@@ -2568,7 +2568,7 @@ penalties; the wound rule is a reasonable MVP default that makes escapes
 feel consequential during gameplay.
 
 **Introduced:** WP-017
-**Status:** Accepted
+**Status:** Accepted. **Superseded by D-24656** (WP-793, 2026-10-05) — no escape gives a generic Wound; an escape runs the rulebook HQ KO + Bystander discard instead.
 
 ---
 
@@ -38937,7 +38937,7 @@ _Active 2026-08-31 — WP-628 / EC-663. Client-only; no new endpoint, no new aut
 
 ### D-24439 — the generic per-escape wound is gated on the villain having no onEscape ability of its own (Active 2026-08-31)
 
-**Status:** Active 2026-08-31 — landed directly (targeted fidelity fix, no WP). Implemented in `packages/game-engine/src/villainDeck/villainDeck.reveal.ts` (the escape branch of `performVillainReveal`) via a new pure lookup `villainCardHasEscapeAbility(G, cardId)` in `packages/game-engine/src/villain/villainEffects.execute.ts`.
+**Status:** Active 2026-08-31 — landed directly (targeted fidelity fix, no WP). **Superseded by D-24656** (WP-793, 2026-10-05) — the generic escape Wound this entry gated is removed for every escape. Implemented in `packages/game-engine/src/villainDeck/villainDeck.reveal.ts` (the escape branch of `performVillainReveal`) via a new pure lookup `villainCardHasEscapeAbility(G, cardId)` in `packages/game-engine/src/villain/villainEffects.execute.ts`.
 
 **Context.** On any villain escape, `performVillainReveal` applied a **generic per-escape Wound to the active player** — a WP-015 "MVP" / "legacy system-level penalty" (the code comment's words), fired **unconditionally** for every escape with no basis in the escaping card's text, the scheme's text, or the Marvel Legendary rules (a villain escaping wounds no one unless its own Escape ability says so). Separately, WP-186 wired card-defined **onEscape abilities** (e.g. Ultron's `Escape: Each player reveals a [hc:tech] Hero or gains a Wound. [effect:reveal-or-wound:hc:tech]`) that resolve at the same escape site. The two **stacked**: a live 2-player match against Red Skull / Midtown Bank Robbery showed each Ultron escape wounding the active player **twice** (once generic, once from Ultron's ability) while the non-active player took one — the asymmetric double-wound was the fingerprint. Midtown Bank Robbery's card carries no escape-wound rule, confirming the generic wound had no card/scheme basis.
 
@@ -46457,7 +46457,7 @@ parity), D-24568 (the WP-745 sweep).
 
 ---
 
-### D-24656 — A Villain escape runs the rulebook procedure: HQ KO (≤ 6, current player chooses), then a one-card discard per player if Bystanders were carried, then the Escape effect; the generic escape Wound is removed (supersedes D-1702 and D-24439) (Drafted 2026-10-04; not yet landed — WP-793 / EC-830)
+### D-24656 — A Villain escape runs the rulebook procedure: HQ KO (≤ 6, current player chooses), then a one-card discard per player if Bystanders were carried, then the Escape effect; the generic escape Wound is removed (supersedes D-1702 and D-24439) (Active 2026-10-05 — WP-793 / EC-830)
 
 **Context.** D-1702 (WP-017) gave the current player a Wound on every escape as "a reasonable MVP default". D-24439 later found it had no basis in any card, scheme or rule and gated it to Villains without an Escape ability, keeping it only so ability-less escapes had some penalty. The rulebook has a real penalty that was never modeled (rules v23 L556–L570, "in this order"):
 1. the escaping Villain KOs a Hero costing 6 or less from the HQ, the player whose turn it is choosing, and the HQ refills;
@@ -46467,7 +46467,7 @@ parity), D-24568 (the WP-745 sweep).
 In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escaped twice carrying Bystanders. Each time the log showed the Wound and the carry, and no KO or discard. Mystique escaped with no Wound, KO or discard. No scheme or Mastermind prints a per-escape Wound.
 
 **Decision.**
-1. **Order and source.** Every escape runs the three steps, sourced from rules v23 L556–L570. Escapes caused by card effects run them too (L1037, L2826). Step 3 (the onEscape dispatch, then the captured-Hero KO, the Mystique become-scheme-twist branch and the escaped-pile resource-loss check) keeps its code and order inside the move. It still resolves before the entering Villain's Ambush (L573).
+1. **Order and source.** Every escape runs the three steps, sourced from rules v23 L556–L570. Escapes caused by card effects run them too (L1037, L2826). Step 3 (the onEscape dispatch, then the captured Heroes moved into the Escape Pile (D-24657), the Mystique become-scheme-twist branch and the escaped-pile resource-loss check) keeps its code and order inside the move. It still resolves before the entering Villain's Ambush (L573).
 2. **Step 1.** Eligible = HQ Heroes whose cost is ≤ 6. Haunted Heroes are included and the haunter stays (L1533).
    - 0 eligible: a logged no-op.
    - 1 eligible: KO'd automatically. This is the 0 / 1 / 2+ rule of D-24006, D-24007, D-24343 and D-24644.
@@ -46498,7 +46498,7 @@ In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escape
    - **Supersedes D-1702** (the WP-017 escape Wound) and **D-24439** (its gate). No escape gives a generic Wound or touches `turnEconomy.woundsDrawn`. Printed Escape Wounds are unchanged.
    - No new move, `hasPending*` guard or `UIState` field. The choices ride the projected `pendingSeatChoice`, and the client adds three headings.
    - The sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged (neither replays an escape).
-   - The runtime-observed feed and the dashboard `totalObs` pin are regenerated. The real-opener scaffold measured 7959 → 7980 observations and 8884 → 8903.
+   - The runtime-observed feed and the dashboard `totalObs` pin are regenerated. The real-opener scaffold measured 7959 → 7980 observations and 8884 → 8903 (pre-WP-792 / WP-749 baselines); at execution, on top of both, the feed moved 7953 → 7974 observations (80 → 81 mechanics, 0 dropped) and `totalObs` 8878 → 8897.
    - The diagnostic PAR profiles are re-pinned by WP-793's own follow-up `INFRA:` PR, opened immediately after its execution merges; that PR also re-anchors the WP-591 per-scheme seed PAR (Midtown Bank Robbery included), which was calibrated under the old escape costs. WP-792 re-pinned separately (#2586) and WP-749 re-pins inside its own `EC-786:` commit; there is no combined re-pin (operator ruling 2026-10-04, amended 2026-10-05, Jeff, WP-793 OD-2).
    - Live play in a match in progress at deploy continues; its next escape runs the new procedure. **Re-executing any log that contains a pre-deploy escape stalls.** That escape now parks a seat choice the log never answers, so every later recorded move is a block-all no-op. This hits:
      - competitive verification (`replay_verification_failed`);
@@ -46507,6 +46507,8 @@ In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escape
      It is permanent for durable pre-deploy replays. It is wider than the Master Strike capture removal's window (D-24654, WP-792, drafted in PR #2580). Accepted; no migration.
    - Stored `competitive_scores` rows are frozen (D-24616 §5). Operator ruling 2026-10-04 (Jeff, WP-793 OD-1): leave them frozen — no rewrite, no leaderboard annotation, no new season.
    - Multi-player sims depend on WP-749 / D-24573.
+
+**Gates.** game-engine 4844 / 1112 suites → 4873 / 1120, 0 fail. With only the engine change built, the engine failed exactly the 8 WP §Scope G generic-Wound tests and nothing else; those 8 now assert no Wound (plus the `ALL_PENDING_FIELDS` addition and the dashboard `totalObs` pin). `pnpm -r build` 0 (no `lagn-v1.json` churn); `pnpm -r --no-bail test` 0 fail in all 12 packages (arena-client 2262 → 2263, dashboard 570, server 1659 with 206 DB-backed skips). arena-client and dashboard `typecheck` 0. Sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged. `sim:runtime-observed` regenerated: 312 games terminate, 7953 → 7974 observations, 80 → 81 mechanics (`last-stand` newly reached, 1 obs), 0 dropped; dashboard `totalObs` 8878 → 8897 (percentResolved stays 13.9). `sim:coverage --check`, `effect-index:check`, `mechanics:metadata:check`, `ledger:heroes:check`, `ledger:villains:check` current with no regeneration; `wiki:lint` 0, `wiki-viewer:check-links` OK. Revert proofs 6/6 (restore the Wound; restore the reduced Secret Invasion block; drop the escape opener; drop the return-on-discard opener; drop the any-pending wait; drop the legacy-move guard), plus a non-vacuity check (parking the discard with the active-seat skip fails the `game.test.ts` real-reducer case). EC-830's hand-built-`G` `seatChoiceDispatch.test.ts` clause (and its `runFixture` fallback) was stale — both harnesses build `G` only from a setup config — so that case is a seeded two-seat sim replayed through `runFixture` (01.6 post-mortem §7). D-24026 live-verify pending.
 
 **Reserved by:** NUMBER-LEDGER D-24656 (#2578). Related: WP-793 / EC-830, D-1702 (superseded), D-24439 (superseded), D-24440, D-24314, D-24315, D-18603, D-24287, D-24587, D-24501, D-24511, D-24499, D-24648, D-24301, D-24527, D-24644, D-24284, D-24006, D-24007, D-13503, D-24318, D-24616 §5, D-24573, D-24654.
 

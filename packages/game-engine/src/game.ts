@@ -28,7 +28,7 @@ import { resolveOptionalPutBottomHQ, hasPendingOptionalPutBottomHQ } from './mov
 import { resolvePutAnyNumberBottomHQ, hasPendingPutAnyNumberBottomHQ } from './moves/resolvePutAnyNumberBottomHQ.js';
 import { resolveReturnZeroCostDiscard, hasPendingReturnZeroCostDiscard } from './moves/resolveReturnZeroCostDiscard.js';
 import { resolveDiscardToPlay, hasPendingDiscardToPlay } from './moves/resolveDiscardToPlay.js';
-import { resolveReturnOnDiscard, hasPendingReturnOnDiscard } from './moves/resolveReturnOnDiscard.js';
+import { resolveReturnOnDiscard, hasPendingReturnOnDiscard, openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from './moves/resolveReturnOnDiscard.js';
 import { resolveGiveHqHeroChoice, hasPendingGiveHqHeroChoice } from './moves/giveHqHeroChoice.resolve.js';
 import { resolveCopyPowersChoice, hasPendingCopyPowersChoice } from './moves/copyPowersChoice.resolve.js';
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
@@ -39,6 +39,7 @@ import { resolveCountScaledChoice, hasPendingCountScaledChoice } from './moves/c
 import { resolveUndercoverChoice, hasPendingUndercoverChoice } from './moves/undercover.resolve.js';
 import { resolveSeatChoice, hasPendingSeatChoice, SEAT_CHOICE_STAGE } from './moves/seatChoice.resolve.js';
 import { openDivingBlockSeatChoiceIfNeeded } from './moves/divingBlock.logic.js';
+import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEscapeProcedure.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -803,6 +804,28 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // threshold a hero ability is waiting on. `{ random }` is passed because a
           // deferred effect may DRAW, and the bare ctx carries no random (D-24051).
           resolveDeferredHeroGrants(G, { G, ctx, random });
+          // why: WP-793 / D-24656 — a NON-ACTIVE seat's front return-on-discard entry (a
+          // discard forced on another player's turn) becomes a seat choice for that seat, so
+          // it answers its own reaction instead of freezing the turn. Runs FIRST so the
+          // escape opener below (which waits on any pending choice) sees the reaction as an
+          // open seat choice and holds until it resolves. Early no-op when the queue is empty
+          // or its front belongs to the active player (who keeps the legacy move).
+          openNonActiveReturnOnDiscardSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-793 / D-24656 — open the rulebook HQ KO + Bystander discard every escape
+          // this move recorded (rules v23 L556–L570; steps 1–2 resolve after the move, the
+          // D-24656 point 4 deviation). Runs here, after every move, so EVERY escape path in
+          // every stage is covered and each resolveSeatChoice that resolves a step opens the
+          // next. Runs BEFORE the Diving Block opener: an escape's steps are owed in rule
+          // order and no escape adds a Wound any more, so a Diving Block wave from a step-3
+          // Escape Wound waits behind them. ctx.currentPlayer is the escape's chooser and the
+          // seat the D-24648 stage-ride skip applies to. Early no-op when nothing is queued.
+          openEscapeProcedureSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-793 / D-24656 — both checks above ran BEFORE the openers, so an automatic
+          // escape KO whose HQ refill emptied the Hero Deck would only be caught on the NEXT
+          // move. Re-run them (both idempotent) so the deck-out latch and Super Hero Civil
+          // War's loss land on this move.
+          latchFinalTurnIfDeckExhausted(G);
+          applyPileDepletionResourceLoss(G);
           // why: WP-682 / D-24499 — after every move, open (or re-open) the next
           // Diving-Block reveal/decline WAVE for any Wounds parked at the
           // gainWoundForPlayer chokepoint this move. Runs here (not in each

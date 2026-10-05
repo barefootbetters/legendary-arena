@@ -21,13 +21,10 @@ import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
-import { performVillainReveal } from '../villainDeck/villainDeck.reveal.js';
+import { performVillainReveal, resolveVillainEscape } from '../villainDeck/villainDeck.reveal.js';
 import { koCard } from '../board/ko.logic.js';
 import { refillHqSlot, pushVillainIntoCity } from '../board/city.logic.js';
-import { attachBystanderToVillain, carryEscapedBystandersToPile } from '../board/bystanders.logic.js';
-import { moveAttachedHeroesToEscapedPile } from '../board/heroCapture.logic.js';
-import { applyEscapedPileResourceLoss } from './schemeResourceLoss.js';
-import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
+import { attachBystanderToVillain } from '../board/bystanders.logic.js';
 import {
   composeSchemeTwistNarrative,
   composeStrikeBlockedNarrative,
@@ -656,21 +653,22 @@ function killbots(
  * path and attacks for its cost + 2 — resolveFightCost), pushes it into the Sewers
  * (city space 0 via pushVillainIntoCity), refills the vacated HQ slot, and emits one
  * `schemeTwistResolved` event. If the city was full, the displaced card escapes and
- * is routed through the standard escape consequences (Escaped Villains pile + counter
- * + carried bystanders + KO'd captured heroes + the escaped-converted-count loss
- * check); the per-reveal wound and card-text Escape: effects are a reveal-move
- * concern and are intentionally not replayed by this twist.
+ * runs the full escape through `resolveVillainEscape` (WP-793 / D-24656): counter +
+ * Escaped Villains pile, carried bystanders, the owed rulebook HQ KO + Bystander
+ * discard, its card-text Escape effect, captured heroes to the Escape Pile, and the
+ * escaped-converted-count loss check — rules v23 L2826–L2829, an escape caused by a
+ * card effect "causes all the same effects".
  *
  * @param gameState - Game state to mutate (HQ + city + overlay + log + notable event).
- * @param _context - Unused (no villain-deck reveal).
- * @param _implementationMap - Unused.
+ * @param context - Reveal context threaded into the escape (random + currentPlayer).
+ * @param implementationMap - Handler map threaded into the escape (Mystique's twist).
  * @param _params - Unused (no resolver params).
  * @param twistCardId - The scheme-twist card instance that triggered.
  */
 function secretInvasion(
   gameState: LegendaryGameState,
-  _context: RevealContext,
-  _implementationMap: ImplementationMap,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
   _params: Record<string, unknown>,
   twistCardId?: CardExtId,
 ): void {
@@ -716,34 +714,20 @@ function secretInvasion(
       `[Scheme Twist] The highest-cost HQ Hero "${resolveCardName(gameState, target.cardId)}" moved into the Sewers as a Skrull Villain (cost ${target.cost}).`,
     );
 
-    if (pushResult.escapedCard !== null) {
-      // why: a full city displaces the card at the escape edge. Route it through
-      // the loss-relevant escape consequences (mirrors the reveal path's escape
-      // branch, minus the reveal-move wound + card-text Escape: effects): count the
-      // escape, add it to the Escaped Villains pile, carry its bystanders, KO its
-      // captured heroes, then evaluate the escaped-converted-count loss.
-      gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] =
-        (gameState.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0) + 1;
-      gameState.escapedPile = [...gameState.escapedPile, pushResult.escapedCard];
-      pushLog(gameState,
-        `[Scheme Twist] ${resolveCardName(gameState, pushResult.escapedCard)} escaped from the city.`,
-      );
-      const carryResult = carryEscapedBystandersToPile(
-        pushResult.escapedCard,
-        gameState.attachedBystanders,
-        gameState.escapedPile,
-      );
-      gameState.attachedBystanders = carryResult.attachedBystanders;
-      gameState.escapedPile = carryResult.escapedPile;
-      moveAttachedHeroesToEscapedPile(gameState, pushResult.escapedCard);
-      applyEscapedPileResourceLoss(gameState);
-    }
-
-    // why: refill the vacated HQ slot from the hero deck front (FIFO; empty deck
-    // leaves the slot null per D-13503).
+    // why: WP-793 / D-24656 — refill the vacated HQ slot from the hero deck front (FIFO;
+    // empty deck leaves the slot null per D-13503) BEFORE the City push's escape resolves,
+    // so the HQ is full when the escape's owed HQ KO is offered ("immediately flip a new
+    // Hero") and a nested twist from Mystique's Escape never sees a null slot.
     const refillResult = refillHqSlot(gameState.hq, target.slotIndex, gameState.heroDeck);
     gameState.hq = refillResult.hq;
     gameState.heroDeck = refillResult.heroDeck;
+
+    if (pushResult.escapedCard !== null) {
+      // why: WP-793 / D-24656 — a full city displaces the card at the escape edge, and an
+      // escape caused by a card effect "causes all the same effects" (rules v23
+      // L2826–L2829). Run the full escape every other path runs, not a reduced copy.
+      resolveVillainEscape(gameState, context, implementationMap, pushResult.escapedCard);
+    }
   }
 
   const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;

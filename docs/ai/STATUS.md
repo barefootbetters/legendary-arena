@@ -7,6 +7,36 @@
 
 ## Current State
 
+### WP-793 — A Villain escape follows the rulebook: HQ KO, Bystander discard, then the Escape effect (EC-830 / D-24656) (2026-10-05)
+
+**User-visible on `play.legendary-arena.com` (after deploy). D-24026 live-verify pending.** When a Villain escapes,
+the current player no longer gains a Wound. Instead the escape does what the rulebook says, in order:
+1. it KOs a Hero costing 6 or less from the HQ. With two or more candidates the current player picks one ("A Villain
+   escaped — choose a Hero in the HQ to KO"); with one it is KO'd automatically; with none the log says so. The HQ
+   space refills from the Hero Deck;
+2. if it carried Bystanders away, every player with a card in hand discards one ("Bystanders were carried away —
+   choose a card to discard");
+3. its own Escape effect, as before.
+
+Steps 1–2 are prompted right after the move that caused the escape (D-24656 point 4). A player who discards Cyclops's
+Unending Energy on someone else's turn now answers "Return the discarded card to your hand?" from their own seat
+instead of freezing the turn.
+
+- **Engine + three prompt headings.** D-24656 is Active and supersedes D-1702 / D-24439. Every escape path runs the
+  same procedure, including the Secret Invasion Skrull push. No new move, guard or UIState field.
+- **Counts.** game-engine 4844 / 1112 suites → 4873 / 1120, 0 fail; arena-client 2262 → 2263; `pnpm -r --no-bail
+  test` 0 fail in all 12 packages. Sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged. Re-pins:
+  runtime-observed 7953 → 7974 observations (0 dropped, 312 games terminate); dashboard `totalObs` 8878 → 8897.
+- **Scores move.** Fewer Wounds (+1 VP, RawScore −10 each), but HQ churn and a card per player per Bystander escape.
+  Midtown Bank Robbery changes most. Stored competitive rows stay frozen (OD-1). Replays that contain a pre-deploy
+  escape stop re-executing at that escape (accepted). The PAR profiles and the seed-PAR re-anchor are WP-793's
+  follow-up `INFRA:` PR (OD-2).
+- **Live-verify recipe (D-24026).** In a match (Midtown Bank Robbery makes it quick) where a Villain carrying a
+  Bystander escapes: the log has no "gained a wound from villain escape" line; the HQ-KO prompt appears (or the
+  automatic / "KO'd nothing" line) and the HQ space refills; the discard prompt appears and one card leaves the hand;
+  the Villain's own Escape effect still fires. In a 2-seat or bot-ally match, confirm the other seat answers its own
+  discard prompt. Record the matchId here.
+
 ### WP-749 — Sim / PAR loops resolve a seat choice addressed to a non-active seat (EC-786 / D-24573) (2026-10-05)
 
 **No user-observable change — infrastructure only.** The simulation runner and the PAR aggregator no longer

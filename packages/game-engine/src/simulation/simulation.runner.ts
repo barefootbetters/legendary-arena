@@ -46,6 +46,12 @@ import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { promoteMastermindVictoryIfPending } from '../endgame/mastermindVictory.logic.js';
 import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
 import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
+// why: WP-793 / D-24656 — the two turn.onMove openers this loop mirrors. Both are plain
+// G-mutating helpers in modules that sit in runtime-safe import cycles with
+// seatChoice.resolve (function-body references only), so importing them here adds no
+// top-level cross-reference.
+import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../moves/resolveReturnOnDiscard.js';
+import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEscapeProcedure.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
@@ -673,6 +679,17 @@ function runPerTurnLoop(
         // deferred grants).
         applyPileDepletionResourceLoss(gameState);
         resolveDeferredHeroGrants(gameState, seatChoiceContext);
+        // why: WP-793 / D-24656 — mirror the live turn.onMove openers in their live order
+        // (return-on-discard, then the escape procedure, then the depletion re-check) after
+        // this non-active seat's move too: its discard may queue a non-active
+        // return-on-discard, and resolving an escape step opens the next. events is
+        // undefined (no stage ride in a reimplemented loop) and the seat argument is this
+        // loop's ACTIVE seat (currentPlayer), never the acting seat — live onMove reads
+        // ctx.currentPlayer, which a non-active seat's move does not change. The escape
+        // opener runs before the (unmirrored) Diving Block opener, as live.
+        openNonActiveReturnOnDiscardSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+        applyPileDepletionResourceLoss(gameState);
         continue;
       }
     }
@@ -762,6 +779,19 @@ function runPerTurnLoop(
     if (dispatchedMoveContext !== undefined) {
       resolveDeferredHeroGrants(gameState, dispatchedMoveContext);
     }
+
+    // why: WP-793 / D-24656 — mirror the live turn.onMove openers in their live order, AFTER
+    // the deferred-grant resolve: the non-active return-on-discard opener, then the escape
+    // opener (the rulebook HQ KO + Bystander discard every escape this move recorded), then
+    // the depletion re-check (an automatic KO's HQ refill can empty the Hero Deck). Without
+    // them a queued escape would never open its steps in the sim. events is undefined (no
+    // stage ride here) and the seat argument is this loop's ACTIVE seat (currentPlayer), not
+    // the move context's ctx. Both openers run before the (unmirrored) Diving Block opener,
+    // as live; the getLegalMoves seat-choice short-circuit and the WP-749 non-active
+    // dispatch then answer each parked choice at its defaultOptionIndex.
+    openNonActiveReturnOnDiscardSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
+    applyPileDepletionResourceLoss(gameState);
 
     // why: zero-legal-moves + endTurn-illegal fallback (RS-6 second clause).
     // If the policy returned endTurn when the stage is not cleanup, the

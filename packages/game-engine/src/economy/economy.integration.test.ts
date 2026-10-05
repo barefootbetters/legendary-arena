@@ -341,7 +341,8 @@ describe('economy integration', () => {
     );
   });
 
-  it('escape increments woundsDrawn for current player', () => {
+  // why: WP-793 / D-24656 — intentional behavior change: the D-1702 / D-24439 generic escape Wound is removed.
+  it('escape leaves woundsDrawn at 0 for the current player (D-24656)', () => {
     const gameState = createMockGameState({
       villainDeck: { deck: ['escape-villain'], discard: [] },
       villainDeckCardTypes: { 'escape-villain': 'villain' },
@@ -355,8 +356,13 @@ describe('economy integration', () => {
 
     assert.strictEqual(
       moveContext.G.turnEconomy.woundsDrawn,
-      1,
-      'Escape wound must increment woundsDrawn for current player',
+      0,
+      'an escape gives no Wound, so woundsDrawn stays 0',
+    );
+    assert.deepStrictEqual(
+      moveContext.G.piles.wounds,
+      ['wound-01', 'wound-02', 'wound-03'],
+      'the wound pile is unchanged by an escape',
     );
   });
 
