@@ -7,6 +7,17 @@
 
 ## Current State
 
+### D-24660 — Pure Fury no longer logs a phantom "attack" hollow effect (direct fix) (2026-10-05)
+
+**Diagnostics / coverage only, no gameplay change.** Pure Fury's "whose [icon:attack] is less than …" describes the
+target's attack, but the parser read it as an attack bonus with no number. Every play logged a phantom `attack`
+no-handler hollow, and four sibling cards with no real handler looked covered. The phrase is now treated like the
+other enemy-stat icons (D-24605). The coverage baseline is updated: those four now honestly count as `noEffect`.
+
+- **Engine parser only** (`heroAbility.setup.ts`). game-engine 4876 / 0 fail; the coverage, ledger and
+  runtime-observed gates are current.
+- **Follow-up noted:** msp1 Pure Fury is missing its `[keyword:pure-fury]` marker, so it does nothing.
+
 ### D-24659 — Monarch's Decree no longer asks a solo player to choose (direct fix) (2026-10-05)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Defeating Dr. Doom's Monarch's Decree in a solo match

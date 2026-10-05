@@ -519,8 +519,14 @@ const NEGATIVE_MAGNITUDE_ICON_PATTERN = /-\s*\d+\s*\[icon:(?:attack|recruit)\]/g
 // EXCLUDE them (mirrors CONDITION_ICON_PATTERN / NEGATIVE_MAGNITUDE_ICON_PATTERN). A GRANT
 // icon ("you get +3[icon:attack]") never follows "as if it were a", never precedes "or less",
 // and never follows "Villain of", so it is never suppressed.
+// why: D-24660 — "whose [icon:attack] is less than …" (core/co2e Pure Fury and five
+// siblings: "Defeat any Villain or Mastermind whose [icon:attack] is less than the number
+// of …") names the TARGET's attack, never a grant. Unsuppressed, Step 3 read the bare icon
+// as a magnitude-less `attack` keyword that logged a phantom `attack` no-handler hollow on
+// every play (live solo match f4JyVOX_Tq3). Every "whose [icon:attack]" line in data/cards
+// is this target-stat form.
 const ADVERSARY_STAT_ICON_PATTERN =
-  /as if it were an?\s+\d+\s*\[icon:attack\]|\d+\s*\[icon:attack\]\s+or less|Villain of\s+\d+\s*\[icon:attack\](?:\s+or\s+\d+\s*\[icon:attack\])?/gi;
+  /as if it were an?\s+\d+\s*\[icon:attack\]|\d+\s*\[icon:attack\]\s+or less|Villain of\s+\d+\s*\[icon:attack\](?:\s+or\s+\d+\s*\[icon:attack\])?|whose\s+\[icon:attack\]/gi;
 
 // why: D-24606 — the Annihilation-era Focus cost prefix ("[keyword:Focus] 2[icon:recruit]
 // [icon:5] <effect>", the ff04 form "[keyword:Focus 6][icon:recruit] [icon:5] <effect>") is a

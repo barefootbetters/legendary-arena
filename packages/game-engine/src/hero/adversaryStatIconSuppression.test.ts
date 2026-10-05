@@ -116,3 +116,23 @@ describe('adversary-stat icon suppression (D-24605)', () => {
     assert.deepStrictEqual(attackEffects, [{ type: 'attack', magnitude: 2 }]);
   });
 });
+
+describe('"whose [icon:attack]" target-stat suppression (D-24660)', () => {
+  // why: the exact generated core Pure Fury line (data/cards/core.json, nick-fury/pure-fury).
+  const PURE_FURY_ABILITY =
+    'Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile. [keyword:pure-fury]';
+
+  it('Pure Fury — "whose [icon:attack] is less than" grants no attack and keeps pure-fury', () => {
+    const hook = buildHook(PURE_FURY_ABILITY);
+    assertNoAttackGrant(hook, 'Pure Fury');
+    assert.ok(hook.keywords.includes('pure-fury'), 'the pure-fury keyword is still parsed');
+  });
+
+  it('a real grant on the same line as "whose [icon:attack]" is unaffected', () => {
+    const hook = buildHook(
+      'You get +2[icon:attack]. Then defeat any Villain whose [icon:attack] is less than the number of Bystanders in your Victory Pile.',
+    );
+    const attackEffects = (hook.effects ?? []).filter((effect) => effect.type === 'attack');
+    assert.deepStrictEqual(attackEffects, [{ type: 'attack', magnitude: 2 }]);
+  });
+});
