@@ -539,8 +539,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // line no longer carries a magnitude-less attack. The feed regenerated: 7938 -> 7959 raw
   // observations, same 80 mechanics, 0 dropped. totalObs 8866 -> 8884; resolvedObs stays 1235,
   // so percentResolved stays 13.9. A sweep-trajectory artifact, not a regression.
+  // 2026-10-04 (WP-792 / D-24654, re-pin): a Master Strike no longer captures a Bystander onto
+  // the Mastermind, so the core/dr-doom sweep's bots rescue fewer Bystanders and their fixed-seed
+  // trajectories shift (feed regenerated on top of #2579 / #2582: 7959 -> 7953 raw observations,
+  // same 80 mechanics, 0 dropped; man-out-of-time 83 -> 77, woman-out-of-time 69 -> 66,
+  // gate-only 482 -> 485). totalObs
+  // 8884 -> 8878 (-6, equal to the raw feed drop); resolvedObs stays 1235, so percentResolved
+  // stays 13.9 (1235 / 8878). A sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8884);
+  assert.equal(view.totalObs.value, 8878);
   assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);
 });

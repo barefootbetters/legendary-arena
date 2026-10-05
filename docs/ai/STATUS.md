@@ -7,6 +7,29 @@
 
 ## Current State
 
+### WP-792 — A Master Strike no longer captures a Bystander (EC-829 / D-24654) (2026-10-04)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A Master Strike now does only what the Mastermind's
+card says. It no longer puts a Bystander on the Mastermind every time, for every Mastermind, so players stop
+rescuing Bystanders the rules never gave them. Bystander VP and scores are no longer inflated. In Jeff's Magneto
+match `PyK5YS2L8Bo`, 2 of the 3 rescued Bystanders came from this placeholder, so Bystander VP read 3 instead of 1.
+
+- **Engine only.** The D-15401 placeholder call and its helper are removed, and both of its log lines go
+  (`[Master Strike] … captured a Bystander.` and the empty-supply line). D-24654 supersedes D-15401 and D-24383.
+- **Unchanged:** a Villain-Deck Bystander captured by the Mastermind when the City is empty, Here, Hold This, the
+  kidnap fallback, and the rescue on a tactic defeat. The Mastermind tile's `👤 N` badge now counts only those.
+- **Not modeled yet:** printed Bystander strikes (Mr. Sinister, Madelyne Pryor, Mojo, Arcade, …). Each is a
+  follow-up that must model the capture together with its printed cost (OD-3).
+- **Counts.** game-engine 4843 / 0 fail; dashboard 570 / 0; `pnpm -r --no-bail test` 0 fail. Re-pins: sentinel
+  `finalStateHash` `492fe6bf…` → `06f79cdd…`, runtime-observed 7959 → 7953, dashboard `totalObs` 8884 → 8878.
+  `PRE_WP080_HASH` unchanged.
+- **Scores.** Live scores drop where the placeholder inflated them. Stored `competitive_scores` stay frozen (OD-1).
+  A competitive match captured before the deploy and submitted after it fails `replay_verification_failed`
+  (accepted). The PAR profile re-pin follows as a separate `INFRA:` PR (OD-2).
+- **Live-verify (D-24026): pending.** In a core Magneto game, let a Master Strike resolve. The log must have no
+  `[Master Strike] Magneto captured a Bystander.` line, and the Mastermind tile shows no badge unless a Villain-Deck
+  Bystander was captured with an empty City.
+
 ### D-24657 — Heroes captured by an escaping Villain go to the Escape Pile, not the KO pile (direct fix) (2026-10-04)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** When a Villain that captured a Hero from the HQ

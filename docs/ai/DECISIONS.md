@@ -17098,7 +17098,7 @@ new randomness source; no new `RuleEffectType`. Mastermind defeat does
 not release captured bystanders in MVP — a future WP may model release.
 
 **Introduced:** WP-154 (executed 2026-05-16)
-**Status:** Immutable
+**Status:** Immutable. **Superseded by D-24654** (WP-792, 2026-10-04) — a Master Strike resolves only its printed text and no longer captures a Bystander; this entry's body is kept as written.
 
 ---
 
@@ -37866,7 +37866,7 @@ Locked:
    "EC missed a file" mid-execution amendment (01.0b §deviations), not a scope
    change — the capture line SHOULD now appear, and the fixture oracle records it.
 
-**Active 2026-08-18 (WP-574 / EC-609).**
+**Active 2026-08-18 (WP-574 / EC-609).** **Superseded by D-24654** (WP-792, 2026-10-04) — the generic capture is removed, so this success line no longer fires.
 
 ### D-24384 — Diagnostics Report Carries No Effect Trace (Channel Mismatch)
 
@@ -46418,7 +46418,7 @@ parity), D-24568 (the WP-745 sweep).
 
 ---
 
-### D-24654 — A Master Strike resolves only its printed text: the generic capture-a-Bystander placeholder is removed (supersedes D-15401 and D-24383) (Drafted 2026-10-04; not yet landed — WP-792 / EC-829)
+### D-24654 — A Master Strike resolves only its printed text: the generic capture-a-Bystander placeholder is removed (supersedes D-15401 and D-24383) (Active 2026-10-04 — WP-792 / EC-829)
 
 **Context.** D-15401 (WP-154, Immutable) made every Master Strike, for every Mastermind, capture the top Bystander onto the Mastermind. It was an MVP shortcut to unblock the projection, not a rule: rules v23 (~L3429) says "When a Master Strike occurs, each Mastermind does its Master Strike ability", and core Magneto's printed strike captures nothing. D-24383 (WP-574) later logged the capture on success. In Jeff's solo match `PyK5YS2L8Bo` (Magneto), two of the three Bystanders rescued by a tactic defeat were invented by the placeholder (log `6.1.1`, `7.1.1`), so Bystander VP read 3 instead of 1. Every score that counts rescued Bystanders was inflated, for every Mastermind.
 
@@ -46434,6 +46434,8 @@ parity), D-24568 (the WP-745 sweep).
    - **Matches in progress** switch at the next strike after deploy. Bystanders the Mastermind already holds stay and are rescued normally; there is no migration.
    - A **competitive match** captured before the deploy and submitted after it fails `replay_verification_failed`. This is an accepted window, as with WP-790 / WP-726. Read-time re-execution of pre-deploy replays (the coach, submit by `replayHash`) also reflects the post-deploy rules; replays are durable in `bgio.replay_artifacts`, so for an unsubmitted pre-deploy match the window is permanent. Accepted; no migration.
    - Stored `competitive_scores` rows are frozen, not re-verified (the D-24616 §5 precedent). Operator ruling 2026-10-04 (Jeff, WP-792 OD-1): leave them frozen — no rewrite, no leaderboard annotation, no new season.
+
+**Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in all 12 packages; game-engine 4843 → 4843 / 0 (the two WP-574 wording tests became one, plus the new five-Mastermind case); dashboard 570 → 570 / 0, `test:coverage` 0, `typecheck` 0. 2/2 revert proofs: restoring the generic call fails 9 tests (the new case and the 8 inverted), and a capture for `dkcy/mr-sinister` only fails the new case. Sentinel re-recorded by `record-game-fixture.mjs`: `finalStateHash` `492fe6bf…` → `06f79cdd…`, and the key-order-independent semantic diff is exactly the 10 expected paths (the hash, the dropped `1.1.1 [Master Strike] core/dr-doom captured a Bystander.` line, the renumbered three). `PRE_WP080_HASH` unchanged. `sim:runtime-observed` regenerated: 7959 → 7953 observations, 80 mechanics, 0 dropped (man-out-of-time 83 → 77, woman-out-of-time 69 → 66, gate-only 482 → 485), a sweep-trajectory shift. Dashboard `totalObs` re-pinned 8884 → 8878 (percentResolved stays 13.9). `sim:coverage --check`, `effect-index:check`, `mechanics:metadata:check`, `ledger:heroes:check`, `ledger:villains:check`, `wiki:lint`, `wiki-viewer:check-links` OK with no diff. The numbers match the draft scaffold even though `main` moved (#2579, #2582). D-24026 live-verify pending (a core Magneto Master Strike must log no `captured a Bystander.` line).
 
 **Reserved by:** NUMBER-LEDGER D-24654 (#2578). Related: WP-792 / EC-829, D-15401 (superseded), D-24383 (superseded), D-12805, D-24500, D-24537, D-24616 §5, D-24081.
 

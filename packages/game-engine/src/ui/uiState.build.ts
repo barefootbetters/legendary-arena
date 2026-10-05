@@ -931,8 +931,8 @@ export function buildUIState(
   // 2026-04-29 PS-5.
   //
   // why: WP-128 / D-12805 — `G.mastermind.attachedBystanders` IS populated at
-  // runtime (WP-154 / D-15401: Master Strike captures a bystander onto the
-  // mastermind); project it directly. **Still do NOT flatten
+  // runtime (D-24654 capture sources: a Villain-Deck Bystander revealed with an
+  // empty City, Here, Hold This, the kidnap fallback); project it directly. **Still do NOT flatten
   // `G.attachedBystanders`** (the top-level city-villain captures) into this
   // field — D-12805 Interpretation B keeps the two capture stores separate;
   // city-villain bystanders render on the city row as

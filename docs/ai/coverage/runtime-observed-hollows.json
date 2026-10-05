@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 80,
-    "totalObservations": 7959,
+    "totalObservations": 7953,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 518,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7441
+      "parse-unrecognized": 7435
     }
   },
   "byMechanic": {
@@ -1187,12 +1187,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 482,
+      "hitCount": 485,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 482
+        "parse-unrecognized": 485
       },
       "examples": [
         {
@@ -1515,12 +1515,12 @@
       ]
     },
     "man-out-of-time": {
-      "hitCount": 83,
-      "lastSeenTurn": 29,
+      "hitCount": 77,
+      "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 83
+        "parse-unrecognized": 77
       },
       "examples": [
         {
@@ -1542,7 +1542,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "ca75/captain-america-1941/devoted-patriot#2",
+          "cardId": "ca75/captain-america-1941/devoted-patriot#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -2977,12 +2977,12 @@
       ]
     },
     "woman-out-of-time": {
-      "hitCount": 69,
+      "hitCount": 66,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 69
+        "parse-unrecognized": 66
       },
       "examples": [
         {
