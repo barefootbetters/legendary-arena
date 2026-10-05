@@ -30,10 +30,10 @@
       "card": "Black Widow",
       "ability": "Mission Accomplished",
       "wp": "WP-022",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Mission Accomplished drew a card both times."
     },
     {
       "key": "core/black-widow|optional-ko-reward",
@@ -41,10 +41,10 @@
       "card": "Black Widow",
       "ability": "Dangerous Rescue",
       "wp": "WP-248",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Dangerous Rescue (Covert) KO'd a Wound from hand and rescued a Bystander."
     },
     {
       "key": "core/black-widow|rescue",
@@ -52,10 +52,10 @@
       "card": "Black Widow",
       "ability": "Mission Accomplished",
       "wp": "WP-215",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Mission Accomplished's Tech rescue gated off with no other Tech Hero, then rescued after a second Mission Accomplished."
     },
     {
       "key": "core/captain-america|attack-per-count",
@@ -228,10 +228,10 @@
       "card": "Gambit",
       "ability": "Card Shark",
       "wp": "WP-253",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Card Shark drew revealed X-Men cards and left non-X-Men (S.H.I.E.L.D. cards, a Wound) on top."
     },
     {
       "key": "core/gambit|reveal-cost-attack",
@@ -250,10 +250,10 @@
       "card": "Gambit",
       "ability": "Hypnotic Charm",
       "wp": "WP-702",
-      "state": "partial",
-      "date": "2026-09-21",
-      "evidence": "WP-726 live match (prompt parked 3×)",
-      "note": "1-player \"no other deck\" case (D-24639) still pending."
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Discard and keep both chosen; the 1-player \"no other player's deck\" case (D-24639) logged when the Instinct half fired (turn 15)."
     },
     {
       "key": "core/gambit|reveal-top-dispose-others",
@@ -261,10 +261,10 @@
       "card": "Gambit",
       "ability": "Hypnotic Charm",
       "wp": "WP-702",
-      "state": "partial",
-      "date": "2026-09-21",
-      "evidence": "WP-726 live match",
-      "note": "1-player \"no other deck\" case (D-24639) still pending."
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Instinct half gated correctly without another Instinct Hero, and logged \"no other player's deck\" in solo (D-24639)."
     },
     {
       "key": "core/hawkeye|covering-fire",
@@ -382,10 +382,10 @@
       "card": "Nick Fury",
       "ability": "Battlefield Promotion",
       "wp": "WP-681",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Battlefield Promotion KO'd a S.H.I.E.L.D. card from hand (twice) and discard (once) and gained an Officer each time."
     },
     {
       "key": "core/nick-fury|pure-fury",
@@ -547,10 +547,10 @@
       "card": "Baron Zemo",
       "ability": "rescue-bystanders-current-by-trait-count",
       "wp": "WP-485",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Zero case confirmed: no Avengers Hero in hand or play, rescued 0. Rescuing with Avengers held is untested."
     },
     {
       "key": "core-villain-brotherhood-blob|setup:require-to-defeat",
@@ -602,10 +602,10 @@
       "card": "Doombot Legion",
       "ability": "scry-ko-own-deck",
       "wp": "WP-447",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Five fights: looked at the top two and KO'd the chosen one each time."
     },
     {
       "key": "core-villain-enemies-of-asgard-enchantress|draw-cards-current",
@@ -701,10 +701,10 @@
       "card": "Melter",
       "ability": "ko-cullable-each-deck-top",
       "wp": "WP-519",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Revealed the deck top and offered KO or keep; KO'd a Trooper."
     },
     {
       "key": "core-villain-brotherhood-mystique|become-scheme-twist",
@@ -888,10 +888,10 @@
       "card": "Whirlwind",
       "ability": "ko-hero",
       "wp": "WP-252",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "Also re-check the henchman swap fix (D-24607)."
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Deny path confirmed: fought in the Sewers, no effect. Fighting him on the Rooftops or Bridge (KO two Heroes) is untested."
     },
     {
       "key": "core-villain-enemies-of-asgard-ymir-frost-giant-king|ko-wounds-current-hand-and-discard",
@@ -1086,10 +1086,10 @@
       "card": "Dr. Doom",
       "ability": "Master Strike — reveal Tech or put 2 cards on top",
       "wp": "WP-538",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "Includes the WP-645 \"Blocked!\" path."
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Put-2-on-top branch confirmed (6 cards, no Tech); no Bystander capture (WP-792 live). The Tech-reveal branch is untested."
     },
     {
       "key": "mastermind:core/dr-doom|dark-technology",
@@ -1196,10 +1196,10 @@
       "card": "The Legacy Virus",
       "ability": "Twists wound; Evil Wins when the Wound stack runs out",
       "wp": "WP-511",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "note": "Twists wounded with no Tech Hero and were avoided by revealing Mission Accomplished; Evil Wins when the 6-per-player solo Wound Stack ran out (turn 16)."
     },
     {
       "key": "scheme:core/replace-earths-leaders-with-killbots|killbots",
