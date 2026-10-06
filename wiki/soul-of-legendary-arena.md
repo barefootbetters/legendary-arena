@@ -1950,7 +1950,15 @@ dispute.
   menu. The lens takes no side on policing; Kaepernick's claim
   stands or falls on its own evidence. It reads who got to define the Sunday.
 - **The mandated pigsty: *Lord of the Flies*** *(questions 1, 2, 4 and 5)*. The
-  novel is not the secular book it is often taught as. Golding wrote in "Fable"
+  novel is not the secular book it is often taught as. A secular literary
+  reading usually sums it up as a story about what happens when civilization
+  breaks down and human beings are "left to themselves," and its answer is the
+  darkest one on offer: left to themselves, the boys become savages, because
+  the beast was in them. On the last page Ralph weeps "for the end of innocence,
+  the darkness of man's heart." Golding did not leave
+  the boys to themselves. He took away their parents, their faith, and every
+  grown-up who could raise them, and then left them with a devil on a stick.
+  Golding wrote in "Fable"
   (*The Hot Gates*, 1965), as it is commonly quoted: "Man is a fallen being. He
   is gripped by original sin." He knew the doctrine of the Fall, then wrote a
   whole novel about it and left God out, like King Noah's priests, whom Abinadi
@@ -1959,6 +1967,22 @@ dispute.
   one boy who sees the truth, is read as a Christ-figure by critics, by study
   guides and, by several accounts, by Golding himself — and the tribe kills him.
   The book's diagnosis is the Fall.
+
+  **Who wrote it.** William Golding (1911–1993) was a husband, a father of two,
+  and a schoolmaster for most of his working life: Bishop Wordsworth's School,
+  Salisbury, from 1940 until he retired from teaching in 1962. The boys on the
+  island were written by a man who taught boys every day. The war interrupted
+  the teaching. He spent six years in the Royal Navy, and his
+  [Nobel biography](https://www.nobelprize.org/prizes/literature/1983/golding/biographical/)
+  places him at the sinking of the Bismarck and off the French coast on D-Day,
+  finishing as "Lieutenant in command of a rocket ship." In "Fable" he says the
+  war is where his view of man changed: "Before the Second World War I believed
+  in the perfectibility of social man," but "I had discovered what one man could
+  do to another," and "anyone who moved through those years without
+  understanding that man produces evil as a bee produces honey, must have been
+  blind or wrong in the head." The page does not argue with what he saw. He told
+  the truth about the twentieth century's Friday; the quarrel is with a book
+  that stops there.
 
   What it lacks is the rest of the story, at both ends. Luke begins the parable
   at home, not in the pigsty: "A certain man had two sons" (Luke 15:11). The boy
@@ -2011,7 +2035,9 @@ dispute.
   itself: the Golding estate reports more than fifty million copies sold, and a
   set text is a market re-created every year. And the seal does the arguing: the
   1983 Nobel Prize, awarded for novels that "illuminate the human condition,"
-  ends the question of whether the book belongs on the list. The syllabus keeps
+  ends the question of whether the book belongs on the list. In plain words, the
+  Nobel committee rewarded Golding for exposing the darkness in man; the
+  critique here is that he leaves out the light that can redeem him. The syllabus keeps
   the diagnosis and drops the theology that named it. The chapter it leaves out is
   Luke 15: "For this my son was dead, and is alive again; he was lost, and is
   found" (15:24).
@@ -2042,7 +2068,7 @@ dispute.
   to kill Ralph. Second, the sealed prize: one of the Swedish Academy's own
   judges, Artur Lundkvist, broke protocol to call Golding "a small English
   phenomenon of no great interest," and the deliberations stay sealed until
-  2034. Third, the experiment: like Frederick II's infants, the island removes
+  2034. Third, [the experiment](#five-more-moves-from-the-head-on-the-stick): like Frederick II's infants, the island removes
   the Father and the goal and then reports the result as human nature.
 
   The essay also answers the head with an older scene: **Legion** (Mark 5;
@@ -2050,8 +2076,8 @@ dispute.
   could bind him, no, not with chains … neither could any man tame him" (Mark
   5:3–4), and he lived "crying, and cutting himself with stones" (5:5). Then
   "when he saw Jesus afar off, he ran" (5:6). The spirit answers in the plural,
-  "My name is Legion: for we are many" (5:9), just as Golding's head speaks for
-  the crowd ("we shall do you"). The devils go into the swine, and "the herd ran
+  "My name is Legion: for we are many" (5:9), just as Golding's head
+  [speaks for the crowd](#the-masterminds-common-tactics-the-grammar-of-manipulation) ("we shall do you"). The devils go into the swine, and "the herd ran
   violently down a steep place into the sea, (they were about two thousand;)"
   (5:13). The man is found "sitting at the feet of Jesus, clothed, and in his
   right mind" (Luke 8:35) and is sent home to tell "how great things the Lord
@@ -2062,14 +2088,16 @@ dispute.
   into the sea.
 
   **The Forbidden Experiment.** The essay reads Golding's island as a
-  deprivation experiment and sets it beside the original. In the 1200s the
+  [deprivation experiment](#five-more-moves-from-the-head-on-the-stick) and sets it beside the original. In the 1200s the
   Emperor Frederick II had infants raised with food and washing but no one
   allowed to speak to them, to learn what language people speak by nature. The
   chronicler Salimbene recorded that "the children could not live without
   clappings of the hands, and gestures, and gladness of countenance, and
   blandishments," and they died. Frederick took away the love in a mother's
   voice, and the babies died. Golding took away the love of the Father, and the
-  boys became violent hunters. Neither flawed experiment revealed a nature:
+  boys became violent hunters, then wrote the result down as a verdict on every
+  one of us: "the darkness of man's heart." Man is evil, the experiment says,
+  and left alone he becomes the beast. Neither flawed experiment revealed a nature:
   Frederick's did not show that babies are dumb and only mimic, and Golding's
   did not show that boys are evil and violent. Each revealed a need. A baby needs
   a mother's love to survive, and a boy needs his father's love to become a man.
@@ -2100,6 +2128,32 @@ dispute.
   The most
   brilliant mind of the century set out to find human nature and only proved
   what every nurse in his kingdom could have told him.
+
+  **The Professor's confessions.** The essay tested itself against a
+  counterargument written by Grok in the voice of a Liberal Arts Professor, a
+  single woman who taught the book for thirty years (not a real person). Read
+  closely, her objection confesses more than it refutes. She is a voice, not a
+  person, so these are what the argument concedes, whoever makes it. She admits
+  the casting double standard is deliberate, a "correction," and calls the book
+  room's choice "a failure of nerve." She also gives away nine things in her own
+  words: (1) the category the correction is aimed at, "white, male, and
+  Christian," which is the churchgoing boy the essay names; (2) her department
+  treats reading as a vehicle for "the causes that department taught her to
+  treat as the point of reading," while faulting the essay for treating the
+  novel as "a delivery system"; (3) assigning Luke 15 "replaces one orthodoxy
+  with another," so the current reading is an [orthodoxy
+  too](#the-pattern-in-the-mirror-ais-secular-default); (4) the argument
+  [credits the child with the adult's
+  decision](#withhold-the-machinery--a-deception-every-side-uses): an adult
+  stops the prayer "before I had the rank to stop saying it," and a Jewish girl
+  is named as the reason; (5) Simon is "killed by the hymn," the reading the
+  essay predicts a churchgoing boy will take away; (6) her compassion "has to
+  run toward" one child over another by group, the opposite of one measure; (7)
+  the argument stops at funding the bridge ("nobody has to fund the bridge"),
+  where the essay says fix the rule and have someone running; (8) the argument
+  assumes the department decides "what their classrooms are allowed to contain";
+  and (9) "We know which child flinched, and it was not only him," conceding
+  that the fair-haired boy was hurt too, while denying it was the real injury.
 
 **Scheme and Twist sketches** *(illustrative, not cards — per the
 [design-lens rule](#in-legendary-grammar--a-design-lens), a real Scheme is
@@ -2985,8 +3039,12 @@ operator has declined a caveat, do not bring it back.
   [CommonLit's guide](https://www.commonlit.org/blog/rule-the-school-with-this-novel-guide-for-lord-of-the-flies/);
   the ALA-derived [Banned & Challenged Classics list](https://research.gfcmsu.edu/bannedbooks/ChallengedClassics);
   Mental Floss on [Golding's 1972 verdict](https://www.mentalfloss.com/article/62962);
-  the [Golding estate](https://www.william-golding.co.uk/about/) on sales; and the
-  [1983 Nobel Prize citation](https://www.nobelprize.org/prizes/literature/1983/summary/).
+  the [Golding estate](https://www.william-golding.co.uk/about/) on sales; the
+  [1983 Nobel Prize citation](https://www.nobelprize.org/prizes/literature/1983/summary/)
+  and Golding's [Nobel biography](https://www.nobelprize.org/prizes/literature/1983/golding/biographical/)
+  on his teaching and war service; and
+  [Wikipedia](https://en.wikipedia.org/wiki/William_Golding) on his marriage,
+  children, and teaching dates.
   For the anthem protests: UPI's
   [Browns–Colts game report](https://www.upi.com/Sports_News/NFL/2017/09/24/Cleveland-Browns-Indianapolis-Colts-met-with-boos-as-players-lock-arms-during-national-anthem/5521506278586/)
   (24 September 2017); the

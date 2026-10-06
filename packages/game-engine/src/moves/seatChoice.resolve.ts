@@ -50,6 +50,22 @@ import {
   MONARCHS_DISCARD_KIND,
   VANISHING_ILLUSIONS_KO_KIND,
 } from './seatChoiceTactics.js';
+// why: WP-793 / D-24656 — the rulebook escape procedure's two kind-specific applies (HQ KO,
+// Bystander discard). villainEscapeProcedure imports parkSeatChoice from this module, so the
+// two form a runtime-safe import cycle (each references the other ONLY inside function
+// bodies, never at module top level), so ESM resolves both bindings by call time.
+import {
+  applyEscapeBystanderDiscard,
+  applyEscapeHqKo,
+  ESCAPE_BYSTANDER_DISCARD_KIND,
+  ESCAPE_HQ_KO_KIND,
+} from '../villainDeck/villainEscapeProcedure.js';
+// why: WP-793 / D-24656 — a non-active seat's return-on-discard apply. resolveReturnOnDiscard
+// imports parkSeatChoice from this module: the same runtime-safe cycle (function bodies only).
+import {
+  applyReturnOnDiscardSeatChoice,
+  RETURN_ON_DISCARD_SEAT_CHOICE_KIND,
+} from './resolveReturnOnDiscard.js';
 import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -407,6 +423,21 @@ function applySeatChoiceByKind(
   }
   if (choice.kind === VANISHING_ILLUSIONS_KO_KIND) {
     applyVanishingIllusionsKo(G, choice);
+    return;
+  }
+  // why: WP-793 / D-24656 — the escape procedure's HQ KO (the current player's pick) and
+  // every-player Bystander discard (atomic, ascending seats, through discardFromHand), and a
+  // non-active seat's return-on-discard answer. None draws, so none needs the shuffle context.
+  if (choice.kind === ESCAPE_HQ_KO_KIND) {
+    applyEscapeHqKo(G, choice);
+    return;
+  }
+  if (choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND) {
+    applyEscapeBystanderDiscard(G, choice);
+    return;
+  }
+  if (choice.kind === RETURN_ON_DISCARD_SEAT_CHOICE_KIND) {
+    applyReturnOnDiscardSeatChoice(G, choice);
     return;
   }
   if (applySeatChoiceCard(G, choice)) {

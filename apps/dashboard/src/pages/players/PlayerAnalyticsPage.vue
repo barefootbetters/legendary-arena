@@ -8,6 +8,8 @@ import Column from 'primevue/column';
 import TrafficSourcesWidget from '../../widgets/TrafficSourcesWidget.vue';
 import ActivationFunnelWidget from '../../widgets/ActivationFunnelWidget.vue';
 import RetentionCohortsWidget from '../../widgets/RetentionCohortsWidget.vue';
+import DauChartWidget from '../../widgets/DauChartWidget.vue';
+import AcquisitionFunnelStripWidget from '../../widgets/AcquisitionFunnelStripWidget.vue';
 
 const { data, loading, error, updatedAt, source } = useFetch(fetchPlayerRecords);
 const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
@@ -30,6 +32,12 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
          the trend widgets pick up `useDateRange` from the route query
          automatically, and the cohorts widget defaults to 8 cohorts. -->
     <section class="analytics-stack" aria-label="Player analytics widgets">
+      <!-- why: WP-791 / D-24653 — the DAU chart and the acquisition strip
+           moved here from the Overview: they show mock data or "no data" in
+           production (no DAU signal, no live funnel), and the Overview shows
+           only real data. They sit with the other player analytics. -->
+      <DauChartWidget />
+      <AcquisitionFunnelStripWidget />
       <TrafficSourcesWidget />
       <ActivationFunnelWidget />
       <RetentionCohortsWidget />

@@ -24,11 +24,16 @@ import { DEFAULT_IMPLEMENTATION_MAP } from '../rules/ruleRuntime.impl.js';
 import { pushVillainIntoCity } from '../board/city.logic.js';
 import { validateCityShape } from '../board/city.validate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { carryEscapedBystandersToPile } from '../board/bystanders.logic.js';
 import { applyEscapedPileResourceLoss } from '../rules/schemeResourceLoss.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
-import { koAttachedHeroesOnEscape } from '../board/heroCapture.logic.js';
+import { moveAttachedHeroesToEscapedPile } from '../board/heroCapture.logic.js';
+// why: WP-793 / D-24656 — the escape records the rulebook HQ KO + Bystander discard it owes.
+// villainEscapeProcedure → phaseCard → playVillainTop.resolve → this module is a
+// runtime-safe import cycle: enqueueEscapeProcedure is referenced only inside a function
+// body, never at module top level, so ESM resolves the binding by call time (the
+// divingBlock.logic.ts precedent).
+import { enqueueEscapeProcedure } from './villainEscapeProcedure.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
@@ -39,7 +44,6 @@ import {
   executeVillainAbilities,
   resolveEffectResultNames,
   villainCardEscapeTriggersSchemeTwist,
-  villainCardHasEscapeAbility,
   villainCardPlaysVillainDeckCards,
 } from '../villain/villainEffects.execute.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
@@ -554,9 +558,11 @@ export function performVillainReveal(
 
 /**
  * Resolves one Villain escaping the City: the escape counter + Escaped Villains pile,
- * the generic per-escape wound (only when the escaper has no Escape ability of its
- * own), bystander carry-away, card-text Escape effects, captured-hero KO, the
- * escape→Scheme-Twist branch (Mystique) and the escaped-pile resource-loss check.
+ * bystander carry-away, the rulebook HQ KO + Bystander discard the escape owes (recorded
+ * here, opened after the move by the turn.onMove escape opener — D-24656), card-text
+ * Escape effects, captured heroes to the Escape Pile (D-24657), the escape→Scheme-Twist
+ * branch (Mystique) and the escaped-pile resource-loss check. No escape gives a generic
+ * Wound (D-24656 supersedes the MVP placeholder of D-1702 / D-24439).
  *
  * // why: WP-757 / D-24587 — extracted mechanically from performVillainReveal's escape
  * branch (the reveal path calls it with identical behavior) so every push into the
@@ -590,30 +596,6 @@ export function resolveVillainEscape(
     `Villain ${formatCardRef(G.cardDisplayData, escapedCardId)} escaped from the city.`,
   );
 
-  // why: D-24439 — the WP-015 generic per-escape wound is a BASELINE penalty
-  // for a plain villain that just slides out of the City. It applies ONLY when
-  // the escaping villain has NO onEscape ability of its own. A villain whose
-  // card text governs its escape (Ultron's reveal-or-wound, Mystique's
-  // become-scheme-twist, …) resolves that ability below INSTEAD — the generic
-  // wound must not stack on top of it. That stacking double-wounded the active
-  // player on every ability-bearing escape (the generic wound hits the active
-  // player, then the card ability hits again), with no basis in the card or
-  // scheme text or the Legendary rules. The gate keys off the card's parsed
-  // onEscape hooks, so it needs no new data. Current player gains 1 wound.
-  if (!villainCardHasEscapeAbility(G, escapedCardId)) {
-    const woundPileBefore = G.piles.wounds.length;
-    // why: WP-682 / D-24499 — route the generic per-escape wound through the
-    // gainWoundForPlayer chokepoint so the current player's Diving Block sees it.
-    gainWoundForPlayer(G, ctx.currentPlayer);
-    if (woundPileBefore > 0) {
-      // why: track current player wound for UI economy projection
-      G.turnEconomy.woundsDrawn += 1;
-      pushLog(G,
-        `Player ${ctx.currentPlayer} gained a wound from villain escape.`,
-      );
-    }
-  }
-
   // why: D-24314 — an escaping villain CARRIES its captured bystanders into
   // the Escaped Villains pile (G.escapedPile), not back to the shared supply.
   // This is faithful to Universal Rules v23 escape handling and makes the
@@ -628,19 +610,30 @@ export function resolveVillainEscape(
   );
   G.attachedBystanders = escapeBystanderResult.attachedBystanders;
   G.escapedPile = escapeBystanderResult.escapedPile;
-  if (escapeBystanderResult.escapedPile.length > escapedPileBeforeBystanders) {
+  const hasCarriedBystanders =
+    escapeBystanderResult.escapedPile.length > escapedPileBeforeBystanders;
+  if (hasCarriedBystanders) {
     pushLog(G,
       `Bystanders from escaped villain ${formatCardRef(G.cardDisplayData, escapedCardId)} carried into the Escaped Villains pile.`,
     );
   }
 
+  // why: WP-793 / D-24656 — rules v23 L556–L570 owe, in order, (1) an HQ KO of a Hero
+  // costing 6 or less (the current player chooses) and (2) a discard by every player if
+  // Bystanders were carried away, before (3) the Escape effect. Steps 1–2 need player
+  // choices this events-less site cannot park, so they are recorded here and resolve
+  // AFTER the move, opened by the play-phase turn.onMove escape opener (the accepted
+  // deviation, D-24656 point 4). Step 3 stays inline below so the escaping Villain's
+  // Escape effect still resolves before the next Villain's Ambush (rules v23 L573).
+  enqueueEscapeProcedure(G, escapedCardId, ctx.currentPlayer, hasCarriedBystanders);
+
   // why: card-specific Escape:/Overrun: effects fire AFTER
   // carryEscapedBystandersToPile per D-18603 — a captureBystander effect
   // reached via an Escape: marker attaches to the escaped card now in
   // G.escapedPile (post-carry), not the still-attached pre-carry
-  // state. The generic per-escape current-player wound above (WP-015
-  // legacy system-level penalty) is PRESERVED; card-text effects layer
-  // on top, they do not replace it. Overrun: is a v1 synonym of Escape:
+  // state. They are step 3 of the rulebook procedure (D-24656); the
+  // owed HQ KO + Bystander discard recorded above resolve after the
+  // move, and no escape adds a generic Wound. Overrun: is a v1 synonym of Escape:
   // (D-18602) — both prefixes resolve to onEscape at parse time, so this
   // single fire site covers both. Henchman escapes safely no-op here
   // (per-card hook lookup misses; D-18507-class filter). Per WP-191
@@ -674,8 +667,8 @@ export function resolveVillainEscape(
       `Escape effect: ${composeEffectResultLogLine(resolvedEscapeResults)}.`,
     );
   }
-  // why: captured heroes KO'd when villain escapes (tabletop rules)
-  koAttachedHeroesOnEscape(G, escapedCardId);
+  // why: D-24657 — captured heroes stay in the Escape Pile with their captor (rules v23)
+  moveAttachedHeroesToEscapedPile(G, escapedCardId);
 
   // why: WP-481 / D-24287 — Mystique's "Escape: … becomes a Scheme Twist that
   // takes effect immediately." The executor's become-scheme-twist handler is a
@@ -686,7 +679,8 @@ export function resolveVillainEscape(
   // increments, and the loss threshold is checked. The escaped card stays in the
   // escaped pile — resolvers use the cardId only to stamp a schemeTwistResolved
   // notableEvent, never to route a card. "Takes effect immediately" → after the
-  // escape's own consequences (wound / bystander release / escape effects / hero KO).
+  // escape's own in-move consequences (bystander carry-away / escape effects / captured heroes to the
+  // Escape Pile); the owed HQ KO + Bystander discard resolve after the move (D-24656).
   if (villainCardEscapeTriggersSchemeTwist(G, escapedCardId)) {
     pushLog(G,
       `Escape effect: ${formatCardRef(G.cardDisplayData, escapedCardId)} becomes a Scheme Twist that takes effect immediately.`,
@@ -722,11 +716,11 @@ export function resolveVillainEscape(
 
   // why: D-24315 — evaluate the active scheme's escaped-pile resource-loss
   // condition at the END of the escape branch, after every escape
-  // consequence has settled (bystander carry-away, current-player wound,
-  // card-text Escape: effects, captured-hero KO, and the Mystique
-  // escape→scheme-twist path). This is the only place G.escapedPile grows,
-  // so the count reflects the full escape. No-op for schemes with no
-  // resourceLossCondition.
+  // consequence has settled (bystander carry-away, card-text Escape:
+  // effects, captured heroes to the Escape Pile, and the Mystique
+  // escape→scheme-twist path). Every escape path — including the Secret
+  // Invasion Skrull push (D-24656) — grows G.escapedPile here, so the count
+  // reflects the full escape. No-op for schemes with no resourceLossCondition.
   applyEscapedPileResourceLoss(G);
 }
 

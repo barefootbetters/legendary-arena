@@ -533,8 +533,28 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // trajectory moved. totalObs 8031 -> 8866 (+835, equal to the raw feed rise 7103 -> 7938);
   // resolvedObs stays 1235, so percentResolved 15.4 -> 13.9 (1235 / 8866). Newly visible hollow
   // surface, not a regression.
+  // 2026-10-01 (WP-790 / D-24652, re-pin): "usable only against …" attack is now spendable only
+  // on its named targets, so the fixed-seed sweep's bots fight differently whenever an affected
+  // hero (co2e Storm, vill Electro, …) is in the loadout, and Storm's / Electro's Ranged follow-up
+  // line no longer carries a magnitude-less attack. The feed regenerated: 7938 -> 7959 raw
+  // observations, same 80 mechanics, 0 dropped. totalObs 8866 -> 8884; resolvedObs stays 1235,
+  // so percentResolved stays 13.9. A sweep-trajectory artifact, not a regression.
+  // 2026-10-04 (WP-792 / D-24654, re-pin): a Master Strike no longer captures a Bystander onto
+  // the Mastermind, so the core/dr-doom sweep's bots rescue fewer Bystanders and their fixed-seed
+  // trajectories shift (feed regenerated on top of #2579 / #2582: 7959 -> 7953 raw observations,
+  // same 80 mechanics, 0 dropped; man-out-of-time 83 -> 77, woman-out-of-time 69 -> 66,
+  // gate-only 482 -> 485). totalObs
+  // 8884 -> 8878 (-6, equal to the raw feed drop); resolvedObs stays 1235, so percentResolved
+  // stays 13.9 (1235 / 8878). A sweep-trajectory artifact, not a regression.
+  // 2026-10-05 (WP-793 / D-24656, re-pin): a Villain escape no longer gives the current player
+  // a generic Wound and instead KOs an HQ Hero costing 6 or less (and, when it carried Bystanders,
+  // costs each player a card), so the fixed-seed sweep's hands, HQ and Hero Deck shift (feed
+  // regenerated on top of WP-749 #2587: 7953 -> 7974 raw observations, 80 -> 81 mechanics with
+  // `last-stand` newly reached (1 obs), 0 dropped, all 312 games terminate). totalObs
+  // 8878 -> 8897; resolvedObs stays 1235, so percentResolved stays 13.9 (1235 / 8897). A
+  // sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8866);
+  assert.equal(view.totalObs.value, 8897);
   assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);
 });

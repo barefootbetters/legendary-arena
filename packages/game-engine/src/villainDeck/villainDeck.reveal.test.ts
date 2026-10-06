@@ -1217,8 +1217,8 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
     // why: this is the henchman-shape case — no onEscape hook authored for
     // the card, so executeVillainAbilities reaches the per-card lookup,
     // returns an empty array, and the for-of loop never executes. The
-    // mechanical escape behavior (counter, pile, generic wound, release)
-    // must still fire exactly as before.
+    // mechanical escape behavior (counter, pile, release) must still fire
+    // exactly as before; since WP-793 / D-24656 no generic wound fires.
     const escapedCardId = 'henchman-doombot-legion-04' as CardExtId;
     const gameState = createMockGameState({
       deck: ['new-villain' as CardExtId],
@@ -1252,11 +1252,13 @@ describe('revealVillainCard — onEscape fire site (WP-186 §Files #7a)', () => 
       moveContext.G.escapedPile.includes(escapedCardId),
       'escaped card still added to G.escapedPile',
     );
+    // why: WP-793 / D-24656 — intentional behavior change: the D-1702 / D-24439 generic escape Wound is removed.
     assert.equal(
       moveContext.G.playerZones['0']!.discard.length,
-      1,
-      'generic WP-015 wound still fires for current player',
+      0,
+      'no generic escape wound for the current player (D-24656)',
     );
+    assert.deepStrictEqual(moveContext.G.piles.wounds, ['w0', 'w1'], 'the wound pile is unchanged');
     assert.equal(
       moveContext.G.playerZones['1']!.discard.length,
       0,
@@ -1806,8 +1808,8 @@ describe('revealVillainCard — real-registry villain end-to-end (WP-186 §Files
     // not emitted in v1 (the parser's collectHenchmanHookEntries filter
     // excludes every timing except onFight), so executeVillainAbilities
     // safe-skips for henchman escapes via per-card hook lookup. The
-    // mechanical escape behavior (counter, pile, generic wound, bystander
-    // release) must still fire. This proves the new fire site does not
+    // mechanical escape behavior (counter, pile, bystander release) must
+    // still fire; since WP-793 / D-24656 no generic wound fires. This proves the new fire site does not
     // crash on real henchman ext_ids and the path runs end-to-end against
     // the real registry's instance grammar.
     const config = buildEscapeConfig();
@@ -1871,10 +1873,11 @@ describe('revealVillainCard — real-registry villain end-to-end (WP-186 §Files
       gameState.escapedPile.includes(henchmanId!),
       'henchman must enter the escaped pile end-to-end',
     );
+    // why: WP-793 / D-24656 — intentional behavior change: the D-1702 / D-24439 generic escape Wound is removed.
     assert.equal(
       gameState.playerZones['0']!.discard.length - p0DiscardBefore,
-      1,
-      'current player still gets the generic WP-015 escape wound',
+      0,
+      'the current player gets no generic escape wound (D-24656)',
     );
     assert.equal(
       gameState.playerZones['1']!.discard.length - p1DiscardBefore,
@@ -2290,7 +2293,8 @@ describe('resolveVillainEscape + Haunt Ambush (WP-757 / D-24587)', () => {
     assert.deepStrictEqual(directState.escapedPile, ['escaper', 'captured-bystander']);
     assert.deepStrictEqual(directState.escapedPile, revealState.escapedPile);
     assert.deepStrictEqual(directState.attachedBystanders, revealState.attachedBystanders);
-    assert.deepStrictEqual(directState.playerZones['0']!.discard, ['w0']);
+    // why: WP-793 / D-24656 — intentional behavior change: the D-1702 / D-24439 generic escape Wound is removed.
+    assert.deepStrictEqual(directState.playerZones['0']!.discard, []);
     assert.deepStrictEqual(directState.playerZones['0']!.discard, revealState.playerZones['0']!.discard);
     assert.deepStrictEqual(directState.piles.wounds, revealState.piles.wounds);
     assert.equal(directState.turnEconomy.woundsDrawn, revealState.turnEconomy.woundsDrawn);

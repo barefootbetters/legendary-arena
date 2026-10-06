@@ -16,8 +16,10 @@ import type { SubmitMove } from './uiMoveName.types';
  * + WP-128 `attachedBystanders` array. Click fires `fightMastermind`.
  *
  * `mastermind.attachedBystanders` (D-12805 Interpretation B) is bystanders
- * captured by the mastermind itself via Master Strike — populated at runtime
- * since WP-154 / D-15401. Per WP-505 it renders as a count-only "N captured"
+ * captured by the mastermind itself. Per D-24654 a Master Strike captures
+ * none; the store fills from a Villain-Deck Bystander revealed while the City
+ * is empty, and from the no-Villain capture fallback (Here, Hold This, D-24500;
+ * count-scaled captures, D-24537). Per WP-505 it renders as a count-only "N captured"
  * badge (face-down = identity hidden), matching the city-villain badge; these
  * are the mastermind's own captures, never the top-level city-villain
  * `G.attachedBystanders` (which render on the city row).
@@ -116,7 +118,7 @@ export default defineComponent({
       if (!healLockGate(props.hasHealedThisTurn).allowed) {
         return false;
       }
-      return !useCardCostGating(props.economy).canFight(mastermindFightCost()).allowed;
+      return !useCardCostGating(props.economy).canFight(mastermindFightCost(), 'mastermind').allowed;
     }
 
     function hasFightCostBadge(): boolean {
@@ -142,7 +144,10 @@ export default defineComponent({
       if (!healLock.allowed) {
         return healLock;
       }
-      const cost = useCardCostGating(props.economy).canFight(mastermindFightCost());
+      // why: WP-790 / D-24652 — pass the 'mastermind' target (here, in the cost badge and in the
+      // EV check) so restricted attack whose grant names the Mastermind counts, exactly as the
+      // fightMastermind gate does — the served figure must match the engine gate.
+      const cost = useCardCostGating(props.economy).canFight(mastermindFightCost(), 'mastermind');
       if (!cost.allowed) {
         return cost;
       }
@@ -210,7 +215,7 @@ export default defineComponent({
       if (!gateForFight().allowed) {
         return false;
       }
-      return useCardCostGating(props.economy).canFightWithExcessiveViolence(mastermindFightCost());
+      return useCardCostGating(props.economy).canFightWithExcessiveViolence(mastermindFightCost(), 'mastermind');
     }
 
     function onFightEV(): void {

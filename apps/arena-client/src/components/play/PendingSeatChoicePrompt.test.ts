@@ -160,4 +160,32 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
       );
     }
   });
+
+  // why: WP-793 / D-24656 — the escape procedure's HQ-KO pick and Bystander discard, and a
+  // non-active seat's own return-on-discard answer, each render their exact heading (not
+  // the "Your choice" fallback).
+  test('renders the exact heading for each of the three WP-793 kinds (escape procedure / return-on-discard)', () => {
+    const { submitMove } = recorder();
+    const cases: { kind: string; heading: string }[] = [
+      { kind: 'escape-hq-ko', heading: 'A Villain escaped — choose a Hero in the HQ to KO' },
+      { kind: 'escape-bystander-discard', heading: 'Bystanders were carried away — choose a card to discard' },
+      { kind: 'return-on-discard', heading: 'Return the discarded card to your hand?' },
+    ];
+    for (const { kind, heading } of cases) {
+      const choice: UIPendingSeatChoice = {
+        kind,
+        addressedSeats: ['player-1'],
+        outstandingSeats: ['player-1'],
+        seatPrompts: { 'player-1': { options: [{ label: 'Option A' }, { label: 'Option B' }] } },
+      };
+      const wrapper = mount(PendingSeatChoicePrompt, {
+        props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+      });
+      assert.equal(
+        wrapper.find('.pending-seat-choice-prompt__heading').text(),
+        heading,
+        `heading for kind ${kind}`,
+      );
+    }
+  });
 });

@@ -23,7 +23,7 @@ source:
   - ../render.yaml
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
-last-reviewed: 2026-08-09
+last-reviewed: 2026-10-04
 ---
 
 # Ubuntu Lab Provisioning
@@ -68,8 +68,11 @@ co-located localhost DB), the program's `infra/` artifacts are authoritative.
 
 The operator-capability and disaster-recovery-rehearsal value that first justified
 the box still holds — but the box is no longer exploratory. The move is decided
-(see the callout) and in progress; cost is roughly a wash, so control and
-capability are the drivers, not the bill.
+(see the callout) and in progress. When it was planned in July, cost looked
+roughly even and control was the driver. That changed once Render's plans were
+raised under load: the September 2026 bill was **$146.35**, against about $48 a
+month for the target droplet. Cost is now a driver too (see
+[Cost case](#cost-case-september-2026)).
 
 ## Mechanics
 
@@ -90,9 +93,156 @@ question: the migration PLAN co-locates the server and database on one host
 (no cross-provider hop). What remains is the disciplined execution and the
 governance transcription noted in the callout — not the architecture decision.
 
+### Cost case (September 2026)
+
+The vendor was reconfirmed as **DigitalOcean** on 2026-10-02 and held after a
+NameHero price comparison on 2026-10-04 (see
+[Vendor comparison](#vendor-comparison-digitalocean-vs-namehero-2026-10-04)).
+NameHero had been named elsewhere, but only as a candidate host for the
+[AI Second Brain](ai-second-brain.md), never for this migration.
+
+What Render charged for September 2026 (invoice `0SPQWPNF-0006`, paid
+2026-10-01):
+
+| Line | Render plan | Sep 2026 | After migration |
+|---|---|---|---|
+| Game server | `pro`, 2 CPU / 4 GB | $85.00 | on the droplet |
+| PostgreSQL | `pro-4gb` plus storage | $55.30 | on the droplet, `localhost` |
+| Builds | 6 h 42 m of pipeline minutes | $5.00 | GitHub Actions deploy |
+| Bandwidth | 6.5 GB | $1.05 | included with the droplet |
+| ewiki static site | free | $0.00 | Cloudflare Pages |
+| **Total** | | **$146.35** | **~$48** (4 vCPU / 8 GB), **~$24** if stepped down to 4 GB |
+
+That saves about **$1,180 a year** at 8 GB and about $1,470 at 4 GB, before
+backup storage. Backups go to R2, which is inside its free tier today. Both
+Render plans were raised in July to cure CPU and memory starvation; the reasons
+are recorded in `render.yaml`.
+
+**Cost-reduction order.** These steps are ranked by savings for the effort.
+1. **Restart the migration.** No commits have landed in `legendary-arena-lab`
+   since 2026-07-25, and every month of the stall costs about $100 more than the
+   droplet would. The phases and gates in its PLAN are unchanged.
+2. **Size from data, not from the July incidents.** Before choosing the droplet
+   size, pull September's CPU and memory figures for the server and the
+   database from the Render dashboard. That settles whether the box can start
+   at 4 GB instead of 8 GB. If the API runs idle, start at 2 vCPU / 4 GB ($24)
+   and resize up; that captures NameHero-level savings without changing
+   vendor. If the graphs show sustained CPU instead, the fix is a resize to
+   CPU-Optimized, not a different host.
+3. **Reduce the load, which pays off on any host.**
+   - The bot-ally driver polls every live match every 250 ms
+     (`apps/server/src/bot-ally/botAllyDriver.mjs`). Driving it from state
+     changes instead cuts server CPU and database queries.
+   - Finished `bgio` matches are never pruned, so the database grows without
+     bound. A retention job would stop that, but it must keep the
+     completed-match data that replay verification (D-24119) and the team-key
+     backfill (D-24187) read.
+4. **Trim Render only if cutover is more than a month or two out.**
+   - Build only the server and the packages it depends on
+     (`pnpm --filter @legendary-arena/server... build`) instead of
+     `pnpm -r build`. That goes after the $5 build line.
+   - Step the server from `pro` down to `standard`, which saves $60 a month,
+     but only if the September figures show headroom. Under-provisioning is
+     what caused the July freezes.
+5. **Keep the rollback window short.** Render bills in full while it stays
+   warm, so set the PLAN's "N days" deliberately (for example, 14) and
+   decommission on schedule.
+
+### Vendor comparison: DigitalOcean vs NameHero (2026-10-04)
+
+**Verdict: stay with DigitalOcean for this cutover.** NameHero is cheaper
+hardware, but its headline price is a first-term promo, its US site is in the
+middle of the country, and the program's runbook is written against
+DigitalOcean's API. NameHero remains a reasonable host for a separate
+[AI Second Brain](ai-second-brain.md) box, uncoupled from the arena deploy
+pipeline.
+
+The workload is one Ubuntu 24.04 box running `apps/server`, PostgreSQL 18 on
+`localhost`, Nginx, a Cloudflare origin certificate, systemd, SSH deploy, and
+`pg_dump` to R2. Bandwidth does not matter (Render moved 6.5 GB in September),
+and the box is a single point of failure on either vendor. What separates them
+is price certainty, region, CPU class, disk, and fit with the runbook.
+
+**Price.** Figures were checked against both vendors' pricing pages on
+2026-10-04.
+
+DigitalOcean, list price with no term commitment:
+
+| Droplet | vCPU | RAM | Disk | Transfer | Monthly |
+|---|---|---|---|---|---|
+| Basic (step-down) | 2 | 4 GB | 80 GB SSD | 4 TB | $24 |
+| Basic (planned start) | 4 | 8 GB | 160 GB SSD | 5 TB | $48 |
+| CPU-Optimized (resize path) | 4 | 8 GB | 50 GB SSD | 5 TB | $84 |
+
+NameHero unmanaged VPS. The promo is the first invoice of a 3-year term, for
+new accounts only; after that the regular rate applies:
+
+| Plan | vCPU | RAM | Disk | Transfer | Promo | Regular |
+|---|---|---|---|---|---|---|
+| Plus | 2 | 8 GB | 100 GB NVMe | 8 TB | $6.85 | $15.92 |
+| Turbo | 4 | 16 GB | 200 GB NVMe | 16 TB | $12.01 | $27.94 |
+| Business | 8 | 32 GB | 400 GB NVMe | 32 TB | $20.68 | $48.09 |
+
+NameHero has no 4 vCPU / 8 GB plan. The fair match for the planned start is
+Turbo at its regular rate: 4 cores and 16 GB for about $28 a month, against
+$48 for DigitalOcean's 4 cores and 8 GB. That gap is about **$240 a year**, on
+top of the ~$1,180 a year already saved by leaving Render. Do not budget the
+$12 promo.
+
+Backups: DigitalOcean's droplet backups add 20% of the droplet price weekly
+($9.60 on the $48 box) or 30% daily. Neither is needed while R2 dumps are the
+source of truth. NameHero's nightly full-VPS backups are an add-on ordered at
+signup and restore the whole machine.
+
+**Where NameHero is better.**
+- **Disk.** Unmanaged plans run on NVMe and AMD EPYC. A third-party HostAdvice
+  benchmark of a Turbo-class box reported about 1.3 GB/s sequential read and
+  about 15k random 4K IOPS (not re-verified here). DigitalOcean Basic is
+  shared-CPU SSD.
+- **RAM per core.** Turbo's 16 GB suits Postgres plus the unpruned `bgio` blob
+  store. The July freezes were memory starvation as well as CPU.
+- **CPU class.** NameHero markets dedicated EPYC cores. DigitalOcean Basic is
+  shared vCPU, which carries noisy-neighbor risk for the chatty 250 ms bot-ally
+  loop.
+- Bandwidth allowance and a 30-day money-back window. Neither matters here.
+
+**Where DigitalOcean fits this migration.**
+- **Region.** With the database co-located, `sfo3` no longer matters for the
+  app-to-DB hop. It still matters because Socket.IO rides Cloudflare to the
+  origin, so origin round-trip time shows up in live matches. San Francisco
+  serves a West Coast player base. NameHero's US site is Lenexa, Kansas: fine
+  for a national audience, worse for the West Coast path already chosen.
+- **CPU headroom without a vendor change.** If September's graphs show
+  sustained CPU, resize to CPU-Optimized ($84) on the same account.
+- **The runbook.** The program's `infra/` assumes cloud-init, `doctl`, a
+  destroy-and-rebuild drill, and per-second billing so a lab rebuild is cheap.
+  DigitalOcean provides that API, a Terraform provider, snapshots, and cloud
+  firewalls. NameHero is a client-area VPS with root Ubuntu. It can run the
+  same systemd unit, but the provisioners and the §6 rebuild would need a
+  rewrite before they could run. Unmanaged plans also exclude NameHero's
+  support tier, though the program already accepts the operator burden.
+- **Price stays put.** DigitalOcean has billed per second since 2026-01-01,
+  capped at the monthly rate. NameHero's headline rate expires.
+
+**Why not reopen the vendor now.** Each month of stall costs about $100 more
+than the droplet, which is most of the steady-state gap between DigitalOcean
+($48) and NameHero Turbo ($28). The PLAN, the `sfo3` pin, and the IaC are
+already written for DigitalOcean.
+
 ### Prerequisites & effort
 
 - A DigitalOcean account with an SSH key pair already uploaded.
+
+  **Account status (2026-10-04).** The account is open but has **no payment
+  method**, so it cannot create a droplet yet. Usage is $0 and no resources
+  exist. The account also holds a $5 "Inference Cloud Trial" credit that
+  expires 2026-10-21. It is named for the inference products, so do not count
+  on it covering droplet usage. Remaining setup, in order:
+  1. Add a payment method (operator only).
+  2. Set a spend alert a little above the planned droplet price, for example
+     $60 a month for the $48 box. The billing page now offers spend alerts.
+  3. Upload the SSH public key, and create an API token if provisioning goes
+     through `doctl` or Terraform.
 - A throwaway lab hostname (e.g. `lab.<your-domain>`) ready to point at the
   droplet IP.
 - Familiarity with the production topology in the
@@ -116,13 +266,15 @@ multi-node would additionally require.
 
 ### 1 — Provision the droplet
 
-- **Region:** pin to the **nearest DigitalOcean US-West region to the Render
-  Postgres**. The managed DB is in **Oregon** (per the inventory's managed-database
-  notes); DigitalOcean has no Oregon region, so `sfo3` (San Francisco) is the
-  closest. It is *not* co-located with Oregon, which is fine — the §4 latency probe
-  then measures the realistic cross-provider hop, which is exactly the number worth
-  knowing.
-- **Image:** Ubuntu 24.04 (LTS). **Size:** 2 vCPU / 4 GB / 80 GB SSD (~$24/mo).
+- **Region:** `sfo3` (San Francisco). It was first chosen as the closest
+  DigitalOcean region to Render's Oregon Postgres. With the database now
+  co-located on the droplet, the pin holds for a different reason: Socket.IO
+  rides Cloudflare to the origin, so origin round-trip time reaches live
+  matches, and San Francisco serves a West Coast player base.
+- **Image:** Ubuntu 24.04 (LTS). **Size:** the program plans 4 vCPU / 8 GB /
+  160 GB SSD ($48/mo), or 2 vCPU / 4 GB / 80 GB SSD ($24/mo) if September's
+  Render figures show the API idle. See
+  [Vendor comparison](#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
 - **Auth:** SSH key only. Create via the DigitalOcean UI or `doctl`.
 
 Baseline hardening (first boot as root, create the working user, then switch to it):
@@ -336,10 +488,11 @@ migration Work Packet is the pending governance noted in the callout.
 
 ## Edge Cases
 
-- **Region is nearest-not-same.** DigitalOcean has no Oregon region; `sfo3` is the
-  closest to Render's Oregon DB. Pin the droplet there so the §4 probe reflects a
-  realistic hop rather than a cross-continent worst case — but do not read the
-  result as *co-located* latency.
+- **Region is about players now, not the database.** DigitalOcean has no Oregon
+  region; `sfo3` was the closest to Render's Oregon DB. Co-location removed that
+  hop, but origin round-trip time still reaches live matches through Cloudflare,
+  so keep the West Coast pin. A central-US host (such as NameHero's Lenexa site)
+  would trade West Coast latency for national evenness.
 - **Never point the lab at production data.** The credential-gated `0.0.0.0/0`
   inbound rule makes prod *reachable* — that convenience is exactly the footgun.
   Always run against a restored copy.

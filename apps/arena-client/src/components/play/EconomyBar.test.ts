@@ -80,3 +80,66 @@ describe('EconomyBar (WP-129)', () => {
     }
   });
 });
+
+describe('EconomyBar — restricted attack chips (WP-790 / D-24652)', () => {
+  test('renders one chip per projected grant with its remaining amount and label', () => {
+    const wrapper = mount(EconomyBar, {
+      props: {
+        economy: economy({
+          attack: 5,
+          availableAttack: 0,
+          restrictedAttack: [
+            { remaining: 2, targets: ['rooftops'], label: 'Rooftops' },
+            { remaining: 3, targets: ['sewers', 'bridge', 'mastermind'], label: 'Sewers or Bridge or Mastermind' },
+          ],
+        }),
+      },
+    });
+    const chips = wrapper.findAll('[data-testid="economy-restricted-attack"]');
+    assert.deepEqual(chips.map((chip) => chip.text()), [
+      '+2 only against: Rooftops',
+      '+3 only against: Sewers or Bridge or Mastermind',
+    ]);
+  });
+
+  test('the chips sit in their own row, last in the bar (they never widen the cockpit column)', () => {
+    // why: the row's CSS (zero intrinsic width, full-row basis) is what stops the chips
+    // from widening the cockpit's auto-sized side column and squeezing Played This Turn /
+    // Your Hand. jsdom cannot measure layout, so this pins the structure the CSS relies on.
+    const wrapper = mount(EconomyBar, {
+      props: {
+        economy: economy({
+          attack: 4,
+          availableAttack: 2,
+          restrictedAttack: [{ remaining: 2, targets: ['rooftops'], label: 'Rooftops' }],
+        }),
+      },
+    });
+    const bar = wrapper.find('[data-testid="play-economy-bar"]');
+    const lastChild = bar.element.lastElementChild!;
+    assert.equal(lastChild.classList.contains('economy-restricted-chips'), true);
+    assert.equal(lastChild.querySelectorAll('[data-testid="economy-restricted-attack"]').length, 1);
+  });
+
+  test('each chip stacks its amount over its targets (two lines, full text kept)', () => {
+    const wrapper = mount(EconomyBar, {
+      props: {
+        economy: economy({
+          attack: 5,
+          availableAttack: 2,
+          restrictedAttack: [{ remaining: 3, targets: ['sewers', 'bridge'], label: 'Sewers or Bridge' }],
+        }),
+      },
+    });
+    const chip = wrapper.find('[data-testid="economy-restricted-attack"]');
+    assert.equal(chip.find('.economy-restricted-attack__amount').text(), '+3 only against:');
+    assert.equal(chip.find('.economy-restricted-attack__targets').text(), 'Sewers or Bridge');
+    assert.equal(chip.element.textContent, '+3 only against: Sewers or Bridge');
+  });
+
+  test('renders no chip when the field is absent', () => {
+    const wrapper = mount(EconomyBar, { props: { economy: economy({ attack: 2, availableAttack: 2 }) } });
+    assert.equal(wrapper.findAll('[data-testid="economy-restricted-attack"]').length, 0);
+    assert.equal(wrapper.find('.economy-restricted-chips').exists(), false);
+  });
+});

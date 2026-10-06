@@ -1,55 +1,60 @@
 <script setup lang="ts">
-// why: WP-204 §No cross-widget composable coupling — this strip widget
-// reads the same 3 composables that the full ops widgets use, NOT
-// their refs / emitted events. The §Determinism scope HARD invariant
-// requires that each widget instance call its own composable directly
-// so the widget tree stays a forest, not a graph. The KpiSnapshot
-// literals below are inline per WP-204 §Scope (In) → Widgets (rule of
-// three: extract only when a second consumer surfaces, per 00.6
-// §16.1).
+// why: WP-791 / D-24653 — every card on this Overview strip reads real data:
+// Server (GET /api/dash/system/runtime), DR drill (GET /api/dash/dr-readiness),
+// and Cost (the cached vendor-bill actuals). The two former cards (worst
+// surface, error rate) could only ever show mock data in production, so they
+// were replaced rather than shown. Card text and chips for Server and DR come
+// from the pure builders in utils/overviewPulse.ts; this widget only renders.
 
-import { computed, type Ref } from 'vue';
-import { useDateRange } from '../composables/useDateRange.js';
-import { usePublicSurfaceHealth } from '../composables/usePublicSurfaceHealth.js';
-import { useErrorRateMonitor } from '../composables/useErrorRateMonitor.js';
+import { computed } from 'vue';
+import { useFetch } from '../composables/useFetch.js';
 import { useInfraCostWatchdog } from '../composables/useInfraCostWatchdog.js';
-import { useDataFreshness, type DataFreshnessSource } from '../composables/useDataFreshness.js';
-import {
-  fetchUptimeProbes,
-  fetchErrorRateSnapshots,
-  fetchInfraCostEntries,
-} from '../services/mocks.js';
+import { fetchDrReadiness, fetchRuntimeHealth } from '../services/endpoints.js';
+import { fetchInfraCostActuals, INFRA_COST_ACTUALS_AS_OF } from '../config/infraCostActuals.js';
 import { computeKpiStatus } from '../utils/kpiStatus.js';
+import { describeDrDrillCard, describeServerCard } from '../utils/overviewPulse.js';
 import { INFRA_COST_BUDGETS } from '../config/infraCostBudgets.js';
-import { INFRA_COST_VENDORS, type KpiSnapshot, type KpiStatus } from '../types/index.js';
+import {
+  INFRA_COST_VENDORS,
+  type KpiSnapshot,
+  type KpiStatus,
+  type ServiceResponse,
+} from '../types/index.js';
 
-const { range } = useDateRange();
+const runtimeFetch = useFetch(fetchRuntimeHealth);
+const drFetch = useFetch(fetchDrReadiness);
+// why: the cost card reads the same real vendor-bill actuals as the
+// System Health page's Infra Cost Watchdog. It used to read the mock
+// factory, so Overview showed a made-up 6.7% "On track" while System
+// Health showed the real 71.4% with Postgres over budget.
+const costResponse = computed(() => fetchInfraCostActuals());
 
-// why: WP-204 §Determinism scope — capture nowMs ONCE at mount; all
-// three composables receive the same stable timestamp so per-card
-// derivations are reactive-stable across the strip.
-const nowMs = Date.now();
-
-const uptimeResponse = computed(() => fetchUptimeProbes(range.value, nowMs));
-const errorResponse = computed(() => fetchErrorRateSnapshots(range.value, nowMs));
-const costResponse = computed(() => fetchInfraCostEntries(range.value, nowMs));
-
-const health = usePublicSurfaceHealth(() => uptimeResponse.value);
-const monitor = useErrorRateMonitor(() => errorResponse.value);
 const watchdog = useInfraCostWatchdog(() => costResponse.value, INFRA_COST_BUDGETS);
 
-const updatedAtRef: Ref<number | null> = computed(() => health.updatedAt.value);
-const sourceFreshnessRef: Ref<DataFreshnessSource | null> = computed(() => health.source.value);
-const { relativeTime, sourceLabel } = useDataFreshness(updatedAtRef, sourceFreshnessRef);
+/**
+ * Label naming where one card's figure comes from. The strip mixes
+ * sources (Server and DR are live fetches; cost is the cached
+ * vendor-bill snapshot), so each card carries its own tag instead of
+ * one strip-wide badge that would describe only one of them. '' while
+ * a fetch has not answered yet (the tag is hidden).
+ */
+function buildSourceTag(source: ServiceResponse<unknown>['source'] | null): string {
+  if (source === null) {
+    return '';
+  }
+  if (source === 'CACHED') {
+    return `CACHED · as of ${INFRA_COST_ACTUALS_AS_OF}`;
+  }
+  return source;
+}
 
 // why: D-19608 Widget State Gate Pattern — single `state` computed
-// gates the entire render via the 4-arm v-if chain. WP-204 §Widget
-// Data Requirements drops the strip to `empty` when all three
-// underlying composables have nothing; per-card partial data renders
-// `"—"` placeholder (NOT `0%` / `$0`) per §Widget Data Requirements.
+// gates the entire render via the 4-arm v-if chain. The strip drops to
+// `empty` only when no card has anything to show; per-card missing data
+// renders `"—"` (NOT `0%` / `$0`).
 const state = computed<'loading' | 'error' | 'empty' | 'data'>(() => {
-  const hasUptime = health.series.value.length > 0;
-  const hasErrorData = monitor.series.value.length > 0;
+  const hasRuntime = runtimeFetch.data.value !== null || runtimeFetch.error.value !== null;
+  const hasDr = drFetch.data.value !== null || drFetch.error.value !== null;
   let costHasAnyVendor = false;
   const mtdMap = watchdog.mtdByVendor.value;
   for (const vendor of INFRA_COST_VENDORS) {
@@ -58,7 +63,7 @@ const state = computed<'loading' | 'error' | 'empty' | 'data'>(() => {
       break;
     }
   }
-  if (!hasUptime && !hasErrorData && !costHasAnyVendor) {
+  if (!hasRuntime && !hasDr && !costHasAnyVendor) {
     return 'empty';
   }
   return 'data';
@@ -76,86 +81,38 @@ interface StripCard {
   readonly valueLabel: string;
   readonly status: KpiStatus | null;
   readonly statusLabel: string;
+  readonly sourceTag: string;
 }
 
-const worstSurfaceCard = computed<StripCard>(() => {
-  const worst = health.worstSurface.value;
-  if (worst === null) {
-    // why: §Widget Data Requirements partial-data rule — render the
-    // `"—"` placeholder when underlying data is empty; NOT `0%` (a
-    // literal zero would mislead the operator into thinking the
-    // surface is at 0% uptime instead of "no data").
-    return {
-      id: 'worst-surface',
-      label: 'Worst surface',
-      valueLabel: '—',
-      status: null,
-      statusLabel: '',
-    };
-  }
-  // why: locked KpiSnapshot literal per WP-204 §Scope (In) → Widgets
-  // — `direction: 'higher-is-better'`; `target: 99.0`; `tolerance:
-  // 4.0`. Thresholds: value >= 99.0 ⇒ on-track; 95.0 <= value < 99.0
-  // ⇒ needs-attention; value < 95.0 ⇒ off-track. The reuse of
-  // `computeKpiStatus()` preserves the WP-198 single-implementation
-  // discipline; no bespoke threshold logic in the widget.
-  const snapshot: KpiSnapshot = {
-    id: 'worst-surface',
-    label: 'Worst surface',
-    value: worst.uptimePercent,
-    previousValue: 0,
-    unit: '%',
-    trend: 'flat',
-    target: 99.0,
-    tolerance: 4.0,
-    direction: 'higher-is-better',
-  };
-  const status = computeKpiStatus(snapshot) ?? 'on-track';
+const serverCard = computed<StripCard>(() => {
+  const view = describeServerCard({
+    data: runtimeFetch.data.value,
+    error: runtimeFetch.error.value,
+    source: runtimeFetch.source.value,
+  });
   return {
-    id: 'worst-surface',
-    label: 'Worst surface',
-    valueLabel: `${worst.uptimePercent.toFixed(1)}% (${worst.surface})`,
-    status,
-    statusLabel: STATUS_LABEL[status],
+    id: 'server',
+    label: 'Server',
+    valueLabel: view.valueLabel,
+    status: view.status,
+    statusLabel: view.status === null ? '' : STATUS_LABEL[view.status],
+    sourceTag: buildSourceTag(runtimeFetch.source.value),
   };
 });
 
-const currentErrorRateCard = computed<StripCard>(() => {
-  const series = monitor.series.value;
-  if (series.length === 0) {
-    return {
-      id: 'current-error-rate',
-      label: 'Current error rate (1h)',
-      valueLabel: '—',
-      status: null,
-      statusLabel: '',
-    };
-  }
-  const rateFraction = monitor.currentRate.value;
-  const ratePercent = Math.round(rateFraction * 1000) / 10;
-  // why: locked KpiSnapshot literal per WP-204 §Scope (In) → Widgets
-  // — value expressed as percentage 0-100; `direction:
-  // 'lower-is-better'`; `target: 1.0`; `tolerance: 4.0`. Thresholds:
-  // value <= 1.0 ⇒ on-track; 1.0 < value <= 5.0 ⇒ needs-attention;
-  // value > 5.0 ⇒ off-track.
-  const snapshot: KpiSnapshot = {
-    id: 'current-error-rate',
-    label: 'Current error rate (1h)',
-    value: ratePercent,
-    previousValue: 0,
-    unit: '%',
-    trend: 'flat',
-    target: 1.0,
-    tolerance: 4.0,
-    direction: 'lower-is-better',
-  };
-  const status = computeKpiStatus(snapshot) ?? 'on-track';
+const drDrillCard = computed<StripCard>(() => {
+  const view = describeDrDrillCard({
+    data: drFetch.data.value,
+    error: drFetch.error.value,
+    source: drFetch.source.value,
+  });
   return {
-    id: 'current-error-rate',
-    label: 'Current error rate (1h)',
-    valueLabel: `${ratePercent.toFixed(1)}%`,
-    status,
-    statusLabel: STATUS_LABEL[status],
+    id: 'dr-drill',
+    label: 'DR drill',
+    valueLabel: view.valueLabel,
+    status: view.status,
+    statusLabel: view.status === null ? '' : STATUS_LABEL[view.status],
+    sourceTag: buildSourceTag(drFetch.source.value),
   };
 });
 
@@ -175,6 +132,7 @@ const costUtilizationCard = computed<StripCard>(() => {
       valueLabel: '—',
       status: null,
       statusLabel: '',
+      sourceTag: buildSourceTag(watchdog.source.value),
     };
   }
   const utilizationFraction = watchdog.totalBudgetUtilizationRatio.value;
@@ -202,12 +160,13 @@ const costUtilizationCard = computed<StripCard>(() => {
     valueLabel: `${utilizationPercent.toFixed(1)}%`,
     status,
     statusLabel: STATUS_LABEL[status],
+    sourceTag: buildSourceTag(watchdog.source.value),
   };
 });
 
 const cards = computed<readonly StripCard[]>(() => [
-  worstSurfaceCard.value,
-  currentErrorRateCard.value,
+  serverCard.value,
+  drDrillCard.value,
   costUtilizationCard.value,
 ]);
 </script>
@@ -220,10 +179,6 @@ const cards = computed<readonly StripCard[]>(() => [
   >
     <header class="widget-header">
       <h3>Ops at a Glance</h3>
-      <span v-if="sourceLabel" class="freshness-badge">
-        <span class="source">{{ sourceLabel }}</span>
-        <span class="timestamp">{{ relativeTime }}</span>
-      </span>
     </header>
 
     <div v-if="state === 'loading'" class="widget-loading" aria-hidden="true">
@@ -237,16 +192,19 @@ const cards = computed<readonly StripCard[]>(() => [
     <div v-else-if="state === 'empty'" class="widget-empty">
       <!-- why: §Widget Data Requirements `OpsAtAGlanceStripWidget`
            empty-partial rule — full-empty (no data anywhere across
-           the three composables) drops to the strip-level empty arm.
+           the three cards) drops to the strip-level empty arm.
            Per-card partial-data values render `"—"` instead (see the
            cards above). -->
-      <p>No ops data captured in selected range.</p>
+      <p>No ops data captured yet.</p>
     </div>
 
     <div v-else class="widget-data">
       <div class="card-row">
         <article v-for="card in cards" :key="card.id" class="strip-card" :aria-label="card.label">
           <span class="card-label">{{ card.label }}</span>
+          <span v-if="card.sourceTag" class="card-source" :data-source-tag="card.sourceTag">{{
+            card.sourceTag
+          }}</span>
           <span class="card-value">{{ card.valueLabel }}</span>
           <span
             v-if="card.status !== null"
@@ -293,19 +251,14 @@ const cards = computed<readonly StripCard[]>(() => [
   color: var(--p-text-color);
 }
 
-.freshness-badge {
-  font-size: 0.65rem;
-  color: var(--p-text-muted-color);
-  display: flex;
-  gap: 0.35rem;
-}
-
-.freshness-badge .source {
+.card-source {
+  align-self: flex-start;
+  font-size: 0.6rem;
+  font-weight: 600;
   background: var(--p-surface-border, var(--p-content-border-color));
   color: var(--p-text-color);
-  padding: 0.1rem 0.3rem;
+  padding: 0.05rem 0.3rem;
   border-radius: 3px;
-  font-weight: 600;
 }
 
 .widget-loading {

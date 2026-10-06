@@ -159,10 +159,13 @@ describe('enterCityIgnoringAmbush (WP-757 / D-24587)', () => {
     assert.ok(gameState.escapedPile.includes(ESCAPING_VILLAIN), 'the escaper is in the escaped pile');
     assert.ok(gameState.escapedPile.includes(bystanderId), 'its bystander is carried into the escaped pile');
     assert.equal(gameState.attachedBystanders[ESCAPING_VILLAIN], undefined, 'the attachment entry is cleared');
-    // why: D-24439 — the escaper has no Escape ability, so the generic per-escape
-    // wound goes to the current player.
-    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [WOUND_ID], 'the current player gained the wound');
-    assert.deepStrictEqual(gameState.piles.wounds, [], 'the wound came from the supply');
+    // why: WP-793 / D-24656 — intentional behavior change: the D-1702 / D-24439 generic escape Wound is removed.
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [], 'the current player takes no escape wound');
+    assert.deepStrictEqual(gameState.piles.wounds, [WOUND_ID], 'the wound pile is unchanged');
+    assert.ok(
+      !gameState.messages.some((entry) => entry.text.includes('gained a wound from villain escape')),
+      'no generic escape-Wound line is logged',
+    );
     assert.equal(gameState.hq[4], HQ_HERO, 'Ambush still did not fire on the entering Villain');
   });
 

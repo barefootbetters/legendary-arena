@@ -3467,3 +3467,33 @@ describe('filterUIStateForAudience — WP-789 revealed card (D-24637)', () => {
     assert.equal(Object.keys(result).includes('notableEventCards'), false);
   });
 });
+
+describe('filterUIStateForAudience — restricted attack (WP-790 / D-24652)', () => {
+  // why: the restricted-attack grants ride the active-player-only economy block. They must
+  // survive the whitelist for the active player (copied), be omitted when absent, and NEVER
+  // reach a non-active player or a spectator (REDACTED_ECONOMY).
+  const GRANTS = [{ remaining: 2, targets: ['rooftops' as const], label: 'Rooftops' }];
+
+  it('passes restrictedAttack through for the active player as a copy', () => {
+    const uiState = createTestUIState();
+    uiState.economy.restrictedAttack = GRANTS.map((grant) => ({ ...grant, targets: [...grant.targets] }));
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.deepStrictEqual(result.economy.restrictedAttack, GRANTS);
+    assert.notEqual(result.economy.restrictedAttack, uiState.economy.restrictedAttack);
+    assert.notEqual(result.economy.restrictedAttack?.[0]?.targets, uiState.economy.restrictedAttack[0]!.targets);
+  });
+
+  it('omits restrictedAttack for the active player when absent (omit-when-absent)', () => {
+    const result = filterUIStateForAudience(createTestUIState(), PLAYER_0);
+    assert.ok(!('restrictedAttack' in result.economy));
+  });
+
+  it('never exposes restrictedAttack to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.restrictedAttack = GRANTS.map((grant) => ({ ...grant, targets: [...grant.targets] }));
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(!('restrictedAttack' in result.economy), 'non-active audiences see REDACTED_ECONOMY');
+    }
+  });
+});

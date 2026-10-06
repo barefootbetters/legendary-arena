@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2616,
+    "executable": 2580,
     "heroes": 324,
     "hooks": 6380,
-    "noEffect": 2636,
-    "parsedNotExecuted": 1128
+    "noEffect": 2650,
+    "parsedNotExecuted": 1150
   },
   "perSet": {
     "2099": {
@@ -48,7 +48,7 @@
       "noEffect": 24
     },
     "ca75": {
-      "executable": 57,
+      "executable": 52,
       "hooks": 100,
       "noEffect": 43
     },
@@ -58,12 +58,12 @@
       "noEffect": 76
     },
     "co2e": {
-      "executable": 156,
+      "executable": 144,
       "hooks": 241,
-      "noEffect": 45
+      "noEffect": 52
     },
     "core": {
-      "executable": 134,
+      "executable": 133,
       "hooks": 229,
       "noEffect": 10
     },
@@ -73,7 +73,7 @@
       "noEffect": 163
     },
     "cvwr": {
-      "executable": 159,
+      "executable": 154,
       "hooks": 400,
       "noEffect": 112
     },
@@ -133,7 +133,7 @@
       "noEffect": 113
     },
     "msp1": {
-      "executable": 84,
+      "executable": 78,
       "hooks": 109,
       "noEffect": 13
     },
@@ -173,9 +173,9 @@
       "noEffect": 75
     },
     "ssw1": {
-      "executable": 118,
+      "executable": 117,
       "hooks": 221,
-      "noEffect": 85
+      "noEffect": 86
     },
     "ssw2": {
       "executable": 128,
@@ -183,9 +183,9 @@
       "noEffect": 84
     },
     "vill": {
-      "executable": 125,
+      "executable": 120,
       "hooks": 288,
-      "noEffect": 84
+      "noEffect": 89
     },
     "vnom": {
       "executable": 20,
@@ -203,9 +203,9 @@
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 126,
+      "executable": 125,
       "hooks": 337,
-      "noEffect": 121
+      "noEffect": 122
     },
     "xmen": {
       "executable": 125,

@@ -2322,6 +2322,31 @@ describe('buildUIState — return-on-discard suppressed while discard-to-play pe
   });
 });
 
+describe('buildUIState — return-on-discard projected only for the active player (WP-793 / D-24656)', () => {
+  const CYCLOPS = 'core/cyclops' as CardExtId;
+
+  it('projects pendingReturnOnDiscard for an active-player front entry', () => {
+    const gameState = createTestGameState();
+    gameState.playerZones['0']!.discard = [CYCLOPS];
+    gameState.pendingReturnOnDiscard = [{ playerID: '0', cardId: CYCLOPS }];
+
+    const result = buildUIState(gameState, { ...mockCtx, currentPlayer: '0' });
+
+    assert.equal(result.pendingReturnOnDiscard?.playerID, '0');
+  });
+
+  it('omits pendingReturnOnDiscard for a non-active front entry (that seat answers its seat choice)', () => {
+    const gameState = createTestGameState();
+    gameState.playerZones['0']!.discard = [CYCLOPS];
+    gameState.pendingReturnOnDiscard = [{ playerID: '0', cardId: CYCLOPS }];
+
+    const result = buildUIState(gameState, { ...mockCtx, currentPlayer: '1' });
+
+    assert.equal(result.pendingReturnOnDiscard, undefined,
+      'a non-active owner must not also see the legacy prompt (one click would strand its seat choice)');
+  });
+});
+
 describe('buildUIState — Portals Dark-Portal descriptor (WP-728 / D-24549)', () => {
   const PORTALS = 'core/portals-to-the-dark-dimension';
 
@@ -2469,5 +2494,44 @@ describe('buildUIState — notableEventCards (WP-789 / D-24637)', () => {
     ];
     const result = buildUIState(gameState, mockCtx);
     assert.equal(Object.keys(result).includes('notableEventCards'), false);
+  });
+});
+
+describe('buildUIState — economy.restrictedAttack projection (WP-790 / D-24652)', () => {
+  it('projects grants with attack left, with a label, and excludes them from availableAttack', () => {
+    const gameState = createTestGameState();
+    gameState.turnEconomy = {
+      ...gameState.turnEconomy,
+      attack: 6,
+      restrictedAttack: [
+        { remaining: 2, targets: ['rooftops'], sourceCardId: 'bolt' as CardExtId },
+        { remaining: 0, targets: ['bank'], sourceCardId: 'spent' as CardExtId },
+        { remaining: 3, targets: ['sewers', 'bridge', 'mastermind'], sourceCardId: 'wave' as CardExtId },
+      ],
+    };
+    const uiState = buildUIState(gameState, mockCtx);
+    assert.deepStrictEqual(uiState.economy.restrictedAttack, [
+      { remaining: 2, targets: ['rooftops'], label: 'Rooftops' },
+      { remaining: 3, targets: ['sewers', 'bridge', 'mastermind'], label: 'Sewers or Bridge or Mastermind' },
+    ]);
+    assert.equal(uiState.economy.attack, 6, 'the total still counts restricted attack');
+    assert.equal(uiState.economy.availableAttack, 1, 'availableAttack excludes the 5 restricted');
+    assert.notEqual(
+      uiState.economy.restrictedAttack?.[0]?.targets,
+      gameState.turnEconomy.restrictedAttack?.[0]?.targets,
+      'targets is a copy, never an alias of G',
+    );
+  });
+
+  it('omits the key when there is no grant with attack left', () => {
+    const gameState = createTestGameState();
+    assert.ok(!('restrictedAttack' in buildUIState(gameState, mockCtx).economy));
+    gameState.turnEconomy = {
+      ...gameState.turnEconomy,
+      attack: 2,
+      spentAttack: 2,
+      restrictedAttack: [{ remaining: 0, targets: ['rooftops'], sourceCardId: 'bolt' as CardExtId }],
+    };
+    assert.ok(!('restrictedAttack' in buildUIState(gameState, mockCtx).economy));
   });
 });

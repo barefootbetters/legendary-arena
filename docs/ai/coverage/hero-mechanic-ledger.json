@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 789,
+    "totalRows": 791,
     "byStatus": {
-      "executable": 397,
+      "executable": 400,
       "deferred": 16,
       "condition": 49,
       "unsupported": 296,
-      "unmarked": 29,
+      "unmarked": 28,
       "subsystem": 2
     },
     "distinctMechanics": 159
@@ -3138,6 +3138,22 @@
       "extId": "co2e/cyclops",
       "heroName": "Cyclops",
       "set": "co2e",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "x-men-united",
+          "name": "X-Men United"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/cyclops",
+      "heroName": "Cyclops",
+      "set": "co2e",
       "mechanic": "discard-to-play",
       "status": "executable",
       "wp": "WP-383",
@@ -3616,6 +3632,22 @@
         {
           "slug": "avengers-assemble",
           "name": "Avengers Assemble!"
+        }
+      ]
+    },
+    {
+      "extId": "core/cyclops",
+      "heroName": "Cyclops",
+      "set": "core",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "x-men-united",
+          "name": "X-Men United"
         }
       ]
     },
@@ -8146,12 +8178,17 @@
       "extId": "msp1/nick-fury",
       "heroName": "Nick Fury",
       "set": "msp1",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "pure-fury",
+      "status": "executable",
+      "wp": "WP-682",
+      "decision": "D-24499",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#pure-fury",
+      "designs": [
+        {
+          "slug": "pure-fury",
+          "name": "Pure Fury"
+        }
+      ]
     },
     {
       "extId": "msp1/thor",

@@ -13,7 +13,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   cardCarriesDivingBlock,
-  countDivingBlockCopiesInHand,
+  countRevealableDivingBlockCopies,
   checkDivingBlock,
   hasPendingDivingBlockWounds,
   openDivingBlockSeatChoiceIfNeeded,
@@ -25,6 +25,7 @@ import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import type { LegendaryGameState } from '../types.js';
 
 const DIVING_BLOCK_ID = 'core/captain-america/diving-block#0';
+const DIVING_BLOCK_SECOND_COPY_ID = 'core/captain-america/diving-block#1';
 const OTHER_CARD_ID = 'core/spider-man/web-shooters#0';
 
 /** Identity Shuffle so the reveal draw is deterministic in tests. */
@@ -58,6 +59,7 @@ function makeState(options: {
     piles: { bystanders: [], wounds, officers: [], sidekicks: [] },
     heroAbilityHooks: [
       { cardId: DIVING_BLOCK_ID, timing: 'onPlay', keywords: ['diving-block'] },
+      { cardId: DIVING_BLOCK_SECOND_COPY_ID, timing: 'onPlay', keywords: ['diving-block'] },
     ],
     turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0, cardsDrawn: 0 },
     messages: [],
@@ -77,9 +79,47 @@ describe('Diving Block — keyword detection + copy count (WP-682 / D-24499)', (
     assert.equal(cardCarriesDivingBlock(G, OTHER_CARD_ID), false);
   });
 
-  it('countDivingBlockCopiesInHand counts only Diving Block cards in hand', () => {
+  it('countRevealableDivingBlockCopies counts only Diving Block cards in hand', () => {
     const G = makeState({ hands: { '0': [DIVING_BLOCK_ID, OTHER_CARD_ID, DIVING_BLOCK_ID] }, woundCount: 3 });
-    assert.equal(countDivingBlockCopiesInHand(G, '0'), 2);
+    assert.equal(countRevealableDivingBlockCopies(G, '0'), 2);
+  });
+
+  // why: D-24651 — rules v23 "Revealing a Card": a card played this turn (still in
+  // front of you) can be revealed, so a played Diving Block counts too.
+  it('D-24651: a Diving Block played this turn counts alongside copies in hand', () => {
+    const G = makeState({ hands: { '0': [DIVING_BLOCK_ID] }, woundCount: 2 });
+    G.playerZones['0']!.inPlay = [DIVING_BLOCK_SECOND_COPY_ID, OTHER_CARD_ID];
+    assert.equal(countRevealableDivingBlockCopies(G, '0'), 2);
+  });
+});
+
+describe('Diving Block — a played copy can be revealed (D-24651)', () => {
+  it('a Wound gained after Diving Block was played parks the reveal choice', () => {
+    const G = makeState({ hands: { '0': [OTHER_CARD_ID] }, woundCount: 1 });
+    G.playerZones['0']!.inPlay = [DIVING_BLOCK_ID];
+    gainWoundForPlayer(G, '0');
+    assert.equal(hasPendingDivingBlockWounds(G), true);
+    assert.equal(G.pendingDivingBlockWounds![0]!.playerID, '0');
+  });
+
+  it('revealing the played copy prevents the Wound, draws a card, and leaves Diving Block in play', () => {
+    const G = makeState({ hands: { '0': [] }, decks: { '0': ['draw-card#0'] }, woundCount: 1 });
+    G.playerZones['0']!.inPlay = [DIVING_BLOCK_ID];
+    gainWoundForPlayer(G, '0');
+    openDivingBlockSeatChoiceIfNeeded(G, undefined);
+    resolveSeatChoice(makeContext(G, '0'), { optionIndex: 0 });
+    assert.deepEqual(G.playerZones['0']!.discard, [], 'the Wound was prevented');
+    assert.deepEqual(G.playerZones['0']!.hand, ['draw-card#0'], 'drew a card instead');
+    assert.deepEqual(G.playerZones['0']!.inPlay, [DIVING_BLOCK_ID], 'Diving Block stays in play');
+    assert.equal(G.piles.wounds.length, 1, 'the Wound went back to the supply');
+  });
+
+  it('one-copy-per-Wound still holds: one played copy + two Wounds parks only one interception', () => {
+    const G = makeState({ hands: { '0': [] }, woundCount: 2 });
+    G.playerZones['0']!.inPlay = [DIVING_BLOCK_ID];
+    gainWoundForPlayer(G, '0');
+    gainWoundForPlayer(G, '0');
+    assert.equal(G.pendingDivingBlockWounds!.length, 1);
   });
 });
 

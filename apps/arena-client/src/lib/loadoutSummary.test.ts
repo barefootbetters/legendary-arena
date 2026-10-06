@@ -46,6 +46,7 @@ test('summarizeLoadout extracts names and counts from a well-formed document', (
     woundsCount: 30,
     officersCount: 30,
     sidekicksCount: 0,
+    finalBlow: false,
   });
 });
 
@@ -74,7 +75,15 @@ test('summarizeLoadout returns safe fallbacks for a missing setup block', () => 
     woundsCount: null,
     officersCount: null,
     sidekicksCount: null,
+    finalBlow: false,
   });
+});
+
+test('summarizeLoadout reads setup.final_blow — only a literal true turns it on (D-24658)', () => {
+  assert.equal(summarizeLoadout({ setup: { ...WELL_FORMED_LAGN.setup, final_blow: true } }).finalBlow, true);
+  assert.equal(summarizeLoadout({ setup: { ...WELL_FORMED_LAGN.setup, final_blow: false } }).finalBlow, false);
+  assert.equal(summarizeLoadout({ setup: { ...WELL_FORMED_LAGN.setup, final_blow: 'yes' } }).finalBlow, false);
+  assert.equal(summarizeLoadout(WELL_FORMED_LAGN).finalBlow, false);
 });
 
 test('summarizeLoadout does not throw on null / non-object / misshaped input', () => {

@@ -98,7 +98,7 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 28,
+      "cardCount": 30,
       "cardIds": [
         "asrd/thor",
         "bkwd/falcon-winter-soldier",
@@ -107,9 +107,11 @@
         "ca75/captain-america-falcon",
         "co2e/black-widow",
         "co2e/captain-america",
+        "co2e/cyclops",
         "co2e/iron-man",
         "core/black-widow",
         "core/captain-america",
+        "core/cyclops",
         "core/deadpool",
         "core/iron-man",
         "core/nick-fury",
@@ -1270,9 +1272,10 @@
       "label": "Pure Fury",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
-        "core/nick-fury"
+        "core/nick-fury",
+        "msp1/nick-fury"
       ],
       "hidden": true
     },
@@ -2146,7 +2149,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 29,
+      "cardCount": 28,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
@@ -2164,7 +2167,6 @@
         "dkcy/daredevil",
         "dkcy/professor-x",
         "gotg/groot",
-        "msp1/nick-fury",
         "nmut/karma",
         "rvlt/hellcat",
         "shld/leo-fitz-and-jemma-simmons",
@@ -2781,6 +2783,7 @@
     },
     "co2e/cyclops": {
       "mechanics": [
+        "attack-per-count",
         "discard-to-play"
       ]
     },
@@ -2870,6 +2873,7 @@
     },
     "core/cyclops": {
       "mechanics": [
+        "attack-per-count",
         "discard-to-play",
         "return-on-discard"
       ]
@@ -3574,7 +3578,7 @@
     },
     "msp1/nick-fury": {
       "mechanics": [
-        "unmarked"
+        "pure-fury"
       ]
     },
     "msp1/thor": {

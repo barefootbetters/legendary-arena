@@ -127,7 +127,8 @@ import { phasingOptions } from '../moves/phaseCard.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
-import { getAvailableRecruit, getSpendableAttack } from '../economy/economy.logic.js';
+import { getAvailableRecruit, getSpendableAttack, formatAttackTargets } from '../economy/economy.logic.js';
+import type { AttackTargetName } from '../economy/economy.types.js';
 import {
   resolveFightCost,
   resolveMastermindFightCost,
@@ -930,8 +931,8 @@ export function buildUIState(
   // 2026-04-29 PS-5.
   //
   // why: WP-128 / D-12805 — `G.mastermind.attachedBystanders` IS populated at
-  // runtime (WP-154 / D-15401: Master Strike captures a bystander onto the
-  // mastermind); project it directly. **Still do NOT flatten
+  // runtime (D-24654 capture sources: a Villain-Deck Bystander revealed with an
+  // empty City, Here, Hold This, the kidnap fallback); project it directly. **Still do NOT flatten
   // `G.attachedBystanders`** (the top-level city-villain captures) into this
   // field — D-12805 Interpretation B keeps the two capture stores separate;
   // city-villain bystanders render on the city row as
@@ -1040,6 +1041,20 @@ export function buildUIState(
   const piercing = gameState.turnEconomy.piercing;
   const woundsDrawn = gameState.turnEconomy.woundsDrawn;
   const currentPhasingOptions = phasingOptions(gameState, ctx.currentPlayer);
+  // why: WP-790 / D-24652 — project the restricted-attack grants that still have attack left
+  // (Board-Visible Field Rule step 2), with copied `targets` so the projection never aliases G,
+  // and the display label the economy bar shows. availableAttack (getSpendableAttack) excludes
+  // these amounts, so the client needs them to enable a Fight button the engine would accept.
+  const restrictedAttack: { remaining: number; targets: AttackTargetName[]; label: string }[] = [];
+  for (const grant of gameState.turnEconomy.restrictedAttack ?? []) {
+    if (grant.remaining > 0) {
+      restrictedAttack.push({
+        remaining: grant.remaining,
+        targets: [...grant.targets],
+        label: formatAttackTargets(grant.targets),
+      });
+    }
+  }
   const economy = {
     attack: gameState.turnEconomy.attack,
     recruit: gameState.turnEconomy.recruit,
@@ -1071,6 +1086,9 @@ export function buildUIState(
     // when at least one hand card is phasable), so a turn without Phasing keeps the
     // economy block byte-identical and the client renders Phase buttons only when legal.
     ...(currentPhasingOptions.length > 0 ? { phasingOptions: currentPhasingOptions } : {}),
+    // why: WP-790 / D-24652 — omit-when-absent, so a turn with no restricted grant keeps the
+    // economy block byte-identical.
+    ...(restrictedAttack.length > 0 ? { restrictedAttack } : {}),
   };
 
   // --- 8. Project log ---
@@ -2090,10 +2108,15 @@ export function buildUIState(
   // the prompt would only offer a dead-click; the projection mirrors the block-all
   // priority (discard-to-play outranks return-on-discard) so the client is shown only
   // the actionable choice. The return prompt reappears once the cost is fully paid.
+  // why: WP-793 / D-24656 — project only an ACTIVE-player front entry. A non-active owner
+  // answers only through its 'return-on-discard' seat choice (opened in turn.onMove); showing
+  // it the legacy prompt too would let one click pop the entry and spend the seat's single
+  // stage-ride move (moveLimit 1), stranding the seat choice addressed to it.
   let pendingReturnOnDiscard: UIPendingReturnOnDiscard | undefined;
   if (
     gameState.pendingReturnOnDiscard !== undefined &&
     gameState.pendingReturnOnDiscard.length > 0 &&
+    gameState.pendingReturnOnDiscard[0]!.playerID === ctx.currentPlayer &&
     !hasPendingDiscardToPlay(gameState)
   ) {
     const frontReturn = gameState.pendingReturnOnDiscard[0]!;

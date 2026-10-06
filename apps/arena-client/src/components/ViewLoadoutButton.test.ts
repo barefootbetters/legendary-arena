@@ -1,11 +1,11 @@
 import '../testing/jsdom-setup';
 
-import { describe, test, afterEach } from 'node:test';
+import { describe, test, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { setActivePinia, createPinia } from 'pinia';
 import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils';
 
-import ViewLoadoutButton from './ViewLoadoutButton.vue';
+import ViewLoadoutButton, { STATUS_CLEAR_DELAY_MS } from './ViewLoadoutButton.vue';
 import { useAuthStore } from '../stores/auth';
 
 /**
@@ -162,6 +162,32 @@ describe('ViewLoadoutButton', () => {
       wrapper.find('[data-testid="view-loadout-status"]').text(),
       /blocked|pop-?up/i,
     );
+  });
+
+  // why: D-24650 — a blocked pop-up's message used to persist (it covered the turn
+  // bar's Reveal button on desktop); it now clears itself.
+  test('D-24650: the status message clears itself after STATUS_CLEAR_DELAY_MS', async () => {
+    mock.timers.enable({ apis: ['setTimeout'] });
+    try {
+      setSearch('?match=m1');
+      stubFetch({ lagn: {} });
+      stubOpen(true);
+      const wrapper = mountButton();
+
+      await wrapper.find('[data-testid="view-loadout-button"]').trigger('click');
+      await flushPromises();
+      assert.equal(wrapper.find('[data-testid="view-loadout-status"]').exists(), true);
+
+      mock.timers.tick(STATUS_CLEAR_DELAY_MS - 1);
+      await flushPromises();
+      assert.equal(wrapper.find('[data-testid="view-loadout-status"]').exists(), true, 'still shown just before the delay');
+
+      mock.timers.tick(1);
+      await flushPromises();
+      assert.equal(wrapper.find('[data-testid="view-loadout-status"]').exists(), false, 'cleared at the delay');
+    } finally {
+      mock.timers.reset();
+    }
   });
 
   test('a 404 closes the pre-opened tab (no navigation) and shows the not-available message', async () => {

@@ -7,7 +7,10 @@ import type { ServiceResponse } from '../types/index.js';
 // refresh, no retry), so the operator must see which axis a widget rode at
 // build time. The widening is local to useDataFreshness — ServiceResponse
 // stays untouched so fetched-data callsites keep their narrower contract.
-export type DataFreshnessSource = ServiceResponse<unknown>['source'] | 'BUILD';
+// why: D-24653 — 'LOCAL' follows the same additive precedent for data the
+// operator entered in this browser (localStorage): it is neither fetched nor
+// mock, and the Overview must never show a MOCK tag for real operator state.
+export type DataFreshnessSource = ServiceResponse<unknown>['source'] | 'BUILD' | 'LOCAL';
 
 interface UseDataFreshnessReturn {
   relativeTime: ComputedRef<string>;

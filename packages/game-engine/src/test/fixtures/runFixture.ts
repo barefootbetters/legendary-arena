@@ -40,6 +40,11 @@ import { CORE_MOVE_NAMES } from '../../moves/coreMoves.types.js';
 import { drawCards, playCard, endTurn } from '../../moves/coreMoves.impl.js';
 import { applyOnBeginParity } from '../../simulation/onBeginParity.js';
 import { resolveDeferredHeroGrants } from '../../hero/heroEffects.execute.js';
+// why: WP-793 / D-24656 — the two turn.onMove openers this harness mirrors (see
+// dispatchSingleMove). Plain G-mutating helpers; their modules' import cycles with
+// seatChoice.resolve reference each other only inside function bodies.
+import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../../moves/resolveReturnOnDiscard.js';
+import { openEscapeProcedureSeatChoiceIfNeeded } from '../../villainDeck/villainEscapeProcedure.js';
 import { applyEndOfTurnCleanup } from '../../moves/endOfTurnCleanup.logic.js';
 import { revealVillainCard } from '../../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../../moves/fightVillain.js';
@@ -47,6 +52,7 @@ import { recruitHero } from '../../moves/recruitHero.js';
 import { fightMastermind } from '../../moves/fightMastermind.js';
 import { setPlayerReady, startMatchIfReady } from '../../lobby/lobby.moves.js';
 import { resolvePutCardsOnDeckChoice } from '../../moves/putCardsOnDeckChoice.resolve.js';
+import { resolveSeatChoice } from '../../moves/seatChoice.resolve.js';
 import { advanceTurnStage } from '../../turn/turnLoop.js';
 import { hashGameState } from './hashGameState.js';
 
@@ -160,11 +166,12 @@ function fixtureAdvanceStage(context: FixtureMoveContext): void {
 // because the canonical array is locked at exactly three entries by the
 // drift-detection test in coreMoves.types.test.ts; if a future packet
 // extends it, this file refuses to compile rather than silently drift.
-// The seven non-core entries (advanceStage / revealVillainCard /
+// The nine non-core entries (advanceStage / revealVillainCard /
 // fightVillain / recruitHero / fightMastermind / setPlayerReady /
-// startMatchIfReady) use string literals because no canonical move-name
-// array covers them — same pragmatic gap that simulation.runner.ts and
-// replay.execute.ts already exhibit. The closed set of dispatchable
+// startMatchIfReady / resolvePutCardsOnDeckChoice / resolveSeatChoice) use
+// string literals because no canonical move-name array covers them — same
+// pragmatic gap that simulation.runner.ts and replay.execute.ts already
+// exhibit. The closed set of dispatchable
 // names is enforced by the type system anyway: every entry corresponds
 // to a directly imported move function. Unknown names throw via the
 // runtime check in `dispatchSingleMove` below (NOT the warn-and-continue
@@ -194,6 +201,14 @@ const MOVE_MAP: Record<string, MoveDispatch> = {
   // or the block-all guard freezes the scripted tail. Reads only G + playerID.
   resolvePutCardsOnDeckChoice: (context, args) =>
     resolvePutCardsOnDeckChoice(context as never, args as never),
+  // why: WP-749 / D-24573 — the sim capture -> fixture replay lockstep (D-24273). The
+  // simulation runner now dispatches a non-active seat's resolveSeatChoice (a WP-684
+  // seat choice addressed to another seat, e.g. Loki's Vanishing Illusions) and captures
+  // it under that seat's playerId; without this entry a captured trace throws "unknown
+  // move name" here. dispatchSingleMove already passes move.playerId as playerID, so the
+  // move replays as the addressed seat with no other change.
+  resolveSeatChoice: (context, args) =>
+    resolveSeatChoice(context as never, args as never),
 };
 
 /**
@@ -376,13 +391,26 @@ function dispatchSingleMove(
   // per-move resolve (the D-24273 capture -> replay contract): record-game-fixture.mjs
   // records through this runner, so a sim-captured trace that fires a deferred grant
   // must fire it here too, or the recorded messages / finalStateHash would diverge
-  // from the sim that produced the trace. This harness mirrors no other onMove effect
-  // (pile depletion included), so there is no earlier call to order against. Receives
+  // from the sim that produced the trace. Besides the two WP-793 openers below, this
+  // harness mirrors no other onMove effect (pile depletion included), so there is no
+  // earlier call to order against. Receives
   // the dispatched move's own context so a grant that draws uses this runner's seeded
   // Shuffle and the real ctx.turn. The context's `events` is inert for the resolver:
   // no hero effect calls endTurn / setPhase, and setActivePlayers is typeof-guarded
   // (absent here), which matches live passing an events-less `{ G, ctx, random }`.
   resolveDeferredHeroGrants(gameState, moveContext);
+
+  // why: WP-793 / D-24656 — the LOCKSTEP PARTNER of the simulation.runner.ts opener mirror
+  // (the D-24273 capture -> replay contract): mirror the live turn.onMove openers in their
+  // live order after the deferred-grant resolve — the non-active return-on-discard opener,
+  // then the escape-procedure opener (the rulebook HQ KO + Bystander discard every escape
+  // this move recorded). A sim-captured trace answers the choices they park with
+  // resolveSeatChoice moves, so the replay must park them too. events is undefined (no stage
+  // ride here) and the seat argument is the harness's ACTIVE seat (cursor.currentPlayer),
+  // never the acting move.playerId. No depletion re-check: this harness mirrors no pile
+  // depletion (out of scope since WP-749).
+  openNonActiveReturnOnDiscardSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
+  openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
 
   if (endTurnFlag.triggered) {
     rotateToNextTurn(gameState, cursor, fixture.input.playerOrder, numPlayers, nextRandom, endTurnFlag.nextPlayer);

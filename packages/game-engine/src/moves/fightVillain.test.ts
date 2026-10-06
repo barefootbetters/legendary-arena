@@ -1076,3 +1076,66 @@ describe('fightVillain — villain Blood Frenzy (WP-760)', () => {
     assert.equal(moveContext.G.turnEconomy.spentAttack, 5);
   });
 });
+
+describe('fightVillain — restricted "usable only against" attack (WP-790 / D-24652)', () => {
+  /**
+   * A 2-cost villain at the given City index, with plain + Rooftops-only restricted attack.
+   *
+   * @param cityIndex - Where the villain sits (2 = Rooftops, 0 = Sewers).
+   * @param plainAttack - Unrestricted attack.
+   * @param restrictedAmount - Rooftops-only attack.
+   * @param fightCost - The villain's fight cost.
+   * @returns The game state.
+   */
+  function withRestrictedAttack(
+    cityIndex: number,
+    plainAttack: number,
+    restrictedAmount: number,
+    fightCost = 2,
+  ): LegendaryGameState {
+    const city: LegendaryGameState['city'] = [null, null, null, null, null];
+    city[cityIndex] = 'villain-a';
+    const gameState = createMockGameState({ city });
+    gameState.cardStats['villain-a' as CardExtId] = makeCardStatEntry({ fightCost });
+    gameState.turnEconomy = makeTurnEconomy({
+      attack: plainAttack + restrictedAmount,
+      restrictedAttack: [{ remaining: restrictedAmount, targets: ['rooftops'], sourceCardId: 'bolt' as CardExtId }],
+    });
+    return gameState;
+  }
+
+  it('Rooftops-only attack pays for a Rooftops fight', () => {
+    const moveContext = createMockMoveContext(withRestrictedAttack(2, 0, 2));
+    fightVillain(moveContext, { cityIndex: 2 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 2);
+    assert.equal(moveContext.G.turnEconomy.restrictedAttack?.[0]?.remaining, 0);
+  });
+
+  it('the same attack cannot pay for a Sewers fight (silent return, economy unchanged)', () => {
+    const gameState = withRestrictedAttack(0, 0, 2);
+    const economyBefore = JSON.parse(JSON.stringify(gameState.turnEconomy));
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.equal(moveContext.G.city[0], 'villain-a', 'the villain stays in the City');
+    assert.deepEqual(moveContext.G.turnEconomy, economyBefore);
+  });
+
+  it('mixed restricted + plain attack pays a cost of 5', () => {
+    const moveContext = createMockMoveContext(withRestrictedAttack(2, 3, 2, 5));
+    fightVillain(moveContext, { cityIndex: 2 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 5);
+    assert.equal(moveContext.G.turnEconomy.restrictedAttack?.[0]?.remaining, 0);
+  });
+
+  it('the Excessive Violence +1 is payable from eligible restricted attack', () => {
+    const gameState = withRestrictedAttack(2, 2, 1);
+    gameState.turnEconomy = { ...gameState.turnEconomy, excessiveViolencePlayedCards: ['rc' as CardExtId] };
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 2, useExcessiveViolence: true });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 3, 'cost 2 + the EV extra 1');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, true);
+  });
+});

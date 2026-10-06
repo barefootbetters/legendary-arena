@@ -969,3 +969,67 @@ describe('CityRow — heal lock (D-24180 / D-24614)', () => {
     wrapper.unmount();
   });
 });
+
+describe('CityRow — restricted "usable only against" attack (WP-790 / D-24652)', () => {
+  // why: availableAttack excludes restricted attack; each cell passes its City space
+  // (citySpaceNameForIndex(cell.cityIndex)) so a Rooftops-only grant enables exactly the
+  // Rooftops fight the engine would accept — and nothing else.
+  function restrictedCity(rooftopsFightCost = 2): UICityState {
+    const rooftopsVillain = villain('rooftops-villain', 2);
+    rooftopsVillain.fightCost = rooftopsFightCost;
+    return {
+      spaces: [villain('sewers-villain', 2), null, rooftopsVillain, null, null],
+      escapedPile: [],
+    };
+  }
+
+  function rooftopsEconomy(remaining: number, over: Partial<UITurnEconomyState> = {}): UITurnEconomyState {
+    return economy({
+      attack: remaining,
+      availableAttack: 0,
+      restrictedAttack: [{ remaining, targets: ['rooftops'], label: 'Rooftops' }],
+      ...over,
+    });
+  }
+
+  function villainButton(wrapper: ReturnType<typeof mount>, cityIndex: string) {
+    return wrapper
+      .findAll('[data-testid="play-city-villain"]')
+      .find((button) => button.attributes('data-city-index') === cityIndex)!;
+  }
+
+  test('Rooftops restricted attack enables the Rooftops fight; the Sewers fight stays disabled', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: { city: restrictedCity(), decks: DECKS, currentStage: 'main', economy: rooftopsEconomy(2), submitMove },
+    });
+    assert.equal(villainButton(wrapper, '2').attributes('disabled'), undefined, 'Rooftops enabled');
+    assert.notEqual(villainButton(wrapper, '0').attributes('disabled'), undefined, 'Sewers disabled');
+    assert.equal(villainButton(wrapper, '0').attributes('title'), 'Needs 2 attack, you have 0.');
+  });
+
+  test('the cost-short badge is not loud when Rooftops restricted attack covers the cost', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: { city: restrictedCity(3), decks: DECKS, currentStage: 'main', economy: rooftopsEconomy(3), submitMove },
+    });
+    const badge = villainButton(wrapper, '2').find('[data-testid="play-city-fight-cost"]');
+    assert.equal(badge.exists(), true);
+    assert.equal(badge.classes().includes('city-space__fight-cost--unaffordable'), false);
+  });
+
+  test('the Excessive Violence control counts eligible restricted attack only', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: restrictedCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: rooftopsEconomy(3, { excessiveViolenceAvailable: true }),
+        submitMove,
+      },
+    });
+    const evButtons = wrapper.findAll('[data-testid="play-city-villain-ev"]');
+    assert.deepEqual(evButtons.map((button) => button.attributes('data-city-index')), ['2']);
+  });
+});

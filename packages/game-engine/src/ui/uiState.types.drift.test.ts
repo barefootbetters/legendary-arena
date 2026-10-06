@@ -1677,3 +1677,50 @@ function buildEmptyMatchUIState() {
   const ctx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
   return buildUIState(gameState, ctx);
 }
+
+describe('UIState type drift (WP-790 / D-24652) — economy.restrictedAttack', () => {
+  it('UITurnEconomyState.restrictedAttack is pinned on a BUILT and FILTERED projection', () => {
+    // why: WP-790 / D-24652 — restrictedAttack is OPTIONAL and omit-when-absent, so a
+    // `satisfies`/literal pin gives it NO drift protection (WP-563 / D-24372). Only a keyset
+    // assertion on a REAL built projection — with a restricted grant in G — catches buildUIState
+    // dropping it, and the same keyset on the active player's FILTERED projection catches the
+    // audience whitelist dropping it (the EC-206 failure mode).
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const registry: CardRegistryReader = { ...makeCardRegistryReader(), listCards: () => [] };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx({ numPlayers: 1 }));
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    gameState.turnEconomy.attack = 2;
+    gameState.turnEconomy.restrictedAttack = [{ remaining: 2, targets: ['rooftops'], sourceCardId: 'core/hero-x/bolt' }];
+    const present = buildUIState(gameState, uiCtx);
+    const expectedKeys = [
+      'attack',
+      'availableAttack',
+      'availableRecruit',
+      'piercing',
+      'recruit',
+      'restrictedAttack',
+      'woundsDrawn',
+    ];
+    assert.deepStrictEqual(Object.keys(present.economy).sort(), expectedKeys);
+    assert.deepStrictEqual(Object.keys(present.economy.restrictedAttack![0]!).sort(), ['label', 'remaining', 'targets']);
+
+    const filtered = filterUIStateForAudience(present, { kind: 'player', playerId: '0' });
+    assert.deepStrictEqual(Object.keys(filtered.economy).sort(), expectedKeys);
+    assert.deepStrictEqual(Object.keys(filtered.economy.restrictedAttack![0]!).sort(), ['label', 'remaining', 'targets']);
+
+    delete gameState.turnEconomy.restrictedAttack;
+    const absent = buildUIState(gameState, uiCtx);
+    assert.ok(!('restrictedAttack' in absent.economy), 'no grant ⇒ the key is absent, not []');
+  });
+});

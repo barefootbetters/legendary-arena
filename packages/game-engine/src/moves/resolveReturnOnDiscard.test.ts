@@ -17,7 +17,12 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveReturnOnDiscard } from './resolveReturnOnDiscard.js';
+import {
+  openNonActiveReturnOnDiscardSeatChoiceIfNeeded,
+  resolveReturnOnDiscard,
+  RETURN_ON_DISCARD_SEAT_CHOICE_KIND,
+} from './resolveReturnOnDiscard.js';
+import { resolveSeatChoice } from './seatChoice.resolve.js';
 import { resolveDiscardToPlay } from './resolveDiscardToPlay.js';
 import type { LegendaryGameState, PendingDiscardToPlay } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -154,5 +159,106 @@ describe('Extinction Blast n=3 + Cyclops exploit is closed (D-24527)', () => {
     assert.deepEqual(G.playerZones['0']!.hand, [UNENDING_ENERGY], 'Cyclops returned after the cost was paid');
     assert.deepEqual(G.playerZones['0']!.discard, [CARD_B, CARD_C], 'three distinct cards paid the cost');
     assert.equal((G.pendingReturnOnDiscard ?? []).length, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-793 / D-24656 — a NON-ACTIVE seat answers its own return-on-discard reaction
+// through a 'return-on-discard' seat choice.
+// ---------------------------------------------------------------------------
+
+/**
+ * Two-seat state: seat 1 has just discarded Unending Energy (its return-on-discard
+ * entry is queued), seat 0 is the active player.
+ *
+ * @param ownerSeat - The seat that owns the front entry.
+ * @returns The game state.
+ */
+function makeTwoSeatState(ownerSeat: string): LegendaryGameState {
+  const zonesFor = (seat: string) => ({
+    deck: [],
+    hand: [CARD_B],
+    discard: seat === ownerSeat ? [UNENDING_ENERGY] : [],
+    inPlay: [],
+    victory: [],
+  });
+  return {
+    playerZones: { '0': zonesFor('0'), '1': zonesFor('1') },
+    heroAbilityHooks: [{ cardId: UNENDING_ENERGY, timing: 'onDiscard', keywords: ['return-on-discard'] }],
+    cardDisplayData: {},
+    counters: {},
+    messages: [],
+    pendingReturnOnDiscard: [{ playerID: ownerSeat, cardId: UNENDING_ENERGY }],
+  } as unknown as LegendaryGameState;
+}
+
+/** Submits `optionIndex` for `seat` through the real resolveSeatChoice move. */
+function submitSeatChoice(gameState: LegendaryGameState, seat: string, optionIndex: number): void {
+  resolveSeatChoice({ G: gameState, playerID: seat } as unknown as Parameters<typeof resolveSeatChoice>[0], { optionIndex });
+}
+
+describe('non-active return-on-discard seat choice (WP-793 / D-24656)', () => {
+  it('a non-active front entry opens a return-on-discard choice for that seat only', () => {
+    const G = makeTwoSeatState('1');
+
+    openNonActiveReturnOnDiscardSeatChoiceIfNeeded(G, undefined, '0');
+
+    const choice = G.pendingSeatChoice;
+    assert.ok(choice);
+    assert.equal(choice.kind, RETURN_ON_DISCARD_SEAT_CHOICE_KIND);
+    assert.deepEqual(choice.addressedSeats, ['1']);
+    assert.deepEqual(choice.seatPrompts['1']!.options, [
+      { label: 'Return core/cyclops to your hand', cardId: UNENDING_ENERGY },
+      { label: 'Leave core/cyclops in your discard pile', cardId: UNENDING_ENERGY },
+    ]);
+    assert.equal(choice.defaultOptionIndex, 0);
+  });
+
+  it('option 0 returns the card to hand; the entry is popped', () => {
+    const G = makeTwoSeatState('1');
+    openNonActiveReturnOnDiscardSeatChoiceIfNeeded(G, undefined, '0');
+
+    submitSeatChoice(G, '1', 0);
+
+    assert.equal(G.pendingSeatChoice, undefined);
+    assert.deepEqual(G.playerZones['1']!.hand, [CARD_B, UNENDING_ENERGY]);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+    assert.equal((G.pendingReturnOnDiscard ?? []).length, 0);
+  });
+
+  it('option 1 leaves the card in the discard pile; the entry is popped', () => {
+    const G = makeTwoSeatState('1');
+    openNonActiveReturnOnDiscardSeatChoiceIfNeeded(G, undefined, '0');
+
+    submitSeatChoice(G, '1', 1);
+
+    assert.equal(G.pendingSeatChoice, undefined);
+    assert.deepEqual(G.playerZones['1']!.hand, [CARD_B]);
+    assert.deepEqual(G.playerZones['1']!.discard, [UNENDING_ENERGY]);
+    assert.equal((G.pendingReturnOnDiscard ?? []).length, 0);
+  });
+
+  it('an active-player front entry opens nothing and resolveReturnOnDiscard behaves as before', () => {
+    const G = makeTwoSeatState('0');
+
+    openNonActiveReturnOnDiscardSeatChoiceIfNeeded(G, undefined, '0');
+    assert.equal(G.pendingSeatChoice, undefined, 'the active player keeps the legacy move');
+
+    resolveReturnOnDiscard(ctx(G, '0'), { cardId: UNENDING_ENERGY });
+    assert.deepEqual(G.playerZones['0']!.hand, [CARD_B, UNENDING_ENERGY]);
+    assert.equal((G.pendingReturnOnDiscard ?? []).length, 0);
+  });
+
+  it('while the seat choice is open, the ridden seat\'s legacy resolveReturnOnDiscard changes nothing', () => {
+    const G = makeTwoSeatState('1');
+    openNonActiveReturnOnDiscardSeatChoiceIfNeeded(G, undefined, '0');
+    const choiceBefore = structuredClone(G.pendingSeatChoice);
+
+    resolveReturnOnDiscard(ctx(G, '1'), { cardId: UNENDING_ENERGY });
+    resolveReturnOnDiscard(ctx(G, '1'), { decline: true });
+
+    assert.deepEqual(G.pendingSeatChoice, choiceBefore, 'the seat choice is intact');
+    assert.deepEqual(G.pendingReturnOnDiscard, [{ playerID: '1', cardId: UNENDING_ENERGY }], 'the queue is intact');
+    assert.deepEqual(G.playerZones['1']!.discard, [UNENDING_ENERGY]);
   });
 });
