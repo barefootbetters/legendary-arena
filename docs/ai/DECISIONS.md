@@ -46667,4 +46667,27 @@ Also: server 1455 / 0; `ledger:heroes`, `ledger:villains`, `mechanics:metadata`,
 
 ---
 
+### D-24664 — Storm Spinning Cyclone: one active-player move-a-Villain choice, swap-if-occupied, moved-Villain-only rescue (WP-795 / EC-832) (Active 2026-10-06)
+
+**Context.** core Storm's **Spinning Cyclone** ("You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain. (If you move a Villain to a city space that already has Villain, swap them.)") did nothing: no marker, no handler, no log line and no trace. In Jeff's 2-player match `s1jtBcEAOfw` (Red Skull / Secret Invasion, 2026-10-06) it was played seven times without effect.
+
+**Decision.** A curated `[keyword:spinning-cyclone]` marker on `core/storm/spinning-cyclone` abilityIndex 0 feeds a new handler-bearing, no-magnitude `spinning-cyclone` HeroKeyword. `heroEffectSpinningCyclone` parks one `PendingMoveVillainChoice { playerID, sourceCardId }` (lazy `G.pendingMoveVillainChoices`), and the new server-only `resolveMoveVillainChoice` resolves it.
+
+1. **One active-player pending entry, two-field answer.** The answer is `{ fromCityIndex, toCityIndex }` or `{ decline: true }`, validated against the live `G.city`. A null or non-object payload, a mixed or partial shape, a non-integer or out-of-range index, `from === to`, an empty source, an empty queue or a `playerID` mismatch is a silent no-op with the queue intact (D-24284 active-player scoping). With no City Villain the handler logs a `blocked` line and parks nothing.
+2. **Swap-if-occupied, both Villains stay in the City.** The resolve move swaps `G.city[from]` and `G.city[to]` by direct index assignment (the D-24336 precedent) and is the only mutation site. No Fight, Escape or Ambush fires, nothing enters from the Villain Deck, and a Villain moved onto the Bridge does not escape. Bystanders and captured Heroes are keyed by the Villain's ext_id, so they travel with it.
+3. **Rescue only the moved Villain's Bystanders, only on a move,** through the fight path's `awardAttachedBystanders` with the same "rescued N bystander(s) from …" line. The swapped-with Villain keeps its Bystanders and captured Heroes; a decline rescues nothing.
+4. **Bot default:** move the lowest-index City Villain holding a Bystander to the lowest-index other space (captures the rescue value), else decline. Deterministic; `getLegalMoves` returns exactly one move.
+5. **Card-named keyword** (`spinning-cyclone`, the `covering-fire` / `here-hold-this` precedent). A generic move-a-Villain helper is deferred until a second card needs it. co2e Storm's Spinning Cyclone has no rescue clause, so it gets no marker and stays hollow; it will need a distinct keyword or variant.
+6. **Matches in progress and replay.** A match already running at deploy keeps the hooks built at its setup. A competitive capture taken before the deploy that plays Spinning Cyclone, but submitted after it, fails `replay_verification_failed`. That is the accepted window (the D-24652 §5 precedent); it closes as pre-deploy matches age out.
+
+Around it: the block-all guard `hasPendingMoveVillainChoice(G)` beside every Covering Fire guard call site (14 sites in 12 files, incl. `hasAnyPendingChoice()` and the `ai.legalMoves` short-circuit); the sim three-site dispatch (`SIMULATION_MOVE_NAMES` + both `MOVE_MAP`s); a chooser-redacted `UIState.pendingMoveVillainChoice { playerID, villainCityIndices }` recomputed from the live City and copied into a fresh array by the filter; and `MoveVillainChoicePrompt.vue` (`defineComponent` form, D-6512), which submits ENGINE indices. `TurnActionBar.anyPendingChoice()` includes the new flag (the D-24648 freeze class).
+
+**Determinism.** The queue is runtime-only and lazy-initialized at the park site, never in `Game.setup`. The sentinel replay fixture never plays Storm, so `finalStateHash` / `PRE_WP080_HASH` are byte-unchanged — no re-pin. Drift pins (runtime, D-24372): `HERO_KEYWORDS` 75 → 76 (three files), `HERO_EFFECT_HANDLERS` 58 → 59 (two asserts), moves 46 → 47.
+
+**Gates.** game-engine 4883 → 4918 / 0 fail (+35; 1122 → 1131 suites); arena-client 2270 → 2278 / 0 fail (+8); vue-tsc 0; dashboard 570 / 0 (totalObs pin unchanged); `pnpm -r --no-bail test` 0 fail across every package; replay fixtures green and byte-unchanged, no sentinel re-pin. Revert proofs 4/4: the park, the swap, the moved-only rescue and the filter pass-through each fail a new test when reverted. `cards:check` reproducible after the apply script (one `core.json` line); `ledger:heroes`, `mechanics:metadata` and `effect-index` regenerated with a real one-row diff; `sim:runtime-observed` current (a line-ending-only regen reverted); `sim:coverage --check` OK.
+
+**Reserved by:** NUMBER-LEDGER D-24664 (#2610). Related: WP-719 / D-24541 (Covering Fire, the template), D-24284 (active-player scoping), D-24295 (City space names), D-24336 (two-Villain swap), D-24603 (Henchmen are Villains), D-12803 (audience filter), D-24372 (runtime drift pins), D-24648 (anyPendingChoice freeze class), D-6512 (component authoring form).
+
+---
+
 Protect this file.
