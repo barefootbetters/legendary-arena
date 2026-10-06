@@ -46663,6 +46663,8 @@ Also: server 1455 / 0; `ledger:heroes`, `ledger:villains`, `mechanics:metadata`,
 
 **Reserved by:** NUMBER-LEDGER D-24662. Related: D-24660 (whose-attack target stat), D-24605 (adversary-stat suppression), D-24661 (Cruel Ruler attribution), WP-486 / D-24291 (Silent Sniper), WP-682 / D-24499 (Pure Fury), WP-580 / D-24389 (recruit-as-attack).
 
+**Live-verify (D-24026), 2026-10-06: Silent Sniper half PASS.** Match `B59aMEnwd5M` (build `bb8b8d5`, the D-24662 merge): the bot's Silent Sniper logged "defeats Oddball (core/deadpool/oddball#1) for free." at 29.2.7, before the defeat. God of Thunder half pending: it was not played as a Hero in this match.
+
 ---
 
 Protect this file.
