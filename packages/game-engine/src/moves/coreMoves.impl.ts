@@ -39,6 +39,7 @@ import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingCoveringFireChoice } from './coveringFireChoice.resolve.js';
+import { hasPendingMoveVillainChoice } from './moveVillainChoice.resolve.js';
 import { hasPendingSplitFaceChoice, isSplitCardInstance, parkSplitFaceChoice, playBothSplitFaces } from './splitFaceChoice.resolve.js';
 import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from './undercover.resolve.js';
@@ -186,6 +187,10 @@ export function drawCards({ G, playerID, ...context }: MoveContext, args: DrawCa
   }
   // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
   if (hasPendingCoveringFireChoice(G)) {
+    return;
+  }
+  // why: block-all — pendingMoveVillainChoices must be resolved before any other action (WP-795 / D-24664)
+  if (hasPendingMoveVillainChoice(G)) {
     return;
   }
   // why: block-all — pendingSplitFaceChoices must be resolved before any other action (WP-724 / D-24546)
@@ -446,6 +451,10 @@ export function playCard({ G, playerID, ...context }: MoveContext, args: PlayCar
   }
   // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
   if (hasPendingCoveringFireChoice(G)) {
+    return;
+  }
+  // why: block-all — pendingMoveVillainChoices must be resolved before any other action (WP-795 / D-24664)
+  if (hasPendingMoveVillainChoice(G)) {
     return;
   }
   // why: block-all — pendingSplitFaceChoices must be resolved before any other action (WP-724 / D-24546)
@@ -709,6 +718,10 @@ export function endTurn({ G, playerID, events, random }: MoveContext): void {
   }
   // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
   if (hasPendingCoveringFireChoice(G)) {
+    return;
+  }
+  // why: block-all — pendingMoveVillainChoices must be resolved before any other action (WP-795 / D-24664)
+  if (hasPendingMoveVillainChoice(G)) {
     return;
   }
   // why: block-all — pendingSplitFaceChoices must be resolved before any other action (WP-724 / D-24546)

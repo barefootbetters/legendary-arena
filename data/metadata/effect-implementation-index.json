@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1969,
+    "totalEntries": 1970,
     "byScope": {
-      "hero": 791,
+      "hero": 792,
       "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 557,
+      "executable": 558,
       "deferred": 16,
       "condition": 49,
       "unsupported": 297,
@@ -7785,6 +7785,23 @@
         {
           "slug": "gathering-stormclouds",
           "name": "Gathering Stormclouds"
+        }
+      ]
+    },
+    {
+      "extId": "core/storm",
+      "name": "Storm",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "spinning-cyclone",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#spinning-cyclone",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "spinning-cyclone",
+          "name": "Spinning Cyclone"
         }
       ]
     },
@@ -30611,7 +30628,8 @@
     "core/storm": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "spinning-cyclone"
       ]
     },
     "core/thor": {

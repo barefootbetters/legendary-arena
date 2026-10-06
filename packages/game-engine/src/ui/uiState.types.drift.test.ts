@@ -1724,3 +1724,41 @@ describe('UIState type drift (WP-790 / D-24652) — economy.restrictedAttack', (
     assert.ok(!('restrictedAttack' in absent.economy), 'no grant ⇒ the key is absent, not []');
   });
 });
+
+describe('UIState type drift (WP-795 / D-24664) — pendingMoveVillainChoice', () => {
+  it('UIPendingMoveVillainChoice is pinned on a BUILT and FILTERED projection', () => {
+    // why: WP-795 / D-24664 — pendingMoveVillainChoice is OPTIONAL and omit-when-absent, so a
+    // `satisfies`/literal pin gives it NO drift protection (WP-563 / D-24372). Only a keyset
+    // assertion on a REAL built projection — with a parked choice in G — catches buildUIState
+    // dropping it, and the same keyset on the chooser's FILTERED projection catches the audience
+    // whitelist dropping it (the EC-206 failure mode).
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const registry: CardRegistryReader = { ...makeCardRegistryReader(), listCards: () => [] };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx({ numPlayers: 1 }));
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    assert.ok(!('pendingMoveVillainChoices' in gameState), 'setup never creates the lazy queue');
+    const absent = buildUIState(gameState, uiCtx);
+    assert.ok(!('pendingMoveVillainChoice' in absent), 'no parked choice ⇒ the key is absent');
+
+    gameState.city = [null, null, 'core/v/villain-a#0', null, null];
+    gameState.pendingMoveVillainChoices = [{ playerID: '0', sourceCardId: 'core/storm/spinning-cyclone#0' }];
+    const present = buildUIState(gameState, uiCtx);
+    const expectedKeys = ['playerID', 'villainCityIndices'];
+    assert.deepStrictEqual(Object.keys(present.pendingMoveVillainChoice!).sort(), expectedKeys);
+    assert.deepStrictEqual(present.pendingMoveVillainChoice!.villainCityIndices, [2]);
+
+    const filtered = filterUIStateForAudience(present, { kind: 'player', playerId: '0' });
+    assert.deepStrictEqual(Object.keys(filtered.pendingMoveVillainChoice!).sort(), expectedKeys);
+  });
+});

@@ -34,6 +34,7 @@ import { resolveCopyPowersChoice, hasPendingCopyPowersChoice } from './moves/cop
 import { resolveVictoryPileCardPick, hasPendingVictoryPileCardPick } from './moves/resolveVictoryPileCardPick.js';
 import { resolveDrawOrEmpowered, hasPendingDrawOrEmpowered } from './moves/drawOrEmpowered.resolve.js';
 import { resolveCoveringFireChoice, hasPendingCoveringFireChoice } from './moves/coveringFireChoice.resolve.js';
+import { resolveMoveVillainChoice, hasPendingMoveVillainChoice } from './moves/moveVillainChoice.resolve.js';
 import { resolveSplitFaceChoice, hasPendingSplitFaceChoice } from './moves/splitFaceChoice.resolve.js';
 import { resolveCountScaledChoice, hasPendingCountScaledChoice } from './moves/countScaledChoice.resolve.js';
 import { resolveUndercoverChoice, hasPendingUndercoverChoice } from './moves/undercover.resolve.js';
@@ -208,6 +209,8 @@ function advanceStage({ G, ctx, events, random }: MoveContext): void {
   if (hasPendingDrawOrEmpowered(G)) { return; }
   // why: block-all — pendingCoveringFireChoices must be resolved before any other action (WP-719 / D-24541)
   if (hasPendingCoveringFireChoice(G)) { return; }
+  // why: block-all — pendingMoveVillainChoices must be resolved before any other action (WP-795 / D-24664)
+  if (hasPendingMoveVillainChoice(G)) { return; }
   // why: block-all — pendingSplitFaceChoices must be resolved before any other action (WP-724 / D-24546)
   if (hasPendingSplitFaceChoice(G)) { return; }
   // why: block-all — pendingCountScaledChoice must be resolved before any other action (WP-675 / D-24490)
@@ -649,6 +652,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // choose-one (each other player draws or discards a card). Server-only (client: false) —
     // it mutates real G (each other seat's hand/deck/discard), absent on UIState.
     resolveCoveringFireChoice: { move: resolveCoveringFireChoice, client: false },
+    // why: WP-795 / D-24664 — resolveMoveVillainChoice resolves core Storm's Spinning Cyclone
+    // (move a Villain to a new City space, swap if occupied, rescue only its Bystanders, or
+    // decline). Server-only (client: false) — it mutates real G (G.city, attachedBystanders, the
+    // chooser's Victory Pile) and validates the answer against the live City.
+    resolveMoveVillainChoice: { move: resolveMoveVillainChoice, client: false },
     // why: WP-724 / D-24546 — resolveSplitFaceChoice binds the chosen side of a split /
     // dual-faced hero card (grants that face's economy + fires its ability). Server-only
     // (client: false) — it mutates real G (inPlay relabel, turnEconomy, effects), absent on UIState.

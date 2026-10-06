@@ -1890,6 +1890,17 @@
       "hidden": true
     },
     {
+      "slug": "spinning-cyclone",
+      "label": "Spinning Cyclone",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "core/storm"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "steal-abilities",
       "label": "Steal Abilities",
       "scope": "hero",
@@ -2949,7 +2960,8 @@
     },
     "core/storm": {
       "mechanics": [
-        "draw"
+        "draw",
+        "spinning-cyclone"
       ]
     },
     "core/thor": {

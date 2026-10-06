@@ -1219,6 +1219,24 @@ export function filterUIStateForAudience(
     };
   }
 
+  // why: WP-795 / D-24664 — the pending Spinning Cyclone move-a-Villain choice is private to the
+  // chooser (only the active player may resolve it). Present only when the audience is the
+  // choosing player; omitted (conditional assignment, never an `undefined` literal) for opponents
+  // AND spectators — mirroring the pendingCoveringFireChoice posture above. villainCityIndices is
+  // copied into a fresh array (the split-face fresh-object precedent below) so the projection
+  // never aliases the built state. A field that reaches build but not this whitelist is dropped at
+  // the filter (the shipped board-visible-field failure mode) — the prompt would never render.
+  if (
+    uiState.pendingMoveVillainChoice !== undefined &&
+    audience.kind === 'player' &&
+    audience.playerId === uiState.pendingMoveVillainChoice.playerID
+  ) {
+    result.pendingMoveVillainChoice = {
+      playerID: uiState.pendingMoveVillainChoice.playerID,
+      villainCityIndices: [...uiState.pendingMoveVillainChoice.villainCityIndices],
+    };
+  }
+
   // why: WP-724 / D-24546 — the pending split-face "choose a side" picker is private to the chooser
   // (only the active player may resolve it). Present only when the audience is the choosing player;
   // omitted (conditional assignment, never an `undefined` literal) for opponents AND spectators —

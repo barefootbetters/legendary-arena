@@ -132,7 +132,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // no-reward KO of one of your Heroes) (56 → 57).
     // WP-780 / D-24619 added the play-both-sides handler (cvwr Penumbra's turn-scoped
     // isPlayBothSidesActive flag) (57 → 58).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 58);
+    // WP-795 / D-24664 added the spinning-cyclone handler (core Storm's Spinning Cyclone
+    // move-a-Villain park) (58 → 59).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 59);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7652,9 +7654,10 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // WP-753's reveal-three-assign + reveal-three-assign-again handlers, D-24580, and WP-754's
     // optional-discard-draw + reveal-top-may-ko handlers, D-24581, and WP-765's blood-frenzy +
     // blood-frenzy-recruit + day-night-both handlers, D-24598, and WP-767's optional-ko-your-hero
-    // handler, D-24600, and WP-780's play-both-sides handler, D-24619 — 58).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 58,
-      'HERO_EFFECT_HANDLERS stays 58 (X-Gene is not an effect handler)');
+    // handler, D-24600, and WP-780's play-both-sides handler, D-24619, and WP-795's
+    // spinning-cyclone handler, D-24664 — 59).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 59,
+      'HERO_EFFECT_HANDLERS stays 59 (X-Gene is not an effect handler)');
   });
 });
 

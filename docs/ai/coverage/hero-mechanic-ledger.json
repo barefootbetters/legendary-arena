@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 791,
+    "totalRows": 792,
     "byStatus": {
-      "executable": 400,
+      "executable": 401,
       "deferred": 16,
       "condition": 49,
       "unsupported": 296,
       "unmarked": 28,
       "subsystem": 2
     },
-    "distinctMechanics": 159
+    "distinctMechanics": 160
   },
   "rows": [
     {
@@ -4244,6 +4244,22 @@
         {
           "slug": "gathering-stormclouds",
           "name": "Gathering Stormclouds"
+        }
+      ]
+    },
+    {
+      "extId": "core/storm",
+      "heroName": "Storm",
+      "set": "core",
+      "mechanic": "spinning-cyclone",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#spinning-cyclone",
+      "designs": [
+        {
+          "slug": "spinning-cyclone",
+          "name": "Spinning Cyclone"
         }
       ]
     },

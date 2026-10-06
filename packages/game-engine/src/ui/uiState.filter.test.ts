@@ -3497,3 +3497,41 @@ describe('filterUIStateForAudience — restricted attack (WP-790 / D-24652)', ()
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-795 / D-24664 — pendingMoveVillainChoice chooser redaction + fresh-array pass-through
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the full (unfiltered) UIState for a match where player '0' owes a Spinning Cyclone
+ * move-a-Villain pick, with Villains at City indices 1 and 3.
+ */
+function createMoveVillainChoiceUIState(): UIState {
+  const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+  gameState.city = [null, 'villain-a' as CardExtId, null, 'villain-b' as CardExtId, null];
+  gameState.pendingMoveVillainChoices = [
+    { playerID: '0', sourceCardId: 'core/storm/spinning-cyclone#0' as CardExtId },
+  ];
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — pendingMoveVillainChoice redaction (WP-795 / D-24664)', () => {
+  it('the chooser sees the choice with the live City Villain indices', () => {
+    const full = createMoveVillainChoiceUIState();
+    const result = filterUIStateForAudience(full, PLAYER_0);
+    assert.deepEqual(result.pendingMoveVillainChoice, { playerID: '0', villainCityIndices: [1, 3] });
+    assert.notEqual(
+      result.pendingMoveVillainChoice!.villainCityIndices,
+      full.pendingMoveVillainChoice!.villainCityIndices,
+      'the filter copies villainCityIndices into a fresh array (never aliases the built projection)',
+    );
+  });
+
+  it('an opponent and a spectator do NOT see pendingMoveVillainChoice', () => {
+    const full = createMoveVillainChoiceUIState();
+    assert.equal(filterUIStateForAudience(full, PLAYER_1).pendingMoveVillainChoice, undefined);
+    assert.equal('pendingMoveVillainChoice' in filterUIStateForAudience(full, PLAYER_1), false);
+    assert.equal(filterUIStateForAudience(full, SPECTATOR).pendingMoveVillainChoice, undefined);
+    assert.equal('pendingMoveVillainChoice' in filterUIStateForAudience(full, SPECTATOR), false);
+  });
+});

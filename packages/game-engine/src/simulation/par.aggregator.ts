@@ -87,6 +87,9 @@ import { resolveDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 // why: WP-719 / D-24541 — same as resolveDrawOrEmpowered: a parked Covering Fire choice must be
 // dispatchable in the PAR aggregator's MOVE_MAP or its per-turn loop spins. Pinned by the drift guard.
 import { resolveCoveringFireChoice } from '../moves/coveringFireChoice.resolve.js';
+// why: WP-795 / D-24664 — a parked Spinning Cyclone choice makes resolveMoveVillainChoice the only
+// legal move; it must be dispatchable in the PAR aggregator MOVE_MAP or the per-turn loop hangs.
+import { resolveMoveVillainChoice } from '../moves/moveVillainChoice.resolve.js';
 // why: WP-724 / D-24546 — same dispatch-completeness rule as the runner MOVE_MAP: a parked
 // split-face choice makes resolveSplitFaceChoice the only legal move, so it must be dispatchable
 // in this duplicated MOVE_MAP or the PAR per-turn loop hangs. Pinned by the drift guard.
@@ -494,6 +497,7 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // unconditionally; the block-all guard freezes every other move until it resolves).
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
   resolveCoveringFireChoice: (context, args) => resolveCoveringFireChoice(context as never, args as never),
+  resolveMoveVillainChoice: (context, args) => resolveMoveVillainChoice(context as never, args as never),
   resolveSplitFaceChoice: (context, args) => resolveSplitFaceChoice(context as never, args as never),
   resolveCountScaledChoice: (context, args) => resolveCountScaledChoice(context as never, args as never),
   resolveUndercoverChoice: (context, args) => resolveUndercoverChoice(context as never, args as never),

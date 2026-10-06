@@ -1358,7 +1358,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain.",
+            "You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain. [keyword:spinning-cyclone]",
             "(If you move a Villain to a city space that already has Villain, swap them.)"
           ]
         },

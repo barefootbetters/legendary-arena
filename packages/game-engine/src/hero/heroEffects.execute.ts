@@ -243,6 +243,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // belongs here. Carries NO magnitude (a choose-one branch, not a count) → also in
   // NO_MAGNITUDE_KEYWORDS.
   'covering-fire',
+  // why: WP-795 / D-24664 — core Storm's "Spinning Cyclone" (move a Villain to a new City space,
+  // rescue its Bystanders, swap if occupied); has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectSpinningCyclone) that parks a PendingMoveVillainChoice for the active player, so it
+  // belongs here. Carries NO magnitude (a pick, not a count) → also in NO_MAGNITUDE_KEYWORDS.
+  'spinning-cyclone',
   // why: WP-735 / D-24555 — the Venomverse "Digest N / Indigestion" Victory-Pile-count branch;
   // has a HERO_EFFECT_HANDLERS entry (heroEffectDigestIndigestion) that branches on the Victory-Pile
   // count and dispatches the selected branch via the reentrant executeSingleEffect, so it belongs
@@ -549,6 +554,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // resolve time, so the magnitude pre-gate must not drop it, or heroEffectCoveringFire never
   // parks its choice.
   'covering-fire',
+  // why: WP-795 / D-24664 — spinning-cyclone carries NO magnitude: the outcome is a pick (which
+  // Villain, which space), resolved against the live City at resolve time, so the magnitude
+  // pre-gate must not drop it, or heroEffectSpinningCyclone never parks its choice.
+  'spinning-cyclone',
   // why: WP-735 / D-24555 — digest-indigestion carries NO top-level magnitude (the branch
   // magnitudes ride the nested inline effects: +attack / +recruit / draw:N / rescue:N). The
   // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
@@ -3698,6 +3707,57 @@ function heroEffectCoveringFire(
 }
 
 /**
+ * Park handler for the `spinning-cyclone` hero keyword (WP-795 / D-24664).
+ *
+ * core Storm's "Spinning Cyclone" ("You may move a Villain to a new city space. Rescue any
+ * Bystanders captured by that Villain. (If you move a Villain to a city space that already
+ * has Villain, swap them.)"). With at least one Villain in the City, this handler parks ONE
+ * PendingMoveVillainChoice onto the FIFO G.pendingMoveVillainChoices queue for the ACTIVE
+ * player. resolveMoveVillainChoice then moves (or swaps) the chosen Villain and rescues only
+ * its Bystanders, or declines. With no City Villain there is nothing to move: the handler logs
+ * a blocked line and parks nothing.
+ *
+ * // why: D-24664 — the move is optional and the pick (which Villain, which space) is a
+ * genuine choice, so it parks an interactive choice for the active player (D-24284) rather
+ * than auto-resolving. The park is SILENT; the resolve move logs the move, the rescue or the
+ * decline.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the move happens at resolve time; no randomness).
+ * @param playerID - The active player who played the Spinning Cyclone card.
+ * @param cardId - The played card, recorded on the choice for log attribution.
+ * @param _effect - The `{ type: 'spinning-cyclone' }` descriptor (no magnitude).
+ */
+function heroEffectSpinningCyclone(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  let hasCityVillain = false;
+  for (const citySpace of G.city) {
+    if (citySpace !== null) {
+      hasCityVillain = true;
+      break;
+    }
+  }
+  if (!hasCityVillain) {
+    pushLog(G,
+      `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} found no Villain in the City to move.`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
+  // why: D-24664 — lazy-init at the park site (mirrors the Covering Fire park) — never in
+  // Game.setup, so a game that never plays Spinning Cyclone carries no new field and both hash
+  // oracles stay byte-unchanged. The park is SILENT; resolveMoveVillainChoice logs the outcome.
+  if (!G.pendingMoveVillainChoices) { G.pendingMoveVillainChoices = []; }
+  G.pendingMoveVillainChoices.push({ playerID, sourceCardId: cardId });
+}
+
+/**
  * Handler for the `here-hold-this` hero keyword (WP-683 / D-24500).
  *
  * Deadpool's "Here, Hold This for a Second" — "A Villain of your choice captures a
@@ -6087,6 +6147,12 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // the active player, resolved by resolveCoveringFireChoice (draw/discard applied to each other
   // seat). Carries NO magnitude → in NO_MAGNITUDE_KEYWORDS.
   'covering-fire': heroEffectCoveringFire,
+  // why: WP-795 / D-24664 — core Storm's Spinning Cyclone ("You may move a Villain to a new city
+  // space. Rescue any Bystanders captured by that Villain."; swap if occupied): parks a
+  // PendingMoveVillainChoice for the active player when a Villain is in the City, resolved by
+  // resolveMoveVillainChoice (move / swap + moved-Villain-only rescue, or decline). Carries NO
+  // magnitude → in NO_MAGNITUDE_KEYWORDS.
+  'spinning-cyclone': heroEffectSpinningCyclone,
   // why: WP-735 / D-24555 — the Venomverse "Digest N / Indigestion" Victory-Pile-count branch:
   // heroEffectDigestIndigestion reads G.playerZones[pid].victory.length (READ-ONLY) and dispatches
   // the Digest branch (count ≥ threshold), the Indigestion fallback (below threshold), or BOTH

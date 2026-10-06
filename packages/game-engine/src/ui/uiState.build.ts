@@ -71,6 +71,7 @@ import type {
   UIPendingDoOver,
   UIPendingDrawOrEmpowered,
   UIPendingCoveringFireChoice,
+  UIPendingMoveVillainChoice,
   UIPendingSplitFaceChoice,
   UISplitFaceOption,
   UIPendingCountScaledChoice,
@@ -1713,6 +1714,29 @@ export function buildUIState(
     };
   }
 
+  // why: WP-795 / D-24664 — project the FRONT entry of G.pendingMoveVillainChoices as the
+  // Spinning Cyclone move-a-Villain prompt. villainCityIndices is recomputed from the LIVE G.city
+  // on every build into a fresh array (ascending non-null indices) — nothing is snapshotted at
+  // park time, so the prompt always offers the Villains actually in the City. Redaction to the
+  // chooser-only audience is enforced by filterUIStateForAudience (keyed on .playerID).
+  let pendingMoveVillainChoice: UIPendingMoveVillainChoice | undefined;
+  if (
+    gameState.pendingMoveVillainChoices !== undefined &&
+    gameState.pendingMoveVillainChoices.length > 0
+  ) {
+    const frontChoice = gameState.pendingMoveVillainChoices[0]!;
+    const villainCityIndices: number[] = [];
+    for (let cityIndex = 0; cityIndex < gameState.city.length; cityIndex++) {
+      if (gameState.city[cityIndex] !== null) {
+        villainCityIndices.push(cityIndex);
+      }
+    }
+    pendingMoveVillainChoice = {
+      playerID: frontChoice.playerID,
+      villainCityIndices,
+    };
+  }
+
   // why: WP-724 / D-24546 — project the FRONT entry of G.pendingSplitFaceChoices as the two-face
   // "choose a side" picker. Each face's name/cost/abilityText comes from G.cardDisplayData and its
   // attack/recruit from G.cardStats (both faces' entries live in G per D-24545), recomputed fresh
@@ -2435,6 +2459,9 @@ export function buildUIState(
     // why: WP-719 / D-24541 — conditional spread so an absent choice omits the field (no
     // `pendingCoveringFireChoice: undefined` literal under exactOptionalPropertyTypes).
     ...(pendingCoveringFireChoice !== undefined ? { pendingCoveringFireChoice } : {}),
+    // why: WP-795 / D-24664 — conditional spread (omit-when-undefined under
+    // exactOptionalPropertyTypes), mirroring pendingCoveringFireChoice above.
+    ...(pendingMoveVillainChoice !== undefined ? { pendingMoveVillainChoice } : {}),
     // why: WP-724 / D-24546 — conditional spread (omit-when-undefined under
     // exactOptionalPropertyTypes), mirroring pendingCoveringFireChoice above.
     ...(pendingSplitFaceChoice !== undefined ? { pendingSplitFaceChoice } : {}),

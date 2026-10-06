@@ -231,6 +231,12 @@
       "markupToken": "[keyword:covering-fire]"
     },
     {
+      "heroSlug": "storm",
+      "cardSlug": "spinning-cyclone",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:spinning-cyclone]"
+    },
+    {
       "heroSlug": "gambit",
       "cardSlug": "hypnotic-charm",
       "abilityIndex": 0,
