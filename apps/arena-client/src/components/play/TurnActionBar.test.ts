@@ -90,6 +90,25 @@ describe('TurnActionBar — Step 1 Reveal (one click, watcher auto-advance)', ()
     assert.equal(calls[0]!.name, 'advanceStage');
   });
 
+  test('the auto-advance waits for a pending SPLIT-FACE choice and fires once it clears (D-24648 class)', async () => {
+    // why: anyPendingChoice() previously omitted hasPendingSplitFaceChoice even though the
+    // bar receives it — the same omission that froze the turn in D-24648. A split-face pick
+    // pending at 'start' must hold the reveal auto-advance until it resolves.
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(TurnActionBar, {
+      props: {
+        currentStage: 'start',
+        hasRevealedVillain: true,
+        hasPendingSplitFaceChoice: true,
+        submitMove,
+      },
+    });
+    assert.equal(calls.length, 0, 'no advance while the split-face choice is pending');
+    await wrapper.setProps({ hasPendingSplitFaceChoice: false });
+    assert.equal(calls.length, 1, 'advance fires once the split-face choice clears');
+    assert.equal(calls[0]!.name, 'advanceStage');
+  });
+
   test('D-24648: End Turn / Pass Priority are blocked while a seat choice is pending', () => {
     const { submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {
