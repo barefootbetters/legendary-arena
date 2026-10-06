@@ -33,6 +33,7 @@
     "wall-crawl": { "wp": "WP-273", "decision": "D-24049" },
     "dodge": { "wp": "WP-275", "decision": "D-24051" },
     "phasing": { "wp": "WP-783", "decision": "D-24629" },
+    "fight-cost-reduction": { "wp": "WP-794", "decision": "D-24663" },
     "berserk": { "wp": "WP-256", "decision": "D-24031" },
     "empowered": { "wp": "WP-267", "decision": "D-24044" },
     "gainWoundEachPlayer": { "wp": "WP-185", "decision": "D-18502" },

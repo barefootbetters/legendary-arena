@@ -1133,3 +1133,39 @@ describe('fightMastermind — restricted "usable only against" attack (WP-790 / 
     assert.deepStrictEqual(moveContext.G.turnEconomy, economyBefore);
   });
 });
+
+describe('fightMastermind — fight-cost reduction (WP-794 / D-24663)', () => {
+  const mastermindTwo = [{ target: 'mastermind' as const, amount: 2, sourceCardId: 'wave' as CardExtId }];
+
+  it('a mastermind 2 reduction lowers the spend by 2 (cost 8 → 6)', () => {
+    const gameState = createMockGameState({
+      turnEconomy: makeTurnEconomy({ attack: 6, fightCostReductions: mastermindTwo }),
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, ['tactic-1']);
+    assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 6);
+  });
+
+  it('without the reduction the same 6 attack cannot fight (no G mutation)', () => {
+    const gameState = createMockGameState({ turnEconomy: makeTurnEconomy({ attack: 6 }) });
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, []);
+    assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 0);
+  });
+
+  it('the Final Blow fight also costs 2 less', () => {
+    const gameState = {
+      ...createMockGameState({
+        turnEconomy: makeTurnEconomy({ attack: 6, fightCostReductions: mastermindTwo }),
+        mastermind: pendingFinalBlowMastermind(),
+      }),
+      finalBlow: true,
+    };
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('test-mastermind-base'), 'the final blow lands');
+    assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 6);
+  });
+});

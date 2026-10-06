@@ -31,6 +31,21 @@ export interface RestrictedAttackGrant {
 }
 
 /**
+ * One "Any Villain you fight on the <space> this turn gets -N attack" /
+ * "The Mastermind gets -N attack this turn" reduction (WP-794 / D-24663).
+ *
+ * `target` is the City space (or `'mastermind'`) whose fights cost less, `amount`
+ * is N, and `sourceCardId` is the hero card that played the line. A reduction is
+ * never spent: every fight this turn against an eligible target gets it in full.
+ * Strings and numbers only, so the entry stays JSON-serializable.
+ */
+export interface FightCostReduction {
+  target: AttackTargetName;
+  amount: number;
+  sourceCardId: CardExtId;
+}
+
+/**
  * Per-turn economy tracking for attack and recruit points.
  *
  * Reset to all zeros at the start of each player turn. Accumulated by
@@ -160,6 +175,19 @@ export interface TurnEconomy {
    * serializes byte-identically and neither state-hash oracle moves.
    */
   restrictedAttack?: RestrictedAttackGrant[];
+  /**
+   * WP-794 / D-24663 — the fight-cost reductions played this turn, one entry per
+   * played reduction line, in play order. Read ONLY by `resolveFightCost` and
+   * `resolveMastermindFightCost` through `getFightCostReduction`, which sums the
+   * entries whose `target` matches; entries stack and are never spent.
+   *
+   * LAZILY MATERIALIZED, exactly like `restrictedAttack`: absent until the first
+   * reduction (`addFightCostReduction`), dropped by `resetTurnEconomy` at turn
+   * start, carried by `carryConversionFlag`. Absent ≡ no reduction; omitted by
+   * `JSON.stringify`, so a turn with no reduction serializes byte-identically and
+   * neither state-hash oracle moves.
+   */
+  fightCostReductions?: FightCostReduction[];
 }
 
 // why: stats resolved at setup time from registry so moves never query
