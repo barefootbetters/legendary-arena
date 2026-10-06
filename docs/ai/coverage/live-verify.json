@@ -272,10 +272,10 @@
       "card": "Hawkeye",
       "ability": "Covering Fire",
       "wp": "WP-719",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): played 3× with [hc:tech] met (12.2.5, 14.2.10, 15.2.11); trace fired.",
+      "note": "Solo only: the draw/discard choice parks with no other player to affect and logs nothing. Multi-seat draw and discard branches unexercised."
     },
     {
       "key": "core/hawkeye|defeated-villain-or-mastermind",
@@ -294,9 +294,9 @@
       "card": "Hawkeye",
       "ability": "Quick Draw",
       "wp": "WP-022",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Quick Draw drew 1 each play (12.2.2, 15.2.2, 17.2.2).",
       "note": ""
     },
     {
@@ -338,9 +338,9 @@
       "card": "Iron Man",
       "ability": "Arc Reactor",
       "wp": "WP-247",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Arc Reactor +1 and +2 with other Tech Heroes; blocked line when no other Tech Hero (6.2.6, 9.2.10, 12.2.4).",
       "note": ""
     },
     {
@@ -349,9 +349,9 @@
       "card": "Iron Man",
       "ability": "Endless Invention, Quantum Breakthrough",
       "wp": "WP-022",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Endless Invention drew 1, plus the Tech second card when met (17.2.8–9).",
       "note": ""
     },
     {
@@ -514,9 +514,9 @@
       "card": "Wolverine",
       "ability": "Berserker Rage, Frenzied Slashing, Keen Senses",
       "wp": "WP-022",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Frenzied Slashing drew 2 and Keen Senses drew 1 with Instinct met; blocked without (14.2.4, 16.2.4).",
       "note": ""
     },
     {
@@ -525,9 +525,9 @@
       "card": "Wolverine",
       "ability": "Healing Factor",
       "wp": "WP-382",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Healing Factor KO'd a Wound and drew (3.2.3, 8.2.3, 13.2.7); no-Wound branch logged no reward (15.2.4).",
       "note": ""
     },
     {
@@ -569,10 +569,10 @@
       "card": "Destroyer",
       "ability": "ko-heroes-current-by-trait",
       "wp": "WP-485",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "Fired live 2026-08-03 but KO'd 0 basic S.H.I.E.L.D. cards; fixed by WP-490 — re-test."
+      "state": "verified",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Destroyer fight KO'd 4 S.H.I.E.L.D. Heroes (6.2.11), the post-WP-490 re-test.",
+      "note": "Supersedes the 2026-08-03 KO-0 finding."
     },
     {
       "key": "core-villain-enemies-of-asgard-destroyer|koHeroEachPlayerMag2",
@@ -635,10 +635,10 @@
       "card": "Frost Giant",
       "ability": "reveal-or-wound",
       "wp": "WP-469",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Frost Giant fight wounded with no Ranged Hero (7.2.8).",
+      "note": "Reveal (no-wound) branch unexercised."
     },
     {
       "key": "core-villain-spider-foes-green-goblin|captureBystander",
@@ -910,10 +910,10 @@
       "card": "Ymir, Frost Giant King",
       "ability": "reveal-or-wound",
       "wp": "WP-469",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Ymir Ambush wounded with no Ranged Hero (12.1.2).",
+      "note": "Reveal (no-wound) branch unexercised."
     },
     {
       "key": "core-villain-radiation-zzzax|reveal-or-wound",
@@ -1042,10 +1042,10 @@
       "card": "Loki",
       "ability": "Tactic: Cruel Ruler",
       "wp": "WP-693",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 15.2.15 with Hand Ninjas the only City Villain; a Hand Ninjas defeat follows at 15.2.18.",
+      "note": "The one-target auto free defeat carries no Cruel Ruler log line, so free vs. paid is not distinguishable from the log; ≥2-target prompt unexercised."
     },
     {
       "key": "mastermind:core/loki|maniacal-tyrant",
@@ -1053,10 +1053,10 @@
       "card": "Loki",
       "ability": "Tactic: Maniacal Tyrant",
       "wp": "WP-693",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 8.2.18 with an empty discard pile, so nothing to KO.",
+      "note": "KO-up-to-four path with a non-empty discard unexercised."
     },
     {
       "key": "mastermind:core/loki|vanishing-illusions",
@@ -1064,10 +1064,10 @@
       "card": "Loki",
       "ability": "Tactic: Vanishing Illusions",
       "wp": "WP-694",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 13.2.18; solo no-op (no other players).",
+      "note": "Multi-seat branch unexercised."
     },
     {
       "key": "mastermind:core/loki|whispers-and-lies",
@@ -1075,10 +1075,10 @@
       "card": "Loki",
       "ability": "Tactic: Whispers and Lies",
       "wp": "WP-691",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 14.2.14; solo no-op, logged nothing.",
+      "note": "Multi-seat bystander KO unexercised; solo should log a no-op line."
     },
     {
       "key": "mastermind:core/dr-doom|master-strike",
@@ -1251,10 +1251,10 @@
       "card": "Unleash the Power of the Cosmic Cube",
       "ability": "Escalating twist Wounds",
       "wp": "WP-540",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-05",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): twists 1–4 no wound, twist 5 one wound (13.1.1).",
+      "note": "Twists 6–8 (wound, 3 wounds, Evil Wins) not reached."
     },
     {
       "key": "core/cyclops|attack-per-count",
