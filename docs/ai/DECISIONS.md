@@ -46014,6 +46014,12 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 3. The D-24632 exemption itself is unchanged. The failure was a stale hook copy, not the exemption's regex. CI was never affected, because the commit-hygiene job runs the PR's own `.githooks`.
 4. What wrote the absolute overrides is outside the repo (no repo script writes one) and still unidentified. The guard makes the repo self-healing at each session start regardless.
 
+**Amendment 2026-10-05: the writer is identified, and the guard was not running in desktop worktree sessions.** The commit-msg hook rejected git's merge-from-main subject again, in two PR-branch merges. 6 worktrees created after the 2026-09-29 repair carried the absolute override, and so did the shared config.
+- **The writer is Claude Desktop.** It writes `config.worktree` (`longpaths = true` plus an absolute `core.hooksPath` copied from the shared config) at worktree creation. One example: the app recorded worktree `cranky-fermat-9f0ba2` as created at 14:59:54.4, and the file was written at 14:59:54.98.
+- **The repo guard never ran.** The session started 75 s later, and its SessionStart record shows only the prune hook: the exact hook set in the **canonical** checkout's `.claude/settings.json`. That checkout sits on a 2026-09-11 commit, before #2519, so it has no guard entry and no guard script. A repo-delivered SessionStart hook cannot reach these sessions while canonical is stale. That follows from the transcript and the timestamps; it was not observed directly.
+- **Fix, outside the repo.** Jeff's user-level `~/.claude/settings.json` now has a SessionStart hook, `~/.claude/hooks/worktree-hooks-path-guard.mjs`. It reads the hook payload's `cwd` and runs that checkout's own copy of this guard when one exists. The shared config and the 5 live overridden worktrees were reset to `.githooks` by hand. The guard script itself is unchanged.
+- **For any session on a machine without the user-level hook:** `git -c core.hooksPath=.githooks commit …` runs the right hooks for a single commit.
+
 **Gates.** `pnpm guard:test` +5 (a foreign worktree override is reset; a stale absolute shared value is overridden for this worktree only; relative and own-absolute values are left alone silently; unset is set; outside a repo it exits 0 silently).
 
 **Reserved by:** NUMBER-LEDGER D-24643. Related: D-24632 (merge-from-main exemption), PR #2488 (hook-test isolation), PR #2516 (the trigger), D-24642.
