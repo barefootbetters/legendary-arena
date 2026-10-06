@@ -73,6 +73,11 @@ export function resolvePutCardsOnDeckChoice(
   args: ResolvePutCardsOnDeckChoiceArgs,
 ): void {
   // Step 1: Validate args — cardIds must be a non-empty array of non-empty strings
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   if (!Array.isArray(args.cardIds)) { return; }
   if (args.cardIds.length === 0) { return; }
   for (const cardId of args.cardIds) {

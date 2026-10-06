@@ -135,6 +135,19 @@ describe('non-active seat resolve (single seat)', () => {
     resolveSeatChoice(makeContext(gameState, '1'), { optionIndex: 0 });
     assert.equal(hasPendingSeatChoice(gameState), false, 'valid index resolves');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, choice intact', () => {
+    for (const badArgs of [undefined, null]) {
+      // Seat '1' is addressed, has not submitted, and has a prompt — so without the guard
+      // the move reaches the optionIndex read.
+      const gameState = makeState(singleSeatChoice('1'));
+      assert.doesNotThrow(() => resolveSeatChoice(makeContext(gameState, '1'), badArgs as never));
+      assert.equal(hasPendingSeatChoice(gameState), true, 'choice stays open');
+      assert.equal(hasSeatSubmitted(gameState.pendingSeatChoice!, '1'), false, 'no submission recorded');
+      assert.equal(gameState.messages.length, 0, 'nothing applied');
+      assert.deepEqual(gameState.playerZones['1']!.deck, ['c1#0'], 'deck unchanged');
+    }
+  });
 });
 
 describe('simultaneous multi-seat resolve — await-all + atomic + determinism', () => {

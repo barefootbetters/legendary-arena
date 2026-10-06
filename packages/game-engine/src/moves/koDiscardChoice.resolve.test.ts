@@ -139,6 +139,16 @@ describe('resolveKoDiscardChoice (WP-693 / D-24510)', () => {
     resolveKoDiscardChoice(makeContext(badElement), { cardIds: [123 as never] });
     assert.equal(hasPendingKoDiscardChoice(badElement), true, 'a non-string element leaves the queue intact');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    const G = makeG({ discard: ['a', 'b'], pending: parked() });
+    for (const badArgs of [undefined, null]) {
+      assert.doesNotThrow(() => resolveKoDiscardChoice(makeContext(G), badArgs as never));
+    }
+    assert.equal(G.pendingKoDiscardChoices?.length, 1, 'the queue entry is still parked');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['a', 'b'], 'discard unchanged');
+    assert.deepStrictEqual(G.ko, [], 'nothing KO\'d');
+  });
 });
 
 // ---------------------------------------------------------------------------

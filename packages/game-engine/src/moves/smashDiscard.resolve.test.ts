@@ -266,6 +266,23 @@ describe('resolveSmashDiscard — guards (WP-676 / D-24492)', () => {
     assert.equal(gameState.pendingSmashDiscards!.length, 1, 'queue intact — wrong chooser');
     assert.equal(gameState.turnEconomy.attack, 3, 'no Attack granted');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const gameState = makeTestGameState({
+        hand: ['card-a' as CardExtId],
+        attack: 3,
+        pendingSmashDiscards: [smashPending(2)],
+      });
+      const context = makeMoveContext(gameState);
+
+      assert.doesNotThrow(() => resolveSmashDiscard(context, badArgs as never));
+
+      assert.equal(gameState.pendingSmashDiscards!.length, 1, 'queue intact');
+      assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['card-a'], 'hand untouched');
+      assert.equal(gameState.turnEconomy.attack, 3, 'no Attack granted');
+    }
+  });
 });
 
 describe('resolveSmashDiscard — two-entry FIFO (Hurl Trucks, +0/+2/+4)', () => {

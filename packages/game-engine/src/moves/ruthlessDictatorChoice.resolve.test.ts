@@ -213,6 +213,17 @@ describe('resolveRuthlessDictatorChoice move (WP-695 / D-24512)', () => {
     resolveRuthlessDictatorChoice(makeMoveContext(G3), { cardId: CARD_A, disposition: 'ko' });
     assert.deepStrictEqual(G3.ko, [], 'empty queue ignored');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeTestGameState({ deck: [CARD_A, CARD_B, CARD_C], pendingRuthlessDictatorChoices: [threeCardChoice()] });
+      assert.doesNotThrow(() => resolveRuthlessDictatorChoice(makeMoveContext(G), badArgs as never));
+      assert.equal(G.pendingRuthlessDictatorChoices!.length, 1, 'queue intact');
+      assert.deepStrictEqual(G.pendingRuthlessDictatorChoices![0]!.revealedCardIds, [CARD_A, CARD_B, CARD_C]);
+      assert.deepStrictEqual(G.playerZones['0']!.deck, [CARD_A, CARD_B, CARD_C], 'deck unchanged');
+      assert.deepStrictEqual(G.ko, [], 'nothing KO’d');
+    }
+  });
 });
 
 describe('hasPendingRuthlessDictatorChoice + block-all (WP-695 / D-24512)', () => {

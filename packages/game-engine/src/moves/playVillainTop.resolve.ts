@@ -68,6 +68,11 @@ export function resolvePlayVillainTopChoice(
   args: ResolvePlayVillainTopChoiceArgs,
 ): void {
   // Step 1: validate args — `accept` must be a boolean.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   const accept = (args as { accept?: unknown }).accept;
   if (typeof accept !== 'boolean') { return; }
 

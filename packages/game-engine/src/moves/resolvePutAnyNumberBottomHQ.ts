@@ -130,6 +130,11 @@ export function resolvePutAnyNumberBottomHQ(
   args: ResolvePutAnyNumberBottomHQArgs,
 ): void {
   // Step 1: Validate args — cardIds must be an array (empty is a valid "put none").
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   const cardIds = (args as { cardIds?: unknown }).cardIds;
   if (!Array.isArray(cardIds)) {
     return;

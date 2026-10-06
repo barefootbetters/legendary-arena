@@ -73,6 +73,11 @@ export function resolveUndercoverChoice(
   args: ResolveUndercoverChoiceArgs,
 ): void {
   // Step 1: Validate args — targetExtId must be a non-empty string.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   const targetExtId = (args as { targetExtId?: unknown }).targetExtId;
   if (typeof targetExtId !== 'string' || targetExtId.length === 0) {
     return;

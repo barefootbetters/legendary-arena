@@ -569,6 +569,17 @@ describe('resolveOptionalKoReward — silent no-ops leave the queue byte-identic
       '0',
     );
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    const gameState = makeTestGameState({ hand: ['a' as CardExtId], pendingOptionalKoRewards: [rescuePending()] });
+    const { context } = makeMoveContext(gameState);
+    for (const badArgs of [undefined, null]) {
+      assert.doesNotThrow(() => resolveOptionalKoReward(context, badArgs as never));
+    }
+    assert.equal(gameState.pendingOptionalKoRewards?.length, 1, 'queue entry still parked');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['a'], 'hand unchanged');
+    assert.deepStrictEqual(gameState.ko, [], 'ko unchanged');
+  });
 });
 
 describe('hasPendingOptionalKoReward predicate', () => {

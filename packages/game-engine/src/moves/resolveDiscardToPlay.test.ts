@@ -335,6 +335,17 @@ describe('resolveDiscardToPlay — no-op guards (queue intact, no zone change)',
     assertUntouched(state, ['a'] as CardExtId[]);
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const state = makeTestGameState({
+        hand: ['a'] as CardExtId[],
+        pendingDiscardToPlay: [{ playerID: '0', sourceCardId: 'src' as CardExtId, remaining: 1 }],
+      });
+      assert.doesNotThrow(() => resolveDiscardToPlay(makeMoveContext(state), badArgs as never));
+      assertUntouched(state, ['a'] as CardExtId[]);
+    }
+  });
+
   it('an empty / undefined queue is a no-op', () => {
     const state = makeTestGameState({ hand: ['a'] as CardExtId[] });
     resolveDiscardToPlay(makeMoveContext(state), { cardId: 'a' as CardExtId });

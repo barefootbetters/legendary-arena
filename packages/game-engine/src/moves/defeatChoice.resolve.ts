@@ -250,6 +250,11 @@ export function resolveDefeatChoice(
   args: ResolveDefeatChoiceArgs,
 ): void {
   // Step 1: Validate args
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   if (args.targetKind !== 'villain' && args.targetKind !== 'mastermind') {
     return;
   }

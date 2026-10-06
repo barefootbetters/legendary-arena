@@ -199,6 +199,24 @@ describe('resolveHeroChoice', () => {
       'deck must be unchanged when resolution is unknown (AC-3).');
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, pendingHeroChoice intact', () => {
+    const pending: PendingHeroChoice = { choiceType: 'discard-or-return', cardId: 'hero-a', playerID: '0' };
+    const gameState = makeTestGameState({
+      deck: ['hero-a'],
+      pendingHeroChoice: pending,
+    });
+    const { context } = makeMoveContext(gameState);
+
+    for (const badArgs of [undefined, null]) {
+      assert.doesNotThrow(() => resolveHeroChoice(context, badArgs as never));
+    }
+
+    assert.equal(gameState.pendingHeroChoice, pending,
+      'pendingHeroChoice must be preserved when args are missing.');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['hero-a'],
+      'deck must be unchanged when args are missing.');
+  });
+
   // ---------------------------------------------------------------------------
   // Test 4: no pending choice — no-op
   // ---------------------------------------------------------------------------

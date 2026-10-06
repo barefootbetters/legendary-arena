@@ -333,6 +333,11 @@ export function resolveSeatChoice(
   if (prompt === undefined) {
     return;
   }
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   const optionIndex = (args as { optionIndex?: unknown }).optionIndex;
   if (
     typeof optionIndex !== 'number'

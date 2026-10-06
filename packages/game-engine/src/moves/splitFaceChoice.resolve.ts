@@ -217,6 +217,11 @@ export function resolveSplitFaceChoice(
   args: ResolveSplitFaceChoiceArgs,
 ): void {
   // Step 1: Validate args — face must be exactly 'a' or 'b'.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   const face = (args as { face?: unknown }).face;
   if (face !== 'a' && face !== 'b') {
     return;

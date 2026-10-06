@@ -176,6 +176,16 @@ describe('resolveElectromagneticBubbleChoice move (WP-695 / D-24512)', () => {
     assert.equal(G3.deferredHandInjections, undefined, 'empty queue ignored');
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeTestGameState({ inPlay: [XMEN_A, XMEN_B], pendingElectromagneticBubbleChoices: [twoChoice()] });
+      assert.doesNotThrow(() => resolveElectromagneticBubbleChoice(makeMoveContext(G), badArgs as never));
+      assert.equal(G.pendingElectromagneticBubbleChoices?.length, 1, `${String(badArgs)} args → queue intact`);
+      assert.equal(G.deferredHandInjections, undefined, 'no deferred injection recorded');
+      assert.deepStrictEqual(G.playerZones['0']!.inPlay, [XMEN_A, XMEN_B], 'inPlay unchanged');
+    }
+  });
+
   it('hasPendingElectromagneticBubbleChoice reflects the queue', () => {
     assert.equal(hasPendingElectromagneticBubbleChoice(makeTestGameState()), false);
     assert.equal(hasPendingElectromagneticBubbleChoice(makeTestGameState({ pendingElectromagneticBubbleChoices: [twoChoice()] })), true);

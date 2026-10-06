@@ -250,6 +250,20 @@ describe('resolveMelterKoChoice (WP-603 / D-24413)', () => {
     assert.deepStrictEqual(bad.ko, []);
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    const G = makeTestGameState({
+      decks: { '0': [WOUND] },
+      pendingMelterKoChoices: [melterChoice([{ ownerPlayerID: '0', cardId: WOUND }])],
+    });
+    for (const badArgs of [undefined, null]) {
+      assert.doesNotThrow(() => resolveMelterKoChoice(makeMoveContext(G), badArgs as never));
+    }
+    assert.equal(G.pendingMelterKoChoices?.length, 1, 'queue entry still parked');
+    assert.equal(G.pendingMelterKoChoices?.[0]?.revealedTops.length, 1, 'revealed snapshot untouched');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [WOUND], 'owner deck unchanged');
+    assert.deepStrictEqual(G.ko, [], 'nothing KO\'d');
+  });
+
   it('is a silent no-op when the KO target is absent from the owner deck (queue intact)', () => {
     // why: defensive — the block-all guard freezes the deck, so unreachable in practice,
     // but the move must no-op safely rather than throw or corrupt state.

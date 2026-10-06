@@ -118,6 +118,9 @@ export function resolveSmashDiscard(
   args: ResolveSmashDiscardArgs,
 ): void {
   // Step 1: Validate args — exactly one of { decline: true } / { cardId }.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') { return; }
   const isDecline = (args as { decline?: unknown }).decline === true;
   const cardId = (args as { cardId?: unknown }).cardId;
   const isDiscardRequest = typeof cardId === 'string' && cardId.length > 0;

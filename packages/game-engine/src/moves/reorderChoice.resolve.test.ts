@@ -180,6 +180,15 @@ describe('resolveReorderChoice (WP-479 / D-24286)', () => {
     assert.equal(G.pendingReorderChoices!.length, 1, 'non-array is a no-op');
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeTestGameState({ deck: [A, B, C], pendingReorderChoices: [reorderEntry([A, B, C])] });
+      assert.doesNotThrow(() => resolveReorderChoice(makeMoveContext(G), badArgs as never));
+      assert.equal(G.pendingReorderChoices!.length, 1, 'queue intact');
+      assert.deepStrictEqual(G.playerZones['0']!.deck, [A, B, C], 'deck unchanged');
+    }
+  });
+
   it('no-ops when the deck top has drifted from the parked remainder (defense-in-depth)', () => {
     // parked [A, B, C] but the live deck top is [A, B] — the block-all guard should
     // prevent this; if it ever regresses, the resolve must not scramble the deck.

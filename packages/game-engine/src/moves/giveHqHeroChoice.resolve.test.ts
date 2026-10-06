@@ -135,6 +135,16 @@ describe('resolveGiveHqHeroChoice', () => {
     resolveGiveHqHeroChoice({ G, playerID: '0' } as never, { cardId: '' as CardExtId });
     assert.equal(G.pendingGiveHqHeroChoices?.length, 1, 'empty cardId → no-op, queue intact');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeG({ hq: ['h0', null, null, null, null] as CardExtId[], heroDeck: ['r0'] as CardExtId[], pending: [CHOICE] });
+      assert.doesNotThrow(() => resolveGiveHqHeroChoice({ G, playerID: '0' } as never, badArgs as never));
+      assert.equal(G.pendingGiveHqHeroChoices?.length, 1, `${String(badArgs)} args → queue intact`);
+      assert.equal(G.hq[0], 'h0', 'HQ unchanged');
+      assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'no gain');
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

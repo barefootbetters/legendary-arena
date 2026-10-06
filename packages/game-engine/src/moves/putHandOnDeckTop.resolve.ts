@@ -102,6 +102,11 @@ export function resolvePutHandOnDeckTop(
   args: ResolvePutHandOnDeckTopArgs,
 ): void {
   // Step 1: Validate args — cardId must be a non-empty string.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   const cardId = (args as { cardId?: unknown }).cardId;
   if (typeof cardId !== 'string' || cardId.length === 0) { return; }
 

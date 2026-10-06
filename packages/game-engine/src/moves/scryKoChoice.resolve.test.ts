@@ -216,6 +216,19 @@ describe('resolveScryKoChoice (WP-470 / D-24282)', () => {
     assert.deepStrictEqual(G.ko, []);
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeTestGameState({
+        deck: [WOUND, HERO],
+        pendingScryKoChoices: [scryChoice([WOUND, HERO])],
+      });
+      assert.doesNotThrow(() => resolveScryKoChoice(makeMoveContext(G), badArgs as never));
+      assert.equal(G.pendingScryKoChoices?.length, 1, 'queue intact');
+      assert.deepStrictEqual(G.playerZones['0']!.deck, [WOUND, HERO], 'deck unchanged');
+      assert.deepStrictEqual(G.ko, [], 'nothing KO’d');
+    }
+  });
+
   it('is a silent no-op when the revealed cardId is somehow absent from the deck (queue intact)', () => {
     // why: defensive — the block-all guard freezes the deck, so this is unreachable in
     // practice, but the move must still no-op safely rather than throw or corrupt state.
