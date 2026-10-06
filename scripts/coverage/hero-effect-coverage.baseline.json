@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2580,
+    "executable": 2576,
     "heroes": 324,
     "hooks": 6380,
-    "noEffect": 2650,
-    "parsedNotExecuted": 1150
+    "noEffect": 2653,
+    "parsedNotExecuted": 1151
   },
   "perSet": {
     "2099": {
@@ -58,12 +58,12 @@
       "noEffect": 76
     },
     "co2e": {
-      "executable": 144,
+      "executable": 143,
       "hooks": 241,
-      "noEffect": 52
+      "noEffect": 53
     },
     "core": {
-      "executable": 133,
+      "executable": 132,
       "hooks": 229,
       "noEffect": 10
     },
@@ -133,9 +133,9 @@
       "noEffect": 113
     },
     "msp1": {
-      "executable": 78,
+      "executable": 77,
       "hooks": 109,
-      "noEffect": 13
+      "noEffect": 14
     },
     "nmut": {
       "executable": 26,
@@ -208,9 +208,9 @@
       "noEffect": 122
     },
     "xmen": {
-      "executable": 125,
+      "executable": 124,
       "hooks": 367,
-      "noEffect": 218
+      "noEffect": 219
     }
   },
   "schemaVersion": 1,

@@ -7,6 +7,16 @@
 
 ## Current State
 
+### D-24662 — Silent Sniper and Pure Fury name their free defeat; God of Thunder stops logging phantom hollows (direct fix) (2026-10-06)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** From 2-player Red Skull / Secret Invasion match `s1jtBcEAOfw`:
+- **Black Widow's Silent Sniper** and **Nick Fury's Pure Fury**, with a single eligible target, now log "{card} defeats {target} for free." before the defeat, so it no longer reads like a paid fight.
+- **Thor's God of Thunder** no longer records phantom "recruit" and "attack" hollow effects in diagnostics. Its recruit-as-attack effect is unchanged.
+
+- **Engine only** (`heroAbility.setup.ts`, `heroEffects.execute.ts`). game-engine 4883 / 0 fail (+4, revert-proofed); server 1455 / 0.
+- **Coverage baseline updated:** co2e, msp1 and xmen each have one unmarked conversion line that now honestly counts as `noEffect`. Ledger and index checks are current.
+- **Live-verify (D-24026): pending.** Play Silent Sniper with exactly one Villain holding a Bystander and look for the "for free" line. Play God of Thunder; the diagnostics should show no recruit/attack no-handler traces.
+
 ### D-24661 — solo Covering Fire and Whispers and Lies say they did nothing; Cruel Ruler names its free defeat (direct fix) (2026-10-05)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** From solo Loki / Cosmic Cube match `aK-n8zNOteC`:

@@ -46635,4 +46635,34 @@ Also: server 1455 / 0; `sim:coverage --check` OK; `sim:runtime-observed --check`
 
 ---
 
+### D-24662 — "use [icon:recruit] as [icon:attack]" is a conversion, never a grant; one-target Silent Sniper / Pure Fury free defeats are attributed (direct fix, no WP) (Active 2026-10-06)
+
+**Context.** Live 2-player bot-ally match `s1jtBcEAOfw` (Red Skull / Secret Invasion of the Skrull Shapeshifters, build `bd7cfb7`, 2026-10-06) showed two diagnostics gaps.
+- **Thor's God of Thunder** ("You can use [icon:recruit] as [icon:attack] this turn. [keyword:recruit-as-attack]"). The real `recruit-as-attack` effect fired, and the bot spent recruit as attack. Each play also traced phantom `recruit` and `attack` no-handler hollows, because Step 3 read both bare icons as magnitude-less keywords. This is the same class as Pure Fury's "whose [icon:attack]" (D-24660).
+- **Black Widow's Silent Sniper** auto-defeated the only Villain holding a Bystander. The shared defeat core logged only an ordinary "fought Sentinel at city space 0" line, so the free defeat read as a paid fight. Pure Fury's one-target path has the same gap. This is the hero-card counterpart of Cruel Ruler (D-24661).
+
+**Decision.**
+- `ADVERSARY_STAT_ICON_PATTERN` gains a resource-conversion alternative, `(use|spend) (any amount of your) [icon:recruit] as [icon:attack]`. Every icon in a match is suppressed, so both are excluded from the Step 2b/3 extractors. A real grant elsewhere on the line is unaffected.
+- The one-target auto path of `heroEffectDefeatWithBystander` (Silent Sniper) and `heroEffectPureFury` logs "Player N's {card} defeats {target} for free." before dispatching, through a shared `logAutoFreeDefeat` helper. The ≥2-target prompt path is unchanged.
+
+No new G field, move, UIState field or trace status.
+
+**Not changed:**
+- The Amazing Spider-Man reorder resolve still logs no line. D-24286 deliberately keeps a deck-top reorder private.
+- The villain `no-op` traces on Endless Armies of HYDRA (`play-villain-deck-cards`) and on the Skrull hero gain (`gain-attached-hero`) are the documented `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES`: the real effect fires at the fight site. They are not a defect.
+
+**Coverage baseline.** `sim:coverage --check` reported 3 "regressions"; all are the intended correction. co2e, msp1 and xmen each have one unmarked conversion line whose only parsed "effect" was the phantom keyword, so `noEffect` rises by 1 each. The informational EXECUTABLE split also moves core God of Thunder to parsed-not-executed, because the script's informational `EXECUTED_KEYWORDS` list omits `recruit-as-attack`. That is a pre-existing staleness in a list that never gates. The baseline is updated.
+
+**Gates.** game-engine 4883 / 0 fail, with 4 new cases. These 3 fail against `origin/main`:
+- `adversaryStatIconSuppression.test.ts`: God of Thunder; spend-any-amount.
+- `heroEffects.execute.test.ts`: the Silent Sniper one-target attribution.
+
+The fourth, `adversaryStatIconSuppression.test.ts` same-line-grant-kept, is a guard and passes either way.
+
+Also: server 1455 / 0; `ledger:heroes`, `ledger:villains`, `mechanics:metadata`, `effect-index` and `sim:runtime-observed` checks current; `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24662. Related: D-24660 (whose-attack target stat), D-24605 (adversary-stat suppression), D-24661 (Cruel Ruler attribution), WP-486 / D-24291 (Silent Sniper), WP-682 / D-24499 (Pure Fury), WP-580 / D-24389 (recruit-as-attack).
+
+---
+
 Protect this file.

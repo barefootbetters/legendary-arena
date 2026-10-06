@@ -4457,6 +4457,31 @@ function heroEffectShuffleDiscardEmptyReward(
 // keywords now dispatch through the single parameterized `reveal` handler (their
 // markers are translated to a `reveal` descriptor with revealRules at parse time).
 /**
+ * Logs the attribution line for a one-target automatic free defeat (D-24662).
+ *
+ * // why: the shared defeat core logs an ordinary "fought X at city space N" line, which
+ * reads as a paid fight; without this line the free defeat was indistinguishable in the
+ * log (live match s1jtBcEAOfw, Silent Sniper). Mirrors the D-24661 Cruel Ruler line.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param playerID - The player whose card granted the free defeat.
+ * @param cardId - The played hero card granting the free defeat.
+ * @param targetCardId - The auto-chosen target's display ext_id.
+ */
+function logAutoFreeDefeat(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+  targetCardId: CardExtId,
+): void {
+  pushLog(G,
+    `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} defeats ${formatCardRef(G.cardDisplayData, targetCardId)} for free.`,
+    'applied',
+    cardId, // why: WP-438 — the played card that granted the free defeat.
+  );
+}
+
+/**
  * Hero handler for the `defeat-with-bystander` keyword (WP-486 / D-24291).
  *
  * Silent Sniper's "Defeat a Villain or Mastermind that has a Bystander." Builds the
@@ -4513,6 +4538,7 @@ function heroEffectDefeatWithBystander(
   // The dispatch routes through the shared core; a villain's onFight may park its
   // own nested pending, which the block-all guards then serialize.
   if (targets.length === 1) {
+    logAutoFreeDefeat(G, playerID, cardId, targets[0]!.cardId);
     dispatchDefeatWithBystanderTarget(G, bareCtx, targets[0]!, shuffleContext);
     return;
   }
@@ -4675,6 +4701,7 @@ function heroEffectPureFury(
   // why: exactly 1 eligible target → auto-defeat with no prompt (mandatory-if-able),
   // via the SHARED free-defeat path (no attack spent, no acted-this-turn flag).
   if (targets.length === 1) {
+    logAutoFreeDefeat(G, playerID, cardId, targets[0]!.cardId);
     dispatchDefeatWithBystanderTarget(G, bareCtx, targets[0]!, shuffleContext);
     return;
   }

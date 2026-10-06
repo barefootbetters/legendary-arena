@@ -6383,6 +6383,22 @@ describe('defeat-with-bystander handler (WP-486 / D-24291)', () => {
     assert.equal(gameState.pendingDefeatChoices ?? undefined, undefined, 'no choice is parked for a single target');
   });
 
+  it('D-24662: exactly 1 eligible target → logs the free-defeat attribution before the fight line', () => {
+    const gameState = defeatHookState();
+    gameState.city = ['villain-a', null, null, null, null];
+    gameState.attachedBystanders = { 'villain-a': ['bystander-1'] };
+    gameState.notableEvents = [];
+    executeHeroEffects(gameState, defeatWrapper(), '0', 'hero-silent-sniper' as string);
+
+    const attributionIndex = gameState.messages.findIndex((entry) =>
+      /hero-silent-sniper.* defeats .*villain-a.* for free\./.test(entry.text));
+    assert.ok(attributionIndex >= 0, 'the auto free defeat names the card that granted it');
+    const foughtIndex = gameState.messages.findIndex((entry) => /fought .*villain-a/.test(entry.text));
+    if (foughtIndex >= 0) {
+      assert.ok(attributionIndex < foughtIndex, 'the attribution precedes the shared core\'s fought line');
+    }
+  });
+
   it('≥2 eligible targets → parks a PendingDefeatChoice (no defeat yet)', () => {
     const gameState = defeatHookState();
     gameState.city = ['villain-a', null, 'villain-c', null, null];
