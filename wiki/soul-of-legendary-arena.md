@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-30
+last-reviewed: 2026-10-05
 ---
 
 # Soul of Legendary Arena
@@ -768,6 +768,43 @@ suffering that *forms* is the upward pull paying its steepest price.
 > The injustice is not the question — almost everyone has one. What you do
 > carrying it is. Not the exit; the next step.
 
+### Two orientations: the victim frame and the providence frame
+
+Underneath "not the victim" sits a choice of orientation that every person makes,
+mostly without naming it. The two options pull in opposite directions, and the
+difference compounds — over a life, across a family, down generations.
+
+- **The victim frame** locates control *outside* you. Your condition is
+  something done to you; the explanation for where you stand is someone else's
+  act, and the remedy is someone else's move. It can be built on a true
+  grievance, which is why it holds so well.
+- **The providence frame** locates responsibility and agency *with* you, under
+  God. You are accountable, and so you act. It does not deny the wrong; it
+  denies that the wrong gets the last word on what you do next. Scripture puts
+  the purpose of redemption in exactly those terms — to be "free forever,
+  knowing good from evil; to act for themselves and not to be acted upon"
+  ([2 Nephi 2:26](https://www.churchofjesuschrist.org/study/scriptures/bofm/2-ne/2?lang=eng&id=p26#p26)) —
+  and names the stakes of the choice: men "are free to choose liberty and
+  eternal life… or to choose captivity and death"
+  ([2:27](https://www.churchofjesuschrist.org/study/scriptures/bofm/2-ne/2?lang=eng&id=p27#p27)).
+
+The orientation belongs to a **person**, not a party. It is tempting to map the
+two frames onto two political coalitions, and that mapping is the weakest link
+in the argument: people of deep faith and real agency vote every way, and so do
+people living inside the victim frame. Lean the case on the partisan label and
+that is where someone knocks it down. Name the orientation for what it does to
+the individual, the family, and the church, and the case stands on its own. This
+is the same discipline as the [Mastermind Lens](#the-mastermind-lens--five-questions)
+— it reads the seat, not the man — turned inward: it reads the frame, not the
+voter.
+
+A game can teach this one honestly, because it does not have to argue it. In
+Legendary the bad draw is real — the villain deck flips whether you deserved it
+or not — and the next move is still yours. The [circle](#the-mastermind-lens--five-questions)
+the lens closes on is the same lesson at full size: counting only what was done
+to you keeps you swinging; taking responsibility is the one move that needs no
+one's permission.
+
 ### Honoring is not ossifying — the real distinction
 
 The soul here is easy to caricature as "never change anything," so it is
@@ -1363,7 +1400,11 @@ they never have to name whoever is sitting in it.
 **The discipline: judge by effect, not motive.** Almost nobody experiences
 himself as the villain. Hitler thought he was saving a civilisation; Lenin
 thought he was ending exploitation. Motive is unknowable and a bad instrument.
-Ask what the arrangement *does*.
+Ask what the arrangement *does*. The same rule covers what it *says*: read the
+governing record, not the campaign language. A movement whose rhetoric runs
+against a class while its donors, its policy, and its beneficiaries run toward
+that class is telling you about its positioning, not its program — and that
+test cuts against every side that uses it.
 
 The five questions run upstream to downstream, and each covers one separate
 lever:
@@ -1432,6 +1473,17 @@ looks like freedom.
   *manufactured choice* (keep the aid, or form the household, as if those were
   the only two boxes) and *virtues as handles* (compassion for a mother and
   child holds the price in place; drop the virtue and the lock is just a price).
+- **The kept wound** *(question 5, turned on a movement)*. Organizing people
+  around the grievance between those who have and those who do not is as old as
+  Rome's tribunes, and it is a powerful way to build a coalition. Run it to
+  termination and it carries a structural incentive: if the coalition is built
+  on the grievance, healing the grievance dissolves the coalition. So the wound
+  is kept open rather than closed, and the members are taught that leaving it
+  behind is betrayal — the exit priced in loyalty instead of money. It is the
+  subsidy-as-lock at the scale of a movement, and it is not owned by any one
+  party: anyone who builds on that foundation inherits the incentive. The test
+  is the same — if the arrangement's standing depends on the condition
+  persisting, watch whether it ever lets the condition end.
 
 **Worked examples** — each read as *architecture*, not as a courtroom verdict:
 
@@ -1587,6 +1639,54 @@ looks like freedom.
   The diagnostic: watch who opposes the reform, not who claims to care — and
   when a rule that stops pricing marriage or work is called cruel, watch who
   defends the old rule, and which virtue they hold up while doing it.
+- **Pharaoh, Herod, and the altar at Olishem — the voiceless captive**
+  *(questions 4 and 5, at their limit)*. Three accounts, more than a thousand
+  years apart, and the same machine stands under all of them. A power that is a
+  numerical minority — a king, a Pharaoh's priesthood — meets a threat it cannot
+  manage by persuasion. So it reaches for the one party that has no voice, no
+  vote, and no recourse. The victim is chosen *because* it cannot resist, argue,
+  or be heard.
+
+  | Account | The threat to the seat | The captive | The deliverance |
+  |---|---|---|---|
+  | Pharaoh ([Exodus 1](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/1?lang=eng)) | "The people of the children of Israel are more and mightier than we" (1:9) | Every Hebrew son: "if it be a son, then ye shall kill him" (1:16); "every son that is born ye shall cast into the river" (1:22) | The midwives "feared God, and did not as the king of Egypt commanded them" (1:17); the infant drawn out — "Because I drew him out of the water" ([2:10](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/2?lang=eng&id=p10#p10)) |
+  | Herod ([Matthew 2](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/2?lang=eng)) | A rival: "Where is he that is born King of the Jews?" — "he was troubled, and all Jerusalem with him" (2:2–3) | "All the children that were in Bethlehem… from two years old and under" (2:16) | "Take the young child and his mother, and flee into Egypt… for Herod will seek the young child to destroy him" (2:13) |
+  | The priest of Pharaoh ([Abraham 1](https://www.churchofjesuschrist.org/study/scriptures/pgp/abr/1?lang=eng)) | Those who would not worship the gods of the land | "Men, women, and children" (1:8); "the thank-offering of a child" (1:10); three virgins "offered up because of their virtue; they would not bow down" (1:11); Abraham himself, bound (1:12, 15) | "The angel of his presence stood by me, and immediately unloosed my bands… I… have come down to deliver thee" (1:15–16); "the Lord broke down the altar" (1:20) |
+
+  **The frame.** In each, the killing is dressed as care for the whole.
+  Pharaoh's is in the text: "let us deal wisely with them; lest they multiply,
+  and… join also unto our enemies" (Exodus 1:10) — infanticide as national
+  security, the demographic threat answered by the river. The altar's is a
+  *thank-offering* — a sacrifice presented as gratitude to the gods of the land.
+  Herod's is the least dressed; Matthew records only the rival king and a wounded
+  pride ("he saw that he was mocked of the wise men," 2:16), and the "stability
+  of the realm" reading is an inference from how such kings justified themselves,
+  not a line in the text. That is the tell this whole lens tracks: the phrase
+  built so that the killing sounds like stewardship, and the victim disappears
+  behind the collective benefit. The society buys its safety or its favour with
+  the blood of the one who cannot fight back and tells itself the ledger
+  balances — the scapegoat at its most literal. Its modern descendant is the same kind of phrase laid
+  over the unborn, the most voiceless captive of all: the act renamed as
+  *health*, so that it reads as care.
+
+  **Two selection rules, one machine.** Pharaoh and Herod choose the captive
+  who *cannot* speak — the infant. The altar at Olishem also takes the one who
+  *will not* bow: the virgins die "because of their virtue," and Abraham is laid
+  there because his fathers "utterly refused to hearken to my voice" (Abraham
+  1:5). That is question 4 run to the end — what happens to the person who says
+  no — and it shows the two rules are one: the machine needs a victim who
+  cannot answer back, and it will make one, either by choosing the voiceless or
+  by silencing the dissenter.
+
+  **The counter-move the machine never names.** In every one of these accounts
+  God sides with the captive against the frame. The infant is drawn from the
+  water; the child is carried out of Herod's reach by night; the bands are
+  loosed and the altar broken down. The whole arc of each story is the rescue of
+  exactly the party the seat marked as expendable — the recourse-less one given
+  recourse by the only power above the king. It is the same answer as
+  [the inversion](#the-mastermind-lens--five-questions) at the close of this
+  lens: the hard lock is not final, and the voiceless one is precisely whom God
+  refuses to let be erased.
 
 **Recent cases** — the same five questions, within living memory. Each is read
 as architecture; none needs a theory of who was right about the underlying
@@ -2867,6 +2967,24 @@ operator has declined a caveat, do not bring it back.
   [Rehoboam](#three-stories-that-hold-the-lesson) later abuses (1 Kings 12);
   affirmed by the page, behind
   [the "Give us a king" section](#give-us-a-king-the-throne-a-people-asks-for).
+- Voiceless-captive scriptures behind the
+  [Mastermind Lens](#the-mastermind-lens--five-questions) worked example
+  *Pharaoh, Herod, and the altar at Olishem* (KJV and Pearl of Great Price,
+  Church of Jesus Christ of Latter-day Saints scripture text) —
+  [Exodus 1](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/1?lang=eng)
+  and [Exodus 2:10](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/2?lang=eng&id=p10#p10)
+  (Pharaoh's security frame, the midwives, the infant drawn from the water),
+  [Matthew 2](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/2?lang=eng)
+  (Herod and the children of Bethlehem; the flight into Egypt), and
+  [Abraham 1](https://www.churchofjesuschrist.org/study/scriptures/pgp/abr/1?lang=eng)
+  (the altar at Olishem, the thank-offering of a child, the virgins killed
+  "because of their virtue," Abraham unbound and the altar broken down). The
+  text states Pharaoh's justification; the Herod and altar framings are read by
+  the page, as marked in the example.
+- [2 Nephi 2:26–27](https://www.churchofjesuschrist.org/study/scriptures/bofm/2-ne/2?lang=eng&id=p26-p27#p26)
+  (Book of Mormon) — "to act for themselves and not to be acted upon"; liberty
+  or captivity as a choice. Behind
+  [Two orientations](#two-orientations-the-victim-frame-and-the-providence-frame).
 - Flawed-hero scriptures behind
   [The flawed hero](#the-flawed-hero--failure-that-teaches-not-failure-that-dismisses)
   (KJV) —
