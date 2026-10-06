@@ -1413,6 +1413,14 @@ governing record, not the campaign language. A movement whose rhetoric runs
 against a class while its donors, its policy, and its beneficiaries run toward
 that class is telling you about its positioning, not its program.
 
+**Every arrangement has winners and losers: beneficiaries and believers.** The
+**beneficiaries** collect: the revenue, the standing, the seat. The
+**believers** carry the arrangement in good faith — they vote for it, defend
+it, send their children into it — and they are usually the ones who pay. Name
+both. Then ask what happens if the arrangement changes: the reform the
+beneficiaries fight hardest is usually the one that turns the believers into
+the winners.
+
 The five questions run upstream to downstream, and each covers one separate
 lever:
 
@@ -2107,6 +2115,15 @@ dispute.
   need the test-score argument settled to read the arrangement; it asks whose
   money it is, and what it costs to leave.
 
+  **Winners and losers.** Under the district monopoly, the **beneficiaries**
+  are the teachers' unions, the school districts, and the school boards: the
+  enrollment-funded revenue, the dues, and the captive seat are theirs. The
+  **believers** are the parents who trust the district to put their child
+  first, and they and their children pay. Vouchers turn it around. **Parents
+  and students win**; **the teachers' unions, school districts, and school
+  boards lose** — the revenue and the captive seat leave with the child. That
+  is why the fight is as hard as it is.
+
   **The money.** "Free public education" is not free; it is paid for in full by
   taxpayers. In 2023–24 U.S. public schools took in about **$1.04 trillion —
   roughly $21,100 per student** — of which about **45.8% came from the states**
@@ -2388,15 +2405,18 @@ authored through the pipeline):*
 
 **Across the aisle — the lens on contested issues.** Each side's stance is
 stated the way its own advocates would put it. The lens column says what the
-five questions find.
+five questions find; the last two name the
+[winners and losers](#the-mastermind-lens--five-questions) — the
+**beneficiaries**, who collect, and the **believers**, who carry the
+arrangement in good faith and pay for it.
 
-| Issue | Liberal stance | Conservative stance | The Mastermind Lens |
-|---|---|---|---|
-| **Taxing the rich** | Raise top marginal rates; the wealthiest should pay a fairer share toward the common good. | Keep rates low; wealth is earned property, and taxing it slows growth and investment. | **Positioning, not program.** The rhetoric runs against the rich while much of the big-donor class funds the party using it. The fight is over income-tax rates, which never reach the asset values where great fortunes sit. |
-| **Haves vs. have-nots** | Inequality is structural; organize those without and redistribute from those who have. | Opportunity, not envy; class warfare divides a nation and punishes success. | **[The kept wound](#the-mastermind-lens--five-questions).** A coalition built on a grievance dissolves if the grievance heals, so it keeps the wound open. The test: does the program ever let the condition end? |
-| **Victim frame vs. faith** | Outcomes are shaped by structural barriers; name them and change the system. | Personal responsibility, faith, and family; you act, under God. | **A soft lock on the person.** The structural frame puts control outside you, so the way out always waits on someone else's move. The [providence frame](#two-orientations-the-victim-frame-and-the-providence-frame) is the exit that needs no one's permission. |
-| **Abortion** | Bodily autonomy; reproductive health care; the woman's choice. | The unborn child is a human life and deserves the law's protection. | **The voiceless captive.** The child is ruled out of the question, *child* is made unsayable, and the act is renamed *health* — the machine of Pharaoh's river and the altar at Olishem. |
-| **Schools and vouchers** | Public money belongs in public schools that take every child; vouchers drain their funding toward less accountable private schools; stand with teachers. | Money should follow the child; parents, not districts, choose the school; competition makes every school better. | **Whose money, whose child.** Unions and school boards defend the institution; parents defend the child. Taxpayers pay about $21,100 per student, but the money follows the building: leaving costs a new house or tuition on top of taxes, and the district's budget needs the child to stay. Parents who objected were set beside the word *terrorism*. |
+| Issue | Liberal stance | Conservative stance | The Mastermind Lens | Beneficiaries (win) | Believers (pay) |
+|---|---|---|---|---|---|
+| **Taxing the rich** | Raise top marginal rates; the wealthiest should pay a fairer share toward the common good. | Keep rates low; wealth is earned property, and taxing it slows growth and investment. | **Positioning, not program.** The rhetoric runs against the rich while much of the big-donor class funds the party using it. The fight is over income-tax rates, which never reach the asset values where great fortunes sit. | The politicians who campaign on it, and the asset-holding donors the rate fight never reaches. | The voters sold the slogan, and the salaried high earners who actually pay the income-tax rate. |
+| **Haves vs. have-nots** | Inequality is structural; organize those without and redistribute from those who have. | Opportunity, not envy; class warfare divides a nation and punishes success. | **[The kept wound](#the-mastermind-lens--five-questions).** A coalition built on a grievance dissolves if the grievance heals, so it keeps the wound open. The test: does the program ever let the condition end? | The brokers of the grievance, whose standing depends on it lasting. | The have-nots, kept in the condition the coalition needs. |
+| **Victim frame vs. faith** | Outcomes are shaped by structural barriers; name them and change the system. | Personal responsibility, faith, and family; you act, under God. | **A soft lock on the person.** The structural frame puts control outside you, so the way out always waits on someone else's move. The [providence frame](#two-orientations-the-victim-frame-and-the-providence-frame) is the exit that needs no one's permission. | Whoever holds the remedy the victim is told to wait for. | The person who waits — and the family that inherits the frame. |
+| **Abortion** | Bodily autonomy; reproductive health care; the woman's choice. | The unborn child is a human life and deserves the law's protection. | **The voiceless captive.** The child is ruled out of the question, *child* is made unsayable, and the act is renamed *health* — the machine of Pharaoh's river and the altar at Olishem. | The providers, paid per procedure, and whoever the child would have cost. | The mother, told it is health care. The child pays everything and was never asked to believe anything. |
+| **Schools and vouchers** | Public money belongs in public schools that take every child; vouchers drain their funding toward less accountable private schools; stand with teachers. | Money should follow the child; parents, not districts, choose the school; competition makes every school better. | **Whose money, whose child.** Unions and school boards defend the institution; parents defend the child. Taxpayers pay about $21,100 per student, but the money follows the building: leaving costs a new house or tuition on top of taxes, and the district's budget needs the child to stay. Parents who objected were set beside the word *terrorism*. | Teachers' unions, school districts, and school boards. **With vouchers, they lose.** | Parents and students. **With vouchers, they win.** |
 
 **What the lens does and does not do.** It will **not** name a person, and that
 is a feature. The moment a lens promises to identify the Mastermind, it becomes a
