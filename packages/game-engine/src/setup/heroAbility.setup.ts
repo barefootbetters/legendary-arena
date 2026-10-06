@@ -525,8 +525,13 @@ const NEGATIVE_MAGNITUDE_ICON_PATTERN = /-\s*\d+\s*\[icon:(?:attack|recruit)\]/g
 // as a magnitude-less `attack` keyword that logged a phantom `attack` no-handler hollow on
 // every play (live solo match f4JyVOX_Tq3). Every "whose [icon:attack]" line in data/cards
 // is this target-stat form.
+// why: D-24662 — "use / spend (any amount of your) [icon:recruit] as [icon:attack]" (core Thor
+// God of Thunder and its reprints) names the two resources of a conversion, never a grant of
+// either. Unsuppressed, Step 3 read both bare icons as magnitude-less `recruit` and `attack`
+// keywords that logged phantom no-handler hollows beside the real recruit-as-attack effect
+// (live match s1jtBcEAOfw). Every icon in a match is suppressed, so both are covered.
 const ADVERSARY_STAT_ICON_PATTERN =
-  /as if it were an?\s+\d+\s*\[icon:attack\]|\d+\s*\[icon:attack\]\s+or less|Villain of\s+\d+\s*\[icon:attack\](?:\s+or\s+\d+\s*\[icon:attack\])?|whose\s+\[icon:attack\]/gi;
+  /as if it were an?\s+\d+\s*\[icon:attack\]|\d+\s*\[icon:attack\]\s+or less|Villain of\s+\d+\s*\[icon:attack\](?:\s+or\s+\d+\s*\[icon:attack\])?|whose\s+\[icon:attack\]|(?:use|spend)\s+(?:any amount of your\s+)?\[icon:recruit\]\s+as\s+\[icon:attack\]/gi;
 
 // why: D-24606 — the Annihilation-era Focus cost prefix ("[keyword:Focus] 2[icon:recruit]
 // [icon:5] <effect>", the ff04 form "[keyword:Focus 6][icon:recruit] [icon:5] <effect>") is a

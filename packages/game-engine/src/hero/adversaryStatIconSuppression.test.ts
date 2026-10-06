@@ -136,3 +136,29 @@ describe('"whose [icon:attack]" target-stat suppression (D-24660)', () => {
     assert.deepStrictEqual(attackEffects, [{ type: 'attack', magnitude: 2 }]);
   });
 });
+
+describe('"use [icon:recruit] as [icon:attack]" conversion suppression (D-24662)', () => {
+  // why: the exact generated core God of Thunder line (data/cards/core.json, thor/god-of-thunder).
+  const GOD_OF_THUNDER_ABILITY = 'You can use [icon:recruit] as [icon:attack] this turn. [keyword:recruit-as-attack]';
+
+  it('God of Thunder grants neither recruit nor attack and keeps recruit-as-attack', () => {
+    const hook = buildHook(GOD_OF_THUNDER_ABILITY);
+    assertNoAttackGrant(hook, 'God of Thunder');
+    const recruitEffects = (hook.effects ?? []).filter((effect) => effect.type === 'recruit');
+    assert.deepStrictEqual(recruitEffects, [], 'God of Thunder: the conversion names recruit, never grants it');
+    assert.ok(!hook.keywords.includes('recruit'), 'God of Thunder: no plain recruit keyword');
+    assert.ok(hook.keywords.includes('recruit-as-attack'), 'the recruit-as-attack keyword is still parsed');
+  });
+
+  it('"spend any amount of your [icon:recruit] as [icon:attack]" is suppressed too', () => {
+    const hook = buildHook('You can spend any amount of your [icon:recruit] as [icon:attack] this turn.');
+    assertNoAttackGrant(hook, 'spend-any-amount conversion');
+    assert.ok(!hook.keywords.includes('recruit'), 'no plain recruit keyword');
+  });
+
+  it('a real grant on the same line as the conversion is kept', () => {
+    const hook = buildHook('You get +2[icon:attack]. You can use [icon:recruit] as [icon:attack] this turn.');
+    const attackEffects = (hook.effects ?? []).filter((effect) => effect.type === 'attack');
+    assert.deepStrictEqual(attackEffects, [{ type: 'attack', magnitude: 2 }]);
+  });
+});
