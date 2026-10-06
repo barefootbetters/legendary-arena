@@ -788,15 +788,23 @@ difference compounds — over a life, across a family, down generations.
   eternal life… or to choose captivity and death"
   ([2:27](https://www.churchofjesuschrist.org/study/scriptures/bofm/2-ne/2?lang=eng&id=p27#p27)).
 
-The orientation belongs to a **person**, not a party. It is tempting to map the
-two frames onto two political coalitions, and that mapping is the weakest link
-in the argument: people of deep faith and real agency vote every way, and so do
-people living inside the victim frame. Lean the case on the partisan label and
-that is where someone knocks it down. Name the orientation for what it does to
-the individual, the family, and the church, and the case stands on its own. This
-is the same discipline as the [Mastermind Lens](#the-mastermind-lens--five-questions)
-— it reads the seat, not the man — turned inward: it reads the frame, not the
-voter.
+**The two frames map onto the two parties, and the record shows it.** The left
+teaches the circumstances frame and the right teaches the responsibility frame,
+and their voters answer accordingly. Asked why a person is poor, Democrats said
+"circumstances beyond their control" over "lack of effort" by 71% to 19%;
+Republicans said "lack of effort" by 56% to 32%. Asked why a person is rich,
+Democrats said "more advantages" by 60% to 29%; Republicans said "worked
+harder" by 66% to 21% (Pew, April 2017). Faith follows the same line: in 2024,
+voters who attend religious services monthly or more chose Trump over Harris
+64% to 34%, while less frequent attenders went to Harris 56% to 43% (Pew,
+validated voters). One party's message is *your condition was done to you*.
+The other's is *you act, under God*.
+
+What the map does not do is decide any one person. Every voter is a moral agent
+and chooses his own frame; the party label tells you what a platform teaches,
+not what a man has chosen. The [Mastermind Lens](#the-mastermind-lens--five-questions)
+reads the seat, not the man. Read the same way, the victim frame is the seat
+one party's message builds, and each person still decides whether to sit in it.
 
 A game can teach this one honestly, because it does not have to argue it. In
 Legendary the bad draw is real — the villain deck flips whether you deserved it
@@ -3136,6 +3144,13 @@ operator has declined a caveat, do not bring it back.
   (the babe that leaped in the womb "for joy"), and
   [Exodus 1:17](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/1?lang=eng&id=p17#p17)
   (the midwives who "feared God").
+- Pew Research Center —
+  ["Why people are rich and poor: Republicans and Democrats have very different views"](https://www.pewresearch.org/short-reads/2017/05/02/why-people-are-rich-and-poor-republicans-and-democrats-have-very-different-views/)
+  (survey of April 5–11, 2017) and
+  ["Behind Trump's 2024 victory"](https://www.pewresearch.org/politics/2025/06/26/behind-trumps-2024-victory-a-more-racially-and-ethnically-diverse-voter-coalition/)
+  (validated voters, June 2025: religious attendance and the 2024 vote).
+  Behind
+  [Two orientations](#two-orientations-the-victim-frame-and-the-providence-frame).
 - [2 Nephi 2:26–27](https://www.churchofjesuschrist.org/study/scriptures/bofm/2-ne/2?lang=eng&id=p26-p27#p26)
   (Book of Mormon) — "to act for themselves and not to be acted upon"; liberty
   or captivity as a choice. Behind
