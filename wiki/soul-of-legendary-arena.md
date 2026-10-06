@@ -1665,9 +1665,10 @@ looks like freedom.
   built so that the killing sounds like stewardship, and the victim disappears
   behind the collective benefit. The society buys its safety or its favour with
   the blood of the one who cannot fight back and tells itself the ledger
-  balances — the scapegoat at its most literal. Its modern descendant is the same kind of phrase laid
-  over the unborn, the most voiceless captive of all: the act renamed as
-  *health*, so that it reads as care.
+  balances — the scapegoat at its most literal. Its modern descendant is the
+  same kind of phrase laid over the unborn, the most voiceless captive of all:
+  the act renamed as *health*, so that it reads as care (the next case reads it
+  in full).
 
   **Two selection rules, one machine.** Pharaoh and Herod choose the captive
   who *cannot* speak — the infant. The altar at Olishem also takes the one who
@@ -1687,6 +1688,49 @@ looks like freedom.
   [the inversion](#the-mastermind-lens--five-questions) at the close of this
   lens: the hard lock is not final, and the voiceless one is precisely whom God
   refuses to let be erased.
+- **The womb — the ultimate captive** *(all five questions, at the limit)*.
+  The altar case brought forward. Of every party this lens has read, the child
+  in the womb has the least: no voice, no vote, no advocate in the room, no face
+  anyone has to look at, and no way to leave. That is exactly the captive the
+  machine reaches for, and the five questions read the arrangement around it
+  without strain:
+
+  1. **Scope.** The inquiry is set so that "whose life is this?" is ruled out
+     before it starts. Framed as one person's body and one person's choice, the
+     question has only one party in it, and the second never enters the room.
+  2. **Standing.** The standing to define what happens sits with those who
+     perform it and those who fund it. The child has no reporter.
+  3. **Vocabulary.** "Fetus," "tissue," "products of conception," "reproductive
+     care" — words that make the counter-word, *child*, sound like extremism
+     rather than description. Scripture uses the counter-word without
+     hesitation: "Before I formed thee in the belly I knew thee"
+     ([Jeremiah 1:5](https://www.churchofjesuschrist.org/study/scriptures/ot/jer/1?lang=eng&id=p5#p5));
+     "the babe leaped in her womb"
+     ([Luke 1:41](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/1?lang=eng&id=p41#p41)) —
+     a babe, not tissue, and one that answers a voice "for joy" (1:44).
+  4. **The one who says no.** The nurse, the doctor, the pharmacist, the
+     volunteer who declines to take part. Watch what declining costs them, not
+     what the official explanation says.
+  5. **Exit.** For the child there is none: the hard lock at its absolute. For
+     the mother the lock is soft — the partner who will leave, the job, the
+     money, the shame — and the arrangement prices one choice cheap and the
+     other dear. She is often a captive of the arrangement too, which is why the
+     lens reads the seat and never has to condemn the woman standing in it.
+
+  **The frame.** "For the good of society" is the oldest version of "women's
+  health" — a phrase built so that the killing sounds like stewardship, and the
+  victim disappears behind the benefit to someone else. It works because the
+  handle is a real virtue: compassion for a frightened woman is good, and that
+  is exactly why it holds. Pharaoh had the river, the priest had the
+  thank-offering, and the modern seat has a medical word; the machine underneath
+  has not changed.
+
+  **The counter-move.** The midwives are its type: they "feared God, and did not
+  as the king of Egypt commanded them, but saved the men children alive"
+  ([Exodus 1:17](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/1?lang=eng&id=p17#p17)) —
+  the people standing at the birth who refuse the order. And the last word of
+  [the inversion](#the-mastermind-lens--five-questions) is the other half:
+  adoption. The voiceless one is not only spared; he is given a family.
 
 **Recent cases** — the same five questions, within living memory. Each is read
 as architecture; none needs a theory of who was right about the underlying
@@ -2049,6 +2093,79 @@ dispute.
   was actually making, about the ritual it had paid to see, was never on the
   menu. The lens takes no side on policing; Kaepernick's claim
   stands or falls on its own evidence. It reads who got to define the Sunday.
+- **School choice: whose money, whose child** *(questions 3, 4 and 5)*. Start
+  with who stands where. On one side are the teachers' unions and the school
+  boards and their associations, defending the institution: the district, the
+  building, the enrollment count. On the other are parents, defending their own
+  child's seat and asking for the money to follow the child. The lens does not
+  need the test-score argument settled to read the arrangement; it asks whose
+  money it is, and what it costs to leave.
+
+  **The money.** "Free public education" is not free; it is paid for in full by
+  taxpayers. In 2023–24 U.S. public schools took in about **$1.04 trillion —
+  roughly $21,100 per student** — of which about **45.8% came from the states**
+  (income, sales, and corporate taxes, lotteries, and excise taxes), **42.5% from
+  local sources** (mostly property taxes on homes, businesses, and land), and
+  **11.7% from the federal government** (targeted programs such as Title I,
+  special education under IDEA, and school meals). On a $100 school budget,
+  that is about $46 state, $43 local, and $11 federal. The parent has already
+  paid; the question is only where the money is allowed to go.
+
+  The five questions, at the points where they bite:
+
+  - **What does it cost to leave? (5)** Under residential assignment, the money
+    follows the *building*, not the child. A family that wants a different
+    school has two exits. One is to move: buy a house in a better district,
+    which is why a good school's price shows up in the home's price and its
+    property tax. The other is to pay private tuition *on top of* the taxes
+    already paid for the seat the child is not using. Either way, the exit is
+    priced at a mortgage or at paying twice. For a family without the money,
+    the door is formally open and practically locked — the soft lock in its
+    plainest form.
+  - **Whose standing depends on the child staying? (5)** Districts are funded
+    largely by enrollment, so a departing child takes revenue with him. That is
+    the [kept wound](#the-mastermind-lens--five-questions)'s test applied to an
+    institution: when the arrangement's budget depends on the child remaining,
+    watch whether it ever makes leaving easy. A choice program reverses the
+    flow. Arizona's Empowerment Scholarship Account, universal since 2022, sends
+    a typical student roughly $7,000–$7,500 a year to spend on the school the
+    family picks. (That is not a like-for-like comparison with the $21,100
+    figure, which also covers buildings, debt, and administration, but the
+    direction of the money is the point: it moves with the child.)
+  - **What may be said? (3)** Money following a child is named *defunding
+    public education* or *privatization*, as if the funds belonged to the
+    system rather than to the child they were raised to educate. That is the
+    manufactured choice: "public schools or vouchers," when the unit the money
+    was for is the child, not the building.
+  - **What happens to the parent who says no? (4)** On 29 September 2021 the
+    National School Boards Association wrote to the President about threats
+    against board members, citing real incidents, and said such acts "could be
+    the equivalent to a form of domestic terrorism and hate crimes." Within
+    days the Attorney General directed the FBI to address the "disturbing
+    spike in harassment, intimidation, and threats of violence" against school
+    officials. The parents filling board meetings to object to curriculum and
+    closures found their side of the room sitting next to the word
+    *terrorism*. On 22 October the NSBA withdrew the letter and apologised to
+    parents. By February 2022, 29 state associations had distanced themselves
+    from it and 20 had left the NSBA or cut their dues. The lens does not
+    excuse any real threat. It reads what the label did to everyone else who
+    stood up at the microphone.
+
+  The money also says who funds each defence. From 1990 through 2024 the
+  National Education Association's PACs gave $134.5 million to federal
+  candidates and committees, 97% of it to Democrats and liberal groups; for
+  2024 its Advocacy Fund raised nearly $27 million, "virtually all of it" spent
+  to elect Democrats. The test is the same for every side: follow the money, and ask whom
+  the arrangement protects when the child and the institution want different
+  things.
+
+  **The counter-move.** The commandment to raise a child was not given to a
+  board: "But I have commanded you to bring up your children in light and
+  truth"
+  ([Doctrine and Covenants 93:40](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/93?lang=eng&id=p40#p40)).
+  A school can serve that stewardship; it cannot own it. An arrangement that
+  lets the money follow the child puts the stewardship back where the
+  commandment put it.
 - **The mandated pigsty: *Lord of the Flies*** *(questions 1, 2, 4 and 5)*. The
   novel is not the secular book it is often taught as. A secular literary
   reading usually sums it up as a story about what happens when civilization
@@ -2262,6 +2379,19 @@ authored through the pipeline):*
 - **Scheme: "The Door Locks Behind You."** Entry is voluntary; exit is not.
 - **Twist: "Terms Subject to Change."** The moment the terms flip.
 - **Candidate Scheme: "Investigate Yourself, Find Yourself Innocent."**
+
+**Across the aisle — the lens on contested issues.** Each side's stance is
+stated the way its own advocates would put it. The lens column reads the
+architecture, and it does not split the difference: where it finds a seat, it
+says so; where the party label is the weak link, it says that instead.
+
+| Issue | Liberal stance | Conservative stance | The Mastermind Lens |
+|---|---|---|---|
+| **Taxing the rich** | Raise top marginal rates; the wealthiest should pay a fairer share toward the common good. | Keep rates low; wealth is earned property, and taxing it slows growth and investment. | Read the record, not the rhetoric. Both parties' donor classes are rich; the fight is over marginal rates on *income* and rarely touches how great fortunes are made and held (asset values). "Hate the rich" is campaign language, not a governing program — and the same test finds the same gap in the other side's populist rhetoric. |
+| **Haves vs. have-nots** | Inequality is structural; organize those without and redistribute from those who have. | Opportunity, not envy; class warfare divides a nation and punishes success. | [The kept wound](#the-mastermind-lens--five-questions): a coalition built on a grievance dissolves if the grievance heals, so it has an incentive to keep it open. Not owned by one side — grievance against "the elites" runs the same machine from the right. The test: does the arrangement ever let the condition end? |
+| **Victim frame vs. faith** | Outcomes are shaped by structural barriers; name them and change the system. | Personal responsibility, faith, and family; you act, under God. | [The orientation](#two-orientations-the-victim-frame-and-the-providence-frame) is real and compounds over a life and a family, but it belongs to a person, not a party. The partisan mapping is the weakest link; the lens reads the frame, not the voter. |
+| **Abortion** | Bodily autonomy; reproductive health care; the woman's choice. | The unborn child is a human life and deserves the law's protection. | The voiceless captive, all five questions at the limit: the second party ruled out of scope, the counter-word made unsayable, the act renamed *health*. The same machine as Pharaoh's river and the altar at Olishem — and the same counter-move, the midwives who would not obey. |
+| **Schools and vouchers** | Public money belongs in public schools that take every child; vouchers drain their funding toward less accountable private schools; stand with teachers. | Money should follow the child; parents, not districts, choose the school; competition makes every school better. | Ask who defends whom: the unions and school boards defend the institution; parents defend their own child. Taxpayers already pay about $21,100 per student (2023–24: 46% state, 43% local, mostly property tax, 11% federal), but the money follows the *building*. Leaving costs a house in another district or tuition on top of taxes, and the district's budget depends on the child staying — the soft lock, plus the kept wound's test. When parents objected, their side of the room was set beside the word *terrorism*. [Read in full](#the-mastermind-lens--five-questions) under Recent cases. |
 
 **What the lens does and does not do.** It will **not** name a person, and that
 is a feature. The moment a lens promises to identify the Mastermind, it becomes a
@@ -2981,6 +3111,31 @@ operator has declined a caveat, do not bring it back.
   "because of their virtue," Abraham unbound and the altar broken down). The
   text states Pharaoh's justification; the Herod and altar framings are read by
   the page, as marked in the example.
+- Sources behind the Mastermind Lens recent case *School choice: whose money,
+  whose child* —
+  [USAFacts, "How are public schools in the US funded?"](https://usafacts.org/answers/how-are-public-schools-in-the-us-funded/country/united-states/)
+  (2023–24: $1.04 trillion, ~$21,100 per student; 45.8% state, 42.5% local,
+  11.7% federal);
+  [National School Boards Association](https://en.wikipedia.org/wiki/National_School_Boards_Association)
+  (the 29 September 2021 letter, its 22 October withdrawal, and the state
+  associations that left);
+  [The 74, "NEA PAC raised roughly $27 million for 2024"](https://www.the74million.org/article/national-education-association-pac-raised-roughly-27-million-for-2024-election/)
+  and [InfluenceWatch, NEA](https://www.influencewatch.org/labor-union/national-education-association-nea/)
+  (NEA PACs, 1990–2024: $134.5 million, 97% to Democrats and liberals; the
+  2024 Advocacy Fund, ~$27 million); Arizona Department
+  of Education, [Empowerment Scholarship Account](https://www.azed.gov/esa)
+  (universal since 2022; typical base award ~$7,000–$7,500 in 2025–26 per
+  program guides); and
+  [Doctrine and Covenants 93:40](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/93?lang=eng&id=p40#p40).
+- Womb scriptures behind the Mastermind Lens worked example *The womb — the
+  ultimate captive* (KJV, Church of Jesus Christ of Latter-day Saints
+  scripture text) —
+  [Jeremiah 1:5](https://www.churchofjesuschrist.org/study/scriptures/ot/jer/1?lang=eng&id=p5#p5)
+  ("Before I formed thee in the belly I knew thee"),
+  [Luke 1:41–44](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/1?lang=eng&id=p41-p44#p41)
+  (the babe that leaped in the womb "for joy"), and
+  [Exodus 1:17](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/1?lang=eng&id=p17#p17)
+  (the midwives who "feared God").
 - [2 Nephi 2:26–27](https://www.churchofjesuschrist.org/study/scriptures/bofm/2-ne/2?lang=eng&id=p26-p27#p26)
   (Book of Mormon) — "to act for themselves and not to be acted upon"; liberty
   or captivity as a choice. Behind
