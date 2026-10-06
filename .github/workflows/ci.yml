@@ -420,10 +420,16 @@ jobs:
   # legends.legendary-arena.com 2026-07-18. A reachability probe reports a healthy
   # 200 for that state (the HTML itself serves fine), so this needs its own gate.
   #
+  # All four SPAs are checked here (arena-client, legends-board, registry-viewer,
+  # dashboard): "the build emitted every artifact its own index.html names" holds
+  # on every surface, and it costs nothing extra once the workspace is built.
+  #
   # This job is the hermetic half: it verifies every asset referenced by each
   # built index.html actually exists in the build output. The deploy/edge-drift
   # half — the failure class actually observed — cannot be seen from PR CI and
-  # runs nightly against the live origins in spa-assets-nightly.yml.
+  # runs nightly against the live origins in spa-assets-nightly.yml. That nightly
+  # covers legends/play/cards but NOT dashboard, which is behind Cloudflare Access
+  # and cannot be probed unauthenticated; dashboard's coverage is build-time only.
   spa-assets:
     name: SPA Asset Masking
     runs-on: ubuntu-latest
@@ -437,8 +443,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # why: `pnpm -r build` emits the arena-client and legends-board dist/
-      # trees this gate inspects, and builds their workspace dependencies in
+      # why: `pnpm -r build` emits the four SPA dist/ trees this gate inspects, and builds their workspace dependencies in
       # order (arena-client resolves game-engine and preplan dist at build time).
       - name: Build workspace
         run: pnpm -r build

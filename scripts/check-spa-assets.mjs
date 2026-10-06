@@ -133,8 +133,8 @@ async function checkDistDirectory(distDirectory) {
     } catch {
       failures.push(
         `The asset ${assetPath} referenced by ${indexPath} does not exist in the build output. ` +
-          `Deploying this build would serve the SPA catch-all (index.html, HTTP 200) in its place ` +
-          `and the app would never mount. Re-run the build for this app.`,
+          `Deploying this build would leave the browser unable to load it, so the app would never ` +
+          `mount. Re-run the build for this app.`,
       );
     }
   }
