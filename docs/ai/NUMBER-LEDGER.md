@@ -432,6 +432,8 @@ high-water: 422
 - WP-791 — dashboard-overview-business-first (App dashboard. The Overview page leads with whether the business is making or losing money — revenue vs. real costs, engagement, and real health — and carries no MOCK tile; governance widgets move to Vision & Roadmap. reserved 2026-10-02, claude/reserve-wp791-overview)
 - WP-792 — master-strike-no-bystander-capture (Game Engine + scoring/PAR re-pin. Retire the D-15401 MVP placeholder: a Master Strike no longer captures a Bystander onto the Mastermind for every mastermind; only printed strike text resolves (rules v23 "each Mastermind does its Master Strike"). Surfaced in solo match PyK5YS2L8Bo — 2 of 3 rescued Bystanders were invented. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
 - WP-793 — villain-escape-rulebook-procedure (Game Engine + Arena Client. Make a Villain escape follow rules v23 p.15 in order: (1) the escaping Villain KOs a Hero costing 6 or less from the HQ, current player chooses, HQ refills; (2) if it had captured Bystanders, each player discards one card; (3) its printed Escape effect. Retires the WP-015 / D-24439 generic per-escape Wound placeholder. Surfaced in solo match jjChx_MJ2gl. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
+- WP-794 — storm-location-fight-cost-reduction (Game Engine. Core Storm Lightning Bolt "Any Villain you fight on the Rooftops this turn gets -2[icon:attack]" and Tidal Wave's Bridge -2 / [hc:ranged] Mastermind -2 this turn: a turn-scoped fight-cost reduction applied in resolveFightCost / resolveMastermindFightCost. Surfaced in 2p match s1jtBcEAOfw. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
+- WP-795 — storm-spinning-cyclone-move-villain (Game Engine + Arena Client. Core Storm Spinning Cyclone "You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain" with swap-if-occupied: an optional two-step pending choice (Villain, then destination space). Surfaced in 2p match s1jtBcEAOfw. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 
 ## EC
 
@@ -825,6 +827,8 @@ high-water: 457
 - EC-828 — dashboard-overview-business-first (WP-791; App dashboard. reserved 2026-10-02, claude/reserve-wp791-overview)
 - EC-829 — master-strike-no-bystander-capture (WP-792; Game Engine + scoring/PAR re-pin. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
 - EC-830 — villain-escape-rulebook-procedure (WP-793; Game Engine + Arena Client. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
+- EC-831 — storm-location-fight-cost-reduction (WP-794; Game Engine. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
+- EC-832 — storm-spinning-cyclone-move-villain (WP-795; Game Engine + Arena Client. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 
 ## D
 
@@ -1265,4 +1269,6 @@ section below) and the allocation protocol in
 - D-24660 — whose-attack-target-stat-icon (direct fix, no WP — "whose [icon:attack] is less than" names the target's attack, so the D-24605 adversary-stat suppression covers it and Pure Fury and five siblings stop logging a phantom attack no-handler hollow. reserved 2026-10-05, infra/solo-decree-and-pure-fury-hollow)
 - D-24661 — solo-each-other-player-no-op-and-cruel-ruler-attribution (direct fix, no WP — Covering Fire and Whispers and Lies log a no-op with no other player (Covering Fire parks no prompt); Cruel Ruler's one-target auto free defeat logs its attribution. reserved 2026-10-05, infra/solo-silent-effects)
 - D-24662 — recruit-as-attack-conversion-icons-and-free-defeat-attribution (direct fix, no WP — "use/spend [icon:recruit] as [icon:attack]" is suppressed as a conversion, so God of Thunder stops tracing phantom recruit/attack hollows; Silent Sniper and Pure Fury one-target free defeats log their attribution. reserved 2026-10-06, infra/free-defeat-reorder-log-and-conversion-icons)
+- D-24663 — storm-location-fight-cost-reduction (WP-794 — turn-scoped per-city-space and Mastermind fight-cost reduction model. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
+- D-24664 — storm-spinning-cyclone-move-villain (WP-795 — optional move-a-Villain two-step choice, swap-if-occupied, rescue on move. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 - D-24658 — match-lagn-final-blow (direct fix, no WP — the match LAGN projection writes setup.final_blow: true for a Final Blow match, read from matchConfiguration within the D-24153 carve-out, and the Battle Brief states Final Blow On/Off from it. reserved 2026-10-05, infra/battle-brief-final-blow)
