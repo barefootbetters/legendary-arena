@@ -410,11 +410,12 @@ jobs:
   # DB-gated server tests self-skip when TEST_DATABASE_URL is unset, so the
   # default runner environment is sufficient.
   # ── 3h. SPA asset-masking gate ───────────────────────────────────────────────
-  # why: apps/arena-client and apps/legends-board both ship the Cloudflare Pages
-  # catch-all `/*  /index.html  200` in public/_redirects. That rule is required
-  # for client-side routing, but when a hashed bundle referenced by index.html is
-  # absent the request does NOT 404 — it falls through and returns index.html with
-  # HTTP 200 and Content-Type: text/html. The browser gets HTML where it expects a
+  # why: every SPA here is served by Cloudflare Pages with an SPA fallback —
+  # legends-board's explicit `/*  /index.html  200` in public/_redirects, and
+  # Pages' built-in fallback (no top-level 404.html) for the other three. The
+  # fallback is required for client-side routing, but when a hashed bundle
+  # referenced by index.html is absent the request does NOT 404 — it returns
+  # index.html with HTTP 200 and Content-Type: text/html. The browser gets HTML where it expects a
   # module, the app never mounts, and the page sits on its no-JS fallback: a silent
   # white page with no failed request to notice. Observed live on
   # legends.legendary-arena.com 2026-07-18. A reachability probe reports a healthy

@@ -4,14 +4,21 @@
 # references only assets it emitted; this one proves a DEPLOY actually serves
 # them. They catch different failures and neither substitutes for the other.
 #
-# The failure this exists for: apps/arena-client and apps/legends-board ship the
-# Cloudflare Pages catch-all `/*  /index.html  200`. When a hashed bundle named
-# by the deployed index.html is missing at the edge, the request does not 404 —
-# it falls through and returns index.html with HTTP 200 and text/html. The
-# browser receives HTML where it expects a module, the app never mounts, and the
-# surface sits on its no-JS fallback indefinitely. Observed live on
-# legends.legendary-arena.com on 2026-07-18, where the served index.html named a
-# bundle hash absent from the deploy.
+# The failure this exists for: the public SPAs are served by Cloudflare Pages
+# with an SPA fallback (legends-board's explicit `/*  /index.html  200` in
+# public/_redirects; Pages' built-in fallback for arena-client and
+# registry-viewer). When a hashed bundle named by the deployed index.html is
+# missing at the edge, the fallback returns index.html with HTTP 200 and
+# text/html. The browser receives HTML where it expects a module, the app never
+# mounts, and the surface sits on its no-JS fallback indefinitely. Observed live
+# on legends.legendary-arena.com on 2026-07-18, where the served index.html
+# named a bundle hash absent from the deploy.
+#
+# Since the 2026-08-10 cache-poisoning incident, all three public SPAs run an
+# edge guard (functions/_middleware.ts) that turns that HTML response under
+# /assets/ into a real 404, so a missing asset normally fails this probe as a
+# non-200. The HTML-masking check is the backstop for when the guard is not
+# running.
 #
 # Why this cannot live in PR CI: it requires the deployed origin, which a PR
 # runner cannot see. Why it cannot fold into `pnpm check:domains`: that probe

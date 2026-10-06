@@ -1,24 +1,33 @@
 /**
  * Legendary Arena — SPA Asset-Masking Gate
  *
- * Both public SPAs (`apps/arena-client`, `apps/legends-board`) ship a
- * Cloudflare Pages catch-all in `public/_redirects`:
+ * Every SPA here is served by Cloudflare Pages with an SPA fallback: any
+ * request that matches no static file returns `index.html` with HTTP 200.
+ * `apps/legends-board` declares it explicitly in `public/_redirects`
+ * (`/*  /index.html  200`); `apps/arena-client`, `apps/registry-viewer` and
+ * `apps/dashboard` get Pages' built-in fallback, which applies whenever the
+ * build has no top-level `404.html`.
  *
- *     /*  /index.html  200
- *
- * That rule is required for client-side routing, but it has a nasty
+ * The fallback is required for client-side routing, but it has a nasty
  * side effect: when a hashed bundle referenced by `index.html` is MISSING
- * from the deploy, the request does not 404. It falls through the catch-all
- * and returns `index.html` with HTTP 200 and `Content-Type: text/html`.
- * The browser receives HTML where it expected JavaScript, the module never
- * executes, the app never mounts, and the page sits on its no-JS fallback
- * forever. No 404, no console error, no failed request — a silent white page.
+ * from the deploy, the request does not 404. It returns `index.html` with
+ * HTTP 200 and `Content-Type: text/html`. The browser receives HTML where it
+ * expected JavaScript, the module never executes, the app never mounts, and
+ * the page sits on its no-JS fallback forever — a silent white page.
  *
  * This was observed live on legends.legendary-arena.com on 2026-07-18, where
  * `index.html` referenced a bundle hash that was not present on the deploy.
  * A reachability probe (`pnpm check:domains`) reports a healthy 200 for that
  * state, because the HTML itself serves fine — which is exactly why this
  * separate gate exists.
+ *
+ * Since the 2026-08-10 CDN cache-poisoning incident, the three public SPAs
+ * (arena-client, legends-board, registry-viewer) also run an edge guard in
+ * `functions/_middleware.ts` that turns an HTML-shell response under
+ * `/assets/` into a real, uncacheable 404 ("Asset not found"). So on a healthy
+ * edge a missing asset now surfaces here as a non-200; the HTML-masking check
+ * stays as the backstop for when that middleware is not running. Dashboard has
+ * no guard.
  *
  * Two modes:
  *
@@ -66,7 +75,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
  * HTML document. Only root-relative paths are returned — cross-origin
  * references (the brand-tokens stylesheet on www) are deliberately excluded
  * because they are governed by their own fallback contract and are not
- * subject to this SPA catch-all.
+ * subject to this SPA fallback.
  *
  * @param {string} htmlText - The full text of an index.html document.
  * @returns {string[]} Unique root-relative asset paths, in document order.
@@ -84,7 +93,7 @@ function extractSameOriginAssetPaths(htmlText) {
 }
 
 /**
- * Decides whether a response body is the SPA catch-all HTML rather than the
+ * Decides whether a response body is the SPA fallback HTML rather than the
  * asset that was requested. Checks the declared content type first, then
  * sniffs the body, because a misconfigured host can serve HTML under a
  * JavaScript content type.
@@ -230,10 +239,11 @@ async function runLiveProbePass(baseUrl) {
     if (isHtmlMasked(assetResponse.contentType, assetResponse.bodyText)) {
       failures.push(
         `${assetUrl} returned an HTML document (content-type "${assetResponse.contentType}") ` +
-          `instead of the asset itself. The SPA catch-all in public/_redirects is masking a ` +
-          `missing file: the browser receives HTML where it expects a module, so the app never ` +
-          `mounts and the page sits on its no-JS fallback. Redeploy this app and confirm the ` +
-          `hashed assets referenced by index.html are present in the deploy.`,
+          `instead of the asset itself. The SPA fallback is masking a missing file, and the ` +
+          `edge asset guard (functions/_middleware.ts) did not turn it into a 404: the browser ` +
+          `receives HTML where it expects a module, so the app never mounts and the page sits ` +
+          `on its no-JS fallback. Redeploy this app, confirm the hashed assets referenced by ` +
+          `index.html are present in the deploy, and confirm the middleware is running.`,
       );
     }
   }
