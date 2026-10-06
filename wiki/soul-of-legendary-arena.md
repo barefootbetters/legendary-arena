@@ -1665,9 +1665,10 @@ looks like freedom.
   built so that the killing sounds like stewardship, and the victim disappears
   behind the collective benefit. The society buys its safety or its favour with
   the blood of the one who cannot fight back and tells itself the ledger
-  balances — the scapegoat at its most literal. Its modern descendant is the same kind of phrase laid
-  over the unborn, the most voiceless captive of all: the act renamed as
-  *health*, so that it reads as care.
+  balances — the scapegoat at its most literal. Its modern descendant is the
+  same kind of phrase laid over the unborn, the most voiceless captive of all:
+  the act renamed as *health*, so that it reads as care (the next case reads it
+  in full).
 
   **Two selection rules, one machine.** Pharaoh and Herod choose the captive
   who *cannot* speak — the infant. The altar at Olishem also takes the one who
@@ -1687,6 +1688,49 @@ looks like freedom.
   [the inversion](#the-mastermind-lens--five-questions) at the close of this
   lens: the hard lock is not final, and the voiceless one is precisely whom God
   refuses to let be erased.
+- **The womb — the ultimate captive** *(all five questions, at the limit)*.
+  The altar case brought forward. Of every party this lens has read, the child
+  in the womb has the least: no voice, no vote, no advocate in the room, no face
+  anyone has to look at, and no way to leave. That is exactly the captive the
+  machine reaches for, and the five questions read the arrangement around it
+  without strain:
+
+  1. **Scope.** The inquiry is set so that "whose life is this?" is ruled out
+     before it starts. Framed as one person's body and one person's choice, the
+     question has only one party in it, and the second never enters the room.
+  2. **Standing.** The standing to define what happens sits with those who
+     perform it and those who fund it. The child has no reporter.
+  3. **Vocabulary.** "Fetus," "tissue," "products of conception," "reproductive
+     care" — words that make the counter-word, *child*, sound like extremism
+     rather than description. Scripture uses the counter-word without
+     hesitation: "Before I formed thee in the belly I knew thee"
+     ([Jeremiah 1:5](https://www.churchofjesuschrist.org/study/scriptures/ot/jer/1?lang=eng&id=p5#p5));
+     "the babe leaped in her womb"
+     ([Luke 1:41](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/1?lang=eng&id=p41#p41)) —
+     a babe, not tissue, and one that answers a voice "for joy" (1:44).
+  4. **The one who says no.** The nurse, the doctor, the pharmacist, the
+     volunteer who declines to take part. Watch what declining costs them, not
+     what the official explanation says.
+  5. **Exit.** For the child there is none: the hard lock at its absolute. For
+     the mother the lock is soft — the partner who will leave, the job, the
+     money, the shame — and the arrangement prices one choice cheap and the
+     other dear. She is often a captive of the arrangement too, which is why the
+     lens reads the seat and never has to condemn the woman standing in it.
+
+  **The frame.** "For the good of society" is the oldest version of "women's
+  health" — a phrase built so that the killing sounds like stewardship, and the
+  victim disappears behind the benefit to someone else. It works because the
+  handle is a real virtue: compassion for a frightened woman is good, and that
+  is exactly why it holds. Pharaoh had the river, the priest had the
+  thank-offering, and the modern seat has a medical word; the machine underneath
+  has not changed.
+
+  **The counter-move.** The midwives are its type: they "feared God, and did not
+  as the king of Egypt commanded them, but saved the men children alive"
+  ([Exodus 1:17](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/1?lang=eng&id=p17#p17)) —
+  the people standing at the birth who refuse the order. And the last word of
+  [the inversion](#the-mastermind-lens--five-questions) is the other half:
+  adoption. The voiceless one is not only spared; he is given a family.
 
 **Recent cases** — the same five questions, within living memory. Each is read
 as architecture; none needs a theory of who was right about the underlying
@@ -2262,6 +2306,18 @@ authored through the pipeline):*
 - **Scheme: "The Door Locks Behind You."** Entry is voluntary; exit is not.
 - **Twist: "Terms Subject to Change."** The moment the terms flip.
 - **Candidate Scheme: "Investigate Yourself, Find Yourself Innocent."**
+
+**Across the aisle — the lens on contested issues.** Each side's stance is
+stated the way its own advocates would put it. The lens column reads the
+architecture, and it does not split the difference: where it finds a seat, it
+says so; where the party label is the weak link, it says that instead.
+
+| Issue | Liberal stance | Conservative stance | The Mastermind Lens |
+|---|---|---|---|
+| **Taxing the rich** | Raise top marginal rates; the wealthiest should pay a fairer share toward the common good. | Keep rates low; wealth is earned property, and taxing it slows growth and investment. | Read the record, not the rhetoric. Both parties' donor classes are rich; the fight is over marginal rates on *income* and rarely touches how great fortunes are made and held (asset values). "Hate the rich" is campaign language, not a governing program — and the same test finds the same gap in the other side's populist rhetoric. |
+| **Haves vs. have-nots** | Inequality is structural; organize those without and redistribute from those who have. | Opportunity, not envy; class warfare divides a nation and punishes success. | [The kept wound](#the-mastermind-lens--five-questions): a coalition built on a grievance dissolves if the grievance heals, so it has an incentive to keep it open. Not owned by one side — grievance against "the elites" runs the same machine from the right. The test: does the arrangement ever let the condition end? |
+| **Victim frame vs. faith** | Outcomes are shaped by structural barriers; name them and change the system. | Personal responsibility, faith, and family; you act, under God. | [The orientation](#two-orientations-the-victim-frame-and-the-providence-frame) is real and compounds over a life and a family, but it belongs to a person, not a party. The partisan mapping is the weakest link; the lens reads the frame, not the voter. |
+| **Abortion** | Bodily autonomy; reproductive health care; the woman's choice. | The unborn child is a human life and deserves the law's protection. | The voiceless captive, all five questions at the limit: the second party ruled out of scope, the counter-word made unsayable, the act renamed *health*. The same machine as Pharaoh's river and the altar at Olishem — and the same counter-move, the midwives who would not obey. |
 
 **What the lens does and does not do.** It will **not** name a person, and that
 is a feature. The moment a lens promises to identify the Mastermind, it becomes a
@@ -2981,6 +3037,15 @@ operator has declined a caveat, do not bring it back.
   "because of their virtue," Abraham unbound and the altar broken down). The
   text states Pharaoh's justification; the Herod and altar framings are read by
   the page, as marked in the example.
+- Womb scriptures behind the Mastermind Lens worked example *The womb — the
+  ultimate captive* (KJV, Church of Jesus Christ of Latter-day Saints
+  scripture text) —
+  [Jeremiah 1:5](https://www.churchofjesuschrist.org/study/scriptures/ot/jer/1?lang=eng&id=p5#p5)
+  ("Before I formed thee in the belly I knew thee"),
+  [Luke 1:41–44](https://www.churchofjesuschrist.org/study/scriptures/nt/luke/1?lang=eng&id=p41-p44#p41)
+  (the babe that leaped in the womb "for joy"), and
+  [Exodus 1:17](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/1?lang=eng&id=p17#p17)
+  (the midwives who "feared God").
 - [2 Nephi 2:26–27](https://www.churchofjesuschrist.org/study/scriptures/bofm/2-ne/2?lang=eng&id=p26-p27#p26)
   (Book of Mormon) — "to act for themselves and not to be acted upon"; liberty
   or captivity as a choice. Behind
