@@ -11,7 +11,9 @@ import type { SubmitMove } from "./uiMoveName.types";
  * headings ship with the consuming cards. WP-683 (D-24500) adds the Deadpool
  * headings: 'here-hold-this' (pick a Villain to capture a Bystander),
  * 'random-acts-wound' (optional gain-a-Wound-to-hand), and 'random-acts-pass-left'
- * (pass a card to the player on your left). It renders one button per option from
+ * (pass a card to the player on your left). WP-793 (D-24656) adds the escape
+ * procedure's 'escape-hq-ko' and 'escape-bystander-discard' headings and the
+ * non-active 'return-on-discard' heading. It renders one button per option from
  * the VIEWER'S OWN prompt only
  * (`pendingSeatChoice.seatPrompts[viewerPlayerId]`) — the engine's per-seat
  * audience filter has already redacted the projection to the viewing seat, so a
@@ -102,6 +104,15 @@ export default defineComponent({
           return 'Choose a card to discard (Monarch’s Decree)';
         case 'vanishing-illusions-ko':
           return 'Choose a Villain to KO from your Victory Pile (Vanishing Illusions)';
+        // why: WP-793 / D-24656 — the rulebook escape procedure (the current player's HQ
+        // KO pick, then every player's Bystander discard) and a non-active seat's own
+        // return-on-discard answer.
+        case 'escape-hq-ko':
+          return 'A Villain escaped — choose a Hero in the HQ to KO';
+        case 'escape-bystander-discard':
+          return 'Bystanders were carried away — choose a card to discard';
+        case 'return-on-discard':
+          return 'Return the discarded card to your hand?';
         default:
           return 'Your choice';
       }

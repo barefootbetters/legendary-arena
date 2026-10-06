@@ -109,7 +109,8 @@ export function attachBystanderToCityVillain(G: LegendaryGameState, cityIndex: n
  * // why: WP-683 / D-24500 — universal-rules-v23 §capture: when a "Villain captures
  * a Bystander" effect fires and there is no Villain in the City, the MASTERMIND
  * captures the Bystander instead. Mastermind captures live in
- * G.mastermind.attachedBystanders (the D-15401 mastermind-side store), append-only.
+ * G.mastermind.attachedBystanders, append-only. A Master Strike adds none (D-24654);
+ * the other writer is a Villain-Deck Bystander revealed while the City is empty.
  * An empty supply is a clean no-op.
  *
  * @param G - Game state (mutated under Immer draft).

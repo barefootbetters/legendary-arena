@@ -220,6 +220,11 @@ export default defineComponent({
     // null and the preview falls back to the composition ext_ids.
     const loadoutFormat = ref<'LAGN' | 'MATCH-SETUP' | null>(null);
     const loadoutDisplayNames = ref<LagnDisplayNames | null>(null);
+    // why: D-24658 — the Final Blow rule for the LOADOUT path. Pre-set from a LAGN
+    // file's `setup.final_blow` and shown as its own checkbox in the preview (the
+    // manual form's `finalBlow` toggle sits in the collapsed advanced form and is
+    // not read by this path), so a loadout saved with Final Blow launches with it.
+    const loadoutFinalBlow = ref(false);
     // why: the preview rows shown under the upload control. Each entity row
     // prefers the LAGN display name and falls back to the composition ext_id,
     // so a Registry-Viewer LAGN export (ids only) still reflects its contents.
@@ -435,7 +440,12 @@ export default defineComponent({
       // empty composition whenever the player used the upload path, which the
       // game server (correctly) rejects with a 400.
       const parsed = parsedLoadout.value;
-      const config = parsed !== null ? parsed.composition : buildConfig();
+      // why: D-24658 — a loadout carries its own Final Blow choice (loadoutFinalBlow);
+      // the manual path keeps buildConfig()'s toggle.
+      const config =
+        parsed !== null
+          ? { ...parsed.composition, ...(loadoutFinalBlow.value ? { finalBlow: true } : {}) }
+          : buildConfig();
       const seatCount =
         parsed !== null
           ? parsed.playerCount
@@ -886,6 +896,8 @@ export default defineComponent({
         loadoutFormat.value = lagn.kind === 'ok' ? 'LAGN' : 'MATCH-SETUP';
         loadoutDisplayNames.value =
           lagn.kind === 'ok' ? lagn.displayNames : null;
+        // why: D-24658 — a MATCH-SETUP file has no Final Blow field, so it starts off.
+        loadoutFinalBlow.value = lagn.kind === 'ok' ? lagn.finalBlow : false;
         errorMessage.value = null;
         return;
       }
@@ -987,7 +999,11 @@ export default defineComponent({
       // concern). The create → persist → join(seat 0) → nav chain itself now
       // lives once in launchMatchFromComposition (WP-448), never inline here.
       const result = await launchMatchFromComposition({
-        config: parsed.composition,
+        // why: D-24658 — the loadout path's Final Blow envelope flag, omit-when-off.
+        config: {
+          ...parsed.composition,
+          ...(loadoutFinalBlow.value ? { finalBlow: true } : {}),
+        },
         playerCount: parsed.playerCount,
         playerName: playerName.value.trim(),
         authToken,
@@ -1073,6 +1089,7 @@ export default defineComponent({
       numPlayers,
       playerName,
       finalBlow,
+      loadoutFinalBlow,
       matches,
       joinableMatches,
       errorMessage,
@@ -1339,6 +1356,23 @@ export default defineComponent({
               {{ loadoutPreview.woundsCount }} /
               {{ loadoutPreview.officersCount }} /
               {{ loadoutPreview.sidekicksCount }}
+            </dd>
+          </div>
+          <!-- why: D-24658 — pre-ticked from the loadout's setup.final_blow and editable
+               here, because the manual form's toggle is not read on this path. -->
+          <div class="loadout-preview-row">
+            <dt>Final Blow</dt>
+            <dd>
+              <label class="final-blow-toggle" for="loadoutFinalBlow">
+                <input
+                  id="loadoutFinalBlow"
+                  v-model="loadoutFinalBlow"
+                  type="checkbox"
+                  data-testid="preview-final-blow"
+                  aria-label="Final Blow for this loadout (optional rule)"
+                />
+                Win only after a 5th, final fight against the Mastermind
+              </label>
             </dd>
           </div>
         </dl>

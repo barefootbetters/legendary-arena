@@ -1319,3 +1319,58 @@ describe('getLegalMoves — villain Blood Frenzy cost matches the move guard (WP
     assert.equal(legalMoves.filter((move) => move.name === 'fightVillain').length, 1);
   });
 });
+
+describe('getLegalMoves — restricted attack mirrors the per-target fight guard (WP-790 / D-24652)', () => {
+  // why: the bot must enumerate exactly the fights the engine accepts. Restricted ("usable
+  // only against …") attack counts only for an eligible target, so one global spendable figure
+  // would offer a fight the move refuses (the legalMoves↔move-guard divergence class).
+  function makeRestrictedG(grants: NonNullable<LegendaryGameState['turnEconomy']['restrictedAttack']>): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main' });
+    gameState.city = ['v-0', 'v-1', 'v-2', 'v-3', 'v-4'] as LegendaryGameState['city'];
+    const cardStats: Record<string, unknown> = { 'm-base': makeCardStatEntry({ fightCost: 2 }) };
+    for (const villain of gameState.city) {
+      cardStats[villain as string] = makeCardStatEntry({ fightCost: 2 });
+    }
+    gameState.cardStats = cardStats as LegendaryGameState['cardStats'];
+    gameState.mastermind = { baseCardId: 'm-base', tacticsDeck: ['t-1'] } as unknown as LegendaryGameState['mastermind'];
+    let restrictedTotal = 0;
+    for (const grant of grants) {
+      restrictedTotal += grant.remaining;
+    }
+    gameState.turnEconomy = makeTurnEconomy({
+      attack: restrictedTotal,
+      ...(grants.length > 0 ? { restrictedAttack: grants } : {}),
+    });
+    return gameState;
+  }
+
+  /** The fight intents getLegalMoves offers, as `cityIndex` numbers plus 'mastermind'. */
+  function fightTargets(gameState: LegendaryGameState): Array<number | string> {
+    const targets: Array<number | string> = [];
+    for (const move of getLegalMoves(gameState, CONTEXT)) {
+      if (move.name === 'fightVillain') {
+        targets.push((move.args as { cityIndex: number }).cityIndex);
+      } else if (move.name === 'fightMastermind') {
+        targets.push('mastermind');
+      }
+    }
+    return targets;
+  }
+
+  test('a Rooftops-only grant enumerates the Rooftops fight and no other', () => {
+    const targets = fightTargets(makeRestrictedG([{ remaining: 2, targets: ['rooftops'], sourceCardId: 'bolt' as CardExtId }]));
+    assert.deepEqual(targets, [2]);
+  });
+
+  test('a Mastermind-only grant enumerates the Mastermind fight and no City fight', () => {
+    const targets = fightTargets(makeRestrictedG([{ remaining: 2, targets: ['mastermind'], sourceCardId: 'wave' as CardExtId }]));
+    assert.deepEqual(targets, ['mastermind']);
+  });
+
+  test('with no grant the list equals the pre-WP-790 list: plain attack reaches every target', () => {
+    assert.deepEqual(fightTargets(makeRestrictedG([])), []);
+    const plainAttackG = makeRestrictedG([]);
+    plainAttackG.turnEconomy = makeTurnEconomy({ attack: 2 });
+    assert.deepEqual(fightTargets(plainAttackG), [0, 1, 2, 3, 4, 'mastermind']);
+  });
+});

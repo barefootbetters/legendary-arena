@@ -841,3 +841,143 @@ describe('LegendaryGame', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-793 / D-24656 — the play-phase turn.onMove openers for the rulebook escape
+// procedure and a non-active seat's return-on-discard. These prove the WIRING in
+// game.ts (the injected-seam trap): dropping either opener from turn.onMove must fail
+// a case here even though the helper unit tests stay green.
+// ---------------------------------------------------------------------------
+
+/** The play phase's turn.onMove hook. */
+function playPhaseOnMove(): (context: unknown) => void {
+  const playPhase = (
+    LegendaryGame.phases as Record<string, { turn?: { onMove?: (context: unknown) => void } }>
+  ).play;
+  const onMove = playPhase?.turn?.onMove;
+  assert.ok(onMove, 'play phase must define a turn.onMove hook');
+  return onMove;
+}
+
+/**
+ * A complete two-seat G from boardgame.io's own setup, cloned so it is mutable, with
+ * an empty HQ and empty Hero Deck the cases fill in.
+ */
+function cloneSetupG(): LegendaryGameState {
+  const initialState = InitializeGame({ game: LegendaryGame, numPlayers: 2, setupData: createMockMatchConfiguration() });
+  const gameState = structuredClone(initialState.G) as LegendaryGameState;
+  gameState.hq = [null, null, null, null, null];
+  gameState.heroDeck = [];
+  return gameState;
+}
+
+/** Runs the play-phase onMove for active seat 0 with a no-op events surface. */
+function runOnMove(gameState: LegendaryGameState): void {
+  playPhaseOnMove()({
+    G: gameState,
+    ctx: { turn: 1, currentPlayer: '0' },
+    random: { Shuffle: (items: unknown[]) => items },
+    events: { setActivePlayers: () => {} },
+  });
+}
+
+describe('play-phase turn.onMove escape-procedure wiring (WP-793 / D-24656)', () => {
+  it('a queued escape with two eligible HQ Heroes opens an escape-hq-ko choice', () => {
+    const gameState = cloneSetupG();
+    gameState.hq = ['test-hq-a', 'test-hq-b', null, null, null];
+    gameState.pendingEscapeProcedures = [
+      { escapedCardId: 'test-escaper', chooserPlayerID: '0', hasCarriedBystanders: false, isHqKoResolved: false },
+    ];
+
+    runOnMove(gameState);
+
+    assert.equal(gameState.pendingSeatChoice?.kind, 'escape-hq-ko', 'onMove must open the escape procedure');
+    assert.deepEqual(gameState.pendingSeatChoice?.addressedSeats, ['0']);
+  });
+
+  it('a non-active return-on-discard front entry opens its seat choice', () => {
+    const gameState = cloneSetupG();
+    gameState.playerZones['1']!.discard = ['core/cyclops'];
+    gameState.pendingReturnOnDiscard = [{ playerID: '1', cardId: 'core/cyclops' }];
+
+    runOnMove(gameState);
+
+    assert.equal(gameState.pendingSeatChoice?.kind, 'return-on-discard', 'onMove must open the reaction for seat 1');
+    assert.deepEqual(gameState.pendingSeatChoice?.addressedSeats, ['1']);
+  });
+
+  it('leaves an open Diving Block wave alone and does not open the escape over it', () => {
+    const gameState = cloneSetupG();
+    gameState.hq = ['test-hq-a', 'test-hq-b', null, null, null];
+    const divingBlockWave = {
+      kind: 'diving-block',
+      addressedSeats: ['1'],
+      seatPrompts: { '1': { options: [{ label: 'Reveal' }, { label: 'Take the Wound' }] } },
+      submissions: {},
+      defaultOptionIndex: 1,
+    };
+    gameState.pendingSeatChoice = structuredClone(divingBlockWave);
+    gameState.pendingEscapeProcedures = [
+      { escapedCardId: 'test-escaper', chooserPlayerID: '0', hasCarriedBystanders: false, isHqKoResolved: false },
+    ];
+
+    runOnMove(gameState);
+
+    assert.deepEqual(gameState.pendingSeatChoice, divingBlockWave, 'the open wave is untouched');
+    assert.equal(gameState.pendingEscapeProcedures?.[0]?.isHqKoResolved, false, 'the escape waits for it');
+  });
+
+  it('real reducer: a Bystander-carrying escape parks a two-seat discard and the ACTIVE seat\'s submission is accepted first', () => {
+    const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+    const makeMove = (
+      state: unknown,
+      moveName: string,
+      args: unknown[],
+      playerID: string,
+    ): { G: unknown; ctx: { currentPlayer: unknown } } =>
+      reducer(state, { type: 'MAKE_MOVE', payload: { type: moveName, args, playerID } });
+    const initialState = InitializeGame({ game: LegendaryGame, numPlayers: 2, setupData: createMockMatchConfiguration() });
+    let state = makeMove(initialState, 'setPlayerReady', [{ ready: true }], '0');
+    state = makeMove(state, 'setPlayerReady', [{ ready: true }], '1');
+    state = makeMove(state, 'startMatchIfReady', [], '0');
+    const activeSeat = String(state.ctx.currentPlayer);
+    const otherSeat = activeSeat === '0' ? '1' : '0';
+
+    // why: inject a full City whose space-4 Villain carries a Bystander and a Villain on
+    // top of the Villain Deck, with an empty HQ so step 1 is the logged no-op and the
+    // two-seat discard (step 2) is what onMove parks after the real reveal move.
+    const escapeG = structuredClone(state.G) as LegendaryGameState;
+    escapeG.city = ['test-c0', 'test-c1', 'test-c2', 'test-c3', 'test-escaper'];
+    escapeG.attachedBystanders = { 'test-escaper': ['test-bystander'] };
+    escapeG.villainDeck = { deck: ['test-entering'], discard: [] };
+    escapeG.villainDeckCardTypes = { ...escapeG.villainDeckCardTypes, 'test-escaper': 'villain', 'test-entering': 'villain' };
+    escapeG.hq = [null, null, null, null, null];
+    const activeHandBefore = escapeG.playerZones[activeSeat]!.hand.length;
+    const otherHandBefore = escapeG.playerZones[otherSeat]!.hand.length;
+    assert.ok(activeHandBefore > 0 && otherHandBefore > 0, 'both seats start with a hand');
+
+    state = makeMove({ ...state, G: escapeG }, 'revealVillainCard', [], activeSeat);
+    const parkedG = state.G as LegendaryGameState;
+    assert.equal(parkedG.pendingSeatChoice?.kind, 'escape-bystander-discard', 'onMove opened the discard after the reveal');
+    assert.deepEqual([...parkedG.pendingSeatChoice!.addressedSeats].sort(), ['0', '1']);
+
+    state = makeMove(state, 'resolveSeatChoice', [{ optionIndex: 0 }], activeSeat);
+    const afterActiveG = state.G as LegendaryGameState;
+    assert.deepEqual(
+      afterActiveG.pendingSeatChoice?.submissions[activeSeat],
+      { optionIndex: 0 },
+      'the reducer must accept the active seat\'s own discard first (no active-seat skip on a mixed ride)',
+    );
+
+    state = makeMove(state, 'resolveSeatChoice', [{ optionIndex: 0 }], otherSeat);
+    const finalG = state.G as LegendaryGameState;
+    assert.equal(finalG.pendingSeatChoice, undefined, 'the choice applied once both seats answered');
+    assert.equal(finalG.playerZones[activeSeat]!.hand.length, activeHandBefore - 1);
+    assert.equal(finalG.playerZones[otherSeat]!.hand.length, otherHandBefore - 1);
+    assert.equal(
+      finalG.messages.some((entry) => entry.text.includes('gained a wound from villain escape')),
+      false,
+      'no generic escape Wound',
+    );
+  });
+});

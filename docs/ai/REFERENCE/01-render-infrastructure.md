@@ -1,6 +1,31 @@
 # 01 — Render.com Backend Setup
 # Legendary Arena · Execution Prompt
 
+> **Historical foundation prompt — executed 2026-04-09, not the live
+> infrastructure reference.** This is Foundation Prompt 01 (see
+> `docs/ai/work-packets/WORK_INDEX.md` § Foundation Prompts): a one-time
+> execution prompt that scaffolded `apps/server` and the first `render.yaml`.
+> Its deliverables (Sections 1–5) are kept as written, as the record of what
+> was asked. **Do not copy its `render.yaml`, `.env.example`, CORS list, or plan
+> sizing into current work.** The live infrastructure is summarized below, and
+> `render.yaml` at the repo root is authoritative over this file.
+
+## Current state (as of 2026-10-02)
+
+| Piece | Today | Authoritative source |
+|---|---|---|
+| Game server | `legendary-arena-server`, `pro` plan (2 CPU / 4 GB), Node `24.18.0` (`NODE_VERSION` = `.node-version`). Entry point `apps/server/src/index.mjs`, run through the `tsx` loader. Served at `api.legendary-arena.com` and `legendary-arena-server.onrender.com` (`legendary-arena.onrender.com` no longer resolves). | `render.yaml`; `docs/ops/domains.json` |
+| Build and deploy | `buildCommand` = `pnpm install && pnpm -r build && node scripts/migrate.mjs`. The server auto-deploys on push to `main` unless every changed file is under `buildFilter.ignoredPaths` (`wiki/`, `docs/`, the front-end apps). | `render.yaml` |
+| Migrations | Plain SQL files in `data/migrations/` (45 as of this date), applied in filename order by `scripts/migrate.mjs`, tracked in `public.schema_migrations`. They run once per deploy in `buildCommand`. | `scripts/migrate.mjs` |
+| Database | `legendary-arena-db`, `pro-4gb` (raised from `basic-256mb` → `basic-1gb` → `pro-4gb` after OOM and CPU-starvation crashes in July 2026). Storage autoscaling is on. Public inbound is credential-gated (`ipAllowList: 0.0.0.0/0`). | `render.yaml` (plan changes must also be made in the dashboard) |
+| Backups | Daily `pg_dump` to a private R2 bucket, independent of Render (WP-416 / D-24236), plus a monthly DR-drill reminder issue. | `.github/workflows/db-backup.yml`, `dr-drill-reminder.yml`; `docs/ops/DISASTER_RECOVERY.md` |
+| ewiki | `legendary-arena-wiki`, Render static site behind Cloudflare Access. `autoDeploy: false`; the `wiki-viewer` workflow fires its deploy hook after the link and Hugo gates pass. | `render.yaml`; `.github/workflows/wiki-viewer.yml` |
+| CORS | The live allowlist in `apps/server/src/server.mjs` (see the historical note under *CORS and networking*). | `apps/server/src/server.mjs` |
+| Cost | **$146.35 for September 2026**: server $85.00, Postgres $55.30, builds $5.00, bandwidth $1.05, ewiki $0. | Render invoice `0SPQWPNF-0006` |
+| Direction | The server and Postgres move to one self-hosted DigitalOcean droplet (~$48/mo); Render stays warm as the rollback target until decommission. Decided at the program level, but stalled since 2026-07-25 and not yet in `DECISIONS.md`. | ewiki *Ubuntu Lab Provisioning* (§ Cost case); `legendary-arena-lab` repo `docs/PLAN.md` |
+
+---
+
 > **FULL CONTENTS MODE — Output contract for this session:**
 > - Full file contents for every new or modified file (no diffs, no snippets)
 > - List of exact commands to run with expected output
@@ -344,6 +369,15 @@ Requirements:
 
 ### Section 5 — Render Infrastructure
 
+> **Historical — superseded.** The `render.yaml` and `.env.example` below are
+> the April 2026 bootstrap versions. Today's `render.yaml` differs in almost
+> every field: `pro` / `pro-4gb` plans instead of `starter`, a build + migrate
+> `buildCommand`, the `tsx`-loader `startCommand` on `index.mjs`,
+> `buildFilter`, a pinned `NODE_VERSION`, and the ewiki static-site service.
+> The sample `GAME_SERVER_URL` host (`legendary-arena.onrender.com`) no longer
+> resolves. Use the live files and the *Current state* table at the top of
+> this document.
+
 **`render.yaml`** (at monorepo root):
 
 ```yaml
@@ -435,6 +469,11 @@ VITE_GAME_SERVER_URL=https://legendary-arena.onrender.com
 4. **First bottleneck at scale**: Given startup-load rules caching and the Render
    starter tier, what is the first bottleneck at ~100 concurrent games, and what
    is the minimal operational fix that does not require rewriting the architecture?
+   *(Answered in practice, July 2026: CPU and RAM starvation on both the web
+   service and the database, under bot-ally 250 ms polling, autoplay loops,
+   cron sweeps, and unpruned `bgio` match blobs. The fix was plan increases,
+   recorded in the `render.yaml` `why:` comments, which led to the September
+   2026 cost in the Current state table.)*
 
 ---
 

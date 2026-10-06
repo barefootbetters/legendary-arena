@@ -3,6 +3,10 @@ import { computed } from 'vue';
 import { useBuildRoadmap, taskStateLabel } from '../../composables/useBuildRoadmap.js';
 import { useCoverageLedger } from '../../composables/useCoverageLedger.js';
 import type { TaskState } from '../../types/roadmap.js';
+import VisionCard from '../../widgets/VisionCard.vue';
+import GovernanceKpiStrip from '../../widgets/GovernanceKpiStrip.vue';
+import GovernanceThroughputWidget from '../../widgets/GovernanceThroughputWidget.vue';
+import StatusFeedWidget from '../../widgets/StatusFeedWidget.vue';
 
 // why: the data is static, so the summary is computed once at setup against the
 // real clock. Tests cover the pure logic directly (useBuildRoadmap.test.ts); the
@@ -52,6 +56,20 @@ const bannerMessage = computed(() => {
         <code>docs/01-VISION.md</code>).
       </p>
     </header>
+
+    <!-- why: WP-791 / D-24653 — the build-governance widgets moved here from
+         the Overview, which now leads with money, engagement, and health.
+         This page is the dashboard's build/roadmap surface, so they sit at
+         its top, unchanged. -->
+    <section class="build-governance" aria-label="Build governance">
+      <h2 class="section-heading">Build governance</h2>
+      <VisionCard />
+      <GovernanceKpiStrip />
+      <div class="governance-grid">
+        <GovernanceThroughputWidget />
+        <StatusFeedWidget />
+      </div>
+    </section>
 
     <section class="banner" :class="stateClass(summary.overallState)">
       <span class="banner-state">{{ taskStateLabel(summary.overallState) }}</span>
@@ -138,6 +156,30 @@ const bannerMessage = computed(() => {
 
 .subtitle code {
   font-size: 0.78rem;
+}
+
+.build-governance {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-heading {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--p-text-color);
+}
+
+.governance-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1199px) {
+  .governance-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .banner {

@@ -118,3 +118,41 @@ describe('canFightWithExcessiveViolence (WP-738 / D-24561)', () => {
     assert.equal(gating.canFightWithExcessiveViolence(4), false);
   });
 });
+
+describe('restricted attack per fight target (WP-790 / D-24652)', () => {
+  // why: availableAttack excludes "usable only against …" attack; the gate adds back the
+  // grants eligible for the target, via the engine-exported sumRestrictedAttackForTarget.
+  function restrictedEconomy(): UITurnEconomyState {
+    return {
+      ...economy({ attack: 3, recruit: 0, available: { attack: 1 } }),
+      restrictedAttack: [{ remaining: 2, targets: ['rooftops'], label: 'Rooftops' }],
+      excessiveViolenceAvailable: true,
+    };
+  }
+
+  test('an eligible target counts the restricted attack', () => {
+    assert.equal(canFight(3, restrictedEconomy(), 'rooftops').allowed, true);
+  });
+
+  test('an ineligible target stays disabled, with the reason using the per-target figure', () => {
+    const result = canFight(3, restrictedEconomy(), 'sewers');
+    assert.equal(result.allowed, false);
+    assert.equal(result.reason, 'Needs 3 attack, you have 1.');
+  });
+
+  test('no target means no restricted attack (the pre-WP-790 figure)', () => {
+    assert.equal(canFight(3, restrictedEconomy()).allowed, false);
+  });
+
+  test('the Excessive Violence +1 check uses the per-target figure', () => {
+    assert.equal(canFightWithExcessiveViolence(2, restrictedEconomy(), 'rooftops'), true);
+    assert.equal(canFightWithExcessiveViolence(2, restrictedEconomy(), 'mastermind'), false);
+  });
+
+  test('useCardCostGating passes the target through', () => {
+    const gating = useCardCostGating(restrictedEconomy());
+    assert.equal(gating.canFight(3, 'rooftops').allowed, true);
+    assert.equal(gating.canFight(3, 'bridge').allowed, false);
+    assert.equal(gating.canFightWithExcessiveViolence(2, 'rooftops'), true);
+  });
+});

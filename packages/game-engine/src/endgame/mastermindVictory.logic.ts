@@ -96,6 +96,7 @@ export function dropAllPendingPlayerChoices(gameState: LegendaryGameState): void
   gameState.pendingDoOverChoices = undefined;
   gameState.pendingDrawOrEmpowered = undefined;
   gameState.pendingElectromagneticBubbleChoices = undefined;
+  gameState.pendingEscapeProcedures = undefined; // why: WP-793 / D-24656 — the escape-procedure queue (owed HQ KO + Bystander discard) joins the end-of-game drop set (D-24518); a decided match never opens it
   gameState.pendingGiveHqHeroChoices = undefined;
   gameState.pendingHeroChoice = undefined;
   gameState.pendingKoDiscardChoices = undefined;

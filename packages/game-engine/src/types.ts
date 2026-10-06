@@ -1472,6 +1472,28 @@ export interface PendingDivingBlockWound {
 }
 
 /**
+ * The rulebook escape procedure an escaped Villain still owes (WP-793 / D-24656).
+ *
+ * Rules v23 L556–L570: an escape (1) KOs an HQ Hero costing 6 or less, chosen by the
+ * current player, then (2) if the Villain carried Bystanders away, each player discards a
+ * card, then (3) resolves the Villain's Escape effect. Step 3 resolves inside the move;
+ * steps 1–2 are recorded here by `resolveVillainEscape` and opened after the move by the
+ * play-phase `turn.onMove` escape opener, one entry at a time, in escape order (the
+ * accepted deviation, D-24656 point 4). Runtime-only, never persisted; lazily initialized
+ * at the escape site, never in Game.setup, and the key is deleted when the queue drains.
+ */
+export interface PendingEscapeProcedure {
+  /** The escaped Villain (named in the HQ-KO log line). */
+  escapedCardId: CardExtId;
+  /** The player whose turn it was when the Villain escaped (chooses the HQ KO). */
+  chooserPlayerID: string;
+  /** Whether the escape carried at least one Bystander into the Escape Pile (owes step 2). */
+  hasCarriedBystanders: boolean;
+  /** Whether step 1 (the HQ KO) has been resolved or opened for this escape. */
+  isHqKoResolved: boolean;
+}
+
+/**
  * Pending give-HQ-Hero player choice state (WP-532 / D-24343).
  *
  * Created when the `give-hq-hero-each-player` villain-effect handler (Paibok the
@@ -2160,6 +2182,15 @@ export interface LegendaryGameState {
   // oracles from re-pinning. Absent (undefined) or empty [] both mean "no pending Wound".
   /** FIFO queue of pending reactive Diving-Block wound interceptions awaiting resolution (WP-682). */
   pendingDivingBlockWounds?: PendingDivingBlockWound[] | undefined;
+  // why: WP-793 / D-24656 — every Villain escape records the rulebook HQ KO + Bystander
+  // discard it owes; the play-phase turn.onMove escape opener drains the FIFO one entry at
+  // a time through the WP-684 seat-choice capability (the Diving Block precedent). Optional
+  // so existing test-state literals need no update; **lazily initialized at the escape
+  // site, never in Game.setup**, and deleted (not emptied) when drained, so an escape-free
+  // match leaves it absent and the empty-replay PRE_WP080_HASH / hashGameState oracles do
+  // not re-pin. Engine-internal: not projected to UIState.
+  /** FIFO queue of escape procedures (HQ KO, Bystander discard) owed by escaped Villains (WP-793). */
+  pendingEscapeProcedures?: PendingEscapeProcedure[] | undefined;
   // why: WP-532 / D-24343 — the current (fighting) player's pending give-HQ-Hero pick
   // (Paibok Fight). Optional so existing test-state literals need no update; **lazily
   // initialized at the park site, never in Game.setup** — an undefined field is omitted

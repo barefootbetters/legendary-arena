@@ -123,11 +123,14 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #f1f5f9;
+  /* why: a faint tint of the text colour over the content background keeps the
+     plain-background card distinct from the backdrop on both light and dark themes. */
+  background: color-mix(in srgb, var(--p-text-color) 4%, var(--p-content-background));
 }
 
 .login-card {
-  background: #ffffff;
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
   border-radius: 12px;
   padding: 2.5rem;
   width: 100%;
@@ -139,18 +142,18 @@ onMounted(async () => {
 .login-card h1 {
   margin: 0;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--p-text-color);
 }
 
 .subtitle {
-  color: #64748b;
+  color: var(--p-text-muted-color);
   margin: 0.25rem 0 2rem;
   font-size: 0.9rem;
 }
 
 .login-status {
   font-size: 0.9rem;
-  color: #64748b;
+  color: var(--p-text-muted-color);
 }
 
 .login-widget {
@@ -160,9 +163,9 @@ onMounted(async () => {
 .login-banner {
   font-size: 0.9rem;
   padding: 0.75rem 1rem;
-  background: #fff4e6;
-  border: 1px solid #f4a261;
+  background: color-mix(in srgb, var(--p-orange-500) 14%, transparent);
+  border: 1px solid var(--p-orange-500);
   border-radius: 6px;
-  color: #0f172a;
+  color: var(--p-text-color);
 }
 </style>

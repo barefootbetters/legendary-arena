@@ -1,9 +1,8 @@
 /**
  * Tests for mastermind strike handler (WP-024, WP-154).
  *
- * Verifies bystander capture on strike, empty-supply logging,
- * negative assertions on city-villain attachedBystanders, and
- * serialization.
+ * Verifies that a strike captures no bystander (D-24654), negative
+ * assertions on city-villain attachedBystanders, and serialization.
  *
  * No boardgame.io imports. Uses node:test and node:assert only.
  */
@@ -130,41 +129,30 @@ describe('mastermindStrikeHandler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Test 3: captures top bystander (index 0) from non-empty supply
+  // Test 3: a strike leaves the bystander supply and the mastermind store alone
   // -------------------------------------------------------------------------
-  it('captures top bystander from supply onto mastermind.attachedBystanders', () => {
+  it('does not capture a Bystander (D-24654)', () => {
     const gameState = makeTestState();
-    const originalBystanderCount = gameState.piles.bystanders.length;
-    const topBystander = gameState.piles.bystanders[0];
+    const supplyBefore = [...gameState.piles.bystanders];
 
     mastermindStrikeHandler(gameState, {}, { cardId: 'test-strike' });
 
-    assert.equal(
-      gameState.mastermind.attachedBystanders.length,
-      1,
-      'mastermind.attachedBystanders must have exactly 1 entry after capture',
+    assert.deepStrictEqual(
+      gameState.mastermind.attachedBystanders,
+      [],
+      'a Master Strike must not add a Bystander to mastermind.attachedBystanders',
     );
-    assert.equal(
-      gameState.mastermind.attachedBystanders[0],
-      topBystander,
-      'captured bystander must be the former index-0 card',
-    );
-    assert.equal(
-      gameState.piles.bystanders.length,
-      originalBystanderCount - 1,
-      'bystander pile must shrink by exactly 1',
-    );
-    assert.equal(
-      gameState.piles.bystanders[0],
-      'bystander-002',
-      'new top of pile must be the former index-1 card',
+    assert.deepStrictEqual(
+      gameState.piles.bystanders,
+      supplyBefore,
+      'a Master Strike must not draw from the bystander supply (length and order unchanged)',
     );
   });
 
   // -------------------------------------------------------------------------
-  // Test 4: empty supply — no capture, message appended
+  // Test 4: empty supply — no capture and no message
   // -------------------------------------------------------------------------
-  it('skips capture and appends message when bystander supply is empty', () => {
+  it('appends no message on an empty supply for a mastermind with no printed strike (D-24654)', () => {
     const gameState = makeTestState();
     gameState.piles.bystanders = [];
     const messagesBefore = gameState.messages.length;
@@ -178,80 +166,69 @@ describe('mastermindStrikeHandler', () => {
     );
     assert.equal(
       gameState.messages.length,
-      messagesBefore + 1,
-      'exactly one message appended on empty supply',
+      messagesBefore,
+      'no message appended — the strike no longer reports on the bystander supply',
     );
-    const emptyLine = gameState.messages[gameState.messages.length - 1]!;
-    assert.ok(
-      emptyLine.text.startsWith('[Master Strike]'),
-      'empty-supply message must begin with [Master Strike] prefix',
-    );
-    // why: WP-574 AC-2 — the empty-supply wording is BYTE-UNCHANGED (D-15401
-    // specified this exact message). `.endsWith` tolerates the pushLog address
-    // prefix; this fixture omits logMeta so the text is the bare sentence.
-    assert.ok(
-      emptyLine.text.endsWith('Bystander supply is empty — no bystander captured.'),
-      'empty-supply line wording is byte-unchanged',
-    );
-    assert.equal(emptyLine.outcome, 'blocked', 'a supply-empty no-op is blocked (WP-434)');
   });
 
   // -------------------------------------------------------------------------
-  // Test 4b (WP-574): success path logs an applied capture line naming the mastermind
+  // Test 4b (D-24654): no capture wording for a full or an empty supply
   // -------------------------------------------------------------------------
-  it('logs an applied [Master Strike] capture line naming the mastermind on a successful capture (AC-1)', () => {
-    const gameState = makeTestState();
-    const messagesBefore = gameState.messages.length;
-
-    mastermindStrikeHandler(gameState, {}, { cardId: 'test-strike' });
-
-    assert.equal(
-      gameState.messages.length,
-      messagesBefore + 1,
-      'exactly one capture message appended on a successful capture',
-    );
-    const captureLine = gameState.messages[gameState.messages.length - 1]!;
-    assert.ok(
-      captureLine.text.startsWith('[Master Strike]'),
-      'capture line uses the [Master Strike] prefix',
-    );
-    assert.ok(
-      captureLine.text.endsWith('captured a Bystander.'),
-      'capture line records the capture',
-    );
-    // why: no cardDisplayData in this fixture, so resolveCardName falls back to
-    // the mastermind baseCardId — the line still names the capturing mastermind.
-    assert.ok(
-      captureLine.text.includes('test-mastermind-base'),
-      'capture line names the capturing mastermind',
-    );
-    assert.equal(captureLine.outcome, 'applied', 'a completed capture is applied (WP-434)');
-  });
-
-  // -------------------------------------------------------------------------
-  // Test 4c (WP-574): the two branches keep distinguishable wordings (AC-2)
-  // -------------------------------------------------------------------------
-  it('produces distinguishable success and empty-supply wordings — both survive independently (AC-2)', () => {
-    const successState = makeTestState();
-    mastermindStrikeHandler(successState, {}, { cardId: 'test-strike' });
-    const successText = successState.messages[successState.messages.length - 1]!.text;
+  it('logs no capture or empty-supply line for a full or an empty supply (D-24654)', () => {
+    const fullState = makeTestState();
+    mastermindStrikeHandler(fullState, {}, { cardId: 'test-strike' });
 
     const emptyState = makeTestState();
     emptyState.piles.bystanders = [];
     mastermindStrikeHandler(emptyState, {}, { cardId: 'test-strike' });
-    const emptyText = emptyState.messages[emptyState.messages.length - 1]!.text;
 
-    // why: the success and empty-supply branches must not collapse into one
-    // wording — a reader must tell a capture from a supply-exhausted no-op.
-    assert.notEqual(successText, emptyText, 'the two branch wordings must differ');
-    assert.ok(
-      emptyText.endsWith('Bystander supply is empty — no bystander captured.'),
-      'empty-supply line is byte-unchanged (D-15401)',
-    );
-    assert.ok(
-      successText.endsWith('captured a Bystander.'),
-      'success line is the new additive capture wording',
-    );
+    for (const gameState of [fullState, emptyState]) {
+      for (const message of gameState.messages) {
+        assert.ok(
+          !message.text.endsWith('captured a Bystander.'),
+          `a Master Strike must not log a capture line (got "${message.text}")`,
+        );
+        assert.ok(
+          !message.text.endsWith('no bystander captured.'),
+          `a Master Strike must not log an empty-supply line (got "${message.text}")`,
+        );
+      }
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // Test 4c (D-24654): no mastermind's strike captures, printed capture or not
+  // -------------------------------------------------------------------------
+  it('leaves the supply and the store unchanged for every mastermind, including the deferred printed captures (D-24654)', () => {
+    // why: dkcy/mr-sinister and ssw1/madelyne-pryor-goblin-queen print a
+    // Bystander capture, but its cost (his per-Bystander attack, her Demon
+    // Goblins) is unmodeled, so the capture is deferred (D-24654 points 2 and 4).
+    // A follow-up that models one of them must change this pin on purpose.
+    const mastermindIds = [
+      'dkcy/mr-sinister',
+      'ssw1/madelyne-pryor-goblin-queen',
+      'core/magneto',
+      'core/dr-doom',
+      'unknown/not-a-mastermind',
+    ];
+    for (const mastermindId of mastermindIds) {
+      const gameState = makeTestState();
+      gameState.selection = { ...gameState.selection, mastermindId };
+      const supplyBefore = [...gameState.piles.bystanders];
+
+      mastermindStrikeHandler(gameState, {}, { cardId: 'test-strike' });
+
+      assert.deepStrictEqual(
+        gameState.piles.bystanders,
+        supplyBefore,
+        `${mastermindId}: a Master Strike must not draw from the bystander supply`,
+      );
+      assert.deepStrictEqual(
+        gameState.mastermind.attachedBystanders,
+        [],
+        `${mastermindId}: a Master Strike must not add a Bystander to the mastermind`,
+      );
+    }
   });
 
   // -------------------------------------------------------------------------
@@ -411,7 +388,7 @@ describe('mastermindStrikeHandler — Magneto Master Strike', () => {
     assert.equal(gameState.playerZones['2']!.discard.length, 1);
   });
 
-  it('still captures one bystander onto the mastermind (generic strike effect)', () => {
+  it('no longer runs the generic bystander capture on the Magneto path (D-24654)', () => {
     const gameState = makeMagnetoState({
       '0': ['h1', 'h2', 'h3', 'h4', 'h5'],
     });
@@ -419,12 +396,12 @@ describe('mastermindStrikeHandler — Magneto Master Strike', () => {
 
     mastermindStrikeHandler(gameState, {}, { cardId: 'strike-card' }, {});
 
-    assert.equal(
-      gameState.mastermind.attachedBystanders.length,
-      1,
-      'Generic D-15401 bystander capture must still run on the Magneto path',
+    assert.deepStrictEqual(
+      gameState.mastermind.attachedBystanders,
+      [],
+      'Magneto prints no capture, so the strike adds no Bystander to the mastermind',
     );
-    assert.equal(gameState.piles.bystanders.length, 1);
+    assert.equal(gameState.piles.bystanders.length, 2);
   });
 
   it('still returns the generic masterStrikeCount counter effect', () => {
@@ -483,8 +460,8 @@ describe('mastermindStrikeHandler — Magneto Master Strike', () => {
     );
     assert.equal(
       gameState.mastermind.attachedBystanders.length,
-      1,
-      'Generic bystander capture still runs for any mastermind',
+      0,
+      'No mastermind captures a Bystander on a Master Strike (D-24654)',
     );
   });
 });
@@ -848,7 +825,7 @@ describe('mastermindStrikeHandler — Red Skull Master Strike', () => {
     assert.deepStrictEqual(gameState.ko, []);
   });
 
-  it('preserves generic strike behavior: bystander capture, counter, one emission', () => {
+  it('preserves generic strike behavior: no bystander capture, counter, one emission', () => {
     const gameState = makeRedSkullState(
       { '0': ['hero-a', 'hero-b'] },
       { 'hero-a': stat(2), 'hero-b': stat(5) },
@@ -862,9 +839,9 @@ describe('mastermindStrikeHandler — Red Skull Master Strike', () => {
       {},
     );
 
-    // D-15401 bystander capture still runs on the Red Skull path.
-    assert.equal(gameState.mastermind.attachedBystanders.length, 1);
-    assert.equal(gameState.piles.bystanders.length, 1);
+    // D-24654 — no bystander capture on the Red Skull path.
+    assert.deepStrictEqual(gameState.mastermind.attachedBystanders, []);
+    assert.equal(gameState.piles.bystanders.length, 2);
     // Generic counter effect still returned.
     const counterEffect = effects.find(
       (effect) =>
@@ -1596,9 +1573,9 @@ describe('mastermindStrikeHandler — co2e dispatch isolation (WP-388)', () => {
       { type: 'modifyCounter', counter: 'masterStrikeCount', delta: 1 },
       { type: 'queueMessage', message: 'Mastermind strike revealed — strike count incremented.' },
     ]);
-    // D-15401 capture still runs on the co2e branch
-    assert.equal(gameState.mastermind.attachedBystanders.length, 1);
-    assert.equal(gameState.piles.bystanders.length, 2);
+    // D-24654 — no bystander capture on the co2e branch
+    assert.deepStrictEqual(gameState.mastermind.attachedBystanders, []);
+    assert.equal(gameState.piles.bystanders.length, 3);
     // WP-200 emission still terminal
     assert.equal(gameState.notableEvents.length, 1);
     // exactly one hand mutation per player per strike
@@ -1810,6 +1787,7 @@ describe('mastermindStrikeHandler — Doctor Octopus reveal-eight (WP-397)', () 
 
   it('preserves the generic strike behaviour on the reveal branch (AC-8)', () => {
     const gameState = makeOctopusRevealState(['a'], {});
+    const supplyLengthBefore = gameState.piles.bystanders.length;
 
     const effects = mastermindStrikeHandler(
       gameState,
@@ -1822,7 +1800,8 @@ describe('mastermindStrikeHandler — Doctor Octopus reveal-eight (WP-397)', () 
       { type: 'modifyCounter', counter: 'masterStrikeCount', delta: 1 },
       { type: 'queueMessage', message: 'Mastermind strike revealed — strike count incremented.' },
     ]);
-    assert.equal(gameState.mastermind.attachedBystanders.length, 1, 'D-15401 capture still runs');
+    assert.deepStrictEqual(gameState.mastermind.attachedBystanders, [], 'D-24654 — no bystander capture');
+    assert.equal(gameState.piles.bystanders.length, supplyLengthBefore, 'D-24654 — the bystander supply is untouched');
     assert.equal(gameState.notableEvents.length, 1, 'WP-200 emission still terminal');
   });
 

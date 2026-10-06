@@ -78,7 +78,7 @@ interface PhaseCardArgs {
  * @param G - The game state to inspect (not mutated).
  * @returns true when any pending choice is open.
  */
-function hasAnyPendingChoice(G: LegendaryGameState): boolean {
+export function hasAnyPendingChoice(G: LegendaryGameState): boolean {
   if (hasPendingKoHeroChoice(G)) return true;
   if (hasPendingScryKoChoice(G)) return true;
   if (hasPendingMelterKoChoice(G)) return true;

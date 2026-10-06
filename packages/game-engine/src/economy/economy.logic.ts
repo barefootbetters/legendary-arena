@@ -10,7 +10,7 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
-import type { TurnEconomy, CardStatEntry } from './economy.types.js';
+import type { TurnEconomy, CardStatEntry, AttackTargetName, RestrictedAttackGrant } from './economy.types.js';
 import { matchesShieldOrHydra } from './shieldMembership.js';
 // why: D-13702 / D-18706 fan-out — economy.logic.ts must resolve hero AND
 // villain card-instance ext_ids identically to the deck builders so
@@ -487,6 +487,7 @@ type CarriedTurnFields = Partial<
     | 'excessiveViolenceUsedThisTurn'
     | 'isPlayBothSidesActive'
     | 'bothSidesPlayedCardIds'
+    | 'restrictedAttack'
   >
 >;
 
@@ -541,7 +542,33 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   if (economy.bothSidesPlayedCardIds !== undefined) {
     carried.bothSidesPlayedCardIds = economy.bothSidesPlayedCardIds;
   }
+  // why: WP-790 / D-24652 — carry the restricted-attack sub-ledger, or a later same-turn
+  // addResources / spend rebuild would drop it and the restricted remainder would turn back
+  // into plain attack. Copied as a new array of copied grants so no rebuild aliases the
+  // prior economy's ledger.
+  if (economy.restrictedAttack !== undefined) {
+    carried.restrictedAttack = copyRestrictedAttackGrants(economy.restrictedAttack);
+  }
   return carried;
+}
+
+/**
+ * Copies a restricted-attack ledger: a new array of new grant objects, each with
+ * its own copied `targets` array.
+ *
+ * @param grants - The ledger to copy.
+ * @returns A deep copy that shares no array or object with `grants`.
+ */
+function copyRestrictedAttackGrants(grants: readonly RestrictedAttackGrant[]): RestrictedAttackGrant[] {
+  const copied: RestrictedAttackGrant[] = [];
+  for (const grant of grants) {
+    copied.push({
+      remaining: grant.remaining,
+      targets: [...grant.targets],
+      sourceCardId: grant.sourceCardId,
+    });
+  }
+  return copied;
 }
 
 /**
@@ -564,11 +591,97 @@ export function getAvailableAttack(economy: TurnEconomy): number {
  * @returns Attack points spendable toward fight costs this turn.
  */
 export function getSpendableAttack(economy: TurnEconomy): number {
-  const availableAttack = economy.attack - economy.spentAttack;
+  // why: WP-790 / D-24652 — restricted ("usable only against …") attack stays inside
+  // `attack` but may pay only for an eligible target, so the target-free spendable figure
+  // excludes its unspent remainder. The max(0, …) clamp is defensive: the spend helpers
+  // keep `attack - spentAttack >= remaining`, but a negative spendable figure must never
+  // reach a gate or the projected `availableAttack`.
+  const unrestrictedAttack = economy.attack - economy.spentAttack - getRestrictedAttackRemaining(economy);
+  const availableAttack = Math.max(0, unrestrictedAttack);
   if (economy.recruitSpendableAsAttack === true) {
     return availableAttack + (economy.recruit - economy.spentRecruit);
   }
   return availableAttack;
+}
+
+/**
+ * Returns the total unspent restricted attack this turn (WP-790 / D-24652): the
+ * sum of every grant's `remaining`, or 0 when no restricted grant was played.
+ *
+ * @param economy - Current turn economy state.
+ * @returns The restricted remainder still inside `attack - spentAttack`.
+ */
+export function getRestrictedAttackRemaining(economy: TurnEconomy): number {
+  if (economy.restrictedAttack === undefined) {
+    return 0;
+  }
+  let total = 0;
+  for (const grant of economy.restrictedAttack) {
+    total += grant.remaining;
+  }
+  return total;
+}
+
+/**
+ * Sums the unspent restricted attack that can pay for a fight against `target`
+ * (WP-790 / D-24652). This is the ONE eligibility rule: the engine gates and the
+ * arena-client Fight buttons both call it.
+ *
+ * @param grants - Restricted grants (the engine ledger or the UI projection).
+ * @param target - The fight target, or undefined (no restricted attack applies).
+ * @returns The sum of `remaining` over the grants whose `targets` include `target`.
+ */
+export function sumRestrictedAttackForTarget(
+  grants: readonly { remaining: number; targets: readonly AttackTargetName[] }[],
+  target: AttackTargetName | undefined,
+): number {
+  if (target === undefined) {
+    return 0;
+  }
+  let total = 0;
+  for (const grant of grants) {
+    if (grant.targets.includes(target)) {
+      total += grant.remaining;
+    }
+  }
+  return total;
+}
+
+/**
+ * Returns the attack that can fund a fight against `target` (WP-790 / D-24652):
+ * the target-free spendable figure plus the restricted attack eligible for it.
+ *
+ * @param economy - Current turn economy state.
+ * @param target - The fight target (a City space name or 'mastermind').
+ * @returns Attack points spendable toward this target's fight cost.
+ */
+export function getSpendableAttackForTarget(economy: TurnEconomy, target: AttackTargetName): number {
+  return getSpendableAttack(economy) + sumRestrictedAttackForTarget(economy.restrictedAttack ?? [], target);
+}
+
+/** Display names for the fight targets (WP-790 / D-24652). */
+const ATTACK_TARGET_LABELS: Readonly<Record<AttackTargetName, string>> = {
+  sewers: 'Sewers',
+  bank: 'Bank',
+  rooftops: 'Rooftops',
+  streets: 'Streets',
+  bridge: 'Bridge',
+  mastermind: 'Mastermind',
+};
+
+/**
+ * Formats restricted-attack targets for the log line and the economy-bar chip,
+ * e.g. `['sewers', 'bridge', 'mastermind']` → `"Sewers or Bridge or Mastermind"`.
+ *
+ * @param targets - The targets, in canonical order.
+ * @returns The display names joined with `" or "`.
+ */
+export function formatAttackTargets(targets: readonly AttackTargetName[]): string {
+  const labels: string[] = [];
+  for (const target of targets) {
+    labels.push(ATTACK_TARGET_LABELS[target]);
+  }
+  return labels.join(' or ');
 }
 
 /**
@@ -874,6 +987,133 @@ export function spendFightCost(economy: TurnEconomy, cost: number): TurnEconomy 
     next = spendRecruit(next, fromRecruit);
   }
   return next;
+}
+
+/**
+ * Adds a "usable only against …" attack grant (WP-790 / D-24652).
+ *
+ * `attack += amount` (the grant still counts toward the turn's attack made) and a
+ * new grant is appended to the lazily-materialized `restrictedAttack` ledger. Every
+ * other field is carried unchanged through the single carry chokepoint.
+ *
+ * @param economy - Current turn economy state.
+ * @param amount - The restricted attack granted.
+ * @param targets - Where it may be spent, in canonical order.
+ * @param sourceCardId - The hero card that granted it.
+ * @returns New TurnEconomy with the attack added and the grant recorded.
+ */
+export function addRestrictedAttack(
+  economy: TurnEconomy,
+  amount: number,
+  targets: readonly AttackTargetName[],
+  sourceCardId: CardExtId,
+): TurnEconomy {
+  // why: WP-790 / D-24652 — printed "usable only against …" attack (rules v23, the Liberate
+  // entry). It stays inside `attack`, so the turn total, the stats and every "attack you
+  // made" condition count it; the ledger entry is what keeps it off ineligible fights.
+  // Materialized on the first grant only (absent until then), so a turn with no restricted
+  // grant serializes byte-identically and neither hash oracle moves.
+  const nextGrants = copyRestrictedAttackGrants(economy.restrictedAttack ?? []);
+  nextGrants.push({ remaining: amount, targets: [...targets], sourceCardId });
+  return {
+    attack: economy.attack + amount,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count (mirrors woundsDrawn).
+    cardsDrawn: economy.cardsDrawn,
+    ...carryConversionFlag(economy),
+    restrictedAttack: nextGrants,
+  };
+}
+
+/**
+ * Records a fight-cost spend against a known target (WP-790 / D-24652).
+ *
+ * Pays in three steps: (1) restricted grants eligible for `target`,
+ * narrowest-first; (2) unrestricted attack; (3) unspent recruit, only when the
+ * WP-580 conversion is active. The caller gates affordability on
+ * `getSpendableAttackForTarget`. With no restricted grant the result equals
+ * `spendFightCost(economy, cost)`.
+ *
+ * It never delegates to `spendFightCost`: that function's `attack - spentAttack`
+ * includes the remainder of INELIGIBLE grants, so under the WP-580 conversion it
+ * would spend that restricted attack instead of recruit.
+ *
+ * @param economy - Current turn economy state.
+ * @param cost - The fight cost to pay (including any Excessive Violence extra).
+ * @param target - The fight target.
+ * @returns New TurnEconomy with the cost debited.
+ */
+export function spendFightCostForTarget(
+  economy: TurnEconomy,
+  cost: number,
+  target: AttackTargetName,
+): TurnEconomy {
+  let costLeft = cost;
+  let next = economy;
+  // Step 1: eligible restricted grants, narrowest-first.
+  if (economy.restrictedAttack !== undefined) {
+    const grants = copyRestrictedAttackGrants(economy.restrictedAttack);
+    let paidFromGrants = 0;
+    for (const grantIndex of orderEligibleGrantsNarrowestFirst(grants, target)) {
+      if (costLeft <= 0) {
+        break;
+      }
+      const grant = grants[grantIndex]!;
+      const fromGrant = Math.min(costLeft, grant.remaining);
+      grant.remaining -= fromGrant;
+      costLeft -= fromGrant;
+      paidFromGrants += fromGrant;
+    }
+    // why: zero-remaining grants stay in the array (stable indices). The paid amount moves
+    // into spentAttack, so `attack - spentAttack` stays the true unspent total and the
+    // invariant `attack - spentAttack >= remaining` holds.
+    next = { ...spendAttack(economy, paidFromGrants), restrictedAttack: grants };
+  }
+  // Step 2: unrestricted attack — never the remainder of a grant this target cannot use.
+  const unrestrictedAttack = next.attack - next.spentAttack - getRestrictedAttackRemaining(next);
+  const fromAttack = Math.max(0, Math.min(costLeft, unrestrictedAttack));
+  next = spendAttack(next, fromAttack);
+  costLeft -= fromAttack;
+  // Step 3: recruit, only under the WP-580 recruit-as-attack conversion.
+  if (costLeft > 0 && next.recruitSpendableAsAttack === true) {
+    next = spendRecruit(next, costLeft);
+  }
+  return next;
+}
+
+/**
+ * Returns the indices of the grants eligible for `target`, narrowest-first: the
+ * fewest `targets` first, ties broken by grant (array) order.
+ *
+ * @param grants - The restricted-attack ledger.
+ * @param target - The fight target.
+ * @returns Eligible grant indices in spend order.
+ */
+function orderEligibleGrantsNarrowestFirst(
+  grants: readonly RestrictedAttackGrant[],
+  target: AttackTargetName,
+): number[] {
+  const eligibleIndices: number[] = [];
+  for (let grantIndex = 0; grantIndex < grants.length; grantIndex++) {
+    const grant = grants[grantIndex]!;
+    if (grant.remaining > 0 && grant.targets.includes(target)) {
+      eligibleIndices.push(grantIndex);
+    }
+  }
+  // why: WP-790 / D-24652 — narrowest-first keeps the most flexible attack for later
+  // fights. Deterministic (target count, then grant order), so no player prompt is needed.
+  eligibleIndices.sort((leftIndex, rightIndex) => {
+    const widthDifference = grants[leftIndex]!.targets.length - grants[rightIndex]!.targets.length;
+    if (widthDifference !== 0) {
+      return widthDifference;
+    }
+    return leftIndex - rightIndex;
+  });
+  return eligibleIndices;
 }
 
 /**

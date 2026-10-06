@@ -146,6 +146,15 @@ describe('resolveCruelRuler (WP-693 / D-24510)', () => {
     assert.equal(G.turnEconomy.spentAttack, 0, 'no attack spent');
   });
 
+  it('D-24661: exactly 1 City Villain → logs the Cruel Ruler free-defeat attribution', () => {
+    const G = makeG({ city: ['villain-a', null, null, null, null] });
+    resolveCruelRuler(G, CTX, '0', SHUFFLE);
+    assert.ok(
+      G.messages.some((entry) => /defeats .*villain-a.* for free \(Cruel Ruler\)/.test(entry.text)),
+      'the auto free defeat is attributed to Cruel Ruler, not read as a paid fight',
+    );
+  });
+
   it('exactly 1 City Villain → fires the villain onFight ability (reuses the fight path)', () => {
     const G = makeG({
       city: ['villain-a', null, null, null, null],

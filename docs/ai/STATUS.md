@@ -7,6 +7,253 @@
 
 ## Current State
 
+### D-24661 — solo Covering Fire and Whispers and Lies say they did nothing; Cruel Ruler names its free defeat (direct fix) (2026-10-05)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** From solo Loki / Cosmic Cube match `aK-n8zNOteC`:
+- **Hawkeye's Covering Fire** no longer asks a solo player to choose "each other player draws or discards". With nobody to affect, it logs that and moves on.
+- **Loki's Whispers and Lies** now logs that there is no other player, instead of resolving silently.
+- **Loki's Cruel Ruler**, with one Villain in the City, logs "defeats {Villain} for free (Cruel Ruler)" before the defeat. The free defeat no longer reads like a paid fight.
+
+Multiplayer behavior is unchanged.
+
+- **Engine only** (`heroEffects.execute.ts`, `tacticHandlers.ts`). game-engine 4879 / 0 fail (+3, revert-proofed); server 1455 / 0; `sim:coverage` and `sim:runtime-observed` checks pass.
+- **Live-verify (D-24026): pending.** In a solo game, play Covering Fire with another Tech Hero: there should be no prompt, just the no-op line. Defeat Cruel Ruler with one Villain in the City and look for the "for free (Cruel Ruler)" line.
+
+### msp1 Nick Fury's Pure Fury works (card-data fix, follow-up to D-24660) (2026-10-05)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** In the Marvel Studios Phase 1 set, Nick Fury's **Pure
+Fury** now defeats a Villain or Mastermind whose attack is less than the number of S.H.I.E.L.D. Heroes in the KO
+pile, the same as core. Its text is identical to core's, but it lacked the `[keyword:pure-fury]` marker, so it did
+nothing. It also carried the old spurious "needs another S.H.I.E.L.D. Hero" play gate (D-24530 suppresses it only
+on marked lines).
+
+- **Data only.** A curated `hero-ability-markers.json` entry, applied to `data/cards/msp1.json`. `cards:check`
+  reproducible; hero ledger msp1 Nick Fury `(unmarked)` → `pure-fury` executable; card-mechanics and effect index
+  regenerated; `sim:coverage` baseline msp1 noEffect 14 → 13. No engine change.
+- **Live-verify (D-24026): pending.** In an msp1 game, play Pure Fury with enough S.H.I.E.L.D. Heroes in the KO pile.
+
+### D-24660 — Pure Fury no longer logs a phantom "attack" hollow effect (direct fix) (2026-10-05)
+
+**Diagnostics / coverage only, no gameplay change.** Pure Fury's "whose [icon:attack] is less than …" describes the
+target's attack, but the parser read it as an attack bonus with no number. Every play logged a phantom `attack`
+no-handler hollow, and four sibling cards with no real handler looked covered. The phrase is now treated like the
+other enemy-stat icons (D-24605). The coverage baseline is updated: those four now honestly count as `noEffect`.
+
+- **Engine parser only** (`heroAbility.setup.ts`). game-engine 4876 / 0 fail; the coverage, ledger and
+  runtime-observed gates are current.
+- **Follow-up noted:** msp1 Pure Fury is missing its `[keyword:pure-fury]` marker, so it does nothing.
+
+### D-24659 — Monarch's Decree no longer asks a solo player to choose (direct fix) (2026-10-05)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Defeating Dr. Doom's Monarch's Decree in a solo match
+no longer asks "each other player draws or discards". There is no other player, so it now logs that and moves on.
+Multiplayer behavior is unchanged.
+
+- **Engine only** (`tacticHandlers.ts`). game-engine 4876 / 0 fail.
+- **Live-verify (D-24026): pending.** In a solo Dr. Doom game, defeat Monarch's Decree: no prompt appears, and the log
+  reads "there is no other player to draw or discard".
+
+### D-24658 — The Battle Brief says whether Final Blow is on (direct fix) (2026-10-05)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** The Battle Brief now has a **Final Blow** tile under
+the lineup. It reads "On — win only after a 5th, final fight against the Mastermind" when the match was created with
+the optional rule, and "Off — defeating the Mastermind's last Tactic wins" otherwise. The match's loadout download
+(and the result LAGN) now records `setup.final_blow: true` for a Final Blow match instead of dropping it. Loading a
+saved loadout in the Arena Workshop now pre-ticks a **Final Blow** checkbox in the loadout preview when the loadout
+has the rule, and the match is created with it. Before, a Final Blow loadout silently started a normal match.
+
+- **Server + client.** `buildMatchLagn` writes the flag from `matchConfiguration`; `summarizeLoadout` and the lobby's
+  `convertLagnUpload` read it; both loadout launch buttons send it. No engine or UIState change.
+- **Counts.** `pnpm -r --no-bail test` 0 fail in all 12 packages (server 1661, arena-client 2270); arena-client
+  `vue-tsc` 0.
+- **Live-verify (D-24026): pending.** Create a match with the Final Blow box ticked: the brief shows "Final Blow · On".
+  Create one without it: the brief shows "Off".
+
+### WP-793 — A Villain escape follows the rulebook: HQ KO, Bystander discard, then the Escape effect (EC-830 / D-24656) (2026-10-05)
+
+**User-visible on `play.legendary-arena.com` (after deploy). D-24026 live-verify pending.** When a Villain escapes,
+the current player no longer gains a Wound. Instead the escape does what the rulebook says, in order:
+1. it KOs a Hero costing 6 or less from the HQ. With two or more candidates the current player picks one ("A Villain
+   escaped — choose a Hero in the HQ to KO"); with one it is KO'd automatically; with none the log says so. The HQ
+   space refills from the Hero Deck;
+2. if it carried Bystanders away, every player with a card in hand discards one ("Bystanders were carried away —
+   choose a card to discard");
+3. its own Escape effect, as before.
+
+Steps 1–2 are prompted right after the move that caused the escape (D-24656 point 4). A player who discards Cyclops's
+Unending Energy on someone else's turn now answers "Return the discarded card to your hand?" from their own seat
+instead of freezing the turn.
+
+- **Engine + three prompt headings.** D-24656 is Active and supersedes D-1702 / D-24439. Every escape path runs the
+  same procedure, including the Secret Invasion Skrull push. No new move, guard or UIState field.
+- **Counts.** game-engine 4844 / 1112 suites → 4873 / 1120, 0 fail; arena-client 2262 → 2263; `pnpm -r --no-bail
+  test` 0 fail in all 12 packages. Sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged. Re-pins:
+  runtime-observed 7953 → 7974 observations (0 dropped, 312 games terminate); dashboard `totalObs` 8878 → 8897.
+- **Scores move.** Fewer Wounds (+1 VP, RawScore −10 each), but HQ churn and a card per player per Bystander escape.
+  Midtown Bank Robbery changes most. Stored competitive rows stay frozen (OD-1). Replays that contain a pre-deploy
+  escape stop re-executing at that escape (accepted). The PAR profiles and the seed-PAR re-anchor are WP-793's
+  follow-up `INFRA:` PR (OD-2).
+- **Live-verify recipe (D-24026).** In a match (Midtown Bank Robbery makes it quick) where a Villain carrying a
+  Bystander escapes: the log has no "gained a wound from villain escape" line; the HQ-KO prompt appears (or the
+  automatic / "KO'd nothing" line) and the HQ space refills; the discard prompt appears and one card leaves the hand;
+  the Villain's own Escape effect still fires. In a 2-seat or bot-ally match, confirm the other seat answers its own
+  discard prompt. Record the matchId here.
+
+### WP-749 — Sim / PAR loops resolve a seat choice addressed to a non-active seat (EC-786 / D-24573) (2026-10-05)
+
+**No user-observable change — infrastructure only.** The simulation runner and the PAR aggregator no longer
+freeze when a card or tactic asks **another** player to choose (Loki's Vanishing Illusions; the non-active part of
+Random Acts' pass-left). They now resolve it for that seat with the same deterministic default the live
+disconnect/timeout path uses, then play on. The live game already routed the choice to the right seat and is
+unchanged. Live-verify (D-24026): N/A — no player-facing surface.
+
+- **Engine harnesses only.** `simulation.runner.ts`, `par.aggregator.ts` and `runFixture.ts` (map entry). No
+  change under `game.ts`, `moves/**`, `rules/**` or `ai.legalMoves.ts`. D-24573 is Active.
+- **Counts.** game-engine 4843 / 1111 suites → 4844 / 1112, 0 fail; `pnpm -r --no-bail test` 0 fail in all 12
+  packages. Sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged; `sim:runtime-observed:check` and
+  `sim:coverage --check` current with no regeneration.
+- **The only derived shift: the PAR profiles regenerated (Loki stuck → finished).** Aggregate win / loss / stuck
+  10910 / 13028 / 1662 → 12073 / 13400 / 127. The 32 Loki scenarios went from 1546 stuck to 11, none of them a
+  seat choice. The operator dashboard's PAR-fidelity view now reflects Loki's difficulty, not a harness gap.
+- **Unblocks** WP-793 (escape procedure) and WP-758 (Zarathos). WP-793's planned PAR re-pin now covers only its
+  own change.
+
+### WP-792 — A Master Strike no longer captures a Bystander (EC-829 / D-24654) (2026-10-04)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A Master Strike now does only what the Mastermind's
+card says. It no longer puts a Bystander on the Mastermind every time, for every Mastermind, so players stop
+rescuing Bystanders the rules never gave them. Bystander VP and scores are no longer inflated. In Jeff's Magneto
+match `PyK5YS2L8Bo`, 2 of the 3 rescued Bystanders came from this placeholder, so Bystander VP read 3 instead of 1.
+
+- **Engine only.** The D-15401 placeholder call and its helper are removed, and both of its log lines go
+  (`[Master Strike] … captured a Bystander.` and the empty-supply line). D-24654 supersedes D-15401 and D-24383.
+- **Unchanged:** a Villain-Deck Bystander captured by the Mastermind when the City is empty, Here, Hold This, the
+  kidnap fallback, and the rescue on a tactic defeat. The Mastermind tile's `👤 N` badge now counts only those.
+- **Not modeled yet:** printed Bystander strikes (Mr. Sinister, Madelyne Pryor, Mojo, Arcade, …). Each is a
+  follow-up that must model the capture together with its printed cost (OD-3).
+- **Counts.** game-engine 4843 / 0 fail; dashboard 570 / 0; `pnpm -r --no-bail test` 0 fail. Re-pins: sentinel
+  `finalStateHash` `492fe6bf…` → `06f79cdd…`, runtime-observed 7959 → 7953, dashboard `totalObs` 8884 → 8878.
+  `PRE_WP080_HASH` unchanged.
+- **Scores.** Live scores drop where the placeholder inflated them. Stored `competitive_scores` stay frozen (OD-1).
+  A competitive match captured before the deploy and submitted after it fails `replay_verification_failed`
+  (accepted). The PAR profile re-pin follows as a separate `INFRA:` PR (OD-2).
+- **Live-verify (D-24026): log half PASS (2026-10-05, Jeff, solo Dr. Doom / The Legacy Virus, production build
+  `4e64cdd`, match `kjkmEBIn3o0`).** Dr. Doom's Master Strike (turn 10) resolved its printed text only ("must put 2
+  cards on top of their deck") with no `[Master Strike] … captured a Bystander.` line, and no Master Strike capture
+  appears anywhere in the log. The removal is mastermind-agnostic, so this covers the Magneto case too.
+  **Tile half pending:** confirm the Mastermind tile shows no Bystander badge unless a Villain-Deck Bystander was
+  captured with an empty City.
+
+### D-24657 — Heroes captured by an escaping Villain go to the Escape Pile, not the KO pile (direct fix) (2026-10-04)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When a Villain that captured a Hero from the HQ
+(Skrull Queen Veranke, Skrull Shapeshifters and similar) escapes, the captured Hero now goes into the Escape Pile
+with it, as the rules say, instead of being KO'd.
+
+- **Engine only.** The helper is renamed `moveAttachedHeroesToEscapedPile` and is used on both escape paths. No new state,
+  move or UI field; escape-loss counts and scoring ignore the Hero.
+- **Counts.** game-engine 4839 / 0 fail; `pnpm -r --no-bail test` 0 fail; CI data gates current; no re-pin.
+- **Live-verify (D-24026): pending.** In a Skrulls game, let a Villain holding a captured Hero escape. The Hero should
+  appear in the Escape Pile and not in the KO pile.
+
+### D-24655 — X-Men United adds +2 attack for each other X-Men Hero you played (direct fix) (2026-10-04)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Cyclops' **X-Men United** now gives +2 attack for
+*each* other X-Men Hero you played this turn (+1 each on the co2e card). Before, it always gave a flat +2, so a turn
+with two or more other X-Men Heroes came up short. It also now shows on `/coverage` (Cyclops `attack-per-count`).
+
+- **Engine + card data.** New `x-men-played-this-turn` count source, plus a marker on the core and co2e X-Men United
+  lines. No new state, move, or UI field.
+- **Counts.** game-engine 4842 / 0 fail; CI data gates current; no fixture or hash churn.
+- **Live-verify (D-24026): pending.** Play X-Men United after two other X-Men Heroes in one turn; the log should read
+  "Count-scaled attack: +4 (2 per 1 … count 2)".
+
+### WP-791 — Dashboard Overview, business first (EC-828 / D-24653) (2026-10-03)
+
+**User-visible: dashboard Overview leads with money, engagement, real health** (`dashboard.legendary-arena.com/overview`,
+after deploy). The first row is Revenue (30d), Royalties (30d), Costs (monthly), Net (monthly) and Cash runway.
+Revenue is the live KPI and Costs start from the cached vendor-bill actuals. Cash balance, other fixed monthly costs
+and the royalty rate are entered with "Edit operating inputs" and stored in this browser only, never committed (the
+repo is public). Until they are entered, Royalties, Net and Runway read "Not entered", not $0. Next come the five KPI
+cards, then Engagement: matches started (7d), "Finished with a winner (7d)", "Scored or joined (7d)". Then Ops at a
+Glance (Server uptime graded like System Health, DR drill, Cost), then the Daily Execution checklist. Every Overview
+tile reads LIVE, CACHED or operator-entered LOCAL; nothing is MOCK. In production the DR card reads "Not connected"
+(no `DASH_GITHUB_TOKEN`), not a green verdict.
+
+- **Moved.** Vision card, Governance KPIs, Governance Throughput and the STATUS feed are at the top of Vision &
+  Roadmap ("Build governance"). The DAU chart and Acquisition strip are on Players. The Alerts panel (no server
+  route) is mounted nowhere. The range selector left the Overview.
+- **D-24653 Active.** It records the Overview content contract and amends D-19602: the real royalty rate never goes
+  into `config/revenueDeductions.ts` while the repo is public. It also supersedes the WP-203 / WP-204 additive-only
+  rule.
+- **Counts.** dashboard 508 → 555 / 0 fail; typecheck 0; lint, format:check, test:coverage, build green.
+  `OpsAtAGlanceStripWidget.test.ts` tests 2–3 rewritten for the new cards. Test 1 is token-identical, rewrapped by
+  prettier, which also clears the Dashboard Gates format-check red on main since #2562.
+- **Local preview.** Inputs: cash $1,000, other costs $50, royalty 10%, with revenue $0 from a local API stub.
+  Result: Royalties $0.00, Costs $196.35, Net −$196.35, Runway 5.1 months. The values persisted across a reload,
+  and no MOCK tag showed with `VITE_USE_MOCKS` unset.
+- **Live-verify (D-24026): PASS (2026-10-03, Jeff, `dashboard.legendary-arena.com/overview`, after the #2565
+  deploy).** No `MOCK` tag appeared on the Overview, and with Jeff's real operating inputs entered, Net and Runway
+  rendered. The inputs stay in his browser; none is recorded here (the repo is public).
+
+### WP-790 — "Usable only against …" attack can only be spent there (EC-827 / D-24652) (2026-10-01)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Hero attack printed "usable only against Villains in
+the Sewers or Bridge [or the Mastermind]" now pays only for those fights. Storm's Lightning Bolt +2 pays for a Rooftops
+fight, not a Sewers fight or the Mastermind. With another Ranged Hero played, Storm's "use this bonus against the
+Mastermind instead" also lets it pay for the Mastermind. Electro's Shocking Robbery gives one +3 (Bank, or the
+Mastermind with Ranged), not +6. The economy bar shows each restricted amount as a chip, e.g. `+2 only against:
+Rooftops`, and the Attack figure no longer counts it. Fight buttons enable when restricted attack covers the cost.
+The other cards: cvwr Speedball and Storm & Black Panther, dead Stingray, dims / 3dtc Man-Thing, fear Nerkkod, smhc
+High-Tech Spider-Man, ssw1 Namor and Ultimate Spider-Man, wwhk Namora. A match already in progress at deploy keeps
+the old behavior until it ends.
+
+- **Engine.** Lazy `TurnEconomy.restrictedAttack` + target-aware spend helpers (narrowest-first); the parser reads the
+  clause and fuses the Storm / Electro Ranged lines; both fight moves and the bot gate per target; an active-only
+  `UITurnEconomyState.restrictedAttack` projection.
+- **Client.** `canFight` takes the fight target (CityRow, MastermindTile); EconomyBar chips.
+- **Counts.** game-engine 4781 → 4838 / 0 fail; arena-client 2247 → 2260 / 0 fail; dashboard 505 / 0; vue-tsc 0;
+  replay fixtures and sentinel hashes byte-unchanged (no re-pin). One authorized test edit (the D-24649 Storm Tidal
+  Wave case); the dashboard totalObs pin moved 8866 → 8884 with the regenerated sweep feed.
+- **Live-verify (D-24026): PASS (2026-10-02, Jeff, solo Magneto / Midtown Bank Robbery with co2e Storm, production
+  build `2f74774`, match `aFW9yQjIiFa`; the Rooftops-button case in match `KBNTuZi_3zb`).**
+  - The Play Diagnostics `uiStateSnapshot` carries
+    `economy.restrictedAttack: [{ remaining: 2, targets: ["rooftops"], label: "Rooftops" }]`.
+  - The Ranged widen is decided at play:
+    - turn 20: Lightning Bolt after Revitalizing Rain logged "only against: Rooftops or Mastermind";
+    - turn 23: Lightning Bolt #1 with no earlier Ranged Hero stayed Rooftops-only; #2, played after #1, widened.
+  - Turn 23 reconciles to the point. Attack was 18 (14 plain + 2 restricted from each Bolt).
+    - The Magneto fight (8) spent Bolt #2's Mastermind-eligible 2 first, then plain.
+    - The Sewers Mystique fight (5) spent plain only.
+    - Bolt #1's Rooftops-only 2 was untouched, ending at `availableAttack: 3`.
+  - The economy bar chip rendered as `Attack: 5/7` + `+2 only against: Rooftops` (Jeff's screen, turn 7 of a second
+    Storm match, matchId not recorded).
+  - **Rooftops-button case (match `KBNTuZi_3zb`, turn 3).** Verified by replaying the stored match log read-only
+    through boardgame.io's reducer and evaluating the client Fight gate on the served (active-player-filtered)
+    UIState after every move. The rendered button itself was not observed.
+    - A Sentinel (cost 3) sat on the Rooftops, with a Sabretooth (cost 5) in each of the Sewers and the Bank.
+    - After the first Lightning Bolt (2 plain + 2 Rooftops-only), the Rooftops Fight gate is ON (4 ≥ 3) only
+      because of the restricted +2. The Sewers / Bank gates stay off.
+    - Magneto stays off at 7 of 8 (5 plain + the one Mastermind-eligible +2).
+    - Across all 6 states where restricted attack was held, the client gate matched the engine's legal fights.
+      Zero mismatches.
+    - Played out (same match, turn 3). Jeff fought the Rooftops Sentinel holding 5 plain + 2 Rooftops + 2
+      Rooftops-or-Mastermind; the fight was paid from the restricted grants (narrowest first). He then fought
+      the Bank Sabretooth (cost 5) with the untouched 5 plain. Plain-first spending would have left 2 and
+      refused that fight. The match was lost on turn 17 to the scheme (8 Bystanders carried away), unrelated.
+
+### D-24651 — Diving Block works after you have played it (direct fix) (2026-10-01)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Captain America's Diving Block ("If you would gain a
+Wound, you may reveal this card and draw a card instead") now offers its reveal when the card is already in front of
+you — played earlier this turn — not only when it is in your hand. Before, playing Diving Block and then taking a
+Wound (e.g. from fighting Sabretooth) gave no prompt. Revealing it from play leaves it in play. One Diving Block still
+stops one Wound.
+
+- **Engine only.** `divingBlock.logic.ts` (`countRevealableDivingBlockCopies` counts hand + play area) + 4 tests.
+- **Live-verify (D-24026):** pending. Play Diving Block, then fight a villain that wounds you (Sabretooth) or take a
+  Master Strike: the "Reveal Diving Block" prompt appears, and Diving Block stays in your play area after revealing.
+
 ### D-24650 — The bottom-left play buttons no longer cover the Reveal button (direct fix) (2026-10-01)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** On desktop, "Download diagnostics", "View cards in

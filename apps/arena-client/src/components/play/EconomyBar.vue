@@ -67,6 +67,26 @@ export default defineComponent({
     <span data-testid="play-economy-wounds-drawn">
       Wounds drawn: {{ economy.woundsDrawn }}
     </span>
+    <!-- why: WP-790 / D-24652 — one chip per restricted ("usable only against …")
+         grant with attack left: the Attack figure above excludes these amounts, so
+         the chip says how much more attack exists and where it can be spent. The
+         engine projects the label; this renders served data only. Active-player-only
+         and omit-when-absent, so no chip renders without a restricted grant.
+         The chips sit LAST, in their own full-width row under the Attack / Recruit /
+         Pierce / Wounds line, and that row never widens the bar (see
+         .economy-restricted-chips), so they wrap inside the cockpit column instead
+         of squeezing Played This Turn / Your Hand. -->
+    <div
+      v-if="(economy.restrictedAttack ?? []).length > 0"
+      class="economy-restricted-chips"
+    >
+      <span
+        v-for="(grant, grantIndex) in economy.restrictedAttack"
+        :key="grantIndex"
+        class="economy-restricted-attack"
+        data-testid="economy-restricted-attack"
+      ><span class="economy-restricted-attack__amount">+{{ grant.remaining }} only against:</span> <span class="economy-restricted-attack__targets">{{ grant.label }}</span></span>
+    </div>
   </section>
 </template>
 
@@ -87,5 +107,43 @@ export default defineComponent({
   padding: 0.05rem 0.4rem;
   border: 1px solid var(--color-foreground, #999);
   border-radius: 0.75rem;
+}
+
+/* why: WP-790 — the chips get their own row (flex-basis 100%) whose intrinsic width
+   is zero (width: 0) and whose laid-out width is the full bar (min-width: 100%). On
+   desktop the cockpit's side column is an `auto` grid track sized to its widest
+   content, and the main column (Played This Turn / Your Hand) takes what is left; a
+   chip row that counted toward that width took up to ~400px from the hand. Now the
+   column keeps its no-chip width and the chips wrap inside it. */
+.economy-restricted-chips {
+  flex: 1 0 100%;
+  width: 0;
+  min-width: 100%;
+  /* why: pull the chip row up toward the Attack line (the bar's 1rem gap is sized
+     for spacing items within a line, not between lines). */
+  margin-top: -0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.4rem;
+  font-size: 0.85rem;
+}
+
+/* why: WP-790 — the restricted-attack chip uses the same bordered-pill shape as the
+   convert cue (meaning in the text, not colour alone; no animation). */
+/* why (Jeff feedback): the full text stays ("+2 only against:" / "Rooftops"), stacked on
+   two lines so each chip is about half as wide and two or three sit side by side
+   instead of each taking its own row. The space between the two spans keeps the chip's
+   text content reading "+2 only against: Rooftops" for screen readers. */
+.economy-restricted-attack {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 0.1rem 0.5rem;
+  border: 1px dashed var(--color-foreground, #999);
+  border-radius: 0.6rem;
+  line-height: 1.2;
+}
+
+.economy-restricted-attack__targets {
+  font-weight: 600;
 }
 </style>

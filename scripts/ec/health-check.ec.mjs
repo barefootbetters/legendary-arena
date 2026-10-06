@@ -115,7 +115,7 @@ const REQUIRED_VARS = {
   ],
   'Game Server': [
     'NODE_ENV',           // 'development' or 'production'
-    'GAME_SERVER_URL',    // e.g. https://legendary-arena.onrender.com
+    'GAME_SERVER_URL',    // e.g. https://api.legendary-arena.com
     'PORT',               // local dev only — Render sets this automatically
   ],
   'Cloudflare': [

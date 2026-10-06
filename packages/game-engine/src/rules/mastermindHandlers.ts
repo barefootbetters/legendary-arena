@@ -4,9 +4,11 @@
  * The exported `mastermindStrikeHandler` is a dispatcher that branches on
  * `G.selection.mastermindId`. Per-mastermind handlers implement card-text
  * effects (e.g., Magneto forces each player to discard down to four cards).
- * The generic strike-counter increment and the D-15401 bystander capture
- * run for every mastermind so card-specific handlers stay focused on the
- * card text.
+ * The generic strike-counter increment runs for every mastermind so
+ * card-specific handlers stay focused on the card text. A Master Strike
+ * resolves only its printed text: it captures no Bystander unless that
+ * text says so, and no printed capture is modeled yet (D-24654, which
+ * supersedes D-15401).
  *
  * No boardgame.io imports. No registry imports.
  */
@@ -164,47 +166,6 @@ function resolveShuffleFunction(
     return null;
   }
   return shuffle as <T>(items: T[]) => T[];
-}
-
-/**
- * Captures one bystander from the top of the bystander supply onto the
- * mastermind per D-15401. If the supply is empty, logs a message and
- * skips. Mutates G directly so callers do not need a new effect type.
- *
- * @param gameState - The game state to mutate.
- */
-function captureBystanderOntoMastermind(gameState: LegendaryGameState): void {
-  if (gameState.piles.bystanders.length > 0) {
-    const [captured, ...remainingBystanders] = gameState.piles.bystanders;
-    gameState.piles.bystanders = remainingBystanders;
-    gameState.mastermind.attachedBystanders = [
-      ...gameState.mastermind.attachedBystanders,
-      captured!,
-    ];
-    // why: WP-574 — ADDITIVE success-path log line. D-15401 is Immutable and
-    // specified a message ONLY for the empty-supply case, so a successful capture
-    // was silent: Bystanders arrived in the victory pile after a mastermind fight
-    // with no log trail. This is observability only — when and whether a Bystander
-    // is captured is unchanged. The line names the capturing mastermind (all supply
-    // Bystanders are identical tokens, so there is nothing to name on the captured
-    // card; baseCardId is the {setAbbr}-mastermind-{slug}-{cardSlug} display key).
-    // WP-434 — a completed capture is `applied`. No LogEntry.card: the generic
-    // strike path carries no per-card context.
-    pushLog(
-      gameState,
-      `[Master Strike] ${resolveCardName(gameState.cardDisplayData, gameState.mastermind.baseCardId)} captured a Bystander.`,
-      'applied',
-    );
-  } else {
-    // why: bystander supply exhausted, no capture per D-15401. WP-434 — a
-    // supply-empty no-op is `blocked` (the effect tried and nothing happened) per
-    // the LOG_OUTCOMES taxonomy; routed through pushLog like every other line.
-    pushLog(
-      gameState,
-      '[Master Strike] Bystander supply is empty — no bystander captured.',
-      'blocked',
-    );
-  }
 }
 
 /**
@@ -1136,25 +1097,6 @@ function resolveDoctorOctopusReveal(
 }
 
 /**
- * Mastermind strike handler dispatcher.
- *
- * Branches on `G.selection.mastermindId`. The generic bystander capture
- * (D-15401) runs for every strike. Per-mastermind text effects mutate G
- * directly. The returned RuleEffect[] carries only the shared counter
- * increment and message — card-specific work is done inline.
- *
- * @param gameState - Current game state (mutated for bystander capture and per-mastermind effects).
- * @param _ctx - Context (unused — chained reveals are scheme-side for now).
- * @param payload - Trigger payload `{ cardId }` from villain reveal.
- *   WP-200: read to source `strikeCardId` for the terminal
- *   `mastermindStrikeResolved` emission. Production dispatch always
- *   passes a real `{ cardId: string }`; unit tests that call the handler
- *   directly with a stub fall back to an empty string so the emission
- *   produces a well-typed event without throwing.
- * @param _implementationMap - Handler map (unused; reserved for future cascading strikes).
- * @returns Array of RuleEffect descriptions to apply.
- */
-/**
  * Resolves General "Thunderbolt" Ross's Master Strike — the flip (WP-669 / D-24483).
  *
  * The printed text is "General Ross [keyword:Transforms], then [Cross-Dimensional Hulk
@@ -1204,13 +1146,36 @@ function resolveGeneralRossStrike(gameState: LegendaryGameState): void {
   );
 }
 
+/**
+ * Mastermind strike handler dispatcher.
+ *
+ * Branches on `G.selection.mastermindId`. Per-mastermind text effects mutate
+ * G directly. A Master Strike resolves only the Mastermind's printed text, so
+ * it never captures a Bystander on its own (D-24654). The returned
+ * RuleEffect[] carries only the shared counter increment and message —
+ * card-specific work is done inline.
+ *
+ * @param gameState - Current game state (mutated by the per-mastermind effects).
+ * @param strikeContext - The rule-pipeline context; read for the active player
+ *   (interactive strike choices) and for the deterministic shuffle (Doctor Octopus).
+ * @param payload - Trigger payload `{ cardId }` from villain reveal.
+ *   WP-200: read to source `strikeCardId` for the terminal
+ *   `mastermindStrikeResolved` emission. Production dispatch always
+ *   passes a real `{ cardId: string }`; unit tests that call the handler
+ *   directly with a stub fall back to an empty string so the emission
+ *   produces a well-typed event without throwing.
+ * @param _implementationMap - Handler map (unused; reserved for future cascading strikes).
+ * @returns Array of RuleEffect descriptions to apply.
+ */
 export function mastermindStrikeHandler(
   gameState: LegendaryGameState,
   strikeContext: unknown,
   payload: unknown,
   _implementationMap: ImplementationMap,
 ): RuleEffect[] {
-  captureBystanderOntoMastermind(gameState);
+  // why: rules v23 ~L3429 — "When a Master Strike occurs, each Mastermind does its
+  // Master Strike ability", so each Mastermind resolves only its own printed strike.
+  // D-24654 removed the D-15401 generic capture-a-Bystander placeholder.
 
   // why: branches are mutually exclusive per mastermind id — a mastermind
   // matching none of them takes no branch and the strike is generic
@@ -1247,8 +1212,8 @@ export function mastermindStrikeHandler(
     resolveGeneralRossStrike(gameState);
   }
 
-  // why: WP-200 — terminal emission AFTER both the generic bystander
-  // capture AND the per-mastermind text effect. Narrows the trigger
+  // why: WP-200 — terminal emission AFTER the per-mastermind text effect
+  // (there is no generic capture to wait for since D-24654). Narrows the trigger
   // payload defensively (`unknown` from the rule pipeline) so a missing
   // / malformed payload produces an empty `strikeCardId` rather than a
   // throw — moves never throw, per architecture rules. Production dispatch

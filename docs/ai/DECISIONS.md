@@ -2568,7 +2568,7 @@ penalties; the wound rule is a reasonable MVP default that makes escapes
 feel consequential during gameplay.
 
 **Introduced:** WP-017
-**Status:** Accepted
+**Status:** Accepted. **Superseded by D-24656** (WP-793, 2026-10-05) — no escape gives a generic Wound; an escape runs the rulebook HQ KO + Bystander discard instead.
 
 ---
 
@@ -17098,7 +17098,7 @@ new randomness source; no new `RuleEffectType`. Mastermind defeat does
 not release captured bystanders in MVP — a future WP may model release.
 
 **Introduced:** WP-154 (executed 2026-05-16)
-**Status:** Immutable
+**Status:** Immutable. **Superseded by D-24654** (WP-792, 2026-10-04) — a Master Strike resolves only its printed text and no longer captures a Bystander; this entry's body is kept as written.
 
 ---
 
@@ -20401,6 +20401,8 @@ worth the indirection cost.
 **Drafted:** 2026-05-31.
 **Landed:** 2026-06-02.
 **Status:** Active
+
+**Amended by D-24653 (2026-10-03, WP-791):** the real royalty rate is never swapped into `config/revenueDeductions.ts` while the repo is public; the placeholder stays `isMock: true` and the operator enters the rate on the Overview (browser storage only).
 
 ---
 
@@ -37864,7 +37866,7 @@ Locked:
    "EC missed a file" mid-execution amendment (01.0b §deviations), not a scope
    change — the capture line SHOULD now appear, and the fixture oracle records it.
 
-**Active 2026-08-18 (WP-574 / EC-609).**
+**Active 2026-08-18 (WP-574 / EC-609).** **Superseded by D-24654** (WP-792, 2026-10-04) — the generic capture is removed, so this success line no longer fires.
 
 ### D-24384 — Diagnostics Report Carries No Effect Trace (Channel Mismatch)
 
@@ -38935,7 +38937,7 @@ _Active 2026-08-31 — WP-628 / EC-663. Client-only; no new endpoint, no new aut
 
 ### D-24439 — the generic per-escape wound is gated on the villain having no onEscape ability of its own (Active 2026-08-31)
 
-**Status:** Active 2026-08-31 — landed directly (targeted fidelity fix, no WP). Implemented in `packages/game-engine/src/villainDeck/villainDeck.reveal.ts` (the escape branch of `performVillainReveal`) via a new pure lookup `villainCardHasEscapeAbility(G, cardId)` in `packages/game-engine/src/villain/villainEffects.execute.ts`.
+**Status:** Active 2026-08-31 — landed directly (targeted fidelity fix, no WP). **Superseded by D-24656** (WP-793, 2026-10-05) — the generic escape Wound this entry gated is removed for every escape. Implemented in `packages/game-engine/src/villainDeck/villainDeck.reveal.ts` (the escape branch of `performVillainReveal`) via a new pure lookup `villainCardHasEscapeAbility(G, cardId)` in `packages/game-engine/src/villain/villainEffects.execute.ts`.
 
 **Context.** On any villain escape, `performVillainReveal` applied a **generic per-escape Wound to the active player** — a WP-015 "MVP" / "legacy system-level penalty" (the code comment's words), fired **unconditionally** for every escape with no basis in the escaping card's text, the scheme's text, or the Marvel Legendary rules (a villain escaping wounds no one unless its own Escape ability says so). Separately, WP-186 wired card-defined **onEscape abilities** (e.g. Ultron's `Escape: Each player reveals a [hc:tech] Hero or gains a Wound. [effect:reveal-or-wound:hc:tech]`) that resolve at the same escape site. The two **stacked**: a live 2-player match against Red Skull / Midtown Bank Robbery showed each Ultron escape wounding the active player **twice** (once generic, once from Ultron's ability) while the non-active player took one — the asymmetric double-wound was the fingerprint. Midtown Bank Robbery's card carries no escape-wound rule, confirming the generic wound had no card/scheme basis.
 
@@ -46366,6 +46368,264 @@ parity), D-24568 (the WP-745 sweep).
 **Gates.** arena-client 2247 / 0 fail (+2: the dock wraps the utilities, mounted once; the status clears at exactly `STATUS_CLEAR_DELAY_MS`, not before); vue-tsc 0. Geometry measured on the live board at 1440×900: footer 55px, dock row top 37px, row width 494px.
 
 **Reserved by:** NUMBER-LEDGER D-24650. Related: WP-363 (View loadout button), WP-610 (Deck odds slot), WP-688 / D-24502 (desktop fit to the footer band), D-24026 (the live session that surfaced it).
+
+---
+
+### D-24651 — Diving Block can be revealed from the play area, not only from hand (amends D-24499 §1; direct fix, no WP) (Active 2026-10-01)
+
+**Context.** D-24499 §1 counted only the Diving Block copies in the wound recipient's HAND. Rules v23 "Revealing a Card" says you can reveal a card from your hand **or** a card in front of you that you have already played this turn. In live match `SprBgGkJuY0` (Magneto / Midtown Bank Robbery, solo) Captain America's Diving Block was played on turn 9 (9.2.1), then Sabretooth's fight wound landed (9.2.13) with no reveal prompt. The engine was inconsistent with itself: Sabretooth's own "reveal an X-Men Hero" check in the same match (11.2.10) counted a played Storm card.
+
+**Decision.**
+1. `countDivingBlockCopiesInHand` is renamed `countRevealableDivingBlockCopies` and counts Diving Block copies in `playerZones.hand` **plus** `playerZones.inPlay`. `checkDivingBlock` gates on that count. The public engine export is renamed with it (the only consumers are the logic file and its test).
+2. A reveal from play leaves Diving Block in the play area, just as a reveal from hand leaves it in hand. A reveal is not a play or a discard, so the card is never moved.
+3. **Unchanged:** D-24499's one-copy-per-Wound rule. One revealable copy with two simultaneous Wounds still parks exactly one interception. Rules v23 also says the same card can be revealed multiple times in a turn; Jeff has not ruled on whether that lifts the per-Wound limit, so it stays as shipped.
+4. No new `G` field and no hash change. A match where no Diving Block is in play when a Wound lands behaves byte-for-byte as before.
+
+**Gates.** `divingBlock.logic.test.ts` 15 / 0 fail. The hand-count test was renamed with the counter, and 4 tests were added: a played copy counts alongside hand copies; a Wound gained after Diving Block was played parks the reveal choice; revealing the played copy returns the Wound, draws a card and leaves Diving Block in play; one played copy plus two Wounds parks only one interception.
+
+**Reserved by:** NUMBER-LEDGER D-24651. Related: D-24499 / WP-682 (Diving Block), WP-684 (non-active seat choice), D-24497 / D-24645 (rules v23 "your Heroes" = hand + played this turn), D-24026 (the live session that surfaced it).
+
+---
+
+### D-24652 — "Usable only against …" attack is a restricted sub-ledger inside `attack`, spent per fight target (WP-790 / EC-827) (Active 2026-10-01)
+
+**Context.** Rules v23 (the Liberate entry, `docs/legendary-universal-rules-v23.md` ~L1656–1666) defines attack "usable only against" named targets as a bonus that may be spent only on those targets. The engine parsed the `+N[icon:attack]` and ignored the clause, so 13 hero cards (co2e Storm Lightning Bolt / Tidal Wave, cvwr Speedball and Storm & Black Panther, dead Stingray, dims / 3dtc Man-Thing, fear Nerkkod, smhc High-Tech Spider-Man, ssw1 Namor and Ultimate Spider-Man, vill Electro, wwhk Namora) granted plain attack spendable on any fight. Electro's Shocking Robbery granted +6 (its Ranged "Instead you may get +3 … against the Commander" line was read as a second grant). Surfaced in Jeff's match `SprBgGkJuY0`.
+
+**Decision.**
+
+1. **Restricted attack stays inside `attack`.** A grant adds to `turnEconomy.attack` and records a `RestrictedAttackGrant { remaining, targets, sourceCardId }` in the lazy `TurnEconomy.restrictedAttack` sub-ledger. The turn total, the stats and "attack you made" conditions count it, which is faithful: you made that attack. Only the spendable figure excludes it: `getSpendableAttack = max(0, attack - spentAttack - remaining)` (+ unspent recruit under WP-580 / D-24389), and `getSpendableAttackForTarget` adds back the grants eligible for that target. The field is absent until a grant, carried by `carryConversionFlag`, and never in `resetTurnEconomy` / `REDACTED_ECONOMY`, so a turn without a grant serializes byte-identically (sentinel hashes unchanged). The projection `UITurnEconomyState.restrictedAttack` (remaining > 0 grants + a label) reaches the active player only. The arena-client Fight gates and the bot use the same engine helper (`sumRestrictedAttackForTarget`).
+2. **Spend order (`spendFightCostForTarget`).** Eligible grants pay first, narrowest-first (fewest targets; ties go to the earlier grant), then plain attack (net of every grant's remaining), then recruit only under the WP-580 conversion. It never delegates to `spendFightCost`, whose `attack - spentAttack` would spend an ineligible grant's attack before recruit. The choice is deterministic, so there is no player prompt. Invariant after every helper: `attack - spentAttack >= remaining`. Zero-remaining grants stay in the array (stable indices).
+3. **Widen fusion.** Storm's `[hc:ranged]: You may use this bonus [icon:attack] against the Mastermind instead.` and Electro's `[hc:ranged]: Instead you may get +3[icon:attack] usable only against the Commander.` (only when N equals the grant) widen the restricted grant on the immediately preceding line of the same card: the grant records `widenToMastermindWhen` (a copied array of the follow-up's conditions), evaluated at grant time, and the follow-up hook loses its `attack` effect and keyword (its gate stays). So Electro grants one +3, and a Ranged Storm play no longer logs an `attack-no-magnitude` hollow (D-24649) for the follow-up. The fusion target is tracked as `previousLineHook` in the `buildHeroAbilityHooks` instance loop, never `hooks[hooks.length - 1]` (the digest / Excessive Violence / day-night fused hooks are pushed before the loop). **Known approximation:** Electro's Bank / Mastermind amount is one shared bucket, so a Ranged player can split the 3 between the two targets where the card means one or the other.
+4. **The parser fails closed.** The clause is read only after a Step 2b `+N[icon:attack]` magnitude. A clause with no recognized target or with the word "other" parses as before: nmut Karma ("other Villains or the Mastermind", also magnitude-less), mdns Wong Seal the Rift ("usable only to fight", behind an unsupported Patrol marker), and the Focus- / Lightshow-suppressed lines (anni / ff04 Mr. Fantastic, xmen Havok Blinding Burst) are unchanged. Deferred to follow-ups that can reuse this pool: Liberate (wtif, needs a bystander predicate) and Blinding Burst (behind the Lightshow executor, WP-781).
+5. **Matches in progress.** A match already running when this deploys keeps the hooks built at its setup (they live in `G.heroAbilityHooks`), so it keeps the old plain-attack behavior until it ends. There is no migration. A competitive match captured before the deploy that plays an affected card, but is submitted after it, re-executes under the new rules and fails `replay_verification_failed`: the same accepted window WP-789 / WP-726 carried, which closes as pre-deploy matches age out.
+
+**Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in all 12 packages; game-engine 4781 → 4838 / 0 (+57), arena-client 2247 → 2260 / 0 (+13), dashboard 505 / 0; arena-client vue-tsc 0. Replay fixtures green and byte-unchanged. 7/7 revert proofs. `sim:runtime-observed` regenerated (7938 → 7959 observations, same 80 mechanics; a sweep-trajectory shift); the dashboard totalObs pin re-pinned 8866 → 8884 (percentResolved stays 13.9); `sim:coverage` re-baselined (co2e −6 / vill −5 executable → noEffect for the stripped follow-up hooks, plus a pre-existing −5 executable drift in ca75 / co2e / cvwr / msp1 that `--check` cannot catch). `effect-index`, `mechanics:metadata` and `ledger:heroes` unchanged. D-24026 live verify is operator-pending.
+
+**Reserved by:** NUMBER-LEDGER D-24652 (#2550). Related: WP-790 / EC-827, D-24389 (WP-580 lazy flag + attack-then-recruit spend), D-24295 (`CITY_SPACE_NAMES` / `citySpaceNameForIndex`), D-24574 (client Fight gates read the engine's projected `fightCost`), D-24649 (magnitude-dropped effects are hollow), D-24556 / D-24557 (Excessive Violence +1 check), D-12803 (audience filter), D-24372 (runtime drift pins).
+
+### D-24653 — Overview content contract: business first, no MOCK tile, operator financial inputs in browser storage only (amends D-19602; WP-791 / EC-828) (Active 2026-10-03)
+
+**Context.** On 2026-10-02 the live dashboard Overview showed 9 players, 2 new in 30 days, 2 matches and $0 revenue, while Render alone cost $146.35 for September, and never put those side by side. Its top half was governance (vision text, governance KPIs, throughput, STATUS feed). Its `Ops at a Glance` strip, Acquisition strip, Alerts panel and DAU chart could only ever show mock data, an error, or "no data" in production (Alerts polls `/api/dash/alerts`, which has no server route; DAU has no signal, D-24169 §6). WP-203 / WP-204 had made their Overview strips "additive-only", which blocked removing any of it. The repo is public, so the operator's cash balance, fixed costs and royalty rate cannot be committed the way infra vendor spend is (`config/infraCostActuals.ts`).
+
+**Decision.**
+
+1. **Order.** The Overview reads money → KPIs → engagement → health → the operator's daily checklist: `BusinessPulseWidget` (Revenue 30d, Royalties 30d, Costs monthly, Net monthly, Cash runway), the five live KPI cards (`total_players`, `new_players_30d`, `total_matches`, `revenue_30d`, `hero_win_rate_30d`), `EngagementStripWidget` (matches started 7d, "Finished with a winner (7d)", "Scored or joined (7d)"), `OpsAtAGlanceStripWidget` (Server from `/api/dash/system/runtime`, DR drill from `/api/dash/dr-readiness`, Cost from the cached actuals), `DailyExecutionPanel`. Build/governance widgets do not appear on the Overview; they sit at the top of Vision & Roadmap under "Build governance". The DAU chart and acquisition strip sit on Players. `AlertsPanel` is mounted on no page (file kept). The range selector is gone: no Overview widget reads `useDateRange`.
+2. **No MOCK on the Overview (production).** With `VITE_USE_MOCKS` unset, every Overview widget reads `LIVE` or `CACHED` data, or operator-entered `LOCAL` data (a new additive `useDataFreshness` label, D-19804 precedent; `DailyExecutionPanel` reads `LOCAL`). A widget that can only be mock or permanently empty in production is relocated or unmounted, not shown. Missing or not-entered data renders `—` / "Not entered", never `0` / `$0.00`, and a card backed by mock data never carries a status chip (INFRA #2562 rule): the production DR placeholder payload (`source: 'mock'`, no `DASH_GITHUB_TOKEN`) reads "Not connected"; a Server 401/403 (a dashboard sign-in problem) reads `—`, not red. The "Since you last looked" line stays: it is a text line from the build snapshot, not a widget.
+3. **No committed financial inputs.** Cash balance, other fixed monthly costs and the royalty rate live only in the operator's browser (`localStorage` key `la-dashboard-operating-inputs`, `{ version: 1, cashBalanceCents, otherFixedMonthlyCents, royaltyRateBasisPoints, updatedAt }`, integer cents / basis points; an invalid or missing record reads as all-null; save replaces the whole record and reports a failed write as "Not saved — browser storage unavailable") while the repo is public. No default, sample or placeholder value for them appears in source. **This amends D-19602:** the real royalty rate is never swapped into `config/revenueDeductions.ts` while the repo is public; that file's placeholder stays `isMock: true`, so the Monetization page's `NetRevenueChartWidget` stays flagged MOCK and is not the source of truth for royalties — the Overview's LOCAL rate is. A durable, cross-device (server-stored) record is a deferred follow-up.
+4. **Supersedes** the WP-203 / WP-204 "additive-only" Overview placement constraint; that rule protected those packets' scope and is not a standing rule.
+
+**Known limits (recorded, not defects).** Engagement counts come from capped feeds (`/api/dash/matches` 50 by `updated_at`, `/api/dash/players` 100 by `created_at`, D-24169) whose order is not the counted timestamp, so a full feed reads `"<count>+"`; ties project as `in_progress` and count as unfinished. Costs treat the summed month-to-date infra actuals as a full month, valid while `INFRA_COST_ACTUALS_AS_OF` is a month-end date.
+
+**Gates.** Dashboard `typecheck` exit 0; `test` 508 → 555 / 0 fail; `lint`, `format:check`, `test:coverage` (thresholds held; `overviewPulse.ts` 100 / 100 / 100) and `build` green. `OpsAtAGlanceStripWidget.test.ts` tests 2–3 rewritten for the new cards (`Tests-changed:` trailer); test 1 keeps every token, prettier-rewrapped, which also clears the Dashboard Gates format check red on main since #2562. Local preview reproduced WP §8 step 3 (Royalties $0.00, Costs $196.35, Net −$196.35, Runway 5.1 months, persisting across a reload; no MOCK tag on `/overview`). D-24026 live verify is operator-pending.
+
+**Reserved by:** NUMBER-LEDGER D-24653 (#2563). Related: WP-791 / EC-828, D-19602 (amended), D-19804 (`'BUILD'` label precedent), D-22601 (mock banner), D-24169 (`/matches` / `/players` / `/kpis` shapes, caps, sort orders), D-24258 (runtime health), D-24330 (DR readiness), D-19601 (integer cents).
+
+---
+
+### D-24654 — A Master Strike resolves only its printed text: the generic capture-a-Bystander placeholder is removed (supersedes D-15401 and D-24383) (Active 2026-10-04 — WP-792 / EC-829)
+
+**Context.** D-15401 (WP-154, Immutable) made every Master Strike, for every Mastermind, capture the top Bystander onto the Mastermind. It was an MVP shortcut to unblock the projection, not a rule: rules v23 (~L3429) says "When a Master Strike occurs, each Mastermind does its Master Strike ability", and core Magneto's printed strike captures nothing. D-24383 (WP-574) later logged the capture on success. In Jeff's solo match `PyK5YS2L8Bo` (Magneto), two of the three Bystanders rescued by a tactic defeat were invented by the placeholder (log `6.1.1`, `7.1.1`), so Bystander VP read 3 instead of 1. Every score that counts rescued Bystanders was inflated, for every Mastermind.
+
+**Decision.**
+1. `mastermindStrikeHandler` no longer captures a Bystander. **Supersedes D-15401** in full. `G.mastermind.attachedBystanders` stays the Mastermind-side store (D-12805 Interpretation B); its writers are the Villain-Deck Bystander revealed with an empty City and `captureBystanderToMastermind` (Here, Hold This, D-24500; the kidnap fallback, D-24537). Rescue on tactic defeat is unchanged.
+2. No printed Master Strike capture is modeled yet. Every Bystander-capturing strike in the card data comes with a printed rule that makes those Bystanders cost the player (Mr. Sinister's +1 attack per Bystander, Madelyne Pryor's Demon Goblins, Human Shields, Hidden Witnesses, …). A printed capture is modeled only together with that rule; a capture alone would reintroduce free Bystander VP.
+3. **Supersedes D-24383.** Its success line and the D-15401 empty-supply line stop firing, and the now-unused `captureBystanderOntoMastermind` helper that held them is deleted.
+4. Follow-ups: dkcy Mr. Sinister, ssw1 Madelyne Pryor, anni Annihilus, xmen Mojo and Arcade, noir The Goblin and Charles Xavier, wwhk Red Hulk, msmc Bastion, ca75 Zemo, mdns Lilith.
+5. **Determinism and scoring.**
+   - The sentinel `finalStateHash` and its messages are re-recorded. `PRE_WP080_HASH` is unchanged (its replay fires no strike).
+   - The runtime-observed feed and the dashboard `totalObs` pin are regenerated.
+   - The diagnostic PAR profiles are re-pinned by a follow-up `INFRA:` PR, opened immediately after the WP-792 execution merges (operator ruling 2026-10-04, Jeff, WP-792 OD-2). Seed PAR is rating-driven and unaffected.
+   - **Matches in progress** switch at the next strike after deploy. Bystanders the Mastermind already holds stay and are rescued normally; there is no migration.
+   - A **competitive match** captured before the deploy and submitted after it fails `replay_verification_failed`. This is an accepted window, as with WP-790 / WP-726. Read-time re-execution of pre-deploy replays (the coach, submit by `replayHash`) also reflects the post-deploy rules; replays are durable in `bgio.replay_artifacts`, so for an unsubmitted pre-deploy match the window is permanent. Accepted; no migration.
+   - Stored `competitive_scores` rows are frozen, not re-verified (the D-24616 §5 precedent). Operator ruling 2026-10-04 (Jeff, WP-792 OD-1): leave them frozen — no rewrite, no leaderboard annotation, no new season.
+
+**Gates.** After `pnpm -r build`: `pnpm -r --no-bail test` 0 failures in all 12 packages; game-engine 4843 → 4843 / 0 (the two WP-574 wording tests became one, plus the new five-Mastermind case); dashboard 570 → 570 / 0, `test:coverage` 0, `typecheck` 0. 2/2 revert proofs: restoring the generic call fails 9 tests (the new case and the 8 inverted), and a capture for `dkcy/mr-sinister` only fails the new case. Sentinel re-recorded by `record-game-fixture.mjs`: `finalStateHash` `492fe6bf…` → `06f79cdd…`, and the key-order-independent semantic diff is exactly the 10 expected paths (the hash, the dropped `1.1.1 [Master Strike] core/dr-doom captured a Bystander.` line, the renumbered three). `PRE_WP080_HASH` unchanged. `sim:runtime-observed` regenerated: 7959 → 7953 observations, 80 mechanics, 0 dropped (man-out-of-time 83 → 77, woman-out-of-time 69 → 66, gate-only 482 → 485), a sweep-trajectory shift. Dashboard `totalObs` re-pinned 8884 → 8878 (percentResolved stays 13.9). `sim:coverage --check`, `effect-index:check`, `mechanics:metadata:check`, `ledger:heroes:check`, `ledger:villains:check`, `wiki:lint`, `wiki-viewer:check-links` OK with no diff. The numbers match the draft scaffold even though `main` moved (#2579, #2582). D-24026 live-verify pending (a core Magneto Master Strike must log no `captured a Bystander.` line).
+
+**Live-verify (D-24026), 2026-10-05: log half PASS.** Production build `4e64cdd`, match `kjkmEBIn3o0` (Jeff, solo Dr. Doom / The Legacy Virus): Dr. Doom's turn-10 Master Strike resolved only its printed put-2-on-top text, with no `captured a Bystander.` line anywhere in the log. The removal is mastermind-agnostic, so this covers the Magneto criterion. The Mastermind-tile badge half is still pending a visual check.
+
+**Reserved by:** NUMBER-LEDGER D-24654 (#2578). Related: WP-792 / EC-829, D-15401 (superseded), D-24383 (superseded), D-12805, D-24500, D-24537, D-24616 §5, D-24081.
+
+---
+
+### D-24655 — X-Men United grants its bonus per other X-Men Hero played, not a flat +2 (direct fix, no WP) (Active 2026-10-04)
+
+**Context.** Cyclops' **X-Men United** prints "[team:x-men]: You get +2[icon:attack] for each other [team:x-men] Hero you played this turn" (core; the co2e reprint prints "+1 … for each other X-Men Hero" as its third ability). No count source modeled "other X-Men played this turn", so neither line carried a count-scaled marker: the synergy-gated `+2[icon:attack]` parsed to a **flat +2**. It was right only when exactly one other X-Men Hero had been played and under-granted with two or more. Because the line resolved as a plain attack, the hero ledger carried no row for it and `/coverage` never showed the gap. Surfaced in Jeff's solo match `PyK5YS2L8Bo` (2026-10-04, build `afd76ff`), where the diagnostics effect trace showed `effect: "attack", magnitude: 2`.
+
+**Decision.**
+1. New `HeroCountSource` **`x-men-played-this-turn`**: the count of OTHER cards played this turn on the X-Men team, via `countTeamCardsPlayedThisTurn(…, 'x-men')` (`cardHasTeamWhenPlayed`, so a Copy-Powers team grant counts per D-24391). Self-exclusive and play-area only, the exact X-Men analogue of `avengers-played-this-turn` (WP-680 / D-24497). This is "you played this turn", not the hand + play "Heroes you have" reading (D-24529).
+2. Curated markers (`hero-ability-markers.json`): core `cyclops/x-men-united` ability 0 → `[keyword:attack-per-count:x-men-played-this-turn:2]`; co2e `cyclops/x-men-united` ability 2 → `…:1`. The existing D-24016 suppression drops the flat `+N[icon:attack]`, so there is no double grant. The leading `[team:x-men]:` gate is unchanged.
+3. `HERO_COUNT_SOURCES` 14 → 15, with the union and canonical array moved together (runtime drift pin).
+4. Out of scope: co2e X-Men United's ability 1 ("+1 per card discarded from your hand this turn", a different count source); nmut's Sunlight-gated "+1 per other X-Men card"; and three Avengers lines that already have a source but no marker (antm, co2e Captain America, msp1 A Day Unlike Any Other). These are recorded as follow-ups, not fixed here.
+
+**Gates.** game-engine 4842 / 0 fail (+2 count-source tests: resolver and countedInputs parity; +2 parse tests: core and co2e emit `attack-per-count` on `x-men-played-this-turn` with no phantom flat attack). Card-data `cards:check` reproducible (2 lines). Hero ledger +2 rows (core + co2e Cyclops `attack-per-count`), `card-mechanics.json` and the effect index regenerated; villain ledger and runtime-observed unchanged; `sim:coverage --check` OK. No fixture or hash re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24655 (#2578). Related: D-24497 (team-played count sources), D-24016 (flat-icon suppression), D-24391 (effective team in play), D-24529 ("you have" vs "you played").
+
+---
+
+### D-24656 — A Villain escape runs the rulebook procedure: HQ KO (≤ 6, current player chooses), then a one-card discard per player if Bystanders were carried, then the Escape effect; the generic escape Wound is removed (supersedes D-1702 and D-24439) (Active 2026-10-05 — WP-793 / EC-830)
+
+**Context.** D-1702 (WP-017) gave the current player a Wound on every escape as "a reasonable MVP default". D-24439 later found it had no basis in any card, scheme or rule and gated it to Villains without an Escape ability, keeping it only so ability-less escapes had some penalty. The rulebook has a real penalty that was never modeled (rules v23 L556–L570, "in this order"):
+1. the escaping Villain KOs a Hero costing 6 or less from the HQ, the player whose turn it is choosing, and the HQ refills;
+2. if it had captured Bystanders, each player discards one card from hand, one card no matter how many Bystanders;
+3. its Escape effect.
+
+In Jeff's solo match `jjChx_MJ2gl` (Magneto / Midtown Bank Robbery), Blob escaped twice carrying Bystanders. Each time the log showed the Wound and the carry, and no KO or discard. Mystique escaped with no Wound, KO or discard. No scheme or Mastermind prints a per-escape Wound.
+
+**Decision.**
+1. **Order and source.** Every escape runs the three steps, sourced from rules v23 L556–L570. Escapes caused by card effects run them too (L1037, L2826). Step 3 (the onEscape dispatch, then the captured Heroes moved into the Escape Pile (D-24657), the Mystique become-scheme-twist branch and the escaped-pile resource-loss check) keeps its code and order inside the move. It still resolves before the entering Villain's Ambush (L573).
+2. **Step 1.** Eligible = HQ Heroes whose cost is ≤ 6. Haunted Heroes are included and the haunter stays (L1533).
+   - 0 eligible: a logged no-op.
+   - 1 eligible: KO'd automatically. This is the 0 / 1 / 2+ rule of D-24006, D-24007, D-24343 and D-24644.
+   - 2+ eligible: a single-seat `PendingSeatChoice` of kind `escape-hq-ko`, addressed to the player whose turn it was. Options are sorted cost then slot; the default is option 0.
+
+   The KO goes to `G.ko` and the slot refills with `refillHqSlot`. An empty Hero Deck leaves the slot `null` (D-13503). Hero-Deck depletion (Super Hero Civil War, the draw latch) is caught by the post-opener re-check (point 4) and, inside the opener, by a depletion check after each automatic KO.
+3. **Step 2.** Only when the carry moved ≥ 1 Bystander into `G.escapedPile`, and once per escape. It is a simultaneous multi-seat `PendingSeatChoice` of kind `escape-bystander-discard` (D-24501, copied from D-24511's Monarch's discard):
+   - every seat holding a card is addressed, with one option per hand card and default 0. A seat with an empty hand is not addressed;
+   - each seat discards through `discardFromHand`, so return-on-discard (D-24301) and teleport-on-discard see a card-effect discard;
+   - a one-card hand still prompts, because the multi-seat apply is atomic;
+   - the choice is parked with **no** active-seat stage-ride skip, as Random Acts' pass-left is. Skipping the active
+     seat in a mixed ride would set `activePlayers` to the non-active seats only, and the active seat could not submit
+     until they all did. The D-24648 skip applies only to a one-seat choice addressed to the active player (the step-1
+     KO).
+
+   Each player chooses their own card; the D-24284 "others auto-pick" split is not used.
+4. **Queue and accepted deviation.** `resolveVillainEscape` has no `events` and can run several times per move, so it appends a `PendingEscapeProcedure` to `G.pendingEscapeProcedures`. That field is lazy; the key is deleted when the queue empties, and only `dropAllPendingPlayerChoices` assigns `undefined`. The play-phase `turn.onMove` drains the queue, before the Diving Block opener:
+   - each escape's step 1 before its step 2, and escapes in the order they happened;
+   - never while any pending player choice is open. That is the `phaseCard.ts` `hasAnyPendingChoice` aggregate (seat choice, return-on-discard, every active-player queue) plus `pendingHeroChoice`. A step-3 choice such as the Juggernaut Escape's hand KO therefore resolves before that escape's steps 1–2 open, and prompts never stack;
+   - never once `evaluateEndgame(G)` is non-null, checked at every loop iteration.
+
+   After the openers, `turn.onMove` re-runs the idempotent final-turn latch and pile-depletion checks, so an automatic KO's refill that empties the Hero Deck is caught on the same move. The sim runner and PAR aggregator mirror the openers at every post-move site, with the loop's active seat as `currentPlayer`; `runFixture` mirrors them too.
+
+   **Accepted deviation:** steps 1–2 resolve after the move that caused the escape. Step 3, the Ambush and the rest of the reveal resolve first, and the HQ and hands are read when the choice opens. The engine cannot suspend a move halfway. Deferring step 3 too would put the Ambush before the Escape (against L573). The universal pending-choice model already parks and continues (D-24284, D-24644). A strict-order continuation is a follow-up.
+5. **Every escape path.** The Villain-Deck reveal push-off and the Haunt exorcise release already call `resolveVillainEscape`. The Secret Invasion Skrull push (`schemeTwistResolvers.ts`) replaces its reduced copy with `resolveVillainEscape`, so it also gains the onEscape dispatch, the Mystique check and the shared log line. Its vacated HQ slot now refills before the escape resolves, as the rule's "immediately flip" requires.
+6. **Non-active return-on-discard.** A front `G.pendingReturnOnDiscard` entry owned by a non-active seat is opened from `turn.onMove` as a single-seat seat choice of kind `return-on-discard` for that seat. The options are return (default) and leave. The apply duplicates `resolveReturnOnDiscard`'s short decline/return mutation: duplicate first, abstract at the third copy. Before this, such an entry froze the turn, because only the current player can submit `resolveReturnOnDiscard`. While that seat choice is open, `resolveReturnOnDiscard` is a no-op, so a stale or crafted legacy submission cannot pop the entry; this is defense in depth. Any off-prompt move from a ridden seat still spends its single admitted move. That is pre-existing for every D-24501 seat choice, and hardening it is a follow-up. The new discard makes that case common in 2+ player and bot-ally matches; the fix also covers Monarch's discard. Active-player entries are unchanged. The legacy `pendingReturnOnDiscard` projection is emitted only for an active-player front entry. Otherwise a non-active owner could answer through the old prompt, spend its one stage-ride move, and strand the seat choice.
+7. **Supersessions and determinism.**
+   - **Supersedes D-1702** (the WP-017 escape Wound) and **D-24439** (its gate). No escape gives a generic Wound or touches `turnEconomy.woundsDrawn`. Printed Escape Wounds are unchanged.
+   - No new move, `hasPending*` guard or `UIState` field. The choices ride the projected `pendingSeatChoice`, and the client adds three headings.
+   - The sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged (neither replays an escape).
+   - The runtime-observed feed and the dashboard `totalObs` pin are regenerated. The real-opener scaffold measured 7959 → 7980 observations and 8884 → 8903 (pre-WP-792 / WP-749 baselines); at execution, on top of both, the feed moved 7953 → 7974 observations (80 → 81 mechanics, 0 dropped) and `totalObs` 8878 → 8897.
+   - The diagnostic PAR profiles are re-pinned by WP-793's own follow-up `INFRA:` PR, opened immediately after its execution merges; that PR also re-anchors the WP-591 per-scheme seed PAR (Midtown Bank Robbery included), which was calibrated under the old escape costs. WP-792 re-pinned separately (#2586) and WP-749 re-pins inside its own `EC-786:` commit; there is no combined re-pin (operator ruling 2026-10-04, amended 2026-10-05, Jeff, WP-793 OD-2).
+   - Live play in a match in progress at deploy continues; its next escape runs the new procedure. **Re-executing any log that contains a pre-deploy escape stalls.** That escape now parks a seat choice the log never answers, so every later recorded move is a block-all no-op. This hits:
+     - competitive verification (`replay_verification_failed`);
+     - coach `reduceReplayByHash`;
+     - every match in progress at deploy.
+     It is permanent for durable pre-deploy replays. It is wider than the Master Strike capture removal's window (D-24654, WP-792, drafted in PR #2580). Accepted; no migration.
+   - Stored `competitive_scores` rows are frozen (D-24616 §5). Operator ruling 2026-10-04 (Jeff, WP-793 OD-1): leave them frozen — no rewrite, no leaderboard annotation, no new season.
+   - Multi-player sims depend on WP-749 / D-24573.
+
+**Gates.** game-engine 4844 / 1112 suites → 4873 / 1120, 0 fail. With only the engine change built, the engine failed exactly the 8 WP §Scope G generic-Wound tests and nothing else; those 8 now assert no Wound (plus the `ALL_PENDING_FIELDS` addition and the dashboard `totalObs` pin). `pnpm -r build` 0 (no `lagn-v1.json` churn); `pnpm -r --no-bail test` 0 fail in all 12 packages (arena-client 2262 → 2263, dashboard 570, server 1659 with 206 DB-backed skips). arena-client and dashboard `typecheck` 0. Sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged. `sim:runtime-observed` regenerated: 312 games terminate, 7953 → 7974 observations, 80 → 81 mechanics (`last-stand` newly reached, 1 obs), 0 dropped; dashboard `totalObs` 8878 → 8897 (percentResolved stays 13.9). `sim:coverage --check`, `effect-index:check`, `mechanics:metadata:check`, `ledger:heroes:check`, `ledger:villains:check` current with no regeneration; `wiki:lint` 0, `wiki-viewer:check-links` OK. Revert proofs 6/6 (restore the Wound; restore the reduced Secret Invasion block; drop the escape opener; drop the return-on-discard opener; drop the any-pending wait; drop the legacy-move guard), plus a non-vacuity check (parking the discard with the active-seat skip fails the `game.test.ts` real-reducer case). EC-830's hand-built-`G` `seatChoiceDispatch.test.ts` clause (and its `runFixture` fallback) was stale — both harnesses build `G` only from a setup config — so that case is a seeded two-seat sim replayed through `runFixture` (01.6 post-mortem §7). D-24026 live-verify pending.
+
+**Reserved by:** NUMBER-LEDGER D-24656 (#2578). Related: WP-793 / EC-830, D-1702 (superseded), D-24439 (superseded), D-24440, D-24314, D-24315, D-18603, D-24287, D-24587, D-24501, D-24511, D-24499, D-24648, D-24301, D-24527, D-24644, D-24284, D-24006, D-24007, D-13503, D-24318, D-24616 §5, D-24573, D-24654.
+
+---
+
+### D-24657 — A Villain escaping with captured Heroes carries them into the Escape Pile instead of KOing them (direct fix, no WP) (Active 2026-10-04)
+
+**Context.** Villains such as Skrull Queen Veranke and the Skrull Shapeshifters capture Heroes from the HQ (`G.villainAttachedHeroes`, WP-214 / D-21401). When the captor escaped, both escape paths (the Villain-Deck reveal in `villainDeck.reveal.ts` and the scheme-twist push in `schemeTwistResolvers.ts`) called `koAttachedHeroesOnEscape`, which moved the captured Heroes to `G.ko`. Its comment cited "tabletop rules", but Universal Rules v23 "Villains Escaping with Captured Heroes" says the opposite: "If a Villain escapes with captured Heroes, that doesn't cause any discarding. The captured Heroes just stay in the Escape Pile." Found while drafting WP-793 (the rulebook escape procedure, D-24656).
+
+**Decision.**
+1. The helper is renamed `moveAttachedHeroesToEscapedPile` and appends the captured Heroes to `G.escapedPile`, in captor order, after the escaped Villain. It still deletes the `G.villainAttachedHeroes` entry (D-21401 zone integrity). Both escape paths call it at the same point as before.
+2. No discard is added for captured Heroes, matching the rule. The Bystander-carry discard is WP-793's step 2 and is unaffected.
+3. Counting stays correct. A hero ext_id has no `villainDeckCardTypes` entry and is not a supply Bystander, so `countEscapedPileByType`, the bystander-lost scoring loop and the PAR aggregator do not count it. Escaped-villain loss counts (Negative Zone, Killbots, Secret Invasion) are unchanged.
+4. The Escape Pile display now shows captured Heroes alongside their captor. That is display only, through the existing `city.escapedPile` projection with no new field.
+
+**Gates.** game-engine 4839 / 0 fail (the 4 escape-lifecycle tests in `heroCapture.logic.test.ts` rewritten for the intended behavior change, plus 1 new `schemeResourceLoss.test.ts` guard that a captured Hero in the pile is not counted as a Villain, Henchman or Bystander). `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages. `sim:runtime-observed`, `sim:coverage`, both ledgers, mechanics metadata and the effect index all current with no regeneration; no fixture or hash re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24657. Related: WP-214 / D-21401 (hero capture), D-24314 (bystander carry), D-24656 / WP-793 (rulebook escape procedure), D-24315 / D-24325 (escaped-pile loss counts).
+
+---
+
+### D-24573 — The observation harnesses resolve a non-active seat choice with its deterministic default (Active 2026-10-05 — WP-749 / EC-786)
+
+**Status:** Active — landed 2026-10-05 (WP-749 / EC-786).
+
+**Context.** The simulation runner and the PAR aggregator only ever drive the current player. When a WP-684 / D-24501 seat choice is addressed to a **different** seat (Loki's Vanishing Illusions, the non-active part of Random Acts' pass-left), the active seat is correctly blocked, its legal list is empty, the policy falls back to `endTurn` outside cleanup and the game was recorded as stuck. Found by the #2297 PAR re-pin; at execution HEAD the 32 Loki PAR profiles held 1546 stuck games of 6400. D-24590 / D-24593 closed the same gap in the server autoplay and bot-ally drivers; this is the engine-harness counterpart.
+
+**Decision.**
+1. When `G.pendingSeatChoice` is open and the current player is not an outstanding addressed seat, `simulation.runner.ts` `runPerTurnLoop` and `par.aggregator.ts` `simulateOneGame` dispatch, for `getOutstandingSeats(choice)[0]`, the single `resolveSeatChoice` that `getLegalMoves` returns for that seat (`defaultOptionIndex`, the disconnect/timeout default), with a move context built for that seat. No policy is consulted and no decision log is pushed, so a game that never opens such a choice is byte-identical. The branch runs right after `evaluateEndgame`, then the per-move `onMove` mirrors (pile depletion, then deferred grants), then `continue`; it counts against `MAX_MOVE_STEPS_PER_TURN` / `MAX_MOVES_PER_GAME`.
+2. A seat whose legal list is not exactly one `resolveSeatChoice` ends the game as stuck with a full-sentence warning (fail loud, no retry).
+3. The sim captures the move under the acting seat's `playerId` (D-24273), and `runFixture`'s `MOVE_MAP` replays it. `replay.execute.ts` stays core-moves-only (D-0205).
+4. **Open parity questions.** Opening Diving Block's wave (`openDivingBlockSeatChoiceIfNeeded`) in the loops is still unmirrored. The dispatched context carries `ctx.currentPlayer = <acting seat>`, while live `onMove` keeps the active seat there; this only matters if a non-active seat's resolve trips a deferred grant that reads bare `ctx.currentPlayer`. `runFixture` builds its context the same way, so the sim ↔ fixture lockstep holds.
+
+**Gates.** game-engine 4843 / 1111 suites → 4844 / 1112 (new `seatChoiceDispatch.test.ts`, mutation-checked), 0 fail; sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged; `sim:runtime-observed:check` and `sim:coverage --check` current with no regeneration; `pnpm -r --no-bail test` 0 fail. PAR profiles regenerated (the attribution baseline showed no prior drift): aggregate win / loss / stuck 10910 / 13028 / 1662 → 12073 / 13400 / 127 (25600); Loki 1094 / 3760 / 1546 → 2257 / 4132 / 11, none of the 11 a seat choice; control scenario unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24573. Related: WP-684 / D-24501 (seat-choice model), WP-694 / D-24511 (Vanishing Illusions), WP-744 / D-24567 (loop `onMove` parity), WP-732 / D-24553, D-24273 (capture → replay), D-0205, D-24590 / D-24593 (server-driver counterparts), WP-793 / D-24656 (unblocked).
+
+---
+
+### D-24658 — The match loadout records the Final Blow rule, and the Battle Brief states it (direct fix, no WP) (Active 2026-10-05)
+
+**Context.** The optional Final Blow rule (WP-686 / WP-687, D-24503 / D-24504) is chosen with a lobby checkbox, and it changes how the table wins: after the last Tactic, one more fight against the Mastermind. The Battle Brief (WP-786 / D-24634) never said whether it was on (Jeff, 2026-10-05). The brief reads group and hero names from the public match LAGN (`GET /api/match/:matchId/lagn`, D-24446), but `buildMatchLagn` never wrote LAGN 1.6.0's `setup.final_blow` (WP-698). So the match loadout, its "View loadout" download and the result LAGN all dropped the rule. The flag is already persisted: `buildInitialGameState` stores the full payload as `G.matchConfiguration`, including `finalBlow: true` when set.
+
+**Decision.**
+1. `MatchLagnComposition` gains the optional `finalBlow` envelope flag, and `buildMatchLagn` writes `setup.final_blow: true` only when it is `true` (omit-when-off, matching the engine's own omit-when-off `G.finalBlow` and the lagn-spec `tier1-final-blow` example). The read stays inside the D-24153 carve-out: it uses only `initial_state.G.matchConfiguration`, never `G.finalBlow`. The result LAGN inherits the field because it reuses `buildMatchLagn`.
+2. The client `summarizeLoadout` gains `finalBlow: boolean`, true only for a literal `true`, so a misshaped value never reads as on.
+3. The Battle Brief always shows a full-width **Final Blow** tile under the lineup: "On — win only after a 5th, final fight against the Mastermind" (the lobby toggle's wording) or "Off — defeating the Mastermind's last Tactic wins". No UIState field is added (the brief's existing D-24446 LAGN path), so the Board-Visible Field Rule is untouched.
+4. The `api-endpoints.md` row for `GET /api/match/:matchId/lagn` is replaced whole (D-11804). It also corrects the stale `1.5.0` version stamp to the current `1.6.0`.
+5. **The lobby loadout path carries the flag in.** Jeff's solo match `f4JyVOX_Tq3` (2026-10-05) launched from a saved loadout with `final_blow: true` but was created without it: its stored `matchConfiguration` had no `finalBlow`, and it ended at the 4th Tactic. `convertLagnUpload` dropped `setup.final_blow`. Both loadout launches (`submitFromJson`, and `createWithBotAlly` with a loadout) sent `parsed.composition` only, ignoring even the manual form's toggle, which sits in the collapsed advanced form. Now `convertLagnUpload` returns `finalBlow` (literal `true` only, never written into the 9-field composition). A loadout-scoped `loadoutFinalBlow` is pre-set from it and shown as its own **Final Blow** checkbox in the loadout preview. Both loadout launches add `finalBlow: true` when it is ticked (omit-when-off). The manual path's toggle is unchanged.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (server 1661, +2 `buildMatchLagn` cases: Final Blow on writes and validates, off or absent omits; arena-client 2270, +1 `summarizeLoadout` case, +2 Battle Brief cases, +1 `convertLagnUpload` case and +3 lobby cases: a Final Blow loadout pre-ticks the preview and creates with `finalBlow: true`, a plain loadout omits it, and ticking the preview box sends it; the two whole-object `summarizeLoadout` expectations gain `finalBlow: false`); arena-client `vue-tsc --noEmit` 0. Browser-checked on the worktree dev server: Jeff's saved Doom / Portals loadout parses with Final Blow ticked. No engine change and no re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24658. Related: WP-686 / D-24503 and WP-687 / D-24504 (Final Blow), WP-698 (LAGN 1.6.0 `setup.final_blow`), WP-786 / D-24634 (Battle Brief), WP-361 / D-24153 (match LAGN projection and blob-read carve-out), D-24446 (public read), D-11804 (catalog row semantics).
+
+---
+
+### D-24659 — Monarch's Decree is a no-op with no other player: no draw-vs-discard prompt in solo (direct fix, no WP) (Active 2026-10-05)
+
+**Context.** Core Dr. Doom's tactic Monarch's Decree prints "Choose one: each other player draws a card OR each other player discards a card." `resolveMonarchsDecree` (WP-694 / D-24511) always parked the draw-vs-discard mode choice for the defeating player. In a solo match there is no other player, so both options do nothing, yet the player was still asked to choose. Live solo match `f4JyVOX_Tq3` (2026-10-05) logged "must choose — each other player draws a card, or each other player discards a card" with nothing to follow.
+
+**Decision.** When `G.playerZones` holds no seat other than the defeating player, `resolveMonarchsDecree` logs "there is no other player to draw or discard (Monarch's Decree)" and parks nothing. That mirrors Vanishing Illusions, which already parks nothing when no other seat qualifies. With at least one other seat, behavior is unchanged: the mode choice parks for the defeating player, draw applies to every other seat, and discard chains the multi-seat discard. No new G field, move or UIState field.
+
+**Gates.** game-engine 4876 / 0 fail (+1 `tacticHandlers.test.ts` solo case: no choice parked, no seat admitted, the no-op logged; revert-proofed to fail without the guard). `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24659. Related: WP-694 / D-24511 (Monarch's Decree), WP-684 / D-24501 (seat-choice model), D-24658 (held by #2591).
+
+---
+
+### D-24660 — "whose [icon:attack] is less than …" names the target's attack, never a grant (direct fix, no WP) (Active 2026-10-05)
+
+**Context.** Core Nick Fury's Pure Fury prints "Defeat any Villain or Mastermind whose [icon:attack] is less than the number of [team:shield] Heroes in the KO pile." The parser's Step 3 icon→keyword read turned the bare `[icon:attack]` into a magnitude-less `attack` keyword. The real `pure-fury` effect fired correctly, but every play also traced a phantom `attack` / `no-handler` hollow (live solo match `f4JyVOX_Tq3`: three plays, three phantom hollows). The same phrase is on five more hero lines in `data/cards`:
+- co2e Pure Fury;
+- msp1 Pure Fury;
+- ssw1 Thanos, Utter Annihilation;
+- wwhk Hiroim, Blade of the People;
+- the Adversary-side hydra line.
+
+In every one it describes the target's attack.
+
+**Decision.**
+1. `ADVERSARY_STAT_ICON_PATTERN` (D-24605) gains `whose\s+\[icon:attack\]`, so the positional suppression excludes that icon from the Step 2b and Step 3 reads. A real grant icon elsewhere on the same line is unaffected.
+2. `sim:coverage`'s baseline is updated for the intended correction. Core Pure Fury loses its phantom executable `attack` hook (core executable 134 → 133). The four sibling lines with no handler (co2e and msp1 Pure Fury, Thanos Utter Annihilation, Hiroim Blade of the People) lose the phantom "effect" that made them look covered and now count as `noEffect` (+1 each in co2e, msp1, ssw1, wwhk; total executable 2585 → 2580, noEffect 2647 → 2651).
+3. Found in passing, not fixed here: msp1 Pure Fury has core's exact text but no `[keyword:pure-fury]` marker, so it is hollow. That is a one-line curated-marker follow-up.
+
+**Gates.** game-engine 4876 / 0 fail (+2 `adversaryStatIconSuppression.test.ts` cases: the exact core Pure Fury line yields no attack grant and keeps `pure-fury`, and a real "+2[icon:attack]" on the same line still grants; revert-proofed). `ledger:heroes`, `ledger:villains`, `mechanics:metadata`, `effect-index` and `sim:runtime-observed` checks are current with no regeneration. `sim:coverage --check` OK after `--update-baseline`.
+
+**Reserved by:** NUMBER-LEDGER D-24660. Related: D-24605 (adversary-stat icon suppression), D-24499 / D-24530 (Pure Fury), D-24649 (magnitude-dropped hollows), D-24471 / D-24486 (positional icon suppression).
+
+---
+
+### D-24661 — "Each other player" effects log a no-op in solo, and Cruel Ruler's automatic free defeat is attributed (direct fix, no WP) (Active 2026-10-05)
+
+**Context.** Live solo match `aK-n8zNOteC` (Loki / Unleash the Power of the Cosmic Cube, build `ae8fae3`, 2026-10-05) left three effects with no visible result:
+- **Hawkeye's Covering Fire** ("[hc:tech]: Choose one: each other player draws a card or each other player discards a card"). `heroEffectCoveringFire` (WP-719 / D-24541) parked the draw-vs-discard choice even with no other seat. The player was prompted three times, and the resolve logged nothing, because there was no seat to draw or discard.
+- **Loki's Whispers and Lies** ("each other player KOs two Bystanders from their Victory Pile"). `resolveWhispersAndLies` skips the defeater, so in solo it ran an empty loop and logged nothing.
+- **Loki's Cruel Ruler** ("Defeat a Villain in the City for free"). With exactly one City Villain, `resolveCruelRuler` auto-defeats it through `dispatchDefeatWithBystanderTarget`. The defeat core logs an ordinary "fought X at city space N" line, so the free defeat could not be told apart from a paid fight.
+
+**Decision.**
+- Covering Fire and Whispers and Lies: when `G.playerZones` holds no seat other than the acting player, log "there is no other player to … (Card)" and return. Covering Fire parks nothing. This is the Monarch's Decree (D-24659) and Vanishing Illusions precedent.
+- Cruel Ruler: the exactly-one auto path first logs "Player N defeats {Villain} for free (Cruel Ruler)", then dispatches the defeat.
+
+Multiplayer behavior is unchanged in all three. No new G field, move, UIState field or trace status. The Covering Fire hook still traces `fired`, because its handler ran and logged.
+
+**Gates.** game-engine 4879 / 0 fail, with 3 new cases, each revert-proofed to fail without the fix:
+- `coveringFireChoice.resolve.test.ts`: solo parks nothing and logs the no-op.
+- `tacticHandlers.test.ts`: solo Whispers and Lies KOs nothing and logs the no-op.
+- `tacticHandlers.loki693.test.ts`: the Cruel Ruler one-target attribution line.
+
+Also: server 1455 / 0; `sim:coverage --check` OK; `sim:runtime-observed --check` current; `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24661. Related: D-24659 (Monarch's Decree solo no-op), WP-719 / D-24541 (Covering Fire), WP-691 / D-24508 (Whispers and Lies), WP-693 / D-24510 (Cruel Ruler).
 
 ---
 

@@ -8,6 +8,27 @@
  */
 
 import type { CardExtId } from '../state/zones.types.js';
+import type { CitySpaceName } from '../board/citySpaceNames.js';
+
+/**
+ * A fight target restricted attack may be spent on (WP-790 / D-24652): one of
+ * the five named City spaces, or the Mastermind.
+ */
+export type AttackTargetName = CitySpaceName | 'mastermind';
+
+/**
+ * One "usable only against …" attack grant (WP-790 / D-24652).
+ *
+ * `remaining` is the unspent part of the grant. `targets` is in canonical order
+ * (`CITY_SPACE_NAMES` order, then `'mastermind'`). `sourceCardId` is the hero
+ * card that granted it. Strings and numbers only, so the grant stays
+ * JSON-serializable.
+ */
+export interface RestrictedAttackGrant {
+  remaining: number;
+  targets: AttackTargetName[];
+  sourceCardId: CardExtId;
+}
 
 /**
  * Per-turn economy tracking for attack and recruit points.
@@ -122,6 +143,23 @@ export interface TurnEconomy {
    * Strings only (CardExtId), never card objects.
    */
   bothSidesPlayedCardIds?: CardExtId[];
+  // why: WP-790 / D-24652 — printed "usable only against …" attack (rules v23, the
+  // Liberate entry: a bonus spendable only on the named targets). The granted amount
+  // stays INSIDE `attack`, so the turn's attack total, the stats and every "attack you
+  // made" condition still count it; this sub-ledger records only the restricted
+  // remainder, which `getSpendableAttack` excludes unless the fight's target is eligible.
+  /**
+   * WP-790 / D-24652 — the restricted-attack sub-ledger, one entry per
+   * "usable only against …" grant played this turn, in grant order.
+   *
+   * LAZILY MATERIALIZED, exactly like `excessiveViolencePlayedCards`: absent until
+   * the first restricted grant (`addRestrictedAttack`), dropped by
+   * `resetTurnEconomy` at turn start, carried by `carryConversionFlag`. Grants that
+   * reach `remaining` 0 stay in the array (stable indices). Absent ≡ no restricted
+   * attack; omitted by `JSON.stringify`, so a turn with no restricted grant
+   * serializes byte-identically and neither state-hash oracle moves.
+   */
+  restrictedAttack?: RestrictedAttackGrant[];
 }
 
 // why: stats resolved at setup time from registry so moves never query

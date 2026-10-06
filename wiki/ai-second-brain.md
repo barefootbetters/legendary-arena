@@ -23,7 +23,9 @@ source:
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
   - ../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md
   - C:\www\jefferyjjensen-corporate-memory (the ship — private repo barefootbetters/jefferyjjensen-corporate-memory)
-last-reviewed: 2026-09-29
+  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026 — the hosting cost baseline)
+  - ../render.yaml
+last-reviewed: 2026-10-04
 ---
 
 # AI Second Brain
@@ -92,8 +94,9 @@ the brain's private contents live in the ship repo,
 on GitHub while signed in; its Markdown renders as pages). Personal context
 (priorities, voice, notes) is linked from here, never copied here.*
 
-**As of 2026-09-29: the ship is launched and onboarded; no platform services run
-yet.**
+**As of 2026-10-04: the ship is launched, audited, and readable as a private
+web viewer, and the first notes-migration pilot client is engaged. No platform
+services run yet, and the Day 2 tool connection is overdue.**
 
 | Milestone | Status | Date | Where to look |
 |---|---|---|---|
@@ -105,13 +108,19 @@ yet.**
 | First personal capture versioned in `notes/` | Done | 2026-09-29 | [`notes/`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/tree/main/notes) |
 | `/onboard` — Day-1 context written | Done | 2026-09-29 | [corporate-memory#2](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/2); [`context/priorities.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/priorities.md) |
 | Note skeleton: `inbox/`, `engineering/`, `research/`, `consulting/`, the note template, README note rules; first note (Mastermind exit cost) | Done | 2026-09-29 | [corporate-memory#3](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/3); [`_templates/note.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/_templates/note.md); [`notes/mastermind-exit-cost.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/notes/mastermind-exit-cost.md) |
-| Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | Next | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
-| Map Day 7: `/audit` (Four Cs score) | Scheduled | ~2026-10-06 | The report stays on the machine (`audits/` is gitignored); its score and top findings get a row here |
+| Baseline `/audit`: **29/100, Foundation** (Context 11, Connections 3, Capabilities 13, Cadence 2). Top findings: the engine route read a stale local checkout, and the beta deliverables had no route | Done | 2026-09-29 | The report stays on the machine (`audits/` is gitignored) |
+| Audit findings -01 to -08 fixed: the engine and repos are read from GitHub `main`, the 2026-10-30 beta-session checklist is in `priorities.md`, the planned jeff-ai stack is labelled as planned, and the connections registry has rows 9–10 | Done | 2026-09-29 | corporate-memory [#6](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/6)–[#11](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/11) |
+| Weekly check scheduled (Task Scheduler, Fridays 07:00); scripts ported to PowerShell | Done; first automatic run **PASS** 2026-10-02 | 2026-09-29 | corporate-memory [#10](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/10), [#12](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/12); [`reviews/log.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/reviews/log.md) |
+| Private web viewer: the ship's Markdown as pages with search, at **brain.barefootbetters.com** behind Cloudflare Access (the ewiki's sign-in) | Done | 2026-10-04 | corporate-memory [#16](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/16)–[#18](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/18); [`viewer/README.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/viewer/README.md) |
+| First notes-migration pilot client engaged (a seminary teacher; seminary teachers are the first market — see [Open Questions](#open-questions) #7) | Done; pilot success criteria still open | 2026-10-04 | Engagement details stay in the private ship: [corporate-memory#15](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/15) |
+| Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | **Overdue**: only the GitHub repo routes are connected | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
+| Map Day 7: `/audit` re-run, scored against the 29/100 baseline | Scheduled | ~2026-10-06 | Its score and top findings get a row here |
 | Map Day 14: `/level-up` (first automation; the recorded top pain is food and routines) | Scheduled | ~2026-10-13 | [`context/about-me.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/about-me.md) |
+| Owned host exists: production moves off Render to the DigitalOcean droplet (the brain's bootstrap host) | Stalled since 2026-07-25. The vendor was reconfirmed 2026-10-02, and the dedicated-host shopping note is dated 2026-10-04 | — | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Hosting and security posture](#hosting-and-security-posture) (cost baseline and host shopping note) |
 | Runbook Phase 1: corpus census on the owned host | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 | Runbook Phases 2–6: navigation MCP, vector layer, LiteLLM / Open WebUI, voice | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 
-Open intake items: two answers are still marked `[CONFIRM]` in
+Open intake items: three answers are still marked `[CONFIRM]` in
 [`aios-intake.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/aios-intake.md).
 
 ### Goals
@@ -632,15 +641,22 @@ corrupts recall or the store:
 ### Hosting and security posture
 
 - **Host.** An **unmanaged Ubuntu 24.04 VPS** with full root — a dedicated one is
-  the end-state, though the bootstrap build may co-locate on the existing box with
-  isolation (see the deployment callout above). The architecture locks **ownership
-  and open formats, never a provider** — so the vendor is a shopping decision, not
-  an architectural one. As of 2026-08, candidates in this class:
-  - **NameHero** — US-centric, ~$7/mo for the 8 GB tier, familiar support.
+  the end-state. The bootstrap build may co-locate, with isolation, on the
+  **production DigitalOcean droplet** that the Render migration stands up (see
+  the deployment callout above and the cost baseline below). That droplet does
+  not exist yet, so neither does the bootstrap host. The architecture locks
+  **ownership and open formats, never a provider**, so the vendor for the
+  eventual *dedicated* brain host is a shopping decision, not an architectural
+  one. As of 2026-08, candidates in this class were:
+  - **NameHero** — US-centric, familiar support. The 2026-08 "~$7/mo for the
+    8 GB tier" was a 3-year promo; renewal is $15.92 (Plus) and $27.94 (Turbo).
+    See the [host shopping note](#hosting-and-security-posture) below.
   - **Hetzner Cloud** — often the best price/performance for a self-hosted
     Postgres + Docker stack; US and EU regions.
   - **DigitalOcean / Vultr / Linode** — pricier, but strong snapshot/networking
-    ecosystems and low friction when leaving a PaaS like Render.
+    ecosystems. DigitalOcean is already the production vendor (reconfirmed
+    2026-10-02), so a dedicated brain droplet there shares one account,
+    one backup routine, and one set of runbooks.
 
   Compare current plans before committing rather than treating any one as the
   default; and because a durable knowledge store inherits the Disaster Recovery
@@ -655,6 +671,94 @@ corrupts recall or the store:
   bootstrap floor when embeddings and voice run concurrently**, and the 16 GB
   class is also where a small resident local model or more concurrent agents
   belong.
+- **Cost baseline: what production costs today (September 2026, actual).**
+  Production runs on Render, not on an owned box. Its September bill (invoice
+  `0SPQWPNF-0006`, paid 2026-10-01) was **$146.35**:
+
+  | Line | Render plan | Sep 2026 |
+  |---|---|---|
+  | Game server (`apps/server`) | `pro` web service, 2 CPU / 4 GB | $85.00 |
+  | PostgreSQL (`legendary-arena-db`) | `pro-4gb`, 4 GB / 1 CPU, plus storage | $55.30 |
+  | Builds | 6 h 42 m of pipeline minutes | $5.00 |
+  | Bandwidth | 6.5 GB | $1.05 |
+  | ewiki static site | free | $0.00 |
+
+  That is about **$1,750 a year** for one server and one database. Both plans
+  were raised in July 2026 to cure CPU and memory starvation (the reasons are in
+  `render.yaml`); the dashboard's last cost snapshot, from 2026-07-27, predates
+  the full-month effect and still shows about $30.
+
+  Two consequences for this page. **First, there is no existing box to co-locate
+  on yet.** Render is a PaaS, so the bootstrap co-location depends on the
+  Render → DigitalOcean migration recorded in
+  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (the
+  `legendary-arena-lab` PLAN, 2026-07-24, reconfirmed 2026-10-02), and that
+  program has not moved since 2026-07-25. NameHero and the other vendors above
+  remain candidates only for the brain's eventual *dedicated* host. **Second, weigh the brain's host budget against $146 a
+  month, not against zero.** The PLAN's target size (4 vCPU / 8 GB, ~$48/mo at
+  DigitalOcean) replaces the whole Render bill, and a 16 GB box that also
+  carries the brain with voice would still cost less than Render charges for
+  production alone. That makes "co-locate to bootstrap" a cost decision, not
+  only a convenience. The resource-contention caution in the deployment callout
+  still applies, and a dedicated host is still the end-state.
+- **Host shopping note (2026-10-04).** The vendor for the brain host is still
+  unlocked. This note prices the candidates against the stack this page runs.
+  It does not move the arena migration: `api.legendary-arena.com` and its
+  Postgres stay on the DigitalOcean droplet
+  ([Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md), vendor reconfirmed
+  2026-10-02). NameHero remains a candidate only for the brain's eventual
+  dedicated host.
+
+  The size bar is unchanged: 8 GB / 2 vCPU is the lower tier for Postgres +
+  LiteLLM + Open WebUI + CPU embeddings, and 16 GB is the floor once local
+  Whisper and a TTS sidecar run at the same time. Ubuntu 24.04 LTS. Backups are
+  the operator's (`pg_dump` and the Git corpus to R2); a host snapshot is a
+  convenience, not the recovery path.
+
+  NameHero's published prices, checked 2026-10-04. The promo is the first
+  invoice of a 3-year term; budget the renewal.
+
+  | Plan | vCPU | RAM | Disk | Transfer | Promo | Renewal | Fits the brain? |
+  |---|---|---|---|---|---|---|---|
+  | AI Agent VPS | 2 | 4 GB | 100 GB NVMe | 4 TB | $6.49 (3-year, $233.77 prepaid) | $9.99 | No. Half the lower tier, and the image is Ubuntu 22.04. |
+  | Unmanaged Plus | 2 | 8 GB | 100 GB NVMe | 8 TB | $6.85 | $15.92 | Lower tier only, no voice. |
+  | Unmanaged Turbo | 4 | 16 GB | 200 GB NVMe | 16 TB | $12.01 | $27.94 | The honest floor once voice is on. |
+  | Unmanaged Business | 8 | 32 GB | 400 GB NVMe | 32 TB | $20.68 | $48.09 | Headroom; same dollars as the arena droplet. |
+
+  DigitalOcean Basic, same day, month-to-month with no promo cliff: 2 vCPU /
+  4 GB / 80 GB SSD is $24 and 4 vCPU / 8 GB / 160 GB SSD is $48 (`sfo3`). There
+  is no Basic 2 vCPU / 8 GB; CPU-Optimized 4 vCPU / 8 GB is $84, and weekly
+  backups add 20%. Full side-by-side:
+  [Vendor comparison](ubuntu-lab-provisioning.md#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
+
+  Plus and Turbo at renewal still undercut DigitalOcean on RAM and disk per
+  dollar. Neither is in San Francisco; NameHero's NVMe US site is Lenexa,
+  Kansas — fine for a single-operator brain reached over Tailscale, the wrong
+  pin for the arena origin.
+
+  **Do not order the AI Agent VPS for this platform.** It is a checkout
+  installer (OpenClaw, n8n, Hermes, Docker, Claude Code, Open WebUI) on a 4 GB
+  Ubuntu 22.04 box, and it misses three ways:
+  - 4 GB cannot hold Postgres + LiteLLM + Open WebUI + CPU embeddings, let
+    alone voice.
+  - The image is 22.04; the host pin is 24.04. Replacing the image throws away
+    the one-click install it is priced around.
+  - One-click Open WebUI ships its document upload and built-in RAG switched on,
+    which the "Open WebUI collections are not a knowledge base" anti-goal
+    ([Edge Cases](#edge-cases)) turns off in v1. A preinstalled agent is an
+    agent-layer choice ([The agent layer is replaceable](#the-agent-layer-is-replaceable)),
+    not a reason to pick a host.
+
+  If a NameHero box is bought for the brain, it is unmanaged **Turbo** at the
+  renewal price: Ubuntu 24.04, no preinstalled app, dumps to R2, Tailscale in
+  front, no coupling to the arena deploy. **Plus** is the pilot only if voice
+  stays off. The AI Agent SKU is out.
+
+  No quote has been requested. If the vendor is reopened, ask for Turbo
+  month-to-month (not 3-year prepay), Ubuntu 24.04 with no checkout app, and
+  whether a West Coast site exists. Until that quote is in writing, the
+  bootstrap host is the DigitalOcean droplet the migration stands up, and a
+  dedicated brain host stays a later split.
 - **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
   on that class treat **local LLMs as optional and CPU-only (small models)** and
   lean on **hosted models via LiteLLM** for reasoning quality. But the dedicated
@@ -964,7 +1068,7 @@ The options, cheapest first:
 | **B. In-server routing shim** — a small Node module owns the model id + per-model config (thinking / output budget), read from env | none | ✅ (env / config) | ✅ | *now* — one LLM surface; lowest cost; delivers the principle with no infra |
 | **C. Hosted gateway** (e.g. OpenRouter) | none (external dependency) | ✅ | ✅ | you want a real gateway with zero ops and accept a third party in the path |
 | **D1. Self-hosted LiteLLM on Render**, beside `apps/server` | one small service, co-located | ✅ | ✅ | a second LLM surface appears and you want ownership + cost control near the server |
-| **D2. Self-hosted LiteLLM on the brain host** (NameHero) | one service, cross-host | ✅ | ✅ | the AI Second Brain platform is built and already runs the gateway |
+| **D2. Self-hosted LiteLLM on the brain host** (vendor open) | one service, cross-host | ✅ | ✅ | the AI Second Brain platform is built and already runs the gateway |
 
 **Recommendation.** Take **B now.** It is the model-independence *principle*
 (model as config; quirks off the feature client) at the cost of a small, testable
@@ -2061,6 +2165,44 @@ This is the summary index; the individual gotchas and their nuances live in
   material he flags as Willdan's stays out. Sensitivity examples elsewhere
   ("client engineering data, formulations") are about which model may see a
   thing, not who owns it, so they stay.
+- **2026-10-02 — hosting cost baseline added (descriptive, no re-lock).** The
+  September 2026 Render bill ($146.35: game server $85.00, Postgres $55.30,
+  builds $5.00, bandwidth $1.05) is now a cost baseline under
+  [Hosting and security posture](#hosting-and-security-posture). Two corrections
+  follow from it. The page said v1 "co-locates on the existing box," but
+  production is on Render, a PaaS, so there is no box yet; the bootstrap host is
+  the DigitalOcean droplet from the Render migration (vendor reconfirmed
+  2026-10-02), and that migration has stalled since 2026-07-25. The brain's host budget is now framed against $146 a month
+  rather than zero. [Build status](#build-status) gained a row for the host, and
+  Open Question 3 points at the baseline. No Locked row moved, and there is no
+  `DECISIONS.md` entry.
+- **2026-10-04 — host shopping note (descriptive, no re-lock).** Priced
+  NameHero's current unmanaged plans and its AI Agent VPS against the brain's
+  size bar and against DigitalOcean Basic. The 2026-08 "~$7/mo for 8 GB" figure
+  was the Plus promo; renewal is $15.92 (Plus, 2 vCPU / 8 GB) and $27.94 (Turbo,
+  4 vCPU / 16 GB). The AI Agent VPS ($9.99 regular, $6.49 on a 3-year prepay) is
+  2 vCPU / 4 GB on Ubuntu 22.04 with a one-click agent install — below the 8 GB
+  lower tier, on the wrong image, and at odds with the Open WebUI built-in-RAG
+  anti-goal. Open Question 3 now points at the note, and the gateway table's D2
+  row no longer names NameHero as the brain host. Recorded as a shopping note
+  only; the arena migration stays DigitalOcean. No Locked row moved, and there
+  is no `DECISIONS.md` entry.
+- **2026-10-04 — first market named (descriptive, no re-lock).** Open Question
+  7 records the operator's direction: seminary teachers are the first market,
+  a single seminary teacher's ship is the pilot, and a successful pilot becomes
+  a brand other seminary teachers can buy. Which line sells it, packaging, and
+  price stay open. No Locked row moved, and there is no `DECISIONS.md` entry.
+- **2026-10-04 — Build status refreshed (descriptive, no re-lock).** Added
+  rows for:
+  - the 2026-09-29 baseline `/audit` (29/100, Foundation) and the fixes for
+    its findings -01 to -08;
+  - the scheduled weekly check (first automatic run passed 2026-10-02);
+  - the private web viewer at brain.barefootbetters.com;
+  - the first notes-migration pilot client.
+
+  Map Day 2 is marked overdue, the Day 7 audit is now a re-run against the
+  baseline, and the open-intake count is corrected from two to three. No
+  Locked row moved, and there is no `DECISIONS.md` entry.
 
 ## Open Questions
 
@@ -2099,11 +2241,18 @@ is built.
    budget**, which lifts quality on the *same* model. All three are tuned at the
    gateway and reopen no Locked row.
 3. **Host sizing, vendor, and when to split off production.** A dedicated host is
-   the end-state; v1 co-locates on the existing box (D-24341). The lower tier for
+   the end-state; v1 co-locates with production (D-24341). That box does not
+   exist yet: production is still on Render at $146.35/mo (September 2026), and
+   the DigitalOcean droplet it moves to is the stalled migration in
+   [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (see the cost baseline
+   in [Hosting and security posture](#hosting-and-security-posture)). The
+   cost ceiling for the brain is best set against that Render figure. The lower tier for
    the eventual dedicated box is an ~8 GB / 2 vCPU class unmanaged Ubuntu 24.04
-   (NameHero, Hetzner, or DigitalOcean / Vultr / Linode are 2026-08 candidates —
-   vendor is unlocked; compare current plans and weight reliability + owned
-   backups, see [Hosting and security posture](#hosting-and-security-posture)) for
+   (vendor is unlocked; current NameHero renewal prices and DigitalOcean Basic
+   are compared in the 2026-10-04 host shopping note under
+   [Hosting and security posture](#hosting-and-security-posture) — NameHero
+   Turbo at $27.94 is the floor once voice is on — and weight reliability +
+   owned backups over promo price) for
    a navigation-plus-vector brain that leans on hosted inference; the upper tier,
    if local reasoning quality on sensitive domains is wanted, is a unified-memory
    accelerated box (Spark / GB10 class — order $8–10k as of 2026-08 for a
@@ -2184,6 +2333,14 @@ is built.
    one's own. A sold offering keeps the license and attribution and brands its own
    layer: the plumbing, the governance, and the setup work. **Open** — a business
    decision, not an architecture one.
+
+   *Market direction (2026-10-04):* the first market is **seminary teachers**.
+   The pilot is one seminary teacher's ship, the
+   [Positioning](#positioning-the-owner-stays-captain) demo made real. If the
+   pilot works, it becomes a brand other seminary teachers buy, so they own
+   their study archive independent of any AI platform. That promise is
+   *Model Independence* plus "your data never leaves", sold as a product. Still
+   open: the pilot's success criteria, which set whether it "works".
 
 ## References
 

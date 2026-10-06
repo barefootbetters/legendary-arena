@@ -12,7 +12,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { fightMastermind, defeatMastermindTacticCore } from './fightMastermind.js';
-import { mastermindStrikeHandler } from '../rules/mastermindHandlers.js';
+import { captureBystanderToMastermind } from './seatChoiceCards.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
@@ -395,18 +395,20 @@ describe('fightMastermind', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Integration: Master Strike capture (real handler) then per-fight rescue
+// Integration: Mastermind capture (real capture helper) then per-fight rescue
 // across two fights. Reproduces the play.legendary-arena.com report where a
 // mastermind that captured bystanders was only releasing them on the final
 // blow — proves the captured bystanders are awarded to victory on EACH tactic
 // defeat, end-to-end through the real capture + fight code paths, with a
-// fresh capture between fights to show the per-fight semantics.
+// fresh capture between fights to show the per-fight semantics. A Master
+// Strike captures nothing since D-24654, so the capture comes from
+// captureBystanderToMastermind (Here, Hold This / the kidnap fallback).
 // ---------------------------------------------------------------------------
 
 /**
- * Builds a self-contained state for the strike-capture-then-fight integration
- * test. Includes notableEvents (the strike handler emits one) and a 2-tactic
- * mastermind with a non-Magneto id so only the generic capture runs.
+ * Builds a self-contained state for the capture-then-fight integration
+ * test. Includes notableEvents (the fight emits events) and a 2-tactic
+ * mastermind with a two-bystander supply for the two captures.
  */
 function makeIntegrationState(): LegendaryGameState {
   return {
@@ -464,16 +466,16 @@ function makeIntegrationState(): LegendaryGameState {
   } as unknown as LegendaryGameState;
 }
 
-describe('fightMastermind — integration: Master Strike capture then per-fight rescue', () => {
+describe('fightMastermind — integration: Mastermind capture then per-fight rescue', () => {
   it('rescues the held bystander on EACH tactic defeat, including a fresh capture between fights', () => {
     const gameState = makeIntegrationState();
 
-    // A real Master Strike captures the first bystander onto the mastermind.
-    mastermindStrikeHandler(gameState, {}, { cardId: 'strike-1' });
+    // A real capture puts the first bystander onto the mastermind.
+    captureBystanderToMastermind(gameState);
     assert.equal(
       gameState.mastermind.attachedBystanders.length,
       1,
-      'one bystander must be captured onto the mastermind by the first strike',
+      'one bystander must be captured onto the mastermind by the first capture',
     );
 
     const moveContext = createMockMoveContext(gameState);
@@ -497,12 +499,12 @@ describe('fightMastermind — integration: Master Strike capture then per-fight 
       'mastermind bystander store is cleared after the non-final rescue',
     );
 
-    // A second Master Strike captures another bystander BETWEEN fights.
-    mastermindStrikeHandler(moveContext.G, {}, { cardId: 'strike-2' });
+    // A second capture puts another bystander on the mastermind BETWEEN fights.
+    captureBystanderToMastermind(moveContext.G);
     assert.equal(
       moveContext.G.mastermind.attachedBystanders.length,
       1,
-      'the second strike captures a fresh bystander before the final fight',
+      'the second capture puts a fresh bystander on the mastermind before the final fight',
     );
 
     // Second attack: defeats tactic-2 (last) — vanquish — rescues the freshly
@@ -1099,5 +1101,35 @@ describe('fightMastermind — Haunt (WP-757 / D-24587)', () => {
       [{ kind: 'villain', cardId: 'haunting-villain' }, null, null, null, null],
       'the Villain haunter is untouched by a Mastermind fight',
     );
+  });
+});
+
+describe('fightMastermind — restricted "usable only against" attack (WP-790 / D-24652)', () => {
+  it('Mastermind-eligible restricted attack pays for the fight', () => {
+    const gameState = createMockGameState({
+      turnEconomy: makeTurnEconomy({
+        attack: 8,
+        restrictedAttack: [{ remaining: 3, targets: ['bridge', 'mastermind'], sourceCardId: 'bubble' as CardExtId }],
+      }),
+    });
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, ['tactic-1']);
+    assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 8);
+    assert.strictEqual(moveContext.G.turnEconomy.restrictedAttack?.[0]?.remaining, 0);
+  });
+
+  it('City-only restricted attack cannot pay for the Mastermind (no G mutation)', () => {
+    const gameState = createMockGameState({
+      turnEconomy: makeTurnEconomy({
+        attack: 8,
+        restrictedAttack: [{ remaining: 3, targets: ['rooftops'], sourceCardId: 'bolt' as CardExtId }],
+      }),
+    });
+    const economyBefore = JSON.parse(JSON.stringify(gameState.turnEconomy));
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, []);
+    assert.deepStrictEqual(moveContext.G.turnEconomy, economyBefore);
   });
 });
