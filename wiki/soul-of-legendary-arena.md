@@ -1403,8 +1403,7 @@ thought he was ending exploitation. Motive is unknowable and a bad instrument.
 Ask what the arrangement *does*. The same rule covers what it *says*: read the
 governing record, not the campaign language. A movement whose rhetoric runs
 against a class while its donors, its policy, and its beneficiaries run toward
-that class is telling you about its positioning, not its program — and that
-test cuts against every side that uses it.
+that class is telling you about its positioning, not its program.
 
 The five questions run upstream to downstream, and each covers one separate
 lever:
@@ -1480,8 +1479,7 @@ looks like freedom.
   on the grievance, healing the grievance dissolves the coalition. So the wound
   is kept open rather than closed, and the members are taught that leaving it
   behind is betrayal — the exit priced in loyalty instead of money. It is the
-  subsidy-as-lock at the scale of a movement, and it is not owned by any one
-  party: anyone who builds on that foundation inherits the incentive. The test
+  subsidy-as-lock at the scale of a movement. The test
   is the same — if the arrangement's standing depends on the condition
   persisting, watch whether it ever lets the condition end.
 
@@ -2381,17 +2379,16 @@ authored through the pipeline):*
 - **Candidate Scheme: "Investigate Yourself, Find Yourself Innocent."**
 
 **Across the aisle — the lens on contested issues.** Each side's stance is
-stated the way its own advocates would put it. The lens column reads the
-architecture, and it does not split the difference: where it finds a seat, it
-says so; where the party label is the weak link, it says that instead.
+stated the way its own advocates would put it. The lens column says what the
+five questions find.
 
 | Issue | Liberal stance | Conservative stance | The Mastermind Lens |
 |---|---|---|---|
-| **Taxing the rich** | Raise top marginal rates; the wealthiest should pay a fairer share toward the common good. | Keep rates low; wealth is earned property, and taxing it slows growth and investment. | Read the record, not the rhetoric. Both parties' donor classes are rich; the fight is over marginal rates on *income* and rarely touches how great fortunes are made and held (asset values). "Hate the rich" is campaign language, not a governing program — and the same test finds the same gap in the other side's populist rhetoric. |
-| **Haves vs. have-nots** | Inequality is structural; organize those without and redistribute from those who have. | Opportunity, not envy; class warfare divides a nation and punishes success. | [The kept wound](#the-mastermind-lens--five-questions): a coalition built on a grievance dissolves if the grievance heals, so it has an incentive to keep it open. Not owned by one side — grievance against "the elites" runs the same machine from the right. The test: does the arrangement ever let the condition end? |
-| **Victim frame vs. faith** | Outcomes are shaped by structural barriers; name them and change the system. | Personal responsibility, faith, and family; you act, under God. | [The orientation](#two-orientations-the-victim-frame-and-the-providence-frame) is real and compounds over a life and a family, but it belongs to a person, not a party. The partisan mapping is the weakest link; the lens reads the frame, not the voter. |
-| **Abortion** | Bodily autonomy; reproductive health care; the woman's choice. | The unborn child is a human life and deserves the law's protection. | The voiceless captive, all five questions at the limit: the second party ruled out of scope, the counter-word made unsayable, the act renamed *health*. The same machine as Pharaoh's river and the altar at Olishem — and the same counter-move, the midwives who would not obey. |
-| **Schools and vouchers** | Public money belongs in public schools that take every child; vouchers drain their funding toward less accountable private schools; stand with teachers. | Money should follow the child; parents, not districts, choose the school; competition makes every school better. | Ask who defends whom: the unions and school boards defend the institution; parents defend their own child. Taxpayers already pay about $21,100 per student (2023–24: 46% state, 43% local, mostly property tax, 11% federal), but the money follows the *building*. Leaving costs a house in another district or tuition on top of taxes, and the district's budget depends on the child staying — the soft lock, plus the kept wound's test. When parents objected, their side of the room was set beside the word *terrorism*. [Read in full](#the-mastermind-lens--five-questions) under Recent cases. |
+| **Taxing the rich** | Raise top marginal rates; the wealthiest should pay a fairer share toward the common good. | Keep rates low; wealth is earned property, and taxing it slows growth and investment. | **Positioning, not program.** The rhetoric runs against the rich while much of the big-donor class funds the party using it. The fight is over income-tax rates, which never reach the asset values where great fortunes sit. |
+| **Haves vs. have-nots** | Inequality is structural; organize those without and redistribute from those who have. | Opportunity, not envy; class warfare divides a nation and punishes success. | **[The kept wound](#the-mastermind-lens--five-questions).** A coalition built on a grievance dissolves if the grievance heals, so it keeps the wound open. The test: does the program ever let the condition end? |
+| **Victim frame vs. faith** | Outcomes are shaped by structural barriers; name them and change the system. | Personal responsibility, faith, and family; you act, under God. | **A soft lock on the person.** The structural frame puts control outside you, so the way out always waits on someone else's move. The [providence frame](#two-orientations-the-victim-frame-and-the-providence-frame) is the exit that needs no one's permission. |
+| **Abortion** | Bodily autonomy; reproductive health care; the woman's choice. | The unborn child is a human life and deserves the law's protection. | **The voiceless captive.** The child is ruled out of the question, *child* is made unsayable, and the act is renamed *health* — the machine of Pharaoh's river and the altar at Olishem. |
+| **Schools and vouchers** | Public money belongs in public schools that take every child; vouchers drain their funding toward less accountable private schools; stand with teachers. | Money should follow the child; parents, not districts, choose the school; competition makes every school better. | **Whose money, whose child.** Unions and school boards defend the institution; parents defend the child. Taxpayers pay about $21,100 per student, but the money follows the building: leaving costs a new house or tuition on top of taxes, and the district's budget needs the child to stay. Parents who objected were set beside the word *terrorism*. |
 
 **What the lens does and does not do.** It will **not** name a person, and that
 is a feature. The moment a lens promises to identify the Mastermind, it becomes a
