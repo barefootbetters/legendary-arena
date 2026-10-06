@@ -19,10 +19,10 @@
       "card": "Black Widow",
       "ability": "Silent Sniper",
       "wp": "WP-486",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Silent Sniper (38.2.9) auto-defeated the one Sentinel holding a Bystander (38.2.10); trace fired.",
+      "note": "The one-target auto defeat carries no Silent Sniper log line; ≥2-target prompt unexercised."
     },
     {
       "key": "core/black-widow|draw",
@@ -118,9 +118,9 @@
       "card": "Deadpool",
       "ability": "Oddball",
       "wp": "WP-247",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Oddball counted odd-cost Heroes played earlier, 0 through 4 (27.2.28 count 4).",
       "note": ""
     },
     {
@@ -129,10 +129,10 @@
       "card": "Deadpool",
       "ability": "Hey, Can I Get a Do-Over?",
       "wp": "WP-681",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): offered when first and declined (24.2.2, 34.2.2).",
+      "note": "Accept branch (discard hand, draw four) unexercised."
     },
     {
       "key": "core/deadpool|first-hero-condition",
@@ -140,9 +140,9 @@
       "card": "Deadpool",
       "ability": "Hey, Can I Get a Do-Over?",
       "wp": "WP-681",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): offered as the first Hero played (24.2.1); blocked when not first (18.2.4, 37.2.16).",
       "note": ""
     },
     {
@@ -151,9 +151,9 @@
       "card": "Deadpool",
       "ability": "Here, Hold This for a Second",
       "wp": "WP-683",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): chosen Villain captured a Bystander (20.2.6, 26.2.15, 29.2.6); one Villain auto-captured (38.2.4).",
       "note": ""
     },
     {
@@ -162,10 +162,10 @@
       "card": "Deadpool",
       "ability": "Random Acts of Unkindness",
       "wp": "WP-683",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): bot played it; each player passed a card left (35.2.11–13).",
+      "note": "Optional gain-a-Wound was declined; the Wound branch is unexercised."
     },
     {
       "key": "core/emma-frost|defeated-villain-or-mastermind",
@@ -273,9 +273,9 @@
       "ability": "Covering Fire",
       "wp": "WP-719",
       "state": "partial",
-      "date": "2026-10-05",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): played 3× with [hc:tech] met (12.2.5, 14.2.10, 15.2.11); trace fired.",
-      "note": "Solo only: the draw/discard choice parks with no other player to affect and logs nothing. Multi-seat draw and discard branches unexercised."
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): the other player drew a card three times (14.2.5, 20.2.12, 34.2.6); blocked without another Tech Hero (26.2.10).",
+      "note": "Discard branch unexercised."
     },
     {
       "key": "core/hawkeye|defeated-villain-or-mastermind",
@@ -283,9 +283,9 @@
       "card": "Hawkeye",
       "ability": "Impossible Trick Shot",
       "wp": "",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Impossible Trick Shot rescued 3 Bystanders after each of three defeats in one turn (32.2.20, 32.2.25, 32.2.28).",
       "note": ""
     },
     {
@@ -305,9 +305,9 @@
       "card": "Hawkeye",
       "ability": "Impossible Trick Shot",
       "wp": "WP-215",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Impossible Trick Shot rescued 3 Bystanders per defeat (32.2.20, 32.2.25, 32.2.28).",
       "note": ""
     },
     {
@@ -448,10 +448,10 @@
       "card": "Spider-Man",
       "ability": "Astonishing Strength, Great Responsibility, The Amazing Spider-Man, Web-Shooters",
       "wp": "WP-253",
-      "state": "partial",
-      "date": "2026-10-04",
-      "evidence": "Solo Magneto matches PyK5YS2L8Bo + trJwnB0oLeg (build afd76ff)",
-      "note": "The Amazing Spider-Man, Astonishing Strength and Great Responsibility confirmed. Web-Shooters not played."
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Astonishing Strength drew a ≤2-cost card (13.2.2) and left a miss on top (19.2.7); Great Responsibility miss (12.2.4); The Amazing Spider-Man drew the hit and left misses (32.2.5–7).",
+      "note": ""
     },
     {
       "key": "core/spider-man|reveal-count",
@@ -470,10 +470,10 @@
       "card": "Spider-Man",
       "ability": "The Amazing Spider-Man",
       "wp": "WP-479",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): The Amazing Spider-Man left 3 then 2 cards on top (26.2.6–8, 32.2.5–7) and the game continued, so the reorder prompt resolved.",
+      "note": "The chosen order is not logged; confirm the prompt order on screen."
     },
     {
       "key": "core/storm|draw",
@@ -481,9 +481,9 @@
       "card": "Storm",
       "ability": "Gathering Stormclouds",
       "wp": "WP-022",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Gathering Stormclouds drew with another Ranged Hero (28.2.4, 36.2.12) and was blocked without (20.2.14).",
       "note": ""
     },
     {
@@ -492,9 +492,9 @@
       "card": "Thor",
       "ability": "God of Thunder",
       "wp": "WP-580",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): bot defeated the Skrull Random Acts (9 attack) with 2 attack + 7 recruit after God of Thunder (31.2.2–7).",
       "note": ""
     },
     {
@@ -724,9 +724,9 @@
       "ability": "give-hq-hero-each-player",
       "wp": "WP-532",
       "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Paibok escaped unfought (13.1.2).",
+      "note": "Fight effect unexercised."
     },
     {
       "key": "core-villain-brotherhood-sabretooth|reveal-or-wound",
@@ -767,9 +767,9 @@
       "card": "Skrull Queen Veranke",
       "ability": "captureHqHeroHighestCost",
       "wp": "WP-214",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Ambush captured the highest-cost HQ Hero, Tidal Wave (13.1.3).",
       "note": ""
     },
     {
@@ -778,9 +778,9 @@
       "card": "Skrull Queen Veranke",
       "ability": "gain-attached-hero",
       "wp": "WP-450",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): defeating her gained Tidal Wave (28.2.15).",
       "note": ""
     },
     {
@@ -789,9 +789,9 @@
       "card": "Skrull Shapeshifters",
       "ability": "captureHqHeroRightmost",
       "wp": "WP-214",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Ambush captured the rightmost HQ Hero twice (3.1.2, 9.1.2).",
       "note": ""
     },
     {
@@ -800,9 +800,9 @@
       "card": "Skrull Shapeshifters",
       "ability": "gain-attached-hero",
       "wp": "WP-450",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): defeating it gained the captured Oddball (13.2.10).",
       "note": ""
     },
     {
@@ -811,9 +811,9 @@
       "card": "Super-Skrull",
       "ability": "koHeroEachPlayer",
       "wp": "WP-189",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): every player KO'd a Hero on both fights (11.2.10, 32.2.27).",
       "note": ""
     },
     {
@@ -822,10 +822,10 @@
       "card": "Supreme HYDRA",
       "ability": "scoring:dynamic-vp",
       "wp": "WP-546",
-      "state": "partial",
-      "date": "2026-08-15",
-      "evidence": "WP-546 live-verify, match U6aE2N1IW0k (#1441)",
-      "note": "Base 3 VP confirmed; +3 per other HYDRA Villain pending."
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): bot Victory Pile villainVP 23 = Supreme HYDRA 3 + 3×3 (Kidnappers, Endless Armies, Viper) + Kidnappers 1 + Super-Skrull 2 + Shapeshifters 2 + Endless Armies 3 + Viper 3.",
+      "note": ""
     },
     {
       "key": "core-villain-radiation-the-leader|play-villain-deck-cards",
@@ -877,10 +877,10 @@
       "card": "Viper",
       "ability": "gain-wound-unless-victory-villain-group",
       "wp": "WP-494",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): both players held another HYDRA Villain, so no Wounds (35.2.14).",
+      "note": "Wound branch unexercised."
     },
     {
       "key": "core-villain-masters-of-evil-whirlwind|ko-hero",
@@ -943,10 +943,10 @@
       "card": "Red Skull",
       "ability": "Master Strike — each player KOs a Hero from hand",
       "wp": "WP-386",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "Includes the WP-577 interactive KO choice."
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): 4 strikes; each seat KO'd a Hero from hand, the active player by choice and the other seat automatically (4.1, 17.1, 21.1, 23.1).",
+      "note": ""
     },
     {
       "key": "mastermind:core/red-skull|tactics-567",
@@ -965,9 +965,9 @@
       "card": "Red Skull",
       "ability": "Tactic: Ruthless Dictator",
       "wp": "WP-695",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): bot looked at the top 3, KO'd one, discarded one and kept one on top (21.2.16–19).",
       "note": ""
     },
     {
@@ -1229,10 +1229,10 @@
       "card": "Secret Invasion of the Skrull Shapeshifters",
       "ability": "Requires 6 Hero decks",
       "wp": "WP-524",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-06",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): 6 Hero decks in setup; Skrull Heroes entered from the Villain Deck and were gained on defeat; twists moved the highest-cost HQ Hero to the Sewers (7 twists).",
+      "note": "Evil Wins (6 Heroes escaped) not reached."
     },
     {
       "key": "scheme:core/portals-to-the-dark-dimension|dark-portals",
