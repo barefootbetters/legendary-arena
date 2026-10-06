@@ -19,10 +19,10 @@
       "card": "Black Widow",
       "ability": "Silent Sniper",
       "wp": "WP-486",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-06",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Silent Sniper (38.2.9) auto-defeated the one Sentinel holding a Bystander (38.2.10); trace fired.",
-      "note": "The one-target auto defeat carries no Silent Sniper log line; ≥2-target prompt unexercised."
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): the bot's Silent Sniper defeated the Skrull Oddball holding a Bystander for free, attributed live (29.2.7, D-24662). Earlier one-target auto defeat: match s1jtBcEAOfw 38.2.10.",
+      "note": "≥2-target prompt unexercised."
     },
     {
       "key": "core/black-widow|draw",
@@ -129,10 +129,10 @@
       "card": "Deadpool",
       "ability": "Hey, Can I Get a Do-Over?",
       "wp": "WP-681",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-06",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): offered when first and declined (24.2.2, 34.2.2).",
-      "note": "Accept branch (discard hand, draw four) unexercised."
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): the Do-Over was taken, discarding 5 and drawing 4 (24.2.2). Decline branch: match s1jtBcEAOfw (24.2.2, 34.2.2).",
+      "note": ""
     },
     {
       "key": "core/deadpool|first-hero-condition",
@@ -725,7 +725,7 @@
       "wp": "WP-532",
       "state": "pending",
       "date": "2026-10-06",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): Paibok escaped unfought (13.1.2).",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): Paibok escaped unfought again (10.1.2); also escaped in s1jtBcEAOfw.",
       "note": "Fight effect unexercised."
     },
     {
@@ -879,8 +879,8 @@
       "wp": "WP-494",
       "state": "partial",
       "date": "2026-10-06",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): both players held another HYDRA Villain, so no Wounds (35.2.14).",
-      "note": "Wound branch unexercised."
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): both players held another HYDRA Villain again, so no Wounds (30.2.16); also s1jtBcEAOfw 35.2.14.",
+      "note": "Wound branch unexercised: fight Viper before anyone has a HYDRA Villain."
     },
     {
       "key": "core-villain-masters-of-evil-whirlwind|ko-hero",
