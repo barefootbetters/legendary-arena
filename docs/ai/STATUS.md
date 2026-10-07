@@ -7,6 +7,32 @@
 
 ## Current State
 
+### WP-796 — "Add an extra Henchman group" schemes require the extra group (EC-833 / D-24666) (2026-10-07)
+
+**User-visible on `cards.legendary-arena.com` and `play.legendary-arena.com` (after deploy).** Negative Zone
+Prison Breakout (core), Asgard Under Siege (msp1) and Invasion of the Venom Symbiotes (vnom) now require one more
+Henchman group than the player count normally uses: 2 at 1–3 players, 3 at 4–5. The loadout builder's required row
+and preview, the play lobby's requirement line and create gate, and `Game.setup` all agree, and the base count is
+rejected. A 1-player Negative Zone match now plays with 20 Henchman cards, as printed. Every other scheme is
+unchanged. Saved or exported base-count loadouts for these schemes are flagged on load, not rewritten.
+
+- **Ranked gauntlet.** The nine affected legs (four Core Negative Zone, three msp1 Asgard Under Siege, two vnom
+  Venom Symbiotes) launch with and qualify on the extra group. The Core pools gain `core/sentinel`; the msp1 /
+  vnom legs use generator-emitted `schemeOverrides`. Operator-only score rows on these legs stop counting toward
+  standings and run progress (D-24666 §3).
+- **Counts.** registry 253 → 270; game-engine 4994 → 4999; server 1661 → 1663 (1455 → 1457 pass); registry-viewer
+  312 → 318; every package 0 fail. Replay fixtures and sentinel hashes byte-unchanged (no re-pin). Revert proofs 6/6.
+- **Named follow-ups:** the 16 NZPB diagnostic PAR profiles and an NZPB seed-PAR re-estimate; the renamed-group
+  (mdns, rlmk, smhc) and different-shape (xmen ×2, pttr) extra-Henchman schemes; the 0-Henchman Venom theme; the
+  legends-board requirement list for msp1 / vnom legs; the stale "`undefined` for non-Core" comments in
+  `server.mjs`, `LoadoutBuilder.vue` and `gauntletQualificationCheck.ts`; an operator cleanup of 1-group NZPB
+  scenario-board rows.
+- **Live-verify (D-24026): pending (operator, post-deploy).** The cards loadout builder shows 2 Henchman groups for
+  a 1p NZPB loadout and exports with 2; a 1p NZPB match created from it plays with 20 Henchman cards in its Villain
+  Deck; a Core NZPB and an msp1 Asgard Under Siege gauntlet "Play this leg" launch with the extra group; the play
+  lobby shows 2 for a 1p NZPB config after a hard refresh (`setup-requirements` is cached up to an hour). Record
+  the matchId here.
+
 ### D-24665 — solo Crushing Shockwave says it did nothing; Storm WP-794 / WP-795 live-verified (2026-10-07)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Defeating Magneto's **Crushing Shockwave** in a solo game now logs that there is no other player to reveal or take Wounds, instead of resolving silently. Multiplayer is unchanged.

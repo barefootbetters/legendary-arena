@@ -46751,4 +46751,34 @@ Around it: the block-all guard `hasPendingMoveVillainChoice(G)` beside every Cov
 
 ---
 
+### D-24666 — "Add an extra Henchman group" is a strict base + 1 Henchman-group requirement on every surface (WP-796 / EC-833) (Active 2026-10-07)
+
+**Context.** Three schemes print "Setup: … Add an extra Henchman group": core Negative Zone Prison Breakout, msp1 Asgard Under Siege (a reprint) and vnom Invasion of the Venom Symbiotes. The per-player-count table allows exactly 1 Henchman group at 1–3 players and 2 at 4–5, and the loadout builder, the lobby and `Game.setup` rejected one more, so no loadout could be set up as printed. Jeff hit this building a 1-player Negative Zone match (2026-10-07); every Negative Zone match so far ran one group short, which made its 12-escape loss (D-24609) easier to avoid than printed.
+
+**Decision.**
+
+1. **A requirement override, strict.** Schemes that print "Add an extra Henchman group" require exactly base + 1 Henchman groups at every player count (2 at 1–3p, 3 at 4–5p). The base count is rejected, and so is base + 2. The closed list is `core/negative-zone-prison-breakout`, `msp1/asgard-under-siege`, `vnom/invasion-of-the-venom-symbiotes`. This is the D-24337 shape (a requirement increase the operator must supply), not a build-side `schemeSetupSizing` transform; `PLAYER_COUNT_SETUP` is never mutated.
+2. **One definition.** `SCHEMES_WITH_EXTRA_HENCHMAN_GROUP` and `resolveEffectiveHenchmenCount` live only in `packages/registry/src/playerCountSetup.ts`, consumed by `checkPlayerCountComposition` and carried as a required `CardRegistry` member.
+   - The engine reaches the resolver structurally through an optional `CardRegistryReader` member and falls back to the base count without it (`?.` / `??`), so a table-only test mock keeps the base count.
+   - The server setup-requirements projection and the loadout builder (required row and preview) read the same resolver from the `@legendary-arena/registry/playerCountSetup` subpath.
+   - The gauntlet menu generator keeps a duplicated list (it runs before any build), pinned through its output: the emitted `schemeOverrides` keys must equal the registry list.
+3. **Gauntlet compositions follow the rule.**
+   - Authored legs slice their `henchmanPool` by the effective count. The four 2026 Core NZPB pools gain `core/sentinel`, the one Core Henchman group in none of them, so 4–5p (3 groups) is satisfiable; `validateGauntletConfigs` rejects a pool shorter than the 5-player effective count.
+   - Menu-fallback legs (msp1 ×3, vnom ×2) use generator-emitted `schemeOverrides` built with the D-24199 fill rule: the base composition plus the next distinct-slug group, the same villains. `getGauntletConfig` returns the override when no authored leg exists, so every ranked consumer (server overlay, viewer pack import, qualification badge) follows with no code edit. Core masterminds also get an override, unused because the authored legs win. The generator throws on an override that is not base + exactly one group or that repeats a bare slug (Henchman card ids are `henchman-<slug>-NN`).
+   - The approved `henchman_key` of these nine legs changes. Qualification is evaluated at read time, so existing score rows (operator-only) stay in the database but **stop counting** toward gauntlet standings and run progress for these legs; new qualifying runs must use the new composition.
+   - The scenario, global-top and theme leaderboards filter on `scenario_key` only, which carries no Henchmen, so existing 1-group NZPB rows rank beside new 2-group rows under the same PAR. **Accepted by decision** (only the operator has scores); an operator cleanup of those rows is a named follow-up.
+4. **PAR.** The NZPB seed-PAR artifacts and their `artifactHash` stay byte-identical **by decision**, not because they are independent of the Henchmen: the NZPB baseline was a structural estimate for the old composition. A re-estimate (a new seed-PAR version under the write-once rule) is a named follow-up. The 16 NZPB diagnostic PAR profiles are stale until the next full profile regeneration (named follow-up). Seed PAR enumerates scenarios from `gauntlet-configs.json`, so no new competitive scenario appears.
+5. **Not covered:** the renamed-group (mdns, rlmk, smhc) and different-shape (xmen ×2, pttr) extra-Henchman schemes, and the pre-existing 0-Henchman Venom theme. All are named follow-ups, as are the legends-board requirement list for the msp1 / vnom legs and the stale "`undefined` for every non-Core leg" comments in `server.mjs`, `LoadoutBuilder.vue` and `gauntletQualificationCheck.ts`.
+6. **No migration.** Matches in progress keep their setup; nothing is re-validated mid-match. Saved loadouts (the WP-301 profile library, exported LAGNs) holding a base-count NZPB / Asgard Under Siege / Venom Symbiotes loadout become invalid and are flagged by the builder and the lobby when loaded; they are not rewritten. A raw autoplay caller sending a base-count NZPB `setupData` now gets the correct 400.
+
+**Determinism.** No `G` field and no `MatchSetupConfig` field changes; the engine villain deck already adds 10 cards per configured group. The sentinel replay fixture plays `core/legacy-virus-the`, so `finalStateHash` / `PRE_WP080_HASH` are byte-unchanged — no re-pin.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 failures (registry 253 → 270, game-engine 4994 → 4999, server 1661 → 1663 / 1455 → 1457 pass, registry-viewer 312 → 318, every other package unchanged); registry-viewer typecheck 0; `gauntlet:configs:check` and `gauntlet:loadouts:check` OK, with the generated overrides matching the EC table exactly; PAR script tests 11 / 0; replay fixtures green and byte-unchanged. One mandated existing-test edit (`gauntletConfigs.test.ts` menu equivalence excludes the listed schemes and asserts the pool prefix instead). Revert proofs 6/6: the resolver's +1, the engine check, the server projection, `getGauntletConfig`'s effective slice, the viewer override (each of the two sites), and the `schemeOverrides` branch each fail a new test when reverted. `api-endpoints.md` setup-requirements row replaced whole (D-11804).
+
+**Reserved by:** NUMBER-LEDGER D-24666 (#2623). Related: D-24165 (table SSOT), D-24337 / D-24338 / D-24385 (requirement overrides), D-24199 / D-24278 / D-24283 (gauntlet menu, single variant, per-scheme overlay), D-24609 (NZPB escaped Henchmen), D-24372 (runtime drift pins), D-11804 (API catalog).
+
+**Live-verify (D-24026): pending (operator, post-deploy).**
+
+---
+
 Protect this file.
