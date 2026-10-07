@@ -27,11 +27,15 @@ unchanged. Saved or exported base-count loadouts for these schemes are flagged o
   legends-board requirement list for msp1 / vnom legs; the stale "`undefined` for non-Core" comments in
   `server.mjs`, `LoadoutBuilder.vue` and `gauntletQualificationCheck.ts`; an operator cleanup of 1-group NZPB
   scenario-board rows.
-- **Live-verify (D-24026): pending (operator, post-deploy).** The cards loadout builder shows 2 Henchman groups for
-  a 1p NZPB loadout and exports with 2; a 1p NZPB match created from it plays with 20 Henchman cards in its Villain
-  Deck; a Core NZPB and an msp1 Asgard Under Siege gauntlet "Play this leg" launch with the extra group; the play
-  lobby shows 2 for a 1p NZPB config after a hard refresh (`setup-requirements` is cached up to an hour). Record
-  the matchId here.
+- **Live-verify (D-24026), 2026-10-07: match half PASS.** Match `omKVEsz1PFc` (build `45c4abc`, 1p Dr. Doom /
+  Negative Zone Prison Breakout / Masters of Evil / Spider-Man, Wolverine, Captain America): a 2-group loadout
+  (Doombot Legion + Hand Ninjas) exported, created and played to a win. The diagnostics hold exactly 20 distinct
+  Henchman cards (`henchman-doombot-legion-00..09`, `henchman-hand-ninjas-00..09`), and both groups entered the City
+  during play. **Loadout builder PASS** (cards, same session): a 1p NZPB / Dr. Doom draft with only Doombot Legion
+  shows "For a 1-player match: 1 villain groups, 2 henchmen groups, 3 heroes", flags "A 1-player match needs 2
+  henchmen groups — this loadout has 1", and the gauntlet badge reports the 1-group draft won't count toward the
+  dr-doom gauntlet. **Still pending:** the Core NZPB and msp1 Asgard Under Siege gauntlet "Play this leg" launches,
+  and the lobby requirement line after a hard refresh.
 
 ### D-24665 — solo Crushing Shockwave says it did nothing; Storm WP-794 / WP-795 live-verified (2026-10-07)
 

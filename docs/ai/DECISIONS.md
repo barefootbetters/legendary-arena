@@ -46777,7 +46777,7 @@ Around it: the block-all guard `hasPendingMoveVillainChoice(G)` beside every Cov
 
 **Reserved by:** NUMBER-LEDGER D-24666 (#2623). Related: D-24165 (table SSOT), D-24337 / D-24338 / D-24385 (requirement overrides), D-24199 / D-24278 / D-24283 (gauntlet menu, single variant, per-scheme overlay), D-24609 (NZPB escaped Henchmen), D-24372 (runtime drift pins), D-11804 (API catalog).
 
-**Live-verify (D-24026): pending (operator, post-deploy).**
+**Live-verify (D-24026), 2026-10-07: match half PASS.** Match `omKVEsz1PFc` (build `45c4abc`, 1p Dr. Doom / NZPB): a 2-group loadout (Doombot Legion + Hand Ninjas) was accepted by `Game.setup` and the Villain Deck held exactly 20 distinct Henchman cards (10 per group). **Loadout builder PASS:** a 1-group 1p NZPB draft shows the required row "2 henchmen groups" and the mismatch "needs 2 henchmen groups — this loadout has 1", and the gauntlet badge says it won't count toward the dr-doom leg. The Core NZPB and msp1 Asgard Under Siege "Play this leg" launches and the lobby requirement line are still pending.
 
 ---
 
