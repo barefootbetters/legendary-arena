@@ -31,8 +31,11 @@ unchanged. Saved or exported base-count loadouts for these schemes are flagged o
   Negative Zone Prison Breakout / Masters of Evil / Spider-Man, Wolverine, Captain America): a 2-group loadout
   (Doombot Legion + Hand Ninjas) exported, created and played to a win. The diagnostics hold exactly 20 distinct
   Henchman cards (`henchman-doombot-legion-00..09`, `henchman-hand-ninjas-00..09`), and both groups entered the City
-  during play. **Still pending:** the builder blocking export with 1 group, the Core NZPB and msp1 Asgard Under Siege
-  gauntlet "Play this leg" launches, and the lobby requirement line after a hard refresh.
+  during play. **Loadout builder PASS** (cards, same session): a 1p NZPB / Dr. Doom draft with only Doombot Legion
+  shows "For a 1-player match: 1 villain groups, 2 henchmen groups, 3 heroes", flags "A 1-player match needs 2
+  henchmen groups — this loadout has 1", and the gauntlet badge reports the 1-group draft won't count toward the
+  dr-doom gauntlet. **Still pending:** the Core NZPB and msp1 Asgard Under Siege gauntlet "Play this leg" launches,
+  and the lobby requirement line after a hard refresh.
 
 ### D-24665 — solo Crushing Shockwave says it did nothing; Storm WP-794 / WP-795 live-verified (2026-10-07)
 
