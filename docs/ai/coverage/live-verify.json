@@ -487,6 +487,28 @@
       "note": ""
     },
     {
+      "key": "core/storm|fight-cost-reduction",
+      "kind": "hero",
+      "card": "Storm",
+      "ability": "Lightning Bolt / Tidal Wave",
+      "wp": "WP-794",
+      "state": "pending",
+      "date": "2026-10-06",
+      "evidence": "Not exercised yet: Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 452o26A0iXw was set up before the deploy, so it kept its setup-time hero hooks (D-24663 §6) and the card did nothing. Lightning Bolt was played 16 times (first at 4.2.1) with no reduction line.",
+      "note": "Needs a match set up after the #2614 deploy: Lightning Bolt with a Villain on the Rooftops (cost -2 with the altered-cost badge, reduced spend), and Tidal Wave Bridge -2 / Ranged Mastermind -2."
+    },
+    {
+      "key": "core/storm|spinning-cyclone",
+      "kind": "hero",
+      "card": "Storm",
+      "ability": "Spinning Cyclone",
+      "wp": "WP-795",
+      "state": "pending",
+      "date": "2026-10-06",
+      "evidence": "Not exercised yet: Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 452o26A0iXw was set up before the deploy, so it kept its setup-time hero hooks (D-24663 §6) and the card did nothing. Spinning Cyclone was played 9 times (first at 8.2.1) with no move prompt.",
+      "note": "Needs a match set up after the #2615 deploy: move a Villain to a new City space (swap if occupied) and rescue its Bystanders."
+    },
+    {
       "key": "core/thor|recruit-as-attack",
       "kind": "hero",
       "card": "Thor",
@@ -1010,8 +1032,8 @@
       "ability": "Tactic: Electromagnetic Bubble",
       "wp": "WP-695",
       "state": "verified",
-      "date": "2026-10-01",
-      "evidence": "D-24645 live-verify, solo featured table",
+      "date": "2026-10-06",
+      "evidence": "D-24645 live-verify, solo featured table. Re-confirmed in Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 452o26A0iXw: the X-Men choice (16.2.18), then Spinning Cyclone joined the next hand as a seventh card (16.2.19, 16.3.1).",
       "note": ""
     },
     {
@@ -1021,8 +1043,8 @@
       "ability": "Tactic: Xavier's Nemesis",
       "wp": "WP-691",
       "state": "verified",
-      "date": "2026-10-01",
-      "evidence": "D-24645 live-verify, solo featured table",
+      "date": "2026-10-06",
+      "evidence": "D-24645 live-verify, solo featured table. Re-confirmed in Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 452o26A0iXw: rescued 3 Bystanders, one per X-Men Hero in hand or play (16.2.21).",
       "note": ""
     },
     {
@@ -1142,8 +1164,8 @@
       "ability": "Villains capture Bystanders; +1 attack per Bystander",
       "wp": "WP-748",
       "state": "verified",
-      "date": "2026-09-26",
-      "evidence": "Match 25-GJ0oXBwy (#2411)",
+      "date": "2026-10-06",
+      "evidence": "Match 25-GJ0oXBwy (#2411). Re-confirmed in Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 452o26A0iXw: the Bank Villain captured 2 Bystanders on each twist (4.1.1, 7.1.1, 9.1.1, 12.1.1), an empty Bank captured none (15.1.1, 17.1.1), and fight costs carried +1 per Bystander (e.g. a 4-Bystander Sentinel fought for 7, 13.2.12).",
       "note": ""
     },
     {
