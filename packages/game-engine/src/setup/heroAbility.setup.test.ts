@@ -1461,7 +1461,7 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
   it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
     // it must not appear in the canonical keyword array nor bump its count.
-    assert.equal(HERO_KEYWORDS.length, 76, 'HERO_KEYWORDS stays 76 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-794 fight-cost-reduction added)');
+    assert.equal(HERO_KEYWORDS.length, 77, 'HERO_KEYWORDS stays 77 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-794 fight-cost-reduction + WP-795 spinning-cyclone added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });

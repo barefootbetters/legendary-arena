@@ -1375,6 +1375,49 @@ describe('getLegalMoves — restricted attack mirrors the per-target fight guard
   });
 });
 
+describe('getLegalMoves — Spinning Cyclone move-a-Villain short-circuit (WP-795 / D-24664)', () => {
+  /** A G with Villains in the City, optional Bystander attachments, and a parked choice. */
+  function makeMoveVillainG(
+    city: (CardExtId | null)[],
+    attachedBystanders: Record<string, CardExtId[]>,
+  ): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main' });
+    gameState.city = city as LegendaryGameState['city'];
+    gameState.attachedBystanders = attachedBystanders;
+    gameState.pendingMoveVillainChoices = [{ playerID: '0', sourceCardId: 'core/storm/spinning-cyclone#0' as CardExtId }];
+    return gameState;
+  }
+
+  test('moves the lowest-index Bystander holder to space 0 when the holder sits above index 0', () => {
+    const gameState = makeMoveVillainG(
+      [null, 'villain-a' as CardExtId, null, 'villain-b' as CardExtId, null],
+      { 'villain-b': ['bystander-1' as CardExtId] },
+    );
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    assert.equal(legalMoves.length, 1, 'exactly one legal move while pending');
+    assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { fromCityIndex: 3, toCityIndex: 0 } }]);
+  });
+
+  test('moves a Bystander holder at index 0 to space 1', () => {
+    const gameState = makeMoveVillainG(
+      ['villain-a' as CardExtId, null, null, null, null],
+      { 'villain-a': ['bystander-1' as CardExtId] },
+    );
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { fromCityIndex: 0, toCityIndex: 1 } }]);
+  });
+
+  test('declines when no City Villain holds a Bystander', () => {
+    const gameState = makeMoveVillainG(
+      [null, 'villain-a' as CardExtId, null, null, null],
+      {},
+    );
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    assert.equal(legalMoves.length, 1, 'exactly one legal move while pending');
+    assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { decline: true } }]);
+  });
+});
+
 describe('getLegalMoves — fight-cost reduction reads the same resolvers (WP-794 / D-24663)', () => {
   // why: the bot must enumerate exactly the fights the engine accepts at the reduced cost.
   function makeReducedG(

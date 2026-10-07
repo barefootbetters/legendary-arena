@@ -44,6 +44,7 @@ import { hasPendingPlayVillainTopChoice } from './playVillainTop.resolve.js';
 import { hasPendingVictoryPileCardPick } from './resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from './drawOrEmpowered.resolve.js';
 import { hasPendingCoveringFireChoice } from './coveringFireChoice.resolve.js';
+import { hasPendingMoveVillainChoice } from './moveVillainChoice.resolve.js';
 import { hasPendingSplitFaceChoice } from './splitFaceChoice.resolve.js';
 import { hasPendingCountScaledChoice } from './countScaledChoice.resolve.js';
 import { hasPendingUndercoverChoice } from './undercover.resolve.js';
@@ -71,7 +72,7 @@ interface PhaseCardArgs {
 /**
  * Whether any pending choice is open, which freezes the board for Phasing.
  *
- * The first 29 checks are the dodgeCard block-all cluster, copied verbatim (there
+ * The first 30 checks are the dodgeCard block-all cluster, copied verbatim (there
  * is no shared helper; the same cluster is inlined in healWounds / recruitHero /
  * exorciseHauntedHero). The last two are the put-bottom-HQ guards.
  *
@@ -99,6 +100,7 @@ export function hasAnyPendingChoice(G: LegendaryGameState): boolean {
   if (hasPendingVictoryPileCardPick(G)) return true;
   if (hasPendingDrawOrEmpowered(G)) return true;
   if (hasPendingCoveringFireChoice(G)) return true;
+  if (hasPendingMoveVillainChoice(G)) return true;
   if (hasPendingSplitFaceChoice(G)) return true;
   if (hasPendingCountScaledChoice(G)) return true;
   if (hasPendingUndercoverChoice(G)) return true;

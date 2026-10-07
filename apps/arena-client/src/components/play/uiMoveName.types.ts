@@ -98,6 +98,9 @@ export type UiMoveName =
   // why: WP-719 / D-24541 — unblocks the Covering Fire choose-one prompt (Hawkeye's "Covering Fire";
   // each other player draws or discards a card).
   | 'resolveCoveringFireChoice'
+  // why: WP-795 / D-24664 — unblocks the Spinning Cyclone move-a-Villain prompt (core Storm's
+  // "Spinning Cyclone"; move a Villain to a new City space, swap if occupied, or decline).
+  | 'resolveMoveVillainChoice'
   // why: WP-725 / D-24546 — unblocks the split / dual-faced hero "choose a side" picker (the client
   // half of WP-724; the player binds which face of a split card applies).
   | 'resolveSplitFaceChoice'

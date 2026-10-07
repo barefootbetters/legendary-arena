@@ -1202,6 +1202,29 @@ export interface PendingCoveringFireChoice {
 }
 
 /**
+ * Pending Spinning Cyclone move-a-Villain choice state (WP-795 / D-24664 — core Storm's
+ * "Spinning Cyclone").
+ *
+ * Created when the `spinning-cyclone` hero effect is played with at least one Villain in the
+ * City — the printed "You may move a Villain to a new city space. Rescue any Bystanders
+ * captured by that Villain. (If you move a Villain to a city space that already has Villain,
+ * swap them.)". Appended to G.pendingMoveVillainChoices[] (FIFO queue). Removed (front-popped)
+ * by resolveMoveVillainChoice after the ACTIVE player answers `{ fromCityIndex, toCityIndex }`
+ * or `{ decline: true }`. Must be undefined or empty at every turn-end (enforced by the
+ * block-all guards).
+ *
+ * // why: D-24664 — the whole decision (which Villain, which space) is one intent, answered
+ * once. The entry stores only the chooser and the source card; the answer is validated against
+ * the live G.city at resolve time, and the block-all guards freeze the City until it arrives.
+ */
+export interface PendingMoveVillainChoice {
+  /** The active player who must pick a Villain and a destination, or decline. */
+  playerID: string;
+  /** The Spinning Cyclone card that parked this choice, for log attribution. */
+  sourceCardId: CardExtId;
+}
+
+/**
  * Pending split / dual-faced hero "choose a side" state (WP-724 / D-24546 — the split
  * hero card mechanic that un-defers D-14101).
  *
@@ -2085,6 +2108,16 @@ export interface LegendaryGameState {
   // Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
   /** FIFO queue of pending Covering Fire choose-one choices awaiting resolution (WP-719). */
   pendingCoveringFireChoices?: PendingCoveringFireChoice[] | undefined;
+
+  // why: WP-795 / D-24664 — FIFO queue of pending Spinning Cyclone move-a-Villain choices (one
+  // per played core Storm "Spinning Cyclone" while a Villain is in the City). Entries are
+  // appended by the heroEffectSpinningCyclone park case; front-popped by
+  // resolveMoveVillainChoice after the ACTIVE player moves (or swaps) a Villain or declines.
+  // Must be undefined or empty at every turn-end. Optional so existing test state literals do
+  // not need updating; **lazily initialized at the park site, never in Game.setup** (D-24664).
+  // Absent (undefined) or empty [] both mean "no pending choice" (guards test `.length`).
+  /** FIFO queue of pending Spinning Cyclone move-a-Villain choices awaiting resolution (WP-795). */
+  pendingMoveVillainChoices?: PendingMoveVillainChoice[] | undefined;
 
   // why: WP-724 / D-24546 — a split / dual-faced hero card parks a "choose a side" pick here
   // when PLAYED (the card is in inPlay as its primary face; its economy + ability are deferred

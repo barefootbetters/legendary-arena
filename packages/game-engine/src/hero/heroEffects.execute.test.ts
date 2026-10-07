@@ -135,7 +135,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // isPlayBothSidesActive flag) (57 → 58).
     // WP-794 / D-24663 added the fight-cost-reduction handler (Storm / Forge "Any Villain you
     // fight on the <space> this turn gets -N" and "The Mastermind gets -N this turn") (58 → 59).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 59);
+    // WP-795 / D-24664 added the spinning-cyclone handler (core Storm's Spinning Cyclone
+    // move-a-Villain park) (59 → 60).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 60);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7810,9 +7812,9 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // optional-discard-draw + reveal-top-may-ko handlers, D-24581, and WP-765's blood-frenzy +
     // blood-frenzy-recruit + day-night-both handlers, D-24598, and WP-767's optional-ko-your-hero
     // handler, D-24600, and WP-780's play-both-sides handler, D-24619, and WP-794's
-    // fight-cost-reduction handler, D-24663 — 59).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 59,
-      'HERO_EFFECT_HANDLERS stays 59 (X-Gene is not an effect handler)');
+    // fight-cost-reduction handler, D-24663, and WP-795's spinning-cyclone handler, D-24664 — 60).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 60,
+      'HERO_EFFECT_HANDLERS stays 60 (X-Gene is not an effect handler)');
   });
 });
 

@@ -257,6 +257,12 @@ export interface UIState {
   // chooser (the D-24011 hand-privacy analog — keyed on .playerID). Absent (undefined) means
   // no pending Covering Fire choice; the client must not render the prompt in that case.
   pendingCoveringFireChoice?: UIPendingCoveringFireChoice;
+  // why: WP-795 / D-24664 — projects the FRONT of G.pendingMoveVillainChoices so the active
+  // (choosing) player can render core Storm's "Spinning Cyclone" move-a-Villain prompt (which
+  // City Villain, which other space, or decline). Redacted (omitted) for every audience except
+  // the chooser (keyed on .playerID). Absent (undefined) means no pending move-a-Villain choice;
+  // the client must not render the prompt in that case.
+  pendingMoveVillainChoice?: UIPendingMoveVillainChoice;
   // why: WP-724 / D-24546 — projects the FRONT of G.pendingSplitFaceChoices so the active
   // (choosing) player can render the split / dual-faced hero "choose a side" picker (both faces'
   // name / ability / cost / economy). Redacted (omitted) for every audience except the chooser
@@ -1583,6 +1589,29 @@ export interface UIPendingCoveringFireChoice {
   playerID: string;
   /** The number of OTHER seats each branch affects, for the prompt label ("each of N players"). */
   otherPlayerCount: number;
+}
+
+/**
+ * UI contract for resolving a pending Spinning Cyclone move-a-Villain choice (WP-795 / D-24664 —
+ * core Storm's "Spinning Cyclone").
+ *
+ * The active player picks one City Villain (a `villainCityIndices` entry) and a different City
+ * space (any of the other four; an occupied space swaps), then submits
+ * `resolveMoveVillainChoice({ fromCityIndex, toCityIndex })` with ENGINE indices (0 = Sewers …
+ * 4 = Bridge), or `resolveMoveVillainChoice({ decline: true })`. Villain names and "swap with"
+ * labels come from the already-projected `UIState.city`. Only visible to the choosing player;
+ * redacted for opponents and spectators (keyed on .playerID).
+ *
+ * @see WP-795 §Locked Contract Values — UIState
+ * @see EC-832 Locked Values
+ * @see DECISIONS.md D-24664
+ */
+export interface UIPendingMoveVillainChoice {
+  // why: D-24664 — the redaction key; the chooser-only filter compares
+  // audience.playerId against this, mirroring UIPendingCoveringFireChoice.playerID.
+  playerID: string;
+  /** The ascending engine indices (0..4) of the City spaces holding a Villain, from the live City. */
+  villainCityIndices: number[];
 }
 
 /**

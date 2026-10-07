@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-795 — Storm's Spinning Cyclone moves a Villain and rescues its Bystanders (EC-832 / D-24664) (2026-10-06)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** core Storm's **Spinning Cyclone** now works. With a
+Villain in the City, the player gets a "Spinning Cyclone: move a Villain" prompt: pick a Villain, then any other
+City space, or choose Don't move. An empty space receives the Villain; an occupied space swaps the two. The moved
+Villain's captured Bystanders go to the player's Victory Pile; the other Villain keeps its own. The log reads, e.g.,
+"Player 0 moved HYDRA Kidnappers (…) from the Sewers to the Rooftops (Spinning Cyclone)." and then the usual
+"rescued N bystander(s)" line. With no Villain in the City it logs "found no Villain in the City to move." Moving
+is not a fight or an escape: nothing triggers, and a Villain moved to the Bridge stays there. The co2e printing
+(no rescue clause) is unchanged. A match already in progress at deploy keeps the old behavior until it ends.
+
+- **Engine.** A `spinning-cyclone` keyword parks one active-player choice; the new server-only
+  `resolveMoveVillainChoice` moves / swaps / declines and rescues only the moved Villain's Bystanders. Block-all
+  guard at all 14 Covering Fire sites, the bot default (move the lowest-index Bystander holder, else decline), the
+  sim dispatch, and a chooser-only `pendingMoveVillainChoice` projection.
+- **Client.** `MoveVillainChoicePrompt.vue` (submits engine indices), the turn-action gates and the
+  `anyPendingChoice()` auto-advance hold.
+- **Counts.** game-engine 4883 → 4918 / 0 fail; arena-client 2270 → 2278 / 0 fail; dashboard 570 / 0; vue-tsc 0;
+  replay fixtures and sentinel hashes byte-unchanged (no re-pin). Drift pins only among existing tests
+  (`HERO_KEYWORDS` 76 → 77, handlers 59 → 60, moves 46 → 47, on top of WP-794). Revert proofs 4/4.
+- **Live-verify (D-24026): pending (operator, post-deploy).** In a match with core Storm, play Spinning Cyclone:
+  move a Villain holding a Bystander to an empty space (move + rescue lines), swap two Villains once, decline
+  once, confirm no freeze, and confirm `pendingMoveVillainChoice` appears in the Play Diagnostics
+  `uiStateSnapshot` while the prompt is open. Record the matchId here.
+
 ### WP-794 — Storm and Forge "this turn gets -N attack" lines lower fight costs (EC-831, D-24663) (2026-10-06)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** From 2-player Red Skull / Secret Invasion match

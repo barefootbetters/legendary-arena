@@ -61,6 +61,7 @@ import SmashDiscardPrompt from '../components/play/SmashDiscardPrompt.vue';
 import DoOverPrompt from '../components/play/DoOverPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CoveringFireChoicePrompt from '../components/play/CoveringFireChoicePrompt.vue';
+import MoveVillainChoicePrompt from '../components/play/MoveVillainChoicePrompt.vue';
 import SplitFaceChoicePrompt from '../components/play/SplitFaceChoicePrompt.vue';
 import CountScaledChoicePrompt from '../components/play/CountScaledChoicePrompt.vue';
 import UndercoverChoicePrompt from '../components/play/UndercoverChoicePrompt.vue';
@@ -150,6 +151,7 @@ export default defineComponent({
     DoOverPrompt,
     DrawOrEmpoweredPrompt,
     CoveringFireChoicePrompt,
+    MoveVillainChoicePrompt,
     SplitFaceChoicePrompt,
     CountScaledChoicePrompt,
     UndercoverChoicePrompt,
@@ -539,6 +541,12 @@ export default defineComponent({
     const hasPendingCoveringFireChoice = computed<boolean>(
       () => snapshot.value?.pendingCoveringFireChoice !== undefined,
     );
+    // why: WP-795 / D-24664 — derived from UIState.pendingMoveVillainChoice !== undefined; passed
+    // to TurnActionBar to block end-turn / pass-priority / heal at EVERY stage while a Spinning
+    // Cyclone move-a-Villain choice is pending, and to hold its auto-advance (D-24648).
+    const hasPendingMoveVillainChoice = computed<boolean>(
+      () => snapshot.value?.pendingMoveVillainChoice !== undefined,
+    );
     // why: WP-725 / D-24546 — derived from UIState.pendingSplitFaceChoice !== undefined; passed to
     // TurnActionBar to block end-turn / pass-priority / heal at EVERY stage while a split / dual-faced
     // hero "choose a side" pick is pending (board frozen, mirrors hasPendingCoveringFireChoice).
@@ -721,6 +729,7 @@ export default defineComponent({
       hasPendingSmashDiscard,
       hasPendingDoOver,
       hasPendingCoveringFireChoice,
+      hasPendingMoveVillainChoice,
       hasPendingSplitFaceChoice,
       hasPendingVictoryPileCardPick,
       hasPendingOptionalPutBottomHQ,
@@ -1112,6 +1121,15 @@ export default defineComponent({
             :viewer-player-id="viewer.playerId"
             :submit-move="submitMove"
           />
+          <!-- why: WP-795 / D-24664 — the Spinning Cyclone move-a-Villain prompt (core Storm);
+               appears only for the choosing (active) player when pendingMoveVillainChoice is
+               set. Same block-all posture as the covering-fire prompt above. NOT a modal. -->
+          <MoveVillainChoicePrompt
+            :pending-move-villain-choice="snapshot.pendingMoveVillainChoice"
+            :city="snapshot.city"
+            :viewer-player-id="viewer.playerId"
+            :submit-move="submitMove"
+          />
           <!-- why: WP-725 / D-24546 — the split / dual-faced hero "choose a side" picker; appears
                only for the choosing (active) player when pendingSplitFaceChoice is set. Same
                block-all posture as the covering-fire prompt above. NOT a modal; normal flow. -->
@@ -1269,6 +1287,7 @@ export default defineComponent({
             :has-pending-reveal-three-assign="hasPendingRevealThreeAssign"
             :has-pending-seat-choice="hasPendingSeatChoice"
             :has-pending-covering-fire-choice="hasPendingCoveringFireChoice"
+            :has-pending-move-villain-choice="hasPendingMoveVillainChoice"
             :has-pending-split-face-choice="hasPendingSplitFaceChoice"
             :has-pending-ruthless-dictator-choice="hasPendingRuthlessDictatorChoice"
             :has-pending-electromagnetic-bubble-choice="hasPendingElectromagneticBubbleChoice"

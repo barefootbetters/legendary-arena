@@ -308,6 +308,12 @@ export function useTurnActions(
   // the engine's hasPendingSeatChoice block-all guard. The seat prompt renders in normal flow
   // (not a modal), so without this the action bar stayed live over an engine-frozen board.
   hasPendingSeatChoice: boolean = false,
+  // why: WP-795 / D-24664 — appended LAST (after hasPendingSeatChoice) so existing positional
+  // callers stay valid without edits; degrades gracefully (no gate) when omitted. True while a
+  // core Storm Spinning Cyclone move-a-Villain choice is pending; blocks End Turn / Pass Priority /
+  // Heal at ANY stage (the engine's full block-all guard set freezes the board). The prompt's
+  // Don't move button is the decline exit.
+  hasPendingMoveVillainChoice: boolean = false,
 ): {
   activeStep: TurnStep;
   canRevealVillain: () => GatingResult;
@@ -570,6 +576,15 @@ export function useTurnActions(
           reason: 'Resolve the pending seat choice before taking another action.',
         };
       }
+      // why: WP-795 / D-24664 — End Turn / Pass Priority blocked at any stage while a Spinning
+      // Cyclone move-a-Villain choice is pending (the engine's full block-all guard set freezes the
+      // board). The prompt's Don't move button is the decline exit.
+      if (hasPendingMoveVillainChoice) {
+        return {
+          allowed: false,
+          reason: 'Resolve Spinning Cyclone — move a Villain or choose not to — before taking another action.',
+        };
+      }
       // why: WP-476 / D-24284 — End Turn / Pass Priority blocked at any stage while a
       // Magneto discard-to-limit choice is pending (the engine's full block-all guard
       // set freezes the board, mirroring hasPendingScryKoChoice). The choice is
@@ -828,6 +843,14 @@ export function useTurnActions(
           reason: 'Resolve the pending seat choice before taking another action.',
         };
       }
+      if (hasPendingMoveVillainChoice) {
+        // why: WP-795 / D-24664 — the engine's block-all guards block endTurn while
+        // pendingMoveVillainChoices is non-empty; surface the reason as a tooltip.
+        return {
+          allowed: false,
+          reason: 'Resolve Spinning Cyclone — move a Villain or choose not to — before taking another action.',
+        };
+      }
       if (hasPendingRuthlessDictatorChoice) {
         // why: WP-695 / D-24512 — the engine's block-all guards block endTurn while
         // pendingRuthlessDictatorChoices is non-empty; surface the reason as a tooltip.
@@ -1006,7 +1029,10 @@ export function useTurnActions(
         hasPendingRevealThreeAssign ||
         // why: WP-682 / D-24648 — mirror the engine healWounds block-all guard, which returns
         // early while a WP-684 seat choice (Diving Block / Random Acts / Monarch's Decree) is pending.
-        hasPendingSeatChoice
+        hasPendingSeatChoice ||
+        // why: WP-795 / D-24664 — mirror the engine healWounds block-all guard, which returns
+        // early while a Spinning Cyclone move-a-Villain choice is pending.
+        hasPendingMoveVillainChoice
       ) {
         return {
           allowed: false,

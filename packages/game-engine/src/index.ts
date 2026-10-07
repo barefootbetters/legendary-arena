@@ -164,6 +164,9 @@ export { recruitOfficer, OFFICER_RECRUIT_COST } from "./moves/recruitOfficer.js"
 // consume verbatim: the exorcise move + args and the three haunt helpers.
 export { exorciseHauntedHero } from "./moves/exorciseHauntedHero.js";
 export type { ExorciseHauntedHeroArgs, ExorciseOutcome } from "./moves/exorciseHauntedHero.js";
+// why: WP-795 / D-24664 — the Spinning Cyclone answer payload, so the arena-client prompt submits a
+// type-checked { fromCityIndex, toCityIndex } | { decline: true } (type-only; no runtime export).
+export type { ResolveMoveVillainChoiceArgs } from "./moves/moveVillainChoice.resolve.js";
 export {
   hauntHqSlot,
   isMastermindHaunting,
@@ -429,6 +432,7 @@ export type {
   UIPendingDoOver,
   UIPendingDrawOrEmpowered,
   UIPendingCoveringFireChoice,
+  UIPendingMoveVillainChoice,
   UIPendingSplitFaceChoice,
   UISplitFaceOption,
   UIPendingCountScaledChoice,

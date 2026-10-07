@@ -50,6 +50,8 @@ import {
 } from '../moves/resolveVictoryPileCardPick.js';
 import { hasPendingDrawOrEmpowered } from '../moves/drawOrEmpowered.resolve.js';
 import { hasPendingCoveringFireChoice } from '../moves/coveringFireChoice.resolve.js';
+import { hasPendingMoveVillainChoice } from '../moves/moveVillainChoice.resolve.js';
+import type { ResolveMoveVillainChoiceArgs } from '../moves/moveVillainChoice.resolve.js';
 import {
   hasPendingSplitFaceChoice,
   isSplitCardInstance,
@@ -171,6 +173,10 @@ export const SIMULATION_MOVE_NAMES = [
   // (block-all pending choice); it MUST be dispatchable in BOTH sim MOVE_MAPs or the per-turn
   // loop hangs on a parked Covering Fire choice.
   'resolveCoveringFireChoice',
+  // why: WP-795 / D-24664 — resolveMoveVillainChoice is a getLegalMoves short-circuit (block-all
+  // pending choice); it MUST be dispatchable in BOTH sim MOVE_MAPs or the per-turn loop hangs on
+  // a parked Spinning Cyclone move-a-Villain choice.
+  'resolveMoveVillainChoice',
   // why: WP-724 / D-24546 — resolveSplitFaceChoice is a getLegalMoves short-circuit (block-all
   // pending choice); it MUST be dispatchable in BOTH sim MOVE_MAPs or the per-turn loop hangs on
   // a parked split-face "choose a side".
@@ -250,6 +256,32 @@ export interface SimulationLifecycleContext {
   readonly turn: number;
   readonly currentPlayer: string;
   readonly numPlayers: number;
+}
+
+/**
+ * The bot's deterministic Spinning Cyclone answer (WP-795 / D-24664).
+ *
+ * Moves the lowest-index City Villain that holds a captured Bystander to the lowest-index
+ * other City space (swapping when occupied), so the printed rescue fires. With no Bystander
+ * holder in the City it declines.
+ *
+ * @param gameState - The engine state. Not mutated.
+ * @returns The move payload: a move between two City indices, or a decline.
+ */
+function selectDefaultMoveVillainArgs(gameState: LegendaryGameState): ResolveMoveVillainChoiceArgs {
+  for (let fromCityIndex = 0; fromCityIndex < gameState.city.length; fromCityIndex++) {
+    const villainId = gameState.city[fromCityIndex];
+    if (villainId === null || villainId === undefined) {
+      continue;
+    }
+    const bystanders = gameState.attachedBystanders[villainId];
+    if (bystanders === undefined || bystanders.length === 0) {
+      continue;
+    }
+    const toCityIndex = fromCityIndex === 0 ? 1 : 0;
+    return { fromCityIndex, toCityIndex };
+  }
+  return { decline: true };
 }
 
 /**
@@ -430,6 +462,14 @@ export function getLegalMoves(
   // a list of length EXACTLY 1.
   if (hasPendingCoveringFireChoice(gameState)) {
     return [{ name: 'resolveCoveringFireChoice', args: { choice: 'draw' } }];
+  }
+  // why: WP-795 / D-24664 — a Spinning Cyclone move-a-Villain choice blocks every other move; the
+  // bot resolves it first with a deterministic default that captures the printed rescue value:
+  // move the lowest-index City Villain holding a Bystander to the lowest-index other space, else
+  // decline (moving a Villain with nothing to rescue has no deterministic benefit). Returns a list
+  // of length EXACTLY 1.
+  if (hasPendingMoveVillainChoice(gameState)) {
+    return [{ name: 'resolveMoveVillainChoice', args: selectDefaultMoveVillainArgs(gameState) }];
   }
   // why: WP-724 / D-24546 — a split-face "choose a side" blocks every other move; the bot resolves
   // it first with a deterministic default of 'a' (the primary face — the only face reachable before
