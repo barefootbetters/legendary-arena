@@ -640,7 +640,8 @@ function countXMenHeroesYouHave(
  *
  * Rescues one Bystander from the shared supply (`G.piles.bystanders`, top-of-pile
  * per D-21501) into the defeating player's Victory Pile, once per X-Men Hero in
- * their hand or played this turn (D-24645). Zero X-Men Heroes rescues nothing; an empty supply stops early. Mutates
+ * their hand or played this turn (D-24645). Zero X-Men Heroes, or an empty supply, rescues nothing and logs a
+ * `blocked` line naming why; a short supply stops early. Mutates
  * `G.piles.bystanders` and the player's victory zone via `moveCardFromZone`; never
  * throws.
  *
@@ -662,6 +663,16 @@ export function resolveXaviersNemesis(
     playedCardIdsThisTurn(G, playerZones.inPlay),
     playerZones.hand,
   );
+  // why: nothing to rescue is a no-effect outcome, logged `blocked` with its reason —
+  // the Electromagnetic Bubble "has no X-Men Hero" precedent — never an `applied`
+  // "rescued 0 Bystander(s)" line, which read as a successful effect.
+  if (xMenCount === 0) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has no X-Men Hero in hand or play, so no Bystander is rescued (Xavier's Nemesis).`,
+      'blocked',
+    );
+    return;
+  }
   let rescuedCount = 0;
   for (let rescueIndex = 0; rescueIndex < xMenCount; rescueIndex++) {
     // why: top-of-pile convention — bystanders[0] is the next available supply
@@ -681,6 +692,13 @@ export function resolveXaviersNemesis(
     rescuedCount += 1;
   }
 
+  if (rescuedCount === 0) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has X-Men Heroes but the Bystander supply is empty, so no Bystander is rescued (Xavier's Nemesis).`,
+      'blocked',
+    );
+    return;
+  }
   pushLog(G,
     `Fight effect: Player ${currentPlayer} rescued ${String(rescuedCount)} Bystander(s) — one per X-Men Hero in hand or play (Xavier's Nemesis).`,
     'applied',

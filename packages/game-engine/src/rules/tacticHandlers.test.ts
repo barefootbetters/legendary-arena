@@ -417,14 +417,33 @@ describe('resolveXaviersNemesis (WP-691 / D-24508)', () => {
     assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander', 'pile-bystander']);
     assert.equal(G.piles.bystanders.length, 3); // 5 − 2 rescued
     assert.match(G.messages[0]!.text, /rescued 2 Bystander/);
+    assert.equal(G.messages[0]!.outcome, 'applied');
   });
 
-  it('rescues ZERO with no in-play X-Men Hero (supply untouched)', () => {
+  // why: a zero rescue is a no-effect outcome — it logs a `blocked` line naming the
+  // reason (the Electromagnetic Bubble precedent), not an `applied` "rescued 0" line.
+  it('rescues ZERO with no X-Men Hero, logged blocked with the reason (supply untouched)', () => {
     const G = makeXaviersState([XAVIERS_NON_X_MEN], 5);
     resolveXaviersNemesis(G, '0');
     assert.equal(G.playerZones['0']!.victory.length, 0);
     assert.equal(G.piles.bystanders.length, 5);
-    assert.match(G.messages[0]!.text, /rescued 0 Bystander/);
+    assert.equal(G.messages.length, 1);
+    assert.equal(
+      G.messages[0]!.text,
+      "Fight effect: Player 0 has no X-Men Hero in hand or play, so no Bystander is rescued (Xavier's Nemesis).",
+    );
+    assert.equal(G.messages[0]!.outcome, 'blocked');
+  });
+
+  it('rescues ZERO from an empty supply, logged blocked with the reason', () => {
+    const G = makeXaviersState([XAVIERS_X_MEN_HERO, XAVIERS_X_MEN_HERO], 0);
+    resolveXaviersNemesis(G, '0');
+    assert.equal(G.playerZones['0']!.victory.length, 0);
+    assert.equal(
+      G.messages[0]!.text,
+      "Fight effect: Player 0 has X-Men Heroes but the Bystander supply is empty, so no Bystander is rescued (Xavier's Nemesis).",
+    );
+    assert.equal(G.messages[0]!.outcome, 'blocked');
   });
 
   it('stops early when the supply runs short (3 X-Men, 1 Bystander → 1 rescued)', () => {
