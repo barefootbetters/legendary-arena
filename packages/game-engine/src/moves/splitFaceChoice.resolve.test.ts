@@ -239,6 +239,24 @@ describe('resolveSplitFaceChoice — face binding (WP-724 / D-24546)', () => {
     resolveSplitFaceChoice(makeMoveContext(emptyQueue, '0'), { face: 'a' });
     assert.equal(emptyQueue.turnEconomy.recruit, 0, 'empty queue: no economy granted');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const gameState = makeTestGameState(
+        { '0': { inPlay: [FACE_A] } },
+        {
+          splitFaces: SPLIT_FACES,
+          pendingSplitFaceChoices: [{ playerID: '0', sourceCardId: FACE_A, faceA: FACE_A, faceB: FACE_B }],
+          cardStats: { [FACE_A]: stat(0, 1, 2), [FACE_B]: stat(1, 0, 2) },
+        },
+      );
+      assert.doesNotThrow(() => resolveSplitFaceChoice(makeMoveContext(gameState, '0'), badArgs as never));
+      assert.equal(gameState.pendingSplitFaceChoices!.length, 1, 'queue intact');
+      assert.deepEqual(gameState.playerZones['0']!.inPlay, [FACE_A], 'inPlay unchanged');
+      assert.equal(gameState.turnEconomy.recruit, 0, 'no economy granted');
+      assert.equal(gameState.turnEconomy.attack, 0, 'no economy granted');
+    }
+  });
 });
 
 describe('face-b replay (WP-772 / D-24604)', () => {

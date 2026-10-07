@@ -221,6 +221,19 @@ describe('resolveDoOver — invalid inputs are silent no-ops', () => {
     assert.doesNotThrow(() => resolveDoOver(makeMoveContext(gameState), { accept: true }));
     assert.equal(hasPendingDoOver(gameState), false);
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const gameState = makeTestGameState({
+        hand: ['h1'] as CardExtId[], deck: ['d1', 'd2', 'd3', 'd4'] as CardExtId[],
+        pendingDoOverChoices: [{ playerID: '0' }],
+      });
+      assert.doesNotThrow(() => resolveDoOver(makeMoveContext(gameState), badArgs as never));
+      assert.equal(gameState.pendingDoOverChoices?.length, 1, `${String(badArgs)} args → queue intact`);
+      assert.deepEqual(gameState.playerZones['0']!.hand, ['h1'], 'hand unchanged');
+      assert.deepEqual(gameState.playerZones['0']!.deck, ['d1', 'd2', 'd3', 'd4'], 'deck unchanged');
+    }
+  });
 });
 
 describe('hasPendingDoOver block-all guard', () => {

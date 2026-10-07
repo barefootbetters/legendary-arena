@@ -292,6 +292,17 @@ describe('resolveRevealThreeAssign (WP-753 / D-24580)', () => {
     assert.deepEqual(emptyQueue.playerZones['0']!.hand, []);
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeTestGameState({ deck: [CARD_A, CARD_B, CARD_C], pending: [makeEntry([CARD_A, CARD_B, CARD_C])] });
+      assert.doesNotThrow(() => resolveRevealThreeAssign(makeMoveContext(G), badArgs as never));
+      assert.equal(G.pendingRevealThreeAssign!.length, 1, 'queue intact');
+      assert.deepEqual(G.pendingRevealThreeAssign![0]!.revealedCardIds, [CARD_A, CARD_B, CARD_C]);
+      assert.deepEqual(G.playerZones['0']!.deck, [CARD_A, CARD_B, CARD_C], 'deck unchanged');
+      assert.deepEqual(G.playerZones['0']!.hand, [], 'hand unchanged');
+    }
+  });
+
   it('hasPendingRevealThreeAssign reflects the queue state', () => {
     assert.equal(hasPendingRevealThreeAssign(makeTestGameState()), false, 'undefined → false');
     assert.equal(hasPendingRevealThreeAssign(makeTestGameState({ pending: [] })), false, 'empty → false');

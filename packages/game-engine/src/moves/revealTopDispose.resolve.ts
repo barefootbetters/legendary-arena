@@ -113,6 +113,9 @@ export function resolveRevealTopDispose(
   args: ResolveRevealTopDisposeArgs,
 ): void {
   // Step 1: Validate args — empty ids or an invalid disposition is a no-op.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') { return; }
   if (typeof args.ownerPlayerID !== 'string' || args.ownerPlayerID.length === 0) { return; }
   if (typeof args.cardId !== 'string' || args.cardId.length === 0) { return; }
   if (!isValidDisposition(args.disposition)) { return; }

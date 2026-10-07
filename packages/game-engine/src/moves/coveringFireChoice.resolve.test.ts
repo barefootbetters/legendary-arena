@@ -263,6 +263,18 @@ describe('resolveCoveringFireChoice — invalid inputs are silent no-ops', () =>
     );
     assert.equal(hasPendingCoveringFireChoice(gameState), false);
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const gameState = base();
+      assert.doesNotThrow(() =>
+        resolveCoveringFireChoice(makeMoveContext(gameState, '0'), badArgs as never),
+      );
+      assert.equal(gameState.pendingCoveringFireChoices!.length, 1);
+      assert.deepEqual(gameState.playerZones['1']!.hand, ['b1']);
+      assert.deepEqual(gameState.playerZones['1']!.deck, ['b2']);
+    }
+  });
 });
 
 describe('hasPendingCoveringFireChoice block-all guard', () => {

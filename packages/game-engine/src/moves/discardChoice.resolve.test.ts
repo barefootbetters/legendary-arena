@@ -240,6 +240,19 @@ describe('resolveDiscardChoice (WP-476 / D-24284)', () => {
     resolveDiscardChoice(makeMoveContext(G), { cardIds: [] });
     assert.equal(G.pendingDiscardChoices?.length, 1, 'empty cardIds is a no-op');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeTestGameState({
+        hand: [A, B, C, D, E],
+        pendingDiscardChoices: [discardChoice(4)],
+      });
+      assert.doesNotThrow(() => resolveDiscardChoice(makeMoveContext(G), badArgs as never));
+      assert.equal(G.pendingDiscardChoices?.length, 1, `${String(badArgs)} args → queue intact`);
+      assert.deepStrictEqual(G.playerZones['0']!.hand, [A, B, C, D, E], 'hand unchanged');
+      assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'discard unchanged');
+    }
+  });
 });
 
 describe('block-all guard — a pending discard choice freezes action moves (AC-4)', () => {

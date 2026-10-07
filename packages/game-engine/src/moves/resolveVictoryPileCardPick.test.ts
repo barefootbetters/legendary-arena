@@ -468,6 +468,26 @@ describe('resolveVictoryPileCardPick — atomicity', () => {
     assert.equal(gameState.pendingVictoryPileCardPick!.length, 1, 'queue intact on invalid arg');
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const pending: PendingVictoryPileCardPick[] = [{ rewardType: 'attack', playerID: '0' }];
+      const gameState = makeTestGameState({
+        victory: ['villain-k' as CardExtId],
+        villainDeckCardTypes: { 'villain-k': 'villain' },
+        cardStats: { 'villain-k': { attack: 0, recruit: 0, cost: 0, fightCost: 5 } },
+        pendingVictoryPileCardPick: pending,
+        attack: 2,
+      });
+      const { context } = makeMoveContext(gameState);
+
+      assert.doesNotThrow(() => resolveVictoryPileCardPick(context, badArgs as never));
+
+      assert.equal(gameState.turnEconomy.attack, 2, 'attack unchanged on argless submission');
+      assert.deepEqual(gameState.playerZones['0']!.victory, ['villain-k'], 'victory pile unchanged');
+      assert.equal(gameState.pendingVictoryPileCardPick!.length, 1, 'queue intact on argless submission');
+    }
+  });
+
   it('does not mutate G.turnEconomy when playerID does not match front entry', () => {
     const pending: PendingVictoryPileCardPick[] = [{ rewardType: 'attack', playerID: '1' }];
     const gameState = makeTestGameState({

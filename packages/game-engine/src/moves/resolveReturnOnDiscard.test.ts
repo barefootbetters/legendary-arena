@@ -125,6 +125,23 @@ describe('resolveReturnOnDiscard priority guard (D-24527)', () => {
   });
 });
 
+describe('resolveReturnOnDiscard — invalid args', () => {
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeState({
+        discard: [UNENDING_ENERGY],
+        pendingReturnOnDiscard: [{ playerID: '0', cardId: UNENDING_ENERGY }],
+      });
+
+      assert.doesNotThrow(() => resolveReturnOnDiscard(ctx(G), badArgs as never));
+
+      assert.deepEqual(G.playerZones['0']!.discard, [UNENDING_ENERGY]);
+      assert.deepEqual(G.playerZones['0']!.hand, []);
+      assert.equal(G.pendingReturnOnDiscard!.length, 1);
+    }
+  });
+});
+
 describe('Extinction Blast n=3 + Cyclops exploit is closed (D-24527)', () => {
   it('one Cyclops cannot pay a three-discard cost — it forces three distinct cards, then returns', () => {
     // Extinction Blast is already inPlay; the cost (remaining 3) is pending.

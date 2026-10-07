@@ -245,6 +245,16 @@ describe('resolveCopyPowersChoice', () => {
     resolveCopyPowersChoice(makeContext(G, '0'), { cardId: '' as CardExtId });
     assert.equal(G.pendingCopyPowersChoices?.length, 1, 'empty cardId → no-op, queue intact');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeG({ inPlay0: [COPY, GAMBIT, WOLVERINE], pending: [PENDING] });
+      assert.doesNotThrow(() => resolveCopyPowersChoice(makeContext(G, '0'), badArgs as never));
+      assert.equal(G.pendingCopyPowersChoices?.length, 1, `${String(badArgs)} args → queue intact`);
+      assert.deepStrictEqual(G.playerZones['0']!.inPlay, [COPY, GAMBIT, WOLVERINE], 'inPlay unchanged');
+      assert.equal(G.cardSizeChangingClasses, undefined, 'no class granted');
+    }
+  });
 });
 
 describe('Copy Powers full duplicate — economy + team (WP-582 / D-24391)', () => {

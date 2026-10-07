@@ -34,6 +34,11 @@ export interface ResolveHeroChoiceArgs {
  */
 export function resolveHeroChoice({ G, playerID }: MoveContext, args: ResolveHeroChoiceArgs): void {
   // Step 1: Validate args — unknown resolution is a silent no-op (moves never throw)
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   if (args.resolution !== 'discard' && args.resolution !== 'return') { return; }
   // Step 2: Validate pending state — no-op if no pending choice, wrong player, or wrong type
   if (!G.pendingHeroChoice) { return; }

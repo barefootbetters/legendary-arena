@@ -430,6 +430,20 @@ describe('resolveKoHeroChoice — silent no-ops leave the queue byte-identical',
     assert.equal(JSON.stringify(gameState.pendingKoHeroChoices), queueBefore);
     assert.deepStrictEqual(gameState.ko, []);
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    const gameState = makeTestGameState({
+      hand: ['hero-a' as CardExtId, 'hero-b' as CardExtId],
+      pendingKoHeroChoices: [koChoice()],
+    });
+    const { context } = makeMoveContext(gameState);
+    for (const badArgs of [undefined, null]) {
+      assert.doesNotThrow(() => resolveKoHeroChoice(context, badArgs as never));
+    }
+    assert.equal(gameState.pendingKoHeroChoices?.length, 1, 'queue entry still parked');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['hero-a', 'hero-b'], 'hand unchanged');
+    assert.deepStrictEqual(gameState.ko, [], 'ko unchanged');
+  });
 });
 
 describe('hasPendingKoHeroChoice predicate', () => {

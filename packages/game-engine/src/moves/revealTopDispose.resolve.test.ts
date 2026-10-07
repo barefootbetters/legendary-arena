@@ -267,6 +267,19 @@ describe('resolveRevealTopDispose (WP-702 / D-24521)', () => {
     assert.deepStrictEqual(bad.playerZones['0']!.deck, [WOUND]);
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeTestGameState({
+        decks: { '0': [WOUND] },
+        pendingRevealTopDispose: [revealChoice([{ ownerPlayerID: '0', cardId: WOUND }])],
+      });
+      assert.doesNotThrow(() => resolveRevealTopDispose(makeMoveContext(G), badArgs as never));
+      assert.equal(G.pendingRevealTopDispose?.length, 1, 'queue intact');
+      assert.deepStrictEqual(G.playerZones['0']!.deck, [WOUND], 'deck unchanged');
+      assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'discard unchanged');
+    }
+  });
+
   it('hasPendingRevealTopDispose reflects the queue state', () => {
     assert.equal(hasPendingRevealTopDispose(makeTestGameState()), false, 'undefined queue → false');
     assert.equal(hasPendingRevealTopDispose(makeTestGameState({ pendingRevealTopDispose: [] })), false, 'empty → false');

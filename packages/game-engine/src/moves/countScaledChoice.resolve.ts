@@ -92,6 +92,11 @@ export function resolveCountScaledChoice(
   }
 
   // Step 1b: Validate args — optionIndex must be an integer index into front.options.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   const optionIndex = (args as { optionIndex?: unknown }).optionIndex;
   if (
     typeof optionIndex !== 'number'

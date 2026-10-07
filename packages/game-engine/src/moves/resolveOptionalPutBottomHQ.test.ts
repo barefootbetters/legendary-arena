@@ -276,6 +276,23 @@ describe('resolveOptionalPutBottomHQ — no-op guards', () => {
     assert.equal(state.pendingOptionalPutBottomHQ!.length, 1);
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const state = makeTestGameState({
+        hq: ['hq-a' as CardExtId, null, null, null, null],
+        heroDeck: ['top' as CardExtId],
+        pendingOptionalPutBottomHQ: [{ playerID: '0', sourceCardId: 'src' as CardExtId }],
+      });
+      const context = makeMoveContext(state);
+
+      assert.doesNotThrow(() => resolveOptionalPutBottomHQ(context, badArgs as never));
+
+      assert.deepEqual(state.hq, ['hq-a', null, null, null, null]);
+      assert.deepEqual(state.heroDeck, ['top']);
+      assert.equal(state.pendingOptionalPutBottomHQ!.length, 1);
+    }
+  });
+
   it('is a no-op when a different player submits', () => {
     const state = makeTestGameState({
       hq: ['hq-a' as CardExtId, null, null, null, null],

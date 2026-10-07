@@ -98,6 +98,16 @@ describe('resolveCountScaledChoice', () => {
     resolveCountScaledChoice(makeContext(gameState, '0'), { optionIndex: 0 });
     assert.equal(gameState.turnEconomy.recruit, 0);
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const gameState = makeState();
+      assert.doesNotThrow(() => resolveCountScaledChoice(makeContext(gameState, '0'), badArgs as never));
+      assert.equal(gameState.pendingCountScaledChoice!.length, 1, `${String(badArgs)} args → queue intact`);
+      assert.equal(gameState.turnEconomy.attack, 0, 'attack unchanged');
+      assert.equal(gameState.turnEconomy.recruit, 0, 'recruit unchanged');
+    }
+  });
 });
 
 describe('resolveCountScaledChoice — mixed heterogeneous options (WP-679 / D-24495)', () => {

@@ -255,6 +255,20 @@ describe('resolvePlayVillainTopChoice — silent no-ops leave the queue byte-ide
       '0',
     );
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    const gameState = makeTestGameState({
+      villainDeck: ['vd-top' as CardExtId],
+      villainDeckCardTypes: { 'vd-top': 'villain' },
+      pendingPlayVillainTopChoices: [shadowedThoughtsPending()],
+    });
+    const { context } = makeMoveContext(gameState);
+    for (const badArgs of [undefined, null]) {
+      assert.doesNotThrow(() => resolvePlayVillainTopChoice(context, badArgs as never));
+    }
+    assert.equal(gameState.pendingPlayVillainTopChoices?.length, 1, 'queue entry still parked');
+    assert.deepStrictEqual(gameState.villainDeck.deck, ['vd-top'], 'villain deck unchanged');
+  });
 });
 
 describe('hasPendingPlayVillainTopChoice predicate', () => {

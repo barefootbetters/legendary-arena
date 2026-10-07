@@ -140,6 +140,11 @@ export function resolveCopyPowersChoice(
   args: ResolveCopyPowersChoiceArgs,
 ): void {
   // Step 1: Validate args — empty / non-string cardId is a no-op.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   if (typeof args.cardId !== 'string' || args.cardId.length === 0) {
     return;
   }

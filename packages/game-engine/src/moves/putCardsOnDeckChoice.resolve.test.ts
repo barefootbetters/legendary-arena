@@ -236,6 +236,16 @@ describe('resolvePutCardsOnDeckChoice (WP-538 / D-24347)', () => {
     resolvePutCardsOnDeckChoice(makeMoveContext(G), { cardIds: undefined as unknown as CardExtId[] });
     assert.equal(G.pendingPutCardsOnDeckChoices?.length, 1, 'non-array cardIds is a no-op');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    const G = makeTestGameState({ hand: [A, B, C], deck: [DECK1], pendingPutCardsOnDeckChoices: [putChoice(2)] });
+    for (const badArgs of [undefined, null]) {
+      assert.doesNotThrow(() => resolvePutCardsOnDeckChoice(makeMoveContext(G), badArgs as never));
+    }
+    assert.equal(G.pendingPutCardsOnDeckChoices?.length, 1, 'queue entry still parked');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [A, B, C], 'hand unchanged');
+    assert.deepStrictEqual(G.playerZones['0']!.deck, [DECK1], 'deck unchanged');
+  });
 });
 
 describe('block-all guard — put-cards-on-deck pending (WP-538 / D-24347)', () => {

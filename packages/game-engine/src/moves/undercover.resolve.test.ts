@@ -115,6 +115,17 @@ describe('resolveUndercoverChoice', () => {
     assert.deepEqual(gameState.playerZones['0']!.victory, []);
     assert.equal(gameState.pendingUndercoverChoice!.length, 1, 'the queue is untouched');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const gameState = parkedState();
+      const handBefore = [...gameState.playerZones['0']!.hand];
+      assert.doesNotThrow(() => resolveUndercoverChoice(makeContext(gameState, '0'), badArgs as never));
+      assert.equal(gameState.pendingUndercoverChoice!.length, 1, 'the queue is untouched');
+      assert.deepEqual(gameState.playerZones['0']!.hand, handBefore, 'hand unchanged');
+      assert.deepEqual(gameState.playerZones['0']!.victory, [], 'no send');
+    }
+  });
 });
 
 describe('hasPendingUndercoverChoice + block-all', () => {

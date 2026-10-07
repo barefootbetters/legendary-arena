@@ -262,6 +262,20 @@ describe('resolveDrawOrEmpowered — failure boundaries leave G unmutated', () =
     resolveDrawOrEmpowered(makeMoveContext(gameState), { choice: 'draw' });
     assert.equal(JSON.stringify(gameState), before, 'no-op on an empty queue');
   });
+
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const gameState = makeTestGameState({
+        deck: ['top' as CardExtId],
+        pendingDrawOrEmpowered: [strengthPending()],
+      });
+      const before = JSON.stringify(gameState);
+      assert.doesNotThrow(() => resolveDrawOrEmpowered(makeMoveContext(gameState), badArgs as never));
+      assert.equal(gameState.pendingDrawOrEmpowered!.length, 1, `${String(badArgs)} args → queue intact`);
+      assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['top'], 'deck unchanged');
+      assert.equal(JSON.stringify(gameState), before, 'no field mutated');
+    }
+  });
 });
 
 describe('resolveDrawOrEmpowered — FIFO front-only integrity', () => {

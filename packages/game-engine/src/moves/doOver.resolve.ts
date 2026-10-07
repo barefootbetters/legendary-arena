@@ -86,6 +86,11 @@ export function resolveDoOver(
   args: ResolveDoOverArgs,
 ): void {
   // Step 1: Validate args — exactly one of { decline: true } / { accept: true }.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   const isDecline = (args as { decline?: unknown }).decline === true;
   const isAccept = (args as { accept?: unknown }).accept === true;
   // why: exactly-one-shape — both present or neither present is a malformed payload

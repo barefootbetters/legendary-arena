@@ -94,6 +94,11 @@ export function resolveCoveringFireChoice(
   args: ResolveCoveringFireChoiceArgs,
 ): void {
   // Step 1: Validate args — choice must be exactly 'draw' or 'discard'.
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   const choice = (args as { choice?: unknown }).choice;
   if (choice !== 'draw' && choice !== 'discard') {
     return;

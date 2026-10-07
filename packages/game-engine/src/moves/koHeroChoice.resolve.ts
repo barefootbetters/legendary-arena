@@ -71,6 +71,11 @@ export function hasPendingKoHeroChoice(G: LegendaryGameState): boolean {
  */
 export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveKoHeroChoiceArgs): void {
   // Step 1: Validate args — unknown zone, empty cardId, or a wound is a no-op
+  // why: a client may submit the move with no payload (undefined) or null; reading a field off
+  // either throws a TypeError, and moves never throw — reject before any field read.
+  if (args === null || typeof args !== 'object') {
+    return;
+  }
   if (args.zone !== 'discard' && args.zone !== 'hand' && args.zone !== 'inPlay') { return; }
   if (typeof args.cardId !== 'string' || args.cardId.length === 0) { return; }
   // why: a wound is never a "hero" for KO purposes (D-18503 carries forward);

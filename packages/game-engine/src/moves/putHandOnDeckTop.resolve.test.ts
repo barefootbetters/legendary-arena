@@ -197,6 +197,23 @@ describe('resolvePutHandOnDeckTop — guards (WP-700 / D-24519)', () => {
     assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['card-a'], 'hand untouched');
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    const gameState = makeTestGameState({
+      hand: ['card-a' as CardExtId],
+      deck: ['deck-x' as CardExtId],
+      pendingPutHandOnDeckTop: [putPending()],
+    });
+    const context = makeMoveContext(gameState);
+
+    for (const badArgs of [undefined, null]) {
+      assert.doesNotThrow(() => resolvePutHandOnDeckTop(context, badArgs as never));
+    }
+
+    assert.equal(gameState.pendingPutHandOnDeckTop!.length, 1, 'queue intact');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['card-a'], 'hand untouched');
+    assert.deepStrictEqual(gameState.playerZones['0']!.deck, ['deck-x'], 'deck untouched');
+  });
+
   it('is a no-op when the front entry belongs to another player', () => {
     const gameState = makeTestGameState({
       hand: ['card-a' as CardExtId],

@@ -324,6 +324,18 @@ describe('resolveReturnZeroCostDiscard — no-op guards (queue intact, no zone c
     assertUntouched(state, ['zero-a'] as CardExtId[], []);
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const state = makeTestGameState({
+        discard: ['zero-a'] as CardExtId[],
+        cardStats: { 'zero-a': statEntry(0) },
+        pendingReturnZeroCostDiscard: [{ playerID: '0', sourceCardId: 'src' as CardExtId }],
+      });
+      assert.doesNotThrow(() => resolveReturnZeroCostDiscard(makeMoveContext(state), badArgs as never));
+      assertUntouched(state, ['zero-a'] as CardExtId[], []);
+    }
+  });
+
   it('an empty / undefined queue is a no-op', () => {
     const state = makeTestGameState({
       discard: ['zero-a'] as CardExtId[],

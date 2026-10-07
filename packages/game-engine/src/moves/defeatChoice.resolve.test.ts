@@ -403,6 +403,21 @@ describe('resolveDefeatChoice (WP-486 / D-24291)', () => {
     assert.equal(notInSet.city[0], 'villain-a', 'no villain was defeated on the rejected submission');
   });
 
+  it('argless (undefined) and null submissions → no-op, never throw, queue intact', () => {
+    for (const badArgs of [undefined, null]) {
+      const G = makeG({
+        pendingDefeatChoices: parkedVillainAndMastermind(),
+        city: ['villain-a', null, null, null, null],
+        attachedBystanders: { 'villain-a': ['b'] },
+        mastermindTacticsDeck: ['tactic-1', 'tactic-2'],
+      });
+      assert.doesNotThrow(() => resolveDefeatChoice(makeMoveContext(G) as never, badArgs as never));
+      assert.equal(G.pendingDefeatChoices?.length, 1, `${String(badArgs)} args → queue intact`);
+      assert.equal(G.city[0], 'villain-a', 'no villain was defeated');
+      assert.equal(G.mastermind.tacticsDeck.length, 2, 'no Mastermind tactic was defeated');
+    }
+  });
+
   it('accepts a "cruel-ruler" front entry and defeats the chosen City Villain for free (WP-693 / D-24510)', () => {
     const G = makeG({
       city: ['villain-a', null, 'villain-c', null, null],
