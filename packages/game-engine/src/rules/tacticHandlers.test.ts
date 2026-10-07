@@ -155,6 +155,14 @@ describe('resolveCrushingShockwave (WP-506 / D-24312)', () => {
     assert.ok(G.messages.some((entry) => entry.text.includes('revealed an X-Men Hero')));
   });
 
+  it('D-24665: solo (no other seat) wounds nobody and logs the no-op', () => {
+    const G = makeShockwaveState({ '0': [NON_X_MEN_CARD] }, 5);
+    resolveCrushingShockwave(G, '0');
+    assert.equal(G.playerZones['0']!.discard.length, 0);
+    assert.equal(G.piles.wounds.length, 5);
+    assert.ok(G.messages.some((entry) => /no other player to reveal an X-Men Hero or gain Wounds \(Crushing Shockwave\)/.test(entry.text)));
+  });
+
   it('never affects the DEFEATING player, even holding no X-Men Hero', () => {
     // why: '0' is the defeater AND holds a non-X-Men card — still skipped entirely.
     const G = makeShockwaveState({ '0': [NON_X_MEN_CARD], '1': [X_MEN_HERO] }, 5);
