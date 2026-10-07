@@ -7,6 +7,31 @@
 
 ## Current State
 
+### WP-794 — Storm and Forge "this turn gets -N attack" lines lower fight costs (EC-831, D-24663) (2026-10-06)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** From 2-player Red Skull / Secret Invasion match
+`s1jtBcEAOfw`, where Lightning Bolt was played four times and no Rooftops fight was ever cheaper:
+- **core Storm Lightning Bolt**: Villains you fight on the Rooftops this turn cost 2 less.
+- **core Storm Tidal Wave**: Bridge Villains cost 2 less. With another Ranged Hero, the Mastermind also costs 2
+  less, and the line no longer logs "Its effect is not supported yet".
+- **cvwr Storm & Black Panther Lightning Strike**: Rooftops −1.
+- **dkcy Forge Dirty Work**: with another Tech Hero, Sewers −2.
+
+Each play logs one line, e.g. "Player 0's Lightning Bolt (…): Villains you fight on the Rooftops this turn get -2
+attack." The cost shown on the City card or Mastermind tile drops by the same amount and carries the existing
+altered-cost badge. The Fight button enables at the lower cost. A cost never goes below 0. A Villain that reaches
+the Rooftops later in the turn still gets the reduction.
+
+- **Engine only.** A Step 4c clause parser feeds a lazy `TurnEconomy.fightCostReductions` list, which only
+  `resolveFightCost` / `resolveMastermindFightCost` read, so the fight move, the bot and the projected cost agree.
+  No client change. game-engine 4883 → 4924 / 0 (+41, 5/5 revert proofs); `pnpm -r --no-bail test` 0 failures.
+  Replay fixtures and `PRE_WP080_HASH` are byte-unchanged.
+- **Coverage baseline updated:** `noEffect` core −7, cvwr −5, dkcy −5. The ledger, mechanics, effect index and
+  runtime-observed artifacts are unchanged.
+- **Live-verify (D-24026): pending.** In a match with core Storm, play Lightning Bolt with a Villain on the
+  Rooftops. Confirm the log line, that the Rooftops card's cost drops by 2 with the altered-cost badge, and that the
+  fight spends the reduced amount.
+
 ### D-24662 — Silent Sniper and Pure Fury name their free defeat; God of Thunder stops logging phantom hollows (direct fix) (2026-10-06)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** From 2-player Red Skull / Secret Invasion match `s1jtBcEAOfw`:

@@ -633,12 +633,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'day-night-both', // why: WP-765 / D-24598 — the fused Sunlight / Moonlight / "Instead, you get both" composite (digest-indigestion precedent)
     'optional-ko-your-hero', // why: WP-767 / D-24600 — Snarling Fangs' "you may KO one of your Heroes" (hand + played this turn, Heroes only, no reward)
     'play-both-sides', // why: WP-780 / D-24619 — cvwr Penumbra "play both sides as if they were two different cards" — sets G.turnEconomy.isPlayBothSidesActive; playCard then plays a later split card's both faces
+    'fight-cost-reduction', // why: WP-794 / D-24663 — "Any Villain you fight on the <space> this turn gets -N" / "The Mastermind gets -N this turn" — appends to the lazy G.turnEconomy.fightCostReductions list the two fight-cost resolvers subtract
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      75,
-      'HERO_KEYWORDS must have exactly 75 entries',
+      76,
+      'HERO_KEYWORDS must have exactly 76 entries',
     );
 
     assert.deepStrictEqual(

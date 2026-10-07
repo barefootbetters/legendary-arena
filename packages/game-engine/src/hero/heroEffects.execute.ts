@@ -48,7 +48,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets } from '../economy/economy.logic.js';
+import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
@@ -297,6 +297,11 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // isPlayBothSidesActive flag, so it belongs here. Carries NO magnitude → also in
   // NO_MAGNITUDE_KEYWORDS.
   'play-both-sides',
+  // why: WP-794 / D-24663 — "Any Villain you fight on the <space> this turn gets -N" / "The
+  // Mastermind gets -N this turn"; has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectFightCostReduction) that appends to the lazy fightCostReductions list, so it
+  // belongs here. Carries a magnitude (the amount) → NOT in NO_MAGNITUDE_KEYWORDS.
+  'fight-cost-reduction',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -5159,6 +5164,55 @@ function heroEffectPlayBothSides(
   );
 }
 
+/**
+ * Hero handler for the `fight-cost-reduction` keyword (WP-794 / D-24663).
+ *
+ * core Storm Lightning Bolt / Tidal Wave, cvwr Storm & Black Panther Lightning Strike and
+ * dkcy Forge Dirty Work — "Any Villain you fight on the <space> this turn gets -N attack" /
+ * "The Mastermind gets -N attack this turn". Appends `{ target, amount, sourceCardId }` to
+ * the lazy `G.turnEconomy.fightCostReductions` list; `resolveFightCost` /
+ * `resolveMastermindFightCost` then subtract it from every eligible fight this turn. A
+ * missing target is a silent no-op (the magnitude pre-gate already guarantees the amount).
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Context (unused).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played hero card.
+ * @param effect - The fight-cost-reduction descriptor (magnitude + target).
+ */
+function heroEffectFightCostReduction(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const target = effect.fightCostReductionTarget;
+  if (target === undefined) {
+    return;
+  }
+  const amount = effect.magnitude as number;
+  G.turnEconomy = addFightCostReduction(G.turnEconomy, target, amount, cardId);
+  const cardRef = formatCardRef(G.cardDisplayData, cardId);
+  // why: WP-434 — `applied` (green): it changed turn state (eligible fights now cost less)
+  // even though no resource total moved.
+  if (target === 'mastermind') {
+    pushLog(G,
+      `Player ${playerID}'s ${cardRef}: the Mastermind gets -${amount} attack this turn.`,
+      'applied',
+      cardId, // why: WP-438.
+    );
+    return;
+  }
+  // why: the printed cards say "in the Sewers" but "on the Rooftops" / "on the Bridge".
+  const preposition = target === 'sewers' ? 'in' : 'on';
+  pushLog(G,
+    `Player ${playerID}'s ${cardRef}: Villains you fight ${preposition} the ${formatAttackTargets([target])} this turn get -${amount} attack.`,
+    'applied',
+    cardId, // why: WP-438.
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Investigate handler (static-criterion + draw subset; WP-564 / D-24373)
 // ---------------------------------------------------------------------------
@@ -6127,6 +6181,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // isPlayBothSidesActive flag; playCard then plays a later split card's faces a and b via
   // playBothSplitFaces instead of parking the picker. NO magnitude.
   'play-both-sides': heroEffectPlayBothSides,
+  // why: WP-794 / D-24663 — "Any Villain you fight on the <space> this turn gets -N" / "The
+  // Mastermind gets -N this turn": appends a turn-scoped reduction that resolveFightCost /
+  // resolveMastermindFightCost subtract. Carries a magnitude (the amount).
+  'fight-cost-reduction': heroEffectFightCostReduction,
 };
 
 // ---------------------------------------------------------------------------

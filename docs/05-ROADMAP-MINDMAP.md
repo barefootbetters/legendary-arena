@@ -457,7 +457,7 @@ mindmap
         ["WP-789 ✅ Reveal card visible Card Shark and High Stakes Jackpot show the revealed card image including a miss plus notableEventCards projection game engine plus arena-client EC-826 D-24637 Active DONE 2026-09-29"]
         ["WP-790 ✅ Location-restricted attack usable only against attack is spendable only on the named City spaces or the Mastermind game engine plus arena-client EC-827 D-24652 Active DONE 2026-10-01"]
         ["WP-792 ✅ Master Strikes stop capturing a Bystander only printed strike text resolves retires the D-15401 placeholder game engine EC-829 D-24654 Active DONE 2026-10-04"]
-        ["WP-794 📝 Storm fight-cost reduction Lightning Bolt Rooftops minus 2 Tidal Wave Bridge minus 2 and Mastermind minus 2 game engine DRAFTED 2026-10-06 EC-831 D-24663 reserved"]
+        ["WP-794 ✅ Storm fight-cost reduction Lightning Bolt Rooftops minus 2 Tidal Wave Bridge minus 2 and Mastermind minus 2 game engine EC-831 D-24663 Active DONE 2026-10-06"]
         ["WP-795 📝 Storm Spinning Cyclone move a Villain to a new City space swap if occupied rescue its Bystanders game engine plus arena-client DRAFTED 2026-10-06 EC-832 D-24664 reserved"]
         ["WP-775 📝 Board affordability cues red cost when unaffordable and a rim on fightable targets arena-client DRAFTED 2026-09-26 EC-812 D-24612 reserved"]
         ["WP-776 📝 Superpower-ready rim hand cards whose superpower condition already holds game engine plus arena-client DRAFTED 2026-09-26 EC-813 D-24613 reserved"]
@@ -962,7 +962,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 179/196 | 17 open |
+| Hero Ability Coverage & Markup Pipeline | 180/196 | 16 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -983,9 +983,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 0/8 | 8 📝 placeholders |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **771/791 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 19 open |
+| **Total** | **772/791 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 18 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 20):** WP-795 open; WP-794 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 19):** WP-795 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

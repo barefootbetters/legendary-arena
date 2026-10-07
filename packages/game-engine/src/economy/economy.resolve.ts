@@ -21,10 +21,13 @@ import type { LegendaryGameState } from '../types.js';
 import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 // why: WP-728 / D-24549 — the fixed City space count bounds the Dark-Portal
 // location scan; CITY_SPACE_NAMES is the single source of the 5-space board.
-import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
+import { CITY_SPACE_NAMES, citySpaceNameForIndex } from '../board/citySpaceNames.js';
 // why: WP-760 / D-24589 — villain Blood Frenzy reuses WP-765's shared distinct-VP
 // helper (D-24598), so villain and hero Blood Frenzy can never count differently.
 import { countDistinctVictoryPointValues } from './bloodFrenzy.logic.js';
+// why: WP-794 / D-24663 — the only read site of TurnEconomy.fightCostReductions is the
+// shared summing helper, called from the two resolvers below.
+import { getFightCostReduction } from './economy.logic.js';
 
 // why: WP-539 / D-24348 — the Portals scheme ext_id, gating the Dark-Portal buffs.
 const PORTALS_SCHEME_ID = 'core/portals-to-the-dark-dimension';
@@ -79,12 +82,46 @@ export function resolveFightCost(
   // single site, so the fight move, the bot's legal moves and the City fightCost
   // projection can never disagree. Blood Frenzy (WP-760 / D-24589) is a villain
   // keyword, not a scheme bonus, but it lives here for the same reason.
-  return (
+  const costBeforeReduction =
     resolveBaseFightCost(G, villainCardId) +
     darkPortalVillainBonus(G, villainCardId) +
     bystanderVillainAttackBonus(G, villainCardId) +
-    villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId)
-  );
+    villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId);
+  // why: WP-794 / D-24663 — the Storm / Forge "Any Villain you fight on the <space> this turn
+  // gets -N attack" reduction is applied HERE, in the single authority, so the fight move, the
+  // bot's legal moves and the City fightCost projection all agree by construction.
+  // why: the 0 floor keeps this function's ">= 0" promise; Patrol (getPatrolModifier) is added
+  // by the fight move AFTER this floor, unchanged, so Patrol still pays in full.
+  return Math.max(0, costBeforeReduction - cityFightCostReduction(G, villainCardId));
+}
+
+/**
+ * The fight-cost reduction for a villain's current City space (WP-794 / D-24663).
+ *
+ * Sums the turn's reductions whose target is the City space the villain is in
+ * right now. A villain not in the City, an index with no space name, or a partial
+ * `G` with no `turnEconomy` gets 0.
+ *
+ * @param G - Game state (read-only).
+ * @param villainCardId - The villain zone-instance ext_id.
+ * @returns The reduction for the villain's space, or 0.
+ */
+function cityFightCostReduction(
+  G: LegendaryGameState,
+  villainCardId: CardExtId,
+): number {
+  // why: the space is read at FIGHT time, never stored at play time, so a Villain that
+  // enters or is moved into the space later this turn still gets the reduction. The
+  // `?.` / `?? -1` mirror darkPortalVillainBonus's partial-G tolerance.
+  const cityIndex = G.city?.indexOf(villainCardId) ?? -1;
+  if (cityIndex < 0 || G.turnEconomy === undefined) {
+    return 0;
+  }
+  const spaceName = citySpaceNameForIndex(cityIndex);
+  if (spaceName === undefined) {
+    return 0;
+  }
+  return getFightCostReduction(G.turnEconomy, spaceName);
 }
 
 /**
@@ -288,5 +325,11 @@ export function resolveMastermindFightCost(G: LegendaryGameState): number {
   // darkPortalLocations is the single source (scheme gate + counter read), so this
   // combat read and the UIState projection can never disagree.
   const portalBonus = darkPortalLocations(G).onMastermind ? DARK_PORTAL_ATTACK_BONUS : 0;
-  return baseFightCost + portalBonus;
+  // why: WP-794 / D-24663 — Storm's "[hc:ranged]: The Mastermind gets -2 attack this turn" is
+  // applied HERE, in the single authority, so fightMastermind (normal and Final Blow), the bot
+  // and the Mastermind fightCost projection agree. A partial G with no turnEconomy gets 0.
+  const mastermindReduction =
+    G.turnEconomy === undefined ? 0 : getFightCostReduction(G.turnEconomy, 'mastermind');
+  // why: the 0 floor keeps this function's ">= 0" promise.
+  return Math.max(0, baseFightCost + portalBonus - mastermindReduction);
 }
