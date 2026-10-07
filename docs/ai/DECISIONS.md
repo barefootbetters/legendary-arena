@@ -46710,7 +46710,7 @@ D-24486 already kept each `-N[icon:attack]` from becoming a phantom +N grant, so
 
 **Reserved by:** NUMBER-LEDGER D-24663 (#2610). Related: WP-794 / EC-831, D-24652 (WP-790 lazy-field pattern, `AttackTargetName`, `formatAttackTargets`), D-24295 (`CITY_SPACE_NAMES` / `citySpaceNameForIndex`), D-24486 (negative-icon suppression), D-24623 (`gate-only` hollow), D-24574 (projected `fightCost`), D-24603 (Henchmen are Villains), D-24372 (runtime drift pins), WP-795 / D-24664 (Spinning Cyclone).
 
-**Live-verify (D-24026), 2026-10-06: Tidal Wave Bridge half PASS.** Solo Magneto / Midtown Bank Robbery match `1K760WkJX68` (build `1f4ce39`, set up after the deploy): each Tidal Wave play logged "Villains you fight on the Bridge this turn get -2 attack." (11.2.10, 14.2.2, 15.2.4, 16.2.7, 18.2.5), and Jeff saw the Bridge Villain's cost drop with the altered-cost badge. Its Ranged Mastermind line was correctly blocked with no other Ranged Hero played. Still pending: Lightning Bolt (Rooftops; not recruited in this match) and the Mastermind −2 with Ranged.
+**Live-verify (D-24026), 2026-10-07: Tidal Wave Bridge half PASS.** Match `1K760WkJX68` (build `1f4ce39`): Tidal Wave logged the Bridge -2 line, and on turn 14 nine attack paid the Bridge Sentinel at 1 plus Magneto at 8, which is unaffordable at the unreduced 11. Lightning Bolt (Rooftops) and the Ranged Mastermind -2 line are still unexercised live. The on-screen half is confirmed too: Jeff saw the Bridge Villain's cost drop with the altered-cost badge.
 
 ---
 
@@ -46735,7 +46735,19 @@ Around it: the block-all guard `hasPendingMoveVillainChoice(G)` beside every Cov
 
 **Reserved by:** NUMBER-LEDGER D-24664 (#2610). Related: WP-719 / D-24541 (Covering Fire, the template), D-24284 (active-player scoping), D-24295 (City space names), D-24336 (two-Villain swap), D-24603 (Henchmen are Villains), D-12803 (audience filter), D-24372 (runtime drift pins), D-24648 (anyPendingChoice freeze class), D-6512 (component authoring form).
 
-**Live-verify (D-24026), 2026-10-06: PASS.** Solo Magneto / Midtown Bank Robbery match `1K760WkJX68` (build `1f4ce39`, set up after the deploy): Spinning Cyclone moved a Villain to an empty space (5.2.4), swapped with an occupied space (8.2.8, 10.2.3), rescued the moved Villain's Bystanders (12.2.3, 14.2.6, 18.2.3; 16 rescued in all, matching the final `bystandersRescued` 16), logged an empty City (15.2.8) and logged a declined move (19.2.11).
+**Live-verify (D-24026), 2026-10-07: PASS.** Match `1K760WkJX68` (build `1f4ce39`): a move to an empty space (5.2.4), swaps (8.2.8, 10.2.3), moved-Villain-only rescues (12.2.3, 14.2.6, 18.2.3), the no-Villain line (15.2.8), a decline (19.2.11), and no freeze.
+
+---
+
+### D-24665 — Crushing Shockwave logs a no-op with no other player (direct fix, no WP) (Active 2026-10-07)
+
+**Context.** Core Magneto's tactic Crushing Shockwave prints "Each other player reveals an [team:x-men] Hero or gains two Wounds." `resolveCrushingShockwave` skips the defeater, so in a solo match it ran an empty loop and logged nothing. Live solo match `1K760WkJX68` (2026-10-07) defeated it at 16.2.17 with no follow-up line. This is the same gap D-24661 closed for Whispers and Lies.
+
+**Decision.** When `G.playerZones` holds no seat other than the defeating player, `resolveCrushingShockwave` logs "there is no other player to reveal an X-Men Hero or gain Wounds (Crushing Shockwave)" and returns. Multiplayer is unchanged. No new G field, move or UIState field.
+
+**Gates.** game-engine 4994 / 0 fail, with one new `tacticHandlers.test.ts` solo case, revert-proofed to fail without the guard. Also: server 1455 / 0; `sim:coverage --check` OK; `sim:runtime-observed:check` current; `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24665. Related: D-24661 (Whispers and Lies / Covering Fire solo no-op), D-24659 (Monarch's Decree), WP-506 / D-24312 (Crushing Shockwave).
 
 ---
 

@@ -341,6 +341,18 @@ export function resolveCrushingShockwave(
 ): void {
   const playerIds = Object.keys(G.playerZones).sort();
 
+  // why: D-24665 — with no other seat (a solo match) the effect has no one to
+  // reveal or take Wounds; log the no-op so the tactic does not resolve silently
+  // (the Whispers and Lies D-24661 / Monarch's Decree D-24659 precedent).
+  const hasOtherSeat = playerIds.some((seat) => seat !== currentPlayer);
+  if (!hasOtherSeat) {
+    pushLog(G,
+      `Fight effect: there is no other player to reveal an X-Men Hero or gain Wounds (Crushing Shockwave).`,
+      'neutral',
+    );
+    return;
+  }
+
   for (const playerId of playerIds) {
     // why: "each OTHER player" — a tactic Fight is the defeating player's reward
     // AGAINST the others, unlike a Master Strike, which hits every player. Skip
