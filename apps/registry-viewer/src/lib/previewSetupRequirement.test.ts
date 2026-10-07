@@ -66,6 +66,29 @@ describe("resolveSetupRequirement", () => {
     assert.equal(requirement.row.villainDeckBystanderCount, 2);
   });
 
+  it("requires base + 1 Henchman groups for Negative Zone Prison Breakout (D-24666)", () => {
+    const henchmenCounts: number[] = [];
+    for (const playerCount of [1, 2, 3, 4, 5]) {
+      const requirement = resolveSetupRequirement(
+        makePreviewDocument("core/negative-zone-prison-breakout", playerCount),
+      );
+      assert.ok(requirement, `expected a requirement for ${playerCount} players`);
+      henchmenCounts.push(requirement.row.henchmenGroupCount);
+    }
+    assert.deepEqual(henchmenCounts, [2, 2, 2, 3, 3]);
+  });
+
+  it("keeps the base Henchman count for Midtown Bank Robbery", () => {
+    assert.equal(
+      resolveSetupRequirement(makePreviewDocument("core/midtown-bank-robbery", 1))?.row.henchmenGroupCount,
+      1,
+    );
+    assert.equal(
+      resolveSetupRequirement(makePreviewDocument("core/midtown-bank-robbery", 4))?.row.henchmenGroupCount,
+      2,
+    );
+  });
+
   it("returns null when there is no preview document", () => {
     assert.equal(resolveSetupRequirement(null), null);
   });

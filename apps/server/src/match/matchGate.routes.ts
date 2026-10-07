@@ -50,13 +50,15 @@ import { INTERNAL_DELEGATION_HEADER } from './nativeLobbyGuard.js';
 import { recordSeatAccount } from './seatAccount.logic.js';
 import type { AccountId } from '../identity/identity.types.js';
 import koaBody from 'koa-body';
-// why: the pure, browser-safe setup table + scheme-aware hero-count resolver
+// why: the pure, browser-safe setup table + scheme-aware hero-count and
+// Henchman-count resolvers
 // live on their own subpath (zero node deps); imported from the subpath — not
 // the barrel, which does not re-export resolveEffectiveHeroCount — so this WP
 // needs no registry-package change (D-24337 lives entirely in registry/engine).
 import {
   PLAYER_COUNT_SETUP,
   resolveEffectiveHeroCount,
+  resolveEffectiveHenchmenCount,
   type PlayerCountSetupRow,
 } from '@legendary-arena/registry/playerCountSetup';
 
@@ -195,14 +197,17 @@ async function resolveAuthenticatedAccountId(
 // request.body directly and the WP-307 live-verify only exercised the 401 paths.
 /**
  * Projects the per-player-count setup requirements for a scheme, applying the
- * scheme-aware hero-count override (WP-525 / D-24338, over WP-524 / D-24337).
+ * scheme-aware hero-count override (WP-525 / D-24338, over WP-524 / D-24337) and
+ * the scheme-aware Henchman-count override (WP-796 / D-24666).
  *
  * An empty `schemeId` returns the base `PLAYER_COUNT_SETUP` unchanged — the
  * no-param `/api/match/setup-requirements` response stays byte-identical to
  * WP-371's, so every existing caller is unaffected. A scheme with a printed
  * hero-count override (Secret Invasion → 6 heroes) gets a per-row effective
- * `heroCount`; every other row field is unchanged. Server wires — the "6" comes
- * from the single registry resolver, never re-hardcoded here.
+ * `heroCount`, and an "Add an extra Henchman group" scheme (Negative Zone Prison
+ * Breakout) gets a per-row effective `henchmenGroupCount` (base + 1); the other
+ * row fields are unchanged. Server wires — the "6" and the "+ 1" come from the
+ * single registry resolvers, never re-hardcoded here.
  *
  * @param schemeId The selected scheme ext_id, or '' for the base table.
  * @returns The requirements table keyed by player count.
@@ -218,6 +223,7 @@ function projectSetupRequirements(
     const numPlayers = Number(countKey);
     projected[numPlayers] = {
       ...row,
+      henchmenGroupCount: resolveEffectiveHenchmenCount(schemeId, numPlayers, row.henchmenGroupCount),
       heroCount: resolveEffectiveHeroCount(schemeId, numPlayers, row.heroCount),
     };
   }

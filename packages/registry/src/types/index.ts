@@ -237,6 +237,19 @@ export interface CardRegistry {
    * receives can apply the override.
    */
   resolveEffectiveHeroCount(schemeId: string, numPlayers: number, baseHeroCount: number): number;
+
+  /**
+   * Scheme-aware effective Henchman-group count (D-24666). Returns the standard
+   * `playerCountSetup[numPlayers].henchmenGroupCount` for most schemes, but base + 1
+   * for the schemes that print "Add an extra Henchman group" (Negative Zone Prison
+   * Breakout, Asgard Under Siege, Invasion of the Venom Symbiotes).
+   *
+   * why: carried on the registry object (like `resolveEffectiveHeroCount`) so the
+   * game engine reaches the ONE definition at setup time via structural typing,
+   * without importing this package. Required — both registry impls must expose it
+   * so every registry the engine receives can apply the override.
+   */
+  resolveEffectiveHenchmenCount(schemeId: string, numPlayers: number, baseHenchmenCount: number): number;
 }
 
 // ── Factory options ──────────────────────────────────────────────────────────

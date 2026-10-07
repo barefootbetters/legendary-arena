@@ -140,6 +140,51 @@ export function resolveEffectiveHeroCount(
   return baseHeroCount;
 }
 
+/**
+ * The schemes whose printed setup says "Add an extra Henchman group" (D-24666):
+ * core Negative Zone Prison Breakout, its msp1 reprint Asgard Under Siege, and
+ * vnom Invasion of the Venom Symbiotes. A closed list — the renamed-group and
+ * different-shape variants need card-pool work, not a count.
+ */
+export const SCHEMES_WITH_EXTRA_HENCHMAN_GROUP: readonly string[] = [
+  'core/negative-zone-prison-breakout',
+  'msp1/asgard-under-siege',
+  'vnom/invasion-of-the-venom-symbiotes',
+];
+
+/**
+ * Returns the effective Henchman-group count a match must supply, applying the
+ * printed "Add an extra Henchman group" setup clause (D-24666).
+ *
+ * A listed scheme requires exactly `baseHenchmenCount + 1` at every player count
+ * (2 at 1–3p, 3 at 4–5p); every other scheme returns the base count unchanged.
+ *
+ * why: the card prints "Add an extra Henchman group" — a REQUIREMENT increase like
+ * Secret Invasion's "6 Heroes" (D-24337), not a build-side downsize. The operator
+ * must actually SUPPLY the extra group, so it lives on the requirement side (this
+ * resolver) and every Henchman-count enforcement site reaches this one definition:
+ * `checkPlayerCountComposition` (below), the game engine's
+ * `validatePlayerCountComposition` (via the registry object it reads
+ * structurally), the server setup-requirements projection, the loadout builder,
+ * and `getGauntletConfig`. The base `PLAYER_COUNT_SETUP` table is never mutated.
+ *
+ * @param schemeId - The selected scheme ext_id (`MatchSetupConfig.schemeId`).
+ * @param numPlayers - The match player count (accepted for signature parity with
+ *   `resolveEffectiveHeroCount`; unused today).
+ * @param baseHenchmenCount - The standard `PLAYER_COUNT_SETUP[numPlayers].henchmenGroupCount`.
+ * @returns The Henchman-group count the match must supply for this scheme.
+ */
+export function resolveEffectiveHenchmenCount(
+  schemeId: string,
+  numPlayers: number,
+  baseHenchmenCount: number,
+): number {
+  if (SCHEMES_WITH_EXTRA_HENCHMAN_GROUP.includes(schemeId)) {
+    return baseHenchmenCount + 1;
+  }
+  return baseHenchmenCount;
+}
+
 /** One composition-count mismatch against the player-count table. */
 export interface PlayerCountCompositionMismatch {
   /** The composition array field whose length is wrong. */
@@ -159,10 +204,11 @@ export interface PlayerCountCompositionInput {
   readonly henchmanGroupIds: readonly unknown[];
   readonly heroDeckIds: readonly unknown[];
   /**
-   * The selected scheme ext_id, so the hero-count requirement can be
-   * scheme-aware (D-24337 — Secret Invasion requires 6 heroes). Optional:
-   * when absent the base `heroCount` is used, so existing callers that omit it
-   * keep the standard behaviour.
+   * The selected scheme ext_id, so the hero-count and Henchman-count
+   * requirements can be scheme-aware (D-24337 — Secret Invasion requires 6
+   * heroes; D-24666 — "Add an extra Henchman group"). Optional: when absent the
+   * base `heroCount` / `henchmenGroupCount` are used, so existing callers that
+   * omit it keep the standard behaviour.
    */
   readonly schemeId?: string;
 }
@@ -193,11 +239,18 @@ export function checkPlayerCountComposition(
       actual: input.villainGroupIds.length,
     });
   }
-  if (input.henchmanGroupIds.length !== row.henchmenGroupCount) {
+  // why: the Henchman-count requirement is scheme-aware (D-24666). A missing
+  // schemeId resolves to the base count, so callers that omit it are unaffected.
+  const requiredHenchmenCount = resolveEffectiveHenchmenCount(
+    input.schemeId ?? '',
+    input.playerCount,
+    row.henchmenGroupCount,
+  );
+  if (input.henchmanGroupIds.length !== requiredHenchmenCount) {
     mismatches.push({
       field: 'henchmanGroupIds',
       label: 'henchmen groups',
-      required: row.henchmenGroupCount,
+      required: requiredHenchmenCount,
       actual: input.henchmanGroupIds.length,
     });
   }

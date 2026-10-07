@@ -12,7 +12,11 @@ import {
   buildHenchmanKey,
 } from "./gauntletLoadouts.js";
 import type { GauntletLoadoutComposition } from "./gauntletLoadouts.js";
-import { PLAYER_COUNT_SETUP } from "./playerCountSetup.js";
+import {
+  PLAYER_COUNT_SETUP,
+  SCHEMES_WITH_EXTRA_HENCHMAN_GROUP,
+  resolveEffectiveHenchmenCount,
+} from "./playerCountSetup.js";
 import type { SupportedPlayerCount } from "./playerCountSetup.js";
 
 const SUPPORTED_PLAYER_COUNTS: SupportedPlayerCount[] = [1, 2, 3, 4, 5];
@@ -127,6 +131,70 @@ test("buildVillainSegment strips only the core qualifier and sorts; buildHenchma
     buildHenchmanKey(composition),
     "core/doombot-legion+zzzz/omega-guard",
   );
+});
+
+// why: D-24666 — the generator keeps its own copy of the extra-Henchman scheme
+// list (it runs before any build). It also runs main() on import, so no test can
+// import it; like REQUIRED_GROUP_COUNTS, the copy is pinned through its OUTPUT.
+test("the emitted schemeOverrides keys equal SCHEMES_WITH_EXTRA_HENCHMAN_GROUP (drift pin)", () => {
+  const emittedSchemeIds = new Set<string>();
+  for (const menu of GAUNTLET_LOADOUT_MENUS) {
+    for (const schemeSlug of Object.keys(menu.schemeOverrides ?? {})) {
+      emittedSchemeIds.add(`${menu.setAbbr}/${schemeSlug}`);
+    }
+  }
+  assert.deepEqual([...emittedSchemeIds].sort(), [...SCHEMES_WITH_EXTRA_HENCHMAN_GROUP].sort());
+});
+
+test("every scheme override is the base composition plus one distinct-slug henchmen group", () => {
+  let checkedCompositions = 0;
+  for (const menu of GAUNTLET_LOADOUT_MENUS) {
+    const baseVariant = menu.variants[0];
+    assert.ok(baseVariant !== undefined, `${menu.setAbbr}/${menu.mastermindSlug} must offer variant 0`);
+    for (const [schemeSlug, compositionsByPlayerCount] of Object.entries(menu.schemeOverrides ?? {})) {
+      for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+        const label = `${menu.setAbbr}/${menu.mastermindSlug} / ${schemeSlug} at ${playerCount}p`;
+        const override = compositionsByPlayerCount[playerCount];
+        const base: GauntletLoadoutComposition = baseVariant.compositionsByPlayerCount[playerCount];
+        assert.equal(
+          override.henchmanGroupIds.length,
+          resolveEffectiveHenchmenCount(
+            `${menu.setAbbr}/${schemeSlug}`,
+            playerCount,
+            PLAYER_COUNT_SETUP[playerCount].henchmenGroupCount,
+          ),
+          `${label} must supply the scheme-effective henchmen count`,
+        );
+        for (const baseHenchmanId of base.henchmanGroupIds) {
+          assert.ok(override.henchmanGroupIds.includes(baseHenchmanId), `${label} must keep ${baseHenchmanId}`);
+        }
+        assert.deepEqual(override.villainGroupIds, base.villainGroupIds, `${label} must keep the base villains`);
+        // why: Henchman card ids are built from the bare slug, so no two groups in
+        // one composition may share a slug across sets.
+        const slugs: string[] = [];
+        for (const groupId of [...override.villainGroupIds, ...override.henchmanGroupIds]) {
+          slugs.push(groupId.slice(groupId.indexOf("/") + 1));
+        }
+        assert.equal(new Set(slugs).size, slugs.length, `${label} must not repeat a slug`);
+        checkedCompositions += 1;
+      }
+    }
+  }
+  assert.ok(checkedCompositions > 0, "the generated menus must carry scheme overrides");
+});
+
+test("menus for masterminds without an extra-Henchman scheme carry no schemeOverrides key", () => {
+  const setsWithListedScheme = new Set<string>();
+  for (const schemeId of SCHEMES_WITH_EXTRA_HENCHMAN_GROUP) {
+    setsWithListedScheme.add(schemeId.slice(0, schemeId.indexOf("/")));
+  }
+  for (const menu of GAUNTLET_LOADOUT_MENUS) {
+    assert.equal(
+      "schemeOverrides" in menu,
+      setsWithListedScheme.has(menu.setAbbr),
+      `${menu.setAbbr}/${menu.mastermindSlug} schemeOverrides presence is wrong`,
+    );
+  }
 });
 
 test("the sizing assertion fails on a deliberately mis-sized composition", () => {

@@ -46,6 +46,17 @@ export interface GauntletLoadoutMenu {
   readonly setAbbr: string;
   readonly mastermindSlug: string;
   readonly variants: readonly GauntletLoadoutVariant[];
+  /**
+   * Scheme-aware compositions keyed by scheme SLUG, for the schemes in this
+   * mastermind's own set that print "Add an extra Henchman group" (D-24666).
+   * Each is variant 0 with one more henchmen group (the D-24199 fill order) and
+   * the same villains. Emitted only for masterminds whose set has such a scheme,
+   * so every other menu entry carries no key. `getGauntletConfig` returns it for
+   * a leg with no authored per-scheme config.
+   */
+  readonly schemeOverrides?: Readonly<
+    Record<string, GauntletLoadoutVariant['compositionsByPlayerCount']>
+  >;
 }
 
 export { GAUNTLET_LOADOUT_MENUS };

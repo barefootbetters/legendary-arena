@@ -26,7 +26,12 @@
  *   4. Emit one canonical variant (variant 0) per mastermind — the single
  *      approved configuration ranked qualification uses (D-24278). Casual play
  *      keeps free selection; only ranked qualification is fixed.
- *   5. Default mode: write the module. --check mode: regenerate in memory and
+ *   5. For each scheme in the mastermind's own set that prints "Add an extra
+ *      Henchman group" (D-24666), emit a `schemeOverrides` entry keyed by scheme
+ *      slug: variant 0's villains and the henchmen refilled with the same rule
+ *      for one more group. getGauntletConfig returns it for a leg with no
+ *      authored config, so the leg's approved composition stays legal.
+ *   6. Default mode: write the module. --check mode: regenerate in memory and
  *      exit non-zero if the committed module drifts (the CI freshness gate).
  *
  * Deterministic: identical card data always yields byte-identical output.
@@ -74,6 +79,19 @@ const REQUIRED_GROUP_COUNTS = {
   4: { villainGroupCount: 3, henchmenGroupCount: 2 },
   5: { villainGroupCount: 4, henchmenGroupCount: 2 },
 };
+
+// why: mirrors SCHEMES_WITH_EXTRA_HENCHMAN_GROUP in
+// packages/registry/src/playerCountSetup.ts (D-24666) — the schemes that print
+// "Add an extra Henchman group" and so require base + 1 henchmen groups.
+// Duplicated rather than imported because this script runs before any build and
+// must not depend on the registry dist (the REQUIRED_GROUP_COUNTS precedent); the
+// output-derived drift pin in gauntletLoadouts.test.ts asserts the emitted
+// schemeOverrides keys equal the registry list.
+const SCHEMES_WITH_EXTRA_HENCHMAN_GROUP = [
+  'core/negative-zone-prison-breakout',
+  'msp1/asgard-under-siege',
+  'vnom/invasion-of-the-venom-symbiotes',
+];
 
 const SUPPORTED_PLAYER_COUNTS = [1, 2, 3, 4, 5];
 
@@ -200,6 +218,118 @@ function fillGroupSlots(
 }
 
 /**
+ * Returns the bare slug of a set-qualified ext_id (`setAbbr/slug` → `slug`).
+ *
+ * @param {string} groupId a set-qualified ext_id.
+ * @returns {string} the slug after the set qualifier.
+ */
+function toBareSlug(groupId) {
+  return groupId.slice(groupId.indexOf('/') + 1);
+}
+
+/**
+ * Throws a GenerationError unless one scheme-override composition is the base
+ * composition plus exactly one henchmen group, with no two ids sharing a slug.
+ *
+ * @param {string} label the mastermind / scheme / player-count being checked.
+ * @param {object} baseComposition variant 0's composition at this player count.
+ * @param {object} overrideComposition the scheme-override composition.
+ */
+function assertOverrideComposition(label, baseComposition, overrideComposition) {
+  // why: fillGroupSlots sorts its output, so the override is checked as a set —
+  // every base henchmen id present, plus exactly one more — not by position.
+  const isSuperset = baseComposition.henchmanGroupIds.every((groupId) =>
+    overrideComposition.henchmanGroupIds.includes(groupId),
+  );
+  const hasOneMoreGroup =
+    overrideComposition.henchmanGroupIds.length ===
+    baseComposition.henchmanGroupIds.length + 1;
+  if (!isSuperset || !hasOneMoreGroup) {
+    throw new GenerationError(
+      `The extra-Henchman scheme override for ${label} is not the base henchmen ` +
+        `plus exactly one group: base [${baseComposition.henchmanGroupIds.join(', ')}], ` +
+        `override [${overrideComposition.henchmanGroupIds.join(', ')}]. Check the ` +
+        `D-24199 fill order for this mastermind's set.`,
+    );
+  }
+  // why: Henchman card ids are built from the BARE slug (henchman-<slug>-NN in the
+  // engine's villain-deck setup), so two groups sharing a slug across sets (e.g.
+  // core/doombot-legion + co2e/doombot-legion) would collide on card ids.
+  const seenSlugs = new Set();
+  for (const groupId of [
+    ...overrideComposition.villainGroupIds,
+    ...overrideComposition.henchmanGroupIds,
+  ]) {
+    const slug = toBareSlug(groupId);
+    if (seenSlugs.has(slug)) {
+      throw new GenerationError(
+        `The extra-Henchman scheme override for ${label} names two groups with the ` +
+          `slug "${slug}". Card ids are built from the bare slug, so the match would ` +
+          `collide; adjust the fill order so the override picks a distinct-slug group.`,
+      );
+    }
+    seenSlugs.add(slug);
+  }
+}
+
+/**
+ * Builds the `schemeOverrides` map for one mastermind: for each scheme in its own
+ * set that prints "Add an extra Henchman group", variant 0's villains with the
+ * henchmen refilled (same D-24199 rule) for one more group, at every player count.
+ *
+ * @param {{abbr: string, data: object}} set the mastermind's own set.
+ * @param {string} mastermindSlug the mastermind's slug (for error messages).
+ * @param {object} baseVariant the mastermind's variant 0.
+ * @param {string[]} inSetHenchmenIds the set's henchmen group ids.
+ * @param {string[]} fallbackHenchmenIds the Core Set / Core 2E henchmen pool.
+ * @returns {object|undefined} the overrides keyed by scheme slug, or undefined
+ *   when the set has no extra-Henchman scheme.
+ */
+function buildSchemeOverrides(
+  set,
+  mastermindSlug,
+  baseVariant,
+  inSetHenchmenIds,
+  fallbackHenchmenIds,
+) {
+  const sortedSchemes = [...(set.data.schemes ?? [])].sort(
+    (firstScheme, secondScheme) =>
+      firstScheme.slug < secondScheme.slug ? -1 : 1,
+  );
+  let schemeOverrides;
+  for (const scheme of sortedSchemes) {
+    if (!SCHEMES_WITH_EXTRA_HENCHMAN_GROUP.includes(`${set.abbr}/${scheme.slug}`)) {
+      continue;
+    }
+    const compositionsByPlayerCount = {};
+    for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+      const baseComposition = baseVariant.compositionsByPlayerCount[playerCount];
+      const overrideComposition = {
+        villainGroupIds: [...baseComposition.villainGroupIds],
+        henchmanGroupIds: fillGroupSlots(
+          [],
+          inSetHenchmenIds,
+          fallbackHenchmenIds,
+          REQUIRED_GROUP_COUNTS[playerCount].henchmenGroupCount + 1,
+          baseVariant.variantIndex,
+        ),
+      };
+      assertOverrideComposition(
+        `"${set.abbr}/${mastermindSlug}" / "${scheme.slug}" at ${playerCount} players`,
+        baseComposition,
+        overrideComposition,
+      );
+      compositionsByPlayerCount[playerCount] = overrideComposition;
+    }
+    if (schemeOverrides === undefined) {
+      schemeOverrides = {};
+    }
+    schemeOverrides[scheme.slug] = compositionsByPlayerCount;
+  }
+  return schemeOverrides;
+}
+
+/**
  * Builds every mastermind's single-variant menu.
  *
  * @param {{abbr: string, data: object}[]} sets every set read from data/cards/.
@@ -307,11 +437,22 @@ function buildLoadoutMenus(sets) {
         }
         variants.push({ variantIndex, compositionsByPlayerCount });
       }
-      menus.push({
+      const menu = {
         setAbbr: set.abbr,
         mastermindSlug: mastermind.slug,
         variants,
-      });
+      };
+      const schemeOverrides = buildSchemeOverrides(
+        set,
+        mastermind.slug,
+        variants[0],
+        inSetHenchmenIds,
+        fallbackHenchmenIds,
+      );
+      if (schemeOverrides !== undefined) {
+        menu.schemeOverrides = schemeOverrides;
+      }
+      menus.push(menu);
     }
   }
   return menus;
@@ -382,6 +523,21 @@ function renderModule(menus) {
       lines.push('      },');
     }
     lines.push('    ],');
+    if (menu.schemeOverrides !== undefined) {
+      lines.push('    schemeOverrides: {');
+      for (const [schemeSlug, compositionsByPlayerCount] of Object.entries(
+        menu.schemeOverrides,
+      )) {
+        lines.push(`      '${schemeSlug}': {`);
+        for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+          lines.push(
+            renderComposition(playerCount, compositionsByPlayerCount[playerCount]),
+          );
+        }
+        lines.push('      },');
+      }
+      lines.push('    },');
+    }
     lines.push('  },');
   }
   lines.push('];');

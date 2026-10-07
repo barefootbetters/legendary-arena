@@ -213,6 +213,45 @@ describe('matchGate.routes (WP-307)', () => {
     assert.equal(body.requirements[5]?.heroCount, 6);
   });
 
+  test('GET /api/match/setup-requirements?schemeId=<Negative Zone Prison Breakout> projects henchmenGroupCount base + 1 (WP-796 / D-24666)', async () => {
+    // why: the scheme prints "Add an extra Henchman group", so the lobby must ask
+    // for 2/2/2/3/3 Henchman groups — agreeing with the engine and the loadout
+    // builder. The hero count stays the base table's.
+    const handlers = collectRoutes(unauthenticatedDeps);
+    const koaContext = makeContext(undefined, { schemeId: 'core/negative-zone-prison-breakout' });
+
+    await handlers.get('/api/match/setup-requirements')!(koaContext);
+
+    assert.equal(koaContext.status, 200);
+    const body = koaContext.body as {
+      requirements: Record<string, { henchmenGroupCount: number; heroCount: number }>;
+    };
+    const henchmenCounts: number[] = [];
+    const heroCounts: number[] = [];
+    for (const playerCount of ['1', '2', '3', '4', '5']) {
+      henchmenCounts.push(body.requirements[playerCount]!.henchmenGroupCount);
+      heroCounts.push(body.requirements[playerCount]!.heroCount);
+    }
+    assert.deepEqual(henchmenCounts, [2, 2, 2, 3, 3]);
+    assert.deepEqual(heroCounts, [3, 5, 5, 5, 6]);
+  });
+
+  test('GET /api/match/setup-requirements without a schemeId (or for Midtown) keeps the base henchmenGroupCount', async () => {
+    const handlers = collectRoutes(unauthenticatedDeps);
+    for (const query of [undefined, { schemeId: 'core/midtown-bank-robbery' }]) {
+      const koaContext = makeContext(undefined, query);
+
+      await handlers.get('/api/match/setup-requirements')!(koaContext);
+
+      const body = koaContext.body as { requirements: Record<string, { henchmenGroupCount: number }> };
+      const henchmenCounts: number[] = [];
+      for (const playerCount of ['1', '2', '3', '4', '5']) {
+        henchmenCounts.push(body.requirements[playerCount]!.henchmenGroupCount);
+      }
+      assert.deepEqual(henchmenCounts, [1, 1, 1, 2, 2]);
+    }
+  });
+
   test('POST /api/match/create without a valid session returns 401 and never delegates', async () => {
     installFetchStub(200, { matchID: 'should-not-be-created' });
     const handlers = collectRoutes(unauthenticatedDeps);
