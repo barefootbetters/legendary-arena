@@ -434,7 +434,7 @@ high-water: 422
 - WP-793 — villain-escape-rulebook-procedure (Game Engine + Arena Client. Make a Villain escape follow rules v23 p.15 in order: (1) the escaping Villain KOs a Hero costing 6 or less from the HQ, current player chooses, HQ refills; (2) if it had captured Bystanders, each player discards one card; (3) its printed Escape effect. Retires the WP-015 / D-24439 generic per-escape Wound placeholder. Surfaced in solo match jjChx_MJ2gl. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
 - WP-794 — storm-location-fight-cost-reduction (Game Engine. Core Storm Lightning Bolt "Any Villain you fight on the Rooftops this turn gets -2[icon:attack]" and Tidal Wave's Bridge -2 / [hc:ranged] Mastermind -2 this turn: a turn-scoped fight-cost reduction applied in resolveFightCost / resolveMastermindFightCost. Surfaced in 2p match s1jtBcEAOfw. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 - WP-795 — storm-spinning-cyclone-move-villain (Game Engine + Arena Client. Core Storm Spinning Cyclone "You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain" with swap-if-occupied: an optional two-step pending choice (Villain, then destination space). Surfaced in 2p match s1jtBcEAOfw. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
-- WP-796 — scheme-extra-henchman-group (Registry + Engine setup + Server + Registry Viewer + Arena Client. A scheme-aware henchmen-group requirement override, sibling of resolveEffectiveHeroCount: core Negative Zone Prison Breakout, msp1 Asgard Under Siege and vnom Invasion of the Venom Symbiotes print "Add an extra Henchman group to the Villain Deck", which no loadout can supply today. reserved 2026-10-07, spec/reserve-scheme-extra-henchman-group)
+- WP-796 — scheme-extra-henchman-group (Registry + Engine setup + Server + Registry Viewer + gauntlet tooling; no arena-client change. A scheme-aware henchmen-group requirement override, sibling of resolveEffectiveHeroCount: core Negative Zone Prison Breakout, msp1 Asgard Under Siege and vnom Invasion of the Venom Symbiotes print "Add an extra Henchman group to the Villain Deck", which no loadout can supply today. reserved 2026-10-07, spec/reserve-scheme-extra-henchman-group)
 
 ## EC
 
@@ -830,7 +830,7 @@ high-water: 457
 - EC-830 — villain-escape-rulebook-procedure (WP-793; Game Engine + Arena Client. reserved 2026-10-04, spec/reserve-strike-capture-xmen-united)
 - EC-831 — storm-location-fight-cost-reduction (WP-794; Game Engine. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 - EC-832 — storm-spinning-cyclone-move-villain (WP-795; Game Engine + Arena Client. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
-- EC-833 — scheme-extra-henchman-group (WP-796; Registry + Engine setup + Server + Registry Viewer + Arena Client. reserved 2026-10-07, spec/reserve-scheme-extra-henchman-group)
+- EC-833 — scheme-extra-henchman-group (WP-796; Registry + Engine setup + Server + Registry Viewer + gauntlet tooling. reserved 2026-10-07, spec/reserve-scheme-extra-henchman-group)
 
 ## D
 
