@@ -34,8 +34,13 @@ unchanged. Saved or exported base-count loadouts for these schemes are flagged o
   during play. **Loadout builder PASS** (cards, same session): a 1p NZPB / Dr. Doom draft with only Doombot Legion
   shows "For a 1-player match: 1 villain groups, 2 henchmen groups, 3 heroes", flags "A 1-player match needs 2
   henchmen groups — this loadout has 1", and the gauntlet badge reports the 1-group draft won't count toward the
-  dr-doom gauntlet. **Still pending:** the Core NZPB and msp1 Asgard Under Siege gauntlet "Play this leg" launches,
-  and the lobby requirement line after a hard refresh.
+  dr-doom gauntlet. **Gauntlet pack import PASS** (cards): loading the `core/dr-doom` · fixed · 1-player pack and
+  picking the Negative Zone leg prefilled Masters of Evil + Doombot Legion + Hand Ninjas (2 groups, locked), and the
+  badge read "✓ Qualifies for the dr-doom gauntlet (variant 0)". **Gauntlet leg match PASS** (operator-reported
+  "Play this leg"): match `4IXFL3VuFfa` (build `14c29c9`, Nick Fury / Iron Man / Black Widow) set up with Doombot
+  Legion + Hand Ninjas and 20 distinct Henchman cards, played to a win (the export does not itself record the launch
+  path). **Still pending:** the lobby requirement line after a hard refresh; the msp1 Asgard Under Siege leg
+  (the generated `schemeOverrides` path) is unexercised live.
 
 ### D-24665 — solo Crushing Shockwave says it did nothing; Storm WP-794 / WP-795 live-verified (2026-10-07)
 
