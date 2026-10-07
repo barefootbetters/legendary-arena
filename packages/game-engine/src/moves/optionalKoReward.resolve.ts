@@ -71,7 +71,7 @@ export function hasPendingOptionalKoReward(G: LegendaryGameState): boolean {
  *   1. Validate args — exactly { decline: true } XOR { zone, cardId }; an
  *      invalid shape is a silent no-op (queue intact).
  *   2. Validate the front pending entry — non-empty queue, front.playerID match.
- *   3. { decline } → front-pop ONLY, no KO, no reward (silent).
+ *   3. { decline } → front-pop ONLY, no KO, no reward; logs one neutral line.
  *   4. { zone, cardId } → the card must be present in playerZones[pid][zone]
  *      NOW (recomputed fresh, no snapshot). Absent/stale → silent no-op, queue
  *      intact (resubmit).
@@ -117,8 +117,17 @@ export function resolveOptionalKoReward(
   const front = queue[0]!;
   if (front.playerID !== playerID) { return; }
 
-  // Step 3: Decline → front-pop only, no KO, no reward (silent).
+  // Step 3: Decline → front-pop, no KO, no reward, and one log line.
+  // why: a silent decline left the card's play line with nothing after it, which reads
+  // the same as an ability that never fired (Dangerous Rescue in match 452o26A0iXw).
+  // Outcome 'neutral': the player chose not to pay, nothing failed.
   if (isDecline) {
+    pushLog(
+      G,
+      `Player ${playerID} chose not to KO a card for ${formatCardRef(G.cardDisplayData, front.sourceCardId)}'s ability.`,
+      'neutral',
+      front.sourceCardId,
+    );
     queue.shift();
     return;
   }

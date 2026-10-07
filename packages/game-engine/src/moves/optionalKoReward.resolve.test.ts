@@ -452,7 +452,10 @@ describe('resolveOptionalKoReward — decline', () => {
     assert.deepStrictEqual(gameState.playerZones['0']!.victory, [], 'no reward on decline');
     assert.deepStrictEqual(gameState.piles.bystanders, ['by-0'], 'bystander supply untouched on decline');
     assert.equal(gameState.pendingOptionalKoRewards!.length, 0, 'queue front-popped on decline');
-    assert.deepStrictEqual(gameState.messages, [], 'decline is silent');
+    assert.equal(gameState.messages.length, 1, 'decline logs exactly one line');
+    assert.match(gameState.messages[0]!.text, /^Player 0 chose not to KO a card for .*hero-x.*'s ability\.$/);
+    assert.equal(gameState.messages[0]!.outcome, 'neutral', 'a decline is neutral, not blocked');
+    assert.equal(gameState.messages[0]!.card, 'hero-x', 'the line is attributed to the source card');
   });
 });
 
@@ -784,7 +787,7 @@ describe('resolveOptionalKoReward — logs the KO cost (WP-590 / D-24399)', () =
     assert.match(gameState.messages[0]!.text, /disc-card/, 'names the KOd discard card');
   });
 
-  it('decline logs no KO line (still silent)', () => {
+  it('decline logs no KO line, only the decline line', () => {
     const gameState = makeTestGameState({
       hand: ['keep-me' as CardExtId],
       bystanders: ['by-0' as CardExtId],
@@ -794,6 +797,8 @@ describe('resolveOptionalKoReward — logs the KO cost (WP-590 / D-24399)', () =
 
     resolveOptionalKoReward(context, { decline: true });
 
-    assert.deepStrictEqual(gameState.messages, [], 'decline is silent — no KO line');
+    assert.equal(gameState.messages.length, 1, 'only the decline line');
+    assert.doesNotMatch(gameState.messages[0]!.text, /KO'd/, 'no KO line on decline');
+    assert.match(gameState.messages[0]!.text, /chose not to KO/);
   });
 });
