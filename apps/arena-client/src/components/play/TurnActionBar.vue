@@ -395,6 +395,10 @@ export default defineComponent({
         props.hasPendingPutHandOnDeckTop ||
         // why: WP-719 / D-24541 — a pending Covering Fire choose-one must also block auto-advance.
         props.hasPendingCoveringFireChoice ||
+        // why: WP-725 / D-24546 — a pending split-face "choose a side" pick must also block
+        // auto-advance (the D-24648 freeze class: an omitted flag lets the watcher fire into
+        // the engine's block-all and latch isAutoAdvancing / wantEndTurn).
+        props.hasPendingSplitFaceChoice ||
         // why: WP-753 / D-24580 — a pending reveal-three assignment must also block auto-advance.
         props.hasPendingRevealThreeAssign ||
         // why: WP-682 / D-24648 — a pending WP-684 seat choice (Diving Block reveal/decline,
