@@ -22,12 +22,21 @@ export const GAME_LOG_EXPORT_FILE_NAME = 'game-log.txt';
  * given (chronological) order, with a trailing newline so the file ends cleanly.
  * An empty log yields an empty string (no stray newline).
  *
+ * Optional header lines (e.g. the build provenance from
+ * `formatProvenanceHeaderLines`) are written first, followed by a blank line. With
+ * no header lines the output is exactly the plain transcript.
+ *
  * @param log The chronological log entries, exactly as received from `UIState.log`.
+ * @param headerLines Lines to write above the transcript; empty by default.
  * @returns The joined transcript text, or an empty string when the log is empty.
  */
-export function buildGameLogText(log: readonly LogEntry[]): string {
+export function buildGameLogText(log: readonly LogEntry[], headerLines: readonly string[] = []): string {
   if (log.length === 0) {
     return '';
+  }
+  let header = '';
+  if (headerLines.length > 0) {
+    header = headerLines.join('\n') + '\n\n';
   }
   // why: WP-435 — the export stays a plain-text transcript, so the on-screen colour
   // becomes a leading `[outcome]` text tag on non-`neutral` lines (greppable, mirrors
@@ -35,6 +44,7 @@ export function buildGameLogText(log: readonly LogEntry[]): string {
   // transcript reads cleanly; this also keeps every pre-B.3b (all-`neutral`) export
   // byte-identical.
   return (
+    header +
     log
       .map((entry) =>
         entry.outcome === 'neutral' ? entry.text : `[${entry.outcome}] ${entry.text}`,

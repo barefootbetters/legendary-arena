@@ -1,5 +1,5 @@
 <script lang="ts">
-import { computed, defineComponent, ref, toRef, type PropType } from 'vue';
+import { computed, defineComponent, ref, toRef, watch, type PropType } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import PlayDesktop from './PlayDesktop.vue';
@@ -44,6 +44,8 @@ import { useBotAllyStatus } from '../composables/useBotAllyStatus';
 import { useDeployVersionCheck } from '../composables/useDeployVersionCheck';
 import { useUiStateStore } from '../stores/uiState';
 import { useAuthStore } from '../stores/auth';
+import { useBuildProvenanceStore } from '../stores/buildProvenance';
+import { serverUrl } from '../lobby/lobbyApi';
 import { readMatchSetup, readBotAllySetup } from '../diagnostics/matchSetupSession';
 import {
   launchMatchFromComposition,
@@ -338,6 +340,25 @@ export default defineComponent({
     // state but never the JS bundle (D-24238). Pure client presentation — no
     // engine/registry import, no G/ctx read; fail-soft, non-move-gating.
     const { updateAvailable: isUpdateAvailable } = useDeployVersionCheck();
+
+    // why: the diagnostics and game-log exports stamp which client build, server
+    // build and match-creation time produced a match (a match keeps the card rules
+    // built at its setup, and the client and server deploy independently). Loaded
+    // once per match id here at the play root so the export click handlers read it
+    // synchronously. Fail-soft: a failed probe leaves the exports unchanged.
+    const buildProvenanceStore = useBuildProvenanceStore();
+    watch(
+      () => props.matchId,
+      (matchId) => {
+        void buildProvenanceStore.load(
+          serverUrl,
+          matchId,
+          { gitSha: __GIT_SHA__, buildTimestamp: __BUILD_TIMESTAMP__ },
+          (url) => fetch(url),
+        );
+      },
+      { immediate: true },
+    );
 
     // why: the reload is USER-INITIATED (a button), never automatic — a forced
     // reload mid-turn would discard an in-progress action and read as hostile

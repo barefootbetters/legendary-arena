@@ -3,6 +3,8 @@ import { computed, defineComponent, onBeforeUnmount, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useUiStateStore } from '../stores/uiState';
 import { buildGameLogText } from './log/gameLogExport';
+import { useBuildProvenanceStore } from '../stores/buildProvenance';
+import { formatProvenanceHeaderLines } from '../diagnostics/buildProvenance';
 
 type CopyState = 'idle' | 'copied' | 'failed';
 
@@ -123,7 +125,10 @@ export default defineComponent({
       if (current === null) {
         return;
       }
-      const didCopy = await copyTextToClipboard(buildGameLogText(current.log));
+      // why: same build-provenance header as the download button, read synchronously
+      // so the clipboard write stays inside the click's user activation.
+      const headerLines = formatProvenanceHeaderLines(useBuildProvenanceStore().provenance);
+      const didCopy = await copyTextToClipboard(buildGameLogText(current.log, headerLines));
       copyState.value = didCopy ? 'copied' : 'failed';
       scheduleReset();
     }
