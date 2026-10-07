@@ -14,7 +14,15 @@ import {
   getPlayerCountSetup,
   checkPlayerCountComposition,
   resolveEffectiveHeroCount,
+  resolveEffectiveHenchmenCount,
+  SCHEMES_WITH_EXTRA_HENCHMAN_GROUP,
 } from './playerCountSetup.js';
+
+/** The core scheme whose printed setup says "Add an extra Henchman group" (D-24666). */
+const NEGATIVE_ZONE_PRISON_BREAKOUT = 'core/negative-zone-prison-breakout';
+
+/** A scheme with no Henchman-count override. */
+const MIDTOWN_BANK_ROBBERY = 'core/midtown-bank-robbery';
 
 /** The scheme whose printed setup requires 6 heroes (D-24337). */
 const SECRET_INVASION = 'core/secret-invasion-of-the-skrull-shapeshifters';
@@ -199,5 +207,90 @@ describe('resolveEffectiveHeroCount', () => {
   it('never mutates the base PLAYER_COUNT_SETUP table', () => {
     resolveEffectiveHeroCount(SECRET_INVASION, 2, PLAYER_COUNT_SETUP[2].heroCount);
     assert.equal(PLAYER_COUNT_SETUP[2].heroCount, 5);
+  });
+});
+
+describe('SCHEMES_WITH_EXTRA_HENCHMAN_GROUP (D-24666)', () => {
+  it('lists exactly the three "Add an extra Henchman group" schemes, in order', () => {
+    // why: D-24372 runtime drift pin — the closed list is a locked value.
+    assert.deepEqual(
+      [...SCHEMES_WITH_EXTRA_HENCHMAN_GROUP],
+      [
+        'core/negative-zone-prison-breakout',
+        'msp1/asgard-under-siege',
+        'vnom/invasion-of-the-venom-symbiotes',
+      ],
+    );
+  });
+});
+
+describe('resolveEffectiveHenchmenCount (D-24666)', () => {
+  it('returns base + 1 (2/2/2/3/3) for every listed scheme at 1–5 players', () => {
+    for (const schemeId of SCHEMES_WITH_EXTRA_HENCHMAN_GROUP) {
+      const effectiveCounts: number[] = [];
+      for (const playerCount of [1, 2, 3, 4, 5] as const) {
+        effectiveCounts.push(
+          resolveEffectiveHenchmenCount(
+            schemeId,
+            playerCount,
+            PLAYER_COUNT_SETUP[playerCount].henchmenGroupCount,
+          ),
+        );
+      }
+      assert.deepEqual(effectiveCounts, [2, 2, 2, 3, 3], `wrong effective counts for ${schemeId}`);
+    }
+  });
+
+  it('returns the base count unchanged for an unlisted or empty scheme', () => {
+    assert.equal(resolveEffectiveHenchmenCount(MIDTOWN_BANK_ROBBERY, 1, 1), 1);
+    assert.equal(resolveEffectiveHenchmenCount(MIDTOWN_BANK_ROBBERY, 4, 2), 2);
+    assert.equal(resolveEffectiveHenchmenCount('', 5, 2), 2);
+    assert.equal(resolveEffectiveHenchmenCount(SECRET_INVASION, 2, 1), 1);
+  });
+
+  it('never mutates the base PLAYER_COUNT_SETUP table', () => {
+    resolveEffectiveHenchmenCount(NEGATIVE_ZONE_PRISON_BREAKOUT, 1, PLAYER_COUNT_SETUP[1].henchmenGroupCount);
+    assert.equal(PLAYER_COUNT_SETUP[1].henchmenGroupCount, 1);
+  });
+});
+
+describe('checkPlayerCountComposition — extra Henchman group (D-24666)', () => {
+  /**
+   * Builds a 1-player composition input with the given scheme and Henchman-group count.
+   */
+  function soloInput(schemeId: string, henchmenGroupCount: number) {
+    const henchmanGroupIds: string[] = [];
+    for (let index = 0; index < henchmenGroupCount; index += 1) {
+      henchmanGroupIds.push(`h${index}`);
+    }
+    return {
+      playerCount: 1,
+      schemeId,
+      villainGroupIds: ['a'],
+      henchmanGroupIds,
+      heroDeckIds: ['1', '2', '3'],
+    };
+  }
+
+  it('reports one henchmen mismatch (required 2) for a 1p NZPB loadout with 1 group', () => {
+    const mismatches = checkPlayerCountComposition(soloInput(NEGATIVE_ZONE_PRISON_BREAKOUT, 1));
+    assert.deepEqual(mismatches, [
+      { field: 'henchmanGroupIds', label: 'henchmen groups', required: 2, actual: 1 },
+    ]);
+  });
+
+  it('passes a 1p NZPB loadout with 2 groups', () => {
+    assert.deepEqual(checkPlayerCountComposition(soloInput(NEGATIVE_ZONE_PRISON_BREAKOUT, 2)), []);
+  });
+
+  it('rejects a 1p NZPB loadout with 3 groups (exactly base + 1)', () => {
+    const mismatches = checkPlayerCountComposition(soloInput(NEGATIVE_ZONE_PRISON_BREAKOUT, 3));
+    assert.deepEqual(mismatches, [
+      { field: 'henchmanGroupIds', label: 'henchmen groups', required: 2, actual: 3 },
+    ]);
+  });
+
+  it('leaves a 1p Midtown loadout with 1 group clean', () => {
+    assert.deepEqual(checkPlayerCountComposition(soloInput(MIDTOWN_BANK_ROBBERY, 1)), []);
   });
 });

@@ -482,6 +482,87 @@ describe('validateMatchSetup — scheme-aware hero-count gate lowers to 4 at 2p 
   });
 });
 
+/**
+ * A registry mock whose resolveEffectiveHenchmenCount adds one Henchman group for
+ * the test scheme — mimicking the registry's "Add an extra Henchman group" resolver
+ * (Negative Zone Prison Breakout, D-24666). Keyed to the existing test scheme so
+ * the config passes existence and the gate runs.
+ */
+function createMockRegistryWithExtraHenchmanOverride() {
+  return {
+    ...createMockRegistryWithTable(),
+    resolveEffectiveHenchmenCount(schemeId: string, _numPlayers: number, baseHenchmenCount: number): number {
+      return schemeId === 'test/test-scheme-001' ? baseHenchmenCount + 1 : baseHenchmenCount;
+    },
+  };
+}
+
+/**
+ * A 1-player config (1 villain group, 3 heroes) with the given Henchman groups.
+ * `core/core-henchman-only` is the mock's second known Henchman group.
+ */
+function createSoloInputWithHenchmen(henchmanGroupIds: string[]): Record<string, unknown> {
+  return {
+    ...createValidInput(),
+    villainGroupIds: ['test/test-villain-group-001'],
+    henchmanGroupIds,
+  };
+}
+
+describe('validateMatchSetup — scheme-aware Henchman-count gate (WP-796 / D-24666)', () => {
+  it('rejects a 1-group 1p loadout for a scheme that requires an extra Henchman group', () => {
+    const registry = createMockRegistryWithExtraHenchmanOverride();
+    // why: base@1p is 1 Henchman group (would pass), but the override scheme
+    // requires 2 — proving the engine forwards schemeId and enforces base + 1.
+    const input = createSoloInputWithHenchmen(['test/test-henchman-group-001']);
+    const result = validateMatchSetup(input, registry, 1);
+
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      const error = result.errors.find((each) => each.field === 'henchmanGroupIds');
+      assert.ok(error, 'Expected a henchmanGroupIds error for the raised Henchman count.');
+      assert.ok(
+        error.message.includes('requires 2') && error.message.includes('provides 1'),
+        'Message should name the raised required count and the actual count.',
+      );
+    }
+  });
+
+  it('accepts a 2-group 1p loadout for the same scheme', () => {
+    const registry = createMockRegistryWithExtraHenchmanOverride();
+    const input = createSoloInputWithHenchmen(['test/test-henchman-group-001', 'core/core-henchman-only']);
+    const result = validateMatchSetup(input, registry, 1);
+
+    assert.equal(result.ok, true, 'A 2-group loadout must pass the raised requirement.');
+  });
+
+  it('keeps the base 1-group requirement for a scheme without an override', () => {
+    const registry = createMockRegistryWithExtraHenchmanOverride();
+    const input = {
+      ...createSoloInputWithHenchmen(['test/test-henchman-group-001']),
+      schemeId: 'core/core-scheme-only',
+    };
+    const result = validateMatchSetup(input, registry, 1);
+
+    assert.equal(result.ok, true, 'A non-override scheme keeps the base Henchman requirement.');
+  });
+
+  it('falls back to the base Henchman count when the registry omits the resolver', () => {
+    // why: a table-only mock (no resolveEffectiveHenchmenCount) reverts to the base
+    // count via the `?? row.henchmenGroupCount` fallback, so 1 group @1p passes and
+    // 2 groups fail, even for the would-be-override scheme.
+    const registry = createMockRegistryWithTable();
+    const oneGroup = validateMatchSetup(createSoloInputWithHenchmen(['test/test-henchman-group-001']), registry, 1);
+    assert.equal(oneGroup.ok, true, 'A resolver-less mock must use the base Henchman count.');
+    const twoGroups = validateMatchSetup(
+      createSoloInputWithHenchmen(['test/test-henchman-group-001', 'core/core-henchman-only']),
+      registry,
+      1,
+    );
+    assert.equal(twoGroups.ok, false, 'A resolver-less mock must reject base + 1 groups.');
+  });
+});
+
 describe('validateMatchSetup — no-throw contract', () => {
   it('never throws, even with null input', () => {
     const registry = createMockRegistry();

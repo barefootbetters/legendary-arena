@@ -35,6 +35,7 @@ import {
   getPlayerCountSetup,
   checkPlayerCountComposition,
   resolveEffectiveHeroCount,
+  resolveEffectiveHenchmenCount,
   type PlayerCountSetupRow,
   type PlayerCountCompositionMismatch,
 } from "@legendary-arena/registry/playerCountSetup";
@@ -466,6 +467,8 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
   // Invasion requires 6). The base row is a Readonly<PlayerCountSetupRow>, so
   // build a NEW row spreading the resolved heroCount rather than mutating the
   // immutable single-source-of-truth table row.
+  // why: D-24666 — the displayed Henchman-group requirement is scheme-aware too
+  // ("Add an extra Henchman group" schemes require base + 1), resolved the same way.
   const requiredPlayerCountSetup = computed<PlayerCountSetupRow | undefined>(() => {
     const baseRow = getPlayerCountSetup(draft.value.playerCount);
     if (baseRow === undefined) {
@@ -473,6 +476,11 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     }
     return {
       ...baseRow,
+      henchmenGroupCount: resolveEffectiveHenchmenCount(
+        draft.value.composition.schemeId,
+        draft.value.playerCount,
+        baseRow.henchmenGroupCount,
+      ),
       heroCount: resolveEffectiveHeroCount(
         draft.value.composition.schemeId,
         draft.value.playerCount,
@@ -487,7 +495,8 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
       villainGroupIds: draft.value.composition.villainGroupIds,
       henchmanGroupIds: draft.value.composition.henchmanGroupIds,
       heroDeckIds: draft.value.composition.heroDeckIds,
-      // why: D-24337 — scheme-aware hero-count requirement (Secret Invasion → 6).
+      // why: D-24337 / D-24666 — scheme-aware hero-count (Secret Invasion → 6) and
+      // Henchman-count ("Add an extra Henchman group" → base + 1) requirements.
       schemeId: draft.value.composition.schemeId,
     }),
   );

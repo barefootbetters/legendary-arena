@@ -16,7 +16,11 @@ import { readFile, readdir } from "node:fs/promises";
 import { join, extname, resolve } from "node:path";
 import { SetIndexEntrySchema, SetDataSchema } from "../schema.js";
 import { flattenSet, applyQuery, buildHealthReport } from "../shared.js";
-import { PLAYER_COUNT_SETUP, resolveEffectiveHeroCount } from "../playerCountSetup.js";
+import {
+  PLAYER_COUNT_SETUP,
+  resolveEffectiveHeroCount,
+  resolveEffectiveHenchmenCount,
+} from "../playerCountSetup.js";
 import { hashCanonicalJson, deriveRegistryVersion } from "../canonicalJson.js";
 import type {
   CardRegistry,
@@ -199,6 +203,11 @@ export async function createRegistryFromLocalFiles(
     // object (like playerCountSetup) so the engine reaches the single definition
     // structurally without importing this package.
     resolveEffectiveHeroCount,
+
+    // why: D-24666 — the scheme-aware Henchman-count override rides on the
+    // registry object (like resolveEffectiveHeroCount) so the engine reaches the
+    // single definition structurally without importing this package.
+    resolveEffectiveHenchmenCount,
 
     listSets():           SetIndexEntry[]    { return setIndex; },
     getSet(abbr: string): SetData | undefined { return loadedSets.get(abbr); },

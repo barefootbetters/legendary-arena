@@ -30,8 +30,13 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { getGauntletConfig, getActiveYear, validateGauntletConfigs } from "./gauntletConfigs.js";
 import { GAUNTLET_CONFIGS_DATA } from "./gauntletConfigs.generated.js";
-import { GAUNTLET_LOADOUT_MENUS } from "./gauntletLoadouts.js";
-import { PLAYER_COUNT_SETUP } from "./playerCountSetup.js";
+import { GAUNTLET_LOADOUT_MENUS, getGauntletLoadoutMenu } from "./gauntletLoadouts.js";
+import type { GauntletLoadoutComposition } from "./gauntletLoadouts.js";
+import {
+  PLAYER_COUNT_SETUP,
+  SCHEMES_WITH_EXTRA_HENCHMAN_GROUP,
+  resolveEffectiveHenchmenCount,
+} from "./playerCountSetup.js";
 import type { SupportedPlayerCount } from "./playerCountSetup.js";
 
 // why: pnpm --filter sets CWD to packages/registry/; the card data and the
@@ -130,11 +135,28 @@ describe("getGauntletConfig — non-swapped Core legs reproduce GAUNTLET_LOADOUT
             sortedIds(expected.villainGroupIds),
             `Villain groups drifted for core/${mastermindSlug}/${schemeSlug} at ${playerCount} players.`,
           );
-          assert.deepEqual(
-            sortedIds(config!.henchmanGroupIds),
-            sortedIds(expected.henchmanGroupIds),
-            `Henchmen groups drifted for core/${mastermindSlug}/${schemeSlug} at ${playerCount} players.`,
-          );
+          // why: D-24666 — an "Add an extra Henchman group" scheme takes base + 1
+          // henchmen, so its leg deliberately no longer equals the base menu's
+          // henchmen; it must instead be the authored pool's prefix at the
+          // scheme-effective count.
+          if (SCHEMES_WITH_EXTRA_HENCHMAN_GROUP.includes(`core/${schemeSlug}`)) {
+            const effectiveCount = resolveEffectiveHenchmenCount(
+              `core/${schemeSlug}`,
+              playerCount,
+              PLAYER_COUNT_SETUP[playerCount].henchmenGroupCount,
+            );
+            assert.deepEqual(
+              config!.henchmanGroupIds,
+              leg.henchmanPool.slice(0, effectiveCount),
+              `Henchmen groups for core/${mastermindSlug}/${schemeSlug} at ${playerCount} players are not the pool prefix at the effective count.`,
+            );
+          } else {
+            assert.deepEqual(
+              sortedIds(config!.henchmanGroupIds),
+              sortedIds(expected.henchmanGroupIds),
+              `Henchmen groups drifted for core/${mastermindSlug}/${schemeSlug} at ${playerCount} players.`,
+            );
+          }
           checkedLegs += 1;
         }
       }
@@ -173,6 +195,126 @@ describe("getGauntletConfig — pool scaling and absent-leg fallback", () => {
     // why: set 2099 hosts gauntlets but carries no per-scheme override; the loader
     // returns undefined and the consumer uses GAUNTLET_LOADOUT_MENUS.
     assert.equal(getGauntletConfig("2099", "sinister-six-2099", "pull-reality-into-cyberspace", 5), undefined);
+  });
+});
+
+describe("getGauntletConfig — extra Henchman group (D-24666)", () => {
+  /** The expected Henchman pool of each Core Negative Zone Prison Breakout leg. */
+  const NZPB_POOLS: Record<string, string[]> = {
+    "dr-doom": ["core/doombot-legion", "core/hand-ninjas", "core/sentinel"],
+    "red-skull": ["core/doombot-legion", "core/hand-ninjas", "core/sentinel"],
+    magneto: ["core/savage-land-mutates", "core/hand-ninjas", "core/sentinel"],
+    loki: ["core/savage-land-mutates", "core/hand-ninjas", "core/sentinel"],
+  };
+
+  /** The menu-fallback legs whose scheme adds a Henchman group, as [set, mastermind, scheme]. */
+  const MENU_OVERRIDE_LEGS: [string, string, string][] = [
+    ["msp1", "iron-monger", "asgard-under-siege"],
+    ["msp1", "loki", "asgard-under-siege"],
+    ["msp1", "red-skull", "asgard-under-siege"],
+    ["vnom", "hybrid", "invasion-of-the-venom-symbiotes"],
+    ["vnom", "poison-thanos", "invasion-of-the-venom-symbiotes"],
+  ];
+
+  it("gives each Core NZPB leg 2 Henchman groups at 1–3p and 3 at 4–5p, as a pool prefix", () => {
+    const expectedCounts: Record<SupportedPlayerCount, number> = { 1: 2, 2: 2, 3: 2, 4: 3, 5: 3 };
+    for (const [mastermindSlug, pool] of Object.entries(NZPB_POOLS)) {
+      for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+        const config = getGauntletConfig("core", mastermindSlug, "negative-zone-prison-breakout", playerCount);
+        assert.deepEqual(
+          config?.henchmanGroupIds,
+          pool.slice(0, expectedCounts[playerCount]),
+          `core/${mastermindSlug} NZPB henchmen are wrong at ${playerCount} players.`,
+        );
+      }
+    }
+  });
+
+  it("returns the menu's scheme override for each msp1 / vnom extra-Henchman leg", () => {
+    for (const [setAbbr, mastermindSlug, schemeSlug] of MENU_OVERRIDE_LEGS) {
+      const menu = getGauntletLoadoutMenu(setAbbr, mastermindSlug);
+      assert.ok(menu !== undefined, `No menu found for ${setAbbr}/${mastermindSlug}.`);
+      const baseVariant = menu.variants[0];
+      assert.ok(baseVariant !== undefined, `No variant 0 found for ${setAbbr}/${mastermindSlug}.`);
+      for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+        const label = `${setAbbr}/${mastermindSlug}/${schemeSlug} at ${playerCount} players`;
+        const config = getGauntletConfig(setAbbr, mastermindSlug, schemeSlug, playerCount);
+        const baseComposition: GauntletLoadoutComposition = baseVariant.compositionsByPlayerCount[playerCount];
+        assert.ok(config !== undefined, `Expected a scheme-aware composition for ${label}.`);
+        assert.deepEqual(config.villainGroupIds, baseComposition.villainGroupIds, `Villains changed for ${label}.`);
+        assert.equal(
+          config.henchmanGroupIds.length,
+          baseComposition.henchmanGroupIds.length + 1,
+          `Expected one more Henchman group for ${label}.`,
+        );
+        for (const baseHenchmanId of baseComposition.henchmanGroupIds) {
+          assert.ok(config.henchmanGroupIds.includes(baseHenchmanId), `${label} dropped ${baseHenchmanId}.`);
+        }
+      }
+    }
+  });
+
+  it("names the generated msp1 Asgard Under Siege henchmen at 1p and 4p", () => {
+    assert.deepEqual(getGauntletConfig("msp1", "loki", "asgard-under-siege", 1)?.henchmanGroupIds, [
+      "msp1/hammer-drone-army",
+      "msp1/hydra-pilots",
+    ]);
+    assert.deepEqual(getGauntletConfig("msp1", "loki", "asgard-under-siege", 4)?.henchmanGroupIds, [
+      "msp1/hammer-drone-army",
+      "msp1/hydra-pilots",
+      "msp1/hydra-spies",
+    ]);
+  });
+
+  it("leaves every unlisted leg as before: authored legs slice by the base count, others are undefined", () => {
+    let checkedLegs = 0;
+    const yearBlock = committedConfigs.years[committedConfigs.activeYear];
+    for (const menu of GAUNTLET_LOADOUT_MENUS) {
+      for (const scheme of readSet(menu.setAbbr).schemes ?? []) {
+        if (SCHEMES_WITH_EXTRA_HENCHMAN_GROUP.includes(`${menu.setAbbr}/${scheme.slug}`)) {
+          continue;
+        }
+        const leg = yearBlock?.sets[menu.setAbbr]?.masterminds[menu.mastermindSlug]?.schemes[scheme.slug];
+        for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+          const config = getGauntletConfig(menu.setAbbr, menu.mastermindSlug, scheme.slug, playerCount);
+          const label = `${menu.setAbbr}/${menu.mastermindSlug}/${scheme.slug} at ${playerCount} players`;
+          if (leg === undefined) {
+            assert.equal(config, undefined, `Expected no per-scheme config for ${label}.`);
+          } else {
+            assert.deepEqual(
+              config?.henchmanGroupIds,
+              leg.henchmanPool.slice(0, PLAYER_COUNT_SETUP[playerCount].henchmenGroupCount),
+              `Henchmen changed for ${label}.`,
+            );
+          }
+          checkedLegs += 1;
+        }
+      }
+    }
+    assert.ok(checkedLegs > 0, "Expected at least one unlisted leg to check.");
+  });
+
+  it("rejects a leg whose henchman pool is shorter than the scheme's 5-player effective count", () => {
+    const configs = JSON.parse(readFileSync(configsPath, "utf8"));
+    configs.years["2026"].sets.core.masterminds.magneto.schemes["negative-zone-prison-breakout"].henchmanPool = [
+      "core/savage-land-mutates",
+      "core/hand-ninjas",
+    ];
+    assert.throws(
+      () => validateGauntletConfigs(configs),
+      /set "core", mastermind "magneto", scheme "negative-zone-prison-breakout".*requires 3 Henchman groups at 5 players/,
+    );
+  });
+
+  it("rejects an unlisted leg whose henchman pool is shorter than the base 5-player count", () => {
+    const configs = JSON.parse(readFileSync(configsPath, "utf8"));
+    configs.years["2026"].sets.core.masterminds["dr-doom"].schemes["midtown-bank-robbery"].henchmanPool = [
+      "core/doombot-legion",
+    ];
+    assert.throws(
+      () => validateGauntletConfigs(configs),
+      /scheme "midtown-bank-robbery".*requires 2 Henchman groups at 5 players/,
+    );
   });
 });
 

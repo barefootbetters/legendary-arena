@@ -14,7 +14,7 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
   "description": "Authored gauntlet adversary configurations, keyed by season year. Each leg (a mastermind + scheme pairing) fields its own ordered villain and henchman pools, so a mastermind's schemes can field different adversaries for variety. Non-swapped legs reproduce the current generated gauntlet loadouts exactly; swapped legs carry the operator-curated variety. This file is authored data; the engine consumes it in a later work packet (per-scheme approved-loadout wiring). Group identifiers are set-qualified ext_ids (setAbbr/slug).",
   "activeYear": "2026",
   "slicing": {
-    "note": "A leg's composition for a given player count is the first N entries of each ordered pool, where N is the count below. Pools are ordered anchor-first (the mastermind's always-leads villain group), then thematically. Because the counts are monotonic, first-N produces nested sets that match the game's per-player-count setup requirements.",
+    "note": "A leg's composition for a given player count is the first N entries of each ordered pool, where N is the count below. Pools are ordered anchor-first (the mastermind's always-leads villain group), then thematically. Because the counts are monotonic, first-N produces nested sets that match the game's per-player-count setup requirements. The henchmen slice uses the scheme-effective count, not only the table value below: a scheme that prints 'Add an extra Henchman group' (Negative Zone Prison Breakout) takes base + 1 henchman groups (2 at 1-3 players, 3 at 4-5), so those legs' pools carry a third entry (core/sentinel) to make 4-5 players satisfiable.",
     "villainGroupCountByPlayerCount": {
       "1": 1,
       "2": 2,
@@ -103,7 +103,8 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",
-                    "core/hand-ninjas"
+                    "core/hand-ninjas",
+                    "core/sentinel"
                   ],
                   "variety": "Skrulls replace Brotherhood"
                 },
@@ -231,7 +232,8 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                   ],
                   "henchmanPool": [
                     "core/savage-land-mutates",
-                    "core/hand-ninjas"
+                    "core/hand-ninjas",
+                    "core/sentinel"
                   ],
                   "variety": "Savage Land Mutates replace Doombot Legion"
                 },
@@ -359,7 +361,8 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",
-                    "core/hand-ninjas"
+                    "core/hand-ninjas",
+                    "core/sentinel"
                   ],
                   "variety": null
                 },
@@ -487,7 +490,8 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                   ],
                   "henchmanPool": [
                     "core/savage-land-mutates",
-                    "core/hand-ninjas"
+                    "core/hand-ninjas",
+                    "core/sentinel"
                   ],
                   "variety": "Savage Land Mutates replace Doombot Legion"
                 },

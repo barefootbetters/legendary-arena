@@ -772,3 +772,67 @@ describe('buildVillainDeck — Killbots converted bystanders (WP-513 / D-24324)'
     assert.equal(Object.keys(result.convertedOrigins).length, 0);
   });
 });
+
+/**
+ * A minimal registry whose `core` set declares Negative Zone Prison Breakout and
+ * two Henchman groups, so a config can carry the scheme's printed "Add an extra
+ * Henchman group" (WP-796 / D-24666) — 2 groups at 1 player. Villains are omitted
+ * (an empty group list) so the assertion isolates the Henchman cards.
+ */
+function createTwoHenchmanGroupMockRegistry(): VillainDeckRegistryReader {
+  const setAbbr = 'core';
+  const coreSetData = {
+    abbr: setAbbr,
+    name: 'Core',
+    villains: [],
+    henchmen: [
+      { id: 1, slug: 'doombot-legion', name: 'Doombot Legion', imageUrl: 'https://example.com/dl.webp', abilities: [] },
+      { id: 2, slug: 'hand-ninjas', name: 'Hand Ninjas', imageUrl: 'https://example.com/hn.webp', abilities: [] },
+    ],
+    schemes: [
+      {
+        id: 3,
+        slug: 'negative-zone-prison-breakout',
+        name: 'Negative Zone Prison Breakout',
+        villainDeckTwistCount: 8,
+        imageUrl: 'https://example.com/nzpb.webp',
+        cards: [],
+      },
+    ],
+    heroes: [],
+    bystanders: [],
+    wounds: [],
+    other: [],
+  };
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: setAbbr }],
+    getSet: (abbr: string) => (abbr === setAbbr ? coreSetData : undefined),
+  } as unknown as VillainDeckRegistryReader;
+}
+
+describe('buildVillainDeck — extra Henchman group (WP-796 / D-24666)', () => {
+  it('builds 20 Henchman cards (10 per group) with no duplicate id for two groups at 1 player', () => {
+    const config: MatchSetupConfig = {
+      schemeId: 'core/negative-zone-prison-breakout',
+      mastermindId: 'core/dr-doom',
+      villainGroupIds: [],
+      henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'],
+      heroDeckIds: [],
+      bystandersCount: 5,
+      woundsCount: 5,
+      officersCount: 5,
+      sidekicksCount: 5,
+    };
+    const context = makeMockCtx({ numPlayers: 1 });
+    const result = buildVillainDeck(config, createTwoHenchmanGroupMockRegistry(), context);
+
+    const henchmanCards = result.state.deck.filter((id) => result.cardTypes[id] === 'henchman');
+    assert.equal(henchmanCards.length, 20, 'two Henchman groups must yield 20 Henchman cards');
+    assert.equal(new Set(henchmanCards).size, 20, 'every Henchman card id must be unique');
+    for (const groupSlug of ['doombot-legion', 'hand-ninjas']) {
+      const groupCards = henchmanCards.filter((id) => id.startsWith(`henchman-${groupSlug}-`));
+      assert.equal(groupCards.length, 10, `group ${groupSlug} must contribute 10 Henchman cards`);
+    }
+  });
+});

@@ -20,6 +20,7 @@ import type { MatchSetupDocument } from "@legendary-arena/registry/setupContract
 import {
   getPlayerCountSetup,
   resolveEffectiveHeroCount,
+  resolveEffectiveHenchmenCount,
   type PlayerCountSetupRow,
 } from "@legendary-arena/registry/playerCountSetup";
 
@@ -27,7 +28,7 @@ import {
 export interface PreviewSetupRequirement {
   /** The preview's player count (1–5). */
   readonly playerCount: number;
-  /** The required counts, with a scheme-aware `heroCount`. */
+  /** The required counts, with a scheme-aware `heroCount` and `henchmenGroupCount`. */
   readonly row: PlayerCountSetupRow;
 }
 
@@ -39,7 +40,8 @@ export interface PreviewSetupRequirement {
  * @param previewDocument - The URL-driven preview document (carries playerCount
  *   and composition.schemeId), or null when no URL params are present.
  * @returns The required counts (villain groups / henchmen / heroes /
- *   villain-deck bystanders) with `heroCount` resolved for the scheme, or null.
+ *   villain-deck bystanders) with `heroCount` and `henchmenGroupCount` resolved
+ *   for the scheme, or null.
  */
 export function resolveSetupRequirement(
   previewDocument: MatchSetupDocument | null,
@@ -52,12 +54,18 @@ export function resolveSetupRequirement(
     return null;
   }
   // why: WP-526 / D-24337 — the hero count is scheme-aware (Secret Invasion
-  // requires 6). Spread a NEW row so the immutable single-source-of-truth
-  // PLAYER_COUNT_SETUP row is never mutated.
+  // requires 6), and so is the Henchman count (D-24666 — "Add an extra Henchman
+  // group" requires base + 1). Spread a NEW row so the immutable
+  // single-source-of-truth PLAYER_COUNT_SETUP row is never mutated.
   return {
     playerCount: previewDocument.playerCount,
     row: {
       ...baseRow,
+      henchmenGroupCount: resolveEffectiveHenchmenCount(
+        previewDocument.composition.schemeId,
+        previewDocument.playerCount,
+        baseRow.henchmenGroupCount,
+      ),
       heroCount: resolveEffectiveHeroCount(
         previewDocument.composition.schemeId,
         previewDocument.playerCount,

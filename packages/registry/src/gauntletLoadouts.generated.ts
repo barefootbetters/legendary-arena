@@ -408,6 +408,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'negative-zone-prison-breakout': {
+        1: { villainGroupIds: ['core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        2: { villainGroupIds: ['core/brotherhood', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        3: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        4: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
+        5: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
+      },
+    },
   },
   {
     setAbbr: 'core',
@@ -424,6 +433,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'negative-zone-prison-breakout': {
+        1: { villainGroupIds: ['core/enemies-of-asgard'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        2: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        3: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        4: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
+        5: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
+      },
+    },
   },
   {
     setAbbr: 'core',
@@ -440,6 +458,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'negative-zone-prison-breakout': {
+        1: { villainGroupIds: ['core/brotherhood'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        2: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        3: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        4: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
+        5: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
+      },
+    },
   },
   {
     setAbbr: 'core',
@@ -456,6 +483,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'negative-zone-prison-breakout': {
+        1: { villainGroupIds: ['core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        2: { villainGroupIds: ['core/brotherhood', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        3: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        4: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
+        5: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
+      },
+    },
   },
   {
     setAbbr: 'cosm',
@@ -968,6 +1004,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'asgard-under-siege': {
+        1: { villainGroupIds: ['msp1/iron-foes'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots'] },
+        2: { villainGroupIds: ['msp1/chitauri', 'msp1/iron-foes'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots'] },
+        3: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard', 'msp1/iron-foes'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots'] },
+        4: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard', 'msp1/iron-foes'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots', 'msp1/hydra-spies'] },
+        5: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard', 'msp1/gamma-hunters', 'msp1/iron-foes'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots', 'msp1/hydra-spies'] },
+      },
+    },
   },
   {
     setAbbr: 'msp1',
@@ -984,6 +1029,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'asgard-under-siege': {
+        1: { villainGroupIds: ['msp1/enemies-of-asgard'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots'] },
+        2: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots'] },
+        3: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard', 'msp1/gamma-hunters'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots'] },
+        4: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard', 'msp1/gamma-hunters'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots', 'msp1/hydra-spies'] },
+        5: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard', 'msp1/gamma-hunters', 'msp1/hydra'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots', 'msp1/hydra-spies'] },
+      },
+    },
   },
   {
     setAbbr: 'msp1',
@@ -1000,6 +1054,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'asgard-under-siege': {
+        1: { villainGroupIds: ['msp1/hydra'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots'] },
+        2: { villainGroupIds: ['msp1/chitauri', 'msp1/hydra'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots'] },
+        3: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard', 'msp1/hydra'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots'] },
+        4: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard', 'msp1/hydra'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots', 'msp1/hydra-spies'] },
+        5: { villainGroupIds: ['msp1/chitauri', 'msp1/enemies-of-asgard', 'msp1/gamma-hunters', 'msp1/hydra'], henchmanGroupIds: ['msp1/hammer-drone-army', 'msp1/hydra-pilots', 'msp1/hydra-spies'] },
+      },
+    },
   },
   {
     setAbbr: 'nmut',
@@ -1448,6 +1511,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'invasion-of-the-venom-symbiotes': {
+        1: { villainGroupIds: ['vnom/life-foundation'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        2: { villainGroupIds: ['vnom/life-foundation', 'vnom/poisons'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'vnom/life-foundation', 'vnom/poisons'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'vnom/life-foundation', 'vnom/poisons'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas', 'co2e/savage-land-mutates'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'vnom/life-foundation', 'vnom/poisons'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas', 'co2e/savage-land-mutates'] },
+      },
+    },
   },
   {
     setAbbr: 'vnom',
@@ -1464,6 +1536,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'invasion-of-the-venom-symbiotes': {
+        1: { villainGroupIds: ['vnom/poisons'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        2: { villainGroupIds: ['vnom/life-foundation', 'vnom/poisons'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'vnom/life-foundation', 'vnom/poisons'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'vnom/life-foundation', 'vnom/poisons'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas', 'co2e/savage-land-mutates'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'vnom/life-foundation', 'vnom/poisons'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas', 'co2e/savage-land-mutates'] },
+      },
+    },
   },
   {
     setAbbr: 'wpnx',

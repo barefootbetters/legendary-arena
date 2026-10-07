@@ -72,6 +72,17 @@ export interface CardRegistryReader {
    * real Game.setup.
    */
   resolveEffectiveHeroCount?(schemeId: string, numPlayers: number, baseHeroCount: number): number;
+  /**
+   * Scheme-aware effective Henchman-group count (D-24666 — the printed "Add an
+   * extra Henchman group" schemes require base + 1).
+   *
+   * why: read structurally off the registry object, like `resolveEffectiveHeroCount`,
+   * so the engine reaches the ONE registry-side definition without importing the
+   * registry package. Optional so a hand-rolled test mock that omits it falls back
+   * to the base `henchmenGroupCount` (the `?.`/`??` below); every production registry
+   * impl carries it as a required member of `CardRegistry`.
+   */
+  resolveEffectiveHenchmenCount?(schemeId: string, numPlayers: number, baseHenchmenCount: number): number;
 }
 
 /**
@@ -502,8 +513,17 @@ function validatePlayerCountComposition(
   if (row === undefined) {
     return;
   }
+  const schemeId = typeof input.schemeId === 'string' ? input.schemeId : '';
   checkCompositionCount('villainGroupIds', 'villain groups', row.villainGroupCount, numPlayers, input, errors);
-  checkCompositionCount('henchmanGroupIds', 'henchmen groups', row.henchmenGroupCount, numPlayers, input, errors);
+  // why: D-24666 — the Henchman-group requirement is scheme-aware ("Add an extra
+  // Henchman group" requires base + 1). The `?.`/`?? row.henchmenGroupCount`
+  // fallback keeps a table-only test mock (no resolver method) on the base count;
+  // every production registry carries the resolver (required on CardRegistry), so
+  // it never reverts in a real Game.setup.
+  const requiredHenchmenCount =
+    registry.resolveEffectiveHenchmenCount?.(schemeId, numPlayers, row.henchmenGroupCount) ??
+    row.henchmenGroupCount;
+  checkCompositionCount('henchmanGroupIds', 'henchmen groups', requiredHenchmenCount, numPlayers, input, errors);
   // why: D-24337 — the hero-group requirement is scheme-aware. Forward the
   // config's schemeId (already in `input`) to the registry-side resolver so a
   // scheme with a printed hero-count override (Secret Invasion "6 Heroes")
@@ -511,7 +531,6 @@ function validatePlayerCountComposition(
   // test mock (no resolver method) on the base count; every production registry
   // carries the resolver (required on CardRegistry), so it never reverts in a
   // real Game.setup.
-  const schemeId = typeof input.schemeId === 'string' ? input.schemeId : '';
   const requiredHeroCount =
     registry.resolveEffectiveHeroCount?.(schemeId, numPlayers, row.heroCount) ?? row.heroCount;
   checkCompositionCount('heroDeckIds', 'heroes', requiredHeroCount, numPlayers, input, errors);

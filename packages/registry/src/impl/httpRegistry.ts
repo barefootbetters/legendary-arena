@@ -16,7 +16,11 @@ import {
   applyQuery,
   buildHealthReport,
 } from "../shared.js";
-import { PLAYER_COUNT_SETUP, resolveEffectiveHeroCount } from "../playerCountSetup.js";
+import {
+  PLAYER_COUNT_SETUP,
+  resolveEffectiveHeroCount,
+  resolveEffectiveHenchmenCount,
+} from "../playerCountSetup.js";
 import { hashCanonicalJson, deriveRegistryVersion } from "../canonicalJson.js";
 import type {
   CardRegistry,
@@ -178,6 +182,11 @@ export async function createRegistryFromHttp(
     // object (like playerCountSetup) so the engine reaches the single definition
     // structurally without importing this package.
     resolveEffectiveHeroCount,
+
+    // why: D-24666 — the scheme-aware Henchman-count override rides on the
+    // registry object (like resolveEffectiveHeroCount) so the engine reaches the
+    // single definition structurally without importing this package.
+    resolveEffectiveHenchmenCount,
 
     /** @returns High-level counts for the registry. */
     info(): RegistryInfo {

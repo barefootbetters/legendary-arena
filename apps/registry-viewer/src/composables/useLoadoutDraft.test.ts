@@ -403,6 +403,71 @@ describe("useLoadoutDraft — composed readiness", () => {
   });
 });
 
+// A registry carrying core Negative Zone Prison Breakout (its printed "Add an
+// extra Henchman group", D-24666) and two Henchman groups, so a 1-player NZPB
+// draft can be built with either 1 or 2 groups.
+const NEGATIVE_ZONE_REGISTRY = makeRegistry([
+  { extId: "core/negative-zone-prison-breakout", cardType: "scheme" },
+  { extId: "core/midtown-bank-robbery", cardType: "scheme" },
+  { extId: "core/loki", cardType: "mastermind" },
+  { extId: "core/hydra", cardType: "villain" },
+  { extId: "core/sentinel", cardType: "henchman" },
+  { extId: "core/hand-ninjas", cardType: "henchman" },
+  { extId: "core/spider-man", cardType: "hero" },
+  { extId: "core/wolverine", cardType: "hero" },
+  { extId: "core/storm", cardType: "hero" },
+]);
+
+/** Builds a 1-player draft on NEGATIVE_ZONE_REGISTRY for a scheme and its Henchman groups. */
+function makeSoloHenchmenDraft(schemeSlug: string, henchmanGroupIds: string[]) {
+  const api = useLoadoutDraft(NEGATIVE_ZONE_REGISTRY);
+  api.setPlayerCount(1); // base: 1 villain / 1 henchman / 3 heroes
+  api.prefillFromTheme(
+    makeTheme(
+      makeSetupIntent({
+        schemeId: schemeSlug,
+        mastermindId: "loki",
+        villainGroupIds: ["hydra"],
+        henchmanGroupIds,
+        heroDeckIds: ["spider-man", "wolverine", "storm"],
+      }),
+    ),
+  );
+  return api;
+}
+
+describe("useLoadoutDraft — extra Henchman group (WP-796 / D-24666)", () => {
+  it("the required row shows 2 Henchman groups for a 1p Negative Zone Prison Breakout draft", () => {
+    const api = makeSoloHenchmenDraft("negative-zone-prison-breakout", ["sentinel"]);
+    assert.equal(api.requiredPlayerCountSetup.value?.henchmenGroupCount, 2);
+    api.setPlayerCount(4);
+    assert.equal(api.requiredPlayerCountSetup.value?.henchmenGroupCount, 3);
+  });
+
+  it("a 1-group 1p NZPB draft is not ready (henchmen required 2, actual 1)", () => {
+    const api = makeSoloHenchmenDraft("negative-zone-prison-breakout", ["sentinel"]);
+    assert.deepEqual(api.errors.value, []);
+    const mismatches: ReadonlyArray<{ field: string; required: number; actual: number }> =
+      api.playerCountCompositionMismatches.value;
+    const henchman = mismatches.find((mismatch) => mismatch.field === "henchmanGroupIds");
+    assert.equal(henchman?.required, 2);
+    assert.equal(henchman?.actual, 1);
+    assert.equal(api.isReady.value, false);
+  });
+
+  it("a 2-group 1p NZPB draft is ready", () => {
+    const api = makeSoloHenchmenDraft("negative-zone-prison-breakout", ["sentinel", "hand-ninjas"]);
+    assert.deepEqual(api.playerCountCompositionMismatches.value, []);
+    assert.equal(api.isReady.value, true);
+  });
+
+  it("leaves Midtown Bank Robbery on the base Henchman count", () => {
+    const api = makeSoloHenchmenDraft("midtown-bank-robbery", ["sentinel"]);
+    assert.equal(api.requiredPlayerCountSetup.value?.henchmenGroupCount, 1);
+    assert.equal(api.isReady.value, true);
+  });
+});
+
 // A registry whose core/magneto mastermind carries an Always-Leads clause
 // (Magneto Always Leads the Brotherhood), plus a cross-set case: an
 // xmen/magneto mastermind that also leads "brotherhood", with a same-set
