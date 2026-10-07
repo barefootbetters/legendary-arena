@@ -46710,6 +46710,8 @@ D-24486 already kept each `-N[icon:attack]` from becoming a phantom +N grant, so
 
 **Reserved by:** NUMBER-LEDGER D-24663 (#2610). Related: WP-794 / EC-831, D-24652 (WP-790 lazy-field pattern, `AttackTargetName`, `formatAttackTargets`), D-24295 (`CITY_SPACE_NAMES` / `citySpaceNameForIndex`), D-24486 (negative-icon suppression), D-24623 (`gate-only` hollow), D-24574 (projected `fightCost`), D-24603 (Henchmen are Villains), D-24372 (runtime drift pins), WP-795 / D-24664 (Spinning Cyclone).
 
+**Live-verify (D-24026), 2026-10-06: Tidal Wave Bridge half PASS.** Solo Magneto / Midtown Bank Robbery match `1K760WkJX68` (build `1f4ce39`, set up after the deploy): each Tidal Wave play logged "Villains you fight on the Bridge this turn get -2 attack." (11.2.10, 14.2.2, 15.2.4, 16.2.7, 18.2.5), and Jeff saw the Bridge Villain's cost drop with the altered-cost badge. Its Ranged Mastermind line was correctly blocked with no other Ranged Hero played. Still pending: Lightning Bolt (Rooftops; not recruited in this match) and the Mastermind −2 with Ranged.
+
 ---
 
 ### D-24664 — Storm Spinning Cyclone: one active-player move-a-Villain choice, swap-if-occupied, moved-Villain-only rescue (WP-795 / EC-832) (Active 2026-10-06)
@@ -46732,6 +46734,8 @@ Around it: the block-all guard `hasPendingMoveVillainChoice(G)` beside every Cov
 **Gates.** game-engine 4883 → 4918 / 0 fail (+35; 1122 → 1131 suites); arena-client 2270 → 2278 / 0 fail (+8); vue-tsc 0; dashboard 570 / 0 (totalObs pin unchanged); `pnpm -r --no-bail test` 0 fail across every package; replay fixtures green and byte-unchanged, no sentinel re-pin. Revert proofs 4/4: the park, the swap, the moved-only rescue and the filter pass-through each fail a new test when reverted. `cards:check` reproducible after the apply script (one `core.json` line); `ledger:heroes`, `mechanics:metadata` and `effect-index` regenerated with a real one-row diff; `sim:runtime-observed` current (a line-ending-only regen reverted); `sim:coverage --check` OK.
 
 **Reserved by:** NUMBER-LEDGER D-24664 (#2610). Related: WP-719 / D-24541 (Covering Fire, the template), D-24284 (active-player scoping), D-24295 (City space names), D-24336 (two-Villain swap), D-24603 (Henchmen are Villains), D-12803 (audience filter), D-24372 (runtime drift pins), D-24648 (anyPendingChoice freeze class), D-6512 (component authoring form).
+
+**Live-verify (D-24026), 2026-10-06: PASS.** Solo Magneto / Midtown Bank Robbery match `1K760WkJX68` (build `1f4ce39`, set up after the deploy): Spinning Cyclone moved a Villain to an empty space (5.2.4), swapped with an occupied space (8.2.8, 10.2.3), rescued the moved Villain's Bystanders (12.2.3, 14.2.6, 18.2.3; 16 rescued in all, matching the final `bystandersRescued` 16), logged an empty City (15.2.8) and logged a declined move (19.2.11).
 
 ---
 

@@ -492,10 +492,10 @@
       "card": "Storm",
       "ability": "Lightning Bolt / Tidal Wave",
       "wp": "WP-794",
-      "state": "pending",
+      "state": "partial",
       "date": "2026-10-06",
-      "evidence": "Not exercised yet: Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 452o26A0iXw was set up before the deploy, so it kept its setup-time hero hooks (D-24663 §6) and the card did nothing. Lightning Bolt was played 16 times (first at 4.2.1) with no reduction line.",
-      "note": "Needs a match set up after the #2614 deploy: Lightning Bolt with a Villain on the Rooftops (cost -2 with the altered-cost badge, reduced spend), and Tidal Wave Bridge -2 / Ranged Mastermind -2."
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, set up after the deploy): each Tidal Wave play logged \"Villains you fight on the Bridge this turn get -2 attack.\" (11.2.10, 14.2.2, 15.2.4, 16.2.7, 18.2.5) and the Bridge Villain showed the reduced cost with the altered-cost badge (Jeff, on screen). The Ranged Mastermind line was correctly blocked with no other Ranged Hero played.",
+      "note": "Still pending: Lightning Bolt Rooftops -2 (not recruited), and Tidal Wave Mastermind -2 after another Ranged Hero. The reduced spend is not logged; confirm on screen."
     },
     {
       "key": "core/storm|spinning-cyclone",
@@ -503,10 +503,10 @@
       "card": "Storm",
       "ability": "Spinning Cyclone",
       "wp": "WP-795",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-10-06",
-      "evidence": "Not exercised yet: Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 452o26A0iXw was set up before the deploy, so it kept its setup-time hero hooks (D-24663 §6) and the card did nothing. Spinning Cyclone was played 9 times (first at 8.2.1) with no move prompt.",
-      "note": "Needs a match set up after the #2615 deploy: move a Villain to a new City space (swap if occupied) and rescue its Bystanders."
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, set up after the deploy): moved a Villain to an empty space (5.2.4), swapped with an occupied space (8.2.8, 10.2.3), rescued the moved Villain's Bystanders (12.2.3, 14.2.6, 18.2.3), logged an empty City (15.2.8) and a declined move (19.2.11).",
+      "note": "The rescue happens at the move, not the fight, so the later fight against that Villain rescues nothing."
     },
     {
       "key": "core/thor|recruit-as-attack",
