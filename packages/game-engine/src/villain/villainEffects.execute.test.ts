@@ -1938,7 +1938,31 @@ describe('executeVillainAbilities — rescue-bystanders-current-by-trait-count (
     executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
     assert.equal(G.playerZones['0']!.victory.length, 0, 'no Avengers → no rescue');
     assert.equal(G.piles.bystanders.length, 2, 'supply untouched');
-    assert.match(G.messages![0]!.text, /Fight effect: rescued 0 Bystander\(s\)/);
+    // why: a zero rescue names its reason, never "rescued 0 Bystander(s)".
+    assert.equal(
+      G.messages![0]!.text,
+      'Fight effect: Player 0 has no avengers Hero in hand or play, so no Bystander is rescued.',
+    );
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+  });
+
+  it('zero rescued from an empty supply names the empty supply (blocked)', () => {
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      playerZones: {
+        '0': { deck: [], hand: [AV_A], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      bystanders: [] as CardExtId[],
+      messages: [],
+      cardTraits: TRAITS,
+    });
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.victory.length, 0);
+    assert.equal(
+      G.messages![0]!.text,
+      'Fight effect: Player 0 has avengers Heroes but the Bystander supply is empty, so no Bystander is rescued.',
+    );
     assert.equal(G.messages![0]!.outcome, 'blocked');
   });
 });

@@ -2551,11 +2551,29 @@ function villainEffectRescueBystandersCurrentByTraitCount(
     rescued += 1;
   }
   // why: D-24290 — Fight-timed self-narration (see draw-cards-current). Zero
-  // matching Heroes (or an empty supply) is a reachable no-op (`blocked`).
+  // matching Heroes, or an empty supply, is a reachable no-op: it logs `blocked`
+  // with the reason (the Xavier's Nemesis / Electromagnetic Bubble wording), never a
+  // "rescued 0 Bystander(s)" line.
+  if (rescueCount === 0) {
+    pushLog(
+      G,
+      `Fight effect: Player ${currentPlayer} has no ${requireValue} Hero in hand or play, so no Bystander is rescued.`,
+      'blocked',
+    );
+    return { targets: [] };
+  }
+  if (rescued === 0) {
+    pushLog(
+      G,
+      `Fight effect: Player ${currentPlayer} has ${requireValue} Heroes but the Bystander supply is empty, so no Bystander is rescued.`,
+      'blocked',
+    );
+    return { targets: [] };
+  }
   pushLog(
     G,
     `Fight effect: rescued ${String(rescued)} Bystander(s) (one per your ${requireValue} Hero).`,
-    rescued > 0 ? 'applied' : 'blocked',
+    'applied',
   );
   return { targets: [] };
 }
