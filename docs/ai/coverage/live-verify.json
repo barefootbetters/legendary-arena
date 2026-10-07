@@ -492,10 +492,10 @@
       "card": "Storm",
       "ability": "Lightning Bolt / Tidal Wave",
       "wp": "WP-794",
-      "state": "pending",
-      "date": "2026-10-06",
-      "evidence": "Not exercised yet: Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 452o26A0iXw was set up before the deploy, so it kept its setup-time hero hooks (D-24663 §6) and the card did nothing. Lightning Bolt was played 16 times (first at 4.2.1) with no reduction line.",
-      "note": "Needs a match set up after the #2614 deploy: Lightning Bolt with a Villain on the Rooftops (cost -2 with the altered-cost badge, reduced spend), and Tidal Wave Bridge -2 / Ranged Mastermind -2."
+      "state": "partial",
+      "date": "2026-10-07",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): Tidal Wave logged \"Villains you fight on the Bridge this turn get -2 attack\" 5 times (11.2.10, 14.2.2, 15.2.4, 16.2.7, 18.2.5). On turn 14, 9 attack paid the Bridge Sentinel (3 - 2 = 1) and Magneto (8), which is unaffordable without the reduction (11).",
+      "note": "Lightning Bolt (Rooftops -2) was not drawn, and the Ranged Mastermind -2 line was blocked every time (no other Ranged Hero played before it)."
     },
     {
       "key": "core/storm|spinning-cyclone",
@@ -503,10 +503,10 @@
       "card": "Storm",
       "ability": "Spinning Cyclone",
       "wp": "WP-795",
-      "state": "pending",
-      "date": "2026-10-06",
-      "evidence": "Not exercised yet: Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 452o26A0iXw was set up before the deploy, so it kept its setup-time hero hooks (D-24663 §6) and the card did nothing. Spinning Cyclone was played 9 times (first at 8.2.1) with no move prompt.",
-      "note": "Needs a match set up after the #2615 deploy: move a Villain to a new City space (swap if occupied) and rescue its Bystanders."
+      "state": "verified",
+      "date": "2026-10-07",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): moved a Villain to an empty space (5.2.4), swapped with an occupant (8.2.8, 10.2.3), rescued the moved Villain's Bystanders (12.2.3, 14.2.6, 18.2.3), logged \"found no Villain\" with an empty City (15.2.8, 16.2.11) and declined (19.2.11). No freeze.",
+      "note": ""
     },
     {
       "key": "core/thor|recruit-as-attack",
@@ -1010,9 +1010,9 @@
       "ability": "Tactic: Crushing Shockwave",
       "wp": "WP-506",
       "state": "partial",
-      "date": "2026-10-04",
-      "evidence": "Solo Magneto / Midtown Bank Robbery, match trJwnB0oLeg (build afd76ff)",
-      "note": "Prints \"each other player\": a correct no-op solo. Needs a 2-player game to see the reveal-or-gain-two-Wounds."
+      "date": "2026-10-07",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): defeated at 16.2.17; solo, so no other player, and no log line at all.",
+      "note": "Solo now logs a no-op line (D-24665). The multi-seat reveal-or-two-Wounds branch still needs a 2-player game."
     },
     {
       "key": "mastermind:core/magneto|bitter-captor",

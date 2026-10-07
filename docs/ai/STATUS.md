@@ -7,6 +7,15 @@
 
 ## Current State
 
+### D-24665 — solo Crushing Shockwave says it did nothing; Storm WP-794 / WP-795 live-verified (2026-10-07)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Defeating Magneto's **Crushing Shockwave** in a solo game now logs that there is no other player to reveal or take Wounds, instead of resolving silently. Multiplayer is unchanged.
+
+- **Engine only** (`tacticHandlers.ts`). game-engine 4994 / 0 fail (+1, revert-proofed); server 1455 / 0.
+- **Storm live-verify (match `1K760WkJX68`, build `1f4ce39`):**
+  - **D-24664 Spinning Cyclone: PASS.** Move, swap, moved-Villain-only rescue, the no-Villain line, and decline were all seen.
+  - **D-24663: Tidal Wave Bridge half PASS.** Lightning Bolt and the Ranged Mastermind -2 line are still pending.
+
 ### Declining an optional KO is logged (direct fix) (2026-10-06)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Declining the "you may KO a card" choice from Dangerous Rescue, Battlefield Promotion and the other optional-KO cards now logs "Player N chose not to KO a card for {card}'s ability." Before, the play line had nothing after it, which looked the same as an ability that never fired (solo Magneto / Midtown match `452o26A0iXw`).
