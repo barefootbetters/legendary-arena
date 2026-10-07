@@ -494,7 +494,7 @@
       "wp": "WP-794",
       "state": "partial",
       "date": "2026-10-07",
-      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): Tidal Wave logged \"Villains you fight on the Bridge this turn get -2 attack\" 5 times (11.2.10, 14.2.2, 15.2.4, 16.2.7, 18.2.5). On turn 14, 9 attack paid the Bridge Sentinel (3 - 2 = 1) and Magneto (8), which is unaffordable without the reduction (11).",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): Tidal Wave logged \"Villains you fight on the Bridge this turn get -2 attack\" 5 times (11.2.10, 14.2.2, 15.2.4, 16.2.7, 18.2.5). On turn 14, 9 attack paid the Bridge Sentinel (3 - 2 = 1) and Magneto (8), which is unaffordable without the reduction (11). Jeff saw the Bridge Villain's cost drop with the altered-cost badge on screen.",
       "note": "Lightning Bolt (Rooftops -2) was not drawn, and the Ranged Mastermind -2 line was blocked every time (no other Ranged Hero played before it)."
     },
     {

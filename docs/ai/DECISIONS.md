@@ -46710,7 +46710,7 @@ D-24486 already kept each `-N[icon:attack]` from becoming a phantom +N grant, so
 
 **Reserved by:** NUMBER-LEDGER D-24663 (#2610). Related: WP-794 / EC-831, D-24652 (WP-790 lazy-field pattern, `AttackTargetName`, `formatAttackTargets`), D-24295 (`CITY_SPACE_NAMES` / `citySpaceNameForIndex`), D-24486 (negative-icon suppression), D-24623 (`gate-only` hollow), D-24574 (projected `fightCost`), D-24603 (Henchmen are Villains), D-24372 (runtime drift pins), WP-795 / D-24664 (Spinning Cyclone).
 
-**Live-verify (D-24026), 2026-10-07: Tidal Wave Bridge half PASS.** Match `1K760WkJX68` (build `1f4ce39`): Tidal Wave logged the Bridge -2 line, and on turn 14 nine attack paid the Bridge Sentinel at 1 plus Magneto at 8, which is unaffordable at the unreduced 11. Lightning Bolt (Rooftops) and the Ranged Mastermind -2 line are still unexercised live.
+**Live-verify (D-24026), 2026-10-07: Tidal Wave Bridge half PASS.** Match `1K760WkJX68` (build `1f4ce39`): Tidal Wave logged the Bridge -2 line, and on turn 14 nine attack paid the Bridge Sentinel at 1 plus Magneto at 8, which is unaffordable at the unreduced 11. Lightning Bolt (Rooftops) and the Ranged Mastermind -2 line are still unexercised live. The on-screen half is confirmed too: Jeff saw the Bridge Villain's cost drop with the altered-cost badge.
 
 ---
 
