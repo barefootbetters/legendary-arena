@@ -4,6 +4,8 @@ import { storeToRefs } from 'pinia';
 import { useUiStateStore } from '../stores/uiState';
 import { buildGameLogText } from './log/gameLogExport';
 import { downloadTextFile } from '../lib/downloadTextFile';
+import { useBuildProvenanceStore } from '../stores/buildProvenance';
+import { formatProvenanceHeaderLines } from '../diagnostics/buildProvenance';
 
 /**
  * Small fixed-position "Download game log" button, mounted once at the play
@@ -62,7 +64,11 @@ export default defineComponent({
       if (current === null) {
         return;
       }
-      downloadTextFile(buildFileName(), buildGameLogText(current.log));
+      // why: stamp the client build, server build and match-creation time above the
+      // transcript (read synchronously from the store the play root loaded); no lines
+      // until that load finishes, so the transcript falls back to plain text.
+      const headerLines = formatProvenanceHeaderLines(useBuildProvenanceStore().provenance);
+      downloadTextFile(buildFileName(), buildGameLogText(current.log, headerLines));
     }
 
     return { hasDownloadableLog, onDownloadGameLog };

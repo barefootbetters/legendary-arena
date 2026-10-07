@@ -47,6 +47,14 @@ export default defineComponent({
       type: Array as PropType<readonly LogEntry[]>,
       required: true,
     },
+    // why: the build-provenance header (client build, server build, match created)
+    // the play pages pass for the Copy / Save transcript. Empty by default, so a
+    // replay or any caller without provenance gets the plain transcript.
+    headerLines: {
+      type: Array as PropType<readonly string[]>,
+      required: false,
+      default: () => [],
+    },
   },
   setup(props) {
     // why: the compact scroll viewport is the panel <section> (overflow-y: auto).
@@ -111,7 +119,7 @@ export default defineComponent({
         return;
       }
       try {
-        await navigator.clipboard.writeText(buildGameLogText(props.log));
+        await navigator.clipboard.writeText(buildGameLogText(props.log, props.headerLines));
       } catch (clipboardError) {
         // why: a clipboard rejection is intentionally swallowed — Save remains.
       }
@@ -126,7 +134,7 @@ export default defineComponent({
       // inline (2nd copy — §16.1 duplicate-first); extracting it would touch the
       // out-of-scope DiagnosticExportButton. This Save is a human-readable log
       // transcript, deliberately distinct from that JSON diagnostics export.
-      const transcript = buildGameLogText(props.log);
+      const transcript = buildGameLogText(props.log, props.headerLines);
       const blob = new Blob([transcript], { type: 'text/plain' });
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement('a');

@@ -20,6 +20,7 @@
  * Posture locked by WP-228 / EC-260 / D-22801.
  */
 
+import type { BuildProvenance } from './buildProvenance';
 import { buildEffectProvenance, type EffectProvenance } from './effectProvenance';
 
 /**
@@ -108,6 +109,10 @@ export interface DiagnosticContext {
   // buildTransportDiagnostics from the connection store + the capture clock. A
   // typed block (unlike the opaque payloads above) so the builder/tests read it.
   transport: TransportDiagnostics;
+  // why: which client build, server build and match-creation time produced this
+  // match (diagnostics/buildProvenance.ts). Optional: the play root loads it once
+  // per match, and it is absent until that load finishes or outside a match.
+  buildProvenance?: BuildProvenance | null;
 }
 
 /**
@@ -147,6 +152,12 @@ export interface DiagnosticReport {
    * {@link buildTransportDiagnostics} for how the caller assembles it.
    */
   transport: TransportDiagnostics;
+  /**
+   * The client build, the running server build and the match creation time, with a
+   * flag when the match was created before the running server booted (so it may be
+   * running card rules from an earlier build). Null when not collected.
+   */
+  buildProvenance: BuildProvenance | null;
   /**
    * Derived card-effect provenance (WP-314 / D-24100): what the turn is blocked on
    * (`awaitingPlayerInput`) and the recently-played cards with an inferred `outcome`,
@@ -608,6 +619,7 @@ export function buildDiagnosticReport(
     // uiStateSnapshot / matchSetup) so the builder stays pure — the one clock
     // subtraction already happened in buildTransportDiagnostics at collect time.
     transport: context.transport,
+    buildProvenance: context.buildProvenance ?? null,
     // why: derive provenance from the snapshot the caller already collected — no new
     // context field, so the impure exporter (DiagnosticExportButton) is unchanged. No
     // resolver is passed: the arena-client has no client-side card-text source, so

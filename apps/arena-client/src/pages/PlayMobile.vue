@@ -50,6 +50,8 @@ import DoOverPrompt from '../components/play/DoOverPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CoveringFireChoicePrompt from '../components/play/CoveringFireChoicePrompt.vue';
 import MoveVillainChoicePrompt from '../components/play/MoveVillainChoicePrompt.vue';
+import { useBuildProvenanceStore } from '../stores/buildProvenance';
+import { formatProvenanceHeaderLines } from '../diagnostics/buildProvenance';
 import SplitFaceChoicePrompt from '../components/play/SplitFaceChoicePrompt.vue';
 import CountScaledChoicePrompt from '../components/play/CountScaledChoicePrompt.vue';
 import UndercoverChoicePrompt from '../components/play/UndercoverChoicePrompt.vue';
@@ -327,6 +329,13 @@ export default defineComponent({
     const hasPendingDoOver = computed<boolean>(
       () => snapshot.value?.pendingDoOver !== undefined,
     );
+    // why: the build-provenance header for the game-log Copy / Save (client build,
+    // server build, match created), read from the store the play root loads once per
+    // match. Empty until that load finishes, so the transcript falls back to plain text.
+    const buildProvenanceStore = useBuildProvenanceStore();
+    const gameLogHeaderLines = computed<string[]>(() =>
+      formatProvenanceHeaderLines(buildProvenanceStore.provenance),
+    );
     // why: WP-719 / D-24541 — derived from UIState.pendingCoveringFireChoice !== undefined; blocks
     // end-turn / pass-priority / heal at EVERY stage while a Covering Fire choose-one is pending.
     const hasPendingCoveringFireChoice = computed<boolean>(
@@ -494,6 +503,7 @@ export default defineComponent({
       hasPendingSmashDiscard,
       hasPendingDoOver,
       hasPendingCoveringFireChoice,
+      gameLogHeaderLines,
       hasPendingMoveVillainChoice,
       hasPendingSplitFaceChoice,
       hasPendingVictoryPileCardPick,
@@ -677,7 +687,7 @@ export default defineComponent({
              projection — the engine owns log authorship (D-20002). -->
         <section class="play-mobile__log" data-testid="play-mobile-log">
           <h2 class="play-mobile__log-heading">Game Log</h2>
-          <GameLogPanel :log="snapshot.log" />
+          <GameLogPanel :log="snapshot.log" :header-lines="gameLogHeaderLines" />
         </section>
       </main>
       <footer

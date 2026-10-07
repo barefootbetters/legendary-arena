@@ -14,6 +14,7 @@ import {
 import { readMatchSetup } from '../diagnostics/matchSetupSession';
 import { useUiStateStore } from '../stores/uiState';
 import { useConnectionStore } from '../stores/connection';
+import { useBuildProvenanceStore } from '../stores/buildProvenance';
 
 /**
  * Small, unobtrusive fixed-position "Download diagnostics" button mounted on
@@ -72,6 +73,9 @@ export default defineComponent({
         // store; timeSinceLastFrameMs derives from the same click-time clock so
         // the pure builder stays clock-free.
         transport: buildTransportDiagnostics(useConnectionStore(), capturedAtMs),
+        // why: read synchronously from the store the play root loaded, so the click
+        // handler stays synchronous; null until that load finishes.
+        buildProvenance: useBuildProvenanceStore().provenance,
       };
     }
 
