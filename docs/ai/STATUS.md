@@ -7,6 +7,13 @@
 
 ## Current State
 
+### Declining an optional KO is logged (direct fix) (2026-10-06)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Declining the "you may KO a card" choice from Dangerous Rescue, Battlefield Promotion and the other optional-KO cards now logs "Player N chose not to KO a card for {card}'s ability." Before, the play line had nothing after it, which looked the same as an ability that never fired (solo Magneto / Midtown match `452o26A0iXw`).
+
+- **Engine only** (`optionalKoReward.resolve.ts`), log line only. The two tests that pinned the silent decline now assert the new line. game-engine 4991 / 0; `pnpm -r --no-bail test` 0 failures. Replay fixtures unchanged; the bot never declines.
+- **Live-verify (D-24026): pending.** Decline a Dangerous Rescue KO and look for the line.
+
 ### WP-795 — Storm's Spinning Cyclone moves a Villain and rescues its Bystanders (EC-832 / D-24664) (2026-10-06)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** core Storm's **Spinning Cyclone** now works. With a
