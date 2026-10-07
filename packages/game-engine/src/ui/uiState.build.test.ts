@@ -2535,3 +2535,33 @@ describe('buildUIState — economy.restrictedAttack projection (WP-790 / D-24652
     assert.ok(!('restrictedAttack' in buildUIState(gameState, mockCtx).economy));
   });
 });
+
+describe('buildUIState — projected fightCost shows the fight-cost reduction (WP-794 / D-24663)', () => {
+  it('a Rooftops villain printed 5 projects 3 after a rooftops 2 reduction; a Streets villain stays 5', () => {
+    const gameState = createTestGameState();
+    const rooftopsVillain = 'roof-villain' as CardExtId;
+    const streetsVillain = 'street-villain' as CardExtId;
+    gameState.city = [null, null, rooftopsVillain, streetsVillain, null];
+    gameState.cardStats[rooftopsVillain] = makeCardStatEntry({ fightCost: 5 });
+    gameState.cardStats[streetsVillain] = makeCardStatEntry({ fightCost: 5 });
+    gameState.turnEconomy = {
+      ...gameState.turnEconomy,
+      fightCostReductions: [{ target: 'rooftops', amount: 2, sourceCardId: 'bolt' as CardExtId }],
+    };
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.city.spaces[2]!.fightCost, 3);
+    assert.equal(result.city.spaces[3]!.fightCost, 5);
+  });
+
+  it('the Mastermind projects base − 2 after a mastermind 2 reduction', () => {
+    const gameState = createTestGameState();
+    gameState.cardStats[gameState.mastermind.baseCardId] = makeCardStatEntry({ fightCost: 8 });
+    gameState.turnEconomy = {
+      ...gameState.turnEconomy,
+      fightCostReductions: [{ target: 'mastermind', amount: 2, sourceCardId: 'wave' as CardExtId }],
+    };
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.fightCost, 6);
+    assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState));
+  });
+});

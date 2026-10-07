@@ -10,7 +10,7 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
-import type { TurnEconomy, CardStatEntry, AttackTargetName, RestrictedAttackGrant } from './economy.types.js';
+import type { TurnEconomy, CardStatEntry, AttackTargetName, RestrictedAttackGrant, FightCostReduction } from './economy.types.js';
 import { matchesShieldOrHydra } from './shieldMembership.js';
 // why: D-13702 / D-18706 fan-out — economy.logic.ts must resolve hero AND
 // villain card-instance ext_ids identically to the deck builders so
@@ -488,6 +488,7 @@ type CarriedTurnFields = Partial<
     | 'isPlayBothSidesActive'
     | 'bothSidesPlayedCardIds'
     | 'restrictedAttack'
+    | 'fightCostReductions'
   >
 >;
 
@@ -549,7 +550,33 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   if (economy.restrictedAttack !== undefined) {
     carried.restrictedAttack = copyRestrictedAttackGrants(economy.restrictedAttack);
   }
+  // why: WP-794 / D-24663 — carry the fight-cost reduction list ONLY when present, so a turn
+  // with no reduction keeps the key absent and both hash oracles stay byte-stable. Without the
+  // carry, the very next addResources / spend rebuild would drop the reductions and the next
+  // fight would cost full price. Copied as a new array of copied entries so no rebuild aliases
+  // the prior economy's list.
+  if (economy.fightCostReductions !== undefined) {
+    carried.fightCostReductions = copyFightCostReductions(economy.fightCostReductions);
+  }
   return carried;
+}
+
+/**
+ * Copies a fight-cost reduction list: a new array of new entry objects.
+ *
+ * @param reductions - The list to copy.
+ * @returns A copy that shares no array or object with `reductions`.
+ */
+function copyFightCostReductions(reductions: readonly FightCostReduction[]): FightCostReduction[] {
+  const copied: FightCostReduction[] = [];
+  for (const reduction of reductions) {
+    copied.push({
+      target: reduction.target,
+      amount: reduction.amount,
+      sourceCardId: reduction.sourceCardId,
+    });
+  }
+  return copied;
 }
 
 /**
@@ -1114,6 +1141,66 @@ function orderEligibleGrantsNarrowestFirst(
     return leftIndex - rightIndex;
   });
   return eligibleIndices;
+}
+
+/**
+ * Records a fight-cost reduction for the rest of the turn (WP-794 / D-24663).
+ *
+ * Appends one `{ target, amount, sourceCardId }` entry to the lazily-materialized
+ * `fightCostReductions` list (the old list, or `[]`). Every other field is carried
+ * unchanged through the single carry chokepoint. `resetTurnEconomy` drops the list
+ * at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param target - The City space, or `'mastermind'`, whose fights cost less.
+ * @param amount - How much less each such fight costs.
+ * @param sourceCardId - The hero card that played the reduction line.
+ * @returns New TurnEconomy with the reduction appended.
+ */
+export function addFightCostReduction(
+  economy: TurnEconomy,
+  target: AttackTargetName,
+  amount: number,
+  sourceCardId: CardExtId,
+): TurnEconomy {
+  const nextReductions = copyFightCostReductions(economy.fightCostReductions ?? []);
+  nextReductions.push({ target, amount, sourceCardId });
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    // why: WP-665 / D-24476 — carry the per-turn effect-draw count (mirrors woundsDrawn).
+    cardsDrawn: economy.cardsDrawn,
+    ...carryConversionFlag(economy),
+    fightCostReductions: nextReductions,
+  };
+}
+
+/**
+ * Returns the total fight-cost reduction for one target this turn (WP-794 / D-24663).
+ *
+ * Sums `amount` over the `fightCostReductions` entries whose `target` equals
+ * `target`. Entries stack and are never spent, so every fight against an eligible
+ * target reads the full sum.
+ *
+ * @param economy - Current turn economy state.
+ * @param target - The fight target (a City space name, or `'mastermind'`).
+ * @returns The summed reduction, or 0 when the list is absent or has no match.
+ */
+export function getFightCostReduction(economy: TurnEconomy, target: AttackTargetName): number {
+  if (economy.fightCostReductions === undefined) {
+    return 0;
+  }
+  let totalReduction = 0;
+  for (const reduction of economy.fightCostReductions) {
+    if (reduction.target === target) {
+      totalReduction += reduction.amount;
+    }
+  }
+  return totalReduction;
 }
 
 /**

@@ -232,6 +232,12 @@ export interface HeroEffectDescriptor {
     targets: AttackTargetName[];
     widenToMastermindWhen?: HeroCondition[];
   };
+  // why: WP-794 / D-24663 — for a 'fight-cost-reduction' effect, fightCostReductionTarget is the
+  // City space (or 'mastermind') named by the printed "Any Villain you fight on the <space> this
+  // turn gets -N[icon:attack]" / "The Mastermind gets -N[icon:attack] this turn" line; the
+  // effect's `magnitude` is N. Set only by the Step 4c clause parser. A plain string, so the hook
+  // stays JSON-serializable. Other keywords ignore it.
+  fightCostReductionTarget?: AttackTargetName;
 }
 
 // ---------------------------------------------------------------------------

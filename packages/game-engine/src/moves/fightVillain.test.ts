@@ -1139,3 +1139,51 @@ describe('fightVillain — restricted "usable only against" attack (WP-790 / D-2
     assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, true);
   });
 });
+
+describe('fightVillain — fight-cost reduction (WP-794 / D-24663)', () => {
+  /**
+   * A villain at the given City index with a rooftops 2 reduction played this turn.
+   *
+   * @param cityIndex - Where the villain sits (2 = Rooftops, 0 = Sewers).
+   * @param attack - Unspent attack.
+   * @param fightCost - The villain's printed fight cost.
+   * @returns The game state.
+   */
+  function withRooftopsReduction(cityIndex: number, attack: number, fightCost = 5): LegendaryGameState {
+    const city: LegendaryGameState['city'] = [null, null, null, null, null];
+    city[cityIndex] = 'villain-a';
+    const gameState = createMockGameState({ city });
+    gameState.cardStats['villain-a' as CardExtId] = makeCardStatEntry({ fightCost });
+    gameState.turnEconomy = makeTurnEconomy({
+      attack,
+      fightCostReductions: [{ target: 'rooftops', amount: 2, sourceCardId: 'bolt' as CardExtId }],
+    });
+    return gameState;
+  }
+
+  it('after a rooftops 2 reduction, a Rooftops fight costing 5 succeeds with 3 attack and spends 3', () => {
+    const moveContext = createMockMoveContext(withRooftopsReduction(2, 3));
+    fightVillain(moveContext, { cityIndex: 2 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 3);
+  });
+
+  it('a Sewers fight with the same 3 attack is rejected silently, G unchanged', () => {
+    const gameState = withRooftopsReduction(0, 3);
+    const stateBefore = JSON.parse(JSON.stringify(gameState));
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.equal(moveContext.G.city[0], 'villain-a', 'the villain stays in the City');
+    assert.deepEqual(JSON.parse(JSON.stringify(moveContext.G)), stateBefore);
+  });
+
+  it('Excessive Violence: rooftops -2, a cost-5 villain and 4 attack spends 4 and fires EV', () => {
+    const gameState = withRooftopsReduction(2, 4);
+    gameState.turnEconomy = { ...gameState.turnEconomy, excessiveViolencePlayedCards: ['rc' as CardExtId] };
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 2, useExcessiveViolence: true });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 4, 'reduced cost 3 + the EV extra 1');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, true);
+  });
+});

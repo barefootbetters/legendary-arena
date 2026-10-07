@@ -46665,6 +46665,51 @@ Also: server 1455 / 0; `ledger:heroes`, `ledger:villains`, `mechanics:metadata`,
 
 **Live-verify (D-24026), 2026-10-06: Silent Sniper half PASS.** Match `B59aMEnwd5M` (build `bb8b8d5`, the D-24662 merge): the bot's Silent Sniper logged "defeats Oddball (core/deadpool/oddball#1) for free." at 29.2.7, before the defeat. God of Thunder half pending: it was not played as a Hero in this match.
 
+### D-24663 — A printed fight-cost reduction is a turn-scoped `TurnEconomy` list read only by the two fight-cost resolvers (WP-794 / EC-831) (Active 2026-10-06)
+
+**Context.** Five printed lines did nothing:
+- core Storm Lightning Bolt: "Any Villain you fight on the Rooftops this turn gets -2[icon:attack]."
+- core Storm Tidal Wave: the same on the Bridge, and "[hc:ranged]: The Mastermind gets -2[icon:attack] this turn."
+- cvwr Storm & Black Panther Lightning Strike: Rooftops -1.
+- dkcy Forge Dirty Work: "[hc:tech]: … in the Sewers … -2[icon:attack]."
+
+D-24486 already kept each `-N[icon:attack]` from becoming a phantom +N grant, so these lines parsed to nothing. Tidal Wave's Ranged line logged "Its effect is not supported yet" (the D-24623 `gate-only` hollow). Surfaced in Jeff's 2-player match `s1jtBcEAOfw`: Lightning Bolt was played four times, and no Rooftops fight was ever cheaper.
+
+**Decision.**
+
+1. **A turn-scoped, lazily materialized list.** Each played line appends one `FightCostReduction { target, amount, sourceCardId }` (`target` is an `AttackTargetName`) to `TurnEconomy.fightCostReductions` through `addFightCostReduction`.
+   - The list is absent until the first reduction, carried by `carryConversionFlag` as a copied array, and dropped by `resetTurnEconomy`. It is never in `REDACTED_ECONOMY` or any `UIState` field.
+   - Only `resolveFightCost` and `resolveMastermindFightCost` read it, through `getFightCostReduction`, which sums the matching entries. Entries stack and are never spent.
+   - The fight move, the bot's legal moves and the projected `fightCost` all call those two resolvers, so they agree by construction. No move, bot, projection or client file changed.
+2. **The space is read at fight time.** `resolveFightCost` maps the Villain's current `G.city` index to a space name (`citySpaceNameForIndex`). A Villain that enters or is moved onto the Rooftops later in the turn gets the reduction. That includes WP-795 Spinning Cyclone, with no extra code, and Henchmen (D-24603).
+3. **Fight-time only.** The cards say "Any Villain **you fight**". Effects that read a Villain's printed attack still read `cardStats[...].fightCost`: Pure Fury targets, the D-24605 "N or less" lines, and the `uiState.build` `attackValue`.
+4. **The cost floors at 0 inside the resolver**, which keeps the resolver's `>= 0` promise. Patrol (`getPatrolModifier`) is added by the move after the floor, unchanged. Excessive Violence's +1 reads the reduced cost.
+5. **The parser fails closed.** A new Step 4c in `parseAbilityText` runs after Step 4a and before Step 4b.
+   - It matches the post-gate text (`abilityText.slice(leadingGatePrefixLength).trim()`) against two anchored regexes, the whole vocabulary:
+     - "Any Villain you fight (on|in) the <space> this turn gets -N[icon:attack]";
+     - "The Mastermind gets -N[icon:attack] this turn".
+   - On a match it pushes `{ type: 'fight-cost-reduction', magnitude: N, fightCostReductionTarget }` straight to `effects` / `uniqueKeywords`. The gate's conditions parse as before, and D-24486's icon suppression is unchanged.
+   - "Each Villain gets -N", "the next time you fight the Mastermind" (smhc), Royal Decree's "isn't worth at least 5VP", and villain- and scheme-side reductions are named follow-ups.
+   - A whole-corpus scan (333 heroes) finds exactly the five lines above.
+   - The handler-bearing keyword `fight-cost-reduction` carries a magnitude, so it is not in `NO_MAGNITUDE_KEYWORDS`.
+   - Log lines:
+     - City: "Player N's {card}: Villains you fight on the Rooftops this turn get -2 attack." (`in` for the Sewers, `on` for the other spaces);
+     - Mastermind: "Player N's {card}: the Mastermind gets -2 attack this turn."
+6. **Matches in progress** keep the hooks built at setup (`G.heroAbilityHooks`), so they keep today's behavior until they end. There is no migration.
+   - A competitive match captured before the deploy that plays an affected card, but is submitted after it, re-executes under the new rules and fails `replay_verification_failed`.
+   - This is the same accepted window WP-790 / WP-789 carried. It closes as pre-deploy matches age out.
+
+**Gates.** After `pnpm -r build`:
+- `pnpm -r --no-bail test`: 0 failures. game-engine 4883 → 4924 / 0 (+41).
+- The only edited existing assertions are the mandated drift pins: `HERO_KEYWORDS` 75 → 76 in three files plus the order array, and `HERO_EFFECT_HANDLERS` 58 → 59 in two asserts. `economy.resolve.test.ts` (`makeG` / `makeMastermindG` partial G) passes unedited.
+- 5/5 revert proofs: the parse, the handler, the City term, the Mastermind term and the floor.
+- Replay fixtures and `PRE_WP080_HASH` are byte-unchanged, with no re-pin.
+- `sim:coverage` was re-baselined: `noEffect` core 10 → 3, cvwr 112 → 107, dkcy 126 → 121 (−17 in total). These hooks move to the informational parsed-not-executed split, because the script's informational `EXECUTED_KEYWORDS` list never gates.
+- `ledger:heroes`, `mechanics:metadata`, `effect-index`, `sim:runtime-observed` and `cards:check` are current and unchanged.
+- D-24026 live verify is operator-pending.
+
+**Reserved by:** NUMBER-LEDGER D-24663 (#2610). Related: WP-794 / EC-831, D-24652 (WP-790 lazy-field pattern, `AttackTargetName`, `formatAttackTargets`), D-24295 (`CITY_SPACE_NAMES` / `citySpaceNameForIndex`), D-24486 (negative-icon suppression), D-24623 (`gate-only` hollow), D-24574 (projected `fightCost`), D-24603 (Henchmen are Villains), D-24372 (runtime drift pins), WP-795 / D-24664 (Spinning Cyclone).
+
 ---
 
 ### D-24664 — Storm Spinning Cyclone: one active-player move-a-Villain choice, swap-if-occupied, moved-Villain-only rescue (WP-795 / EC-832) (Active 2026-10-06)
@@ -46682,7 +46727,7 @@ Also: server 1455 / 0; `ledger:heroes`, `ledger:villains`, `mechanics:metadata`,
 
 Around it: the block-all guard `hasPendingMoveVillainChoice(G)` beside every Covering Fire guard call site (14 sites in 12 files, incl. `hasAnyPendingChoice()` and the `ai.legalMoves` short-circuit); the sim three-site dispatch (`SIMULATION_MOVE_NAMES` + both `MOVE_MAP`s); a chooser-redacted `UIState.pendingMoveVillainChoice { playerID, villainCityIndices }` recomputed from the live City and copied into a fresh array by the filter; and `MoveVillainChoicePrompt.vue` (`defineComponent` form, D-6512), which submits ENGINE indices. `TurnActionBar.anyPendingChoice()` includes the new flag (the D-24648 freeze class).
 
-**Determinism.** The queue is runtime-only and lazy-initialized at the park site, never in `Game.setup`. The sentinel replay fixture never plays Storm, so `finalStateHash` / `PRE_WP080_HASH` are byte-unchanged — no re-pin. Drift pins (runtime, D-24372): `HERO_KEYWORDS` 75 → 76 (three files), `HERO_EFFECT_HANDLERS` 58 → 59 (two asserts), moves 46 → 47.
+**Determinism.** The queue is runtime-only and lazy-initialized at the park site, never in `Game.setup`. The sentinel replay fixture never plays Storm, so `finalStateHash` / `PRE_WP080_HASH` are byte-unchanged — no re-pin. Drift pins (runtime, D-24372): `HERO_KEYWORDS` 76 → 77 (three files), `HERO_EFFECT_HANDLERS` 59 → 60 (two asserts), moves 46 → 47 — re-pinned on top of WP-794 / D-24663, which merged first and took 75 → 76 / 58 → 59.
 
 **Gates.** game-engine 4883 → 4918 / 0 fail (+35; 1122 → 1131 suites); arena-client 2270 → 2278 / 0 fail (+8); vue-tsc 0; dashboard 570 / 0 (totalObs pin unchanged); `pnpm -r --no-bail test` 0 fail across every package; replay fixtures green and byte-unchanged, no sentinel re-pin. Revert proofs 4/4: the park, the swap, the moved-only rescue and the filter pass-through each fail a new test when reverted. `cards:check` reproducible after the apply script (one `core.json` line); `ledger:heroes`, `mechanics:metadata` and `effect-index` regenerated with a real one-row diff; `sim:runtime-observed` current (a line-ending-only regen reverted); `sim:coverage --check` OK.
 

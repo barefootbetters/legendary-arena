@@ -1417,3 +1417,53 @@ describe('getLegalMoves — Spinning Cyclone move-a-Villain short-circuit (WP-79
     assert.deepEqual(legalMoves, [{ name: 'resolveMoveVillainChoice', args: { decline: true } }]);
   });
 });
+
+describe('getLegalMoves — fight-cost reduction reads the same resolvers (WP-794 / D-24663)', () => {
+  // why: the bot must enumerate exactly the fights the engine accepts at the reduced cost.
+  function makeReducedG(
+    reductions: NonNullable<LegendaryGameState['turnEconomy']['fightCostReductions']>,
+    attack: number,
+  ): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main' });
+    gameState.city = ['v-0', 'v-1', 'v-2', 'v-3', 'v-4'] as LegendaryGameState['city'];
+    const cardStats: Record<string, unknown> = { 'm-base': makeCardStatEntry({ fightCost: 4 }) };
+    for (const villain of gameState.city) {
+      cardStats[villain as string] = makeCardStatEntry({ fightCost: 4 });
+    }
+    gameState.cardStats = cardStats as LegendaryGameState['cardStats'];
+    gameState.mastermind = { baseCardId: 'm-base', tacticsDeck: ['t-1'] } as unknown as LegendaryGameState['mastermind'];
+    gameState.turnEconomy = makeTurnEconomy({
+      attack,
+      ...(reductions.length > 0 ? { fightCostReductions: reductions } : {}),
+    });
+    return gameState;
+  }
+
+  /** The fight intents getLegalMoves offers, as `cityIndex` numbers plus 'mastermind'. */
+  function fightTargets(gameState: LegendaryGameState): Array<number | string> {
+    const targets: Array<number | string> = [];
+    for (const move of getLegalMoves(gameState, CONTEXT)) {
+      if (move.name === 'fightVillain') {
+        targets.push((move.args as { cityIndex: number }).cityIndex);
+      } else if (move.name === 'fightMastermind') {
+        targets.push('mastermind');
+      }
+    }
+    return targets;
+  }
+
+  test('a rooftops 2 reduction enumerates the Rooftops fight at the reduced cost (2 attack, printed 4)', () => {
+    const targets = fightTargets(makeReducedG([{ target: 'rooftops', amount: 2, sourceCardId: 'bolt' as CardExtId }], 2));
+    assert.deepEqual(targets, [2]);
+  });
+
+  test('a mastermind 2 reduction enumerates fightMastermind at base − 2', () => {
+    const targets = fightTargets(makeReducedG([{ target: 'mastermind', amount: 2, sourceCardId: 'wave' as CardExtId }], 2));
+    assert.deepEqual(targets, ['mastermind']);
+  });
+
+  test('with no reduction the list equals today\'s list', () => {
+    assert.deepEqual(fightTargets(makeReducedG([], 2)), []);
+    assert.deepEqual(fightTargets(makeReducedG([], 4)), [0, 1, 2, 3, 4, 'mastermind']);
+  });
+});

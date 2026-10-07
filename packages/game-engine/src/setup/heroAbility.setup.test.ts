@@ -1461,7 +1461,7 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
   it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
     // it must not appear in the canonical keyword array nor bump its count.
-    assert.equal(HERO_KEYWORDS.length, 76, 'HERO_KEYWORDS stays 76 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-795 spinning-cyclone added)');
+    assert.equal(HERO_KEYWORDS.length, 77, 'HERO_KEYWORDS stays 77 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-794 fight-cost-reduction + WP-795 spinning-cyclone added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });
@@ -2003,6 +2003,122 @@ describe('buildHeroAbilityHooks — restricted attack widen fusion (WP-790 / D-2
     for (const hook of hooks) {
       for (const effect of hook.effects ?? []) {
         assert.equal(effect.attackRestriction?.widenToMastermindWhen, undefined, `no cross-card fusion on ${hook.cardId}`);
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-794 / D-24663 — Step 4c fight-cost reduction clause
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns every `fight-cost-reduction` effect on the hooks.
+ *
+ * @param hooks - Parsed hooks.
+ * @returns The fight-cost-reduction effects, in hook order.
+ */
+function fightCostReductionEffectsOf(hooks: ReturnType<typeof buildHeroAbilityHooks>) {
+  const reductionEffects = [];
+  for (const hook of hooks) {
+    for (const effect of hook.effects ?? []) {
+      if (effect.type === 'fight-cost-reduction') {
+        reductionEffects.push(effect);
+      }
+    }
+  }
+  return reductionEffects;
+}
+
+describe('buildHeroAbilityHooks — fight-cost reduction clause (WP-794 / D-24663)', () => {
+  it('core Storm Lightning Bolt: rooftops 2, ungated', () => {
+    const hooks = parseRestrictedCard('core', 'storm', 'lightning-bolt', [
+      'Any Villain you fight on the Rooftops this turn gets -2[icon:attack].',
+    ]);
+    assert.equal(hooks.length, 1);
+    assert.deepEqual(hooks[0]!.effects, [{ type: 'fight-cost-reduction', magnitude: 2, fightCostReductionTarget: 'rooftops' }]);
+    assert.deepEqual(hooks[0]!.keywords, ['fight-cost-reduction']);
+    assert.equal(hooks[0]!.conditions, undefined, 'no gate');
+    assert.equal(attackEffectsOf(hooks).length, 0, 'D-24486: the -2 icon is still no phantom attack grant');
+  });
+
+  it('core Storm Tidal Wave: idx0 bridge 2 (ungated), idx1 mastermind 2 gated on [hc:ranged]', () => {
+    const hooks = parseRestrictedCard('core', 'storm', 'tidal-wave', [
+      'Any Villain you fight on the Bridge this turn gets -2[icon:attack].',
+      '[hc:ranged]: The Mastermind gets -2[icon:attack] this turn.',
+    ]);
+    assert.equal(hooks.length, 2);
+    assert.deepEqual(hooks[0]!.effects, [{ type: 'fight-cost-reduction', magnitude: 2, fightCostReductionTarget: 'bridge' }]);
+    assert.deepEqual(hooks[0]!.keywords, ['fight-cost-reduction']);
+    assert.deepEqual(hooks[1]!.effects, [{ type: 'fight-cost-reduction', magnitude: 2, fightCostReductionTarget: 'mastermind' }]);
+    assert.deepEqual(hooks[1]!.keywords, ['conditional', 'fight-cost-reduction']);
+    assert.deepEqual(hooks[1]!.conditions, [{ type: 'heroClassMatch', value: 'ranged' }]);
+  });
+
+  it('core Storm Tidal Wave idx1 is no longer a gate-only hollow', () => {
+    const hooks = parseRestrictedCard('core', 'storm', 'tidal-wave', [
+      'Any Villain you fight on the Bridge this turn gets -2[icon:attack].',
+      '[hc:ranged]: The Mastermind gets -2[icon:attack] this turn.',
+    ]);
+    assert.equal((hooks[1]!.unresolvedMarkers ?? []).includes('gate-only'), false);
+  });
+
+  it('cvwr Storm & Black Panther Lightning Strike (a split-card face): rooftops 1 on that face\'s hook', () => {
+    const cards = [
+      { slug: 'lightning-strike', abilities: ['Any Villain you fight on the Rooftops this turn gets -1[icon:attack].'] },
+      { slug: 'pouncing-strike', abilities: ['You may move a Villain to an adjacent empty city space.'] },
+    ];
+    const setData = {
+      abbr: 'cvwr',
+      heroes: [{
+        slug: 'storm-black-panther',
+        cards,
+        physicalCards: [{ id: 'p2', count: 1, sides: ['lightning-strike', 'pouncing-strike'] }],
+      }],
+      villains: [], henchmen: [], schemes: [], masterminds: [], bystanders: [], wounds: [], other: [],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'cvwr' }],
+      getSet: (abbr: string) => (abbr === 'cvwr' ? setData : undefined),
+    };
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('cvwr/storm-black-panther'));
+    const strikeHooks = hooks.filter((hook) => hook.cardId.includes('/lightning-strike'));
+    assert.ok(strikeHooks.length > 0, 'the Lightning Strike face has a hook');
+    assert.deepEqual(strikeHooks[0]!.effects, [{ type: 'fight-cost-reduction', magnitude: 1, fightCostReductionTarget: 'rooftops' }]);
+    assert.deepEqual(strikeHooks[0]!.keywords, ['fight-cost-reduction']);
+    const pounceHooks = hooks.filter((hook) => hook.cardId.includes('/pouncing-strike'));
+    assert.equal(fightCostReductionEffectsOf(pounceHooks).length, 0, 'the other face carries no reduction');
+  });
+
+  it('dkcy Forge Dirty Work: sewers 2, gated on [hc:tech]', () => {
+    const hooks = parseRestrictedCard('dkcy', 'forge', 'dirty-work', [
+      '[hc:tech]: Any Villain you fight in the Sewers this turn gets -2[icon:attack].',
+    ]);
+    assert.deepEqual(hooks[0]!.effects, [{ type: 'fight-cost-reduction', magnitude: 2, fightCostReductionTarget: 'sewers' }]);
+    assert.deepEqual(hooks[0]!.keywords, ['conditional', 'fight-cost-reduction']);
+    assert.deepEqual(hooks[0]!.conditions, [{ type: 'heroClassMatch', value: 'tech' }]);
+  });
+
+  it('a double space after the gate still matches (post-gate text is trimmed)', () => {
+    const hooks = parseRestrictedCard('test', 'test-hero', 'test-card', [
+      '[hc:ranged]:  The Mastermind gets -2[icon:attack] this turn.',
+    ]);
+    assert.equal(fightCostReductionEffectsOf(hooks).length, 1);
+  });
+
+  it('fails closed: "Each Villain gets -N", "the next time you fight the Mastermind" and Royal Decree carry no reduction', () => {
+    const unchangedLines = [
+      '[team:spider-friends]: Each Villain gets -2[icon:attack] this turn. The next time you fight the Mastermind this turn, it gets -2[icon:attack].',
+      'Each Villain gets -2[icon:attack].',
+      '[team:heroes-of-asgard]: Each player who is [keyword:Worthy] draws a card. Each Villain that isn\'t worth at least 5VP gets -1[icon:attack] this turn.',
+      'Any Villain you fight on the Rooftops this turn gets -2[icon:attack]. Draw a card.',
+    ];
+    for (const line of unchangedLines) {
+      const hooks = parseRestrictedCard('test', 'test-hero', 'test-card', [line]);
+      assert.equal(fightCostReductionEffectsOf(hooks).length, 0, `no reduction on: ${line}`);
+      for (const hook of hooks) {
+        assert.equal(hook.keywords.includes('fight-cost-reduction'), false, `no keyword on: ${line}`);
       }
     }
   });

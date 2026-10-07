@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { executeHeroEffects, fireExcessiveViolencePlays, resolveDeferredHeroGrants, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
+import { formatCardRef } from '../log/logDisplay.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
 import type { HeroAbilityHook, HeroEffectDescriptor } from '../rules/heroAbility.types.js';
 import type { HeroKeyword } from '../rules/heroKeywords.js';
@@ -132,9 +133,11 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // no-reward KO of one of your Heroes) (56 → 57).
     // WP-780 / D-24619 added the play-both-sides handler (cvwr Penumbra's turn-scoped
     // isPlayBothSidesActive flag) (57 → 58).
+    // WP-794 / D-24663 added the fight-cost-reduction handler (Storm / Forge "Any Villain you
+    // fight on the <space> this turn gets -N" and "The Mastermind gets -N this turn") (58 → 59).
     // WP-795 / D-24664 added the spinning-cyclone handler (core Storm's Spinning Cyclone
-    // move-a-Villain park) (58 → 59).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 59);
+    // move-a-Villain park) (59 → 60).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 60);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -568,6 +571,160 @@ describe('play-both-sides — cvwr Penumbra turn-scoped flag (WP-780 / D-24619)'
   it('is registered in HANDLED_KEYWORDS and HERO_EFFECT_HANDLERS', () => {
     assert.ok(HANDLED_KEYWORDS.has('play-both-sides'));
     assert.equal(typeof HERO_EFFECT_HANDLERS['play-both-sides'], 'function');
+  });
+});
+
+describe('fight-cost-reduction — Storm / Forge turn-scoped reductions (WP-794 / D-24663)', () => {
+  const reductionCtx = makeMockCtx();
+
+  /**
+   * Builds a state with one fight-cost-reduction hook in play.
+   *
+   * @param effect - The fight-cost-reduction effect descriptor.
+   * @returns The state; the played card is 'storm-card'.
+   */
+  function makeReductionState(effect: HeroEffectDescriptor): LegendaryGameState {
+    return makeTestState({
+      inPlay: ['storm-card'],
+      turnEconomyAttack: 3,
+      heroAbilityHooks: [
+        {
+          cardId: 'storm-card' as string,
+          timing: 'onPlay',
+          keywords: ['fight-cost-reduction'] as HeroKeyword[],
+          effects: [effect],
+        },
+      ],
+    });
+  }
+
+  /**
+   * Returns the game log text lines.
+   *
+   * @param gameState - The game state.
+   * @returns Each message's text.
+   */
+  function logTexts(gameState: LegendaryGameState): string[] {
+    return gameState.messages.map((message) => (typeof message === 'string' ? message : message.text));
+  }
+
+  it('City "on" form: appends a rooftops entry and logs the locked line', () => {
+    const gameState = makeReductionState({ type: 'fight-cost-reduction', magnitude: 2, fightCostReductionTarget: 'rooftops' });
+    const fired = executeHeroEffects(gameState, reductionCtx, '0', 'storm-card' as string);
+    assert.equal(fired, 1);
+    assert.deepEqual(gameState.turnEconomy.fightCostReductions, [
+      { target: 'rooftops', amount: 2, sourceCardId: 'storm-card' },
+    ]);
+    assert.equal(gameState.turnEconomy.attack, 3, 'every other field is carried');
+    const cardRef = formatCardRef(gameState.cardDisplayData, 'storm-card' as string);
+    assert.ok(
+      logTexts(gameState).includes(`Player 0's ${cardRef}: Villains you fight on the Rooftops this turn get -2 attack.`),
+      `expected the locked City line, got: ${JSON.stringify(logTexts(gameState))}`,
+    );
+  });
+
+  it('City "in" form: the Sewers reads "in the Sewers"', () => {
+    const gameState = makeReductionState({ type: 'fight-cost-reduction', magnitude: 2, fightCostReductionTarget: 'sewers' });
+    executeHeroEffects(gameState, reductionCtx, '0', 'storm-card' as string);
+    const cardRef = formatCardRef(gameState.cardDisplayData, 'storm-card' as string);
+    assert.ok(
+      logTexts(gameState).includes(`Player 0's ${cardRef}: Villains you fight in the Sewers this turn get -2 attack.`),
+      `expected the locked Sewers line, got: ${JSON.stringify(logTexts(gameState))}`,
+    );
+  });
+
+  it('Mastermind form: appends a mastermind entry and logs the locked line', () => {
+    const gameState = makeReductionState({ type: 'fight-cost-reduction', magnitude: 2, fightCostReductionTarget: 'mastermind' });
+    executeHeroEffects(gameState, reductionCtx, '0', 'storm-card' as string);
+    assert.deepEqual(gameState.turnEconomy.fightCostReductions, [
+      { target: 'mastermind', amount: 2, sourceCardId: 'storm-card' },
+    ]);
+    const cardRef = formatCardRef(gameState.cardDisplayData, 'storm-card' as string);
+    assert.ok(
+      logTexts(gameState).includes(`Player 0's ${cardRef}: the Mastermind gets -2 attack this turn.`),
+      `expected the locked Mastermind line, got: ${JSON.stringify(logTexts(gameState))}`,
+    );
+  });
+
+  it('a missing target is a silent no-op', () => {
+    const gameState = makeReductionState({ type: 'fight-cost-reduction', magnitude: 2 });
+    const messageCountBefore = gameState.messages.length;
+    executeHeroEffects(gameState, reductionCtx, '0', 'storm-card' as string);
+    assert.equal(Object.keys(gameState.turnEconomy).includes('fightCostReductions'), false);
+    assert.equal(
+      logTexts(gameState).slice(messageCountBefore).some((text) => text.includes('this turn get')),
+      false,
+      'no reduction line is logged',
+    );
+  });
+
+  /**
+   * Parses core Storm Tidal Wave (verbatim) and plays it beside one other Hero.
+   *
+   * @param otherHeroClass - The other in-play Hero's class.
+   * @returns The state after the play and the played card id.
+   */
+  function playTidalWave(otherHeroClass: string): { gameState: LegendaryGameState; playedCardId: string } {
+    const cards = [{
+      slug: 'tidal-wave',
+      hc: 'ranged',
+      abilities: [
+        'Any Villain you fight on the Bridge this turn gets -2[icon:attack].',
+        '[hc:ranged]: The Mastermind gets -2[icon:attack] this turn.',
+      ],
+    }];
+    const setData = {
+      abbr: 'core',
+      heroes: [{ slug: 'storm', cards, physicalCards: [{ id: 'p0', count: 1, sides: ['tidal-wave'] }] }],
+      villains: [], henchmen: [], schemes: [], masterminds: [], bystanders: [], wounds: [], other: [],
+    };
+    const hooks = buildHeroAbilityHooks(
+      { listCards: () => [], listSets: () => [{ abbr: 'core' }], getSet: (abbr: string) => (abbr === 'core' ? setData : undefined) },
+      {
+        schemeId: 'test/test-scheme', mastermindId: 'test/test-mastermind', villainGroupIds: ['test/villain-001'],
+        henchmanGroupIds: ['test/henchman-001'], heroDeckIds: ['core/storm'], bystandersCount: 10, woundsCount: 15,
+        officersCount: 20, sidekicksCount: 5,
+      },
+    );
+    const playedCardId = hooks[0]!.cardId;
+    const gameState = makeTestState({
+      inPlay: ['other-hero', playedCardId],
+      heroAbilityHooks: hooks.filter((hook) => hook.cardId === playedCardId),
+      cardTraits: { 'other-hero': { heroClass: otherHeroClass, team: null } },
+    });
+    executeHeroEffects(gameState, reductionCtx, '0', playedCardId);
+    return { gameState, playedCardId };
+  }
+
+  it('AC-3: Tidal Wave with another Ranged Hero played adds the bridge and the mastermind entries', () => {
+    const { gameState, playedCardId } = playTidalWave('ranged');
+    assert.deepEqual(gameState.turnEconomy.fightCostReductions, [
+      { target: 'bridge', amount: 2, sourceCardId: playedCardId },
+      { target: 'mastermind', amount: 2, sourceCardId: playedCardId },
+    ]);
+  });
+
+  it('AC-3: Tidal Wave with no other Ranged Hero played adds a bridge entry only (the idx1 gate fails)', () => {
+    const { gameState, playedCardId } = playTidalWave('strength');
+    assert.deepEqual(gameState.turnEconomy.fightCostReductions, [
+      { target: 'bridge', amount: 2, sourceCardId: playedCardId },
+    ]);
+    assert.equal(
+      logTexts(gameState).some((text) => text.includes('not supported yet')),
+      false,
+      'Tidal Wave line 2 no longer logs "Its effect is not supported yet"',
+    );
+  });
+
+  it('is registered in HANDLED_KEYWORDS and HERO_EFFECT_HANDLERS, and carries a magnitude', () => {
+    assert.ok(HANDLED_KEYWORDS.has('fight-cost-reduction'));
+    assert.equal(typeof HERO_EFFECT_HANDLERS['fight-cost-reduction'], 'function');
+    const gameState = makeReductionState({ type: 'fight-cost-reduction', fightCostReductionTarget: 'rooftops' });
+    assert.equal(
+      executeHeroEffects(gameState, reductionCtx, '0', 'storm-card' as string),
+      0,
+      'a magnitude-less reduction is dropped by the magnitude pre-gate (NOT in NO_MAGNITUDE_KEYWORDS)',
+    );
   });
 });
 
@@ -7654,10 +7811,10 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // WP-753's reveal-three-assign + reveal-three-assign-again handlers, D-24580, and WP-754's
     // optional-discard-draw + reveal-top-may-ko handlers, D-24581, and WP-765's blood-frenzy +
     // blood-frenzy-recruit + day-night-both handlers, D-24598, and WP-767's optional-ko-your-hero
-    // handler, D-24600, and WP-780's play-both-sides handler, D-24619, and WP-795's
-    // spinning-cyclone handler, D-24664 — 59).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 59,
-      'HERO_EFFECT_HANDLERS stays 59 (X-Gene is not an effect handler)');
+    // handler, D-24600, and WP-780's play-both-sides handler, D-24619, and WP-794's
+    // fight-cost-reduction handler, D-24663, and WP-795's spinning-cyclone handler, D-24664 — 60).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 60,
+      'HERO_EFFECT_HANDLERS stays 60 (X-Gene is not an effect handler)');
   });
 });
 

@@ -485,6 +485,16 @@ const ATTACK_RESTRICTION_WIDEN_BONUS_PATTERN =
 const ATTACK_RESTRICTION_WIDEN_INSTEAD_PATTERN =
   /^\[hc:[a-z]+\]:\s*Instead you may get \+(\d+)\[icon:attack\] usable only against the (Mastermind|Commander)\.?$/i;
 
+// why: WP-794 / D-24663 — the printed fight-cost reduction clauses (core Storm Lightning Bolt /
+// Tidal Wave, cvwr Storm & Black Panther Lightning Strike, dkcy Forge Dirty Work). Matched on the
+// text AFTER the leading gate prefix, trimmed (data carries a double space after the gate). These
+// two forms are the whole vocabulary: "Each Villain gets -N", "the next time you fight the
+// Mastermind" and Royal Decree deliberately do not match (fail closed).
+/** Regex for the City form, e.g. "Any Villain you fight on the Rooftops this turn gets -2[icon:attack]." */
+const FIGHT_COST_REDUCTION_CITY_PATTERN = /^Any Villain you fight (?:on|in) the (Sewers|Bank|Rooftops|Streets|Bridge) this turn gets -(\d+)\[icon:attack\]\.?$/i;
+/** Regex for the Mastermind form, e.g. "The Mastermind gets -2[icon:attack] this turn." */
+const FIGHT_COST_REDUCTION_MASTERMIND_PATTERN = /^The Mastermind gets -(\d+)\[icon:attack\] this turn\.?$/i;
+
 // why: WP-660 / D-24471 — an [icon:recruit|attack] token inside a THRESHOLD / RATE
 // CONDITION clause ("made at least N[icon:recruit]", "for every N[icon:recruit]",
 // "N or more [icon:recruit]") refers to a resource the player MADE this turn — it is the
@@ -2497,6 +2507,25 @@ function parseAbilityText(
     }
   }
 
+  // Step 4c: WP-794 / D-24663 — the fight-cost reduction clause.
+  // why: a separate clause recognizer, NOT the icon extractors. D-24486's negative-icon
+  // suppression stays in force (the "-N[icon:attack]" never becomes a phantom +N grant); this
+  // step recognizes the whole printed clause instead. It pushes straight to `effects` /
+  // `uniqueKeywords` (never through `keywords` / `magnitudes`, which would rebuild a bare effect
+  // without its target). The gate prefix's conditions parsed above are unchanged, and a line
+  // that matches neither locked regex parses exactly as before.
+  const fightCostReduction = parseFightCostReductionClause(
+    abilityText.slice(leadingGatePrefixLength).trim(),
+  );
+  if (fightCostReduction !== undefined) {
+    effects.push({
+      type: 'fight-cost-reduction',
+      magnitude: fightCostReduction.amount,
+      fightCostReductionTarget: fightCostReduction.target,
+    });
+    uniqueKeywords.push('fight-cost-reduction');
+  }
+
   // Step 4b: surface an unmodeled [rule:X] line as an honest hollow.
   // why: D-24618 — a line that resolved NOTHING (no keyword, effect, composition, or other
   // unresolved marker) but carries a `[rule:X]` token is an ability the engine does not
@@ -2572,6 +2601,33 @@ function parseAbilityText(
     sizeChangingClasses,
     timing,
   };
+}
+
+/**
+ * Parses a printed fight-cost reduction clause (WP-794 / D-24663).
+ *
+ * @param postGateText - The ability text after any leading gate prefix, trimmed.
+ * @returns The target (a lowercased City space name, or `'mastermind'`) and the
+ *   amount, or undefined when the text matches neither locked form (fail closed).
+ */
+function parseFightCostReductionClause(
+  postGateText: string,
+): { target: AttackTargetName; amount: number } | undefined {
+  const cityMatch = FIGHT_COST_REDUCTION_CITY_PATTERN.exec(postGateText);
+  if (cityMatch !== null) {
+    const spaceName = cityMatch[1]!.toLowerCase();
+    for (const citySpaceName of CITY_SPACE_NAMES) {
+      if (citySpaceName === spaceName) {
+        return { target: citySpaceName, amount: Number(cityMatch[2]) };
+      }
+    }
+    return undefined;
+  }
+  const mastermindMatch = FIGHT_COST_REDUCTION_MASTERMIND_PATTERN.exec(postGateText);
+  if (mastermindMatch !== null) {
+    return { target: 'mastermind', amount: Number(mastermindMatch[1]) };
+  }
+  return undefined;
 }
 
 /**
