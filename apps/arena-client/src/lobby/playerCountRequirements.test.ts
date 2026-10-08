@@ -69,4 +69,19 @@ describe('formatMismatchWarning', () => {
     const warning = formatMismatchWarning(4, { label: 'villain groups', required: 3, actual: 1 });
     assert.equal(warning, 'A 4-player match needs 3 villain groups — this loadout has 1.');
   });
+
+  test('uses the singular, including the irregular ones, when exactly 1 is required', () => {
+    assert.equal(
+      formatMismatchWarning(1, { label: 'villain groups', required: 1, actual: 2 }),
+      'A 1-player match needs 1 villain group — this loadout has 2.',
+    );
+    assert.equal(
+      formatMismatchWarning(2, { label: 'henchmen groups', required: 1, actual: 0 }),
+      'A 2-player match needs 1 henchman group — this loadout has 0.',
+    );
+    assert.equal(
+      formatMismatchWarning(1, { label: 'heroes', required: 1, actual: 3 }),
+      'A 1-player match needs 1 hero — this loadout has 3.',
+    );
+  });
 });

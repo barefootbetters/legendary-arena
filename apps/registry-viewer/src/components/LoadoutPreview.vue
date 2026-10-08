@@ -25,6 +25,7 @@ import type {
 import type { CardRegistry, FlatCard } from "../registry/browser";
 import type { SetupMatchedCount } from "../composables/useSetupFromUrl";
 import { resolveSetupRequirement } from "../lib/previewSetupRequirement";
+import { formatSetupCount } from "../lib/setupCountLabels";
 
 interface Props {
   hasUrlParams: boolean;
@@ -191,10 +192,10 @@ async function onCopyLink(): Promise<void> {
         data-testid="preview-setup-requirement"
       >
         For a {{ setupRequirement.playerCount }}-player match:
-        {{ setupRequirement.row.villainGroupCount }} villain groups,
-        {{ setupRequirement.row.henchmenGroupCount }} henchmen groups,
-        {{ setupRequirement.row.heroCount }} heroes,
-        {{ setupRequirement.row.villainDeckBystanderCount }} villain-deck bystanders.
+        {{ formatSetupCount(setupRequirement.row.villainGroupCount, 'villainGroup') }},
+        {{ formatSetupCount(setupRequirement.row.henchmenGroupCount, 'henchmanGroup') }},
+        {{ formatSetupCount(setupRequirement.row.heroCount, 'hero') }},
+        {{ formatSetupCount(setupRequirement.row.villainDeckBystanderCount, 'villainDeckBystander') }}.
       </p>
     </header>
 

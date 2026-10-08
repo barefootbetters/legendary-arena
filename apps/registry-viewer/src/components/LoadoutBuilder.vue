@@ -66,6 +66,7 @@ import {
   serializeSupportPreset,
   supportPresetFilename,
 } from "../lib/supportPreset";
+import { formatSetupCount, setupCountNounForField } from "../lib/setupCountLabels";
 
 // why: Verbatim WP-093 UI strings referenced via imported constants, but also
 // recorded in these comments so the §11 Step 9 Select-String gate confirms
@@ -1334,10 +1335,10 @@ function slotLabel(slot: PickerSlot): string {
           data-testid="player-count-requirements"
         >
           For a {{ draft.playerCount }}-player match:
-          {{ requiredPlayerCountSetup.villainGroupCount }} villain groups,
-          {{ requiredPlayerCountSetup.henchmenGroupCount }} henchmen groups,
-          {{ requiredPlayerCountSetup.heroCount }} heroes,
-          {{ requiredPlayerCountSetup.villainDeckBystanderCount }} villain-deck bystanders.
+          {{ formatSetupCount(requiredPlayerCountSetup.villainGroupCount, 'villainGroup') }},
+          {{ formatSetupCount(requiredPlayerCountSetup.henchmenGroupCount, 'henchmanGroup') }},
+          {{ formatSetupCount(requiredPlayerCountSetup.heroCount, 'hero') }},
+          {{ formatSetupCount(requiredPlayerCountSetup.villainDeckBystanderCount, 'villainDeckBystander') }}.
         </p>
         <ul
           v-if="playerCountCompositionMismatches.length > 0"
@@ -1346,8 +1347,9 @@ function slotLabel(slot: PickerSlot): string {
           role="alert"
         >
           <li v-for="mismatch in playerCountCompositionMismatches" :key="mismatch.field">
-            A {{ draft.playerCount }}-player match needs {{ mismatch.required }}
-            {{ mismatch.label }} — this loadout has {{ mismatch.actual }}.
+            A {{ draft.playerCount }}-player match needs
+            {{ formatSetupCount(mismatch.required, setupCountNounForField(mismatch.field)) }} — this loadout has
+            {{ mismatch.actual }}.
           </li>
         </ul>
 
