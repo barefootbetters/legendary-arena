@@ -27,7 +27,7 @@ unchanged. Saved or exported base-count loadouts for these schemes are flagged o
   legends-board requirement list for msp1 / vnom legs; the stale "`undefined` for non-Core" comments in
   `server.mjs`, `LoadoutBuilder.vue` and `gauntletQualificationCheck.ts`; an operator cleanup of 1-group NZPB
   scenario-board rows.
-- **Live-verify (D-24026), 2026-10-07: match half PASS.** Match `omKVEsz1PFc` (build `45c4abc`, 1p Dr. Doom /
+- **Live-verify (D-24026), 2026-10-07: PASS.** Match `omKVEsz1PFc` (build `45c4abc`, 1p Dr. Doom /
   Negative Zone Prison Breakout / Masters of Evil / Spider-Man, Wolverine, Captain America): a 2-group loadout
   (Doombot Legion + Hand Ninjas) exported, created and played to a win. The diagnostics hold exactly 20 distinct
   Henchman cards (`henchman-doombot-legion-00..09`, `henchman-hand-ninjas-00..09`), and both groups entered the City
@@ -39,8 +39,10 @@ unchanged. Saved or exported base-count loadouts for these schemes are flagged o
   badge read "✓ Qualifies for the dr-doom gauntlet (variant 0)". **Gauntlet leg match PASS** (operator-reported
   "Play this leg"): match `4IXFL3VuFfa` (build `14c29c9`, Nick Fury / Iron Man / Black Widow) set up with Doombot
   Legion + Hand Ninjas and 20 distinct Henchman cards, played to a win (the export does not itself record the launch
-  path). **Still pending:** the lobby requirement line after a hard refresh; the msp1 Asgard Under Siege leg
-  (the generated `schemeOverrides` path) is unexercised live.
+  path). **Lobby PASS:** after a hard refresh, pasting a 1-group NZPB 1p LAGN in the play lobby shows "A 1-player
+  match needs 2 henchmen groups — this loadout has 1." (the projection-driven create gate). **Not exercised live:**
+  the msp1 Asgard Under Siege / vnom Venom Symbiotes legs (the generated `schemeOverrides` path), covered by unit
+  tests only.
 
 ### D-24665 — solo Crushing Shockwave says it did nothing; Storm WP-794 / WP-795 live-verified (2026-10-07)
 
