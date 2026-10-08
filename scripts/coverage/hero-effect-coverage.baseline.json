@@ -2,9 +2,9 @@
   "corpus": {
     "executable": 2576,
     "heroes": 324,
-    "hooks": 6380,
+    "hooks": 6383,
     "noEffect": 2636,
-    "parsedNotExecuted": 1168
+    "parsedNotExecuted": 1171
   },
   "perSet": {
     "2099": {
@@ -64,7 +64,7 @@
     },
     "core": {
       "executable": 132,
-      "hooks": 229,
+      "hooks": 232,
       "noEffect": 3
     },
     "cosm": {
