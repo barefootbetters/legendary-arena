@@ -23,7 +23,10 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PLAYER_COUNT_SETUP } from '../packages/registry/dist/playerCountSetup.js';
+import {
+  PLAYER_COUNT_SETUP,
+  resolveEffectiveHeroCount,
+} from '../packages/registry/dist/playerCountSetup.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..');
@@ -196,22 +199,44 @@ function renderSetupTable() {
 }
 
 /**
- * Renders the Fixed-Pool budget table. The budget is `heroCount + 2`
- * (D-24187 §5), collapsed to the distinct rows a reader cares about.
+ * Renders the Fixed-Pool budget table for one gauntlet: one row per player
+ * count (1–5), with the base hero count, the largest hero count any of the
+ * gauntlet's legs requires, and the resulting budget
+ * `max(base, largest leg) + 2` (D-24187 §4 as amended by D-24671).
  *
+ * why: a deliberate second copy of the `max(base, largest leg) + 2` rule
+ * (duplicate-first). The canonical site is the budget helper in
+ * apps/server/src/legends/gauntlet.logic.ts (D-24671 §2); this script cannot
+ * import the server's TS logic. Five rows, not collapsed, because a scheme's
+ * printed count can differ at a single player count.
+ *
+ * @param setAbbr The gauntlet's set abbreviation (scheme ids are set-qualified).
+ * @param schemes The gauntlet's legs (every scheme of the set).
  * @returns The markdown table.
  */
-function renderBudgetTable() {
+function renderBudgetTable(setAbbr, schemes) {
   const lines = [
-    '| Players | Heroes per match | Fixed-Pool budget |',
-    '|---|---|---|',
+    '| Players | Base heroes | Largest leg | Fixed-Pool budget |',
+    '|---|---|---|---|',
   ];
-  const soloHeroCount = PLAYER_COUNT_SETUP[1].heroCount;
-  const midHeroCount = PLAYER_COUNT_SETUP[2].heroCount;
-  const fiveHeroCount = PLAYER_COUNT_SETUP[5].heroCount;
-  lines.push(`| 1 | ${soloHeroCount} | ${soloHeroCount + 2} |`);
-  lines.push(`| 2–4 | ${midHeroCount} | ${midHeroCount + 2} |`);
-  lines.push(`| 5 | ${fiveHeroCount} | ${fiveHeroCount + 2} |`);
+  for (const playerCount of [1, 2, 3, 4, 5]) {
+    const baseHeroCount = PLAYER_COUNT_SETUP[playerCount].heroCount;
+    let largestLegHeroCount = baseHeroCount;
+    for (const scheme of schemes) {
+      const legHeroCount = resolveEffectiveHeroCount(
+        `${setAbbr}/${scheme.slug}`,
+        playerCount,
+        baseHeroCount,
+      );
+      if (legHeroCount > largestLegHeroCount) {
+        largestLegHeroCount = legHeroCount;
+      }
+    }
+    lines.push(
+      `| ${playerCount} | ${baseHeroCount} | ${largestLegHeroCount} | ` +
+        `${largestLegHeroCount + 2} |`,
+    );
+  }
   return lines.join('\n');
 }
 
@@ -271,4 +296,4 @@ console.log(renderLegGallery(schemes));
 console.log('');
 console.log(renderSetupTable());
 console.log('');
-console.log(renderBudgetTable());
+console.log(renderBudgetTable(setAbbrArgument, schemes));

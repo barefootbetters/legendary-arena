@@ -55,13 +55,16 @@ export type GauntletRunStatus =
 /**
  * One leg of a run's derived progression. Mirrors the server's
  * `GauntletRunLegProgress`. `schemeId` is the bare registry scheme slug (keyed
- * the same way in `legPicks`); `cleared` / `hasFullPicks` / `lastPlayedAt` are
- * derived per read (nothing is stored, D-24262).
+ * the same way in `legPicks`); `heroCount` is the leg's required hero pick (its
+ * scheme's printed count, WP-798 / D-24671); `cleared` / `hasFullPicks` /
+ * `lastPlayedAt` are derived per read (nothing is stored, D-24262).
  */
 export interface GauntletRunLegProgress {
   readonly schemeId: string;
   readonly schemeName: string;
   readonly cleared: boolean;
+  /** The leg's required hero pick, from `resolveEffectiveHeroCount` for its scheme (D-24671). */
+  readonly heroCount: number;
   readonly hasFullPicks: boolean;
   readonly lastPlayedAt: string | null;
 }
@@ -132,6 +135,10 @@ export interface GauntletRunProgressView extends GauntletRunView {
   readonly status: GauntletRunStatus;
   readonly pool: readonly string[];
   readonly budgetHeadroom: number;
+  /**
+   * The BASE per-player-count hero count (`PLAYER_COUNT_SETUP`), NOT a leg's
+   * required pick — gating and hints read `legs[].heroCount` (D-24671).
+   */
   readonly heroCount: number;
   readonly budget: number;
   readonly isChampion: boolean;

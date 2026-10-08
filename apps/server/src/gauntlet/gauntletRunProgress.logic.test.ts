@@ -226,6 +226,7 @@ function legs(
       schemeId: `scheme-${index}`,
       schemeName: `Scheme ${index}`,
       cleared: spec.cleared,
+      heroCount: 3,
       hasFullPicks: spec.hasFullPicks,
       lastPlayedAt: null,
     });
@@ -621,6 +622,74 @@ describe('deriveGauntletRunProgress per-scheme leg-clear + launch (WP-473 / D-24
     );
     assert.ok(view.launch !== null);
     assert.equal('legLaunch' in view.launch, false);
+  });
+});
+
+describe('deriveGauntletRunProgress per-leg hero count (WP-798 / D-24671)', () => {
+  const deps = stubLeaderboardDeps();
+
+  /**
+   * Fixture inputs whose scheme-a leg requires 6 heroes at every player count
+   * (Secret Invasion's printed count); scheme-b carries no count (base 3).
+   */
+  function sixHeroLegInputs(): GauntletRunProgressInputs {
+    return fixtureInputs({
+      legs: [
+        {
+          schemeSlug: 'scheme-a',
+          schemeName: 'Scheme A',
+          heroCountByPlayerCount: { 1: 6, 2: 6, 3: 6, 4: 6, 5: 6 },
+        },
+        { schemeSlug: 'scheme-b', schemeName: 'Scheme B' },
+      ],
+    });
+  }
+
+  test("a leg reports its own required count; full picks need that count, not the run's base", () => {
+    const fivePicks = deriveGauntletRunProgress(
+      fixtureRun({ 'scheme-a': ['h1', 'h2', 'h3', 'h4', 'h5'] }),
+      sixHeroLegInputs(),
+      [],
+      deps.checkParPublished,
+    );
+    const legAWithFive = fivePicks.legs.find((leg) => leg.schemeId === 'scheme-a');
+    assert.equal(legAWithFive?.heroCount, 6);
+    assert.equal(legAWithFive?.hasFullPicks, false);
+
+    const sixPicks = deriveGauntletRunProgress(
+      fixtureRun({ 'scheme-a': ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] }),
+      sixHeroLegInputs(),
+      [],
+      deps.checkParPublished,
+    );
+    const legAWithSix = sixPicks.legs.find((leg) => leg.schemeId === 'scheme-a');
+    assert.equal(legAWithSix?.hasFullPicks, true);
+    assert.equal(sixPicks.status, 'ready');
+    // why: the run-level heroCount stays the BASE count (D-24671 §1).
+    assert.equal(sixPicks.heroCount, 3);
+  });
+
+  test('a leg with no injected count falls back to the base count', () => {
+    const view = deriveGauntletRunProgress(
+      fixtureRun({ 'scheme-b': ['h1', 'h2', 'h3'] }),
+      sixHeroLegInputs(),
+      [],
+      deps.checkParPublished,
+    );
+    const legB = view.legs.find((leg) => leg.schemeId === 'scheme-b');
+    assert.equal(legB?.heroCount, 3);
+    assert.equal(legB?.hasFullPicks, true);
+  });
+
+  test('the view budget is the injected per-gauntlet poolBudget', () => {
+    const view = deriveGauntletRunProgress(
+      fixtureRun({}),
+      fixtureInputs({ poolBudget: 8 }),
+      [],
+      deps.checkParPublished,
+    );
+    assert.equal(view.budget, 8);
+    assert.equal(view.budgetHeadroom, 8);
   });
 });
 

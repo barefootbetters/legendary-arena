@@ -429,9 +429,14 @@ Every gauntlet board now has **two divisions**, switchable by a toggle:
 - **Fixed-Pool Championship** — the same completeness and roster rules,
   **plus** a shared hero-pool constraint. To claim a fixed board a
   competitor's chosen winning replays must, across all legs, draw their
-  heroes from one pool of at most **`heroCount + 2`** distinct heroes
-  (`PLAYER_COUNT_SETUP` + 2, D-24165: solo 3+2 = 5, 2–4p 5+2 = 7, 5p
-  6+2 = 8). The championship title attaches to this division.
+  heroes from one pool of at most **`max(base heroCount, largest leg
+  hero count) + 2`** distinct heroes, per gauntlet (D-24671, amending
+  D-24187 §4). The base is `PLAYER_COUNT_SETUP` (D-24165: solo 3, 2–4p 5,
+  5p 6); a leg's count is its scheme's printed hero requirement (core
+  Secret Invasion needs 6), so a gauntlet with no such leg keeps
+  5 / 7 / 7 / 7 / 8 and Core is 8 at every player count. The pool always
+  holds the largest team plus two alternates. The championship title
+  attaches to this division.
 
 **How it works, end to end:**
 
@@ -495,7 +500,7 @@ stating plainly because it invalidates the obvious version of this idea:
 | Mastermind (name, slug, home set) | Villain groups — **any villain groups qualify** |
 | The full scheme **leg** list (3–8) | Henchmen groups |
 | Per-player-count setup counts (`PLAYER_COUNT_SETUP`) | Bystanders / wounds / officers / sidekicks as a *gauntlet* property |
-| Fixed-division pool **budget** (`heroCount + 2`) | The fixed division's hero **roster** |
+| Fixed-division pool **budget** (`max(base, largest leg) + 2`, D-24671) | The fixed division's hero **roster** |
 
 A gauntlet is a **multi-leg championship**, not a match loadout. It pins a
 mastermind and a set's scheme list; everything else varies per match. The
@@ -843,7 +848,9 @@ surface:
   per run — the **5-state status** `needs-heroes → ready → playing →
   all-legs-cleared → champion`, the hero **pool** (sorted union of every
   leg's picks), **budget headroom** (`budget − pool.length`, where budget =
-  `heroCount + 2`), per-leg `cleared` + `lastPlayedAt`, and `isChampion` —
+  the gauntlet's `max(base, largest leg) + 2`, D-24671), per-leg `cleared`,
+  required `heroCount` (the leg's scheme count, D-24671) + `lastPlayedAt`,
+  and `isChampion` —
   **all computed at read time** via the WP-442 truth helper, nothing stored.
 - **`PATCH`** edits a run's `leg_picks` (structural validation only — hero-id
   legality is a launch-time concern); **`DELETE`** removes a run. Every
@@ -1219,7 +1226,10 @@ instead of a bare table. Hand-authored mockup:
 > surface; the fixed-pool board sits beside it as the prestige division
 > the championship title attaches to), and the pool budget is **exactly
 > `heroCount + 2`** (a binary check — the union of heroes across an
-> entry's legs fits the budget or it does not).
+> entry's legs fits the budget or it does not). *(Amended by D-24671,
+> 2026-10-08: the budget is per gauntlet, `max(base heroCount, largest leg
+> hero count) + 2`, so the pool always fits a leg whose scheme needs more
+> heroes; still a binary check.)*
 
 **The recommendation: a gauntlet entry must be earned with a fixed hero
 group plus 1–2 alternates.** To claim a set's mastermind championship, a
@@ -1260,6 +1270,10 @@ a well-defined core size, and the rule generalizes as:
 > alternates) such that every chosen leg's winning replay drew its
 > entire hero deck from that pool. Equivalently: the union of hero
 > slugs across the entry's legs is ≤ `heroCount + 2`.
+
+*(Amended by D-24671, 2026-10-08: the pool size is now `max(base heroCount,
+largest leg hero count) + 2` per gauntlet — the largest team any leg's scheme
+requires, plus two alternates.)*
 
 No declaration step is needed — like D-24131, this stays a
 publisher-derived aggregation with no submission ceremony. The

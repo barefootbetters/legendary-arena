@@ -23,6 +23,10 @@ import {
   getActiveYear,
   validateThemeFile,
 } from '@legendary-arena/registry';
+// why: WP-798 / D-24671 — the scheme-aware hero-count resolver lives on the
+// registry's `playerCountSetup` subpath (the barrel does not re-export it); the
+// wiring layer uses it to stamp each gauntlet leg's required hero pick.
+import { resolveEffectiveHeroCount } from '@legendary-arena/registry/playerCountSetup';
 import { buildScenarioKey } from '@legendary-arena/game-engine';
 import { loadRules, getRules } from './rules/loader.mjs';
 import { createParGate } from './par/parGate.mjs';
@@ -619,14 +623,38 @@ export async function startServer() {
       henchmen: henchmanSummaries,
     });
   }
-  // why: WP-384 / D-24187 §4 — the fixed-division pool budgets are derived
+  // why: WP-384 / D-24187 §4 — the BASE fixed-division pool budgets are derived
   // HERE, at wiring time, from the registry's canonical PLAYER_COUNT_SETUP
-  // table (budget = heroCount + 2) and ride the catalog as plain data:
+  // table (base budget = heroCount + 2) and ride the catalog as plain data:
   // gauntlet.logic.ts may not import the registry (its layer lock), and
-  // re-typed literals there would drift if the setup table ever changed.
+  // re-typed literals there would drift if the setup table ever changed. Under
+  // WP-798 / D-24671 buildGauntletCatalog widens them per gauntlet to
+  // max(base, largest leg) + 2 using the per-leg counts below.
   const heroPoolBudgets = {};
   for (const [playerCount, setupRow] of Object.entries(PLAYER_COUNT_SETUP)) {
     heroPoolBudgets[Number(playerCount)] = setupRow.heroCount + 2;
+  }
+  // why: WP-798 / D-24671 §5 — each leg's required hero pick is its scheme's
+  // printed count (resolveEffectiveHeroCount, e.g. Secret Invasion 6). Computed
+  // HERE with the registry resolver and injected as plain data so the gauntlet
+  // logic modules stay registry-free. Keyed setAbbr/schemeSlug.
+  const legHeroCountsByScheme = new Map();
+  for (const setSummary of gauntletSetSummaries) {
+    for (const scheme of setSummary.schemes) {
+      const heroCountByPlayerCount = {};
+      for (const [playerCount, setupRow] of Object.entries(PLAYER_COUNT_SETUP)) {
+        const count = Number(playerCount);
+        heroCountByPlayerCount[count] = resolveEffectiveHeroCount(
+          `${setSummary.setAbbr}/${scheme.slug}`,
+          count,
+          setupRow.heroCount,
+        );
+      }
+      legHeroCountsByScheme.set(
+        `${setSummary.setAbbr}/${scheme.slug}`,
+        heroCountByPlayerCount,
+      );
+    }
   }
   // why: WP-395 / D-24199 — the canonical loadout requirement is projected
   // HERE, at wiring time, from the registry's generated menu into the two
@@ -715,6 +743,7 @@ export async function startServer() {
     heroPoolBudgets,
     approvedLoadoutsByGauntlet,
     approvedLoadoutsByScheme,
+    legHeroCountsByScheme,
   );
   console.log(
     `[server] gauntlet catalog built: ${gauntletCatalog.length} gauntlets ` +
@@ -1240,9 +1269,10 @@ export async function startServer() {
   // why: 01.5 runtime-wiring allowance — the WP-446 derived GET read needs its
   // per-run derivation inputs and the leaderboard dependency INJECTED so the
   // logic layer stays registry-free (D-24265 §5). resolveGauntletRunProgressInputs
-  // maps a stored run to its gauntlet's legs + approvedLoadouts + poolBudget
-  // (heroPoolBudgets[playerCount] = heroCount + 2) + heroCount (from the
-  // registry's PLAYER_COUNT_SETUP) + boardName (buildGauntletBoardName) — all
+  // maps a stored run to its gauntlet's legs (each carrying its required
+  // heroCountByPlayerCount, D-24671) + approvedLoadouts + poolBudget (the
+  // definition's heroPoolBudgets[playerCount] = max(base, largest leg) + 2) +
+  // the base heroCount (from the registry's PLAYER_COUNT_SETUP) + boardName (buildGauntletBoardName) — all
   // read off the already-built gauntletCatalog, so the derivation reuses the
   // SAME truth inputs getGauntletStandings uses without the logic layer touching
   // the registry. leaderboardDependencies carries the same checkParPublished the

@@ -1193,3 +1193,114 @@ describe('per-scheme approved loadouts (WP-472 / D-24283)', () => {
     assert.strictEqual(enemies?.usedByGauntlets, true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Per-leg hero counts + per-gauntlet pool budget (WP-798 / D-24671)
+// ---------------------------------------------------------------------------
+
+/** The base budgets the wiring layer passes (`heroCount + 2`, D-24187 §4). */
+const BASE_BUDGETS = { 1: 5, 2: 7, 3: 7, 4: 7, 5: 8 };
+
+/**
+ * Builds a one-mastermind set summary with the given scheme slugs.
+ *
+ * @param setAbbr The set abbreviation.
+ * @param schemeSlugs The set's scheme slugs (one leg each).
+ * @returns The set summary.
+ */
+function oneMastermindSummary(setAbbr: string, schemeSlugs: string[]): GauntletSetSummary {
+  const schemes: { slug: string; name: string }[] = [];
+  for (const schemeSlug of schemeSlugs) {
+    schemes.push({ slug: schemeSlug, name: schemeSlug });
+  }
+  return {
+    setAbbr,
+    setName: setAbbr,
+    schemes,
+    masterminds: [{ slug: 'mm', name: 'Mastermind' }],
+    villains: [],
+    henchmen: [],
+  };
+}
+
+describe('per-leg hero counts and per-gauntlet budgets (WP-798 / D-24671)', () => {
+  test('a leg needing 6 at every count raises the gauntlet budget to 8 and carries its counts', () => {
+    const sixEverywhere = { 1: 6, 2: 6, 3: 6, 4: 6, 5: 6 };
+    const counts = new Map([
+      ['core/secret-invasion', sixEverywhere],
+      ['core/midtown', { 1: 3, 2: 5, 3: 5, 4: 5, 5: 6 }],
+    ]);
+    const catalog = buildGauntletCatalog(
+      [oneMastermindSummary('core', ['midtown', 'secret-invasion'])],
+      BASE_BUDGETS,
+      undefined,
+      undefined,
+      counts,
+    );
+    assert.deepEqual(catalog[0]?.heroPoolBudgets, { 1: 8, 2: 8, 3: 8, 4: 8, 5: 8 });
+    const secretInvasionLeg = catalog[0]?.legs.find((leg) => leg.schemeSlug === 'secret-invasion');
+    assert.deepEqual(secretInvasionLeg?.heroCountByPlayerCount, sixEverywhere);
+  });
+
+  test('a set whose every leg needs 4 at 2p keeps budget 7 at 2p (never shrinks below base + 2)', () => {
+    const counts = new Map([
+      ['tst/civil-war-a', { 1: 3, 2: 4, 3: 5, 4: 5, 5: 6 }],
+      ['tst/civil-war-b', { 1: 3, 2: 4, 3: 5, 4: 5, 5: 6 }],
+    ]);
+    const catalog = buildGauntletCatalog(
+      [oneMastermindSummary('tst', ['civil-war-a', 'civil-war-b'])],
+      BASE_BUDGETS,
+      undefined,
+      undefined,
+      counts,
+    );
+    assert.equal(catalog[0]?.heroPoolBudgets?.[2], 7);
+    assert.deepEqual(catalog[0]?.heroPoolBudgets, { 1: 5, 2: 7, 3: 7, 4: 7, 5: 8 });
+  });
+
+  test('a leg missing from the counts map contributes the base; budgets stay finite', () => {
+    const counts = new Map([['tst/mapped', { 1: 4, 2: 6, 3: 6, 4: 6, 5: 7 }]]);
+    const catalog = buildGauntletCatalog(
+      [oneMastermindSummary('tst', ['mapped', 'unmapped'])],
+      BASE_BUDGETS,
+      undefined,
+      undefined,
+      counts,
+    );
+    assert.deepEqual(catalog[0]?.heroPoolBudgets, { 1: 6, 2: 8, 3: 8, 4: 8, 5: 9 });
+    const unmappedLeg = catalog[0]?.legs.find((leg) => leg.schemeSlug === 'unmapped');
+    assert.equal(unmappedLeg !== undefined && 'heroCountByPlayerCount' in unmappedLeg, false);
+  });
+
+  test('each definition gets its own budgets object; the passed base map is never mutated', () => {
+    const passedBudgets = { 1: 5, 2: 7, 3: 7, 4: 7, 5: 8 };
+    const counts = new Map([
+      ['aaa/big-leg', { 1: 6, 2: 6, 3: 6, 4: 6, 5: 6 }],
+      ['zzz/plain-leg', { 1: 3, 2: 5, 3: 5, 4: 5, 5: 6 }],
+    ]);
+    const catalog = buildGauntletCatalog(
+      [oneMastermindSummary('aaa', ['big-leg']), oneMastermindSummary('zzz', ['plain-leg'])],
+      passedBudgets,
+      undefined,
+      undefined,
+      counts,
+    );
+    assert.deepEqual(catalog[0]?.heroPoolBudgets, { 1: 8, 2: 8, 3: 8, 4: 8, 5: 8 });
+    assert.deepEqual(catalog[1]?.heroPoolBudgets, { 1: 5, 2: 7, 3: 7, 4: 7, 5: 8 });
+    assert.deepEqual(passedBudgets, { 1: 5, 2: 7, 3: 7, 4: 7, 5: 8 });
+  });
+
+  test('without per-leg counts the catalog is byte-identical to the four-argument call', () => {
+    const withoutCounts = buildGauntletCatalog([CORE_SUMMARY], BASE_BUDGETS);
+    const withUndefinedCounts = buildGauntletCatalog([CORE_SUMMARY], BASE_BUDGETS, undefined, undefined, undefined);
+    assert.equal(JSON.stringify(withUndefinedCounts), JSON.stringify(withoutCounts));
+    assert.equal(withoutCounts[0]?.heroPoolBudgets, BASE_BUDGETS);
+  });
+
+  test('per-leg counts are stamped even when no budgets are supplied', () => {
+    const counts = new Map([['tst/leg', { 1: 6, 2: 6, 3: 6, 4: 6, 5: 6 }]]);
+    const catalog = buildGauntletCatalog([oneMastermindSummary('tst', ['leg'])], undefined, undefined, undefined, counts);
+    assert.equal(catalog[0]?.heroPoolBudgets, undefined);
+    assert.deepEqual(catalog[0]?.legs[0]?.heroCountByPlayerCount, { 1: 6, 2: 6, 3: 6, 4: 6, 5: 6 });
+  });
+});

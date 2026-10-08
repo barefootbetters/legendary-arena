@@ -1804,8 +1804,11 @@ export default defineComponent({
                     Launch is unavailable until this gauntlet's composition is
                     configured.
                   </template>
+                  <!-- why: WP-798 / D-24671 — the count is per leg because legs'
+                       schemes differ (Secret Invasion needs 6), so the hint reads
+                       the leg's own heroCount, not the run's base count. -->
                   <template v-else>
-                    Enter a full hero pick ({{ run.heroCount }} heroes) and save
+                    Enter a full hero pick ({{ leg.heroCount }} heroes) and save
                     to enable Play this leg.
                   </template>
                 </p>

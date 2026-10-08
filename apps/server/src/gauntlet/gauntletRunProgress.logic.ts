@@ -284,8 +284,9 @@ function deriveGauntletRunLaunch(
  * (champion pool search) from WP-442 verbatim.
  *
  * @param run the caller's raw stored run view.
- * @param inputs the injected per-run derivation inputs (legs, approvedLoadouts,
- *   poolBudget, heroCount, boardName).
+ * @param inputs the injected per-run derivation inputs (legs — each possibly
+ *   carrying its required `heroCountByPlayerCount` — approvedLoadouts,
+ *   poolBudget, the base heroCount, boardName).
  * @param qualifyingRows the caller-scoped `competitive_scores` rows already
  *   fetched for this run's mastermind + legs + player_count.
  * @param checkParPublished the leaderboard dependency that resolves a scenario's
@@ -419,11 +420,18 @@ export function deriveGauntletRunProgress(
     }
     const picksForLeg = run.legPicks[leg.schemeSlug];
     const pickCount = Array.isArray(picksForLeg) ? picksForLeg.length : 0;
+    // why: WP-798 / D-24671 — the required pick is per leg because legs'
+    // schemes differ (Secret Invasion needs 6). The `?? inputs.heroCount`
+    // fallback keeps definitions built without per-leg counts on the base count,
+    // exactly as before.
+    const legHeroCount =
+      leg.heroCountByPlayerCount?.[run.playerCount] ?? inputs.heroCount;
     legs.push({
       schemeId: leg.schemeSlug,
       schemeName: leg.schemeName,
       cleared: isCleared,
-      hasFullPicks: pickCount === inputs.heroCount,
+      heroCount: legHeroCount,
+      hasFullPicks: pickCount === legHeroCount,
       lastPlayedAt: lastPlayedBySchemeSlug.get(leg.schemeSlug) ?? null,
     });
   }
@@ -438,8 +446,9 @@ export function deriveGauntletRunProgress(
   }
   const pool = [...poolSet].sort();
 
-  // why: budget is the injected poolBudget (heroPoolBudgets[playerCount] =
-  // heroCount + 2, D-24187 §4). Reusing the SAME value findBestPoolAssignment
+  // why: budget is the injected poolBudget (the definition's
+  // heroPoolBudgets[playerCount] = max(base, largest leg) + 2, D-24187 §4 as
+  // amended by D-24671). Reusing the SAME value findBestPoolAssignment
   // receives — rather than re-deriving heroCount + 2 here — guarantees the
   // view's budget and the champion search can never diverge.
   const budget = inputs.poolBudget;
