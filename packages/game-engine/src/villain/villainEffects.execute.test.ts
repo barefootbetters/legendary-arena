@@ -28,6 +28,11 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 
 const WOUND = 'pile-wound' as CardExtId;
 const CTX = { currentPlayer: '0' };
+// why: D-24669 — the CURRENT player now picks its own "each player KOs N of their Heroes"
+// KO when it has a real choice; every other player keeps the D-18902 / D-18503 auto-pick.
+// The tests that pin that auto-pick ORDER for every seat dispatch with a current player who
+// holds no seat in their fixture, so each seat takes the auto path they describe.
+const NON_SEAT_CTX = { currentPlayer: 'not-a-seat' };
 
 interface MakeGOptions {
   hooks?: VillainAbilityHook[];
@@ -489,7 +494,7 @@ describe('executeVillainAbilities — starting-SHIELD KO priority (D-20602)', ()
         },
       },
     });
-    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    executeVillainAbilities(G, NON_SEAT_CTX, 'v-x' as CardExtId, 'onFight');
 
     assert.deepStrictEqual(
       G.ko,
@@ -2432,7 +2437,7 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
         },
       },
     });
-    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    executeVillainAbilities(G, NON_SEAT_CTX, 'v-x' as CardExtId, 'onFight');
 
     assert.deepStrictEqual(
       G.ko,
@@ -2523,7 +2528,7 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
       playerZones: { '0': buildZones() },
     });
-    executeVillainAbilities(gLegacy, CTX, 'v-x' as CardExtId, 'onFight');
+    executeVillainAbilities(gLegacy, NON_SEAT_CTX, 'v-x' as CardExtId, 'onFight');
     assert.equal(gLegacy.ko.length, 1, 'legacy resolver KOs exactly one card');
     const legacyKoId = gLegacy.ko[0];
 
@@ -2699,7 +2704,7 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
         },
       },
     });
-    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    executeVillainAbilities(G, NON_SEAT_CTX, 'v-x' as CardExtId, 'onFight');
 
     assert.deepStrictEqual(
       G.ko,
@@ -3018,7 +3023,7 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
         },
       },
     });
-    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    executeVillainAbilities(G, NON_SEAT_CTX, 'v-x' as CardExtId, 'onFight');
 
     assert.deepStrictEqual(
       G.ko,
@@ -4842,5 +4847,51 @@ describe('executeVillainAbilities — a split card Penumbra played both-sides (W
     const marked = makeSplitState(hook, true, ['bys0', 'bys1', 'bys2'] as CardExtId[]);
     executeVillainAbilities(marked, CTX, 'v-zemo' as CardExtId, 'onFight');
     assert.equal(marked.playerZones['0']!.victory.length, 2, 'two different cards → two Bystanders');
+  });
+});
+
+describe('executeVillainAbilities — the current player picks an each-player KO (D-24669)', () => {
+  it('Destroyer-style magnitude 2: the current player parks a pick for two; other players auto-KO', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onEscape', ['koHeroEachPlayerMag2'])],
+      playerZones: {
+        '0': { deck: [], hand: ['core-hero-p0-h-a' as CardExtId, 'core-hero-p0-h-b' as CardExtId], discard: ['core-hero-p0-d-c' as CardExtId], inPlay: [], victory: [] },
+        '1': { deck: [], hand: ['core-hero-p1-h-a' as CardExtId], discard: ['core-hero-p1-d-a' as CardExtId, 'core-hero-p1-d-b' as CardExtId], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
+
+    assert.deepStrictEqual(G.ko, ['core-hero-p1-d-a', 'core-hero-p1-d-b'], 'only the other player auto-KOs (discard first)');
+    assert.equal(G.pendingKoHeroChoices?.length, 1, 'the current player has one parked pick');
+    assert.equal(G.pendingKoHeroChoices![0]!.playerID, '0');
+    assert.equal(G.pendingKoHeroChoices![0]!.remaining, 2, 'it owes two KOs');
+    assert.equal(G.pendingKoHeroChoices![0]!.zones, undefined, 'unrestricted: every zone is offered');
+    assert.equal(G.playerZones['0']!.hand.length + G.playerZones['0']!.discard.length, 3, "the current player's cards are untouched until they pick");
+  });
+
+  it('magnitude 1: the current player parks a single pick (no remaining field)', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
+      playerZones: {
+        '0': { deck: [], hand: ['core-hero-p0-h-a' as CardExtId], discard: ['core-hero-p0-d-a' as CardExtId], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+
+    assert.deepStrictEqual(G.ko, [], 'nothing is KO\'d before the pick');
+    assert.deepStrictEqual(G.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0' }]);
+  });
+
+  it('a forced KO still auto-resolves for the current player (no more Heroes than owed)', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onEscape', ['koHeroEachPlayerMag2'])],
+      playerZones: {
+        '0': { deck: [], hand: ['core-hero-p0-h-a' as CardExtId], discard: ['core-hero-p0-d-a' as CardExtId, WOUND], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
+
+    assert.deepStrictEqual(G.ko, ['core-hero-p0-d-a', 'core-hero-p0-h-a'], 'both Heroes are KO\'d with no prompt');
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no pick is parked');
   });
 });

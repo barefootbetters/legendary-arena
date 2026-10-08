@@ -46799,4 +46799,33 @@ No new G field, move or UIState field. Gameplay and scoring are unchanged; Killb
 
 ---
 
+### D-24669 — "Each player KOs N of their Heroes" lets the current player choose which (direct fix, no WP) (Active 2026-10-08)
+
+**Context.** In Jeff's solo match `L7pW0ZAyP_c` (Loki / The Legacy Virus, build `b2f6473`, turn 13) Destroyer escaped. Its Escape ("Each player KOs two of their Heroes", `[effect:koHeroEachPlayerMag2]`) KO'd two S.H.I.E.L.D. Agents with no prompt (13.1.3). The only KO the player saw was the rulebook HQ KO (13.1.4), so it looked like the card effect never fired. D-24644 made Juggernaut's zone-locked "…from their discard pile / hand" each-player KO the current player's choice, but the zone-less path (`koHeroEachPlayer` / `koHeroEachPlayerMag2`) still auto-picked for every player, starter-first. The printed effect is each player's own choice, the same reading as D-24386 (Red Skull) and D-24644 (Juggernaut).
+
+The cards on this path:
+- core and msp1 Destroyer's Escape (KO two);
+- core Super-Skrull, amwp M.O.D.O.K., msis Stonekeeper and wtif Yondu Fights (KO one).
+
+**Decision.**
+1. On the zone-less each-player path, the **current player** parks a `PendingKoHeroChoice` with no `zones` field and `remaining: N` (omitted for N = 1) when they have a real choice: more KO-able Heroes than owed **and** at least two distinct options. A forced KO still auto-resolves with no prompt, as does an empty one.
+2. **Other players** still auto-pick (D-18902 / D-18503 order). Pending choices are current-player scoped (D-24284).
+3. `parkZoneKoChoice` takes an optional zone, so one parker serves both paths. No new move, `G` field, UI component or log string. `resolveKoHeroChoice` already honours an unrestricted entry and `remaining`, and the D-24644 composer already logs "the active player must KO two heroes" for the Mag2 keyword.
+4. **Bot.** An unrestricted entry resolves with `selectDefaultKoTarget`, the same card the old auto-pick KO'd (the WP-242 bot-parity test pins this). So all-bot sims, PAR outcomes and both hash oracles are unchanged.
+
+**Tests changed (authorized behavior change).** Five existing `villainEffects.execute.test.ts` cases pinned the old current-player auto-pick:
+- starting-first priority per player;
+- one KO from every player;
+- legacy bot-parity;
+- magnitude-2 order;
+- the magnitude-1 non-regression.
+
+Each now dispatches with a current player who holds no seat in its fixture, so every assertion about the auto-pick order is unchanged. Three new cases pin the new behavior: a Mag2 current-player park beside other players' auto-KO, a magnitude-1 park, and a forced KO that still auto-resolves. The two park cases fail against the old engine.
+
+**Gates.** game-engine 5007 / 0 fail; server 1457 / 0; `sim:coverage --check` OK; `sim:runtime-observed:check` current; the sentinel replay (Brotherhood, zone-locked Juggernaut only) is unchanged; `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24669. Related: D-24644 (Juggernaut, the zone-locked half), D-24386 / D-24284 (current player chooses, others auto), D-24298 (`remaining`), D-18902 / D-18503 / D-20602 (the auto-pick order kept for other players and the bot), D-24656 (the escape procedure).
+
+---
+
 Protect this file.
