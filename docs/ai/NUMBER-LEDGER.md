@@ -436,6 +436,8 @@ high-water: 422
 - WP-795 — storm-spinning-cyclone-move-villain (Game Engine + Arena Client. Core Storm Spinning Cyclone "You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain" with swap-if-occupied: an optional two-step pending choice (Villain, then destination space). Surfaced in 2p match s1jtBcEAOfw. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 - WP-796 — scheme-extra-henchman-group (Registry + Engine setup + Server + Registry Viewer + gauntlet tooling; no arena-client change. A scheme-aware henchmen-group requirement override, sibling of resolveEffectiveHeroCount: core Negative Zone Prison Breakout, msp1 Asgard Under Siege and vnom Invasion of the Venom Symbiotes print "Add an extra Henchman group to the Villain Deck", which no loadout can supply today. reserved 2026-10-07, spec/reserve-scheme-extra-henchman-group)
 - WP-797 — always-leads-fidelity (Card-data pipeline + Registry + Registry Viewer + gauntlet tooling; no engine change. Henchman-group Always Leads (alwaysLeadsHenchmen / henchman ledBy) for the 9 masterminds that print one, plus the 11 printed-vs-data villain-lead corrections; core Dr. Doom gauntlet legs re-anchored. reserved 2026-10-07, spec/reserve-always-leads-fidelity)
+- WP-798 — gauntlet-per-leg-hero-count (Server gauntlet run progress + launch + arena-client profile; the per-leg hero pick count follows resolveEffectiveHeroCount for the leg scheme, and the champion pool budget becomes the largest leg count + 2. reserved 2026-10-08, spec/reserve-scheme-hero-count)
+- WP-799 — scheme-hero-count-table (Registry; resolveEffectiveHeroCount reads one table of printed Hero Deck count rules (+N, exactly N, per player count) for 25 schemes beyond Secret Invasion / Civil War. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 
 ## EC
 
@@ -833,6 +835,8 @@ high-water: 457
 - EC-832 — storm-spinning-cyclone-move-villain (WP-795; Game Engine + Arena Client. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 - EC-833 — scheme-extra-henchman-group (WP-796; Registry + Engine setup + Server + Registry Viewer + gauntlet tooling. reserved 2026-10-07, spec/reserve-scheme-extra-henchman-group)
 - EC-834 — always-leads-fidelity (WP-797; Card-data pipeline + Registry + Registry Viewer + gauntlet tooling. reserved 2026-10-07, spec/reserve-always-leads-fidelity)
+- EC-835 — gauntlet-per-leg-hero-count (WP-798. reserved 2026-10-08, spec/reserve-scheme-hero-count)
+- EC-836 — scheme-hero-count-table (WP-799. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 
 ## D
 
@@ -1282,3 +1286,5 @@ section below) and the allocation protocol in
 - D-24668 — killbot-display-name-and-reveal-from-hand-no-reveal-line (direct fix, no WP — Killbot-converted villain-deck Bystanders display as "Killbot"; a reveal-from-hand ability with no reveal logs a blocked line. reserved 2026-10-08, infra/killbot-name-and-psychic-link-noop)
 - D-24669 — each-player-ko-current-player-chooses (direct fix, no WP — the zone-less "Each player KOs N of their Heroes" path (Destroyer Escape, Super-Skrull Fight and siblings) lets the current player choose; others auto-pick. reserved 2026-10-08, infra/each-player-ko-current-chooses)
 - D-24670 — reveal-attack-log-amount-and-phantom-attack (direct fix, no WP — reveal-for-attack log lines say "gained +N attack"; reveal-cost-attack / reveal-attack-choose / victory-villain-attack lines drop the phantom plain attack keyword. reserved 2026-10-08, infra/high-stakes-jackpot-log-and-phantom)
+- D-24671 — gauntlet-per-leg-hero-count (WP-798 — per-leg hero pick count and the champion pool budget rule, amending D-24187 §4. reserved 2026-10-08, spec/reserve-scheme-hero-count)
+- D-24672 — scheme-hero-count-table (WP-799 — the printed Hero Deck count rules as one registry table; strict requirement. reserved 2026-10-08, spec/reserve-scheme-hero-count)
