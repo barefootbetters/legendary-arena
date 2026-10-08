@@ -397,6 +397,7 @@ function readiness(overrides: Partial<DrReadiness>): DrReadiness {
     lastDrill: { date: '2026-09-01', result: 'pass' },
     nextDue: '2026-11-01',
     overdue: false,
+    backupMirrorAlert: null,
     source: 'github',
     ...overrides,
   };

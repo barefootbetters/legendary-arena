@@ -23,11 +23,17 @@ export interface LastDrill {
   readonly result: DrillResult;
 }
 
+/** The open pCloud-mirror failure issue (mirrors the server `BackupMirrorAlert`). */
+export interface BackupMirrorAlert {
+  readonly openedAt: string | null;
+}
+
 /** The DR-readiness projection (mirrors the server `DrReadiness` wire shape). */
 export interface DrReadiness {
   readonly lastDrill: LastDrill | null;
   readonly nextDue: string;
   readonly overdue: boolean;
+  readonly backupMirrorAlert: BackupMirrorAlert | null;
   readonly source: 'github' | 'mock';
 }
 
@@ -60,6 +66,7 @@ export function mockDrReadiness(nowMs: number): ServiceResponse<DrReadiness> {
       lastDrill: { date: currentMonthFirst, result: 'pass' },
       nextDue: computeNextDue(nowMs),
       overdue: false,
+      backupMirrorAlert: null,
       source: 'mock',
     },
     updatedAt: nowMs,

@@ -61,8 +61,18 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 /** Default repository the drill issues live in; overridable via `DASH_GITHUB_REPO`. */
 const DEFAULT_GITHUB_REPO = 'barefootbetters/legendary-arena';
 
-/** GitHub REST page size — one page of 100 comfortably covers the drill-issue history. */
+/** GitHub REST page size — one page of 100 comfortably covers the bot-opened issue history. */
 const GITHUB_ISSUES_PER_PAGE = 100;
+
+/**
+ * Only issues opened by this account are fetched. why: the issues endpoint
+ * returns PRs too, newest first, and this repo opens ~20 PRs a day — an
+ * unfiltered first page held 100 PRs and zero drill issues (2026-10-08), so the
+ * tile reported "On track" while three drill issues sat open. Both the drill
+ * issues (`dr-drill-reminder.yml`) and the backup-mirror alert (`db-backup.yml`)
+ * are opened by the Actions `GITHUB_TOKEN`, i.e. `github-actions[bot]`.
+ */
+const GITHUB_ISSUE_CREATOR = 'github-actions%5Bbot%5D';
 
 interface CacheEntry {
   readonly data: DrReadiness;
@@ -108,6 +118,7 @@ function toDrillIssue(rawItem: unknown): DrillIssue {
     state: item.state === 'closed' ? 'closed' : 'open',
     body: typeof item.body === 'string' ? item.body : null,
     closedAt: typeof item.closed_at === 'string' ? item.closed_at : null,
+    createdAt: typeof item.created_at === 'string' ? item.created_at : null,
     // why: GitHub's issues endpoint returns pull requests too (each carries a
     // `pull_request` member); flag them so the pure derivation excludes them.
     isPullRequest: item.pull_request !== undefined && item.pull_request !== null,
@@ -121,7 +132,7 @@ function toDrillIssue(rawItem: unknown): DrillIssue {
  */
 async function fetchDrillIssues(token: string): Promise<DrillIssue[]> {
   const repo = readRepoCoordinate();
-  const url = `https://api.github.com/repos/${repo}/issues?state=all&per_page=${GITHUB_ISSUES_PER_PAGE}`;
+  const url = `https://api.github.com/repos/${repo}/issues?state=all&creator=${GITHUB_ISSUE_CREATOR}&per_page=${GITHUB_ISSUES_PER_PAGE}`;
   const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,

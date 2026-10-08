@@ -12,7 +12,12 @@
  * Authority: WP-517 §6/§Derivation; EC-552 Locked Values + Guardrails; D-24330.
  */
 
-import type { DrReadiness, DrillIssue, DrillResult } from './dashboardDrReadiness.types.js';
+import type {
+  BackupMirrorAlert,
+  DrReadiness,
+  DrillIssue,
+  DrillResult,
+} from './dashboardDrReadiness.types.js';
 
 /**
  * Exact title prefix a drill issue carries. The separator is an EM DASH
@@ -20,6 +25,13 @@ import type { DrReadiness, DrillIssue, DrillResult } from './dashboardDrReadines
  * ${year}`` — a plain hyphen would match zero issues.
  */
 const DR_DRILL_TITLE_PREFIX = 'DR drill due — ';
+
+/**
+ * Exact title of the tracking issue `.github/workflows/db-backup.yml` opens when
+ * the pCloud mirror fails (EM DASH, U+2014). The workflow and this constant must
+ * match byte-for-byte; the routes test pins them together.
+ */
+export const BACKUP_MIRROR_ALERT_TITLE = 'Backup mirror failing — pCloud';
 
 /**
  * Full English month names in calendar order (index 0 = January). Matches the
@@ -118,6 +130,26 @@ export function computeNextDue(referenceDate: Date): string {
 }
 
 /**
+ * Find the open `Backup mirror failing — pCloud` issue, if any. The workflow keeps
+ * at most one open (it comments on an existing one), so the first match wins.
+ */
+export function findBackupMirrorAlert(issues: readonly DrillIssue[]): BackupMirrorAlert | null {
+  for (const issue of issues) {
+    if (issue.isPullRequest || issue.state !== 'open') {
+      continue;
+    }
+    if (issue.title !== BACKUP_MIRROR_ALERT_TITLE) {
+      continue;
+    }
+    // why: `createdAt` is always present on a real GitHub issue; a payload that
+    // omits it still raises the alert (the signal that matters), just undated.
+    const openedAt = issue.createdAt === null ? null : issue.createdAt.slice(0, 10);
+    return { openedAt };
+  }
+  return null;
+}
+
+/**
  * Derive the DR-readiness projection from live drill issues (`source: 'github'`).
  *
  * - Drops pull requests and any title that is not a `DR drill due — …` string.
@@ -127,6 +159,7 @@ export function computeNextDue(referenceDate: Date): string {
  *   its close date and `result` from its `Drill passed` checkbox; `null` when
  *   none has closed.
  * - `nextDue` = the 1st of the month after the reference date (UTC).
+ * - `backupMirrorAlert` = the open pCloud-mirror failure issue, or `null`.
  */
 export function deriveDrReadiness(issues: readonly DrillIssue[], referenceDate: Date): DrReadiness {
   // why: GitHub's issues endpoint returns pull requests alongside issues, and
@@ -175,6 +208,7 @@ export function deriveDrReadiness(issues: readonly DrillIssue[], referenceDate: 
     lastDrill,
     nextDue: computeNextDue(referenceDate),
     overdue,
+    backupMirrorAlert: findBackupMirrorAlert(issues),
     source: 'github',
   };
 }
@@ -190,6 +224,7 @@ export function buildMockDrReadiness(referenceDate: Date): DrReadiness {
     lastDrill: null,
     nextDue: computeNextDue(referenceDate),
     overdue: false,
+    backupMirrorAlert: null,
     source: 'mock',
   };
 }
