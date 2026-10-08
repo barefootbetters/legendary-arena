@@ -745,6 +745,18 @@ const EXCESSIVE_VIOLENCE_CARDS: ReadonlySet<string> = new Set<string>([
   'mgtg/drax/remove-his-spine',
 ]);
 
+// why: WP-668 / D-24481, D-24670 — keywords whose handler computes the line's own
+// "+[icon:attack] equal to …" amount. The printed icon on such a line is that grant, not
+// a separate flat attack, so the icon-suppression in the keyword pass drops the plain
+// 'attack' keyword. Unmarked "+[icon:attack] equal to" lines are NOT listed — they stay
+// honest hollows (D-24649).
+const SELF_COMPUTED_ATTACK_KEYWORDS: ReadonlySet<string> = new Set<string>([
+  'reveal-herodeck-attack',
+  'reveal-cost-attack',
+  'reveal-attack-choose',
+  'victory-villain-attack',
+]);
+
 // why: WP-765 / D-24598 — the cards whose "[keyword:Sunlight]: … / [keyword:Moonlight]: … /
 // [X]: Instead, you get both." lines are FUSED into one executable `day-night-both` hook (the
 // WP-735 digest-indigestion composite precedent). HeroCondition has no OR, so emitting the three
@@ -2101,9 +2113,12 @@ function parseAbilityText(
   // only the reveal-herodeck-attack effect remains.
   // why: WP-668 / D-24481 — the reveal-Hero-Deck-attack keyword subsumes the printed
   // attack icon (mirrors the D-24016 attack-per-count suppression above).
+  // why: D-24670 — the same holds for every keyword that computes its own "+[icon:attack]
+  // equal to …" amount (SELF_COMPUTED_ATTACK_KEYWORDS); High Stakes Jackpot traced a
+  // phantom 'attack' no-handler on every play.
   let lineHasRevealHeroDeckAttack = false;
   for (const keyword of uniqueKeywords) {
-    if (keyword === 'reveal-herodeck-attack') {
+    if (SELF_COMPUTED_ATTACK_KEYWORDS.has(keyword)) {
       lineHasRevealHeroDeckAttack = true;
       break;
     }

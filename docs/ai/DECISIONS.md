@@ -46828,4 +46828,21 @@ Each now dispatches with a current player who holds no seat in its fixture, so e
 
 ---
 
+### D-24670 — Reveal-for-attack log lines name the amount; self-computed "+[icon:attack] equal to" keywords drop the phantom attack (direct fix, no WP) (Active 2026-10-08)
+
+**Context.** In Jeff's solo match `iNKIWCJu8FH` (Loki / The Legacy Virus, build `fedbdb1`) High Stakes Jackpot worked: on turn 16 it revealed Diving Block (cost 6) and the +6 paid for Loki. But the log read "Player 0 revealed Diving Block (cost 6) — always matched: gained attack." with no amount, so the player could not tell what it was worth. The diagnostics trace also recorded an `attack` no-handler on every play. The parser promoted the line's printed "+[icon:attack]" to a magnitude-less plain `attack` effect beside the real `reveal` effect. The same phantom sat on `reveal-attack-choose` and `victory-villain-attack` lines. The magnitude pre-gate already dropped it to a no-op, so there was no double grant, but the hook was misclassified and every play traced a fake effect.
+
+**Decision.**
+1. **Log amount.** `describeRevealActions(actions, cost)` takes the revealed card's cost. `attack-by-cost` reads "gained +N attack" (N = the cost); `attack-fixed` reads "gained +N attack" from the rule's `amount` (bare "gained attack" only when no amount is set). The same phrase feeds the `heroEffectResolved` narrative, so the overlay names the amount too. No behavior change; the grant is untouched.
+2. **Phantom attack.** A new `SELF_COMPUTED_ATTACK_KEYWORDS` set (`reveal-herodeck-attack`, `reveal-cost-attack`, `reveal-attack-choose`, `victory-villain-attack`) drives the existing D-24481 icon suppression. A line carrying one of them drops the plain `attack` keyword and its magnitude. Unmarked "+[icon:attack] equal to …" lines are NOT listed and stay honest hollows (D-24649); a negative-control test pins that.
+3. **Coverage report.** `victory-villain-attack` joins the informational `EXECUTED_KEYWORDS` list in `scripts/hero-effect-coverage.mjs` (it is already in `MVP_KEYWORDS`). Without it the antm hook, which had only counted as executable through the phantom, would have slipped into PARSED_NOT_EXECUTED. With it, this change leaves the coverage baseline untouched.
+
+**Tests changed (authorized wording change).** `revealLog.test.ts` pinned "gained attack" for both attack kinds, and the WP-726 `heroEffectResolved` narrative case in `heroEffects.execute.test.ts` pinned "— gained attack.". Both now expect the amount. Four new parser cases cover the three keywords plus an unmarked negative control. Against the old source, 5 cases fail.
+
+**Gates.** game-engine 5011 / 0 fail; `sim:coverage --check` OK (no delta from this change); `sim:runtime-observed:check` current; `ledger:heroes:check` and `effect-index:check` current; `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24670. Related: D-24481 (the reveal-herodeck-attack suppression this generalizes), D-24582 (the reveal attack-fixed sibling), D-24649 (unmarked lines stay hollow), D-24237 / WP-325 (the reveal-outcome log line), WP-726 (the reveal narrative).
+
+---
+
 Protect this file.

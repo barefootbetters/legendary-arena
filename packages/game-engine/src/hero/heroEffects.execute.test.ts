@@ -2092,7 +2092,7 @@ describe('executeHeroEffects', () => {
     // (resolveTransformCardName's defensive fallback); no "Player N" prefix (sibling voice).
     assert.equal(
       event.narrative,
-      '"hero-x" revealed "hero-y" (cost 3) — gained attack.',
+      '"hero-x" revealed "hero-y" (cost 3) — gained +3 attack.',
       'names the source hero, the revealed card + cost, and the outcome, third-person.',
     );
   });
