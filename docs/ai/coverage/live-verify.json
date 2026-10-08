@@ -493,9 +493,9 @@
       "ability": "Lightning Bolt / Tidal Wave",
       "wp": "WP-794",
       "state": "partial",
-      "date": "2026-10-07",
-      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): Tidal Wave logged \"Villains you fight on the Bridge this turn get -2 attack\" 5 times (11.2.10, 14.2.2, 15.2.4, 16.2.7, 18.2.5). On turn 14, 9 attack paid the Bridge Sentinel (3 - 2 = 1) and Magneto (8), which is unaffordable without the reduction (11). Jeff saw the Bridge Villain's cost drop with the altered-cost badge on screen.",
-      "note": "Lightning Bolt (Rooftops -2) was not drawn, and the Ranged Mastermind -2 line was blocked every time (no other Ranged Hero played before it)."
+      "date": "2026-10-08",
+      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): Lightning Bolt Rooftops -2 proven on turn 37 — 8 attack paid Baron Zemo on the Rooftops at 4 (6 - 2), and the next 6 attack paid Dr. Doom's Final Blow at 9; unreduced, Zemo costs 6 and the Final Blow is out of reach. Tidal Wave Bridge -2: match 1K760WkJX68.",
+      "note": "Tidal Wave's Ranged Mastermind -2 line still unexercised (Tidal Wave not played here)."
     },
     {
       "key": "core/storm|spinning-cyclone",
@@ -855,10 +855,10 @@
       "card": "The Leader",
       "ability": "play-villain-deck-cards",
       "wp": "WP-542",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "Ambush half of WP-542 — The Leader never appeared in the verify match."
+      "state": "verified",
+      "date": "2026-10-08",
+      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): both Ambushes played the next Villain Deck card — a Scheme Twist (20.1.2) and a Master Strike (27.1.2).",
+      "note": ""
     },
     {
       "key": "core-villain-spider-foes-the-lizard|gain-wound",
@@ -943,10 +943,10 @@
       "card": "Zzzax",
       "ability": "reveal-or-wound",
       "wp": "WP-469",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-08",
+      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): fought twice; the player with a Strength Hero revealed and the other gained a Wound (24.2.13, 35.2.10).",
+      "note": "Escape half unexercised (same effect)."
     },
     {
       "key": "core-villain-masters-of-evil-ultron|scoring:dynamic-vp",
@@ -955,9 +955,9 @@
       "ability": "Dynamic victory points",
       "wp": "WP-553",
       "state": "verified",
-      "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
-      "note": "Scored 8 = printed 2 + 6 Tech Heroes owned at game end (villain VP 20 reconciles)."
+      "date": "2026-10-08",
+      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): Player 0 owned 3 Tech Heroes (Covering Fire, Team Player, Diving Block), so Ultron scored 2 + 3 = 5; villainVP 30 reconciles. Earlier: base 2 with no Tech Heroes (match zE7zTyM-ziJ).",
+      "note": ""
     },
     {
       "key": "mastermind:core/red-skull|master-strike",
@@ -1273,10 +1273,10 @@
       "card": "Unleash the Power of the Cosmic Cube",
       "ability": "Escalating twist Wounds",
       "wp": "WP-540",
-      "state": "partial",
-      "date": "2026-10-05",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): twists 1–4 no wound, twist 5 one wound (13.1.1).",
-      "note": "Twists 6–8 (wound, 3 wounds, Evil Wins) not reached."
+      "state": "verified",
+      "date": "2026-10-08",
+      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): twists 1–4 dealt no Wounds; twist 5 and 6 one Wound to each player; twist 7 three Wounds to each player (22.1, 29.1, 32.1). Earlier: solo match aK-n8zNOteC twists 1–5.",
+      "note": "Twist 8 (Evil Wins) not reached."
     },
     {
       "key": "core/cyclops|attack-per-count",
