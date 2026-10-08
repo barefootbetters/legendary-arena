@@ -35,6 +35,7 @@ test('mockDrReadiness data is the healthy mock-mode posture', () => {
   assert.equal(data.overdue, false);
   assert.equal(data.nextDue, '2026-09-01');
   assert.deepEqual(data.lastDrill, { date: '2026-08-01', result: 'pass' });
+  assert.equal(data.backupMirrorAlert, null);
 });
 
 test('mockDrReadiness rolls the next-due date over a year boundary (UTC)', () => {
@@ -48,6 +49,7 @@ test('wrapLiveDrReadiness badges a real GitHub-backed payload LIVE and keeps it 
     lastDrill: { date: '2026-09-01', result: 'pass' },
     nextDue: '2026-11-01',
     overdue: false,
+    backupMirrorAlert: { openedAt: '2026-10-05' },
     source: 'github',
   };
   const response = wrapLiveDrReadiness(payload, NOW_MS);
@@ -61,6 +63,7 @@ test('wrapLiveDrReadiness badges the server placeholder payload MOCK, not LIVE',
     lastDrill: null,
     nextDue: '2026-11-01',
     overdue: false,
+    backupMirrorAlert: null,
     source: 'mock',
   };
   const response = wrapLiveDrReadiness(placeholder, NOW_MS);
@@ -96,4 +99,23 @@ test('a placeholder payload shows "Not connected" instead of a green "On track"'
     /const isPlaceholder = computed\(\(\) => data\.value\?\.source === 'mock'\);/,
   );
   assert.match(source, /if \(isPlaceholder\.value\) \{\s*return 'Not connected';/);
+});
+
+test('an open backup-mirror alert reads "Mirror failing", ranked below an overdue drill', async () => {
+  const source = await readFile(widgetPath, 'utf8');
+  assert.match(
+    source,
+    /const hasMirrorAlert = computed\(\(\) => data\.value\?\.backupMirrorAlert != null\);/,
+  );
+  // Placeholder, then overdue, then the mirror alert, then the green default.
+  assert.match(
+    source,
+    /return 'Not connected';[\s\S]*?return 'Overdue';[\s\S]*?if \(hasMirrorAlert\.value\) \{\s*return 'Mirror failing';[\s\S]*?return 'On track';/,
+  );
+  // A placeholder payload never claims "No open alert" — it cannot know.
+  assert.match(
+    source,
+    /const mirrorLabel = computed\(\(\) => \{\s*if \(isPlaceholder\.value\) \{\s*return 'Unknown';/,
+  );
+  assert.match(source, /return `Failing since \$\{alert\.openedAt\}`;/);
 });

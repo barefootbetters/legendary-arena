@@ -14,6 +14,12 @@ on:
     - cron: '17 9 * * *'
   workflow_dispatch:
 
+permissions:
+  # why: least privilege — checkout reads the repo; the pCloud-mirror status step
+  # opens/comments/closes its tracking issue. Nothing else needs the token.
+  contents: read
+  issues: write
+
 jobs:
   backup:
     runs-on: ubuntu-latest
@@ -146,10 +152,17 @@ jobs:
               done
 
       - name: Mirror to pCloud (second offsite copy) and prune
+        id: pcloud_mirror
         # why: 3-2-1 — a copy on a vendor independent of Cloudflare, so a single-vendor
         # loss of Cloudflare cannot take both the card images and the only DB backup.
         # Independently gated: skips green until RCLONE_PCLOUD_TOKEN is provisioned.
         if: steps.guard.outputs.has_secrets == 'true' && steps.guard.outputs.has_pcloud == 'true'
+        # why: a red run must mean the PRIMARY (R2) backup failed. A revoked pCloud
+        # token turned 2026-10-05..08 red while R2 succeeded every night, so a real R2
+        # failure would have been indistinguishable from the mirror noise. The mirror
+        # failure is NOT silenced: the next step raises a warning annotation and keeps
+        # a tracking issue open until the mirror recovers.
+        continue-on-error: true
         env:
           # why: rclone reads a remote's config from RCLONE_CONFIG_<NAME>_* env vars,
           # so CI needs no rclone.conf file and no interactive login. TOKEN is the JSON
@@ -186,3 +199,75 @@ jobs:
                   rclone delete "pcloud:${staleKey}"
                 fi
               done
+
+      - name: Report pCloud mirror status
+        # why: the mirror step is continue-on-error, so its failure must surface
+        # somewhere persistent or it goes unseen. Use the step's `outcome` (the
+        # pre-continue-on-error result; `conclusion` would read success). A skipped
+        # mirror (no token, or the R2 leg failed first) reports nothing.
+        if: always() && (steps.pcloud_mirror.outcome == 'failure' || steps.pcloud_mirror.outcome == 'success')
+        uses: actions/github-script@v8
+        env:
+          MIRROR_OUTCOME: ${{ steps.pcloud_mirror.outcome }}
+        with:
+          script: |
+            // why: one exact title is the dedupe key — an open issue with it means
+            // "the pCloud mirror is currently failing"; it is commented on each
+            // failed night and closed on the first night the mirror succeeds.
+            const title = 'Backup mirror failing — pCloud';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const tracking = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+
+            if (process.env.MIRROR_OUTCOME === 'failure') {
+              core.warning('pCloud mirror failed. The primary R2 backup succeeded; only the second offsite copy is missing for this run. See the "Mirror to pCloud" step log.');
+              await core.summary
+                .addHeading('pCloud mirror failed', 3)
+                .addRaw('The R2 backup succeeded. The pCloud second copy did not. A revoked token needs `rclone authorize "pcloud"` and a new `RCLONE_PCLOUD_TOKEN` secret (docs/ops/DISASTER_RECOVERY.md §3).')
+                .write();
+              if (tracking) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: tracking.number,
+                  body: `Still failing: ${runUrl}`,
+                });
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body: [
+                    'The nightly `DB Backup` run uploaded the dump to R2 (primary), but the',
+                    'pCloud mirror (second offsite copy, 3-2-1) failed.',
+                    '',
+                    `First failing run: ${runUrl}`,
+                    '',
+                    'Most likely cause: a revoked or expired pCloud OAuth token (`pcloud error:',
+                    "Revoked 'access_token'` in the step log). Fix: run `rclone authorize \"pcloud\"`",
+                    'locally, store the token JSON with `gh secret set RCLONE_PCLOUD_TOKEN`, then',
+                    '`gh workflow run db-backup.yml`. This issue closes itself on the next run whose',
+                    'mirror succeeds. See `docs/ops/DISASTER_RECOVERY.md` §3.',
+                  ].join('\n'),
+                });
+              }
+            } else if (tracking) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: tracking.number,
+                body: `pCloud mirror recovered: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: tracking.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+            }

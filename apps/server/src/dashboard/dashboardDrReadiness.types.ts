@@ -50,6 +50,15 @@ export interface LastDrill {
   readonly result: DrillResult;
 }
 
+/**
+ * An open `Backup mirror failing — pCloud` issue, which `db-backup.yml` opens when
+ * the pCloud second-offsite copy fails and closes when it next succeeds.
+ */
+export interface BackupMirrorAlert {
+  /** UTC `YYYY-MM-DD` the tracking issue was opened (the first failing night), or `null` if the payload lacked it. */
+  readonly openedAt: string | null;
+}
+
 /** The DR-readiness projection returned in the `{ data }` envelope. */
 export interface DrReadiness {
   /** Newest CLOSED drill issue's date + result, or `null` when none has closed yet. */
@@ -58,6 +67,11 @@ export interface DrReadiness {
   readonly nextDue: string;
   /** `true` when an OPEN drill issue's title month is earlier than the reference month. */
   readonly overdue: boolean;
+  /**
+   * The open pCloud-mirror failure issue, or `null` when none is open. `null`
+   * means "no alert", not "mirror verified healthy": a skipped mirror opens nothing.
+   */
+  readonly backupMirrorAlert: BackupMirrorAlert | null;
   /**
    * `github` when derived from live drill issues; `mock` when the feed served
    * the mock-first fallback (no/invalid `DASH_GITHUB_TOKEN`, or a GitHub fetch
@@ -82,6 +96,8 @@ export interface DrillIssue {
   readonly body: string | null;
   /** ISO-8601 close time, or `null` for an open issue. */
   readonly closedAt: string | null;
+  /** ISO-8601 open time (dates the backup-mirror alert), or `null` when absent. */
+  readonly createdAt: string | null;
   /**
    * `true` when this row is actually a pull request. GitHub's issues endpoint
    * returns PRs too (each carries a `pull_request` member); the derivation

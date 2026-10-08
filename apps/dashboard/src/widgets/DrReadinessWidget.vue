@@ -34,12 +34,22 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
 // drill history, so a green "On track" would be a fabricated verdict.
 const isPlaceholder = computed(() => data.value?.source === 'mock');
 
+// why: an open `Backup mirror failing — pCloud` issue means the 3-2-1 second copy
+// is missing while the primary R2 backup still lands. The DB Backup run stays
+// green in that state, so this tile is where it must show (2026-10-05..08 went
+// unnoticed for four nights). It ranks below an overdue drill: R2 still holds a
+// restorable dump, so it is a watch, not a red.
+const hasMirrorAlert = computed(() => data.value?.backupMirrorAlert != null);
+
 const statusLabel = computed(() => {
   if (isPlaceholder.value) {
     return 'Not connected';
   }
   if (data.value?.overdue) {
     return 'Overdue';
+  }
+  if (hasMirrorAlert.value) {
+    return 'Mirror failing';
   }
   return 'On track';
 });
@@ -51,7 +61,24 @@ const statusTone = computed(() => {
   if (data.value?.overdue) {
     return 'saturated';
   }
+  if (hasMirrorAlert.value) {
+    return 'watch';
+  }
   return 'healthy';
+});
+
+const mirrorLabel = computed(() => {
+  if (isPlaceholder.value) {
+    return 'Unknown';
+  }
+  const alert = data.value?.backupMirrorAlert;
+  if (alert == null) {
+    return 'No open alert';
+  }
+  if (alert.openedAt === null) {
+    return 'Failing';
+  }
+  return `Failing since ${alert.openedAt}`;
 });
 
 function resultLabel(result: DrillResult): string {
@@ -120,6 +147,17 @@ function resultTone(result: DrillResult): string {
         <div class="metric">
           <dt>Next due</dt>
           <dd>{{ data.nextDue }}</dd>
+        </div>
+        <div class="metric">
+          <dt>pCloud backup mirror</dt>
+          <dd>
+            <span :class="{ 'mirror-failing': hasMirrorAlert }">{{ mirrorLabel }}</span>
+            <span class="sub">{{
+              hasMirrorAlert
+                ? '(R2 primary still current — see the open GitHub issue)'
+                : '(second offsite copy)'
+            }}</span>
+          </dd>
         </div>
         <div class="metric">
           <dt>Feed</dt>
@@ -267,6 +305,10 @@ function resultTone(result: DrillResult): string {
   margin: 0.15rem 0 0;
   font-size: 0.9rem;
   color: var(--p-text-color);
+}
+.mirror-failing {
+  font-weight: 700;
+  color: color-mix(in srgb, var(--p-yellow-500) 70%, var(--p-text-color));
 }
 .metric .sub {
   display: block;

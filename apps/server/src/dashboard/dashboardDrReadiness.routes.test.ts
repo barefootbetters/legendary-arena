@@ -14,12 +14,16 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 
 import { registerDashboardDrReadinessRoutes } from './dashboardDrReadiness.routes.js';
 import {
+  BACKUP_MIRROR_ALERT_TITLE,
   buildMockDrReadiness,
   computeNextDue,
   deriveDrReadiness,
+  findBackupMirrorAlert,
 } from './dashboardDrReadiness.logic.js';
 import type {
   DashboardDrReadinessRouteDependencies,
@@ -102,6 +106,7 @@ test('an admin with no token gets 200 { data } (mock-first) with no-store', asyn
   assert.equal(body.data.source, 'mock');
   assert.equal(body.data.overdue, false);
   assert.equal(body.data.lastDrill, null);
+  assert.equal(body.data.backupMirrorAlert, null);
   assert.match(String(body.data.nextDue), /^\d{4}-\d{2}-01$/);
 });
 
@@ -131,6 +136,7 @@ function drillIssue(overrides: Partial<DrillIssue>): DrillIssue {
     state: 'open',
     body: null,
     closedAt: null,
+    createdAt: null,
     isPullRequest: false,
     ...overrides,
   };
@@ -229,11 +235,80 @@ test('computeNextDue rolls December over to the next January (UTC)', () => {
 });
 
 test('buildMockDrReadiness is the locked no-token shape', () => {
+  // why: `backupMirrorAlert: null` was added 2026-10-08 with the pCloud-mirror
+  // alert field — an intended shape change, not a loosened assertion.
   const mock = buildMockDrReadiness(REFERENCE_DATE);
   assert.deepEqual(mock, {
     lastDrill: null,
     nextDue: '2026-09-01',
     overdue: false,
+    backupMirrorAlert: null,
     source: 'mock',
   });
+});
+
+// ---------------------------------------------------------------------------
+// Backup-mirror alert — the open `Backup mirror failing — pCloud` issue.
+// ---------------------------------------------------------------------------
+
+test('deriveDrReadiness: an OPEN backup-mirror issue raises backupMirrorAlert dated by createdAt', () => {
+  const result = deriveDrReadiness(
+    [
+      drillIssue({
+        title: BACKUP_MIRROR_ALERT_TITLE,
+        state: 'open',
+        createdAt: '2026-10-05T09:45:40Z',
+      }),
+    ],
+    REFERENCE_DATE,
+  );
+  assert.deepEqual(result.backupMirrorAlert, { openedAt: '2026-10-05' });
+  assert.equal(result.overdue, false, 'the mirror issue is not a drill issue');
+  assert.equal(result.lastDrill, null);
+});
+
+test('findBackupMirrorAlert: a CLOSED mirror issue, a PR, or a near-miss title is no alert', () => {
+  assert.equal(
+    findBackupMirrorAlert([
+      drillIssue({ title: BACKUP_MIRROR_ALERT_TITLE, state: 'closed', closedAt: '2026-10-08T19:13:00Z' }),
+    ]),
+    null,
+  );
+  assert.equal(
+    findBackupMirrorAlert([
+      drillIssue({ title: BACKUP_MIRROR_ALERT_TITLE, state: 'open', isPullRequest: true }),
+    ]),
+    null,
+  );
+  // A plain hyphen instead of the em dash must not match.
+  assert.equal(
+    findBackupMirrorAlert([drillIssue({ title: 'Backup mirror failing - pCloud', state: 'open' })]),
+    null,
+  );
+});
+
+test('findBackupMirrorAlert: an undated open issue still alerts, with openedAt null', () => {
+  assert.deepEqual(
+    findBackupMirrorAlert([drillIssue({ title: BACKUP_MIRROR_ALERT_TITLE, state: 'open' })]),
+    { openedAt: null },
+  );
+});
+
+const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url));
+
+test('the alert title matches the issue title db-backup.yml opens, byte for byte', async () => {
+  const workflow = await readFile(`${repoRoot}.github/workflows/db-backup.yml`, 'utf8');
+  assert.ok(
+    workflow.includes(`const title = '${BACKUP_MIRROR_ALERT_TITLE}';`),
+    'db-backup.yml must open the issue under BACKUP_MIRROR_ALERT_TITLE',
+  );
+});
+
+test('the live fetch filters to github-actions[bot] issues so PRs cannot crowd out the first page', async () => {
+  const routes = await readFile(
+    fileURLToPath(new URL('./dashboardDrReadiness.routes.ts', import.meta.url)),
+    'utf8',
+  );
+  assert.match(routes, /const GITHUB_ISSUE_CREATOR = 'github-actions%5Bbot%5D';/);
+  assert.match(routes, /issues\?state=all&creator=\$\{GITHUB_ISSUE_CREATOR\}&per_page=/);
 });

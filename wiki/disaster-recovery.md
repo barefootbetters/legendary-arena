@@ -26,7 +26,7 @@ source:
   - ../docs/ai/DECISIONS.md
   - ../render.yaml
   - ../.github/workflows/db-backup.yml
-last-reviewed: 2026-08-09
+last-reviewed: 2026-10-08
 canonical-source: docs/ops/DISASTER_RECOVERY.md
 ---
 
@@ -57,20 +57,52 @@ not in memory. The three assets that are **not** replaceable are the
 own secret store, not in the repo). If an asset is not in the §2 inventory
 of the canonical doc, recovery assumes it is lost.
 
-### The two backup layers
+### The three backup layers
 
 | Layer | Source | Where | Notes |
 |---|---|---|---|
 | Managed (internal) | Render Postgres automated snapshots + PITR | Render | Retention per plan — confirm in the Render dashboard. Cannot survive losing Render itself. |
-| External (provider-independent) | `pg_dump -Fc`, daily GitHub Actions ([`db-backup.yml`](../.github/workflows/db-backup.yml), WP-416 / D-24236) | private Cloudflare R2 bucket, `db-backups/` prefix, 35-day window | The only database copy that survives losing the Render account (scenario DR-05). |
+| External (provider-independent) | `pg_dump -Fc`, daily 09:17 UTC GitHub Actions ([`db-backup.yml`](../.github/workflows/db-backup.yml), WP-416 / D-24236) | private Cloudflare R2 bucket, `db-backups/YYYY/MM/DD/` | **Primary** offsite copy. Live since 2026-08-09; restore drilled 2026-08-09. GFS retention: 35 daily · 12 weekly · 12 monthly. |
+| Second offsite (3-2-1) | the same dump, `rclone copyto` in the same run | pCloud, `db-backups/` (US region, `api.pcloud.com`) | Vendor independent of Cloudflare, same GFS policy. Live since 2026-08-10; restore drilled 2026-08-10. |
 
-The external layer is the one that makes a provider-loss recoverable. It
-is a full-database operational `pg_dump` — **not** an application read of
-the `bgio` blob, so it sits outside the persistence-boundary carve-outs and
-interprets nothing (see
+The external layers are the ones that make a provider-loss recoverable. They
+are a full-database operational `pg_dump` — **not** an application read of
+the `bgio` blob, so they sit outside the persistence-boundary carve-outs and
+interpret nothing (see
 [ARCHITECTURE.md §Persistence Boundary](../docs/ai/ARCHITECTURE.md) and
 DECISIONS [D-24095](../docs/ai/DECISIONS.md)). The backup is a derived
 operational copy and is never read back into gameplay state.
+
+### Reading a `DB Backup` run
+
+| Run result | Meaning | Action |
+|---|---|---|
+| Red | The **primary** failed: the dump or the R2 upload. No new offsite backup exists for that night. | Urgent. Read the failing step's log and fix the same day; the RPO clock is running. |
+| Green + warning annotation | R2 succeeded; only the pCloud mirror failed. The issue **`Backup mirror failing — pCloud`** is open and gets a comment each failing night. | Fix within days. The issue closes itself on the first run whose mirror succeeds. |
+| Green, no warning | Both copies landed. | None. |
+
+The pCloud step is `continue-on-error` so a red run always means the primary
+failed. Before that change (2026-10-08), a revoked pCloud token turned four
+nights red (2026-10-05..08) while R2 succeeded every night, and nobody noticed.
+The dashboard DR Readiness tile reads drill issues only, not backup runs.
+
+**Re-minting a revoked pCloud token** (`pcloud error: Revoked 'access_token'
+provided … (2095)` in the mirror step). Operator-only; the token is a secret:
+
+```powershell
+rclone authorize "pcloud"
+gh secret set RCLONE_PCLOUD_TOKEN -R barefootbetters/legendary-arena
+rclone config reconnect pcloud:
+gh workflow run db-backup.yml -R barefootbetters/legendary-arena
+```
+
+Paste the JSON that `rclone authorize` prints when `gh secret set` prompts for
+it. The revocation also killed the operator's local `pcloud:` remote, so
+reconnect it too. A new authorization does **not** revoke an existing one:
+CI and the local remote both work on separate tokens. The account is US, so
+`RCLONE_PCLOUD_HOSTNAME` stays unset (it defaults to `api.pcloud.com`).
+Nights missed during an outage exist only on R2. Back-copy them with
+`rclone copy r2:<bucket>/db-backups/<yyyy>/<mm> pcloud:db-backups/<yyyy>/<mm>`.
 
 ### Recovery scenarios (DR-01 … DR-05)
 
@@ -79,11 +111,11 @@ The canonical doc §5 enumerates five scenarios, each with an honest
 
 | ID | Trigger | Honest recoverability |
 |---|---|---|
-| DR-01 | Database loss / corruption | Render dashboard restore / PITR only; no external fallback until the R2 backup is provisioned |
+| DR-01 | Database loss / corruption | Yes — Render dashboard restore / PITR, or the latest R2 / pCloud dump (restore drilled) |
 | DR-02 | Application server lost, DB intact | Yes — lowest risk; the server is stateless, redeploy from the [`render.yaml`](../render.yaml) blueprint |
-| DR-03 | Accidental data deletion (`DROP TABLE …`) | Render PITR to just before the deletion — the scenario an external backup most protects against |
+| DR-03 | Accidental data deletion (`DROP TABLE …`) | Yes — Render PITR to just before the deletion, or the last nightly dump (up to ~24 h of loss) |
 | DR-04 | Credential compromise | Yes, operationally — rotate the secret at its source; no data restore unless data was tampered with |
-| DR-05 | Cloud-provider / account failure | Recoverable **once the WP-416 backup is live**; the R2 dump is then the only surviving DB copy |
+| DR-05 | Cloud-provider / account failure | Yes — the R2 dump survives losing Render, and the pCloud copy survives losing Cloudflare; both restores drilled (2026-08-09 / 08-10) |
 
 ### Recovery is graded by capability, not infrastructure
 
@@ -114,12 +146,13 @@ one can log in has not recovered anything.
 
 ## Edge Cases
 
-- **A backup nobody has restored is an assumption, not a backup.** The
-  external pipeline exists in code but is inert until the operator
-  provisions its five GitHub Actions secrets and runs it once via
-  `workflow_dispatch` — **and** until a restore has actually been drilled.
-  Until then, DR-05 remains unrecoverable regardless of what the workflow
-  file says.
+- **A backup nobody has restored is an assumption, not a backup.** Both
+  offsite copies have been restored in a drill (§7 of the canonical doc).
+  The monthly `DR drill due — <Month> <Year>` issue keeps that evidence
+  fresh; the canonical §3 integrity gates require a drill within 90 days.
+- **A green run is not proof both copies landed.** Since 2026-10-08 a pCloud
+  mirror failure leaves the run green with a warning. The open
+  `Backup mirror failing — pCloud` issue is the signal, not the run color.
 - **RPO / RTO are proposed defaults, not confirmed policy.** The canonical
   doc §1 seeds 24 h / 4 h pending operator confirmation; a recovery only
   "fails" against a number that has actually been agreed.
@@ -133,21 +166,23 @@ one can log in has not recovered anything.
   DR-04 response invalidates existing `user_id_hash` linkage — treat as
   irreversible, per its `render.yaml` note.
 - **The R2 dump and the card images share one vendor.** Both live on
-  Cloudflare, so a single-vendor loss takes the only database backup and
-  the images at once — the reason a second offsite copy (3-2-1) is a named
-  follow-up in the canonical doc.
+  Cloudflare, so a single-vendor loss takes the primary database backup and
+  the images at once. The pCloud second copy covers the database side of that.
+  The exact card-image bytes uploaded to R2 also live in the operator's
+  pCloud-synced `card-images-staging/original/` folder, outside this repo.
+- **pCloud tokens can be revoked out from under CI.** The 2026-10-05
+  revocation hit both the CI secret and the operator's local remote at the
+  same moment. The trigger was not confirmed. A pCloud password change or an
+  app-access revoke in pCloud settings would produce exactly this; expect it
+  after any pCloud account-security change.
 
 ## Open Questions
 
-- Whether the WP-416 secrets have been provisioned and the first
-  `workflow_dispatch` backup has produced an object in R2 (until then the
-  workflow skips green and no external backup exists).
-- Whether a restore has been drilled and an RTO measured — the §7 drill
-  record is where that evidence lives; treat this page's recoverability
-  claims as "designed for," not "proven," until a drill exists.
-- The confirmed RPO / RTO values (canonical doc §1), long-term
-  weekly/monthly GFS retention beyond the 35-day window, and a second
-  offsite copy of the dump — all named as operator follow-ups.
+- The confirmed RPO / RTO values (canonical doc §1 still lists them as
+  proposed defaults: 24 h / 4 h).
+- Whether the dashboard DR Readiness tile should also surface backup and
+  mirror freshness (for example, an open `Backup mirror failing — pCloud`
+  issue). Today it reads drill issues only.
 
 ## References
 
@@ -160,7 +195,8 @@ one can log in has not recovered anything.
 - [WP-416 — Provider-Independent PostgreSQL Backup Pipeline](../docs/ai/work-packets/WP-416-db-backup-pipeline.md)
   and its [EC-451 checklist](../docs/ai/execution-checklists/EC-451-db-backup-pipeline.checklist.md).
 - [`.github/workflows/db-backup.yml`](../.github/workflows/db-backup.yml) —
-  the daily `pg_dump` → R2 workflow.
+  the daily `pg_dump` → R2 → pCloud workflow, with the mirror-status
+  tracking issue.
 - [ARCHITECTURE.md §Persistence Boundary](../docs/ai/ARCHITECTURE.md) and
   [DECISIONS.md](../docs/ai/DECISIONS.md) D-24095 (framework-store
   exemption), D-24236 (WP-416 backup pipeline).
