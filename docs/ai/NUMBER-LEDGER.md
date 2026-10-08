@@ -435,6 +435,7 @@ high-water: 422
 - WP-794 — storm-location-fight-cost-reduction (Game Engine. Core Storm Lightning Bolt "Any Villain you fight on the Rooftops this turn gets -2[icon:attack]" and Tidal Wave's Bridge -2 / [hc:ranged] Mastermind -2 this turn: a turn-scoped fight-cost reduction applied in resolveFightCost / resolveMastermindFightCost. Surfaced in 2p match s1jtBcEAOfw. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 - WP-795 — storm-spinning-cyclone-move-villain (Game Engine + Arena Client. Core Storm Spinning Cyclone "You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain" with swap-if-occupied: an optional two-step pending choice (Villain, then destination space). Surfaced in 2p match s1jtBcEAOfw. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 - WP-796 — scheme-extra-henchman-group (Registry + Engine setup + Server + Registry Viewer + gauntlet tooling; no arena-client change. A scheme-aware henchmen-group requirement override, sibling of resolveEffectiveHeroCount: core Negative Zone Prison Breakout, msp1 Asgard Under Siege and vnom Invasion of the Venom Symbiotes print "Add an extra Henchman group to the Villain Deck", which no loadout can supply today. reserved 2026-10-07, spec/reserve-scheme-extra-henchman-group)
+- WP-797 — always-leads-fidelity (Card-data pipeline + Registry + Registry Viewer + gauntlet tooling; no engine change. Henchman-group Always Leads (alwaysLeadsHenchmen / henchman ledBy) for the 9 masterminds that print one, plus the 11 printed-vs-data villain-lead corrections; core Dr. Doom gauntlet legs re-anchored. reserved 2026-10-07, spec/reserve-always-leads-fidelity)
 
 ## EC
 
@@ -831,6 +832,7 @@ high-water: 457
 - EC-831 — storm-location-fight-cost-reduction (WP-794; Game Engine. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 - EC-832 — storm-spinning-cyclone-move-villain (WP-795; Game Engine + Arena Client. reserved 2026-10-06, spec/reserve-storm-city-space-abilities)
 - EC-833 — scheme-extra-henchman-group (WP-796; Registry + Engine setup + Server + Registry Viewer + gauntlet tooling. reserved 2026-10-07, spec/reserve-scheme-extra-henchman-group)
+- EC-834 — always-leads-fidelity (WP-797; Card-data pipeline + Registry + Registry Viewer + gauntlet tooling. reserved 2026-10-07, spec/reserve-always-leads-fidelity)
 
 ## D
 
@@ -1276,3 +1278,4 @@ section below) and the allocation protocol in
 - D-24665 — crushing-shockwave-solo-no-op (direct fix, no WP — core Magneto Crushing Shockwave logs a no-op with no other player instead of resolving silently. reserved 2026-10-07, infra/live-verify-storm-and-shockwave)
 - D-24666 — scheme-extra-henchman-group (WP-796 — the henchmen-group requirement override and its scheme list. reserved 2026-10-07, spec/reserve-scheme-extra-henchman-group)
 - D-24658 — match-lagn-final-blow (direct fix, no WP — the match LAGN projection writes setup.final_blow: true for a Final Blow match, read from matchConfiguration within the D-24153 carve-out, and the Battle Brief states Final Blow On/Off from it. reserved 2026-10-05, infra/battle-brief-final-blow)
+- D-24667 — always-leads-fidelity (WP-797 — henchman-group Always Leads data shape, any-of lead rule, and the Dr. Doom gauntlet re-anchor. reserved 2026-10-07, spec/reserve-always-leads-fidelity)
