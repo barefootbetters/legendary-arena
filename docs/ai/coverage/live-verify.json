@@ -77,7 +77,7 @@
       "state": "verified",
       "date": "2026-10-08",
       "evidence": "solo Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil), match EMXM2s3Ucsh (build afa55d3): twist 6 (1 Wound, 20.1.3) and twist 7 (3 Wounds, 24.1.3) each offered the reveal; revealing returned the Wound and drew a card. The Wound pile went 30 → 27 and the player ended with 3 Wounds = twist 5's 1 + twist 7's 2, so both reveals took.",
-      "note": "Twist 7 stopped 1 of 3 Wounds: D-24499/D-24651 allow one reveal per Diving Block copy. Rules v23 \"Revealing a Card\" says the same card may be revealed multiple times in a turn; awaiting Jeff's ruling."
+      "note": "Twist 7 stopped 1 of 3 Wounds under the old one-reveal-per-copy cap. Jeff ruled (D-24673, #2646) that one copy can stop every Wound; after deploy, re-verify three reveal prompts at a 3-Wound twist."
     },
     {
       "key": "core/captain-america|recruit-per-count",
