@@ -941,6 +941,15 @@ function villainEffectKoHero(
         targets.push(koedId);
       }
     } else {
+      // why: D-24669 — "Each player KOs two of their Heroes" (Destroyer's Escape) and
+      // "…one of their Heroes" (Super-Skrull's Fight) are each player's own choice, the
+      // reading D-24644 applied to Juggernaut and D-24386 to Red Skull. The current
+      // player picks when they have a real choice; other players still auto-pick
+      // (D-24284). A forced KO falls through to the auto-resolve below.
+      if (playerId === currentPlayer && parkZoneKoChoice(G, playerId, undefined, repetitions)) {
+        parked = true;
+        continue;
+      }
       for (let iteration = 0; iteration < repetitions; iteration++) {
         const koedId = koOneHeroForPlayer(G, playerId);
         if (koedId !== null) {
@@ -955,33 +964,42 @@ function villainEffectKoHero(
 }
 
 /**
- * Parks the current player's zone-locked "KO N Heroes from your <zone>" choice when
- * they have a real one (D-24644): more Heroes in that zone than the count owed AND at
- * least two distinct options. Otherwise returns false and the caller auto-resolves
- * the forced KO with `koHeroesFromZoneForPlayer`.
+ * Parks the current player's "KO N Heroes" choice for an each-player KO when they have
+ * a real one: more Heroes than the count owed AND at least two distinct options.
+ * Otherwise returns false and the caller auto-resolves the forced KO.
+ *
+ * With a `zone` it is the zone-locked "KO N Heroes from your <zone>" choice (D-24644,
+ * Juggernaut). Without one it is the unrestricted "KO N of your Heroes" choice
+ * (D-24669, Destroyer's Escape / Super-Skrull's Fight), parked with no `zones` field, so
+ * the existing resolve offers every KO-able Hero.
  *
  * @param G - Game state (the pending queue is lazily created on a park).
  * @param playerId - The current player.
- * @param zone - The zone the printed effect restricts the KO to.
- * @param magnitude - How many Heroes the player must KO from that zone.
+ * @param zone - The zone the printed effect restricts the KO to, or undefined for none.
+ * @param magnitude - How many Heroes the player must KO.
  * @returns True when a pending choice was parked.
  */
 function parkZoneKoChoice(
   G: LegendaryGameState,
   playerId: string,
-  zone: 'discard' | 'hand',
+  zone: 'discard' | 'hand' | undefined,
   magnitude: number,
 ): boolean {
   const zones = G.playerZones[playerId];
   if (!zones) return false;
-  const allowedZones: readonly KoHeroTarget['zone'][] = [zone];
+  const allowedZones: readonly KoHeroTarget['zone'][] | undefined = zone === undefined ? undefined : [zone];
   // why: mirror the current-player ko-hero parker (WP-492 / D-24298): a choice exists
   // only when the player can spare some Heroes AND the options are not all identical.
   // A KO never grows the option count, so a forced start stays forced throughout.
   if (countKoableHeroes(zones, allowedZones) <= magnitude) return false;
   if (buildKoEligibleTargets(zones, allowedZones).length < 2) return false;
   if (!G.pendingKoHeroChoices) G.pendingKoHeroChoices = [];
-  const entry: PendingKoHeroChoice = { choiceType: 'ko-hero', playerID: playerId, zones: allowedZones };
+  const entry: PendingKoHeroChoice = { choiceType: 'ko-hero', playerID: playerId };
+  // why: D-24669 — an unrestricted KO carries no `zones` field (absent ≡ every zone),
+  // the same shape the WP-242 current-player parker uses.
+  if (allowedZones !== undefined) {
+    entry.zones = allowedZones;
+  }
   // why: omit `remaining` for a single KO (absent ≡ 1), matching the WP-492 parker.
   if (magnitude >= 2) {
     entry.remaining = magnitude;

@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24669 — Destroyer's Escape and Super-Skrull's Fight let you choose which Heroes to KO (direct fix) (2026-10-08)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** "Each player KOs N of their Heroes" now prompts the current player to pick, instead of silently KO'ing starters. This covers Destroyer's Escape (two) and Super-Skrull's Fight (one), plus M.O.D.O.K., Stonekeeper and Yondu in other sets. Other players still auto-pick. A forced KO (no more Heroes than owed) still happens without a prompt. Reported in solo match `L7pW0ZAyP_c`.
+
+- **Engine only** (`villainEffects.execute.ts`). game-engine 5007 / 0 fail (+3; 5 authorized test edits); server 1457 / 0.
+- **Live-verify (D-24026): pending.** Let a Destroyer escape with more than two Heroes; a "Choose a Hero to KO (2 remaining)" prompt should appear.
+
 ### D-24668 — Killbots are called Killbots; Psychic Link says when no one revealed (direct fix) (2026-10-08)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** From 2-player Dr. Doom / Killbots match `zE7zTyM-ziJ`:
