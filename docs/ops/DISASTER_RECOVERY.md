@@ -36,8 +36,8 @@ retention in the Render dashboard).
 Consequence, stated plainly so it is not discovered during a crisis:
 
 - **DR-01 / DR-03** (database loss, accidental deletion) are recoverable through
-  Render's own dashboard restore / PITR **and**, once the workflow is
-  provisioned, from the R2 dump. The restore *mechanics* were drilled 2026-08-09
+  Render's own dashboard restore / PITR **and** from the R2 (or pCloud) dump.
+  The restore *mechanics* were drilled 2026-08-09
   (a full `pg_dump`/`pg_restore` of prod into a scratch DB; row counts matched —
   §7), and re-drilled the same day from the **actual R2 object** (downloaded and
   restored; stable tables matched — §7).
@@ -138,6 +138,18 @@ is additive to the existing pipeline and requires
 be cost and attack surface aimed at risks below the license-loss and
 operational-drill gaps that actually bound recovery here.
 
+**Failure posture (2026-10-08).** A red `DB Backup` run means the **primary**
+(dump or R2 upload) failed. Treat it as urgent. The pCloud mirror step is
+`continue-on-error`: a mirror failure leaves the run green with a warning
+annotation and opens (or comments on) the issue **`Backup mirror failing —
+pCloud`**, which auto-closes on the first run whose mirror succeeds. The usual
+cause is a revoked pCloud OAuth token (`pcloud error: Revoked 'access_token'
+… (2095)`). The 2026-10-05 revocation also killed the operator's local
+`pcloud:` remote, so assume one event hits both. Re-mint with
+`rclone authorize "pcloud"`, then update **both** the `RCLONE_PCLOUD_TOKEN`
+secret and the local remote (`rclone config reconnect pcloud:`). The
+2026-10-05..08 R2 dumps exist only on R2 unless they are back-copied to pCloud.
+
 ### Backup integrity gates
 
 A backup that *exists* is not a backup that *works*. Each database backup must
@@ -209,10 +221,13 @@ downstream — so each step has what the next one needs:
 ### DR-01 — Database loss
 
 - **Trigger:** DB instance corrupted / unavailable.
-- **Recoverable today?** Only via Render dashboard restore / PITR. No external
-  fallback.
+- **Recoverable today?** Yes. Render dashboard restore / PITR first; the
+  external fallback is the latest R2 (or pCloud) `db-backups/…` dump, restore
+  drilled 2026-08-09 / 08-10 (§7).
 - **Procedure:** Render dashboard → restore the DB to the latest good snapshot
   (or a PITR timestamp within RPO) → verify §6 Phase 2 → verify §6 Phases 3+.
+  If Render's copy is unusable, `pg_restore` the latest offsite dump that
+  passes the §3 integrity gates instead.
 
 ### DR-02 — Application server loss
 
@@ -228,11 +243,14 @@ downstream — so each step has what the next one needs:
 
 - **Trigger:** e.g. `DELETE FROM legendary.friendships;` or
   `DROP TABLE legendary.competitive_scores;`.
-- **Recoverable today?** Only via Render PITR to a timestamp just before the
-  deletion — **if** PITR is enabled and its window covers it. A server snapshot
-  does **not** help. This is the scenario an external backup most protects.
+- **Recoverable today?** Yes. Render PITR to a timestamp just before the
+  deletion, **if** PITR is enabled and its window covers it. Otherwise restore
+  the affected tables from the last nightly offsite dump (up to ~24 h of loss
+  for those tables). A server snapshot does **not** help.
 - **Procedure:** identify the deletion time → Render PITR restore to just
-  before it → validate affected tables (§6 Phase 2) → reconcile.
+  before it, or `pg_restore --table=…` the affected tables from the newest dump
+  taken before the deletion into a scratch DB and copy them back → validate
+  affected tables (§6 Phase 2) → reconcile.
 
 ### DR-04 — Credential compromise
 
@@ -248,14 +266,15 @@ downstream — so each step has what the next one needs:
 ### DR-05 — Cloud-provider / account failure
 
 - **Trigger:** Render outage that loses data, or loss of the Render account.
-- **Recoverable?** **NO** until *all three* hold: (a) the R2 backup is
-  configured (secrets provisioned), (b) a successful backup object is present
-  and passes the §3 integrity gates, and (c) a restore drill has been recorded
-  (§7). **Backup existence alone is not recoverability.** Once all three hold:
-  yes, from the R2 dump — the only database copy that survives losing Render.
+- **Recoverable?** **Yes, as of 2026-08-09.** That depends on all three of these
+  staying true: (a) the R2 backup is configured (secrets provisioned), (b) a
+  successful backup object is present and passes the §3 integrity gates, and
+  (c) a restore drill is on record within 90 days (§7). **Backup existence
+  alone is not recoverability.** The R2 dump survives losing Render; the pCloud
+  copy (drilled 2026-08-10) also survives losing Cloudflare.
 - **Procedure:** provision Postgres elsewhere → restore the latest `db-backups/…`
-  R2 dump (`pg_restore`) → stand up the server (DR-02) pointed at it → repoint DNS
-  → §6 validation.
+  dump from R2 (or pCloud if Cloudflare is also down) with `pg_restore` → stand
+  up the server (DR-02) pointed at it → repoint DNS → §6 validation.
 
 ---
 
