@@ -76,8 +76,8 @@
       "wp": "WP-682",
       "state": "pending",
       "date": "2026-10-08",
-      "evidence": "solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Diving Block was played on turns 10 and 15, but every Wound (twists 1/8/11, strikes 2/16, Ymir's Ambush 9) arrived while it was in the deck or discard.",
-      "note": "Needs it in hand when a Wound arrives."
+      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): played five times; at 8.1.1 and 11.1.1 a Tech reveal (Diving Block / Web-Shooters) avoided the Legacy Virus twist Wound, and every Wound that did arrive (4.1, 12.1, 15.1, 16.1, 18.1, 19.1) came while Diving Block was out of hand (the final hand holds none).",
+      "note": "Needs it in hand when a Wound arrives that a Tech reveal does not stop (a Loki strike or Ymir Ambush)."
     },
     {
       "key": "core/captain-america|recruit-per-count",
@@ -239,10 +239,10 @@
       "card": "Gambit",
       "ability": "High Stakes Jackpot",
       "wp": "WP-253",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "verified",
+      "date": "2026-10-08",
+      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): High Stakes Jackpot revealed the top card every play (10.2.8, 13.2.5, 16.2.6, 18.2.7). On turn 16 it revealed Diving Block (cost 6): 4 + 6 + Card Shark 2 + Trooper 1 = 13 paid Loki's 10, which is unaffordable without the +6.",
+      "note": "The reveal line says \"gained attack\" without the amount; the trace also records a phantom \"attack\" no-handler per play."
     },
     {
       "key": "core/gambit|reveal-top-dispose",
@@ -437,9 +437,9 @@
       "card": "Spider-Man",
       "ability": "Web-Shooters",
       "wp": "WP-215",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
+      "state": "verified",
+      "date": "2026-10-08",
+      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): Web-Shooters rescued a Bystander each play (11.2.4, 14.2.2, 18.2.4) and its reveal drew a ≤2-cost card (14.2.3, 18.2.5) or left a cost-4 one on top (11.2.5).",
       "note": ""
     },
     {
@@ -1075,10 +1075,10 @@
       "card": "Loki",
       "ability": "Tactic: Maniacal Tyrant",
       "wp": "WP-693",
-      "state": "partial",
-      "date": "2026-10-05",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 8.2.18 with an empty discard pile, so nothing to KO.",
-      "note": "KO-up-to-four path with a non-empty discard unexercised."
+      "state": "verified",
+      "date": "2026-10-08",
+      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): defeated at 16.2.11; the player chose and KO'd 4 cards from the discard pile (16.2.12–13). Empty-discard no-op: match aK-n8zNOteC.",
+      "note": ""
     },
     {
       "key": "mastermind:core/loki|vanishing-illusions",
