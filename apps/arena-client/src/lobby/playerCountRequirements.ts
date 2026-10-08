@@ -73,16 +73,30 @@ export function computePlayerCountMismatches(
   return mismatches;
 }
 
+// why: the mismatch labels are plural (they double as stable keys); a required count of 1
+// reads "1 villain group", not "1 villain groups". "henchmen groups" and "heroes" are
+// irregular, so each label maps to its own singular.
+const SINGULAR_LABELS: Readonly<Record<string, string>> = {
+  'villain groups': 'villain group',
+  'henchmen groups': 'henchman group',
+  heroes: 'hero',
+};
+
 /**
  * Builds a full-sentence warning for one mismatch, e.g.
- * "A 4-player match needs 3 villain groups — this loadout has 1."
+ * "A 4-player match needs 3 villain groups — this loadout has 1." or
+ * "A 1-player match needs 1 villain group — this loadout has 2."
  */
 export function formatMismatchWarning(
   playerCount: number,
   mismatch: RequirementMismatch,
 ): string {
+  let requiredLabel = mismatch.label;
+  if (mismatch.required === 1) {
+    requiredLabel = SINGULAR_LABELS[mismatch.label] ?? mismatch.label;
+  }
   return (
-    `A ${playerCount}-player match needs ${mismatch.required} ${mismatch.label} — ` +
+    `A ${playerCount}-player match needs ${mismatch.required} ${requiredLabel} — ` +
     `this loadout has ${mismatch.actual}.`
   );
 }
