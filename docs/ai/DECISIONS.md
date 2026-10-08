@@ -29401,6 +29401,9 @@ pool-constrained standings + publisher emission + carve-out doc edits) and WP-38
 (client: division toggle, hero-pool display, fixed claim chips) — drafted
 2026-07-16, pending execution.
 
+**§4 amended by D-24671 (2026-10-08, WP-798):** budget = max(base heroCount, largest leg count) + 2 per
+gauntlet; never below base + 2.
+
 Protect this file.
 
 ### D-24188 — Red Skull Master Strike MVP: deterministic auto-KO of the lowest-cost Hero
@@ -34159,6 +34162,9 @@ no-DB pure `deriveGauntletRunStatus` + `GAUNTLET_RUN_STATUSES` drift test. Layer
 grep over `gauntletRunProgress.logic.ts` finds no
 engine/preplan/boardgame.io/registry/`apps/*` import; a re-implementation grep
 finds no local `qualifiesAsLegClear`/`findBestPoolAssignment` definition.
+
+**Amended by D-24671 (2026-10-08, WP-798):** hasFullPicks compares each leg's own heroCount; budget is the
+per-gauntlet D-24671 §2 value.
 
 ### D-24266 — A printed villain/henchman Fight/Ambush/Escape line with no `[effect:]` marker is `no-handler` hollow (observability breadcrumb), superseding WP-188's silent marker-free skip (Active)
 
@@ -46869,6 +46875,29 @@ Each now dispatches with a current player who holds no seat in its fixture, so e
 **Gates.** game-engine 5011 / 0 fail; `sim:coverage --check` OK (no delta from this change); `sim:runtime-observed:check` current; `ledger:heroes:check` and `effect-index:check` current; `pnpm -r build` 0.
 
 **Reserved by:** NUMBER-LEDGER D-24670. Related: D-24481 (the reveal-herodeck-attack suppression this generalizes), D-24582 (the reveal attack-fixed sibling), D-24649 (unmarked lines stay hollow), D-24237 / WP-325 (the reveal-outcome log line), WP-726 (the reveal narrative).
+
+---
+
+### D-24671 — A gauntlet leg asks for its scheme's hero count; the fixed-division pool budget is max(base, largest leg) + 2 per gauntlet (WP-798 / EC-835) (Active 2026-10-08)
+
+**Amends D-24187 §4 (pool budget) and D-24265 (per-leg `hasFullPicks` / `ready` count; `budget` definition).**
+
+**Context.** A gauntlet run asked for the base per-player-count hero count on every leg, but a leg's scheme can require a different count (`resolveEffectiveHeroCount`, D-24337 / D-24385). Core Secret Invasion (6 heroes) was unlaunchable from "Play this leg" at 1–4 players and Core Super Hero Civil War (4 heroes) at 2 players: saving the base count enabled Play and `Game.setup` then rejected the match, while saving the printed count left "full picks" false. The fixed-division budget `heroCount + 2` also made a solo Core champion impossible (a 6-hero Secret Invasion team cannot fit a pool of 5). Found while scoping the WP-799 hero-count table (2026-10-08).
+
+**Decision.**
+
+1. **Per-leg hero count.** A gauntlet leg's required hero pick is `resolveEffectiveHeroCount` for that leg's scheme at the run's player count, computed in the wiring layer (`server.mjs`) and stamped on the leg (`heroCountByPlayerCount`). The progress view carries it per leg (`legs[].heroCount`); "full picks", "Play this leg" and the profile hint follow it. The run-level `heroCount` stays the base count.
+2. **Pool budget, amending D-24187 §4.** A gauntlet's fixed-division budget at N players is `max(base heroCount, largest leg count) + 2`, per gauntlet (per set), never below `base + 2`; a leg that lowers its count never lowers the pool. A gauntlet with no overridden leg is unchanged. Core becomes 8 at every count; the other 38 scheme-hosting sets keep 5 / 7 / 7 / 7 / 8. Jeff kept this default over the tighter `max(base + 2, largest leg)` (2026-10-08).
+3. **Ranked consequence.** Standings evaluate at read time, so a looser budget can newly qualify existing fixed-division entries on affected gauntlets. Observed at execution (read-only production query, 2026-10-08): Core heroes-win rows carrying a `team_key` — 1 player: 96 rows / 2 players / 0 Secret Invasion wins; 2 players: 82 rows / 4 players / 0 Secret Invasion wins. A fixed entry needs a win on every leg, so with no Secret Invasion win no Core fixed-division entry exists before or after this change: nothing is newly qualified today. Nothing is re-scored or deleted; `team_key`, leg-clear rules and the approved loadouts are unchanged. No migration: nothing persisted changes (`leg_picks`, `competitive_scores`, `team_key`, published board and index shapes), and runs and standings re-derive on read. Version skew between the Render and Pages deploys is accepted: gating is server-derived (`hasFullPicks`), so only the hint text can render without a count for a few minutes.
+4. **The save path stays structural** (D-24264 §2): picks of any length save; the per-leg count gates Play, and the engine remains the authoritative composition block.
+5. **One definition.** Counts come only from the registry resolver; the logic modules (`gauntlet.logic.ts`, `gauntletTruth.logic.ts`, `gauntletRunProgress.logic.ts`) stay registry-free and fall back to the base count when no per-leg count is injected. The budget rule lives in one non-exported pure helper (`deriveDefinitionHeroPoolBudgets`) that returns a fresh object; `scripts/gauntlet-post-block.mjs` carries a deliberate duplicate-first copy for the blog table. WP-799's table reaches the gauntlet through this path.
+6. **Not covered:** a count check on the save path, historical WP wording that still says `heroCount + 2`, and regenerating the budget tables in published Core gauntlet blog posts (named follow-ups).
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 failures (server 1668 → 1677 / 1462 → 1471 pass, arena-client 2297 → 2298, every other package unchanged); arena-client typecheck 0. Logic-module registry grep: no match. `gauntlet-post-block.mjs`: core magneto 8×5, dkcy apocalypse 5/7/7/7/8. Scratch real-data catalog: core 8/8/8/8/8, the other 38 sets 5/7/7/7/8; core Secret Invasion 6 at 1–5p, Civil War 3/4/5/5/6. Revert proofs 5/5 (per-leg `hasFullPicks`, the `max(…) + 2` budget, never-shrink, the leg-count stamp, the fresh per-definition budgets object). One mandated type-only test edit (the `legs()` helper). API catalog `GET /api/me/gauntlet-runs` row updated (D-11804).
+
+**Reserved by:** NUMBER-LEDGER D-24671 (#2642). Related: D-24187 (fixed division), D-24264 / D-24265 / D-24269 (run tracker), D-24283 (per-scheme overlay), D-24337 / D-24385 (resolver), D-24672 (WP-799 table), D-11804 (API catalog).
+
+**Live-verify (D-24026): pending (operator, after BOTH the Render and Pages deploys).**
 
 ---
 

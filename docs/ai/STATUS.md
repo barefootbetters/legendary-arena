@@ -7,6 +7,26 @@
 
 ## Current State
 
+### WP-798 — Gauntlet legs ask for their scheme's hero count; the pool budget fits the largest leg (EC-835 / D-24671) (2026-10-08)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** In profile → Gauntlet Runs, each leg now asks for its
+own scheme's hero count: core Secret Invasion asks for 6 heroes, and core Super Hero Civil War asks for 4 at 2 players.
+Both legs can now be launched from "Play this leg" (before, the tracker asked for the base count and the match was
+rejected). Each gauntlet's fixed-division hero pool budget now fits its largest leg, `max(base, largest leg) + 2`:
+Core becomes 8 at every player count, every other set is unchanged. The generated gauntlet blog block prints the
+per-gauntlet budget.
+
+- **Counts.** server 1668 → 1677 (1462 → 1471 pass); arena-client 2297 → 2298; every other package unchanged; 0
+  failures; arena-client typecheck 0. Revert proofs 5/5. Real-data catalog: Core 8×5, the other 38 sets 5/7/7/7/8.
+- **Ranked.** Production has no Core Secret Invasion win, so no Core fixed-division entry exists before or after the
+  change (D-24671 §3).
+- **Named follow-ups:** a count check on the save path; historical `heroCount + 2` wording in old WPs; regenerating
+  the budget table in published Core gauntlet blog posts (marketing repo).
+- **Live-verify (D-24026): pending (operator, after BOTH the Render and Pages deploys).** Import a Core gauntlet pack
+  at 2 players: the Secret Invasion leg's hint says 6 heroes and the Civil War leg's says 4; save 6 heroes on Secret
+  Invasion and "Play this leg" launches a 6-hero match; the run shows "Hero pool: N / 8 budget". Record the matchId
+  here.
+
 ### WP-797 — Always Leads fidelity: Henchman-group leads and printed-lead corrections (EC-834 / D-24667) (2026-10-07)
 
 **User-visible on `cards.legendary-arena.com` and `play.legendary-arena.com` (after the R2 metadata copy and deploy).**
