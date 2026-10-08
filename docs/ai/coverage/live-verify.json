@@ -75,9 +75,9 @@
       "ability": "Diving Block",
       "wp": "WP-682",
       "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "Re-test after D-24651. Not drawn in the Hulk game (jjChx_MJ2gl). Needs it in hand when Crazed Rampage, Sabretooth or an escape wounds you."
+      "date": "2026-10-08",
+      "evidence": "solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Diving Block was played on turns 10 and 15, but every Wound (twists 1/8/11, strikes 2/16, Ymir's Ambush 9) arrived while it was in the deck or discard.",
+      "note": "Needs it in hand when a Wound arrives."
     },
     {
       "key": "core/captain-america|recruit-per-count",
@@ -602,10 +602,10 @@
       "card": "Destroyer",
       "ability": "koHeroEachPlayerMag2",
       "wp": "WP-202",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-08",
+      "evidence": "solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Destroyer escaped (13.1.2); its Escape KO'd two of Player 0's Heroes (13.1.3), auto-picked with no prompt, then the rulebook HQ KO ran (13.1.4).",
+      "note": "D-24669 makes the current player choose; re-verify the \"Choose a Hero to KO (2 remaining)\" prompt after deploy."
     },
     {
       "key": "core-villain-spider-foes-doctor-octopus|override-next-hand-size",
@@ -657,10 +657,10 @@
       "card": "Frost Giant",
       "ability": "reveal-or-wound",
       "wp": "WP-469",
-      "state": "partial",
-      "date": "2026-10-05",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Frost Giant fight wounded with no Ranged Hero (7.2.8).",
-      "note": "Reveal (no-wound) branch unexercised."
+      "state": "verified",
+      "date": "2026-10-08",
+      "evidence": "solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): with Card Shark (Ranged) played, the Fight wounded nobody (7.2.8). Wound branch: match aK-n8zNOteC (7.2.8).",
+      "note": ""
     },
     {
       "key": "core-villain-spider-foes-green-goblin|captureBystander",
@@ -1219,8 +1219,8 @@
       "ability": "Twists wound; Evil Wins when the Wound stack runs out",
       "wp": "WP-511",
       "state": "verified",
-      "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
+      "date": "2026-10-08",
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd) Evil Wins also seen live: solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473) — the solo Wound stack ran out at 16.1.3 and the scheme won.",
       "note": "Twists wounded with no Tech Hero and were avoided by revealing Mission Accomplished; Evil Wins when the 6-per-player solo Wound Stack ran out (turn 16)."
     },
     {
