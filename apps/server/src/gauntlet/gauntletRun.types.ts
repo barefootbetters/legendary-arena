@@ -240,8 +240,11 @@ export type GauntletExistenceResolver = (
  * One leg of a run's derived progression (WP-446 / D-24265 §3). `schemeId` is
  * the registry scheme `slug`; `schemeName` is its display name; `cleared` is
  * `true` when at least one of the caller's `competitive_scores` rows for this
- * leg qualifies via `qualifiesAsLegClear`; `hasFullPicks` is
- * `leg_picks[schemeId].length === heroCount`; `lastPlayedAt` is the ISO
+ * leg qualifies via `qualifiesAsLegClear`; `heroCount` is the leg's required
+ * hero pick (WP-798 / D-24671 — its scheme's printed count from the registry
+ * resolver, injected by the wiring layer; the base count when none is injected);
+ * `hasFullPicks` is `leg_picks[schemeId].length === heroCount` (the LEG's count);
+ * `lastPlayedAt` is the ISO
  * `max(created_at)` over the caller's qualifying rows for the leg, or `null`
  * when the leg has no qualifying row. Nothing here is stored — every field is
  * derived on each read (D-24262).
@@ -250,6 +253,8 @@ export interface GauntletRunLegProgress {
   readonly schemeId: string;
   readonly schemeName: string;
   readonly cleared: boolean;
+  /** The leg's required hero pick, from `resolveEffectiveHeroCount` for its scheme (D-24671). */
+  readonly heroCount: number;
   readonly hasFullPicks: boolean;
   readonly lastPlayedAt: string | null;
 }
@@ -337,8 +342,10 @@ export const GAUNTLET_RUN_STATUSES: readonly GauntletRunStatus[] = [
  * The owner's DERIVED view of one gauntlet run on the wire (WP-446 / D-24265
  * §3): the raw `GauntletRunView` fields PLUS the progression block computed at
  * read time from `legPicks` + `legendary.competitive_scores`. `pool` is the
- * sorted union of all `leg_picks` hero ids; `budget` is `heroCount + 2` (the
- * fixed-pool budget, D-24187 §4); `budgetHeadroom` is `budget − pool.length`
+ * sorted union of all `leg_picks` hero ids; `heroCount` is the BASE
+ * per-player-count hero count (`PLAYER_COUNT_SETUP`), NOT a leg's required pick —
+ * gating and hints read `legs[].heroCount`; `budget` is the gauntlet's fixed-pool
+ * budget, `max(base, largest leg count) + 2` (D-24187 §4 as amended by D-24671); `budgetHeadroom` is `budget − pool.length`
  * (negative allowed when picks exceed budget); `isChampion` is `true` only when
  * every leg is cleared AND a budget-valid pool assignment exists. Nothing here
  * is stored (D-24262).
@@ -366,9 +373,10 @@ export interface GauntletRunProgressView extends GauntletRunView {
  * logic layer never imports the registry. `legs` are the gauntlet's home-set
  * scheme legs; `approvedLoadouts` is the gauntlet's approved menu (undefined
  * when the requirement is not configured — the loadout clause is then skipped);
- * `poolBudget` is `heroPoolBudgets[playerCount]` (`= heroCount + 2`) — the SAME
- * value `findBestPoolAssignment` receives and the view's `budget`; `heroCount`
- * is the run's per-`playerCount` hero-group count; `boardName` is
+ * `poolBudget` is the definition's `heroPoolBudgets[playerCount]` (per gauntlet,
+ * `max(base, largest leg) + 2`, D-24671) — the SAME value `findBestPoolAssignment`
+ * receives and the view's `budget`; `heroCount` is the run's BASE per-`playerCount`
+ * hero-group count, the fallback for a leg that carries no `heroCountByPlayerCount`; `boardName` is
  * `buildGauntletBoardName(definition)` for the cap-warning log.
  */
 export interface GauntletRunProgressInputs {

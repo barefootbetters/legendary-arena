@@ -18,8 +18,11 @@
  * WP-384 / D-24187 adds the fixed-hero-pool prestige DIVISION beside the
  * open one: a fixed entry exists only when some assignment of one
  * qualifying win per leg keeps the union of hero ids (the row's `team_key`)
- * within the board's pool budget (`heroCount + 2`). Open-division semantics
- * are unchanged; the fixed division is computed from the same single query.
+ * within the board's pool budget. Open-division semantics are unchanged; the
+ * fixed division is computed from the same single query. WP-798 / D-24671
+ * (amending D-24187 §4) makes the budget per gauntlet: `max(base heroCount,
+ * largest leg hero count) + 2`, where each leg's count is its scheme's printed
+ * hero requirement, so the pool always holds the largest team.
  *
  * Layer-boundary contract: no engine, registry, preplan, or UI imports.
  * The catalog — and, per D-24187, the per-count hero-pool budgets — arrive
@@ -115,14 +118,28 @@ export interface GauntletLeg {
   // publisher can emit the requirement per leg. Optional so pre-WP-472 callers
   // and loadout-less tests keep their leg shape unchanged.
   readonly approvedLoadouts?: GauntletApprovedLoadouts;
+  // why: WP-798 / D-24671 — the leg's required hero pick per player count (its
+  // scheme's printed requirement, e.g. Secret Invasion 6). Computed by the
+  // wiring layer with the registry resolver and stamped by buildGauntletCatalog,
+  // so this module stays registry-free. Optional so callers that inject no
+  // counts keep the pre-WP-798 leg shape and the base count.
+  readonly heroCountByPlayerCount?: GauntletLegHeroCounts;
 }
 
 /**
- * The fixed-division pool budget per player count (WP-384 / D-24187 §4):
- * `heroCount + 2` from the registry's PLAYER_COUNT_SETUP table. Keys are
- * the numeric player counts 1-5. Built by the wiring layer (`server.mjs`)
- * — never re-typed as literals here and never imported from the registry
- * (this module's layer lock).
+ * One leg's required hero pick per player count (WP-798 / D-24671): keys are
+ * the numeric player counts 1-5, values the count `resolveEffectiveHeroCount`
+ * returns for the leg's scheme. Built by the wiring layer (`server.mjs`).
+ */
+export type GauntletLegHeroCounts = Readonly<Record<number, number>>;
+
+/**
+ * The fixed-division pool budget per player count (WP-384 / D-24187 §4, as
+ * amended by D-24671). The wiring layer passes the base map (`heroCount + 2`
+ * from the registry's PLAYER_COUNT_SETUP table); when per-leg counts are also
+ * injected, each definition carries its own `max(base, largest leg) + 2`
+ * budgets. Keys are the numeric player counts 1-5 — never re-typed as literals
+ * here and never imported from the registry (this module's layer lock).
  */
 export type GauntletHeroPoolBudgets = Readonly<Record<number, number>>;
 
@@ -198,10 +215,11 @@ export const GAUNTLET_PLAYER_COUNTS = [1, 2, 3, 4, 5] as const;
  * `slug` ASC order within a set, legs sorted by scheme slug ASC.
  *
  * @param setSummaries Plain per-set registry slices from the wiring layer.
- * @param heroPoolBudgets Optional per-count fixed-division pool budgets
- *   (WP-384 / D-24187 §4), stamped onto every definition. The wiring layer
- *   derives them from PLAYER_COUNT_SETUP; absent budgets disable the fixed
- *   division (it computes empty).
+ * @param heroPoolBudgets Optional per-count base fixed-division pool budgets
+ *   (WP-384 / D-24187 §4: `heroCount + 2`). The wiring layer derives them from
+ *   PLAYER_COUNT_SETUP; they are stamped onto every definition unchanged, or,
+ *   with `legHeroCountsByScheme`, widened per gauntlet to fit its largest leg
+ *   (D-24671). Absent budgets disable the fixed division (it computes empty).
  * @param approvedLoadoutsByGauntlet Optional approved-loadout lookup keyed
  *   `setAbbr/mastermindSlug` (WP-395 / D-24199), built by the wiring layer
  *   from the registry's generated menu. A gauntlet with no entry carries no
@@ -214,6 +232,12 @@ export const GAUNTLET_PLAYER_COUNTS = [1, 2, 3, 4, 5] as const;
  *   leg with an authored per-scheme override; every other leg falls back to the
  *   per-mastermind menu. Each leg's EFFECTIVE loadout (overlay when present,
  *   else the menu) is stamped onto the leg.
+ * @param legHeroCountsByScheme Optional per-leg required hero counts keyed
+ *   `setAbbr/schemeSlug` (WP-798 / D-24671), built by the wiring layer with the
+ *   registry resolver. Each leg with an entry carries it as
+ *   `heroCountByPlayerCount`; when `heroPoolBudgets` is also supplied, each
+ *   definition gets its own budgets (`max(base, largest leg) + 2`). Absent, the
+ *   definitions are exactly as before WP-798.
  * @returns The ordered gauntlet definitions.
  */
 export function buildGauntletCatalog(
@@ -221,6 +245,7 @@ export function buildGauntletCatalog(
   heroPoolBudgets?: GauntletHeroPoolBudgets,
   approvedLoadoutsByGauntlet?: ReadonlyMap<string, GauntletApprovedLoadouts>,
   approvedLoadoutsByScheme?: ReadonlyMap<string, GauntletApprovedLoadouts>,
+  legHeroCountsByScheme?: ReadonlyMap<string, GauntletLegHeroCounts>,
 ): GauntletDefinition[] {
   const catalog: GauntletDefinition[] = [];
 
@@ -259,13 +284,26 @@ export function buildGauntletCatalog(
         // `{ schemeSlug, schemeName }` (exactOptionalPropertyTypes + the
         // pre-WP-472 leg-shape tests).
         const effectiveLoadout = perSchemeLoadout ?? mastermindMenu;
+        const legHeroCounts = legHeroCountsByScheme?.get(
+          `${setSummary.setAbbr}/${scheme.slug}`,
+        );
         legs.push({
           schemeSlug: scheme.slug,
           schemeName: scheme.name,
           ...(effectiveLoadout !== undefined
             ? { approvedLoadouts: effectiveLoadout }
             : {}),
+          ...(legHeroCounts !== undefined
+            ? { heroCountByPlayerCount: legHeroCounts }
+            : {}),
         });
+      }
+      // why: WP-798 / D-24671 — with per-leg counts injected, each definition
+      // gets its OWN freshly built budgets (never the shared input object, never
+      // mutated); without them the passed map rides unchanged, exactly as before.
+      let definitionBudgets = heroPoolBudgets;
+      if (heroPoolBudgets !== undefined && legHeroCountsByScheme !== undefined) {
+        definitionBudgets = deriveDefinitionHeroPoolBudgets(legs, heroPoolBudgets);
       }
       catalog.push({
         setAbbr: setSummary.setAbbr,
@@ -276,7 +314,7 @@ export function buildGauntletCatalog(
         // why: WP-384 — the budgets ride every definition so the standings
         // computation stays registry-free; `undefined` flows through as an
         // absent optional field for pre-WP-384 callers.
-        heroPoolBudgets,
+        heroPoolBudgets: definitionBudgets,
         // why: WP-395 — the per-mastermind menu is PRESERVED on the definition
         // (unchanged shape) so WP-473's per-run callers keep reading it until
         // they migrate to the per-leg field; the per-scheme overlay rides the
@@ -287,6 +325,44 @@ export function buildGauntletCatalog(
   }
 
   return catalog;
+}
+
+/**
+ * Derives one gauntlet's fixed-division pool budgets from the base budgets and
+ * its legs' required hero counts (WP-798 / D-24671 §2, amending D-24187 §4):
+ * for every player count in `baseBudgets`, `max(base heroCount, largest leg
+ * hero count) + 2`. Returns a fresh object; never mutates its inputs.
+ *
+ * why: the fixed-division pool must hold the largest team any leg requires
+ * (Secret Invasion's 6 heroes), keeping the format's two alternates above it,
+ * and it never shrinks below today's `base + 2` — a leg that LOWERS its count
+ * (2-player Civil War's 4) never lowers the pool.
+ *
+ * @param legs The gauntlet's legs, possibly carrying `heroCountByPlayerCount`.
+ * @param baseBudgets The wiring layer's base map (`heroCount + 2` per count).
+ * @returns A fresh per-count budgets record.
+ */
+function deriveDefinitionHeroPoolBudgets(
+  legs: readonly GauntletLeg[],
+  baseBudgets: GauntletHeroPoolBudgets,
+): GauntletHeroPoolBudgets {
+  const budgets: Record<number, number> = {};
+  for (const [playerCountKey, passedBudget] of Object.entries(baseBudgets)) {
+    const playerCount = Number(playerCountKey);
+    // why: the base hero count is recovered as `passedBudget - 2` because the
+    // wiring layer builds the passed map as `heroCount + 2` (D-24187 §4).
+    let largestHeroCount = passedBudget - 2;
+    for (const leg of legs) {
+      // why: a leg with no count for this player count contributes nothing
+      // (the base), so the budget is always a finite integer, never NaN.
+      const legHeroCount = leg.heroCountByPlayerCount?.[playerCount];
+      if (legHeroCount !== undefined && legHeroCount > largestHeroCount) {
+        largestHeroCount = legHeroCount;
+      }
+    }
+    budgets[playerCount] = largestHeroCount + 2;
+  }
+  return budgets;
 }
 
 /**
@@ -556,7 +632,8 @@ export interface GauntletStandingsForCount {
  * The FIXED division additionally requires a non-NULL `team_key` on every
  * win in the entry's assignment and the union of hero ids across the
  * assignment fitting the board's pool budget (`heroPoolBudgets` on the
- * definition; an absent budget disables the division for that count).
+ * definition — per gauntlet, `max(base, largest leg) + 2` under D-24671; an
+ * absent budget disables the division for that count).
  *
  * @param definition The gauntlet to compute.
  * @param database The pg pool (queries are read-only).

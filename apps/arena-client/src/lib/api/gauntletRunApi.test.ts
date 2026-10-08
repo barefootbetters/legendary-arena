@@ -186,6 +186,34 @@ test('listGauntletRuns returns the derived runs on 200 and attaches the Bearer h
   }
 });
 
+// why: WP-798 / D-24671 — a NEW fixture (a spread of PROGRESS_VIEW with its own
+// legs) carries the per-leg required hero count, so PROGRESS_VIEW stays unedited.
+const PER_LEG_HERO_COUNT_VIEW = {
+  ...PROGRESS_VIEW,
+  legs: [
+    {
+      schemeId: 'secret-invasion-of-the-skrull-shapeshifters',
+      schemeName: 'Secret Invasion of the Skrull Shapeshifters',
+      cleared: false,
+      heroCount: 6,
+      hasFullPicks: false,
+      lastPlayedAt: null,
+    },
+  ],
+};
+
+test("listGauntletRuns round-trips each leg's required heroCount (WP-798)", async () => {
+  const stub = installFetchStub(200, { runs: [PER_LEG_HERO_COUNT_VIEW] });
+  try {
+    const result = await listGauntletRuns('token-abc');
+    assert.ok(result.ok);
+    assert.equal(result.value.runs[0]?.legs[0]?.heroCount, 6);
+    assert.equal(result.value.runs[0]?.heroCount, PROGRESS_VIEW.heroCount);
+  } finally {
+    stub.restore();
+  }
+});
+
 test('listGauntletRuns omits the Authorization header when the token is null', async () => {
   const stub = installFetchStub(200, { runs: [] });
   try {
