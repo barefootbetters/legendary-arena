@@ -138,6 +138,18 @@ is additive to the existing pipeline and requires
 be cost and attack surface aimed at risks below the license-loss and
 operational-drill gaps that actually bound recovery here.
 
+**Failure posture (2026-10-08).** A red `DB Backup` run means the **primary**
+(dump or R2 upload) failed. Treat it as urgent. The pCloud mirror step is
+`continue-on-error`: a mirror failure leaves the run green with a warning
+annotation and opens (or comments on) the issue **`Backup mirror failing —
+pCloud`**, which auto-closes on the first run whose mirror succeeds. The usual
+cause is a revoked pCloud OAuth token (`pcloud error: Revoked 'access_token'
+… (2095)`). The 2026-10-05 revocation also killed the operator's local
+`pcloud:` remote, so assume one event hits both. Re-mint with
+`rclone authorize "pcloud"`, then update **both** the `RCLONE_PCLOUD_TOKEN`
+secret and the local remote (`rclone config reconnect pcloud:`). The
+2026-10-05..08 R2 dumps exist only on R2 unless they are back-copied to pCloud.
+
 ### Backup integrity gates
 
 A backup that *exists* is not a backup that *works*. Each database backup must
