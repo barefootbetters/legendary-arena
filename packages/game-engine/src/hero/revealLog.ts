@@ -80,12 +80,14 @@ export function describeRevealPredicate(predicate: RevealPredicate): string {
 }
 
 /**
- * Renders one reveal action kind to a human-readable outcome phrase.
+ * Renders one reveal action to a human-readable outcome phrase.
  *
- * @param kind The reveal action kind.
- * @returns A short phrase, e.g. `"drew it"`.
+ * @param action The reveal action.
+ * @param cost The revealed card's cost (the attack-by-cost amount).
+ * @returns A short phrase, e.g. `"drew it"` or `"gained +6 attack"`.
  */
-function describeRevealActionKind(kind: RevealActionKind): string {
+function describeRevealAction(action: RevealAction, cost: number): string {
+  const kind = action.kind;
   if (kind === 'draw') {
     return 'drew it';
   }
@@ -95,8 +97,16 @@ function describeRevealActionKind(kind: RevealActionKind): string {
   if (kind === 'discard') {
     return 'discarded it';
   }
-  if (kind === 'attack-by-cost' || kind === 'attack-fixed') {
-    return 'gained attack';
+  // why: D-24670 — name the amount; "gained attack" hid how much the reveal granted
+  // (High Stakes Jackpot, match iNKIWCJu8FH).
+  if (kind === 'attack-by-cost') {
+    return `gained +${cost} attack`;
+  }
+  if (kind === 'attack-fixed') {
+    if (action.amount === undefined) {
+      return 'gained attack';
+    }
+    return `gained +${action.amount} attack`;
   }
   if (kind === 'choose-discard-or-return') {
     return 'queued a choice';
@@ -108,12 +118,13 @@ function describeRevealActionKind(kind: RevealActionKind): string {
  * Renders a matched rule's actions to a comma-joined phrase.
  *
  * @param actions The matched rule's actions, in order.
- * @returns The joined phrase, e.g. `"gained attack, queued a choice"`.
+ * @param cost The revealed card's cost (the attack-by-cost amount).
+ * @returns The joined phrase, e.g. `"gained +4 attack, queued a choice"`.
  */
-export function describeRevealActions(actions: readonly RevealAction[]): string {
+export function describeRevealActions(actions: readonly RevealAction[], cost: number): string {
   const phrases: string[] = [];
   for (const action of actions) {
-    phrases.push(describeRevealActionKind(action.kind));
+    phrases.push(describeRevealAction(action, cost));
   }
   return phrases.join(', ');
 }

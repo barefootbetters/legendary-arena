@@ -2010,7 +2010,7 @@ function applyRevealRules(
     if (matchedPredicateText === undefined) {
       matchedPredicateText = describeRevealPredicate(rule.predicate);
     }
-    matchedActionPhrases.push(describeRevealActions(rule.actions));
+    matchedActionPhrases.push(describeRevealActions(rule.actions, cost));
     for (const unappliedKind of applyRevealRuleActions(G, playerID, playerZones, topCardId, cost, rule.actions)) {
       unappliedActionKinds.push(unappliedKind);
     }

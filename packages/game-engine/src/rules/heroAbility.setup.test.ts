@@ -403,6 +403,47 @@ describe('buildHeroAbilityHooks — condition-clause icon is not a grant (WP-660
     assert.ok(!hook!.keywords.includes('attack'), 'the printed [icon:attack] is subsumed by the reveal-herodeck-attack keyword');
   });
 
+  // why: D-24670 — High Stakes Jackpot (match iNKIWCJu8FH) traced a phantom 'attack'
+  // no-handler on every play. Each keyword that computes its own "+[icon:attack] equal to …"
+  // amount subsumes the printed icon, exactly like reveal-herodeck-attack above.
+  it('D-24670: reveal-cost-attack (High Stakes Jackpot) emits no phantom flat attack', () => {
+    const hook = oneCard('core', 'gambit', 'high-stakes-jackpot',
+      "Reveal the top card of your deck. You get +[icon:attack] equal to that card's cost. [keyword:reveal-cost-attack]");
+    assert.ok(hook !== undefined, 'the hook exists');
+    assert.ok(hook!.keywords.includes('reveal-cost-attack'), 'the reveal-cost-attack keyword resolves');
+    assert.ok(!hook!.keywords.includes('attack'), 'the printed [icon:attack] is subsumed');
+    assert.deepStrictEqual(
+      (hook!.effects ?? []).map((effect) => effect.type),
+      ['reveal'],
+      'the only effect is the reveal (its attack-by-cost rule is the grant)',
+    );
+  });
+
+  it('D-24670: reveal-attack-choose emits no phantom flat attack', () => {
+    const hook = oneCard('test', 'hero', 'reveal-choose',
+      "Reveal the top card of your deck. You get +[icon:attack] equal to that card's cost. Discard it or put it back. [keyword:reveal-attack-choose:4]");
+    assert.ok(hook !== undefined, 'the hook exists');
+    assert.ok(!hook!.keywords.includes('attack'), 'the printed [icon:attack] is subsumed');
+    assert.deepStrictEqual((hook!.effects ?? []).map((effect) => effect.type), ['reveal'], 'the only effect is the reveal');
+  });
+
+  it('D-24670: victory-villain-attack emits no phantom flat attack', () => {
+    const hook = oneCard('test', 'hero', 'victory-attack',
+      "[keyword:victory-villain-attack] You get +[icon:attack] equal to the printed [icon:attack] of a Villain in your Victory Pile. (Mastermind tactics aren't Villains.)");
+    assert.ok(hook !== undefined, 'the hook exists');
+    assert.ok(!hook!.keywords.includes('attack'), 'the printed [icon:attack] is subsumed');
+    assert.deepStrictEqual(hook!.effects, [{ type: 'victory-villain-attack' }], 'the only effect is victory-villain-attack');
+  });
+
+  it('D-24670: an unmarked "+[icon:attack] equal to" line keeps its honest hollow attack keyword', () => {
+    // why: negative control — the suppression keys on the marker, not the English text, so
+    // an unmodeled line still surfaces as a hollow (D-24649) rather than silently vanishing.
+    const hook = oneCard('test', 'hero', 'unmarked-equal-to',
+      "You get +[icon:attack] equal to the number of cards in your hand.");
+    assert.ok(hook !== undefined, 'the hook exists');
+    assert.ok(hook!.keywords.includes('attack'), 'the unmarked line keeps its attack keyword');
+  });
+
   it('KEEPS a real grant icon elsewhere on a condition line ("you get +N[icon:attack]")', () => {
     const hook = oneCard('co2e', 'thor', 'glory-of-asgard',
       'Once this turn, if you made at least 8[icon:recruit] this turn, you get +3[icon:attack].');

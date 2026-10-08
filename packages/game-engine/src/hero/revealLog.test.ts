@@ -42,17 +42,21 @@ test('describeRevealPredicate renders the trait predicates article-aware (WP-729
 });
 
 test('describeRevealActions maps each action kind and comma-joins them', () => {
-  assert.equal(describeRevealActions([{ kind: 'draw' }]), 'drew it');
-  assert.equal(describeRevealActions([{ kind: 'ko' }]), "KO'd it");
-  assert.equal(describeRevealActions([{ kind: 'attack-by-cost' }]), 'gained attack');
-  assert.equal(describeRevealActions([{ kind: 'attack-fixed', amount: 2 }]), 'gained attack');
+  assert.equal(describeRevealActions([{ kind: 'draw' }], 3), 'drew it');
+  assert.equal(describeRevealActions([{ kind: 'ko' }], 3), "KO'd it");
+  // why: D-24670 — the attack phrases name the amount: the revealed card's cost for
+  // attack-by-cost, the rule's own amount for attack-fixed.
+  assert.equal(describeRevealActions([{ kind: 'attack-by-cost' }], 6), 'gained +6 attack');
+  assert.equal(describeRevealActions([{ kind: 'attack-by-cost' }], 0), 'gained +0 attack');
+  assert.equal(describeRevealActions([{ kind: 'attack-fixed', amount: 2 }], 5), 'gained +2 attack');
+  assert.equal(describeRevealActions([{ kind: 'attack-fixed' }], 5), 'gained attack');
   assert.equal(
-    describeRevealActions([{ kind: 'choose-discard-or-return' }]),
+    describeRevealActions([{ kind: 'choose-discard-or-return' }], 3),
     'queued a choice',
   );
   assert.equal(
-    describeRevealActions([{ kind: 'attack-by-cost' }, { kind: 'choose-discard-or-return' }]),
-    'gained attack, queued a choice',
+    describeRevealActions([{ kind: 'attack-by-cost' }, { kind: 'choose-discard-or-return' }], 4),
+    'gained +4 attack, queued a choice',
   );
 });
 

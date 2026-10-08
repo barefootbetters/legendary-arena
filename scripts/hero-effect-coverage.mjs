@@ -94,6 +94,10 @@ const EXECUTED_KEYWORDS = new Set([
   // mandatory discard-to-hand return resolved by resolveReturnZeroCostDiscard). Informational
   // only, same as the D-24132 entry above.
   'return-zero-cost-discard',
+  // why: D-24670 — victory-villain-attack is in MVP_KEYWORDS (heroEffectVictoryVillainAttack).
+  // Its antm hook was only counted EXECUTABLE through the phantom 'attack' icon effect that
+  // D-24670 suppresses; listing it keeps the informational split honest.
+  'victory-villain-attack',
 ]);
 
 /** Error type signalling a probe failure (exit code 2). */
