@@ -796,3 +796,30 @@ describe("flattenSet groupName (loadout picker labels)", () => {
     assert.equal(result[0]!.groupName, "The Legacy Virus", "scheme groupName mirrors its name");
   });
 });
+
+describe("flattenSet mastermind Always Leads (D-24667)", () => {
+  it("carries alwaysLeads and alwaysLeadsHenchmen onto every mastermind card", () => {
+    const setData = {
+      id: 1, abbr: "core",
+      heroes: [],
+      masterminds: [
+        {
+          id: 1, name: "Dr. Doom", slug: "dr-doom",
+          alwaysLeads: [], alwaysLeadsHenchmen: ["doombot-legion"], vp: 5,
+          cards: [
+            { name: "Dr. Doom", slug: "dr-doom", tactic: false, vAttack: 9, imageUrl: "", abilities: [] },
+            { name: "Dark Technology", slug: "dark-technology", tactic: true, vAttack: null, imageUrl: "", abilities: [] },
+          ],
+        },
+      ],
+      villains: [], henchmen: [], schemes: [], bystanders: [], wounds: [], other: [],
+    } as unknown as SetData;
+
+    const masterminds = flattenSet(setData, "Core Set").filter((card) => card.cardType === "mastermind");
+    assert.equal(masterminds.length, 2);
+    for (const mastermindCard of masterminds) {
+      assert.deepEqual(mastermindCard.alwaysLeads, []);
+      assert.deepEqual(mastermindCard.alwaysLeadsHenchmen, ["doombot-legion"]);
+    }
+  });
+});

@@ -98,10 +98,10 @@ $env:R2_BASE_URL = "https://images.legendary-arena.com"; pnpm registry:validate
    `imageUrl` points at `images.legendary-arena.com` and flags ability
    text lines containing the literal pipeline artifact
    `[object Object]`.
-3. **Phase 3 — Cross-references.** Two checks run: `alwaysLeads` slug
-   resolution (each mastermind's `alwaysLeads` entries either match a
-   villain-group slug in the same set or are flagged as potential
-   henchman references) and duplicate-slug detection across all sets
+3. **Phase 3 — Cross-references.** Two checks run: Always-Leads slug
+   resolution (each mastermind's `alwaysLeads` entries must match a
+   villain-group slug and its `alwaysLeadsHenchmen` entries a Henchman-group
+   slug in the same set, D-24667) and duplicate-slug detection across all sets
    (duplicates are warnings because they can cause upsert collisions
    during later PostgreSQL seeding).
 4. **Phase 4 — Image spot-checks.** Three images per set are sampled
@@ -211,18 +211,23 @@ release promotion gate.
 
 Phase 3 runs two cross-reference checks over the registry.
 
-**`alwaysLeads` slug resolution.** Every mastermind record has an
-`alwaysLeads` array of villain-group slugs that the mastermind
-conventionally leads. For each entry, the script checks that the
-slug resolves to a villain group present in the same set. Entries
-that do not resolve are warnings, because some masterminds
-legitimately lead henchman groups (which live outside the villain
-slug space). Warnings are expected; **errors** in this phase are not.
+**Always-Leads slug resolution.** Every mastermind record has an
+`alwaysLeads` array of the villain-group slugs it prints as Always
+Leads and an `alwaysLeadsHenchmen` array of the Henchman-group slugs it
+prints (D-24667). For each `alwaysLeads` entry the script checks that the
+slug resolves to a villain group present in the same set
+(`ALWAYS_LEADS_UNRESOLVED`); for each `alwaysLeadsHenchmen` entry, a
+Henchman group present in the same set
+(`ALWAYS_LEADS_HENCHMEN_UNRESOLVED`). A Henchman slug is no longer
+accepted in `alwaysLeads`. Both stay warnings, but a clean corpus emits
+none; any finding is a lead-data defect to fix in
+`scripts/convert-cards/inputs/leads.json`.
 
-- [ ] The script emitted zero `ALWAYS_LEADS_UNRESOLVED` findings at
-      the `error` level. Warning-level findings are acceptable and
-      should be cross-checked against the physical cards by a human
-      reviewer during content authoring, not at deploy time.
+- [ ] The script emitted zero `ALWAYS_LEADS_UNRESOLVED` and zero
+      `ALWAYS_LEADS_HENCHMEN_UNRESOLVED` findings at the `error` level.
+      Warning-level findings should be cross-checked against the
+      physical cards by a human reviewer during content authoring, not
+      at deploy time.
 
 **Duplicate slug detection.** Every hero, mastermind, villain group,
 and scheme slug is collected across all sets. Any slug that appears in

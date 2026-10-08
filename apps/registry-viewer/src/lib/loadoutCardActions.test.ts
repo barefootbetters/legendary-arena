@@ -33,15 +33,23 @@ import {
 // why: a minimal registry whose listCards() supplies the ext_id + cardType +
 // alwaysLeads universe the draft needs. Magneto Always Leads the Brotherhood,
 // so selecting it auto-includes (and requires) core/brotherhood — the fixture
-// the Always-Leads no-op test relies on.
-const MOCK_CARDS: Array<{ extId: string; cardType: string; alwaysLeads?: readonly string[] }> = [
+// the Always-Leads no-op test relies on. Dr. Doom Always Leads the Doombot
+// Legion Henchman group (D-24667), for the Henchman no-op test.
+const MOCK_CARDS: Array<{
+  extId: string;
+  cardType: string;
+  alwaysLeads?: readonly string[];
+  alwaysLeadsHenchmen?: readonly string[];
+}> = [
   { extId: "core/midtown-bank-robbery", cardType: "scheme" },
   { extId: "core/secret-invasion", cardType: "scheme" },
   { extId: "core/magneto", cardType: "mastermind", alwaysLeads: ["brotherhood"] },
   { extId: "core/loki", cardType: "mastermind" },
+  { extId: "core/dr-doom", cardType: "mastermind", alwaysLeadsHenchmen: ["doombot-legion"] },
   { extId: "core/brotherhood", cardType: "villain" },
   { extId: "core/hydra", cardType: "villain" },
   { extId: "core/sentinel", cardType: "henchman" },
+  { extId: "core/doombot-legion", cardType: "henchman" },
   { extId: "core/wolverine", cardType: "hero" },
   { extId: "core/spider-man", cardType: "hero" },
 ];
@@ -218,6 +226,23 @@ describe("toggleCardInLoadout (WP-279)", () => {
       api.draft.value.composition.villainGroupIds.includes("core/brotherhood"),
       "Always-Leads villain group must remain after a remove attempt",
     );
+  });
+
+  it("Always-Leads Henchman group is NOT removable via the button (D-24667)", () => {
+    const api = makeApi();
+    // Selecting Dr. Doom auto-includes (and requires) core/doombot-legion.
+    api.setMastermind("core/dr-doom");
+    assert.ok(api.draft.value.composition.henchmanGroupIds.includes("core/doombot-legion"));
+    assert.ok(api.requiredHenchmanGroupIds.value.includes("core/doombot-legion"));
+    toggleCardInLoadout(api, card("core/doombot-legion", "henchman"));
+    assert.ok(
+      api.draft.value.composition.henchmanGroupIds.includes("core/doombot-legion"),
+      "Always-Leads Henchman group must remain after a remove attempt",
+    );
+    // A Henchman group nobody leads still toggles off normally.
+    toggleCardInLoadout(api, card("core/sentinel", "henchman"));
+    toggleCardInLoadout(api, card("core/sentinel", "henchman"));
+    assert.ok(!api.draft.value.composition.henchmanGroupIds.includes("core/sentinel"));
   });
 
   it("non-composition card type is a no-op (no throw, no mutation)", () => {

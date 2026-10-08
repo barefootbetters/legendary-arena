@@ -23,14 +23,14 @@
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "instinct",
-          "hc2": "covert",
           "cost": 2,
           "attack": null,
           "recruit": "1+",
           "abilities": [
             "[team:heroes-of-wakanda] [keyword:Ambush]: Rescue a Bystander.",
             "Gain the [keyword:Thrones Favor]. If you already have it, you may spend it to get +2[icon:recruit]."
-          ]
+          ],
+          "hc2": "covert"
         },
         {
           "name": "Vibranium Claws",
@@ -40,14 +40,14 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "instinct",
-          "hc2": "tech",
           "cost": 4,
           "attack": "2+",
           "recruit": null,
           "abilities": [
             "[hc:instinct] [keyword:Ambush]: You get +2[icon:attack].",
             "[hc:instinct]: Gain the [keyword:Thrones Favor]. If you already have it, you may spend it to get +2[icon:attack]."
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Heart-Shaped Herb",
@@ -57,14 +57,14 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "strength",
-          "hc2": "covert",
           "cost": 5,
           "attack": "3",
           "recruit": null,
           "abilities": [
             "[hc:covert] [keyword:Ambush]: Look at the top card of your deck. Draw it or KO it.",
             "[hc:covert]: Gain the [keyword:Thrones Favor]. If you already had it, you may spend it to look at the top card of your deck. Draw it or KO it."
-          ]
+          ],
+          "hc2": "covert"
         },
         {
           "name": "Unite the Tribes of Wakanda",
@@ -74,14 +74,14 @@
           "rarityLabel": "Rare",
           "slot": 4,
           "hc": "strength",
-          "hc2": "ranged",
           "cost": 8,
           "attack": "5+",
           "recruit": "0+",
           "abilities": [
             "[team:heroes-of-wakanda] [keyword:Ambush]: You get +1[icon:attack] for each Hero Class you have.",
             "[team:heroes-of-wakanda]: Gain the [keyword:Thrones Favor]. If you already had it, you may spend it to get +1[icon:recruit] and +1[icon:attack] for each Hero Class you have."
-          ]
+          ],
+          "hc2": "ranged"
         }
       ],
       "physicalCards": [
@@ -171,14 +171,14 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "covert",
-          "hc2": "ranged",
           "cost": 6,
           "attack": "3",
           "recruit": null,
           "abilities": [
             "Wound Villains on the Rooftops and Bridge.",
             "[hc:covert][hc:ranged]: Gain the [keyword:Thrones Favor]. If you already had it, you may spend it to [keyword:Wound the Mastermind] twice."
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "Thunderous Tempest",
@@ -269,13 +269,13 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "tech",
-          "hc2": "ranged",
           "cost": 4,
           "attack": null,
           "recruit": "0+",
           "abilities": [
             "You get [keyword:Empowered] by the color of your choice, getting [icon:recruit] instead of [icon:attack]."
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "Shock Net",
@@ -380,14 +380,14 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "strength",
-          "hc2": "instinct",
           "cost": 4,
           "attack": "2+",
           "recruit": null,
           "abilities": [
             "You may gain a S.H.I.E.L.D. Officer.",
             "[hc:strength]: Instead, you may KO a S.H.I.E.L.D. Officer or Wound from your hand or discard pile to get +2[icon:attack]."
-          ]
+          ],
+          "hc2": "instinct"
         },
         {
           "name": "Sovereign Bodyguard",
@@ -507,14 +507,14 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "covert",
-          "hc2": "tech",
           "cost": 5,
           "attack": "3",
           "recruit": null,
           "abilities": [
             "[team:heroes-of-wakanda] [keyword:Ambush]: You may KO one of your cards.",
             "[team:heroes-of-wakanda]: If any [keyword:Villain or Mastermind has any Wounds], you may KO a card from your hand or discard pile."
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Reflective Vibranium Armor",
@@ -577,6 +577,7 @@
       "alwaysLeads": [
         "killmongers-league"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 4,
       "cards": [
         {
@@ -652,6 +653,7 @@
       "alwaysLeads": [
         "enemies-of-wakanda"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

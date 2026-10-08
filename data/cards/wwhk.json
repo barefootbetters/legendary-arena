@@ -2137,6 +2137,7 @@
       "alwaysLeads": [
         "code-red"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2216,6 +2217,7 @@
       "alwaysLeads": [
         "illuminati"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 7,
       "cards": [
         {
@@ -2294,6 +2296,7 @@
       "alwaysLeads": [
         "warbound"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2372,6 +2375,7 @@
       "alwaysLeads": [
         "intelligencia"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2450,6 +2454,7 @@
       "alwaysLeads": [
         "sakaar-imperial-guard"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2527,6 +2532,7 @@
       "alwaysLeads": [
         "aspects-of-the-void"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -3097,34 +3103,37 @@
       "id": 26,
       "name": "Cytoplasm Spikes",
       "slug": "cytoplasm-spikes",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hm-cytoplasm-spikes.webp",
       "abilities": [
         "Fight: [keyword:Feast]. If Cytoplasm Spikes feasts on a non-grey Hero, you get +2[icon:recruit]."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     },
     {
       "id": 27,
       "name": "Death's Heads",
       "slug": "deaths-heads",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hm-deaths-heads.webp",
       "abilities": [
         "Fight: If you [keyword:Outwit] these Death's Heads, KO one of your cards that costs 0."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     },
     {
       "id": 28,
       "name": "Sakaaran Hivelings",
       "slug": "sakaaran-hivelings",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-hm-sakaaran-hivelings.webp",
       "abilities": [
         "Fight: Look at the top card of your deck. Put it back on the top or bottom. Then [keyword:Feast]."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     }
   ],
   "schemes": [

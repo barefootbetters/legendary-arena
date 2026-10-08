@@ -565,6 +565,7 @@
       "alwaysLeads": [
         "life-foundation"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -640,6 +641,7 @@
       "alwaysLeads": [
         "poisons"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 7,
       "cards": [
         {

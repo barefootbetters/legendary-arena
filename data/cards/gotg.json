@@ -563,6 +563,7 @@
       "alwaysLeads": [
         "kree-starforce"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -625,6 +626,7 @@
       "alwaysLeads": [
         "infinity-gems"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 7,
       "cards": [
         {

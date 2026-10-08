@@ -2,7 +2,7 @@
   {
     "_note": "All slugs match the 'slug' field in src/data/cards/*.json",
     "_note2": "Henchmen leads use the 'henchmen' array. villainGroups and henchmen can both be present.",
-    "_note3": "Sets with no always-leads rule (3dtc, dims) are omitted. ssw1 has 2 unassigned groups noted inline.",
+    "_note3": "Sets with no always-leads rule (3dtc) are omitted. ssw1 has 2 unassigned groups noted inline.",
     "set": "PLACEHOLDER_DELETE_THIS",
     "mastermind": "PLACEHOLDER_DELETE_THIS",
     "villainGroups": []
@@ -10,7 +10,7 @@
 
   { "_set": "2099" },
   { "set": "2099", "mastermind": "sinister-six-2099",    "villainGroups": ["alchemax-enforcers"] },
-  { "set": "2099", "mastermind": "alchemax-executives",  "villainGroups": ["false-aesir-of-alchemax"] },
+  { "set": "2099", "mastermind": "alchemax-executives",  "villainGroups": ["alchemax-enforcers"] },
 
   { "_set": "anni" },
   { "set": "anni", "mastermind": "annihilus",          "villainGroups": ["annihilation-wave"] },
@@ -19,15 +19,15 @@
   { "_set": "amwp - Ant-Man & Wasp Quantumania" },
   { "set": "amwp", "mastermind": "darren-cross",           "villainGroups": ["cross-technologies"] },
   { "set": "amwp", "mastermind": "ghost-master-thief",     "villainGroups": ["ghost-chasers"] },
-  { "set": "amwp", "mastermind": "kang-quantum-conqueror", "villainGroups": ["armada-of-kang", "quantum-realm"] },
+  { "set": "amwp", "mastermind": "kang-quantum-conqueror", "villainGroups": ["armada-of-kang"] },
 
   { "_set": "antm - Ant-Man" },
   { "set": "antm", "mastermind": "morgan-le-fay", "villainGroups": ["queens-vengeance"] },
   { "set": "antm", "mastermind": "ultron",         "villainGroups": ["ultrons-legacy"] },
 
   { "_set": "asrd - Heroes of Asgard" },
-  { "set": "asrd", "mastermind": "hela-goddess-of-death",  "villainGroups": ["dark-council"] },
-  { "set": "asrd", "mastermind": "malekith-the-accursed",  "villainGroups": ["omens-of-ragnarok"] },
+  { "set": "asrd", "mastermind": "hela-goddess-of-death",  "villainGroups": ["omens-of-ragnarok"] },
+  { "set": "asrd", "mastermind": "malekith-the-accursed",  "villainGroups": ["dark-council"] },
 
   { "_set": "bkpt - Black Panther" },
   { "set": "bkpt", "mastermind": "killmonger", "villainGroups": ["killmongers-league"] },
@@ -46,7 +46,7 @@
   { "set": "chmp", "mastermind": "pagliacci",      "villainGroups": ["wrecking-crew"] },
 
   { "_set": "core - Core Set" },
-  { "set": "core", "mastermind": "dr-doom",  "villainGroups": ["masters-of-evil"] },
+  { "set": "core", "mastermind": "dr-doom",  "villainGroups": [], "henchmen": ["doombot-legion"] },
   { "set": "core", "mastermind": "loki",      "villainGroups": ["enemies-of-asgard"] },
   { "set": "core", "mastermind": "magneto",   "villainGroups": ["brotherhood"] },
   { "set": "core", "mastermind": "red-skull", "villainGroups": ["hydra"] },
@@ -67,10 +67,13 @@
   { "set": "dead", "mastermind": "evil-deadpool", "villainGroups": ["evil-deadpool-corpse"] },
   { "set": "dead", "mastermind": "macho-gomez",   "villainGroups": ["deadpools-friends"] },
 
+  { "_set": "dims - Dimensions" },
+  { "set": "dims", "mastermind": "j-jonah-jameson", "villainGroups": [], "henchmen": ["spider-slayer"] },
+
   { "_set": "dkcy - Dark City" },
   { "set": "dkcy", "mastermind": "apocalypse",  "villainGroups": ["four-horsemen"] },
   { "set": "dkcy", "mastermind": "kingpin",      "villainGroups": ["streets-of-new-york"] },
-  { "set": "dkcy", "mastermind": "mephisto",     "villainGroups": ["emissaries-of-evil"] },
+  { "set": "dkcy", "mastermind": "mephisto",     "villainGroups": ["underworld"] },
   { "set": "dkcy", "mastermind": "mr-sinister",  "villainGroups": ["marauders"] },
   { "set": "dkcy", "mastermind": "stryfe",        "villainGroups": ["mutant-liberation-front"] },
 
@@ -95,7 +98,7 @@
 
   { "_set": "mgtg - MS Guardians of the Galaxy" },
   { "set": "mgtg", "mastermind": "ronan-the-accuser",     "villainGroups": ["followers-of-ronan"] },
-  { "set": "mgtg", "mastermind": "ego-the-living-planet", "villainGroups": ["ravagers"] },
+  { "set": "mgtg", "mastermind": "ego-the-living-planet", "villainGroups": [], "_anyVillainGroup": true },
 
   { "_set": "msmc - Messiah Complex" },
   { "set": "msmc", "mastermind": "lady-deathstrike",       "villainGroups": ["reavers"] },
@@ -103,12 +106,12 @@
   { "set": "msmc", "mastermind": "exodus",                  "villainGroups": ["acolytes"] },
 
   { "_set": "msis - MS Infinity Saga" },
-  { "set": "msis", "mastermind": "thanos",    "villainGroups": ["children-of-thanos"] },
-  { "set": "msis", "mastermind": "ebony-maw", "villainGroups": ["infinity-stones"] },
+  { "set": "msis", "mastermind": "thanos",    "villainGroups": ["infinity-stones"] },
+  { "set": "msis", "mastermind": "ebony-maw", "villainGroups": ["children-of-thanos"] },
 
   { "_set": "msp1 - Marvel Studios" },
   { "set": "msp1", "mastermind": "iron-monger", "villainGroups": ["iron-foes"] },
-  { "set": "msp1", "mastermind": "loki",         "villainGroups": ["enemies-of-asgard", "chitauri"] },
+  { "set": "msp1", "mastermind": "loki",         "villainGroups": ["enemies-of-asgard"] },
   { "set": "msp1", "mastermind": "red-skull",    "villainGroups": ["hydra"] },
 
   { "_set": "nmut - New Mutants" },
@@ -164,7 +167,7 @@
   { "set": "vnom", "mastermind": "poison-thanos", "villainGroups": ["poisons"] },
 
   { "_set": "wpnx - Weapon X" },
-  { "set": "wpnx", "mastermind": "omega-red",  "villainGroups": ["berserkers"] },
+  { "set": "wpnx", "mastermind": "omega-red",  "villainGroups": [], "_anyVillainGroup": true },
   { "set": "wpnx", "mastermind": "romulus",     "villainGroups": ["weapon-plus"] },
   { "set": "wpnx", "mastermind": "sabretooth",  "villainGroups": ["berserkers"] },
 

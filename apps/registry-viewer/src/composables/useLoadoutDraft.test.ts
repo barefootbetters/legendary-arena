@@ -28,12 +28,14 @@ import { useLoadoutDraft } from "./useLoadoutDraft.js";
 
 // why: a minimal stand-in for the real CardRegistry (FlatCard[]). The
 // composable reads `extId` (validation), `cardType` (prefill resolution), and
-// `alwaysLeads` (mastermind Always-Leads auto-include) off each card, so the
-// fixture carries just those fields (alwaysLeads optional, masterminds only).
+// `alwaysLeads` / `alwaysLeadsHenchmen` (mastermind Always-Leads auto-include)
+// off each card, so the fixture carries just those fields (the lead arrays
+// optional, masterminds only).
 type RegistryCardFixture = {
   extId: string;
   cardType: string;
   alwaysLeads?: readonly string[];
+  alwaysLeadsHenchmen?: readonly string[];
 };
 function makeRegistry(cards: Array<RegistryCardFixture>): {
   listCards: () => Array<RegistryCardFixture>;
@@ -536,6 +538,67 @@ describe("useLoadoutDraft setMastermind — Always-Leads villain groups", () => 
     const api = useLoadoutDraft(ALWAYS_LEADS_REGISTRY);
     assert.deepEqual(api.requiredVillainGroupIds.value, []);
     assert.deepEqual(api.missingRequiredVillainGroupIds.value, []);
+  });
+});
+
+// A registry whose core/dr-doom mastermind prints a Henchman-Group lead (Dr. Doom
+// Always Leads the Doombot Legion, D-24667), beside a villain-lead core/magneto,
+// and enough cards for a 1-player draft to be fully ready.
+const HENCHMAN_LEADS_REGISTRY = makeRegistry([
+  { extId: "core/midtown-bank-robbery", cardType: "scheme" },
+  { extId: "core/dr-doom", cardType: "mastermind", alwaysLeads: [], alwaysLeadsHenchmen: ["doombot-legion"] },
+  { extId: "core/magneto", cardType: "mastermind", alwaysLeads: ["brotherhood"], alwaysLeadsHenchmen: [] },
+  { extId: "core/brotherhood", cardType: "villain" },
+  { extId: "core/masters-of-evil", cardType: "villain" },
+  { extId: "core/doombot-legion", cardType: "henchman" },
+  { extId: "core/hand-ninjas", cardType: "henchman" },
+  { extId: "core/spider-man", cardType: "hero" },
+  { extId: "core/wolverine", cardType: "hero" },
+  { extId: "core/storm", cardType: "hero" },
+]);
+
+/** Builds a 1-player draft on HENCHMAN_LEADS_REGISTRY for the given mastermind. */
+function makeSoloLeadDraft(mastermindExtId: string) {
+  const api = useLoadoutDraft(HENCHMAN_LEADS_REGISTRY);
+  api.setPlayerCount(1);
+  api.setScheme("core/midtown-bank-robbery");
+  for (const heroId of ["core/spider-man", "core/wolverine", "core/storm"]) {
+    api.addHeroGroup(heroId);
+  }
+  api.setMastermind(mastermindExtId);
+  return api;
+}
+
+describe("useLoadoutDraft setMastermind — Always-Leads Henchman groups (D-24667)", () => {
+  it("auto-adds and requires the led Henchman group, not a villain group", () => {
+    const api = makeSoloLeadDraft("core/dr-doom");
+    api.addVillainGroup("core/brotherhood");
+    assert.deepEqual(api.draft.value.composition.henchmanGroupIds, ["core/doombot-legion"]);
+    assert.deepEqual(api.requiredHenchmanGroupIds.value, ["core/doombot-legion"]);
+    assert.deepEqual(api.missingRequiredHenchmanGroupIds.value, []);
+    assert.deepEqual(api.requiredVillainGroupIds.value, []);
+    assert.equal(api.isReady.value, true);
+  });
+
+  it("is not ready once the required Henchman group is removed", () => {
+    const api = makeSoloLeadDraft("core/dr-doom");
+    api.addVillainGroup("core/brotherhood");
+    api.removeHenchmanGroup("core/doombot-legion");
+    api.addHenchmanGroup("core/hand-ninjas");
+    assert.deepEqual(api.missingRequiredHenchmanGroupIds.value, ["core/doombot-legion"]);
+    assert.deepEqual(api.playerCountCompositionMismatches.value, []);
+    assert.equal(api.readinessIssueCount.value, api.errors.value.length + 1);
+    assert.equal(api.isReady.value, false);
+  });
+
+  it("leaves a villain-lead mastermind unchanged: villain required, no Henchman required", () => {
+    const api = makeSoloLeadDraft("core/magneto");
+    api.addHenchmanGroup("core/hand-ninjas");
+    assert.deepEqual(api.draft.value.composition.villainGroupIds, ["core/brotherhood"]);
+    assert.deepEqual(api.requiredVillainGroupIds.value, ["core/brotherhood"]);
+    assert.deepEqual(api.requiredHenchmanGroupIds.value, []);
+    assert.deepEqual(api.missingRequiredHenchmanGroupIds.value, []);
+    assert.equal(api.isReady.value, true);
   });
 });
 

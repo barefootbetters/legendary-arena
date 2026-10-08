@@ -264,8 +264,9 @@ recomputed each ~5-minute cycle.
 > selection, and hero choice stays free in both divisions (heroes are not part
 > of `ScenarioKey`, so they cost nothing to calibrate). Migration cost is
 > currently **zero** because `competitive_scores` is empty; that ends the day
-> the first score lands. **103 / 111** masterminds already declare
-> `alwaysLeads`, so most of the loadout is given by the printed cards.
+> the first score lands. **108 / 111** masterminds already declare
+> an Always-Leads group (`alwaysLeads` or `alwaysLeadsHenchmen`), so most of
+> the loadout is given by the printed cards.
 
 **Player-count boards** *(D-24134, live)*: one board per
 (set × mastermind × playerCount 1..5). The existing
@@ -328,7 +329,9 @@ key carries, never *how many* keys exist.
 **Where the data lives:** `data/gauntlet-configs.json` — season-keyed
 (`years.2026`), then set → mastermind → scheme. Each leg stores an
 **ordered villain pool** (four groups) and **henchman pool** (two groups),
-anchor-first (the mastermind's always-leads group leads the villain pool).
+anchor-first: the mastermind's Always-Leads Villain group leads the villain
+pool, or a Henchman-group lead leads the henchman pool (Dr. Doom → Doombot
+Legion, D-24667).
 A given player count uses the first *N* of each pool, where *N* is the
 game's per-count setup requirement (villains 1/2/3/3/4, henchmen 1/1/1/2/2
 for 1–5 players). **Non-swapped legs reproduce the current generated
@@ -345,14 +348,14 @@ its mastermind's base pool:
 
 | Scheme | Villain pool (anchor-first) | Henchmen | Variety vs. base |
 |---|---|---|---|
-| Midtown Bank Robbery | Masters of Evil, Brotherhood, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | — |
-| Secret Invasion of the Skrull Shapeshifters | Masters of Evil, Skrulls, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
-| Legacy Virus, The | Masters of Evil, Brotherhood, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | — |
-| Negative Zone Prison Breakout | Masters of Evil, Skrulls, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
-| Portals to the Dark Dimension | Masters of Evil, Brotherhood, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | — |
-| Replace Earth's Leaders with Killbots | Masters of Evil, Brotherhood, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | — |
-| Super Hero Civil War | Masters of Evil, Skrulls, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
-| Unleash the Power of the Cosmic Cube | Masters of Evil, Skrulls, Enemies of Asgard, HYDRA | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
+| Midtown Bank Robbery | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Secret Invasion of the Skrull Shapeshifters | Skrulls, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
+| Legacy Virus, The | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Negative Zone Prison Breakout | Skrulls, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas, Sentinel | **Skrulls replace Brotherhood** |
+| Portals to the Dark Dimension | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Replace Earth's Leaders with Killbots | Brotherhood, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | — |
+| Super Hero Civil War | Skrulls, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
+| Unleash the Power of the Cosmic Cube | Skrulls, Enemies of Asgard, HYDRA, Masters of Evil | Doombot Legion, Hand Ninjas | **Skrulls replace Brotherhood** |
 
 #### Magneto
 

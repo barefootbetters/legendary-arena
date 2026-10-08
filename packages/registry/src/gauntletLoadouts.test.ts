@@ -4,6 +4,8 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   GAUNTLET_LOADOUT_MENUS,
@@ -195,6 +197,154 @@ test("menus for masterminds without an extra-Henchman scheme carry no schemeOver
       `${menu.setAbbr}/${menu.mastermindSlug} schemeOverrides presence is wrong`,
     );
   }
+});
+
+// why: pnpm --filter sets CWD to packages/registry/; the card data lives at the
+// monorepo root, two directory levels up.
+const cardsDirectory = join(process.cwd(), "..", "..", "data", "cards");
+
+/** The committed card data's group ids by type, plus each mastermind's Henchman leads. */
+interface CommittedGroupIndex {
+  villainGroupIds: Set<string>;
+  henchmanGroupIds: Set<string>;
+  henchmanLeadIdsByMastermind: Map<string, string[]>;
+}
+
+/**
+ * Collects the string `slug` of each entry that carries one. Set JSON is read
+ * untyped, so every entry is narrowed here rather than cast.
+ *
+ * @param entries a raw set-JSON array (or anything else).
+ * @returns the slugs of the entries that carry a string slug.
+ */
+function collectSlugs(entries: unknown): string[] {
+  const slugs: string[] = [];
+  if (!Array.isArray(entries)) {
+    return slugs;
+  }
+  for (const entry of entries) {
+    if (typeof entry === "object" && entry !== null && "slug" in entry && typeof entry.slug === "string") {
+      slugs.push(entry.slug);
+    }
+  }
+  return slugs;
+}
+
+/**
+ * Reads every committed data/cards set into a set-qualified group index.
+ *
+ * @returns villain / Henchman ext_ids and each mastermind's Henchman-lead ext_ids.
+ */
+function readCommittedGroupIndex(): CommittedGroupIndex {
+  const index: CommittedGroupIndex = {
+    villainGroupIds: new Set(),
+    henchmanGroupIds: new Set(),
+    henchmanLeadIdsByMastermind: new Map(),
+  };
+  for (const fileName of readdirSync(cardsDirectory).filter((name) => name.endsWith(".json"))) {
+    const setAbbr = fileName.replace(".json", "");
+    const setData: unknown = JSON.parse(readFileSync(join(cardsDirectory, fileName), "utf8"));
+    if (typeof setData !== "object" || setData === null) {
+      continue;
+    }
+    const villains = "villains" in setData ? setData.villains : [];
+    const henchmen = "henchmen" in setData ? setData.henchmen : [];
+    const masterminds = "masterminds" in setData ? setData.masterminds : [];
+    for (const slug of collectSlugs(villains)) {
+      index.villainGroupIds.add(`${setAbbr}/${slug}`);
+    }
+    for (const slug of collectSlugs(henchmen)) {
+      index.henchmanGroupIds.add(`${setAbbr}/${slug}`);
+    }
+    for (const mastermind of Array.isArray(masterminds) ? masterminds : []) {
+      if (typeof mastermind !== "object" || mastermind === null || !("slug" in mastermind)) {
+        continue;
+      }
+      const leads = "alwaysLeadsHenchmen" in mastermind ? mastermind.alwaysLeadsHenchmen : [];
+      const leadIds: string[] = [];
+      for (const lead of Array.isArray(leads) ? leads : []) {
+        if (typeof lead === "string") {
+          leadIds.push(`${setAbbr}/${lead}`);
+        }
+      }
+      index.henchmanLeadIdsByMastermind.set(`${setAbbr}/${String(mastermind.slug)}`, leadIds);
+    }
+  }
+  return index;
+}
+
+/**
+ * Lists every composition a menu carries — variant 0 and every scheme override —
+ * at every player count, with a label for failure messages.
+ *
+ * @param menu one generated mastermind menu.
+ * @returns [label, composition] pairs.
+ */
+function listMenuCompositions(
+  menu: (typeof GAUNTLET_LOADOUT_MENUS)[number],
+): [string, GauntletLoadoutComposition][] {
+  const compositions: [string, GauntletLoadoutComposition][] = [];
+  for (const variant of menu.variants) {
+    for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+      compositions.push([
+        `${menu.setAbbr}/${menu.mastermindSlug} variant ${variant.variantIndex} at ${playerCount}p`,
+        variant.compositionsByPlayerCount[playerCount],
+      ]);
+    }
+  }
+  for (const [schemeSlug, compositionsByPlayerCount] of Object.entries(menu.schemeOverrides ?? {})) {
+    for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+      compositions.push([
+        `${menu.setAbbr}/${menu.mastermindSlug} / ${schemeSlug} at ${playerCount}p`,
+        compositionsByPlayerCount[playerCount],
+      ]);
+    }
+  }
+  return compositions;
+}
+
+// why: D-24667 — a Henchman slug in co2e Doctor Doom's alwaysLeads once put
+// co2e/doombot-legion in BOTH villainGroupIds and henchmanGroupIds.
+test("every menu slot holds a group of its own type in the committed card data", () => {
+  const index = readCommittedGroupIndex();
+  for (const menu of GAUNTLET_LOADOUT_MENUS) {
+    for (const [label, composition] of listMenuCompositions(menu)) {
+      for (const villainGroupId of composition.villainGroupIds) {
+        assert.ok(index.villainGroupIds.has(villainGroupId), `${label}: ${villainGroupId} is not a villain group`);
+      }
+      for (const henchmanGroupId of composition.henchmanGroupIds) {
+        assert.ok(index.henchmanGroupIds.has(henchmanGroupId), `${label}: ${henchmanGroupId} is not a Henchman group`);
+      }
+    }
+  }
+});
+
+test("a mastermind's printed Henchman lead is in every composition's Henchmen (D-24667)", () => {
+  const index = readCommittedGroupIndex();
+  let checkedMasterminds = 0;
+  for (const menu of GAUNTLET_LOADOUT_MENUS) {
+    const leadIds = index.henchmanLeadIdsByMastermind.get(`${menu.setAbbr}/${menu.mastermindSlug}`) ?? [];
+    if (leadIds.length === 0) {
+      continue;
+    }
+    checkedMasterminds += 1;
+    for (const [label, composition] of listMenuCompositions(menu)) {
+      for (const leadId of leadIds) {
+        assert.ok(composition.henchmanGroupIds.includes(leadId), `${label} must field its Henchman lead ${leadId}`);
+      }
+    }
+  }
+  // why: dims J. Jonah Jameson hosts no gauntlet (no scheme), so 8 of the 9
+  // Henchman-lead masterminds have a menu.
+  assert.equal(checkedMasterminds, 8, "Expected 8 Henchman-lead masterminds with a menu.");
+  assert.deepEqual(getGauntletLoadoutMenu("core", "dr-doom")?.variants[0]?.compositionsByPlayerCount[1], {
+    villainGroupIds: ["core/brotherhood"],
+    henchmanGroupIds: ["core/doombot-legion"],
+  });
+  assert.deepEqual(getGauntletLoadoutMenu("co2e", "doctor-doom")?.variants[0]?.compositionsByPlayerCount[1], {
+    villainGroupIds: ["co2e/brotherhood-of-mutants"],
+    henchmanGroupIds: ["co2e/doombot-legion"],
+  });
 });
 
 test("the sizing assertion fails on a deliberately mis-sized composition", () => {

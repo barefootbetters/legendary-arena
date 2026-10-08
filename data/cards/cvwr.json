@@ -2100,6 +2100,7 @@
       "alwaysLeads": [
         "superhuman-registration-act"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2162,6 +2163,7 @@
       "alwaysLeads": [
         "thunderbolts"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2225,6 +2227,7 @@
       "alwaysLeads": [
         "shield-elite"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2288,6 +2291,7 @@
       "alwaysLeads": [
         "heroes-for-hire"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2351,6 +2355,7 @@
       "alwaysLeads": [
         "registration-enforcers"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2814,25 +2819,27 @@
       "id": 19,
       "name": "Mandroid",
       "slug": "mandroid",
-      "vAttack": "2+",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-hm-mandroid.webp",
       "abilities": [
         "This gets +1[icon:attack] for each other Mandroid in your Victory Pile.",
         "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
-      ]
+      ],
+      "vAttack": "2+",
+      "vp": 1
     },
     {
       "id": 20,
       "name": "Cape-Killers",
       "slug": "cape-killers",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-hm-cape-killers.webp",
       "abilities": [
         "[keyword:S.H.I.E.L.D. Clearance]",
         "Fight: KO a card from your discard pile."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     }
   ],
   "schemes": [
@@ -3000,7 +3007,6 @@
     {
       "id": null,
       "name": "Blinding Flash",
-      "filterName": null,
       "slug": "blinding-flash",
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-wd-blinding-flash.webp",
       "cards": [
@@ -3011,12 +3017,12 @@
             "Healing: You may discard a card and have each other player discard a card. If you do, KO this Wound."
           ]
         }
-      ]
+      ],
+      "filterName": null
     },
     {
       "id": null,
       "name": "Blunt Force Trauma",
-      "filterName": null,
       "slug": "blunt-force-trauma",
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-wd-blunt-force-trauma.webp",
       "cards": [
@@ -3027,12 +3033,12 @@
             "Healing: You may spend 5. If you do, KO this Wound."
           ]
         }
-      ]
+      ],
+      "filterName": null
     },
     {
       "id": null,
       "name": "Corrosive Webbing",
-      "filterName": null,
       "slug": "corrosive-webbing",
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-wd-corrosive-webbing.webp",
       "cards": [
@@ -3043,12 +3049,12 @@
             "Healing: You may KO this Wound. If you do, gain another Wound."
           ]
         }
-      ]
+      ],
+      "filterName": null
     },
     {
       "id": null,
       "name": "Fatal Blow",
-      "filterName": null,
       "slug": "fatal-blow",
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-wd-fatal-blow.webp",
       "cards": [
@@ -3059,12 +3065,12 @@
             "Healing: You may KO a Hero that costs 1 or more from your hand or discard pile. If you do, KO this Wound."
           ]
         }
-      ]
+      ],
+      "filterName": null
     },
     {
       "id": null,
       "name": "Psychic Trauma",
-      "filterName": null,
       "slug": "psychic-trauma",
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-wd-psychic-trauma.webp",
       "cards": [
@@ -3075,12 +3081,12 @@
             "Healing: You may spend 5. If you do, KO this Wound."
           ]
         }
-      ]
+      ],
+      "filterName": null
     },
     {
       "id": null,
       "name": "Spreading Nanovirus",
-      "filterName": null,
       "slug": "spreading-nanovirus",
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-wd-spreading-nanovirus.webp",
       "cards": [
@@ -3091,12 +3097,12 @@
             "Healing: You may have the player on your left gain this Wound."
           ]
         }
-      ]
+      ],
+      "filterName": null
     },
     {
       "id": null,
       "name": "Subdermal Tracker",
-      "filterName": null,
       "slug": "subdermal-tracker",
       "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-wd-subdermal-tracker.webp",
       "cards": [
@@ -3107,7 +3113,8 @@
             "Healing: You may play a card from the Villain Deck. If you do, KO this Wound."
           ]
         }
-      ]
+      ],
+      "filterName": null
     }
   ],
   "other": [

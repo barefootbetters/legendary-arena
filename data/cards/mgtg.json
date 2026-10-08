@@ -933,6 +933,7 @@
       "alwaysLeads": [
         "followers-of-ronan"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": null,
       "cards": [
         {
@@ -1007,9 +1008,8 @@
       "id": 84,
       "name": "Ego, the Living Planet",
       "slug": "ego-the-living-planet",
-      "alwaysLeads": [
-        "ravagers"
-      ],
+      "alwaysLeads": [],
+      "alwaysLeadsHenchmen": [],
       "vp": null,
       "cards": [
         {
@@ -1198,9 +1198,7 @@
       "id": 105,
       "name": "Ravagers",
       "slug": "ravagers",
-      "ledBy": [
-        "ego-the-living-planet"
-      ],
+      "ledBy": [],
       "cards": [
         {
           "name": "Gef",

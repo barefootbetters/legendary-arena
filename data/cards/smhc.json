@@ -568,6 +568,7 @@
       "alwaysLeads": [
         "salvagers"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -643,6 +644,7 @@
       "alwaysLeads": [
         "vulture-tech"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

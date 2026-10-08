@@ -112,6 +112,8 @@ const {
   isValid,
   requiredVillainGroupIds,
   missingRequiredVillainGroupIds,
+  requiredHenchmanGroupIds,
+  missingRequiredHenchmanGroupIds,
   requiredPlayerCountSetup,
   playerCountCompositionMismatches,
   isReady,
@@ -1495,11 +1497,29 @@ function slotLabel(slot: PickerSlot): string {
             >Pick…</button>
           </div>
           <ul class="chip-list">
-            <li v-for="groupId in draft.composition.henchmanGroupIds" :key="groupId" class="chip">
+            <li
+              v-for="groupId in draft.composition.henchmanGroupIds"
+              :key="groupId"
+              class="chip"
+              :class="{ required: requiredHenchmanGroupIds.includes(groupId) }"
+            >
               {{ groupId }}
-              <button v-if="!adversaryFieldsLocked" type="button" class="chip-close" @click="removeHenchmanGroup(groupId)">✕</button>
+              <!-- why: a Henchman group the selected mastermind Always Leads is
+                   mandatory (e.g. Dr. Doom → Doombot Legion, D-24667) — show a
+                   lock instead of a remove button, mirroring the villain chips. -->
+              <span
+                v-if="requiredHenchmanGroupIds.includes(groupId)"
+                class="chip-lock"
+                title="Always Leads — the selected mastermind requires this Henchman group; it can't be removed."
+              >🔒</span>
+              <button v-else-if="!adversaryFieldsLocked" type="button" class="chip-close" @click="removeHenchmanGroup(groupId)">✕</button>
             </li>
           </ul>
+          <p v-if="missingRequiredHenchmanGroupIds.length > 0" class="requirement-warning" role="alert">
+            ⚠ The selected mastermind Always Leads
+            <strong>{{ missingRequiredHenchmanGroupIds.join(", ") }}</strong> — this Henchman
+            group is required and must be in the deck. Add it before exporting.
+          </p>
         </div>
 
         <div class="field">

@@ -909,6 +909,7 @@
       "alwaysLeads": [
         "reavers"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -984,6 +985,7 @@
       "alwaysLeads": [
         "purifiers"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1063,6 +1065,7 @@
       "alwaysLeads": [
         "acolytes"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 7,
       "cards": [
         {
@@ -1423,25 +1426,27 @@
       "id": 37,
       "name": "Mr. Sinister Clones",
       "slug": "mr-sinister-clones",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/msmc/msmc-hm-mr-sinister-clones.webp",
       "abilities": [
         "[keyword:Ambush]: [keyword:Clone]. When the cloned copy enters the city, shuffle a Bystander into the Villain Deck.",
         "[keyword:Fight]: [keyword:Clone] the next Hero you recruit this turn that has printed cost 4 or less."
       ],
-      "vp": 1,
-      "vAttack": 3
+      "vAttack": 3,
+      "vp": 1
     },
     {
       "id": 38,
       "name": "Sentinel Squad O∗N∗E∗",
       "slug": "sentinel-squad-o-n-e",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/msmc/msmc-hm-sentinel-squad-o-n-e.webp",
       "abilities": [
         "[keyword:Ambush]: If there are no other Sentinel Squad O*N*E*s in the city, [keyword:Clone].",
         "[keyword:Fight]: If there are no other Sentinel Squad O*N*E*s in the city, KO one of your Heroes and put this Villain on the bottom of the Villain Deck."
       ],
-      "vp": 1,
-      "vAttack": 2
+      "vAttack": 2,
+      "vp": 1
     }
   ],
   "schemes": [

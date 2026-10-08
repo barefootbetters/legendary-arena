@@ -28,7 +28,7 @@ const EXPECTED_SCENARIO_COUNT = 128;
 
 /** A known 1-villain (solo) scenario key the season produces. */
 const REPRESENTATIVE_SCENARIO_KEY =
-  "midtown-bank-robbery::dr-doom::masters-of-evil";
+  "midtown-bank-robbery::dr-doom::brotherhood";
 
 const temporaryRoots: string[] = [];
 

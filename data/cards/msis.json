@@ -56,14 +56,14 @@
           "rarityLabel": "Common 3",
           "slot": 3,
           "hc": "instinct",
-          "hc2": "ranged",
           "cost": 4,
           "attack": "2",
           "recruit": null,
           "abilities": [
             "[keyword:Phasing]",
             "Choose a Hero Class. Reveal the top card of your deck. If it's the Hero Class you named, draw it."
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "Invoke the Time Stone",
@@ -185,13 +185,13 @@
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "covert",
-          "hc2": "tech",
           "cost": 2,
           "attack": "1",
           "recruit": null,
           "abilities": [
             "[hc:covert]: Draw a card. [keyword:draw:1]"
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Avengers Reassembled",
@@ -201,13 +201,13 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "instinct",
-          "hc2": "covert",
           "cost": 3,
           "attack": "2+",
           "recruit": null,
           "abilities": [
             "If you have all five Hero Classes, you get +3[icon:attack]."
-          ]
+          ],
+          "hc2": "covert"
         },
         {
           "name": "Great Many Lives Lost",
@@ -217,13 +217,13 @@
           "rarityLabel": "Common 3",
           "slot": 3,
           "hc": "strength",
-          "hc2": "instinct",
           "cost": 4,
           "attack": null,
           "recruit": "2",
           "abilities": [
             "[hc:instinct] [keyword:Sacrifice]: KO up to two cards from your hand and/or discard pile."
-          ]
+          ],
+          "hc2": "instinct"
         },
         {
           "name": "Council of War",
@@ -233,14 +233,14 @@
           "rarityLabel": "Uncommon",
           "slot": 4,
           "hc": "strength",
-          "hc2": "covert",
           "cost": 5,
           "attack": "0+",
           "recruit": "3+",
           "abilities": [
             "You get +1[icon:recruit] for each other [rule:multicolored] Hero you have.",
             "[hc:strength]: You may have this card make all [icon:attack] instead of [icon:recruit]."
-          ]
+          ],
+          "hc2": "covert"
         },
         {
           "name": "Vibranium Nanites",
@@ -250,14 +250,14 @@
           "rarityLabel": "Uncommon 2",
           "slot": 5,
           "hc": "tech",
-          "hc2": "ranged",
           "cost": 6,
           "attack": "3",
           "recruit": null,
           "abilities": [
             "Reveal the top card of your deck. If it's [rule:multicolored], draw it. Otherwise, put it back or discard it.",
             "[hc:tech]: You may KO that card."
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "Fateful Return",
@@ -267,13 +267,13 @@
           "rarityLabel": "Rare",
           "slot": 6,
           "hc": "instinct",
-          "hc2": "tech",
           "cost": 8,
           "attack": "0+",
           "recruit": null,
           "abilities": [
             "You get +2[icon:attack] for each Hero Class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:2]"
-          ]
+          ],
+          "hc2": "tech"
         }
       ],
       "physicalCards": [
@@ -364,13 +364,13 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "strength",
-          "hc2": "tech",
           "cost": 3,
           "attack": "2+",
           "recruit": null,
           "abilities": [
             "[hc:tech][hc:strength]: You get +2[icon:attack]."
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Hulkbuster Armor",
@@ -554,14 +554,14 @@
           "rarityLabel": "Uncommon",
           "slot": 4,
           "hc": "strength",
-          "hc2": "ranged",
           "cost": 5,
           "attack": "2+",
           "recruit": null,
           "abilities": [
             "For the rest of this turn, it is the [keyword:Endgame] for your Hero cards.",
             "If it was already the [keyword:Endgame], you get +2[icon:attack]."
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "Moment of Destiny",
@@ -791,13 +791,13 @@
           "rarityLabel": "Rare",
           "slot": 9,
           "hc": "covert",
-          "hc2": "ranged",
           "cost": 7,
           "attack": "4",
           "recruit": null,
           "abilities": [
             "[hc:ranged]: Reveal the top five cards of the Hero Deck. You may put one of them with an odd-numbered cost into your hand. You may KO one of them. Put the rest back in any order."
-          ]
+          ],
+          "hc2": "ranged"
         }
       ],
       "physicalCards": [
@@ -861,8 +861,9 @@
       "name": "Thanos",
       "slug": "thanos",
       "alwaysLeads": [
-        "children-of-thanos"
+        "infinity-stones"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 7,
       "cards": [
         {
@@ -939,8 +940,9 @@
       "name": "Ebony Maw",
       "slug": "ebony-maw",
       "alwaysLeads": [
-        "infinity-stones"
+        "children-of-thanos"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1020,7 +1022,7 @@
       "name": "Children of Thanos",
       "slug": "children-of-thanos",
       "ledBy": [
-        "thanos"
+        "ebony-maw"
       ],
       "cards": [
         {
@@ -1129,7 +1131,7 @@
       "name": "Infinity Stones",
       "slug": "infinity-stones",
       "ledBy": [
-        "ebony-maw"
+        "thanos"
       ],
       "cards": [
         {

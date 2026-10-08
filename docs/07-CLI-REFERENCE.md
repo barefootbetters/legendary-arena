@@ -126,7 +126,7 @@ all 40 sets in 4 sequential phases.
 - Schemes: slug, name (null-id transforms skipped)
 - Slug format: lowercase, hyphens only, no spaces/underscores
 - Intra-set duplicate slugs
-- alwaysLeads references resolve to villain/henchman slugs
+- alwaysLeads references resolve to villain slugs; alwaysLeadsHenchmen references resolve to henchman slugs (D-24667)
 
 **Known data quality items (warnings, not errors):**
 - `[object Object]` abilities in some sets (R2 pipeline issue)

@@ -568,6 +568,7 @@
       "alwaysLeads": [
         "annihilation-wave"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -641,6 +642,7 @@
       "alwaysLeads": [
         "timelines-of-kang"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

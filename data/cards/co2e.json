@@ -1644,7 +1644,8 @@
       "id": 1,
       "name": "Dr. Doom",
       "slug": "doctor-doom",
-      "alwaysLeads": [
+      "alwaysLeads": [],
+      "alwaysLeadsHenchmen": [
         "doombot-legion"
       ],
       "vp": 6,
@@ -1723,6 +1724,7 @@
       "alwaysLeads": [
         "enemies-of-asgard"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1803,6 +1805,7 @@
       "alwaysLeads": [
         "brotherhood-of-mutants"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1883,6 +1886,7 @@
       "alwaysLeads": [
         "hydra"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1960,9 +1964,9 @@
       "name": "Doctor Octopus",
       "slug": "doctor-octopus",
       "alwaysLeads": [
-        "sinister-spider-foes",
-        "sinister-syndicate"
+        "sinister-spider-foes"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 8,
       "cards": [
         {
@@ -2215,9 +2219,7 @@
       "id": 4,
       "name": "Masters of Evil",
       "slug": "masters-of-evil",
-      "ledBy": [
-        "doctor-doom"
-      ],
+      "ledBy": [],
       "cards": [
         {
           "name": "Baron Zemo",
@@ -2384,9 +2386,7 @@
       "id": 7,
       "name": "Sinister Syndicate",
       "slug": "sinister-syndicate",
-      "ledBy": [
-        "doctor-octopus"
-      ],
+      "ledBy": [],
       "cards": [
         {
           "name": "Beetle",
@@ -2498,6 +2498,9 @@
       "id": 1,
       "name": "Doombot Legion",
       "slug": "doombot-legion",
+      "ledBy": [
+        "doctor-doom"
+      ],
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-doombot-legion.webp",
       "abilities": [
         "Fight: Look at the top two cards of your deck. KO one of them and put the other back. [effect:scry-ko-own-deck]"
@@ -2509,6 +2512,7 @@
       "id": 2,
       "name": "Hand Ninjas",
       "slug": "hand-ninjas",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-hand-ninjas.webp",
       "abilities": [
         "Fight: If you fight Hand Ninjas in the Sewers or Rooftops, KO one of your Heroes. Otherwise, you get +1[icon:recruit]."
@@ -2520,6 +2524,7 @@
       "id": 3,
       "name": "Savage Land Mutates",
       "slug": "savage-land-mutates",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-savage-land-mutates.webp",
       "abilities": [
         "Fight: Reveal the top card of your deck. If it's grey, KO it. If it's [hc:strength] or [hc:instinct], draw it."
@@ -2531,6 +2536,7 @@
       "id": 4,
       "name": "Sentinel",
       "slug": "sentinel",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-sentinel.webp",
       "abilities": [
         "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"

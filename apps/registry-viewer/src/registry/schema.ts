@@ -94,6 +94,8 @@ export const MastermindSchema = z.object({
   name:        z.string(),
   slug:        z.string(),
   alwaysLeads: z.array(z.string()).optional().default([]),
+  // Henchman-Group leads (D-24667); alwaysLeads holds Villain Groups only.
+  alwaysLeadsHenchmen: z.array(z.string()).optional().default([]),
   vp:          z.number().int().optional().nullable(),
   cards:       z.array(MastermindCardSchema),
 });

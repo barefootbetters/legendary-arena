@@ -235,6 +235,9 @@ export function flattenSet(
         // Leads the Brotherhood). Carried on every mastermind card (group-level
         // value, like groupName); the builder reads it off the collapsed entry.
         alwaysLeads: mm.alwaysLeads,
+        // why: the Henchman-Group half of the same clause (Dr. Doom Always
+        // Leads the Doombot Legion, D-24667); same group-level carry.
+        alwaysLeadsHenchmen: mm.alwaysLeadsHenchmen,
         slug:      card.slug,
         imageUrl:  card.imageUrl ?? "",
         // why: D-24189 — surface the mastermind card's printed attack + VP in the

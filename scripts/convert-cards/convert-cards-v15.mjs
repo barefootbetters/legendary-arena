@@ -188,21 +188,22 @@ const SCHEME_DECK_COUNTS = JSON.parse(
   readFileSync(join(DATA_DIR, 'scheme-deck-counts.json'), 'utf8'),
 );
 
-// why: mastermind → villain-group "Always Leads" relationship. The relationship
-// already lived in leads.json but the converter never read it (D-16703); it
-// previously wrote alwaysLeads/ledBy as hardcoded empty arrays.
+// why: mastermind → villain-group / henchman-group "Always Leads" relationship.
+// The relationship already lived in leads.json but the converter never read it
+// (D-16703); it previously wrote alwaysLeads/ledBy as hardcoded empty arrays.
+// The henchmen[] half was dropped until D-24667.
 const LEADS = JSON.parse(readFileSync(join(DATA_DIR, 'leads.json'), 'utf8'));
 
 /**
- * Builds a per-set list of villain-group lead rows from the raw leads.json
- * array. Skips non-data rows: the PLACEHOLDER_DELETE_THIS row and the
- * comment-only markers ({ "_set": ... }, { "_unassigned": ... }) which carry
- * no usable "set" string. Henchmen leads and the "_anyVillainGroup" wildcard
- * are out of scope for villain-group wiring; only the villainGroups[] array is
- * read, so wildcard rows (with empty villainGroups[]) contribute nothing.
+ * Builds a per-set list of lead rows from the raw leads.json array. Skips
+ * non-data rows: the PLACEHOLDER_DELETE_THIS row and the comment-only markers
+ * ({ "_set": ... }, { "_unassigned": ... }) which carry no usable "set" string.
+ * Both the villainGroups[] and henchmen[] arrays are read (D-24667). The
+ * "_anyVillainGroup" wildcard forces no group, so wildcard rows (with empty
+ * villainGroups[]) contribute nothing.
  *
  * @param leadsArray - The parsed leads.json array.
- * @returns Map of setAbbr → array of { mastermind, villainGroups } rows.
+ * @returns Map of setAbbr → array of { mastermind, villainGroups, henchmen } rows.
  */
 function buildLeadsBySet(leadsArray) {
   const leadsBySet = new Map();
@@ -211,8 +212,9 @@ function buildLeadsBySet(leadsArray) {
       continue;
     }
     const groups = Array.isArray(row.villainGroups) ? row.villainGroups : [];
+    const henchmen = Array.isArray(row.henchmen) ? row.henchmen : [];
     const existing = leadsBySet.get(row.set) ?? [];
-    existing.push({ mastermind: row.mastermind, villainGroups: groups });
+    existing.push({ mastermind: row.mastermind, villainGroups: groups, henchmen });
     leadsBySet.set(row.set, existing);
   }
   return leadsBySet;
@@ -285,13 +287,37 @@ function applyVillainCopies(result, setAbbr) {
 }
 
 /**
- * Populates mastermind.alwaysLeads[] and villainGroup.ledBy[] from leads.json
- * (D-16703), replacing the hardcoded empty arrays. The relationship is
+ * Ensures every mastermind carries an alwaysLeadsHenchmen[] array and every
+ * henchman group a ledBy[] array, so applyLeadsRelationships can push into them.
+ *
+ * @param result - The converted set object (mutated in place).
+ */
+function normaliseHenchmanLeadArrays(result) {
+  // why: patch overlays (e.g. the dims "_op: append" henchmen) rebuild or add
+  // henchman groups after construction, so these arrays can be absent here even
+  // though construction emits them.
+  for (const mastermind of result.masterminds) {
+    if (!Array.isArray(mastermind.alwaysLeadsHenchmen)) {
+      mastermind.alwaysLeadsHenchmen = [];
+    }
+  }
+  for (const henchmanGroup of result.henchmen) {
+    if (!Array.isArray(henchmanGroup.ledBy)) {
+      henchmanGroup.ledBy = [];
+    }
+  }
+}
+
+/**
+ * Populates mastermind.alwaysLeads[] / villainGroup.ledBy[] (D-16703) and
+ * mastermind.alwaysLeadsHenchmen[] / henchmanGroup.ledBy[] (D-24667) from
+ * leads.json, replacing the hardcoded empty arrays. The relationship is
  * symmetric and deduplicated: a mastermind that leads a group lists that group
- * in alwaysLeads[], and the group lists that mastermind in ledBy[]. A group may
+ * in its lead array, and the group lists that mastermind in ledBy[]. A group may
  * be led by more than one mastermind and a mastermind may lead more than one
- * group. Loud-fails if a lead row names a mastermind or villain group that does
- * not exist in the converted set, before the set's output is written.
+ * group. Loud-fails if a lead row names a mastermind, villain group or henchman
+ * group that does not exist in the converted set, before the set's output is
+ * written.
  *
  * @param result - The converted set object (mutated in place).
  * @param setAbbr - The set abbreviation being converted.
@@ -299,6 +325,7 @@ function applyVillainCopies(result, setAbbr) {
  */
 function applyLeadsRelationships(result, setAbbr) {
   const leadRows = LEADS_BY_SET.get(setAbbr) ?? [];
+  normaliseHenchmanLeadArrays(result);
 
   const mastermindBySlug = new Map();
   for (const mastermind of result.masterminds) {
@@ -307,6 +334,10 @@ function applyLeadsRelationships(result, setAbbr) {
   const groupBySlug = new Map();
   for (const villainGroup of result.villains) {
     groupBySlug.set(villainGroup.slug, villainGroup);
+  }
+  const henchmanGroupBySlug = new Map();
+  for (const henchmanGroup of result.henchmen) {
+    henchmanGroupBySlug.set(henchmanGroup.slug, henchmanGroup);
   }
 
   for (const leadRow of leadRows) {
@@ -330,6 +361,19 @@ function applyLeadsRelationships(result, setAbbr) {
       }
       pushUnique(mastermind.alwaysLeads, groupSlug);
       pushUnique(villainGroup.ledBy, leadRow.mastermind);
+    }
+    for (const henchmanSlug of leadRow.henchmen) {
+      const henchmanGroup = henchmanGroupBySlug.get(henchmanSlug);
+      if (!henchmanGroup) {
+        throw new Error(
+          `leads.json names henchman group "${henchmanSlug}" led by mastermind ` +
+            `"${leadRow.mastermind}" for set "${setAbbr}", which does not match any ` +
+            `henchman group in the converted set. Fix the henchman slug in leads.json ` +
+            `or update the source data.`,
+        );
+      }
+      pushUnique(mastermind.alwaysLeadsHenchmen, henchmanSlug);
+      pushUnique(henchmanGroup.ledBy, leadRow.mastermind);
     }
   }
 }
@@ -866,6 +910,7 @@ function convertSet(jsFilePath, setAbbr) {
         name: mm.name,
         slug: mmSlug,
         alwaysLeads: [],
+        alwaysLeadsHenchmen: [],
         vp: mm.vp ?? null,
         cards: convertedCards,
       });
@@ -917,6 +962,7 @@ function convertSet(jsFilePath, setAbbr) {
           id: hm.id,
           name: hm.name,
           slug: hmSlug,
+          ledBy: [],
           imageUrl: standaloneImageUrl(setAbbr, 'hm', hmSlug),
           abilities: parseAbilities(onlyCard?.abilities ?? hm.abilities),
         };
@@ -940,6 +986,7 @@ function convertSet(jsFilePath, setAbbr) {
         id: hm.id,
         name: hm.name,
         slug: hmSlug,
+        ledBy: [],
         imageUrl: convertedCards[0].imageUrl,
         abilities: [],
         cards: convertedCards,

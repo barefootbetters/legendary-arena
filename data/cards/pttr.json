@@ -566,6 +566,7 @@
       "alwaysLeads": [
         "maximum-carnage"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -631,6 +632,7 @@
       "alwaysLeads": [
         "sinister-six"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

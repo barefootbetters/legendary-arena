@@ -554,6 +554,7 @@
       "alwaysLeads": [
         "heralds-of-galactus"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 7,
       "cards": [
         {
@@ -618,6 +619,7 @@
       "alwaysLeads": [
         "subterranea"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

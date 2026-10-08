@@ -16,7 +16,7 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['2099/false-aesir-of-alchemax'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          1: { villainGroupIds: ['2099/alchemax-enforcers'], henchmanGroupIds: ['co2e/doombot-legion'] },
           2: { villainGroupIds: ['2099/alchemax-enforcers', '2099/false-aesir-of-alchemax'], henchmanGroupIds: ['co2e/doombot-legion'] },
           3: { villainGroupIds: ['2099/alchemax-enforcers', '2099/false-aesir-of-alchemax', 'co2e/brotherhood-of-mutants'], henchmanGroupIds: ['co2e/doombot-legion'] },
           4: { villainGroupIds: ['2099/alchemax-enforcers', '2099/false-aesir-of-alchemax', 'co2e/brotherhood-of-mutants'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
@@ -81,9 +81,9 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         variantIndex: 0,
         compositionsByPlayerCount: {
           1: { villainGroupIds: ['amwp/armada-of-kang'], henchmanGroupIds: ['amwp/quantum-hound'] },
-          2: { villainGroupIds: ['amwp/armada-of-kang', 'amwp/quantum-realm'], henchmanGroupIds: ['amwp/quantum-hound'] },
-          3: { villainGroupIds: ['amwp/armada-of-kang', 'amwp/cross-technologies', 'amwp/quantum-realm'], henchmanGroupIds: ['amwp/quantum-hound'] },
-          4: { villainGroupIds: ['amwp/armada-of-kang', 'amwp/cross-technologies', 'amwp/quantum-realm'], henchmanGroupIds: ['amwp/quantum-hound', 'amwp/quantumnauts'] },
+          2: { villainGroupIds: ['amwp/armada-of-kang', 'amwp/cross-technologies'], henchmanGroupIds: ['amwp/quantum-hound'] },
+          3: { villainGroupIds: ['amwp/armada-of-kang', 'amwp/cross-technologies', 'amwp/ghost-chasers'], henchmanGroupIds: ['amwp/quantum-hound'] },
+          4: { villainGroupIds: ['amwp/armada-of-kang', 'amwp/cross-technologies', 'amwp/ghost-chasers'], henchmanGroupIds: ['amwp/quantum-hound', 'amwp/quantumnauts'] },
           5: { villainGroupIds: ['amwp/armada-of-kang', 'amwp/cross-technologies', 'amwp/ghost-chasers', 'amwp/quantum-realm'], henchmanGroupIds: ['amwp/quantum-hound', 'amwp/quantumnauts'] },
         },
       },
@@ -160,7 +160,7 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['asrd/dark-council'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          1: { villainGroupIds: ['asrd/omens-of-ragnarok'], henchmanGroupIds: ['co2e/doombot-legion'] },
           2: { villainGroupIds: ['asrd/dark-council', 'asrd/omens-of-ragnarok'], henchmanGroupIds: ['co2e/doombot-legion'] },
           3: { villainGroupIds: ['asrd/dark-council', 'asrd/omens-of-ragnarok', 'co2e/brotherhood-of-mutants'], henchmanGroupIds: ['co2e/doombot-legion'] },
           4: { villainGroupIds: ['asrd/dark-council', 'asrd/omens-of-ragnarok', 'co2e/brotherhood-of-mutants'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
@@ -176,7 +176,7 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['asrd/omens-of-ragnarok'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          1: { villainGroupIds: ['asrd/dark-council'], henchmanGroupIds: ['co2e/doombot-legion'] },
           2: { villainGroupIds: ['asrd/dark-council', 'asrd/omens-of-ragnarok'], henchmanGroupIds: ['co2e/doombot-legion'] },
           3: { villainGroupIds: ['asrd/dark-council', 'asrd/omens-of-ragnarok', 'co2e/brotherhood-of-mutants'], henchmanGroupIds: ['co2e/doombot-legion'] },
           4: { villainGroupIds: ['asrd/dark-council', 'asrd/omens-of-ragnarok', 'co2e/brotherhood-of-mutants'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
@@ -320,11 +320,11 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['co2e/doombot-legion'], henchmanGroupIds: ['co2e/doombot-legion'] },
-          2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/doombot-legion'], henchmanGroupIds: ['co2e/doombot-legion'] },
-          3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/doombot-legion', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
-          4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/doombot-legion', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
-          5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/doombot-legion', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+          1: { villainGroupIds: ['co2e/brotherhood-of-mutants'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+          5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
         },
       },
     ],
@@ -337,10 +337,10 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         variantIndex: 0,
         compositionsByPlayerCount: {
           1: { villainGroupIds: ['co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion'] },
-          2: { villainGroupIds: ['co2e/sinister-spider-foes', 'co2e/sinister-syndicate'], henchmanGroupIds: ['co2e/doombot-legion'] },
-          3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/sinister-spider-foes', 'co2e/sinister-syndicate'], henchmanGroupIds: ['co2e/doombot-legion'] },
-          4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/sinister-spider-foes', 'co2e/sinister-syndicate'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
-          5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/sinister-spider-foes', 'co2e/sinister-syndicate'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+          2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+          5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
         },
       },
     ],
@@ -400,20 +400,20 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion'] },
-          2: { villainGroupIds: ['core/brotherhood', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion'] },
-          3: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion'] },
-          4: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+          1: { villainGroupIds: ['core/brotherhood'], henchmanGroupIds: ['core/doombot-legion'] },
+          2: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard'], henchmanGroupIds: ['core/doombot-legion'] },
+          3: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion'] },
+          4: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
           5: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
         },
       },
     ],
     schemeOverrides: {
       'negative-zone-prison-breakout': {
-        1: { villainGroupIds: ['core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
-        2: { villainGroupIds: ['core/brotherhood', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
-        3: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
-        4: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
+        1: { villainGroupIds: ['core/brotherhood'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        2: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        3: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas'] },
+        4: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
         5: { villainGroupIds: ['core/brotherhood', 'core/enemies-of-asgard', 'core/hydra', 'core/masters-of-evil'], henchmanGroupIds: ['core/doombot-legion', 'core/hand-ninjas', 'core/savage-land-mutates'] },
       },
     },
@@ -532,9 +532,9 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['cosm/black-order-of-thanos'], henchmanGroupIds: ['cosm/sidera-maris-bridge-builders'] },
-          2: { villainGroupIds: ['cosm/black-order-of-thanos', 'cosm/celestials'], henchmanGroupIds: ['cosm/sidera-maris-bridge-builders'] },
-          3: { villainGroupIds: ['cosm/black-order-of-thanos', 'cosm/celestials', 'cosm/elders-of-the-universe'], henchmanGroupIds: ['cosm/sidera-maris-bridge-builders'] },
+          1: { villainGroupIds: ['cosm/black-order-of-thanos'], henchmanGroupIds: ['cosm/universal-church-of-truth'] },
+          2: { villainGroupIds: ['cosm/black-order-of-thanos', 'cosm/celestials'], henchmanGroupIds: ['cosm/universal-church-of-truth'] },
+          3: { villainGroupIds: ['cosm/black-order-of-thanos', 'cosm/celestials', 'cosm/elders-of-the-universe'], henchmanGroupIds: ['cosm/universal-church-of-truth'] },
           4: { villainGroupIds: ['cosm/black-order-of-thanos', 'cosm/celestials', 'cosm/elders-of-the-universe'], henchmanGroupIds: ['cosm/sidera-maris-bridge-builders', 'cosm/universal-church-of-truth'] },
           5: { villainGroupIds: ['cosm/black-order-of-thanos', 'cosm/celestials', 'cosm/elders-of-the-universe', 'cosm/from-beyond'], henchmanGroupIds: ['cosm/sidera-maris-bridge-builders', 'cosm/universal-church-of-truth'] },
         },
@@ -692,11 +692,11 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['dkcy/emissaries-of-evil'], henchmanGroupIds: ['dkcy/maggia-goons'] },
-          2: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen'], henchmanGroupIds: ['dkcy/maggia-goons'] },
-          3: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders'], henchmanGroupIds: ['dkcy/maggia-goons'] },
-          4: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
-          5: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+          1: { villainGroupIds: ['dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+          2: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+          3: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+          4: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+          5: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
         },
       },
     ],
@@ -884,7 +884,7 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          1: { villainGroupIds: ['mgtg/followers-of-ronan'], henchmanGroupIds: ['co2e/doombot-legion'] },
           2: { villainGroupIds: ['mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
           3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
           4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
@@ -916,7 +916,7 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['msis/infinity-stones'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          1: { villainGroupIds: ['msis/children-of-thanos'], henchmanGroupIds: ['co2e/doombot-legion'] },
           2: { villainGroupIds: ['msis/children-of-thanos', 'msis/infinity-stones'], henchmanGroupIds: ['co2e/doombot-legion'] },
           3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'msis/children-of-thanos', 'msis/infinity-stones'], henchmanGroupIds: ['co2e/doombot-legion'] },
           4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'msis/children-of-thanos', 'msis/infinity-stones'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
@@ -932,7 +932,7 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['msis/children-of-thanos'], henchmanGroupIds: ['co2e/doombot-legion'] },
+          1: { villainGroupIds: ['msis/infinity-stones'], henchmanGroupIds: ['co2e/doombot-legion'] },
           2: { villainGroupIds: ['msis/children-of-thanos', 'msis/infinity-stones'], henchmanGroupIds: ['co2e/doombot-legion'] },
           3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'msis/children-of-thanos', 'msis/infinity-stones'], henchmanGroupIds: ['co2e/doombot-legion'] },
           4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'msis/children-of-thanos', 'msis/infinity-stones'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
@@ -1231,9 +1231,9 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['rvlt/army-of-evil'], henchmanGroupIds: ['rvlt/hydra-base'] },
-          2: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers'], henchmanGroupIds: ['rvlt/hydra-base'] },
-          3: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang'], henchmanGroupIds: ['rvlt/hydra-base'] },
+          1: { villainGroupIds: ['rvlt/army-of-evil'], henchmanGroupIds: ['rvlt/mandarins-rings'] },
+          2: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers'], henchmanGroupIds: ['rvlt/mandarins-rings'] },
+          3: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang'], henchmanGroupIds: ['rvlt/mandarins-rings'] },
           4: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang'], henchmanGroupIds: ['rvlt/hydra-base', 'rvlt/mandarins-rings'] },
           5: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base', 'rvlt/mandarins-rings'] },
         },
@@ -1423,11 +1423,11 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
-          2: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
-          3: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
-          4: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/magma-men'] },
-          5: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/magma-men'] },
+          1: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars'], henchmanGroupIds: ['ssw2/spider-infected'] },
+          2: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere'], henchmanGroupIds: ['ssw2/spider-infected'] },
+          3: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun'], henchmanGroupIds: ['ssw2/spider-infected'] },
+          4: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/spider-infected'] },
+          5: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/spider-infected'] },
         },
       },
     ],
@@ -1617,11 +1617,11 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['wtif/black-order-guards'], henchmanGroupIds: ['wtif/giants-of-jotunheim'] },
-          2: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals'], henchmanGroupIds: ['wtif/giants-of-jotunheim'] },
-          3: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords'], henchmanGroupIds: ['wtif/giants-of-jotunheim'] },
-          4: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords'], henchmanGroupIds: ['wtif/giants-of-jotunheim', 'wtif/ultron-sentries'] },
-          5: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords', 'wtif/stranges-demons'], henchmanGroupIds: ['wtif/giants-of-jotunheim', 'wtif/ultron-sentries'] },
+          1: { villainGroupIds: ['wtif/black-order-guards'], henchmanGroupIds: ['wtif/vibranium-liberator-drones'] },
+          2: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals'], henchmanGroupIds: ['wtif/vibranium-liberator-drones'] },
+          3: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords'], henchmanGroupIds: ['wtif/vibranium-liberator-drones'] },
+          4: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords'], henchmanGroupIds: ['wtif/giants-of-jotunheim', 'wtif/vibranium-liberator-drones'] },
+          5: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords', 'wtif/stranges-demons'], henchmanGroupIds: ['wtif/giants-of-jotunheim', 'wtif/vibranium-liberator-drones'] },
         },
       },
     ],
@@ -1633,9 +1633,9 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
       {
         variantIndex: 0,
         compositionsByPlayerCount: {
-          1: { villainGroupIds: ['wtif/black-order-guards'], henchmanGroupIds: ['wtif/giants-of-jotunheim'] },
-          2: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals'], henchmanGroupIds: ['wtif/giants-of-jotunheim'] },
-          3: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords'], henchmanGroupIds: ['wtif/giants-of-jotunheim'] },
+          1: { villainGroupIds: ['wtif/black-order-guards'], henchmanGroupIds: ['wtif/ultron-sentries'] },
+          2: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals'], henchmanGroupIds: ['wtif/ultron-sentries'] },
+          3: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords'], henchmanGroupIds: ['wtif/ultron-sentries'] },
           4: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords'], henchmanGroupIds: ['wtif/giants-of-jotunheim', 'wtif/ultron-sentries'] },
           5: { villainGroupIds: ['wtif/black-order-guards', 'wtif/intergalactic-party-animals', 'wtif/rival-overlords', 'wtif/stranges-demons'], henchmanGroupIds: ['wtif/giants-of-jotunheim', 'wtif/ultron-sentries'] },
         },

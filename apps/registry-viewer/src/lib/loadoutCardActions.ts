@@ -103,8 +103,8 @@ export function isCardInLoadout(
 /**
  * Toggles the card's presence in the shared loadout draft: adds (or sets, for
  * the single slots) when absent, removes (or clears) when present — using ONLY
- * the existing `UseLoadoutDraftApi` methods. A villain group the selected
- * mastermind Always Leads is locked: removing it is a no-op.
+ * the existing `UseLoadoutDraftApi` methods. A villain or Henchman group the
+ * selected mastermind Always Leads is locked: removing it is a no-op.
  *
  * @param api - The shared loadout-draft API (owned by `App.vue`).
  * @param card - The viewed card (extId + cardType).
@@ -144,11 +144,17 @@ export function toggleCardInLoadout(api: UseLoadoutDraftApi, card: LoadoutAction
     return;
   }
   if (slot === "henchman") {
-    if (present) {
-      api.removeHenchmanGroup(card.extId);
-    } else {
+    if (!present) {
       api.addHenchmanGroup(card.extId);
+      return;
     }
+    // why: the D-24054 guard extended to Henchman leads (D-24667 §5) — a Henchman
+    // group the selected mastermind Always Leads (Dr. Doom → Doombot Legion) is
+    // mandatory; without this no-op the Cards-tab button bypasses the lock.
+    if (api.requiredHenchmanGroupIds.value.includes(card.extId)) {
+      return;
+    }
+    api.removeHenchmanGroup(card.extId);
     return;
   }
   // slot === "villain"

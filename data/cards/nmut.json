@@ -562,6 +562,7 @@
       "alwaysLeads": [
         "demons-of-limbo"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -637,6 +638,7 @@
       "alwaysLeads": [
         "hellions"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

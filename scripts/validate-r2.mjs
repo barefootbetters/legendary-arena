@@ -372,7 +372,43 @@ function checkIntraSetDuplicateSlugs(setJson, setAbbreviation) {
 }
 
 /**
- * Validates mastermind alwaysLeads references against villain/henchman slugs.
+ * Warns for each entry of one mastermind lead array that is not a slug in the
+ * given in-set group slug set.
+ * @param {object} mastermind - The mastermind record
+ * @param {string} leadField - "alwaysLeads" or "alwaysLeadsHenchmen"
+ * @param {Set<string>} groupSlugs - The in-set slugs of the matching group type
+ * @param {string} groupLabel - "villain" or "henchman", for the warning text
+ * @param {string} setAbbreviation - Set abbreviation for error messages
+ */
+function checkLeadEntries(mastermind, leadField, groupSlugs, groupLabel, setAbbreviation) {
+  const leadEntries = mastermind[leadField];
+  if (!Array.isArray(leadEntries) || leadEntries.length === 0) {
+    // Empty or absent lead arrays are acceptable — some masterminds lead any group
+    return;
+  }
+
+  for (const leadsEntry of leadEntries) {
+    const leadsSlug = typeof leadsEntry === 'string' ? leadsEntry : leadsEntry?.slug;
+
+    if (!leadsSlug) {
+      continue;
+    }
+
+    if (leadsSlug === 'PLACEHOLDER_DELETE_THIS') {
+      // Known placeholder — skip silently per 00.2 §12
+      continue;
+    }
+
+    if (!groupSlugs.has(leadsSlug)) {
+      recordWarning(`[${setAbbreviation}] Mastermind "${mastermind.slug}" ${leadField} entry "${leadsSlug}" does not match any ${groupLabel} slug in this set.`);
+    }
+  }
+}
+
+/**
+ * Validates mastermind alwaysLeads references against villain slugs and
+ * alwaysLeadsHenchmen references against henchman slugs (D-24667: a Henchman
+ * slug is no longer accepted in alwaysLeads).
  * @param {object} setJson - The full set JSON object
  * @param {string} setAbbreviation - Set abbreviation for error messages
  */
@@ -400,27 +436,8 @@ function checkAlwaysLeadsReferences(setJson, setAbbreviation) {
   }
 
   for (const mastermind of setJson.masterminds) {
-    if (!Array.isArray(mastermind.alwaysLeads) || mastermind.alwaysLeads.length === 0) {
-      // Empty or absent alwaysLeads is acceptable — some masterminds lead any group
-      continue;
-    }
-
-    for (const leadsEntry of mastermind.alwaysLeads) {
-      const leadsSlug = typeof leadsEntry === 'string' ? leadsEntry : leadsEntry?.slug;
-
-      if (!leadsSlug) {
-        continue;
-      }
-
-      if (leadsSlug === 'PLACEHOLDER_DELETE_THIS') {
-        // Known placeholder — skip silently per 00.2 §12
-        continue;
-      }
-
-      if (!villainSlugs.has(leadsSlug) && !henchmenSlugs.has(leadsSlug)) {
-        recordWarning(`[${setAbbreviation}] Mastermind "${mastermind.slug}" alwaysLeads entry "${leadsSlug}" does not match any villain or henchman slug in this set.`);
-      }
-    }
+    checkLeadEntries(mastermind, 'alwaysLeads', villainSlugs, 'villain', setAbbreviation);
+    checkLeadEntries(mastermind, 'alwaysLeadsHenchmen', henchmenSlugs, 'henchman', setAbbreviation);
   }
 }
 

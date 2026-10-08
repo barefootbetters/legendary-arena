@@ -573,6 +573,7 @@
       "alwaysLeads": [
         "monsters-unleashed"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 7,
       "cards": [
         {
@@ -648,6 +649,7 @@
       "alwaysLeads": [
         "wrecking-crew"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

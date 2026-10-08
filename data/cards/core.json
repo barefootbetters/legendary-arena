@@ -1718,8 +1718,9 @@
       "id": 1,
       "name": "Dr. Doom",
       "slug": "dr-doom",
-      "alwaysLeads": [
-        "masters-of-evil"
+      "alwaysLeads": [],
+      "alwaysLeadsHenchmen": [
+        "doombot-legion"
       ],
       "vp": 5,
       "cards": [
@@ -1783,6 +1784,7 @@
       "alwaysLeads": [
         "enemies-of-asgard"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 5,
       "cards": [
         {
@@ -1845,6 +1847,7 @@
       "alwaysLeads": [
         "brotherhood"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 5,
       "cards": [
         {
@@ -1907,6 +1910,7 @@
       "alwaysLeads": [
         "hydra"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 5,
       "cards": [
         {
@@ -2136,9 +2140,7 @@
       "id": 4,
       "name": "Masters of Evil",
       "slug": "masters-of-evil",
-      "ledBy": [
-        "dr-doom"
-      ],
+      "ledBy": [],
       "cards": [
         {
           "name": "Baron Zemo",
@@ -2353,6 +2355,9 @@
       "id": 1,
       "name": "Doombot Legion",
       "slug": "doombot-legion",
+      "ledBy": [
+        "dr-doom"
+      ],
       "imageUrl": "https://images.legendary-arena.com/core/core-hm-doombot-legion.webp",
       "abilities": [
         "Fight: Look at the top two cards of your deck. KO one of them and put the other back. [effect:scry-ko-own-deck]"
@@ -2364,6 +2369,7 @@
       "id": 2,
       "name": "Hand Ninjas",
       "slug": "hand-ninjas",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/core/core-hm-hand-ninjas.webp",
       "abilities": [
         "Fight: You get +1[icon:recruit]. [effect:gain-recruit-current:1]"
@@ -2375,6 +2381,7 @@
       "id": 3,
       "name": "Savage Land Mutates",
       "slug": "savage-land-mutates",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/core/core-hm-savage-land-mutates.webp",
       "abilities": [
         "Fight: When you draw a new hand of cards at the end of this turn, draw an extra card. [effect:add-next-hand-size:1]"
@@ -2386,6 +2393,7 @@
       "id": 4,
       "name": "Sentinel",
       "slug": "sentinel",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/core/core-hm-sentinel.webp",
       "abilities": [
         "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"

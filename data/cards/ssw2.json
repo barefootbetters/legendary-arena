@@ -38,14 +38,14 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "strength",
-          "hc2": "instinct",
           "cost": 3,
           "attack": "0+",
           "recruit": "0+",
           "abilities": [
             "[keyword:Wall-Crawl]",
             "[keyword:Patrol the Bank]: If it's empty, you get +2[icon:recruit]. If it's not, you get +2[icon:attack]."
-          ]
+          ],
+          "hc2": "instinct"
         },
         {
           "name": "Big Slimeportunity",
@@ -137,14 +137,14 @@
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "strength",
-          "hc2": "covert",
           "cost": 3,
           "attack": null,
           "recruit": "2+",
           "abilities": [
             "[keyword:Wall-Crawl]",
             "[keyword:Patrol the Sewers]: If it's empty, you get +1[icon:recruit]."
-          ]
+          ],
+          "hc2": "covert"
         },
         {
           "name": "Quiver of Thunderbolts",
@@ -247,13 +247,13 @@
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "strength",
-          "hc2": "tech",
           "cost": 3,
           "attack": "2",
           "recruit": null,
           "abilities": [
             "Reveal the top card of your deck. If it's [hc:tech] or [hc:strength], draw it. [keyword:reveal:hc-tech:draw] [keyword:reveal:hc-strength:draw]"
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Upside-down Thinking",
@@ -263,14 +263,14 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "strength",
-          "hc2": "tech",
           "cost": 4,
           "attack": null,
           "recruit": null,
           "abilities": [
             "[keyword:Wall-Crawl]",
             "[keyword:Patrol any city space]: If it's empty, then the hero in the HQ space under it costs 3 less this turn."
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Doctor of Beatdown",
@@ -280,14 +280,14 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "strength",
-          "hc2": "tech",
           "cost": 6,
           "attack": "2+",
           "recruit": null,
           "abilities": [
             "For each other [hc:strength] card you played this turn, you get +1[icon:attack]. [keyword:attack-per-count:strength-heroes-played-this-turn:1]",
             "For each other [hc:tech] card you played this turn, you get +1[icon:attack]. [keyword:attack-per-count:tech-heroes-played-this-turn:1]"
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Multi-Variable Smackulus",
@@ -297,13 +297,13 @@
           "rarityLabel": "Rare",
           "slot": 4,
           "hc": "strength",
-          "hc2": "tech",
           "cost": 8,
           "attack": "4",
           "recruit": null,
           "abilities": [
             "[hc:tech][hc:tech][hc:strength][hc:strength]: Draw three cards."
-          ]
+          ],
+          "hc2": "tech"
         }
       ],
       "physicalCards": [
@@ -391,13 +391,13 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "instinct",
-          "hc2": "ranged",
           "cost": 6,
           "attack": "4",
           "recruit": null,
           "abilities": [
             "Reveal the top three cards of the Villain Deck. Rescue any Bystanders you revealed, then put the rest back in any order."
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "Telepathic Control",
@@ -471,13 +471,13 @@
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "strength",
-          "hc2": "tech",
           "cost": 2,
           "attack": null,
           "recruit": "1+",
           "abilities": [
             "[keyword:Spectrum]: you get +2[icon:recruit]."
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Patriotic Chomp",
@@ -610,13 +610,13 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "strength",
-          "hc2": "covert",
           "cost": 5,
           "attack": "3",
           "recruit": null,
           "abilities": [
             "[keyword:Patrol the Rooftops]: If it's empty, reveal the top two cards of your deck. If they have different team icons, draw them. Otherwise, put them back in any order."
-          ]
+          ],
+          "hc2": "covert"
         },
         {
           "name": "Lead the Captain Britain Corps",
@@ -689,13 +689,13 @@
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "strength",
-          "hc2": "instinct",
           "cost": 2,
           "attack": "0+",
           "recruit": "0+",
           "abilities": [
             "[keyword:Patrol the Escape Pile]: If there are none Bystanders in it, you get +2[icon:attack]. Otherwise, you get +2[icon:recruit]."
-          ]
+          ],
+          "hc2": "instinct"
         },
         {
           "name": "Culling Blade",
@@ -798,13 +798,13 @@
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "tech",
-          "hc2": "ranged",
           "cost": 2,
           "attack": null,
           "recruit": "1",
           "abilities": [
             "[keyword:Patrol the Streets]: If it's empty, draw a card."
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "You're a Slow Learner",
@@ -908,13 +908,13 @@
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "covert",
-          "hc2": "tech",
           "cost": 3,
           "attack": "2",
           "recruit": null,
           "abilities": [
             "[keyword:Patrol the Sewers]: If it's empty, rescue a Bystander."
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Bloodstone Pendant",
@@ -1048,13 +1048,13 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "instinct",
-          "hc2": "ranged",
           "cost": 6,
           "attack": "3",
           "recruit": null,
           "abilities": [
             "Gain a Hero that was KO'd this turn."
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "Destruction Is Creation",
@@ -1142,13 +1142,13 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "strength",
-          "hc2": "ranged",
           "cost": 5,
           "attack": "2",
           "recruit": "2",
           "abilities": [
             "To play this card, you must discard a card from your hand. [keyword:discard-to-play:1]"
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "Form of Solid Ruby",
@@ -1251,14 +1251,14 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "instinct",
-          "hc2": "covert",
           "cost": 4,
           "attack": "2+",
           "recruit": null,
           "abilities": [
             "[keyword:Wall-Crawl]",
             "[keyword:Patrol the Rooftops]: If it's empty, you get +1[icon:attack]."
-          ]
+          ],
+          "hc2": "covert"
         },
         {
           "name": "Seek the Empty Mind",
@@ -1362,14 +1362,14 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "strength",
-          "hc2": "instinct",
           "cost": 2,
           "attack": "1",
           "recruit": null,
           "abilities": [
             "[keyword:Wall-Crawl]",
             "[keyword:Spectrum]: Draw a card. [keyword:draw:1]"
-          ]
+          ],
+          "hc2": "instinct"
         },
         {
           "name": "Silk Stalking",
@@ -1473,13 +1473,13 @@
           "rarityLabel": "Common 2",
           "slot": 2,
           "hc": "strength",
-          "hc2": "covert",
           "cost": 4,
           "attack": "2",
           "recruit": null,
           "abilities": [
             "If a player would gain a Wound, you may discard this card instead. If you do, draw two cards."
-          ]
+          ],
+          "hc2": "covert"
         },
         {
           "name": "Possessed by the Soulsword",
@@ -1567,13 +1567,13 @@
           "rarityLabel": "Common 1",
           "slot": 1,
           "hc": "instinct",
-          "hc2": "tech",
           "cost": 2,
           "attack": "2",
           "recruit": null,
           "abilities": [
             "[keyword:Patrol the Bridge]: If it's empty, reveal the top card of your deck. If that card costs 2 or less, draw it."
-          ]
+          ],
+          "hc2": "tech"
         },
         {
           "name": "Save the Day",
@@ -1709,13 +1709,13 @@
           "rarityLabel": "Uncommon",
           "slot": 3,
           "hc": "covert",
-          "hc2": "ranged",
           "cost": 5,
           "attack": "3",
           "recruit": null,
           "abilities": [
             "You may move a villain to an adjacent city space. If another Villain is already there, swap them."
-          ]
+          ],
+          "hc2": "ranged"
         },
         {
           "name": "Change History",
@@ -1777,6 +1777,7 @@
       "alwaysLeads": [
         "kun-lun"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 5,
       "cards": [
         {
@@ -1840,6 +1841,7 @@
       "alwaysLeads": [
         "utopolis"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1903,6 +1905,7 @@
       "alwaysLeads": [
         "monster-metropolis"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1964,6 +1967,9 @@
       "name": "Spider-Queen",
       "slug": "spider-queen",
       "alwaysLeads": [],
+      "alwaysLeadsHenchmen": [
+        "spider-infected"
+      ],
       "vp": 6,
       "cards": [
         {
@@ -2382,37 +2388,42 @@
       "id": 16,
       "name": "Khonshu Guardians",
       "slug": "khonshu-guardians",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-hm-khonshu-guardians.webp",
       "abilities": [
         "While in the Sewers, Rooftops or Bridge, this is in “wolf form“ and gets +2[icon:attack].",
         "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     },
     {
       "id": 17,
       "name": "Magma Men",
       "slug": "magma-men",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-hm-magma-men.webp",
       "abilities": [
         "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]",
         "[keyword:Fateful Resurrection]"
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     },
     {
       "id": 18,
       "name": "Spider-Infected",
       "slug": "spider-infected",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [
+        "spider-queen"
+      ],
       "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-hm-spider-infected.webp",
       "abilities": [
         "Ambush: This captures a Bystander. [effect:captureBystander]",
         "Fight: The next Hero you gain this turn has [keyword:Wall-Crawl]."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     }
   ],
   "schemes": [
@@ -2596,15 +2607,75 @@
   ],
   "wounds": [],
   "other": [
-    { "name": "Crazed Charge",         "slug": "crazed-charge",         "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-crazed-charge.webp",         "abilities": [] },
-    { "name": "Detonate the Bridge",   "slug": "detonate-the-bridge",   "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-detonate-the-bridge.webp",   "abilities": [] },
-    { "name": "Devastate S.H.I.E.L.D.","slug": "devastate-shield",      "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-devastate-shield.webp",      "abilities": [] },
-    { "name": "Hostage Situation",     "slug": "hostage-situation",     "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-hostage-situation.webp",     "abilities": [] },
-    { "name": "Puzzle Trap",           "slug": "puzzle-trap",           "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-puzzle-trap.webp",           "abilities": [] },
-    { "name": "Rack and Ruin",         "slug": "rack-and-ruin",         "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-rack-and-ruin.webp",         "abilities": [] },
-    { "name": "Secret Escape Tunnels", "slug": "secret-escape-tunnels", "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-secret-escape-tunnels.webp", "abilities": [] },
-    { "name": "Seize the High Ground", "slug": "seize-the-high-ground", "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-seize-the-high-ground.webp", "abilities": [] },
-    { "name": "Shadowy Disciple",      "slug": "shadowy-disciple",      "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-shadowy-disciple.webp",      "abilities": [] },
-    { "name": "This is a Stickup",     "slug": "this-is-a-stickup",     "cardType": "ambitions", "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-this-is-a-stickup.webp",     "abilities": [] }
+    {
+      "name": "Crazed Charge",
+      "slug": "crazed-charge",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-crazed-charge.webp",
+      "abilities": []
+    },
+    {
+      "name": "Detonate the Bridge",
+      "slug": "detonate-the-bridge",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-detonate-the-bridge.webp",
+      "abilities": []
+    },
+    {
+      "name": "Devastate S.H.I.E.L.D.",
+      "slug": "devastate-shield",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-devastate-shield.webp",
+      "abilities": []
+    },
+    {
+      "name": "Hostage Situation",
+      "slug": "hostage-situation",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-hostage-situation.webp",
+      "abilities": []
+    },
+    {
+      "name": "Puzzle Trap",
+      "slug": "puzzle-trap",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-puzzle-trap.webp",
+      "abilities": []
+    },
+    {
+      "name": "Rack and Ruin",
+      "slug": "rack-and-ruin",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-rack-and-ruin.webp",
+      "abilities": []
+    },
+    {
+      "name": "Secret Escape Tunnels",
+      "slug": "secret-escape-tunnels",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-secret-escape-tunnels.webp",
+      "abilities": []
+    },
+    {
+      "name": "Seize the High Ground",
+      "slug": "seize-the-high-ground",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-seize-the-high-ground.webp",
+      "abilities": []
+    },
+    {
+      "name": "Shadowy Disciple",
+      "slug": "shadowy-disciple",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-shadowy-disciple.webp",
+      "abilities": []
+    },
+    {
+      "name": "This is a Stickup",
+      "slug": "this-is-a-stickup",
+      "cardType": "ambitions",
+      "imageUrl": "https://images.legendary-arena.com/ssw2/ssw2-am-this-is-a-stickup.webp",
+      "abilities": []
+    }
   ]
 }
