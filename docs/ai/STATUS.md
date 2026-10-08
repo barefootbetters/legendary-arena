@@ -21,6 +21,13 @@ Every mastermind's Always Leads now matches the printed card.
 - **Operator, at merge (before or with the viewer deploy):** `rclone copy data/cards r2:legendary-images/metadata` (copy, never sync) and `node scripts/upload-themes-to-r2.mjs`. Until the copy lands, a Dr. Doom gauntlet-leg prefill shows a stale "Masters of Evil required" warning.
 - **Live-verify (D-24026): pending.** cards — core Dr. Doom locks Doombot Legion, not Masters of Evil; Magus locks Universal Church of Truth; Hela requires Omens of Ragnarok; the House of M theme prefills ready. play — a core Dr. Doom 2p gauntlet "Play this leg" launches with Brotherhood + Enemies of Asgard and Doombot Legion (record the matchId here).
 
+### D-24670 — High Stakes Jackpot's reveal says how much attack it gave (direct fix) (2026-10-08)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A reveal that grants attack now logs the amount: "revealed Diving Block (cost 6) — always matched: gained +6 attack." instead of "gained attack.", and the reveal overlay says the same. This covers High Stakes Jackpot, the reveal-and-choose variant, and fixed-amount reveals. Diagnostics no longer trace a phantom "attack" no-handler on every High Stakes Jackpot play. Reported in solo match `iNKIWCJu8FH`.
+
+- **Engine only** (`revealLog.ts`, `heroAbility.setup.ts`) plus the informational coverage list. game-engine 5011 / 0 fail (+4; 2 authorized wording-test edits).
+- **Live-verify (D-24026): pending.** Play High Stakes Jackpot; the reveal line should name the amount.
+
 ### D-24669 — Destroyer's Escape and Super-Skrull's Fight let you choose which Heroes to KO (direct fix) (2026-10-08)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** "Each player KOs N of their Heroes" now prompts the current player to pick, instead of silently KO'ing starters. This covers Destroyer's Escape (two) and Super-Skrull's Fight (one), plus M.O.D.O.K., Stonekeeper and Yondu in other sets. Other players still auto-pick. A forced KO (no more Heroes than owed) still happens without a prompt. Reported in solo match `L7pW0ZAyP_c`.
