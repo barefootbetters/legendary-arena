@@ -1581,3 +1581,40 @@ function findWoundArrayEntry(
   }
   return null;
 }
+
+// ---------------------------------------------------------------------------
+// Killbot display names (D-24668)
+// ---------------------------------------------------------------------------
+
+/** The display name of a villain-deck Bystander converted to a Killbot Villain. */
+export const KILLBOT_DISPLAY_NAME = 'Killbot';
+
+/**
+ * Renames every Killbot-converted villain-deck Bystander to "Killbot" in the setup-time
+ * display data (D-24668).
+ *
+ * // why: under Replace Earth's Leaders with Killbots the villain-deck Bystanders are
+ * Killbot Villains (D-24324), but their display entries kept the Bystander name, so the
+ * log, the City card and the Victory Pile read "fought Bystander" and "Villain Bystander
+ * escaped" (match zE7zTyM-ziJ). Only 'killbot'-origin entries change; Secret Invasion's
+ * Skrull Heroes keep their Hero names, and every other scheme's display data is untouched.
+ *
+ * @param cardDisplayData - The freshly built display data; mutated in place.
+ * @param convertedOrigins - The converted-villain overlay from buildVillainDeck.
+ */
+export function applyKillbotDisplayNames(
+  cardDisplayData: Record<CardExtId, UICardDisplay>,
+  convertedOrigins: Readonly<Record<CardExtId, string>>,
+): void {
+  for (const convertedId of Object.keys(convertedOrigins)) {
+    if (convertedOrigins[convertedId] !== 'killbot') {
+      continue;
+    }
+    const entry = cardDisplayData[convertedId];
+    if (entry === undefined) {
+      continue;
+    }
+    // why: a fresh object per key, so no display entry is aliased.
+    cardDisplayData[convertedId] = { ...entry, name: KILLBOT_DISPLAY_NAME };
+  }
+}

@@ -143,6 +143,29 @@ describe('Psychic Link handler (WP-659 / D-24470)', () => {
     assert.equal(G.playerZones['2']!.deck.length, 2, 'player 2 (no X-Men) did not draw');
   });
 
+  it('D-24668: when no player holds a match, one blocked line says no one drew', () => {
+    const G = makeHandState(
+      { '0': ['shield-card'], '1': ['shield-card'] },
+      { '0': ['d0a'], '1': ['d1a'] },
+    );
+    executeSingleEffect(G, mockCtx, '0', 'psychic-link', REVEAL_EFFECT);
+
+    const noRevealLines = G.messages.filter((entry) =>
+      /No player had a matching Hero to reveal for .*psychic-link.*, so no one drew\./.test(entry.text));
+    assert.equal(noRevealLines.length, 1, 'exactly one no-reveal line');
+    assert.equal(noRevealLines[0]!.outcome, 'blocked');
+  });
+
+  it('D-24668: no no-reveal line when at least one player revealed', () => {
+    const G = makeHandState(
+      { '0': ['shield-card'], '1': ['xmen-card'] },
+      { '0': ['d0a'], '1': ['d1a'] },
+    );
+    executeSingleEffect(G, mockCtx, '0', 'psychic-link', REVEAL_EFFECT);
+
+    assert.ok(!G.messages.some((entry) => entry.text.startsWith('No player had a matching Hero')));
+  });
+
   it('AC-6: never throws on an empty hand or a card with no trait entry', () => {
     const emptyHand = makeHandState({ '0': [] }, { '0': ['deck-a'] });
     assert.doesNotThrow(() => executeSingleEffect(emptyHand, mockCtx, '0', 'psychic-link', REVEAL_EFFECT));
