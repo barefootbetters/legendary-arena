@@ -1866,6 +1866,7 @@
       "alwaysLeads": [
         "four-horsemen"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1930,6 +1931,7 @@
       "alwaysLeads": [
         "streets-of-new-york"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1991,8 +1993,9 @@
       "name": "Mephisto",
       "slug": "mephisto",
       "alwaysLeads": [
-        "emissaries-of-evil"
+        "underworld"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2056,6 +2059,7 @@
       "alwaysLeads": [
         "marauders"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2119,6 +2123,7 @@
       "alwaysLeads": [
         "mutant-liberation-front"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2180,9 +2185,7 @@
       "id": 8,
       "name": "Emissaries of Evil",
       "slug": "emissaries-of-evil",
-      "ledBy": [
-        "mephisto"
-      ],
+      "ledBy": [],
       "cards": [
         {
           "name": "Egghead",
@@ -2461,7 +2464,9 @@
       "id": 13,
       "name": "Underworld",
       "slug": "underworld",
-      "ledBy": [],
+      "ledBy": [
+        "mephisto"
+      ],
       "cards": [
         {
           "name": "Azazel",
@@ -2518,24 +2523,26 @@
       "id": 5,
       "name": "Maggia Goons",
       "slug": "maggia-goons",
-      "vAttack": "4",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-hm-maggia-goons.webp",
       "abilities": [
         "[keyword:Bribe]",
         "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
-      ]
+      ],
+      "vAttack": "4",
+      "vp": 1
     },
     {
       "id": 6,
       "name": "Phalanx",
       "slug": "phalanx",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-hm-phalanx.webp",
       "abilities": [
         "Fight: Reveal a [hc:tech] Hero or KO one of your Heroes with a [icon:attack] icon."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     }
   ],
   "schemes": [

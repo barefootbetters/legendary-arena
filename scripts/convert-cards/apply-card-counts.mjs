@@ -48,14 +48,14 @@ const LEADS = JSON.parse(readFileSync(LEADS_PATH, 'utf8'));
 const SCHEME_DECK_COUNTS = JSON.parse(readFileSync(SCHEME_DECK_COUNTS_PATH, 'utf8'));
 
 /**
- * Builds a per-set list of villain-group lead rows from the raw leads.json
- * array, skipping the PLACEHOLDER_DELETE_THIS row and the comment-only markers
+ * Builds a per-set list of lead rows from the raw leads.json array, skipping
+ * the PLACEHOLDER_DELETE_THIS row and the comment-only markers
  * ({ "_set": ... }, { "_unassigned": ... }) that carry no usable "set" string.
- * Only villainGroups[] is read; henchmen leads and the "_anyVillainGroup"
- * wildcard are out of scope for villain-group wiring.
+ * Both villainGroups[] and henchmen[] are read (D-24667); the
+ * "_anyVillainGroup" wildcard forces no group.
  *
  * @param leadsArray - The parsed leads.json array.
- * @returns Map of setAbbr → array of { mastermind, villainGroups } rows.
+ * @returns Map of setAbbr → array of { mastermind, villainGroups, henchmen } rows.
  */
 function buildLeadsBySet(leadsArray) {
   const leadsBySet = new Map();
@@ -64,8 +64,9 @@ function buildLeadsBySet(leadsArray) {
       continue;
     }
     const groups = Array.isArray(row.villainGroups) ? row.villainGroups : [];
+    const henchmen = Array.isArray(row.henchmen) ? row.henchmen : [];
     const existing = leadsBySet.get(row.set) ?? [];
-    existing.push({ mastermind: row.mastermind, villainGroups: groups });
+    existing.push({ mastermind: row.mastermind, villainGroups: groups, henchmen });
     leadsBySet.set(row.set, existing);
   }
   return leadsBySet;
@@ -134,9 +135,34 @@ function applyVillainCopies(setData, setAbbr) {
 }
 
 /**
- * Populates mastermind.alwaysLeads[] and villainGroup.ledBy[] for an outlier set
- * from leads.json (D-16703), symmetric and deduplicated. Loud-fails if a lead
- * row names a mastermind or villain group absent from the set.
+ * Resets every lead array in an outlier set to empty: each mastermind's
+ * alwaysLeads[] / alwaysLeadsHenchmen[] and each villain / henchman group's
+ * ledBy[]. applyLeadsRelationships then rebuilds them from leads.json alone.
+ *
+ * @param setData - The outlier set object (mutated in place).
+ */
+function resetLeadArrays(setData) {
+  // why: this script reads the committed outlier JSON as its base, which
+  // already carries the previous run's leads; appending onto it would keep a
+  // lead that leads.json has since corrected or removed (D-24667).
+  for (const mastermind of setData.masterminds ?? []) {
+    mastermind.alwaysLeads = [];
+    mastermind.alwaysLeadsHenchmen = [];
+  }
+  for (const villainGroup of setData.villains ?? []) {
+    villainGroup.ledBy = [];
+  }
+  for (const henchmanGroup of setData.henchmen ?? []) {
+    henchmanGroup.ledBy = [];
+  }
+}
+
+/**
+ * Populates mastermind.alwaysLeads[] / villainGroup.ledBy[] (D-16703) and
+ * mastermind.alwaysLeadsHenchmen[] / henchmanGroup.ledBy[] (D-24667) for an
+ * outlier set from leads.json, symmetric and deduplicated. Every lead array is
+ * rebuilt from leads.json, never appended. Loud-fails if a lead row names a
+ * mastermind, villain group or henchman group absent from the set.
  *
  * @param setData - The outlier set object (mutated in place).
  * @param setAbbr - The set abbreviation being processed.
@@ -144,6 +170,7 @@ function applyVillainCopies(setData, setAbbr) {
  */
 function applyLeadsRelationships(setData, setAbbr) {
   const leadRows = LEADS_BY_SET.get(setAbbr) ?? [];
+  resetLeadArrays(setData);
 
   const mastermindBySlug = new Map();
   for (const mastermind of setData.masterminds ?? []) {
@@ -152,6 +179,10 @@ function applyLeadsRelationships(setData, setAbbr) {
   const groupBySlug = new Map();
   for (const villainGroup of setData.villains ?? []) {
     groupBySlug.set(villainGroup.slug, villainGroup);
+  }
+  const henchmanGroupBySlug = new Map();
+  for (const henchmanGroup of setData.henchmen ?? []) {
+    henchmanGroupBySlug.set(henchmanGroup.slug, henchmanGroup);
   }
 
   for (const leadRow of leadRows) {
@@ -175,6 +206,19 @@ function applyLeadsRelationships(setData, setAbbr) {
       }
       pushUnique(mastermind.alwaysLeads, groupSlug);
       pushUnique(villainGroup.ledBy, leadRow.mastermind);
+    }
+    for (const henchmanSlug of leadRow.henchmen) {
+      const henchmanGroup = henchmanGroupBySlug.get(henchmanSlug);
+      if (!henchmanGroup) {
+        throw new Error(
+          `leads.json names henchman group "${henchmanSlug}" led by mastermind ` +
+            `"${leadRow.mastermind}" for set "${setAbbr}", which does not match any ` +
+            `henchman group in ${setAbbr}.json. Fix the henchman slug in leads.json or ` +
+            `update the source data.`,
+        );
+      }
+      pushUnique(mastermind.alwaysLeadsHenchmen, henchmanSlug);
+      pushUnique(henchmanGroup.ledBy, leadRow.mastermind);
     }
   }
 }

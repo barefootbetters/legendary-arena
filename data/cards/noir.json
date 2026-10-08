@@ -553,6 +553,7 @@
       "alwaysLeads": [
         "x-men-noir"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -617,6 +618,7 @@
       "alwaysLeads": [
         "goblins-freak-show"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

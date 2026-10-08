@@ -78,9 +78,29 @@ describe("getGauntletConfig — Core per-scheme swaps", () => {
       "secret-invasion-of-the-skrull-shapeshifters",
       2,
     );
-    assert.deepEqual(swapped?.villainGroupIds, ["core/masters-of-evil", "core/skrulls"]);
+    assert.deepEqual(swapped?.villainGroupIds, ["core/skrulls", "core/enemies-of-asgard"]);
     const unswapped = getGauntletConfig("core", "dr-doom", "midtown-bank-robbery", 2);
-    assert.deepEqual(unswapped?.villainGroupIds, ["core/masters-of-evil", "core/brotherhood"]);
+    assert.deepEqual(unswapped?.villainGroupIds, ["core/brotherhood", "core/enemies-of-asgard"]);
+  });
+
+  it("anchors Dr. Doom on his printed Henchman lead, Doombot Legion (D-24667)", () => {
+    const doomConfig = committedConfigs.years[committedConfigs.activeYear]?.sets.core?.masterminds["dr-doom"];
+    assert.ok(doomConfig !== undefined, "Expected an authored core/dr-doom config.");
+    assert.equal(doomConfig.anchorHenchmanGroup, "core/doombot-legion");
+    assert.equal(doomConfig.anchorVillainGroup, undefined);
+    assert.deepEqual(
+      getGauntletConfig("core", "dr-doom", "midtown-bank-robbery", 2)?.henchmanGroupIds,
+      ["core/doombot-legion"],
+    );
+    for (const schemeSlug of Object.keys(doomConfig.schemes)) {
+      for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+        const config = getGauntletConfig("core", "dr-doom", schemeSlug, playerCount);
+        assert.ok(
+          config?.henchmanGroupIds.includes("core/doombot-legion"),
+          `core/dr-doom/${schemeSlug} at ${playerCount} players must field Doombot Legion.`,
+        );
+      }
+    }
   });
 
   it("varies the Red Skull 2-player fight by reordering the same 4-set", () => {
@@ -349,6 +369,24 @@ describe("validateGauntletConfigs", () => {
     const configs = JSON.parse(readFileSync(configsPath, "utf8"));
     configs.years["2026"].sets.core.masterminds["dr-doom"].schemes["midtown-bank-robbery"].smuggled = true;
     assert.throws(() => validateGauntletConfigs(configs), /not a valid gauntlet-configs file/);
+  });
+
+  it("rejects a mastermind config with neither anchor (D-24667)", () => {
+    const configs = JSON.parse(readFileSync(configsPath, "utf8"));
+    delete configs.years["2026"].sets.core.masterminds["dr-doom"].anchorHenchmanGroup;
+    assert.throws(
+      () => validateGauntletConfigs(configs),
+      /set "core", mastermind "dr-doom" must carry exactly one of anchorVillainGroup or anchorHenchmanGroup.*neither/,
+    );
+  });
+
+  it("rejects a mastermind config with both anchors (D-24667)", () => {
+    const configs = JSON.parse(readFileSync(configsPath, "utf8"));
+    configs.years["2026"].sets.core.masterminds["dr-doom"].anchorVillainGroup = "core/masters-of-evil";
+    assert.throws(
+      () => validateGauntletConfigs(configs),
+      /set "core", mastermind "dr-doom" must carry exactly one of anchorVillainGroup or anchorHenchmanGroup.*both/,
+    );
   });
 });
 

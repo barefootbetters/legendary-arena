@@ -570,6 +570,7 @@
       "alwaysLeads": [
         "inhuman-rebellion"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -645,6 +646,7 @@
       "alwaysLeads": [
         "shiar-imperial-elite"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

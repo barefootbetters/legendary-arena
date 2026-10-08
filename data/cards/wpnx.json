@@ -454,9 +454,7 @@
       "id": 102,
       "name": "Omega Red",
       "slug": "omega-red",
-      "alwaysLeads": [
-        "berserkers"
-      ],
+      "alwaysLeads": [],
       "vp": 6,
       "cards": [
         {
@@ -525,7 +523,8 @@
             "Fight: If this is not the final Tactic, and if you have at least two Wounds in your hand and/or discard pile, return all of them to the bottom of the Wound Deck and shuffle this Tactic back into Omega Red's other Tactics."
           ]
         }
-      ]
+      ],
+      "alwaysLeadsHenchmen": []
     },
     {
       "id": 103,
@@ -601,7 +600,8 @@
             "Fight: You get +[icon:recruit] equal to the [icon:attack] Romulus is gaining from [keyword:Weapon X Sequence]."
           ]
         }
-      ]
+      ],
+      "alwaysLeadsHenchmen": []
     },
     {
       "id": 104,
@@ -678,7 +678,8 @@
             "Fight: Stack a card from the Wound Deck next to Sabretooth as a “Savagery.“"
           ]
         }
-      ]
+      ],
+      "alwaysLeadsHenchmen": []
     }
   ],
   "villains": [
@@ -687,7 +688,6 @@
       "name": "Berserkers",
       "slug": "berserkers",
       "ledBy": [
-        "omega-red",
         "sabretooth"
       ],
       "cards": [

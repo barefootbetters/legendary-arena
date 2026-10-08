@@ -1654,6 +1654,7 @@
       "alwaysLeads": [
         "defenders"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1716,6 +1717,7 @@
       "alwaysLeads": [
         "avengers"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1776,6 +1778,9 @@
       "name": "Odin",
       "slug": "odin",
       "alwaysLeads": [],
+      "alwaysLeadsHenchmen": [
+        "asgardian-warriors"
+      ],
       "vp": 6,
       "cards": [
         {
@@ -1839,6 +1844,7 @@
       "alwaysLeads": [
         "x-men-first-class"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -2338,45 +2344,51 @@
       "id": 7,
       "name": "Asgardian Warriors",
       "slug": "asgardian-warriors",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [
+        "odin"
+      ],
       "imageUrl": "https://images.legendary-arena.com/vill/vill-hm-asgardian-warriors.webp",
       "abilities": [
         "Fight: Draw a card."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     },
     {
       "id": 8,
       "name": "Cops",
       "slug": "cops",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/vill/vill-hm-cops.webp",
       "abilities": [
         "Fight: Gain a New Recruit."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     },
     {
       "id": 9,
       "name": "Multiple Man",
       "slug": "multiple-man",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/vill/vill-hm-multiple-man.webp",
       "abilities": [
         "Fight: KO one of your Allies for each other Multiple Man in your Victory Pile."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     },
     {
       "id": 10,
       "name": "S.H.I.E.L.D. Assault Squad",
       "slug": "shield-assault-squad",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/vill/vill-hm-shield-assault-squad.webp",
       "abilities": [
         "Fight: Discard the top card of your deck. Then KO an Ally from your discard pile."
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     }
   ],
   "schemes": [
@@ -2587,7 +2599,6 @@
     {
       "id": null,
       "name": "Bindings",
-      "filterName": null,
       "slug": "bindings",
       "imageUrl": "https://images.legendary-arena.com/vill/vill-wd-bindings.webp",
       "cards": [
@@ -2597,7 +2608,8 @@
             "Betrayal: If you don't recruit any Allies or defeat any Adversaries or Commanders on your turn, you may KO a Bindings from your hand. If you do, the player to your right gains all the other Bindings from your hand."
           ]
         }
-      ]
+      ],
+      "filterName": null
     }
   ],
   "other": [

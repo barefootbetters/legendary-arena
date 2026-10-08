@@ -517,17 +517,56 @@ async function checkPerSetCardData(
 
 // ── Phase 3: Cross-References ─────────────────────────────────────────────────
 
+/**
+ * Type guard for a Henchman group entry carrying a string `slug`. `SetData.henchmen`
+ * is `unknown[]` (henchman shapes vary across sets), so entries are narrowed here.
+ *
+ * @param value - One raw entry of `SetData.henchmen`.
+ * @returns True when the entry is an object with a string `slug`.
+ */
+function isSluggedGroup(value: unknown): value is { slug: string } {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  return typeof (value as { slug?: unknown }).slug === "string";
+}
+
+/**
+ * Collects the slugs of every Henchman group in a set.
+ *
+ * @param setData - The validated set.
+ * @returns The set's Henchman group slugs.
+ */
+function collectHenchmanSlugs(setData: SetData): Set<string> {
+  const henchmanSlugs = new Set<string>();
+  for (const henchmanGroup of setData.henchmen) {
+    if (isSluggedGroup(henchmanGroup)) {
+      henchmanSlugs.add(henchmanGroup.slug);
+    }
+  }
+  return henchmanSlugs;
+}
+
+/**
+ * Warns when a mastermind's `alwaysLeads` entry is not an in-set villain group
+ * slug, or an `alwaysLeadsHenchmen` entry is not an in-set Henchman group slug.
+ *
+ * @param allSets - Every set that passed schema validation.
+ * @param findings - The accumulated findings (appended to).
+ */
 function checkAlwaysLeadsConsistency(allSets: Map<string, SetData>, findings: Finding[]): void {
   const phase = "Phase 3 — Cross-References";
 
   for (const [setAbbr, setData] of allSets) {
     const villainGroupSlugs = new Set(setData.villains.map((vg) => vg.slug));
+    const henchmanGroupSlugs = collectHenchmanSlugs(setData);
 
     for (const mastermind of setData.masterminds) {
+      // why: alwaysLeads holds Villain Groups only — a printed Henchman-Group lead
+      // lives in alwaysLeadsHenchmen (D-24667), so each half is checked against
+      // its own group type.
       for (const leadSlug of mastermind.alwaysLeads) {
         if (!villainGroupSlugs.has(leadSlug)) {
-          // why: some leads reference henchman groups, not villain groups —
-          // these are valid but can't be resolved against villain slugs alone
           findings.push({
             level:   "warning",
             phase,
@@ -535,7 +574,21 @@ function checkAlwaysLeadsConsistency(allSets: Map<string, SetData>, findings: Fi
             code:    "ALWAYS_LEADS_UNRESOLVED",
             message: `Mastermind "${mastermind.slug}" in "${setAbbr}" has alwaysLeads entry ` +
                      `"${leadSlug}" that doesn't match any villain group slug in this set. ` +
-                     "May be a henchman group — verify against the physical cards.",
+                     "A Henchman-group lead belongs in alwaysLeadsHenchmen; fix the lead in " +
+                     "scripts/convert-cards/inputs/leads.json.",
+          });
+        }
+      }
+      for (const leadSlug of mastermind.alwaysLeadsHenchmen) {
+        if (!henchmanGroupSlugs.has(leadSlug)) {
+          findings.push({
+            level:   "warning",
+            phase,
+            setAbbr,
+            code:    "ALWAYS_LEADS_HENCHMEN_UNRESOLVED",
+            message: `Mastermind "${mastermind.slug}" in "${setAbbr}" has alwaysLeadsHenchmen entry ` +
+                     `"${leadSlug}" that doesn't match any Henchman group slug in this set. ` +
+                     "Fix the henchmen lead in scripts/convert-cards/inputs/leads.json.",
           });
         }
       }

@@ -1418,7 +1418,8 @@
             "Fight: Each other player reveals the top three cards of their deck, discards all those cards that cost 1 or more, and puts the rest back in any order."
           ]
         }
-      ]
+      ],
+      "alwaysLeadsHenchmen": []
     },
     {
       "id": 94,
@@ -1497,7 +1498,8 @@
             "Reveal the top card of the Hero Deck then put it on the bottom of the Hero Deck. You may play a copy of that card this turn."
           ]
         }
-      ]
+      ],
+      "alwaysLeadsHenchmen": []
     },
     {
       "id": 95,
@@ -1570,6 +1572,9 @@
             "Fight: From left to right, each Killmonger Hero in the HQ enters the city as a Villain as described on the Mastermind card. Then refill all the empty HQ spaces."
           ]
         }
+      ],
+      "alwaysLeadsHenchmen": [
+        "vibranium-liberator-drones"
       ]
     },
     {
@@ -1644,6 +1649,9 @@
             "Fight: For each Ultron Sentry in your Victory Pile, you may KO a Hero from your hand or discard pile."
           ]
         }
+      ],
+      "alwaysLeadsHenchmen": [
+        "ultron-sentries"
       ]
     }
   ],
@@ -2101,7 +2109,8 @@
       "abilities": [
         "Ambush: Each player discards the top three cards of their deck.",
         "Fight: You may KO a grey Hero from your discard pile."
-      ]
+      ],
+      "ledBy": []
     },
     {
       "id": 39,
@@ -2113,6 +2122,9 @@
       "abilities": [
         "Ambush: Another Villain captures a Bystander. ",
         "Fight: [keyword:Liberate 3]. The next time you rescue a Bystander this turn (Including from this Henchmen), KO one of your Heroes."
+      ],
+      "ledBy": [
+        "killmonger-the-betrayer"
       ]
     },
     {
@@ -2176,7 +2188,10 @@
         "ranged": "https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-ranged.webp",
         "strength": "https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-strength.webp",
         "tech": "https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-tech.webp"
-      }
+      },
+      "ledBy": [
+        "ultron-infinity"
+      ]
     }
   ],
   "schemes": [

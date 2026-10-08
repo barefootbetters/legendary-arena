@@ -14,7 +14,7 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
   "description": "Authored gauntlet adversary configurations, keyed by season year. Each leg (a mastermind + scheme pairing) fields its own ordered villain and henchman pools, so a mastermind's schemes can field different adversaries for variety. Non-swapped legs reproduce the current generated gauntlet loadouts exactly; swapped legs carry the operator-curated variety. This file is authored data; the engine consumes it in a later work packet (per-scheme approved-loadout wiring). Group identifiers are set-qualified ext_ids (setAbbr/slug).",
   "activeYear": "2026",
   "slicing": {
-    "note": "A leg's composition for a given player count is the first N entries of each ordered pool, where N is the count below. Pools are ordered anchor-first (the mastermind's always-leads villain group), then thematically. Because the counts are monotonic, first-N produces nested sets that match the game's per-player-count setup requirements. The henchmen slice uses the scheme-effective count, not only the table value below: a scheme that prints 'Add an extra Henchman group' (Negative Zone Prison Breakout) takes base + 1 henchman groups (2 at 1-3 players, 3 at 4-5), so those legs' pools carry a third entry (core/sentinel) to make 4-5 players satisfiable.",
+    "note": "A leg's composition for a given player count is the first N entries of each ordered pool, where N is the count below. Pools are ordered anchor-first: the mastermind's Always-Leads villain group leads villainPool, or a Henchman-group lead (Dr. Doom leads Doombot Legion) leads henchmanPool; then thematically. Because the counts are monotonic, first-N produces nested sets that match the game's per-player-count setup requirements. The henchmen slice uses the scheme-effective count, not only the table value below: a scheme that prints 'Add an extra Henchman group' (Negative Zone Prison Breakout) takes base + 1 henchman groups (2 at 1-3 players, 3 at 4-5), so those legs' pools carry a third entry (core/sentinel) to make 4-5 players satisfiable.",
     "villainGroupCountByPlayerCount": {
       "1": 1,
       "2": 2,
@@ -39,12 +39,12 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
           "masterminds": {
             "dr-doom": {
               "mastermindName": "Dr. Doom",
-              "anchorVillainGroup": "core/masters-of-evil",
+              "anchorHenchmanGroup": "core/doombot-legion",
               "baseVillainPool": [
-                "core/masters-of-evil",
                 "core/brotherhood",
                 "core/enemies-of-asgard",
-                "core/hydra"
+                "core/hydra",
+                "core/masters-of-evil"
               ],
               "baseHenchmanPool": [
                 "core/doombot-legion",
@@ -54,10 +54,10 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                 "midtown-bank-robbery": {
                   "schemeName": "Midtown Bank Robbery",
                   "villainPool": [
-                    "core/masters-of-evil",
                     "core/brotherhood",
                     "core/enemies-of-asgard",
-                    "core/hydra"
+                    "core/hydra",
+                    "core/masters-of-evil"
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",
@@ -68,10 +68,10 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                 "secret-invasion-of-the-skrull-shapeshifters": {
                   "schemeName": "Secret Invasion of the Skrull Shapeshifters",
                   "villainPool": [
-                    "core/masters-of-evil",
                     "core/skrulls",
                     "core/enemies-of-asgard",
-                    "core/hydra"
+                    "core/hydra",
+                    "core/masters-of-evil"
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",
@@ -82,10 +82,10 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                 "legacy-virus-the": {
                   "schemeName": "Legacy Virus, The",
                   "villainPool": [
-                    "core/masters-of-evil",
                     "core/brotherhood",
                     "core/enemies-of-asgard",
-                    "core/hydra"
+                    "core/hydra",
+                    "core/masters-of-evil"
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",
@@ -96,10 +96,10 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                 "negative-zone-prison-breakout": {
                   "schemeName": "Negative Zone Prison Breakout",
                   "villainPool": [
-                    "core/masters-of-evil",
                     "core/skrulls",
                     "core/enemies-of-asgard",
-                    "core/hydra"
+                    "core/hydra",
+                    "core/masters-of-evil"
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",
@@ -111,10 +111,10 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                 "portals-to-the-dark-dimension": {
                   "schemeName": "Portals to the Dark Dimension",
                   "villainPool": [
-                    "core/masters-of-evil",
                     "core/brotherhood",
                     "core/enemies-of-asgard",
-                    "core/hydra"
+                    "core/hydra",
+                    "core/masters-of-evil"
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",
@@ -125,10 +125,10 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                 "replace-earths-leaders-with-killbots": {
                   "schemeName": "Replace Earth's Leaders with Killbots",
                   "villainPool": [
-                    "core/masters-of-evil",
                     "core/brotherhood",
                     "core/enemies-of-asgard",
-                    "core/hydra"
+                    "core/hydra",
+                    "core/masters-of-evil"
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",
@@ -139,10 +139,10 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                 "super-hero-civil-war": {
                   "schemeName": "Super Hero Civil War",
                   "villainPool": [
-                    "core/masters-of-evil",
                     "core/skrulls",
                     "core/enemies-of-asgard",
-                    "core/hydra"
+                    "core/hydra",
+                    "core/masters-of-evil"
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",
@@ -153,10 +153,10 @@ export const GAUNTLET_CONFIGS_DATA: unknown = {
                 "unleash-the-power-of-the-cosmic-cube": {
                   "schemeName": "Unleash the Power of the Cosmic Cube",
                   "villainPool": [
-                    "core/masters-of-evil",
                     "core/skrulls",
                     "core/enemies-of-asgard",
-                    "core/hydra"
+                    "core/hydra",
+                    "core/masters-of-evil"
                   ],
                   "henchmanPool": [
                     "core/doombot-legion",

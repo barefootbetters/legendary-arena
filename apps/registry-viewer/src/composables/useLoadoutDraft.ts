@@ -204,30 +204,43 @@ function resolveThemeSlugToExtId(
 }
 
 /**
- * Resolves the villain group ext_ids a mastermind "Always Leads".
+ * Resolves the villain group or Henchman group ext_ids a mastermind
+ * "Always Leads".
  *
  * A mastermind with an Always-Leads clause (e.g. Magneto Always Leads the
- * Brotherhood) makes that villain group mandatory in the match deck — the
- * printed rule is "you must include these villains." The mastermind card
- * carries the requirement as bare group slugs in `alwaysLeads` (e.g.
- * `["brotherhood"]`); this resolves each to the set-qualified villain group
+ * Brotherhood; Dr. Doom Always Leads the Doombot Legion) makes that group
+ * mandatory in the match deck — the printed rule is "be sure to include that
+ * group." The mastermind card carries the requirement as bare group slugs in
+ * `alwaysLeads` (Villain groups, e.g. `["brotherhood"]`) or
+ * `alwaysLeadsHenchmen` (Henchman groups, e.g. `["doombot-legion"]`); this
+ * resolves each slug of the requested `ledCardType` to the set-qualified group
  * ext_id the loadout composition stores (e.g. "core/brotherhood").
  *
  * Resolution prefers the mastermind's OWN set printing of the led group
- * (a `{mastermindSetAbbr}/{ledSlug}` villain that exists), so a non-core
- * mastermind leads its own set's group rather than a core reprint. When no
- * same-set printing exists it falls back to `resolveThemeSlugToExtId`'s
+ * (a `{mastermindSetAbbr}/{ledSlug}` group of that card type that exists), so a
+ * non-core mastermind leads its own set's group rather than a core reprint.
+ * When no same-set printing exists it falls back to `resolveThemeSlugToExtId`'s
  * core-preferred-else-lexicographic pick — the same id-space bridge the theme
  * prefill uses (D-24018). An already-qualified slug (contains "/") passes
- * through untouched. A slug that resolves to no villain group is dropped (the
- * requirement is unenforceable without the group in the registry).
+ * through untouched. A slug that resolves to no group of that card type is
+ * dropped (the requirement is unenforceable without the group in the registry).
  *
  * @param mastermindExtId - The selected mastermind's set-qualified ext_id.
- * @param cards - The registry's flat card list (extId + cardType + alwaysLeads).
+ * @param cards - The registry's flat card list (extId + cardType + lead slugs).
+ * @param ledCardType - Which kind of led group to resolve: "villain" reads
+ *                      `alwaysLeads`, "henchman" reads `alwaysLeadsHenchmen`.
  */
 function resolveAlwaysLeadsGroupIds(
   mastermindExtId: string,
-  cards: Array<{ extId: string; cardType: string; alwaysLeads?: readonly string[] }>,
+  cards: Array<{
+    extId: string;
+    cardType: string;
+    alwaysLeads?: readonly string[];
+    alwaysLeadsHenchmen?: readonly string[];
+  }>,
+  // why: the rulebook lets a mastermind lead a Villain Group OR a Henchman
+  // Group (v23 setup), and the two live in separate fields (D-24667).
+  ledCardType: "villain" | "henchman",
 ): string[] {
   const trimmedMastermindId = mastermindExtId.trim();
   if (trimmedMastermindId === "") {
@@ -236,7 +249,11 @@ function resolveAlwaysLeadsGroupIds(
   let leadSlugs: readonly string[] = [];
   for (const card of cards) {
     if (card.cardType === "mastermind" && card.extId === trimmedMastermindId) {
-      leadSlugs = card.alwaysLeads ?? [];
+      if (ledCardType === "villain") {
+        leadSlugs = card.alwaysLeads ?? [];
+      } else {
+        leadSlugs = card.alwaysLeadsHenchmen ?? [];
+      }
       break;
     }
   }
@@ -260,19 +277,19 @@ function resolveAlwaysLeadsGroupIds(
       continue;
     }
     // why: prefer the mastermind's own set printing of the led group so a
-    // non-core mastermind requires its own set's villains, not a core reprint.
+    // non-core mastermind requires its own set's group, not a core reprint.
     let chosenGroupId: string | null = null;
     if (mastermindSetAbbr !== "") {
       const sameSetGroupId = `${mastermindSetAbbr}/${ledSlug}`;
       for (const card of cards) {
-        if (card.cardType === "villain" && card.extId === sameSetGroupId) {
+        if (card.cardType === ledCardType && card.extId === sameSetGroupId) {
           chosenGroupId = sameSetGroupId;
           break;
         }
       }
     }
     if (chosenGroupId === null) {
-      chosenGroupId = resolveThemeSlugToExtId(ledSlug, "villain", cards);
+      chosenGroupId = resolveThemeSlugToExtId(ledSlug, ledCardType, cards);
     }
     if (chosenGroupId !== null && !resolvedGroupIds.includes(chosenGroupId)) {
       resolvedGroupIds.push(chosenGroupId);
@@ -334,6 +351,18 @@ export interface UseLoadoutDraftApi {
    */
   missingRequiredVillainGroupIds: ComputedRef<string[]>;
   /**
+   * Henchman group ext_ids the selected mastermind "Always Leads" — mandatory
+   * Henchmen the match deck must include (e.g. Dr. Doom → "core/doombot-legion",
+   * D-24667). Empty when no mastermind is selected or it leads no Henchman group.
+   */
+  requiredHenchmanGroupIds: ComputedRef<string[]>;
+  /**
+   * The subset of `requiredHenchmanGroupIds` not currently in the draft's
+   * `henchmanGroupIds`. The builder warns and blocks export while this is
+   * non-empty, exactly as for `missingRequiredVillainGroupIds`.
+   */
+  missingRequiredHenchmanGroupIds: ComputedRef<string[]>;
+  /**
    * The required setup counts for the draft's player count (WP-372 / D-24165) —
    * villain groups / henchmen groups / villain-deck bystanders / heroes — or
    * undefined when the count is out of the supported 1–5 range.
@@ -348,8 +377,8 @@ export interface UseLoadoutDraftApi {
   playerCountCompositionMismatches: ComputedRef<PlayerCountCompositionMismatch[]>;
   /**
    * The total number of open blockers on the draft, across all three validity
-   * dimensions: document-schema errors, missing Always-Leads villain groups,
-   * and player-count composition mismatches.
+   * dimensions: document-schema errors, missing Always-Leads villain and
+   * Henchman groups, and player-count composition mismatches.
    */
   readinessIssueCount: ComputedRef<number>;
   /**
@@ -421,6 +450,9 @@ interface LoadoutRegistryReader extends CardRegistryReader {
     // Optional so non-mastermind cards and the lean test fixtures satisfy the
     // shape without change (the real FlatCard always carries it on masterminds).
     alwaysLeads?: readonly string[];
+    // why: the Henchman-Group half of the same clause (D-24667), resolved to
+    // Henchman group ext_ids the same way. Optional for the same reason.
+    alwaysLeadsHenchmen?: readonly string[];
   }>;
 }
 
@@ -451,12 +483,29 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
   const isValid = computed<boolean>(() => validationResult.value.ok);
 
   const requiredVillainGroupIds = computed<string[]>(() =>
-    resolveAlwaysLeadsGroupIds(draft.value.composition.mastermindId, registry.listCards()),
+    resolveAlwaysLeadsGroupIds(
+      draft.value.composition.mastermindId,
+      registry.listCards(),
+      "villain",
+    ),
   );
 
   const missingRequiredVillainGroupIds = computed<string[]>(() => {
     const present = draft.value.composition.villainGroupIds;
     return requiredVillainGroupIds.value.filter((groupId) => !present.includes(groupId));
+  });
+
+  const requiredHenchmanGroupIds = computed<string[]>(() =>
+    resolveAlwaysLeadsGroupIds(
+      draft.value.composition.mastermindId,
+      registry.listCards(),
+      "henchman",
+    ),
+  );
+
+  const missingRequiredHenchmanGroupIds = computed<string[]>(() => {
+    const present = draft.value.composition.henchmanGroupIds;
+    return requiredHenchmanGroupIds.value.filter((groupId) => !present.includes(groupId));
   });
 
   // why: WP-372 / D-24165 — the required counts for the selected player count,
@@ -503,14 +552,15 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
 
   // why: readiness is a three-part conjunction, not just schema validity — a
   // draft can pass validateMatchSetupDocument while still missing an
-  // Always-Leads villain group or carrying the wrong hero count for its player
-  // count. Composing it once here keeps the builder's export gates and the
-  // tray pill on one predicate; when the pill counted only `errors`, a
+  // Always-Leads villain or Henchman group or carrying the wrong hero count for
+  // its player count. Composing it once here keeps the builder's export gates
+  // and the tray pill on one predicate; when the pill counted only `errors`, a
   // 2-hero 2-player draft read "ready" while the builder blocked export.
   const readinessIssueCount = computed<number>(
     () =>
       errors.value.length +
       missingRequiredVillainGroupIds.value.length +
+      missingRequiredHenchmanGroupIds.value.length +
       playerCountCompositionMismatches.value.length,
   );
 
@@ -528,13 +578,24 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     // deck. Auto-include the led group(s) on selection so the loadout carries
     // the villains the printed rule requires instead of silently omitting them.
     // addUniqueId no-ops on a group already present, so this never duplicates a
-    // chip the user (or a theme prefill) already added.
+    // chip the user (or a theme prefill) already added. A Henchman-Group lead
+    // (Dr. Doom → Doombot Legion, D-24667) is auto-included the same way.
+    const registryCards = registry.listCards();
     const requiredGroupIds = resolveAlwaysLeadsGroupIds(
       trimmedMastermindId,
-      registry.listCards(),
+      registryCards,
+      "villain",
     );
     for (const requiredGroupId of requiredGroupIds) {
       addUniqueId(draft.value.composition.villainGroupIds, requiredGroupId);
+    }
+    const requiredHenchmenIds = resolveAlwaysLeadsGroupIds(
+      trimmedMastermindId,
+      registryCards,
+      "henchman",
+    );
+    for (const requiredHenchmanId of requiredHenchmenIds) {
+      addUniqueId(draft.value.composition.henchmanGroupIds, requiredHenchmanId);
     }
   }
 
@@ -896,6 +957,8 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
     isValid,
     requiredVillainGroupIds,
     missingRequiredVillainGroupIds,
+    requiredHenchmanGroupIds,
+    missingRequiredHenchmanGroupIds,
     requiredPlayerCountSetup,
     playerCountCompositionMismatches,
     readinessIssueCount,

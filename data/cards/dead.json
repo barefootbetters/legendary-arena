@@ -555,6 +555,7 @@
       "alwaysLeads": [
         "evil-deadpool-corpse"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -618,6 +619,7 @@
       "alwaysLeads": [
         "deadpools-friends"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

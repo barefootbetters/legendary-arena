@@ -297,7 +297,12 @@ export const MastermindSchema = z.object({
   id:          z.number().int().positive(),
   name:        z.string(),
   slug:        z.string(),
+  // alwaysLeads holds Villain Group slugs only; a printed Henchman-Group lead
+  // lives in alwaysLeadsHenchmen (D-24667).
   alwaysLeads: z.array(z.string()),
+  // why: R2 metadata/*.json uploaded before the D-24667 regen lacks the field,
+  // so a missing array defaults to "leads no Henchman group".
+  alwaysLeadsHenchmen: z.array(z.string()).default([]),
   vp:          z.number().int().nullable(),
   cards:       z.array(MastermindCardSchema),
 });

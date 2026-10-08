@@ -94,12 +94,14 @@ export interface GauntletConfigLeg {
 }
 
 /**
- * One mastermind's authored config: its display name, printed Always-Leads anchor,
- * base pools, and the per-scheme legs.
+ * One mastermind's authored config: its display name, printed Always-Leads anchor
+ * (`anchorVillainGroup | anchorHenchmanGroup (exactly one)`), base pools, and the
+ * per-scheme legs.
  */
 export interface GauntletMastermindConfig {
   readonly mastermindName: string;
-  readonly anchorVillainGroup: string;
+  readonly anchorVillainGroup?: string | undefined;
+  readonly anchorHenchmanGroup?: string | undefined;
   readonly baseVillainPool: readonly string[];
   readonly baseHenchmanPool: readonly string[];
   readonly schemes: Readonly<Record<string, GauntletConfigLeg>>;
@@ -168,7 +170,8 @@ const GauntletConfigLegSchema = z
 const GauntletMastermindConfigSchema = z
   .object({
     mastermindName: z.string().min(1),
-    anchorVillainGroup: z.string().min(1),
+    anchorVillainGroup: z.string().min(1).optional(),
+    anchorHenchmanGroup: z.string().min(1).optional(),
     baseVillainPool: z.array(z.string().min(1)).min(1),
     baseHenchmanPool: z.array(z.string().min(1)).min(1),
     schemes: z.record(z.string(), GauntletConfigLegSchema),
@@ -249,7 +252,8 @@ export function validateGauntletConfigs(input: unknown): GauntletConfigsFile {
       `This value is not a valid gauntlet-configs file: ${describeSchemaIssues(result.error)}. ` +
         `A valid file is { schemaVersion, description, activeYear, slicing, years: { "<year>": ` +
         `{ label, sets: { "<setAbbr>": { setName, masterminds: { "<mastermindSlug>": ` +
-        `{ mastermindName, anchorVillainGroup, baseVillainPool, baseHenchmanPool, schemes: ` +
+        `{ mastermindName, anchorVillainGroup | anchorHenchmanGroup (exactly one), ` +
+        `baseVillainPool, baseHenchmanPool, schemes: ` +
         `{ "<schemeSlug>": { schemeName, villainPool, henchmanPool, variety } } } } } } } } } ` +
         `with no other keys.`,
     );
@@ -262,8 +266,40 @@ export function validateGauntletConfigs(input: unknown): GauntletConfigsFile {
         `year that exists (${Object.keys(file.years).join(", ") || "no years present"}).`,
     );
   }
+  assertExactlyOneAnchor(file);
   assertHenchmanPoolsCoverEffectiveCount(file);
   return file;
+}
+
+/**
+ * Throws a full-sentence `Error` naming the set and mastermind of the first
+ * config that carries neither or both of `anchorVillainGroup` /
+ * `anchorHenchmanGroup`.
+ *
+ * why: Dr. Doom's printed Always Leads is a Henchman group (Doombot Legion,
+ * D-24667), so the anchor may be either kind — but a config records exactly one
+ * printed lead, never zero and never two.
+ *
+ * @param file the structurally valid gauntlet-configs file.
+ * @throws Error when any mastermind config has no anchor or two anchors.
+ */
+function assertExactlyOneAnchor(file: GauntletConfigsFile): void {
+  for (const yearConfig of Object.values(file.years)) {
+    for (const [setAbbr, setConfig] of Object.entries(yearConfig.sets)) {
+      for (const [mastermindSlug, mastermindConfig] of Object.entries(setConfig.masterminds)) {
+        const hasVillainAnchor = mastermindConfig.anchorVillainGroup !== undefined;
+        const hasHenchmanAnchor = mastermindConfig.anchorHenchmanGroup !== undefined;
+        if (hasVillainAnchor === hasHenchmanAnchor) {
+          throw new Error(
+            `The gauntlet config for set "${setAbbr}", mastermind "${mastermindSlug}" must carry ` +
+              `exactly one of anchorVillainGroup or anchorHenchmanGroup (its printed Always-Leads ` +
+              `group), but it has ${hasVillainAnchor ? "both" : "neither"}. Fix that mastermind in ` +
+              `data/gauntlet-configs.json and run \`pnpm gauntlet:configs\`.`,
+          );
+        }
+      }
+    }
+  }
 }
 
 /**

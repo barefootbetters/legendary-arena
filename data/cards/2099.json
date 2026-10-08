@@ -715,14 +715,15 @@
             "Fight: Each villain in the city captures a Bystander. [rule:Adapt]."
           ]
         }
-      ]
+      ],
+      "alwaysLeadsHenchmen": []
     },
     {
       "id": 101,
       "name": "Alchemax Executives",
       "slug": "alchemax-executives",
       "alwaysLeads": [
-        "false-aesir-of-alchemax"
+        "alchemax-enforcers"
       ],
       "vp": 6,
       "cards": [
@@ -824,7 +825,8 @@
             "Fight: Send a Hero from the Escape Pile [keyword:Undercover]. Then [rule:Adapt]."
           ]
         }
-      ]
+      ],
+      "alwaysLeadsHenchmen": []
     }
   ],
   "villains": [
@@ -832,9 +834,7 @@
       "id": 123,
       "name": "False Aesir of Alchemax",
       "slug": "false-aesir-of-alchemax",
-      "ledBy": [
-        "alchemax-executives"
-      ],
+      "ledBy": [],
       "cards": [
         {
           "name": "Heimdall 2099",
@@ -897,7 +897,8 @@
       "name": "Alchemax Enforcers",
       "slug": "alchemax-enforcers",
       "ledBy": [
-        "sinister-six-2099"
+        "sinister-six-2099",
+        "alchemax-executives"
       ],
       "cards": [
         {

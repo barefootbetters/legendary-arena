@@ -1008,6 +1008,7 @@
       "alwaysLeads": [
         "from-beyond"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 7,
       "cards": [
         {
@@ -1083,6 +1084,7 @@
       "alwaysLeads": [
         "elders-of-the-universe"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1155,6 +1157,9 @@
       "name": "Magus",
       "slug": "magus",
       "alwaysLeads": [],
+      "alwaysLeadsHenchmen": [
+        "universal-church-of-truth"
+      ],
       "vp": 6,
       "cards": [
         {
@@ -1487,25 +1492,29 @@
       "id": 35,
       "name": "Sidera Maris, Bridge Builders",
       "slug": "sidera-maris-bridge-builders",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/cosm/cosm-hm-sidera-maris-bridge-builders.webp",
       "abilities": [
         "[keyword:Ambush]: If there's a Villain on the Bridge, that Villain and this Henchman each gain a Shard. Otherwise, move this to the Bridge.",
         "[keyword:Fight]: KO one of your Heroes."
       ],
-      "vp": 1,
-      "vAttack": 3
+      "vAttack": 3,
+      "vp": 1
     },
     {
       "id": 36,
       "name": "Universal Church of Truth",
       "slug": "universal-church-of-truth",
+      "ledBy": [
+        "magus"
+      ],
       "imageUrl": "https://images.legendary-arena.com/cosm/cosm-hm-universal-church-of-truth.webp",
       "abilities": [
         "[keyword:Ambush]: Each Henchman Villain in the city gains a Shard. If Magus is the Mastermind, one Cosmic Wraith also gains a Shard.",
         "[keyword:Fight]: Burn 2 Shards: KO one of your Heroes."
       ],
-      "vp": 1,
-      "vAttack": 2
+      "vAttack": 2,
+      "vp": 1
     }
   ],
   "schemes": [

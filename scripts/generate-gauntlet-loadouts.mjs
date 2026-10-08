@@ -19,7 +19,8 @@
  *      at least one scheme, matching buildGauntletCatalog's own filter
  *      (D-24131 §1). Sets with no scheme host no gauntlet, so they need no menu.
  *   2. For each mastermind, seed the villain slots with its printed
- *      `alwaysLeads` groups — the game's own rules make those canonical.
+ *      `alwaysLeads` groups and the henchmen slots with its printed
+ *      `alwaysLeadsHenchmen` groups — the game's own rules make those canonical.
  *   3. Fill the remaining villain and henchmen slots per player count from the
  *      mastermind's own set first, then from the Core Set / Core 2E pool
  *      (the D-24199 core-fallback rule).
@@ -218,6 +219,38 @@ function fillGroupSlots(
 }
 
 /**
+ * Builds a mastermind's printed-lead anchor ids for one slot type, rejecting a
+ * lead slug that is not an in-set group of that type.
+ *
+ * @param {{abbr: string}} set the mastermind's own set.
+ * @param {{slug: string}} mastermind the mastermind whose leads are anchored.
+ * @param {string[]} leadSlugs the bare lead slugs (`alwaysLeads` or
+ *   `alwaysLeadsHenchmen`).
+ * @param {string[]} inSetGroupIds the set's group ids of the matching type.
+ * @param {'villain'|'henchman'} leadType which slot type the leads anchor.
+ * @returns {string[]} the set-qualified anchor ids, in lead order.
+ */
+function buildLeadAnchorIds(set, mastermind, leadSlugs, inSetGroupIds, leadType) {
+  const anchorIds = [];
+  for (const leadSlug of leadSlugs) {
+    const anchorId = `${set.abbr}/${leadSlug}`;
+    // why: a Henchman slug in alwaysLeads once put co2e/doombot-legion in a
+    // villain slot (and in the henchmen slot too); a lead must name an in-set
+    // group of the slot type it anchors (D-24667).
+    if (!inSetGroupIds.includes(anchorId)) {
+      throw new GenerationError(
+        `Mastermind "${set.abbr}/${mastermind.slug}" Always Leads "${leadSlug}", ` +
+          `which is not a ${leadType} group in set "${set.abbr}". A villain lead ` +
+          `belongs in alwaysLeads and a Henchman lead in alwaysLeadsHenchmen; fix ` +
+          `the lead in scripts/convert-cards/inputs/leads.json (or co2e.json).`,
+      );
+    }
+    anchorIds.push(anchorId);
+  }
+  return anchorIds;
+}
+
+/**
  * Returns the bare slug of a set-qualified ext_id (`setAbbr/slug` → `slug`).
  *
  * @param {string} groupId a set-qualified ext_id.
@@ -280,6 +313,8 @@ function assertOverrideComposition(label, baseComposition, overrideComposition) 
  * @param {{abbr: string, data: object}} set the mastermind's own set.
  * @param {string} mastermindSlug the mastermind's slug (for error messages).
  * @param {object} baseVariant the mastermind's variant 0.
+ * @param {string[]} anchorHenchmenIds the printed Henchman-Group lead ids (may
+ *   be empty) — anchored first, exactly as in the base fill (D-24667).
  * @param {string[]} inSetHenchmenIds the set's henchmen group ids.
  * @param {string[]} fallbackHenchmenIds the Core Set / Core 2E henchmen pool.
  * @returns {object|undefined} the overrides keyed by scheme slug, or undefined
@@ -289,6 +324,7 @@ function buildSchemeOverrides(
   set,
   mastermindSlug,
   baseVariant,
+  anchorHenchmenIds,
   inSetHenchmenIds,
   fallbackHenchmenIds,
 ) {
@@ -307,7 +343,7 @@ function buildSchemeOverrides(
       const overrideComposition = {
         villainGroupIds: [...baseComposition.villainGroupIds],
         henchmanGroupIds: fillGroupSlots(
-          [],
+          anchorHenchmenIds,
           inSetHenchmenIds,
           fallbackHenchmenIds,
           REQUIRED_GROUP_COUNTS[playerCount].henchmenGroupCount + 1,
@@ -390,10 +426,20 @@ function buildLoadoutMenus(sets) {
         firstMastermind.slug < secondMastermind.slug ? -1 : 1,
     );
     for (const mastermind of sortedMasterminds) {
-      const anchorVillainIds = [];
-      for (const alwaysLedSlug of mastermind.alwaysLeads ?? []) {
-        anchorVillainIds.push(`${set.abbr}/${alwaysLedSlug}`);
-      }
+      const anchorVillainIds = buildLeadAnchorIds(
+        set,
+        mastermind,
+        mastermind.alwaysLeads ?? [],
+        inSetVillainIds,
+        'villain',
+      );
+      const anchorHenchmenIds = buildLeadAnchorIds(
+        set,
+        mastermind,
+        mastermind.alwaysLeadsHenchmen ?? [],
+        inSetHenchmenIds,
+        'henchman',
+      );
       const variants = [];
       for (
         let variantIndex = 0;
@@ -411,7 +457,7 @@ function buildLoadoutMenus(sets) {
             variantIndex,
           );
           const henchmanGroupIds = fillGroupSlots(
-            [],
+            anchorHenchmenIds,
             inSetHenchmenIds,
             fallbackHenchmenIds,
             requiredCounts.henchmenGroupCount,
@@ -446,6 +492,7 @@ function buildLoadoutMenus(sets) {
         set,
         mastermind.slug,
         variants[0],
+        anchorHenchmenIds,
         inSetHenchmenIds,
         fallbackHenchmenIds,
       );

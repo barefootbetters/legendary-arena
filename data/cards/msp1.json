@@ -852,6 +852,7 @@
       "alwaysLeads": [
         "iron-foes"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 5,
       "cards": [
         {
@@ -913,9 +914,9 @@
       "name": "Loki",
       "slug": "loki",
       "alwaysLeads": [
-        "enemies-of-asgard",
-        "chitauri"
+        "enemies-of-asgard"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 5,
       "cards": [
         {
@@ -978,6 +979,7 @@
       "alwaysLeads": [
         "hydra"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 5,
       "cards": [
         {
@@ -1039,9 +1041,7 @@
       "id": 71,
       "name": "Chitauri",
       "slug": "chitauri",
-      "ledBy": [
-        "loki"
-      ],
+      "ledBy": [],
       "cards": [
         {
           "name": "Chitauri Soldier",
@@ -1325,45 +1325,49 @@
       "id": 29,
       "name": "Hammer Drone Army",
       "slug": "hammer-drone-army",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/msp1/msp1-hm-hammer-drone-army.webp",
       "abilities": [
         "[keyword:Fight]: Look at the top two cards of your deck. KO one of them and put the other back."
       ],
-      "vp": 1,
-      "vAttack": 3
+      "vAttack": 3,
+      "vp": 1
     },
     {
       "id": 30,
       "name": "HYDRA Pilots",
       "slug": "hydra-pilots",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/msp1/msp1-hm-hydra-pilots.webp",
       "abilities": [
         "[keyword:Fight]: You get +1[icon:recruit]."
       ],
-      "vp": 1,
-      "vAttack": 3
+      "vAttack": 3,
+      "vp": 1
     },
     {
       "id": 31,
       "name": "HYDRA Spies",
       "slug": "hydra-spies",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/msp1/msp1-hm-hydra-spies.webp",
       "abilities": [
         "[keyword:Fight]: When you draw a new hand of cards at the end of this turn, draw an extra card."
       ],
-      "vp": 1,
-      "vAttack": 3
+      "vAttack": 3,
+      "vp": 1
     },
     {
       "id": 32,
       "name": "Ten Rings Fanatics",
       "slug": "ten-rings-fanatics",
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/msp1/msp1-hm-ten-rings-fanatics.webp",
       "abilities": [
         "[keyword:Fight]: KO one of your Heroes."
       ],
-      "vp": 1,
-      "vAttack": 3
+      "vAttack": 3,
+      "vp": 1
     }
   ],
   "schemes": [
@@ -1577,7 +1581,6 @@
     {
       "id": null,
       "name": "Wound",
-      "filterName": null,
       "slug": "wound",
       "imageUrl": "https://images.legendary-arena.com/msp1/msp1-wd-wound.webp",
       "cards": [
@@ -1585,7 +1588,8 @@
           "qtd": 30,
           "abilities": []
         }
-      ]
+      ],
+      "filterName": null
     }
   ],
   "other": [

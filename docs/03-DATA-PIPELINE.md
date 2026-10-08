@@ -112,9 +112,9 @@ Each `{abbr}.json` follows this structure (enforced by Zod in
   abbr:        string          // e.g. "mdns", "core"
   exportName:  string
   heroes:      HeroDeck[]      // { slug, name, team, cards: HeroCard[] }
-  masterminds: Mastermind[]    // { slug, name, vp, alwaysLeads, cards: MastermindCard[] }
+  masterminds: Mastermind[]    // { slug, name, vp, alwaysLeads, alwaysLeadsHenchmen, cards: MastermindCard[] }
   villains:    VillainGroup[]  // { slug, name, cards: VillainCard[] }
-  henchmen:    Henchman[]      // { slug, name, imageUrl, vAttack, vp } — flat, no nested cards
+  henchmen:    Henchman[]      // { slug, name, ledBy, imageUrl, vAttack, vp } — flat, no nested cards
   schemes:     Scheme[]        // { slug, name, imageUrl, cards: SchemeCard[] }
   bystanders:  unknown[]
   wounds:      unknown[]

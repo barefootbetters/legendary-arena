@@ -563,6 +563,7 @@
       "alwaysLeads": [
         "queens-vengeance"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -638,6 +639,7 @@
       "alwaysLeads": [
         "ultrons-legacy"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

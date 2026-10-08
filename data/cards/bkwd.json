@@ -621,6 +621,7 @@
       "alwaysLeads": [
         "taskmasters-thunderbolts"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -702,6 +703,7 @@
       "alwaysLeads": [
         "elite-assassins"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {

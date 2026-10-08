@@ -72,6 +72,16 @@ export interface FlatCard {
    * with no Always-Leads clause and for every non-mastermind card type.
    */
   alwaysLeads?: readonly string[];
+  /**
+   * Mastermind-only: the Henchman group slugs this mastermind "Always Leads".
+   * Bare entity slugs (e.g. `["doombot-legion"]`), mirroring the card data's
+   * `Mastermind.alwaysLeadsHenchmen` (D-24667). The loadout builder reads this
+   * to auto-include — and require — the led Henchman group(s) when the
+   * mastermind is selected (e.g. Dr. Doom Always Leads the Doombot Legion).
+   * Empty/absent for masterminds with no Henchman-Group lead and for every
+   * non-mastermind card type.
+   */
+  alwaysLeadsHenchmen?: readonly string[];
   slug:      string;
   imageUrl:  string;
   /** Hero-only: image URL resolved from physicalCards[] (D-14103). */

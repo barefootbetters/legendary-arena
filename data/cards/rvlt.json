@@ -1000,6 +1000,7 @@
       "alwaysLeads": [
         "lethal-legion"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1079,6 +1080,7 @@
       "alwaysLeads": [
         "hoods-gang"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -1154,6 +1156,9 @@
       "name": "Mandarin",
       "slug": "mandarin",
       "alwaysLeads": [],
+      "alwaysLeadsHenchmen": [
+        "mandarins-rings"
+      ],
       "vp": 6,
       "cards": [
         {
@@ -1586,20 +1591,22 @@
       "id": 33,
       "name": "HYDRA Base",
       "slug": "hydra-base",
-      "vAttack": "2+",
-      "vp": 1,
+      "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-hydra-base.webp",
       "abilities": [
         "HYDRA Base gets +2[icon:attack] while there's a Villain here.",
         "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
-      ]
+      ],
+      "vAttack": "2+",
+      "vp": 1
     },
     {
       "id": 34,
       "name": "Mandarin's Rings",
       "slug": "mandarins-rings",
-      "vAttack": "3",
-      "vp": 1,
+      "ledBy": [
+        "mandarin"
+      ],
       "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-daimonic-the-white-light.webp",
       "abilities": [],
       "cards": [
@@ -1683,7 +1690,9 @@
             "Fight: Choose a card you played this turn that costs 0. When you draw a new hand of cards at the end of this turn, add that card to your hand as an extra card."
           ]
         }
-      ]
+      ],
+      "vAttack": "3",
+      "vp": 1
     }
   ],
   "schemes": [

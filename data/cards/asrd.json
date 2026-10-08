@@ -560,8 +560,9 @@
       "name": "Hela, Goddess of Death",
       "slug": "hela-goddess-of-death",
       "alwaysLeads": [
-        "dark-council"
+        "omens-of-ragnarok"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -639,8 +640,9 @@
       "name": "Malekith the Accursed",
       "slug": "malekith-the-accursed",
       "alwaysLeads": [
-        "omens-of-ragnarok"
+        "dark-council"
       ],
+      "alwaysLeadsHenchmen": [],
       "vp": 6,
       "cards": [
         {
@@ -720,7 +722,7 @@
       "name": "Dark Council",
       "slug": "dark-council",
       "ledBy": [
-        "hela-goddess-of-death"
+        "malekith-the-accursed"
       ],
       "cards": [
         {
@@ -803,7 +805,7 @@
       "name": "Omens of Ragnarok",
       "slug": "omens-of-ragnarok",
       "ledBy": [
-        "malekith-the-accursed"
+        "hela-goddess-of-death"
       ],
       "cards": [
         {
