@@ -5414,6 +5414,7 @@ function heroEffectRevealFromHand(
   if (criterion === undefined) {
     return;
   }
+  let anyPlayerRevealed = false;
   for (const eachPlayerId of Object.keys(G.playerZones).sort()) {
     const playerZones = G.playerZones[eachPlayerId];
     if (!playerZones) {
@@ -5432,6 +5433,7 @@ function heroEffectRevealFromHand(
     if (!handHasMatch) {
       continue;
     }
+    anyPlayerRevealed = true;
     const drawnCount = drawFromPlayerDeck(G, eachPlayerId, 1, ctx as ShuffleProvider);
     if (drawnCount > 0) {
       pushLog(G,
@@ -5448,6 +5450,16 @@ function heroEffectRevealFromHand(
         cardId,
       );
     }
+  }
+  // why: D-24668 — when no player held a matching Hero the ability resolved with no log
+  // line at all (Psychic Link, match zE7zTyM-ziJ 13.2.6). Say so, the WP-434 `blocked`
+  // outcome for an ability whose condition found nothing.
+  if (!anyPlayerRevealed) {
+    pushLog(G,
+      `No player had a matching Hero to reveal for ${formatCardRef(G.cardDisplayData, cardId)}, so no one drew.`,
+      'blocked',
+      cardId,
+    );
   }
 }
 

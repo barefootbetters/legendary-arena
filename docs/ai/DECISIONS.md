@@ -46781,4 +46781,22 @@ Around it: the block-all guard `hasPendingMoveVillainChoice(G)` beside every Cov
 
 ---
 
+### D-24668 — Killbots display as "Killbot"; a reveal-from-hand with no reveal says so (direct fix, no WP) (Active 2026-10-08)
+
+**Context.** Live 2-player match `zE7zTyM-ziJ` (Dr. Doom / Replace Earth's Leaders with Killbots, build `28bc08a`, 2026-10-08) showed two log gaps.
+- Under the Killbots scheme, villain-deck Bystanders are Killbot Villains (D-24324), but their setup-time display entries kept the Bystander name. The log, the City card and the Victory Pile read "Bystander … revealed and entered the city", "fought Bystander" and "Villain Bystander escaped".
+- Emma Frost's Psychic Link ("Each player may reveal another X-Men Hero. Each player who does draws a card.") resolved with no line at all when no player held a match (13.2.6). The shared reveal-from-hand handler (WP-659 / D-24470) skips a no-match player silently.
+
+**Decision.**
+- `applyKillbotDisplayNames` (`setup/buildCardDisplayData.ts`), called once in `buildInitialGameState` after the display data is built, renames every `killbot`-origin entry to `KILLBOT_DISPLAY_NAME` ("Killbot"). Each renamed entry is a fresh object, and its image is unchanged. Secret Invasion's Skrull Heroes keep their Hero names, and every other scheme's display data is byte-identical.
+- `heroEffectRevealFromHand` logs "No player had a matching Hero to reveal for {card}, so no one drew." (`blocked`) when no seat revealed. One line per play; nothing changes when anyone reveals.
+
+No new G field, move or UIState field. Gameplay and scoring are unchanged; Killbots still score 1 VP each.
+
+**Gates.** game-engine 5004 / 0 fail, with 5 new cases (3 `buildCardDisplayData.test.ts`, 2 `psychicLink.revealFromHand.test.ts`). Each fix is revert-proofed by its own case. Also: server 1457 / 0; arena-client 2296 / 0; `sim:coverage --check` OK; `sim:runtime-observed:check` current; `pnpm -r build` 0. The replay sentinel is a Legacy Virus match, so its hash is unaffected.
+
+**Reserved by:** NUMBER-LEDGER D-24668. Related: WP-513 / D-24324 (Killbots conversion), D-24325 (the Killbot attack counter), WP-659 / D-24470 (reveal-from-hand), WP-434 (log outcomes).
+
+---
+
 Protect this file.

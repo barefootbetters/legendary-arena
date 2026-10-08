@@ -69,6 +69,7 @@ import {
   isSchemeRegistryReader,
 } from './buildSchemeSetupInstructions.js';
 import {
+  applyKillbotDisplayNames,
   buildCardDisplayData,
   isCardDisplayDataRegistryReader,
 } from './buildCardDisplayData.js';
@@ -452,6 +453,10 @@ export function buildInitialGameState(
   // supply in `G.sharedPiles.bystanders`, a different domain — see the
   // `numPlayers` @param JSDoc in `buildCardDisplayData.ts`).
   const cardDisplayData = buildCardDisplayData(registry as unknown, config, numPlayers);
+  // why: D-24668 — Killbot-converted villain-deck Bystanders display as "Killbot", so the
+  // log, City card and Victory Pile name them as the Villains they are. A no-op for every
+  // scheme without Killbots.
+  applyKillbotDisplayNames(cardDisplayData, villainDeckResult.convertedOrigins);
 
   // why: WP-111 / EC-118 / PS-8 — setup-time diagnostic surface for missing
   // display entries. Preserves WP-028 D-2801 projection-purity contract:

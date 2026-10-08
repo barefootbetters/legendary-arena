@@ -7,6 +7,17 @@
 
 ## Current State
 
+### D-24668 — Killbots are called Killbots; Psychic Link says when no one revealed (direct fix) (2026-10-08)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** From 2-player Dr. Doom / Killbots match `zE7zTyM-ziJ`:
+- Under **Replace Earth's Leaders with Killbots**, the converted Bystanders now read "Killbot" on the City card, in the Victory Pile and in the log ("fought Killbot", "Villain Killbot escaped").
+- **Psychic Link** (and any other "each player may reveal … draws a card" ability) logs "No player had a matching Hero to reveal …, so no one drew." instead of resolving silently.
+
+Gameplay and scoring are unchanged.
+
+- **Engine only** (`buildCardDisplayData.ts`, `buildInitialGameState.ts`, `heroEffects.execute.ts`). game-engine 5004 / 0 fail (+5, revert-proofed); server 1457 / 0; arena-client 2296 / 0.
+- **Live-verify (D-24026): pending.** In a new Killbots match, a Killbot entering the City should read "Killbot".
+
 ### WP-796 — "Add an extra Henchman group" schemes require the extra group (EC-833 / D-24666) (2026-10-07)
 
 **User-visible on `cards.legendary-arena.com` and `play.legendary-arena.com` (after deploy).** Negative Zone

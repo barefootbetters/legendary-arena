@@ -10,8 +10,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  applyKillbotDisplayNames,
   buildCardDisplayData,
   isCardDisplayDataRegistryReader,
+  KILLBOT_DISPLAY_NAME,
 } from './buildCardDisplayData.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 // why: WP-173 / D-17301 — constants-drift detection. The test imports
@@ -2074,5 +2076,44 @@ describe('buildCardDisplayData — WP-173 well-known ext_id coverage (D-17301)',
       assert.equal(entry.name, expectedTier1Name, `tier-1 name mismatch for ${constant}`);
       assert.equal(entry.cost, null, `cost must be null for ${constant}`);
     }
+  });
+});
+
+describe('applyKillbotDisplayNames (D-24668)', () => {
+  /** Builds a display entry with the Bystander name. */
+  function bystanderEntry(extId: string) {
+    return { extId, name: 'Bystander', imageUrl: 'https://example.com/bystander.webp', cost: null };
+  }
+
+  it('renames killbot-origin entries to "Killbot" and keeps their image', () => {
+    const displayData = {
+      'bystander-villain-deck-00': bystanderEntry('bystander-villain-deck-00'),
+      'bystander-villain-deck-01': bystanderEntry('bystander-villain-deck-01'),
+    };
+    applyKillbotDisplayNames(displayData, {
+      'bystander-villain-deck-00': 'killbot',
+      'bystander-villain-deck-01': 'killbot',
+    });
+    assert.equal(KILLBOT_DISPLAY_NAME, 'Killbot');
+    assert.equal(displayData['bystander-villain-deck-00'].name, 'Killbot');
+    assert.equal(displayData['bystander-villain-deck-01'].name, 'Killbot');
+    assert.equal(displayData['bystander-villain-deck-00'].imageUrl, 'https://example.com/bystander.webp');
+  });
+
+  it('leaves skrull-origin and unconverted entries untouched', () => {
+    const skrullEntry = { extId: 'core/storm/lightning-bolt#0', name: 'Lightning Bolt', imageUrl: '', cost: 4 };
+    const displayData = {
+      'core/storm/lightning-bolt#0': skrullEntry,
+      'pile-bystander': bystanderEntry('pile-bystander'),
+    };
+    applyKillbotDisplayNames(displayData, { 'core/storm/lightning-bolt#0': 'skrull' });
+    assert.equal(displayData['core/storm/lightning-bolt#0'], skrullEntry, 'a skrull entry is not replaced');
+    assert.equal(displayData['pile-bystander'].name, 'Bystander', 'an unconverted Bystander keeps its name');
+  });
+
+  it('tolerates a converted id with no display entry', () => {
+    const displayData: Record<string, ReturnType<typeof bystanderEntry>> = {};
+    assert.doesNotThrow(() => applyKillbotDisplayNames(displayData, { 'bystander-villain-deck-05': 'killbot' }));
+    assert.equal(Object.keys(displayData).length, 0);
   });
 });
