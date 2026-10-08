@@ -87,6 +87,7 @@ import {
   describeUnappliedRevealActions,
   formatRevealOutcomeLine,
 } from './revealLog.js';
+import { formatCountScaledRate } from './countSourceLabel.js';
 import { pushLog } from '../log/logPush.js';
 import type { LogOutcome } from '../log/logOutcome.types.js';
 import {
@@ -2465,7 +2466,7 @@ function heroEffectAttackPerCount(
   G.turnEconomy = addResources(G.turnEconomy, grant, 0);
   // why: record the source, count, and grant so the count-scaled attack is
   // observable in replay inspection (no implicit side effects).
-  pushLog(G, `Count-scaled attack: +${grant} (${effect.magnitude as number} per ${perEach} ${effect.countSource}, count ${count}).`);
+  pushLog(G, `Count-scaled attack: +${grant} (${formatCountScaledRate(effect.magnitude as number, perEach, effect.countSource, count)}).`);
 }
 
 /**
@@ -2508,7 +2509,7 @@ function heroEffectRecruitPerCount(
   G.turnEconomy = addResources(G.turnEconomy, 0, grant);
   // why: record the source, count, and grant so the count-scaled recruit is
   // observable in replay inspection (no implicit side effects).
-  pushLog(G, `Count-scaled recruit: +${grant} (${effect.magnitude as number} per ${perEach} ${effect.countSource}, count ${count}).`);
+  pushLog(G, `Count-scaled recruit: +${grant} (${formatCountScaledRate(effect.magnitude as number, perEach, effect.countSource, count)}).`);
 }
 
 /**
@@ -2571,7 +2572,7 @@ function heroEffectKidnapPerCount(
   }
   // why: record the count and capture total so the count-scaled kidnap is observable
   // in replay inspection (no implicit side effects).
-  pushLog(G, `Count-scaled kidnap: ${captures} Bystander capture(s) (${effect.magnitude as number} per ${perEach} ${effect.countSource}, count ${count}).`);
+  pushLog(G, `Count-scaled kidnap: ${captures} Bystander capture(s) (${formatCountScaledRate(effect.magnitude as number, perEach, effect.countSource, count)}).`);
 }
 
 /**

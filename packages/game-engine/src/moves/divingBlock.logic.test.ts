@@ -114,12 +114,14 @@ describe('Diving Block — a played copy can be revealed (D-24651)', () => {
     assert.equal(G.piles.wounds.length, 1, 'the Wound went back to the supply');
   });
 
-  it('one-copy-per-Wound still holds: one played copy + two Wounds parks only one interception', () => {
+  // why: D-24673 — rules v23 "Revealing a Card": the same card can be revealed
+  // multiple times, so one played copy covers both Wounds (was capped at one, D-24499).
+  it('D-24673: one played copy + two Wounds parks an interception for EACH Wound', () => {
     const G = makeState({ hands: { '0': [] }, woundCount: 2 });
     G.playerZones['0']!.inPlay = [DIVING_BLOCK_ID];
     gainWoundForPlayer(G, '0');
     gainWoundForPlayer(G, '0');
-    assert.equal(G.pendingDivingBlockWounds!.length, 1);
+    assert.equal(G.pendingDivingBlockWounds!.length, 2);
   });
 });
 
@@ -142,13 +144,48 @@ describe('Diving Block — chokepoint parks a pending interception (WP-682 / D-2
     assert.equal(hasPendingDivingBlockWounds(G), false);
   });
 
-  it('one-copy-per-Wound gate: one copy in hand + two Wounds parks only ONE interception', () => {
-    const G = makeState({ hands: { '0': [DIVING_BLOCK_ID] }, woundCount: 2 });
+  // why: D-24673 — the twist-7 case from match EMXM2s3Ucsh: one Diving Block in hand,
+  // three Wounds. Every Wound is interceptable; revealing the same copy three times
+  // prevents all three and draws three cards.
+  it('D-24673: one copy in hand + three Wounds → three reveals prevent all three', () => {
+    const G = makeState({
+      hands: { '0': [DIVING_BLOCK_ID] },
+      decks: { '0': ['draw-a#0', 'draw-b#0', 'draw-c#0'] },
+      woundCount: 3,
+    });
     gainWoundForPlayer(G, '0');
     gainWoundForPlayer(G, '0');
-    assert.equal(G.pendingDivingBlockWounds!.length, 1);
-    // Both Wounds landed; only one is interceptable.
-    assert.equal(G.playerZones['0']!.discard.filter((c) => c === WOUND_EXT_ID).length, 2);
+    gainWoundForPlayer(G, '0');
+    assert.equal(G.pendingDivingBlockWounds!.length, 3, 'every Wound parks an interception');
+    for (let wave = 0; wave < 3; wave++) {
+      openDivingBlockSeatChoiceIfNeeded(G, undefined);
+      assert.equal(G.pendingSeatChoice!.kind, DIVING_BLOCK_SEAT_CHOICE_KIND);
+      resolveSeatChoice(makeContext(G, '0'), { optionIndex: 0 });
+    }
+    assert.equal(G.playerZones['0']!.discard.filter((c) => c === WOUND_EXT_ID).length, 0, 'no Wound kept');
+    assert.equal(G.piles.wounds.length, 3, 'all three Wounds went back to the supply');
+    assert.deepEqual(
+      G.playerZones['0']!.hand,
+      [DIVING_BLOCK_ID, 'draw-a#0', 'draw-b#0', 'draw-c#0'],
+      'Diving Block stays in hand and three cards were drawn',
+    );
+    assert.equal(hasPendingDivingBlockWounds(G), false);
+  });
+
+  it('D-24673: one copy can reveal for some Wounds and decline others', () => {
+    const G = makeState({
+      hands: { '0': [DIVING_BLOCK_ID] },
+      decks: { '0': ['draw-a#0', 'draw-b#0'] },
+      woundCount: 2,
+    });
+    gainWoundForPlayer(G, '0');
+    gainWoundForPlayer(G, '0');
+    openDivingBlockSeatChoiceIfNeeded(G, undefined);
+    resolveSeatChoice(makeContext(G, '0'), { optionIndex: 0 });
+    openDivingBlockSeatChoiceIfNeeded(G, undefined);
+    resolveSeatChoice(makeContext(G, '0'), { optionIndex: 1 });
+    assert.equal(G.playerZones['0']!.discard.filter((c) => c === WOUND_EXT_ID).length, 1, 'the declined Wound is kept');
+    assert.equal(G.piles.wounds.length, 1, 'the revealed-for Wound went back');
   });
 
   it('fires for a non-hero wound source: checkDivingBlock works from any caller after a wound lands', () => {

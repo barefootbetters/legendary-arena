@@ -46901,4 +46901,32 @@ Each now dispatches with a current player who holds no seat in its fixture, so e
 
 ---
 
+### D-24673 — One Diving Block can stop every Wound; twist Wound lines and count-scaled lines read honestly (amends D-24499 / D-24651; direct fix, no WP) (Active 2026-10-08)
+
+**Context.** In Jeff's solo match `EMXM2s3Ucsh` (Dr. Doom / Unleash the Power of the Cosmic Cube, build `afa55d3`), Cosmic Cube twist 7 dealt 3 Wounds with one Diving Block in hand. Diving Block stopped only 1, because D-24499 capped reveals at one per Diving Block copy. D-24651 left that cap in place pending Jeff's ruling. The same game showed two misleading log lines:
+- The twist line read "Player 0 gained 1 wound(s)." for a Wound Diving Block then prevented. Wounds land first and the reveal prompts resolve afterwards, so the line read as final.
+- Count-scaled lines printed the internal count-source slug. Avengers Assemble / Perfect Teamwork showed "distinct-hero-classes-played-this-turn", but that source counts the Hero colors in hand **and** play (D-24529).
+
+**Ruling (Jeff, 2026-10-08).** Rules v23 "Revealing a Card": "You can reveal the same card multiple times in a turn if necessary." Diving Block reads "If you would gain a Wound, you may reveal this card and draw a card instead"; each Wound is a separate "would gain". So one revealable Diving Block can stop every Wound.
+
+**Decision.**
+1. **Diving Block.** `checkDivingBlock` parks an interception for **every** Wound whenever the player has at least one revealable Diving Block (in hand or played this turn, D-24651). The per-copy cap is removed. Each Wound is still its own reveal/decline wave, so a player can reveal for some and take others. `countPendingWoundsForPlayer` is exported as `countPendingDivingBlockWounds`.
+2. **Twist Wound line.** The wound-all Scheme Twist resolver counts the interceptions it parked for each player. If any are pending, it logs "[Scheme Twist] Player N would gain K wound(s) — Diving Block can prevent it / each one." The reveal ("prevented the Wound and drew a card") and decline ("took the Wound") lines that follow give the outcome. Without Diving Block, the line is unchanged ("gained K wound(s)."). Other wound sources keep their existing wording.
+3. **Count label.** New pure `hero/countSourceLabel.ts`: `describeCountSource` gives each `HERO_COUNT_SOURCES` entry a plain singular phrase ("Hero color you have (hand + played)", "other Avengers Hero played this turn", …), and `formatCountScaledRate` builds the rate clause. The count-scaled attack / recruit / kidnap lines now read e.g. "Count-scaled recruit: +3 (1 per Hero color you have (hand + played); count 3)." The internal slug is unchanged.
+4. **Bot.** The Diving Block seat-choice default is still decline, and the change only adds interceptions when a player already holds Diving Block. No hash oracle, sim gate or bot test moved.
+
+**Tests changed (authorized behavior change).** Two `divingBlock.logic.test.ts` cases pinned the one-copy cap (one played copy + two Wounds → one interception; one copy in hand + two Wounds → one interception). They now pin the ruling: an interception per Wound, and three reveals of one copy preventing all three of twist 7's Wounds (draw 3, Diving Block stays). New cases cover:
+- mixed reveal and decline with one copy;
+- the "would gain" vs. "gained" twist line;
+- the labelled count-scaled line;
+- a label for every canonical count source.
+
+Against the old source, 4 cases fail.
+
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` all green (game-engine 5019, server 1462, arena-client 2297, dashboard 571, registry-viewer 326, registry 281, legends-board 135, lagn-spec 107, preplan 52, engine-runner 20, vue-sfc-loader 11, replay-producer 4; 0 fail). `sim:coverage --check` OK; `sim:runtime-observed:check` current; `ledger:heroes:check` and `effect-index:check` current.
+
+**Reserved by:** NUMBER-LEDGER D-24673. Amends D-24499 §1 (the one-copy-per-Wound cap) and D-24651 §3 (which deferred it). Related: D-24529 (the hand + play reading of "Heroes you have"), WP-684 (seat-choice waves), D-24026 (the live session that surfaced it).
+
+---
+
 Protect this file.

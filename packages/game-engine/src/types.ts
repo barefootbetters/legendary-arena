@@ -1474,9 +1474,9 @@ export interface PendingTeleportReturn {
  * landed in the player's discard pile when this entry is parked — mirroring the
  * `return-on-discard` land-then-offer-undo reactive precedent — so `woundCardId`
  * is the exact Wound card that a reveal will UNDO (returned to the wounds supply,
- * replaced by a card draw). One entry per gained Wound (PER-WOUND semantics); a
- * player is offered at most `divingBlockCopiesInHand` reveals per Wound batch
- * (one Diving Block copy per Wound, per the ruling).
+ * replaced by a card draw). One entry per gained Wound (PER-WOUND semantics); one
+ * revealable Diving Block covers every Wound, since rules v23 lets the same card be
+ * revealed multiple times (D-24673; D-24499 had capped it at one per copy).
  *
  * The FIFO is drained one WAVE at a time through the WP-684 non-active/multi-seat
  * pending-choice capability (G.pendingSeatChoice, kind 'diving-block'): the wound

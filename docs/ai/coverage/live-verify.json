@@ -74,10 +74,10 @@
       "card": "Captain America",
       "ability": "Diving Block",
       "wp": "WP-682",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-10-08",
-      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): played five times; at 8.1.1 and 11.1.1 a Tech reveal (Diving Block / Web-Shooters) avoided the Legacy Virus twist Wound, and every Wound that did arrive (4.1, 12.1, 15.1, 16.1, 18.1, 19.1) came while Diving Block was out of hand (the final hand holds none).",
-      "note": "Needs it in hand when a Wound arrives that a Tech reveal does not stop (a Loki strike or Ymir Ambush)."
+      "evidence": "solo Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil), match EMXM2s3Ucsh (build afa55d3): twist 6 (1 Wound, 20.1.3) and twist 7 (3 Wounds, 24.1.3) each offered the reveal; revealing returned the Wound and drew a card. The Wound pile went 30 → 27 and the player ended with 3 Wounds = twist 5's 1 + twist 7's 2, so both reveals took.",
+      "note": "Twist 7 stopped 1 of 3 Wounds under the old one-reveal-per-copy cap. Jeff ruled (D-24673, #2646) that one copy can stop every Wound; after deploy, re-verify three reveal prompts at a 3-Wound twist."
     },
     {
       "key": "core/captain-america|recruit-per-count",
@@ -241,8 +241,8 @@
       "wp": "WP-253",
       "state": "verified",
       "date": "2026-10-08",
-      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): High Stakes Jackpot revealed the top card every play (10.2.8, 13.2.5, 16.2.6, 18.2.7). On turn 16 it revealed Diving Block (cost 6): 4 + 6 + Card Shark 2 + Trooper 1 = 13 paid Loki's 10, which is unaffordable without the +6.",
-      "note": "The reveal line says \"gained attack\" without the amount; the trace also records a phantom \"attack\" no-handler per play."
+      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): High Stakes Jackpot revealed the top card every play (10.2.8, 13.2.5, 16.2.6, 18.2.7). On turn 16 it revealed Diving Block (cost 6): 4 + 6 + Card Shark 2 + Trooper 1 = 13 paid Loki's 10, which is unaffordable without the +6. D-24670 log fix seen live: solo Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil), match EMXM2s3Ucsh (build afa55d3) — \"gained +6 attack\" (12.2.9), \"+4\" (16.2.14), \"+0\" for a S.H.I.E.L.D. Agent (19.2.2), \"+3\" (21.2.14).",
+      "note": ""
     },
     {
       "key": "core/gambit|reveal-top-dispose",
@@ -492,10 +492,10 @@
       "card": "Storm",
       "ability": "Lightning Bolt / Tidal Wave",
       "wp": "WP-794",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-08",
-      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): Lightning Bolt Rooftops -2 proven on turn 37 — 8 attack paid Baron Zemo on the Rooftops at 4 (6 - 2), and the next 6 attack paid Dr. Doom's Final Blow at 9; unreduced, Zemo costs 6 and the Final Blow is out of reach. Tidal Wave Bridge -2: match 1K760WkJX68.",
-      "note": "Tidal Wave's Ranged Mastermind -2 line still unexercised (Tidal Wave not played here)."
+      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): Lightning Bolt Rooftops -2 proven on turn 37 — 8 attack paid Baron Zemo on the Rooftops at 4 (6 - 2), and the next 6 attack paid Dr. Doom's Final Blow at 9; unreduced, Zemo costs 6 and the Final Blow is out of reach. Tidal Wave Bridge -2: match 1K760WkJX68. Tidal Wave's Ranged Mastermind -2: solo Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil), match EMXM2s3Ucsh (build afa55d3) — applied after another Ranged Hero (22.2.9, 24.2.14) and correctly blocked without one (9.2.14). On turn 24 the player had 17 attack and 3 left after fighting Ultron (6), Dr. Doom's Final Blow and a Rooftops Doombot (3 - 2 Lightning Bolt = 1), so Dr. Doom cost 7 = 9 - 2.",
+      "note": ""
     },
     {
       "key": "core/storm|spinning-cyclone",
