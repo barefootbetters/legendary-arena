@@ -20,6 +20,7 @@ import type { CardExtId } from '../state/zones.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { countPendingDivingBlockWounds } from '../moves/divingBlock.logic.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { performVillainReveal, resolveVillainEscape } from '../villainDeck/villainDeck.reveal.js';
 import { koCard } from '../board/ko.logic.js';
@@ -353,6 +354,7 @@ function woundAll(
     const playerIds = Object.keys(gameState.playerZones);
 
     for (const playerId of playerIds) {
+      const divingBlockPendingBefore = countPendingDivingBlockWounds(gameState, playerId);
       let woundsGained = 0;
       for (let woundIndex = 0; woundIndex < effectiveWoundCount; woundIndex++) {
         if (gameState.piles.wounds.length === 0) {
@@ -367,10 +369,23 @@ function woundAll(
         woundsGained = woundsGained + 1;
       }
 
+      // why: D-24673 — the Wounds land first and Diving Block's reveal prompts resolve
+      // afterwards (land-then-offer-undo), so "gained N" read as final even when Diving
+      // Block then returned some (match EMXM2s3Ucsh: "gained 1" for a prevented Wound).
+      // While reveals are pending, say "would gain" — each reveal/decline line that
+      // follows states the outcome.
+      const divingBlockParked =
+        countPendingDivingBlockWounds(gameState, playerId) - divingBlockPendingBefore;
       if (woundsGained > 0 && woundsGained === effectiveWoundCount) {
-        pushLog(gameState,
-          `[Scheme Twist] Player ${playerId} gained ${woundsGained} wound(s).`,
-        );
+        if (divingBlockParked > 0) {
+          pushLog(gameState,
+            `[Scheme Twist] Player ${playerId} would gain ${woundsGained} wound(s) — Diving Block can prevent ${divingBlockParked === 1 ? 'it' : 'each one'}.`,
+          );
+        } else {
+          pushLog(gameState,
+            `[Scheme Twist] Player ${playerId} gained ${woundsGained} wound(s).`,
+          );
+        }
       }
     }
   }
