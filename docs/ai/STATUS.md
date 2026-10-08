@@ -7,6 +7,18 @@
 
 ## Current State
 
+### D-24673 — One Diving Block stops every Wound; clearer Wound and count log lines (direct fix) (2026-10-08)
+
+**User-visible on `play.legendary-arena.com` (after deploy).**
+- Diving Block can now be revealed for **each** Wound, not once per copy. Cosmic Cube's 3-Wound twist with one Diving Block in hand gives three prompts, and revealing each time stops all three and draws three cards (rules v23 "Revealing a Card").
+- A Scheme Twist that wounds a Diving Block holder now logs "would gain N wound(s) — Diving Block can prevent each one" instead of "gained N", which read as final.
+- Count-scaled lines read in plain English, e.g. "+3 (1 per Hero color you have (hand + played); count 3)" instead of the internal slug.
+
+Reported in solo match `EMXM2s3Ucsh`.
+
+- **Engine only.** game-engine 5019 / 0 fail; every package green (2 authorized Diving Block test edits).
+- **Live-verify (D-24026): pending.** With one Diving Block in hand at Cosmic Cube twist 7, you should get three reveal prompts.
+
 ### WP-797 — Always Leads fidelity: Henchman-group leads and printed-lead corrections (EC-834 / D-24667) (2026-10-07)
 
 **User-visible on `cards.legendary-arena.com` and `play.legendary-arena.com` (after the R2 metadata copy and deploy).**

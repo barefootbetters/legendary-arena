@@ -3790,6 +3790,36 @@ describe('executeHeroEffects recruit-per-count cost-four-plus-played-this-turn (
       'a recruit-per-count grant must not touch attack.');
   });
 
+  // why: D-24673 — the count-scaled log line names what was counted in plain English
+  // instead of the internal count-source slug.
+  it('D-24673: the count-scaled log line uses the plain-English count label', () => {
+    const gameState = makeTestState({
+      inPlay: ['ally-a', 'ally-b', 'follow-big-leads'],
+      turnEconomyRecruit: 0,
+      cardStats: {
+        'ally-a': statOfCost(4),
+        'ally-b': statOfCost(6),
+        'follow-big-leads': statOfCost(4),
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'follow-big-leads' as string,
+          timing: 'onPlay',
+          keywords: ['recruit-per-count'],
+          effects: [{ type: 'recruit-per-count', magnitude: 1, countSource: 'cost-four-plus-played-this-turn' }],
+        },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'follow-big-leads' as string);
+
+    const texts = gameState.messages.map((message) => message.text);
+    assert.ok(
+      texts.includes('Count-scaled recruit: +2 (1 per other card costing 4 or more played this turn; count 2).'),
+      `expected the labelled line, got: ${JSON.stringify(texts)}`,
+    );
+  });
+
   it('grants 0 when only the triggering cost>=4 card is in play (the flat/dropped-bonus bug case)', () => {
     const gameState = makeTestState({
       inPlay: ['follow-big-leads'],

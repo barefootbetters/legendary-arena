@@ -391,6 +391,42 @@ describe('wound-all resolver', () => {
     assert.equal(gameState.playerZones['0']!.discard.length, 3, 'twist 7 = 3 wounds (the MAX step)');
   });
 
+  // why: D-24673 — match EMXM2s3Ucsh logged "gained 1 wound(s)" for a Wound Diving
+  // Block then prevented. While reveals are pending the line says "would gain".
+  it('D-24673: with Diving Block revealable, the line says "would gain", not "gained"', () => {
+    const divingBlockId = 'core/captain-america/diving-block#0';
+    const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
+    gameState.counters.schemeTwistCount = 6;
+    gameState.playerZones['0']!.hand = [divingBlockId];
+    gameState.heroAbilityHooks = [
+      { cardId: divingBlockId, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {
+      escalation: COSMIC_ESCALATION,
+    });
+
+    const texts = gameState.messages.map((message) => message.text);
+    assert.ok(
+      texts.includes('[Scheme Twist] Player 0 would gain 3 wound(s) — Diving Block can prevent each one.'),
+      `expected the "would gain" line, got: ${JSON.stringify(texts)}`,
+    );
+    assert.ok(!texts.some((text) => text.includes('gained 3 wound(s)')), 'no premature "gained" line');
+    assert.equal(gameState.pendingDivingBlockWounds?.length, 3, 'each Wound awaits its reveal');
+  });
+
+  it('D-24673: without Diving Block the line still says "gained"', () => {
+    const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
+    gameState.counters.schemeTwistCount = 6;
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {
+      escalation: COSMIC_ESCALATION,
+    });
+
+    const texts = gameState.messages.map((message) => message.text);
+    assert.ok(texts.includes('[Scheme Twist] Player 0 gained 3 wound(s).'), `got: ${JSON.stringify(texts)}`);
+  });
+
   it('escalation deals to every player', () => {
     const gameState = makeResolverState({
       playerCount: 2,

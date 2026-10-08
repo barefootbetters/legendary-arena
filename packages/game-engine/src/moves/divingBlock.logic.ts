@@ -10,8 +10,8 @@
  *
  * The interception follows the return-on-discard land-then-offer-undo shape: the
  * Wound lands in the player's discard first, then `checkDivingBlock` parks one
- * PENDING entry per Wound (G.pendingDivingBlockWounds, PER-WOUND, one Diving Block
- * copy per Wound). The pending FIFO is drained one WAVE at a time through the
+ * PENDING entry per Wound (G.pendingDivingBlockWounds, PER-WOUND; one revealable copy
+ * covers every Wound — D-24673). The pending FIFO is drained one WAVE at a time through the
  * WP-684 non-active/multi-seat pending-choice capability (G.pendingSeatChoice, kind
  * 'diving-block'): the wound recipient MAY be a NON-ACTIVE seat (a Master Strike /
  * "each player gains a Wound" scheme), which the shipped active-player-only
@@ -87,10 +87,9 @@ export function cardCarriesDivingBlock(
  * The number of Diving Block copies the player can reveal: in hand OR played this
  * turn (still in their play area).
  *
- * // why: WP-682 / D-24499 — the ruling is "each simultaneous Wound needs its OWN
- * Diving Block", so the per-Wound park gate compares the count of already pending
- * Diving-Block Wounds for the player against the revealable copies: a player with
- * one copy and two Wounds is offered exactly one reveal.
+ * // why: D-24673 — only zero vs. non-zero matters: rules v23 lets the same card be
+ * revealed multiple times, so one copy stops every Wound (D-24499 had capped the
+ * reveals at one per copy).
  * // why: D-24651 — rules v23 "Revealing a Card": "You can reveal a card from your
  * hand or you can reveal a card in front of you that you have already played this
  * turn." D-24499 counted the hand only, so a Diving Block played earlier in the turn
@@ -128,13 +127,15 @@ export function countRevealableDivingBlockCopies(
 }
 
 /**
- * The number of Diving-Block Wounds currently pending for the given player.
+ * The number of Diving-Block Wounds currently pending for the given player. The
+ * Scheme Twist wound log reads it to tell whether Diving Block can still prevent the
+ * Wounds it just dealt (D-24673).
  *
  * @param G - The game state to inspect (not mutated).
  * @param playerID - The player whose pending Wounds are counted.
  * @returns How many entries in the FIFO belong to the player.
  */
-function countPendingWoundsForPlayer(
+export function countPendingDivingBlockWounds(
   G: LegendaryGameState,
   playerID: string,
 ): number {
@@ -163,8 +164,8 @@ export function hasPendingDivingBlockWounds(G: LegendaryGameState): boolean {
 
 /**
  * Parks a reactive Diving-Block interception for a Wound that just landed in the
- * player's discard pile, when the player holds Diving Block and has an un-committed
- * copy left for this Wound batch.
+ * player's discard pile, when the player can reveal Diving Block (in hand or played
+ * this turn).
  *
  * Runs AFTER the Wound moved into discard (the land-then-offer-undo shape). Lazily
  * initializes the FIFO at the park site (never in Game.setup) so an untriggered
@@ -182,14 +183,11 @@ export function checkDivingBlock(
   playerID: string,
   woundCardId: CardExtId,
 ): void {
-  const revealableCopies = countRevealableDivingBlockCopies(G, playerID);
-  if (revealableCopies === 0) {
-    return;
-  }
-  // why: WP-682 / D-24499 — one Diving Block copy per Wound. A player with fewer
-  // copies than incoming Wounds is offered exactly `revealableCopies` reveals; the rest
-  // of the Wounds land unpreventably.
-  if (countPendingWoundsForPlayer(G, playerID) >= revealableCopies) {
+  // why: D-24673 — rules v23 "Revealing a Card": "You can reveal the same card
+  // multiple times in a turn if necessary." Revealing never uses Diving Block up, so
+  // ONE revealable copy can stop every Wound; each Wound parks its own interception.
+  // (D-24499 had capped the reveals at one per copy.)
+  if (countRevealableDivingBlockCopies(G, playerID) === 0) {
     return;
   }
   if (G.pendingDivingBlockWounds === undefined) {
