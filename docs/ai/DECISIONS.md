@@ -46969,4 +46969,20 @@ Against the old source, 4 cases fail.
 
 ---
 
+### D-24677 — No "final turn" announcement when the deck-emptying card already decided the game (direct fix, no WP) (Active 2026-10-08)
+
+**Context.** In Jeff's solo match `C2LVapHVpCt` (Dr. Doom / Unleash the Power of the Cosmic Cube, build `bb43daf`), the last Villain Deck card was Scheme Twist 8. The game log read:
+- 32.1.3 "Scheme loss triggered — twist threshold reached."
+- 32.1.4 "The villain deck is empty — this is the final turn. Win or lose this turn, or the game ends in a tie."
+
+The game was already over (`scheme-wins`). D-24599 had skipped the announcement only when the emptied deck is itself the scheme's loss pile (Midnight Massacre, Civil War). It missed the case where the emptying card triggers a different, already-fired outcome.
+
+**Decision.** `latchFinalTurnIfDeckExhausted` still latches `FINAL_TURN_TRIGGERED` exactly as before, but skips the "final turn… tie" line whenever `evaluateEndgame(gameState)` already returns an outcome. That covers a scheme loss, a mastermind defeat, or any future win/loss that fires on the same card. The counter, the tie resolution and the outcome are unchanged; only the contradictory message is gone. `G.messages` is hash-excluded (D-24081).
+
+**Tests.** `finalTurn.logic.test.ts` gains two cases: a deck emptied after a scheme loss latches silently (fails against the old source), and an undecided game still announces the final turn. game-engine 5021 / 0, server 1472 / 0, `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24677 (D-24676 is held by the open #2651). Related: D-24599 (the pile-loss half of this guard), D-24159 / WP-367 (the deck-exhaustion final turn), D-24026 (the live session that surfaced it).
+
+---
+
 Protect this file.

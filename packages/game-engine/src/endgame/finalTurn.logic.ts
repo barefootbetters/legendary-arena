@@ -62,6 +62,15 @@ export function latchFinalTurnIfDeckExhausted(gameState: LegendaryGameState): vo
     return;
   }
 
+  // why: D-24677 — the card that emptied the deck can itself decide the game: in
+  // match C2LVapHVpCt (Cosmic Cube) the last Villain Deck card was Scheme Twist 8,
+  // so "Scheme loss triggered" was followed by "this is the final turn… or the game
+  // ends in a tie" for a game already over. When an outcome has already fired there
+  // is no final turn to announce; the latch itself is unchanged.
+  if (evaluateEndgame(gameState) !== null) {
+    return;
+  }
+
   const emptiedDeckName = isVillainDeckEmpty ? 'villain' : 'hero';
   pushLog(
     gameState,

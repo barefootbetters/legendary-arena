@@ -7,6 +7,12 @@
 
 ## Current State
 
+### D-24677 — No "final turn" message after the game has already ended (direct fix) (2026-10-08)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When the last Villain Deck card itself ends the game (Cosmic Cube's Scheme Twist 8), the log no longer follows "Scheme loss triggered" with "this is the final turn… or the game ends in a tie". Reported in solo match `C2LVapHVpCt`.
+
+- **Engine only** (`endgame/finalTurn.logic.ts`, message-only). game-engine 5021 / 0, server 1472 / 0.
+
 ### WP-799 — Printed Hero Deck counts from one scheme hero-count table (EC-836 / D-24672) (2026-10-08)
 
 **User-visible on `cards.legendary-arena.com` and `play.legendary-arena.com` (after deploy).** Twenty-four more

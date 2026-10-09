@@ -252,3 +252,32 @@ describe('D-24599 — no contradictory "final turn… tie" line before a deck-ru
     assert.match(state.messages[0]!.text, /villain deck is empty — this is the final turn/);
   });
 });
+
+describe('D-24677 — no "final turn" line when the game is already decided', () => {
+  // why: match C2LVapHVpCt — Cosmic Cube's Scheme Twist 8 was the last Villain Deck
+  // card. Its twist-count loss fired first, so the deck-empty latch must not then
+  // announce a final turn for a game that is already over.
+  it('a Villain Deck emptied by the card that already triggered a scheme loss latches silently', () => {
+    const state = makeState({
+      villainDeck: [],
+      heroDeck: ['h-1'],
+      counters: { [ENDGAME_CONDITIONS.SCHEME_LOSS]: 1 },
+    });
+
+    latchFinalTurnIfDeckExhausted(state);
+
+    assert.equal(state.counters[ENDGAME_CONDITIONS.FINAL_TURN_TRIGGERED], 1, 'the latch is unchanged');
+    assert.equal(state.messages.length, 0, 'no final-turn announcement after the game ended');
+    assert.equal(evaluateEndgame(state)?.outcome, 'scheme-wins');
+  });
+
+  it('an undecided game still announces the final turn', () => {
+    const state = makeState({ villainDeck: [], heroDeck: ['h-1'] });
+
+    latchFinalTurnIfDeckExhausted(state);
+
+    assert.equal(evaluateEndgame(state), null);
+    assert.equal(state.messages.length, 1);
+    assert.match(state.messages[0]!.text, /this is the final turn/);
+  });
+});
