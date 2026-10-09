@@ -445,7 +445,8 @@ function applySeatChoiceByKind(
     applyReturnOnDiscardSeatChoice(G, choice);
     return;
   }
-  if (applySeatChoiceCard(G, choice)) {
+  // why: D-24678 — the shuffle context reaches Random Acts' Diving Block draw.
+  if (applySeatChoiceCard(G, choice, shuffleContext)) {
     return;
   }
   applyResolvedSeatChoice(G, choice);

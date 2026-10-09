@@ -47022,4 +47022,25 @@ The game was already over (`scheme-wins`). D-24599 had skipped the announcement 
 
 ---
 
+### D-24678 — Diving Block can replace Random Acts of Unkindness's Wound (direct fix, no WP) (Active 2026-10-09)
+
+**Context.** Jeff reported that taking the optional Wound from Deadpool's Random Acts of Unkindness never offered Captain America's Diving Block ("If you would gain a Wound, you may reveal this card and draw a card instead"). D-24499 routed every wound source through the `gainWoundForPlayer` chokepoint, where Diving Block intercepts. Random Acts (WP-683 / D-24500) came later and gains its Wound straight to the **hand** with the bare `gainWound` helper, so Diving Block never saw it. A chokepoint-based fix would also have to undo a Wound from the hand, and in multiplayer it would race the pass-left step that follows: the Wound could be passed away before the reveal resolved.
+
+**Decision.**
+1. When the acting player can reveal Diving Block (in hand or played this turn, D-24651) and the Wound supply is non-empty, Random Acts' wound prompt gets a third option: **"Reveal Diving Block: draw a card instead of the Wound"**. It is index 2, appended so gain = 0 and decline = 1 (the default) are unchanged.
+2. Choosing it leaves the Wound in the supply, draws one card (reshuffle-aware, through the resolver's shuffle context) and logs "revealed Diving Block: drew a card instead of gaining the Wound". Diving Block is revealed, never moved. Because no Wound lands, the multiplayer pass-left still chains afterwards with nothing to race.
+3. `seatChoiceCards.ts` stays free of the divingBlock import cycle (its header contract): the hero handler computes `countRevealableDivingBlockCopies(G, playerID) > 0` and passes a boolean to `buildRandomActsWoundChoice`. `applySeatChoiceCard` / `applyRandomActsWoundGain` take an optional shuffle provider.
+4. **Client:** `PendingSeatChoicePrompt` already renders the projected options, so the third button needs no client change. **Bot:** the default stays decline, and no hash oracle or sim gate moved.
+
+**Tests.** Three new `seatChoiceCards.test.ts` cases, all failing against the old source:
+- a holder gets 3 options and a non-holder keeps 2;
+- solo reveal draws, keeps the Wound in the supply and Diving Block in hand;
+- multiplayer reveal still chains the pass-left.
+
+`pnpm -r --no-bail test` all green (game-engine 5024, server 1472, arena-client 2298, …; 0 fail). `sim:coverage --check` OK, `sim:runtime-observed:check` current, `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24678. Related: D-24499 / D-24651 / D-24673 (Diving Block), D-24500 / WP-683 (Random Acts), D-24026 (the live report).
+
+---
+
 Protect this file.

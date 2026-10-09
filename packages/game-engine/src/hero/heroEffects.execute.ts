@@ -68,6 +68,7 @@ import {
   dispatchDefeatWithBystanderTarget,
 } from '../moves/defeatChoice.resolve.js';
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
+import { countRevealableDivingBlockCopies } from '../moves/divingBlock.logic.js';
 import {
   revealTopThreeForAssign,
   buildAllRevealThreeAssignDispositions,
@@ -3863,7 +3864,10 @@ function heroEffectRandomActs(
   // gain-to-hand is a real choice, so park it (it chains the pass on resolve). The wound
   // choice is active-scoped, so no stage ride (events undefined).
   if (G.piles.wounds.length > 0) {
-    parkSeatChoice(G, undefined, buildRandomActsWoundChoice(playerID));
+    // why: D-24678 — offer Diving Block's "draw a card instead" when the player can reveal
+    // one (in hand or played this turn, D-24651).
+    const canRevealDivingBlock = countRevealableDivingBlockCopies(G, playerID) > 0;
+    parkSeatChoice(G, undefined, buildRandomActsWoundChoice(playerID, canRevealDivingBlock));
     pushLog(G,
       `Player ${playerID} may gain a Wound to their hand before the pass (${formatCardRef(G.cardDisplayData, cardId)}).`,
       'neutral',
