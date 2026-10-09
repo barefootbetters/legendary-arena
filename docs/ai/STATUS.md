@@ -7,6 +7,12 @@
 
 ## Current State
 
+### D-24677 — No "final turn" message after the game has already ended (direct fix) (2026-10-08)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When the last Villain Deck card itself ends the game (Cosmic Cube's Scheme Twist 8), the log no longer follows "Scheme loss triggered" with "this is the final turn… or the game ends in a tie". Reported in solo match `C2LVapHVpCt`.
+
+- **Engine only** (`endgame/finalTurn.logic.ts`, message-only). game-engine 5021 / 0, server 1472 / 0.
+
 ### D-24676 — The card viewer always picks up the latest card data (direct fix) (2026-10-08)
 
 **User-visible on `cards.legendary-arena.com` (after deploy).** The viewer and loadout builder now revalidate every card-data file with R2 on load. A returning visitor whose browser held an old copy, such as the pre-WP-797 Dr. Doom lead that locked Masters of Evil, gets the current data on the next page load with no hard reload. Unchanged files cost a 304.
