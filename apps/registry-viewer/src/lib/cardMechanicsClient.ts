@@ -36,6 +36,7 @@ import {
   type CardMechanicsIndex,
 } from "@legendary-arena/registry/schema";
 import { devLog } from "./devLog";
+import { fetchMetadata } from "./fetchMetadata";
 
 // why: the ONE non-blocking empty fallback. A missing or invalid feed must
 // never break the card grid, so every HTTP / schema / fetch failure path
@@ -74,7 +75,7 @@ export function getCardMechanics(
     const startedAt = performance.now();
     devLog("filter", "mechanics load start", { baseUrl: metadataBaseUrl });
     try {
-      const response = await fetch(url);
+      const response = await fetchMetadata(url);
       if (!response.ok) {
         devLog("filter", "mechanics load failed", {
           baseUrl:    metadataBaseUrl,

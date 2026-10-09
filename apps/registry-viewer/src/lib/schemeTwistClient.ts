@@ -21,6 +21,7 @@ import {
   type SchemeTwistPattern,
 } from "@legendary-arena/registry/schema";
 import { devLog } from "./devLog";
+import { fetchMetadata } from "./fetchMetadata";
 
 // ── Singleton loaders ───────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ export function getSchemeTwistPatterns(metadataBaseUrl: string): Promise<SchemeT
     const startedAt = performance.now();
     devLog("schemeTwist", "patterns load start", { baseUrl: metadataBaseUrl });
     try {
-      const response = await fetch(url);
+      const response = await fetchMetadata(url);
       if (!response.ok) {
         devLog("schemeTwist", "patterns load failed", {
           baseUrl: metadataBaseUrl,
@@ -115,7 +116,7 @@ export function getSchemeTwistAssignments(metadataBaseUrl: string): Promise<Map<
     const startedAt = performance.now();
     devLog("schemeTwist", "assignments load start", { baseUrl: metadataBaseUrl });
     try {
-      const response = await fetch(url);
+      const response = await fetchMetadata(url);
       if (!response.ok) {
         devLog("schemeTwist", "assignments load failed", {
           baseUrl: metadataBaseUrl,
