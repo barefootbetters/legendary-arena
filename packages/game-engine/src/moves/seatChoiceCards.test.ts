@@ -219,6 +219,76 @@ describe('random-acts — optional gain-Wound-to-hand (WP-683 / D-24500)', () =>
 });
 
 // ---------------------------------------------------------------------------
+// Random Acts + Diving Block (D-24678)
+// ---------------------------------------------------------------------------
+
+const DIVING_BLOCK_ID = 'core/captain-america/diving-block#0';
+
+/** A Random Acts state whose seat 0 holds Diving Block and has one card to draw. */
+function makeDivingBlockState(seats: string[]): LegendaryGameState {
+  const hands: Record<string, string[]> = {};
+  for (const seat of seats) {
+    hands[seat] = seat === '0' ? [DIVING_BLOCK_ID, 'a0'] : [`${seat}-card`];
+  }
+  const G = makeState({ wounds: ['w0'], hands });
+  G.playerZones['0']!.deck = ['drawn#0'];
+  (G as unknown as { heroAbilityHooks: unknown[] }).heroAbilityHooks = [
+    { cardId: DIVING_BLOCK_ID, timing: 'onPlay', keywords: ['diving-block'] },
+  ];
+  return G;
+}
+
+/** A resolve context with a real (identity) Shuffle, for the Diving Block draw. */
+function makeShufflingResolveCtx(
+  G: LegendaryGameState,
+  playOrder: string[],
+): Parameters<typeof resolveSeatChoice>[0] {
+  const context = makeResolveCtx(G, '0', playOrder) as unknown as { random: unknown };
+  context.random = { Shuffle: <T,>(deck: T[]): T[] => [...deck] };
+  return context as unknown as Parameters<typeof resolveSeatChoice>[0];
+}
+
+describe('random-acts + Diving Block — draw a card instead of the Wound (D-24678)', () => {
+  // why: match report 2026-10-09 — Random Acts gained its Wound straight to hand through
+  // the bare gainWound helper, so Diving Block ("If you would gain a Wound, you may
+  // reveal this card and draw a card instead") was never offered.
+  it('a Diving Block holder gets a third option; a non-holder keeps two', () => {
+    const holder = makeDivingBlockState(['0']);
+    executeSingleEffect(holder, makeHandlerCtx(['0']), '0', 'random-acts#0', { type: 'random-acts' });
+    const holderOptions = holder.pendingSeatChoice!.seatPrompts['0']!.options;
+    assert.equal(holderOptions.length, 3);
+    assert.equal(holderOptions[2]!.label, 'Reveal Diving Block: draw a card instead of the Wound');
+    assert.equal(holder.pendingSeatChoice!.defaultOptionIndex, 1, 'the default still declines');
+
+    const nonHolder = makeState({ wounds: ['w0'], hands: { '0': ['a0'] } });
+    executeSingleEffect(nonHolder, makeHandlerCtx(['0']), '0', 'random-acts#0', { type: 'random-acts' });
+    assert.equal(nonHolder.pendingSeatChoice!.seatPrompts['0']!.options.length, 2);
+  });
+
+  it('solo: revealing Diving Block draws a card, keeps the Wound in the supply and Diving Block in hand', () => {
+    const G = makeDivingBlockState(['0']);
+    executeSingleEffect(G, makeHandlerCtx(['0']), '0', 'random-acts#0', { type: 'random-acts' });
+    resolveSeatChoice(makeShufflingResolveCtx(G, ['0']), { optionIndex: 2 });
+    assert.deepEqual(G.piles.wounds, ['w0'], 'no Wound gained');
+    assert.deepEqual(G.playerZones['0']!.hand, [DIVING_BLOCK_ID, 'a0', 'drawn#0'], 'drew a card; Diving Block stays');
+    assert.equal(G.pendingSeatChoice, undefined, 'no cross-seat pass in solo');
+    assert.ok(
+      G.messages.some((message) => message.text.includes('revealed Diving Block: drew a card instead of gaining the Wound')),
+      'the reveal is logged',
+    );
+  });
+
+  it('multiplayer: revealing Diving Block still chains the pass-left, with no Wound in hand to pass', () => {
+    const G = makeDivingBlockState(['0', '1']);
+    executeSingleEffect(G, makeHandlerCtx(['0', '1']), '0', 'random-acts#0', { type: 'random-acts' });
+    resolveSeatChoice(makeShufflingResolveCtx(G, ['0', '1']), { optionIndex: 2 });
+    assert.deepEqual(G.piles.wounds, ['w0'], 'no Wound gained');
+    assert.ok(!G.playerZones['0']!.hand.includes('w0'));
+    assert.equal(G.pendingSeatChoice!.kind, RANDOM_ACTS_PASS_LEFT_KIND, 'the pass still chains');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Random Acts — simultaneous multi-seat pass-left
 // ---------------------------------------------------------------------------
 

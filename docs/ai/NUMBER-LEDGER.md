@@ -1295,3 +1295,4 @@ section below) and the allocation protocol in
 - D-24675 — time-heist-hero-count (WP-800 — The Time Heist main Hero Deck = exactly 4; amends D-24672 §1 / §4. reserved 2026-10-08, claude/reserve-time-heist-count)
 - D-24676 — viewer-metadata-fetch-no-cache (direct fix, no WP — the registry viewer fetches every R2 data file with cache: "no-cache" so a stale pre-Cache-Control copy is revalidated. reserved 2026-10-08, infra/viewer-metadata-no-cache)
 - D-24677 — no-final-turn-line-after-decided-game (direct fix, no WP — the deck-exhaustion latch skips its "final turn… tie" announcement when evaluateEndgame already has an outcome. reserved 2026-10-08, infra/no-final-turn-line-after-loss)
+- D-24678 — random-acts-diving-block-option (direct fix, no WP — Random Acts' optional Wound prompt offers "Reveal Diving Block: draw a card instead" when Diving Block is revealable. reserved 2026-10-09, infra/random-acts-diving-block)

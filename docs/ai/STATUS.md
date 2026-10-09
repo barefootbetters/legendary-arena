@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24678 — Diving Block works on Random Acts of Unkindness's Wound (direct fix) (2026-10-09)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When you play Random Acts of Unkindness while holding Diving Block (or with it already played this turn), the "Gain a Wound to your hand?" prompt gets a third button: **"Reveal Diving Block: draw a card instead of the Wound"**. Before this, Diving Block was never offered for that Wound.
+
+- **Engine only.** Every package green (game-engine 5024, arena-client 2298).
+- **Live-verify (D-24026): pending.** Play Random Acts with Diving Block in hand; the third button should draw a card and leave the Wound in the supply.
+
 ### D-24677 — No "final turn" message after the game has already ended (direct fix) (2026-10-08)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** When the last Villain Deck card itself ends the game (Cosmic Cube's Scheme Twist 8), the log no longer follows "Scheme loss triggered" with "this is the final turn… or the game ends in a tie". Reported in solo match `C2LVapHVpCt`.

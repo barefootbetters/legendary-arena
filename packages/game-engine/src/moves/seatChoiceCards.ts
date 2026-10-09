@@ -32,6 +32,8 @@ import type { CardExtId } from '../state/zones.types.js';
 import { attachBystanderToVillain } from '../board/bystanders.logic.js';
 import { gainWound } from '../board/wounds.logic.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { drawCardsIntoHand } from './drawCards.logic.js';
+import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
 
@@ -41,6 +43,13 @@ export const HERE_HOLD_THIS_KIND = 'here-hold-this';
 export const RANDOM_ACTS_WOUND_KIND = 'random-acts-wound';
 /** Discriminant for Random Acts' simultaneous multi-seat pass-left step. */
 export const RANDOM_ACTS_PASS_LEFT_KIND = 'random-acts-pass-left';
+
+// why: the Random Acts wound-choice option indices are the contract between the
+// builder, the client prompt, and the apply. Gain and decline keep their original
+// 0 / 1 (the default stays decline); the Diving Block option is appended as 2 so it
+// never shifts the existing indices (D-24678).
+const RANDOM_ACTS_GAIN_OPTION_INDEX = 0;
+const RANDOM_ACTS_DIVING_BLOCK_OPTION_INDEX = 2;
 
 /** One eligible Here, Hold This target: the City space and its occupant. */
 export interface HereHoldThisTarget {
@@ -191,15 +200,31 @@ export function applyHereHoldThis(G: LegendaryGameState, choice: PendingSeatChoi
  * variant of the discard-default gain (heroEffectGainWound), so the gained Wound is
  * immediately a legal card the player can pass away in step 2.
  *
+ * // why: D-24678 — Diving Block ("If you would gain a Wound, you may reveal this card
+ * and draw a card instead") applies to this Wound too. The gain went straight to the
+ * hand through the bare gainWound helper, never the gainWoundForPlayer chokepoint, so
+ * Diving Block was never offered. When the player can reveal Diving Block, a third
+ * option replaces the gain with a draw at the moment it would happen — no Wound
+ * lands, so the pass-left that follows cannot pass it away first.
+ *
  * @param playerID - The acting player (the sole addressed seat).
+ * @param canRevealDivingBlock - Whether the player holds a revealable Diving Block
+ *   (computed by the caller, so this module stays free of the divingBlock import cycle).
  * @returns The pending wound choice to park.
  */
-export function buildRandomActsWoundChoice(playerID: string): PendingSeatChoice {
+export function buildRandomActsWoundChoice(
+  playerID: string,
+  canRevealDivingBlock = false,
+): PendingSeatChoice {
+  const options: SeatChoiceOption[] = [{ label: 'Gain a Wound to your hand' }, { label: 'Decline' }];
+  if (canRevealDivingBlock) {
+    options.push({ label: 'Reveal Diving Block: draw a card instead of the Wound' });
+  }
   return {
     kind: RANDOM_ACTS_WOUND_KIND,
     addressedSeats: [playerID],
     seatPrompts: {
-      [playerID]: { options: [{ label: 'Gain a Wound to your hand' }, { label: 'Decline' }] },
+      [playerID]: { options },
     },
     submissions: {},
     // why: the bot/sim + disconnect default DECLINES — gaining a Wound is a downside a
@@ -220,14 +245,22 @@ export function buildRandomActsWoundChoice(playerID: string): PendingSeatChoice 
  *
  * @param G - Game state (mutated under Immer draft).
  * @param choice - The fully-submitted pending choice (kind 'random-acts-wound').
+ * @param shuffleContext - Deterministic reshuffle source for the Diving Block draw,
+ *   or undefined (the disconnect/timeout path, whose default is decline).
  */
-export function applyRandomActsWoundGain(G: LegendaryGameState, choice: PendingSeatChoice): void {
+export function applyRandomActsWoundGain(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+  shuffleContext?: ShuffleProvider,
+): void {
   const seat = choice.addressedSeats[0];
   if (seat === undefined) {
     return;
   }
   const submission = choice.submissions[seat];
-  if (submission === undefined || submission.optionIndex !== 0) {
+  const isGain = submission?.optionIndex === RANDOM_ACTS_GAIN_OPTION_INDEX;
+  const isDivingBlock = submission?.optionIndex === RANDOM_ACTS_DIVING_BLOCK_OPTION_INDEX;
+  if (!isGain && !isDivingBlock) {
     // why: declined (or a defensive miss) — no Wound gained.
     return;
   }
@@ -237,6 +270,15 @@ export function applyRandomActsWoundGain(G: LegendaryGameState, choice: PendingS
   }
   if (G.piles.wounds.length === 0) {
     pushLog(G, `Player ${seat} could not gain a Wound — the Wound supply is empty.`, 'blocked');
+    return;
+  }
+  if (isDivingBlock) {
+    // why: D-24678 — Diving Block replaces the gain: the Wound stays in the supply and
+    // the player draws a card instead; Diving Block itself is only revealed, never moved.
+    if (shuffleContext !== undefined) {
+      drawCardsIntoHand(zones, 1, shuffleContext);
+    }
+    pushLog(G, `Player ${seat} revealed Diving Block: drew a card instead of gaining the Wound (Random Acts of Unkindness).`, 'applied');
     return;
   }
   const result = gainWound(G.piles.wounds, zones.hand);
@@ -369,15 +411,21 @@ export function applyRandomActsPassLeft(G: LegendaryGameState, choice: PendingSe
  *
  * @param G - Game state (mutated under Immer draft).
  * @param choice - The fully-submitted pending choice.
+ * @param shuffleContext - Deterministic reshuffle source for draws (Random Acts'
+ *   Diving Block option), or undefined on the timeout path.
  * @returns Whether a card-specific apply ran.
  */
-export function applySeatChoiceCard(G: LegendaryGameState, choice: PendingSeatChoice): boolean {
+export function applySeatChoiceCard(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+  shuffleContext?: ShuffleProvider,
+): boolean {
   if (choice.kind === HERE_HOLD_THIS_KIND) {
     applyHereHoldThis(G, choice);
     return true;
   }
   if (choice.kind === RANDOM_ACTS_WOUND_KIND) {
-    applyRandomActsWoundGain(G, choice);
+    applyRandomActsWoundGain(G, choice, shuffleContext);
     return true;
   }
   if (choice.kind === RANDOM_ACTS_PASS_LEFT_KIND) {
