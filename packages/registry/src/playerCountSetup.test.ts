@@ -258,7 +258,7 @@ describe('resolveEffectiveHenchmenCount (D-24666)', () => {
 });
 
 /**
- * The 26 printed Hero Deck count rows (D-24672), in source order, each with its
+ * The 27 printed Hero Deck count rows (D-24672), in source order, each with its
  * locked effective hero count at 1..5 players (base 3/5/5/5/6). Written-out
  * literals — never computed from the rule under test.
  */
@@ -289,6 +289,7 @@ const EXPECTED_HERO_COUNTS_BY_SCHEME: readonly (readonly [string, readonly numbe
   ['dead/deadpool-kills-the-marvel-universe', [3, 4, 5, 5, 6]],
   ['cvwr/epic-super-hero-civil-war', [4, 5, 5, 5, 6]],
   ['cosm/destroy-the-nova-corps', [5, 5, 5, 5, 6]],
+  ['msis/the-time-heist', [4, 4, 4, 4, 4]],
 ];
 
 /**
@@ -308,13 +309,13 @@ function effectiveHeroCountsAtEveryPlayerCount(schemeId: string): number[] {
 }
 
 describe('SCHEME_HERO_COUNT_RULES (D-24672)', () => {
-  it('holds exactly the 26 printed Hero Deck count rows, in order', () => {
+  it('holds exactly the 27 printed Hero Deck count rows, in order', () => {
     // why: D-24372 runtime drift pin — the closed table is a locked value.
     assert.deepEqual(
       Object.keys(SCHEME_HERO_COUNT_RULES),
       EXPECTED_HERO_COUNTS_BY_SCHEME.map((entry) => entry[0]),
     );
-    assert.equal(Object.keys(SCHEME_HERO_COUNT_RULES).length, 26);
+    assert.equal(Object.keys(SCHEME_HERO_COUNT_RULES).length, 27);
   });
 
   it('names only schemes that exist in data/cards', () => {
@@ -349,10 +350,6 @@ describe('resolveEffectiveHeroCount — printed Hero Deck count rows (D-24672)',
   it('returns the base count for an unlisted scheme and for an empty id', () => {
     assert.deepEqual(effectiveHeroCountsAtEveryPlayerCount('core/midtown-bank-robbery'), [3, 5, 5, 5, 6]);
     assert.deepEqual(effectiveHeroCountsAtEveryPlayerCount(''), [3, 5, 5, 5, 6]);
-  });
-
-  it('keeps msis The Time Heist at the base count (deliberately not a row)', () => {
-    assert.deepEqual(effectiveHeroCountsAtEveryPlayerCount('msis/the-time-heist'), [3, 5, 5, 5, 6]);
   });
 
   it('resolves prototype keys such as constructor and __proto__ to the base count', () => {
@@ -396,6 +393,37 @@ describe('checkPlayerCountComposition — printed Hero Deck counts (D-24672)', (
       checkPlayerCountComposition(heroInput('ca75/go-back-in-time-to-slay-heroes-ancestors', 1, 3)),
       [{ field: 'heroDeckIds', label: 'heroes', required: 8, actual: 3 }],
     );
+  });
+
+  it('reports one heroDeckIds mismatch (required 4) for a 2p The Time Heist loadout with 5 heroes', () => {
+    assert.deepEqual(checkPlayerCountComposition(heroInput('msis/the-time-heist', 2, 5)), [
+      { field: 'heroDeckIds', label: 'heroes', required: 4, actual: 5 },
+    ]);
+  });
+
+  it('passes a 2p The Time Heist loadout with 4 heroes', () => {
+    assert.deepEqual(checkPlayerCountComposition(heroInput('msis/the-time-heist', 2, 4)), []);
+  });
+
+  it('reports one heroDeckIds mismatch (required 4) for a 1p The Time Heist loadout with 3 heroes', () => {
+    assert.deepEqual(checkPlayerCountComposition(heroInput('msis/the-time-heist', 1, 3)), [
+      { field: 'heroDeckIds', label: 'heroes', required: 4, actual: 3 },
+    ]);
+  });
+
+  it('reports one heroDeckIds mismatch (required 4) for a 5p The Time Heist loadout with 6 heroes', () => {
+    // why: built inline — `heroInput` supplies one Henchman group and 5 players
+    // require 2, which would add a second, unrelated mismatch.
+    const input = {
+      playerCount: 5,
+      schemeId: 'msis/the-time-heist',
+      villainGroupIds: ['v0', 'v1', 'v2', 'v3'],
+      henchmanGroupIds: ['h0', 'h1'],
+      heroDeckIds: ['hero0', 'hero1', 'hero2', 'hero3', 'hero4', 'hero5'],
+    };
+    assert.deepEqual(checkPlayerCountComposition(input), [
+      { field: 'heroDeckIds', label: 'heroes', required: 4, actual: 6 },
+    ]);
   });
 });
 

@@ -88,8 +88,8 @@ export type SchemeHeroCountRule =
 // why: a scheme's printed Hero Deck size is a REQUIREMENT override (D-24337 /
 // D-24672) — the operator must supply exactly that many Heroes and the base count
 // is rejected. One closed table, so the next printed rule is a data row rather than
-// another `if`. Keyed by scheme ext_id. msis The Time Heist is deliberately absent
-// (its 4 + 4 Past Hero Deck has no MatchSetupConfig home; a named follow-up).
+// another `if`. Keyed by scheme ext_id. Only the main Hero Deck is counted:
+// Heroes a scheme keeps outside it (The Time Heist's Past Hero Deck) are not.
 /**
  * Every printed Hero Deck count rule, keyed by scheme ext_id (D-24672). The only
  * reader is `resolveEffectiveHeroCount`.
@@ -130,6 +130,10 @@ export const SCHEME_HERO_COUNT_RULES: Readonly<Record<string, SchemeHeroCountRul
   'dead/deadpool-kills-the-marvel-universe': { kind: 'exactAtPlayerCount', playerCount: 2, count: 4 },
   'cvwr/epic-super-hero-civil-war': { kind: 'exactAtPlayerCount', playerCount: 1, count: 4 },
   'cosm/destroy-the-nova-corps': { kind: 'exactAtPlayerCount', playerCount: 1, count: 5 },
+  // why: The Time Heist prints "Use 4 Heroes in the Hero Deck" — exactly 4 at every
+  // player count. Its 4-Hero Past Hero Deck belongs to the separately named
+  // full-fidelity arc for The Past, which is not implemented (D-24675).
+  'msis/the-time-heist': { kind: 'exact', count: 4 },
 };
 
 /**
