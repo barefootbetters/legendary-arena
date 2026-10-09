@@ -6,7 +6,7 @@
  * under heuristic freshness — for days after a data fix. After WP-797 (#2639)
  * corrected Dr. Doom's Always Leads, a returning visitor's loadout builder still
  * locked Masters of Evil to Dr. Doom, and Ctrl+Shift+R did not help because
- * these requests are made by script after the page loads (D-24675).
+ * these requests are made by script after the page loads (D-24676).
  *
  * `cache: "no-cache"` makes the browser revalidate every cached copy with R2
  * (a 304 when unchanged, against the object's ETag / Last-Modified), so a fix

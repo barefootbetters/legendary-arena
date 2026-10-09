@@ -7,7 +7,7 @@
 
 ## Current State
 
-### D-24675 — The card viewer always picks up the latest card data (direct fix) (2026-10-08)
+### D-24676 — The card viewer always picks up the latest card data (direct fix) (2026-10-08)
 
 **User-visible on `cards.legendary-arena.com` (after deploy).** The viewer and loadout builder now revalidate every card-data file with R2 on load. A returning visitor whose browser held an old copy, such as the pre-WP-797 Dr. Doom lead that locked Masters of Evil, gets the current data on the next page load with no hard reload. Unchanged files cost a 304.
 

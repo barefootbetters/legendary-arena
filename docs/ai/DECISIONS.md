@@ -46969,7 +46969,7 @@ Against the old source, 4 cases fail.
 
 ---
 
-### D-24675 — The registry viewer revalidates every R2 data fetch (cache: "no-cache") (direct fix, no WP) (Active 2026-10-08)
+### D-24676 — The registry viewer revalidates every R2 data fetch (cache: "no-cache") (direct fix, no WP) (Active 2026-10-08)
 
 **Context.** D-24674 gave the `/metadata/*.json` objects a 5-minute `Cache-Control`, but that only governs copies fetched **after** the change. Jeff's browser still held a pre-WP-797 `core.json` from when the objects had no header. Heuristic freshness kept it "fresh", so his loadout builder still locked Masters of Evil to Dr. Doom. Ctrl+Shift+R did not help, because the viewer requests these files by script after the page loads. A clean browser showed the correct lead (Doombot Legion), so the data was fine; the stale copy was on the client.
 
@@ -46980,7 +46980,7 @@ Against the old source, 4 cases fail.
 
 **Tests.** New `fetchMetadata.test.ts`: the helper sends `cache: "no-cache"`, and `createRegistryFromHttp` sends it on every request (`sets.json` + set files). The registry case fails against the old `httpRegistry.ts`. registry-viewer 329 / 0; `pnpm --filter registry-viewer build` 0.
 
-**Reserved by:** NUMBER-LEDGER D-24675. Related: D-24674 (the server-side `Cache-Control`; this is the client-side half), D-24667 / WP-797 (the data change whose stale copy surfaced it).
+**Reserved by:** NUMBER-LEDGER D-24676. Related: D-24674 (the server-side `Cache-Control`; this is the client-side half), D-24667 / WP-797 (the data change whose stale copy surfaced it).
 
 ---
 

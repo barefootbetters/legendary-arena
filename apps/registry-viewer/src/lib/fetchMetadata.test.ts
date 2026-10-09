@@ -1,5 +1,5 @@
 /**
- * Tests for fetchMetadata — R2 data fetches always revalidate (D-24675).
+ * Tests for fetchMetadata — R2 data fetches always revalidate (D-24676).
  */
 
 import { afterEach, test } from "node:test";
