@@ -71,40 +71,76 @@ export function getPlayerCountSetup(
   return undefined;
 }
 
-/** The scheme whose printed setup overrides the standard hero-group count. */
-const SECRET_INVASION_SCHEME_ID = 'core/secret-invasion-of-the-skrull-shapeshifters';
+/**
+ * One printed Hero Deck count rule (D-24672). Three shapes cover every printed
+ * count clause:
+ * - `add` — "Add an extra Hero" style: `base + amount` from `fromPlayerCount`
+ *   players upward, the base count below it;
+ * - `exact` — "6 Heroes" style: exactly `count` at every player count;
+ * - `exactAtPlayerCount` — "If only 2 players, use only 4 Heroes" style: exactly
+ *   `count` at `playerCount` players, the base count at every other count.
+ */
+export type SchemeHeroCountRule =
+  | { readonly kind: 'add'; readonly amount: number; readonly fromPlayerCount: number }
+  | { readonly kind: 'exact'; readonly count: number }
+  | { readonly kind: 'exactAtPlayerCount'; readonly playerCount: number; readonly count: number };
 
-// why: the card prints "Setup: 8 Twists. 6 Heroes. Skrull Villain Group required.
-// Shuffle 12 random Heroes from the Hero Deck into the Villain Deck." A fixed count
-// from the physical card, not a configurable param (mirrors SKRULL_HERO_COUNT = 12
-// in the engine's convertHeroesToSkrulls).
-/** Secret Invasion's printed hero-group count (its "6 Heroes" setup clause). */
-const SECRET_INVASION_HERO_COUNT = 6;
-
-/** The scheme whose printed setup lowers the hero-group count at 2 players. */
-const CIVIL_WAR_SCHEME_ID = 'core/super-hero-civil-war';
-
-// why: the card prints "If only 2 players, use only 4 Heroes in the Hero Deck" —
-// a per-count requirement override (only at exactly 2 players), the sibling to
-// Secret Invasion's flat "6 Heroes". A fixed count from the physical card (WP-576 /
-// D-24385), not a configurable param. The engine's resolveEffectiveHeroDeckIds
-// already slices the BUILT deck to the same 4 at 2p (D-24328); this makes the
-// requirement side agree so the operator must SUPPLY exactly 4.
-/** Super Hero Civil War's printed 2-player hero-group count (its "4 Heroes at 2p" clause). */
-const CIVIL_WAR_2P_HERO_COUNT = 4;
+// why: a scheme's printed Hero Deck size is a REQUIREMENT override (D-24337 /
+// D-24672) — the operator must supply exactly that many Heroes and the base count
+// is rejected. One closed table, so the next printed rule is a data row rather than
+// another `if`. Keyed by scheme ext_id. msis The Time Heist is deliberately absent
+// (its 4 + 4 Past Hero Deck has no MatchSetupConfig home; a named follow-up).
+/**
+ * Every printed Hero Deck count rule, keyed by scheme ext_id (D-24672). The only
+ * reader is `resolveEffectiveHeroCount`.
+ */
+export const SCHEME_HERO_COUNT_RULES: Readonly<Record<string, SchemeHeroCountRule>> = {
+  // why: "6 Heroes" (D-24337). `exact 6` is identical to the former
+  // `Math.max(base, 6)` because the base count never exceeds 6 (1–5p: 3/5/5/5/6).
+  'core/secret-invasion-of-the-skrull-shapeshifters': { kind: 'exact', count: 6 },
+  // "If only 2 players, use only 4 Heroes in the Hero Deck" (D-24385; the engine's
+  // D-24328 build-side slice produces the same 4).
+  'core/super-hero-civil-war': { kind: 'exactAtPlayerCount', playerCount: 2, count: 4 },
+  'msp1/enslave-minds-with-the-chitauri-scepter': { kind: 'exact', count: 6 },
+  'msp1/super-hero-civil-war': { kind: 'exactAtPlayerCount', playerCount: 2, count: 4 },
+  'co2e/super-hero-civil-war': { kind: 'exactAtPlayerCount', playerCount: 2, count: 4 },
+  'co2e/secret-invasion-of-the-skrull-shapeshifters': { kind: 'add', amount: 1, fromPlayerCount: 1 },
+  '2099/subjugate-earth-with-mega-corporations': { kind: 'add', amount: 1, fromPlayerCount: 1 },
+  '2099/befoul-earth-into-a-polluted-wasteland': { kind: 'add', amount: 1, fromPlayerCount: 1 },
+  'cosm/contest-of-champions-the': { kind: 'add', amount: 1, fromPlayerCount: 1 },
+  'cosm/annihilation-conquest': { kind: 'add', amount: 1, fromPlayerCount: 1 },
+  'shld/hydra-helicarriers-hunt-heroes': { kind: 'add', amount: 1, fromPlayerCount: 1 },
+  'wpnx/go-after-heroes-loved-ones': { kind: 'add', amount: 1, fromPlayerCount: 1 },
+  // why: operator ruling 2026-10-08 (D-24672 §3) — "And two extra Heroes" both go
+  // into the Hero Deck, so the requirement is base + 2.
+  'mdns/wager-at-blackjack-for-heroes-souls': { kind: 'add', amount: 2, fromPlayerCount: 1 },
+  'antm/age-of-ultron': { kind: 'add', amount: 1, fromPlayerCount: 4 },
+  'bkwd/frame-heroes-for-murder': { kind: 'exact', count: 6 },
+  'dkcy/detonate-the-helicarrier': { kind: 'exact', count: 6 },
+  'rvlt/house-of-m': { kind: 'exact', count: 6 },
+  'cvwr/avengers-vs-x-men': { kind: 'exact', count: 6 },
+  'chmp/divide-and-conquer': { kind: 'exact', count: 7 },
+  'cvwr/reveal-heroes-secret-identities': { kind: 'exact', count: 7 },
+  'wwhk/break-the-planet-asunder': { kind: 'exact', count: 7 },
+  // why: operator ruling 2026-10-08 (D-24672 §3) — "Use 7 Heroes" is an 84-card
+  // Hero Deck. Its double-the-groups / keep-half Villain Deck clause is deferred to
+  // a separate packet.
+  'mgtg/star-lords-awesome-mix-tape': { kind: 'exact', count: 7 },
+  'ca75/go-back-in-time-to-slay-heroes-ancestors': { kind: 'exact', count: 8 },
+  'dead/deadpool-kills-the-marvel-universe': { kind: 'exactAtPlayerCount', playerCount: 2, count: 4 },
+  'cvwr/epic-super-hero-civil-war': { kind: 'exactAtPlayerCount', playerCount: 1, count: 4 },
+  'cosm/destroy-the-nova-corps': { kind: 'exactAtPlayerCount', playerCount: 1, count: 5 },
+};
 
 /**
- * Returns the effective hero-group count a match must supply, applying any
- * scheme-specific setup override (D-24337 Secret Invasion; D-24385 Civil War).
+ * Returns the effective hero-group count a match must supply, applying the
+ * scheme's printed Hero Deck count rule from `SCHEME_HERO_COUNT_RULES`
+ * (D-24672; D-24337 Secret Invasion and D-24385 Civil War are rows).
  *
- * Two overrides today, both requirement-side (never a build-time downsize):
- * - Secret Invasion of the Skrull Shapeshifters — `Math.max(base, 6)`, its printed
- *   "6 Heroes" clause, flat at every player count (2/3/4p 5→6; 5p already 6;
- *   solo-1p 3→6).
- * - Super Hero Civil War — exactly `4` at 2 players only (its printed "If only 2
- *   players, use only 4 Heroes"); a per-count override, unchanged at 1/3/4/5p.
- *
- * Every other `(scheme, count)` returns the base count unchanged.
+ * - no row → the base count;
+ * - `add` → `base + amount` when `numPlayers >= fromPlayerCount`, else base;
+ * - `exact` → `count` at every player count;
+ * - `exactAtPlayerCount` → `count` when `numPlayers === playerCount`, else base.
  *
  * why: these are REQUIREMENT overrides, not build-time downsizes. Unlike the two
  * engine `schemeSetupSizing` overrides (Legacy Virus wounds, Civil War hero deck)
@@ -113,11 +149,12 @@ const CIVIL_WAR_2P_HERO_COUNT = 4;
  * groups, so it lives on the requirement side (this resolver) and every hero-count
  * enforcement site reaches this one definition: `checkPlayerCountComposition`
  * (below), the game engine's `validatePlayerCountComposition` (via the registry
- * object it reads structurally), and the loadout builder. The base
+ * object it reads structurally), the server setup-requirements projection, the
+ * loadout builder, and the gauntlet per-leg hero count (D-24671). The base
  * `PLAYER_COUNT_SETUP` table is never mutated.
  *
  * @param schemeId - The selected scheme ext_id (`MatchSetupConfig.schemeId`).
- * @param numPlayers - The match player count (used by the per-count Civil War override).
+ * @param numPlayers - The match player count (used by the per-count rules).
  * @param baseHeroCount - The standard `PLAYER_COUNT_SETUP[numPlayers].heroCount`.
  * @returns The hero-group count the match must supply for this scheme.
  */
@@ -126,17 +163,34 @@ export function resolveEffectiveHeroCount(
   numPlayers: number,
   baseHeroCount: number,
 ): number {
-  if (schemeId === SECRET_INVASION_SCHEME_ID) {
-    return Math.max(baseHeroCount, SECRET_INVASION_HERO_COUNT);
+  // why: an own-property lookup, so a prototype key such as `constructor` or
+  // `__proto__` resolves to the base count rather than an inherited member.
+  if (!Object.hasOwn(SCHEME_HERO_COUNT_RULES, schemeId)) {
+    return baseHeroCount;
   }
-  // why: the printed "If only 2 players, use only 4 Heroes in the Hero Deck"
-  // (WP-576) — a per-count requirement override at exactly 2 players, the sibling
-  // to Secret Invasion's flat "6 Heroes". Requires EXACTLY 4 (not a range): a
-  // 5-hero 2p Civil War loadout is now invalid, matching the printed card and the
-  // 4-hero deck the engine already builds (D-24328 slice).
-  if (schemeId === CIVIL_WAR_SCHEME_ID && numPlayers === 2) {
-    return CIVIL_WAR_2P_HERO_COUNT;
+  const rule = SCHEME_HERO_COUNT_RULES[schemeId];
+  if (rule === undefined) {
+    return baseHeroCount;
   }
+  if (rule.kind === 'add') {
+    if (numPlayers >= rule.fromPlayerCount) {
+      return baseHeroCount + rule.amount;
+    }
+    return baseHeroCount;
+  }
+  if (rule.kind === 'exact') {
+    return rule.count;
+  }
+  if (rule.kind === 'exactAtPlayerCount') {
+    if (numPlayers === rule.playerCount) {
+      return rule.count;
+    }
+    return baseHeroCount;
+  }
+  // why: a new rule kind must get an explicit branch above, never a silent base
+  // fallback — adding a fourth `SchemeHeroCountRule` kind fails this assignment at
+  // the registry `tsc` build.
+  const exhaustiveCheck: never = rule;
   return baseHeroCount;
 }
 

@@ -8,6 +8,8 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import {
   PLAYER_COUNT_SETUP,
@@ -16,6 +18,7 @@ import {
   resolveEffectiveHeroCount,
   resolveEffectiveHenchmenCount,
   SCHEMES_WITH_EXTRA_HENCHMAN_GROUP,
+  SCHEME_HERO_COUNT_RULES,
 } from './playerCountSetup.js';
 
 /** The core scheme whose printed setup says "Add an extra Henchman group" (D-24666). */
@@ -251,6 +254,148 @@ describe('resolveEffectiveHenchmenCount (D-24666)', () => {
   it('never mutates the base PLAYER_COUNT_SETUP table', () => {
     resolveEffectiveHenchmenCount(NEGATIVE_ZONE_PRISON_BREAKOUT, 1, PLAYER_COUNT_SETUP[1].henchmenGroupCount);
     assert.equal(PLAYER_COUNT_SETUP[1].henchmenGroupCount, 1);
+  });
+});
+
+/**
+ * The 26 printed Hero Deck count rows (D-24672), in source order, each with its
+ * locked effective hero count at 1..5 players (base 3/5/5/5/6). Written-out
+ * literals — never computed from the rule under test.
+ */
+const EXPECTED_HERO_COUNTS_BY_SCHEME: readonly (readonly [string, readonly number[]])[] = [
+  ['core/secret-invasion-of-the-skrull-shapeshifters', [6, 6, 6, 6, 6]],
+  ['core/super-hero-civil-war', [3, 4, 5, 5, 6]],
+  ['msp1/enslave-minds-with-the-chitauri-scepter', [6, 6, 6, 6, 6]],
+  ['msp1/super-hero-civil-war', [3, 4, 5, 5, 6]],
+  ['co2e/super-hero-civil-war', [3, 4, 5, 5, 6]],
+  ['co2e/secret-invasion-of-the-skrull-shapeshifters', [4, 6, 6, 6, 7]],
+  ['2099/subjugate-earth-with-mega-corporations', [4, 6, 6, 6, 7]],
+  ['2099/befoul-earth-into-a-polluted-wasteland', [4, 6, 6, 6, 7]],
+  ['cosm/contest-of-champions-the', [4, 6, 6, 6, 7]],
+  ['cosm/annihilation-conquest', [4, 6, 6, 6, 7]],
+  ['shld/hydra-helicarriers-hunt-heroes', [4, 6, 6, 6, 7]],
+  ['wpnx/go-after-heroes-loved-ones', [4, 6, 6, 6, 7]],
+  ['mdns/wager-at-blackjack-for-heroes-souls', [5, 7, 7, 7, 8]],
+  ['antm/age-of-ultron', [3, 5, 5, 6, 7]],
+  ['bkwd/frame-heroes-for-murder', [6, 6, 6, 6, 6]],
+  ['dkcy/detonate-the-helicarrier', [6, 6, 6, 6, 6]],
+  ['rvlt/house-of-m', [6, 6, 6, 6, 6]],
+  ['cvwr/avengers-vs-x-men', [6, 6, 6, 6, 6]],
+  ['chmp/divide-and-conquer', [7, 7, 7, 7, 7]],
+  ['cvwr/reveal-heroes-secret-identities', [7, 7, 7, 7, 7]],
+  ['wwhk/break-the-planet-asunder', [7, 7, 7, 7, 7]],
+  ['mgtg/star-lords-awesome-mix-tape', [7, 7, 7, 7, 7]],
+  ['ca75/go-back-in-time-to-slay-heroes-ancestors', [8, 8, 8, 8, 8]],
+  ['dead/deadpool-kills-the-marvel-universe', [3, 4, 5, 5, 6]],
+  ['cvwr/epic-super-hero-civil-war', [4, 5, 5, 5, 6]],
+  ['cosm/destroy-the-nova-corps', [5, 5, 5, 5, 6]],
+];
+
+/**
+ * Returns a scheme's effective hero counts at 1..5 players from the base table.
+ *
+ * @param schemeId - The scheme ext_id to resolve.
+ * @returns The five effective hero counts, 1p first.
+ */
+function effectiveHeroCountsAtEveryPlayerCount(schemeId: string): number[] {
+  const effectiveCounts: number[] = [];
+  for (const playerCount of [1, 2, 3, 4, 5] as const) {
+    effectiveCounts.push(
+      resolveEffectiveHeroCount(schemeId, playerCount, PLAYER_COUNT_SETUP[playerCount].heroCount),
+    );
+  }
+  return effectiveCounts;
+}
+
+describe('SCHEME_HERO_COUNT_RULES (D-24672)', () => {
+  it('holds exactly the 26 printed Hero Deck count rows, in order', () => {
+    // why: D-24372 runtime drift pin — the closed table is a locked value.
+    assert.deepEqual(
+      Object.keys(SCHEME_HERO_COUNT_RULES),
+      EXPECTED_HERO_COUNTS_BY_SCHEME.map((entry) => entry[0]),
+    );
+    assert.equal(Object.keys(SCHEME_HERO_COUNT_RULES).length, 26);
+  });
+
+  it('names only schemes that exist in data/cards', () => {
+    // why: fail-loud against a scheme-id typo — a mistyped key would silently
+    // resolve to the base count and the printed rule would never apply.
+    const cardsDirectory = join(process.cwd(), '..', '..', 'data', 'cards');
+    for (const schemeId of Object.keys(SCHEME_HERO_COUNT_RULES)) {
+      const [setAbbr, schemeSlug] = schemeId.split('/');
+      const setData = JSON.parse(
+        readFileSync(join(cardsDirectory, `${setAbbr}.json`), 'utf8'),
+      ) as { schemes?: { slug: string }[] };
+      const schemeSlugs = (setData.schemes ?? []).map((scheme) => scheme.slug);
+      assert.ok(
+        schemeSlugs.includes(schemeSlug ?? ''),
+        `SCHEME_HERO_COUNT_RULES names "${schemeId}", which is not a scheme in data/cards/${setAbbr}.json (typo?).`,
+      );
+    }
+  });
+});
+
+describe('resolveEffectiveHeroCount — printed Hero Deck count rows (D-24672)', () => {
+  it('returns each row\'s locked effective count at 1–5 players', () => {
+    for (const [schemeId, expectedCounts] of EXPECTED_HERO_COUNTS_BY_SCHEME) {
+      assert.deepEqual(
+        effectiveHeroCountsAtEveryPlayerCount(schemeId),
+        expectedCounts,
+        `wrong effective hero counts for ${schemeId}`,
+      );
+    }
+  });
+
+  it('returns the base count for an unlisted scheme and for an empty id', () => {
+    assert.deepEqual(effectiveHeroCountsAtEveryPlayerCount('core/midtown-bank-robbery'), [3, 5, 5, 5, 6]);
+    assert.deepEqual(effectiveHeroCountsAtEveryPlayerCount(''), [3, 5, 5, 5, 6]);
+  });
+
+  it('keeps msis The Time Heist at the base count (deliberately not a row)', () => {
+    assert.deepEqual(effectiveHeroCountsAtEveryPlayerCount('msis/the-time-heist'), [3, 5, 5, 5, 6]);
+  });
+
+  it('resolves prototype keys such as constructor and __proto__ to the base count', () => {
+    // why: guards the own-property lookup — an inherited Object.prototype member
+    // must never be read as a rule.
+    assert.deepEqual(effectiveHeroCountsAtEveryPlayerCount('constructor'), [3, 5, 5, 5, 6]);
+    assert.deepEqual(effectiveHeroCountsAtEveryPlayerCount('__proto__'), [3, 5, 5, 5, 6]);
+    assert.deepEqual(effectiveHeroCountsAtEveryPlayerCount('toString'), [3, 5, 5, 5, 6]);
+  });
+});
+
+describe('checkPlayerCountComposition — printed Hero Deck counts (D-24672)', () => {
+  /**
+   * Builds a composition input with the given scheme, player count and hero count.
+   */
+  function heroInput(schemeId: string, playerCount: number, heroCount: number) {
+    const heroDeckIds: string[] = [];
+    for (let index = 0; index < heroCount; index += 1) {
+      heroDeckIds.push(`hero${index}`);
+    }
+    const villainGroupIds: string[] = [];
+    const villainGroupCount = getPlayerCountSetup(playerCount)?.villainGroupCount ?? 0;
+    for (let index = 0; index < villainGroupCount; index += 1) {
+      villainGroupIds.push(`v${index}`);
+    }
+    return { playerCount, schemeId, villainGroupIds, henchmanGroupIds: ['h'], heroDeckIds };
+  }
+
+  it('reports one heroDeckIds mismatch (required 6) for a 2p Annihilation: Conquest loadout with 5 heroes', () => {
+    assert.deepEqual(checkPlayerCountComposition(heroInput('cosm/annihilation-conquest', 2, 5)), [
+      { field: 'heroDeckIds', label: 'heroes', required: 6, actual: 5 },
+    ]);
+  });
+
+  it('passes a 2p Annihilation: Conquest loadout with 6 heroes', () => {
+    assert.deepEqual(checkPlayerCountComposition(heroInput('cosm/annihilation-conquest', 2, 6)), []);
+  });
+
+  it('reports one heroDeckIds mismatch (required 8) for a 1p Go Back in Time loadout with 3 heroes', () => {
+    assert.deepEqual(
+      checkPlayerCountComposition(heroInput('ca75/go-back-in-time-to-slay-heroes-ancestors', 1, 3)),
+      [{ field: 'heroDeckIds', label: 'heroes', required: 8, actual: 3 }],
+    );
   });
 });
 
