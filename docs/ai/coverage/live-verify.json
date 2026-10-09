@@ -75,9 +75,9 @@
       "ability": "Diving Block",
       "wp": "WP-682",
       "state": "verified",
-      "date": "2026-10-08",
-      "evidence": "solo Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil), match EMXM2s3Ucsh (build afa55d3): twist 6 (1 Wound, 20.1.3) and twist 7 (3 Wounds, 24.1.3) each offered the reveal; revealing returned the Wound and drew a card. The Wound pile went 30 → 27 and the player ended with 3 Wounds = twist 5's 1 + twist 7's 2, so both reveals took. solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf): no Diving Block was in hand at twists 5–8, so the D-24673 multi-reveal is still unexercised.",
-      "note": "Twist 7 stopped 1 of 3 Wounds under the old one-reveal-per-copy cap. Jeff ruled (D-24673, #2646) that one copy can stop every Wound; after deploy, re-verify three reveal prompts at a 3-Wound twist."
+      "date": "2026-10-09",
+      "evidence": "solo Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil), match EMXM2s3Ucsh (build afa55d3): twist 6 (1 Wound, 20.1.3) and twist 7 (3 Wounds, 24.1.3) each offered the reveal; revealing returned the Wound and drew a card. The Wound pile went 30 → 27 and the player ended with 3 Wounds = twist 5's 1 + twist 7's 2, so both reveals took. solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf): no Diving Block was in hand at twists 5–8, so the D-24673 multi-reveal is still unexercised. D-24673 multi-reveal seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — twist 7 logged \"would gain 3 wound(s) — Diving Block can prevent each one\" (24.1.1) and one Diving Block was revealed three times, each preventing a Wound and drawing a card (24.1.3–24.1.5); twist 6 likewise (\"can prevent it\", 20.1.3).",
+      "note": ""
     },
     {
       "key": "core/captain-america|recruit-per-count",
@@ -1064,10 +1064,10 @@
       "card": "Loki",
       "ability": "Tactic: Cruel Ruler",
       "wp": "WP-693",
-      "state": "partial",
-      "date": "2026-10-05",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 15.2.15 with Hand Ninjas the only City Villain; a Hand Ninjas defeat follows at 15.2.18.",
-      "note": "The one-target auto free defeat carries no Cruel Ruler log line, so free vs. paid is not distinguishable from the log; ≥2-target prompt unexercised."
+      "state": "verified",
+      "date": "2026-10-09",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 15.2.15 with Hand Ninjas the only City Villain; a Hand Ninjas defeat follows at 15.2.18. ≥2-target branch: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — with two Sentinels in the City, Cruel Ruler prompted \"choose a Villain in the City to defeat for free\" (22.2.24) and the chosen Sentinel was defeated (22.2.25); the tactic also freed Loki's 6 captured Bystanders (22.2.23).",
+      "note": ""
     },
     {
       "key": "mastermind:core/loki|maniacal-tyrant",
@@ -1098,9 +1098,9 @@
       "ability": "Tactic: Whispers and Lies",
       "wp": "WP-691",
       "state": "partial",
-      "date": "2026-10-05",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 14.2.14; solo no-op, logged nothing.",
-      "note": "Multi-seat bystander KO unexercised; solo should log a no-op line."
+      "date": "2026-10-09",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 14.2.14; solo no-op, logged nothing. Solo no-op line seen: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — \"there is no other player to KO Bystanders from\" (24.2.17).",
+      "note": "Multi-seat Bystander KO unexercised (needs a 2-player game)."
     },
     {
       "key": "mastermind:core/dr-doom|master-strike",
@@ -1274,8 +1274,8 @@
       "ability": "Escalating twist Wounds",
       "wp": "WP-540",
       "state": "verified",
-      "date": "2026-10-08",
-      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): twists 1–4 dealt no Wounds; twist 5 and 6 one Wound to each player; twist 7 three Wounds to each player (22.1, 29.1, 32.1). Earlier: solo match aK-n8zNOteC twists 1–5. Twist 8 Evil Wins seen live: solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf) — twists 5–8 dealt 1, 1, 3 and 3 Wounds (26.1.1, 28.1.1, 30.1.1, 32.1.1), and twist 8 ended the game as scheme-wins (32.1.3).",
+      "date": "2026-10-09",
+      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): twists 1–4 dealt no Wounds; twist 5 and 6 one Wound to each player; twist 7 three Wounds to each player (22.1, 29.1, 32.1). Earlier: solo match aK-n8zNOteC twists 1–5. Twist 8 Evil Wins seen live: solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf) — twists 5–8 dealt 1, 1, 3 and 3 Wounds (26.1.1, 28.1.1, 30.1.1, 32.1.1), and twist 8 ended the game as scheme-wins (32.1.3). D-24673 twist line seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — \"would gain N wound(s) — Diving Block can prevent…\" when Diving Block was revealable (20.1.1, 24.1.1) and plain \"gained N wound(s)\" when it was not (19.1.1, 26.1.1).",
       "note": ""
     },
     {
