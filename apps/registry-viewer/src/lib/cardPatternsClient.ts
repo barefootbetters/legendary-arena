@@ -35,6 +35,7 @@ import {
   type CardPattern,
 } from "@legendary-arena/registry/schema";
 import { devLog } from "./devLog";
+import { fetchMetadata } from "./fetchMetadata";
 
 export type PatternTaxonomyKey = "hero" | "villain" | "henchman" | "mastermind";
 
@@ -137,7 +138,7 @@ async function loadPatternsFile(
 ): Promise<CardPattern[]> {
   const url = `${metadataBaseUrl}/metadata/${taxonomy}-patterns.json`;
   try {
-    const response = await fetch(url);
+    const response = await fetchMetadata(url);
     if (!response.ok) {
       devLog("cardPatterns", "patterns load failed", {
         taxonomy,
@@ -198,7 +199,7 @@ async function loadAssignmentsFile(
   const url = `${metadataBaseUrl}/metadata/${taxonomy}-pattern-assignments.json`;
   const schema = ASSIGNMENT_SCHEMA_BY_TYPE[taxonomy];
   try {
-    const response = await fetch(url);
+    const response = await fetchMetadata(url);
     if (!response.ok) {
       devLog("cardPatterns", "assignments load failed", {
         taxonomy,

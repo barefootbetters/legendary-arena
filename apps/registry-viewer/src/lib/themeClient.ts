@@ -18,6 +18,7 @@ import {
   type ThemeDefinition,
 } from "@legendary-arena/registry/theme.schema";
 import { devLog } from "./devLog";
+import { fetchMetadata } from "./fetchMetadata";
 
 // why: re-export so existing consumers (App.vue, ThemeGrid.vue, ThemeDetail.vue)
 // continue to `import type { ThemeDefinition } from "./themeClient"` without
@@ -40,7 +41,7 @@ export function getThemes(metadataBaseUrl: string): Promise<ThemeDefinition[]> {
     devLog("theme", "load start", { baseUrl: metadataBaseUrl });
     try {
       const indexUrl = `${metadataBaseUrl}/themes/index.json`;
-      const indexResponse = await fetch(indexUrl);
+      const indexResponse = await fetchMetadata(indexUrl);
       if (!indexResponse.ok) {
         throw new Error(
           `Cannot load themes/index.json: HTTP ${indexResponse.status}. ` +
@@ -66,7 +67,7 @@ export function getThemes(metadataBaseUrl: string): Promise<ThemeDefinition[]> {
       const fetchResults = await Promise.allSettled(
         filenames.map(async (filename) => {
           const themeUrl = `${metadataBaseUrl}/themes/${filename}`;
-          const themeResponse = await fetch(themeUrl);
+          const themeResponse = await fetchMetadata(themeUrl);
           if (!themeResponse.ok) {
             console.warn(`[Themes] Failed to load ${filename}: HTTP ${themeResponse.status}`);
             return null;

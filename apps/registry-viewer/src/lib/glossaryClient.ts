@@ -32,6 +32,7 @@ import {
 } from "@legendary-arena/registry/schema";
 import type { RuleEntry } from "../composables/useRules";
 import { devLog } from "./devLog";
+import { fetchMetadata } from "./fetchMetadata";
 
 // ── Types (viewer-local) ────────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ function loadKeywordBundle(metadataBaseUrl: string): Promise<KeywordBundle> {
     const startedAt = performance.now();
     devLog("glossary", "load start", { baseUrl: metadataBaseUrl, resource: "keywords" });
     try {
-      const response = await fetch(url);
+      const response = await fetchMetadata(url);
       if (!response.ok) {
         throw new Error(
           `Cannot load metadata/keywords-full.json: HTTP ${response.status}. ` +
@@ -156,7 +157,7 @@ export function getRuleGlossary(metadataBaseUrl: string): Promise<RuleGlossary> 
     const startedAt = performance.now();
     devLog("glossary", "load start", { baseUrl: metadataBaseUrl, resource: "rules" });
     try {
-      const response = await fetch(url);
+      const response = await fetchMetadata(url);
       if (!response.ok) {
         throw new Error(
           `Cannot load metadata/rules-full.json: HTTP ${response.status}. ` +

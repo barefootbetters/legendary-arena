@@ -13,6 +13,7 @@ import {
   type ViewerConfig,
 } from "@legendary-arena/registry/schema";
 import { devLog } from "./devLog";
+import { fetchMetadata } from "./fetchMetadata";
 
 let _promise: Promise<CardRegistry> | null = null;
 
@@ -23,7 +24,7 @@ export function getRegistry(): Promise<CardRegistry> {
     const url = "/registry-config.json";
     let baseUrl = "";
     try {
-      const res = await fetch(url);
+      const res = await fetchMetadata(url);
       if (!res.ok) throw new Error(`Cannot load registry-config.json: ${res.status}`);
       const rawPayload = await res.json();
       const parseResult = ViewerConfigSchema.safeParse(rawPayload);
