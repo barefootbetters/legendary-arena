@@ -89,6 +89,8 @@
     "gauntlet:configs":         "node scripts/generate-gauntlet-configs.mjs",
     "gauntlet:configs:check":   "node scripts/generate-gauntlet-configs.mjs --check",
 
+    "metadata:upload":      "node scripts/upload-metadata-to-r2.mjs",
+    "metadata:upload:test": "node --import tsx --test scripts/upload-metadata-to-r2.test.ts",
     "themes:check-slugs":   "node scripts/check-theme-slug-resolution.mjs",
     "themes:check-slugs:check": "node scripts/check-theme-slug-resolution.mjs --check"
   },
