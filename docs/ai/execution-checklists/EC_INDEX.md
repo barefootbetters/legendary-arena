@@ -967,6 +967,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC-834 | WP-797    | card-data pipeline + Registry + registry-viewer + gauntlet tooling (`leads.json` `henchmen` honoured by both converters + outlier lead reset; `alwaysLeadsHenchmen` / Henchman `ledBy`; registry + viewer schema; builder Henchman lock; generator Henchman anchors + lead-type guard; optional exactly-one gauntlet anchor; Dr. Doom re-anchor + seed PAR v1 regen) | **WP-797 — Always Leads fidelity.** D-24667 reserved. 9 Henchman leads + 11 Villain-lead corrections; two mandated test edits. | Done |
 | EC-835 | WP-798    | Server + arena-client + blog tooling (per-leg `heroCount` from `resolveEffectiveHeroCount` injected by `server.mjs`; `buildGauntletCatalog` optional 5th arg + `max(base, largest leg) + 2` budget; `GauntletRunLegProgress.heroCount`; profile hint; `gauntlet-post-block.mjs` budget table) | **WP-798 — gauntlet per-leg hero count.** D-24671 Active. | Done |
 | EC-836 | WP-799    | Registry (`SchemeHeroCountRule` + 26-row `SCHEME_HERO_COUNT_RULES` read by `resolveEffectiveHeroCount`; one server and one viewer test; API catalog row) | **WP-799 — scheme hero-count table.** D-24672 Active. | Done |
+| EC-837 | WP-800    | Registry (one `exact 4` `SCHEME_HERO_COUNT_RULES` row for msis The Time Heist; mandated WP-799 drift-pin edits + four composition cases; API catalog row) | **WP-800 — The Time Heist hero count.** D-24675 reserved. | Draft |
 ---
 
 ## Rules
