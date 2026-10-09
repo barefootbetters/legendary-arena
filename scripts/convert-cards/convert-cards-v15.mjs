@@ -1854,9 +1854,8 @@ if (auditWarnings.length > 0) {
 console.log('');
 console.log('📤 Next step — sync to R2 (production-canonical path):');
 console.log('');
-console.log('  do not use rclone sync as it deletes all files in the directory and then uploads ');
-console.log('  rclone copy C:\\pcloud\\BB\\DEV\\legendary-arena\\data\\cards r2:legendary-images/metadata --progress');
-console.log('  rclone copy C:\\pcloud\\BB\\DEV\\legendary-arena\\data\\metadata r2:legendary-images/metadata --progress');
+console.log('  commit the regenerated data, then from an up-to-date main run:');
+console.log('  pnpm metadata:upload            (--dry-run to preview; never rclone sync)');
 console.log('');
 console.log('   (Run apply-card-counts.mjs first if you edited cardCounts for 2099, amwp, wpnx, or wtif.)');
 console.log('   (Run node scripts/convert-cards/apply-card-counts.mjs)');

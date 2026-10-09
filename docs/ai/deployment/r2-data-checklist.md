@@ -397,8 +397,7 @@ config files. Either direction silently destroys half of production.
 
 | Goal | Command | Why safe |
 |---|---|---|
-| Push new/changed config or taxonomy files | `rclone copy ./data/metadata legendary-r2:legendary-images/metadata` | `copy` is additive — uploads new/changed files, never deletes |
-| Push new/changed per-set card data | `rclone copy ./data/cards legendary-r2:legendary-images/metadata` | same — additive |
+| Push new/changed config, taxonomy, or per-set card data | `pnpm metadata:upload` (`scripts/upload-metadata-to-r2.mjs`, D-24674) | `rclone copy` of BOTH folders — additive, never deletes; publishes the committed LF bytes (not a CRLF working tree) and sets `Cache-Control: public, max-age=300, must-revalidate` so browsers pick up a fix within 5 minutes. `--dry-run` previews; `--backfill` re-stamps every object |
 | Push a single file | `rclone copyto ./data/metadata/sets.json legendary-r2:legendary-images/metadata/sets.json` | one object, no directory diff (this is the §A.7 new-set pattern) |
 | Audit drift without mutating | `rclone check legendary-r2:legendary-images/metadata/ ./data/metadata/` | read-only (§A.6) |
 

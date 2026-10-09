@@ -46929,4 +46929,23 @@ Against the old source, 4 cases fail.
 
 ---
 
+### D-24674 — Cards-site metadata is published by one script, from committed bytes, with a 5-minute Cache-Control (direct fix, no WP) (Active 2026-10-08)
+
+**Context.** After WP-797 (#2639) re-uploaded `core.json` with Dr. Doom's corrected Always Leads, Jeff's loadout builder still locked Masters of Evil to Dr. Doom and added no Henchman group. A clean browser showed the fix, so Jeff's browser was holding an old copy. The `/metadata/*.json` objects carried **no** `Cache-Control`, so each browser picked its own heuristic freshness. Two more problems turned up while fixing it:
+- **Line endings.** Uploads were bare `rclone copy` runs from a Windows working tree, so 7 objects on R2 (`sets.json`, `card-abilities.json`, `keywords-full.json`, `rules-full.json`, `card-types.json`, `villain-pattern-assignments.json`, `co2e.json`) were CRLF copies of the committed LF files. The content was the same.
+- **Stale files.** `card-mechanics.json` and `effect-implementation-index.json` on R2 dated from 2026-09-10, while `main` last changed them on 2026-10-06. Merged data had never been republished.
+
+**Decision.**
+1. New `scripts/upload-metadata-to-r2.mjs` (`pnpm metadata:upload`) is the one way to publish the cards-site metadata. It stages the **committed** `data/metadata` and `data/cards` JSON at a git ref (default `HEAD`) with `git show`, byte-for-byte, so a CRLF working tree or uncommitted edits never reach production.
+2. It runs `rclone copy` (never `sync`, per r2-data-checklist §A.8) into `r2:legendary-images/metadata` with `--header-upload "Cache-Control: public, max-age=300, must-revalidate"`, the same recipe as `upload-move-sfx-to-r2.mjs`. A data fix reaches every browser within 5 minutes, and revalidation is a cheap 304.
+3. Plain runs compare MD5 checksums (`--checksum`) and upload only changed content. `--backfill` adds `--ignore-times` to re-stamp every object; `--dry-run` previews. Afterwards the script reads `core.json` back from the public URL and fails if the header is missing.
+4. Docs now point at the script: `03-DATA-PIPELINE.md` §3, `08-DEPLOYMENT.md`, r2-data-checklist §A.8, and the `convert-cards-v15.mjs` next-step printout. `pnpm metadata:upload:test` pins the argument builder and runs in CI next to the count-marker suite.
+5. **One-time backfill** (run with this change): every metadata object was re-uploaded from `main` with the header. This normalized the 7 CRLF objects to LF (no content change) and published the 2 stale feeds as they stand on `main`.
+
+**Gates.** `pnpm metadata:upload:test` 3 / 0. A dry run against R2 listed the 9 differing objects; a line-ending-insensitive comparison confirmed 7 are CRLF-only and 2 are genuinely stale.
+
+**Reserved by:** NUMBER-LEDGER D-24674. Related: D-24667 / WP-797 (the Always Leads data change that exposed it), D-24219 (the SFX uploader's Cache-Control recipe), r2-data-checklist §A.8 (never `sync`).
+
+---
+
 Protect this file.

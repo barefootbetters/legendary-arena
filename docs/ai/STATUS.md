@@ -7,6 +7,12 @@
 
 ## Current State
 
+### D-24674 — Card-data fixes reach browsers within 5 minutes (direct fix) (2026-10-08)
+
+**User-visible on `cards.legendary-arena.com`.** The card and taxonomy files the viewer and loadout builder load now carry `Cache-Control: public, max-age=300, must-revalidate`. A data fix (such as WP-797's Dr. Doom → Doombot Legion lead) shows up within 5 minutes; a returning visitor no longer needs a hard reload. The backfill also published two feeds that had been stale since 2026-09-10 (`card-mechanics.json`, `effect-implementation-index.json`).
+
+- **Operator:** publish metadata with `pnpm metadata:upload` from an up-to-date `main` (`--dry-run` previews). Never hand-run `rclone copy` from a Windows working tree: it uploads CRLF copies.
+
 ### WP-798 — Gauntlet legs ask for their scheme's hero count; the pool budget fits the largest leg (EC-835 / D-24671) (2026-10-08)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** In profile → Gauntlet Runs, each leg now asks for its
