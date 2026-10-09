@@ -7,6 +7,28 @@
 
 ## Current State
 
+### WP-799 — Printed Hero Deck counts from one scheme hero-count table (EC-836 / D-24672) (2026-10-08)
+
+**User-visible on `cards.legendary-arena.com` and `play.legendary-arena.com` (after deploy).** Twenty-four more
+schemes now require their printed Hero Deck size, on top of core Secret Invasion and core Civil War. A 2-player
+Annihilation: Conquest loadout needs 6 heroes (the builder blocks export with 5, and the lobby warns); Go Back in Time
+to Slay Heroes' Ancestors needs 8 at every player count; Star-Lord's Awesome Mix Tape needs 7. The msp1 / co2e Civil
+War and msp1 Chitauri Scepter reprints now match their core originals. Every other scheme is unchanged. Gauntlet legs
+on these schemes ask for the printed count, and 16 sets' fixed-division hero-pool budgets rise (e.g. ca75 10, cosm
+7/8/8/8/9).
+
+- **Counts.** registry 281 → 290; registry-viewer 326 → 327; server 1677 → 1678 (1471 → 1472 pass); every other
+  package unchanged; 0 failures; scripts 105 / 105; viewer typecheck 0; replay fixtures byte-identical. Revert proofs
+  3/3. AC8 budget table matches the 16-set list exactly.
+- **Ranked.** Production has 0 `team_key` heroes-win replays on the 16 affected gauntlets, so nothing is newly
+  qualified (D-24672 §5).
+- **Named follow-ups:** extra Heroes kept outside the Hero Deck; which-Hero constraints; Star-Lord's group doubling;
+  The Time Heist's Past Hero Deck; the six themes that now prefill one Hero short.
+- **Live-verify (D-24026): pending (operator, after BOTH the Render and Pages deploys).** Builder shows "6 heroes" for a
+  2p Annihilation: Conquest loadout and blocks export with 5; the lobby warns after a hard refresh (the
+  setup-requirements response is cached for an hour); a 6-hero match plays; an affected gauntlet leg asks for and
+  launches with the printed count; a ca75 run shows "Hero pool: N / 10 budget". Record the matchId here.
+
 ### WP-798 — Gauntlet legs ask for their scheme's hero count; the pool budget fits the largest leg (EC-835 / D-24671) (2026-10-08)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** In profile → Gauntlet Runs, each leg now asks for its
