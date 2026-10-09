@@ -7,6 +7,22 @@
 
 ## Current State
 
+### WP-800 — The Time Heist needs exactly 4 Heroes (EC-837 / D-24675) (2026-10-09)
+
+**User-visible on `cards.legendary-arena.com` and `play.legendary-arena.com` (after deploy).** msis The Time Heist
+now requires its printed main Hero Deck — exactly 4 heroes at 1–5 players (was 3 / 5 / 5 / 5 / 6). The loadout
+builder blocks export with any other count, and the lobby warns. The Past (alternate city, Past HQ, Past Hero Deck)
+is still not implemented; it is a named full-fidelity arc. The msis gauntlet's Time Heist leg asks for 4, and the
+msis fixed-division budget becomes 6 / 7 / 7 / 7 / 8 (1-player 5 → 6). Every other scheme is unchanged.
+
+- **Counts.** registry 290 → 293 (suites 43 → 43); every other package unchanged; 0 failures; viewer typecheck 0;
+  replay fixtures byte-identical. Revert proof 1/1 (6 / 293 fail with the row removed).
+- **Ranked.** Production has 0 msis heroes-win replays and 0 Time Heist scores, so nothing is newly qualified
+  (D-24675 §4).
+- **Live-verify (D-24026): pending (operator, after BOTH the Render and Pages deploys).** Builder shows "4 heroes"
+  for a 2p Time Heist loadout and blocks export with 5; the lobby warns after a hard refresh; a 4-hero Time Heist
+  match plays (matchId: pending); the msis Time Heist leg asks for 4.
+
 ### D-24677 — No "final turn" message after the game has already ended (direct fix) (2026-10-08)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** When the last Villain Deck card itself ends the game (Cosmic Cube's Scheme Twist 8), the log no longer follows "Scheme loss triggered" with "this is the final turn… or the game ends in a tie". Reported in solo match `C2LVapHVpCt`.
