@@ -236,8 +236,9 @@ Fix all errors before proceeding. Warnings are informational.
 ### 3. Upload to R2
 
 ```pwsh
-# Upload card JSON
-rclone copy data/cards/ r2:legendary-images/metadata/ --include "*.json"
+# Upload card JSON + taxonomy (data/cards + data/metadata, committed bytes,
+# Cache-Control: public, max-age=300, must-revalidate) — commit first, run from main
+pnpm metadata:upload            # add --dry-run to preview; --backfill to re-stamp every object
 
 # Upload images (if new or changed)
 rclone copy <image-source> r2:legendary-images/{abbr}/

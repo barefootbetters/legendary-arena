@@ -106,7 +106,7 @@ Fix the data issues first.
 When new card sets are added or existing data is corrected:
 
 1. Run `convert-cards-v15.mjs` to generate updated JSON
-2. Upload JSON to R2: `rclone copy data/cards/ r2:legendary-images/metadata/`
+2. Commit the data, then upload JSON to R2 from `main`: `pnpm metadata:upload` (publishes the committed `data/cards` + `data/metadata` bytes with a 5-minute `Cache-Control`; `--dry-run` previews)
 3. Upload images to R2: `rclone copy <image-source> r2:legendary-images/{abbr}/`
 4. Run `pnpm validate` to verify the upload
 5. Commit any local data changes with `INFRA:` or `SPEC:` prefix
