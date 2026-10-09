@@ -1,5 +1,6 @@
 import { SetDataSchema } from "../schema.js";
 import { flattenSet, applyQuery, buildHealthReport } from "../shared.js";
+import { fetchMetadata } from "../../lib/fetchMetadata.js";
 // why: use types-index.ts (the live/wide type source) per EC-102
 // consolidation. See browser.ts comment.
 import type {
@@ -14,7 +15,7 @@ export async function createRegistryFromHttp(
   const errors: Array<{ setAbbr?: string; code: string; message: string }> = [];
 
   // ── 1. Load set index — accept any object, extract what we need ─────────────
-  const indexRes = await fetch(`${base}/metadata/sets.json`);
+  const indexRes = await fetchMetadata(`${base}/metadata/sets.json`);
   if (!indexRes.ok) {
     throw new Error(`Failed to fetch sets.json: ${indexRes.status} ${indexRes.statusText}`);
   }
@@ -92,7 +93,7 @@ export async function createRegistryFromHttp(
 }
 
 async function fetchSet(base: string, abbr: string): Promise<SetData | null> {
-  const res = await fetch(`${base}/metadata/${abbr}.json`);
+  const res = await fetchMetadata(`${base}/metadata/${abbr}.json`);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   const raw: unknown = await res.json();
   const result = SetDataSchema.safeParse(raw);

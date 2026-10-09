@@ -34,6 +34,7 @@ import {
   type CardTypeEntry,
 } from "@legendary-arena/registry/schema";
 import { devLog } from "./devLog";
+import { fetchMetadata } from "./fetchMetadata";
 
 // ── Singleton loader ────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ export function getCardTypes(metadataBaseUrl: string): Promise<CardTypeEntry[]> 
     const startedAt = performance.now();
     devLog("cardTypes", "load start", { baseUrl: metadataBaseUrl });
     try {
-      const response = await fetch(url);
+      const response = await fetchMetadata(url);
       if (!response.ok) {
         devLog("cardTypes", "load failed", {
           baseUrl:    metadataBaseUrl,

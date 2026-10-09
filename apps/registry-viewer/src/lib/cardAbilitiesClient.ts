@@ -43,6 +43,7 @@ import {
 } from "@legendary-arena/registry/schema";
 import type { FlatCard } from "../registry/types/types-index";
 import { devLog } from "./devLog";
+import { fetchMetadata } from "./fetchMetadata";
 
 // ── Singleton loader ────────────────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ export function getCardAbilities(metadataBaseUrl: string): Promise<CardAbilityEn
     const startedAt = performance.now();
     devLog("cardAbilities", "load start", { baseUrl: metadataBaseUrl });
     try {
-      const response = await fetch(url);
+      const response = await fetchMetadata(url);
       if (!response.ok) {
         devLog("cardAbilities", "load failed", {
           baseUrl:    metadataBaseUrl,
