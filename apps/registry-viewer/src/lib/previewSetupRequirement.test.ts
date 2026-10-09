@@ -56,6 +56,20 @@ describe("resolveSetupRequirement", () => {
     assert.equal(resolveSetupRequirement(makePreviewDocument("core/midtown-bank-robbery", 5))?.row.heroCount, 6);
   });
 
+  it("requires 8 heroes for Go Back in Time to Slay Heroes' Ancestors at every player count (D-24672)", () => {
+    // why: the scheme prints "8 Heroes in Hero deck", an `exact 8` row in
+    // SCHEME_HERO_COUNT_RULES, so the preview requires 8 at 1–5 players.
+    const heroCounts: number[] = [];
+    for (const playerCount of [1, 2, 3, 4, 5]) {
+      const requirement = resolveSetupRequirement(
+        makePreviewDocument("ca75/go-back-in-time-to-slay-heroes-ancestors", playerCount),
+      );
+      assert.ok(requirement, `expected a requirement for ${playerCount} players`);
+      heroCounts.push(requirement.row.heroCount);
+    }
+    assert.deepEqual(heroCounts, [8, 8, 8, 8, 8]);
+  });
+
   it("leaves the non-hero required counts as the base table values", () => {
     // why: only heroCount is scheme-conditioned; villain/henchmen/bystander
     // counts come straight from PLAYER_COUNT_SETUP.

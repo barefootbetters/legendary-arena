@@ -236,6 +236,29 @@ describe('matchGate.routes (WP-307)', () => {
     assert.deepEqual(heroCounts, [3, 5, 5, 5, 6]);
   });
 
+  test('GET /api/match/setup-requirements?schemeId=<Annihilation: Conquest> projects heroCount base + 1 (WP-799 / D-24672)', async () => {
+    // why: the scheme prints "Add an extra Hero", a SCHEME_HERO_COUNT_RULES row, so
+    // the lobby must ask for 4/6/6/6/7 heroes — agreeing with the engine and the
+    // loadout builder. The Henchman count stays the base table's.
+    const handlers = collectRoutes(unauthenticatedDeps);
+    const koaContext = makeContext(undefined, { schemeId: 'cosm/annihilation-conquest' });
+
+    await handlers.get('/api/match/setup-requirements')!(koaContext);
+
+    assert.equal(koaContext.status, 200);
+    const body = koaContext.body as {
+      requirements: Record<string, { henchmenGroupCount: number; heroCount: number }>;
+    };
+    const henchmenCounts: number[] = [];
+    const heroCounts: number[] = [];
+    for (const playerCount of ['1', '2', '3', '4', '5']) {
+      henchmenCounts.push(body.requirements[playerCount]!.henchmenGroupCount);
+      heroCounts.push(body.requirements[playerCount]!.heroCount);
+    }
+    assert.deepEqual(heroCounts, [4, 6, 6, 6, 7]);
+    assert.deepEqual(henchmenCounts, [1, 1, 1, 2, 2]);
+  });
+
   test('GET /api/match/setup-requirements without a schemeId (or for Midtown) keeps the base henchmenGroupCount', async () => {
     const handlers = collectRoutes(unauthenticatedDeps);
     for (const query of [undefined, { schemeId: 'core/midtown-bank-robbery' }]) {
