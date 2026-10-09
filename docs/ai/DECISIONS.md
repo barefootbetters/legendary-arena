@@ -46969,6 +46969,28 @@ Against the old source, 4 cases fail.
 
 ---
 
+### D-24675 — The Time Heist's main Hero Deck is exactly 4 Heroes: a 27th SCHEME_HERO_COUNT_RULES row (amends D-24672 §1 / §4; WP-800 / EC-837) (Active 2026-10-09)
+
+**Context.** msis The Time Heist prints "Use 4 Heroes in the Hero Deck, plus 4 other Heroes to make a 'Past Hero Deck.'" WP-799 left it out of `SCHEME_HERO_COUNT_RULES` (D-24672 §4), because the 4 Past Heroes have no `MatchSetupConfig` home except `heroDeckIds`. The engine implements none of The Past (alternate city, Past HQ, Past Hero Deck, odd-Twist timeline swap), so the requirement stayed at the base count (3 / 5 / 5 / 5 / 6), which matched neither printed number.
+
+**Decision.**
+
+1. **The Time Heist's main Hero Deck is exactly 4 Heroes** at every player count — an `exact 4` row appended as the 27th and last entry of `SCHEME_HERO_COUNT_RULES` (`packages/registry/src/playerCountSetup.ts`). Strict, like every other row: any other count is rejected. No new rule kind, no resolver change, no consumer change; every enforcement surface (composition check, engine `validatePlayerCountComposition`, setup-requirements projection, loadout builder and preview, gauntlet per-leg picks) follows through the resolver.
+2. **Amends D-24672 §1 and §4.** The table now holds every printed Hero Deck count rule (Heroes kept outside the Hero Deck remain out of scope). The Time Heist deferral is resolved for the main deck: 4, not 8 (operator ruling, Jeff, 2026-10-08). Of the three options weighed — count only (4), full fidelity (8 with The Past), 8 now with 4 inert Past Heroes — count only was chosen.
+3. **The Past is a named full-fidelity arc:** the alternate city, Past HQ, Past Hero Deck and odd-Twist timeline swap. When it lands it moves the requirement to 8 and decides where the 4 Past Heroes live (the 9-field `MatchSetupConfig` lock stays). Saved 4-hero loadouts are flagged on load then, not rewritten.
+4. **Gauntlet.** The msis fixed-division budget (D-24671, `max(base, largest leg) + 2`) becomes 6 / 7 / 7 / 7 / 8 (1-player 5 → 6; never lower; every other set unchanged). Existing Time Heist scores that used another count remain valid leg clears (`qualifiesAsLegClear` has no team-size check); nothing is re-scored. **Observed at execution (read-only production query, `transaction_read_only = on`, 2026-10-09):** 0 heroes-win replays (deduplicated by `replay_hash`) whose scheme and mastermind `scenario_key` segments are both `msis/…`, at any player count, so 0 carrying a `team_key`; and 0 `competitive_scores` rows of any outcome on The Time Heist. Nothing is newly qualified today.
+5. **No migration.** Matches in progress keep their setup; no theme names the scheme. Saved loadouts and in-progress gauntlet runs whose Time Heist leg holds any count other than 4 are flagged on read (builder warning; `hasFullPicks` false, so "Play this leg" waits for a re-pick), never rewritten; `leg_picks` saves stay structural (D-24671 §4).
+
+**Tests changed (authorized behavior change).** WP-799 pinned "26 rows" and "Time Heist is not a row". `EXPECTED_HERO_COUNTS_BY_SCHEME` gains `['msis/the-time-heist', [4, 4, 4, 4, 4]]` (JSDoc 27), the drift pin asserts 27 rows, and "keeps msis The Time Heist at the base count (deliberately not a row)" is removed. Four composition cases replace it (2p × 5 → required 4; 2p × 4 → clean; 1p × 3 → required 4; 5p × 6 with an inline input → required 4). No other existing assertion changed.
+
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` 0 failures: registry 290 → 293 (suites 43 → 43); every other package unchanged (game-engine 5021, server 1678 / 1472 pass, arena-client 2298, dashboard 571, registry-viewer 329, legends-board 135, lagn-spec 107, preplan 52, engine-runner 20, vue-sfc-loader 11, replay-producer 4). Registry-viewer typecheck 0. Replay fixtures byte-identical; sentinel `finalStateHash` / `PRE_WP080_HASH` unchanged (no re-pin). Revert proof 1/1 (row removed → 6 / 293 fail, including all four new cases). `gauntlet-post-block.mjs msis thanos` → 6 / 7 / 7 / 7 / 8. `git grep` `msis/the-time-heist` → one non-test match (the row); "Time Heist is deliberately absent" → none. API catalog `GET /api/match/setup-requirements` row replaced whole (D-11804; Wired / guest; 27 rows).
+
+**Reserved by:** NUMBER-LEDGER D-24675 (#2650). Related: D-24672 (amended), D-24671 (gauntlet per-leg count and budget), D-24337 (requirement override), D-24165 (player-count table), D-24372 (runtime drift pin), D-24444 (`Tests-changed:` trailer), D-11804 (API catalog).
+
+**Live-verify (D-24026): pending (operator, after BOTH the Render and Pages deploys).** Builder shows "4 heroes" for a 2p Time Heist loadout and blocks export with 5; the lobby warns after a hard refresh; a 4-hero Time Heist match plays; the msis Time Heist leg asks for 4.
+
+---
+
 ### D-24676 — The registry viewer revalidates every R2 data fetch (cache: "no-cache") (direct fix, no WP) (Active 2026-10-08)
 
 **Context.** D-24674 gave the `/metadata/*.json` objects a 5-minute `Cache-Control`, but that only governs copies fetched **after** the change. Jeff's browser still held a pre-WP-797 `core.json` from when the objects had no header. Heuristic freshness kept it "fresh", so his loadout builder still locked Masters of Evil to Dr. Doom. Ctrl+Shift+R did not help, because the viewer requests these files by script after the page loads. A clean browser showed the correct lead (Doombot Legion), so the data was fine; the stale copy was on the client.
