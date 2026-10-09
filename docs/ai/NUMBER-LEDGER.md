@@ -438,6 +438,7 @@ high-water: 422
 - WP-797 — always-leads-fidelity (Card-data pipeline + Registry + Registry Viewer + gauntlet tooling; no engine change. Henchman-group Always Leads (alwaysLeadsHenchmen / henchman ledBy) for the 9 masterminds that print one, plus the 11 printed-vs-data villain-lead corrections; core Dr. Doom gauntlet legs re-anchored. reserved 2026-10-07, spec/reserve-always-leads-fidelity)
 - WP-798 — gauntlet-per-leg-hero-count (Server gauntlet run progress + launch + arena-client profile; the per-leg hero pick count follows resolveEffectiveHeroCount for the leg scheme, and the fixed-division pool budget becomes max(base, largest leg count) + 2 per gauntlet. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 - WP-799 — scheme-hero-count-table (Registry; resolveEffectiveHeroCount reads one table of printed Hero Deck count rules (+N, exactly N, per player count) for 24 schemes beyond Secret Invasion / Civil War. reserved 2026-10-08, spec/reserve-scheme-hero-count)
+- WP-800 — time-heist-hero-count (Registry; The Time Heist requires exactly 4 Heroes — its printed main Hero Deck — as one SCHEME_HERO_COUNT_RULES row; the Past Hero Deck / alternate city stays a named full-fidelity arc. reserved 2026-10-08, claude/reserve-time-heist-count)
 
 ## EC
 
@@ -837,6 +838,7 @@ high-water: 457
 - EC-834 — always-leads-fidelity (WP-797; Card-data pipeline + Registry + Registry Viewer + gauntlet tooling. reserved 2026-10-07, spec/reserve-always-leads-fidelity)
 - EC-835 — gauntlet-per-leg-hero-count (WP-798. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 - EC-836 — scheme-hero-count-table (WP-799. reserved 2026-10-08, spec/reserve-scheme-hero-count)
+- EC-837 — time-heist-hero-count (WP-800. reserved 2026-10-08, claude/reserve-time-heist-count)
 
 ## D
 
@@ -1291,3 +1293,4 @@ section below) and the allocation protocol in
 - D-24673 — diving-block-multi-reveal-and-honest-wound-count-logs (direct fix, no WP — one revealable Diving Block can stop every Wound (rules v23 "reveal the same card multiple times"); the twist line says "would gain" while Diving Block reveals are pending; count-scaled lines name the count in plain English. reserved 2026-10-08, infra/diving-block-multi-reveal-and-wound-log)
 - D-24674 — metadata-upload-script-cache-control (direct fix, no WP — pnpm metadata:upload publishes committed data/cards + data/metadata bytes to r2:legendary-images/metadata with Cache-Control: public, max-age=300, must-revalidate; one-time backfill. reserved 2026-10-08, infra/metadata-cache-control)
 - D-24675 — viewer-metadata-fetch-no-cache (direct fix, no WP — the registry viewer fetches every R2 data file with cache: "no-cache" so a stale pre-Cache-Control copy is revalidated. reserved 2026-10-08, infra/viewer-metadata-no-cache)
+- D-24675 — time-heist-hero-count (WP-800 — The Time Heist main Hero Deck = exactly 4; amends D-24672 §1 / §4. reserved 2026-10-08, claude/reserve-time-heist-count)
