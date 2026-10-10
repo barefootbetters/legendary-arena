@@ -1075,10 +1075,10 @@
       "card": "Loki",
       "ability": "Tactic: Maniacal Tyrant",
       "wp": "WP-693",
-      "state": "verified",
-      "date": "2026-10-08",
-      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): defeated at 16.2.11; the player chose and KO'd 4 cards from the discard pile (16.2.12–13). Empty-discard no-op: match aK-n8zNOteC.",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-10",
+      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): defeated at 16.2.11; the player chose and KO'd 4 cards from the discard pile (16.2.12–13). Empty-discard no-op: match aK-n8zNOteC. 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Black Widow, Wolverine), match 5oJXzZqbdys (build 39c8244): defeated at 20.2.23; only one of several S.H.I.E.L.D. Agents could be selected, so 1 card was KO’d (20.2.25).",
+      "note": "Copies of a shared-id card (S.H.I.E.L.D. Agents, Troopers, Officers, Wounds) could not be multi-selected; fixed by D-24682. Re-confirm by KO’ing two S.H.I.E.L.D. Agents after deploy."
     },
     {
       "key": "mastermind:core/loki|vanishing-illusions",
@@ -1207,10 +1207,10 @@
       "card": "Super Hero Civil War",
       "ability": "Evil Wins when the Hero Deck runs out; 4 heroes at 2 players",
       "wp": "WP-510",
-      "state": "partial",
-      "date": "2026-10-04",
-      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
-      "note": "Evil Wins fired when the Hero Deck ran out (turn 12). The 2-player 4-hero setup cannot be exercised solo."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Black Widow, Wolverine), match 5oJXzZqbdys (build 39c8244): the 2-player setup used exactly 4 Heroes (56-card Hero Deck); Twist #6 KO’d the HQ and the refill ran the Hero Deck out, so Evil Wins (21.1.8).",
+      "note": "Both: the Hero-Deck loss, and 4 Heroes at 2 players."
     },
     {
       "key": "scheme:core/legacy-virus-the|wound-loss",

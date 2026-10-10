@@ -1,7 +1,7 @@
 /**
  * Tests for the KO-from-discard vertical (WP-693 / EC-730 / D-24510): the
  * eligibility predicate, hasPendingKoDiscardChoice, and the resolveKoDiscardChoice
- * move (0/3/4/over-cap/duplicate/absent/wrong-player/empty-queue).
+ * move (0/3/4/over-cap/repeated-id multiset/absent/wrong-player/empty-queue).
  *
  * Uses node:test and node:assert only. No boardgame.io imports.
  */
@@ -100,10 +100,22 @@ describe('resolveKoDiscardChoice (WP-693 / D-24510)', () => {
     assert.deepStrictEqual(G.ko, []);
   });
 
-  it('DUPLICATE ids are a silent no-op with the queue intact', () => {
+  it('D-24682: a repeated id KOs one copy per occurrence (two S.H.I.E.L.D. Agents share one id)', () => {
+    // why: live report 2026-10-10 — Maniacal Tyrant let Jeff pick only one of several
+    // S.H.I.E.L.D. Agents, because basic S.H.I.E.L.D. cards share one ext_id (D-24183) and the
+    // old distinct-set rule (D-24510) rejected the id twice.
+    const agent = 'starting-shield-agent' as CardExtId;
+    const G = makeG({ discard: [agent, 'b', agent, agent], pending: parked() });
+    resolveKoDiscardChoice(makeContext(G), { cardIds: [agent, agent, 'b'] });
+    assert.equal(hasPendingKoDiscardChoice(G), false, 'the multi-copy selection resolves');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [agent], 'one Agent stays; two Agents and b were KO\'d');
+    assert.deepStrictEqual(G.ko, [agent, agent, 'b']);
+  });
+
+  it('D-24682: repeating an id more times than the discard holds copies is a silent no-op', () => {
     const G = makeG({ discard: ['a', 'b'], pending: parked() });
     resolveKoDiscardChoice(makeContext(G), { cardIds: ['a', 'a'] });
-    assert.equal(hasPendingKoDiscardChoice(G), true, 'a repeated id leaves the queue intact');
+    assert.equal(hasPendingKoDiscardChoice(G), true, 'only one copy of a is held, so the queue stays intact');
     assert.deepStrictEqual(G.playerZones['0']!.discard, ['a', 'b'], 'discard untouched');
     assert.deepStrictEqual(G.ko, []);
   });

@@ -3,7 +3,7 @@
  * Maniacal Tyrant: "KO up to four cards from your discard pile").
  *
  * Covers: chooser-only render gate, empty "KO None" submit, up-to-cap multi-select,
- * over-cap block, and the distinct-ext_id guard (the engine rejects a repeated id).
+ * over-cap block, and selecting two copies of a shared-id card (D-24682).
  * node:test + @vue/test-utils.
  */
 
@@ -77,17 +77,20 @@ describe('PendingKoDiscardChoicePrompt (WP-693 / D-24510)', () => {
     assert.match(wrapper.find('[data-testid="pending-ko-discard-submit"]').text(), /KO 2 cards/);
   });
 
-  test('cannot select a second copy of an already-selected ext_id (distinct-set guard)', async () => {
+  test('D-24682: two copies of a shared-id card (two S.H.I.E.L.D. Agents) can both be selected', async () => {
+    // why: live report 2026-10-10 — only one of several S.H.I.E.L.D. Agents was selectable.
+    // Basic S.H.I.E.L.D. cards share one ext_id, so each copy is its own discard-index pick.
     let submitted: { name: string; args: unknown } | undefined;
     const submitMove: SubmitMove = (name, args) => { submitted = { name, args }; };
-    // two identical 'dup' cards at index 0 and 1
     const wrapper = mount(PendingKoDiscardChoicePrompt, {
-      props: { pendingKoDiscardChoice: makeChoice(['dup', 'dup', 'x']), viewerPlayerId: 'player-0', submitMove },
+      props: { pendingKoDiscardChoice: makeChoice(['agent', 'agent', 'x']), viewerPlayerId: 'player-0', submitMove },
     });
+    assert.equal(wrapper.find('[data-testid="pending-ko-discard-card-1"]').attributes('disabled'), undefined);
     await wrapper.find('[data-testid="pending-ko-discard-card-0"]').trigger('click');
-    await wrapper.find('[data-testid="pending-ko-discard-card-1"]').trigger('click'); // blocked (same ext_id)
+    await wrapper.find('[data-testid="pending-ko-discard-card-1"]').trigger('click');
+    assert.equal(wrapper.find('[data-testid="pending-ko-discard-card-1"]').attributes('aria-pressed'), 'true');
     await wrapper.find('[data-testid="pending-ko-discard-submit"]').trigger('click');
-    assert.deepEqual(submitted, { name: 'resolveKoDiscardChoice', args: { cardIds: ['dup'] } });
+    assert.deepEqual(submitted, { name: 'resolveKoDiscardChoice', args: { cardIds: ['agent', 'agent'] } });
   });
 });
 
