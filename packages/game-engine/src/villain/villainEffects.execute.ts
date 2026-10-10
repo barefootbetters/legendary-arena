@@ -2162,16 +2162,64 @@ function villainEffectGainOfficerCurrent(
 }
 
 /**
- * ko-wounds-current-hand-and-discard primitive — the current (fighting) player KOs
- * every Wound from their own hand + discard pile (Ymir, Frost Giant King "Fight:
- * Choose a player. That player KOs any number of Wounds from their hand and discard
- * pile.", D-24329 / WP-516).
+ * Counts the Wounds in a player's hand + discard pile (the zones Ymir's Fight
+ * names). A missing zone counts as zero.
+ */
+function countWoundsInHandAndDiscard(G: LegendaryGameState, playerId: string): number {
+  const zones = G.playerZones[playerId];
+  if (!zones) {
+    return 0;
+  }
+  let woundCount = 0;
+  for (const cardId of zones.hand) {
+    if (cardId === WOUND_EXT_ID) {
+      woundCount += 1;
+    }
+  }
+  for (const cardId of zones.discard) {
+    if (cardId === WOUND_EXT_ID) {
+      woundCount += 1;
+    }
+  }
+  return woundCount;
+}
+
+/**
+ * Picks the player Ymir's "Choose a player" resolves to: the player with the most
+ * Wounds in hand + discard (D-24684, amending D-24329). Ties go to the current
+ * player, then to the lowest seat id — deterministic, no player-selection UI.
+ */
+function selectPlayerWithMostWounds(G: LegendaryGameState, currentPlayer: string): string {
+  // why: D-24684 — the D-24329 collapse to the fighting player wasted the effect in
+  // co-op when the fighter had no Wounds and a teammate did (live 2p match
+  // r8_2EFHd3Ah, 36.2.37: "KO'd 0" while the bot held Wounds). KO'ing Wounds is pure
+  // upside for whoever holds them, so a rational co-op chooser picks the player
+  // with the most. Seeding with the current player makes them win every tie.
+  let chosenPlayer = currentPlayer;
+  let chosenCount = countWoundsInHandAndDiscard(G, currentPlayer);
+  const playerIds = Object.keys(G.playerZones).sort();
+  for (const playerId of playerIds) {
+    const woundCount = countWoundsInHandAndDiscard(G, playerId);
+    if (woundCount > chosenCount) {
+      chosenPlayer = playerId;
+      chosenCount = woundCount;
+    }
+  }
+  return chosenPlayer;
+}
+
+/**
+ * ko-wounds-current-hand-and-discard primitive — the chosen player KOs every Wound
+ * from their own hand + discard pile (Ymir, Frost Giant King "Fight: Choose a
+ * player. That player KOs any number of Wounds from their hand and discard pile.",
+ * D-24329 / WP-516, chooser amended by D-24684).
  *
- * Auto-resolved and deterministic. "Choose a player" collapses to the current player
- * and "any number" to KO-all in the shipped solo/co-op modes: a rational chooser
- * KOs all their own Wounds (pure upside), so there is no player-selection UI and no
- * partial-KO choice. Self-narrates via `pushLog` (keyword-less —
- * `descriptorToLegacyKeyword` returns undefined, so no `VillainEffectResult` is
+ * Auto-resolved and deterministic. "Choose a player" resolves to the player with the
+ * most Wounds in hand + discard (ties → the current player), and "any number" to
+ * KO-all: KO'ing Wounds is pure upside, so there is no player-selection UI and no
+ * partial-KO choice. The primitive keeps its WP-516 name (it is a card-data marker);
+ * "current" no longer describes the target. Self-narrates via `pushLog` (keyword-less
+ * — `descriptorToLegacyKeyword` returns undefined, so no `VillainEffectResult` is
  * recorded and the generic `<timing> effect:` line never fires). Returns the KO'd
  * Wound ext_ids as `targets` for parity with `villainEffectKoHeroesCurrentByTrait`
  * (dropped by the recording path).
@@ -2183,10 +2231,11 @@ function villainEffectKoWoundsCurrentHandAndDiscard(
   timing: VillainAbilityTiming,
   _descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
-  const zones = G.playerZones[currentPlayer];
-  // why: D-24329 — single-target, the CURRENT player only. "Choose a player"
-  // collapses to the fighting player; other players' zones are never touched (unlike
-  // the each-player KO helper). A missing zone is a reachable no-op guard.
+  const label = villainEffectTimingLabel(timing);
+  const chosenPlayer = selectPlayerWithMostWounds(G, currentPlayer);
+  const zones = G.playerZones[chosenPlayer];
+  // why: single-target — only the chosen player's zones change (unlike the
+  // each-player KO helper). A missing zone is a reachable no-op guard.
   if (!zones) {
     return { targets: [] };
   }
@@ -2225,11 +2274,16 @@ function villainEffectKoWoundsCurrentHandAndDiscard(
   // removed by marking the card). `G.messages` is hash-excluded (D-24081). Honest
   // colour per the WP-434 contract: ≥1 Wound KO'd → `applied`; zero Wounds is a
   // reachable no-op → `blocked`. Label derived from the fired timing (Ymir is Fight).
-  const label = villainEffectTimingLabel(timing);
+  // The applied line names the chosen player (D-24683 attribution) because it may not
+  // be the one who fought.
+  if (koedWounds.length === 0) {
+    pushLog(G, `${label} effect: no player had a Wound in their hand or discard pile to KO.`, 'blocked');
+    return { targets: koedWounds };
+  }
   pushLog(
     G,
-    `${label} effect: KO'd ${String(koedWounds.length)} Wound(s) from your hand and discard pile.`,
-    koedWounds.length > 0 ? 'applied' : 'blocked',
+    `${label} effect: Player ${chosenPlayer} KO'd ${String(koedWounds.length)} Wound(s) from their hand and discard pile.`,
+    'applied',
   );
   return { targets: koedWounds };
 }

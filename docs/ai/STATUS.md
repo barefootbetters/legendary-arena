@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24684 — Ymir's Fight KOs Wounds from the player who has the most (direct fix) (2026-10-10)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Defeating Ymir, Frost Giant King now KOs the Wounds in hand and discard of whichever player holds the most, with ties going to the player who fought him. The log names that player: "Fight effect: Player 1 KO'd 3 Wound(s) from their hand and discard pile." Before, it always picked the fighter, even with none: 2p match `r8_2EFHd3Ah` logged "KO'd 0" while the bot held Wounds (36.2.37).
+
+- **Engine only.** Two log-text test updates and two new cases; solo play is unchanged.
+- **Live-verify (D-24026):** pending. A 2p game where Ymir is defeated while the teammate holds more Wounds.
+
 ### D-24683 — "Each player KOs" lines say which player lost which Heroes (direct fix) (2026-10-10)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Juggernaut's Ambush and Escape, Destroyer's Escape and the other "each player KOs" effects now log, for example, "Player 0 KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent; Player 1 had no hero to KO". Before, "every player KO’d two heroes (S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent)" read as if both players lost two. Reported in 2p matches `GkZeatCQh5f` and `O7iMuNBh9E5`.
