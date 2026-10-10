@@ -1456,7 +1456,13 @@ is for have names, and any one of them can say it failed him. Love for "everyone
 has no address, so no one can call it to account. It can justify anything,
 because whoever it harms is always outweighed by everyone else. Its first move is
 to call the particular *narrow* — the warm "we're all in this together" that
-prises a family loose from its own garden. Its last move is the voiceless-captive
+prises a family loose from its own garden. The old name for love with an address
+is the *ordo amoris*, the order of love: family first, then neighbour, then
+community, then country, and only after that the world. When JD Vance laid out
+that order on Fox News in January 2025, the reaction treated loving your own
+children first as the scandal — the first move, in public, in a single news
+cycle ([Matt Walsh's walk-through](https://www.youtube.com/watch?v=ZcsK0kMZCrc)).
+Its last move is the voiceless-captive
 case below: once the collective's need outranks the individual, there is no
 individual it cannot spend. The kulaks were dispossessed and deported to build
 the collective farm, and the villages left behind starved under its grain
@@ -3305,7 +3311,12 @@ operator has declined a caveat, do not bring it back.
   [Exodus 3:6](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/3?lang=eng&id=p6#p6)
   and [Exodus 3:15](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/3?lang=eng&id=p15#p15)
   (KJV; "the God of Abraham, the God of Isaac, and the God of Jacob… this is my
-  name for ever"). Dekulakization and
+  name for ever"). The *ordo amoris* case is from
+  [Matt Walsh, *Is This The Most Controversial Thing JD Vance Has Ever Said?*](https://www.youtube.com/watch?v=ZcsK0kMZCrc)
+  (*The Matt Walsh Show*, 31 January 2025), on Vance's late-January 2025 Fox
+  News remarks that love is ordered from family outward. The remarks are
+  paraphrased here, not quoted. Walsh's commentary is attributed, not
+  adjudicated by this page. Dekulakization and
   the Nazi Aktion T4 child-killing programme are cited as illustrations of
   structure, not adjudicated by this page.
 - Sources behind [the Warren Commission example](#the-mastermind-lens--five-questions)
