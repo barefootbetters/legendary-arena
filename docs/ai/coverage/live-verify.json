@@ -272,10 +272,10 @@
       "card": "Hawkeye",
       "ability": "Covering Fire",
       "wp": "WP-719",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-10",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): the other player drew a card three times (14.2.5, 20.2.12, 34.2.6); blocked without another Tech Hero (26.2.10). 2p bot-ally Magneto / Midtown Bank Robbery (Brotherhood + Spider-Foes; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match ciNPDe-qZE- (build 85c92de): the other player drew twice more (14.2.6, 20.2.7); blocked without another Tech Hero twice (26.2.13, 30.2.5).",
-      "note": "Discard branch still unexercised: pick \"discard\" on the two-button prompt."
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): the other player drew a card three times (14.2.5, 20.2.12, 34.2.6); blocked without another Tech Hero (26.2.10). 2p bot-ally Magneto / Midtown Bank Robbery (Brotherhood + Spider-Foes; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match ciNPDe-qZE- (build 85c92de): the other player drew twice more (14.2.6, 20.2.7); blocked without another Tech Hero twice (26.2.13, 30.2.5). 2p bot-ally Dr. Doom / Replace Earth’s Leaders with Killbots (HYDRA + Masters of Evil; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match 38KtA2vWDg9 (build c26dc19): the discard branch: the other player discarded Odinson (22.2.9) and a Wound (28.2.8).",
+      "note": "Both branches."
     },
     {
       "key": "core/hawkeye|defeated-villain-or-mastermind",
@@ -877,10 +877,10 @@
       "card": "Ultron",
       "ability": "reveal-or-wound",
       "wp": "WP-469",
-      "state": "pending",
-      "date": "2026-10-08",
-      "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): Ultron was fought (28.2.12), not escaped; its dynamic VP scored the base 2 (no Tech Heroes owned).",
-      "note": "Escape effect unexercised."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): Ultron was fought (28.2.12), not escaped; its dynamic VP scored the base 2 (no Tech Heroes owned). 2p bot-ally Dr. Doom / Replace Earth’s Leaders with Killbots (HYDRA + Masters of Evil; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match 38KtA2vWDg9 (build c26dc19): Ultron escaped (27.1.2); the player who revealed a Tech Hero was spared and the other gained a Wound (27.1.3).",
+      "note": ""
     },
     {
       "key": "core-villain-spider-foes-venom|gainWoundEachPlayer",
@@ -899,10 +899,10 @@
       "card": "Viper",
       "ability": "gain-wound-unless-victory-villain-group",
       "wp": "WP-494",
-      "state": "partial",
-      "date": "2026-10-06",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): both players held another HYDRA Villain again, so no Wounds (30.2.16); also s1jtBcEAOfw 35.2.14.",
-      "note": "Wound branch unexercised: fight Viper before anyone has a HYDRA Villain."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): both players held another HYDRA Villain again, so no Wounds (30.2.16); also s1jtBcEAOfw 35.2.14. 2p bot-ally Dr. Doom / Replace Earth’s Leaders with Killbots (HYDRA + Masters of Evil; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match 38KtA2vWDg9 (build c26dc19): fought with HYDRA Kidnappers already in the fighter’s Victory Pile; only the other player (no HYDRA Villain) gained a Wound (25.2.6).",
+      "note": "Both branches."
     },
     {
       "key": "core-villain-masters-of-evil-whirlwind|ko-hero",
@@ -1130,10 +1130,10 @@
       "card": "Dr. Doom",
       "ability": "Tactic: Monarch's Decree",
       "wp": "WP-694",
-      "state": "partial",
-      "date": "2026-10-08",
-      "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): 2 players; the defeater chose draw and the other seat drew 1 (16.2.9–10).",
-      "note": "Discard branch unexercised."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): 2 players; the defeater chose draw and the other seat drew 1 (16.2.9–10). 2p bot-ally Dr. Doom / Replace Earth’s Leaders with Killbots (HYDRA + Masters of Evil; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match 38KtA2vWDg9 (build c26dc19): the discard branch: Monarch’s Decree defeated via Pure Fury (39.2.21); the other player chose and discarded a Wound (39.2.22–24).",
+      "note": "Both branches."
     },
     {
       "key": "mastermind:core/dr-doom|secrets-of-time-travel",
@@ -1229,10 +1229,10 @@
       "card": "Replace Earth's Leaders with Killbots",
       "ability": "Converted-Bystander Killbots + escape loss",
       "wp": "WP-513",
-      "state": "partial",
-      "date": "2026-10-08",
-      "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): villain-deck Bystanders entered as Killbots with attack = Twists next to the Scheme (3, then 4 / 5 / 6 after twists 1–3); defeated Killbots scored 1 VP each (villainVP reconciles); 2 escaped (19.1.2, 22.1.2) and ran the HQ-KO escape step.",
-      "note": "Evil Wins (5 Killbots escape) not reached. The \"Bystander\" label seen in build 28bc08a was fixed by #2631 (D-24668); confirm Killbots read \"Killbot\" on the City card, in the log and in the Victory Pile next Killbots game."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): villain-deck Bystanders entered as Killbots with attack = Twists next to the Scheme (3, then 4 / 5 / 6 after twists 1–3); defeated Killbots scored 1 VP each (villainVP reconciles); 2 escaped (19.1.2, 22.1.2) and ran the HQ-KO escape step. 2p bot-ally Dr. Doom / Replace Earth’s Leaders with Killbots (HYDRA + Masters of Evil; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match 38KtA2vWDg9 (build c26dc19): Killbot attack rose 4 → 8 with Twists 1–5 (17.1.1 … 42.1.1); the fifth Killbot escape triggered Evil Wins (43.1.3, scheme-wins, loss progress 5 / 5). Every converted card reads “Killbot” in the log, the City and the Victory Pile (D-24668).",
+      "note": "Defeated Killbots score as villainVP, not bystanderVP (rules v23 L2341: they count as Bystanders in the Victory Pile). Totals are unaffected (both 1 VP)."
     },
     {
       "key": "scheme:core/secret-invasion-of-the-skrull-shapeshifters|conversion",
