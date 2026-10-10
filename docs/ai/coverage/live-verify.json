@@ -263,8 +263,8 @@
       "wp": "WP-702",
       "state": "verified",
       "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd)",
-      "note": "Instinct half gated correctly without another Instinct Hero, and logged \"no other player's deck\" in solo (D-24639)."
+      "evidence": "Solo Dr. Doom / The Legacy Virus, match kjkmEBIn3o0 (build 4e64cdd). 2p bot-ally Magneto / Midtown Bank Robbery (Brotherhood + Radiation; Hulk, Gambit, Wolverine, Spider-Man, Iron Man; Final Blow on), match 7953YOOyUIq (build e43c236): multi-seat branch fired twice after an Instinct Hero — kept Unstoppable Hulk on top of Player 0's deck (19.2.23, after Healing Factor) and discarded a S.H.I.E.L.D. Trooper from Player 0's deck (27.2.10, after Great Responsibility); gated correctly on five turns with no earlier Instinct play (5.2.3, 9.2.4, 13.2.7, 17.2.14, 33.2.6).",
+      "note": "Instinct half gated correctly without another Instinct Hero; solo logs \"no other player's deck\" (D-24639); 2p keep and discard both seen on the other player's deck."
     },
     {
       "key": "core/hawkeye|covering-fire",
@@ -1000,7 +1000,7 @@
       "wp": "WP-476",
       "state": "verified",
       "date": "2026-10-04",
-      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). 2p bot-ally Magneto / Midtown Bank Robbery (Brotherhood + Radiation; Hulk, Gambit, Wolverine, Spider-Man, Iron Man; Final Blow on), match 7953YOOyUIq (build e43c236): both seats discarded down to 4 (6.1.3, 6.1.5), and both revealed X-Men on four later Strikes (14.1.3–4, 18.1.7–8, 29.1.1–2, 38.1.1–2).",
       "note": "Both branches: revealed an X-Men Hero (blocked), and the discard-down-to-4 choice."
     },
     {
@@ -1009,10 +1009,10 @@
       "card": "Magneto",
       "ability": "Tactic: Crushing Shockwave",
       "wp": "WP-506",
-      "state": "partial",
-      "date": "2026-10-09",
-      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): defeated at 16.2.17; solo, so no other player, and no log line at all. Re-confirmed in solo Magneto / Midtown Bank Robbery (Cyclops, Spider-Man, Captain America; Final Blow on), match XZrA_nLcdl6 (build 43d9e74): the solo no-op line logged on defeat (27.2.17).",
-      "note": "The multi-seat reveal-or-two-Wounds branch still needs a 2-player game."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): defeated at 16.2.17; solo, so no other player, and no log line at all. Re-confirmed in solo Magneto / Midtown Bank Robbery (Cyclops, Spider-Man, Captain America; Final Blow on), match XZrA_nLcdl6 (build 43d9e74): the solo no-op line logged on defeat (27.2.17). 2p bot-ally Magneto / Midtown Bank Robbery (Brotherhood + Radiation; Hulk, Gambit, Wolverine, Spider-Man, Iron Man; Final Blow on), match 7953YOOyUIq (build e43c236): the bot defeated it (23.2.15); only the other seat was checked — Player 0 revealed an X-Men Hero and took no Wounds (23.2.16), and the defeater was not touched.",
+      "note": "Multi-seat reveal branch confirmed live. The two-Wounds branch did not come up (the other seat held an X-Men Hero when it resolved); it is pinned by the tacticHandlers.test.ts resolver tests (exactly two Wounds, supply short, defeater excluded)."
     },
     {
       "key": "mastermind:core/magneto|bitter-captor",
