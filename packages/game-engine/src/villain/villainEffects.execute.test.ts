@@ -17,6 +17,7 @@ import {
   selectScryKoTarget,
   buildKoEligibleTargets,
   villainCardPlaysVillainDeckCards,
+  resolveEffectResultNames,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
@@ -3311,7 +3312,32 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
     });
     const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
     assert.deepStrictEqual(results, [
-      { keyword: 'koHeroEachPlayer', targets: ['core-hero-p0-a', 'core-hero-p1-a'] },
+      {
+        keyword: 'koHeroEachPlayer',
+        targets: ['core-hero-p0-a', 'core-hero-p1-a'],
+        // why: D-24683 — the same KOs split by player, seat order; player 2 had none.
+        targetsByPlayer: [
+          { playerId: '0', targets: ['core-hero-p0-a'] },
+          { playerId: '1', targets: ['core-hero-p1-a'] },
+          { playerId: '2', targets: [] },
+        ],
+      },
+    ]);
+  });
+
+  it('D-24683: resolveEffectResultNames carries the per-player split with names resolved', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: ['core-hero-p0-a' as CardExtId], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    const resolved = resolveEffectResultNames(G, executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight'));
+    // why: no display entry in this fixture, so the name falls back to the ext_id.
+    assert.deepStrictEqual(resolved[0]?.playerTargetNames, [
+      { playerId: '0', names: ['core-hero-p0-a'] },
+      { playerId: '1', names: [] },
     ]);
   });
 

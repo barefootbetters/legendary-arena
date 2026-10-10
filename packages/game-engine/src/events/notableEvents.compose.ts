@@ -73,6 +73,18 @@ export interface ResolvedEffectResult {
   keyword: VillainEffectKeyword;
   targetNames: string[];
   pending?: boolean;
+  /** An each-player KO's per-player split, names resolved (D-24683). */
+  playerTargetNames?: ResolvedPlayerTargetNames[];
+}
+
+/**
+ * One player's share of an each-player KO with its target names resolved (D-24683).
+ * `pending: true` marks the current player's parked pick.
+ */
+export interface ResolvedPlayerTargetNames {
+  playerId: string;
+  names: string[];
+  pending?: boolean;
 }
 
 /**
@@ -117,6 +129,15 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     if (result.keyword === 'koHeroEachPlayerMag2') {
       pendingClause = 'the active player must KO two heroes';
     }
+    // why: D-24683 — with the per-player split, name each other player's outcome
+    // ("Player 1 KO’d …" / "Player 1 had no hero to KO") instead of a flat list.
+    if (result.playerTargetNames !== undefined) {
+      const otherClauses = composePlayerKoClauses(result.playerTargetNames);
+      if (otherClauses.length > 0) {
+        return `${pendingClause}; ${otherClauses.join('; ')}`;
+      }
+      return pendingClause;
+    }
     if (result.targetNames.length > 0) {
       // why: D-24644 — an each-player KO parks only the active player's pick; the
       // other players' auto-KOs already happened and are still named.
@@ -125,6 +146,13 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     return pendingClause;
   }
   const label = labelForEffect(result.keyword);
+  // why: D-24683 — "every player KO’d two heroes (S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent)"
+  // read as if both players lost two when one had nothing to KO (matches GkZeatCQh5f,
+  // O7iMuNBh9E5). With the per-player split, say who KO'd what. Nothing KO'd at all keeps
+  // the D-24646 "no player had a hero to KO" wording below.
+  if (result.playerTargetNames !== undefined && result.targetNames.length > 0) {
+    return composePlayerKoClauses(result.playerTargetNames).join('; ');
+  }
   if (result.targetNames.length > 0) {
     return `${label} (${result.targetNames.join(', ')})`;
   }
@@ -135,6 +163,28 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     return noTargetLabel;
   }
   return label;
+}
+
+/**
+ * Composes one clause per player for an each-player KO (D-24683), skipping the player
+ * whose pick is still pending (the caller names that one).
+ *
+ * @param playerTargetNames - Each player's share, in seat order.
+ * @returns "Player N KO’d A, B" or "Player N had no hero to KO", one per non-pending player.
+ */
+function composePlayerKoClauses(playerTargetNames: readonly ResolvedPlayerTargetNames[]): string[] {
+  const clauses: string[] = [];
+  for (const playerShare of playerTargetNames) {
+    if (playerShare.pending === true) {
+      continue;
+    }
+    if (playerShare.names.length > 0) {
+      clauses.push(`Player ${playerShare.playerId} KO’d ${playerShare.names.join(', ')}`);
+    } else {
+      clauses.push(`Player ${playerShare.playerId} had no hero to KO`);
+    }
+  }
+  return clauses;
 }
 
 // why: D-24646 — the resolved-nothing wording for the three KO-a-Hero keywords, the only
