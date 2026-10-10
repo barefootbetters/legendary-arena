@@ -1727,17 +1727,54 @@ function villainEffectRevealOrWound(
   // wound landed on ≥1 player → `applied`; every player revealed (the villain
   // effect touched no one) → `blocked`.
   const label = villainEffectTimingLabel(timing);
+  // why: D-24679 — name the trait checked ("had no Ranged Hero"), so a reader can tell
+  // from the log alone what the player needed (match BvcATHgYM5k, Ymir's Ambush).
+  const requirement = describeRevealRequirement(requireKind, requireValue);
   if (woundedPlayerIds.length > 0) {
     const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
     pushLog(
       G,
-      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no matching Hero and gained a Wound (${names}).`,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no ${requirement} Hero and gained a Wound (${names}).`,
       'applied',
     );
   } else {
-    pushLog(G, `${label} effect: every player revealed a matching Hero.`, 'blocked');
+    // why: "an" before a vowel sound — the vowels plus "X" (read "ex"), as in the printed
+    // "reveals an X-Men Hero".
+    const article = /^[AEIOUX]/.test(requirement) ? 'an' : 'a';
+    pushLog(G, `${label} effect: every player revealed ${article} ${requirement} Hero.`, 'blocked');
   }
   return { targets: [] };
+}
+
+// why: D-24679 — display labels for the team slugs whose printed name is not a simple
+// title-casing of the slug. Hero classes and other teams title-case cleanly.
+const REVEAL_TEAM_LABELS: Readonly<Record<string, string>> = {
+  'x-men': 'X-Men',
+  shield: 'S.H.I.E.L.D.',
+  hydra: 'HYDRA',
+  'x-force': 'X-Force',
+  'x-factor': 'X-Factor',
+};
+
+/**
+ * Names the trait a reveal-or-wound checks, for its log line.
+ *
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug, e.g. `ranged` or `x-men`.
+ * @returns A display label, e.g. `Ranged`, `X-Men`, `S.H.I.E.L.D.`.
+ */
+function describeRevealRequirement(kind: 'team' | 'hero-class', value: string): string {
+  if (kind === 'team') {
+    const teamLabel = REVEAL_TEAM_LABELS[value];
+    if (teamLabel !== undefined) {
+      return teamLabel;
+    }
+  }
+  const words: string[] = [];
+  for (const word of value.split('-')) {
+    words.push(word.length > 0 ? word[0]!.toUpperCase() + word.slice(1) : word);
+  }
+  return words.join(' ');
 }
 
 /**

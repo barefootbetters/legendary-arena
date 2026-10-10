@@ -47043,4 +47043,22 @@ The game was already over (`scheme-wins`). D-24599 had skipped the announcement 
 
 ---
 
+### D-24679 — Villain "reveal a Hero or gain a Wound" log lines name the Hero class or team checked (direct fix, no WP) (Active 2026-10-10)
+
+**Context.** In Jeff's solo match `BvcATHgYM5k`, Ymir's Ambush logged "1 player(s) had no matching Hero and gained a Wound" on a turn when he then played Lightning Bolt, a Ranged Hero. Nothing in the log said what Ymir had checked for, so the line could not be checked against the hand. Lightning Bolt may have been the card Diving Block drew right after.
+
+**Decision.** The `reveal-or-wound` villain primitive names the trait it checked. This primitive backs Ymir, Frost Giant, Sabretooth, Ultron, Zzzax and their siblings, at Ambush, Fight and Escape.
+- "had no Ranged Hero and gained a Wound";
+- "every player revealed an X-Men Hero".
+
+A new `describeRevealRequirement` title-cases the slug, with a small map for team names that are not plain title case (`X-Men`, `S.H.I.E.L.D.`, `HYDRA`, `X-Force`, `X-Factor`). The article is "an" before a vowel or "X" ("an X-Men Hero", as printed). The wound logic, outcome colour and `strikeBlocked` events are unchanged, and `G.messages` is hash-excluded (D-24081).
+
+**Tests changed (authorized wording change).** Two `villainEffects.execute.test.ts` AC-7 cases pinned "had no matching Hero" and "revealed a matching Hero"; they now expect "had no X-Men Hero" and "revealed a Ranged Hero". A new case covers `S.H.I.E.L.D.`, a hero class (`Tech`) and the "an X-Men" article. It caught a first-draft article bug ("a X-Men") before commit, and it fails against the old source.
+
+**Gates.** `pnpm -r --no-bail test` 0 fail (game-engine 5025, server 1472, arena-client 2298); `sim:coverage --check` OK; `sim:runtime-observed:check` current; `pnpm -r build` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24679. Related: D-24281 / WP-469 (reveal-or-wound), D-24026 (the live session that surfaced it).
+
+---
+
 Protect this file.

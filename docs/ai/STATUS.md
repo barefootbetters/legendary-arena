@@ -7,6 +7,12 @@
 
 ## Current State
 
+### D-24679 — "Reveal a Hero or gain a Wound" lines say which Hero (direct fix) (2026-10-10)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Ymir, Frost Giant, Sabretooth, Ultron and similar villains now log what they checked: "1 player(s) had no Ranged Hero and gained a Wound" / "every player revealed an X-Men Hero", instead of "matching Hero". Reported in solo match `BvcATHgYM5k`.
+
+- **Engine only, log text only.** Every package green (2 authorized wording-test edits).
+
 ### WP-800 — The Time Heist needs exactly 4 Heroes (EC-837 / D-24675) (2026-10-09)
 
 **User-visible on `cards.legendary-arena.com` and `play.legendary-arena.com` (after deploy).** msis The Time Heist
