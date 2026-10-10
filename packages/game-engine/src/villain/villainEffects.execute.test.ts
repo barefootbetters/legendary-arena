@@ -1382,7 +1382,7 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     assert.equal(G.messages!.length, 1, 'exactly one log line pushed');
     assert.match(
       G.messages![0]!.text,
-      /Fight effect: 2 player\(s\) had no matching Hero and gained a Wound \(Player 0, Player 1\)\./,
+      /Fight effect: 2 player\(s\) had no X-Men Hero and gained a Wound \(Player 0, Player 1\)\./,
     );
     assert.equal(G.messages![0]!.outcome, 'applied', 'the villain effect landed → applied');
     // why: AC-7 — reveal-or-wound is keyword-less, so it self-narrates and emits
@@ -1402,9 +1402,39 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     assert.equal(G.playerZones['0']!.discard.length, 0);
     assert.equal(G.playerZones['1']!.discard.length, 0);
     assert.equal(G.messages!.length, 1, 'exactly one log line pushed');
-    assert.match(G.messages![0]!.text, /Escape effect: every player revealed a matching Hero\./);
+    assert.match(G.messages![0]!.text, /Escape effect: every player revealed a Ranged Hero\./);
     assert.equal(G.messages![0]!.outcome, 'blocked', 'no wound landed → blocked');
     assert.equal(G.piles.wounds.length, 1, 'wound pile untouched');
+  });
+
+  // why: D-24679 — the log names the trait checked; team slugs use their printed name
+  // and a vowel-initial label takes "an".
+  it('D-24679 names the checked team / class with its printed label and article', () => {
+    const cases = [
+      { kind: 'team' as const, value: 'shield', wounded: /had no S\.H\.I\.E\.L\.D\. Hero and gained a Wound/ },
+      { kind: 'hero-class' as const, value: 'tech', wounded: /had no Tech Hero and gained a Wound/ },
+    ];
+    for (const testCase of cases) {
+      const G = makeG({
+        hooks: [rowHook('v-x', 'onFight', testCase.kind, testCase.value)],
+        playerZones: { '0': zone([PLAIN]) },
+        wounds: [WOUND],
+        cardTraits: TRAITS,
+        messages: [],
+      });
+      executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+      assert.match(G.messages![0]!.text, testCase.wounded);
+    }
+
+    const revealed = makeG({
+      hooks: [rowHook('v-x', 'onAmbush', 'team', 'x-men')],
+      playerZones: { '0': zone([XMEN]) },
+      wounds: [WOUND],
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(revealed, CTX, 'v-x' as CardExtId, 'onAmbush');
+    assert.match(revealed.messages![0]!.text, /Ambush effect: every player revealed an X-Men Hero\./);
   });
 });
 
