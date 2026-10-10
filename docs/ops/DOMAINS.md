@@ -25,6 +25,7 @@ define new architectural boundaries.
 | `cards.legendary-arena.com` | Registry viewer | Cloudflare Pages | [apps/registry-viewer](../../apps/registry-viewer) | live (migrated 2026-07-16; legacy `cards.barefootbetters.com` 301-redirects here) |
 | `wiki.legendary-arena.com` | Public player wiki | Cloudflare Pages | TBD (separate Hugo site) | planned |
 | `ewiki.legendary-arena.com` | Private engineering wiki | Render Static Site + Access | [apps/wiki-viewer](../../apps/wiki-viewer) (Hugo build of [wiki/](../../wiki)) | live, gated |
+| `legendary-arena-wiki.onrender.com` | Render default origin of the eng wiki — must 404 (Access bypass otherwise) | Render | [render.yaml](../../render.yaml) `renderSubdomainPolicy: disabled` | planned (disable pending; 200 observed 2026-10-05) |
 | `legends.legendary-arena.com` | Public scoreboard (attract board) | Cloudflare Pages | [apps/legends-board](../../apps/legends-board) (WP-143) | live (domain since 2026-07-08; SPA shipped 2026-05-15, WP-143) |
 | `api.legendary-arena.com` | Game server REST + Socket.IO | Render (CNAME from Cloudflare) | [apps/server](../../apps/server) | live |
 | `legendary-arena-server.onrender.com` | API canonical hostname | Render | [apps/server](../../apps/server) | live |
@@ -162,6 +163,7 @@ that confuses anyone who clicks it.
 - **Renderer:** [apps/wiki-viewer](../../apps/wiki-viewer) — Hugo build, deployed as the Render Static Site `legendary-arena-wiki` (see [render.yaml](../../render.yaml))
 - **Gate:** Cloudflare Zero Trust Access policy (Free tier, One-time PIN identity provider)
 - **DNS posture:** **proxied (orange cloud)**, NOT DNS-only. Access can only intercept traffic that flows through Cloudflare's edge; DNS-only would route the client directly to Render's IP and bypass the gate. (This is the opposite of the `api.` posture — see that section for why `api.` uses DNS-only.)
+- **Render default origin: disabled.** Access gates only the custom domain, so Render's built-in `legendary-arena-wiki.onrender.com` host is a second, ungated door to the same content (observed serving the full wiki with `200` on 2026-10-05). `renderSubdomainPolicy: disabled` in [render.yaml](../../render.yaml) closes it; because this service's settings may not auto-sync from the Blueprint, also set **Render → `legendary-arena-wiki` → Settings → Custom Domains → Render Subdomain → Disabled**. Healthy: the onrender.com host returns `404` (Render answers before the service), and `ewiki.` still `302`s to Access. A `200` on the onrender.com host is a security incident — same severity as `ewiki` returning `200`.
 
 **Healthy response (unauthenticated):** `302` to a `*.cloudflareaccess.com`
 login URL, or `401`/`403`. **A `200` here is a failure** — it means the

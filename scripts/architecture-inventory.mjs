@@ -2930,7 +2930,20 @@ async function renderInfrastructureServicesSection() {
       // convention is `<name>.onrender.com` for web/worker services.
       // Static sites follow the same pattern but may have a custom
       // domain (handled by the domains.json cross-reference).
-      const renderUrl = `https://${serviceName}.onrender.com`;
+      // why: a service with `renderSubdomainPolicy: disabled` 404s on its
+      // onrender.com host (it serves only via its custom domain), so listing
+      // that URL would advertise a dead — and, for a gated service, formerly
+      // bypassing — origin. Scope the check to this service's own block
+      // (up to the next `- type:` entry or the `databases:` section).
+      const blockStart = match.index + match[0].length;
+      const boundaryPattern = /\n\s*- type:|\ndatabases:/g;
+      boundaryPattern.lastIndex = blockStart;
+      const boundary = boundaryPattern.exec(renderRaw);
+      const serviceBlock = renderRaw.slice(blockStart, boundary ? boundary.index : renderRaw.length);
+      const isRenderSubdomainDisabled = /^\s*renderSubdomainPolicy:\s*disabled\b/m.test(serviceBlock);
+      const renderUrl = isRenderSubdomainDisabled
+        ? `_onrender.com subdomain disabled (custom domain only)_`
+        : `https://${serviceName}.onrender.com`;
 
       // why: detect the runtime from the YAML to label the service
       // accurately. Node web services, static sites, and worker

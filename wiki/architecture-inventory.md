@@ -63,6 +63,7 @@ Canonical source: `docs/ops/domains.json`. Ops runbook: `docs/ops/DOMAINS.md`.
 | `cards.legendary-arena.com` | apps/registry-viewer | Cloudflare Pages | live |
 | `wiki.legendary-arena.com` | TBD - separate Hugo site (not yet authored) | Cloudflare Pages | planned |
 | `ewiki.legendary-arena.com` | apps/wiki-viewer (Hugo build of docs/wiki/) | Render Static Site + Cloudflare Access | live |
+| `legendary-arena-wiki.onrender.com` | apps/wiki-viewer (Render Static Site legendary-arena-wiki) | Render | planned |
 | `legends.legendary-arena.com` | apps/legends-board | Cloudflare Pages | live |
 | `dashboard.legendary-arena.com` | apps/dashboard | Cloudflare Pages + Cloudflare Access | live |
 | `legendary-arena-dashboard.pages.dev` | apps/dashboard | Cloudflare Pages + Cloudflare Access | planned |
@@ -92,7 +93,7 @@ answers "what URL maps to what app."
 |---|---|---|
 | `legendary-arena-db` | Managed PostgreSQL (pro-4gb) | _internal (connection string via env)_ |
 | `legendary-arena-server` | Render Web Service | https://legendary-arena-server.onrender.com |
-| `legendary-arena-wiki` | Render Web Service | https://legendary-arena-wiki.onrender.com |
+| `legendary-arena-wiki` | Render Web Service | _onrender.com subdomain disabled (custom domain only)_ |
 
 ### Render account model & sizing (what we pay for, and why)
 
