@@ -12,14 +12,14 @@
 **User-visible on `play.legendary-arena.com` (after deploy).** Juggernaut's Ambush and Escape, Destroyer's Escape and the other "each player KOs" effects now log, for example, "Player 0 KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent; Player 1 had no hero to KO". Before, "every player KO’d two heroes (S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent)" read as if both players lost two. Reported in 2p matches `GkZeatCQh5f` and `O7iMuNBh9E5`.
 
 - **Engine only, text only.** No rules or state change; no re-pin.
-- **Live-verify (D-24026): pending.** In a 2p match, a Juggernaut Ambush when one player's discard is empty logs that player as "had no hero to KO".
+- **Live-verify (D-24026), 2026-10-10: PASS.** Match `r8_2EFHd3Ah` (build `031aaf0`, 2p bot-ally Loki / Midtown Bank Robbery): Juggernaut's Ambush logged "the active player must KO two heroes; Player 1 had no hero to KO" (4.1.2). Its Escape logged "…; Player 1 KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent" (18.1.3). A second Ambush with nothing to KO kept "no player had a hero to KO" (36.1.2).
 
 ### D-24682 — Maniacal Tyrant / Salomé can KO several S.H.I.E.L.D. Agents (direct fix) (2026-10-10)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** The "KO up to N cards from your discard pile" prompt (Loki's Maniacal Tyrant, Salomé) now lets you pick several copies of the same basic card: two S.H.I.E.L.D. Agents, a Trooper and a Wound, and so on. Before this, only one copy of each could be selected. Reported in 2p match `5oJXzZqbdys`.
 
 - **Engine + arena-client.** Two authorized test rewrites; every package green (game-engine 5031 → 5032).
-- **Live-verify (D-24026): pending.** Defeat Maniacal Tyrant with two or more S.H.I.E.L.D. Agents in your discard, select two, and the log reads "KO'd 2 card(s)".
+- **Live-verify (D-24026), 2026-10-10: PASS.** Match `r8_2EFHd3Ah` (build `031aaf0`): Maniacal Tyrant logged "KO'd 3 card(s)" (34.2.18). The KO pile shows a S.H.I.E.L.D. Trooper and two S.H.I.E.L.D. Agents, so two copies of the shared Agent id were selected and KO'd.
 
 ### D-24681 — Bot ally no longer stalls when Silent Sniper or Pure Fury defeats Loki's Vanishing Illusions (direct fix) (2026-10-10)
 
