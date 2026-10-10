@@ -84,7 +84,7 @@
       "expectedLocation": "https://legendary-arena.cloudflareaccess.com/",
       "state": "live",
       "anchor": "dashboard",
-      "notes": "Live since 2026-06-02. CF Pages project: legendary-arena-dashboard. Cloudflare Access (Self-hosted, Email OTP, single-operator allow = jeff@barefootbetters.com) redirects unauthenticated probes to login (302) or rejects them (401/403). A 200 here means the gate is misconfigured and the dashboard is publicly readable. expectedLocation is a prefix; the Access login URL appends a long JWT in the query string that varies per request. Ships in mock mode (VITE_USE_MOCKS=true on CF Pages Production scope); real-data wiring is a separate WP."
+      "notes": "Live since 2026-06-02. CF Pages project: legendary-arena-dashboard. Cloudflare Access (Self-hosted, Email OTP, single-operator allow = jeff@barefootbetters.com) redirects unauthenticated probes to login (302) or rejects them (401/403). A 200 here means the gate is misconfigured and the dashboard is publicly readable. expectedLocation is a prefix; the Access login URL appends a long JWT in the query string that varies per request. Launched in mock mode (D-19702); now a live-mode build (VITE_USE_MOCKS=false, VITE_API_BASE_URL=https://api.legendary-arena.com, Hanko sign-in; read from the deployed bundle 2026-10-10), so a missing gate exposes the live operator dashboard with only the server's admin-session check in front of live data."
     },
     {
       "name": "Internal admin dashboard (pages.dev alias)",

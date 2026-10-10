@@ -209,32 +209,35 @@ Configuration steps (completed 2026-05-08):
 - **Renderer:** Vite SPA, deployed to the Cloudflare Pages project `legendary-arena-dashboard` (build command `pnpm install --frozen-lockfile && pnpm --filter "@legendary-arena/dashboard..." build`; output dir `apps/dashboard/dist`)
 - **Gate:** Cloudflare Zero Trust Access policy (Free tier, Self-hosted application, Email One-time PIN identity provider, single-operator allow rule on `jeff@barefootbetters.com`)
 - **DNS posture:** **proxied (orange cloud)**, NOT DNS-only. Access can only intercept traffic that flows through Cloudflare's edge; DNS-only would route the client directly to the CF Pages origin and bypass the gate. (Same posture as `ewiki.`, opposite of `api.`.)
-- **Production env vars (CF Pages):** `VITE_USE_MOCKS=true`, `NODE_VERSION=22`. `VITE_API_BASE_URL` is **deliberately not set** — the dashboard ships in mock mode and makes zero HTTP calls to `api.legendary-arena.com` until the real-data wiring WP lands.
+- **App sign-in:** Hanko ([`LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue), WP-241), behind the Access gate. Live `/api/dash/*` routes on `api.legendary-arena.com` require an admin session and return `401` without one.
+- **Production env vars (CF Pages):** live mode — `VITE_USE_MOCKS=false`, `VITE_API_BASE_URL=https://api.legendary-arena.com`, and `VITE_HANKO_TENANT_BASE_URL` set to the Hanko tenant (all three read from the deployed bundle 2026-10-10); `NODE_VERSION=22` was set at launch and not re-checked. The live/mock switch is `isLiveModeEnabled()` (D-20601): live only when `VITE_USE_MOCKS !== 'true'` and `VITE_API_BASE_URL` is non-empty. See [`apps/dashboard/.env.example`](../../apps/dashboard/.env.example) for the full variable list. (Launched 2026-06-02 in mock mode per D-19702; real-data wiring landed in later WPs, starting with WP-373's billing + revenue routes.)
 
 **Healthy response (unauthenticated):** `302` to a `*.cloudflareaccess.com`
 login URL, or `401`/`403`. **A `200` here is a failure** — it means the
-Access policy is missing and the dashboard's in-app mock login (which
-accepts any email + any role per
-[`apps/dashboard/src/pages/auth/LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue))
-is publicly exposed. The redirect target is enforced by the probe via
+Access policy is missing and the live operator dashboard is publicly
+reachable, with the server's admin-session check as the only layer in front
+of live business data. The redirect target is enforced by the probe via
 `expectedLocation: "https://legendary-arena.cloudflareaccess.com/"` in
 [domains.json](./domains.json) — a `302` to anywhere else fails the row.
 
 **Configure the Cloudflare Access policy before attaching the custom domain.**
 If the custom domain is attached before the Access policy exists, there is a
-window during which the dashboard is on the public internet — and the mock
-login lets any email + any role through. This is the canonical
-**Gate-before-expose** rule (WP-197 / EC-223).
+window during which the live operator dashboard is on the public internet.
+This is the canonical **Gate-before-expose** rule (WP-197 / EC-223).
 
-Configuration steps (completed 2026-06-02 under WP-197 / EC-223):
+Configuration steps (completed 2026-06-02 under WP-197 / EC-223; steps 2 and
+6 are updated for today's live-mode build, so the list doubles as the rebuild
+runbook):
 1. Add the `dashboard` row to [domains.json](./domains.json) with
    `state: "planned"`, `expectedStatus: [302, 401, 403]`,
    `expectedLocation: "https://legendary-arena.cloudflareaccess.com/"`.
 2. In Cloudflare Pages, create project `legendary-arena-dashboard`
    linked to the `legendary-arena` GitHub repo, production branch
-   `main`, build command and output dir as above, env vars
-   `VITE_USE_MOCKS=true` and `NODE_VERSION=22` on the Production
-   scope. Trigger the first production build; confirm
+   `main`, build command and output dir as above, and the live-mode
+   env vars listed above on the Production scope (`VITE_USE_MOCKS=false`,
+   `VITE_API_BASE_URL`, `VITE_HANKO_TENANT_BASE_URL`, `NODE_VERSION`).
+   The 2026-06-02 launch used `VITE_USE_MOCKS=true` with no API base
+   (D-19702). Trigger the first production build; confirm
    `legendary-arena-dashboard.pages.dev` serves the SPA shell. **Do
    not attach the custom domain yet.**
 3. Activate Cloudflare Zero Trust Free plan on the account (already
@@ -253,9 +256,10 @@ Configuration steps (completed 2026-06-02 under WP-197 / EC-223):
    `Full` or `Full (strict)`, not `Flexible`.
 6. From an incognito browser, visit `https://dashboard.legendary-arena.com`.
    Expect a redirect to `*.cloudflareaccess.com/cdn-cgi/access/...`. After
-   email OTP, `/login` should render; selecting any role routes to
-   `/overview` (mock login posture); every widget displays its
-   `MOCK` freshness badge. **A 200 unauthenticated is a security
+   email OTP, `/login` should render the Hanko sign-in. After an admin
+   sign-in, `/overview` loads, its widgets show `LIVE` / `CACHED` /
+   `LOCAL` freshness badges (not `MOCK`), and the mock-mode banner
+   (WP-226) is absent. **A 200 unauthenticated is a security
    incident — see the failure runbook.**
 7. Verify `pnpm check:domains` reports `READY` for the `dashboard`
    entry, then flip `state: "planned"` → `"live"` in
@@ -302,11 +306,14 @@ routes/logic.
    reports `FAIL` — that is the intended "not yet gated" signal, not a
    regression.)
 
-**Real-data wiring is explicitly deferred** (D-19702). Every widget
-on `/overview` renders its four-state shell against in-bundle mock
-data. Wiring to real endpoints (Stripe webhook stream, analytics
-events table, cohort materialization, public-surface ping) is the
-domain of follow-up WPs.
+**Real data is wired.** The launch deferred real data (D-19702), and
+follow-up WPs wired the widgets to admin-session-gated `/api/dash/*`
+routes, starting with billing + revenue (WP-373). Widgets show where
+their data comes from with the freshness badge (`LIVE` / `CACHED` /
+`LOCAL`, or `MOCK` in a mock build). A `MOCK` badge or the mock-mode
+banner on the production dashboard means the deploy env has drifted
+back to mock mode; check the env vars above. (The net-revenue chart's
+`MOCK` deduction placeholder is intentional, per D-19602.)
 
 ### legends
 **`legends.legendary-arena.com`** — public, no-auth scoreboard ("Hall of Legends" attract board). SPA shipped 2026-05-15 (WP-143); custom domain live since 2026-07-08.
