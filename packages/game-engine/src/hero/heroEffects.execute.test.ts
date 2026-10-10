@@ -6599,6 +6599,33 @@ describe('defeat-with-bystander handler (WP-486 / D-24291)', () => {
     assert.equal(gameState.city[0], 'villain-a', 'nothing is defeated until the player resolves the choice');
     assert.equal(gameState.city[2], 'villain-c', 'nothing is defeated until the player resolves the choice');
   });
+
+  it('D-24681: a one-target free defeat of Vanishing Illusions admits the other seat to its KO choice', () => {
+    // why: match CM_RIBLkJem — Silent Sniper's sole target was Loki, whose top tactic was
+    // Vanishing Illusions ("each other player KOs a Villain from their Victory Pile"). The
+    // one-target path dropped the move's events, so the bot seat was never admitted via
+    // setActivePlayers, its resolveSeatChoice never landed, and the bot ally faulted.
+    const gameState = defeatHookState();
+    gameState.playerZones['1'] = {
+      deck: [], hand: [], discard: [], inPlay: [], victory: ['core-villain-hydra-a#0'],
+    } as unknown as (typeof gameState.playerZones)[string];
+    gameState.villainDeckCardTypes = { 'core-villain-hydra-a#0': 'villain' } as typeof gameState.villainDeckCardTypes;
+    gameState.mastermind.attachedBystanders = ['bystander-m'] as typeof gameState.mastermind.attachedBystanders;
+    gameState.mastermind.tacticsDeck = ['core-mastermind-loki-vanishing-illusions'] as typeof gameState.mastermind.tacticsDeck;
+    gameState.notableEvents = [];
+    const admitted: unknown[] = [];
+    const wrapper = {
+      ctx: { numPlayers: 2, currentPlayer: '0', turn: 1 },
+      random: makeMockCtx().random,
+      events: { setActivePlayers: (arg: unknown) => admitted.push(arg) },
+    };
+
+    executeHeroEffects(gameState, wrapper, '0', 'hero-silent-sniper' as string);
+
+    assert.equal(gameState.pendingSeatChoice?.kind, 'vanishing-illusions-ko', 'the KO choice is parked');
+    assert.deepEqual(gameState.pendingSeatChoice?.addressedSeats, ['1'], 'addressed to the other seat');
+    assert.equal(admitted.length, 1, 'the other seat is admitted via setActivePlayers');
+  });
 });
 
 // ---------------------------------------------------------------------------
