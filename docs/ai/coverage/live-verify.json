@@ -1077,7 +1077,7 @@
       "wp": "WP-693",
       "state": "partial",
       "date": "2026-10-10",
-      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): defeated at 16.2.11; the player chose and KO'd 4 cards from the discard pile (16.2.12–13). Empty-discard no-op: match aK-n8zNOteC. 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Black Widow, Wolverine), match 5oJXzZqbdys (build 39c8244): defeated at 20.2.23; only one of several S.H.I.E.L.D. Agents could be selected, so 1 card was KO’d (20.2.25).",
+      "evidence": "solo Loki / The Legacy Virus, match iNKIWCJu8FH (build fedbdb1): defeated at 16.2.11; the player chose and KO'd 4 cards from the discard pile (16.2.12–13). Empty-discard no-op: match aK-n8zNOteC. 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Black Widow, Wolverine), match 5oJXzZqbdys (build 39c8244): defeated at 20.2.23; only one of several S.H.I.E.L.D. Agents could be selected, so 1 card was KO’d (20.2.25). 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Wolverine, Captain America), match GkZeatCQh5f (build 39c8244): defeated at 14.2.14 with an empty discard: logged the no-op (14.2.15). Build predates the D-24682 fix.",
       "note": "Copies of a shared-id card (S.H.I.E.L.D. Agents, Troopers, Officers, Wounds) could not be multi-selected; fixed by D-24682. Re-confirm by KO’ing two S.H.I.E.L.D. Agents after deploy."
     },
     {
@@ -1086,10 +1086,10 @@
       "card": "Loki",
       "ability": "Tactic: Vanishing Illusions",
       "wp": "WP-694",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-10",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 13.2.18; solo no-op (no other players). Solo no-op line seen: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win — \"no other player had a Villain in their Victory Pile to KO\" (21.2.16), after rescuing Loki's 4 Bystanders (21.2.15). 2p bot-ally Loki / Midtown Bank Robbery (Enemies of Asgard + Radiation), match CM_RIBLkJem (build 4d96598): a one-target Silent Sniper defeat parked the multi-seat KO for the bot (32.2.14), and the bot ally faulted. Fixed by #2667 (D-24681).",
-      "note": "Multi-seat branch still to confirm after the D-24681 deploy: the other seat KOs a Villain from its Victory Pile and the game continues."
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 13.2.18; solo no-op (no other players). Solo no-op line seen: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win — \"no other player had a Villain in their Victory Pile to KO\" (21.2.16), after rescuing Loki's 4 Bystanders (21.2.15). 2p bot-ally Loki / Midtown Bank Robbery (Enemies of Asgard + Radiation), match CM_RIBLkJem (build 4d96598): a one-target Silent Sniper defeat parked the multi-seat KO for the bot (32.2.14), and the bot ally faulted. Fixed by #2667 (D-24681). 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Wolverine, Captain America), match GkZeatCQh5f (build 39c8244): defeated by a normal fight (22.2.18); the bot chose and KO’d Frost Giant from its Victory Pile (22.2.20) and the game continued.",
+      "note": "Multi-seat branch confirmed. The one-target free-defeat path (Silent Sniper / Pure Fury, D-24681) has its own live-verify line in STATUS."
     },
     {
       "key": "mastermind:core/loki|whispers-and-lies",
@@ -1098,9 +1098,9 @@
       "ability": "Tactic: Whispers and Lies",
       "wp": "WP-691",
       "state": "partial",
-      "date": "2026-10-09",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 14.2.14; solo no-op, logged nothing. Solo no-op line seen: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — \"there is no other player to KO Bystanders from\" (24.2.17).",
-      "note": "Multi-seat Bystander KO unexercised (needs a 2-player game)."
+      "date": "2026-10-10",
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 14.2.14; solo no-op, logged nothing. Solo no-op line seen: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — \"there is no other player to KO Bystanders from\" (24.2.17). 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Wolverine, Captain America), match GkZeatCQh5f (build 39c8244): defeated at 26.2.16; the bot had no Bystanders in its Victory Pile, so it KO’d 0 (26.2.18).",
+      "note": "Multi-seat Bystander KO still unexercised: the other player needs Bystanders in their Victory Pile when Whispers and Lies is defeated."
     },
     {
       "key": "mastermind:core/dr-doom|master-strike",
