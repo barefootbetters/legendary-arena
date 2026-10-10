@@ -1232,7 +1232,7 @@
       "state": "partial",
       "date": "2026-10-08",
       "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): villain-deck Bystanders entered as Killbots with attack = Twists next to the Scheme (3, then 4 / 5 / 6 after twists 1–3); defeated Killbots scored 1 VP each (villainVP reconciles); 2 escaped (19.1.2, 22.1.2) and ran the HQ-KO escape step.",
-      "note": "Evil Wins (5 Killbots escape) not reached. Killbots display and log as \"Bystander\"."
+      "note": "Evil Wins (5 Killbots escape) not reached. The \"Bystander\" label seen in build 28bc08a was fixed by #2631 (D-24668); confirm Killbots read \"Killbot\" on the City card, in the log and in the Victory Pile next Killbots game."
     },
     {
       "key": "scheme:core/secret-invasion-of-the-skrull-shapeshifters|conversion",
