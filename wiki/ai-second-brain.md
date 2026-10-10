@@ -663,6 +663,12 @@ corrupts recall or the store:
 - **`sensitivity` is stored, separate from authority class** (see
   [Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)),
   so the query surface can withhold owner-only domains from a hosted model.
+  **Enforce it in the database, not only in the MCP server.** Postgres
+  row-level security on the chunk table, keyed on `sensitivity`, gives the
+  hosted-facing read role a policy that cannot return owner-only rows. A bug
+  in the knowledge-query server then returns nothing rather than leaking. This
+  is *Permissions Beat Prompts* one layer down, the same move as Supabase's
+  row-level security on a client-facing app.
 
 ### Hosting and security posture
 
@@ -1701,6 +1707,21 @@ doing its job. The platform is successful when the operator can:
 
 Each is observable, so "is the brain working?" is a check, not an opinion.
 
+**A judge model covers what a deterministic check cannot.** Some outputs have
+no exact answer: whether a compiled page summarizes its sources faithfully, or
+whether an extraction note dropped a caveat. For those, a skill keeps a small
+set of example inputs with operator-approved outputs, and a judge model scores
+new output against them (LLM-as-a-judge; Dave Ebbelaar's segment on Nate Herk's
+channel, [References](#references)). Three limits keep it honest:
+
+- A deterministic check runs first wherever one exists. The citation verifier
+  and the coach's whole-term rubric stay deterministic, and a judge never
+  replaces them.
+- The judge is a different model from the author, routed through the gateway.
+  This is the multi-model cross-check in [Edge Cases](#edge-cases).
+- A judge's verdict is evidence for the operator, not an authority. It can flag
+  a page for review; it cannot promote one.
+
 ### Failure modes
 
 A governance page is stronger when it names how it can fail. Each failure below
@@ -2317,6 +2338,32 @@ This is the summary index; the individual gotchas and their nuances live in
     video's claim, and it is not checked here.
 
   No Locked row moved, and there is no `DECISIONS.md` entry.
+- **2026-10-10 — external review: building and selling software with AI
+  (Preferred / Open, no re-lock).** Reviewed a Grok summary of a Nate Herk video
+  with guest Dave Ebbelaar. The title and channel were checked; the content came
+  from the summary.
+  **Adopted:**
+  - The four-rung risk ladder in Open Question 7. The business is on rung 3,
+    and one ship per customer keeps each instance on rung 1. Three things must
+    be proven before selling beyond the pilot.
+  - A judge model for outputs with no exact answer
+    ([Success criteria](#success-criteria)). It runs after the deterministic
+    checks, it is a different model from the author, and its verdict is
+    evidence, never promotion.
+  - Postgres row-level security on `sensitivity`
+    ([Embedding and schema invariants](#embedding-and-schema-invariants)), the
+    analogue of the video's Supabase advice.
+
+  **Already covered:** agents as the build surface with the human supplying
+  intent and review; least-privilege credentials; phone access.
+
+  **Not adopted:**
+  - "Heavy specs matter less as models improve." It is fine for a rung-1
+    prototype, but *Plan Before Delegation* still asks for written goals and
+    acceptance criteria.
+  - The guest's "~10×" productivity figure. It is not checked here.
+
+  No Locked row moved, and there is no `DECISIONS.md` entry.
 
 ## Open Questions
 
@@ -2471,6 +2518,20 @@ is built.
    which is the thing the [Positioning](#positioning-the-owner-stays-captain)
    promise rules out.
 
+   *Risk ladder (2026-10-10):* Dave Ebbelaar, a guest on Nate Herk's channel
+   ([References](#references)), ranks AI-built software in four rungs of risk:
+   a personal tool, a team tool, a product sold to others, and a consumer
+   service. The ship sits on two rungs at once. The *business* is on rung 3: the
+   pilot client is a customer. Each *instance* keeps rung-1 shape: one operator,
+   one corpus, one host. One ship per customer is what keeps it there, because
+   it sells a rung-3 service without running a rung-4 shared service. Rung 3
+   still brings its own obligations: the customer owns their ship and its
+   backups, the setup is documented, and the support terms are written down.
+   Before selling beyond the pilot, three things are proven on the operator's
+   own ship and the pilot's: a rehearsed restore, `sensitivity` enforcement,
+   and the citation verifier. A multi-tenant service would move to rung 4. That
+   is a separate decision, made later if at all.
+
 ## References
 
 - [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — the architecture +
@@ -2504,6 +2565,10 @@ is built.
   - [*Grok Bot Just Got 2 Massive Upgrades. Do These Things Now.*](https://www.youtube.com/watch?v=MgvwZaDPCs4)
     — model routing and a cloud-hosted Claude Code terminal, under
     [The agent layer is replaceable](#the-agent-layer-is-replaceable).
+  - [*How to Actually Build & Sell Software with AI as a Non-Techie*](https://youtu.be/l8ywUsEJ2XQ)
+    (guest Dave Ebbelaar) — the risk ladder in Open Question 7, LLM-as-a-judge
+    under [Success criteria](#success-criteria), and row-level security under
+    [Embedding and schema invariants](#embedding-and-schema-invariants).
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — the host-build sibling
   page (droplet hardening, Node/Postgres/Nginx stack, restore and DR drills).
 - [Disaster Recovery](disaster-recovery.md) — the backup-and-restore discipline
