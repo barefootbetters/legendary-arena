@@ -25,7 +25,7 @@ source:
   - C:\www\jefferyjjensen-corporate-memory (the ship — private repo barefootbetters/jefferyjjensen-corporate-memory)
   - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026 — the hosting cost baseline)
   - ../render.yaml
-last-reviewed: 2026-10-04
+last-reviewed: 2026-10-10
 ---
 
 # AI Second Brain
@@ -520,6 +520,32 @@ turn that authored the note. This is *Permissions Beat Prompts* at the write lay
 the promotion boundary holds because the credential cannot cross it, not because
 the prompt asked nicely.
 
+**A worked recipe: expert corpus → compiled wiki → cited rules → verified
+skill.** Nate Herk's 2026 "another Karpathy" build ([References](#references))
+is the clearest end-to-end example of this loop. It runs four steps over one
+expert's public material, about 700k words:
+
+1. **Collect raw sources** (transcripts, posts, blogs, code) into `raw/`. Here
+   that is Reference raw source.
+2. **Compile an interlinked Markdown wiki** over them, with an `INDEX.md` and an
+   optional Obsidian view. These are compiled Reference pages under the rules in
+   [Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority):
+   each carries its `source:` list and hashes, and none is cited as policy.
+3. **Extract a short list of rules** from the wiki, each one citing the pages it
+   came from.
+4. **Wrap the rules in a skill with a verification hook.** In the video the hook
+   is "run it first": the skill may not hand over code it has not run.
+
+Ongoing ingest updates the wiki. Here that is the propose-only scheduled compile
+([Architectural invariants](#architectural-invariants-vs-implementation-choices)).
+Two fences keep the recipe inside this design. The rule list starts as a compiled
+page; turning it into rules a skill *enforces* is a promotion, so the operator
+reviews it and a model does not. And the verification hook is code (a hook or a
+`checks/` script) rather than a sentence in the skill prompt, which is
+*Permissions Beat Prompts* and "a skill without verification is incomplete".
+Prototype it on one small owned Reference corpus, the operator's own first. A
+client's corpus lives in the client's ship, never this one.
+
 ### Knowledge-query MCP surface
 
 Every agent reaches the vector layer through **one shared MCP server**, not by
@@ -637,6 +663,12 @@ corrupts recall or the store:
 - **`sensitivity` is stored, separate from authority class** (see
   [Knowledge governance](#knowledge-governance-how-knowledge-enters-moves-and-earns-authority)),
   so the query surface can withhold owner-only domains from a hosted model.
+  **Enforce it in the database, not only in the MCP server.** Postgres
+  row-level security on the chunk table, keyed on `sensitivity`, gives the
+  hosted-facing read role a policy that cannot return owner-only rows. A bug
+  in the knowledge-query server then returns nothing rather than leaking. This
+  is *Permissions Beat Prompts* one layer down, the same move as Supabase's
+  row-level security on a client-facing app.
 
 ### Hosting and security posture
 
@@ -833,6 +865,10 @@ is local Markdown, not any one app's workflow. A web clipper that saves a page a
 Markdown plus its images to local disk is a good ingest front door for the
 Research domain, provided it lands in the domain's `raw/` or `inbox/` — never an
 Authoritative tree. Clipping is a human act, so it needs no write-jail of its own.
+A model's built-in social search (Grok's native X search is a 2026 example) is
+the same kind of front door for public Research material. Its results land in
+`inbox/` as Transient, are treated as data rather than instructions, and are
+promoted only by the usual rules.
 
 **Voice is split by domain, not universal.** Each domain carries its own tone
 profile — engineering-professional, Legendary Arena product, Barefoot Betters
@@ -949,6 +985,31 @@ Turnstone-style supervisor). All three are swappable; only the knowledge base
 underneath them is not. The motto *knowledge is permanent, agents are replaceable*
 is exactly this split — "agents" is hardware + model + harness, and any of the
 three can change without moving a single fact.
+
+**Vendor routers and hosted always-on harnesses are hosted surfaces.** In 2026
+some assistants route each task to whichever backend suits it. Nate Herk shows
+Grok Bot forwarding work to Claude, Midjourney, or Suno, and running Claude Code
+or Codex inside a cloud terminal that the operator can reach from a phone
+([References](#references)). Both confirm *Model Independence* from the outside:
+the model is a routable worker. Neither replaces the owned gateway. A vendor
+router is a hosted gateway, gateway Option C in the
+[coach sketch](#gateway-routing-for-the-endgame-coach-decision-sketch), with the
+routing decision and the query content held by the vendor. A cloud terminal is a
+hosted computer. So both take **hosted-OK work only**:
+
+- No owner-only domain goes in. The `sensitivity` column applies to a router
+  exactly as it applies to hosted inference ([Edge Cases](#edge-cases)).
+- Secrets stay on the owned host. The video's workflow of cloning repos and
+  copying `.env` files onto the vendor's machine is the part *not* adopted;
+  credentials are scoped per server on the owned box
+  ([Hosting and security posture](#hosting-and-security-posture)).
+- The corpus is still read through the same MCP surface. A hosted harness that
+  keeps its own copy of the corpus is a second truth store.
+
+Phone access on the owned path stays Tailscale Serve
+([Voice interface](#voice-interface-speech-in-speech-out)). A hosted harness is an
+optional experiment once the Day 2 tool connection and the first navigation slice
+work. It is not a platform dependency.
 
 ### Voice interface (speech in, speech out)
 
@@ -1274,6 +1335,33 @@ governs any other change. This repo already runs this layer: `.claude/CLAUDE.md`
 the `.claude/rules/*.md` enforcement files, and the memory index are exactly
 these files — high-signal, version-controlled, loaded every session, and edited
 under review like any other governed artifact.
+
+**Keep the always-loaded set short; context bloat is a finding.** Every line in
+these files is paid for on every turn, in tokens and in attention. Nate Herk's
+2026 context-engineering video ([References](#references)) reports that
+Anthropic cut its own system prompts sharply on recent models with little
+quality loss. That figure is the video's claim, not one checked here. The rule
+it supports already stands under *Context Must Be Routed*:
+
+- The always-loaded files hold **goals, audience, purpose, and routing**.
+- Procedures, long rule lists, and examples live in skills or linked docs and
+  load **when a task needs them**.
+- A per-domain voice profile is loaded by the skill writing in that domain, not
+  by every session.
+
+Three practices follow:
+
+- **The ship's `/audit` measures it.** Unused skills, duplicated rules, and
+  always-on text that no task reads are findings in the audit, fixed the way
+  any failure is (*Every Failure Upgrades the System*).
+- **A model change triggers an audit.** A new model can need less steering
+  than the last one, and old workarounds then become noise. This is the same
+  lesson as the coach's per-model quirk rows
+  ([Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch)):
+  model-specific instructions are config to revisit, not permanent context.
+- **Prune duplicate checks, never the last one.** When a reliable handoff makes
+  a second check redundant, removing it is cleanup. Removing the only check is a
+  breach of *Verification Is Required*.
 
 ### The ship, the map, and the captain (platform repo)
 
@@ -1618,6 +1706,21 @@ doing its job. The platform is successful when the operator can:
   [Operating discipline](#operating-discipline)).
 
 Each is observable, so "is the brain working?" is a check, not an opinion.
+
+**A judge model covers what a deterministic check cannot.** Some outputs have
+no exact answer: whether a compiled page summarizes its sources faithfully, or
+whether an extraction note dropped a caveat. For those, a skill keeps a small
+set of example inputs with operator-approved outputs, and a judge model scores
+new output against them (LLM-as-a-judge; Dave Ebbelaar's segment on Nate Herk's
+channel, [References](#references)). Three limits keep it honest:
+
+- A deterministic check runs first wherever one exists. The citation verifier
+  and the coach's whole-term rubric stay deterministic, and a judge never
+  replaces them.
+- The judge is a different model from the author, routed through the gateway.
+  This is the multi-model cross-check in [Edge Cases](#edge-cases).
+- A judge's verdict is evidence for the operator, not an authority. It can flag
+  a page for review; it cannot promote one.
 
 ### Failure modes
 
@@ -2203,6 +2306,64 @@ This is the summary index; the individual gotchas and their nuances live in
   Map Day 2 is marked overdue, the Day 7 audit is now a re-run against the
   baseline, and the open-intake count is corrected from two to three. No
   Locked row moved, and there is no `DECISIONS.md` entry.
+- **2026-10-10 — external review: three Nate Herk videos (Preferred / Open, no
+  re-lock).** Reviewed a Grok summary of three videos from Nate Herk's channel,
+  which is also the source of the map. Titles and channel were checked; the
+  videos' content was taken from the summary, not watched.
+  **Adopted:**
+  - The "another Karpathy" build as a worked recipe under
+    [Knowledge extraction](#knowledge-extraction-operator-triggered): raw
+    sources, then a compiled wiki, then cited rules, then a skill with a
+    verification hook. Two fences: the rule list is promoted by the operator,
+    and the hook is code.
+  - A demo pattern for Open Question 7.
+  - Keep the always-loaded context short ([Persistent context files](#persistent-context-files)):
+    the ship's `/audit` treats bloat as a finding, a model change triggers an
+    audit, and duplicate checks are pruned but never the last one.
+  - Per-skill model tiers at the gateway (Open Question 2).
+  - Vendor routers and hosted always-on harnesses (Grok Bot) as hosted-OK
+    surfaces ([The agent layer is replaceable](#the-agent-layer-is-replaceable)).
+  - Built-in X search as a Research front door into `inbox/`.
+
+  **Not adopted:**
+  - Calling a vendor router "the LiteLLM pattern in another harness." It is a
+    hosted gateway that holds the routing decision and the query content, so
+    owner-only domains stay off it.
+  - Cloning repos and copying `.env` files onto a vendor's cloud terminal.
+    Secrets stay on the owned host.
+  - Dropping a verification step outright. Only a *duplicate* check is pruned.
+  - Expert *emulation* for the seminary pilot. The selling point is the
+    teacher's own words cited, not new text in the teacher's voice.
+  - The "80% smaller system prompts, ~10× faster" figure. It is recorded as the
+    video's claim, and it is not checked here.
+
+  No Locked row moved, and there is no `DECISIONS.md` entry.
+- **2026-10-10 — external review: building and selling software with AI
+  (Preferred / Open, no re-lock).** Reviewed a Grok summary of a Nate Herk video
+  with guest Dave Ebbelaar. The title and channel were checked; the content came
+  from the summary.
+  **Adopted:**
+  - The four-rung risk ladder in Open Question 7. The business is on rung 3,
+    and one ship per customer keeps each instance on rung 1. Three things must
+    be proven before selling beyond the pilot.
+  - A judge model for outputs with no exact answer
+    ([Success criteria](#success-criteria)). It runs after the deterministic
+    checks, it is a different model from the author, and its verdict is
+    evidence, never promotion.
+  - Postgres row-level security on `sensitivity`
+    ([Embedding and schema invariants](#embedding-and-schema-invariants)), the
+    analogue of the video's Supabase advice.
+
+  **Already covered:** agents as the build surface with the human supplying
+  intent and review; least-privilege credentials; phone access.
+
+  **Not adopted:**
+  - "Heavy specs matter less as models improve." It is fine for a rung-1
+    prototype, but *Plan Before Delegation* still asks for written goals and
+    acceptance criteria.
+  - The guest's "~10×" productivity figure. It is not checked here.
+
+  No Locked row moved, and there is no `DECISIONS.md` entry.
 
 ## Open Questions
 
@@ -2239,7 +2400,12 @@ is built.
    **quantization** (NVFP4-class 4-bit) to fit larger weights in unified memory
    without wrecking coherence; and tune the per-call **reasoning-effort / thinking
    budget**, which lifts quality on the *same* model. All three are tuned at the
-   gateway and reopen no Locked row.
+   gateway and reopen no Locked row. *Routing per skill (2026-10-10):* the roster
+   can be chosen per skill as well as per domain. A simple skill (filing a
+   capture, a lint report) routes to a cheap, fast model, and a hard one
+   (synthesis, review) to a strong one. A skill declares the tier it needs and the
+   gateway maps tiers to models, so a cheaper model is a config change too. This
+   is *Skills Over Monoliths* paying off at the routing layer.
 3. **Host sizing, vendor, and when to split off production.** A dedicated host is
    the end-state; v1 co-locates with production (D-24341). That box does not
    exist yet: production is still on Render at $146.35/mo (September 2026), and
@@ -2342,6 +2508,30 @@ is built.
    *Model Independence* plus "your data never leaves", sold as a product. Still
    open: the pilot's success criteria, which set whether it "works".
 
+   *Demo pattern (2026-10-10):* the
+   [expert-corpus recipe](#knowledge-extraction-operator-triggered) gives the
+   pilot a concrete build: the teacher's study archive as `raw/`, a compiled wiki
+   over it, and a skill that answers from it with citations. One change from the
+   video carries over. The Karpathy agent *teaches in its subject's style, in new
+   words*; this one *returns the teacher's own words*, cited. Generating new
+   devotional text in the teacher's voice would sell machine-written content,
+   which is the thing the [Positioning](#positioning-the-owner-stays-captain)
+   promise rules out.
+
+   *Risk ladder (2026-10-10):* Dave Ebbelaar, a guest on Nate Herk's channel
+   ([References](#references)), ranks AI-built software in four rungs of risk:
+   a personal tool, a team tool, a product sold to others, and a consumer
+   service. The ship sits on two rungs at once. The *business* is on rung 3: the
+   pilot client is a customer. Each *instance* keeps rung-1 shape: one operator,
+   one corpus, one host. One ship per customer is what keeps it there, because
+   it sells a rung-3 service without running a rung-4 shared service. Rung 3
+   still brings its own obligations: the customer owns their ship and its
+   backups, the setup is documented, and the support terms are written down.
+   Before selling beyond the pilot, three things are proven on the operator's
+   own ship and the pilot's: a rehearsed restore, `sensitivity` enforcement,
+   and the citation verifier. A multi-tenant service would move to rung 4. That
+   is a separate decision, made later if at all.
+
 ## References
 
 - [DECISIONS.md D-24341](../docs/ai/DECISIONS.md#d-24341) — the architecture +
@@ -2364,6 +2554,21 @@ is built.
   Three Ms of AI™ and Four Cs of an AI OS™ frameworks (trademarks of Nate Herk).
   It is the layout the platform repo follows; see
   [The ship, the map, and the captain](#the-ship-the-map-and-the-captain-platform-repo).
+- Nate Herk | AI Automation, three videos reviewed 2026-10-10 from a summary
+  (see [History](#history)):
+  - [*I Built Another Andrej Karpathy Using Claude*](https://www.youtube.com/watch?v=bvGptCLDhyo)
+    — the expert-corpus recipe under
+    [Knowledge extraction](#knowledge-extraction-operator-triggered).
+  - [*Anthropic Engineers Just 10x'd Everyone's Claude Code*](https://www.youtube.com/watch?v=oz2CwrPV2Rg)
+    — minimal always-on context and periodic audits, under
+    [Persistent context files](#persistent-context-files).
+  - [*Grok Bot Just Got 2 Massive Upgrades. Do These Things Now.*](https://www.youtube.com/watch?v=MgvwZaDPCs4)
+    — model routing and a cloud-hosted Claude Code terminal, under
+    [The agent layer is replaceable](#the-agent-layer-is-replaceable).
+  - [*How to Actually Build & Sell Software with AI as a Non-Techie*](https://youtu.be/l8ywUsEJ2XQ)
+    (guest Dave Ebbelaar) — the risk ladder in Open Question 7, LLM-as-a-judge
+    under [Success criteria](#success-criteria), and row-level security under
+    [Embedding and schema invariants](#embedding-and-schema-invariants).
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — the host-build sibling
   page (droplet hardening, Node/Postgres/Nginx stack, restore and DR drills).
 - [Disaster Recovery](disaster-recovery.md) — the backup-and-restore discipline
