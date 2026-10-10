@@ -47150,4 +47150,26 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 ---
 
+### D-24684 — Ymir's "Choose a player" picks the player with the most Wounds (direct fix, no WP) (Active 2026-10-10)
+
+**Context.** Ymir, Frost Giant King's Fight reads "Choose a player. That player KOs any number of Wounds from their hand and discard pile." D-24329 (WP-516) collapsed "choose a player" to the fighting player, on the reasoning that a rational chooser KOs all their own Wounds. That holds only when the fighter has Wounds. In 2p bot-ally match `r8_2EFHd3Ah` (build `031aaf0`), Player 0 fought Ymir holding none, because Diving Block had prevented every recent Wound, and the log read "KO'd 0 Wound(s)" (36.2.37). The bot had just gained a Wound from Frost Giant (36.2.30) and ended the game with 17. The effect was wasted where any co-op player would have picked the teammate.
+
+**Decision.**
+1. **Chooser.** The handler picks the player with the most Wounds in hand + discard (the printed zones; the deck is not scanned). Ties go to the fighting player, then to the lowest seat id. It stays auto-resolved and deterministic: KO'ing Wounds is pure upside for whoever holds them, so this is the pick a rational co-op chooser makes, and no player-selection UI or pending choice is added. This amends D-24329 point 1 (the current-player collapse). Its "any number → all" and hand + discard-only scope are unchanged.
+2. **Name kept.** The primitive keeps its WP-516 name `ko-wounds-current-hand-and-discard`. It is a card-data marker and a canonical `VILLAIN_EFFECT_PRIMITIVES` entry, so renaming it would churn card data for a label. "current" no longer describes the target; the handler JSDoc says so.
+3. **Wording.** The applied line names the chosen player, which may not be the fighter (the D-24683 attribution precedent): "Fight effect: Player 1 KO'd 3 Wound(s) from their hand and discard pile." When no player holds a Wound: "Fight effect: no player had a Wound in their hand or discard pile to KO." (blocked).
+4. **Solo.** Unchanged. The only seat is the fighter.
+
+**Tests.** `villainEffects.execute.test.ts`: AC-1's log regex now expects the player-named line, and AC-2's expects the new no-Wound line. Their state assertions are unchanged; AC-1 already gave the fighter more Wounds than player 1. New cases: the teammate is chosen when the fighter has none (the `r8_2EFHd3Ah` shape, deck Wound untouched), and a tie goes to the fighter even when it is not the lowest seat. Authorized behaviour change under this entry.
+
+**Hash posture.** `G.messages` is hash-excluded (D-24081). The target change alters `G` only in a 2+ player match where a non-fighter holds more Wounds. No hash, PAR or replay fixture re-pinned: the engine suite passed with fixtures untouched.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5036 → 5038, server 1678, arena-client 2298); `sim:runtime-observed:check` current; `ledger:numbers:check` passed; no generated-artifact churn.
+
+**Live-verify (D-24026):** pending. Next 2p game with Enemies of Asgard: defeat Ymir while a teammate holds more Wounds, and check the line names that player.
+
+**Reserved by:** NUMBER-LEDGER D-24684. Related: D-24329 / WP-516 (the primitive), D-24683 (player attribution), WP-603 / D-24413 (Melter's "choose a player" went interactive instead), D-24026.
+
+---
+
 Protect this file.

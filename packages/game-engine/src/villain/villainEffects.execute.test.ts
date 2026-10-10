@@ -3846,7 +3846,8 @@ describe('override-next-hand-size ⟂ Magneto discard-to-limit (WP-503 / D-24307
 
 // ---------------------------------------------------------------------------
 // ko-wounds-current-hand-and-discard (WP-516 / D-24329) — Ymir, Frost Giant
-// King Fight: the current player KOs every Wound from their hand + discard.
+// King Fight: the player with the most Wounds (ties → the current player, D-24684)
+// KOs every Wound from their hand + discard.
 // ---------------------------------------------------------------------------
 
 /**
@@ -3892,17 +3893,59 @@ describe('executeVillainAbilities — ko-wounds-current-hand-and-discard (WP-516
     assert.deepStrictEqual(G.playerZones['0']!.inPlay, [WOUND], 'in-play Wound is untouched');
     // why: all three KO’d Wounds land in the general KO pile (hand-order then discard-order).
     assert.deepStrictEqual(G.ko, [WOUND, WOUND, WOUND], 'three Wounds KO’d to the KO pile');
-    // why: AC-3 — the non-current player's Wounds are untouched (single-target).
-    assert.deepStrictEqual(G.playerZones['1']!.hand, [WOUND], 'non-current player hand untouched');
-    assert.deepStrictEqual(G.playerZones['1']!.discard, [WOUND], 'non-current player discard untouched');
-    // why: keyword-less self-narration (D-24266 breadcrumb removed by marking).
+    // why: single-target — player '1' holds fewer Wounds (2 vs 3), so it is not
+    // chosen and its Wounds are untouched (D-24684 most-Wounds chooser).
+    assert.deepStrictEqual(G.playerZones['1']!.hand, [WOUND], 'non-chosen player hand untouched');
+    assert.deepStrictEqual(G.playerZones['1']!.discard, [WOUND], 'non-chosen player discard untouched');
+    // why: keyword-less self-narration (D-24266 breadcrumb removed by marking),
+    // naming the chosen player (D-24683 attribution).
     assert.equal(G.messages!.length, 1, 'one self-narrated Fight-effect line');
-    assert.match(G.messages![0]!.text, /Fight effect: KO'd 3 Wound\(s\) from your hand and discard pile\./);
+    assert.match(G.messages![0]!.text, /Fight effect: Player 0 KO'd 3 Wound\(s\) from their hand and discard pile\./);
     assert.equal(G.messages![0]!.outcome, 'applied');
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'no hollow record when the handler fires');
   });
 
-  it('AC-2 a player with zero Wounds is a reachable no-op (blocked, no crash, no hollow)', () => {
+  it('D-24684 picks the teammate when the fighter has no Wounds (live 2p match r8_2EFHd3Ah)', () => {
+    const G = makeG({
+      hooks: [koWoundsHook('v-ymir')],
+      playerZones: {
+        '0': { deck: [], hand: [CARD_A], discard: [CARD_B], inPlay: [], victory: [] },
+        '1': { deck: [WOUND], hand: [WOUND, CARD_A], discard: [WOUND, WOUND], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-ymir' as CardExtId, 'onFight');
+
+    // why: player '1' holds 3 Wounds in hand + discard vs the fighter's 0, so '1' is chosen.
+    assert.deepStrictEqual(G.playerZones['1']!.hand, [CARD_A], 'teammate hand Wound KO’d');
+    assert.deepStrictEqual(G.playerZones['1']!.discard, [], 'teammate discard Wounds KO’d');
+    // why: the deck is not a named zone — its Wound stays.
+    assert.deepStrictEqual(G.playerZones['1']!.deck, [WOUND], 'teammate deck untouched');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [CARD_A], 'fighter hand untouched');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [CARD_B], 'fighter discard untouched');
+    assert.deepStrictEqual(G.ko, [WOUND, WOUND, WOUND], 'three Wounds KO’d to the KO pile');
+    assert.match(G.messages![0]!.text, /Fight effect: Player 1 KO'd 3 Wound\(s\) from their hand and discard pile\./);
+    assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('D-24684 a Wound-count tie goes to the fighting player', () => {
+    const G = makeG({
+      hooks: [koWoundsHook('v-ymir')],
+      playerZones: {
+        '0': { deck: [], hand: [WOUND], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [WOUND], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, { currentPlayer: '1' }, 'v-ymir' as CardExtId, 'onFight');
+
+    // why: 1–1 tie; the fighter ('1', not the lowest seat) wins it.
+    assert.deepStrictEqual(G.playerZones['1']!.discard, [], 'fighter Wound KO’d');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [WOUND], 'other seat untouched on a tie');
+    assert.match(G.messages![0]!.text, /Fight effect: Player 1 KO'd 1 Wound\(s\)/);
+  });
+
+  it('AC-2 no player holding a Wound is a reachable no-op (blocked, no crash, no hollow)', () => {
     const G = makeG({
       hooks: [koWoundsHook('v-ymir')],
       playerZones: {
@@ -3916,7 +3959,7 @@ describe('executeVillainAbilities — ko-wounds-current-hand-and-discard (WP-516
     assert.deepStrictEqual(G.ko, [], 'nothing KO’d');
     assert.deepStrictEqual(G.playerZones['0']!.hand, [CARD_A], 'non-Wound hand stays');
     assert.deepStrictEqual(G.playerZones['0']!.discard, [CARD_B], 'non-Wound discard stays');
-    assert.match(G.messages![0]!.text, /Fight effect: KO'd 0 Wound\(s\) from your hand and discard pile\./);
+    assert.match(G.messages![0]!.text, /Fight effect: no player had a Wound in their hand or discard pile to KO\./);
     assert.equal(G.messages![0]!.outcome, 'blocked');
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
   });
