@@ -27,6 +27,7 @@ import type {
   VillainEffectResult,
   VillainEffectDescriptor,
   VillainEffectPrimitive,
+  VillainEffectPlayerTargets,
 } from '../rules/villainAbility.types.js';
 import {
   getVillainHooksForCard,
@@ -35,7 +36,7 @@ import {
 } from '../rules/villainAbility.types.js';
 import type { CitySpaceName } from '../board/citySpaceNames.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
-import type { ResolvedEffectResult } from '../events/notableEvents.compose.js';
+import type { ResolvedEffectResult, ResolvedPlayerTargetNames } from '../events/notableEvents.compose.js';
 import { composeStrikeBlockedNarrative } from '../events/notableEvents.compose.js';
 import type { StrikeBlockThreatKind } from '../events/notableEvents.types.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
@@ -190,6 +191,9 @@ export function executeVillainAbilities(
           if (application.pending === true) {
             result.pending = true;
           }
+          if (application.targetsByPlayer !== undefined) {
+            result.targetsByPlayer = application.targetsByPlayer;
+          }
           results.push(result);
         }
       } else {
@@ -264,6 +268,22 @@ export function resolveEffectResultNames(
     };
     if (result.pending === true) {
       resolvedResult.pending = true;
+    }
+    // why: D-24683 — carry the each-player KO's per-player split, names resolved the same way.
+    if (result.targetsByPlayer !== undefined) {
+      const playerTargetNames: ResolvedPlayerTargetNames[] = [];
+      for (const playerShare of result.targetsByPlayer) {
+        const names: string[] = [];
+        for (const targetId of playerShare.targets) {
+          names.push(resolveCardDisplayName(G, targetId));
+        }
+        const resolvedShare: ResolvedPlayerTargetNames = { playerId: playerShare.playerId, names };
+        if (playerShare.pending === true) {
+          resolvedShare.pending = true;
+        }
+        playerTargetNames.push(resolvedShare);
+      }
+      resolvedResult.playerTargetNames = playerTargetNames;
     }
     resolved.push(resolvedResult);
   }
@@ -702,6 +722,9 @@ function buildVillainEffectTraceParams(
 interface VillainEffectApplication {
   targets: CardExtId[];
   pending?: boolean;
+  // why: D-24683 — an each-player KO also reports each player's share so the log can
+  // attribute it; every other handler omits it.
+  targetsByPlayer?: VillainEffectPlayerTargets[];
 }
 
 /**
@@ -920,8 +943,13 @@ function villainEffectKoHero(
   // and contributes no target. This only reads the resolver's return — it does
   // NOT post-process the mutation (D-18902 mutation-location lock preserved).
   const targets: CardExtId[] = [];
+  // why: D-24683 — each player's share, in the same seat order, so the log line says who
+  // lost which Heroes ("Player 0 KO'd …; Player 1 had no hero to KO") instead of a flat list.
+  const targetsByPlayer: VillainEffectPlayerTargets[] = [];
   let parked = false;
   for (const playerId of playerIds) {
+    const playerShare: VillainEffectPlayerTargets = { playerId, targets: [] };
+    targetsByPlayer.push(playerShare);
     // why: D-24280 — a `zone`-bearing descriptor (Juggernaut's discard/hand
     // source-restricted KO) uses the zone-locked resolver, which KOs `repetitions`
     // heroes from ONLY that zone (no discard→hand→inPlay fallback). Absent zone is
@@ -934,11 +962,13 @@ function villainEffectKoHero(
       // identical) auto-resolves with no prompt.
       if (playerId === currentPlayer && parkZoneKoChoice(G, playerId, descriptor.zone, repetitions)) {
         parked = true;
+        playerShare.pending = true;
         continue;
       }
       const koedIds = koHeroesFromZoneForPlayer(G, playerId, descriptor.zone, repetitions);
       for (const koedId of koedIds) {
         targets.push(koedId);
+        playerShare.targets.push(koedId);
       }
     } else {
       // why: D-24669 — "Each player KOs two of their Heroes" (Destroyer's Escape) and
@@ -948,19 +978,21 @@ function villainEffectKoHero(
       // (D-24284). A forced KO falls through to the auto-resolve below.
       if (playerId === currentPlayer && parkZoneKoChoice(G, playerId, undefined, repetitions)) {
         parked = true;
+        playerShare.pending = true;
         continue;
       }
       for (let iteration = 0; iteration < repetitions; iteration++) {
         const koedId = koOneHeroForPlayer(G, playerId);
         if (koedId !== null) {
           targets.push(koedId);
+          playerShare.targets.push(koedId);
         }
       }
     }
   }
   // why: D-24644 — `targets` still names the other players' auto-KOs; pending marks
   // the current player's parked pick (named at resolve time by resolveKoHeroChoice).
-  return parked ? { targets, pending: true } : { targets };
+  return parked ? { targets, pending: true, targetsByPlayer } : { targets, targetsByPlayer };
 }
 
 /**

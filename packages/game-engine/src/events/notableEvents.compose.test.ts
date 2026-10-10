@@ -260,6 +260,64 @@ describe('composeEffectResultLogLine (WP-316)', () => {
     );
   });
 
+  // why: D-24683 — "every player KO’d two heroes (S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent)" read
+  // as both players losing two when one had nothing to KO (matches GkZeatCQh5f, O7iMuNBh9E5).
+  it('D-24683: an each-player KO names which player KO’d what, and who had nothing', () => {
+    const agents = ['S.H.I.E.L.D. Agent', 'S.H.I.E.L.D. Agent'];
+    assert.equal(
+      composeEffectResultLogLine([{
+        keyword: 'koHeroEachPlayerMag2',
+        targetNames: agents,
+        playerTargetNames: [
+          { playerId: '0', names: agents },
+          { playerId: '1', names: [] },
+        ],
+      }]),
+      'Player 0 KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent; Player 1 had no hero to KO',
+    );
+    assert.equal(
+      composeAmbushNarrative('Juggernaut', [{
+        keyword: 'koHeroEachPlayerMag2',
+        targetNames: ['S.H.I.E.L.D. Trooper', 'Hulk'],
+        playerTargetNames: [
+          { playerId: '0', names: ['S.H.I.E.L.D. Trooper'] },
+          { playerId: '1', names: ['Hulk'] },
+        ],
+      }]),
+      '"Juggernaut" ambushed: Player 0 KO’d S.H.I.E.L.D. Trooper; Player 1 KO’d Hulk.',
+    );
+  });
+
+  it('D-24683: a pending each-player KO names each other player, including one with nothing', () => {
+    assert.equal(
+      composeEffectResultLogLine([{
+        keyword: 'koHeroEachPlayerMag2',
+        targetNames: ['Hulk'],
+        pending: true,
+        playerTargetNames: [
+          { playerId: '0', names: [], pending: true },
+          { playerId: '1', names: ['Hulk'] },
+          { playerId: '2', names: [] },
+        ],
+      }]),
+      'the active player must KO two heroes; Player 1 KO’d Hulk; Player 2 had no hero to KO',
+    );
+  });
+
+  it('D-24683: an each-player KO that took nothing anywhere keeps "no player had a hero to KO"', () => {
+    assert.equal(
+      composeEffectResultLogLine([{
+        keyword: 'koHeroEachPlayerMag2',
+        targetNames: [],
+        playerTargetNames: [
+          { playerId: '0', names: [] },
+          { playerId: '1', names: [] },
+        ],
+      }]),
+      'no player had a hero to KO',
+    );
+  });
+
   it('D-24644 amendment: a pending two-KO effect (Juggernaut) says "two heroes"; one-KO keywords keep "a hero"', () => {
     assert.equal(
       composeEffectResultLogLine([{ keyword: 'koHeroEachPlayerMag2', targetNames: [], pending: true }]),

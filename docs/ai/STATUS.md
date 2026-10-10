@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24683 — "Each player KOs" lines say which player lost which Heroes (direct fix) (2026-10-10)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Juggernaut's Ambush and Escape, Destroyer's Escape and the other "each player KOs" effects now log, for example, "Player 0 KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent; Player 1 had no hero to KO". Before, "every player KO’d two heroes (S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent)" read as if both players lost two. Reported in 2p matches `GkZeatCQh5f` and `O7iMuNBh9E5`.
+
+- **Engine only, text only.** No rules or state change; no re-pin.
+- **Live-verify (D-24026): pending.** In a 2p match, a Juggernaut Ambush when one player's discard is empty logs that player as "had no hero to KO".
+
 ### D-24682 — Maniacal Tyrant / Salomé can KO several S.H.I.E.L.D. Agents (direct fix) (2026-10-10)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** The "KO up to N cards from your discard pile" prompt (Loki's Maniacal Tyrant, Salomé) now lets you pick several copies of the same basic card: two S.H.I.E.L.D. Agents, a Trooper and a Wound, and so on. Before this, only one copy of each could be selected. Reported in 2p match `5oJXzZqbdys`.

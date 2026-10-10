@@ -47123,4 +47123,27 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 ---
 
+### D-24683 — An each-player KO's log line and Ambush/Fight narrative say which player KO'd what (direct fix, no WP) (Active 2026-10-10)
+
+**Context.** In 2p matches `GkZeatCQh5f` and `O7iMuNBh9E5`, Juggernaut's Ambush logged "every player KO’d two heroes (S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent)". Only two names appear, so the line reads as if both players lost two. It is almost certainly one player losing two while the other had nothing in their discard. The each-player `ko-hero` executor returned one flat `targets` list across every player, and the composer wrapped it in the fixed label "every player KO’d two heroes". Nothing recorded whose card was whose. The same flat list fed the pending wording "the active player must KO two heroes; other players KO’d …".
+
+**Decision.**
+1. **Per-player split.** `VillainEffectResult` gains an optional `targetsByPlayer?: VillainEffectPlayerTargets[]` (`{ playerId, targets, pending? }`, seat order). Only the each-player branch of `villainEffectKoHero` fills it, so every other effect is untouched. The flat `targets` list is unchanged. This is an additive optional field on a contract type, recorded here. The fire-site `resolveEffectResultNames` resolves the names into `ResolvedEffectResult.playerTargetNames`.
+2. **Wording.** `composeEffectResultClause` renders one clause per player:
+   - "Player 0 KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent; Player 1 had no hero to KO".
+   - A pending current-player pick keeps "the active player must KO two heroes" and names each other player the same way.
+   - Nothing KO'd anywhere keeps D-24646's "no player had a hero to KO".
+   - Results without the split (every other keyword, older callers) keep the old wording.
+3. **Hash posture.** `G.messages` is hash-excluded (D-24081). The Ambush/Fight/Escape narrative in `G.notableEvents` carries this text. No replay or hash fixture contains an each-player KO that took a card, so nothing re-pinned (engine suite green, fixtures untouched), the same finding as D-24646.
+
+**Tests.** One existing shape test (`villainEffects.execute.test.ts`, "koHeroEachPlayer reports every KO'd hero across players") now expects the added `targetsByPlayer` field. Its existing assertions are unchanged. New tests:
+- the resolver carries the per-player split;
+- composer cases: a split with an empty player, a two-player Ambush narrative, a pending pick naming the others, and the all-empty wording.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5032 → 5036, server 1678, arena-client 2298); arena-client typecheck 0; `sim:runtime-observed:check` current; no generated-artifact churn.
+
+**Reserved by:** NUMBER-LEDGER D-24683. Related: D-24644 (Juggernaut each-player KO), D-24646 (no-target wording), D-24669 (current player picks), D-24102 / WP-316 (effect-result targets), D-24026 (the live sessions that surfaced it).
+
+---
+
 Protect this file.

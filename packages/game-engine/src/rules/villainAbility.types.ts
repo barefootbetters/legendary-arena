@@ -143,6 +143,24 @@ export interface VillainEffectResult {
   keyword: VillainEffectKeyword;
   targets: CardExtId[];
   pending?: boolean;
+  /**
+   * The same targets split by player, in seat order, for an each-player KO only
+   * (D-24683). Present only when the effect KOs for every player, so the log can say
+   * which player lost which Heroes and which had none. Omitted for every other effect.
+   */
+  targetsByPlayer?: VillainEffectPlayerTargets[];
+}
+
+/**
+ * One player's share of an each-player KO (D-24683).
+ *
+ * `targets` is what this player's auto-KO took (empty when they had nothing to KO);
+ * `pending: true` marks the current player's parked pick, named later at resolve time.
+ */
+export interface VillainEffectPlayerTargets {
+  playerId: string;
+  targets: CardExtId[];
+  pending?: boolean;
 }
 
 // ---------------------------------------------------------------------------
