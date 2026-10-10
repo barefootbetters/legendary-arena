@@ -25,7 +25,7 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-10-05
+last-reviewed: 2026-10-09
 ---
 
 # Soul of Legendary Arena
@@ -1448,6 +1448,28 @@ lock does not need the hard one. If leaving costs your livelihood and your name,
 almost nobody tests the wall. It is cheaper than force, and from the outside it
 looks like freedom.
 
+**Love with no address — the asymmetry.** Real love is particular. It has an
+address: a mother and father pour themselves into *these* children, a town keeps
+up *its* streets, a nation tends *its own* people. That is not selfishness; it is
+how love works, and it is the reason love can be held to account. The people it
+is for have names, and any one of them can say it failed him. Love for "everyone"
+has no address, so no one can call it to account. It can justify anything,
+because whoever it harms is always outweighed by everyone else. Its first move is
+to call the particular *narrow* — the warm "we're all in this together" that
+prises a family loose from its own garden. Its last move is the voiceless-captive
+case below: once the collective's need outranks the individual, there is no
+individual it cannot spend. The kulaks were dispossessed and deported to build
+the collective farm, and the villages left behind starved under its grain
+quotas — for the good of everyone. Aktion T4 killed thousands of disabled German
+children for the health of the *Volk* — a nation's love turned from its own
+children to an abstraction of itself. Dostoevsky put the asymmetry in a doctor's
+mouth: "The more I love humanity in general, the less I love man in particular."
+The test: **to whom is this compassion answerable, by name?** If the answer is
+only a category — humanity, the people, the planet, the future, the *Volk* — and
+no person inside it can hold the love to account, judge it by its effect, not
+its warmth. The line to carry out of it: *when someone's compassion is for
+everyone in general and no one in particular, watch your children.*
+
 **Supporting mechanisms** — each one a way of working one of the five levers:
 
 - **The rotating seat** *(why the lens looks for a seat, not a man)*. Pareto's
@@ -2435,6 +2457,9 @@ together:
   doing the hard lock's job.
 - If the arrangement can replace its occupants without changing any of the five
   answers, you have found the seat, not the man.
+- If every answer to *answerable to whom?* is a category and never a name, the
+  [love has no address](#the-mastermind-lens--five-questions), and the people
+  it claims to serve are the ones it can spend.
 
 The lens is working when it can describe a gulag and a benefits schedule with
 the same five questions, and does not have to raise its voice for either.
@@ -3227,6 +3252,13 @@ operator has declined a caveat, do not bring it back.
   Commission, the Warren and Church committees, the Reichstag Fire Decree,
   Pareto's *circulation of elites*) are cited as illustrations of structure,
   not adjudicated by this page.
+- Source behind the lens's *love with no address* —
+  Fyodor Dostoevsky, [*The Brothers Karamazov*](https://www.gutenberg.org/ebooks/28054),
+  tr. Constance Garnett (1912; public domain), Book II, ch. IV, "A Lady of Little
+  Faith," where Father Zossima recounts a doctor's confession: "The more I love
+  humanity in general, the less I love man in particular." Dekulakization and
+  the Nazi Aktion T4 child-killing programme are cited as illustrations of
+  structure, not adjudicated by this page.
 - Sources behind [the Warren Commission example](#the-mastermind-lens--five-questions)
   — David Talbot, [*The Devil's Chessboard: Allen Dulles, the CIA, and the Rise
   of America's Secret Government*](https://www.harpercollins.ca/9780062276179/the-devils-chessboard/) (Harper, 2015; audiobook narrated by Peter
