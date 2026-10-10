@@ -324,7 +324,7 @@ has the rule, and the match is created with it. Before, a Final Blow loadout sil
 
 ### WP-793 — A Villain escape follows the rulebook: HQ KO, Bystander discard, then the Escape effect (EC-830 / D-24656) (2026-10-05)
 
-**User-visible on `play.legendary-arena.com` (after deploy). D-24026 live-verify pending.** When a Villain escapes,
+**User-visible on `play.legendary-arena.com` (after deploy). D-24026 live-verify PASS 2026-10-10 (see below).** When a Villain escapes,
 the current player no longer gains a Wound. Instead the escape does what the rulebook says, in order:
 1. it KOs a Hero costing 6 or less from the HQ. With two or more candidates the current player picks one ("A Villain
    escaped — choose a Hero in the HQ to KO"); with one it is KO'd automatically; with none the log says so. The HQ
@@ -351,6 +351,15 @@ instead of freezing the turn.
   automatic / "KO'd nothing" line) and the HQ space refills; the discard prompt appears and one card leaves the hand;
   the Villain's own Escape effect still fires. In a 2-seat or bot-ally match, confirm the other seat answers its own
   discard prompt. Record the matchId here.
+- **Live-verify (D-24026), 2026-10-10: PASS.** Match `ciNPDe-qZE-` (build `85c92de`, 2p bot-ally Magneto / Midtown
+  Bank Robbery, Brotherhood + Spider-Foes). Four escapes carried Bystanders: Venom, Blob, Sabretooth and Green Goblin.
+  - **No generic escape Wound.** Venom's and Sabretooth's own printed Escape Wounds fired (21.1.4, 32.1.4); Blob,
+    which has no Escape ability, gave none.
+  - **HQ KO and refill.** Each escape KO'd an HQ Hero (21.1.5, 25.1.7, 32.1.5) and the HQ ended with all 5 slots full.
+  - **Discard.** Both seats discarded one card per escape, including the bot seat answering its own prompt (21.1.6–7,
+    25.1.8–9, 32.1.6–7).
+  - **Endgame stop.** Green Goblin's escape took the carry to 9 of 8, and the game ended there with no HQ-KO or discard
+    prompt opened (33.1.4). That is the point-4 "never once `evaluateEndgame` is non-null" rule.
 
 ### WP-749 — Sim / PAR loops resolve a seat choice addressed to a non-active seat (EC-786 / D-24573) (2026-10-05)
 

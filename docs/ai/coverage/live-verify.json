@@ -273,9 +273,9 @@
       "ability": "Covering Fire",
       "wp": "WP-719",
       "state": "partial",
-      "date": "2026-10-06",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): the other player drew a card three times (14.2.5, 20.2.12, 34.2.6); blocked without another Tech Hero (26.2.10).",
-      "note": "Discard branch unexercised."
+      "date": "2026-10-10",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): the other player drew a card three times (14.2.5, 20.2.12, 34.2.6); blocked without another Tech Hero (26.2.10). 2p bot-ally Magneto / Midtown Bank Robbery (Brotherhood + Spider-Foes; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match ciNPDe-qZE- (build 85c92de): the other player drew twice more (14.2.6, 20.2.7); blocked without another Tech Hero twice (26.2.13, 30.2.5).",
+      "note": "Discard branch still unexercised: pick \"discard\" on the two-button prompt."
     },
     {
       "key": "core/hawkeye|defeated-villain-or-mastermind",
@@ -866,10 +866,10 @@
       "card": "The Lizard",
       "ability": "gain-wound",
       "wp": "WP-252",
-      "state": "partial",
-      "date": "2026-08-03",
-      "evidence": "WP-489 live-verify (#1187)",
-      "note": "Deny path at the Bank confirmed; Sewers positive path pending."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "WP-489 live-verify (#1187). 2p bot-ally Magneto / Midtown Bank Robbery (Brotherhood + Spider-Foes; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match ciNPDe-qZE- (build 85c92de): fought in the Sewers (city space 0) twice, and each time the other player gained a Wound (9.2.7, 21.2.10).",
+      "note": "Both paths: the deny path at the Bank, and the Sewers Wound to each other player."
     },
     {
       "key": "core-villain-masters-of-evil-ultron|reveal-or-wound",
@@ -888,10 +888,10 @@
       "card": "Venom",
       "ability": "gainWoundEachPlayer",
       "wp": "WP-185",
-      "state": "pending",
-      "date": "2026-10-08",
-      "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): Venom was fought with a Covert Hero in play (28.2.11), not escaped.",
-      "note": "Escape effect unexercised."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): Venom was fought with a Covert Hero in play (28.2.11), not escaped. 2p bot-ally Magneto / Midtown Bank Robbery (Brotherhood + Spider-Foes; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match ciNPDe-qZE- (build 85c92de): Venom escaped at 21.1.2 and each player gained a Wound (21.1.4).",
+      "note": ""
     },
     {
       "key": "core-villain-hydra-viper|gain-wound-unless-victory-villain-group",
@@ -1174,10 +1174,10 @@
       "card": "Midtown Bank Robbery",
       "ability": "Escapes carry Bystanders away; resource-loss Evil Wins",
       "wp": "WP-508",
-      "state": "partial",
-      "date": "2026-10-04",
-      "evidence": "Solo Magneto / Midtown Bank Robbery (Hulk), match jjChx_MJ2gl (build afd76ff)",
-      "note": "Escaping Blob x2 + Mystique carried 6 Bystanders; loss progress read 6 of 8. Evil Wins at 8 not reached."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Hulk), match jjChx_MJ2gl (build afd76ff): escaping Blob x2 + Mystique carried 6 Bystanders; loss progress read 6 of 8. 2p bot-ally Magneto / Midtown Bank Robbery (Brotherhood + Spider-Foes; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match ciNPDe-qZE- (build 85c92de): Venom carried 3 Bystanders (21.1.3), Blob 1 (25.1.5), Sabretooth 2 (32.1.3) and Green Goblin 3 (33.1.3); at 9 of 8 the scheme won (33.1.4, gameOver scheme-wins, loss progress 9 / 8).",
+      "note": ""
     },
     {
       "key": "scheme:core/negative-zone-prison-breakout|escape-loss",
