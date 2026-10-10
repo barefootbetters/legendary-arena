@@ -445,6 +445,59 @@ describe('computeFinalScores — printed VP (D-24157)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Defeated Killbots score as Bystanders (rules v23 L2341)
+// ---------------------------------------------------------------------------
+
+describe('computeFinalScores — defeated Killbots', () => {
+  it('scores a defeated Killbot as bystanderVP, not villainVP, with the total unchanged', () => {
+    // why: match 38KtA2vWDg9 showed 8 Killbots in villainVP and 0 bystanderVP. The rule
+    // (v23 L2341) puts them in the Victory Pile as Bystanders. Killbots are typed
+    // 'villain' for routing (D-24324), so only the 'killbot' converted origin marks them.
+    const gameState = {
+      ...createMockGameState({
+        playerZones: {
+          '0': {
+            deck: [], hand: [], discard: [], inPlay: [],
+            victory: ['bystander-villain-deck-01', 'bystander-villain-deck-02', 'v-real'],
+          },
+        },
+        villainDeckCardTypes: {
+          'bystander-villain-deck-01': 'villain',
+          'bystander-villain-deck-02': 'villain',
+          'v-real': 'villain',
+        },
+        cardVictoryPoints: { 'v-real': 3 },
+      }),
+      convertedVillainOrigins: {
+        'bystander-villain-deck-01': 'killbot',
+        'bystander-villain-deck-02': 'killbot',
+      },
+    } as LegendaryGameState;
+
+    const breakdown = computeFinalScores(gameState).players[0]!;
+    assert.equal(breakdown.villainVP, 3, 'only the real Villain scores villainVP');
+    assert.equal(breakdown.bystanderVP, 2 * VP_BYSTANDER, 'each Killbot scores as a Bystander');
+    assert.equal(breakdown.totalVP, 5);
+  });
+
+  it('leaves a Skrull-origin card on the villain branch (the Killbot rule is origin-specific)', () => {
+    const gameState = {
+      ...createMockGameState({
+        playerZones: {
+          '0': { deck: [], hand: [], discard: [], inPlay: [], victory: ['hero-skrull-00'] },
+        },
+        villainDeckCardTypes: { 'hero-skrull-00': 'villain' },
+      }),
+      convertedVillainOrigins: { 'hero-skrull-00': 'skrull' },
+    } as LegendaryGameState;
+
+    const breakdown = computeFinalScores(gameState).players[0]!;
+    assert.equal(breakdown.villainVP, VP_VILLAIN);
+    assert.equal(breakdown.bystanderVP, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Supreme HYDRA dynamic VP (WP-546 / D-24355)
 // ---------------------------------------------------------------------------
 

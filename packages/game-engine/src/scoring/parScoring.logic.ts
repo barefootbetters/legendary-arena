@@ -22,7 +22,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { ReplayResult } from '../replay/replay.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
-import { computeFinalScores, isBystanderCard } from './scoring.logic.js';
+import { computeFinalScores, isBystanderCard, isVictoryPileBystander } from './scoring.logic.js';
 import type {
   ParBaseline,
   PenaltyEventType,
@@ -79,10 +79,11 @@ export function deriveScoringInputs(
   // dropped every supply-pile bystander (BYSTANDER_EXT_ID), undercounting rescues
   // and under-crediting the competitive score — matching computeFinalScores' VP
   // count and the HUD rescue count now.
+  // A defeated Killbot also counts (isVictoryPileBystander, rules v23 L2341).
   let bystandersRescued = 0;
   for (const zones of Object.values(gameState.playerZones)) {
     for (const cardExtId of zones.victory) {
-      if (isBystanderCard(gameState, cardExtId)) {
+      if (isVictoryPileBystander(gameState, cardExtId)) {
         bystandersRescued = bystandersRescued + 1;
       }
     }
@@ -103,17 +104,17 @@ export function deriveScoringInputs(
     let playerMastermindTacticsDefeated = 0;
     if (playerZones) {
       // why: WP-616 — classify each victory-pile card with the SAME else-if order
-      // computeFinalScores uses (villainDeckCardTypes → isBystanderCard →
+      // computeFinalScores uses (isVictoryPileBystander → villainDeckCardTypes →
       // mastermind.tacticsDefeated), so these per-seat counts never drift from the
-      // VP computation. The bystander branch is unchanged from WP-588.
+      // VP computation. A defeated Killbot is a Bystander here, not a Villain.
       for (const cardExtId of playerZones.victory) {
         const cardType = gameState.villainDeckCardTypes[cardExtId];
-        if (cardType === 'villain') {
+        if (isVictoryPileBystander(gameState, cardExtId)) {
+          playerBystandersRescued = playerBystandersRescued + 1;
+        } else if (cardType === 'villain') {
           playerVillainsDefeated = playerVillainsDefeated + 1;
         } else if (cardType === 'henchman') {
           playerHenchmenDefeated = playerHenchmenDefeated + 1;
-        } else if (isBystanderCard(gameState, cardExtId)) {
-          playerBystandersRescued = playerBystandersRescued + 1;
         } else if (gameState.mastermind.tacticsDefeated.includes(cardExtId)) {
           playerMastermindTacticsDefeated = playerMastermindTacticsDefeated + 1;
         }

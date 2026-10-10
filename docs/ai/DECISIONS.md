@@ -47061,4 +47061,33 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 ---
 
+### D-24680 — A defeated Killbot counts as a Bystander in the Victory Pile; escaped-pile loss lines name what escaped (direct fix, no WP) (Active 2026-10-10)
+
+**Context.** In 2p match `38KtA2vWDg9` (Dr. Doom / Replace Earth's Leaders with Killbots), the bot's final breakdown read `villainVP` 23 and `bystanderVP` 0, with 8 defeated Killbots inside the 23. Rules v23 L2337–L2341 ("Bystanders that become Villains"): "If you defeat them, you still get any 'rescue' effects on Special Bystanders. They count as Bystanders in your Victory Pile, not Villains." Covert Operation already counted them as Bystanders, which gave the bot +7 attack on turn 35, so the same game disagreed with itself. Killbots are typed `'villain'` in `G.villainDeckCardTypes` so they route, fight and escape as Villains (D-24324). Every Victory Pile classifier checked that type before the Bystander test. Separately, the escaped-pile loss line read "5 killbot card(s) carried away by escaping villains". Only Bystanders are carried away, so the wording was wrong for Negative Zone Prison Breakout, Killbots and Secret Invasion.
+
+**Decision.**
+1. **`isVictoryPileBystander(G, cardId)`** (`scoring/scoring.logic.ts`) returns `isBystanderCard` OR a `'killbot'` converted origin. Every Victory Pile classifier now checks it **first**, before the villain branch:
+   - `computeFinalScores` (breakdown);
+   - `victoryPointValueForCard` (live VP; it mirrors scoring);
+   - `deriveScoringInputs` (aggregate and per-seat rescues / villains defeated);
+   - the PAR aggregator's rescue count;
+   - the UIState `bystandersRescued` HUD count.
+
+   `getEligibleVictoryVillains` excludes a Killbot, so a "Villain from your Victory Pile" pick never offers one.
+2. **The escaped pile is unchanged.** It keeps `isBystanderCard`: an escaped Killbot is an escaped Villain (the rules count "Bystanders that were turned into Villains … and escaped the city as Villains" among escapes), not a lost Bystander. A Skrull-origin card keeps the villain branch.
+3. **Loss line.** `applyEscapedPileResourceLoss` logs via a new `describeEscapedLoss`:
+   - "8 Bystanders carried away by escaping Villains" (Midtown Bank Robbery);
+   - "12 Villains escaped" (Negative Zone);
+   - "5 Killbots escaped";
+   - "6 Skrulls escaped".
+4. **No score moves.** `VP_BYSTANDER` and the `VP_VILLAIN` fallback are both 1, so every total, RawScore and PAR is unchanged. `bystandersRescued` is informational since D-24409. Only the category split and the per-seat report-card counts change, and only for Killbots matches. `G.messages` is hash-excluded (D-24081). No G field, no re-pin.
+
+**Tests.** New: Killbots score as `bystanderVP` with the total unchanged, and a Skrull stays on the villain branch (`scoring.logic.test.ts`); per-seat rescues and an escaped Killbot not counted as `bystanderLost` (`parScoring.logic.test.ts`); `getEligibleVictoryVillains` excludes a Killbot. The four loss wordings are asserted in the existing `schemeResourceLoss.test.ts` threshold cases; no existing assertion changed.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5025 → 5030, server 1678, arena-client 2298, dashboard 571); `sim:runtime-observed:check` current; `git status` shows no generated-artifact churn.
+
+**Reserved by:** NUMBER-LEDGER D-24680. Related: D-24324 / D-24325 (Killbots), D-24668 (Killbot display name), D-24395 (isBystanderCard), D-24409, D-24026 (the live session that surfaced it).
+
+---
+
 Protect this file.

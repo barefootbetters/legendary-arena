@@ -537,6 +537,22 @@ describe('getEligibleVictoryVillains', () => {
     );
   });
 
+  it('excludes a defeated Killbot — it counts as a Bystander in the Victory Pile (rules v23 L2341)', () => {
+    const gameState = {
+      ...makeTestGameState({
+        victory: ['villain-m' as CardExtId, 'bystander-villain-deck-03' as CardExtId],
+        villainDeckCardTypes: {
+          'villain-m': 'villain',
+          // why: Killbots are typed 'villain' for routing (D-24324); only the origin marks them.
+          'bystander-villain-deck-03': 'villain',
+        },
+      }),
+      convertedVillainOrigins: { 'bystander-villain-deck-03': 'killbot' },
+    } as LegendaryGameState;
+
+    assert.deepStrictEqual(getEligibleVictoryVillains(gameState, '0'), ['villain-m']);
+  });
+
   it('returns empty array when no players zones exist for playerID', () => {
     const gameState = makeTestGameState({});
 

@@ -965,3 +965,38 @@ describe('deriveScoringInputs synergy split (WP-708 / D-24531)', () => {
     assert.equal(seat?.conditionalClausesRealizedValue, 2, 'realizedValue survives the deep-copy');
   });
 });
+
+describe('deriveScoringInputs — defeated Killbots are rescued Bystanders (rules v23 L2341)', () => {
+  it('counts a defeated Killbot in bystandersRescued and per-seat rescues, not villainsDefeated', () => {
+    // why: Killbots are typed 'villain' for routing (D-24324); the 'killbot' converted origin
+    // is what makes them Bystanders in the Victory Pile. Before the fix this seat read
+    // villainsDefeated 3 / bystandersRescued 0 (match 38KtA2vWDg9's report-card split).
+    const state = {
+      ...makeTerminalStateWithVictoryPile(
+        ['bystander-villain-deck-01', 'bystander-villain-deck-02', 'vil-1'],
+        { 'bystander-villain-deck-01': 'villain', 'bystander-villain-deck-02': 'villain', 'vil-1': 'villain' },
+      ),
+      convertedVillainOrigins: {
+        'bystander-villain-deck-01': 'killbot',
+        'bystander-villain-deck-02': 'killbot',
+      },
+    } as unknown as LegendaryGameState;
+
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.bystandersRescued, 2);
+    const seat = inputs.perPlayer?.find((contribution) => contribution.playerId === '0');
+    assert.equal(seat?.bystandersRescued, 2);
+    assert.equal(seat?.villainsDefeated, 1);
+    assert.equal(inputs.victoryPoints, 3, 'both categories are 1 VP, so the total is unchanged');
+  });
+
+  it('keeps an escaped Killbot out of bystanderLost — it escaped as a Villain', () => {
+    const state = {
+      ...makeTerminalStateWithEscapedPile(['bystander-villain-deck-05'], { 'bystander-villain-deck-05': 'villain' }),
+      convertedVillainOrigins: { 'bystander-villain-deck-05': 'killbot' },
+    } as unknown as LegendaryGameState;
+
+    const inputs = deriveScoringInputs(makeReplayResult(10), state);
+    assert.equal(inputs.penaltyEventCounts.bystanderLost, 0);
+  });
+});

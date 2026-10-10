@@ -25,7 +25,7 @@ import {
   VP_TACTIC,
   VP_UNDERCOVER,
 } from '../scoring/scoring.types.js';
-import { isBystanderCard } from '../scoring/scoring.logic.js';
+import { isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import { computeDynamicVillainVictoryPoints } from '../scoring/dynamicVictoryPoints.js';
 
 /**
@@ -33,9 +33,9 @@ import { computeDynamicVillainVictoryPoints } from '../scoring/dynamicVictoryPoi
  * null when the card carries no VP value.
  *
  * // why: mirrors computeFinalScores (scoring/scoring.logic.ts) branch for branch:
- * 1. villain — the dynamic-VP resolver, then printed `cardVictoryPoints`, then VP_VILLAIN;
- * 2. henchman — printed, then VP_HENCHMAN;
- * 3. bystander (either source, via isBystanderCard) — VP_BYSTANDER;
+ * 1. bystander (any source, incl. a defeated Killbot, via isVictoryPileBystander) — VP_BYSTANDER;
+ * 2. villain — the dynamic-VP resolver, then printed `cardVictoryPoints`, then VP_VILLAIN;
+ * 3. henchman — printed, then VP_HENCHMAN;
  * 4. a Mastermind tactic THIS player defeated — the mastermind's printed VP, then VP_TACTIC;
  * 5. a card this player sent Undercover — VP_UNDERCOVER (scoring counts these from
  *    `zones.undercover`; they sit in the Victory Pile and fall through the villain /
@@ -58,6 +58,11 @@ export function victoryPointValueForCard(
   }
   const cardType = G.villainDeckCardTypes[cardId];
 
+  // why: checked before the villain branch — a defeated Killbot is typed 'villain'
+  // but counts as a Bystander in the Victory Pile (rules v23 L2341).
+  if (isVictoryPileBystander(G, cardId)) {
+    return VP_BYSTANDER;
+  }
   if (cardType === 'villain') {
     // why: WP-772 / D-24604 — split by zone exactly like computeFinalScores: the off-play cards
     // take the split-face map's both-halves view, the in-play cards only their chosen face.
@@ -81,9 +86,6 @@ export function victoryPointValueForCard(
   }
   if (cardType === 'henchman') {
     return G.cardVictoryPoints?.[cardId] ?? VP_HENCHMAN;
-  }
-  if (isBystanderCard(G, cardId)) {
-    return VP_BYSTANDER;
   }
   if (G.mastermind.tacticsDefeated.includes(cardId)) {
     return G.cardVictoryPoints?.[G.mastermind.baseCardId] ?? VP_TACTIC;

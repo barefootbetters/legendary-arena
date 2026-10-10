@@ -52,6 +52,30 @@ export function isBystanderCard(
 }
 
 /**
+ * Returns whether a card in a Victory Pile counts as a Bystander there.
+ *
+ * why: rules v23 L2337–L2341 ("Bystanders that become Villains") — a defeated
+ * Killbot "count[s] as Bystanders in your Victory Pile, not Villains". Killbots
+ * are typed 'villain' in G.villainDeckCardTypes so they route, fight and escape
+ * as Villains (D-24324), so the Victory Pile reads their 'killbot' converted
+ * origin instead of the type. The escaped pile keeps isBystanderCard: an escaped
+ * Killbot is an escaped Villain, not a lost Bystander.
+ *
+ * @param gameState - Current game state (read-only).
+ * @param cardExtId - The card ext-id in a Victory Pile.
+ * @returns Whether the card counts as a Bystander in the Victory Pile.
+ */
+export function isVictoryPileBystander(
+  gameState: LegendaryGameState,
+  cardExtId: string,
+): boolean {
+  if (gameState.convertedVillainOrigins?.[cardExtId] === 'killbot') {
+    return true;
+  }
+  return isBystanderCard(gameState, cardExtId);
+}
+
+/**
  * Computes final VP scores for all players.
  *
  * Pure function — reads G, returns FinalScoreSummary, never mutates.
@@ -122,7 +146,14 @@ export function computeFinalScores(
     for (const cardId of zones.victory) {
       const cardType = gameState.villainDeckCardTypes[cardId];
 
-      if (cardType === 'villain') {
+      if (isVictoryPileBystander(gameState, cardId)) {
+        // why: bystanders in victory come from three sources — villain-deck
+        // bystanders (tracked in G.villainDeckCardTypes), rescued supply-pile
+        // bystanders (BYSTANDER_EXT_ID) and defeated Killbots (typed 'villain',
+        // so this branch runs before the villain branch). isVictoryPileBystander
+        // is the single source of truth for all three. Each scores a flat VP_BYSTANDER.
+        bystanderCount++;
+      } else if (cardType === 'villain') {
         // why: a card-text dynamic-VP resolver overrides the printed-VP/fallback
         // path for known modifier villains (Supreme HYDRA counts victory-pile HYDRA
         // villains, D-24355; Ultron counts tech Heroes across all zones, D-24362); it
@@ -139,13 +170,6 @@ export function computeFinalScores(
         villainVP += dynamicVp ?? (gameState.cardVictoryPoints?.[cardId] ?? VP_VILLAIN);
       } else if (cardType === 'henchman') {
         henchmanVP += gameState.cardVictoryPoints?.[cardId] ?? VP_HENCHMAN;
-      } else if (isBystanderCard(gameState, cardId)) {
-        // why: bystanders in victory come from two sources — villain-deck
-        // bystanders (tracked in G.villainDeckCardTypes) and rescued
-        // supply-pile bystanders (BYSTANDER_EXT_ID). isBystanderCard is the
-        // single source of truth for both (WP-586). Both contribute a flat
-        // VP_BYSTANDER.
-        bystanderCount++;
       } else if (gameState.mastermind.tacticsDefeated.includes(cardId)) {
         // why: a victory-pile card whose id is in mastermind.tacticsDefeated is a
         // Mastermind tactic THIS player defeated (fightMastermind pushes it to the

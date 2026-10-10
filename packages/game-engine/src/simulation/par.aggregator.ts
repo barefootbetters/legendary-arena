@@ -62,7 +62,7 @@ import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
 // top-level cross-reference.
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEscapeProcedure.js';
-import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
+import { computeFinalScores, isBystanderCard, isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
@@ -962,10 +962,11 @@ export function deriveScoringInputsFromFinalState(
   // BYSTANDER_EXT_ID). The old villainDeckCardTypes-only test dropped every
   // supply-pile bystander, so the PAR baseline undercounted rescues exactly
   // as the live deriveScoringInputs did — kept symmetric by sharing one helper.
+  // A defeated Killbot also counts (isVictoryPileBystander, rules v23 L2341).
   let bystandersRescued = 0;
   for (const zones of Object.values(finalState.playerZones)) {
     for (const cardExtId of zones.victory) {
-      if (isBystanderCard(finalState, cardExtId)) {
+      if (isVictoryPileBystander(finalState, cardExtId)) {
         bystandersRescued = bystandersRescued + 1;
       }
     }

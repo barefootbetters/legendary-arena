@@ -147,11 +147,6 @@ export function applyEscapedPileResourceLoss(
     condition.kind === 'escaped-pile-count'
       ? countEscapedPileByType(gameState, condition.cardTypes)
       : countEscapedByConvertedOrigin(gameState, condition.origin);
-  const matchLabel =
-    condition.kind === 'escaped-pile-count'
-      ? condition.cardTypes.join('/')
-      : condition.origin;
-
   if (matchCount >= condition.threshold) {
     // why: SCHEME_LOSS is set HERE, in the escape path, rather than derived
     // inside evaluateEndgame, because evaluateEndgame reads only G.counters
@@ -160,9 +155,40 @@ export function applyEscapedPileResourceLoss(
     gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
     pushLog(
       gameState,
-      `Scheme loss triggered — ${matchCount} ${matchLabel} card(s) carried away by escaping villains (threshold ${condition.threshold}).`,
+      `Scheme loss triggered — ${describeEscapedLoss(condition, matchCount)} (threshold ${condition.threshold}).`,
     );
   }
+}
+
+/**
+ * Describes what reached an escaped-pile loss threshold, in the printed rule's terms.
+ *
+ * why: only Bystanders are "carried away by escaping Villains" (Midtown Bank Robbery).
+ * Villains, Henchmen, Killbots and Skrulls escape themselves, so the generic "card(s)
+ * carried away" line misdescribed three of the four escaped-pile schemes (match
+ * 38KtA2vWDg9 logged "5 killbot card(s) carried away by escaping villains").
+ *
+ * @param condition - The escaped-pile resource-loss condition that triggered.
+ * @param matchCount - How many matching cards are in the escaped pile.
+ * @returns The phrase naming the count and what escaped, without the threshold.
+ */
+function describeEscapedLoss(
+  condition: Extract<
+    SchemeResourceLossCondition,
+    { kind: 'escaped-pile-count' } | { kind: 'escaped-converted-count' }
+  >,
+  matchCount: number,
+): string {
+  if (condition.kind === 'escaped-converted-count') {
+    if (condition.origin === 'killbot') {
+      return `${matchCount} Killbots escaped`;
+    }
+    return `${matchCount} Skrulls escaped`;
+  }
+  if (condition.cardTypes.length === 1 && condition.cardTypes[0] === 'bystander') {
+    return `${matchCount} Bystanders carried away by escaping Villains`;
+  }
+  return `${matchCount} Villains escaped`;
 }
 
 /**
