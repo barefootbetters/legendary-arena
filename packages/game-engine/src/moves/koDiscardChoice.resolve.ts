@@ -4,7 +4,7 @@
  *
  * Called by the current player after Loki's "Maniacal Tyrant" tactic Fight ("KO up
  * to four cards from your discard pile") parked a PendingKoDiscardChoice. The player
- * selects 0..min(4, discardSize) DISTINCT cards from their OWN discard; this move
+ * selects 0..min(4, discardSize) cards from their OWN discard; this move
  * validates the selection against the current discard, removes each chosen card from
  * discard, appends it to the global KO pile (G.ko) via koCard, and front-pops the
  * pending entry. An empty selection is the legal "KO nothing" choice.
@@ -15,9 +15,11 @@
  * array payload, FIFO queue, front-only resolve, front-pop on success, block-all
  * guard, silent no-ops on every invalid payload with the queue left intact.
  *
- * // why: D-24510 — the payload ids must be DISTINCT (a Set) per the WP contract:
- * KO-from-discard is modeled as a set of at most `maxCount` distinct discard ids,
- * so a payload repeating an id is rejected rather than treated as two removals.
+ * // why: D-24682 (supersedes D-24510's distinct-id rule) — the payload is a MULTISET.
+ * Basic S.H.I.E.L.D. Agents / Troopers / Officers and Wounds share one ext_id per kind
+ * (fungible tokens, D-24183), so "KO two S.H.I.E.L.D. Agents" is the same id twice. Each
+ * repeated id removes one more copy; asking for more copies than the discard holds is
+ * rejected by the per-card presence check on the working copy.
  *
  * No registry imports. No .reduce(). Moves never throw.
  */
@@ -35,9 +37,9 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 /**
  * Payload for the resolveKoDiscardChoice move.
  *
- * cardIds — the DISTINCT discard ext_ids to KO (order irrelevant — the KO pile is a
- * set-like destination). Must be 0..maxCount ids, each distinct, each present in the
- * chooser's discard now. An empty array is the legal "KO nothing" choice.
+ * cardIds — the discard ext_ids to KO (order irrelevant). Must be 0..maxCount ids, each
+ * present in the chooser's discard now; an id may repeat once per copy held (two
+ * S.H.I.E.L.D. Agents = the Agent id twice). An empty array is the legal "KO nothing" choice.
  */
 export interface ResolveKoDiscardChoiceArgs {
   cardIds: CardExtId[];
@@ -78,28 +80,16 @@ export function getEligibleKoDiscardCards(
 }
 
 /**
- * Whether the payload ids are all distinct (no repeated ext_id).
- *
- * // why: D-24510 — the KO-from-discard payload is a SET of distinct discard ids;
- * a repeated id is an invalid payload (rejected), not two removals of the same card.
- *
- * @param cardIds - The submitted ids.
- * @returns true when every id is distinct.
- */
-function areIdsDistinct(cardIds: readonly CardExtId[]): boolean {
-  return new Set(cardIds).size === cardIds.length;
-}
-
-/**
  * Resolves the FRONT pending KO-from-discard choice by knocking out the chosen
  * cards from the player's own discard into the global KO pile.
  *
  * Validate args → validate the front pending entry → the selection must be 0..maxCount
- * DISTINCT ids all present in the chooser's discard → remove each from discard, append
- * to G.ko → front-pop on success. Silent no-ops (queue intact — resubmit): non-array /
- * non-string ids; a repeated id; more ids than maxCount; empty queue; front.playerID
- * mismatch; front.choiceType mismatch; any id absent from the discard. An empty
- * selection is the legal "KO nothing" choice and still front-pops.
+ * ids all present in the chooser's discard (a repeated id needs that many copies) →
+ * remove each from discard, append to G.ko → front-pop on success. Silent no-ops (queue
+ * intact — resubmit): non-array / non-string ids; more ids than maxCount; empty queue;
+ * front.playerID mismatch; front.choiceType mismatch; any id absent from the discard, or
+ * repeated more times than the discard holds copies. An empty selection is the legal
+ * "KO nothing" choice and still front-pops.
  *
  * @param context - boardgame.io move context with G and playerID.
  * @param args - the selected { cardIds } to KO from the discard pile.
@@ -119,8 +109,6 @@ export function resolveKoDiscardChoice(
   for (const cardId of args.cardIds) {
     if (typeof cardId !== 'string' || cardId.length === 0) { return; }
   }
-  // why: D-24510 — reject a payload repeating an id (the selection is a distinct set).
-  if (!areIdsDistinct(args.cardIds)) { return; }
 
   // Step 2: Validate the front pending entry — front-only resolution (no index in the
   // payload, so a non-front entry can never be targeted).

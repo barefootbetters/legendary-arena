@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24682 — Maniacal Tyrant / Salomé can KO several S.H.I.E.L.D. Agents (direct fix) (2026-10-10)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** The "KO up to N cards from your discard pile" prompt (Loki's Maniacal Tyrant, Salomé) now lets you pick several copies of the same basic card: two S.H.I.E.L.D. Agents, a Trooper and a Wound, and so on. Before this, only one copy of each could be selected. Reported in 2p match `5oJXzZqbdys`.
+
+- **Engine + arena-client.** Two authorized test rewrites; every package green (game-engine 5031 → 5032).
+- **Live-verify (D-24026): pending.** Defeat Maniacal Tyrant with two or more S.H.I.E.L.D. Agents in your discard, select two, and the log reads "KO'd 2 card(s)".
+
 ### D-24681 — Bot ally no longer stalls when Silent Sniper or Pure Fury defeats Loki's Vanishing Illusions (direct fix) (2026-10-10)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** A free defeat with only one target (Silent Sniper, Pure Fury) of a tactic that makes the other players choose now lets them choose. Those tactics are Loki's Vanishing Illusions and Dr. Doom's Monarch's Decree discard. Before this, the bot ally faulted ("The bot ally could not finish its turn, so the match was stopped"), and a human in that seat would have been frozen. Reported in 2p bot-ally match `CM_RIBLkJem`.

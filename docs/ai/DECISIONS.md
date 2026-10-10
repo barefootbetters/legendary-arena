@@ -47104,4 +47104,23 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 ---
 
+### D-24682 — KO-from-discard accepts several copies of the same card; supersedes D-24510's distinct-id rule (direct fix, no WP) (Active 2026-10-10)
+
+**Context.** In 2p match `5oJXzZqbdys` (Loki / Super Hero Civil War), Jeff defeated Maniacal Tyrant ("KO up to four cards from your discard pile"). The prompt let him select only one of several S.H.I.E.L.D. Agents, and the log reads "KO'd 1 card(s)" (20.2.25). D-24510 modeled the selection as a set of **distinct** ext_ids: the engine rejected a repeated id, and the client disabled every other copy of an already-selected id. But basic S.H.I.E.L.D. Agents, Troopers, Officers and Wounds share one ext_id per kind (fungible tokens, D-24183), so two Agents are the same id twice. The rule only ever passed for a discard of distinct Hero cards, which is how the 10-08 live-verify KO'd four. Salomé's "KO up to two" (WP-760 / D-24589) shares the choice and had the same defect.
+
+**Decision.**
+1. **Engine (`resolveKoDiscardChoice`).** The payload is a multiset. The distinct-id check is removed. The existing per-card loop already removes one copy per occurrence from a working copy of the discard, so a repeated id KOs one more copy each time. Asking for more copies than the discard holds still fails that presence check, and the whole submission is a silent no-op with the queue intact. The cap and empty-selection rules are unchanged.
+2. **Client (`PendingKoDiscardChoicePrompt.vue`).** Selection was already by discard index. The guard that disabled a second copy of a selected id is removed, so each copy is its own pick, and the submit sends the id once per copy.
+3. No other multi-select prompt has the distinct-id rule. `PutAnyNumberBottomHQPrompt` uses a Set over HQ ids, which are always distinct per-copy Hero ids. No G field, no re-pin.
+
+**Tests changed (authorized behavior change).**
+- `koDiscardChoice.resolve.test.ts`: "DUPLICATE ids are a silent no-op" becomes two cases. KO'ing two of three shared-id Agents plus one other card now succeeds. Repeating an id more times than the discard holds copies is still a no-op.
+- `PendingKoDiscardChoicePrompt.test.ts`: "cannot select a second copy" becomes "two copies can both be selected", which submits the id twice.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5031 → 5032); no generated-artifact churn.
+
+**Reserved by:** NUMBER-LEDGER D-24682. Related: D-24510 / WP-693 (Maniacal Tyrant; distinct-id rule superseded), D-24589 / WP-760 (Salomé), D-24183 (fungible ext_ids), D-24026 (the live session that surfaced it).
+
+---
+
 Protect this file.

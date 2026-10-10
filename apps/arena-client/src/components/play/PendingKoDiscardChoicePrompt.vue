@@ -13,9 +13,9 @@ import type { SubmitMove } from "./uiMoveName.types";
  * 0..maxCount cards to KO and submits `resolveKoDiscardChoice({ cardIds })`. An empty
  * selection ("KO None") is the legal "KO nothing" choice.
  *
- * // why: the engine resolve rejects a payload repeating an ext_id (the selection is a
- * DISTINCT set, D-24510). So selecting a discard entry whose ext_id is ALREADY selected
- * is blocked here — the submitted cardIds are always distinct, never a rejected payload.
+ * // why: D-24682 — the selection is by discard INDEX, so two copies of a shared-id card
+ * (two S.H.I.E.L.D. Agents) are two separate picks; the submitted cardIds may repeat an
+ * id once per copy, which the engine accepts as a multiset.
  *
  * NOT a modal — the choice is game-blocking and cannot be dismissed.
  * NOT position:fixed. NOT <Teleport>. Renders in normal document flow.
@@ -82,19 +82,6 @@ export default defineComponent({
       return selectedIndices.value.includes(discardIndex);
     }
 
-    /** The ext_id already selected at some OTHER discard index (distinct-set guard). */
-    function extIdAlreadySelected(discardIndex: number): boolean {
-      const choice = props.pendingKoDiscardChoice;
-      if (!choice) return false;
-      const thisExtId = choice.discard[discardIndex]?.cardId;
-      if (thisExtId === undefined) return false;
-      for (const selectedIndex of selectedIndices.value) {
-        if (selectedIndex === discardIndex) continue;
-        if (choice.discard[selectedIndex]?.cardId === thisExtId) return true;
-      }
-      return false;
-    }
-
     function toggleCard(discardIndex: number): void {
       if (isSubmitting.value) return;
       if (selectedIndices.value.includes(discardIndex)) {
@@ -103,9 +90,6 @@ export default defineComponent({
       }
       // why: never let the player over-select beyond the cap.
       if (selectedIndices.value.length >= maxCount.value) return;
-      // why: D-24510 — the engine rejects a repeated ext_id, so block selecting a second
-      // copy of an already-selected card (keeps the submit a distinct set).
-      if (extIdAlreadySelected(discardIndex)) return;
       selectedIndices.value = [...selectedIndices.value, discardIndex];
     }
 
@@ -126,7 +110,6 @@ export default defineComponent({
       shouldRender,
       maxCount,
       isSelected,
-      extIdAlreadySelected,
       toggleCard,
       canSubmit,
       onSubmit,
@@ -156,7 +139,7 @@ export default defineComponent({
         class="pending-ko-discard-choice-prompt__card-btn"
         :class="{ 'pending-ko-discard-choice-prompt__card-btn--selected': isSelected(discardIndex) }"
         :data-testid="`pending-ko-discard-card-${discardIndex}`"
-        :disabled="isSubmitting || (!isSelected(discardIndex) && extIdAlreadySelected(discardIndex))"
+        :disabled="isSubmitting"
         :aria-pressed="isSelected(discardIndex) ? 'true' : 'false'"
         :title="entry.display.name"
         @click="toggleCard(discardIndex)"
