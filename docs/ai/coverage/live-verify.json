@@ -558,10 +558,10 @@
       "card": "Abomination",
       "ability": "capture-bystander",
       "wp": "WP-252",
-      "state": "partial",
-      "date": "2026-08-03",
-      "evidence": "WP-489 live-verify (#1187)",
-      "note": "Deny path at the Bank confirmed; Streets/Bridge positive path pending."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "WP-489 live-verify (#1187). 2p bot-ally Loki / Midtown Bank Robbery (Enemies of Asgard + Radiation), match CM_RIBLkJem (build 4d96598): fought on the Bridge (city space 4), the Fight effect rescued 3 Bystanders (26.2.16–17).",
+      "note": "Both paths: the deny path at the Bank, and the Streets/Bridge rescue."
     },
     {
       "key": "core-villain-masters-of-evil-baron-zemo|rescue-bystanders-current-by-trait-count",
@@ -1088,8 +1088,8 @@
       "wp": "WP-694",
       "state": "partial",
       "date": "2026-10-10",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 13.2.18; solo no-op (no other players). Solo no-op line seen: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win — \"no other player had a Villain in their Victory Pile to KO\" (21.2.16), after rescuing Loki's 4 Bystanders (21.2.15).",
-      "note": "Multi-seat branch unexercised."
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): defeated at 13.2.18; solo no-op (no other players). Solo no-op line seen: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win — \"no other player had a Villain in their Victory Pile to KO\" (21.2.16), after rescuing Loki's 4 Bystanders (21.2.15). 2p bot-ally Loki / Midtown Bank Robbery (Enemies of Asgard + Radiation), match CM_RIBLkJem (build 4d96598): a one-target Silent Sniper defeat parked the multi-seat KO for the bot (32.2.14), and the bot ally faulted. Fixed by #2667 (D-24681).",
+      "note": "Multi-seat branch still to confirm after the D-24681 deploy: the other seat KOs a Villain from its Victory Pile and the game continues."
     },
     {
       "key": "mastermind:core/loki|whispers-and-lies",
