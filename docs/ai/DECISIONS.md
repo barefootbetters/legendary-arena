@@ -47119,6 +47119,8 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5031 → 5032); no generated-artifact churn.
 
+**Live-verify (D-24026), 2026-10-10: PASS.** Match `r8_2EFHd3Ah` (build `031aaf0`, 2p bot-ally Loki / Midtown Bank Robbery): Maniacal Tyrant KO'd 3 cards (34.2.18), a S.H.I.E.L.D. Trooper and two S.H.I.E.L.D. Agents per the KO pile.
+
 **Reserved by:** NUMBER-LEDGER D-24682. Related: D-24510 / WP-693 (Maniacal Tyrant; distinct-id rule superseded), D-24589 / WP-760 (Salomé), D-24183 (fungible ext_ids), D-24026 (the live session that surfaced it).
 
 ---
@@ -47141,6 +47143,8 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 - composer cases: a split with an empty player, a two-player Ambush narrative, a pending pick naming the others, and the all-empty wording.
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5032 → 5036, server 1678, arena-client 2298); arena-client typecheck 0; `sim:runtime-observed:check` current; no generated-artifact churn.
+
+**Live-verify (D-24026), 2026-10-10: PASS.** Match `r8_2EFHd3Ah` (build `031aaf0`): Juggernaut's Ambush logged "the active player must KO two heroes; Player 1 had no hero to KO" (4.1.2), and its Escape logged "…; Player 1 KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent" (18.1.3).
 
 **Reserved by:** NUMBER-LEDGER D-24683. Related: D-24644 (Juggernaut each-player KO), D-24646 (no-target wording), D-24669 (current player picks), D-24102 / WP-316 (effect-result targets), D-24026 (the live sessions that surfaced it).
 
