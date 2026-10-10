@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24681 — Bot ally no longer stalls when Silent Sniper or Pure Fury defeats Loki's Vanishing Illusions (direct fix) (2026-10-10)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A free defeat with only one target (Silent Sniper, Pure Fury) of a tactic that makes the other players choose now lets them choose. Those tactics are Loki's Vanishing Illusions and Dr. Doom's Monarch's Decree discard. Before this, the bot ally faulted ("The bot ally could not finish its turn, so the match was stopped"), and a human in that seat would have been frozen. Reported in 2p bot-ally match `CM_RIBLkJem`.
+
+- **Engine only.** The one-target paths forward the move's events like the multi-target prompt already did. Every package green (game-engine 5030 → 5031).
+- **Live-verify (D-24026): pending.** In a 2p bot-ally Loki match, a one-target Silent Sniper (or Pure Fury) defeat of Vanishing Illusions: the bot KOs a Villain from its Victory Pile and the game continues.
+
 ### D-24680 — Defeated Killbots score as Bystanders; loss lines say what escaped (direct fix) (2026-10-10)
 
 **User-visible on `play.legendary-arena.com` (after deploy).**

@@ -42,7 +42,7 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  * // why: narrowed via a structural type so this move forwards events without depending on
  * the concrete boardgame.io EventsAPI shape. Optional/guarded.
  */
-interface TacticSeatChoiceEvents {
+export interface TacticSeatChoiceEvents {
   setActivePlayers?: (arg: {
     value: Record<string, { stage: string; moveLimit: number }>;
     revert?: boolean;

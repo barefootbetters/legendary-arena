@@ -67,6 +67,7 @@ import {
   buildDefeatWithBystanderTargets,
   dispatchDefeatWithBystanderTarget,
 } from '../moves/defeatChoice.resolve.js';
+import type { TacticSeatChoiceEvents } from '../moves/defeatChoice.resolve.js';
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
 import { countRevealableDivingBlockCopies } from '../moves/divingBlock.logic.js';
 import {
@@ -4609,7 +4610,13 @@ function heroEffectDefeatWithBystander(
   // own nested pending, which the block-all guards then serialize.
   if (targets.length === 1) {
     logAutoFreeDefeat(G, playerID, cardId, targets[0]!.cardId);
-    dispatchDefeatWithBystanderTarget(G, bareCtx, targets[0]!, shuffleContext);
+    // why: D-24681 — forward the move's events, as resolveDefeatChoice does for the ≥2 path.
+    // A free defeat of Loki's Vanishing Illusions / Dr. Doom's Monarch's Decree parks a
+    // multi-seat seat choice that must admit the non-active seats via setActivePlayers;
+    // without events the other seat could never submit (match CM_RIBLkJem: the bot ally
+    // faulted on Vanishing Illusions after a one-target Silent Sniper defeat).
+    const events = (ctx as { events?: TacticSeatChoiceEvents }).events;
+    dispatchDefeatWithBystanderTarget(G, bareCtx, targets[0]!, shuffleContext, events);
     return;
   }
 
@@ -4772,7 +4779,10 @@ function heroEffectPureFury(
   // via the SHARED free-defeat path (no attack spent, no acted-this-turn flag).
   if (targets.length === 1) {
     logAutoFreeDefeat(G, playerID, cardId, targets[0]!.cardId);
-    dispatchDefeatWithBystanderTarget(G, bareCtx, targets[0]!, shuffleContext);
+    // why: D-24681 — forward events so a free defeat of a multi-seat tactic admits the
+    // other seats (the Silent Sniper twin above; same Vanishing Illusions / Monarch's Decree path).
+    const events = (ctx as { events?: TacticSeatChoiceEvents }).events;
+    dispatchDefeatWithBystanderTarget(G, bareCtx, targets[0]!, shuffleContext, events);
     return;
   }
 

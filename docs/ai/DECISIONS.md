@@ -47090,4 +47090,18 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 ---
 
+### D-24681 — A one-target free defeat (Silent Sniper / Pure Fury) forwards the move's events, so a multi-seat tactic admits the other seats (direct fix, no WP) (Active 2026-10-10)
+
+**Context.** In 2p bot-ally match `CM_RIBLkJem` (Loki / Midtown Bank Robbery), the human played Silent Sniper. Its only eligible target was Loki, and the top tactic was Vanishing Illusions ("Each other player KOs a Villain from their Victory Pile"). The tactic parked its WP-684 multi-seat seat choice for the bot seat (32.2.14). The bot ally then faulted: "The bot ally could not finish its turn, so the match was stopped." The one-target auto-defeat in `heroEffectDefeatWithBystander` and `heroEffectPureFury` called `dispatchDefeatWithBystanderTarget` without the move's `events`. D-24511 forwards `events` so `parkSeatChoice` can admit the non-active seats via `setActivePlayers`, but only `fightMastermind` and `resolveDefeatChoice` (the ≥2-target prompt) passed them. With no admission, boardgame.io rejected the bot seat's `resolveSeatChoice` from a non-active seat. The driver's retry budget ran out and it faulted (`submitBotSeatChoice`, D-24593). A human addressed the same way would have been frozen too. The Dr. Doom game (`38KtA2vWDg9`) did not hit this because Pure Fury had several targets there and took the prompt path. The simulation harness drives the reducer without boardgame.io stages, so the sim and PAR loops could not see it (WP-749).
+
+**Decision.** Both one-target paths read `events` off the move-context wrapper (playCard spreads `...context`) and forward them to `dispatchDefeatWithBystanderTarget`, matching the ≥2 path. `TacticSeatChoiceEvents` is exported from `defeatChoice.resolve.ts` for the type-only import. Cruel Ruler's one-target call (`tacticHandlers.ts`) is left unchanged: it only ever defeats a City Villain, whose core takes no events. No G field, no new move, no re-pin. `G.messages` is unchanged.
+
+**Tests.** A new `heroEffects.execute.test.ts` case covers a one-target Silent Sniper defeat of a Mastermind whose top tactic is Vanishing Illusions. It parks the KO choice for seat 1 and admits that seat exactly once. Revert proof: dropping the `events` argument fails it (0 / 1).
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5030 → 5031, server 1678, arena-client 2298); `sim:runtime-observed:check` current; no generated-artifact churn.
+
+**Reserved by:** NUMBER-LEDGER D-24681. Related: D-24511 / WP-694 (multi-seat tactics), D-24593 (bot-ally seat choice), D-24501 / WP-684 (seat choice), D-24291 / WP-486 (Silent Sniper), D-24499 / WP-682 (Pure Fury), D-24026 (the live session that surfaced it).
+
+---
+
 Protect this file.
