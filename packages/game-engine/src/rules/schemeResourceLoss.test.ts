@@ -122,6 +122,10 @@ describe('applyEscapedPileResourceLoss', () => {
     const state = makeState(MIDTOWN, bystanderPile(8), {});
     applyEscapedPileResourceLoss(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    assert.equal(
+      state.messages[0]?.text,
+      'Scheme loss triggered — 8 Bystanders carried away by escaping Villains (threshold 8).',
+    );
   });
 
   it('does NOT set SCHEME_LOSS at 7 bystanders (below threshold)', () => {
@@ -212,6 +216,7 @@ describe('escaped-pile-count villain — Negative Zone (WP-509 / D-24316)', () =
     const state = negZoneState(12);
     applyEscapedPileResourceLoss(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    assert.equal(state.messages[0]?.text, 'Scheme loss triggered — 12 Villains escaped (threshold 12).');
   });
 
   it('does NOT set SCHEME_LOSS at 11 villains (below threshold)', () => {
@@ -516,6 +521,8 @@ describe('escaped-converted-count — Killbots (WP-513 / D-24325)', () => {
     const state = killbotsState(5);
     applyEscapedPileResourceLoss(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    // why: match 38KtA2vWDg9 logged "5 killbot card(s) carried away by escaping villains".
+    assert.equal(state.messages[0]?.text, 'Scheme loss triggered — 5 Killbots escaped (threshold 5).');
   });
 
   it('does NOT set SCHEME_LOSS at 4 Killbots (below threshold)', () => {
@@ -588,6 +595,7 @@ describe('escaped-converted-count — Secret Invasion (WP-514 / D-24326)', () =>
     const state = secretInvasionState(6);
     applyEscapedPileResourceLoss(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    assert.equal(state.messages[0]?.text, 'Scheme loss triggered — 6 Skrulls escaped (threshold 6).');
   });
 
   it('does NOT set SCHEME_LOSS at 5 Skrulls (below threshold)', () => {

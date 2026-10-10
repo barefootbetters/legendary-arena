@@ -7,6 +7,15 @@
 
 ## Current State
 
+### D-24680 — Defeated Killbots score as Bystanders; loss lines say what escaped (direct fix) (2026-10-10)
+
+**User-visible on `play.legendary-arena.com` (after deploy).**
+- **Score breakdown.** On Replace Earth's Leaders with Killbots, the breakdown and report card count a defeated Killbot as a rescued Bystander, not a defeated Villain, per rules v23 L2341. Totals are unchanged because both are 1 VP. Reported in 2p match `38KtA2vWDg9` (`villainVP` 23 / `bystanderVP` 0).
+- **Loss lines.** They now name what escaped: "5 Killbots escaped", "12 Villains escaped", "6 Skrulls escaped". Midtown keeps "8 Bystanders carried away by escaping Villains".
+
+- **Engine only.** No score, PAR or hash moves; every package green (game-engine 5025 → 5030).
+- **Live-verify (D-24026): pending.** In a Killbots match, the end-of-game breakdown shows defeated Killbots under Bystanders, and a 5-escape loss logs "5 Killbots escaped".
+
 ### D-24679 — "Reveal a Hero or gain a Wound" lines say which Hero (direct fix) (2026-10-10)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Ymir, Frost Giant, Sabretooth, Ultron and similar villains now log what they checked: "1 player(s) had no Ranged Hero and gained a Wound" / "every player revealed an X-Men Hero", instead of "matching Hero". Reported in solo match `BvcATHgYM5k`.

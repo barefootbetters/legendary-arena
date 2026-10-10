@@ -84,6 +84,11 @@ export function getEligibleVictoryVillains(
     // why: filter reads setup-time villain-deck type map (WP-014B); tactics are in G.mastermind, never in this map, so they stay excluded.
     // Henchmen count: rules v23 "Henchmen Are Villains" — "Henchman Villain cards are indeed Villains" (D-24608; same correction as D-24603).
     const cardType = G.villainDeckCardTypes[cardId];
+    // why: a defeated Killbot is typed 'villain' for routing but counts as a Bystander
+    // in the Victory Pile, not a Villain (rules v23 L2341), so it is never eligible.
+    if (G.convertedVillainOrigins?.[cardId] === 'killbot') {
+      continue;
+    }
     if (cardType === 'villain' || cardType === 'henchman') {
       eligible.push(cardId);
     }

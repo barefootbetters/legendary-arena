@@ -139,7 +139,7 @@ import {
 import { resolveCountSource } from '../hero/heroCountSource.resolve.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
-import { computeFinalScores, isBystanderCard } from '../scoring/scoring.logic.js';
+import { computeFinalScores, isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
 import { isFinalBlowAvailable } from '../mastermind/mastermind.logic.js';
 import { isMastermindHaunting } from '../board/haunt.logic.js';
@@ -432,13 +432,14 @@ function countBystandersRescued(gameState: LegendaryGameState): number {
   // why: bystanders in victory come from two sources — villain-deck
   // bystanders (tracked in G.villainDeckCardTypes with type='bystander')
   // and rescued / awarded supply-pile bystanders (BYSTANDER_EXT_ID, NOT
-  // registered in villainDeckCardTypes). isBystanderCard (scoring.logic.ts)
-  // is the single source of truth for that dual condition (WP-586), so the
-  // HUD counter, the VP calculation, and the competitive-score inputs can
-  // never disagree on what a "bystander in the victory pile" is.
+  // registered in villainDeckCardTypes), plus defeated Killbots (rules v23
+  // L2341). isVictoryPileBystander (scoring.logic.ts) is the single source of
+  // truth for that condition (WP-586), so the HUD counter, the VP calculation,
+  // and the competitive-score inputs can never disagree on what a "bystander
+  // in the victory pile" is.
   for (const playerZones of Object.values(gameState.playerZones)) {
     for (const cardExtId of playerZones.victory) {
-      if (isBystanderCard(gameState, cardExtId)) {
+      if (isVictoryPileBystander(gameState, cardExtId)) {
         bystanderCount += 1;
       }
     }
