@@ -272,30 +272,56 @@ project at `legendary-arena-dashboard.pages.dev` (and every preview deployment
 at `<hash>.legendary-arena-dashboard.pages.dev`), and those hostnames are **not**
 covered by a custom-domain Access application. So this alias has served the
 operator SPA bundle **ungated on the public internet since 2026-06-02** (observed
-`200` on 2026-09-10). The bundle ships in mock mode with no live API base, so no
-live customer/business data leaks through it — but the same **gate-before-expose**
-concern applies as for the custom domain: the in-app mock
-[`LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue) accepts any
-email, and the bundle carries the governance snapshot, mock figures, and internal
-routes/logic.
+`200` on 2026-09-10 and again on 2026-10-09).
 
-**Close it (operator action — CF Zero Trust / Pages dashboard):**
+What the open alias exposes (checked 2026-10-09):
+- **The full live-mode bundle.** The deployed build has `VITE_USE_MOCKS=false`
+  and calls `https://api.legendary-arena.com`, so the alias is a working copy of
+  the operator dashboard, not a mock shell. The bundle also carries the
+  governance snapshot, coverage ledger, effect index, and internal routes and
+  links.
+- **The Hanko sign-in, with Access skipped.**
+  [`LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue) is the real
+  Hanko login (the old any-email mock form is gone), and the server's CORS
+  allowlist includes this origin (`apps/server/src/server.mjs`). Live data is
+  still behind the server's admin session check — an unauthenticated
+  `GET /api/dash/dr-readiness` from this origin returns `401` — but on this host
+  that check is the **only** layer; Access is not in front of it.
+
+**Close it (operator action — CF Pages / Zero Trust dashboard).**
+
+Pages → Settings → **Enable access policy** on its own does **not** close this.
+Per Cloudflare's docs, that toggle "will only protect your preview deployments"
+(`<hash>.legendary-arena-dashboard.pages.dev`), "not your `*.pages.dev` domain
+or custom domain"
+([Preview deployments](https://developers.cloudflare.com/pages/configuration/preview-deployments/)).
+Gating the production alias takes the extra steps from
+[Known issues → Enable Access on your `*.pages.dev` domain](https://developers.cloudflare.com/pages/platform/known-issues/#enable-access-on-your-pagesdev-domain):
 
 1. Cloudflare dashboard → **Workers & Pages** → `legendary-arena-dashboard` →
-   **Settings** → **Enable access policy**. This is the purpose-built path: it
-   auto-creates Access policies covering **both** the `*.pages.dev` production
-   alias **and** preview deployments, so preview builds of PRs stop being public
-   too. Set the policy identity provider to **Email One-time PIN** with the same
-   single-operator allow rule `Include: Emails = jeff@barefootbetters.com` (reuse
-   the existing WP-197 policy/group so the two stay in lock-step).
-   - *Manual alternative:* Zero Trust → Access → Applications → Add a
-     **Self-hosted** application with domain `legendary-arena-dashboard.pages.dev`
-     and the same allow rule. This covers only the production alias, **not**
-     preview deployments — prefer the Pages toggle above.
-2. From an incognito browser, visit `https://legendary-arena-dashboard.pages.dev`.
+   **Settings** → **Enable access policy**.
+2. Select **Manage** on the Access policy it created for preview deployments.
+   Under **Access** → **Applications**, select the project → **Configure**.
+3. Under **Public hostname**, delete the wildcard (`*`) from the **Subdomain**
+   field and **Save**. That application now covers
+   `legendary-arena-dashboard.pages.dev` itself.
+4. Go back to the Pages project → **Settings** → **General** and select
+   **Enable access policy** again. This re-creates the preview-deployment
+   policy.
+5. Confirm there are now **two** Access applications: one for
+   `legendary-arena-dashboard.pages.dev` and one for
+   `*.legendary-arena-dashboard.pages.dev`. On both, set the identity provider
+   to **Email One-time PIN** and use the same single-operator allow rule as
+   WP-197 (`Include: Emails = jeff@barefootbetters.com`; reuse its policy/group
+   so all three applications stay in lock-step). The custom domain keeps its
+   existing WP-197 application, so Cloudflare's remaining steps (a new
+   application for the custom domain) do not apply.
+6. From an incognito browser, visit `https://legendary-arena-dashboard.pages.dev`.
    Expect a redirect to `*.cloudflareaccess.com/cdn-cgi/access/...` (or `401`/`403`).
-   **A `200` unauthenticated means the alias is still public.**
-3. Verify `pnpm check:domains` reports `READY` for the
+   **A `200` unauthenticated means the alias is still public.** Also open any
+   recent preview URL from the Pages **Deployments** list; it should redirect to
+   Access too.
+7. Verify `pnpm check:domains` reports `READY` for the
    `Internal admin dashboard (pages.dev alias)` entry, then flip its
    `state: "planned"` → `"live"` in [domains.json](./domains.json). Re-run;
    expect `OK`. (Until the gate is enabled the probe sees `200` and the row
