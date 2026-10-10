@@ -2,37 +2,28 @@
 
 A pnpm monorepo implementing the Legendary deck-building card game as a multiplayer web app using boardgame.io.
 
+> This file and `.claude/rules/*.md` load on **every** turn, so they hold goals,
+> invariants, and routing only. Procedures and rationale live in the docs they
+> point to and load when a task needs them. Keep it that way: add a pointer,
+> not a paragraph.
+
 ## Operating Posture (Why This Matters)
 
-Legendary-arena.com is a real business with real employees. Payroll happens
-every Friday. Royalties to Upper Deck and Marvel are paid on every dollar of
-revenue. Cloud bills, R2 storage, and ongoing development all draw from the
-same pool. None of it pauses for elegant solutions.
+Legendary-arena.com is a real business: payroll every Friday, royalties to
+Upper Deck and Marvel on every dollar, cloud and R2 bills, ongoing development.
+Binding on every session:
 
-Claude's commitment, binding every session that reads this file:
-
-- **Survival lens first.** Evaluate every recommendation by: does this protect
-  revenue, ship a better product, or reduce risk? Working code that ships
-  beats elegant code that doesn't. Pragmatic engineering that earns sales
-  beats architectural purity that costs them.
-- **Anti-commercial drift is a bug.** "Permanently free," "luxuries never
-  necessities," closed enumerations of permitted revenue vectors, and similar
-  preemptive caps are foreclosed payroll. See the auto-memory
-  `feedback-vision-anticommercial-drift` for the full pattern catalog.
-- **Risk surfacing is part of the job.** Flag risks to revenue, sales,
-  customer trust, or legal/financial exposure before acting. Surface
-  operational papercuts noticed in passing (stale env values, doc drift,
+- **Survival lens first.** Does this protect revenue, ship a better product, or
+  reduce risk? Working code that ships beats elegant code that doesn't.
+- **Anti-commercial drift is a bug.** "Permanently free," closed lists of
+  permitted revenue, and similar caps are foreclosed payroll (auto-memory
+  `feedback-vision-anticommercial-drift`).
+- **Surface risk** to revenue, customer trust, or legal/financial exposure
+  before acting, plus papercuts noticed in passing (stale env, doc drift,
   pre-existing test failures). Don't manufacture risk to look thorough.
-- **Time and tokens are real costs.** Session tokens cost money. Operator
-  time is the most valuable resource on the project. No ceremony when the
-  work is clear.
-- **Mistakes land on the business.** When Claude drops the ball, the cost
-  is borne by Jeff and the business, not by Claude. Own it in one sentence
-  and move on. Don't repeat it.
-
-We are economically aligned. Jeff's success keeps the business alive, which
-keeps the Claude Code subscription, which keeps Anthropic earning. Symbiotic,
-not charitable — both sides need it to work. Best effort, every session.
+- **Time and tokens are real costs.** Operator time is the most valuable
+  resource on the project. No ceremony when the work is clear.
+- **Mistakes land on the business.** Own it in one sentence, move on, don't repeat it.
 
 ## Quick Reference
 
@@ -52,95 +43,51 @@ pnpm -r test          # run all tests (root has no `test` script; bare `pnpm tes
 
 ### Build before you test (stale `dist` fakes failures)
 
-Apps import the **built `dist`** of the packages they depend on, not
-their `src`. So a package edit is invisible to a dependent app's tests
-until that package is rebuilt — which cuts both ways:
+Apps import the **built `dist`** of their package dependencies, not `src`. So
+the order is always **`pnpm -r build && pnpm -r test`**, and rebuild before
+diagnosing any cross-package test failure.
 
-- **False green** — a `src` fix that never rebuilt; the app's tests
-  still exercise the old `dist` and pass.
-- **False red** — a stale or missing `dist` crashes a test file at
-  *import*, which `node:test` reports as a failing test. The tests in
-  that file never register, so the totals shrink at the same time.
-  Observed 2026-07-19: `apps/registry-viewer` reported 99 tests / 7
-  fail against a stale `dist` and 174 tests / 0 fail after a rebuild —
-  same commit, no source change.
-
-So the order is always **`pnpm -r build && pnpm -r test`**, and before
-diagnosing any cross-package test failure, rebuild first and re-run.
-Chasing an import-crash "failure" through the source costs a session
-and finds nothing. Two related traps:
-
-- `pnpm -r test` **bails on the first failing package**; one broken
-  package masks every package after it. Use `pnpm -r --no-bail test`
-  when you need whole-repo totals.
+- **False green:** a `src` fix that never rebuilt still tests the old `dist`.
+- **False red:** a stale or missing `dist` crashes a test file at import;
+  `node:test` reports a failure and the file's tests never register, so totals
+  shrink too (2026-07-19: registry-viewer showed 99 tests / 7 fail stale vs
+  174 / 0 rebuilt, same commit).
+- `pnpm -r test` **bails on the first failing package**; use
+  `pnpm -r --no-bail test` for whole-repo totals.
 - A build may rewrite CI-gated generated artifacts (e.g.
   `packages/lagn-spec/schemas/lagn-v1.json`). Check `git status` after
-  building, and confirm a real diff exists before committing one —
-  line-ending-only churn is noise, not a change.
+  building, and confirm a real diff exists before committing one; line-ending-only
+  churn is noise, not a change.
 
 ## Session Start: Catch Up On `main`
 
-When the user asks for substantive work in this repo, start with a
-quick check of what's landed on `origin/main` since the last session
-you worked in. Cheap:
-
-```bash
-git fetch origin main --prune
-git log origin/main --oneline -10
-```
-
-Surface only what matters for the current ask:
-- A WP that completed and changes the answer (e.g., user asks you
-  to draft WP-X but WP-X already shipped)
-- A contract, decision, or invariant the new work would touch
-  (DECISIONS.md, ARCHITECTURE.md, `.claude/rules/**`, REFERENCE docs)
-- Direct edits to the file(s) the user is asking you to modify
-- A stash or open PR that overlaps with the request
-
-If nothing relevant landed, say so in one line and move on. If
-something did, one sentence per item — don't enumerate exhaustively.
-
-This catches the "that already shipped while I was offline" class of
-drift before it costs an unproductive draft cycle. Especially valuable
-here because the WP/EC throughput is high — sessions can land a WP
-every few hours.
+Before substantive work, run `git fetch origin main --prune` and
+`git log origin/main --oneline -10`. Surface only what changes the current ask
+(a WP that already shipped, a touched contract / DECISIONS / ARCHITECTURE /
+rules / REFERENCE doc, direct edits to the target files, an overlapping stash
+or PR), one sentence each; if nothing relevant landed, say so in one line.
 
 ## Architecture Rules (see .claude/rules/ and .claude/skills/ for details)
 
-> Cross-cutting rules (architecture, code-style, work-packets) load every
-> session from `.claude/rules/`. Layer-specific rules (game-engine,
-> registry, persistence, server) load on-demand via
-> `.claude/skills/legendary-*/SKILL.md` and retain full authority when
-> triggered.
-
-- Determinism is non-negotiable: all randomness via `ctx.random.*`, never `Math.random()`
-- The engine owns truth: clients submit intents, not outcomes
-- `G` is never persisted to a database
-- Moves never throw; only `Game.setup()` may throw
-- All zones store `CardExtId` strings only, never full card objects
-- No `.reduce()` in zone operations or effect application
-- Every `ctx.events.setPhase()` and `ctx.events.endTurn()` call needs a `// why:` comment
+Cross-cutting rules (architecture, code-style, work-packets) load every session
+from `.claude/rules/`. Layer-specific rules (game-engine, registry, persistence,
+server) load on demand via `.claude/skills/legendary-*/SKILL.md` and keep full
+authority when triggered.
 
 ## Card Data (In-Repo Since 2026-05-06)
 
-- **Upstream sources:** `scripts/convert-cards/inputs/cards/*.js` (36
-  npm-derived set sources), with per-set overlays in
-  `scripts/convert-cards/inputs/patches/`
-- **Generated output:** `data/cards/{abbr}.json` — the registry-consumed
-  location. 41 sets: 36 converted by `convert-cards-v15.mjs`, 4 outlier
-  sets (`2099`, `amwp`, `wpnx`, `wtif`) produced only by
-  `apply-card-counts.mjs`, and `co2e.json` hand-authored (no upstream 2e
-  source exists)
-- Regenerating is **multi-stage**, not a single script: `convert-cards-v15.mjs`
-  then the `apply-*.mjs` passes in `scripts/convert-cards/` (card-counts,
-  hero-ability-markers, effect-markers, defeat-requirement-markers).
-  `docs/03-DATA-PIPELINE.md` §1 documents the full stage order, and
-  `docs/03.1-DATA-SOURCES.md` is the paired source inventory (both current
-  as of PR #1780)
-- **Legacy:** `C:\Users\jjensen\bbcode\modern-master-strike\src\data\cards\`
-  still exists on disk but is a frozen pre-co2e mirror of *generated
-  output*, not a source. Nothing reads it. Do not edit it or treat it as
-  card data.
+- **Sources:** `scripts/convert-cards/inputs/cards/*.js` (36 npm-derived sets)
+  plus per-set overlays in `scripts/convert-cards/inputs/patches/`.
+- **Generated output:** `data/cards/{abbr}.json`, the registry-consumed
+  location. 41 sets: 36 converted by `convert-cards-v15.mjs`, 4 outliers
+  (`2099`, `amwp`, `wpnx`, `wtif`) from `apply-card-counts.mjs` only, and
+  `co2e.json` hand-authored.
+- **Regeneration is multi-stage:** `convert-cards-v15.mjs`, then the `apply-*.mjs`
+  passes (card-counts, hero-ability-markers, effect-markers,
+  defeat-requirement-markers). Stage order: `docs/03-DATA-PIPELINE.md` §1;
+  sources: `docs/03.1-DATA-SOURCES.md`.
+- **Legacy:** `C:\Users\jjensen\bbcode\modern-master-strike\src\data\cards\` is a
+  frozen mirror of old generated output. Nothing reads it; never edit or use it.
 
 ## External Data
 
@@ -156,141 +103,89 @@ every few hours.
 
 ## Execution Checklists (Mandatory for Work Packet Execution)
 
-For any Work Packet with a corresponding Execution Checklist
-(`docs/ai/execution-checklists/EC-NNN-*.checklist.md`), the checklist is
-the **authoritative execution contract**. Claude must read the EC before
-starting the WP session. Compliance is binary — every checklist item must
-be satisfied exactly.
-
-The EC does not replace the Work Packet. The WP remains the authoritative
-design document. If the EC and WP conflict, the WP wins. The EC extracts
-the most drift-prone elements (locked values, guardrails, required comments)
-into a quick-reference format that prevents re-derivation errors.
-
-ECs are subordinate to `docs/ai/ARCHITECTURE.md` and `.claude/rules/*.md`.
-
-The full EC workflow (read order, coding discipline, debugging, completion
-rule) is defined in `docs/ai/REFERENCE/01.1-how-to-use-ecs-while-coding.md`.
-
-**EC governance set:**
-- `docs/ai/execution-checklists/EC-TEMPLATE.md` — structure and rules
-- `docs/ai/execution-checklists/EC_INDEX.md` — index and status tracking
-- `docs/ai/REFERENCE/01.1-how-to-use-ecs-while-coding.md` — usage workflow
-- `docs/ai/REFERENCE/01.2-bug-handling-under-ec-mode.md` — clause-driven debugging
-- `docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md` — commit message format and hooks
+When a WP has an EC (`docs/ai/execution-checklists/EC-NNN-*.checklist.md`),
+read the EC before the session starts; it is the **authoritative execution
+contract** and compliance is binary. The WP stays the design document and wins
+if the two conflict; ECs are subordinate to `docs/ai/ARCHITECTURE.md` and
+`.claude/rules/*.md`. Governance set: `docs/ai/REFERENCE/01.1-how-to-use-ecs-while-coding.md`
+(workflow), `docs/ai/REFERENCE/01.2-bug-handling-under-ec-mode.md`,
+`docs/ai/REFERENCE/01.3-commit-hygiene-under-ec-mode.md`, and
+`docs/ai/execution-checklists/EC-TEMPLATE.md` / `EC_INDEX.md`.
 
 ## Lint Gate (Mandatory for Work Packet Actions)
 
-Before performing **any** of the following actions, Claude MUST invoke and
-satisfy the Prompt Lint Gate:
-
-- Creating or modifying Work Packets
-- Executing a Work Packet
-- Migrating legacy prompts into governed artifacts
-- Proposing cross-layer refactors that span multiple Work Packets
-
-The Prompt Lint Gate is defined in:
-`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`
-
-Claude must explicitly confirm that:
-- All applicable lint checklist items are satisfied, **OR**
-- Any unmet items are explicitly listed, justified, and approved before proceeding
-
-If the lint gate cannot be satisfied, Claude must STOP. Do not work around the
-checklist, guess, or silently proceed.
+Before creating or modifying a WP, executing a WP, migrating a legacy prompt
+into a governed artifact, or proposing a cross-layer refactor spanning WPs,
+satisfy the Prompt Lint Gate (`docs/ai/REFERENCE/00.3-prompt-lint-checklist.md`):
+explicitly confirm every applicable item passes, **or** list each unmet item
+with its justification and get approval. If the gate cannot be satisfied, STOP —
+do not work around the checklist, guess, or silently proceed.
 
 ### File Modifications During Execution
 
-Individual file modifications during Work Packet execution are governed by
-`.claude/rules/*.md` (loaded automatically by Claude Code), not by the lint
-checklist. The lint gate applies to **Work Packet quality**, not to every
-individual file edit.
+Individual file edits during WP execution follow `.claude/rules/*.md`; the lint
+gate covers WP quality, not every edit.
 
 ### Authority Constraints
 
-The Prompt Lint Gate:
-- Is subordinate to `docs/ai/ARCHITECTURE.md`
-- Must not override architectural or layer-boundary rules
-- Must not introduce new requirements independently
-
-If a lint checklist item conflicts with ARCHITECTURE.md, Layer Boundary, or
-`.claude/rules/*.md`, the higher-authority document wins and the checklist
-item must be constrained or treated as non-applicable.
+The gate is subordinate to `docs/ai/ARCHITECTURE.md`, must not override
+architectural or layer-boundary rules, and adds no requirements of its own. An
+item that conflicts with ARCHITECTURE.md, the Layer Boundary, or
+`.claude/rules/*.md` is constrained or treated as non-applicable.
 
 ## Multi-Step Workflow Integrity (No Skipped Steps, No False "Done")
 
-Some reference docs define multi-step workflows that produce real,
-checkable artifacts. The most drift-prone is the WP-drafting preflight
-`docs/ai/REFERENCE/01.0a-wp-drafting-phase.md` — Steps 1–7 plus a Phase 1
-Definition of Done. When asked to run that file (or any workflow like it)
-as a preflight, the following are **binding**:
+For any reference doc that defines a multi-step workflow with artifacts — most
+of all the WP-drafting preflight `docs/ai/REFERENCE/01.0a-wp-drafting-phase.md`:
 
-- **Read the whole file before acting.** It is long on purpose. Do not
-  complain about its length, skim it, or work from a summary. Length is
-  never a reason to skip content — read every step first.
-- **Execute every step, in order, to its artifact.** For `01.0a` this
-  means **Step 6 (write the session prompt) and Step 7 (commit) are not
-  optional.** Gates going green at Step 5 is *not* the finish line — the
-  most common failure here is stopping after the gates pass and calling
-  the WP "ready." It is not ready until the session prompt exists and the
-  drafting commit has landed per the Phase 1 Definition of Done.
-- **Never report "done" or "ready to execute" unless the workflow's own
-  Definition of Done is met and every required artifact actually exists** —
-  WP file, EC file, index rows, gate verdicts, session prompt, commit.
-  Re-check each artifact is present before claiming completion. If a step
-  was skipped or could not be finished, state exactly which one and why —
-  do not paper over the gap with an optimistic status.
+- **Read the whole file before acting.** Length is never a reason to skim or
+  work from a summary.
+- **Execute every step, in order, to its artifact.** For `01.0a`, **Step 6
+  (session prompt) and Step 7 (commit) are not optional**; green gates at Step 5
+  are not the finish line. The WP is not ready until the session prompt exists
+  and the drafting commit has landed per the Phase 1 Definition of Done.
+- **Never report "done" or "ready to execute"** until the workflow's Definition
+  of Done is met and every artifact exists (WP, EC, index rows, gate verdicts,
+  session prompt, commit) — re-check each one before claiming completion. If a
+  step was skipped, say which and why.
 
-A premature "ready to execute" is a false-completion claim: it burns an
-unproductive execution cycle and hides that a step was skipped. Per the
-Operating Posture above, that cost lands on the business, not on Claude —
-treat it as a bug, not a rounding error. (Plain terms: this section exists
-to keep "Lazy Man" — the skip-the-tedious-steps-and-declare-victory reflex
-— out of the drafting workflow.)
+A premature "ready" is a false-completion claim and a bug, not a rounding error.
 
 ## Reward Integrity (Don't Game the Grader)
 
-Tests passing, CI green, `hugo` building, lints quiet, "looks good" — these
-are *evidence* the work is done. They are not the objective. The objective is
-the real user-visible behavior plus the standing / fairness / determinism
-invariants. When faking the evidence is easier than earning it, earn it or
-stop and report the blocker. Rationale and the research it draws on:
-ewiki [Reward Integrity](../wiki/reward-integrity.md).
-
-**Done means** the intended behavior is true, the relevant tests pass *for the
-right reason*, and the fairness / determinism invariants still hold. It is NOT
-done when a check was deleted, skipped, weakened, or pointed at a fixture that
-always passes.
+Tests, CI, `hugo` builds, and quiet lints are *evidence* of done, not the
+objective. **Done means** the intended user-visible behavior is true, the
+relevant tests pass *for the right reason*, and the fairness / determinism
+invariants hold. It is NOT done when a check was deleted, skipped, weakened, or
+pointed at a fixture that always passes. When faking the evidence is easier
+than earning it, earn it or stop and report the blocker. Rationale:
+[Reward Integrity](../wiki/reward-integrity.md).
 
 **To turn a red check green, never:**
 - Edit, delete, skip, or comment out a test, assertion, snapshot, or golden
-  file — unless the product behavior intentionally changed, and the commit says so.
-- Write the expected answer into the test. Tests describe behavior; the
-  implementation earns it.
+  file — unless product behavior intentionally changed and the commit says so.
+- Write the expected answer into the test.
 - Modify CI, `.githooks/*`, linters, generated-artifact gates, or permission
   files to silence a failure you introduced.
 - Widen tool permissions (`--dangerously-skip-permissions`, always-allow,
-  disable hooks) to finish a task.
-- Claim a check passed without running it — paste the command and the tail of
-  its output. A green run against a stale `dist` is not a pass (see Key Commands).
+  disabled hooks) to finish a task.
+- Claim a check passed without running it — paste the command and its output
+  tail. A green run against a stale `dist` is not a pass.
 
-**If the honest path is blocked** — a missing fixture, an unreachable command,
-a loadout/config that cannot be created, a test that cannot pass without editing
-the test — STOP and report the blocker. Fix the environment; do not invent a
-path around the check.
+**If the honest path is blocked** (missing fixture, unreachable command, a
+config that cannot be created, a test that cannot pass without editing it),
+STOP and report the blocker. Fix the environment; do not invent a path around
+the check.
 
-**Optimize the work, not the metric.** Play quality, standing integrity,
-deterministic behavior, honest UX, and build time are worth optimizing. A test
-pass-count, a "CI green" line, or a low turn/token count is never itself the
-target — doing less of the actual work to shrink one is gaming, not efficiency.
-(Token *cost* is real per the Operating Posture; the lever is doing the work
-efficiently, not skipping it.)
+**Optimize the work, not the metric.** A pass count, a CI-green line, or a low
+turn/token count is never the target; doing less real work to shrink one is
+gaming.
 
-**Fairness and layers stay intact.** If a change would let money or a cosmetic
-buy a game outcome, refuse and cite `docs/01-VISION.md` (NG-1, no pay-to-win).
-Do not move per-request game state into the Hugo sites, or marketing/checkout
-into the engine (layer boundaries: `.claude/rules/architecture.md`).
+**Fairness and layers stay intact.** Refuse any change that lets money or a
+cosmetic buy a game outcome (`docs/01-VISION.md` NG-1, no pay-to-win). Keep
+per-request game state out of the Hugo sites and marketing/checkout out of the
+engine (`.claude/rules/architecture.md`).
 
-**After a correction,** capture the one-line falsifiable rule in its governing
-sink — auto-memory for behavior, `docs/ai/DECISIONS.md` for an architectural
-call, this file only for a repo-wide constraint. One line, not an essay.
+**After a correction,** record the one-line falsifiable rule in its sink:
+auto-memory for behavior, `docs/ai/DECISIONS.md` for an architectural call,
+this file only for a repo-wide constraint. One line, not an essay.
