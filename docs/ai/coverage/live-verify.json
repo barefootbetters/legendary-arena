@@ -76,7 +76,7 @@
       "wp": "WP-682",
       "state": "verified",
       "date": "2026-10-10",
-      "evidence": "solo Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil), match EMXM2s3Ucsh (build afa55d3): twist 6 (1 Wound, 20.1.3) and twist 7 (3 Wounds, 24.1.3) each offered the reveal; revealing returned the Wound and drew a card. The Wound pile went 30 → 27 and the player ended with 3 Wounds = twist 5's 1 + twist 7's 2, so both reveals took. solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf): no Diving Block was in hand at twists 5–8, so the D-24673 multi-reveal is still unexercised. D-24673 multi-reveal seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — twist 7 logged \"would gain 3 wound(s) — Diving Block can prevent each one\" (24.1.1) and one Diving Block was revealed three times, each preventing a Wound and drawing a card (24.1.3–24.1.5); twist 6 likewise (\"can prevent it\", 20.1.3). Also solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win: blocked Ymir's Ambush Wound (6.1.3) and a Loki strike Wound (8.1.3), and one copy blocked all three twist-7 Wounds again (25.1.3–25.1.5).",
+      "evidence": "solo Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil), match EMXM2s3Ucsh (build afa55d3): twist 6 (1 Wound, 20.1.3) and twist 7 (3 Wounds, 24.1.3) each offered the reveal; revealing returned the Wound and drew a card. The Wound pile went 30 → 27 and the player ended with 3 Wounds = twist 5's 1 + twist 7's 2, so both reveals took. solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf): no Diving Block was in hand at twists 5–8, so the D-24673 multi-reveal is still unexercised. D-24673 multi-reveal seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — twist 7 logged \"would gain 3 wound(s) — Diving Block can prevent each one\" (24.1.1) and one Diving Block was revealed three times, each preventing a Wound and drawing a card (24.1.3–24.1.5); twist 6 likewise (\"can prevent it\", 20.1.3). Also solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win: blocked Ymir's Ambush Wound (6.1.3) and a Loki strike Wound (8.1.3), and one copy blocked all three twist-7 Wounds again (25.1.3–25.1.5). Random Acts' Wound replaced by a draw (D-24678, 24.2.6) and twist 6 prevented again (24.1.3): solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win.",
       "note": ""
     },
     {
@@ -164,8 +164,8 @@
       "wp": "WP-683",
       "state": "verified",
       "date": "2026-10-10",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): bot played it; each player passed a card left (35.2.11–13). Wound branch: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win — taking the optional Wound put it in hand (24.2.14), and solo skipped the pass with \"there is no other player to pass to\" (24.2.15).",
-      "note": "D-24678 (Diving Block option on this prompt) not yet seen: no Diving Block was revealable when Random Acts was played."
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): bot played it; each player passed a card left (35.2.11–13). Wound branch: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win — taking the optional Wound put it in hand (24.2.14), and solo skipped the pass with \"there is no other player to pass to\" (24.2.15). D-24678 seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win — with Diving Block revealable, the third option replaced the Wound with a draw (\"revealed Diving Block: drew a card instead of gaining the Wound\", 24.2.6); decline (18.2.9, 22.2.13) and gain (27.2.12) also seen.",
+      "note": ""
     },
     {
       "key": "core/emma-frost|defeated-villain-or-mastermind",
@@ -602,10 +602,10 @@
       "card": "Destroyer",
       "ability": "koHeroEachPlayerMag2",
       "wp": "WP-202",
-      "state": "partial",
-      "date": "2026-10-08",
-      "evidence": "solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Destroyer escaped (13.1.2); its Escape KO'd two of Player 0's Heroes (13.1.3), auto-picked with no prompt, then the rulebook HQ KO ran (13.1.4).",
-      "note": "D-24669 makes the current player choose; re-verify the \"Choose a Hero to KO (2 remaining)\" prompt after deploy."
+      "state": "verified",
+      "date": "2026-10-10",
+      "evidence": "solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Destroyer escaped (13.1.2); its Escape KO'd two of Player 0's Heroes (13.1.3), auto-picked with no prompt, then the rulebook HQ KO ran (13.1.4). D-24669 choice seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win — Destroyer escaped (13.1.2), \"the active player must KO two heroes\" (13.1.3), and both KOs resolved through the KO-choice move (13.1.4–13.1.5), then the rulebook HQ KO (13.1.6).",
+      "note": ""
     },
     {
       "key": "core-villain-spider-foes-doctor-octopus|override-next-hand-size",
@@ -932,10 +932,10 @@
       "card": "Ymir, Frost Giant King",
       "ability": "reveal-or-wound",
       "wp": "WP-469",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-10",
-      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Ymir Ambush wounded with no Ranged Hero (12.1.2). solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win: both Ambushes (1.1.2, 6.1.2) found no Ranged Hero in hand; the turn-6 Lightning Bolt may have been Diving Block's replacement draw (6.1.3), so the reveal branch is still unproven.",
-      "note": "Reveal (no-wound) branch unexercised."
+      "evidence": "solo Loki / Cosmic Cube, match aK-n8zNOteC (build ae8fae3): Ymir Ambush wounded with no Ranged Hero (12.1.2). solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win: both Ambushes (1.1.2, 6.1.2) found no Ranged Hero in hand; the turn-6 Lightning Bolt may have been Diving Block's replacement draw (6.1.3), so the reveal branch is still unproven. Reveal branch: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win — both Ambushes found a Ranged Hero and dealt no Wound (\"every player revealed a Ranged Hero\", 22.1.2, 25.1.2; D-24679 names the class).",
+      "note": ""
     },
     {
       "key": "core-villain-radiation-zzzax|reveal-or-wound",
