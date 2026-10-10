@@ -1470,6 +1470,20 @@ no person inside it can hold the love to account, judge it by its effect, not
 its warmth. The line to carry out of it: *when someone's compassion is for
 everyone in general and no one in particular, watch your children.*
 
+**The covenant has an address.** God names Himself by a family: "the God of
+Abraham, the God of Isaac, and the God of Jacob… this is my name for ever, and
+this is my memorial unto all generations" (Exodus 3:15). Named men, named
+generations, the blessing flowing *down* through a household rather than being
+taken *up* by the collective. Abraham brings worship back down from the
+collective to the family. That is the axis under this whole lens — the covenant
+household against the cult and the collective — and the difference between them
+is a limit. The household has one built in: at Moriah the knife is stopped (the
+voiceless-captive case below reads it). The collective has none. Its harvest, its
+quota, its *Volk* is never satisfied, so the altar is never broken down from
+inside. And when a people that has traded the household for the collective
+asks to be made safe, the answer it reaches for is the one
+[1 Samuel 8](#give-us-a-king-the-throne-a-people-asks-for) prices in advance.
+
 **Supporting mechanisms** — each one a way of working one of the five levers:
 
 - **The rotating seat** *(why the lens looks for a seat, not a man)*. Pareto's
@@ -1718,12 +1732,35 @@ everyone in general and no one in particular, watch your children.*
   **The counter-move the machine never names.** In every one of these accounts
   God sides with the captive against the frame. The infant is drawn from the
   water; the child is carried out of Herod's reach by night; the bands are
-  loosed and the altar broken down. The whole arc of each story is the rescue of
-  exactly the party the seat marked as expendable — the recourse-less one given
-  recourse by the only power above the king. It is the same answer as
+  loosed and the altar broken down. The arc of each story runs toward exactly
+  the party the seat marked as expendable — the recourse-less one given
+  recourse by the only power above the king. But not every captive is carried
+  out. Bethlehem's children were not. The three virgins on the altar at Olishem
+  were not: they kept the same faith on the same altar where Abraham was
+  delivered, and they died. Same faith, same altar, different earthly endings.
+  So the counter-move is not a promise that the knife always stops in this
+  life. It is that the record refuses the erasure the frame depends on. The
+  altar's frame makes them an offering for the land; the text gives them a
+  father and a reason — "the daughters of Onitah… offered up because of their
+  virtue" (Abraham 1:11). It is the same answer as
   [the inversion](#the-mastermind-lens--five-questions) at the close of this
   lens: the hard lock is not final, and the voiceless one is precisely whom God
   refuses to let be erased.
+
+  **The inversion at Moriah — the God who stops the knife.** Abraham is the
+  hinge. The father of the covenant first survives being the victim: bound on
+  the altar at Olishem, unbound by the angel. Later he is the one asked to offer
+  a son, and he is stopped: "Abraham stretched forth his hand, and took the
+  knife to slay his son… Lay not thine hand upon the lad" (Genesis 22:10, 12).
+  Set that beside Baal and the groves. Israel "made a grove… and served Baal.
+  And they caused their sons and their daughters to pass through the fire"
+  (2 Kings 17:16–17); they "built also the high places of Baal, to burn their
+  sons with fire for burnt offerings unto Baal" (Jeremiah 19:5). The cult
+  claims the body and the child. The page reads its bargain as the child spent
+  so the harvest comes in and the rest of the society is blessed — the
+  fertility motive is a reading of the cult, not a line in those verses.
+  Abraham's story cuts the other way. The altar of the land takes the child for
+  everyone; the God of Abraham stops the knife over one named son.
 - **The womb — the ultimate captive** *(all five questions, at the limit)*.
   The altar case brought forward. Of every party this lens has read, the child
   in the womb has the least: no voice, no vote, no advocate in the room, no face
@@ -3157,10 +3194,17 @@ operator has declined a caveat, do not bring it back.
   [Matthew 2](https://www.churchofjesuschrist.org/study/scriptures/nt/matt/2?lang=eng)
   (Herod and the children of Bethlehem; the flight into Egypt), and
   [Abraham 1](https://www.churchofjesuschrist.org/study/scriptures/pgp/abr/1?lang=eng)
-  (the altar at Olishem, the thank-offering of a child, the virgins killed
-  "because of their virtue," Abraham unbound and the altar broken down). The
-  text states Pharaoh's justification; the Herod and altar framings are read by
-  the page, as marked in the example.
+  (the altar at Olishem, the thank-offering of a child, the virgins — "the
+  daughters of Onitah" — killed "because of their virtue," Abraham unbound and
+  the altar broken down),
+  [Genesis 22:10–12](https://www.churchofjesuschrist.org/study/scriptures/ot/gen/22?lang=eng&id=p10#p10)
+  (the knife stopped at Moriah),
+  [2 Kings 17:16–17](https://www.churchofjesuschrist.org/study/scriptures/ot/2-kgs/17?lang=eng&id=p16#p16)
+  and [Jeremiah 19:5](https://www.churchofjesuschrist.org/study/scriptures/ot/jer/19?lang=eng&id=p5#p5)
+  (the grove, Baal, and sons and daughters passed through the fire). The text
+  states Pharaoh's justification; the Herod and altar framings, and the
+  harvest motive behind Baal's fire, are read by the page, as marked in the
+  example.
 - Sources behind the Mastermind Lens recent case *School choice: whose money,
   whose child* —
   [USAFacts, "How are public schools in the US funded?"](https://usafacts.org/answers/how-are-public-schools-in-the-us-funded/country/united-states/)
@@ -3252,11 +3296,16 @@ operator has declined a caveat, do not bring it back.
   Commission, the Warren and Church committees, the Reichstag Fire Decree,
   Pareto's *circulation of elites*) are cited as illustrations of structure,
   not adjudicated by this page.
-- Source behind the lens's *love with no address* —
+- Sources behind the lens's *love with no address* and *the covenant has an address* —
   Fyodor Dostoevsky, [*The Brothers Karamazov*](https://www.gutenberg.org/ebooks/28054),
   tr. Constance Garnett (1912; public domain), Book II, ch. IV, "A Lady of Little
   Faith," where Father Zossima recounts a doctor's confession: "The more I love
-  humanity in general, the less I love man in particular." Dekulakization and
+  humanity in general, the less I love man in particular." The covenant's
+  address is from
+  [Exodus 3:6](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/3?lang=eng&id=p6#p6)
+  and [Exodus 3:15](https://www.churchofjesuschrist.org/study/scriptures/ot/ex/3?lang=eng&id=p15#p15)
+  (KJV; "the God of Abraham, the God of Isaac, and the God of Jacob… this is my
+  name for ever"). Dekulakization and
   the Nazi Aktion T4 child-killing programme are cited as illustrations of
   structure, not adjudicated by this page.
 - Sources behind [the Warren Commission example](#the-mastermind-lens--five-questions)
