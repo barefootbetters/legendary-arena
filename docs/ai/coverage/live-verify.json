@@ -470,10 +470,10 @@
       "card": "Spider-Man",
       "ability": "The Amazing Spider-Man",
       "wp": "WP-479",
-      "state": "partial",
-      "date": "2026-10-08",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): The Amazing Spider-Man left 3 then 2 cards on top (26.2.6–8, 32.2.5–7) and the game continued, so the reorder prompt resolved. solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf): two plays left two cards back (13.2.5 → Oddball surfaced before Here, Hold This; 18.2.1 → Diving Block #1 surfaced before #2), each the reverse of the reveal order.",
-      "note": "Both remainders came back reversed: confirm whether a reorder prompt appeared, or whether the engine reverses them on its own."
+      "state": "verified",
+      "date": "2026-10-09",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): The Amazing Spider-Man left 3 then 2 cards on top (26.2.6–8, 32.2.5–7) and the game continued, so the reorder prompt resolved. solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf): two plays left two cards back (13.2.5 → Oddball surfaced before Here, Hold This; 18.2.1 → Diving Block #1 surfaced before #2), each the reverse of the reveal order. solo Magneto / Midtown Bank Robbery (Cyclops, Spider-Man, Captain America; Final Blow on), match XZrA_nLcdl6 (build 43d9e74): two plays left two cards back, once in reveal order (25.2.2–3 → Optic Blast #2 stayed above Unending Energy #0, 25.2.7) and once swapped (27.2.3–4 → Optic Blast #1 surfaced above #3, 27.2.7).",
+      "note": "The remainder order is the player’s choice: the engine parks a reorder prompt that blocks all play until it is submitted (resolveReorderChoice writes no log line), so the earlier reversals were picks, not an engine reversal."
     },
     {
       "key": "core/storm|draw",
@@ -1010,9 +1010,9 @@
       "ability": "Tactic: Crushing Shockwave",
       "wp": "WP-506",
       "state": "partial",
-      "date": "2026-10-07",
-      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): defeated at 16.2.17; solo, so no other player, and no log line at all.",
-      "note": "Solo now logs a no-op line (D-24665). The multi-seat reveal-or-two-Wounds branch still needs a 2-player game."
+      "date": "2026-10-09",
+      "evidence": "Solo Magneto / Midtown Bank Robbery (Storm, Nick Fury, Black Widow; Final Blow on), match 1K760WkJX68 (build 1f4ce39, after the #2614 / #2615 deploy): defeated at 16.2.17; solo, so no other player, and no log line at all. Re-confirmed in solo Magneto / Midtown Bank Robbery (Cyclops, Spider-Man, Captain America; Final Blow on), match XZrA_nLcdl6 (build 43d9e74): the solo no-op line logged on defeat (27.2.17).",
+      "note": "The multi-seat reveal-or-two-Wounds branch still needs a 2-player game."
     },
     {
       "key": "mastermind:core/magneto|bitter-captor",
@@ -1022,7 +1022,7 @@
       "wp": "WP-692",
       "state": "verified",
       "date": "2026-10-04",
-      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
+      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). Solo Magneto / Midtown Bank Robbery (Cyclops, Spider-Man, Captain America; Final Blow on), match XZrA_nLcdl6 (build 43d9e74): with no X-Men Hero in the HQ it logged a no-op (20.2.15).",
       "note": "Gained Unending Energy (X-Men) from the HQ for free."
     },
     {
