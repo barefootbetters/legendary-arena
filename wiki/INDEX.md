@@ -420,6 +420,14 @@ Cross-cutting governance, methodology, and readiness assessments.
   featured table, a scenario-first flow (Challenge → Roster → Table → Brief →
   **Enter Arena**), the current console kept as **Arena Workshop**, and a
   7-step priority order. Records a direction; no decision is made.
+- [Why Play Needs a Debug Panel](why-play-needs-a-debug-panel.md) — *(draft,
+  proposal)* the case for an operator-only debug panel on play, modelled on
+  the Herbs vs. Ailments panel: reveal every seat's zones and the supply
+  counts, set up edge-case boards through engine moves, jump to turn N of a
+  past match, show the bot's scored candidates, and copy the board as a
+  fixture. Grounded in the 2026-10-10/11 live-verify sessions (D-24684,
+  D-24686). Admin-only, never competitive, deterministic. A WP and DECISIONS
+  entry own any build.
 
 ## Tutorial
 
