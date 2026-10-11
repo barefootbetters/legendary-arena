@@ -120,7 +120,7 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
     }
   });
 
-  it('WP-242: ≥2 eligible in discard → fightVillain PARKS a choice (no auto-KO); resolving the default KOs the starter SHIELD (D-20602)', () => {
+  it('WP-242: ≥2 eligible in hand → fightVillain PARKS a choice (no auto-KO); resolving the default KOs the starter SHIELD (D-20602)', () => {
     const gameState = buildInitialGameState(
       buildSentinelFocusedConfig(),
       buildSentinelFocusedRegistry(),
@@ -142,10 +142,17 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
       piercing: 0,
       woundsDrawn: 0,
     };
+    // why: D-24687 — "your Heroes" is hand + inPlay; the same two cards also sit in
+    // the discard, which is never read.
     gameState.playerZones['0']!.discard = [
       'core/spider-man/web-strike#00' as CardExtId,
       'starting-shield-agent' as CardExtId,
     ];
+    gameState.playerZones['0']!.hand = [
+      'core/spider-man/web-strike#00' as CardExtId,
+      'starting-shield-agent' as CardExtId,
+    ];
+    gameState.playerZones['0']!.inPlay = [];
 
     const koBefore = gameState.ko.length;
     const context = {
@@ -163,7 +170,7 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
     const defaultTarget = selectDefaultKoTarget(gameState.playerZones['0']!);
     assert.deepStrictEqual(
       defaultTarget,
-      { zone: 'discard', cardId: 'starting-shield-agent' },
+      { zone: 'hand', cardId: 'starting-shield-agent' },
       'D-20602: starter SHIELD is the default/auto KO target ahead of the recruited hero',
     );
     resolveKoHeroChoice(
@@ -176,6 +183,11 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
       'resolving KOs the starter SHIELD card',
     );
     assert.equal(gameState.pendingKoHeroChoices!.length, 0, 'queue front-popped after resolve');
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.discard,
+      ['core/spider-man/web-strike#00', 'starting-shield-agent'],
+      'discard unchanged',
+    );
   });
 
   it('D-20603: turn-1 autoplay state (cards in inPlay, empty hand+discard) KOs from inPlay', () => {
@@ -277,12 +289,12 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
     );
   });
 
-  it('D-20603: zone priority is discard → hand → inPlay (discard still wins)', () => {
-    // why: the third tier MUST NOT preempt the first two. When a player
-    // has heroes in discard (the common case from turn 2+), the resolver
-    // KOs from discard exactly as before D-20603. Pinning this ensures
-    // the broadening is additive and the existing zone-priority lock
-    // from D-18503 carries forward.
+  it('D-24687: the default pick takes inPlay before hand and never the discard (inPlay wins)', () => {
+    // why: D-24687 (superseding the D-18503 / D-20603 zone priority) — the
+    // default pick reads inPlay, then hand; a played Hero has already produced
+    // its Recruit and Attack. A Hero in the discard (the common case from turn
+    // 2+) is not one of "your Heroes" and is never taken. inPlay wins even over
+    // a lexically earlier starter in hand: the zone order dominates.
     const gameState = buildInitialGameState(
       buildSentinelFocusedConfig(),
       buildSentinelFocusedRegistry(),
@@ -306,7 +318,7 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
     };
     gameState.playerZones['0']!.discard = ['starting-shield-trooper' as CardExtId];
     gameState.playerZones['0']!.hand = ['starting-shield-agent' as CardExtId];
-    gameState.playerZones['0']!.inPlay = ['starting-shield-agent' as CardExtId];
+    gameState.playerZones['0']!.inPlay = ['starting-shield-trooper' as CardExtId];
 
     const context = {
       G: gameState,
@@ -314,16 +326,15 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
     } as unknown as FightVillainContext;
     fightVillain(context, { cityIndex: 0 });
 
-    // why: WP-242 — three eligible heroes across three zones is a player
-    // choice; the Fight effect parks. The default pick still honours the
-    // discard → hand → inPlay zone priority (D-18503).
+    // why: WP-242 — two eligible heroes (hand + inPlay) is a player choice;
+    // the Fight effect parks. The default pick honours the D-24687 order.
     assert.deepStrictEqual(gameState.ko, [], 'no auto-KO when ≥2 eligible — parked');
     assert.equal(gameState.pendingKoHeroChoices?.length, 1, 'one pending KO choice appended');
     const defaultTarget = selectDefaultKoTarget(gameState.playerZones['0']!);
     assert.deepStrictEqual(
       defaultTarget,
-      { zone: 'discard', cardId: 'starting-shield-trooper' },
-      'discard wins over hand and inPlay (D-18503 zone priority preserved)',
+      { zone: 'inPlay', cardId: 'starting-shield-trooper' },
+      'inPlay wins over hand; the discard is never read (D-24687)',
     );
     resolveKoHeroChoice(
       { G: gameState, playerID: '0' } as unknown as Parameters<typeof resolveKoHeroChoice>[0],
@@ -332,7 +343,7 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
     assert.deepStrictEqual(
       gameState.ko,
       ['starting-shield-trooper'],
-      'resolving the default KOs the discard trooper',
+      'resolving the default KOs the inPlay trooper',
     );
     assert.equal(
       gameState.playerZones['0']!.hand.length,
@@ -341,12 +352,17 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
     );
     assert.equal(
       gameState.playerZones['0']!.inPlay.length,
-      1,
-      'inPlay untouched',
+      0,
+      'inPlay loses the KO\'d trooper',
+    );
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.discard,
+      ['starting-shield-trooper'],
+      'discard unchanged',
     );
   });
 
-  it('D-20603: zone priority is discard → hand → inPlay (hand wins over inPlay when discard empty)', () => {
+  it('D-24687: the default pick takes the hand when inPlay holds no Hero (discard never read)', () => {
     const gameState = buildInitialGameState(
       buildSentinelFocusedConfig(),
       buildSentinelFocusedRegistry(),
@@ -368,9 +384,12 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
       piercing: 0,
       woundsDrawn: 0,
     };
-    gameState.playerZones['0']!.discard = [];
-    gameState.playerZones['0']!.hand = ['starting-shield-trooper' as CardExtId];
-    gameState.playerZones['0']!.inPlay = ['starting-shield-agent' as CardExtId];
+    gameState.playerZones['0']!.discard = ['starting-shield-agent' as CardExtId];
+    gameState.playerZones['0']!.hand = [
+      'starting-shield-trooper' as CardExtId,
+      'core/spider-man/web-strike#00' as CardExtId,
+    ];
+    gameState.playerZones['0']!.inPlay = [];
 
     const context = {
       G: gameState,
@@ -378,15 +397,16 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
     } as unknown as FightVillainContext;
     fightVillain(context, { cityIndex: 0 });
 
-    // why: WP-242 — two eligible heroes (hand + inPlay) is a player choice; the
-    // Fight effect parks. The default pick honours hand-over-inPlay priority.
+    // why: WP-242 — two eligible heroes in hand is a player choice; the Fight
+    // effect parks. With nothing in play the default pick falls to the hand, and
+    // the starter agent in the discard is never read (D-24687).
     assert.deepStrictEqual(gameState.ko, [], 'no auto-KO when ≥2 eligible — parked');
     assert.equal(gameState.pendingKoHeroChoices?.length, 1, 'one pending KO choice appended');
     const defaultTarget = selectDefaultKoTarget(gameState.playerZones['0']!);
     assert.deepStrictEqual(
       defaultTarget,
       { zone: 'hand', cardId: 'starting-shield-trooper' },
-      'hand wins over inPlay when discard is empty',
+      'hand is taken when inPlay holds no Hero; the discard agent is ignored',
     );
     resolveKoHeroChoice(
       { G: gameState, playerID: '0' } as unknown as Parameters<typeof resolveKoHeroChoice>[0],
@@ -399,8 +419,13 @@ describe('henchman Sentinel Fight: koHeroCurrentPlayer fires end-to-end', () => 
     );
     assert.equal(
       gameState.playerZones['0']!.inPlay.length,
-      1,
-      'inPlay untouched while hand had a target',
+      0,
+      'inPlay stays empty',
+    );
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.discard,
+      ['starting-shield-agent'],
+      'discard unchanged',
     );
   });
 });

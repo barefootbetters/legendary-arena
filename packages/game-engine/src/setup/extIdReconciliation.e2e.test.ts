@@ -290,7 +290,7 @@ describe('ext_id grammar reconciliation — end-to-end effect resolution (WP-191
     );
     assert.ok(mystiqueId, 'fixture must produce a mystique instance in the deck');
 
-    // Give the current player a hero in discard so the Fight: KO has a target.
+    // Give the current player a hero in hand so the Fight: KO has a target.
     const heroKoTarget = heroReservoirIds(gameState).find((id) =>
       id.startsWith('core/spider-man/'),
     );
@@ -308,10 +308,11 @@ describe('ext_id grammar reconciliation — end-to-end effect resolution (WP-191
     };
     // why: WP-701 / D-24520 — setup now deals a 6-card opening hand (all KO-able
     // Heroes for koHeroCurrentPlayer). With extra eligible Heroes on hand the Fight:
-    // KO would PARK a choice (≥2 distinct options) instead of auto-KOing. Clear the
-    // hand + in-play so the single discard Hero is the ONLY KO-able target, forcing
-    // the auto-KO path this test exercises.
-    gameState.playerZones['0']!.hand = [];
+    // KO would PARK a choice (≥2 distinct options) instead of auto-KOing. Leave a
+    // single Hero in hand and clear in-play so it is the ONLY KO-able target,
+    // forcing the auto-KO path this test exercises. The copy in the discard is not
+    // one of "your Heroes" (D-24687) and must stay.
+    gameState.playerZones['0']!.hand = [heroKoTarget!];
     gameState.playerZones['0']!.inPlay = [];
     gameState.playerZones['0']!.discard = [heroKoTarget!];
 
@@ -340,7 +341,12 @@ describe('ext_id grammar reconciliation — end-to-end effect resolution (WP-191
     );
     assert.ok(
       gameState.ko.includes(heroKoTarget!),
-      'the hero in discard must be the KO target',
+      'the hero in hand must be the KO target',
+    );
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.discard,
+      [heroKoTarget!],
+      'discard unchanged',
     );
   });
 

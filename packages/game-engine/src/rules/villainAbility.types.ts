@@ -452,7 +452,8 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *     `ko-cullable-each-deck-top`, `swap-two-city-villains`: no params
  *   - `ko-hero` with `target: 'each'`: optional `zone` (D-24280) restricts the
  *     per-player KO to a single source zone (Juggernaut's "from their discard
- *     pile" / "from their hand"); absent means the discard→hand→inPlay fallback.
+ *     pile" / "from their hand"); absent means "your Heroes" — hand + inPlay,
+ *     never the discard pile (D-24687).
  *   - `gain-wound` with `target: 'each-other'` (D-24295): every player EXCEPT the
  *     current player gains `magnitude` Wound(s) (default 1) — the Lizard.
  *   - `capture-bystander`: optional `magnitude` (D-24295) is a rescue COUNT
