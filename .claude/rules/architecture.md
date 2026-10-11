@@ -229,15 +229,18 @@ chain importing Shared Tooling; Shared Tooling in any app's runtime `dependencie
 > **boardgame.io framework-store exemption (D-24095).** boardgame.io's own
 > storage adapter MAY persist its opaque match state to the dedicated `bgio`
 > schema. Application code never reads or interprets that blob, and it is never
-> a save-game or a source of derived features, **except** four server-layer,
+> a save-game or a source of derived features, **except** five server-layer,
 > read-only, never-written-back carve-outs: **D-24119** (replay and score
 > verification from `initialState + log` of a completed match),
 > **D-24153** (Tier-1 LAGN loadout projection from
 > `initialState.G.matchConfiguration` + `ctx.numPlayers`), **D-24169** (match
 > summary for `/api/dash/matches` from `matchConfiguration`, `numPlayers`, and
-> `metadata.{createdAt,updatedAt,gameover}`), and **D-24187** (deriving or
+> `metadata.{createdAt,updatedAt,gameover}`), **D-24187** (deriving or
 > backfilling `legendary.competitive_scores.team_key` from `heroDeckIds`, read
-> from `bgio.replay_artifacts` or the `bgio.matches` blob). The exact terms
+> from `bgio.replay_artifacts` or the `bgio.matches` blob), and **D-24689** (an
+> `admin-session-required` route reading a match's live `state` solely to test
+> `G.isDebugMatch` and, only when true, handing it to the engine's
+> `buildOperatorView`; any other match is refused). The exact terms
 > are in ARCHITECTURE.md §Persistence Boundary (Cross-Layer); read them before
 > touching any `bgio` read. All other application reads of the blob are forbidden.
 

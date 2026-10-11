@@ -59,6 +59,13 @@ case directly, and shows what the bot weighed. It's modelled on the
 and adapted to a turn-based, hidden-information, server-authoritative game.
 It's a proposal. A WP and a DECISIONS entry would own any build.
 
+**Build status (2026-10-11):** WP-802 / D-24689 builds the server and engine
+half: an admin creates an unlisted, never-scored **operator match**
+(`isDebugMatch`), and reads its whole board, Wounds by zone and the bot's
+recent decisions from `GET /api/admin/operator-match/:matchId/board`. The
+arena-client panel, the setters and jump to turn N are planned follow-ons.
+D-24689 answers the six Open Questions below.
+
 ## Mechanics
 
 ### What exists today (verified against code, 2026-10-11)
@@ -398,25 +405,32 @@ fit them, not bend them.
    `playerView`, or an admin HTTP route that builds it server-side. The
    choice decides whether a DECISIONS carve-out is needed for live reads as
    well as for replays.
+   Answered: D-24689 §4 (an admin HTTP route, under a fifth carve-out).
 2. **Jump to turn N on the right engine.** D-24119's replay runs on the
    current server. Does a mid-match stop need the match's build, recorded in
    `buildProvenance`, and does it refuse when the build differs? Check D-24119
    before relying on it for old matches.
+   Answered: D-24689 §8 (record the build at creation; label, don't refuse).
 3. **Which setters come first?** This page orders them by the incidents.
    A WP should confirm the list and the order, and whether "place a card"
    is limited to cards already loaded at setup. The engine never queries the
    registry after setup, so a card outside the match's composition has no
    data to stand on.
+   Answered: D-24689 §7 (order, conservation, move rules).
 4. **Bot candidates, live or logged?** Show them only in the panel, or also
    record them in a debug match's diagnostics so a bot decision can be read
    afterwards?
+   Answered: D-24689 §5 (live, from server memory, via the board route).
 5. **UI library.** Herbs vs. Ailments names Tweakpane as the shared
    debug-panel UI for both games. The arena-client is Vue 3, with PrimeVue on
    the dashboard. Whether play takes Tweakpane, and how it mounts beside the
    play mat, is open.
+   Answered: D-24689 §6 (a lazy Vue panel; Tweakpane for the setters).
 6. **The debug flag's name and home.** It goes in the extensible match-setup
    envelope. The exact field, its default, and its drift tests need a
    DECISIONS entry.
+   Answered: D-24689 §1 (`isDebugMatch` on the creation payload, not the
+   loadout envelope).
 
 ## References
 

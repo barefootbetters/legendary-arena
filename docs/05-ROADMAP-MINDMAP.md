@@ -914,7 +914,7 @@ mindmap
         ["Future-WP-F 📝 Placeholder — end-to-end smoke suite"]
         ["Future-WP-G 📝 Placeholder — disconnect stress suite"]
         ["Future-WP-H 📝 Placeholder — synthetic load generator"]
-        ["WP-802 📝 Operator match admin-only creation never scored reveal-all board read server plus game engine isDebugMatch buildOperatorView admin operator-match routes debug_match refusal EC-839 D-24689 reserved DRAFTED 2026-10-11"]
+        ["WP-802 ✅ Operator match admin-only creation never scored reveal-all board read server plus game engine isDebugMatch buildOperatorView admin operator-match routes debug_match refusal EC-839 D-24689 Active DONE 2026-10-11"]
         ["Future-WP-I 📝 Placeholder — operator panel in the arena-client (WP-802 follow-on)"]
         ["Future-WP-J 📝 Placeholder — operator setters (WP-802 follow-on, D-24689 §7)"]
         ["Future-WP-K 📝 Placeholder — operator jump to turn N (WP-802 follow-on, D-24689 §8)"]
@@ -991,11 +991,11 @@ mindmap
 | Friends & Ranked Trust (2026-07) | 18/19 | 1 open |
 | Play Lobby Entrance (2026-09) | 4/4 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
-| Phase 10 — Debugging, Testing & Troubleshooting | 0/1 | 1 open |
+| Phase 10 — Debugging, Testing & Troubleshooting | 1/1 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **779/798 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 18 open |
+| **Total** | **780/798 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 17 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 19):** WP-802 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 18):** WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
