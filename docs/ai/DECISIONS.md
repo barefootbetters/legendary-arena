@@ -47192,4 +47192,24 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 ---
 
+### D-24686 — Reveal-or-Wound lines say when the Wound supply is empty (direct fix, no WP) (Active 2026-10-11)
+
+**Context.** In 2p match `sDBnFxiigDL` (Loki / Cosmic Cube, build `eca1242`), Ymir's second Ambush logged "every player revealed a Ranged Hero" (37.1.2), but no Hero in the pool was Ranged. The Wound supply had run out at 34.1.2. `villainEffectRevealOrWound` skipped a player who lacked the Hero when the supply was empty (correctly, not counting them as wounded), then read "nobody wounded" as "everyone revealed". `villainEffectGainWoundUnlessVictoryVillainGroup` (Viper and similar) had the same flaw: "every player had another <group> Villain in their Victory Pile".
+
+**Decision.**
+1. Both handlers track players skipped for an empty supply.
+2. Nobody wounded because of the supply: "<Timing> effect: the Wound supply is empty, so no Wound was gained (Player 0, Player 1 had no Ranged Hero)." Outcome `blocked`. The Victory-Pile handler names "had no other <group> Villain in their Victory Pile".
+3. Supply runs out partway: the applied line gains "; the Wound supply ran out before Player 1".
+4. The every-player-revealed / every-player-safe lines now fire only when that is true. Log text only: no rules, state or notable-event change, and `G.messages` is hash-excluded (D-24081).
+
+**Tests.** `villainEffects.execute.test.ts`: three new cases (empty supply for each handler, and the partway run-out). No existing test changed.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5038 → 5041).
+
+**Live-verify (D-24026):** pending. A game where a reveal-or-Wound villain fires after the Wound supply runs out (Cosmic Cube reliably empties it).
+
+**Reserved by:** NUMBER-LEDGER D-24686. Related: D-24281 / WP-469 (reveal-or-wound), D-24299 / WP-494 (the Victory-Pile variant), D-24679 (naming the trait checked), D-24683 (player attribution), D-24026.
+
+---
+
 Protect this file.
