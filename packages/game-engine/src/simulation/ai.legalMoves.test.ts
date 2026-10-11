@@ -18,7 +18,8 @@ import { selectDefaultOptionalKoTarget } from '../hero/heroEffects.execute.js';
 import type { LegendaryGameState, PendingKoHeroChoice, PendingOptionalKoReward } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { makeTurnEconomy, makeCardStatEntry, makeCardRegistryReader } from '../test/fixtureBuilders.js';
-import { WOUND_EXT_ID, SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import { WOUND_EXT_ID, SHIELD_OFFICER_EXT_ID, SHIELD_AGENT_EXT_ID, SHIELD_TROOPER_EXT_ID } from '../setup/pilesInit.js';
+import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
@@ -1467,3 +1468,52 @@ describe('getLegalMoves — fight-cost reduction reads the same resolvers (WP-79
     assert.deepEqual(fightTargets(makeReducedG([], 4)), [0, 1, 2, 3, 4, 'mastermind']);
   });
 });
+
+describe('getLegalMoves — KO-from-discard default KOs Wounds, then starters (D-24688)', () => {
+  const RECRUITED_HERO = 'core/hulk/crazed-rampage#0' as CardExtId;
+
+  /** A G whose current player has the given discard and a parked KO-up-to-N choice. */
+  function makeKoDiscardG(discard: CardExtId[], maxCount: number): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main', discard });
+    gameState.pendingKoDiscardChoices = [{ choiceType: 'ko-from-discard', playerID: '0', maxCount }];
+    gameState.ko = [];
+    gameState.messages = [];
+    return gameState;
+  }
+
+  test('KOs Wounds first, then starting S.H.I.E.L.D. cards, capped at maxCount', () => {
+    const gameState = makeKoDiscardG(
+      [SHIELD_AGENT_EXT_ID, RECRUITED_HERO, WOUND_EXT_ID, SHIELD_TROOPER_EXT_ID, SHIELD_OFFICER_EXT_ID, WOUND_EXT_ID, SHIELD_AGENT_EXT_ID],
+      4,
+    );
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+    assert.equal(legalMoves.length, 1, 'exactly one legal move while pending');
+    assert.deepEqual(legalMoves, [{
+      name: 'resolveKoDiscardChoice',
+      args: { cardIds: [WOUND_EXT_ID, WOUND_EXT_ID, SHIELD_AGENT_EXT_ID, SHIELD_TROOPER_EXT_ID] },
+    }]);
+  });
+
+  test('never KOs a recruited Hero or an Officer, and KOs nothing when nothing is cullable', () => {
+    const gameState = makeKoDiscardG([RECRUITED_HERO, SHIELD_OFFICER_EXT_ID], 4);
+    assert.deepEqual(getLegalMoves(gameState, CONTEXT), [{ name: 'resolveKoDiscardChoice', args: { cardIds: [] } }]);
+  });
+
+  test('a smaller maxCount (Salomé-style KO up to two) stops at the cap', () => {
+    const gameState = makeKoDiscardG([SHIELD_TROOPER_EXT_ID, WOUND_EXT_ID, SHIELD_AGENT_EXT_ID], 2);
+    assert.deepEqual(getLegalMoves(gameState, CONTEXT), [{
+      name: 'resolveKoDiscardChoice',
+      args: { cardIds: [WOUND_EXT_ID, SHIELD_TROOPER_EXT_ID] },
+    }]);
+  });
+
+  test('the default round-trips through resolveKoDiscardChoice and clears the choice', () => {
+    const gameState = makeKoDiscardG([SHIELD_AGENT_EXT_ID, WOUND_EXT_ID, RECRUITED_HERO, SHIELD_AGENT_EXT_ID], 4);
+    const [move] = getLegalMoves(gameState, CONTEXT);
+    resolveKoDiscardChoice({ G: gameState, playerID: '0' } as never, move!.args as never);
+    assert.equal(gameState.pendingKoDiscardChoices?.length ?? 0, 0, 'the choice is resolved');
+    assert.deepEqual(gameState.playerZones['0']!.discard, [RECRUITED_HERO], 'only the recruited Hero stays');
+    assert.deepEqual([...gameState.ko].sort(), [SHIELD_AGENT_EXT_ID, SHIELD_AGENT_EXT_ID, WOUND_EXT_ID].sort());
+  });
+});
+

@@ -47212,4 +47212,26 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 ---
 
+### D-24688 — The bot KOs its Wounds and starting cards with "KO up to N from your discard pile" (direct fix, no WP) (Active 2026-10-11)
+
+**Context.** Loki's Maniacal Tyrant ("KO up to four cards from your discard pile") and Salomé's Fight share the KO-from-discard choice (WP-693 / D-24510, WP-760 / D-24589). D-24510 gave the bot an empty "KO nothing" default so all-bot simulations stayed byte-identical to a world without the prompt. In bot-ally play that turns the tactic into a no-op for the bot seat. Matches `xGw-94HDhBj` (23.2.14) and `sDBnFxiigDL` (35.2.14) logged "Player 1 KO'd 0 card(s)" while the bot's discard held Wounds and starting S.H.I.E.L.D. cards.
+
+**Decision.**
+1. `ai.legalMoves.ts` `selectDefaultKoDiscardCardIds` picks the chooser's Wounds first, then starting S.H.I.E.L.D. Agents and Troopers (the `isCullableDeckTopCard` set the bot already culls for Melter, D-24413), each in discard order, up to the entry's `maxCount`. Repeated ids are allowed (D-24682).
+2. Recruited Heroes and S.H.I.E.L.D. Officers are never picked. With nothing cullable the selection is empty, as before.
+3. Every picked id is in the discard and the count never exceeds `maxCount`, so the move always resolves and the block-all guard always lifts.
+4. Human play is unchanged: the prompt still lets a person pick any 0..N cards.
+
+**Determinism.** All-bot games that reach Maniacal Tyrant or Salomé now KO cards, so their later states differ. Accepted: this is the point of the fix.
+
+**Tests.** `simulation/ai.legalMoves.test.ts`: four new cases (Wounds first then starters with the cap, nothing cullable, a smaller cap, a round trip through `resolveKoDiscardChoice`). No existing test changed.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5043 → 5047); `sim:runtime-observed:check` current (the solo sweep never meets Loki or Salomé); `sim:coverage --check` OK; `par:seed:test` 0; no fixture re-pinned. The ungated multi-player PAR diagnostic profiles that include Loki will drift.
+
+**Live-verify (D-24026):** pending. A bot-ally game where the bot defeats Maniacal Tyrant with Wounds or starting cards in its discard should log "Player 1 KO'd N card(s)" with N > 0.
+
+**Reserved by:** NUMBER-LEDGER D-24688. Related: D-24510 / WP-693 (the choice and its empty default), D-24589 / WP-760 (Salomé), D-24682 (repeated ids), D-24413 (the cullable set), D-24026.
+
+---
+
 Protect this file.

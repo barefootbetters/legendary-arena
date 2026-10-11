@@ -259,6 +259,46 @@ export interface SimulationLifecycleContext {
 }
 
 /**
+ * The bot's deterministic "KO up to N cards from your discard pile" answer (Loki's
+ * Maniacal Tyrant, Salomé — D-24688, amending D-24510's empty default).
+ *
+ * Picks the front entry's chooser's Wounds first, then starting S.H.I.E.L.D. Agents and
+ * Troopers (the `isCullableDeckTopCard` set the bot already culls for Melter), each in
+ * discard order, up to the entry's `maxCount`. A repeated id is one more copy (D-24682).
+ * Anything else stays: a recruited Hero or an Officer is never KO'd.
+ *
+ * @param gameState - The engine state. Not mutated.
+ * @returns The card ids to KO; empty when the discard holds nothing cullable.
+ */
+export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): CardExtId[] {
+  const front = gameState.pendingKoDiscardChoices?.[0];
+  if (front === undefined) {
+    return [];
+  }
+  const discard = gameState.playerZones[front.playerID]?.discard ?? [];
+  const chosen: CardExtId[] = [];
+  // why: D-24688 — Wounds first (a dead card is the best KO), then the starting
+  // S.H.I.E.L.D. cards; two passes keep the order deterministic and capped.
+  for (const cardId of discard) {
+    if (chosen.length >= front.maxCount) {
+      return chosen;
+    }
+    if (cardId === WOUND_EXT_ID) {
+      chosen.push(cardId);
+    }
+  }
+  for (const cardId of discard) {
+    if (chosen.length >= front.maxCount) {
+      return chosen;
+    }
+    if (cardId !== WOUND_EXT_ID && isCullableDeckTopCard(cardId)) {
+      chosen.push(cardId);
+    }
+  }
+  return chosen;
+}
+
+/**
  * The bot's deterministic Spinning Cyclone answer (WP-795 / D-24664).
  *
  * Moves the lowest-index City Villain that holds a captured Bystander to the lowest-index
@@ -863,14 +903,15 @@ export function getLegalMoves(
     ];
   }
 
-  // why: WP-693 / D-24510 — pending KO-from-discard short-circuit (Loki's Maniacal Tyrant).
-  // The engine block-all guard freezes every other move, so the bot must resolve it first.
-  // The deterministic default is the EMPTY "KO nothing" selection — always valid and
-  // unblocking (the choice is OPTIONAL, "up to four"), so par/replay stay byte-identical to
-  // a no-KO world except for the extra park→resolve move pair; only live human play gets the
-  // prompt. Mirrors the resolvePutAnyNumberBottomHQ empty-default. Returns EXACTLY 1 move.
+  // why: WP-693 / D-24510 — pending KO-from-discard short-circuit (Loki's Maniacal Tyrant,
+  // Salomé). The engine block-all guard freezes every other move, so the bot must resolve it
+  // first. D-24688 replaces D-24510's empty "KO nothing" default: a bot ally that never thins
+  // its deck plays the tactic as a no-op (live matches xGw-94HDhBj 23.2.14, sDBnFxiigDL
+  // 35.2.14). The default now KOs the chooser's Wounds, then starting S.H.I.E.L.D. cards, up
+  // to maxCount. Every id is in the discard, so the selection is always valid and unblocking.
+  // Returns EXACTLY 1 move.
   if (hasPendingKoDiscardChoice(gameState)) {
-    return [{ name: 'resolveKoDiscardChoice', args: { cardIds: [] } }];
+    return [{ name: 'resolveKoDiscardChoice', args: { cardIds: selectDefaultKoDiscardCardIds(gameState) } }];
   }
 
   // why: WP-427 / D-24248 — pending optional-put-bottom-HQ short-circuit. While a
