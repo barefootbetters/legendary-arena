@@ -428,9 +428,10 @@ multi-node would additionally require.
   co-located on the droplet, the pin holds for a different reason: Socket.IO
   rides Cloudflare to the origin, so origin round-trip time reaches live
   matches, and San Francisco serves a West Coast player base.
-- **Image:** Ubuntu 24.04 (LTS). **Size:** 2 vCPU / 4 GB / 80 GB SSD ($24/mo),
-  recommended on 2026-10-11 from measured Render use, with a 2 GB swapfile. The
-  PLAN's original 4 vCPU / 8 GB / 160 GB ($48/mo) is the first resize step. See
+- **Image:** Ubuntu 24.04 (LTS). **Size:** 2 vCPU / 4 GB / 80 GB SSD ($24/mo)
+  with a 2 GB swapfile (`08-swap.ps1`), per lab D-002 (2026-10-11, sized from
+  measured Render use). The PLAN's original 4 vCPU / 8 GB / 160 GB ($48/mo) is
+  the first resize step. See
   [Vendor comparison](#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
 - **Auth:** SSH key only. Create via the DigitalOcean UI or `doctl`.
 
@@ -684,10 +685,11 @@ migration Work Packet is the pending governance noted in the callout.
   operational-burden transfer (accepted — see Ownership boundary), and a check
   against the server-layer boundary in
   [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
-- **Droplet size.** The vendor survey ([Vendor survey](#vendor-survey-2026-10-11))
-  held the DigitalOcean call. Measured Render use on 2026-10-11 points to the $24
-  box (2 vCPU / 4 GB) rather than the PLAN's $48 box. The lab PLAN still says
-  4 vCPU / 8 GB until Jeff confirms the change.
+- **Droplet size** — decided 2026-10-11: start at 2 vCPU / 4 GB ($24) with a
+  2 GB swapfile, sized from measured Render use. The lab PLAN adopted it as
+  lab D-002 (`legendary-arena-lab` #19, which adds `infra/scripts/08-swap.ps1`).
+  This box is too small to also host the [AI Second Brain](ai-second-brain.md)
+  (its floor is 8 GB).
 - **Managed vs self-hosted Postgres** — decided: self-hosted on the same host
   (co-located, `localhost`), per the PLAN. No longer open.
 - **The cross-provider latency threshold** — moot: the co-located target removes

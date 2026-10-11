@@ -677,7 +677,11 @@ corrupts recall or the store:
   the end-state. The bootstrap build may co-locate, with isolation, on the
   **production DigitalOcean droplet** that the Render migration stands up (see
   the deployment callout above and the cost baseline below). That droplet does
-  not exist yet, so neither does the bootstrap host. The architecture locks
+  not exist yet, so neither does the bootstrap host. It will also be too small:
+  lab D-002 (2026-10-11) starts it at 2 vCPU / 4 GB, sized for the arena alone,
+  which is below this page's 8 GB floor. Co-locating would mean resizing the
+  droplet up first; otherwise the brain gets its own host from the start (see
+  the cost baseline below). The architecture locks
   **ownership and open formats, never a provider**, so the vendor for the
   eventual *dedicated* brain host is a shopping decision, not an architectural
   one. As of 2026-08, candidates in this class were:
@@ -731,15 +735,31 @@ corrupts recall or the store:
   on yet.** Render is a PaaS, so the bootstrap co-location depends on the
   Render → DigitalOcean migration recorded in
   [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (the
-  `legendary-arena-lab` PLAN, 2026-07-24, reconfirmed 2026-10-02), and that
-  program has not moved since 2026-07-25. NameHero and the other vendors above
-  remain candidates only for the brain's eventual *dedicated* host. **Second, weigh the brain's host budget against $146 a
-  month, not against zero.** The PLAN's target size (4 vCPU / 8 GB, ~$48/mo at
-  DigitalOcean) replaces the whole Render bill, and a 16 GB box that also
-  carries the brain with voice would still cost less than Render charges for
-  production alone. That makes "co-locate to bootstrap" a cost decision, not
-  only a convenience. The resource-contention caution in the deployment callout
-  still applies, and a dedicated host is still the end-state.
+  `legendary-arena-lab` PLAN, 2026-07-24, reconfirmed 2026-10-02). That
+  program restarted on 2026-10-04. NameHero and the other vendors above
+  remain candidates only for the brain's eventual *dedicated* host. **Second,
+  the arena turned out to be small, and that changes the co-location math.**
+  Measured Render use on 2026-10-11 was about 1 GB and well under one core, so
+  the arena droplet starts at 2 vCPU / 4 GB (~$24/mo, lab D-002) instead of the
+  planned 4 vCPU / 8 GB. A shared box would need about 16 GB for the brain's
+  8 GB floor plus the arena, roughly $96 a month at DigitalOcean's Basic
+  pricing. Two boxes are cheaper: the $24 arena droplet plus an 8 GB brain host
+  (NameHero Plus $24.49, or a $48 DigitalOcean droplet) comes to about $48–72.
+  Co-location remains *permitted* to bootstrap, but it no longer saves money,
+  and two boxes also remove the resource-contention concern in the deployment
+  callout. A dedicated host is still the end-state.
+
+  **Voice is deferred, so plan the brain host at 8 GB (operator direction,
+  2026-10-11).** Jeff uses voice only while driving, up to about 2 hours a day,
+  through Claude's own app voice. That runs on Anthropic's side and uses no RAM
+  on the brain host; the trade-off is that those conversations use the vendor's
+  memory, not the brain's. The rest of the day is desktop text chat. So the
+  brain host is sized at the **8 GB tier**, and local Whisper + TTS on the box is
+  a later add. Even then the
+  [voice addendum](../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md) sizes its v1
+  default (Whisper `base`/`small` + Piper) for an 8 GB / 2 vCPU box. The 16 GB
+  figure above is headroom for voice running alongside embeddings, not a hard
+  floor for voice.
 - **Host shopping note (2026-10-04).** The vendor for the brain host is still
   unlocked. This note prices the candidates against the stack this page runs.
   It does not move the arena migration: `api.legendary-arena.com` and its
@@ -2396,6 +2416,14 @@ This is the summary index; the individual gotchas and their nuances live in
   The Hetzner candidate entry is corrected: US prices rose on 2026-06-15, so
   Hetzner is no longer the cheap option in the US. No Locked row moved, and there
   is no `DECISIONS.md` entry.
+- **2026-10-11 — arena droplet sized at 4 GB; bootstrap co-location no longer
+  saves money (descriptive, no re-lock).** Lab D-002 starts the arena droplet at
+  2 vCPU / 4 GB, which is below this page's 8 GB floor. A shared box would need
+  ~16 GB (~$96/mo). Two boxes cost ~$48–72. The Locked row "co-location OK to
+  bootstrap" still permits co-location; the cost argument for it is withdrawn.
+  Voice is deferred on Jeff's direction (Claude app voice while driving), so the
+  brain host plans at the 8 GB tier. No Locked row moved, and there is no
+  `DECISIONS.md` entry.
 
 ## Open Questions
 
