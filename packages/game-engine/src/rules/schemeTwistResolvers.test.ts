@@ -348,17 +348,18 @@ describe('wound-all resolver', () => {
   // schemeTwistCount + 1: prior count 0-3 → twists 1-4 (0 wounds), 4-5 → twists
   // 5-6 (1 wound), 6 → twist 7 (3 wounds, the MAX matching step).
   const COSMIC_ESCALATION = [
-    { atOrAfterTwist: 5, woundCount: 1 },
-    { atOrAfterTwist: 7, woundCount: 3 },
+    { atOrAfterTwist: 5, throughTwist: 6, woundCount: 1 },
+    { atOrAfterTwist: 7, throughTwist: 7, woundCount: 3 },
   ];
 
-  it('escalation deals the printed Cosmic Cube schedule (0 on twists 1-4, 1 on 5-6, 3 on 7)', () => {
+  it('escalation deals the printed Cosmic Cube schedule (0 on twists 1-4, 1 on 5-6, 3 on 7, 0 on 8)', () => {
     const scenarios = [
       { priorTwistCount: 0, currentTwist: 1, expectedWounds: 0 },
       { priorTwistCount: 3, currentTwist: 4, expectedWounds: 0 },
       { priorTwistCount: 4, currentTwist: 5, expectedWounds: 1 },
       { priorTwistCount: 5, currentTwist: 6, expectedWounds: 1 },
       { priorTwistCount: 6, currentTwist: 7, expectedWounds: 3 },
+      { priorTwistCount: 7, currentTwist: 8, expectedWounds: 0 },
     ];
 
     for (const scenario of scenarios) {
@@ -382,10 +383,15 @@ describe('wound-all resolver', () => {
 
   it('escalation at twist 7 takes the MAX matching step (3 wounds), not the first (1)', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
-    gameState.counters.schemeTwistCount = 6; // currentTwist 7 — matches both 5→1 and 7→3
+    gameState.counters.schemeTwistCount = 6; // currentTwist 7 — matches both open-ended steps
 
+    // why: D-24685 closed the Cosmic Cube steps, so open-ended steps keep the
+    // overlapping case this test pins.
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
-      escalation: COSMIC_ESCALATION,
+      escalation: [
+        { atOrAfterTwist: 5, woundCount: 1 },
+        { atOrAfterTwist: 7, woundCount: 3 },
+      ],
     });
 
     assert.equal(gameState.playerZones['0']!.discard.length, 3, 'twist 7 = 3 wounds (the MAX step)');
@@ -440,6 +446,35 @@ describe('wound-all resolver', () => {
 
     assert.equal(gameState.playerZones['0']!.discard.length, 3, 'player 0 got 3 wounds');
     assert.equal(gameState.playerZones['1']!.discard.length, 3, 'player 1 got 3 wounds');
+  });
+
+  it('D-24685: twist 8 ("Evil Wins!") deals no Wounds and logs it, with Wounds still in the supply', () => {
+    const gameState = makeResolverState({ playerCount: 2, wounds: ['w1', 'w2', 'w3', 'w4', 'w5', 'w6'] });
+    gameState.counters.schemeTwistCount = 7; // currentTwist 8 — past the 3-Wound step
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {
+      escalation: COSMIC_ESCALATION,
+    });
+
+    assert.equal(gameState.playerZones['0']!.discard.length, 0, 'player 0 gains nothing on twist 8');
+    assert.equal(gameState.playerZones['1']!.discard.length, 0, 'player 1 gains nothing on twist 8');
+    assert.equal(gameState.piles.wounds.length, 6, 'wound supply untouched');
+    const texts = gameState.messages.map((message) => message.text);
+    assert.ok(
+      texts.includes('[Scheme Twist] No wounds this twist — twist 8 deals no Wounds.'),
+      `got: ${JSON.stringify(texts)}`,
+    );
+  });
+
+  it('a step without throughTwist stays open on later twists', () => {
+    const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
+    gameState.counters.schemeTwistCount = 7; // currentTwist 8
+
+    resolver(gameState, makeRevealContext(), emptyImplementationMap, {
+      escalation: [{ atOrAfterTwist: 7, woundCount: 2 }],
+    });
+
+    assert.equal(gameState.playerZones['0']!.discard.length, 2, 'open-ended step still deals on twist 8');
   });
 
   it('escalation below the threshold is a logged no-op (no wounds, no throw)', () => {

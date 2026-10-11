@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24685 — Cosmic Cube's 8th Twist no longer hands out Wounds (direct fix) (2026-10-11)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** On Unleash the Power of the Cosmic Cube, Twist 8 is now only "Evil Wins!". Before, it also tried to give each player 3 Wounds; in 2p matches `ZVUtr7aaCom` and `sDBnFxiigDL` the supply was empty, so it logged "gained 0 of 3 wounds" just before the loss.
+
+- **Engine only.** Twists 5-6 (1 Wound) and 7 (3 Wounds) are unchanged.
+- **Live-verify (D-24026):** pending. A Cosmic Cube game that reaches Twist 8 with Wounds left in the supply.
+
 ### D-24684 — Ymir's Fight KOs Wounds from the player who has the most (direct fix) (2026-10-10)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Defeating Ymir, Frost Giant King now KOs the Wounds in hand and discard of whichever player holds the most, with ties going to the player who fought him. The log names that player: "Fight effect: Player 1 KO'd 3 Wound(s) from their hand and discard pile." Before, it always picked the fighter, even with none: 2p match `r8_2EFHd3Ah` logged "KO'd 0" while the bot held Wounds (36.2.37).

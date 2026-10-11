@@ -47172,4 +47172,24 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 ---
 
+### D-24685 — Cosmic Cube's twist 8 deals no Wounds (direct fix, no WP) (Active 2026-10-11)
+
+**Context.** Unleash the Power of the Cosmic Cube prints "Twist 5-6: Each player gains a Wound. Twist 7: Each player gains 3 Wounds. Twist 8: Evil Wins!" D-24349 (WP-540) encoded the schedule as open-ended `atOrAfterTwist` steps (5 → 1, 7 → 3), so twist 8 still matched the 7 → 3 step and tried to give each player 3 Wounds before the loss. In 2p matches `ZVUtr7aaCom` and `sDBnFxiigDL` (build `eca1242`) the supply was already empty, so the log read "Wound supply exhausted — player 0 gained 0 of 3 wounds" at twist 8. With Wounds left, both players would have taken 3 more at the moment of the loss, which feeds the final board and score and can open Diving Block prompts on a lost game.
+
+**Decision.**
+1. **`throughTwist`.** A `wound-all` escalation step may carry an optional `throughTwist`. The step matches only while `atOrAfterTwist ≤ twist ≤ throughTwist`. Steps without it stay open-ended. The step shape is resolver params (`Record<string, unknown>`), not a contract type.
+2. **Cosmic Cube config.** `{ atOrAfterTwist: 5, throughTwist: 6, woundCount: 1 }` and `{ atOrAfterTwist: 7, throughTwist: 7, woundCount: 3 }`, matching the printed "5-6" and "7". Twist 8 matches no step and deals nothing; the existing `lossThreshold: 8` still ends the game.
+3. **Log.** A twist below the first step keeps "No wounds this twist — twist N is below the escalation threshold." A twist past the closed steps logs "No wounds this twist — twist 8 deals no Wounds."
+4. **Scope.** Only core Cosmic Cube uses `escalation` (the co2e and msp1 reprints are `counter-only`). Portals to the Dark Dimension's twist 7 only logs a line and has no gameplay effect, so it is unchanged.
+
+**Tests.** `schemeTwistResolvers.test.ts`: the Cosmic schedule constant mirrors the closed config, and the schedule test adds twist 8 → 0. New cases: twist 8 deals nothing to either player with Wounds in the supply and logs the line; a step without `throughTwist` still deals on later twists. The twist-7 MAX test keeps its overlapping case with explicit open-ended steps. `schemeTwistConfigs.test.ts` drift test E expects the closed steps. Authorized behaviour change under this entry.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5038 → 5040); `sim:runtime-observed:check` current; `ledger:numbers:check` passed; no PAR, hash or replay fixture re-pinned.
+
+**Live-verify (D-24026):** pending. A Cosmic Cube game that reaches twist 8 with Wounds still in the supply should log "twist 8 deals no Wounds" and no "gained" line.
+
+**Reserved by:** NUMBER-LEDGER D-24685. Related: D-24349 / WP-540 (the escalation), D-24178 (twist-loss thresholds), D-24673 (Diving Block "would gain" wording), D-24026.
+
+---
+
 Protect this file.

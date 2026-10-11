@@ -83,8 +83,9 @@ describe('SCHEME_TWIST_CONFIGS drift tests', () => {
     assert.equal(cosmicCube?.resolverId, 'wound-all');
     assert.deepEqual(cosmicCube?.params, {
       escalation: [
-        { atOrAfterTwist: 5, woundCount: 1 },
-        { atOrAfterTwist: 7, woundCount: 3 },
+        { atOrAfterTwist: 5, throughTwist: 6, woundCount: 1 },
+        // D-24685 — each step closes at its printed last twist; twist 8 is Evil Wins only.
+        { atOrAfterTwist: 7, throughTwist: 7, woundCount: 3 },
       ],
     });
     // loss config unchanged (true twist-loss at 8, no resource condition)
