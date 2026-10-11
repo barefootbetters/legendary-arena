@@ -180,11 +180,15 @@ it.
 
 **Cutover from Render (D-24690, one time).** Do steps 1–3 before merging the
 D-24690 PR; the merge triggers the deploy.
-1. **API token.** Cloudflare → My Profile → API Tokens → Create Token →
-   **Edit Cloudflare Workers** template, scoped to this account and the
-   `legendary-arena.com` zone. In GitHub → Settings → Secrets and variables →
-   Actions, add secrets `CLOUDFLARE_API_TOKEN` (the token) and
-   `CLOUDFLARE_ACCOUNT_ID`.
+1. **API token.** Cloudflare → Manage Account → **Account API tokens** →
+   Create Token → **Edit Cloudflare Workers** template; account resources:
+   this account; zone resources: only `legendary-arena.com` (the deploy
+   attaches the `ewiki.` / `dashboard.` custom domains). An account-owned
+   token suits CI: it is not tied to a person's login. In GitHub → Settings →
+   Secrets and variables → Actions, add secrets `CLOUDFLARE_API_TOKEN` (the
+   token) and `CLOUDFLARE_ACCOUNT_ID`. If the first deploy fails with an auth
+   error on the custom-domain step, use a user token instead (My Profile →
+   API Tokens, same template and scope).
 2. **Confirm the Access application** for `ewiki.legendary-arena.com` exists
    and is enabled (Zero Trust → Access → Applications). It is reused as-is.
 3. **Remove the old record.** Cloudflare DNS for `legendary-arena.com` →
