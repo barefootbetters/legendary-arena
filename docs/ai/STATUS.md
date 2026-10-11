@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24686 — "Reveal or gain a Wound" lines say when the Wound supply is empty (direct fix) (2026-10-11)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When a villain's "each player reveals a ___ Hero or gains a Wound" effect fires after the Wound supply runs out, the log now says "the Wound supply is empty, so no Wound was gained (Player 0, Player 1 had no Ranged Hero)". Before, it said "every player revealed a Ranged Hero" even when nobody could (2p match `sDBnFxiigDL`, Ymir's Ambush at 37.1.2). Viper's Victory-Pile version is fixed the same way.
+
+- **Engine only, text only.** No rules or state change.
+- **Live-verify (D-24026):** pending.
+
 ### D-24685 — Cosmic Cube's 8th Twist no longer hands out Wounds (direct fix) (2026-10-11)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** On Unleash the Power of the Cosmic Cube, Twist 8 is now only "Evil Wins!". Before, it also tried to give each player 3 Wounds; in 2p matches `ZVUtr7aaCom` and `sDBnFxiigDL` the supply was empty, so it logged "gained 0 of 3 wounds" just before the loss.
