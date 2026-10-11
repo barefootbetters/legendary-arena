@@ -47206,7 +47206,7 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5038 → 5041).
 
-**Live-verify (D-24026):** pending. A game where a reveal-or-Wound villain fires after the Wound supply runs out (Cosmic Cube reliably empties it).
+**Live-verify (D-24026):** pending. A game where a reveal-or-Wound villain fires after the Wound supply runs out. Cosmic Cube can empty it (`sDBnFxiigDL`, `ZVUtr7aaCom`) but often doesn't: three later Cosmic Cube games (including `mAmjZ9Cm9L9` and `xGw-94HDhBj`) never ran it out, and `Cq_czI1TQH0` ended with 20 Wounds left.
 
 **Reserved by:** NUMBER-LEDGER D-24686. Related: D-24281 / WP-469 (reveal-or-wound), D-24299 / WP-494 (the Victory-Pile variant), D-24679 (naming the trait checked), D-24683 (player attribution), D-24026.
 
