@@ -271,72 +271,10 @@ services:
       - key: LEGENDS_PUBLISHER_INTERVAL_MS
         value: "300000"
 
-  # Engineering Wiki — Hugo-built read-only projection of wiki/.
-  # why: Static-site posture per WP-139 / D-13811. Builds the wiki content
-  # projection + link integrity + Hugo render at deploy time. Layer-boundary
-  # clean — does not import or run any engine/registry/server code; the
-  # buildCommand only touches apps/wiki-viewer/ and wiki/. Hugo version
-  # is pinned in apps/wiki-viewer/.hugo-version (D-13808 + Open Decision C).
-  - type: web
-    name: legendary-arena-wiki
-    runtime: static
-    # why: deploys are driven deterministically by the wiki-viewer CI
-    # workflow's Render Deploy Hook step (.github/workflows/wiki-viewer.yml),
-    # which fires only AFTER the link-integrity + Hugo build gate passes on
-    # main. Render's implicit on-commit auto-deploy stalled intermittently
-    # (2026-06-11: #273-#276 did not auto-deploy), so it is disabled here to
-    # make CI the single, gated trigger and avoid double deploys.
-    autoDeploy: false
-    # why: D-24293 — after the Hugo render, generate the Pagefind search index
-    # into apps/wiki-viewer/public/pagefind/. This uses `pnpm dlx pagefind@1.5.2`
-    # (fetch-and-run the pinned version) rather than `pnpm exec pagefind` on
-    # PURPOSE: Render's build runs a FILTERED install (`pnpm install --filter .`)
-    # and a static service can run with NODE_ENV=production, either of which can
-    # leave the pagefind devDependency binary absent — `pnpm exec` would then fail
-    # with "command not found" and the deploy would publish HTML with NO
-    # /pagefind/ index (observed 2026-08-02: the search box rendered but every
-    # /pagefind/* 404'd). `pnpm dlx` does not depend on the project install, so it
-    # is robust here. CI (.github/workflows/wiki-viewer.yml) keeps `pnpm exec`
-    # because it does a full frozen install that guarantees the pinned binary is
-    # present; both produce a byte-identical index from the same pagefind 1.5.2.
-    #
-    # why: `>-` FOLDED scalar with `&&` at each line-end — NOT a `|` literal
-    # block — on PURPOSE. This service is Blueprint-managed but its Build Command
-    # does NOT auto-sync from render.yaml; the operator sets it via the dashboard
-    # textarea, which FLATTENS newlines to spaces (observed 2026-08-03: a `|`
-    # block pasted in ran as one space-joined line, so `tar` received `--filter`
-    # from the next command and the build died). The folded `>-` scalar collapses
-    # these lines into ONE space-separated command joined by `&&`, so the exact
-    # same string is safe whether Render honors newlines (blueprint sync) or
-    # flattens them (dashboard paste), and it fails fast at each step. Keep the
-    # `&&` at every line-end if you add or reorder steps. render.yaml now matches
-    # the live service command verbatim.
-    buildCommand: >-
-      curl -sL "https://github.com/gohugoio/hugo/releases/download/v$(cat apps/wiki-viewer/.hugo-version)/hugo_extended_$(cat apps/wiki-viewer/.hugo-version)_linux-amd64.tar.gz" | tar -xz hugo &&
-      ./hugo version &&
-      pnpm install --filter . --frozen-lockfile=false &&
-      node apps/wiki-viewer/scripts/project-wiki.mjs &&
-      node apps/wiki-viewer/scripts/check-links.mjs &&
-      ./hugo --source apps/wiki-viewer --minify &&
-      pnpm dlx pagefind@1.5.2 --site apps/wiki-viewer/public
-    staticPublishPath: apps/wiki-viewer/public
-    pullRequestPreviewsEnabled: false
-    # why: the Cloudflare Access gate binds ONLY to ewiki.legendary-arena.com.
-    # Render's default legendary-arena-wiki.onrender.com origin served the full
-    # wiki ungated (observed 2026-10-05: ewiki → 302 to Access, onrender.com →
-    # 200 with content), so the gate was bypassable. `disabled` makes Render 404
-    # every request to the onrender.com host before it reaches the service
-    # (requires ≥1 custom domain — ewiki is attached). Like buildCommand above,
-    # this service's settings may not auto-sync from render.yaml: ALSO set
-    # Settings → Custom Domains → Render Subdomain → Disabled in the dashboard,
-    # and keep the two in agreement. pnpm check:domains probes the 404.
-    renderSubdomainPolicy: disabled
-    envVars:
-      # why: WP-400 / D-24205 — must equal .node-version. Render precedence is
-      # NODE_VERSION > .node-version > .nvmrc > engines, so THIS VALUE WINS;
-      # leaving it stale silently overrides the pin. pnpm check:node-pin enforces it.
-      - key: NODE_VERSION
-        value: "24.18.0"
+  # The engineering wiki (ewiki) is no longer a Render service: it moved to the
+  # assets-only Cloudflare Worker legendary-arena-wiki (D-24690, see
+  # apps/wiki-viewer/wrangler.jsonc). Delete the Render service by hand; removing
+  # it from this Blueprint does not delete it.
 
 databases:
   # Managed PostgreSQL — rules engine backing store

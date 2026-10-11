@@ -131,7 +131,7 @@ restated here.
 
 | Path | Remote | Owns | Deploys to |
 |---|---|---|---|
-| `C:\pcloud\BB\DEV\legendary-arena` | `barefootbetters/legendary-arena` | Engine, server, clients, card data, the `wiki/` source, all AI governance | Render (server, wiki), Cloudflare Pages (viewer, client, legends board) |
+| `C:\pcloud\BB\DEV\legendary-arena` | `barefootbetters/legendary-arena` | Engine, server, clients, card data, the `wiki/` source, all AI governance | Render (server), Cloudflare Pages (viewer, client, legends board), Cloudflare Workers (ewiki, dashboard) |
 | `C:\www\legendary-arena-com` | the marketing-site repo | Hugo marketing site: blog posts, brand tokens, layouts, marketing docs, and Legendary Arena's corporate-memory layer (`docs/corporate-memory/`) | Cloudflare Pages → `www.legendary-arena.com` |
 | `C:\www\jefferyjjensen-corporate-memory` | `barefootbetters/jefferyjjensen-corporate-memory` (**private**) | Top node of the distributed corporate memory (owner profile, portfolio routing map, cross-business decision log, personal notes) and, since 2026-09-29, the [AI Second Brain](ai-second-brain.md) "ship" (AIS-OS skills and operating manuals) | Nothing — private, never published |
 

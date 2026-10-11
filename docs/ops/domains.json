@@ -57,23 +57,23 @@
     {
       "name": "Engineering wiki (private, gated)",
       "url": "https://ewiki.legendary-arena.com",
-      "host": "Render Static Site + Cloudflare Access",
-      "source": "apps/wiki-viewer (Hugo build of docs/wiki/)",
+      "host": "Cloudflare Workers + Cloudflare Access",
+      "source": "apps/wiki-viewer (Hugo build of docs/wiki/); Worker legendary-arena-wiki",
       "expectedStatus": [302, 401, 403],
       "expectedLocation": "https://legendary-arena.cloudflareaccess.com/",
       "state": "live",
       "anchor": "ewiki",
-      "notes": "Live since 2026-05-08. Cloudflare Access redirects unauthenticated probes to login (302) or rejects them (401/403). A 200 here means the gate is misconfigured and the private wiki is publicly readable. expectedLocation is a prefix; the Access login URL appends a long JWT in the query string that varies per request."
+      "notes": "Live since 2026-05-08; served by the assets-only Cloudflare Worker legendary-arena-wiki since the D-24690 cutover (workers_dev and preview_urls off, so the custom domain is the only hostname). Cloudflare Access redirects unauthenticated probes to login (302) or rejects them (401/403). A 200 here means the gate is misconfigured and the private wiki is publicly readable. expectedLocation is a prefix; the Access login URL appends a long JWT in the query string that varies per request."
     },
     {
-      "name": "Engineering wiki (Render default origin, must be disabled)",
+      "name": "Engineering wiki (retired Render origin, must 404)",
       "url": "https://legendary-arena-wiki.onrender.com",
       "host": "Render",
-      "source": "apps/wiki-viewer (Render Static Site legendary-arena-wiki)",
+      "source": "none — Render static site legendary-arena-wiki, retired by D-24690",
       "expectedStatus": 404,
       "state": "planned",
       "anchor": "ewiki",
-      "notes": "The Render service's built-in onrender.com host. The ewiki Access application gates ONLY ewiki.legendary-arena.com, so this host served the full wiki UNGATED (observed 200 with content on 2026-10-05) — an Access bypass. Closed by renderSubdomainPolicy: disabled in render.yaml, which makes Render 404 every request to this host before it reaches the service. state is 'planned' until the setting is live: a 200 here reports FAIL (bypass still open); a 404 reports READY — then flip state 'planned' -> 'live'. Any later 200 is a security incident (see DOMAINS.md#ewiki)."
+      "notes": "The retired Render service's built-in onrender.com host. It served the full wiki UNGATED (observed 200 on 2026-10-05 and 2026-10-11) because the ewiki Access application gates only ewiki.legendary-arena.com. D-24690 moved the ewiki to a Cloudflare Worker; once the Render service is deleted, Render answers 404 for this host. state is 'planned' until then: a 200 reports FAIL (service still exists — delete it); a 404 reports READY — flip state to 'live'. Any later 200 is a security incident (DOMAINS.md#ewiki)."
     },
     {
       "name": "Legends scoreboard (public attract board)",
@@ -88,24 +88,24 @@
     {
       "name": "Internal admin dashboard",
       "url": "https://dashboard.legendary-arena.com",
-      "host": "Cloudflare Pages + Cloudflare Access",
+      "host": "Cloudflare Workers + Cloudflare Access",
       "source": "apps/dashboard",
       "expectedStatus": [302, 401, 403],
       "expectedLocation": "https://legendary-arena.cloudflareaccess.com/",
       "state": "live",
       "anchor": "dashboard",
-      "notes": "Live since 2026-06-02. CF Pages project: legendary-arena-dashboard. Cloudflare Access (Self-hosted, Email OTP, single-operator allow = jeff@barefootbetters.com) redirects unauthenticated probes to login (302) or rejects them (401/403). A 200 here means the gate is misconfigured and the dashboard is publicly readable. expectedLocation is a prefix; the Access login URL appends a long JWT in the query string that varies per request. Launched in mock mode (D-19702); now a live-mode build (VITE_USE_MOCKS=false, VITE_API_BASE_URL=https://api.legendary-arena.com, Hanko sign-in; read from the deployed bundle 2026-10-10), so a missing gate exposes the live operator dashboard with only the server's admin-session check in front of live data."
+      "notes": "Live since 2026-06-02. Served by the assets-only Cloudflare Worker legendary-arena-dashboard since the D-24690 cutover (workers_dev and preview_urls off); before that, the CF Pages project legendary-arena-dashboard. Cloudflare Access (Self-hosted, Email OTP, single-operator allow = jeff@barefootbetters.com) redirects unauthenticated probes to login (302) or rejects them (401/403). A 200 here means the gate is misconfigured and the dashboard is publicly readable. expectedLocation is a prefix; the Access login URL appends a long JWT in the query string that varies per request. Launched in mock mode (D-19702); now a live-mode build (VITE_USE_MOCKS=false, VITE_API_BASE_URL=https://api.legendary-arena.com, Hanko sign-in; read from the deployed bundle 2026-10-10), so a missing gate exposes the live operator dashboard with only the server's admin-session check in front of live data."
     },
     {
-      "name": "Internal admin dashboard (pages.dev alias)",
+      "name": "Internal admin dashboard (retired pages.dev alias)",
       "url": "https://legendary-arena-dashboard.pages.dev",
       "host": "Cloudflare Pages + Cloudflare Access",
-      "source": "apps/dashboard",
+      "source": "none — CF Pages project legendary-arena-dashboard, retired by D-24690",
       "expectedStatus": [302, 401, 403],
       "expectedLocation": "https://legendary-arena.cloudflareaccess.com/",
       "state": "planned",
       "anchor": "dashboard",
-      "notes": "The CF Pages project's built-in production alias. The dashboard.legendary-arena.com Access application (WP-197) gates ONLY the custom domain, so this alias has served the operator SPA bundle UNGATED since 2026-06-02 (observed 200 on 2026-09-10 and 2026-10-09). The deployed bundle is live-mode (VITE_USE_MOCKS=false, calls api.legendary-arena.com) and the server CORS-allows this origin, so the alias is a working operator dashboard with only the server's admin-session check in front of live data (unauthenticated /api/dash/* returns 401) — Access is skipped. state is 'planned' deliberately: until the gate is enabled the probe returns 200 (not the expected 302/401/403), so check:domains reports FAIL for this row — that FAIL is the actionable 'alias not yet gated' signal, not a regression. Pages -> Settings -> Enable access policy ALONE does NOT close it: per Cloudflare's docs that toggle protects only preview deployments, not the *.pages.dev production alias. Follow the full steps in DOMAINS.md#dashboard (Cloudflare known-issue 'Enable Access on your *.pages.dev domain': enable the policy, remove the '*' from the Access app's subdomain, re-enable for previews). Then re-run check:domains: expect READY, and flip state 'planned' -> 'live'."
+      "notes": "The retired CF Pages project's built-in production alias. It served the live operator dashboard UNGATED from 2026-06-02 (observed 200 on 2026-09-10, 2026-10-09 and 2026-10-11): the dashboard Access application gates only the custom domain, and Pages' Enable access policy covers only preview deployments. D-24690 moved the dashboard to a Cloudflare Worker with no default hostname. Until the Pages project is deleted this row reports FAIL (200). Once it is deleted the hostname stops resolving (PENDING) and this row is removed. Any 200 here is a security incident (DOMAINS.md#dashboard)."
     },
     {
       "name": "API (game server, friendly hostname)",

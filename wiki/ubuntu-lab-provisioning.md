@@ -23,14 +23,17 @@ source:
   - ../render.yaml
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
-last-reviewed: 2026-10-04
+  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0005.pdf (Render bill, Aug 2026)
+  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026)
+last-reviewed: 2026-10-11
 ---
 
 # Ubuntu Lab Provisioning
 
 > **Migration in progress.** `api.legendary-arena.com` and its PostgreSQL are
 > moving off Render onto a self-hosted DigitalOcean Ubuntu droplet fronted by
-> Cloudflare, and the ewiki moves to Cloudflare Pages. The move is decided at the
+> Cloudflare. (The ewiki already left Render on 2026-10-11, for an assets-only
+> Cloudflare Worker rather than Pages — D-24690.) The move is decided at the
 > migration-program level: the `legendary-arena-lab` repo holds the runbook and the
 > infrastructure-as-code (`docs/PLAN.md`, `infra/`, and its operator wiki). Until
 > the final decommission phase, Render stays warm as the rollback target (see the
@@ -48,6 +51,9 @@ last-reviewed: 2026-10-04
 > `status: draft` and deliberately cites no `D-`/`WP-` IDs it cannot yet resolve.
 > The former "records no decision to leave Render" disclaimer is superseded: that
 > decision is made — only its transcription into `DECISIONS.md` is outstanding.
+> **Update 2026-10-11:** the ewiki half is now transcribed, as D-24690 — onto an
+> assets-only Cloudflare **Worker**, not Pages (a Pages project always serves an
+> ungated `*.pages.dev` alias). The api + Postgres half is still untranscribed.
 
 ## Summary
 
@@ -70,8 +76,8 @@ The operator-capability and disaster-recovery-rehearsal value that first justifi
 the box still holds — but the box is no longer exploratory. The move is decided
 (see the callout) and in progress. When it was planned in July, cost looked
 roughly even and control was the driver. That changed once Render's plans were
-raised under load: the September 2026 bill was **$146.35**, against about $48 a
-month for the target droplet. Cost is now a driver too (see
+raised under load: the August and September 2026 bills were **$146.50** and
+**$146.35**, against about $48 a month for the target droplet. Cost is now a driver too (see
 [Cost case](#cost-case-september-2026)).
 
 ## Mechanics
@@ -95,23 +101,30 @@ governance transcription noted in the callout — not the architecture decision.
 
 ### Cost case (September 2026)
 
-The vendor was reconfirmed as **DigitalOcean** on 2026-10-02 and held after a
-NameHero price comparison on 2026-10-04 (see
+The vendor was reconfirmed as **DigitalOcean** on 2026-10-02. It held after a
+NameHero price comparison on 2026-10-04 and again after NameHero's written
+month-to-month quote on 2026-10-11 (see
 [Vendor comparison](#vendor-comparison-digitalocean-vs-namehero-2026-10-04)).
 NameHero had been named elsewhere, but only as a candidate host for the
 [AI Second Brain](ai-second-brain.md), never for this migration.
 
-What Render charged for September 2026 (invoice `0SPQWPNF-0006`, paid
-2026-10-01):
+What Render charged for August 2026 (invoice `0SPQWPNF-0005`, paid
+2026-09-01) and September 2026 (invoice `0SPQWPNF-0006`, paid 2026-10-01):
 
-| Line | Render plan | Sep 2026 | After migration |
-|---|---|---|---|
-| Game server | `pro`, 2 CPU / 4 GB | $85.00 | on the droplet |
-| PostgreSQL | `pro-4gb` plus storage | $55.30 | on the droplet, `localhost` |
-| Builds | 6 h 42 m of pipeline minutes | $5.00 | GitHub Actions deploy |
-| Bandwidth | 6.5 GB | $1.05 | included with the droplet |
-| ewiki static site | free | $0.00 | Cloudflare Pages |
-| **Total** | | **$146.35** | **~$48** (4 vCPU / 8 GB), **~$24** if stepped down to 4 GB |
+| Line | Render plan | Aug 2026 | Sep 2026 | After migration |
+|---|---|---|---|---|
+| Game server | `pro`, 2 CPU / 4 GB | $85.00 | $85.00 | on the droplet |
+| PostgreSQL | `pro-4gb` plus storage | $55.30 | $55.30 | on the droplet, `localhost` |
+| Builds | pipeline minutes (Aug 41 m, Sep 6 h 42 m) | $5.00 | $5.00 | GitHub Actions deploy |
+| Bandwidth | Aug 7.8 GB, Sep 6.5 GB | $1.20 | $1.05 | included with the droplet |
+| ewiki static site | free | $0.00 | $0.00 | Cloudflare Worker (moved 2026-10-11, D-24690) |
+| **Total** | | **$146.50** | **$146.35** | **~$48** (4 vCPU / 8 GB), **~$24** if stepped down to 4 GB |
+
+The two months differ by 15 cents, all of it bandwidth, so about **$146 a
+month is the steady run rate**, not a one-off spike. Builds billed $5 in both
+months, at 41 minutes and at nearly seven hours, so that line behaves like a
+flat charge rather than a per-minute one. August and September together cost
+$292.85.
 
 That saves about **$1,180 a year** at 8 GB and about $1,470 at 4 GB, before
 backup storage. Backups go to R2, which is inside its free tier today. Both
@@ -119,15 +132,17 @@ Render plans were raised in July to cure CPU and memory starvation; the reasons
 are recorded in `render.yaml`.
 
 **Cost-reduction order.** These steps are ranked by savings for the effort.
-1. **Restart the migration.** No commits have landed in `legendary-arena-lab`
-   since 2026-07-25, and every month of the stall costs about $100 more than the
-   droplet would. The phases and gates in its PLAN are unchanged.
+1. **Finish the migration.** It restarted on 2026-10-04. The work that needs
+   no droplet is merged: `legendary-arena-lab` #17 and #18 fixed the
+   provisioners and proved them in CI on Ubuntu 24.04. What remains starts
+   with a payment method on the DigitalOcean account. Every month on Render
+   costs about $100 more than the droplet would. The phases and gates in the
+   PLAN are unchanged.
 2. **Size from data, not from the July incidents.** Before choosing the droplet
    size, pull September's CPU and memory figures for the server and the
    database from the Render dashboard. That settles whether the box can start
    at 4 GB instead of 8 GB. If the API runs idle, start at 2 vCPU / 4 GB ($24)
-   and resize up; that captures NameHero-level savings without changing
-   vendor. If the graphs show sustained CPU instead, the fix is a resize to
+   and resize up; that saves more than switching vendor would. If the graphs show sustained CPU instead, the fix is a resize to
    CPU-Optimized, not a different host.
 3. **Reduce the load, which pays off on any host.**
    - The bot-ally driver polls every live match every 250 ms
@@ -140,7 +155,9 @@ are recorded in `render.yaml`.
 4. **Trim Render only if cutover is more than a month or two out.**
    - Build only the server and the packages it depends on
      (`pnpm --filter @legendary-arena/server... build`) instead of
-     `pnpm -r build`. That goes after the $5 build line.
+     `pnpm -r build`. That shortens deploys, but it probably won't lower the
+     $5 build line: August's 41 minutes billed the same $5 as September's
+     6 h 42 m.
    - Step the server from `pro` down to `standard`, which saves $60 a month,
      but only if the September figures show headroom. Under-provisioning is
      what caused the July freezes.
@@ -150,23 +167,28 @@ are recorded in `render.yaml`.
 
 ### Vendor comparison: DigitalOcean vs NameHero (2026-10-04)
 
-**Verdict: stay with DigitalOcean for this cutover.** NameHero is cheaper
-hardware, but its headline price is a first-term promo, its US site is in the
-middle of the country, and the program's runbook is written against
-DigitalOcean's API. NameHero remains a reasonable host for a separate
+**Current call (2026-10-11): stay with DigitalOcean for this cutover.**
+NameHero's written reply settled the price, and the price gap is now small.
+It did not settle any of the operational questions the cutover depends on:
+the Ubuntu 24.04 image, cloud-init, self-service snapshots and rebuilds, the
+data center, and whether vCPUs are dedicated. DigitalOcean answers all of
+those today. NameHero remains a reasonable host for a separate
 [AI Second Brain](ai-second-brain.md) box, uncoupled from the arena deploy
 pipeline.
+
+This section was first written on 2026-10-04 from NameHero's published
+prices. Those turned out to be 3-year-term rates. NameHero reopened the
+question on 2026-10-05 with month-to-month quotes for the existing account,
+and its answers to six follow-up questions arrived on 2026-10-11.
 
 The workload is one Ubuntu 24.04 box running `apps/server`, PostgreSQL 18 on
 `localhost`, Nginx, a Cloudflare origin certificate, systemd, SSH deploy, and
 `pg_dump` to R2. Bandwidth does not matter (Render moved 6.5 GB in September),
 and the box is a single point of failure on either vendor. What separates them
-is price certainty, region, CPU class, disk, and fit with the runbook.
+is region, CPU class, disk, provisioning fit, and, by a small margin, price.
 
-**Price.** Figures were checked against both vendors' pricing pages on
-2026-10-04.
-
-DigitalOcean, list price with no term commitment:
+**Price.** DigitalOcean, list price with no term commitment (checked
+2026-10-04):
 
 | Droplet | vCPU | RAM | Disk | Transfer | Monthly |
 |---|---|---|---|---|---|
@@ -174,60 +196,91 @@ DigitalOcean, list price with no term commitment:
 | Basic (planned start) | 4 | 8 GB | 160 GB SSD | 5 TB | $48 |
 | CPU-Optimized (resize path) | 4 | 8 GB | 50 GB SSD | 5 TB | $84 |
 
-NameHero unmanaged VPS. The promo is the first invoice of a 3-year term, for
-new accounts only; after that the regular rate applies:
+NameHero unmanaged VPS, month-to-month, as quoted in writing to the existing
+account (2026-10-11):
 
-| Plan | vCPU | RAM | Disk | Transfer | Promo | Regular |
-|---|---|---|---|---|---|---|
-| Plus | 2 | 8 GB | 100 GB NVMe | 8 TB | $6.85 | $15.92 |
-| Turbo | 4 | 16 GB | 200 GB NVMe | 16 TB | $12.01 | $27.94 |
-| Business | 8 | 32 GB | 400 GB NVMe | 32 TB | $20.68 | $48.09 |
+| Plan | vCPU | RAM | Disk | Transfer | Monthly |
+|---|---|---|---|---|---|
+| Plus | 2 | 8 GB | 100 GB NVMe | 8 TB | $24.49 |
+| Turbo | 4 | 16 GB | 200 GB NVMe | 16 TB | $42.99 |
 
-NameHero has no 4 vCPU / 8 GB plan. The fair match for the planned start is
-Turbo at its regular rate: 4 cores and 16 GB for about $28 a month, against
-$48 for DigitalOcean's 4 cores and 8 GB. That gap is about **$240 a year**, on
-top of the ~$1,180 a year already saved by leaving Render. Do not budget the
-$12 promo.
+Promo pricing is for new customers only, so it never applies to this account.
+The quoted rate applies from the first invoice and is held for 12 months as
+long as no add-ons are bought. The VPS can be cancelled at any time. The
+$15.92 and $27.94 "regular" figures in the 2026-10-04 version of this section
+were 3-year prepaid rates and are withdrawn.
+
+At like-for-like sizes the gap is small:
+- Plus costs 49 cents more than DigitalOcean's 2 vCPU / 4 GB box, for double
+  the RAM and NVMe disk.
+- Turbo costs about $5 a month less (~$60 a year) than DigitalOcean's 4 vCPU /
+  8 GB box, for double the RAM and disk.
+
+The "about $240 a year" gap claimed on 2026-10-04 came from the 3-year rates
+and is gone. Either vendor saves roughly $1,180 to $1,470 a year against
+Render.
 
 Backups: DigitalOcean's droplet backups add 20% of the droplet price weekly
 ($9.60 on the $48 box) or 30% daily. Neither is needed while R2 dumps are the
 source of truth. NameHero's nightly full-VPS backups are an add-on ordered at
-signup and restore the whole machine.
+signup and restore the whole machine. Buying one would also end the 12-month
+price hold.
+
+**NameHero's answers (2026-10-11).** These are the six questions sent on
+2026-10-05, plus what the reply confirmed without being asked:
+
+| Question | NameHero's answer |
+|---|---|
+| Ubuntu 24.04 image | **Not confirmed.** NameHero says it would confirm availability at initial provisioning. |
+| cloud-init, API deploy, snapshots, rebuilds | **Not confirmed.** NameHero says it would confirm which of these are self-service and which go through the management panel. |
+| In-place Plus → Turbo upgrade | **Not answered.** |
+| Dedicated vs shared vCPU | **Not answered.** The reply says the hosts are AMD EPYC, but the generation varies by host and is confirmed only after provisioning. |
+| Data center and a test IP | **Declined.** NameHero would not estimate Lenexa-to-San Francisco latency before confirming a deployment location, and sent no test IP. |
+| Mid-month cancel billing | **Partly answered.** Cancel any time. Proration was not stated. |
+| Price and term | **Confirmed:** month-to-month, held 12 months with no add-ons. |
+| Network and access | **Confirmed:** one dedicated IPv4 address and full root. |
 
 **Where NameHero is better.**
-- **Disk.** Unmanaged plans run on NVMe and AMD EPYC. A third-party HostAdvice
-  benchmark of a Turbo-class box reported about 1.3 GB/s sequential read and
-  about 15k random 4K IOPS (not re-verified here). DigitalOcean Basic is
-  shared-CPU SSD.
-- **RAM per core.** Turbo's 16 GB suits Postgres plus the unpruned `bgio` blob
-  store. The July freezes were memory starvation as well as CPU.
-- **CPU class.** NameHero markets dedicated EPYC cores. DigitalOcean Basic is
-  shared vCPU, which carries noisy-neighbor risk for the chatty 250 ms bot-ally
-  loop.
+- **RAM and disk per dollar.** Turbo's 16 GB suits Postgres plus the unpruned
+  `bgio` blob store; the July freezes were memory starvation as well as CPU.
+  Unmanaged plans run on NVMe. A third-party HostAdvice benchmark of a
+  Turbo-class box reported about 1.3 GB/s sequential read and about 15k random
+  4K IOPS (not re-verified here). DigitalOcean Basic uses SSD.
+- **Price, slightly.** As above, about $5 a month at the 4-core size and level
+  at the 2-core size.
 - Bandwidth allowance and a 30-day money-back window. Neither matters here.
 
 **Where DigitalOcean fits this migration.**
 - **Region.** With the database co-located, `sfo3` no longer matters for the
   app-to-DB hop. It still matters because Socket.IO rides Cloudflare to the
   origin, so origin round-trip time shows up in live matches. San Francisco
-  serves a West Coast player base. NameHero's US site is Lenexa, Kansas: fine
-  for a national audience, worse for the West Coast path already chosen.
-- **CPU headroom without a vendor change.** If September's graphs show
-  sustained CPU, resize to CPU-Optimized ($84) on the same account.
-- **The runbook.** The program's `infra/` assumes cloud-init, `doctl`, a
-  destroy-and-rebuild drill, and per-second billing so a lab rebuild is cheap.
-  DigitalOcean provides that API, a Terraform provider, snapshots, and cloud
-  firewalls. NameHero is a client-area VPS with root Ubuntu. It can run the
-  same systemd unit, but the provisioners and the §6 rebuild would need a
-  rewrite before they could run. Unmanaged plans also exclude NameHero's
-  support tier, though the program already accepts the operator burden.
-- **Price stays put.** DigitalOcean has billed per second since 2026-01-01,
-  capped at the monthly rate. NameHero's headline rate expires.
+  serves a West Coast player base. NameHero's US site is Lenexa, Kansas, and
+  NameHero declined to name the deployment location or give a test IP to
+  measure from.
+- **CPU class is known.** DigitalOcean Basic is shared vCPU, and that is
+  stated. The noisy-neighbor risk for the 250 ms bot-ally loop is known, and
+  the fix is a resize to CPU-Optimized ($84) on the same account. NameHero
+  markets EPYC cores but did not say whether they are dedicated.
+- **Provisioning is confirmed.** The `legendary-arena-lab` provisioners are
+  vendor-neutral: lab #18 (2026-10-04) runs the whole chain in its
+  `provision-smoke` CI on a fresh Ubuntu 24.04 machine. The scripts still
+  assume three things: a 24.04 image, cloud-init user-data at create, and a
+  self-service destroy-and-rebuild for the §6 drill. DigitalOcean provides all
+  three, plus snapshots, cloud firewalls, and per-second billing that makes a
+  rehearsal rebuild cheap. NameHero has confirmed none of the three.
 
-**Why not reopen the vendor now.** Each month of stall costs about $100 more
-than the droplet, which is most of the steady-state gap between DigitalOcean
-($48) and NameHero Turbo ($28). The PLAN, the `sfo3` pin, and the IaC are
-already written for DigitalOcean.
+**What would change the call.** NameHero becomes the better buy if it confirms
+four things in writing before an order:
+1. The Ubuntu 24.04 image.
+2. cloud-init user-data at create.
+3. A self-service snapshot and rebuild.
+4. The data center, with a test IP to measure Cloudflare-to-origin latency
+   from the West Coast.
+
+If all four come back yes, Turbo at $42.99 beats DigitalOcean's $48 box on
+every axis except region. Don't hold the cutover for the answers: each week on
+Render costs about $23 more than the droplet would, against a NameHero saving
+of about $1 a week at the 4-core size.
 
 ### Prerequisites & effort
 

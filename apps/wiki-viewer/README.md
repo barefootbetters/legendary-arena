@@ -64,10 +64,22 @@ availability is not the wiki's responsibility).
 
 ## Deploy
 
-The site deploys as a Render static-site service named `legendary-arena-wiki`
-declared in [`render.yaml`](../../render.yaml) (D-13811). CI is
-[`.github/workflows/wiki-viewer.yml`](../../.github/workflows/wiki-viewer.yml),
-triggered on push to `main` touching `wiki/` or `apps/wiki-viewer/`.
+The site deploys as the assets-only Cloudflare Worker `legendary-arena-wiki`,
+declared in [`wrangler.jsonc`](wrangler.jsonc) (D-24690, which moved it off the
+Render static site of D-13811). The Worker serves `./public` on the custom
+domain `ewiki.legendary-arena.com`, gated by Cloudflare Access, with
+`workers_dev` and `preview_urls` both `false` so it has no other public
+hostname. Keep them `false`: either one adds an address the Access gate does
+not cover.
+
+CI is [`.github/workflows/wiki-viewer.yml`](../../.github/workflows/wiki-viewer.yml),
+triggered on push to `main` touching `wiki/` or `apps/wiki-viewer/`, and on
+manual `workflow_dispatch`. Its build job runs the gates and uploads the
+`wiki-viewer-public` artifact; on `main` its deploy job downloads that artifact
+and runs `pnpm dlx wrangler@4.149.0 deploy --config apps/wiki-viewer/wrangler.jsonc`
+with the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repo secrets (it
+fails if either is missing). To re-publish without a content change, run the
+workflow on `main` from the Actions tab.
 
 ## Hugo version
 

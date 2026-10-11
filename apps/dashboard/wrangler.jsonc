@@ -1,0 +1,37 @@
+// Operator dashboard (dashboard.legendary-arena.com) — assets-only Cloudflare Worker.
+//
+// why: D-24690. The dashboard moved off Cloudflare Pages because every Pages
+// project also serves <project>.pages.dev and <hash>.<project>.pages.dev, and a
+// custom-domain Access application gates neither (legendary-arena-dashboard
+// .pages.dev served the live dashboard ungated from 2026-06-02). A Worker has
+// no default public hostname once workers_dev and preview_urls are off, so the
+// custom domain below — gated by the existing WP-197 Access application — is
+// the only door.
+//
+// Built and deployed by .github/workflows/dashboard-deploy.yml on every push
+// to main (the same cadence as the Pages Git integration it replaces).
+{
+  "name": "legendary-arena-dashboard",
+  "compatibility_date": "2026-10-11",
+  "assets": {
+    // why: Vite SPA. Navigation requests that match no file get index.html
+    // with 200, so vue-router's deep links (/coverage, /debug/effects) load
+    // on refresh — the fallback Pages inferred automatically. public/_headers
+    // is copied into dist/ and applies unchanged on Workers.
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  // why: these two lines are the point of D-24690. workers_dev: false removes
+  // the *.workers.dev hostname; preview_urls: false removes per-version
+  // preview hostnames. Both must stay false, or the dashboard gets a second,
+  // ungated address again (the pages.dev failure).
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    // why: custom_domain creates the DNS record and certificate. Wrangler
+    // refuses while another DNS record exists for the hostname, so the
+    // cutover removes the domain from the Pages project and deletes its CNAME
+    // first (DOMAINS.md#dashboard).
+    { "pattern": "dashboard.legendary-arena.com", "custom_domain": true }
+  ]
+}

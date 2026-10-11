@@ -1,0 +1,34 @@
+// Engineering wiki (ewiki.legendary-arena.com) — assets-only Cloudflare Worker.
+//
+// why: D-24690. The ewiki moved off the Render static site because Render's
+// default legendary-arena-wiki.onrender.com host served the whole wiki with no
+// Cloudflare Access gate (observed 2026-10-05). A Worker has no default public
+// hostname once workers_dev and preview_urls are off, so the custom domain
+// below — gated by the existing ewiki Access application — is the only door.
+//
+// Deployed by the deploy job in .github/workflows/wiki-viewer.yml, which
+// uploads the exact apps/wiki-viewer/public/ artifact that passed the build
+// job's link-integrity, page-count, determinism and JS-free gates.
+{
+  "name": "legendary-arena-wiki",
+  "compatibility_date": "2026-10-11",
+  "assets": {
+    // why: Hugo writes pretty URLs (/page/index.html). The default
+    // html_handling (auto-trailing-slash) serves /page/ from that file and
+    // redirects /page to /page/, matching Hugo's own link style. No
+    // not_found_handling: the site has no 404 layout, so a miss is a plain 404.
+    "directory": "./public"
+  },
+  // why: these two lines are the point of D-24690. workers_dev: false removes
+  // the *.workers.dev hostname; preview_urls: false removes per-version
+  // preview hostnames. Both must stay false, or the wiki gets a second,
+  // ungated address again (the onrender.com / pages.dev failure).
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    // why: custom_domain creates the DNS record and certificate. Wrangler
+    // refuses while another DNS record exists for the hostname, so the
+    // cutover deletes the old CNAME to Render first (DOMAINS.md#ewiki).
+    { "pattern": "ewiki.legendary-arena.com", "custom_domain": true }
+  ]
+}

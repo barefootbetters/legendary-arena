@@ -1212,8 +1212,8 @@ export function buildUIState(
   // --- 13b. Project pending KO-a-Hero choice (front of queue) ---
   // why: D-24010 + WP-243 — project the FRONT entry of G.pendingKoHeroChoices
   // with its eligible targets recomputed fresh from current G (no snapshot —
-  // WP-242 stores none). The eligible list spans the chooser's non-wound
-  // discard → hand → inPlay in array index order, deduped per (zone, cardId)
+  // WP-242 stores none). The eligible list holds the chooser's non-wound cards
+  // in the entry's allowed zones, in array index order, deduped per (zone, cardId)
   // by buildKoEligibleTargets. `remaining` = total KOs owed = Σ (entry.remaining ??
   // 1) over the queue (WP-492 / D-24298): a queue of single-KO entries reads its
   // length unchanged (each owes 1), and a magnitude-N park (Whirlwind, one entry
@@ -1230,7 +1230,7 @@ export function buildUIState(
     if (chooserZones !== undefined) {
       // why: WP-577 — a hand-scoped entry (Red Skull) projects hand Heroes only, so
       // the prompt offers exactly the printed "from their hand" targets. Absent
-      // `zones` ⇒ all zones (villain ko-hero unchanged).
+      // `zones` ⇒ "your Heroes", hand + inPlay with no discard card (D-24687).
       const eligibleTargets = buildKoEligibleTargets(chooserZones, frontChoice.zones);
       const eligible: UIEligibleKoHeroCard[] = [];
       for (const target of eligibleTargets) {

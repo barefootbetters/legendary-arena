@@ -188,9 +188,9 @@ answers a question the two reachability probes structurally cannot:
 *is the live ewiki built from the newest commit that should have
 triggered a build?*
 
-The ewiki's Render static site (`legendary-arena-wiki`) has
-`autoDeploy` disabled; the `wiki-viewer` workflow's `deploy` job is
-the sole trigger, firing Render's deploy hook only after the
+The ewiki is the assets-only Cloudflare Worker `legendary-arena-wiki`
+(D-24690); the `wiki-viewer` workflow's `deploy` job is its only deploy
+path, running `wrangler deploy` on the gated build only after the
 link-integrity, Hugo build, determinism, and JS-free gates pass. That
 keeps broken content off the live site, but it also means the live
 wiki freezes silently whenever the workflow does not complete — no
@@ -215,20 +215,14 @@ Two deliberate constraints:
   is "Actions is not running our workflows"; a nightly job would queue
   behind the same outage it is meant to report.
 
-**Known limitation — a manual deploy produces a false `STALE`.** The
-probe answers *"did CI deploy this commit?"*, not *"is the live site
-current?"*. Those diverge whenever the site is published from Render's
-Manual Deploy button — which is the documented workaround when Actions
-is down. The site becomes current while CI run history still shows
-nothing successful, so the check keeps reporting `STALE` against a page
-that is in fact up to date (observed twice on 2026-07-19 during a
-multi-hour Actions incident). The error runs in the safe direction: it
-over-reports staleness rather than hiding a frozen site. Closing the
-gap would need a `RENDER_API_KEY` to read Render's deploy state, which
-this script deliberately does not take, since the live site itself
-cannot be read — Cloudflare Access returns a `302` for every path.
-Read a `STALE` verdict as *"CI has not published this"* and check the
-Render deploy log before concluding a page is missing.
+**Manual re-publish counts.** The probe answers *"did CI deploy this
+commit?"*. Since D-24690 that matches *"is the live site current?"*:
+every deploy, including a manual re-publish (**Actions → wiki-viewer →
+Run workflow** on `main`), is a `wiki-viewer` run on `main`, so it
+shows up in the run history the check reads. The old false-`STALE`
+case — a Render Manual Deploy outside CI, observed twice on 2026-07-19
+during a multi-hour Actions incident — no longer exists. A `STALE`
+verdict now means the Worker has not received this commit.
 
 `TRIGGER_PATHS` in the script mirrors the `paths:` filter in
 [`.github/workflows/wiki-viewer.yml`](../.github/workflows/wiki-viewer.yml).
@@ -412,7 +406,7 @@ of the repo's Pages SPAs (2026-08-23):
 | `play.legendary-arena.com` | `legendary-arena-play` | ✅ live | arena-client; also carries profile-meta |
 | `legends.legendary-arena.com` | `legendary-arena-legends` | ✅ live | legends-board; guard-only |
 | `cards.legendary-arena.com` | `legendary-arena` | ✅ live | registry-viewer; guard-only. Root set to `apps/registry-viewer` + Build command changed from the root script `pnpm viewer:build` to `pnpm install --frozen-lockfile && pnpm --filter "registry-viewer..." build` (the root script won't resolve from the app dir) |
-| `dashboard.legendary-arena.com` | `legendary-arena-dashboard` | ➖ n/a | behind Cloudflare Access (single operator); the gate intercepts `/assets/*`, so the shared-cache poisoning vector does not apply — a guard would be defense-in-depth only |
+| `dashboard.legendary-arena.com` | `legendary-arena-dashboard` (Cloudflare Worker since D-24690, not Pages) | ➖ n/a | behind Cloudflare Access (single operator); the gate intercepts `/assets/*`, so the shared-cache poisoning vector does not apply — a guard would be defense-in-depth only |
 
 ### Latest run snapshot — 2026-05-19
 
@@ -594,11 +588,11 @@ fails the same way, ruling out half-provisioned states.
   returns `PENDING`. This is the normal state for subdomains whose
   CF Pages project or Render service hasn't been provisioned yet;
   it is not a regression.
-- **403 from Pages can be load-balancer noise.** The `play`,
-  `cards`, and `ewiki` Pages projects all sit behind the same
+- **403 from Pages can be load-balancer noise.** The `play` and
+  `cards` Pages projects and the `ewiki` Worker all sit behind the same
   Cloudflare front layers as R2. A 403 from any of them follows the
-  same three-layer diagnosis; the third branch points at the Pages
-  project's access policies (Cloudflare Access) rather than R2.
+  same three-layer diagnosis; the third branch points at the
+  hostname's access policies (Cloudflare Access) rather than R2.
 - **`live` checkout drift.** When the worktree's copy of either
   script is newer than the canonical checkout's, run the worktree's
   script against the canonical checkout's `.env`

@@ -201,13 +201,13 @@ const OPERATOR_OPS_TOOLCHAIN = [
 // posture, or storage policy materially changes. Sourced from the 2026-07-22
 // DB-stability arc (PRs #920/#930/#931/#932/#933/#935).
 const MANAGED_DATABASE_OPS_NOTES = {
-  instance: 'Basic-1gb (1 GB RAM / 0.5 CPU) — Render managed PostgreSQL 18, Oregon (US West).',
+  instance: 'Pro-4gb (4 GB RAM / 1 CPU) — Render managed PostgreSQL 18, Oregon (US West). Bumped from Basic-1gb on 2026-07-23 (#958).',
   notes: [
     'Upgraded 2026-07-22 from Basic-256mb (256 MB / 0.1 CPU): the smaller instance repeatedly OOM-crashed into recovery mode ("the database system is in recovery mode" / "not yet accepting connections") under the real workload (bgio match blobs plus leaderboard / dashboard / competitive queries), killing in-flight autoplay + bot-ally matches. Storage stayed ~56% of 1 GB throughout, so the constraint was RAM/CPU, NOT disk.',
     'BLUEPRINT-MANAGED: `plan`, `ipAllowList`, and `storageAutoscalingEnabled` all live in render.yaml `databases:`. A dashboard-only change to any of them is REVERTED on the next blueprint sync — every managed-DB setting must be set in render.yaml to be durable.',
     '`ipAllowList: []` = internal-only inbound (was public `0.0.0.0/0`). The server connects via the internal hostname, so nothing app-side breaks; the External Database URL / a local `psql` no longer connects — use the Render dashboard PSQL shell for ops. Caveat: the dashboard also showed the `0.0.0.0/0` rules "Affected by: Workspace / Environment" — a workspace/environment-level network rule may layer on top and is only removable in the dashboard, not render.yaml.',
     '`storageAutoscalingEnabled: true` grows the disk +50% at 90% full. ROW retention IS handled (this note was stale): the match-reaper (WP-327, `apps/server/src/db/matchReaper.js`) deletes finished matches 1h after gameover — once the WP-335 capture-harvester has preserved the durable replay/competitive artifact per the D-24119 carve-out — and abandoned matches after 24h. What NEITHER the reaper NOR autoscaling does is shrink the table FILE: Postgres keeps deleted-row space as reusable dead tuples (mostly in TOAST, where the jsonb match blobs live), so `pg_total_relation_size(\'bgio.matches\')` can be hundreds of MB with only a few live rows. Reclaim that bloat to disk with a one-shot `VACUUM FULL` — see the operator runbook `docs/ops/RUNBOOK-db-storage-reclaim.md` (worked example 2026-07-24: 346MB → 41MB, ~305MB of TOAST bloat reclaimed). NOT a scheduled chore on `pro-4gb` + autoscaling; reclaim only when you want the space back.',
-    "Render's Connection Pool (PgBouncer) is ENABLED on the instance, but the app stays on the DIRECT Internal Database URL — with 1 GB RAM there is no connection-memory pressure to justify PgBouncer transaction-pooling (which can break prepared statements / session state). Route the app through the pool URL only if real connection pressure ever appears.",
+    "Render's Connection Pool (PgBouncer) is ENABLED on the instance, but the app stays on the DIRECT Internal Database URL — with 4 GB RAM there is no connection-memory pressure to justify PgBouncer transaction-pooling (which can break prepared statements / session state). Route the app through the pool URL only if real connection pressure ever appears.",
     'Fix arc (all 2026-07-22): #920 added `pool.on("error")` (a band-aid that stopped the process crash but the DB kept killing idle clients); #930 gave the autoplay loop a bounded transient-read retry (`resilientFetch`, reads-only); #931 de-noised the pool error log (it was dumping a ~40-line pg Connection object per idle-client kill); #932 bumped the plan to basic-1gb (root cause); #933 restricted inbound to internal-only; #935 enabled storage autoscaling.',
     'DIAGNOSTIC LESSON: the autoplay guest-safe `abortReason` ("The bot loop stopped after an unexpected server error", D-24037) HIDES the raw exception — it is logged only server-side as `[autoplay] match <id> bot loop failed: <msg>`. To diagnose an autoplay/bot abort, pull that Render log line; the engine-runner harness cannot reproduce it (it bypasses boardgame.io).',
   ],
@@ -218,17 +218,18 @@ const MANAGED_DATABASE_OPS_NOTES = {
 // knowledge a future operator needs to reason about cost and scaling. This
 // curated block records it, mirroring MANAGED_DATABASE_OPS_NOTES' role. Update it
 // when a Render plan/instance-type or the workspace tier materially changes.
-// Sourced from the 2026-07-23 server-sizing arc (#948) + the pricing model Render
-// exposes on its dashboard (verified against the live billing page).
+// Sourced from the 2026-07-23 server-sizing arc (#948), the 2026-07-23/25 plan
+// bumps (#958 DB, #1014 web), and the Aug/Sep 2026 Render invoices
+// (0SPQWPNF-0005/-0006), which bill `pro` $85.00 + `pro-4gb` $55.30.
 const RENDER_ACCOUNT_AND_SIZING_NOTES = {
   summary:
     'Render bills on TWO INDEPENDENT axes: (1) a flat, team-level **Workspace plan**, and (2) per-service **instance types** (compute), billed per service on ANY workspace. They are separate — running a larger instance type does NOT require a paid workspace. The project pays for three Render line items: the Workspace, the game server (a web service), and the managed database.',
   webServiceInstanceTypes:
-    'Web-service instance types (the render.yaml `plan:` value → CPU / RAM / ~monthly compute): `starter` 0.5 / 512 MB / $7 · `standard` 1 / 2 GB / ~$25 · `pro` 2 / 4 GB / ~$85 · `pro plus` 4 / 8 GB / ~$175. (Postgres uses a SEPARATE instance-type scale: `basic-1gb` = 0.5 CPU / 1 GB / $19.)',
+    'Web-service instance types (the render.yaml `plan:` value → CPU / RAM / ~monthly compute): `starter` 0.5 / 512 MB / $7 · `standard` 1 / 2 GB / ~$25 · `pro` 2 / 4 GB / ~$85 · `pro plus` 4 / 8 GB / ~$175. (Postgres uses a SEPARATE instance-type scale: `basic-1gb` = 0.5 CPU / 1 GB / $19 · `pro-4gb` = 1 CPU / 4 GB / $55.30 as billed.)',
   notes: [
-    'WORKSPACE — **Hobby ($0/mo flat)**. The free personal tier; kept deliberately. Instance-type compute is billed per-service regardless of workspace, and the Hobby→Pro ($25/mo flat) difference is features we do not need yet (horizontal autoscaling, preview environments, audit logs, SOC2) — NOT access to larger instances. Caveat: Hobby includes 500 pipeline (build) minutes/mo; a burst of PR merges (each runs `pnpm install && pnpm -r build && migrate`) can exceed it and bill the overage.',
-    'SERVER — web service `legendary-arena-server`, **`standard` (1 CPU / 2 GB, ~$25/mo compute)**. Upgraded 2026-07-23 (#948) from the implicit default `starter` (0.5 CPU / 512 MB, $7): the service had NO `plan:` field, so Render silently ran it on `starter`. That half-CPU could not carry a real-time authoritative WebSocket server that ALSO runs the bot-ally drivers (250 ms polling per live match), the "Watch Bot Play" autoplay loops, and four cron loops (legends publisher / match reaper / capture harvester) — the instance pegged at load ~7, causing health-check restarts (a live match hit the D-24230 revival cap of 3 in <1 h with NO deploys), a crawling bot (~1 turn / 10 min), and the recurring client-desync freezes. `plan:` is BLUEPRINT-MANAGED: it MUST live in render.yaml (a dashboard change reverts on sync), and merging the render.yaml change IS the upgrade. Next lever if `standard` saturates under real concurrency: `pro` (2 CPU / 4 GB, ~$85).',
-    'DATABASE — managed Postgres `legendary-arena-db`, **`basic-1gb` (0.5 CPU / 1 GB, $19/mo)**. Its own 2026-07-22 upgrade from `basic-256mb` (the OOM-recovery fix, #932) is detailed in the "Managed database" block below. NOTE it is also only 0.5 CPU: the July-22 fix addressed RAM (OOM), so if DB *CPU* (not RAM) later becomes the bottleneck, `pro-4gb` (1 CPU / 4 GB, $55) is the equivalent move on the Postgres scale.',
+    'WORKSPACE — **Hobby ($0/mo flat)**. The free personal tier; kept deliberately. Instance-type compute is billed per-service regardless of workspace, and the Hobby→Pro ($25/mo flat) difference is features we do not need yet (horizontal autoscaling, preview environments, audit logs, SOC2) — NOT access to larger instances. Caveat: Hobby includes 500 pipeline (build) minutes/mo; a burst of PR merges (each runs `pnpm install && pnpm -r build && migrate`) can exceed it and bill the overage. Observed: the builds line billed a flat $5.00 in both Aug 2026 (41 min) and Sep 2026 (6 h 42 m).',
+    'SERVER — web service `legendary-arena-server`, **`pro` (2 CPU / 4 GB, $85.00/mo as billed Aug + Sep 2026)**. Bumped `standard` → `pro` on 2026-07-25 (#1014): the dashboard was already on Pro while render.yaml still said `standard`, a live downgrade risk on the next blueprint sync, so render.yaml was brought into agreement. Before that it was upgraded 2026-07-23 (#948) to `standard` (1 CPU / 2 GB, ~$25) from the implicit default `starter` (0.5 CPU / 512 MB, $7): the service had NO `plan:` field, so Render silently ran it on `starter`. That half-CPU could not carry a real-time authoritative WebSocket server that ALSO runs the bot-ally drivers (250 ms polling per live match), the "Watch Bot Play" autoplay loops, and four cron loops (legends publisher / match reaper / capture harvester) — the instance pegged at load ~7, causing health-check restarts (a live match hit the D-24230 revival cap of 3 in <1 h with NO deploys), a crawling bot (~1 turn / 10 min), and the recurring client-desync freezes. `plan:` is BLUEPRINT-MANAGED: it MUST live in render.yaml (a dashboard change reverts on sync), and a plan change must ALSO be set in the dashboard (it does not auto-apply from a blueprint push) — keep the two in agreement. Next lever if `pro` saturates under real concurrency: `pro plus` (4 CPU / 8 GB, ~$175).',
+    'DATABASE — managed Postgres `legendary-arena-db`, **`pro-4gb` (1 CPU / 4 GB, $55.30/mo as billed Aug + Sep 2026, storage included)**. Bumped `basic-1gb` → `pro-4gb` on 2026-07-23 (#958) after the DB crashed hard under load (`ECONNREFUSED :5432` plus read-only recovery windows) and took the game server down with it; `basic-1gb` (0.5 CPU / 1 GB) was itself the 2026-07-22 OOM fix from `basic-256mb` (#932), detailed in the "Managed database" block below. render.yaml names `basic-4gb` (2 CPU / 4 GB, ~$75) as the next step if it destabilises under real concurrency.',
     'ROOT-CAUSE vs SYMPTOM: the client-side resync fixes (reconnect-resync D-24232/#944, spectator-staleness + tab-focus D-24234/#947) and the server revival-cap reset (D-24233/#945) RECOVER from the desync freezes; the server sizing (#948) removes the CPU starvation that GENERATED them. Verify the fix in the Render **Events tab** (restart frequency → ~0 between real deploys) and the **CPU metric** (load well under 1×/core).',
   ],
 };
@@ -3004,19 +3005,30 @@ async function renderInfrastructureServicesSection() {
           continue;
         }
         const hostname = new URL(entry.url).hostname;
-        // Determine the canonical Cloudflare product.
-        let product;
+        // Determine the canonical Cloudflare product(s).
+        // why: a host string can name two products ("Cloudflare Workers
+        // + Cloudflare Access", D-24690), and each deserves its row:
+        // one is the hosting, the other the gate. "Pages" stays the
+        // fallback for plain "Cloudflare Pages" hosts.
+        const products = [];
         if (host.includes('r2')) {
-          product = 'Cloudflare R2 (object storage + CDN)';
-        } else if (host.includes('access')) {
-          product = 'Cloudflare Access (zero-trust gate)';
-        } else {
-          product = 'Cloudflare Pages (static hosting)';
+          products.push('Cloudflare R2 (object storage + CDN)');
         }
-        if (!cfBuckets.has(product)) {
-          cfBuckets.set(product, []);
+        if (host.includes('workers')) {
+          products.push('Cloudflare Workers (static assets)');
         }
-        cfBuckets.get(product).push(hostname);
+        if (host.includes('access')) {
+          products.push('Cloudflare Access (zero-trust gate)');
+        }
+        if (host.includes('pages') || products.length === 0) {
+          products.push('Cloudflare Pages (static hosting)');
+        }
+        for (const product of products) {
+          if (!cfBuckets.has(product)) {
+            cfBuckets.set(product, []);
+          }
+          cfBuckets.get(product).push(hostname);
+        }
       }
 
       for (const [product, domains] of [...cfBuckets.entries()].sort(([a], [b]) => a.localeCompare(b))) {
@@ -3311,20 +3323,21 @@ async function synthesizeWikiViewerEntry() {
     stackFacts.push('⚠ _`wiki/` source directory not found_');
   }
 
-  // why: deployment target is locked under D-13811 (Render Static
-  // Site). Confirm against render.yaml so a future redeploy posture
-  // change surfaces here as drift rather than silent staleness.
-  const renderYamlPath = join(REPO_ROOT, 'render.yaml');
+  // why: deployment target is locked under D-24690 (assets-only
+  // Cloudflare Worker, superseding D-13811's Render Static Site).
+  // Confirm against the wiki's wrangler.jsonc so a future redeploy
+  // posture change surfaces here as drift rather than silent staleness.
+  const wranglerConfigPath = join(REPO_ROOT, 'apps', 'wiki-viewer', 'wrangler.jsonc');
   let deployFact;
-  if (existsSync(renderYamlPath)) {
-    const renderYamlContents = await readFile(renderYamlPath, 'utf8');
-    if (renderYamlContents.includes('legendary-arena-wiki')) {
-      deployFact = 'deployed as Render Static Site `legendary-arena-wiki`';
+  if (existsSync(wranglerConfigPath)) {
+    const wranglerContents = await readFile(wranglerConfigPath, 'utf8');
+    if (/"name":\s*"legendary-arena-wiki"/.test(wranglerContents)) {
+      deployFact = 'deployed as assets-only Cloudflare Worker `legendary-arena-wiki`';
     } else {
-      deployFact = '⚠ _no `legendary-arena-wiki` service block found in `render.yaml`_';
+      deployFact = '⚠ _no `"name": "legendary-arena-wiki"` found in `apps/wiki-viewer/wrangler.jsonc`_';
     }
   } else {
-    deployFact = '⚠ _`render.yaml` not found_';
+    deployFact = '⚠ _`apps/wiki-viewer/wrangler.jsonc` not found_';
   }
   stackFacts.push(deployFact);
 

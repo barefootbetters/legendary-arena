@@ -1,12 +1,14 @@
 /**
  * Legendary Arena — SPA Asset-Masking Gate
  *
- * Every SPA here is served by Cloudflare Pages with an SPA fallback: any
- * request that matches no static file returns `index.html` with HTTP 200.
- * `apps/legends-board` declares it explicitly in `public/_redirects`
- * (`/*  /index.html  200`); `apps/arena-client`, `apps/registry-viewer` and
- * `apps/dashboard` get Pages' built-in fallback, which applies whenever the
- * build has no top-level `404.html`.
+ * Every SPA here is served with an SPA fallback: a request that matches no
+ * static file returns `index.html` with HTTP 200. `apps/legends-board`
+ * declares it explicitly in `public/_redirects` (`/*  /index.html  200`);
+ * `apps/arena-client` and `apps/registry-viewer` get Cloudflare Pages'
+ * built-in fallback, which applies whenever the build has no top-level
+ * `404.html`. `apps/dashboard` is a Cloudflare Worker (D-24690) and sets the
+ * fallback explicitly with `not_found_handling: "single-page-application"`
+ * in its `wrangler.jsonc`.
  *
  * The fallback is required for client-side routing, but it has a nasty
  * side effect: when a hashed bundle referenced by `index.html` is MISSING

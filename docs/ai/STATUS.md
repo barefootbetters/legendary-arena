@@ -7,6 +7,15 @@
 
 ## Current State
 
+### WP-801 / EC-838 / D-24687 — "KO one of your Heroes" takes a Hero from your hand or play, never your discard pile (2026-10-11)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** An effect that says "KO one (or two) of your Heroes" without naming a zone now takes Heroes only from your hand or the cards you played this turn (rules v23 L721–L725). Super-Skrull's Fight, Destroyer's Escape and the other "each player KOs one of their Heroes" effects take another player's Hero from their hand, a starting S.H.I.E.L.D. card first. The Sentinel / Whirlwind / Maestro prompt lists only hand and in-play cards. A player with nothing in hand or play loses nothing, and the log says "Player N had no hero to KO". Before, the engine looked in the discard pile first: in 2p match `D54LvDsnOR_` (23.2.21) Super-Skrull KO'd Avengers Assemble! from Player 0's discard while they held three Agents.
+
+- **Engine only.** `YOUR_HEROES_KO_ZONES = ['hand', 'inPlay']` is the default for a zoneless KO; the auto-pickers take inPlay, then hand; the bot's Juggernaut discard branch reads the discard directly. Juggernaut and Red Skull, which name their zones, are unchanged. No client change.
+- **Tests.** 40 authorized engine test rewrites (WP-801 §Scope G) and 12 new tests; engine 5047 → 5059 / 0; `pnpm -r --no-bail test` 0 fail in all 12 packages. `sim:runtime-observed:check` current, `sim:coverage --check` OK, `par:seed:test` 0, replay fixtures unchanged. Revert proofs 5/5.
+- **Accepted divergence.** All-bot outcomes and pre-deploy replays that resolved an unqualified KO no longer re-execute byte-identically; stored scores stay frozen (D-24616 §5). The ungated multi-player PAR diagnostic profiles drift (OD-1, follow-up `INFRA:` PR).
+- **Live-verify (D-24026):** pending. Five Core rows in `live-verify.json` are back to `pending` until re-seen after deploy: Sentinel, Super-Skrull, Destroyer's Escape, Whirlwind and Maestro.
+
 ### D-24688 — A bot partner now uses Maniacal Tyrant to thin its deck (direct fix) (2026-10-11)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** When the bot defeats Loki's Maniacal Tyrant (or Salomé), it KOs up to four Wounds and starting S.H.I.E.L.D. cards from its discard pile instead of KO'ing nothing. Before, matches `xGw-94HDhBj` and `sDBnFxiigDL` logged "Player 1 KO'd 0 card(s)". Your own prompt is unchanged.
