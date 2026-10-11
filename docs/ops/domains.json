@@ -71,9 +71,9 @@
       "host": "Render",
       "source": "none — Render static site legendary-arena-wiki, retired by D-24690",
       "expectedStatus": 404,
-      "state": "planned",
+      "state": "live",
       "anchor": "ewiki",
-      "notes": "The retired Render service's built-in onrender.com host. It served the full wiki UNGATED (observed 200 on 2026-10-05 and 2026-10-11) because the ewiki Access application gates only ewiki.legendary-arena.com. D-24690 moved the ewiki to a Cloudflare Worker; once the Render service is deleted, Render answers 404 for this host. state is 'planned' until then: a 200 reports FAIL (service still exists — delete it); a 404 reports READY — flip state to 'live'. Any later 200 is a security incident (DOMAINS.md#ewiki)."
+      "notes": "The retired Render service's built-in onrender.com host. It served the full wiki UNGATED (observed 200 on 2026-10-05 and 2026-10-11) because the ewiki Access application gates only ewiki.legendary-arena.com. D-24690 moved the ewiki to a Cloudflare Worker, and the Render service was deleted on 2026-10-11, so Render answers 404 for this host. Kept as a regression probe: any 200 here means a service named legendary-arena-wiki exists on Render again and must be deleted (DOMAINS.md#ewiki)."
     },
     {
       "name": "Legends scoreboard (public attract board)",
@@ -99,13 +99,12 @@
     {
       "name": "Internal admin dashboard (retired pages.dev alias)",
       "url": "https://legendary-arena-dashboard.pages.dev",
-      "host": "Cloudflare Pages + Cloudflare Access",
+      "host": "Cloudflare Pages (project deleted)",
       "source": "none — CF Pages project legendary-arena-dashboard, retired by D-24690",
-      "expectedStatus": [302, 401, 403],
-      "expectedLocation": "https://legendary-arena.cloudflareaccess.com/",
-      "state": "planned",
+      "expectedStatus": [404, 530],
+      "state": "live",
       "anchor": "dashboard",
-      "notes": "The retired CF Pages project's built-in production alias. It served the live operator dashboard UNGATED from 2026-06-02 (observed 200 on 2026-09-10, 2026-10-09 and 2026-10-11): the dashboard Access application gates only the custom domain, and Pages' Enable access policy covers only preview deployments. D-24690 moved the dashboard to a Cloudflare Worker with no default hostname. Until the Pages project is deleted this row reports FAIL (200). Once it is deleted the hostname stops resolving (PENDING) and this row is removed. Any 200 here is a security incident (DOMAINS.md#dashboard)."
+      "notes": "The retired CF Pages project's built-in production alias. It served the live operator dashboard UNGATED from 2026-06-02 (observed 200 on 2026-09-10, 2026-10-09 and 2026-10-11), because the dashboard Access application gates only the custom domain and Pages' Enable access policy covers only preview deployments. D-24690 moved the dashboard to a Cloudflare Worker; the Pages project was deleted on 2026-10-11 and this host has answered 530 (no such project) since. The *.pages.dev wildcard still resolves, so this is a status check, not a DNS one. Kept as a regression probe: a 200 means a Pages project named legendary-arena-dashboard exists again (DOMAINS.md#dashboard)."
     },
     {
       "name": "API (game server, friendly hostname)",
