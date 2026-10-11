@@ -332,6 +332,19 @@ A test whose title states the retired order (`spans discard → hand → inPlay`
   - D-24009: "pick order amended by D-24687 (bot-equals-auto-pick parity stands)".
 - `docs/ai/STATUS.md`, `docs/ai/work-packets/WORK_INDEX.md`, `docs/ai/execution-checklists/EC_INDEX.md`,
   `docs/05-ROADMAP-MINDMAP.md` (📝 → ✅, then `pnpm roadmap:counts:write`).
+- `docs/ai/coverage/live-verify.json`: the five Core rows whose live evidence was recorded under the old discard-first
+  default change from `"state": "verified"` to `"state": "pending"`. Each keeps its old `evidence`, and its `note` says
+  "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default". Set `date` to the govern-close
+  date. Without this the dashboard keeps reporting them verified against behavior that no longer ships:
+  - `henchman-sentinel|koHeroCurrentPlayer`
+  - `core-villain-skrulls-super-skrull|koHeroEachPlayer`
+  - `core-villain-enemies-of-asgard-destroyer|koHeroEachPlayerMag2` (Escape)
+  - `core-villain-masters-of-evil-whirlwind|ko-hero` (`ko-hero:current:2`)
+  - `core-villain-radiation-maestro|ko-heroes-current-count-by-trait`
+
+  Unchanged, and staying `verified`:
+  - Destroyer's Fight `ko-heroes-current-by-trait`, which already scans hand + inPlay (D-24290);
+  - Juggernaut `ko-hero` and Red Skull, which name their zones.
 
 ## D-24687 Content
 
@@ -385,6 +398,8 @@ D-24006, D-24009 and D-24386).**
 - `packages/game-engine/src/moves/optionalKoReward.resolve.test.ts` — **modified** — 1 rewrite.
 - `docs/ai/DECISIONS.md`, `docs/ai/STATUS.md`, `docs/ai/work-packets/WORK_INDEX.md`,
   `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — **modified** — governance close.
+- `docs/ai/coverage/live-verify.json` — **modified** — governance close: five rows verified → pending (§Scope H). A
+  post-deploy commit later sets them back to verified.
 
 Fourteen engine files (six source, three of them comment-only: `types.ts`, `uiState.build.ts`,
 `villainAbility.types.ts`; plus eight test files) are over the ~8-file guidance. A split would leave the engine in a mixed
@@ -442,8 +457,22 @@ Expected to Change. The test diff touches only the §Scope G bodies and §Scope 
 - [ ] D-24687 Active in DECISIONS, plus the six pointers in §Scope H.
 - [ ] STATUS, WORK_INDEX (`[x]` with date), EC_INDEX and the mindmap (✅, counts regenerated) updated.
 - [ ] Two commits in the same PR: `EC-838:` (code + tests) and `SPEC:` (governance close).
-- [ ] D-24026 live verification after deploy (2p game with Skrulls or Sentinel: a non-active KO takes a hand card;
-      the Sentinel prompt lists no discard cards). Recorded as a STATUS flip.
+- [ ] `live-verify.json`: the five §Scope H rows are `pending` in the govern-close commit, with the other 112 entries
+      byte-unchanged (`git diff` on the file shows only those five rows).
+- [ ] D-24026 live verification after deploy. Re-verify each of the five rows on a post-merge build:
+      - Super-Skrull: in a 2p game, the non-active player's KO takes a card from their hand (the log names it);
+      - Sentinel: the KO prompt lists no discard card;
+      - Destroyer: its Escape KOs two Heroes from hand / play only;
+      - Whirlwind: its Rooftops / Bridge KO-two offers no discard card;
+      - Maestro: the count-by-trait KO offers no discard card.
+      Each row goes back to `verified` with the new matchId + build in `evidence`. Record this as a STATUS flip in the
+      same post-deploy commit. A row not yet seen live stays `pending`; never back-fill one.
+
+## Amendment 2026-10-11 (pre-execution)
+
+Live-verify re-test of the five affected Core rows (§Scope H bullet, §Files Expected to Change, §Definition of Done;
+EC-838 mirrors it). The change is governance-only: it adds `docs/ai/coverage/live-verify.json` to the govern-close
+allowlist (20 files). There is no engine, test, locked-value or contract change, so the gate verdicts below stand.
 
 ## Open Operator Decisions (do not block execution)
 

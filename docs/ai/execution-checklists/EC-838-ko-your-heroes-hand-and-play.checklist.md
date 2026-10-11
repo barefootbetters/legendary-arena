@@ -58,6 +58,7 @@
 - `packages/game-engine/src/setup/extIdReconciliation.e2e.test.ts` — **modified** — 1 rewrite
 - `packages/game-engine/src/moves/optionalKoReward.resolve.test.ts` — **modified** — 1 rewrite
 - `docs/ai/DECISIONS.md`, `docs/ai/STATUS.md`, `docs/ai/work-packets/WORK_INDEX.md`, `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — **modified** — governance close
+- `docs/ai/coverage/live-verify.json` — **modified** — governance close: five rows verified → pending (WP §Scope H)
 
 ## After Completing
 - [ ] `pnpm -r build` exits 0; `pnpm -r --no-bail test` 0 failures in every package; engine before/after counts recorded
@@ -69,8 +70,19 @@
 - [ ] Commit 1, `EC-838: …`: names the 40 authorized test rewrites as an intentional behavior change, with `Tests-changed:` and `Vision: §1, §3, §8, §14, §22, §24` trailers.
 - [ ] Commit 2, `SPEC: WP-801 / EC-838 govern-close — …`:
   - STATUS.md; D-24687 Active with gates, plus the six WP §Scope H pointers (D-18503, D-20603 "zone priority superseded"; D-20602 "zone priority superseded, within-zone starter rule stands"; D-24006, D-24386 "zone default amended"; D-24009 "pick order amended, parity stands");
-  - WORK_INDEX `[x]`, EC_INDEX Done, mindmap `✅`; `pnpm roadmap:counts:write` + `:check`; `pnpm ledger:numbers:check`.
-- [ ] Live (D-24026), after merge + deploy only: in a 2p game with Skrulls or Sentinel, a non-active KO takes a hand card and the Sentinel prompt lists no discard card. Govern-close says "live-verify pending"; a post-deploy STATUS commit records the matchId.
+  - WORK_INDEX `[x]`, EC_INDEX Done, mindmap `✅`; `pnpm roadmap:counts:write` + `:check`; `pnpm ledger:numbers:check`;
+  - `docs/ai/coverage/live-verify.json`: `state` verified → pending, `date` = close date, `note` = "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default", `evidence` kept, for exactly these five keys:
+    - `henchman-sentinel|koHeroCurrentPlayer`
+    - `core-villain-skrulls-super-skrull|koHeroEachPlayer`
+    - `core-villain-enemies-of-asgard-destroyer|koHeroEachPlayerMag2`
+    - `core-villain-masters-of-evil-whirlwind|ko-hero`
+    - `core-villain-radiation-maestro|ko-heroes-current-count-by-trait`
+  - Every other entry is byte-unchanged. Destroyer's `ko-heroes-current-by-trait`, Juggernaut and Red Skull stay verified.
+- [ ] Live (D-24026), after merge + deploy only:
+  - Super-Skrull, 2p: a non-active KO takes a hand card.
+  - Sentinel: the prompt lists no discard card.
+  - Destroyer Escape, Whirlwind KO-two, Maestro: neither the prompt nor the auto-pick offers a discard card.
+  - Govern-close says "live-verify pending". A post-deploy commit flips each re-seen row back to `verified` with the new matchId + build, plus a STATUS line. A row not yet seen stays `pending`.
 
 ## Common Failure Smells
 - The runtime-observed sweep reports games hitting the 50-turn cap → the bot's discard-scoped branch still calls `selectDefaultKoTarget`.
