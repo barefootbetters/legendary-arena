@@ -321,6 +321,16 @@ services:
       pnpm dlx pagefind@1.5.2 --site apps/wiki-viewer/public
     staticPublishPath: apps/wiki-viewer/public
     pullRequestPreviewsEnabled: false
+    # why: the Cloudflare Access gate binds ONLY to ewiki.legendary-arena.com.
+    # Render's default legendary-arena-wiki.onrender.com origin served the full
+    # wiki ungated (observed 2026-10-05: ewiki → 302 to Access, onrender.com →
+    # 200 with content), so the gate was bypassable. `disabled` makes Render 404
+    # every request to the onrender.com host before it reaches the service
+    # (requires ≥1 custom domain — ewiki is attached). Like buildCommand above,
+    # this service's settings may not auto-sync from render.yaml: ALSO set
+    # Settings → Custom Domains → Render Subdomain → Disabled in the dashboard,
+    # and keep the two in agreement. pnpm check:domains probes the 404.
+    renderSubdomainPolicy: disabled
     envVars:
       # why: WP-400 / D-24205 — must equal .node-version. Render precedence is
       # NODE_VERSION > .node-version > .nvmrc > engines, so THIS VALUE WINS;

@@ -66,6 +66,16 @@
       "notes": "Live since 2026-05-08. Cloudflare Access redirects unauthenticated probes to login (302) or rejects them (401/403). A 200 here means the gate is misconfigured and the private wiki is publicly readable. expectedLocation is a prefix; the Access login URL appends a long JWT in the query string that varies per request."
     },
     {
+      "name": "Engineering wiki (Render default origin, must be disabled)",
+      "url": "https://legendary-arena-wiki.onrender.com",
+      "host": "Render",
+      "source": "apps/wiki-viewer (Render Static Site legendary-arena-wiki)",
+      "expectedStatus": 404,
+      "state": "planned",
+      "anchor": "ewiki",
+      "notes": "The Render service's built-in onrender.com host. The ewiki Access application gates ONLY ewiki.legendary-arena.com, so this host served the full wiki UNGATED (observed 200 with content on 2026-10-05) — an Access bypass. Closed by renderSubdomainPolicy: disabled in render.yaml, which makes Render 404 every request to this host before it reaches the service. state is 'planned' until the setting is live: a 200 here reports FAIL (bypass still open); a 404 reports READY — then flip state 'planned' -> 'live'. Any later 200 is a security incident (see DOMAINS.md#ewiki)."
+    },
+    {
       "name": "Legends scoreboard (public attract board)",
       "url": "https://legends.legendary-arena.com",
       "host": "Cloudflare Pages",
