@@ -748,6 +748,18 @@ corrupts recall or the store:
   Co-location remains *permitted* to bootstrap, but it no longer saves money,
   and two boxes also remove the resource-contention concern in the deployment
   callout. A dedicated host is still the end-state.
+
+  **Voice is deferred, so plan the brain host at 8 GB (operator direction,
+  2026-10-11).** Jeff uses voice only while driving, up to about 2 hours a day,
+  through Claude's own app voice. That runs on Anthropic's side and uses no RAM
+  on the brain host; the trade-off is that those conversations use the vendor's
+  memory, not the brain's. The rest of the day is desktop text chat. So the
+  brain host is sized at the **8 GB tier**, and local Whisper + TTS on the box is
+  a later add. Even then the
+  [voice addendum](../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md) sizes its v1
+  default (Whisper `base`/`small` + Piper) for an 8 GB / 2 vCPU box. The 16 GB
+  figure above is headroom for voice running alongside embeddings, not a hard
+  floor for voice.
 - **Host shopping note (2026-10-04).** The vendor for the brain host is still
   unlocked. This note prices the candidates against the stack this page runs.
   It does not move the arena migration: `api.legendary-arena.com` and its
@@ -2409,7 +2421,9 @@ This is the summary index; the individual gotchas and their nuances live in
   2 vCPU / 4 GB, which is below this page's 8 GB floor. A shared box would need
   ~16 GB (~$96/mo). Two boxes cost ~$48–72. The Locked row "co-location OK to
   bootstrap" still permits co-location; the cost argument for it is withdrawn.
-  No Locked row moved, and there is no `DECISIONS.md` entry.
+  Voice is deferred on Jeff's direction (Claude app voice while driving), so the
+  brain host plans at the 8 GB tier. No Locked row moved, and there is no
+  `DECISIONS.md` entry.
 
 ## Open Questions
 
