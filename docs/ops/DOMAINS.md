@@ -220,7 +220,7 @@ exists.
 - **Gate:** Cloudflare Zero Trust Access application on the hostname (Free tier, Self-hosted application, Email One-time PIN identity provider, single-operator allow rule on `jeff@barefootbetters.com`). Hostname-based, so it carried over from Pages unchanged.
 - **One door only.** `workers_dev: false` and `preview_urls: false`, so there is no `*.workers.dev`, preview, or `pages.dev` hostname. Keep both `false`. (Before D-24690 the Pages project also served `legendary-arena-dashboard.pages.dev` and `<hash>.legendary-arena-dashboard.pages.dev` without Access — the production alias since 2026-06-02.)
 - **App sign-in:** Hanko ([`LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue), WP-241), behind the Access gate. Live `/api/dash/*` routes on `api.legendary-arena.com` require an admin session and return `401` without one. The API's CORS allowlist has the custom domain only (and `localhost:4173` for local dev).
-- **Build env (set in the workflow):** live mode — `VITE_USE_MOCKS=false`, `VITE_API_BASE_URL=https://api.legendary-arena.com`, `VITE_HANKO_TENANT_BASE_URL` from repo variable `DASHBOARD_HANKO_TENANT_BASE_URL` (the build refuses to run without it), `VITE_FEATURE_FLAGS` from repo variable `DASHBOARD_FEATURE_FLAGS` (optional). The live/mock switch is `isLiveModeEnabled()` (D-20601): live only when `VITE_USE_MOCKS !== 'true'` and `VITE_API_BASE_URL` is non-empty. See [`apps/dashboard/.env.example`](../../apps/dashboard/.env.example) for the full variable list. (Launched 2026-06-02 in mock mode per D-19702; real-data wiring landed in later WPs, starting with WP-373's billing + revenue routes.)
+- **Build env (set in the workflow):** live mode — `VITE_USE_MOCKS=false`, `VITE_API_BASE_URL=https://api.legendary-arena.com`, `VITE_HANKO_TENANT_BASE_URL` from `DASHBOARD_HANKO_TENANT_BASE_URL`, a repo variable or secret (the build refuses to run without it), `VITE_FEATURE_FLAGS` from `DASHBOARD_FEATURE_FLAGS` (optional, variable or secret). The live/mock switch is `isLiveModeEnabled()` (D-20601): live only when `VITE_USE_MOCKS !== 'true'` and `VITE_API_BASE_URL` is non-empty. See [`apps/dashboard/.env.example`](../../apps/dashboard/.env.example) for the full variable list. (Launched 2026-06-02 in mock mode per D-19702; real-data wiring landed in later WPs, starting with WP-373's billing + revenue routes.)
 
 **Healthy response (unauthenticated):** `302` to a `*.cloudflareaccess.com`
 login URL, or `401`/`403`. **A `200` here is a failure** — it means the
@@ -234,8 +234,8 @@ Access application exists before the hostname serves anything.
 
 **Cutover from Pages (D-24690, one time).** Uses the same API token and
 secrets as the ewiki cutover (step 1 there). Do steps 1–2 before merging.
-1. **Repo variables.** GitHub → Settings → Secrets and variables → Actions →
-   Variables: `DASHBOARD_HANKO_TENANT_BASE_URL` = the value of
+1. **Repo variable or secret.** GitHub → Settings → Secrets and variables →
+   Actions (either tab works): `DASHBOARD_HANKO_TENANT_BASE_URL` = the value of
    `VITE_HANKO_TENANT_BASE_URL` in the Pages project's Production env vars
    (Workers & Pages → `legendary-arena-dashboard` → Settings → Variables).
    If the Pages project sets `VITE_FEATURE_FLAGS`, copy it to

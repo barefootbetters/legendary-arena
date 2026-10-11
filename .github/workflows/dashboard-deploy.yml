@@ -43,21 +43,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # why: the VITE_* values are compiled into the public bundle, so they are
-      # repo variables, not secrets. VITE_USE_MOCKS / VITE_API_BASE_URL are the
-      # live-mode pair that isLiveModeEnabled() (D-20601) requires. The Hanko
-      # tenant has no committed production value, so it comes from the
-      # DASHBOARD_HANKO_TENANT_BASE_URL repo variable; without it the login
-      # renders its 'unavailable' state, so the build refuses to ship that.
+      # why: VITE_USE_MOCKS / VITE_API_BASE_URL are the live-mode pair that
+      # isLiveModeEnabled() (D-20601) requires. The Hanko tenant has no
+      # committed production value, so it comes from DASHBOARD_HANKO_TENANT_BASE_URL,
+      # read as a repo variable or a repo secret (either works; the value is
+      # compiled into the public bundle, so it is not confidential). Without it
+      # the login renders its 'unavailable' state, so the build refuses to ship
+      # that. DASHBOARD_FEATURE_FLAGS is optional, from either place too.
       - name: Build dashboard
         env:
           VITE_USE_MOCKS: 'false'
           VITE_API_BASE_URL: https://api.legendary-arena.com
-          VITE_HANKO_TENANT_BASE_URL: ${{ vars.DASHBOARD_HANKO_TENANT_BASE_URL }}
-          VITE_FEATURE_FLAGS: ${{ vars.DASHBOARD_FEATURE_FLAGS }}
+          VITE_HANKO_TENANT_BASE_URL: ${{ vars.DASHBOARD_HANKO_TENANT_BASE_URL || secrets.DASHBOARD_HANKO_TENANT_BASE_URL }}
+          VITE_FEATURE_FLAGS: ${{ vars.DASHBOARD_FEATURE_FLAGS || secrets.DASHBOARD_FEATURE_FLAGS }}
         run: |
           if [ -z "$VITE_HANKO_TENANT_BASE_URL" ]; then
-            echo "::error::Repo variable DASHBOARD_HANKO_TENANT_BASE_URL is unset; the dashboard login would be unusable (D-24690)."
+            echo "::error::DASHBOARD_HANKO_TENANT_BASE_URL (repo variable or secret) is unset; the dashboard login would be unusable (D-24690)."
             exit 1
           fi
           pnpm --filter "@legendary-arena/dashboard..." build

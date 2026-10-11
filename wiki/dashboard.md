@@ -310,9 +310,9 @@ fallback, `workers_dev` and `preview_urls` off), built and deployed by
 [`.github/workflows/dashboard-deploy.yml`](../.github/workflows/dashboard-deploy.yml)
 on every push to `main` and on manual `workflow_dispatch` (D-24690). The build
 env is `VITE_USE_MOCKS=false`, `VITE_API_BASE_URL=https://api.legendary-arena.com`,
-`VITE_HANKO_TENANT_BASE_URL` from the repo variable
-`DASHBOARD_HANKO_TENANT_BASE_URL`, and `VITE_FEATURE_FLAGS` from the repo
-variable `DASHBOARD_FEATURE_FLAGS`. It moved off the Cloudflare Pages project
+`VITE_HANKO_TENANT_BASE_URL` from `DASHBOARD_HANKO_TENANT_BASE_URL`, and
+`VITE_FEATURE_FLAGS` from `DASHBOARD_FEATURE_FLAGS` (each a repo variable or
+secret). It moved off the Cloudflare Pages project
 of the same name because Access gates only the custom hostname, and the
 project's production `legendary-arena-dashboard.pages.dev` alias served the
 live dashboard ungated from 2026-06-02. A Worker with `workers_dev` and
