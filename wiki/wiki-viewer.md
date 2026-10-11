@@ -509,6 +509,20 @@ The theme is defined in `apps/wiki-viewer/layouts/` and
   attaches the custom domain, confirm the Access redirect, then delete the
   Render service and the `RENDER_WIKI_DEPLOY_HOOK` secret by hand.
   Full steps: [DOMAINS.md §ewiki](../docs/ops/DOMAINS.md#ewiki).
+- **2026-10-11 — cutover done (D-24690, #2697).** The old `ewiki` record
+  turned out to point at the *game server's* Render host
+  (`legendary-arena-server.onrender.com`), not the wiki service's, which is
+  why Render never verified the wiki's custom domain and the #2603 toggle
+  could not stick. The first deploy uploaded the Worker but could not
+  attach `ewiki.legendary-arena.com` until the old DNS record was deleted;
+  re-running the failed job attached it. Right after the domain attached,
+  two probes briefly got `200` before Access applied to the new hostname;
+  every probe since redirects to Access (48 of 48 across both sites). The
+  Render static site was deleted the same day, and
+  `legendary-arena-wiki.onrender.com` now returns `404`. The dashboard's
+  Pages project (5,852 deployments) was deleted after its deployments were
+  cleared through the API, so `legendary-arena-dashboard.pages.dev` now
+  answers `530` (no such project).
 
 ## References
 

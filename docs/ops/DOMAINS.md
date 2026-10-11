@@ -25,12 +25,11 @@ define new architectural boundaries.
 | `cards.legendary-arena.com` | Registry viewer | Cloudflare Pages | [apps/registry-viewer](../../apps/registry-viewer) | live (migrated 2026-07-16; legacy `cards.barefootbetters.com` 301-redirects here) |
 | `wiki.legendary-arena.com` | Public player wiki | Cloudflare Pages | TBD (separate Hugo site) | planned |
 | `ewiki.legendary-arena.com` | Private engineering wiki | Cloudflare Worker + Access | [apps/wiki-viewer](../../apps/wiki-viewer) (Hugo build of [wiki/](../../wiki)); Worker `legendary-arena-wiki` (D-24690) | live, gated |
-| `legendary-arena-wiki.onrender.com` | Retired Render origin of the eng wiki — must 404 (it was an Access bypass) | Render (service to be deleted) | none — retired by D-24690 | planned (200 until the Render service is deleted) |
+| `legendary-arena-wiki.onrender.com` | Retired Render origin of the eng wiki — must 404 (it was an Access bypass) | Render (service deleted 2026-10-11) | none — retired by D-24690 | live (404 since 2026-10-11; regression probe) |
 | `legends.legendary-arena.com` | Public scoreboard (attract board) | Cloudflare Pages | [apps/legends-board](../../apps/legends-board) (WP-143) | live (domain since 2026-07-08; SPA shipped 2026-05-15, WP-143) |
 | `api.legendary-arena.com` | Game server REST + Socket.IO | Render (CNAME from Cloudflare) | [apps/server](../../apps/server) | live |
 | `legendary-arena-server.onrender.com` | API canonical hostname | Render | [apps/server](../../apps/server) | live |
 | `dashboard.legendary-arena.com` | Internal admin dashboard | Cloudflare Worker + Access | [apps/dashboard](../../apps/dashboard); Worker `legendary-arena-dashboard` (D-24690) | live, gated |
-| `legendary-arena-dashboard.pages.dev` | Retired CF Pages alias of the dashboard | Cloudflare Pages (project to be deleted) | none — retired by D-24690 | **UNGATED until the Pages project is deleted**; row removed after (see [dashboard](#dashboard)) |
 | `images.legendary-arena.com` | Card image CDN | Cloudflare R2 | external | live (canonical since 2026-07-16; legacy `images.barefootbetters.com` serves the same bucket, no redirect) |
 
 `state` legend: `live` = deployed and probed for health; `planned` = not yet
@@ -178,8 +177,8 @@ publicly readable. The redirect target is enforced by the probe via
 old Render service still exists and serves the wiki without Access — delete
 it.
 
-**Cutover from Render (D-24690, one time).** Do steps 1–3 before merging the
-D-24690 PR; the merge triggers the deploy.
+**Cutover from Render (D-24690, done 2026-10-11).** Kept as the record and
+the rebuild runbook. Steps 1–3 come before the merge, which triggers the deploy.
 1. **API token.** Cloudflare → Manage Account → **Account API tokens** →
    Create Token → **Edit Cloudflare Workers** template; account resources:
    this account; zone resources: only `legendary-arena.com` (the deploy
@@ -207,6 +206,17 @@ D-24690 PR; the merge triggers the deploy.
    should show the onrender.com row `READY`; flip it to `"live"` in
    [domains.json](./domains.json).
 
+What actually happened (2026-10-11): the old `ewiki` CNAME pointed at the
+**game server's** Render host (`legendary-arena-server.onrender.com`), not
+the wiki service's — which is why Render listed the wiki's custom domain as
+"Waiting for DNS" and its subdomain toggle never took effect (#2603). The
+first deploy uploaded the Worker but failed to attach the domain ("already
+has externally managed DNS records", code 100117) because step 3 had not
+run yet; after the records were deleted, re-running the failed job attached
+it. For a minute or two after the domain attached, two probes got `200`
+instead of the Access redirect before Access applied to the new hostname;
+every probe since redirects. The Render service was deleted the same day.
+
 **Gate-before-expose still applies to any rebuild:** create (or confirm) the
 Access application for the hostname before the Worker's custom domain
 exists.
@@ -232,7 +242,7 @@ of live business data. The redirect target is enforced by the probe via
 This is the canonical **Gate-before-expose** rule (WP-197 / EC-223): the
 Access application exists before the hostname serves anything.
 
-**Cutover from Pages (D-24690, one time).** Uses the same API token and
+**Cutover from Pages (D-24690, done 2026-10-11).** Uses the same API token and
 secrets as the ewiki cutover (step 1 there). Do steps 1–2 before merging.
 1. **Repo variable or secret.** GitHub → Settings → Secrets and variables →
    Actions (either tab works): `DASHBOARD_HANKO_TENANT_BASE_URL` = the value of
@@ -255,8 +265,17 @@ secrets as the ewiki cutover (step 1 there). Do steps 1–2 before merging.
 5. **Retire Pages.** Workers & Pages → `legendary-arena-dashboard` (the
    **Pages** project, not the new Worker) → Settings → **Delete project**.
    This removes `legendary-arena-dashboard.pages.dev` and every preview URL.
-   Then `pnpm check:domains`: the `pages.dev` row stops resolving (`PENDING`)
-   — remove that row from [domains.json](./domains.json).
+   Cloudflare refuses to delete a Pages project with more than 100
+   deployments (this one had 5,852 by then, one per branch push; clearing them took about 70 minutes at the API rate limit); delete the
+   deployments through the API first, keeping the active production one
+   ([Pages known issues](https://developers.cloudflare.com/pages/platform/known-issues/)).
+   The Pages API rejected an **account-owned** token with `Authentication
+   error` (code 10000) even though it verified as active; a **user** token
+   (My Profile → API Tokens, with Cloudflare Pages: Edit) worked. Delete
+   that token afterwards. Once the project is gone the `pages.dev` hostname
+   answers `530` (no such project; the `*.pages.dev` wildcard still
+   resolves). Its [domains.json](./domains.json) row stays as a regression
+   probe expecting `404`/`530`.
 
 **Real data is wired.** The launch deferred real data (D-19702), and
 follow-up WPs wired the widgets to admin-session-gated `/api/dash/*`
