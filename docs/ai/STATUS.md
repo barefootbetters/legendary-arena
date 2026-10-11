@@ -63,7 +63,7 @@
 - **Loss lines.** They now name what escaped: "5 Killbots escaped", "12 Villains escaped", "6 Skrulls escaped". Midtown keeps "8 Bystanders carried away by escaping Villains".
 
 - **Engine only.** No score, PAR or hash moves; every package green (game-engine 5025 → 5030).
-- **Live-verify (D-24026): pending.** In a Killbots match, the end-of-game breakdown shows defeated Killbots under Bystanders, and a 5-escape loss logs "5 Killbots escaped".
+- **Live-verify (D-24026), 2026-10-11: scoring half PASS.** Match `shs6zv3TjDy` (build `8f70b0b`, 2p bot-ally Magneto / Killbots): Player 0's breakdown read `bystanderVP` 11 (8 Killbots + 3 Bystanders) and Player 1's read 7 (5 + 2). Neither seat's `villainVP` counted a Killbot. **Still pending:** the "5 Killbots escaped" loss line (this game was won).
 
 ### D-24679 — "Reveal a Hero or gain a Wound" lines say which Hero (direct fix) (2026-10-10)
 

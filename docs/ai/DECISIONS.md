@@ -47086,6 +47086,8 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5025 → 5030, server 1678, arena-client 2298, dashboard 571); `sim:runtime-observed:check` current; `git status` shows no generated-artifact churn.
 
+**Live-verify (D-24026), 2026-10-11: scoring half PASS.** Match `shs6zv3TjDy` (build `8f70b0b`): `bystanderVP` 11 = 8 Killbots + 3 Bystanders (Player 0) and 7 = 5 + 2 (Player 1); no Killbot in `villainVP`. The "5 Killbots escaped" line is still pending (the game was won).
+
 **Reserved by:** NUMBER-LEDGER D-24680. Related: D-24324 / D-24325 (Killbots), D-24668 (Killbot display name), D-24395 (isBystanderCard), D-24409, D-24026 (the live session that surfaced it).
 
 ---
