@@ -417,7 +417,7 @@ gameplay surface.
 **What it is:** Internal-facing browser SPA for operators/admins to monitor
 business and game-health metrics and drive operational tasks. The first
 (and only) instance is `apps/dashboard/` — a Vue 3 + PrimeVue 4 + Pinia +
-Vite SPA at `dashboard.legendary-arena.com` (Cloudflare Pages) presenting
+Vite SPA at `dashboard.legendary-arena.com` (Cloudflare Worker, D-24690) presenting
 KPI / analytics widgets and operational tooling (e.g. the daily-execution
 checklist). It is not player-facing (unlike `client-app`) and not a
 documentation / reference viewer (unlike `docs-app`).

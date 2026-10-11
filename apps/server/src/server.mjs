@@ -820,21 +820,17 @@ export async function startServer() {
       'https://legendary-arena-play.pages.dev',
       // why: WP-206 / D-20601 — dashboard analytics LIVE flip wiring.
       // The first entry below is the live operator-dashboard host per
-      // docs/ops/DOMAINS.md §dashboard (CF Pages + CF Access, live
-      // since 2026-06-02). The second is the Vite dashboard preview-
+      // docs/ops/DOMAINS.md §dashboard (Cloudflare Worker + CF Access,
+      // live since 2026-06-02). The second is the Vite dashboard preview-
       // server default for local-dev LIVE-mode against the local
       // server. The 3 GET endpoints registered by
       // `registerAnalyticsRoutes` consume the operator's
       // cookie-credentials Hanko session via this CORS allowance.
+      // why: D-24690 — the custom domain is the dashboard's only origin. The
+      // former `legendary-arena-dashboard.pages.dev` alias is gone with the Pages
+      // project (it served the dashboard without Cloudflare Access), so it is no
+      // longer allowlisted.
       'https://dashboard.legendary-arena.com',
-      // why: the CF Pages production alias for the `legendary-arena-dashboard`
-      // project (the custom domain above is `CNAME → legendary-arena-dashboard.pages.dev`).
-      // Allowlisted for parity with `legendary-arena-play.pages.dev` above — so a
-      // preview/parity deploy reached at the `.pages.dev` host can also call this API
-      // cross-origin in LIVE mode (the custom domain remains the primary origin). The
-      // admin-session gate on `/api/dash/*` (WP-373/374) is the real access boundary;
-      // CORS only lets the legit dashboard SPA make the browser request.
-      'https://legendary-arena-dashboard.pages.dev',
       'http://localhost:4173',
       'https://cards.barefootbetters.com',
       'https://cards.legendary-arena.com',

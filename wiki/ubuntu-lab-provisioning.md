@@ -32,7 +32,8 @@ last-reviewed: 2026-10-11
 
 > **Migration in progress.** `api.legendary-arena.com` and its PostgreSQL are
 > moving off Render onto a self-hosted DigitalOcean Ubuntu droplet fronted by
-> Cloudflare, and the ewiki moves to Cloudflare Pages. The move is decided at the
+> Cloudflare. (The ewiki already left Render on 2026-10-11, for an assets-only
+> Cloudflare Worker rather than Pages — D-24690.) The move is decided at the
 > migration-program level: the `legendary-arena-lab` repo holds the runbook and the
 > infrastructure-as-code (`docs/PLAN.md`, `infra/`, and its operator wiki). Until
 > the final decommission phase, Render stays warm as the rollback target (see the
@@ -50,6 +51,9 @@ last-reviewed: 2026-10-11
 > `status: draft` and deliberately cites no `D-`/`WP-` IDs it cannot yet resolve.
 > The former "records no decision to leave Render" disclaimer is superseded: that
 > decision is made — only its transcription into `DECISIONS.md` is outstanding.
+> **Update 2026-10-11:** the ewiki half is now transcribed, as D-24690 — onto an
+> assets-only Cloudflare **Worker**, not Pages (a Pages project always serves an
+> ungated `*.pages.dev` alias). The api + Postgres half is still untranscribed.
 
 ## Summary
 
@@ -113,7 +117,7 @@ What Render charged for August 2026 (invoice `0SPQWPNF-0005`, paid
 | PostgreSQL | `pro-4gb` plus storage | $55.30 | $55.30 | on the droplet, `localhost` |
 | Builds | pipeline minutes (Aug 41 m, Sep 6 h 42 m) | $5.00 | $5.00 | GitHub Actions deploy |
 | Bandwidth | Aug 7.8 GB, Sep 6.5 GB | $1.20 | $1.05 | included with the droplet |
-| ewiki static site | free | $0.00 | $0.00 | Cloudflare Pages |
+| ewiki static site | free | $0.00 | $0.00 | Cloudflare Worker (moved 2026-10-11, D-24690) |
 | **Total** | | **$146.50** | **$146.35** | **~$48** (4 vCPU / 8 GB), **~$24** if stepped down to 4 GB |
 
 The two months differ by 15 cents, all of it bandwidth, so about **$146 a

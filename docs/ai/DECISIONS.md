@@ -15694,7 +15694,7 @@ runs on push to `main` whose paths touch `docs/wiki/` or
 - Future moves (e.g., Cloudflare Pages, Vercel, GitHub Pages) require a
   new DECISIONS entry that supersedes this lock.
 
-**Status:** Active.
+**Status:** Active until 2026-10-11. **Superseded by D-24690** — the ewiki is an assets-only Cloudflare Worker (`apps/wiki-viewer/wrangler.jsonc`); the Render static site is retired because its default `onrender.com` host bypassed Cloudflare Access.
 
 **Citation:** WP-139 §Decisions / D-13811; EC-142 §Locked Values;
 `render.yaml` `legendary-arena-wiki` service block;
@@ -20366,7 +20366,7 @@ worth the indirection cost.
 
 **Drafted:** 2026-06-01.
 **Landed:** 2026-06-02.
-**Status:** Landed
+**Status:** Landed. **Hosting half superseded by D-24690** (2026-10-11) — the dashboard is an assets-only Cloudflare Worker, not a Pages project, because the Pages `*.pages.dev` aliases bypassed Cloudflare Access. The Access half (Self-hosted, Email OTP, single-operator allow) is unchanged.
 
 ---
 
@@ -47265,6 +47265,32 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 **Live-verify (D-24026):** pending. Five Core rows in `docs/ai/coverage/live-verify.json` move from verified to pending until re-seen on a post-deploy build: Sentinel, Super-Skrull, Destroyer's Escape, Whirlwind and Maestro. Check that a non-active player's KO takes a hand card (the log names it), and that no prompt or auto-pick offers a discard card.
 
 **Reserved by:** NUMBER-LEDGER D-24687. Related: D-24006–D-24010 / WP-242, D-24298 / WP-492, D-24386 / WP-577, D-24280 / WP-463, D-24644, D-24669, D-24683, D-24600 and D-24645 (Hero-side "your Heroes", already hand + play), D-24616 §5, D-24026.
+
+---
+
+### D-24690 — The ewiki and the dashboard are assets-only Cloudflare Workers with no default hostname (direct infra change, no WP) (Active 2026-10-11)
+
+**Context.** Cloudflare Access gates hostnames, and both private sites had a second, ungated hostname. Render served the ewiki at `legendary-arena-wiki.onrender.com` as well as `ewiki.legendary-arena.com`. On 2026-10-05 and again on 2026-10-11 that default host returned `200` with the full wiki, while `ewiki.` redirected to Access. Cloudflare Pages served the dashboard at `legendary-arena-dashboard.pages.dev` and `<hash>.legendary-arena-dashboard.pages.dev` as well as `dashboard.legendary-arena.com`. The production alias had served the live-mode dashboard bundle without Access since 2026-06-02 (CORS-allowlisted by the API; the server's admin-session check was the only layer).
+
+Fixing each platform in place did not hold:
+- Render: #2603 set `renderSubdomainPolicy: disabled`, but the switch needs a verified custom domain. Render lists `ewiki.legendary-arena.com` as "Waiting for DNS / Waiting for Verification" because the record is Cloudflare-proxied, and the toggle stayed enabled.
+- Pages: "Enable access policy" protects only preview deployments. The production `pages.dev` alias needs Cloudflare's known-issue workaround (#2662), and the alias stays a standing exposure that one misconfiguration reopens.
+
+Jeff chose (2026-10-11) to move both sites to Cloudflare, consistent with the plan to leave Render.
+
+**Decision.**
+1. **Hosting.** The ewiki is the assets-only Worker `legendary-arena-wiki` (`apps/wiki-viewer/wrangler.jsonc`, assets `./public`). The dashboard is the assets-only Worker `legendary-arena-dashboard` (`apps/dashboard/wrangler.jsonc`, assets `./dist`, `not_found_handling: "single-page-application"`). Each serves only its custom domain (`custom_domain: true`).
+2. **No default hostname.** Both configs set `workers_dev: false` and `preview_urls: false`. These two fields are the substance of this decision: with them, the Access-gated custom domain is the only way in. They must stay `false`.
+3. **Gate.** The existing hostname-based Access applications (`ewiki.` from D-13811's era; `dashboard.` per D-19701) carry over unchanged.
+4. **Deploy.** The ewiki deploys from `.github/workflows/wiki-viewer.yml`: the deploy job ships the build job's gated artifact byte-for-byte (`pnpm dlx wrangler@4.149.0 deploy`), on push to `main` or `workflow_dispatch`. The dashboard deploys from the new `.github/workflows/dashboard-deploy.yml` on every push to `main` (the Pages cadence) or `workflow_dispatch`. Its build sets `VITE_USE_MOCKS=false` and `VITE_API_BASE_URL=https://api.legendary-arena.com`, and reads `VITE_HANKO_TENANT_BASE_URL` / `VITE_FEATURE_FLAGS` from repo variables. It refuses to build without the Hanko tenant. Both deploy steps fail loudly without the `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` repo secrets.
+5. **Retired.** The Render static site `legendary-arena-wiki` (removed from `render.yaml`; a Blueprint never deletes a service, so it is deleted by hand), the `RENDER_WIKI_DEPLOY_HOOK` secret, and the Pages project `legendary-arena-dashboard` (deleting it removes every `pages.dev` alias). The API no longer CORS-allowlists `https://legendary-arena-dashboard.pages.dev`.
+6. **Probes.** `docs/ops/domains.json` keeps the old ewiki origin as a regression row expecting `404` (a deleted Render service returns `404`). The `pages.dev` row is removed once the project is deleted, because the hostname then stops resolving.
+
+**Not changed.** The game server and Postgres stay on Render; the Render → DigitalOcean plan (`wiki/ubuntu-lab-provisioning.md`) is separate. Hugo, Pagefind, and the wiki-viewer build gates (D-13808, D-24293) are unchanged. The ewiki stays JS-free except the Pagefind loader.
+
+**Cutover (operator).** Runbooks in `docs/ops/DOMAINS.md#ewiki` and `#dashboard`. Create the API token, set the secrets and variables, and remove the old DNS records (a Worker custom domain cannot be created over an existing CNAME). Then merge and let both deploys run, verify that both hostnames still redirect to Access and serve after login, and delete the Render service and the Pages project. Finally re-run `pnpm check:domains`.
+
+**Reserved by:** NUMBER-LEDGER D-24690 (#2691). Supersedes D-13811 (hosting target) and the hosting half of D-19701. Related: #2603, #2662, #2673, D-20601 (live-mode gate), D-24026.
 
 ---
 

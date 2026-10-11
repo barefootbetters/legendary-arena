@@ -24,13 +24,13 @@ define new architectural boundaries.
 | `play.legendary-arena.com` | Game client | Cloudflare Pages | [apps/arena-client](../../apps/arena-client) | live |
 | `cards.legendary-arena.com` | Registry viewer | Cloudflare Pages | [apps/registry-viewer](../../apps/registry-viewer) | live (migrated 2026-07-16; legacy `cards.barefootbetters.com` 301-redirects here) |
 | `wiki.legendary-arena.com` | Public player wiki | Cloudflare Pages | TBD (separate Hugo site) | planned |
-| `ewiki.legendary-arena.com` | Private engineering wiki | Render Static Site + Access | [apps/wiki-viewer](../../apps/wiki-viewer) (Hugo build of [wiki/](../../wiki)) | live, gated |
-| `legendary-arena-wiki.onrender.com` | Render default origin of the eng wiki — must 404 (Access bypass otherwise) | Render | [render.yaml](../../render.yaml) `renderSubdomainPolicy: disabled` | planned (disable pending; 200 observed 2026-10-05) |
+| `ewiki.legendary-arena.com` | Private engineering wiki | Cloudflare Worker + Access | [apps/wiki-viewer](../../apps/wiki-viewer) (Hugo build of [wiki/](../../wiki)); Worker `legendary-arena-wiki` (D-24690) | live, gated |
+| `legendary-arena-wiki.onrender.com` | Retired Render origin of the eng wiki — must 404 (it was an Access bypass) | Render (service to be deleted) | none — retired by D-24690 | planned (200 until the Render service is deleted) |
 | `legends.legendary-arena.com` | Public scoreboard (attract board) | Cloudflare Pages | [apps/legends-board](../../apps/legends-board) (WP-143) | live (domain since 2026-07-08; SPA shipped 2026-05-15, WP-143) |
 | `api.legendary-arena.com` | Game server REST + Socket.IO | Render (CNAME from Cloudflare) | [apps/server](../../apps/server) | live |
 | `legendary-arena-server.onrender.com` | API canonical hostname | Render | [apps/server](../../apps/server) | live |
-| `dashboard.legendary-arena.com` | Internal admin dashboard | Cloudflare Pages + Access | [apps/dashboard](../../apps/dashboard) | live, gated |
-| `legendary-arena-dashboard.pages.dev` | Internal admin dashboard (CF Pages alias) | Cloudflare Pages + Access | [apps/dashboard](../../apps/dashboard) | live, **UNGATED — gate pending** (see [dashboard](#dashboard)) |
+| `dashboard.legendary-arena.com` | Internal admin dashboard | Cloudflare Worker + Access | [apps/dashboard](../../apps/dashboard); Worker `legendary-arena-dashboard` (D-24690) | live, gated |
+| `legendary-arena-dashboard.pages.dev` | Retired CF Pages alias of the dashboard | Cloudflare Pages (project to be deleted) | none — retired by D-24690 | **UNGATED until the Pages project is deleted**; row removed after (see [dashboard](#dashboard)) |
 | `images.legendary-arena.com` | Card image CDN | Cloudflare R2 | external | live (canonical since 2026-07-16; legacy `images.barefootbetters.com` serves the same bucket, no redirect) |
 
 `state` legend: `live` = deployed and probed for health; `planned` = not yet
@@ -157,182 +157,106 @@ until there is something to deploy, otherwise the URL serves a 404 placeholder
 that confuses anyone who clicks it.
 
 ### ewiki
-**`ewiki.legendary-arena.com`** — private engineering wiki, gated. Live since 2026-05-08.
+**`ewiki.legendary-arena.com`** — private engineering wiki, gated. Live since 2026-05-08; on a Cloudflare Worker since the D-24690 cutover.
 
 - **Source:** [wiki/](../../wiki) markdown files
-- **Renderer:** [apps/wiki-viewer](../../apps/wiki-viewer) — Hugo build, deployed as the Render Static Site `legendary-arena-wiki` (see [render.yaml](../../render.yaml))
-- **Gate:** Cloudflare Zero Trust Access policy (Free tier, One-time PIN identity provider)
-- **DNS posture:** **proxied (orange cloud)**, NOT DNS-only. Access can only intercept traffic that flows through Cloudflare's edge; DNS-only would route the client directly to Render's IP and bypass the gate. (This is the opposite of the `api.` posture — see that section for why `api.` uses DNS-only.)
-- **Render default origin: disabled.** Access gates only the custom domain, so Render's built-in `legendary-arena-wiki.onrender.com` host is a second, ungated door to the same content (observed serving the full wiki with `200` on 2026-10-05). `renderSubdomainPolicy: disabled` in [render.yaml](../../render.yaml) closes it; because this service's settings may not auto-sync from the Blueprint, also set **Render → `legendary-arena-wiki` → Settings → Custom Domains → Render Subdomain → Disabled**. Healthy: the onrender.com host returns `404` (Render answers before the service), and `ewiki.` still `302`s to Access. A `200` on the onrender.com host is a security incident — same severity as `ewiki` returning `200`.
+- **Renderer:** [apps/wiki-viewer](../../apps/wiki-viewer) — Hugo + Pagefind build, served by the assets-only Cloudflare Worker `legendary-arena-wiki` ([`apps/wiki-viewer/wrangler.jsonc`](../../apps/wiki-viewer/wrangler.jsonc), D-24690)
+- **Deploy:** the `deploy` job in [`.github/workflows/wiki-viewer.yml`](../../.github/workflows/wiki-viewer.yml), on push to `main` (wiki paths) or **Actions → wiki-viewer → Run workflow** on `main`. It ships the build job's gated artifact as-is with `wrangler deploy`. Needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repo secrets.
+- **Gate:** Cloudflare Zero Trust Access application on the hostname (Free tier, One-time PIN identity provider). It is hostname-based, so it did not change when the origin moved from Render to the Worker.
+- **One door only.** The Worker sets `workers_dev: false` and `preview_urls: false`, so it has no `*.workers.dev` or preview hostname. The custom domain is the only way in. Keep both `false`: turning either on recreates the bypass this move removed. (Before D-24690, Render also served the wiki at `legendary-arena-wiki.onrender.com` with no gate — observed `200` with full content on 2026-10-05 and 2026-10-11.)
 
 **Healthy response (unauthenticated):** `302` to a `*.cloudflareaccess.com`
 login URL, or `401`/`403`. **A `200` here is a failure** — it means the
-Access policy is missing and the engineering wiki is publicly readable.
-The redirect target is enforced by the probe via `expectedLocation:
-"https://legendary-arena.cloudflareaccess.com/"` in
-[domains.json](./domains.json) — a `302` to anywhere else (e.g., the
-Render origin's default page, or a misconfigured proxy) fails the row.
+Access application is missing or disabled and the engineering wiki is
+publicly readable. The redirect target is enforced by the probe via
+`expectedLocation: "https://legendary-arena.cloudflareaccess.com/"` in
+[domains.json](./domains.json) — a `302` to anywhere else fails the row.
 
-**Configure the Cloudflare Access policy before attaching the custom domain.**
-If the custom domain is attached before the Access policy exists, there is a
-window during which the eng wiki is on the public internet.
+**Retired origin.** `legendary-arena-wiki.onrender.com` must return `404`
+(Render answers `404` for a deleted service). Its row in
+[domains.json](./domains.json) is a regression probe: a `200` there means the
+old Render service still exists and serves the wiki without Access — delete
+it.
 
-Configuration steps (completed 2026-05-08):
-1. Verify Render auto-deployed the `legendary-arena-wiki` static-site service
-   from `render.yaml` (probe its `*.onrender.com` URL — content should serve
-   without a gate at this layer; the gate binds to the custom domain).
-2. Activate the Cloudflare Zero Trust **Free** plan on the account. Without
-   an active Zero Trust plan, no Access application can be created — the
-   dashboard's "Add an Application" button is gated behind plan activation.
-3. In Cloudflare Zero Trust → Access → Applications → Add an Application,
-   pick the **Self-hosted** tile (NOT "Connect a private web application",
-   which is the tunnel-based flow). Set Application domain to the full
-   FQDN `ewiki.legendary-arena.com`, attach an Allow policy on the
-   operator's email, accept all available identity providers (Email
-   One-time PIN is built-in and sufficient).
-4. In Render, attach `ewiki.legendary-arena.com` as a custom domain on the
-   **`legendary-arena-wiki`** service (NOT `legendary-arena-server`). Copy
-   that service's CNAME target.
-5. In Cloudflare DNS for the `legendary-arena.com` zone, add CNAME `ewiki`
-   → Render's wiki-service target, **proxied (orange cloud)**.
-6. Verify Cloudflare TLS mode for the zone is `Full` or `Full (strict)`,
-   not `Flexible` — required so Cloudflare's edge talks to Render over
-   HTTPS.
-7. From an incognito browser, visit `https://ewiki.legendary-arena.com`.
-   Expect a redirect to `*.cloudflareaccess.com/cdn-cgi/access/...`. After
-   email OTP, the wiki should render. **A 200 with content unauthenticated,
-   or Render's plain-text "Not Found" 404, is a failure — see the failure
-   runbook below.**
+**Cutover from Render (D-24690, one time).** Do steps 1–3 before merging the
+D-24690 PR; the merge triggers the deploy.
+1. **API token.** Cloudflare → Manage Account → **Account API tokens** →
+   Create Token → **Edit Cloudflare Workers** template; account resources:
+   this account; zone resources: only `legendary-arena.com` (the deploy
+   attaches the `ewiki.` / `dashboard.` custom domains). An account-owned
+   token suits CI: it is not tied to a person's login. In GitHub → Settings →
+   Secrets and variables → Actions, add secrets `CLOUDFLARE_API_TOKEN` (the
+   token) and `CLOUDFLARE_ACCOUNT_ID`. If the first deploy fails with an auth
+   error on the custom-domain step, use a user token instead (My Profile →
+   API Tokens, same template and scope).
+2. **Confirm the Access application** for `ewiki.legendary-arena.com` exists
+   and is enabled (Zero Trust → Access → Applications). It is reused as-is.
+3. **Remove the old record.** Cloudflare DNS for `legendary-arena.com` →
+   delete the `ewiki` CNAME to Render. A Worker custom domain cannot be
+   created while another record exists for the hostname. The ewiki is down
+   from here until step 4 finishes (a few minutes).
+4. **Merge** (or, if already merged, Actions → wiki-viewer → Run workflow on
+   `main`). The deploy job creates the custom domain, its DNS record and
+   certificate.
+5. **Verify.** From an incognito browser, `https://ewiki.legendary-arena.com`
+   redirects to `*.cloudflareaccess.com`; after the email OTP the wiki and
+   its search load. `pnpm check:domains` shows `ewiki` `OK`.
+6. **Retire Render.** Render → `legendary-arena-wiki` → Settings → **Delete
+   Static Site** (removing it from `render.yaml` does not delete it). Remove
+   the `RENDER_WIKI_DEPLOY_HOOK` repo secret. Then `pnpm check:domains`
+   should show the onrender.com row `READY`; flip it to `"live"` in
+   [domains.json](./domains.json).
+
+**Gate-before-expose still applies to any rebuild:** create (or confirm) the
+Access application for the hostname before the Worker's custom domain
+exists.
 
 ### dashboard
-**`dashboard.legendary-arena.com`** — internal admin dashboard, gated. Live since 2026-06-02.
+**`dashboard.legendary-arena.com`** — internal admin dashboard, gated. Live since 2026-06-02; on a Cloudflare Worker since the D-24690 cutover.
 
 - **Source:** [apps/dashboard](../../apps/dashboard)
-- **Renderer:** Vite SPA, deployed to the Cloudflare Pages project `legendary-arena-dashboard` (build command `pnpm install --frozen-lockfile && pnpm --filter "@legendary-arena/dashboard..." build`; output dir `apps/dashboard/dist`)
-- **Gate:** Cloudflare Zero Trust Access policy (Free tier, Self-hosted application, Email One-time PIN identity provider, single-operator allow rule on `jeff@barefootbetters.com`)
-- **DNS posture:** **proxied (orange cloud)**, NOT DNS-only. Access can only intercept traffic that flows through Cloudflare's edge; DNS-only would route the client directly to the CF Pages origin and bypass the gate. (Same posture as `ewiki.`, opposite of `api.`.)
-- **App sign-in:** Hanko ([`LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue), WP-241), behind the Access gate. Live `/api/dash/*` routes on `api.legendary-arena.com` require an admin session and return `401` without one.
-- **Production env vars (CF Pages):** live mode — `VITE_USE_MOCKS=false`, `VITE_API_BASE_URL=https://api.legendary-arena.com`, and `VITE_HANKO_TENANT_BASE_URL` set to the Hanko tenant (all three read from the deployed bundle 2026-10-10); `NODE_VERSION=22` was set at launch and not re-checked. The live/mock switch is `isLiveModeEnabled()` (D-20601): live only when `VITE_USE_MOCKS !== 'true'` and `VITE_API_BASE_URL` is non-empty. See [`apps/dashboard/.env.example`](../../apps/dashboard/.env.example) for the full variable list. (Launched 2026-06-02 in mock mode per D-19702; real-data wiring landed in later WPs, starting with WP-373's billing + revenue routes.)
+- **Renderer:** Vite SPA, served by the assets-only Cloudflare Worker `legendary-arena-dashboard` ([`apps/dashboard/wrangler.jsonc`](../../apps/dashboard/wrangler.jsonc), SPA fallback; [`public/_headers`](../../apps/dashboard/public/_headers) applies unchanged)
+- **Deploy:** [`.github/workflows/dashboard-deploy.yml`](../../.github/workflows/dashboard-deploy.yml) on every push to `main` (the cadence of the Pages Git integration it replaced) or **Actions → dashboard-deploy → Run workflow**. It runs `pnpm --filter "@legendary-arena/dashboard..." build`, then `wrangler deploy`. Lint, typecheck and tests stay in `ci.yml` (Dashboard Gates).
+- **Gate:** Cloudflare Zero Trust Access application on the hostname (Free tier, Self-hosted application, Email One-time PIN identity provider, single-operator allow rule on `jeff@barefootbetters.com`). Hostname-based, so it carried over from Pages unchanged.
+- **One door only.** `workers_dev: false` and `preview_urls: false`, so there is no `*.workers.dev`, preview, or `pages.dev` hostname. Keep both `false`. (Before D-24690 the Pages project also served `legendary-arena-dashboard.pages.dev` and `<hash>.legendary-arena-dashboard.pages.dev` without Access — the production alias since 2026-06-02.)
+- **App sign-in:** Hanko ([`LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue), WP-241), behind the Access gate. Live `/api/dash/*` routes on `api.legendary-arena.com` require an admin session and return `401` without one. The API's CORS allowlist has the custom domain only (and `localhost:4173` for local dev).
+- **Build env (set in the workflow):** live mode — `VITE_USE_MOCKS=false`, `VITE_API_BASE_URL=https://api.legendary-arena.com`, `VITE_HANKO_TENANT_BASE_URL` from `DASHBOARD_HANKO_TENANT_BASE_URL`, a repo variable or secret (the build refuses to run without it), `VITE_FEATURE_FLAGS` from `DASHBOARD_FEATURE_FLAGS` (optional, variable or secret). The live/mock switch is `isLiveModeEnabled()` (D-20601): live only when `VITE_USE_MOCKS !== 'true'` and `VITE_API_BASE_URL` is non-empty. See [`apps/dashboard/.env.example`](../../apps/dashboard/.env.example) for the full variable list. (Launched 2026-06-02 in mock mode per D-19702; real-data wiring landed in later WPs, starting with WP-373's billing + revenue routes.)
 
 **Healthy response (unauthenticated):** `302` to a `*.cloudflareaccess.com`
 login URL, or `401`/`403`. **A `200` here is a failure** — it means the
-Access policy is missing and the live operator dashboard is publicly
+Access application is missing and the live operator dashboard is publicly
 reachable, with the server's admin-session check as the only layer in front
 of live business data. The redirect target is enforced by the probe via
 `expectedLocation: "https://legendary-arena.cloudflareaccess.com/"` in
 [domains.json](./domains.json) — a `302` to anywhere else fails the row.
+This is the canonical **Gate-before-expose** rule (WP-197 / EC-223): the
+Access application exists before the hostname serves anything.
 
-**Configure the Cloudflare Access policy before attaching the custom domain.**
-If the custom domain is attached before the Access policy exists, there is a
-window during which the live operator dashboard is on the public internet.
-This is the canonical **Gate-before-expose** rule (WP-197 / EC-223).
-
-Configuration steps (completed 2026-06-02 under WP-197 / EC-223; steps 2 and
-6 are updated for today's live-mode build, so the list doubles as the rebuild
-runbook):
-1. Add the `dashboard` row to [domains.json](./domains.json) with
-   `state: "planned"`, `expectedStatus: [302, 401, 403]`,
-   `expectedLocation: "https://legendary-arena.cloudflareaccess.com/"`.
-2. In Cloudflare Pages, create project `legendary-arena-dashboard`
-   linked to the `legendary-arena` GitHub repo, production branch
-   `main`, build command and output dir as above, and the live-mode
-   env vars listed above on the Production scope (`VITE_USE_MOCKS=false`,
-   `VITE_API_BASE_URL`, `VITE_HANKO_TENANT_BASE_URL`, `NODE_VERSION`).
-   The 2026-06-02 launch used `VITE_USE_MOCKS=true` with no API base
-   (D-19702). Trigger the first production build; confirm
-   `legendary-arena-dashboard.pages.dev` serves the SPA shell. **Do
-   not attach the custom domain yet.**
-3. Activate Cloudflare Zero Trust Free plan on the account (already
-   active from `ewiki.` setup). In Cloudflare Zero Trust → Access →
-   Applications → Add an Application, pick the **Self-hosted** tile
-   (NOT "Connect a private web application"). Set application
-   domain to `dashboard.legendary-arena.com`, identity provider
-   = Email One-time PIN (built-in), allow policy single-rule
-   `Include: Emails = jeff@barefootbetters.com`.
-4. In Cloudflare Pages → `legendary-arena-dashboard` → Custom
-   domains, attach `dashboard.legendary-arena.com`. Cloudflare
-   auto-creates the DNS record; verify it is `CNAME dashboard →
-   legendary-arena-dashboard.pages.dev` and is **proxied (orange
-   cloud)**.
-5. Verify Cloudflare TLS mode for the `legendary-arena.com` zone is
-   `Full` or `Full (strict)`, not `Flexible`.
-6. From an incognito browser, visit `https://dashboard.legendary-arena.com`.
-   Expect a redirect to `*.cloudflareaccess.com/cdn-cgi/access/...`. After
-   email OTP, `/login` should render the Hanko sign-in. After an admin
-   sign-in, `/overview` loads, its widgets show `LIVE` / `CACHED` /
-   `LOCAL` freshness badges (not `MOCK`), and the mock-mode banner
-   (WP-226) is absent. **A 200 unauthenticated is a security
-   incident — see the failure runbook.**
-7. Verify `pnpm check:domains` reports `READY` for the `dashboard`
-   entry, then flip `state: "planned"` → `"live"` in
-   [domains.json](./domains.json). Re-run; expect `OK`.
-
-#### pages.dev alias — gate the Cloudflare Pages production URL
-
-**`legendary-arena-dashboard.pages.dev`** — the CF Pages project's built-in
-production alias. **Gate pending.**
-
-The WP-197 Access application above gates **only** the custom domain
-`dashboard.legendary-arena.com`. Cloudflare Pages **always** also serves the
-project at `legendary-arena-dashboard.pages.dev` (and every preview deployment
-at `<hash>.legendary-arena-dashboard.pages.dev`), and those hostnames are **not**
-covered by a custom-domain Access application. So this alias has served the
-operator SPA bundle **ungated on the public internet since 2026-06-02** (observed
-`200` on 2026-09-10 and again on 2026-10-09).
-
-What the open alias exposes (checked 2026-10-09):
-- **The full live-mode bundle.** The deployed build has `VITE_USE_MOCKS=false`
-  and calls `https://api.legendary-arena.com`, so the alias is a working copy of
-  the operator dashboard, not a mock shell. The bundle also carries the
-  governance snapshot, coverage ledger, effect index, and internal routes and
-  links.
-- **The Hanko sign-in, with Access skipped.**
-  [`LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue) is the real
-  Hanko login (the old any-email mock form is gone), and the server's CORS
-  allowlist includes this origin (`apps/server/src/server.mjs`). Live data is
-  still behind the server's admin session check — an unauthenticated
-  `GET /api/dash/dr-readiness` from this origin returns `401` — but on this host
-  that check is the **only** layer; Access is not in front of it.
-
-**Close it (operator action — CF Pages / Zero Trust dashboard).**
-
-Pages → Settings → **Enable access policy** on its own does **not** close this.
-Per Cloudflare's docs, that toggle "will only protect your preview deployments"
-(`<hash>.legendary-arena-dashboard.pages.dev`), "not your `*.pages.dev` domain
-or custom domain"
-([Preview deployments](https://developers.cloudflare.com/pages/configuration/preview-deployments/)).
-Gating the production alias takes the extra steps from
-[Known issues → Enable Access on your `*.pages.dev` domain](https://developers.cloudflare.com/pages/platform/known-issues/#enable-access-on-your-pagesdev-domain):
-
-1. Cloudflare dashboard → **Workers & Pages** → `legendary-arena-dashboard` →
-   **Settings** → **Enable access policy**.
-2. Select **Manage** on the Access policy it created for preview deployments.
-   Under **Access** → **Applications**, select the project → **Configure**.
-3. Under **Public hostname**, delete the wildcard (`*`) from the **Subdomain**
-   field and **Save**. That application now covers
-   `legendary-arena-dashboard.pages.dev` itself.
-4. Go back to the Pages project → **Settings** → **General** and select
-   **Enable access policy** again. This re-creates the preview-deployment
-   policy.
-5. Confirm there are now **two** Access applications: one for
-   `legendary-arena-dashboard.pages.dev` and one for
-   `*.legendary-arena-dashboard.pages.dev`. On both, set the identity provider
-   to **Email One-time PIN** and use the same single-operator allow rule as
-   WP-197 (`Include: Emails = jeff@barefootbetters.com`; reuse its policy/group
-   so all three applications stay in lock-step). The custom domain keeps its
-   existing WP-197 application, so Cloudflare's remaining steps (a new
-   application for the custom domain) do not apply.
-6. From an incognito browser, visit `https://legendary-arena-dashboard.pages.dev`.
-   Expect a redirect to `*.cloudflareaccess.com/cdn-cgi/access/...` (or `401`/`403`).
-   **A `200` unauthenticated means the alias is still public.** Also open any
-   recent preview URL from the Pages **Deployments** list; it should redirect to
-   Access too.
-7. Verify `pnpm check:domains` reports `READY` for the
-   `Internal admin dashboard (pages.dev alias)` entry, then flip its
-   `state: "planned"` → `"live"` in [domains.json](./domains.json). Re-run;
-   expect `OK`. (Until the gate is enabled the probe sees `200` and the row
-   reports `FAIL` — that is the intended "not yet gated" signal, not a
-   regression.)
+**Cutover from Pages (D-24690, one time).** Uses the same API token and
+secrets as the ewiki cutover (step 1 there). Do steps 1–2 before merging.
+1. **Repo variable or secret.** GitHub → Settings → Secrets and variables →
+   Actions (either tab works): `DASHBOARD_HANKO_TENANT_BASE_URL` = the value of
+   `VITE_HANKO_TENANT_BASE_URL` in the Pages project's Production env vars
+   (Workers & Pages → `legendary-arena-dashboard` → Settings → Variables).
+   If the Pages project sets `VITE_FEATURE_FLAGS`, copy it to
+   `DASHBOARD_FEATURE_FLAGS`.
+2. **Free the hostname.** Pages project → Custom domains → remove
+   `dashboard.legendary-arena.com`; then in Cloudflare DNS delete the
+   `dashboard` CNAME if it is still there. The dashboard is down from here
+   until step 3 finishes (a few minutes).
+3. **Merge** (or, if already merged, Actions → dashboard-deploy → Run
+   workflow). The deploy creates the custom domain, its DNS record and
+   certificate.
+4. **Verify.** Incognito: `https://dashboard.legendary-arena.com` redirects to
+   Access; after OTP, `/login` shows the Hanko sign-in; after an admin
+   sign-in, `/overview` loads with `LIVE` / `CACHED` / `LOCAL` badges and no
+   mock-mode banner (WP-226). A deep link such as `/coverage` loads on
+   refresh (SPA fallback).
+5. **Retire Pages.** Workers & Pages → `legendary-arena-dashboard` (the
+   **Pages** project, not the new Worker) → Settings → **Delete project**.
+   This removes `legendary-arena-dashboard.pages.dev` and every preview URL.
+   Then `pnpm check:domains`: the `pages.dev` row stops resolving (`PENDING`)
+   — remove that row from [domains.json](./domains.json).
 
 **Real data is wired.** The launch deferred real data (D-19702), and
 follow-up WPs wired the widgets to admin-session-gated `/api/dash/*`
@@ -340,7 +264,7 @@ routes, starting with billing + revenue (WP-373). Widgets show where
 their data comes from with the freshness badge (`LIVE` / `CACHED` /
 `LOCAL`, or `MOCK` in a mock build). A `MOCK` badge or the mock-mode
 banner on the production dashboard means the deploy env has drifted
-back to mock mode; check the env vars above. (The net-revenue chart's
+back to mock mode; check the build env above. (The net-revenue chart's
 `MOCK` deduction placeholder is intentional, per D-19602.)
 
 ### legends
@@ -474,23 +398,31 @@ is attached to that project (not a different one).
 or disabled. **Treat as a security incident** until corrected. Add an
 Access application for the hostname and re-probe before continuing.
 
-**`ewiki` reaches Render directly without a Cloudflare Access redirect**
-(probe response includes `x-render-origin-server: Render` and `Server:
-cloudflare`, but no Access intercept). Either (a) the Cloudflare DNS
-record is set to "DNS only" (gray cloud) — flip to proxied (orange cloud)
-so Cloudflare's edge sees the traffic; or (b) the Access application's
-domain doesn't match `ewiki.legendary-arena.com` exactly; or (c) the
-Cloudflare Zero Trust plan is not active on the account (no Access app
-can be created without an active plan, even Free). Fix the misconfigured
-piece and re-probe.
+**`ewiki` or `dashboard` serves without a Cloudflare Access redirect.**
+Either (a) the Access application's domain doesn't match the hostname
+exactly, or is disabled; or (b) the Cloudflare Zero Trust plan is not
+active on the account (no Access app can be created without an active
+plan, even Free). Fix the misconfigured piece and re-probe. A Worker custom
+domain is always proxied, so the old "DNS only" failure mode no longer
+applies.
 
-**`ewiki` shows the Cloudflare Access login redirect, but after auth
-returns plain "Not Found" with `x-render-origin-server: Render`.** The
-gate works; the Render binding is wrong. The custom domain
-`ewiki.legendary-arena.com` is either unattached or attached to the wrong
-Render service (typically `legendary-arena-server` instead of
-`legendary-arena-wiki`). In Render, detach from the wrong service and
-re-attach to `legendary-arena-wiki`, then re-probe.
+**`ewiki` or `dashboard` shows the Access login, but after auth returns a
+Cloudflare error or an empty `404`.** The gate works; the Worker is not
+serving. Check, in order: the latest `wiki-viewer` / `dashboard-deploy`
+workflow run on `main` succeeded (a missing `CLOUDFLARE_API_TOKEN` /
+`CLOUDFLARE_ACCOUNT_ID` secret fails it loudly); Workers & Pages → the
+Worker (`legendary-arena-wiki` / `legendary-arena-dashboard`) → Settings →
+Domains & Routes lists the custom domain; a deploy that failed with a "DNS
+record already exists" error means the old CNAME is still there — delete it
+and re-run the workflow.
+
+**`legendary-arena-wiki.onrender.com` returns `200`.** The retired Render
+service still exists and serves the wiki without Access. **Treat as a
+security incident:** delete the service in Render (D-24690).
+
+**`legendary-arena-dashboard.pages.dev` resolves and returns `200`.** The
+retired Pages project still exists and serves the dashboard without Access.
+**Treat as a security incident:** delete the Pages project (D-24690).
 
 **`api.legendary-arena.com/health` returns DNS error.** CNAME hasn't been
 created yet, or hasn't propagated. Check Cloudflare DNS for the `api` record.

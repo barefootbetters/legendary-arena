@@ -1,11 +1,11 @@
 /**
  * Legendary Arena — Ewiki Deploy-Freshness Gate
  *
- * The ewiki (`ewiki.legendary-arena.com`, Render static site
- * `legendary-arena-wiki`) has `autoDeploy` disabled. The `wiki-viewer`
- * GitHub Actions workflow is the SOLE deploy trigger: it runs the
- * link-integrity, Hugo build, determinism, and JS-free gates, and only on
- * a pass does its `deploy` job fire Render's deploy hook. That design is
+ * The ewiki (`ewiki.legendary-arena.com`) is the assets-only Cloudflare
+ * Worker `legendary-arena-wiki` (D-24690). The `wiki-viewer` GitHub Actions
+ * workflow is its SOLE deploy path: it runs the link-integrity, Hugo build,
+ * determinism, and JS-free gates, and only on a pass does its `deploy` job
+ * run `wrangler deploy` on the gated build. That design is
  * deliberate — it keeps broken wiki content off the live site — but it
  * means the live wiki silently freezes whenever the workflow does not
  * complete, with no signal anywhere except the page not being there.
@@ -33,19 +33,12 @@
  * nightly job would be queued behind exactly the same outage it is meant to
  * report. Run it from a workstation when a wiki edit does not appear.
  *
- * KNOWN LIMITATION — a manual deploy produces a false STALE. This probe
- * answers "did CI deploy this commit?", NOT "is the live site current?".
- * Those diverge whenever someone publishes from the Render dashboard's
- * Manual Deploy button, which is the documented workaround when Actions is
- * down: the site becomes current while CI run history still shows nothing
- * successful, so this check keeps reporting STALE against a site that is in
- * fact up to date. Observed twice on 2026-07-19 during a multi-hour Actions
- * incident. The error is in the safe direction — it over-reports staleness
- * rather than hiding a frozen site — and it is not cheaply fixable: Render's
- * deploy state needs a RENDER_API_KEY this script deliberately does not take,
- * and the live site cannot be read directly because Cloudflare Access returns
- * a 302 for every path. Treat a STALE verdict as "CI has not published this"
- * and check Render's deploy log before concluding the page is missing.
+ * This probe answers "did CI deploy this commit?". Since D-24690 that is
+ * the same question as "is the live site current?", because every deploy —
+ * including a manual re-publish — is a `wiki-viewer` run on main (a
+ * workflow_dispatch run lands in the same run history this check reads).
+ * The old false-STALE case, a Render dashboard Manual Deploy outside CI
+ * (observed twice on 2026-07-19), no longer exists.
  *
  * Usage:
  *   node scripts/check-wiki-freshness.mjs
@@ -81,9 +74,9 @@ const TRIGGER_PATHS = [
   'docs/09-CHANGELOG.md',
 ];
 
-// why: the deploy job only fires for runs that reached a successful
-// conclusion, so any other state — queued, in progress, failed, cancelled —
-// means Render was never told to rebuild.
+// why: a run concludes `success` only when both the gated build and the
+// deploy job succeed, so any other state — queued, in progress, failed,
+// cancelled — means the Worker was not updated from that run.
 const RUN_HISTORY_LIMIT = 30;
 
 /**
@@ -219,14 +212,16 @@ function describeRunState(run) {
   }
   if (run.conclusion === 'failure') {
     return (
-      'The run FAILED, so the deploy hook never fired. Read the run log — the ' +
-      'link-integrity, Hugo build, determinism, and JS-free gates all block the deploy.'
+      'The run FAILED, so the ewiki was not deployed. Read the run log — the ' +
+      'link-integrity, Hugo build, determinism, and JS-free gates all block the deploy, ' +
+      'and the deploy job fails when the CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID ' +
+      'repo secret is missing.'
     );
   }
   if (run.conclusion === 'cancelled') {
-    return 'The run was cancelled, so the deploy hook never fired. Re-run it from the Actions tab.';
+    return 'The run was cancelled, so the ewiki was not deployed. Re-run it from the Actions tab.';
   }
-  return `The run ended as "${run.conclusion ?? run.status}", which is not a success, so no deploy was triggered.`;
+  return `The run ended as "${run.conclusion ?? run.status}", which is not a success, so the ewiki was not deployed.`;
 }
 
 /**
@@ -304,19 +299,9 @@ function main() {
   }
 
   console.error(
-    '\n  To publish without waiting for CI: Render dashboard → legendary-arena-wiki → ' +
-      'Manual Deploy. That bypasses the content gates, so run ' +
-      '`pnpm wiki-viewer:project && pnpm wiki-viewer:check-links` locally first.',
-  );
-
-  // why: this probe reads CI run history, not Render's deploy state, so a
-  // manual deploy leaves it reporting STALE against a site that is actually
-  // current. Saying so here means the operator does not re-deploy a page that
-  // is already live, or go hunting for a problem that no longer exists.
-  console.error(
-    '\n  NOTE: this check reads CI history, not Render. If the site was already ' +
-      'published by a Manual Deploy, this STALE verdict is expected and the live ' +
-      'page may be current — confirm in the Render deploy log.',
+    '\n  To re-publish without a new commit: GitHub → Actions → wiki-viewer → ' +
+      'Run workflow on main (or `gh workflow run wiki-viewer.yml --ref main`). ' +
+      'That runs the same content gates, then the same deploy job.',
   );
 
   return 1;

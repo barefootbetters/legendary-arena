@@ -91,8 +91,8 @@ deploy:
 | Marketing repo site files | Deployed to `www.legendary-arena.com` via Cloudflare Pages |
 | CF Pages Functions (`functions/api/*`) | Deployed as edge functions at `https://www.legendary-arena.com/api/*` by Cloudflare Pages (same deploy) |
 | Built images (Hugo output) | `C:\www\legendary-arena-com\public\images\` — Hugo writes here during build by copying from `static\images\`. Do NOT save images here manually; the directory is regenerated on each build and manual files get overwritten or end up untracked. Manual saves go in `C:\www\legendary-arena-com\static\images\`. |
-| This wiki page | Published to `ewiki.legendary-arena.com/hugo-web-system/` via Render |
-| Screenshots | Published to `ewiki.legendary-arena.com/hugo-web-system/` via Render |
+| This wiki page | Published to `ewiki.legendary-arena.com/hugo-web-system/` via the `wiki-viewer` workflow (Cloudflare Worker) |
+| Screenshots | Published to `ewiki.legendary-arena.com/hugo-web-system/` via the `wiki-viewer` workflow (Cloudflare Worker) |
 
 If this wiki page and the marketing repo files disagree, the marketing
 repo is authoritative.

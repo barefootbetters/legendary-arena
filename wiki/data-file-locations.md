@@ -178,8 +178,12 @@ match start** rather than bundling audio into the build. Full pipeline:
   `R2_*` / `AWS_*`, `BREVO_*`, `VITE_*`, …). The real `.env` values are
   injected per-environment and are **not** committed.
 - [`render.yaml`](../render.yaml) — production services
-  (`legendary-arena-server`, `legendary-arena-wiki`, `legendary-arena-db`)
-  and their secret bindings (`sync: false`).
+  (`legendary-arena-server`, `legendary-arena-db`) and their secret bindings
+  (`sync: false`).
+- [`apps/wiki-viewer/wrangler.jsonc`](../apps/wiki-viewer/wrangler.jsonc) and
+  [`apps/dashboard/wrangler.jsonc`](../apps/dashboard/wrangler.jsonc) — the
+  assets-only Cloudflare Workers that serve the ewiki and the dashboard
+  (D-24690).
 - [`.claude/`](../.claude/) — Claude Code harness config, rules, and skills.
 
 ### Docs, decisions and coverage data

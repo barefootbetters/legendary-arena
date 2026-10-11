@@ -61,10 +61,12 @@ environment enables it.
 > platform is wired yet (Cloudflare Web Analytics / Plausible for traffic,
 > Search Console for SEO all remain TODO), so threshold widgets stay in
 > **no-data / mock mode** and mock-mode-first is the default posture. And
-> *which* feeds have actually flipped **LIVE** in production is
-> **deploy-environment state, not visible from this repo or this page** — check
-> the Cloudflare Pages project env (`VITE_USE_MOCKS` / `VITE_API_BASE_URL`)
-> rather than assuming a page is showing real data. Full detail in
+> the production build's live-mode pair is set in
+> [`.github/workflows/dashboard-deploy.yml`](../.github/workflows/dashboard-deploy.yml)
+> (`VITE_USE_MOCKS=false`, `VITE_API_BASE_URL=https://api.legendary-arena.com`,
+> D-24690), but whether a given widget shows real data still depends on its
+> server route — check the widget's freshness badge rather than assuming a page
+> is showing real data. Full detail in
 > [§Open Questions](#open-questions) below.
 
 ## Mechanics
@@ -168,7 +170,7 @@ dashboard** (see the DR-readiness note below); `/metrics/dau`, `/alerts`, and
 > then bounded by real prod Stripe data — early operation may be sparse or `0`,
 > never fabricated. This supersedes the 2026-07 *"renders mock until the flip"*
 > note; the definitive per-widget state is still the widget's freshness badge /
-> the CF Pages env, not this page. The **gameplay + KPI slice** (`/matches`, `/players`, `/kpis`) is now **live
+> the build env in `dashboard-deploy.yml`, not this page. The **gameplay + KPI slice** (`/matches`, `/players`, `/kpis`) is now **live
 > server-side** — **executed as WP-374 / EC-403 / D-24169** — via
 > `apps/server/src/dashboard/dashboardGameplay.{types,logic,routes}.ts`. `/matches`
 > reads the `bgio.matches` blob as a read-only **match-summary projection**
@@ -301,8 +303,21 @@ discipline used by the player app (see [Profile Login](profile-login.md)).
 Route guarding gates **purely on `isAuthenticated`** (token present); role-based
 routing was retired (WP-241 / D-24004), and admin role-scoping is deferred to a
 server-side follow-up. In front of the deploy, **Cloudflare Access (WP-197)** is
-the operator-reachability boundary. The app deploys as the Cloudflare Pages
-project `legendary-arena-dashboard`.
+the operator-reachability boundary. The app deploys as the assets-only
+Cloudflare Worker `legendary-arena-dashboard`
+([`apps/dashboard/wrangler.jsonc`](../apps/dashboard/wrangler.jsonc), SPA
+fallback, `workers_dev` and `preview_urls` off), built and deployed by
+[`.github/workflows/dashboard-deploy.yml`](../.github/workflows/dashboard-deploy.yml)
+on every push to `main` and on manual `workflow_dispatch` (D-24690). The build
+env is `VITE_USE_MOCKS=false`, `VITE_API_BASE_URL=https://api.legendary-arena.com`,
+`VITE_HANKO_TENANT_BASE_URL` from `DASHBOARD_HANKO_TENANT_BASE_URL`, and
+`VITE_FEATURE_FLAGS` from `DASHBOARD_FEATURE_FLAGS` (each a repo variable or
+secret). It moved off the Cloudflare Pages project
+of the same name because Access gates only the custom hostname, and the
+project's production `legendary-arena-dashboard.pages.dev` alias served the
+live dashboard ungated from 2026-06-02. A Worker with `workers_dev` and
+`preview_urls` off has no default public hostname, so the Access-gated
+`dashboard.legendary-arena.com` is the only door.
 
 ### CI — the Dashboard Gates job
 
@@ -426,9 +441,11 @@ threshold enforcement activates as real data sources are wired.
   widgets stay in no-data or mock mode and mock-mode-first remains the default
   posture. See the *Open Questions* in
   [`dashboard-operating-system.md`](../apps/dashboard/docs/dashboard-operating-system.md).
-- **Which feeds have flipped LIVE in production** is deploy-environment state,
-  not visible from the repo — check the CF Pages project env (`VITE_USE_MOCKS` /
-  `VITE_API_BASE_URL`) rather than assuming a page is showing real data.
+- **Which feeds show real data in production** depends on each widget's server
+  route, not only the build. The live-mode pair (`VITE_USE_MOCKS` /
+  `VITE_API_BASE_URL`) is now committed in `dashboard-deploy.yml` (D-24690);
+  check the widget's freshness badge rather than assuming a page is showing
+  real data.
 
 ## References
 

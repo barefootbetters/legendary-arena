@@ -19,7 +19,7 @@
 | Migrations | Plain SQL files in `data/migrations/` (45 as of this date), applied in filename order by `scripts/migrate.mjs`, tracked in `public.schema_migrations`. They run once per deploy in `buildCommand`. | `scripts/migrate.mjs` |
 | Database | `legendary-arena-db`, `pro-4gb` (raised from `basic-256mb` → `basic-1gb` → `pro-4gb` after OOM and CPU-starvation crashes in July 2026). Storage autoscaling is on. Public inbound is credential-gated (`ipAllowList: 0.0.0.0/0`). | `render.yaml` (plan changes must also be made in the dashboard) |
 | Backups | Daily `pg_dump` to a private R2 bucket, independent of Render (WP-416 / D-24236), plus a monthly DR-drill reminder issue. | `.github/workflows/db-backup.yml`, `dr-drill-reminder.yml`; `docs/ops/DISASTER_RECOVERY.md` |
-| ewiki | `legendary-arena-wiki`, Render static site behind Cloudflare Access. `autoDeploy: false`; the `wiki-viewer` workflow fires its deploy hook after the link and Hugo gates pass. | `render.yaml`; `.github/workflows/wiki-viewer.yml` |
+| ewiki | **No longer a Render service.** Since 2026-10-11 (D-24690) the ewiki is the assets-only Cloudflare Worker `legendary-arena-wiki` behind Cloudflare Access, deployed by the `wiki-viewer` workflow's deploy job (`wrangler deploy` of the gated build). It left Render because Render's default `legendary-arena-wiki.onrender.com` host served the wiki without the Access gate. The Render service and its deploy-hook secret are retired. | `apps/wiki-viewer/wrangler.jsonc`; `.github/workflows/wiki-viewer.yml` |
 | CORS | The live allowlist in `apps/server/src/server.mjs` (see the historical note under *CORS and networking*). | `apps/server/src/server.mjs` |
 | Cost | **$146.35 for September 2026**: server $85.00, Postgres $55.30, builds $5.00, bandwidth $1.05, ewiki $0. | Render invoice `0SPQWPNF-0006` |
 | Direction | The server and Postgres move to one self-hosted DigitalOcean droplet (~$48/mo); Render stays warm as the rollback target until decommission. Decided at the program level, but stalled since 2026-07-25 and not yet in `DECISIONS.md`. | ewiki *Ubuntu Lab Provisioning* (§ Cost case); `legendary-arena-lab` repo `docs/PLAN.md` |
@@ -373,7 +373,8 @@ Requirements:
 > the April 2026 bootstrap versions. Today's `render.yaml` differs in almost
 > every field: `pro` / `pro-4gb` plans instead of `starter`, a build + migrate
 > `buildCommand`, the `tsx`-loader `startCommand` on `index.mjs`,
-> `buildFilter`, a pinned `NODE_VERSION`, and the ewiki static-site service.
+> `buildFilter`, and a pinned `NODE_VERSION`. (It also carried an ewiki
+> static-site service until D-24690 moved the ewiki to a Cloudflare Worker.)
 > The sample `GAME_SERVER_URL` host (`legendary-arena.onrender.com`) no longer
 > resolves. Use the live files and the *Current state* table at the top of
 > this document.

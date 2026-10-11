@@ -136,20 +136,24 @@ wins.
 | `www.legendary-arena.com` | External Hugo repo (`C:\www\legendary-arena-com`) | Cloudflare Pages | live | Apex redirects here (CF Redirect Rule) |
 | `play.legendary-arena.com` | `apps/arena-client` | Cloudflare Pages | live | Vue 3 SPA; CORS origin in server allowlist |
 | `cards.legendary-arena.com` | `apps/registry-viewer` | Cloudflare Pages | live | Migrated 2026-07-16; legacy `cards.barefootbetters.com` 301-redirects here (CF zone Redirect Rule, path+query preserved) |
-| `ewiki.legendary-arena.com` | `apps/wiki-viewer` | Render Static Site | live | Gated behind Cloudflare Access (302/401/403 expected) |
+| `ewiki.legendary-arena.com` | `apps/wiki-viewer` | Cloudflare Worker (assets-only, `legendary-arena-wiki`) | live | Gated behind Cloudflare Access (302/401/403 expected). Moved off the Render static site by D-24690; `workers_dev` / `preview_urls` off, so no other public hostname |
+| `dashboard.legendary-arena.com` | `apps/dashboard` | Cloudflare Worker (assets-only, `legendary-arena-dashboard`) | live | Gated behind Cloudflare Access (302/401/403 expected). Moved off Cloudflare Pages by D-24690; deployed by `dashboard-deploy.yml` |
 | `api.legendary-arena.com` | `apps/server` | Render | live | CNAME to `legendary-arena-server.onrender.com` (not CF-proxied — Render needs direct origin for TLS + WebSocket) |
 | `wiki.legendary-arena.com` | TBD (separate Hugo site) | Cloudflare Pages | planned | Public player wiki; not yet authored |
 | `legends.legendary-arena.com` | `apps/legends-board` (WP-143) | Cloudflare Pages | planned | Public scoreboard; reads R2 snapshots, no server API calls |
 | `images.legendary-arena.com` | R2 bucket (external) | Cloudflare R2 + CDN | live | Card images; bucket index returns 403/404, individual keys return 200 |
 
-**Hosting model:** Cloudflare Pages for static SPAs and Hugo sites;
-Render for the Node.js game server and the Hugo engineering wiki.
-The split is intentional — CF Pages gives free global CDN and instant
+**Hosting model:** Cloudflare Pages for the public static SPAs and Hugo
+sites; assets-only Cloudflare Workers for the two Access-gated sites (the
+engineering wiki and the operator dashboard, D-24690), because a Worker
+with `workers_dev` and `preview_urls` off has no default public hostname
+for Access to miss; Render for the Node.js game server and PostgreSQL.
+The split is intentional — Cloudflare gives free global CDN and instant
 rollbacks for static assets; Render provides managed PostgreSQL and
 persistent-process support for the server.
 
-**DNS posture:** All CF Pages subdomains are Cloudflare-proxied (orange
-cloud). The `api` CNAME is DNS-only (grey cloud) so Render can
+**DNS posture:** All CF Pages and Worker subdomains are Cloudflare-proxied
+(orange cloud). The `api` CNAME is DNS-only (grey cloud) so Render can
 terminate TLS and handle WebSocket upgrade directly.
 
 ---

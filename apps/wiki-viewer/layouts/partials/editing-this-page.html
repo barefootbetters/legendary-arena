@@ -14,8 +14,9 @@
   Commit-prefix convention (verified against git history): INFRA: is canonical
   for ewiki page edits (wiki/*.md) and changelog/doc edits; SPEC: is only for a
   page that IS a design/spec artifact — which, among mirror pages, is the
-  upstream REFERENCE workflow doc. Deploy target is Render (a static_site fired
-  by the wiki-viewer workflow's deploy hook), NOT Cloudflare Pages.
+  upstream REFERENCE workflow doc. Deploy target is the assets-only Cloudflare
+  Worker legendary-arena-wiki (D-24690), deployed by the wiki-viewer workflow's
+  deploy job with wrangler — not Render and not Cloudflare Pages.
 */ -}}
 {{- $page := .page -}}
 {{- $name := $page.File.BaseFileName -}}
@@ -147,9 +148,9 @@
       same gates run on your PR.
     </p>
     <p>
-      After merge, the <code>wiki-viewer</code> workflow runs the gates (~30s) and
-      fires the Render deploy hook; the Render static site rebuilds and the change
-      is live in a few minutes.
+      After merge, the <code>wiki-viewer</code> workflow runs the gates, then its
+      deploy job uploads that exact build to the Cloudflare Worker; the change is
+      live once the run is green.
     </p>
   </div>
 </details>

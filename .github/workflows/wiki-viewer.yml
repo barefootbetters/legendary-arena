@@ -2,12 +2,15 @@ name: wiki-viewer
 
 # why: trigger on wiki/ or apps/wiki-viewer/ touches per WP-139 §Open
 # Decision G default, plus docs/09-CHANGELOG.md (D-24164 — the one docs/ file
-# project-wiki.mjs also projects into the ewiki). Render's static_site
-# (legendary-arena-wiki) has autoDeploy off; this workflow is the CI-side gate
-# (link-integrity + Hugo build) that fires the Render Deploy Hook on pass — so
-# any source this build consumes must appear in the paths filter above.
+# project-wiki.mjs also projects into the ewiki). This workflow is the CI-side
+# gate (link-integrity + Hugo build) and, on main, the only deploy path to the
+# legendary-arena-wiki Worker (D-24690) — so any source this build consumes
+# must appear in the paths filter above.
 
 on:
+  # why: manual run on main re-deploys the ewiki without a content change (the
+  # D-24690 cutover, or a re-publish after a failed deploy).
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -17,8 +20,8 @@ on:
       - '.github/workflows/wiki-viewer.yml'
       # why: D-24164 — project-wiki.mjs also projects docs/09-CHANGELOG.md into
       # the ewiki, so a changelog-only edit must trigger this gated build+deploy
-      # too (Render autoDeploy is off; this workflow's deploy hook is the sole
-      # trigger). Without this path, changelog edits would not reach the ewiki.
+      # too (this workflow is the ewiki's only deploy path, D-24690). Without
+      # this path, changelog edits would not reach the ewiki.
       - 'docs/09-CHANGELOG.md'
   pull_request:
     paths:
@@ -28,8 +31,8 @@ on:
       - '.github/workflows/wiki-viewer.yml'
       # why: D-24164 — project-wiki.mjs also projects docs/09-CHANGELOG.md into
       # the ewiki, so a changelog-only edit must trigger this gated build+deploy
-      # too (Render autoDeploy is off; this workflow's deploy hook is the sole
-      # trigger). Without this path, changelog edits would not reach the ewiki.
+      # too (this workflow is the ewiki's only deploy path, D-24690). Without
+      # this path, changelog edits would not reach the ewiki.
       - 'docs/09-CHANGELOG.md'
 
 jobs:
@@ -119,9 +122,9 @@ jobs:
       # Pagefind, so the Pagefind bundle — including pagefind-ui.css — must not
       # exist in the tree when that step samples it) and BEFORE the JS-free gate
       # (which now allow-lists the sanctioned loader). pagefind is a root
-      # devDependency installed by the frozen `pnpm install` step above; the
-      # same `pnpm exec pagefind --site apps/wiki-viewer/public` invocation runs
-      # in render.yaml so the deployed artifact matches this gated one.
+      # devDependency installed by the frozen `pnpm install` step above. The
+      # deploy job ships this gated artifact as-is (D-24690), so the live index
+      # is the one built here.
       - name: Generate Pagefind search index
         run: pnpm exec pagefind --site apps/wiki-viewer/public
 
@@ -159,29 +162,50 @@ jobs:
           path: apps/wiki-viewer/public/
           retention-days: 7
 
-  # why: deterministic deploy trigger. Render's implicit on-commit auto-deploy
-  # for legendary-arena-wiki stalled intermittently (2026-06-11), leaving the
-  # live site multiple commits behind main. autoDeploy is now disabled in
-  # render.yaml; this job is the single deploy trigger. It runs only on push
-  # to main and only after the build job's link-check + Hugo build + JS-free
-  # + determinism gates pass, so broken wiki content can never reach the live
-  # site. The Render Deploy Hook URL is stored as a repo secret.
+  # why: D-24690 — the ewiki is the assets-only Cloudflare Worker
+  # legendary-arena-wiki (apps/wiki-viewer/wrangler.jsonc). This job is the
+  # single deploy path. It runs only on main (push, or a manual
+  # workflow_dispatch for the cutover or a re-publish) and only after the build
+  # job's link-check, page-count, determinism and JS-free gates pass. It
+  # deploys the build job's uploaded artifact byte-for-byte, so what ships is
+  # exactly what was gated; the old Render path rebuilt the site a second time
+  # on Render's side.
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    concurrency:
+      group: wiki-viewer-deploy
+      cancel-in-progress: false
     steps:
-      - name: Trigger Render deploy
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Download gated build
+        uses: actions/download-artifact@v7
+        with:
+          name: wiki-viewer-public
+          path: apps/wiki-viewer/public
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+
+      # why: fail loudly when the Cloudflare credentials are missing. This is
+      # the only deploy path, so a silent skip would leave the ewiki stale with
+      # a green run. `pnpm dlx` pins wrangler without adding a workspace
+      # dependency (the same pattern as pagefind in the build).
+      - name: Deploy to Cloudflare Workers
         env:
-          DEPLOY_HOOK: ${{ secrets.RENDER_WIKI_DEPLOY_HOOK }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # why: skip (do not fail) when the secret is absent so the workflow
-          # stays green on forks / before the secret is configured. A missing
-          # hook means no deploy, which is visible in the live site, not a
-          # red CI run.
-          if [ -z "$DEPLOY_HOOK" ]; then
-            echo "RENDER_WIKI_DEPLOY_HOOK is not set — skipping deploy trigger." >&2
-            exit 0
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repo secrets are required to deploy the ewiki (D-24690)."
+            exit 1
           fi
-          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK"
-          echo "Render deploy triggered for legendary-arena-wiki."
+          pnpm dlx wrangler@4.149.0 deploy --config apps/wiki-viewer/wrangler.jsonc

@@ -49,7 +49,7 @@ synthesised from the app's own manifests:
 - **`apps/server`** — Legendary Arena boardgame.io game server — wiring layer only
   - Stack: boardgame.io (`boardgame.io@^0.50.0`) over Socket.IO (transitive via `boardgame.io`) + HTTP routes via Koa router (`@koa/router@10.1.1` + `koa@2.16.4`, both transitive via `boardgame.io`) + PostgreSQL via `pg@^8.13.0`.
 - **`apps/wiki-viewer`** — Engineering wiki build pipeline. Build-time, read-only Hugo projection of `wiki/` (no `package.json` — Hugo is a Go binary, not a Node dep). Layer-boundary clean: zero runtime imports of `@legendary-arena/game-engine`, `@legendary-arena/registry`, or `apps/server`. Build pipeline is `pnpm wiki-viewer:project` (copy `wiki/*.md` → `apps/wiki-viewer/content/`) → `pnpm wiki-viewer:check-links` (case-sensitive internal-link gate) → `hugo --minify`.
-  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 89 source pages projected from `wiki/` + deployed as Render Static Site `legendary-arena-wiki`.
+  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 89 source pages projected from `wiki/` + deployed as assets-only Cloudflare Worker `legendary-arena-wiki`.
 
 ## Deployment topology
 
@@ -62,11 +62,11 @@ Canonical source: `docs/ops/domains.json`. Ops runbook: `docs/ops/DOMAINS.md`.
 | `play.legendary-arena.com` | apps/arena-client | Cloudflare Pages | live |
 | `cards.legendary-arena.com` | apps/registry-viewer | Cloudflare Pages | live |
 | `wiki.legendary-arena.com` | TBD - separate Hugo site (not yet authored) | Cloudflare Pages | planned |
-| `ewiki.legendary-arena.com` | apps/wiki-viewer (Hugo build of docs/wiki/) | Render Static Site + Cloudflare Access | live |
-| `legendary-arena-wiki.onrender.com` | apps/wiki-viewer (Render Static Site legendary-arena-wiki) | Render | planned |
+| `ewiki.legendary-arena.com` | apps/wiki-viewer (Hugo build of docs/wiki/); Worker legendary-arena-wiki | Cloudflare Workers + Cloudflare Access | live |
+| `legendary-arena-wiki.onrender.com` | none — Render static site legendary-arena-wiki, retired by D-24690 | Render | planned |
 | `legends.legendary-arena.com` | apps/legends-board | Cloudflare Pages | live |
-| `dashboard.legendary-arena.com` | apps/dashboard | Cloudflare Pages + Cloudflare Access | live |
-| `legendary-arena-dashboard.pages.dev` | apps/dashboard | Cloudflare Pages + Cloudflare Access | planned |
+| `dashboard.legendary-arena.com` | apps/dashboard | Cloudflare Workers + Cloudflare Access | live |
+| `legendary-arena-dashboard.pages.dev` | none — CF Pages project legendary-arena-dashboard, retired by D-24690 | Cloudflare Pages + Cloudflare Access | planned |
 | `api.legendary-arena.com` | apps/server | Render (legendary-arena-server) | live |
 | `legendary-arena-server.onrender.com` | apps/server | Render | live |
 | `images.legendary-arena.com` | external (BarefootBetters image bucket) | Cloudflare R2 + Cloudflare CDN | live |
@@ -84,7 +84,8 @@ answers "what URL maps to what app."
 | Service | Kind | URL / Scope |
 |---|---|---|
 | Cloudflare Access (zero-trust gate) | zero-trust gate | `dashboard.legendary-arena.com`, `ewiki.legendary-arena.com`, `legendary-arena-dashboard.pages.dev` |
-| Cloudflare Pages (static hosting) | static hosting | `cards.legendary-arena.com`, `legendary-arena.com`, `legends.legendary-arena.com`, `play.legendary-arena.com`, `wiki.legendary-arena.com`, `www.legendary-arena.com` |
+| Cloudflare Pages (static hosting) | static hosting | `cards.legendary-arena.com`, `legendary-arena-dashboard.pages.dev`, `legendary-arena.com`, `legends.legendary-arena.com`, `play.legendary-arena.com`, `wiki.legendary-arena.com`, `www.legendary-arena.com` |
+| Cloudflare Workers (static assets) | static assets | `dashboard.legendary-arena.com`, `ewiki.legendary-arena.com` |
 | Cloudflare R2 (object storage + CDN) | object storage + CDN | `images.legendary-arena.com` |
 
 ### Render
@@ -93,7 +94,6 @@ answers "what URL maps to what app."
 |---|---|---|
 | `legendary-arena-db` | Managed PostgreSQL (pro-4gb) | _internal (connection string via env)_ |
 | `legendary-arena-server` | Render Web Service | https://legendary-arena-server.onrender.com |
-| `legendary-arena-wiki` | Render Web Service | _onrender.com subdomain disabled (custom domain only)_ |
 
 ### Render account model & sizing (what we pay for, and why)
 
