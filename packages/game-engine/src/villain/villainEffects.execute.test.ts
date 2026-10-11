@@ -768,6 +768,18 @@ describe('executeVillainAbilities — Viper gain-wound-unless-victory-villain-gr
     assert.match(G.messages.at(-1)!.text, /had no other hydra Villain in their Victory Pile and gained a Wound/);
   });
 
+  it('D-24686 an empty supply says so instead of "every player had another" villain', () => {
+    const G = makeG({ hooks: [viperHook], playerZones: zones([VIPER], [KIDNAPPERS]), wounds: [], messages: [] });
+    executeVillainAbilities(G, CTX, VIPER, 'onFight');
+
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'no Wound from an empty supply');
+    assert.equal(
+      G.messages.at(-1)!.text,
+      'Fight effect: the Wound supply is empty, so no Wound was gained (Player 0 had no other hydra Villain in their Victory Pile).',
+    );
+    assert.equal(G.messages.at(-1)!.outcome, 'blocked');
+  });
+
   it('a non-HYDRA villain (masters-of-evil) in the Victory Pile does NOT spare a player', () => {
     const G = makeG({ hooks: [viperHook], playerZones: zones([VIPER], [WHIRLWIND]), wounds: ['w0', 'w1'] as CardExtId[] });
     executeVillainAbilities(G, CTX, VIPER, 'onFight');
@@ -1328,6 +1340,47 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
     assert.equal(G.playerZones['0']!.discard.length, 0, 'no wound gained from an empty pile');
     assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'reachable no-op, never hollow');
+  });
+
+  it('D-24686 an empty supply says so instead of "every player revealed" (live match sDBnFxiigDL)', () => {
+    const G = makeG({
+      hooks: [rowHook('v-ymir', 'onAmbush', 'hero-class', 'ranged')],
+      playerZones: { '0': zone([PLAIN]), '1': zone([XMEN]) },
+      wounds: [],
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-ymir' as CardExtId, 'onAmbush');
+
+    assert.equal(G.messages!.length, 1, 'one self-narrated line');
+    assert.equal(
+      G.messages![0]!.text,
+      'Ambush effect: the Wound supply is empty, so no Wound was gained (Player 0, Player 1 had no Ranged Hero).',
+    );
+    assert.equal(G.messages![0]!.outcome, 'blocked');
+    assert.ok(
+      !G.notableEvents.some((event) => event.type === 'strikeBlocked'),
+      'no one revealed, so no strikeBlocked',
+    );
+  });
+
+  it('D-24686 a supply that runs out partway names who missed out', () => {
+    const G = makeG({
+      hooks: [rowHook('v-ymir', 'onAmbush', 'hero-class', 'ranged')],
+      playerZones: { '0': zone([PLAIN]), '1': zone([XMEN]) },
+      wounds: [WOUND],
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-ymir' as CardExtId, 'onAmbush');
+
+    assert.equal(G.playerZones['0']!.discard.length, 1, 'player 0 took the last Wound');
+    assert.equal(G.playerZones['1']!.discard.length, 0, 'player 1 got none');
+    assert.equal(
+      G.messages![0]!.text,
+      'Ambush effect: 1 player(s) had no Ranged Hero and gained a Wound (Player 0); the Wound supply ran out before Player 1.',
+    );
+    assert.equal(G.messages![0]!.outcome, 'applied');
   });
 
   it('AC-5 woundsDrawn bumps only when the CURRENT player is the wounded one', () => {

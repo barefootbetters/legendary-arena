@@ -1683,6 +1683,19 @@ const STRIKE_BLOCK_THREAT_KIND_BY_TIMING: Record<VillainAbilityTiming, StrikeBlo
   onEscape: 'escape',
 };
 
+/**
+ * Composes the tail clause naming players who would have gained a Wound but the
+ * supply was empty (D-24686). Empty string when there are none, so a normal
+ * "gained a Wound" line reads exactly as before.
+ */
+function composeEmptyWoundSupplyClause(emptySupplyPlayerIds: readonly string[]): string {
+  if (emptySupplyPlayerIds.length === 0) {
+    return '';
+  }
+  const names = emptySupplyPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+  return `; the Wound supply ran out before ${names}`;
+}
+
 function villainEffectRevealOrWound(
   G: LegendaryGameState,
   currentPlayer: string,
@@ -1704,6 +1717,7 @@ function villainEffectRevealOrWound(
   // why: sorted player-id iteration for replay determinism (D-18902), matching
   // the each-player gain-wound / ko-hero paths.
   const woundedPlayerIds: string[] = [];
+  const emptySupplyPlayerIds: string[] = [];
   for (const playerId of Object.keys(G.playerZones).sort()) {
     const zones = G.playerZones[playerId];
     if (!zones) {
@@ -1735,9 +1749,11 @@ function villainEffectRevealOrWound(
       continue;
     }
     // why: no matching Hero in hand or in play — gain one Wound. Empty pile is a reachable
-    // no-op (mirrors gain-wound:each): the player is NOT counted as wounded, so
-    // the narration below stays honest.
+    // no-op (mirrors gain-wound:each): the player is NOT counted as wounded, and is
+    // tracked so the narration says the supply ran out rather than "revealed"
+    // (D-24686).
     if (G.piles.wounds.length === 0) {
+      emptySupplyPlayerIds.push(playerId);
       continue;
     }
     // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a Master-Strike Wound
@@ -1762,12 +1778,23 @@ function villainEffectRevealOrWound(
   // why: D-24679 — name the trait checked ("had no Ranged Hero"), so a reader can tell
   // from the log alone what the player needed (match BvcATHgYM5k, Ymir's Ambush).
   const requirement = describeRevealRequirement(requireKind, requireValue);
+  const emptySupplyClause = composeEmptyWoundSupplyClause(emptySupplyPlayerIds);
   if (woundedPlayerIds.length > 0) {
     const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
     pushLog(
       G,
-      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no ${requirement} Hero and gained a Wound (${names}).`,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no ${requirement} Hero and gained a Wound (${names})${emptySupplyClause}.`,
       'applied',
+    );
+  } else if (emptySupplyPlayerIds.length > 0) {
+    // why: D-24686 — nobody gained a Wound because the supply is empty, not because
+    // every player revealed (live match sDBnFxiigDL, Ymir's Ambush at 37.1.2, where no
+    // Hero in the pool was Ranged).
+    const names = emptySupplyPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(
+      G,
+      `${label} effect: the Wound supply is empty, so no Wound was gained (${names} had no ${requirement} Hero).`,
+      'blocked',
     );
   } else {
     // why: "an" before a vowel sound — the vowels plus "X" (read "ex"), as in the printed
@@ -3302,6 +3329,7 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
   // why: sorted player-id iteration for replay determinism (D-18902), matching
   // reveal-or-wound / gain-wound:each.
   const woundedPlayerIds: string[] = [];
+  const emptySupplyPlayerIds: string[] = [];
   for (const playerId of Object.keys(G.playerZones).sort()) {
     const zones = G.playerZones[playerId];
     if (!zones) {
@@ -3312,9 +3340,10 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
       continue;
     }
     // why: no other group villain — gain one Wound. Empty pile is a reachable no-op
-    // (mirrors gain-wound:each): the player is NOT counted as wounded, so the
-    // narration below stays honest.
+    // (mirrors gain-wound:each): the player is NOT counted as wounded, and is
+    // tracked so the narration says the supply ran out (D-24686).
     if (G.piles.wounds.length === 0) {
+      emptySupplyPlayerIds.push(playerId);
       continue;
     }
     // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so Diving Block sees this
@@ -3333,12 +3362,21 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
   // `G.messages` is hash-excluded (D-24081). Honest colour per the WP-434 contract:
   // a wound landed → `applied`; every player was safe → `blocked`.
   const label = villainEffectTimingLabel(timing);
+  const emptySupplyClause = composeEmptyWoundSupplyClause(emptySupplyPlayerIds);
   if (woundedPlayerIds.length > 0) {
     const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
     pushLog(
       G,
-      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no other ${group} Villain in their Victory Pile and gained a Wound (${names}).`,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no other ${group} Villain in their Victory Pile and gained a Wound (${names})${emptySupplyClause}.`,
       'applied',
+    );
+  } else if (emptySupplyPlayerIds.length > 0) {
+    // why: D-24686 — the supply is empty; do not claim every player was safe.
+    const names = emptySupplyPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(
+      G,
+      `${label} effect: the Wound supply is empty, so no Wound was gained (${names} had no other ${group} Villain in their Victory Pile).`,
+      'blocked',
     );
   } else {
     pushLog(
