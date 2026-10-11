@@ -96,8 +96,8 @@ If `pnpm check` passes and tests are green, the machine is ready.
 | **Phone** | Mobile control surface — PR review + merge, deploy monitoring, remote session steering via Tailscale. Does not author. |
 | **Claude** | Two roles: **Claude Code** (laptop or workstation) builds to WP/EC contract; **Claude-in-CI** runs the nightly Inspector triage agent. |
 | **GitHub** | Branch → PR → squash-merge `main`; holds the governance ledger; runs CI; merge triggers deploy. |
-| **Render** | Game server + managed PostgreSQL + the ewiki static site. The server deploys on commit to `main` (wiki-, docs-, and front-end-only pushes are skipped by `buildFilter`); the ewiki deploys through a hook from the `wiki-viewer` workflow. September 2026 bill: **$146.35**. Moving to a self-hosted DigitalOcean droplet (decided, stalled since 2026-07-25 — [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#cost-case-september-2026)). |
-| **Cloudflare** | Pages hosts the front-ends (`www`, `play`, `cards`, `legends`, `dashboard`); R2 hosts card images (`images.legendary-arena.com`) and the private nightly DB backups. |
+| **Render** | Game server + managed PostgreSQL. The server deploys on commit to `main` (wiki-, docs-, and front-end-only pushes are skipped by `buildFilter`). September 2026 bill: **$146.35**. Moving to a self-hosted DigitalOcean droplet (decided, stalled since 2026-07-25 — [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#cost-case-september-2026)). |
+| **Cloudflare** | Pages hosts the public front-ends (`www`, `play`, `cards`, `legends`); assets-only Workers host the two Access-gated sites, the ewiki and `dashboard` (D-24690), deployed by GitHub Actions; R2 hosts card images (`images.legendary-arena.com`) and the private nightly DB backups. |
 
 ### Round trip (idea to live)
 
@@ -105,7 +105,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 2. **Claude Code builds it** — builds to the WP/EC contract, runs local gates, commits with two-commit topology (`EC-NNN:` implementation + `SPEC:` governance close).
 3. **GitHub takes it** — branch → PR → CI. Four checks are required to merge (Workspace Unit Tests, Typecheck Arena Client, Server DB Tests, Coverage & Ledger Gates); the rest also run on every PR (build, commit hygiene, reward-integrity guards, registry validation, Dashboard Gates, LAGN drift, SPA asset masking, Pages preview).
 4. **Approve from the phone** — merge PR via GitHub UI (phone-friendly).
-5. **It ships automatically** — `main` → Render rebuild + migrations (server-relevant paths only); Cloudflare rebuilds front-ends + R2 serves assets; `wiki/` changes rebuild the ewiki via the `wiki-viewer` workflow's Render deploy hook. Live across `*.legendary-arena.com`.
+5. **It ships automatically** — `main` → Render rebuild + migrations (server-relevant paths only); Cloudflare rebuilds front-ends + R2 serves assets; `wiki/` changes rebuild the ewiki and the `wiki-viewer` workflow deploys it to its Cloudflare Worker; the `dashboard-deploy` workflow does the same for the dashboard. Live across `*.legendary-arena.com`.
 6. **It feeds itself** — nightly Claude CI Inspector triage; WP auto-verification loop (WP-231/233); new findings generate new WPs → re-enter at step 1.
 
 ### Remote execution model
@@ -261,9 +261,9 @@ pasting.
 | GitHub (PRs, issues, CI status) | `gh` CLI | Active |
 | PostgreSQL (game data) | `DATABASE_URL` in `.env` | Active |
 | Cloudflare R2 (card images, metadata) | `rclone` CLI | Active |
-| Cloudflare Pages (front-end deploys) | GitHub integration (auto) | Active |
+| Cloudflare Pages (public front-end deploys) | GitHub integration (auto) | Active |
+| Cloudflare Workers (ewiki + dashboard deploys) | `wrangler deploy` from `wiki-viewer.yml` / `dashboard-deploy.yml` | Active |
 | Render (server deploys) | GitHub integration (auto, `buildFilter`-scoped) | Active |
-| Render (ewiki deploys) | Deploy hook fired by `wiki-viewer.yml` | Active |
 | Card data JSON (41 sets) | Local filesystem (`data/cards/`) | Active |
 | Hanko (auth service) | JWKS endpoint via `.env` | Active |
 | Claude Code MCP servers | Browser (Claude in Chrome), visualize | Active |
@@ -327,8 +327,9 @@ with no operator at the keyboard.
 | Roadmap counts | Weekly Monday 06:00 UTC (`roadmap-counts.yml`) | Regenerates the ROADMAP count table, opens PR on diff |
 | Roadmap schedule watch | Daily 13:00 UTC (`roadmap-schedule-nightly.yml`) | Maintains one `schedule-watch` issue when roadmap tasks slip |
 | Auto-deploy (Render server) | On merge to `main`, server-relevant paths only | Rebuilds server, runs migrations |
-| Auto-deploy (ewiki) | On merge touching `wiki/**` (`wiki-viewer.yml` → Render deploy hook) | Rebuilds the ewiki |
-| Auto-deploy (Cloudflare Pages) | On merge to `main` | Rebuilds front-ends |
+| Auto-deploy (ewiki) | On merge touching `wiki/**` (`wiki-viewer.yml` → `wrangler deploy`) | Rebuilds the ewiki and deploys it to its Worker |
+| Auto-deploy (dashboard) | On merge to `main` (`dashboard-deploy.yml` → `wrangler deploy`) | Rebuilds the dashboard and deploys it to its Worker |
+| Auto-deploy (Cloudflare Pages) | On merge to `main` | Rebuilds the public front-ends |
 | WP auto-verification (WP-231/233) | Part of nightly sweep | Closes verified findings, surfaces new ones |
 
 **Triage findings carry severity — the loop is prioritized, not flat.**
@@ -814,8 +815,9 @@ copy or a deployment target.
 | **Laptop** | Git clone + `.env` + `node_modules` | `git pull` / `git push` to GitHub |
 | **Home Workstation** | Git clone + `.env` + `node_modules` + Ollama models | `git pull` / `git push` to GitHub |
 | **Phone** | No repo clone — GitHub mobile app + Remote Desktop | Reads GitHub directly |
-| **Render** | Production server + managed PostgreSQL + ewiki static site | Server: auto-deploy on merge to `main`; ewiki: deploy hook from `wiki-viewer.yml` |
-| **Cloudflare Pages** | Front-end builds (www, play, cards, legends, dashboard) | Auto-deploy on merge to `main` |
+| **Render** | Production server + managed PostgreSQL | Auto-deploy on merge to `main` |
+| **Cloudflare Pages** | Public front-end builds (www, play, cards, legends) | Auto-deploy on merge to `main` |
+| **Cloudflare Workers** | ewiki + dashboard (assets-only, Access-gated) | `wrangler deploy` from `wiki-viewer.yml` / `dashboard-deploy.yml` on merge to `main` |
 | **Cloudflare R2** | Card images + metadata; private nightly DB backups | `rclone sync` from operator machine; backups from `db-backup.yml` |
 | **GitHub Actions** | CI runners + nightly triage agent | Triggered by push / PR / cron |
 
@@ -883,14 +885,13 @@ Each platform manages its own configuration and secrets independently.
 - Secrets configured in repo Settings → Secrets and variables → Actions
 - Nightly triage agent runs as a scheduled workflow
 
-**Render** — server + database + ewiki:
+**Render** — server + database:
 
 - Service: `legendary-arena-server` on the `pro` plan (2 CPU / 4 GB), declared
   in `render.yaml`
 - Database: `legendary-arena-db` (managed PostgreSQL, `pro-4gb`)
-- Static site: `legendary-arena-wiki` (the ewiki, `ewiki.legendary-arena.com`,
-  behind Cloudflare Access). `autoDeploy` is off; the `wiki-viewer` workflow
-  fires its deploy hook.
+- The ewiki is no longer on Render; it moved to a Cloudflare Worker
+  (D-24690, see *Cloudflare Workers* below).
 - Env vars configured in the Render dashboard (Environment tab). Plan
   changes must be made in both `render.yaml` and the dashboard, or a
   blueprint sync reverts one to the other.
@@ -902,14 +903,27 @@ Each platform manages its own configuration and secrets independently.
   self-hosted DigitalOcean droplet (~$48/mo); the plan and the reduction
   order are in [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#cost-case-september-2026).
 
-**Cloudflare Pages** — front-ends:
+**Cloudflare Pages** — public front-ends:
 
-- Sites: `www`, `play`, `cards`, `legends`, and `dashboard`
-  (`.legendary-arena.com`); `dashboard` sits behind Cloudflare Access. The
+- Sites: `www`, `play`, `cards`, and `legends` (`.legendary-arena.com`). The
   marketing site (`www`) is built from the separate `legendary-arena-com` repo.
   The authoritative host list is `docs/ops/domains.json`.
 - Env vars configured per-project in Pages → Settings → Environment variables
 - Auto-deploys on merge to `main` (via GitHub integration)
+
+**Cloudflare Workers** — the two Access-gated sites (D-24690):
+
+- `legendary-arena-wiki` serves the ewiki (`ewiki.legendary-arena.com`) from
+  `apps/wiki-viewer/wrangler.jsonc`; the `wiki-viewer` workflow deploys the
+  gated Hugo build with `wrangler deploy`.
+- `legendary-arena-dashboard` serves `dashboard.legendary-arena.com` from
+  `apps/dashboard/wrangler.jsonc`; `dashboard-deploy.yml` builds and deploys
+  it on every push to `main`. Its build env comes from the workflow and repo
+  variables, not a Pages project.
+- Both are assets-only with `workers_dev` and `preview_urls` off, so the
+  Access-gated custom domain is the only public hostname. Both workflows
+  also run on manual `workflow_dispatch` and need the `CLOUDFLARE_API_TOKEN`
+  and `CLOUDFLARE_ACCOUNT_ID` repo secrets.
 
 **Cloudflare R2** — static assets:
 
@@ -1025,8 +1039,9 @@ Each deploy surface has a deterministic rollback path.
 | Surface | Fail signal | Rollback action | Verification |
 |---|---|---|---|
 | **Render** (server) | Health check fails, migration error, 5xx spike | Revert the PR on GitHub → merge revert to `main` → Render auto-redeploys | `curl $GAME_SERVER_URL/health` returns 200 |
-| **Render** (ewiki) | Build failure, missing page, stale content | Revert the PR → merge to `main` → `wiki-viewer` workflow rebuilds and fires the deploy hook | Page content updated on `legendary-arena-wiki.onrender.com` (the origin, not gated by Access) |
-| **Cloudflare Pages** (front-ends) | Build failure, missing assets, blank page | Revert the PR → merge to `main` → Pages auto-rebuilds | Site loads at `play.legendary-arena.com` |
+| **Cloudflare Worker** (ewiki) | Build failure, missing page, stale content | Revert the PR → merge to `main` → `wiki-viewer` workflow rebuilds and redeploys the Worker | Page content updated on `ewiki.legendary-arena.com` (after the Access login) |
+| **Cloudflare Worker** (dashboard) | Build failure, blank page, wrong data source | Revert the PR → merge to `main` → `dashboard-deploy` workflow rebuilds and redeploys the Worker | Dashboard loads at `dashboard.legendary-arena.com` (after the Access login) |
+| **Cloudflare Pages** (public front-ends) | Build failure, missing assets, blank page | Revert the PR → merge to `main` → Pages auto-rebuilds | Site loads at `play.legendary-arena.com` |
 | **Cloudflare R2** (images/metadata) | Missing or corrupted assets | Re-run last known good `rclone sync` from operator machine | `pnpm check` R2 probe passes |
 | **GitHub Actions** (CI/triage) | Workflow fails or produces bad output | Fix the workflow file or inputs → push to `main` | Workflow re-runs green |
 
@@ -1067,7 +1082,7 @@ a clean redeploy), never via Render/Cloudflare dashboard rollback buttons
 | `[conflicted N]` files appear | pCloud sync collision with git | Delete conflicted copies; `git status` | Clean working tree |
 | `pnpm check:domains` shows FAIL | DNS/TLS misconfigured for subdomain | Read `dns:` / `tls:` diagnostic lines | All live rows show `[OK]` |
 | Nightly triage didn't run | Sweep Nightly failed or was skipped (the Inspector only chains after it) | Actions tab; check `sweep-nightly.yml` first, then `gh workflow run inspection-nightly.yml` | Workflow completes green |
-| ewiki change not live after merge | `wiki-viewer` run failed, or a `render.yaml` build-command change hasn't synced | `gh run list --workflow=wiki-viewer.yml --branch=main`; check the page on `legendary-arena-wiki.onrender.com` | New content on the origin |
+| ewiki change not live after merge | `wiki-viewer` run failed (a gate, or the deploy job: missing Cloudflare secrets) | `gh run list --workflow=wiki-viewer.yml --branch=main`; re-run it on `main` from the Actions tab once fixed | New content on `ewiki.legendary-arena.com` |
 
 For detailed probe diagnostics, see
 [Operational Health Checks](operational-health-checks.md).

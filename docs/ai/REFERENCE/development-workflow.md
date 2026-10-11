@@ -53,8 +53,8 @@ flowchart LR
 | **Phone** | Mobile control surface — review CI, **approve & merge PRs**, monitor deploys, and remotely control workstation sessions via Tailscale. It drives and approves; it does not author. | GitHub mobile / Remote Desktop / claude.ai mobile |
 | **Claude** | Two distinct roles: **Claude Code** (laptop or workstation) builds to the locked WP/EC contract and runs local gates; **Claude-in-CI** is the autonomous nightly Inspector triage agent (`.github/workflows/inspection-nightly.yml`). | Workstation + Laptop + GitHub Actions |
 | **GitHub** | The spine — branch → PR → squash-merge `main`; holds the committed governance ledger (`WORK_INDEX` / `EC_INDEX` / `DECISIONS` / `STATUS`); runs CI; **merge to `main` triggers deploy.** | github.com |
-| **Render** | Deploys the boardgame.io game server on commit to `main` (a `buildFilter` skips pushes that touch only `wiki/`, `docs/`, or the front-end apps); migrations run once per deploy in `buildCommand`. Also hosts the managed PostgreSQL and the ewiki static site, which deploys through a hook fired by the `wiki-viewer` workflow, not on push. Server `pro` + Postgres `pro-4gb` cost **$146.35** for September 2026. The move of the server and Postgres to one self-hosted DigitalOcean droplet is decided but stalled since 2026-07-25 (see the ewiki *Ubuntu Lab Provisioning* page). | `legendary-arena-server` + `legendary-arena-db` + `legendary-arena-wiki` |
-| **Cloudflare** | Pages hosts the front-ends (`www`, `play`, `cards`, `legends`, `dashboard`); R2 hosts card images (`images.legendary-arena.com`) and the nightly private DB backups. | Pages + R2 |
+| **Render** | Deploys the boardgame.io game server on commit to `main` (a `buildFilter` skips pushes that touch only `wiki/`, `docs/`, or the front-end apps); migrations run once per deploy in `buildCommand`. Also hosts the managed PostgreSQL. (The ewiki left Render for a Cloudflare Worker per D-24690.) Server `pro` + Postgres `pro-4gb` cost **$146.35** for September 2026. The move of the server and Postgres to one self-hosted DigitalOcean droplet is decided but stalled since 2026-07-25 (see the ewiki *Ubuntu Lab Provisioning* page). | `legendary-arena-server` + `legendary-arena-db` |
+| **Cloudflare** | Pages hosts the public front-ends (`www`, `play`, `cards`, `legends`); assets-only Workers host the two Access-gated sites, the ewiki (`legendary-arena-wiki`) and `dashboard` (`legendary-arena-dashboard`), deployed by GitHub Actions with `wrangler deploy` (D-24690); R2 hosts card images (`images.legendary-arena.com`) and the nightly private DB backups. | Pages + Workers + R2 |
 
 ## A change's round trip (idea → live)
 
@@ -87,7 +87,8 @@ flowchart LR
    - `main` → Render rebuild + migrations (server-relevant paths only)
    - Cloudflare rebuilds front-ends + serves assets via R2
    - `wiki/` changes → the `wiki-viewer` workflow builds the ewiki and
-     fires its Render deploy hook
+     deploys it to its Cloudflare Worker; `dashboard-deploy.yml` does the
+     same for the dashboard on every push to `main`
    - Live across `*.legendary-arena.com`
 6. **It feeds itself**
    - Nightly Claude CI runs Inspector triage — findings are tagged

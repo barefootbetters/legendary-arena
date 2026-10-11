@@ -3004,19 +3004,30 @@ async function renderInfrastructureServicesSection() {
           continue;
         }
         const hostname = new URL(entry.url).hostname;
-        // Determine the canonical Cloudflare product.
-        let product;
+        // Determine the canonical Cloudflare product(s).
+        // why: a host string can name two products ("Cloudflare Workers
+        // + Cloudflare Access", D-24690), and each deserves its row:
+        // one is the hosting, the other the gate. "Pages" stays the
+        // fallback for plain "Cloudflare Pages" hosts.
+        const products = [];
         if (host.includes('r2')) {
-          product = 'Cloudflare R2 (object storage + CDN)';
-        } else if (host.includes('access')) {
-          product = 'Cloudflare Access (zero-trust gate)';
-        } else {
-          product = 'Cloudflare Pages (static hosting)';
+          products.push('Cloudflare R2 (object storage + CDN)');
         }
-        if (!cfBuckets.has(product)) {
-          cfBuckets.set(product, []);
+        if (host.includes('workers')) {
+          products.push('Cloudflare Workers (static assets)');
         }
-        cfBuckets.get(product).push(hostname);
+        if (host.includes('access')) {
+          products.push('Cloudflare Access (zero-trust gate)');
+        }
+        if (host.includes('pages') || products.length === 0) {
+          products.push('Cloudflare Pages (static hosting)');
+        }
+        for (const product of products) {
+          if (!cfBuckets.has(product)) {
+            cfBuckets.set(product, []);
+          }
+          cfBuckets.get(product).push(hostname);
+        }
       }
 
       for (const [product, domains] of [...cfBuckets.entries()].sort(([a], [b]) => a.localeCompare(b))) {
@@ -3311,20 +3322,21 @@ async function synthesizeWikiViewerEntry() {
     stackFacts.push('⚠ _`wiki/` source directory not found_');
   }
 
-  // why: deployment target is locked under D-13811 (Render Static
-  // Site). Confirm against render.yaml so a future redeploy posture
-  // change surfaces here as drift rather than silent staleness.
-  const renderYamlPath = join(REPO_ROOT, 'render.yaml');
+  // why: deployment target is locked under D-24690 (assets-only
+  // Cloudflare Worker, superseding D-13811's Render Static Site).
+  // Confirm against the wiki's wrangler.jsonc so a future redeploy
+  // posture change surfaces here as drift rather than silent staleness.
+  const wranglerConfigPath = join(REPO_ROOT, 'apps', 'wiki-viewer', 'wrangler.jsonc');
   let deployFact;
-  if (existsSync(renderYamlPath)) {
-    const renderYamlContents = await readFile(renderYamlPath, 'utf8');
-    if (renderYamlContents.includes('legendary-arena-wiki')) {
-      deployFact = 'deployed as Render Static Site `legendary-arena-wiki`';
+  if (existsSync(wranglerConfigPath)) {
+    const wranglerContents = await readFile(wranglerConfigPath, 'utf8');
+    if (/"name":\s*"legendary-arena-wiki"/.test(wranglerContents)) {
+      deployFact = 'deployed as assets-only Cloudflare Worker `legendary-arena-wiki`';
     } else {
-      deployFact = '⚠ _no `legendary-arena-wiki` service block found in `render.yaml`_';
+      deployFact = '⚠ _no `"name": "legendary-arena-wiki"` found in `apps/wiki-viewer/wrangler.jsonc`_';
     }
   } else {
-    deployFact = '⚠ _`render.yaml` not found_';
+    deployFact = '⚠ _`apps/wiki-viewer/wrangler.jsonc` not found_';
   }
   stackFacts.push(deployFact);
 

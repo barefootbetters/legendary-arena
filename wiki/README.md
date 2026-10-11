@@ -3,7 +3,7 @@
 > An internal engineering reference for game systems, mechanics, and
 > concepts in the Legendary Arena engine.
 >
-> **Last updated:** 2026-07-06
+> **Last updated:** 2026-10-11
 
 ---
 
@@ -54,12 +54,14 @@ The wiki answers questions like:
 ## Rendered viewer
 
 A Hugo-built static-site projection of this directory is deployed at
-[`https://legendary-arena-wiki.onrender.com/`](https://legendary-arena-wiki.onrender.com/)
-(Render `static_site` service `legendary-arena-wiki`, declared in
-[`render.yaml`](../render.yaml); see WP-139 / D-13811). The rendered
-site is regenerated on every push to `main` that touches `wiki/`
-or `apps/wiki-viewer/`; the publish target is read-only and is never
-hand-edited. Authoring stays in `wiki/` per
+[`https://ewiki.legendary-arena.com/`](https://ewiki.legendary-arena.com/),
+gated by Cloudflare Access. It is served by the assets-only Cloudflare
+Worker `legendary-arena-wiki`, declared in
+[`apps/wiki-viewer/wrangler.jsonc`](../apps/wiki-viewer/wrangler.jsonc)
+(WP-139 / D-13811; hosting moved off Render by D-24690). The Worker has
+no other public hostname. The rendered site is regenerated on every
+push to `main` that touches `wiki/` or `apps/wiki-viewer/`; the publish
+target is read-only and is never hand-edited. Authoring stays in `wiki/` per
 [SCHEMA.md § Publish / Sync Boundary](SCHEMA.md). Build pipeline lives
 in [`apps/wiki-viewer/`](../apps/wiki-viewer/).
 
@@ -218,15 +220,15 @@ on every build (D-13810).
 
    Merge once CI is green.
 
-Render auto-rebuilds the `legendary-arena-wiki` static-site service
-on every push to `main` that touches `wiki/` or `apps/wiki-viewer/`,
-and the change lands at
+On every push to `main` that touches `wiki/` or `apps/wiki-viewer/`,
+the `wiki-viewer` workflow builds and gates the site, then deploys it
+to the `legendary-arena-wiki` Worker, and the change lands at
 [`https://ewiki.legendary-arena.com/<slug>/`](https://ewiki.legendary-arena.com/)
-within ~1–2 minutes.
+once the run is green.
 
 ### What runs on push
 
-The Render build invokes, in order:
+The workflow's build job invokes, in order:
 
 1. `pnpm wiki-viewer:project` — copies `wiki/*.md` into Hugo's
    content tree under `apps/wiki-viewer/content/`. `INDEX.md` is
@@ -241,37 +243,24 @@ The Render build invokes, in order:
 
 The CI workflow at
 [`.github/workflows/wiki-viewer.yml`](../.github/workflows/wiki-viewer.yml)
-runs the same pipeline on every PR and `main` push as a pre-deploy
-gate. CI also enforces the JS-free production invariant (no
-`<script>` tags in rendered output) and a determinism check (two
-consecutive builds produce byte-identical `*.html` + `*.css`).
+runs this pipeline on every PR and `main` push. It also enforces the
+JS-free production invariant (no `<script>` tags in rendered output,
+apart from the sanctioned Pagefind loader) and a determinism check (two
+consecutive builds produce byte-identical `*.html` + `*.css`), builds
+the Pagefind search index, and uploads the result as the
+`wiki-viewer-public` artifact. On `main` only, the deploy job downloads
+that artifact and runs
+`pnpm dlx wrangler@4.149.0 deploy --config apps/wiki-viewer/wrangler.jsonc`,
+so the live site is the gated build byte-for-byte.
 
 ### Manual deployment
 
-To manually redeploy the wiki (when automatic CI-triggered deployment
-fails or is needed outside the normal push-to-main flow):
-
-1. **Via Render dashboard** (recommended):
-   - Go to [`https://dashboard.render.com/`](https://dashboard.render.com/)
-   - Find the `legendary-arena-wiki` static site service
-   - Click **Manual Deploy** → **Deploy latest commit** (or specify a
-     commit hash)
-   - The build runs the same CI pipeline (link check, Hugo, JS-free
-     verification, determinism check); watch the build logs for errors
-
-2. **Via deploy hook** (CLI, requires the `RENDER_WIKI_DEPLOY_HOOK`
-   secret):
-   ```bash
-   curl --fail --silent --show-error -X POST "$RENDER_WIKI_DEPLOY_HOOK"
-   ```
-   The hook URL is stored as a repository secret and used by the CI
-   workflow (`.github/workflows/wiki-viewer.yml`) to trigger deploys
-   after CI gates pass.
-
-**Note:** `autoDeploy` is disabled in [`render.yaml`](../render.yaml)
-to prevent stale or broken builds from reaching the live site. All
-deploys (automatic and manual) run the same CI verification pipeline
-before publishing.
+To redeploy the wiki without a content change (a failed deploy, or a
+re-publish outside the normal push-to-main flow): GitHub → **Actions** →
+**wiki-viewer** → **Run workflow** on `main`. That runs the same build
+gates, then the same deploy job. The deploy job needs the
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets and
+fails the run if either is missing. There is no other deploy path.
 
 ### Preview locally
 

@@ -58,8 +58,8 @@ deploy:
 | File | Published at |
 |---|---|
 | Marketing repo files | Deployed to `www.legendary-arena.com` via Cloudflare Pages |
-| This wiki page | Published to `ewiki.legendary-arena.com/brevo-email-pipeline/` via Render |
-| Screenshots | Published to `ewiki.legendary-arena.com/brevo-email-pipeline/` via Render |
+| This wiki page | Published to `ewiki.legendary-arena.com/brevo-email-pipeline/` via the `wiki-viewer` workflow (Cloudflare Worker) |
+| Screenshots | Published to `ewiki.legendary-arena.com/brevo-email-pipeline/` via the `wiki-viewer` workflow (Cloudflare Worker) |
 
 If this wiki page and `C:\www\legendary-arena-com\docs\brevo\email-automation.md`
 disagree, the marketing repo doc is authoritative.

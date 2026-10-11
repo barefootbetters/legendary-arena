@@ -96,14 +96,14 @@ PR merged -> wiki/<slug>.md lands on main
        (the same gates already ran on the PR)
        project wiki/ -> content/, case-sensitive internal-link check,
        Hugo build, JS-free + determinism gates
-  -> the deploy job fires the Render deploy hook
-  -> Render rebuilds and publishes the static site
-  -> live at ewiki.legendary-arena.com/<slug>/  (usually a few minutes)
+  -> the deploy job uploads that gated build to the Cloudflare Worker
+     (wrangler deploy)
+  -> live at ewiki.legendary-arena.com/<slug>/  once the run is green
 ```
 
-The ~30-second part is CI; the remaining minutes are Render rebuilding. A
-much longer lag is a Render deploy stall, not your edit — details in
-[Wiki Viewer](wiki-viewer.md).
+Nothing rebuilds on the hosting side, so a page that is not live after
+the run goes green is not your edit — check the latest wiki-viewer run on
+`main`; details in [Wiki Viewer](wiki-viewer.md).
 
 > ⚠️ **The ewiki is stricter than the marketing site — a bad edit fails
 > the build and never deploys.** No raw HTML and no shortcodes: an

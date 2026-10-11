@@ -1,0 +1,78 @@
+name: dashboard-deploy
+
+# why: D-24690 — the operator dashboard is the assets-only Cloudflare Worker
+# legendary-arena-dashboard (apps/dashboard/wrangler.jsonc), replacing the
+# Cloudflare Pages project whose built-in *.pages.dev hostnames bypassed
+# Cloudflare Access. This workflow replaces the Pages Git integration: it
+# builds and deploys on every push to main, the same cadence, because the
+# build bakes in repo-wide data (governance snapshot from git log, coverage
+# ledger, effect index, PAR fidelity, wiki lint, coach eval) that any commit
+# can change. Lint / typecheck / test gates stay in ci.yml (Dashboard Gates).
+
+on:
+  push:
+    branches: [main]
+  # why: manual run re-deploys without a commit (the D-24690 cutover, or a
+  # re-publish after a failed deploy).
+  workflow_dispatch:
+
+# why: only the newest main commit matters; an in-flight build of an older
+# commit is cancelled rather than racing it to deploy.
+concurrency:
+  group: dashboard-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      # why: fetch-depth 0 gives the governance-snapshot generator full git
+      # history (git log -50 plus per-file committer dates), as in ci.yml.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # why: the VITE_* values are compiled into the public bundle, so they are
+      # repo variables, not secrets. VITE_USE_MOCKS / VITE_API_BASE_URL are the
+      # live-mode pair that isLiveModeEnabled() (D-20601) requires. The Hanko
+      # tenant has no committed production value, so it comes from the
+      # DASHBOARD_HANKO_TENANT_BASE_URL repo variable; without it the login
+      # renders its 'unavailable' state, so the build refuses to ship that.
+      - name: Build dashboard
+        env:
+          VITE_USE_MOCKS: 'false'
+          VITE_API_BASE_URL: https://api.legendary-arena.com
+          VITE_HANKO_TENANT_BASE_URL: ${{ vars.DASHBOARD_HANKO_TENANT_BASE_URL }}
+          VITE_FEATURE_FLAGS: ${{ vars.DASHBOARD_FEATURE_FLAGS }}
+        run: |
+          if [ -z "$VITE_HANKO_TENANT_BASE_URL" ]; then
+            echo "::error::Repo variable DASHBOARD_HANKO_TENANT_BASE_URL is unset; the dashboard login would be unusable (D-24690)."
+            exit 1
+          fi
+          pnpm --filter "@legendary-arena/dashboard..." build
+
+      # why: fail loudly when the Cloudflare credentials are missing. This is
+      # the only deploy path, so a silent skip would leave the dashboard stale
+      # with a green run. `pnpm dlx` pins wrangler without adding a workspace
+      # dependency (the same pin as the wiki-viewer deploy job).
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repo secrets are required to deploy the dashboard (D-24690)."
+            exit 1
+          fi
+          pnpm dlx wrangler@4.149.0 deploy --config apps/dashboard/wrangler.jsonc
