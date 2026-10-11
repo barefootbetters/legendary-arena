@@ -682,7 +682,8 @@ corrupts recall or the store:
   eventual *dedicated* brain host is a shopping decision, not an architectural
   one. As of 2026-08, candidates in this class were:
   - **NameHero** — US-centric, familiar support. The 2026-08 "~$7/mo for the
-    8 GB tier" was a 3-year promo; renewal is $15.92 (Plus) and $27.94 (Turbo).
+    8 GB tier" was a new-customer 3-year promo. The month-to-month rate quoted
+    to the existing account on 2026-10-11 is $24.49 (Plus) and $42.99 (Turbo).
     See the [host shopping note](#hosting-and-security-posture) below.
   - **Hetzner Cloud** — often the best price/performance for a self-hosted
     Postgres + Docker stack; US and EU regions.
@@ -721,8 +722,8 @@ corrupts recall or the store:
   steady run rate. That is about **$1,750 a year** for one server and one
   database. Both plans
   were raised in July 2026 to cure CPU and memory starvation (the reasons are in
-  `render.yaml`); the dashboard's last cost snapshot, from 2026-07-27, predates
-  the full-month effect and still shows about $30.
+  `render.yaml`). The dashboard's Infra Cost Watchdog carries the September
+  figures ($91.05 Render plus $55.30 Postgres, as of 2026-09-30).
 
   Two consequences for this page. **First, there is no existing box to co-locate
   on yet.** Render is a PaaS, so the bootstrap co-location depends on the
@@ -751,15 +752,21 @@ corrupts recall or the store:
   the operator's (`pg_dump` and the Git corpus to R2); a host snapshot is a
   convenience, not the recovery path.
 
-  NameHero's published prices, checked 2026-10-04. The promo is the first
-  invoice of a 3-year term; budget the renewal.
+  NameHero's prices. Plus and Turbo are the month-to-month rates quoted in
+  writing to the existing account on 2026-10-11. Promo pricing is for new
+  customers only, so it does not apply. The quoted rate is held for 12 months
+  if no add-ons are bought. The other two rows are published prices checked
+  2026-10-04; they were not quoted month-to-month.
 
-  | Plan | vCPU | RAM | Disk | Transfer | Promo | Renewal | Fits the brain? |
-  |---|---|---|---|---|---|---|---|
-  | AI Agent VPS | 2 | 4 GB | 100 GB NVMe | 4 TB | $6.49 (3-year, $233.77 prepaid) | $9.99 | No. Half the lower tier, and the image is Ubuntu 22.04. |
-  | Unmanaged Plus | 2 | 8 GB | 100 GB NVMe | 8 TB | $6.85 | $15.92 | Lower tier only, no voice. |
-  | Unmanaged Turbo | 4 | 16 GB | 200 GB NVMe | 16 TB | $12.01 | $27.94 | The honest floor once voice is on. |
-  | Unmanaged Business | 8 | 32 GB | 400 GB NVMe | 32 TB | $20.68 | $48.09 | Headroom; same dollars as the arena droplet. |
+  | Plan | vCPU | RAM | Disk | Transfer | Monthly | Fits the brain? |
+  |---|---|---|---|---|---|---|
+  | AI Agent VPS | 2 | 4 GB | 100 GB NVMe | 4 TB | not quoted ($9.99 published after a 3-year promo) | No. Half the lower tier, and the image is Ubuntu 22.04. |
+  | Unmanaged Plus | 2 | 8 GB | 100 GB NVMe | 8 TB | **$24.49** | Lower tier only, no voice. |
+  | Unmanaged Turbo | 4 | 16 GB | 200 GB NVMe | 16 TB | **$42.99** | The honest floor once voice is on. |
+  | Unmanaged Business | 8 | 32 GB | 400 GB NVMe | 32 TB | not quoted ($48.09 published, a 3-year rate) | Headroom. |
+
+  The $15.92 and $27.94 "renewal" figures this note gave on 2026-10-04 were
+  3-year prepaid rates and are withdrawn.
 
   DigitalOcean Basic, same day, month-to-month with no promo cliff: 2 vCPU /
   4 GB / 80 GB SSD is $24 and 4 vCPU / 8 GB / 160 GB SSD is $48 (`sfo3`). There
@@ -767,8 +774,9 @@ corrupts recall or the store:
   backups add 20%. Full side-by-side:
   [Vendor comparison](ubuntu-lab-provisioning.md#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
 
-  Plus and Turbo at renewal still undercut DigitalOcean on RAM and disk per
-  dollar. Neither is in San Francisco; NameHero's NVMe US site is Lenexa,
+  At the quoted rates, Plus and Turbo still beat DigitalOcean on RAM and disk
+  per dollar, but not by much on price: Plus costs 49 cents more than the $24
+  droplet, and Turbo about $5 less than the $48 one. Neither is in San Francisco; NameHero's NVMe US site is Lenexa,
   Kansas — fine for a single-operator brain reached over Tailscale, the wrong
   pin for the arena origin.
 
@@ -786,15 +794,17 @@ corrupts recall or the store:
     not a reason to pick a host.
 
   If a NameHero box is bought for the brain, it is unmanaged **Turbo** at the
-  renewal price: Ubuntu 24.04, no preinstalled app, dumps to R2, Tailscale in
+  quoted $42.99: Ubuntu 24.04, no preinstalled app, dumps to R2, Tailscale in
   front, no coupling to the arena deploy. **Plus** is the pilot only if voice
   stays off. The AI Agent SKU is out.
 
-  No quote has been requested. If the vendor is reopened, ask for Turbo
-  month-to-month (not 3-year prepay), Ubuntu 24.04 with no checkout app, and
-  whether a West Coast site exists. Until that quote is in writing, the
-  bootstrap host is the DigitalOcean droplet the migration stands up, and a
-  dedicated brain host stays a later split.
+  A month-to-month quote is now in writing (2026-10-11), but NameHero has not
+  yet confirmed the Ubuntu 24.04 image, cloud-init, self-service snapshots and
+  rebuilds, or the data center. The full answer table is in
+  [Vendor comparison](ubuntu-lab-provisioning.md#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
+  Those gaps matter less for a Tailscale-only brain than for the arena origin.
+  Until a brain host is bought, the bootstrap host is the DigitalOcean droplet
+  the migration stands up, and a dedicated brain host stays a later split.
 - **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
   on that class treat **local LLMs as optional and CPU-only (small models)** and
   lean on **hosted models via LiteLLM** for reasoning quality. But the dedicated
@@ -2368,6 +2378,13 @@ This is the summary index; the individual gotchas and their nuances live in
   - The guest's "~10×" productivity figure. It is not checked here.
 
   No Locked row moved, and there is no `DECISIONS.md` entry.
+- **2026-10-11 — NameHero quote and August Render bill (descriptive, no
+  re-lock).** NameHero quoted month-to-month rates in writing to the existing
+  account: Plus $24.49, Turbo $42.99, no promo, held 12 months. The 2026-10-04
+  "renewal" figures were 3-year rates and are withdrawn from the host shopping
+  note. NameHero did not confirm Ubuntu 24.04, cloud-init, snapshots, or the
+  data center. The August Render invoice ($146.50) joins September's in the
+  cost baseline. No Locked row moved, and there is no `DECISIONS.md` entry.
 
 ## Open Questions
 
