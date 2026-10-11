@@ -685,8 +685,10 @@ corrupts recall or the store:
     8 GB tier" was a new-customer 3-year promo. The month-to-month rate quoted
     to the existing account on 2026-10-11 is $24.49 (Plus) and $42.99 (Turbo).
     See the [host shopping note](#hosting-and-security-posture) below.
-  - **Hetzner Cloud** — often the best price/performance for a self-hosted
-    Postgres + Docker stack; US and EU regions.
+  - **Hetzner Cloud** — the price/performance leader in the EU. That no longer
+    holds in the US: prices there rose on 2026-06-15, and a 4 vCPU / 8 GB
+    server in Hillsboro, OR now costs $73.49, against DigitalOcean's $48 (see
+    [Vendor survey](ubuntu-lab-provisioning.md#vendor-survey-2026-10-11)).
   - **DigitalOcean / Vultr / Linode** — pricier, but strong snapshot/networking
     ecosystems. DigitalOcean is already the production vendor (reconfirmed
     2026-10-02), so a dedicated brain droplet there shares one account,
@@ -803,7 +805,10 @@ corrupts recall or the store:
   rebuilds, or the data center. The full answer table is in
   [Vendor comparison](ubuntu-lab-provisioning.md#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
   Those gaps matter less for a Tailscale-only brain than for the arena origin.
-  Until a brain host is bought, the bootstrap host is the DigitalOcean droplet
+  Hetzner, Akamai/Linode, Vultr, Lightsail, and OVHcloud are priced in the
+  [Vendor survey](ubuntu-lab-provisioning.md#vendor-survey-2026-10-11) (2026-10-11).
+  For a 16 GB brain box, NameHero Turbo ($42.99) and Lightsail's 4 vCPU / 16 GB
+  bundle ($84) bracket the options. Until a brain host is bought, the bootstrap host is the DigitalOcean droplet
   the migration stands up, and a dedicated brain host stays a later split.
 - **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
   on that class treat **local LLMs as optional and CPU-only (small models)** and
@@ -2385,6 +2390,12 @@ This is the summary index; the individual gotchas and their nuances live in
   note. NameHero did not confirm Ubuntu 24.04, cloud-init, snapshots, or the
   data center. The August Render invoice ($146.50) joins September's in the
   cost baseline. No Locked row moved, and there is no `DECISIONS.md` entry.
+- **2026-10-11 — vendor survey linked (descriptive, no re-lock).** A
+  multi-vendor survey led by Hetzner now lives in
+  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#vendor-survey-2026-10-11).
+  The Hetzner candidate entry is corrected: US prices rose on 2026-06-15, so
+  Hetzner is no longer the cheap option in the US. No Locked row moved, and there
+  is no `DECISIONS.md` entry.
 
 ## Open Questions
 

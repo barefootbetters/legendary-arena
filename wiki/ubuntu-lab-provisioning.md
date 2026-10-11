@@ -102,9 +102,11 @@ governance transcription noted in the callout — not the architecture decision.
 ### Cost case (September 2026)
 
 The vendor was reconfirmed as **DigitalOcean** on 2026-10-02. It held after a
-NameHero price comparison on 2026-10-04 and again after NameHero's written
-month-to-month quote on 2026-10-11 (see
-[Vendor comparison](#vendor-comparison-digitalocean-vs-namehero-2026-10-04)).
+NameHero price comparison on 2026-10-04. It held again on 2026-10-11, after
+NameHero's written month-to-month quote and a multi-vendor survey led by
+Hetzner (see
+[Vendor comparison](#vendor-comparison-digitalocean-vs-namehero-2026-10-04) and
+[Vendor survey](#vendor-survey-2026-10-11)).
 NameHero had been named elsewhere, but only as a candidate host for the
 [AI Second Brain](ai-second-brain.md), never for this migration.
 
@@ -281,6 +283,88 @@ If all four come back yes, Turbo at $42.99 beats DigitalOcean's $48 box on
 every axis except region. Don't hold the cutover for the answers: each week on
 Render costs about $23 more than the droplet would, against a NameHero saving
 of about $1 a week at the 4-core size.
+
+**Sizing headroom.** Render gives production 8 GB in total today: 4 GB for the
+server and 4 GB for Postgres. DigitalOcean's $48 box matches that with no
+headroom, and the July freezes were partly memory starvation. RAM is the real
+advantage of NameHero Turbo (16 GB) and of the larger plans at budget vendors.
+On DigitalOcean the fix is a resize to the next Basic size (8 vCPU / 16 GB,
+about $96 if pricing stays linear; check before resizing). Before choosing the
+starting size, pull September's memory graphs for both Render services. If both
+sit well under 4 GB, 8 GB is enough. If either runs near its limit, start
+bigger.
+
+### Vendor survey (2026-10-11)
+
+A separate research session surveyed Hetzner Cloud in depth and four other
+providers against the cutover's hard requirements, using vendor pricing and
+docs pages. An earlier Hetzner look was never recorded, so this replaces it.
+Figures marked *verified* were re-checked against the vendor page in this pass.
+The current call is unchanged: DigitalOcean, `sfo3`.
+
+The hard requirements; a vendor that fails any one is out:
+1. An Ubuntu 24.04 image at create.
+2. cloud-init user-data at create.
+3. A self-service snapshot and rebuild.
+4. A named US West data center.
+5. Month-to-month or hourly billing at the regular rate, with no promo or term.
+6. A KVM VM with root access and a dedicated IPv4.
+
+| Vendor | US West location | Hard reqs | ~2 vCPU | ~4 vCPU | Price source |
+|---|---|---|---|---|---|
+| DigitalOcean | San Francisco (`sfo3`) | Pass | 2 / 4 GB / 80 GB, $24 | 4 / 8 GB / 160 GB, $48 (CPU-Optimized dedicated 4 / 8, $84) | Vendor page, 2026-10-04 |
+| Hetzner Cloud | Hillsboro, OR | Pass | CPX21: 3 / 4 GB / 80 GB, $37.49 | CPX31: 4 / 8 GB / 160 GB, $73.49 (CCX23, 4 dedicated / 16 GB, $102.99) | *Verified* (US price-adjustment page); plus ~$0.60/mo IPv4 and VAT |
+| Akamai / Linode | Fremont, Seattle, Los Angeles | Pass | 2 / 4 GB / 80 GB, $24 | 4 / 8 GB / 160 GB, $48 | Survey; not re-checked |
+| Vultr | Silicon Valley, Seattle, Los Angeles | Pass | 2 / 4 GB, ~$20 | 4 / 8 GB, ~$40 | Survey; not re-checked (vendor page refused the fetch) |
+| AWS Lightsail | Oregon | Pass | 2 / 4 GB / 80 GB, $24 | 2 / 8 GB / 160 GB, $44; 4 / 16 GB / 320 GB, $84 | *Verified* (pricing page) |
+| OVHcloud US | Not confirmed | Fails 4–5 until confirmed | VPS-1: 2 / 4 GB / 40 GB, $4.54 | VPS-2: 4 / 8 GB / 75 GB, $8.50 | Listed prices appear to be 12-month upfront; no month-to-month price or named US site shown |
+| NameHero | Not confirmed (Lenexa, KS) | Fails (unconfirmed) | Plus: 2 / 8 GB / 100 GB, $24.49 | Turbo: 4 / 16 GB / 200 GB, $42.99 | Written quote, 2026-10-11 |
+
+**Hetzner.** Hetzner raised US cloud prices for new orders and rescales on
+2026-06-15. Its Hillsboro location now costs more than DigitalOcean at the size
+this cutover needs: CPX31 at $73.49 plus IPv4, against $48, or about **$312 a
+year more**. The "best price/performance" reputation, and the one-line
+candidate entry in [AI Second Brain](ai-second-brain.md), come from before that
+increase and from EU pricing.
+
+On features, the survey found Hetzner passes every requirement:
+- Ubuntu 24.04, cloud-init, snapshots and rebuilds.
+- Hourly billing capped at the monthly price.
+- An official Terraform provider, cloud firewalls, and private networks.
+- In-place rescale, though the disk cannot shrink, so a downsize must keep the
+  disk size.
+
+Against it:
+- US servers include about 1 TB of traffic, well above the 6–8 GB a month
+  production uses.
+- New accounts may face ID or prepayment checks.
+- The US footprint is newer and runs in third-party data centers.
+
+Hetzner is worth a second look only if dedicated vCPU becomes a requirement.
+CCX13 (2 dedicated vCPU / 8 GB, $50.99) is the cheapest dedicated option
+surveyed.
+
+**The others.**
+- Akamai/Linode matches DigitalOcean's prices exactly and has a Bay Area site
+  (Fremont), so it is the drop-in alternative if DigitalOcean ever disappoints.
+- Vultr looks about $8 a month cheaper at 4 / 8 GB with three West Coast
+  cities. Re-check its price before relying on that.
+- Lightsail's 4-vCPU bundle carries 16 GB but costs $84. Lightsail bundles are
+  burstable-CPU per the survey, which doesn't suit the sustained 250 ms bot-ally
+  loop. That point wasn't confirmed on the pricing page.
+- OVHcloud and NameHero stay out until their month-to-month terms and data
+  centers are confirmed in writing.
+
+**Ranking (the decision is Jeff's).**
+1. DigitalOcean `sfo3`. It passes everything and is the current call.
+2. Akamai/Linode or Vultr, at the same price or slightly cheaper with true West
+   Coast sites.
+3. Hetzner Hillsboro, only for dedicated vCPU.
+4. OVHcloud and NameHero, not until confirmed.
+
+One correction to the survey: it said the $48 droplet matches today's footprint
+"with headroom". It matches Render's 8 GB total exactly, so there is no RAM
+headroom (see Sizing headroom above).
 
 ### Prerequisites & effort
 
@@ -522,9 +606,9 @@ migration Work Packet is the pending governance noted in the callout.
 
 - **[Architecture & Library Adoption Inventory](architecture-inventory.md)** —
   the authoritative live picture this lab shadows: Render account model and
-  sizing (server `standard`; the managed Postgres, pinned in `render.yaml`, was
-  bumped `basic-1gb` → `pro-4gb` under load — treat `render.yaml` as
-  authoritative when the generated inventory lags a plan change), the
+  sizing (server `pro`, Postgres `pro-4gb`, both raised under load in July
+  2026; treat `render.yaml` as authoritative if the generated inventory ever
+  lags a plan change), the
   managed-database notes, and the full deployment topology. Read it first.
 - **[Development Workflow](development-workflow.md)** — the production
   develop-from-anywhere loop (Claude Code → GitHub → auto-deploy on merge to
@@ -580,6 +664,9 @@ migration Work Packet is the pending governance noted in the callout.
   operational-burden transfer (accepted — see Ownership boundary), and a check
   against the server-layer boundary in
   [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
+- **Droplet size.** The vendor survey ([Vendor survey](#vendor-survey-2026-10-11))
+  held the DigitalOcean call. The starting size still waits on September's
+  Render memory graphs (see "Sizing headroom").
 - **Managed vs self-hosted Postgres** — decided: self-hosted on the same host
   (co-located, `localhost`), per the PLAN. No longer open.
 - **The cross-provider latency threshold** — moot: the co-located target removes
@@ -588,7 +675,7 @@ migration Work Packet is the pending governance noted in the callout.
 ## References
 
 - [`render.yaml`](../render.yaml) — the blueprint-managed production infra source
-  (authoritative for plan values): server `plan: standard`, the managed-DB `plan`,
+  (authoritative for plan values): server `plan: pro`, the managed-DB `plan: pro-4gb`,
   the `sync: false` secret set, and the build/start commands this runbook mirrors.
 - [Architecture & Library Adoption Inventory](architecture-inventory.md) — Render
   account model & sizing, managed-database operational notes, and deployment
