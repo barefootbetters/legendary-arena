@@ -440,6 +440,7 @@ high-water: 422
 - WP-799 — scheme-hero-count-table (Registry; resolveEffectiveHeroCount reads one table of printed Hero Deck count rules (+N, exactly N, per player count) for 24 schemes beyond Secret Invasion / Civil War. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 - WP-800 — time-heist-hero-count (Registry; The Time Heist requires exactly 4 Heroes — its printed main Hero Deck — as one SCHEME_HERO_COUNT_RULES row; the Past Hero Deck / alternate city stays a named full-fidelity arc. reserved 2026-10-08, claude/reserve-time-heist-count)
 - WP-801 — ko-your-heroes-hand-and-play (Engine; unqualified "KO one/two of your Heroes" draws only from hand + cards played this turn, never the discard pile, per rules v23 — auto-pick, current-player choice, bot and client prompt. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
+- WP-802 — operator-board-inspection (Server + Engine + Client; admin-created debug match with a reveal-all operator panel on play — every zone, supply counts, villain-deck order, pending choice, effect traces, bot candidates. Read-only; setters and jump-to-turn are planned follow-ons. reserved 2026-10-11, spec/wp-operator-board-panel)
 
 ## EC
 
@@ -841,6 +842,7 @@ high-water: 457
 - EC-836 — scheme-hero-count-table (WP-799. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 - EC-837 — time-heist-hero-count (WP-800. reserved 2026-10-08, claude/reserve-time-heist-count)
 - EC-838 — ko-your-heroes-hand-and-play (WP-801. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
+- EC-839 — operator-board-inspection (WP-802. reserved 2026-10-11, spec/wp-operator-board-panel)
 
 ## D
 
@@ -1308,3 +1310,4 @@ section below) and the allocation protocol in
 - D-24686 — reveal-or-wound-empty-supply-log (direct fix, no WP — reveal-or-wound and gain-wound-unless-victory-villain-group log that the Wound supply is empty instead of "every player revealed / had another Villain". reserved 2026-10-11, infra/reveal-or-wound-empty-supply-log)
 - D-24687 — ko-your-heroes-hand-and-play (WP-801; amends D-18503 / D-20603 zone priority — unqualified "your Heroes" KOs exclude the discard pile. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
 - D-24688 — bot-ko-discard-default (direct fix, no WP — the bot answers "KO up to N cards from your discard pile" (Maniacal Tyrant, Salomé) with its Wounds, then starting S.H.I.E.L.D. cards, instead of KO'ing nothing; amends D-24510's empty default. reserved 2026-10-11, claude/bot-ko-discard-default)
+- D-24689 — operator-board-inspection (WP-802; locks the debug-match envelope flag, the never-scored rule, the operator reveal-all read path and the panel UI, and rules on the arc's open questions — setters, jump-to-turn, bot candidates. reserved 2026-10-11, spec/wp-operator-board-panel)
