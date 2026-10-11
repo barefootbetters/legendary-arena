@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24688 — A bot partner now uses Maniacal Tyrant to thin its deck (direct fix) (2026-10-11)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** When the bot defeats Loki's Maniacal Tyrant (or Salomé), it KOs up to four Wounds and starting S.H.I.E.L.D. cards from its discard pile instead of KO'ing nothing. Before, matches `xGw-94HDhBj` and `sDBnFxiigDL` logged "Player 1 KO'd 0 card(s)". Your own prompt is unchanged.
+
+- **Engine bot policy only.** All-bot games with these cards play differently from here on.
+- **Live-verify (D-24026):** pending.
+
 ### D-24686 — "Reveal or gain a Wound" lines say when the Wound supply is empty (direct fix) (2026-10-11)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** When a villain's "each player reveals a ___ Hero or gains a Wound" effect fires after the Wound supply runs out, the log now says "the Wound supply is empty, so no Wound was gained (Player 0, Player 1 had no Ranged Hero)". Before, it said "every player revealed a Ranged Hero" even when nobody could (2p match `sDBnFxiigDL`, Ymir's Ambush at 37.1.2). Viper's Victory-Pile version is fixed the same way.
