@@ -22,7 +22,7 @@ source:
   - ../docs/ai/REFERENCE/01-render-infrastructure.md
   - ../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md
   - ../docs/ai/REFERENCE/01.0b-wp-execution-phase.md
-last-reviewed: 2026-10-02
+last-reviewed: 2026-10-11
 canonical-source: docs/ai/REFERENCE/development-workflow.md
 ---
 
@@ -899,7 +899,8 @@ Each platform manages its own configuration and secrets independently.
   under a `buildFilter.ignoredPaths` tree (`wiki/`, `docs/`, the front-end
   apps); migrations run in `buildCommand`
 - **Cost:** $146.35 for September 2026 (server $85.00, Postgres $55.30,
-  builds $5.00, bandwidth $1.05). Server and Postgres are moving to one
+  builds $5.00, bandwidth $1.05); August was $146.50, so ~$146/mo is the
+  steady rate. Server and Postgres are moving to one
   self-hosted DigitalOcean droplet (~$48/mo); the plan and the reduction
   order are in [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#cost-case-september-2026).
 

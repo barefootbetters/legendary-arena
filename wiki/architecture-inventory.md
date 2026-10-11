@@ -10,7 +10,7 @@ tags:
 
 # Architecture & Library Adoption Inventory
 
-_Generated 2026-09-28 by `scripts/architecture-inventory.mjs`._
+_Generated 2026-10-11 by `scripts/architecture-inventory.mjs`._
 
 This is a deterministic snapshot of installed dependencies,
 their actual import usage across the workspace, and SaaS /
@@ -49,7 +49,7 @@ synthesised from the app's own manifests:
 - **`apps/server`** — Legendary Arena boardgame.io game server — wiring layer only
   - Stack: boardgame.io (`boardgame.io@^0.50.0`) over Socket.IO (transitive via `boardgame.io`) + HTTP routes via Koa router (`@koa/router@10.1.1` + `koa@2.16.4`, both transitive via `boardgame.io`) + PostgreSQL via `pg@^8.13.0`.
 - **`apps/wiki-viewer`** — Engineering wiki build pipeline. Build-time, read-only Hugo projection of `wiki/` (no `package.json` — Hugo is a Go binary, not a Node dep). Layer-boundary clean: zero runtime imports of `@legendary-arena/game-engine`, `@legendary-arena/registry`, or `apps/server`. Build pipeline is `pnpm wiki-viewer:project` (copy `wiki/*.md` → `apps/wiki-viewer/content/`) → `pnpm wiki-viewer:check-links` (case-sensitive internal-link gate) → `hugo --minify`.
-  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 87 source pages projected from `wiki/` + deployed as assets-only Cloudflare Worker `legendary-arena-wiki`.
+  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 89 source pages projected from `wiki/` + deployed as assets-only Cloudflare Worker `legendary-arena-wiki`.
 
 ## Deployment topology
 
@@ -99,18 +99,18 @@ answers "what URL maps to what app."
 
 Render bills on TWO INDEPENDENT axes: (1) a flat, team-level **Workspace plan**, and (2) per-service **instance types** (compute), billed per service on ANY workspace. They are separate — running a larger instance type does NOT require a paid workspace. The project pays for three Render line items: the Workspace, the game server (a web service), and the managed database.
 
-Web-service instance types (the render.yaml `plan:` value → CPU / RAM / ~monthly compute): `starter` 0.5 / 512 MB / $7 · `standard` 1 / 2 GB / ~$25 · `pro` 2 / 4 GB / ~$85 · `pro plus` 4 / 8 GB / ~$175. (Postgres uses a SEPARATE instance-type scale: `basic-1gb` = 0.5 CPU / 1 GB / $19.)
+Web-service instance types (the render.yaml `plan:` value → CPU / RAM / ~monthly compute): `starter` 0.5 / 512 MB / $7 · `standard` 1 / 2 GB / ~$25 · `pro` 2 / 4 GB / ~$85 · `pro plus` 4 / 8 GB / ~$175. (Postgres uses a SEPARATE instance-type scale: `basic-1gb` = 0.5 CPU / 1 GB / $19 · `pro-4gb` = 1 CPU / 4 GB / $55.30 as billed.)
 
 Curated in `RENDER_ACCOUNT_AND_SIZING_NOTES` in `scripts/architecture-inventory.mjs`.
 
-- WORKSPACE — **Hobby ($0/mo flat)**. The free personal tier; kept deliberately. Instance-type compute is billed per-service regardless of workspace, and the Hobby→Pro ($25/mo flat) difference is features we do not need yet (horizontal autoscaling, preview environments, audit logs, SOC2) — NOT access to larger instances. Caveat: Hobby includes 500 pipeline (build) minutes/mo; a burst of PR merges (each runs `pnpm install && pnpm -r build && migrate`) can exceed it and bill the overage.
-- SERVER — web service `legendary-arena-server`, **`standard` (1 CPU / 2 GB, ~$25/mo compute)**. Upgraded 2026-07-23 (#948) from the implicit default `starter` (0.5 CPU / 512 MB, $7): the service had NO `plan:` field, so Render silently ran it on `starter`. That half-CPU could not carry a real-time authoritative WebSocket server that ALSO runs the bot-ally drivers (250 ms polling per live match), the "Watch Bot Play" autoplay loops, and four cron loops (legends publisher / match reaper / capture harvester) — the instance pegged at load ~7, causing health-check restarts (a live match hit the D-24230 revival cap of 3 in <1 h with NO deploys), a crawling bot (~1 turn / 10 min), and the recurring client-desync freezes. `plan:` is BLUEPRINT-MANAGED: it MUST live in render.yaml (a dashboard change reverts on sync), and merging the render.yaml change IS the upgrade. Next lever if `standard` saturates under real concurrency: `pro` (2 CPU / 4 GB, ~$85).
-- DATABASE — managed Postgres `legendary-arena-db`, **`basic-1gb` (0.5 CPU / 1 GB, $19/mo)**. Its own 2026-07-22 upgrade from `basic-256mb` (the OOM-recovery fix, #932) is detailed in the "Managed database" block below. NOTE it is also only 0.5 CPU: the July-22 fix addressed RAM (OOM), so if DB *CPU* (not RAM) later becomes the bottleneck, `pro-4gb` (1 CPU / 4 GB, $55) is the equivalent move on the Postgres scale.
+- WORKSPACE — **Hobby ($0/mo flat)**. The free personal tier; kept deliberately. Instance-type compute is billed per-service regardless of workspace, and the Hobby→Pro ($25/mo flat) difference is features we do not need yet (horizontal autoscaling, preview environments, audit logs, SOC2) — NOT access to larger instances. Caveat: Hobby includes 500 pipeline (build) minutes/mo; a burst of PR merges (each runs `pnpm install && pnpm -r build && migrate`) can exceed it and bill the overage. Observed: the builds line billed a flat $5.00 in both Aug 2026 (41 min) and Sep 2026 (6 h 42 m).
+- SERVER — web service `legendary-arena-server`, **`pro` (2 CPU / 4 GB, $85.00/mo as billed Aug + Sep 2026)**. Bumped `standard` → `pro` on 2026-07-25 (#1014): the dashboard was already on Pro while render.yaml still said `standard`, a live downgrade risk on the next blueprint sync, so render.yaml was brought into agreement. Before that it was upgraded 2026-07-23 (#948) to `standard` (1 CPU / 2 GB, ~$25) from the implicit default `starter` (0.5 CPU / 512 MB, $7): the service had NO `plan:` field, so Render silently ran it on `starter`. That half-CPU could not carry a real-time authoritative WebSocket server that ALSO runs the bot-ally drivers (250 ms polling per live match), the "Watch Bot Play" autoplay loops, and four cron loops (legends publisher / match reaper / capture harvester) — the instance pegged at load ~7, causing health-check restarts (a live match hit the D-24230 revival cap of 3 in <1 h with NO deploys), a crawling bot (~1 turn / 10 min), and the recurring client-desync freezes. `plan:` is BLUEPRINT-MANAGED: it MUST live in render.yaml (a dashboard change reverts on sync), and a plan change must ALSO be set in the dashboard (it does not auto-apply from a blueprint push) — keep the two in agreement. Next lever if `pro` saturates under real concurrency: `pro plus` (4 CPU / 8 GB, ~$175).
+- DATABASE — managed Postgres `legendary-arena-db`, **`pro-4gb` (1 CPU / 4 GB, $55.30/mo as billed Aug + Sep 2026, storage included)**. Bumped `basic-1gb` → `pro-4gb` on 2026-07-23 (#958) after the DB crashed hard under load (`ECONNREFUSED :5432` plus read-only recovery windows) and took the game server down with it; `basic-1gb` (0.5 CPU / 1 GB) was itself the 2026-07-22 OOM fix from `basic-256mb` (#932), detailed in the "Managed database" block below. render.yaml names `basic-4gb` (2 CPU / 4 GB, ~$75) as the next step if it destabilises under real concurrency.
 - ROOT-CAUSE vs SYMPTOM: the client-side resync fixes (reconnect-resync D-24232/#944, spectator-staleness + tab-focus D-24234/#947) and the server revival-cap reset (D-24233/#945) RECOVER from the desync freezes; the server sizing (#948) removes the CPU starvation that GENERATED them. Verify the fix in the Render **Events tab** (restart frequency → ~0 between real deploys) and the **CPU metric** (load well under 1×/core).
 
 ### Managed database — sizing history & operational notes
 
-Instance: Basic-1gb (1 GB RAM / 0.5 CPU) — Render managed PostgreSQL 18, Oregon (US West).
+Instance: Pro-4gb (4 GB RAM / 1 CPU) — Render managed PostgreSQL 18, Oregon (US West). Bumped from Basic-1gb on 2026-07-23 (#958).
 
 Curated in `MANAGED_DATABASE_OPS_NOTES` in `scripts/architecture-inventory.mjs` (the derived Render table above shows only the plan string).
 
@@ -118,7 +118,7 @@ Curated in `MANAGED_DATABASE_OPS_NOTES` in `scripts/architecture-inventory.mjs` 
 - BLUEPRINT-MANAGED: `plan`, `ipAllowList`, and `storageAutoscalingEnabled` all live in render.yaml `databases:`. A dashboard-only change to any of them is REVERTED on the next blueprint sync — every managed-DB setting must be set in render.yaml to be durable.
 - `ipAllowList: []` = internal-only inbound (was public `0.0.0.0/0`). The server connects via the internal hostname, so nothing app-side breaks; the External Database URL / a local `psql` no longer connects — use the Render dashboard PSQL shell for ops. Caveat: the dashboard also showed the `0.0.0.0/0` rules "Affected by: Workspace / Environment" — a workspace/environment-level network rule may layer on top and is only removable in the dashboard, not render.yaml.
 - `storageAutoscalingEnabled: true` grows the disk +50% at 90% full. ROW retention IS handled (this note was stale): the match-reaper (WP-327, `apps/server/src/db/matchReaper.js`) deletes finished matches 1h after gameover — once the WP-335 capture-harvester has preserved the durable replay/competitive artifact per the D-24119 carve-out — and abandoned matches after 24h. What NEITHER the reaper NOR autoscaling does is shrink the table FILE: Postgres keeps deleted-row space as reusable dead tuples (mostly in TOAST, where the jsonb match blobs live), so `pg_total_relation_size('bgio.matches')` can be hundreds of MB with only a few live rows. Reclaim that bloat to disk with a one-shot `VACUUM FULL` — see the operator runbook `docs/ops/RUNBOOK-db-storage-reclaim.md` (worked example 2026-07-24: 346MB → 41MB, ~305MB of TOAST bloat reclaimed). NOT a scheduled chore on `pro-4gb` + autoscaling; reclaim only when you want the space back.
-- Render's Connection Pool (PgBouncer) is ENABLED on the instance, but the app stays on the DIRECT Internal Database URL — with 1 GB RAM there is no connection-memory pressure to justify PgBouncer transaction-pooling (which can break prepared statements / session state). Route the app through the pool URL only if real connection pressure ever appears.
+- Render's Connection Pool (PgBouncer) is ENABLED on the instance, but the app stays on the DIRECT Internal Database URL — with 4 GB RAM there is no connection-memory pressure to justify PgBouncer transaction-pooling (which can break prepared statements / session state). Route the app through the pool URL only if real connection pressure ever appears.
 - Fix arc (all 2026-07-22): #920 added `pool.on("error")` (a band-aid that stopped the process crash but the DB kept killing idle clients); #930 gave the autoplay loop a bounded transient-read retry (`resilientFetch`, reads-only); #931 de-noised the pool error log (it was dumping a ~40-line pg Connection object per idle-client kill); #932 bumped the plan to basic-1gb (root cause); #933 restricted inbound to internal-only; #935 enabled storage autoscaling.
 - DIAGNOSTIC LESSON: the autoplay guest-safe `abortReason` ("The bot loop stopped after an unexpected server error", D-24037) HIDES the raw exception — it is logged only server-side as `[autoplay] match <id> bot loop failed: <msg>`. To diagnose an autoplay/bot abort, pull that Render log line; the engine-runner harness cannot reproduce it (it bypasses boardgame.io).
 
@@ -280,11 +280,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 1345 |
-| Vue SFC | 189 |
-| JavaScript | 146 |
+| TypeScript | 1393 |
+| Vue SFC | 194 |
+| JavaScript | 150 |
 | JSON | 114 |
-| Markdown | 108 |
+| Markdown | 110 |
 | HTML | 18 |
 | CSS | 12 |
 | PowerShell | 10 |
@@ -295,11 +295,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 1340 |
-| `.vue` | 189 |
+| `.ts` | 1388 |
+| `.vue` | 194 |
 | `.json` | 114 |
-| `.md` | 108 |
-| `.mjs` | 104 |
+| `.md` | 110 |
+| `.mjs` | 108 |
 | `.js` | 40 |
 | `.html` | 18 |
 | `.css` | 12 |
@@ -358,9 +358,9 @@ Whether each non-Node language's toolchain marker files and source-file extensio
 |---|---|---:|---|
 | `@vitejs/plugin-vue` | ^5.0.5 | 4 _(partial)_ | `apps/arena-client/package.json` (dev); `apps/dashboard/package.json` (dev); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev) |
 | `@vue/compiler-sfc` | ^3.4.27 | 1 _(minimal)_ | `packages/vue-sfc-loader/package.json` (dev); `packages/vue-sfc-loader/package.json` (peer) |
-| `pinia` | ^2.1.7 | 69 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/dashboard/package.json` (dep); `apps/registry-viewer/package.json` (dep) |
+| `pinia` | ^2.1.7 | 74 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/dashboard/package.json` (dep); `apps/registry-viewer/package.json` (dep) |
 | `vite` | ^5.3.1 | 7 _(partial)_ | `apps/arena-client/package.json` (dev); `apps/dashboard/package.json` (dev); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev) |
-| `vue` | ^3.4.27 | 278 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/dashboard/package.json` (dep); `apps/legends-board/package.json` (dep); `apps/registry-viewer/package.json` (dep); `packages/vue-sfc-loader/package.json` (dev); `packages/vue-sfc-loader/package.json` (peer) |
+| `vue` | ^3.4.27 | 287 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/dashboard/package.json` (dep); `apps/legends-board/package.json` (dep); `apps/registry-viewer/package.json` (dep); `packages/vue-sfc-loader/package.json` (dev); `packages/vue-sfc-loader/package.json` (peer) |
 | `vue-router` | ^4.3.2 | 6 _(partial)_ | `apps/dashboard/package.json` (dep) |
 
 _Other candidates in this category not currently installed:_ `@vue/runtime-core`
@@ -369,7 +369,7 @@ _Other candidates in this category not currently installed:_ `@vue/runtime-core`
 
 | Package | Version(s) | Files importing | Declared in |
 |---|---|---:|---|
-| `boardgame.io` | ^0.50.0 | 75 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
+| `boardgame.io` | ^0.50.0 | 77 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
 
 _Other candidates in this category not currently installed:_ `koa`, `@koa/router`, `koa-bodyparser`, `koa-static`, `express`, `fastify`, `hono`
 
@@ -524,7 +524,7 @@ _Other candidates in this category not currently installed:_ `@aws-sdk/s3-reques
 
 | Package | Version(s) | Files importing | Declared in |
 |---|---|---:|---|
-| `@vue/test-utils` | ^2.4.6 | 102 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `packages/vue-sfc-loader/package.json` (dev) |
+| `@vue/test-utils` | ^2.4.6 | 105 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `packages/vue-sfc-loader/package.json` (dev) |
 | `jsdom` | ^24.1.0 | 2 _(minimal)_ | `apps/arena-client/package.json` (dev); `packages/vue-sfc-loader/package.json` (dev) |
 | `playwright` | ^1.48.0 | 1 _(minimal)_ | `apps/arena-client/package.json` (dev) |
 
@@ -623,10 +623,10 @@ become load-bearing.
 |---|---|---:|---|
 | `@cloudflare/workers-types` | ^4.20260701.1, ^4.20240620.0 | 3 _(partial)_ | `apps/arena-client/package.json` (dev); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev); `packages/registry/package.json` (dev) |
 | `@koa/multer` | ^3.0.2 | 1 _(minimal)_ | `apps/server/package.json` (dep) |
-| `@legendary-arena/game-engine` | workspace:* | 250 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
+| `@legendary-arena/game-engine` | workspace:* | 254 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
 | `@legendary-arena/lagn` | workspace:* | 10 _(partial)_ | `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep) |
 | `@legendary-arena/preplan` | workspace:* | 11 _(partial)_ | `apps/arena-client/package.json` (dep) |
-| `@legendary-arena/registry` | workspace:* | 59 _(comprehensive)_ | `apps/dashboard/package.json` (dep); `apps/engine-runner/package.json` (dep); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev) |
+| `@legendary-arena/registry` | workspace:* | 60 _(comprehensive)_ | `apps/dashboard/package.json` (dep); `apps/engine-runner/package.json` (dep); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev) |
 | `@legendary-arena/vue-sfc-loader` | workspace:* | 0 ⚠ | `apps/arena-client/package.json` (dev) |
 | `@types/canvas-confetti` | ^1.9.0 | 0 _(tooling)_ | `apps/arena-client/package.json` (dev) |
 | `@types/howler` | ^2.2.13 | 0 _(tooling)_ | `apps/arena-client/package.json` (dev) |
@@ -722,7 +722,7 @@ installed but not yet placed surfaces under "Not yet classified".
 
 | Package | Version(s) | Adoption | Files importing |
 |---|---|---|---:|
-| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 75 _(comprehensive)_ |
+| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 77 _(comprehensive)_ |
 | `pg` | ^8.13.0 | direct dep — `apps/server/package.json` | 55 _(comprehensive)_ |
 | `typescript` | ^5.4.5, ^5.2.2 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json`, `apps/replay-producer/package.json`, `package.json`, `packages/game-engine/package.json`, `packages/lagn-spec/package.json`, `packages/preplan/package.json`, `packages/registry/package.json`, `packages/vue-sfc-loader/package.json` | 1 _(minimal)_ |
 | `zod` | ^3.23.8, ^3.22.4 | direct dep — `apps/registry-viewer/package.json`, `packages/lagn-spec/package.json`, `packages/registry/package.json` | 19 _(comprehensive)_ |
@@ -736,12 +736,12 @@ installed but not yet placed surfaces under "Not yet classified".
 | `axios` | ^1.7.2 | direct dep — `apps/dashboard/package.json` | 2 _(minimal)_ |
 | `echarts` | ^5.5.0 | direct dep — `apps/dashboard/package.json` | 13 _(partial)_ |
 | `koa` | 2.16.4 | transitive via `boardgame.io` | _(transitive)_ |
-| `pinia` | ^2.1.7 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/registry-viewer/package.json` | 69 _(comprehensive)_ |
+| `pinia` | ^2.1.7 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/registry-viewer/package.json` | 74 _(comprehensive)_ |
 | `primevue` | ^4.0.0 | direct dep — `apps/dashboard/package.json` | 5 _(partial)_ |
 | `socket.io` | 3.1.2, 4.8.3 | transitive via `boardgame.io` | _(transitive)_ |
 | `socket.io-client` | 4.8.3 | transitive via `boardgame.io` | _(transitive)_ |
 | `vite` | ^5.3.1 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json` | 7 _(partial)_ |
-| `vue` | ^3.4.27 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json`, `packages/vue-sfc-loader/package.json` | 278 _(comprehensive)_ |
+| `vue` | ^3.4.27 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json`, `packages/vue-sfc-loader/package.json` | 287 _(comprehensive)_ |
 | `vue-router` | ^4.3.2 | direct dep — `apps/dashboard/package.json` | 6 _(partial)_ |
 
 ### Tooling
@@ -756,7 +756,7 @@ installed but not yet placed surfaces under "Not yet classified".
 | `@vitejs/plugin-vue` | ^5.0.5 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json` | 4 _(partial)_ |
 | `@vue/compiler-sfc` | ^3.4.27 | direct dep — `packages/vue-sfc-loader/package.json` | 1 _(minimal)_ |
 | `@vue/eslint-config-typescript` | ^13.0.0 | direct dep — `apps/dashboard/package.json`, `apps/registry-viewer/package.json` | 2 _(minimal)_ |
-| `@vue/test-utils` | ^2.4.6 | direct dep — `apps/arena-client/package.json`, `packages/vue-sfc-loader/package.json` | 102 _(comprehensive)_ |
+| `@vue/test-utils` | ^2.4.6 | direct dep — `apps/arena-client/package.json`, `packages/vue-sfc-loader/package.json` | 105 _(comprehensive)_ |
 | `@vue/tsconfig` | ^0.5.1 | direct dep — `apps/legends-board/package.json`, `apps/registry-viewer/package.json` | 2 _(minimal)_ |
 | `dotenv` | ^16.4.5 | direct dep — `packages/registry/package.json` | 2 _(minimal)_ |
 | `eslint` | ^8.57.1 | direct dep — `apps/dashboard/package.json`, `apps/registry-viewer/package.json` | 0 _(tooling)_ |
