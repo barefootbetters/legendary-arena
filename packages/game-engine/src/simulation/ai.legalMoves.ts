@@ -34,7 +34,12 @@ import { hasPendingKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
-import { selectDefaultKoTarget, selectScryKoTarget, isCullableDeckTopCard } from '../villain/villainEffects.execute.js';
+import {
+  selectDefaultKoTarget,
+  selectKoHeroTarget,
+  selectScryKoTarget,
+  isCullableDeckTopCard,
+} from '../villain/villainEffects.execute.js';
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -657,31 +662,34 @@ export function getLegalMoves(
   // why: pending-KO short-circuit (D-24009) — when a KO-a-Hero choice is
   // pending the engine block-all guard freezes every other move, so the bot
   // must resolve it before anything else. The single legal move is
-  // resolveKoHeroChoice with the legacy auto-resolution target
-  // (selectDefaultKoTarget reuses selectKoHeroTarget over discard → hand →
-  // inPlay), keeping the bot KO target byte-identical to the prior
-  // auto-resolution for replay determinism. selectDefaultKoTarget is non-null
-  // here because a choice is appended only when ≥2 eligible targets exist and
-  // the board is frozen. Returns a list of length EXACTLY 1 — no other move
-  // is appended or merged.
+  // resolveKoHeroChoice with the auto-resolution target (selectDefaultKoTarget
+  // reuses selectKoHeroTarget over inPlay, then hand — D-24687), keeping the bot
+  // KO target equal to the auto-resolution's (D-24009 parity). The target is
+  // non-null here because a choice is appended only when ≥2 eligible targets
+  // exist and the board is frozen. Returns a list of length EXACTLY 1 — no other
+  // move is appended or merged.
   if (hasPendingKoHeroChoice(gameState)) {
     // why: WP-577 / D-24386 — a hand-scoped entry (Red Skull's strike parks
     // `zones: ['hand']`) resolves to the lowest-cost HAND Hero, byte-identical to
     // the old resolveRedSkullStrike auto-pick (selectRedSkullKoTarget), so an all-bot
-    // sim + both hash oracles are unchanged. A generic (all-zone) entry keeps the
-    // legacy discard→hand→inPlay default. The bot MUST offer a zone the resolve
-    // accepts, or the block-all guard never lifts (the legalMoves↔guard divergence).
+    // sim + both hash oracles are unchanged. A zoneless entry ("your Heroes") takes
+    // selectDefaultKoTarget's inPlay-then-hand default (D-24687). The bot MUST offer a
+    // zone the resolve accepts, or the block-all guard never lifts (the
+    // legalMoves↔guard divergence).
     const front = gameState.pendingKoHeroChoices![0]!;
     let defaultTarget: KoHeroTarget | null;
     if (front.zones !== undefined && front.zones.includes('hand')) {
       const handTarget = selectRedSkullKoTarget(gameState, zones.hand);
       defaultTarget = handTarget === null ? null : { zone: 'hand', cardId: handTarget };
     } else if (front.zones !== undefined && front.zones.includes('discard')) {
-      // why: D-24644 — Juggernaut's Ambush parks a discard-only entry. Offer the legacy
-      // discard default (selectDefaultKoTarget over the discard alone: starter-first,
-      // then lexical), which is the card the pre-D-24644 auto-pick KO'd. Offering a
-      // hand card here would be rejected and the block-all guard would never lift.
-      defaultTarget = selectDefaultKoTarget({ ...zones, hand: [], inPlay: [] });
+      // why: D-24644 — Juggernaut's Ambush parks a discard-only entry. Offer the
+      // discard pile's own pick (selectKoHeroTarget: starter-first, then lexical),
+      // the card the pre-D-24644 auto-pick KO'd. selectDefaultKoTarget no longer
+      // reads the discard pile (D-24687), so it would return null here, the bot
+      // would have no legal move, and the block-all guard would never lift
+      // (scaffold: 225 of 312 sweep games stalled). A hand card would be rejected.
+      const discardTarget = selectKoHeroTarget(zones.discard);
+      defaultTarget = discardTarget === null ? null : { zone: 'discard', cardId: discardTarget };
     } else {
       defaultTarget = selectDefaultKoTarget(zones);
     }

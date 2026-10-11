@@ -78,6 +78,20 @@ export interface KoHeroTarget {
   cardId: CardExtId;
 }
 
+/**
+ * The zones an unqualified "KO one of your Heroes" may take from: the hand and
+ * the cards played this turn (D-24687).
+ *
+ * The default meaning of a KO that names no zone — an absent `allowedZones` in
+ * buildKoEligibleTargets / countKoableHeroes, and an absent `zones` on a
+ * PendingKoHeroChoice. Read only as a `??` fallback; never written into G, so a
+ * zoneless pending entry keeps its WP-242 shape.
+ */
+// why: rules v23 L721–L725 — "one of your Heroes" can be "a Hero you've already
+// played this turn or a Hero still in your hand"; the discard pile is not one of
+// "your Heroes" (D-24687). A printed zone (Juggernaut, Red Skull) still overrides it.
+export const YOUR_HEROES_KO_ZONES: readonly KoHeroTarget['zone'][] = ['hand', 'inPlay'];
+
 // ---------------------------------------------------------------------------
 // executeVillainAbilities — main entry point
 // ---------------------------------------------------------------------------
@@ -933,9 +947,9 @@ function villainEffectKoHero(
   // koHeroEachPlayer, 2 == koHeroEachPlayerMag2. The literal-2 inner loop is now
   // a descriptor param (D-24023 retiring D-20201's closed-union-per-magnitude);
   // a future Mag3 is data-only (magnitude: 3), no code change. Per-iteration
-  // semantics inherit D-18503 (discard→hand→inPlay, starter-first tie-break,
-  // silent no-op for zero eligible). Magnitude-N ≡ magnitude-1 N times — pinned
-  // by the shared-resolver parity test on a single-player G.
+  // semantics are koOneHeroForPlayer's (hand + inPlay only per D-24687, starter-first
+  // tie-break, silent no-op for zero eligible). Magnitude-N ≡ magnitude-1 N times —
+  // pinned by the shared-resolver parity test on a single-player G.
   const repetitions = descriptor.magnitude ?? 1;
   const playerIds = Object.keys(G.playerZones).sort();
   // why: WP-316 — collect the KO'd ext_ids across every player/iteration in the
@@ -952,8 +966,8 @@ function villainEffectKoHero(
     targetsByPlayer.push(playerShare);
     // why: D-24280 — a `zone`-bearing descriptor (Juggernaut's discard/hand
     // source-restricted KO) uses the zone-locked resolver, which KOs `repetitions`
-    // heroes from ONLY that zone (no discard→hand→inPlay fallback). Absent zone is
-    // the byte-unchanged legacy path (koOneHeroForPlayer, per-iteration).
+    // heroes from ONLY that zone (no cross-zone fallback). Absent zone is the
+    // "your Heroes" path (koOneHeroForPlayer, per-iteration; hand + inPlay, D-24687).
     if (descriptor.zone !== undefined) {
       // why: D-24644 — "Each player KOs two Heroes from their discard pile" is each
       // player's own choice, so the CURRENT player picks (the D-24386 Red Skull split);
@@ -1001,9 +1015,10 @@ function villainEffectKoHero(
  * Otherwise returns false and the caller auto-resolves the forced KO.
  *
  * With a `zone` it is the zone-locked "KO N Heroes from your <zone>" choice (D-24644,
- * Juggernaut). Without one it is the unrestricted "KO N of your Heroes" choice
+ * Juggernaut). Without one it is the unqualified "KO N of your Heroes" choice
  * (D-24669, Destroyer's Escape / Super-Skrull's Fight), parked with no `zones` field, so
- * the existing resolve offers every KO-able Hero.
+ * the existing resolve offers the Heroes in hand and in play (YOUR_HEROES_KO_ZONES,
+ * D-24687).
  *
  * @param G - Game state (the pending queue is lazily created on a park).
  * @param playerId - The current player.
@@ -1027,8 +1042,8 @@ function parkZoneKoChoice(
   if (buildKoEligibleTargets(zones, allowedZones).length < 2) return false;
   if (!G.pendingKoHeroChoices) G.pendingKoHeroChoices = [];
   const entry: PendingKoHeroChoice = { choiceType: 'ko-hero', playerID: playerId };
-  // why: D-24669 — an unrestricted KO carries no `zones` field (absent ≡ every zone),
-  // the same shape the WP-242 current-player parker uses.
+  // why: D-24669 — an unqualified KO carries no `zones` field (absent ≡ "your Heroes",
+  // hand + inPlay per D-24687), the same shape the WP-242 current-player parker uses.
   if (allowedZones !== undefined) {
     entry.zones = allowedZones;
   }
@@ -2508,9 +2523,9 @@ function villainEffectKoHeroesCurrentByTrait(
   }
   // why: operator ruling 2026-08-01 — "your Heroes" includes Heroes played this
   // turn, which sit in `inPlay` (the Fight effect resolves after the play phase),
-  // so the KO scans hand + in-play. This is the Destroyer's own zones, NOT the
-  // discard→hand→inPlay per-player KO helper (koOneHeroForPlayer), whose zones +
-  // starter-first selection are wrong for a "KO ALL matching" effect.
+  // so the KO scans hand + in-play. This is the Destroyer's own scan, NOT the
+  // per-player KO helper (koOneHeroForPlayer), whose one-card starter-first
+  // selection is wrong for a "KO ALL matching" effect.
   const targets: CardExtId[] = [];
   const remainingHand: CardExtId[] = [];
   // why: WP-772 / D-24604 — the hand is off play, so a split card there matches on either half's
@@ -3510,7 +3525,8 @@ function applyVillainEffect(
 // ---------------------------------------------------------------------------
 
 /**
- * KOs one hero card from the given player's discard (priority) then hand.
+ * KOs one of the given player's Heroes: from in play first, then from the hand.
+ * Never takes a card from the discard pile (D-24687).
  *
  * Shared per-player resolver called by BOTH the `koHeroCurrentPlayer` and
  * `koHeroEachPlayer` effect cases — the latter iterates every player in
@@ -3534,24 +3550,20 @@ function applyVillainEffect(
  *   `koHeroEachPlayer` case it is each entry of the sorted player-ids
  *   iteration).
  */
-// why: deterministic auto-resolution — zone priority is discard → hand →
-// inPlay per D-20603 (which adds the third tier on top of D-18503's
-// original discard-then-hand contract; the third tier closes the
-// turn-1 autoplay no-op where every starter card the bot just played
-// sits in inPlay while hand and discard are both empty). Within each
-// tier, the D-20602 two-tier ext_id rule applies: starting SHIELD
-// cards (`starting-shield-trooper`, `starting-shield-agent`) ahead of
-// everything else, with ext_id lexical ascending as the tie-break.
-// Starting-first preserves replay determinism and remains NOT VP-based
-// — the starter set is a closed enum, no registry read (D-18503
-// carries forward). The printed card grants player choice; interactive
-// targeting is deferred to a future UI WP (WP-185 §Out of Scope). This
-// function owns the `koCard` mutation site for the per-player KO —
-// callers in both the `koHeroCurrentPlayer` and `koHeroEachPlayer`
-// dispatch cases delegate to it and do not post-process its output, so
-// the mutation site is uniform across branches (D-18902
-// mutation-location lock; single source of truth for KO targeting +
-// replay determinism).
+// why: deterministic auto-resolution over "your Heroes" — rules v23 L721–L725
+// (D-24687, which supersedes the zone priority of D-18503 / D-20603). inPlay
+// goes first because a Hero played this turn has already produced its Recruit
+// and Attack (L723–L725), so KO'ing it costs nothing more this turn; for any
+// other player inPlay is empty and the pick comes from the hand. The discard
+// pile is never read. Within each zone the D-20602 rule applies via
+// selectKoHeroTarget: starting SHIELD cards (`starting-shield-trooper`,
+// `starting-shield-agent`) ahead of everything else, with ext_id lexical
+// ascending as the tie-break. Starting-first preserves replay determinism and
+// remains NOT VP-based — the starter set is a closed enum, no registry read.
+// This function owns the `koCard` mutation site for the per-player KO —
+// callers delegate to it and do not post-process its output (D-18902
+// mutation-location lock; single source of truth for KO targeting + replay
+// determinism).
 function koOneHeroForPlayer(
   G: LegendaryGameState,
   playerId: string,
@@ -3559,42 +3571,11 @@ function koOneHeroForPlayer(
   const zones = G.playerZones[playerId];
   if (!zones) return null;
 
-  const discardTarget = selectKoHeroTarget(zones.discard);
-  if (discardTarget !== null) {
-    const moveResult = moveCardFromZone(zones.discard, [], discardTarget);
-    if (moveResult.found) {
-      zones.discard = moveResult.from;
-      G.ko = koCard(G.ko, discardTarget);
-      // why: WP-316 — return the KO'd ext_id for the log target.
-      return discardTarget;
-    }
-    // why: discard has strict priority — once a discard hero is chosen we stop
-    // and never fall through to hand or inPlay.
-    return null;
-  }
-
-  const handTarget = selectKoHeroTarget(zones.hand);
-  if (handTarget !== null) {
-    const moveResult = moveCardFromZone(zones.hand, [], handTarget);
-    if (moveResult.found) {
-      zones.hand = moveResult.from;
-      G.ko = koCard(G.ko, handTarget);
-      // why: WP-316 — return the KO'd ext_id for the log target.
-      return handTarget;
-    }
-    // why: hand wins over inPlay once a hand hero is chosen.
-    return null;
-  }
-
-  // why: D-20603 — inPlay is the third tier. The autoplay flow runs
-  // `playCard` for every hand card (hand → inPlay) BEFORE the spend
-  // phase that calls `fightVillain`, so on turn 1 (when nothing has
-  // cycled into discard yet) both hand and discard are empty while
-  // inPlay holds every starter SHIELD card the bot just played.
-  // Without this third tier, a Sentinel Fight: KO no-ops silently
-  // even though the printed text "KO one of your Heroes" clearly has
-  // 6 eligible targets sitting in inPlay. Same starter-first priority
-  // applies (D-20602 carries forward via selectKoHeroTarget).
+  // why: inPlay first (D-24687; the D-20603 turn-1 case still holds — the
+  // autoplay flow plays every hand card before the spend phase that fights, so
+  // on turn 1 the bot's Heroes all sit in inPlay). A played Hero has already
+  // produced its Recruit and Attack (rules v23 L723–L725). Starter-first within
+  // the zone (D-20602, via selectKoHeroTarget).
   const inPlayTarget = selectKoHeroTarget(zones.inPlay);
   if (inPlayTarget !== null) {
     const moveResult = moveCardFromZone(zones.inPlay, [], inPlayTarget);
@@ -3604,9 +3585,25 @@ function koOneHeroForPlayer(
       // why: WP-316 — return the KO'd ext_id for the log target.
       return inPlayTarget;
     }
+    // why: inPlay wins over hand once an inPlay hero is chosen.
+    return null;
   }
-  // why: WP-316 — no eligible hero in any zone (or the move missed); no KO,
-  // no target.
+
+  // why: the hand is the other half of "your Heroes" (D-24687) and the only one
+  // a non-current player has, since their inPlay is empty off-turn.
+  const handTarget = selectKoHeroTarget(zones.hand);
+  if (handTarget !== null) {
+    const moveResult = moveCardFromZone(zones.hand, [], handTarget);
+    if (moveResult.found) {
+      zones.hand = moveResult.from;
+      G.ko = koCard(G.ko, handTarget);
+      // why: WP-316 — return the KO'd ext_id for the log target.
+      return handTarget;
+    }
+  }
+  // why: WP-316 — no eligible hero in hand or play (or the move missed); no KO,
+  // no target. The discard pile is never read: a Hero there is not one of "your
+  // Heroes" (D-24687 supersedes the D-18503 / D-20603 zone priority).
   return null;
 }
 
@@ -3628,7 +3625,7 @@ function koOneHeroForPlayer(
  * @param magnitude - The maximum number of heroes to KO from that zone.
  * @returns The KO'd card ext_ids in KO order (WP-316 log targets).
  */
-// why: D-24280 — unlike koOneHeroForPlayer (discard→hand→inPlay), this KOs ONLY
+// why: D-24280 — unlike koOneHeroForPlayer (hand + inPlay, D-24687), this KOs ONLY
 // from `zones[zone]` because the printed effect is source-restricted — it cannot
 // reach the player's other zones, so a zone with fewer than `magnitude` heroes
 // yields fewer KOs and an empty zone yields none, a reachable no-op (never
@@ -3682,7 +3679,9 @@ function koHeroesFromZoneForPlayer(
 // pure lex-asc, so the pre-D-20602 heuristic always picked good cards).
 // Membership check uses a closed enum, so the rule remains NOT VP-based
 // and reads no registry at runtime (D-18503 carries forward).
-function selectKoHeroTarget(zone: CardExtId[]): CardExtId | null {
+// Exported (WP-801 / D-24687) so the bot's discard-scoped Juggernaut branch
+// picks within the discard pile directly; the body is unchanged.
+export function selectKoHeroTarget(zone: CardExtId[]): CardExtId | null {
   let startingSelected: CardExtId | null = null;
   let otherSelected: CardExtId | null = null;
   for (const candidate of zone) {
@@ -3705,18 +3704,21 @@ function selectKoHeroTarget(zone: CardExtId[]): CardExtId | null {
 // ---------------------------------------------------------------------------
 
 /**
- * Builds the deduped eligible KO-a-Hero targets across a player's zones.
+ * Builds the deduped eligible KO-a-Hero targets across a player's allowed zones.
  *
- * Scans discard, then hand, then inPlay — each in array index order — emitting
- * one target per non-wound card. Deduped by `(zone, cardId)` keeping the first
- * occurrence: two copies of the same ext_id in the same zone collapse to one
+ * Visits the zones in the fixed order discard, hand, inPlay, skipping any zone
+ * not allowed — with no `allowedZones` the allowed zones are YOUR_HEROES_KO_ZONES
+ * (hand + inPlay, D-24687). Each allowed zone is read in array index order,
+ * emitting one target per non-wound card. Deduped by `(zone, cardId)` keeping the
+ * first occurrence: two copies of the same ext_id in the same zone collapse to one
  * option (KOing either is outcome-identical), but the same ext_id in two
- * different zones stays two options (a discard-KO and an inPlay-KO differ).
+ * different zones stays two options (a hand-KO and an inPlay-KO differ).
  *
- * Used by the parker (count), resolveKoHeroChoice has no need of it, and the
+ * Used by the parker (count), the resolve move's forced remainder, and the
  * WP-243 projection. Fresh recompute every call — no snapshot (D-24007).
  *
  * @param zones - The player's card zones.
+ * @param allowedZones - The zones the KO may take from; absent means "your Heroes".
  * @returns The eligible KO targets in deterministic scan order.
  */
 export function buildKoEligibleTargets(
@@ -3733,8 +3735,9 @@ export function buildKoEligibleTargets(
   const orderedZones: KoHeroTarget['zone'][] = ['discard', 'hand', 'inPlay'];
   for (const zoneName of orderedZones) {
     // why: WP-577 — an optional zone allowlist restricts eligibility (Red Skull's
-    // strike is hand-only). Absent ⇒ all zones (byte-identical to WP-242).
-    if (allowedZones !== undefined && !allowedZones.includes(zoneName)) continue;
+    // strike is hand-only). An absent allowlist means "your Heroes", hand + inPlay
+    // (D-24687 amends the WP-577 / D-24386 default): the discard pile is skipped.
+    if (!(allowedZones ?? YOUR_HEROES_KO_ZONES).includes(zoneName)) continue;
     for (const cardId of zones[zoneName]) {
       // why: a wound is never a "hero" for KO purposes (D-18503 carries
       // forward); wounds are excluded even when sitting in an otherwise-valid zone.
@@ -3749,9 +3752,10 @@ export function buildKoEligibleTargets(
 }
 
 /**
- * Counts a player's PHYSICAL KO-able heroes — every non-wound card across discard,
- * hand, and inPlay, WITHOUT the per-(zone, cardId) dedupe `buildKoEligibleTargets`
- * applies (WP-492 / D-24298).
+ * Counts a player's PHYSICAL KO-able heroes — every non-wound card in the allowed
+ * zones (absent `allowedZones` ⇒ YOUR_HEROES_KO_ZONES, hand + inPlay, D-24687),
+ * WITHOUT the per-(zone, cardId) dedupe `buildKoEligibleTargets` applies
+ * (WP-492 / D-24298).
  *
  * The magnitude-N current-player KO (Whirlwind) parks an interactive choice only
  * when the player has MORE KO-able heroes than the count owed (a genuine choice of
@@ -3760,7 +3764,8 @@ export function buildKoEligibleTargets(
  * option count: two identical copies are one option but two physical heroes.
  *
  * @param zones - The player's card zones.
- * @returns The number of non-wound cards across discard + hand + inPlay.
+ * @param allowedZones - The zones the KO may take from; absent means "your Heroes".
+ * @returns The number of non-wound cards in the allowed zones.
  */
 export function countKoableHeroes(
   zones: PlayerZones,
@@ -3770,8 +3775,9 @@ export function countKoableHeroes(
   const orderedZones: KoHeroTarget['zone'][] = ['discard', 'hand', 'inPlay'];
   for (const zoneName of orderedZones) {
     // why: WP-577 — an optional zone allowlist restricts the count to the KO's
-    // allowed zones (Red Skull is hand-only). Absent ⇒ all zones (WP-492 unchanged).
-    if (allowedZones !== undefined && !allowedZones.includes(zoneName)) continue;
+    // allowed zones (Red Skull is hand-only). An absent allowlist means "your
+    // Heroes", hand + inPlay (D-24687 amends the WP-577 / D-24386 default).
+    if (!(allowedZones ?? YOUR_HEROES_KO_ZONES).includes(zoneName)) continue;
     for (const cardId of zones[zoneName]) {
       // why: a wound is never a "hero" for KO purposes (D-18503) — excluded here too.
       if (cardId === WOUND_EXT_ID) continue;
@@ -3782,34 +3788,33 @@ export function countKoableHeroes(
 }
 
 /**
- * Selects the single default KO target the legacy auto-resolution would pick.
+ * Selects the single default KO target for an unqualified "KO one of your Heroes".
  *
- * Runs selectKoHeroTarget over discard, then hand, then inPlay, returning the
- * first non-null pick with its zone, or null when no zone has an eligible hero.
+ * Runs selectKoHeroTarget over inPlay, then hand, returning the first non-null
+ * pick with its zone, or null when neither zone has an eligible hero. Never
+ * reads the discard pile (D-24687).
  *
- * This is the bot default pick AND the auto-1 pick, and it is the determinism
- * anchor (reuses the unchanged selectKoHeroTarget so the bot's KO target is
- * byte-identical to today's koOneHeroForPlayer resolution — D-24009).
+ * This is the bot default pick for a zoneless pending KO, and it is the
+ * determinism anchor: it reuses the unchanged selectKoHeroTarget in the same
+ * zone order as koOneHeroForPlayer, so the bot's KO target equals the
+ * auto-resolution's (D-24009 parity).
  *
  * @param zones - The player's card zones.
  * @returns The default KO target, or null when no eligible hero exists.
  */
 export function selectDefaultKoTarget(zones: PlayerZones): KoHeroTarget | null {
-  // why: zone priority is discard → hand → inPlay (D-20603), identical to
-  // koOneHeroForPlayer. selectKoHeroTarget owns the within-zone starter-first
-  // tie-break (D-20602); reusing it verbatim keeps the bot KO target
-  // byte-identical to the prior auto-resolution (D-24009 replay determinism).
-  const discardTarget = selectKoHeroTarget(zones.discard);
-  if (discardTarget !== null) {
-    return { zone: 'discard', cardId: discardTarget };
+  // why: inPlay first, then hand — the koOneHeroForPlayer order. A played Hero has
+  // already produced its Recruit and Attack (rules v23 L723–L725), and the discard
+  // tier is gone (D-24687 supersedes D-18503 / D-20603). selectKoHeroTarget owns the
+  // within-zone starter-first tie-break (D-20602); reusing it verbatim keeps the bot
+  // KO target equal to the auto-resolution's (D-24009 parity).
+  const inPlayTarget = selectKoHeroTarget(zones.inPlay);
+  if (inPlayTarget !== null) {
+    return { zone: 'inPlay', cardId: inPlayTarget };
   }
   const handTarget = selectKoHeroTarget(zones.hand);
   if (handTarget !== null) {
     return { zone: 'hand', cardId: handTarget };
-  }
-  const inPlayTarget = selectKoHeroTarget(zones.inPlay);
-  if (inPlayTarget !== null) {
-    return { zone: 'inPlay', cardId: inPlayTarget };
   }
   return null;
 }

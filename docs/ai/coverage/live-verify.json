@@ -602,10 +602,10 @@
       "card": "Destroyer",
       "ability": "koHeroEachPlayerMag2",
       "wp": "WP-202",
-      "state": "verified",
-      "date": "2026-10-10",
+      "state": "pending",
+      "date": "2026-10-11",
       "evidence": "solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Destroyer escaped (13.1.2); its Escape KO'd two of Player 0's Heroes (13.1.3), auto-picked with no prompt, then the rulebook HQ KO ran (13.1.4). D-24669 choice seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win — Destroyer escaped (13.1.2), \"the active player must KO two heroes\" (13.1.3), and both KOs resolved through the KO-choice move (13.1.4–13.1.5), then the rulebook HQ KO (13.1.6).",
-      "note": ""
+      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
     },
     {
       "key": "core-villain-spider-foes-doctor-octopus|override-next-hand-size",
@@ -712,10 +712,10 @@
       "card": "Maestro",
       "ability": "ko-heroes-current-count-by-trait",
       "wp": "WP-544",
-      "state": "verified",
-      "date": "2026-08-15",
+      "state": "pending",
+      "date": "2026-10-11",
       "evidence": "WP-544 live-verify, matches NPyIIWIjd1Q + iFdZ8t9xFsP (#1421)",
-      "note": ""
+      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
     },
     {
       "key": "core-villain-masters-of-evil-melter|ko-cullable-each-deck-top",
@@ -778,10 +778,10 @@
       "card": "Sentinel",
       "ability": "koHeroCurrentPlayer",
       "wp": "WP-185",
-      "state": "verified",
-      "date": "2026-10-04",
+      "state": "pending",
+      "date": "2026-10-11",
       "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
-      "note": "Four fights, KO choice each time."
+      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
     },
     {
       "key": "core-villain-skrulls-skrull-queen-veranke|captureHqHeroHighestCost",
@@ -833,10 +833,10 @@
       "card": "Super-Skrull",
       "ability": "koHeroEachPlayer",
       "wp": "WP-189",
-      "state": "verified",
-      "date": "2026-10-08",
+      "state": "pending",
+      "date": "2026-10-11",
       "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): every player KO'd a Hero on both fights (11.2.10, 32.2.27). D-24669 current-player choice seen live: solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf) — all three Super-Skrull fights (8.2.12, 9.2.11, 30.2.16) resolved through the KO choice move (\"Player 0 KO'd S.H.I.E.L.D. Trooper (starting-shield-trooper).\", the koHeroChoice.resolve line).",
-      "note": ""
+      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
     },
     {
       "key": "core-villain-hydra-supreme-hydra|scoring:dynamic-vp",
@@ -910,10 +910,10 @@
       "card": "Whirlwind",
       "ability": "ko-hero",
       "wp": "WP-252",
-      "state": "verified",
-      "date": "2026-10-05",
+      "state": "pending",
+      "date": "2026-10-11",
       "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b)",
-      "note": "Both: fought in the Sewers, no effect; fought on the Bridge, KO two Heroes of your choice."
+      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
     },
     {
       "key": "core-villain-enemies-of-asgard-ymir-frost-giant-king|ko-wounds-current-hand-and-discard",

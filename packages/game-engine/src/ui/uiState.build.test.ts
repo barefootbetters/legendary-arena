@@ -1164,20 +1164,38 @@ describe('buildUIState — pendingKoHeroChoice projection (WP-243 / D-24010)', (
     assert.equal(ui.pendingKoHeroChoice, undefined, 'absent when no pending KO choice');
   });
 
-  it('projects the FRONT entry with eligible spanning discard → hand → inPlay (wounds excluded)', () => {
-    const ui = buildUIState(withKoChoice(), mockCtx);
+  it('projects the FRONT entry with eligible spanning hand → inPlay (wounds and the discard pile excluded)', () => {
+    // why: D-24687 — a zoneless entry is "your Heroes" (hand + inPlay). An entry
+    // naming every zone still projects them in the fixed zone order.
+    const gameState = withKoChoice();
+    const ui = buildUIState(gameState, mockCtx);
     assert.ok(ui.pendingKoHeroChoice !== undefined, 'present when queue non-empty');
     assert.equal(ui.pendingKoHeroChoice!.choiceType, 'ko-hero');
     assert.equal(ui.pendingKoHeroChoice!.playerID, '0');
     assert.deepStrictEqual(
       ui.pendingKoHeroChoice!.eligible.map((e) => ({ zone: e.zone, cardId: e.cardId })),
       [
+        { zone: 'hand', cardId: 'hero-h1' },
+        { zone: 'inPlay', cardId: 'hero-p1' },
+      ],
+      'eligible scanned in hand → inPlay array index order, wounds and discard excluded',
+    );
+    const allZones = withKoChoice();
+    allZones.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard', 'hand', 'inPlay'] }];
+    assert.deepStrictEqual(
+      buildUIState(allZones, mockCtx).pendingKoHeroChoice!.eligible.map((e) => ({ zone: e.zone, cardId: e.cardId })),
+      [
         { zone: 'discard', cardId: 'hero-d1' },
         { zone: 'discard', cardId: 'hero-d2' },
         { zone: 'hand', cardId: 'hero-h1' },
         { zone: 'inPlay', cardId: 'hero-p1' },
       ],
-      'eligible scanned in discard → hand → inPlay array index order, wounds excluded',
+      'an entry naming every zone is scanned in discard, hand, inPlay order, wounds excluded',
+    );
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.discard,
+      ['hero-d1', WOUND, 'hero-d2'],
+      'discard unchanged',
     );
   });
 
@@ -1219,39 +1237,47 @@ describe('buildUIState — pendingKoHeroChoice projection (WP-243 / D-24010)', (
 
   it('eligible order is derived from array index, not Object.keys (reversed-array pin)', () => {
     const gameState = withKoChoice();
+    gameState.playerZones['0']!.hand = ['hero-h1' as CardExtId, 'hero-h2' as CardExtId];
     // Reverse each zone array; eligible must follow the NEW index order exactly.
     gameState.playerZones['0']!.discard = [...gameState.playerZones['0']!.discard].reverse();
+    gameState.playerZones['0']!.hand = [...gameState.playerZones['0']!.hand].reverse();
     const ui = buildUIState(gameState, mockCtx);
     assert.deepStrictEqual(
       ui.pendingKoHeroChoice!.eligible
-        .filter((e) => e.zone === 'discard')
+        .filter((e) => e.zone === 'hand')
         .map((e) => e.cardId),
-      ['hero-d2', 'hero-d1'],
-      'discard eligible follows the reversed array index order',
+      ['hero-h2', 'hero-h1'],
+      'hand eligible follows the reversed array index order',
+    );
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.discard,
+      ['hero-d2', WOUND, 'hero-d1'],
+      'discard unchanged (not offered by a zoneless entry, D-24687)',
     );
   });
 
   it('within-zone dedupe: same ext_id twice in one zone → one entry; same ext_id in two zones → two entries', () => {
     const gameState = makeGameStateWithDisplayData();
     gameState.playerZones['0']!.discard = ['dup' as CardExtId, 'dup' as CardExtId];
-    gameState.playerZones['0']!.hand = ['dup' as CardExtId];
-    gameState.playerZones['0']!.inPlay = [];
+    gameState.playerZones['0']!.hand = ['dup' as CardExtId, 'dup' as CardExtId];
+    gameState.playerZones['0']!.inPlay = ['dup' as CardExtId];
     gameState.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '0' }];
     const ui = buildUIState(gameState, mockCtx);
     assert.deepStrictEqual(
       ui.pendingKoHeroChoice!.eligible.map((e) => ({ zone: e.zone, cardId: e.cardId })),
       [
-        { zone: 'discard', cardId: 'dup' },
         { zone: 'hand', cardId: 'dup' },
+        { zone: 'inPlay', cardId: 'dup' },
       ],
     );
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['dup', 'dup'], 'discard unchanged');
   });
 
   it('mutating a projected eligible display does not affect G (defensive copy)', () => {
     const gameState = makeGameStateWithDisplayData();
     const cardId = 'core/black-widow/strike#0' as CardExtId;
     gameState.playerZones['0']!.discard = [cardId, 'other' as CardExtId];
-    gameState.playerZones['0']!.hand = [];
+    gameState.playerZones['0']!.hand = [cardId, 'other' as CardExtId];
     gameState.playerZones['0']!.inPlay = [];
     gameState.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '0' }];
     const originalName = gameState.cardDisplayData[cardId]!.name;
@@ -1259,6 +1285,24 @@ describe('buildUIState — pendingKoHeroChoice projection (WP-243 / D-24010)', (
     const entry = ui.pendingKoHeroChoice!.eligible.find((e) => e.cardId === cardId)!;
     entry.display.name = 'mutated';
     assert.equal(gameState.cardDisplayData[cardId]!.name, originalName, 'G display untouched');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [cardId, 'other'], 'discard unchanged');
+  });
+
+  it('a zoneless entry projects no discard card in eligible; a discard-scoped entry still does (WP-801 / D-24687)', () => {
+    const zoneless = withKoChoice();
+    const zonelessEligible = buildUIState(zoneless, mockCtx).pendingKoHeroChoice!.eligible;
+    assert.equal(
+      zonelessEligible.some((e) => e.zone === 'discard'),
+      false,
+      'an unqualified "KO one of your Heroes" offers no discard card',
+    );
+    const discardScoped = withKoChoice();
+    discardScoped.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'] }];
+    assert.deepStrictEqual(
+      buildUIState(discardScoped, mockCtx).pendingKoHeroChoice!.eligible.map((e) => e.cardId),
+      ['hero-d1', 'hero-d2'],
+      'Juggernaut parity: a discard-scoped entry projects the discard Heroes',
+    );
   });
 
   it('buildUIState does not mutate G (purity)', () => {

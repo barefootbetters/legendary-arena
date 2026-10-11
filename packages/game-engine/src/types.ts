@@ -502,10 +502,12 @@ export interface PendingKoHeroChoice {
   // owed count); the resolve move decrements it and front-pops when it reaches 0.
   remaining?: number;
   // why: WP-577 / D-24386 — an OPTIONAL zone allowlist restricting which zones the
-  // KO may come from. ABSENT means all zones (the WP-242 villain ko-hero is
-  // byte-identical: discard/hand/inPlay). Red Skull's Master Strike ("KO a Hero from
-  // their hand") parks `zones: ['hand']` so the prompt, the resolve move, and the bot
-  // default are hand-only. Additive + append-only (D-24034); a bare entry omits it.
+  // KO may come from. ABSENT means "your Heroes": hand + inPlay (D-24687), the
+  // unqualified "KO one of your Heroes" (rules v23 L721–L725) — never the discard
+  // pile. Red Skull's Master Strike ("KO a Hero from their hand") parks
+  // `zones: ['hand']` and Juggernaut's Ambush parks `zones: ['discard']`, so the
+  // prompt, the resolve move, and the bot default follow the printed zone.
+  // Additive + append-only (D-24034); a bare entry omits it.
   zones?: readonly ('hand' | 'discard' | 'inPlay')[];
 }
 

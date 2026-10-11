@@ -3,9 +3,12 @@
  *
  * Called by the active player after a koHeroCurrentPlayer effect with ≥2
  * eligible targets appended a PendingKoHeroChoice to G.pendingKoHeroChoices.
- * The player selects which hero to KO from their discard, hand, or inPlay
- * zone; this move validates the selection against the current zone contents,
- * moves the chosen card to the KO pile, and front-pops the queue.
+ * The player selects which hero to KO from a zone the entry allows: its
+ * `zones` list when present (Juggernaut's discard or hand, Red Skull's hand),
+ * otherwise "your Heroes" — hand or inPlay, never the discard pile
+ * (YOUR_HEROES_KO_ZONES, D-24687). This move validates the selection against the
+ * current zone contents, moves the chosen card to the KO pile, and front-pops
+ * the queue.
  *
  * All invalid states are silent no-ops (moves never throw). The queue is left
  * byte-identical on every no-op so the player can resubmit a valid target —
@@ -27,7 +30,11 @@ import { resolveCardName } from '../log/logDisplay.js';
 // which needs the chooser's fresh distinct-eligible options. buildKoEligibleTargets
 // is the SAME recompute the parker + the UIState projection use (no snapshot,
 // D-24007); imported here so the forced remainder shares one eligibility source.
-import { buildKoEligibleTargets, countKoableHeroes } from '../villain/villainEffects.execute.js';
+import {
+  buildKoEligibleTargets,
+  countKoableHeroes,
+  YOUR_HEROES_KO_ZONES,
+} from '../villain/villainEffects.execute.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -91,9 +98,10 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   if (front.choiceType !== 'ko-hero') { return; }
   // why: WP-577 — a hand-scoped entry (Red Skull's strike parks `zones: ['hand']`)
   // may only KO from an allowed zone; a client or bot submitting another zone is a
-  // silent no-op leaving the queue intact (resubmit). Absent `zones` ⇒ all zones
-  // (the WP-242 villain ko-hero, byte-identical).
-  if (front.zones !== undefined && !front.zones.includes(args.zone)) { return; }
+  // silent no-op leaving the queue intact (resubmit). A zoneless entry is an
+  // unqualified "KO one of your Heroes", so it allows hand + inPlay and rejects
+  // 'discard' (YOUR_HEROES_KO_ZONES, D-24687).
+  if (!(front.zones ?? YOUR_HEROES_KO_ZONES).includes(args.zone)) { return; }
 
   // Step 3: Resolve against CURRENT G — the chosen cardId must be present in
   // the named zone right now (no eligible snapshot is stored; eligibility is
@@ -140,7 +148,8 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   let owed = owedAfterPick;
   while (owed > 0) {
     // why: WP-577 — honour the entry's zone allowlist (a hand-scoped Red Skull entry
-    // stays hand-only through the forced remainder too). Absent ⇒ all zones.
+    // stays hand-only through the forced remainder too). Absent ⇒ the helpers'
+    // "your Heroes" default, hand + inPlay (D-24687).
     const eligible = buildKoEligibleTargets(playerZones, front.zones);
     if (eligible.length === 0) break; // why: nothing left to KO (fewer heroes than owed).
     // why: a genuine choice still remains only when the player has MORE KO-able

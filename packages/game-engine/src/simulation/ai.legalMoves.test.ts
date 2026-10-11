@@ -20,6 +20,7 @@ import type { CardExtId } from '../state/zones.types.js';
 import { makeTurnEconomy, makeCardStatEntry, makeCardRegistryReader } from '../test/fixtureBuilders.js';
 import { WOUND_EXT_ID, SHIELD_OFFICER_EXT_ID, SHIELD_AGENT_EXT_ID, SHIELD_TROOPER_EXT_ID } from '../setup/pilesInit.js';
 import { resolveKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
+import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { buildInitialGameState } from '../setup/buildInitialGameState.js';
@@ -68,7 +69,7 @@ describe('getLegalMoves — pending-KO short-circuit (WP-242 / D-24009)', () => 
     const gameState = makeG({
       discard: ['core/spider-man/strike' as CardExtId, 'starting-shield-agent' as CardExtId],
       hand: ['hero-h' as CardExtId],
-      inPlay: ['hero-p' as CardExtId],
+      inPlay: ['hero-p' as CardExtId, 'starting-shield-agent' as CardExtId],
       currentStage: 'main',
       pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0' }],
     });
@@ -84,8 +85,42 @@ describe('getLegalMoves — pending-KO short-circuit (WP-242 / D-24009)', () => 
       expectedTarget,
       'target equals the legacy auto-resolution pick (selectKoHeroTarget priority)',
     );
-    // The default target is the starter SHIELD card in discard (D-20602).
-    assert.deepStrictEqual(only.args, { zone: 'discard', cardId: 'starting-shield-agent' });
+    // The default target is the starter SHIELD card in play (D-20602 within the zone;
+    // D-24687 inPlay first, the discard never read).
+    assert.deepStrictEqual(only.args, { zone: 'inPlay', cardId: 'starting-shield-agent' });
+    assert.deepStrictEqual(
+      gameState.playerZones['0']!.discard,
+      ['core/spider-man/strike', 'starting-shield-agent'],
+      'discard unchanged',
+    );
+  });
+
+  test('D-24687: a DISCARD-scoped entry is answered with a discard card even though selectDefaultKoTarget no longer reads the discard (freeze regression)', () => {
+    // why: WP-801 scaffold — routing the Juggernaut discard-only entry through
+    // selectDefaultKoTarget returned null, the bot had no legal move, and the
+    // block-all guard never lifted (225 of 312 sweep games hit the turn cap).
+    const gameState = makeG({
+      discard: ['hero-z' as CardExtId, 'hero-m' as CardExtId],
+      currentStage: 'start',
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'], remaining: 2 }],
+    });
+    assert.equal(selectDefaultKoTarget(gameState.playerZones['0']!), null, 'the generic default reads no discard');
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.deepStrictEqual(legalMoves, [
+      { name: 'resolveKoHeroChoice', args: { zone: 'discard', cardId: 'hero-m' } },
+    ]);
+    // why: this file's makeG carries only what getLegalMoves reads; the resolve move
+    // also writes the KO pile and the log.
+    gameState.ko = [];
+    gameState.messages = [];
+    resolveKoHeroChoice(
+      { G: gameState, playerID: '0' } as unknown as Parameters<typeof resolveKoHeroChoice>[0],
+      legalMoves[0]!.args as { zone: 'discard'; cardId: CardExtId },
+    );
+    assert.equal(gameState.pendingKoHeroChoices?.length ?? 0, 0, 'the resolve accepts it and the guard lifts');
+    assert.deepStrictEqual([...gameState.ko].sort(), ['hero-m', 'hero-z']);
   });
 
   test('a HAND-scoped entry (Red Skull, WP-577) resolves to the lowest-cost HAND Hero — byte-identical to the auto-pick, ignoring discard/inPlay', () => {

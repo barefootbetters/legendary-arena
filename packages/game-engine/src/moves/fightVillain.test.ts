@@ -330,8 +330,11 @@ function fightHook(
 
 describe('fightVillain — WP-316 Fight: effect log narration', () => {
   it('auto-KO (1 eligible) pushes a Fight effect line naming the resolved hero', () => {
+    // why: D-24687 — the eligible hero is in hand; the copy in the discard is not
+    // one of "your Heroes" and stays.
     const gameState = createMockGameState({
       city: ['villain-a', null, null, null, null],
+      hand: ['core-hero-spidey'],
       discard: ['core-hero-spidey'],
       villainAbilityHooks: [fightHook('villain-a', 'koHeroCurrentPlayer')],
       cardDisplayData: {
@@ -359,11 +362,15 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
         'Fought "villain-a"; Fight effect: the active player KO’d a hero (Spider-Man).',
       );
     }
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.discard, ['core-hero-spidey'], 'discard unchanged');
   });
 
   it('≥2 eligible (pending KO) pushes a Fight effect line that says the choice is pending', () => {
+    // why: D-24687 — the two eligible heroes are in hand; the discard copies are
+    // not one of "your Heroes" and stay.
     const gameState = createMockGameState({
       city: ['villain-a', null, null, null, null],
+      hand: ['core-hero-a', 'core-hero-b'],
       discard: ['core-hero-a', 'core-hero-b'],
       villainAbilityHooks: [fightHook('villain-a', 'koHeroCurrentPlayer')],
     });
@@ -379,6 +386,11 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
       moveContext.G.pendingKoHeroChoices?.length,
       1,
       'the choice is parked pending',
+    );
+    assert.deepStrictEqual(
+      moveContext.G.playerZones['0']!.discard,
+      ['core-hero-a', 'core-hero-b'],
+      'discard unchanged',
     );
   });
 
