@@ -59,9 +59,10 @@ last-reviewed: 2026-10-11
 
 The single DigitalOcean droplet (Ubuntu 24.04 LTS) that `api.legendary-arena.com`
 and its PostgreSQL are migrating onto, with Postgres self-hosted on the same box
-and Cloudflare in front. The migration program sizes the target at **4 vCPU / 8 GB
-to start** (stepping down to 4 GB if it runs idle), not the original 2 vCPU / 4 GB
-lab spec.
+and Cloudflare in front. The migration program planned **4 vCPU / 8 GB to
+start**. Measured Render use (2026-10-11, about 1 GB and well under one core in
+total) now points to starting at **2 vCPU / 4 GB** and resizing up on evidence;
+see Sizing from measured use under the vendor comparison.
 
 This page is the engine-repo **record** of that migration. The executable
 runbooks and infrastructure-as-code — cloud-init, the numbered provisioners,
@@ -140,12 +141,11 @@ are recorded in `render.yaml`.
    with a payment method on the DigitalOcean account. Every month on Render
    costs about $100 more than the droplet would. The phases and gates in the
    PLAN are unchanged.
-2. **Size from data, not from the July incidents.** Before choosing the droplet
-   size, pull September's CPU and memory figures for the server and the
-   database from the Render dashboard. That settles whether the box can start
-   at 4 GB instead of 8 GB. If the API runs idle, start at 2 vCPU / 4 GB ($24)
-   and resize up; that saves more than switching vendor would. If the graphs show sustained CPU instead, the fix is a resize to
-   CPU-Optimized, not a different host.
+2. **Size from data, not from the July incidents.** Done 2026-10-11: both
+   Render services run idle (about 1 GB and well under one core in total), so
+   start at 2 vCPU / 4 GB ($24) and resize up on evidence. That saves more than
+   switching vendor would. See
+   [Sizing from measured use](#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
 3. **Reduce the load, which pays off on any host.**
    - The bot-ally driver polls every live match every 250 ms
      (`apps/server/src/bot-ally/botAllyDriver.mjs`). Driving it from state
@@ -284,15 +284,34 @@ every axis except region. Don't hold the cutover for the answers: each week on
 Render costs about $23 more than the droplet would, against a NameHero saving
 of about $1 a week at the 4-core size.
 
-**Sizing headroom.** Render gives production 8 GB in total today: 4 GB for the
-server and 4 GB for Postgres. DigitalOcean's $48 box matches that with no
-headroom, and the July freezes were partly memory starvation. RAM is the real
-advantage of NameHero Turbo (16 GB) and of the larger plans at budget vendors.
-On DigitalOcean the fix is a resize to the next Basic size (8 vCPU / 16 GB,
-about $96 if pricing stays linear; check before resizing). Before choosing the
-starting size, pull September's memory graphs for both Render services. If both
-sit well under 4 GB, 8 GB is enough. If either runs near its limit, start
-bigger.
+**Sizing from measured use (2026-10-11).** Render gives production 8 GB and
+3 CPUs in total: 4 GB / 2 CPU for the server and 4 GB / 1 CPU for Postgres. The
+Render metrics for the 7 days to 2026-10-11 show both far below that:
+
+| Service | Memory | CPU |
+|---|---|---|
+| Game server (`pro`, 4 GB / 2 CPU) | ~5% (~200 MB) steady; spikes to ~10–13% (~400–500 MB) around deploys | ~0–1% steady; spikes to ~10–13% (~0.25 core) at deploys |
+| `legendary-arena-db` (`pro-4gb`, 4 GB / 1 CPU) | Flat, under ~10% (under ~400 MB) | Flat, near 0% |
+
+The database figures are read from a low-resolution screenshot, so treat them
+as upper bounds. Active connections were a few out of 100, and the transaction
+volume came in short bursts. Production uses about 1 GB and well under one core
+in total.
+
+**Recommendation: start on the $24 droplet (2 vCPU / 4 GB / 80 GB), not the
+$48 one.** That is $288 a year against $576, and about $1,470 a year saved
+against Render. The July freezes happened at 512 MB / 0.5 CPU, well below this
+box. Three guardrails:
+- **Add a 2 GB swapfile.** `pnpm -r build` now runs on the box during deploys and
+  spikes memory well above the steady state.
+- **Resize "CPU and RAM only".** Keeping the 80 GB disk preserves the option to
+  size back down; a disk resize cannot be undone.
+- **Resize up on evidence.** Bot-ally load grows with the number of live
+  matches. Move to the $48 box (4 vCPU / 8 GB) if memory holds above ~70% or CPU
+  above ~50% under real traffic. The resize is a reboot of about a minute.
+
+At this usage, RAM-heavy plans such as NameHero Turbo (16 GB) buy headroom the
+workload doesn't use.
 
 ### Vendor survey (2026-10-11)
 
@@ -363,8 +382,9 @@ surveyed.
 4. OVHcloud and NameHero, not until confirmed.
 
 One correction to the survey: it said the $48 droplet matches today's footprint
-"with headroom". It matches Render's 8 GB total exactly, so there is no RAM
-headroom (see Sizing headroom above).
+"with headroom". It matches Render's 8 GB *allocation* exactly. Measured use is
+about 1 GB, so the real headroom question is answered by usage, not allocation
+(see Sizing from measured use above).
 
 ### Prerequisites & effort
 
@@ -408,9 +428,9 @@ multi-node would additionally require.
   co-located on the droplet, the pin holds for a different reason: Socket.IO
   rides Cloudflare to the origin, so origin round-trip time reaches live
   matches, and San Francisco serves a West Coast player base.
-- **Image:** Ubuntu 24.04 (LTS). **Size:** the program plans 4 vCPU / 8 GB /
-  160 GB SSD ($48/mo), or 2 vCPU / 4 GB / 80 GB SSD ($24/mo) if September's
-  Render figures show the API idle. See
+- **Image:** Ubuntu 24.04 (LTS). **Size:** 2 vCPU / 4 GB / 80 GB SSD ($24/mo),
+  recommended on 2026-10-11 from measured Render use, with a 2 GB swapfile. The
+  PLAN's original 4 vCPU / 8 GB / 160 GB ($48/mo) is the first resize step. See
   [Vendor comparison](#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
 - **Auth:** SSH key only. Create via the DigitalOcean UI or `doctl`.
 
@@ -665,8 +685,9 @@ migration Work Packet is the pending governance noted in the callout.
   against the server-layer boundary in
   [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
 - **Droplet size.** The vendor survey ([Vendor survey](#vendor-survey-2026-10-11))
-  held the DigitalOcean call. The starting size still waits on September's
-  Render memory graphs (see "Sizing headroom").
+  held the DigitalOcean call. Measured Render use on 2026-10-11 points to the $24
+  box (2 vCPU / 4 GB) rather than the PLAN's $48 box. The lab PLAN still says
+  4 vCPU / 8 GB until Jeff confirms the change.
 - **Managed vs self-hosted Postgres** — decided: self-hosted on the same host
   (co-located, `localhost`), per the PLAN. No longer open.
 - **The cross-provider latency threshold** — moot: the co-located target removes
