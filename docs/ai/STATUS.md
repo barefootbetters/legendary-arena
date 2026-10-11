@@ -19,7 +19,7 @@
 **User-visible on `play.legendary-arena.com` (after deploy).** On Unleash the Power of the Cosmic Cube, Twist 8 is now only "Evil Wins!". Before, it also tried to give each player 3 Wounds; in 2p matches `ZVUtr7aaCom` and `sDBnFxiigDL` the supply was empty, so it logged "gained 0 of 3 wounds" just before the loss.
 
 - **Engine only.** Twists 5-6 (1 Wound) and 7 (3 Wounds) are unchanged.
-- **Live-verify (D-24026):** pending. A Cosmic Cube game that reaches Twist 8 with Wounds left in the supply.
+- **Live-verify (D-24026), 2026-10-11: PASS.** Match `Cq_czI1TQH0` (build `4d103a9`): Twist 8 logged "No wounds this twist — twist 8 deals no Wounds." with 20 Wounds still in the supply, then the loss.
 
 ### D-24684 — Ymir's Fight KOs Wounds from the player who has the most (direct fix) (2026-10-10)
 
