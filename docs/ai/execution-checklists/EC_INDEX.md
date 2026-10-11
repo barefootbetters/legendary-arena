@@ -969,6 +969,7 @@ the range clearly separate from game-engine WP-backed ECs.
 | EC-836 | WP-799    | Registry (`SchemeHeroCountRule` + 26-row `SCHEME_HERO_COUNT_RULES` read by `resolveEffectiveHeroCount`; one server and one viewer test; API catalog row) | **WP-799 — scheme hero-count table.** D-24672 Active. | Done |
 | EC-837 | WP-800    | Registry (one `exact 4` `SCHEME_HERO_COUNT_RULES` row for msis The Time Heist; mandated WP-799 drift-pin edits + four composition cases; API catalog row) | **WP-800 — The Time Heist hero count.** D-24675 Active. | Done |
 | EC-838 | WP-801    | Game Engine (`YOUR_HEROES_KO_ZONES` default for a zoneless KO in `buildKoEligibleTargets` / `countKoableHeroes` / `resolveKoHeroChoice`; `koOneHeroForPlayer` + `selectDefaultKoTarget` inPlay → hand, no discard; bot Juggernaut discard branch via `selectKoHeroTarget`; `types.ts` comment; 40 authorized test rewrites) | **WP-801 — "KO one of your Heroes" takes from hand or play.** D-24687 reserved. | Pending |
+| EC-839 | WP-802    | Server + Game Engine (`isDebugMatch` on the creation payload, `G` and `UIState` omit-when-off; `buildOperatorView` reveal-all projection; three `admin-session-required` operator routes; public create refusals + native create / `playAgain` admin-or-delegation; `debug_match` submission refusal; in-memory bot-decision record) | **WP-802 — Operator match.** D-24689 reserved. | Pending |
 ---
 
 ## Rules
