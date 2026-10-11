@@ -439,6 +439,7 @@ high-water: 422
 - WP-798 — gauntlet-per-leg-hero-count (Server gauntlet run progress + launch + arena-client profile; the per-leg hero pick count follows resolveEffectiveHeroCount for the leg scheme, and the fixed-division pool budget becomes max(base, largest leg count) + 2 per gauntlet. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 - WP-799 — scheme-hero-count-table (Registry; resolveEffectiveHeroCount reads one table of printed Hero Deck count rules (+N, exactly N, per player count) for 24 schemes beyond Secret Invasion / Civil War. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 - WP-800 — time-heist-hero-count (Registry; The Time Heist requires exactly 4 Heroes — its printed main Hero Deck — as one SCHEME_HERO_COUNT_RULES row; the Past Hero Deck / alternate city stays a named full-fidelity arc. reserved 2026-10-08, claude/reserve-time-heist-count)
+- WP-801 — ko-your-heroes-hand-and-play (Engine; unqualified "KO one/two of your Heroes" draws only from hand + cards played this turn, never the discard pile, per rules v23 — auto-pick, current-player choice, bot and client prompt. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
 
 ## EC
 
@@ -839,6 +840,7 @@ high-water: 457
 - EC-835 — gauntlet-per-leg-hero-count (WP-798. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 - EC-836 — scheme-hero-count-table (WP-799. reserved 2026-10-08, spec/reserve-scheme-hero-count)
 - EC-837 — time-heist-hero-count (WP-800. reserved 2026-10-08, claude/reserve-time-heist-count)
+- EC-838 — ko-your-heroes-hand-and-play (WP-801. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
 
 ## D
 
@@ -1304,3 +1306,4 @@ section below) and the allocation protocol in
 - D-24684 — ymir-choose-player-most-wounds (direct fix, no WP — Ymir, Frost Giant King's Fight "Choose a player" picks the player with the most Wounds in hand + discard, ties to the fighter; amends D-24329's current-player collapse. reserved 2026-10-10, infra/ymir-choose-player-most-wounds)
 - D-24685 — cosmic-cube-twist8-no-wounds (direct fix, no WP — Unleash the Power of the Cosmic Cube's twist 8 deals no Wounds; the wound-all escalation steps gain an optional throughTwist. reserved 2026-10-11, infra/cosmic-cube-twist8-no-wounds)
 - D-24686 — reveal-or-wound-empty-supply-log (direct fix, no WP — reveal-or-wound and gain-wound-unless-victory-villain-group log that the Wound supply is empty instead of "every player revealed / had another Villain". reserved 2026-10-11, infra/reveal-or-wound-empty-supply-log)
+- D-24687 — ko-your-heroes-hand-and-play (WP-801; amends D-18503 / D-20603 zone priority — unqualified "your Heroes" KOs exclude the discard pile. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
