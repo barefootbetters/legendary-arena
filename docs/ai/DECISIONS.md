@@ -47236,4 +47236,24 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 ---
 
+### D-24691 — The native-lobby hard gate matches every create/join path the router serves (direct fix, no WP) (Active 2026-10-11)
+
+**Context.** WP-308 / D-24094 put `nativeLobbyGuard.ts` in front of the boardgame.io native lobby so `POST /games/legendary-arena/create` and `/{matchID}/join` need a session or the internal-delegation secret. The guard tested the path with an exact string (create) and a case-sensitive regex pinned to `legendary-arena` (join). boardgame.io 0.50.2 builds its lobby router as `new Router()` on `@koa/router` 10.1.1 with the defaults `strict: false` and `sensitive: false`, matches the raw `ctx.path`, and finds the game by the decoded `ctx.params.name`. A probe against the installed router confirmed that `/create/`, `/CREATE`, `/GAMES/.../Create/`, `/games/legendary%2Darena/create`, and the same spellings of `/:id/join` all reach the create and join handlers. The guard let every one of them through, so any anonymous caller could create or join a match past D-24094 and the D-24092 account policy. Found by the WP-802 copilot check.
+
+**Decision.**
+1. The guard stays POST-only and matches `/^\/games\/[^/]+\/create\/?$/i` for create and `/^\/games\/[^/]+\/[^/]+\/join\/?$/i` for join: case-insensitive, optional trailing slash, any game segment.
+2. Any game segment, because an encoded spelling of `legendary-arena` decodes to the real game downstream. A foreign name 404s in boardgame.io, so gating it costs nothing.
+3. Admission is unchanged: a valid internal-delegation secret or an authenticated session. Everything else gets the same `401` body.
+4. `playAgain` (`/games/:name/:id/playAgain`) stays outside this guard. WP-802 / D-24689 adds it under its admin rule; EC-839's check that the guard "does not guard playAgain" still holds. WP-802's execution re-baselines `nativeLobbyGuard.ts` against this change.
+
+**Tests.** `nativeLobbyGuard.test.ts`: 12 variant paths (6 create, 6 join) each get `401` with no pass-through; a variant with the secret and a variant with a session still pass; a GET on a variant and a POST to `/join/extra` pass untouched. Against the old guard the 12 variant tests fail; against the new guard all 25 pass. No existing test changed.
+
+**Gates.** `pnpm -r build` 0; `pnpm --filter @legendary-arena/server test` 1694 tests, 0 fail (206 skipped need a test database, as before).
+
+**Live-verify (D-24026):** pending. After deploy, `POST /games/legendary-arena/create/` and `POST /games/legendary-arena/CREATE` with no auth should return `401`, not a `matchID`.
+
+**Reserved by:** NUMBER-LEDGER D-24691. Related: D-24094 / WP-308 (the hard gate), D-24092 (account policy), D-24093 (the soft gate it replaced), D-24689 / WP-802 (playAgain), D-11804 (API catalog rows), D-24026.
+
+---
+
 Protect this file.
