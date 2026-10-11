@@ -47186,7 +47186,7 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5038 → 5040); `sim:runtime-observed:check` current; `ledger:numbers:check` passed; no PAR, hash or replay fixture re-pinned.
 
-**Live-verify (D-24026):** pending. A Cosmic Cube game that reaches twist 8 with Wounds still in the supply should log "twist 8 deals no Wounds" and no "gained" line.
+**Live-verify (D-24026), 2026-10-11: PASS.** 2p bot-ally Dr. Doom / Unleash the Power of the Cosmic Cube (Skrulls + Masters of Evil; Captain America, Iron Man, Spider-Man, Storm, Thor), match `Cq_czI1TQH0` (build `4d103a9`): twist 8 logged "No wounds this twist — twist 8 deals no Wounds." (40.1.1), then the loss (40.1.3). The Wound supply still held 20 Wounds at game end, so the old schedule would have dealt 3 to each player.
 
 **Reserved by:** NUMBER-LEDGER D-24685. Related: D-24349 / WP-540 (the escalation), D-24178 (twist-loss thresholds), D-24673 (Diving Block "would gain" wording), D-24026.
 
