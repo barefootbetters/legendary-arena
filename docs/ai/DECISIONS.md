@@ -47166,7 +47166,7 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5036 → 5038, server 1678, arena-client 2298); `sim:runtime-observed:check` current; `ledger:numbers:check` passed; no generated-artifact churn.
 
-**Live-verify (D-24026):** pending. Next 2p game with Enemies of Asgard: defeat Ymir while a teammate holds more Wounds, and check the line names that player.
+**Live-verify (D-24026), 2026-10-10: PARTIAL.** 2p bot-ally Loki / Midtown Bank Robbery (Radiation + Enemies of Asgard; Gambit, Wolverine, Spider-Man, Captain America, Black Widow; Final Blow on), match MHZt0mnJyn6 (build 19be0fc). The bot fought Ymir (25.2.25) and the Wound came off Player 0: "Player 0 KO'd 1 Wound(s) from their hand and discard pile" (25.2.24). Player 0's count of 1 is confirmed from the log (the 25.1.2 Ambush Wound; the 22.2.15 Wound was KO'd by Healing Factor at 24.2.2). So the effect no longer collapses to the fighter. Not confirmed: that the bot had 0 Wounds in hand + discard, which a pick of Player 0 requires (ties go to the fighter). The bot held 3 Wounds overall, one on top of its deck (25.2.19); the log does not show its hand or discard. Still needed: a 2p game where Player 0 defeats Ymir while the bot visibly holds more Wounds.
 
 **Reserved by:** NUMBER-LEDGER D-24684. Related: D-24329 / WP-516 (the primitive), D-24683 (player attribution), WP-603 / D-24413 (Melter's "choose a player" went interactive instead), D-24026.
 
