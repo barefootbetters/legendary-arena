@@ -19527,6 +19527,8 @@ sixth keyword, `koHeroEachPlayer`.)
 
 ### D-18503 — koHeroCurrentPlayer Resolves by Zone + ext_id Over Non-Wound Cards, Not VP
 
+**Zone priority superseded by D-24687** (WP-801, 2026-10-11): an unqualified "KO one of your Heroes" takes from hand or play, never the discard pile.
+
 **Decision:** `koHeroCurrentPlayer` KOs one card from the current player's discard
 (priority) then hand, selecting the lexically-smallest `ext_id` that is NOT the
 wound token (`pile-wound`). Silent no-op if neither zone holds a non-wound card.
@@ -22968,6 +22970,8 @@ re-discovering it at execution time.
 
 ### D-20602 — KO Target Selection Prefers Starting SHIELD Cards Ahead of Lexical Ascending (Amends D-18503)
 
+**Zone priority superseded by D-24687** (WP-801, 2026-10-11; the within-zone starter rule stands).
+
 **Decision:** The per-player KO target resolver
 (`selectKoHeroTarget` in
 `packages/game-engine/src/villain/villainEffects.execute.ts`) picks the
@@ -23028,6 +23032,8 @@ new move, no new effect keyword, no DECISIONS authority moved).
 ---
 
 ### D-20603 — KO Target Selection Adds `inPlay` as Third Zone Tier (Amends D-18503 Zone List)
+
+**Zone priority superseded by D-24687** (WP-801, 2026-10-11): the automatic pick takes inPlay, then hand; the discard pile is never read.
 
 **Decision:** The per-player KO target resolver
 (`koOneHeroForPlayer` in
@@ -24786,6 +24792,8 @@ Protect this file.
 
 **Amended:** for Juggernaut's zone-restricted each-player KO (`ko-hero:each:N:discard|hand`), the current player now chooses (D-24644, 2026-09-29). The other each-player variants and non-current players stay auto.
 
+**Zone default amended by D-24687** (WP-801, 2026-10-11): the eligible set of an unqualified KO is hand + inPlay; the discard pile is not offered.
+
 The `koHeroCurrentPlayer` villain Fight effect no longer auto-picks the KO target. It computes eligible targets across the current player's discard + hand + inPlay (carrying the D-20603 zone union into the interactive set), then: 0 eligible → silent no-op; exactly 1 → auto-KO that card (no decision to make); ≥2 → park a player choice. This supersedes the WP-185 §Out-of-Scope auto-resolution deferral for the current-player case only. `koHeroEachPlayer` / `koHeroEachPlayerMag2` remain auto-resolved (non-active players choosing off-turn is a deferred turn-flow change).
 
 **Packet:** WP-242 (EC-273).
@@ -24815,6 +24823,8 @@ A new `resolveKoHeroChoice({ zone, cardId })` move (registered `client: false`; 
 ---
 
 **D-24009: Bot/Sim Auto-Resolve Preserves the Prior Auto-Pick (Byte-Identical Target)**
+
+**Pick order amended by D-24687** (WP-801, 2026-10-11; bot-equals-auto-pick parity stands): `selectDefaultKoTarget` and `koOneHeroForPlayer` take inPlay, then hand, never discard.
 
 While a KO choice is pending, `getLegalMoves` returns exactly one move — `resolveKoHeroChoice` with the target chosen by `selectDefaultKoTarget`, which reuses the unchanged `selectKoHeroTarget` priority (discard → hand → inPlay; starter-S.H.I.E.L.D. first; ext_id lexical tie-break). The bot's KO target is therefore byte-identical to the prior auto-resolution; only the move stream changes (the KO lands one move later). A parity test pins legacy-`koOneHeroForPlayer` vs new-flow KO'd cardId equality. The sentinel/`PRE_WP080_HASH` replay is re-pinned only if it diverges (WP-236 coherent-game-gate discipline); at implementation time it did NOT diverge, so no fixture was touched.
 
@@ -37969,6 +37979,8 @@ builder at 2p with scheme `core/super-hero-civil-war` requires exactly 4 heroes 
 
 ### D-24386 — Red Skull Master Strike: the Active Player Chooses the KO'd Hero (D-24284 Split)
 
+**Zone default amended by D-24687** (WP-801, 2026-10-11): an absent `zones` / `allowedZones` now means hand + inPlay, not every zone. Red Skull's `['hand']` is unchanged.
+
 Red Skull's Master Strike prints "Each player KOs a Hero from their hand" — an
 owning-player choice. WP-386 / D-24188 shipped a deterministic auto-pick MVP "to
 avoid a blocking multi-player pending-choice," and named this upgrade as the
@@ -47233,6 +47245,26 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 **Live-verify (D-24026):** pending. A bot-ally game where the bot defeats Maniacal Tyrant with Wounds or starting cards in its discard should log "Player 1 KO'd N card(s)" with N > 0.
 
 **Reserved by:** NUMBER-LEDGER D-24688. Related: D-24510 / WP-693 (the choice and its empty default), D-24589 / WP-760 (Salomé), D-24682 (repeated ids), D-24413 (the cullable set), D-24026.
+
+---
+
+### D-24687 — "Your Heroes" means hand + played this turn: an unqualified "KO one/two of your Heroes" never takes from the discard pile (amends D-18503 / D-20602 / D-20603 and the zone default in D-24006, D-24009, D-24386) (Active 2026-10-11 — WP-801 / EC-838)
+
+**Context.** Rules v23 L721–L725 (and L3014–L3018): "one of your Heroes" can be "a Hero you've already played this turn or a Hero still in your hand". The engine looked in the discard pile first. D-18503 (WP-185) chose "discard, then hand" for the first automatic `koHeroCurrentPlayer`, D-20603 added inPlay, and every later packet carried the order forward for byte-identical replay (D-24009). No entry cited a rule for the discard pile. In Jeff's 2p bot-ally match `D54LvDsnOR_` (build `b55341c`, 23.2.21), Super-Skrull's Fight KO'd Avengers Assemble! from Player 0's discard while they held three S.H.I.E.L.D. Agents and a Trooper.
+
+**Decision.**
+1. An unqualified "KO one/two of your Heroes" takes cards only from the hand and in play. A `PendingKoHeroChoice` without `zones`, and an eligibility or count call without `allowedZones`, mean `YOUR_HEROES_KO_ZONES = ['hand', 'inPlay']` (`villain/villainEffects.execute.ts`). The constant is only a `??` fallback; zoneless parkers still omit `zones`, so the `G` shape is unchanged.
+2. Automatic picks (other players, the forced step, and the bot default) take inPlay, then hand, starter-first within the zone (D-20602's within-zone rule is kept). The discard tier is removed. The cross-zone order is deliberate: a played Hero has already produced its Recruit and Attack, other players have nothing in play, and the bot plays its hand before fighting. A current-player bot holding a starter in hand and a recruited Hero in play therefore KOs the recruited Hero; accepted. D-24009's bot-equals-auto-pick parity still holds; only its order changes.
+3. Named zones are unchanged: Juggernaut (D-24280 / D-24644) and Red Skull (D-24386). The bot's discard-scoped Juggernaut branch now picks `selectKoHeroTarget(zones.discard)` directly, because `selectDefaultKoTarget` no longer reads the discard (without it 225 of 312 runtime-observed sweep games stalled in the WP-801 scaffold).
+4. Accepted: all-bot outcomes and pre-deploy replays that resolved an unqualified KO diverge (the D-24009 byte-identity is deliberately broken for this rule); stored `competitive_scores` stay frozen (D-24616 §5). The solo runtime-observed sweep, seed PAR and the replay fixtures are unchanged. A queued zoneless KO whose player holds no Hero in hand or play when it reaches the front cannot resolve: the board waits and the bot returns no move (a match restored across the deploy with an entry parked before it, or two zoneless entries queued for one player). This predates D-24687, which makes it easier to hit by shrinking the pool; accepted as fail-closed (WP-801 OD-3).
+
+**Tests.** 40 existing engine tests rewritten under the WP-801 §Scope G rules (each fixture's discard Heroes stay and each test asserts the discard is unchanged; no assertion removed or weakened; old → new titles in the `EC-838:` commit's `Tests-changed:` trailer). 12 new tests: the Super-Skrull repro, a discard-only player losing nothing (with the D-24683 log line), Sentinel's forced hand KO, Whirlwind and Maestro never counting a discard card, the helper defaults with Juggernaut parity, `selectDefaultKoTarget` order and `null`, the zoneless-entry keyset, the resolve guard (zoneless rejects `discard`; `['discard']` accepts it), the UIState projection, and the bot's discard-scoped answer.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5047 → 5059); `sim:runtime-observed:check` current (no regeneration); `sim:coverage --check` OK; `par:seed:test` 0; sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged. Revert proofs 5/5 (all-zones default, the discard tier in `koOneHeroForPlayer`, the discard tier in `selectDefaultKoTarget`, the resolve guard, the bot's discard branch).
+
+**Live-verify (D-24026):** pending. Five Core rows in `docs/ai/coverage/live-verify.json` move from verified to pending until re-seen on a post-deploy build: Sentinel, Super-Skrull, Destroyer's Escape, Whirlwind and Maestro. Check that a non-active player's KO takes a hand card (the log names it), and that no prompt or auto-pick offers a discard card.
+
+**Reserved by:** NUMBER-LEDGER D-24687. Related: D-24006–D-24010 / WP-242, D-24298 / WP-492, D-24386 / WP-577, D-24280 / WP-463, D-24644, D-24669, D-24683, D-24600 and D-24645 (Hero-side "your Heroes", already hand + play), D-24616 §5, D-24026.
 
 ---
 
