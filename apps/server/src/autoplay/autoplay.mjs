@@ -29,6 +29,10 @@ import {
   buildAbortReason,
 } from './botLoopProgress.mjs';
 import { INTERNAL_DELEGATION_HEADER } from '../match/nativeLobbyGuard.js';
+import {
+  OPERATOR_FLAG_REFUSAL_MESSAGE,
+  setupDataCarriesOperatorFlag,
+} from '../operator/operatorMatch.logic.js';
 
 /**
  * Per-match playback controllers, keyed by match id. A controller is
@@ -328,6 +332,14 @@ export function registerAutoplayRoutes(router, context) {
     const policyName = body.policy === 'random' ? 'random' : 'competent';
     const delayMs = Math.max(100, Math.min(5000, Number(body.delayMs) || 800));
     const seed = typeof body.seed === 'string' ? body.seed : String(Date.now());
+
+    // why: WP-802 / D-24689 §2 — only the admin operator route may set the
+    // operator-match flag; refuse it here, before any loopback create.
+    if (setupDataCarriesOperatorFlag(body.setupData)) {
+      koaContext.status = 400;
+      koaContext.body = { error: OPERATOR_FLAG_REFUSAL_MESSAGE };
+      return;
+    }
 
     // why: when the caller sends no custom loadout, build a default composition
     // scaled to the requested player count. The prior fixed default matched NO

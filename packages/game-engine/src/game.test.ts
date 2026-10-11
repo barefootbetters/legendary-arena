@@ -154,6 +154,44 @@ describe('LegendaryGame', () => {
     );
   });
 
+  it('WP-802: setup() with isDebugMatch: true stores G.isDebugMatch === true', () => {
+    // why: WP-802 / D-24689 — an operator match carries the flag on G for the
+    // operator board read, the never-scored refusal and the bot-decision record.
+    const gameState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      { ...createMockMatchConfiguration(), isDebugMatch: true },
+    );
+    assert.equal(gameState.isDebugMatch, true);
+  });
+
+  it('WP-802: setup() leaves no isDebugMatch key on G when the flag is absent or false', () => {
+    // why: WP-802 / D-24689 — omit-when-off. A key written as false would move
+    // PRE_WP080_HASH and every finalStateHash; the keyset proves it is absent.
+    const absentFlagState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      createMockMatchConfiguration(),
+    );
+    const falseFlagState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      { ...createMockMatchConfiguration(), isDebugMatch: false },
+    );
+    assert.equal(Object.keys(absentFlagState).includes('isDebugMatch'), false);
+    assert.equal(Object.keys(falseFlagState).includes('isDebugMatch'), false);
+    assert.ok(
+      !JSON.stringify(absentFlagState).includes('"isDebugMatch"'),
+      'A match with no isDebugMatch in setupData must not serialize an isDebugMatch key anywhere in G',
+    );
+  });
+
+  it('WP-802: setup() leaves no G.isDebugMatch key for a truthy non-boolean flag', () => {
+    // why: WP-802 / D-24689 §1 — only a strict `true` turns an operator match on.
+    const truthyFlagState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 2 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      { ...createMockMatchConfiguration(), isDebugMatch: 'yes' as unknown as boolean },
+    );
+    assert.equal(Object.keys(truthyFlagState).includes('isDebugMatch'), false);
+  });
+
   it('setup() throws when matchConfiguration is not provided', () => {
     const mockContext = makeMockCtx({ numPlayers: 2 });
     assert.throws(

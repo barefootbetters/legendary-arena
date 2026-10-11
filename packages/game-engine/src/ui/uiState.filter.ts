@@ -1624,5 +1624,14 @@ export function filterUIStateForAudience(
     result.effectTraces = effectTracesCopy;
   }
 
+  // why: WP-802 / D-24689 §1 — isDebugMatch is PUBLIC to EVERY audience (own
+  // player, other player, spectator), so every seat and every diagnostics export
+  // shows that the match is an operator match. Conditional assignment keeps a
+  // normal match omitting the field. Without this pass-through the field would be
+  // dropped at the whitelist (the shipped EC-206 failure mode).
+  if (uiState.isDebugMatch === true) {
+    result.isDebugMatch = true;
+  }
+
   return result;
 }

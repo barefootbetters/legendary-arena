@@ -17,6 +17,11 @@
  * The human then joins seat 0 through the existing authed `/api/match/join`
  * (WP-376, client) so seat 0 keeps its account row + own credential.
  *
+ * WP-802 / D-24689 adds `POST /api/admin/operator-match/create-with-bot`
+ * (admin-session-required): the same steps, creating an unlisted operator match
+ * (`isDebugMatch: true`). The public route refuses that flag, and every driver
+ * records its decisions in memory when its match is an operator match.
+ *
  * This module owns the boardgame.io `Master` move submission and the `pg`
  * side-table persistence (the framework/database seam); the orchestration lives
  * in `botAllyDriver.mjs`, which imports neither. Server layer: it wires the
@@ -43,6 +48,11 @@ import {
   BOT_ALLY_LEASE_TTL_MS,
   acquireOrRenewBotAllyLease,
 } from './botAllyOwnership.mjs';
+import {
+  OPERATOR_FLAG_REFUSAL_MESSAGE,
+  setupDataCarriesOperatorFlag,
+} from '../operator/operatorMatch.logic.js';
+import { recordOperatorBotDecision } from '../operator/operatorBotDecisions.js';
 import koaBody from 'koa-body';
 
 // why: boardgame.io v0.50 ships CJS-only bundles for /master and /internal;
@@ -532,9 +542,308 @@ function startDriverForMatch({ matchId, botSeats, decisionSeed, policyName, subm
     // (the deploy-overlap two-writer guard). Pooled query — no pinned connection.
     renewOrAcquireLease: () =>
       acquireOrRenewBotAllyLease(database, matchId, SERVER_INSTANCE_ID, BOT_ALLY_LEASE_TTL_MS),
-    decide: (state, seat) => decideBotMove(state, seat, policy),
+    // why: WP-802 / D-24689 §5 — the decision observer is wired HERE (not in the
+    // create handler) so a driver revived after a restart records too.
+    decide: (state, seat) =>
+      decideBotMove(state, seat, policy, (decision) =>
+        recordIfOperatorMatch(matchId, state, seat, decision),
+      ),
   };
   return createBotAllyDriver({ matchId, botSeats, deps, initialReviveCount });
+}
+
+/**
+ * Records a bot decision in the in-memory operator record when the match is an
+ * operator match; does nothing for any other match.
+ *
+ * // why: WP-802 / D-24689 §5 — records only when `G.isDebugMatch === true`, read
+ * from the state the driver already fetched (the only `G` field read here). The
+ * record lives in process memory and is never written to `G`, the move log or
+ * any table.
+ *
+ * @param {string} matchId - The match id.
+ * @param {object} state - The fetched match state the decision was made on.
+ * @param {string} seat - The bot seat that decided.
+ * @param {{ isForced: boolean, move: { name: string, args: unknown }, decisionLog: readonly string[], legalMoveCount: number }} decision -
+ *   How the move was chosen.
+ * @returns {void}
+ */
+function recordIfOperatorMatch(matchId, state, seat, decision) {
+  if (state.G?.isDebugMatch !== true) {
+    return;
+  }
+  recordOperatorBotDecision(matchId, {
+    turn: state.ctx.turn,
+    seat,
+    isForced: decision.isForced,
+    move: decision.move,
+    decisionLog: decision.decisionLog,
+    legalMoveCount: decision.legalMoveCount,
+  });
+}
+
+/**
+ * Step 1 of a bot-ally create: the loopback native create, carrying the
+ * internal-delegation secret.
+ *
+ * @param {object} params
+ * @param {object} params.context - Server context (serverUrl, secret).
+ * @param {number} params.numPlayers - The seat count.
+ * @param {object} params.setupData - The creation payload forwarded to setup.
+ * @param {boolean} params.unlisted - Whether the match is hidden from the public list.
+ * @returns {Promise<{ ok: true, matchId: string } | { ok: false, status: number, error: string }>}
+ */
+async function createNativeBotAllyMatch({ context, numPlayers, setupData, unlisted }) {
+  // why: the public route's native create body stays exactly `{ numPlayers,
+  // setupData }`; only the operator route adds `unlisted: true` (D-24689 §2), so
+  // its match never appears in GET /games/legendary-arena.
+  const nativeBody = unlisted ? { numPlayers, setupData, unlisted: true } : { numPlayers, setupData };
+  const createResponse = await fetch(`${context.serverUrl}/games/legendary-arena/create`, {
+    method: 'POST',
+    // why: WP-308 / D-24094 — carry the internal-delegation secret so the
+    // native-lobby hard gate admits this loopback create.
+    headers: {
+      'Content-Type': 'application/json',
+      [INTERNAL_DELEGATION_HEADER]: context.internalDelegationSecret,
+    },
+    body: JSON.stringify(nativeBody),
+  });
+  if (!createResponse.ok) {
+    const nativeErrorBody = await createResponse.text();
+    return {
+      ok: false,
+      status: createResponse.status,
+      error:
+        `The bot-ally match could not be created by the game server ` +
+        `(it responded HTTP ${createResponse.status}: ${nativeErrorBody}). ` +
+        'Check the match configuration and try again.',
+    };
+  }
+  const createResult = await createResponse.json();
+  return { ok: true, matchId: createResult.matchID };
+}
+
+/**
+ * Step 2 of a bot-ally create: secret-join ONLY the bot seats "1"…"botCount"
+ * and capture each seat's credential. Seat 0 is NEVER joined here.
+ *
+ * @param {object} params
+ * @param {object} params.context - Server context (serverUrl, secret).
+ * @param {string} params.matchId - The new match id.
+ * @param {number} params.botCount - How many bot seats to join.
+ * @returns {Promise<{ ok: true, botSeats: string[], credentials: Record<string, string> } | { ok: false, status: number, error: string }>}
+ */
+async function joinBotSeats({ context, matchId, botCount }) {
+  // why: seat 0 stays open for the human, who joins it through the authed
+  // /api/match/join (WP-376) so seat 0 gets its own match_seat_accounts row
+  // + credential hand-off; the server joining seat 0 would break that
+  // seat→account mapping (attribution + ranked eligibility).
+  const botSeats = [];
+  const credentials = {};
+  for (let seatIndex = 1; seatIndex <= botCount; seatIndex++) {
+    const seat = String(seatIndex);
+    const joinResponse = await fetch(`${context.serverUrl}/games/legendary-arena/${matchId}/join`, {
+      method: 'POST',
+      // why: WP-308 / D-24094 — the internal-delegation secret admits each
+      // bot join. The bot seat is NEVER written to match_seat_accounts
+      // (D-24120): a bot has no session and must stay absent from that
+      // table, which is load-bearing for WP-377's ranked guard (a rowless
+      // seat must not count toward the roster).
+      headers: {
+        'Content-Type': 'application/json',
+        [INTERNAL_DELEGATION_HEADER]: context.internalDelegationSecret,
+      },
+      body: JSON.stringify({ playerID: seat, playerName: `Bot Ally ${seatIndex}` }),
+    });
+    if (!joinResponse.ok) {
+      const nativeErrorBody = await joinResponse.text();
+      return {
+        ok: false,
+        status: joinResponse.status,
+        error:
+          `A bot ally seat could not be joined on the game server ` +
+          `(it responded HTTP ${joinResponse.status}: ${nativeErrorBody}). ` +
+          'Please try again.',
+      };
+    }
+    const joinResult = await joinResponse.json();
+    botSeats.push(seat);
+    credentials[seat] = joinResult.playerCredentials;
+  }
+  return { ok: true, botSeats, credentials };
+}
+
+/**
+ * Steps 3 and 4 of a bot-ally create: persist the botSeats tag, start the
+ * driver, then auto-ready each bot seat. Never starts the match itself.
+ *
+ * @param {object} params
+ * @param {object} params.context - Server context (database, db).
+ * @param {Function} params.createSubmit - The move-submission factory.
+ * @param {string} params.matchId - The new match id.
+ * @param {string[]} params.botSeats - The joined bot seats.
+ * @param {Record<string, string>} params.credentials - Each bot seat's credential.
+ * @param {string} params.policy - The bot policy name.
+ * @returns {Promise<void>}
+ */
+async function startAndReadyBotSeats({ context, createSubmit, matchId, botSeats, credentials, policy }) {
+  // why: the decision seed is the match id — deterministic, unique, and
+  // clock-free (no Date.now), so a bot-ally match is reproducible.
+  const decisionSeed = matchId;
+  await insertBotAllyMatch(context.database, matchId, botSeats, decisionSeed, policy);
+  const submit = createSubmit(matchId, credentials);
+  startDriverForMatch({ matchId, botSeats, decisionSeed, policyName: policy, submit, context });
+
+  // why: bot seats are readied here (before the human arrives) so that once
+  // the human readies seat 0, readyCount reaches requiredPlayers and
+  // validateCanStartMatch passes (lobby.validate.ts). Readying does NOT
+  // start the match — setPlayerReady only writes G.lobby.ready and never
+  // changes phase; the lobby → play transition happens only when the
+  // client dispatches startMatchIfReady (lobby.moves.ts, from
+  // LobbyControls.vue's Start Match button). Ready is dispatched as each
+  // bot playerID (setPlayerReady keys off the dispatching seat, not
+  // ctx.currentPlayer — lobby.moves.ts, D-10010).
+  for (const seat of botSeats) {
+    await submit({ seat, moveName: 'setPlayerReady', moveArgs: { ready: true } });
+  }
+}
+
+/**
+ * Creates a bot-ally match: the native create, the bot-seat joins, the driver
+ * start and the bot readies. Shared by the public create-with-bot route and the
+ * admin-only operator create route (WP-802).
+ *
+ * @param {object} params
+ * @param {object} params.context - Server context.
+ * @param {Function} params.createSubmit - The move-submission factory.
+ * @param {number} params.numPlayers - The seat count.
+ * @param {number} params.botCount - How many bot seats.
+ * @param {string} params.policy - The bot policy name.
+ * @param {object} params.setupData - The creation payload forwarded to setup.
+ * @param {boolean} params.unlisted - Whether the match is hidden from the public list.
+ * @returns {Promise<{ ok: true, matchId: string } | { ok: false, status: number, error: string }>}
+ */
+async function createBotAllyMatch({ context, createSubmit, numPlayers, botCount, policy, setupData, unlisted }) {
+  try {
+    const created = await createNativeBotAllyMatch({ context, numPlayers, setupData, unlisted });
+    if (!created.ok) {
+      return created;
+    }
+    const joined = await joinBotSeats({ context, matchId: created.matchId, botCount });
+    if (!joined.ok) {
+      return joined;
+    }
+    await startAndReadyBotSeats({
+      context,
+      createSubmit,
+      matchId: created.matchId,
+      botSeats: joined.botSeats,
+      credentials: joined.credentials,
+      policy,
+    });
+    return { ok: true, matchId: created.matchId };
+  } catch (faultError) {
+    console.error(`[bot-ally] create-with-bot failed unexpectedly: ${faultError.message}`);
+    return {
+      ok: false,
+      status: 500,
+      error:
+        'The bot-ally match could not be created because of an unexpected ' +
+        'server error. Please retry in a moment.',
+    };
+  }
+}
+
+/**
+ * Writes a bot-ally create result to the response: `200 { matchId }` or the
+ * failure's status and full-sentence error.
+ *
+ * @param {object} koaContext - The request context.
+ * @param {{ ok: true, matchId: string } | { ok: false, status: number, error: string }} result -
+ *   The create result.
+ * @returns {void}
+ */
+function respondWithCreateResult(koaContext, result) {
+  if (result.ok) {
+    koaContext.status = 200;
+    koaContext.body = { matchId: result.matchId };
+    return;
+  }
+  koaContext.status = result.status;
+  koaContext.body = { error: result.error };
+}
+
+/**
+ * Runs the D-15902 admin check for the operator create route and, on failure,
+ * writes the 401 / 403 / 500 response.
+ *
+ * @param {object} koaContext - The request context.
+ * @param {object} context - Server context (verifier, accountResolver, database).
+ * @param {Function} requireAdminSession - The WP-159 admin gate.
+ * @returns {Promise<boolean>} `true` when the caller is an admin.
+ */
+async function passesOperatorAdminCheck(koaContext, context, requireAdminSession) {
+  const authResult = await requireAdminSession(koaContext.req, {
+    verifier: context.verifier,
+    accountResolver: context.accountResolver,
+    database: context.database,
+  });
+  if (authResult.ok === true) {
+    return true;
+  }
+  if (authResult.code === 'unauthorized') {
+    koaContext.status = 401;
+    koaContext.body = { code: 'unauthorized', reason: authResult.reason };
+  } else if (authResult.code === 'forbidden') {
+    koaContext.status = 403;
+    koaContext.body = { code: 'forbidden', reason: authResult.reason };
+  } else {
+    koaContext.status = 500;
+    koaContext.body = {
+      error: 'The admin check for this operator route could not be completed; try again in a moment.',
+    };
+  }
+  return false;
+}
+
+/**
+ * Registers `POST /api/admin/operator-match/create-with-bot` (WP-802 / D-24689 §2):
+ * the only route that may set the operator-match flag. It creates an unlisted
+ * bot-ally match through the same steps as the public route.
+ *
+ * @param {import('@koa/router')} router - The boardgame.io server's koa router.
+ * @param {object} context - Server context.
+ * @param {Function} createSubmit - The move-submission factory.
+ * @param {Function} requireAdminSession - The WP-159 admin gate.
+ * @returns {void}
+ */
+function registerOperatorCreateRoute(router, context, createSubmit, requireAdminSession) {
+  router.post('/api/admin/operator-match/create-with-bot', async (koaContext) => {
+    koaContext.set('Cache-Control', 'no-store');
+    // why: admin-session-required (D-15902) — the admin check is the first
+    // business-logic step; nothing is parsed or created before it.
+    if (!(await passesOperatorAdminCheck(koaContext, context, requireAdminSession))) {
+      return;
+    }
+    await ensureJsonBodyParsed(koaContext);
+    const validation = validateCreateWithBotBody(koaContext.request.body);
+    if (!validation.ok) {
+      koaContext.status = 400;
+      koaContext.body = { error: validation.error };
+      return;
+    }
+    const { numPlayers, botCount, policy, setupData } = validation.value;
+    const result = await createBotAllyMatch({
+      context,
+      createSubmit,
+      numPlayers,
+      botCount,
+      policy,
+      setupData: { ...setupData, isDebugMatch: true },
+      unlisted: true,
+    });
+    respondWithCreateResult(koaContext, result);
+  });
 }
 
 /**
@@ -549,15 +858,19 @@ function startDriverForMatch({ matchId, botSeats, decisionSeed, policyName, subm
  * @param {string} context.internalDelegationSecret - The WP-308 native-lobby secret.
  * @param {object} context.database - The long-lived pg pool.
  * @param {Function} context.requireAuthenticatedSession - The WP-112 session check.
+ * @param {Function} [context.requireAdminSession] - The WP-159 admin gate; when
+ *   supplied, the WP-802 operator create route is registered too.
  * @param {object} [context.verifier] - Hanko verifier (undefined in dev-mode).
  * @param {object} [context.accountResolver] - Account resolver.
  */
 export function registerBotAllyRoutes(router, context) {
+  // why: WP-802 — requireAdminSession is destructured, never asserted: a context
+  // without it (the guest-solo-only callers, unit-test collectors) registers no
+  // operator create route.
   const {
-    serverUrl,
-    internalDelegationSecret,
     database,
     requireAuthenticatedSession,
+    requireAdminSession,
     verifier,
     accountResolver,
   } = context;
@@ -595,117 +908,32 @@ export function registerBotAllyRoutes(router, context) {
       return;
     }
     const { numPlayers, botCount, policy, setupData } = validation.value;
-
-    try {
-      // Step 1: create the match (loopback native create, secret header).
-      const createResponse = await fetch(`${serverUrl}/games/legendary-arena/create`, {
-        method: 'POST',
-        // why: WP-308 / D-24094 — carry the internal-delegation secret so the
-        // native-lobby hard gate admits this loopback create.
-        headers: {
-          'Content-Type': 'application/json',
-          [INTERNAL_DELEGATION_HEADER]: internalDelegationSecret,
-        },
-        body: JSON.stringify({ numPlayers, setupData }),
-      });
-      if (!createResponse.ok) {
-        const nativeErrorBody = await createResponse.text();
-        koaContext.status = createResponse.status;
-        koaContext.body = {
-          error:
-            `The bot-ally match could not be created by the game server ` +
-            `(it responded HTTP ${createResponse.status}: ${nativeErrorBody}). ` +
-            'Check the match configuration and try again.',
-        };
-        return;
-      }
-      const createResult = await createResponse.json();
-      const matchId = createResult.matchID;
-
-      // Step 2: secret-join ONLY the bot seats "1"…"botCount"; capture each
-      // seat's credential. Seat 0 is NEVER joined here.
-      // why: seat 0 stays open for the human, who joins it through the authed
-      // /api/match/join (WP-376) so seat 0 gets its own match_seat_accounts row
-      // + credential hand-off; the server joining seat 0 would break that
-      // seat→account mapping (attribution + ranked eligibility).
-      const botSeats = [];
-      const credentials = {};
-      for (let seatIndex = 1; seatIndex <= botCount; seatIndex++) {
-        const seat = String(seatIndex);
-        const joinResponse = await fetch(
-          `${serverUrl}/games/legendary-arena/${matchId}/join`,
-          {
-            method: 'POST',
-            // why: WP-308 / D-24094 — the internal-delegation secret admits each
-            // bot join. The bot seat is NEVER written to match_seat_accounts
-            // (D-24120): a bot has no session and must stay absent from that
-            // table, which is load-bearing for WP-377's ranked guard (a rowless
-            // seat must not count toward the roster).
-            headers: {
-              'Content-Type': 'application/json',
-              [INTERNAL_DELEGATION_HEADER]: internalDelegationSecret,
-            },
-            body: JSON.stringify({ playerID: seat, playerName: `Bot Ally ${seatIndex}` }),
-          },
-        );
-        if (!joinResponse.ok) {
-          const nativeErrorBody = await joinResponse.text();
-          koaContext.status = joinResponse.status;
-          koaContext.body = {
-            error:
-              `A bot ally seat could not be joined on the game server ` +
-              `(it responded HTTP ${joinResponse.status}: ${nativeErrorBody}). ` +
-              'Please try again.',
-          };
-          return;
-        }
-        const joinResult = await joinResponse.json();
-        botSeats.push(seat);
-        credentials[seat] = joinResult.playerCredentials;
-      }
-
-      // Step 3: persist the botSeats tag + register + start the driver. The
-      // decision seed is the match id — deterministic, unique, and clock-free
-      // (no Date.now), so a bot-ally match is reproducible.
-      const decisionSeed = matchId;
-      await insertBotAllyMatch(database, matchId, botSeats, decisionSeed, policy);
-      const submit = createSubmit(matchId, credentials);
-      startDriverForMatch({
-        matchId,
-        botSeats,
-        decisionSeed,
-        policyName: policy,
-        submit,
-        context,
-      });
-
-      // Step 4: auto-ready each bot seat. The endpoint MUST NOT start the match
-      // itself.
-      // why: bot seats are readied here (before the human arrives) so that once
-      // the human readies seat 0, readyCount reaches requiredPlayers and
-      // validateCanStartMatch passes (lobby.validate.ts). Readying does NOT
-      // start the match — setPlayerReady only writes G.lobby.ready and never
-      // changes phase; the lobby → play transition happens only when the
-      // client dispatches startMatchIfReady (lobby.moves.ts, from
-      // LobbyControls.vue's Start Match button). Ready is dispatched as each
-      // bot playerID (setPlayerReady keys off the dispatching seat, not
-      // ctx.currentPlayer — lobby.moves.ts, D-10010).
-      for (const seat of botSeats) {
-        await submit({ seat, moveName: 'setPlayerReady', moveArgs: { ready: true } });
-      }
-
-      koaContext.status = 200;
-      koaContext.body = { matchId };
-    } catch (faultError) {
-      koaContext.status = 500;
-      koaContext.body = {
-        error:
-          'The bot-ally match could not be created because of an unexpected ' +
-          'server error. Please retry in a moment.',
-      };
-      console.error(`[bot-ally] create-with-bot failed unexpectedly: ${faultError.message}`);
+    // why: WP-802 / D-24689 §2 — only the admin operator route may set the
+    // operator-match flag; refuse it here, before any loopback create.
+    if (setupDataCarriesOperatorFlag(setupData)) {
+      koaContext.status = 400;
+      koaContext.body = { error: OPERATOR_FLAG_REFUSAL_MESSAGE };
+      return;
     }
+
+    const result = await createBotAllyMatch({
+      context,
+      createSubmit,
+      numPlayers,
+      botCount,
+      policy,
+      setupData,
+      unlisted: false,
+    });
+    respondWithCreateResult(koaContext, result);
   });
+
+  // why: WP-802 / D-24689 §2 — the admin-only operator create. Registered only
+  // when the context supplies the admin gate (server.mjs does); a context
+  // without it (a unit-test collector) simply has no operator route.
+  if (typeof requireAdminSession === 'function') {
+    registerOperatorCreateRoute(router, context, createSubmit, requireAdminSession);
+  }
 
   // why: guest — the unguessable matchId is the capability, so the play surface
   // (WP-415) can poll a match's bot-ally status without a session; the response

@@ -75,9 +75,16 @@ async function runGuard(
   return { ctx, nextCalls };
 }
 
+// why: WP-802 / D-24689 §2 — models a valid NON-admin session: the session check
+// passes, the D-15902 admin check answers `forbidden`.
 const acceptingSessionDeps: NativeLobbyGuardDependencies = {
   internalSecret: SECRET,
   requireAuthenticatedSession: async () => ({ ok: true, value: 'acct-1' }),
+  requireAdminSession: async () => ({
+    ok: false,
+    code: 'forbidden',
+    reason: 'Authenticated account does not have admin privileges.',
+  }),
   database: fakeDatabase,
 };
 
@@ -88,8 +95,27 @@ const rejectingSessionDeps: NativeLobbyGuardDependencies = {
     reason: 'no bearer token supplied',
     code: 'missing_token',
   }),
+  requireAdminSession: async () => ({
+    ok: false,
+    code: 'unauthorized',
+    reason: 'Admin session validation failed: upstream session check rejected the request.',
+  }),
   database: fakeDatabase,
 };
+
+// why: WP-802 — an admin session: both the session and the D-15902 admin check pass.
+const adminSessionDeps: NativeLobbyGuardDependencies = {
+  internalSecret: SECRET,
+  requireAuthenticatedSession: async () => ({ ok: true, value: 'acct-admin' }),
+  requireAdminSession: async () => ({ ok: true, accountId: 'acct-admin' as never }),
+  database: fakeDatabase,
+};
+
+// why: restated literally (not imported) so the assertion proves the guard's
+// output, mirroring the adminSession.ts reason-string test posture.
+const NON_ADMIN_NATIVE_CREATE_MESSAGE =
+  'Matches are created through the /api/match routes; this native create route ' +
+  'accepts only a server-internal delegation or an admin session.';
 
 describe('nativeLobbyGuard (WP-308)', () => {
   test('POST create with no secret and no session returns 401 and does not pass through', async () => {
@@ -150,14 +176,20 @@ describe('nativeLobbyGuard (WP-308)', () => {
     assert.equal(ctx.status, 0);
   });
 
-  test('POST create with a valid session (no secret) passes through', async () => {
+  test('POST create with a valid non-admin session (no secret) returns 403 and does not pass through', async () => {
+    // why: WP-802 / D-24689 §2 — native create admits only the internal
+    // delegation or an admin session; a signed-in non-admin is refused.
     const ctx = makeContext('POST', '/games/legendary-arena/create', {
       authorization: 'Bearer real-token',
     });
     const { nextCalls } = await runGuard(acceptingSessionDeps, ctx);
 
-    assert.equal(nextCalls, 1);
-    assert.equal(ctx.status, 0);
+    assert.equal(ctx.status, 403);
+    assert.equal(
+      (ctx.body as { error: string }).error,
+      NON_ADMIN_NATIVE_CREATE_MESSAGE,
+    );
+    assert.equal(nextCalls, 0);
   });
 
   test('GET match list is untouched — passes through without an auth check', async () => {
@@ -257,6 +289,112 @@ describe('nativeLobbyGuard router-variant paths (D-24691)', () => {
   test('a POST with extra segments after join is untouched (no router match downstream)', async () => {
     const ctx = makeContext('POST', '/games/legendary-arena/m-7/join/extra', {});
     const { nextCalls } = await runGuard(rejectingSessionDeps, ctx);
+
+    assert.equal(nextCalls, 1);
+    assert.equal(ctx.status, 0);
+  });
+});
+
+// why: WP-802 / D-24689 §2 — native create and boardgame.io's playAgain create a
+// match from caller setupData the guard can't read, so they admit only the
+// internal delegation or an admin session. Join keeps its secret-or-session rule.
+// (The no-session 401 on create/join path variants is pinned above, D-24691.)
+describe('nativeLobbyGuard admin-only native create and playAgain (WP-802 / D-24689)', () => {
+  test('an admin session admits a native create', async () => {
+    const ctx = makeContext('POST', '/games/legendary-arena/create', {
+      authorization: 'Bearer admin-token',
+    });
+    const { nextCalls } = await runGuard(adminSessionDeps, ctx);
+
+    assert.equal(nextCalls, 1);
+    assert.equal(ctx.status, 0);
+  });
+
+  test('an admin session admits a native playAgain', async () => {
+    const ctx = makeContext('POST', '/games/legendary-arena/m-1/playAgain', {
+      authorization: 'Bearer admin-token',
+    });
+    const { nextCalls } = await runGuard(adminSessionDeps, ctx);
+
+    assert.equal(nextCalls, 1);
+    assert.equal(ctx.status, 0);
+  });
+
+  test('a non-admin session gets 403 on playAgain with the locked message and no pass-through', async () => {
+    const ctx = makeContext('POST', '/games/legendary-arena/m-1/playAgain', {
+      authorization: 'Bearer real-token',
+    });
+    const { nextCalls } = await runGuard(acceptingSessionDeps, ctx);
+
+    assert.equal(ctx.status, 403);
+    assert.equal((ctx.body as { error: string }).error, NON_ADMIN_NATIVE_CREATE_MESSAGE);
+    assert.equal(nextCalls, 0);
+  });
+
+  test('a playAgain with no session gets 401 and does not pass through', async () => {
+    const ctx = makeContext('POST', '/games/legendary-arena/m-1/playAgain', {});
+    const { nextCalls } = await runGuard(rejectingSessionDeps, ctx);
+
+    assert.equal(ctx.status, 401);
+    assert.match((ctx.body as { error: string }).error, /signed-in account is required/);
+    assert.equal(nextCalls, 0);
+  });
+
+  test('a playAgain carrying the valid internal secret passes through', async () => {
+    const ctx = makeContext('POST', '/games/legendary-arena/m-1/playAgain', {
+      [INTERNAL_DELEGATION_HEADER]: SECRET,
+    });
+    const { nextCalls } = await runGuard(rejectingSessionDeps, ctx);
+
+    assert.equal(nextCalls, 1);
+    assert.equal(ctx.status, 0);
+  });
+
+  for (const variantPath of [
+    '/games/legendary-arena/create/',
+    '/games/legendary-arena/CREATE',
+    '/games/legendary%2Darena/create',
+    '/games/legendary-arena/m-1/playagain',
+    '/games/legendary-arena/m-1/PLAYAGAIN/',
+  ]) {
+    test(`a non-admin session gets 403 on ${variantPath} and does not pass through`, async () => {
+      // why: the path is passed raw — Koa's ctx.path is undecoded, which is what
+      // the case-insensitive, trailing-slash-tolerant patterns are built for.
+      const ctx = makeContext('POST', variantPath, { authorization: 'Bearer real-token' });
+      const { nextCalls } = await runGuard(acceptingSessionDeps, ctx);
+
+      assert.equal(ctx.status, 403);
+      assert.equal(nextCalls, 0);
+    });
+  }
+
+  test('an admin lookup failure on native create returns 500 and does not pass through', async () => {
+    const lookupFailedDeps: NativeLobbyGuardDependencies = {
+      ...acceptingSessionDeps,
+      requireAdminSession: async () => ({
+        ok: false,
+        code: 'lookup_failed',
+        reason: 'Failed to read admin authorization for the authenticated account.',
+      }),
+    };
+    const ctx = makeContext('POST', '/games/legendary-arena/create', {
+      authorization: 'Bearer real-token',
+    });
+    const { nextCalls } = await runGuard(lookupFailedDeps, ctx);
+
+    assert.equal(ctx.status, 500);
+    assert.equal(
+      (ctx.body as { error: string }).error,
+      'The admin check for this native create could not be completed; try again in a moment.',
+    );
+    assert.equal(nextCalls, 0);
+  });
+
+  test('a non-admin session still admits a native join', async () => {
+    const ctx = makeContext('POST', '/games/legendary-arena/m-1/join', {
+      authorization: 'Bearer real-token',
+    });
+    const { nextCalls } = await runGuard(acceptingSessionDeps, ctx);
 
     assert.equal(nextCalls, 1);
     assert.equal(ctx.status, 0);

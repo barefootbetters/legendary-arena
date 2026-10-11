@@ -48,6 +48,10 @@ import type {
 } from '../auth/sessionToken.types.js';
 import { INTERNAL_DELEGATION_HEADER } from './nativeLobbyGuard.js';
 import { recordSeatAccount } from './seatAccount.logic.js';
+import {
+  OPERATOR_FLAG_REFUSAL_MESSAGE,
+  setupDataCarriesOperatorFlag,
+} from '../operator/operatorMatch.logic.js';
 import type { AccountId } from '../identity/identity.types.js';
 import koaBody from 'koa-body';
 // why: the pure, browser-safe setup table + scheme-aware hero-count and
@@ -308,6 +312,13 @@ export function registerMatchGateRoutes(
       numPlayers?: unknown;
       setupData?: unknown;
     };
+    // why: WP-802 / D-24689 §2 — only the admin operator route may set the
+    // operator-match flag; refuse it here, before any loopback create.
+    if (setupDataCarriesOperatorFlag(requestBody.setupData)) {
+      koaContext.status = 400;
+      koaContext.body = { error: OPERATOR_FLAG_REFUSAL_MESSAGE };
+      return;
+    }
 
     try {
       const createResponse = await fetch(

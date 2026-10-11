@@ -426,4 +426,23 @@ describe('matchGate.routes (WP-307)', () => {
     assert.match((koaContext.body as { error: string }).error, /"matchID"/);
     assert.equal(fetchCalls.length, 0);
   });
+
+  test('POST /api/match/create refuses a setupData carrying isDebugMatch with 400 and never delegates (WP-802 / D-24689 §2)', async () => {
+    installFetchStub(200, { matchID: 'match-never' });
+    const handlers = collectRoutes(authenticatedDeps);
+    const koaContext = makeContext({
+      numPlayers: 2,
+      setupData: { schemeId: 'core/midtown-bank-robbery', isDebugMatch: true },
+    });
+
+    await handlers.get('/api/match/create')!(koaContext);
+
+    assert.equal(koaContext.status, 400);
+    assert.deepEqual(koaContext.body, {
+      error:
+        'This match setup carries isDebugMatch, which only the operator create route may set. ' +
+        'Remove the field and create the match again.',
+    });
+    assert.equal(fetchCalls.length, 0, 'a flagged setupData never reaches the native create');
+  });
 });

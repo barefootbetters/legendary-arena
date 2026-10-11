@@ -183,6 +183,16 @@ const ENDED_EARLY_FINAL_STATE = {
 } as unknown as LegendaryGameState;
 const ENDED_EARLY_REPLAY_HASH = computeStateHash(ENDED_EARLY_FINAL_STATE);
 
+// why: WP-802 / D-24689 §3 — an operator-match fixture: a decisive heroes-win
+// final state (so nothing else would reject it) that carries G.isDebugMatch.
+// The submission path must reject it as debug_match before any score, badge or
+// row is written. Its extra key yields its own canonical hash.
+const OPERATOR_MATCH_FINAL_STATE = {
+  ...(WIN_FINAL_STATE as unknown as Record<string, unknown>),
+  isDebugMatch: true,
+} as unknown as LegendaryGameState;
+const OPERATOR_MATCH_REPLAY_HASH = computeStateHash(OPERATOR_MATCH_FINAL_STATE);
+
 // why: WP-344 player-count fixture — identical to WIN_FINAL_STATE except the
 // per-player zone record carries TWO seats, which is the seat-count source
 // step 14c reads (D-24134 §1). The extra seat changes the canonical hash, so
@@ -964,6 +974,76 @@ describe('competition logic (WP-053)', () => {
     },
   );
 
+  // -------------------------------------------------------------------------
+  // WP-802 / D-24689 §3 — an operator match is never scored (debug_match)
+  // -------------------------------------------------------------------------
+
+  test(
+    'rejects an operator match with published PAR as debug_match (no score or badge written)',
+    hasTestDatabase ? {} : { skip: 'requires test database' },
+    async () => {
+      assert.ok(testPool !== null);
+      const accountResult = await createPlayerAccount(
+        {
+          email: 'wp802-operator@example.test',
+          displayName: 'Operator Admin',
+          authProvider: 'email',
+          authProviderId: 'wp802-operator',
+        },
+        testPool,
+      );
+      assert.ok(accountResult.ok === true);
+      const account = accountResult.value;
+
+      const ownershipResult = await assignReplayOwnership(
+        account.accountId,
+        OPERATOR_MATCH_REPLAY_HASH,
+        TEST_SCENARIO_KEY,
+        testPool,
+      );
+      assert.ok(ownershipResult.ok === true);
+      await updateReplayVisibility(
+        ownershipResult.value.ownershipId,
+        'public',
+        testPool,
+      );
+
+      const result = await submitCompetitiveScoreImpl(
+        account,
+        OPERATOR_MATCH_REPLAY_HASH,
+        testPool,
+        {
+          // why: reduce to the operator-match final state; PAR is published for
+          // the scenario (stubCheckParPublished), so only the operator flag can
+          // reject this otherwise-scorable heroes-win.
+          reduceReplay: async (replayHash: string) =>
+            replayHash === OPERATOR_MATCH_REPLAY_HASH
+              ? {
+                  finalState: OPERATOR_MATCH_FINAL_STATE,
+                  stateHash: OPERATOR_MATCH_REPLAY_HASH,
+                  turnCount: TEST_TURN_COUNT,
+                }
+              : null,
+          checkParPublished: stubCheckParPublished,
+        },
+      );
+      assert.deepEqual(result, { ok: false, reason: 'debug_match' });
+
+      const scoreRows = await testPool.query(
+        'SELECT 1 FROM legendary.competitive_scores WHERE player_id = ' +
+          '(SELECT player_id FROM legendary.players WHERE ext_id = $1)',
+        [account.accountId],
+      );
+      assert.strictEqual(scoreRows.rowCount, 0, 'no competitive_scores row for an operator match');
+      const badgeRows = await testPool.query(
+        'SELECT 1 FROM legendary.player_badges WHERE player_id = ' +
+          '(SELECT player_id FROM legendary.players WHERE ext_id = $1)',
+        [account.accountId],
+      );
+      assert.strictEqual(badgeRows.rowCount, 0, 'no badge for an operator match');
+    },
+  );
+
   test('SUBMISSION_REJECTION_REASONS array matches SubmissionRejectionReason union', () => {
     // Forward inclusion + exhaustiveness via `never` default.
     function assertNever(value: never): never {
@@ -981,6 +1061,7 @@ describe('competition logic (WP-053)', () => {
         case 'replay_verification_failed':
         case 'match_not_finished':
         case 'ended_early':
+        case 'debug_match':
           break;
         default:
           assertNever(reason);
@@ -997,6 +1078,7 @@ describe('competition logic (WP-053)', () => {
       'replay_verification_failed',
       'match_not_finished',
       'ended_early',
+      'debug_match',
     ];
     for (const reason of expectedReasons) {
       assert.ok(
