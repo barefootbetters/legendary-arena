@@ -312,7 +312,7 @@ function woundAll(
   // `escalation` is present it drives the wound count off the current twist
   // number. Other wound-all schemes keep the flat woundCount path.
   const escalation = params['escalation'] as
-    | Array<{ atOrAfterTwist: number; woundCount: number }>
+    | Array<{ atOrAfterTwist: number; throughTwist?: number; woundCount: number }>
     | undefined;
 
   // why: branch-then-emit; single terminal push — one schemeTwistResolved
@@ -334,18 +334,27 @@ function woundAll(
       // why: a twist can match more than one escalation step (twist 7 matches
       // both the 5→1 and 7→3 steps), so take the MAX matching step's woundCount
       // — the highest escalation reached — not the first or last. No .reduce().
+      // D-24685 — an optional `throughTwist` closes a step, so Cosmic Cube's
+      // twist 8 ("Evil Wins!") matches no step and deals nothing.
       let escalatedWoundCount = 0;
+      let isBelowFirstStep = true;
       for (const step of escalation) {
-        if (step.atOrAfterTwist <= currentTwist && step.woundCount > escalatedWoundCount) {
+        if (step.atOrAfterTwist <= currentTwist) {
+          isBelowFirstStep = false;
+        }
+        const isStepOpen = step.throughTwist === undefined || currentTwist <= step.throughTwist;
+        if (step.atOrAfterTwist <= currentTwist && isStepOpen && step.woundCount > escalatedWoundCount) {
           escalatedWoundCount = step.woundCount;
         }
       }
       effectiveWoundCount = escalatedWoundCount;
 
-      if (effectiveWoundCount === 0) {
+      if (effectiveWoundCount === 0 && isBelowFirstStep) {
         pushLog(gameState,
           `[Scheme Twist] No wounds this twist — twist ${currentTwist} is below the escalation threshold.`,
         );
+      } else if (effectiveWoundCount === 0) {
+        pushLog(gameState, `[Scheme Twist] No wounds this twist — twist ${currentTwist} deals no Wounds.`);
       }
     } else {
       effectiveWoundCount = woundCount as number;
