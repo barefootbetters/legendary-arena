@@ -921,10 +921,10 @@
       "card": "Ymir, Frost Giant King",
       "ability": "ko-wounds-current-hand-and-discard",
       "wp": "WP-516",
-      "state": "verified",
-      "date": "2026-08-09",
-      "evidence": "WP-516 live-verify, 2p co-op (#1301)",
-      "note": ""
+      "state": "partial",
+      "date": "2026-10-10",
+      "evidence": "WP-516 live-verify, 2p co-op (#1301). After D-24684 (most-Wounds chooser, #2677): 2p bot-ally Loki / Midtown Bank Robbery (Radiation + Enemies of Asgard; Gambit, Wolverine, Spider-Man, Captain America, Black Widow; Final Blow on), match MHZt0mnJyn6 (build 19be0fc): the bot fought Ymir (25.2.25) and Player 0's 1 Wound was KO'd (25.2.24), so the target is no longer fixed to the fighter.",
+      "note": "D-24684 changed who \"Choose a player\" picks. Partial until a game shows the most-Wounds pick directly: Player 0 defeats Ymir while the bot clearly holds more Wounds (the bot's hand and discard are not visible in the log)."
     },
     {
       "key": "core-villain-enemies-of-asgard-ymir-frost-giant-king|reveal-or-wound",
