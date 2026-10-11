@@ -12,7 +12,7 @@
 **User-visible on `play.legendary-arena.com` (after deploy).** Defeating Ymir, Frost Giant King now KOs the Wounds in hand and discard of whichever player holds the most, with ties going to the player who fought him. The log names that player: "Fight effect: Player 1 KO'd 3 Wound(s) from their hand and discard pile." Before, it always picked the fighter, even with none: 2p match `r8_2EFHd3Ah` logged "KO'd 0" while the bot held Wounds (36.2.37).
 
 - **Engine only.** Two log-text test updates and two new cases; solo play is unchanged.
-- **Live-verify (D-24026), 2026-10-10: PARTIAL.** Match `MHZt0mnJyn6` (build `19be0fc`): the bot fought Ymir and the Wound came off Player 0 (25.2.24), so the target is no longer fixed to the fighter. Whether Player 0 truly held more Wounds than the bot is not visible in the log. Still needed: Player 0 defeats Ymir while the bot clearly holds more Wounds.
+- **Live-verify (D-24026), 2026-10-11: PASS.** Match `ZVUtr7aaCom` (build `eca1242`): Player 0 defeated Ymir and the log read "Player 1 KO'd 8 Wound(s) from their hand and discard pile" (34.2.11). The bot held more Wounds than the fighter, so the effect picked it.
 
 ### D-24683 — "Each player KOs" lines say which player lost which Heroes (direct fix) (2026-10-10)
 
