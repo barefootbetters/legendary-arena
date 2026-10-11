@@ -168,8 +168,14 @@ scores every legal move and takes the highest, with seeded tie-breaks, but
 the scored pairs are "not surfaced outside the policy." So the operator sees
 only outcomes: which card the bot put back with Stack the Deck, or Loki's
 Maniacal Tyrant ("KO up to four cards from your discard pile") logging
-"KO'd 0." Whether that 0 was an empty discard pile or a choice can't be
-told from the log.
+"Player 1 KO'd 0 card(s)." The log can't say whether that 0 was an empty
+discard pile or a choice. It was a choice. D-24688 found that the bot's
+default for this KO-from-discard prompt was "KO nothing", left over from
+D-24510, so the tactic did nothing for a bot ally even with Wounds and
+starting cards in its discard (`xGw-94HDhBj` at 23.2.14, `sDBnFxiigDL` at
+35.2.14). Finding that meant reading the bot's code after the games. A
+candidate view would have shown "KO nothing" being picked over a discard
+full of Wounds at the moment it happened.
 
 ### What it costs today
 
@@ -328,8 +334,9 @@ fit them, not bend them.
 - **Getting a villain to the right seat.** Force the next villain-deck card,
   instead of playing Midtown games until it shows up.
 - **The bot's choices.** Stack the Deck put-backs and Maniacal Tyrant's
-  "KO'd 0" show up as candidates with scores, so "the bot chose badly" and
-  "the effect is broken" can be told apart.
+  KO pick show up as candidates with scores, so "the bot chose badly" and
+  "the effect is broken" can be told apart while the game is on. D-24688's
+  "KO nothing" default would have shown up the first time it fired.
 - **Turning a live bug into a test.** Copy the board as a fixture at the
   moment it went wrong.
 
@@ -420,7 +427,8 @@ fit them, not bend them.
   `ZVUtr7aaCom`, partial `MHZt0mnJyn6`), D-24685 (Cosmic Cube twist 8; PASS
   `Cq_czI1TQH0`), D-24686 (empty-supply log line; live-verify pending),
   D-24119 / D-24095 (faithful replay and the framework-store exemption),
-  D-24146 (ranked eligibility), D-24306 (`ended_early`)
+  D-24146 (ranked eligibility), D-24306 (`ended_early`), D-24688 (the bot's
+  "KO nothing" default for Maniacal Tyrant, carried over from D-24510)
 - [`docs/ai/coverage/live-verify.json`](../docs/ai/coverage/live-verify.json):
   the per-card live-verify record
 - [`docs/ai/ARCHITECTURE.md`](../docs/ai/ARCHITECTURE.md) and
