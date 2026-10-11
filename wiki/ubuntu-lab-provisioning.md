@@ -23,7 +23,9 @@ source:
   - ../render.yaml
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
-last-reviewed: 2026-10-04
+  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0005.pdf (Render bill, Aug 2026)
+  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026)
+last-reviewed: 2026-10-11
 ---
 
 # Ubuntu Lab Provisioning
@@ -70,8 +72,8 @@ The operator-capability and disaster-recovery-rehearsal value that first justifi
 the box still holds — but the box is no longer exploratory. The move is decided
 (see the callout) and in progress. When it was planned in July, cost looked
 roughly even and control was the driver. That changed once Render's plans were
-raised under load: the September 2026 bill was **$146.35**, against about $48 a
-month for the target droplet. Cost is now a driver too (see
+raised under load: the August and September 2026 bills were **$146.50** and
+**$146.35**, against about $48 a month for the target droplet. Cost is now a driver too (see
 [Cost case](#cost-case-september-2026)).
 
 ## Mechanics
@@ -101,17 +103,23 @@ NameHero price comparison on 2026-10-04 (see
 NameHero had been named elsewhere, but only as a candidate host for the
 [AI Second Brain](ai-second-brain.md), never for this migration.
 
-What Render charged for September 2026 (invoice `0SPQWPNF-0006`, paid
-2026-10-01):
+What Render charged for August 2026 (invoice `0SPQWPNF-0005`, paid
+2026-09-01) and September 2026 (invoice `0SPQWPNF-0006`, paid 2026-10-01):
 
-| Line | Render plan | Sep 2026 | After migration |
-|---|---|---|---|
-| Game server | `pro`, 2 CPU / 4 GB | $85.00 | on the droplet |
-| PostgreSQL | `pro-4gb` plus storage | $55.30 | on the droplet, `localhost` |
-| Builds | 6 h 42 m of pipeline minutes | $5.00 | GitHub Actions deploy |
-| Bandwidth | 6.5 GB | $1.05 | included with the droplet |
-| ewiki static site | free | $0.00 | Cloudflare Pages |
-| **Total** | | **$146.35** | **~$48** (4 vCPU / 8 GB), **~$24** if stepped down to 4 GB |
+| Line | Render plan | Aug 2026 | Sep 2026 | After migration |
+|---|---|---|---|---|
+| Game server | `pro`, 2 CPU / 4 GB | $85.00 | $85.00 | on the droplet |
+| PostgreSQL | `pro-4gb` plus storage | $55.30 | $55.30 | on the droplet, `localhost` |
+| Builds | pipeline minutes (Aug 41 m, Sep 6 h 42 m) | $5.00 | $5.00 | GitHub Actions deploy |
+| Bandwidth | Aug 7.8 GB, Sep 6.5 GB | $1.20 | $1.05 | included with the droplet |
+| ewiki static site | free | $0.00 | $0.00 | Cloudflare Pages |
+| **Total** | | **$146.50** | **$146.35** | **~$48** (4 vCPU / 8 GB), **~$24** if stepped down to 4 GB |
+
+The two months differ by 15 cents, all of it bandwidth, so about **$146 a
+month is the steady run rate**, not a one-off spike. Builds billed $5 in both
+months, at 41 minutes and at nearly seven hours, so that line behaves like a
+flat charge rather than a per-minute one. August and September together cost
+$292.85.
 
 That saves about **$1,180 a year** at 8 GB and about $1,470 at 4 GB, before
 backup storage. Backups go to R2, which is inside its free tier today. Both
@@ -140,7 +148,9 @@ are recorded in `render.yaml`.
 4. **Trim Render only if cutover is more than a month or two out.**
    - Build only the server and the packages it depends on
      (`pnpm --filter @legendary-arena/server... build`) instead of
-     `pnpm -r build`. That goes after the $5 build line.
+     `pnpm -r build`. That shortens deploys, but it probably won't lower the
+     $5 build line: August's 41 minutes billed the same $5 as September's
+     6 h 42 m.
    - Step the server from `pro` down to `standard`, which saves $60 a month,
      but only if the September figures show headroom. Under-provisioning is
      what caused the July freezes.

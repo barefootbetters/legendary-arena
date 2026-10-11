@@ -23,9 +23,10 @@ source:
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
   - ../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md
   - C:\www\jefferyjjensen-corporate-memory (the ship — private repo barefootbetters/jefferyjjensen-corporate-memory)
+  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0005.pdf (Render bill, Aug 2026)
   - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026 — the hosting cost baseline)
   - ../render.yaml
-last-reviewed: 2026-10-10
+last-reviewed: 2026-10-11
 ---
 
 # AI Second Brain
@@ -715,7 +716,10 @@ corrupts recall or the store:
   | Bandwidth | 6.5 GB | $1.05 |
   | ewiki static site | free | $0.00 |
 
-  That is about **$1,750 a year** for one server and one database. Both plans
+  August's bill (invoice `0SPQWPNF-0005`) was $146.50: the same lines, with
+  7.8 GB of bandwidth at $1.20. Two months 15 cents apart make $146 a month the
+  steady run rate. That is about **$1,750 a year** for one server and one
+  database. Both plans
   were raised in July 2026 to cure CPU and memory starvation (the reasons are in
   `render.yaml`); the dashboard's last cost snapshot, from 2026-07-27, predates
   the full-month effect and still shows about $30.
