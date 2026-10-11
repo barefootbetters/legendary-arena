@@ -101,10 +101,18 @@ interface KoaGuardContext {
  */
 type KoaNext = () => Promise<unknown>;
 
-// why: the join match id is a single non-empty path segment; the pattern
-// pins the game name and the create/join suffix so ONLY the two native
-// create/join POST routes match — never the `GET` list or an `/api/*` route.
-const NATIVE_JOIN_PATH_PATTERN = /^\/games\/legendary-arena\/[^/]+\/join$/;
+// why: these patterns must match every path the boardgame.io lobby router
+// serves for `/games/:name/create` and `/games/:name/:id/join`, not just the
+// canonical spelling. boardgame.io 0.50.2 builds `new Router()` (@koa/router
+// 10.1.1) with its defaults — `strict: false` (optional trailing slash),
+// `sensitive: false` (case-insensitive) — matches against the raw, undecoded
+// `ctx.path`, and resolves the game from the DECODED `ctx.params.name`. So
+// `/create/`, `/CREATE`, and `/games/legendary%2Darena/create` all reach the
+// create handler; an exact-string guard let them through unauthenticated
+// (D-24691). Hence: case-insensitive, optional trailing slash, and ANY game
+// segment (an encoded name decodes to ours; a foreign name 404s downstream).
+const NATIVE_CREATE_PATH_PATTERN = /^\/games\/[^/]+\/create\/?$/i;
+const NATIVE_JOIN_PATH_PATTERN = /^\/games\/[^/]+\/[^/]+\/join\/?$/i;
 
 /**
  * Reports whether a request targets one of the two guarded native
@@ -119,7 +127,7 @@ function isGuardedNativeLobbyPath(method: string, path: string): boolean {
   if (method !== 'POST') {
     return false;
   }
-  if (path === '/games/legendary-arena/create') {
+  if (NATIVE_CREATE_PATH_PATTERN.test(path)) {
     return true;
   }
   return NATIVE_JOIN_PATH_PATTERN.test(path);
