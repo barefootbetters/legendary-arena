@@ -186,3 +186,79 @@ describe('nativeLobbyGuard (WP-308)', () => {
     assert.equal(ctx.status, 0);
   });
 });
+
+// why: boardgame.io 0.50.2's lobby router (@koa/router 10.1.1, defaults
+// `strict: false`, `sensitive: false`) matches the raw `ctx.path` with an
+// optional trailing slash and no case sensitivity, and decodes `:name`
+// before looking up the game. Every spelling below reaches the native
+// create/join handler, so every one must be gated (D-24691). `ctx.path` is
+// the raw, undecoded path — the `%2D` cases are exactly what the guard sees.
+const CREATE_PATH_VARIANTS = [
+  '/games/legendary-arena/create/',
+  '/games/legendary-arena/CREATE',
+  '/games/legendary-arena/Create/',
+  '/GAMES/legendary-arena/create',
+  '/games/legendary%2Darena/create',
+  '/games/legendary%2darena/create/',
+];
+
+const JOIN_PATH_VARIANTS = [
+  '/games/legendary-arena/match-42/join/',
+  '/games/legendary-arena/match-42/JOIN',
+  '/games/legendary-arena/match-42/Join/',
+  '/GAMES/legendary-arena/match-42/join',
+  '/games/legendary%2Darena/match-42/join',
+  '/games/legendary%2darena/match-42/join/',
+];
+
+describe('nativeLobbyGuard router-variant paths (D-24691)', () => {
+  for (const variantPath of [...CREATE_PATH_VARIANTS, ...JOIN_PATH_VARIANTS]) {
+    test(`POST ${variantPath} with no secret and no session returns 401 and does not pass through`, async () => {
+      const ctx = makeContext('POST', variantPath, {});
+      const { nextCalls } = await runGuard(rejectingSessionDeps, ctx);
+
+      assert.equal(ctx.status, 401);
+      assert.match(
+        (ctx.body as { error: string }).error,
+        /signed-in account is required/,
+      );
+      assert.equal(nextCalls, 0);
+    });
+  }
+
+  test('a variant create path carrying the valid internal secret still passes through', async () => {
+    const ctx = makeContext('POST', '/games/legendary-arena/CREATE/', {
+      [INTERNAL_DELEGATION_HEADER]: SECRET,
+    });
+    const { nextCalls } = await runGuard(rejectingSessionDeps, ctx);
+
+    assert.equal(nextCalls, 1);
+    assert.equal(ctx.status, 0);
+  });
+
+  test('a variant join path with a valid session still passes through', async () => {
+    const ctx = makeContext('POST', '/games/legendary%2Darena/m-7/join/', {
+      authorization: 'Bearer real-token',
+    });
+    const { nextCalls } = await runGuard(acceptingSessionDeps, ctx);
+
+    assert.equal(nextCalls, 1);
+    assert.equal(ctx.status, 0);
+  });
+
+  test('a GET on a variant create path is untouched (POST-only gate)', async () => {
+    const ctx = makeContext('GET', '/games/legendary-arena/CREATE/', {});
+    const { nextCalls } = await runGuard(rejectingSessionDeps, ctx);
+
+    assert.equal(nextCalls, 1);
+    assert.equal(ctx.status, 0);
+  });
+
+  test('a POST with extra segments after join is untouched (no router match downstream)', async () => {
+    const ctx = makeContext('POST', '/games/legendary-arena/m-7/join/extra', {});
+    const { nextCalls } = await runGuard(rejectingSessionDeps, ctx);
+
+    assert.equal(nextCalls, 1);
+    assert.equal(ctx.status, 0);
+  });
+});
