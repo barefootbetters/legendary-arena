@@ -163,10 +163,13 @@ function makeMoveContext(
 const koChoice = (playerID = '0'): PendingKoHeroChoice => ({ choiceType: 'ko-hero', playerID });
 
 describe('resolveKoHeroChoice — success paths', () => {
-  it('resolves from discard, KOs the card, and front-pops the queue', () => {
+  it('resolves from discard on a discard-scoped entry, KOs the card, and front-pops the queue', () => {
+    // why: D-24687 — only an entry that names the discard pile (Juggernaut's Ambush,
+    // D-24644) can KO from it; a zoneless entry is hand + inPlay.
     const gameState = makeTestGameState({
+      hand: ['hero-h' as CardExtId],
       discard: ['hero-d' as CardExtId, 'hero-e' as CardExtId],
-      pendingKoHeroChoices: [koChoice()],
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'] }],
     });
     const { context } = makeMoveContext(gameState);
 
@@ -175,10 +178,14 @@ describe('resolveKoHeroChoice — success paths', () => {
     assert.deepStrictEqual(gameState.ko, ['hero-d'], 'chosen discard card KOd');
     assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['hero-e'], 'KO removed from discard');
     assert.equal(gameState.pendingKoHeroChoices!.length, 0, 'queue front-popped');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['hero-h'], 'hand untouched');
   });
 
   it('logs the resolved KO naming the hero (WP-316 resolve-time naming)', () => {
+    // why: D-24687 — the hero is resolved from hand; the copy in the discard is
+    // not one of "your Heroes" and stays.
     const gameState = makeTestGameState({
+      hand: ['hero-d' as CardExtId],
       discard: ['hero-d' as CardExtId],
       pendingKoHeroChoices: [koChoice()],
     });
@@ -187,7 +194,7 @@ describe('resolveKoHeroChoice — success paths', () => {
     };
     const { context } = makeMoveContext(gameState);
 
-    resolveKoHeroChoice(context, { zone: 'discard', cardId: 'hero-d' as CardExtId });
+    resolveKoHeroChoice(context, { zone: 'hand', cardId: 'hero-d' as CardExtId });
 
     assert.ok(
       gameState.messages.some(
@@ -195,6 +202,7 @@ describe('resolveKoHeroChoice — success paths', () => {
       ),
       'a resolve-time log line names the KO\'d hero',
     );
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['hero-d'], 'discard unchanged');
   });
 
   it('the KO log falls back to the ext_id when no display name exists', () => {
@@ -258,16 +266,20 @@ describe('resolveKoHeroChoice — success paths', () => {
   });
 
   it('KOs only the first matching occurrence of a duplicated ext_id', () => {
+    // why: D-24687 — the duplicate pair is resolved from hand; the discard pair is
+    // not one of "your Heroes" and stays.
     const gameState = makeTestGameState({
+      hand: ['dup' as CardExtId, 'dup' as CardExtId],
       discard: ['dup' as CardExtId, 'dup' as CardExtId],
       pendingKoHeroChoices: [koChoice()],
     });
     const { context } = makeMoveContext(gameState);
 
-    resolveKoHeroChoice(context, { zone: 'discard', cardId: 'dup' as CardExtId });
+    resolveKoHeroChoice(context, { zone: 'hand', cardId: 'dup' as CardExtId });
 
     assert.deepStrictEqual(gameState.ko, ['dup']);
-    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['dup'], 'one copy remains');
+    assert.deepStrictEqual(gameState.playerZones['0']!.hand, ['dup'], 'one copy remains');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['dup', 'dup'], 'discard unchanged');
   });
 });
 
@@ -658,5 +670,44 @@ describe('resolveKoHeroChoice — hand-scoped entry (WP-577 / D-24386, Red Skull
     assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['hero-d']);
     assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, ['hero-p']);
     assert.equal(gameState.pendingKoHeroChoices!.length, 1, 'queue intact — the player resubmits a hand target');
+  });
+});
+
+describe('resolveKoHeroChoice — zoneless entry is "your Heroes" (WP-801 / D-24687)', () => {
+  it('a zoneless entry rejects zone: discard as a silent no-op with the queue intact', () => {
+    const gameState = makeTestGameState({
+      hand: ['hero-a' as CardExtId],
+      discard: ['hero-d' as CardExtId],
+      inPlay: ['hero-p' as CardExtId],
+      pendingKoHeroChoices: [koChoice()],
+    });
+    const queueBefore = JSON.stringify(gameState.pendingKoHeroChoices);
+    const { context } = makeMoveContext(gameState);
+
+    resolveKoHeroChoice(context, { zone: 'discard', cardId: 'hero-d' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, [], 'no card KO\'d from the discard pile');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['hero-d'], 'discard unchanged');
+    assert.equal(JSON.stringify(gameState.pendingKoHeroChoices), queueBefore, 'queue intact for resubmit');
+    assert.equal(
+      gameState.messages.filter((message) => message.text.includes("KO'd")).length,
+      0,
+      'a rejected resolve narrates nothing',
+    );
+  });
+
+  it('a discard-scoped entry (Juggernaut, D-24644) still accepts zone: discard', () => {
+    const gameState = makeTestGameState({
+      hand: ['hero-a' as CardExtId],
+      discard: ['hero-d' as CardExtId, 'hero-e' as CardExtId],
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'] }],
+    });
+    const { context } = makeMoveContext(gameState);
+
+    resolveKoHeroChoice(context, { zone: 'discard', cardId: 'hero-e' as CardExtId });
+
+    assert.deepStrictEqual(gameState.ko, ['hero-e']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['hero-d']);
+    assert.equal(gameState.pendingKoHeroChoices!.length, 0, 'queue front-popped');
   });
 });

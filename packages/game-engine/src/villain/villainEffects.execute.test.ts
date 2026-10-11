@@ -16,10 +16,13 @@ import {
   selectDefaultKoTarget,
   selectScryKoTarget,
   buildKoEligibleTargets,
+  countKoableHeroes,
+  YOUR_HEROES_KO_ZONES,
   villainCardPlaysVillainDeckCards,
   resolveEffectResultNames,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
+import { composeEffectResultLogLine } from '../events/notableEvents.compose.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
@@ -185,7 +188,9 @@ describe('executeVillainAbilities — koHeroCurrentPlayer (WP-242 park → resol
   // auto-KO + no append (decision C); ≥2 eligible → append a pending choice
   // and KO nothing (the player picks via resolveKoHeroChoice). The legacy
   // auto-pick now applies only to the each-player variants (unchanged).
-  it('≥2 eligible (discard + hand) → appends one pending choice and KOs nothing', () => {
+  it('≥2 eligible (hand + inPlay) → appends one pending choice and KOs nothing', () => {
+    // why: D-24687 — "your Heroes" is hand + inPlay; the discard Heroes are not
+    // eligible, so the choice is between the hand Hero and the played Hero.
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroCurrentPlayer'])],
       playerZones: {
@@ -193,7 +198,7 @@ describe('executeVillainAbilities — koHeroCurrentPlayer (WP-242 park → resol
           deck: [],
           hand: ['core-hero-z-00'] as CardExtId[],
           discard: ['core-hero-b-00', 'core-hero-a-00', WOUND] as CardExtId[],
-          inPlay: [],
+          inPlay: ['core-hero-p-00'] as CardExtId[],
           victory: [],
         },
         '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
@@ -201,6 +206,11 @@ describe('executeVillainAbilities — koHeroCurrentPlayer (WP-242 park → resol
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
 
+    assert.deepStrictEqual(
+      G.playerZones['0']!.inPlay,
+      ['core-hero-p-00'],
+      'inPlay untouched while pending',
+    );
     assert.deepStrictEqual(G.ko, [], 'nothing KOd yet — the player must choose');
     assert.equal(G.pendingKoHeroChoices?.length, 1, 'one pending choice appended');
     assert.deepStrictEqual(
@@ -242,12 +252,14 @@ describe('executeVillainAbilities — koHeroCurrentPlayer (WP-242 park → resol
   });
 
   it('exactly 1 eligible → auto-KOs that card and appends nothing (decision C)', () => {
+    // why: D-24687 — the discard Hero is not one of "your Heroes", so the single
+    // eligible Hero is the one in hand.
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroCurrentPlayer'])],
       playerZones: {
         '0': {
           deck: [],
-          hand: [WOUND] as CardExtId[],
+          hand: [WOUND, 'core-hero-h-00'] as CardExtId[],
           discard: ['core-hero-a-00', WOUND] as CardExtId[],
           inPlay: [],
           victory: [],
@@ -257,16 +269,21 @@ describe('executeVillainAbilities — koHeroCurrentPlayer (WP-242 park → resol
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
 
-    assert.deepStrictEqual(G.ko, ['core-hero-a-00'], 'the single eligible hero is auto-KOd');
+    assert.deepStrictEqual(G.ko, ['core-hero-h-00'], 'the single eligible hero is auto-KOd');
     assert.equal(
       G.pendingKoHeroChoices === undefined || G.pendingKoHeroChoices.length === 0,
       true,
       'no pending choice appended when exactly 1 eligible',
     );
     assert.equal(
-      G.playerZones['0']!.discard.includes('core-hero-a-00' as CardExtId),
+      G.playerZones['0']!.hand.includes('core-hero-h-00' as CardExtId),
       false,
-      'auto-KO target removed from discard',
+      'auto-KO target removed from hand',
+    );
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      ['core-hero-a-00', WOUND],
+      'discard unchanged (not one of "your Heroes")',
     );
   });
 
@@ -308,7 +325,9 @@ describe('executeVillainAbilities — koHeroCurrentPlayer (WP-242 park → resol
 });
 
 describe('buildKoEligibleTargets (WP-242)', () => {
-  it('spans discard → hand → inPlay in array index order, excluding wounds', () => {
+  it('spans hand → inPlay in array index order with no allowlist, excluding wounds and the discard pile', () => {
+    // why: D-24687 — an absent allowlist means "your Heroes" (hand + inPlay). An
+    // explicit allowlist naming all three zones still scans in the fixed zone order.
     const zones = {
       deck: [],
       hand: ['core-hand-a' as CardExtId, WOUND],
@@ -318,26 +337,40 @@ describe('buildKoEligibleTargets (WP-242)', () => {
     } as unknown as PlayerZones;
 
     assert.deepStrictEqual(buildKoEligibleTargets(zones), [
+      { zone: 'hand', cardId: 'core-hand-a' },
+      { zone: 'inPlay', cardId: 'core-play-a' },
+    ]);
+    assert.deepStrictEqual(buildKoEligibleTargets(zones, ['discard', 'hand', 'inPlay']), [
       { zone: 'discard', cardId: 'core-disc-a' },
       { zone: 'discard', cardId: 'core-disc-b' },
       { zone: 'hand', cardId: 'core-hand-a' },
       { zone: 'inPlay', cardId: 'core-play-a' },
     ]);
+    assert.deepStrictEqual(
+      zones.discard,
+      ['core-disc-a', WOUND, 'core-disc-b'],
+      'discard unchanged (the builder never mutates)',
+    );
   });
 
   it('dedupes the same ext_id within a zone (one option) but keeps it across zones (two options)', () => {
     const zones = {
       deck: [],
-      hand: ['dup' as CardExtId],
+      hand: ['dup' as CardExtId, 'dup' as CardExtId],
       discard: ['dup' as CardExtId, 'dup' as CardExtId],
-      inPlay: [],
+      inPlay: ['dup' as CardExtId],
       victory: [],
     } as unknown as PlayerZones;
 
     assert.deepStrictEqual(buildKoEligibleTargets(zones), [
+      { zone: 'hand', cardId: 'dup' },
+      { zone: 'inPlay', cardId: 'dup' },
+    ]);
+    assert.deepStrictEqual(buildKoEligibleTargets(zones, ['discard', 'hand']), [
       { zone: 'discard', cardId: 'dup' },
       { zone: 'hand', cardId: 'dup' },
     ]);
+    assert.deepStrictEqual(zones.discard, ['dup', 'dup'], 'discard unchanged');
   });
 
   it('returns an empty list when only wounds are present', () => {
@@ -399,21 +432,27 @@ describe('executeVillainAbilities — starting-SHIELD KO priority (D-20602)', ()
   // bot default pick `selectDefaultKoTarget` (reused for auto-1 and the sim
   // bot). These tests assert that selection directly (the human-facing choice
   // shows ALL eligible targets; the priority only governs the auto-resolution).
-  it('selectDefaultKoTarget prefers starting SHIELD card over a recruited hero in discard', () => {
+  it('selectDefaultKoTarget prefers starting SHIELD card over a recruited hero in play (discard ignored)', () => {
     const zones = {
       deck: [],
       hand: [],
+      // why: D-24687 — the discard pile is never read; the same cards sit in inPlay.
+      discard: ['core/spider-man/strike' as CardExtId, SHIELD_AGENT, SHIELD_TROOPER],
       // why: 'core/spider-man/...' lex-sorts before 'starting-shield-...';
       // pure lex-asc would have picked the recruited hero (pre-D-20602).
-      discard: ['core/spider-man/strike' as CardExtId, SHIELD_AGENT, SHIELD_TROOPER],
-      inPlay: [],
+      inPlay: ['core/spider-man/strike' as CardExtId, SHIELD_AGENT, SHIELD_TROOPER],
       victory: [],
     } as unknown as PlayerZones;
 
     assert.deepStrictEqual(
       selectDefaultKoTarget(zones),
-      { zone: 'discard', cardId: SHIELD_AGENT },
+      { zone: 'inPlay', cardId: SHIELD_AGENT },
       'auto-pick selects the lex-first starting SHIELD card, NOT the recruited hero',
+    );
+    assert.deepStrictEqual(
+      zones.discard,
+      ['core/spider-man/strike', SHIELD_AGENT, SHIELD_TROOPER],
+      'discard unchanged',
     );
   });
 
@@ -436,7 +475,11 @@ describe('executeVillainAbilities — starting-SHIELD KO priority (D-20602)', ()
   it('selectDefaultKoTarget falls back to lex-asc among recruited heroes when no starting SHIELD cards present', () => {
     const zones = {
       deck: [],
-      hand: [],
+      hand: [
+        'core/wolverine/claws' as CardExtId,
+        'core/black-widow/spy' as CardExtId,
+      ],
+      // why: D-24687 — the discard pile is never read; the same cards sit in hand.
       discard: [
         'core/wolverine/claws' as CardExtId,
         'core/black-widow/spy' as CardExtId,
@@ -447,48 +490,55 @@ describe('executeVillainAbilities — starting-SHIELD KO priority (D-20602)', ()
 
     assert.deepStrictEqual(
       selectDefaultKoTarget(zones),
-      { zone: 'discard', cardId: 'core/black-widow/spy' },
+      { zone: 'hand', cardId: 'core/black-widow/spy' },
       'lex-asc tie-break still applies among non-starting cards (D-18503 preserved)',
+    );
+    assert.deepStrictEqual(
+      zones.discard,
+      ['core/wolverine/claws', 'core/black-widow/spy'],
+      'discard unchanged',
     );
   });
 
-  it('selectDefaultKoTarget discard zone priority is preserved even when only the hand holds a starting card', () => {
-    // why: starting-first tier ordering does NOT override the zone-priority
-    // (discard before hand) lock from D-18503. A recruited hero in discard
-    // is the auto-pick before a starting card in hand.
+  it('selectDefaultKoTarget zone priority (inPlay before hand) is preserved even when only the hand holds a starting card', () => {
+    // why: starting-first tier ordering does NOT override the zone order (D-24687:
+    // inPlay, then hand). A recruited hero in play is the auto-pick before a
+    // starting card in hand, and the discard pile is never read.
     const zones = {
       deck: [],
       hand: [SHIELD_AGENT],
       discard: ['core/spider-man/strike' as CardExtId],
-      inPlay: [],
+      inPlay: ['core/spider-man/strike' as CardExtId],
       victory: [],
     } as unknown as PlayerZones;
 
     assert.deepStrictEqual(
       selectDefaultKoTarget(zones),
-      { zone: 'discard', cardId: 'core/spider-man/strike' },
-      'discard always beats hand, regardless of starting-card tier',
+      { zone: 'inPlay', cardId: 'core/spider-man/strike' },
+      'inPlay always beats hand, regardless of starting-card tier',
     );
+    assert.deepStrictEqual(zones.discard, ['core/spider-man/strike'], 'discard unchanged');
   });
 
   it('koHeroEachPlayer applies starting-first priority per player', () => {
     // why: per-player resolver is shared (D-18902), so each-player dispatch
     // inherits the new priority. Player 0 has both a recruited hero AND a
-    // starting card in discard — starting wins. Player 1 has only a recruited
-    // hero — falls back to lex-asc.
+    // starting card in hand — starting wins. Player 1 has only recruited
+    // heroes — falls back to lex-asc. Each discard holds the same cards and is
+    // never read (D-24687).
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
       playerZones: {
         '0': {
           deck: [],
-          hand: [],
+          hand: ['core/spider-man/strike' as CardExtId, SHIELD_AGENT],
           discard: ['core/spider-man/strike' as CardExtId, SHIELD_AGENT],
           inPlay: [],
           victory: [],
         },
         '1': {
           deck: [],
-          hand: [],
+          hand: ['core/hulk/smash' as CardExtId, 'core/wolverine/claws' as CardExtId],
           discard: ['core/hulk/smash' as CardExtId, 'core/wolverine/claws' as CardExtId],
           inPlay: [],
           victory: [],
@@ -502,26 +552,48 @@ describe('executeVillainAbilities — starting-SHIELD KO priority (D-20602)', ()
       [SHIELD_AGENT, 'core/hulk/smash'],
       'player 0 KOs starting SHIELD; player 1 KOs lex-first recruited hero',
     );
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      ['core/spider-man/strike', SHIELD_AGENT],
+      'player 0 discard unchanged',
+    );
+    assert.deepStrictEqual(
+      G.playerZones['1']!.discard,
+      ['core/hulk/smash', 'core/wolverine/claws'],
+      'player 1 discard unchanged',
+    );
   });
 
   it('determinism: selectDefaultKoTarget starting-first priority is stable across two identical calls', () => {
     const build = () =>
       ({
         deck: [],
-        hand: ['core/wolverine/claws' as CardExtId],
+        hand: [
+          'core/wolverine/claws' as CardExtId,
+          SHIELD_TROOPER,
+          'core/spider-man/strike' as CardExtId,
+          SHIELD_AGENT,
+          WOUND,
+        ],
         discard: [SHIELD_TROOPER, 'core/spider-man/strike' as CardExtId, SHIELD_AGENT, WOUND],
         inPlay: [],
         victory: [],
       } as unknown as PlayerZones);
 
-    const first = selectDefaultKoTarget(build());
+    const firstZones = build();
+    const first = selectDefaultKoTarget(firstZones);
     const second = selectDefaultKoTarget(build());
 
     assert.deepStrictEqual(first, second, 'identical pick across two calls');
     assert.deepStrictEqual(
       first,
-      { zone: 'discard', cardId: SHIELD_AGENT },
+      { zone: 'hand', cardId: SHIELD_AGENT },
       'lex-first starting card wins',
+    );
+    assert.deepStrictEqual(
+      firstZones.discard,
+      [SHIELD_TROOPER, 'core/spider-man/strike', SHIELD_AGENT, WOUND],
+      'discard unchanged (never read, D-24687)',
     );
   });
 });
@@ -2491,10 +2563,10 @@ describe('executeVillainAbilities — determinism', () => {
 describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
   it('KOs exactly one hero from every player with ≥1 eligible hero; skips players with zero eligible heroes', () => {
     // why: 3-player fixture exercises the eligible-hero split per the
-    // hardened §AC. Player 0: hero in discard (KO target). Player 1: hero
-    // only in hand (KO falls through to hand). Player 2: wounds only (zero
-    // eligible — silent skip). Expected: G.ko = [p0-discard-hero,
-    // p1-hand-hero] in iteration order; player 2 unchanged.
+    // hardened §AC. Player 0: hero in play (KO target; its discard Heroes are
+    // never read, D-24687). Player 1: hero only in hand (KO falls through to
+    // hand). Player 2: wounds only (zero eligible — silent skip). Expected:
+    // G.ko = [p0-inPlay-hero, p1-hand-hero] in iteration order; player 2 unchanged.
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
       playerZones: {
@@ -2502,7 +2574,7 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
           deck: [],
           hand: ['core-hero-p0-hand-z' as CardExtId],
           discard: ['core-hero-p0-disc-b' as CardExtId, 'core-hero-p0-disc-a' as CardExtId, WOUND],
-          inPlay: [],
+          inPlay: ['core-hero-p0-play-a' as CardExtId],
           victory: [],
         },
         '1': {
@@ -2525,13 +2597,18 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
 
     assert.deepStrictEqual(
       G.ko,
-      ['core-hero-p0-disc-a', 'core-hero-p1-hand-a'],
-      'KOs in sorted-player order: player 0 from discard (lex-first non-wound), player 1 from hand (lex-first)',
+      ['core-hero-p0-play-a', 'core-hero-p1-hand-a'],
+      'KOs in sorted-player order: player 0 from inPlay (lex-first non-wound), player 1 from hand (lex-first)',
     );
     assert.equal(
-      G.playerZones['0']!.discard.includes('core-hero-p0-disc-a' as CardExtId),
+      G.playerZones['0']!.inPlay.includes('core-hero-p0-play-a' as CardExtId),
       false,
-      "player 0's chosen discard hero removed",
+      "player 0's chosen inPlay hero removed",
+    );
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      ['core-hero-p0-disc-b', 'core-hero-p0-disc-a', WOUND],
+      'player 0 discard unchanged (not one of "your Heroes")',
     );
     assert.equal(
       G.playerZones['1']!.hand.includes('core-hero-p1-hand-a' as CardExtId),
@@ -2556,27 +2633,28 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
     // string ids the orderings coincide observationally, but the explicit
     // sort is the auditable determinism contract. This test inserts the
     // players in REVERSED order ('2', '1', '0') to prove the dispatch
-    // iterates in sorted order regardless of insertion order.
+    // iterates in sorted order regardless of insertion order. Each player's
+    // Hero is in hand; the copy in each discard is never read (D-24687).
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
       playerZones: {
         '2': {
           deck: [],
-          hand: [],
+          hand: ['core-hero-z-z2' as CardExtId],
           discard: ['core-hero-z-z2' as CardExtId],
           inPlay: [],
           victory: [],
         },
         '1': {
           deck: [],
-          hand: [],
+          hand: ['core-hero-z-z1' as CardExtId],
           discard: ['core-hero-z-z1' as CardExtId],
           inPlay: [],
           victory: [],
         },
         '0': {
           deck: [],
-          hand: [],
+          hand: ['core-hero-z-z0' as CardExtId],
           discard: ['core-hero-z-z0' as CardExtId],
           inPlay: [],
           victory: [],
@@ -2590,6 +2668,13 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
       ['core-hero-z-z0', 'core-hero-z-z1', 'core-hero-z-z2'],
       'G.ko mutation order matches sorted player ids (0, 1, 2), not insertion order (2, 1, 0)',
     );
+    for (const playerId of ['0', '1', '2']) {
+      assert.deepStrictEqual(
+        G.playerZones[playerId]!.discard,
+        [`core-hero-z-z${playerId}`],
+        `player ${playerId} discard unchanged`,
+      );
+    }
   });
 
   it('bot-parity: legacy auto-resolution (koHeroEachPlayer) and the new selectDefaultKoTarget→resolve KO the SAME cardId (load-bearing)', () => {
@@ -2630,6 +2715,17 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
 
     assert.equal(newKoId, legacyKoId, 'bot KO target is byte-identical to legacy auto-resolution');
     assert.equal(gNew.pendingKoHeroChoices.length, 0, 'new flow front-pops the resolved choice');
+    // why: D-24687 — neither path reads the discard pile (inPlay, then hand).
+    assert.deepStrictEqual(
+      gLegacy.playerZones['0']!.discard,
+      buildZones().discard,
+      'auto-resolution leaves the discard unchanged',
+    );
+    assert.deepStrictEqual(
+      gNew.playerZones['0']!.discard,
+      buildZones().discard,
+      'bot default + resolve leave the discard unchanged',
+    );
   });
 
   it('determinism (audit-exact): two identical dispatches produce identical KO targets, mutation order, and messages', () => {
@@ -2691,26 +2787,27 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
     // koHeroCurrentPlayer semantics (current-player only) MUST be unchanged
     // post-shared-resolver-rename. This regression test confirms invoking
     // koHeroCurrentPlayer from a multi-player G targets ONLY currentPlayer.
+    // Each Hero is in hand with a copy in the discard, which is never read (D-24687).
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroCurrentPlayer'])],
       playerZones: {
         '0': {
           deck: [],
-          hand: [],
+          hand: ['core-hero-p0-a' as CardExtId],
           discard: ['core-hero-p0-a' as CardExtId],
           inPlay: [],
           victory: [],
         },
         '1': {
           deck: [],
-          hand: [],
+          hand: ['core-hero-p1-a' as CardExtId],
           discard: ['core-hero-p1-a' as CardExtId],
           inPlay: [],
           victory: [],
         },
         '2': {
           deck: [],
-          hand: [],
+          hand: ['core-hero-p2-a' as CardExtId],
           discard: ['core-hero-p2-a' as CardExtId],
           inPlay: [],
           victory: [],
@@ -2734,6 +2831,13 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
       ['core-hero-p2-a'],
       'player 2 discard untouched',
     );
+    assert.deepStrictEqual(G.playerZones['1']!.hand, ['core-hero-p1-a'], 'player 1 hand untouched');
+    assert.deepStrictEqual(G.playerZones['2']!.hand, ['core-hero-p2-a'], 'player 2 hand untouched');
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      ['core-hero-p0-a'],
+      'player 0 discard unchanged (the KO came from the hand)',
+    );
   });
 
   it('safe-skips when G.playerZones is empty (no throw)', () => {
@@ -2753,15 +2857,15 @@ describe('executeVillainAbilities — koHeroEachPlayer (WP-189)', () => {
 // ---------------------------------------------------------------------------
 
 describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
-  it('multi-player magnitude-2: each player with ≥2 eligible heroes loses exactly 2 in discard-then-hand ext_id-lexical order', () => {
+  it('multi-player magnitude-2: each player with ≥2 eligible heroes loses exactly 2 in inPlay-then-hand ext_id-lexical order', () => {
     // why: WP-202 §AC Behavior — a 2-player fixture where each player has
-    // both discard and hand heroes. Per the locked rule: discard priority
-    // ascending by ext_id, then hand ascending by ext_id, two iterations
-    // per player. Player 0: discard ['p0-d-b', 'p0-d-a'] → iteration 1
-    // picks 'p0-d-a', iteration 2 picks 'p0-d-b' (still in discard before
-    // hand). Player 1: discard ['p1-d-c'] → iteration 1 picks 'p1-d-c',
-    // iteration 2 falls through to hand and picks 'p1-h-a'. G.ko order
-    // follows iteration order (player 0 twice, then player 1 twice).
+    // inPlay, hand and discard heroes. Per the D-24687 rule: inPlay ascending
+    // by ext_id, then hand ascending by ext_id, two iterations per player; the
+    // discard is never read. Player 0: inPlay ['p0-p-b', 'p0-p-a'] → iteration 1
+    // picks 'p0-p-a', iteration 2 picks 'p0-p-b' (still in play before hand).
+    // Player 1: inPlay ['p1-p-c'] → iteration 1 picks 'p1-p-c', iteration 2
+    // falls through to hand and picks 'p1-h-a'. G.ko order follows iteration
+    // order (player 0 twice, then player 1 twice).
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayerMag2'])],
       playerZones: {
@@ -2773,7 +2877,10 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
             'core-hero-p0-d-a' as CardExtId,
             WOUND,
           ],
-          inPlay: [],
+          inPlay: [
+            'core-hero-p0-p-b' as CardExtId,
+            'core-hero-p0-p-a' as CardExtId,
+          ],
           victory: [],
         },
         '1': {
@@ -2783,7 +2890,7 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
             'core-hero-p1-h-a' as CardExtId,
           ],
           discard: ['core-hero-p1-d-c' as CardExtId],
-          inPlay: [],
+          inPlay: ['core-hero-p1-p-c' as CardExtId],
           victory: [],
         },
       },
@@ -2793,32 +2900,42 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
     assert.deepStrictEqual(
       G.ko,
       [
-        'core-hero-p0-d-a',
-        'core-hero-p0-d-b',
-        'core-hero-p1-d-c',
+        'core-hero-p0-p-a',
+        'core-hero-p0-p-b',
+        'core-hero-p1-p-c',
         'core-hero-p1-h-a',
       ],
-      'G.ko mutation order: player 0 discard×2, then player 1 discard then hand',
+      'G.ko mutation order: player 0 inPlay×2, then player 1 inPlay then hand',
     );
     assert.deepStrictEqual(
-      G.playerZones['0']!.discard,
-      [WOUND],
-      "player 0 discard heroes removed; wound stays",
+      G.playerZones['0']!.inPlay,
+      [],
+      'player 0 inPlay heroes removed',
     );
     assert.deepStrictEqual(
       G.playerZones['0']!.hand,
       ['core-hero-p0-h-z'],
-      'player 0 hand untouched (both iterations satisfied from discard)',
+      'player 0 hand untouched (both iterations satisfied from inPlay)',
     );
     assert.deepStrictEqual(
-      G.playerZones['1']!.discard,
+      G.playerZones['0']!.discard,
+      ['core-hero-p0-d-b', 'core-hero-p0-d-a', WOUND],
+      'player 0 discard unchanged (never read, D-24687)',
+    );
+    assert.deepStrictEqual(
+      G.playerZones['1']!.inPlay,
       [],
-      'player 1 discard consumed (only 1 hero there)',
+      'player 1 inPlay consumed (only 1 hero there)',
     );
     assert.deepStrictEqual(
       G.playerZones['1']!.hand,
       ['core-hero-p1-h-b'],
       "player 1 hand: 'a' removed, 'b' retained",
+    );
+    assert.deepStrictEqual(
+      G.playerZones['1']!.discard,
+      ['core-hero-p1-d-c'],
+      'player 1 discard unchanged (never read, D-24687)',
     );
   });
 
@@ -2826,7 +2943,8 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
     // why: WP-202 §AC Behavior — the silent-no-op-per-iteration semantics
     // and the strict 2-cap. Player 0 has 1 eligible hero (second iteration
     // no-ops). Player 1 has 0 eligible heroes (both iterations no-op).
-    // Player 2 has 3 eligible heroes (third is not touched).
+    // Player 2 has 3 eligible heroes in hand (third is not touched); the
+    // discard copies are never read (D-24687).
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayerMag2'])],
       playerZones: {
@@ -2846,7 +2964,11 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
         },
         '2': {
           deck: [],
-          hand: [],
+          hand: [
+            'core-hero-p2-h-c' as CardExtId,
+            'core-hero-p2-h-b' as CardExtId,
+            'core-hero-p2-h-a' as CardExtId,
+          ],
           discard: [
             'core-hero-p2-d-c' as CardExtId,
             'core-hero-p2-d-b' as CardExtId,
@@ -2863,8 +2985,8 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
       G.ko,
       [
         'core-hero-p0-h-a',
-        'core-hero-p2-d-a',
-        'core-hero-p2-d-b',
+        'core-hero-p2-h-a',
+        'core-hero-p2-h-b',
       ],
       'G.ko: p0 loses 1 (only hero), p1 loses 0 (silent), p2 loses exactly 2 of 3',
     );
@@ -2879,9 +3001,14 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
       'player 1 untouched (zero eligible)',
     );
     assert.deepStrictEqual(
-      G.playerZones['2']!.discard,
-      ['core-hero-p2-d-c'],
+      G.playerZones['2']!.hand,
+      ['core-hero-p2-h-c'],
       "player 2 retains the lex-largest hero ('c'); 'a' and 'b' KO'd",
+    );
+    assert.deepStrictEqual(
+      G.playerZones['2']!.discard,
+      ['core-hero-p2-d-c', 'core-hero-p2-d-b', 'core-hero-p2-d-a'],
+      'player 2 discard unchanged (never read, D-24687)',
     );
   });
 
@@ -2889,13 +3016,17 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
     // why: WP-202 §AC Behavior — verifies per-player iteration is
     // independent (no cross-player coupling). Player 0 has 2 eligible
     // heroes (loses 2), player 1 has 1 eligible (loses 1), player 2 has 0
-    // eligible (loses 0). All in a single dispatch.
+    // eligible (loses 0). All in a single dispatch. Player 0's discard copies
+    // are never read (D-24687).
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayerMag2'])],
       playerZones: {
         '0': {
           deck: [],
-          hand: [],
+          hand: [
+            'core-hero-p0-h-b' as CardExtId,
+            'core-hero-p0-h-a' as CardExtId,
+          ],
           discard: [
             'core-hero-p0-d-b' as CardExtId,
             'core-hero-p0-d-a' as CardExtId,
@@ -2923,13 +3054,18 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
 
     assert.deepStrictEqual(
       G.ko,
-      ['core-hero-p0-d-a', 'core-hero-p0-d-b', 'core-hero-p1-h-a'],
-      'G.ko: p0 loses 2 from discard, p1 loses 1 from hand, p2 loses 0',
+      ['core-hero-p0-h-a', 'core-hero-p0-h-b', 'core-hero-p1-h-a'],
+      'G.ko: p0 loses 2 from hand, p1 loses 1 from hand, p2 loses 0',
     );
     assert.deepStrictEqual(
       G.playerZones['2']!.hand,
       [WOUND],
       'player 2 untouched (wound is not a hero)',
+    );
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      ['core-hero-p0-d-b', 'core-hero-p0-d-a'],
+      'player 0 discard unchanged (never read, D-24687)',
     );
   });
 
@@ -3081,7 +3217,7 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
     // why: WP-202 §AC Behavior — adding the magnitude-2 branch must NOT
     // change the magnitude-1 branch's behavior. A two-player G with ≥1
     // eligible hero per player should yield exactly 2 KOs (one per
-    // player), not 4.
+    // player), not 4. Player 0's discard Heroes are never read (D-24687).
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
       playerZones: {
@@ -3092,7 +3228,10 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
             'core-hero-p0-d-b' as CardExtId,
             'core-hero-p0-d-a' as CardExtId,
           ],
-          inPlay: [],
+          inPlay: [
+            'core-hero-p0-p-b' as CardExtId,
+            'core-hero-p0-p-a' as CardExtId,
+          ],
           victory: [],
         },
         '1': {
@@ -3111,13 +3250,18 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
 
     assert.deepStrictEqual(
       G.ko,
-      ['core-hero-p0-d-a', 'core-hero-p1-h-a'],
+      ['core-hero-p0-p-a', 'core-hero-p1-h-a'],
       'magnitude-1 still produces exactly one KO per player (not two)',
     );
     assert.deepStrictEqual(
+      G.playerZones['0']!.inPlay,
+      ['core-hero-p0-p-b'],
+      "player 0 retains lex-larger inPlay hero",
+    );
+    assert.deepStrictEqual(
       G.playerZones['0']!.discard,
-      ['core-hero-p0-d-b'],
-      "player 0 retains lex-larger discard hero",
+      ['core-hero-p0-d-b', 'core-hero-p0-d-a'],
+      'player 0 discard unchanged (never read, D-24687)',
     );
     assert.deepStrictEqual(
       G.playerZones['1']!.hand,
@@ -3131,7 +3275,8 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
     // single-target. A 3-player G dispatched via koHeroCurrentPlayer
     // produces exactly 1 KO on the current player, leaving the other two
     // untouched. This pins that the magnitude-2 addition did not bleed
-    // into the current-player branch.
+    // into the current-player branch. Each Hero is in play with a copy in the
+    // discard, which is never read (D-24687).
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroCurrentPlayer'])],
       playerZones: {
@@ -3139,21 +3284,21 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
           deck: [],
           hand: [],
           discard: ['core-hero-p0-a' as CardExtId],
-          inPlay: [],
+          inPlay: ['core-hero-p0-a' as CardExtId],
           victory: [],
         },
         '1': {
           deck: [],
           hand: [],
           discard: ['core-hero-p1-a' as CardExtId],
-          inPlay: [],
+          inPlay: ['core-hero-p1-a' as CardExtId],
           victory: [],
         },
         '2': {
           deck: [],
           hand: [],
           discard: ['core-hero-p2-a' as CardExtId],
-          inPlay: [],
+          inPlay: ['core-hero-p2-a' as CardExtId],
           victory: [],
         },
       },
@@ -3174,6 +3319,13 @@ describe('executeVillainAbilities — koHeroEachPlayerMag2 (WP-202)', () => {
       G.playerZones['2']!.discard,
       ['core-hero-p2-a'],
       'player 2 discard untouched',
+    );
+    assert.deepStrictEqual(G.playerZones['1']!.inPlay, ['core-hero-p1-a'], 'player 1 inPlay untouched');
+    assert.deepStrictEqual(G.playerZones['2']!.inPlay, ['core-hero-p2-a'], 'player 2 inPlay untouched');
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      ['core-hero-p0-a'],
+      'player 0 discard unchanged (the KO came from inPlay)',
     );
   });
 });
@@ -3289,12 +3441,13 @@ describe('executeVillainAbilities — WP-200/WP-316 return shape (keyword surfac
 
 describe('executeVillainAbilities — WP-316 result targets', () => {
   it('koHeroCurrentPlayer auto-KO (exactly 1 eligible) reports the KO\'d hero as the target', () => {
+    // why: D-24687 — the discard Hero is not eligible; the single hand Hero is.
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroCurrentPlayer'])],
       playerZones: {
         '0': {
           deck: [],
-          hand: [WOUND] as CardExtId[],
+          hand: [WOUND, 'core-hero-h-00'] as CardExtId[],
           discard: ['core-hero-a-00', WOUND] as CardExtId[],
           inPlay: [],
           victory: [],
@@ -3304,11 +3457,14 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
     });
     const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
     assert.deepStrictEqual(results, [
-      { keyword: 'koHeroCurrentPlayer', targets: ['core-hero-a-00'] },
+      { keyword: 'koHeroCurrentPlayer', targets: ['core-hero-h-00'] },
     ]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['core-hero-a-00', WOUND], 'discard unchanged');
   });
 
   it('koHeroCurrentPlayer with ≥2 eligible reports pending: true and no targets', () => {
+    // why: D-24687 — the choice is between the hand Hero and the played Hero;
+    // the discard Heroes are not eligible.
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroCurrentPlayer'])],
       playerZones: {
@@ -3316,7 +3472,7 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
           deck: [],
           hand: ['core-hero-z-00'] as CardExtId[],
           discard: ['core-hero-b-00', 'core-hero-a-00'] as CardExtId[],
-          inPlay: [],
+          inPlay: ['core-hero-p-00'] as CardExtId[],
           victory: [],
         },
         '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
@@ -3326,6 +3482,11 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
     assert.deepStrictEqual(results, [
       { keyword: 'koHeroCurrentPlayer', targets: [], pending: true },
     ]);
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      ['core-hero-b-00', 'core-hero-a-00'],
+      'discard unchanged',
+    );
   });
 
   it('koHeroCurrentPlayer with 0 eligible (wounds only) reports empty targets, no pending', () => {
@@ -3343,12 +3504,13 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
   });
 
   it('koHeroEachPlayer reports every KO\'d hero across players in mutation order', () => {
+    // why: D-24687 — player 0's Hero is in hand; the copy in its discard is never read.
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
       playerZones: {
         '0': {
           deck: [],
-          hand: [],
+          hand: ['core-hero-p0-a' as CardExtId],
           discard: ['core-hero-p0-a' as CardExtId],
           inPlay: [],
           victory: [],
@@ -3376,13 +3538,21 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
         ],
       },
     ]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['core-hero-p0-a'], 'player 0 discard unchanged');
   });
 
   it('D-24683: resolveEffectResultNames carries the per-player split with names resolved', () => {
+    // why: D-24687 — player 0's Hero is in hand; the copy in its discard is never read.
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
       playerZones: {
-        '0': { deck: [], hand: [], discard: ['core-hero-p0-a' as CardExtId], inPlay: [], victory: [] },
+        '0': {
+          deck: [],
+          hand: ['core-hero-p0-a' as CardExtId],
+          discard: ['core-hero-p0-a' as CardExtId],
+          inPlay: [],
+          victory: [],
+        },
         '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
       },
     });
@@ -3392,6 +3562,7 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
       { playerId: '0', names: ['core-hero-p0-a'] },
       { playerId: '1', names: [] },
     ]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['core-hero-p0-a'], 'player 0 discard unchanged');
   });
 
   it('capture-hq-hero reports the captured hero; gain-wound + capture-bystander report []', () => {
@@ -5004,46 +5175,283 @@ describe('executeVillainAbilities — a split card Penumbra played both-sides (W
 
 describe('executeVillainAbilities — the current player picks an each-player KO (D-24669)', () => {
   it('Destroyer-style magnitude 2: the current player parks a pick for two; other players auto-KO', () => {
+    // why: D-24687 — "your Heroes" is hand + inPlay: the current player has three
+    // (a real choice of two), the other player loses two from hand, and no discard
+    // pile is touched.
     const G = makeG({
       hooks: [hook('v-x', 'onEscape', ['koHeroEachPlayerMag2'])],
       playerZones: {
-        '0': { deck: [], hand: ['core-hero-p0-h-a' as CardExtId, 'core-hero-p0-h-b' as CardExtId], discard: ['core-hero-p0-d-c' as CardExtId], inPlay: [], victory: [] },
-        '1': { deck: [], hand: ['core-hero-p1-h-a' as CardExtId], discard: ['core-hero-p1-d-a' as CardExtId, 'core-hero-p1-d-b' as CardExtId], inPlay: [], victory: [] },
+        '0': { deck: [], hand: ['core-hero-p0-h-a' as CardExtId, 'core-hero-p0-h-b' as CardExtId], discard: ['core-hero-p0-d-c' as CardExtId], inPlay: ['core-hero-p0-p-c' as CardExtId], victory: [] },
+        '1': { deck: [], hand: ['core-hero-p1-h-a' as CardExtId, 'core-hero-p1-h-b' as CardExtId], discard: ['core-hero-p1-d-a' as CardExtId, 'core-hero-p1-d-b' as CardExtId], inPlay: [], victory: [] },
       },
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
 
-    assert.deepStrictEqual(G.ko, ['core-hero-p1-d-a', 'core-hero-p1-d-b'], 'only the other player auto-KOs (discard first)');
+    assert.deepStrictEqual(G.ko, ['core-hero-p1-h-a', 'core-hero-p1-h-b'], 'only the other player auto-KOs (from the hand)');
     assert.equal(G.pendingKoHeroChoices?.length, 1, 'the current player has one parked pick');
     assert.equal(G.pendingKoHeroChoices![0]!.playerID, '0');
     assert.equal(G.pendingKoHeroChoices![0]!.remaining, 2, 'it owes two KOs');
-    assert.equal(G.pendingKoHeroChoices![0]!.zones, undefined, 'unrestricted: every zone is offered');
-    assert.equal(G.playerZones['0']!.hand.length + G.playerZones['0']!.discard.length, 3, "the current player's cards are untouched until they pick");
+    assert.equal(G.pendingKoHeroChoices![0]!.zones, undefined, 'zoneless: "your Heroes" (hand + inPlay) is offered');
+    assert.equal(
+      G.playerZones['0']!.hand.length + G.playerZones['0']!.discard.length + G.playerZones['0']!.inPlay.length,
+      4,
+      "the current player's cards are untouched until they pick",
+    );
+    assert.deepStrictEqual(
+      G.playerZones['1']!.discard,
+      ['core-hero-p1-d-a', 'core-hero-p1-d-b'],
+      "the other player's discard is unchanged",
+    );
   });
 
   it('magnitude 1: the current player parks a single pick (no remaining field)', () => {
+    // why: D-24687 — the choice is between the hand Hero and the played Hero.
     const G = makeG({
       hooks: [hook('v-x', 'onFight', ['koHeroEachPlayer'])],
       playerZones: {
-        '0': { deck: [], hand: ['core-hero-p0-h-a' as CardExtId], discard: ['core-hero-p0-d-a' as CardExtId], inPlay: [], victory: [] },
+        '0': { deck: [], hand: ['core-hero-p0-h-a' as CardExtId], discard: ['core-hero-p0-d-a' as CardExtId], inPlay: ['core-hero-p0-p-a' as CardExtId], victory: [] },
       },
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
 
     assert.deepStrictEqual(G.ko, [], 'nothing is KO\'d before the pick');
     assert.deepStrictEqual(G.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0' }]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['core-hero-p0-d-a'], 'discard unchanged');
   });
 
   it('a forced KO still auto-resolves for the current player (no more Heroes than owed)', () => {
+    // why: D-24687 — two Heroes in hand + play for a KO of two is forced; the
+    // discard Hero is not one of them.
     const G = makeG({
       hooks: [hook('v-x', 'onEscape', ['koHeroEachPlayerMag2'])],
       playerZones: {
-        '0': { deck: [], hand: ['core-hero-p0-h-a' as CardExtId], discard: ['core-hero-p0-d-a' as CardExtId, WOUND], inPlay: [], victory: [] },
+        '0': { deck: [], hand: ['core-hero-p0-h-a' as CardExtId], discard: ['core-hero-p0-d-a' as CardExtId, WOUND], inPlay: ['core-hero-p0-p-a' as CardExtId], victory: [] },
       },
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
 
-    assert.deepStrictEqual(G.ko, ['core-hero-p0-d-a', 'core-hero-p0-h-a'], 'both Heroes are KO\'d with no prompt');
+    assert.deepStrictEqual(G.ko, ['core-hero-p0-p-a', 'core-hero-p0-h-a'], 'both Heroes are KO\'d with no prompt (inPlay, then hand)');
     assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no pick is parked');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['core-hero-p0-d-a', WOUND], 'discard unchanged');
+  });
+});
+
+describe('"KO one of your Heroes" takes from hand or play, never the discard pile (WP-801 / D-24687)', () => {
+  // why: rules v23 L721–L725 — "one of your Heroes" is a Hero played this turn or a
+  // Hero still in hand. An unqualified KO never reaches the discard pile.
+  const SHIELD_AGENT = 'starting-shield-agent' as CardExtId;
+  const SHIELD_TROOPER = 'starting-shield-trooper' as CardExtId;
+  const AVENGERS_ASSEMBLE = 'core/captain-america/avengers-assemble' as CardExtId;
+
+  it('Super-Skrull repro (match D54LvDsnOR_ 23.2.21): the non-current player KOs a hand Agent, not the discard Hero', () => {
+    const G = makeG({
+      hooks: [hook('v-super-skrull', 'onFight', ['koHeroEachPlayer'])],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [SHIELD_AGENT, SHIELD_AGENT, SHIELD_AGENT, SHIELD_TROOPER],
+          discard: [AVENGERS_ASSEMBLE],
+          inPlay: [],
+          victory: [],
+        },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(G, { currentPlayer: '1' }, 'v-super-skrull' as CardExtId, 'onFight');
+
+    assert.deepStrictEqual(G.ko, [SHIELD_AGENT], 'player 0 loses a starting Agent from hand');
+    assert.deepStrictEqual(
+      G.playerZones['0']!.hand,
+      [SHIELD_AGENT, SHIELD_AGENT, SHIELD_TROOPER],
+      'one Agent left the hand',
+    );
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [AVENGERS_ASSEMBLE], 'the discard is untouched');
+  });
+
+  it('a non-current player with Heroes only in the discard pile loses nothing, and the log says so', () => {
+    const G = makeG({
+      hooks: [hook('v-super-skrull', 'onFight', ['koHeroEachPlayer'])],
+      playerZones: {
+        '0': { deck: [], hand: [WOUND], discard: [AVENGERS_ASSEMBLE, SHIELD_AGENT], inPlay: [], victory: [] },
+        '1': { deck: [], hand: ['core-hero-p1-h-a' as CardExtId], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    const results = executeVillainAbilities(G, { currentPlayer: '1' }, 'v-super-skrull' as CardExtId, 'onFight');
+
+    assert.deepStrictEqual(G.ko, ['core-hero-p1-h-a'], "only player 1's forced hand KO happens");
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [AVENGERS_ASSEMBLE, SHIELD_AGENT], 'discard untouched');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [WOUND], 'a Wound is not a Hero');
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(G, results)),
+      'Player 0 had no hero to KO; Player 1 KO’d core-hero-p1-h-a',
+      'the D-24683 per-player line names player 0 as having no Hero to KO',
+    );
+  });
+
+  it('Sentinel: Heroes in the discard plus exactly one hand Hero → forced auto-KO of the hand card, no park', () => {
+    const G = makeG({
+      hooks: [hook('v-sentinel', 'onFight', ['koHeroCurrentPlayer'])],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [SHIELD_TROOPER],
+          discard: [AVENGERS_ASSEMBLE, SHIELD_AGENT, 'core/hulk/smash' as CardExtId],
+          inPlay: [],
+          victory: [],
+        },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-sentinel' as CardExtId, 'onFight');
+
+    assert.deepStrictEqual(G.ko, [SHIELD_TROOPER], 'the only hand Hero is KO’d');
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park — the discard Heroes are not a choice');
+    assert.deepStrictEqual(results, [{ keyword: 'koHeroCurrentPlayer', targets: [SHIELD_TROOPER] }]);
+    assert.deepStrictEqual(
+      G.playerZones['0']!.discard,
+      [AVENGERS_ASSEMBLE, SHIELD_AGENT, 'core/hulk/smash'],
+      'discard untouched',
+    );
+  });
+
+  it('Whirlwind ko-hero:current:2 never counts or offers a discard card', () => {
+    const whirlwindHook: VillainAbilityHook = {
+      cardId: 'v-whirlwind' as CardExtId,
+      timing: 'onFight',
+      keywords: [],
+      effects: [
+        { primitive: 'ko-hero', target: 'current', magnitude: 2, requireCitySpaces: ['rooftops', 'bridge'] },
+      ],
+    };
+    // Forced: two Heroes in hand + play for a KO of two, however many sit in the discard.
+    const forced = makeG({
+      hooks: [whirlwindHook],
+      playerZones: {
+        '0': { deck: [], hand: ['h-a' as CardExtId], discard: ['d-a', 'd-b', 'd-c'] as CardExtId[], inPlay: ['p-a' as CardExtId], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(forced, CTX, 'v-whirlwind' as CardExtId, 'onFight', undefined, 2);
+    assert.equal(forced.pendingKoHeroChoices?.length ?? 0, 0, 'no park — the discard is not counted');
+    assert.deepStrictEqual([...forced.ko].sort(), ['h-a', 'p-a']);
+    assert.deepStrictEqual(forced.playerZones['0']!.discard, ['d-a', 'd-b', 'd-c'], 'discard untouched');
+
+    // A real choice: the parked entry offers only hand + play.
+    const parked = makeG({
+      hooks: [whirlwindHook],
+      playerZones: {
+        '0': { deck: [], hand: ['h-a', 'h-b'] as CardExtId[], discard: ['d-a' as CardExtId], inPlay: ['p-a' as CardExtId], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(parked, CTX, 'v-whirlwind' as CardExtId, 'onFight', undefined, 2);
+    assert.deepStrictEqual(parked.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }]);
+    assert.deepStrictEqual(
+      buildKoEligibleTargets(parked.playerZones['0']!, parked.pendingKoHeroChoices![0]!.zones),
+      [
+        { zone: 'hand', cardId: 'h-a' },
+        { zone: 'hand', cardId: 'h-b' },
+        { zone: 'inPlay', cardId: 'p-a' },
+      ],
+      'the offered Heroes exclude the discard card',
+    );
+  });
+
+  it('Maestro count-by-trait never counts or offers a discard card', () => {
+    const STRENGTH_A = 'core/hulk/a#0' as CardExtId;
+    const STRENGTH_B = 'core/hulk/b#0' as CardExtId;
+    const RANGED = 'core/x-men/cyclops#0' as CardExtId;
+    const COVERT = 'core/x-men/nightcrawler#0' as CardExtId;
+    const G = makeG({
+      hooks: [{
+        cardId: 'v-maestro' as CardExtId,
+        timing: 'onFight',
+        keywords: [],
+        effects: [{ primitive: 'ko-heroes-current-count-by-trait', requireKind: 'hero-class', requireValue: 'strength' }],
+      }],
+      playerZones: {
+        '0': { deck: [], hand: [STRENGTH_A, STRENGTH_B], discard: [RANGED, COVERT], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: {
+        [STRENGTH_A]: { heroClass: 'strength', team: 'avengers' },
+        [STRENGTH_B]: { heroClass: 'strength', team: 'avengers' },
+        [RANGED]: { heroClass: 'ranged', team: 'x-men' },
+        [COVERT]: { heroClass: 'covert', team: 'x-men' },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+
+    assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'owed 2 with 2 Heroes in hand + play — forced, no park');
+    assert.deepStrictEqual([...G.ko].sort(), [STRENGTH_A, STRENGTH_B].sort(), 'only the hand Heroes are KO’d');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [RANGED, COVERT], 'discard untouched');
+  });
+
+  it('buildKoEligibleTargets / countKoableHeroes: no allowlist excludes discard; [\'discard\'] still returns it', () => {
+    const zones = {
+      deck: [],
+      hand: ['core-hand-a' as CardExtId, WOUND],
+      discard: ['core-disc-a' as CardExtId, 'core-disc-b' as CardExtId, WOUND],
+      inPlay: ['core-play-a' as CardExtId],
+      victory: [],
+    } as unknown as PlayerZones;
+
+    assert.deepStrictEqual(buildKoEligibleTargets(zones), [
+      { zone: 'hand', cardId: 'core-hand-a' },
+      { zone: 'inPlay', cardId: 'core-play-a' },
+    ]);
+    assert.equal(countKoableHeroes(zones), 2, 'hand + inPlay only');
+    // why: Juggernaut parity (D-24280 / D-24644) — a named discard zone is unchanged.
+    assert.deepStrictEqual(buildKoEligibleTargets(zones, ['discard']), [
+      { zone: 'discard', cardId: 'core-disc-a' },
+      { zone: 'discard', cardId: 'core-disc-b' },
+    ]);
+    assert.equal(countKoableHeroes(zones, ['discard']), 2, 'the discard Heroes, Wound excluded');
+    assert.deepStrictEqual(YOUR_HEROES_KO_ZONES, ['hand', 'inPlay']);
+  });
+
+  it('selectDefaultKoTarget: inPlay before hand, and null when only the discard holds Heroes', () => {
+    const both = {
+      deck: [],
+      hand: [SHIELD_AGENT],
+      discard: [SHIELD_TROOPER],
+      inPlay: ['core/hulk/smash' as CardExtId],
+      victory: [],
+    } as unknown as PlayerZones;
+    assert.deepStrictEqual(selectDefaultKoTarget(both), { zone: 'inPlay', cardId: 'core/hulk/smash' });
+
+    const discardOnly = {
+      deck: [],
+      hand: [WOUND],
+      discard: [SHIELD_AGENT, AVENGERS_ASSEMBLE],
+      inPlay: [],
+      victory: [],
+    } as unknown as PlayerZones;
+    assert.equal(selectDefaultKoTarget(discardOnly), null);
+  });
+
+  it('a Sentinel park and a Super-Skrull current-player park carry exactly choiceType + playerID (no zones key)', () => {
+    const sentinel = makeG({
+      hooks: [hook('v-sentinel', 'onFight', ['koHeroCurrentPlayer'])],
+      playerZones: {
+        '0': { deck: [], hand: ['h-a', 'h-b'] as CardExtId[], discard: ['d-a' as CardExtId], inPlay: [], victory: [] },
+      },
+    });
+    executeVillainAbilities(sentinel, CTX, 'v-sentinel' as CardExtId, 'onFight');
+    assert.equal(sentinel.pendingKoHeroChoices?.length, 1);
+    assert.deepStrictEqual(Object.keys(sentinel.pendingKoHeroChoices![0]!).sort(), ['choiceType', 'playerID']);
+
+    const superSkrull = makeG({
+      hooks: [hook('v-super-skrull', 'onFight', ['koHeroEachPlayer'])],
+      playerZones: {
+        '0': { deck: [], hand: ['h-a' as CardExtId], discard: ['d-a' as CardExtId], inPlay: ['p-a' as CardExtId], victory: [] },
+      },
+    });
+    executeVillainAbilities(superSkrull, CTX, 'v-super-skrull' as CardExtId, 'onFight');
+    assert.equal(superSkrull.pendingKoHeroChoices?.length, 1);
+    assert.deepStrictEqual(Object.keys(superSkrull.pendingKoHeroChoices![0]!).sort(), ['choiceType', 'playerID']);
   });
 });

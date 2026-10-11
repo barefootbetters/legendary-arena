@@ -721,18 +721,22 @@ describe('resolvers are NOT blocked while an optional-KO-reward is pending', () 
   });
 
   it('resolveKoHeroChoice is NOT blocked by a pending optional-KO-reward (each clears its own state)', () => {
+    // why: D-24687 — a zoneless KO entry takes from hand or play; the copy in the
+    // discard is not one of "your Heroes" and stays.
     const gameState = makeTestGameState({
+      hand: ['ko-hero-target' as CardExtId],
       discard: ['ko-hero-target' as CardExtId],
       pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0' }],
       pendingOptionalKoRewards: [rescuePending()],
     });
     const { context } = makeMoveContext(gameState);
 
-    resolveKoHeroChoice(context, { zone: 'discard', cardId: 'ko-hero-target' as CardExtId });
+    resolveKoHeroChoice(context, { zone: 'hand', cardId: 'ko-hero-target' as CardExtId });
 
     assert.deepStrictEqual(gameState.ko, ['ko-hero-target'], 'KO-hero resolver acted');
     assert.equal(gameState.pendingKoHeroChoices!.length, 0, 'KO-hero queue front-popped');
     assert.equal(gameState.pendingOptionalKoRewards!.length, 1, 'optional-KO-reward queue untouched');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['ko-hero-target'], 'discard unchanged');
   });
 
   it('resolveHeroChoice is NOT blocked by a pending optional-KO-reward', () => {
