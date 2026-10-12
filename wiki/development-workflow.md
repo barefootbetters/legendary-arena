@@ -7,6 +7,7 @@ tags:
   - governance
   - cloudflare
   - render
+  - digitalocean
   - tailscale
   - ci
   - workstation
@@ -22,7 +23,7 @@ source:
   - ../docs/ai/REFERENCE/01-render-infrastructure.md
   - ../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md
   - ../docs/ai/REFERENCE/01.0b-wp-execution-phase.md
-last-reviewed: 2026-10-11
+last-reviewed: 2026-10-12
 canonical-source: docs/ai/REFERENCE/development-workflow.md
 ---
 
@@ -33,16 +34,17 @@ to production for `legendary-arena.com`. Three operator surfaces (laptop,
 home workstation, phone) drive Claude Code sessions that build to
 **WP/EC** contracts (Work Packet — scoped unit of work; Execution
 Checklist — the quick-reference compliance contract for that WP), commit
-to GitHub, and deploy automatically via Render and Cloudflare on merge to
-`main`. A nightly CI triage agent closes the loop by generating new work
-packets from sweep results.
+to GitHub, and ship on merge to `main`: the Cloudflare front-ends deploy
+automatically, and the operator deploys the API to its DigitalOcean droplet
+(manual since the 2026-10-12 cutover from Render). A nightly CI triage agent
+closes the loop by generating new work packets from sweep results.
 
 The home workstation is a personal cloud-grade dev + AI server: always-on,
 remotely accessible via Tailscale, and ready for local AI models. For
 **development and agent work** it replaces a cloud VM with a stronger,
 cheaper, fully operator-controlled machine. It is not a production host:
-production runs on Render today and is moving to a self-hosted
-DigitalOcean droplet (see [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)).
+production runs on a self-hosted DigitalOcean droplet, which replaced Render
+on 2026-10-12 (see [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)).
 
 This document is structured around the **Four C's framework** (Nate Herk,
 "AI Operating System" — see References): Context, Connections,
@@ -96,7 +98,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 | **Phone** | Mobile control surface — PR review + merge, deploy monitoring, remote session steering via Tailscale. Does not author. |
 | **Claude** | Two roles: **Claude Code** (laptop or workstation) builds to WP/EC contract; **Claude-in-CI** runs the nightly Inspector triage agent. |
 | **GitHub** | Branch → PR → squash-merge `main`; holds the governance ledger; runs CI; merge triggers deploy. |
-| **Render** | Game server + managed PostgreSQL. The server deploys on commit to `main` (wiki-, docs-, and front-end-only pushes are skipped by `buildFilter`). September 2026 bill: **$146.35**. Moving to a self-hosted DigitalOcean droplet: rehearsed end to end on 2026-10-11/12, cutover scheduled for 2026-10-12 ([Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026), [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#rehearsal-results-2026-10-11)). |
+| **DigitalOcean droplet** | Game server + PostgreSQL 18 (`localhost`) on one self-hosted Ubuntu 24.04 box (2 vCPU / 4 GB, ~$24/mo) behind Cloudflare, since the 2026-10-12 cutover. The operator deploys `main` manually with the `legendary-arena-lab` repo's `40-app-deploy.ps1`; a deploy-on-push workflow is planned after the rollback window. Render (production until 2026-10-12; September 2026 bill **$146.35**) was suspended at cutover for a 7-day rollback window ([Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026), [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)). |
 | **Cloudflare** | Pages hosts the public front-ends (`www`, `play`, `cards`, `legends`); assets-only Workers host the two Access-gated sites, the ewiki and `dashboard` (D-24690), deployed by GitHub Actions; R2 hosts card images (`images.legendary-arena.com`) and the private nightly DB backups. |
 
 ### Round trip (idea to live)
@@ -105,7 +107,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 2. **Claude Code builds it** — builds to the WP/EC contract, runs local gates, commits with two-commit topology (`EC-NNN:` implementation + `SPEC:` governance close).
 3. **GitHub takes it** — branch → PR → CI. Four checks are required to merge (Workspace Unit Tests, Typecheck Arena Client, Server DB Tests, Coverage & Ledger Gates); the rest also run on every PR (build, commit hygiene, reward-integrity guards, registry validation, Dashboard Gates, LAGN drift, SPA asset masking, Pages preview).
 4. **Approve from the phone** — merge PR via GitHub UI (phone-friendly).
-5. **It ships automatically** — `main` → Render rebuild + migrations (server-relevant paths only); Cloudflare rebuilds front-ends + R2 serves assets; `wiki/` changes rebuild the ewiki and the `wiki-viewer` workflow deploys it to its Cloudflare Worker; the `dashboard-deploy` workflow does the same for the dashboard. Live across `*.legendary-arena.com`.
+5. **It ships** — Cloudflare rebuilds front-ends automatically + R2 serves assets; the operator deploys server changes to the droplet (`40-app-deploy.ps1`: build + migrations + restart + health gate); `wiki/` changes rebuild the ewiki and the `wiki-viewer` workflow deploys it to its Cloudflare Worker; the `dashboard-deploy` workflow does the same for the dashboard. Live across `*.legendary-arena.com`.
 6. **It feeds itself** — nightly Claude CI Inspector triage; WP auto-verification loop (WP-231/233); new findings generate new WPs → re-enter at step 1.
 
 ### Remote execution model
@@ -175,7 +177,7 @@ dependency and enables long-running autonomous workflows.
 
 ### AI system flow
 
-![AI system flow: operator surfaces (laptop, workstation, phone) connect over the Tailscale mesh to Claude Code, the primary orchestrator. Claude Code commits to the GitHub repo and rclone-syncs assets to Cloudflare R2; merges to main deploy to Render and Cloudflare Pages. GitHub Actions CI runs a nightly Claude Inspector triage that generates new work packets, which feed back into Claude Code as a closed loop. Ollama local models are a future, operator-discretionary layer.](/development-workflow/ai-system-flow.png)
+![AI system flow: operator surfaces (laptop, workstation, phone) connect over the Tailscale mesh to Claude Code, the primary orchestrator. Claude Code commits to the GitHub repo and rclone-syncs assets to Cloudflare R2; merges to main deploy to Cloudflare Pages, and the operator deploys the server to the DigitalOcean droplet (the image predates the 2026-10-12 move off Render and still shows Render). GitHub Actions CI runs a nightly Claude Inspector triage that generates new work packets, which feed back into Claude Code as a closed loop. Ollama local models are a future, operator-discretionary layer.](/development-workflow/ai-system-flow.png)
 
 > Ollama and the external AI tools are future / operator-discretionary —
 > not part of the committed orchestration loop. The closed loop is
@@ -263,7 +265,7 @@ pasting.
 | Cloudflare R2 (card images, metadata) | `rclone` CLI | Active |
 | Cloudflare Pages (public front-end deploys) | GitHub integration (auto) | Active |
 | Cloudflare Workers (ewiki + dashboard deploys) | `wrangler deploy` from `wiki-viewer.yml` / `dashboard-deploy.yml` | Active |
-| Render (server deploys) | GitHub integration (auto, `buildFilter`-scoped) | Active |
+| DigitalOcean droplet (server deploys) | SSH + the `legendary-arena-lab` repo's `40-app-deploy.ps1` (manual) | Active since 2026-10-12 (replaced Render's GitHub auto-deploy) |
 | Card data JSON (41 sets) | Local filesystem (`data/cards/`) | Active |
 | Hanko (auth service) | JWKS endpoint via `.env` | Active |
 | Claude Code MCP servers | Browser (Claude in Chrome), visualize | Active |
@@ -319,14 +321,14 @@ with no operator at the keyboard.
 | Nightly sweep | Daily 07:00 UTC (`sweep-nightly.yml`) | 2×2 smoke sweep against the locked fixture; posts the summary to `/api/sweep/runs`; its completion triggers the Inspector |
 | Nightly Inspector triage | After each Sweep Nightly run (`inspection-nightly.yml`, `workflow_run`) | Headless Claude applies the **P0/P1/P2** rubric to the sweep, posts the report, generates WPs |
 | Weekly sweep | Sunday 08:00 UTC (`sweep-weekly.yml`) | Rotating 20-scheme window × all masterminds of the full corpus |
-| DB backup | Daily 09:17 UTC (`db-backup.yml`) | `pg_dump` of the Render Postgres → private R2 bucket (provider-independent, WP-416 / D-24236) |
+| DB backup (on the droplet, not CI) | Daily 09:17 UTC (`la-backup` systemd timer → the lab's `50-backup.ps1`) | `pg_dump` of the droplet's Postgres → private R2 bucket (provider-independent, same layout as WP-416 / D-24236) + optional pCloud mirror; pings healthchecks.io. Replaced the `db-backup.yml` Actions nightly, disabled at the 2026-10-12 cutover |
 | DR drill reminder | Monthly, 1st 09:00 UTC (`dr-drill-reminder.yml`) | Opens a dated drill-checklist issue (monthly restore; quarterly / semiannual rebuilds) |
 | SPA asset probe | Daily 07:20 UTC (`spa-assets-nightly.yml`) | Proves the live public SPAs actually serve the assets they reference |
 | SPA warm on deploy | On `apps/arena-client/**` push to `main` (`spa-warm-on-deploy.yml`) | Waits for the new `play.` bundle and warms it at the edge |
 | Architecture inventory | Weekly Monday 06:00 UTC (`architecture-inventory.yml`) | Regenerates `wiki/architecture-inventory.md`, opens PR on diff |
 | Roadmap counts | Weekly Monday 06:00 UTC (`roadmap-counts.yml`) | Regenerates the ROADMAP count table, opens PR on diff |
 | Roadmap schedule watch | Daily 13:00 UTC (`roadmap-schedule-nightly.yml`) | Maintains one `schedule-watch` issue when roadmap tasks slip |
-| Auto-deploy (Render server) | On merge to `main`, server-relevant paths only | Rebuilds server, runs migrations |
+| Server deploy (droplet) | **Not automatic** since 2026-10-12: the operator runs `40-app-deploy.ps1`; a deploy-on-push workflow is planned after the rollback window | Checks out `main`, builds, runs migrations, restarts `la-server`, health gate (~35 s) |
 | Auto-deploy (ewiki) | On merge touching `wiki/**` (`wiki-viewer.yml` → `wrangler deploy`) | Rebuilds the ewiki and deploys it to its Worker |
 | Auto-deploy (dashboard) | On merge to `main` (`dashboard-deploy.yml` → `wrangler deploy`) | Rebuilds the dashboard and deploys it to its Worker |
 | Auto-deploy (Cloudflare Pages) | On merge to `main` | Rebuilds the public front-ends |
@@ -365,9 +367,10 @@ dead-man's switches cover the API droplet and its nightly backup (see
 [Ubuntu lab provisioning](ubuntu-lab-provisioning.md#rehearsal-results-2026-10-11)).
 `pnpm check` is still the manual sweep of every domain.
 
-**Assessment:** Cadence exists in CI (nightly sweep + triage, daily DB
-backup, monthly DR-drill reminders, weekly inventory and roadmap counts,
-auto-deploy) but not on operator machines. The workstation enables a
+**Assessment:** Cadence exists in CI (nightly sweep + triage, monthly
+DR-drill reminders, weekly inventory and roadmap counts, front-end
+auto-deploy) and on the API droplet (daily DB backup, 5-minute monitor) but
+not on operator machines. The workstation enables a
 new cadence layer — scheduled Claude Code agents that run locally, not
 just in GitHub Actions. This is the highest-leverage gap to close.
 
@@ -541,7 +544,7 @@ is tracked in the repo.
 |---|---|---|
 | Local execution | `.env` in the repo checkout | Claude Code, `pnpm -r test`, dev servers |
 | CI / GitHub | GitHub Actions secrets | CI workflows, nightly triage agent |
-| Deploy (Render / Cloudflare) | Platform-managed env vars | Production server, Pages builds |
+| Deploy (droplet / Cloudflare) | The droplet's root-only `/etc/la/.env`; Cloudflare-managed env vars | Production server, Pages builds |
 
 Each layer has its own secret surface. `.env` is local execution only —
 CI and deploy never read it.
@@ -560,7 +563,7 @@ pnpm check
 This runs the full connection health check (see
 [Operational Health Checks](operational-health-checks.md)) — validates all
 11 required env vars, probes every external service (PostgreSQL, Hanko,
-R2, GitHub, Render), and checks toolchain versions. If `pnpm check`
+R2, GitHub, the API server), and checks toolchain versions. If `pnpm check`
 passes, the workstation is correctly configured.
 
 **Pass condition:** `pnpm check` reports all checks passed.
@@ -820,10 +823,10 @@ copy or a deployment target.
 | **Laptop** | Git clone + `.env` + `node_modules` | `git pull` / `git push` to GitHub |
 | **Home Workstation** | Git clone + `.env` + `node_modules` + Ollama models | `git pull` / `git push` to GitHub |
 | **Phone** | No repo clone — GitHub mobile app + Remote Desktop | Reads GitHub directly |
-| **Render** | Production server + managed PostgreSQL | Auto-deploy on merge to `main` |
+| **DigitalOcean droplet** | Production server + PostgreSQL 18 (since 2026-10-12; Render before) | Manual deploy: the operator runs the lab's `40-app-deploy.ps1` over SSH |
 | **Cloudflare Pages** | Public front-end builds (www, play, cards, legends) | Auto-deploy on merge to `main` |
 | **Cloudflare Workers** | ewiki + dashboard (assets-only, Access-gated) | `wrangler deploy` from `wiki-viewer.yml` / `dashboard-deploy.yml` on merge to `main` |
-| **Cloudflare R2** | Card images + metadata; private nightly DB backups | `rclone sync` from operator machine; backups from `db-backup.yml` |
+| **Cloudflare R2** | Card images + metadata; private nightly DB backups | `rclone sync` from operator machine; backups from the droplet's `50-backup.ps1` (the `db-backup.yml` workflow until 2026-10-12) |
 | **GitHub Actions** | CI runners + nightly triage agent | Triggered by push / PR / cron |
 
 ### Filesystem layout
@@ -890,24 +893,39 @@ Each platform manages its own configuration and secrets independently.
 - Secrets configured in repo Settings → Secrets and variables → Actions
 - Nightly triage agent runs as a scheduled workflow
 
-**Render** — server + database:
+**DigitalOcean droplet** — server + database (production since 2026-10-12):
 
-- Service: `legendary-arena-server` on the `pro` plan (2 CPU / 4 GB), declared
-  in `render.yaml`
-- Database: `legendary-arena-db` (managed PostgreSQL, `pro-4gb`)
-- The ewiki is no longer on Render; it moved to a Cloudflare Worker
-  (D-24690, see *Cloudflare Workers* below).
-- Env vars configured in the Render dashboard (Environment tab). Plan
-  changes must be made in both `render.yaml` and the dashboard, or a
-  blueprint sync reverts one to the other.
-- The server auto-deploys on merge to `main` unless every changed file is
-  under a `buildFilter.ignoredPaths` tree (`wiki/`, `docs/`, the front-end
-  apps); migrations run in `buildCommand`
+- One self-hosted Ubuntu 24.04 droplet in `sfo3`, 2 vCPU / 4 GB.
+  Provisioned and deployed from the separate `legendary-arena-lab` repo
+  (`infra/scripts/NN-*.ps1`, runbooks under `content/`); the engine-side
+  summary is [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
+- Edge: `api.legendary-arena.com` is a proxied Cloudflare A record. Nginx
+  terminates TLS with a Cloudflare Origin Certificate, and the api hosts run
+  SSL Full (strict).
+- Server: the systemd unit `la-server`; logs with `journalctl -u la-server`.
+- Database: PostgreSQL 18 on `localhost`, same box.
+- Env vars: the root-only env file `/etc/la/.env` (mode 600) on the droplet.
+  `render.yaml` stays in the repo only as the inventory of `sync: false`
+  secret names.
+- Deploys are **manual**: the operator runs `40-app-deploy.ps1` over SSH
+  (checks out `main`, `pnpm install --frozen-lockfile`, build, migrations,
+  restart, health gate; ~35 s). A deploy-on-push workflow is planned after
+  the 7-day rollback window.
+- **Cost:** ~$24/mo.
+
+**Render** — server + database until 2026-10-12 (history):
+
+- Service `legendary-arena-server` (`pro`, 2 CPU / 4 GB) and database
+  `legendary-arena-db` (managed PostgreSQL, `pro-4gb`), declared in
+  `render.yaml`. The server auto-deployed on merge to `main` (skipping
+  `buildFilter.ignoredPaths` pushes) and ran migrations in `buildCommand`.
+- At the 2026-10-12 cutover the web service was suspended, kept for a 7-day
+  rollback window with the Render database as the rollback copy; Render is
+  deleted after the window (~2026-10-20).
 - **Cost:** $146.35 for September 2026 (server $85.00, Postgres $55.30,
-  builds $5.00, bandwidth $1.05); August was $146.50, so ~$146/mo is the
-  steady rate. Server and Postgres are moving to one
-  self-hosted DigitalOcean droplet (~$24/mo to start); the plan and the reduction
-  order are in [Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026).
+  builds $5.00, bandwidth $1.05); August was $146.50, so ~$146/mo was the
+  steady rate. The comparison is in
+  [Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026).
 
 **Cloudflare Pages** — public front-ends:
 
@@ -988,12 +1006,15 @@ truth.
 
 **Rotation order** (highest impact first):
 
-1. `DATABASE_URL` — rotate the PostgreSQL password in Render, update
-   `.env` on all machines, verify with `pnpm check`
+1. `DATABASE_URL` — rotate the app role's password in PostgreSQL on the
+   droplet, update `DATABASE_URL` in the droplet's `/etc/la/.env` and
+   restart `la-server`, update `.env` on all machines, verify with
+   `pnpm check`
 2. `ANTHROPIC_API_KEY` — regenerate at `console.anthropic.com`, update
    `.env`, re-auth Claude Code (`claude auth login`)
-3. `JWT_SECRET` — rotate in Render env vars; active sessions invalidate
-   on next server restart
+3. `JWT_SECRET` — rotate in the droplet's `/etc/la/.env`, then
+   `sudo systemctl restart la-server`; active sessions invalidate on that
+   restart
 4. GitHub tokens — regenerate in GitHub Settings → Developer settings →
    Personal access tokens
 5. Cloudflare API tokens — regenerate in Cloudflare dashboard →
@@ -1003,14 +1024,14 @@ truth.
 
 **Verification after rotation:** Run `pnpm check` on every machine with
 the updated `.env`. All probes must pass. If a deploy surface uses the
-rotated secret (Render, GitHub Actions), trigger a manual deploy or CI
-run to confirm.
+rotated secret (the droplet, GitHub Actions), restart `la-server` and check
+`/health`, or trigger a CI run, to confirm.
 
 ### Version pinning
 
 | Tool | Minimum | Pinned where | Upgrade path |
 |---|---|---|---|
-| Node.js | v22+ (`engines`); production pinned at `24.18.0` | `.node-version` + `render.yaml` `NODE_VERSION` (kept equal by `pnpm check:node-pin`, D-24205); `pnpm check` validates the local major | Bump `.node-version` and `NODE_VERSION` together; run `pnpm -r build && pnpm -r test` after |
+| Node.js | v22+ (`engines`); production pinned at `24.18.0` | `.node-version` + `render.yaml` `NODE_VERSION` (kept equal by `pnpm check:node-pin`, D-24205); on the production droplet, installed by the `legendary-arena-lab` repo's `10-node.ps1`; `pnpm check` validates the local major | Bump `.node-version` and `NODE_VERSION` together, and the lab's `10-node.ps1` pin for the droplet; run `pnpm -r build && pnpm -r test` after |
 | pnpm | v10+ (`engines`); `10.32.1` | `package.json` `packageManager` | `npm install -g pnpm@<version>`; run `pnpm install --frozen-lockfile` to verify lockfile compatibility |
 | boardgame.io | `0.50.x` (locked) | `package.json` + `pnpm check` verifies exact range | Do NOT upgrade without a DECISIONS.md entry — API surface changes are breaking |
 | Hugo | `0.161.1 Extended` | `apps/wiki-viewer/.hugo-version` | Update `.hugo-version` + test with `pnpm wiki-viewer:build`; needs DECISIONS entry |
@@ -1026,10 +1047,10 @@ version bump as its own `INFRA:` change.
 | System | Runner | Check | Frequency | Failure response |
 |---|---|---|---|---|
 | Nightly sweep → Inspector triage | GitHub Actions | Both workflows complete green | Daily (Inspector chains after the sweep) | Investigate in next operator session |
-| DB backup | GitHub Actions | Dump uploaded to the private R2 bucket | Daily | Fix the same day — an unbacked day widens the recovery gap |
+| DB backup | The droplet's `la-backup` timer (`50-backup.ps1`; GitHub Actions `db-backup.yml` until 2026-10-12) | Dump uploaded to the private R2 bucket; healthchecks.io `la-droplet-backup` pinged | Daily | Fix the same day — an unbacked day widens the recovery gap |
 | DR drill | Operator (issue opened by GitHub Actions) | Monthly restore drill run; issue closed | Monthly | Run the drill; closing the issue is the record |
 | Architecture inventory | GitHub Actions | PR generated on diff | Weekly (Mon 06:00 UTC) | Non-blocking; check Actions tab |
-| Auto-deploy (Render) | Render | Deploy status: Live | On merge to `main` | Check Render Events log; revert PR if needed |
+| API deploy (droplet) | Operator (`40-app-deploy.ps1`) | Health gate passes at the end of the deploy | Manual, after server-relevant merges to `main` | Read the `40` output and `journalctl -u la-server`; revert PR and redeploy if needed |
 | Auto-deploy (Pages) | Cloudflare | Build status: Success | On merge to `main` | Check Pages Deployments log; revert PR if needed |
 | Uptime probes | UptimeRobot + healthchecks.io; Operator | UptimeRobot `api./health` up; healthchecks.io checks up; `pnpm check` all green | UptimeRobot every 5 min; healthchecks.io every 5 min + nightly; `pnpm check` manual (after deploys, incidents, machine setup) | Email alert → follow the alert; fix before proceeding |
 | Subdomain health | Operator | `pnpm check:domains` no FAILs | Manual (run after DNS/TLS changes) | Follow `dns:`/`tls:` diagnostics |
@@ -1044,7 +1065,7 @@ Each deploy surface has a deterministic rollback path.
 
 | Surface | Fail signal | Rollback action | Verification |
 |---|---|---|---|
-| **Render** (server) | Health check fails, migration error, 5xx spike | Revert the PR on GitHub → merge revert to `main` → Render auto-redeploys | `curl $GAME_SERVER_URL/health` returns 200 |
+| **DigitalOcean droplet** (server) | Health gate fails, migration error, 5xx spike | Revert the PR on GitHub → merge revert to `main` → re-run `40-app-deploy.ps1`. During the 7-day window after the 2026-10-12 cutover, a whole-platform rollback is also possible: restore the DNS-only CNAME `api` → `legendary-arena-server.onrender.com` and resume the suspended Render service | `curl $GAME_SERVER_URL/health` returns 200 |
 | **Cloudflare Worker** (ewiki) | Build failure, missing page, stale content | Revert the PR → merge to `main` → `wiki-viewer` workflow rebuilds and redeploys the Worker | Page content updated on `ewiki.legendary-arena.com` (after the Access login) |
 | **Cloudflare Worker** (dashboard) | Build failure, blank page, wrong data source | Revert the PR → merge to `main` → `dashboard-deploy` workflow rebuilds and redeploys the Worker | Dashboard loads at `dashboard.legendary-arena.com` (after the Access login) |
 | **Cloudflare Pages** (public front-ends) | Build failure, missing assets, blank page | Revert the PR → merge to `main` → Pages auto-rebuilds | Site loads at `play.legendary-arena.com` |
@@ -1052,20 +1073,25 @@ Each deploy surface has a deterministic rollback path.
 | **GitHub Actions** (CI/triage) | Workflow fails or produces bad output | Fix the workflow file or inputs → push to `main` | Workflow re-runs green |
 
 **Rollback rule:** Always revert via a new PR to `main` (which triggers
-a clean redeploy), never via Render/Cloudflare dashboard rollback buttons
-— those create drift between the repo and deployed state.
+a clean redeploy of the front-ends; redeploy the droplet with `40`), never
+via Cloudflare dashboard rollback buttons or a hand-edited checkout on the
+droplet — those create drift between the repo and deployed state.
 
 ## Interactions
 
-- **Committed stack:** GitHub, Render, Cloudflare, CI, governance — all
-  reproducible from repo config.
+- **Committed stack:** GitHub, the DigitalOcean droplet, Cloudflare, CI,
+  governance — all reproducible from repo config (the droplet from the
+  `legendary-arena-lab` repo's provisioners).
 - **Personal layer:** Workstation, Tailscale, local AI models — operator-managed,
-  not in any committed config (`render.yaml`, `.env.example`).
+  not in any committed config (`.env.example`, the lab repo).
 - **Governance docs:** the workflow is subordinate to the authority chain
   (`.claude/CLAUDE.md` → `docs/ai/ARCHITECTURE.md` → `.claude/rules/*.md`)
   and defines no rules of its own.
-- **Deploy infrastructure:** for Render and Cloudflare specifics, see
-  [01-render-infrastructure.md](../docs/ai/REFERENCE/01-render-infrastructure.md).
+- **Deploy infrastructure:** for the API server (the droplet, since
+  2026-10-12), see [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) and
+  the `legendary-arena-lab` repo; for Cloudflare specifics, see
+  [01-render-infrastructure.md](../docs/ai/REFERENCE/01-render-infrastructure.md)
+  (its Render sections describe the platform retired on 2026-10-12).
 - **WP/EC execution:** for the drafting and execution mechanics, see
   [01.0a-wp-drafting-phase.md](../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md)
   and [01.0b-wp-execution-phase.md](../docs/ai/REFERENCE/01.0b-wp-execution-phase.md).
@@ -1082,7 +1108,7 @@ a clean redeploy), never via Render/Cloudflare dashboard rollback buttons
 | `pnpm -r build` fails | TypeScript errors or missing deps | `pnpm install && pnpm -r build` | Exit 0, no errors |
 | Claude Code won't authenticate | API key expired or missing | `claude auth login` | Auth success message |
 | Git push rejected | Branch behind `main` or hook failure | Read hook error; `git pull --rebase origin main` | Push succeeds |
-| Render deploy fails | Build error or migration failure | Render dashboard → Events → latest deploy log | Deploy status: Live |
+| API deploy fails | Build error, migration failure, or failed health gate | The `40-app-deploy.ps1` output; `journalctl -u la-server` on the droplet | `40` finishes with the health gate passing |
 | Cloudflare Pages deploy fails | Build error or env var missing | Pages dashboard → Deployments → latest build log | Build status: Success |
 | RDP won't connect | Tailscale offline, wrong IP, or Home edition | Check Tailscale dashboard; verify Windows Pro | Desktop visible from client |
 | `[conflicted N]` files appear | pCloud sync collision with git | Delete conflicted copies; `git status` | Clean working tree |
@@ -1119,7 +1145,8 @@ For detailed probe diagnostics, see
   service's dashboard immediately.
 - **If the workstation becomes committed infrastructure** (e.g., scheduled
   agents, model-backed APIs), it must be defined in repo config and
-  documented in both the REFERENCE doc and `01-render-infrastructure.md`.
+  documented in both the REFERENCE doc and the infrastructure docs
+  ([Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) for server hosts).
 - **Claude is two things, not one** — the local pair programmer and the
   autonomous CI agent are distinct execution contexts with different
   permissions and scopes.
@@ -1127,7 +1154,7 @@ For detailed probe diagnostics, see
 ## References
 
 - [docs/ai/REFERENCE/development-workflow.md](../docs/ai/REFERENCE/development-workflow.md) — authoritative REFERENCE doc (workflow loop overview)
-- [docs/ai/REFERENCE/01-render-infrastructure.md](../docs/ai/REFERENCE/01-render-infrastructure.md) — deploy/runtime infrastructure
+- [docs/ai/REFERENCE/01-render-infrastructure.md](../docs/ai/REFERENCE/01-render-infrastructure.md) — deploy/runtime infrastructure (Cloudflare; Render sections are history since 2026-10-12)
 - [docs/ai/REFERENCE/01.0a-wp-drafting-phase.md](../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md) — WP drafting phase
 - [docs/ai/REFERENCE/01.0b-wp-execution-phase.md](../docs/ai/REFERENCE/01.0b-wp-execution-phase.md) — WP execution phase
 - [.github/workflows/inspection-nightly.yml](../.github/workflows/inspection-nightly.yml) — nightly Inspector triage agent
@@ -1136,4 +1163,4 @@ For detailed probe diagnostics, see
 - OpenRouter — `https://openrouter.ai` (hosted OpenAI-compatible model gateway; no-GPU Tier-1 alternative)
 - Nate Herk, "I Turned Claude Opus 4.8 Into My Entire AI Operating System" — `https://www.youtube.com/watch?v=0WDkwMxj13s` (Four C's + Three M's frameworks)
 - AIS-OS starter kit — `https://github.com/nateherkai/AIS-OS` (`/onboard`, `/audit`, `/level-up` skills); since 2026-09-29 also the "map" for the operator's [AI Second Brain](ai-second-brain.md)
-- [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — the Render → DigitalOcean production migration and its cost case
+- [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — the production DigitalOcean droplet (since 2026-10-12), the Render → DigitalOcean migration, and the `legendary-arena-lab` repo that provisions and deploys it

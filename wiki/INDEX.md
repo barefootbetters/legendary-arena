@@ -246,8 +246,9 @@ Cross-cutting governance, methodology, and readiness assessments.
   the repo boundary.
 - [Development Workflow](development-workflow.md) — The
   develop-from-anywhere loop: laptop / workstation / phone drive
-  Claude Code sessions on WP/EC contracts → GitHub → auto-deploy via
-  Render + Cloudflare on merge to `main`; a nightly CI triage agent
+  Claude Code sessions on WP/EC contracts → GitHub → front-ends
+  auto-deploy via Cloudflare on merge to `main`, and the API deploys
+  manually to its DigitalOcean droplet; a nightly CI triage agent
   turns sweep results into new work packets.
 - [Testing](testing.md) — The testing map: the four-layer testing model
   (unit/contract → integration/framework → complete-game replay →
@@ -278,9 +279,10 @@ Cross-cutting governance, methodology, and readiness assessments.
   authoritative `.claude/CLAUDE.md` Reward Integrity block; defines nothing.
 - [Disaster Recovery](disaster-recovery.md) — Operator playbook (mirror
   of `docs/ops/DISASTER_RECOVERY.md`) for restoring **service** after
-  infrastructure loss: the backup layers (Render managed, the WP-416
-  `pg_dump` → R2 external copy, and its pCloud mirror), the five recovery
-  scenarios (DR-01…DR-05) with honest recoverability verdicts, and the
+  infrastructure loss: the backup layers since the 2026-10-12 cutover (the
+  droplet's nightly `50-backup.ps1` `pg_dump` → R2 external copy, plus its
+  pCloud mirror; no managed PITR), the five recovery scenarios
+  (DR-01…DR-05) with honest recoverability verdicts, and the
   capability-graded validation checklist. Nightly dumps have run since
   2026-08-09, and a restore from R2 was drilled on 2026-10-11/12.
 - [Private Site Hosting](private-site-hosting.md) — How the two private
@@ -290,7 +292,8 @@ Cross-cutting governance, methodology, and readiness assessments.
   `pages.dev` / `workers.dev` alias is an ungated copy. Records the
   2026-10 bypass, the move off Render and Pages, and the cutover gotchas.
 - [Render Migration Analysis](render-migration-analysis.md) — *(draft)* the
-  case for moving the game server and Postgres off Render: the ~$146/mo
+  case for moving the game server and Postgres off Render (cut over
+  2026-10-12): the ~$146/mo
   Render bills, sizing the droplet from measured use (2 vCPU / 4 GB, $24),
   the DigitalOcean vs NameHero comparison, a multi-vendor survey against hard
   requirements, and the architecture candidates weighed. Companion to
@@ -481,8 +484,8 @@ Step-by-step walkthroughs for completing specific tasks.
   unlisted-not-private artist handshake, and a ready-to-publish quality
   bar. Companion to the [Video Production Workflow](video-production-workflow.md).
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — *(draft)* the
-  DigitalOcean Ubuntu 24.04 host replacing Render for `api.` and its
-  PostgreSQL: target architecture (Cloudflare → Nginx → `apps/server` +
+  DigitalOcean Ubuntu 24.04 host that replaced Render for `api.` and its
+  PostgreSQL on 2026-10-12: target architecture (Cloudflare → Nginx → `apps/server` +
   `localhost` Postgres under systemd, backups to R2), why the platform is
   changing, the 2 vCPU / 4 GB target configuration, the 2026-10-11 rehearsal
   results on the kept cutover droplet, droplet hardening, the

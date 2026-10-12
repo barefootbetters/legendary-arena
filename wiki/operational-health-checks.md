@@ -8,6 +8,7 @@ tags:
   - cloudflare
   - hanko
   - render
+  - digitalocean
   - domains
 related:
   - play-diagnostics.md
@@ -28,7 +29,7 @@ source:
   - ../docs/ops/domains.json
   - ../docs/ops/DOMAINS.md
   - ../package.json
-last-reviewed: 2026-08-23
+last-reviewed: 2026-10-12
 ---
 
 ## Summary
@@ -457,7 +458,7 @@ CONNECTIONS (concurrent)
   ✓ Cloudflare R2 : metadata/sets.json → 200 application/json  (197ms)
   ✓ boardgame.io server : /health → 200 application/json 15B  (310ms)
   ✓ Cloudflare Pages : https://cards.legendary-arena.com → 200  (301ms)
-  ✓ API server CORS : https://legendary-arena-server.onrender.com/api/me/profile allows Origin=https://play.legendary-arena.com  (HTTP 204, 335ms)
+  ✓ API server CORS : https://api.legendary-arena.com/api/me/profile allows Origin=https://play.legendary-arena.com  (HTTP 204, 335ms)
   ✓ Arena-client bundle env : https://play.legendary-arena.com/assets/index-BaZEBP-t.js has all required VITE_* env vars inlined.
   ✓ GitHub API : barefootbetters/legendary-arena found  (563ms)
   ✓ Git remote : origin → https://github.com/barefootbetters/legendary-arena.git
@@ -478,7 +479,7 @@ output prints the full URL):
 ```
 [check-subdomains] manifest: docs/ops/domains.json (version 1, updated 2026-05-10)
 [check-subdomains] runbook:  docs/ops/DOMAINS.md
-[check-subdomains] entries:  10 (probing all)
+[check-subdomains] entries:  9 (probing all)
 
 [OK     ] Apex (legendary-arena.com)               https://legendary-arena.com                             HTTP 301                                 expected=301|302|308 state=live
         location: https://www.legendary-arena.com/
@@ -495,10 +496,9 @@ output prints the full URL):
         dns:     A=[ENOTFOUND]  AAAA=[ENOTFOUND]
         tls:     ENOTFOUND
 [OK     ] API (game server, friendly hostname)     https://api.legendary-arena.com/health                  HTTP 200                                 expected=200 state=live
-[OK     ] API (Render canonical hostname)          https://legendary-arena-server.onrender.com/health      HTTP 200                                 expected=200 state=live
 [OK     ] Card images CDN                          https://images.legendary-arena.com/                     HTTP 404                                 expected=200|403|404 state=live
 
-[check-subdomains] 7 ok, 2 pending, 1 ready-to-flip, 0 failed
+[check-subdomains] 6 ok, 2 pending, 1 ready-to-flip, 0 failed
 [check-subdomains] 1 planned entry is reachable and healthy — flip "state" to "live" in docs/ops/domains.json.
 ```
 
@@ -552,6 +552,15 @@ fails the same way, ruling out half-provisioned states.
 - **CI / deploy.** Neither script is currently wired into a CI
   workflow; both are local-operator probes. They make no
   modifications to any service — every probe is a read.
+- **Continuous monitoring runs elsewhere.** Since the 2026-10-12 move of
+  `api.` to the DigitalOcean droplet, UptimeRobot checks
+  `https://api.legendary-arena.com/health` every 5 minutes, and two
+  healthchecks.io checks watch the droplet (`la-droplet-monitor`, an on-box
+  5-minute check of the service, `/health`, disk and backup age; and
+  `la-droplet-backup`, the nightly backup ping). All three email on failure.
+  `pnpm check` and `pnpm check:domains` remain the manual sweep after
+  deploys, incidents, and machine setup. See
+  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 
 ## Edge Cases
 
@@ -587,7 +596,7 @@ fails the same way, ruling out half-provisioned states.
 - **`PENDING` is the expected state for unfinished work.** A
   `planned` entry that fails to connect (DNS, refused, timeout)
   returns `PENDING`. This is the normal state for subdomains whose
-  CF Pages project or Render service hasn't been provisioned yet;
+  CF Pages project, Worker, or droplet vhost hasn't been provisioned yet;
   it is not a regression.
 - **403 from Pages can be load-balancer noise.** The `play` and
   `cards` Pages projects and the `ewiki` Worker all sit behind the same

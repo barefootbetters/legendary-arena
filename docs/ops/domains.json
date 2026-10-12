@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-07-08",
+  "updated": "2026-10-12",
   "runbook": "docs/ops/DOMAINS.md",
   "comment": "Canonical list of legendary-arena.com subdomains. Read by scripts/check-subdomains.mjs. When adding or changing an entry, also update DOMAINS.md (one section per anchor). Field reference: see DOMAINS.md §Adding a new subdomain.",
   "domains": [
@@ -99,21 +99,22 @@
     {
       "name": "API (game server, friendly hostname)",
       "url": "https://api.legendary-arena.com/health",
-      "host": "Render (legendary-arena-server)",
+      "host": "DigitalOcean droplet (proxied; Origin cert, Full strict)",
       "source": "apps/server",
       "expectedStatus": 200,
       "state": "live",
       "anchor": "api",
-      "notes": "CNAME api.legendary-arena.com -> legendary-arena-server.onrender.com (DNS only, not Cloudflare-proxied — Render needs direct origin access for Let's Encrypt cert renewal and websocket transport). Live since 2026-05-09. Both this hostname and the canonical onrender.com hostname stay healthy in parallel during the dual-running window. PUBLIC_BASE_URL is unrelated to this hostname — it is the CLIENT URL Stripe Checkout redirects users to after success/cancel (see apps/server/src/billing/billing.routes.ts) and is updated when play.legendary-arena.com is deployed, not now."
+      "notes": "Proxied Cloudflare A record api.legendary-arena.com -> the self-hosted DigitalOcean droplet (Ubuntu 24.04, sfo3) since the 2026-10-12 cutover. Nginx on the droplet terminates TLS with a Cloudflare Origin Certificate; the api hosts run SSL Full (strict) through a Configuration Rule while the rest of the zone stays on Full. The server is the systemd unit la-server; provisioning and deploys live in the legendary-arena-lab repo. Live since 2026-05-09; from then until 2026-10-12 this was a DNS-only CNAME to legendary-arena-server.onrender.com (Render). Rollback during the 7-day window restores that CNAME exactly and resumes the Render service. PUBLIC_BASE_URL is unrelated to this hostname — it is the CLIENT URL Stripe Checkout redirects users to after success/cancel (see apps/server/src/billing/billing.routes.ts)."
     },
     {
-      "name": "API (Render canonical hostname)",
+      "name": "API (retired Render origin, rollback only)",
       "url": "https://legendary-arena-server.onrender.com/health",
-      "host": "Render",
-      "source": "apps/server",
-      "expectedStatus": 200,
+      "host": "Render (suspended)",
+      "source": "none — Render web service legendary-arena-server, suspended at the 2026-10-12 cutover",
+      "expectedStatus": [404, 503],
       "state": "live",
-      "anchor": "api"
+      "anchor": "api",
+      "notes": "Not a production hostname since the 2026-10-12 cutover. The Render web service is suspended for the 7-day rollback window (then Render is deleted, ~2026-10-20), so this host no longer serves the game: a suspended service is expected to answer 503 and a deleted one 404 (as legendary-arena-wiki.onrender.com does). Kept as a probe, like the retired ewiki origin above: a 200 here means the Render service is running again. That is expected only during a rollback, when api.legendary-arena.com points back here; otherwise suspend or delete it."
     },
     {
       "name": "Card images CDN",

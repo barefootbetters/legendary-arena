@@ -113,7 +113,8 @@ at `legendary-arena.cloudflareaccess.com`). They also keep the retired
 - [Operational Health Checks](operational-health-checks.md) — `check:domains`
   and the freshness check that read these deploys.
 - [Development Workflow](development-workflow.md) — where the two Workers sit
-  among Render (game server, Postgres) and Pages (public front-ends).
+  among the DigitalOcean droplet (game server, Postgres; Render until
+  2026-10-12) and Pages (public front-ends).
 - [Architecture Inventory](architecture-inventory.md) — lists both Workers
   under "Cloudflare Workers (static assets)" and the retired origin row.
 - [Data & File Locations](data-file-locations.md) — where the two

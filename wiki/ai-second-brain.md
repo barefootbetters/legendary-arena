@@ -117,7 +117,7 @@ services run yet, and the Day 2 tool connection is overdue.**
 | Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | **Overdue**: only the GitHub repo routes are connected | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
 | Map Day 7: `/audit` re-run, scored against the 29/100 baseline | Scheduled | ~2026-10-06 | Its score and top findings get a row here |
 | Map Day 14: `/level-up` (first automation; the recorded top pain is food and routines) | Scheduled | ~2026-10-13 | [`context/about-me.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/about-me.md) |
-| Owned host exists: production moves off Render to the DigitalOcean droplet (the brain's bootstrap host) | Rehearsed end to end on 2026-10-11/12 on the kept $24 droplet; cutover scheduled for 2026-10-12. The vendor was reconfirmed 2026-10-02, and the dedicated-host shopping note is dated 2026-10-04 | — | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Hosting and security posture](#hosting-and-security-posture) (cost baseline and host shopping note) |
+| Owned host exists: production moves off Render to the DigitalOcean droplet (the brain's bootstrap host) | Done: production cut over to the $24 droplet on 2026-10-12, after an end-to-end rehearsal on 2026-10-11/12. The droplet is too small (4 GB) to also host the brain. The vendor was reconfirmed 2026-10-02, and the dedicated-host shopping note is dated 2026-10-04 | 2026-10-12 | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Hosting and security posture](#hosting-and-security-posture) (cost baseline and host shopping note) |
 | Runbook Phase 1: corpus census on the owned host | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 | Runbook Phases 2–6: navigation MCP, vector layer, LiteLLM / Open WebUI, voice | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 
@@ -675,10 +675,10 @@ corrupts recall or the store:
 
 - **Host.** An **unmanaged Ubuntu 24.04 VPS** with full root — a dedicated one is
   the end-state. The bootstrap build may co-locate, with isolation, on the
-  **production DigitalOcean droplet** that the Render migration stands up (see
+  **production DigitalOcean droplet** that the Render migration stood up (see
   the deployment callout above and the cost baseline below). That droplet now
-  exists: it was provisioned and rehearsed on 2026-10-11/12 and takes
-  production at the 2026-10-12 cutover. But it is too small:
+  exists: it was provisioned and rehearsed on 2026-10-11/12 and has carried
+  production since the 2026-10-12 cutover. But it is too small:
   lab D-002 (2026-10-11) starts it at 2 vCPU / 4 GB, sized for the arena alone,
   which is below this page's 8 GB floor. Co-locating would mean resizing the
   droplet up first; otherwise the brain gets its own host from the start (see
@@ -712,8 +712,9 @@ corrupts recall or the store:
   bootstrap floor when embeddings and voice run concurrently**, and the 16 GB
   class is also where a small resident local model or more concurrent agents
   belong.
-- **Cost baseline: what production costs today (September 2026, actual).**
-  Production runs on Render, not on an owned box. Its September bill (invoice
+- **Cost baseline: what production cost on Render (September 2026, actual).**
+  Production ran on Render, not on an owned box, until the 2026-10-12 cutover;
+  it now runs on the ~$24/mo DigitalOcean droplet. Render's September bill (invoice
   `0SPQWPNF-0006`, paid 2026-10-01) was **$146.35**:
 
   | Line | Render plan | Sep 2026 |
@@ -734,8 +735,8 @@ corrupts recall or the store:
 
   Two consequences for this page. **First, the only owned box is the new arena
   droplet.** Render is a PaaS, so co-location was always going to depend on
-  the Render → DigitalOcean migration (rehearsed 2026-10-11/12, cutover
-  scheduled 2026-10-12) recorded in
+  the Render → DigitalOcean migration (rehearsed 2026-10-11/12, cut over
+  2026-10-12) recorded in
   [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (the
   `legendary-arena-lab` PLAN, 2026-07-24, reconfirmed 2026-10-02). That
   program restarted on 2026-10-04. NameHero and the other vendors above
@@ -831,7 +832,7 @@ corrupts recall or the store:
   [Vendor survey](render-migration-analysis.md#vendor-survey-2026-10-11) (2026-10-11).
   For a 16 GB brain box, NameHero Turbo ($42.99) and Lightsail's 4 vCPU / 16 GB
   bundle ($84) bracket the options. Until a brain host is bought, the bootstrap host is the DigitalOcean droplet
-  the migration stands up, and a dedicated brain host stays a later split.
+  the migration stood up, and a dedicated brain host stays a later split.
 - **Local vs hosted models — two host classes.** A plain VPS line has no GPU, so
   on that class treat **local LLMs as optional and CPU-only (small models)** and
   lean on **hosted models via LiteLLM** for reasoning quality. But the dedicated
@@ -1148,8 +1149,9 @@ governance surface.**
 
 The [endgame coach](#proposed-stack) is named as the first proof point of the
 replaceable-agent claim — but "route it through LiteLLM" is not a single option,
-it is a small decision, because the coach runs on the **Render game server**
-(`apps/server`, `api.legendary-arena.com`), *not* on the brain host. Two facts
+it is a small decision, because the coach runs on the **game server**
+(`apps/server`, `api.legendary-arena.com` — the DigitalOcean droplet since
+2026-10-12, Render before), *not* on the brain host. Two facts
 set the shape of the choice:
 
 - **The call is fail-soft and post-game.** Any error returns `coach_unavailable`
@@ -1169,7 +1171,7 @@ The options, cheapest first:
 | **A. Status quo** — direct Anthropic, model hardcoded | none | ❌ | ❌ | never the end-state; it is the thing being replaced |
 | **B. In-server routing shim** — a small Node module owns the model id + per-model config (thinking / output budget), read from env | none | ✅ (env / config) | ✅ | *now* — one LLM surface; lowest cost; delivers the principle with no infra |
 | **C. Hosted gateway** (e.g. OpenRouter) | none (external dependency) | ✅ | ✅ | you want a real gateway with zero ops and accept a third party in the path |
-| **D1. Self-hosted LiteLLM on Render**, beside `apps/server` | one small service, co-located | ✅ | ✅ | a second LLM surface appears and you want ownership + cost control near the server |
+| **D1. Self-hosted LiteLLM on the API droplet**, beside `apps/server` | one small service, co-located (the 4 GB droplet is sized for the arena alone; check memory headroom or resize first) | ✅ | ✅ | a second LLM surface appears and you want ownership + cost control near the server |
 | **D2. Self-hosted LiteLLM on the brain host** (vendor open) | one service, cross-host | ✅ | ✅ | the AI Second Brain platform is built and already runs the gateway |
 
 **Recommendation.** Take **B now.** It is the model-independence *principle*
@@ -1178,7 +1180,7 @@ Node module and no new infrastructure — the right size for a single LLM surfac
 Promote to a **real gateway (C or D)** only when a *second* LLM surface appears,
 or the brain platform is built and already runs one; that is when a shared
 gateway earns its operating cost. If self-hosting LiteLLM for the coach, prefer
-**D1 (co-located on Render)** over **D2 (the brain host)**: even fail-soft,
+**D1 (co-located on the API droplet)** over **D2 (the brain host)**: even fail-soft,
 pointing the live game server at the brain host couples two things the
 architecture deliberately keeps separate (see
 [Co-hosting during bootstrap](#edge-cases)), for no benefit the coach needs.
@@ -1205,8 +1207,10 @@ feature reaching across the network.
 >   (above), so the coach is not waiting on anything.
 > - **Setting it to the default is a no-op.** `COACH_MODEL=claude-sonnet-5` resolves
 >   to exactly what unset does — do not set it merely to "pin" the current model.
-> - **Swapping = set `COACH_MODEL` in the Render dashboard** to the exact Anthropic
->   model id (e.g. `claude-opus-5`); Render then redeploys the server. The value is
+> - **Swapping = set `COACH_MODEL` in the API droplet's `/etc/la/.env`** to the
+>   exact Anthropic model id (e.g. `claude-opus-5`), then restart the server
+>   (`sudo systemctl restart la-server`); before the 2026-10-12 cutover this was
+>   the Render dashboard, which redeployed on save. The value is
 >   the API id, never a friendly name like "Sonnet 5". Since WP-737 (D-24559) the
 >   registry is an allowlist: an id with no quirk row (a typo, a friendly name, an
 >   unvetted model) is **not** sent — the coach keeps running on the default
@@ -2470,9 +2474,9 @@ is built.
    is *Skills Over Monoliths* paying off at the routing layer.
 3. **Host sizing, vendor, and when to split off production.** A dedicated host is
    the end-state; v1 co-locates with production (D-24341). That box now
-   exists but is too small to share: production is on Render at $146.35/mo
-   (September 2026) until the 2026-10-12 cutover to the 4 GB DigitalOcean
-   droplet rehearsed in
+   exists but is too small to share: production moved off Render ($146.35/mo,
+   September 2026) to the 4 GB DigitalOcean droplet (~$24/mo) at the
+   2026-10-12 cutover recorded in
    [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (see the cost baseline
    in [Hosting and security posture](#hosting-and-security-posture)). The
    cost ceiling for the brain is best set against that Render figure. The lower tier for
@@ -2505,7 +2509,7 @@ is built.
    coach's model + per-model quirks are config (`COACH_MODEL` + the shim registry)
    with no new infra — see [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch).
    *Still open:* whether/when to promote to a **real gateway** (hosted like
-   OpenRouter, or self-hosted LiteLLM co-located on Render, D1) instead of the
+   OpenRouter, or self-hosted LiteLLM co-located on the API droplet, D1) instead of the
    shim. *Gate:* only when a **second LLM surface** needs routing/quirk handling,
    or the brain platform is running and wants a shared gateway. Never LiteLLM on
    the brain host for this coach (D2) — it couples the live game server to the

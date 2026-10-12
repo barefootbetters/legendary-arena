@@ -93,7 +93,7 @@ up not knowing which one is current.
 | A user-uploaded avatar | Hosted | R2 `avatars/{accountId}.webp`; Postgres stores the URL, never the bytes |
 | Per-theme / per-hero game music — WAV masters + local MP3 derivatives | pCloud | `C:\pcloud\LA\audio\` — working binaries, never git, masters never uploaded; shape locked by D-24219 — see [Music Authoring](music-authoring.md) |
 | Published game audio (320 kbps MP3 — music + event stings) | Hosted | R2 `legendary-images` `audio/` prefix — the **sole** audio surface; see [Data & File Locations](data-file-locations.md) |
-| A secret or credential | Neither git nor a synced plain-text file | `.env` locally (gitignored), Render dashboard in production. See Edge Cases. |
+| A secret or credential | Neither git nor a synced plain-text file | `.env` locally (gitignored), the API droplet's root-only `/etc/la/.env` in production (the Render dashboard until 2026-10-12). See Edge Cases. |
 | A diagnostics JSON or loadout pulled off a live match | pCloud, scoped to a project | Currently accumulating loose at the pCloud root — see Edge Cases |
 
 ### pCloud — observed layout (2026-07-20)
@@ -131,7 +131,7 @@ restated here.
 
 | Path | Remote | Owns | Deploys to |
 |---|---|---|---|
-| `C:\pcloud\BB\DEV\legendary-arena` | `barefootbetters/legendary-arena` | Engine, server, clients, card data, the `wiki/` source, all AI governance | Render (server), Cloudflare Pages (viewer, client, legends board), Cloudflare Workers (ewiki, dashboard) |
+| `C:\pcloud\BB\DEV\legendary-arena` | `barefootbetters/legendary-arena` | Engine, server, clients, card data, the `wiki/` source, all AI governance | DigitalOcean droplet (server, since 2026-10-12; Render before), Cloudflare Pages (viewer, client, legends board), Cloudflare Workers (ewiki, dashboard) |
 | `C:\www\legendary-arena-com` | the marketing-site repo | Hugo marketing site: blog posts, brand tokens, layouts, marketing docs, and Legendary Arena's corporate-memory layer (`docs/corporate-memory/`) | Cloudflare Pages → `www.legendary-arena.com` |
 | `C:\www\jefferyjjensen-corporate-memory` | `barefootbetters/jefferyjjensen-corporate-memory` (**private**) | Top node of the distributed corporate memory (owner profile, portfolio routing map, cross-business decision log, personal notes) and, since 2026-09-29, the [AI Second Brain](ai-second-brain.md) "ship" (AIS-OS skills and operating manuals) | Nothing — private, never published |
 
@@ -308,8 +308,8 @@ Two things that follow from the ownership table above:
 
 - **Accounting exports are pCloud, never git and never a server disk.**
   A Stripe payout CSV or a bank statement in a repo is a permanent,
-  mirrored copy of financial data. On a Render disk it is ephemeral and
-  unbacked. Neither is a filing cabinet.
+  mirrored copy of financial data. On the API droplet's disk it sits outside
+  the database backup, and it is lost with the box. Neither is a filing cabinet.
 - **Business documents are not the system of record for the facts inside
   them.** A downloaded Stripe report is a *snapshot*; Stripe remains
   authoritative. Keep the document for the year-end package and the
@@ -457,8 +457,8 @@ asked. Two pointers keep it reachable:
 
 - [01-REPO-FOLDER-STRUCTURE.md](../docs/01-REPO-FOLDER-STRUCTURE.md) —
   the engine repo's authoritative directory layout.
-- [render.yaml](../render.yaml) — production services and their secret
-  bindings.
+- [render.yaml](../render.yaml) — the retired Render blueprint (production
+  until 2026-10-12); now the inventory of `sync: false` secret names.
 - [.env.example](../.env.example) — the shape of every required
   environment variable; the real values are never committed.
 - [Data & File Locations](data-file-locations.md) — in-repo data, R2 key

@@ -23,6 +23,7 @@ source:
   - ../packages/registry/src/heroImageUrl.ts
   - ../apps/server/src/profile/avatarUpload.logic.ts
   - ../render.yaml
+  - legendary-arena/legendary-arena-lab infra/scripts (the API droplet, production since 2026-10-12)
 last-reviewed: 2026-07-20
 ---
 
@@ -119,11 +120,12 @@ reverse. Key prefixes:
 | `metadata/{abbr}.json`, `metadata/sets.json`, `metadata/card-mechanics.json`, … | Flat mirror of the card + metadata JSON — **the Registry Viewer's live data source** | **manual `rclone copy`** — no automated sync (see below) |
 | `themes/` | Gameplay UI themes from [`content/themes/`](../content/themes/) | [`scripts/upload-themes-to-r2.mjs`](../scripts/upload-themes-to-r2.mjs) |
 | `audio/themes/…mp3`, `audio/heroes/…mp3` | Per-theme (`MT01`–`MT04` music + `ES01`–`ES04` event stings) and per-hero (`MT01`–`MT04`) music, 320 kbps MP3 — the **sole** audio surface | interim on `legendary-images` → `images.legendary-arena.com/audio/…`; production target `music.barefootbetters.com` (not live) — see [Music Authoring](music-authoring.md) |
-| `legends/…json` | Legends Snapshot Publisher output (separate `R2_LEGENDS_BUCKET`) | render.yaml secrets |
+| `legends/…json` | Legends Snapshot Publisher output (separate `R2_LEGENDS_BUCKET`) | the API droplet's `/etc/la/.env` (names inventoried in `render.yaml`) |
 
 R2 credentials are **not committed**: local `.env` carries
 `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`; production injects
-`R2_*` secrets via the Render dashboard. Reachability is probed by
+`R2_*` secrets from the API droplet's root-only env file `/etc/la/.env`
+(the Render dashboard until the 2026-10-12 cutover). Reachability is probed by
 `pnpm check` (see [Operational Health Checks](operational-health-checks.md)).
 
 ### Music and audio
@@ -177,9 +179,14 @@ match start** rather than bundling audio into the build. Full pipeline:
   variable (`DATABASE_URL`, `JWT_SECRET`, `HANKO_*`, `STRIPE_*`,
   `R2_*` / `AWS_*`, `BREVO_*`, `VITE_*`, …). The real `.env` values are
   injected per-environment and are **not** committed.
-- [`render.yaml`](../render.yaml) — production services
-  (`legendary-arena-server`, `legendary-arena-db`) and their secret bindings
-  (`sync: false`).
+- [`render.yaml`](../render.yaml) — the retired Render blueprint
+  (`legendary-arena-server`, `legendary-arena-db`; production until
+  2026-10-12). It no longer governs production, but stays as the inventory of
+  `sync: false` secret names.
+- `/etc/la/.env` on the API droplet — the production server's secrets
+  (root-only, mode 600) since 2026-10-12; provisioning lives in the
+  `legendary-arena-lab` repo (see
+  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)).
 - [`apps/wiki-viewer/wrangler.jsonc`](../apps/wiki-viewer/wrangler.jsonc) and
   [`apps/dashboard/wrangler.jsonc`](../apps/dashboard/wrangler.jsonc) — the
   assets-only Cloudflare Workers that serve the ewiki and the dashboard
@@ -293,7 +300,7 @@ match start** rather than bundling audio into the build. Full pipeline:
 - **pCloud conflict files.** This repo lives on a pCloud-synced path, which
   can spawn `… [conflicted N].json` siblings; the un-suffixed file is
   canonical.
-- **Secrets are never in the repo.** `.env` and Render secrets hold all
+- **Secrets are never in the repo.** `.env` and the droplet's `/etc/la/.env` hold all
   credentials; the committed `.env.example` is only the shape.
 
 ## References
@@ -306,7 +313,8 @@ match start** rather than bundling audio into the build. Full pipeline:
   `R2_BASE_URL` host constant.
 - [`avatarUpload.logic.ts`](../apps/server/src/profile/avatarUpload.logic.ts) —
   avatar `AVATAR_CDN_BASE` host constant and upload pipeline.
-- [`render.yaml`](../render.yaml) — production services and secret bindings.
+- [`render.yaml`](../render.yaml) — the retired Render blueprint; the
+  inventory of `sync: false` secret names.
 - [R2 Image Naming Convention](r2-image-naming-convention.md),
   [LAGN Specification](lagn-v1.md),
   [Card Type Taxonomy](card-type-taxonomy.md),
