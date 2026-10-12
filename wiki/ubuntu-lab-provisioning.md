@@ -17,6 +17,7 @@ related:
   - data-file-locations.md
   - workspace-map.md
   - ai-second-brain.md
+  - render-migration-analysis.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ubuntu-lab-provisioning.md (this page — https://ewiki.legendary-arena.com/ubuntu-lab-provisioning/)
@@ -30,374 +31,83 @@ last-reviewed: 2026-10-11
 
 # Ubuntu Lab Provisioning
 
-> **Migration in progress.** `api.legendary-arena.com` and its PostgreSQL are
-> moving off Render onto a self-hosted DigitalOcean Ubuntu droplet fronted by
-> Cloudflare. (The ewiki already left Render on 2026-10-11, for an assets-only
-> Cloudflare Worker rather than Pages — D-24690.) The move is decided at the
-> migration-program level: the `legendary-arena-lab` repo holds the runbook and the
-> infrastructure-as-code (`docs/PLAN.md`, `infra/`, and its operator wiki). Until
-> the final decommission phase, Render stays warm as the rollback target (see the
-> [Architecture & Library Adoption Inventory](architecture-inventory.md) for the
-> live-until-cutover topology). This page defines nothing and governs nothing — it
-> is the engine-repo record that the migration is happening; the program repo owns
-> the executable steps.
->
-> **Governance status — pending transcription.** This page is being flipped ahead
-> of the engine-repo governance it will ultimately cite. The `DECISIONS.md` lock
-> ("api + Postgres leave Render for DigitalOcean + Cloudflare; ewiki → Cloudflare
-> Pages") and the migration Work Packet are **not yet written** (when this
-> callout was first written, the latest decision was D-24236). Until they land, the migration PLAN in the
-> `legendary-arena-lab` repo is the governing source; this page stays
-> `status: draft` and deliberately cites no `D-`/`WP-` IDs it cannot yet resolve.
-> The former "records no decision to leave Render" disclaimer is superseded: that
-> decision is made — only its transcription into `DECISIONS.md` is outstanding.
-> **Update 2026-10-11:** the ewiki half is now transcribed, as D-24690 — onto an
-> assets-only Cloudflare **Worker**, not Pages (a Pages project always serves an
-> ungated `*.pages.dev` alias). The api + Postgres half is still untranscribed.
+> **Governance status.** The decision to move `api.legendary-arena.com` and its
+> PostgreSQL off Render is made, and the `legendary-arena-lab` program repo is
+> executing it (`docs/PLAN.md`, `infra/`). Its transcription into the engine repo
+> (a `DECISIONS.md` entry and a migration Work Packet) is pending; until it lands,
+> the program repo is the governing source and this page stays `status: draft`.
+> The ewiki half of the move is already recorded as D-24690.
 
 ## Summary
 
-The single DigitalOcean droplet (Ubuntu 24.04 LTS) that `api.legendary-arena.com`
-and its PostgreSQL are migrating onto, with Postgres self-hosted on the same box
-and Cloudflare in front. It starts at **2 vCPU / 4 GB / 80 GB ($24/mo) with a
-2 GB swapfile** and resizes up only on evidence. The migration program first
-planned 4 vCPU / 8 GB, but measured Render use (2026-10-11) is about 1 GB and
-well under one core in total; see
-[Sizing from measured use](#sizing-from-measured-use-2026-10-11).
-
-This page is the engine-repo **record** of that migration. The executable
-runbooks and infrastructure-as-code — cloud-init, the numbered provisioners,
-Nginx + Cloudflare TLS, self-hosted Postgres, the systemd unit, and the SSH
-deploy pipeline — live in the **`legendary-arena-lab`** repo (`infra/`,
-`content/`, and its operator wiki). The hand-run steps below are retained as the
-original rehearsal procedure and as background; where they differ from the program
-(PM2 → systemd, Certbot → Cloudflare Origin Certificate, cross-provider probe →
-co-located localhost DB), the program's `infra/` artifacts are authoritative.
-
-The operator-capability and disaster-recovery-rehearsal value that first justified
-the box still holds — but the box is no longer exploratory. The move is decided
-(see the callout) and in progress. When it was planned in July, cost looked
-roughly even and control was the driver. That changed once Render's plans were
-raised under load: the August and September 2026 bills were **$146.50** and
-**$146.35**, against $24 a month for the target droplet ($48 on the first resize
-step). Cost is now a driver too (see
-[Cost case](#cost-case-september-2026)).
+The Ubuntu 24.04 DigitalOcean host that will replace Render for the game server
+and its PostgreSQL: one box running Nginx behind Cloudflare, the Node server,
+and a self-hosted PostgreSQL under systemd, with backups to Cloudflare R2. This
+page records the target architecture, what the operator takes over, and the
+provisioning, restore and rebuild procedure. The cost, sizing and vendor
+analysis behind it is on the Render Migration Analysis page.
 
 ## Mechanics
 
-### What this host is — and the migration phase it is in
+### Target architecture
+
+```text
+Players
+   │
+Cloudflare  (DNS, proxy, TLS to the origin)
+   │
+DigitalOcean droplet, Ubuntu 24.04 LTS, sfo3
+   ├─ Nginx          (reverse proxy, WebSocket upgrade for Socket.IO)
+   ├─ apps/server    (Node 24.18.0, under systemd)
+   └─ PostgreSQL 18  (localhost only)
+   │
+pg_dump  →  Cloudflare R2  (backups)
+```
 
 - **Is becoming:** the production host for `apps/server` and a self-hosted
-  PostgreSQL 18, behind Nginx + Cloudflare, under systemd — the target
-  architecture locked in the migration PLAN (`legendary-arena-lab` repo).
-- **Is not yet carrying production traffic.** Until the cutover phase, the box is
+  PostgreSQL 18 — the target architecture locked in the migration PLAN. The
+  server and database share one box, so there is no cross-provider hop (the
+  alternatives weighed are in
+  [Architecture candidates](render-migration-analysis.md#architecture-candidates-decided)).
+- **Is not yet carrying production traffic.** Until cutover, the box is
   provisioned and rehearsed against a **copy** of the data, never the live prod
-  DB. The Render managed Postgres allows credential-gated public inbound
-  (`ipAllowList: ['0.0.0.0/0']` in `render.yaml`) — that is a footgun, not an
-  invitation; rehearsal always runs against a restored copy (see the Restore
-  drill). Render stays warm as the rollback target through the decommission phase.
+  DB. Render's managed Postgres allows credential-gated public inbound
+  (`ipAllowList: ['0.0.0.0/0']` in `render.yaml`) — a footgun, not an
+  invitation. Render stays warm as the rollback target until the decommission
+  phase (live-until-cutover topology:
+  [Architecture & Library Adoption Inventory](architecture-inventory.md)).
 
-Self-hosting Postgres on this box is now the **chosen** path, not an open
-question: the migration PLAN co-locates the server and database on one host
-(no cross-provider hop). What remains is the disciplined execution and the
-governance transcription noted in the callout — not the architecture decision.
+### Why the platform is changing
 
-### Cost case (September 2026)
+1. **Cost.** Render bills about $146 a month (August and September 2026). The
+   droplet starts at $24, about $1,470 a year less
+   ([Cost case](render-migration-analysis.md#cost-case-september-2026)).
+2. **Control.** Full OS access, infrastructure-as-code the business owns, and
+   recovery procedures that can be rehearsed rather than trusted.
+3. **Operator capability.** A proven ability to provision, rebuild, restore and
+   recover the environment without depending on one vendor.
 
-The vendor was reconfirmed as **DigitalOcean** on 2026-10-02. It held after a
-NameHero price comparison on 2026-10-04. It held again on 2026-10-11, after
-NameHero's written month-to-month quote and a multi-vendor survey led by
-Hetzner (see
-[Vendor comparison](#vendor-comparison-digitalocean-vs-namehero-2026-10-04) and
-[Vendor survey](#vendor-survey-2026-10-11)).
-NameHero had been named elsewhere, but only as a candidate host for the
-[AI Second Brain](ai-second-brain.md), never for this migration.
+When the box was planned in July, cost looked roughly even and control was the
+driver. Render's plans were raised under load that month, and cost became a
+driver too.
 
-What Render charged for August 2026 (invoice `0SPQWPNF-0005`, paid
-2026-09-01) and September 2026 (invoice `0SPQWPNF-0006`, paid 2026-10-01):
+### Target configuration
 
-| Line | Render plan | Aug 2026 | Sep 2026 | After migration |
-|---|---|---|---|---|
-| Game server | `pro`, 2 CPU / 4 GB | $85.00 | $85.00 | on the droplet |
-| PostgreSQL | `pro-4gb` plus storage | $55.30 | $55.30 | on the droplet, `localhost` |
-| Builds | pipeline minutes (Aug 41 m, Sep 6 h 42 m) | $5.00 | $5.00 | GitHub Actions deploy |
-| Bandwidth | Aug 7.8 GB, Sep 6.5 GB | $1.20 | $1.05 | included with the droplet |
-| ewiki static site | free | $0.00 | $0.00 | Cloudflare Worker (moved 2026-10-11, D-24690) |
-| **Total** | | **$146.50** | **$146.35** | **~$24** at the start size (2 vCPU / 4 GB), **~$48** on the resize path (4 vCPU / 8 GB) |
-
-The two months differ by 15 cents, all of it bandwidth, so about **$146 a
-month is the steady run rate**, not a one-off spike. Builds billed $5 in both
-months, at 41 minutes and at nearly seven hours, so that line behaves like a
-flat charge rather than a per-minute one. August and September together cost
-$292.85.
-
-Starting at the $24 droplet saves about **$1,470 a year**; the $48 size would
-save about $1,180. Both figures are before backup storage. Backups go to R2, which is inside its free tier today. Both
-Render plans were raised in July to cure CPU and memory starvation; the reasons
-are recorded in `render.yaml`.
-
-**Cost-reduction order.** These steps are ranked by savings for the effort.
-1. **Finish the migration.** It restarted on 2026-10-04. The work that needs
-   no droplet is merged: `legendary-arena-lab` #17 and #18 fixed the
-   provisioners and proved them in CI on Ubuntu 24.04. What remains starts
-   with a payment method on the DigitalOcean account. Every month on Render
-   costs about $120 more than the $24 droplet would. The phases and gates in the
-   PLAN are unchanged.
-2. **Size from data, not from the July incidents.** Done 2026-10-11: both
-   Render services run idle (about 1 GB and well under one core in total), so
-   start at 2 vCPU / 4 GB ($24) and resize up on evidence. That saves more than
-   switching vendor would. See
-   [Sizing from measured use](#sizing-from-measured-use-2026-10-11).
-3. **Reduce the load, which pays off on any host.**
-   - The bot-ally driver polls every live match every 250 ms
-     (`apps/server/src/bot-ally/botAllyDriver.mjs`). Driving it from state
-     changes instead cuts server CPU and database queries.
-   - Finished `bgio` matches are never pruned, so the database grows without
-     bound. A retention job would stop that, but it must keep the
-     completed-match data that replay verification (D-24119) and the team-key
-     backfill (D-24187) read.
-4. **Trim Render only if cutover is more than a month or two out.**
-   - Build only the server and the packages it depends on
-     (`pnpm --filter @legendary-arena/server... build`) instead of
-     `pnpm -r build`. That shortens deploys, but it probably won't lower the
-     $5 build line: August's 41 minutes billed the same $5 as September's
-     6 h 42 m.
-   - Step the server from `pro` down to `standard`, which saves $60 a month,
-     but only if the September figures show headroom. Under-provisioning is
-     what caused the July freezes.
-5. **Keep the rollback window short.** Render bills in full while it stays
-   warm, so set the PLAN's "N days" deliberately (for example, 14) and
-   decommission on schedule.
-
-### Vendor comparison: DigitalOcean vs NameHero (2026-10-04)
-
-**Current call (2026-10-11): stay with DigitalOcean for this cutover.**
-NameHero's written reply settled the price, and the price gap is now small.
-It did not settle any of the operational questions the cutover depends on:
-the Ubuntu 24.04 image, cloud-init, self-service snapshots and rebuilds, the
-data center, and whether vCPUs are dedicated. DigitalOcean answers all of
-those today. NameHero remains a reasonable host for a separate
-[AI Second Brain](ai-second-brain.md) box, uncoupled from the arena deploy
-pipeline.
-
-This section was first written on 2026-10-04 from NameHero's published
-prices. Those turned out to be 3-year-term rates. NameHero reopened the
-question on 2026-10-05 with month-to-month quotes for the existing account,
-and its answers to six follow-up questions arrived on 2026-10-11.
-
-The workload is one Ubuntu 24.04 box running `apps/server`, PostgreSQL 18 on
-`localhost`, Nginx, a Cloudflare origin certificate, systemd, SSH deploy, and
-`pg_dump` to R2. Bandwidth does not matter (Render moved 6.5 GB in September),
-and the box is a single point of failure on either vendor. What separates them
-is region, CPU class, disk, provisioning fit, and, by a small margin, price.
-
-**Price.** DigitalOcean, list price with no term commitment (checked
-2026-10-04):
-
-| Droplet | vCPU | RAM | Disk | Transfer | Monthly |
-|---|---|---|---|---|---|
-| Basic (start) | 2 | 4 GB | 80 GB SSD | 4 TB | $24 |
-| Basic (first resize step) | 4 | 8 GB | 160 GB SSD | 5 TB | $48 |
-| CPU-Optimized (resize path) | 4 | 8 GB | 50 GB SSD | 5 TB | $84 |
-
-NameHero unmanaged VPS, month-to-month, as quoted in writing to the existing
-account (2026-10-11):
-
-| Plan | vCPU | RAM | Disk | Transfer | Monthly |
-|---|---|---|---|---|---|
-| Plus | 2 | 8 GB | 100 GB NVMe | 8 TB | $24.49 |
-| Turbo | 4 | 16 GB | 200 GB NVMe | 16 TB | $42.99 |
-
-Promo pricing is for new customers only, so it never applies to this account.
-The quoted rate applies from the first invoice and is held for 12 months as
-long as no add-ons are bought. The VPS can be cancelled at any time. The
-$15.92 and $27.94 "regular" figures in the 2026-10-04 version of this section
-were 3-year prepaid rates and are withdrawn.
-
-At like-for-like sizes the gap is small:
-- Plus costs 49 cents more than DigitalOcean's 2 vCPU / 4 GB box, for double
-  the RAM and NVMe disk.
-- Turbo costs about $5 a month less (~$60 a year) than DigitalOcean's 4 vCPU /
-  8 GB box, for double the RAM and disk.
-
-The "about $240 a year" gap claimed on 2026-10-04 came from the 3-year rates
-and is gone. Either vendor saves roughly $1,180 to $1,470 a year against
-Render.
-
-Backups: DigitalOcean's droplet backups add 20% of the droplet price weekly
-($9.60 on the $48 box) or 30% daily. Neither is needed while R2 dumps are the
-source of truth. NameHero's nightly full-VPS backups are an add-on ordered at
-signup and restore the whole machine. Buying one would also end the 12-month
-price hold.
-
-**NameHero's answers (2026-10-11).** These are the six questions sent on
-2026-10-05, plus what the reply confirmed without being asked:
-
-| Question | NameHero's answer |
+| Part | Setting |
 |---|---|
-| Ubuntu 24.04 image | **Not confirmed.** NameHero says it would confirm availability at initial provisioning. |
-| cloud-init, API deploy, snapshots, rebuilds | **Not confirmed.** NameHero says it would confirm which of these are self-service and which go through the management panel. |
-| In-place Plus → Turbo upgrade | **Not answered.** |
-| Dedicated vs shared vCPU | **Not answered.** The reply says the hosts are AMD EPYC, but the generation varies by host and is confirmed only after provisioning. |
-| Data center and a test IP | **Declined.** NameHero would not estimate Lenexa-to-San Francisco latency before confirming a deployment location, and sent no test IP. |
-| Mid-month cancel billing | **Partly answered.** Cancel any time. Proration was not stated. |
-| Price and term | **Confirmed:** month-to-month, held 12 months with no add-ons. |
-| Network and access | **Confirmed:** one dedicated IPv4 address and full root. |
+| Host | DigitalOcean `sfo3`, Ubuntu 24.04 LTS, 2 vCPU / 4 GB / 80 GB SSD ($24/mo), 2 GB swapfile (lab D-002). Resize path: 4 vCPU / 8 GB ($48), on evidence ([Sizing from measured use](render-migration-analysis.md#sizing-from-measured-use-2026-10-11)). |
+| Application | `apps/server` on Node 24.18.0, run by a systemd unit. |
+| Database | Self-hosted PostgreSQL 18 on `localhost`. |
+| Edge | Cloudflare in front; Nginx terminates TLS with a Cloudflare Origin Certificate. |
+| Deploy | GitHub Actions → SSH → `git pull` + build + `systemctl reload`. |
+| Backups | `pg_dump` to R2; restore rehearsed (§5) and full rebuild rehearsed (§6). |
+| Monitoring | Documented monitoring is a cutover gate owned by the program. |
 
-**Where NameHero is better.**
-- **RAM and disk per dollar.** Turbo's 16 GB suits Postgres plus the unpruned
-  `bgio` blob store; the July freezes were memory starvation as well as CPU.
-  Unmanaged plans run on NVMe. A third-party HostAdvice benchmark of a
-  Turbo-class box reported about 1.3 GB/s sequential read and about 15k random
-  4K IOPS (not re-verified here). DigitalOcean Basic uses SSD.
-- **Price, slightly.** As above, about $5 a month at the 4-core size and level
-  at the 2-core size.
-- Bandwidth allowance and a 30-day money-back window. Neither matters here.
-
-**Where DigitalOcean fits this migration.**
-- **Region.** With the database co-located, `sfo3` no longer matters for the
-  app-to-DB hop. It still matters because Socket.IO rides Cloudflare to the
-  origin, so origin round-trip time shows up in live matches. San Francisco
-  serves a West Coast player base. NameHero's US site is Lenexa, Kansas, and
-  NameHero declined to name the deployment location or give a test IP to
-  measure from.
-- **CPU class is known.** DigitalOcean Basic is shared vCPU, and that is
-  stated. The noisy-neighbor risk for the 250 ms bot-ally loop is known, and
-  the fix is a resize to CPU-Optimized ($84) on the same account. NameHero
-  markets EPYC cores but did not say whether they are dedicated.
-- **Provisioning is confirmed.** The `legendary-arena-lab` provisioners are
-  vendor-neutral: lab #18 (2026-10-04) runs the whole chain in its
-  `provision-smoke` CI on a fresh Ubuntu 24.04 machine. The scripts still
-  assume three things: a 24.04 image, cloud-init user-data at create, and a
-  self-service destroy-and-rebuild for the §6 drill. DigitalOcean provides all
-  three, plus snapshots, cloud firewalls, and per-second billing that makes a
-  rehearsal rebuild cheap. NameHero has confirmed none of the three.
-
-**What would change the call.** NameHero becomes the better buy if it confirms
-four things in writing before an order:
-1. The Ubuntu 24.04 image.
-2. cloud-init user-data at create.
-3. A self-service snapshot and rebuild.
-4. The data center, with a test IP to measure Cloudflare-to-origin latency
-   from the West Coast.
-
-If all four come back yes, Turbo at $42.99 beats DigitalOcean's $48 box on
-every axis except region. At the measured start size, though, the comparison
-is Plus ($24.49) against the $24 droplet: level on price, so a yes buys RAM
-headroom the workload doesn't use, not savings. Don't hold the cutover for the
-answers: each week on Render costs about $28 more than the $24 droplet would.
-
-### Sizing from measured use (2026-10-11)
-
-Render gives production 8 GB and
-3 CPUs in total: 4 GB / 2 CPU for the server and 4 GB / 1 CPU for Postgres. The
-Render metrics for the 7 days to 2026-10-11 show both far below that:
-
-| Service | Memory | CPU |
-|---|---|---|
-| Game server (`pro`, 4 GB / 2 CPU) | ~5% (~200 MB) steady; spikes to ~10–13% (~400–500 MB) around deploys | ~0–1% steady; spikes to ~10–13% (~0.25 core) at deploys |
-| `legendary-arena-db` (`pro-4gb`, 4 GB / 1 CPU) | Flat, under ~10% (under ~400 MB) | Flat, near 0% |
-
-The database figures are read from a low-resolution screenshot, so treat them
-as upper bounds. Active connections were a few out of 100, and the transaction
-volume came in short bursts. Production uses about 1 GB and well under one core
-in total.
-
-**Recommendation: start on the $24 droplet (2 vCPU / 4 GB / 80 GB), not the
-$48 one.** That is $288 a year against $576, and about $1,470 a year saved
-against Render. The July freezes happened at 512 MB / 0.5 CPU, well below this
-box. Three guardrails:
-- **Add a 2 GB swapfile.** `pnpm -r build` now runs on the box during deploys and
-  spikes memory well above the steady state.
-- **Resize "CPU and RAM only".** Keeping the 80 GB disk preserves the option to
-  size back down; a disk resize cannot be undone.
-- **Resize up on evidence.** Bot-ally load grows with the number of live
-  matches. Move to the $48 box (4 vCPU / 8 GB) if memory holds above ~70% or CPU
-  above ~50% under real traffic. The resize is a reboot of about a minute.
-
-At this usage, RAM-heavy plans such as NameHero Turbo (16 GB) buy headroom the
-workload doesn't use.
-
-**The AI Second Brain does not share this box.** A 4 GB droplet is below the
-[AI Second Brain](ai-second-brain.md)'s 8 GB floor, so the brain gets its own
-host. Its 16 GB figure applies only if local speech-to-text and text-to-speech
-models run on the VPS itself. Voice is used only while driving (up to about two
-hours a day) through Claude's own app voice, which runs on Anthropic's side, so
-local voice is deferred. Voice is not a reason to size the arena host, or the
-brain host, at 16 GB.
-
-### Vendor survey (2026-10-11)
-
-A separate research session surveyed Hetzner Cloud in depth and four other
-providers against the cutover's hard requirements, using vendor pricing and
-docs pages. An earlier Hetzner look was never recorded, so this replaces it.
-Figures marked *verified* were re-checked against the vendor page in this pass.
-The current call is unchanged: DigitalOcean, `sfo3`.
-
-The hard requirements; a vendor that fails any one is out:
-1. An Ubuntu 24.04 image at create.
-2. cloud-init user-data at create.
-3. A self-service snapshot and rebuild.
-4. A named US West data center.
-5. Month-to-month or hourly billing at the regular rate, with no promo or term.
-6. A KVM VM with root access and a dedicated IPv4.
-
-| Vendor | US West location | Hard reqs | ~2 vCPU | ~4 vCPU | Price source |
-|---|---|---|---|---|---|
-| DigitalOcean | San Francisco (`sfo3`) | Pass | 2 / 4 GB / 80 GB, $24 | 4 / 8 GB / 160 GB, $48 (CPU-Optimized dedicated 4 / 8, $84) | Vendor page, 2026-10-04 |
-| Hetzner Cloud | Hillsboro, OR | Pass | CPX21: 3 / 4 GB / 80 GB, $37.49 | CPX31: 4 / 8 GB / 160 GB, $73.49 (CCX23, 4 dedicated / 16 GB, $102.99) | *Verified* (US price-adjustment page); plus ~$0.60/mo IPv4 and VAT |
-| Akamai / Linode | Fremont, Seattle, Los Angeles | Pass | 2 / 4 GB / 80 GB, $24 | 4 / 8 GB / 160 GB, $48 | Survey; not re-checked |
-| Vultr | Silicon Valley, Seattle, Los Angeles | Pass | 2 / 4 GB, ~$20 | 4 / 8 GB, ~$40 | Survey; not re-checked (vendor page refused the fetch) |
-| AWS Lightsail | Oregon | Pass | 2 / 4 GB / 80 GB, $24 | 2 / 8 GB / 160 GB, $44; 4 / 16 GB / 320 GB, $84 | *Verified* (pricing page) |
-| OVHcloud US | Not confirmed | Fails 4–5 until confirmed | VPS-1: 2 / 4 GB / 40 GB, $4.54 | VPS-2: 4 / 8 GB / 75 GB, $8.50 | Listed prices appear to be 12-month upfront; no month-to-month price or named US site shown |
-| NameHero | Not confirmed (Lenexa, KS) | Fails (unconfirmed) | Plus: 2 / 8 GB / 100 GB, $24.49 | Turbo: 4 / 16 GB / 200 GB, $42.99 | Written quote, 2026-10-11 |
-
-**Hetzner.** Hetzner raised US cloud prices for new orders and rescales on
-2026-06-15. Its Hillsboro location now costs more than DigitalOcean at the size
-this cutover needs: CPX31 at $73.49 plus IPv4, against $48, or about **$312 a
-year more**. The "best price/performance" reputation, and the one-line
-candidate entry in [AI Second Brain](ai-second-brain.md), come from before that
-increase and from EU pricing.
-
-On features, the survey found Hetzner passes every requirement:
-- Ubuntu 24.04, cloud-init, snapshots and rebuilds.
-- Hourly billing capped at the monthly price.
-- An official Terraform provider, cloud firewalls, and private networks.
-- In-place rescale, though the disk cannot shrink, so a downsize must keep the
-  disk size.
-
-Against it:
-- US servers include about 1 TB of traffic, well above the 6–8 GB a month
-  production uses.
-- New accounts may face ID or prepayment checks.
-- The US footprint is newer and runs in third-party data centers.
-
-Hetzner is worth a second look only if dedicated vCPU becomes a requirement.
-CCX13 (2 dedicated vCPU / 8 GB, $50.99) is the cheapest dedicated option
-surveyed.
-
-**The others.**
-- Akamai/Linode matches DigitalOcean's prices exactly and has a Bay Area site
-  (Fremont), so it is the drop-in alternative if DigitalOcean ever disappoints.
-- Vultr looks about $8 a month cheaper at 4 / 8 GB with three West Coast
-  cities. Re-check its price before relying on that.
-- Lightsail's 4-vCPU bundle carries 16 GB but costs $84. Lightsail bundles are
-  burstable-CPU per the survey, which doesn't suit the sustained 250 ms bot-ally
-  loop. That point wasn't confirmed on the pricing page.
-- OVHcloud and NameHero stay out until their month-to-month terms and data
-  centers are confirmed in writing.
-
-**Ranking (the decision is Jeff's).**
-1. DigitalOcean `sfo3`. It passes everything and is the current call.
-2. Akamai/Linode or Vultr, at the same price or slightly cheaper with true West
-   Coast sites.
-3. Hetzner Hillsboro, only for dedicated vCPU.
-4. OVHcloud and NameHero, not until confirmed.
-
-One correction to the survey: it said the $48 droplet matches today's footprint
-"with headroom". It matches Render's 8 GB *allocation* exactly. Measured use is
-about 1 GB, so the real headroom question is answered by usage, not allocation
-(see [Sizing from measured use](#sizing-from-measured-use-2026-10-11)).
+The executable versions — cloud-init, the numbered provisioners, the systemd
+unit, the TLS setup and the deploy pipeline — live in the `legendary-arena-lab`
+repo (`infra/`, `content/`, and its operator wiki), and they are authoritative.
+§1–§6 below are the original hand-run rehearsal procedure, kept because they
+show what each provisioner does.
 
 ### Prerequisites & effort
 
@@ -436,16 +146,11 @@ multi-node would additionally require.
 
 ### 1 — Provision the droplet
 
-- **Region:** `sfo3` (San Francisco). It was first chosen as the closest
-  DigitalOcean region to Render's Oregon Postgres. With the database now
-  co-located on the droplet, the pin holds for a different reason: Socket.IO
-  rides Cloudflare to the origin, so origin round-trip time reaches live
-  matches, and San Francisco serves a West Coast player base.
-- **Image:** Ubuntu 24.04 (LTS). **Size:** 2 vCPU / 4 GB / 80 GB SSD ($24/mo)
-  with a 2 GB swapfile (`08-swap.ps1`), per lab D-002 (2026-10-11, sized from
-  measured Render use). The PLAN's original 4 vCPU / 8 GB / 160 GB ($48/mo) is
-  the first resize step. See
-  [Vendor comparison](#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
+- **Region:** `sfo3` (San Francisco). Socket.IO rides Cloudflare to the
+  origin, so origin round-trip time reaches live matches, and San Francisco
+  serves a West Coast player base.
+- **Image and size:** per [Target configuration](#target-configuration). The
+  swapfile is `infra/scripts/08-swap.ps1` in the lab repo.
 - **Auth:** SSH key only. Create via the DigitalOcean UI or `doctl`.
 
 Baseline hardening (first boot as root, create the working user, then switch to it):
@@ -465,6 +170,13 @@ sudo dpkg-reconfigure -plow unattended-upgrades    # enable auto security patche
 ```
 
 ### 2 — Base application stack
+
+> **Rehearsal procedure — superseded for the real host.** §2 and §3 run the
+> server under PM2 and issue the certificate with Certbot, as the first hand-run
+> lab did. The target host uses a **systemd** unit and a **Cloudflare Origin
+> Certificate**; follow the lab repo's `infra/` provisioners for those. The
+> Node pin, the Nginx WebSocket block and the copy-only database rule below
+> still apply as written.
 
 Install Node **before** the global `pm2`, and match the repo pin exactly
 (`.node-version` → `24.18.0`, D-24205) — a version manager keeps that pin explicit:
@@ -537,22 +249,13 @@ bucket, a lab JWT secret) — never copy production secrets onto a learning box.
 `DATABASE_URL` points at the local lab Postgres, never at prod. Confirm health via
 the `/health` endpoint (and `/health/legends-publisher` if that loop is enabled).
 
-### 4 — Latency probe (superseded by the co-located target — historical)
+### 4 — Latency probe (moot)
 
-> **Moot for the chosen architecture.** The migration co-locates the server and
-> PostgreSQL on the same host (app ↔ DB over `localhost`), so the cross-provider
-> app↔DB hop this probe measured no longer exists. This section is retained as
-> background for why a "keep Postgres on Render" option was rejected; it is not a
-> step in the migration.
-
-A production "move only the stateless server, keep managed Postgres" step would put
-the app↔DB link across the public internet instead of Render's internal network. A
-boardgame.io move handler issues many small queries, and the bot-ally poll runs
-every 250 ms per live match — a chatty, latency-sensitive profile. Stand the server
-on the droplet, point it at a **copy** DB reachable over the same provider boundary
-you would use in production (the §1 region), and measure per-round-trip query
-latency under a simulated match load. Treat the result as the gate on whether that
-move is worth doing — measure, don't assume.
+The first lab plan measured app↔DB latency across providers, as the gate on a
+"move only the server, keep Render Postgres" option. The target co-locates the
+database on `localhost`, so there is no hop to measure and this is not a step.
+Why that option was weighed and dropped is under
+[Architecture candidates](render-migration-analysis.md#architecture-candidates-decided).
 
 ### 5 — Restore drill (rehearse before self-managed PG ever touches prod)
 
@@ -584,10 +287,9 @@ prescriptive runbook, deliberately kept out of the descriptive ewiki). This lab
 is where that runbook is *rehearsed*; the runbook is what you follow when it is
 not a drill.
 
-### Ownership boundary (what a self-managed move would transfer)
+### Operational ownership
 
-Render currently owns, and a move to a self-managed droplet would transfer to the
-operator, each of the following:
+Render owns each of these today; on the droplet they become the operator's:
 
 - Host maintenance and OS/kernel security patching
 - Service lifecycle (restarts, health recovery, deploy pipeline)
@@ -596,12 +298,9 @@ operator, each of the following:
 - Service monitoring and alerting
 - Platform-level security updates
 
-This list is the operational cost side of the migration, and the program has
-**accepted** the transfer: patching, service lifecycle, Postgres operations,
-backups/point-in-time recovery, monitoring, and platform security updates become
-operator responsibilities. The single-box SPOF that comes with it is mitigated by
-tested `pg_dump` → R2 backups and a rehearsed restore (Mechanics §5–6), which the
-PLAN makes a hard gate before cutover.
+The program has **accepted** this transfer. The single-box SPOF that comes with
+it is mitigated by tested `pg_dump` → R2 backups and a rehearsed restore and
+rebuild (§5–6), which the PLAN makes a hard gate before cutover.
 
 ### What a successful lab looks like
 
@@ -612,32 +311,16 @@ operator can, unaided —
 - deploy `apps/server` against a lab database,
 - perform a complete Postgres backup **and** restore,
 - recover the host after a simulated failure (the §6 rebuild),
-- rotate TLS certificates and application secrets,
-- measure and document app↔database latency (§4), and
+- rotate TLS certificates and application secrets, and
 - patch and maintain the host across at least one release cycle.
-
-### Architecture candidates (decided — retained as evaluation history)
-
-The evaluation is now resolved. The migration PLAN selects a **single
-self-hosted host with the server and PostgreSQL co-located** on it (Ubuntu server
-+ self-hosted Ubuntu Postgres on one box, no cross-provider hop) — the family of
-Options C/D below, minus a second database server. The table is retained as the
-record of what was weighed and why the highest-risk option was avoided:
-
-| Option | Configuration | Notes |
-|---|---|---|
-| **A** | Render server + Render Postgres | Current production. |
-| **B** | Ubuntu server + Render Postgres | Stateless-server move only; introduces the cross-provider app↔DB hop the §4 probe measures. |
-| **C** | Ubuntu server + managed Postgres (co-located) | Self-hosted app tier, DB still managed, app and DB back on one fast private network. |
-| **D** | Ubuntu app server + Ubuntu database server | Fully self-managed. |
-| **E** | Render server + self-hosted Ubuntu Postgres | **Highest-risk of the set — avoid.** Self-hosts the crown-jewel DB *and* forces the app↔DB link over the public internet, inverting the safer "self-host the stateless tier first, keep the stateful tier managed" ordering. |
-
-The choice is made at the migration-program level (`legendary-arena-lab` repo,
-`docs/PLAN.md`). Its transcription into an engine-repo `DECISIONS` entry and a
-migration Work Packet is the pending governance noted in the callout.
 
 ## Interactions
 
+- **[Render Migration Analysis](render-migration-analysis.md)** — the cost
+  case, measured-use sizing, vendor comparison and survey, and architecture
+  candidates behind the [Target configuration](#target-configuration).
+- **[AI Second Brain](ai-second-brain.md)** — gets its own host; this box is
+  below its 8 GB floor. Its runbook hardens that host per §1.
 - **[Architecture & Library Adoption Inventory](architecture-inventory.md)** —
   the authoritative live picture this lab shadows: Render account model and
   sizing (server `pro`, Postgres `pro-4gb`, both raised under load in July
@@ -659,11 +342,11 @@ migration Work Packet is the pending governance noted in the callout.
 
 ## Edge Cases
 
-- **Region is about players now, not the database.** DigitalOcean has no Oregon
-  region; `sfo3` was the closest to Render's Oregon DB. Co-location removed that
-  hop, but origin round-trip time still reaches live matches through Cloudflare,
-  so keep the West Coast pin. A central-US host (such as NameHero's Lenexa site)
-  would trade West Coast latency for national evenness.
+- **Region is about players now, not the database.** `sfo3` was first picked
+  as the closest region to Render's Oregon DB. Co-location removed that hop, but
+  origin round-trip time still reaches live matches through Cloudflare, so keep
+  the West Coast pin. A central-US host would trade West Coast latency for
+  national evenness.
 - **Never point the lab at production data.** The credential-gated `0.0.0.0/0`
   inbound rule makes prod *reachable* — that convenience is exactly the footgun.
   Always run against a restored copy.
@@ -686,30 +369,43 @@ migration Work Packet is the pending governance noted in the callout.
   kernel patches are operator responsibilities on a droplet that Render otherwise
   absorbs; unattended-upgrades may schedule a reboot.
 
+## History
+
+- **2026-07** — The box was planned as an operator learning lab and staging
+  host, with PM2, Certbot and a cross-provider latency probe (§2–§4). Render's
+  plans were raised under load the same month.
+- **2026-07-25 to 2026-10-04** — The migration stalled, then restarted;
+  `legendary-arena-lab` #17 and #18 fixed the provisioners and proved them in CI
+  on Ubuntu 24.04.
+- **Program decisions since** — systemd replaced PM2, a Cloudflare Origin
+  Certificate replaced Certbot, and co-located `localhost` PostgreSQL replaced
+  the managed-database options, which made the latency probe moot.
+- **2026-10-11** — The ewiki moved off Render to an assets-only Cloudflare
+  Worker (D-24690). The droplet was sized from measured Render use at 2 vCPU /
+  4 GB with a 2 GB swapfile (lab D-002, `legendary-arena-lab` #19); it is too
+  small to also host the [AI Second Brain](ai-second-brain.md), and driving-only
+  voice doesn't require local STT/TTS on either host. The cost, vendor and
+  architecture analysis moved to
+  [Render Migration Analysis](render-migration-analysis.md).
+
 ## Open Questions
 
-- **Governance transcription is pending (the one real open item).** The decision
-  to move `api.` + Postgres off Render is made at the migration-program level, but
-  it is **not yet recorded** in [DECISIONS.md](../docs/ai/DECISIONS.md) (only the
-  ewiki half is, as D-24690) and has no migration Work Packet. Until both land, this page
-  cites the migration PLAN rather than a `D-`/`WP-` ID and stays `status: draft`.
-  The still-required execution gates are unchanged and now owned by the program:
-  validated backup **and tested** restore (Mechanics §5–6), documented monitoring,
-  a tested rollback (repoint Cloudflare DNS `api.` → Render), the
-  operational-burden transfer (accepted — see Ownership boundary), and a check
-  against the server-layer boundary in
-  [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
-- **Droplet size** — decided 2026-10-11: start at 2 vCPU / 4 GB ($24) with a
-  2 GB swapfile, sized from measured Render use. The lab PLAN adopted it as
-  lab D-002 (`legendary-arena-lab` #19, which adds `infra/scripts/08-swap.ps1`).
-  This box is too small to also host the [AI Second Brain](ai-second-brain.md)
-  (its floor is 8 GB). Voice (used only while driving, up to about two hours a
-  day) does not require local STT/TTS on any VPS, so it does not reopen the
-  16 GB question for either host.
-- **Managed vs self-hosted Postgres** — decided: self-hosted on the same host
-  (co-located, `localhost`), per the PLAN. No longer open.
-- **The cross-provider latency threshold** — moot: the co-located target removes
-  the app↔DB hop the Mechanics §4 probe measured.
+- **Governance transcription is pending.** The move of `api.` and Postgres off
+  Render is decided at the program level but not yet recorded in
+  [DECISIONS.md](../docs/ai/DECISIONS.md) (only the ewiki half is, as
+  D-24690), and it has no migration Work Packet. Until both land, this page cites
+  the migration PLAN rather than a `D-`/`WP-` ID and stays `status: draft`.
+
+**Remaining actions**, in order (the execution gates are owned by the program):
+
+1. Transcribe the migration decision into `DECISIONS.md`.
+2. Publish the migration Work Packet, including a check against the
+   server-layer boundary in
+   [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
+3. Pass the cutover gates: a validated backup and a **tested** restore and
+   rebuild (§5–6), and documented monitoring.
+4. Cut over, with a tested rollback (repoint Cloudflare DNS `api.` → Render).
+5. Decommission Render after a deliberately short rollback window.
 
 ## References
 
