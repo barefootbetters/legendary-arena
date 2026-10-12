@@ -11,6 +11,7 @@ tags:
   - backup
   - governance
 related:
+  - system-backup.md
   - operational-health-checks.md
   - ubuntu-lab-provisioning.md
   - data-file-locations.md

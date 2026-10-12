@@ -11,6 +11,7 @@ related:
   - hugo-web-system.md
   - hugo-onboarding.md
   - workspace-map.md
+  - system-backup.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ewiki-authoring.md (this page — https://ewiki.legendary-arena.com/ewiki-authoring/)
@@ -20,8 +21,11 @@ source:
   - ../apps/wiki-viewer/layouts/shortcodes/audio-inline.html
   - ../apps/wiki-viewer/layouts/shortcodes/motif-table.html
   - ../apps/wiki-viewer/layouts/shortcodes/swatch.html
+  - ../apps/wiki-viewer/layouts/shortcodes/include-section.html
+  - ../apps/wiki-viewer/layouts/partials/editing-this-page.html
+  - ../docs/ai/DECISIONS.md
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-09-09
+last-reviewed: 2026-10-12
 ---
 
 # Ewiki Authoring
@@ -190,9 +194,10 @@ The wiki viewer intentionally restricts certain features:
   You cannot embed `<div>`, `<span>`, `<style>`, or any HTML tags.
 - **No syntax highlighting.** Fenced code blocks render as plain
   monospace. Language hints (` ```js `) are accepted but ignored.
-- **Custom shortcodes: four.** The viewer defines four custom
+- **Custom shortcodes: five.** The viewer defines five custom
   shortcodes — `audio` and `audio-inline` (see *Embedding audio*),
-  `swatch` and `motif-table` (see *Colour swatches and motif tables*).
+  `swatch` and `motif-table` (see *Colour swatches and motif tables*),
+  and `include-section` (see *Including a section from another page*).
   Hugo's built-in shortcodes still run, so long as their output is static
   and JS-free — `youtube` renders an `<iframe>` and is fine
   ([Hugo Web System](hugo-web-system.md)). The `highlight` shortcode is
@@ -276,6 +281,64 @@ Avengers|avengers|Hero|C major
 X-Men|x-men|Hero|D major
 {{</* /motif-table */>}}
 ```
+
+### Including a section from another page
+
+**Write a fact once, on the page that owns it.** When another page needs the
+same text (a hub that gathers every backup fact, say), include the owner's
+section instead of copying it. Copied prose drifts: one copy gets updated and
+the other doesn't. An included section is rendered from the owner page on
+every build, so it can't go stale (D-24709).
+
+```
+{{</* include-section page="disaster-recovery" section="the-backup-layers" */>}}
+```
+
+- `page` (required): the owner page's slug, its filename without `.md`.
+- `section` (required): the owner heading's anchor, the same id a
+  `page.md#anchor` link uses (GitHub-style: lowercase, spaces become hyphens,
+  punctuation dropped). `### Offsite backups (R2 + pCloud)` is
+  `offsite-backups-r2--pcloud`. A heading with an explicit `{#custom-id}`
+  uses that id.
+
+The shortcode
+(`C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\layouts\shortcodes\include-section.html`,
+[on GitHub](../apps/wiki-viewer/layouts/shortcodes/include-section.html))
+looks up the page, cuts the Markdown from that heading to the next heading of
+the same level, and renders it in place. The heading itself is left out, so
+the including page writes its own.
+
+**Every included block looks the same.** It is set off by a left rule and
+opens with a standard caption bar: a **Linked section** label, then *This
+section is linked from another document:* followed by the reference — the
+owner page › section (linked to the exact heading) and the owner's source
+file (`wiki/<slug>.md`, linked on GitHub) — and *Edit it there; this page
+picks up the change on the next build.* The shortcode always emits this
+caption; you don't write it, and you shouldn't add your own. The "Editing
+this page" footer on an including page repeats that the text is edited on
+the owner page.
+
+What it handles for you:
+
+- **A renamed or removed heading fails the build**, with an error naming the
+  including page and the missing anchor. It never renders an empty block.
+  When you rename a heading that another page includes, fix the `section=`
+  value in the same PR. To find who includes a page, search the wiki for
+  `page="<slug>"`.
+- **Headings inside code fences don't count.** A `# comment` line in a
+  ```` ```bash ```` block doesn't end the section.
+- **In-page links keep working.** A `(#anchor)` link in the included text is
+  rewritten to point at the owner page. Cross-page `slug.md` links and `../`
+  repo links need no rewrite.
+- **Search indexes the text once**, on the owner page. Included blocks carry
+  `data-pagefind-ignore`.
+
+Limits: no nesting (an included section that itself contains an
+`include-section` fails the build), and a section that's empty because the
+next heading follows it directly fails too. The raw Markdown of the including
+page shows the shortcode lines, not the text, so on GitHub or to an agent
+reading `wiki/*.md` directly, follow the `page=` / `section=` values to the
+owner. Live example: [System Backup](system-backup.md).
 
 ### Embedding diagrams {#embedding-diagrams}
 
@@ -379,6 +442,12 @@ The block has three automatic variants:
   (D-24310). **Do not hand-write an editing blockquote;** the fields drive
   the footer for you.
 - **Changelog:** the generated page points at `docs/09-CHANGELOG.md`.
+
+On a page that includes sections from other pages, the footer adds one more
+paragraph, whichever variant it is: the **Linked section** blocks are edited
+on their owner pages, and this page's file holds only the `include-section`
+lines. Every footer also carries a short *Write it once* note pointing to
+[Including a section from another page](#including-a-section-from-another-page).
 
 > **Superseded pattern.** Earlier mirror pages hand-authored a
 > `> **Editing this page**` blockquote at the top of the body (and it

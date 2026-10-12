@@ -47855,4 +47855,24 @@ UptimeRobot measured 10 m 10 s of downtime. `pnpm check:domains`: 11 ok, 0 faile
 
 ---
 
+### D-24709 — Ewiki sections are written once and included elsewhere with the `include-section` shortcode (direct change, no WP) (Active 2026-10-12)
+
+**Context.** Backup and recovery facts are spread across Disaster Recovery, Ubuntu Lab Provisioning, Development Workflow and AI Second Brain. The operator wants them on one page. Copying them onto a hub would create a second copy of each fact that drifts the moment either side is edited — the failure the "Editing this page" footer partial was created to stop for its own boilerplate.
+
+**Decision.**
+
+1. **One owner per fact.** A fact's prose lives on exactly one wiki page. Another page that needs it renders the owner's section at build time with `{{</* include-section page="<slug>" section="<anchor>" */>}}` (`apps/wiki-viewer/layouts/shortcodes/include-section.html`). Nothing is copied.
+2. **Section boundaries.** `section` is the owner heading's published anchor (GitHub-style, or an explicit `{#custom-id}`). The section runs to the next heading of the same or higher level; headings inside code fences are ignored; the heading itself is not included.
+3. **Fail loudly.** A missing page, a missing or duplicated anchor, an empty section, or a nested include is a Hugo `errorf`, so the `wiki-viewer` build goes red. An owner-side heading rename therefore surfaces on the PR that made it, never as a silently empty hub.
+4. **Edit at the owner.** Every included block carries one standard caption, emitted by the shortcode: a "Linked section" label, "This section is linked from another document:", and the reference (owner page › section, linked to the heading, plus the owner's `wiki/<slug>.md` source on GitHub). In-page `(#anchor)` links are rewritten to the owner page. The block is `data-pagefind-ignore`, so search lands on the owner. The "Editing this page" footer says so on any page that calls the shortcode, and every footer points to the convention.
+5. **Hub pages own no facts.** A page built from includes (the first is `wiki/system-backup.md`) contributes headings and framing only.
+
+**Not changed.** The ewiki stays JS-free and its output stays deterministic (the shortcode emits static HTML). `unsafe = false` is unchanged. The front-matter schema and the six rendered fields are unchanged.
+
+**Trade-off accepted.** The raw Markdown of an including page shows the shortcode lines, not the text. A reader of `wiki/*.md` on GitHub, or an agent reading the corpus, follows `page=` / `section=` to the owner.
+
+**Reserved by:** NUMBER-LEDGER D-24709. Documented in `wiki/SCHEMA.md` §Section includes and `wiki/ewiki-authoring.md` §Including a section from another page.
+
+---
+
 Protect this file.

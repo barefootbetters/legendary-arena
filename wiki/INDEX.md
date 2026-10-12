@@ -285,6 +285,12 @@ Cross-cutting governance, methodology, and readiness assessments.
   (DR-01…DR-05) with honest recoverability verdicts, and the
   capability-graded validation checklist. Nightly dumps have run since
   2026-08-09, and a restore from R2 was drilled on 2026-10-11/12.
+- [System Backup](system-backup.md) — *(draft)* every backup and recovery
+  fact on one page: what is at risk, the database backup layers, how the
+  nightly backup runs and how to read its result, the DR-01…DR-05 scenarios,
+  proving a recovery, secrets rotation, pCloud's role, and the AI Second
+  Brain's backup plan. Owns no facts — each section is included from its
+  owner page at build time (D-24709), so it never drifts from them.
 - [Private Site Hosting](private-site-hosting.md) — How the two private
   operator sites (ewiki, dashboard) keep a single Access-gated door: each is
   an assets-only Cloudflare Worker with `workers_dev` and `preview_urls` off

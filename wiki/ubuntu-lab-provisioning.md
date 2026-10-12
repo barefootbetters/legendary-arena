@@ -19,6 +19,7 @@ related:
   - workspace-map.md
   - ai-second-brain.md
   - render-migration-analysis.md
+  - system-backup.md
 status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ubuntu-lab-provisioning.md (this page — https://ewiki.legendary-arena.com/ubuntu-lab-provisioning/)
