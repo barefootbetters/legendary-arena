@@ -33,6 +33,7 @@ import {
   executeVillainAbilities,
   resolveEffectResultNames,
   villainCardPlaysVillainDeckCards,
+  readTurnNumber,
 } from '../villain/villainEffects.execute.js';
 // why: WP-542 / D-24351 — the onFight fire site for Endless Armies of HYDRA plays the top
 // two Villain Deck cards. The reveal machinery lives in villainDeck.reveal.ts; this move
@@ -507,7 +508,9 @@ export function defeatCityVillainCore(
     );
     const revealContext: RevealContext = {
       random: shuffleContext.random,
-      ctx: { currentPlayer },
+      // why: D-24704 — forward the framework turn so the played cards' villain
+      // traces carry it, as this Fight's own onFight traces already do.
+      ctx: { currentPlayer, turn: readTurnNumber(ctx) },
     };
     playTopVillainDeckCards(G, revealContext, DEFAULT_IMPLEMENTATION_MAP, fightPlayCount);
   }

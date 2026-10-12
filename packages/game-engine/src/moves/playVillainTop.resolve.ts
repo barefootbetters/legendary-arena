@@ -64,7 +64,7 @@ export function hasPendingPlayVillainTopChoice(G: LegendaryGameState): boolean {
  * @param args - `{ accept }`.
  */
 export function resolvePlayVillainTopChoice(
-  { G, playerID, random }: MoveContext,
+  { G, ctx, playerID, random }: MoveContext,
   args: ResolvePlayVillainTopChoiceArgs,
 ): void {
   // Step 1: validate args — `accept` must be a boolean.
@@ -101,7 +101,7 @@ export function resolvePlayVillainTopChoice(
   // the printed "If you do" reward, granted after the play.
   const revealContext: RevealContext = {
     random,
-    ctx: { currentPlayer: playerID },
+    ctx: { currentPlayer: playerID, turn: ctx.turn },
   };
   pushLog(G,
     `Player ${playerID} plays the top card of the Villain Deck for ${formatCardRef(G.cardDisplayData, front.cardId)}.`,

@@ -341,8 +341,9 @@ export interface EffectTraceResolution {
  * @property status - The dispatch outcome.
  * @property fireSite - The code site that emitted this trace.
  * @property params - A shallow scalar snapshot of the descriptor's own parameter fields.
- * @property turn - The boardgame.io turn number the trace was observed on (0 when the
- *   emitting context carries no turn, e.g. the villain-deck reveal path).
+ * @property turn - The boardgame.io turn number the trace was observed on (0 only when
+ *   the emitting context carries no turn, e.g. a hand-built test context; the
+ *   villain-deck reveal path forwards the framework turn since D-24704).
  * @property resolution - The realized count-scaled computation (WP-706 / D-24528).
  *   Additive OPTIONAL: present only on a count-scaled (`attack-per-count` /
  *   `recruit-per-count`) dispatch, absent on every other trace. Diagnostics-only,

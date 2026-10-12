@@ -2203,6 +2203,49 @@ describe('The Leader onAmbush fire site — plays the top villain-deck card (WP-
     );
   });
 
+  // why: D-24704 — the reveal path built its RevealContext from currentPlayer alone,
+  // so every villain trace it emitted (and every trace of a card it played) read
+  // `turn: 0` while hero traces carried the framework turn.
+  it('stamps the framework turn on every reveal-path villain trace, including a played card', () => {
+    const theLeader = 'the-leader' as CardExtId;
+    const ambushVillain = 'ambush-v' as CardExtId;
+    const gameState = createMockGameState({
+      deck: [theLeader, ambushVillain],
+      discard: [],
+      cardTypes: { [theLeader]: 'villain', [ambushVillain]: 'villain' },
+      cardKeywords: { [theLeader]: ['ambush'], [ambushVillain]: ['ambush'] },
+      villainAbilityHooks: [
+        {
+          cardId: theLeader,
+          timing: 'onAmbush',
+          keywords: [],
+          effects: [{ primitive: 'play-villain-deck-cards', magnitude: 1 }],
+        },
+        {
+          cardId: ambushVillain,
+          timing: 'onAmbush',
+          keywords: ['captureHqHeroRightmost'],
+          effects: [{ primitive: 'capture-hq-hero', selector: 'rightmost' }],
+        },
+      ],
+    });
+    gameState.playerZones['0'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    gameState.hq = [null, null, null, null, 'core-hero-ironman' as CardExtId];
+    gameState.heroDeck = [];
+    const moveContext = makeMockMoveContext(gameState, { turn: 7 });
+
+    revealVillainCard(moveContext);
+
+    const traces = gameState.diagnostics?.traces ?? [];
+    const leaderTrace = traces.find((trace) => trace.cardId === theLeader);
+    const playedTrace = traces.find((trace) => trace.cardId === ambushVillain);
+    assert.ok(leaderTrace, 'The Leader\'s Ambush emits a villain trace');
+    assert.ok(playedTrace, 'the card The Leader played emits its own Ambush trace');
+    for (const trace of traces) {
+      assert.equal(trace.turn, 7, `trace for ${trace.cardId} carries the framework turn`);
+    }
+  });
+
   // why: D-24703 — prod match 0BVSi0_KY0A: The Leader's Ambush played the top card,
   // but the overlay read "entered the city with no Ambush effect" because the play
   // fires outside the executor and the narrative was built from the executor's

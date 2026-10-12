@@ -86,23 +86,25 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 // why: narrow context interface for performVillainReveal so rule handlers
 // can chain a reveal without importing boardgame.io. The real boardgame.io
 // FnContext is structurally assignable to RevealContext.
-/** Minimum context the inner reveal needs: deterministic shuffle + active player. */
+// why: D-24704 — `turn` is required so every site that builds a RevealContext
+// forwards the framework turn. Without it the villain executor and the
+// secondary-site trace stamped `turn: 0` on every reveal-path diagnostics record,
+// while hero and Fight-path records carried the real `ctx.turn`.
+/** Minimum context the inner reveal needs: deterministic shuffle + active player + turn. */
 export interface RevealContext {
   /** Deterministic RNG for villain-deck reshuffle. */
   random: { Shuffle: <T>(deck: T[]) => T[] };
-  /** boardgame.io ctx fragment carrying the active player id. */
-  ctx: { currentPlayer: string };
+  /** boardgame.io ctx fragment: the active player id and the framework turn number. */
+  ctx: { currentPlayer: string; turn: number };
 }
 
 /**
  * Reads the boardgame.io turn number off a `RevealContext`, defaulting to 0.
  *
- * `RevealContext.ctx` declares only `currentPlayer` — the reveal pipeline is fed a
- * narrowed context that omits `turn` — so this returns 0 on the reveal path. That
- * matches the villain executor's `readTurnNumber`, which also returns 0 for the
- * reveal ctx, so the WP-488 `secondary-site` trace stamps a `turn` consistent with the
- * villain-executor traces emitted on this same path. A full move ctx that happens to
- * carry a numeric `turn` is honored defensively. Never throws.
+ * Every production site that builds a `RevealContext` forwards the framework turn
+ * (D-24704), so the WP-488 `secondary-site` trace stamps the same `turn` as the
+ * villain-executor traces on this path, which read it off the same `ctx`. A hand-built
+ * test context with no numeric `turn` falls back to 0. Never throws.
  *
  * @param context - The reveal context (its `ctx` fragment is read for `turn`).
  * @returns The turn number, or 0 when unavailable.
@@ -189,7 +191,7 @@ export function revealVillainCard({ G, ctx, ...context }: MoveContext): void {
 
   performVillainReveal(
     G,
-    { random: context.random, ctx: { currentPlayer: ctx.currentPlayer } },
+    { random: context.random, ctx: { currentPlayer: ctx.currentPlayer, turn: ctx.turn } },
     DEFAULT_IMPLEMENTATION_MAP,
   );
 
@@ -714,9 +716,9 @@ export function resolveVillainEscape(
     // no-op (D-24287); the REAL Scheme Twist just fired HERE via the rule pipeline. Emit
     // a `secondary-site` trace so the Mystique case is answerable ("the executor was a
     // no-op; the twist fired at the escape site"), distinct from the executor's `no-op`
-    // trace for the same card. `handler` names the rule trigger that ran; `turn` reads 0
-    // because the RevealContext carries no turn (consistent with the villain executor's
-    // hollow records on this same reveal path — readTurnNumber returns 0 there too).
+    // trace for the same card. `handler` names the rule trigger that ran; `turn` is the
+    // RevealContext's framework turn (D-24704), the same value the villain executor's
+    // records on this reveal path read.
     recordEffectTrace(G, {
       cardId: escapedCardId,
       scope: 'villain',

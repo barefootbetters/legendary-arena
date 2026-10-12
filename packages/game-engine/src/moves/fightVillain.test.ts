@@ -683,6 +683,47 @@ describe('fightVillain — Endless Armies of HYDRA plays the top two Villain Dec
     );
   });
 
+  // why: D-24704 — the Fight play built its RevealContext from currentPlayer alone,
+  // so the played card's Ambush trace read `turn: 0` while the Fight's own onFight
+  // trace carried the framework turn.
+  it('the played card\'s villain traces carry the same framework turn as the Fight', () => {
+    const endless = 'endless-armies' as CardExtId;
+    const ambushVillain = 'ambush-v' as CardExtId;
+    const gameState = createMockGameState({
+      city: [endless, null, null, null, null],
+      villainAbilityHooks: [
+        {
+          cardId: endless,
+          timing: 'onFight',
+          keywords: [],
+          effects: [{ primitive: 'play-villain-deck-cards', magnitude: 1 }],
+        },
+        {
+          cardId: ambushVillain,
+          timing: 'onAmbush',
+          keywords: ['captureHqHeroRightmost'],
+          effects: [{ primitive: 'capture-hq-hero', selector: 'rightmost' }],
+        },
+      ],
+    });
+    gameState.villainDeck = { deck: [ambushVillain], discard: [] };
+    gameState.villainDeckCardTypes = { [ambushVillain]: 'villain' };
+    gameState.cardKeywords = { ...(gameState.cardKeywords ?? {}), [ambushVillain]: ['ambush'] };
+    gameState.hq = [null, null, null, null, 'core-hero-ironman' as CardExtId];
+    gameState.heroDeck = [];
+    const moveContext = makeMockMoveContext(gameState, { turn: 9 });
+
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const traces = gameState.diagnostics?.traces ?? [];
+    const fightTrace = traces.find((trace) => trace.cardId === endless);
+    const playedTrace = traces.find((trace) => trace.cardId === ambushVillain);
+    assert.ok(fightTrace, 'the Fight emits a villain trace');
+    assert.ok(playedTrace, 'the played card emits its Ambush trace');
+    assert.equal(fightTrace!.turn, 9, 'the Fight trace carries the framework turn');
+    assert.equal(playedTrace!.turn, 9, 'the played card\'s trace carries the same turn');
+  });
+
   it('a defeated villain with no play hook plays nothing from the villain deck', () => {
     const plain = 'plain-villain' as CardExtId;
     const gameState = createMockGameState({
