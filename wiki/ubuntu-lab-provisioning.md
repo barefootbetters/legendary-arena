@@ -133,6 +133,7 @@ box, so cutover day starts from a provisioned host rather than a blank one.
 | `50` → `51` backup and restore drill | Pass: 41 tables, row counts identical; `51` refuses the live database without its flag |
 | Production-copy restore | Pass after a fix (bug 2 below): 41 tables and 6,320 rows identical to production; `schema_migrations` 45 on both |
 | `21` Cloudflare TLS | Pass, tested through `api-next.legendary-arena.com` (a proxied record pointed at the droplet): `/health` 200 through Cloudflare with SSL Strict, Socket.IO handshake 200, WebSocket upgrade 101, and the droplet IP on 443 times out because UFW admits only Cloudflare. Production `api.` was untouched |
+| `50` offsite backup to R2 | Pass (2026-10-12), using the separate bucket `legendary-arena-db-backups-rehearsal`. `-Install` added rclone and the 09:17 UTC timer; one backup uploaded; `51 RESTORE_FROM_R2=latest` restored it with identical row counts; retention pruning on a synthetic 120-day history keeps 47 and flags 73 |
 
 **Measured on the 4 GB box.** The deploy build peaked at **1.37 GB used with
 no swap**. Steady state with the server and Postgres running is about 800 MB
@@ -170,8 +171,7 @@ rule, and its record changes from today's DNS-only CNAME to Render into a
 proxied A record to the droplet. Rollback restores that CNAME exactly.
 
 **Not yet rehearsed:**
-- `50` offsite upload to R2 with real credentials (the drill ran local-only)
-  and `60` monitoring with a real health-check URL and alert path.
+- `60` monitoring with a real health-check URL and alert path.
 - The cutover itself: a fresh production dump, the `api.` DNS flip, and the
   rollback drill (repointing `api.` back to Render).
 
@@ -469,13 +469,15 @@ operator can, unaided —
 2. Publish the migration Work Packet, including a check against the
    server-layer boundary in
    [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
-3. Finish the unrehearsed provisioning steps (see
-   [Rehearsal results](#rehearsal-results-2026-10-11)): `21` Cloudflare TLS
-   (Origin Certificate, Full (strict), 443 locked to Cloudflare ranges), the
-   `50` offsite upload to R2 with real credentials, and `60` monitoring. The
-   restore half of the backup gate already passed on a production copy.
+3. Finish the last unrehearsed provisioning step, `60` monitoring with a real
+   health-check URL (see [Rehearsal results](#rehearsal-results-2026-10-11)).
+   `21` Cloudflare TLS and the `50` R2 backup passed on 2026-10-12, and the
+   restore gate passed on a production copy.
 4. Cut over from a fresh production dump, with a rehearsed rollback (repoint
-   Cloudflare DNS `api.` → Render).
+   Cloudflare DNS `api.` → Render). The same day, switch the droplet's backups
+   from the rehearsal bucket to the production backup bucket and retire this
+   repo's `db-backup.yml` nightly. Its source, Render, stops being the truth, and
+   the droplet's Postgres is localhost-only, so the workflow could not reach it.
 5. Decommission Render after a deliberately short rollback window.
 
 ## References
