@@ -55,6 +55,7 @@ import { registerCoachRoutes } from './coach/coach.routes.js';
 import { createAnthropicCoachClient } from './coach/coachClient.js';
 import { registerFeedbackRoutes } from './feedback/feedback.routes.js';
 import { registerBattlePlanRoutes } from './match/battlePlan.routes.js';
+import { installClientActionGuard } from './game/clientActionGuard.mjs';
 import { resolveCoachModelConfig } from './coach/coachModelConfig.js';
 import {
   createNativeLobbyGuard,
@@ -858,6 +859,13 @@ export async function startServer() {
     // artifact that stores, it does not decide gameplay.
     db: createBgioPgStore(pool),
   });
+
+  // why: D-24701 — boardgame.io's socket transport hands any client `update`
+  // action to Master.onUpdate, which runs raw GAME_EVENTs (setPhase, endGame,
+  // endTurn, ...), whole-state UPDATE / SYNC / RESET / PATCH, and UNDO / REDO
+  // for an active seat, skipping move validation. Admit player moves
+  // (MAKE_MOVE) only. Installed before run() so every socket gets the filter.
+  installClientActionGuard(server, [LegendaryGame]);
 
   registerHealthRoute(server.router);
 
