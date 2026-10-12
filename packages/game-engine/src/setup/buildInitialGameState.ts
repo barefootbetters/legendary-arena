@@ -642,6 +642,11 @@ export function buildInitialGameState(
     // non–Final-Blow match byte-identical (the schemeLossPileSetupSize /
     // activeScoringConfig precedent below). Read by WP-687 as `finalBlow === true`.
     ...(config.finalBlow === true ? { finalBlow: true } : {}),
+    // why: WP-802 / D-24689 — seed the operator-match flag ONLY for a strict
+    // `true` and omit it otherwise. Writing `isDebugMatch: false` would move
+    // PRE_WP080_HASH and every finalStateHash; omit-when-off keeps every normal
+    // match byte-identical (the WP-686 finalBlow precedent directly above).
+    ...(config.isDebugMatch === true ? { isDebugMatch: true } : {}),
     selection,
     // why: currentStage is initialized to the first canonical turn stage.
     // The play phase onBegin hook resets it on each new turn. During setup

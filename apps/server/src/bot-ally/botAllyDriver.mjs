@@ -248,9 +248,12 @@ export function buildBotPolicy(decisionSeed, policyName) {
  * @param {object} state - The fetched match state (`{ G, ctx, _stateID }`).
  * @param {string} botSeat - The bot seat id (e.g. `"1"`).
  * @param {object} policy - The AIPolicy built by {@link buildBotPolicy}.
+ * @param {(decision: { isForced: boolean, move: { name: string, args: unknown }, decisionLog: readonly string[], legalMoveCount: number }) => void} [onDecision] -
+ *   Optional observer told how the move was chosen (WP-802 / D-24689 §5). It
+ *   never changes the move: a throw is logged and the same move is returned.
  * @returns {{ name: string, args: unknown }} The move to submit.
  */
-export function decideBotMove(state, botSeat, policy) {
+export function decideBotMove(state, botSeat, policy, onDecision) {
   const lifecycleContext = lifecycleContextFor(state);
   const legalMoves = getLegalMoves(state.G, lifecycleContext);
 
@@ -262,7 +265,14 @@ export function decideBotMove(state, botSeat, policy) {
   // are also singletons, so the policy path below returns them unchanged.
   const pendingChoice = findPendingChoiceMove(legalMoves);
   if (pendingChoice !== null) {
-    return { name: pendingChoice.name, args: pendingChoice.args };
+    const forcedMove = { name: pendingChoice.name, args: pendingChoice.args };
+    notifyDecision(onDecision, {
+      isForced: true,
+      move: forcedMove,
+      decisionLog: [],
+      legalMoveCount: legalMoves.length,
+    });
+    return forcedMove;
   }
 
   const fullUIState = buildUIState(state.G, {
@@ -277,7 +287,40 @@ export function decideBotMove(state, botSeat, policy) {
     playerId: botSeat,
   });
   const intent = policy.decideTurn(filteredView, legalMoves);
-  return { name: intent.move.name, args: intent.move.args };
+  const chosenMove = { name: intent.move.name, args: intent.move.args };
+  notifyDecision(onDecision, {
+    isForced: false,
+    move: chosenMove,
+    decisionLog: intent.decisionLog ?? [],
+    legalMoveCount: legalMoves.length,
+  });
+  return chosenMove;
+}
+
+/**
+ * Tells an optional decision observer how a bot move was chosen, isolating any
+ * fault it raises.
+ *
+ * // why: WP-802 / D-24689 §5 — the observer records operator-match bot
+ * decisions. It runs in its own try/catch so a recorder fault is logged and can
+ * never change the move or trigger the driver's fault fallback.
+ *
+ * @param {Function | undefined} onDecision - The observer, when given.
+ * @param {{ isForced: boolean, move: { name: string, args: unknown }, decisionLog: readonly string[], legalMoveCount: number }} decision -
+ *   How the move was chosen.
+ * @returns {void}
+ */
+function notifyDecision(onDecision, decision) {
+  if (typeof onDecision !== 'function') {
+    return;
+  }
+  try {
+    onDecision(decision);
+  } catch (observerError) {
+    console.error(
+      `[bot-ally] the bot decision observer failed and was skipped; the bot's move is unchanged: ${observerError.message}`,
+    );
+  }
 }
 
 /**

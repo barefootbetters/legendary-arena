@@ -655,6 +655,63 @@ test('decideBotMove chooses only from the legal moves the seat may see', () => {
   );
 });
 
+// WP-802 / D-24689 §5 — the optional decision observer. It is told how each move
+// was chosen and can never change the move.
+
+/**
+ * A real bot-seat state with a parked KO-a-Hero choice on seat 1, so
+ * getLegalMoves short-circuits to the single forced resolve move.
+ */
+function forcedChoiceBotState() {
+  const state = realBotState('1');
+  (state.G as unknown as Record<string, unknown>).pendingKoHeroChoices = [
+    { choiceType: 'ko-hero', playerID: '1' },
+  ];
+  return state;
+}
+
+test('decideBotMove tells onDecision isForced: true and an empty decisionLog for a forced pending choice', () => {
+  const state = forcedChoiceBotState();
+  const baseline = decideBotMove(state, '1', buildBotPolicy('seed-forced', 'competent'));
+  const observed: Array<Record<string, unknown>> = [];
+  const move = decideBotMove(state, '1', buildBotPolicy('seed-forced', 'competent'), (decision: Record<string, unknown>) => {
+    observed.push(decision);
+  });
+  assert.deepEqual(move, baseline, 'the observer does not change the forced move');
+  assert.equal(observed.length, 1);
+  assert.equal(observed[0]!.isForced, true);
+  assert.deepEqual(observed[0]!.decisionLog, []);
+  assert.equal(observed[0]!.legalMoveCount, 1);
+  assert.deepEqual(observed[0]!.move, baseline);
+});
+
+test('decideBotMove tells onDecision the policy decisionLog on the policy path', () => {
+  const state = realBotState('1');
+  const baseline = decideBotMove(state, '1', buildBotPolicy('seed-policy', 'competent'));
+  const observed: Array<Record<string, unknown>> = [];
+  const move = decideBotMove(state, '1', buildBotPolicy('seed-policy', 'competent'), (decision: Record<string, unknown>) => {
+    observed.push(decision);
+  });
+  assert.deepEqual(move, baseline, 'the observer does not change the policy move');
+  assert.equal(observed.length, 1);
+  assert.equal(observed[0]!.isForced, false);
+  const decisionLog = observed[0]!.decisionLog as string[];
+  assert.ok(decisionLog.length > 0, 'the competent policy decisionLog is passed through');
+  assert.match(decisionLog[0]!, /^\[Bot\] Chose: /);
+  assert.deepEqual(observed[0]!.move, baseline);
+});
+
+test('decideBotMove returns the same move when onDecision throws (forced and policy paths)', () => {
+  const throwingObserver = () => {
+    throw new Error('recorder fault');
+  };
+  for (const state of [forcedChoiceBotState(), realBotState('1')]) {
+    const baseline = decideBotMove(state, '1', buildBotPolicy('seed-throw', 'competent'));
+    const move = decideBotMove(state, '1', buildBotPolicy('seed-throw', 'competent'), throwingObserver);
+    assert.deepEqual(move, baseline, 'a throwing observer never changes the bot move');
+  }
+});
+
 // WP-414 / D-24233 — reset the lifetime revive_count once a REVIVED match proves
 // it is still drivable (completes a bot turn), so restart churn on a healthy
 // match never strands it at the D-24230 cap.

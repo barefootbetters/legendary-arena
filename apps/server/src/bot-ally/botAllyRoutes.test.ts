@@ -32,6 +32,8 @@ import {
   MAX_REVIVALS,
 } from './botAllyRoutes.mjs';
 import { botAllyDrivers, BOT_FAULTED_MESSAGE } from './botAllyDriver.mjs';
+import { buildInitialGameState } from '@legendary-arena/game-engine';
+import { readOperatorBotDecisions } from '../operator/operatorBotDecisions.js';
 
 // why: the create handler registers a real BotAllyDriver (which starts a poll);
 // stop + clear every registered driver after each test so no timer leaks into
@@ -796,5 +798,259 @@ describe('rehydrateBotAllyDrivers — strand→faulted (WP-419 / D-24239)', () =
         (query.params as unknown[])[1] === 'faulted',
     );
     assert.equal(faultWrite, undefined, 'a revived match with a live driver is never faulted by the strand pass');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-802 / D-24689 — operator create route, public refusal, decision record
+// ---------------------------------------------------------------------------
+
+const OPERATOR_CREATE_PATH = '/api/admin/operator-match/create-with-bot';
+
+/** Registers the routes and returns every POST handler keyed by path. */
+function collectPostHandlers(context: Record<string, unknown>): Map<string, Handler> {
+  const handlers = new Map<string, Handler>();
+  const router = {
+    post(path: string, handler: Handler): void {
+      handlers.set(path, handler);
+    },
+    get(): void {},
+  };
+  registerBotAllyRoutes(router as never, context as never);
+  return handlers;
+}
+
+/**
+ * Re-stubs fetch so the native create returns `matchId` (a per-test id keeps
+ * the module-level operator record of one test out of another).
+ */
+function stubFetchWithMatchId(matchId: string): void {
+  fetchCalls = [];
+  globalThis.fetch = (async (url: string, init?: RequestInit) => {
+    fetchCalls.push({ url: String(url), init });
+    if (String(url).endsWith('/create')) {
+      return { ok: true, status: 200, async json() { return { matchID: matchId }; }, async text() { return ''; } } as never;
+    }
+    if (String(url).endsWith('/join')) {
+      const seat = JSON.parse(String(init?.body ?? '{}')).playerID;
+      return { ok: true, status: 200, async json() { return { playerCredentials: `cred-${seat}` }; }, async text() { return ''; } } as never;
+    }
+    throw new Error(`Unexpected fetch to ${url}`);
+  }) as never;
+}
+
+/**
+ * Builds a real two-seat engine state on bot seat 1's turn, as an operator
+ * match when `isOperatorMatch` is true.
+ */
+function realBotTurnState(
+  isOperatorMatch: boolean,
+  stateId: number,
+): { G: Record<string, unknown>; ctx: Record<string, unknown>; _stateID: number } {
+  const config = {
+    schemeId: 'test-scheme-001',
+    mastermindId: 'test-mastermind-001',
+    villainGroupIds: ['test-villain-group-001'],
+    henchmanGroupIds: ['test-henchman-group-001'],
+    heroDeckIds: ['test-hero-deck-001', 'test-hero-deck-002'],
+    bystandersCount: 10,
+    woundsCount: 15,
+    officersCount: 20,
+    sidekicksCount: 5,
+    ...(isOperatorMatch ? { isDebugMatch: true } : {}),
+  };
+  const setupContext = {
+    ctx: { numPlayers: 2 },
+    random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+  };
+  const gameState = buildInitialGameState(config as never, { listCards: () => [] } as never, setupContext as never);
+  return {
+    G: gameState as unknown as Record<string, unknown>,
+    ctx: { phase: 'play', turn: 2, currentPlayer: '1', numPlayers: 2 },
+    _stateID: stateId,
+  };
+}
+
+/**
+ * Builds a route context whose bgio store serves a mutable state and whose
+ * bot submit hands the turn back to seat 0 (so one tick is one bot decision).
+ */
+function makeDrivenRouteContext(database: never): {
+  context: Record<string, unknown>;
+  holder: { state: unknown };
+} {
+  const holder: { state: unknown } = {
+    state: { _stateID: 0, ctx: { currentPlayer: '0', phase: 'lobby', turn: 0, numPlayers: 2 } },
+  };
+  const { context } = makeRouteContext(true, database);
+  context.db = {
+    async fetch() {
+      return { state: holder.state };
+    },
+  };
+  context.createSubmit = () => async () => {
+    const current = holder.state as { ctx: Record<string, unknown>; _stateID: number };
+    holder.state = { ...current, ctx: { ...current.ctx, currentPlayer: '0' }, _stateID: current._stateID + 1 };
+  };
+  return { context, holder };
+}
+
+/** Reads the current player of the store-held state. */
+function currentPlayerOf(holder: { state: unknown }): unknown {
+  return (holder.state as { ctx: { currentPlayer: unknown } }).ctx.currentPlayer;
+}
+
+/**
+ * Takes the registered driver for a match off its timer so the test drives it
+ * with explicit ticks.
+ */
+function takeDriverOffTimer(matchId: string): { tick(): Promise<void> } {
+  const driver = botAllyDrivers.get(matchId) as unknown as {
+    tick(): Promise<void>;
+    timer: ReturnType<typeof setTimeout> | null;
+  };
+  assert.ok(driver !== undefined, `a driver was registered for ${matchId}`);
+  if (driver.timer !== null) {
+    clearTimeout(driver.timer);
+    driver.timer = null;
+  }
+  return driver;
+}
+
+describe('WP-802 / D-24689 — public refusal and operator create route', () => {
+  test('the public route refuses a flagged setupData with 400 and makes no loopback create', async () => {
+    const { database } = makeSpyDatabase();
+    const handler = collectHandler(makeRouteContext(true, database).context);
+    const koaContext = makeContext({
+      numPlayers: 2,
+      botCount: 1,
+      policy: 'competent',
+      setupData: { schemeId: 's', isDebugMatch: true },
+    });
+
+    await handler(koaContext);
+
+    assert.equal(koaContext.status, 400);
+    assert.deepEqual(koaContext.body, {
+      error:
+        'This match setup carries isDebugMatch, which only the operator create route may set. ' +
+        'Remove the field and create the match again.',
+    });
+    assert.equal(fetchCalls.length, 0, 'a flagged setupData never reaches the native lobby');
+  });
+
+  test('the operator route is not registered when the context has no admin gate', () => {
+    const { database } = makeSpyDatabase();
+    const handlers = collectPostHandlers(makeRouteContext(true, database).context);
+    assert.equal(handlers.has(OPERATOR_CREATE_PATH), false);
+    assert.equal(handlers.has('/api/match/create-with-bot'), true);
+  });
+
+  test('the operator route creates with isDebugMatch: true and unlisted: true in the native create body', async () => {
+    const { database } = makeSpyDatabase();
+    const { context } = makeRouteContext(true, database);
+    context.requireAdminSession = async () => ({ ok: true, accountId: 'acct-admin' });
+    const handler = collectPostHandlers(context).get(OPERATOR_CREATE_PATH)!;
+    const koaContext = makeContext({ numPlayers: 2, botCount: 1, policy: 'competent', setupData: { schemeId: 's' } });
+
+    await handler(koaContext);
+
+    assert.equal(koaContext.status, 200);
+    assert.deepEqual(koaContext.body, { matchId: 'match-xyz' });
+    assert.equal(koaContext.headers['Cache-Control'], 'no-store');
+    const createCall = fetchCalls.find((call) => call.url.endsWith('/create'));
+    assert.deepEqual(JSON.parse(String(createCall?.init?.body)), {
+      numPlayers: 2,
+      setupData: { schemeId: 's', isDebugMatch: true },
+      unlisted: true,
+    });
+    const joinedSeats = fetchCalls
+      .filter((call) => call.url.endsWith('/join'))
+      .map((call) => JSON.parse(String(call.init?.body ?? '{}')).playerID);
+    assert.deepEqual(joinedSeats, ['1'], 'the operator route joins only the bot seat, like the public route');
+  });
+
+  test('the public route keeps its native create body unchanged (no unlisted, no flag)', async () => {
+    const { database } = makeSpyDatabase();
+    const handler = collectHandler(makeRouteContext(true, database).context);
+    await handler(makeContext({ numPlayers: 2, botCount: 1, policy: 'competent', setupData: { schemeId: 's' } }));
+
+    const createCall = fetchCalls.find((call) => call.url.endsWith('/create'));
+    assert.deepEqual(JSON.parse(String(createCall?.init?.body)), { numPlayers: 2, setupData: { schemeId: 's' } });
+  });
+
+  for (const [label, adminResult, expectedStatus] of [
+    ['without a session', { ok: false, code: 'unauthorized', reason: 'no session' }, 401],
+    ['for a non-admin session', { ok: false, code: 'forbidden', reason: 'not an admin' }, 403],
+  ] as const) {
+    test(`the operator route is refused ${label} and touches no native lobby`, async () => {
+      const { database } = makeSpyDatabase();
+      const { context } = makeRouteContext(true, database);
+      context.requireAdminSession = async () => adminResult;
+      const handler = collectPostHandlers(context).get(OPERATOR_CREATE_PATH)!;
+      const koaContext = makeContext({ numPlayers: 2, botCount: 1, policy: 'competent', setupData: { schemeId: 's' } });
+
+      await handler(koaContext);
+
+      assert.equal(koaContext.status, expectedStatus);
+      assert.equal(fetchCalls.length, 0);
+    });
+  }
+});
+
+describe('WP-802 / D-24689 §5 — bot decisions recorded through startDriverForMatch', () => {
+  test('an operator match records forced and policy decisions with the policy decisionLog', async () => {
+    const matchId = 'match-operator-record';
+    stubFetchWithMatchId(matchId);
+    const { database } = makeSpyDatabase();
+    const { context, holder } = makeDrivenRouteContext(database);
+    context.requireAdminSession = async () => ({ ok: true, accountId: 'acct-admin' });
+    await collectPostHandlers(context).get(OPERATOR_CREATE_PATH)!(
+      makeContext({ numPlayers: 2, botCount: 1, policy: 'competent', setupData: { schemeId: 's' } }),
+    );
+    const driver = takeDriverOffTimer(matchId);
+
+    const forcedState = realBotTurnState(true, 10);
+    forcedState.G.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '1' }];
+    holder.state = forcedState;
+    await driver.tick();
+    assert.equal(currentPlayerOf(holder), '0', 'the forced tick submitted a move (the turn passed back to seat 0)');
+    holder.state = realBotTurnState(true, 20);
+    await driver.tick();
+    assert.equal(currentPlayerOf(holder), '0', 'the policy tick submitted a move');
+
+    const decisions = readOperatorBotDecisions(matchId);
+    const forced = decisions.find((decision) => decision.isForced);
+    const chosen = decisions.find((decision) => !decision.isForced);
+    assert.ok(forced !== undefined, 'the forced KO-a-Hero resolve was recorded');
+    assert.equal(forced.move.name, 'resolveKoHeroChoice');
+    assert.equal(forced.legalMoveCount, 1);
+    assert.deepEqual(forced.decisionLog, []);
+    assert.equal(forced.seat, '1');
+    assert.equal(forced.turn, 2);
+    assert.ok(chosen !== undefined, 'the policy decision was recorded');
+    assert.ok(chosen.decisionLog.length > 0, 'the policy decisionLog was carried');
+  });
+
+  test('a normal match records nothing', async () => {
+    const matchId = 'match-normal-record';
+    stubFetchWithMatchId(matchId);
+    const { database } = makeSpyDatabase();
+    const { context, holder } = makeDrivenRouteContext(database);
+    await collectHandler(context)(
+      makeContext({ numPlayers: 2, botCount: 1, policy: 'competent', setupData: { schemeId: 's' } }),
+    );
+    const driver = takeDriverOffTimer(matchId);
+
+    const forcedState = realBotTurnState(false, 10);
+    forcedState.G.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '1' }];
+    holder.state = forcedState;
+    await driver.tick();
+    assert.equal(currentPlayerOf(holder), '0', 'the forced tick submitted a move (the turn passed back to seat 0)');
+    holder.state = realBotTurnState(false, 20);
+    await driver.tick();
+    assert.equal(currentPlayerOf(holder), '0', 'the policy tick submitted a move');
+
+    assert.deepEqual(readOperatorBotDecisions(matchId), []);
   });
 });

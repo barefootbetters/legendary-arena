@@ -359,6 +359,11 @@ export interface UIState {
   // value-unchanged for every audience (D-12803 public-projection posture). Traces
   // stay INERT (D-24294): this projection is read-only and never a gameplay input.
   effectTraces?: EffectTrace[];
+  // why: WP-802 / D-24689 §1 — marks an admin-created operator match. OPTIONAL and
+  // omit-when-off: present (always `true`) only when G.isDebugMatch is true, so a
+  // normal match's UIState and every existing fixture are unchanged. PUBLIC to every
+  // audience, so every seat and every diagnostics export shows an operator match.
+  isDebugMatch?: boolean;
 }
 
 /**

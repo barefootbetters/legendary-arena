@@ -877,6 +877,13 @@ export async function submitCompetitiveScoreImpl(
   // stores SQL NULL rather than rejecting — outcome is supplementary
   // provenance for the gauntlet boards, never a verification gate.
   const endgameResult = evaluateEndgame(reduced.finalState as LegendaryGameState);
+  // why: WP-802 / D-24689 §3 — an operator match is never scored (beside
+  // D-24306's ended_early below). Rejected before any score, badge or row is
+  // written, so it can never reach a leaderboard, gauntlet or Casual row. The
+  // read is of G.isDebugMatch on the replay-reduced final state (D-24119).
+  if ((reduced.finalState as LegendaryGameState).isDebugMatch === true) {
+    return { ok: false, reason: 'debug_match' };
+  }
   // why: WP-502 / D-24306 — a match the players ended early (the endedEarly
   // marker on the reduced gameover) is NEVER a ranked result. Reject before
   // computing or writing any score, so an abandoned/timed-out match cannot land

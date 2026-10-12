@@ -47316,4 +47316,58 @@ Jeff chose (2026-10-11) to move both sites to Cloudflare, consistent with the pl
 
 ---
 
+### D-24689 — Operator match: an admin-created, never-scored match with a reveal-all board read (Active 2026-10-11 — WP-802 / EC-839)
+
+Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and constrains the arc's follow-ons.
+
+1. **Identity (Q6).**
+   - The flag is `isDebugMatch?: boolean` on the creation payload `MatchConfiguration`, beside `finalBlow`. It is never part of the loadout envelope (`SetupEnvelope` / `EnvelopeSchema` stay strict), the LAGN document or the 9-field composition.
+   - `Game.setup()` writes `G.isDebugMatch = true` only for a strict `true`, and omits it otherwise, so normal matches and every hash oracle are byte-identical. Nothing writes it after setup.
+   - `UIState.isDebugMatch` is public to every audience, so every seat and every diagnostics export shows the match is an operator match.
+2. **Creation is admin-only.**
+   - Only `POST /api/admin/operator-match/create-with-bot` sets the flag.
+   - Every public create path that forwards caller `setupData` refuses a payload carrying the key (400).
+   - The native-lobby guard recognizes every path the router serves for create, `playAgain` and join (case-insensitive, any game-name segment, optional trailing slash), closing the existing D-24094 path-variant bypass. (The create and join patterns landed first as D-24691; WP-802 added `playAgain`.)
+   - boardgame.io's native create and `playAgain` admit only the server-internal delegation or an admin session. No client uses either; a non-admin session gets 403. This narrows D-24094's session admission for those two routes only; join is unchanged. It also closes the `playAgain` path by which a guest could mint a match outside the D-24092 gate. A `playAgain` on an operator match yields another operator match, which only an admin can request.
+   - The operator match is created `unlisted`, so it never appears in the public match list.
+   - Any future create proxy that forwards caller `setupData` must refuse the flag the same way.
+3. **Never scored.**
+   - `submitCompetitiveScoreImpl` rejects an operator match with the permanent reason `debug_match` before any score, badge or row is written, beside `ended_early` (D-24306).
+   - It is never ranked, never on a leaderboard, never a gauntlet leg, never a Casual row, and never PAR-eligible (no seed-challenge feature exists today; any future one reads `competitive_scores` and inherits this).
+   - Capture (`bgio.replay_artifacts`) still runs; a replay of an operator match is a tool, not a result.
+4. **Reads travel over an admin HTTP route (Q1), under a fifth framework-store carve-out.**
+   - **The carve-out:** for an `admin-session-required` route, a server-layer read MAY read a match's live `state` solely to test `G.isDebugMatch`, and MAY pass it to the engine's `buildOperatorView` (a derived, read-only projection) only when that is `true`.
+   - **Its limits:** the projection is never written back, never persisted, never a save-game, never round-tripped into gameplay state, and never a source of competitive or derived features. It is refused (409) for any other match.
+   - **Why not a spectator connection:** spectators are unauthenticated, so a reveal-all audience in `playerView` could not be admin-gated. `playerView` and the player audiences are unchanged.
+   - **Two narrow `G.isDebugMatch` reads ride on reads that already exist:** the bot-ally driver MAY test it on the state it already fetches, solely to decide whether to record a decision (§5); and `submitCompetitiveScoreImpl` tests it on `reduced.finalState` under D-24119 (§3). Neither read widens what those paths do with the state.
+5. **Bot decisions are shown live, from server memory (Q4).**
+   - **What is recorded:** for each bot decision in an operator match, the server keeps the turn, the seat, whether the move was forced, the move, the policy's own `decisionLog` (the chosen move and up to two scored alternatives) and the legal-move count.
+   - **Where it lives:** process memory, capped at 50 per match and 20 matches. It is not in `G`, the move log or any table, and a restart loses it. It is per instance: during a deploy overlap (the WP-437 lease) the board route can land on the instance that isn't driving the bot and show an empty list. Fault-fallback moves and seat-choice submissions (engine defaults) are not recorded. The record keeps the most recent 50 decisions per match.
+   - **Who sees it:** the board route returns it; the client follow-on's snapshot download saves it. It is not added to the player diagnostics export.
+   - A full scored list of every legal move needs an engine change to `ai.competent.ts` and is not needed: a forced singleton (the D-24688 class) is visible as `isForced: true, legalMoveCount: 1`.
+6. **UI (Q5).**
+   - The read-only panel is a Vue 3 SFC in the arena-client, loaded with `defineAsyncComponent` only in an operator match for an admin. The arena-client has no UI library, and the read-only panel adds no dependency.
+   - The setters' control pane adopts Tweakpane, the shared debug-panel library named on the Herbs vs. Ailments page. It is mounted inside that Vue panel as a lazy chunk; the setters packet adds the dependency.
+7. **Setters, for the follow-on packet (Q3).**
+   - **Order:** (1) set a supply pile count; (2) move a card already in the villain deck to its top; (3) reveal the next Scheme Twist or Master Strike now, moving one already in the villain deck to the top and revealing it through the normal reveal path; (4) move a card already in the match from one zone to another through the zone and gain helpers.
+   - **Conservation:** a setter never creates or destroys a card and never names a card outside the match's loaded composition. The engine never queries the registry after setup, so such a card has no data. A supply decrease moves cards to a set-aside zone that no rule reads. Its name and `G` shape belong to the setters packet and are written only when used.
+   - **Move rules:** every setter is a boardgame.io move under the Move Validation Contract. It returns silently unless `G.isDebugMatch === true`; is refused while any pending choice is open; runs only on the operator's own turn, in the `main` stage; uses no `ctx.random` or `Math.random` (reorder, never re-roll); and writes a `pushLog` line starting "Operator:".
+   - Because setters are moves, they are in the move log and replay faithfully.
+8. **Jump to turn N, for its follow-on packet (Q2).**
+   - It needs its own carve-out entry: reading `initialState + log` of **any** match, finished or in progress, to rebuild a read-only board stopped at move N. Gap 2 was a normal match. It is admin-only and never written back.
+   - It replays on the current server build. No build is recorded per match today: `bgio.replay_artifacts` has no version column, and D-24119 does no build check. So that packet records the server build at match creation and shows "played on build X, replayed on build Y" (or "build unknown").
+   - It labels the result rather than refusing, because the matches worth inspecting are usually from an earlier build.
+
+**Implementation (WP-802 / EC-839).** Engine: `MatchConfiguration.isDebugMatch?`, the omit-when-off setup spread, `UIState.isDebugMatch` (five-step rule), and the new contract `ui/operatorView.types.ts` + `ui/operatorView.build.ts` (`buildOperatorView`). Server: `operator/operatorMatch.logic.ts` (`setupDataCarriesOperatorFlag`, `OPERATOR_FLAG_REFUSAL_MESSAGE`), `operator/operatorBotDecisions.ts` (the §5 record), `operator/operatorMatch.routes.ts` (eligibility + board), the operator create route and the shared module-level create steps in `bot-ally/botAllyRoutes.mjs`, `decideBotMove`'s optional `onDecision` observer (own `try` / `catch`), the native-lobby guard's `playAgain` pattern and admin rule, the three public refusals, and `debug_match` in `competition.types.ts` / `competition.logic.ts`. `server.mjs` wires the routes and passes `requireAdminSession` to the guard and the bot-ally context.
+
+**Tests.** Engine 5059 → 5072 / 0 (setup flag keysets, audience pass-through keysets, eight `buildOperatorView` cases). Server 1694 → 1738 tests, 0 fail (207 skipped need a test database; the DB-gated `debug_match` case ran locally against `TEST_DATABASE_URL`, `competition.logic.test.ts` 34/34, 0 skipped). Existing-test edits are exactly WP-802 §Scope G (the guard fixture fakes, the renamed non-admin 403 test, the drift lockstep). Twelve revert proofs each fail at least one test.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages; `sim:runtime-observed:check`, `sim:coverage --check` and `par:seed:test` unchanged; arena-client `vue-tsc` clean; the replay fixture `finalStateHash` and `PRE_WP080_HASH` unchanged.
+
+**Live-verify (D-24026):** pending. After deploy, with an admin bearer token, the eight WP-802 §Verification live steps (eligibility; operator create + a played turn; board with every seat and a bot decision; 409 for a normal match; 400 on `/api/match/create` with the flag; 403 / 401 on the native create, `playAgain` and `/create/`; absent from the public match list; `uiStateSnapshot.isDebugMatch === true` in the Play Diagnostics export). The matchId is recorded as a STATUS flip.
+
+**Reserved by:** NUMBER-LEDGER D-24689 (#2688). Related: D-24026, D-24095, D-24119, D-24153, D-24169, D-24187, D-24306, D-24503, D-24094, D-24691, D-15901, D-15902, D-12803, D-24684, D-24686, D-24688.
+
+---
+
 Protect this file.

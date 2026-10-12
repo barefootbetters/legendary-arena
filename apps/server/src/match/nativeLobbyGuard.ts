@@ -27,12 +27,20 @@
  * and `accountResolver` are all caller-injected (the WP-104 / WP-109 /
  * WP-307 pattern).
  *
+ * WP-802 / D-24689 §2 narrows that admission for the two native routes that
+ * CREATE a match: `POST .../create` and boardgame.io's `POST .../:id/playAgain`
+ * admit only the internal-delegation secret or an **admin** session (D-15902).
+ * A non-admin session gets `403`; no session gets the `401` above. Join keeps
+ * the secret-or-session rule.
+ *
  * Authority: WP-308; EC-338; D-24094 (hard-gate mechanism, supersedes the
- * D-24093 soft-gate limitation); D-24092 (policy); D-11202 (bearer header).
+ * D-24093 soft-gate limitation); D-24092 (policy); D-11202 (bearer header);
+ * D-24691 (path variants); WP-802 / D-24689 §2 (admin-only native create).
  */
 
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 
+import type { AdminSessionResult } from '../auth/adminSession.js';
 import type {
   AccountResolver,
   DatabaseClient,
@@ -75,6 +83,12 @@ export interface NativeLobbyGuardDependencies {
     req: SessionTokenRequest,
     options: RequireAuthenticatedSessionOptions,
   ) => Promise<RequireAuthenticatedSessionResult>;
+  // why: WP-802 / D-24689 §2 — the D-15902 admin gate that native create and
+  // playAgain require of a caller without the internal secret.
+  readonly requireAdminSession: (
+    req: SessionTokenRequest,
+    options: RequireAuthenticatedSessionOptions,
+  ) => Promise<AdminSessionResult>;
   readonly verifier?: SessionVerifier;
   readonly accountResolver?: AccountResolver;
   readonly database: DatabaseClient;
@@ -102,7 +116,8 @@ interface KoaGuardContext {
 type KoaNext = () => Promise<unknown>;
 
 // why: these patterns must match every path the boardgame.io lobby router
-// serves for `/games/:name/create` and `/games/:name/:id/join`, not just the
+// serves for `/games/:name/create`, `/games/:name/:id/playAgain` and
+// `/games/:name/:id/join`, not just the
 // canonical spelling. boardgame.io 0.50.2 builds `new Router()` (@koa/router
 // 10.1.1) with its defaults — `strict: false` (optional trailing slash),
 // `sensitive: false` (case-insensitive) — matches against the raw, undecoded
@@ -111,26 +126,39 @@ type KoaNext = () => Promise<unknown>;
 // create handler; an exact-string guard let them through unauthenticated
 // (D-24691). Hence: case-insensitive, optional trailing slash, and ANY game
 // segment (an encoded name decodes to ours; a foreign name 404s downstream).
+// WP-802 / D-24689 §2 adds playAgain under the same normalization: it creates a
+// new match from caller setupData, so it is gated like create.
 const NATIVE_CREATE_PATH_PATTERN = /^\/games\/[^/]+\/create\/?$/i;
+const NATIVE_PLAY_AGAIN_PATH_PATTERN = /^\/games\/[^/]+\/[^/]+\/playagain\/?$/i;
 const NATIVE_JOIN_PATH_PATTERN = /^\/games\/[^/]+\/[^/]+\/join\/?$/i;
 
 /**
- * Reports whether a request targets one of the two guarded native
- * create/join routes. POST only — the `GET` list, spectating, sockets, and
- * every other method or path return `false` and pass through untouched.
+ * Which guarded native lobby route a request targets: one that creates a match
+ * (`create`, boardgame.io's `playAgain`) or `join`.
+ */
+type GuardedNativeLobbyRoute = 'creates-match' | 'join';
+
+/**
+ * Classifies a request against the guarded native lobby routes. POST only —
+ * the `GET` list, spectating, sockets, and every other method or path return
+ * `null` and pass through untouched.
  *
  * @param method The request method.
  * @param path The request path (no query string).
- * @returns `true` only for POST create / POST join on the native lobby.
+ * @returns `creates-match` for POST create / playAgain, `join` for POST join,
+ *   otherwise `null`.
  */
-function isGuardedNativeLobbyPath(method: string, path: string): boolean {
+function classifyNativeLobbyPath(method: string, path: string): GuardedNativeLobbyRoute | null {
   if (method !== 'POST') {
-    return false;
+    return null;
   }
-  if (NATIVE_CREATE_PATH_PATTERN.test(path)) {
-    return true;
+  if (NATIVE_CREATE_PATH_PATTERN.test(path) || NATIVE_PLAY_AGAIN_PATH_PATTERN.test(path)) {
+    return 'creates-match';
   }
-  return NATIVE_JOIN_PATH_PATTERN.test(path);
+  if (NATIVE_JOIN_PATH_PATTERN.test(path)) {
+    return 'join';
+  }
+  return null;
 }
 
 /**
@@ -196,35 +224,105 @@ export function createNativeLobbyGuard(
     ctx: KoaGuardContext,
     next: KoaNext,
   ): Promise<void> {
-    if (!isGuardedNativeLobbyPath(ctx.method, ctx.path)) {
+    const route = classifyNativeLobbyPath(ctx.method, ctx.path);
+    if (route === null) {
       await next();
       return;
     }
-    // why: allow-if-secret-OR-session — the server-internal loopback
-    // delegations (matchGate + autoplay) carry the process secret; a genuine
-    // signed-in caller carries a valid session. Either one admits the request;
-    // everything else is rejected, so the D-24092 account gate holds by every
-    // path (D-24094).
+    // why: the server-internal loopback delegations (matchGate, autoplay,
+    // bot-ally, guest solo) carry the process secret, which admits any guarded
+    // route (D-24094).
     const providedSecret = ctx.get(INTERNAL_DELEGATION_HEADER);
     if (isValidInternalSecret(providedSecret, deps.internalSecret)) {
       await next();
       return;
     }
-    const sessionResult = await deps.requireAuthenticatedSession(ctx.req, {
-      verifier: deps.verifier,
-      accountResolver: deps.accountResolver,
-      database: deps.database,
-    });
-    if (sessionResult.ok === true) {
-      await next();
+    if (route === 'creates-match') {
+      await admitAdminOrReject(ctx, next, deps);
       return;
     }
-    ctx.status = 401;
+    await admitSessionOrReject(ctx, next, deps);
+  };
+}
+
+/**
+ * The 401 body for a guarded native route with no valid session (unchanged
+ * since WP-308).
+ */
+const SIGNED_IN_ACCOUNT_REQUIRED_MESSAGE =
+  'A signed-in account is required to create or join a multiplayer ' +
+  'match; this native lobby route accepts only a valid authenticated ' +
+  'session or a server-internal delegation. Sign in and try again.';
+
+/**
+ * Join admission (D-24094, unchanged): any valid authenticated session admits;
+ * everything else gets 401.
+ *
+ * @param ctx The request context.
+ * @param next The downstream continuation.
+ * @param deps The injected guard dependencies.
+ */
+async function admitSessionOrReject(
+  ctx: KoaGuardContext,
+  next: KoaNext,
+  deps: NativeLobbyGuardDependencies,
+): Promise<void> {
+  const sessionResult = await deps.requireAuthenticatedSession(ctx.req, {
+    verifier: deps.verifier,
+    accountResolver: deps.accountResolver,
+    database: deps.database,
+  });
+  if (sessionResult.ok === true) {
+    await next();
+    return;
+  }
+  ctx.status = 401;
+  ctx.body = { error: SIGNED_IN_ACCOUNT_REQUIRED_MESSAGE };
+}
+
+/**
+ * Native create / playAgain admission (WP-802 / D-24689 §2): only an admin
+ * session admits a caller without the internal secret.
+ *
+ * @param ctx The request context.
+ * @param next The downstream continuation.
+ * @param deps The injected guard dependencies.
+ */
+async function admitAdminOrReject(
+  ctx: KoaGuardContext,
+  next: KoaNext,
+  deps: NativeLobbyGuardDependencies,
+): Promise<void> {
+  // why: the guard can't read the request body (boardgame.io's own koaBody
+  // re-reads the stream), so it can't see whether setupData carries the
+  // operator-match flag. Create and playAgain therefore admit only the
+  // delegation or an admin (D-15902) — D-24689 §2 narrows D-24094's session
+  // admission for these two routes only. No client calls either directly.
+  const adminResult = await deps.requireAdminSession(ctx.req, {
+    verifier: deps.verifier,
+    accountResolver: deps.accountResolver,
+    database: deps.database,
+  });
+  if (adminResult.ok === true) {
+    await next();
+    return;
+  }
+  if (adminResult.code === 'forbidden') {
+    ctx.status = 403;
     ctx.body = {
       error:
-        'A signed-in account is required to create or join a multiplayer ' +
-        'match; this native lobby route accepts only a valid authenticated ' +
-        'session or a server-internal delegation. Sign in and try again.',
+        'Matches are created through the /api/match routes; this native create route ' +
+        'accepts only a server-internal delegation or an admin session.',
     };
-  };
+    return;
+  }
+  if (adminResult.code === 'lookup_failed') {
+    ctx.status = 500;
+    ctx.body = {
+      error: 'The admin check for this native create could not be completed; try again in a moment.',
+    };
+    return;
+  }
+  ctx.status = 401;
+  ctx.body = { error: SIGNED_IN_ACCOUNT_REQUIRED_MESSAGE };
 }

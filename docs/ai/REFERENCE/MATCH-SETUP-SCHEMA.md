@@ -467,6 +467,17 @@ off matches stay byte-identical). This does not weaken the additive rule
 compatible; it simply means the payload alias `MatchConfiguration`
 (never the 9-field `MatchSetupConfig` composition) carries the flag.
 
+`isDebugMatch` (WP-802 / D-24689, optional `boolean`) is **not** an envelope
+field: it is a creation-payload field on `MatchConfiguration` only, consumed
+by the engine like `finalBlow`, and set only by the admin-only operator create
+route (`POST /api/admin/operator-match/create-with-bot`). The loadout envelope
+never carries it — the registry's strict `EnvelopeSchema` rejects it, so a
+shared or imported loadout (LAGN, the profile library) can never turn a match
+into an operator match — and every public create proxy refuses a `setupData`
+carrying the key (400). `Game.setup()` stores it on `G` only for a strict
+`true` (omitted otherwise, so normal matches stay byte-identical). See
+`DECISIONS.md` D-24689.
+
 ---
 
 ## Community & Tooling Compatibility

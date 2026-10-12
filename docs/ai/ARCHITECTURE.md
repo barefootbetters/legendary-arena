@@ -371,8 +371,15 @@ Shared Tooling (orthogonal):
 > `legendary.competitive_scores.team_key` column (the D-24187 §1 sorted-`+`-joined
 > hero team identity; a derived, write-once domain value for the fixed-hero-pool
 > gauntlet division — never a `state`/`log` interpretation, never written back to
-> the blob, never round-tripped into gameplay state). All other application reads
-> of the blob remain forbidden. Snapshots remain counts-only.
+> the blob, never round-tripped into gameplay state) — **and** the D-24689
+> operator-board carve-out: for an `admin-session-required` route, a server-layer
+> read MAY read a match's live `state` solely to test `G.isDebugMatch`, and MAY pass
+> it to the engine's `buildOperatorView` (a derived, read-only projection) only when
+> that is `true` (the admin's whole-board read of an operator match — never written
+> back, never persisted, never a save-game, never round-tripped into gameplay state,
+> never a source of competitive or derived features, and refused (409) for any other
+> match). All other application reads of the blob or a match's live state remain
+> forbidden. Snapshots remain counts-only.
 
 #### Enforcement Rule
 

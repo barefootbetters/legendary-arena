@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 
 import { checkPlayerCountComposition } from '@legendary-arena/registry';
 
-import { buildDefaultComposition } from './autoplay.mjs';
+import { buildDefaultComposition, registerAutoplayRoutes } from './autoplay.mjs';
 
 /** The four supply-count fields the engine expects on every composition. */
 const SUPPLY_FIELDS = [
@@ -91,4 +91,51 @@ test('an out-of-range player count falls back to the valid 1-player composition'
     onePlayerComposition,
     'An out-of-range player count must fall back to the 1-player composition.',
   );
+});
+
+test('POST /api/match/autoplay refuses a setupData carrying isDebugMatch with 400 and never creates (WP-802 / D-24689 §2)', async () => {
+  // why: capture the autoplay create handler (the last argument after koaBody())
+  // with a fake router; the other playback routes register and are ignored.
+  type AutoplayHandler = (koaContext: Record<string, unknown>) => Promise<void>;
+  let createHandler: AutoplayHandler | undefined;
+  const router = {
+    post(path: string, ...handlers: AutoplayHandler[]): void {
+      if (path === '/api/match/autoplay') {
+        createHandler = handlers[handlers.length - 1];
+      }
+    },
+    get(): void {},
+  };
+  registerAutoplayRoutes(router as never, {
+    db: {},
+    transport: {},
+    auth: {},
+    serverUrl: 'http://localhost:8000',
+    internalDelegationSecret: 'test-secret',
+  } as never);
+  assert.ok(createHandler !== undefined, 'The autoplay create route must be registered.');
+
+  const fetchCalls: string[] = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    fetchCalls.push(String(input));
+    throw new Error('A flagged autoplay request must never reach the native lobby.');
+  }) as typeof globalThis.fetch;
+  try {
+    const koaContext: Record<string, unknown> = {
+      request: { body: { playerCount: 1, setupData: { ...buildDefaultComposition(1), isDebugMatch: true } } },
+      status: 0,
+      body: undefined,
+    };
+    await createHandler(koaContext);
+    assert.equal(koaContext.status, 400);
+    assert.deepEqual(koaContext.body, {
+      error:
+        'This match setup carries isDebugMatch, which only the operator create route may set. ' +
+        'Remove the field and create the match again.',
+    });
+    assert.deepEqual(fetchCalls, [], 'a flagged setupData never reaches the native create');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

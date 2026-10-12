@@ -3535,3 +3535,35 @@ describe('filterUIStateForAudience — pendingMoveVillainChoice redaction (WP-79
     assert.equal('pendingMoveVillainChoice' in filterUIStateForAudience(full, SPECTATOR), false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-802 / D-24689 §1 — isDebugMatch public pass-through (five-step rule step 4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the full (unfiltered) UIState for a match, an operator match when
+ * `isOperatorMatch` is true and a normal match otherwise.
+ */
+function createOperatorFlagUIState(isOperatorMatch: boolean): UIState {
+  const config = isOperatorMatch ? { ...createTestConfig(), isDebugMatch: true } : createTestConfig();
+  const gameState = buildInitialGameState(config, createMockRegistry(), makeMockCtx());
+  return buildUIState(gameState, mockCtx);
+}
+
+describe('filterUIStateForAudience — isDebugMatch public pass-through (WP-802 / D-24689)', () => {
+  it('an operator match keeps isDebugMatch: true for its own player, another player and a spectator', () => {
+    const full = createOperatorFlagUIState(true);
+    assert.equal(full.isDebugMatch, true, 'buildUIState populates the flag for an operator match');
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      assert.equal(filterUIStateForAudience(full, audience).isDebugMatch, true);
+    }
+  });
+
+  it('a normal match has no isDebugMatch key in the built projection or for any audience', () => {
+    const full = createOperatorFlagUIState(false);
+    assert.equal(Object.keys(full).includes('isDebugMatch'), false);
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      assert.equal(Object.keys(filterUIStateForAudience(full, audience)).includes('isDebugMatch'), false);
+    }
+  });
+});

@@ -447,8 +447,18 @@ import type { UICardDisplay } from './ui/uiState.types.js';
  * The composition lock is untouched (finalBlow is envelope/payload-level, not a
  * composition field); this widening only lets the flag ride in setupData through
  * to Game.setup(), where buildInitialGameState stores it on G. Absence = off.
+ *
+ * why: WP-802 / D-24689 — the payload also carries the optional operator-match
+ * flag `isDebugMatch`, set only by the admin-only operator create route (every
+ * public create path refuses it). Like finalBlow it is a creation-payload field,
+ * never a loadout-envelope or composition field; buildInitialGameState stores it
+ * on G only when it is strictly true (omit-when-off keeps normal matches and every
+ * hash oracle byte-identical, the WP-686 precedent).
  */
-export type MatchConfiguration = MatchSetupConfig & { readonly finalBlow?: boolean };
+export type MatchConfiguration = MatchSetupConfig & {
+  readonly finalBlow?: boolean;
+  readonly isDebugMatch?: boolean;
+};
 
 // why: boardgame.io 0.50.x uses the string player-index convention
 // ("0" | "1" | "2" | ... — the index of the seat within a match's
@@ -1756,6 +1766,15 @@ export interface LegendaryGameState {
   // buildInitialGameState). Read by WP-687's endgame gate as `finalBlow === true`.
   /** Whether this match plays the optional Final Blow rule. Absent = off. */
   readonly finalBlow?: boolean;
+
+  // why: WP-802 / D-24689 — the operator-match flag. OPTIONAL and seeded by
+  // buildInitialGameState ONLY when the setup payload's isDebugMatch is strictly
+  // true; omitted otherwise, so a normal match is byte-identical and no whole-G
+  // hash oracle re-pins (the WP-686 finalBlow precedent). Nothing writes it after
+  // setup. It gates the admin-only operator board read (buildOperatorView), the
+  // never-scored refusal and the bot-decision record.
+  /** Whether this match is an admin-created operator match. Absent = normal match. */
+  readonly isDebugMatch?: boolean;
 
   // why: selection extracts the entity reference fields from matchConfiguration
   // for convenient read access. matchConfiguration is the full 9-field input;

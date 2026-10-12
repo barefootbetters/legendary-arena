@@ -2497,5 +2497,8 @@ export function buildUIState(
     // empty trace channel omits the field (no `effectTraces: undefined` literal
     // under exactOptionalPropertyTypes, no empty-array injection).
     ...(effectTraces !== undefined ? { effectTraces } : {}),
+    // why: WP-802 / D-24689 §1 — omit-when-off, so a normal match's UIState has no
+    // isDebugMatch key at all (no `false` literal, no fixture backfill).
+    ...(gameState.isDebugMatch === true ? { isDebugMatch: true } : {}),
   };
 }

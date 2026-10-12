@@ -79,6 +79,7 @@ import { loadBillingConfig, createStripeClient } from './billing/billing.config.
 import { registerLegendsPublisherRoutes } from './legends/legends.routes.js';
 import { registerAutoplayRoutes } from './autoplay/autoplay.mjs';
 import { registerBotAllyRoutes, rehydrateBotAllyDrivers } from './bot-ally/botAllyRoutes.mjs';
+import { registerOperatorMatchRoutes } from './operator/operatorMatch.routes.js';
 import { registerAddGuestRoutes } from './match/addGuestRoutes.mjs';
 import { registerGuestAccessRoutes } from './match/guestAccessRoutes.mjs';
 import { registerGuestSoloRoutes } from './match/guestSoloRoutes.mjs';
@@ -1415,10 +1416,25 @@ export async function startServer() {
     internalDelegationSecret,
     database: pool,
     requireAuthenticatedSession,
+    // why: WP-802 / D-24689 §2 — supplying the D-15902 admin gate registers the
+    // admin-only POST /api/admin/operator-match/create-with-bot beside the public
+    // create-with-bot (the guest routes below ignore it).
+    requireAdminSession,
     verifier,
     accountResolver: verifier === undefined ? undefined : accountResolver,
   };
   registerBotAllyRoutes(server.router, botAllyContext);
+
+  // why: WP-802 / D-24689 §4 — the admin-only operator eligibility and board
+  // routes. The board route reads an operator match's live state (the fifth
+  // framework-store carve-out) and hands G to the engine's buildOperatorView.
+  registerOperatorMatchRoutes(server.router, {
+    db: server.db,
+    requireAdminSession,
+    verifier,
+    accountResolver: verifier === undefined ? undefined : accountResolver,
+    database: pool,
+  });
 
   // why: WP-627 / D-24437 — the host-initiated add-guest endpoint (POST
   // /api/match/add-guest). Reuses the bot-ally context bundle (it needs the same
@@ -1458,14 +1474,18 @@ export async function startServer() {
   // `configureApp` — the ordering (PS-1 scaffold-verified against
   // boardgame.io@0.50.2) that lets the guard reject an unauthenticated native
   // create/join before the framework handles it. The guard admits a request
-  // carrying the internal-delegation secret (the loopback delegations above)
-  // OR a valid authenticated session; everything else on the two native POST
-  // create/join paths gets 401. The GET list, spectating, sockets, and every
+  // carrying the internal-delegation secret (the loopback delegations above);
+  // otherwise native create and playAgain need an admin session (WP-802 /
+  // D-24689 §2, 403 for a non-admin) and join needs a valid authenticated
+  // session; everything else on those native POST paths gets 401. The GET list, spectating, sockets, and every
   // /api/* route pass through untouched.
   server.app.middleware.unshift(
     createNativeLobbyGuard({
       internalSecret: internalDelegationSecret,
       requireAuthenticatedSession,
+      // why: WP-802 / D-24689 §2 — native create and playAgain admit only the
+      // internal delegation or an admin session (D-15902).
+      requireAdminSession,
       verifier,
       accountResolver: verifier === undefined ? undefined : accountResolver,
       database: pool,

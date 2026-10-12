@@ -470,6 +470,16 @@ export type { LogEntry, LogOutcome } from "./log/logOutcome.types.js";
 export { LOG_OUTCOMES } from "./log/logOutcome.types.js";
 export { buildUIState } from "./ui/uiState.build.js";
 
+// Operator projection (WP-802)
+export type {
+  OperatorBuildContext,
+  OperatorWoundsByZone,
+  OperatorSeatView,
+  OperatorSupplyCounts,
+  OperatorView,
+} from "./ui/operatorView.types.js";
+export { buildOperatorView } from "./ui/operatorView.build.js";
+
 // Audience & filter (WP-029)
 export type { UIAudience } from "./ui/uiAudience.types.js";
 export { filterUIStateForAudience } from "./ui/uiState.filter.js";

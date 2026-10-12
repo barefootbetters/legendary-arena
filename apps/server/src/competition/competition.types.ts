@@ -92,7 +92,12 @@ export type SubmissionRejectionReason =
   // (the endedEarly gameover marker). An abandoned/timed-out match is never a
   // ranked result, so the server refuses to score it — a PERMANENT ineligibility,
   // not a retriable failure. Maps to HTTP 422 (the default eligibility branch).
-  | 'ended_early';
+  | 'ended_early'
+  // why: WP-802 / D-24689 §3 — the match is an admin-created operator match
+  // (G.isDebugMatch). An operator match is never scored, ranked, badged or
+  // gauntlet-eligible — a PERMANENT ineligibility, beside ended_early. Maps to
+  // HTTP 422 (the default eligibility branch).
+  | 'debug_match';
 
 /**
  * Canonical readonly array mirroring the `SubmissionRejectionReason`
@@ -117,6 +122,7 @@ export const SUBMISSION_REJECTION_REASONS: readonly SubmissionRejectionReason[] 
   'replay_verification_failed',
   'match_not_finished',
   'ended_early',
+  'debug_match',
 ] as const;
 
 /**
