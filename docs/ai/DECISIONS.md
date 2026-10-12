@@ -47412,4 +47412,34 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 
 ---
 
+### D-24694 — Spectrum counts the classes in your hand as well as the cards you played (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** Spectrum ("You can use a card's Spectrum abilities only if you have at least 3 classes of Hero", D-24055) parses to the `distinctHeroClassesAtLeast` condition. Its evaluator and its failure-message count both read only the cards played this turn, so a player holding the third class in hand was told "you have 2" and lost the ability.
+
+**Rule.** `docs/legendary-universal-rules-v23.md` ~L1946-1953 (Spectrum): "You can count all the classes you have among cards you played this turn and cards in your hand." Grey S.H.I.E.L.D. Heroes, HYDRA Allies, New Recruits and Sidekicks have no class, so they don't help.
+
+**Decision.**
+1. **One counter.** The Spectrum gate and its describe line both call `countDistinctHeroClassesYouHave` (the "each color of Hero you have" count, D-24529), whose semantics already match the rule. Its behavior is unchanged:
+   - **Hand:** printed `heroClass` / `heroClass2` via `offPlayCardTraits`, so a split card in hand counts both halves (WP-772 / D-24604). No Size-Changing grant, since that is an in-play effect.
+   - **Play:** `playedCardIdsThisTurn` with Penumbra both-sides (WP-780 / D-24619), `heroClass2` (WP-703 / D-24523) and Size-Changing grants (D-24074), exactly as before.
+   - Classless cards, Wounds and Bystanders contribute nothing.
+2. **Self-inclusion unchanged.** The Spectrum card in play still counts its own class (D-24055).
+3. **Message.** The describe line now reads "it needs 3 different Hero classes in hand or play — you have N", quoting the same count the gate compared.
+4. **Removed.** `countDistinctHeroClassesInPlay` lost its only caller and is deleted, so the played-card class read for Spectrum lives in one place: the play-area half of `countDistinctHeroClassesYouHave`.
+5. **Wait-and-see.** `distinctHeroClassesAtLeast` stays a one-shot wait-and-see threshold (D-24377). It now also crosses when a Hero of a new class enters your hand later in the turn.
+6. **WP-803 note.** WP-803's §Played-vs-Have Map lists the two Spectrum call sites (`:~225`, `:~598`) as "have" callers. They no longer call `playedCardIdsThisTurn` directly; Spectrum now inherits whatever `countDistinctHeroClassesYouHave` (`:~667`, already a "have" caller) reads. The map's caller count drops by two (12 / 18 of 30 becomes 10 / 18 of 28) when that packet is executed.
+
+**Sites changed.** `hero/heroConditions.evaluate.ts` (the `distinctHeroClassesAtLeast` evaluate and describe cases; the counter's JSDoc); comment-only updates in `hero/heroCountSource.resolve.ts` and `hero/deferredConditionalGrants.ts`.
+
+**Tests.**
+- **New (7):** in `hero/heroConditions.evaluate.test.ts`: 2 in play + a 3rd only in hand fires; the Spectrum card alone in play + 2 in hand fires (self-inclusive); a repeated class in hand adds nothing; grey S.H.I.E.L.D., Officer, Wound and Bystander in hand add nothing; a split card in hand counts both halves; a Size-Changing grant on a hand card does not count; the failure message quotes the hand-inclusive count.
+- **Revert proof:** with the source reverted, 4 of the 7 fail (the three negative guards pass either way).
+- **Re-pinned (sweep trajectory):** `useInPlayCoverage.test.ts` totalObs 8897 → 8900, percentResolved holds at 13.9.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5074 → 5081); `sim:runtime-observed` regenerated (7974 → 7977 observations, same 81 mechanics, 0 dropped), then `:check` current; `sim:coverage --check`, `ledger:heroes:check`, `mechanics:metadata:check` and `effect-index:check` OK; dashboard `test:coverage` 571 / 0. The replay fixture `finalStateHash` and `PRE_WP080_HASH` are unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24694. Related: D-24055 (Spectrum gate), D-24529 ("Heroes you have" = hand + play), D-24604, D-24619, D-24523, D-24074, D-24377, D-24692 / WP-803.
+
+---
+
 Protect this file.

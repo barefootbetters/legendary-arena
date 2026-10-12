@@ -553,8 +553,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // `last-stand` newly reached (1 obs), 0 dropped, all 312 games terminate). totalObs
   // 8878 -> 8897; resolvedObs stays 1235, so percentResolved stays 13.9 (1235 / 8897). A
   // sweep-trajectory artifact, not a regression.
+  // 2026-10-12 (D-24694, re-pin): Spectrum now counts the classes in your hand as well as the
+  // cards you played (rules v23 ~L1950-1953), so Spectrum lines fire more often in the
+  // fixed-seed sweep and its trajectories shift (feed regenerated: 7974 -> 7977 raw
+  // observations, same 81 mechanics, 0 dropped; attack-no-magnitude 414 -> 415, gate-only
+  // 486 -> 487, patrol-the-sewers 56 -> 57). totalObs 8897 -> 8900 (+3, equal to the raw feed
+  // rise); resolvedObs stays 1235, so percentResolved stays 13.9 (1235 / 8900). A
+  // sweep-trajectory artifact, not a regression.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8897);
+  assert.equal(view.totalObs.value, 8900);
   assert.equal(view.percentResolved.value, 13.9);
   assert.ok(view.remaining.value.length > 0);
 });

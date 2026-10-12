@@ -28,7 +28,7 @@ import { countDistinctHeroClassesYouHave } from './heroConditions.evaluate.js';
 // a played Officer as a shield Hero.
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // why: WP-706 / D-24528 — the diagnostics-only explain for the distinct-class source
-// mirrors countDistinctHeroClassesInPlay's inline Set (printed heroClass/heroClass2 plus
+// mirrors countDistinctHeroClassesYouHave's play-area Set (printed heroClass/heroClass2 plus
 // the Size-Changing granted classes), so it imports getGrantedClasses to gather the same
 // granted classes. It does NOT call cardHasClassWhenPlayed (the boolean class-match gate).
 // why: WP-711 / D-24534 — the per-hero-class-played count sources match a played card's
@@ -713,7 +713,7 @@ function collectDistinctHeroClassCards(
  * why: this is a SEPARATE read-only pass, NOT folded into `resolveCountSource`, so the
  * gameplay grant integer stays byte-identical (determinism — the resolver is untouched).
  * It mirrors each played-this-turn counter's matching logic in ext-id-collecting form
- * (sharing `cardCountsAsTeamMember`; mirroring `countDistinctHeroClassesInPlay`'s inline
+ * (sharing `cardCountsAsTeamMember`; mirroring `countDistinctHeroClassesYouHave`'s play-area
  * class Set — it does NOT call `cardHasClassWhenPlayed`). It returns `[]` for the
  * victory-pile sources (`victory-bystanders`, `shield-levels`) — those enumerate the
  * Victory Pile, not cards-played-this-turn, and are omitted from `countedInputs` in this

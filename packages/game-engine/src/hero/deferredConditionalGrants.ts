@@ -16,7 +16,9 @@
  *     crossed, dropped and re-crossed within one turn still grants once.
  *     `heroClassMatch` and `requiresTeam` are deliberately OUT of scope (they keep
  *     on-play evaluation); the boundary is "is it a numeric threshold", not "does
- *     it read inPlay" — `distinctHeroClassesAtLeast` reads inPlay and is in scope.
+ *     it read inPlay" — `distinctHeroClassesAtLeast` (Spectrum) reads hand + play
+ *     (D-24694) and is in scope, so a Hero of a new class drawn later this turn
+ *     can still cross it.
  *     Converting the class gates would change every `[hc:X]` card and remove
  *     play-ordering skill from class synergy. Sticky per-turn EVENT predicates
  *     (`masterStrikePlayedThisTurn` / `masterStrikeOrAmbushPlayedThisTurn`, WP-743 /

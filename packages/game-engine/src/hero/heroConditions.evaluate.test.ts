@@ -27,7 +27,12 @@ import { WAIT_AND_SEE_CONDITION_TYPES } from './deferredConditionalGrants.js';
 import type { LegendaryGameState } from '../types.js';
 import type { HeroAbilityHook } from '../rules/heroAbility.types.js';
 import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
-import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import {
+  BYSTANDER_EXT_ID,
+  SHIELD_AGENT_EXT_ID,
+  SHIELD_OFFICER_EXT_ID,
+  WOUND_EXT_ID,
+} from '../setup/pilesInit.js';
 
 // ---------------------------------------------------------------------------
 // Test helper
@@ -821,6 +826,135 @@ describe('distinctHeroClassesAtLeast honors the Size-Changing grant (WP-290 / D-
 
     assert.equal(result, true,
       'covert (printed) + instinct (granted-only) = 2 distinct effective classes');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24694 — Spectrum counts the classes in your HAND as well as the cards you played
+//
+// Rules v23 ~L1950-1953: "You can count all the classes you have among cards you
+// played this turn and cards in your hand." The gate stays self-INCLUSIVE (the
+// Spectrum card in play counts its own class, D-24055).
+// ---------------------------------------------------------------------------
+
+describe('distinctHeroClassesAtLeast counts hand + play (Spectrum, D-24694)', () => {
+  const SPECTRUM_CONDITION = { type: 'distinctHeroClassesAtLeast', value: '3' };
+
+  it('2 classes in play + a 3rd class only in hand meets the gate', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-tech#0', 'spectrum-covert#0'],
+      hand: ['hero-instinct#0'],
+      cardTraits: {
+        'hero-tech#0': { heroClass: 'tech', team: null },
+        'spectrum-covert#0': { heroClass: 'covert', team: null },
+        'hero-instinct#0': { heroClass: 'instinct', team: null },
+      },
+    });
+
+    assert.equal(
+      evaluateCondition(gameState, '0', SPECTRUM_CONDITION, 'spectrum-covert#0'),
+      true,
+      'tech + covert (self) in play + instinct in hand = 3 classes',
+    );
+  });
+
+  it('the Spectrum card alone in play plus 2 classes in hand meets the gate (self-inclusive)', () => {
+    const gameState = makeTestState({
+      inPlay: ['spectrum-covert#0'],
+      hand: ['hero-tech#0', 'hero-instinct#0'],
+      cardTraits: {
+        'spectrum-covert#0': { heroClass: 'covert', team: null },
+        'hero-tech#0': { heroClass: 'tech', team: null },
+        'hero-instinct#0': { heroClass: 'instinct', team: null },
+      },
+    });
+
+    assert.equal(
+      evaluateCondition(gameState, '0', SPECTRUM_CONDITION, 'spectrum-covert#0'),
+      true,
+      'the Spectrum card counts its own class; the other two come from hand',
+    );
+  });
+
+  it('a hand class that repeats a played class adds nothing', () => {
+    const gameState = makeTestState({
+      inPlay: ['spectrum-covert#0'],
+      hand: ['hero-tech#0', 'hero-covert#1'],
+      cardTraits: {
+        'spectrum-covert#0': { heroClass: 'covert', team: null },
+        'hero-tech#0': { heroClass: 'tech', team: null },
+        'hero-covert#1': { heroClass: 'covert', team: null },
+      },
+    });
+
+    assert.equal(evaluateCondition(gameState, '0', SPECTRUM_CONDITION, 'spectrum-covert#0'), false);
+  });
+
+  it('grey S.H.I.E.L.D. Heroes, Wounds and Bystanders in hand add nothing', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-tech#0', 'spectrum-covert#0'],
+      hand: [SHIELD_AGENT_EXT_ID, SHIELD_OFFICER_EXT_ID, 'grey-shield#0', WOUND_EXT_ID, BYSTANDER_EXT_ID],
+      cardTraits: {
+        'hero-tech#0': { heroClass: 'tech', team: null },
+        'spectrum-covert#0': { heroClass: 'covert', team: null },
+        'grey-shield#0': { heroClass: null, team: 'shield' },
+      },
+    });
+
+    assert.equal(
+      evaluateCondition(gameState, '0', SPECTRUM_CONDITION, 'spectrum-covert#0'),
+      false,
+      'classless cards in hand never reach the third class',
+    );
+  });
+
+  it('a split card in hand counts both halves\' classes (WP-772 / D-24604)', () => {
+    const gameState = makeTestState({
+      inPlay: ['spectrum-covert#0'],
+      hand: ['cvwr/duo/tech-half#0'],
+      cardTraits: {
+        'spectrum-covert#0': { heroClass: 'covert', team: null },
+        'cvwr/duo/tech-half#0': { heroClass: 'tech', team: 'avengers' },
+        'cvwr/duo/strength-half#0': { heroClass: 'strength', team: 'avengers' },
+      },
+    });
+    gameState.splitFaces = { 'cvwr/duo/tech-half': 'cvwr/duo/strength-half' } as LegendaryGameState['splitFaces'];
+
+    assert.equal(
+      evaluateCondition(gameState, '0', SPECTRUM_CONDITION, 'spectrum-covert#0'),
+      true,
+      'covert in play + tech and strength from the split card in hand = 3 classes',
+    );
+  });
+
+  it('a Size-Changing grant on a card still in hand does not count (in-play effect only)', () => {
+    const gameState = makeTestState({
+      inPlay: ['hero-tech#0', 'spectrum-covert#0'],
+      hand: ['sc-in-hand#0'],
+      cardTraits: {
+        'hero-tech#0': { heroClass: 'tech', team: null },
+        'spectrum-covert#0': { heroClass: 'covert', team: null },
+        'sc-in-hand#0': { heroClass: null, team: null },
+      },
+      cardSizeChangingClasses: { 'sc-in-hand#0': ['instinct'] },
+    });
+
+    assert.equal(evaluateCondition(gameState, '0', SPECTRUM_CONDITION, 'spectrum-covert#0'), false);
+  });
+
+  it('the failure message quotes the hand-inclusive count', () => {
+    const gameState = makeTestState({
+      inPlay: ['spectrum-instinct#0'],
+      hand: ['hero-strength#0', WOUND_EXT_ID],
+      cardTraits: {
+        'spectrum-instinct#0': { heroClass: 'instinct', team: null },
+        'hero-strength#0': { heroClass: 'strength', team: null },
+      },
+    });
+
+    const text = describeFailedCondition(gameState, '0', SPECTRUM_CONDITION);
+    assert.match(text, /3 different Hero classes in hand or play/);
+    assert.match(text, /you have 2$/);
   });
 });
 

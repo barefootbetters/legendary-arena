@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24694 — Spectrum counts the classes in your hand (direct fix) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A Spectrum ability ("only if you have at least 3 classes of Hero") now counts the classes in your hand as well as the cards you played this turn, as rules v23 says. Before, a third class held in hand didn't count, so the ability was skipped. The skip message now reads "… 3 different Hero classes in hand or play — you have N".
+
+- **Engine only.** Grey S.H.I.E.L.D. Heroes, Wounds and Bystanders still add nothing; a split card in hand counts both halves. Every package is green; the sweep feed moved by 3 observations and the dashboard pin was re-pinned.
+- **Live-verify (D-24026): pending.** Play a Spectrum card with two classes in play and a third class only in hand, and check the Spectrum line fires.
+
 ### D-24693 — KO lines say where the card came from (direct fix) (2026-10-12)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Every "KO a Hero" log line now names the zone, e.g. "Player 1 KO'd S.H.I.E.L.D. Agent (starting-shield-agent) from their hand." or "… from the cards they played this turn". That makes WP-801's "hand or play, never the discard pile" rule checkable from a match log.

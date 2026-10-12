@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 81,
-    "totalObservations": 7974,
+    "totalObservations": 7977,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7453
+      "parse-unrecognized": 7456
     }
   },
   "byMechanic": {
@@ -263,12 +263,12 @@
       ]
     },
     "attack-no-magnitude": {
-      "hitCount": 414,
+      "hitCount": 415,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 414
+        "parse-unrecognized": 415
       },
       "examples": [
         {
@@ -1181,12 +1181,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 486,
+      "hitCount": 487,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 486
+        "parse-unrecognized": 487
       },
       "examples": [
         {
@@ -1813,12 +1813,12 @@
       ]
     },
     "patrol-the-sewers": {
-      "hitCount": 56,
+      "hitCount": 57,
       "lastSeenTurn": 26,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 56
+        "parse-unrecognized": 57
       },
       "examples": [
         {
@@ -1855,7 +1855,7 @@
     },
     "patrol-the-streets": {
       "hitCount": 7,
-      "lastSeenTurn": 23,
+      "lastSeenTurn": 18,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
