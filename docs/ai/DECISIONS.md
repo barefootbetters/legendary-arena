@@ -47663,6 +47663,7 @@ Protect this file.
 **Gates.** `pnpm install`; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5092 unchanged, arena-client 2299 unchanged, server 1748 with 207 DB-gated skips without `TEST_DATABASE_URL`); `check-number-ledger --check` passed. No golden, PAR or hash re-pin; no `lagn-v1.json` churn.
 
 **Live-verify (D-24026):** pending. After deploy, a production match created after the release, with at least one move made, stores `state->'_undo'` and `state->'_redo'` as `[]` in `bgio.matches`.
+**Live-verify (D-24026), 2026-10-12: PASS.** Match `LB9T2QZkiQI` (build `b598e53`, a guest autoplay bot match): mid-play on turn 12 (`_stateID` 142) and again at game over on turn 15 (`_stateID` 186), the stored `bgio.matches` row had `_undo` and `_redo` both `[]` (27.6 KB and 30.2 KB). The five rows stored before the deploy each held 1 to 3 undo snapshots (38 to 98 KB). Read-only query.
 
 **Reserved by:** NUMBER-LEDGER D-24702. Related: D-24701 (socket accepts only MAKE_MOVE), D-24095 (bgio framework-store exemption), D-24119 / D-24124 (faithful replay), D-24159 (deck-exhaustion final turn), D-24026.
 
