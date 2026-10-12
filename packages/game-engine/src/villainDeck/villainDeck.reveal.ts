@@ -76,6 +76,7 @@ import {
   composeAmbushNarrative,
   composeBystanderRevealedNarrative,
   composeEffectResultLogLine,
+  composeVillainDeckPlayClause,
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 
@@ -376,6 +377,19 @@ export function performVillainReveal(
           'threat',
         );
       }
+      // why: D-24703 — The Leader's Ambush play (WP-542 / D-24351) is performed below,
+      // not by the executor, so read its count BEFORE the ambushResolved push and feed it
+      // to the narrative; otherwise the overlay reads "entered the city with no Ambush
+      // effect" while the Ambush plays a card. The narrated log line mirrors the Fight
+      // site's, so the played card's reveal is attributed to this villain. The play
+      // itself still fires AFTER the event (ordering unchanged).
+      const ambushPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onAmbush');
+      if (ambushPlayCount > 0) {
+        pushLog(G,
+          `Ambush effect: ${formatCardRef(G.cardDisplayData, cardId)} ${composeVillainDeckPlayClause(ambushPlayCount)}.`,
+          'threat',
+        );
+      }
       G.notableEvents.push({
         type: 'ambushResolved',
         revealedCardId: cardId,
@@ -384,7 +398,7 @@ export function performVillainReveal(
         // why: WP-319 — the narrative now names the captured HQ hero / KO'd hero
         // (etc.) via the resolved results, so the center-screen overlay announces
         // the specific hero. `appliedEffects` stays the keyword array (badges).
-        narrative: composeAmbushNarrative(ambushCardName, resolvedAmbushResults),
+        narrative: composeAmbushNarrative(ambushCardName, resolvedAmbushResults, ambushPlayCount),
       });
 
       // why: WP-542 / D-24351 — The Leader's "Ambush: Play the top card of the Villain
@@ -394,7 +408,6 @@ export function performVillainReveal(
       // ambushResolved event above) — the Ambush plays the top N villain-deck cards, each
       // resolving as a normal reveal (villain→city, henchman / bystander / scheme-twist /
       // master-strike, recursing through the rule pipeline). N is the marked count.
-      const ambushPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onAmbush');
       if (ambushPlayCount > 0) {
         playTopVillainDeckCards(G, context, implementationMap, ambushPlayCount);
       }

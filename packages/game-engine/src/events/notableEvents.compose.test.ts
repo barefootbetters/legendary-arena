@@ -153,6 +153,34 @@ describe('composeAmbushNarrative (WP-319 — names the effect targets)', () => {
       '"core-villain-x-men-toad-00" entered the city with no Ambush effect.',
     );
   });
+
+  // why: D-24703 — The Leader's villain-deck play is performed by the reveal fire
+  // site, so the executor returns no results; the play count alone must not read
+  // as "no Ambush effect".
+  it('names a villain-deck play when the executor returned no results', () => {
+    assert.equal(
+      composeAmbushNarrative('The Leader', [], 1),
+      '"The Leader" ambushed: plays the top card of the Villain Deck.',
+    );
+    assert.equal(
+      composeAmbushNarrative('Some Villain', [], 2),
+      '"Some Villain" ambushed: plays the top 2 cards of the Villain Deck.',
+    );
+  });
+
+  it('appends the villain-deck play after the executor effects', () => {
+    assert.equal(
+      composeAmbushNarrative('Toad', [{ keyword: 'gainWoundEachPlayer', targetNames: [] }], 1),
+      '"Toad" ambushed: every player gained a wound; plays the top card of the Villain Deck.',
+    );
+  });
+
+  it('keeps the no-effect sentence for a zero play count', () => {
+    assert.equal(
+      composeAmbushNarrative('Magneto', [], 0),
+      '"Magneto" entered the city with no Ambush effect.',
+    );
+  });
 });
 
 describe('composeSchemeTwistNarrative', () => {

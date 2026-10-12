@@ -2203,6 +2203,59 @@ describe('The Leader onAmbush fire site — plays the top villain-deck card (WP-
     );
   });
 
+  // why: D-24703 — prod match 0BVSi0_KY0A: The Leader's Ambush played the top card,
+  // but the overlay read "entered the city with no Ambush effect" because the play
+  // fires outside the executor and the narrative was built from the executor's
+  // (empty) results alone.
+  it('narrates the villain-deck play in ambushResolved and the log, before the played card', () => {
+    const theLeader = 'the-leader' as CardExtId;
+    const gameState = createMockGameState({
+      deck: [theLeader, 'played-by-leader'],
+      discard: [],
+      cardTypes: { [theLeader]: 'villain', 'played-by-leader': 'villain' },
+      cardKeywords: { [theLeader]: ['ambush'] },
+      villainAbilityHooks: [
+        {
+          cardId: theLeader,
+          timing: 'onAmbush',
+          keywords: [],
+          effects: [{ primitive: 'play-villain-deck-cards', magnitude: 1 }],
+        },
+      ],
+    });
+    (gameState as { cardDisplayData?: unknown }).cardDisplayData = {
+      [theLeader]: { name: 'The Leader' },
+    };
+    gameState.playerZones['0'] = { ...makePlayerZones(), deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+    const moveContext = createMockMoveContext(gameState);
+
+    revealVillainCard(moveContext);
+
+    const ambushEvent = gameState.notableEvents.find(
+      (event) => event.type === 'ambushResolved' && event.revealedCardId === theLeader,
+    );
+    assert.ok(ambushEvent !== undefined && ambushEvent.type === 'ambushResolved', 'The Leader emits ambushResolved');
+    assert.strictEqual(
+      ambushEvent.narrative,
+      '"The Leader" ambushed: plays the top card of the Villain Deck.',
+    );
+    // why: VillainEffectKeyword is frozen (D-24023) and has no play keyword, so the
+    // badge array stays empty; the narrative carries the effect.
+    assert.deepStrictEqual(ambushEvent.appliedEffects, []);
+    const messageTexts = gameState.messages.map((message) => message.text);
+    const ambushLineIndex = messageTexts.findIndex((text) =>
+      text.includes('Ambush effect:') && text.includes('plays the top card of the Villain Deck'),
+    );
+    const playedEntryIndex = messageTexts.findIndex((text) =>
+      text.includes('played-by-leader') && text.includes('revealed and entered the city'),
+    );
+    assert.ok(ambushLineIndex >= 0, 'an Ambush effect: log line names the villain-deck play');
+    assert.ok(playedEntryIndex > ambushLineIndex, 'the played card is logged after the Ambush line that caused it');
+    // why: ordering rule kept — the Leader's ambushResolved precedes any event the
+    // chained play emits.
+    assert.strictEqual(gameState.notableEvents.indexOf(ambushEvent), 0);
+  });
+
   it('does not play a villain-deck card when the revealed villain has no play hook', () => {
     const plain = 'plain-ambush' as CardExtId;
     const gameState = createMockGameState({

@@ -47704,3 +47704,33 @@ None of these is a player input the faithful replay re-dispatches (it replays `M
 ---
 
 Protect this file.
+### D-24703 — The Leader's Ambush names its villain-deck play in the ambushResolved narrative (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** Prod match `0BVSi0_KY0A` (build `b598e53`): Core villain The Leader ("Ambush: Play the top card of the Villain Deck", WP-542 / D-24351) entered the city and its Ambush played the next card, a Scheme Twist that resolved. The center-screen overlay still read `"The Leader" entered the city with no Ambush effect.` with `appliedEffects: []`. The `play-villain-deck-cards` executor handler is a deliberate no-op (D-24351); the reveal fire site (`villainDeck.reveal.ts`) performs the play itself. The `ambushResolved` narrative was composed from the executor's results alone, which are empty for The Leader, so it took the "no Ambush effect" branch. The log had the same gap: only the `[Ambush]` entry line, then the Scheme Twist with no stated cause (the Fight site already narrates its play, D-24351).
+
+**Decision.**
+1. `composeAmbushNarrative` takes an optional `villainDeckPlayCount` (default 0). A count > 0 adds the clause from the new `composeVillainDeckPlayClause` ("plays the top card of the Villain Deck" / "plays the top N cards of the Villain Deck"), after any executor effect clauses. The Leader's narrative becomes `"The Leader" ambushed: plays the top card of the Villain Deck.` With no effects and a zero count, the existing "no Ambush effect" sentence is unchanged.
+2. The reveal site reads `villainCardPlaysVillainDeckCards(G, cardId, 'onAmbush')` before the `ambushResolved` push (it was read after), passes it to the narrative, and pushes an `Ambush effect: <card> plays the top card of the Villain Deck.` log line (`threat`), matching the Fight site's line.
+3. **Ordering unchanged.** `ambushResolved` is still pushed before `playTopVillainDeckCards`, so the Ambush event precedes every event the played card emits. Only the count read moved earlier; it is a pure read of `G.villainAbilityHooks`.
+4. **`appliedEffects` stays `[]`.** It is typed `VillainEffectKeyword[]`, which is frozen at 10 (D-24023) and has no play keyword. The overlay renders those keywords as badges, so the narrative carries the effect.
+5. **WP vs direct fix.** Direct fix: a narrative string and a log line, with no new `G` field, move, phase or stage.
+
+**Determinism.** `notableEvents` is hashed, so the narrative change alters `finalStateHash` only for a match in which a card with an onAmbush `play-villain-deck-cards` hook is revealed. No committed fixture does: the sentinel replay reveals only a Master Strike, and `PRE_WP080_HASH` is an empty-replay oracle. No golden, PAR, sim profile or hash re-pin. `G.messages` is hash-excluded (D-24081).
+
+**Files.** `packages/game-engine/src/events/notableEvents.compose.ts`, `packages/game-engine/src/villainDeck/villainDeck.reveal.ts`, and their tests. No HTTP endpoint touched.
+
+**Tests.** `villainDeck.reveal.test.ts`: a Leader reveal with a non-empty villain deck emits `ambushResolved` with narrative `"The Leader" ambushed: plays the top card of the Villain Deck.` and `appliedEffects: []`; the `Ambush effect:` log line precedes the played card's city-entry line; the Leader's event is the first notable event. `notableEvents.compose.test.ts`: play-only (1 and 2 cards), effects plus play, and zero count.
+
+**Revert proof.** With the reveal site passing no count to `composeAmbushNarrative`, the new reveal test fails with actual `"The Leader" entered the city with no Ambush effect.`, the prod string.
+
+**Gates.** `pnpm install`; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5146, arena-client 2307, server 1759 after rebasing onto D-24701, with 207 DB-gated skips without `TEST_DATABASE_URL`); `check-number-ledger --check` passed. No hash re-pin; no `lagn-v1.json` churn.
+
+**Not in scope.** Villain effect traces on the reveal path are stamped `turn: 0` because `RevealContext.ctx` carries only `currentPlayer` (`readRevealContextTurn`), while hero traces carry the framework `ctx.turn` (one ahead of the log's play turn after the lobby turn, the D-24697 class). Separate fix.
+
+**Live-verify (D-24026):** pending. After deploy, a match with The Leader in the villain deck: when The Leader is revealed, the overlay reads `"The Leader" ambushed: plays the top card of the Villain Deck.` and the log shows the `Ambush effect:` line before the played card.
+
+**Reserved by:** NUMBER-LEDGER D-24703. Related: D-24351 (play-villain-deck-cards), D-24023 (frozen keyword vocabulary), WP-200 / WP-319 (ambushResolved narrative), D-24081, D-24026.
+
+---
+
+Protect this file.
