@@ -46407,6 +46407,8 @@ parity), D-24568 (the WP-745 sweep).
 
 **Gates.** `divingBlock.logic.test.ts` 15 / 0 fail. The hand-count test was renamed with the counter, and 4 tests were added: a played copy counts alongside hand copies; a Wound gained after Diving Block was played parks the reveal choice; revealing the played copy returns the Wound, draws a card and leaves Diving Block in play; one played copy plus two Wounds parks only one interception.
 
+**Live-verify (D-24026), 2026-10-10: PASS.** Match `r8_2EFHd3Ah` (build `031aaf0`): a played Diving Block was revealed from the play area to stop a Wound (30.2.5 → 30.2.11), and on turn 36 the same played copy was revealed twice (36.2.22, 36.2.33).
+
 **Reserved by:** NUMBER-LEDGER D-24651. Related: D-24499 / WP-682 (Diving Block), WP-684 (non-active seat choice), D-24497 / D-24645 (rules v23 "your Heroes" = hand + played this turn), D-24026 (the live session that surfaced it).
 
 ---
@@ -46726,6 +46728,8 @@ D-24486 already kept each `-N[icon:attack]` from becoming a phantom +N grant, so
 - `ledger:heroes`, `mechanics:metadata`, `effect-index`, `sim:runtime-observed` and `cards:check` are current and unchanged.
 - D-24026 live verify is operator-pending.
 
+**Live-verify (D-24026), 2026-10-12: Lightning Bolt Rooftops PASS (log evidence).** Match `13KtRi8XZSU` (build `a9cd238`, 2p bot-ally Loki / Midtown Bank Robbery): a fight against printed-5 Abomination with 4 attack (11.2.13), and a two-Bolt 7 → 3 Zzzax fight with 5 attack (23.2.20), each affordable only at the reduced cost. The altered-cost badge was not checked.
+
 **Reserved by:** NUMBER-LEDGER D-24663 (#2610). Related: WP-794 / EC-831, D-24652 (WP-790 lazy-field pattern, `AttackTargetName`, `formatAttackTargets`), D-24295 (`CITY_SPACE_NAMES` / `citySpaceNameForIndex`), D-24486 (negative-icon suppression), D-24623 (`gate-only` hollow), D-24574 (projected `fightCost`), D-24603 (Henchmen are Villains), D-24372 (runtime drift pins), WP-795 / D-24664 (Spinning Cyclone).
 
 **Live-verify (D-24026), 2026-10-07: Tidal Wave Bridge half PASS.** Match `1K760WkJX68` (build `1f4ce39`): Tidal Wave logged the Bridge -2 line, and on turn 14 nine attack paid the Bridge Sentinel at 1 plus Magneto at 8, which is unaffordable at the unreduced 11. Lightning Bolt (Rooftops) and the Ranged Mastermind -2 line are still unexercised live. The on-screen half is confirmed too: Jeff saw the Bridge Villain's cost drop with the altered-cost badge.
@@ -46750,6 +46754,11 @@ Around it: the block-all guard `hasPendingMoveVillainChoice(G)` beside every Cov
 **Determinism.** The queue is runtime-only and lazy-initialized at the park site, never in `Game.setup`. The sentinel replay fixture never plays Storm, so `finalStateHash` / `PRE_WP080_HASH` are byte-unchanged — no re-pin. Drift pins (runtime, D-24372): `HERO_KEYWORDS` 76 → 77 (three files), `HERO_EFFECT_HANDLERS` 59 → 60 (two asserts), moves 46 → 47 — re-pinned on top of WP-794 / D-24663, which merged first and took 75 → 76 / 58 → 59.
 
 **Gates.** game-engine 4883 → 4918 / 0 fail (+35; 1122 → 1131 suites); arena-client 2270 → 2278 / 0 fail (+8); vue-tsc 0; dashboard 570 / 0 (totalObs pin unchanged); `pnpm -r --no-bail test` 0 fail across every package; replay fixtures green and byte-unchanged, no sentinel re-pin. Revert proofs 4/4: the park, the swap, the moved-only rescue and the filter pass-through each fail a new test when reverted. `cards:check` reproducible after the apply script (one `core.json` line); `ledger:heroes`, `mechanics:metadata` and `effect-index` regenerated with a real one-row diff; `sim:runtime-observed` current (a line-ending-only regen reverted); `sim:coverage --check` OK.
+
+**Live-verify (D-24026), 2026-10-12: PASS (log evidence).** Match `13KtRi8XZSU` (build `a9cd238`, 2p bot-ally Loki / Midtown Bank Robbery):
+- move + rescue (30.2.6–7), two swaps (14.2.2, 18.2.4), three declines, and the empty-City no-op (40.2.2);
+- no freeze;
+- the `pendingMoveVillainChoice` snapshot was not checked (the export is taken at game end).
 
 **Reserved by:** NUMBER-LEDGER D-24664 (#2610). Related: WP-719 / D-24541 (Covering Fire, the template), D-24284 (active-player scoping), D-24295 (City space names), D-24336 (two-Villain swap), D-24603 (Henchmen are Villains), D-12803 (audience filter), D-24372 (runtime drift pins), D-24648 (anyPendingChoice freeze class), D-6512 (component authoring form).
 
@@ -46813,6 +46822,8 @@ No new G field, move or UIState field. Gameplay and scoring are unchanged; Killb
 
 **Gates.** game-engine 5004 / 0 fail, with 5 new cases (3 `buildCardDisplayData.test.ts`, 2 `psychicLink.revealFromHand.test.ts`). Each fix is revert-proofed by its own case. Also: server 1457 / 0; arena-client 2296 / 0; `sim:coverage --check` OK; `sim:runtime-observed:check` current; `pnpm -r build` 0. The replay sentinel is a Legacy Virus match, so its hash is unaffected.
 
+**Live-verify (D-24026), 2026-10-10: PASS.** Match `38KtA2vWDg9` (build `c26dc19`): Killbots read "Killbot" entering the City (1.1.1), in fights and escapes, and in the Victory Pile display.
+
 **Reserved by:** NUMBER-LEDGER D-24668. Related: WP-513 / D-24324 (Killbots conversion), D-24325 (the Killbot attack counter), WP-659 / D-24470 (reveal-from-hand), WP-434 (log outcomes).
 
 ---
@@ -46841,6 +46852,8 @@ The cards on this path:
 Each now dispatches with a current player who holds no seat in its fixture, so every assertion about the auto-pick order is unchanged. Three new cases pin the new behavior: a Mag2 current-player park beside other players' auto-KO, a magnitude-1 park, and a forced KO that still auto-resolves. The two park cases fail against the old engine.
 
 **Gates.** game-engine 5007 / 0 fail; server 1457 / 0; `sim:coverage --check` OK; `sim:runtime-observed:check` current; the sentinel replay (Brotherhood, zone-locked Juggernaut only) is unchanged; `pnpm -r build` 0.
+
+**Live-verify (D-24026), 2026-10-10: PASS (log evidence).** Match `GkZeatCQh5f` (build `39c8244`): Destroyer's Escape parked the current player's two-KO choice ("the active player must KO two heroes; other players KO’d …", 20.1.3), resolved at 20.1.4–5.
 
 **Reserved by:** NUMBER-LEDGER D-24669. Related: D-24644 (Juggernaut, the zone-locked half), D-24386 / D-24284 (current player chooses, others auto), D-24298 (`remaining`), D-18902 / D-18503 / D-20602 (the auto-pick order kept for other players and the bot), D-24656 (the escape procedure).
 
@@ -47365,6 +47378,8 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages; `sim:runtime-observed:check`, `sim:coverage --check` and `par:seed:test` unchanged; arena-client `vue-tsc` clean; the replay fixture `finalStateHash` and `PRE_WP080_HASH` unchanged.
 
 **Live-verify (D-24026):** pending. After deploy, with an admin bearer token, the eight WP-802 §Verification live steps (eligibility; operator create + a played turn; board with every seat and a bot decision; 409 for a normal match; 400 on `/api/match/create` with the flag; 403 / 401 on the native create, `playAgain` and `/create/`; absent from the public match list; `uiStateSnapshot.isDebugMatch === true` in the Play Diagnostics export). The matchId is recorded as a STATUS flip.
+
+**Live-verify (D-24026), 2026-10-11: `playAgain` guard PASS (partial).** In production, a guest seat holder's `playAgain` (guest-solo match `a1IWi_ipmX6`, valid seat-0 credentials, no bearer) gets the guard's `401` on `playAgain`, `playagain/` and `PLAYAGAIN`; boardgame.io's handler is never reached. The non-admin `403` and the other seven steps remain pending.
 
 **Reserved by:** NUMBER-LEDGER D-24689 (#2688). Related: D-24026, D-24095, D-24119, D-24153, D-24169, D-24187, D-24306, D-24503, D-24094, D-24691, D-15901, D-15902, D-12803, D-24684, D-24686, D-24688.
 

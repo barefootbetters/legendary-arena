@@ -7,6 +7,33 @@
 
 ## Current State
 
+### D-24690 — The ewiki and the dashboard are Cloudflare Workers with one Access-gated door; the Render and Pages bypasses are closed (direct infra change) (2026-10-11)
+
+**Operator-only: `ewiki.legendary-arena.com` and `dashboard.legendary-arena.com`.** Both private sites had a second, ungated address. Render served the whole engineering wiki at `legendary-arena-wiki.onrender.com` (seen 2026-10-05 and 2026-10-11). Cloudflare Pages served the live operator dashboard at `legendary-arena-dashboard.pages.dev`, plus a public preview for every branch push, from 2026-06-02. Access gates hostnames, so these copies were never behind it. Both sites are now assets-only Cloudflare Workers with `workers_dev` and `preview_urls` off. Each one's only address is its custom domain, behind the existing hostname-based Access application.
+
+- **Fixes tried first:**
+  - **Render (#2603):** set `renderSubdomainPolicy: disabled`. The toggle never took effect, because Render never verified the wiki's custom domain: the record was Cloudflare-proxied and pointed at the game server's Render host.
+  - **Pages (#2662):** corrected the `pages.dev` Access runbook. Pages' toggle covers previews only.
+  - **#2673:** updated the dashboard runbook for the live-mode build.
+  - **Decision:** Jeff then chose to move both sites off Render and Pages.
+- **The change (#2697, reserved #2691):**
+  - **Worker configs:** `apps/wiki-viewer/wrangler.jsonc` and `apps/dashboard/wrangler.jsonc`.
+  - **Deploys:** `wiki-viewer.yml` deploys the gated build artifact with wrangler; the new `dashboard-deploy.yml` builds live mode on every push to `main`. Both need the `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` repo secrets.
+  - **Removals:** the wiki service left `render.yaml`, and the `pages.dev` origin left the API's CORS allowlist.
+  - **Decision log:** D-13811 and the hosting half of D-19701 are superseded.
+  - **Docs:** `DOMAINS.md`, the inventory and 19 wiki and docs pages were updated.
+- **Cutover (2026-10-11):**
+  - **First deploy:** uploaded both Workers, but could not attach the custom domains until the old DNS records were deleted.
+  - **Access window:** two probes got `200` in the minute after the ewiki domain attached, before Access applied. Since then, 48 of 48 probes across both hostnames redirect to Access.
+  - **Retirements:** the Render static site is deleted (`onrender.com` → `404`). The Pages project is deleted after its 5,852 deployments were cleared through the API; the `pages.dev` name answered `530`, then left DNS. The `RENDER_WIKI_DEPLOY_HOOK` secret and the temporary tokens are deleted.
+  - **Records:** #2700 recorded the outcome, and #2704 dropped the `pages.dev` probe once the name stopped resolving.
+- **Account sweep.** No other private Workers or Pages project on the account has an open default address: each is either off or behind Access.
+- **Wiki.** The new canonical Guide [Private Site Hosting](../../wiki/private-site-hosting.md) (#2705, revised #2706) explains the one-door shape and the cutover gotchas. `wiki/wiki-viewer.md` History records the wiki side.
+- **Checks.** `pnpm check:domains`: 11 ok, 1 pending (`wiki.`), 0 failed. The retired `onrender.com` host stays as a live `404` probe. Both deploy workflows pass on `main`.
+- **Live-verify (D-24026): done 2026-10-11.** The operator confirmed after login:
+  - the ewiki and its search, and the new History section;
+  - the dashboard: Hanko sign-in, `/overview` with `LIVE` / `CACHED` / `LOCAL` badges and no mock banner, and a `/coverage` deep link on refresh.
+
 ### WP-802 / EC-839 / D-24689 — Operator match: admin-only creation, never scored, and a reveal-all board read (2026-10-11)
 
 **Operator-only, on the game server (after deploy).** An admin can create an unlisted bot-ally **operator match** with `POST /api/admin/operator-match/create-with-bot`, then read its whole board from `GET /api/admin/operator-match/:matchId/board`: every seat's hand, deck in draw order, discard, in-play and victory pile, Wounds split by zone, the villain deck, hero deck and Mastermind tactics in order, the supply counts, the KO and escaped piles, the engine's counters, and the bot's recent decisions (forced or chosen, the policy's own decision lines, the legal-move count). That answers the D-24684 Ymir question in one game. Players see nothing new except that every seat sees the match is an operator match (`UIState.isDebugMatch`). The arena-client panel is the planned follow-on; until it ships, an operator match's gameover submit gets a 422 `debug_match`.
@@ -16,6 +43,7 @@
 - **Re-baseline.** PR #2694 (D-24691, the native guard's router-variant patterns) merged first; WP-802 added only the `playAgain` pattern and the admin rule on top of it.
 - **Tests.** Engine 5059 → 5072 / 0; server 1694 → 1738 tests, 0 fail (207 skipped need a test database; the DB-gated `debug_match` test ran locally, 34/34, 0 skipped). `pnpm -r --no-bail test` 0 fail in all 12 packages; `sim:runtime-observed:check` current, `sim:coverage --check` OK, `par:seed:test` 0; arena-client `vue-tsc` clean; sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged; 12/12 revert proofs.
 - **Live-verify (D-24026):** pending. After deploy, run the eight WP-802 §Verification live steps with an admin bearer token and record the operator matchId here.
+  - **`playAgain` guard: PASS 2026-10-11** (run by Jeff against `api.legendary-arena.com`). A signed-out `POST /api/match/create-guest-solo` returned guest match `a1IWi_ipmX6`, seat `0`, with credentials. Its own seat-0 credentials, no bearer and `unlisted: true`, sent to `POST /games/legendary-arena/a1IWi_ipmX6/{playAgain, playagain/, PLAYAGAIN}`, got `401` with the guard's JSON body ("A signed-in account is required…") each time, not boardgame.io's plain-text `Invalid credentials` 403 or a `nextMatchID`. The guard fires before boardgame.io's handler on all three spellings, so a guest seat holder can no longer mint a match outside the D-24092 gate. The non-admin-token `403` half of step 6, and steps 1–5, 7 and 8, are still pending.
 
 ### WP-801 / EC-838 / D-24687 — "KO one of your Heroes" takes a Hero from your hand or play, never your discard pile (2026-10-11)
 
@@ -211,7 +239,7 @@ Every mastermind's Always Leads now matches the printed card.
 **User-visible on `play.legendary-arena.com` (after deploy).** "Each player KOs N of their Heroes" now prompts the current player to pick, instead of silently KO'ing starters. This covers Destroyer's Escape (two) and Super-Skrull's Fight (one), plus M.O.D.O.K., Stonekeeper and Yondu in other sets. Other players still auto-pick. A forced KO (no more Heroes than owed) still happens without a prompt. Reported in solo match `L7pW0ZAyP_c`.
 
 - **Engine only** (`villainEffects.execute.ts`). game-engine 5007 / 0 fail (+3; 5 authorized test edits); server 1457 / 0.
-- **Live-verify (D-24026): pending.** Let a Destroyer escape with more than two Heroes; a "Choose a Hero to KO (2 remaining)" prompt should appear.
+- **Live-verify (D-24026), 2026-10-10: PASS (log evidence).** Match `GkZeatCQh5f` (build `39c8244`, 2p bot-ally Loki / Super Hero Civil War): Destroyer escaped (20.1.2). The line read "the active player must KO two heroes; other players KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent" (20.1.3): the current player's two-KO choice parked while the bot auto-picked, and the current player then chose two (20.1.4–5). The prompt's own text is not in the log.
 
 ### D-24668 — Killbots are called Killbots; Psychic Link says when no one revealed (direct fix) (2026-10-08)
 
@@ -222,7 +250,7 @@ Every mastermind's Always Leads now matches the printed card.
 Gameplay and scoring are unchanged.
 
 - **Engine only** (`buildCardDisplayData.ts`, `buildInitialGameState.ts`, `heroEffects.execute.ts`). game-engine 5004 / 0 fail (+5, revert-proofed); server 1457 / 0; arena-client 2296 / 0.
-- **Live-verify (D-24026): pending.** In a new Killbots match, a Killbot entering the City should read "Killbot".
+- **Live-verify (D-24026), 2026-10-10: PASS.** Match `38KtA2vWDg9` (build `c26dc19`, 2p bot-ally Dr. Doom / Killbots): every converted card read "Killbot" entering the City ("1.1.1 Killbot (bystander-villain-deck-14) revealed and entered the city."), in fights and escapes, and in both Victory Piles (15 display entries, none "Bystander").
 
 ### WP-796 — "Add an extra Henchman group" schemes require the extra group (EC-833 / D-24666) (2026-10-07)
 
@@ -297,10 +325,12 @@ is not a fight or an escape: nothing triggers, and a Villain moved to the Bridge
 - **Counts.** game-engine 4883 → 4918 / 0 fail; arena-client 2270 → 2278 / 0 fail; dashboard 570 / 0; vue-tsc 0;
   replay fixtures and sentinel hashes byte-unchanged (no re-pin). Drift pins only among existing tests
   (`HERO_KEYWORDS` 76 → 77, handlers 59 → 60, moves 46 → 47, on top of WP-794). Revert proofs 4/4.
-- **Live-verify (D-24026): pending (operator, post-deploy).** In a match with core Storm, play Spinning Cyclone:
-  move a Villain holding a Bystander to an empty space (move + rescue lines), swap two Villains once, decline
-  once, confirm no freeze, and confirm `pendingMoveVillainChoice` appears in the Play Diagnostics
-  `uiStateSnapshot` while the prompt is open. Record the matchId here.
+- **Live-verify (D-24026), 2026-10-12: PASS (log evidence).** Match `13KtRi8XZSU` (build `a9cd238`, 2p bot-ally Loki / Midtown Bank Robbery):
+  - **Move + rescue:** Destroyer moved from the Bank to the empty Bridge and 1 Bystander was rescued (30.2.6–7).
+  - **Swaps:** Enchantress and The Leader (14.2.2), Zzzax and Maestro (18.2.4).
+  - **Declines:** three (20.2.8, 24.2.4, 36.2.6), and the empty-City no-op (40.2.2).
+  - **No freeze:** the game ran to the final blow.
+  - **Not checked:** the `pendingMoveVillainChoice` snapshot. The export is taken at game end, so no prompt was open.
 
 ### WP-794 — Storm and Forge "this turn gets -N attack" lines lower fight costs (EC-831, D-24663) (2026-10-06)
 
@@ -323,9 +353,10 @@ the Rooftops later in the turn still gets the reduction.
   Replay fixtures and `PRE_WP080_HASH` are byte-unchanged.
 - **Coverage baseline updated:** `noEffect` core −7, cvwr −5, dkcy −5. The ledger, mechanics, effect index and
   runtime-observed artifacts are unchanged.
-- **Live-verify (D-24026): pending.** In a match with core Storm, play Lightning Bolt with a Villain on the
-  Rooftops. Confirm the log line, that the Rooftops card's cost drops by 2 with the altered-cost badge, and that the
-  fight spends the reduced amount.
+- **Live-verify (D-24026), 2026-10-12: PASS (log evidence).** Match `13KtRi8XZSU` (build `a9cd238`, 2p bot-ally Loki / Midtown Bank Robbery). The bot's Lightning Bolt logged the Rooftops −2 line every play (11.2.3 …). Fights only affordable at the reduced cost:
+  - **Turn 11:** Abomination (printed 5) was fought on the Rooftops with 4 attack (11.2.13).
+  - **Turn 23:** two Lightning Bolts took Zzzax from 7 (printed 5 + 2 Bystanders) to 3, fought with 5 attack (23.2.20).
+  - **Not checked:** the altered-cost badge (a visual).
 
 ### D-24662 — Silent Sniper and Pure Fury name their free defeat; God of Thunder stops logging phantom hollows (direct fix) (2026-10-06)
 
@@ -335,7 +366,7 @@ the Rooftops later in the turn still gets the reduction.
 
 - **Engine only** (`heroAbility.setup.ts`, `heroEffects.execute.ts`). game-engine 4883 / 0 fail (+4, revert-proofed); server 1455 / 0.
 - **Coverage baseline updated:** co2e, msp1 and xmen each have one unmarked conversion line that now honestly counts as `noEffect`. Ledger and index checks are current.
-- **Live-verify (D-24026): pending.** Play Silent Sniper with exactly one Villain holding a Bystander and look for the "for free" line. Play God of Thunder; the diagnostics should show no recruit/attack no-handler traces.
+- **Live-verify (D-24026): Silent Sniper half PASS, God of Thunder half pending.** Silent Sniper: match `B59aMEnwd5M` (2026-10-06, per D-24662), and again in match `CM_RIBLkJem` (build `4d96598`), where "Player 0's Silent Sniper defeats Loki for free." (32.2.11). Still pending: play God of Thunder; the diagnostics should show no recruit/attack no-handler traces.
 
 ### D-24661 — solo Covering Fire and Whispers and Lies say they did nothing; Cruel Ruler names its free defeat (direct fix) (2026-10-05)
 
@@ -590,7 +621,7 @@ Wound (e.g. from fighting Sabretooth) gave no prompt. Revealing it from play lea
 stops one Wound.
 
 - **Engine only.** `divingBlock.logic.ts` (`countRevealableDivingBlockCopies` counts hand + play area) + 4 tests.
-- **Live-verify (D-24026):** pending. Play Diving Block, then fight a villain that wounds you (Sabretooth) or take a
+- **Live-verify (D-24026), 2026-10-10: PASS.** Match `r8_2EFHd3Ah` (build `031aaf0`, 2p bot-ally Loki / Midtown): Diving Block was played (30.2.5), then revealed from the play area to stop Crazed Rampage's Wound (30.2.11). On turn 36 one played Diving Block (36.2.10) was revealed twice more (36.2.22, 36.2.33), so it stayed in play after revealing. Original recipe: play Diving Block, then fight a villain that wounds you (Sabretooth) or take a
   Master Strike: the "Reveal Diving Block" prompt appears, and Diving Block stays in your play area after revealing.
 
 ### D-24650 — The bottom-left play buttons no longer cover the Reveal button (direct fix) (2026-10-01)

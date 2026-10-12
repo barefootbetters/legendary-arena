@@ -76,8 +76,12 @@ are recorded in `render.yaml`.
 **Cost-reduction order.** These steps are ranked by savings for the effort.
 1. **Finish the migration.** It restarted on 2026-10-04. The work that needs
    no droplet is merged: `legendary-arena-lab` #17 and #18 fixed the
-   provisioners and proved them in CI on Ubuntu 24.04. What remains starts
-   with a payment method on the DigitalOcean account. Every month on Render
+   provisioners and proved them in CI on Ubuntu 24.04, and on 2026-10-11 the
+   whole chain was rehearsed on the real $24 droplet, including a
+   production-copy restore (see
+   [Rehearsal results](ubuntu-lab-provisioning.md#rehearsal-results-2026-10-11)).
+   What remains is the Cloudflare TLS step, the offsite backup and monitoring
+   credentials, and the cutover itself. Every month on Render
    costs about $120 more than the $24 droplet would. The phases and gates in the
    PLAN are unchanged.
 2. **Size from data, not from the July incidents.** Done 2026-10-11: both

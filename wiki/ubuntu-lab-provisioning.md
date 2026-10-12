@@ -69,6 +69,9 @@ pg_dump  →  Cloudflare R2  (backups)
   server and database share one box, so there is no cross-provider hop (the
   alternatives weighed are in
   [Architecture candidates](render-migration-analysis.md#architecture-candidates-decided)).
+- **Is provisioned and rehearsed (2026-10-11).** `la-rehearsal-01` passed every
+  provisioner and a production-copy restore, and is kept as the cutover box; see
+  [Rehearsal results](#rehearsal-results-2026-10-11).
 - **Is not yet carrying production traffic.** Until cutover, the box is
   provisioned and rehearsed against a **copy** of the data, never the live prod
   DB. Render's managed Postgres allows credential-gated public inbound
@@ -100,8 +103,8 @@ driver too.
 | Database | Self-hosted PostgreSQL 18 on `localhost`. |
 | Edge | Cloudflare in front; Nginx terminates TLS with a Cloudflare Origin Certificate. |
 | Deploy | GitHub Actions → SSH → `git pull` + build + `systemctl reload`. |
-| Backups | `pg_dump` to R2; restore rehearsed (§5) and full rebuild rehearsed (§6). |
-| Monitoring | Documented monitoring is a cutover gate owned by the program. |
+| Backups | `pg_dump` to R2, restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11; the R2 upload with real credentials is not yet proven. |
+| Monitoring | Provisioner `60` with a real health-check URL and alert path; not yet rehearsed, and a cutover gate. |
 
 The executable versions — cloud-init, the numbered provisioners, the systemd
 unit, the TLS setup and the deploy pipeline — live in the `legendary-arena-lab`
@@ -109,20 +112,74 @@ repo (`infra/`, `content/`, and its operator wiki), and they are authoritative.
 §1–§6 below are the original hand-run rehearsal procedure, kept because they
 show what each provisioner does.
 
+### Rehearsal results (2026-10-11)
+
+The provisioners were rehearsed end to end on a real droplet before any
+production traffic: `la-rehearsal-01`, DigitalOcean `sfo3`, Basic 2 vCPU /
+4 GB / 80 GB ($24/mo), Ubuntu 24.04.5. The droplet is **kept** as the cutover
+box, so cutover day starts from a provisioned host rather than a blank one.
+
+| Step | Result |
+|---|---|
+| cloud-init | Pass after a fix (bug 1 below): `operator` user, SSH key, PowerShell 7.6.6 |
+| `05` SSH hardening | Pass: root login and password auth refused; key login as `operator` works |
+| `06` UFW | Pass: only 22, 80, and 443 open |
+| `07` fail2ban + unattended-upgrades | Pass |
+| `08` swapfile | Pass: 2 GB, swappiness 10 |
+| `10` Node / pnpm | Pass: Node 24.18.0, pnpm 10.32.1 |
+| `20` Nginx | Pass: `/health` proxied on port 80 |
+| `30` PostgreSQL | Pass: PostgreSQL 18.6; `shared_buffers` auto-set to 979 MB (25% of RAM) |
+| `40` deploy | Pass in 71 s: engine `main` built, migrations run, systemd service healthy |
+| `50` → `51` backup and restore drill | Pass: 41 tables, row counts identical; `51` refuses the live database without its flag |
+| Production-copy restore | Pass after a fix (bug 2 below): 41 tables and 6,320 rows identical to production; `schema_migrations` 45 on both |
+
+**Measured on the 4 GB box.** The deploy build peaked at **1.37 GB used with
+no swap**. Steady state with the server and Postgres running is about 800 MB
+used and 3.1 GB available. That confirms the $24 sizing: the heaviest moment
+used about a third of RAM.
+
+**Two real bugs, both invisible to CI, both fixed in `legendary-arena-lab`:**
+1. **Ubuntu 24.04 ships a system group named `operator` (gid 37).**
+   cloud-init's `useradd operator` failed with "group operator exists", so
+   the user and its SSH key were never created and the box was unreachable as
+   `operator`. CI missed it because `provision-smoke` only schema-checks
+   cloud-init and creates the user with its own command. Fixed in lab #22:
+   `primary_group: operator` in cloud-init, and the same fix in
+   `05-user-and-ssh.ps1`. Verified on a fresh boot.
+2. **Production carries `pg_stat_statements`** (Render's query monitoring),
+   and `51-restore` restores as the app role, which cannot create extensions.
+   The restore failed at the first statement, and **the real cutover restore
+   would have failed the same way.** Fixed in lab #23: `51` creates the dump's
+   extensions as `postgres` first, then restores the rest as the app role.
+   `provision-smoke` now covers this case.
+
+**Data handling.** The production copy was a read-only `pg_dump` (15 MB, from
+a 66 MB database). The operator ran the copy to the droplet and the restore
+by hand. Afterwards every copy was deleted: the local dump, the copy on the
+droplet, and the restored scratch database. Production was never written to.
+
+**Not yet rehearsed:**
+- `21` Cloudflare TLS: the real Origin Certificate, Full (strict), and 443
+  locked to Cloudflare ranges. It needs Cloudflare access and belongs to
+  cutover.
+- `50` offsite upload to R2 with real credentials (the drill ran local-only)
+  and `60` monitoring with a real health-check URL and alert path.
+- The cutover itself: a fresh production dump, the `api.` DNS flip, and the
+  rollback drill (repointing `api.` back to Render).
+
 ### Prerequisites & effort
 
 - A DigitalOcean account with an SSH key pair already uploaded.
 
-  **Account status (2026-10-04).** The account is open but has **no payment
-  method**, so it cannot create a droplet yet. Usage is $0 and no resources
-  exist. The account also holds a $5 "Inference Cloud Trial" credit that
-  expires 2026-10-21. It is named for the inference products, so do not count
-  on it covering droplet usage. Remaining setup, in order:
-  1. Add a payment method (operator only).
-  2. Set a spend alert a little above the planned droplet price, for example
-     $30 a month for the $24 box (raise it on a resize). The billing page now offers spend alerts.
-  3. Upload the SSH public key, and create an API token if provisioning goes
-     through `doctl` or Terraform.
+  **Account status (2026-10-11).** Payment method added. The operator's
+  desktop has `doctl` authenticated with a 30-day API token, and its SSH key
+  is uploaded to the account. One droplet exists, `la-rehearsal-01` ($24/mo),
+  kept as the cutover box (see [Rehearsal results](#rehearsal-results-2026-10-11)).
+  A spend alert a little above the droplet price (for example $30 a month,
+  raised on a resize) is recommended; it was not confirmed set as of this
+  revision. The $5 "Inference Cloud Trial" credit expires 2026-10-21 and is
+  named for the inference products, so do not count on it covering droplet
+  usage.
 - A throwaway lab hostname (e.g. `lab.<your-domain>`) ready to point at the
   droplet IP.
 - Familiarity with the production topology in the
@@ -384,8 +441,10 @@ operator can, unaided —
   Worker (D-24690). The droplet was sized from measured Render use at 2 vCPU /
   4 GB with a 2 GB swapfile (lab D-002, `legendary-arena-lab` #19); it is too
   small to also host the [AI Second Brain](ai-second-brain.md), and driving-only
-  voice doesn't require local STT/TTS on either host. The cost, vendor and
-  architecture analysis moved to
+  voice doesn't require local STT/TTS on either host. The whole provisioner
+  chain and a production-copy restore were then rehearsed on `la-rehearsal-01`,
+  which surfaced two bugs CI could not see (lab #22, #23); the box is kept for
+  cutover. The cost, vendor and architecture analysis moved to
   [Render Migration Analysis](render-migration-analysis.md).
 
 ## Open Questions
@@ -402,9 +461,13 @@ operator can, unaided —
 2. Publish the migration Work Packet, including a check against the
    server-layer boundary in
    [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
-3. Pass the cutover gates: a validated backup and a **tested** restore and
-   rebuild (§5–6), and documented monitoring.
-4. Cut over, with a tested rollback (repoint Cloudflare DNS `api.` → Render).
+3. Finish the unrehearsed provisioning steps (see
+   [Rehearsal results](#rehearsal-results-2026-10-11)): `21` Cloudflare TLS
+   (Origin Certificate, Full (strict), 443 locked to Cloudflare ranges), the
+   `50` offsite upload to R2 with real credentials, and `60` monitoring. The
+   restore half of the backup gate already passed on a production copy.
+4. Cut over from a fresh production dump, with a rehearsed rollback (repoint
+   Cloudflare DNS `api.` → Render).
 5. Decommission Render after a deliberately short rollback window.
 
 ## References

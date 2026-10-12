@@ -484,7 +484,8 @@ Step-by-step walkthroughs for completing specific tasks.
   DigitalOcean Ubuntu 24.04 host replacing Render for `api.` and its
   PostgreSQL: target architecture (Cloudflare → Nginx → `apps/server` +
   `localhost` Postgres under systemd, backups to R2), why the platform is
-  changing, the 2 vCPU / 4 GB target configuration, droplet hardening, the
+  changing, the 2 vCPU / 4 GB target configuration, the 2026-10-11 rehearsal
+  results on the kept cutover droplet, droplet hardening, the
   rehearsal deploy against a **copy** of the DB, restore and full-rebuild
   drills, and what the operator takes over from Render. The program repo
   (`legendary-arena-lab`) holds the executable runbook; cost and vendor
