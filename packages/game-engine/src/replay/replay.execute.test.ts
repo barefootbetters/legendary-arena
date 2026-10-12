@@ -178,7 +178,14 @@ import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
 // stream is byte-unchanged; the sole delta is the hand/deck split. A real behaviour change
 // (the tabletop starting-hand deal), verified against the regenerated sentinel — not a masked
 // regression.
-const PRE_WP080_HASH = '4b119265';
+// why: WP-805 / D-24700 re-pin (2026-10-12) — buildInitialGameState now seeds the
+// omit-when-off isFirstPlayerRandom: true for two or more seats, and this replay is
+// 2-seat (playerOrder ['0', '1']), so the key serializes into its final state and shifts
+// the hash. The SOLE canonical-JSON delta is that one key: replayGame drives its own
+// playerOrder and never runs boardgame.io's play-phase turn order, so nothing is drawn
+// and no trajectory changes. Sanctioned new-hashed-field class.
+// Pre-WP-805: '4b119265'. Post-WP-805: 'dae75521'.
+const PRE_WP080_HASH = 'dae75521';
 
 /**
  * Minimal mock registry for replay tests. Mirrors replay.verify.test.ts.

@@ -1776,6 +1776,17 @@ export interface LegendaryGameState {
   /** Whether this match is an admin-created operator match. Absent = normal match. */
   readonly isDebugMatch?: boolean;
 
+  // why: WP-805 / D-24700 — the random-first-player flag (rules v23 L524, "Choose a
+  // random player to go first"). OPTIONAL and seeded by buildInitialGameState ONLY for
+  // a match with two or more seats; omitted for solo (one seat has no choice to make).
+  // Nothing writes it after setup. The play phase's turn.order.first reads it: true
+  // draws the opener with the match's seeded random; absent keeps the old opener
+  // (the seat after the lobby turn holder), so a stored log created before WP-805
+  // replays unchanged through the faithful replay (D-24119). Omit-when-off keeps solo
+  // byte-identical (the WP-686 finalBlow / WP-802 isDebugMatch precedent).
+  /** Whether this match draws its first player at random when play begins. Absent = created before WP-805, or solo. */
+  readonly isFirstPlayerRandom?: boolean;
+
   // why: selection extracts the entity reference fields from matchConfiguration
   // for convenient read access. matchConfiguration is the full 9-field input;
   // selection holds just the scheme, mastermind, and group ext_ids.
