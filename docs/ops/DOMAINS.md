@@ -515,7 +515,7 @@ works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
 2. **Sign in to Cloudflare** as yourself: `pnpm dlx wrangler@4.149.0 login`.
    It opens the browser for an OAuth grant. Nothing to copy, and no token is
    stored in the repo. Use the same wrangler version the workflows pin.
-3. **The account:** `$env:CLOUDFLARE_ACCOUNT_ID = 'a1e9255402b3d778a06b56fda38eee85'`.
+3. **The account:** `$env:CLOUDFLARE_ACCOUNT_ID = '<account id>'`. It's the 32-hex id in the Cloudflare dashboard URL (`dash.cloudflare.com/<account id>/…`), and it's kept out of this public repo.
 
 **ewiki** (`legendary-arena-wiki`):
 

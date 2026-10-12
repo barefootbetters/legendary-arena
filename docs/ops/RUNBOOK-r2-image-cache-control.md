@@ -172,9 +172,8 @@ Cloudflare **edge** does not cache the R2 custom-domain responses without an exp
 Cache Rule. So this step is required to get edge caching (lower R2 egress + faster first
 paint for new clients); until it lands, only browser caching is active.
 
-Create the rule on the **`legendary-arena.com`** zone (account
-`a1e9255402b3d778a06b56fda38eee85`; `images.legendary-arena.com` is an R2 custom domain
-on that zone).
+Create the rule on the **`legendary-arena.com`** zone, in the project's Cloudflare
+account (`images.legendary-arena.com` is an R2 custom domain on that zone).
 
 **Matcher — scopes to card images, excludes avatars (also `.webp` on the same host):**
 

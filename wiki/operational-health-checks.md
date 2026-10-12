@@ -462,8 +462,8 @@ CONNECTIONS (concurrent)
   ✓ Arena-client bundle env : https://play.legendary-arena.com/assets/index-BaZEBP-t.js has all required VITE_* env vars inlined.
   ✓ GitHub API : barefootbetters/legendary-arena found  (563ms)
   ✓ Git remote : origin → https://github.com/barefootbetters/legendary-arena.git
-  ✓ Hanko JWKS : https://cfd0ef6d-6cb9-43a6-83c1-9956bb93bd2e.hanko.io/.well-known/jwks.json → 200 2 keys  (897ms)
-  ✓ Hanko tenant CORS : https://cfd0ef6d-6cb9-43a6-83c1-9956bb93bd2e.hanko.io/me allows Origin=https://play.legendary-arena.com  (HTTP 204, 897ms)
+  ✓ Hanko JWKS : https://<tenant-id>.hanko.io/.well-known/jwks.json → 200 2 keys  (897ms)
+  ✓ Hanko tenant CORS : https://<tenant-id>.hanko.io/me allows Origin=https://play.legendary-arena.com  (HTTP 204, 897ms)
   ✓ rclone config : Config found at C:\Users\jjensen\AppData\Roaming\rclone\rclone.conf
   ✓ rclone binary : rclone v1.73.3
   ✓ rclone R2 bucket : bucket root: 45 folders

@@ -32,7 +32,7 @@ export const INFRA_COST_ACTUALS_AS_OF = '2026-09-30';
 
 // why: month-to-date spend per vendor as of INFRA_COST_ACTUALS_AS_OF, read from
 // the vendor bills. Sourcing, per vendor:
-//   render     — Render invoice 0SPQWPNF-0006 (Sep 1–30 2026, paid 2026-10-01),
+//   render     — Render's September 2026 invoice (Sep 1–30, paid 2026-10-01),
 //                compute + pipeline + egress: legendary-arena-server on `pro`
 //                ($85.00) + builds, 6h42m ($5.00) + bandwidth, 6.5 GB ($1.05) +
 //                the ewiki static site ($0.00) = $91.05. The Postgres datastore

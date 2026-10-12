@@ -24,8 +24,7 @@ source:
   - ../render.yaml
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
-  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0005.pdf (Render bill, Aug 2026)
-  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026)
+  - C:\pcloud\LA\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
 last-reviewed: 2026-10-12
 ---
 
