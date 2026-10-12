@@ -1064,3 +1064,126 @@ test('D-24658: ticking the preview Final Blow box on a loadout sends finalBlow:t
 
   assert.equal(createSetupData(calls).finalBlow, true);
 });
+
+// --- WP-804 / EC-841: the admin-only "Operator match" option ---
+
+/**
+ * Stub fetch for the operator option: the eligibility probe answers
+ * `eligibilityStatus`, both create routes return a matchId, the join returns
+ * the human's credential, and the mount-time calls succeed. Records every call.
+ */
+function stubOperatorLobbyFetch(eligibilityStatus: number): RecordedCall[] {
+  const recorded: RecordedCall[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    recorded.push({ url, init });
+    if (url.includes('/api/admin/operator-match/eligibility')) {
+      return {
+        ok: eligibilityStatus === 200,
+        status: eligibilityStatus,
+        json: async () => ({ isOperator: eligibilityStatus === 200 }),
+      } as Response;
+    }
+    if (url.includes('/api/admin/operator-match/create-with-bot')) {
+      return { ok: true, status: 200, json: async () => ({ matchId: 'match-operator-1' }) } as Response;
+    }
+    if (url.includes('/api/match/create-with-bot')) {
+      return { ok: true, status: 200, json: async () => ({ matchId: 'match-bot-xyz' }) } as Response;
+    }
+    if (url.includes('/api/match/join')) {
+      return { ok: true, status: 200, json: async () => ({ playerCredentials: 'human-own-cred' }) } as Response;
+    }
+    if (url.includes('/api/match/setup-requirements')) {
+      return { ok: true, status: 200, json: async () => ({ requirements: SETUP_REQUIREMENTS }) } as Response;
+    }
+    return { ok: true, status: 200, json: async () => ({ matches: [] }) } as Response;
+  }) as typeof globalThis.fetch;
+  return recorded;
+}
+
+test('WP-804: the operator checkbox is absent for a non-operator and present after an eligibility 200', async () => {
+  setSearch('?route=lobby');
+  stubOperatorLobbyFetch(403);
+  const playerWrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await flushPromises();
+  assert.equal(playerWrapper.find('[data-testid="lobby-operator-match"]').exists(), false);
+  playerWrapper.unmount();
+
+  const calls = stubOperatorLobbyFetch(200);
+  const adminWrapper = mountLobby();
+  await flushPromises();
+  assert.equal(
+    adminWrapper.find('[data-testid="lobby-operator-match"]').exists(),
+    false,
+    'signed out: no probe, no option',
+  );
+  signIn();
+  await flushPromises();
+  assert.ok(calls.some((call) => call.url.includes('/api/admin/operator-match/eligibility')));
+  const option = adminWrapper.find('[data-testid="lobby-bot-ally"] [data-testid="lobby-operator-match"]');
+  assert.equal(option.exists(), true, 'the option sits in the bot-ally section');
+  assert.match(
+    adminWrapper.find('[data-testid="lobby-bot-ally"]').text(),
+    /Operator match \(admin, not scored\)/,
+  );
+});
+
+test('WP-804: checked, the bot-ally create posts to the operator path and then joins seat 0', async () => {
+  setSearch('?route=lobby');
+  const calls = stubOperatorLobbyFetch(200);
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await flushPromises();
+  await wrapper.find('#playerName').setValue('Operator');
+  await wrapper.find('[data-testid="lobby-operator-match"]').setValue(true);
+
+  await wrapper.find('[data-testid="lobby-create-bot-ally"]').trigger('click');
+  await flushPromises();
+
+  const operatorCreate = calls.find((call) => call.url.includes('/api/admin/operator-match/create-with-bot'));
+  assert.ok(operatorCreate, 'the operator create endpoint was called');
+  assert.equal(
+    (operatorCreate!.init?.headers as Record<string, string>).Authorization,
+    'Bearer bot-ally-token',
+  );
+  const createBody = JSON.parse(String(operatorCreate!.init?.body)) as {
+    numPlayers: number;
+    botCount: number;
+    policy: string;
+  };
+  assert.equal(createBody.numPlayers, 2);
+  assert.equal(createBody.botCount, 1);
+  assert.equal(createBody.policy, 'competent');
+  assert.ok(
+    !calls.some((call) => call.url.includes('/api/match/create-with-bot')),
+    'the public create is not called',
+  );
+  const joinCall = calls.find((call) => call.url.includes('/api/match/join'));
+  assert.ok(joinCall, 'the human joined seat 0');
+  const joinBody = JSON.parse(String(joinCall!.init?.body)) as { matchID: string; playerID: string };
+  assert.equal(joinBody.matchID, 'match-operator-1');
+  assert.equal(joinBody.playerID, '0');
+});
+
+test('WP-804: unchecked, the bot-ally create posts to the public path as before', async () => {
+  setSearch('?route=lobby');
+  const calls = stubOperatorLobbyFetch(200);
+  const wrapper = mountLobby();
+  await flushPromises();
+  signIn();
+  await flushPromises();
+  await wrapper.find('#playerName').setValue('Operator');
+  assert.equal(wrapper.find('[data-testid="lobby-operator-match"]').exists(), true);
+
+  await wrapper.find('[data-testid="lobby-create-bot-ally"]').trigger('click');
+  await flushPromises();
+
+  assert.ok(calls.some((call) => call.url.includes('/api/match/create-with-bot')));
+  assert.ok(
+    !calls.some((call) => call.url.includes('/api/admin/operator-match/create-with-bot')),
+    'the operator create is not called when unchecked',
+  );
+});

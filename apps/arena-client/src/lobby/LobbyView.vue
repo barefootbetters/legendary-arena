@@ -29,6 +29,8 @@ import type { LagnDisplayNames } from './lagnLoadout';
 import { persistMatchSetup, persistBotAllySetup } from '../diagnostics/matchSetupSession';
 import { launchMatchFromComposition } from './useCreateMatchFromComposition';
 import { useAuthStore } from '../stores/auth';
+import { useOperatorEligibility } from '../composables/useOperatorEligibility';
+import { createOperatorMatchWithBot } from '../lib/api/operatorMatchApi';
 
 // why: defineComponent({ setup() { return {...} } }) is required (NOT
 // <script setup>) because the template references non-prop bindings under
@@ -150,6 +152,11 @@ export default defineComponent({
     // 1..seatCount-1 so at least one seat is always left open for the human.
     const botAllyBotCount = ref('1');
     const botAllyPolicy = ref('competent');
+    // why: WP-804 / D-24689 §6 — an admin can make the bot-ally match an
+    // operator match (unscored, inspectable from the play surface). The option
+    // shows only after the eligibility route answers 200; the server gates the
+    // operator create route itself (D-15902).
+    const isOperatorMatchChecked = ref(false);
 
     // why: JSON-first layout per WP-092. The Registry Viewer loadout
     // builder (WP-091) is the expected authoring path; users export a
@@ -350,6 +357,9 @@ export default defineComponent({
     }
 
     const authStore = useAuthStore();
+    // why: WP-804 — the lobby probes once per visit for a signed-in user (and
+    // again if the token changes), to show or hide the operator-match option.
+    const { isOperator } = useOperatorEligibility(ref(true));
 
     // why: D-24092 — playing a seat in a multiplayer match requires a free
     // account. Returns the bearer token when signed in; otherwise sends the
@@ -472,7 +482,13 @@ export default defineComponent({
 
       isSubmitting.value = true;
       try {
-        const created = await createMatchWithBot(
+        // why: WP-804 — the operator box swaps only the create route; the setup
+        // stash, the seat-0 join and the navigation below are unchanged.
+        const createBotAllyMatch =
+          isOperator.value && isOperatorMatchChecked.value
+            ? createOperatorMatchWithBot
+            : createMatchWithBot;
+        const created = await createBotAllyMatch(
           config,
           seatCount,
           botCount,
@@ -1118,6 +1134,8 @@ export default defineComponent({
       botAllyBotCount,
       botAllyPolicy,
       createWithBotAlly,
+      isOperator,
+      isOperatorMatchChecked,
       isSignedIn,
       activeGuestMatchId,
       guestSeatLink,
@@ -1259,6 +1277,15 @@ export default defineComponent({
         <option value="competent">Competent (heuristic)</option>
         <option value="random">Random</option>
       </select>
+
+      <label v-if="isOperator" class="lobby-operator-match">
+        <input
+          v-model="isOperatorMatchChecked"
+          type="checkbox"
+          data-testid="lobby-operator-match"
+        />
+        Operator match (admin, not scored)
+      </label>
 
       <button
         type="button"

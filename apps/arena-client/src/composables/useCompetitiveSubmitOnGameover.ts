@@ -59,6 +59,8 @@ import {
  *   marker, WP-502 / D-24306), so it is never scored whatever its loadout; NOT an
  *   error and NOT retriable. Distinct from `ineligible` so the UI never claims an
  *   early-ended ranked-gauntlet match "isn't part of a ranked gauntlet".
+ * - `operator-match` — an admin-created operator match (`isDebugMatch`, WP-802 /
+ *   D-24689 §3), which is never scored; nothing is submitted (WP-804).
  */
 export type SubmissionStatus =
   | 'idle'
@@ -69,7 +71,8 @@ export type SubmissionStatus =
   | 'guest'
   | 'session-expired'
   | 'ineligible'
-  | 'ended-early';
+  | 'ended-early'
+  | 'operator-match';
 
 /**
  * Optional account-binding evidence for telling an expired session apart from a
@@ -244,6 +247,18 @@ export function useCompetitiveSubmitOnGameover(
     const currentMatchId = matchId.value;
     if (currentMatchId === '') {
       // why: no live match id (a non-live mount) — nothing to submit.
+      return;
+    }
+
+    // why: WP-804 / D-24689 §3 — an operator match is never scored. The client
+    // skips the doomed POST and latches (hasSubmitted + submittedForMatch), so a
+    // later gameover frame for this match never submits even if the flag were
+    // absent from it; the server's debug_match 422 stays authoritative. Checked
+    // before the early-end and guest checks so every seat gets the same status.
+    if (uiStateStore.snapshot?.isDebugMatch === true) {
+      hasSubmitted = true;
+      submittedForMatch = currentMatchId;
+      submissionStatus.value = 'operator-match';
       return;
     }
 

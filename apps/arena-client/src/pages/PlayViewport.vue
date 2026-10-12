@@ -1,5 +1,5 @@
 <script lang="ts">
-import { computed, defineComponent, ref, toRef, watch, type PropType } from 'vue';
+import { computed, defineAsyncComponent, defineComponent, ref, toRef, watch, type PropType } from 'vue';
 import { storeToRefs } from 'pinia';
 
 import PlayDesktop from './PlayDesktop.vue';
@@ -42,6 +42,7 @@ import { useWoundCue } from '../composables/useWoundCue';
 import { useAdaptiveMusic } from '../composables/useAdaptiveMusic';
 import { useBotAllyStatus } from '../composables/useBotAllyStatus';
 import { useDeployVersionCheck } from '../composables/useDeployVersionCheck';
+import { useOperatorEligibility } from '../composables/useOperatorEligibility';
 import { useUiStateStore } from '../stores/uiState';
 import { useAuthStore } from '../stores/auth';
 import { useBuildProvenanceStore } from '../stores/buildProvenance';
@@ -53,6 +54,16 @@ import {
 } from '../lobby/useCreateMatchFromComposition';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
+
+// why: WP-804 / D-24689 §6 — the operator board panel is lazy: normal play never
+// downloads it, because PlayViewport ships in the entry chunk (App.vue imports it
+// statically). It is registered under the PascalCase name and rendered with the
+// PascalCase tag so the build keeps it in its own chunk. No errorComponent: if
+// the chunk fails to load, the panel renders nothing and Vue logs the error,
+// which is acceptable for operator tooling.
+const OperatorBoardPanel = defineAsyncComponent(
+  () => import('../components/play/OperatorBoardPanel.vue'),
+);
 
 // why: WP-339 — the user-facing message for each post-match submission status.
 // Mounted once here at the shared viewport root (which holds matchId, D-16501), so
@@ -86,6 +97,9 @@ const SUBMISSION_MESSAGES: Record<Exclude<SubmissionStatus, 'idle'>, string> = {
   // loadout (a ranked-gauntlet match included), so it gets its own honest line rather
   // than the par_not_published `ineligible` copy, which would be false for a gauntlet.
   'ended-early': 'This match ended early, so it isn’t scored to the leaderboard.',
+  // why: WP-804 / D-24689 §3 — an admin-created operator match is never scored;
+  // every seat is told so instead of seeing a failed submit.
+  'operator-match': 'Operator match — not scored.',
 };
 
 /**
@@ -139,7 +153,7 @@ export function computeCasualCoachMatchId(
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, GameLogCopyButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, BattleBrief, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, GameLogCopyButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, BattleBrief, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner, OperatorBoardPanel },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -394,6 +408,20 @@ export default defineComponent({
     // banner's whole gate — no client-side "is it the final turn" logic here.
     const finalTurn = computed(() => endgameSnapshot.value?.finalTurn);
 
+    // why: WP-804 — an operator match (UIState.isDebugMatch, public to every
+    // audience) shows every seat the "not scored" badge.
+    const isOperatorMatch = computed<boolean>(
+      () => endgameSnapshot.value?.isDebugMatch === true,
+    );
+    // why: WP-804 — the play surface probes eligibility only in an operator
+    // match, so a normal game never costs the server an admin lookup.
+    const { isOperator } = useOperatorEligibility(isOperatorMatch);
+    // why: WP-804 — the panel needs all three: an operator match, an eligible
+    // (admin) viewer, and a live match id to read (the fixture route has '').
+    const isOperatorPanelVisible = computed<boolean>(
+      () => isOperatorMatch.value && isOperator.value && props.matchId !== '',
+    );
+
     const isGameOver = computed<boolean>(
       () => endgameSnapshot.value?.gameOver !== undefined,
     );
@@ -497,6 +525,8 @@ export default defineComponent({
       playAgainError,
       playAgain,
       finalTurn,
+      isOperatorMatch,
+      isOperatorPanelVisible,
     };
   },
 });
@@ -611,6 +641,17 @@ export default defineComponent({
       // match.
     -->
     <HollowEffectsPanel />
+    <!--
+      // why: WP-804 / D-24689 §3 — the public operator-match badge, for every
+      // seat, so nobody mistakes an unscored operator match for a ranked one.
+    -->
+    <p v-if="isOperatorMatch" class="operator-match-badge" data-testid="operator-match-badge">Operator match — not scored</p>
+    <!--
+      // why: WP-804 / D-24689 §6 — the lazy operator board panel, mounted ONCE
+      // here at the shared viewport root so it covers both play surfaces. Shown
+      // only in an operator match, to an eligible admin, with a live match id.
+    -->
+    <OperatorBoardPanel v-if="isOperatorPanelVisible" :match-id="matchId" />
     <!--
       // why: WP-607 — <DeckProbabilityPanel> is mounted ONCE at the shared viewport
       // root, inside the utility dock above, so the collapsible plain card counter
@@ -769,6 +810,24 @@ export default defineComponent({
    this component's scope id to the child <FinalTurnBanner>'s root element, so
    this class styles that root without editing the pure component. z-index sits
    above the mat but below the fixed audio/diagnostics controls. */
+/* why: WP-804 — the operator-match badge sits top-left, below the app header,
+   clear of the centered final-turn banner and the right-side operator panel. */
+.operator-match-badge {
+  position: fixed;
+  top: 4.5rem;
+  left: 8px;
+  z-index: 46;
+  margin: 0;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--la-color-gold);
+  background: var(--la-color-surface);
+  border: 1px solid var(--la-color-border-strong);
+  border-radius: 0.4rem;
+  pointer-events: none;
+}
+
 .final-turn-banner-overlay {
   position: fixed;
   top: 0.75rem;

@@ -310,3 +310,71 @@ test('re-arms and submits again when the matchId changes', async () => {
     stub.restore();
   }
 });
+
+// why: WP-804 / D-24689 §3 — an operator match (UIState.isDebugMatch) is never
+// scored: an authenticated player makes no POST and sees 'operator-match'.
+test('an operator match at gameover is never submitted; status becomes operator-match', async () => {
+  setActivePinia(createPinia());
+  const stub = installFetchStub(200, { record: {}, wasExisting: false });
+  try {
+    useAuthStore().setSession('token-abc', null);
+    const snapshot = structuredClone(loadUiStateFixture('endgame-win'));
+    snapshot.isDebugMatch = true;
+    useUiStateStore().setSnapshot(snapshot);
+
+    const { submissionStatus } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+
+    assert.equal(submissionStatus.value, 'operator-match');
+    assert.equal(stub.calls.length, 0, 'an operator match must never POST');
+  } finally {
+    stub.restore();
+  }
+});
+
+// why: WP-804 — the skip latches like the early-end skip: a later gameover frame
+// for the same match without the flag still never submits, so the latch, not
+// the flag, is what stops it.
+test('the operator-match skip is latched: a second gameover without the flag makes no POST', async () => {
+  setActivePinia(createPinia());
+  const stub = installFetchStub(200, { record: {}, wasExisting: false });
+  try {
+    useAuthStore().setSession('token-abc', null);
+    const uiStateStore = useUiStateStore();
+    const operatorSnapshot = structuredClone(loadUiStateFixture('endgame-win'));
+    operatorSnapshot.isDebugMatch = true;
+    uiStateStore.setSnapshot(operatorSnapshot);
+    const { submissionStatus } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+    assert.equal(submissionStatus.value, 'operator-match');
+
+    uiStateStore.setSnapshot(loadUiStateFixture('mid-turn'));
+    await flush();
+    uiStateStore.setSnapshot(loadUiStateFixture('endgame-win'));
+    await flush();
+
+    assert.equal(stub.calls.length, 0, 'the latch stops the second gameover');
+    assert.equal(submissionStatus.value, 'operator-match');
+  } finally {
+    stub.restore();
+  }
+});
+
+test('a normal match (no isDebugMatch) still submits once', async () => {
+  setActivePinia(createPinia());
+  const stub = installFetchStub(200, { record: {}, wasExisting: false });
+  try {
+    useAuthStore().setSession('token-abc', null);
+    const snapshot = loadUiStateFixture('endgame-win');
+    assert.equal(snapshot.isDebugMatch, undefined, 'the fixture is a normal match');
+    useUiStateStore().setSnapshot(snapshot);
+
+    const { submissionStatus } = useCompetitiveSubmitOnGameover(ref('match-1'));
+    await flush();
+
+    assert.equal(submissionStatus.value, 'submitted');
+    assert.equal(stub.calls.length, 1);
+  } finally {
+    stub.restore();
+  }
+});
