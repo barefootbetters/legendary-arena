@@ -47668,7 +47668,10 @@ None of these is a player input the faithful replay re-dispatches (it replays `M
 
 **Gates.** `pnpm install`; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (apps/server 1756 incl. 11 new, 207 DB-gated skips without `TEST_DATABASE_URL`; game-engine 5092 and arena-client 2299 unchanged); `check-number-ledger --check` passed. No engine, feed or hash change; no `lagn-v1.json` churn.
 
-**Live-verify (D-24026):** pending. After deploy, a normal match plays end to end from the arena client: ready, start, a full turn, endTurn. The Render log shows no `Dropped a client socket update` line for it. A crafted `GAME_EVENT` sent with a seat's credentials leaves the match unchanged and logs exactly one drop line.
+**Live-verify (D-24026): PASS 2026-10-12** on production `gitSha 8a43ea0` (`/api/version`, built 14:57 UTC), in two parts.
+- **Crafted socket packets** (guest solo match `CM6aJw8NkD3`, a raw `socket.io-client` sending credentialed `update` packets): `GAME_EVENT setPhase('play')` and `GAME_EVENT endGame` in the lobby, and `GAME_EVENT endTurn` in the start stage, were each **dropped**. `_stateID`, phase and turn were unchanged after each, and there was no gameover. On the same socket, `setPlayerReady` → `startMatchIfReady` → `revealVillainCard` → `advanceStage` ×2 → `endTurn` advanced `_stateID` 0 → 6 and turn 2 → 3. `UPDATE` / `PATCH` were not sent to production: a guard failure would have written a forged state to the stored match. The unit and socket tests cover both.
+- **Real arena client** (play.legendary-arena.com, Enter Arena featured table, match `3pQoKegtRwC`, version `6af171d`): Begin the Battle → reveal → end turn reached Turn 2. A `WebSocket.send` hook captured every client action, and each was a `MAKE_MOVE` (`revealVillainCard`, `advanceStage` ×2, `endTurn`). The game log shows the reveal, so the client sends nothing the guard drops.
+- Not checked: the Render log's `Dropped a client socket update` lines (no log access from the session). The state checks above are the evidence.
 
 **Reserved by:** NUMBER-LEDGER D-24701. Related: D-10007 (all-seats-active lobby), D-22002 (endTurn move guards), D-24119 / D-24124 (faithful replay re-dispatches `MAKE_MOVE` only), D-24159 (deck-exhaustion final turn), D-24095 (bgio store), WP-805 / D-24700 (random first player, #2740), D-24026.
 
