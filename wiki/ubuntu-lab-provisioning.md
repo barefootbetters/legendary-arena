@@ -45,8 +45,8 @@ last-reviewed: 2026-10-11
 > **Governance status — pending transcription.** This page is being flipped ahead
 > of the engine-repo governance it will ultimately cite. The `DECISIONS.md` lock
 > ("api + Postgres leave Render for DigitalOcean + Cloudflare; ewiki → Cloudflare
-> Pages") and the migration Work Packet are **not yet written** — the latest
-> decision at this revision is D-24236. Until they land, the migration PLAN in the
+> Pages") and the migration Work Packet are **not yet written** (when this
+> callout was first written, the latest decision was D-24236). Until they land, the migration PLAN in the
 > `legendary-arena-lab` repo is the governing source; this page stays
 > `status: draft` and deliberately cites no `D-`/`WP-` IDs it cannot yet resolve.
 > The former "records no decision to leave Render" disclaimer is superseded: that
@@ -59,10 +59,11 @@ last-reviewed: 2026-10-11
 
 The single DigitalOcean droplet (Ubuntu 24.04 LTS) that `api.legendary-arena.com`
 and its PostgreSQL are migrating onto, with Postgres self-hosted on the same box
-and Cloudflare in front. The migration program planned **4 vCPU / 8 GB to
-start**. Measured Render use (2026-10-11, about 1 GB and well under one core in
-total) now points to starting at **2 vCPU / 4 GB** and resizing up on evidence;
-see Sizing from measured use under the vendor comparison.
+and Cloudflare in front. It starts at **2 vCPU / 4 GB / 80 GB ($24/mo) with a
+2 GB swapfile** and resizes up only on evidence. The migration program first
+planned 4 vCPU / 8 GB, but measured Render use (2026-10-11) is about 1 GB and
+well under one core in total; see
+[Sizing from measured use](#sizing-from-measured-use-2026-10-11).
 
 This page is the engine-repo **record** of that migration. The executable
 runbooks and infrastructure-as-code — cloud-init, the numbered provisioners,
@@ -78,7 +79,8 @@ the box still holds — but the box is no longer exploratory. The move is decide
 (see the callout) and in progress. When it was planned in July, cost looked
 roughly even and control was the driver. That changed once Render's plans were
 raised under load: the August and September 2026 bills were **$146.50** and
-**$146.35**, against about $48 a month for the target droplet. Cost is now a driver too (see
+**$146.35**, against $24 a month for the target droplet ($48 on the first resize
+step). Cost is now a driver too (see
 [Cost case](#cost-case-september-2026)).
 
 ## Mechanics
@@ -121,7 +123,7 @@ What Render charged for August 2026 (invoice `0SPQWPNF-0005`, paid
 | Builds | pipeline minutes (Aug 41 m, Sep 6 h 42 m) | $5.00 | $5.00 | GitHub Actions deploy |
 | Bandwidth | Aug 7.8 GB, Sep 6.5 GB | $1.20 | $1.05 | included with the droplet |
 | ewiki static site | free | $0.00 | $0.00 | Cloudflare Worker (moved 2026-10-11, D-24690) |
-| **Total** | | **$146.50** | **$146.35** | **~$48** (4 vCPU / 8 GB), **~$24** if stepped down to 4 GB |
+| **Total** | | **$146.50** | **$146.35** | **~$24** at the start size (2 vCPU / 4 GB), **~$48** on the resize path (4 vCPU / 8 GB) |
 
 The two months differ by 15 cents, all of it bandwidth, so about **$146 a
 month is the steady run rate**, not a one-off spike. Builds billed $5 in both
@@ -129,8 +131,8 @@ months, at 41 minutes and at nearly seven hours, so that line behaves like a
 flat charge rather than a per-minute one. August and September together cost
 $292.85.
 
-That saves about **$1,180 a year** at 8 GB and about $1,470 at 4 GB, before
-backup storage. Backups go to R2, which is inside its free tier today. Both
+Starting at the $24 droplet saves about **$1,470 a year**; the $48 size would
+save about $1,180. Both figures are before backup storage. Backups go to R2, which is inside its free tier today. Both
 Render plans were raised in July to cure CPU and memory starvation; the reasons
 are recorded in `render.yaml`.
 
@@ -139,13 +141,13 @@ are recorded in `render.yaml`.
    no droplet is merged: `legendary-arena-lab` #17 and #18 fixed the
    provisioners and proved them in CI on Ubuntu 24.04. What remains starts
    with a payment method on the DigitalOcean account. Every month on Render
-   costs about $100 more than the droplet would. The phases and gates in the
+   costs about $120 more than the $24 droplet would. The phases and gates in the
    PLAN are unchanged.
 2. **Size from data, not from the July incidents.** Done 2026-10-11: both
    Render services run idle (about 1 GB and well under one core in total), so
    start at 2 vCPU / 4 GB ($24) and resize up on evidence. That saves more than
    switching vendor would. See
-   [Sizing from measured use](#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
+   [Sizing from measured use](#sizing-from-measured-use-2026-10-11).
 3. **Reduce the load, which pays off on any host.**
    - The bot-ally driver polls every live match every 250 ms
      (`apps/server/src/bot-ally/botAllyDriver.mjs`). Driving it from state
@@ -194,8 +196,8 @@ is region, CPU class, disk, provisioning fit, and, by a small margin, price.
 
 | Droplet | vCPU | RAM | Disk | Transfer | Monthly |
 |---|---|---|---|---|---|
-| Basic (step-down) | 2 | 4 GB | 80 GB SSD | 4 TB | $24 |
-| Basic (planned start) | 4 | 8 GB | 160 GB SSD | 5 TB | $48 |
+| Basic (start) | 2 | 4 GB | 80 GB SSD | 4 TB | $24 |
+| Basic (first resize step) | 4 | 8 GB | 160 GB SSD | 5 TB | $48 |
 | CPU-Optimized (resize path) | 4 | 8 GB | 50 GB SSD | 5 TB | $84 |
 
 NameHero unmanaged VPS, month-to-month, as quoted in writing to the existing
@@ -280,11 +282,14 @@ four things in writing before an order:
    from the West Coast.
 
 If all four come back yes, Turbo at $42.99 beats DigitalOcean's $48 box on
-every axis except region. Don't hold the cutover for the answers: each week on
-Render costs about $23 more than the droplet would, against a NameHero saving
-of about $1 a week at the 4-core size.
+every axis except region. At the measured start size, though, the comparison
+is Plus ($24.49) against the $24 droplet: level on price, so a yes buys RAM
+headroom the workload doesn't use, not savings. Don't hold the cutover for the
+answers: each week on Render costs about $28 more than the $24 droplet would.
 
-**Sizing from measured use (2026-10-11).** Render gives production 8 GB and
+### Sizing from measured use (2026-10-11)
+
+Render gives production 8 GB and
 3 CPUs in total: 4 GB / 2 CPU for the server and 4 GB / 1 CPU for Postgres. The
 Render metrics for the 7 days to 2026-10-11 show both far below that:
 
@@ -312,6 +317,14 @@ box. Three guardrails:
 
 At this usage, RAM-heavy plans such as NameHero Turbo (16 GB) buy headroom the
 workload doesn't use.
+
+**The AI Second Brain does not share this box.** A 4 GB droplet is below the
+[AI Second Brain](ai-second-brain.md)'s 8 GB floor, so the brain gets its own
+host. Its 16 GB figure applies only if local speech-to-text and text-to-speech
+models run on the VPS itself. Voice is used only while driving (up to about two
+hours a day) through Claude's own app voice, which runs on Anthropic's side, so
+local voice is deferred. Voice is not a reason to size the arena host, or the
+brain host, at 16 GB.
 
 ### Vendor survey (2026-10-11)
 
@@ -384,7 +397,7 @@ surveyed.
 One correction to the survey: it said the $48 droplet matches today's footprint
 "with headroom". It matches Render's 8 GB *allocation* exactly. Measured use is
 about 1 GB, so the real headroom question is answered by usage, not allocation
-(see Sizing from measured use above).
+(see [Sizing from measured use](#sizing-from-measured-use-2026-10-11)).
 
 ### Prerequisites & effort
 
@@ -397,7 +410,7 @@ about 1 GB, so the real headroom question is answered by usage, not allocation
   on it covering droplet usage. Remaining setup, in order:
   1. Add a payment method (operator only).
   2. Set a spend alert a little above the planned droplet price, for example
-     $60 a month for the $48 box. The billing page now offers spend alerts.
+     $30 a month for the $24 box (raise it on a resize). The billing page now offers spend alerts.
   3. Upload the SSH public key, and create an API token if provisioning goes
      through `doctl` or Terraform.
 - A throwaway lab hostname (e.g. `lab.<your-domain>`) ready to point at the
@@ -668,16 +681,17 @@ migration Work Packet is the pending governance noted in the callout.
 - **Version pins still bind.** Node must be `24.18.0` to match `.node-version`
   (D-24205); `boardgame.io` stays on the `^0.50.0` line. A lab on a newer Node or
   bgio is testing a different system than production.
-- **Certbot + unattended-upgrades are now yours.** Certificate renewal and kernel
-  patches are operator responsibilities on a droplet that Render otherwise absorbs;
-  unattended-upgrades may schedule a reboot.
+- **Certificates and kernel patches are now yours.** Certificate renewal (Certbot
+  in the hand-run steps, the Cloudflare Origin Certificate in the program) and
+  kernel patches are operator responsibilities on a droplet that Render otherwise
+  absorbs; unattended-upgrades may schedule a reboot.
 
 ## Open Questions
 
 - **Governance transcription is pending (the one real open item).** The decision
   to move `api.` + Postgres off Render is made at the migration-program level, but
-  it is **not yet recorded** in [DECISIONS.md](../docs/ai/DECISIONS.md) (latest
-  entry D-24236) and has no migration Work Packet. Until both land, this page
+  it is **not yet recorded** in [DECISIONS.md](../docs/ai/DECISIONS.md) (only the
+  ewiki half is, as D-24690) and has no migration Work Packet. Until both land, this page
   cites the migration PLAN rather than a `D-`/`WP-` ID and stays `status: draft`.
   The still-required execution gates are unchanged and now owned by the program:
   validated backup **and tested** restore (Mechanics §5–6), documented monitoring,
@@ -689,7 +703,9 @@ migration Work Packet is the pending governance noted in the callout.
   2 GB swapfile, sized from measured Render use. The lab PLAN adopted it as
   lab D-002 (`legendary-arena-lab` #19, which adds `infra/scripts/08-swap.ps1`).
   This box is too small to also host the [AI Second Brain](ai-second-brain.md)
-  (its floor is 8 GB).
+  (its floor is 8 GB). Voice (used only while driving, up to about two hours a
+  day) does not require local STT/TTS on any VPS, so it does not reopen the
+  16 GB question for either host.
 - **Managed vs self-hosted Postgres** — decided: self-hosted on the same host
   (co-located, `localhost`), per the PLAN. No longer open.
 - **The cross-provider latency threshold** — moot: the co-located target removes
