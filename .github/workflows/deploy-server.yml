@@ -1,0 +1,174 @@
+name: deploy-server
+
+# why: D-24708 — since the D-24707 cutover (2026-10-12) the game server runs on a
+# self-hosted DigitalOcean droplet, so nothing deploys it on push the way Render
+# did. This workflow restores that cadence, more strictly:
+#   - it runs only after CI ("CI → Build → Deploy") SUCCEEDS on a push to main,
+#     so an untested commit never ships (Render built before CI finished);
+#   - it deploys the exact commit CI tested, never "whatever main is now";
+#   - it skips when nothing server-relevant changed since the live commit
+#     (Render's buildFilter ignore list, plus .github/ and .claude/).
+# The droplet side is the legendary-arena-lab repo: the `deployer` user's key is
+# pinned to the la-deploy gate (41-deploy-user.ps1), which accepts only
+# `status` and `deploy <40-hex commit on main, not older than live>`, then runs
+# 40-app-deploy.ps1 (frozen install, build, migrations, restart, /health gate).
+#
+# Repository configuration:
+#   secrets.DEPLOY_SSH_KEY      private half of the CI deploy key (ed25519)
+#   secrets.DEPLOY_HOST         droplet address (a secret so it stays out of this public repo)
+#   secrets.DEPLOY_KNOWN_HOSTS  the droplet's ssh-ed25519 host-key line (pins the host)
+#   vars.DEPLOY_ENABLED         'true' to deploy; anything else pauses deploys
+
+on:
+  workflow_run:
+    workflows: ["CI → Build → Deploy"]
+    types: [completed]
+    branches: [main]
+  # why: an operator re-deploy without a new commit — a retry after a flaky CI
+  # run, or a specific commit. Rolling BACK is a hand deploy on the droplet; the
+  # gate refuses older commits by design.
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Commit to deploy (40-hex). Empty = current main."
+        required: false
+        default: ""
+      force:
+        description: "Deploy even if no server-relevant file changed"
+        type: boolean
+        default: false
+
+# why: deploys must never overlap or be cancelled half-way (a cancelled run can
+# leave a restart unverified); runs queue instead. The gate also holds a flock.
+concurrency:
+  group: deploy-server-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy the API server to the droplet
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push'))
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve the commit to deploy
+        id: target
+        env:
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_SHA: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
+            sha="$RUN_SHA"
+          elif [ -n "$INPUT_SHA" ]; then
+            sha="$INPUT_SHA"
+          else
+            sha="$(git rev-parse origin/main)"
+          fi
+          if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::The commit to deploy must be 40 lowercase hex characters; got '$sha'."
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Set up SSH (pinned host key)
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DEPLOY_SSH_KEY" ] || [ -z "$DEPLOY_KNOWN_HOSTS" ]; then
+            echo "::error::DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS must both be set as repository secrets."
+            exit 1
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Ask the droplet which commit is live
+        id: live
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          live="$(ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=20 "deployer@$DEPLOY_HOST" status | tail -n 1 | tr -d '\r')"
+          if ! [[ "$live" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::The droplet did not report a live commit (got '$live')."
+            exit 1
+          fi
+          echo "sha=$live" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether the server needs this deploy
+        id: plan
+        env:
+          LIVE: ${{ steps.live.outputs.sha }}
+          TARGET: ${{ steps.target.outputs.sha }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          decide() { echo "deploy=$1" >> "$GITHUB_OUTPUT"; echo "$2"; echo "### deploy-server: $2" >> "$GITHUB_STEP_SUMMARY"; }
+          if [ "$LIVE" = "$TARGET" ]; then
+            decide false "$TARGET is already live."
+          elif git merge-base --is-ancestor "$TARGET" "$LIVE" 2>/dev/null; then
+            decide false "$TARGET is older than the live $LIVE (a later deploy already ran)."
+          elif [ "$FORCE" = "true" ]; then
+            decide true "Forced deploy of $TARGET (live: $LIVE)."
+          elif ! git merge-base --is-ancestor "$LIVE" "$TARGET" 2>/dev/null; then
+            # why: the live commit isn't behind the target on main (a hand deploy of
+            # another commit), so a path diff means nothing; converge on main.
+            decide true "Live $LIVE is not an ancestor of $TARGET; deploying to converge on main."
+          else
+            # why: Render's buildFilter ignoredPaths, plus CI config and Claude
+            # tooling, never change what the server runs.
+            changed="$(git diff --name-only "$LIVE" "$TARGET" \
+              | grep -vE '^(wiki/|docs/|\.github/|\.claude/|apps/(wiki-viewer|arena-client|dashboard|legends-board|registry-viewer)/)' || true)"
+            if [ -n "$changed" ]; then
+              decide true "Deploying $TARGET: $(printf '%s\n' "$changed" | wc -l) server-relevant file(s) changed since $LIVE."
+              printf '%s\n' "$changed" | head -n 40
+            else
+              decide false "No server-relevant change between $LIVE and $TARGET; nothing to deploy."
+            fi
+          fi
+
+      - name: Deploy through the la-deploy gate
+        if: steps.plan.outputs.deploy == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          TARGET: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=20 -o ServerAliveInterval=30 \
+            "deployer@$DEPLOY_HOST" "deploy $TARGET"
+
+      - name: Health through Cloudflare
+        if: steps.plan.outputs.deploy == 'true'
+        run: |
+          set -euo pipefail
+          # why: 40-app-deploy.ps1 already gates on the origin's /health; this checks
+          # the public path (DNS → Cloudflare → Nginx/TLS → server) players use.
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 10 https://api.legendary-arena.com/health; then
+              echo
+              echo "### deploy-server: https://api.legendary-arena.com/health is 200" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::https://api.legendary-arena.com/health did not return 200 within a minute of the deploy."
+          exit 1

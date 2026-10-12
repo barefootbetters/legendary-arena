@@ -47834,4 +47834,25 @@ UptimeRobot measured 10 m 10 s of downtime. `pnpm check:domains`: 11 ok, 0 faile
 
 ---
 
+### D-24708 — The game server deploys after CI passes on main, as the exact tested commit, through a restricted gate on the droplet (direct change, no WP) (Active 2026-10-12)
+
+**Context.** Render deployed `apps/server` on every server-relevant push to `main`, and it did so before CI finished. Since the D-24707 cutover nothing deploys the droplet on its own: merges sat on `main` until someone ran `40-app-deploy.ps1` by hand.
+
+**Decision.**
+
+1. **Trigger.** [`deploy-server.yml`](../../.github/workflows/deploy-server.yml) runs on `workflow_run` when CI (`CI → Build → Deploy`) **completes successfully** for a **push** to `main`. A failed or cancelled CI never deploys, and PR runs never deploy. `workflow_dispatch` lets the operator re-run it or name a commit.
+2. **What ships.** The exact commit CI tested (`workflow_run.head_sha`), never "whatever `main` is now". `40-app-deploy.ps1` checks out a 40-hex `DEPLOY_REF` detached.
+3. **When.** Only when a server-relevant file changed between the **live** commit (asked from the droplet) and the target. The ignore list is Render's `buildFilter` (`wiki/`, `docs/`, and the `wiki-viewer`, `arena-client`, `dashboard`, `legends-board` and `registry-viewer` apps) plus `.github/` and `.claude/`.
+4. **Least privilege.** The workflow logs in as `deployer` (lab `41-deploy-user.ps1`). That user's only key is pinned with `restrict,command="sudo -n /usr/local/sbin/la-deploy"`, and one sudoers rule runs that gate as root. The gate accepts only `status` and `deploy <40-hex>`. It refuses an unknown commit, one not on `origin/main`, and one older than the live commit, and it serializes with hand deploys through `flock`. A leaked CI key can therefore only redeploy code already on `main`, and a slow CI run can't roll production back. Rollback stays a deliberate hand deploy.
+5. **Host pinning and configuration.** The workflow uses secrets `DEPLOY_SSH_KEY`, `DEPLOY_HOST` (kept out of the public repo) and `DEPLOY_KNOWN_HOSTS` (strict host-key checking), and the variable `DEPLOY_ENABLED` (`true` deploys; anything else pauses).
+6. **Verification.** `40` gates on the origin's `/health`. The workflow then checks `https://api.legendary-arena.com/health` through Cloudflare.
+
+**Not changed.** Layers and the engine are untouched; `apps/server` is unchanged. Hand deploys (`40-app-deploy.ps1`) still work, and with a branch `DEPLOY_REF` they behave as before.
+
+**Supersedes in part:** D-24707 §4 ("Deploys. Manual"). Hand deploys remain the rollback path.
+
+**Reserved by:** NUMBER-LEDGER D-24708. Related: D-24707 (the droplet), lab PR #32 (gate, `41`, exact-commit `40`).
+
+---
+
 Protect this file.

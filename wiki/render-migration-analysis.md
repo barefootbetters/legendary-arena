@@ -375,8 +375,8 @@ doing. Co-location removed that hop, so the probe is moot.
   the former Render plan values the cost case bills against (`render.yaml` is
   authoritative if the inventory lags).
 - **[Development Workflow](development-workflow.md)** — the Render deploy loop
-  the migration replaced: manual `40-app-deploy.ps1` over SSH during the
-  rollback window, with a deploy-on-push workflow to follow.
+  the migration replaced: `deploy-server.yml` deploys after CI passes, through
+  the droplet's `la-deploy` gate and `40-app-deploy.ps1` (D-24708).
 
 ## Edge Cases
 

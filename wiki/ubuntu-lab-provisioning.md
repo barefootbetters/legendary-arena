@@ -103,7 +103,7 @@ driver too.
 | Application | `apps/server` on Node 24.18.0, run by a systemd unit. |
 | Database | Self-hosted PostgreSQL 18 on `localhost`. |
 | Edge | Cloudflare in front; Nginx terminates TLS with a Cloudflare Origin Certificate. |
-| Deploy | Manual since cutover: the operator runs `40-app-deploy.ps1` over SSH (checkout `main`, install, build, migrations, restart, health gate). A GitHub Actions → SSH deploy-on-push is planned after the rollback window. |
+| Deploy | Automatic after CI passes on `main` ([`deploy-server.yml`](../.github/workflows/deploy-server.yml), D-24708): GitHub Actions → SSH as the restricted `deployer` user, whose key is pinned to the `la-deploy` gate (`41-deploy-user.ps1`) → `40-app-deploy.ps1` for the exact tested commit (install, build, migrations, restart, health gate). Hand deploys run `40` directly. |
 | Backups | `pg_dump` to R2 (production bucket `legendary-arena-db-backups` since cutover), restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11, and the R2 upload and restore-from-R2 passed on 2026-10-12. |
 | Monitoring | Provisioner `60` every 5 min, plus a ping after each backup, to two healthchecks.io dead-man's-switch checks that email on a failure or a missing ping. Rehearsed 2026-10-12, including a real alert. UptimeRobot checks the public `api.…/health` path every 5 minutes. |
 
@@ -237,11 +237,20 @@ The steps performed:
 Anything written on the droplet after the flip isn't in Render's database. A
 rollback after real traffic needs that data copied back.
 
-**Deploys after cutover** are manual: the operator runs `40-app-deploy.ps1`
-over SSH. It checks out `main`, runs `pnpm install --frozen-lockfile`, builds,
-runs migrations, restarts the service, and checks health, in about 35 s. Merges
-to `main` no longer reach production on their own. A deploy-on-push workflow
-is planned after the rollback window. Logs: `journalctl -u la-server`.
+**Deploys after cutover.** For the first hours they were manual
+(`40-app-deploy.ps1` over SSH). Since D-24708 (2026-10-12),
+[`deploy-server.yml`](../.github/workflows/deploy-server.yml) deploys after CI
+succeeds on a push to `main`:
+
+- It deploys the exact tested commit, and only when a server-relevant file
+  changed since the live commit.
+- It connects as the restricted `deployer` user, whose key can only ask for
+  `status` or `deploy <commit on main, not older than live>`.
+- The droplet side then runs `40-app-deploy.ps1`: frozen install, build,
+  migrations, restart, and a health gate, in about 35 s.
+
+Logs: `journalctl -u la-server` (the server) and `journalctl -t la-deploy`
+(the gate).
 
 ### Prerequisites & effort
 
@@ -462,10 +471,10 @@ operator can, unaided —
   managed-database notes, and the full deployment topology. Read it first.
 - **[Development Workflow](development-workflow.md)** — the production
   develop-from-anywhere loop (Claude Code → GitHub → deploy on merge to
-  `main`). The migration replaced Render's push-to-main auto-deploy with a
-  manual `40-app-deploy.ps1` run over SSH (owned by the `legendary-arena-lab`
-  program), with a GitHub Actions → SSH deploy-on-push to follow after the
-  rollback window; the hand-run steps on this page are its rehearsal-time
+  `main`). The migration replaced Render's push-to-main auto-deploy with
+  `deploy-server.yml`, which deploys after CI passes, over SSH to the
+  `la-deploy` gate → `40-app-deploy.ps1` (owned by the `legendary-arena-lab`
+  program). The hand-run steps on this page are its rehearsal-time
   equivalent.
 - **[Operational Health Checks](operational-health-checks.md)** — `pnpm check`
   walks toolchain and external-service connectivity (PostgreSQL, R2, Hanko, CORS);
