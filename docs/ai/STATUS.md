@@ -7,6 +7,14 @@
 
 ## Current State
 
+### D-24696 — Agent X-13 Spy Network lets you choose: gain a S.H.I.E.L.D. Officer or +2 attack (direct fix) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Playing ca75 Agent X-13 "Spy Network" now opens the "Choose one" prompt with two buttons, "Gain a S.H.I.E.L.D. Officer" and "+2 Attack", as the card prints. Before, it always granted +2 attack and never offered the Officer. The Officer goes to your discard pile. If the Officer stack is empty, that pick does nothing. Bots take the +2 attack.
+
+- **Reuses the shipped choose-one** (D-24495). There is no new pending queue, move or prompt. Two curated card markers drive it, and `data/cards/ca75.json` is regenerated, not hand-edited.
+- **Coverage bookkeeping:** the hero ledger, card-mechanics and effect-index feeds are regenerated. The informational `count-scaled-choose` executable count is corrected (vnom 23, shld 37).
+- **Live-verify (D-24026): pending.** Play Spy Network and check both picks: the Officer pick puts an Officer in discard, and the attack pick adds exactly +2.
+
 ### D-24695 — The Watch Bot Play bot keeps playing its hand after a card asks it to choose (direct fix) (2026-10-12)
 
 **User-visible on `play.legendary-arena.com` (after deploy), Watch Bot Play only.** When the autoplay bot plays a card that stops for a choice (anni Brainstorm's Time Loop Experiments: put a card from your hand on top of your deck), it now makes the choice and plays the rest of its hand. Before, the engine refused every later play while the choice was open. The bot re-submitted the same blocked card until its 30-play limit, about 23 seconds of dead playback at the default speed, and then spent its Recruit and Attack with the rest of the hand unplayed.

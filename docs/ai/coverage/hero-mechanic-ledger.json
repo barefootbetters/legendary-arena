@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 792,
+    "totalRows": 794,
     "byStatus": {
-      "executable": 401,
+      "executable": 402,
       "deferred": 16,
       "condition": 49,
       "unsupported": 296,
       "unmarked": 28,
-      "subsystem": 2
+      "subsystem": 3
     },
-    "distinctMechanics": 160
+    "distinctMechanics": 161
   },
   "rows": [
     {
@@ -2367,6 +2367,38 @@
         {
           "slug": "unveil-identity",
           "name": "Unveil Identity"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "heroName": "Agent X-13",
+      "set": "ca75",
+      "mechanic": "attack",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack",
+      "designs": [
+        {
+          "slug": "spy-network",
+          "name": "Spy Network"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "heroName": "Agent X-13",
+      "set": "ca75",
+      "mechanic": "gain-officer",
+      "status": "subsystem",
+      "wp": "",
+      "decision": "D-24696",
+      "handler": "choose-one:count-scaled-choose-option",
+      "designs": [
+        {
+          "slug": "spy-network",
+          "name": "Spy Network"
         }
       ]
     },

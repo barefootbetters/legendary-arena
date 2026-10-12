@@ -1271,6 +1271,36 @@ describe('filterUIStateForAudience — pendingCountScaledChoice redaction (D-244
   });
 });
 
+describe('filterUIStateForAudience — Spy Network gain-officer / flat-attack options (D-24696)', () => {
+  /** Builds a UIState where player '0' owes ca75 Spy Network's choose-one. */
+  function createSpyNetworkChoiceUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.pendingCountScaledChoice = [{
+      playerID: '0',
+      cardId: 'ca75/agent-x-13/spy-network#0',
+      options: [{ kind: 'gain-officer' }, { kind: 'flat-attack', magnitude: 2 }],
+    }];
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('the chooser sees both options with their kind + label (+ the flat attack total)', () => {
+    const result = filterUIStateForAudience(createSpyNetworkChoiceUIState(), PLAYER_0);
+    assert.deepEqual(result.pendingCountScaledChoice, {
+      playerID: '0',
+      options: [
+        { kind: 'gain-officer', label: 'Gain a S.H.I.E.L.D. Officer' },
+        { kind: 'flat-attack', label: '+2 Attack', resource: 'attack', total: 2 },
+      ],
+    });
+  });
+
+  it('an opponent and a spectator do NOT see the choice', () => {
+    const uiState = createSpyNetworkChoiceUIState();
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingCountScaledChoice, undefined);
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingCountScaledChoice, undefined);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // WP-678 / D-24494 — pendingUndercoverChoice redaction (chooser-only)
 // ---------------------------------------------------------------------------

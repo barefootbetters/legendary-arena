@@ -534,8 +534,20 @@ export function getLegalMoves(
   // why: WP-675 / D-24490 — a count-scaled choose-one blocks every other move; the bot resolves
   // it first with a deterministic default of option 0 (an expected-value default is deferred,
   // mirroring the draw-or-empowered default above). Returns a list of length EXACTLY 1.
+  // why: D-24696 — when the choice offers a flat attack (ca75 Spy Network: gain a S.H.I.E.L.D.
+  // Officer OR +2 attack) the bot takes the attack: the grant is spendable this turn, while an
+  // Officer only lands in discard for a later reshuffle. Every other
+  // choice (no flat-attack option) keeps option 0, so existing bot behavior is unchanged.
   if (hasPendingCountScaledChoice(gameState)) {
-    return [{ name: 'resolveCountScaledChoice', args: { optionIndex: 0 } }];
+    const frontOptions = gameState.pendingCountScaledChoice![0]!.options;
+    let optionIndex = 0;
+    for (let i = 0; i < frontOptions.length; i++) {
+      if (frontOptions[i]!.kind === 'flat-attack') {
+        optionIndex = i;
+        break;
+      }
+    }
+    return [{ name: 'resolveCountScaledChoice', args: { optionIndex } }];
   }
   // why: WP-678 / D-24494 — an Undercover target pick blocks every other move; the bot resolves
   // it first with a deterministic default of the FIRST eligible target (the eligibleTargets

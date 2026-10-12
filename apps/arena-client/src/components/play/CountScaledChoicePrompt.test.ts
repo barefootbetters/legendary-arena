@@ -121,4 +121,27 @@ describe('CountScaledChoicePrompt (WP-675 / EC-712)', () => {
     );
     assert.equal(wrapper.find('[data-testid="count-scaled-choice-option-1"]').text(), '+2 Attack');
   });
+
+  // why: D-24696 — ca75 Spy Network's single-line choose-one: a S.H.I.E.L.D. Officer gain and a
+  // flat +2 attack, both rendered from `label`; choosing the Officer submits optionIndex 0.
+  test('renders Spy Network\'s gain-officer + flat-attack options and submits the Officer pick', async () => {
+    const { calls, submitMove } = recorder();
+    const spyNetwork: UIPendingCountScaledChoice = {
+      playerID: 'player-0',
+      options: [
+        { kind: 'gain-officer', label: 'Gain a S.H.I.E.L.D. Officer' },
+        { kind: 'flat-attack', resource: 'attack', total: 2, label: '+2 Attack' },
+      ],
+    };
+    const wrapper = mount(CountScaledChoicePrompt, {
+      props: { pendingCountScaledChoice: spyNetwork, viewerPlayerId: 'player-0', submitMove },
+    });
+    assert.equal(
+      wrapper.find('[data-testid="count-scaled-choice-option-0"]').text(),
+      'Gain a S.H.I.E.L.D. Officer',
+    );
+    assert.equal(wrapper.find('[data-testid="count-scaled-choice-option-1"]').text(), '+2 Attack');
+    await wrapper.find('[data-testid="count-scaled-choice-option-0"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'resolveCountScaledChoice', args: { optionIndex: 0 } }]);
+  });
 });

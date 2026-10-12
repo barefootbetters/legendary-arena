@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2576,
+    "executable": 2585,
     "heroes": 324,
     "hooks": 6383,
     "noEffect": 2636,
-    "parsedNotExecuted": 1171
+    "parsedNotExecuted": 1162
   },
   "perSet": {
     "2099": {
@@ -163,7 +163,7 @@
       "noEffect": 98
     },
     "shld": {
-      "executable": 31,
+      "executable": 37,
       "hooks": 95,
       "noEffect": 21
     },
@@ -188,7 +188,7 @@
       "noEffect": 89
     },
     "vnom": {
-      "executable": 20,
+      "executable": 23,
       "hooks": 76,
       "noEffect": 6
     },

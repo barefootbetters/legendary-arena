@@ -129,10 +129,41 @@ export interface UndercoverChoiceOption {
 }
 
 /**
- * One option of a multi-line "Choose one:" hero ability (WP-679 / D-24495).
+ * The "Gain a S.H.I.E.L.D. Officer" option of a single-line choose-one (D-24696).
+ *
+ * ca75 Agent X-13 Spy Network: "Choose one: Gain a S.H.I.E.L.D. Officer, or you get
+ * +2[icon:attack]." Resolved by moving the top of `G.piles.officers` to the chooser's
+ * discard pile (rules v23: "Gain" means "put it into your discard pile"). An empty
+ * Officer stack makes the option a logged no-op.
+ */
+export interface GainOfficerChoiceOption {
+  /** Discriminant — this option gains a S.H.I.E.L.D. Officer to discard (D-24696). */
+  kind: 'gain-officer';
+}
+
+/**
+ * A flat "+N attack" option of a single-line choose-one (D-24696).
+ *
+ * The attack half of Spy Network ("…, or you get +2[icon:attack]."). Resolved through the
+ * shipped `attack` hero-effect executor with `magnitude`.
+ */
+export interface FlatAttackChoiceOption {
+  /** Discriminant — this option grants a flat attack amount (D-24696). */
+  kind: 'flat-attack';
+  /** The attack granted when this option is chosen. */
+  magnitude: number;
+}
+
+/**
+ * One option of a "Choose one:" hero ability (WP-679 / D-24495; extended D-24696).
  *
  * A tagged union so a single choose-one can mix a count-scaled resource grant with an
- * Undercover send (the two shld cards) — not only the two-count-scaled shape (vnom).
+ * Undercover send (the two shld cards) — not only the two-count-scaled shape (vnom) —
+ * or a S.H.I.E.L.D. Officer gain with a flat attack grant (ca75 Spy Network).
  * The resolve move (`resolveCountScaledChoice`) dispatches by `kind`.
  */
-export type ChooseOneOption = CountScaledChoiceOption | UndercoverChoiceOption;
+export type ChooseOneOption =
+  | CountScaledChoiceOption
+  | UndercoverChoiceOption
+  | GainOfficerChoiceOption
+  | FlatAttackChoiceOption;

@@ -57,6 +57,18 @@
   ],
   "ca75": [
     {
+      "heroSlug": "agent-x-13",
+      "cardSlug": "spy-network",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-officer]"
+    },
+    {
+      "heroSlug": "agent-x-13",
+      "cardSlug": "spy-network",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack:2]"
+    },
+    {
       "heroSlug": "captain-america-1941",
       "cardSlug": "liberate-the-prisoners",
       "abilityIndex": 0,

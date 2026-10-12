@@ -1692,15 +1692,17 @@ export interface UIPendingSplitFaceChoice {
 export interface UIPendingCountScaledChoiceOption {
   // why: WP-679 / D-24495 — a choose-one may mix a count-scaled grant with an Undercover
   // send; `kind` tells the client which fields to read / how to label the button.
-  /** Discriminant — a count-scaled resource grant, or an Undercover send. */
-  kind: 'count-scaled' | 'undercover';
-  /** count-scaled: which resource this option grants. */
+  // why: D-24696 — ca75 Spy Network adds a S.H.I.E.L.D. Officer gain ('gain-officer', label
+  // only) and a flat attack grant ('flat-attack', resource 'attack' + total = the flat amount).
+  /** Discriminant — a count-scaled resource grant, an Undercover send, an Officer gain, or a flat attack. */
+  kind: 'count-scaled' | 'undercover' | 'gain-officer' | 'flat-attack';
+  /** count-scaled / flat-attack: which resource this option grants. */
   resource?: 'attack' | 'recruit';
   /** count-scaled: the per-unit rate (attack/recruit per counted card). */
   perUnit?: number;
   /** count-scaled: the resolved count (of qualifying cards / S.H.I.E.L.D. Level). */
   count?: number;
-  /** count-scaled: the grant this option would apply now (perUnit × floor(count / perEach)). */
+  /** count-scaled: the grant this option would apply now (perUnit × floor(count / perEach)); flat-attack: the flat amount. */
   total?: number;
   /** A display label for the button (always present; e.g. "+3 attack" or "Send a S.H.I.E.L.D. Hero Undercover"). */
   label: string;

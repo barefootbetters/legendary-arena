@@ -102,6 +102,37 @@ export function gainOfficerToHand(G: LegendaryGameState, playerID: string): bool
 }
 
 /**
+ * Gains a S.H.I.E.L.D. Officer from the shared supply into a player's DISCARD pile (D-24696 —
+ * ca75 Spy Network's "Choose one: Gain a S.H.I.E.L.D. Officer, …" option).
+ *
+ * A card-effect FREE gain (no Recruit spent, unlike recruitOfficer) that follows the rulebook
+ * default: rules v23 — "Gain" means "put it into your discard pile." Same pile mutation as the
+ * WP-541 `gain-officer-current` villain reward.
+ *
+ * // why: D-24696 — an empty Officer supply (or a missing player zone in a narrow mock) is a
+ * no-op that returns false, so the chosen option silently does nothing — moves never throw.
+ *
+ * @param G - Game state (mutated in place under Immer draft).
+ * @param playerID - The player who gains the Officer.
+ * @returns true when an Officer was moved to discard; false when the supply was empty or the
+ *   player's zones were missing.
+ */
+export function gainOfficerToDiscard(G: LegendaryGameState, playerID: string): boolean {
+  const officerId = G.piles.officers[0];
+  if (officerId === null || officerId === undefined) {
+    return false;
+  }
+  const zones = G.playerZones[playerID];
+  if (!zones) {
+    return false;
+  }
+  // why: pile[0] is the top card (the locked supply-pile convention); slice(1) drops it.
+  G.piles.officers = G.piles.officers.slice(1);
+  zones.discard = [...zones.discard, officerId];
+  return true;
+}
+
+/**
  * Recruits a S.H.I.E.L.D. Officer from the shared supply.
  *
  * Removes the top card of `G.piles.officers` and places it in the current
