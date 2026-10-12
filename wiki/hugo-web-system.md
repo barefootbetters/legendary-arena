@@ -1035,8 +1035,8 @@ always emits an `<img>` for it, regardless of the `unsafe` flag. A **raw**
 inline `<img>` or inline `<svg>` block in Markdown renders here only
 because this site sets `markup.goldmark.renderer.unsafe = true` (WP-014);
 prefer the Markdown form unless you need an attribute it can't express.
-(The engineering wiki itself is JS-free and Render-hosted, not Cloudflare
-Pages — it too serves SVGs statically, which is how the committed SVG in
+(The engineering wiki itself is JS-free and served by an assets-only
+Cloudflare Worker (D-24690), not Cloudflare Pages — it too serves SVGs statically, which is how the committed SVG in
 [Diagrams](#diagrams-mermaid) renders, but it is a different property.)
 
 **Important constraint:** Hugo's built-in image processing

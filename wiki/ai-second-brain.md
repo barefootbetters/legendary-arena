@@ -117,7 +117,7 @@ services run yet, and the Day 2 tool connection is overdue.**
 | Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | **Overdue**: only the GitHub repo routes are connected | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
 | Map Day 7: `/audit` re-run, scored against the 29/100 baseline | Scheduled | ~2026-10-06 | Its score and top findings get a row here |
 | Map Day 14: `/level-up` (first automation; the recorded top pain is food and routines) | Scheduled | ~2026-10-13 | [`context/about-me.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/context/about-me.md) |
-| Owned host exists: production moves off Render to the DigitalOcean droplet (the brain's bootstrap host) | Stalled since 2026-07-25. The vendor was reconfirmed 2026-10-02, and the dedicated-host shopping note is dated 2026-10-04 | — | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Hosting and security posture](#hosting-and-security-posture) (cost baseline and host shopping note) |
+| Owned host exists: production moves off Render to the DigitalOcean droplet (the brain's bootstrap host) | Rehearsed end to end on 2026-10-11/12 on the kept $24 droplet; cutover scheduled for 2026-10-12. The vendor was reconfirmed 2026-10-02, and the dedicated-host shopping note is dated 2026-10-04 | — | [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); [Hosting and security posture](#hosting-and-security-posture) (cost baseline and host shopping note) |
 | Runbook Phase 1: corpus census on the owned host | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 | Runbook Phases 2–6: navigation MCP, vector layer, LiteLLM / Open WebUI, voice | Not started | — | [Runbook §12](../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md#12-execution-schedule--checklist-phased) |
 
@@ -676,8 +676,9 @@ corrupts recall or the store:
 - **Host.** An **unmanaged Ubuntu 24.04 VPS** with full root — a dedicated one is
   the end-state. The bootstrap build may co-locate, with isolation, on the
   **production DigitalOcean droplet** that the Render migration stands up (see
-  the deployment callout above and the cost baseline below). That droplet does
-  not exist yet, so neither does the bootstrap host. It will also be too small:
+  the deployment callout above and the cost baseline below). That droplet now
+  exists: it was provisioned and rehearsed on 2026-10-11/12 and takes
+  production at the 2026-10-12 cutover. But it is too small:
   lab D-002 (2026-10-11) starts it at 2 vCPU / 4 GB, sized for the arena alone,
   which is below this page's 8 GB floor. Co-locating would mean resizing the
   droplet up first; otherwise the brain gets its own host from the start (see
@@ -731,9 +732,10 @@ corrupts recall or the store:
   `render.yaml`). The dashboard's Infra Cost Watchdog carries the September
   figures ($91.05 Render plus $55.30 Postgres, as of 2026-09-30).
 
-  Two consequences for this page. **First, there is no existing box to co-locate
-  on yet.** Render is a PaaS, so the bootstrap co-location depends on the
-  Render → DigitalOcean migration recorded in
+  Two consequences for this page. **First, the only owned box is the new arena
+  droplet.** Render is a PaaS, so co-location was always going to depend on
+  the Render → DigitalOcean migration (rehearsed 2026-10-11/12, cutover
+  scheduled 2026-10-12) recorded in
   [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (the
   `legendary-arena-lab` PLAN, 2026-07-24, reconfirmed 2026-10-02). That
   program restarted on 2026-10-04. NameHero and the other vendors above
@@ -2467,9 +2469,10 @@ is built.
    gateway maps tiers to models, so a cheaper model is a config change too. This
    is *Skills Over Monoliths* paying off at the routing layer.
 3. **Host sizing, vendor, and when to split off production.** A dedicated host is
-   the end-state; v1 co-locates with production (D-24341). That box does not
-   exist yet: production is still on Render at $146.35/mo (September 2026), and
-   the DigitalOcean droplet it moves to is the stalled migration in
+   the end-state; v1 co-locates with production (D-24341). That box now
+   exists but is too small to share: production is on Render at $146.35/mo
+   (September 2026) until the 2026-10-12 cutover to the 4 GB DigitalOcean
+   droplet rehearsed in
    [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) (see the cost baseline
    in [Hosting and security posture](#hosting-and-security-posture)). The
    cost ceiling for the brain is best set against that Render figure. The lower tier for

@@ -57,7 +57,7 @@ What Render charged for August 2026 (invoice `0SPQWPNF-0005`, paid
 |---|---|---|---|---|
 | Game server | `pro`, 2 CPU / 4 GB | $85.00 | $85.00 | on the droplet |
 | PostgreSQL | `pro-4gb` plus storage | $55.30 | $55.30 | on the droplet, `localhost` |
-| Builds | pipeline minutes (Aug 41 m, Sep 6 h 42 m) | $5.00 | $5.00 | GitHub Actions deploy |
+| Builds | pipeline minutes (Aug 41 m, Sep 6 h 42 m) | $5.00 | $5.00 | builds on the droplet during deploy (`40-app-deploy.ps1`; no build charge) |
 | Bandwidth | Aug 7.8 GB, Sep 6.5 GB | $1.20 | $1.05 | included with the droplet |
 | ewiki static site | free | $0.00 | $0.00 | Cloudflare Worker (moved 2026-10-11, D-24690) |
 | **Total** | | **$146.50** | **$146.35** | **~$24** at the start size (2 vCPU / 4 GB), **~$48** on the resize path (4 vCPU / 8 GB) |
@@ -80,10 +80,11 @@ are recorded in `render.yaml`.
    whole chain was rehearsed on the real $24 droplet, including a
    production-copy restore (see
    [Rehearsal results](ubuntu-lab-provisioning.md#rehearsal-results-2026-10-11)).
-   What remains is the Cloudflare TLS step, the offsite backup and monitoring
-   credentials, and the cutover itself. Every month on Render
-   costs about $120 more than the $24 droplet would. The phases and gates in the
-   PLAN are unchanged.
+   On 2026-10-12 the Cloudflare TLS step, the R2 offsite backup, and
+   monitoring were rehearsed too, and the production secrets were installed on
+   the droplet. Only the cutover itself remains; it is scheduled for
+   2026-10-12. Every month on Render costs about $120 more than the $24
+   droplet would. The phases and gates in the PLAN are unchanged.
 2. **Size from data, not from the July incidents.** Done 2026-10-11: both
    Render services run idle (about 1 GB and well under one core in total), so
    start at 2 vCPU / 4 GB ($24) and resize up on evidence. That saves more than
@@ -97,7 +98,8 @@ are recorded in `render.yaml`.
      bound. A retention job would stop that, but it must keep the
      completed-match data that replay verification (D-24119) and the team-key
      backfill (D-24187) read.
-4. **Trim Render only if cutover is more than a month or two out.**
+4. **Trim Render only if cutover is more than a month or two out.** Not
+   needed: the cutover came first (scheduled 2026-10-12). Kept for the record.
    - Build only the server and the packages it depends on
      (`pnpm --filter @legendary-arena/server... build`) instead of
      `pnpm -r build`. That shortens deploys, but it probably won't lower the
@@ -106,9 +108,11 @@ are recorded in `render.yaml`.
    - Step the server from `pro` down to `standard`, which saves $60 a month,
      but only if the September figures show headroom. Under-provisioning is
      what caused the July freezes.
-5. **Keep the rollback window short.** Render bills in full while it stays
-   warm, so set the PLAN's "N days" deliberately (for example, 14) and
-   decommission on schedule.
+5. **Keep the rollback window short.** The window is **7 days**. At cutover
+   the Render web service is suspended, not downgraded: suspending stops
+   writes during the final dump, resuming it is the rollback, and a suspended
+   service isn't billed for compute. The Render database stays up as the
+   rollback copy until Render is deleted on day 7.
 
 
 ### Sizing from measured use (2026-10-11)
@@ -370,7 +374,8 @@ doing. Co-location removed that hop, so the probe is moot.
   the live Render plan values the cost case bills against (`render.yaml` is
   authoritative if the inventory lags).
 - **[Development Workflow](development-workflow.md)** — the Render deploy loop
-  the migration replaces with a GitHub Actions → SSH deploy.
+  the migration replaces: manual `40-app-deploy.ps1` over SSH during the
+  rollback window, with a deploy-on-push workflow to follow.
 
 ## Edge Cases
 

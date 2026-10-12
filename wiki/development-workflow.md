@@ -96,7 +96,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 | **Phone** | Mobile control surface — PR review + merge, deploy monitoring, remote session steering via Tailscale. Does not author. |
 | **Claude** | Two roles: **Claude Code** (laptop or workstation) builds to WP/EC contract; **Claude-in-CI** runs the nightly Inspector triage agent. |
 | **GitHub** | Branch → PR → squash-merge `main`; holds the governance ledger; runs CI; merge triggers deploy. |
-| **Render** | Game server + managed PostgreSQL. The server deploys on commit to `main` (wiki-, docs-, and front-end-only pushes are skipped by `buildFilter`). September 2026 bill: **$146.35**. Moving to a self-hosted DigitalOcean droplet (decided, stalled since 2026-07-25 — [Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026)). |
+| **Render** | Game server + managed PostgreSQL. The server deploys on commit to `main` (wiki-, docs-, and front-end-only pushes are skipped by `buildFilter`). September 2026 bill: **$146.35**. Moving to a self-hosted DigitalOcean droplet: rehearsed end to end on 2026-10-11/12, cutover scheduled for 2026-10-12 ([Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026), [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#rehearsal-results-2026-10-11)). |
 | **Cloudflare** | Pages hosts the public front-ends (`www`, `play`, `cards`, `legends`); assets-only Workers host the two Access-gated sites, the ewiki and `dashboard` (D-24690), deployed by GitHub Actions; R2 hosts card images (`images.legendary-arena.com`) and the private nightly DB backups. |
 
 ### Round trip (idea to live)
@@ -1031,7 +1031,7 @@ version bump as its own `INFRA:` change.
 | Architecture inventory | GitHub Actions | PR generated on diff | Weekly (Mon 06:00 UTC) | Non-blocking; check Actions tab |
 | Auto-deploy (Render) | Render | Deploy status: Live | On merge to `main` | Check Render Events log; revert PR if needed |
 | Auto-deploy (Pages) | Cloudflare | Build status: Success | On merge to `main` | Check Pages Deployments log; revert PR if needed |
-| Uptime probes | Operator | `pnpm check` all green | Manual (run after deploys, incidents, machine setup) | Fix before proceeding |
+| Uptime probes | UptimeRobot + healthchecks.io; Operator | UptimeRobot `api./health` up; healthchecks.io checks up; `pnpm check` all green | UptimeRobot every 5 min; healthchecks.io every 5 min + nightly; `pnpm check` manual (after deploys, incidents, machine setup) | Email alert → follow the alert; fix before proceeding |
 | Subdomain health | Operator | `pnpm check:domains` no FAILs | Manual (run after DNS/TLS changes) | Follow `dns:`/`tls:` diagnostics |
 
 No SLA beyond "investigate in next operator session" — this is a
