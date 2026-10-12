@@ -463,7 +463,7 @@ That is 14 lines on 14 cards. Each card's other lines are unaffected.
   - gated Out of Time lines now count as conditional clauses (value 0) in the WP-708 Synergy Rate, so ca75 / anni Synergy figures shift (display-only, off-ranking)
   - the deviations: set-aside replay order, a later card replaying while an earlier choice is pending, and Copy Powers unable to target a set-aside card or a turn-2 replayed card (discarded at once)
   - guard 3's reliance on line order: it holds because Out of Time is the last line on every in-scope card and nothing appends to `inPlay` mid-pass; a future card with a later appending line must revisit it
-  - the Spectrum ruling, quoting both passages. L1950-1953 counts "the classes you have among cards you played this turn and cards in your hand"; L3443-3447 says moved cards still count as "cards you played this turn" but not as "Heroes you Have". This packet reads Spectrum as a "have" read (12 / 18 map). It is an interpretation for Jeff to confirm; reversing it moves the two Spectrum callers back to "played" with no other change.
+  - the Spectrum ruling, quoting both passages. L1950-1953 counts "the classes you have among cards you played this turn and cards in your hand"; L3443-3447 says moved cards still count as "cards you played this turn" but not as "Heroes you Have". This packet reads Spectrum as a "have" read (12 / 18 map). **Jeff confirmed this ruling on 2026-10-12.**
   - the return line's `neutral` log outcome
   - no "you discarded" on the turn-2 discard
   - the public projection
@@ -579,13 +579,13 @@ Non-scope wording locks applied:
 Eight findings, all applied in place (no allowlist change):
 1. `beginMain` fires after the `actionInStep` reset.
 2. The replay snapshots its list, deletes the key once, and returns early on a missing entry or zones.
-3. Spectrum (`:~225` / `:~598`) is reclassified as "have", so the map is now 12 / 18. This is an interpretation (L3443-3447 "Heroes you Have" vs L1950-1953 "cards you played this turn"). D-24692 records it as a ruling for Jeff to confirm.
+3. Spectrum (`:~225` / `:~598`) is reclassified as "have", so the map is now 12 / 18. This is an interpretation (L3443-3447 "Heroes you Have" vs L1950-1953 "cards you played this turn"). D-24692 records it as a ruling; Jeff confirmed it on 2026-10-12.
 4. The EC now copies the regex, the log sentences and their outcomes verbatim; the return line is `neutral`.
 5. Test homes are named; the `mid-turn.json` layout edit is local-only.
 6. The arena-client and dashboard typecheck gates and the full dashboard prebuild chain were added.
 7. The ledger read is optional (`turnEconomy?`) on both paths and returns a fresh array.
 8. D-24692 gains guard-3 line-order fragility, the turn-2 Copy Powers deviation, the Spectrum ruling and the return outcome. The bot follow-up is corrected (the drain belongs inside `playHandCards`; pre-existing), and the pre-deploy wording now says "any recognized line".
 
-**Pre-flight (01.4), round 3: READY TO EXECUTE** (2026-10-11). All eight copilot fixes are verified against source: the 12 / 18 map is exact across 30 callers, the replay loop is re-entrancy-safe, the `turnEconomy?` read is required by `heroConditionHoldsForInPlay`'s minimal state, and all test homes and commands exist. Applied: RS-18 (Files list says "twelve") and RS-19 (Spectrum recorded as an interpretation for Jeff to confirm).
+**Pre-flight (01.4), round 3: READY TO EXECUTE** (2026-10-11). All eight copilot fixes are verified against source: the 12 / 18 map is exact across 30 callers, the replay loop is re-entrancy-safe, the `turnEconomy?` read is required by `heroConditionHoldsForInPlay`'s minimal state, and all test homes and commands exist. Applied: RS-18 (Files list says "twelve") and RS-19 (Spectrum recorded as an interpretation; Jeff confirmed it on 2026-10-12).
 
 **Copilot (01.7), round 2: PASS, disposition CONFIRM** (2026-10-11). All eight fixes landed with no new contradiction. The regex, log sentences, heading, test id and provenance are byte-identical between WP and EC. The EC has 94 content lines (ceiling 100). Its one editorial residual (the Files list said "ten") is applied.
