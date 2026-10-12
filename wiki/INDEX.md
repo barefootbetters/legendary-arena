@@ -247,8 +247,8 @@ Cross-cutting governance, methodology, and readiness assessments.
 - [Development Workflow](development-workflow.md) — The
   develop-from-anywhere loop: laptop / workstation / phone drive
   Claude Code sessions on WP/EC contracts → GitHub → front-ends
-  auto-deploy via Cloudflare on merge to `main`, and the API deploys
-  manually to its DigitalOcean droplet; a nightly CI triage agent
+  auto-deploy via Cloudflare on merge to `main`, and the API deploys to
+  its DigitalOcean droplet once CI passes; a nightly CI triage agent
   turns sweep results into new work packets.
 - [Testing](testing.md) — The testing map: the four-layer testing model
   (unit/contract → integration/framework → complete-game replay →

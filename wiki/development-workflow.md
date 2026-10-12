@@ -98,7 +98,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 | **Phone** | Mobile control surface — PR review + merge, deploy monitoring, remote session steering via Tailscale. Does not author. |
 | **Claude** | Two roles: **Claude Code** (laptop or workstation) builds to WP/EC contract; **Claude-in-CI** runs the nightly Inspector triage agent. |
 | **GitHub** | Branch → PR → squash-merge `main`; holds the governance ledger; runs CI; merge triggers deploy. |
-| **DigitalOcean droplet** | Game server + PostgreSQL 18 (`localhost`) on one self-hosted Ubuntu 24.04 box (2 vCPU / 4 GB, ~$24/mo) behind Cloudflare, since the 2026-10-12 cutover. The operator deploys `main` manually with the `legendary-arena-lab` repo's `40-app-deploy.ps1`; a deploy-on-push workflow is planned after the rollback window. Render (production until 2026-10-12; September 2026 bill **$146.35**) was suspended at cutover for a 7-day rollback window ([Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026), [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)). |
+| **DigitalOcean droplet** | Game server + PostgreSQL 18 (`localhost`) on one self-hosted Ubuntu 24.04 box (2 vCPU / 4 GB, ~$24/mo) behind Cloudflare, since the 2026-10-12 cutover. The server deploys on merge to `main` once CI passes ([`deploy-server.yml`](../.github/workflows/deploy-server.yml), D-24708), through the `legendary-arena-lab` repo's `40-app-deploy.ps1`; wiki-, docs-, and front-end-only pushes are skipped. Render (production until 2026-10-12; September 2026 bill **$146.35**) was suspended at cutover for a 7-day rollback window ([Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026), [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)). |
 | **Cloudflare** | Pages hosts the public front-ends (`www`, `play`, `cards`, `legends`); assets-only Workers host the two Access-gated sites, the ewiki and `dashboard` (D-24690), deployed by GitHub Actions; R2 hosts card images (`images.legendary-arena.com`) and the private nightly DB backups. |
 
 ### Round trip (idea to live)
@@ -107,7 +107,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 2. **Claude Code builds it** — builds to the WP/EC contract, runs local gates, commits with two-commit topology (`EC-NNN:` implementation + `SPEC:` governance close).
 3. **GitHub takes it** — branch → PR → CI. Four checks are required to merge (Workspace Unit Tests, Typecheck Arena Client, Server DB Tests, Coverage & Ledger Gates); the rest also run on every PR (build, commit hygiene, reward-integrity guards, registry validation, Dashboard Gates, LAGN drift, SPA asset masking, Pages preview).
 4. **Approve from the phone** — merge PR via GitHub UI (phone-friendly).
-5. **It ships** — Cloudflare rebuilds front-ends automatically + R2 serves assets; the operator deploys server changes to the droplet (`40-app-deploy.ps1`: build + migrations + restart + health gate); `wiki/` changes rebuild the ewiki and the `wiki-viewer` workflow deploys it to its Cloudflare Worker; the `dashboard-deploy` workflow does the same for the dashboard. Live across `*.legendary-arena.com`.
+5. **It ships** — Cloudflare rebuilds front-ends automatically + R2 serves assets; once CI passes, `deploy-server.yml` deploys server changes to the droplet (`40-app-deploy.ps1`: build + migrations + restart + health gate); `wiki/` changes rebuild the ewiki and the `wiki-viewer` workflow deploys it to its Cloudflare Worker; the `dashboard-deploy` workflow does the same for the dashboard. Live across `*.legendary-arena.com`.
 6. **It feeds itself** — nightly Claude CI Inspector triage; WP auto-verification loop (WP-231/233); new findings generate new WPs → re-enter at step 1.
 
 ### Remote execution model
@@ -265,7 +265,7 @@ pasting.
 | Cloudflare R2 (card images, metadata) | `rclone` CLI | Active |
 | Cloudflare Pages (public front-end deploys) | GitHub integration (auto) | Active |
 | Cloudflare Workers (ewiki + dashboard deploys) | `wrangler deploy` from `wiki-viewer.yml` / `dashboard-deploy.yml` | Active |
-| DigitalOcean droplet (server deploys) | SSH + the `legendary-arena-lab` repo's `40-app-deploy.ps1` (manual) | Active since 2026-10-12 (replaced Render's GitHub auto-deploy) |
+| DigitalOcean droplet (server deploys) | `deploy-server.yml` → SSH as the restricted `deployer` user → the `la-deploy` gate → the `legendary-arena-lab` repo's `40-app-deploy.ps1` | Active since 2026-10-12 (replaced Render's GitHub auto-deploy; D-24708) |
 | Card data JSON (41 sets) | Local filesystem (`data/cards/`) | Active |
 | Hanko (auth service) | JWKS endpoint via `.env` | Active |
 | Claude Code MCP servers | Browser (Claude in Chrome), visualize | Active |
@@ -328,7 +328,7 @@ with no operator at the keyboard.
 | Architecture inventory | Weekly Monday 06:00 UTC (`architecture-inventory.yml`) | Regenerates `wiki/architecture-inventory.md`, opens PR on diff |
 | Roadmap counts | Weekly Monday 06:00 UTC (`roadmap-counts.yml`) | Regenerates the ROADMAP count table, opens PR on diff |
 | Roadmap schedule watch | Daily 13:00 UTC (`roadmap-schedule-nightly.yml`) | Maintains one `schedule-watch` issue when roadmap tasks slip |
-| Server deploy (droplet) | **Not automatic** since 2026-10-12: the operator runs `40-app-deploy.ps1`; a deploy-on-push workflow is planned after the rollback window | Checks out `main`, builds, runs migrations, restarts `la-server`, health gate (~35 s) |
+| Server deploy (droplet) | After CI succeeds on a push to `main` (`deploy-server.yml`, D-24708); skipped when no server-relevant file changed since the live commit | Deploys the exact commit CI tested through the droplet's `la-deploy` gate → `40-app-deploy.ps1` (frozen install, build, migrations, restart, origin health gate, ~35 s), then checks `api./health` through Cloudflare |
 | Auto-deploy (ewiki) | On merge touching `wiki/**` (`wiki-viewer.yml` → `wrangler deploy`) | Rebuilds the ewiki and deploys it to its Worker |
 | Auto-deploy (dashboard) | On merge to `main` (`dashboard-deploy.yml` → `wrangler deploy`) | Rebuilds the dashboard and deploys it to its Worker |
 | Auto-deploy (Cloudflare Pages) | On merge to `main` | Rebuilds the public front-ends |
@@ -823,7 +823,7 @@ copy or a deployment target.
 | **Laptop** | Git clone + `.env` + `node_modules` | `git pull` / `git push` to GitHub |
 | **Home Workstation** | Git clone + `.env` + `node_modules` + Ollama models | `git pull` / `git push` to GitHub |
 | **Phone** | No repo clone — GitHub mobile app + Remote Desktop | Reads GitHub directly |
-| **DigitalOcean droplet** | Production server + PostgreSQL 18 (since 2026-10-12; Render before) | Manual deploy: the operator runs the lab's `40-app-deploy.ps1` over SSH |
+| **DigitalOcean droplet** | Production server + PostgreSQL 18 (since 2026-10-12; Render before) | Auto-deploy after CI passes on `main` (`deploy-server.yml`); hand deploys via the lab's `40-app-deploy.ps1` |
 | **Cloudflare Pages** | Public front-end builds (www, play, cards, legends) | Auto-deploy on merge to `main` |
 | **Cloudflare Workers** | ewiki + dashboard (assets-only, Access-gated) | `wrangler deploy` from `wiki-viewer.yml` / `dashboard-deploy.yml` on merge to `main` |
 | **Cloudflare R2** | Card images + metadata; private nightly DB backups | `rclone sync` from operator machine; backups from the droplet's `50-backup.ps1` (the `db-backup.yml` workflow until 2026-10-12) |
@@ -907,10 +907,16 @@ Each platform manages its own configuration and secrets independently.
 - Env vars: the root-only env file `/etc/la/.env` (mode 600) on the droplet.
   `render.yaml` stays in the repo only as the inventory of `sync: false`
   secret names.
-- Deploys are **manual**: the operator runs `40-app-deploy.ps1` over SSH
-  (checks out `main`, `pnpm install --frozen-lockfile`, build, migrations,
-  restart, health gate; ~35 s). A deploy-on-push workflow is planned after
-  the 7-day rollback window.
+- Deploys are **automatic after CI**: [`deploy-server.yml`](../.github/workflows/deploy-server.yml)
+  (D-24708) runs when CI succeeds on a push to `main`. If server-relevant files
+  changed since the live commit, it deploys the tested commit over SSH as the
+  restricted `deployer` user, whose key is pinned to the `la-deploy` gate. The
+  gate runs `40-app-deploy.ps1`: an exact-commit checkout,
+  `pnpm install --frozen-lockfile`, build, migrations, restart, and a health
+  gate (~35 s). Pause deploys with the repository variable
+  `DEPLOY_ENABLED=false`. Re-run or pick a commit from **Actions →
+  deploy-server → Run workflow**. Roll back with a hand deploy of the older
+  commit on the droplet (the gate refuses to go backwards).
 - **Cost:** ~$24/mo.
 
 **Render** — server + database until 2026-10-12 (history):
@@ -1050,7 +1056,7 @@ version bump as its own `INFRA:` change.
 | DB backup | The droplet's `la-backup` timer (`50-backup.ps1`; GitHub Actions `db-backup.yml` until 2026-10-12) | Dump uploaded to the private R2 bucket; healthchecks.io `la-droplet-backup` pinged | Daily | Fix the same day — an unbacked day widens the recovery gap |
 | DR drill | Operator (issue opened by GitHub Actions) | Monthly restore drill run; issue closed | Monthly | Run the drill; closing the issue is the record |
 | Architecture inventory | GitHub Actions | PR generated on diff | Weekly (Mon 06:00 UTC) | Non-blocking; check Actions tab |
-| API deploy (droplet) | Operator (`40-app-deploy.ps1`) | Health gate passes at the end of the deploy | Manual, after server-relevant merges to `main` | Read the `40` output and `journalctl -u la-server`; revert PR and redeploy if needed |
+| API deploy (droplet) | GitHub Actions (`deploy-server.yml`) | Run green: the origin health gate inside `40`, then `api./health` 200 through Cloudflare | After CI succeeds on a push to `main`, when server-relevant files changed | Read the run log (it streams `40`'s output) and `journalctl -u la-server`; re-run from Actions, or revert the PR (its merge deploys) |
 | Auto-deploy (Pages) | Cloudflare | Build status: Success | On merge to `main` | Check Pages Deployments log; revert PR if needed |
 | Uptime probes | UptimeRobot + healthchecks.io; Operator | UptimeRobot `api./health` up; healthchecks.io checks up; `pnpm check` all green | UptimeRobot every 5 min; healthchecks.io every 5 min + nightly; `pnpm check` manual (after deploys, incidents, machine setup) | Email alert → follow the alert; fix before proceeding |
 | Subdomain health | Operator | `pnpm check:domains` no FAILs | Manual (run after DNS/TLS changes) | Follow `dns:`/`tls:` diagnostics |
@@ -1065,7 +1071,7 @@ Each deploy surface has a deterministic rollback path.
 
 | Surface | Fail signal | Rollback action | Verification |
 |---|---|---|---|
-| **DigitalOcean droplet** (server) | Health gate fails, migration error, 5xx spike | Revert the PR on GitHub → merge revert to `main` → re-run `40-app-deploy.ps1`. During the 7-day window after the 2026-10-12 cutover, a whole-platform rollback is also possible: restore the DNS-only CNAME `api` → `legendary-arena-server.onrender.com` and resume the suspended Render service | `curl $GAME_SERVER_URL/health` returns 200 |
+| **DigitalOcean droplet** (server) | Health gate fails, migration error, 5xx spike | Revert the PR on GitHub → merge the revert to `main` → `deploy-server.yml` deploys it once CI passes. For an immediate rollback, hand-deploy the previous commit on the droplet (`DEPLOY_REF=<sha>` with `40-app-deploy.ps1`; the CI gate refuses older commits by design). During the 7-day window after the 2026-10-12 cutover, a whole-platform rollback is also possible: restore the DNS-only CNAME `api` → `legendary-arena-server.onrender.com` and resume the suspended Render service | `curl $GAME_SERVER_URL/health` returns 200 |
 | **Cloudflare Worker** (ewiki) | Build failure, missing page, stale content | Revert the PR → merge to `main` → `wiki-viewer` workflow rebuilds and redeploys the Worker | Page content updated on `ewiki.legendary-arena.com` (after the Access login) |
 | **Cloudflare Worker** (dashboard) | Build failure, blank page, wrong data source | Revert the PR → merge to `main` → `dashboard-deploy` workflow rebuilds and redeploys the Worker | Dashboard loads at `dashboard.legendary-arena.com` (after the Access login) |
 | **Cloudflare Pages** (public front-ends) | Build failure, missing assets, blank page | Revert the PR → merge to `main` → Pages auto-rebuilds | Site loads at `play.legendary-arena.com` |
@@ -1108,7 +1114,7 @@ droplet — those create drift between the repo and deployed state.
 | `pnpm -r build` fails | TypeScript errors or missing deps | `pnpm install && pnpm -r build` | Exit 0, no errors |
 | Claude Code won't authenticate | API key expired or missing | `claude auth login` | Auth success message |
 | Git push rejected | Branch behind `main` or hook failure | Read hook error; `git pull --rebase origin main` | Push succeeds |
-| API deploy fails | Build error, migration failure, or failed health gate | The `40-app-deploy.ps1` output; `journalctl -u la-server` on the droplet | `40` finishes with the health gate passing |
+| API deploy fails | Build error, migration failure, failed health gate, or the `deploy-server` run fails at SSH | The `deploy-server` run log (it streams the `40-app-deploy.ps1` output); `journalctl -u la-server` and `journalctl -t la-deploy` on the droplet | Re-run succeeds, or `40` finishes by hand with the health gate passing |
 | Cloudflare Pages deploy fails | Build error or env var missing | Pages dashboard → Deployments → latest build log | Build status: Success |
 | RDP won't connect | Tailscale offline, wrong IP, or Home edition | Check Tailscale dashboard; verify Windows Pro | Desktop visible from client |
 | `[conflicted N]` files appear | pCloud sync collision with git | Delete conflicted copies; `git status` | Clean working tree |
