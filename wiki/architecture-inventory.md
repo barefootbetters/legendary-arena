@@ -10,7 +10,7 @@ tags:
 
 # Architecture & Library Adoption Inventory
 
-_Generated 2026-10-11 by `scripts/architecture-inventory.mjs`._
+_Generated 2026-10-12 by `scripts/architecture-inventory.mjs`._
 
 This is a deterministic snapshot of installed dependencies,
 their actual import usage across the workspace, and SaaS /
@@ -49,7 +49,7 @@ synthesised from the app's own manifests:
 - **`apps/server`** — Legendary Arena boardgame.io game server — wiring layer only
   - Stack: boardgame.io (`boardgame.io@^0.50.0`) over Socket.IO (transitive via `boardgame.io`) + HTTP routes via Koa router (`@koa/router@10.1.1` + `koa@2.16.4`, both transitive via `boardgame.io`) + PostgreSQL via `pg@^8.13.0`.
 - **`apps/wiki-viewer`** — Engineering wiki build pipeline. Build-time, read-only Hugo projection of `wiki/` (no `package.json` — Hugo is a Go binary, not a Node dep). Layer-boundary clean: zero runtime imports of `@legendary-arena/game-engine`, `@legendary-arena/registry`, or `apps/server`. Build pipeline is `pnpm wiki-viewer:project` (copy `wiki/*.md` → `apps/wiki-viewer/content/`) → `pnpm wiki-viewer:check-links` (case-sensitive internal-link gate) → `hugo --minify`.
-  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 89 source pages projected from `wiki/` + deployed as assets-only Cloudflare Worker `legendary-arena-wiki`.
+  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 90 source pages projected from `wiki/` + deployed as assets-only Cloudflare Worker `legendary-arena-wiki`.
 
 ## Deployment topology
 
@@ -84,8 +84,8 @@ answers "what URL maps to what app."
 |---|---|---|
 | Cloudflare Access (zero-trust gate) | zero-trust gate | `dashboard.legendary-arena.com`, `ewiki.legendary-arena.com` |
 | Cloudflare Pages (static hosting) | static hosting | `cards.legendary-arena.com`, `legendary-arena.com`, `legends.legendary-arena.com`, `play.legendary-arena.com`, `wiki.legendary-arena.com`, `www.legendary-arena.com` |
-| Cloudflare Workers (static assets) | static assets | `dashboard.legendary-arena.com`, `ewiki.legendary-arena.com` |
 | Cloudflare R2 (object storage + CDN) | object storage + CDN | `images.legendary-arena.com` |
+| Cloudflare Workers (static assets) | static assets | `dashboard.legendary-arena.com`, `ewiki.legendary-arena.com` |
 
 ### Render
 
@@ -115,10 +115,10 @@ Curated in `MANAGED_DATABASE_OPS_NOTES` in `scripts/architecture-inventory.mjs` 
 
 - Upgraded 2026-07-22 from Basic-256mb (256 MB / 0.1 CPU): the smaller instance repeatedly OOM-crashed into recovery mode ("the database system is in recovery mode" / "not yet accepting connections") under the real workload (bgio match blobs plus leaderboard / dashboard / competitive queries), killing in-flight autoplay + bot-ally matches. Storage stayed ~56% of 1 GB throughout, so the constraint was RAM/CPU, NOT disk.
 - BLUEPRINT-MANAGED: `plan`, `ipAllowList`, and `storageAutoscalingEnabled` all live in render.yaml `databases:`. A dashboard-only change to any of them is REVERTED on the next blueprint sync — every managed-DB setting must be set in render.yaml to be durable.
-- `ipAllowList: []` = internal-only inbound (was public `0.0.0.0/0`). The server connects via the internal hostname, so nothing app-side breaks; the External Database URL / a local `psql` no longer connects — use the Render dashboard PSQL shell for ops. Caveat: the dashboard also showed the `0.0.0.0/0` rules "Affected by: Workspace / Environment" — a workspace/environment-level network rule may layer on top and is only removable in the dashboard, not render.yaml.
+- `ipAllowList: ["0.0.0.0/0"]` = public inbound, credential-gated: a connection attempt is accepted from anywhere but still needs the DB password. #933 briefly made it internal-only (`ipAllowList: []`), but that locked the operator out of the External Database URL during an incident, exactly when DB access was needed, so #941 re-allowed public inbound (the rationale comment lives on the render.yaml `ipAllowList` line). The server still connects via the internal hostname; operator tooling (a local `psql`, the db-backup workflow `pg_dump`) uses the External Database URL. To narrow it, replace `0.0.0.0/0` with the operator address as a `/32`, which needs updating whenever a residential IP changes.
 - `storageAutoscalingEnabled: true` grows the disk +50% at 90% full. ROW retention IS handled (this note was stale): the match-reaper (WP-327, `apps/server/src/db/matchReaper.js`) deletes finished matches 1h after gameover — once the WP-335 capture-harvester has preserved the durable replay/competitive artifact per the D-24119 carve-out — and abandoned matches after 24h. What NEITHER the reaper NOR autoscaling does is shrink the table FILE: Postgres keeps deleted-row space as reusable dead tuples (mostly in TOAST, where the jsonb match blobs live), so `pg_total_relation_size('bgio.matches')` can be hundreds of MB with only a few live rows. Reclaim that bloat to disk with a one-shot `VACUUM FULL` — see the operator runbook `docs/ops/RUNBOOK-db-storage-reclaim.md` (worked example 2026-07-24: 346MB → 41MB, ~305MB of TOAST bloat reclaimed). NOT a scheduled chore on `pro-4gb` + autoscaling; reclaim only when you want the space back.
 - Render's Connection Pool (PgBouncer) is ENABLED on the instance, but the app stays on the DIRECT Internal Database URL — with 4 GB RAM there is no connection-memory pressure to justify PgBouncer transaction-pooling (which can break prepared statements / session state). Route the app through the pool URL only if real connection pressure ever appears.
-- Fix arc (all 2026-07-22): #920 added `pool.on("error")` (a band-aid that stopped the process crash but the DB kept killing idle clients); #930 gave the autoplay loop a bounded transient-read retry (`resilientFetch`, reads-only); #931 de-noised the pool error log (it was dumping a ~40-line pg Connection object per idle-client kill); #932 bumped the plan to basic-1gb (root cause); #933 restricted inbound to internal-only; #935 enabled storage autoscaling.
+- Fix arc (all 2026-07-22): #920 added `pool.on("error")` (a band-aid that stopped the process crash but the DB kept killing idle clients); #930 gave the autoplay loop a bounded transient-read retry (`resilientFetch`, reads-only); #931 de-noised the pool error log (it was dumping a ~40-line pg Connection object per idle-client kill); #932 bumped the plan to basic-1gb (root cause); #933 restricted inbound to internal-only (later reverted by #941 — see the ipAllowList note); #935 enabled storage autoscaling.
 - DIAGNOSTIC LESSON: the autoplay guest-safe `abortReason` ("The bot loop stopped after an unexpected server error", D-24037) HIDES the raw exception — it is logged only server-side as `[autoplay] match <id> bot loop failed: <msg>`. To diagnose an autoplay/bot abort, pull that Render log line; the engine-runner harness cannot reproduce it (it bypasses boardgame.io).
 
 ## First-party subsystems
@@ -279,11 +279,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 1393 |
+| TypeScript | 1401 |
 | Vue SFC | 194 |
 | JavaScript | 150 |
 | JSON | 114 |
-| Markdown | 110 |
+| Markdown | 111 |
 | HTML | 18 |
 | CSS | 12 |
 | PowerShell | 10 |
@@ -294,10 +294,10 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 1388 |
+| `.ts` | 1396 |
 | `.vue` | 194 |
 | `.json` | 114 |
-| `.md` | 110 |
+| `.md` | 111 |
 | `.mjs` | 108 |
 | `.js` | 40 |
 | `.html` | 18 |
@@ -310,6 +310,7 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 | `.svg` | 3 |
 | `.cjs` | 2 |
 | `.gitignore` | 2 |
+| `.jsonc` | 2 |
 | `.gitkeep` | 1 |
 | `.hugo-version` | 1 |
 | `.npmignore` | 1 |
@@ -368,7 +369,7 @@ _Other candidates in this category not currently installed:_ `@vue/runtime-core`
 
 | Package | Version(s) | Files importing | Declared in |
 |---|---|---:|---|
-| `boardgame.io` | ^0.50.0 | 77 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
+| `boardgame.io` | ^0.50.0 | 78 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
 
 _Other candidates in this category not currently installed:_ `koa`, `@koa/router`, `koa-bodyparser`, `koa-static`, `express`, `fastify`, `hono`
 
@@ -622,7 +623,7 @@ become load-bearing.
 |---|---|---:|---|
 | `@cloudflare/workers-types` | ^4.20260701.1, ^4.20240620.0 | 3 _(partial)_ | `apps/arena-client/package.json` (dev); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev); `packages/registry/package.json` (dev) |
 | `@koa/multer` | ^3.0.2 | 1 _(minimal)_ | `apps/server/package.json` (dep) |
-| `@legendary-arena/game-engine` | workspace:* | 254 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
+| `@legendary-arena/game-engine` | workspace:* | 257 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
 | `@legendary-arena/lagn` | workspace:* | 10 _(partial)_ | `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep) |
 | `@legendary-arena/preplan` | workspace:* | 11 _(partial)_ | `apps/arena-client/package.json` (dep) |
 | `@legendary-arena/registry` | workspace:* | 60 _(comprehensive)_ | `apps/dashboard/package.json` (dep); `apps/engine-runner/package.json` (dep); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev) |
@@ -721,7 +722,7 @@ installed but not yet placed surfaces under "Not yet classified".
 
 | Package | Version(s) | Adoption | Files importing |
 |---|---|---|---:|
-| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 77 _(comprehensive)_ |
+| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 78 _(comprehensive)_ |
 | `pg` | ^8.13.0 | direct dep — `apps/server/package.json` | 55 _(comprehensive)_ |
 | `typescript` | ^5.4.5, ^5.2.2 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json`, `apps/replay-producer/package.json`, `package.json`, `packages/game-engine/package.json`, `packages/lagn-spec/package.json`, `packages/preplan/package.json`, `packages/registry/package.json`, `packages/vue-sfc-loader/package.json` | 1 _(minimal)_ |
 | `zod` | ^3.23.8, ^3.22.4 | direct dep — `apps/registry-viewer/package.json`, `packages/lagn-spec/package.json`, `packages/registry/package.json` | 19 _(comprehensive)_ |
