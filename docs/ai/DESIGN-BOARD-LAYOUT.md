@@ -619,10 +619,10 @@ new field set) before the wireframe's full functionality can ship.
 
 ### §5.1 — Turn Structure
 
-**Match start:** choose a random player to go first. The engine's
-`Game.setup()` per WP-005A picks the first player via
-`ctx.random.*` (deterministic from the match seed); the locked
-match seed is recorded so the same setup replays identically.
+**Match start:** choose a random player to go first. The first
+player is drawn with the match's seeded `random` when the play
+phase begins (WP-805 / D-24700), deterministic from the match seed;
+the locked match seed is recorded so the same setup replays identically.
 
 **Turn order:** clockwise rotation around the table. The engine
 advances `ctx.currentPlayer` on every `endTurn` move per

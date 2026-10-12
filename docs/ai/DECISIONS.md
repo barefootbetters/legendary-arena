@@ -47611,10 +47611,38 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 
 ---
 
+### D-24700 — A random player goes first: the play phase opens on a seeded-random seat (WP-805 / EC-842) (Active 2026-10-12)
+
+**Context.** Rules v23 L524: "Choose a random player to go first. Players take turns in clockwise order." `DESIGN-BOARD-LAYOUT.md` §5.1 said the same. Until now every match with two or more seats opened on seat 1: the play phase set no `turn.order`, so boardgame.io's `TurnOrder.DEFAULT.first` returned `(playOrderPos + 1) % playOrder.length` for a phase starting after turn 0, the seat after the lobby's turn holder. In a bot-ally match the bot always went first (production operator match `3pNYCKHKJCE`, 2026-10-11).
+
+**Decision.**
+
+1. **Random, by the rulebook.** Jeff ruled for random over "seat 0 always" (2026-10-12). A fixed seat 0 would only move the bias from the bot to the host.
+2. **Draw point: `play.turn.order.first`.** boardgame.io calls it once per match, when `startMatchIfReady`'s `setPhase('play')` starts the phase, with the match's seeded `random` in its context. A flagged match returns `random.Die(ctx.playOrder.length) - 1`. The draw comes after every setup shuffle, so deck order is untouched; only later in-play draws shift. **Not `Game.setup()`:** the design doc's "setup picks the first player" predates the lobby phase, and a draw inside setup would come before every setup shuffle and move every match's decks and every solo pin. `next` is `(ctx.playOrderPos + 1) % ctx.playOrder.length`, boardgame.io's default clockwise rotation, verbatim.
+3. **The legacy-replay gate.** `readonly isFirstPlayerRandom?: boolean` on `LegendaryGameState`, written `true` by `buildInitialGameState` only when `context.ctx.numPlayers > 1`, never `false`, never written after setup. A flagless `G` takes the legacy branch, `(ctx.playOrderPos + 1) % ctx.playOrder.length` with no random draw, byte-identical to the old `DEFAULT.first`. It protects the four faithful-replay callers that re-run a stored `initialState + log` with the current engine: the capture harvester (`replay/matchCapture.logic.ts`, the `replayHash` of every finished match), the competitive verifier (`competition/competition.logic.ts`), the AI coach (`coach/coach.logic.ts`) and the scenario-key re-key (`replay/scenarioKeyRekey.logic.ts`). **Rejected alternative:** an unconditional `order.first`. It needs no `G` change and moves no pin, but every multi-seat match stored before deploy would open a different seat on replay, its first logged move would be refused, and score verification and the coach would break for it.
+4. **Solo omit.** One seat has no choice (`Die(1)` is always 1); drawing would only shift the RNG stream. Solo writes no flag and makes no draw, so every solo match and solo pin is byte-identical.
+5. **Harnesses stay on seat 0.** The simulation runner, the PAR aggregator, the fixture runner and `buildSnapshotSequence` choose their own opener and never call boardgame.io's turn order. Seat 0 is one legal outcome of the draw, so they are unchanged, and PAR, `sim:runtime-observed` and `sim:coverage` do not move.
+6. **Declared re-pins, trajectories unchanged.** Two whole-`G` hash oracles move, only because a 2-seat `G` gains the key: the `sentinel-core-doom-2p` `finalStateHash` (re-recorded by `scripts/record-game-fixture.mjs --input`; one-line JSON diff, `06f79cdd…` → `3a74c4a8…`) and `PRE_WP080_HASH` (`'4b119265'` → `'dae75521'`, provenance line in place). No other oracle moved.
+7. **Matches in their lobby at deploy** were set up by the old engine with no flag, so they keep the seat-1 opener. That is the legacy branch working as designed.
+8. **Accepted rollback window** (beside D-24687 §4). A deploy rollback or roll-forward that straddles a flagged match's lobby-to-play transition makes that match's faithful replay diverge: a match set up by the new engine (flag present) that starts play under an older engine opens seat 1 in its stored log, but the new engine's replay draws. Stored scores stay frozen (D-24616 §5).
+9. **Client-sent `GAME_EVENT` exposure.** `LegendaryGame` declares no `events` config, so a crafted client could send a raw `setPhase('play')`; after this decision that would also re-draw the opener. The faithful replay skips `GAME_EVENT`s, so such a match already diverges on replay. The fix is a separate `events` config follow-up; the server-side client action allowlist in flight as #2737 addresses the same exposure at the socket.
+
+**Out of scope.** Announcing the opener (a log or Battle Brief line); seat order around the table; scenario or scheme rules that name a first player; server and client edits (none needed: the bot-ally driver acts when `ctx.currentPlayer` is a bot seat, and autoplay drives whichever seat is current).
+
+**Determinism.** One seeded draw per multi-seat match, at a fixed point (play start, after all setup shuffles), through boardgame.io's `random` only. Same seed, same opener and same `plugins.random` state. A flagless state draws nothing (tests assert `plugins.random.data` deep-equal across `startMatchIfReady` on the legacy and solo paths).
+
+**Gates.** game-engine 5136 → 5142 / 0 fail (+6: the setup key test and five seeded reducer tests); server 1745 / 0 fail (207 DB-gated skips) with no server edit; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0 with no `lagn-v1.json` churn; `par:seed:test`, `sim:runtime-observed:check` and `sim:coverage --check` 0 (unchanged). Revert proofs 3/3: removing the `order` block fails the opener-set and wrap tests; removing the legacy branch fails the legacy and solo tests; writing the flag for one seat fails the setup key and solo tests. Withholding the flag returns both re-pinned oracles to exactly `4b119265` and `06f79cdd…`, so the key is the only delta.
+
+**Live-verify (D-24026):** pending. After deploy, on `play.legendary-arena.com`, create 2-seat bot-ally matches, up to 8, stopping once one has opened on the human seat and one on the bot; each opener is stable on reload. Recorded as a STATUS flip.
+
+**Reserved by:** NUMBER-LEDGER D-24700 (#2730). Related: D-10007 (lobby phase), D-24503 / D-24689 (omit-when-off `G` flags), D-24119 / D-24124 (faithful replay), D-24687 §4 / D-24616 §5 (pre-deploy window), #2737 (client action allowlist, in flight), D-24026.
+
+---
+
 ### D-24701 — The game socket accepts only player moves from clients (direct fix, no WP) (Active 2026-10-12)
 
 **Context.** Found in the WP-805 pre-flight review. boardgame.io 0.50.2's SocketIO transport hands every client `update` packet to `Master.onUpdate` (`boardgame.io/dist/cjs/server.js`, `socket.on('update', ...)`). The Master checks only that the seat's credentials match, that the seat is active, that the state id is current, and, for a `MAKE_MOVE`, that the move exists. Then it runs the action through the game reducer and persists the result. The reducer honours more than moves:
-- `GAME_EVENT` runs a flow event: `setPhase`, `endPhase`, `endGame`, `endTurn`, `pass`, `setActivePlayers`, `setStage`, `endStage`. In the lobby every seat is active (`activePlayers: { all: 'lobbyReady' }`, D-10007), so any seat could `setPhase('play')` past `startMatchIfReady`. Once WP-805 lands, that would also re-draw the random first player. In play, the active seat could `endTurn` past the endTurn move's cleanup-only stage gate and pending-choice guards (D-22002), or `endGame` with any result.
+- `GAME_EVENT` runs a flow event: `setPhase`, `endPhase`, `endGame`, `endTurn`, `pass`, `setActivePlayers`, `setStage`, `endStage`. In the lobby every seat is active (`activePlayers: { all: 'lobbyReady' }`, D-10007), so any seat could `setPhase('play')` past `startMatchIfReady`. Since WP-805 (#2740) the play phase's `turn.order.first` draws the first player, so a raw `setPhase('play')` would also re-draw it. In play, the active seat could `endTurn` past the endTurn move's cleanup-only stage gate and pending-choice guards (D-22002), or `endGame` with any result.
 - `UPDATE`, `SYNC` and `RESET` return `action.state`, which replaces the whole match state. `PATCH` applies an arbitrary RFC 6902 patch to it.
 - `UNDO` / `REDO` roll the state back or forward. `LegendaryGame` does not set `disableUndo`.
 
@@ -47642,7 +47670,7 @@ None of these is a player input the faithful replay re-dispatches (it replays `M
 
 **Live-verify (D-24026):** pending. After deploy, a normal match plays end to end from the arena client: ready, start, a full turn, endTurn. The Render log shows no `Dropped a client socket update` line for it. A crafted `GAME_EVENT` sent with a seat's credentials leaves the match unchanged and logs exactly one drop line.
 
-**Reserved by:** NUMBER-LEDGER D-24701. Related: D-10007 (all-seats-active lobby), D-22002 (endTurn move guards), D-24119 / D-24124 (faithful replay re-dispatches `MAKE_MOVE` only), D-24159 (deck-exhaustion final turn), D-24095 (bgio store), WP-805 / D-24700 (random first player, pending), D-24026.
+**Reserved by:** NUMBER-LEDGER D-24701. Related: D-10007 (all-seats-active lobby), D-22002 (endTurn move guards), D-24119 / D-24124 (faithful replay re-dispatches `MAKE_MOVE` only), D-24159 (deck-exhaustion final turn), D-24095 (bgio store), WP-805 / D-24700 (random first player, #2740), D-24026.
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "expected": {
-    "finalStateHash": "06f79cdd7645359ff0baa868073f6e6efb9832337c7133f1b46c44a8d10e446c",
+    "finalStateHash": "3a74c4a8b05f9ff9167da9c26b2523835781a759c0f766ecabe8efe5b71a7915",
     "messages": [
       {
         "outcome": "neutral",

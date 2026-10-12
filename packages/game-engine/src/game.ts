@@ -783,6 +783,28 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
         // moves). The 01.5 triggers remain absent: this is a
         // phase-configuration property, not a phase hook.
         activePlayers: { currentPlayer: 'playTurn' },
+        // why: WP-805 / D-24700 — boardgame.io calls order.first once per match, when
+        // the play phase begins (startMatchIfReady's setPhase), with the match's
+        // seeded random in its context; order.next runs at every endTurn.
+        order: {
+          first: ({ G, ctx, random }) => {
+            if (G.isFirstPlayerRandom !== true) {
+              // why: a flagless G (created before WP-805, or solo) keeps
+              // boardgame.io's former TurnOrder.DEFAULT opener for a phase that
+              // starts after turn 0, verbatim and with no random draw, so a stored
+              // log replays unchanged through the faithful replay (D-24119).
+              return (ctx.playOrderPos + 1) % ctx.playOrder.length;
+            }
+            // why: rules v23 L524 ("Choose a random player to go first"), D-24700.
+            // One seeded draw per match, made when play begins, so it comes after
+            // every setup shuffle and leaves the decks untouched. Die(n) returns
+            // 1..n; minus one is a playOrder index.
+            return random.Die(ctx.playOrder.length) - 1;
+          },
+          // why: clockwise rotation (ascending seat order, wrapping), unchanged:
+          // boardgame.io's TurnOrder.DEFAULT next, verbatim.
+          next: ({ ctx }) => (ctx.playOrderPos + 1) % ctx.playOrder.length,
+        },
         stages: {
           playTurn: {},
           // why: WP-684 / D-24501 — an empty stage a NON-ACTIVE addressed seat is placed

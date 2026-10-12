@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-805 / EC-842 — A random player goes first (D-24700) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** In a match with two or more seats, the first turn now goes to a seat drawn at random when play begins, as rules v23 L524 says. Before, every multi-seat match opened on seat 1, so in a bot-ally match the bot always went first; now the human opens about half the time. Turns then go clockwise as before. Solo matches are unchanged.
+
+- **Engine only.** Setup stamps `G.isFirstPlayerRandom: true` for 2+ seats (omitted for solo); the play phase's `turn.order.first` draws the opener with the match's seeded `random` after all setup shuffles. A match without the flag (stored before this deploy, or still in its lobby at deploy) keeps the old seat-1 opener, so score verification, capture and the AI coach replay old matches unchanged. No server, client or UIState change.
+- **Tests.** game-engine 5136 → 5142, server 1745 (no edit); all 0 fail. Re-pinned `sentinel-core-doom-2p` `finalStateHash` and `PRE_WP080_HASH`, both only for the new key. PAR and the sim gates unchanged.
+- **Live-verify (D-24026):** pending. Create 2-seat bot-ally matches (up to 8) until one opens on the human seat and one on the bot; each opener is stable on reload.
+
 ### WP-803 / EC-840 — Man / Woman Out of Time sets the card aside and replays it next turn (D-24692) (2026-10-12)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Six heroes now play their Out of Time cards as printed: ca75 Captain America 1941, Agent X-13, Steve Rogers (Director of S.H.I.E.L.D.) and Winter Soldier; anni Brainstorm and Psi-Lord. When an Out of Time card's gate holds, the card leaves play after its abilities and shows under **Out of Time — returns next turn** in your played row. It still counts as played for the rest of the turn. Next turn, right after you advance past the villain card, it plays again (icons, abilities and the play log line) and goes to your discard pile. It never goes Out of Time twice, and a copy (Copy Powers, Steal Abilities) never goes Out of Time. The Hollow effects panel stops listing these lines; Winter Soldier's "2>4" grant lines stay listed (a named follow-up).
