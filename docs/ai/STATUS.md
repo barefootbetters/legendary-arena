@@ -9,7 +9,7 @@
 
 ### D-24702 — Stored matches no longer carry undo snapshots (direct fix) (2026-10-12)
 
-**Server storage only; nothing a player sees changes.** `LegendaryGame` now sets `disableUndo: true`. boardgame.io has undo on by default, and it was saving a full copy of the game state (`G`, `ctx`, plugins) into every `bgio.matches` row for each move of the current turn. Nothing in the game uses undo, and D-24701 (#2737, open) limits the socket to player moves. A stored row now holds `_undo` and `_redo` as `[]`.
+**Server storage only; nothing a player sees changes.** `LegendaryGame` now sets `disableUndo: true`. boardgame.io has undo on by default, and it was saving a full copy of the game state (`G`, `ctx`, plugins) into every `bgio.matches` row for each move of the current turn. Nothing in the game uses undo, and since D-24701 (#2737) the socket accepts only player moves. A stored row now holds `_undo` and `_redo` as `[]`.
 
 - **Engine config only.** One field on `LegendaryGame`; no `G`, move, hash, replay, golden or PAR change. Matches already in progress drop their snapshots at their next turn boundary.
 - **Tests.** New `apps/server/src/game/undoStorage.test.ts` drives a real `Master` match to turn 2 and asserts the stacks stay empty after every move, and that an UNDO is refused. server 1745 → 1748; all 0 fail.
