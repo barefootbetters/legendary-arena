@@ -193,3 +193,24 @@ export function formatPlayedCardLabel(
   const trimmedEffect = plainEffect.endsWith('.') ? plainEffect.slice(0, -1) : plainEffect;
   return `${label} — ${trimmedEffect}`;
 }
+
+/**
+ * Names the zone a KO'd card came from, for log lines (D-24693).
+ *
+ * // why: "KO one of your Heroes" may take only from hand or play (D-24687), but every
+ * KO line said only "KO'd S.H.I.E.L.D. Agent", so a log could not show which zone a card
+ * left. This is the third site to need the wording (after optionalKoReward and the KO-hero
+ * resolve), so the mapping lives here once.
+ *
+ * @param zone - The player zone the card was KO'd from.
+ * @returns "their hand", "their discard pile" or "the cards they played this turn".
+ */
+export function describeKoSourceZone(zone: 'hand' | 'discard' | 'inPlay'): string {
+  if (zone === 'hand') {
+    return 'their hand';
+  }
+  if (zone === 'discard') {
+    return 'their discard pile';
+  }
+  return 'the cards they played this turn';
+}

@@ -1706,7 +1706,11 @@ describe('executeVillainAbilities — ko-heroes-current-by-trait (WP-485 / D-242
       [SHIELD_A],
       'only the current player is affected',
     );
-    assert.match(G.messages![0]!.text, /Fight effect: KO'd 2 of your shield Hero\(es\)\./);
+    // why: D-24693 — the line now names each KO'd card and the zone it left.
+    assert.equal(
+      G.messages![0]!.text,
+      `Fight effect: KO'd 2 of your shield Hero(es) (${SHIELD_A} from their hand, ${SHIELD_B} from the cards they played this turn).`,
+    );
     assert.equal(G.messages![0]!.outcome, 'applied');
   });
 
@@ -1972,7 +1976,11 @@ describe('executeVillainAbilities — ko-heroes-current-by-trait basic-S.H.I.E.L
       'discard is out of scope — its S.H.I.E.L.D. card survives',
     );
     assert.deepStrictEqual(G.ko, [AGENT, TROOPER, OFFICER], 'all three basic S.H.I.E.L.D. cards KO’d');
-    assert.match(G.messages![0]!.text, /Fight effect: KO'd 3 of your shield Hero\(es\)\./);
+    // why: D-24693 — the line now names each KO'd card and the zone it left.
+    assert.equal(
+      G.messages![0]!.text,
+      `Fight effect: KO'd 3 of your shield Hero(es) (${AGENT} from their hand, ${TROOPER} from the cards they played this turn, ${OFFICER} from the cards they played this turn).`,
+    );
     assert.equal(G.messages![0]!.outcome, 'applied');
   });
 
@@ -3457,7 +3465,8 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
     });
     const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
     assert.deepStrictEqual(results, [
-      { keyword: 'koHeroCurrentPlayer', targets: ['core-hero-h-00'] },
+      // why: D-24693 — the auto-KO also reports the zone it took from.
+      { keyword: 'koHeroCurrentPlayer', targets: ['core-hero-h-00'], targetZones: ['hand'] },
     ]);
     assert.deepStrictEqual(G.playerZones['0']!.discard, ['core-hero-a-00', WOUND], 'discard unchanged');
   });
@@ -3532,10 +3541,12 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
         targets: ['core-hero-p0-a', 'core-hero-p1-a'],
         // why: D-24683 — the same KOs split by player, seat order; player 2 had none.
         targetsByPlayer: [
-          { playerId: '0', targets: ['core-hero-p0-a'] },
-          { playerId: '1', targets: ['core-hero-p1-a'] },
+          { playerId: '0', targets: ['core-hero-p0-a'], zones: ['hand'] },
+          { playerId: '1', targets: ['core-hero-p1-a'], zones: ['hand'] },
           { playerId: '2', targets: [] },
         ],
+        // why: D-24693 — the zone each KO left, index-aligned with targets.
+        targetZones: ['hand', 'hand'],
       },
     ]);
     assert.deepStrictEqual(G.playerZones['0']!.discard, ['core-hero-p0-a'], 'player 0 discard unchanged');
@@ -3557,9 +3568,10 @@ describe('executeVillainAbilities — WP-316 result targets', () => {
       },
     });
     const resolved = resolveEffectResultNames(G, executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight'));
-    // why: no display entry in this fixture, so the name falls back to the ext_id.
+    // why: no display entry in this fixture, so the name falls back to the ext_id; D-24693
+    // appends the zone the card left.
     assert.deepStrictEqual(resolved[0]?.playerTargetNames, [
-      { playerId: '0', names: ['core-hero-p0-a'] },
+      { playerId: '0', names: ['core-hero-p0-a from their hand'] },
       { playerId: '1', names: [] },
     ]);
     assert.deepStrictEqual(G.playerZones['0']!.discard, ['core-hero-p0-a'], 'player 0 discard unchanged');
@@ -5283,7 +5295,7 @@ describe('"KO one of your Heroes" takes from hand or play, never the discard pil
     assert.deepStrictEqual(G.playerZones['0']!.hand, [WOUND], 'a Wound is not a Hero');
     assert.equal(
       composeEffectResultLogLine(resolveEffectResultNames(G, results)),
-      'Player 0 had no hero to KO; Player 1 KO’d core-hero-p1-h-a',
+      'Player 0 had no hero to KO; Player 1 KO’d core-hero-p1-h-a from their hand',
       'the D-24683 per-player line names player 0 as having no Hero to KO',
     );
   });
@@ -5306,7 +5318,9 @@ describe('"KO one of your Heroes" takes from hand or play, never the discard pil
 
     assert.deepStrictEqual(G.ko, [SHIELD_TROOPER], 'the only hand Hero is KO’d');
     assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park — the discard Heroes are not a choice');
-    assert.deepStrictEqual(results, [{ keyword: 'koHeroCurrentPlayer', targets: [SHIELD_TROOPER] }]);
+    assert.deepStrictEqual(results, [
+      { keyword: 'koHeroCurrentPlayer', targets: [SHIELD_TROOPER], targetZones: ['hand'] },
+    ]);
     assert.deepStrictEqual(
       G.playerZones['0']!.discard,
       [AVENGERS_ASSEMBLE, SHIELD_AGENT, 'core/hulk/smash'],
