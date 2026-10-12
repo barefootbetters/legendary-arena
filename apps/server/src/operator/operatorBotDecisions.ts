@@ -18,6 +18,8 @@ export const OPERATOR_BOT_DECISION_MATCH_CAP = 20;
 
 /** One bot decision in an operator match. */
 export interface OperatorBotDecision {
+  // why: D-24697 — the play-relative turn the board and the game log show
+  // (the engine's `game.turn`), not the framework `ctx.turn`.
   readonly turn: number;
   readonly seat: string;
   readonly isForced: boolean;

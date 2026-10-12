@@ -1032,6 +1032,32 @@ describe('WP-802 / D-24689 §5 — bot decisions recorded through startDriverFor
     assert.ok(chosen.decisionLog.length > 0, 'the policy decisionLog was carried');
   });
 
+  // why: D-24697 — production plays a lobby turn first, so play's onBegin stamps
+  // logMeta with firstPlayTurn 2 and the board shows framework turn 2 as turn 1.
+  // The recorded decision must carry that board turn, not the raw ctx.turn.
+  test('an operator decision records the board turn, not the framework ctx.turn', async () => {
+    const matchId = 'match-operator-display-turn';
+    stubFetchWithMatchId(matchId);
+    const { database } = makeSpyDatabase();
+    const { context, holder } = makeDrivenRouteContext(database);
+    context.requireAdminSession = async () => ({ ok: true, accountId: 'acct-admin' });
+    await collectPostHandlers(context).get(OPERATOR_CREATE_PATH)!(
+      makeContext({ numPlayers: 2, botCount: 1, policy: 'competent', setupData: { schemeId: 's' } }),
+    );
+    const driver = takeDriverOffTimer(matchId);
+
+    const afterLobbyState = realBotTurnState(true, 30);
+    afterLobbyState.G.logMeta = { turn: 1, actionInStep: 0, firstPlayTurn: 2 };
+    holder.state = afterLobbyState;
+    await driver.tick();
+    assert.equal(currentPlayerOf(holder), '0', 'the tick submitted a move');
+
+    const decisions = readOperatorBotDecisions(matchId);
+    assert.ok(decisions.length > 0, 'the decision was recorded');
+    assert.equal(afterLobbyState.ctx.turn, 2);
+    assert.equal(decisions[0]!.turn, 1);
+  });
+
   test('a normal match records nothing', async () => {
     const matchId = 'match-normal-record';
     stubFetchWithMatchId(matchId);

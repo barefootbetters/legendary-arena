@@ -7,6 +7,15 @@
 
 ## Current State
 
+### D-24697 — Operator bot decisions carry the turn the board shows (direct fix) (2026-10-12)
+
+**Operator-only, on the game server (after deploy).** On the operator board (`GET /api/admin/operator-match/:matchId/board`), each bot decision's `turn` now matches the board's turn counter and the game log. It used to read one turn ahead, because the lobby uses a framework turn before play starts. The production live-verify of operator match `3pNYCKHKJCE` showed the bot's first turn as `turn: 2` on board turn 1.
+
+- **Fix.** `recordIfOperatorMatch` (`apps/server/src/bot-ally/botAllyRoutes.mjs`) takes `turn` from the engine's `buildUIState(...).game.turn` instead of `ctx.turn`. The server doesn't read `G.logMeta` itself. No engine change.
+- **Catalog.** The board row in `api-endpoints.md` is replaced whole; its status, auth and response shape are unchanged.
+- **Tests.** One new test in `botAllyRoutes.test.ts` fails without the fix (actual 2, expected 1). Server 1741 tests, 0 fail (207 skipped need a test database).
+- **Live-verify (D-24026):** pending. After deploy, create an operator match, play one turn, and check that the board's first bot decisions show the same `turn` as `operatorView.board.game.turn` for that bot turn.
+
 ### D-24696 — Agent X-13 Spy Network lets you choose: gain a S.H.I.E.L.D. Officer or +2 attack (direct fix) (2026-10-12)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Playing ca75 Agent X-13 "Spy Network" now opens the "Choose one" prompt with two buttons, "Gain a S.H.I.E.L.D. Officer" and "+2 Attack", as the card prints. Before, it always granted +2 attack and never offered the Officer. The Officer goes to your discard pile. If the Officer stack is empty, that pick does nothing. Bots take the +2 attack.
