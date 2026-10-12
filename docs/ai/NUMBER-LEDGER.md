@@ -442,6 +442,7 @@ high-water: 422
 - WP-801 — ko-your-heroes-hand-and-play (Engine; unqualified "KO one/two of your Heroes" draws only from hand + cards played this turn, never the discard pile, per rules v23 — auto-pick, current-player choice, bot and client prompt. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
 - WP-802 — operator-board-inspection (Server + Engine + Client; admin-created debug match with a reveal-all operator panel on play — every zone, supply counts, villain-deck order, pending choice, effect traces, bot candidates. Read-only; setters and jump-to-turn are planned follow-ons. reserved 2026-10-11, spec/wp-operator-board-panel)
 - WP-803 — out-of-time (Engine + arena-client render; Captain America 75th "Man / Woman Out of Time": after a card's abilities resolve it is set aside, then played a second time after the next turn's villain reveal and discarded. reserved 2026-10-11, claude/reserve-wp803-out-of-time)
+- WP-804 — operator-panel-client (arena-client; the operator panel for WP-802 operator matches — admin-only lobby option, lazy Vue board panel, public operator badge, skip the score submit, operator snapshot and fixture downloads. Reserves no D; rulings sit under D-24689 §5/§6. reserved 2026-10-11, spec/reserve-operator-panel-client)
 
 ## EC
 
@@ -845,6 +846,7 @@ high-water: 457
 - EC-838 — ko-your-heroes-hand-and-play (WP-801. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
 - EC-839 — operator-board-inspection (WP-802. reserved 2026-10-11, spec/wp-operator-board-panel)
 - EC-840 — out-of-time (WP-803. reserved 2026-10-11, claude/reserve-wp803-out-of-time)
+- EC-841 — operator-panel-client (WP-804. reserved 2026-10-11, spec/reserve-operator-panel-client)
 
 ## D
 
