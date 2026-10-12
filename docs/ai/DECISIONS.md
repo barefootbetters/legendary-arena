@@ -47569,4 +47569,39 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 
 ---
 
+### D-24701 — The game socket accepts only player moves from clients (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** Found in the WP-805 pre-flight review. boardgame.io 0.50.2's SocketIO transport hands every client `update` packet to `Master.onUpdate` (`boardgame.io/dist/cjs/server.js`, `socket.on('update', ...)`). The Master checks only that the seat's credentials match, that the seat is active, that the state id is current, and, for a `MAKE_MOVE`, that the move exists. Then it runs the action through the game reducer and persists the result. The reducer honours more than moves:
+- `GAME_EVENT` runs a flow event: `setPhase`, `endPhase`, `endGame`, `endTurn`, `pass`, `setActivePlayers`, `setStage`, `endStage`. In the lobby every seat is active (`activePlayers: { all: 'lobbyReady' }`, D-10007), so any seat could `setPhase('play')` past `startMatchIfReady`. Once WP-805 lands, that would also re-draw the random first player. In play, the active seat could `endTurn` past the endTurn move's cleanup-only stage gate and pending-choice guards (D-22002), or `endGame` with any result.
+- `UPDATE`, `SYNC` and `RESET` return `action.state`, which replaces the whole match state. `PATCH` applies an arbitrary RFC 6902 patch to it.
+- `UNDO` / `REDO` roll the state back or forward. `LegendaryGame` does not set `disableUndo`.
+
+None of these is a player input the faithful replay re-dispatches (it replays `MAKE_MOVE` only, `matchReplay.logic.ts`), so a match touched this way would also fail replay and score verification (D-24119 / D-24124).
+
+**Decision.**
+1. **An allowlist at the socket boundary.** `apps/server/src/game/clientActionGuard.mjs` installs Socket.IO namespace middleware on each game namespace boardgame.io registers. It adds a per-socket packet filter that passes an `update` packet only when its action is an object with `type === 'MAKE_MOVE'`. Every other `update` is dropped before boardgame.io sees it, with one full-sentence `console.warn` naming the action type (clipped to 64 characters), match and seat. Credentials are never logged. Non-`update` packets (`sync`, `chat`, disconnect) pass unchanged. `server.mjs` calls `installClientActionGuard(server, [LegendaryGame])` right after `Server({...})`, before `run()`.
+2. **Why not the game's `events` config.** In 0.50.2, `events: { setPhase: false, ... }` only fills `flow.enabledEventNames`. The one reader of that list is the client (`client.js` builds `client.events` from it). The server reducer's `GAME_EVENT` case calls `flow.processEvent`, which dispatches through every event handler with no enabled check. The in-move `events` API is built from `flow.eventNames` (all events), so disabling would not break the engine's own `setPhase` / `endTurn` calls, but it would not stop a crafted client either. The engine could not guard `UPDATE` / `SYNC` / `RESET` / `PATCH` / `UNDO` / `REDO` at all: the reducer handles them before any game hook runs. So the fix is server wiring, and the engine is unchanged.
+3. **Allowlist, not blocklist.** The arena client only sends moves: `client.moves.*`, never `client.events`, `undo` / `redo`, or plugin actions. So `MAKE_MOVE` is the whole legitimate client vocabulary, and an action type a future boardgame.io adds is refused by default.
+4. **Scope.** Server-internal dispatch is untouched. The autoplay loop and the bot ally build their own `Master` and call `onUpdate` directly, never through the socket. Lobby REST routes are unaffected.
+
+**Determinism.** No engine, feed, hash or replay change. Honest matches send only moves, so they play identically. Matches that already contain a raw client event in their log are untouched. The guard only stops new ones.
+
+**Files.** New `apps/server/src/game/clientActionGuard.mjs` (`isClientUpdateActionAllowed`, `filterClientUpdatePacket`, `installClientActionGuard`) and `clientActionGuard.test.ts`. `apps/server/src/server.mjs`: one import plus the install call. `apps/server/src/server.mjs.test.ts`: a wiring assertion. No HTTP endpoint touched, so no `api-endpoints.md` row changes.
+
+**Tests.** `clientActionGuard.test.ts`, all on the real `LegendaryGame` via `InitializeGame`:
+- **Exposure pins** (boardgame.io's real `Master`, in-memory store). A seat's `GAME_EVENT setPhase('play')` takes the lobby to play with `lobby.started` false and the seat never readied. `GAME_EVENT endGame` sets `ctx.gameover`. An `UPDATE` stores a client-forged `G`. These pin the framework behaviour the guard exists for. If a boardgame.io upgrade starts refusing these actions, the pins fail and say so.
+- **Allowlist:** `MAKE_MOVE` passes. `GAME_EVENT`, `UNDO`, `REDO`, `UPDATE`, `SYNC`, `RESET`, `PATCH`, `PLUGIN`, `STRIP_TRANSIENTS`, non-objects and type-less actions are refused. The packet filter passes `sync` and move updates and drops the rest. A non-server argument throws a full-sentence error.
+- **Real socket path:** a boardgame.io `Server()` on an ephemeral port, with a raw `socket.io-client` sending credentialed `update` packets. Control (no guard): a raw `setPhase('play')` lands. Guarded: raw `setPhase`, `endGame` and `UPDATE` are dropped, and `setPlayerReady` then advances `_stateID` by exactly one with the phase still `lobby` and no gameover. `startMatchIfReady` still reaches play. A raw `endTurn` in the start stage is dropped. `revealVillainCard`, `advanceStage` ×2 and the `endTurn` move then reach turn 2 at the `start` stage. The test stocks the hero deck because the empty test registry deals none (an empty deck makes turn 1 the D-24159 final turn).
+- `server.mjs.test.ts`: `server.mjs` imports the guard and calls it after `Server({...})` and before `server.run(...)`.
+
+**Revert proof.** With the `socket.use(filterClientUpdatePacket)` line commented out, the guarded socket test fails (`the raw setPhase was dropped`: `'play' !== 'lobby'`). The other 9 pass, including the control.
+
+**Gates.** `pnpm install`; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (apps/server 1756 incl. 11 new, 207 DB-gated skips without `TEST_DATABASE_URL`; game-engine 5092 and arena-client 2299 unchanged); `check-number-ledger --check` passed. No engine, feed or hash change; no `lagn-v1.json` churn.
+
+**Live-verify (D-24026):** pending. After deploy, a normal match plays end to end from the arena client: ready, start, a full turn, endTurn. The Render log shows no `Dropped a client socket update` line for it. A crafted `GAME_EVENT` sent with a seat's credentials leaves the match unchanged and logs exactly one drop line.
+
+**Reserved by:** NUMBER-LEDGER D-24701. Related: D-10007 (all-seats-active lobby), D-22002 (endTurn move guards), D-24119 / D-24124 (faithful replay re-dispatches `MAKE_MOVE` only), D-24159 (deck-exhaustion final turn), D-24095 (bgio store), WP-805 / D-24700 (random first player, pending), D-24026.
+
+---
+
 Protect this file.

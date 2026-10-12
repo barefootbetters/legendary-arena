@@ -97,6 +97,31 @@ describe('apps/server/src/server.mjs — registry wiring contract (WP-113 PS-5)'
   });
 });
 
+describe('apps/server/src/server.mjs — client action guard wiring (D-24701)', () => {
+  it('imports installClientActionGuard and installs it on the constructed Server for LegendaryGame', async () => {
+    const text = await readFile(serverPath, 'utf8');
+
+    assert.match(
+      text,
+      /import\s*\{\s*installClientActionGuard\s*\}\s*from\s*['"]\.\/game\/clientActionGuard\.mjs['"]/,
+      'server.mjs must import installClientActionGuard from ./game/clientActionGuard.mjs',
+    );
+    const serverConstructIndex = text.indexOf('const server = Server({');
+    const guardCallIndex = text.indexOf('installClientActionGuard(server, [LegendaryGame]);');
+    assert.ok(serverConstructIndex > -1, 'Server({...}) construction must exist');
+    assert.ok(
+      guardCallIndex > serverConstructIndex,
+      'installClientActionGuard(server, [LegendaryGame]) must be called after Server({...}) is constructed — without it a client can send raw GAME_EVENT / UPDATE / PATCH / UNDO actions straight to the match',
+    );
+    const runIndex = text.indexOf('await server.run(');
+    assert.ok(runIndex > -1, 'server.run(...) must exist');
+    assert.ok(
+      guardCallIndex < runIndex,
+      'installClientActionGuard must be called before server.run(...) so no socket connects without the filter',
+    );
+  });
+});
+
 describe('startup guard (WP-131)', () => {
   // why: save and restore the four `process.env` keys these tests
   // mutate (`NODE_ENV`, `HANKO_TENANT_BASE_URL`, `HANKO_EXPECTED_AUDIENCE`,
