@@ -34,7 +34,7 @@
  */
 
 import { createRequire } from 'node:module';
-import { LegendaryGame } from '@legendary-arena/game-engine';
+import { LegendaryGame, buildUIState } from '@legendary-arena/game-engine';
 import { INTERNAL_DELEGATION_HEADER } from '../match/nativeLobbyGuard.js';
 import {
   createBotAllyDriver,
@@ -561,6 +561,11 @@ function startDriverForMatch({ matchId, botSeats, decisionSeed, policyName, subm
  * record lives in process memory and is never written to `G`, the move log or
  * any table.
  *
+ * // why: D-24697 — `turn` is the engine's display turn (`buildUIState(...).game.turn`),
+ * the number the operator board and the game log show. The raw `ctx.turn` ran one
+ * ahead, because the lobby uses a framework turn before play begins; the engine
+ * owns that offset, so the server reads its projection and never interprets `G.logMeta`.
+ *
  * @param {string} matchId - The match id.
  * @param {object} state - The fetched match state the decision was made on.
  * @param {string} seat - The bot seat that decided.
@@ -572,8 +577,13 @@ function recordIfOperatorMatch(matchId, state, seat, decision) {
   if (state.G?.isDebugMatch !== true) {
     return;
   }
-  recordOperatorBotDecision(matchId, {
+  const displayTurn = buildUIState(state.G, {
+    phase: state.ctx.phase,
     turn: state.ctx.turn,
+    currentPlayer: state.ctx.currentPlayer,
+  }).game.turn;
+  recordOperatorBotDecision(matchId, {
+    turn: displayTurn,
     seat,
     isForced: decision.isForced,
     move: decision.move,

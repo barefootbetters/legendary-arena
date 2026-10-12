@@ -47519,4 +47519,20 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 
 ---
 
+### D-24697 — Operator bot decisions carry the turn the board shows (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** The operator board (`GET /api/admin/operator-match/:matchId/board`, WP-802 / D-24689 §5) returns the bot ally's recent decisions. Each decision's `turn` was stamped from raw `state.ctx.turn` in `recordIfOperatorMatch` (`apps/server/src/bot-ally/botAllyRoutes.mjs`). The board itself and the game log number turns with the engine's play-relative turn (`G.logMeta.turn = ctx.turn − firstPlayTurn + 1`, `game.ts` play `onBegin`; `buildUIState` projects it as `game.turn`). A bot-ally match plays one framework turn in the lobby before play begins, so every decision read one turn ahead of the board. The production live-verify of operator match `3pNYCKHKJCE` (2026-10-11) showed it: the bot's first turn was board turn 1, but its decisions said `turn: 2`.
+
+**Decision.**
+
+1. `recordIfOperatorMatch` stamps `turn` from the engine's projection, `buildUIState(G, { phase, turn, currentPlayer }).game.turn`, the same number the board and the game log show. Before play's first `onBegin` stamps `logMeta`, the projection falls back to `ctx.turn` exactly as the board does.
+2. The server reads the projection, not `G.logMeta`. The engine owns the offset; the server still reads only `G.isDebugMatch` directly (D-24689 §5).
+3. Nothing else changes: the decision's other fields, the 50-per-match and 20-match caps, the in-memory lifetime, and every non-operator match (which records nothing).
+
+**Verification.** New test in `botAllyRoutes.test.ts`: an operator-match bot decision on a state with `ctx.turn` 2 and `logMeta { turn: 1, firstPlayTurn: 2 }` records `turn: 1`. It fails against the unfixed recorder (actual 2). The existing decision test, with no `logMeta`, still records `ctx.turn` (2) through the fallback. Server 1741 tests, 0 fail.
+
+**Reserved by:** NUMBER-LEDGER D-24697. Related: D-24689 / WP-802 (operator board and the decision record), D-11804 (API catalog row), D-24026.
+
+---
+
 Protect this file.
