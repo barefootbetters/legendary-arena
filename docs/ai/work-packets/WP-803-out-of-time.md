@@ -17,7 +17,7 @@
 **User-Visible Surface:** `play.legendary-arena.com`
 **Lane:** Standard (two-session). Two layers, a contract-file edit (`economy.types.ts`), a new `G` field, a new `UIState` field and a turn-loop wiring change: fails lightweight-lane criteria 1, 3, 4 and 6.
 
-> Baseline: `origin/main` at `c8c96134` plus the reserve commit (#2714, WP-803 / EC-840 / D-24692).
+> Baseline: `origin/main` at `295f9dc5` (includes #2714 reserve, #2722 / D-24694, #2723 / D-24695, #2724 / D-24696). Drafted at `c8c96134`; re-synced 2026-10-12.
 
 ---
 
@@ -76,7 +76,8 @@ Rules v23 L3441-3470 (cards you played this turn) adds that a card which moved t
    - Gate conditions are built in Step 1 / 1b `:~1230-1296`. `[keyword:Savior]` becomes `{ type: 'bystandersInVictoryAtLeast', value: '3' }` `:~1667-1670`.
    - The generic hook builder (`:~2501-2505`) emits one `{ type: keyword }` effect per resolved no-magnitude keyword, so the recognizer pushes the **keyword only**.
    - `KEYWORD_TIMING_DEFAULTS` `:~607` is a `Partial<…>`, so no entry is needed and the hook keeps `onPlay`.
-   - `HERO_PARSER_RECOGNIZED_MARKER_NAMES` `:~400-420` feeds the `sim:coverage` probe (`scripts/hero-effect-coverage.mjs:~44,~75`). Its drift test is `setup/heroAbility.setup.test.ts:~1785-1811`.
+   - `HERO_PARSER_RECOGNIZED_MARKER_NAMES` `:~400-420` feeds the `sim:coverage` probe (`scripts/hero-effect-coverage.mjs:~44,~75`). Its drift test is `setup/heroAbility.setup.test.ts:~1835`.
+   - Since D-24696 (#2724) the list ends with `'gain-officer'`, and the drift test's `ALLOWLIST_GATED_NAMES` includes it. The three Out of Time slugs are appended after it; parser anchors shifted about +9..+12 lines.
 3. **Executor** (`hero/heroEffects.execute.ts`):
    - `executeHeroEffects` `:~810`. The gate is evaluated at `:~856` (`evaluateAllConditions`), and `executeSingleEffect` `:~6312` dispatches handlers.
    - The executor runs **all** of a card's lines in order, in one pass, without parking any (`:~837-979`). A line that opens a choice (e.g. `put-hand-on-deck-top` `:~3166`) leaves the choice pending while the later lines still run. On every in-scope card, the Out of Time line is the **last** line.
@@ -89,7 +90,7 @@ Rules v23 L3441-3470 (cards you played this turn) adds that a card which moved t
    - Savior reads `playerZones.victory` (`:~334-351`).
    - None of hc / team / Savior is wait-and-see (`hero/deferredConditionalGrants.ts:~67-90`).
    - Today four identical `requiresTeam` conditions AND to "one other". WP-741 changes that repo-wide; this packet is neutral to it.
-5. **Played-this-turn chokepoint.** `playedCardIdsThisTurn(G, inPlay)` (`hero/splitCard.logic.ts:~169`) is the only rules-facing "played this turn" read. It expands Penumbra's `turnEconomy.bothSidesPlayedCardIds` and has 30 non-test callers, classified in §Played-vs-Have Map.
+5. **Played-this-turn chokepoint.** `playedCardIdsThisTurn(G, inPlay)` (`hero/splitCard.logic.ts:~169`) is the only rules-facing "played this turn" read. It expands Penumbra's `turnEconomy.bothSidesPlayedCardIds` and has 28 non-test callers on `main` after D-24694 (#2722), classified in §Played-vs-Have Map.
    - Every "played" caller evaluates the **active** player, so an active-player-scoped `TurnEconomy` ledger is correct.
    - `TurnEconomy` is reset by `resetTurnEconomy()` at every turn start (`game.ts:~924` and the sim / PAR / fixture rotations).
    - Ledger template:
@@ -204,7 +205,7 @@ The chosen design moves the card out on both turns and keeps it countable throug
     - It always returns a fresh array.
     - Its JSDoc states the active-player scope.
   - New export `playedCardIdsStillInPlay(G, inPlay)` returns exactly today's result.
-  - The twelve "have" callers in §Played-vs-Have Map switch to `playedCardIdsStillInPlay`, each with a `// why:` citing rules v23 L3443-3447 (moved cards "don't count as 'Your Heroes' or 'Heroes you Have'") and L3457-3470. The eighteen "played" callers are unchanged.
+  - The ten "have" callers in §Played-vs-Have Map switch to `playedCardIdsStillInPlay`, each with a `// why:` citing rules v23 L3443-3447 (moved cards "don't count as 'Your Heroes' or 'Heroes you Have'") and L3457-3470. The eighteen "played" callers are unchanged.
 - **Turn-start replay** (`moves/outOfTime.logic.ts`, new): `replayOutOfTimeCards(G, context, playerID): void`.
   - It returns early, mutating nothing, when the player has no entry or no `playerZones`.
   - Otherwise it snapshots the list, deletes the player key once (and the field when no key remains), then loops the **snapshot** in order:
@@ -235,23 +236,22 @@ The chosen design moves the card out on both turns and keeps it countable throug
 - **Bots:** no change to `ai.legalMoves.ts`, `ai.competent.ts` or `apps/server`. The replay is automatic, so every loop that advances the stage gets it.
 - **Determinism.** No randomness is added; the replayed play draws through the passed context exactly as a hand play does. In a match without an Out of Time card, no `G` field is written. So the sentinel `finalStateHash`, `PRE_WP080_HASH` and PAR are expected unchanged; a change = STOP.
 
-## Played-vs-Have Map (locked — all 30 `playedCardIdsThisTurn` callers)
+## Played-vs-Have Map (locked — all 28 `playedCardIdsThisTurn` callers, re-synced to `main` after D-24694 / #2722)
 
-**"Have" (12): switch to `playedCardIdsStillInPlay`.** These are hand + play "you have" / reveal-style reads. Rules v23 L3443-3447: cards you played that moved elsewhere "still count as 'cards you played this turn,' but they don't count as 'Your Heroes' or 'Heroes you Have.'"
+**"Have" (10): switch to `playedCardIdsStillInPlay`.** These are hand + play "you have" / reveal-style reads. Rules v23 L3443-3447: cards you played that moved elsewhere "still count as 'cards you played this turn,' but they don't count as 'Your Heroes' or 'Heroes you Have.'"
 - `hero/heroConditions.evaluate.ts`:
-  - `:~225` (Spectrum gate: "only if you have at least 3 classes of Hero", rules L1946-1953 / D-24055) and `:~598` (its describe count)
-  - `:~322` (`heroCostAtLeastInHandOrPlay`)
-  - `:~366` (cheap-or-size-changing gate)
-  - `:~667` (`countDistinctHeroClassesYouHave`, "each color of Hero you have", Perfect Teamwork / Storm the Beachhead line 0 / International Strike Force)
-  - `:~700` (`countDistinctHeroCostsInHandOrPlay`)
-  - `:~794` (`countCheapOrSizeChanging`)
-- `hero/heroCountSource.resolve.ts` `:~692` (`collectDistinctHeroClassCards`, the diagnostics mirror of `:~667`)
-- `villain/villainEffects.execute.ts` `:~1629` (`playerHasHeroMatchingTrait`) and `:~1666` (`countPlayerHeroesMatchingTrait`)
+  - `:~311` (`heroCostAtLeastInHandOrPlay`)
+  - `:~355` (cheap-or-size-changing gate)
+  - `:~620` (`countDistinctHeroClassesYouHave`, "each color of Hero you have", Perfect Teamwork / Storm the Beachhead line 0 / International Strike Force). Since D-24694 (#2722) it is also the Spectrum gate and describe count ("only if you have at least 3 classes of Hero", rules L1946-1953, hand + play; the Jeff-confirmed "have" ruling), so Spectrum moves with this one site.
+  - `:~653` (`countDistinctHeroCostsInHandOrPlay`)
+  - `:~747` (`countCheapOrSizeChanging`)
+- `hero/heroCountSource.resolve.ts` `:~692` (`collectDistinctHeroClassCards`, the diagnostics mirror of `:~620`)
+- `villain/villainEffects.execute.ts` `:~1671` (`playerHasHeroMatchingTrait`) and `:~1708` (`countPlayerHeroesMatchingTrait`)
 - `rules/tacticHandlers.ts` `:~675` (`resolveXaviersNemesis` → `countXMenHeroesYouHave`)
 - `moves/villainDefeatRequirement.logic.ts` `:~73` (D-24076: "have" is hand or in play)
 
 **"Played" (18): unchanged, so they now see the ledger.** These are Superpower gates and per-played-card counts.
-- `hero/heroConditions.evaluate.ts` `:~119, ~140, ~164, ~188, ~200, ~486, ~847`
+- `hero/heroConditions.evaluate.ts` `:~119, ~140, ~164, ~188, ~200, ~475, ~800`
 - `hero/heroCountSource.resolve.ts` `:~119, ~159, ~202, ~274, ~315, ~353, ~481, ~521, ~561, ~595, ~633`
 
 If execution finds a caller whose semantics contradict its bucket, STOP and amend this map + D-24692. Do not reclassify silently.
@@ -318,7 +318,7 @@ That is 14 lines on 14 cards. Each card's other lines are unaffected.
   - `hero/heroEffects.execute.ts` + test: the handler, the three sets, and both count asserts.
   - `economy/economy.types.ts` and `economy/economy.logic.ts` + test.
   - `hero/splitCard.logic.ts` + test.
-  - The twelve "have" sites: `hero/heroConditions.evaluate.ts`, `hero/heroCountSource.resolve.ts` (+ test), `villain/villainEffects.execute.ts`, `rules/tacticHandlers.ts` and `moves/villainDefeatRequirement.logic.ts`.
+  - The ten "have" sites: `hero/heroConditions.evaluate.ts`, `hero/heroCountSource.resolve.ts` (+ test), `villain/villainEffects.execute.ts`, `rules/tacticHandlers.ts` and `moves/villainDefeatRequirement.logic.ts`.
   - `types.ts`.
 - **C) Replay + wiring.**
   - `moves/outOfTime.logic.ts` + `.test.ts` (new).
@@ -365,14 +365,14 @@ That is 14 lines on 14 cards. Each card's other lines are unaffected.
 - **Iron Lad** gained as a Hero (anni villain hero text). It is not built into hero hooks today.
 - **Focus** (Psi-Lord line 0) is unimplemented engine-wide. "Focus across both turns" lands with Focus.
 - **Replay order and pending choices.** When several cards return, the rules let you play them in any order, and you finish one card's effect before playing the next. Here they replay in set-aside order, and a later card replays even while an earlier card's choice is pending (each choice still resolves). Recorded as deviations in D-24692.
-- **Bot ally and choice-opening plays.** Server autoplay's `playHandCards` (`apps/server/src/autoplay/autoplay.mjs:~882-912`) never drains a pending choice between plays. That is pre-existing: it already bites on turn 1 when Time Loop Experiments is played from hand. A replayed Time Loop Experiments hits it at the top of `main` too, so the bot ally plays no further hand cards that turn. The match does not freeze, because `spendResources` drains the choice. The sim and PAR loops resolve choices through `getLegalMoves` and are unaffected. The named follow-up is a drain between plays inside `playHandCards`, kept out as a server-layer edit.
+- **Bot and choice-opening plays: resolved on `main` by D-24695 (#2723).** The Watch Bot Play autoplay's `playHandCards` now drains a pending choice after each hand play. A choice parked by Time Loop Experiments or Spy Network played from hand is drained after that play. A choice parked by the turn-2 replay (inside `advanceStage`) costs one refused `playCard` before the post-play drain resolves it; D-24697 (in flight) also drains before the first hand play. Either way the hand still plays out. The bot-ally driver always picked moves from `getLegalMoves` and was never affected, and neither were the sim / PAR loops. No server edit is in this packet.
 - **End-of-game "all your cards" scoring** (`scoring/scoring.logic.ts:~131-143`, Ultron's Tech count and its Blood Frenzy mirror) does not include set-aside cards. This only matters when the game ends between a card's two turns; it is a named follow-up.
 - **Opponent display** of set-aside cards (the field is public, so an `OpponentPanel` count is a follow-up), and `notableEventCardLookup` coverage of the new zone.
 - **Copy Powers targeting a set-aside card.** `buildCopyPowersTargets` keeps scanning raw `inPlay`, so a set-aside card can't be copied after it leaves play. Recorded as a deviation in D-24692.
 - **Dashboard alias folding.** The runtime keys (`man-out-of-time` …) never join the ledger's folded `out-of-time`, so the in-play gauge cannot credit them as resolved; it moves only because the denominator shrinks. Named follow-up.
 - **`replay/replay.execute.ts` turn-economy posture (D-24322).** That harness does not reset `turnEconomy` between turns, so its ledger persists. A card cycling Out of Time twice in one match can replay differently there; this affects replay-producer snapshots only. Inherited from Penumbra, unchanged.
 - **Pre-deploy matches.** A pre-deploy ca75 / anni log that played any recognized Out of Time line (including the ungated Storm the Beachhead) no longer re-executes byte-identically. This is the accepted window of WP-792 / WP-793 / WP-801 (D-24687 §4); stored `competitive_scores` stay frozen (D-24616 §5).
-- **Agent X-13 Spy Network line 0** ("Choose one: Gain a S.H.I.E.L.D. Officer, or +2 Attack") always grants +2 and drops the Officer option with no hollow. Pre-existing, reported separately.
+- **Agent X-13 Spy Network line 0** ("Choose one: Gain a S.H.I.E.L.D. Officer, or +2 Attack") is fixed separately by D-24696 (#2724). It now parks the WP-679 choose-one, so like Time Loop Experiments the card goes Out of Time with that choice pending on turn 1 and re-opens it on its turn-2 replay. The executor still runs every line in one pass (Assumes 3); no extra scope.
 
 ## Files Expected to Change
 
@@ -381,7 +381,7 @@ That is 14 lines on 14 cards. Each card's other lines are unaffected.
 - `packages/game-engine/src/hero/heroEffects.execute.ts` (+ `.test.ts`) — modified (handler + keyword sets + count asserts)
 - `packages/game-engine/src/economy/economy.types.ts`, `economy/economy.logic.ts` (+ `.test.ts`) — modified (ledger field, carry, helper)
 - `packages/game-engine/src/hero/splitCard.logic.ts` (+ `.test.ts`) — modified (ledger in `playedCardIdsThisTurn`; new `playedCardIdsStillInPlay`)
-- `packages/game-engine/src/hero/heroConditions.evaluate.ts`, `hero/heroCountSource.resolve.ts` (+ `.test.ts`), `villain/villainEffects.execute.ts`, `rules/tacticHandlers.ts`, `moves/villainDefeatRequirement.logic.ts` — modified (the twelve "have" sites)
+- `packages/game-engine/src/hero/heroConditions.evaluate.ts`, `hero/heroCountSource.resolve.ts` (+ `.test.ts`), `villain/villainEffects.execute.ts`, `rules/tacticHandlers.ts`, `moves/villainDefeatRequirement.logic.ts` — modified (the ten "have" sites)
 - `packages/game-engine/src/types.ts` — modified (`outOfTimeCards?`)
 - `packages/game-engine/src/turn/turnLoop.ts` (+ `turnLoop.test.ts`, `turnLoop.integration.test.ts`), `rules/tacticHandlers.test.ts` — modified (`beginMain`)
 - `packages/game-engine/src/game.ts`, `game.test.ts`, `simulation/simulation.runner.ts`, `simulation/par.aggregator.ts`, `test/fixtures/runFixture.ts`, `replay/replay.execute.ts` — modified (01.5 wiring + reducer test)
@@ -420,7 +420,7 @@ That is 14 lines on 14 cards. Each card's other lines are unaffected.
 ## Acceptance Criteria
 
 1. **Parsing.** Each Card Map line parses to keyword `out-of-time` with no unresolved marker and with its gate conditions as built today. That includes both Savior lines (Punch Evil in the Face, Shadow of Wars Past). The 2>4 lines are unchanged.
-2. **Turn 1, gate met.** A played Out of Time card leaves `inPlay` into `G.outOfTimeCards[player]` after its other lines resolve and logs the set-aside line. For the rest of the turn it still counts as played for Superpower gates and count sources, but not for the twelve "have" reads (incl. Spectrum).
+2. **Turn 1, gate met.** A played Out of Time card leaves `inPlay` into `G.outOfTimeCards[player]` after its other lines resolve and logs the set-aside line. For the rest of the turn it still counts as played for Superpower gates and count sources, but not for the ten "have" reads (incl. Spectrum, via `countDistinctHeroClassesYouHave`).
 3. **Turn 1, gate unmet.** The card stays in `inPlay` and is discarded at cleanup.
 4. **Turn 2 replay.** On the owner's next turn, after `revealVillainCard` and `advanceStage`, each set-aside card is played once more through `applyCardPlay`, in set-aside order: play log line, printed icons, abilities. Afterwards the card is in `discard`, `outOfTimeCards` is absent, and the card is not set aside again.
 5. **No early replay.** Nothing replays before the villain card is revealed or while any reveal choice is pending.
@@ -456,19 +456,19 @@ That is 14 lines on 14 cards. Each card's other lines are unaffected.
 - [ ] All ACs pass; the diff is allowlist-only.
 - [ ] D-24692 Active. It records:
   - the set-aside storage (delete-when-empty) and the active-player-scoped turn ledger
-  - played vs have, with the 30-caller map and the rejected keep-in-play alternative
+  - played vs have, with the 28-caller map (re-synced after D-24694) and the rejected keep-in-play alternative
   - start → main as the replay point, and the required `beginMain` closure
   - the three handler guards: copies, never twice, and enemy-sent cards admitted later
   - repeated gates left to WP-741 / D-24563: until WP-741 lands, Sniper Squad goes Out of Time with one other S.H.I.E.L.D. card (starting Agents count)
   - gated Out of Time lines now count as conditional clauses (value 0) in the WP-708 Synergy Rate, so ca75 / anni Synergy figures shift (display-only, off-ranking)
   - the deviations: set-aside replay order, a later card replaying while an earlier choice is pending, and Copy Powers unable to target a set-aside card or a turn-2 replayed card (discarded at once)
   - guard 3's reliance on line order: it holds because Out of Time is the last line on every in-scope card and nothing appends to `inPlay` mid-pass; a future card with a later appending line must revisit it
-  - the Spectrum ruling, quoting both passages. L1950-1953 counts "the classes you have among cards you played this turn and cards in your hand"; L3443-3447 says moved cards still count as "cards you played this turn" but not as "Heroes you Have". This packet reads Spectrum as a "have" read (12 / 18 map). It is an interpretation for Jeff to confirm; reversing it moves the two Spectrum callers back to "played" with no other change.
+  - the Spectrum ruling, quoting both passages. L1950-1953 counts "the classes you have among cards you played this turn and cards in your hand"; L3443-3447 says moved cards still count as "cards you played this turn" but not as "Heroes you Have". This packet reads Spectrum as a "have" read (10 / 18 map; since D-24694 Spectrum rides `countDistinctHeroClassesYouHave`, so it moves with that one site). **Jeff confirmed this ruling on 2026-10-12.**
   - the return line's `neutral` log outcome
   - no "you discarded" on the turn-2 discard
   - the public projection
   - hero × mechanic ledger granularity for Winter Soldier
-  - the bot-ally limitation
+  - the bot / choice-opening note (resolved by D-24695, not by this packet)
   - the accepted pre-deploy replay window
 - [ ] `docs/ai/STATUS.md`; WORK_INDEX `[x]`; EC_INDEX Done; mindmap `✅`; `roadmap:counts:check` 0.
 - [ ] Two-commit topology (`EC-840:` then `SPEC:`), with `Tests-changed:` trailers for `gateOnlyHollow.test.ts` and the dashboard pin.
@@ -579,13 +579,20 @@ Non-scope wording locks applied:
 Eight findings, all applied in place (no allowlist change):
 1. `beginMain` fires after the `actionInStep` reset.
 2. The replay snapshots its list, deletes the key once, and returns early on a missing entry or zones.
-3. Spectrum (`:~225` / `:~598`) is reclassified as "have", so the map is now 12 / 18. This is an interpretation (L3443-3447 "Heroes you Have" vs L1950-1953 "cards you played this turn"). D-24692 records it as a ruling for Jeff to confirm.
+3. Spectrum (`:~225` / `:~598`) is reclassified as "have", so the map is now 12 / 18. This is an interpretation (L3443-3447 "Heroes you Have" vs L1950-1953 "cards you played this turn"). D-24692 records it as a ruling; Jeff confirmed it on 2026-10-12.
 4. The EC now copies the regex, the log sentences and their outcomes verbatim; the return line is `neutral`.
 5. Test homes are named; the `mid-turn.json` layout edit is local-only.
 6. The arena-client and dashboard typecheck gates and the full dashboard prebuild chain were added.
 7. The ledger read is optional (`turnEconomy?`) on both paths and returns a fresh array.
 8. D-24692 gains guard-3 line-order fragility, the turn-2 Copy Powers deviation, the Spectrum ruling and the return outcome. The bot follow-up is corrected (the drain belongs inside `playHandCards`; pre-existing), and the pre-deploy wording now says "any recognized line".
 
-**Pre-flight (01.4), round 3: READY TO EXECUTE** (2026-10-11). All eight copilot fixes are verified against source: the 12 / 18 map is exact across 30 callers, the replay loop is re-entrancy-safe, the `turnEconomy?` read is required by `heroConditionHoldsForInPlay`'s minimal state, and all test homes and commands exist. Applied: RS-18 (Files list says "twelve") and RS-19 (Spectrum recorded as an interpretation for Jeff to confirm).
+**Pre-flight (01.4), round 3: READY TO EXECUTE** (2026-10-11). All eight copilot fixes are verified against source: the 12 / 18 map is exact across 30 callers, the replay loop is re-entrancy-safe, the `turnEconomy?` read is required by `heroConditionHoldsForInPlay`'s minimal state, and all test homes and commands exist. Applied: RS-18 (Files list says "twelve") and RS-19 (Spectrum recorded as an interpretation; Jeff confirmed it on 2026-10-12).
 
 **Copilot (01.7), round 2: PASS, disposition CONFIRM** (2026-10-11). All eight fixes landed with no new contradiction. The regex, log sentences, heading, test id and provenance are byte-identical between WP and EC. The EC has 94 content lines (ceiling 100). Its one editorial residual (the Files list said "ten") is applied.
+
+**Pre-flight (01.4), round 4: READY TO EXECUTE** (2026-10-12). This is a delta review after #2722 / D-24694, #2723 / D-24695 and #2724 / D-24696 landed on `main`.
+- The re-synced map is exact: 28 callers, 10 have / 18 played.
+- The bot and Spy Network notes are verified against source. Guards 2–3 hold with Spy Network's choice pending, and `resolveCountScaledChoice` never reads `inPlay`.
+- RS-20..RS-22 are applied: the DoD map count, the baseline at `295f9dc5` plus the `gain-officer` neighbour note, and the bot-note wording.
+
+**Copilot (01.7), round 3: PASS, disposition CONFIRM** (2026-10-12). The delta introduces no contradiction, allowlist gap or scope change. The EC is 94 content lines and copies the WP verbatim. Two editorial fixes are applied: the live D-24692 clause now reads 10 / 18, and this gate record entry. The drift-test anchor is re-pointed to `~1835`.

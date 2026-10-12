@@ -7,12 +7,12 @@
 - [ ] Baseline `origin/main` includes the reserve commit (#2714). `pnpm install` and `pnpm -r build` → 0; `pnpm -r --no-bail test` → 0 fail; `pnpm --filter @legendary-arena/arena-client typecheck` and `pnpm --filter @legendary-arena/dashboard typecheck` → 0.
 - [ ] Re-read the anchors (all `~`):
   - `heroKeywords.ts`; the three `HERO_KEYWORDS.length` pins (77 at draft); the two handler-count asserts (`heroEffects.execute.test.ts:~140`, `:~7873`; 60 at draft)
-  - `LEADING_GATE_PREFIX_PATTERN` `heroAbility.setup.ts:~131`; `HERO_PARSER_RECOGNIZED_MARKER_NAMES` `:~400` (drift test `setup/heroAbility.setup.test.ts:~1785`)
+  - `LEADING_GATE_PREFIX_PATTERN` `heroAbility.setup.ts:~131`; `HERO_PARSER_RECOGNIZED_MARKER_NAMES` `:~400` (drift test `setup/heroAbility.setup.test.ts:~1835`)
   - `playedCardIdsThisTurn` `splitCard.logic.ts:~169`; `applyCardPlay` `coreMoves.impl.ts:~285`
   - `advanceTurnStage` `turnLoop.ts:~121` and its five callers
   - `CarriedTurnFields` / `carryConversionFlag` / `markBothSidesPlayed` `economy.logic.ts:~481/~520/~973`
   - `victoryCards` in build / filter
-- [ ] Re-count the `playedCardIdsThisTurn` callers (30 at draft) and match each one to its WP §Played-vs-Have bucket (12 have / 18 played). Any mismatch → STOP and amend the WP + D-24692.
+- [ ] Re-count the `playedCardIdsThisTurn` callers (28 after D-24694) and match each one to its WP §Played-vs-Have bucket (10 have / 18 played). Any mismatch → STOP and amend the WP + D-24692.
 - [ ] Check whether WP-741 (D-24563) has landed. Either way, gate conditions stay exactly as the parser builds them.
 - [ ] The main checkout's branch `infra/endgame-readonly-board` has uncommitted edits to `PlayDesktop.vue` / `PlayMobile.vue`, and PR #2698 (a PAR re-pin) is open. Rebase on the `main` of execution day, and measure "PAR unchanged" against it.
 
@@ -30,7 +30,7 @@
 - **Played vs have.**
   - `playedCardIdsThisTurn` = Penumbra-expanded `inPlay` + ledger entries not already present.
   - `playedCardIdsStillInPlay` = today's result.
-  - The 12 "have" sites switch, including `countDistinctHeroClassesYouHave`, `collectDistinctHeroClassCards` and both Spectrum reads (`:~225`, `:~598`). The 18 "played" sites are unchanged. The ledger read is `G.turnEconomy?.outOfTimePlayedCardIds`; it is appended on both paths (including the Penumbra-absent early return) and always returns a fresh array.
+  - The 10 "have" sites switch, including `countDistinctHeroClassesYouHave` (which also carries Spectrum since D-24694) and `collectDistinctHeroClassCards`. The 18 "played" sites are unchanged. The ledger read is `G.turnEconomy?.outOfTimePlayedCardIds`; it is appended on both paths (including the Penumbra-absent early return) and always returns a fresh array.
 - **`replayOutOfTimeCards(G, context, playerID)`** (`moves/outOfTime.logic.ts`).
   - It returns early when there is no entry or no `playerZones`.
   - Otherwise it snapshots the list, deletes the key once (and the field if it is now empty), then for each snapshot card, in order:
@@ -72,7 +72,7 @@
 - `OUT_OF_TIME_LINE_PATTERN`: rules v23 L1667. Savior is admitted because `LEADING_GATE_PREFIX_PATTERN` is hc/team-only (D-24628). The 2>4 grant lines are a different capability.
 - Each handler guard: guard 1 = L1674 / L1692; guards 2–3 = L1689 (copies).
 - `outOfTimeCards` lazy / delete-when-empty: hash stability (D-24526 precedent).
-- The ledger in `playedCardIdsThisTurn`: L1682 + L3441-3453 (active-player scope). Each of the 12 "have" switches: L3443-3447 + L3457-3470.
+- The ledger in `playedCardIdsThisTurn`: L1682 + L3441-3453 (active-player scope). Each of the 10 "have" switches: L3443-3447 + L3457-3470.
 - `beginMain` in `advanceTurnStage` and at each of the five bindings: L1678 (after "Play a Villain Card", before playing out the hand).
 - The replay's pre-record before `applyCardPlay`, and the turn-2 discard that is not a "you discarded".
 - The public projection disposition.
