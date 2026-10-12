@@ -47444,4 +47444,26 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 
 ---
 
+### D-24695 — The autoplay bot resolves a pending choice between hand plays (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** The Watch Bot Play loop (`apps/server/src/autoplay/autoplay.mjs`) plays its whole hand in `playHandCards` before it spends. A played card can park a block-all pending choice: anni Brainstorm's Time Loop Experiments ("Draw a card. Then put a card from your hand on top of your deck.") parks `pendingPutHandOnDeckTop`, and other choose-one Heroes park their own. While a choice is parked the engine refuses every `playCard`. `drainPendingChoices` (D-24038) ran at turn entry, after the start-stage reveal, and before each spend step, but not between plays. The refusal is a void return, which boardgame.io still commits (`_stateID` advances), so the play step's silent-rejection guard never fired. The loop re-submitted the same blocked card up to its 30-play cap, each one paced (29 × 800 ms at the default speed), and the spend step then drained the choice. The match never froze, but the bot forfeited the rest of its hand plays that turn.
+
+**Decision.**
+1. After each accepted play, `playHandCards` calls the existing `drainPendingChoices` on the post-play state before it picks the next card. It does no I/O when nothing is parked, so a choice-free turn submits the same moves as before.
+2. Each drain dispatch goes through `dispatchAdvancingMove`, so a resolve that does not advance aborts (`stage-did-not-advance`) instead of spinning. A game-over or abort from the drain returns from the play step with its `playedCount`.
+3. Card order (`hand[0]`), the 30-play cap, pacing, logging and the spend step are unchanged. Server wiring only: the engine still decides legality and supplies the resolve move with its default args.
+4. The bot-ally driver (`bot-ally/botAllyDriver.mjs`) is not affected. It picks every move from `getLegalMoves`, whose resolve short-circuit comes first. `botLoopProgress.mjs` holds pure helpers and no loop.
+
+**Determinism.** Engine, feeds and hashes are unchanged. Autoplay matches that play a choice-opening card now play more cards that turn, so they play differently from that turn on. Accepted: that is the fix.
+
+**Tests.** New `apps/server/src/autoplay/handPlayDrain.test.ts` drives the real `playHandCards` through boardgame.io's real `Master` and the real engine moves (in-memory store, no-op transport, instant controller). (1) A Time Loop Experiments hand commits `playCard, resolvePutHandOnDeckTop, playCard` and ends with an empty hand. (2) A choice-free three-card hand commits exactly three `playCard` moves in hand order. Revert proof: without the drain, test 1 fails with 30 `playCard` commits and no resolve; test 2 passes either way.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (server 1738 → 1740, 207 DB-gated skips without `TEST_DATABASE_URL`; game-engine 5074, arena-client 2298 unchanged). No engine, feed or hash change.
+
+**Live-verify (D-24026):** pending. In a Watch Bot Play match where the bot plays a choose-a-card Hero (Time Loop Experiments), the bot resolves the choice and keeps playing cards. That turn's `played N cards` server log line shows the real hand size, not 30 (the cap the blocked loop used to hit).
+
+**Reserved by:** NUMBER-LEDGER D-24695. Related: D-24038 (the drain and the per-stage progress checks), D-24590 (seat-choice drain), D-24519 / WP-700 (put-hand-on-deck-top), D-24688 (bot direct-fix precedent), D-24026.
+
+---
+
 Protect this file.
