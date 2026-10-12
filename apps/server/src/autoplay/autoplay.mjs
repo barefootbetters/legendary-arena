@@ -870,13 +870,70 @@ export function decidePendingChoiceDispatch(state) {
 }
 
 /**
- * Plays cards from the active player's hand until the hand is empty or a play
- * is silently rejected. Card plays generate the turn's attack/recruit economy;
- * they are NOT stage-advancing, so a rejected play stops the play step (the
- * existing _stateID silent-rejection guard) rather than aborting the match.
- * After each accepted play it drains any pending choice the card parked
- * (D-24695), so the next play is not refused by the block-all guard.
- * Exported for the hand-play drain regression suite.
+ * Counts how many copies of a card id a zone holds. Starting S.H.I.E.L.D. cards
+ * and Wounds share one id per kind, so membership alone cannot tell whether a
+ * play moved a copy.
+ *
+ * @param {string[] | undefined} zone - The zone's card ids.
+ * @param {string} cardId - The card id to count.
+ * @returns {number} The number of copies of cardId in the zone.
+ */
+function countCardCopies(zone, cardId) {
+  let copies = 0;
+  for (const zoneCardId of zone ?? []) {
+    if (zoneCardId === cardId) {
+      copies += 1;
+    }
+  }
+  return copies;
+}
+
+/**
+ * Whether a submitted playCard was refused by the engine, judged by its effect
+ * on the player's zones: the card's copies in hand did not drop AND its copies
+ * in play did not rise.
+ *
+ * // why: D-24699 — the engine refuses a play by returning void, and
+ * boardgame.io still commits that move (_stateID advances), so the state id
+ * cannot tell a refused play from an accepted one. The zones can.
+ *
+ * @param {object | undefined} zonesBefore - The player's zones before the play.
+ * @param {object | undefined} zonesAfter - The player's zones after the play.
+ * @param {string} cardId - The card the bot tried to play.
+ * @returns {boolean} true when the play left the card where it was.
+ */
+function isHandPlayRefused(zonesBefore, zonesAfter, cardId) {
+  const leftHand = countCardCopies(zonesAfter?.hand, cardId) < countCardCopies(zonesBefore?.hand, cardId);
+  const enteredPlay = countCardCopies(zonesAfter?.inPlay, cardId) > countCardCopies(zonesBefore?.inPlay, cardId);
+  return !leftHand && !enteredPlay;
+}
+
+/**
+ * Picks the next hand card to play: the first one, in hand order, the engine
+ * has not refused earlier in this play step.
+ *
+ * @param {string[]} hand - The player's hand.
+ * @param {Set<string>} refusedCardIds - Card ids the engine refused this step.
+ * @returns {string | null} The card id to play, or null when every card was refused.
+ */
+function pickUnrefusedHandCard(hand, refusedCardIds) {
+  for (const cardId of hand) {
+    if (!refusedCardIds.has(cardId)) {
+      return cardId;
+    }
+  }
+  return null;
+}
+
+/**
+ * Plays cards from the active player's hand until the hand is empty or every
+ * card left in it has been refused. Card plays generate the turn's
+ * attack/recruit economy; they are NOT stage-advancing, so a refused play skips
+ * that card (D-24699) and a play boardgame.io rejects outright stops the play
+ * step (the _stateID silent-rejection guard) rather than aborting the match.
+ * It drains any already-parked choice before the first pick and after each
+ * accepted play (D-24695 / D-24699), so a block-all guard never refuses a play.
+ * Exported for the hand-play drain and refusal regression suites.
  *
  * @param {{ moveParams: object, controller: object, db: object, matchId: string }} loop - Loop context.
  * @param {object} state - The current match state (currentStage === 'main').
@@ -885,6 +942,17 @@ export function decidePendingChoiceDispatch(state) {
 export async function playHandCards(loop, state) {
   const player = state.ctx.currentPlayer;
   let playedCount = 0;
+  // why: D-24699 — a choice can already be parked when the play step starts (a
+  // card replayed during the start -> main advance). Its block-all guard would
+  // refuse every hand card, and the skip rule below would then play nothing.
+  // No I/O when nothing is parked, so a normal turn submits the same moves.
+  const openingDrain = await drainPendingChoices(loop, state);
+  if (openingDrain.kind !== 'progressed') {
+    return { ...openingDrain, playedCount };
+  }
+  // why: D-24699 — card ids the engine refused this step. Each loop pass either
+  // counts a play or adds a new id here, so the loop cannot spin on one card.
+  const refusedCardIds = new Set();
   while (playedCount < 30) {
     const current = await fetchMatchState(loop.db, loop.matchId);
     if (current === null) {
@@ -893,19 +961,25 @@ export async function playHandCards(loop, state) {
     if (current.ctx.gameover !== undefined) {
       return { kind: 'game-over', state: current, playedCount };
     }
-    const hand = current.G.playerZones[player]?.hand ?? [];
-    if (hand.length === 0) {
+    const zonesBefore = current.G.playerZones[player];
+    const cardId = pickUnrefusedHandCard(zonesBefore?.hand ?? [], refusedCardIds);
+    if (cardId === null) {
       return { kind: 'progressed', state: current, playedCount };
     }
     const previousStateId = current._stateID;
-    await submitMove({ ...loop.moveParams, playerId: player, moveName: 'playCard', moveArgs: { cardId: hand[0] } });
+    await submitMove({ ...loop.moveParams, playerId: player, moveName: 'playCard', moveArgs: { cardId } });
     const after = await fetchMatchState(loop.db, loop.matchId);
     if (after !== null && !hasProgressed(previousStateId, after._stateID)) {
       // why: playCard is not stage-advancing; an unchanged _stateID means the
       // card cannot be played now, so stop the play step rather than aborting
       // the whole match (preserves the existing silent-rejection guard).
-      console.error(`[autoplay] match ${loop.matchId} playCard silently rejected for card ${hand[0]}`);
+      console.error(`[autoplay] match ${loop.matchId} playCard silently rejected for card ${cardId}`);
       return { kind: 'progressed', state: after, playedCount };
+    }
+    if (after !== null && isHandPlayRefused(zonesBefore, after.G.playerZones[player], cardId)) {
+      console.log(`[autoplay] match ${loop.matchId} player ${player}: the engine refused to play card ${cardId}, so the bot skips it for the rest of this turn's hand plays.`);
+      refusedCardIds.add(cardId);
+      continue;
     }
     playedCount += 1;
     await recordAndPace(loop.controller, loop.db, loop.matchId);
