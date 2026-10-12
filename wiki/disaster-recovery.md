@@ -68,7 +68,7 @@ of the canonical doc, recovery assumes it is lost.
 | Managed (internal) | None since 2026-10-12. Self-hosted PostgreSQL on the droplet has no managed snapshots or PITR. | — | Until the 2026-10-12 cutover, Render Postgres snapshots + PITR were this layer. Render's snapshots exist only until the Render database is deleted (~2026-10-20, end of the rollback window). |
 | Local (on the droplet) | `pg_dump -Fc` by the lab's `50-backup.ps1` | the droplet's local disk, last 7 dumps | Fastest restore source; lost with the droplet. |
 | External (provider-independent) | the same dump, daily 09:17 UTC by the droplet's `la-backup` systemd timer (`50-backup.ps1` in `legendary-arena-lab`), which then pings the healthchecks.io check `la-droplet-backup` | private Cloudflare R2 bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | **Primary** offsite copy. GFS retention: 35 daily · 12 weekly · 12 monthly. Same key layout and retention as the WP-416 / D-24236 GitHub Actions nightly ([`db-backup.yml`](../.github/workflows/db-backup.yml)), which ran from 2026-08-09 and was disabled at the 2026-10-12 cutover. Restore from R2 drilled 2026-10-11/12 (`51-restore.ps1`, `RESTORE_FROM_R2=latest`). |
-| Second offsite (3-2-1) | the same dump, `rclone` in the same `50-backup.ps1` run, when `BACKUP_PCLOUD_TOKEN` is configured | pCloud, `db-backups/` (US region, `api.pcloud.com`) | Vendor independent of Cloudflare, same GFS policy. Live in the GitHub Actions nightly since 2026-08-10 (restore drilled 2026-08-10); on the droplet it runs only when the token is set in the backup config. |
+| Second offsite (3-2-1) | the same dump, `rclone` in the same `50-backup.ps1` run, on every production backup; it reports to its own healthchecks.io check `la-droplet-pcloud` | pCloud, `db-backups/` (US region, `api.pcloud.com`) | Vendor independent of Cloudflare, same GFS policy. Ran in the GitHub Actions nightly from 2026-08-10 (restore drilled 2026-08-10). It is permanent on the droplet (lab #30): a missing `BACKUP_PCLOUD_TOKEN` or a failed copy pings `la-droplet-pcloud` as failed, while `la-droplet-backup` stays green because R2 already holds the dump. The first droplet mirror landed 2026-10-12, byte-identical to the R2 object. |
 
 The external layers are the ones that make a provider-loss recoverable. They
 are a full-database operational `pg_dump` — **not** an application read of
@@ -87,7 +87,8 @@ night landed:
 | Where | Healthy | Unhealthy → action |
 |---|---|---|
 | healthchecks.io check `la-droplet-backup` | Up: a success ping after each nightly run | Down or late (email alert): no successful offsite backup that night. Urgent; the RPO clock is running. Read the run's log next. |
-| `journalctl -u la-backup` on the droplet | The run logs the dump, the R2 upload, and (when configured) the pCloud mirror | An error names the failing step: the dump, the R2 upload, or the mirror. Fix the same day. |
+| healthchecks.io check `la-droplet-pcloud` | Up: the pCloud mirror landed | Down (email alert, with the reason in the ping body): R2 is safe, but the second copy failed or the token is missing. Fix within days; a revoked token is the usual cause (re-mint below). |
+| `journalctl -u la-backup` on the droplet | The run logs the dump, the R2 upload, and the pCloud mirror | An error names the failing step: the dump, the R2 upload, or the mirror. |
 | The R2 bucket `legendary-arena-db-backups` | Today's object under `db-backups/YYYY/MM/DD/` | Missing: the upload did not land, whatever the other two say. |
 
 The on-box monitor (`la-droplet-monitor`, every 5 minutes) also checks the
@@ -113,8 +114,11 @@ The dashboard DR Readiness tile reads drill issues only, not backup runs.
 
 **Re-minting a revoked pCloud token** (`pcloud error: Revoked 'access_token'
 provided … (2095)` in the mirror step). This is the GitHub Actions procedure
-from that period; on the droplet, the new token goes into
-`BACKUP_PCLOUD_TOKEN` in the backup config instead of a GitHub secret.
+from that period. On the droplet, mint a new token straight into the
+operator's local `backup.env` without displaying it (`rclone authorize
+"pcloud"` captured and written as `BACKUP_PCLOUD_TOKEN=…`), then install that
+file as the droplet's root-only backup config. Each authorization is
+independent, so the droplet's token and any other are revoked separately.
 Operator-only; the token is a secret:
 
 ```powershell
@@ -229,8 +233,8 @@ one can log in has not recovered anything.
 - [WP-416 — Provider-Independent PostgreSQL Backup Pipeline](../docs/ai/work-packets/WP-416-db-backup-pipeline.md)
   and its [EC-451 checklist](../docs/ai/execution-checklists/EC-451-db-backup-pipeline.checklist.md).
 - `legendary-arena/legendary-arena-lab` — `infra/scripts/50-backup.ps1`
-  (the droplet's nightly `pg_dump` → local → R2 → optional pCloud, with the
-  healthchecks.io ping), `51-restore.ps1` (restore, including
+  (the droplet's nightly `pg_dump` → local → R2 → pCloud, with separate
+  healthchecks.io pings for the backup and the mirror), `51-restore.ps1` (restore, including
   `RESTORE_FROM_R2=latest`), and `60-monitor.ps1` (the on-box check); the
   engine-side summary is [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 - [`.github/workflows/db-backup.yml`](../.github/workflows/db-backup.yml) —

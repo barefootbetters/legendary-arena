@@ -66,8 +66,8 @@ Canonical source: `docs/ops/domains.json`. Ops runbook: `docs/ops/DOMAINS.md`.
 | `legendary-arena-wiki.onrender.com` | none — Render static site legendary-arena-wiki, retired by D-24690 | Render | live |
 | `legends.legendary-arena.com` | apps/legends-board | Cloudflare Pages | live |
 | `dashboard.legendary-arena.com` | apps/dashboard | Cloudflare Workers + Cloudflare Access | live |
-| `api.legendary-arena.com` | apps/server | Render (legendary-arena-server) | live |
-| `legendary-arena-server.onrender.com` | apps/server | Render | live |
+| `api.legendary-arena.com` | apps/server | DigitalOcean droplet (proxied; Origin cert, Full strict) | live |
+| `legendary-arena-server.onrender.com` | none — Render web service legendary-arena-server, suspended at the 2026-10-12 cutover | Render (suspended) | live |
 | `images.legendary-arena.com` | external (BarefootBetters image bucket) | Cloudflare R2 + Cloudflare CDN | live |
 
 ## Infrastructure services

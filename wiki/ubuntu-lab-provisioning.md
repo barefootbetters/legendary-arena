@@ -18,7 +18,7 @@ related:
   - workspace-map.md
   - ai-second-brain.md
   - render-migration-analysis.md
-status: draft
+status: canonical
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ubuntu-lab-provisioning.md (this page — https://ewiki.legendary-arena.com/ubuntu-lab-provisioning/)
   - ../render.yaml
@@ -31,12 +31,11 @@ last-reviewed: 2026-10-12
 
 # Ubuntu Lab Provisioning
 
-> **Governance status.** The decision to move `api.legendary-arena.com` and its
-> PostgreSQL off Render is made, and the `legendary-arena-lab` program repo is
-> executing it (`docs/PLAN.md`, `infra/`). Its transcription into the engine repo
-> (a `DECISIONS.md` entry and a migration Work Packet) is pending; until it lands,
-> the program repo is the governing source and this page stays `status: draft`.
-> The ewiki half of the move is already recorded as D-24690.
+> **Governance status.** The move of `api.legendary-arena.com` and its PostgreSQL
+> off Render is recorded as [D-24707](../docs/ai/DECISIONS.md) (Active
+> 2026-10-12). It is an operational migration run by the `legendary-arena-lab`
+> program repo (`docs/PLAN.md`, `infra/`), so it has no Work Packet. The ewiki
+> half of the move is D-24690.
 
 ## Summary
 
@@ -183,37 +182,66 @@ TLS; this monitor does. It was green against Render before cutover and followed
 
 ### Cutover (2026-10-12)
 
-Production moved to the droplet on 2026-10-12 at 11 PM PDT (2026-10-13 06:00
-UTC). The steps performed:
+Production moved to the droplet on **2026-10-12, around 12:00–12:30 PDT
+(about 19:00–19:30 UTC)**. That was earlier than the planned 11 PM window: a
+read-only check showed no active matches in the previous 15 minutes and 4
+matches created in the previous 24 hours, so a quiet midday window cost players
+nothing and left the afternoon to watch the box. UptimeRobot recorded one
+outage of **10 m 10 s** (at its 5-minute check granularity).
 
-1. **Render suspended.** The Render web service `legendary-arena-server` was
-   suspended first, so nothing wrote to the Render database during the final
-   dump. Resuming it is the rollback.
-2. **Final dump restored.** A read-only `pg_dump` of the Render database was
-   restored onto the droplet's PostgreSQL 18, and the row counts were compared
-   against the source.
-3. **DNS switched.** `api.` changed from the DNS-only CNAME to Render into a
-   proxied A record to the droplet, and `api.` joined the
-   `Origin TLS strict — api hosts` Configuration Rule (SSL Full (strict)).
-4. **Verified.** `/health` returned 200 through Cloudflare, the Socket.IO
-   WebSocket upgraded, and a signed-in match played end to end.
-5. **Backups switched.** The droplet's `50-backup.ps1` now writes to the
-   production backup bucket `legendary-arena-db-backups` (same
-   `db-backups/YYYY/MM/DD/` layout and GFS retention as before), and this
-   repo's `db-backup.yml` nightly was disabled (`gh workflow disable`). It is
-   deleted after the rollback window.
-6. **Legends publisher moved.** `LEGENDS_PUBLISHER_ENABLED` is set on the
-   droplet only, so exactly one process publishes the legends snapshots.
+The steps performed:
 
-**Rollback (7-day window, to ~2026-10-20).** Restore the DNS-only CNAME
-`api` → `legendary-arena-server.onrender.com` exactly, and resume the Render
-service. The Render database stays up as the rollback copy until Render is
-deleted after the window.
+1. **Rollback rehearsed first.** `api-next` was switched to a DNS-only CNAME to
+   Render and back to the proxied A record. Each change was visible in public
+   DNS within seconds.
+2. **Render suspended.** The web service `legendary-arena-server` was
+   suspended, so nothing wrote to the Render database during the final dump.
+   Both `api.` and the onrender hostname then answered `503`.
+3. **Final dump restored.** A read-only `pg_dump` (14.6 MB, 13 s) was restored
+   into the droplet's live database with `51-restore.ps1`
+   (`RESTORE_ALLOW_LIVE_TARGET=true`, `la-server` stopped). Every table
+   matched the source: **41 tables, 6,425 rows**, and `schema_migrations` 45.
+   The dump was then deleted from the droplet and the operator's desktop.
+4. **Legends publisher moved.** `LEGENDS_PUBLISHER_ENABLED=true` on the
+   droplet, and `false` in Render's environment. Only the box with the live
+   database publishes. The first droplet publish succeeded right away.
+5. **DNS switched.** `api.legendary-arena.com` joined the
+   `Origin TLS strict — api hosts` Configuration Rule, and its record changed
+   from the DNS-only CNAME to Render into a proxied A record to the droplet.
+6. **Render's custom domain removed (unplanned).** Traffic for `api.` kept
+   reaching Render's "Service Suspended" page, even when pinned to the
+   Cloudflare edge (`x-render-routing: suspend-by-user`). Render had registered
+   `api.` as a custom hostname in its own Cloudflare for SaaS account, and that
+   overrides the zone's own record. Deleting the custom domain in Render's
+   dashboard fixed it at once.
+7. **Verified.** Through Cloudflare: `/health` returned 200,
+   `/health/legends-publisher` was ok, the Socket.IO handshake returned 200
+   and the WebSocket upgrade 101, and the droplet IP refused direct
+   connections. A signed-in match was then played end to end and landed in the
+   droplet's database. There were no server errors.
+8. **Backups switched.** `50-backup.ps1` now writes to the production bucket
+   `legendary-arena-db-backups` and mirrors to pCloud. The first run
+   (15.4 MB) landed in both places, byte-identical. The healthchecks.io checks
+   `la-droplet-monitor`, `la-droplet-backup` and `la-droplet-pcloud` are green.
+   This repo's `db-backup.yml` nightly was disabled (`gh workflow disable`) and
+   is deleted after the rollback window.
+
+**Rollback (7-day window, to ~2026-10-20).**
+1. Restore the DNS-only CNAME `api` → `legendary-arena-server.onrender.com`.
+2. Resume the Render service and set Render's `LEGENDS_PUBLISHER_ENABLED`
+   back to `true` (and the droplet's to `false`).
+3. **Re-add `api.legendary-arena.com` as a custom domain in Render**, then wait
+   a few minutes for Render to verify it and issue a certificate. Without it,
+   Render won't answer for `api.`.
+
+Anything written on the droplet after the flip isn't in Render's database. A
+rollback after real traffic needs that data copied back.
 
 **Deploys after cutover** are manual: the operator runs `40-app-deploy.ps1`
-over SSH (checks out `main`, `pnpm install --frozen-lockfile`, build,
-migrations, restart, health gate; about 35 s). A deploy-on-push workflow is
-planned after the rollback window. Logs: `journalctl -u la-server`.
+over SSH. It checks out `main`, runs `pnpm install --frozen-lockfile`, builds,
+runs migrations, restarts the service, and checks health, in about 35 s. Merges
+to `main` no longer reach production on their own. A deploy-on-push workflow
+is planned after the rollback window. Logs: `journalctl -u la-server`.
 
 ### Prerequisites & effort
 
@@ -501,18 +529,18 @@ operator can, unaided —
 
 ## Open Questions
 
-- **Governance transcription is pending.** The move of `api.` and Postgres off
-  Render is decided at the program level but not yet recorded in
-  [DECISIONS.md](../docs/ai/DECISIONS.md) (only the ewiki half is, as
-  D-24690), and it has no migration Work Packet. Until both land, this page cites
-  the migration PLAN rather than a `D-`/`WP-` ID and stays `status: draft`.
+- **Governance is recorded.** The move is
+  [D-24707](../docs/ai/DECISIONS.md), with the ewiki half as D-24690.
 
 **Remaining actions**, in order (the execution gates are owned by the program):
 
-1. Transcribe the migration decision into `DECISIONS.md`.
-2. Publish the migration Work Packet, including a check against the
-   server-layer boundary in
-   [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
+1. ~~Transcribe the migration decision into `DECISIONS.md`.~~ Done 2026-10-12:
+   D-24707.
+2. ~~Publish the migration Work Packet.~~ Not needed: D-24707 records this as
+   an operational migration run by the lab program, and its "Not changed" clause
+   carries the server-layer boundary check
+   ([`.claude/rules/architecture.md`](../.claude/rules/architecture.md)): `apps/server`
+   stays the wiring layer, and no engine or persistence rule changes.
 3. ~~Finish the last unrehearsed provisioning step, `60` monitoring.~~ Done
    2026-10-12: every provisioner has now passed (see
    [Rehearsal results](#rehearsal-results-2026-10-11)). `21` Cloudflare TLS, the

@@ -47800,4 +47800,38 @@ Protect this file.
 
 ---
 
+### D-24707 — The game server and its PostgreSQL move from Render to a self-hosted DigitalOcean droplet behind Cloudflare (operational migration, no WP) (Active 2026-10-12)
+
+**Context.** Render billed about $146 a month (August and September 2026: server `pro` $85, Postgres `pro-4gb` $55.30, builds $5, bandwidth). Measured use on 2026-10-11 was about 200 MB RAM and under 1% of 2 CPUs for the server, and about 1 GB for the database, so a $24 box (2 vCPU / 4 GB + 2 GB swap) carries it with headroom. The migration PLAN in `legendary-arena/legendary-arena-lab` (2026-07-24, restarted 2026-10-04) chose DigitalOcean (lab D-001, D-002). The vendor comparison and cost case are in [Render Migration Analysis](../../wiki/render-migration-analysis.md). Every provisioner was rehearsed on the kept droplet on 2026-10-11/12, including a production-copy restore that matched exactly ([Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md)).
+
+**Decision.**
+
+1. **Host.** `api.legendary-arena.com` (`apps/server`) and its PostgreSQL 18 run on one DigitalOcean droplet (`sfo3`, Ubuntu 24.04), provisioned by the lab repo's numbered `infra/scripts/NN-*.ps1`. Postgres is on `localhost` only.
+2. **Edge.** Cloudflare proxies `api.` (an A record). Nginx terminates TLS with a Cloudflare Origin Certificate. SSL Full (strict) applies to the api hostnames through a Configuration Rule; the zone stays on Full. UFW admits 443 only from Cloudflare.
+3. **Secrets.** Production values live in the droplet's root-only `/etc/la/.env` (mode 600), installed by the operator and verified by key name only. `render.yaml` stays in the repo as the inventory of `sync: false` key names and no longer governs production.
+4. **Deploys.** Manual: the operator runs the lab's `40-app-deploy.ps1` (checkout `main`, frozen install, build, migrations, restart, health gate). Merges to `main` no longer reach production on their own. A deploy-on-push workflow is planned after the rollback window.
+5. **Backups.** The droplet's `50-backup.ps1` takes a nightly `pg_dump` (09:17 UTC) into the R2 bucket `legendary-arena-db-backups`. It uses the same key layout and GFS retention as WP-416 / D-24236, and **mirrors every dump to pCloud permanently** (lab #30). The mirror reports to its own health check, so a mirror failure never reads as a failed backup (the #2641 posture). `.github/workflows/db-backup.yml` was disabled at cutover and is deleted after the rollback window. Self-hosted Postgres has no managed PITR: worst-case data loss is since the last nightly dump.
+6. **Monitoring.** Three healthchecks.io dead-man's switches: `la-droplet-monitor` (5-min on-box health, disk, and backup age), `la-droplet-backup`, and `la-droplet-pcloud`. Plus UptimeRobot on the public `api./health` path. All alert by email.
+7. **One legends publisher.** `LEGENDS_PUBLISHER_ENABLED=true` only on the box holding the live database, because the publisher writes production R2 from its own database.
+8. **Rollback window: 7 days** (to ~2026-10-20). The Render web service is suspended, not deleted. Rollback means restoring the DNS-only CNAME `api.` → `legendary-arena-server.onrender.com`, resuming the service, swapping the publisher flag, and **re-adding `api.` as a Render custom domain**. Render's custom-domain registration (Cloudflare for SaaS) overrides the zone record, so it had to be deleted for the flip to take effect. Render is deleted after the window.
+
+**Cutover (2026-10-12, about 19:00–19:30 UTC).** The cutover was moved up from the planned 11 PM PDT because production was idle: 0 active matches in 15 minutes. The steps:
+- The rollback flip was rehearsed on `api-next`.
+- Render was suspended to freeze writes.
+- A read-only dump was restored with `51-restore.ps1`. All 41 tables and 6,425 rows matched; `schema_migrations` was 45.
+- The publisher moved to the droplet, and `api.` joined the strict rule and became a proxied A record.
+- Render's custom domain was removed.
+- Through Cloudflare: health returned 200, the WebSocket upgraded (101), and a signed-in match landed in the droplet database.
+- The first production backup landed in R2 and pCloud, byte-identical.
+
+UptimeRobot measured 10 m 10 s of downtime. `pnpm check:domains`: 11 ok, 0 failed.
+
+**Not changed.** Layer boundaries, the engine, and the persistence rules are untouched. `apps/server` is still the wiring layer. The boardgame.io framework store (D-24095) is now the droplet's local Postgres, with the same schema and carve-outs. The front-ends (Cloudflare Pages) and the ewiki and dashboard (Cloudflare Workers, D-24690) are unaffected. Every caller already used `api.legendary-arena.com`, except the Stripe webhook, which was repointed from the onrender URL before cutover.
+
+**Supersedes in part:** D-24236's placement, "runs in CI, not on the app server". The backup now runs on the droplet that hosts the database, because the droplet's Postgres is localhost-only and a CI runner can't reach it. D-24236's provider independence still holds: the copies live in R2 and pCloud, off the droplet's vendor, and the D-24236 key layout and retention are unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24707. Related: D-24095, D-24236 (WP-416 backups), D-24690 (ewiki off Render), lab D-001 / D-002.
+
+---
+
 Protect this file.
