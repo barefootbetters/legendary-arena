@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24693 — KO lines say where the card came from (direct fix) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Every "KO a Hero" log line now names the zone, e.g. "Player 1 KO'd S.H.I.E.L.D. Agent (starting-shield-agent) from their hand." or "… from the cards they played this turn". That makes WP-801's "hand or play, never the discard pile" rule checkable from a match log.
+
+- **Engine only, text only.** No rule change; every package green.
+- **Live-verify (D-24026): pending.** In any match, fight a Sentinel and check the KO line names "their hand" or "the cards they played this turn". The same lines re-verify WP-801's five Core rows.
+
 ### D-24690 — The ewiki and the dashboard are Cloudflare Workers with one Access-gated door; the Render and Pages bypasses are closed (direct infra change) (2026-10-11)
 
 **Operator-only: `ewiki.legendary-arena.com` and `dashboard.legendary-arena.com`.** Both private sites had a second, ungated address. Render served the whole engineering wiki at `legendary-arena-wiki.onrender.com` (seen 2026-10-05 and 2026-10-11). Cloudflare Pages served the live operator dashboard at `legendary-arena-dashboard.pages.dev`, plus a public preview for every branch push, from 2026-06-02. Access gates hostnames, so these copies were never behind it. Both sites are now assets-only Cloudflare Workers with `workers_dev` and `preview_urls` off. Each one's only address is its custom domain, behind the existing hostname-based Access application.

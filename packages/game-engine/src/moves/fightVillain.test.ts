@@ -347,9 +347,9 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
 
     assert.ok(
       moveContext.G.messages.some(
-        (entry) => entry.text === 'Fight effect: the active player KO’d a hero (Spider-Man).',
+        (entry) => entry.text === 'Fight effect: the active player KO’d a hero (Spider-Man from their hand).',
       ),
-      'the durable log names the specific KO\'d hero',
+      'the durable log names the specific KO\'d hero and the zone it left (D-24693)',
     );
     // why: WP-316 keyword-surface byte-identity (appliedEffects) + WP-319 the
     // narrative NAMES the KO'd hero (shown by the center-screen overlay).
@@ -359,7 +359,7 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
       assert.deepStrictEqual(event.appliedEffects, ['koHeroCurrentPlayer']);
       assert.equal(
         event.narrative,
-        'Fought "villain-a"; Fight effect: the active player KO’d a hero (Spider-Man).',
+        'Fought "villain-a"; Fight effect: the active player KO’d a hero (Spider-Man from their hand).',
       );
     }
     assert.deepStrictEqual(moveContext.G.playerZones['0']!.discard, ['core-hero-spidey'], 'discard unchanged');

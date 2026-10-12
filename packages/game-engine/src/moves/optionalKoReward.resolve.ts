@@ -30,7 +30,7 @@ import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { gainOfficerToHand } from './recruitOfficer.js';
 import { pushLog } from '../log/logPush.js';
-import { formatCardRef } from '../log/logDisplay.js';
+import { formatCardRef, describeKoSourceZone } from '../log/logDisplay.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -181,17 +181,9 @@ export function resolveOptionalKoReward(
   // (before the Step-6 reward line) so the spent card is observable in the game
   // log instead of silently vanishing, mirroring the Master Strike KO / heroEffectKo
   // phrasing. Outcome 'neutral' because it is a cost, not the payoff.
-  // why: code-style forbids chained ternaries; the third zone (D-24442 in-play)
-  // makes this an if/else if/else. 'the cards they played this turn' names the
-  // in-play source so a KO'd played card reads clearly in the log.
-  let koSourceZoneLabel: string;
-  if (targetZone === 'hand') {
-    koSourceZoneLabel = 'their hand';
-  } else if (targetZone === 'discard') {
-    koSourceZoneLabel = 'their discard pile';
-  } else {
-    koSourceZoneLabel = 'the cards they played this turn';
-  }
+  // why: D-24693 — the zone wording is shared with every other KO line; 'the cards they
+  // played this turn' names the in-play source (D-24442) so a KO'd played card reads clearly.
+  const koSourceZoneLabel = describeKoSourceZone(targetZone);
   pushLog(
     G,
     `Player ${playerID} KO'd ${formatCardRef(G.cardDisplayData, targetCardId)} from ${koSourceZoneLabel} for ${formatCardRef(G.cardDisplayData, front.sourceCardId)}'s ability.`,

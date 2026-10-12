@@ -149,18 +149,28 @@ export interface VillainEffectResult {
    * which player lost which Heroes and which had none. Omitted for every other effect.
    */
   targetsByPlayer?: VillainEffectPlayerTargets[];
+  /**
+   * For a KO effect only: the zone each entry of `targets` was KO'd from, index-aligned
+   * (D-24693), so the log can say "from their hand". Omitted for non-KO effects.
+   */
+  targetZones?: VillainKoZone[];
 }
+
+/** A player zone a Hero can be KO'd from (D-24693). */
+export type VillainKoZone = 'hand' | 'discard' | 'inPlay';
 
 /**
  * One player's share of an each-player KO (D-24683).
  *
  * `targets` is what this player's auto-KO took (empty when they had nothing to KO);
  * `pending: true` marks the current player's parked pick, named later at resolve time.
+ * `zones` (D-24693) is the zone each target left, index-aligned with `targets`.
  */
 export interface VillainEffectPlayerTargets {
   playerId: string;
   targets: CardExtId[];
   pending?: boolean;
+  zones?: VillainKoZone[];
 }
 
 // ---------------------------------------------------------------------------

@@ -28,6 +28,7 @@ import type {
   VillainEffectDescriptor,
   VillainEffectPrimitive,
   VillainEffectPlayerTargets,
+  VillainKoZone,
 } from '../rules/villainAbility.types.js';
 import {
   getVillainHooksForCard,
@@ -59,6 +60,7 @@ import { moveCardFromZone } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
+import { describeKoSourceZone } from '../log/logDisplay.js';
 import {
   WOUND_EXT_ID,
   SHIELD_AGENT_EXT_ID,
@@ -208,6 +210,10 @@ export function executeVillainAbilities(
           if (application.targetsByPlayer !== undefined) {
             result.targetsByPlayer = application.targetsByPlayer;
           }
+          // why: D-24693 — omit-when-empty, like `pending`: a KO that took nothing has no zones.
+          if (application.targetZones !== undefined && application.targetZones.length > 0) {
+            result.targetZones = application.targetZones;
+          }
           results.push(result);
         }
       } else {
@@ -273,8 +279,8 @@ export function resolveEffectResultNames(
   const resolved: ResolvedEffectResult[] = [];
   for (const result of results) {
     const targetNames: string[] = [];
-    for (const targetId of result.targets) {
-      targetNames.push(resolveCardDisplayName(G, targetId));
+    for (let targetIndex = 0; targetIndex < result.targets.length; targetIndex++) {
+      targetNames.push(nameKoTarget(G, result.targets[targetIndex]!, result.targetZones?.[targetIndex]));
     }
     const resolvedResult: ResolvedEffectResult = {
       keyword: result.keyword,
@@ -288,8 +294,8 @@ export function resolveEffectResultNames(
       const playerTargetNames: ResolvedPlayerTargetNames[] = [];
       for (const playerShare of result.targetsByPlayer) {
         const names: string[] = [];
-        for (const targetId of playerShare.targets) {
-          names.push(resolveCardDisplayName(G, targetId));
+        for (let targetIndex = 0; targetIndex < playerShare.targets.length; targetIndex++) {
+          names.push(nameKoTarget(G, playerShare.targets[targetIndex]!, playerShare.zones?.[targetIndex]));
         }
         const resolvedShare: ResolvedPlayerTargetNames = { playerId: playerShare.playerId, names };
         if (playerShare.pending === true) {
@@ -302,6 +308,23 @@ export function resolveEffectResultNames(
     resolved.push(resolvedResult);
   }
   return resolved;
+}
+
+/**
+ * Names one effect target for the log, adding the zone it was KO'd from when known
+ * (D-24693): "S.H.I.E.L.D. Agent from their hand".
+ *
+ * @param G - Game state (read-only; only `G.cardDisplayData` is consulted).
+ * @param targetId - The target card ext_id.
+ * @param zone - The zone the card was KO'd from, or undefined for a non-KO target.
+ * @returns The display name, with " from <zone>" when a zone is given.
+ */
+function nameKoTarget(G: LegendaryGameState, targetId: CardExtId, zone: VillainKoZone | undefined): string {
+  const name = resolveCardDisplayName(G, targetId);
+  if (zone === undefined) {
+    return name;
+  }
+  return `${name} from ${describeKoSourceZone(zone)}`;
 }
 
 /**
@@ -739,6 +762,9 @@ interface VillainEffectApplication {
   // why: D-24683 — an each-player KO also reports each player's share so the log can
   // attribute it; every other handler omits it.
   targetsByPlayer?: VillainEffectPlayerTargets[];
+  // why: D-24693 — a KO handler reports the zone each target left (index-aligned with
+  // `targets`) so the log can name it; every other handler omits it.
+  targetZones?: VillainKoZone[];
 }
 
 /**
@@ -888,6 +914,8 @@ function villainEffectKoHero(
     const magnitude = descriptor.magnitude ?? 1;
 
     const targets: CardExtId[] = [];
+    // why: D-24693 — the zone each auto-KO took from, index-aligned with targets, for the log.
+    const targetZones: VillainKoZone[] = [];
     let owed = magnitude;
     while (owed > 0) {
       const eligible = buildKoEligibleTargets(zones);
@@ -900,6 +928,7 @@ function villainEffectKoHero(
       const koedId = koSingleTarget(G, zones, eligible[0]!);
       if (koedId === null) break; // why: defensive — an unexpected move miss stops progress.
       targets.push(koedId);
+      targetZones.push(eligible[0]!.zone);
       owed -= 1;
     }
 
@@ -927,7 +956,7 @@ function villainEffectKoHero(
       if (parked) {
         pushLog(G, `${label} effect: KO ${String(owed)} of your Heroes — choose which.`, 'neutral');
       } else if (targets.length > 0) {
-        const names = targets.map((koedId) => resolveCardDisplayName(G, koedId)).join(', ');
+        const names = targets.map((koedId, targetIndex) => nameKoTarget(G, koedId, targetZones[targetIndex])).join(', ');
         pushLog(G, `${label} effect: KO'd ${String(targets.length)} of your Heroes (${names}).`, 'applied');
       } else {
         pushLog(G, `${label} effect: no Heroes to KO.`, 'blocked');
@@ -936,7 +965,7 @@ function villainEffectKoHero(
 
     // why: WP-316 / D-24102 — pending: true marks a parked interactive KO (targets
     // stays whatever was auto-KO'd before the park — none, since a park is immediate).
-    return parked ? { targets, pending: true } : { targets };
+    return parked ? { targets, pending: true, targetZones } : { targets, targetZones };
   }
   // why: target === 'each'. Iteration order is Object.keys(G.playerZones).sort()
   // — default JavaScript string compare → lexical ascending (D-18902), NOT
@@ -957,12 +986,16 @@ function villainEffectKoHero(
   // and contributes no target. This only reads the resolver's return — it does
   // NOT post-process the mutation (D-18902 mutation-location lock preserved).
   const targets: CardExtId[] = [];
+  // why: D-24693 — the zone each KO took from, index-aligned with targets.
+  const targetZones: VillainKoZone[] = [];
   // why: D-24683 — each player's share, in the same seat order, so the log line says who
   // lost which Heroes ("Player 0 KO'd …; Player 1 had no hero to KO") instead of a flat list.
   const targetsByPlayer: VillainEffectPlayerTargets[] = [];
   let parked = false;
   for (const playerId of playerIds) {
     const playerShare: VillainEffectPlayerTargets = { playerId, targets: [] };
+    // why: D-24693 — the share's zones, attached only when this player lost a card.
+    const playerZonesKoed: VillainKoZone[] = [];
     targetsByPlayer.push(playerShare);
     // why: D-24280 — a `zone`-bearing descriptor (Juggernaut's discard/hand
     // source-restricted KO) uses the zone-locked resolver, which KOs `repetitions`
@@ -982,7 +1015,9 @@ function villainEffectKoHero(
       const koedIds = koHeroesFromZoneForPlayer(G, playerId, descriptor.zone, repetitions);
       for (const koedId of koedIds) {
         targets.push(koedId);
+        targetZones.push(descriptor.zone);
         playerShare.targets.push(koedId);
+        playerZonesKoed.push(descriptor.zone);
       }
     } else {
       // why: D-24669 — "Each player KOs two of their Heroes" (Destroyer's Escape) and
@@ -996,17 +1031,24 @@ function villainEffectKoHero(
         continue;
       }
       for (let iteration = 0; iteration < repetitions; iteration++) {
-        const koedId = koOneHeroForPlayer(G, playerId);
-        if (koedId !== null) {
-          targets.push(koedId);
-          playerShare.targets.push(koedId);
+        const koed = koOneHeroForPlayer(G, playerId);
+        if (koed !== null) {
+          targets.push(koed.cardId);
+          targetZones.push(koed.zone);
+          playerShare.targets.push(koed.cardId);
+          playerZonesKoed.push(koed.zone);
         }
       }
+    }
+    if (playerZonesKoed.length > 0) {
+      playerShare.zones = playerZonesKoed;
     }
   }
   // why: D-24644 — `targets` still names the other players' auto-KOs; pending marks
   // the current player's parked pick (named at resolve time by resolveKoHeroChoice).
-  return parked ? { targets, pending: true, targetsByPlayer } : { targets, targetsByPlayer };
+  return parked
+    ? { targets, pending: true, targetsByPlayer, targetZones }
+    : { targets, targetsByPlayer, targetZones };
 }
 
 /**
@@ -2527,12 +2569,15 @@ function villainEffectKoHeroesCurrentByTrait(
   // per-player KO helper (koOneHeroForPlayer), whose one-card starter-first
   // selection is wrong for a "KO ALL matching" effect.
   const targets: CardExtId[] = [];
+  // why: D-24693 — the zone each KO'd card left, index-aligned with targets, for the log.
+  const targetZones: VillainKoZone[] = [];
   const remainingHand: CardExtId[] = [];
   // why: WP-772 / D-24604 — the hand is off play, so a split card there matches on either half's
   // class (via the split-face map); the in-play loop below keeps the chosen face only.
   for (const cardId of zones.hand) {
     if (koHeroMatchesTraitOrBasicShield(offPlayCardTraits(G, cardId), cardId, requireKind, requireValue)) {
       targets.push(cardId);
+      targetZones.push('hand');
     } else {
       remainingHand.push(cardId);
     }
@@ -2541,6 +2586,7 @@ function villainEffectKoHeroesCurrentByTrait(
   for (const cardId of zones.inPlay) {
     if (koHeroMatchesTraitOrBasicShield(G.cardTraits[cardId], cardId, requireKind, requireValue)) {
       targets.push(cardId);
+      targetZones.push('inPlay');
     } else {
       remainingInPlay.push(cardId);
     }
@@ -2552,9 +2598,15 @@ function villainEffectKoHeroesCurrentByTrait(
   }
   // why: D-24290 — Fight-timed self-narration (see draw-cards-current). Zero
   // matching Heroes is a reachable no-op (`blocked`), never a hollow record.
+  // why: D-24693 — name each KO'd card and its zone (hand or play) when any were KO'd.
+  let namedTargets = '';
+  if (targets.length > 0) {
+    const names = targets.map((koedId, targetIndex) => nameKoTarget(G, koedId, targetZones[targetIndex])).join(', ');
+    namedTargets = ` (${names})`;
+  }
   pushLog(
     G,
-    `Fight effect: KO'd ${String(targets.length)} of your ${requireValue} Hero(es).`,
+    `Fight effect: KO'd ${String(targets.length)} of your ${requireValue} Hero(es)${namedTargets}.`,
     targets.length > 0 ? 'applied' : 'blocked',
   );
   return { targets };
@@ -2612,6 +2664,8 @@ function villainEffectKoHeroesCurrentCountByTrait(
   // would disturb the byte-pinned WP-242 / WP-492 park-shape tests for no benefit. Extract
   // only when a THIRD count-source appears.
   const targets: CardExtId[] = [];
+  // why: D-24693 — the zone each auto-KO took from, for the self-narrated line.
+  const targetZones: VillainKoZone[] = [];
   let owed = owedFromTrait;
   while (owed > 0) {
     const eligible = buildKoEligibleTargets(zones);
@@ -2624,6 +2678,7 @@ function villainEffectKoHeroesCurrentCountByTrait(
     const koedId = koSingleTarget(G, zones, eligible[0]!);
     if (koedId === null) break; // why: defensive — an unexpected move miss stops progress.
     targets.push(koedId);
+    targetZones.push(eligible[0]!.zone);
     owed -= 1;
   }
 
@@ -2651,7 +2706,7 @@ function villainEffectKoHeroesCurrentCountByTrait(
       'neutral',
     );
   } else if (targets.length > 0) {
-    const names = targets.map((koedId) => resolveCardDisplayName(G, koedId)).join(', ');
+    const names = targets.map((koedId, targetIndex) => nameKoTarget(G, koedId, targetZones[targetIndex])).join(', ');
     pushLog(
       G,
       `Fight effect: KO'd ${String(targets.length)} of your Heroes (${names}) — one per your ${requireValue} Hero.`,
@@ -3549,6 +3604,7 @@ function applyVillainEffect(
  *   `koHeroCurrentPlayer` case this is `ctx.currentPlayer`, for the
  *   `koHeroEachPlayer` case it is each entry of the sorted player-ids
  *   iteration).
+ * @returns The KO'd card and the zone it left, or null when nothing was KO'd.
  */
 // why: deterministic auto-resolution over "your Heroes" — rules v23 L721–L725
 // (D-24687, which supersedes the zone priority of D-18503 / D-20603). inPlay
@@ -3564,10 +3620,11 @@ function applyVillainEffect(
 // callers delegate to it and do not post-process its output (D-18902
 // mutation-location lock; single source of truth for KO targeting + replay
 // determinism).
+// why: D-24693 — returns the zone with the card so the log can say where it came from.
 function koOneHeroForPlayer(
   G: LegendaryGameState,
   playerId: string,
-): CardExtId | null {
+): KoHeroTarget | null {
   const zones = G.playerZones[playerId];
   if (!zones) return null;
 
@@ -3582,8 +3639,8 @@ function koOneHeroForPlayer(
     if (moveResult.found) {
       zones.inPlay = moveResult.from;
       G.ko = koCard(G.ko, inPlayTarget);
-      // why: WP-316 — return the KO'd ext_id for the log target.
-      return inPlayTarget;
+      // why: WP-316 — return the KO'd ext_id (and its zone, D-24693) for the log target.
+      return { zone: 'inPlay', cardId: inPlayTarget };
     }
     // why: inPlay wins over hand once an inPlay hero is chosen.
     return null;
@@ -3597,8 +3654,8 @@ function koOneHeroForPlayer(
     if (moveResult.found) {
       zones.hand = moveResult.from;
       G.ko = koCard(G.ko, handTarget);
-      // why: WP-316 — return the KO'd ext_id for the log target.
-      return handTarget;
+      // why: WP-316 — return the KO'd ext_id (and its zone, D-24693) for the log target.
+      return { zone: 'hand', cardId: handTarget };
     }
   }
   // why: WP-316 — no eligible hero in hand or play (or the move missed); no KO,

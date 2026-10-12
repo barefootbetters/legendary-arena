@@ -47385,4 +47385,31 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 
 ---
 
+### D-24693 — Every "KO a Hero" log line names the zone the card left (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** WP-801 / D-24687 made an unqualified "KO one of your Heroes" take only from hand or play, and put five Core live-verify rows back to `pending`: Sentinel, Super-Skrull, Destroyer's Escape, Whirlwind and Maestro. None of them could be re-verified from a log, because every KO line named only the card ("Player 1 KO'd S.H.I.E.L.D. Agent (starting-shield-agent).", match `13KtRi8XZSU`). The diagnostics effect traces don't record the zone either. Battlefield Promotion's optional-KO line already said "from their hand".
+
+**Decision.**
+1. **Shared wording.** A new `describeKoSourceZone(zone)` (`log/logDisplay.ts`) returns "their hand", "their discard pile" or "the cards they played this turn". `optionalKoReward` now uses it, since this is the third copy of the mapping.
+2. **Interactive KO.** `resolveKoHeroChoice` logs "Player 0 KO'd S.H.I.E.L.D. Agent (starting-shield-agent) from their hand.", including each auto-resolved forced remainder.
+3. **Automatic KOs.** These report the zone each card left:
+   - the current-player auto-KO and Whirlwind's magnitude line;
+   - Maestro's count-by-trait line;
+   - Destroyer's KO-all line, which now also names the cards;
+   - the each-player KO (Destroyer's Escape, Super-Skrull, Juggernaut).
+
+   `VillainEffectResult` gains an optional `targetZones` (index-aligned with `targets`, omitted when empty), and `VillainEffectPlayerTargets` an optional `zones`. `koOneHeroForPlayer` returns `{ zone, cardId }`. `resolveEffectResultNames` appends " from <zone>" to each target name, so the composer needs no change. These are additive optional fields on a contract type, recorded here.
+4. **Text only.** No rule, state or KO-target change. `G.messages` is hash-excluded. The Fight/Ambush/Escape narratives in `G.notableEvents` carry the new text, but no replay or hash fixture moved (engine suite green, fixtures untouched).
+
+**Tests.**
+- **Changed (authorized wording / shape change):** fightVillain auto-KO line + narrative; the two Destroyer KO-all lines; four result-shape tests that now expect `targetZones` / `zones`; the D-24683 resolver test; the Super-Skrull per-player line.
+- **New:** the resolver names hand and play, and the forced remainder names its zone.
+- **Revert proof:** dropping the zone from the resolver line fails the new test (1 / 2).
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5072 → 5074, server 1738, arena-client 2298); arena-client typecheck 0; `sim:runtime-observed:check` current; no generated-artifact churn.
+
+**Reserved by:** NUMBER-LEDGER D-24693. Related: D-24687 / WP-801 (hand + play), D-24683 (per-player KO line), D-24399 (optional-KO-reward line), D-24026 (the live session that surfaced it).
+
+---
+
 Protect this file.

@@ -24,7 +24,7 @@ import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { pushLog } from '../log/logPush.js';
-import { resolveCardName } from '../log/logDisplay.js';
+import { resolveCardName, describeKoSourceZone } from '../log/logDisplay.js';
 // why: WP-492 / D-24298 — a magnitude-N KO entry (Whirlwind) owes more than one KO.
 // After the player's pick, the resolve move auto-resolves any now-FORCED remainder,
 // which needs the chooser's fresh distinct-eligible options. buildKoEligibleTargets
@@ -126,8 +126,10 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   // WP-316 §Scope Out deferral; this completes it. (The exactly-1 auto-KO path
   // already names its target at fight time.) `G.messages` is hash-excluded
   // (D-24081), so this adds no determinism / sentinel impact.
+  // why: D-24693 — name the source zone so a log shows the KO came from hand or play
+  // (D-24687), never the discard pile, for an unqualified "KO one of your Heroes".
   const koHeroName = resolveCardName(G.cardDisplayData, args.cardId);
-  pushLog(G, `Player ${playerID} KO'd ${koHeroName} (${args.cardId}).`);
+  pushLog(G, `Player ${playerID} KO'd ${koHeroName} (${args.cardId}) from ${describeKoSourceZone(args.zone)}.`);
 
   // Step 6: Decrement the front entry's remaining KOs owed (WP-492 / D-24298).
   // why: a bare entry (remaining absent) owes 1 → decrement to 0 → front-pop,
@@ -162,7 +164,7 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
     playerZones[forced.zone] = forcedMove.from;
     G.ko = koCard(G.ko, forced.cardId);
     const forcedName = resolveCardName(G.cardDisplayData, forced.cardId);
-    pushLog(G, `Player ${playerID} KO'd ${forcedName} (${forced.cardId}).`);
+    pushLog(G, `Player ${playerID} KO'd ${forcedName} (${forced.cardId}) from ${describeKoSourceZone(forced.zone)}.`);
     owed -= 1;
   }
 

@@ -220,6 +220,31 @@ describe('resolveKoHeroChoice — success paths', () => {
     );
   });
 
+  it('D-24693: the KO line names the zone the card left (hand, or the cards played this turn)', () => {
+    // why: D-24687 restricts "KO one of your Heroes" to hand + play; without the zone a log
+    // could not show that (live match 13KtRi8XZSU, Sentinel: "Player 1 KO'd S.H.I.E.L.D. Agent").
+    const handState = makeTestGameState({ hand: ['hero-h' as CardExtId], pendingKoHeroChoices: [koChoice()] });
+    resolveKoHeroChoice(makeMoveContext(handState).context, { zone: 'hand', cardId: 'hero-h' as CardExtId });
+    assert.ok(handState.messages.some((message) => message.text === "Player 0 KO'd hero-h (hero-h) from their hand."));
+
+    const playState = makeTestGameState({ inPlay: ['hero-p' as CardExtId], pendingKoHeroChoices: [koChoice()] });
+    resolveKoHeroChoice(makeMoveContext(playState).context, { zone: 'inPlay', cardId: 'hero-p' as CardExtId });
+    assert.ok(
+      playState.messages.some(
+        (message) => message.text === "Player 0 KO'd hero-p (hero-p) from the cards they played this turn.",
+      ),
+    );
+  });
+
+  it('D-24693: an auto-resolved forced remainder also names its zone', () => {
+    const state = makeTestGameState({
+      hand: ['h-a', 'h-b'] as CardExtId[],
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
+    });
+    resolveKoHeroChoice({ G: state, playerID: '0' } as never, { zone: 'hand', cardId: 'h-a' });
+    assert.ok(state.messages.some((message) => message.text === "Player 0 KO'd h-b (h-b) from their hand."));
+  });
+
   it('a no-op resolve (target absent from the named zone) pushes no KO log line', () => {
     const gameState = makeTestGameState({
       discard: ['hero-d' as CardExtId],
