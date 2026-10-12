@@ -103,7 +103,7 @@ driver too.
 | Database | Self-hosted PostgreSQL 18 on `localhost`. |
 | Edge | Cloudflare in front; Nginx terminates TLS with a Cloudflare Origin Certificate. |
 | Deploy | Automatic after CI passes on `main` ([`deploy-server.yml`](../.github/workflows/deploy-server.yml), D-24708): GitHub Actions → SSH as the restricted `deployer` user, whose key is pinned to the `la-deploy` gate (`41-deploy-user.ps1`) → `40-app-deploy.ps1` for the exact tested commit (install, build, migrations, restart, health gate). Hand deploys run `40` directly. |
-| Backups | `pg_dump` to R2 (production bucket `legendary-arena-db-backups` since cutover), restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11, and the R2 upload and restore-from-R2 passed on 2026-10-12. |
+| Backups | Nightly `pg_dump` (09:17 UTC) → local copy → R2 (production bucket `legendary-arena-db-backups` since cutover) → **pCloud mirror** (second vendor, permanent), each with its own health check; restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11; the R2 upload, restore-from-R2, and the first production pCloud mirror passed on 2026-10-12. See [Offsite backups](#offsite-backups-r2--pcloud). |
 | Monitoring | Provisioner `60` every 5 min, plus a ping after each backup, to two healthchecks.io dead-man's-switch checks that email on a failure or a missing ping. Rehearsed 2026-10-12, including a real alert. UptimeRobot checks the public `api.…/health` path every 5 minutes. |
 
 The executable versions — cloud-init, the numbered provisioners, the systemd
@@ -134,6 +134,7 @@ box, so cutover day starts from a provisioned host rather than a blank one.
 | Production-copy restore | Pass after a fix (bug 2 below): 41 tables and 6,320 rows identical to production; `schema_migrations` 45 on both |
 | `21` Cloudflare TLS | Pass, tested through `api-next.legendary-arena.com` (a proxied record pointed at the droplet): `/health` 200 through Cloudflare with SSL Strict, Socket.IO handshake 200, WebSocket upgrade 101, and the droplet IP on 443 times out because UFW admits only Cloudflare. Production `api.` was untouched |
 | `50` offsite backup to R2 | Pass (2026-10-12), using the separate bucket `legendary-arena-db-backups-rehearsal`. `-Install` added rclone and the 09:17 UTC timer; one backup uploaded; `51 RESTORE_FROM_R2=latest` restored it with identical row counts; retention pruning on a synthetic 120-day history keeps 47 and flags 73 |
+| `50` pCloud mirror | Pass (2026-10-12, production, after the cutover restore). The droplet got its own pCloud token (minted on the operator's desktop and written straight into the backup config, never displayed). Before installing it, the token was proven by listing the existing `db-backups/` folders. The first run's dump (15.4 MB) landed in pCloud byte-identical to the R2 object, and `la-droplet-pcloud` went green. The mirror reports to its own check: a missing token or a failed copy fails `la-droplet-pcloud` only, never `la-droplet-backup` |
 | `60` monitoring | Pass (2026-10-12). Two healthchecks.io checks: `la-droplet-monitor` (5-min period, 10-min grace) and `la-droplet-backup` (cron `17 9 * * *` UTC, 2-h grace). `-Install` registered the 5-minute timer, and one monitor run and one backup run each pinged their check. Stopping `la-server` sent a failure ping ("la-server is not active; /health unreachable"), and the run after restarting it passed. The ping URLs live only in the droplet's root-only config |
 
 **Measured on the 4 GB box.** The deploy build peaked at **1.37 GB used with
@@ -250,6 +251,70 @@ succeeds on a push to `main`:
 
 Logs: `journalctl -u la-server` (the server) and `journalctl -t la-deploy`
 (the gate).
+
+### Offsite backups (R2 + pCloud)
+
+Every night at 09:17 UTC the droplet's `la-backup` timer runs the lab's
+`50-backup.ps1`. One run produces three copies, on three vendors:
+
+| Copy | Where | Kept | Health check |
+|---|---|---|---|
+| Local | the droplet's `/var/backups/la`, last 7 dumps | lost with the droplet | `la-droplet-monitor` alerts if the newest is over 26 h old |
+| **Primary offsite** | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/legendary-arena-<stamp>.dump` | GFS: 35 daily, 12 weekly, 12 monthly | `la-droplet-backup` (dump + R2 upload) |
+| **Second offsite (pCloud)** | pCloud (US region), the same `db-backups/YYYY/MM/DD/` keys | the same GFS pruning, applied to pCloud separately | `la-droplet-pcloud` (the mirror only) |
+
+That is 3-2-1: the live database, plus two offsite copies with independent
+vendors and credentials. Losing Cloudflare, or losing the R2 token, still
+leaves a recoverable dump on pCloud. The Render-era GitHub nightly
+(`db-backup.yml`) kept the same pCloud copy from 2026-08-10. Its last copy and
+the droplet's first one sit side by side in `db-backups/2026/10/12/`.
+
+**Why the mirror has its own check.** R2 is the primary copy. A pCloud failure
+mustn't read as "the backup failed", which is urgent, and it mustn't stay
+silent either. The engine's `db-backup.yml` used the same posture from
+2026-10-08 (#2641), after a revoked pCloud token turned four nights red while R2
+was fine. So on the droplet:
+
+- R2 failed, meaning the dump or the upload: `la-droplet-backup` goes **down**
+  (email). Fix it the same day; the RPO clock is running.
+- pCloud failed, or `BACKUP_PCLOUD_TOKEN` is missing: `la-droplet-pcloud` goes
+  **down** (email, with the reason in the ping body). R2 is safe; fix within days.
+- Both green: both copies landed.
+
+**Configuration.** The droplet's root-only `/etc/la/backup.env` holds the R2
+credentials and bucket, the pCloud token (`BACKUP_PCLOUD_TOKEN`), and the two
+ping URLs (`BACKUP_HEALTHCHECK_URL`, `BACKUP_PCLOUD_HEALTHCHECK_URL`). The
+operator keeps the master copy in the private ops folder and installs it with
+`scp` + `sudo install -m 600`. It's verified by key name only.
+
+**The pCloud token.** It's an rclone pCloud OAuth token, minted on the
+operator's desktop with `rclone authorize "pcloud"`. The output is captured and
+written straight into the local `backup.env` as `BACKUP_PCLOUD_TOKEN=…`, so the
+token is never displayed or pasted into chat. Each authorization is independent:
+the droplet's token and any other (the retired GitHub nightly's, the operator's
+local `pcloud:` remote) are revoked separately, so re-minting one never breaks
+another. A revoked token shows up as `pcloud error: Revoked 'access_token' …
+(2095)` in `journalctl -u la-backup` and turns `la-droplet-pcloud` down. Re-mint
+it the same way and reinstall `backup.env`.
+
+**Production data only.** Install the pCloud token, or point
+`BACKUP_R2_BUCKET` at the production bucket, only while the droplet holds the
+production database. Before the cutover restore, the droplet's test database
+would have dropped test dumps into the production folders. The shared GFS
+pruning would then have counted them as real backups and pruned real ones to
+make room.
+
+**Check it by hand:**
+
+```text
+journalctl -u la-backup -n 15 --no-pager      # dump, "Uploading to r2:…", "Mirroring to pcloud:…", "Backup complete."
+systemctl list-timers la-backup.timer         # next run
+```
+
+Restoring from either copy, and the provider-loss scenarios, are on
+[Disaster Recovery](disaster-recovery.md). `51-restore.ps1` restores straight
+from R2 (`RESTORE_FROM_R2=latest`). A pCloud dump restores through
+`RESTORE_DUMP=<file>` after downloading it.
 
 ### Prerequisites & effort
 
@@ -440,7 +505,9 @@ Render owned each of these until 2026-10-12; on the droplet they are the operato
 - Platform-level security updates
 
 The program has **accepted** this transfer. The single-box SPOF that comes with
-it is mitigated by tested `pg_dump` → R2 backups and a rehearsed restore and
+it is mitigated by tested nightly `pg_dump` backups to R2 **and** pCloud (two
+vendors, each with its own health check; see
+[Offsite backups](#offsite-backups-r2--pcloud)), and by a rehearsed restore and
 rebuild (§5–6), which the PLAN makes a hard gate before cutover.
 
 ### What a successful lab looks like
@@ -533,7 +600,9 @@ operator can, unaided —
   [Render Migration Analysis](render-migration-analysis.md).
 - **2026-10-12** — Cutover: production moved to this droplet and the Render
   web service was suspended for a 7-day rollback window (see
-  [Cutover](#cutover-2026-10-12)).
+  [Cutover](#cutover-2026-10-12)). The same day, the pCloud mirror became a
+  permanent part of every production backup, with its own `la-droplet-pcloud`
+  check (lab #30), and deploys became automatic after CI (D-24708).
 
 ## Open Questions
 
