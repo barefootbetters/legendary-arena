@@ -47570,3 +47570,32 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 ---
 
 Protect this file.
+### D-24702 — LegendaryGame disables boardgame.io undo, so stored matches carry no per-move snapshots (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** `LegendaryGame` did not set `disableUndo`, and boardgame.io 0.50 enables undo by default. With undo on, the reducer's `updateUndoRedoState` appends an entry holding the full `G`, `ctx` and `plugins` to the match state's `_undo` array on every move and event of the current turn, and `InitializeGame` seeds `_undo` with one entry. The Master persists that state, `_undo` and `_redo` included, in every `bgio.matches` row (D-24095). A Legendary turn runs many moves over a large `G`, so each stored row carried a turn's worth of full-state copies. Nothing uses them. D-24701 stops clients sending UNDO / REDO over the socket. A repo-wide search of `apps/**`, `packages/**` and `scripts/**` finds no `client.undo` / `redo`, no server code that dispatches UNDO / REDO, and no code or test that reads `_undo` / `_redo`. That covers the faithful replay (`apps/server/src/replay`), autoplay, bot-ally, the simulation harness and engine-runner.
+
+**Decision.**
+1. `LegendaryGame` sets `disableUndo: true` (`packages/game-engine/src/game.ts`, with a `// why:` comment). The reducer then never fills `_undo` / `_redo`, `InitializeGame` stores them empty, and an UNDO / REDO action that reaches the Master is refused with `ActionDisabled` and changes nothing. D-24701 already stops clients sending one over the socket.
+2. **WP vs direct fix.** Direct fix. It is a one-line game-config change with no new `G` field, no move change and no phase or stage change, the same shape as D-24699 / D-24701.
+3. **Unchanged.** `G` and every move. Undo state lives beside `G`, never in it, so `computeStateHash` / `hashGameState`, replay goldens, PAR and sim profiles, and the replay hash (`computeStateHash` of the reduced final `G`) are unaffected. The faithful replay re-dispatches only `MAKE_MOVE` log entries (D-24124) through `CreateGameReducer({ game: LegendaryGame })`. That reducer now skips the undo bookkeeping, which never fed `G`. Stored matches that already hold a non-empty `_undo` still load and play. With undo off, the reducer no longer appends to the stack, and only UNDO / REDO read it. boardgame.io resets both stacks to `[]` at every turn start and end, so a match in progress at deploy sheds its stack at its next turn boundary. A finished row keeps whatever stack it ended with until it is reaped.
+
+**Determinism.** No `G`, hash or replay change. The stored match state shrinks: `_undo` / `_redo` stay `[]`.
+
+**Files.** `packages/game-engine/src/game.ts` (one config field); new `apps/server/src/game/undoStorage.test.ts`. No HTTP endpoint touched.
+
+**Tests.** New `undoStorage.test.ts` uses the D-24699 harness: boardgame.io's real `Master`, the real engine moves, an in-memory store and a no-op transport. The empty test registry deals an empty Hero Deck, which would latch the D-24159 final turn and end the match at the first `endTurn`, so the test stocks `G.heroDeck` on a `structuredClone` of the initial state.
+- **Real match:** lobby → `startMatchIfReady` → `revealVillainCard` → `advanceStage` ×2 → `endTurn`. Every move commits (`_stateID` +1), every stored state has `_undo` and `_redo` equal to `[]`, and the match reaches its second play turn at the `start` stage with no gameover.
+- **UNDO refused:** an UNDO after `revealVillainCard` leaves the stored state deep-equal to before.
+- **Contrast:** with `{ ...LegendaryGame, disableUndo: false }`, the stored `_undo` holds full `G` / `ctx` / `plugins` snapshots after three moves. That is the cost this entry removes.
+
+**Revert proof.** With `disableUndo` removed from `game.ts` and the engine rebuilt, the first two tests fail and the contrast test passes. With it restored, all three pass.
+
+**Gates.** `pnpm install`; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5092 unchanged, arena-client 2299 unchanged, server 1748 with 207 DB-gated skips without `TEST_DATABASE_URL`); `check-number-ledger --check` passed. No golden, PAR or hash re-pin; no `lagn-v1.json` churn.
+
+**Live-verify (D-24026):** pending. After deploy, a production match created after the release, with at least one move made, stores `state->'_undo'` and `state->'_redo'` as `[]` in `bgio.matches`.
+
+**Reserved by:** NUMBER-LEDGER D-24702. Related: D-24701 (socket accepts only MAKE_MOVE), D-24095 (bgio framework-store exemption), D-24119 / D-24124 (faithful replay), D-24159 (deck-exhaustion final turn), D-24026.
+
+---
+
+Protect this file.
