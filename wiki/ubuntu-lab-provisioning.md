@@ -90,6 +90,9 @@ step). Cost is now a driver too (see
 - **Is becoming:** the production host for `apps/server` and a self-hosted
   PostgreSQL 18, behind Nginx + Cloudflare, under systemd — the target
   architecture locked in the migration PLAN (`legendary-arena-lab` repo).
+- **Is provisioned and rehearsed (2026-10-11).** `la-rehearsal-01` passed every
+  provisioner and a production-copy restore; see
+  [Rehearsal results](#rehearsal-results-2026-10-11).
 - **Is not yet carrying production traffic.** Until the cutover phase, the box is
   provisioned and rehearsed against a **copy** of the data, never the live prod
   DB. The Render managed Postgres allows credential-gated public inbound
@@ -139,8 +142,12 @@ are recorded in `render.yaml`.
 **Cost-reduction order.** These steps are ranked by savings for the effort.
 1. **Finish the migration.** It restarted on 2026-10-04. The work that needs
    no droplet is merged: `legendary-arena-lab` #17 and #18 fixed the
-   provisioners and proved them in CI on Ubuntu 24.04. What remains starts
-   with a payment method on the DigitalOcean account. Every month on Render
+   provisioners and proved them in CI on Ubuntu 24.04, and on 2026-10-11 the
+   whole chain was rehearsed on the real $24 droplet, including a
+   production-copy restore (see
+   [Rehearsal results](#rehearsal-results-2026-10-11)). What remains is the
+   Cloudflare TLS step, the offsite backup and monitoring credentials, and the
+   cutover itself. Every month on Render
    costs about $120 more than the $24 droplet would. The phases and gates in the
    PLAN are unchanged.
 2. **Size from data, not from the July incidents.** Done 2026-10-11: both
@@ -399,20 +406,74 @@ One correction to the survey: it said the $48 droplet matches today's footprint
 about 1 GB, so the real headroom question is answered by usage, not allocation
 (see [Sizing from measured use](#sizing-from-measured-use-2026-10-11)).
 
+### Rehearsal results (2026-10-11)
+
+The provisioners were rehearsed end to end on a real droplet before any
+production traffic: `la-rehearsal-01`, DigitalOcean `sfo3`, Basic 2 vCPU /
+4 GB / 80 GB ($24/mo), Ubuntu 24.04.5. The droplet is **kept** as the cutover
+box, so cutover day starts from a provisioned host rather than a blank one.
+
+| Step | Result |
+|---|---|
+| cloud-init | Pass after a fix (bug 1 below): `operator` user, SSH key, PowerShell 7.6.6 |
+| `05` SSH hardening | Pass: root login and password auth refused; key login as `operator` works |
+| `06` UFW | Pass: only 22, 80, and 443 open |
+| `07` fail2ban + unattended-upgrades | Pass |
+| `08` swapfile | Pass: 2 GB, swappiness 10 |
+| `10` Node / pnpm | Pass: Node 24.18.0, pnpm 10.32.1 |
+| `20` Nginx | Pass: `/health` proxied on port 80 |
+| `30` PostgreSQL | Pass: PostgreSQL 18.6; `shared_buffers` auto-set to 979 MB (25% of RAM) |
+| `40` deploy | Pass in 71 s: engine `main` built, migrations run, systemd service healthy |
+| `50` → `51` backup and restore drill | Pass: 41 tables, row counts identical; `51` refuses the live database without its flag |
+| Production-copy restore | Pass after a fix (bug 2 below): 41 tables and 6,320 rows identical to production; `schema_migrations` 45 on both |
+
+**Measured on the 4 GB box.** The deploy build peaked at **1.37 GB used with
+no swap**. Steady state with the server and Postgres running is about 800 MB
+used and 3.1 GB available. That confirms the $24 sizing: the heaviest moment
+used about a third of RAM.
+
+**Two real bugs, both invisible to CI, both fixed in `legendary-arena-lab`:**
+1. **Ubuntu 24.04 ships a system group named `operator` (gid 37).**
+   cloud-init's `useradd operator` failed with "group operator exists", so
+   the user and its SSH key were never created and the box was unreachable as
+   `operator`. CI missed it because `provision-smoke` only schema-checks
+   cloud-init and creates the user with its own command. Fixed in lab #22:
+   `primary_group: operator` in cloud-init, and the same fix in
+   `05-user-and-ssh.ps1`. Verified on a fresh boot.
+2. **Production carries `pg_stat_statements`** (Render's query monitoring),
+   and `51-restore` restores as the app role, which cannot create extensions.
+   The restore failed at the first statement, and **the real cutover restore
+   would have failed the same way.** Fixed in lab #23: `51` creates the dump's
+   extensions as `postgres` first, then restores the rest as the app role.
+   `provision-smoke` now covers this case.
+
+**Data handling.** The production copy was a read-only `pg_dump` (15 MB, from
+a 66 MB database). The operator ran the copy to the droplet and the restore
+by hand. Afterwards every copy was deleted: the local dump, the copy on the
+droplet, and the restored scratch database. Production was never written to.
+
+**Not yet rehearsed:**
+- `21` Cloudflare TLS: the real Origin Certificate, Full (strict), and 443
+  locked to Cloudflare ranges. It needs Cloudflare access and belongs to
+  cutover.
+- `50` offsite upload to R2 with real credentials (the drill ran local-only)
+  and `60` monitoring with a real health-check URL and alert path.
+- The cutover itself: a fresh production dump, the `api.` DNS flip, and the
+  rollback drill (repointing `api.` back to Render).
+
 ### Prerequisites & effort
 
 - A DigitalOcean account with an SSH key pair already uploaded.
 
-  **Account status (2026-10-04).** The account is open but has **no payment
-  method**, so it cannot create a droplet yet. Usage is $0 and no resources
-  exist. The account also holds a $5 "Inference Cloud Trial" credit that
-  expires 2026-10-21. It is named for the inference products, so do not count
-  on it covering droplet usage. Remaining setup, in order:
-  1. Add a payment method (operator only).
-  2. Set a spend alert a little above the planned droplet price, for example
-     $30 a month for the $24 box (raise it on a resize). The billing page now offers spend alerts.
-  3. Upload the SSH public key, and create an API token if provisioning goes
-     through `doctl` or Terraform.
+  **Account status (2026-10-11).** Payment method added. The operator's
+  desktop has `doctl` authenticated with a 30-day API token, and its SSH key
+  is uploaded to the account. One droplet exists, `la-rehearsal-01` ($24/mo),
+  kept as the cutover box (see [Rehearsal results](#rehearsal-results-2026-10-11)).
+  A spend alert a little above the droplet price (for example $30 a month,
+  raised on a resize) is recommended; it was not confirmed set as of this
+  revision. The $5 "Inference Cloud Trial" credit expires 2026-10-21 and is
+  named for the inference products, so do not count on it covering droplet
+  usage.
 - A throwaway lab hostname (e.g. `lab.<your-domain>`) ready to point at the
   droplet IP.
 - Familiarity with the production topology in the
@@ -694,7 +755,8 @@ migration Work Packet is the pending governance noted in the callout.
   ewiki half is, as D-24690) and has no migration Work Packet. Until both land, this page
   cites the migration PLAN rather than a `D-`/`WP-` ID and stays `status: draft`.
   The still-required execution gates are unchanged and now owned by the program:
-  validated backup **and tested** restore (Mechanics §5–6), documented monitoring,
+  validated backup **and tested** restore (Mechanics §5–6; rehearsed on a
+  production copy on 2026-10-11, R2 offsite upload still to prove), documented monitoring,
   a tested rollback (repoint Cloudflare DNS `api.` → Render), the
   operational-burden transfer (accepted — see Ownership boundary), and a check
   against the server-layer boundary in
