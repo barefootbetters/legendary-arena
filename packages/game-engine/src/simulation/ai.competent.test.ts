@@ -571,3 +571,52 @@ describe('Exorcise scoring (WP-757 / D-24587)', () => {
     assert.deepStrictEqual(intent.move, EXORCISE, 'a real decision outranks the lifecycle move');
   });
 });
+
+describe('First-Hero cards lead the turn (D-24706)', () => {
+  const DO_OVER = 'core/deadpool/hey-can-i-get-a-do-over#2';
+  const AGENT = 'starting-shield-agent';
+
+  /**
+   * A view whose active player holds an Agent and Do-Over (with the setup marker in its
+   * ability text) and has the given number of cards in play.
+   */
+  function buildDoOverView(inPlayCount: number): UIState {
+    const view = buildSyntheticUIState(emptyCitySpaces());
+    view.players[0]!.inPlayCount = inPlayCount;
+    view.players[0]!.handDisplay = [
+      { extId: AGENT, name: 'S.H.I.E.L.D. Agent', cost: null, imageUrl: '', heroClass: null, team: null },
+      {
+        extId: DO_OVER,
+        name: 'Hey, Can I Get a Do-Over?',
+        cost: 3,
+        imageUrl: '',
+        heroClass: 'instinct',
+        team: 'unaffiliated',
+        abilityText:
+          'If this is the first Hero you played this turn, you may discard the rest of your hand and draw four cards. [keyword:first-hero-condition] [keyword:do-over]',
+      },
+    ];
+    return view;
+  }
+
+  const LEGAL_MOVES: LegalMove[] = [
+    { name: 'playCard', args: { cardId: AGENT } },
+    { name: 'playCard', args: { cardId: DO_OVER } },
+  ];
+
+  test('with nothing in play, the bot plays the first-Hero card before any other card, on every seed', () => {
+    // why: live match 0BVSi0_KY0A — the tie-break played two Agents first and wasted
+    // Do-Over. Every seed must now pick Do-Over, not just a lucky one.
+    for (let i = 0; i < 20; i++) {
+      const policy = createCompetentHeuristicPolicy(`first-hero-seed-${i}`);
+      const intent = policy.decideTurn(buildDoOverView(0), LEGAL_MOVES);
+      assert.deepStrictEqual(intent.move, { name: 'playCard', args: { cardId: DO_OVER } });
+    }
+  });
+
+  test('once a card is in play the first-Hero card gets no bonus (the gate can no longer pass)', () => {
+    const policy = createCompetentHeuristicPolicy('first-hero-after-play-seed');
+    const intent = policy.decideTurn(buildDoOverView(1), LEGAL_MOVES);
+    assert.match(intent.decisionLog![0]!, /\(score 200\)/, 'both plays tie at the base score');
+  });
+});

@@ -7,6 +7,14 @@
 
 ## Current State
 
+### D-24706 — The bot leads with Do-Over and redraws when its hand is mostly Wounds (direct fix) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy), bot-ally matches.** When the bot holds Deadpool's "Hey, Can I Get a Do-Over?", it now plays it first in its turn, so the "first Hero you played this turn" ability can fire. Before, it often played S.H.I.E.L.D. Agents first and the ability did nothing (live match `0BVSi0_KY0A`). When the ability fires, the bot now discards and draws 4 if fewer than 4 of its other cards are playable (for example 2 Wounds among 5), and keeps its hand otherwise. Before, it always kept its hand.
+
+- **Bot only.** No rule, move or state change; a human's Do-Over is unchanged. Watch Bot Play gets the redraw rule here and the lead pick in D-24705 (#2747).
+- **Tests.** game-engine 5148 → 5153 (5 new), server 1759 unchanged; all 0 fail. PAR and the sim gates unchanged.
+- **Live-verify (D-24026):** pending. In a bot-ally match with Deadpool, the bot plays Do-Over first and the log shows it resolving.
+
 ### D-24702 — Stored matches no longer carry undo snapshots (direct fix) (2026-10-12)
 
 **Server storage only; nothing a player sees changes.** `LegendaryGame` now sets `disableUndo: true`. boardgame.io has undo on by default, and it was saving a full copy of the game state (`G`, `ctx`, plugins) into every `bgio.matches` row for each move of the current turn. Nothing in the game uses undo, and since D-24701 (#2737) the socket accepts only player moves. A stored row now holds `_undo` and `_redo` as `[]`.

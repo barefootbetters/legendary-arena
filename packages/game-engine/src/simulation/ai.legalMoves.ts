@@ -45,7 +45,7 @@ import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
 import { hasPendingPutHandOnDeckTop } from '../moves/putHandOnDeckTop.resolve.js';
 import { hasPendingRevealTopDispose, selectDefaultRevealTopDisposition } from '../moves/revealTopDispose.resolve.js';
-import { hasPendingDoOver } from '../moves/doOver.resolve.js';
+import { hasPendingDoOver, DO_OVER_DRAW_COUNT } from '../moves/doOver.resolve.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { hasPendingPlayVillainTopChoice } from '../moves/playVillainTop.resolve.js';
 import { selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget } from '../hero/heroEffects.execute.js';
@@ -347,6 +347,33 @@ function selectFirstHqCard(hq: ReadonlyArray<CardExtId | null>): CardExtId | nul
 }
 
 /**
+ * The bot's answer to the front pending Do-Over choice (D-24706).
+ *
+ * // why: accepting discards the rest of the hand and draws a fixed DO_OVER_DRAW_COUNT
+ * (4). A Wound in hand does nothing, so the trade is worth it exactly when fewer than 4
+ * of the cards it would discard are live (non-Wound): the redraw then leaves the bot
+ * holding more playable cards. With 4 or more live cards the bot keeps its hand
+ * (D-24498's former always-decline default). Reads only the chooser's own hand.
+ *
+ * @param gameState - The engine state with a pending Do-Over. Not mutated.
+ * @returns `{ accept: true }` when the redraw adds live cards, else `{ decline: true }`.
+ */
+function selectDoOverDefault(gameState: LegendaryGameState): { accept: true } | { decline: true } {
+  const chooserPlayerId = gameState.pendingDoOverChoices![0]!.playerID;
+  const hand = gameState.playerZones[chooserPlayerId]?.hand ?? [];
+  let liveCardCount = 0;
+  for (const cardId of hand) {
+    if (cardId !== WOUND_EXT_ID) {
+      liveCardCount += 1;
+    }
+  }
+  if (liveCardCount < DO_OVER_DRAW_COUNT) {
+    return { accept: true };
+  }
+  return { decline: true };
+}
+
+/**
  * Enumerates all legal moves for the active player.
  *
  * Pure function — deterministic, no side effects, no G mutation. The
@@ -591,12 +618,11 @@ export function getLegalMoves(
   }
 
   // why: WP-681 / D-24498 — a Do-Over accept/decline choice blocks every other move; the bot
-  // resolves it first. Deterministic default: DECLINE — discarding the whole hand to redraw 4
-  // is a large economy swing whose value depends on the current hand, so the conservative
-  // no-op default is chosen (an expected-value default is deferred, mirroring the
-  // play-top-Villain-Deck decline default). Returns a list of length EXACTLY 1.
+  // resolves it first. D-24706 replaces D-24498's always-decline default with
+  // selectDoOverDefault (accept only when the redraw leaves more live cards). Returns a list
+  // of length EXACTLY 1.
   if (hasPendingDoOver(gameState)) {
-    return [{ name: 'resolveDoOver', args: { decline: true } }];
+    return [{ name: 'resolveDoOver', args: selectDoOverDefault(gameState) }];
   }
 
   // why: pending victory-pile villain-pick short-circuit (D-24067) — the bot must

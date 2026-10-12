@@ -47764,4 +47764,24 @@ Protect this file.
 
 ---
 
+### D-24706 — The bot leads with a "first Hero you played this turn" card and accepts a Do-Over that nets live cards (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** Live bot-ally match `0BVSi0_KY0A` (build `b598e53`, 2026-10-12): on turn 8 the bot seat played two S.H.I.E.L.D. Agents and then Deadpool's "Hey, Can I Get a Do-Over?", so the "if this is the first Hero you played this turn" gate (WP-681 / D-24498) had already failed. Two causes. (1) The Competent Heuristic policy (`simulation/ai.competent.ts`) scores every non-Wound `playCard` at 200, so hand order is a seeded tie-break. (2) Even when Do-Over led the turn, the bot's deterministic default for the pending choice was always `{ decline: true }` (D-24498), so ordering alone would have changed nothing in play.
+
+**Decision.**
+
+1. **Ordering.** A `playCard` whose hand display carries the `[keyword:first-hero-condition]` setup marker scores `SCORE_PLAY_FIRST_HERO_CARD` (201, one above the 200 base, below the 400 mandatory reveal) while the active player's `inPlayCount` is 0. The policy reads only the audience-filtered view, the active player's own `handDisplay`. Without a hand display, or once anything is in play, the card keeps the base score. A hand with no such card scores exactly as before, so its tie-breaks (and the mulberry32 stream) are unchanged.
+2. **Accept rule (supersedes D-24498's bot default).** `getLegalMoves`' pending Do-Over short-circuit returns `resolveDoOver` with `selectDoOverDefault(G)`: `{ accept: true }` when fewer than `DO_OVER_DRAW_COUNT` (4) of the chooser's remaining hand cards are non-Wound, otherwise `{ decline: true }`. Accepting discards the hand and draws a fixed 4, so it pays exactly when the redraw leaves more playable cards; a Wound in hand produces nothing. Still exactly one move, so the forced-choice drain contract is unchanged. Jeff chose this over "order only" (cosmetic) and "always accept" (2026-10-12).
+3. **Reach.** The bot-ally driver (`decideBotMove`) gets both halves. Watch Bot Play gets the accept rule through the same `getLegalMoves` drain, but its hand step plays cards in hand order (`autoplay.mjs` `playHandCards`, D-24699) and does not consult the policy; D-24705 (#2747) gives that step the same lead pick. The sim and PAR run the same policy: PAR's hero pool has no Deadpool, and `par:seed:test`, `sim:runtime-observed:check` and `sim:coverage --check` were unchanged.
+
+**Not a rules change.** No engine rule, move, `G` field or `UIState` field changes; only the bot's choices. A human player's Do-Over is unaffected.
+
+**Gates.** game-engine 5148 → 5153 / 0 fail (+5: two policy tests, three accept-rule tests); server 1759 / 0 fail with no edit; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; `par:seed:test`, `sim:runtime-observed:check`, `sim:coverage --check` 0. Revert proofs 2/2: removing the ordering bonus fails the 20-seed "plays Do-Over first" test; restoring always-decline fails both accept tests.
+
+**Live-verify (D-24026):** pending. In a bot-ally match with core Deadpool, when the bot holds Do-Over at the start of its main stage it plays it first, and the log shows the Do-Over resolving (accept with 2+ Wounds among the rest of its hand, decline otherwise).
+
+**Reserved by:** NUMBER-LEDGER D-24706. Related: D-24498 (Do-Over, superseded bot default), D-24705 (Watch Bot Play lead pick), D-24699 (Watch Bot Play hand order), D-24026. Renumbered from D-24704, which #2746 took first.
+
+---
+
 Protect this file.
