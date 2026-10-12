@@ -1776,6 +1776,17 @@ export interface LegendaryGameState {
   /** Whether this match is an admin-created operator match. Absent = normal match. */
   readonly isDebugMatch?: boolean;
 
+  // why: WP-805 / D-24700 — the random-first-player flag (rules v23 L524, "Choose a
+  // random player to go first"). OPTIONAL and seeded by buildInitialGameState ONLY for
+  // a match with two or more seats; omitted for solo (one seat has no choice to make).
+  // Nothing writes it after setup. The play phase's turn.order.first reads it: true
+  // draws the opener with the match's seeded random; absent keeps the old opener
+  // (the seat after the lobby turn holder), so a stored log created before WP-805
+  // replays unchanged through the faithful replay (D-24119). Omit-when-off keeps solo
+  // byte-identical (the WP-686 finalBlow / WP-802 isDebugMatch precedent).
+  /** Whether this match draws its first player at random when play begins. Absent = created before WP-805, or solo. */
+  readonly isFirstPlayerRandom?: boolean;
+
   // why: selection extracts the entity reference fields from matchConfiguration
   // for convenient read access. matchConfiguration is the full 9-field input;
   // selection holds just the scheme, mastermind, and group ext_ids.
@@ -2225,6 +2236,18 @@ export interface LegendaryGameState {
   // PRE_WP080_HASH / hashGameState oracles do not re-pin. Drained (emptied) every turn-end.
   /** FIFO queue of cards set aside by teleport-on-discard, awaiting end-of-turn return (D-24526). */
   pendingTeleportReturns?: PendingTeleportReturn[] | undefined;
+  // why: WP-803 / D-24692 — Man / Woman Out of Time (rules v23 L1667-1694): "After you use this
+  // card's abilities, set it aside. At the beginning of your next turn, play this card a second
+  // time and then discard it." The `out-of-time` hero handler moves the just-played card out of
+  // inPlay into its owner's list here (in no zone, like pendingTeleportReturns);
+  // replayOutOfTimeCards plays each one again on the owner's next start → main advance, then
+  // discards it. Keyed by playerID, set-aside order. CardExtId strings only.
+  // why: lazily created at the handler, never in Game.setup; a player key is deleted when its
+  // list empties and the field is deleted when no key remains. A match with no Out of Time card
+  // never writes it, so canonical JSON omits it and the sentinel finalStateHash /
+  // PRE_WP080_HASH oracles do not re-pin (the D-24526 precedent).
+  /** Per-player cards set aside Out of Time, awaiting their turn-2 replay (WP-803 / D-24692). */
+  outOfTimeCards?: Record<string, CardExtId[]>;
   // why: WP-682 / D-24499 — a player who holds Captain America's Diving Block gaining a
   // Wound parks one entry PER WOUND at the gainWoundForPlayer chokepoint (checkDivingBlock),
   // AFTER the Wound has landed in their discard. The FIFO is drained one WAVE at a time via

@@ -192,6 +192,27 @@ describe('LegendaryGame', () => {
     assert.equal(Object.keys(truthyFlagState).includes('isDebugMatch'), false);
   });
 
+  it('WP-805: setup() writes isFirstPlayerRandom: true for 2–5 seats and leaves no key for 1 seat', () => {
+    // why: WP-805 / D-24700 — the flag marks a match that draws its opener at play
+    // start. Omit-when-off for solo keeps every solo match and solo pin byte-identical.
+    for (const numPlayers of [2, 3, 4, 5]) {
+      const gameState = LegendaryGame.setup!(
+        makeMockCtx({ numPlayers }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+        createMockMatchConfiguration(),
+      );
+      assert.equal(gameState.isFirstPlayerRandom, true, `a ${numPlayers}-seat match must carry isFirstPlayerRandom: true`);
+    }
+    const soloState = LegendaryGame.setup!(
+      makeMockCtx({ numPlayers: 1 }) as Parameters<NonNullable<typeof LegendaryGame.setup>>[0],
+      createMockMatchConfiguration(),
+    );
+    assert.equal(Object.keys(soloState).includes('isFirstPlayerRandom'), false);
+    assert.ok(
+      !JSON.stringify(soloState).includes('"isFirstPlayerRandom"'),
+      'A solo match must not serialize an isFirstPlayerRandom key anywhere in G',
+    );
+  });
+
   it('setup() throws when matchConfiguration is not provided', () => {
     const mockContext = makeMockCtx({ numPlayers: 2 });
     assert.throws(
@@ -881,6 +902,215 @@ describe('LegendaryGame', () => {
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// WP-805 / D-24700 — a random player goes first (rules v23 L524). These drive a
+// REAL match through boardgame.io's own reducer, because the opener is chosen by
+// the play phase's turn.order.first, which only the framework calls (the sim, PAR
+// and fixture harnesses keep seat 0 and never reach it). Every match is seeded
+// explicitly: an unseeded InitializeGame seeds from the clock.
+// ---------------------------------------------------------------------------
+
+/** The slice of a boardgame.io match state the opener tests read. */
+interface OpenerTestState {
+  G: Record<string, unknown>;
+  ctx: { currentPlayer: string; phase: string };
+  plugins: { random: { data: unknown } };
+}
+
+/** The boardgame.io reducer, typed for the opener tests. */
+type OpenerTestReducer = (state: unknown, action: { type: string; payload: unknown }) => OpenerTestState;
+
+/** A seeded match in its lobby, plus the reducer that drives it. */
+interface SeededLobby {
+  initialState: OpenerTestState;
+  reducer: OpenerTestReducer;
+}
+
+/** A match driven from its lobby into play. */
+interface StartedMatch {
+  readiedState: OpenerTestState;
+  playState: OpenerTestState;
+}
+
+/**
+ * The fixed seeds the opener tests walk: `seed-0` … `seed-39`.
+ *
+ * @returns The 40 seed strings, in order.
+ */
+function buildOpenerSeeds(): string[] {
+  const seeds: string[] = [];
+  for (let i = 0; i < 40; i++) {
+    seeds.push(`seed-${i}`);
+  }
+  return seeds;
+}
+
+const OPENER_SEEDS = buildOpenerSeeds();
+
+/**
+ * Creates a seeded match in its lobby with the mock configuration.
+ *
+ * @param seed - The match seed (the `{ ...LegendaryGame, seed }` precedent).
+ * @param numPlayers - The number of seats.
+ * @returns The initial lobby state and a reducer for the same seeded game.
+ */
+function createSeededLobby(seed: string, numPlayers: number): SeededLobby {
+  const seededGame = { ...LegendaryGame, seed };
+  const initialState = InitializeGame({
+    game: seededGame,
+    numPlayers,
+    setupData: createMockMatchConfiguration(),
+  }) as unknown as OpenerTestState;
+  const reducer = CreateGameReducer({ game: seededGame, isClient: false }) as unknown as OpenerTestReducer;
+  return { initialState, reducer };
+}
+
+/**
+ * Dispatches one move through the reducer.
+ *
+ * @param reducer - The boardgame.io reducer.
+ * @param state - The state to apply the move to.
+ * @param moveName - The move name.
+ * @param args - The move arguments.
+ * @param playerID - The seat submitting the move.
+ * @returns The next state.
+ */
+function dispatchOpenerMove(
+  reducer: OpenerTestReducer,
+  state: OpenerTestState,
+  moveName: string,
+  args: unknown[],
+  playerID: string,
+): OpenerTestState {
+  return reducer(state, { type: 'MAKE_MOVE', payload: { type: moveName, args, playerID } });
+}
+
+/**
+ * Readies every seat, then starts the match (lobby → play).
+ *
+ * @param reducer - The boardgame.io reducer.
+ * @param lobbyState - A lobby state (possibly with an edited G).
+ * @param numPlayers - The number of seats to ready.
+ * @returns The state just before startMatchIfReady and the first play state.
+ */
+function startMatchFromLobby(
+  reducer: OpenerTestReducer,
+  lobbyState: OpenerTestState,
+  numPlayers: number,
+): StartedMatch {
+  let readiedState = lobbyState;
+  for (let seat = 0; seat < numPlayers; seat++) {
+    readiedState = dispatchOpenerMove(reducer, readiedState, 'setPlayerReady', [{ ready: true }], String(seat));
+  }
+  const playState = dispatchOpenerMove(reducer, readiedState, 'startMatchIfReady', [], '0');
+  assert.equal(playState.ctx.phase, 'play', 'startMatchIfReady must move a fully readied lobby into play');
+  return { readiedState, playState };
+}
+
+/**
+ * Creates a seeded match and drives it into play.
+ *
+ * @param seed - The match seed.
+ * @param numPlayers - The number of seats.
+ * @returns The readied lobby state, the first play state and the reducer.
+ */
+function startSeededMatch(seed: string, numPlayers: number): StartedMatch & { reducer: OpenerTestReducer } {
+  const { initialState, reducer } = createSeededLobby(seed, numPlayers);
+  return { ...startMatchFromLobby(reducer, initialState, numPlayers), reducer };
+}
+
+describe('WP-805 / D-24700 — a random player goes first', () => {
+  it('a 3-seat match can open on every seat: the openers over seed-0 … seed-39 are exactly {0, 1, 2}', () => {
+    const openers = new Set<string>();
+    for (const seed of OPENER_SEEDS) {
+      const { readiedState, playState } = startSeededMatch(seed, 3);
+      // why: the draw happened — a flagged match spends one seeded die roll at play start.
+      assert.notDeepStrictEqual(
+        playState.plugins.random.data,
+        readiedState.plugins.random.data,
+        `a flagged match must draw its opener from random when play begins (${seed})`,
+      );
+      openers.add(playState.ctx.currentPlayer);
+    }
+    // why: an exact set (not "more than one opener") catches a truncated draw range
+    // such as Die(length - 1), which could never open the last seat.
+    assert.deepStrictEqual([...openers].sort(), ['0', '1', '2']);
+  });
+
+  it('the same seed opens the same seat with the same random state', () => {
+    const firstRun = startSeededMatch('seed-7', 3);
+    const secondRun = startSeededMatch('seed-7', 3);
+    assert.equal(firstRun.playState.ctx.currentPlayer, secondRun.playState.ctx.currentPlayer);
+    assert.deepStrictEqual(firstRun.playState.plugins.random, secondRun.playState.plugins.random);
+  });
+
+  it('a 2-seat state created before WP-805 (no flag) opens seat 1 and draws nothing', () => {
+    // why: D-24119 — the faithful replay re-runs a stored initialState + log with the
+    // current engine. A stored multi-seat state has no flag and was recorded with seat
+    // 1 opening; the legacy branch must reproduce it without shifting the random stream.
+    for (const seed of OPENER_SEEDS.slice(0, 10)) {
+      const { initialState, reducer } = createSeededLobby(seed, 2);
+      assert.equal(initialState.G.isFirstPlayerRandom, true, 'a new 2-seat match carries the flag');
+      const legacyG = structuredClone(initialState.G);
+      delete legacyG.isFirstPlayerRandom;
+      const { readiedState, playState } = startMatchFromLobby(reducer, { ...initialState, G: legacyG }, 2);
+      assert.equal(playState.ctx.currentPlayer, '1', `a flagless 2-seat state must open seat 1 (${seed})`);
+      assert.deepStrictEqual(
+        playState.plugins.random.data,
+        readiedState.plugins.random.data,
+        `a flagless state must make no random draw at play start (${seed})`,
+      );
+    }
+  });
+
+  it('a solo match has no flag, opens seat 0 and draws nothing', () => {
+    for (const seed of OPENER_SEEDS.slice(0, 10)) {
+      const { readiedState, playState } = startSeededMatch(seed, 1);
+      assert.equal(Object.keys(playState.G).includes('isFirstPlayerRandom'), false, `solo G must carry no flag key (${seed})`);
+      assert.equal(playState.ctx.currentPlayer, '0', `a solo match opens seat 0 (${seed})`);
+      assert.deepStrictEqual(
+        playState.plugins.random.data,
+        readiedState.plugins.random.data,
+        `a solo match must make no random draw at play start (${seed})`,
+      );
+    }
+  });
+
+  it('after the opener ends its turn the next seat is clockwise, wrapping from seat 2 to seat 0', () => {
+    let wrapSeed: string | undefined;
+    for (const seed of OPENER_SEEDS) {
+      if (startSeededMatch(seed, 3).playState.ctx.currentPlayer === '2') {
+        wrapSeed = seed;
+        break;
+      }
+    }
+    assert.ok(wrapSeed, 'some seed in seed-0 … seed-39 must open seat 2 on 3 seats');
+
+    const { playState, reducer } = startSeededMatch(wrapSeed, 3);
+    assert.equal(playState.ctx.currentPlayer, '2');
+    // why: the villain reveal is set directly (the fairness-guard test precedent above)
+    // so the turn can leave 'start' regardless of what the mock villain deck holds. The
+    // mock configuration has no registry, so both shared decks are empty and the
+    // deck-exhaustion final-turn latch (WP-367) would end the game on this turn instead
+    // of passing it on; one placeholder card in each deck keeps the match going.
+    const villainDeck = playState.G.villainDeck as { deck: string[] };
+    let state: OpenerTestState = {
+      ...playState,
+      G: {
+        ...playState.G,
+        villainRevealedThisTurn: true,
+        heroDeck: ['test/placeholder-hero-card'],
+        villainDeck: { ...villainDeck, deck: ['test/placeholder-villain-card'] },
+      },
+    };
+    state = dispatchOpenerMove(reducer, state, 'advanceStage', [], '2'); // start → main
+    state = dispatchOpenerMove(reducer, state, 'advanceStage', [], '2'); // main → cleanup
+    state = dispatchOpenerMove(reducer, state, 'advanceStage', [], '2'); // cleanup → endTurn
+    assert.equal(state.ctx.currentPlayer, '0', 'the seat after seat 2 on a 3-seat table is seat 0');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // WP-793 / D-24656 — the play-phase turn.onMove openers for the rulebook escape
 // procedure and a non-active seat's return-on-discard. These prove the WIRING in
@@ -1018,5 +1248,87 @@ describe('play-phase turn.onMove escape-procedure wiring (WP-793 / D-24656)', ()
       false,
       'no generic escape Wound',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-803 / D-24692 — the live advanceStage binding replays Out of Time cards. Only the real
+// reducer exercises game.ts's beginMain closure behind the reveal gate and the block-all
+// guards (the injected-seam trap: the turnLoop / replay unit tests mock the closure).
+// ---------------------------------------------------------------------------
+
+describe('advanceStage Out of Time replay wiring (WP-803 / D-24692)', () => {
+  it('real reducer: nothing replays before the reveal or while a reveal choice is pending; then the card plays once and is discarded', () => {
+    const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+    const makeMove = (
+      state: unknown,
+      moveName: string,
+      args: unknown[],
+      playerID: string,
+    ): { G: unknown; ctx: { currentPlayer: unknown } } =>
+      reducer(state, { type: 'MAKE_MOVE', payload: { type: moveName, args, playerID } });
+    const initialState = InitializeGame({ game: LegendaryGame, numPlayers: 2, setupData: createMockMatchConfiguration() });
+    let state = makeMove(initialState, 'setPlayerReady', [{ ready: true }], '0');
+    state = makeMove(state, 'setPlayerReady', [{ ready: true }], '1');
+    state = makeMove(state, 'startMatchIfReady', [], '0');
+    const activeSeat = String(state.ctx.currentPlayer);
+
+    // why: inject a card the seat set aside last turn (an ungated Out of Time card whose line 0
+    // draws a card and whose printed icon is +2 attack), and a benign Villain on top of the
+    // Villain Deck so the real reveal move spends the reveal allowance.
+    const outOfTimeCard = 'test/oot-hero/returning-card#0';
+    const injectedG = structuredClone(state.G) as LegendaryGameState;
+    injectedG.outOfTimeCards = { [activeSeat]: [outOfTimeCard] };
+    injectedG.heroAbilityHooks = [
+      ...injectedG.heroAbilityHooks,
+      { cardId: outOfTimeCard, timing: 'onPlay', keywords: ['draw'], effects: [{ type: 'draw', magnitude: 1 }] },
+      { cardId: outOfTimeCard, timing: 'onPlay', keywords: ['out-of-time'], effects: [{ type: 'out-of-time' }] },
+    ];
+    injectedG.cardStats = {
+      ...injectedG.cardStats,
+      [outOfTimeCard]: {
+        attack: 2, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0,
+        hasAttackIcon: true, hasRecruitIcon: false, isShieldOrHydra: false,
+      },
+    };
+    injectedG.villainDeck = { deck: ['test-entering'], discard: [] };
+    injectedG.villainDeckCardTypes = { ...injectedG.villainDeckCardTypes, 'test-entering': 'villain' };
+    state = { ...state, G: injectedG };
+
+    // Before the reveal: advanceStage is refused and nothing replays.
+    state = makeMove(state, 'advanceStage', [], activeSeat);
+    let currentG = state.G as LegendaryGameState;
+    assert.equal(currentG.currentStage, 'start');
+    assert.deepEqual(currentG.outOfTimeCards, { [activeSeat]: [outOfTimeCard] }, 'no replay before the reveal');
+
+    state = makeMove(state, 'revealVillainCard', [], activeSeat);
+    currentG = state.G as LegendaryGameState;
+    assert.equal(currentG.villainRevealedThisTurn, true);
+
+    // While a reveal choice (a KO-a-Hero choice) is pending: advanceStage is refused, no replay.
+    const pendingG = structuredClone(currentG) as LegendaryGameState;
+    pendingG.pendingKoHeroChoices = [{ playerID: activeSeat } as never];
+    const blocked = makeMove({ ...state, G: pendingG }, 'advanceStage', [], activeSeat);
+    const blockedG = blocked.G as LegendaryGameState;
+    assert.equal(blockedG.currentStage, 'start');
+    assert.deepEqual(blockedG.outOfTimeCards, { [activeSeat]: [outOfTimeCard] }, 'no replay while a choice is pending');
+
+    // Choice resolved (none pending): the advance replays the card once, then discards it.
+    const handBefore = currentG.playerZones[activeSeat]!.hand.length;
+    const attackBefore = currentG.turnEconomy.attack;
+    state = makeMove(state, 'advanceStage', [], activeSeat);
+    const finalG = state.G as LegendaryGameState;
+    const zones = finalG.playerZones[activeSeat]!;
+    assert.equal(finalG.currentStage, 'main');
+    assert.equal(finalG.outOfTimeCards, undefined, 'the set-aside is consumed');
+    assert.equal(zones.discard[zones.discard.length - 1], outOfTimeCard, 'discarded after the second play');
+    assert.equal(zones.inPlay.includes(outOfTimeCard), false);
+    assert.equal(zones.hand.length, handBefore + 1, 'line 0 drew a card');
+    assert.equal(finalG.turnEconomy.attack, attackBefore + 2, 'its printed +2 attack is credited');
+    assert.deepEqual(finalG.turnEconomy.outOfTimePlayedCardIds, [outOfTimeCard]);
+    const texts = finalG.messages.map((entry) => entry.text);
+    assert.ok(texts.some((text) => text.includes('returns from Out of Time and is played a second time.')));
+    assert.ok(texts.some((text) => text.includes(`Player ${activeSeat} played `)), 'the play-core log line');
+    assert.ok(texts.some((text) => text.endsWith('is not set aside again: a card goes Out of Time only once.')));
   });
 });

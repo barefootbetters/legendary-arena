@@ -6,6 +6,7 @@ import { TURN_STAGES } from './turn/turnPhases.types.js';
 import { advanceTurnStage } from './turn/turnLoop.js';
 import { drawCards, playCard, endTurn } from './moves/coreMoves.impl.js';
 import { applyEndOfTurnCleanup } from './moves/endOfTurnCleanup.logic.js';
+import { replayOutOfTimeCards } from './moves/outOfTime.logic.js';
 import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
@@ -128,7 +129,10 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  *
  * @param context - boardgame.io move context with G and events.
  */
-function advanceStage({ G, ctx, events, random }: MoveContext): void {
+function advanceStage({ G, ...context }: MoveContext): void {
+  // why: WP-803 / D-24692 — keep the whole move context rest so the beginMain binding below
+  // hands replayOutOfTimeCards exactly what playCard hands applyCardPlay.
+  const { ctx, events, random } = context;
   // why: block-all guard (D-24008) — while a KO-a-Hero choice is pending the
   // board is frozen; advanceStage (at any stage) returns with no side effects
   // so the player resolves the Fight effect before any other action. Placed
@@ -264,6 +268,11 @@ function advanceStage({ G, ctx, events, random }: MoveContext): void {
     // closure carries G + the ShuffleProvider (ctx.random) that turnLoop.ts's narrow
     // state interface deliberately does not.
     cleanup: (endingPlayerID) => applyEndOfTurnCleanup(G, endingPlayerID, { random }),
+    // why: WP-803 / D-24692 — rules v23 L1678: returning Out of Time cards are played after the
+    // villain card and before the hand. advanceTurnStage calls this only on start → main, which
+    // the reveal gate and the block-all guards above hold back until the villain card is
+    // revealed and every reveal choice is resolved.
+    beginMain: (startingPlayerID) => replayOutOfTimeCards(G, context, startingPlayerID),
   });
 }
 
@@ -782,6 +791,28 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
         // moves). The 01.5 triggers remain absent: this is a
         // phase-configuration property, not a phase hook.
         activePlayers: { currentPlayer: 'playTurn' },
+        // why: WP-805 / D-24700 — boardgame.io calls order.first once per match, when
+        // the play phase begins (startMatchIfReady's setPhase), with the match's
+        // seeded random in its context; order.next runs at every endTurn.
+        order: {
+          first: ({ G, ctx, random }) => {
+            if (G.isFirstPlayerRandom !== true) {
+              // why: a flagless G (created before WP-805, or solo) keeps
+              // boardgame.io's former TurnOrder.DEFAULT opener for a phase that
+              // starts after turn 0, verbatim and with no random draw, so a stored
+              // log replays unchanged through the faithful replay (D-24119).
+              return (ctx.playOrderPos + 1) % ctx.playOrder.length;
+            }
+            // why: rules v23 L524 ("Choose a random player to go first"), D-24700.
+            // One seeded draw per match, made when play begins, so it comes after
+            // every setup shuffle and leaves the decks untouched. Die(n) returns
+            // 1..n; minus one is a playOrder index.
+            return random.Die(ctx.playOrder.length) - 1;
+          },
+          // why: clockwise rotation (ascending seat order, wrapping), unchanged:
+          // boardgame.io's TurnOrder.DEFAULT next, verbatim.
+          next: ({ ctx }) => (ctx.playOrderPos + 1) % ctx.playOrder.length,
+        },
         stages: {
           playTurn: {},
           // why: WP-684 / D-24501 — an empty stage a NON-ACTIVE addressed seat is placed

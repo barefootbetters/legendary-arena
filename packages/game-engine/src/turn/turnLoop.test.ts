@@ -10,6 +10,9 @@
  *   - byte-identity hygiene: a fully-spent counter leaves G exactly as an
  *     untriggered game (the lazy-omit hash pattern).
  *
+ * Also covers the WP-803 / D-24692 `beginMain` closure: called exactly once, for the acting
+ * seat, on the start → main advance only, after the per-step action counter reset.
+ *
  * No boardgame.io imports — advanceTurnStage takes the narrow TurnLoopContext.
  */
 
@@ -36,15 +39,19 @@ function makeContext(currentPlayer = '0'): {
   context: TurnLoopContext;
   endTurnSpy: ReturnType<typeof mock.fn>;
   cleanupSpy: ReturnType<typeof mock.fn>;
+  beginMainSpy: ReturnType<typeof mock.fn>;
 } {
   const endTurnSpy = mock.fn();
   const cleanupSpy = mock.fn();
+  // why: WP-803 / D-24692 — the required start → main closure (the Out of Time replay).
+  const beginMainSpy = mock.fn();
   const context: TurnLoopContext = {
     currentPlayer,
     events: { endTurn: endTurnSpy },
     cleanup: cleanupSpy,
+    beginMain: beginMainSpy,
   };
-  return { context, endTurnSpy, cleanupSpy };
+  return { context, endTurnSpy, cleanupSpy, beginMainSpy };
 }
 
 describe('consumeExtraTurn', () => {
@@ -160,5 +167,49 @@ describe('advanceTurnStage — extra-turn branch', () => {
     // queued extra turn is NOT consumed by player 0's turn-end.
     assert.deepEqual(endTurnSpy.mock.calls[0]!.arguments, []);
     assert.deepEqual(gameState.extraTurns, { '1': 1 });
+  });
+});
+
+describe('advanceTurnStage — beginMain (WP-803 / D-24692)', () => {
+  it('calls beginMain once for the acting seat on start → main, after the action counter reset', () => {
+    const gameState: TurnLoopState = { currentStage: TURN_STAGES[0], logMeta: { actionInStep: 4 } };
+    const observed: { stage: string; actionInStep: number | undefined }[] = [];
+    const beginMainSpy = mock.fn(() => {
+      observed.push({ stage: gameState.currentStage, actionInStep: gameState.logMeta?.actionInStep });
+    });
+    const context: TurnLoopContext = {
+      currentPlayer: '1',
+      events: { endTurn: mock.fn() },
+      cleanup: mock.fn(),
+      beginMain: beginMainSpy,
+    };
+
+    advanceTurnStage(gameState, context);
+
+    assert.equal(beginMainSpy.mock.callCount(), 1);
+    assert.deepEqual(beginMainSpy.mock.calls[0]!.arguments, ['1']);
+    // why: the replay runs with the stage already main and the per-step counter already
+    // reset, so its log lines number from the fresh main step.
+    assert.deepEqual(observed, [{ stage: TURN_STAGES[1], actionInStep: 0 }]);
+  });
+
+  it('does not call beginMain on main → cleanup', () => {
+    const gameState: TurnLoopState = { currentStage: TURN_STAGES[1] };
+    const { context, beginMainSpy } = makeContext('0');
+
+    advanceTurnStage(gameState, context);
+
+    assert.equal(gameState.currentStage, TURN_STAGES[2]);
+    assert.equal(beginMainSpy.mock.callCount(), 0);
+  });
+
+  it('does not call beginMain on the cleanup turn-end', () => {
+    const gameState: TurnLoopState = { currentStage: TURN_STAGES[2] };
+    const { context, beginMainSpy, endTurnSpy } = makeContext('0');
+
+    advanceTurnStage(gameState, context);
+
+    assert.equal(endTurnSpy.mock.callCount(), 1);
+    assert.equal(beginMainSpy.mock.callCount(), 0);
   });
 });

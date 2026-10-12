@@ -7,6 +7,24 @@
 
 ## Current State
 
+### WP-805 / EC-842 — A random player goes first (D-24700) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** In a match with two or more seats, the first turn now goes to a seat drawn at random when play begins, as rules v23 L524 says. Before, every multi-seat match opened on seat 1, so in a bot-ally match the bot always went first; now the human opens about half the time. Turns then go clockwise as before. Solo matches are unchanged.
+
+- **Engine only.** Setup stamps `G.isFirstPlayerRandom: true` for 2+ seats (omitted for solo); the play phase's `turn.order.first` draws the opener with the match's seeded `random` after all setup shuffles. A match without the flag (stored before this deploy, or still in its lobby at deploy) keeps the old seat-1 opener, so score verification, capture and the AI coach replay old matches unchanged. No server, client or UIState change.
+- **Tests.** game-engine 5136 → 5142, server 1745 (no edit); all 0 fail. Re-pinned `sentinel-core-doom-2p` `finalStateHash` and `PRE_WP080_HASH`, both only for the new key. PAR and the sim gates unchanged.
+- **Live-verify (D-24026):** pending. Create 2-seat bot-ally matches (up to 8) until one opens on the human seat and one on the bot; each opener is stable on reload.
+
+### WP-803 / EC-840 — Man / Woman Out of Time sets the card aside and replays it next turn (D-24692) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Six heroes now play their Out of Time cards as printed: ca75 Captain America 1941, Agent X-13, Steve Rogers (Director of S.H.I.E.L.D.) and Winter Soldier; anni Brainstorm and Psi-Lord. When an Out of Time card's gate holds, the card leaves play after its abilities and shows under **Out of Time — returns next turn** in your played row. It still counts as played for the rest of the turn. Next turn, right after you advance past the villain card, it plays again (icons, abilities and the play log line) and goes to your discard pile. It never goes Out of Time twice, and a copy (Copy Powers, Steal Abilities) never goes Out of Time. The Hollow effects panel stops listing these lines; Winter Soldier's "2>4" grant lines stay listed (a named follow-up).
+
+- **Engine.** A new `out-of-time` hero keyword and handler; a lazy per-player set-aside (`G.outOfTimeCards`); a turn ledger that keeps the card "played this turn" while the ten "Heroes you have" reads (Spectrum included) ignore it; the replay runs on the start → main advance in all five turn loops through a required `beginMain` closure. No new move.
+- **Client.** One prop on `PlayedCardsRow` plus the two page mounts; the 1280×720 cockpit does not grow.
+- **Known limits (D-24692).** Sniper Squad and Reshape Reality need only one other card of their team until WP-741 lands. Several returning cards replay in set-aside order. Copy Powers can't copy a set-aside card.
+- **Tests.** game-engine 5092 → 5136, arena-client 2299 → 2307, dashboard 571 (in-play gauge re-pinned 13.9% → 14.1%, denominator only), server 1741; all 0 fail. Hash oracles and PAR unchanged.
+- **Live-verify (D-24026):** pending. In a ca75 match, play Devoted Patriot after another Strength Hero: it shows under Out of Time; a diagnostics download shows `outOfTimeCards`; next turn, after the villain card and advance, it plays again (draws a card) and lands in the discard pile.
+
 ### D-24699 — The Watch Bot Play bot skips a card the engine won't let it play (direct fix) (2026-10-12)
 
 **User-visible on `play.legendary-arena.com` (after deploy), Watch Bot Play only.** When the autoplay bot holds a card the engine refuses to play, it now skips that card and plays the rest of its hand. Examples are a Wound, or a "To play this card, you must discard…" Hero whose cost its hand can't pay (ssw2 Extinction Blast discards three). Before, the bot re-submitted the refused card until its 30-play limit, about 23 seconds of dead playback at the default speed, and never played the cards behind it. The server log now shows one "the engine refused to play card …" line for the skipped card. The bot also resolves a choice that is already open when it starts playing its hand, before its first play.

@@ -279,6 +279,13 @@ function redactHandCards(player: UIPlayerState): UIPlayerState {
     base.victoryVP = player.victoryVP;
   }
 
+  // why: WP-803 / D-24692 — outOfTimeCards is PUBLIC (the victoryCards disposition): the card
+  // was played face-up and is set aside in the open. Per-entry shallow copy mirrors the
+  // projection-time aliasing-defense.
+  if (player.outOfTimeCards !== undefined) {
+    base.outOfTimeCards = deepCopyDisplayEntries(player.outOfTimeCards);
+  }
+
   return base;
 }
 
@@ -397,6 +404,12 @@ function preserveHandCards(player: UIPlayerState): UIPlayerState {
   // why: WP-128 / D-12801 — victoryVP is public; primitive number.
   if (player.victoryVP !== undefined) {
     base.victoryVP = player.victoryVP;
+  }
+
+  // why: WP-803 / D-24692 — outOfTimeCards is PUBLIC (the victoryCards disposition); per-entry
+  // shallow copy mirrors the projection-time aliasing-defense.
+  if (player.outOfTimeCards !== undefined) {
+    base.outOfTimeCards = deepCopyDisplayEntries(player.outOfTimeCards);
   }
 
   return base;

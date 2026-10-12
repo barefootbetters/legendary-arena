@@ -48,7 +48,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { moveCardFromZone, moveAllCards } from '../moves/zoneOps.js';
 import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
-import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction } from '../economy/economy.logic.js';
+import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction, recordOutOfTimePlayed } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
@@ -251,6 +251,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // (heroEffectSpinningCyclone) that parks a PendingMoveVillainChoice for the active player, so it
   // belongs here. Carries NO magnitude (a pick, not a count) → also in NO_MAGNITUDE_KEYWORDS.
   'spinning-cyclone',
+  // why: WP-803 / D-24692 — Man / Woman Out of Time (rules v23 L1667-1694); has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectOutOfTime) that sets the just-played card aside into
+  // G.outOfTimeCards, so it belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'out-of-time',
   // why: WP-735 / D-24555 — the Venomverse "Digest N / Indigestion" Victory-Pile-count branch;
   // has a HERO_EFFECT_HANDLERS entry (heroEffectDigestIndigestion) that branches on the Victory-Pile
   // count and dispatches the selected branch via the reentrant executeSingleEffect, so it belongs
@@ -566,6 +570,9 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // Villain, which space), resolved against the live City at resolve time, so the magnitude
   // pre-gate must not drop it, or heroEffectSpinningCyclone never parks its choice.
   'spinning-cyclone',
+  // why: WP-803 / D-24692 — out-of-time carries NO magnitude (it moves the played card itself),
+  // so the magnitude pre-gate must not drop it, or heroEffectOutOfTime never sets the card aside.
+  'out-of-time',
   // why: WP-735 / D-24555 — digest-indigestion carries NO top-level magnitude (the branch
   // magnitudes ride the nested inline effects: +attack / +recruit / draw:N / rescue:N). The
   // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
@@ -5240,6 +5247,79 @@ function heroEffectPlayBothSides(
 }
 
 /**
+ * Hero handler for the `out-of-time` keyword (WP-803 / D-24692).
+ *
+ * Man / Woman Out of Time — "After you use this card's abilities, set it aside. At the
+ * beginning of your next turn, play this card a second time and then discard it." (rules v23
+ * L1667-1694). The Out of Time line is the LAST line on every in-scope card, so the card's other
+ * abilities have already run. Three guards, in order; each failure logs one `blocked` sentence
+ * and returns:
+ *   1. the card is not already in `G.turnEconomy.outOfTimePlayedCardIds` (a replayed card, or one
+ *      already set aside this turn, never goes Out of Time again);
+ *   2. the card is in the player's inPlay (Steal Abilities re-fires a card from the discard pile);
+ *   3. the card is the LAST inPlay entry, i.e. the card being played now (Copy Powers re-fires an
+ *      earlier-played card).
+ * On apply: the card leaves inPlay for the end of `G.outOfTimeCards[playerID]` (map and key
+ * created lazily), and is recorded in the turn's Out of Time ledger so `playedCardIdsThisTurn`
+ * still counts it as played this turn.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Context (unused).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played hero card.
+ * @param _effect - The `{ type: 'out-of-time' }` descriptor (no magnitude).
+ */
+function heroEffectOutOfTime(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  const cardRef = formatCardRef(G.cardDisplayData, cardId);
+  // why: guard 1 — rules v23 L1674 ("You can't use Man Out of Time again to play that card for a
+  // third turn") and L1692 (an enemy-sent card played back "can't use Man Out of Time again").
+  // The turn-2 replay pre-records the card here before it plays, so its own Out of Time line
+  // lands in this branch.
+  if (G.turnEconomy?.outOfTimePlayedCardIds?.includes(cardId) === true) {
+    pushLog(G, `${cardRef} is not set aside again: a card goes Out of Time only once.`, 'blocked', cardId);
+    return;
+  }
+  const playerZones = G.playerZones[playerID];
+  // why: guard 2 — rules v23 L1689 ("If a special ability lets you copy … a Hero card, you can't
+  // use Man Out of Time on the copy"). Steal Abilities re-fires a card sitting in the discard pile.
+  if (playerZones === undefined || !playerZones.inPlay.includes(cardId)) {
+    pushLog(G, `${cardRef} is not set aside: a copy can't use Out of Time.`, 'blocked', cardId);
+    return;
+  }
+  // why: guard 3 — rules v23 L1689 again. Copy Powers re-fires an EARLIER-played card while the
+  // copying card is the newest inPlay entry; only the card being played now is last. This holds
+  // because Out of Time is the last line on every in-scope card and no earlier line appends to
+  // inPlay mid-pass (D-24692 records the fragility).
+  if (playerZones.inPlay[playerZones.inPlay.length - 1] !== cardId) {
+    pushLog(G, `${cardRef} is not set aside: a copy can't use Out of Time.`, 'blocked', cardId);
+    return;
+  }
+  const moved = moveCardFromZone(playerZones.inPlay, G.outOfTimeCards?.[playerID] ?? [], cardId);
+  playerZones.inPlay = moved.from;
+  // why: lazily created here, never in Game.setup, so a match with no Out of Time card never
+  // writes the field and both hash oracles stay byte-stable (the D-24526 precedent).
+  if (G.outOfTimeCards === undefined) {
+    G.outOfTimeCards = {};
+  }
+  G.outOfTimeCards[playerID] = moved.to;
+  // why: rules v23 L1682 + L3441-3453 — the card still counts as played this turn for Superpower
+  // gates and played-card counts, through playedCardIdsThisTurn's ledger read.
+  G.turnEconomy = recordOutOfTimePlayed(G.turnEconomy, cardId);
+  // why: WP-434 — `applied` (green): the card moved out of play.
+  pushLog(G,
+    `Player ${playerID} set ${cardRef} aside Out of Time; it plays again at the start of their next turn.`,
+    'applied',
+    cardId, // why: WP-438.
+  );
+}
+
+/**
  * Hero handler for the `fight-cost-reduction` keyword (WP-794 / D-24663).
  *
  * core Storm Lightning Bolt / Tidal Wave, cvwr Storm & Black Panther Lightning Strike and
@@ -6234,6 +6314,12 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // resolveMoveVillainChoice (move / swap + moved-Villain-only rescue, or decline). Carries NO
   // magnitude → in NO_MAGNITUDE_KEYWORDS.
   'spinning-cyclone': heroEffectSpinningCyclone,
+  // why: WP-803 / D-24692 — Man / Woman Out of Time (rules v23 L1667-1694): after the card's
+  // abilities, set it aside (out of inPlay into G.outOfTimeCards[playerID]) and record it in the
+  // turn's Out of Time ledger so it still counts as played; replayOutOfTimeCards plays it again on
+  // the owner's next start → main advance. Copies never go Out of Time. Carries NO magnitude → in
+  // NO_MAGNITUDE_KEYWORDS.
+  'out-of-time': heroEffectOutOfTime,
   // why: WP-735 / D-24555 — the Venomverse "Digest N / Indigestion" Victory-Pile-count branch:
   // heroEffectDigestIndigestion reads G.playerZones[pid].victory.length (READ-ONLY) and dispatches
   // the Digest branch (count ≥ threshold), the Indigestion fallback (below threshold), or BOTH

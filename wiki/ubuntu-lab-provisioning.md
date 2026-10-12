@@ -103,8 +103,8 @@ driver too.
 | Database | Self-hosted PostgreSQL 18 on `localhost`. |
 | Edge | Cloudflare in front; Nginx terminates TLS with a Cloudflare Origin Certificate. |
 | Deploy | GitHub Actions → SSH → `git pull` + build + `systemctl reload`. |
-| Backups | `pg_dump` to R2, restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11; the R2 upload with real credentials is not yet proven. |
-| Monitoring | Provisioner `60` with a real health-check URL and alert path; not yet rehearsed, and a cutover gate. |
+| Backups | `pg_dump` to R2, restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11, and the R2 upload and restore-from-R2 passed on 2026-10-12. |
+| Monitoring | Provisioner `60` every 5 min, plus a ping after each backup, to two healthchecks.io dead-man's-switch checks that email on a failure or a missing ping. Rehearsed 2026-10-12, including a real alert. |
 
 The executable versions — cloud-init, the numbered provisioners, the systemd
 unit, the TLS setup and the deploy pipeline — live in the `legendary-arena-lab`
@@ -134,6 +134,7 @@ box, so cutover day starts from a provisioned host rather than a blank one.
 | Production-copy restore | Pass after a fix (bug 2 below): 41 tables and 6,320 rows identical to production; `schema_migrations` 45 on both |
 | `21` Cloudflare TLS | Pass, tested through `api-next.legendary-arena.com` (a proxied record pointed at the droplet): `/health` 200 through Cloudflare with SSL Strict, Socket.IO handshake 200, WebSocket upgrade 101, and the droplet IP on 443 times out because UFW admits only Cloudflare. Production `api.` was untouched |
 | `50` offsite backup to R2 | Pass (2026-10-12), using the separate bucket `legendary-arena-db-backups-rehearsal`. `-Install` added rclone and the 09:17 UTC timer; one backup uploaded; `51 RESTORE_FROM_R2=latest` restored it with identical row counts; retention pruning on a synthetic 120-day history keeps 47 and flags 73 |
+| `60` monitoring | Pass (2026-10-12). Two healthchecks.io checks: `la-droplet-monitor` (5-min period, 10-min grace) and `la-droplet-backup` (cron `17 9 * * *` UTC, 2-h grace). `-Install` registered the 5-minute timer, and one monitor run and one backup run each pinged their check. Stopping `la-server` sent a failure ping ("la-server is not active; /health unreachable"), and the run after restarting it passed. The ping URLs live only in the droplet's root-only config |
 
 **Measured on the 4 GB box.** The deploy build peaked at **1.37 GB used with
 no swap**. Steady state with the server and Postgres running is about 800 MB
@@ -171,7 +172,9 @@ rule, and its record changes from today's DNS-only CNAME to Render into a
 proxied A record to the droplet. Rollback restores that CNAME exactly.
 
 **Not yet rehearsed:**
-- `60` monitoring with a real health-check URL and alert path.
+- An external uptime monitor on `https://api.legendary-arena.com/health`. The
+  on-box check calls `127.0.0.1`, so it never tests Nginx, TLS, Cloudflare, or
+  DNS; this monitor is set up at cutover.
 - The cutover itself: a fresh production dump, the `api.` DNS flip, and the
   rollback drill (repointing `api.` back to Render).
 
@@ -469,10 +472,11 @@ operator can, unaided —
 2. Publish the migration Work Packet, including a check against the
    server-layer boundary in
    [`.claude/rules/architecture.md`](../.claude/rules/architecture.md).
-3. Finish the last unrehearsed provisioning step, `60` monitoring with a real
-   health-check URL (see [Rehearsal results](#rehearsal-results-2026-10-11)).
-   `21` Cloudflare TLS and the `50` R2 backup passed on 2026-10-12, and the
-   restore gate passed on a production copy.
+3. ~~Finish the last unrehearsed provisioning step, `60` monitoring.~~ Done
+   2026-10-12: every provisioner has now passed (see
+   [Rehearsal results](#rehearsal-results-2026-10-11)). `21` Cloudflare TLS, the
+   `50` R2 backup, and `60` monitoring passed on 2026-10-12, and the restore
+   gate passed on a production copy.
 4. Cut over from a fresh production dump, with a rehearsed rollback (repoint
    Cloudflare DNS `api.` → Render). The same day, switch the droplet's backups
    from the rehearsal bucket to the production backup bucket and retire this

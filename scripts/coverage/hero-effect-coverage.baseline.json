@@ -3,8 +3,8 @@
     "executable": 2585,
     "heroes": 324,
     "hooks": 6383,
-    "noEffect": 2636,
-    "parsedNotExecuted": 1162
+    "noEffect": 2580,
+    "parsedNotExecuted": 1218
   },
   "perSet": {
     "2099": {
@@ -25,7 +25,7 @@
     "anni": {
       "executable": 16,
       "hooks": 122,
-      "noEffect": 101
+      "noEffect": 77
     },
     "antm": {
       "executable": 47,
@@ -50,7 +50,7 @@
     "ca75": {
       "executable": 52,
       "hooks": 100,
-      "noEffect": 43
+      "noEffect": 11
     },
     "chmp": {
       "executable": 29,
@@ -264,8 +264,7 @@
     "last-stand": 3,
     "liberate": 7,
     "lightshow": 16,
-    "man-out-of-time": 8,
-    "man/woman-out-of-time": 4,
+    "man-out-of-time": 4,
     "microscopic-size-changing": 13,
     "moonlight": 10,
     "patrol-any-city-space": 3,
@@ -313,7 +312,6 @@
     "weapon-x-sequence": 8,
     "what-if...?": 12,
     "when-recruited": 16,
-    "woman-out-of-time": 4,
     "wound-a-villain": 3,
     "wound-each-villain-and-the-mastermind": 1,
     "wound-the-mastermind": 3,

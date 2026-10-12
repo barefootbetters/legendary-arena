@@ -62,12 +62,13 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 77 entries after WP-795 spinning-cyclone', () => {
+  it('HERO_KEYWORDS array has exactly 78 entries after WP-803 out-of-time', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      77,
-      'HERO_KEYWORDS must have exactly 77 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619) + phasing (WP-783 / D-24629) + fight-cost-reduction (WP-794 / D-24663) + spinning-cyclone (WP-795 / D-24664))',
+      78,
+      'HERO_KEYWORDS must have exactly 78 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619) + phasing (WP-783 / D-24629) + fight-cost-reduction (WP-794 / D-24663) + spinning-cyclone (WP-795 / D-24664) + out-of-time (WP-803 / D-24692))',
     );
+    assert.ok(HERO_KEYWORDS.includes('out-of-time'), 'out-of-time must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('fight-cost-reduction'), 'fight-cost-reduction must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('spinning-cyclone'), 'spinning-cyclone must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('phasing'), 'phasing must be in HERO_KEYWORDS array');

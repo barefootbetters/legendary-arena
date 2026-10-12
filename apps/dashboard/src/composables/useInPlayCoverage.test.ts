@@ -560,9 +560,18 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // 486 -> 487, patrol-the-sewers 56 -> 57). totalObs 8897 -> 8900 (+3, equal to the raw feed
   // rise); resolvedObs stays 1235, so percentResolved stays 13.9 (1235 / 8900). A
   // sweep-trajectory artifact, not a regression.
+  // 2026-10-12 (WP-803 / D-24692, re-pin): Man / Woman Out of Time now resolves, so the 14
+  // recognized ca75 / anni lines stop recording parse-unrecognized hollows (feed regenerated:
+  // 7977 -> 7834 raw observations, 81 -> 79 mechanics, 0 dropped; man-out-of-time 77 -> 13,
+  // the Winter Soldier 2>4 grant lines that stay hollow; woman-out-of-time 66 and
+  // man/woman-out-of-time 28 gone; the remaining small deltas are trajectory shifts from cards
+  // that now leave play and replay). The runtime keys are never folded to the ledger's
+  // `out-of-time`, so nothing moves into resolvedObs: the gauge moves only through the smaller
+  // denominator. totalObs 8900 -> 8755; resolvedObs stays 1235, so percentResolved rises
+  // 13.9 -> 14.1 (1235 / 8755). No alias folding; a sweep-trajectory + denominator re-pin.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8900);
-  assert.equal(view.percentResolved.value, 13.9);
+  assert.equal(view.totalObs.value, 8755);
+  assert.equal(view.percentResolved.value, 14.1);
   assert.ok(view.remaining.value.length > 0);
 });
 
