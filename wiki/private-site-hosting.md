@@ -91,7 +91,11 @@ build job's gated artifact unchanged with `wrangler deploy`. The dashboard
 builds in live mode and deploys from
 [`dashboard-deploy.yml`](../.github/workflows/dashboard-deploy.yml) on every
 push to `main`. Both need the `CLOUDFLARE_API_TOKEN` and
-`CLOUDFLARE_ACCOUNT_ID` repo secrets and fail loudly without them.
+`CLOUDFLARE_ACCOUNT_ID` repo secrets and fail loudly without them. When
+GitHub Actions can't deploy, the same build and `wrangler deploy` can run
+from a workstation against the same `wrangler.jsonc`, so the one-door
+settings hold; that path skips the wiki's CI gates and is the fallback, not
+the norm ([DOMAINS.md §Manual deploy fallback](../docs/ops/DOMAINS.md#manual-deploy-fallback)).
 
 **Probes.** [`domains.json`](../docs/ops/domains.json) and
 [`check-subdomains.mjs`](../scripts/check-subdomains.mjs) probe both custom

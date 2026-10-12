@@ -160,7 +160,7 @@ that confuses anyone who clicks it.
 
 - **Source:** [wiki/](../../wiki) markdown files
 - **Renderer:** [apps/wiki-viewer](../../apps/wiki-viewer) — Hugo + Pagefind build, served by the assets-only Cloudflare Worker `legendary-arena-wiki` ([`apps/wiki-viewer/wrangler.jsonc`](../../apps/wiki-viewer/wrangler.jsonc), D-24690)
-- **Deploy:** the `deploy` job in [`.github/workflows/wiki-viewer.yml`](../../.github/workflows/wiki-viewer.yml), on push to `main` (wiki paths) or **Actions → wiki-viewer → Run workflow** on `main`. It ships the build job's gated artifact as-is with `wrangler deploy`. Needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repo secrets.
+- **Deploy:** the `deploy` job in [`.github/workflows/wiki-viewer.yml`](../../.github/workflows/wiki-viewer.yml), on push to `main` (wiki paths) or **Actions → wiki-viewer → Run workflow** on `main`. It ships the build job's gated artifact as-is with `wrangler deploy`. Needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repo secrets. If Actions can't deploy, see [Manual deploy fallback](#manual-deploy-fallback).
 - **Gate:** Cloudflare Zero Trust Access application on the hostname (Free tier, One-time PIN identity provider). It is hostname-based, so it did not change when the origin moved from Render to the Worker.
 - **One door only.** The Worker sets `workers_dev: false` and `preview_urls: false`, so it has no `*.workers.dev` or preview hostname. The custom domain is the only way in. Keep both `false`: turning either on recreates the bypass this move removed. (Before D-24690, Render also served the wiki at `legendary-arena-wiki.onrender.com` with no gate — observed `200` with full content on 2026-10-05 and 2026-10-11.)
 
@@ -226,7 +226,7 @@ exists.
 
 - **Source:** [apps/dashboard](../../apps/dashboard)
 - **Renderer:** Vite SPA, served by the assets-only Cloudflare Worker `legendary-arena-dashboard` ([`apps/dashboard/wrangler.jsonc`](../../apps/dashboard/wrangler.jsonc), SPA fallback; [`public/_headers`](../../apps/dashboard/public/_headers) applies unchanged)
-- **Deploy:** [`.github/workflows/dashboard-deploy.yml`](../../.github/workflows/dashboard-deploy.yml) on every push to `main` (the cadence of the Pages Git integration it replaced) or **Actions → dashboard-deploy → Run workflow**. It runs `pnpm --filter "@legendary-arena/dashboard..." build`, then `wrangler deploy`. Lint, typecheck and tests stay in `ci.yml` (Dashboard Gates).
+- **Deploy:** [`.github/workflows/dashboard-deploy.yml`](../../.github/workflows/dashboard-deploy.yml) on every push to `main` (the cadence of the Pages Git integration it replaced) or **Actions → dashboard-deploy → Run workflow**. It runs `pnpm --filter "@legendary-arena/dashboard..." build`, then `wrangler deploy`. Lint, typecheck and tests stay in `ci.yml` (Dashboard Gates). If Actions can't deploy, see [Manual deploy fallback](#manual-deploy-fallback).
 - **Gate:** Cloudflare Zero Trust Access application on the hostname (Free tier, Self-hosted application, Email One-time PIN identity provider, single-operator allow rule on `jeff@barefootbetters.com`). Hostname-based, so it carried over from Pages unchanged.
 - **One door only.** `workers_dev: false` and `preview_urls: false`, so there is no `*.workers.dev`, preview, or `pages.dev` hostname. Keep both `false`. (Before D-24690 the Pages project also served `legendary-arena-dashboard.pages.dev` and `<hash>.legendary-arena-dashboard.pages.dev` without Access — the production alias since 2026-06-02.)
 - **App sign-in:** Hanko ([`LoginPage.vue`](../../apps/dashboard/src/pages/auth/LoginPage.vue), WP-241), behind the Access gate. Live `/api/dash/*` routes on `api.legendary-arena.com` require an admin session and return `401` without one. The API's CORS allowlist has the custom domain only (and `localhost:4173` for local dev).
@@ -464,6 +464,79 @@ broken in `play` and `cards` until restored. This is upstream of this repo;
 escalate to the BarefootBetters image-bucket owner.
 
 ---
+
+## Manual deploy fallback
+
+Use this only when GitHub Actions can't deploy (an Actions outage, or the
+`wiki-viewer` / `dashboard-deploy` workflow is broken) and the ewiki or the
+dashboard needs a deploy now. It runs the same build and the same
+`wrangler deploy` as the workflows (D-24690), from a workstation. When Actions
+works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
+→ Run workflow** on `main`), because it also runs the gates this path skips.
+
+**Before either deploy** (PowerShell 7):
+
+1. **A clean `main`.** Work in a fresh worktree of `origin/main`, never a
+   feature branch. A local deploy ships whatever is in the folder.
+   ```powershell
+   git -C C:\pcloud\BB\DEV\legendary-arena fetch origin main
+   git -C C:\pcloud\BB\DEV\legendary-arena worktree add --detach C:\claude-worktrees\legendary-arena\manual-deploy origin/main
+   Set-Location C:\claude-worktrees\legendary-arena\manual-deploy
+   ```
+2. **Sign in to Cloudflare** as yourself: `pnpm dlx wrangler@4.149.0 login`.
+   It opens the browser for an OAuth grant. Nothing to copy, and no token is
+   stored in the repo. Use the same wrangler version the workflows pin.
+3. **The account:** `$env:CLOUDFLARE_ACCOUNT_ID = 'a1e9255402b3d778a06b56fda38eee85'`.
+
+**ewiki** (`legendary-arena-wiki`):
+
+1. Build exactly as the workflow's build job does. Hugo must match
+   `apps/wiki-viewer/.hugo-version` (0.161.1 Extended).
+   ```powershell
+   node apps/wiki-viewer/scripts/project-wiki.mjs
+   node apps/wiki-viewer/scripts/check-links.mjs
+   hugo --source apps/wiki-viewer --minify
+   pnpm dlx pagefind@1.5.2 --site apps/wiki-viewer/public
+   ```
+   No `pnpm install` is needed for this path. Skipped compared with CI: the
+   page-count equality, determinism and JS-free gates
+   (`wiki-viewer.yml`). Only use this path for content that already passed CI
+   on its PR.
+2. Deploy: `pnpm dlx wrangler@4.149.0 deploy --config apps/wiki-viewer/wrangler.jsonc`.
+   Add `--dry-run` first to see the file count without uploading.
+
+**dashboard** (`legendary-arena-dashboard`):
+
+1. Install, then build with the workflow's environment. The worktree has full
+   git history, which the governance-snapshot step needs.
+   ```powershell
+   pnpm install --frozen-lockfile
+   $env:VITE_USE_MOCKS = 'false'
+   $env:VITE_API_BASE_URL = 'https://api.legendary-arena.com'
+   $env:VITE_HANKO_TENANT_BASE_URL = '<tenant URL>'
+   pnpm --filter "@legendary-arena/dashboard..." build
+   ```
+   The tenant URL is the `DASHBOARD_HANKO_TENANT_BASE_URL` repo secret, which
+   GitHub can't show. Read the same value from Render →
+   `legendary-arena-server` → Environment → `HANKO_TENANT_BASE_URL`; it is the
+   same tenant (`apps/dashboard/.env.example`). It is not confidential: it
+   ships in the public bundle. Without it the login renders its
+   "unavailable" state. Also set `$env:VITE_FEATURE_FLAGS` if the
+   `DASHBOARD_FEATURE_FLAGS` secret/variable is set (it isn't, as of
+   2026-10-11).
+2. Deploy: `pnpm dlx wrangler@4.149.0 deploy --config apps/dashboard/wrangler.jsonc`.
+
+**After either deploy:**
+
+- `pnpm check:domains` shows the hostname `OK` (Access redirect). From an
+  incognito browser, it loads after the email OTP.
+- The `wrangler.jsonc` files keep `workers_dev: false` and
+  `preview_urls: false`. A local deploy reads the same file, so it can't
+  reopen a default hostname unless someone edited the config.
+- Remove the worktree:
+  `git -C C:\pcloud\BB\DEV\legendary-arena worktree remove C:\claude-worktrees\legendary-arena\manual-deploy`.
+- The next successful workflow run on `main` deploys over the manual
+  version, so nothing needs reconciling afterwards.
 
 ## Adding a new subdomain
 
