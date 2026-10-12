@@ -32,43 +32,56 @@ last-reviewed: 2026-10-12
 
 ## Summary
 
-The two private operator sites, the engineering wiki
-(`ewiki.legendary-arena.com`) and the operator dashboard
-(`dashboard.legendary-arena.com`), are each an assets-only Cloudflare Worker
-whose only public address is its custom domain, and that domain is gated by
-Cloudflare Access. This "one door" shape exists because Access gates
-*hostnames*: any second hostname for the same content (a Render
-`*.onrender.com` host, a Pages `*.pages.dev` alias, a Workers `*.workers.dev`
-host or a preview URL) is an ungated copy. Both sites had one until
-2026-10-11 (D-24690).
+The two private operator sites, the engineering wiki and the operator
+dashboard, are each an assets-only Cloudflare Worker whose only public address
+is its custom domain, and that domain is gated by Cloudflare Access. This
+"one door" shape exists because Access gates hostnames, not content: any
+second hostname for the same site (a Render host, a Pages alias, a Workers
+default host or a preview URL) is an ungated copy. Both sites had such a copy
+until the October 2026 move to Workers.
 
 ## Mechanics
 
-**One door.** Each Worker's `wrangler.jsonc` sets `workers_dev: false` and
-`preview_urls: false` and attaches a single `custom_domain` route
+> **Invariant (D-24690):** `workers_dev` and `preview_urls` stay `false` on
+> both Workers. Turning either on creates a second, ungated address.
+
+**One door.** Each Worker's `wrangler.jsonc`
 ([`apps/wiki-viewer/wrangler.jsonc`](../apps/wiki-viewer/wrangler.jsonc),
-[`apps/dashboard/wrangler.jsonc`](../apps/dashboard/wrangler.jsonc)). With
-both flags off the Worker has no default hostname, so the Access-gated custom
-domain is the only way in. D-24690 calls these two fields the substance of
-the decision ([DECISIONS.md D-24690](../docs/ai/DECISIONS.md)).
+[`apps/dashboard/wrangler.jsonc`](../apps/dashboard/wrangler.jsonc)) sets:
+
+- `workers_dev: false` — no default `*.workers.dev` hostname;
+- `preview_urls: false` — no per-version preview hostnames;
+- one route with `custom_domain: true` — the Access-gated hostname
+  (`ewiki.legendary-arena.com` or `dashboard.legendary-arena.com`).
+
+With both flags off the Worker has no default hostname, so the custom domain
+is the only way in. D-24690 names the two flags as the substance of the
+decision ([DECISIONS.md D-24690](../docs/ai/DECISIONS.md)), and each
+`wrangler.jsonc` carries a `why:` comment saying the same.
 
 **The gate.** The Access applications are hostname-based (Self-hosted, Email
 One-time PIN, single-operator allow), so they did not change when the origin
 behind each hostname moved from Render or Pages to a Worker
-([DOMAINS.md §ewiki, §dashboard](../docs/ops/DOMAINS.md#ewiki)). The
-dashboard keeps a second layer behind Access: its live `/api/dash/*` routes
-require an admin Hanko session and return `401` without one, and the API's
-CORS allowlist names only the custom domain plus local dev
+([DOMAINS.md §ewiki](../docs/ops/DOMAINS.md#ewiki),
+[§dashboard](../docs/ops/DOMAINS.md#dashboard)). The dashboard keeps a second
+layer behind Access: its live `/api/dash/*` routes require an admin Hanko
+session and return `401` without one, and the API's CORS allowlist names only
+the custom domain plus local dev
 ([`server.mjs`](../apps/server/src/server.mjs)).
+
+**Private vs. public sites.** Only these two sites are private. The public
+front-ends (play, cards, legends, www, lab) stay on Cloudflare Pages, where a
+public `pages.dev` alias is harmless because the site is public anyway
+([development-workflow](development-workflow.md)).
 
 **Why the old hosts leaked.** Access sat in front of the custom domains only.
 Render also served the wiki at `legendary-arena-wiki.onrender.com`, and
 Cloudflare Pages also served the dashboard at
-`legendary-arena-dashboard.pages.dev` and at a public
+`legendary-arena-dashboard.pages.dev`, plus a public
 `<hash>.legendary-arena-dashboard.pages.dev` preview for every branch push.
 None of those were gated. Pages' "Enable access policy" covers previews only,
-not the production `pages.dev` alias, and Render's "disable subdomain"
-setting needs a verified custom domain
+not the production `pages.dev` alias. Render's "disable subdomain" setting
+needs a verified custom domain, and the wiki's never became verified
 ([DOMAINS.md §dashboard](../docs/ops/DOMAINS.md#dashboard); D-24690
 §Context).
 
@@ -77,12 +90,13 @@ setting needs a verified custom domain
 build job's gated artifact unchanged with `wrangler deploy`. The dashboard
 builds in live mode and deploys from
 [`dashboard-deploy.yml`](../.github/workflows/dashboard-deploy.yml) on every
-push to `main`. Both use the `CLOUDFLARE_API_TOKEN` and
-`CLOUDFLARE_ACCOUNT_ID` repo secrets, and fail loudly without them.
+push to `main`. Both need the `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` repo secrets and fail loudly without them.
 
 **Probes.** [`domains.json`](../docs/ops/domains.json) and
 [`check-subdomains.mjs`](../scripts/check-subdomains.mjs) probe both custom
-domains for the Access redirect. They also keep the retired
+domains for the Access redirect (`302`/`401`/`403`, with the redirect pointing
+at `legendary-arena.cloudflareaccess.com`). They also keep the retired
 `legendary-arena-wiki.onrender.com` as a live regression row that must return
 `404`. See [Operational Health Checks](operational-health-checks.md).
 
@@ -103,11 +117,10 @@ domains for the Access redirect. They also keep the retired
 
 ## Edge Cases
 
-- **A second hostname is the whole risk.** Turning either flag back on adds
-  an ungated `*.workers.dev` or preview address. The public sites (play,
-  cards, legends, www, lab) still use Pages, and their `pages.dev` aliases
-  are public by design. On 2026-10-11 an account-wide sweep found no other
-  private project with an open default address ([#2700](https://github.com/barefootbetters/legendary-arena/pull/2700)).
+- **Other private projects on the account.** An account-wide sweep on
+  2026-10-11 found no other private Workers or Pages project with an open
+  default address: each private site's default host was either off or behind
+  Access ([#2700](https://github.com/barefootbetters/legendary-arena/pull/2700)).
 - **Proxied records and Render verification.** Render could not verify
   `ewiki.legendary-arena.com` while its record was Cloudflare-proxied ("Waiting
   for DNS"). That record also pointed at the *game server's* Render host,
