@@ -132,6 +132,21 @@ const SCORE_EXORCISE_BASE = 75;
 const SCORE_PLAY_CARD_BASE = 200;
 
 /**
+ * Score for playing a "first Hero you played this turn" card while nothing is in play.
+ *
+ * // why: D-24706 — a card gated on being the FIRST Hero played this turn (Deadpool's "Hey, Can I
+ * Get a Do-Over?", WP-681 / D-24498) only works if it leads the turn. Every other hand
+ * card scores SCORE_PLAY_CARD_BASE, so without this the tie-break could play two
+ * S.H.I.E.L.D. Agents first and waste the ability (live match 0BVSi0_KY0A, 2026-10-12).
+ * One point above the base keeps it below the mandatory reveal (400) and changes
+ * nothing for a hand without such a card, so those turns pick exactly as before.
+ */
+const SCORE_PLAY_FIRST_HERO_CARD = SCORE_PLAY_CARD_BASE + 1;
+
+/** The hero-ability marker the setup parser turns into the first-Hero-played gate. */
+const FIRST_HERO_CONDITION_MARKER = '[keyword:first-hero-condition]';
+
+/**
  * Score for playing a Wound — below EVERY lifecycle move so the bot never plays one.
  *
  * // why: a Wound contributes no attack/recruit; "playing" it only moves it
@@ -257,14 +272,48 @@ function scoreRecruitHero(_move: LegalMove): number {
  * the policy front-loads hand expenditure. EXCEPTION: a Wound converts to
  * nothing, so it is scored below every lifecycle move (SCORE_PLAY_WOUND) and
  * never played — the bot advances / ends instead, and the Wound is discarded
- * at cleanup either way. See SCORE_PLAY_WOUND.
+ * at cleanup either way. See SCORE_PLAY_WOUND. A card gated on being the first Hero
+ * played this turn leads the turn (SCORE_PLAY_FIRST_HERO_CARD).
  */
-function scorePlayCard(move: LegalMove): number {
+function scorePlayCard(move: LegalMove, view: UIState): number {
   const args = move.args as { cardId?: string } | null | undefined;
   if (args?.cardId === WOUND_EXT_ID) {
     return SCORE_PLAY_WOUND;
   }
+  if (args?.cardId !== undefined && isFirstHeroCardPlayableFirst(args.cardId, view)) {
+    return SCORE_PLAY_FIRST_HERO_CARD;
+  }
   return SCORE_PLAY_CARD_BASE;
+}
+
+/**
+ * Whether a hand card is gated on being the first Hero played this turn and the
+ * active player has played nothing yet, so playing it now satisfies the gate.
+ *
+ * // why: the policy sees only the audience-filtered view, never `G`, so it reads the
+ * active player's own `handDisplay` ability text for the setup marker. A view with no
+ * hand display (any non-owner audience) never matches, so the card keeps the base score.
+ *
+ * @param cardId - The hand card the playCard move would play.
+ * @param view - The active player's filtered view.
+ * @returns Whether the card should lead the turn.
+ */
+function isFirstHeroCardPlayableFirst(cardId: string, view: UIState): boolean {
+  let activePlayer: UIState['players'][number] | undefined;
+  for (const player of view.players) {
+    if (player.playerId === view.game.activePlayerId) {
+      activePlayer = player;
+    }
+  }
+  if (activePlayer === undefined || activePlayer.inPlayCount > 0) {
+    return false;
+  }
+  for (const displayEntry of activePlayer.handDisplay ?? []) {
+    if (displayEntry.extId === cardId) {
+      return displayEntry.abilityText?.includes(FIRST_HERO_CONDITION_MARKER) === true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -333,7 +382,7 @@ function scoreOneMove(move: LegalMove, view: UIState): number {
     return SCORE_EXORCISE_BASE;
   }
   if (move.name === 'playCard') {
-    return scorePlayCard(move);
+    return scorePlayCard(move, view);
   }
   if (move.name === 'drawCards') {
     return scoreDrawCards(move);

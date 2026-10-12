@@ -1552,3 +1552,36 @@ describe('getLegalMoves — KO-from-discard default KOs Wounds, then starters (D
   });
 });
 
+describe('getLegalMoves — the bot\'s Do-Over answer (D-24706)', () => {
+  /**
+   * A pending Do-Over for seat 0 with the given remaining hand.
+   *
+   * @param hand - The cards the Do-Over would discard.
+   * @returns The state with one pending Do-Over.
+   */
+  function makeDoOverG(hand: string[]): LegendaryGameState {
+    const gameState = makeG({ hand: hand as CardExtId[], currentStage: 'main' });
+    gameState.pendingDoOverChoices = [{ playerID: '0' }];
+    return gameState;
+  }
+
+  test('accepts when fewer than 4 of the cards it would discard are live (the redraw adds cards)', () => {
+    const legalMoves = getLegalMoves(
+      makeDoOverG(['starting-shield-agent', 'starting-shield-agent', 'starting-shield-trooper', 'pile-wound', 'pile-wound']),
+      CONTEXT,
+    );
+    assert.deepEqual(legalMoves, [{ name: 'resolveDoOver', args: { accept: true } }]);
+  });
+
+  test('declines with 4 or more live cards in hand (keeps the hand)', () => {
+    const legalMoves = getLegalMoves(
+      makeDoOverG(['starting-shield-agent', 'starting-shield-agent', 'starting-shield-trooper', 'starting-shield-trooper', 'pile-wound']),
+      CONTEXT,
+    );
+    assert.deepEqual(legalMoves, [{ name: 'resolveDoOver', args: { decline: true } }]);
+  });
+
+  test('accepts an empty remaining hand (nothing to lose, four cards to gain)', () => {
+    assert.deepEqual(getLegalMoves(makeDoOverG([]), CONTEXT), [{ name: 'resolveDoOver', args: { accept: true } }]);
+  });
+});
