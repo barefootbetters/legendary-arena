@@ -350,6 +350,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
   minPlayers: 1,
   maxPlayers: 5,
 
+  // why: D-24702 — boardgame.io 0.50 enables undo by default, and its reducer then
+  // keeps `_undo` / `_redo` arrays holding a full { G, ctx, plugins } snapshot for
+  // every move of the current turn, persisted in every bgio match record. Nothing
+  // uses undo: the game socket accepts only MAKE_MOVE from clients (D-24701), and
+  // the faithful replay re-dispatches only MAKE_MOVE log entries (D-24124). The
+  // stacks are pure storage cost. G is unaffected, so no hash or replay changes.
+  disableUndo: true,
+
   /**
    * Validates setupData before setup() is called. boardgame.io calls this
    * from the lobby create endpoint -- returning a string triggers a 400
