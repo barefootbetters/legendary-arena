@@ -410,9 +410,9 @@ jobs:
   # DB-gated server tests self-skip when TEST_DATABASE_URL is unset, so the
   # default runner environment is sufficient.
   # ── 3h. SPA asset-masking gate ───────────────────────────────────────────────
-  # why: every SPA here is served by Cloudflare Pages with an SPA fallback —
-  # legends-board's explicit `/*  /index.html  200` in public/_redirects, and
-  # Pages' built-in fallback (no top-level 404.html) for the other three. The
+  # why: every SPA here is served with an SPA fallback — Pages' built-in
+  # fallback (no top-level 404.html) for legends-board, arena-client and
+  # registry-viewer, and the dashboard Worker's not_found_handling. The
   # fallback is required for client-side routing, but when a hashed bundle
   # referenced by index.html is absent the request does NOT 404 — it returns
   # index.html with HTTP 200 and Content-Type: text/html. The browser gets HTML where it expects a
