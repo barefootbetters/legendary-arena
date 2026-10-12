@@ -257,29 +257,57 @@ export function composeFightNarrative(
 // ---------------------------------------------------------------------------
 
 /**
+ * Composes the clause for an Ambush that plays the top N villain-deck cards
+ * (The Leader, D-24351), e.g. "plays the top card of the Villain Deck".
+ *
+ * @param playCount - Number of top villain-deck cards the Ambush plays (>= 1).
+ * @returns The clause (no leading label, no trailing period).
+ */
+export function composeVillainDeckPlayClause(playCount: number): string {
+  if (playCount === 1) {
+    return 'plays the top card of the Villain Deck';
+  }
+  return `plays the top ${playCount} cards of the Villain Deck`;
+}
+
+/**
  * Composes the single-sentence narrative for an `ambushResolved` event.
  *
  * The unconditional city-entry bystander attach is NOT an Ambush effect
  * and is never described here — only `appliedEffects` returned by
- * `executeVillainAbilities(...,'onAmbush')` are referenced.
+ * `executeVillainAbilities(...,'onAmbush')` are referenced, plus the
+ * villain-deck play the reveal fire site performs itself (D-24351).
  *
  * @param cardName - Human-facing name of the revealed villain.
  * @param effectResults - Ambush: effect results the executor applied, with target
  *   ext_ids already resolved to display names (WP-319).
+ * @param villainDeckPlayCount - Top villain-deck cards the Ambush plays (0 = none).
  * @returns Single English sentence describing the resolved ambush.
  */
 export function composeAmbushNarrative(
   cardName: string,
   effectResults: ResolvedEffectResult[],
+  villainDeckPlayCount: number = 0,
 ): string {
-  if (effectResults.length === 0) {
+  // why: D-24703 — The Leader's "Ambush: Play the top card of the Villain Deck" is
+  // played by the reveal fire site, not the executor (its handler is a deliberate
+  // no-op, D-24351), so `effectResults` is empty for it. Without this clause the
+  // overlay claimed the card "entered the city with no Ambush effect" while its
+  // Ambush was visibly resolving (prod match 0BVSi0_KY0A).
+  const clauses: string[] = [];
+  if (effectResults.length > 0) {
+    // why: WP-319 / D-24105 — names the specific effect target(s) in the
+    // ambushResolved narrative (overlay + log) via the shared
+    // composeEffectResultLogLine; supersedes the WP-316 keyword-granular narrative.
+    clauses.push(composeEffectResultLogLine(effectResults));
+  }
+  if (villainDeckPlayCount > 0) {
+    clauses.push(composeVillainDeckPlayClause(villainDeckPlayCount));
+  }
+  if (clauses.length === 0) {
     return `"${cardName}" entered the city with no Ambush effect.`;
   }
-  // why: WP-319 / D-24105 — names the specific effect target(s) in the
-  // ambushResolved narrative (overlay + log) via the shared
-  // composeEffectResultLogLine; supersedes the WP-316 keyword-granular narrative.
-  const effectClause = composeEffectResultLogLine(effectResults);
-  return `"${cardName}" ambushed: ${effectClause}.`;
+  return `"${cardName}" ambushed: ${clauses.join('; ')}.`;
 }
 
 // ---------------------------------------------------------------------------
