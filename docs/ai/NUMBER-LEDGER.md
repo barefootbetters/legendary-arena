@@ -441,6 +441,7 @@ high-water: 422
 - WP-800 — time-heist-hero-count (Registry; The Time Heist requires exactly 4 Heroes — its printed main Hero Deck — as one SCHEME_HERO_COUNT_RULES row; the Past Hero Deck / alternate city stays a named full-fidelity arc. reserved 2026-10-08, claude/reserve-time-heist-count)
 - WP-801 — ko-your-heroes-hand-and-play (Engine; unqualified "KO one/two of your Heroes" draws only from hand + cards played this turn, never the discard pile, per rules v23 — auto-pick, current-player choice, bot and client prompt. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
 - WP-802 — operator-board-inspection (Server + Engine + Client; admin-created debug match with a reveal-all operator panel on play — every zone, supply counts, villain-deck order, pending choice, effect traces, bot candidates. Read-only; setters and jump-to-turn are planned follow-ons. reserved 2026-10-11, spec/wp-operator-board-panel)
+- WP-803 — out-of-time (Engine + arena-client render; Captain America 75th "Man / Woman Out of Time": after a card's abilities resolve it is set aside, then played a second time after the next turn's villain reveal and discarded. reserved 2026-10-11, claude/reserve-wp803-out-of-time)
 
 ## EC
 
@@ -843,6 +844,7 @@ high-water: 457
 - EC-837 — time-heist-hero-count (WP-800. reserved 2026-10-08, claude/reserve-time-heist-count)
 - EC-838 — ko-your-heroes-hand-and-play (WP-801. reserved 2026-10-11, spec/wp-ko-your-heroes-zone)
 - EC-839 — operator-board-inspection (WP-802. reserved 2026-10-11, spec/wp-operator-board-panel)
+- EC-840 — out-of-time (WP-803. reserved 2026-10-11, claude/reserve-wp803-out-of-time)
 
 ## D
 
@@ -1314,3 +1316,4 @@ section below) and the allocation protocol in
 - D-24690 — ewiki-dashboard-to-workers (direct infra change, no WP — the engineering wiki moves off the Render static site and the dashboard off Cloudflare Pages, each to an assets-only Cloudflare Worker with workers.dev and preview URLs off, so no default-origin hostname can bypass Cloudflare Access; supersedes D-13811's hosting target. reserved 2026-10-11, infra/ewiki-dashboard-to-workers)
 - D-24691 — native-lobby-guard-router-variants (direct fix, no WP — the native-lobby hard gate matches every create/join path the boardgame.io router serves: case-insensitive, optional trailing slash, any game segment, so `/create/`, `/CREATE` and `/games/legendary%2Darena/create` no longer bypass D-24094. reserved 2026-10-11, claude/elegant-matsumoto-9d18c7)
 - D-24693 — ko-line-names-zone (direct fix, no WP — every "KO a Hero" log line names the zone the card left, so WP-801's hand + play rule is checkable from a log. reserved 2026-10-12, infra/ko-line-names-zone)
+- D-24692 — out-of-time (WP-803; locks the set-aside zone in G, the turn-start replay point after "Play a Villain Card", the no-second-set-aside rule, and the copy/enemy-sent exclusions. reserved 2026-10-11, claude/reserve-wp803-out-of-time)
