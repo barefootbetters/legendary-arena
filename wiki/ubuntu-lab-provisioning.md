@@ -14,6 +14,7 @@ related:
   - architecture-inventory.md
   - development-workflow.md
   - operational-health-checks.md
+  - disaster-recovery.md
   - data-file-locations.md
   - workspace-map.md
   - ai-second-brain.md
