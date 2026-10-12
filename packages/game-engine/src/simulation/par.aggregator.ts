@@ -68,6 +68,7 @@ import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
+import { replayOutOfTimeCards } from '../moves/outOfTime.logic.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
 
 // why: move function imports mirror the WP-036 runner (D-2705 static
@@ -471,6 +472,11 @@ function aggregatorAdvanceStage(context: AggregatorMoveContext): void {
     // with the live game.ts advanceStage binding + the simulation runner).
     cleanup: (endingPlayerID) =>
       applyEndOfTurnCleanup(context.G, endingPlayerID, { random: context.random }),
+    // why: WP-803 / D-24692 — rules v23 L1678: returning Out of Time cards are played after the
+    // villain card and before the hand (the start → main advance). The aggregator context is
+    // passed the same way MOVE_MAP.playCard passes it (PAR-scoring harness parity).
+    beginMain: (startingPlayerID) =>
+      replayOutOfTimeCards(context.G, context as never, startingPlayerID),
   });
 }
 

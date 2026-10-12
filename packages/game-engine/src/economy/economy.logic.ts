@@ -489,6 +489,7 @@ type CarriedTurnFields = Partial<
     | 'bothSidesPlayedCardIds'
     | 'restrictedAttack'
     | 'fightCostReductions'
+    | 'outOfTimePlayedCardIds'
   >
 >;
 
@@ -557,6 +558,13 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   // the prior economy's list.
   if (economy.fightCostReductions !== undefined) {
     carried.fightCostReductions = copyFightCostReductions(economy.fightCostReductions);
+  }
+  // why: WP-803 / D-24692 — carry the Out of Time played ledger ONLY when present, so a turn
+  // with no Out of Time card keeps the key absent and both hash oracles stay byte-stable.
+  // Without the carry, the next addResources / spend rebuild would drop it and a later
+  // Superpower would stop seeing the set-aside card as played this turn.
+  if (economy.outOfTimePlayedCardIds !== undefined) {
+    carried.outOfTimePlayedCardIds = economy.outOfTimePlayedCardIds;
   }
   return carried;
 }
@@ -987,6 +995,38 @@ export function markBothSidesPlayed(economy: TurnEconomy, cardId: CardExtId): Tu
     // play never drops the Penumbra flag (or any other lazy field) set earlier this turn.
     ...carryConversionFlag(economy),
     bothSidesPlayedCardIds: nextBothSidesPlayed,
+  };
+}
+
+/**
+ * Records a card that went Out of Time, or returned from Out of Time, as played this turn
+ * (WP-803 / D-24692).
+ *
+ * Called by the `out-of-time` hero handler when it sets the card aside, and by
+ * `replayOutOfTimeCards` before the turn-2 play. Appends `cardId` to
+ * `outOfTimePlayedCardIds`, materializing the array on the first call. Every other field is
+ * carried unchanged. `resetTurnEconomy` drops the ledger at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cardId - The card that went Out of Time or returned from it.
+ * @returns New TurnEconomy with `cardId` appended to `outOfTimePlayedCardIds`.
+ */
+export function recordOutOfTimePlayed(economy: TurnEconomy, cardId: CardExtId): TurnEconomy {
+  // why: WP-803 / D-24692 — build a NEW array (mirrors markBothSidesPlayed) so the rebuild
+  // never aliases the prior economy's ledger.
+  const nextOutOfTimePlayed = [...(economy.outOfTimePlayedCardIds ?? []), cardId];
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-803 / D-24692 — spread the single carry chokepoint so recording an Out of Time
+    // card never drops another lazy field set earlier this turn.
+    ...carryConversionFlag(economy),
+    outOfTimePlayedCardIds: nextOutOfTimePlayed,
   };
 }
 

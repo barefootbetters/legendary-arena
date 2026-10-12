@@ -155,18 +155,58 @@ export function offPlayCardStats(G: LegendaryGameState, cardId: string): CardSta
 }
 
 /**
- * Returns the "cards played this turn" view of an inPlay zone (WP-780 / D-24619).
+ * Returns the "cards played this turn" view of an inPlay zone (WP-780 / D-24619), extended
+ * with the cards that went Out of Time or returned from it this turn (WP-803 / D-24692).
  *
- * Each inPlay entry listed in `G.turnEconomy.bothSidesPlayedCardIds` is replaced in place by
- * its two face ids `[faceA, faceB]`; every other entry is copied unchanged, in order. Returns a
- * fresh copy of `inPlay` (identity) when there is no turnEconomy (the minimal-G slice), when
- * the ledger is absent or empty, or when a listed entry's pair resolves to null.
+ * Starts from `playedCardIdsStillInPlay` (the Penumbra-expanded inPlay), then appends each
+ * `G.turnEconomy.outOfTimePlayedCardIds` entry not already present, in record order. Reads the
+ * ledger optionally (the minimal-G slice has no turnEconomy) and always returns a fresh array.
+ *
+ * ACTIVE-PLAYER-SCOPED: the Out of Time ledger belongs to the player whose turn it is, so a
+ * call for any other seat's inPlay must not rely on it. Every rules-facing "played" caller
+ * evaluates the active player.
+ *
+ * @param G - The game state (reads turnEconomy and the split-face map only).
+ * @param inPlay - The active player's inPlay zone (not mutated).
+ * @returns A new array of card ids, one per played card (a both-sides card counts twice; a
+ *   card that went Out of Time counts once).
+ */
+export function playedCardIdsThisTurn(G: LegendaryGameState, inPlay: readonly CardExtId[]): CardExtId[] {
+  const played = playedCardIdsStillInPlay(G, inPlay);
+  // why: WP-803 / D-24692 — rules v23 L1682 ("You 'played' a Man Out of Time card on both the
+  // first turn you played it and the second turn when you replayed it") + L3441-3453 (a card
+  // you played that moved elsewhere still counts as "cards you played this turn"). The card
+  // left inPlay, so the turn ledger supplies it. A card present in both (the turn-2 replay,
+  // while it is still in inPlay) counts once.
+  const outOfTimePlayed = G.turnEconomy?.outOfTimePlayedCardIds;
+  if (outOfTimePlayed === undefined) {
+    return played;
+  }
+  for (const cardId of outOfTimePlayed) {
+    if (!played.includes(cardId)) {
+      played.push(cardId);
+    }
+  }
+  return played;
+}
+
+/**
+ * Returns the "played this turn and still in play" view of an inPlay zone (WP-803 / D-24692).
+ *
+ * This is the Penumbra-expanded inPlay (WP-780 / D-24619) WITHOUT the Out of Time ledger. Each
+ * inPlay entry listed in `G.turnEconomy.bothSidesPlayedCardIds` is replaced in place by its two
+ * face ids `[faceA, faceB]`; every other entry is copied unchanged, in order. Returns a fresh
+ * copy of `inPlay` (identity) when there is no turnEconomy (the minimal-G slice), when the
+ * ledger is absent or empty, or when a listed entry's pair resolves to null.
+ *
+ * "Heroes you have" / "your Heroes" reads use this: rules v23 L3443-3447 say a played card
+ * that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have".
  *
  * @param G - The game state (reads turnEconomy and the split-face map only).
  * @param inPlay - The player's inPlay zone (not mutated).
  * @returns A new array of card ids, one per played card (a both-sides card counts twice).
  */
-export function playedCardIdsThisTurn(G: LegendaryGameState, inPlay: readonly CardExtId[]): CardExtId[] {
+export function playedCardIdsStillInPlay(G: LegendaryGameState, inPlay: readonly CardExtId[]): CardExtId[] {
   // why: cvwr Penumbra — "play both sides as if they were two different cards". The physical
   // card stays ONE inPlay entry (cleanup, invariants, UI and targets read it raw), so only
   // rules-facing "played this turn" Hero trait / count reads expand it to both face ids here.

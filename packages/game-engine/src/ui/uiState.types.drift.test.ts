@@ -1762,3 +1762,39 @@ describe('UIState type drift (WP-795 / D-24664) — pendingMoveVillainChoice', (
     assert.deepStrictEqual(Object.keys(filtered.pendingMoveVillainChoice!).sort(), expectedKeys);
   });
 });
+
+describe('UIState type drift (WP-803 / D-24692) — outOfTimeCards', () => {
+  it('UIPlayerState.outOfTimeCards is pinned on a BUILT projection and omitted when empty', () => {
+    // why: WP-803 / D-24692 — outOfTimeCards is OPTIONAL and omit-when-empty, so a `satisfies` /
+    // literal pin gives it no drift protection (WP-563 / D-24372). Only a keyset assertion on a
+    // REAL built projection, with a set-aside card in G, catches buildUIState dropping it.
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const registry: CardRegistryReader = { ...makeCardRegistryReader(), listCards: () => [] };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx({ numPlayers: 1 }));
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    assert.ok(!('outOfTimeCards' in gameState), 'setup never creates the lazy set-aside');
+    const absent = buildUIState(gameState, uiCtx);
+    assert.equal(Object.keys(absent.players[0]!).includes('outOfTimeCards'), false, 'nothing set aside ⇒ the key is absent');
+
+    gameState.outOfTimeCards = { '0': ['ca75/captain-america-1941/devoted-patriot#0'] };
+    const present = buildUIState(gameState, uiCtx);
+    const player = present.players.find((candidate) => candidate.playerId === '0')!;
+    assert.ok(Object.keys(player).includes('outOfTimeCards'), 'built player projection includes outOfTimeCards');
+    assert.deepStrictEqual(
+      player.outOfTimeCards!.map((entry) => entry.extId),
+      ['ca75/captain-america-1941/devoted-patriot#0'],
+    );
+    assert.deepStrictEqual(Object.keys(player.outOfTimeCards![0]!).sort(), ['display', 'extId']);
+  });
+});

@@ -1053,3 +1053,25 @@ describe('both-sides expansion in played-this-turn count sources (WP-780 / D-246
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-803 / D-24692 — the diagnostics mirror of "each color of Hero you have" ignores Out of Time
+// ---------------------------------------------------------------------------
+
+describe('explainCountSourceInputs — distinct hero classes you have exclude a set-aside card (WP-803 / D-24692)', () => {
+  it('a card only in the Out of Time ledger is not one of the Heroes you have', () => {
+    const setAside = 'ca75/captain-america-1941/devoted-patriot#0';
+    const inPlayCard = 'core/hulk/smash#0';
+    const state = {
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: [inPlayCard], victory: [] } },
+      cardTraits: {
+        [setAside]: { heroClass: 'strength', team: null },
+        [inPlayCard]: { heroClass: 'tech', team: null },
+      },
+      turnEconomy: { attack: 0, recruit: 0, outOfTimePlayedCardIds: [setAside] },
+    } as unknown as LegendaryGameState;
+
+    assert.deepStrictEqual(explainCountSourceInputs(state, '0', 'distinct-hero-classes-played-this-turn'), [inPlayCard]);
+    assert.equal(resolveCountSource(state, '0', 'distinct-hero-classes-played-this-turn'), 1);
+  });
+});

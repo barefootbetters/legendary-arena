@@ -19,7 +19,7 @@ import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
-import { offPlayCardTraits, playedCardIdsThisTurn } from './splitCard.logic.js';
+import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
 
 // why: WP-777 / D-24616 — the one literal for "If you discarded any cards this turn"
 // (New Wings, Pumpkin Bombs). The setup marker arm, the evaluate + describe cases, the
@@ -308,7 +308,8 @@ export function evaluateCondition(
         return false;
       }
       // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-      for (const zone of [playedCardIdsThisTurn(G, playerZones.inPlay), playerZones.hand]) {
+      // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
+      for (const zone of [playedCardIdsStillInPlay(G, playerZones.inPlay), playerZones.hand]) {
         for (const cardId of zone) {
           // why: safe access (a token has no cardStats row → cost 0, never >= 5).
           const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
@@ -352,7 +353,8 @@ export function evaluateCondition(
       }
       let matchCount = 0;
       // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-      for (const zone of [playedCardIdsThisTurn(G, playerZones.inPlay), playerZones.hand]) {
+      // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
+      for (const zone of [playedCardIdsStillInPlay(G, playerZones.inPlay), playerZones.hand]) {
         for (const cardId of zone) {
           const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
           const isCheap = cost === 1 || cost === 2;
@@ -617,7 +619,8 @@ export function countDistinctHeroClassesYouHave(
   // Spectrum gate, including heroClass2 and getGrantedClasses (an in-play
   // Size-Changing Hero contributes each granted color).
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
+  // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
+  for (const playedCardId of playedCardIdsStillInPlay(G, playerZones.inPlay)) {
     const traitEntry = G.cardTraits[playedCardId as CardExtId];
     if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
       distinctClasses.add(traitEntry.heroClass);
@@ -650,7 +653,8 @@ function countDistinctHeroCostsInHandOrPlay(G: LegendaryGameState, playerID: str
   }
   const distinctCosts = new Set<number>();
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-  for (const zone of [playedCardIdsThisTurn(G, playerZones.inPlay), playerZones.hand]) {
+  // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
+  for (const zone of [playedCardIdsStillInPlay(G, playerZones.inPlay), playerZones.hand]) {
     for (const cardId of zone) {
       // why: Wounds and Bystanders are not Heroes (and carry no cardStats row, so
       // would otherwise read as a phantom cost 0); every real Hero, including a
@@ -744,7 +748,8 @@ function countCheapOrSizeChanging(G: LegendaryGameState, playerID: string): numb
   }
   let count = 0;
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-  for (const zone of [playedCardIdsThisTurn(G, playerZones.inPlay), playerZones.hand]) {
+  // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
+  for (const zone of [playedCardIdsStillInPlay(G, playerZones.inPlay), playerZones.hand]) {
     for (const cardId of zone) {
       const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
       const isCheap = cost === 1 || cost === 2;

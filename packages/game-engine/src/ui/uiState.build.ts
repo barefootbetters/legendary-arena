@@ -791,7 +791,7 @@ export function buildUIState(
       }
     }
 
-    players.push({
+    const playerState: UIPlayerState = {
       playerId,
       deckCount: zones.deck.length,
       handCount: zones.hand.length,
@@ -827,7 +827,15 @@ export function buildUIState(
       deckCardStats,
       victoryCards,
       victoryVP,
-    });
+    };
+    // why: WP-803 / D-24692 — the cards this player set aside Out of Time (public; the
+    // `victoryCards` disposition). Omitted when empty so a match without an Out of Time card
+    // projects exactly as before.
+    const outOfTimeCardIds = gameState.outOfTimeCards?.[playerId] ?? [];
+    if (outOfTimeCardIds.length > 0) {
+      playerState.outOfTimeCards = buildDisplayEntries(outOfTimeCardIds, gameState);
+    }
+    players.push(playerState);
   }
 
   // --- 3. Project City ---

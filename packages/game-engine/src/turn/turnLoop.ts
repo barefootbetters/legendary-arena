@@ -36,6 +36,13 @@ export interface TurnLoopContext {
   // the full LegendaryGameState (mirroring the events.endTurn closure) — the caller,
   // which holds G + the ShuffleProvider, binds applyEndOfTurnCleanup(G, pid, { random }).
   cleanup: (endingPlayerID: string) => void;
+  // why: WP-803 / D-24692 — Man / Woman Out of Time, rules v23 L1678: "Play your returning Man
+  // Out of Time cards after the 'Play a Villain Card' part of your turn and before you start
+  // playing out your hand." The start → main advance is exactly that window, so the caller
+  // binds replayOutOfTimeCards(G, <its move context>, pid) here. REQUIRED (not optional) so a
+  // turn loop that forgets the binding fails to compile instead of silently never replaying.
+  // A closure for the same decoupling reason as `cleanup`.
+  beginMain: (startingPlayerID: string) => void;
 }
 
 /**
@@ -127,6 +134,14 @@ export function advanceTurnStage(gameState: TurnLoopState, context: TurnLoopCont
     // {turn}.{step}.{action} numbering resets per step.
     if (gameState.logMeta !== undefined) {
       gameState.logMeta.actionInStep = 0;
+    }
+    // why: WP-803 / D-24692 — rules v23 L1678: returning Out of Time cards are played after
+    // the villain card and before the hand. The start → main advance only happens once the
+    // villain card is revealed and its choices are resolved, and playCard is main-only, so this
+    // is the one replay point for every turn loop. Called AFTER the actionInStep reset so the
+    // replay's log lines number from the fresh main step.
+    if (nextStage === 'main') {
+      context.beginMain(context.currentPlayer);
     }
     return;
   }

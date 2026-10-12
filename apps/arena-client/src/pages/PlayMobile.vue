@@ -665,9 +665,12 @@ export default defineComponent({
              cards sit above the unplayed hand; endTurn sweeps both to
              the discard pile and next turn's onBegin draws back to 6. -->
         <section class="play-mobile__band play-mobile__band--scroll-x">
+          <!-- why: WP-803 / D-24692 — the viewer's Out of Time cards render as a group
+               inside the played-cards well (no new band). -->
           <PlayedCardsRow
             :in-play-cards="viewer.inPlayCards ?? []"
             :in-play-display="viewer.inPlayDisplay"
+            :out-of-time-cards="viewer.outOfTimeCards ?? []"
           />
         </section>
         <section class="play-mobile__band play-mobile__band--scroll-x">

@@ -1020,3 +1020,85 @@ describe('play-phase turn.onMove escape-procedure wiring (WP-793 / D-24656)', ()
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-803 / D-24692 — the live advanceStage binding replays Out of Time cards. Only the real
+// reducer exercises game.ts's beginMain closure behind the reveal gate and the block-all
+// guards (the injected-seam trap: the turnLoop / replay unit tests mock the closure).
+// ---------------------------------------------------------------------------
+
+describe('advanceStage Out of Time replay wiring (WP-803 / D-24692)', () => {
+  it('real reducer: nothing replays before the reveal or while a reveal choice is pending; then the card plays once and is discarded', () => {
+    const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+    const makeMove = (
+      state: unknown,
+      moveName: string,
+      args: unknown[],
+      playerID: string,
+    ): { G: unknown; ctx: { currentPlayer: unknown } } =>
+      reducer(state, { type: 'MAKE_MOVE', payload: { type: moveName, args, playerID } });
+    const initialState = InitializeGame({ game: LegendaryGame, numPlayers: 2, setupData: createMockMatchConfiguration() });
+    let state = makeMove(initialState, 'setPlayerReady', [{ ready: true }], '0');
+    state = makeMove(state, 'setPlayerReady', [{ ready: true }], '1');
+    state = makeMove(state, 'startMatchIfReady', [], '0');
+    const activeSeat = String(state.ctx.currentPlayer);
+
+    // why: inject a card the seat set aside last turn (an ungated Out of Time card whose line 0
+    // draws a card and whose printed icon is +2 attack), and a benign Villain on top of the
+    // Villain Deck so the real reveal move spends the reveal allowance.
+    const outOfTimeCard = 'test/oot-hero/returning-card#0';
+    const injectedG = structuredClone(state.G) as LegendaryGameState;
+    injectedG.outOfTimeCards = { [activeSeat]: [outOfTimeCard] };
+    injectedG.heroAbilityHooks = [
+      ...injectedG.heroAbilityHooks,
+      { cardId: outOfTimeCard, timing: 'onPlay', keywords: ['draw'], effects: [{ type: 'draw', magnitude: 1 }] },
+      { cardId: outOfTimeCard, timing: 'onPlay', keywords: ['out-of-time'], effects: [{ type: 'out-of-time' }] },
+    ];
+    injectedG.cardStats = {
+      ...injectedG.cardStats,
+      [outOfTimeCard]: {
+        attack: 2, recruit: 0, cost: 3, fightCost: 0, fightCostMode: 'static', fightCostBase: 0,
+        hasAttackIcon: true, hasRecruitIcon: false, isShieldOrHydra: false,
+      },
+    };
+    injectedG.villainDeck = { deck: ['test-entering'], discard: [] };
+    injectedG.villainDeckCardTypes = { ...injectedG.villainDeckCardTypes, 'test-entering': 'villain' };
+    state = { ...state, G: injectedG };
+
+    // Before the reveal: advanceStage is refused and nothing replays.
+    state = makeMove(state, 'advanceStage', [], activeSeat);
+    let currentG = state.G as LegendaryGameState;
+    assert.equal(currentG.currentStage, 'start');
+    assert.deepEqual(currentG.outOfTimeCards, { [activeSeat]: [outOfTimeCard] }, 'no replay before the reveal');
+
+    state = makeMove(state, 'revealVillainCard', [], activeSeat);
+    currentG = state.G as LegendaryGameState;
+    assert.equal(currentG.villainRevealedThisTurn, true);
+
+    // While a reveal choice (a KO-a-Hero choice) is pending: advanceStage is refused, no replay.
+    const pendingG = structuredClone(currentG) as LegendaryGameState;
+    pendingG.pendingKoHeroChoices = [{ playerID: activeSeat } as never];
+    const blocked = makeMove({ ...state, G: pendingG }, 'advanceStage', [], activeSeat);
+    const blockedG = blocked.G as LegendaryGameState;
+    assert.equal(blockedG.currentStage, 'start');
+    assert.deepEqual(blockedG.outOfTimeCards, { [activeSeat]: [outOfTimeCard] }, 'no replay while a choice is pending');
+
+    // Choice resolved (none pending): the advance replays the card once, then discards it.
+    const handBefore = currentG.playerZones[activeSeat]!.hand.length;
+    const attackBefore = currentG.turnEconomy.attack;
+    state = makeMove(state, 'advanceStage', [], activeSeat);
+    const finalG = state.G as LegendaryGameState;
+    const zones = finalG.playerZones[activeSeat]!;
+    assert.equal(finalG.currentStage, 'main');
+    assert.equal(finalG.outOfTimeCards, undefined, 'the set-aside is consumed');
+    assert.equal(zones.discard[zones.discard.length - 1], outOfTimeCard, 'discarded after the second play');
+    assert.equal(zones.inPlay.includes(outOfTimeCard), false);
+    assert.equal(zones.hand.length, handBefore + 1, 'line 0 drew a card');
+    assert.equal(finalG.turnEconomy.attack, attackBefore + 2, 'its printed +2 attack is credited');
+    assert.deepEqual(finalG.turnEconomy.outOfTimePlayedCardIds, [outOfTimeCard]);
+    const texts = finalG.messages.map((entry) => entry.text);
+    assert.ok(texts.some((text) => text.includes('returns from Out of Time and is played a second time.')));
+    assert.ok(texts.some((text) => text.includes(`Player ${activeSeat} played `)), 'the play-core log line');
+    assert.ok(texts.some((text) => text.endsWith('is not set aside again: a card goes Out of Time only once.')));
+  });
+});

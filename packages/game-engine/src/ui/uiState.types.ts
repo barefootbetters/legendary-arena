@@ -582,6 +582,17 @@ export interface UIPlayerState {
    * go together).
    */
   victoryVP?: number;
+  /**
+   * This player's cards set aside Out of Time, in set-aside order (WP-803 / D-24692).
+   *
+   * // why: Man / Woman Out of Time (rules v23 L1667-1694) moves a played card out of
+   * play until the start of its owner's next turn, when it is played again and
+   * discarded. The card was played face-up and is set aside in the open, so this is
+   * PUBLIC (the `victoryCards` disposition) and passes every audience filter. Omitted
+   * when the player has nothing set aside. Per-entry shallow copy via `resolveDisplay`
+   * (WP-111 D-11105 aliasing-defense).
+   */
+  outOfTimeCards?: UIDisplayEntry[];
 }
 
 /**

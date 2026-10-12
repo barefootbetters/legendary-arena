@@ -696,6 +696,9 @@ describe('extra-turn end-to-end: resolver → counter → turn-end grant (WP-696
       currentPlayer: '0',
       events: { endTurn: endTurnSpy },
       cleanup: (endingPlayerID) => applyEndOfTurnCleanup(G, endingPlayerID, SHUFFLE),
+      // why: WP-803 / D-24692 — the required start → main closure; a no-op here (this test
+      // advances only the cleanup turn-end, which never calls it).
+      beginMain: () => {},
     });
 
     assert.equal(endTurnSpy.mock.callCount(), 1);

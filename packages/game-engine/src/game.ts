@@ -6,6 +6,7 @@ import { TURN_STAGES } from './turn/turnPhases.types.js';
 import { advanceTurnStage } from './turn/turnLoop.js';
 import { drawCards, playCard, endTurn } from './moves/coreMoves.impl.js';
 import { applyEndOfTurnCleanup } from './moves/endOfTurnCleanup.logic.js';
+import { replayOutOfTimeCards } from './moves/outOfTime.logic.js';
 import { resolveHeroChoice } from './moves/heroChoice.resolve.js';
 import { resolveKoHeroChoice, hasPendingKoHeroChoice } from './moves/koHeroChoice.resolve.js';
 import { resolveScryKoChoice, hasPendingScryKoChoice } from './moves/scryKoChoice.resolve.js';
@@ -128,7 +129,10 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  *
  * @param context - boardgame.io move context with G and events.
  */
-function advanceStage({ G, ctx, events, random }: MoveContext): void {
+function advanceStage({ G, ...context }: MoveContext): void {
+  // why: WP-803 / D-24692 — keep the whole move context rest so the beginMain binding below
+  // hands replayOutOfTimeCards exactly what playCard hands applyCardPlay.
+  const { ctx, events, random } = context;
   // why: block-all guard (D-24008) — while a KO-a-Hero choice is pending the
   // board is frozen; advanceStage (at any stage) returns with no side effects
   // so the player resolves the Fight effect before any other action. Placed
@@ -264,6 +268,11 @@ function advanceStage({ G, ctx, events, random }: MoveContext): void {
     // closure carries G + the ShuffleProvider (ctx.random) that turnLoop.ts's narrow
     // state interface deliberately does not.
     cleanup: (endingPlayerID) => applyEndOfTurnCleanup(G, endingPlayerID, { random }),
+    // why: WP-803 / D-24692 — rules v23 L1678: returning Out of Time cards are played after the
+    // villain card and before the hand. advanceTurnStage calls this only on start → main, which
+    // the reveal gate and the block-all guards above hold back until the villain card is
+    // revealed and every reveal choice is resolved.
+    beginMain: (startingPlayerID) => replayOutOfTimeCards(G, context, startingPlayerID),
   });
 }
 
