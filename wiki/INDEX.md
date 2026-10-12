@@ -278,11 +278,11 @@ Cross-cutting governance, methodology, and readiness assessments.
   authoritative `.claude/CLAUDE.md` Reward Integrity block; defines nothing.
 - [Disaster Recovery](disaster-recovery.md) — Operator playbook (mirror
   of `docs/ops/DISASTER_RECOVERY.md`) for restoring **service** after
-  infrastructure loss: the two backup layers (Render managed + the WP-416
-  `pg_dump` → R2 external copy), the five recovery scenarios (DR-01…DR-05)
-  with honest recoverability verdicts, and the capability-graded validation
-  checklist. The remaining gap is operational — provision the backup
-  secrets and drill a restore.
+  infrastructure loss: the backup layers (Render managed, the WP-416
+  `pg_dump` → R2 external copy, and its pCloud mirror), the five recovery
+  scenarios (DR-01…DR-05) with honest recoverability verdicts, and the
+  capability-graded validation checklist. Nightly dumps have run since
+  2026-08-09, and a restore from R2 was drilled on 2026-10-11/12.
 - [Private Site Hosting](private-site-hosting.md) — How the two private
   operator sites (ewiki, dashboard) keep a single Access-gated door: each is
   an assets-only Cloudflare Worker with `workers_dev` and `preview_urls` off
