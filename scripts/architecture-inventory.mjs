@@ -192,6 +192,25 @@ const OPERATOR_OPS_TOOLCHAIN = [
   },
 ];
 
+// why: some vendor accounts appear in no manifest — render.yaml and
+// domains.json can't see them — so the Infrastructure-services table would
+// silently omit them. List them here. Never put ping URLs, IPs, or resource IDs
+// in this block: the generated page is public, and a ping URL is a credential.
+const CURATED_INFRASTRUCTURE_SERVICES = [
+  {
+    name: 'Healthchecks.io (dead-man\'s switch)',
+    provider: 'Healthchecks.io',
+    kind: 'Uptime + scheduled-job monitoring (free Hobbyist plan, $0)',
+    url:
+      'Two checks for the self-hosted API droplet (Render → DigitalOcean migration): ' +
+      '`la-droplet-monitor` (5-min period, 10-min grace; pinged by the lab repo\'s ' +
+      '`60-monitor.ps1` on-box health / disk / backup-age check) and `la-droplet-backup` ' +
+      '(cron `17 9 * * *` UTC, 2-h grace; pinged by `50-backup.ps1`). Alerts on a ' +
+      '`/fail` ping or a missing ping. Ping URLs live only in the droplet\'s root-only ' +
+      '`/etc/la/*.env`.',
+  },
+];
+
 // why: the Infrastructure-services table derives the managed-Postgres row from
 // render.yaml (it shows the `plan` string), but it can't capture WHY the DB is
 // sized/configured the way it is, or the operational history a future operator
@@ -3056,9 +3075,14 @@ async function renderInfrastructureServicesSection() {
     }
   }
 
+  for (const curatedService of CURATED_INFRASTRUCTURE_SERVICES) {
+    services.push(curatedService);
+  }
+
   // ── Render table ────────────────────────────────────────────────────
   lines.push(`Managed services the project depends on, derived from`);
-  lines.push(`\`render.yaml\` and \`docs/ops/domains.json\`. Answers "what`);
+  lines.push(`\`render.yaml\` and \`docs/ops/domains.json\`, plus vendor accounts`);
+  lines.push(`no manifest declares (curated in \`CURATED_INFRASTRUCTURE_SERVICES\`). Answers "what`);
   lines.push(`vendor accounts and managed services does this project`);
   lines.push(`depend on?" — distinct from Deployment topology, which`);
   lines.push(`answers "what URL maps to what app."`);

@@ -49,7 +49,7 @@ synthesised from the app's own manifests:
 - **`apps/server`** — Legendary Arena boardgame.io game server — wiring layer only
   - Stack: boardgame.io (`boardgame.io@^0.50.0`) over Socket.IO (transitive via `boardgame.io`) + HTTP routes via Koa router (`@koa/router@10.1.1` + `koa@2.16.4`, both transitive via `boardgame.io`) + PostgreSQL via `pg@^8.13.0`.
 - **`apps/wiki-viewer`** — Engineering wiki build pipeline. Build-time, read-only Hugo projection of `wiki/` (no `package.json` — Hugo is a Go binary, not a Node dep). Layer-boundary clean: zero runtime imports of `@legendary-arena/game-engine`, `@legendary-arena/registry`, or `apps/server`. Build pipeline is `pnpm wiki-viewer:project` (copy `wiki/*.md` → `apps/wiki-viewer/content/`) → `pnpm wiki-viewer:check-links` (case-sensitive internal-link gate) → `hugo --minify`.
-  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 90 source pages projected from `wiki/` + deployed as assets-only Cloudflare Worker `legendary-arena-wiki`.
+  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 91 source pages projected from `wiki/` + deployed as assets-only Cloudflare Worker `legendary-arena-wiki`.
 
 ## Deployment topology
 
@@ -73,7 +73,8 @@ Canonical source: `docs/ops/domains.json`. Ops runbook: `docs/ops/DOMAINS.md`.
 ## Infrastructure services
 
 Managed services the project depends on, derived from
-`render.yaml` and `docs/ops/domains.json`. Answers "what
+`render.yaml` and `docs/ops/domains.json`, plus vendor accounts
+no manifest declares (curated in `CURATED_INFRASTRUCTURE_SERVICES`). Answers "what
 vendor accounts and managed services does this project
 depend on?" — distinct from Deployment topology, which
 answers "what URL maps to what app."
@@ -86,6 +87,12 @@ answers "what URL maps to what app."
 | Cloudflare Pages (static hosting) | static hosting | `cards.legendary-arena.com`, `legendary-arena.com`, `legends.legendary-arena.com`, `play.legendary-arena.com`, `wiki.legendary-arena.com`, `www.legendary-arena.com` |
 | Cloudflare R2 (object storage + CDN) | object storage + CDN | `images.legendary-arena.com` |
 | Cloudflare Workers (static assets) | static assets | `dashboard.legendary-arena.com`, `ewiki.legendary-arena.com` |
+
+### Healthchecks.io
+
+| Service | Kind | URL / Scope |
+|---|---|---|
+| Healthchecks.io (dead-man's switch) | Uptime + scheduled-job monitoring (free Hobbyist plan, $0) | Two checks for the self-hosted API droplet (Render → DigitalOcean migration): `la-droplet-monitor` (5-min period, 10-min grace; pinged by the lab repo's `60-monitor.ps1` on-box health / disk / backup-age check) and `la-droplet-backup` (cron `17 9 * * *` UTC, 2-h grace; pinged by `50-backup.ps1`). Alerts on a `/fail` ping or a missing ping. Ping URLs live only in the droplet's root-only `/etc/la/*.env`. |
 
 ### Render
 
@@ -279,11 +286,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 1401 |
+| TypeScript | 1404 |
 | Vue SFC | 194 |
 | JavaScript | 150 |
 | JSON | 114 |
-| Markdown | 111 |
+| Markdown | 112 |
 | HTML | 18 |
 | CSS | 12 |
 | PowerShell | 10 |
@@ -294,10 +301,10 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 1396 |
+| `.ts` | 1399 |
 | `.vue` | 194 |
 | `.json` | 114 |
-| `.md` | 111 |
+| `.md` | 112 |
 | `.mjs` | 108 |
 | `.js` | 40 |
 | `.html` | 18 |
@@ -369,7 +376,7 @@ _Other candidates in this category not currently installed:_ `@vue/runtime-core`
 
 | Package | Version(s) | Files importing | Declared in |
 |---|---|---:|---|
-| `boardgame.io` | ^0.50.0 | 78 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
+| `boardgame.io` | ^0.50.0 | 80 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
 
 _Other candidates in this category not currently installed:_ `koa`, `@koa/router`, `koa-bodyparser`, `koa-static`, `express`, `fastify`, `hono`
 
@@ -623,7 +630,7 @@ become load-bearing.
 |---|---|---:|---|
 | `@cloudflare/workers-types` | ^4.20260701.1, ^4.20240620.0 | 3 _(partial)_ | `apps/arena-client/package.json` (dev); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev); `packages/registry/package.json` (dev) |
 | `@koa/multer` | ^3.0.2 | 1 _(minimal)_ | `apps/server/package.json` (dep) |
-| `@legendary-arena/game-engine` | workspace:* | 257 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
+| `@legendary-arena/game-engine` | workspace:* | 259 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
 | `@legendary-arena/lagn` | workspace:* | 10 _(partial)_ | `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep) |
 | `@legendary-arena/preplan` | workspace:* | 11 _(partial)_ | `apps/arena-client/package.json` (dep) |
 | `@legendary-arena/registry` | workspace:* | 60 _(comprehensive)_ | `apps/dashboard/package.json` (dep); `apps/engine-runner/package.json` (dep); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev) |
@@ -654,17 +661,13 @@ dependency-based inventory.
 
 | Service | Category | Detected in | Description |
 |---|---|---:|---|
-| `brevo` | marketing / email | 21 files | Transactional + marketing email, newsletter forms, SMTP relay. |
-| `snipcart` | ecommerce | 15 files | Cart overlay via CDN script + HTML data attributes. |
+| `brevo` | marketing / email | 13 files | Transactional + marketing email, newsletter forms, SMTP relay. |
+| `snipcart` | ecommerce | 1 file | Cart overlay via CDN script + HTML data attributes. |
 
 ### SaaS usage detail
 
 #### brevo
 
-- `[legendary-arena-website] docs/ai/work-packets/WP-015-newsletter-brevo.md`
-- `[legendary-arena-website] docs/ai/work-packets/WP-018-brevo-automation.md`
-- `[legendary-arena-website] docs/brevo/email-automation.md`
-- `[legendary-arena-website] functions/api/subscribe.js`
 - `apps/server/src/marketing/brevoEnqueue.logic.test.ts`
 - `apps/server/src/marketing/brevoEnqueue.logic.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.test.ts`
@@ -675,30 +678,12 @@ dependency-based inventory.
 - `docs/ai/execution-checklists/EC-383-friend-request-email-notifications.checklist.md`
 - `docs/ai/work-packets/WP-293-game-signup-brevo-enqueue.md`
 - `docs/ai/work-packets/WP-353-friend-request-email-notifications.md`
-- `legendary-arena-website/docs/ai/work-packets/WP-015-newsletter-brevo.md`
-- `legendary-arena-website/docs/ai/work-packets/WP-018-brevo-automation.md`
-- `legendary-arena-website/docs/brevo/email-automation.md`
-- `legendary-arena-website/functions/api/subscribe.js`
 - `wiki/brevo-email-pipeline.md`
 - `wiki/hugo-onboarding.md`
 - `wiki/hugo-web-system.md`
 
 #### snipcart
 
-- `[legendary-arena-website] assets/js/snipcart-lazy.js`
-- `[legendary-arena-website] docs/01-VISION.md`
-- `[legendary-arena-website] docs/ai/work-packets/WP-019-snipcart-commerce.md`
-- `[legendary-arena-website] docs/ai/work-packets/WP-044-site-performance-recovery.md`
-- `[legendary-arena-website] layouts/_partials/header.html`
-- `[legendary-arena-website] layouts/shop/list.html`
-- `[legendary-arena-website] layouts/shop/single.html`
-- `legendary-arena-website/assets/js/snipcart-lazy.js`
-- `legendary-arena-website/docs/01-VISION.md`
-- `legendary-arena-website/docs/ai/work-packets/WP-019-snipcart-commerce.md`
-- `legendary-arena-website/docs/ai/work-packets/WP-044-site-performance-recovery.md`
-- `legendary-arena-website/layouts/_partials/header.html`
-- `legendary-arena-website/layouts/shop/list.html`
-- `legendary-arena-website/layouts/shop/single.html`
 - `wiki/hugo-web-system.md`
 
 ## Importance tiering
@@ -722,7 +707,7 @@ installed but not yet placed surfaces under "Not yet classified".
 
 | Package | Version(s) | Adoption | Files importing |
 |---|---|---|---:|
-| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 78 _(comprehensive)_ |
+| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 80 _(comprehensive)_ |
 | `pg` | ^8.13.0 | direct dep — `apps/server/package.json` | 55 _(comprehensive)_ |
 | `typescript` | ^5.4.5, ^5.2.2 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json`, `apps/replay-producer/package.json`, `package.json`, `packages/game-engine/package.json`, `packages/lagn-spec/package.json`, `packages/preplan/package.json`, `packages/registry/package.json`, `packages/vue-sfc-loader/package.json` | 1 _(minimal)_ |
 | `zod` | ^3.23.8, ^3.22.4 | direct dep — `apps/registry-viewer/package.json`, `packages/lagn-spec/package.json`, `packages/registry/package.json` | 19 _(comprehensive)_ |
