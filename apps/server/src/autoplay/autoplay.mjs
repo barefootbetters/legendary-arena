@@ -925,6 +925,49 @@ function pickUnrefusedHandCard(hand, refusedCardIds) {
   return null;
 }
 
+/** The hero-ability marker the engine's setup parser turns into the first-Hero-played gate. */
+const FIRST_HERO_CONDITION_MARKER = '[keyword:first-hero-condition]';
+
+/**
+ * Picks a hand card that must lead the turn: one gated on being the first Hero
+ * played this turn (Deadpool's "Hey, Can I Get a Do-Over?"), while the player
+ * has nothing in play yet.
+ *
+ * // why: D-24705 — the play step takes the hand in order, so a Do-Over behind two
+ * S.H.I.E.L.D. Agents always failed its gate. This mirrors the bot-ally policy's
+ * ordering (D-24706) and reads the same thing it does: the player's own hand
+ * display from the engine's UIState projection, never the engine's hooks. Once
+ * anything is in play it returns null, so later picks stay in hand order.
+ *
+ * @param {object} state - The current match state.
+ * @param {string} player - The active player id.
+ * @param {Set<string>} refusedCardIds - Card ids the engine refused this step.
+ * @returns {string | null} The card id to lead with, or null for hand order.
+ */
+function pickFirstHeroLeadCard(state, player, refusedCardIds) {
+  if ((state.G.playerZones[player]?.inPlay?.length ?? 0) > 0) {
+    return null;
+  }
+  const fullUIState = buildUIState(state.G, {
+    phase: state.ctx.phase,
+    turn: state.ctx.turn,
+    currentPlayer: player,
+  });
+  const filteredView = filterUIStateForAudience(fullUIState, { kind: 'player', playerId: player });
+  for (const playerView of filteredView.players) {
+    if (playerView.playerId !== player) {
+      continue;
+    }
+    for (const displayEntry of playerView.handDisplay ?? []) {
+      const isFirstHeroCard = displayEntry.abilityText?.includes(FIRST_HERO_CONDITION_MARKER) === true;
+      if (isFirstHeroCard && !refusedCardIds.has(displayEntry.extId)) {
+        return displayEntry.extId;
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Plays cards from the active player's hand until the hand is empty or every
  * card left in it has been refused. Card plays generate the turn's
@@ -962,7 +1005,8 @@ export async function playHandCards(loop, state) {
       return { kind: 'game-over', state: current, playedCount };
     }
     const zonesBefore = current.G.playerZones[player];
-    const cardId = pickUnrefusedHandCard(zonesBefore?.hand ?? [], refusedCardIds);
+    const cardId = pickFirstHeroLeadCard(current, player, refusedCardIds)
+      ?? pickUnrefusedHandCard(zonesBefore?.hand ?? [], refusedCardIds);
     if (cardId === null) {
       return { kind: 'progressed', state: current, playedCount };
     }
