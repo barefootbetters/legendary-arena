@@ -3597,3 +3597,32 @@ describe('filterUIStateForAudience — isDebugMatch public pass-through (WP-802 
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-803 / D-24692 — outOfTimeCards public pass-through (five-step rule step 4)
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — outOfTimeCards public pass-through (WP-803 / D-24692)', () => {
+  it('a set-aside card is visible to its owner, the other player and a spectator', () => {
+    // why: the card was played face-up and is set aside in the open (the victoryCards
+    // disposition), so every audience sees it — through BOTH filter helpers (redactHandCards for
+    // the other player / spectator, preserveHandCards for the owner).
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.outOfTimeCards = { '0': ['ooo-0-001', 'ooo-0-002'] };
+    const full = buildUIState(gameState, mockCtx);
+
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(full, audience);
+      const player0 = result.players.find((player) => player.playerId === '0')!;
+      assert.deepStrictEqual(
+        player0.outOfTimeCards?.map((entry) => entry.extId),
+        ['ooo-0-001', 'ooo-0-002'],
+        `outOfTimeCards must be present for player 0 in ${audience.kind} view`,
+      );
+      // why: aliasing defense — the filtered entries are fresh copies.
+      assert.notStrictEqual(player0.outOfTimeCards, full.players[0]!.outOfTimeCards);
+      const player1 = result.players.find((player) => player.playerId === '1')!;
+      assert.equal(Object.keys(player1).includes('outOfTimeCards'), false, 'nothing set aside ⇒ omitted');
+    }
+  });
+});

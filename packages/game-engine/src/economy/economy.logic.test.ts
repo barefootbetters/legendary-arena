@@ -24,6 +24,7 @@ import {
   enrollExcessiveViolenceCard,
   enablePlayBothSides,
   markBothSidesPlayed,
+  recordOutOfTimePlayed,
   spendAttack,
   spendRecruit,
   markExcessiveViolenceUsed,
@@ -823,5 +824,38 @@ describe('enablePlayBothSides / markBothSidesPlayed (WP-780 / D-24619)', () => {
     assert.deepStrictEqual(economy.excessiveViolencePlayedCards, ['vnom/carnage/rending-claws#0']);
     assert.strictEqual(economy.isPlayBothSidesActive, true);
     assert.deepStrictEqual(economy.bothSidesPlayedCardIds, ['cvwr/cloak-dagger/above#0']);
+  });
+});
+
+describe('recordOutOfTimePlayed (WP-803 / D-24692)', () => {
+  it('a fresh economy carries no Out of Time ledger (absent until recorded — hash-stable)', () => {
+    assert.strictEqual('outOfTimePlayedCardIds' in resetTurnEconomy(), false);
+  });
+
+  it('appends in record order, builds a NEW array each time, and never mutates its input', () => {
+    const base = resetTurnEconomy();
+    const first = recordOutOfTimePlayed(base, 'ca75/captain-america-1941/devoted-patriot#0');
+    const second = recordOutOfTimePlayed(first, 'anni/brainstorm/time-loop-experiments#0');
+    assert.deepStrictEqual(first.outOfTimePlayedCardIds, ['ca75/captain-america-1941/devoted-patriot#0']);
+    assert.deepStrictEqual(second.outOfTimePlayedCardIds, [
+      'ca75/captain-america-1941/devoted-patriot#0',
+      'anni/brainstorm/time-loop-experiments#0',
+    ]);
+    assert.notStrictEqual(second.outOfTimePlayedCardIds, first.outOfTimePlayedCardIds, 'no aliasing');
+    assert.strictEqual('outOfTimePlayedCardIds' in base, false, 'input untouched (pure rebuild)');
+  });
+
+  it('survives addResources / spendAttack / spendRecruit, coexists with other lazy fields, and drops at resetTurnEconomy', () => {
+    let economy = enablePlayBothSides(enableDrawLock(resetTurnEconomy()));
+    economy = recordOutOfTimePlayed(economy, 'ca75/captain-america-1941/devoted-patriot#0');
+    economy = markBothSidesPlayed(economy, 'cvwr/cloak-dagger/above#0');
+    economy = addResources(economy, 3, 2);
+    economy = spendAttack(economy, 1);
+    economy = spendRecruit(economy, 1);
+    assert.deepStrictEqual(economy.outOfTimePlayedCardIds, ['ca75/captain-america-1941/devoted-patriot#0']);
+    assert.strictEqual(economy.drawsLocked, true);
+    assert.strictEqual(economy.isPlayBothSidesActive, true);
+    assert.deepStrictEqual(economy.bothSidesPlayedCardIds, ['cvwr/cloak-dagger/above#0']);
+    assert.strictEqual(resetTurnEconomy().outOfTimePlayedCardIds, undefined);
   });
 });

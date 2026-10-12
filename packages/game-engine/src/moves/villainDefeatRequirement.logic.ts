@@ -14,7 +14,7 @@
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { VillainDefeatRequirement } from '../rules/villainAbility.types.js';
-import { offPlayCardTraits, playedCardIdsThisTurn } from '../hero/splitCard.logic.js';
+import { offPlayCardTraits, playedCardIdsStillInPlay } from '../hero/splitCard.logic.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 
 /**
@@ -70,7 +70,8 @@ export function playerMeetsDefeatRequirement(
     }
   }
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-  for (const playedCardId of playedCardIdsThisTurn(state, zones.inPlay)) {
+  // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
+  for (const playedCardId of playedCardIdsStillInPlay(state, zones.inPlay)) {
     if (traitMeetsDefeatRequirement(state.cardTraits[playedCardId], requirement)) {
       return true;
     }

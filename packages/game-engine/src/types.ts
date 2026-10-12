@@ -2225,6 +2225,18 @@ export interface LegendaryGameState {
   // PRE_WP080_HASH / hashGameState oracles do not re-pin. Drained (emptied) every turn-end.
   /** FIFO queue of cards set aside by teleport-on-discard, awaiting end-of-turn return (D-24526). */
   pendingTeleportReturns?: PendingTeleportReturn[] | undefined;
+  // why: WP-803 / D-24692 — Man / Woman Out of Time (rules v23 L1667-1694): "After you use this
+  // card's abilities, set it aside. At the beginning of your next turn, play this card a second
+  // time and then discard it." The `out-of-time` hero handler moves the just-played card out of
+  // inPlay into its owner's list here (in no zone, like pendingTeleportReturns);
+  // replayOutOfTimeCards plays each one again on the owner's next start → main advance, then
+  // discards it. Keyed by playerID, set-aside order. CardExtId strings only.
+  // why: lazily created at the handler, never in Game.setup; a player key is deleted when its
+  // list empties and the field is deleted when no key remains. A match with no Out of Time card
+  // never writes it, so canonical JSON omits it and the sentinel finalStateHash /
+  // PRE_WP080_HASH oracles do not re-pin (the D-24526 precedent).
+  /** Per-player cards set aside Out of Time, awaiting their turn-2 replay (WP-803 / D-24692). */
+  outOfTimeCards?: Record<string, CardExtId[]>;
   // why: WP-682 / D-24499 — a player who holds Captain America's Diving Block gaining a
   // Wound parks one entry PER WOUND at the gainWoundForPlayer chokepoint (checkDivingBlock),
   // AFTER the Wound has landed in their discard. The FIFO is drained one WAVE at a time via

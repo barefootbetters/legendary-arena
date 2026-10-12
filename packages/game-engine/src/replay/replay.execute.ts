@@ -62,6 +62,7 @@ import { fightMastermind } from '../moves/fightMastermind.js';
 import { setPlayerReady, startMatchIfReady } from '../lobby/lobby.moves.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
+import { replayOutOfTimeCards } from '../moves/outOfTime.logic.js';
 import { pushLog } from '../log/logPush.js';
 
 // why: move functions expect FnContext<LegendaryGameState> & { playerID }.
@@ -119,6 +120,11 @@ function replayAdvanceStage(context: ReplayMoveContext): void {
     // the replayed G matches live/sim byte-for-byte.
     cleanup: (endingPlayerID) =>
       applyEndOfTurnCleanup(context.G, endingPlayerID, { random: context.random }),
+    // why: WP-803 / D-24692 — rules v23 L1678: returning Out of Time cards are played after the
+    // villain card and before the hand (the start → main advance). The replay context is passed
+    // the same way MOVE_MAP.playCard passes it, so the replayed G matches live/sim.
+    beginMain: (startingPlayerID) =>
+      replayOutOfTimeCards(context.G, context as never, startingPlayerID),
   });
 }
 

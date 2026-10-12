@@ -103,3 +103,55 @@ describe('PlayedCardsRow', () => {
     assert.equal(wrapper.findAll('[data-testid="play-played-card"]').length, 0);
   });
 });
+
+describe('PlayedCardsRow — Out of Time group (WP-803 / D-24692)', () => {
+  const PATRIOT = 'ca75/captain-america-1941/devoted-patriot#0';
+
+  test('renders a labelled Out of Time group before the played cards, one tile per set-aside card', () => {
+    const wrapper = mount(PlayedCardsRow, {
+      props: {
+        inPlayCards: ['cap-rogers'],
+        outOfTimeCards: [{ extId: PATRIOT, display: display(PATRIOT, 'Devoted Patriot', 3) }],
+      },
+    });
+    const groups = wrapper.findAll('[data-testid="play-out-of-time"]');
+    assert.equal(groups.length, 1);
+    assert.match(groups[0]!.text(), /Out of Time — returns next turn/);
+    const tiles = wrapper.findAll('[data-testid="play-out-of-time-card"]');
+    assert.equal(tiles.length, 1);
+    assert.equal(tiles[0]!.attributes('data-card-id'), PATRIOT);
+    // why: the group sits inside the same well, before the played cards.
+    const wellItems = wrapper.find('.played-row__cards').element.children;
+    assert.equal(wellItems[0]!.getAttribute('data-testid'), 'play-out-of-time');
+    assert.equal(wellItems[1]!.getAttribute('data-testid'), 'play-played-card');
+  });
+
+  test('"Played This Turn — N" counts only the cards still in play', () => {
+    const wrapper = mount(PlayedCardsRow, {
+      props: {
+        inPlayCards: ['cap-rogers'],
+        outOfTimeCards: [{ extId: PATRIOT, display: display(PATRIOT, 'Devoted Patriot', 3) }],
+      },
+    });
+    assert.match(wrapper.find('[data-testid="play-played-heading"]').text(), /Played This Turn — 1/);
+  });
+
+  test('shows the group (and no "play here" target) when the only card left play Out of Time', () => {
+    const wrapper = mount(PlayedCardsRow, {
+      props: {
+        inPlayCards: [],
+        outOfTimeCards: [{ extId: PATRIOT, display: display(PATRIOT, 'Devoted Patriot', 3) }],
+      },
+    });
+    assert.equal(wrapper.find('[data-testid="play-out-of-time"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="play-played-empty"]').exists(), false);
+  });
+
+  test('renders no Out of Time group when nothing is set aside', () => {
+    const wrapper = mount(PlayedCardsRow, { props: { inPlayCards: ['cap-rogers'] } });
+    assert.equal(wrapper.find('[data-testid="play-out-of-time"]').exists(), false);
+    const empty = mount(PlayedCardsRow, { props: { inPlayCards: [], outOfTimeCards: [] } });
+    assert.equal(empty.find('[data-testid="play-out-of-time"]').exists(), false);
+    assert.equal(empty.find('[data-testid="play-played-empty"]').exists(), true);
+  });
+});

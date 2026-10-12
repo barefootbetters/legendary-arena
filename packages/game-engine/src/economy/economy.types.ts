@@ -188,6 +188,24 @@ export interface TurnEconomy {
    * neither state-hash oracle moves.
    */
   fightCostReductions?: FightCostReduction[];
+  /**
+   * WP-803 / D-24692 — the cards that went Out of Time (Man / Woman Out of Time, rules v23
+   * L1667-1694) or returned from Out of Time this turn, in record order. A card set aside
+   * after its abilities leaves `inPlay`, but rules v23 L1682 + L3441-3453 say it still
+   * counts as "played this turn" — so `playedCardIdsThisTurn` appends every entry here.
+   * "Heroes you have" reads use `playedCardIdsStillInPlay` and never see it.
+   *
+   * ACTIVE-PLAYER-SCOPED: written only for the player whose turn it is (the turn-1
+   * set-aside handler and the turn-2 replay), and read only by evaluations of the active
+   * player, exactly like `bothSidesPlayedCardIds`.
+   *
+   * LAZILY MATERIALIZED, exactly like `bothSidesPlayedCardIds`: absent until the first
+   * record (`recordOutOfTimePlayed`), dropped by `resetTurnEconomy` at turn start, carried
+   * by `carryConversionFlag`. Absent ≡ none; omitted by `JSON.stringify`, so a turn with no
+   * Out of Time card serializes byte-identically and neither state-hash oracle moves.
+   * Strings only (CardExtId), never card objects.
+   */
+  outOfTimePlayedCardIds?: CardExtId[];
 }
 
 // why: stats resolved at setup time from registry so moves never query

@@ -130,6 +130,16 @@ const TEAM_PATTERN = /\[team:([^\]]+)\]/g;
 /** Regex for a leading [hc:X] / [team:X] gate prefix ending in a colon. */
 const LEADING_GATE_PREFIX_PATTERN = /^\s*(?:\[(?:hc|team):[^\]]+\]\s*)+:/;
 
+// why: WP-803 / D-24692 — Man / Woman Out of Time (rules v23 L1667). KEYWORD_PATTERN cannot match
+// the multi-word token, so a line that IS the token (behind an optional gate) is recognized here.
+// The gate admits [keyword:Savior] as well as [hc:X] / [team:X] because LEADING_GATE_PREFIX_PATTERN
+// is hc / team only (D-24628) and must not be widened (D-24628 and the fight-cost clause read it);
+// the Savior condition itself is still built by the Step 2 `savior` arm. A line where the token sits
+// inside other text (Winter Soldier's "A Hero in your hand gains [keyword:Man Out of Time] this turn")
+// is a different capability (granting the keyword) and deliberately does not match.
+/** Regex for a whole line that is the Man / Woman Out of Time token behind an optional gate. */
+const OUT_OF_TIME_LINE_PATTERN = /^\s*(?:(?:(?:\[(?:hc|team):[^\]]+\]|\[keyword:Savior\])\s*)+:\s*)?\[keyword:(?:Man|Woman|Man\/Woman) Out of Time\]\s*$/;
+
 // why: optional :N suffix carries magnitude for rescue/reveal effects (D-21503)
 // why: hyphen allowed in keyword names to support reveal-ko and reveal-min tokens (D-21701, D-21702)
 /** Regex for [keyword:X] or [keyword:X:N] keyword markup (N = non-negative integer). */
@@ -420,6 +430,13 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   // why: D-24696 — the Spy Network choose-one option marker; consumed by the count-scaled-choose
   // pre-pass (tryResolveCountScaledChooseOneLine) and left unresolved off a choose-one line.
   'gain-officer',
+  // why: WP-803 / D-24692 — the three Out of Time spellings (normalized like the coverage probe:
+  // "Man Out of Time" → man-out-of-time). OUT_OF_TIME_LINE_PATTERN resolves a whole-line token to
+  // the `out-of-time` keyword; a line it does not match (Winter Soldier's 2>4 grant lines) keeps
+  // the slug in unresolvedMarkers, so the probe still flags that hero.
+  'man-out-of-time',
+  'woman-out-of-time',
+  'man/woman-out-of-time',
 ];
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an
@@ -1762,6 +1779,14 @@ function parseAbilityText(
   // now-inert line stays a detectable parse-unrecognized hollow rather than looking like flavor.
   if (FOCUS_COST_PATTERN.test(abilityText) && !unresolvedMarkers.includes('focus')) {
     unresolvedMarkers.push('focus');
+  }
+  // why: WP-803 / D-24692 — Man / Woman Out of Time. Runs AFTER the Step 2 loop (not as an early
+  // return), so the line's gate conditions are exactly what Step 1 / 1b and the Savior arm built.
+  // Pushes the keyword only: the generic Step 4 builder emits the single { type: 'out-of-time' }
+  // effect (pushing the effect here too would run the handler twice). Resolving a keyword also
+  // skips the D-24623 unmatched-slug fallback, so no unresolved slug is recorded.
+  if (OUT_OF_TIME_LINE_PATTERN.test(abilityText) && !keywords.includes('out-of-time')) {
+    keywords.push('out-of-time');
   }
 
   // Step 2b: Extract icon-adjacent magnitudes for attack/recruit keywords.

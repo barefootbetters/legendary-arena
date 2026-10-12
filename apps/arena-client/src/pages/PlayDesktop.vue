@@ -943,11 +943,14 @@ export default defineComponent({
                    the scheme column. -->
               <section class="play-desktop__player-zone">
                 <div class="play-desktop__cockpit-main">
+                  <!-- why: WP-803 / D-24692 — the viewer's Out of Time cards render as a group
+                       inside the played-cards well (no new layout slot). -->
                   <PlayedCardsRow
                     :in-play-cards="viewer.inPlayCards ?? []"
                     :in-play-display="viewer.inPlayDisplay"
                     :current-stage="snapshot.game.currentStage"
                     :is-viewer-turn="isViewerTurn"
+                    :out-of-time-cards="viewer.outOfTimeCards ?? []"
                   />
                   <HandRow
                     :hand-cards="viewer.handCards ?? []"

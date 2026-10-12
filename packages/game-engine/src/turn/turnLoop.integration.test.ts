@@ -28,6 +28,9 @@ function makeTurnLoopMockContext(currentPlayer = '0'): {
 } {
   const endTurnSpy = mock.fn();
   const cleanupSpy = mock.fn();
+  // why: WP-803 / D-24692 — the required start → main closure (the Out of Time replay); a
+  // no-op here, its call order is covered in turnLoop.test.ts.
+  const beginMainNoop = mock.fn();
   const context: TurnLoopContext = {
     // why: WP-696 / D-24513 — TurnLoopContext now carries the acting seat so the
     // extra-turn branch can grant that same seat another turn.
@@ -39,6 +42,7 @@ function makeTurnLoopMockContext(currentPlayer = '0'): {
     // so the turn-end test can assert it ran for the ending seat; the draw itself
     // is covered in moves/endOfTurnCleanup.logic.test.ts.
     cleanup: cleanupSpy,
+    beginMain: beginMainNoop,
   };
   return { context, endTurnSpy, cleanupSpy };
 }

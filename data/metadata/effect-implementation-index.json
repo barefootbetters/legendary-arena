@@ -10,10 +10,10 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 559,
+      "executable": 565,
       "deferred": 16,
       "condition": 49,
-      "unsupported": 297,
+      "unsupported": 291,
       "unmarked": 1046,
       "subsystem": 5
     }
@@ -1736,10 +1736,10 @@
       "set": "anni",
       "scope": "hero",
       "mechanic": "out-of-time",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time",
+      "wp": "WP-803",
+      "decision": "D-24692",
       "designs": [
         {
           "slug": "borrow-from-the-future",
@@ -1891,10 +1891,10 @@
       "set": "anni",
       "scope": "hero",
       "mechanic": "out-of-time",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time",
+      "wp": "WP-803",
+      "decision": "D-24692",
       "designs": [
         {
           "slug": "avert-future-tragedy",
@@ -4492,10 +4492,10 @@
       "set": "ca75",
       "scope": "hero",
       "mechanic": "out-of-time",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time",
+      "wp": "WP-803",
+      "decision": "D-24692",
       "designs": [
         {
           "slug": "sniper-squad",
@@ -4568,10 +4568,10 @@
       "set": "ca75",
       "scope": "hero",
       "mechanic": "out-of-time",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time",
+      "wp": "WP-803",
+      "decision": "D-24692",
       "designs": [
         {
           "slug": "devoted-patriot",
@@ -4686,10 +4686,10 @@
       "set": "ca75",
       "scope": "hero",
       "mechanic": "out-of-time",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time",
+      "wp": "WP-803",
+      "decision": "D-24692",
       "designs": [
         {
           "slug": "shadow-of-wars-past",
@@ -4779,10 +4779,10 @@
       "set": "ca75",
       "scope": "hero",
       "mechanic": "out-of-time",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time",
+      "wp": "WP-803",
+      "decision": "D-24692",
       "designs": [
         {
           "slug": "2-4",

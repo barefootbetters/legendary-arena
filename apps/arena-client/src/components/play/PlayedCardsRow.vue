@@ -1,6 +1,6 @@
 <script lang="ts">
 import { defineComponent, type PropType } from 'vue';
-import type { UICardDisplay } from '@legendary-arena/game-engine';
+import type { UICardDisplay, UIDisplayEntry } from '@legendary-arena/game-engine';
 import { useTurnActions } from '../../composables/useTurnActions';
 import CardTile from './CardTile.vue';
 
@@ -14,6 +14,11 @@ import CardTile from './CardTile.vue';
  * non-interactive (no buttons, no move submission). The projection fields
  * (`inPlayCards` / `inPlayDisplay`, WP-128 / D-12803) are own-player-only;
  * opponents see the count via OpponentPanel instead.
+ *
+ * WP-803 / D-24692 — cards the viewer set aside Out of Time (Man / Woman Out
+ * of Time) left play but return at the start of the viewer's next turn; they
+ * render as a labelled "Out of Time" group inside the same well, before the
+ * played cards. Render-only: the engine decides when a card goes and returns.
  *
  * Per the EC-132 §2 SFC authoring whitelist: tested composer, so it uses
  * `defineComponent({ setup() { return {...} } })` per P6-30 / P6-46 /
@@ -54,6 +59,16 @@ export default defineComponent({
       required: false,
       default: true,
     },
+    /**
+     * The viewer's cards set aside Out of Time (WP-803 / D-24692), from
+     * `players[ownIndex].outOfTimeCards` (public; omitted by the engine when
+     * empty). They are not counted in "Played This Turn — N".
+     */
+    outOfTimeCards: {
+      type: Array as PropType<readonly UIDisplayEntry[]>,
+      required: false,
+      default: () => [],
+    },
   },
   setup(props) {
     // why: WP-685 / D-24502 — the empty in-play well shows a dashed "play here"
@@ -89,7 +104,21 @@ export default defineComponent({
       };
     }
 
-    return { resolveDisplay, canLandPlay };
+    function resolveOutOfTimeDisplay(entry: UIDisplayEntry): UICardDisplay {
+      // why: same '<unknown>' fallback as resolveDisplay — the set-aside entry carries its
+      // own display payload (UIDisplayEntry), so no parallel array is needed.
+      if (entry.display.name !== '<unknown>') {
+        return entry.display;
+      }
+      return {
+        extId: entry.extId,
+        name: humanizeCardId(entry.extId),
+        imageUrl: '',
+        cost: null,
+      };
+    }
+
+    return { resolveDisplay, resolveOutOfTimeDisplay, canLandPlay };
   },
 });
 </script>
@@ -107,7 +136,7 @@ export default defineComponent({
          here" landing target, disabled off-turn / off-main; it signals where a
          played hand card lands. No move is submitted from this zone. -->
     <div
-      v-if="inPlayCards.length === 0"
+      v-if="inPlayCards.length === 0 && outOfTimeCards.length === 0"
       class="played-row__target"
       data-testid="play-played-empty"
       :data-can-play="canLandPlay() ? 'true' : 'false'"
@@ -117,6 +146,31 @@ export default defineComponent({
       <span class="played-row__target-hint">{{ canLandPlay() ? 'tap a hand card' : 'not your main step' }}</span>
     </div>
     <ul v-else class="played-row__cards">
+      <!-- why: WP-803 / D-24692 — the viewer's Out of Time cards sit in the SAME well,
+           before the played cards (no new layout slot, so the cockpit does not grow). -->
+      <li
+        v-if="outOfTimeCards.length > 0"
+        class="played-row__out-of-time"
+        data-testid="play-out-of-time"
+        aria-label="Out of Time"
+      >
+        <span class="played-row__out-of-time-heading">Out of Time — returns next turn</span>
+        <ul class="played-row__out-of-time-cards">
+          <li
+            v-for="(entry, index) in outOfTimeCards"
+            :key="`${entry.extId}-${index}`"
+            class="played-row__card"
+            data-testid="play-out-of-time-card"
+            :data-card-id="entry.extId"
+          >
+            <CardTile
+              :display="resolveOutOfTimeDisplay(entry)"
+              size="sm"
+              :show-label="true"
+            />
+          </li>
+        </ul>
+      </li>
       <li
         v-for="(cardId, index) in inPlayCards"
         :key="`${cardId}-${index}`"
@@ -164,6 +218,35 @@ export default defineComponent({
 
 .played-row__card {
   flex: 0 0 auto;
+}
+
+/* why: WP-803 / D-24692 — the Out of Time group: a small caption over smaller tiles,
+   set off from the played cards by a dashed divider, inside the same scrolling well. */
+.played-row__out-of-time {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-right: 0.5rem;
+  border-right: 2px dashed var(--color-foreground, #666);
+}
+
+.played-row__out-of-time-heading {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.played-row__out-of-time-cards {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 /* why: WP-685 / D-24502 lock 5 — the empty-well landing target: a dashed frame

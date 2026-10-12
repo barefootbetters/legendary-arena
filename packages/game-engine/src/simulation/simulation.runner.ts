@@ -55,6 +55,7 @@ import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEsc
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
+import { replayOutOfTimeCards } from '../moves/outOfTime.logic.js';
 
 // Move function imports — these files import boardgame.io types internally,
 // but this file does NOT import boardgame.io directly. Same dispatch pattern
@@ -311,6 +312,12 @@ function simulationAdvanceStage(context: SimulationMoveContext): void {
     // draw's reshuffle stays reproducible (mirrors the live game.ts advanceStage binding).
     cleanup: (endingPlayerID) =>
       applyEndOfTurnCleanup(context.G, endingPlayerID, { random: context.random }),
+    // why: WP-803 / D-24692 — rules v23 L1678: returning Out of Time cards are played after the
+    // villain card and before the hand (the start → main advance). The harness context is passed
+    // the same way MOVE_MAP.playCard passes it, so the replayed play draws through the seeded
+    // ShuffleProvider exactly as the live advanceStage binding does.
+    beginMain: (startingPlayerID) =>
+      replayOutOfTimeCards(context.G, context as never, startingPlayerID),
   });
 }
 
