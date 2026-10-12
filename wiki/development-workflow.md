@@ -96,7 +96,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 | **Phone** | Mobile control surface — PR review + merge, deploy monitoring, remote session steering via Tailscale. Does not author. |
 | **Claude** | Two roles: **Claude Code** (laptop or workstation) builds to WP/EC contract; **Claude-in-CI** runs the nightly Inspector triage agent. |
 | **GitHub** | Branch → PR → squash-merge `main`; holds the governance ledger; runs CI; merge triggers deploy. |
-| **Render** | Game server + managed PostgreSQL. The server deploys on commit to `main` (wiki-, docs-, and front-end-only pushes are skipped by `buildFilter`). September 2026 bill: **$146.35**. Moving to a self-hosted DigitalOcean droplet (decided, stalled since 2026-07-25 — [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#cost-case-september-2026)). |
+| **Render** | Game server + managed PostgreSQL. The server deploys on commit to `main` (wiki-, docs-, and front-end-only pushes are skipped by `buildFilter`). September 2026 bill: **$146.35**. Moving to a self-hosted DigitalOcean droplet (decided, stalled since 2026-07-25 — [Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026)). |
 | **Cloudflare** | Pages hosts the public front-ends (`www`, `play`, `cards`, `legends`); assets-only Workers host the two Access-gated sites, the ewiki and `dashboard` (D-24690), deployed by GitHub Actions; R2 hosts card images (`images.legendary-arena.com`) and the private nightly DB backups. |
 
 ### Round trip (idea to live)
@@ -901,8 +901,8 @@ Each platform manages its own configuration and secrets independently.
 - **Cost:** $146.35 for September 2026 (server $85.00, Postgres $55.30,
   builds $5.00, bandwidth $1.05); August was $146.50, so ~$146/mo is the
   steady rate. Server and Postgres are moving to one
-  self-hosted DigitalOcean droplet (~$48/mo); the plan and the reduction
-  order are in [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#cost-case-september-2026).
+  self-hosted DigitalOcean droplet (~$24/mo to start); the plan and the reduction
+  order are in [Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026).
 
 **Cloudflare Pages** — public front-ends:
 

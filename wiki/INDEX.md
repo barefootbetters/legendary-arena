@@ -289,6 +289,12 @@ Cross-cutting governance, methodology, and readiness assessments.
   (D-24690), because Access gates hostnames and any `onrender.com` /
   `pages.dev` / `workers.dev` alias is an ungated copy. Records the
   2026-10 bypass, the move off Render and Pages, and the cutover gotchas.
+- [Render Migration Analysis](render-migration-analysis.md) — *(draft)* the
+  case for moving the game server and Postgres off Render: the ~$146/mo
+  Render bills, sizing the droplet from measured use (2 vCPU / 4 GB, $24),
+  the DigitalOcean vs NameHero comparison, a multi-vendor survey against hard
+  requirements, and the architecture candidates weighed. Companion to
+  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 - [AI Second Brain](ai-second-brain.md) — *(draft, planning)* proposed
   self-hosted knowledge platform where the corpus is owned and durable while
   the agent layer stays swappable — *knowledge is permanent, agents are
@@ -474,16 +480,16 @@ Step-by-step walkthroughs for completing specific tasks.
   posture + written music permission) that gate public release, the
   unlisted-not-private artist handshake, and a ready-to-publish quality
   bar. Companion to the [Video Production Workflow](video-production-workflow.md).
-- [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — *(draft,
-  non-production)* walkthrough for a personal DigitalOcean Ubuntu 24.04
-  droplet used as an operator **learning lab, staging host, and future
-  migration target** — never a production cutover. Droplet hardening
-  (UFW / Fail2Ban / unattended-upgrades), the Node/PM2/Nginx/Certbot
-  stack, deploying `apps/server` against a **copy** of the DB, the
-  app↔DB latency probe that would gate any stateless-server move, and a
-  Postgres restore drill. Shadows the live Render topology in the
-  [Architecture Inventory](architecture-inventory.md); records no
-  decision to leave Render.
+- [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) — *(draft)* the
+  DigitalOcean Ubuntu 24.04 host replacing Render for `api.` and its
+  PostgreSQL: target architecture (Cloudflare → Nginx → `apps/server` +
+  `localhost` Postgres under systemd, backups to R2), why the platform is
+  changing, the 2 vCPU / 4 GB target configuration, the 2026-10-11 rehearsal
+  results on the kept cutover droplet, droplet hardening, the
+  rehearsal deploy against a **copy** of the DB, restore and full-rebuild
+  drills, and what the operator takes over from Render. The program repo
+  (`legendary-arena-lab`) holds the executable runbook; cost and vendor
+  analysis is in [Render Migration Analysis](render-migration-analysis.md).
 
 ## Tool
 

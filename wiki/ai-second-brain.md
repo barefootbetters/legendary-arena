@@ -692,7 +692,7 @@ corrupts recall or the store:
   - **Hetzner Cloud** — the price/performance leader in the EU. That no longer
     holds in the US: prices there rose on 2026-06-15, and a 4 vCPU / 8 GB
     server in Hillsboro, OR now costs $73.49, against DigitalOcean's $48 (see
-    [Vendor survey](ubuntu-lab-provisioning.md#vendor-survey-2026-10-11)).
+    [Vendor survey](render-migration-analysis.md#vendor-survey-2026-10-11)).
   - **DigitalOcean / Vultr / Linode** — pricier, but strong snapshot/networking
     ecosystems. DigitalOcean is already the production vendor (reconfirmed
     2026-10-02), so a dedicated brain droplet there shares one account,
@@ -794,7 +794,7 @@ corrupts recall or the store:
   4 GB / 80 GB SSD is $24 and 4 vCPU / 8 GB / 160 GB SSD is $48 (`sfo3`). There
   is no Basic 2 vCPU / 8 GB; CPU-Optimized 4 vCPU / 8 GB is $84, and weekly
   backups add 20%. Full side-by-side:
-  [Vendor comparison](ubuntu-lab-provisioning.md#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
+  [Vendor comparison](render-migration-analysis.md#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
 
   At the quoted rates, Plus and Turbo still beat DigitalOcean on RAM and disk
   per dollar, but not by much on price: Plus costs 49 cents more than the $24
@@ -823,10 +823,10 @@ corrupts recall or the store:
   A month-to-month quote is now in writing (2026-10-11), but NameHero has not
   yet confirmed the Ubuntu 24.04 image, cloud-init, self-service snapshots and
   rebuilds, or the data center. The full answer table is in
-  [Vendor comparison](ubuntu-lab-provisioning.md#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
+  [Vendor comparison](render-migration-analysis.md#vendor-comparison-digitalocean-vs-namehero-2026-10-04).
   Those gaps matter less for a Tailscale-only brain than for the arena origin.
   Hetzner, Akamai/Linode, Vultr, Lightsail, and OVHcloud are priced in the
-  [Vendor survey](ubuntu-lab-provisioning.md#vendor-survey-2026-10-11) (2026-10-11).
+  [Vendor survey](render-migration-analysis.md#vendor-survey-2026-10-11) (2026-10-11).
   For a 16 GB brain box, NameHero Turbo ($42.99) and Lightsail's 4 vCPU / 16 GB
   bundle ($84) bracket the options. Until a brain host is bought, the bootstrap host is the DigitalOcean droplet
   the migration stands up, and a dedicated brain host stays a later split.
@@ -2412,7 +2412,7 @@ This is the summary index; the individual gotchas and their nuances live in
   cost baseline. No Locked row moved, and there is no `DECISIONS.md` entry.
 - **2026-10-11 — vendor survey linked (descriptive, no re-lock).** A
   multi-vendor survey led by Hetzner now lives in
-  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md#vendor-survey-2026-10-11).
+  [Render Migration Analysis](render-migration-analysis.md#vendor-survey-2026-10-11).
   The Hetzner candidate entry is corrected: US prices rose on 2026-06-15, so
   Hetzner is no longer the cheap option in the US. No Locked row moved, and there
   is no `DECISIONS.md` entry.
