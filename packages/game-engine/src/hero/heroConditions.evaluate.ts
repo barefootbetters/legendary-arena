@@ -220,24 +220,13 @@ export function evaluateCondition(
         return false;
       }
 
-      const distinctClasses = new Set<string>();
-      // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-      for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
-        const traitEntry = G.cardTraits[playedCardId as CardExtId];
-        if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
-          distinctClasses.add(traitEntry.heroClass);
-        }
-        // why: WP-703 / D-24523 — a dual-class card contributes BOTH printed classes to the distinct-class set.
-        if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
-          distinctClasses.add(traitEntry.heroClass2);
-        }
-        // why: D-24074 — an in-play Size-Changing card counts as each of its effective classes (printed plus granted), via the shared cardHasClassWhenPlayed helper
-        for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
-          distinctClasses.add(grantedClass);
-        }
-      }
-
-      return distinctClasses.size >= threshold;
+      // why: D-24694 — rules v23 ~L1950-1953: "You can count all the classes you have
+      // among cards you played this turn and cards in your hand." So Spectrum is the
+      // hand + play distinct-class count, the same one "each color of Hero you have"
+      // reads: hand cards contribute printed hc/hc2 (a split card both halves, WP-772);
+      // played cards keep Penumbra both-sides (WP-780), hc2 (WP-703) and Size-Changing
+      // grants (D-24074). It read played cards only until D-24694.
+      return countDistinctHeroClassesYouHave(G, playerID) >= threshold;
     }
 
     case 'recruitMadeThisTurnAtLeast': {
@@ -576,55 +565,19 @@ export function findFailedCondition(
 }
 
 /**
- * Counts the distinct hero classes a player currently has in play.
- *
- * Mirrors the `distinctHeroClassesAtLeast` case's own counting so the message
- * quotes the same number the gate compared.
- *
- * @param G - Current game state (read-only).
- * @param playerID - Active player ID.
- * @returns How many distinct hero classes are in play for that player.
- */
-export function countDistinctHeroClassesInPlay(
-  G: LegendaryGameState,
-  playerID: string,
-): number {
-  const playerZones = G.playerZones[playerID];
-  if (!playerZones || !G.cardTraits) {
-    return 0;
-  }
-  const distinctClasses = new Set<string>();
-  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
-    const traitEntry = G.cardTraits[playedCardId as CardExtId];
-    if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
-      distinctClasses.add(traitEntry.heroClass);
-    }
-    // why: WP-703 / D-24523 — a dual-class card contributes BOTH printed classes.
-    if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
-      distinctClasses.add(traitEntry.heroClass2);
-    }
-    for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
-      distinctClasses.add(grantedClass);
-    }
-  }
-  return distinctClasses.size;
-}
-
-/**
  * Counts the distinct hero colors (classes) among the Heroes a player HAS —
  * their HAND plus their play area — for the "for each color of Hero you have"
- * count-scaled family (Captain America's Avengers Assemble! / Perfect Teamwork).
+ * count-scaled family (Captain America's Avengers Assemble! / Perfect Teamwork)
+ * and for the Spectrum gate (`distinctHeroClassesAtLeast`, D-24694).
  *
  * "Heroes you have" is a rulebook term of art (D-24529): per
  * `docs/legendary-universal-rules-v23.md` §"'Your Heroes/Allies' & 'Heroes/Allies
  * You Have'" it "include[s] both the cards in your hand and the cards you have
  * played this turn" — the Heroes in the deck, discard, and KO pile don't count.
  * So the count is ORDER-INDEPENDENT: a Tech Hero still in hand counts even when
- * Avengers Assemble! is played first. This is distinct from
- * `countDistinctHeroClassesInPlay` (play area only), which stays the counting for
- * the `distinctHeroClassesAtLeast` gate and the deferred-conditional-grant
- * monotonicity (both deliberately read inPlay — see deferredConditionalGrants.ts).
+ * Avengers Assemble! is played first. Spectrum reads the same pool: rules v23
+ * ~L1950-1953 count "the classes you have among cards you played this turn and
+ * cards in your hand" (D-24694; it read the play area only before).
  *
  * Gray S.H.I.E.L.D. basics / Officers / Sidekicks carry no `heroClass` (no color),
  * so they never add to the count — matching the printed "color of Hero" wording.
@@ -660,9 +613,9 @@ export function countDistinctHeroClassesYouHave(
       distinctClasses.add(traitEntry.heroClass2);
     }
   }
-  // why: PLAY-AREA half — mirrors countDistinctHeroClassesInPlay exactly, including
-  // heroClass2 and getGrantedClasses (an in-play Size-Changing Hero contributes each
-  // granted color).
+  // why: PLAY-AREA half — the one played-card class read for both this count and the
+  // Spectrum gate, including heroClass2 and getGrantedClasses (an in-play
+  // Size-Changing Hero contributes each granted color).
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
     const traitEntry = G.cardTraits[playedCardId as CardExtId];
@@ -854,8 +807,9 @@ export function describeFailedCondition(
       return 'it needs to be the first Hero you played this turn';
 
     case 'distinctHeroClassesAtLeast': {
-      const distinct = countDistinctHeroClassesInPlay(G, playerID);
-      return `it needs ${condition.value} different Hero classes in play — you have ${distinct}`;
+      // why: D-24694 — quotes the same hand + play count the gate compared.
+      const distinct = countDistinctHeroClassesYouHave(G, playerID);
+      return `it needs ${condition.value} different Hero classes in hand or play — you have ${distinct}`;
     }
 
     case 'recruitMadeThisTurnAtLeast':
