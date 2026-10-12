@@ -26,8 +26,8 @@ source:
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/ai/DECISIONS.md
   - legendary-arena/legendary-arena-lab infra/scripts/50-backup.ps1 and 51-restore.ps1 (droplet backup and restore, production since 2026-10-12)
-  - ../render.yaml (historical: the Render blueprint; now the secret-name inventory)
-  - ../.github/workflows/db-backup.yml (historical: the nightly backup until 2026-10-12)
+  - ../render.yaml
+  - ../.github/workflows/db-backup.yml
 last-reviewed: 2026-10-12
 canonical-source: docs/ops/DISASTER_RECOVERY.md
 ---
