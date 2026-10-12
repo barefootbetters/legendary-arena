@@ -132,6 +132,7 @@ box, so cutover day starts from a provisioned host rather than a blank one.
 | `40` deploy | Pass in 71 s: engine `main` built, migrations run, systemd service healthy |
 | `50` → `51` backup and restore drill | Pass: 41 tables, row counts identical; `51` refuses the live database without its flag |
 | Production-copy restore | Pass after a fix (bug 2 below): 41 tables and 6,320 rows identical to production; `schema_migrations` 45 on both |
+| `21` Cloudflare TLS | Pass, tested through `api-next.legendary-arena.com` (a proxied record pointed at the droplet): `/health` 200 through Cloudflare with SSL Strict, Socket.IO handshake 200, WebSocket upgrade 101, and the droplet IP on 443 times out because UFW admits only Cloudflare. Production `api.` was untouched |
 
 **Measured on the 4 GB box.** The deploy build peaked at **1.37 GB used with
 no swap**. Steady state with the server and Postgres running is about 800 MB
@@ -158,10 +159,17 @@ a 66 MB database). The operator ran the copy to the droplet and the restore
 by hand. Afterwards every copy was deleted: the local dump, the copy on the
 droplet, and the restored scratch database. Production was never written to.
 
+**How strict TLS is set.** The zone runs SSL mode **Full**, not strict, and
+stays that way. Full (strict) applies only to the api hostnames, through the
+Configuration Rule `Origin TLS strict — api hosts`, so no other site on the
+zone is affected. The Cloudflare Origin Certificate covers
+`api.legendary-arena.com` and `api-next.legendary-arena.com` only (no wildcard)
+and is valid to 2041. The operator created it and installed it on the droplet
+personally; the private key went nowhere else. At cutover, `api.` joins the
+rule, and its record changes from today's DNS-only CNAME to Render into a
+proxied A record to the droplet. Rollback restores that CNAME exactly.
+
 **Not yet rehearsed:**
-- `21` Cloudflare TLS: the real Origin Certificate, Full (strict), and 443
-  locked to Cloudflare ranges. It needs Cloudflare access and belongs to
-  cutover.
 - `50` offsite upload to R2 with real credentials (the drill ran local-only)
   and `60` monitoring with a real health-check URL and alert path.
 - The cutover itself: a fresh production dump, the `api.` DNS flip, and the
