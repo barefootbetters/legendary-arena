@@ -1512,7 +1512,7 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
   it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
     // it must not appear in the canonical keyword array nor bump its count.
-    assert.equal(HERO_KEYWORDS.length, 77, 'HERO_KEYWORDS stays 77 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-794 fight-cost-reduction + WP-795 spinning-cyclone added)');
+    assert.equal(HERO_KEYWORDS.length, 78, 'HERO_KEYWORDS stays 78 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-794 fight-cost-reduction + WP-795 spinning-cyclone + WP-803 out-of-time added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });
@@ -1839,8 +1839,29 @@ describe('HERO_PARSER_RECOGNIZED_MARKER_NAMES — every listed name reaches a pa
   // why: D-24696 — gain-officer is consumed only on a count-scaled choose-one line; the mock's
   // plain line is not one, so it too stays unresolved (an honest hollow off its choose-one).
   const ALLOWLIST_GATED_NAMES = new Set<string>(['teleport', 'x-gene', 'gain-officer']);
+  // why: WP-803 / D-24692 — the Out of Time names are multi-word space-form tokens, recognized
+  // only as a WHOLE line (OUT_OF_TIME_LINE_PATTERN); the generic `[keyword:name:2]` probe line
+  // below cannot express them. Each builds its printed token and must resolve `out-of-time`.
+  const SPACE_FORM_WHOLE_LINE_NAMES = new Map<string, string>([
+    ['man-out-of-time', '[keyword:Man Out of Time]'],
+    ['woman-out-of-time', '[keyword:Woman Out of Time]'],
+    ['man/woman-out-of-time', '[keyword:Man/Woman Out of Time]'],
+  ]);
 
   for (const markerName of HERO_PARSER_RECOGNIZED_MARKER_NAMES) {
+    const wholeLineToken = SPACE_FORM_WHOLE_LINE_NAMES.get(markerName);
+    if (wholeLineToken !== undefined) {
+      it(`${markerName} reaches its whole-line parser arm`, () => {
+        const registry = makeRegistry('test', 'marker-hero', [
+          { slug: 'marker-card', abilities: [wholeLineToken] },
+        ]);
+        const hooks = buildHeroAbilityHooks(registry, makeConfig('test/marker-hero'));
+        assert.equal(hooks.length, 1, 'one hook for the one ability line');
+        assert.ok(hooks[0]!.keywords.includes('out-of-time'), `${wholeLineToken} resolves the out-of-time keyword`);
+        assert.deepEqual(hooks[0]!.unresolvedMarkers ?? [], [], 'recognized marker leaves no unresolved entry');
+      });
+      continue;
+    }
     it(`${markerName} reaches its parser arm`, () => {
       const registry = makeRegistry('test', 'marker-hero', [
         { slug: 'marker-card', abilities: [`You get +2[icon:attack]. [keyword:${markerName}:2]`] },
@@ -2174,5 +2195,73 @@ describe('buildHeroAbilityHooks — fight-cost reduction clause (WP-794 / D-2466
         assert.equal(hook.keywords.includes('fight-cost-reduction'), false, `no keyword on: ${line}`);
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-803 / D-24692 — Man / Woman Out of Time recognizer
+// ---------------------------------------------------------------------------
+
+/** The gate-only body each gate's conditions are compared against (the gate parses alone). */
+const OUT_OF_TIME_GATE_ONLY_BODY = 'You may KO a card from your hand or discard pile.';
+
+/**
+ * Parses one ability line on a single-card mock hero and returns its one hook.
+ *
+ * @param line - The ability line.
+ * @returns The line's hook.
+ */
+function parseOneOutOfTimeLine(line: string) {
+  const hooks = buildHeroAbilityHooks(
+    makeRegistry('test', 'out-of-time-hero', [{ slug: 'out-of-time-card', abilities: [line] }]),
+    makeConfig('test/out-of-time-hero'),
+  );
+  assert.equal(hooks.length, 1, `one hook for: ${line}`);
+  return hooks[0]!;
+}
+
+describe('buildHeroAbilityHooks — Man / Woman Out of Time (WP-803 / D-24692)', () => {
+  for (const spelling of ['Man', 'Woman', 'Man/Woman']) {
+    it(`the bare [keyword:${spelling} Out of Time] line resolves to one out-of-time effect`, () => {
+      const hook = parseOneOutOfTimeLine(`[keyword:${spelling} Out of Time]`);
+      assert.ok(hook.keywords.includes('out-of-time'));
+      assert.deepEqual(hook.effects, [{ type: 'out-of-time' }]);
+      assert.deepEqual(hook.unresolvedMarkers ?? [], []);
+      assert.deepEqual(hook.conditions ?? [], []);
+      assert.equal(hook.timing, 'onPlay');
+    });
+  }
+
+  // why: each gate's conditions must be EXACTLY what the parser builds for the same prefix over a
+  // gate-only body — never literal counts, so this holds before and after WP-741 / D-24563 changes
+  // how repeated prefixes are counted.
+  const GATED_LINES: { label: string; prefix: string; spelling: string }[] = [
+    { label: 'hc gate (Devoted Patriot)', prefix: '[hc:strength]:', spelling: 'Man' },
+    { label: 'Savior gate (Punch Evil in the Face)', prefix: '[keyword:Savior]:', spelling: 'Man' },
+    { label: 'Savior gate (Shadow of Wars Past)', prefix: '[keyword:Savior]:', spelling: 'Man' },
+    { label: 'team x4 gate (Sniper Squad)', prefix: '[team:shield][team:shield][team:shield][team:shield]:', spelling: 'Woman' },
+    { label: 'mixed hc gate (Slip the Timestream)', prefix: '[hc:instinct][hc:covert]:', spelling: 'Man/Woman' },
+    { label: 'team x2 gate (Reshape Reality)', prefix: '[team:fantastic-four][team:fantastic-four]:', spelling: 'Man/Woman' },
+  ];
+  for (const gatedLine of GATED_LINES) {
+    it(`${gatedLine.label} keeps the gate's conditions exactly as built`, () => {
+      const hook = parseOneOutOfTimeLine(`${gatedLine.prefix} [keyword:${gatedLine.spelling} Out of Time]`);
+      const gateOnlyHook = parseOneOutOfTimeLine(`${gatedLine.prefix} ${OUT_OF_TIME_GATE_ONLY_BODY}`);
+      assert.ok(hook.keywords.includes('out-of-time'));
+      assert.deepEqual(hook.effects, [{ type: 'out-of-time' }]);
+      assert.deepEqual(hook.unresolvedMarkers ?? [], []);
+      assert.ok((gateOnlyHook.conditions ?? []).length > 0, 'the gate-only body built the gate');
+      assert.deepEqual(hook.conditions, gateOnlyHook.conditions);
+    });
+  }
+
+  it('Winter Soldier 2>4 grant lines stay unresolved (a different capability)', () => {
+    const grantLine = parseOneOutOfTimeLine('A Hero in your hand gains [keyword:Man Out of Time] this turn.');
+    assert.equal(grantLine.keywords.includes('out-of-time'), false);
+    assert.deepEqual(grantLine.unresolvedMarkers, ['man-out-of-time']);
+
+    const gatedGrantLine = parseOneOutOfTimeLine('[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn.');
+    assert.equal(gatedGrantLine.keywords.includes('out-of-time'), false);
+    assert.deepEqual(gatedGrantLine.unresolvedMarkers, ['man-out-of-time']);
   });
 });

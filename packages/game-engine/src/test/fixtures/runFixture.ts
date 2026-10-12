@@ -46,6 +46,7 @@ import { resolveDeferredHeroGrants } from '../../hero/heroEffects.execute.js';
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../../villainDeck/villainEscapeProcedure.js';
 import { applyEndOfTurnCleanup } from '../../moves/endOfTurnCleanup.logic.js';
+import { replayOutOfTimeCards } from '../../moves/outOfTime.logic.js';
 import { revealVillainCard } from '../../villainDeck/villainDeck.reveal.js';
 import { fightVillain } from '../../moves/fightVillain.js';
 import { recruitHero } from '../../moves/recruitHero.js';
@@ -158,6 +159,11 @@ function fixtureAdvanceStage(context: FixtureMoveContext): void {
     // replay reproduces the live end-of-turn draw byte-for-byte.
     cleanup: (endingPlayerID) =>
       applyEndOfTurnCleanup(context.G, endingPlayerID, { random: context.random }),
+    // why: WP-803 / D-24692 — rules v23 L1678: returning Out of Time cards are played after the
+    // villain card and before the hand (the start → main advance). The fixture context is passed
+    // the same way MOVE_MAP.playCard passes it, so the oracle replays live byte-for-byte.
+    beginMain: (startingPlayerID) =>
+      replayOutOfTimeCards(context.G, context as never, startingPlayerID),
   });
 }
 

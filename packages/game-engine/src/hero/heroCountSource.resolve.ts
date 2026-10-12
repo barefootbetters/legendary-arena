@@ -35,7 +35,7 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
 // the class analogue of cardCountsAsTeamMember used by the team sources.
 import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
-import { offPlayCardTraits, playedCardIdsThisTurn } from './splitCard.logic.js';
+import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
 // form (villainDeck.setup.ts), distinct from the global-pile `pile-bystander`
@@ -689,7 +689,8 @@ function collectDistinctHeroClassCards(
   }
   // why: PLAY half — printed colours plus Size-Changing granted classes.
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
+  // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
+  for (const playedCardId of playedCardIdsStillInPlay(G, playerZones.inPlay)) {
     const traitEntry = G.cardTraits[playedCardId as CardExtId];
     const hasPrintedClass =
       traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0;

@@ -22,7 +22,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { resolveSplitFacePair, offPlayCardTraits, offPlayCardStats, playedCardIdsThisTurn } from './splitCard.logic.js';
+import { resolveSplitFacePair, offPlayCardTraits, offPlayCardStats, playedCardIdsThisTurn, playedCardIdsStillInPlay } from './splitCard.logic.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
@@ -279,5 +279,46 @@ describe('split-card data premise (WP-772 / D-24604 real-data pin)', () => {
     }
     assert.deepEqual(violations, [], 'the split-card data premise holds for every pair');
     assert.equal(primaryKeys.size, 39, 'exactly 39 split physical cards across the five sets');
+  });
+});
+
+describe('playedCardIdsThisTurn / playedCardIdsStillInPlay — Out of Time ledger (WP-803 / D-24692)', () => {
+  const SET_ASIDE = 'ca75/captain-america-1941/devoted-patriot#0' as CardExtId;
+
+  /** Builds a state with the split-face map and the given both-sides + Out of Time ledgers. */
+  function makeLedgerState(bothSidesPlayedCardIds: CardExtId[] | undefined, outOfTimePlayedCardIds: CardExtId[]): LegendaryGameState {
+    const state = makeState({ splitFaces: SPLIT_FACES });
+    const turnEconomy: Record<string, unknown> = { attack: 0, recruit: 0, outOfTimePlayedCardIds };
+    if (bothSidesPlayedCardIds !== undefined) {
+      turnEconomy.bothSidesPlayedCardIds = bothSidesPlayedCardIds;
+    }
+    state.turnEconomy = turnEconomy as unknown as LegendaryGameState['turnEconomy'];
+    return state;
+  }
+
+  it('appends a set-aside card on the Penumbra-absent path; the still-in-play view omits it', () => {
+    const state = makeLedgerState(undefined, [SET_ASIDE]);
+    assert.deepEqual(playedCardIdsThisTurn(state, [PLAIN_CARD]), [PLAIN_CARD, SET_ASIDE]);
+    assert.deepEqual(playedCardIdsStillInPlay(state, [PLAIN_CARD]), [PLAIN_CARD]);
+  });
+
+  it('appends a set-aside card after the Penumbra expansion too', () => {
+    const state = makeLedgerState([FACE_A], [SET_ASIDE]);
+    assert.deepEqual(playedCardIdsThisTurn(state, [FACE_A]), [FACE_A, FACE_B, SET_ASIDE]);
+    assert.deepEqual(playedCardIdsStillInPlay(state, [FACE_A]), [FACE_A, FACE_B]);
+  });
+
+  it('counts a card that is both in play and in the ledger (the turn-2 replay) once', () => {
+    const state = makeLedgerState(undefined, [SET_ASIDE]);
+    assert.deepEqual(playedCardIdsThisTurn(state, [SET_ASIDE, PLAIN_CARD]), [SET_ASIDE, PLAIN_CARD]);
+  });
+
+  it('always returns a fresh array and never mutates the zone', () => {
+    const inPlay = [PLAIN_CARD];
+    const state = makeLedgerState(undefined, []);
+    const played = playedCardIdsThisTurn(state, inPlay);
+    assert.deepEqual(played, [PLAIN_CARD]);
+    assert.notEqual(played, inPlay);
+    assert.deepEqual(inPlay, [PLAIN_CARD]);
   });
 });

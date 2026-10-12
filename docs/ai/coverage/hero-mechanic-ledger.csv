@@ -39,14 +39,14 @@ amwp/jentorra,Jentorra,amwp,conqueror,unsupported,,,,conquer-the-conqueror|take-
 amwp/jentorra,Jentorra,amwp,explore,unsupported,,,,find-your-courage|lead-powerful-allies
 amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,(unmarked),unmarked,,,,
 amwp/wasp,Wasp,amwp,(unmarked),unmarked,,,,
-anni/brainstorm,Brainstorm,anni,out-of-time,unsupported,,,,borrow-from-the-future|time-loop-experiments
+anni/brainstorm,Brainstorm,anni,out-of-time,executable,WP-803,D-24692,packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time,borrow-from-the-future|time-loop-experiments
 anni/brainstorm,Brainstorm,anni,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,time-loop-experiments
 anni/fantastic-four-united,Fantastic Four United,anni,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mr-fantastic
 anni/fantastic-four-united,Fantastic Four United,anni,focus,unsupported,,,,human-torch|invisible-woman|mr-fantastic|thing
 anni/heralds-of-galactus,Heralds of Galactus,anni,conqueror,unsupported,,,,firelord|stardust
 anni/heralds-of-galactus,Heralds of Galactus,anni,focus,unsupported,,,,silver-surfer|stardust
 anni/psi-lord,Psi-Lord,anni,focus,unsupported,,,,avert-future-tragedy|interdimensional-rescue|reshape-reality|slip-the-timestream
-anni/psi-lord,Psi-Lord,anni,out-of-time,unsupported,,,,avert-future-tragedy|interdimensional-rescue|reshape-reality|slip-the-timestream
+anni/psi-lord,Psi-Lord,anni,out-of-time,executable,WP-803,D-24692,packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time,avert-future-tragedy|interdimensional-rescue|reshape-reality|slip-the-timestream
 anni/super-skrull,Super-Skrull,anni,bridge,unsupported,,,,put-to-the-torch
 anni/super-skrull,Super-Skrull,anni,conqueror,unsupported,,,,put-to-the-torch|rock-solid|transparent-motives
 anni/super-skrull,Super-Skrull,anni,focus,unsupported,,,,rock-solid|stretching-credibility|transparent-motives
@@ -124,22 +124,22 @@ bkwd/yelena-belova,Yelena Belova,bkwd,undercover,deferred,WP-282,D-24060,,destro
 bkwd/yelena-belova,Yelena Belova,bkwd,unleash,unsupported,,,,destroy-the-red-room|twilight-ops|unveil-identity
 ca75/agent-x-13,Agent X-13,ca75,attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#attack,spy-network
 ca75/agent-x-13,Agent X-13,ca75,gain-officer,subsystem,,D-24696,choose-one:count-scaled-choose-option,spy-network
-ca75/agent-x-13,Agent X-13,ca75,out-of-time,unsupported,,,,sniper-squad|spy-network
+ca75/agent-x-13,Agent X-13,ca75,out-of-time,executable,WP-803,D-24692,packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time,sniper-squad|spy-network
 ca75/agent-x-13,Agent X-13,ca75,savior,condition,,,,mobilize-for-war
 ca75/captain-america-falcon,Captain America (Falcon),ca75,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,star-spangled-hero
 ca75/captain-america-falcon,Captain America (Falcon),ca75,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,aerial-catch
 ca75/captain-america-falcon,Captain America (Falcon),ca75,savior,condition,,,,star-spangled-hero|winged-salvation
 ca75/captain-america-1941,Captain America 1941,ca75,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,storm-the-beachhead
 ca75/captain-america-1941,Captain America 1941,ca75,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,devoted-patriot|liberate-the-prisoners
-ca75/captain-america-1941,Captain America 1941,ca75,out-of-time,unsupported,,,,devoted-patriot|punch-evil-in-the-face|storm-the-beachhead
+ca75/captain-america-1941,Captain America 1941,ca75,out-of-time,executable,WP-803,D-24692,packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time,devoted-patriot|punch-evil-in-the-face|storm-the-beachhead
 ca75/captain-america-1941,Captain America 1941,ca75,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,liberate-the-prisoners
 ca75/captain-america-1941,Captain America 1941,ca75,savior,condition,,,,liberate-the-prisoners|punch-evil-in-the-face
-ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,out-of-time,unsupported,,,,shadow-of-wars-past
+ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,out-of-time,executable,WP-803,D-24692,packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time,shadow-of-wars-past
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,international-strike-force
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,save-the-world
 ca75/steve-rogers-director-of-shield,"Steve Rogers, Director of S.H.I.E.L.D.",ca75,savior,condition,,,,international-strike-force|save-the-world|shadow-of-wars-past
 ca75/winter-soldier,Winter Soldier,ca75,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,sniper-nest
-ca75/winter-soldier,Winter Soldier,ca75,out-of-time,unsupported,,,,2-4|bionic-arm|sniper-nest
+ca75/winter-soldier,Winter Soldier,ca75,out-of-time,executable,WP-803,D-24692,packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time,2-4|bionic-arm|sniper-nest
 chmp/gwenpool,Gwenpool,chmp,cheering-crowds,unsupported,,,,i-heard-keywords-are-powerful
 chmp/gwenpool,Gwenpool,chmp,demolish,unsupported,,,,im-the-best-at-board-games
 chmp/gwenpool,Gwenpool,chmp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,i-heard-keywords-are-powerful

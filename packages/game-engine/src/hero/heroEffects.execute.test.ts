@@ -137,7 +137,8 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // fight on the <space> this turn gets -N" and "The Mastermind gets -N this turn") (58 → 59).
     // WP-795 / D-24664 added the spinning-cyclone handler (core Storm's Spinning Cyclone
     // move-a-Villain park) (59 → 60).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 60);
+    // WP-803 / D-24692 added the out-of-time handler (Man / Woman Out of Time set-aside) (60 → 61).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 61);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7869,9 +7870,10 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // optional-discard-draw + reveal-top-may-ko handlers, D-24581, and WP-765's blood-frenzy +
     // blood-frenzy-recruit + day-night-both handlers, D-24598, and WP-767's optional-ko-your-hero
     // handler, D-24600, and WP-780's play-both-sides handler, D-24619, and WP-794's
-    // fight-cost-reduction handler, D-24663, and WP-795's spinning-cyclone handler, D-24664 — 60).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 60,
-      'HERO_EFFECT_HANDLERS stays 60 (X-Gene is not an effect handler)');
+    // fight-cost-reduction handler, D-24663, and WP-795's spinning-cyclone handler, D-24664, and
+    // WP-803's out-of-time handler, D-24692 — 61).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 61,
+      'HERO_EFFECT_HANDLERS stays 61 (X-Gene is not an effect handler)');
   });
 });
 
@@ -9315,5 +9317,109 @@ describe('selectDefaultOptionalKoTarget allowDiscard (WP-767 / D-24600)', () => 
       { zone: 'hand', cardId: 'hand-cost-2' },
       'the cheaper discard and played cards are not picked while a hand card is eligible',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-803 / D-24692 — out-of-time handler guards (copies never go Out of Time)
+// ---------------------------------------------------------------------------
+
+describe('executeHeroEffects out-of-time handler (WP-803 / D-24692)', () => {
+  const mockCtx = makeMockCtx();
+  const OUT_OF_TIME_HERO = 'test/oot-hero/card#0';
+  const ROGUE = 'core/rogue/copy-powers#0';
+
+  /** The parser's hook for an ungated `[keyword:Man Out of Time]` line. */
+  function outOfTimeHook(cardId: string, conditions?: HeroAbilityHook['conditions']): HeroAbilityHook {
+    const hook: HeroAbilityHook = { cardId, timing: 'onPlay', keywords: ['out-of-time'], effects: [{ type: 'out-of-time' }] };
+    if (conditions !== undefined) {
+      hook.conditions = conditions;
+      hook.keywords = ['conditional', 'out-of-time'];
+    }
+    return hook;
+  }
+
+  /** The log texts, in order. */
+  function texts(gameState: LegendaryGameState): string[] {
+    return gameState.messages.map((entry) => (typeof entry === 'string' ? entry : entry.text));
+  }
+
+  it('sets the just-played (last) card aside and records it in the turn ledger', () => {
+    const gameState = makeTestState({ inPlay: ['other#0', OUT_OF_TIME_HERO], heroAbilityHooks: [outOfTimeHook(OUT_OF_TIME_HERO)] });
+
+    executeHeroEffects(gameState, mockCtx, '0', OUT_OF_TIME_HERO);
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, ['other#0']);
+    assert.deepStrictEqual(gameState.outOfTimeCards, { '0': [OUT_OF_TIME_HERO] });
+    assert.deepStrictEqual(gameState.turnEconomy.outOfTimePlayedCardIds, [OUT_OF_TIME_HERO]);
+    const ref = formatCardRef(gameState.cardDisplayData, OUT_OF_TIME_HERO);
+    assert.deepStrictEqual(texts(gameState), [`Player 0 set ${ref} aside Out of Time; it plays again at the start of their next turn.`]);
+  });
+
+  it('guard 1: a card already in the ledger is not set aside again', () => {
+    const gameState = makeTestState({ inPlay: [OUT_OF_TIME_HERO], heroAbilityHooks: [outOfTimeHook(OUT_OF_TIME_HERO)] });
+    gameState.turnEconomy = { ...gameState.turnEconomy, outOfTimePlayedCardIds: [OUT_OF_TIME_HERO] };
+
+    executeHeroEffects(gameState, mockCtx, '0', OUT_OF_TIME_HERO);
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, [OUT_OF_TIME_HERO]);
+    assert.equal(Object.keys(gameState).includes('outOfTimeCards'), false);
+    assert.deepStrictEqual(gameState.turnEconomy.outOfTimePlayedCardIds, [OUT_OF_TIME_HERO]);
+    const ref = formatCardRef(gameState.cardDisplayData, OUT_OF_TIME_HERO);
+    assert.deepStrictEqual(texts(gameState), [`${ref} is not set aside again: a card goes Out of Time only once.`]);
+    assert.equal(gameState.messages[0]!.outcome, 'blocked');
+  });
+
+  it('guard 3: an earlier-played card (not the last inPlay entry) is not set aside', () => {
+    const gameState = makeTestState({ inPlay: [OUT_OF_TIME_HERO, 'later#0'], heroAbilityHooks: [outOfTimeHook(OUT_OF_TIME_HERO)] });
+
+    executeHeroEffects(gameState, mockCtx, '0', OUT_OF_TIME_HERO);
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, [OUT_OF_TIME_HERO, 'later#0']);
+    assert.equal(Object.keys(gameState).includes('outOfTimeCards'), false);
+    assert.equal(Object.keys(gameState.turnEconomy).includes('outOfTimePlayedCardIds'), false);
+    const ref = formatCardRef(gameState.cardDisplayData, OUT_OF_TIME_HERO);
+    assert.deepStrictEqual(texts(gameState), [`${ref} is not set aside: a copy can't use Out of Time.`]);
+    assert.equal(gameState.messages[0]!.outcome, 'blocked');
+  });
+
+  it('Copy Powers copying an earlier-played Out of Time card whose gate failed leaves the original in play', () => {
+    const gameState = makeTestState({
+      inPlay: [OUT_OF_TIME_HERO, ROGUE],
+      cardTraits: { [OUT_OF_TIME_HERO]: { heroClass: 'strength', team: null }, [ROGUE]: { heroClass: 'covert', team: null } },
+      heroAbilityHooks: [
+        outOfTimeHook(OUT_OF_TIME_HERO, [{ type: 'heroClassMatch', value: 'strength' }]),
+        { cardId: ROGUE, timing: 'onPlay', keywords: ['copy-powers'], effects: [{ type: 'copy-powers' }] },
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', ROGUE);
+
+    // why: the copy grants Rogue the copied Strength class, so the re-fired gate now holds and
+    // the handler is reached on the copy — guard 3 refuses it (the original is not the last entry).
+    const ref = formatCardRef(gameState.cardDisplayData, OUT_OF_TIME_HERO);
+    assert.ok(texts(gameState).includes(`${ref} is not set aside: a copy can't use Out of Time.`), 'the copy log line');
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, [OUT_OF_TIME_HERO, ROGUE]);
+    assert.equal(Object.keys(gameState).includes('outOfTimeCards'), false);
+    assert.equal(Object.keys(gameState.turnEconomy).includes('outOfTimePlayedCardIds'), false);
+  });
+
+  it('Steal Abilities on an Out of Time card discarded from a deck does not set it aside', () => {
+    const gameState = makeTestState({
+      inPlay: ['steal'],
+      deck: [OUT_OF_TIME_HERO],
+      heroAbilityHooks: [
+        { cardId: 'steal', timing: 'onPlay', keywords: ['steal-abilities'], effects: [{ type: 'steal-abilities' }] },
+        outOfTimeHook(OUT_OF_TIME_HERO),
+      ],
+    });
+
+    executeHeroEffects(gameState, mockCtx, '0', 'steal');
+
+    const ref = formatCardRef(gameState.cardDisplayData, OUT_OF_TIME_HERO);
+    assert.ok(texts(gameState).includes(`${ref} is not set aside: a copy can't use Out of Time.`), 'the copy log line (guard 2)');
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, [OUT_OF_TIME_HERO], 'the real card stays in the discard pile');
+    assert.deepStrictEqual(gameState.playerZones['0']!.inPlay, ['steal']);
+    assert.equal(Object.keys(gameState).includes('outOfTimeCards'), false);
   });
 });

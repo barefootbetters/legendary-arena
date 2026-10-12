@@ -30,6 +30,11 @@ import type { LegendaryGameState } from '../types.js';
 // (brainstorm/protege-of-dr-doom line 1).
 const TSUNAMI_OF_JUSTICE_ABILITY = '[hc:covert]: You may KO a card from your hand or discard pile.';
 const PUNCH_EVIL_ABILITY = '[keyword:Savior]: [keyword:Man Out of Time]';
+// why: WP-803 / D-24692 — Punch Evil in the Face now resolves `out-of-time`, so the
+// condition-keyword-gate-over-an-unmatched-multi-word-keyword case needs a SYNTHETIC line (no
+// real-data line of that shape remains): the Outwit condition keyword over the space-magnitude
+// Danger Sense token.
+const CONDITION_GATE_OVER_UNMATCHED_KEYWORD_ABILITY = '[keyword:Outwit]: [keyword:Danger Sense 2]';
 const TALK_WITH_BIRDS_ABILITY = '[hc:ranged]: Gain a [rule:Sidekick].';
 const MICROSCOPIC_ABILITY = '[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]';
 const DANGER_SENSE_ABILITY = '[hc:covert]: [keyword:Danger Sense 2]';
@@ -113,9 +118,17 @@ describe('gate-only hero lines record an unresolved marker (D-24623)', () => {
   });
 
   it('a condition keyword gate over a multi-word keyword names that keyword', () => {
+    const hook = buildHook(CONDITION_GATE_OVER_UNMATCHED_KEYWORD_ABILITY);
+    assert.equal(hook.conditions?.[0]?.type, 'distinctHeroCostsAtLeast');
+    assert.deepEqual(hook.unresolvedMarkers, ['danger-sense']);
+  });
+
+  it('the Savior-gated Out of Time line (Punch Evil in the Face) resolves, so it is no hollow (WP-803)', () => {
     const hook = buildHook(PUNCH_EVIL_ABILITY);
     assert.equal(hook.conditions?.[0]?.type, 'bystandersInVictoryAtLeast');
-    assert.deepEqual(hook.unresolvedMarkers, ['man-out-of-time']);
+    assert.ok(hook.keywords.includes('out-of-time'));
+    assert.deepEqual(hook.effects, [{ type: 'out-of-time' }]);
+    assert.equal(hook.unresolvedMarkers, undefined);
   });
 
   it('a space-magnitude keyword drops its magnitude like the coverage probe', () => {

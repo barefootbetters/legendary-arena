@@ -644,3 +644,30 @@ describe('PlayDesktop Phase-button wiring (WP-783 / D-24629)', () => {
     assert.equal(wrapper.findAll('[data-testid="play-hand-phase"]').length, 0);
   });
 });
+
+describe('PlayDesktop — Out of Time group (WP-803 / D-24692)', () => {
+  test('a snapshot with the viewer\'s outOfTimeCards renders exactly one Out of Time group', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    frame.players[0]!.outOfTimeCards = [
+      {
+        extId: 'ca75/captain-america-1941/devoted-patriot#0',
+        display: { extId: 'ca75/captain-america-1941/devoted-patriot#0', name: 'Devoted Patriot', imageUrl: '', cost: 3 },
+      },
+    ];
+    store.setSnapshot(frame);
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.findAll('[data-testid="play-out-of-time"]').length, 1);
+    assert.equal(wrapper.findAll('[data-testid="play-out-of-time-card"]').length, 1);
+  });
+
+  test('a snapshot without outOfTimeCards renders no Out of Time group', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.find('[data-testid="play-played-row"]').exists(), true, 'the played row is mounted');
+    assert.equal(wrapper.findAll('[data-testid="play-out-of-time"]').length, 0);
+  });
+});

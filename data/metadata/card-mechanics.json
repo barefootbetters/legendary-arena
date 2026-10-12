@@ -1186,7 +1186,7 @@
       "slug": "out-of-time",
       "label": "Out Of Time",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 6,
       "cardIds": [
         "anni/brainstorm",

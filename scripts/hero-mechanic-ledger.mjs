@@ -159,7 +159,12 @@ const PARAMETERIZED_COMPOSITION_MARKERS = new Set(PARAMETERIZED_COMPOSITION_MARK
 // marked hero lines resolve it; Vengeance of the Bloodstone Gem (a doubled Marvel Knights prefix)
 // and It's Morbin Time (a Blood Frenzy draw variant) stay inert, so a by-name check would
 // over-claim them executable.
-const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence', 'blood-frenzy', 'day-night-both']);
+// why: WP-803 / D-24692 — out-of-time is by-hook too. The parser resolves only a line that IS the
+// Man / Woman Out of Time token (behind an optional gate); Winter Soldier's "2>4" grant lines keep
+// the token unresolved. A by-name check would over-claim any card that merely prints the token.
+// Rows are hero x mechanic, so Winter Soldier reads executable through Bionic Arm / Sniper Nest
+// while 2>4 stays a runtime hollow (recorded in D-24692).
+const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence', 'blood-frenzy', 'day-night-both', 'out-of-time']);
 // why: D-24055 — condition-gate mechanics (spectrum) are recognized by the parser
 // as conditions, not keywords. They gate effects but are themselves distinct
 // mechanics that should be tracked in the ledger. Mapping from normalized keyword
