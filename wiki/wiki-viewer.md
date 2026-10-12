@@ -9,6 +9,7 @@ related:
   - architecture-inventory.md
   - hugo-web-system.md
   - hugo-onboarding.md
+  - private-site-hosting.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\wiki-viewer.md (this page — https://ewiki.legendary-arena.com/wiki-viewer/)

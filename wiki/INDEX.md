@@ -283,6 +283,12 @@ Cross-cutting governance, methodology, and readiness assessments.
   with honest recoverability verdicts, and the capability-graded validation
   checklist. The remaining gap is operational — provision the backup
   secrets and drill a restore.
+- [Private Site Hosting](private-site-hosting.md) — How the two private
+  operator sites (ewiki, dashboard) keep a single Access-gated door: each is
+  an assets-only Cloudflare Worker with `workers_dev` and `preview_urls` off
+  (D-24690), because Access gates hostnames and any `onrender.com` /
+  `pages.dev` / `workers.dev` alias is an ungated copy. Records the
+  2026-10 bypass, the move off Render and Pages, and the cutover gotchas.
 - [AI Second Brain](ai-second-brain.md) — *(draft, planning)* proposed
   self-hosted knowledge platform where the corpus is owned and durable while
   the agent layer stays swappable — *knowledge is permanent, agents are

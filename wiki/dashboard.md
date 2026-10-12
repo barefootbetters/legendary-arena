@@ -20,6 +20,7 @@ related:
   - wiki-viewer.md
   - card-effect-system.md
   - debug-effects.md
+  - private-site-hosting.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\dashboard.md (this page — https://ewiki.legendary-arena.com/dashboard/)
