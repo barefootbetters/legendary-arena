@@ -27,8 +27,8 @@ define new architectural boundaries.
 | `ewiki.legendary-arena.com` | Private engineering wiki | Cloudflare Worker + Access | [apps/wiki-viewer](../../apps/wiki-viewer) (Hugo build of [wiki/](../../wiki)); Worker `legendary-arena-wiki` (D-24690) | live, gated |
 | `legendary-arena-wiki.onrender.com` | Retired Render origin of the eng wiki — must 404 (it was an Access bypass) | Render (service deleted 2026-10-11) | none — retired by D-24690 | live (404 since 2026-10-11; regression probe) |
 | `legends.legendary-arena.com` | Public scoreboard (attract board) | Cloudflare Pages | [apps/legends-board](../../apps/legends-board) (WP-143) | live (domain since 2026-07-08; SPA shipped 2026-05-15, WP-143) |
-| `api.legendary-arena.com` | Game server REST + Socket.IO | Render (CNAME from Cloudflare) | [apps/server](../../apps/server) | live |
-| `legendary-arena-server.onrender.com` | API canonical hostname | Render | [apps/server](../../apps/server) | live |
+| `api.legendary-arena.com` | Game server REST + Socket.IO | DigitalOcean droplet (proxied Cloudflare A record; Origin cert, Full strict) | [apps/server](../../apps/server) | live (on the droplet since 2026-10-12; Render 2026-05-09 to 2026-10-12) |
+| `legendary-arena-server.onrender.com` | Retired Render origin of the API — rollback only | Render (suspended 2026-10-12; deleted after the 7-day rollback window) | none — not a production hostname since 2026-10-12 | live probe, expects `503` (suspended) or `404` (deleted) |
 | `dashboard.legendary-arena.com` | Internal admin dashboard | Cloudflare Worker + Access | [apps/dashboard](../../apps/dashboard); Worker `legendary-arena-dashboard` (D-24690) | live, gated |
 | `images.legendary-arena.com` | Card image CDN | Cloudflare R2 | external | live (canonical since 2026-07-16; legacy `images.barefootbetters.com` serves the same bucket, no redirect) |
 
@@ -307,22 +307,44 @@ Depends on:
 **Snapshot freshness is its own check** — the publisher writes a `legends/v1/manifest.json` with `generatedAt` and the SPA renders a "last updated" badge. A stale manifest is the signal that the publisher (not the SPA) is unhealthy. See WP-142.
 
 ### api
-**`api.legendary-arena.com`** (live since 2026-05-09) and
-**`legendary-arena-server.onrender.com`** (live, kept as canonical fallback) — game server.
+**`api.legendary-arena.com`** (live since 2026-05-09) — game server. Since
+the 2026-10-12 cutover it runs on a self-hosted DigitalOcean droplet;
+**`legendary-arena-server.onrender.com`** (the Render origin until then) is
+retired and kept only as the rollback target during the 7-day window.
 
 - **Source:** [apps/server](../../apps/server)
-- **Host:** Render web service `legendary-arena-server` (see [render.yaml](../../render.yaml))
-- **Probe path:** `/health` (matches `healthCheckPath` in render.yaml)
-- **Database:** Render managed Postgres `legendary-arena-db` (private; not internet-reachable)
+- **Host:** DigitalOcean droplet (Ubuntu 24.04, `sfo3`). Cloudflare record
+  `api` is a **proxied A record** to the droplet. Nginx terminates TLS with a
+  Cloudflare Origin Certificate; the api hosts run SSL **Full (strict)** through
+  a Configuration Rule while the rest of the zone stays on Full. The server is
+  the systemd unit `la-server` (logs: `journalctl -u la-server`). Provisioning,
+  deploys (`40-app-deploy.ps1`, manual), backups and monitoring live in the
+  `legendary-arena-lab` repo; see the ewiki
+  [Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md).
+- **Probe path:** `/health`
+- **Database:** PostgreSQL 18 on the same droplet, `localhost` only (not
+  internet-reachable)
 
 **Healthy response:** `200` with a small JSON or text body from the health route.
 
+**Retired Render origin.** `legendary-arena-server.onrender.com/health` is
+expected to answer `503` while the Render service is suspended and `404` once
+it is deleted (~2026-10-20). A `200` means the Render service is running
+again — expected only during a rollback, which restores the DNS-only CNAME
+`api` → `legendary-arena-server.onrender.com` and resumes the service.
+
 Depends on (server-side runtime):
-- Render Postgres `legendary-arena-db`
+- PostgreSQL 18 on the droplet (`localhost`)
 - Hanko tenant (`HANKO_TENANT_BASE_URL`, `HANKO_EXPECTED_AUDIENCE` envs)
 - Stripe billing config (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ALLOWLIST`, `PUBLIC_BASE_URL`) — note `PUBLIC_BASE_URL` is the **client** URL Stripe Checkout redirects users to after success/cancel (see [apps/server/src/billing/billing.routes.ts:339-340](../../apps/server/src/billing/billing.routes.ts)), not an API URL.
 
-**`api.` cutover — completed 2026-05-09. The full procedure was:**
+**`api.` move to the droplet — completed 2026-10-12.** The Render service
+was suspended, a read-only final dump was restored on the droplet with row
+counts compared, and `api` changed from the DNS-only CNAME to Render into a
+proxied A record to the droplet and joined the strict-TLS rule. Details:
+[Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md#cutover-2026-10-12).
+
+**`api.` cutover to Render (history) — completed 2026-05-09. The full procedure was:**
 1. Add Cloudflare CNAME `api` → `legendary-arena-server.onrender.com` in the `legendary-arena.com` zone, **DNS only (gray cloud)**. Cloudflare proxying breaks Render's Let's Encrypt cert provisioning and disrupts long-lived Socket.IO connections on the Free tier.
 2. Add `api.legendary-arena.com` as a custom domain in Render's dashboard. Leave "Render Subdomain" enabled so the onrender.com URL keeps working in parallel.
 3. Wait for Render to issue the Let's Encrypt cert (1-5 minutes typical).
@@ -445,15 +467,22 @@ security incident:** delete the service in Render (D-24690).
 retired Pages project still exists and serves the dashboard without Access.
 **Treat as a security incident:** delete the Pages project (D-24690).
 
-**`api.legendary-arena.com/health` returns DNS error.** CNAME hasn't been
-created yet, or hasn't propagated. Check Cloudflare DNS for the `api` record.
-The onrender.com canonical hostname should still be healthy — that confirms
-the server itself is up and the issue is only the CNAME.
+**`api.legendary-arena.com/health` returns DNS error.** The `api` record is
+missing or hasn't propagated. Check Cloudflare DNS for the proxied `api` A
+record to the droplet.
 
-**`api` returns `502`/`503`.** Render service is down or restarting. Check
-the Render dashboard for the `legendary-arena-server` service. Check
-`legendary-arena-db` Postgres status — a DB outage will surface as 5xx on
-health checks that touch the DB. See [`docs/ops/INCIDENT_RESPONSE.md`](./INCIDENT_RESPONSE.md).
+**`api` returns `502`/`503`/`504`, or a Cloudflare `52x` error.** The server
+on the droplet is down or restarting, or Nginx can't reach it. On the droplet:
+`systemctl status la-server`, `journalctl -u la-server`, and
+`systemctl status postgresql` — a DB outage surfaces as 5xx on health checks
+that touch the DB. A Cloudflare `526` means the origin certificate is not
+accepted under Full (strict). The healthchecks.io check `la-droplet-monitor`
+and UptimeRobot alert on this too. See
+[`docs/ops/INCIDENT_RESPONSE.md`](./INCIDENT_RESPONSE.md).
+
+**`legendary-arena-server.onrender.com` returns `200` outside a rollback.**
+The suspended Render service was resumed. Suspend or delete it, and confirm
+`api` still points at the droplet.
 
 **`api` returns CORS error in browser but `/health` is 200 from curl.** The
 new client origin is not in the server's CORS allowlist. Update the server
@@ -517,9 +546,10 @@ works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
    pnpm --filter "@legendary-arena/dashboard..." build
    ```
    The tenant URL is the `DASHBOARD_HANKO_TENANT_BASE_URL` repo secret, which
-   GitHub can't show. Read the same value from Render →
-   `legendary-arena-server` → Environment → `HANKO_TENANT_BASE_URL`; it is the
-   same tenant (`apps/dashboard/.env.example`). It is not confidential: it
+   GitHub can't show. Read the same value from `HANKO_TENANT_BASE_URL` in the
+   API droplet's `/etc/la/.env` (Render → `legendary-arena-server` →
+   Environment before the 2026-10-12 cutover); it is the same tenant
+   (`apps/dashboard/.env.example`). It is not confidential: it
    ships in the public bundle. Without it the login renders its
    "unavailable" state. Also set `$env:VITE_FEATURE_FLAGS` if the
    `DASHBOARD_FEATURE_FLAGS` secret/variable is set (it isn't, as of
@@ -568,5 +598,9 @@ works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
 - [`docs/08-DEPLOYMENT.md`](../08-DEPLOYMENT.md) — high-level deployment overview
 - [`docs/ops/DEPLOYMENT_FLOW.md`](./DEPLOYMENT_FLOW.md) — environments and promotion
 - [`docs/ops/INCIDENT_RESPONSE.md`](./INCIDENT_RESPONSE.md) — incident handling
-- [`render.yaml`](../../render.yaml) — Render service + database config
+- [`render.yaml`](../../render.yaml) — the retired Render service + database
+  config (production until 2026-10-12); now the inventory of `sync: false`
+  secret names
+- [Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md) — the API
+  droplet and the `legendary-arena-lab` repo that provisions and deploys it
 - [`.claude/CLAUDE.md`](../../.claude/CLAUDE.md) — image CDN and tech-stack invariants

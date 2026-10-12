@@ -26,7 +26,7 @@ source:
   - ../docs/ops/domains.json
   - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0005.pdf (Render bill, Aug 2026)
   - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026)
-last-reviewed: 2026-10-11
+last-reviewed: 2026-10-12
 ---
 
 # Ubuntu Lab Provisioning
@@ -40,8 +40,8 @@ last-reviewed: 2026-10-11
 
 ## Summary
 
-The Ubuntu 24.04 DigitalOcean host that will replace Render for the game server
-and its PostgreSQL: one box running Nginx behind Cloudflare, the Node server,
+The Ubuntu 24.04 DigitalOcean host that replaced Render for the game server
+and its PostgreSQL on 2026-10-12: one box running Nginx behind Cloudflare, the Node server,
 and a self-hosted PostgreSQL under systemd, with backups to Cloudflare R2. This
 page records the target architecture, what the operator takes over, and the
 provisioning, restore and rebuild procedure. The cost, sizing and vendor
@@ -64,7 +64,7 @@ DigitalOcean droplet, Ubuntu 24.04 LTS, sfo3
 pg_dump  →  Cloudflare R2  (backups)
 ```
 
-- **Is becoming:** the production host for `apps/server` and a self-hosted
+- **Is:** the production host for `apps/server` and a self-hosted
   PostgreSQL 18 — the target architecture locked in the migration PLAN. The
   server and database share one box, so there is no cross-provider hop (the
   alternatives weighed are in
@@ -72,13 +72,15 @@ pg_dump  →  Cloudflare R2  (backups)
 - **Is provisioned and rehearsed (2026-10-11).** `la-rehearsal-01` passed every
   provisioner and a production-copy restore, and is kept as the cutover box; see
   [Rehearsal results](#rehearsal-results-2026-10-11).
-- **Is not yet carrying production traffic.** Until cutover, the box is
-  provisioned and rehearsed against a **copy** of the data, never the live prod
-  DB. Render's managed Postgres allows credential-gated public inbound
+- **Carries production since 2026-10-12.** `api.legendary-arena.com` is a
+  proxied Cloudflare A record to this droplet, and its PostgreSQL 18 holds the
+  production data (see [Cutover](#cutover-2026-10-12)). Before cutover the box
+  was rehearsed only against a **copy** of the data, never the live prod DB.
+  Render's managed Postgres allows credential-gated public inbound
   (`ipAllowList: ['0.0.0.0/0']` in `render.yaml`) — a footgun, not an
-  invitation. Render stays warm as the rollback target until the decommission
-  phase (live-until-cutover topology:
-  [Architecture & Library Adoption Inventory](architecture-inventory.md)).
+  invitation; it stays up only as the rollback copy. The Render web service is
+  suspended as the rollback target for the 7-day window, then Render is
+  deleted (~2026-10-20).
 
 ### Why the platform is changing
 
@@ -102,8 +104,8 @@ driver too.
 | Application | `apps/server` on Node 24.18.0, run by a systemd unit. |
 | Database | Self-hosted PostgreSQL 18 on `localhost`. |
 | Edge | Cloudflare in front; Nginx terminates TLS with a Cloudflare Origin Certificate. |
-| Deploy | GitHub Actions → SSH → `git pull` + build + `systemctl reload`. |
-| Backups | `pg_dump` to R2, restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11, and the R2 upload and restore-from-R2 passed on 2026-10-12. |
+| Deploy | Manual since cutover: the operator runs `40-app-deploy.ps1` over SSH (checkout `main`, install, build, migrations, restart, health gate). A GitHub Actions → SSH deploy-on-push is planned after the rollback window. |
+| Backups | `pg_dump` to R2 (production bucket `legendary-arena-db-backups` since cutover), restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11, and the R2 upload and restore-from-R2 passed on 2026-10-12. |
 | Monitoring | Provisioner `60` every 5 min, plus a ping after each backup, to two healthchecks.io dead-man's-switch checks that email on a failure or a missing ping. Rehearsed 2026-10-12, including a real alert. UptimeRobot checks the public `api.…/health` path every 5 minutes. |
 
 The executable versions — cloud-init, the numbered provisioners, the systemd
@@ -174,12 +176,44 @@ proxied A record to the droplet. Rollback restores that CNAME exactly.
 **External uptime monitor (2026-10-12).** UptimeRobot (free plan) checks
 `https://api.legendary-arena.com/health` every 5 minutes and emails on failure.
 The on-box check calls `127.0.0.1`, so it never tests DNS, Cloudflare, Nginx, or
-TLS; this monitor does. It's green against Render today and follows `api.` to the
-droplet at cutover with no change.
+TLS; this monitor does. It was green against Render before cutover and followed
+`api.` to the droplet with no change.
 
-**Not yet rehearsed:**
-- The cutover itself: a fresh production dump, the `api.` DNS flip, and the
-  rollback drill (repointing `api.` back to Render).
+**Cutover done 2026-10-12.** Cutover results: see the cutover section below.
+
+### Cutover (2026-10-12)
+
+Production moved to the droplet on 2026-10-12 at 11 PM PDT (2026-10-13 06:00
+UTC). The steps performed:
+
+1. **Render suspended.** The Render web service `legendary-arena-server` was
+   suspended first, so nothing wrote to the Render database during the final
+   dump. Resuming it is the rollback.
+2. **Final dump restored.** A read-only `pg_dump` of the Render database was
+   restored onto the droplet's PostgreSQL 18, and the row counts were compared
+   against the source.
+3. **DNS switched.** `api.` changed from the DNS-only CNAME to Render into a
+   proxied A record to the droplet, and `api.` joined the
+   `Origin TLS strict — api hosts` Configuration Rule (SSL Full (strict)).
+4. **Verified.** `/health` returned 200 through Cloudflare, the Socket.IO
+   WebSocket upgraded, and a signed-in match played end to end.
+5. **Backups switched.** The droplet's `50-backup.ps1` now writes to the
+   production backup bucket `legendary-arena-db-backups` (same
+   `db-backups/YYYY/MM/DD/` layout and GFS retention as before), and this
+   repo's `db-backup.yml` nightly was disabled (`gh workflow disable`). It is
+   deleted after the rollback window.
+6. **Legends publisher moved.** `LEGENDS_PUBLISHER_ENABLED` is set on the
+   droplet only, so exactly one process publishes the legends snapshots.
+
+**Rollback (7-day window, to ~2026-10-20).** Restore the DNS-only CNAME
+`api` → `legendary-arena-server.onrender.com` exactly, and resume the Render
+service. The Render database stays up as the rollback copy until Render is
+deleted after the window.
+
+**Deploys after cutover** are manual: the operator runs `40-app-deploy.ps1`
+over SSH (checks out `main`, `pnpm install --frozen-lockfile`, build,
+migrations, restart, health gate; about 35 s). A deploy-on-push workflow is
+planned after the rollback window. Logs: `journalctl -u la-server`.
 
 ### Prerequisites & effort
 
@@ -360,7 +394,7 @@ not a drill.
 
 ### Operational ownership
 
-Render owns each of these today; on the droplet they become the operator's:
+Render owned each of these until 2026-10-12; on the droplet they are the operator's:
 
 - Host maintenance and OS/kernel security patching
 - Service lifecycle (restarts, health recovery, deploy pipeline)
@@ -399,11 +433,12 @@ operator can, unaided —
   lags a plan change), the
   managed-database notes, and the full deployment topology. Read it first.
 - **[Development Workflow](development-workflow.md)** — the production
-  develop-from-anywhere loop (Claude Code → GitHub → auto-deploy on merge to
-  `main`). The migration replaces Render's push-to-main auto-deploy with a GitHub
-  Actions → SSH → `git pull` + build + `systemctl reload` pipeline (owned by the
-  `legendary-arena-lab` program); the hand-run steps on this page are its manual,
-  rehearsal-time equivalent.
+  develop-from-anywhere loop (Claude Code → GitHub → deploy on merge to
+  `main`). The migration replaced Render's push-to-main auto-deploy with a
+  manual `40-app-deploy.ps1` run over SSH (owned by the `legendary-arena-lab`
+  program), with a GitHub Actions → SSH deploy-on-push to follow after the
+  rollback window; the hand-run steps on this page are its rehearsal-time
+  equivalent.
 - **[Operational Health Checks](operational-health-checks.md)** — `pnpm check`
   walks toolchain and external-service connectivity (PostgreSQL, R2, Hanko, CORS);
   validate a lab deploy the same way production is validated.
@@ -460,6 +495,9 @@ operator can, unaided —
   which surfaced two bugs CI could not see (lab #22, #23); the box is kept for
   cutover. The cost, vendor and architecture analysis moved to
   [Render Migration Analysis](render-migration-analysis.md).
+- **2026-10-12** — Cutover: production moved to this droplet and the Render
+  web service was suspended for a 7-day rollback window (see
+  [Cutover](#cutover-2026-10-12)).
 
 ## Open Questions
 
@@ -480,18 +518,24 @@ operator can, unaided —
    [Rehearsal results](#rehearsal-results-2026-10-11)). `21` Cloudflare TLS, the
    `50` R2 backup, and `60` monitoring passed on 2026-10-12, and the restore
    gate passed on a production copy.
-4. Cut over from a fresh production dump, with a rehearsed rollback (repoint
+4. ~~Cut over from a fresh production dump, with a rehearsed rollback (repoint
    Cloudflare DNS `api.` → Render). The same day, switch the droplet's backups
    from the rehearsal bucket to the production backup bucket and retire this
-   repo's `db-backup.yml` nightly. Its source, Render, stops being the truth, and
-   the droplet's Postgres is localhost-only, so the workflow could not reach it.
-5. Decommission Render after a deliberately short rollback window.
+   repo's `db-backup.yml` nightly.~~ Done 2026-10-12 (see
+   [Cutover](#cutover-2026-10-12)). Backups write to
+   `legendary-arena-db-backups`, and `db-backup.yml` is disabled: its source,
+   Render, stopped being the truth, and the droplet's Postgres is
+   localhost-only, so the workflow could not reach it.
+5. Decommission Render after the 7-day rollback window (~2026-10-20), and
+   delete `db-backup.yml` the same day.
 
 ## References
 
-- [`render.yaml`](../render.yaml) — the blueprint-managed production infra source
-  (authoritative for plan values): server `plan: pro`, the managed-DB `plan: pro-4gb`,
-  the `sync: false` secret set, and the build/start commands this runbook mirrors.
+- [`render.yaml`](../render.yaml) — the retired Render blueprint (production
+  until 2026-10-12): server `plan: pro`, the managed-DB `plan: pro-4gb`,
+  the `sync: false` secret set (still the inventory of secret names the
+  droplet's `/etc/la/.env` must supply), and the build/start commands this
+  runbook mirrors.
 - [Architecture & Library Adoption Inventory](architecture-inventory.md) — Render
   account model & sizing, managed-database operational notes, and deployment
   topology (generated by `scripts/architecture-inventory.mjs`).

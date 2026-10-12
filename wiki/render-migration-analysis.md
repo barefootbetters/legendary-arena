@@ -20,7 +20,7 @@ source:
   - ../render.yaml
   - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0005.pdf (Render bill, Aug 2026)
   - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026)
-last-reviewed: 2026-10-11
+last-reviewed: 2026-10-12
 ---
 
 # Render Migration Analysis
@@ -28,8 +28,8 @@ last-reviewed: 2026-10-11
 ## Summary
 
 The cost, sizing, vendor and architecture analysis behind moving the game
-server and its PostgreSQL off Render onto one self-hosted DigitalOcean droplet.
-It records what Render costs, how the starting droplet size was chosen from
+server and its PostgreSQL off Render onto one self-hosted DigitalOcean droplet
+(cutover 2026-10-12). It records what Render cost, how the starting droplet size was chosen from
 measured use, and which vendors and architectures were weighed. How to build
 and run the host is on the Ubuntu Lab Provisioning page.
 
@@ -74,7 +74,7 @@ Render plans were raised in July to cure CPU and memory starvation; the reasons
 are recorded in `render.yaml`.
 
 **Cost-reduction order.** These steps are ranked by savings for the effort.
-1. **Finish the migration.** It restarted on 2026-10-04. The work that needs
+1. **Finish the migration.** Done: cut over 2026-10-12. It restarted on 2026-10-04. The work that needs
    no droplet is merged: `legendary-arena-lab` #17 and #18 fixed the
    provisioners and proved them in CI on Ubuntu 24.04, and on 2026-10-11 the
    whole chain was rehearsed on the real $24 droplet, including a
@@ -82,9 +82,9 @@ are recorded in `render.yaml`.
    [Rehearsal results](ubuntu-lab-provisioning.md#rehearsal-results-2026-10-11)).
    On 2026-10-12 the Cloudflare TLS step, the R2 offsite backup, and
    monitoring were rehearsed too, and the production secrets were installed on
-   the droplet. Only the cutover itself remains; it is scheduled for
-   2026-10-12. Every month on Render costs about $120 more than the $24
-   droplet would. The phases and gates in the PLAN are unchanged.
+   the droplet. The cutover followed the same day (see
+   [Cutover](ubuntu-lab-provisioning.md#cutover-2026-10-12)). Every month on
+   Render cost about $120 more than the $24 droplet does.
 2. **Size from data, not from the July incidents.** Done 2026-10-11: both
    Render services run idle (about 1 GB and well under one core in total), so
    start at 2 vCPU / 4 GB ($24) and resize up on evidence. That saves more than
@@ -99,7 +99,7 @@ are recorded in `render.yaml`.
      completed-match data that replay verification (D-24119) and the team-key
      backfill (D-24187) read.
 4. **Trim Render only if cutover is more than a month or two out.** Not
-   needed: the cutover came first (scheduled 2026-10-12). Kept for the record.
+   needed: the cutover came first (2026-10-12). Kept for the record.
    - Build only the server and the packages it depends on
      (`pnpm --filter @legendary-arena/server... build`) instead of
      `pnpm -r build`. That shortens deploys, but it probably won't lower the
@@ -108,16 +108,17 @@ are recorded in `render.yaml`.
    - Step the server from `pro` down to `standard`, which saves $60 a month,
      but only if the September figures show headroom. Under-provisioning is
      what caused the July freezes.
-5. **Keep the rollback window short.** The window is **7 days**. At cutover
-   the Render web service is suspended, not downgraded: suspending stops
-   writes during the final dump, resuming it is the rollback, and a suspended
-   service isn't billed for compute. The Render database stays up as the
-   rollback copy until Render is deleted on day 7.
+5. **Keep the rollback window short.** The window is **7 days**. At the
+   2026-10-12 cutover the Render web service was suspended, not downgraded:
+   suspending stopped writes during the final dump, resuming it is the
+   rollback, and a suspended service isn't billed for compute. The Render
+   database stays up as the rollback copy until Render is deleted on day 7
+   (~2026-10-20).
 
 
 ### Sizing from measured use (2026-10-11)
 
-Render gives production 8 GB and
+Render gave production 8 GB and
 3 CPUs in total: 4 GB / 2 CPU for the server and 4 GB / 1 CPU for Postgres. The
 Render metrics for the 7 days to 2026-10-11 show both far below that:
 
@@ -128,7 +129,7 @@ Render metrics for the 7 days to 2026-10-11 show both far below that:
 
 The database figures are read from a low-resolution screenshot, so treat them
 as upper bounds. Active connections were a few out of 100, and the transaction
-volume came in short bursts. Production uses about 1 GB and well under one core
+volume came in short bursts. Production used about 1 GB and well under one core
 in total.
 
 **Recommendation: start on the $24 droplet (2 vCPU / 4 GB / 80 GB), not the
@@ -347,7 +348,7 @@ record of what was weighed and why the highest-risk option was avoided:
 
 | Option | Configuration | Notes |
 |---|---|---|
-| **A** | Render server + Render Postgres | Current production. |
+| **A** | Render server + Render Postgres | Production until 2026-10-12. |
 | **B** | Ubuntu server + Render Postgres | Stateless-server move only; puts the app↔DB link across the public internet (see below). |
 | **C** | Ubuntu server + managed Postgres (co-located) | Self-hosted app tier, DB still managed, app and DB back on one fast private network. |
 | **D** | Ubuntu app server + Ubuntu database server | Fully self-managed. |
@@ -371,10 +372,10 @@ doing. Co-location removed that hop, so the probe is moot.
 - **[AI Second Brain](ai-second-brain.md)** — sized and hosted separately; it
   shares the vendor research but not this box.
 - **[Architecture & Library Adoption Inventory](architecture-inventory.md)** —
-  the live Render plan values the cost case bills against (`render.yaml` is
+  the former Render plan values the cost case bills against (`render.yaml` is
   authoritative if the inventory lags).
 - **[Development Workflow](development-workflow.md)** — the Render deploy loop
-  the migration replaces: manual `40-app-deploy.ps1` over SSH during the
+  the migration replaced: manual `40-app-deploy.ps1` over SSH during the
   rollback window, with a deploy-on-push workflow to follow.
 
 ## Edge Cases
@@ -408,6 +409,9 @@ doing. Co-location removed that hop, so the probe is moot.
   look; DigitalOcean held. Measured Render use set the start size at 2 vCPU /
   4 GB (lab D-002, `legendary-arena-lab` #19). This analysis moved here from
   Ubuntu Lab Provisioning so that page covers the host procedure only.
+- **2026-10-12** — Cutover: `api.` and its PostgreSQL moved to the $24
+  droplet, and the Render web service was suspended for the 7-day rollback
+  window (see [Cutover](ubuntu-lab-provisioning.md#cutover-2026-10-12)).
 
 ## References
 

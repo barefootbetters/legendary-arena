@@ -298,9 +298,10 @@ board panel, designed empty states) — both executed 2026-07-09; WP-344
 (server: player-count persistence + roster-keyed per-count standings) and
 WP-345 (client: count selector, rosters, challenge links) — both executed
 2026-07-16 (WP-345 D-24026 live-verified on `legends.legendary-arena.com`,
-PR #787). Migrations apply to production automatically — `render.yaml`'s
-server buildCommand runs `scripts/migrate.mjs` on every deploy (a failure
-blocks the deploy), so 026 and 027 are both live (verified via the
+PR #787). Migrations apply to production on every deploy — `render.yaml`'s
+server buildCommand ran `scripts/migrate.mjs` until the 2026-10-12 cutover,
+and since then each `40-app-deploy.ps1` deploy to the droplet runs the
+migrations (a failure stops the deploy), so 026 and 027 are both live (verified via the
 published gauntlet index, which now carries `entryCounts` on all 110
 gauntlets). The remaining precondition for boards filling is data supply:
 authenticated players
@@ -918,7 +919,8 @@ precondition the public boards have.
 - **The board only shows what the publisher wrote.** WP-142's snapshot
   publisher was enabled in production on 2026-07-08
   (`LEGENDS_PUBLISHER_ENABLED=true`, made durable in `render.yaml` by
-  PR #599); `GET /health/legends-publisher` reports `status: "ok"` with a
+  PR #599; since the 2026-10-12 cutover it is set in the API droplet's env
+  file and the publisher runs on the droplet only); `GET /health/legends-publisher` reports `status: "ok"` with a
   fresh `lastSuccessAt` and no errors. At publisher-enable time (2026-07-08)
   the live manifest (`legends/v1/manifest.json`) exposed a **single board,
   `global-top`, with `rowCount: 0`** — because the score-submission transport
@@ -931,7 +933,7 @@ precondition the public boards have.
   endpoint. Two operational preconditions still gate rows actually appearing:
   (a) enough authenticated matches get played and submitted, and (b) the
   **arena-client** (`play.legendary-arena.com`, a separate Cloudflare Pages
-  deploy — *not* the Render server) has shipped the WP-339 client that fires
+  deploy — *not* the API server) has shipped the WP-339 client that fires
   the on-gameover submission. The board renders its empty "Overall Rankings"
   state (with a working "Updated N min ago" freshness badge), not an error,
   and fills on the next ~5-minute publish cycle once rows exist. Note the SPA
