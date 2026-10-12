@@ -3,19 +3,19 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1970,
+    "totalEntries": 1972,
     "byScope": {
-      "hero": 792,
+      "hero": 794,
       "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 558,
+      "executable": 559,
       "deferred": 16,
       "condition": 49,
       "unsupported": 297,
       "unmarked": 1046,
-      "subsystem": 4
+      "subsystem": 5
     }
   },
   "entries": [
@@ -4451,6 +4451,40 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "name": "Agent X-13",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "attack",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "spy-network",
+          "name": "Spy Network"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "name": "Agent X-13",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "gain-officer",
+      "status": "subsystem",
+      "handler": "choose-one:count-scaled-choose-option",
+      "wp": "",
+      "decision": "D-24696",
+      "designs": [
+        {
+          "slug": "spy-network",
+          "name": "Spy Network"
+        }
+      ]
     },
     {
       "extId": "ca75/agent-x-13",
@@ -29632,6 +29666,8 @@
     "ca75/agent-x-13": {
       "scope": "hero",
       "mechanics": [
+        "attack",
+        "gain-officer",
         "out-of-time",
         "savior"
       ]

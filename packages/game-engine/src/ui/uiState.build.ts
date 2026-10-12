@@ -1813,6 +1813,23 @@ export function buildUIState(
                 : 'Send a card from the S.H.I.E.L.D. Officer Stack Undercover',
           };
         }
+        // why: D-24696 — Spy Network's two single-line options. The Officer gain carries only a
+        // label (an empty stack still shows the printed option; choosing it is a logged no-op);
+        // the flat attack carries its fixed grant as `total`.
+        if (option.kind === 'gain-officer') {
+          return {
+            kind: 'gain-officer' as const,
+            label: 'Gain a S.H.I.E.L.D. Officer',
+          };
+        }
+        if (option.kind === 'flat-attack') {
+          return {
+            kind: 'flat-attack' as const,
+            resource: 'attack' as const,
+            total: option.magnitude,
+            label: `+${option.magnitude} Attack`,
+          };
+        }
         const count = resolveCountSource(
           gameState,
           frontChoice.playerID,

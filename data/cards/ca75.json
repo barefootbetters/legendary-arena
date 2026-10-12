@@ -57,7 +57,7 @@
           "attack": "0+",
           "recruit": null,
           "abilities": [
-            "Choose one: Gain a S.H.I.E.L.D. Officer, or you get +2[icon:attack].",
+            "Choose one: Gain a S.H.I.E.L.D. Officer, or you get +2[icon:attack]. [keyword:gain-officer] [keyword:attack:2]",
             "[hc:covert]: [keyword:Woman Out of Time]"
           ]
         },

@@ -24,6 +24,8 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
+import { gainOfficerToDiscard } from './recruitOfficer.js';
+import { pushLog } from '../log/logPush.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -109,7 +111,8 @@ export function resolveCountScaledChoice(
   const chosen = front.options[optionIndex]!;
 
   // Step 3: Dispatch the chosen option by REUSING the existing executor, dispatched by kind
-  // (WP-679 / D-24495 — heterogeneous options; no re-implementation of any grant).
+  // (WP-679 / D-24495 — heterogeneous options; no re-implementation of any grant; the
+  // gain-officer / flat-attack kinds are D-24696).
   if (chosen.kind === 'undercover') {
     // why: WP-679 — the Undercover option dispatches WP-678's source-shape executor, which
     // sends a card to the Victory Pile (and, for the hand shape with ≥2 eligible, parks its
@@ -118,6 +121,28 @@ export function resolveCountScaledChoice(
       ? 'undercover-hand-shield-hero'
       : 'undercover-officer-stack';
     executeSingleEffect(G, context, playerID, front.cardId as CardExtId, { type: undercoverType });
+  } else if (chosen.kind === 'gain-officer') {
+    // why: D-24696 — Spy Network's "Gain a S.H.I.E.L.D. Officer": the top Officer goes to the
+    // chooser's DISCARD (rules v23 "Gain" = put it into your discard pile). An empty Officer
+    // stack makes the chosen option a logged no-op (the gain-officer-current precedent).
+    const triggeringCard = front.cardId as CardExtId;
+    if (gainOfficerToDiscard(G, playerID)) {
+      pushLog(G, `Player ${playerID} gained a S.H.I.E.L.D. Officer.`, 'applied', triggeringCard);
+    } else {
+      pushLog(
+        G,
+        `Player ${playerID} chose to gain a S.H.I.E.L.D. Officer, but the Officer stack is empty.`,
+        'blocked',
+        triggeringCard,
+      );
+    }
+  } else if (chosen.kind === 'flat-attack') {
+    // why: D-24696 — Spy Network's "you get +2[icon:attack]": reuse the shipped flat `attack`
+    // executor (it applies the grant and logs it), no re-implementation.
+    executeSingleEffect(G, context, playerID, front.cardId as CardExtId, {
+      type: 'attack',
+      magnitude: chosen.magnitude,
+    });
   } else {
     // why: WP-675 / D-24490 — the count-scaled option maps to the shipped per-count effect
     // type; front.cardId is threaded so an "each OTHER card" source excludes the played card.

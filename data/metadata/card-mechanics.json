@@ -87,8 +87,9 @@
       "label": "Attack",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
+        "ca75/agent-x-13",
         "core/nick-fury"
       ],
       "hidden": true
@@ -796,6 +797,17 @@
       "cardCount": 1,
       "cardIds": [
         "cvwr/luke-cage"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "gain-officer",
+      "label": "Gain Officer",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "ca75/agent-x-13"
       ],
       "hidden": true
     },
@@ -2704,6 +2716,8 @@
     },
     "ca75/agent-x-13": {
       "mechanics": [
+        "attack",
+        "gain-officer",
         "out-of-time",
         "savior"
       ]

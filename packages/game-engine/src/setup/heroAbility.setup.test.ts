@@ -1144,6 +1144,57 @@ describe('buildHeroAbilityHooks — mixed heterogeneous choose-one (WP-679 / D-2
 });
 
 // ---------------------------------------------------------------------------
+// Single-line choose-one — ca75 Agent X-13 Spy Network (D-24696)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — Spy Network single-line choose-one (D-24696)', () => {
+  // The generated ca75 data: one "Choose one:" line carrying the two curated option markers
+  // the hero-ability-markers pass appends (gain-officer, then the flat attack:2).
+  const SPY_NETWORK_ABILITIES = [
+    'Choose one: Gain a S.H.I.E.L.D. Officer, or you get +2[icon:attack]. [keyword:gain-officer] [keyword:attack:2]',
+    '[hc:covert]: [keyword:Woman Out of Time]',
+  ];
+
+  function buildSpyNetworkHooks(abilities: string[]) {
+    const registry = makeRegistry('ca75', 'agent-x-13', [
+      { slug: 'spy-network', abilities },
+    ]);
+    return buildHeroAbilityHooks(registry, makeConfig('ca75/agent-x-13'));
+  }
+
+  it('emits ONE count-scaled-choose effect: gain-officer, then flat-attack 2 (printed order)', () => {
+    const hooks = buildSpyNetworkHooks(SPY_NETWORK_ABILITIES);
+    const chooseEffects = hooks
+      .flatMap((hook) => hook.effects ?? [])
+      .filter((effect) => effect.type === 'count-scaled-choose');
+    assert.equal(chooseEffects.length, 1, 'exactly one choose-one effect');
+    assert.deepEqual(chooseEffects[0]!.countScaledChoiceOptions, [
+      { kind: 'gain-officer' },
+      { kind: 'flat-attack', magnitude: 2 },
+    ]);
+  });
+
+  it('grants no +2 attack at play time (the printed icon and attack:2 marker are choice options)', () => {
+    const hooks = buildSpyNetworkHooks(SPY_NETWORK_ABILITIES);
+    const lineHook = hooks.find((hook) => hook.keywords.includes('count-scaled-choose'));
+    assert.ok(lineHook !== undefined, 'the choose-one line has a count-scaled-choose hook');
+    assert.ok(!lineHook!.keywords.includes('attack'), 'no flat attack keyword on the choose-one line');
+    for (const effect of lineHook!.effects ?? []) {
+      assert.notEqual(effect.type, 'attack', 'no phantom +2 attack effect alongside the choice');
+    }
+    assert.deepEqual(lineHook!.unresolvedMarkers ?? [], [], 'the gain-officer marker is consumed, not hollow');
+  });
+
+  it('an unmarked Spy Network line is unchanged (flat +2 attack, no choice) — markers gate the fold', () => {
+    const hooks = buildSpyNetworkHooks([
+      'Choose one: Gain a S.H.I.E.L.D. Officer, or you get +2[icon:attack].',
+    ]);
+    assert.ok(hooks.every((hook) => !hook.keywords.includes('count-scaled-choose')),
+      'no choice is parsed without the curated markers');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Investigate keyword — static-criterion parsing (WP-564 / EC-599 / D-24373)
 // ---------------------------------------------------------------------------
 
@@ -1785,7 +1836,9 @@ describe('buildHeroAbilityHooks — play-both-sides (WP-780 / D-24619)', () => {
 describe('HERO_PARSER_RECOGNIZED_MARKER_NAMES — every listed name reaches a parser arm', () => {
   // why: teleport / x-gene resolve only on their card allowlists; a mock card is off
   // both, so the parser must leave them unresolved (the probe's per-hero fail-safe).
-  const ALLOWLIST_GATED_NAMES = new Set<string>(['teleport', 'x-gene']);
+  // why: D-24696 — gain-officer is consumed only on a count-scaled choose-one line; the mock's
+  // plain line is not one, so it too stays unresolved (an honest hollow off its choose-one).
+  const ALLOWLIST_GATED_NAMES = new Set<string>(['teleport', 'x-gene', 'gain-officer']);
 
   for (const markerName of HERO_PARSER_RECOGNIZED_MARKER_NAMES) {
     it(`${markerName} reaches its parser arm`, () => {

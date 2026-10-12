@@ -122,6 +122,8 @@ bkwd/white-tiger,White Tiger,bkwd,dodge,executable,WP-275,D-24051,packages/game-
 bkwd/yelena-belova,Yelena Belova,bkwd,dodge,executable,WP-275,D-24051,packages/game-engine/src/moves/dodgeCard.ts,twilight-ops
 bkwd/yelena-belova,Yelena Belova,bkwd,undercover,deferred,WP-282,D-24060,,destroy-the-red-room|strike-and-fade|twilight-ops|unveil-identity
 bkwd/yelena-belova,Yelena Belova,bkwd,unleash,unsupported,,,,destroy-the-red-room|twilight-ops|unveil-identity
+ca75/agent-x-13,Agent X-13,ca75,attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#attack,spy-network
+ca75/agent-x-13,Agent X-13,ca75,gain-officer,subsystem,,D-24696,choose-one:count-scaled-choose-option,spy-network
 ca75/agent-x-13,Agent X-13,ca75,out-of-time,unsupported,,,,sniper-squad|spy-network
 ca75/agent-x-13,Agent X-13,ca75,savior,condition,,,,mobilize-for-war
 ca75/captain-america-falcon,Captain America (Falcon),ca75,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,star-spangled-hero

@@ -98,6 +98,11 @@ const EXECUTED_KEYWORDS = new Set([
   // Its antm hook was only counted EXECUTABLE through the phantom 'attack' icon effect that
   // D-24670 suppresses; listing it keeps the informational split honest.
   'victory-villain-attack',
+  // why: D-24696 — count-scaled-choose is in MVP_KEYWORDS (heroEffectCountScaledChoose parks a
+  // choose-one resolved by resolveCountScaledChoice). Its omission here read vnom / shld choose-
+  // ones as PARSED_NOT_EXECUTED, and ca75 Spy Network's hook would have dropped from EXECUTABLE
+  // when its phantom flat 'attack' was folded into the choice. Informational only, as above.
+  'count-scaled-choose',
 ]);
 
 /** Error type signalling a probe failure (exit code 2). */

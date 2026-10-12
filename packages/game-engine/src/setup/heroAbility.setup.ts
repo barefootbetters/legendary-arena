@@ -417,6 +417,9 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   'master-strike-or-ambush-this-turn',
   'teleport',
   'x-gene',
+  // why: D-24696 — the Spy Network choose-one option marker; consumed by the count-scaled-choose
+  // pre-pass (tryResolveCountScaledChooseOneLine) and left unresolved off a choose-one line.
+  'gain-officer',
 ];
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an
@@ -1454,6 +1457,15 @@ function parseAbilityText(
       // choose-one option (the parked count-scaled-choose dispatches it at resolve time). Do
       // NOT also push it as a standalone onPlay keyword, or the send would fire twice — once
       // unconditionally at play time and once via the resolved choice. (Intentional no push.)
+    } else if (normalizedKeyword === 'gain-officer') {
+      // why: D-24696 — [keyword:gain-officer] is a choose-one OPTION marker, never a HeroKeyword
+      // (ca75 Spy Network "Choose one: Gain a S.H.I.E.L.D. Officer, or you get +2[icon:attack]."):
+      // the parked count-scaled-choose dispatches it at resolve time, so on a choose-one line it
+      // is consumed (no push). Off a choose-one line it has nothing to run, so it stays an
+      // unresolved marker (honest parse-unrecognized hollow) — the Honest-Partial Invariant.
+      if (!processedAsCountScaledChoose) {
+        unresolvedMarkers.push(normalizedKeyword);
+      }
     } else if (isValidHeroKeyword(normalizedKeyword)) {
       keywords.push(normalizedKeyword);
       // Capture optional :N magnitude suffix when present and valid integer
@@ -3171,6 +3183,15 @@ const ATTACK_PER_COUNT_MARKER_PATTERN = /\[keyword:attack-per-count:([a-z][a-z-]
 const UNDERCOVER_HAND_MARKER_PATTERN = /\[keyword:undercover-hand-shield-hero\]/;
 const UNDERCOVER_OFFICER_MARKER_PATTERN = /\[keyword:undercover-officer-stack\]/;
 
+// why: D-24696 — the two single-line choose-one option markers of ca75 Spy Network ("Choose
+// one: Gain a S.H.I.E.L.D. Officer, or you get +2[icon:attack]."): a gain-an-Officer option
+// marker and the flat attack marker [keyword:attack:N] (already an allowlisted grant token,
+// WP-681). Both are read ONLY inside tryResolveCountScaledChooseOneLine, which requires the
+// "Choose one:" prefix + ≥2 recognized markers, so a flat [keyword:attack:N] on any other line
+// is untouched. `attack-per-count` never matches (its segment after "attack" is "-per-count").
+const GAIN_OFFICER_OPTION_MARKER_PATTERN = /\[keyword:gain-officer\]/;
+const FLAT_ATTACK_OPTION_MARKER_PATTERN = /\[keyword:attack:([1-9]\d*)\]/;
+
 // why: WP-675 / D-24490 — a standalone "Choose one:" header entry (the multi-line choose-one form).
 const STANDALONE_CHOOSE_ONE_HEADER_PATTERN = /^\s*Choose one\s*:\s*$/i;
 // why: WP-675 / D-24490 — an option bullet line under a standalone "Choose one:" header.
@@ -3229,7 +3250,10 @@ function coalesceCountScaledChooseOne(abilities: string[]): string[] {
  *
  * Handles both the homogeneous count-scaled shape (vnom Symbiotic Adaptation — two per-count
  * options) and the MIXED shape (shld approve-orbital-strike / spymaster — an Undercover send
- * + a count-scaled attack). Coalesced (buildHeroAbilityHooks) into one line first.
+ * + a count-scaled attack). Coalesced (buildHeroAbilityHooks) into one line first. Also the
+ * SINGLE-line form (D-24696 — ca75 Spy Network "Choose one: Gain a S.H.I.E.L.D. Officer, or you
+ * get +2[icon:attack]." carrying [keyword:gain-officer] + [keyword:attack:2]), which needs no
+ * coalescing.
  *
  * Gated strictly so it never claims the Empowered / draw-or-empowered choose-ones: (1) a
  * "Choose one:" prefix, (2) ≥2 RECOGNIZED option markers (per-count with a valid source, or
@@ -3273,6 +3297,20 @@ function tryResolveCountScaledChooseOneLine(
     candidates.push({
       index: undercoverOfficerMatch.index,
       option: { kind: 'undercover', source: 'officer-stack' },
+    });
+  }
+  const gainOfficerMatch = GAIN_OFFICER_OPTION_MARKER_PATTERN.exec(abilityText);
+  if (gainOfficerMatch !== null) {
+    candidates.push({
+      index: gainOfficerMatch.index,
+      option: { kind: 'gain-officer' },
+    });
+  }
+  const flatAttackMatch = FLAT_ATTACK_OPTION_MARKER_PATTERN.exec(abilityText);
+  if (flatAttackMatch !== null) {
+    candidates.push({
+      index: flatAttackMatch.index,
+      option: { kind: 'flat-attack', magnitude: parseInt(flatAttackMatch[1]!, 10) },
     });
   }
   // why: require ≥2 options — a single recognized marker is a plain effect line, not a choose-one.
