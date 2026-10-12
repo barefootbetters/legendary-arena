@@ -47381,6 +47381,8 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 
 **Live-verify (D-24026), 2026-10-11: `playAgain` guard PASS (partial).** In production, a guest seat holder's `playAgain` (guest-solo match `a1IWi_ipmX6`, valid seat-0 credentials, no bearer) gets the guard's `401` on `playAgain`, `playagain/` and `PLAYAGAIN`; boardgame.io's handler is never reached. The non-admin `403` and the other seven steps remain pending.
 
+**Live-verify (D-24026), 2026-10-11: PASS, operator match `3pNYCKHKJCE`.** All eight WP-802 live steps hold in production: eligibility `200`; operator create + a played turn with the bot answering; the board read (both seats, ordered decks, counters, 21 bot decisions); `409` for a normal match; `400` for the flag on `/api/match/create`; the guard stops the non-admin native create, `playAgain` and `create/` and an anonymous `create/` (shown by the missing CORS header; codes pinned by unit tests); absent from the public list; `isDebugMatch: true` in seat 0's client snapshot. Precondition found: Jeff's game login had `is_admin = false` until this run.
+
 **Reserved by:** NUMBER-LEDGER D-24689 (#2688). Related: D-24026, D-24095, D-24119, D-24153, D-24169, D-24187, D-24306, D-24503, D-24094, D-24691, D-15901, D-15902, D-12803, D-24684, D-24686, D-24688.
 
 ---
