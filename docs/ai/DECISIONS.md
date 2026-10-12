@@ -47677,6 +47677,7 @@ None of these is a player input the faithful replay re-dispatches (it replays `M
 
 ---
 
+Protect this file.
 ### D-24702 — LegendaryGame disables boardgame.io undo, so stored matches carry no per-move snapshots (direct fix, no WP) (Active 2026-10-12)
 
 **Context.** `LegendaryGame` did not set `disableUndo`, and boardgame.io 0.50 enables undo by default. With undo on, the reducer's `updateUndoRedoState` appends an entry holding the full `G`, `ctx` and `plugins` to the match state's `_undo` array on every move and event of the current turn, and `InitializeGame` seeds `_undo` with one entry. The Master persists that state, `_undo` and `_redo` included, in every `bgio.matches` row (D-24095). A Legendary turn runs many moves over a large `G`, so each stored row carried a turn's worth of full-state copies. Nothing uses them. D-24701 stops clients sending UNDO / REDO over the socket. A repo-wide search of `apps/**`, `packages/**` and `scripts/**` finds no `client.undo` / `redo`, no server code that dispatches UNDO / REDO, and no code or test that reads `_undo` / `_redo`. That covers the faithful replay (`apps/server/src/replay`), autoplay, bot-ally, the simulation harness and engine-runner.
