@@ -47764,6 +47764,22 @@ Protect this file.
 
 ---
 
+### D-24705 — Watch Bot Play leads with a "first Hero you played this turn" card (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** Watch Bot Play's hand step (`apps/server/src/autoplay/autoplay.mjs` `playHandCards`, D-24699) plays the hand in order and never asks the policy, so a Deadpool "Hey, Can I Get a Do-Over?" behind other cards always failed its "if this is the first Hero you played this turn" gate (WP-681 / D-24498). D-24706 fixed the same problem for bot-ally matches through the Competent Heuristic policy; it does not reach this step.
+
+**Decision.** Before each hand pick, `pickFirstHeroLeadCard` returns a hand card whose own hand display carries `[keyword:first-hero-condition]`, when the player has nothing in play and the card was not refused this step. Otherwise the step falls back to hand order, unchanged. It reads the player's `handDisplay` from the engine's UIState projection (`buildUIState` + `filterUIStateForAudience`, already used by the spend step), the same signal the D-24706 policy reads, and never interprets the engine's hooks. The projection is built only while nothing is in play, so at most once per turn in practice. The Do-Over prompt is then drained by the existing D-24695 post-play drain with the engine's bot default (D-24706's accept rule).
+
+**Scope.** Server wiring only: no engine, rule, move, `G` or `UIState` change, no HTTP endpoint. Hands without such a card submit exactly the same moves as before.
+
+**Gates.** A new real-Master test in `handPlayRefusal.test.ts` (hand Agent, Agent, Do-Over, plain, plain) commits `playCard, resolveDoOver, playCard ×4` with Do-Over first in play; the parked-then-drained `resolveDoOver` proves the gate passed. Revert proof: with hand order restored it fails. Server 1760 / 0 fail; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0.
+
+**Live-verify (D-24026):** pending. In a Watch Bot Play match with core Deadpool, the turn after the bot holds Do-Over with other cards, its log shows Do-Over played first and the Do-Over choice resolving.
+
+**Reserved by:** NUMBER-LEDGER D-24705. Related: D-24706 (bot-ally ordering + accept rule), D-24699 (hand-step refusal), D-24695 (post-play drain), D-24498, D-24026.
+
+---
+
 ### D-24706 — The bot leads with a "first Hero you played this turn" card and accepts a Do-Over that nets live cards (direct fix, no WP) (Active 2026-10-12)
 
 **Context.** Live bot-ally match `0BVSi0_KY0A` (build `b598e53`, 2026-10-12): on turn 8 the bot seat played two S.H.I.E.L.D. Agents and then Deadpool's "Hey, Can I Get a Do-Over?", so the "if this is the first Hero you played this turn" gate (WP-681 / D-24498) had already failed. Two causes. (1) The Competent Heuristic policy (`simulation/ai.competent.ts`) scores every non-Wound `playCard` at 200, so hand order is a seeded tie-break. (2) Even when Do-Over led the turn, the bot's deterministic default for the pending choice was always `{ decline: true }` (D-24498), so ordering alone would have changed nothing in play.

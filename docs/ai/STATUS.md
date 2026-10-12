@@ -7,6 +7,14 @@
 
 ## Current State
 
+### D-24705 — Watch Bot Play leads with Do-Over (direct fix) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy), Watch Bot Play only.** When a bot in Watch Bot Play holds Deadpool's "Hey, Can I Get a Do-Over?", it now plays that card first, so its "first Hero you played this turn" ability can fire. Before, it played its hand in order, and Do-Over behind other cards never worked. The rest of the hand still plays in order.
+
+- **Server only.** No engine, rule or state change; bot-ally matches get the same fix through the bot policy (D-24706, #2745).
+- **Tests.** One new real-Master test (Do-Over third in hand is played first and its choice resolves); server 1760, all packages 0 fail.
+- **Live-verify (D-24026):** pending. In a Watch Bot Play match with Deadpool, the log shows Do-Over played first and its choice resolving.
+
 ### D-24706 — The bot leads with Do-Over and redraws when its hand is mostly Wounds (direct fix) (2026-10-12)
 
 **User-visible on `play.legendary-arena.com` (after deploy), bot-ally matches.** When the bot holds Deadpool's "Hey, Can I Get a Do-Over?", it now plays it first in its turn, so the "first Hero you played this turn" ability can fire. Before, it often played S.H.I.E.L.D. Agents first and the ability did nothing (live match `0BVSi0_KY0A`). When the ability fires, the bot now discards and draws 4 if fewer than 4 of its other cards are playable (for example 2 Wounds among 5), and keeps its hand otherwise. Before, it always kept its hand.

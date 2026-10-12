@@ -18,6 +18,8 @@
  * real Master and the real engine moves — the only fakes are an in-memory match
  * store, a no-op transport, and an instant playback controller — and records the
  * exact move sequence the bot submits. Same harness as handPlayDrain.test.ts.
+ * The last test covers the D-24705 lead pick: a "first Hero you played this turn"
+ * card is played before the rest of the hand.
  *
  * Run by the server test runner: `node --import tsx --test src/**\/*.test.ts`.
  */
@@ -243,4 +245,57 @@ test('a normal hand with duplicate starting-card ids plays exactly as before (D-
   const zones = readPlayerZones(memory);
   assert.deepEqual(zones.hand, []);
   assert.deepEqual(zones.inPlay, hand, 'cards were played in hand order');
+});
+
+test('a "first Hero you played this turn" card leads the turn instead of waiting its hand-order turn (D-24705)', async () => {
+  // why: D-24705 — live match 0BVSi0_KY0A: Do-Over behind two S.H.I.E.L.D. Agents
+  // always failed its gate. The hand puts Do-Over third; it must be played first so the
+  // gate passes, which the parked-then-drained resolveDoOver proves. Four live cards
+  // stay behind it, so the bot declines under both the D-24498 and D-24706 defaults.
+  const DO_OVER_CARD = 'test-hero-deck-001/hey-can-i-get-a-do-over#0';
+  const doOverHook = {
+    cardId: DO_OVER_CARD,
+    timing: 'onPlay',
+    keywords: ['do-over'],
+    conditions: [{ type: 'firstHeroPlayedThisTurn', value: '1' }],
+    effects: [{ type: 'do-over' }],
+  };
+  const hand = [
+    'starting-shield-agent',
+    'starting-shield-agent',
+    DO_OVER_CARD,
+    'test-hero-deck-001/plain-card#0',
+    'test-hero-deck-001/plain-card#1',
+  ];
+  const { loop, memory } = await buildMainStageMatch(hand, [doOverHook]);
+  const gameState = memory.stored.state.G as { cardDisplayData: Record<string, unknown> };
+  gameState.cardDisplayData = {
+    ...gameState.cardDisplayData,
+    [DO_OVER_CARD]: {
+      extId: DO_OVER_CARD,
+      name: 'Hey, Can I Get a Do-Over?',
+      cost: 3,
+      imageUrl: '',
+      heroClass: 'instinct',
+      team: 'unaffiliated',
+      abilityText:
+        'If this is the first Hero you played this turn, you may discard the rest of your hand and draw four cards. [keyword:first-hero-condition] [keyword:do-over]',
+    },
+  };
+
+  const result = await playHandCards(loop, memory.stored.state);
+
+  assert.equal(result.kind, 'progressed');
+  assert.deepEqual(
+    memory.committedMoves,
+    ['playCard', 'resolveDoOver', 'playCard', 'playCard', 'playCard', 'playCard'],
+    'Do-Over is played first, its gate passes and parks the choice, the drain resolves it, then the rest of the hand plays',
+  );
+  assert.equal(result.playedCount, 5);
+  const zones = readPlayerZones(memory);
+  assert.deepEqual(
+    zones.inPlay,
+    [DO_OVER_CARD, 'starting-shield-agent', 'starting-shield-agent', 'test-hero-deck-001/plain-card#0', 'test-hero-deck-001/plain-card#1'],
+    'Do-Over first, then the rest in hand order',
+  );
 });
