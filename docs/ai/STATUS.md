@@ -238,7 +238,7 @@ Every mastermind's Always Leads now matches the printed card.
 **User-visible on `play.legendary-arena.com` (after deploy).** "Each player KOs N of their Heroes" now prompts the current player to pick, instead of silently KO'ing starters. This covers Destroyer's Escape (two) and Super-Skrull's Fight (one), plus M.O.D.O.K., Stonekeeper and Yondu in other sets. Other players still auto-pick. A forced KO (no more Heroes than owed) still happens without a prompt. Reported in solo match `L7pW0ZAyP_c`.
 
 - **Engine only** (`villainEffects.execute.ts`). game-engine 5007 / 0 fail (+3; 5 authorized test edits); server 1457 / 0.
-- **Live-verify (D-24026): pending.** Let a Destroyer escape with more than two Heroes; a "Choose a Hero to KO (2 remaining)" prompt should appear.
+- **Live-verify (D-24026), 2026-10-10: PASS (log evidence).** Match `GkZeatCQh5f` (build `39c8244`, 2p bot-ally Loki / Super Hero Civil War): Destroyer escaped (20.1.2). The line read "the active player must KO two heroes; other players KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent" (20.1.3): the current player's two-KO choice parked while the bot auto-picked, and the current player then chose two (20.1.4–5). The prompt's own text is not in the log.
 
 ### D-24668 — Killbots are called Killbots; Psychic Link says when no one revealed (direct fix) (2026-10-08)
 
@@ -249,7 +249,7 @@ Every mastermind's Always Leads now matches the printed card.
 Gameplay and scoring are unchanged.
 
 - **Engine only** (`buildCardDisplayData.ts`, `buildInitialGameState.ts`, `heroEffects.execute.ts`). game-engine 5004 / 0 fail (+5, revert-proofed); server 1457 / 0; arena-client 2296 / 0.
-- **Live-verify (D-24026): pending.** In a new Killbots match, a Killbot entering the City should read "Killbot".
+- **Live-verify (D-24026), 2026-10-10: PASS.** Match `38KtA2vWDg9` (build `c26dc19`, 2p bot-ally Dr. Doom / Killbots): every converted card read "Killbot" entering the City ("1.1.1 Killbot (bystander-villain-deck-14) revealed and entered the city."), in fights and escapes, and in both Victory Piles (15 display entries, none "Bystander").
 
 ### WP-796 — "Add an extra Henchman group" schemes require the extra group (EC-833 / D-24666) (2026-10-07)
 
@@ -362,7 +362,7 @@ the Rooftops later in the turn still gets the reduction.
 
 - **Engine only** (`heroAbility.setup.ts`, `heroEffects.execute.ts`). game-engine 4883 / 0 fail (+4, revert-proofed); server 1455 / 0.
 - **Coverage baseline updated:** co2e, msp1 and xmen each have one unmarked conversion line that now honestly counts as `noEffect`. Ledger and index checks are current.
-- **Live-verify (D-24026): pending.** Play Silent Sniper with exactly one Villain holding a Bystander and look for the "for free" line. Play God of Thunder; the diagnostics should show no recruit/attack no-handler traces.
+- **Live-verify (D-24026): Silent Sniper half PASS, God of Thunder half pending.** Silent Sniper: match `B59aMEnwd5M` (2026-10-06, per D-24662), and again in match `CM_RIBLkJem` (build `4d96598`), where "Player 0's Silent Sniper defeats Loki for free." (32.2.11). Still pending: play God of Thunder; the diagnostics should show no recruit/attack no-handler traces.
 
 ### D-24661 — solo Covering Fire and Whispers and Lies say they did nothing; Cruel Ruler names its free defeat (direct fix) (2026-10-05)
 
@@ -617,7 +617,7 @@ Wound (e.g. from fighting Sabretooth) gave no prompt. Revealing it from play lea
 stops one Wound.
 
 - **Engine only.** `divingBlock.logic.ts` (`countRevealableDivingBlockCopies` counts hand + play area) + 4 tests.
-- **Live-verify (D-24026):** pending. Play Diving Block, then fight a villain that wounds you (Sabretooth) or take a
+- **Live-verify (D-24026), 2026-10-10: PASS.** Match `r8_2EFHd3Ah` (build `031aaf0`, 2p bot-ally Loki / Midtown): Diving Block was played (30.2.5), then revealed from the play area to stop Crazed Rampage's Wound (30.2.11). On turn 36 one played Diving Block (36.2.10) was revealed twice more (36.2.22, 36.2.33), so it stayed in play after revealing. Original recipe: play Diving Block, then fight a villain that wounds you (Sabretooth) or take a
   Master Strike: the "Reveal Diving Block" prompt appears, and Diving Block stays in your play area after revealing.
 
 ### D-24650 — The bottom-left play buttons no longer cover the Reveal button (direct fix) (2026-10-01)

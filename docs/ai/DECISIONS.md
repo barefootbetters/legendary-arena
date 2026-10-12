@@ -46407,6 +46407,8 @@ parity), D-24568 (the WP-745 sweep).
 
 **Gates.** `divingBlock.logic.test.ts` 15 / 0 fail. The hand-count test was renamed with the counter, and 4 tests were added: a played copy counts alongside hand copies; a Wound gained after Diving Block was played parks the reveal choice; revealing the played copy returns the Wound, draws a card and leaves Diving Block in play; one played copy plus two Wounds parks only one interception.
 
+**Live-verify (D-24026), 2026-10-10: PASS.** Match `r8_2EFHd3Ah` (build `031aaf0`): a played Diving Block was revealed from the play area to stop a Wound (30.2.5 → 30.2.11), and on turn 36 the same played copy was revealed twice (36.2.22, 36.2.33).
+
 **Reserved by:** NUMBER-LEDGER D-24651. Related: D-24499 / WP-682 (Diving Block), WP-684 (non-active seat choice), D-24497 / D-24645 (rules v23 "your Heroes" = hand + played this turn), D-24026 (the live session that surfaced it).
 
 ---
@@ -46813,6 +46815,8 @@ No new G field, move or UIState field. Gameplay and scoring are unchanged; Killb
 
 **Gates.** game-engine 5004 / 0 fail, with 5 new cases (3 `buildCardDisplayData.test.ts`, 2 `psychicLink.revealFromHand.test.ts`). Each fix is revert-proofed by its own case. Also: server 1457 / 0; arena-client 2296 / 0; `sim:coverage --check` OK; `sim:runtime-observed:check` current; `pnpm -r build` 0. The replay sentinel is a Legacy Virus match, so its hash is unaffected.
 
+**Live-verify (D-24026), 2026-10-10: PASS.** Match `38KtA2vWDg9` (build `c26dc19`): Killbots read "Killbot" entering the City (1.1.1), in fights and escapes, and in the Victory Pile display.
+
 **Reserved by:** NUMBER-LEDGER D-24668. Related: WP-513 / D-24324 (Killbots conversion), D-24325 (the Killbot attack counter), WP-659 / D-24470 (reveal-from-hand), WP-434 (log outcomes).
 
 ---
@@ -46841,6 +46845,8 @@ The cards on this path:
 Each now dispatches with a current player who holds no seat in its fixture, so every assertion about the auto-pick order is unchanged. Three new cases pin the new behavior: a Mag2 current-player park beside other players' auto-KO, a magnitude-1 park, and a forced KO that still auto-resolves. The two park cases fail against the old engine.
 
 **Gates.** game-engine 5007 / 0 fail; server 1457 / 0; `sim:coverage --check` OK; `sim:runtime-observed:check` current; the sentinel replay (Brotherhood, zone-locked Juggernaut only) is unchanged; `pnpm -r build` 0.
+
+**Live-verify (D-24026), 2026-10-10: PASS (log evidence).** Match `GkZeatCQh5f` (build `39c8244`): Destroyer's Escape parked the current player's two-KO choice ("the active player must KO two heroes; other players KO’d …", 20.1.3), resolved at 20.1.4–5.
 
 **Reserved by:** NUMBER-LEDGER D-24669. Related: D-24644 (Juggernaut, the zone-locked half), D-24386 / D-24284 (current player chooses, others auto), D-24298 (`remaining`), D-18902 / D-18503 / D-20602 (the auto-pick order kept for other players and the bot), D-24656 (the escape procedure).
 
