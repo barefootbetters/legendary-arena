@@ -139,8 +139,8 @@ wins.
 | `ewiki.legendary-arena.com` | `apps/wiki-viewer` | Cloudflare Worker (assets-only, `legendary-arena-wiki`) | live | Gated behind Cloudflare Access (302/401/403 expected). Moved off the Render static site by D-24690; `workers_dev` / `preview_urls` off, so no other public hostname |
 | `dashboard.legendary-arena.com` | `apps/dashboard` | Cloudflare Worker (assets-only, `legendary-arena-dashboard`) | live | Gated behind Cloudflare Access (302/401/403 expected). Moved off Cloudflare Pages by D-24690; deployed by `dashboard-deploy.yml` |
 | `api.legendary-arena.com` | `apps/server` | Render | live | CNAME to `legendary-arena-server.onrender.com` (not CF-proxied — Render needs direct origin for TLS + WebSocket) |
+| `legends.legendary-arena.com` | `apps/legends-board` (WP-143) | Cloudflare Pages (`legendary-arena-legends`) | live | Public scoreboard; reads R2 snapshots, no server API calls. Live since 2026-07-08 (SPA shipped 2026-05-15) |
 | `wiki.legendary-arena.com` | TBD (separate Hugo site) | Cloudflare Pages | planned | Public player wiki; not yet authored |
-| `legends.legendary-arena.com` | `apps/legends-board` (WP-143) | Cloudflare Pages | planned | Public scoreboard; reads R2 snapshots, no server API calls |
 | `images.legendary-arena.com` | R2 bucket (external) | Cloudflare R2 + CDN | live | Card images; bucket index returns 403/404, individual keys return 200 |
 
 **Hosting model:** Cloudflare Pages for the public static SPAs and Hugo
