@@ -874,12 +874,15 @@ export function decidePendingChoiceDispatch(state) {
  * is silently rejected. Card plays generate the turn's attack/recruit economy;
  * they are NOT stage-advancing, so a rejected play stops the play step (the
  * existing _stateID silent-rejection guard) rather than aborting the match.
+ * After each accepted play it drains any pending choice the card parked
+ * (D-24695), so the next play is not refused by the block-all guard.
+ * Exported for the hand-play drain regression suite.
  *
  * @param {{ moveParams: object, controller: object, db: object, matchId: string }} loop - Loop context.
  * @param {object} state - The current match state (currentStage === 'main').
  * @returns {Promise<{ kind: 'progressed' | 'game-over' | 'abort', state?: object, reason?: string, playedCount: number }>}
  */
-async function playHandCards(loop, state) {
+export async function playHandCards(loop, state) {
   const player = state.ctx.currentPlayer;
   let playedCount = 0;
   while (playedCount < 30) {
@@ -906,6 +909,23 @@ async function playHandCards(loop, state) {
     }
     playedCount += 1;
     await recordAndPace(loop.controller, loop.db, loop.matchId);
+    if (after === null) {
+      continue;
+    }
+    // why: D-24695 — a played card can park a block-all pending choice (anni
+    // Brainstorm's Time Loop Experiments parks put-a-hand-card-on-deck-top), and
+    // the engine then refuses every later playCard until it resolves. That
+    // refusal is a void return boardgame.io still commits (_stateID advances),
+    // so without this drain the loop re-submitted the blocked card to the
+    // 30-play cap and the bot forfeited the rest of its hand for the turn.
+    // drainPendingChoices does no I/O when
+    // nothing is parked, so a choice-free turn submits the same moves as before;
+    // each drain dispatch is progress-checked, so it cannot spin. `after` is
+    // current: only this loop submits moves to an autoplay match.
+    const drainResult = await drainPendingChoices(loop, after);
+    if (drainResult.kind !== 'progressed') {
+      return { ...drainResult, playedCount };
+    }
   }
   const finalState = await fetchMatchState(loop.db, loop.matchId);
   return { kind: 'progressed', state: finalState ?? state, playedCount };

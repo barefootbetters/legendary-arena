@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24695 — The Watch Bot Play bot keeps playing its hand after a card asks it to choose (direct fix) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy), Watch Bot Play only.** When the autoplay bot plays a card that stops for a choice (anni Brainstorm's Time Loop Experiments: put a card from your hand on top of your deck), it now makes the choice and plays the rest of its hand. Before, the engine refused every later play while the choice was open. The bot re-submitted the same blocked card until its 30-play limit, about 23 seconds of dead playback at the default speed, and then spent its Recruit and Attack with the rest of the hand unplayed.
+
+- **Server only.** No engine, rule or state change. The bot-ally driver was already correct: it picks every move from the engine's legal moves, which put the open choice first.
+- **Live-verify (D-24026): pending.** Watch a bot match with a choose-a-card Hero (Time Loop Experiments) and check that the bot keeps playing cards after it resolves the choice.
+
 ### D-24694 — Spectrum counts the classes in your hand (direct fix) (2026-10-12)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** A Spectrum ability ("only if you have at least 3 classes of Hero") now counts the classes in your hand as well as the cards you played this turn, as rules v23 says. Before, a third class held in hand didn't count, so the ability was skipped. The skip message now reads "… 3 different Hero classes in hand or play — you have N".
