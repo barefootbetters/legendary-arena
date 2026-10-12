@@ -358,7 +358,12 @@ with the **Tie to KPIs** rule below (acquisition / value / cost).
 | Email / newsletter automation | Brevo pipeline exists but not Claude-triggered |
 | Financial reporting | No automated revenue / royalty tracking |
 | Dependency updates | No automated `pnpm update` + test cycle |
-| Uptime monitoring | `pnpm check` is manual; no scheduled probe |
+
+Uptime monitoring left this list on 2026-10-12. UptimeRobot probes
+`api.legendary-arena.com/health` every 5 minutes, and two healthchecks.io
+dead-man's switches cover the API droplet and its nightly backup (see
+[Ubuntu lab provisioning](ubuntu-lab-provisioning.md#rehearsal-results-2026-10-11)).
+`pnpm check` is still the manual sweep of every domain.
 
 **Assessment:** Cadence exists in CI (nightly sweep + triage, daily DB
 backup, monthly DR-drill reminders, weekly inventory and roadmap counts,

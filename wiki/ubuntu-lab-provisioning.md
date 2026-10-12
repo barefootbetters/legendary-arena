@@ -104,7 +104,7 @@ driver too.
 | Edge | Cloudflare in front; Nginx terminates TLS with a Cloudflare Origin Certificate. |
 | Deploy | GitHub Actions → SSH → `git pull` + build + `systemctl reload`. |
 | Backups | `pg_dump` to R2, restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11, and the R2 upload and restore-from-R2 passed on 2026-10-12. |
-| Monitoring | Provisioner `60` every 5 min, plus a ping after each backup, to two healthchecks.io dead-man's-switch checks that email on a failure or a missing ping. Rehearsed 2026-10-12, including a real alert. |
+| Monitoring | Provisioner `60` every 5 min, plus a ping after each backup, to two healthchecks.io dead-man's-switch checks that email on a failure or a missing ping. Rehearsed 2026-10-12, including a real alert. UptimeRobot checks the public `api.…/health` path every 5 minutes. |
 
 The executable versions — cloud-init, the numbered provisioners, the systemd
 unit, the TLS setup and the deploy pipeline — live in the `legendary-arena-lab`
@@ -171,10 +171,13 @@ personally; the private key went nowhere else. At cutover, `api.` joins the
 rule, and its record changes from today's DNS-only CNAME to Render into a
 proxied A record to the droplet. Rollback restores that CNAME exactly.
 
+**External uptime monitor (2026-10-12).** UptimeRobot (free plan) checks
+`https://api.legendary-arena.com/health` every 5 minutes and emails on failure.
+The on-box check calls `127.0.0.1`, so it never tests DNS, Cloudflare, Nginx, or
+TLS; this monitor does. It's green against Render today and follows `api.` to the
+droplet at cutover with no change.
+
 **Not yet rehearsed:**
-- An external uptime monitor on `https://api.legendary-arena.com/health`. The
-  on-box check calls `127.0.0.1`, so it never tests Nginx, TLS, Cloudflare, or
-  DNS; this monitor is set up at cutover.
 - The cutover itself: a fresh production dump, the `api.` DNS flip, and the
   rollback drill (repointing `api.` back to Render).
 
