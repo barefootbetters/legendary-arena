@@ -325,10 +325,12 @@ is not a fight or an escape: nothing triggers, and a Villain moved to the Bridge
 - **Counts.** game-engine 4883 → 4918 / 0 fail; arena-client 2270 → 2278 / 0 fail; dashboard 570 / 0; vue-tsc 0;
   replay fixtures and sentinel hashes byte-unchanged (no re-pin). Drift pins only among existing tests
   (`HERO_KEYWORDS` 76 → 77, handlers 59 → 60, moves 46 → 47, on top of WP-794). Revert proofs 4/4.
-- **Live-verify (D-24026): pending (operator, post-deploy).** In a match with core Storm, play Spinning Cyclone:
-  move a Villain holding a Bystander to an empty space (move + rescue lines), swap two Villains once, decline
-  once, confirm no freeze, and confirm `pendingMoveVillainChoice` appears in the Play Diagnostics
-  `uiStateSnapshot` while the prompt is open. Record the matchId here.
+- **Live-verify (D-24026), 2026-10-12: PASS (log evidence).** Match `13KtRi8XZSU` (build `a9cd238`, 2p bot-ally Loki / Midtown Bank Robbery):
+  - **Move + rescue:** Destroyer moved from the Bank to the empty Bridge and 1 Bystander was rescued (30.2.6–7).
+  - **Swaps:** Enchantress and The Leader (14.2.2), Zzzax and Maestro (18.2.4).
+  - **Declines:** three (20.2.8, 24.2.4, 36.2.6), and the empty-City no-op (40.2.2).
+  - **No freeze:** the game ran to the final blow.
+  - **Not checked:** the `pendingMoveVillainChoice` snapshot. The export is taken at game end, so no prompt was open.
 
 ### WP-794 — Storm and Forge "this turn gets -N attack" lines lower fight costs (EC-831, D-24663) (2026-10-06)
 
@@ -351,9 +353,10 @@ the Rooftops later in the turn still gets the reduction.
   Replay fixtures and `PRE_WP080_HASH` are byte-unchanged.
 - **Coverage baseline updated:** `noEffect` core −7, cvwr −5, dkcy −5. The ledger, mechanics, effect index and
   runtime-observed artifacts are unchanged.
-- **Live-verify (D-24026): pending.** In a match with core Storm, play Lightning Bolt with a Villain on the
-  Rooftops. Confirm the log line, that the Rooftops card's cost drops by 2 with the altered-cost badge, and that the
-  fight spends the reduced amount.
+- **Live-verify (D-24026), 2026-10-12: PASS (log evidence).** Match `13KtRi8XZSU` (build `a9cd238`, 2p bot-ally Loki / Midtown Bank Robbery). The bot's Lightning Bolt logged the Rooftops −2 line every play (11.2.3 …). Fights only affordable at the reduced cost:
+  - **Turn 11:** Abomination (printed 5) was fought on the Rooftops with 4 attack (11.2.13).
+  - **Turn 23:** two Lightning Bolts took Zzzax from 7 (printed 5 + 2 Bystanders) to 3, fought with 5 attack (23.2.20).
+  - **Not checked:** the altered-cost badge (a visual).
 
 ### D-24662 — Silent Sniper and Pure Fury name their free defeat; God of Thunder stops logging phantom hollows (direct fix) (2026-10-06)
 

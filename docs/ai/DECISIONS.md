@@ -46728,6 +46728,8 @@ D-24486 already kept each `-N[icon:attack]` from becoming a phantom +N grant, so
 - `ledger:heroes`, `mechanics:metadata`, `effect-index`, `sim:runtime-observed` and `cards:check` are current and unchanged.
 - D-24026 live verify is operator-pending.
 
+**Live-verify (D-24026), 2026-10-12: Lightning Bolt Rooftops PASS (log evidence).** Match `13KtRi8XZSU` (build `a9cd238`, 2p bot-ally Loki / Midtown Bank Robbery): a fight against printed-5 Abomination with 4 attack (11.2.13), and a two-Bolt 7 → 3 Zzzax fight with 5 attack (23.2.20), each affordable only at the reduced cost. The altered-cost badge was not checked.
+
 **Reserved by:** NUMBER-LEDGER D-24663 (#2610). Related: WP-794 / EC-831, D-24652 (WP-790 lazy-field pattern, `AttackTargetName`, `formatAttackTargets`), D-24295 (`CITY_SPACE_NAMES` / `citySpaceNameForIndex`), D-24486 (negative-icon suppression), D-24623 (`gate-only` hollow), D-24574 (projected `fightCost`), D-24603 (Henchmen are Villains), D-24372 (runtime drift pins), WP-795 / D-24664 (Spinning Cyclone).
 
 **Live-verify (D-24026), 2026-10-07: Tidal Wave Bridge half PASS.** Match `1K760WkJX68` (build `1f4ce39`): Tidal Wave logged the Bridge -2 line, and on turn 14 nine attack paid the Bridge Sentinel at 1 plus Magneto at 8, which is unaffordable at the unreduced 11. Lightning Bolt (Rooftops) and the Ranged Mastermind -2 line are still unexercised live. The on-screen half is confirmed too: Jeff saw the Bridge Villain's cost drop with the altered-cost badge.
@@ -46752,6 +46754,11 @@ Around it: the block-all guard `hasPendingMoveVillainChoice(G)` beside every Cov
 **Determinism.** The queue is runtime-only and lazy-initialized at the park site, never in `Game.setup`. The sentinel replay fixture never plays Storm, so `finalStateHash` / `PRE_WP080_HASH` are byte-unchanged — no re-pin. Drift pins (runtime, D-24372): `HERO_KEYWORDS` 76 → 77 (three files), `HERO_EFFECT_HANDLERS` 59 → 60 (two asserts), moves 46 → 47 — re-pinned on top of WP-794 / D-24663, which merged first and took 75 → 76 / 58 → 59.
 
 **Gates.** game-engine 4883 → 4918 / 0 fail (+35; 1122 → 1131 suites); arena-client 2270 → 2278 / 0 fail (+8); vue-tsc 0; dashboard 570 / 0 (totalObs pin unchanged); `pnpm -r --no-bail test` 0 fail across every package; replay fixtures green and byte-unchanged, no sentinel re-pin. Revert proofs 4/4: the park, the swap, the moved-only rescue and the filter pass-through each fail a new test when reverted. `cards:check` reproducible after the apply script (one `core.json` line); `ledger:heroes`, `mechanics:metadata` and `effect-index` regenerated with a real one-row diff; `sim:runtime-observed` current (a line-ending-only regen reverted); `sim:coverage --check` OK.
+
+**Live-verify (D-24026), 2026-10-12: PASS (log evidence).** Match `13KtRi8XZSU` (build `a9cd238`, 2p bot-ally Loki / Midtown Bank Robbery):
+- move + rescue (30.2.6–7), two swaps (14.2.2, 18.2.4), three declines, and the empty-City no-op (40.2.2);
+- no freeze;
+- the `pendingMoveVillainChoice` snapshot was not checked (the export is taken at game end).
 
 **Reserved by:** NUMBER-LEDGER D-24664 (#2610). Related: WP-719 / D-24541 (Covering Fire, the template), D-24284 (active-player scoping), D-24295 (City space names), D-24336 (two-Villain swap), D-24603 (Henchmen are Villains), D-12803 (audience filter), D-24372 (runtime drift pins), D-24648 (anyPendingChoice freeze class), D-6512 (component authoring form).
 
