@@ -7,6 +7,33 @@
 
 ## Current State
 
+### D-24690 — The ewiki and the dashboard are Cloudflare Workers with one Access-gated door; the Render and Pages bypasses are closed (direct infra change) (2026-10-11)
+
+**Operator-only: `ewiki.legendary-arena.com` and `dashboard.legendary-arena.com`.** Both private sites had a second, ungated address. Render served the whole engineering wiki at `legendary-arena-wiki.onrender.com` (seen 2026-10-05 and 2026-10-11). Cloudflare Pages served the live operator dashboard at `legendary-arena-dashboard.pages.dev`, plus a public preview for every branch push, from 2026-06-02. Access gates hostnames, so these copies were never behind it. Both sites are now assets-only Cloudflare Workers with `workers_dev` and `preview_urls` off. Each one's only address is its custom domain, behind the existing hostname-based Access application.
+
+- **Fixes tried first:**
+  - **Render (#2603):** set `renderSubdomainPolicy: disabled`. The toggle never took effect, because Render never verified the wiki's custom domain: the record was Cloudflare-proxied and pointed at the game server's Render host.
+  - **Pages (#2662):** corrected the `pages.dev` Access runbook. Pages' toggle covers previews only.
+  - **#2673:** updated the dashboard runbook for the live-mode build.
+  - **Decision:** Jeff then chose to move both sites off Render and Pages.
+- **The change (#2697, reserved #2691):**
+  - **Worker configs:** `apps/wiki-viewer/wrangler.jsonc` and `apps/dashboard/wrangler.jsonc`.
+  - **Deploys:** `wiki-viewer.yml` deploys the gated build artifact with wrangler; the new `dashboard-deploy.yml` builds live mode on every push to `main`. Both need the `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` repo secrets.
+  - **Removals:** the wiki service left `render.yaml`, and the `pages.dev` origin left the API's CORS allowlist.
+  - **Decision log:** D-13811 and the hosting half of D-19701 are superseded.
+  - **Docs:** `DOMAINS.md`, the inventory and 19 wiki and docs pages were updated.
+- **Cutover (2026-10-11):**
+  - **First deploy:** uploaded both Workers, but could not attach the custom domains until the old DNS records were deleted.
+  - **Access window:** two probes got `200` in the minute after the ewiki domain attached, before Access applied. Since then, 48 of 48 probes across both hostnames redirect to Access.
+  - **Retirements:** the Render static site is deleted (`onrender.com` → `404`). The Pages project is deleted after its 5,852 deployments were cleared through the API; the `pages.dev` name answered `530`, then left DNS. The `RENDER_WIKI_DEPLOY_HOOK` secret and the temporary tokens are deleted.
+  - **Records:** #2700 recorded the outcome, and #2704 dropped the `pages.dev` probe once the name stopped resolving.
+- **Account sweep.** No other private Workers or Pages project on the account has an open default address: each is either off or behind Access.
+- **Wiki.** The new canonical Guide [Private Site Hosting](../../wiki/private-site-hosting.md) (#2705, revised #2706) explains the one-door shape and the cutover gotchas. `wiki/wiki-viewer.md` History records the wiki side.
+- **Checks.** `pnpm check:domains`: 11 ok, 1 pending (`wiki.`), 0 failed. The retired `onrender.com` host stays as a live `404` probe. Both deploy workflows pass on `main`.
+- **Live-verify (D-24026): done 2026-10-11.** The operator confirmed after login:
+  - the ewiki and its search, and the new History section;
+  - the dashboard: Hanko sign-in, `/overview` with `LIVE` / `CACHED` / `LOCAL` badges and no mock banner, and a `/coverage` deep link on refresh.
+
 ### WP-802 / EC-839 / D-24689 — Operator match: admin-only creation, never scored, and a reveal-all board read (2026-10-11)
 
 **Operator-only, on the game server (after deploy).** An admin can create an unlisted bot-ally **operator match** with `POST /api/admin/operator-match/create-with-bot`, then read its whole board from `GET /api/admin/operator-match/:matchId/board`: every seat's hand, deck in draw order, discard, in-play and victory pile, Wounds split by zone, the villain deck, hero deck and Mastermind tactics in order, the supply counts, the KO and escaped piles, the engine's counters, and the bot's recent decisions (forced or chosen, the policy's own decision lines, the legal-move count). That answers the D-24684 Ymir question in one game. Players see nothing new except that every seat sees the match is an operator match (`UIState.isDebugMatch`). The arena-client panel is the planned follow-on; until it ships, an operator match's gameover submit gets a 422 `debug_match`.
