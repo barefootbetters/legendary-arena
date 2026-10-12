@@ -47738,3 +47738,30 @@ Protect this file.
 ---
 
 Protect this file.
+### D-24704 — Villain-deck reveal-path traces carry the framework turn (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** Every site that builds a `RevealContext` built its `ctx` from `currentPlayer` alone: `revealVillainCard`, the Fight villain-deck play in `defeatCityVillainCore` (Endless Armies of HYDRA, D-24351), `resolvePlayVillainTopChoice` (WP-663), and the exorcise City entry (`exorciseHauntedHero`, D-24587). The villain executor reads `turn` off the ctx it receives, so every villain effect trace and hollow record on the reveal path stamped `turn: 0`. That covers the start-of-turn reveal, any card it chains (The Leader, scheme-twist chained reveals) and the cards a Fight or Shadowed Thoughts plays. The WP-488 `secondary-site` escape trace stamped 0 for the same reason. Hero traces and a Fight's own `onFight` traces carry the framework `ctx.turn`, so one turn's diagnostics mixed real turn numbers with 0 (noted in the D-24703 PR). `HollowEffectRecord.turn` / `EffectTrace.turn` are documented as "the boardgame.io turn number".
+
+**Decision.**
+1. `RevealContext.ctx` is `{ currentPlayer: string; turn: number }`. `turn` is **required**, so `tsc` rejects any production site that omits it. The four sites forward the framework turn: `ctx.turn` in the three moves; the Fight play reads the bare ctx `defeatCityVillainCore` receives via the villain executor's `readTurnNumber`, now exported for this use.
+2. Rule handlers that chain a reveal (`schemeTwistResolvers`) pass the `RevealContext` they were given, so they inherit the turn unchanged.
+3. **Framework turn, not play-relative.** The trace contract is the boardgame.io turn, which is what hero traces already stamp. Re-basing every trace onto the log's play-relative turn (`G.logMeta`, D-24697) would change that contract for hero and villain traces alike, so it is not part of this fix.
+4. `readRevealContextTurn` keeps its 0 fallback for hand-built test contexts that carry no numeric `turn`.
+
+**Determinism.** `G.diagnostics` is hash-excluded (WP-488 / D-24294), so traces and hollow records never reach `finalStateHash`, `PRE_WP080_HASH`, goldens, PAR or sim profiles. Nothing in gameplay reads `turn` from the context. No re-pin.
+
+**Files.** `packages/game-engine/src/villainDeck/villainDeck.reveal.ts`, `moves/fightVillain.ts`, `moves/playVillainTop.resolve.ts`, `moves/exorciseHauntedHero.ts`, `villain/villainEffects.execute.ts` (export + doc), `diagnostics/hollowEffect.types.ts` (doc), and the reveal and fight tests. No HTTP endpoint touched.
+
+**Tests.** `villainDeck.reveal.test.ts`: a turn-7 `revealVillainCard` of The Leader that plays an Ambush villain stamps `turn: 7` on every trace, both The Leader's and the played card's. `fightVillain.test.ts`: a turn-9 Endless Armies defeat that plays an Ambush villain stamps 9 on the Fight trace and the played card's trace.
+
+**Revert proof.** With the five source files reverted, both new tests fail with actual `0` (expected 7 and 9).
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5148, arena-client 2307, server 1759 with 207 DB-gated skips without `TEST_DATABASE_URL`); `check-number-ledger --check` passed. No hash re-pin; no `lagn-v1.json` churn.
+
+**Live-verify (D-24026):** pending. After deploy, a match's Play Diagnostics export shows `effectTraces` for villain Ambush / Escape effects on the start-of-turn reveal with the same `turn` as that turn's hero traces, not 0.
+
+**Reserved by:** NUMBER-LEDGER D-24704. Related: D-24703 (where this was noted), WP-488 / D-24294 (effect traces, diagnostics hash exclusion), WP-257 / D-24033 (hollow records), D-24351, D-24697, D-24026.
+
+---
+
+Protect this file.

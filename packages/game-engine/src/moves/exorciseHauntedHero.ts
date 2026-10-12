@@ -237,7 +237,7 @@ export function exorciseHauntedHero(
     // Ambush, and any escape it causes keeps reveal parity (enterCityIgnoringAmbush).
     enterCityIgnoringAmbush(
       G,
-      { random, ctx: { currentPlayer: ctx.currentPlayer } },
+      { random, ctx: { currentPlayer: ctx.currentPlayer, turn: ctx.turn } },
       DEFAULT_IMPLEMENTATION_MAP,
       haunter.cardId,
     );

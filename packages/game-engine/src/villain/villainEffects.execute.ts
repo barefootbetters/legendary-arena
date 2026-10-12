@@ -362,12 +362,13 @@ function resolveCardDisplayName(G: LegendaryGameState, extId: CardExtId): string
  * Duplicate-first per §16.1 — the two executors are independent dispatch surfaces;
  * a third appearance would justify extracting a shape-aware reader. The villain CTX
  * test object carries no `turn`, so a missing / non-numeric value falls back to 0,
- * never a throw.
+ * never a throw. Exported for `defeatCityVillainCore` (D-24704), which reads the same
+ * bare ctx to forward the turn into the RevealContext of a Fight villain-deck play.
  *
  * @param ctx - The boardgame.io context, typed unknown to avoid a framework import.
  * @returns The turn number, or 0 when unavailable.
  */
-function readTurnNumber(ctx: unknown): number {
+export function readTurnNumber(ctx: unknown): number {
   if (ctx !== null && typeof ctx === 'object') {
     const turn = (ctx as { turn?: unknown }).turn;
     if (typeof turn === 'number' && Number.isFinite(turn)) {
@@ -657,7 +658,7 @@ const DELIBERATE_NO_OP_VILLAIN_PRIMITIVES: ReadonlySet<VillainEffectPrimitive> =
  * @param timing - The timing that fired ('onAmbush' | 'onFight' | 'onEscape').
  * @param descriptor - The dispatched descriptor.
  * @param application - The dispatch result (null when no handler was reached).
- * @param turn - The turn number for the trace (0 on the reveal path, per readTurnNumber).
+ * @param turn - The framework turn number for the trace (per readTurnNumber).
  * @returns The effect trace to record.
  */
 function buildVillainEffectTrace(
