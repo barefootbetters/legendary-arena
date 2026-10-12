@@ -273,9 +273,11 @@ secrets as the ewiki cutover (step 1 there). Do steps 1–2 before merging.
    error` (code 10000) even though it verified as active; a **user** token
    (My Profile → API Tokens, with Cloudflare Pages: Edit) worked. Delete
    that token afterwards. Once the project is gone the `pages.dev` hostname
-   answers `530` (no such project; the `*.pages.dev` wildcard still
-   resolves). Its [domains.json](./domains.json) row stays as a regression
-   probe expecting `404`/`530`.
+   briefly answers `530` (no such project), then drops out of DNS entirely
+   (`ENOTFOUND`, observed within the hour). `check:domains` has no
+   "must not resolve" verdict, so its [domains.json](./domains.json) row was
+   removed; nothing points at the name any more (no DNS record, no CORS
+   entry).
 
 **Real data is wired.** The launch deferred real data (D-19702), and
 follow-up WPs wired the widgets to admin-session-gated `/api/dash/*`

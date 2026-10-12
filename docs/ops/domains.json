@@ -97,16 +97,6 @@
       "notes": "Live since 2026-06-02. Served by the assets-only Cloudflare Worker legendary-arena-dashboard since the D-24690 cutover (workers_dev and preview_urls off); before that, the CF Pages project legendary-arena-dashboard. Cloudflare Access (Self-hosted, Email OTP, single-operator allow = jeff@barefootbetters.com) redirects unauthenticated probes to login (302) or rejects them (401/403). A 200 here means the gate is misconfigured and the dashboard is publicly readable. expectedLocation is a prefix; the Access login URL appends a long JWT in the query string that varies per request. Launched in mock mode (D-19702); now a live-mode build (VITE_USE_MOCKS=false, VITE_API_BASE_URL=https://api.legendary-arena.com, Hanko sign-in; read from the deployed bundle 2026-10-10), so a missing gate exposes the live operator dashboard with only the server's admin-session check in front of live data."
     },
     {
-      "name": "Internal admin dashboard (retired pages.dev alias)",
-      "url": "https://legendary-arena-dashboard.pages.dev",
-      "host": "Cloudflare Pages (project deleted)",
-      "source": "none — CF Pages project legendary-arena-dashboard, retired by D-24690",
-      "expectedStatus": [404, 530],
-      "state": "live",
-      "anchor": "dashboard",
-      "notes": "The retired CF Pages project's built-in production alias. It served the live operator dashboard UNGATED from 2026-06-02 (observed 200 on 2026-09-10, 2026-10-09 and 2026-10-11), because the dashboard Access application gates only the custom domain and Pages' Enable access policy covers only preview deployments. D-24690 moved the dashboard to a Cloudflare Worker; the Pages project was deleted on 2026-10-11 and this host has answered 530 (no such project) since. The *.pages.dev wildcard still resolves, so this is a status check, not a DNS one. Kept as a regression probe: a 200 means a Pages project named legendary-arena-dashboard exists again (DOMAINS.md#dashboard)."
-    },
-    {
       "name": "API (game server, friendly hostname)",
       "url": "https://api.legendary-arena.com/health",
       "host": "Render (legendary-arena-server)",

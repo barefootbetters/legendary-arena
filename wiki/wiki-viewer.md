@@ -521,8 +521,8 @@ The theme is defined in `apps/wiki-viewer/layouts/` and
   Render static site was deleted the same day, and
   `legendary-arena-wiki.onrender.com` now returns `404`. The dashboard's
   Pages project (5,852 deployments) was deleted after its deployments were
-  cleared through the API, so `legendary-arena-dashboard.pages.dev` now
-  answers `530` (no such project).
+  cleared through the API; `legendary-arena-dashboard.pages.dev` answered
+  `530` (no such project) for a few minutes and then dropped out of DNS.
 
 ## References
 

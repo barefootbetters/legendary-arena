@@ -66,7 +66,6 @@ Canonical source: `docs/ops/domains.json`. Ops runbook: `docs/ops/DOMAINS.md`.
 | `legendary-arena-wiki.onrender.com` | none — Render static site legendary-arena-wiki, retired by D-24690 | Render | live |
 | `legends.legendary-arena.com` | apps/legends-board | Cloudflare Pages | live |
 | `dashboard.legendary-arena.com` | apps/dashboard | Cloudflare Workers + Cloudflare Access | live |
-| `legendary-arena-dashboard.pages.dev` | none — CF Pages project legendary-arena-dashboard, retired by D-24690 | Cloudflare Pages (project deleted) | live |
 | `api.legendary-arena.com` | apps/server | Render (legendary-arena-server) | live |
 | `legendary-arena-server.onrender.com` | apps/server | Render | live |
 | `images.legendary-arena.com` | external (BarefootBetters image bucket) | Cloudflare R2 + Cloudflare CDN | live |
@@ -84,7 +83,7 @@ answers "what URL maps to what app."
 | Service | Kind | URL / Scope |
 |---|---|---|
 | Cloudflare Access (zero-trust gate) | zero-trust gate | `dashboard.legendary-arena.com`, `ewiki.legendary-arena.com` |
-| Cloudflare Pages (static hosting) | static hosting | `cards.legendary-arena.com`, `legendary-arena-dashboard.pages.dev`, `legendary-arena.com`, `legends.legendary-arena.com`, `play.legendary-arena.com`, `wiki.legendary-arena.com`, `www.legendary-arena.com` |
+| Cloudflare Pages (static hosting) | static hosting | `cards.legendary-arena.com`, `legendary-arena.com`, `legends.legendary-arena.com`, `play.legendary-arena.com`, `wiki.legendary-arena.com`, `www.legendary-arena.com` |
 | Cloudflare Workers (static assets) | static assets | `dashboard.legendary-arena.com`, `ewiki.legendary-arena.com` |
 | Cloudflare R2 (object storage + CDN) | object storage + CDN | `images.legendary-arena.com` |
 
