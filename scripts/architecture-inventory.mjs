@@ -209,6 +209,16 @@ const CURATED_INFRASTRUCTURE_SERVICES = [
       '`/fail` ping or a missing ping. Ping URLs live only in the droplet\'s root-only ' +
       '`/etc/la/*.env`.',
   },
+  {
+    name: 'UptimeRobot (external uptime check)',
+    provider: 'UptimeRobot',
+    kind: 'External HTTP(s) uptime monitoring (free plan, $0)',
+    url:
+      'One HTTP(s) monitor on `https://api.legendary-arena.com/health`, 5-min interval, ' +
+      'email alerts. It checks the public path the on-box check skips (DNS → Cloudflare → ' +
+      'Nginx/TLS → server), so it follows `api.` across the Render → droplet cutover ' +
+      'unchanged. Created 2026-10-12.',
+  },
 ];
 
 // why: the Infrastructure-services table derives the managed-Postgres row from
