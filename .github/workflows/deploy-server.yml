@@ -94,9 +94,11 @@ jobs:
             exit 1
           fi
           install -d -m 700 ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          # why: secrets set from a Windows shell can carry CR line endings, which
+          # make OpenSSH reject the key ("invalid format") and the host line.
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Ask the droplet which commit is live
@@ -106,7 +108,7 @@ jobs:
         run: |
           set -euo pipefail
           live="$(ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            -o ConnectTimeout=20 "deployer@$DEPLOY_HOST" status | tail -n 1 | tr -d '\r')"
+            -o ConnectTimeout=20 "deployer@$(printf '%s' "$DEPLOY_HOST" | tr -d '\r\n ')" status | tail -n 1 | tr -d '\r')"
           if ! [[ "$live" =~ ^[0-9a-f]{40}$ ]]; then
             echo "::error::The droplet did not report a live commit (got '$live')."
             exit 1
@@ -154,7 +156,7 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=20 -o ServerAliveInterval=30 \
-            "deployer@$DEPLOY_HOST" "deploy $TARGET"
+            "deployer@$(printf '%s' "$DEPLOY_HOST" | tr -d '\r\n ')" "deploy $TARGET"
 
       - name: Health through Cloudflare
         if: steps.plan.outputs.deploy == 'true'
