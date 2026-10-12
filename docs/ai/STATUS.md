@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24699 — The Watch Bot Play bot skips a card the engine won't let it play (direct fix) (2026-10-12)
+
+**User-visible on `play.legendary-arena.com` (after deploy), Watch Bot Play only.** When the autoplay bot holds a card the engine refuses to play, it now skips that card and plays the rest of its hand. Examples are a Wound, or a "To play this card, you must discard…" Hero whose cost its hand can't pay (ssw2 Extinction Blast discards three). Before, the bot re-submitted the refused card until its 30-play limit, about 23 seconds of dead playback at the default speed, and never played the cards behind it. The server log now shows one "the engine refused to play card …" line for the skipped card. The bot also resolves a choice that is already open when it starts playing its hand, before its first play.
+
+- **Server only.** No engine, rule or state change. The old check ("the match state id did not advance") could never catch an engine refusal, because boardgame.io commits a refused move too. The bot now checks whether the card actually left its hand.
+- **Live-verify (D-24026): pending.** Watch a bot match after the bot takes a Wound, and check that the turn's "played N cards" log line is the hand minus the Wounds, not 30.
+
 ### D-24697 — Operator bot decisions carry the turn the board shows (direct fix) (2026-10-12)
 
 **Operator-only, on the game server (after deploy).** On the operator board (`GET /api/admin/operator-match/:matchId/board`), each bot decision's `turn` now matches the board's turn counter and the game log. It used to read one turn ahead, because the lobby uses a framework turn before play starts. The production live-verify of operator match `3pNYCKHKJCE` showed the bot's first turn as `turn: 2` on board turn 1.

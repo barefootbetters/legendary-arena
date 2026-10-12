@@ -47535,4 +47535,38 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 
 ---
 
+### D-24699 — The autoplay bot skips a hand card the engine refuses instead of re-playing it to the cap (direct fix, no WP) (Active 2026-10-12)
+
+**Context.** The Watch Bot Play loop (`apps/server/src/autoplay/autoplay.mjs`, `playHandCards`) always played `hand[0]` and detected a refused play by "the match `_stateID` did not advance". That guard cannot fire for an engine refusal. The engine refuses a `playCard` by returning void without moving the card, and boardgame.io still commits the move, so `_stateID` advances. This holds even when the refusal leaves `G` untouched: the Wound guard (D-24455) is a bare `return`, and its reproduction still advanced `_stateID` with the old guard never logging. So any hand card the engine refused was re-submitted until the 30-play cap, each one paced (~23 s of dead playback at 800 ms), and the step logged "played 30 cards" while the rest of the hand went unplayed. D-24695 fixed the pending-choice cause. The other causes remained. Real ones: a Wound in hand (D-24455, common once the bot takes damage) and a discard-to-play card whose cost the hand cannot pay (D-24185; ssw2 Extinction Blast costs three discards).
+
+**Decision.**
+1. **Detect a refusal by its effect.** After each `playCard`, the play step compares the player's zones before and after. The play is refused when the card's copies in hand did not drop AND its copies in `inPlay` did not rise. It counts copies, not membership, because starting S.H.I.E.L.D. cards and Wounds share one id per kind: a played Agent leaves another Agent in hand.
+2. **Skip, never re-submit.** A refused card id goes into a per-step set. It is not counted as played, not paced, and not submitted again that step. The picker takes the first hand card, in hand order, that is not in the set. When none is left, the step ends. One full-sentence `console.log` line names the card and says the engine refused it. Each loop pass either counts a play or adds a new id to the set, so the loop cannot spin.
+3. **Drain before the first pick.** `playHandCards` now calls the existing `drainPendingChoices` once before its first pick, as well as after each accepted play (D-24695). A choice can already be parked when the step starts: a card replayed during the start → main advance (WP-803, drafted) is one example, and `runStartStage` does not drain after that advance. Without this drain, the block-all guard would refuse every hand card, the skip rule would skip them all, and the bot would play nothing. The alternative, draining and retrying a refused card once before skipping it, was rejected as larger and less clear. The drain does no I/O when nothing is parked, so a normal turn submits the same moves.
+4. **Unchanged.** The D-24695 post-play drain, hand order, the 30-play cap (now a backstop), pacing of accepted plays, the "played N cards" line and the spend step. A play boardgame.io rejects outright (`_stateID` unchanged) still stops the step through the old guard. Server wiring only: the bot submits intent, and the engine still decides what is legal.
+5. **Known edge.** A card that leaves hand and returns to hand within the same move, never landing in play, reads as refused and is not replayed that step. That is the safe direction: it ends a possible loop instead of feeding it.
+
+**Determinism.** Engine, feeds and hashes are unchanged. Autoplay matches whose bot holds a refused card now play the rest of that hand, so they play differently from that turn on. Accepted: that is the fix.
+
+**Files.** `apps/server/src/autoplay/autoplay.mjs` (`playHandCards` plus three pure helpers: `countCardCopies`, `isHandPlayRefused`, `pickUnrefusedHandCard`); new `apps/server/src/autoplay/handPlayRefusal.test.ts`. No HTTP endpoint touched.
+
+**Tests.** New `handPlayRefusal.test.ts` uses the D-24695 harness: the real `playHandCards`, boardgame.io's real `Master`, the real engine moves, an in-memory store, a no-op transport and an instant controller.
+- **Extinction Blast shape** (`discard-to-play:3`) with two playable cards: commits exactly three `playCard` (one refused, two played), `playedCount` 2, the Blast stays in hand, and exactly one log line names it.
+- **Wound:** `[Wound, plain, Wound, plain]` commits three `playCard`, and the second Wound copy is never submitted.
+- **Pre-parked choice:** a seeded `pendingPutHandOnDeckTop` resolves first, then the remaining cards play (`resolvePutHandOnDeckTop, playCard, playCard`).
+- **Normal hand:** two Agents, a Trooper and a hero card play exactly once each, in hand order.
+- `handPlayDrain.test.ts` (D-24695) passes unchanged.
+
+**Revert proof.**
+- `autoplay.mjs` restored to HEAD: tests 1–3 fail. The Blast and Wound tests each commit 30 `playCard`. The pre-parked test commits `playCard, resolve…, playCard, playCard`. Test 4 passes either way.
+- Only the opening drain removed: the pre-parked test fails, because every card is skipped and the choice stays parked. The other three pass.
+
+**Gates.** `pnpm install`; `pnpm -r build` 0; `pnpm --filter @legendary-arena/server test` 0 fail (1740 → 1744, 207 DB-gated skips without `TEST_DATABASE_URL`); `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5092, arena-client 2299 unchanged); `check-number-ledger --check` passed. No engine, feed or hash change; no `lagn-v1.json` churn.
+
+**Live-verify (D-24026):** pending. In a Watch Bot Play match where the bot holds a Wound, its "played N cards" server log line shows the hand minus the Wounds, not 30. One "the engine refused to play card pile-wound" line appears for that turn.
+
+**Reserved by:** NUMBER-LEDGER D-24699. Related: D-24695 (post-play drain), D-24038 (progress-checked dispatch), D-24185 / WP-383 (discard-to-play precondition), D-24455 / WP-643 (Wound precondition), D-24692 / WP-803 (start-stage replay), D-24026.
+
+---
+
 Protect this file.
