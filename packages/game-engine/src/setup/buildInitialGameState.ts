@@ -647,6 +647,11 @@ export function buildInitialGameState(
     // PRE_WP080_HASH and every finalStateHash; omit-when-off keeps every normal
     // match byte-identical (the WP-686 finalBlow precedent directly above).
     ...(config.isDebugMatch === true ? { isDebugMatch: true } : {}),
+    // why: WP-805 / D-24700 — seed the random-first-player flag ONLY for two or more
+    // seats and omit it for solo. Omit-when-off keeps every solo match and solo hash
+    // oracle byte-identical (the finalBlow / isDebugMatch precedent directly above);
+    // a flagless G is how the play phase recognizes a pre-WP-805 match.
+    ...(context.ctx.numPlayers > 1 ? { isFirstPlayerRandom: true } : {}),
     selection,
     // why: currentStage is initialized to the first canonical turn stage.
     // The play phase onBegin hook resets it on each new turn. During setup
