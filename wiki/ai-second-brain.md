@@ -23,8 +23,7 @@ source:
   - ../docs/ops/AI_SECOND_BRAIN_RUNBOOK.md
   - ../docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md
   - C:\www\jefferyjjensen-corporate-memory (the ship — private repo barefootbetters/jefferyjjensen-corporate-memory)
-  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0005.pdf (Render bill, Aug 2026)
-  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026 — the hosting cost baseline)
+  - C:\pcloud\LA\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026 — the hosting cost baseline)
   - ../render.yaml
 last-reviewed: 2026-10-11
 ---
@@ -714,8 +713,8 @@ corrupts recall or the store:
   belong.
 - **Cost baseline: what production cost on Render (September 2026, actual).**
   Production ran on Render, not on an owned box, until the 2026-10-12 cutover;
-  it now runs on the ~$24/mo DigitalOcean droplet. Render's September bill (invoice
-  `0SPQWPNF-0006`, paid 2026-10-01) was **$146.35**:
+  it now runs on the ~$24/mo DigitalOcean droplet. Render's September bill (paid
+  2026-10-01) was **$146.35**:
 
   | Line | Render plan | Sep 2026 |
   |---|---|---|
@@ -725,7 +724,7 @@ corrupts recall or the store:
   | Bandwidth | 6.5 GB | $1.05 |
   | ewiki static site | free | $0.00 |
 
-  August's bill (invoice `0SPQWPNF-0005`) was $146.50: the same lines, with
+  August's bill was $146.50: the same lines, with
   7.8 GB of bandwidth at $1.20. Two months 15 cents apart make $146 a month the
   steady run rate. That is about **$1,750 a year** for one server and one
   database. Both plans

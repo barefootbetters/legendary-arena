@@ -248,8 +248,8 @@ const MANAGED_DATABASE_OPS_NOTES = {
 // curated block records it, mirroring MANAGED_DATABASE_OPS_NOTES' role. Update it
 // when a Render plan/instance-type or the workspace tier materially changes.
 // Sourced from the 2026-07-23 server-sizing arc (#948), the 2026-07-23/25 plan
-// bumps (#958 DB, #1014 web), and the Aug/Sep 2026 Render invoices
-// (0SPQWPNF-0005/-0006), which bill `pro` $85.00 + `pro-4gb` $55.30.
+// bumps (#958 DB, #1014 web), and the Aug/Sep 2026 Render invoices, which
+// bill `pro` $85.00 + `pro-4gb` $55.30.
 const RENDER_ACCOUNT_AND_SIZING_NOTES = {
   summary:
     'Render bills on TWO INDEPENDENT axes: (1) a flat, team-level **Workspace plan**, and (2) per-service **instance types** (compute), billed per service on ANY workspace. They are separate — running a larger instance type does NOT require a paid workspace. The project pays for three Render line items: the Workspace, the game server (a web service), and the managed database.',

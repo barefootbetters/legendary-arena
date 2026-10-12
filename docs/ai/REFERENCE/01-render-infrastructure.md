@@ -21,7 +21,7 @@
 | Backups | Daily `pg_dump` to a private R2 bucket, independent of Render (WP-416 / D-24236), plus a monthly DR-drill reminder issue. | `.github/workflows/db-backup.yml`, `dr-drill-reminder.yml`; `docs/ops/DISASTER_RECOVERY.md` |
 | ewiki | **No longer a Render service.** Since 2026-10-11 (D-24690) the ewiki is the assets-only Cloudflare Worker `legendary-arena-wiki` behind Cloudflare Access, deployed by the `wiki-viewer` workflow's deploy job (`wrangler deploy` of the gated build). It left Render because Render's default `legendary-arena-wiki.onrender.com` host served the wiki without the Access gate. The Render service and its deploy-hook secret are retired. | `apps/wiki-viewer/wrangler.jsonc`; `.github/workflows/wiki-viewer.yml` |
 | CORS | The live allowlist in `apps/server/src/server.mjs` (see the historical note under *CORS and networking*). | `apps/server/src/server.mjs` |
-| Cost | **$146.35 for September 2026**: server $85.00, Postgres $55.30, builds $5.00, bandwidth $1.05, ewiki $0. | Render invoice `0SPQWPNF-0006` |
+| Cost | **$146.35 for September 2026**: server $85.00, Postgres $55.30, builds $5.00, bandwidth $1.05, ewiki $0. | Render invoice, September 2026 (operator accounting folder) |
 | Direction | The server and Postgres move to one self-hosted DigitalOcean droplet (~$48/mo); Render stays warm as the rollback target until decommission. Decided at the program level, but stalled since 2026-07-25 and not yet in `DECISIONS.md`. | ewiki *Ubuntu Lab Provisioning* (§ Cost case); `legendary-arena-lab` repo `docs/PLAN.md` |
 
 ---

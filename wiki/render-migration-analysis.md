@@ -18,8 +18,7 @@ status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\render-migration-analysis.md (this page — https://ewiki.legendary-arena.com/render-migration-analysis/)
   - ../render.yaml
-  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0005.pdf (Render bill, Aug 2026)
-  - C:\pcloud\LA\ops\accounting\expenses2026\render-Invoice-0SPQWPNF-0006.pdf (Render bill, Sep 2026)
+  - C:\pcloud\LA\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
 last-reviewed: 2026-10-12
 ---
 
@@ -50,8 +49,8 @@ Every price on this page is dated. Re-check the vendor's page before acting on
 one.
 
 ### Cost case (September 2026)
-What Render charged for August 2026 (invoice `0SPQWPNF-0005`, paid
-2026-09-01) and September 2026 (invoice `0SPQWPNF-0006`, paid 2026-10-01):
+What Render charged for August 2026 (paid 2026-09-01) and September 2026
+(paid 2026-10-01):
 
 | Line | Render plan | Aug 2026 | Sep 2026 | After migration |
 |---|---|---|---|---|
@@ -417,8 +416,8 @@ doing. Co-location removed that hop, so the probe is moot.
 
 - [`render.yaml`](../render.yaml) — Render plan values and the reasons both
   plans were raised.
-- Render invoices `0SPQWPNF-0005` (August 2026) and `0SPQWPNF-0006`
-  (September 2026), in the operator accounting folder listed in `source`.
+- Render invoices for August and September 2026, in the operator accounting
+  folder listed in `source`.
 - `legendary-arena-lab` repo — `docs/PLAN.md` (the migration program, lab
   D-002) and `infra/` (the provisioners).
 - [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md) and
