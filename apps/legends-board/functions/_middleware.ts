@@ -7,8 +7,8 @@
  * a request that raced a deploy), return a real, uncacheable `404` instead of
  * letting the `200`-HTML fall through.
  *
- * Why this exists: `public/_redirects` ships the SPA catch-all `/*  /index.html
- * 200`, so a missing `/assets/<hash>.js` does not `404` — it returns
+ * Why this exists: Cloudflare Pages' built-in SPA fallback (the build ships no
+ * top-level `404.html`) means a missing `/assets/<hash>.js` does not `404` — it returns
  * `index.html` (`text/html`) with a `200`. `public/_headers` marks `/assets/*`
  * `Cache-Control: public, max-age=31536000, immutable`, so Cloudflare caches that
  * HTML **against the asset URL, immutable, for a year**. Every subsequent visitor
