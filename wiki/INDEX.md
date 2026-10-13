@@ -304,14 +304,11 @@ Cross-cutting governance, methodology, and readiness assessments.
   the DigitalOcean vs NameHero comparison, a multi-vendor survey against hard
   requirements, and the architecture candidates weighed. Companion to
   [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
-- [AI Second Brain](ai-second-brain.md) — *(draft, planning)* proposed
-  self-hosted knowledge platform where the corpus is owned and durable while
-  the agent layer stays swappable — *knowledge is permanent, agents are
-  replaceable.* Ten vendor-neutral design principles, a PostgreSQL + pgvector /
-  LiteLLM / Open WebUI / MCP stack, the per-domain knowledge repositories, and
-  the backup-and-restore discipline it inherits from Disaster Recovery. The
-  knowledge-architecture companion to the host-build page
-  [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md); no `D-`/`WP-` yet.
+- [AI Second Brain](ai-second-brain.md) — *(draft)* the Legendary Arena side
+  of the operator's self-hosted knowledge platform (*knowledge is permanent,
+  agents are replaceable*): the engine corpus as one domain, the brain's own
+  host, and the endgame coach's model routing. The full design record moved
+  to the private ship repo on 2026-10-12 (D-24712); the page links to it.
 - [Homepage Marketing Scorecard](homepage-marketing-scorecard.md) —
   SB7 + Player Needs Pyramid graded assessment of the homepage;
   tracks readiness across three questions (Problem / Product / Results).

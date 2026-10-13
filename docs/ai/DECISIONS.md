@@ -47891,4 +47891,25 @@ UptimeRobot measured 10 m 10 s of downtime. `pnpm check:domains`: 11 ok, 0 faile
 
 ---
 
+### D-24712 — The AI Second Brain design record moves to the operator's private ship repo; the ewiki keeps a Legendary Arena page (direct change, no WP) (Active 2026-10-12)
+
+**Context.** D-24341 locked the AI Second Brain architecture and named its governance vehicle: this `DECISIONS.md` record plus the ewiki page `ai-second-brain` as the design record, with the runbook under `docs/ops/`. By 2026-10-12 the page had grown to about 2,700 lines, most of it cross-business: the private ship repo (`barefootbetters/jefferyjjensen-corporate-memory`, adopted 2026-09-29), the notes-migration offer and its pricing, and backups for the operator's personal notes. This repo is public, so that source was public even though the ewiki is gated.
+
+**Decision.**
+
+1. **The design record lives in the ship.** The page, `AI_SECOND_BRAIN_RUNBOOK.md`, `AI_SECOND_BRAIN_VOICE_MOBILE.md`, and `KNOWLEDGE_INVENTORY.template.md` move to the ship's `docs/second-brain/`, readable at `brain.barefootbetters.com` behind Cloudflare Access. The ship's viewer publishes on every push to its `main`.
+2. **D-24341's architecture carries over unchanged** as the ship's charter for the brain. Later changes to it are logged in the ship's `decisions/log.md`, not here. D-24341 stays as written, as history.
+3. **The ewiki keeps `ai-second-brain` as a short Legendary Arena page:** where the documents live, the engine corpus as one read-only domain, the brain's separate host, a pointer to the brain's backup plan (so the System Backup include still resolves), and the endgame coach's gateway routing, which is `apps/server` code and stays here.
+4. **The three `docs/ops/` files become pointer stubs,** so links in earlier entries of this append-only file still land somewhere.
+
+**Why.** The ship's own 2026-06-12 rule keeps cross-business strategy out of any single product repo. A customer's ship (one ship per customer) needs the charter to travel with it. Edits stop paying this repo's commit gates and CI for a Markdown change.
+
+**Not changed.** No Locked row of D-24341 moves. Layers, the engine, and `apps/server` are untouched. The coach's routing shim and `COACH_MODEL` behave as before.
+
+**Supersedes in part:** D-24341's governance vehicle (the ewiki page as the design record, the runbook under `docs/ops/`).
+
+**Reserved by:** NUMBER-LEDGER D-24712. Related: D-24341, D-24709 (the include the System Backup hub uses), ship PR barefootbetters/jefferyjjensen-corporate-memory#48.
+
+---
+
 Protect this file.

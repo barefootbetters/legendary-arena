@@ -81,7 +81,8 @@ section** caption.
   exercise.
 - [Development Workflow](development-workflow.md) owns secrets rotation and
   pCloud's role.
-- [AI Second Brain](ai-second-brain.md) owns the knowledge-base backup plan.
+- [AI Second Brain](ai-second-brain.md) points to the knowledge-base backup
+  plan, which lives with the brain's design record in the private ship repo.
 - [Operational Health Checks](operational-health-checks.md) covers the probes
   that confirm a restored system is serving.
 
