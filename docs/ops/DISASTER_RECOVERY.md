@@ -77,6 +77,21 @@ Postgres (`legendary.*` and `bgio.*`).
 > Confirm or adjust these two numbers before treating any drill result as
 > pass/fail — a recovery that took 6 hours only "fails" against a stated RTO.
 
+**Measured so far** (from the §7 drill records):
+
+| Step | Measured | Drill |
+|---|---|---|
+| Download + restore the database from an R2 object | 3 s (2.7 MB dump) | 2026-08-09 |
+| Download + restore from the pCloud copy | 6 s (2.5 MB dump) | 2026-08-10 |
+| Dump production + restore it onto the droplet | 13 s dump (14.6 MB) + restore | 2026-10-12 cutover |
+| End-to-end move of production to a pre-provisioned droplet (freeze, dump, restore, DNS switch) | **10 m 10 s** of downtime (UptimeRobot) | 2026-10-12 cutover |
+| App deploy (`40-app-deploy.ps1`: install, build, migrations, restart, health gate) | 71 s | 2026-10-11 rehearsal |
+| Full rebuild on a **new** droplet (provision, harden, Postgres, TLS, restore, deploy, DNS) | **Not yet timed** — the next full-rebuild drill measures it | — |
+
+The database is small (~66 MB live, ~15 MB dump), so the restore itself is
+seconds. RTO is bounded by provisioning a host and repointing DNS, not by the
+restore.
+
 ---
 
 ## 2. Critical assets inventory
@@ -150,6 +165,61 @@ GitHub nightly's `RCLONE_PCLOUD_TOKEN`, and the operator's local `pcloud:` remot
 are revoked and re-minted separately. A pCloud account-security change can
 revoke all of them at once (it happened 2026-10-05).
 
+### Known gaps
+
+Stated plainly so none of them is discovered during a recovery:
+
+1. **Nothing stops the droplet from deleting every offsite copy.** Pruning
+   needs delete rights, so the droplet's R2 token and pCloud token can each
+   delete every dump. A compromised droplet, or a retention bug, could wipe R2
+   and pCloud in the same run. **Fix:** an R2 bucket lock rule on
+   `legendary-arena-db-backups`, prefix `db-backups/`, age 30 days. Lock rules
+   are managed through the Cloudflare dashboard or account API, not the S3
+   credentials the droplet holds, and 30 days is inside the 35-day daily window,
+   so GFS pruning is never blocked. pCloud has no equivalent documented here.
+2. **Dumps are not encrypted client-side.** R2 encrypts every object at rest
+   (AES-256, Cloudflare-managed keys), but anyone holding the R2 or pCloud
+   credentials, or the operator's pCloud login, can read the player data in a
+   dump. **Open decision:** encrypt each dump on the droplet with a public key
+   (e.g. `age`), keeping the private key offline in the operator's secret
+   store. The cost is key custody: lose that key and every encrypted backup is
+   unreadable.
+3. **Payments since the last dump are missing after a restore.** There is no
+   PITR, and purchases reach `legendary.*` through Stripe webhooks. Stripe is
+   the source of truth and keeps events for 30 days, and the webhook handler
+   ignores duplicate deliveries, so a restore is followed by resending the
+   events since the dump time (§5 DR-01, DR-03).
+
+**Closed 2026-10-13 (D-24711):**
+
+- **The job only checked size.** `50-backup.ps1` now runs `pg_restore --list`
+  on every dump before upload (integrity gate 3, on produce) and fails the run
+  on an unreadable or empty archive. It logs the SHA-256, and the success ping
+  body carries `size=… toc_entries=… sha256=…` (lab #34; first production run
+  2026-10-13: 318 entries).
+- **A dead database did not alert.** `GET /health/db` runs `SELECT 1` and
+  answers 503 when the database is down or slow (engine #2760).
+  `la-droplet-monitor` checks it every 5 minutes (lab #34). UptimeRobot moves
+  from `/health` to `/health/db` as an operator step in its dashboard.
+
+### Not in any backup
+
+The nightly dump covers PostgreSQL only. Everything else is recovered from
+somewhere else, or not at all:
+
+| Data | Where it lives | If it is lost |
+|---|---|---|
+| Player avatars | R2 `legendary-images`, `avatars/` | **No second copy.** The database keeps each URL; players re-upload. |
+| Card images | R2 `legendary-images` | Re-upload from the operator's pCloud `card-images-staging/original/`. |
+| Card metadata, themes | R2 `legendary-images` (`metadata/`, `themes/`) | Regenerated from the repo (`pnpm metadata:upload`, `scripts/upload-themes-to-r2.mjs`). |
+| Legends snapshots | R2 `legends/v1/*` | Derived: the publisher rewrites them from the database within 5 minutes. |
+| Other R2 media (audio) | R2 `legendary-images`, `audio/` | No second copy documented. |
+| Sign-in identities and passkeys | Hanko | Vendor-held. `legendary.players` keys each account by its Hanko user id (`auth_provider_id`); losing the Hanko tenant strands every account. |
+| Payments, invoices | Stripe | Stripe is the source of truth. |
+| Newsletter contacts | Brevo | Vendor-held. |
+| Source, issues, Actions history | GitHub | Every clone holds the full source history; issues and Actions history are GitHub-only. |
+| Live matches in progress | Runtime only | Not recoverable by design (§9). |
+
 ### Backup integrity gates
 
 A backup that *exists* is not a backup that *works*. Each database backup must
@@ -160,7 +230,10 @@ satisfy **all** of these before any scenario may count it as a fallback:
    *produce*; this re-checks on *consume*).
 3. `pg_restore --list <dump>` succeeds — the custom-format archive's table of
    contents is readable (catches a truncated or corrupt dump without a full
-   restore).
+   restore). `50-backup.ps1` runs this on produce too, and logs the dump's
+   SHA-256; on consume, `sha256sum` the downloaded copy and compare it with that
+   night's `Dump readable:` line in `journalctl -u la-backup` (or the
+   `la-droplet-backup` ping body).
 4. Its age is ≤ the §1 RPO at the moment it is relied upon.
 5. A restore drill (§7) has been recorded within the last **90 days**.
 
@@ -252,8 +325,9 @@ downstream — so each step has what the next one needs:
 - **Procedure:** stop `la-server` → `51-restore.ps1` with
   `RESTORE_FROM_R2=latest` and `RESTORE_ALLOW_LIVE_TARGET=true` (or
   `RESTORE_DUMP=<file>` for a downloaded pCloud dump) → verify §6 Phase 2 →
-  start `la-server` → verify §6 Phases 3+. If the newest R2 object fails a §3
-  gate, use the newest one that passes.
+  start `la-server` → in the Stripe dashboard, resend every webhook event since
+  the dump time (§3 Known gaps, 4) → verify §6 Phases 3+. If the newest R2
+  object fails a §3 gate, use the newest one that passes.
 
 ### DR-02 — Application server loss
 
@@ -285,7 +359,8 @@ downstream — so each step has what the next one needs:
 - **Procedure:** identify the deletion time → restore the newest dump taken
   before it into a **scratch** database on the droplet (`51-restore.ps1`
   defaults to a non-live target) → copy the affected tables back → validate
-  them (§6 Phase 2) → reconcile anything written since the dump.
+  them (§6 Phase 2) → reconcile anything written since the dump. If billing
+  tables were affected, resend the Stripe webhook events since the dump time.
 
 ### DR-04 — Credential compromise
 
