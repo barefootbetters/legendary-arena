@@ -100,7 +100,9 @@ failed service takes down, and what to check, in order, when a product is down.
 - [Development Workflow](development-workflow.md) owns secrets rotation and
   pCloud's role.
 - [AI Second Brain](ai-second-brain.md) points to the knowledge-base backup
-  plan, which lives with the brain's design record in the private ship repo.
+  plan, which lives with the brain's design record in the private ship repo
+  and renders at [brain.barefootbetters.com](https://brain.barefootbetters.com/)
+  (signed in, behind Cloudflare Access).
 - [Operational Health Checks](operational-health-checks.md) covers the probes
   that confirm a restored system is serving.
 - [Service Dependency Map](service-dependency-map.md) says what each service

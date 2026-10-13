@@ -92,9 +92,10 @@ OK to bootstrap" still permits sharing a box, but it no longer saves money.
 The brain's backups are its own: three copies, on two kinds of media, one of
 them off-site, with pCloud as the off-site copy. Material marked owner-only
 goes off-site only after it is encrypted on the operator's machine. The plan
-lives in the design record's
-[Backup and recovery](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/design.md#backup-and-recovery)
-section. Nothing about the brain is in this repo's database backups, and a
+lives in the design record's Backup and recovery section, readable at
+[brain.barefootbetters.com](https://brain.barefootbetters.com/docs/second-brain/design/)
+(signed in, behind Cloudflare Access) and in the private ship repo's
+[`design.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/design.md#backup-and-recovery). Nothing about the brain is in this repo's database backups, and a
 brain restore never touches the game server.
 
 ### Gateway routing for the endgame coach (decision sketch)
