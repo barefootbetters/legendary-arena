@@ -1,0 +1,75 @@
+{{- /*
+  Service-impact shortcode for the engineering wiki (D-24710).
+
+  Usage:
+    {{< service-impact view="by-service" >}}   one row per service: what breaks if it is down
+    {{< service-impact view="by-product" >}}   one row per product: what to check, in order
+
+  why: both views are rendered from one data file,
+  docs/ops/service-dependencies.json (plus docs/ops/domains.json for product
+  URLs and hosts), so the "if X is down" lookup and the "X is down, check what"
+  lookup can never disagree, and neither is a hand-maintained copy. The data is
+  validated in partials/service-dependencies-data.html; a broken edge fails
+  the build.
+
+  why: output is fully static (no timestamps, no randomness), so it does not
+  break the two-build byte-identical determinism lock.
+*/ -}}
+{{- $view := .Get "view" -}}
+{{- $page := .Page -}}
+{{- $map := partial "service-dependencies-data.html" (dict "page" $page) -}}
+{{- if eq $view "by-service" -}}
+<table class="service-impact">
+  <thead><tr><th>If this is down</th><th>What breaks</th><th>Where to look</th></tr></thead>
+  <tbody>
+  {{- range $service := $map.services }}
+    <tr id="service-{{ $service.id }}">
+      <td><strong>{{ $service.name }}</strong>{{ with $service.vendor }}<br><span class="service-impact-muted">{{ . }}</span>{{ end }}</td>
+      <td>
+      {{- $hasAny := false -}}
+      {{- range $impact := $map.impacts -}}
+        {{- $entries := slice -}}
+        {{- range $product := $map.products -}}
+          {{- range $product.dependencies -}}
+            {{- if and (eq .service $service.id) (eq .impact $impact.id) -}}
+              {{- $entries = $entries | append (printf "<a href=\"#product-%s\">%s</a> — %s" $product.id $product.name ($page.RenderString .effect)) -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+        {{- if $entries -}}
+          {{- $hasAny = true -}}
+          <p class="service-impact-group"><span class="service-impact-tag service-impact-{{ $impact.id }}">{{ $impact.label }}</span> <br>{{ delimit $entries "<br>" | safeHTML }}</p>
+        {{- end -}}
+      {{- end -}}
+      {{- if not $hasAny -}}<p class="service-impact-group">Nothing in this map depends on it.</p>{{- end -}}
+      </td>
+      <td>{{ with $service.check }}{{ $page.RenderString . }}{{ end }}{{ with $service.status }}<br><a href="{{ . | safeURL }}">Status page</a>{{ end }}</td>
+    </tr>
+  {{- end }}
+  </tbody>
+</table>
+{{- else if eq $view "by-product" -}}
+<table class="service-impact">
+  <thead><tr><th>Product</th><th>Runs on</th><th>If it's down, check these in order</th></tr></thead>
+  <tbody>
+  {{- range $product := $map.products }}
+    {{- $domain := dict -}}
+    {{- with $product.domainUrl -}}{{- $domain = index $map.domainByUrl . -}}{{- end -}}
+    {{- $productUrl := or $product.url $domain.url -}}
+    {{- $runsOn := or $product.host $domain.host -}}
+    <tr id="product-{{ $product.id }}">
+      <td><strong>{{ $product.name }}</strong>{{ with $productUrl }}<br><a href="{{ . | safeURL }}">{{ strings.TrimPrefix "https://" . }}</a>{{ end }}</td>
+      <td>{{ $runsOn }}</td>
+      <td><ol class="service-impact-checks">
+      {{- range $product.dependencies -}}
+        {{- $service := index $map.serviceById .service -}}
+        <li><a href="#service-{{ $service.id }}">{{ $service.name }}</a> <span class="service-impact-tag service-impact-{{ .impact }}">{{ index (where $map.impacts "id" .impact) 0 "label" }}</span> — {{ $page.RenderString .effect }}</li>
+      {{- end -}}
+      </ol></td>
+    </tr>
+  {{- end }}
+  </tbody>
+</table>
+{{- else -}}
+  {{- errorf "service-impact on %s needs view=\"by-service\" or view=\"by-product\"; got %q." $page.File.Path $view -}}
+{{- end -}}

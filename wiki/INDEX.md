@@ -291,6 +291,12 @@ Cross-cutting governance, methodology, and readiness assessments.
   proving a recovery, secrets rotation, pCloud's role, and the AI Second
   Brain's backup plan. Owns no facts — each section is included from its
   owner page at build time (D-24709), so it never drifts from them.
+- [Service Dependency Map](service-dependency-map.md) — *(draft)* which
+  products depend on which services, as a two-way outage lookup: a service is
+  down, what breaks (stops working / partly broken / goes stale / can't deploy
+  / unwatched), and a product is down, what to check in order. Rendered from
+  `docs/ops/service-dependencies.json` + `domains.json` (D-24710); the build
+  fails if a live hostname has no entry.
 - [Private Site Hosting](private-site-hosting.md) — How the two private
   operator sites (ewiki, dashboard) keep a single Access-gated door: each is
   an assets-only Cloudflare Worker with `workers_dev` and `preview_urls` off

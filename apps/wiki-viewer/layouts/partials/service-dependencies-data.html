@@ -1,0 +1,84 @@
+{{- /*
+  Loads and validates the service dependency map (D-24710).
+
+  Input:  dict "page" <the calling page>
+  Output: dict with
+    services     — the services list, in file order
+    products     — the products list, in file order
+    serviceById  — service id → service
+    domainByUrl  — domains.json url → domain entry
+    impacts      — the closed impact set, in display order, each {id, label, meaning}
+
+  why: the map is rendered from docs/ops/service-dependencies.json and
+  docs/ops/domains.json (projected into data/ops/ by project-wiki.mjs). Every
+  cross-reference is checked here and a broken one is a build error (errorf),
+  so the published map can't silently drop an edge or a product:
+    - every dependency names a known service and an impact from the closed set;
+    - every product's domainUrl is a url in domains.json;
+    - every live, serving domains.json entry (state "live", source not "none")
+      is claimed by some product, so a new subdomain can't ship without its
+      dependencies being recorded.
+*/ -}}
+{{- $page := .page -}}
+{{- $ops := site.Data.ops -}}
+{{- $dependencyData := index $ops "service-dependencies" -}}
+{{- $domainData := index $ops "domains" -}}
+{{- if not $dependencyData -}}
+  {{- errorf "service-impact on %s: data/ops/service-dependencies.json was not projected. Run pnpm wiki-viewer:project, and check docs/ops/service-dependencies.json exists." $page.File.Path -}}
+{{- end -}}
+{{- if not $domainData -}}
+  {{- errorf "service-impact on %s: data/ops/domains.json was not projected. Run pnpm wiki-viewer:project, and check docs/ops/domains.json exists." $page.File.Path -}}
+{{- end -}}
+{{- $impacts := slice
+  (dict "id" "down"        "label" "Stops working"      "meaning" "the product is unusable")
+  (dict "id" "degraded"    "label" "Partly broken"      "meaning" "one feature fails; the rest works")
+  (dict "id" "stale"       "label" "Goes stale"         "meaning" "keeps serving, but its data stops updating")
+  (dict "id" "deploys"     "label" "Can't deploy"       "meaning" "keeps serving; changes can't ship")
+  (dict "id" "unmonitored" "label" "Unwatched"          "meaning" "keeps running; nobody is alerted if it fails") -}}
+{{- $impactIds := slice -}}
+{{- range $impacts -}}{{- $impactIds = $impactIds | append .id -}}{{- end -}}
+{{- $serviceById := dict -}}
+{{- range $dependencyData.services -}}
+  {{- if index $serviceById .id -}}
+    {{- errorf "service-dependencies.json: service id %q appears twice. Service ids must be unique." .id -}}
+  {{- end -}}
+  {{- $serviceById = merge $serviceById (dict .id .) -}}
+{{- end -}}
+{{- $domainByUrl := dict -}}
+{{- range $domainData.domains -}}
+  {{- $domainByUrl = merge $domainByUrl (dict .url .) -}}
+{{- end -}}
+{{- $claimedUrls := dict -}}
+{{- range $product := $dependencyData.products -}}
+  {{- with $product.domainUrl -}}
+    {{- if not (index $domainByUrl .) -}}
+      {{- errorf "service-dependencies.json: product %q has domainUrl %q, which is not a url in docs/ops/domains.json. Copy the url exactly from domains.json." $product.id . -}}
+    {{- end -}}
+    {{- $claimedUrls = merge $claimedUrls (dict . true) -}}
+  {{- end -}}
+  {{- if not $product.dependencies -}}
+    {{- errorf "service-dependencies.json: product %q lists no dependencies. Every product runs on something; list at least its host." $product.id -}}
+  {{- end -}}
+  {{- range $product.dependencies -}}
+    {{- if not (index $serviceById .service) -}}
+      {{- errorf "service-dependencies.json: product %q depends on service %q, which is not in the services list. Add the service or fix the id." $product.id .service -}}
+    {{- end -}}
+    {{- if not (in $impactIds .impact) -}}
+      {{- errorf "service-dependencies.json: product %q, service %q has impact %q. Use one of: %s." $product.id .service .impact (delimit $impactIds ", ") -}}
+    {{- end -}}
+    {{- if not .effect -}}
+      {{- errorf "service-dependencies.json: product %q, service %q has no effect text. Say what the reader would see." $product.id .service -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- range $domainData.domains -}}
+  {{- if and (eq .state "live") (not (hasPrefix .source "none")) (not (index $claimedUrls .url)) -}}
+    {{- errorf "service-dependencies.json: the live domain %q (%s) in docs/ops/domains.json has no product in the dependency map. Add a product with domainUrl %q and its dependencies." .name .url .url -}}
+  {{- end -}}
+{{- end -}}
+{{- return (dict
+  "services" $dependencyData.services
+  "products" $dependencyData.products
+  "serviceById" $serviceById
+  "domainByUrl" $domainByUrl
+  "impacts" $impacts) -}}

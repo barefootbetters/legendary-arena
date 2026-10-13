@@ -244,6 +244,41 @@ function projectChangelog() {
   return 1;
 }
 
+/**
+ * Project the ops data files the ewiki renders into apps/wiki-viewer/data/ops/.
+ *
+ * why: D-24710 — the service dependency map is rendered at build time from
+ * docs/ops/service-dependencies.json (the dependency edges) and
+ * docs/ops/domains.json (the product URLs and hosts), the same files ops
+ * tooling reads. Hugo reads site data only from its own data/ directory, so
+ * the files are copied there, byte-for-byte, like wiki pages are copied to
+ * content/. Nothing is transformed; the shortcode validates the cross-links.
+ *
+ * @returns The number of data files projected.
+ */
+function projectOpsData() {
+  const opsDataSources = [
+    join(repoRoot, 'docs', 'ops', 'domains.json'),
+    join(repoRoot, 'docs', 'ops', 'service-dependencies.json'),
+  ];
+  const opsDataTarget = join(here, '..', 'data', 'ops');
+  if (existsSync(opsDataTarget)) {
+    rmSync(opsDataTarget, { recursive: true, force: true });
+  }
+  mkdirSync(opsDataTarget, { recursive: true });
+  let projectedCount = 0;
+  for (const sourcePath of opsDataSources) {
+    if (!existsSync(sourcePath)) {
+      throw new Error(
+        `Ops data file ${sourcePath} not found. The service dependency map on the ewiki is rendered from it; restore the file or remove the page that uses the service-impact shortcode.`
+      );
+    }
+    copyFileSync(sourcePath, join(opsDataTarget, sourcePath.split(/[\\/]/).pop()));
+    projectedCount += 1;
+  }
+  return projectedCount;
+}
+
 try {
   const count = projectWiki();
   process.stdout.write(`Projected ${count} wiki files to ${projectionTarget}\n`);
@@ -251,6 +286,8 @@ try {
   if (changelogCount > 0) {
     process.stdout.write(`Projected the changelog to ${join(projectionTarget, 'changelog.md')}\n`);
   }
+  const opsDataCount = projectOpsData();
+  process.stdout.write(`Projected ${opsDataCount} ops data files to ${join(here, '..', 'data', 'ops')}\n`);
 } catch (error) {
   process.stderr.write(`Wiki projection failed: ${error instanceof Error ? error.message : String(error)}\n`);
   process.exit(1);

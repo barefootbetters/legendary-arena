@@ -22,6 +22,7 @@ source:
   - ../apps/wiki-viewer/layouts/shortcodes/motif-table.html
   - ../apps/wiki-viewer/layouts/shortcodes/swatch.html
   - ../apps/wiki-viewer/layouts/shortcodes/include-section.html
+  - ../apps/wiki-viewer/layouts/shortcodes/service-impact.html
   - ../apps/wiki-viewer/layouts/partials/editing-this-page.html
   - ../docs/ai/DECISIONS.md
   - ../.github/workflows/wiki-viewer.yml
@@ -194,10 +195,11 @@ The wiki viewer intentionally restricts certain features:
   You cannot embed `<div>`, `<span>`, `<style>`, or any HTML tags.
 - **No syntax highlighting.** Fenced code blocks render as plain
   monospace. Language hints (` ```js `) are accepted but ignored.
-- **Custom shortcodes: five.** The viewer defines five custom
+- **Custom shortcodes: six.** The viewer defines six custom
   shortcodes — `audio` and `audio-inline` (see *Embedding audio*),
   `swatch` and `motif-table` (see *Colour swatches and motif tables*),
-  and `include-section` (see *Including a section from another page*).
+  `include-section` (see *Including a section from another page*), and
+  `service-impact` (see *Tables rendered from ops data*).
   Hugo's built-in shortcodes still run, so long as their output is static
   and JS-free — `youtube` renders an `<iframe>` and is fine
   ([Hugo Web System](hugo-web-system.md)). The `highlight` shortcode is
@@ -339,6 +341,30 @@ next heading follows it directly fails too. The raw Markdown of the including
 page shows the shortcode lines, not the text, so on GitHub or to an agent
 reading `wiki/*.md` directly, follow the `page=` / `section=` values to the
 owner. Live example: [System Backup](system-backup.md).
+
+### Tables rendered from ops data
+
+The `service-impact` shortcode renders the
+[Service Dependency Map](service-dependency-map.md) tables from
+[`docs/ops/service-dependencies.json`](../docs/ops/service-dependencies.json)
+and [`docs/ops/domains.json`](../docs/ops/domains.json) at build time
+(D-24710). The projection step copies both files into
+`apps/wiki-viewer/data/ops/` (gitignored), the same way wiki pages are
+copied into `content/`.
+
+```
+{{</* service-impact view="by-service" */>}}
+{{</* service-impact view="by-product" */>}}
+```
+
+- `view` (required): `by-service` (one row per service: what breaks if it is
+  down) or `by-product` (one row per product: what to check, in order).
+
+Edit the JSON, not the page. The build validates every cross-reference and
+fails on an unknown service, an impact outside the closed set, or a live
+hostname in `domains.json` with no product in the map. Implementation:
+`apps/wiki-viewer/layouts/shortcodes/service-impact.html` and the validating
+partial `apps/wiki-viewer/layouts/partials/service-dependencies-data.html`.
 
 ### Embedding diagrams {#embedding-diagrams}
 

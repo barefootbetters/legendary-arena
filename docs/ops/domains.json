@@ -43,7 +43,7 @@
       "expectedStatus": 200,
       "state": "live",
       "anchor": "cards",
-      "notes": "Live since 2026-07-08. CF Pages project: legendary-arena (custom domain cards.legendary-arena.com attached alongside the legendary-arena.pages.dev placeholder). The registry-viewer SPA authenticates cross-origin against api.legendary-arena.com; server CORS allowlist includes this hostname (WP-146)."
+      "notes": "Live since 2026-07-08. CF Pages project: legendary-arena (custom domain cards.legendary-arena.com attached alongside the legendary-arena.pages.dev placeholder). The registry-viewer SPA makes no API calls: card data loads from images.legendary-arena.com/metadata at runtime (no auth, no server contact). The server CORS allowlist still includes this hostname (WP-146)."
     },
     {
       "name": "Public player wiki",
@@ -83,7 +83,7 @@
       "expectedStatus": 200,
       "state": "live",
       "anchor": "legends",
-      "notes": "Live since 2026-07-08. CF Pages project: legendary-arena-legends. Public, no-auth. Reads leaderboard JSON snapshots from R2 (written by WP-142 publisher) via images.legendary-arena.com; the deployed bundle contains zero api.legendary-arena.com / *.onrender.com references (zero-API by design). A 200 here proves the SPA shell loads; snapshot freshness is a separate concern verified by the publisher's own health check (GET /health/legends-publisher). NOTE at cutover: the WP-142 publisher was still idle (LEGENDS_PUBLISHER_ENABLED unset), so panels render the no-data state until it is enabled — a data-supply concern, not a board defect."
+      "notes": "Live since 2026-07-08. CF Pages project: legendary-arena-legends. Public, no-auth. Reads leaderboard JSON snapshots from R2 (written by WP-142 publisher) via images.legendary-arena.com. The leaderboards make no API calls; the one exception is the #/match/<id> result panel and its download, which call GET api.legendary-arena.com/api/match/:id/result-lagn (WP-407/408, VITE_LEGENDS_API_BASE_URL). A 200 here proves the SPA shell loads; snapshot freshness is a separate concern verified by the publisher's own health check (GET /health/legends-publisher). NOTE at cutover: the WP-142 publisher was still idle (LEGENDS_PUBLISHER_ENABLED unset), so panels render the no-data state until it is enabled — a data-supply concern, not a board defect."
     },
     {
       "name": "Internal admin dashboard",

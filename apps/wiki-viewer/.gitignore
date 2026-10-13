@@ -7,6 +7,8 @@ public/
 resources/
 # Projected ewiki asset directories (ewiki/<slug>/ → static/<slug>/)
 static/*/
+# Projected ops data (docs/ops/*.json → data/ops/, D-24710)
+data/ops/
 
 # Hugo's transient build-state lock — created during `hugo` / `hugo server`
 # and removed on clean exit, but lingers if a build is interrupted. Never
