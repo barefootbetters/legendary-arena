@@ -65,8 +65,8 @@ configuration.
 
 The ship repo is private, so these links work while signed in to GitHub. The
 same pages render at [brain.barefootbetters.com](https://brain.barefootbetters.com/)
-behind the ewiki's Cloudflare Access sign-in, and publish on every merge to the
-ship's `main`.
+behind the ewiki's Cloudflare Access sign-in. The operator publishes them
+from the ship's `main`, so the site can trail the repo by a merge or two.
 
 ### What Legendary Arena contributes
 
