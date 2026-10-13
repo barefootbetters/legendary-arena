@@ -31,6 +31,7 @@ import { buildScenarioKey } from '@legendary-arena/game-engine';
 import { loadRules, getRules } from './rules/loader.mjs';
 import { createParGate } from './par/parGate.mjs';
 import { createPool } from './db/database.js';
+import { registerDatabaseHealthRoute } from './db/databaseHealth.routes.js';
 import { createBgioPgStore } from './db/bgioPgStore.js';
 import { registerLeaderboardRoutes } from './leaderboards/leaderboard.routes.js';
 import {
@@ -868,6 +869,10 @@ export async function startServer() {
   installClientActionGuard(server, [LegendaryGame]);
 
   registerHealthRoute(server.router);
+  // why: D-24711 — /health never touches PostgreSQL, so a dead database left
+  // every monitor green. /health/db runs SELECT 1 through the shared pool and
+  // answers 503 when it fails, for the uptime and on-box monitors to watch.
+  registerDatabaseHealthRoute(server.router, pool);
 
   // why: WP-309 — name the active match store at startup so a deploy that
   // silently fell back to the in-memory store (e.g. a construction error) is
