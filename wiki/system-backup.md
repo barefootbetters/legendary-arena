@@ -39,6 +39,14 @@ failed service takes down, and what to check, in order, when a product is down.
 
 ## Mechanics
 
+### Backup policy at a glance
+
+{{< include-section page="disaster-recovery" section="backup-policy-at-a-glance" >}}
+
+### Known gaps
+
+{{< include-section page="disaster-recovery" section="known-gaps" >}}
+
 ### What is at risk
 
 {{< include-section page="disaster-recovery" section="what-is-actually-at-risk" >}}
@@ -54,6 +62,10 @@ failed service takes down, and what to check, in order, when a product is down.
 ### Checking last night's backup
 
 {{< include-section page="disaster-recovery" section="reading-a-droplet-backup-result" >}}
+
+### Not in any backup
+
+{{< include-section page="disaster-recovery" section="not-in-any-backup" >}}
 
 ### Recovery scenarios
 

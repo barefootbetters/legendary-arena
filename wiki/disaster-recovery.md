@@ -50,6 +50,23 @@ page is about *infrastructure* recovery.
 
 ## Mechanics
 
+### Backup policy at a glance
+
+| | |
+|---|---|
+| **Strategy** | 3-2-1: the live PostgreSQL database, plus two offsite copies on independent vendors (Cloudflare R2 and pCloud) with independent credentials. |
+| **What is backed up** | PostgreSQL only (`legendary.*` + `bgio`). Everything else is recovered another way — see [Not in any backup](#not-in-any-backup). |
+| **Schedule** | Nightly at 09:17 UTC on the droplet. No point-in-time recovery. |
+| **RPO** | ≤ 24 h — everything written after the last good dump is lost. 24 h is a proposed default, not yet confirmed. |
+| **RTO** | Proposed default 4 h. Measured: the database restore itself takes seconds (~15 MB dump); moving production to a pre-provisioned droplet took **10 m 10 s** of downtime (2026-10-12). A full rebuild on a new droplet is not yet timed. |
+| **Retention** | GFS on both offsite copies: 35 daily · 12 weekly · 12 monthly. The droplet keeps the last 7 locally. |
+| **Encryption** | R2 encrypts at rest (AES-256, Cloudflare-managed keys). Dumps are **not** encrypted client-side — see [Known gaps](#known-gaps). |
+| **Verification** | The job rejects a dump of 1024 bytes or less. Restores were drilled from R2 (2026-08-09, onto the droplet 2026-10-12) and pCloud (2026-08-10). A backup counts only after a restore drill within 90 days. |
+| **Deletion protection** | None yet — see [Known gaps](#known-gaps). |
+
+The canonical numbers and drill records are in
+[`docs/ops/DISASTER_RECOVERY.md`](../docs/ops/DISASTER_RECOVERY.md) §1 and §7.
+
 ### What is actually at risk
 
 The server is stateless and replaceable — live match state is in Postgres,
@@ -78,6 +95,44 @@ interpret nothing (see
 [ARCHITECTURE.md §Persistence Boundary](../docs/ai/ARCHITECTURE.md) and
 DECISIONS [D-24095](../docs/ai/DECISIONS.md)). The backup is a derived
 operational copy and is never read back into gameplay state.
+
+### Known gaps
+
+Open as of 2026-10-12 (canonical doc §3 Known gaps):
+
+1. **Nothing stops the droplet from deleting every offsite copy.** Pruning
+   needs delete rights, so the droplet's R2 and pCloud tokens can each delete
+   every dump; a compromised droplet or a retention bug could wipe both copies
+   in one run. The fix is an R2 bucket lock rule on `db-backups/` (age 30 days,
+   inside the 35-day daily window so pruning still works). Lock rules are
+   managed through the Cloudflare dashboard or API, not the droplet's S3
+   credentials.
+2. **Dumps are not encrypted client-side.** Anyone with the R2 or pCloud
+   credentials can read the player data in a dump. Encrypting with a public
+   key on the droplet (private key held offline) is an open decision; its
+   cost is key custody.
+3. **The job checks size only** — no `pg_restore --list`, no recorded
+   checksum.
+4. **Payments since the last dump are missing after a restore.** Stripe keeps
+   events for 30 days and the webhook handler ignores duplicates, so a restore
+   is followed by resending the events since the dump time.
+5. **A dead database does not alert** — `/health` doesn't query Postgres.
+
+### Not in any backup
+
+The nightly dump covers PostgreSQL only:
+
+| Data | Where it lives | If it is lost |
+|---|---|---|
+| Player avatars | R2 `legendary-images`, `avatars/` | **No second copy.** Players re-upload; the database keeps the URL. |
+| Card images | R2 | Re-upload from the operator's pCloud `card-images-staging/original/`. |
+| Card metadata, themes | R2 | Regenerated from the repo. |
+| Legends snapshots | R2 `legends/v1/*` | Derived; the publisher rewrites them within 5 minutes. |
+| Other R2 media (audio) | R2 | No second copy documented. |
+| Sign-in identities, passkeys | Hanko | Vendor-held; accounts are keyed by Hanko user id, so losing the tenant strands every account. |
+| Payments | Stripe | Stripe is the source of truth. |
+| Newsletter contacts | Brevo | Vendor-held. |
+| Issues, Actions history | GitHub | GitHub-only (source is in every clone). |
 
 ### Reading a droplet backup result
 
@@ -144,7 +199,7 @@ The canonical doc §5 enumerates five scenarios, each with an honest
 
 | ID | Trigger | Honest recoverability |
 |---|---|---|
-| DR-01 | Database loss / corruption | Yes — restore the latest R2 dump onto the droplet with the lab's `51-restore.ps1` (`RESTORE_FROM_R2=latest`; drilled 2026-10-11/12), or the pCloud copy. No PITR: anything since the last nightly dump is lost |
+| DR-01 | Database loss / corruption | Yes — restore the latest R2 dump onto the droplet with the lab's `51-restore.ps1` (`RESTORE_FROM_R2=latest`; drilled 2026-10-11/12), or the pCloud copy, then resend Stripe webhook events since the dump. No PITR: anything since the last nightly dump is lost |
 | DR-02 | Application server lost, DB intact | Yes — lowest risk; the server is stateless. Redeploy with the lab's `40-app-deploy.ps1`; if the droplet itself is gone, the database went with it, so this becomes DR-01 on a fresh droplet (re-run the lab provisioners, then `40`) |
 | DR-03 | Accidental data deletion (`DROP TABLE …`) | Yes — restore the last nightly dump (up to ~24 h of loss). No point-in-time recovery on self-hosted Postgres unless WAL archiving is added later |
 | DR-04 | Credential compromise | Yes, operationally — rotate the secret at its source and in the droplet's `/etc/la/.env`, then restart `la-server`; no data restore unless data was tampered with |
