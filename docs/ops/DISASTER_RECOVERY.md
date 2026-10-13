@@ -178,10 +178,13 @@ Stated plainly so none of them is discovered during a recovery:
 2. **Dumps are not encrypted client-side.** R2 encrypts every object at rest
    (AES-256, Cloudflare-managed keys), but anyone holding the R2 or pCloud
    credentials, or the operator's pCloud login, can read the player data in a
-   dump. **Open decision:** encrypt each dump on the droplet with a public key
-   (e.g. `age`), keeping the private key offline in the operator's secret
-   store. The cost is key custody: lose that key and every encrypted backup is
-   unreadable.
+   dump. **Deferred (operator, 2026-10-13)** until the AI Second Brain's
+   connections are mapped (DigitalOcean, Cloudflare, GitHub, the laptop,
+   pCloud, the Hugo sites), so one key-custody design covers the brain's
+   backups and these. The candidate is unchanged: encrypt each dump on the
+   droplet with a public key (e.g. `age`), private key held offline in the
+   operator's secret store. The cost is key custody: lose that key and every
+   encrypted backup is unreadable.
 3. **Payments since the last dump are missing after a restore.** There is no
    PITR, and purchases reach `legendary.*` through Stripe webhooks. Stripe is
    the source of truth and keeps events for 30 days, and the webhook handler
