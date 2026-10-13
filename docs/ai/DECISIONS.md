@@ -47875,4 +47875,20 @@ UptimeRobot measured 10 m 10 s of downtime. `pnpm check:domains`: 11 ok, 0 faile
 
 ---
 
+### D-24711 — `GET /health/db` reports database liveness, and the monitors watch it; the nightly backup proves each dump readable before upload (direct change, no WP) (Active 2026-10-12)
+
+**Context.** `GET /health` answers `{ status: 'ok' }` without touching PostgreSQL. While the database is down the server stays up, every signed-in route returns 500 and live matches stall, yet `/health` stays 200 — and both monitors (UptimeRobot on `api./health`, the droplet's `la-droplet-monitor`) watch it, so a dead database raised no alert. Separately, the droplet's `50-backup.ps1` accepted any dump over 1024 bytes: integrity gate 3 (`pg_restore --list`) ran only by hand at restore time, and nothing recorded a checksum. Both gaps were surfaced while verifying the System Backup page (`docs/ops/DISASTER_RECOVERY.md` §3 Known gaps).
+
+**Decision.**
+
+1. **New route, `/health` unchanged.** `GET /health/db` (`apps/server/src/db/databaseHealth.routes.ts`) runs `SELECT 1` through the shared pool, bounded at 3 s, and answers `200 { status: 'ok', database: 'ok', latencyMs }` or `503 { status: 'error', database: 'unreachable', reason: 'timeout' | 'query_failed' }`. `/health` keeps its process-only meaning, so the deploy health gate, `pnpm check` and the domain probes are unaffected. No auth; the pg error text is logged, never returned; `no-store`.
+2. **Monitors.** The on-box `60-monitor.ps1` (lab repo) checks `/health/db` alongside `/health`; UptimeRobot's monitor moves to `https://api.legendary-arena.com/health/db` (operator action). Order: this route deploys first, so neither monitor ever sees a 404.
+3. **Backup integrity on produce.** `50-backup.ps1` (lab repo) runs `pg_restore --list` on each dump and records its SHA-256 before upload; an unreadable dump fails the run (`la-droplet-backup` alerts) instead of reaching R2. The size, table-of-contents entry count and hash go into the log and the success ping body.
+
+**Not changed.** Layers and the engine are untouched; the server stays wiring-only. No new dependency.
+
+**Reserved by:** NUMBER-LEDGER D-24711. Related: D-24707 (the droplet, its monitors and backups), D-11804 (catalog row).
+
+---
+
 Protect this file.
