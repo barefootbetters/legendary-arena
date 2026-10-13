@@ -440,6 +440,30 @@ should resolve when the target supports them.
 - External URLs (genuine outside resources) are exempt from
   resolution checks but must still have visible link text.
 
+### Section includes (write once, show in many places)
+
+A fact has **one owner page**. When another page needs the same text, it
+includes the owner's section with the `include-section` shortcode rather
+than copying the prose (D-24709). The text is rendered from the owner page
+at build time, so the two cannot drift.
+
+- **Edit at the owner.** Every included block carries the same standard
+  caption — a **Linked section** label, "This section is linked from another
+  document", and the reference (owner page › section, plus its
+  `wiki/<slug>.md` source). The shortcode emits it; authors don't write
+  their own. The including page's file holds only the shortcode lines.
+- **A hub page owns no facts.** A page built mostly from includes (e.g.
+  [System Backup](system-backup.md)) contributes headings and framing only;
+  any new fact goes on the owner page first.
+- **Owner headings are an interface.** `section=` is the heading's anchor.
+  Renaming or removing an included heading fails the build until the
+  including page's `section=` is updated, in the same PR.
+- **Prefer an include over a copy, and a link over an include** when the
+  reader only needs to know the section exists.
+
+Usage, parameters, and limits: [Ewiki Authoring §Including a section from
+another page](ewiki-authoring.md#including-a-section-from-another-page).
+
 ---
 
 ## Source Field Conventions

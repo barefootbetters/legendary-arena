@@ -6,7 +6,8 @@
   they live in this one partial rather than being hand-copied into each page's
   markdown (copy-pasted prose drifts, and did: the first cut of this block
   carried the wrong commit prefix and named the wrong deploy target on every
-  page — corrected here). Rendered at the foot of every single page and
+  page — corrected here; it also said "no shortcodes" long after four shipped,
+  corrected with D-24709). Rendered at the foot of every single page and
   collapsed by default via the native <details> element so it never gates
   content and needs no JavaScript (ewiki is JS-free; the Pagefind allow-list
   carve-out is D-24293 and does not apply here).
@@ -131,6 +132,24 @@
         is the convention.)
       </p>
     {{- end -}}
+    {{- /*
+      why: D-24709 — a hub page renders other pages' sections with the
+      include-section shortcode. That text is owned, and edited, on the owner
+      page; editing the hub file changes only the include lines. Detected from
+      an unescaped call in the raw source, so a page that merely documents the
+      shortcode (escaped with the slash-star form inside the delimiters) does
+      not get this note.
+    */ -}}
+    {{- if findRE `\{\{[<%][ \t]*include-section` $page.RawContent 1 -}}
+      <p>
+        <strong>Parts of this page live on other pages.</strong> Each block with a
+        <strong>Linked section</strong> caption is rendered at build time from
+        the owner page it names (<code>include-section</code>, D-24709).
+        Edit the text there — the caption links to it. This page's own file
+        holds only the <code>include-section</code> lines that choose which
+        sections appear.
+      </p>
+    {{- end -}}
     <p>
       Bigger or multi-file change? Press <kbd>.</kbd> on the repo for
       <a href="https://github.dev/barefootbetters/legendary-arena">github.dev</a>
@@ -142,10 +161,23 @@
       <a href="/hugo-onboarding/">Hugo onboarding</a>.
     </p>
     <p>
-      <strong>The build is strict</strong> — no raw HTML, no shortcodes, and
+      <strong>The build is strict</strong> — no raw HTML, only the ewiki's own
+      shortcodes (listed in <a href="/ewiki-authoring/">ewiki authoring</a>), and
       internal links are case-sensitive (<code>scoring.md</code>, never
       <code>Scoring.md</code>). A bad edit fails the build and never deploys; the
       same gates run on your PR.
+    </p>
+    <p>
+      <strong>Write it once.</strong> To show a section of another page here,
+      include it rather than copying it, so the two can never drift apart:
+      <code>{{ "{{" }}&lt; include-section page="disaster-recovery" section="the-backup-layers" &gt;{{ "}}" }}</code>.
+      The shortcode
+      (<code>{{ $repoRoot }}\apps\wiki-viewer\layouts\shortcodes\include-section.html</code>,
+      <a href="{{ $blobBase }}/apps/wiki-viewer/layouts/shortcodes/include-section.html">view on GitHub</a>)
+      looks up the page, cuts the Markdown from that heading to the next heading
+      of the same level, and renders it in place. A renamed or missing heading
+      fails the build. Details:
+      <a href="/ewiki-authoring/#including-a-section-from-another-page">ewiki authoring → Including a section</a>.
     </p>
     <p>
       After merge, the <code>wiki-viewer</code> workflow runs the gates, then its

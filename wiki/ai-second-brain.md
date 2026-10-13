@@ -16,6 +16,7 @@ related:
   - data-file-locations.md
   - workspace-map.md
   - development-workflow.md
+  - system-backup.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)

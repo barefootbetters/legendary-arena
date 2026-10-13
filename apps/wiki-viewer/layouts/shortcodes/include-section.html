@@ -1,0 +1,116 @@
+{{- /*
+  Include-section shortcode for the engineering wiki (D-24709).
+
+  Usage, on a hub page:
+    {{< include-section page="disaster-recovery" section="the-backup-layers" >}}
+
+  why: write once, show in many places. A fact lives on exactly one owner
+  page; a hub page that wants it renders the owner's section at build time
+  instead of copying the prose, so the two can never drift apart. `section`
+  is the heading's anchor as the page already publishes it (GitHub-style, the
+  same id a `page.md#anchor` link uses). The section runs from that heading
+  to the next heading of the same or higher level; the heading itself is not
+  included, so the hub supplies its own.
+
+  why: every failure is a build error (errorf), never an empty block. A
+  renamed or deleted owner heading would otherwise leave the hub silently
+  missing the content it promises. The CI build step fails red on errorf, so
+  an owner-side rename surfaces on the PR that made it.
+
+  why: headings inside fenced code blocks are skipped. Shell comments such as
+  `# Log out, back in as operator` in a ```bash fence are not headings, and
+  treating them as one would cut a section short.
+
+  why: in-page links in the section (`(#anchor)`) are rewritten to
+  `(owner.md#anchor)` before rendering. On the hub they would otherwise point
+  at an anchor that only exists on the owner page. Cross-page `slug.md` and
+  out-of-tree `../` links need no rewrite: every wiki page sits in the same
+  folder, so they resolve the same from either page.
+
+  why: the block carries data-pagefind-ignore so search indexes the text once,
+  on the owner page, and a hit sends the reader to where the text is edited.
+
+  why: output is fully static (no timestamps, no randomness), so it does not
+  break the two-build byte-identical determinism lock.
+*/ -}}
+{{- $pageName := .Get "page" -}}
+{{- $sectionId := .Get "section" -}}
+{{- $hubPath := .Page.File.Path -}}
+{{- if or (not $pageName) (not $sectionId) -}}
+  {{- errorf "include-section on %s needs both page= and section=, for example page=\"disaster-recovery\" section=\"the-backup-layers\"." $hubPath -}}
+{{- end -}}
+{{- $sourcePage := site.GetPage (printf "/%s" $pageName) -}}
+{{- if not $sourcePage -}}
+  {{- errorf "include-section on %s names page=%q, but no wiki page has that slug. Check wiki/%s.md exists and the slug is spelled as its filename." $hubPath $pageName $pageName -}}
+{{- else -}}
+{{- $headingPattern := `^(#{1,6})[ \t]+(.+?)[ \t#]*$` -}}
+{{- $customIdPattern := `[ \t]*\{#([^}]+)\}$` -}}
+{{- $isInFence := false -}}
+{{- $state := "searching" -}}
+{{- $targetLevel := 0 -}}
+{{- $headingText := "" -}}
+{{- $matchCount := 0 -}}
+{{- $captured := "" -}}
+{{- range $rawLine := split $sourcePage.RawContent "\n" -}}
+  {{- $line := strings.TrimRight "\r" $rawLine -}}
+  {{- $isFenceLine := gt (len (findRE "^ {0,3}(```|~~~)" $line 1)) 0 -}}
+  {{- $isHeading := false -}}
+  {{- $level := 0 -}}
+  {{- $text := "" -}}
+  {{- $id := "" -}}
+  {{- if and (not $isInFence) (not $isFenceLine) -}}
+    {{- with findRESubmatch $headingPattern $line 1 -}}
+      {{- $isHeading = true -}}
+      {{- $level = len (index (index . 0) 1) -}}
+      {{- $text = index (index . 0) 2 -}}
+      {{- with findRESubmatch $customIdPattern $text 1 -}}
+        {{- $id = index (index . 0) 1 -}}
+        {{- $text = replaceRE $customIdPattern "" $text -}}
+      {{- else -}}
+        {{- $id = anchorize $text -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if and $isHeading (eq $id $sectionId) -}}
+    {{- $matchCount = add $matchCount 1 -}}
+  {{- end -}}
+  {{- if eq $state "capturing" -}}
+    {{- if and $isHeading (le $level $targetLevel) -}}
+      {{- $state = "done" -}}
+    {{- else -}}
+      {{- $captured = printf "%s%s\n" $captured $line -}}
+    {{- end -}}
+  {{- else if and (eq $state "searching") $isHeading (eq $id $sectionId) -}}
+    {{- $state = "capturing" -}}
+    {{- $targetLevel = $level -}}
+    {{- $headingText = $text -}}
+  {{- end -}}
+  {{- if $isFenceLine -}}
+    {{- $isInFence = not $isInFence -}}
+  {{- end -}}
+{{- end -}}
+{{- if eq $matchCount 0 -}}
+  {{- errorf "include-section on %s: page %q has no heading with anchor %q. The owner heading was probably renamed or removed; update section= on the hub to the heading's current anchor." $hubPath $pageName $sectionId -}}
+{{- else if gt $matchCount 1 -}}
+  {{- errorf "include-section on %s: page %q has %d headings with anchor %q, so the section is ambiguous. Give the intended heading a unique id with a {#custom-id} attribute and point section= at it." $hubPath $pageName $matchCount $sectionId -}}
+{{- else -}}
+{{- $body := trim $captured "\n" -}}
+{{- if not $body -}}
+  {{- errorf "include-section on %s: section %q of page %q is empty (the next heading follows it directly), so there is nothing to show. Point section= at a heading that has body text." $hubPath $sectionId $pageName -}}
+{{- else if findRE `\{\{[<%][ \t]*include-section` $body 1 -}}
+  {{- errorf "include-section on %s: section %q of page %q itself contains an include-section, and nested includes are not supported. Include the inner owner section directly from the hub instead." $hubPath $sectionId $pageName -}}
+{{- else -}}
+{{- $body = replaceRE `\]\(#` (printf "](%s.md#" $pageName) $body -}}
+{{- /*
+  why: one standard caption on every included block, so a reader always
+  knows the text is linked in, where it comes from, and where to edit it:
+  a "Linked section" label, the owner page › section link, and the owner's
+  source file on GitHub.
+*/ -}}
+<div class="included-section" data-pagefind-ignore>
+  <p class="included-from"><span class="included-label">Linked section</span> This section is linked from another document: <a href="{{ printf "/%s/#%s" $pageName $sectionId | safeURL }}">{{ $sourcePage.Title }} › {{ $sourcePage.RenderString $headingText }}</a> (<a href="{{ printf "https://github.com/barefootbetters/legendary-arena/blob/main/wiki/%s.md" $pageName | safeURL }}"><code>wiki/{{ $pageName }}.md</code></a>). Edit it there; this page picks up the change on the next build.</p>
+  {{ $sourcePage.RenderString (dict "display" "block") $body }}
+</div>
+{{- end -}}
+{{- end -}}
+{{- end -}}

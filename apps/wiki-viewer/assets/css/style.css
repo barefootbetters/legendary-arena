@@ -300,6 +300,35 @@ blockquote {
 blockquote > p:first-child { margin-top: 0; }
 blockquote > p:last-child { margin-bottom: 0; }
 
+/* why: D-24709 include-section blocks. One standard design for every linked
+   section: a left rule around the block and a caption bar with a "Linked
+   section" label, the owner page › section link and the owner's source file,
+   so a reader edits the text at its owner rather than on the including page. */
+.included-section {
+  border-left: 3px solid var(--color-border);
+  margin: 1rem 0;
+  padding: 0 0 0 1rem;
+}
+
+.included-section > .included-from {
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.included-section .included-label {
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-right: 0.4rem;
+  text-transform: uppercase;
+}
+
 .body table {
   border-collapse: collapse;
   margin: 1rem 0;
