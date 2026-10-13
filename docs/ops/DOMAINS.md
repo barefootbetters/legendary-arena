@@ -294,7 +294,7 @@ back to mock mode; check the build env above. (The net-revenue chart's
 - **CF Pages project:** `legendary-arena-legends`
 - **Source:** [apps/legends-board](../../apps/legends-board) (WP-143, done 2026-05-15)
 - **Build:** Vite SPA, Cloudflare Pages
-- **Data source:** R2 JSON snapshots written by the publisher in `apps/server/src/legends/` (WP-142, done 2026-05-14). The SPA does **not** hit `api.legendary-arena.com`.
+- **Data source:** R2 JSON snapshots written by the publisher in `apps/server/src/legends/` (WP-142, done 2026-05-14). The leaderboards do **not** hit `api.legendary-arena.com`; the one exception is the `#/match/<id>` result panel and its download, which call `GET /api/match/:id/result-lagn` (WP-407/408, `VITE_LEGENDS_API_BASE_URL`).
 
 Healthy response: `200` with the SPA shell.
 
@@ -318,7 +318,8 @@ retired and kept only as the rollback target during the 7-day window.
   Cloudflare Origin Certificate; the api hosts run SSL **Full (strict)** through
   a Configuration Rule while the rest of the zone stays on Full. The server is
   the systemd unit `la-server` (logs: `journalctl -u la-server`). Provisioning,
-  deploys (`40-app-deploy.ps1`, manual), backups and monitoring live in the
+  deploys (`40-app-deploy.ps1`, run by `deploy-server.yml` after CI passes on
+  main, D-24708, or by hand), backups and monitoring live in the
   `legendary-arena-lab` repo; see the ewiki
   [Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md).
 - **Probe path:** `/health`
@@ -425,6 +426,11 @@ Suggested sequence (for WP scoping):
 ---
 
 ## Failure runbook
+
+Which services each hostname depends on, and what to check in order when one
+is down, is the [Service Dependency Map](../../wiki/service-dependency-map.md)
+(rendered from [`service-dependencies.json`](./service-dependencies.json)).
+The entries below are the per-hostname probe failures.
 
 **`apex` returns 200 instead of a redirect.** The Cloudflare redirect rule is
 missing or pointing the wrong way. Re-create the rule under the zone's "Bulk
@@ -585,9 +591,15 @@ works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
    origin), add it to the server's CORS allowlist in the same change.
 4. If the new subdomain depends on the API, document it under the new
    section's "Depends on:" list.
-5. Run `pnpm check:domains` to confirm the script parses the manifest and
+5. Add the subdomain as a product in
+   [`service-dependencies.json`](./service-dependencies.json) — its
+   `domainUrl` copied exactly from `domains.json`, and every service it
+   depends on with the impact if that service is down (D-24710). The ewiki
+   build fails while a live, serving entry here has no product there, and the
+   [Service Dependency Map](../../wiki/service-dependency-map.md) renders from it.
+6. Run `pnpm check:domains` to confirm the script parses the manifest and
    reports `PENDING` (DNS not yet resolving) for the new entry.
-6. Once the deploy is up, the next probe should report `READY`. Flip
+7. Once the deploy is up, the next probe should report `READY`. Flip
    `state` to `"live"` in [domains.json](./domains.json) — the next probe
    will then report `OK` and any future regression is treated as `FAIL`.
 
@@ -598,6 +610,9 @@ works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
 - [`docs/08-DEPLOYMENT.md`](../08-DEPLOYMENT.md) — high-level deployment overview
 - [`docs/ops/DEPLOYMENT_FLOW.md`](./DEPLOYMENT_FLOW.md) — environments and promotion
 - [`docs/ops/INCIDENT_RESPONSE.md`](./INCIDENT_RESPONSE.md) — incident handling
+- [`service-dependencies.json`](./service-dependencies.json) — which services
+  each product depends on; rendered as the ewiki
+  [Service Dependency Map](../../wiki/service-dependency-map.md) (D-24710)
 - [`render.yaml`](../../render.yaml) — the retired Render service + database
   config (production until 2026-10-12); now the inventory of `sync: false`
   secret names

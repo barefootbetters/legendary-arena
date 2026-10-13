@@ -1,0 +1,293 @@
+{
+  "version": 1,
+  "updated": "2026-10-12",
+  "comment": "Which services each product depends on, and what a reader sees if one is down (D-24710). Rendered on the ewiki as the Service Dependency Map (wiki/service-dependency-map.md) by the service-impact shortcode. A product is a site (domainUrl copied exactly from docs/ops/domains.json, which supplies its URL and host) or a job (url/host given here). List each product's dependencies in the order to check them: edge first, then host, then what it calls. impact is one of: down, degraded, stale, deploys, unmonitored. The ewiki build fails on an unknown service id, an impact outside that set, a missing effect, or a live serving domain in domains.json with no product here.",
+  "services": [
+    {
+      "id": "cloudflare-edge",
+      "name": "Cloudflare DNS + proxy",
+      "vendor": "Cloudflare",
+      "check": "Run `pnpm check:domains`. If every hostname fails at once, it is Cloudflare, not one app.",
+      "status": "https://www.cloudflarestatus.com/"
+    },
+    {
+      "id": "cloudflare-access",
+      "name": "Cloudflare Access",
+      "vendor": "Cloudflare",
+      "check": "Only the gated sites use it. `pnpm check:domains` expects a 302/401/403 login redirect for ewiki and dashboard; a 200 means the gate is off.",
+      "status": "https://www.cloudflarestatus.com/"
+    },
+    {
+      "id": "cloudflare-pages",
+      "name": "Cloudflare Pages",
+      "vendor": "Cloudflare",
+      "check": "Pages dashboard → the project → latest production deployment is green and the custom domain is attached.",
+      "status": "https://www.cloudflarestatus.com/"
+    },
+    {
+      "id": "cloudflare-workers",
+      "name": "Cloudflare Workers",
+      "vendor": "Cloudflare",
+      "check": "Workers dashboard → `legendary-arena-wiki` / `legendary-arena-dashboard`, and the last `wiki-viewer` / `dashboard-deploy` run.",
+      "status": "https://www.cloudflarestatus.com/"
+    },
+    {
+      "id": "cloudflare-r2",
+      "name": "Cloudflare R2 (images.)",
+      "vendor": "Cloudflare",
+      "check": "`curl -sI https://images.legendary-arena.com/metadata/sets.json` returns 200. Card data, images, audio, legends snapshots and the database backups all live in R2.",
+      "status": "https://www.cloudflarestatus.com/"
+    },
+    {
+      "id": "droplet",
+      "name": "DigitalOcean droplet (api.)",
+      "vendor": "DigitalOcean",
+      "check": "UptimeRobot (`api./health`) and healthchecks.io `la-droplet-monitor` alert first. Then SSH in: `systemctl status la-server`, `journalctl -u la-server`.",
+      "status": "https://status.digitalocean.com/"
+    },
+    {
+      "id": "postgres",
+      "name": "PostgreSQL (on the droplet)",
+      "vendor": "Self-hosted",
+      "check": "`/health` does not query the database, so it stays 200 and the monitors stay green. The outside symptom is signed-in pages returning 500. On the droplet: `systemctl status postgresql`, `journalctl -u postgresql`."
+    },
+    {
+      "id": "hanko",
+      "name": "Hanko (sign-in)",
+      "vendor": "Hanko",
+      "check": "Sign in at play.legendary-arena.com; the login page says sign-in is unavailable.",
+      "status": "https://status.hanko.io/"
+    },
+    {
+      "id": "stripe",
+      "name": "Stripe (payments)",
+      "vendor": "Stripe",
+      "check": "Stripe dashboard → Developers → Events and webhook deliveries.",
+      "status": "https://status.stripe.com/"
+    },
+    {
+      "id": "snipcart",
+      "name": "Snipcart (www shop cart)",
+      "vendor": "Snipcart",
+      "check": "Add an item to the cart on www `/shop/`.",
+      "status": "https://status.snipcart.com/"
+    },
+    {
+      "id": "brevo",
+      "name": "Brevo (email)",
+      "vendor": "Brevo",
+      "check": "Brevo dashboard → transactional logs. The server logs and swallows Brevo errors, so nothing fails loudly.",
+      "status": "https://status.brevo.com/"
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic API (AI coach)",
+      "vendor": "Anthropic",
+      "check": "Open a finished match's coach report; a new one returns `coach_unavailable`.",
+      "status": "https://status.claude.com/"
+    },
+    {
+      "id": "github",
+      "name": "GitHub (repo, Actions, API)",
+      "vendor": "GitHub",
+      "check": "`gh run list` for failed or queued runs. Fallbacks while it is down: a local `wrangler deploy` for the ewiki and dashboard (`DOMAINS.md` §Manual deploy fallback) and `40-app-deploy.ps1` on the droplet.",
+      "status": "https://www.githubstatus.com/"
+    },
+    {
+      "id": "npm",
+      "name": "npm registry",
+      "vendor": "npm",
+      "check": "Build logs fail at `pnpm install` / `npm ci` / `pnpm dlx wrangler`.",
+      "status": "https://status.npmjs.org/"
+    },
+    {
+      "id": "healthchecks",
+      "name": "healthchecks.io",
+      "vendor": "healthchecks.io",
+      "check": "The checks `la-droplet-monitor`, `la-droplet-backup` and `la-droplet-pcloud`.",
+      "status": "https://status.healthchecks.io/"
+    },
+    {
+      "id": "uptimerobot",
+      "name": "UptimeRobot",
+      "vendor": "UptimeRobot",
+      "check": "The monitor on `https://api.legendary-arena.com/health`.",
+      "status": "https://status.uptimerobot.com/"
+    },
+    {
+      "id": "pcloud",
+      "name": "pCloud",
+      "vendor": "pCloud",
+      "check": "healthchecks.io `la-droplet-pcloud`, then the mirror step in `journalctl -u la-backup`. pCloud has no public status page."
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "vendor": "Google",
+      "check": "Open a www blog post with an embedded video."
+    },
+    {
+      "id": "barefootbetters",
+      "name": "barefootbetters.com uploads",
+      "vendor": "BarefootBetters (WordPress)",
+      "check": "Load a team icon from `www.barefootbetters.com/wp-content/uploads/2026/03/`."
+    }
+  ],
+  "products": [
+    {
+      "id": "apex",
+      "name": "Apex redirect",
+      "domainUrl": "https://legendary-arena.com",
+      "dependencies": [
+        { "service": "cloudflare-edge", "impact": "down", "effect": "The apex → www redirect is a zone Redirect Rule; without Cloudflare there is no redirect." },
+        { "service": "cloudflare-pages", "impact": "down", "effect": "The redirect lands on www, which Pages serves." }
+      ]
+    },
+    {
+      "id": "www",
+      "name": "Marketing site",
+      "domainUrl": "https://www.legendary-arena.com",
+      "dependencies": [
+        { "service": "cloudflare-edge", "impact": "down", "effect": "Every hostname is proxied through Cloudflare." },
+        { "service": "cloudflare-pages", "impact": "down", "effect": "Pages project `legendary-arena-website` serves the site and its `/api/subscribe` function." },
+        { "service": "snipcart", "impact": "degraded", "effect": "Shop pages render, but add-to-cart and checkout do nothing." },
+        { "service": "stripe", "impact": "degraded", "effect": "Snipcart checkout can't take payment (Stripe is configured in Snipcart)." },
+        { "service": "brevo", "impact": "degraded", "effect": "Newsletter signup shows \"Subscription failed\"." },
+        { "service": "droplet", "impact": "degraded", "effect": "`/leaderboard/` shows an error, `/roadmap/` voting fails, and the header keeps the plain \"Account\" label." },
+        { "service": "cloudflare-r2", "impact": "degraded", "effect": "Hot-linked card art on `/brand/` and three gauntlet posts breaks, and the rules PDF link is dead." },
+        { "service": "youtube", "impact": "degraded", "effect": "Embedded videos in two blog posts don't load." },
+        { "service": "github", "impact": "deploys", "effect": "Pages builds `main` of `legendary-arena/legendary-arena-website` through its Git integration, and the build clones the PaperMod theme from GitHub." },
+        { "service": "npm", "impact": "deploys", "effect": "The Pages build runs `npm ci`." }
+      ]
+    },
+    {
+      "id": "play",
+      "name": "Game client",
+      "domainUrl": "https://play.legendary-arena.com",
+      "dependencies": [
+        { "service": "cloudflare-edge", "impact": "down", "effect": "Every hostname is proxied through Cloudflare." },
+        { "service": "cloudflare-pages", "impact": "down", "effect": "Pages project `legendary-arena-play` serves the app." },
+        { "service": "droplet", "impact": "down", "effect": "The game server runs here. The page loads, but matches can't be listed, created or joined, live games stop with the reconnect banner, and signed-in features fail." },
+        { "service": "postgres", "impact": "down", "effect": "The server stays up, but signed-in routes return 500 and live matches stall." },
+        { "service": "hanko", "impact": "degraded", "effect": "Nobody can sign in; players show as signed out. Guest solo play still works, and existing sessions last until their token expires." },
+        { "service": "cloudflare-r2", "impact": "degraded", "effect": "Card art falls back to text tiles and ability icons to text labels; sound and music go silent; avatars are hidden." },
+        { "service": "anthropic", "impact": "degraded", "effect": "New endgame coach reports are unavailable; cached ones still show." },
+        { "service": "github", "impact": "deploys", "effect": "Pages builds `main` through its Git integration." },
+        { "service": "npm", "impact": "deploys", "effect": "The Pages build installs packages from npm." }
+      ]
+    },
+    {
+      "id": "cards",
+      "name": "Card viewer",
+      "domainUrl": "https://cards.legendary-arena.com",
+      "dependencies": [
+        { "service": "cloudflare-edge", "impact": "down", "effect": "Every hostname is proxied through Cloudflare." },
+        { "service": "cloudflare-pages", "impact": "down", "effect": "Pages project `legendary-arena` serves the app." },
+        { "service": "cloudflare-r2", "impact": "down", "effect": "Card data (`/metadata/sets.json` and the per-set files) loads from images. at runtime; without it no cards show. The viewer makes no API calls." },
+        { "service": "github", "impact": "deploys", "effect": "Pages builds `main` through its Git integration." },
+        { "service": "npm", "impact": "deploys", "effect": "The Pages build installs packages from npm." }
+      ]
+    },
+    {
+      "id": "legends",
+      "name": "Legends scoreboard",
+      "domainUrl": "https://legends.legendary-arena.com",
+      "dependencies": [
+        { "service": "cloudflare-edge", "impact": "down", "effect": "Every hostname is proxied through Cloudflare." },
+        { "service": "cloudflare-pages", "impact": "down", "effect": "Pages project `legendary-arena-legends` serves the app." },
+        { "service": "cloudflare-r2", "impact": "down", "effect": "The leaderboard snapshots (`legends/v1/*`) are served from images.; without them the board shows a load error." },
+        { "service": "droplet", "impact": "stale", "effect": "The snapshot publisher runs inside the game server, so the boards stop updating. The `#/match/<id>` result panel and its download also fail." },
+        { "service": "postgres", "impact": "stale", "effect": "The publisher reads the database, so the boards stop updating." },
+        { "service": "github", "impact": "deploys", "effect": "Pages builds `main` through its Git integration." },
+        { "service": "npm", "impact": "deploys", "effect": "The Pages build installs packages from npm." }
+      ]
+    },
+    {
+      "id": "dashboard",
+      "name": "Operator dashboard",
+      "domainUrl": "https://dashboard.legendary-arena.com",
+      "dependencies": [
+        { "service": "cloudflare-edge", "impact": "down", "effect": "Every hostname is proxied through Cloudflare." },
+        { "service": "cloudflare-access", "impact": "down", "effect": "Access sits in front of every request." },
+        { "service": "cloudflare-workers", "impact": "down", "effect": "The Worker `legendary-arena-dashboard` serves the app." },
+        { "service": "hanko", "impact": "down", "effect": "Every route needs a signed-in session, so you're stuck on the login page." },
+        { "service": "droplet", "impact": "degraded", "effect": "Every `/api/dash` widget shows an error or an empty placeholder; panels built from bundled data still show." },
+        { "service": "postgres", "impact": "degraded", "effect": "The live widgets return errors." },
+        { "service": "github", "impact": "degraded", "effect": "The DR Readiness tile silently shows mock \"on track\" data when the GitHub API fails. `dashboard-deploy.yml` (every push to main) can't run either." },
+        { "service": "npm", "impact": "deploys", "effect": "The deploy runs `pnpm dlx wrangler`." }
+      ]
+    },
+    {
+      "id": "ewiki",
+      "name": "Engineering wiki",
+      "domainUrl": "https://ewiki.legendary-arena.com",
+      "dependencies": [
+        { "service": "cloudflare-edge", "impact": "down", "effect": "Every hostname is proxied through Cloudflare." },
+        { "service": "cloudflare-access", "impact": "down", "effect": "Access sits in front of every request." },
+        { "service": "cloudflare-workers", "impact": "down", "effect": "The Worker `legendary-arena-wiki` serves the site." },
+        { "service": "cloudflare-r2", "impact": "degraded", "effect": "Audio players and the images hot-linked from images. break; the text is fine." },
+        { "service": "barefootbetters", "impact": "degraded", "effect": "Team icons on the music pages break." },
+        { "service": "github", "impact": "deploys", "effect": "The `wiki-viewer` workflow builds, gates and deploys it." },
+        { "service": "npm", "impact": "deploys", "effect": "The build installs packages and runs `pnpm dlx wrangler`." }
+      ]
+    },
+    {
+      "id": "api",
+      "name": "Game server API",
+      "domainUrl": "https://api.legendary-arena.com/health",
+      "dependencies": [
+        { "service": "cloudflare-edge", "impact": "down", "effect": "`api.` is a proxied A record, and the droplet's firewall admits 443 only from Cloudflare." },
+        { "service": "droplet", "impact": "down", "effect": "The server (`la-server`) runs here." },
+        { "service": "postgres", "impact": "down", "effect": "The server can't boot (the rules load is fatal). While running, database routes return 500 and matches stall, but `/health` stays 200, so the monitors don't notice." },
+        { "service": "hanko", "impact": "degraded", "effect": "New sign-ins fail; cached keys keep existing sessions valid. If the server restarts during the outage, every signed-in request returns 401." },
+        { "service": "stripe", "impact": "degraded", "effect": "Starting a purchase returns `stripe_error`; webhooks arrive late (Stripe retries them)." },
+        { "service": "brevo", "impact": "degraded", "effect": "Friend and invite emails aren't sent. A Brevo that hangs slows a new player's first sign-in." },
+        { "service": "cloudflare-r2", "impact": "degraded", "effect": "Avatar uploads fail, and the legends publisher can't publish." },
+        { "service": "anthropic", "impact": "degraded", "effect": "New coach reports return `coach_unavailable`; cached ones are served." },
+        { "service": "github", "impact": "deploys", "effect": "`deploy-server.yml` runs on Actions after CI. Hand-deploy with `40-app-deploy.ps1` on the droplet." },
+        { "service": "npm", "impact": "deploys", "effect": "A deploy runs a frozen `pnpm install`." }
+      ]
+    },
+    {
+      "id": "images",
+      "name": "Images CDN",
+      "domainUrl": "https://images.legendary-arena.com/",
+      "dependencies": [
+        { "service": "cloudflare-edge", "impact": "down", "effect": "Every hostname is proxied through Cloudflare." },
+        { "service": "cloudflare-r2", "impact": "down", "effect": "The bucket behind images. serves card art, card data, audio, avatars and legends snapshots." }
+      ]
+    },
+    {
+      "id": "backup",
+      "name": "Nightly database backup",
+      "host": "Droplet `la-backup` timer (`50-backup.ps1`), 09:17 UTC",
+      "dependencies": [
+        { "service": "droplet", "impact": "down", "effect": "The job runs on the droplet; `la-droplet-backup` alerts when no run pings it." },
+        { "service": "postgres", "impact": "down", "effect": "No dump is taken." },
+        { "service": "cloudflare-r2", "impact": "degraded", "effect": "The primary offsite copy is missed and `la-droplet-backup` alerts; pCloud still gets the dump." },
+        { "service": "pcloud", "impact": "degraded", "effect": "The second offsite copy is missed and `la-droplet-pcloud` alerts; the R2 copy is fine." },
+        { "service": "healthchecks", "impact": "unmonitored", "effect": "A failed backup sends no alert." }
+      ]
+    },
+    {
+      "id": "alerting",
+      "name": "Uptime and health alerts",
+      "host": "healthchecks.io + UptimeRobot (email)",
+      "dependencies": [
+        { "service": "healthchecks", "impact": "unmonitored", "effect": "The on-box health, disk and backup-age checks, and the backup alerts, stop." },
+        { "service": "uptimerobot", "impact": "unmonitored", "effect": "The public `api./health` check stops." },
+        { "service": "postgres", "impact": "unmonitored", "effect": "Neither monitor checks the database: `/health` stays 200 while it is down." }
+      ]
+    },
+    {
+      "id": "nightlies",
+      "name": "Nightly sweep and inspection",
+      "host": "GitHub Actions (`sweep-nightly`, `inspection-nightly`, `sweep-weekly`)",
+      "dependencies": [
+        { "service": "github", "impact": "down", "effect": "The jobs run on Actions." },
+        { "service": "droplet", "impact": "down", "effect": "Results are posted to the API; submissions fail." },
+        { "service": "anthropic", "impact": "degraded", "effect": "The inspection triage (headless Claude) fails; the sweep still lands." }
+      ]
+    }
+  ]
+}

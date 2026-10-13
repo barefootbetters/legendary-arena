@@ -23,6 +23,11 @@ on:
       # too (this workflow is the ewiki's only deploy path, D-24690). Without
       # this path, changelog edits would not reach the ewiki.
       - 'docs/09-CHANGELOG.md'
+      # why: D-24710 — the Service Dependency Map page is rendered from these two
+      # ops data files at build time (projected into apps/wiki-viewer/data/ops/),
+      # so an edit to either must rebuild and redeploy the ewiki.
+      - 'docs/ops/domains.json'
+      - 'docs/ops/service-dependencies.json'
   pull_request:
     paths:
       - 'wiki/**'
@@ -34,6 +39,11 @@ on:
       # too (this workflow is the ewiki's only deploy path, D-24690). Without
       # this path, changelog edits would not reach the ewiki.
       - 'docs/09-CHANGELOG.md'
+      # why: D-24710 — the Service Dependency Map page is rendered from these two
+      # ops data files at build time (projected into apps/wiki-viewer/data/ops/),
+      # so an edit to either must rebuild and redeploy the ewiki.
+      - 'docs/ops/domains.json'
+      - 'docs/ops/service-dependencies.json'
 
 jobs:
   build:

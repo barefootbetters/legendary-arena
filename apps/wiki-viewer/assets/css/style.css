@@ -320,6 +320,27 @@ blockquote > p:last-child { margin-bottom: 0; }
   padding: 0.4rem 0.6rem;
 }
 
+/* why: D-24710 service-impact tables. The impact tags are coloured by
+   severity so a reader scanning "what breaks" sees the outages first. */
+.service-impact { font-size: 0.9rem; }
+.service-impact td { vertical-align: top; }
+.service-impact-muted { color: var(--color-muted); font-size: 0.8rem; }
+.service-impact-group { margin: 0 0 0.4rem; }
+.service-impact-group:last-child { margin-bottom: 0; }
+.service-impact-checks { margin: 0; padding-left: 1.2rem; }
+.service-impact-tag {
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.05rem 0.35rem;
+  white-space: nowrap;
+}
+.service-impact-down { background: #fee2e2; color: #991b1b; }
+.service-impact-degraded { background: #ffedd5; color: #9a3412; }
+.service-impact-stale { background: #fef9c3; color: #854d0e; }
+.service-impact-deploys { background: #e0e7ff; color: #3730a3; }
+.service-impact-unmonitored { background: #f3f4f6; color: #374151; }
+
 .included-section .included-label {
   color: var(--color-accent);
   font-size: 0.75rem;

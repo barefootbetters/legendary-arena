@@ -15,6 +15,7 @@ related:
   - ai-second-brain.md
   - operational-health-checks.md
   - data-file-locations.md
+  - service-dependency-map.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\system-backup.md (this page — https://ewiki.legendary-arena.com/system-backup/)
@@ -30,6 +31,11 @@ facts of its own: each section below is rendered at build time from the page
 that owns it (D-24709), so it is always as current as that page. To change
 something here, edit the owner page named in the section's **Linked
 section** caption.
+
+**Something is down right now?** Start with the
+[Service Dependency Map](service-dependency-map.md)
+(`ewiki.legendary-arena.com/service-dependency-map/`): which products a
+failed service takes down, and what to check, in order, when a product is down.
 
 ## Mechanics
 
@@ -84,6 +90,8 @@ section** caption.
 - [AI Second Brain](ai-second-brain.md) owns the knowledge-base backup plan.
 - [Operational Health Checks](operational-health-checks.md) covers the probes
   that confirm a restored system is serving.
+- [Service Dependency Map](service-dependency-map.md) says what each service
+  outage takes down and what to check when a product is down.
 
 ## Edge Cases
 

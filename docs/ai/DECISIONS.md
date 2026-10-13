@@ -47875,6 +47875,25 @@ UptimeRobot measured 10 m 10 s of downtime. `pnpm check:domains`: 11 ok, 0 faile
 
 ---
 
+### D-24710 — Service dependencies live in `docs/ops/service-dependencies.json` and render on the ewiki as a two-way outage lookup (direct change, no WP) (Active 2026-10-12)
+
+**Context.** When a site or a vendor fails, the operator needs two answers fast: "a service is down — which products break?" and "a product is down — what do I check?" Nothing recorded the edges. `docs/ops/domains.json` maps each hostname to its host, and the Architecture Inventory lists vendor accounts, but neither says what depends on what, or how badly. A hand-drawn table or diagram on a wiki page would drift the first time an app gained a vendor.
+
+**Decision.**
+
+1. **One data file.** `docs/ops/service-dependencies.json` holds a `services` list (id, name, vendor, where to check, status page) and a `products` list. A product is a site, named by its `domainUrl` copied exactly from `docs/ops/domains.json` (which supplies its URL and host), or a background job with its own `url` / `host`. Each product lists its dependencies in check order: service id, impact, and the effect a reader sees.
+2. **Closed impact set.** `down` (stops working), `degraded` (one feature fails), `stale` (serves, data stops updating), `deploys` (serves, changes can't ship), `unmonitored` (runs, nobody is alerted). Separating `down` from `deploys` is the point: a GitHub outage stops deploys, not sites.
+3. **Rendered, not copied.** `project-wiki.mjs` copies `domains.json` and `service-dependencies.json` byte-for-byte into `apps/wiki-viewer/data/ops/` (gitignored). The `service-impact` shortcode renders both views on the Service Dependency Map page. Edits to either file trigger the `wiki-viewer` build.
+4. **Fail loudly.** The build fails on an unknown service id, an impact outside the set, a missing effect, a product with no dependencies, a `domainUrl` not in `domains.json`, or a live, serving `domains.json` entry (state `live`, source not `none`) with no product. Adding a subdomain therefore requires recording its dependencies (`DOMAINS.md` §Adding a new subdomain, step 5).
+
+**Not changed.** `domains.json`'s schema and `check-subdomains.mjs` are untouched. The ewiki stays JS-free and deterministic. The Architecture Inventory generator is unchanged; it answers "what runs where", this map answers "what breaks when".
+
+**Limit accepted.** The build proves every live hostname has an entry, not that each entry lists every dependency. A new outbound call needs its edge added by hand.
+
+**Reserved by:** NUMBER-LEDGER D-24710. Related: D-24709 (the same render-from-source rule for prose), D-24707 (the droplet), D-24690 (the Workers).
+
+---
+
 ### D-24711 — `GET /health/db` reports database liveness, and the monitors watch it; the nightly backup proves each dump readable before upload (direct change, no WP) (Active 2026-10-12)
 
 **Context.** `GET /health` answers `{ status: 'ok' }` without touching PostgreSQL. While the database is down the server stays up, every signed-in route returns 500 and live matches stall, yet `/health` stays 200 — and both monitors (UptimeRobot on `api./health`, the droplet's `la-droplet-monitor`) watch it, so a dead database raised no alert. Separately, the droplet's `50-backup.ps1` accepted any dump over 1024 bytes: integrity gate 3 (`pg_restore --list`) ran only by hand at restore time, and nothing recorded a checksum. Both gaps were surfaced while verifying the System Backup page (`docs/ops/DISASTER_RECOVERY.md` §3 Known gaps).
