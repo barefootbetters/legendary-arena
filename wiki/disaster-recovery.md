@@ -62,7 +62,7 @@ page is about *infrastructure* recovery.
 | **Retention** | GFS on both offsite copies: 35 daily · 12 weekly · 12 monthly. The droplet keeps the last 7 locally. |
 | **Encryption** | R2 encrypts at rest (AES-256, Cloudflare-managed keys). Dumps are **not** encrypted client-side — see [Known gaps](#known-gaps). |
 | **Verification** | Every dump must be over 1024 bytes and pass `pg_restore --list` before upload; its SHA-256 is logged and sent in the success ping. Restores were drilled from R2 (2026-08-09, onto the droplet 2026-10-12) and pCloud (2026-08-10). A backup counts only after a restore drill within 90 days. |
-| **Deletion protection** | None yet — see [Known gaps](#known-gaps). |
+| **Deletion protection** | R2 bucket lock: every R2 dump is undeletable and unoverwritable for its first 30 days (since 2026-10-13). Older R2 dumps and the pCloud copies are not locked — see [Known gaps](#known-gaps). |
 
 The canonical numbers and drill records are in
 [`docs/ops/DISASTER_RECOVERY.md`](../docs/ops/DISASTER_RECOVERY.md) §1 and §7.
@@ -100,13 +100,10 @@ operational copy and is never read back into gameplay state.
 
 Open (canonical doc §3 Known gaps):
 
-1. **Nothing stops the droplet from deleting every offsite copy.** Pruning
-   needs delete rights, so the droplet's R2 and pCloud tokens can each delete
-   every dump; a compromised droplet or a retention bug could wipe both copies
-   in one run. The fix is an R2 bucket lock rule on `db-backups/` (age 30 days,
-   inside the 35-day daily window so pruning still works). Lock rules are
-   managed through the Cloudflare dashboard or API, not the droplet's S3
-   credentials.
+1. **Older backups and the pCloud copy can still be deleted from the droplet.**
+   The R2 bucket lock protects every R2 dump for its first 30 days; weekly and
+   monthly R2 dumps past that, and every pCloud copy, remain deletable with the
+   droplet's tokens.
 2. **Dumps are not encrypted client-side.** Anyone with the R2 or pCloud
    credentials can read the player data in a dump. Encrypting with a public
    key on the droplet (private key held offline) is an open decision; its
@@ -115,7 +112,11 @@ Open (canonical doc §3 Known gaps):
    events for 30 days and the webhook handler ignores duplicates, so a restore
    is followed by resending the events since the dump time.
 
-Closed 2026-10-13 (D-24711): the backup job now runs `pg_restore --list` and
+Closed 2026-10-13: an R2 bucket lock (`la-db-backup-lock`, prefix `db-backups`,
+30 days) stops the droplet, or a retention bug, from deleting or overwriting
+any R2 dump in its first 30 days — the lock is managed in the Cloudflare
+dashboard, not with the droplet's credentials, and pruning only ever deletes
+dumps older than 35 days. And (D-24711) the backup job now runs `pg_restore --list` and
 records a SHA-256 before upload, and `GET /health/db` (`SELECT 1`, 503 when
 the database is down) is checked every 5 minutes by `la-droplet-monitor` and by
 UptimeRobot (moved from `/health` on 2026-10-13), so a dead database alerts.

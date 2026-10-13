@@ -169,14 +169,12 @@ revoke all of them at once (it happened 2026-10-05).
 
 Stated plainly so none of them is discovered during a recovery:
 
-1. **Nothing stops the droplet from deleting every offsite copy.** Pruning
-   needs delete rights, so the droplet's R2 token and pCloud token can each
-   delete every dump. A compromised droplet, or a retention bug, could wipe R2
-   and pCloud in the same run. **Fix:** an R2 bucket lock rule on
-   `legendary-arena-db-backups`, prefix `db-backups/`, age 30 days. Lock rules
-   are managed through the Cloudflare dashboard or account API, not the S3
-   credentials the droplet holds, and 30 days is inside the 35-day daily window,
-   so GFS pruning is never blocked. pCloud has no equivalent documented here.
+1. **Older backups and the pCloud copy can still be deleted from the droplet.**
+   Pruning needs delete rights, so the droplet's R2 and pCloud tokens can delete
+   dumps. Since 2026-10-13 the R2 bucket lock (below) protects every R2 dump for
+   its first 30 days, which are the ones a restore uses; weekly and monthly R2
+   dumps older than that, and every pCloud copy, remain deletable. pCloud has no
+   equivalent lock documented here.
 2. **Dumps are not encrypted client-side.** R2 encrypts every object at rest
    (AES-256, Cloudflare-managed keys), but anyone holding the R2 or pCloud
    credentials, or the operator's pCloud login, can read the player data in a
@@ -190,14 +188,23 @@ Stated plainly so none of them is discovered during a recovery:
    ignores duplicate deliveries, so a restore is followed by resending the
    events since the dump time (§5 DR-01, DR-03).
 
-**Closed 2026-10-13 (D-24711):**
+**Closed 2026-10-13:**
 
-- **The job only checked size.** `50-backup.ps1` now runs `pg_restore --list`
+- **Nothing stopped the droplet from deleting every R2 copy.** R2 bucket lock
+  rule `la-db-backup-lock` on `legendary-arena-db-backups`, prefix `db-backups`,
+  30 days, enabled 2026-10-13: no R2 dump can be deleted or overwritten in its
+  first 30 days. Lock rules are changed through the Cloudflare dashboard or
+  account API, not the S3 credentials the droplet holds, so a compromised
+  droplet or a retention bug can't remove them. GFS pruning never conflicts:
+  `scripts/db-backup-retention.mjs` keeps every backup younger than 35 days
+  and ignores keys it can't parse, so it never asks to delete a locked object.
+
+- **The job only checked size** (D-24711). `50-backup.ps1` now runs `pg_restore --list`
   on every dump before upload (integrity gate 3, on produce) and fails the run
   on an unreadable or empty archive. It logs the SHA-256, and the success ping
   body carries `size=… toc_entries=… sha256=…` (lab #34; first production run
   2026-10-13: 318 entries).
-- **A dead database did not alert.** `GET /health/db` runs `SELECT 1` and
+- **A dead database did not alert** (D-24711). `GET /health/db` runs `SELECT 1` and
   answers 503 when the database is down or slow (engine #2760).
   `la-droplet-monitor` checks it every 5 minutes (lab #34), and UptimeRobot's
   public monitor was moved from `/health` to `/health/db` on 2026-10-13.
