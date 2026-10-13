@@ -1,6 +1,6 @@
 # Disaster Recovery — Legendary Arena
 
-> **Last updated:** 2026-08-09
+> **Last updated:** 2026-10-12
 >
 > Operator-focused recovery procedures for restoring **service** (players
 > able to log in and play), not just files, after infrastructure loss,
@@ -9,50 +9,53 @@
 > **Companion docs:** [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md) covers
 > *in-match game-state* incidents (P0–P3 severity, rollback, replay desync);
 > this document covers *infrastructure* recovery. The ewiki
-> [Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md) page is
-> where the restore and rebuild drills below are *rehearsed* on a
-> non-production box.
+> [Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md) page
+> documents the production droplet and the `legendary-arena-lab`
+> provisioners a rebuild re-runs; restore and rebuild drills run against a
+> **copy** of the database, never the live one.
 
 ---
 
 ## 0. Current state — read this first
 
-Prerequisite #1 — a provider-independent database backup — **now exists in
-code** (WP-416 / D-24236): the `.github/workflows/db-backup.yml` GitHub Actions
-workflow runs `pg_dump -Fc` daily against the Render database and uploads the
-dump to a **private** Cloudflare R2 bucket under `db-backups/`, pruned by a
-grandfather-father-son policy (35 daily · 12 weekly · 12 monthly). It runs in CI,
-independent of the app server. **It is live as of 2026-08-09** —
-the five GitHub Actions secrets (`BACKUP_DATABASE_URL`, `R2_ACCOUNT_ID`,
-`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, the last a
-private bucket) are provisioned, and a `workflow_dispatch` run confirmed a dump
-landed in R2 (`db-backups/2026/08/09/…dump`, ~2.7 MB). Daily backups now run on
-the `17 9 * * *` schedule.
+**Production moved off Render on 2026-10-12 (D-24707).** `api.legendary-arena.com`
+(`apps/server`) and its PostgreSQL 18 run on one self-hosted DigitalOcean droplet
+(`sfo3`, Ubuntu 24.04) behind Cloudflare. Postgres listens on `localhost` only.
+The droplet was built by the numbered provisioners in the
+`legendary-arena/legendary-arena-lab` repo (`infra/scripts/NN-*.ps1`), and every
+one of them was rehearsed on 2026-10-11/12 before cutover. The front-ends stay on
+Cloudflare Pages, and the ewiki and dashboard are Cloudflare Workers (D-24690).
 
-Alongside it, Render's managed Postgres still produces internal backups (daily
-snapshots and, on the current `pro-4gb` plan, point-in-time recovery — confirm
-retention in the Render dashboard).
+**Backups run on the droplet.** Every night at 09:17 UTC the `la-backup` systemd
+timer runs the lab's `50-backup.ps1`: `pg_dump -Fc` → a local copy (last 7) → the
+private Cloudflare R2 bucket `legendary-arena-db-backups` (`db-backups/YYYY/MM/DD/`,
+GFS: 35 daily · 12 weekly · 12 monthly) → a **permanent pCloud mirror** (the
+second vendor). Each offsite copy reports to its own healthchecks.io check. The
+first production backup landed in R2 and pCloud on 2026-10-12, byte-identical.
+The WP-416 GitHub Actions nightly (`.github/workflows/db-backup.yml`, D-24236),
+which backed up Render from 2026-08-09, was **disabled at cutover** and is deleted
+after the rollback window. The key layout and retention are unchanged, so the R2
+and pCloud history is continuous.
 
 Consequence, stated plainly so it is not discovered during a crisis:
 
-- **DR-01 / DR-03** (database loss, accidental deletion) are recoverable through
-  Render's own dashboard restore / PITR **and** from the R2 (or pCloud) dump.
-  The restore *mechanics* were drilled 2026-08-09
-  (a full `pg_dump`/`pg_restore` of prod into a scratch DB; row counts matched —
-  §7), and re-drilled the same day from the **actual R2 object** (downloaded and
-  restored; stable tables matched — §7).
-- **DR-05** (Render itself loses the data, or the account is lost) becomes
-  recoverable **once the R2 backup is live *and* one restore drill is recorded**
-  (§5 DR-05): the dump on Cloudflare R2 is the only copy that survives losing
-  Render, and an un-drilled dump is an assumption, not a recovery. **Both hold as
-  of 2026-08-09** — the backup is live and the R2 object has been restored in a
-  drill (§7), so this scenario is now recoverable.
+- **There is no managed backup layer and no point-in-time recovery.** Render's
+  snapshots and PITR ended with Render. Worst-case data loss for DR-01 and DR-03
+  is everything since the last nightly dump (up to ~24 h).
+- **The database lives on the droplet.** Losing the droplet loses the live
+  database, so a lost droplet is DR-01 on a fresh droplet, not just DR-02.
+- **DR-05 is recoverable.** The R2 dump survives losing the droplet or
+  DigitalOcean; the pCloud copy survives losing Cloudflare. Restores were drilled
+  from R2 (2026-08-09, and onto the droplet 2026-10-12) and from pCloud
+  (2026-08-10) — §7.
 
-**The core provision-and-drill work is complete** (2026-08-09, §7): secrets
-provisioned, first backup in R2, and the R2 object restored in a drill.
-Grandfather-father-son long-term retention (weekly/monthly tiers) is now **enabled**
-(2026-08-09, §3). The second offsite copy (3-2-1) is **live** — the dump mirrors to pCloud each run
-and the pCloud copy has been restored in a drill (2026-08-10, §7).
+**Rollback window (to ~2026-10-20).** The Render web service is suspended, not
+deleted, and Render's database snapshots exist until that database is deleted.
+Rolling back is the D-24707 §8 procedure: restore the DNS-only CNAME `api.` →
+`legendary-arena-server.onrender.com`, resume the service, swap
+`LEGENDS_PUBLISHER_ENABLED`, and **re-add `api.` as a Render custom domain**
+(Render's Cloudflare-for-SaaS hostname overrides the zone record). After the
+window, Render is deleted and this paragraph goes.
 
 ---
 
@@ -64,8 +67,8 @@ this doc.
 
 | Objective | Definition | Proposed default | Bounded by |
 |---|---|---|---|
-| **RPO** (max acceptable data loss) | How much recent data may be lost | **24 hours** | Backup cadence. With only Render daily snapshots, effective RPO ≈ 24 h; enabling/using PITR tightens it toward minutes. |
-| **RTO** (max acceptable downtime) | How long service may be down | **4 hours** | Restore + redeploy time — measure it in the §7 drill, don't assume it. |
+| **RPO** (max acceptable data loss) | How much recent data may be lost | **24 hours** | Backup cadence. The droplet takes one nightly dump and has no PITR, so the effective RPO is ≈ 24 h. Only WAL archiving (not built) would tighten it. |
+| **RTO** (max acceptable downtime) | How long service may be down | **4 hours** | Restore + redeploy time — measure it in the §7 drill, don't assume it. The 2026-10-12 cutover (dump, restore, DNS switch) took 10 m 10 s of measured downtime. |
 
 The protected data (what RPO is measured against): accounts, player profiles,
 friendships, competitive scores, match metadata, replay metadata — all in
@@ -94,16 +97,16 @@ Assets are tiered by what their loss *means* for recovery:
 | Tier | Asset | Where it lives | Recovery source |
 |---|---|---|---|
 | **0** | **Source code** | GitHub `barefootbetters/legendary-arena` | `git clone` |
-| **0** | **Database** | Render managed Postgres (`legendary-arena-db`) | Render restore / PITR; **plus** the WP-416 R2 dump once its secrets are provisioned |
-| **0** | **Secrets / config** | Operator secret store (values are `sync: false` in [`render.yaml`](../../render.yaml)) — see §4 | Operator's own password manager / vault |
-| **1** | **Infrastructure definition** | [`render.yaml`](../../render.yaml) (blueprint) | GitHub (Tier-0 source), applied via Render |
-| **1** | **DNS + CDN + Access** | Cloudflare (Pages, R2, Access, DNS) | Cloudflare dashboard |
-| **1** | **TLS certificates** | Render / Cloudflare (managed); Certbot on a self-hosted box | Re-issued automatically / via Certbot |
-| **1** | **Card images** | Cloudflare R2 (`images.legendary-arena.com`) | R2 (independent of Render) |
-| **2** | **Ubuntu lab / staging box** | operator-provisioned droplet | reprovision ([Ubuntu Lab Provisioning](../../wiki/ubuntu-lab-provisioning.md)) |
+| **0** | **Database** | PostgreSQL 18 on the DigitalOcean droplet (`localhost` only) | The nightly R2 dump (`51-restore.ps1`, `RESTORE_FROM_R2=latest`), or the pCloud copy (`RESTORE_DUMP=<file>`) |
+| **0** | **Secrets / config** | The droplet's root-only `/etc/la/.env` and `/etc/la/backup.env` (mode 600); master copies in the operator's private ops folder — see §4 | Operator's own secret store |
+| **1** | **Infrastructure definition** | `legendary-arena/legendary-arena-lab` `infra/` (cloud-init + numbered provisioners, smoke-tested on fresh Ubuntu 24.04 in CI) | GitHub (Tier-0 source), applied to a fresh droplet |
+| **1** | **Application host** | The DigitalOcean droplet (`sfo3`, 2 vCPU / 4 GB + 2 GB swap) | Reprovision with the lab provisioners (§5 DR-02) |
+| **1** | **DNS + CDN + Access** | Cloudflare (DNS, Pages, Workers, R2, Access, the `Origin TLS strict — api hosts` Configuration Rule) | Cloudflare dashboard |
+| **1** | **TLS certificates** | Cloudflare edge (managed); a Cloudflare Origin Certificate on the droplet's Nginx (covers `api.` and `api-next.`, valid to 2041) | Edge: automatic. Origin: the operator's copy, or re-issue in the Cloudflare dashboard |
+| **1** | **Card images** | Cloudflare R2 (`images.legendary-arena.com`) | R2; the uploaded bytes also live in the operator's pCloud-synced `card-images-staging/original/` |
 | **2** | **Operator workstations** | local machines | reinstall + `git clone` |
 | **2** | **CI/CD runners** | GitHub Actions (hosted) | provider-managed |
-| **2** | **Monitoring / dashboards** | derived views | rebuild from source |
+| **2** | **Monitoring** | healthchecks.io (`la-droplet-monitor`, `la-droplet-backup`, `la-droplet-pcloud`) and UptimeRobot (`api./health`); dashboards are derived views | Re-create the checks; ping URLs come from the secrets in §4 |
 
 **The real assets are the Tier-0 three: source code, database data, and
 secrets.** The server is replaceable; those three are not.
@@ -118,37 +121,34 @@ secrets.** The server is replaceable; those three are not.
 
 | What | Source | Method | Storage | Retention | Verified by |
 |---|---|---|---|---|---|
-| Database (managed) | Render Postgres | Render automated snapshots + PITR | Render (internal) | Per Render plan — **confirm in dashboard** | **Never drilled** |
-| Database (external) | Render Postgres | `pg_dump -Fc` — daily GitHub Actions (`.github/workflows/db-backup.yml`, WP-416) | Cloudflare R2 (private `R2_BACKUP_BUCKET`, `db-backups/` prefix) | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09 (§7)** |
-| Database (2nd offsite) | the same dump | `rclone copyto` — same `db-backup.yml` run, after the R2 upload | pCloud (`db-backups/` path), independent of Cloudflare | GFS mirror (same selector) | **Drilled 2026-08-10 (§7)** |
-| Card images | R2 upload pipeline | manual/scripted | Cloudflare R2 | indefinite | image loads |
+| Database (managed) | — | **None since 2026-10-12.** Self-hosted Postgres has no managed snapshots or PITR. Render's snapshots of the pre-cutover database exist until that database is deleted (~2026-10-20). | — | — | — |
+| Database (local) | Droplet Postgres | `pg_dump -Fc`, lab `50-backup.ps1`, nightly 09:17 UTC (`la-backup` timer) | Droplet `/var/backups/la` | Last 7 dumps; lost with the droplet | `la-droplet-monitor` alerts if the newest is over 26 h old |
+| Database (external) | the same dump | Uploaded by the same run | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09; restored onto the droplet 2026-10-12 (§7)** |
+| Database (2nd offsite) | the same dump | `rclone` mirror in the same run | pCloud (US region), `db-backups/` — independent of Cloudflare | Same GFS policy, pruned separately | **Drilled 2026-08-10 (§7)**; first droplet mirror byte-identical to R2, 2026-10-12 |
+| Card images | R2 upload pipeline | manual/scripted | Cloudflare R2; source bytes in pCloud `card-images-staging/original/` | indefinite | image loads |
 | Source code | GitHub | git | GitHub + local clones | full history | every clone |
-| Secrets | operator | manual | operator secret store | operator-managed | §4 completeness |
+| Secrets | operator | manual | droplet `/etc/la/*.env` + operator secret store | operator-managed | §4 completeness |
 
-**Now live and hardened:** the external row's pipeline (WP-416) is provisioned and
-producing daily backups, a restore has been drilled (§7), and **grandfather-
-father-son retention is enabled** — 35 daily, then one-per-week out to 12 weeks,
-then one-per-month out to 12 months (`scripts/db-backup-retention.mjs`). The
-**second offsite copy** (3-2-1) is **live as of 2026-08-10**: after the R2 upload
-the same dump is `rclone`-mirrored to **pCloud** — a vendor independent of
-Cloudflare — and pruned to the same GFS policy. A backup run confirmed the object
-lands in both vendors, and the pCloud copy has been restored in a drill (§7). It
-is additive to the existing pipeline and requires
-**no new primary infrastructure** (no standby host, no alternate-jurisdiction copy) — those would
-be cost and attack surface aimed at risks below the license-loss and
-operational-drill gaps that actually bound recovery here.
+That is 3-2-1: the live database plus two offsite copies on independent vendors
+with independent credentials. The pipeline adds **no standby host and no
+alternate-jurisdiction copy** — those would be cost and attack surface aimed at
+risks below the operational-drill gaps that actually bound recovery here.
 
-**Failure posture (2026-10-08).** A red `DB Backup` run means the **primary**
-(dump or R2 upload) failed. Treat it as urgent. The pCloud mirror step is
-`continue-on-error`: a mirror failure leaves the run green with a warning
-annotation and opens (or comments on) the issue **`Backup mirror failing —
-pCloud`**, which auto-closes on the first run whose mirror succeeds. The usual
-cause is a revoked pCloud OAuth token (`pcloud error: Revoked 'access_token'
-… (2095)`). The 2026-10-05 revocation also killed the operator's local
-`pcloud:` remote, so assume one event hits both. Re-mint with
-`rclone authorize "pcloud"`, then update **both** the `RCLONE_PCLOUD_TOKEN`
-secret and the local remote (`rclone config reconnect pcloud:`). The
-2026-10-05..08 R2 dumps exist only on R2 unless they are back-copied to pCloud.
+**Failure posture.** The two offsite copies report separately, so a mirror
+failure never reads as a failed backup:
+
+| Signal | Meaning | Response |
+|---|---|---|
+| healthchecks.io `la-droplet-backup` down or late (email) | The dump or the R2 upload failed — no good offsite backup that night | **Urgent**, same day; the RPO clock is running. Read `journalctl -u la-backup`. |
+| healthchecks.io `la-droplet-pcloud` down (email, reason in the ping body) | R2 is safe; the pCloud mirror failed, or `BACKUP_PCLOUD_TOKEN` is missing | Fix within days. A revoked pCloud token (`pcloud error: Revoked 'access_token' … (2095)`) is the usual cause: re-mint with `rclone authorize "pcloud"`, write it into the operator's `backup.env`, and reinstall it on the droplet. |
+| `la-droplet-monitor` down | On-box health, disk, or backup age failed | Read the ping body, then the matching journal. |
+
+Nights missed during a pCloud outage exist only on R2; back-copy them with
+`rclone copy r2:<bucket>/db-backups/<yyyy>/<mm> pcloud:db-backups/<yyyy>/<mm>`.
+Each rclone authorization is independent, so the droplet's token, the retired
+GitHub nightly's `RCLONE_PCLOUD_TOKEN`, and the operator's local `pcloud:` remote
+are revoked and re-minted separately. A pCloud account-security change can
+revoke all of them at once (it happened 2026-10-05).
 
 ### Backup integrity gates
 
@@ -156,7 +156,7 @@ A backup that *exists* is not a backup that *works*. Each database backup must
 satisfy **all** of these before any scenario may count it as a fallback:
 
 1. The object exists at its expected `db-backups/…` key.
-2. Its size is non-zero (the workflow already refuses a dump ≤ 1024 bytes on
+2. Its size is non-zero (`50-backup.ps1` already refuses a dump ≤ 1024 bytes on
    *produce*; this re-checks on *consume*).
 3. `pg_restore --list <dump>` succeeds — the custom-format archive's table of
    contents is readable (catches a truncated or corrupt dump without a full
@@ -171,27 +171,50 @@ check; gates 4–5 are policy checks against this document.
 
 ---
 
-## 4. Secrets to re-provision (from `render.yaml`)
+## 4. Secrets to re-provision
 
-On any rebuild, these `sync: false` values must be restored from the
-operator's secret store (they are **not** in the repo):
+On any rebuild, these values must be restored from the operator's secret store
+(they are **not** in the repo). Production reads them from the droplet's
+root-only `/etc/la/.env`; the backup job reads `/etc/la/backup.env`.
 
+**`/etc/la/.env` — application secrets** (the `sync: false` set in the retired
+[`render.yaml`](../../render.yaml)):
 `JWT_SECRET`, `HANKO_TENANT_BASE_URL`, `HANKO_EXPECTED_AUDIENCE`,
 `HANKO_JWKS_REFRESH_INTERVAL_MS`, `STRIPE_SECRET_KEY`,
 `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ALLOWLIST`, `PUBLIC_BASE_URL`,
 `ANALYTICS_USER_ID_SALT`, `SWEEP_SUBMIT_TOKEN`, `INSPECTION_SUBMIT_TOKEN`,
 `HANDOFF_SUBMIT_TOKEN`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
-`R2_ACCOUNT_ID`, `BREVO_API_KEY`, `BREVO_LIST_ID`, plus `DATABASE_URL`
-(provided by the DB service). Production startup is fatal-on-missing for
-several of these, so a missing secret shows up immediately as a boot failure.
+`R2_ACCOUNT_ID`, `BREVO_API_KEY`, `BREVO_LIST_ID`.
+
+**`/etc/la/.env` — also required, but NOT in `render.yaml`.** `apps/server`
+reads these, and they were set only in Render's Environment tab, so a rebuild
+that uses `render.yaml` as its checklist misses them:
+`DASH_GITHUB_TOKEN`, `DASH_GITHUB_REPO`, `PAR_VERSION`,
+`BREVO_FRIEND_REQUEST_TEMPLATE_ID`, `BREVO_FRIEND_ACCEPTED_TEMPLATE_ID`,
+`BREVO_MATCH_INVITE_TEMPLATE_ID`.
+
+**`/etc/la/.env` — droplet-owned** (written by the provisioners, not copied from
+anywhere): `DATABASE_URL` (the local role), `NODE_ENV`, `NODE_VERSION`, `PORT`,
+and `LEGENDS_PUBLISHER_ENABLED` (`true` only on the box holding the live database,
+because the publisher writes production R2 from its own database).
+
+**`/etc/la/backup.env`:** the R2 credentials and bucket for the backup, the pCloud
+token (`BACKUP_PCLOUD_TOKEN`), and the healthchecks.io ping URLs
+(`BACKUP_HEALTHCHECK_URL`, `BACKUP_PCLOUD_HEALTHCHECK_URL`). `/etc/la/monitor.env`
+holds the `la-droplet-monitor` ping URL.
+
+Both files are installed by the operator with `scp` + `sudo install -m 600` and
+verified **by key name only** — values are never printed.
 
 **Secret-recovery validation.** Restoring secrets is complete only when both
-hold: (a) the recovered inventory **matches** the `sync: false` set in
-[`render.yaml`](../../render.yaml) — no secret silently missing — and (b)
-production startup completes with **no** fatal-on-missing failures in the logs.
-Until both hold, recovery is **not** complete regardless of infrastructure
-state: a booting host with a missing `JWT_SECRET` or `STRIPE_SECRET_KEY` has
-not recovered service.
+hold: (a) the recovered inventory **matches** every key listed above — no secret
+silently missing — and (b) production startup completes with **no**
+fatal-on-missing failures in the logs (`journalctl -u la-server`). Until both
+hold, recovery is **not** complete regardless of infrastructure state: a booting
+host with a missing `JWT_SECRET` or `STRIPE_SECRET_KEY` has not recovered
+service. A missing `DASH_GITHUB_*`, `PAR_VERSION`, or Brevo template id does not
+stop boot — it degrades the dashboard, PAR scoring, or transactional email
+quietly — so check those keys by name.
 
 ---
 
@@ -205,11 +228,13 @@ Whatever the scenario, restore in dependency order — upstream before
 downstream — so each step has what the next one needs:
 
 1. **Access & credentials** — operator secret store, and logins to Cloudflare /
-   Render / GitHub. Without these, nothing else can start.
-2. **Source code** — `git clone`.
-3. **Database** — snapshot / PITR / R2 dump restore (§5 DR-01, DR-03, DR-05).
-4. **Application infrastructure** — host, config, `node scripts/migrate.mjs`,
-   deploy.
+   DigitalOcean / GitHub / healthchecks.io, plus the operator's SSH key for the
+   droplet. Without these, nothing else can start.
+2. **Source code** — `git clone` (the engine repo and `legendary-arena-lab`).
+3. **Database** — restore the newest dump that passes the §3 gates (§5 DR-01,
+   DR-03, DR-05).
+4. **Application infrastructure** — host, config, deploy (`40-app-deploy.ps1`
+   runs the migrations).
 5. **External services** — DNS repoint, R2, Stripe, Brevo.
 6. **Capability validation** — §6, top to bottom.
 7. **Declare recovery complete** — §8.
@@ -220,61 +245,79 @@ downstream — so each step has what the next one needs:
 
 ### DR-01 — Database loss
 
-- **Trigger:** DB instance corrupted / unavailable.
-- **Recoverable today?** Yes. Render dashboard restore / PITR first; the
-  external fallback is the latest R2 (or pCloud) `db-backups/…` dump, restore
-  drilled 2026-08-09 / 08-10 (§7).
-- **Procedure:** Render dashboard → restore the DB to the latest good snapshot
-  (or a PITR timestamp within RPO) → verify §6 Phase 2 → verify §6 Phases 3+.
-  If Render's copy is unusable, `pg_restore` the latest offsite dump that
-  passes the §3 integrity gates instead.
+- **Trigger:** the droplet's database is corrupted or unavailable.
+- **Recoverable today?** Yes. Restore the latest R2 dump onto the droplet with
+  the lab's `51-restore.ps1` (`RESTORE_FROM_R2=latest`; drilled 2026-10-12), or
+  the pCloud copy. There is no PITR: anything since the last nightly dump is lost.
+- **Procedure:** stop `la-server` → `51-restore.ps1` with
+  `RESTORE_FROM_R2=latest` and `RESTORE_ALLOW_LIVE_TARGET=true` (or
+  `RESTORE_DUMP=<file>` for a downloaded pCloud dump) → verify §6 Phase 2 →
+  start `la-server` → verify §6 Phases 3+. If the newest R2 object fails a §3
+  gate, use the newest one that passes.
 
 ### DR-02 — Application server loss
 
-- **Trigger:** server destroyed / host compromised. **Database intact.**
+- **Trigger:** the app process or deploy is broken, or the host is compromised.
 - **Recoverable today?** Yes. The server is stateless (live match state is in
-  Postgres). This is the lowest-risk scenario.
-- **Procedure:** provision host → install runtime (Node `24.18.0`, pnpm, PM2,
-  Nginx) → `git clone` → `pnpm install && pnpm -r build` → restore secrets
-  (§4) → `node scripts/migrate.mjs` → `pm2 start` → §6 validation. On Render:
-  redeploy from `main` (the blueprint rebuilds the service).
+  Postgres). If only the app is broken, this is the lowest-risk scenario. **If
+  the droplet itself is lost, the database went with it** — that is DR-01 on a
+  fresh droplet.
+- **Procedure (droplet intact):** redeploy with the lab's `40-app-deploy.ps1`
+  (checkout, frozen install, build, migrations, restart, health gate). A known-
+  good commit is a hand deploy with `DEPLOY_REF=<sha>`.
+- **Procedure (droplet lost):** create a droplet (Ubuntu 24.04) with the lab's
+  cloud-init → run the provisioners in order (`05` SSH, `06` UFW, `07`, `08`
+  swap, `10` Node/pnpm, `20` Nginx, `21` Cloudflare origin TLS with the Origin Certificate, `30`
+  PostgreSQL) →
+  install `/etc/la/.env` and `/etc/la/backup.env` (§4) → DR-01 restore from R2
+  → `40-app-deploy.ps1` → `50`/`60 -Install` (backup and monitor timers) →
+  point the proxied `api.` A record at the new IP → §6 validation. The
+  provisioners are vendor-neutral (CI smoke runs them on plain Ubuntu 24.04), so
+  another provider works if DigitalOcean is the problem.
 
 ### DR-03 — Accidental data deletion
 
 - **Trigger:** e.g. `DELETE FROM legendary.friendships;` or
   `DROP TABLE legendary.competitive_scores;`.
-- **Recoverable today?** Yes. Render PITR to a timestamp just before the
-  deletion, **if** PITR is enabled and its window covers it. Otherwise restore
-  the affected tables from the last nightly offsite dump (up to ~24 h of loss
-  for those tables). A server snapshot does **not** help.
-- **Procedure:** identify the deletion time → Render PITR restore to just
-  before it, or `pg_restore --table=…` the affected tables from the newest dump
-  taken before the deletion into a scratch DB and copy them back → validate
-  affected tables (§6 Phase 2) → reconcile.
+- **Recoverable today?** Yes, from the last nightly dump taken before the
+  deletion (up to ~24 h of loss for those tables). There is no PITR, and a
+  server rebuild does **not** help.
+- **Procedure:** identify the deletion time → restore the newest dump taken
+  before it into a **scratch** database on the droplet (`51-restore.ps1`
+  defaults to a non-live target) → copy the affected tables back → validate
+  them (§6 Phase 2) → reconcile anything written since the dump.
 
 ### DR-04 — Credential compromise
 
-- **Trigger:** a secret (JWT, Stripe, R2, DB password) leaked.
+- **Trigger:** a secret (JWT, Stripe, R2, DB password, pCloud token, deploy
+  key) leaked.
 - **Recoverable today?** Yes, operationally: rotate. No data restore needed
   unless data was tampered with.
 - **Procedure:** rotate the affected secret at its source (Hanko / Stripe /
-  R2 / Render DB) → update the Render env var → redeploy → audit
-  `legendary.admin_actions` / `legendary.stripe_events` for misuse. Note
+  R2 / the Postgres role / pCloud) → update `/etc/la/.env` (or `backup.env`)
+  on the droplet and the operator's master copy → `sudo systemctl restart
+  la-server` → audit `legendary.admin_actions` / `legendary.stripe_events` for
+  misuse. A leaked deploy key can only redeploy commits already on `main`
+  (the `la-deploy` gate, D-24708); rotate `DEPLOY_SSH_KEY` anyway. Note
   `ANALYTICS_USER_ID_SALT` rotation invalidates existing `user_id_hash`
-  linkage (per its render.yaml note) — treat as one-way.
+  linkage (per its `render.yaml` note) — treat as one-way.
 
 ### DR-05 — Cloud-provider / account failure
 
-- **Trigger:** Render outage that loses data, or loss of the Render account.
-- **Recoverable?** **Yes, as of 2026-08-09.** That depends on all three of these
-  staying true: (a) the R2 backup is configured (secrets provisioned), (b) a
+- **Trigger:** loss of the droplet's data or the DigitalOcean account, or loss
+  of Cloudflare.
+- **Recoverable?** **Yes.** That depends on all three of these staying true:
+  (a) the nightly backup is running (`la-droplet-backup` green), (b) a
   successful backup object is present and passes the §3 integrity gates, and
   (c) a restore drill is on record within 90 days (§7). **Backup existence
-  alone is not recoverability.** The R2 dump survives losing Render; the pCloud
-  copy (drilled 2026-08-10) also survives losing Cloudflare.
-- **Procedure:** provision Postgres elsewhere → restore the latest `db-backups/…`
-  dump from R2 (or pCloud if Cloudflare is also down) with `pg_restore` → stand
-  up the server (DR-02) pointed at it → repoint DNS → §6 validation.
+  alone is not recoverability.** The R2 dump survives losing the droplet or
+  DigitalOcean; the pCloud copy also survives losing Cloudflare.
+- **Procedure (DigitalOcean lost):** DR-02 "droplet lost" on any provider,
+  restoring from R2.
+- **Procedure (Cloudflare lost):** restore from the pCloud copy. Cloudflare
+  also hosts DNS, the front-ends, the ewiki, R2 card images and the TLS edge,
+  so those must be reconstituted elsewhere first; the card-image bytes are in
+  pCloud `card-images-staging/original/`.
 
 ---
 
@@ -285,9 +328,10 @@ Recovery is **not** complete when "Ubuntu boots." It is complete when
 infrastructure component.
 
 **Phase 1 — Infrastructure**
-- [ ] Server process running; PM2 (or Render service) healthy
-- [ ] Nginx / reverse proxy healthy; TLS valid
-- [ ] `curl https://api.legendary-arena.com/health` → HTTP 200
+- [ ] `systemctl is-active la-server` → `active`; no errors in `journalctl -u la-server`
+- [ ] Nginx healthy; TLS valid at the Cloudflare edge and at the origin (SSL Full (strict) on `api.`)
+- [ ] `curl https://api.legendary-arena.com/health` → HTTP 200 (through Cloudflare)
+- [ ] healthchecks.io `la-droplet-monitor` green; UptimeRobot `api./health` up
 
 **Phase 2 — Database & data integrity**
 - [ ] App connects; migrations current; no startup errors in logs
@@ -440,6 +484,73 @@ present), so a single-vendor loss of Cloudflare leaves an independently-recovera
 copy on pCloud. Same data-fidelity scope as the R2 drills; full service bring-up
 stays the quarterly Ubuntu-lab exercise.
 
+**2026-10-11/12 — DR-01 production-copy restore onto the droplet (rehearsal).**
+
+```
+Date:                2026-10-11 / 2026-10-12
+Scenario:            DR-01 — restore a production `pg_dump` onto the droplet with
+                     the lab's 51-restore.ps1, before cutover
+Backup object key:   n/a — a production dump copied to the droplet for the drill
+                     (deleted afterwards)
+Commit SHA restored: n/a — data-fidelity drill; schema_migrations 45 on both sides
+Observed RPO:        ~0 (dump taken at drill time)
+Observed RTO:        not recorded
+Duration:            not recorded
+Result:              PASS (second run)
+Issues found:        first run failed: production carries pg_stat_statements, and
+                     the restore role cannot create it. Fixed in lab #23 (51
+                     pre-creates the dump's extensions as postgres and restores
+                     via -L; the smoke test covers it). Rerun: 41 tables and
+                     6,320 rows identical to production.
+Corrective action:   lab #23.
+```
+
+**2026-10-12 — DR-05 restore from an R2 object onto the droplet (rehearsal).**
+
+```
+Date:                2026-10-12
+Scenario:            DR-05 — 50-backup.ps1 uploads to R2, then 51-restore.ps1
+                     RESTORE_FROM_R2=latest downloads and restores it
+Backup object key:   newest object in legendary-arena-db-backups-rehearsal
+                     (a separate rehearsal bucket, never the production one)
+Commit SHA restored: n/a — data-fidelity drill
+Observed RPO:        minutes (object age at drill time)
+Observed RTO:        not recorded
+Duration:            not recorded
+Result:              PASS — row counts identical
+Issues found:        none. GFS pruning on a synthetic 120-day history kept 47
+                     and flagged 73, as designed.
+Corrective action:   none.
+```
+
+**2026-10-12 — Cutover restore (production; the definitive droplet restore).**
+
+```
+Date:                2026-10-12 (about 19:00–19:30 UTC)
+Scenario:            DR-02/DR-05-shaped move — Render suspended to freeze writes,
+                     a read-only dump restored into the droplet's live database
+                     (51-restore.ps1, RESTORE_ALLOW_LIVE_TARGET=true), DNS switched
+Backup object key:   n/a — a read-only dump taken after the write freeze (14.6 MB,
+                     13 s), deleted after the restore
+Commit SHA restored: n/a — schema_migrations 45 on both sides
+Observed RPO:        0 (writes frozen before the dump)
+Observed RTO:        10 m 10 s of downtime, measured by UptimeRobot
+Duration:            ~30 min including the rollback rehearsal on api-next
+Result:              PASS — 41 tables and 6,425 rows identical to the source.
+                     Through Cloudflare: /health 200, WebSocket upgrade 101, and a
+                     signed-in match landed in the droplet database. The first
+                     production backup landed in R2 and pCloud, byte-identical.
+Issues found:        Render's custom-domain registration for api. (Cloudflare for
+                     SaaS) overrode the zone record (x-render-routing:
+                     suspend-by-user) until it was deleted in Render. A rollback
+                     must re-add it (§0).
+Corrective action:   recorded in D-24707 §8 and §0 above.
+```
+
+**Scope.** The cutover exercised a real restore plus §6 Phases 1–5 (health,
+data, login, a match, WebSocket). It did not run Phases 6–10 as a checklist; the
+next full-rebuild drill covers those.
+
 ---
 
 ## 8. Acceptance criteria & success statement
@@ -490,11 +601,15 @@ unwieldy). Current split:
 - `DISASTER_RECOVERY.md` — this overview + scenarios + acceptance (stays).
 - [`SERVER_REBUILD_RUNBOOK.md`](SERVER_REBUILD_RUNBOOK.md) — **split out
   2026-08-09**: the step-by-step **quarterly full-service rebuild drill** (bare
-  host → running service → §6 capability validation), rehearsed on the Ubuntu lab.
-- `POSTGRES_RESTORE_RUNBOOK.md` — not yet split; the DB-restore commands live in
-  `SERVER_REBUILD_RUNBOOK.md` §4 until they grow enough to warrant their own file.
+  host → running service → §6 capability validation). **It predates the
+  2026-10-12 droplet cutover** (it still describes PM2 and Render). Until it is
+  updated, the executable rebuild is the `legendary-arena-lab` provisioners in
+  the order given in §5 DR-02.
+- `POSTGRES_RESTORE_RUNBOOK.md` — not yet split. On the droplet, restores are the
+  lab's `51-restore.ps1` (§5 DR-01, DR-03).
 
 **Not yet decided (operator):** the RPO/RTO values (§1), and whether a passing DR
 drill becomes a *binding* release gate (that would need a `DECISIONS.md` entry — it
 is descriptive here, not enforced). *(The external `pg_dump` → R2 pipeline question
-is resolved — built as WP-416 and live since 2026-08-09, §0.)*
+is resolved — built as WP-416, live since 2026-08-09, and moved onto the droplet at
+the 2026-10-12 cutover, §0.)*

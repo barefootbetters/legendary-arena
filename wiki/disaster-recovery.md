@@ -200,6 +200,12 @@ one can log in has not recovered anything.
 - **Secret loss surfaces as a boot failure, not silent degradation.**
   Production startup is fatal-on-missing for several `sync: false` secrets,
   so a rebuild that forgets one fails fast at boot rather than limping.
+- **`render.yaml` is not the complete secrets checklist.** `apps/server` also
+  reads `DASH_GITHUB_TOKEN`, `DASH_GITHUB_REPO`, `PAR_VERSION`, and three
+  `BREVO_*_TEMPLATE_ID` values that were set only in Render's Environment tab.
+  None of them stops boot, so a rebuild that misses one degrades the dashboard,
+  PAR scoring, or transactional email quietly. The canonical doc §4 lists the
+  full set for `/etc/la/.env`.
 - **`ANALYTICS_USER_ID_SALT` rotation is one-way.** Rotating it during a
   DR-04 response invalidates existing `user_id_hash` linkage — treat as
   irreversible, per its `render.yaml` note (the note still applies; the value
