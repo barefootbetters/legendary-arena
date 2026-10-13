@@ -117,8 +117,8 @@ Open (canonical doc §3 Known gaps):
 
 Closed 2026-10-13 (D-24711): the backup job now runs `pg_restore --list` and
 records a SHA-256 before upload, and `GET /health/db` (`SELECT 1`, 503 when
-the database is down) is checked by `la-droplet-monitor` every 5 minutes, so a
-dead database alerts.
+the database is down) is checked every 5 minutes by `la-droplet-monitor` and by
+UptimeRobot (moved from `/health` on 2026-10-13), so a dead database alerts.
 
 ### Not in any backup
 

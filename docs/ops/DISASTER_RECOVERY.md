@@ -121,7 +121,7 @@ Assets are tiered by what their loss *means* for recovery:
 | **1** | **Card images** | Cloudflare R2 (`images.legendary-arena.com`) | R2; the uploaded bytes also live in the operator's pCloud-synced `card-images-staging/original/` |
 | **2** | **Operator workstations** | local machines | reinstall + `git clone` |
 | **2** | **CI/CD runners** | GitHub Actions (hosted) | provider-managed |
-| **2** | **Monitoring** | healthchecks.io (`la-droplet-monitor`, `la-droplet-backup`, `la-droplet-pcloud`) and UptimeRobot (`api./health`); dashboards are derived views | Re-create the checks; ping URLs come from the secrets in §4 |
+| **2** | **Monitoring** | healthchecks.io (`la-droplet-monitor`, `la-droplet-backup`, `la-droplet-pcloud`) and UptimeRobot (`api./health/db`); dashboards are derived views | Re-create the checks; ping URLs come from the secrets in §4 |
 
 **The real assets are the Tier-0 three: source code, database data, and
 secrets.** The server is replaceable; those three are not.
@@ -199,8 +199,8 @@ Stated plainly so none of them is discovered during a recovery:
   2026-10-13: 318 entries).
 - **A dead database did not alert.** `GET /health/db` runs `SELECT 1` and
   answers 503 when the database is down or slow (engine #2760).
-  `la-droplet-monitor` checks it every 5 minutes (lab #34). UptimeRobot moves
-  from `/health` to `/health/db` as an operator step in its dashboard.
+  `la-droplet-monitor` checks it every 5 minutes (lab #34), and UptimeRobot's
+  public monitor was moved from `/health` to `/health/db` on 2026-10-13.
 
 ### Not in any backup
 
@@ -406,7 +406,7 @@ infrastructure component.
 - [ ] `systemctl is-active la-server` → `active`; no errors in `journalctl -u la-server`
 - [ ] Nginx healthy; TLS valid at the Cloudflare edge and at the origin (SSL Full (strict) on `api.`)
 - [ ] `curl https://api.legendary-arena.com/health` → HTTP 200 (through Cloudflare)
-- [ ] healthchecks.io `la-droplet-monitor` green; UptimeRobot `api./health` up
+- [ ] healthchecks.io `la-droplet-monitor` green; UptimeRobot `api./health/db` up
 
 **Phase 2 — Database & data integrity**
 - [ ] App connects; migrations current; no startup errors in logs

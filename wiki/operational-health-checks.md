@@ -554,10 +554,12 @@ fails the same way, ruling out half-provisioned states.
   modifications to any service — every probe is a read.
 - **Continuous monitoring runs elsewhere.** Since the 2026-10-12 move of
   `api.` to the DigitalOcean droplet, UptimeRobot checks
-  `https://api.legendary-arena.com/health` every 5 minutes, and two
+  `https://api.legendary-arena.com/health/db` every 5 minutes (the public path
+  plus a `SELECT 1` against PostgreSQL, since 2026-10-13), and three
   healthchecks.io checks watch the droplet (`la-droplet-monitor`, an on-box
-  5-minute check of the service, `/health`, disk and backup age; and
-  `la-droplet-backup`, the nightly backup ping). All three email on failure.
+  5-minute check of the service, `/health`, `/health/db`, disk and backup age;
+  `la-droplet-backup`, the nightly backup ping; and `la-droplet-pcloud`, its
+  pCloud mirror). All of them email on failure.
   `pnpm check` and `pnpm check:domains` remain the manual sweep after
   deploys, incidents, and machine setup. See
   [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
