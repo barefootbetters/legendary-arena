@@ -26,7 +26,7 @@ source:
   - C:\www\jefferyjjensen-corporate-memory (the ship — private repo barefootbetters/jefferyjjensen-corporate-memory)
   - C:\pcloud\LA\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026 — the hosting cost baseline)
   - ../render.yaml
-last-reviewed: 2026-10-11
+last-reviewed: 2026-10-12
 ---
 
 # AI Second Brain
@@ -113,6 +113,7 @@ services run yet, and the Day 2 tool connection is overdue.**
 | Audit findings -01 to -08 fixed: the engine and repos are read from GitHub `main`, the 2026-10-30 beta-session checklist is in `priorities.md`, the planned jeff-ai stack is labelled as planned, and the connections registry has rows 9–10 | Done | 2026-09-29 | corporate-memory [#6](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/6)–[#11](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/11) |
 | Weekly check scheduled (Task Scheduler, Fridays 07:00); scripts ported to PowerShell | Done; first automatic run **PASS** 2026-10-02 | 2026-09-29 | corporate-memory [#10](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/10), [#12](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/12); [`reviews/log.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/reviews/log.md) |
 | Private web viewer: the ship's Markdown as pages with search, at **brain.barefootbetters.com** behind Cloudflare Access (the ewiki's sign-in) | Done | 2026-10-04 | corporate-memory [#16](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/16)–[#18](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/18); [`viewer/README.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/viewer/README.md) |
+| Ship backups meet 3-2-1, with pCloud as the off-site copy | **Not started.** Tracked files have two copies (the checkout and GitHub). Gitignored owner-only files, including the baseline audit report, have one | — | [Backup and recovery](#backup-and-recovery) |
 | First notes-migration pilot client engaged (a seminary teacher; seminary teachers are the first market — see [Open Questions](#open-questions) #7) | Done; pilot success criteria still open | 2026-10-04 | Engagement details stay in the private ship: [corporate-memory#15](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/pull/15) |
 | Map Day 2: connect the first tool (Outlook Calendar or OneDrive) | **Overdue**: only the GitHub repo routes are connected | ~2026-09-30 | [`connections.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/connections.md) |
 | Map Day 7: `/audit` re-run, scored against the 29/100 baseline | Scheduled | ~2026-10-06 | Its score and top findings get a row here |
@@ -1553,6 +1554,27 @@ compiled pages, all on the owner's hardware.
 brain and a customer's are the same ship on the same map. How that becomes an
 offering is [Open Questions](#open-questions) #7.
 
+**The builder never holds the door (2026-10-12).** The operator put the
+product in one line: *this is your brain.* A builder who runs the customer's
+server, holds their keys, or sits between them and their corpus becomes the
+middleman the pitch tells them to fear. So the offer is not a seat in a service
+the operator runs. The operator builds the ship on accounts in the customer's
+name and hands over the keys. If the operator disappears, the brain keeps
+running. Concretely:
+
+- **Every account that holds the brain is in the customer's name**: the repo
+  host, the server or machine, the off-site backup, and any model API key.
+- **The customer holds the encryption key** for their owner-only material
+  ([Backup and recovery](#backup-and-recovery)). The builder never keeps a copy.
+- **Support access is granted by the customer, for a stated job, and removed
+  afterwards**, for example a time-boxed repo-collaborator invite or SSH key.
+  "I can't see inside it" is true only with that rule in place, so the rule goes
+  in the written support terms.
+- **What the pitch does not claim.** The customer still trusts the vendors they
+  pick: the repo host, the VPS, and any hosted model. The claim is that no
+  middleman holds the door, not that no vendor exists. Point 1 above and the
+  oversight paragraph already scope hosted inference.
+
 ### Backup and recovery
 
 Owning the knowledge base means owning its durability. The discipline mirrors
@@ -1573,6 +1595,51 @@ the engine's data-recovery posture in [Disaster Recovery](disaster-recovery.md):
   restoring a potentially stale index — the same "snapshots are derived records"
   instinct the engine applies to `G`. Only the source corpus and the knowledge
   DB's non-derived tables are true backup targets.
+
+#### 3-2-1, with pCloud as the off-site copy (2026-10-12)
+
+The operator set the backup rule: **three copies, on two kinds of media, one of
+them off-site, and the off-site copy is pCloud.** An owned brain makes the owner
+responsible for not losing it. A dead drive takes the knowledge as surely as a
+landlord would.
+
+| Content | Copies today | 3-2-1 target |
+|---|---|---|
+| Tracked ship Markdown (hosted-OK) | 2: the checkout and the private GitHub origin | Add a dated `git bundle` copied to pCloud |
+| Gitignored owner-only files (`audits/`, `brainstorms/`, `scratch/`, `*.local.md`) | **1**: the checkout only. The baseline `/audit` report is here | Add a second local drive and an encrypted copy in pCloud |
+| Knowledge DB non-derived tables (once Postgres runs) | none yet | The brain host, a dump on a second medium, and an encrypted copy in pCloud |
+| Derived (vector index, `.index/`, `viewer/public/`) | rebuilt | No backup. Rebuild from the source |
+
+The live copy is the checkout under `C:\www\` today and the brain host once it
+exists. It is not the production droplet, which runs the game and is too small
+to also host the brain ([Build status](#build-status)).
+
+- **Copy, never sync.** pCloud Sync is two-way, so a local delete also deletes
+  the off-site copy. The off-site copy is a one-way, dated copy onto pCloud
+  Drive. The ship's `docs/02-work-plan-personal-ai.md` already sets this rule
+  for model files, and it applies to the corpus too. No live Git checkout sits
+  in a pCloud folder. Dated file names keep old copies whatever pCloud's
+  file-history retention is.
+- **Owner-only material leaves the host only as ciphertext.** pCloud is a hosted
+  surface, and owner-only material never sits on one in plain text. Client-side
+  encryption is what lets it go off-site at all: pCloud Crypto (a paid add-on),
+  or an archive encrypted before the copy if Crypto is not on the account.
+  Either way pCloud holds only ciphertext. Hosted-OK material can go in plain
+  pCloud. pCloud offers US and EU data regions; which one the account uses is
+  worth checking.
+- **The key gets its own backup, apart from the corpus.** pCloud cannot recover
+  a lost Crypto passphrase, and a lost key makes the encrypted copy unrecoverable.
+  The passphrase lives outside the ship and outside pCloud, for example in the
+  password manager and on paper.
+- **The restore drill includes decryption.** A backup counts only after a
+  rehearsed restore (above). For the encrypted copy, the drill pulls it from
+  pCloud and decrypts it on a machine that did not make it.
+- **By hand first, then scheduled.** Make the first copy by hand. Once it
+  restores, add it to the Friday weekly check (*Incremental Automation*: Cadence
+  last).
+- **Each customer's ship carries the same rule.** The builder sets up the
+  customer's 3-2-1 and rehearses the first restore with them. The customer holds
+  the key ([Positioning](#positioning-the-owner-stays-captain)).
 
 ### Architectural invariants vs. implementation choices
 
@@ -2430,6 +2497,34 @@ This is the summary index; the individual gotchas and their nuances live in
   Voice is deferred on Jeff's direction (Claude app voice while driving), so the
   brain host plans at the 8 GB tier. No Locked row moved, and there is no
   `DECISIONS.md` entry.
+- **2026-10-12 — sovereignty and 3-2-1 backups (Preferred / Open, no
+  re-lock).** From an operator voice session in the Claude app.
+  **Adopted:**
+  - The builder never holds the door
+    ([Positioning](#positioning-the-owner-stays-captain)): accounts in the
+    customer's name, the customer holds the key, support access is granted
+    per job and removed.
+  - Packaging narrowed to a build fee plus an optional service plan
+    ([Open Questions](#open-questions) #7).
+  - 3-2-1 backups with pCloud as the off-site copy
+    ([Backup and recovery](#backup-and-recovery)): copy, never sync; owner-only
+    material goes off-site only as ciphertext; the key is backed up apart from
+    the corpus; the restore drill includes decryption. A Build status row
+    tracks it.
+
+  **Corrected:** the session placed the live copy on the DigitalOcean droplet.
+  That droplet runs production only, so the live copy is the `C:\www\`
+  checkout today and the brain host later. The session's "you trust no one"
+  line is scoped to "no middleman holds the door"; the customer still trusts
+  the vendors they pick.
+
+  **Found:** the gitignored `audits/` folder, which holds the baseline audit
+  report, has exactly one copy.
+
+  **Not covered:** the session opened by asking for creative uses of a second
+  brain and did not answer it.
+
+  No Locked row moved, and there is no `DECISIONS.md` entry.
 
 ## Open Questions
 
@@ -2546,7 +2641,9 @@ is built.
      private config" split already exists. AIS-OS is the public skeleton (the
      `upstream` remote), and the ship is the **private** repo holding config and
      plumbing. Owner-only material stays host-local and gitignored even there,
-     because a private GitHub repo is still a hosted surface. *Still open:* the
+     because a private GitHub repo is still a hosted surface. The one exception
+     is an off-site backup encrypted on the client
+     ([Backup and recovery](#backup-and-recovery)). *Still open:* the
      concrete repo names/hosts for the non-Legendary-Arena domains. **Preferred /
      Open** — nothing here touches a Locked row or needs a new `DECISIONS.md`
      entry.
@@ -2598,6 +2695,18 @@ is built.
    own ship and the pilot's: a rehearsed restore, `sensitivity` enforcement,
    and the citation verifier. A multi-tenant service would move to rung 4. That
    is a separate decision, made later if at all.
+
+   *Packaging direction (2026-10-12):* **a build fee plus an optional service
+   plan.** It is not a subscription to a brain the operator runs, which would put
+   the operator in the seat [Positioning](#positioning-the-owner-stays-captain)
+   rules out. The build sets up the ship on the customer's own accounts, loads
+   the first corpus, sets up 3-2-1 backups, rehearses one restore, and hands
+   over the keys. The service plan, for customers who want it, covers map
+   updates (merging new AIS-OS releases), the update audit, new capabilities,
+   and break-fix support. A customer can drop the plan and keep the brain, so
+   the plan renews on value, not lock-in. This narrows "setup service,
+   subscription, or managed care" to the build plus optional care. *Still
+   open:* the build fee, the plan price, and what the plan includes.
 
 ## References
 
