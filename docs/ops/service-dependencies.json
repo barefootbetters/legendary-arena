@@ -42,14 +42,14 @@
       "id": "droplet",
       "name": "DigitalOcean droplet (api.)",
       "vendor": "DigitalOcean",
-      "check": "UptimeRobot (`api./health`) and healthchecks.io `la-droplet-monitor` alert first. Then SSH in: `systemctl status la-server`, `journalctl -u la-server`.",
+      "check": "UptimeRobot and healthchecks.io `la-droplet-monitor` alert first; `curl https://api.legendary-arena.com/health/db` checks the server and database together. Then SSH in: `systemctl status la-server`, `journalctl -u la-server`.",
       "status": "https://status.digitalocean.com/"
     },
     {
       "id": "postgres",
       "name": "PostgreSQL (on the droplet)",
       "vendor": "Self-hosted",
-      "check": "`/health` does not query the database, so it stays 200 and the monitors stay green. The outside symptom is signed-in pages returning 500. On the droplet: `systemctl status postgresql`, `journalctl -u postgresql`."
+      "check": "`/health/db` runs `SELECT 1` and answers 503 when the database is down or slow; `la-droplet-monitor` alerts on it. (`/health` does not query the database and stays 200.) On the droplet: `systemctl status postgresql`, `journalctl -u postgresql`."
     },
     {
       "id": "hanko",
@@ -238,7 +238,7 @@
       "dependencies": [
         { "service": "cloudflare-edge", "impact": "down", "effect": "`api.` is a proxied A record, and the droplet's firewall admits 443 only from Cloudflare." },
         { "service": "droplet", "impact": "down", "effect": "The server (`la-server`) runs here." },
-        { "service": "postgres", "impact": "down", "effect": "The server can't boot (the rules load is fatal). While running, database routes return 500 and matches stall, but `/health` stays 200, so the monitors don't notice." },
+        { "service": "postgres", "impact": "down", "effect": "The server can't boot (the rules load is fatal). While running, database routes return 500 and matches stall; `/health` stays 200, but `/health/db` answers 503 and `la-droplet-monitor` alerts." },
         { "service": "hanko", "impact": "degraded", "effect": "New sign-ins fail; cached keys keep existing sessions valid. If the server restarts during the outage, every signed-in request returns 401." },
         { "service": "stripe", "impact": "degraded", "effect": "Starting a purchase returns `stripe_error`; webhooks arrive late (Stripe retries them)." },
         { "service": "brevo", "impact": "degraded", "effect": "Friend and invite emails aren't sent. A Brevo that hangs slows a new player's first sign-in." },
@@ -274,9 +274,8 @@
       "name": "Uptime and health alerts",
       "host": "healthchecks.io + UptimeRobot (email)",
       "dependencies": [
-        { "service": "healthchecks", "impact": "unmonitored", "effect": "The on-box health, disk and backup-age checks, and the backup alerts, stop." },
-        { "service": "uptimerobot", "impact": "unmonitored", "effect": "The public `api./health` check stops." },
-        { "service": "postgres", "impact": "unmonitored", "effect": "Neither monitor checks the database: `/health` stays 200 while it is down." }
+        { "service": "healthchecks", "impact": "unmonitored", "effect": "The on-box server, database (`/health/db`), disk and backup-age checks, and the backup alerts, stop." },
+        { "service": "uptimerobot", "impact": "unmonitored", "effect": "The public API check stops." }
       ]
     },
     {

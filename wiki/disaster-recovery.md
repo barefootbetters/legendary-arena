@@ -61,7 +61,7 @@ page is about *infrastructure* recovery.
 | **RTO** | Proposed default 4 h. Measured: the database restore itself takes seconds (~15 MB dump); moving production to a pre-provisioned droplet took **10 m 10 s** of downtime (2026-10-12). A full rebuild on a new droplet is not yet timed. |
 | **Retention** | GFS on both offsite copies: 35 daily · 12 weekly · 12 monthly. The droplet keeps the last 7 locally. |
 | **Encryption** | R2 encrypts at rest (AES-256, Cloudflare-managed keys). Dumps are **not** encrypted client-side — see [Known gaps](#known-gaps). |
-| **Verification** | The job rejects a dump of 1024 bytes or less. Restores were drilled from R2 (2026-08-09, onto the droplet 2026-10-12) and pCloud (2026-08-10). A backup counts only after a restore drill within 90 days. |
+| **Verification** | Every dump must be over 1024 bytes and pass `pg_restore --list` before upload; its SHA-256 is logged and sent in the success ping. Restores were drilled from R2 (2026-08-09, onto the droplet 2026-10-12) and pCloud (2026-08-10). A backup counts only after a restore drill within 90 days. |
 | **Deletion protection** | None yet — see [Known gaps](#known-gaps). |
 
 The canonical numbers and drill records are in
@@ -98,7 +98,7 @@ operational copy and is never read back into gameplay state.
 
 ### Known gaps
 
-Open as of 2026-10-12 (canonical doc §3 Known gaps):
+Open (canonical doc §3 Known gaps):
 
 1. **Nothing stops the droplet from deleting every offsite copy.** Pruning
    needs delete rights, so the droplet's R2 and pCloud tokens can each delete
@@ -111,12 +111,14 @@ Open as of 2026-10-12 (canonical doc §3 Known gaps):
    credentials can read the player data in a dump. Encrypting with a public
    key on the droplet (private key held offline) is an open decision; its
    cost is key custody.
-3. **The job checks size only** — no `pg_restore --list`, no recorded
-   checksum.
-4. **Payments since the last dump are missing after a restore.** Stripe keeps
+3. **Payments since the last dump are missing after a restore.** Stripe keeps
    events for 30 days and the webhook handler ignores duplicates, so a restore
    is followed by resending the events since the dump time.
-5. **A dead database does not alert** — `/health` doesn't query Postgres.
+
+Closed 2026-10-13 (D-24711): the backup job now runs `pg_restore --list` and
+records a SHA-256 before upload, and `GET /health/db` (`SELECT 1`, 503 when
+the database is down) is checked by `la-droplet-monitor` every 5 minutes, so a
+dead database alerts.
 
 ### Not in any backup
 

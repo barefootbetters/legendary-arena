@@ -165,7 +165,7 @@ GitHub nightly's `RCLONE_PCLOUD_TOKEN`, and the operator's local `pcloud:` remot
 are revoked and re-minted separately. A pCloud account-security change can
 revoke all of them at once (it happened 2026-10-05).
 
-### Known gaps (open, as of 2026-10-12)
+### Known gaps
 
 Stated plainly so none of them is discovered during a recovery:
 
@@ -184,18 +184,23 @@ Stated plainly so none of them is discovered during a recovery:
    (e.g. `age`), keeping the private key offline in the operator's secret
    store. The cost is key custody: lose that key and every encrypted backup is
    unreadable.
-3. **The job only checks size.** `50-backup.ps1` rejects a dump of 1024 bytes
-   or less; it does not run `pg_restore --list` (integrity gate 3) or record a
-   checksum. **Fix:** run `pg_restore --list` on the dump and log its SHA-256
-   before upload, and put both in the success ping body.
-4. **Payments since the last dump are missing after a restore.** There is no
+3. **Payments since the last dump are missing after a restore.** There is no
    PITR, and purchases reach `legendary.*` through Stripe webhooks. Stripe is
    the source of truth and keeps events for 30 days, and the webhook handler
    ignores duplicate deliveries, so a restore is followed by resending the
    events since the dump time (§5 DR-01, DR-03).
-5. **A dead database does not alert.** `/health` does not query Postgres, so
-   UptimeRobot and `la-droplet-monitor` stay green while every signed-in route
-   returns 500.
+
+**Closed 2026-10-13 (D-24711):**
+
+- **The job only checked size.** `50-backup.ps1` now runs `pg_restore --list`
+  on every dump before upload (integrity gate 3, on produce) and fails the run
+  on an unreadable or empty archive. It logs the SHA-256, and the success ping
+  body carries `size=… toc_entries=… sha256=…` (lab #34; first production run
+  2026-10-13: 318 entries).
+- **A dead database did not alert.** `GET /health/db` runs `SELECT 1` and
+  answers 503 when the database is down or slow (engine #2760).
+  `la-droplet-monitor` checks it every 5 minutes (lab #34). UptimeRobot moves
+  from `/health` to `/health/db` as an operator step in its dashboard.
 
 ### Not in any backup
 
@@ -225,7 +230,10 @@ satisfy **all** of these before any scenario may count it as a fallback:
    *produce*; this re-checks on *consume*).
 3. `pg_restore --list <dump>` succeeds — the custom-format archive's table of
    contents is readable (catches a truncated or corrupt dump without a full
-   restore).
+   restore). `50-backup.ps1` runs this on produce too, and logs the dump's
+   SHA-256; on consume, `sha256sum` the downloaded copy and compare it with that
+   night's `Dump readable:` line in `journalctl -u la-backup` (or the
+   `la-droplet-backup` ping body).
 4. Its age is ≤ the §1 RPO at the moment it is relied upon.
 5. A restore drill (§7) has been recorded within the last **90 days**.
 
