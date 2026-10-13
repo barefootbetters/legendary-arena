@@ -214,10 +214,10 @@ const CURATED_INFRASTRUCTURE_SERVICES = [
     provider: 'UptimeRobot',
     kind: 'External HTTP(s) uptime monitoring (free plan, $0)',
     url:
-      'One HTTP(s) monitor on `https://api.legendary-arena.com/health`, 5-min interval, ' +
+      'One HTTP(s) monitor on `https://api.legendary-arena.com/health/db`, 5-min interval, ' +
       'email alerts. It checks the public path the on-box check skips (DNS → Cloudflare → ' +
-      'Nginx/TLS → server), so it follows `api.` across the Render → droplet cutover ' +
-      'unchanged. Created 2026-10-12.',
+      'Nginx/TLS → server) plus a `SELECT 1` against PostgreSQL (D-24711). Created ' +
+      '2026-10-12 on `/health`; moved to `/health/db` 2026-10-13.',
   },
 ];
 

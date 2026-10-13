@@ -1059,7 +1059,7 @@ version bump as its own `INFRA:` change.
 | Architecture inventory | GitHub Actions | PR generated on diff | Weekly (Mon 06:00 UTC) | Non-blocking; check Actions tab |
 | API deploy (droplet) | GitHub Actions (`deploy-server.yml`) | Run green: the origin health gate inside `40`, then `api./health` 200 through Cloudflare | After CI succeeds on a push to `main`, when server-relevant files changed | Read the run log (it streams `40`'s output) and `journalctl -u la-server`; re-run from Actions, or revert the PR (its merge deploys) |
 | Auto-deploy (Pages) | Cloudflare | Build status: Success | On merge to `main` | Check Pages Deployments log; revert PR if needed |
-| Uptime probes | UptimeRobot + healthchecks.io; Operator | UptimeRobot `api./health` up; healthchecks.io checks up; `pnpm check` all green | UptimeRobot every 5 min; healthchecks.io every 5 min + nightly; `pnpm check` manual (after deploys, incidents, machine setup) | Email alert → follow the alert; fix before proceeding |
+| Uptime probes | UptimeRobot + healthchecks.io; Operator | UptimeRobot `api./health/db` up; healthchecks.io checks up; `pnpm check` all green | UptimeRobot every 5 min; healthchecks.io every 5 min + nightly; `pnpm check` manual (after deploys, incidents, machine setup) | Email alert → follow the alert; fix before proceeding |
 | Subdomain health | Operator | `pnpm check:domains` no FAILs | Manual (run after DNS/TLS changes) | Follow `dns:`/`tls:` diagnostics |
 
 No SLA beyond "investigate in next operator session" — this is a

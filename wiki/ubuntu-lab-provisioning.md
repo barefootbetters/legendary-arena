@@ -106,7 +106,7 @@ driver too.
 | Edge | Cloudflare in front; Nginx terminates TLS with a Cloudflare Origin Certificate. |
 | Deploy | Automatic after CI passes on `main` ([`deploy-server.yml`](../.github/workflows/deploy-server.yml), D-24708): GitHub Actions → SSH as the restricted `deployer` user, whose key is pinned to the `la-deploy` gate (`41-deploy-user.ps1`) → `40-app-deploy.ps1` for the exact tested commit (install, build, migrations, restart, health gate). Hand deploys run `40` directly. |
 | Backups | Nightly `pg_dump` (09:17 UTC) → local copy → R2 (production bucket `legendary-arena-db-backups` since cutover) → **pCloud mirror** (second vendor, permanent), each with its own health check; restore drill (§5), full rebuild (§6). The local backup and restore drill passed on 2026-10-11; the R2 upload, restore-from-R2, and the first production pCloud mirror passed on 2026-10-12. See [Offsite backups](#offsite-backups-r2--pcloud). |
-| Monitoring | Provisioner `60` every 5 min, plus a ping after each backup, to two healthchecks.io dead-man's-switch checks that email on a failure or a missing ping. Rehearsed 2026-10-12, including a real alert. UptimeRobot checks the public `api.…/health` path every 5 minutes. |
+| Monitoring | Provisioner `60` every 5 min (server, `/health`, `/health/db`, disk, backup age), plus pings after each backup and its pCloud mirror, to three healthchecks.io dead-man's-switch checks that email on a failure or a missing ping. Rehearsed 2026-10-12, including a real alert. UptimeRobot checks the public `api.…/health/db` path every 5 minutes (moved from `/health` on 2026-10-13, so a dead database alerts too). |
 
 The executable versions — cloud-init, the numbered provisioners, the systemd
 unit, the TLS setup and the deploy pipeline — live in the `legendary-arena-lab`
@@ -175,7 +175,9 @@ rule, and its record changes from today's DNS-only CNAME to Render into a
 proxied A record to the droplet. Rollback restores that CNAME exactly.
 
 **External uptime monitor (2026-10-12).** UptimeRobot (free plan) checks
-`https://api.legendary-arena.com/health` every 5 minutes and emails on failure.
+`https://api.legendary-arena.com/health/db` every 5 minutes and emails on failure
+(it watched `/health` until 2026-10-13, when it moved to the route that also
+runs `SELECT 1` against PostgreSQL, D-24711).
 The on-box check calls `127.0.0.1`, so it never tests DNS, Cloudflare, Nginx, or
 TLS; this monitor does. It was green against Render before cutover and followed
 `api.` to the droplet with no change.
