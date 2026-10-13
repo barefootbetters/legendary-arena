@@ -106,8 +106,9 @@ Open (canonical doc §3 Known gaps):
    droplet's tokens.
 2. **Dumps are not encrypted client-side.** Anyone with the R2 or pCloud
    credentials can read the player data in a dump. Encrypting with a public
-   key on the droplet (private key held offline) is an open decision; its
-   cost is key custody.
+   key on the droplet (private key held offline) is deferred (2026-10-13)
+   until the AI Second Brain's connections are mapped, so one key-custody
+   design covers both systems' backups.
 3. **Payments since the last dump are missing after a restore.** Stripe keeps
    events for 30 days and the webhook handler ignores duplicates, so a restore
    is followed by resending the events since the dump time.
