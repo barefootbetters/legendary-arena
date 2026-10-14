@@ -26,7 +26,7 @@ source:
   - ../apps/wiki-viewer/layouts/partials/editing-this-page.html
   - ../docs/ai/DECISIONS.md
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-10-13
+last-reviewed: 2026-10-14
 ---
 
 # Ewiki Authoring
@@ -446,7 +446,7 @@ never hand-write it. It states where the editable source lives, a
 one-click GitHub edit link for this exact page, the commit prefix
 (`INFRA:` for ewiki page edits), the strict-build rules, and how the page
 deploys (the `wiki-viewer` workflow's deploy job, to the Cloudflare Worker
-`legendary-arena-wiki`).
+`legendary-arena-wiki`), and where each of its files ends up.
 
 Each file reference shows **both** forms: the full local drafting path —
 e.g. `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md`, the directory to
@@ -474,6 +474,28 @@ The block has three automatic variants:
   (D-24310). **Do not hand-write an editing blockquote;** the fields drive
   the footer for you.
 - **Changelog:** the generated page points at `docs/09-CHANGELOG.md`.
+
+Every variant ends with **Where this page goes**: the after-merge deploy
+sentence, then a two-column table (*Where* | *What's there*) of every place
+the page's files live or pass through:
+
+| Where | What's there |
+|---|---|
+| Your clone | the full local path of the file you edit (the page, the canonical doc, or `docs\09-CHANGELOG.md`, per variant), plus `ewiki\<slug>\` for images and diagrams |
+| GitHub | the repo path on `main`: the one copy |
+| GitHub Actions | the `wiki-viewer` workflow builds with Hugo + Pagefind and runs the gates, on every PR and on `main` |
+| Cloudflare Workers | the assets-only Worker `legendary-arena-wiki` (D-24690) serves pages, search index, and `ewiki/<slug>/` assets; deployed from `main` only |
+| Cloudflare Access | gates `ewiki.legendary-arena.com`, the only address |
+| Cloudflare R2 | card art and audio clips pages link, in the `legendary-images` bucket at `images.legendary-arena.com`; uploaded separately |
+| AI Second Brain | the brain's read-only Claude connector serves the page in its `ewiki` folder, a snapshot of `wiki/` on `main` taken at each brain deploy, not each site rebuild ([how it works](ai-second-brain.md#reading-this-wiki-from-claude-the-brains-connector)); the changelog is not served |
+| Other sites | images hot-linked from `www.barefootbetters.com` and `www.legendary-arena.com`; nothing uploaded |
+| Not used | DigitalOcean (game API only), Render (retired by D-24690), Cloudflare Pages, any script CDN |
+
+Only the Your clone, GitHub, and AI Second Brain rows change per variant;
+the rest are the same on every page. The rows mirror
+[DOMAINS.md](https://github.com/barefootbetters/legendary-arena/blob/main/docs/ops/DOMAINS.md#ewiki),
+the workflow, and [AI Second Brain](ai-second-brain.md), so a hosting or
+connector change updates the partial in the same PR.
 
 On a page that includes sections from other pages, the footer adds one more
 paragraph, whichever variant it is: the **Linked section** blocks are edited
