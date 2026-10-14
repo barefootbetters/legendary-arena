@@ -238,6 +238,19 @@ export function registerMatchLagnRoutes(
         return;
       }
 
+      // why: D-24717 — an operator match (WP-802 / D-24689) is an admin test
+      // board, never a real result, so it must not reach the public Legends board
+      // as one. Refused with the SAME 404 as an unknown match, so the response is
+      // no oracle for which matches are operator matches. The flag is read from
+      // `matchConfiguration` inside the D-24153 carve-out (the D-24658 finalBlow
+      // precedent). The setup route above stays open: the in-match Battle Brief
+      // and View loadout read it, and the setup carries no player identity.
+      if (configuration.matchConfiguration.isDebugMatch === true) {
+        koaContext.status = 404;
+        koaContext.body = { error: 'not_found' };
+        return;
+      }
+
       // Gate 2 — the completed-match gate (D-24169). A projectable match with no
       // `metadata.gameover` is still in progress; a result LAGN describes a
       // FINISHED match, so reject until gameover.
