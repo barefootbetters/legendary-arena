@@ -287,6 +287,8 @@ guessing, if:
   1. validate the args, without destructuring them in the parameter list, because an `undefined` payload must not
      throw. Check:
      - `typeof args === 'object' && args !== null`;
+     - every nested ref (`from`, `to`) passes `typeof === 'object' && !== null` before any of its fields is read;
+     - `cardId` passes `typeof === 'string'`;
      - every union-typed field is a member of its closed set;
      - every number passes `Number.isInteger`;
      - every player id passes `Object.hasOwn(G.playerZones, id)`, so a client-sent `'constructor'` can't reach
@@ -306,8 +308,9 @@ guessing, if:
     `PILE_LABEL = { wounds: 'Wound', bystanders: 'Bystander', officers: 'S.H.I.E.L.D. Officer', sidekicks: 'Sidekick' }`.
 - **Setter 2 — `operatorMoveToDeckTop({ deck, cardId })`.**
   - The source is `G.villainDeck.deck` (`'villain'`) or `G.heroDeck` (`'hero'`).
-  - The card's first occurrence is removed with `moveCardFromZone(deck, [], cardId)` and prepended (`[cardId,
-    ...deck]`).
+  - The card's first occurrence is removed with `const moveResult = moveCardFromZone(deck, [], cardId)`, then
+    `deck = [cardId, ...moveResult.from]`. Prepend to the removal result, never to the original array, or the card is
+    duplicated.
   - Already at index 0, or absent: return silently.
   - Log: `Operator: ${cardRef} moved to the top of the ${'Villain' | 'Hero'} Deck.`
 - **Setter 3 — `operatorRevealNow({ cardType })`.**
@@ -326,8 +329,9 @@ guessing, if:
   - **R2, a KO:** `{hand | deck | discard | inPlay | victory, p}` → `{ko}`, via `moveCardFromZone` into `G.ko`.
   - **R3, between player zones:** `{hand | deck | discard | inPlay | victory, p}` → `{hand | deck | discard | victory, q}`,
     where `p` and `q` may differ.
-    - A `deck` destination puts the card on **top**: `moveCardFromZone(source, [], cardId)`, then
-      `deck = [cardId, ...deck]`.
+    - A `deck` destination puts the card on **top**: `source = moveCardFromZone(source, [], cardId).from`, then
+      `deck = [cardId, ...deck]`, where `deck` is the destination deck. Source and destination are different zones, so
+      nothing is duplicated.
     - `hand` → `discard` with `p === q` goes through `discardFromHand(G, p, cardId)`.
     - `hand` → `discard` with `p !== q` returns silently.
     - Every other pair uses `moveCardFromZone(source, destination, cardId)`. A same-zone, same-player pair returns
@@ -346,7 +350,8 @@ guessing, if:
   - `amount` must be an integer from 1 to `OPERATOR_ECONOMY_MAX_AMOUNT`.
   - `G.turnEconomy = addResources(G.turnEconomy, attack, recruit)`, with the other resource 0.
   - Log: `Operator: +${amount} ${'Attack' | 'Recruit'} this turn.`
-- **Setter 6 — `operatorEscapeVillain()`.**
+- **Setter 6 — `operatorEscapeVillain({})`.**
+  - The payload must be a non-null object. Its keys are ignored.
   - The escape edge is `const OPERATOR_ESCAPE_CITY_INDEX = 4;`. If `G.city[4]` is `null`, return silently.
   - Otherwise `pushLog` `Operator: ${cardRef} escapes.`, clear the space (`G.city` copy with `[4] = null`), then call
     `resolveVillainEscape(G, { random: context.random, ctx: { currentPlayer: ctx.currentPlayer, turn: ctx.turn } },
@@ -398,15 +403,22 @@ guessing, if:
    - `currentStage` `'start'` and `'cleanup'`;
    - `pendingHeroChoice` set;
    - one `hasAnyPendingChoice` member set;
+   - a non-empty `pendingDivingBlockWounds`;
    - a non-empty `pendingEscapeProcedures`.
-   **Positive control:** a non-empty `pendingTeleportReturns` doesn't block setter 5.
+
+   **Each refusal starts from a state where the same setter and args succeed once the blocker is removed.** Seed
+   `city[4]`, a twist and a strike in the villain deck, the named card in its source, and a non-empty supply. In the
+   same test, remove the blocker and assert that `G` changes (the positive control), for each of the six setters.
+   **Teleport returns:** a non-empty `pendingTeleportReturns` doesn't block setter 5.
 2. **Setter 1.** Decrease to 0 moves every Wound to `operatorSetAside.wounds`. Increase restores from it. Over-max,
    negative and non-integer counts are refused. Equal writes no log line. The log text is exact.
 3. **Setter 2.** Villain deck and hero deck: the card ends at index 0 and the rest keep their order. An absent card is
    refused.
 4. **Setter 3.** With a twist deep in the deck, the twist reaches `G.scheme.twistPile` through the reveal path, with
-   the reveal path's own log lines after the operator line. A deck with no Master Strike is refused.
-   `villainRevealedThisTurn` is unchanged.
+   the reveal path's own log lines after the operator line.
+   - The villain deck shrinks by exactly 1, and the twist id appears once across the deck and `G.scheme.twistPile`.
+   - A deck with no Master Strike is refused.
+   - `villainRevealedThisTurn` is unchanged.
 5. **Setter 4.**
    - R1 for each pile. R1 wounds runs Diving Block: with `core/captain-america/diving-block#0` in the target's hand and
      its hook registered (the `moves/divingBlock.logic.test.ts` `makeState` shape, L38–69), the gain queues
@@ -414,8 +426,11 @@ guessing, if:
    - R2 from each player zone.
    - R3: a deck destination lands on top; same-player hand → discard goes through `discardFromHand` (a return-on-discard
      card parks its pending return); cross-player hand → discard is refused.
-   - R4 into an empty and an occupied space. The displaced card is at the end of `G.heroDeck`.
+   - R4 into an empty and an occupied space. `G.heroDeck` is asserted exactly, contents and length: the placed card is
+     gone, and the displaced card is at the end.
    - Refused:
+     - `from: null`, `to: undefined`, `cardId: 42`;
+     - an R1 `cardId` that isn't the pile's top id;
      - an `inPlay` destination;
      - `{ko}` as a source;
      - a `{supply}` destination;
@@ -427,10 +442,19 @@ guessing, if:
 6. **Setter 5.** Attack and Recruit each add `amount`. 0, 21 and 1.5 are refused.
 7. **Setter 6.** A Villain in space 4 ends in `G.escapedPile`, `G.city[4]` is `null`, and the escape counter rises by
    one. Its attached Bystanders are carried away. An empty space 4 is refused.
-8. **Conservation.** For setters 1, 2 and 4 (every route), the multiset of every card id across all players' zones,
-   `G.piles`, `G.villainDeck`, `G.heroDeck`, `G.hq`, `G.city`, `G.ko`, `G.escapedPile` and `G.operatorSetAside` is the
-   same before and after.
-9. **No random.** Setters 1, 2, 4 and 5 run with a `random` whose every method throws, and don't throw.
+8. **Conservation.** For setters 1, 2 and 4 (every route), the multiset of every card id is the same before and after.
+   It counts:
+   - all players' zones and `G.piles`;
+   - `G.villainDeck.deck` + `.discard`, `G.heroDeck`, `G.hq` and `G.city`;
+   - `G.ko`, `G.escapedPile` and `G.operatorSetAside`;
+   - `G.attachedBystanders`, `G.villainAttachedHeroes`, `G.scheme.twistPile`, `G.mastermind.strikePile` /
+     `.tacticsDeck` / `.attachedBystanders`, `G.transformDeck`,
+     `G.outOfTimeCards`, and `G.pendingTeleportReturns[].cardId`.
+
+   Reference-only queues (`pendingDivingBlockWounds[].woundCardId`, `pendingEscapeProcedures`) aren't counted, which
+   avoids double counts.
+9. **No random.** Setters 1, 2, 4 and 5 run with a `random` that is a `Proxy` whose `get` trap throws on any property
+   access, and they don't throw.
 10. **Determinism.** The same `G` and args, run twice from two clones, give deep-equal results.
 11. **Logging.** The first entry each setter adds (`G.messages[lengthBefore]`, without its prefix) starts with
     `Operator:`. For setters 1, 2, 4 and 5 it is the only entry added. For 3 and 6 the normal path's own lines follow
@@ -524,6 +548,11 @@ and the hero-deck / HQ question).
 - **The determinism-only replay** (`replay/replay.execute.ts`) skips unknown moves with a warning (L216–222). An
   operator match never goes through it. Score verification of an operator match is refused anyway (`debug_match`,
   D-24689 §3), and the D-24119 replay runs the real reducer.
+- **A Diving Block holder blocks the next setter.** An R1 Wound to a Diving Block holder (the bot included) opens a
+  seat choice after the move. Setters stay refused until it resolves. That's the gate working, and a D-24684 setup that
+  moves Wounds into the bot's discard should expect it.
+- **The after-move hooks are verified live.** The tests call the moves directly, so `turn.onMove` and `endIf` don't run
+  in WP-806. Their consequences are verified live under WP-807.
 - **R1 Wounds and Officers take the pile's top card.** The ids are fungible, so the `cardId` check is a consistency
   check, not a choice.
 
@@ -666,4 +695,23 @@ Pending: the gate runs as an independent subagent after pre-flight and copilot.
 
 ## Gate Verdicts
 
-Pending.
+- **Pre-flight (01.4): READY TO EXECUTE.** It ran as an independent subagent. The first pass was NOT READY:
+  - **PS-1:** §D 11 asserted the *newest* log line, but the reveal and escape paths log after the operator line. It now
+    asserts the first added entry.
+  - **PS-2:** top-of-deck placement was unspecified, and R3 contradicted itself (`moveCardFromZone` appends to the
+    bottom). The `putHandOnDeckTop` prepend idiom is now locked for setters 1–3 and R3.
+  - **PS-3:** the 01.6 post-mortem was softened. It is now mandatory and a STOP gate before the `EC-843:` commit.
+  - **RS-1..RS-10 applied:**
+    - the `makeMockMoveContext` harness;
+    - args hardening (no destructuring, `Object.hasOwn`);
+    - full log labels;
+    - explicit refused routes;
+    - the `setAsideCounts` conditional spread;
+    - the 32-check count;
+    - the mid-turn reveal limitation;
+    - the haunted-HQ note in D-24713 §4;
+    - the keyed-access and pile-slice style sanctions;
+    - 01.5 INVOKED.
+  All the fixes are text and none changes scope, so per 01.4 the verdict is READY without a re-run.
+- **Copilot (01.7):** pending.
+- **Lint (00.3):** pending.

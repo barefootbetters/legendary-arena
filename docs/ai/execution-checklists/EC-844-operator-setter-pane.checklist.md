@@ -4,33 +4,35 @@
 **Layer:** App (`apps/arena-client` only)
 
 ## Before Starting
-- [ ] **WP-806 is merged.** `LegendaryGame.moves` has the six `operator*` moves; `@legendary-arena/game-engine` exports `OperatorZoneRef`, `OperatorSupplyPile`, `OperatorSetterMoveName`, `OPERATOR_SUPPLY_PILES` and `OPERATOR_ECONOMY_MAX_AMOUNT`; and `OperatorView.setAsideCounts?` exists. Otherwise STOP.
+- [ ] **WP-806 is merged.** `LegendaryGame.moves` has the six `operator*` moves; `@legendary-arena/game-engine` exports `OperatorZoneRef`, `OperatorSupplyPile`, `OperatorDeckName`, `OperatorRevealCardType`, `OperatorEconomyResource`, `OperatorSetterMoveName`, the six `Operator*Args` types, `OPERATOR_SUPPLY_PILES` and `OPERATOR_ECONOMY_MAX_AMOUNT`; and `OperatorView.setAsideCounts?` exists. Otherwise STOP.
 - [ ] Run `pnpm install`, then `pnpm -r build` (0), `pnpm -r --no-bail test` (0 fail) and `pnpm --filter @legendary-arena/arena-client typecheck` (0). Record the counts (draft: arena-client 2351 / 0 on `5b6a0634`, before WP-806).
 - [ ] Confirm, and STOP if any differs: `OperatorBoardPanel.vue` has only the `matchId` prop; `PlayViewport.vue` L654 mounts it with `:match-id` only; `UiMoveName` has no `operator*` member; nothing imports `tweakpane`.
 - [ ] The EXACT target file set = `## Files to Produce`. Any file outside it is a FAIL, surfaced as a blocker.
 
 ## Locked Values (do not re-derive)
-- Dependencies: `"tweakpane": "^4.0.5"` in arena-client `dependencies` and `"@tweakpane/core": "2.0.5"` in `devDependencies`, types only. Add them with `pnpm --filter @legendary-arena/arena-client add tweakpane@^4.0.5` and `pnpm --filter @legendary-arena/arena-client add -D @tweakpane/core@2.0.5`. No Tweakpane plugin.
+- Dependencies: `"tweakpane": "^4.0.5"` in arena-client `dependencies` and `"@tweakpane/core": "2.0.5"` in `devDependencies`, types only. Add them with `pnpm --filter @legendary-arena/arena-client add tweakpane@^4.0.5` and `pnpm --filter @legendary-arena/arena-client add -D -E @tweakpane/core@2.0.5`. No Tweakpane plugin.
 - `UiMoveName` gains `operatorSetSupplyCount`, `operatorMoveToDeckTop`, `operatorRevealNow`, `operatorMoveCard`, `operatorAddEconomy` and `operatorEscapeVillain`.
+- `OperatorSetterIntent` is a discriminated union `{ name: '<move>'; args: Operator<Move>Args }` over the six WP-806 args types. Builder parameters use `OperatorSupplyPile` / `OperatorDeckName` / `OperatorRevealCardType` / `OperatorEconomyResource`.
 - Intent builders in `lib/operatorSetterIntents.ts`, each returning `{ name, args }`:
   - `buildSupplyCountIntent(pile, count)` → `{ pile, count }`; `buildDeckTopIntent(deck, cardId)` → `{ deck, cardId }`; `buildRevealNowIntent(cardType)` → `{ cardType }`
   - `buildMoveCardIntent(source, to)` → `{ cardId: source.cardId, from: source.from, to }`; `buildEconomyIntent(resource, amount)` → `{ resource, amount }`; `buildEscapeIntent()` → `{}`
 - `OperatorCardSource { key; cardId; from; label }` and `OperatorDestination { key; ref; label }`.
 - `buildCardSources(view)`:
   - seats in order × `hand`, `deckTopFirst` (as `'deck'`), `discard`, `inPlay`, `victory`, with `from = { zone, playerId }` and `key = ${playerId}|${zone}|${cardId}`;
-  - then each supply with a count > 0, with `cardId` its fungible id (`pile-wound` / `pile-bystander` / `pile-shield-officer` / `pile-sidekick`), `from = { zone: 'supply', pile }` and `key = supply|${pile}`.
+  - then each supply with a count > 0, with `cardId` its engine-exported fungible id (`WOUND_EXT_ID` / `BYSTANDER_EXT_ID` / `SHIELD_OFFICER_EXT_ID` / `SIDEKICK_EXT_ID`), `from = { zone: 'supply', pile }` and `key = supply|${pile}`.
 - `buildDestinations(view)`: per seat `hand`, `deck` ("deck (top)"), `discard` and `victory`, with `ref = { zone, playerId }` and `key = ${playerId}|${zone}`; then `{ zone: 'ko' }` with key `ko`, labelled "KO pile".
-- `buildDeckCardOptions(cardIds, view)` = distinct ids, labelled `${position}. ${name}`. `isSetterWindowOpen(view, playerId)` = `currentStage === 'main' && board.game.activePlayerId === playerId`. `hasEscapeCandidate(view)` = `board.city.spaces[4] != null`.
+- `buildDeckCardOptions(cardIds, view)` = distinct ids, labelled `${position}. ${name}`, where position = first-occurrence index + 1 (`['a','a','b']` gives "1. A", "3. B"). `isSetterWindowOpen(view, playerId)` = `currentStage === 'main' && board.game.activePlayerId === playerId`. `hasEscapeCandidate(view)` = `board.city.spaces[4] != null`.
 - `OperatorSetterPane.vue` (`name: 'OperatorSetterPane'`):
   - **Props:** `operatorView`, `playerId` and `submitMove`, all required. **Emits:** `submitted`.
   - **Test ids:** `operator-setters`, `operator-setters-hint`, `operator-setter-pane`.
   - **Pane:** `new Pane({ container, title: 'Setters' })`, with folders Supply, Villain deck, Hero deck, Move a card, Turn economy, Escape.
+  - **Binding labels:** `Pile`, `Count`, `Villain card`, `Hero card`, `HQ space`, `Card`, `Destination`, `Resource`, `Amount`. An empty deck binds a list with no options; a click with an empty selection submits nothing.
 - Buttons: "Set supply count", "Move villain card to top", "Reveal a Scheme Twist now", "Reveal a Master Strike now", "Move hero card to top", "Place hero in HQ space", "Move card", "Add to this turn" (amount 1–`OPERATOR_ECONOMY_MAX_AMOUNT`), "Escape the Villain at the City's edge".
 - "Place hero in HQ space" submits `buildMoveCardIntent({ key: 'heroDeck|' + heroCard, cardId: heroCard, from: { zone: 'heroDeck' }, label: '' }, { zone: 'hq', hqIndex: hqSpace − 1 })`, with `hqSpace` 1–5.
 - "Move card" `source` / `destination` lists are valued by `key`, never by index. On click each key maps back to its entry; a missing key submits nothing.
 - Hints: closed "Setters run on your turn, in the main stage, with no choice open."; open "Setters change the board through the engine. A refused setter changes nothing."
 - Buttons are disabled unless `isSetterWindowOpen`, and Escape also needs `hasEscapeCandidate`. Each click re-checks those against the current prop, then makes one `submitMove(name, args)` call and emits `submitted`.
-- Rebuild when the `computed` key (option keys + window state + `hasEscapeCandidate`) changes: dispose, then rebuild from a reactive `params`, keeping a still-present selection or taking the first option. Dispose in `onUnmounted`. Never more than one live `Pane`.
+- Rebuild when the `computed` key (option keys in list order + window state + `hasEscapeCandidate`) changes: dispose, then rebuild from a reactive `params`, keeping a still-present selection or taking the first option. Dispose in `onUnmounted`. Never more than one live `Pane`.
 - `OperatorBoardPanel.vue`:
   - new optional props `submitMove` (default `null`) and `playerId` (default `''`);
   - `const OperatorSetterPane = defineAsyncComponent(() => import('./OperatorSetterPane.vue'))`, registered in `components`, rendered after `operator-engine` when `operatorView !== null && submitMove !== null && playerId !== ''`, with `@submitted="refreshNow"`;
@@ -39,18 +41,19 @@
 
 ## Guardrails
 - The pane submits intent through `submitMove` only. It never edits state, runs a rule or imports the bgio client.
-- Engine imports come from `@legendary-arena/game-engine` `.` only: types plus the two constants. Never `/setup` or `registry`.
+- Engine imports come from `@legendary-arena/game-engine` `.` only: types plus six constants (`OPERATOR_SUPPLY_PILES`, `OPERATOR_ECONOMY_MAX_AMOUNT` and the four fungible pile ids). Never `/setup` or `registry`.
 - `tweakpane` is imported only in `OperatorSetterPane.vue`, loaded only via `defineAsyncComponent` in the panel (AC 9). `@tweakpane/core` is never imported at runtime.
 - No engine, server, `UIState` or persistence change. Card labels are names only, never card text.
 - SFCs use `defineComponent({ setup })` (D-6512). Functions ~30 lines; no nested ternaries; JSDoc everywhere.
 - Existing tests: additions only. The existing `buildBoardFixture()` in `OperatorBoardPanel.test.ts` stays untouched; new cases use a new helper with `board.game` and `board.city`.
+- Pane tests use the locked helpers. Buttons via `button.tp-btnv_b` with an exact trimmed title and exactly one match; folders via `.tp-fldv_t`; inputs by binding label plus a `change` event. The off-turn click uses `dispatchEvent(new MouseEvent('click', { bubbles: true }))`, because jsdom's `.click()` skips disabled controls. The unmount check reads the captured host element.
 
 ## Required `// why:` Comments
 - The enable rule and the click re-check: presentation only; the engine re-checks the match, turn, stage and choices (WP-806).
 - Stable option keys: list indexes shift after a poll and would move the wrong card.
 - The rebuild: Tweakpane list options are fixed at creation.
 - The lazy pane in `OperatorBoardPanel.vue`: Tweakpane stays out of the entry and panel chunks (D-24689 §6).
-- The re-declared fungible supply ids and `PILE_LABEL`: the engine doesn't export them on `.`; they mirror WP-806.
+- The re-declared `PILE_LABEL`: WP-806 doesn't export it; it mirrors WP-806's labels.
 - `@submitted="refreshNow"`: shows the result without waiting for the 3-second poll (best effort; the socket doesn't wait).
 
 ## Files to Produce
@@ -65,7 +68,18 @@
 ## After Completing
 - [ ] Run `pnpm install --frozen-lockfile`, `pnpm -r build` (0), `pnpm -r --no-bail test` (0 fail) and arena-client `typecheck` (0). Record before / after counts.
 - [ ] Run `pnpm --filter @legendary-arena/arena-client build`. `tp-rotv` must be in exactly one `dist/assets/*.js`, which is neither the `dist/index.html` entry nor the `operator-bot-decisions` chunk.
-- [ ] Revert proofs, each failing ≥ 1 new test: enable buttons off-turn and drop the click re-check; drop the `submitted` emit; skip the dispose on rebuild (two `.tp-rotv`); skip the dispose on unmount; `hqIndex = hqSpace`; value "Move card" by index; render the pane without `submitMove`; drop the `playerId` pass-through in `PlayViewport` (the test mounts with `playerId: '0'`).
+- [ ] Revert proofs, each failing ≥ 1 new test:
+  - enable buttons off-turn (fails the `disabled` assertion);
+  - drop the click re-check (fails the `dispatchEvent` assertion);
+  - drop the `submitted` emit;
+  - skip the dispose on rebuild (two `.tp-rotv`);
+  - skip the dispose on unmount (the captured host still holds `.tp-rotv`);
+  - `hqIndex = hqSpace`;
+  - value "Move card" by index;
+  - render the pane without `submitMove`;
+  - render it with `playerId: ''`;
+  - drop the `playerId` pass-through in `PlayViewport` (the test mounts with `playerId: '0'`);
+  - leave `hasEscapeCandidate` out of the Escape disabled state.
 - [ ] `git diff origin/main -- '*.test.ts'` is additions only. `git diff --name-only origin/main` ⊆ Files to Produce.
 - [ ] Commit 1, `EC-844: …`: code + tests + dependencies, with `Vision: §3, §7, §11, §16, §17, §22`.
 - [ ] Commit 2, `SPEC: WP-807 / EC-844 govern-close — …`: STATUS; the ewiki §Build status; WORK_INDEX `[x]`; EC_INDEX Done; mindmap ✅ + `pnpm roadmap:counts:write` + `:check`; DECISIONS.md: none (D-24689 §6, D-24713); `pnpm ledger:numbers:check`.

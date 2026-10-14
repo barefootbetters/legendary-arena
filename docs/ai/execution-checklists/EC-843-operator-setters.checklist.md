@@ -19,12 +19,16 @@
 - `isOperatorChoiceOpen` = `hasAnyPendingChoice(G)` || `pendingHeroChoice !== undefined` || a non-empty `pendingDivingBlockWounds` || a non-empty `pendingEscapeProcedures`. Teleport returns don't count.
 - Move signature: `({ G, ctx, playerID, ...context }, args: unknown)`.
 - Move order:
-  - (1) validate args, never destructured: an object and not null; union members; `Number.isInteger`; `Object.hasOwn(G.playerZones, id)`;
+  - (1) validate args, never destructured: an object and not null; every nested `from` / `to` an object and not null before any field read; `cardId` a string; union members; `Number.isInteger`; `Object.hasOwn(G.playerZones, id)`. Setter 6 accepts any non-null object and ignores its keys;
   - (2) `canRunOperatorSetter`;
   - (3) state preconditions;
   - (4) helpers + `pushLog`.
   Any failure at 1–3 returns `void` with `G` untouched.
-- **Top placement:** `moveCardFromZone(source, [], cardId)`, then `deck = [cardId, ...deck]` (`putHandOnDeckTop.resolve.ts` L127–136). This applies to setter 2, setter 3, and R3 deck destinations.
+- **Top placement:**
+  - Within one deck (setters 2 and 3): `const moveResult = moveCardFromZone(deck, [], cardId)`, then `deck = [cardId, ...moveResult.from]`. Prepend to the removal result, never the original.
+  - R3 deck destination: remove from the source zone, then `deck = [cardId, ...deck]` (`putHandOnDeckTop.resolve.ts` L127–136).
+- **Setter 2:** a card already at index 0, or absent, is a silent no-op.
+- **R1:** `cardId` must be the pile's top id.
 - **Setter 1:** counts are non-negative integers ≤ the pile plus its set-aside. A decrease moves the top cards to the end of `operatorSetAside[pile]`. An increase takes cards one at a time from the set-aside's end and prepends each, so a decrease then an equal increase restores the order. An equal count is a silent no-op.
 - **Setter 3:** take the first `villainDeckCardTypes` match, put it on top, log, then call `performVillainReveal(G, { random, ctx: { currentPlayer, turn } }, DEFAULT_IMPLEMENTATION_MAP)`. `villainRevealedThisTurn` is untouched.
 - **Setter 4, R1:** wounds → discard via `gainWoundForPlayer`; officers → discard via `gainOfficerToDiscard`; sidekicks → discard and bystanders → victory via `moveCardFromZone`.
@@ -41,6 +45,13 @@
 - Labels: `Player ${p}'s hand|deck|discard pile|play area|Victory Pile`; a deck destination is `the top of Player ${p}'s deck`; `the KO pile`; `the Hero Deck`; `HQ space ${hqIndex + 1}`; `the ${PILE_LABEL} supply`. `PILE_LABEL` = Wound / Bystander / S.H.I.E.L.D. Officer / Sidekick.
 - Registration: `{ move, client: false }`, 47 → 53.
 - `OperatorView.setAsideCounts?: OperatorSupplyCounts` is present only when `G.operatorSetAside` exists, built with a conditional spread inside the return literal.
+- `index.ts` (`.`) exports:
+  - types: `OperatorSupplyPile`, `OperatorDeckName`, `OperatorRevealCardType`, `OperatorEconomyResource`, `OperatorPlayerZoneName`, `OperatorZoneRef`, the six args types and `OperatorSetterMoveName`;
+  - values: `OPERATOR_SUPPLY_PILES`, `OPERATOR_SETTER_MOVE_NAMES` and `OPERATOR_ECONOMY_MAX_AMOUNT`.
+- Tests:
+  - every gate refusal has a positive control (same setter and args succeed with the blocker removed);
+  - "no random" uses a `Proxy` whose `get` trap throws;
+  - conservation counts every card-holding field per WP §D 8.
 
 ## Guardrails
 - Setters 1, 2, 4 and 5 never read `random`. Setters 3 and 6 pass it only to the reveal or escape path. No `Math.random`, no clock.
@@ -70,10 +81,12 @@
 ## After Completing
 - [ ] Run `pnpm -r build` (0), `pnpm -r --no-bail test` (0 fail), `sim:runtime-observed:check`, `sim:coverage --check` and the arena-client `typecheck` (all 0). Record the before / after counts.
 - [ ] Revert proofs, each failing ≥ 1 new test:
-  - drop the `isDebugMatch` check; drop the `playerID` check; drop `pendingHeroChoice` from the choice gate
-  - read `random` in setter 2; route R1 wounds through `moveCardFromZone`; let R4 refill
-  - allow `inPlay` as an R3 destination; append (not prepend) on a deck destination
-  - skip clearing `G.city[4]`; write `operatorSetAside: {}` at setup
+  - drop the `isDebugMatch` check; drop the `playerID` check; drop the stage check
+  - drop each choice-gate clause: `pendingHeroChoice`, `hasAnyPendingChoice`, `pendingDivingBlockWounds`, `pendingEscapeProcedures`
+  - call `context.random.Shuffle(...)` in setter 2; route R1 wounds through `moveCardFromZone`
+  - send R4's displaced card to the hero-deck top; drop R4's displaced card
+  - allow `inPlay` as an R3 destination; append (not prepend) on a deck destination; prepend to the original deck in setter 2
+  - read `from.zone` before the null check; skip clearing `G.city[4]`; write `operatorSetAside: {}` at setup
 - [ ] The WP §Verification `Select-String` prints nothing. The sentinel and `replay.execute.test.ts` diffs are empty. `git diff origin/main -- '*.test.ts'` is additions plus the `game.test.ts` pin.
 - [ ] **STOP gate:** the 01.6 post-mortem is written (`docs/ai/REFERENCE/01.6-post-mortem-checklist.md`) before Commit 1.
 - [ ] Commit 1, `EC-843: …`: code + tests + post-mortem, with a `Tests-changed:` trailer (the move pin) and `Vision: §3, §7, §14, §22, §23`.
@@ -87,3 +100,5 @@
 - A card "moved to the top" is drawn last → `moveCardFromZone` appended it to the bottom.
 - A setter throws on an empty payload → its args were destructured in the parameter list.
 - The escaped Villain is still in the City → space 4 wasn't cleared before `resolveVillainEscape`.
+- A card appears twice in a deck after setter 2 → it was prepended to the original array, not the removal result.
+- Every setter is refused right after an R1 Wound → a Diving Block seat choice is open. That's correct; resolve it first.
