@@ -444,6 +444,8 @@ high-water: 422
 - WP-803 — out-of-time (Engine + arena-client render; Captain America 75th "Man / Woman Out of Time": after a card's abilities resolve it is set aside, then played a second time after the next turn's villain reveal and discarded. reserved 2026-10-11, claude/reserve-wp803-out-of-time)
 - WP-804 — operator-panel-client (arena-client; the operator panel for WP-802 operator matches — admin-only lobby option, lazy Vue board panel, public operator badge, skip the score submit, operator snapshot and fixture downloads. Reserves no D; rulings sit under D-24689 §5/§6. reserved 2026-10-11, spec/reserve-operator-panel-client)
 - WP-805 — random-first-player (Game Engine; the play phase's first turn goes to a seeded-random seat per rules v23 L524 instead of always seat 1, gated by a setup-stamped omit-when-off G flag so older multi-seat logs replay unchanged and solo is byte-identical. reserved 2026-10-12, spec/reserve-random-first-player)
+- WP-806 — operator-setters (Game Engine; follow-on 2 of the WP-802 arc — operator-match-only setter moves: supply pile count with a set-aside zone, villain/hero deck card to top, reveal a Scheme Twist or Master Strike now, move a card between zones incl. an HQ slot, add Recruit/Attack this turn, trigger a villain escape. reserved 2026-10-13, spec/reserve-operator-setters)
+- WP-807 — operator-setter-pane (arena-client; a Tweakpane control pane, lazy inside the WP-804 operator panel, that submits the WP-806 setter moves; adds the tweakpane dependency per D-24689 §6. reserved 2026-10-13, spec/reserve-operator-setters)
 
 ## EC
 
@@ -849,6 +851,8 @@ high-water: 457
 - EC-840 — out-of-time (WP-803. reserved 2026-10-11, claude/reserve-wp803-out-of-time)
 - EC-841 — operator-panel-client (WP-804. reserved 2026-10-11, spec/reserve-operator-panel-client)
 - EC-842 — random-first-player (WP-805. reserved 2026-10-12, spec/reserve-random-first-player)
+- EC-843 — operator-setters (WP-806. reserved 2026-10-13, spec/reserve-operator-setters)
+- EC-844 — operator-setter-pane (WP-807. reserved 2026-10-13, spec/reserve-operator-setters)
 
 ## D
 
@@ -1339,3 +1343,4 @@ section below) and the allocation protocol in
 - D-24710 — service-dependency-map (direct change, no WP — docs/ops/service-dependencies.json records which services each product depends on and the impact if each is down; the ewiki renders it as a two-way outage lookup and the build fails if a live hostname has no entry. reserved 2026-10-12, infra/ewiki-service-dependencies)
 - D-24711 — health-db-and-backup-integrity (direct change, no WP — GET /health/db runs SELECT 1 and answers 200/503 so the monitors catch a dead database; 50-backup.ps1 runs pg_restore --list and records a SHA-256 before upload. reserved 2026-10-12, infra/health-db)
 - D-24712 — second-brain-design-to-ship (direct change, no WP — the AI Second Brain design record, runbook, voice addendum and knowledge-inventory template move to the private ship repo's docs/second-brain/; the ewiki keeps a Legendary Arena page; renumbered from D-24710, which #2758 took first. reserved 2026-10-12, infra/ewiki-second-brain-sovereignty-backup)
+- D-24713 — operator-setters (WP-806; extends D-24689 §7 — Recruit/Attack and villain-escape setters, hero-deck top and HQ placement with the displaced card to the hero-deck bottom, the set-aside zone's name and shape; console deferred. reserved 2026-10-13, spec/reserve-operator-setters)
