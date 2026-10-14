@@ -65,26 +65,27 @@ case directly, and shows what the bot weighed. It's modelled on the
 [Herbs vs. Ailments debug panel design](https://ewiki.herbs-vs-ailments.com/design/herbs-vs-ailments-debug-panel/)
 and adapted to a turn-based, hidden-information, server-authoritative game.
 It started as a proposal. D-24689 turned it into a four-step arc. The first
-step is shipped, and the second is written and waiting to merge. See
-[Build status](#build-status).
+two steps are merged: the server and engine half is live-verified, and the
+client panel is waiting on its live-verify. See [Build status](#build-status).
 
 ## Mechanics
 
 ### Build status
 
-As of 2026-10-13, checked against `main` (`d96296ba`):
+As of 2026-10-13, checked against `main` (`9cfd635d`):
 
 | Step | What | Status |
 |---|---|---|
 | WP-802 / EC-839 / D-24689 | Operator match: only an admin can create it, it's unlisted and never scored, and an admin HTTP route reads the whole board, Wounds by zone and the bot's recent decisions | **Done 2026-10-11. Live-verified in production** on operator match `3pNYCKHKJCE` (all eight WP-802 live steps) |
 | D-24697 | The bot decisions use the turn number the board and game log show | Done (#2728) |
-| WP-804 / EC-841 | The operator panel on play: an admin-only "Operator match" checkbox in the lobby's bot-ally section, a read-only reveal-all board panel, a "not scored" badge every seat sees, no score submit at game over, and two downloads (operator snapshot, UIState fixture) | **Executed, waiting to merge**: [PR #2735](https://github.com/barefootbetters/legendary-arena/pull/2735), CI green. WORK_INDEX still reads Draft until it merges. No new dependency, no Tweakpane |
+| WP-804 / EC-841 | The operator panel on play: an admin-only "Operator match" checkbox in the lobby's bot-ally section, a read-only reveal-all board panel, a "not scored" badge every seat sees, no score submit at game over, and two downloads (operator snapshot, UIState fixture) | **Done 2026-10-12, merged 2026-10-13** ([PR #2735](https://github.com/barefootbetters/legendary-arena/pull/2735), `9cfd635d`). **Live-verify pending**: the seven WP-804 §Verification steps, run as `jefferyjjensen` after deploy. No new dependency, no Tweakpane |
 | Follow-on 2 (no WP yet) | **The setters**, mounted in a **Tweakpane** control pane inside the WP-804 panel, plus the set-aside zone | Designed in D-24689 §6–§7. That packet adds the Tweakpane dependency |
 | Follow-on 3 (no WP yet) | Jump to turn N of any match: a read-only board rebuilt by replay, labelled "played on build X, replayed on build Y" | Designed in D-24689 §8. Needs its own DECISIONS carve-out |
 
-Before WP-804 merges, an operator match can only be created with
-`Invoke-RestMethod` and a pasted admin token, and the board comes back as raw
-JSON. Tweakpane doesn't exist anywhere in the repo yet.
+With WP-804 deployed, an admin ticks "Operator match" in the lobby instead
+of creating one with `Invoke-RestMethod` and a pasted admin token, and reads
+the board in the panel instead of as raw JSON. Tweakpane doesn't exist
+anywhere in the repo yet. Follow-on 2 is the next packet to draft.
 
 ### What exists today (verified against code, 2026-10-11)
 
