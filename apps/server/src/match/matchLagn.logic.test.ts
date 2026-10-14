@@ -15,7 +15,12 @@ import assert from 'node:assert/strict';
 
 import { validate, LAGN_VERSION } from '@legendary-arena/lagn';
 import type { CardRegistry } from '@legendary-arena/registry';
-import type { ScoreBreakdown } from '@legendary-arena/game-engine';
+import { evaluateEndgame, ENDGAME_CONDITIONS } from '@legendary-arena/game-engine';
+import type {
+  EndgameResult,
+  LegendaryGameState,
+  ScoreBreakdown,
+} from '@legendary-arena/game-engine';
 
 import {
   buildMatchLagn,
@@ -27,10 +32,12 @@ import {
   buildResultPlayers,
   buildResultMatchLagn,
   toLagnResult,
+  toResultOmittedReason,
   toResultScore,
   toBattlePlanBlock,
   DEFAULT_SCORING_PROFILE,
   type MatchLagnComposition,
+  type StoredGameover,
   type ResultPlayerIdentity,
 } from './matchLagn.logic.js';
 import type { CompetitiveScoreRecord } from '../competition/competition.types.js';
@@ -374,6 +381,74 @@ describe('toLagnResult — outcome mapping', () => {
     assert.equal(toLagnResult(null), undefined);
     assert.equal(toLagnResult({ outcome: 'something-else' }), undefined);
     assert.equal(toLagnResult({}), undefined);
+  });
+});
+
+/**
+ * The verdict the engine itself returns when exactly one endgame counter is set.
+ * `endIf` stores this object as `metadata.gameover`.
+ *
+ * @param counterName The `ENDGAME_CONDITIONS` counter to set to 1.
+ * @returns The engine's `EndgameResult` for that state.
+ */
+function engineVerdictFor(counterName: string): EndgameResult {
+  // why: evaluateEndgame reads only `G.counters`, so a counters-only state is
+  // enough. Building the verdict from the engine, not by hand, means a renamed or
+  // reshaped engine flag fails this test instead of shipping a false "Draw".
+  const gameState = { counters: { [counterName]: 1 } } as unknown as LegendaryGameState;
+  const verdict = evaluateEndgame(gameState);
+  assert.ok(verdict !== null, `The engine returned no verdict for counter ${counterName}.`);
+  return verdict;
+}
+
+describe('toResultOmittedReason — why result is omitted (WP-812 / D-24720)', () => {
+  test('a decisive verdict omits nothing', () => {
+    assert.equal(toResultOmittedReason({ outcome: 'heroes-win' }), undefined);
+    assert.equal(toResultOmittedReason({ outcome: 'scheme-wins' }), undefined);
+  });
+
+  test('a deck-exhaustion tie is named a tie', () => {
+    const engineTie: StoredGameover = engineVerdictFor(ENDGAME_CONDITIONS.FINAL_TURN_TIE);
+    assert.equal(engineTie.outcome, 'tie');
+    assert.equal(toResultOmittedReason(engineTie), 'tie');
+    assert.equal(toResultOmittedReason({ outcome: 'tie' }), 'tie');
+  });
+
+  test('a match the players ended early is named ended-early, never a tie', () => {
+    // why: the engine stores an abandoned match as a 'tie' flagged endedEarly
+    // (D-24306); the flag, not the outcome string or the reason text, decides.
+    const engineEndedEarly: StoredGameover = engineVerdictFor(
+      ENDGAME_CONDITIONS.MATCH_ENDED_EARLY,
+    );
+    assert.equal(engineEndedEarly.outcome, 'tie');
+    assert.equal(toResultOmittedReason(engineEndedEarly), 'ended-early');
+    assert.equal(toResultOmittedReason({ outcome: 'tie', endedEarly: true }), 'ended-early');
+  });
+
+  test('an unrecorded, empty, or unrecognized verdict is unknown, never a tie', () => {
+    // why: `{}` is WP-811's VERDICT_NOT_RECORDED and its hash-mismatch value;
+    // calling either one a tie is the false "Draw" this packet removes.
+    assert.equal(toResultOmittedReason({}), 'unknown');
+    assert.equal(toResultOmittedReason({ outcome: 'something-else' }), 'unknown');
+    assert.equal(toResultOmittedReason({ reason: 'no outcome key' }), 'unknown');
+  });
+
+  test('the reason is present exactly when toLagnResult omits result', () => {
+    const verdicts = [
+      { outcome: 'heroes-win' },
+      { outcome: 'scheme-wins' },
+      { outcome: 'tie' },
+      { outcome: 'tie', endedEarly: true },
+      // why: a decisive outcome always wins over the flag (precedence pin).
+      { outcome: 'heroes-win', endedEarly: true },
+      { outcome: 'something-else' },
+      {},
+    ];
+    for (const verdict of verdicts) {
+      const isResultOmitted = toLagnResult(verdict) === undefined;
+      const hasReason = toResultOmittedReason(verdict) !== undefined;
+      assert.equal(hasReason, isResultOmitted, JSON.stringify(verdict));
+    }
   });
 });
 

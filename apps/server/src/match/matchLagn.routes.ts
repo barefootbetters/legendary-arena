@@ -9,7 +9,9 @@
  *     "View cards in Registry Viewer" link (WP-363) to hand to the viewer's
  *     `?lagn=` ingest (WP-362).
  *   * `GET /api/match/:matchId/result-lagn` — a COMPLETED match's result LAGN
- *     (WP-406), Hall-of-Legends material.
+ *     (WP-406), Hall-of-Legends material. When `lagn.result` is omitted, the
+ *     envelope also carries `resultOmittedReason` (`'tie'`, `'ended-early'` or
+ *     `'unknown'`) beside `lagn` (WP-812 / D-24720).
  *
  * Access: NO session gate and NO participant gate (D-24446). The setup LAGN is
  * non-secret game setup (scheme / mastermind / villains / heroes / supply) with
@@ -53,6 +55,7 @@ import {
   buildResultPlayers,
   buildNameResolver,
   toLagnResult,
+  toResultOmittedReason,
   toBattlePlanBlock,
   toResultScore,
   DEFAULT_SCORING_PROFILE,
@@ -212,7 +215,8 @@ export function registerMatchLagnRoutes(
   // is public (Hall-of-Legends material), so this endpoint is GUEST-READABLE — no
   // session gate and no participant gate, unlike the private setup emitter above.
   // The privacy surface is which handles appear, decided in `buildResultPlayers`
-  // (claimed handle only, never AccountId — D-24214), not by an auth gate.
+  // (claimed handle only, never AccountId — D-24214), not by an auth gate. A
+  // non-decisive match's body also names why `result` is omitted (WP-812).
   router.get('/api/match/:matchId/result-lagn', async (koaContext) => {
     // why: Cache-Control MUST be the first statement (WP-115 D-11504) so it is set
     // on every response path, including the 500 below.
@@ -260,6 +264,7 @@ export function registerMatchLagnRoutes(
       );
       const players = buildResultPlayers(seats, identities);
       const result = toLagnResult(gameover);
+      const resultOmittedReason = toResultOmittedReason(gameover);
 
       // Battle Plan block — a DOMAIN-table read of `legendary.battle_plan`
       // (WP-635), NOT a bgio blob read, so no new persistence carve-out. Omitted
@@ -306,7 +311,15 @@ export function registerMatchLagnRoutes(
       }
 
       koaContext.status = 200;
-      koaContext.body = { lagn };
+      // why: `resultOmittedReason` rides beside `lagn`, never inside it, and only
+      // when `result` is omitted (WP-812 / D-24720). LAGN has no tie outcome, so
+      // the envelope is where the Hall of Legends learns a tie from an unknown
+      // verdict; a decisive match's body stays exactly `{ lagn }`.
+      if (resultOmittedReason === undefined) {
+        koaContext.body = { lagn };
+      } else {
+        koaContext.body = { lagn, resultOmittedReason };
+      }
     } catch (caughtError) {
       // why: never re-throw — mirror the setup route's fail-closed 500.
       void caughtError;

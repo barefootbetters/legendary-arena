@@ -7,12 +7,20 @@
 
 ## Current State
 
+### WP-812 / EC-849 — The Hall of Legends stops saying "Draw" for a match that was not a tie (D-24720) (2026-10-14)
+
+**User-visible on `legends.legendary-arena.com` (after deploy).** A match whose outcome the server does not know reads "Outcome not recorded", and a match the players ended with "End Game" reads "Ended early". Only a real deck-exhaustion tie still reads "Draw"; wins and losses are unchanged.
+
+- **Server + legends-board.** `/result-lagn` adds `resultOmittedReason` (`'tie'` / `'ended-early'` / `'unknown'`) beside `lagn`, only when `lagn.result` is omitted; decisive bodies stay `{ lagn }`. No LAGN change; the download is unchanged.
+- **Tests.** server 1790 → 1797, 0 fail; legends-board 135 → 138, 0 fail; typecheck 0; `pnpm -r --no-bail test` 0 fail in every package. Twelve mutants each killed.
+- **Live-verify (D-24026): pending.** After both deploys: a decisive match's keys are `["lagn"]`; an unknown-outcome artifact → "Outcome not recorded"; a fresh "End Game" match → "Ended early"; a tie, if one exists → "Draw".
+
 ### WP-811 / EC-848 — Finished matches stay viewable after the reaper (D-24719) (2026-10-14)
 
 **User-visible on `legends.legendary-arena.com` (after deploy).** A finished match's Hall of Legends view, its "Download LAGN", a shared registry-viewer `?lagn=` link and a late-opened report card's seat names keep working after the reaper deletes the live match row, about an hour after the game. Before, all three routes (`/lagn`, `/result-lagn`, `/seat-identities`) returned `404` from then on.
 
 - **Server + migration 046.** When the live row is gone, the readers use the durable `bgio.replay_artifacts` copy. Capture now stores the verdict on the artifact, and the capture harvester fills older artifacts 5 per scan, keeping a verdict only when the re-execution reproduces the captured hash. No route, status, auth, engine or client change.
-- **Known label gap.** An older match shows "Draw" on the Hall of Legends until its verdict is swept, and keeps it if today's engine no longer reproduces its hash. WP-812 (reserved) fixes the label.
+- **Known label gap.** An older match shows "Draw" on the Hall of Legends until its verdict is swept, and keeps it if today's engine no longer reproduces its hash. WP-812 fixes the label (below).
 - **Tests.** server 1767 → 1790, 0 fail; every package 0 fail; DB-gated capture test 19 / 0 / 0 skipped against local Postgres with 046. Revert proofs (a)–(e) and the four copilot mutants each fail as the WP predicts.
 - **Live-verify (D-24026): pending.** After deploy: the backlog counts, `MAYLMfB1PM9` on all three endpoints and its legends-board label before and after its sweep, and a fresh autoplay match at least 80 minutes after game over (view + download).
 

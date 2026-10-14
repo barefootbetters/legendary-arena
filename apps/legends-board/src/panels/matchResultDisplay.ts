@@ -31,7 +31,7 @@ export interface MatchRosterSeat {
 /** The full view model for one completed match's result view. */
 export interface MatchResultView {
   readonly matchId: string
-  /** `'Victory'` | `'Defeat'` | `'Draw'`. */
+  /** `'Victory'` | `'Defeat'` | `'Draw'` | `'Ended early'` | `'Outcome not recorded'`. */
   readonly outcomeLabel: string
   /** True for a decisive outcome (drives the win/loss accent). */
   readonly isDecisive: boolean
@@ -52,18 +52,30 @@ export function buildResultLagnUrl(apiBaseUrl: string, matchId: string): string 
 }
 
 /**
+ * Why the server omitted a result LAGN's `result` block, from the `/result-lagn`
+ * envelope's `resultOmittedReason` (WP-812 / D-24720).
+ */
+export type ResultOmittedReason = 'tie' | 'ended-early' | 'unknown'
+
+/**
  * Map a result LAGN's `result` block to a human outcome label.
  *
- * why: `victory` / `defeat` are the two decisive LAGN outcomes. WP-406 omits the
- * `result` block for a deck-exhaustion tie (LAGN has no tie outcome), and the
- * endpoint only returns `200` for a FINISHED match — so a completed match with no
- * `result` is a draw, labelled as such rather than "pending".
+ * why: `victory` / `defeat` are the two decisive LAGN outcomes. LAGN has no tie
+ * outcome, so the server omits `result` for a deck-exhaustion tie, for a match
+ * the players ended early, and for a finished match whose verdict is not known (a
+ * WP-811 legacy or hash-mismatch artifact), and names which one in the envelope's
+ * `resultOmittedReason`. Only an explicit `'tie'` reads "Draw" and only
+ * `'ended-early'` reads "Ended early". Anything else, including an absent reason
+ * from a server that predates WP-812, reads "Outcome not recorded": calling an
+ * unknown outcome a draw states something the record does not support.
  *
  * @param result The LAGN `result` block, or `undefined` when absent.
+ * @param resultOmittedReason The envelope's reason, or `undefined` when absent.
  * @returns The label and whether it is a decisive win/loss.
  */
 export function formatOutcome(
   result: LAGN['result'],
+  resultOmittedReason: ResultOmittedReason | undefined,
 ): { label: string; isDecisive: boolean } {
   if (result?.outcome === 'victory') {
     return { label: 'Victory', isDecisive: true }
@@ -71,7 +83,13 @@ export function formatOutcome(
   if (result?.outcome === 'defeat') {
     return { label: 'Defeat', isDecisive: true }
   }
-  return { label: 'Draw', isDecisive: false }
+  if (resultOmittedReason === 'tie') {
+    return { label: 'Draw', isDecisive: false }
+  }
+  if (resultOmittedReason === 'ended-early') {
+    return { label: 'Ended early', isDecisive: false }
+  }
+  return { label: 'Outcome not recorded', isDecisive: false }
 }
 
 /**
@@ -116,23 +134,25 @@ export function buildRoster(
  * Parse a WP-406 result-LAGN response body into the panel's view model.
  *
  * The endpoint returns `{ lagn }` where `players[]` and `result` live inside
- * `lagn`, and both are optional. The server already `validate()`d the document
- * before returning it, so this consumes the typed shape without re-validating
- * (no parser fork, EC-442). A malformed body degrades to an empty roster rather
- * than throwing.
+ * `lagn`, and both are optional. When `result` is omitted the envelope also
+ * carries `resultOmittedReason` beside `lagn` (WP-812 / D-24720). The server
+ * already `validate()`d the document before returning it, so this consumes the
+ * typed shape without re-validating (no parser fork, EC-442). A malformed body
+ * degrades to an empty roster rather than throwing.
  *
  * @param matchId The match id (for the view model).
  * @param body The parsed JSON response body (`{ lagn }`).
  * @returns The view model.
  */
 export function parseResultLagn(matchId: string, body: unknown): MatchResultView {
-  const lagn = (body as { lagn?: LAGN } | null)?.lagn
+  const envelope = body as { lagn?: LAGN; resultOmittedReason?: ResultOmittedReason } | null
+  const lagn = envelope?.lagn
   const players = lagn?.players ?? []
   // why: fall back to the emitted roster length if player_count is somehow
   // absent, so a malformed document still lists the seats it names.
   const playerCount =
     typeof lagn?.player_count === 'number' ? lagn.player_count : players.length
-  const { label, isDecisive } = formatOutcome(lagn?.result)
+  const { label, isDecisive } = formatOutcome(lagn?.result, envelope?.resultOmittedReason)
   return {
     matchId,
     outcomeLabel: label,

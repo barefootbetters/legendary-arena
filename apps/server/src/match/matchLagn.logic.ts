@@ -384,6 +384,8 @@ export const DEFAULT_SCORING_PROFILE = 'classic';
 export interface StoredGameover {
   readonly outcome?: string;
   readonly reason?: string;
+  /** True when the players ended the match early (WP-502 / D-24306). */
+  readonly endedEarly?: boolean;
 }
 
 /**
@@ -489,6 +491,42 @@ export function toLagnResult(
     return { outcome: 'defeat' };
   }
   return undefined;
+}
+
+/** Why a finished match's result LAGN omits its `result` block (WP-812 / D-24720). */
+export type ResultOmittedReason = 'tie' | 'ended-early' | 'unknown';
+
+/**
+ * Name why `toLagnResult` omits the `result` block for a finished match, or
+ * `undefined` when the block is present.
+ *
+ * why: LAGN has no tie outcome, so a document without `result` is ambiguous: a
+ * deck-exhaustion tie (D-24159), a match the players ended early (the engine
+ * stores it as `'tie'` flagged `endedEarly`, D-24306), and a finished match whose
+ * verdict is not known (WP-811's `VERDICT_NOT_RECORDED`, a stored `{}`, or an
+ * unrecognized value) all look the same. The Hall of Legends labelled every one
+ * "Draw". This reason rides on the `/result-lagn` envelope, beside `lagn`, so the
+ * view can tell them apart without a LAGN contract change. It calls
+ * `toLagnResult` so the reason is present exactly when `result` is absent.
+ *
+ * @param gameover The stored endgame verdict of a finished match.
+ * @returns `'tie'`, `'ended-early'`, `'unknown'`, or `undefined` when `result` is emitted.
+ */
+export function toResultOmittedReason(
+  gameover: StoredGameover,
+): ResultOmittedReason | undefined {
+  if (toLagnResult(gameover) !== undefined) {
+    return undefined;
+  }
+  // why: the engine reports an abandoned match as a `'tie'` with `endedEarly`
+  // (D-24306), so the flag is checked before the tie: an early end is not a draw.
+  if (gameover.endedEarly === true) {
+    return 'ended-early';
+  }
+  if (gameover.outcome === 'tie') {
+    return 'tie';
+  }
+  return 'unknown';
 }
 
 /** The claimed public alias + mutable label for one account. */
