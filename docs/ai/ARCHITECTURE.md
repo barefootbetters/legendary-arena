@@ -348,11 +348,15 @@ Shared Tooling (orthogonal):
 > derived features — **except** the D-24119 replay/verification carve-out: a
 > server-layer pipeline MAY read the blob's `initialState + log` and re-execute
 > them through boardgame.io's own reducer to reconstruct a **completed** match's
-> final state (a derived, read-only projection, for faithful replay reconstruction
-> and competitive-score verification; never written back to the `bgio` store or to
-> `legendary.*`, never treated as live authoritative state) — **and** the D-24153
-> loadout carve-out: a server-layer read MAY read the blob's
-> `initialState.G.matchConfiguration` (+ `initialState.ctx.numPlayers`) to project a
+> final state (a derived, read-only projection, for faithful replay reconstruction,
+> competitive-score verification, and deriving a captured artifact's endgame verdict
+> (`evaluateEndgame` of the reproduced final `G`) into the D-24122 artifact store's
+> `bgio.replay_artifacts.gameover` column (D-24719); never written back to
+> `bgio.matches` or to `legendary.*`, never treated as live authoritative state) —
+> **and** the D-24153 loadout carve-out: a server-layer read MAY read the blob's
+> `initialState.G.matchConfiguration` (+ `initialState.ctx.numPlayers`) — or, once
+> the reaper has deleted a finished match's live row, the same fields from its
+> durable `bgio.replay_artifacts` copy (D-24719) — to project a
 > match's setup as a read-only **Tier-1 LAGN loadout** (a derived, read-only
 > projection for cross-surface loadout display — the Registry Viewer's Loadout tab;
 > a convenience representation, not a source of truth — the blob remains
@@ -362,8 +366,10 @@ Shared Tooling (orthogonal):
 > `initialState.G.matchConfiguration` (+ `initialState.ctx.numPlayers`) and
 > `metadata.{createdAt,updatedAt,gameover}` to project a match as a read-only
 > **match summary** (scheme / mastermind / player-count / timing / outcome, for the
-> operator dashboard's `/api/dash/matches` analytics; a derived, read-only
-> projection — never `state`/`log`, never written back, never a save-game, never a
+> operator dashboard's `/api/dash/matches` analytics; the same `metadata.gameover`
+> read — or, once reaped, its capture-time copy in `bgio.replay_artifacts.gameover`
+> (D-24719) — is the finished-match gate and outcome of the WP-406 result LAGN and
+> `/seat-identities`; a derived, read-only projection — never `state`/`log`, never written back, never a save-game, never a
 > source of competitive/derived gameplay features, never round-tripped into gameplay
 > state) — **and** the D-24187 team-key carve-out: a server-layer read MAY read
 > `bgio.replay_artifacts` (or the `bgio.matches` blob)
