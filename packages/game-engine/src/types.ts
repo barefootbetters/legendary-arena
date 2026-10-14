@@ -1776,6 +1776,15 @@ export interface LegendaryGameState {
   /** Whether this match is an admin-created operator match. Absent = normal match. */
   readonly isDebugMatch?: boolean;
 
+  // why: WP-806 / D-24689 §7 / D-24713 §5 — the operator set-aside zone. Written ONLY
+  // by the operatorSetSupplyCount setter (an operator match only) and omitted until its
+  // first decrease; a pile's key is created on its first decrease and kept even when it
+  // empties. Omit-when-off keeps every normal match byte-identical, so no whole-G hash
+  // oracle re-pins (the WP-686 finalBlow / WP-802 isDebugMatch precedent). No rule,
+  // UIState builder or scoring code reads it; only that setter and buildOperatorView do.
+  /** Supply cards the operator set aside, per pile, in set-aside order. Absent until the first decrease. */
+  operatorSetAside?: { wounds?: CardExtId[]; bystanders?: CardExtId[]; officers?: CardExtId[]; sidekicks?: CardExtId[] };
+
   // why: WP-805 / D-24700 — the random-first-player flag (rules v23 L524, "Choose a
   // random player to go first"). OPTIONAL and seeded by buildInitialGameState ONLY for
   // a match with two or more seats; omitted for solo (one seat has no choice to make).

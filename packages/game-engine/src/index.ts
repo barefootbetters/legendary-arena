@@ -480,6 +480,28 @@ export type {
 } from "./ui/operatorView.types.js";
 export { buildOperatorView } from "./ui/operatorView.build.js";
 
+// Operator setters (WP-806 / D-24713) — the contract the WP-807 setter pane submits.
+export type {
+  OperatorSupplyPile,
+  OperatorDeckName,
+  OperatorRevealCardType,
+  OperatorEconomyResource,
+  OperatorPlayerZoneName,
+  OperatorZoneRef,
+  OperatorSetSupplyCountArgs,
+  OperatorMoveToDeckTopArgs,
+  OperatorRevealNowArgs,
+  OperatorMoveCardArgs,
+  OperatorAddEconomyArgs,
+  OperatorEscapeVillainArgs,
+  OperatorSetterMoveName,
+} from "./moves/operatorSetters.types.js";
+export {
+  OPERATOR_SUPPLY_PILES,
+  OPERATOR_SETTER_MOVE_NAMES,
+  OPERATOR_ECONOMY_MAX_AMOUNT,
+} from "./moves/operatorSetters.types.js";
+
 // Audience & filter (WP-029)
 export type { UIAudience } from "./ui/uiAudience.types.js";
 export { filterUIStateForAudience } from "./ui/uiState.filter.js";

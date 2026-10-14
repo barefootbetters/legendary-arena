@@ -192,4 +192,20 @@ describe('buildOperatorView (WP-802 / D-24689)', () => {
       buildOperatorView(gameState, OPERATOR_CONTEXT),
     );
   });
+
+  // why: WP-806 / D-24713 §5 — setAsideCounts is optional and omit-when-off, so an
+  // operator match that never set a supply card aside has no key at all.
+  it('has no setAsideCounts key while G.operatorSetAside is absent', () => {
+    const view = buildOperatorView(createGameState(true), OPERATOR_CONTEXT);
+    assert.ok(view !== null);
+    assert.equal(Object.hasOwn(view, 'setAsideCounts'), false);
+  });
+
+  it('counts each pile of G.operatorSetAside exactly, and 0 for a pile never set aside', () => {
+    const gameState = createGameState(true);
+    gameState.operatorSetAside = { wounds: ['pile-wound', 'pile-wound', 'pile-wound'], officers: [] };
+    const view = buildOperatorView(gameState, OPERATOR_CONTEXT);
+    assert.ok(view !== null);
+    assert.deepEqual(view.setAsideCounts, { wounds: 3, bystanders: 0, officers: 0, sidekicks: 0 });
+  });
 });

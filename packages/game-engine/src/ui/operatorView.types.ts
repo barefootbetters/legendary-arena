@@ -65,6 +65,11 @@ export interface OperatorView {
   readonly heroDeckTopFirst: readonly CardExtId[];
   readonly mastermindTacticsTopFirst: readonly CardExtId[];
   readonly supplyCounts: OperatorSupplyCounts;
+  // why: WP-806 / D-24713 §5 — optional, present only once the operator has set a
+  // supply card aside (G.operatorSetAside exists), so an older consumer's inline
+  // OperatorView fixture still type-checks.
+  /** Cards each supply pile has in the operator set-aside zone. Absent until the first decrease. */
+  readonly setAsideCounts?: OperatorSupplyCounts;
   readonly koPile: readonly CardExtId[];
   readonly escapedPile: readonly CardExtId[];
   readonly counters: Readonly<Record<string, number>>;
