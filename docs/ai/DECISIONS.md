@@ -48131,4 +48131,20 @@ D-24026.
 
 ---
 
+### D-24718 — Seat identities refuse an operator match too (direct fix, no WP) (Active 2026-10-14)
+
+**Context.** D-24717 closed `GET /api/match/:matchId/result-lagn` to operator matches (WP-802 / D-24689). Its guest-readable sibling `GET /api/match/:matchId/seat-identities` (the endgame seat-name roster) still served a finished operator match's per-seat handles and bot flags.
+
+**Decision.**
+1. `seat-identities` refuses an operator match with `404 { error: 'match_not_found' }`, the same response as an unknown or unprojectable match, so it is no oracle for which matches are operator matches. The check runs right after the projectability gate, before the finished-match gate and the roster read.
+2. The flag is read as `matchConfiguration.isDebugMatch === true` inside the **D-24153** carve-out, exactly as D-24717 reads it.
+3. **Accepted cost.** The operator's own endgame co-op recap labels seats as plain "Player N" (the composable's existing fallback for a failed read). Nothing else consumes the roster in an operator match: the score submit returns `operator-match` before the D-24630 expired-session check that reads it.
+4. The `api-endpoints.md` row for `seat-identities` is replaced whole (D-11804).
+
+**Gates.** Server suite 1772 tests, 0 fail (207 skipped: the DB-backed cases, no `TEST_DATABASE_URL`). `seatIdentities.routes.test.ts` 8 / 0 (+2: a finished operator match gets the unknown-match 404 with no gameover or roster read, revert-proofed to fail without the gate; a match whose `isDebugMatch` is not a strict `true` is still served). No engine change, no UIState field, no re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24718. Related: D-24717 (result-lagn refusal, extended here), WP-802 / D-24689 (operator match), D-24402 (the `seatIdentities` projection), D-24630 (expired-session check), D-24153 (blob-read carve-out), D-24169 (finished-match gate), D-11804 (catalog row semantics).
+
+---
+
 Protect this file.

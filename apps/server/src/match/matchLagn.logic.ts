@@ -74,8 +74,8 @@ export interface MatchLagnComposition {
   /**
    * The operator-match flag (WP-802 / D-24689), on the same persisted
    * `matchConfiguration` (only a strict `true` marks an operator match). Never
-   * projected into LAGN; the result-LAGN route reads it to refuse an operator
-   * match (D-24717).
+   * projected into LAGN; the result-LAGN and seat-identities routes read it to
+   * refuse an operator match (D-24717, D-24718).
    */
   readonly isDebugMatch?: boolean;
 }

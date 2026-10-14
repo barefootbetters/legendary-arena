@@ -153,6 +153,19 @@ export function registerSeatIdentitiesRoute(
         return;
       }
 
+      // why: D-24718 — an operator match (WP-802 / D-24689) is an admin test
+      // board, so its roster is not published either (the D-24717 result-lagn
+      // posture). Refused with the SAME 404 as an unknown match, so the response
+      // is no oracle for which matches are operator matches. The flag is read
+      // from `matchConfiguration` inside the D-24153 carve-out. The operator's own
+      // endgame recap then labels seats as plain "Player N"; its score submit is
+      // already skipped for an operator match, so no D-24630 check needs the roster.
+      if (configuration.matchConfiguration.isDebugMatch === true) {
+        koaContext.status = 404;
+        koaContext.body = { error: 'match_not_found' };
+        return;
+      }
+
       // Gate 2 — the completed-match gate (D-24169). Seat identities are an
       // endgame report-card surface; a projectable match with no
       // `metadata.gameover` is still in progress, so reject until it finishes
