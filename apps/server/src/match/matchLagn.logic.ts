@@ -729,8 +729,9 @@ export function toBattlePlanBlock(
  *
  * **Construction-only**: like `buildMatchLagn`, this never calls `validate()` —
  * the route validates the built document exactly once before returning it. It
- * stamps `LAGN_VERSION` (1.5.0 as of the WP-641 writer flip), so `players[]`,
- * `battle_plan`, and `result.score` all clear the WP-405 / WP-640 version gates.
+ * stamps `LAGN_VERSION` (1.6.0 since WP-698 / D-24517; WP-641 first raised it
+ * to 1.5.0 for these blocks), so `players[]`, `battle_plan`, and `result.score`
+ * all clear the WP-405 / WP-640 version gates, which are ordinal.
  *
  * why: `result.score` rides ONLY when `result` rides — the schema nests it under
  * `result`, whose `outcome` is required, and the endpoint only runs for finished
