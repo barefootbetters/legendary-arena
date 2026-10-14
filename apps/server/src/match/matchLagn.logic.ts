@@ -71,6 +71,13 @@ export interface MatchLagnComposition {
    * persisted `matchConfiguration` envelope as the composition. Absent = off.
    */
   readonly finalBlow?: boolean;
+  /**
+   * The operator-match flag (WP-802 / D-24689), on the same persisted
+   * `matchConfiguration` (only a strict `true` marks an operator match). Never
+   * projected into LAGN; the result-LAGN and seat-identities routes read it to
+   * refuse an operator match (D-24717, D-24718).
+   */
+  readonly isDebugMatch?: boolean;
 }
 
 /** The composition + seat count read from a single match's blob. */
