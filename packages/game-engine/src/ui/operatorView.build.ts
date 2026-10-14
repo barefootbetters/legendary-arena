@@ -98,6 +98,21 @@ function buildSupplyCounts(gameState: LegendaryGameState): OperatorSupplyCounts 
 }
 
 /**
+ * Counts the cards in each pile of the operator set-aside zone.
+ *
+ * @param setAside - The operator match's `G.operatorSetAside`.
+ * @returns The per-pile count; a pile never set aside counts 0.
+ */
+function buildSetAsideCounts(setAside: NonNullable<LegendaryGameState['operatorSetAside']>): OperatorSupplyCounts {
+  return {
+    wounds: setAside.wounds?.length ?? 0,
+    bystanders: setAside.bystanders?.length ?? 0,
+    officers: setAside.officers?.length ?? 0,
+    sidekicks: setAside.sidekicks?.length ?? 0,
+  };
+}
+
+/**
  * Collects the display data for every card id that appears in the view. An id
  * with no `G.cardDisplayData` entry is left out.
  *
@@ -176,6 +191,12 @@ export function buildOperatorView(
     heroDeckTopFirst,
     mastermindTacticsTopFirst,
     supplyCounts: buildSupplyCounts(gameState),
+    // why: WP-806 / D-24713 §5 — a conditional spread inside the literal: the fields
+    // are readonly and exactOptionalPropertyTypes forbids writing `undefined`, so the
+    // key exists only when the set-aside zone does.
+    ...(gameState.operatorSetAside !== undefined
+      ? { setAsideCounts: buildSetAsideCounts(gameState.operatorSetAside) }
+      : {}),
     koPile,
     escapedPile,
     counters: { ...gameState.counters },

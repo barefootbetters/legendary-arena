@@ -67,6 +67,14 @@ import { healWounds } from './moves/healWounds.js';
 import { endMatchEarly } from './moves/endMatchEarly.js';
 import { dodgeCard } from './moves/dodgeCard.js';
 import { phaseCard } from './moves/phaseCard.js';
+import {
+  operatorSetSupplyCount,
+  operatorMoveToDeckTop,
+  operatorRevealNow,
+  operatorMoveCard,
+  operatorAddEconomy,
+  operatorEscapeVillain,
+} from './moves/operatorSetters.js';
 import { fightMastermind } from './moves/fightMastermind.js';
 import { resetTurnEconomy } from './economy/economy.logic.js';
 import { runAllInvariantChecks } from './invariants/runAllChecks.js';
@@ -708,6 +716,18 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // absent on UIState. NOT in CORE_MOVE_NAMES (mirrors the other resolve* moves). A
     // non-active seat is admitted to submit it via the resolvingSeatChoice stage ride.
     resolveSeatChoice: { move: resolveSeatChoice, client: false },
+    // why: WP-806 / D-24713 §7 — the six operator setters run ONLY in an operator match
+    // (each gates on G.isDebugMatch, the operator's own turn, the main stage and no open
+    // choice, and returns silently otherwise). They are deliberately absent from
+    // getLegalMoves, SIMULATION_MOVE_NAMES, both MOVE_MAPs, the determinism-only replay
+    // and the fixture runner, so no bot, simulation, PAR run or fixture ever makes one
+    // (the phaseCard / endMatchEarly precedent). Server-only (client: false) per D-10008.
+    operatorSetSupplyCount: { move: operatorSetSupplyCount, client: false },
+    operatorMoveToDeckTop: { move: operatorMoveToDeckTop, client: false },
+    operatorRevealNow: { move: operatorRevealNow, client: false },
+    operatorMoveCard: { move: operatorMoveCard, client: false },
+    operatorAddEconomy: { move: operatorAddEconomy, client: false },
+    operatorEscapeVillain: { move: operatorEscapeVillain, client: false },
   },
 
   // why: phase `next` fields declare the intended linear progression

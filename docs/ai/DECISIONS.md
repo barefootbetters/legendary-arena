@@ -47931,4 +47931,55 @@ UptimeRobot measured 10 m 10 s of downtime. `pnpm check:domains`: 11 ok, 0 faile
 
 ---
 
+### D-24713 — Operator setters: the six moves, the set-aside zone, and the §7 extensions (Active 2026-10-13 — WP-806 / EC-843)
+
+Extends D-24689 §7 with the operator's rulings of 2026-10-13 (Open Question 7 on `wiki/why-play-needs-a-debug-panel.md`
+and the hero-deck / HQ question).
+
+1. **Six moves.**
+   - `operatorSetSupplyCount`, `operatorMoveToDeckTop`, `operatorRevealNow`, `operatorMoveCard`, `operatorAddEconomy`
+     and `operatorEscapeVillain`.
+   - Each follows D-24689 §7's move rules: operator match only; the operator's own turn, checked against
+     `ctx.currentPlayer`; the `main` stage; refused while a choice is open; an "Operator:" log line.
+   - "A choice is open" means `hasAnyPendingChoice`, `pendingHeroChoice`, or a queued Diving Block or escape procedure.
+     A set-aside teleport return is not a choice.
+2. **Economy and escape (Open Question 7).**
+   - Setters may add 1–20 Recruit or Attack to the current turn's `turnEconomy`. Turn start resets it as usual.
+   - A forced escape takes the Villain in the escape-edge City space through `resolveVillainEscape`, the path a
+     pushed-out Villain takes, so escape effects, carried Bystanders and the escape count all fire.
+   - Neither creates or destroys a card. Recruit and Attack are turn counters, never VP or score.
+3. **Randomness.** §7's "no `ctx.random`" governs the setter's own logic: no setter chooses a card by chance.
+   `operatorRevealNow` and `operatorEscapeVillain` hand the move's `random` to the normal reveal and escape paths,
+   which use it as they do in play.
+4. **Hero deck and HQ.**
+   - Setter 2 also reorders the hero deck.
+   - Setter 4 may place a hero-deck card in an HQ space. The card it displaces goes to the bottom of the hero deck, as
+     "put a Hero on the bottom of the Hero Deck" cards do. Nothing refills.
+   - `G.hqHaunters` stays aligned with the space, so a placed hero in a haunted space is haunted, consistent with
+     D-24587.
+5. **The set-aside zone** is `G.operatorSetAside?: { wounds?, bystanders?, officers?, sidekicks? }` (`CardExtId[]`
+   each).
+   - It is written only by `operatorSetSupplyCount` and omitted until its first decrease, so normal matches and every
+     hash oracle are byte-identical.
+   - No rule, `UIState` builder or scoring code reads it. `buildOperatorView` shows its counts as the optional
+     `setAsideCounts`.
+6. **Setter 4's routes are closed:**
+   - a gain from a supply;
+   - a KO from a player's zone;
+   - a move between a player's hand, deck top, discard and Victory Pile (any players);
+   - a hero-deck card into an HQ space.
+   Hand → discard for the same player goes through `discardFromHand`. Nothing else is allowed, so no card lands "in
+   play" without having been played.
+7. **Out of the bot.** The setters are absent from `getLegalMoves`, the simulation and PAR dispatch, the
+   determinism-only replay and the fixture runner, like `phaseCard` and `endMatchEarly`. The server's faithful replay
+   re-runs them through the real reducer.
+8. **Deferred.**
+   - A plain-English command console over these moves is a later client packet.
+   - Open Question 8 (branching rewind) and Open Question 9 (a secret per-player rig) are not ruled on.
+   - Jump to turn N stays D-24689 §8's follow-on.
+
+**Reserved by:** NUMBER-LEDGER D-24713 (#2765). Related: D-24689, D-24026, D-24119, D-24160, D-10008, D-24697, D-24372.
+
+---
+
 Protect this file.

@@ -66,7 +66,9 @@ case directly, and shows what the bot weighed. It's modelled on the
 and adapted to a turn-based, hidden-information, server-authoritative game.
 It started as a proposal. D-24689 turned it into a four-step arc. The first
 two steps are merged: the server and engine half is live-verified, and the
-client panel is waiting on its live-verify. See [Build status](#build-status).
+client panel is waiting on its live-verify. The third step's engine half, the
+six setter moves (WP-806, D-24713), is done; its Tweakpane pane (WP-807) comes
+next. See [Build status](#build-status).
 
 ## Mechanics
 
@@ -79,7 +81,8 @@ As of 2026-10-13, checked against `main` (`9cfd635d`):
 | WP-802 / EC-839 / D-24689 | Operator match: only an admin can create it, it's unlisted and never scored, and an admin HTTP route reads the whole board, Wounds by zone and the bot's recent decisions | **Done 2026-10-11. Live-verified in production** on operator match `3pNYCKHKJCE` (all eight WP-802 live steps) |
 | D-24697 | The bot decisions use the turn number the board and game log show | Done (#2728) |
 | WP-804 / EC-841 | The operator panel on play: an admin-only "Operator match" checkbox in the lobby's bot-ally section, a read-only reveal-all board panel, a "not scored" badge every seat sees, no score submit at game over, and two downloads (operator snapshot, UIState fixture) | **Done 2026-10-12, merged 2026-10-13** ([PR #2735](https://github.com/barefootbetters/legendary-arena/pull/2735), `9cfd635d`). **Live-verify pending**: the seven WP-804 §Verification steps, run as `jefferyjjensen` after deploy. No new dependency, no Tweakpane |
-| Follow-on 2 (no WP yet) | **The setters**, mounted in a **Tweakpane** control pane inside the WP-804 panel, plus the set-aside zone | Designed in D-24689 §6–§7. That packet adds the Tweakpane dependency |
+| WP-806 / EC-843 / D-24713 | Follow-on 2, engine half: six operator-match-only setter moves (supply count with the `G.operatorSetAside` zone, deck top for the villain and hero decks, reveal a Scheme Twist or Master Strike now, move a card over a closed route table including a hero into the HQ, add Recruit or Attack, force an escape), each logged "Operator:" and absent from bot and simulation dispatch | **Done 2026-10-13.** No user-observable change on its own; live-verify via WP-807 |
+| WP-807 / EC-844 | Follow-on 2, client half: a **Tweakpane** control pane inside the WP-804 panel that submits the six setters | Drafted; executes after WP-806. Its live-verify covers both packets |
 | Follow-on 3 (no WP yet) | Jump to turn N of any match: a read-only board rebuilt by replay, labelled "played on build X, replayed on build Y" | Designed in D-24689 §8. Needs its own DECISIONS carve-out |
 
 With WP-804 deployed, an admin ticks "Operator match" in the lobby instead
@@ -427,11 +430,11 @@ WP and a DECISIONS entry own any build.
 
 | Idea | Where it fits | Status |
 |---|---|---|
-| Hero / villain deck control: put a chosen card on top, summon a hero to the HQ | Setter 2 (villain deck) and setter 4 (zone to zone). The hero deck needs the setter-2 pattern too, and an HQ placement needs a rule for the card it displaces | Follow-on 2 should name both |
+| Hero / villain deck control: put a chosen card on top, summon a hero to the HQ | Setter 2 (villain deck) and setter 4 (zone to zone). The hero deck needs the setter-2 pattern too, and an HQ placement needs a rule for the card it displaces | Done in WP-806: setter 2 covers both decks, and the displaced HQ card goes to the hero-deck bottom (D-24713 §4) |
 | Select a S.H.I.E.L.D. Officer, Sidekick, Wound or Bystander | Setter 1 (pile count) and setter 4. Choosing which card comes next only matters where a pile holds different cards. Where every copy is the same card, the count covers it | Follow-on 2 |
 | Floating pane with collapsible folders | How Tweakpane mounts inside the WP-804 panel (D-24689 §6) | Follow-on 2 |
 | Console commands: KO a card, draw a card | Setter 4 through the existing KO and draw helpers | Follow-on 2 candidate |
-| Console commands: `add recruit 5`, `add attack 3`, trigger a villain escape | New setter kinds. §7's conservation rule covers cards, and recruit and attack are counters, so they need a ruling that extends §7 | Open Question 7 |
+| Console commands: `add recruit 5`, `add attack 3`, trigger a villain escape | New setter kinds. §7's conservation rule covers cards, and recruit and attack are counters, so they need a ruling that extends §7 | Done in WP-806 (D-24713 §2) |
 | A command console next to the knobs | An input surface over the same setter moves, so every new idea is one more command rather than one more button | Follow-on 2 or later |
 | Rewind with branching (rewind to turn N, make a different choice, play on) | Follow-on 3 is read-only and never written back. bgio's `loadState` / `previewState` are client-side and can't move a server-authoritative match. A branch that fits every rule: create a *new* operator match from the same setup and seed, and replay the first N moves as real moves. Determinism makes that exact | Open Question 8 |
 | Gate the panel with `#debug` in the URL, or a dev build flag | D-24689 gates on an admin session plus an operator match, on the normal production deployment. A URL hash can show the panel, but it can't authorize anything | A convenience at most, never the gate |
@@ -544,6 +547,8 @@ WP and a DECISIONS entry own any build.
    `add attack N` and "trigger a villain escape" don't move a card, so §7's
    conservation rule doesn't cover them. Does follow-on 2 add them, under what
    log line, and does an escape go through the normal escape path?
+   Answered: D-24713 §2 (1–20 Recruit or Attack this turn, and a forced escape
+   through `resolveVillainEscape`, each with an "Operator:" log line).
 8. **Branching rewind.** Is "fork a new operator match from the same setup
    and seed, replaying the first N moves as real moves" the branch model? It
    needs no new persistence read beyond follow-on 3's carve-out, and every
