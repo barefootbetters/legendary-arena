@@ -86,8 +86,17 @@ Follow-on 2 of the WP-802 arc, client half. Engine half: WP-806.
   - `pane.dispose()` on unmount left no `.tp-rotv` in the document.
   The branch was then discarded. `tweakpane@4.0.5` is ESM-only (`"type": "module"`), and its bundle carries the
   literal `tp-rotv` (62 times).
-- **New dependency:** `tweakpane` `^4.0.5` in arena-client `dependencies` (D-24689 §6 assigns it to this packet). No
-  `@tweakpane/*` plugin.
+- **Tweakpane's types need `@tweakpane/core`.** tweakpane 4.0.5's `.d.ts` files import `@tweakpane/core` (`Pane extends
+  RootApi`), and core is only a devDependency of tweakpane, so it is never installed. A second throwaway scaffold
+  (2026-10-13), a `.ts` file under `src/` using `new Pane`, `addFolder`, `addBinding` (number and list),
+  `addButton`, `button.disabled` and `.on('click')`, gave these `vue-tsc --noEmit` results:
+  - with `tweakpane` alone: `TS2339: Property 'addFolder' does not exist on type 'Pane'`;
+  - after `pnpm --filter @legendary-arena/arena-client add -D @tweakpane/core@2.0.5`: exit 0.
+  Core 2.0.5 is the version the 4.0.5 bundle embeds (`new Semver('2.0.5')`). The scaffold was reverted.
+- **New dependencies** (D-24689 §6 assigns them to this packet):
+  - `tweakpane` `^4.0.5` in arena-client `dependencies`;
+  - `@tweakpane/core` `2.0.5` (exact) in arena-client `devDependencies`, types only. It is never imported at runtime.
+  No Tweakpane plugin.
 
 ## Context (Read First)
 
@@ -107,6 +116,10 @@ the turn, the stage and open choices (WP-806). A click while a choice is open do
 **Why "Move a card" is one source list and one destination list.** Dependent lists (zone first, then a card in it) mean
 nested rebuilds. One flat source list ("Player 0 · hand · Iron Man", "Wound supply (top)") and one destination list
 ("Player 1 · discard pile", "KO pile") cover every WP-806 route. The engine refuses pairs outside its table.
+
+The options are valued by a **stable key**, never a list index. After a poll the lists shift, and an index would
+silently point at a different card. Two copies of one card in one zone share a key, which is harmless: they're the same
+card to the engine.
 
 **Read:**
 - WP-806 in full (§Locked Contract Values, §D-24713 Content), WP-804 (§Locked Contract Values, panel and mount),
@@ -152,8 +165,11 @@ baseline before editing. STOP and report, without guessing, if:
 
 ## Locked Contract Values
 
-- **Dependency:** `"tweakpane": "^4.0.5"` in `apps/arena-client/package.json` `dependencies`, and `pnpm-lock.yaml`
-  updated by `pnpm --filter @legendary-arena/arena-client add tweakpane@^4.0.5`.
+- **Dependencies:**
+  - `"tweakpane": "^4.0.5"` in `apps/arena-client/package.json` `dependencies`;
+  - `"@tweakpane/core": "2.0.5"` in `devDependencies`, types only, never imported at runtime.
+  `pnpm-lock.yaml` is updated by `pnpm --filter @legendary-arena/arena-client add tweakpane@^4.0.5` and
+  `pnpm --filter @legendary-arena/arena-client add -D @tweakpane/core@2.0.5`.
 - **Union:** `UiMoveName` gains `'operatorSetSupplyCount' | 'operatorMoveToDeckTop' | 'operatorRevealNow' |
   'operatorMoveCard' | 'operatorAddEconomy' | 'operatorEscapeVillain'`, with one `// why:` naming WP-806 / D-24713.
 - **Intent builders**, in the new `lib/operatorSetterIntents.ts`. These are pure, with no Vue and no Tweakpane:
@@ -167,15 +183,22 @@ baseline before editing. STOP and report, without guessing, if:
   - `buildEconomyIntent(resource: 'attack' | 'recruit', amount: number)` → `operatorAddEconomy`, `{ resource, amount }`
   - `buildEscapeIntent()` → `operatorEscapeVillain`, `{}`
 - **Option builders** (same file):
-  - `export interface OperatorCardSource { cardId: string; from: OperatorZoneRef; label: string }`
+  - `export interface OperatorCardSource { key: string; cardId: string; from: OperatorZoneRef; label: string }`
+  - `export interface OperatorDestination { key: string; ref: OperatorZoneRef; label: string }`
   - `buildCardSources(view: OperatorView): OperatorCardSource[]`
-    - for each seat in order, each card of `hand`, `deckTopFirst`, `discard`, `inPlay` and `victory`, labelled
-      `Player ${playerId} · ${zoneLabel} · ${name}`;
-    - then, for each `OPERATOR_SUPPLY_PILES` pile whose `supplyCounts` is > 0, one entry labelled `${PILE_LABEL} supply
-      (top)`, whose `cardId` is that pile's fungible id: `pile-wound`, `pile-bystander`, `pile-shield-officer` or
-      `pile-sidekick`.
-  - `buildDestinations(view: OperatorView): { label: string; ref: OperatorZoneRef }[]` — for each seat, `hand`, `deck`
-    (labelled "deck (top)"), `discard` and `victory`; then `{ zone: 'ko' }` labelled "KO pile".
+    - **Seats:** for each seat in order, each card of `hand`, `deckTopFirst`, `discard`, `inPlay` and `victory`.
+      - `from = { zone, playerId }`, with zone `'hand' | 'deck' | 'discard' | 'inPlay' | 'victory'`; `deckTopFirst`
+        maps to `'deck'`.
+      - `key = ${playerId}|${zone}|${cardId}`.
+      - Label `Player ${playerId} · ${zoneLabel} · ${name}`.
+    - **Supplies:** then, for each `OPERATOR_SUPPLY_PILES` pile whose `supplyCounts` is > 0, one entry.
+      - `cardId` is the pile's fungible id: `pile-wound`, `pile-bystander`, `pile-shield-officer` or `pile-sidekick`.
+      - `from = { zone: 'supply', pile }` and `key = supply|${pile}`.
+      - Label `${PILE_LABEL} supply (top)`.
+  - `buildDestinations(view: OperatorView): OperatorDestination[]`
+    - for each seat, `hand`, `deck` (labelled "deck (top)"), `discard` and `victory`, with `ref = { zone, playerId }`
+      and `key = ${playerId}|${zone}`;
+    - then `{ zone: 'ko' }`, labelled "KO pile", with key `ko`.
   - `buildDeckCardOptions(cardIds: readonly string[], view: OperatorView): { text: string; value: string }[]` — one
     entry per distinct id, in first-seen order, `text = ${position}. ${name}`, where `position` is 1-based.
   - `isSetterWindowOpen(view: OperatorView, playerId: string): boolean` — `view.currentStage === 'main' &&
@@ -184,7 +207,7 @@ baseline before editing. STOP and report, without guessing, if:
     (UICityCard | null)[]`, `uiState.types.ts` L640–643; index 4 is the escape edge, WP-806 §Assumes).
   - `PILE_LABEL` repeats WP-806's labels (Wound / Bystander / S.H.I.E.L.D. Officer / Sidekick). The fungible ids are
     re-declared here with a `// why:`, since the engine doesn't export them on `.`.
-- **Component** `components/play/OperatorSetterPane.vue`:
+- **Component** `components/play/OperatorSetterPane.vue` (`name: 'OperatorSetterPane'`):
   - **Props:** `operatorView: OperatorView` (required), `playerId: string` (required), `submitMove: SubmitMove`
     (required).
   - **Emits:** `submitted`.
@@ -198,22 +221,28 @@ baseline before editing. STOP and report, without guessing, if:
     2. **Villain deck:** list `villainCard`; button "Move villain card to top"; buttons "Reveal a Scheme Twist now" and
        "Reveal a Master Strike now".
     3. **Hero deck:** list `heroCard`; button "Move hero card to top"; number `hqSpace` (min 1, max 5, step 1); button
-       "Place hero in HQ space". The intent uses `hqIndex = hqSpace − 1`.
-    4. **Move a card:** list `source` (index into `buildCardSources`); list `destination` (index into
-       `buildDestinations`); button "Move card".
+       "Place hero in HQ space". That button's intent is `buildMoveCardIntent({ key: 'heroDeck|' + heroCard, cardId:
+       heroCard, from: { zone: 'heroDeck' }, label: '' }, { zone: 'hq', hqIndex: hqSpace − 1 })`, which is WP-806
+       route R4.
+    4. **Move a card:** list `source`, valued by `OperatorCardSource.key`; list `destination`, valued by
+       `OperatorDestination.key`; button "Move card". On click each key maps back to its entry. If either key is
+       missing from the current lists, nothing is submitted.
     5. **Turn economy:** list `resource` (Attack / Recruit); number `amount` (min 1, max `OPERATOR_ECONOMY_MAX_AMOUNT`,
        step 1); button "Add to this turn".
     6. **Escape:** button "Escape the Villain at the City's edge", disabled unless `hasEscapeCandidate`.
-  - Every button is `disabled` unless `isSetterWindowOpen`. A click builds the intent, calls `submitMove(intent.name,
-    intent.args)` once, then emits `submitted`.
-  - **Rebuild:** a `computed` key joins the option lists and the window state. On change, the pane is disposed and
+  - Every button is `disabled` unless `isSetterWindowOpen`.
+  - On click, the handler re-checks `isSetterWindowOpen` against the current prop, plus `hasEscapeCandidate` for Escape.
+    If the check passes, it builds the intent, calls `submitMove(intent.name, intent.args)` once and emits `submitted`.
+    If it fails, nothing is submitted.
+  - **Rebuild:** a `computed` key joins the option lists' keys, the window state and `hasEscapeCandidate`. On change, the pane is disposed and
     rebuilt from a reactive `params` object, which keeps a selection still present among the options and falls back
     to the first one otherwise.
   - **Teardown:** `onUnmounted` disposes the pane.
 - **Panel** (`OperatorBoardPanel.vue`):
   - **New optional props:** `submitMove` (`Function as PropType<SubmitMove | null>`, default `null`) and `playerId`
     (`String`, default `''`).
-  - **Lazy load:** `const OperatorSetterPane = defineAsyncComponent(() => import('./OperatorSetterPane.vue'))`.
+  - **Lazy load:** `const OperatorSetterPane = defineAsyncComponent(() => import('./OperatorSetterPane.vue'))`,
+    registered as `components: { OperatorSetterPane }`.
   - **Render:** `<OperatorSetterPane v-if="operatorView !== null && submitMove !== null && playerId !== ''"
     :operator-view="operatorView" :player-id="playerId" :submit-move="submitMove" @submitted="refreshNow" />`, inside
     the expanded body, after `operator-engine`.
@@ -245,24 +274,32 @@ baseline before editing. STOP and report, without guessing, if:
   4. `buildDeckCardOptions` collapses duplicate ids and numbers positions from 1;
   5. `isSetterWindowOpen` is false for stage `start`, false for another seat's turn, and true for own turn in `main`;
   6. `hasEscapeCandidate` is true and false.
-- `components/play/OperatorSetterPane.test.ts` (new; jsdom, `attachTo: document.body`). Click the Tweakpane buttons
-  found by text:
+- `components/play/OperatorSetterPane.test.ts` (new; jsdom, `attachTo: document.body`). It declares its own inline
+  `OperatorView` fixture, with `board.game.activePlayerId` and `board.city.spaces` (five slots) set. Click the
+  Tweakpane buttons found by text:
   - the pane and its six folders render, and the hint shows the open text on own turn in `main`;
   - "Set supply count" submits `operatorSetSupplyCount` with the bound pile and count, then emits `submitted`;
   - "Reveal a Scheme Twist now", "Escape the Villain at the City's edge", "Add to this turn" and "Place hero in HQ space"
     (`hqIndex` = space − 1) submit the locked intents;
   - "Move card" submits the chosen source's `cardId` / `from` and the chosen destination's `ref`;
-  - on another seat's turn every button is `disabled`, a click submits nothing, and the hint shows the closed text;
+  - **stable keys:** select a hand card, re-render with a card inserted before it in that hand, click "Move card". The
+    same `cardId` is submitted;
+  - on another seat's turn every button is `disabled`, a click submits nothing (the handler's re-check, tested by
+    calling `.click()` on the button element), and the hint shows the closed text;
   - changing the `operatorView` prop (a card leaves the villain deck) rebuilds the pane: one `.tp-rotv` in the
     document, and the removed card is no longer an option;
   - unmount leaves no `.tp-rotv` in the document.
-- `components/play/OperatorBoardPanel.test.ts`, with new cases only:
+- `components/play/OperatorBoardPanel.test.ts`, with new cases only. They use a **new** fixture helper that adds
+  `board.game.activePlayerId` and `board.city.spaces` to the board. The existing `buildBoardFixture()` stays untouched,
+  because the pane would throw on its `game`-less board.
   - no `operator-setters` without `submitMove`;
   - with `submitMove` and `playerId`, `operator-setters` appears after `flushPromises()`;
-  - a `submitted` event triggers a board fetch (count the stubbed fetches);
+  - a `submitted` event, sent with `findComponent({ name: 'OperatorSetterPane' }).vm.$emit('submitted')`, triggers a
+    board fetch (count the stubbed fetches);
   - `operator-set-aside` renders only when `setAsideCounts` is present.
-- `pages/PlayViewport.test.ts`, with one new case: in the WP-804 positive panel case, the mounted
-  `OperatorBoardPanel` receives `playerId` and a `submitMove` function (`findComponent(...).props()`).
+- `pages/PlayViewport.test.ts`, with one new case. It copies the WP-804 positive panel setup, adds `playerId: '0'` to
+  the mount props, and asserts that the mounted `OperatorBoardPanel` receives `playerId: '0'` and a `submitMove`
+  function (`findComponent(...).props()`).
 
 ### E) Docs (governance close, `SPEC:` commit)
 - `wiki/why-play-needs-a-debug-panel.md`: the §Build status row for follow-on 2 reads done. Tweakpane now exists in
@@ -278,6 +315,9 @@ baseline before editing. STOP and report, without guessing, if:
   this pane adds no authority.
 - **A refused setter is silent.** The engine returns without a log line, and the pane can't tell a refusal from a slow
   board. The hint says a refused setter changes nothing.
+- **The instant refresh can race.** `submitMove` sends over the socket without waiting for an answer, so the immediate
+  `refreshNow()` can come back before the server has applied the move. The next 3-second poll catches up. "At once" is
+  best effort.
 - **A rebuild resets an open dropdown.** Every poll that changes an option list rebuilds the pane. Selections survive;
   an open dropdown closes.
 - **No command console.** A text console over the same moves is a later packet (D-24713 §8).
@@ -294,8 +334,8 @@ baseline before editing. STOP and report, without guessing, if:
 
 ## Files Expected to Change
 
-- `apps/arena-client/package.json` — **modified** — `tweakpane` dependency
-- `pnpm-lock.yaml` — **modified** — lockfile for `tweakpane`
+- `apps/arena-client/package.json` — **modified** — `tweakpane` dependency, `@tweakpane/core` devDependency
+- `pnpm-lock.yaml` — **modified** — lockfile for both
 - `apps/arena-client/src/components/play/uiMoveName.types.ts` — **modified** — six names
 - `apps/arena-client/src/lib/operatorSetterIntents.ts` — **new** — intent and option builders
 - `apps/arena-client/src/lib/operatorSetterIntents.test.ts` — **new** — §D
@@ -310,7 +350,7 @@ baseline before editing. STOP and report, without guessing, if:
 
 Ten code files (plus the lockfile) is over the ~8-file guidance:
 - four are two new modules, each with its own test;
-- the others are small edits: the union, the manifest, the panel and its test, the mount and its test.
+- the others are small edits: the union, `package.json`, the panel and its test, the mount and its test.
 Splitting the dependency from the pane would ship a dependency nothing uses.
 
 ## Contract
@@ -321,11 +361,11 @@ Splitting the dependency from the pane would ship a dependency nothing uses.
 
 ## Acceptance Criteria
 
-1. `apps/arena-client/package.json` lists `"tweakpane": "^4.0.5"` in `dependencies`, and `pnpm install
-   --frozen-lockfile` exits 0.
+1. `apps/arena-client/package.json` lists `"tweakpane": "^4.0.5"` in `dependencies` and `"@tweakpane/core": "2.0.5"`
+   in `devDependencies`, and `pnpm install --frozen-lockfile` exits 0.
 2. Each intent builder returns WP-806's exact move name and args (§D).
-3. The pane renders six folders with the locked button titles, and each button submits exactly one `submitMove` call
-   with the locked intent, then emits `submitted`.
+3. The pane renders six folders with the locked button titles. Each button submits exactly one `submitMove` call with
+   the locked intent, then emits `submitted`. "Move card" submits by stable key, not by list index.
 4. Off the admin's turn, or outside `main`, every button is disabled and no click submits.
 5. An `operatorView` change rebuilds the pane with exactly one live `Pane`. Unmount leaves no `.tp-rotv`.
 6. `OperatorBoardPanel` renders `operator-setters` only with a `submitMove` and a non-empty `playerId`, and a

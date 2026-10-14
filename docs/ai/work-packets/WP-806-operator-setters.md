@@ -76,8 +76,8 @@ set-aside zone's name and shape.
 - **No server move allowlist.** The D-24701 client-action guard admits any `MAKE_MOVE` (`apps/server/src/game/
   clientActionGuard.mjs` L46–51, L77–91). The faithful replay (`apps/server/src/replay/matchReplay.logic.ts`)
   re-dispatches every `MAKE_MOVE` through the real reducer. So no server file changes.
-- **Pending choices.** `hasAnyPendingChoice(G)` (`moves/phaseCard.ts` L82–120) covers the 30 block-all `hasPending*`
-  guards, `hasPendingSeatChoice` and the two put-bottom-HQ guards.
+- **Pending choices.** `hasAnyPendingChoice(G)` (`moves/phaseCard.ts` L82–120) runs 32 checks: the 30 block-all
+  `hasPending*` guards (`hasPendingSeatChoice` among them) and the two put-bottom-HQ guards.
   - It does **not** cover `G.pendingHeroChoice` (`types.ts` L1910). Callers check that separately
     (`villainDeck/villainEscapeProcedure.ts` L271, `moves/coreMoves.impl.ts` L614, `game.ts` L258).
   - `G.pendingDivingBlockWounds` (L2261) and `G.pendingEscapeProcedures` (L2270) are queues that `turn.onMove` opens
@@ -120,7 +120,13 @@ set-aside zone's name and shape.
   - **Bystanders and Sidekicks:** no gain helper exists for either.
   - **Discard:** `discardFromHand(G, playerID, cardId)` (`moves/discardFromHand.ts` L198) is the hand→discard chokepoint,
     drift-guarded by `discardFromHand.test.ts` L134–150.
-  - **Zones:** `moveCardFromZone(from, to, cardId)` (`moves/zoneOps.ts` L54) appends to the end and returns new arrays.
+  - **Zones:** `moveCardFromZone(from, to, cardId)` (`moves/zoneOps.ts` L54) appends to the end (the **bottom** of a
+    deck) and returns new arrays.
+  - **Placing a card on top:** the existing idiom (`moves/putHandOnDeckTop.resolve.ts` L127–136) is
+    `moveCardFromZone(source, [], cardId)` to remove it, then `deck = [cardId, ...deck]`.
+  - **Test harness:** `makeMockMoveContext(G, { playerID, numPlayers })` (`test/mockMoveContext.ts` L71) sets
+    `ctx.currentPlayer = playerID`. A real operator-match `G` is built by `buildInitialGameState(config with
+    isDebugMatch: true, registry, makeMockCtx())`, as in `ui/operatorView.build.test.ts` L29–50.
   - **Economy:** `addResources(economy, attack, recruit)` (`economy/economy.logic.ts` L740). `G.turnEconomy` resets only
     at turn start (`game.ts` L963).
 - **Logging.** `pushLog(G, message, outcome?, card?)` (`log/logPush.ts` L26–31) adds the `{turn}.{step}.{action}`
@@ -227,6 +233,13 @@ doesn't refill anything: the placed card fills the space.
   that setter and `buildOperatorView`. No rule, no `UIState` builder, no scoring code reads it.
 - No `UIState` field, no `playerView` change, no server, client, registry or persistence change.
 - Hand→discard goes through `discardFromHand`. No new `moveCardFromZone(<x>.hand, <y>.discard` idiom anywhere.
+- **Two style rules, applied here:**
+  - **Keyed access.** Setters may index `G.piles[pile]`, `G.operatorSetAside[pile]` and `G.playerZones[id][zone]` with
+    a key that the step-1 validator has already confirmed is a member of its closed union, as `G.villainDeckCardTypes[id]`
+    does. That isn't "dynamic access for known keys".
+  - **Writes outside `zoneOps`.** Setter 1's multi-card move between a pile and its set-aside and R4's `G.hq[i]` write
+    happen outside `zoneOps`. They follow the `gainOfficerToDiscard` (pile slice) and `resolveOptionalPutBottomHQ` (HQ
+    write) precedents. Every single-card zone removal still uses `moveCardFromZone`.
 
 **Session protocol:** Read the EC, then this WP, then WP-802. Run the baseline before editing. STOP and report, without
 guessing, if:
@@ -270,8 +283,14 @@ guessing, if:
     True only when `G.isDebugMatch === true`, `playerID === currentPlayer`,
     `G.currentStage === OPERATOR_SETTER_STAGE` and `!isOperatorChoiceOpen(G)`.
 - **Move order** (each setter in `moves/operatorSetters.ts`, signature `({ G, ctx, playerID, ...context }: MoveContext,
-  args) => void`):
-  1. validate the args' shape;
+  args: unknown) => void`, the `revealVillainCard` / `phaseCard` context pattern):
+  1. validate the args, without destructuring them in the parameter list, because an `undefined` payload must not
+     throw. Check:
+     - `typeof args === 'object' && args !== null`;
+     - every union-typed field is a member of its closed set;
+     - every number passes `Number.isInteger`;
+     - every player id passes `Object.hasOwn(G.playerZones, id)`, so a client-sent `'constructor'` can't reach
+       `Object.prototype`.
   2. `canRunOperatorSetter(G, ctx.currentPlayer, playerID)`;
   3. state preconditions (the card or Villain is where the args say);
   4. mutate through helpers and `pushLog`.
@@ -279,19 +298,23 @@ guessing, if:
 - **Setter 1 — `operatorSetSupplyCount({ pile, count })`.**
   - `count` must be a non-negative integer, with `count ≤ G.piles[pile].length + (G.operatorSetAside?.[pile]?.length ?? 0)`.
   - **Decrease:** the top `current − count` cards (index 0 first) move, in order, to the end of `operatorSetAside[pile]`.
-  - **Increase:** `count − current` cards move from the **end** of `operatorSetAside[pile]` to the top of the pile.
+  - **Increase:** `count − current` cards move one at a time from the **end** of `operatorSetAside[pile]`, each
+    prepended to the pile (`pile = [card, ...pile]`). A decrease followed by an equal increase restores the original
+    order.
   - **Equal:** returns silently, with no log line.
   - Log: `Operator: ${PILE_LABEL} supply set to ${count} (was ${current}).`
     `PILE_LABEL = { wounds: 'Wound', bystanders: 'Bystander', officers: 'S.H.I.E.L.D. Officer', sidekicks: 'Sidekick' }`.
 - **Setter 2 — `operatorMoveToDeckTop({ deck, cardId })`.**
   - The source is `G.villainDeck.deck` (`'villain'`) or `G.heroDeck` (`'hero'`).
-  - The card's first occurrence is removed and placed at index 0.
+  - The card's first occurrence is removed with `moveCardFromZone(deck, [], cardId)` and prepended (`[cardId,
+    ...deck]`).
   - Already at index 0, or absent: return silently.
   - Log: `Operator: ${cardRef} moved to the top of the ${'Villain' | 'Hero'} Deck.`
 - **Setter 3 — `operatorRevealNow({ cardType })`.**
   - Find the first index `i` in `G.villainDeck.deck` with `G.villainDeckCardTypes[deck[i]] === cardType`. None: return
     silently.
-  - Move that card to index 0, then `pushLog` `Operator: revealing ${cardRef} now.`
+  - Move that card to the top with the same remove-and-prepend idiom, then `pushLog` `Operator: revealing ${cardRef}
+    now.`
   - Then call `performVillainReveal(G, { random: context.random, ctx: { currentPlayer: ctx.currentPlayer, turn:
     ctx.turn } }, DEFAULT_IMPLEMENTATION_MAP)`.
   - `G.villainRevealedThisTurn` is not touched.
@@ -303,17 +326,21 @@ guessing, if:
   - **R2, a KO:** `{hand | deck | discard | inPlay | victory, p}` → `{ko}`, via `moveCardFromZone` into `G.ko`.
   - **R3, between player zones:** `{hand | deck | discard | inPlay | victory, p}` → `{hand | deck | discard | victory, q}`,
     where `p` and `q` may differ.
-    - A `deck` destination puts the card on **top** (index 0).
+    - A `deck` destination puts the card on **top**: `moveCardFromZone(source, [], cardId)`, then
+      `deck = [cardId, ...deck]`.
     - `hand` → `discard` with `p === q` goes through `discardFromHand(G, p, cardId)`.
     - `hand` → `discard` with `p !== q` returns silently.
-    - Every other pair uses `moveCardFromZone`. A same-zone, same-player pair returns silently.
+    - Every other pair uses `moveCardFromZone(source, destination, cardId)`. A same-zone, same-player pair returns
+      silently.
   - **R4, a hero into the HQ:** `{heroDeck}` → `{hq, hqIndex}`, with `hqIndex` an integer 0–4.
     - The card's first occurrence leaves `G.heroDeck`, and `G.hq[hqIndex] = cardId`.
     - If the space held a card, that card is pushed to the **end** (bottom) of `G.heroDeck`. Nothing refills.
   - `playerId` / `p` / `q` must be a key of `G.playerZones`.
   - Log: `Operator: ${cardRef} moved from ${fromLabel} to ${toLabel}.`
-    - Labels: `Player ${p}'s hand`, `deck`, `discard pile`, `play area`, `Victory Pile`; `the KO pile`; `the Hero Deck`;
-      `HQ space ${hqIndex + 1}`; `the ${PILE_LABEL} supply`.
+    - Player-zone labels, in full: `Player ${p}'s hand`, `Player ${p}'s deck`, `Player ${p}'s discard pile`,
+      `Player ${p}'s play area`, `Player ${p}'s Victory Pile`. A deck **destination** reads `the top of Player ${p}'s
+      deck`.
+    - Shared labels: `the KO pile`, `the Hero Deck`, `HQ space ${hqIndex + 1}`, `the ${PILE_LABEL} supply`.
     - R4 with a displaced card adds ` ${displacedRef} went to the bottom of the Hero Deck.`
 - **Setter 5 — `operatorAddEconomy({ resource, amount })`.**
   - `amount` must be an integer from 1 to `OPERATOR_ECONOMY_MAX_AMOUNT`.
@@ -332,6 +359,9 @@ guessing, if:
   - `OperatorView` gains the **optional** `readonly setAsideCounts?: OperatorSupplyCounts;`.
   - It is present only when `G.operatorSetAside` exists. Each count is that pile's array length, or 0.
   - It is omitted otherwise, so the WP-804 inline fixture still type-checks.
+  - It is built with a conditional spread **inside** the returned object literal, as `uiState.build.ts` L2414 does.
+    Assigning it afterwards won't compile: the fields are `readonly` and the project uses
+    `exactOptionalPropertyTypes`.
 - **Exports** (`index.ts`, the `.` surface):
   - types: `OperatorSupplyPile`, `OperatorDeckName`, `OperatorRevealCardType`, `OperatorEconomyResource`,
     `OperatorPlayerZoneName`, `OperatorZoneRef`, the six args types and `OperatorSetterMoveName`;
@@ -356,8 +386,12 @@ guessing, if:
 - `index.ts`: the §Locked exports.
 
 ### D) Tests (new)
-`moves/operatorSetters.test.ts` uses a state built with the engine's existing test builders and `makeMockCtx`, and
-calls each move with `playerID` set.
+`moves/operatorSetters.test.ts` uses the harness below.
+- `G` comes from `buildInitialGameState` with `isDebugMatch: true` (the `ui/operatorView.build.test.ts` L29–50
+  pattern), then `G.currentStage = 'main'`. Zones are seeded per case.
+- Each move is called with `makeMockMoveContext(G, { playerID: '0', numPlayers: 2 })`. That helper sets
+  `ctx.currentPlayer = playerID`, so the "not your turn" case overrides `ctx.currentPlayer` to `'1'`.
+- Every args-shape refusal includes `undefined` and `null` payloads.
 1. **Gate, for every setter.** Each refusal leaves `G` deep-equal to a pre-call `structuredClone`:
    - `isDebugMatch` absent;
    - `playerID !== ctx.currentPlayer`;
@@ -381,7 +415,15 @@ calls each move with `playerID` set.
    - R3: a deck destination lands on top; same-player hand → discard goes through `discardFromHand` (a return-on-discard
      card parks its pending return); cross-player hand → discard is refused.
    - R4 into an empty and an occupied space. The displaced card is at the end of `G.heroDeck`.
-   - Refused: an unlisted pair, an unknown player, a card not in the source, `hqIndex` 5.
+   - Refused:
+     - an `inPlay` destination;
+     - `{ko}` as a source;
+     - a `{supply}` destination;
+     - player id `'constructor'`;
+     - an unknown player;
+     - a card not in the source;
+     - `hqIndex` 5.
+   - Setter 1 round trip: a decrease, then an equal increase, restores the pile's original order.
 6. **Setter 5.** Attack and Recruit each add `amount`. 0, 21 and 1.5 are refused.
 7. **Setter 6.** A Villain in space 4 ends in `G.escapedPile`, `G.city[4]` is `null`, and the escape counter rises by
    one. Its attached Bystanders are carried away. An empty space 4 is refused.
@@ -390,7 +432,9 @@ calls each move with `playerID` set.
    same before and after.
 9. **No random.** Setters 1, 2, 4 and 5 run with a `random` whose every method throws, and don't throw.
 10. **Determinism.** The same `G` and args, run twice from two clones, give deep-equal results.
-11. **Every setter's log line starts with `Operator:`** (the newest `G.messages` entry without its prefix).
+11. **Logging.** The first entry each setter adds (`G.messages[lengthBefore]`, without its prefix) starts with
+    `Operator:`. For setters 1, 2, 4 and 5 it is the only entry added. For 3 and 6 the normal path's own lines follow
+    it.
 12. **Pins (runtime):**
     - `OPERATOR_SETTER_MOVE_NAMES` ⊆ `Object.keys(LegendaryGame.moves)`;
     - none of the six is in `SIMULATION_MOVE_NAMES` or `SIMULATION_RUNNER_MOVE_NAMES`;
@@ -402,6 +446,8 @@ counts after a decrease.
 ### E) Existing test — the one authorized change
 - `game.test.ts` move-registration pin: the array, the title, the count message (47 → 53) and one changelog line. The
   new moves force it. Commit 1's `Tests-changed:` trailer names it. No other existing assertion changes.
+- **01.5 runtime-wiring allowance: INVOKED** (`docs/ai/REFERENCE/01.5-runtime-wiring-allowance.md`). It covers the
+  `game.ts` registration and the new `G` field. §E is the only authorized change to an existing test.
 
 ### F) Docs (governance close, `SPEC:` commit)
 - `docs/ai/DECISIONS.md`: D-24713, from §D-24713 Content, marked Active.
@@ -436,6 +482,8 @@ and the hero-deck / HQ question).
    - Setter 2 also reorders the hero deck.
    - Setter 4 may place a hero-deck card in an HQ space. The card it displaces goes to the bottom of the hero deck, as
      "put a Hero on the bottom of the Hero Deck" cards do. Nothing refills.
+   - `G.hqHaunters` stays aligned with the space, so a placed hero in a haunted space is haunted, consistent with
+     D-24587.
 5. **The set-aside zone** is `G.operatorSetAside?: { wounds?, bystanders?, officers?, sidekicks? }` (`CardExtId[]`
    each).
    - It is written only by `operatorSetSupplyCount` and omitted until its first decrease, so normal matches and every
@@ -468,6 +516,11 @@ and the hero-deck / HQ question).
   relying on a rescue trigger uses a real rescue.
 - **Setters can end the game.** They inherit `turn.onMove` and `endIf` (§Context). An operator who empties the hero
   deck gets a final turn.
+- **A mid-turn reveal isn't a start-of-turn reveal.** Some handlers assume the reveal happens at turn start. Magneto's
+  Master Strike checks the hand only, because "inPlay is empty" then (`rules/mastermindHandlers.ts` L201–206). A
+  `main`-stage reveal also sets `masterStrikePlayedThisTurn` partway through the turn. That's the real handler on an
+  unusual timing. A live-verify that depends on such a handler should put the card on top (setter 2) and let the next
+  turn's normal reveal take it.
 - **The determinism-only replay** (`replay/replay.execute.ts`) skips unknown moves with a warning (L216–222). An
   operator match never goes through it. Score verification of an operator match is refused anyway (`debug_match`,
   D-24689 §3), and the D-24119 replay runs the real reducer.
@@ -498,6 +551,8 @@ and the hero-deck / HQ question).
 - `packages/game-engine/src/ui/operatorView.build.ts` — **modified** — builds it
 - `packages/game-engine/src/ui/operatorView.build.test.ts` — **modified** — two cases
 - `packages/game-engine/src/index.ts` — **modified** — the §Locked exports
+- `docs/ai/post-mortems/01.6-WP-806-operator-setters.md` — **new** — mandatory 01.6 post-mortem, written before the
+  `EC-843:` commit and committed in it (the WP-803 precedent)
 - `docs/ai/DECISIONS.md`, `wiki/why-play-needs-a-debug-panel.md`, `docs/ai/STATUS.md`,
   `docs/ai/work-packets/WORK_INDEX.md`, `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` —
   **modified** — governance close
@@ -528,7 +583,8 @@ yet, in two packets instead of one.
    displaced card to the hero-deck bottom.
 6. Setter 5 adds 1–20 to the chosen resource only. Setter 6 escapes the space-4 Villain through
    `resolveVillainEscape`, with space 4 cleared.
-7. The card multiset is unchanged by setters 1, 2 and 4 (§D case 8), and every setter logs a line starting "Operator:".
+7. The card multiset is unchanged by setters 1, 2 and 4 (§D case 8). Every setter's first added log entry starts with
+   "Operator:" (§D case 11).
 8. No setter name appears in `SIMULATION_MOVE_NAMES`, either `MOVE_MAP`, `getLegalMoves`, `replay.execute.ts` or
    `runFixture.ts`. The sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged.
 9. A built `OperatorView` has no `setAsideCounts` key until a decrease, then exact counts.
@@ -572,7 +628,9 @@ every setter in production, and its live record covers this packet too (cited in
 - [ ] `docs/ai/DECISIONS.md`: D-24713 landed Active from §D-24713 Content.
 - [ ] STATUS, WORK_INDEX (`[x]` with date), EC_INDEX, the mindmap (✅, counts regenerated) and the ewiki page's §Build
       status / Open Question 7 are updated.
-- [ ] 01.6 post-mortem evaluated. The new contract file and new `G` field trigger it: write it or record why not.
+- [ ] 01.6 post-mortem written (`docs/ai/post-mortems/01.6-WP-806-operator-setters.md`, per
+      `docs/ai/REFERENCE/01.6-post-mortem-checklist.md`). It is **mandatory**: a new contract that WP-807 consumes, plus
+      new runtime wiring. It is a STOP gate before the `EC-843:` commit.
 - [ ] Two commits in one PR: `EC-843:` (code + tests) and `SPEC:` (governance close). Neither subject contains a
       commit-msg Rule 1 token.
 - [ ] D-24026 live verification: deferred to WP-807 by design. WORK_INDEX says "live-verify via WP-807".
