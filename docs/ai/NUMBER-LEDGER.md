@@ -449,6 +449,7 @@ high-water: 422
 - WP-808 — lagn-tier3-execution-block (Shared Tooling / lagn-spec; LAGN 1.7.0 adds an optional, engine-bound `replay.execution` block — seed, seat order, ordered engine moves, version anchors, expected final-state hash — so a completed match can be re-executed through the D-24119 faithful reducer; contract only, the server producer is a follow-on. reserved 2026-10-13, spec/reserve-lagn-tier3-execution)
 - WP-809 — match-seed-entropy (Server; the bgio match seed is minted from crypto.randomBytes instead of boardgame.io's Date.now() default, which equals the public createdAt metadata to the millisecond, so a live match's deck order was recoverable from the lobby API; one hardened processed-game object wired into Server() and the three bot/autoplay ProcessGameConfig sites. reserved 2026-10-13, spec/reserve-match-seed-entropy)
 - WP-810 — replay-lagn-producer (Server + lagn-spec writer flip; GET /api/match/:matchId/replay-lagn emits a completed, non-operator match as a LAGN 1.7.0 document carrying the WP-808 replay.execution block, verified by re-executing it from the seed before emit; new D-24095 blob-read carve-out; LAGN_VERSION 1.6.0 -> 1.7.0. BLOCKED on WP-808. reserved 2026-10-13, spec/reserve-replay-lagn)
+- WP-811 — lagn-reaped-match-fallback (Server; GET /api/match/:matchId/lagn and /result-lagn fall back to the durable bgio.replay_artifacts copy once the reaper deletes the live bgio.matches row ~1h after gameover, so a finished match stays viewable and downloadable; capture persists the gameover verdict on the artifact. reserved 2026-10-14, spec/reserve-lagn-reaped-fallback)
 
 ## EC
 
@@ -859,6 +860,7 @@ high-water: 457
 - EC-845 — lagn-tier3-execution-block (WP-808. reserved 2026-10-13, spec/reserve-lagn-tier3-execution)
 - EC-846 — match-seed-entropy (WP-809. reserved 2026-10-13, spec/reserve-match-seed-entropy)
 - EC-847 — replay-lagn-producer (WP-810. reserved 2026-10-13, spec/reserve-replay-lagn)
+- EC-848 — lagn-reaped-match-fallback (WP-811. reserved 2026-10-14, spec/reserve-lagn-reaped-fallback)
 
 ## D
 
@@ -1353,3 +1355,4 @@ section below) and the allocation protocol in
 - D-24714 — lagn-tier3-execution-block (WP-808; the LAGN replay tier gains an opt-in engine-bound re-execution block, a scoped exception to the declarative-LAGN principle; descriptive and non-authoritative for scoring. reserved 2026-10-13, spec/reserve-lagn-tier3-execution)
 - D-24715 — match-seed-entropy (WP-809; server-minted high-entropy match seed via a seed getter on the processed LegendaryGame; engine, boardgame.io lock, and replay-from-persisted-initialState unchanged; corrects DESIGN-SEED-CHALLENGES §7(a) — plugin setup never sees setupData, and setupData is public metadata. reserved 2026-10-13, spec/reserve-match-seed-entropy)
 - D-24716 — replay-lagn-producer (WP-810; D-24095 carve-out for the replay-LAGN export read of initialState seed + log; verify-before-emit; amends the D-24714 data_version producer clause. reserved 2026-10-13, spec/reserve-replay-lagn)
+- D-24719 — lagn-reaped-match-fallback (WP-811; widens the D-24153 / D-24169 carve-outs to the durable bgio.replay_artifacts copy when the live row is reaped; adds the capture-time gameover column. reserved 2026-10-14, spec/reserve-lagn-reaped-fallback)
