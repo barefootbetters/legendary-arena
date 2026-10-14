@@ -1,9 +1,10 @@
 /**
  * Drift + behavior tests for the client Wound identity (WP-380).
  *
- * The drift test imports the engine `WOUND_EXT_ID` (a test-only engine import is
- * permitted — components may not) and asserts the client-local constant matches,
- * so the mirrored literal can never drift from the engine.
+ * The drift test imports the engine `WOUND_EXT_ID` from the Runtime-Safe `.`
+ * surface (the arena-client may import that surface, never `/setup`, D-14401)
+ * and asserts the client-local constant matches, so the mirrored literal can
+ * never drift from the engine.
  *
  * Uses node:test and node:assert only.
  */
