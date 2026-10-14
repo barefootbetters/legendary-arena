@@ -7,6 +7,15 @@
 
 ## Current State
 
+### WP-806 / EC-843 — Operator setters (2026-10-13)
+
+**No user-observable change — infrastructure only; live-verify via WP-807.** The engine now has six operator-match-only moves that set up a board through the real paths: set a Wound, Bystander, S.H.I.E.L.D. Officer or Sidekick supply to a count (the difference waits in a set-aside zone no rule reads); move a villain-deck or hero-deck card to the top; reveal the next Scheme Twist or Master Strike now; move a card over a closed route table (gain from a supply, KO, between player zones, a hero into an HQ space with the displaced card to the hero-deck bottom); add 1–20 Recruit or Attack this turn; and force the escape-edge Villain to escape. Each runs only in an operator match, on the operator's own turn, in `main`, with no choice open, and writes an "Operator:" log line. Nothing can submit them until WP-807's Tweakpane pane ships.
+
+- **Engine only.** New contract `moves/operatorSetters.types.ts`; omit-when-off `G.operatorSetAside`; optional `OperatorView.setAsideCounts`. Moves 47 → 53. No server, client, UIState, registry or persistence change. Bots, simulation, PAR and fixtures never dispatch the setters (D-24713 §7).
+- **Determinism.** Setters 1, 2, 4 and 5 never read `random`; the reveal and escape setters hand it to the normal paths. The sentinel `finalStateHash` and `PRE_WP080_HASH` are unchanged (no re-pin).
+- **Tests.** game-engine 5153 → 5254 (101 new), every package 0 fail; the only existing-test edit is the `game.test.ts` move pin. Revert proofs 17/17. 01.6 post-mortem `docs/ai/post-mortems/01.6-WP-806-operator-setters.md`.
+- **Live-verify (D-24026):** via WP-807 §Verification, which exercises every setter in production after both deploy.
+
 ### WP-804 / EC-841 — Operator panel on the play surface (2026-10-12)
 
 **Admin-only on `play.legendary-arena.com` (after deploy); the badge and the unscored end line show to every seat.** An admin ticks "Operator match (admin, not scored)" in the lobby's bot-ally section and lands on the play mat in an operator match through the normal join flow. A board panel beside the mat shows every seat's zones, the villain, hero and Mastermind-tactics decks top-first, the supplies and piles, the engine counters, the last 10 effect traces and the bot's decisions newest first, refreshed every 3 s while open. Two buttons save the board snapshot and the play surface's UIState as JSON. Every seat sees "Operator match — not scored", and at game over the client sends no score and says "Operator match — not scored."
