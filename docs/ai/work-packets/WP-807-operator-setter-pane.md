@@ -483,7 +483,7 @@ Record the matchId in STATUS, citing WP-806 and WP-807.
       `docs/ai/REFERENCE/01.6-post-mortem-checklist.md`). It is **mandatory**: a new runtime dependency and new runtime
       wiring (a lazy chunk plus a move-dispatch path). It is a STOP gate before the `EC-844:` commit, and it is committed
       in that commit.
-- [ ] Two commits in one PR: `EC-844:` (code + tests + dependency) and `SPEC:` (governance close). Neither subject
+- [ ] Two commits in one PR: `EC-844:` (code + tests + dependency + post-mortem) and `SPEC:` (governance close). Neither subject
       contains a commit-msg Rule 1 token.
 - [ ] D-24026 live verification after deploy (§Verification Steps 1–9), recorded as a STATUS flip for WP-806 and WP-807.
 
@@ -515,7 +515,24 @@ No endpoint is added or changed. Moves travel over the existing boardgame.io soc
 
 ## Lint Gate Self-Review (00.3)
 
-Pending: the gate runs as an independent subagent after pre-flight and copilot.
+All 21 sections are satisfied or N/A. The gate ran as an independent subagent: FAIL, then PASS.
+- **First pass, one FAIL:** §14. AC 3 claimed every button submits its locked intent, but §D tested only six of the
+  nine. Fixed: all nine are tested, with exact args, and swap revert proofs were added.
+- **Advisories applied:**
+  - A-1: the empty-options fallback in the EC;
+  - A-2: the locked source and destination label maps;
+  - A-3: the mandatory 01.6 post-mortem;
+  - the §22 Vision title.
+- **N/A:**
+  - §10: no env vars;
+  - §11: no auth change; the presentation-only enable rule is a stated Limitation;
+  - §19: commit-time rule;
+  - §20: no commerce, tier, nav, profile or donate surface;
+  - §21: no endpoint; moves travel over the existing socket.
+- **§7:** `tweakpane` ^4.0.5 and `@tweakpane/core` 2.0.5 (`-E`), with exact commands and the full `package.json` as
+  output.
+- **Out of scope:** three comments still call `bgioClient.ts` the "sole runtime engine-import site", which is stale:
+  `App.vue` L449–451, `woundIdentity.ts` L4–5 and `ConnectionStatusBanner.vue` L22. That's a separate `INFRA:` fix.
 
 ## Gate Verdicts
 
@@ -548,4 +565,4 @@ Pending: the gate runs as an independent subagent after pre-flight and copilot.
   - F9: the `playerId: ''` case.
   The delta re-check was PASS. Its leftovers R1–R3 (the §Assumes export list, the empty-options fallback, the
   label-to-input lookup) are applied.
-- **Lint (00.3):** pending.
+- **Lint (00.3): PASS**, after one FAIL round (§14). See §Lint Gate Self-Review.

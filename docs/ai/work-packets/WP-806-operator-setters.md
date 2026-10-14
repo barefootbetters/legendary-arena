@@ -693,7 +693,26 @@ No endpoint is added or changed, so D-11804 doesn't trigger. The moves travel ov
 
 ## Lint Gate Self-Review (00.3)
 
-Pending: the gate runs as an independent subagent after pre-flight and copilot.
+All 21 sections are satisfied or N/A. The gate ran as an independent subagent: FAIL, then PASS.
+- **First pass, two FAILs:**
+  - §15.1: the DoD lacked the infrastructure-only STATUS line;
+  - the EC Locked Values weren't verbatim.
+  Both are fixed.
+- **Advisories applied:**
+  - the `replay.execute.ts` L134 anchor;
+  - the AC 4 wording for setter 3's randomness;
+  - the Vision §22 title;
+  - `recruitOfficer` as the sole stage precedent.
+- **N/A:**
+  - §7: no new dependency;
+  - §10: no env vars;
+  - §11: no identity-model change;
+  - §19: commit-time rule;
+  - §20: no commerce, tier, nav, profile or donate surface;
+  - §21: no HTTP endpoint and no `apps/server/src/**` function. The moves travel over the existing socket, and
+    `clientActionGuard` has no name allowlist.
+- **§18:** the only grep, over sim, replay and fixture dispatch for the six names, returns 0 hits at HEAD and has no
+  self-trip path.
 
 ## Gate Verdicts
 
@@ -727,4 +746,4 @@ Pending: the gate runs as an independent subagent after pre-flight and copilot.
   - F9: EC/WP parity for exports, R1, setter 2 and setter 6.
   The delta re-check was PASS. Its notes N1 (the fungible top-id refusal) and N2 (count map values; `tacticsDefeated`)
   are applied.
-- **Lint (00.3):** pending.
+- **Lint (00.3): PASS**, after one FAIL round (§15.1 and the EC's verbatim values). See §Lint Gate Self-Review.
