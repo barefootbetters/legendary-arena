@@ -85,6 +85,7 @@ import { registerOperatorMatchRoutes } from './operator/operatorMatch.routes.js'
 import { registerAddGuestRoutes } from './match/addGuestRoutes.mjs';
 import { registerGuestAccessRoutes } from './match/guestAccessRoutes.mjs';
 import { registerGuestSoloRoutes } from './match/guestSoloRoutes.mjs';
+import { resolveListenHost, buildLoopbackOrigin, bindListenToHost } from './listenHost.mjs';
 import { requireAuthenticatedSession } from './auth/sessionToken.logic.js';
 import { requireUnsuspendedAccount } from './auth/requireUnsuspendedAccount.js';
 import { createHankoSessionVerifier } from './auth/hanko/hankoVerifier.logic.js';
@@ -907,7 +908,12 @@ export async function startServer() {
   // why: "Watch Bot Play" feature — server-side autoplay loop using
   // engine AI policies. No game logic here; the autoplay module dispatches
   // moves through boardgame.io's Master class using existing policies.
-  const autoplayServerUrl = `http://localhost:${process.env.PORT ?? '8000'}`;
+  // why: with LISTEN_HOST set (the droplet binds 127.0.0.1), the loopback
+  // calls target that address; `localhost` may resolve to ::1 and be refused.
+  const autoplayServerUrl = buildLoopbackOrigin(
+    resolveListenHost(process.env),
+    process.env.PORT ?? '8000',
+  );
   registerAutoplayRoutes(server.router, {
     db: server.db,
     transport: server.transport,
@@ -1741,10 +1747,16 @@ export async function startServer() {
   // Render will override it anyway and double-setting causes confusion.
   const port = process.env.PORT ?? '8000';
 
+  // why: LISTEN_HOST=127.0.0.1 on the droplet keeps :3000 loopback-only, so
+  // a disabled UFW cannot expose a listener that trusts cf-connecting-ip.
+  // Unset (Render, local dev) listens on every interface, as before.
+  const listenHost = resolveListenHost(process.env);
+  bindListenToHost(server.app, listenHost);
+
   const { appServer } = await server.run({ port: Number(port) });
 
   console.log(
-    `[server] listening on port ${port} ` +
+    `[server] listening on ${listenHost ?? 'all interfaces'} port ${port} ` +
     `(${rulesCount} rules loaded, NODE_ENV=${process.env.NODE_ENV ?? 'development'})`
   );
 
