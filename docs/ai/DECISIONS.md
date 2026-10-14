@@ -48026,7 +48026,8 @@ seat names all died. Prod evidence (2026-10-14, gitSha `44724482`): guest autopl
    ship the server fix, serve the outcome-less result, and fix the label in a follow-up. The follow-up is WP-812 / EC-849 /
    D-24720 (reserved #2787), which makes the envelope say why `result` is absent so the board shows "Outcome not recorded".
    The alternative, `404` for an unknown verdict, was rejected: legacy matches would lose their view and the route mapping
-   would change.
+   would change. **Follow-up done 2026-10-14 (WP-812 / D-24720):** the board says "Outcome not recorded" for an unknown
+   outcome, "Ended early" for an early end, and "Draw" only for a tie.
 8. **Rejected alternatives.** Re-executing the artifact on every `/result-lagn` GET (a full reduction on a guest path
    blocks the event loop for live sockets); re-executing on read for legacy rows only (the same cost on the same path); a
    one-time operator backfill script (a manual prod write; the sweep needs no operator step and is idempotent); a longer
@@ -48045,6 +48046,53 @@ fresh guest autoplay match checked at least 80 minutes after game over; the lege
 
 **Reserved by:** NUMBER-LEDGER D-24719 (#2785). Related: D-24095, D-24113, D-24119, D-24122, D-24124, D-24153, D-24169,
 D-24187, D-24214, D-24216, D-24223, D-24716, D-24717, D-24718, D-24720, D-11804, D-24026.
+
+---
+
+### D-24720 — The `/result-lagn` envelope names why `result` is omitted; the Hall of Legends says "Draw" only for a tie (Active 2026-10-14 — WP-812 / EC-849)
+
+**Problem.** LAGN has no tie outcome, so `toLagnResult` omits the optional `result` block for every non-decisive verdict,
+and legends-board `formatOutcome` (written for the D-24159 deck-exhaustion tie) labelled every outcome-less match "Draw".
+That was already wrong for a match the players ended early: `evaluateEndgame` stores it as `{ outcome: 'tie', endedEarly:
+true }` (D-24306), and the arena-client calls it "Match ended early". WP-811 (D-24719 §7) added a third case, a finished
+match whose verdict is unknown (`VERDICT_NOT_RECORDED` for an unswept legacy artifact, or a stored `{}` for a hash
+mismatch), which would also read "Draw" and may be false.
+
+1. **Envelope field.** The `/result-lagn` 200 body gains the optional `resultOmittedReason: 'tie' | 'ended-early' |
+   'unknown'` beside `lagn`, never inside it. It is present exactly when `lagn.result` is omitted, so a decisive match's
+   body stays `{ lagn }`. Errors, auth (`guest`), `Cache-Control` and `lagn_version` are unchanged.
+2. **Server mapping.** `toResultOmittedReason(gameover)` calls `toLagnResult` (decisive → `undefined`), then
+   `endedEarly === true` → `'ended-early'`, then `outcome === 'tie'` → `'tie'`, else `'unknown'`. `endedEarly` wins over the
+   `'tie'` string; a decisive verdict wins over the flag. It maps the stored verdict the route already holds: no new
+   query, no carve-out, no engine import in production code. `StoredGameover` gains `endedEarly?`.
+3. **Client rule.** `formatOutcome(result, resultOmittedReason)` (second parameter required): Victory / Defeat from a
+   decisive `result`; "Draw" only for `'tie'`; "Ended early" only for `'ended-early'`; "Outcome not recorded" for
+   `'unknown'`, a missing reason, or any reason the client does not recognize. The default is the honest one, so either
+   deploy order is safe: an old client ignores the field; a new client against an old server shows "Outcome not recorded"
+   for a tie or an early end (less specific, never false).
+4. **D-24217 widened.** The Hall of Legends match view now reads one non-identity field beside `lagn`. The identity
+   boundary D-24217 protects is unchanged: the view still reads only the public handles WP-406 emits.
+5. **The download is unchanged.** WP-408 saves `body.lagn` only, so a downloaded document without `result` stays
+   ambiguous between a tie, an early end and an unknown outcome, as before. That is an omission, not a false claim.
+6. **Rejected alternatives.** A LAGN `draw` outcome or `result_status` field (a 1.8.0 bump, since WP-808 / WP-810 claim
+   1.7.0, plus a version gate, a `lagn-v1.json` regen, a writer flip shared with the loadout emitter and the public
+   snapshot — revisit when a LAGN consumer outside the Hall of Legends needs the distinction); a client-only "Outcome not
+   recorded" for every outcome-less match (a real tie loses "Draw"); keeping "Draw" (can be false); `404` for an unknown
+   verdict (rejected in D-24719); folding an early end into `'unknown'` (the outcome is known); an always-present status
+   field (duplicates `result.outcome` and changes every decisive body).
+7. **Evidence.** server 1790 → 1797 / 0 fail / 207 skipped (logic +5, route +2, two route tests strengthened, including
+   WP-811's no-seam legacy-artifact test, which now asserts `'unknown'` through the real `VERDICT_NOT_RECORDED` path);
+   legends-board 135 → 138 / 0 fail; legends-board typecheck 0. The tie and ended-early logic tests build their verdicts
+   with the engine's own `evaluateEndgame`. Twelve mutants, each killed (fail counts 3 / 4 / 3 / 4 / 1 / 2 / 1 / 1 / 2 /
+   1 / 1 / 1, in WP-812 AC 7 order).
+
+**Live-verify (D-24026): pending.** After both deploys (server `GET /version` gitSha = the merge commit, and the
+legends-board Pages build): a decisive match's body keys are exactly `["lagn"]`; an unknown-outcome artifact returns
+`"unknown"` and the board shows "Outcome not recorded"; a non-early tie, if one exists, returns `"tie"` and shows "Draw";
+a fresh guest match ended with "End Game" returns `"ended-early"` and shows "Ended early". Prod SQL goes to Jeff.
+
+**Reserved by:** NUMBER-LEDGER D-24720 (#2787). Related: D-24159, D-24306, D-24216, D-24217, D-24218, D-24719, D-11804,
+D-24026.
 
 ---
 
