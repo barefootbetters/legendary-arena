@@ -315,3 +315,98 @@ describe('OperatorBoardPanel (WP-804)', () => {
     assert.deepEqual(JSON.parse(await blobs[1]!.text()), JSON.parse(JSON.stringify(fixtureSnapshot)));
   });
 });
+
+/**
+ * A board fixture the Setters pane can render: `buildBoardFixture()` plus
+ * `board.game.activePlayerId` and five City spaces (WP-807). The original
+ * helper stays untouched, because the pane reads `board.game`.
+ *
+ * @param withSetAsideCounts Whether the view carries `setAsideCounts`.
+ * @returns A full operator board response.
+ */
+function buildSetterBoardFixture(withSetAsideCounts: boolean = false): OperatorBoardResponse {
+  const response = buildBoardFixture();
+  const board = {
+    ...(response.operatorView.board as unknown as Record<string, unknown>),
+    game: { activePlayerId: '0' },
+    city: { spaces: [null, null, null, null, null] },
+  } as unknown as UIState;
+  const setAside = withSetAsideCounts ? { setAsideCounts: { wounds: 30, bystanders: 2, officers: 0, sidekicks: 1 } } : {};
+  return { ...response, operatorView: { ...response.operatorView, board, ...setAside } };
+}
+
+/**
+ * Stub fetch so every board request answers 200 with the setter fixture.
+ *
+ * @param withSetAsideCounts Whether the view carries `setAsideCounts`.
+ * @returns A counter of board requests.
+ */
+function stubSetterBoard(withSetAsideCounts: boolean = false): () => number {
+  let requestCount = 0;
+  globalThis.fetch = (async () => {
+    requestCount += 1;
+    return { ok: true, status: 200, json: async () => buildSetterBoardFixture(withSetAsideCounts) } as unknown as Response;
+  }) as typeof globalThis.fetch;
+  return () => requestCount;
+}
+
+/**
+ * Mount the panel with the given props and let the poll and the lazy pane settle.
+ *
+ * @param props The panel props.
+ * @returns The mounted wrapper.
+ */
+async function mountSetterPanel(props: Record<string, unknown>) {
+  const wrapper = mount(OperatorBoardPanel, { props: { matchId: 'op-match-1', ...props }, attachTo: document.body });
+  for (let i = 0; i < 5; i += 1) {
+    await flushPromises();
+  }
+  return wrapper;
+}
+
+describe('OperatorBoardPanel Setters pane (WP-807)', () => {
+  const noopSubmitMove = (): void => {};
+
+  test('no Setters pane without submitMove', async () => {
+    stubSetterBoard();
+    const wrapper = await mountSetterPanel({ playerId: '0' });
+    assert.equal(wrapper.find('[data-testid="operator-engine"]').exists(), true, 'the board rendered');
+    assert.equal(wrapper.find('[data-testid="operator-setters"]').exists(), false);
+  });
+
+  test('no Setters pane with submitMove but an empty playerId', async () => {
+    stubSetterBoard();
+    const wrapper = await mountSetterPanel({ submitMove: noopSubmitMove, playerId: '' });
+    assert.equal(wrapper.find('[data-testid="operator-engine"]').exists(), true, 'the board rendered');
+    assert.equal(wrapper.find('[data-testid="operator-setters"]').exists(), false);
+  });
+
+  test('with submitMove and playerId the Setters pane renders', async () => {
+    stubSetterBoard();
+    const wrapper = await mountSetterPanel({ submitMove: noopSubmitMove, playerId: '0' });
+    assert.equal(wrapper.find('[data-testid="operator-setters"]').exists(), true);
+  });
+
+  test('a submitted event fetches the board at once', async () => {
+    const requestCount = stubSetterBoard();
+    const wrapper = await mountSetterPanel({ submitMove: noopSubmitMove, playerId: '0' });
+    assert.equal(requestCount(), 1);
+    wrapper.findComponent({ name: 'OperatorSetterPane' }).vm.$emit('submitted');
+    await flushPromises();
+    assert.equal(requestCount(), 2);
+  });
+
+  test('the set-aside line renders only when setAsideCounts is present', async () => {
+    stubSetterBoard(false);
+    const withoutSetAside = await mountSetterPanel({});
+    assert.equal(withoutSetAside.find('[data-testid="operator-set-aside"]').exists(), false);
+    withoutSetAside.unmount();
+
+    stubSetterBoard(true);
+    const withSetAside = await mountSetterPanel({});
+    assert.equal(
+      withSetAside.find('[data-testid="operator-set-aside"]').text().replace(/\s+/g, ' '),
+      'Set aside — Wounds 30, Bystanders 2, Officers 0, Sidekicks 1',
+    );
+  });
+});

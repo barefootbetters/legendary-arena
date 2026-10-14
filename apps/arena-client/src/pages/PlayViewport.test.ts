@@ -245,6 +245,20 @@ describe('PlayViewport operator match (WP-804)', () => {
     wrapper.unmount();
   });
 
+  test('WP-807: the mounted panel receives the viewer playerId and submitMove', async () => {
+    setActivePinia(createPinia());
+    installMatchMedia(false);
+    useAuthStore().setSession('admin-token', null);
+    stubOperatorFetch(200);
+    setSnapshot(true);
+    const wrapper = mount(PlayViewport, { props: { submitMove: noopSubmitMove, matchId: 'op-1', playerId: '0' } });
+    await settle();
+    const panelProps = wrapper.findComponent({ name: 'OperatorBoardPanel' }).props();
+    assert.equal(panelProps.playerId, '0');
+    assert.equal(panelProps.submitMove, noopSubmitMove);
+    wrapper.unmount();
+  });
+
   test('the panel is absent in a normal match, even for an admin', async () => {
     setActivePinia(createPinia());
     installMatchMedia(false);

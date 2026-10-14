@@ -7,6 +7,15 @@
 
 ## Current State
 
+### WP-807 / EC-844 — Operator setter pane (2026-10-13)
+
+**Admin-only on `play.legendary-arena.com` (after deploy), in an operator match; every seat sees each setter's "Operator:" log line.** The WP-804 operator panel gains a **Setters** pane, built with Tweakpane, whose six folders submit WP-806's six setters: Supply (set a pile to a count), Villain deck (a card to the top; reveal a Scheme Twist or Master Strike now), Hero deck (a card to the top or into HQ space 1–5), Move a card (any player's zone or a supply to a hand, deck top, discard pile, Victory Pile or the KO pile), Turn economy (add 1–20 Attack or Recruit) and Escape. Buttons are enabled only on the admin's own turn in `main`, and the board refreshes right after each submit. The piles section shows a "Set aside —" line once a supply has been lowered.
+
+- **Arena-client only.** New dependencies `tweakpane` ^4.0.5 and the types-only `@tweakpane/core` 2.0.5. No engine, server, UIState or persistence change; the rulings are D-24689 §6 and D-24713, and no DECISIONS entry was needed.
+- **Cost to normal play: none.** Tweakpane ships only in the lazy `OperatorSetterPane-*.js` chunk, which the lazy operator panel loads. It's in neither the entry bundle nor the panel chunk.
+- **Tests.** arena-client 2351 → 2377 (26 new), 0 fail; typecheck 0; `pnpm -r --no-bail test` 0 fail in every package. Existing tests: additions only. Revert proofs 13/13. 01.6 post-mortem `docs/ai/post-mortems/01.6-WP-807-operator-setter-pane.md`.
+- **Live-verify (D-24026): pending.** After deploy, as `jefferyjjensen` in a fresh 2p operator match, run WP-807 §Verification steps 1–9 (they exercise every WP-806 setter too) and record the matchId here for both WP-806 and WP-807.
+
 ### WP-806 / EC-843 — Operator setters (2026-10-13)
 
 **No user-observable change — infrastructure only; live-verify via WP-807.** The engine now has six operator-match-only moves that set up a board through the real paths: set a Wound, Bystander, S.H.I.E.L.D. Officer or Sidekick supply to a count (the difference waits in a set-aside zone no rule reads); move a villain-deck or hero-deck card to the top; reveal the next Scheme Twist or Master Strike now; move a card over a closed route table (gain from a supply, KO, between player zones, a hero into an HQ space with the displaced card to the hero-deck bottom); add 1–20 Recruit or Attack this turn; and force the escape-edge Villain to escape. Each runs only in an operator match, on the operator's own turn, in `main`, with no choice open, and writes an "Operator:" log line. Nothing can submit them until WP-807's Tweakpane pane ships.
