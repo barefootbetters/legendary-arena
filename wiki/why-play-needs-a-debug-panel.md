@@ -21,6 +21,8 @@ related:
   - lagn-v1.md
   - wounds.md
   - testing.md
+  - par-simulation-calibration.md
+  - sound-effects.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\why-play-needs-a-debug-panel.md (this page — https://ewiki.legendary-arena.com/why-play-needs-a-debug-panel/)
@@ -45,7 +47,12 @@ source:
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/ai/DECISIONS.md
   - ../.claude/rules/architecture.md
-last-reviewed: 2026-10-11
+  - ../docs/ai/work-packets/WP-802-operator-board-inspection.md
+  - ../docs/ai/work-packets/WP-804-operator-panel-client.md
+  - ../packages/game-engine/src/ui/operatorView.build.ts
+  - ../apps/server/src/operator/operatorMatch.routes.ts
+  - ../apps/arena-client/src/pages/PlayViewport.vue
+last-reviewed: 2026-10-13
 ---
 
 ## Summary
@@ -57,21 +64,34 @@ operator-only debug panel on play that shows every zone, can set up an edge
 case directly, and shows what the bot weighed. It's modelled on the
 [Herbs vs. Ailments debug panel design](https://ewiki.herbs-vs-ailments.com/design/herbs-vs-ailments-debug-panel/)
 and adapted to a turn-based, hidden-information, server-authoritative game.
-It's a proposal. A WP and a DECISIONS entry would own any build.
-
-**Build status (2026-10-11):** WP-802 / D-24689 builds the server and engine
-half: an admin creates an unlisted, never-scored **operator match**
-(`isDebugMatch`), and reads its whole board, Wounds by zone and the bot's
-recent decisions from `GET /api/admin/operator-match/:matchId/board`. The
-arena-client panel, the setters and jump to turn N are planned follow-ons.
-D-24689 answers the six Open Questions below.
+It started as a proposal. D-24689 turned it into a four-step arc. The first
+step is shipped, and the second is written and waiting to merge. See
+[Build status](#build-status).
 
 ## Mechanics
 
+### Build status
+
+As of 2026-10-13, checked against `main` (`d96296ba`):
+
+| Step | What | Status |
+|---|---|---|
+| WP-802 / EC-839 / D-24689 | Operator match: only an admin can create it, it's unlisted and never scored, and an admin HTTP route reads the whole board, Wounds by zone and the bot's recent decisions | **Done 2026-10-11. Live-verified in production** on operator match `3pNYCKHKJCE` (all eight WP-802 live steps) |
+| D-24697 | The bot decisions use the turn number the board and game log show | Done (#2728) |
+| WP-804 / EC-841 | The operator panel on play: an admin-only "Operator match" checkbox in the lobby's bot-ally section, a read-only reveal-all board panel, a "not scored" badge every seat sees, no score submit at game over, and two downloads (operator snapshot, UIState fixture) | **Executed, waiting to merge**: [PR #2735](https://github.com/barefootbetters/legendary-arena/pull/2735), CI green. WORK_INDEX still reads Draft until it merges. No new dependency, no Tweakpane |
+| Follow-on 2 (no WP yet) | **The setters**, mounted in a **Tweakpane** control pane inside the WP-804 panel, plus the set-aside zone | Designed in D-24689 §6–§7. That packet adds the Tweakpane dependency |
+| Follow-on 3 (no WP yet) | Jump to turn N of any match: a read-only board rebuilt by replay, labelled "played on build X, replayed on build Y" | Designed in D-24689 §8. Needs its own DECISIONS carve-out |
+
+Before WP-804 merges, an operator match can only be created with
+`Invoke-RestMethod` and a pasted admin token, and the board comes back as raw
+JSON. Tweakpane doesn't exist anywhere in the repo yet.
+
 ### What exists today (verified against code, 2026-10-11)
 
-Each of these tools works. None of them can show a live board's hidden
-zones, set a board up, or explain a bot choice.
+Each of these tools works. Before WP-802, none of them could show a live
+board's hidden zones, set a board up, or explain a bot choice. The last
+bullet, the operator match, now covers the first and third of those for an
+admin. Setting a board up is still missing.
 
 - **Play Diagnostics export** ([Play Diagnostics](play-diagnostics.md)).
   The play surface has three export controls, at the bottom left of the
@@ -127,6 +147,17 @@ zones, set a board up, or explain a bot choice.
   can step back. The rewind is visual only, never persisted, and available
   only in autoplay matches. It's the nearest thing to a turn scrubber in the
   repo today.
+- **The operator match (WP-802, added 2026-10-11).** An admin creates an
+  unlisted, never-scored bot-ally match through
+  `POST /api/admin/operator-match/create-with-bot`. `Game.setup()` writes
+  `G.isDebugMatch = true` for it. `GET /api/admin/operator-match/:matchId/board`
+  ([`operatorMatch.routes.ts`](../apps/server/src/operator/operatorMatch.routes.ts))
+  returns the engine's reveal-all projection
+  ([`operatorView.build.ts`](../packages/game-engine/src/ui/operatorView.build.ts)):
+  every seat's zones, deck order, Wounds by zone, supply counts and counters.
+  It also returns the bot's recent decisions, held in server memory. It refuses
+  any match that isn't an operator match (409). The client panel that shows
+  all this is WP-804.
 
 ### The evidence: four gaps from the 2026-10-10/11 live-verify sessions
 
@@ -230,7 +261,7 @@ Four things differ for Legendary Arena:
   ([architecture rules](../.claude/rules/architecture.md), Engine Owns
   Truth). A setter is just another move, validated like every other.
 
-### What the panel would show (read-only)
+### What the panel shows (read-only, WP-804)
 
 - **Every zone of every seat:** hand, deck in order, discard, in play,
   victory pile. Wounds split by zone, so "hand + discard" can be read
@@ -242,55 +273,69 @@ Four things differ for Legendary Arena:
 - **The engine's own state for this move:** the current stage, any open
   pending choice, and this turn's `effectTraces`, which are already
   projected for the diagnostics export.
-- **The bot's candidates:** each legal move with its heuristic score, and
-  the move chosen. This also covers the Stack the Deck put-back and the
-  "KO'd 0" cases.
+- **The bot's decisions:** for each bot decision, the turn, the seat, the
+  move chosen, up to two scored alternatives from the policy's own
+  `decisionLog`, the legal-move count, and whether the move was forced
+  (D-24689 §5). That covers the Stack the Deck put-back and the "KO'd 0"
+  cases. A forced singleton, the D-24688 class, shows as forced with one legal
+  move. A full scored list of every legal move would need an engine change to
+  `ai.competent.ts`, and D-24689 decided it isn't needed.
 
-### What it would let an operator do
+### What it lets an operator do
 
-These are in the order that removes the most replaying, based on the
-incidents above:
+D-24689 §7 fixed the order of setters 1–4, which removes the most replaying
+given the incidents above. Item 5 is follow-on 3, and item 6 ships with
+WP-804.
 
 1. **Set a supply pile count.** For example, empty the Wound supply, which
-   is all D-24686 needed.
-2. **Force the next villain-deck card.** Move a card already in the villain
-   deck to the top, so Ymir comes out on the turn wanted.
-3. **Trigger a scheme twist or a Master Strike now,** through the same
-   resolver the villain-deck reveal uses.
-4. **Place a card in a zone,** for example a Wound into the bot's discard to
-   set up a most-Wounds tie.
-5. **Jump to turn N of a past match:** a read-only board, rebuilt by the
-   faithful replay and stopped at move N.
-6. **Copy the state as a fixture:** export the current projection in the
-   shape of
+   is all D-24686 needed. A decrease moves the cards to a set-aside zone that
+   no rule reads. Nothing is destroyed.
+2. **Move a villain-deck card to the top.** The card must already be in the
+   villain deck, so Ymir comes out on the turn wanted.
+3. **Reveal the next Scheme Twist or Master Strike now.** One already in
+   the villain deck moves to the top and is revealed through the normal
+   reveal path.
+4. **Move a card already in the match from one zone to another,** through
+   the zone and gain helpers. For example, a Wound from the supply into the
+   bot's discard to set up a most-Wounds tie. A setter never names a card
+   outside the match's loaded composition.
+5. **Jump to turn N of any match:** a read-only board, rebuilt by replay
+   and stopped at move N (follow-on 3).
+6. **Copy the state as a fixture:** WP-804's "Download as fixture" saves the
+   current play-surface UIState in the shape of
    [`src/fixtures/uiState/*.json`](../apps/arena-client/src/fixtures/uiState/mid-turn.json),
    so a board found live can be opened with the dev fixture route and turned
    into a test ([Complete-Game Fixtures](complete-game-fixtures.md),
-   [Testing](testing.md)).
+   [Testing](testing.md)). Its "Download operator snapshot" saves the board
+   and bot decisions as JSON.
 
-### The shape it would take
+### The shape it takes (D-24689)
 
-This is a sketch so the guardrails below have something concrete to apply
-to. It isn't a build plan.
-
-- **Creation.** A server route behind `admin-session-required` (a Hanko
-  session plus `is_admin = TRUE`, per the Auth values in
-  [`api-endpoints.md`](../docs/ai/REFERENCE/api-endpoints.md)) creates a
-  match whose setup envelope carries a debug flag. The envelope is
-  extensible, and the nine locked composition fields don't change. The flag
-  is fixed at `Game.setup()` and lands in `G`, so it can't be turned on
-  mid-match.
-- **Setters are engine moves.** Each one follows the Move Validation
-  Contract: validate the arguments, return silently unless the match was set
-  up as a debug match, mutate `G` through the zone helpers, and return
+- **Creation (built).** `POST /api/admin/operator-match/create-with-bot` is
+  `admin-session-required` (a Hanko session plus `is_admin = TRUE`, per the
+  Auth values in
+  [`api-endpoints.md`](../docs/ai/REFERENCE/api-endpoints.md)). It is the
+  only path that sets `isDebugMatch?: boolean` on the creation payload
+  `MatchConfiguration`, next to `finalBlow`. The flag is never in the loadout
+  envelope, the LAGN document or the nine-field composition. Every public
+  create path refuses a payload that carries it (400). `Game.setup()` writes
+  `G.isDebugMatch = true` only for a strict `true`, so it can't be turned on
+  mid-match, and normal matches stay byte-identical.
+- **Reads are an admin HTTP route (built).** The board route builds the
+  reveal-all view server-side with the engine's `buildOperatorView`. It is not
+  a new `playerView` audience, because spectators are unauthenticated and a
+  reveal-all audience there couldn't be admin-gated. The player audiences in
+  [`uiState.filter.ts`](../packages/game-engine/src/ui/uiState.filter.ts)
+  are unchanged.
+- **The client panel (WP-804).** A Vue 3 component that `PlayViewport.vue`
+  loads with `defineAsyncComponent`, only in an operator match for an admin,
+  so normal play never downloads it. It refreshes the board from the route.
+- **Setters are engine moves (follow-on 2).** Each one follows the Move
+  Validation Contract: validate the arguments, return silently unless
+  `G.isDebugMatch === true`, mutate `G` through the zone helpers, and return
   `void`. Because they're ordinary moves, they're in the `bgio` move log, so
-  the D-24119 replay re-executes them faithfully.
-- **Reads are an operator projection.** The reveal-all view is a separate
-  audience from the player audiences in
-  [`uiState.filter.ts`](../packages/game-engine/src/ui/uiState.filter.ts).
-  The players' whitelist stays exactly as it is.
-- **The client panel** mounts only in a debug match for an admin session,
-  and is loaded on demand so normal play doesn't download it.
+  the D-24119 replay re-executes them faithfully. Their controls sit in a
+  Tweakpane pane, loaded lazily inside the WP-804 panel.
 
 ### Guardrails
 
@@ -302,18 +347,22 @@ fit them, not bend them.
   `G`. A crafted move in a normal match finds no flag and does nothing.
 - **Never competitive.** A debug match is never ranked, never
   leaderboard-eligible, and never counted toward PAR, a gauntlet or a seed
-  challenge ([Leaderboard](leaderboard.md), [Scoring](scoring.md)). Score
-  submission already has permanent-ineligibility reasons. `ended_early`
-  (D-24306) is the closest match in
-  [`competition.types.ts`](../apps/server/src/competition/competition.types.ts),
-  and a debug match would be refused the same way. Bot-ally games are
-  already never ranked ([Bot Ally](bot-ally.md)). A debug match should go
-  further and not be scored at all, not even as Casual.
-- **Everything is marked and logged.** The debug flag is visible in the
-  match's setup. Every setter is a move in the replay log and writes a plain
-  line to the game log ("Debug: Wound supply set to 0"), so a debug match
-  can't be mistaken for real play and a diagnostics export from one says
-  what was changed.
+  challenge ([Leaderboard](leaderboard.md), [Scoring](scoring.md)). Built:
+  `submitCompetitiveScoreImpl` rejects an operator match with the permanent
+  reason `debug_match` before any score, badge or row is written, next to
+  `ended_early` (D-24306) in
+  [`competition.types.ts`](../apps/server/src/competition/competition.types.ts).
+  Bot-ally games are already never ranked ([Bot Ally](bot-ally.md)). An
+  operator match goes further: it isn't scored at all, not even as Casual.
+  WP-804 makes the client skip the submit instead of showing the 422 as a
+  failed submit.
+- **Everything is marked and logged.** `UIState.isDebugMatch` reaches every
+  audience, so every seat and every diagnostics export shows it's an operator
+  match, and WP-804 shows every seat a "not scored" badge. Every setter is a
+  move in the replay log and writes a game-log line that starts "Operator:"
+  (for example "Operator: Wound supply set to 0"). A debug match can't be
+  mistaken for real play, and a diagnostics export from one says what was
+  changed.
 - **Determinism holds.** Setters are deterministic functions of their
   arguments. "Force the next card" reorders what's already in the deck. It
   doesn't re-roll, and it never uses `ctx.random` or `Math.random`. The same
@@ -323,10 +372,12 @@ fit them, not bend them.
   ([architecture rules](../.claude/rules/architecture.md)).
 - **No change to what's persisted.** `G` stays runtime-only, and nothing new
   goes into a `legendary.*` table. Fixtures and snapshots are client-side
-  downloads, like the diagnostics report. Reading a *past* match (jump to
-  turn N) goes through the `bgio` record, which is a fifth use of the
-  framework-store exemption next to D-24119, D-24153, D-24169 and D-24187.
-  That needs its own DECISIONS entry. It can't ride on D-24119's wording.
+  downloads, like the diagnostics report. The live board read is a fifth use
+  of the framework-store exemption, next to D-24119, D-24153, D-24169 and
+  D-24187: an admin route may read a match's live `state`, only to test
+  `G.isDebugMatch` and then project it (D-24689 §4). Jump to turn N reads the
+  `initialState + log` of *any* match, so it needs its own carve-out entry. It
+  can't ride on D-24119's or D-24689's wording.
 - **No pay-to-win surface.** It's a tool for operators, not a product
   feature, so no purchase can reach it ([Reward Integrity](reward-integrity.md)).
 
@@ -346,6 +397,52 @@ fit them, not bend them.
   "KO nothing" default would have shown up the first time it fired.
 - **Turning a live bug into a test.** Copy the board as a fixture at the
   moment it went wrong.
+
+### Ideas from the 2026-10-13 design session, reconciled
+
+On 2026-10-13 Jeff worked through a Tweakpane testing panel in a phone chat.
+It produced 19 idea briefs, now drafts in his desk inbox (the private
+corporate-memory repo, `inbox/legendary-arena/`). The chat didn't have the
+repo in front of it, so a few briefs assume work that's already done or rules
+that are already settled. This table places each idea. It decides nothing. A
+WP and a DECISIONS entry own any build.
+
+**Already true, no work needed:**
+
+- **Seeded randomness.** The briefs make this the keystone task. It's an
+  existing invariant: all randomness goes through `ctx.random.*`, and
+  `Math.random()` is forbidden in the engine. The sentinel `finalStateHash`
+  and the D-24119 score-verification replay depend on it.
+- **Monte Carlo PAR.** [PAR Simulation Calibration](par-simulation-calibration.md)
+  (WP-036 / WP-049) already plays a scenario hundreds to thousands of times
+  with the competent bot and sets PAR at the 55th percentile. The ideas below
+  are extensions of it, not a new engine.
+- **A live log during play.** The game log panel is live, the hollow-effects
+  panel is live, and Download diagnostics works at any point in a match.
+  WP-804's panel adds each turn's effect traces and the bot's decisions,
+  refreshed from the board route.
+
+**Where each idea lands:**
+
+| Idea | Where it fits | Status |
+|---|---|---|
+| Hero / villain deck control: put a chosen card on top, summon a hero to the HQ | Setter 2 (villain deck) and setter 4 (zone to zone). The hero deck needs the setter-2 pattern too, and an HQ placement needs a rule for the card it displaces | Follow-on 2 should name both |
+| Select a S.H.I.E.L.D. Officer, Sidekick, Wound or Bystander | Setter 1 (pile count) and setter 4. Choosing which card comes next only matters where a pile holds different cards. Where every copy is the same card, the count covers it | Follow-on 2 |
+| Floating pane with collapsible folders | How Tweakpane mounts inside the WP-804 panel (D-24689 §6) | Follow-on 2 |
+| Console commands: KO a card, draw a card | Setter 4 through the existing KO and draw helpers | Follow-on 2 candidate |
+| Console commands: `add recruit 5`, `add attack 3`, trigger a villain escape | New setter kinds. §7's conservation rule covers cards, and recruit and attack are counters, so they need a ruling that extends §7 | Open Question 7 |
+| A command console next to the knobs | An input surface over the same setter moves, so every new idea is one more command rather than one more button | Follow-on 2 or later |
+| Rewind with branching (rewind to turn N, make a different choice, play on) | Follow-on 3 is read-only and never written back. bgio's `loadState` / `previewState` are client-side and can't move a server-authoritative match. A branch that fits every rule: create a *new* operator match from the same setup and seed, and replay the first N moves as real moves. Determinism makes that exact | Open Question 8 |
+| Gate the panel with `#debug` in the URL, or a dev build flag | D-24689 gates on an admin session plus an operator match, on the normal production deployment. A URL hash can show the panel, but it can't authorize anything | A convenience at most, never the gate |
+| Luck dial (favorable / neutral / difficult) | A reorder-only setter fits §7 ("reorder, never re-roll") inside an operator match | Follow-on 2 or later |
+| Draw-luck rating on the report card | A player-facing scoring feature, not the panel. It ties to [Scoring](scoring.md) and PAR's spread | Separate packet |
+| April Fool's prank mode: secretly rig luck for one friend | Conflicts with "everything is marked." An operator match shows every seat a "not scored" badge, so it can't be secret | Open Question 9 |
+| PAR extremes (speed-run best case, impossible worst case), outlier-fair rating | Extends the PAR simulation pipeline. The fairness question (don't grade a doomed hand as a blown game) belongs on the scoring side | Separate packet |
+| Max-score / min-rounds integrity watchdog | Score verification already replays every submitted match (D-24119). A ceiling from simulation would be a new check there, not a panel control | Separate packet |
+| Scoreboard entry test from the panel | Operator matches are never scored (D-24689 §3), so this can't run from the panel. The Server DB Tests in CI and a crafted terminal replay submitted by match id already cover the write path | Use existing test paths |
+| Effects tuner (visual, audio, music, escalation near a loss) | Client-only: it changes no game state, so it doesn't need an operator match. It tunes the existing feel layer ([Sound Effects](sound-effects.md)) and could run on the dev fixture route | Open Question 10 |
+| Latency monitor, per-hop sparklines | Client-only. The browser can time Cloudflare and the game server directly, but Postgres only through a server health route | Open Question 10 |
+| Whose turn it is + per-player connection status | boardgame.io's per-seat match metadata already carries `isConnected`, and the client tracks its own connection (WP-311). Fits the disconnect / reconnect posture (D-11601..D-11605) | Separate packet |
 
 ## Interactions
 
@@ -368,8 +465,13 @@ fit them, not bend them.
 - [Wounds](wounds.md): the Wound supply is the first pile the setters would
   touch.
 - [LAGN Specification](lagn-v1.md): a debug match's loadout is still a normal
-  LAGN setup. The debug flag lives in the setup envelope, not in the
-  composition.
+  LAGN setup. `isDebugMatch` lives on the creation payload
+  (`MatchConfiguration`), not in the loadout envelope, the LAGN document or
+  the composition (D-24689 §1).
+- [PAR Simulation Calibration](par-simulation-calibration.md) and
+  [Sound Effects](sound-effects.md): the 2026-10-13 ideas below touch both.
+  The Monte Carlo PAR pipeline already exists. An effects tuner would tune
+  the existing feel layer.
 
 ## Edge Cases
 
@@ -381,18 +483,24 @@ fit them, not bend them.
   the reveal path) over raw writes, and the setter log shows which board was
   constructed.
 - **Setting state during a pending choice.** A setter fired while a block-all
-  pending choice is open could strand it. Setters probably need to be
-  refused while any pending choice is open.
+  pending choice is open could strand it. Decided: setters are refused while
+  any pending choice is open (D-24689 §7).
 - **Setting state while the bot is moving.** In a bot-ally match the bot acts
   between the operator's moves. Setters landing mid-bot-turn would race the
-  bot loop, so they likely belong on the operator's own turn only, or behind
-  a bot pause.
+  bot loop. Decided: setters run only on the operator's own turn, in the
+  `main` stage (D-24689 §7).
+- **The bot's decision record is per instance.** It lives in process memory
+  (capped at 50 per match and 20 matches), so a restart loses it. During a
+  deploy overlap the board route can land on the instance that isn't driving
+  the bot and show an empty list (D-24689 §5).
 - **The operator sees every hand.** Play in a debug match isn't
   representative play. That's fine for verifying an effect, and it's one
   more reason the match is never scored.
 - **Replay across builds.** Jumping to turn N re-runs a stored log on the
   current server. If the engine changed between the match and the replay,
-  the replay may not match what happened. See Open Questions.
+  the replay may not match what happened. Decided: record the server build
+  at match creation and label the result "played on build X, replayed on
+  build Y" (or "build unknown") rather than refusing (D-24689 §8).
 - **Diagnostics `.json` vs LAGN.** The diagnostics export is a plain
   `.json` report, not a `.lagn.json` document. LAGN's three tiers are setup,
   card catalog and replay log, with no board-state tier. A "state snapshot" export would be a UIState fixture, not
@@ -431,6 +539,21 @@ fit them, not bend them.
    DECISIONS entry.
    Answered: D-24689 §1 (`isDebugMatch` on the creation payload, not the
    loadout envelope).
+7. **Economy and event setters.** The console ideas `add recruit N`,
+   `add attack N` and "trigger a villain escape" don't move a card, so §7's
+   conservation rule doesn't cover them. Does follow-on 2 add them, under what
+   log line, and does an escape go through the normal escape path?
+8. **Branching rewind.** Is "fork a new operator match from the same setup
+   and seed, replaying the first N moves as real moves" the branch model? It
+   needs no new persistence read beyond follow-on 3's carve-out, and every
+   branch is a normal, replayable operator match.
+9. **Prank mode.** The badge every seat sees is a guardrail (D-24689 §1).
+   A secret per-player rig would need a ruling to hide it from the target
+   player. Is that wanted at all, and does it stay unscored?
+10. **Client-only tools.** The effects tuner and the latency monitor change no
+    game state. Do they belong in the operator panel, or behind a separate
+    admin-only client gate on any match or the fixture route? And does the
+    latency view need a server health route to time Postgres?
 
 ## References
 
@@ -442,7 +565,14 @@ fit them, not bend them.
   `Cq_czI1TQH0`), D-24686 (empty-supply log line; live-verify pending),
   D-24119 / D-24095 (faithful replay and the framework-store exemption),
   D-24146 (ranked eligibility), D-24306 (`ended_early`), D-24688 (the bot's
-  "KO nothing" default for Maniacal Tyrant, carried over from D-24510)
+  "KO nothing" default for Maniacal Tyrant, carried over from D-24510),
+  D-24689 (the operator match and the arc's rulings), D-24697 (bot decisions
+  on the display turn)
+- [WP-802](../docs/ai/work-packets/WP-802-operator-board-inspection.md):
+  operator match, never scored, reveal-all board read (done, live-verified)
+- [WP-804](../docs/ai/work-packets/WP-804-operator-panel-client.md):
+  the operator panel on play
+  ([PR #2735](https://github.com/barefootbetters/legendary-arena/pull/2735))
 - [`docs/ai/coverage/live-verify.json`](../docs/ai/coverage/live-verify.json):
   the per-card live-verify record
 - [`docs/ai/ARCHITECTURE.md`](../docs/ai/ARCHITECTURE.md) and
