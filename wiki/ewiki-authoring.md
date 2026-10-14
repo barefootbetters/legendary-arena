@@ -26,7 +26,7 @@ source:
   - ../apps/wiki-viewer/layouts/partials/editing-this-page.html
   - ../docs/ai/DECISIONS.md
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-10-12
+last-reviewed: 2026-10-13
 ---
 
 # Ewiki Authoring
@@ -341,6 +341,12 @@ next heading follows it directly fails too. The raw Markdown of the including
 page shows the shortcode lines, not the text, so on GitHub or to an agent
 reading `wiki/*.md` directly, follow the `page=` / `section=` values to the
 owner. Live example: [System Backup](system-backup.md).
+
+The Herbs vs. Ailments design wiki runs a port of this shortcode. The one
+difference is that its `page=` takes a relative path to the owner note,
+written the way a link is (`page="../hubs/project-home.md"`), not a slug;
+its authoring guide documents that version under
+[Including a section from another page](https://ewiki.herbs-vs-ailments.com/guides/ewiki-authoring/#including-a-section-from-another-page).
 
 ### Tables rendered from ops data
 
@@ -664,3 +670,7 @@ prefixes.
   — Hugo config (confirms `unsafe = false`, syntax highlighting off)
 - [Wiki Viewer](wiki-viewer.md) — page creation and publishing
 - [SCHEMA.md](SCHEMA.md) — entity-page contract
+- [Herbs vs. Ailments ewiki — Ewiki Authoring](https://ewiki.herbs-vs-ailments.com/guides/ewiki-authoring/)
+  — context only; nothing in Legendary Arena depends on it. A separate game
+  repo whose Hugo wiki was adapted from this page and runs a port of
+  `include-section` (behind its own Cloudflare Access login).
