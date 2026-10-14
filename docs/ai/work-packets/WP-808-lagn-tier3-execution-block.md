@@ -85,7 +85,8 @@ If any of the above is false, this packet is **BLOCKED** and must not proceed.
   - **D-24211** — ordinal gates.
   - **D-5301 / D-24126** — competitive credit is server-side.
   - **D-11804** — whole-row API-catalog updates.
-- `docs/ai/REFERENCE/00.2-data-requirements.md` §7b–§7e (the LAGN canonical field-name sections this extends).
+- `docs/ai/REFERENCE/00.2-data-requirements.md` §7b–§7f (the LAGN canonical field-name sections this extends; §7f is the
+  1.6.0 `final_blow` section #2774 added after drafting).
 - `wiki/lagn-v1.md` (the published spec page, corrected in #2766).
 - `docs/ai/work-packets/WP-640-lagn-1-5-0-battleplan-report.md` and `EC-675` (the template for every mechanical step).
 - `docs/ai/DESIGN-SEED-CHALLENGES.md` §binding (a future shared-seed surface; not touched here).
@@ -287,7 +288,7 @@ improvise a field.
    - the Interactions → Replay Producer bullet;
    - constraint rows 13–14 (one-line summaries, matching rows 1–12);
    - the constraints preamble (~L419): "names all twelve" becomes "names all fourteen".
-10. `00.2-data-requirements.md`: a new **§7f LAGN Replay Execution (WP-808 / D-24714)** with every canonical field
+10. `00.2-data-requirements.md`: a new **§7g LAGN Replay Execution (WP-808 / D-24714)** with every canonical field
     name above.
 11. `api-endpoints.md` — **§21 TRIGGERED (D-11804).** Replace the `POST /api/me/loadouts` row **whole**. A whole-row
     replace must be true, so it also repairs what WP-698 left out:
@@ -323,9 +324,9 @@ improvise a field.
 - **No `UIState` / board-state tier** (rejected by the 2026-10-13 research).
 - **No seed-entropy hardening.** The seed is `Date.now()`-derived (`plugin-random` `Random.seed()`) and sits near the
   public `createdAt`. Pre-existing; tracked as a separate task chip from this drafting session.
-- **No WP-698 doc back-fill outside the loadouts row.** This packet does not add the missing 1.6.0 `final_blow` section
-  to 00.2, and does not fix the `GET /api/match/:matchId/result-lagn` row's "LAGN 1.5.0" claim (it emits 1.6.0). Both
-  are pre-existing doc drift, tracked as a separate task chip.
+- **No WP-698 doc back-fill outside the loadouts row.** The 00.2 §7f `final_blow` section and the
+  `GET /api/match/:matchId/result-lagn` row's 1.6.0 stamp landed separately in #2774 (after this packet was gated), so
+  neither is touched here.
 - **No change to whether `/lagn` / `/result-lagn` serve operator matches.** That is a possible D-24689 follow-up.
 
 ## Files Expected to Change
@@ -340,7 +341,7 @@ improvise a field.
 - `packages/lagn-spec/examples/tier3-execution.lagn.json` — **new** — 1.7.0 shape fixture
 - `packages/lagn-spec/schemas/lagn-v1.json` — **modified** — regenerated
 - `wiki/lagn-v1.md` — **modified** — 1.7.0 column + block docs + constraints 13–14
-- `docs/ai/REFERENCE/00.2-data-requirements.md` — **modified** — §7f field names
+- `docs/ai/REFERENCE/00.2-data-requirements.md` — **modified** — §7g field names
 - `docs/ai/REFERENCE/api-endpoints.md` — **modified** — `POST /api/me/loadouts` row replaced WHOLE
 
 Governance close only beyond these: `DECISIONS.md` (D-24714 Active), `STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`,
@@ -417,7 +418,7 @@ for competition.
 - **AC-10** — `LAGN_VERSION === LAGN_VERSION_1_6_0`, and `packages/lagn-spec/package.json` is unchanged.
 - **AC-11** — `ReplayExecution` / `ReplayExecutionMove` and `LAGN_VERSION_1_7_0` are exported from the package entry.
 - **AC-12** — `api-endpoints.md` `POST /api/me/loadouts` is replaced whole: versions through 1.7.0, the narrowing
-  sentence, and the writer at 1.6.0. `00.2` §7f carries every field name.
+  sentence, and the writer at 1.6.0. `00.2` §7g carries every field name.
 
 ## Verification Steps
 
@@ -439,7 +440,7 @@ git diff --name-only origin/main                                # matches §File
 - [ ] lagn test 0 fail, count recorded (108 → +N); `pnpm -r build` 0; `pnpm -r --no-bail test` no new failures
 - [ ] `generate:schema` clean; `package.json` untouched (AC-10)
 - [ ] `DECISIONS.md` — D-24714 created **Active** with the §D-24714 Content above
-- [ ] `wiki/lagn-v1.md`, `00.2` §7f, and the `api-endpoints.md` row updated per Scope 9–11
+- [ ] `wiki/lagn-v1.md`, `00.2` §7g, and the `api-endpoints.md` row updated per Scope 9–11
 - [ ] `STATUS.md` states "No user-observable change — infrastructure only"
 - [ ] WORK_INDEX `[x]`; EC_INDEX `Done`; mindmap `📝 → ✅`; `pnpm roadmap:counts:check` exits 0
 - [ ] `git diff --name-only` matches §Files Expected to Change exactly (+ the governance files)
@@ -482,7 +483,7 @@ endpoint is added, removed, or re-statused.
 - §1 PASS — all required sections present; Out of Scope lists 7 adjacent exclusions.
 - §2 PASS — engine-wide (full files, ESM/Node 22, 00.6) + packet-specific + session protocol + locked values.
 - §3 PASS — WP-698/640/402/334/336 ✅ + file shapes + BLOCKED clause.
-- §4 PASS — specific D-entries, 00.2 §7b–§7e, ARCHITECTURE layer/persistence sections.
+- §4 PASS — specific D-entries, 00.2 §7b–§7f, ARCHITECTURE layer/persistence sections.
 - §5 PASS — 10-file allowlist, each `new`/`modified` with a one-line description; >8 justified (WP-640 lockstep
   precedent).
 - §6 PASS — snake_case LAGN names locked; `seat` / `player_count` / `shield_officers_count` keep their 00.2 meanings.
@@ -526,8 +527,8 @@ endpoint is added, removed, or re-statused.
   - the Gate B chain position;
   - two more wiki sites.
 
-  RS-6 (the producer emits `catalog_ref`) went into Context. RS-7 is pre-existing drift, moved to Out of Scope and a
-  separate task chip.
+  RS-6 (the producer emits `catalog_ref`) went into Context. RS-7 is pre-existing drift, moved to Out of Scope; it
+  landed separately in #2774.
 - **Copilot check (01.7), run 1:** independent subagent, verdict **RISK / HOLD** with 8 findings. All were fixed in
   place:
   1. `data_version` added;
@@ -560,3 +561,7 @@ endpoint is added, removed, or re-statused.
 
   The run-2 pre-flight READY TO EXECUTE stands. The residual RISK is documented here: it was text-only, and nothing is
   open.
+- **Post-gate reconciliation (2026-10-13, 00.3 §19).** While the drafting PR's CI ran, #2774 landed on `main` with the
+  WP-698 doc back-fill, which took 00.2 §7f. This packet's new section therefore moves to **§7g**, and the WP-698
+  drift is recorded as landed. This is scope-neutral (a section letter and a status note), so no gate re-run is
+  needed.

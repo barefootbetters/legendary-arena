@@ -91,7 +91,7 @@
 - `wiki/lagn-v1.md` — **modified** — WP Scope 9 items (union string ~L58, "all eight", Code Touchpoints test/fixture
   count, constraints preamble count "fourteen", 1.7.0 column, block docs, constraints 13–14, Tier 3 + Interactions
   text)
-- `docs/ai/REFERENCE/00.2-data-requirements.md` — **modified** — §7f
+- `docs/ai/REFERENCE/00.2-data-requirements.md` — **modified** — §7g
 - `docs/ai/REFERENCE/api-endpoints.md` — **modified** — `POST /api/me/loadouts` row replaced WHOLE with the WP Scope 11
   (a)/(a2)/(b)/(b2)/(c) sentences verbatim; every other part of the row unchanged
 
