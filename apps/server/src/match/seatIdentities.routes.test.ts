@@ -261,3 +261,34 @@ describe('WP-811: a reaped finished match keeps its seat roster (production logi
     );
   });
 });
+
+describe('D-24718: a reaped operator match, through the production logic', () => {
+  test('is still refused once only the replay artifact remains (D-24719)', async () => {
+    // why: the live row is gone, so readMatchConfigurationForLagn falls back to
+    // the artifact's initial_state; the refusal must hold on that path too.
+    const reapedDatabase = {
+      query: async (text: string) => {
+        if (/SELECT initial_state FROM bgio\.replay_artifacts/.test(text)) {
+          return {
+            rows: [
+              {
+                initial_state: {
+                  G: { matchConfiguration: { ...VALID_COMPOSITION, isDebugMatch: true } },
+                  ctx: { numPlayers: 2 },
+                },
+              },
+            ],
+          };
+        }
+        return { rows: [] };
+      },
+    } as unknown as DatabaseClient;
+    const router = new FakeRouter();
+    registerSeatIdentitiesRoute(router, reapedDatabase);
+    const context = makeContext('reaped-operator-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'match_not_found' });
+  });
+});

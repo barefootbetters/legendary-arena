@@ -737,4 +737,21 @@ describe('registerMatchLagnRoutes — operator matches (D-24717)', () => {
     assert.equal(validate(body.lagn).valid, true);
     assert.equal(JSON.stringify(body.lagn).includes('isDebugMatch'), false);
   });
+
+  test('a REAPED operator match is still refused by result-lagn, through the production artifact read (D-24719)', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      reapedMatchDatabase({
+        initialState: { G: { matchConfiguration: OPERATOR_COMPOSITION }, ctx: { numPlayers: 1 } },
+        gameover: { outcome: 'heroes-win' },
+      }),
+      deps(),
+    );
+    const context = makeContext('reaped-operator-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'not_found' });
+  });
 });
