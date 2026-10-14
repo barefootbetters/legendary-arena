@@ -47980,6 +47980,72 @@ and the hero-deck / HQ question).
 
 **Reserved by:** NUMBER-LEDGER D-24713 (#2765). Related: D-24689, D-24026, D-24119, D-24160, D-10008, D-24697, D-24372.
 
+### D-24719 — A reaped finished match is served from its replay artifact; capture stores the verdict; a harvester sweep fills older artifacts (Active 2026-10-14 — WP-811 / EC-848)
+
+**Bug.** `readMatchConfigurationForLagn` and `readMatchGameover` read only the live `bgio.matches` row. The WP-327 reaper
+(D-24113) deletes a finished match's row once it is 1 hour past its last write and captured. So `GET
+/api/match/:matchId/lagn`, `/result-lagn` and `/seat-identities` returned `404` for every match that ended more than about an
+hour ago: the WP-407 Hall of Legends match view, the WP-408 download, shared `?lagn=` links and a late-opened report card's
+seat names all died. Prod evidence (2026-10-14, gitSha `44724482`): guest autoplay match `MAYLMfB1PM9` returned `200` with
+`result.outcome: "victory"` at 11:09–11:19 UTC and was confirmed reaped at 12:14 UTC.
+
+1. **Reader fallback, live row first.** Only when the live row is absent, the readers query `bgio.replay_artifacts`
+   `WHERE match_id = $1 LIMIT 1` (one artifact per finished match). Configuration comes from the artifact's `initial_state`,
+   byte-identical to the live row's, through the one `projectConfigurationForLagn`, so the two objects are identical and any
+   gate keyed on them (#2779 / #2780 `isDebugMatch`) holds after the reap. A live row with a null `initial_state` stays
+   `null`, and a live in-progress match stays `match_not_finished`; neither falls back. A match in neither store is still the
+   fail-closed `404`. The fallback never reads the artifact `log`.
+2. **Capture-time verdict.** Migration 046 adds `bgio.replay_artifacts.gameover` (jsonb, nullable) plus a `match_id` index
+   and a partial index on `gameover IS NULL`. The capture INSERT copies the live row's `metadata.gameover`
+   (`serializeStoredGameover`). An artifact whose `gameover` is SQL `NULL` reads as `VERDICT_NOT_RECORDED` (`{}`): finished,
+   outcome unknown. It is never `null`, because the routes map `null` to `match_not_finished` and an artifact exists only for
+   a finished match; `toLagnResult` omits the `result` block for it.
+3. **Harvester sweep.** Each capture-harvester scan, after its capture loop, runs `fillMissingArtifactGameovers` on at most
+   `ARTIFACT_GAMEOVER_SWEEP_BATCH_SIZE = 5` rows with `gameover IS NULL`. Each is re-executed through the D-24119 reducer; the
+   stored verdict is `evaluateEndgame` of the final `G` (the value the live top-level `endIf` returned) **only** when the
+   reproduced `stateHash` equals the row's `replay_hash`. A hash mismatch (today's engine no longer reproduces the capture)
+   or a throwing reduction (pure, so it would repeat every scan) stores `{}` with a full-sentence error. The UPDATE is
+   guarded (`WHERE replay_hash = $1 AND gameover IS NULL`), so a stored verdict is never overwritten, and filled rows are
+   counted by `rowCount`. A failed sweep is logged and swallowed; the rows stay `NULL` and the next scan retries. The
+   mismatch count is recorded after the backlog drains (live-verify, below).
+4. **Carve-out amendments, no new carve-out.** ARCHITECTURE §Persistence Boundary and `.claude/rules/architecture.md`
+   amend three clauses in place: D-24153 reads the same fields from the artifact once the live row is reaped; D-24169 names
+   the `metadata.gameover` read (or its artifact copy) as the finished-match gate and outcome of the WP-406 result LAGN and
+   `/seat-identities`; D-24119 adds deriving a captured artifact's verdict into `bgio.replay_artifacts.gameover`. The
+   carve-out count is unchanged, so WP-810's D-24716 count is unaffected. The `gameover` column is a **D-24122 artifact-store
+   write**, like `replay_hash` and `scenario_key`; the D-24119 "never written back" wording is narrowed to `bgio.matches`.
+   Nothing writes `bgio.matches` or `legendary.*`, and nothing scored, purchased or ranked reads the column.
+5. **D-24122 wording widened.** D-24122 describes the artifact store as read by the server replay pipeline. Guest routes now
+   read it too, for a finished match's setup and verdict only.
+6. **`/seat-identities` is the third affected route.** It calls the same two readers, so a reaped, captured match now
+   returns its roster. It is the same privacy surface as `/result-lagn` (D-24214 claimed handles only), so there is no new
+   exposure; a finished match's public record now lasts as long as its artifact, which is the intended Hall of Legends
+   behavior.
+7. **Display gap and operator decision.** legends-board `formatOutcome` labels any document without `result` as "Draw", so an
+   unknown outcome (an unswept legacy row, or a stored `{}`) shows "Draw" on the Hall of Legends. Jeff kept the WP's default:
+   ship the server fix, serve the outcome-less result, and fix the label in a follow-up. The follow-up is WP-812 / EC-849 /
+   D-24720 (reserved #2787), which makes the envelope say why `result` is absent so the board shows "Outcome not recorded".
+   The alternative, `404` for an unknown verdict, was rejected: legacy matches would lose their view and the route mapping
+   would change.
+8. **Rejected alternatives.** Re-executing the artifact on every `/result-lagn` GET (a full reduction on a guest path
+   blocks the event loop for live sockets); re-executing on read for legacy rows only (the same cost on the same path); a
+   one-time operator backfill script (a manual prod write; the sweep needs no operator step and is idempotent); a longer
+   reaper grace (delays the `404`, grows `bgio.matches`); `match_not_finished` for a legacy artifact (false); trusting any
+   re-derived verdict (could publish Victory for a lost match).
+9. **Exclusions.** Matches never captured (finished before WP-335, or abandoned without gameover) have no artifact and stay
+   `404`. Two matches with byte-identical final `G` share one artifact row (`ON CONFLICT DO NOTHING`), so the second has no
+   artifact; distinct seeds make this practically impossible and it is not addressed.
+10. **Legacy backlog.** Every artifact captured before 046 starts with `gameover IS NULL`. The prod count at deploy could
+    not be read by the executing session (the permission classifier blocked a read-only query on the droplet, as it did at
+    draft); it is recorded with the D-24026 live-verify. The drain takes (count ÷ 5) scans at 5 minutes each.
+
+**Live-verify (D-24026): pending.** After deploy: record the pre-deploy artifact count and the post-drain `gameover =
+'{}'::jsonb` count; `MAYLMfB1PM9` on all three endpoints, with its legends-board label before and after its row is swept; a
+fresh guest autoplay match checked at least 80 minutes after game over; the legends-board view and download.
+
+**Reserved by:** NUMBER-LEDGER D-24719 (#2785). Related: D-24095, D-24113, D-24119, D-24122, D-24124, D-24153, D-24169,
+D-24187, D-24214, D-24216, D-24223, D-24716, D-24717, D-24718, D-24720, D-11804, D-24026.
+
 ---
 
 Protect this file.
