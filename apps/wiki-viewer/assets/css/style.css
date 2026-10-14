@@ -279,6 +279,28 @@ article.entity h1, .section-landing h1 {
   margin-bottom: 0;
 }
 
+/* why: the footer sits outside .body, so the page-table rules do not reach
+   its "Where this page goes" table. Long local paths must wrap rather than
+   push the page into a horizontal scroll on a phone. */
+.editing-this-page-where {
+  border-collapse: collapse;
+  margin: 0.5rem 0 0;
+  width: 100%;
+}
+
+.editing-this-page-where th, .editing-this-page-where td {
+  border: 1px solid var(--color-border);
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.editing-this-page-where th { background: #f9fafb; }
+
+.editing-this-page-where td:first-child { white-space: nowrap; }
+
+.editing-this-page-where code { overflow-wrap: anywhere; }
+
 .editing-this-page-body kbd {
   font-family: var(--mono-stack);
   font-size: 0.85em;
