@@ -188,4 +188,47 @@ describe('GET /api/match/:matchId/seat-identities (INFRA: endgame seat names)', 
     assert.deepEqual(context.body, { error: 'internal_error' });
     assert.equal(context.headers['Cache-Control'], 'no-store');
   });
+
+  test('D-24718: a finished operator match returns the unknown-match 404, before any further read', async () => {
+    const readsAfterGate: string[] = [];
+    const seam = logicSeam({
+      configuration: {
+        matchConfiguration: { ...VALID_COMPOSITION, isDebugMatch: true },
+        numPlayers: 2,
+      },
+    });
+    const router = routerFor({
+      ...seam,
+      readMatchGameover: async (...args) => {
+        readsAfterGate.push('readMatchGameover');
+        return seam.readMatchGameover(...args);
+      },
+      readSeatIdentities: async (...args) => {
+        readsAfterGate.push('readSeatIdentities');
+        return seam.readSeatIdentities(...args);
+      },
+    });
+    const context = makeContext('operator-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'match_not_found' });
+    assert.equal(context.headers['Cache-Control'], 'no-store');
+    assert.deepEqual(readsAfterGate, []);
+  });
+
+  test('D-24718: a finished match whose isDebugMatch is not a strict true is still served', async () => {
+    const router = routerFor(
+      logicSeam({
+        configuration: {
+          matchConfiguration: { ...VALID_COMPOSITION, isDebugMatch: false },
+          numPlayers: 2,
+        },
+      }),
+    );
+    const context = makeContext('normal-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+  });
 });
