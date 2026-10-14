@@ -387,9 +387,63 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     await resultHandlerOf(router)(context);
 
     assert.equal(context.status, 200);
-    const body = context.body as { lagn: Record<string, unknown> };
+    const body = context.body as { lagn: Record<string, unknown>; resultOmittedReason?: string };
     assert.equal(validate(body.lagn).valid, true);
     assert.equal('result' in body.lagn, false);
+    // WP-812 / D-24720: the envelope names the tie beside `lagn`, never inside it.
+    assert.deepEqual(Object.keys(body), ['lagn', 'resultOmittedReason']);
+    assert.equal(body.resultOmittedReason, 'tie');
+  });
+
+  test('WP-812: a match the players ended early is reported ended-early, not tie', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 1 },
+        seats: [{ playerId: '0', accountId: CALLER }],
+        // why: the engine's stored verdict for "End Game" (D-24306) — a 'tie'
+        // that the route must pass to the mapping with its endedEarly flag.
+        gameover: { outcome: 'tie', reason: 'The players ended the match early.', endedEarly: true },
+        identities: identitiesOf({ 'account-caller': ['caller-handle', 'Caller'] }),
+      }),
+    );
+    const context = makeContext('ended-early-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { lagn: Record<string, unknown>; resultOmittedReason?: string };
+    assert.equal(validate(body.lagn).valid, true);
+    assert.equal('result' in body.lagn, false);
+    assert.equal(body.resultOmittedReason, 'ended-early');
+  });
+
+  test('WP-812: an unknown verdict omits result and the envelope says unknown, not tie', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 1 },
+        seats: [{ playerId: '0', accountId: CALLER }],
+        // why: `{}` is what WP-811 serves for an unswept legacy artifact and
+        // stores for a hash mismatch: finished, outcome unknown.
+        gameover: {},
+        identities: identitiesOf({ 'account-caller': ['caller-handle', 'Caller'] }),
+      }),
+    );
+    const context = makeContext('unknown-verdict-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { lagn: Record<string, unknown>; resultOmittedReason?: string };
+    assert.equal(validate(body.lagn).valid, true);
+    assert.equal('result' in body.lagn, false);
+    assert.equal('resultOmittedReason' in body.lagn, false);
+    assert.equal(body.resultOmittedReason, 'unknown');
   });
 
   test('WP-641: a scored match with a plan wires battle_plan + result.score into the document', async () => {
@@ -578,9 +632,13 @@ describe('WP-811: a reaped match stays readable through the production logic', (
     await handler(context);
 
     assert.equal(context.status, 200);
-    const lagn = (context.body as { lagn: Record<string, unknown> }).lagn;
+    const body = context.body as { lagn: Record<string, unknown>; resultOmittedReason?: string };
+    const lagn = body.lagn;
     assert.equal(validate(lagn).valid, true);
     assert.equal(lagn.result, undefined);
+    // WP-812 / D-24720: the real VERDICT_NOT_RECORDED path reads as unknown,
+    // never as a tie, so the Hall of Legends says "Outcome not recorded".
+    assert.equal(body.resultOmittedReason, 'unknown');
   });
 
   test('a match in neither store is still the fail-closed 404 on both routes', async () => {

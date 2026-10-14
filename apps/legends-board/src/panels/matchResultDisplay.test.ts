@@ -36,18 +36,43 @@ describe('buildResultLagnUrl', () => {
 
 describe('formatOutcome', () => {
   it('maps victory and defeat to decisive labels', () => {
-    assert.deepEqual(formatOutcome({ outcome: 'victory' }), {
+    assert.deepEqual(formatOutcome({ outcome: 'victory' }, undefined), {
       label: 'Victory',
       isDecisive: true,
     })
-    assert.deepEqual(formatOutcome({ outcome: 'defeat' }), {
+    assert.deepEqual(formatOutcome({ outcome: 'defeat' }, undefined), {
       label: 'Defeat',
+      isDecisive: true,
+    })
+    // why: a decisive result always wins over any reason (precedence pin).
+    assert.deepEqual(formatOutcome({ outcome: 'victory' }, 'ended-early'), {
+      label: 'Victory',
       isDecisive: true,
     })
   })
 
-  it('labels an absent result block (a finished-match tie) as a non-decisive Draw', () => {
-    assert.deepEqual(formatOutcome(undefined), { label: 'Draw', isDecisive: false })
+  it('labels an absent result block with a tie reason as a non-decisive Draw', () => {
+    assert.deepEqual(formatOutcome(undefined, 'tie'), { label: 'Draw', isDecisive: false })
+  })
+
+  it('WP-812: a match the players ended early reads Ended early, not Draw', () => {
+    assert.deepEqual(formatOutcome(undefined, 'ended-early'), {
+      label: 'Ended early',
+      isDecisive: false,
+    })
+  })
+
+  it('WP-812: an unknown or absent reason reads Outcome not recorded, never Draw', () => {
+    assert.deepEqual(formatOutcome(undefined, 'unknown'), {
+      label: 'Outcome not recorded',
+      isDecisive: false,
+    })
+    // why: a server that predates WP-812 sends no reason; unknown is the honest
+    // default, because a tie is the only case "Draw" may claim.
+    assert.deepEqual(formatOutcome(undefined, undefined), {
+      label: 'Outcome not recorded',
+      isDecisive: false,
+    })
   })
 })
 
@@ -120,7 +145,7 @@ describe('parseResultLagn', () => {
     assert.equal(view.seats[0].playerId, 'ana-handle')
   })
 
-  it('AC-3: a body with no players / result yields a Draw and anonymous seats', () => {
+  it('AC-3: a tie body with no players / result yields a Draw and anonymous seats', () => {
     const view = parseResultLagn('match-2', {
       lagn: {
         lagn_version: '1.4.0',
@@ -129,6 +154,7 @@ describe('parseResultLagn', () => {
         player_count: 1,
         setup: {},
       },
+      resultOmittedReason: 'tie',
     })
     assert.equal(view.outcomeLabel, 'Draw')
     assert.equal(view.seats.length, 1)
@@ -139,6 +165,35 @@ describe('parseResultLagn', () => {
     assert.doesNotThrow(() => parseResultLagn('m', null))
     const view = parseResultLagn('m', {})
     assert.equal(view.seats.length, 0)
-    assert.equal(view.outcomeLabel, 'Draw')
+    assert.equal(view.outcomeLabel, 'Outcome not recorded')
+  })
+
+  it('WP-812: reads resultOmittedReason from the envelope beside lagn', () => {
+    const view = parseResultLagn('match-3', {
+      lagn: {
+        lagn_version: '1.6.0',
+        game_id: 'match-3',
+        variant: 'solo',
+        player_count: 1,
+        setup: {},
+      },
+      resultOmittedReason: 'unknown',
+    })
+    assert.equal(view.outcomeLabel, 'Outcome not recorded')
+    assert.equal(view.isDecisive, false)
+
+    // why: a reason this client does not know (say, one a later server adds)
+    // must never read "Draw"; only the exact 'tie' may.
+    const unrecognized = parseResultLagn('match-4', {
+      lagn: {
+        lagn_version: '1.6.0',
+        game_id: 'match-4',
+        variant: 'solo',
+        player_count: 1,
+        setup: {},
+      },
+      resultOmittedReason: 'abandoned',
+    })
+    assert.equal(unrecognized.outcomeLabel, 'Outcome not recorded')
   })
 })
