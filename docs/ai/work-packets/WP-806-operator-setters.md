@@ -430,7 +430,8 @@ guessing, if:
      gone, and the displaced card is at the end.
    - Refused:
      - `from: null`, `to: undefined`, `cardId: 42`;
-     - an R1 `cardId` that isn't the pile's top id;
+     - an R1 `cardId` that isn't the pile's top id. The ids are fungible, so the presence check is what refuses it;
+       the top-id rule is defensive and has no revert proof;
      - an `inPlay` destination;
      - `{ko}` as a source;
      - a `{supply}` destination;
@@ -447,9 +448,9 @@ guessing, if:
    - all players' zones and `G.piles`;
    - `G.villainDeck.deck` + `.discard`, `G.heroDeck`, `G.hq` and `G.city`;
    - `G.ko`, `G.escapedPile` and `G.operatorSetAside`;
-   - `G.attachedBystanders`, `G.villainAttachedHeroes`, `G.scheme.twistPile`, `G.mastermind.strikePile` /
-     `.tacticsDeck` / `.attachedBystanders`, `G.transformDeck`,
-     `G.outOfTimeCards`, and `G.pendingTeleportReturns[].cardId`.
+   - the **values** (not the keys) of `G.attachedBystanders`, `G.villainAttachedHeroes` and `G.outOfTimeCards`;
+   - `G.scheme.twistPile`, `G.mastermind.strikePile` / `.tacticsDeck` / `.tacticsDefeated` / `.attachedBystanders`,
+     `G.transformDeck` and `G.pendingTeleportReturns[].cardId`.
 
    Reference-only queues (`pendingDivingBlockWounds[].woundCardId`, `pendingEscapeProcedures`) aren't counted, which
    avoids double counts.
@@ -713,5 +714,16 @@ Pending: the gate runs as an independent subagent after pre-flight and copilot.
     - the keyed-access and pile-slice style sanctions;
     - 01.5 INVOKED.
   All the fixes are text and none changes scope, so per 01.4 the verdict is READY without a re-run.
-- **Copilot (01.7):** pending.
+- **Copilot (01.7): PASS.** It ran as an independent subagent. The first pass was RISK → HOLD, with findings F1–F9:
+  - F1: nested-arg null guards;
+  - F2: positive controls on every gate refusal;
+  - F3: the Diving Block gate case and per-clause revert proofs;
+  - F4: honest R4 revert proofs;
+  - F5: the get-trap `Proxy` for "no random";
+  - F6: prepend to the removal result, plus setter 3 conservation;
+  - F7: the full conservation zone list;
+  - F8: the Diving Block and live-only limitations;
+  - F9: EC/WP parity for exports, R1, setter 2 and setter 6.
+  The delta re-check was PASS. Its notes N1 (the fungible top-id refusal) and N2 (count map values; `tacticsDefeated`)
+  are applied.
 - **Lint (00.3):** pending.

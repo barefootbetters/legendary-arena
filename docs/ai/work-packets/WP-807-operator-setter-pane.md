@@ -44,7 +44,8 @@ Follow-on 2 of the WP-802 arc, client half. Engine half: WP-806.
 - **Dependencies:**
   - **WP-806 / EC-843 / D-24713 merged.** That gives:
     - the six moves registered on `LegendaryGame.moves`;
-    - the `.` surface exports: `OperatorSupplyPile`, `OperatorZoneRef`, `OperatorPlayerZoneName`, the six args types,
+    - the `.` surface exports: `OperatorSupplyPile`, `OperatorDeckName`, `OperatorRevealCardType`,
+      `OperatorEconomyResource`, `OperatorZoneRef`, `OperatorPlayerZoneName`, the six args types,
       `OperatorSetterMoveName`, `OPERATOR_SUPPLY_PILES` and `OPERATOR_ECONOMY_MAX_AMOUNT`;
     - `OperatorView.setAsideCounts?`.
     STOP if any of these is missing.
@@ -228,7 +229,8 @@ baseline before editing. STOP and report, without guessing, if:
   - **Binding labels** (Tweakpane `label`): `Pile`, `Count`, `Villain card`, `Hero card`, `HQ space`, `Card`,
     `Destination`, `Resource`, `Amount`.
   - **Empty lists:** an empty villain or hero deck binds a list with no options. A click with an empty selection submits
-    nothing.
+    nothing. If Tweakpane 4.0.5 throws on `options: []` (the rebuild test shows it), omit that list binding and disable
+    its buttons instead. That isn't a STOP.
   - **Pane:** `new Pane({ container: host, title: 'Setters' })`, with folders in this order and these exact button
     titles:
     1. **Supply:** list `pile`; number `count` (min 0, step 1); button "Set supply count".
@@ -298,8 +300,9 @@ baseline before editing. STOP and report, without guessing, if:
     b.textContent?.trim() === title)`, asserting exactly one match. Folder and pane titles are also `<button>`s, so a
     text search over all buttons is ambiguous.
   - **Folders:** read from `.tp-fldv_t`.
-  - **Inputs:** driven by binding label. Set `select.value = key` and dispatch `change`; for numbers, set `input.value`
-    and dispatch `change`.
+  - **Inputs:** driven by binding label. Take the `.tp-lblv` whose `.tp-lblv_l` text equals the label, then its `select`
+    or `input`. For a list, set `select.value = key` and dispatch `change`; for a number, set `input.value` and dispatch
+    `change`.
 
   Cases:
   - the pane renders, the `.tp-fldv_t` texts equal the six folder titles in order, and the hint shows the open text on
@@ -518,5 +521,17 @@ Pending: the gate runs as an independent subagent after pre-flight and copilot.
     - the refresh-race limitation;
     - the wording fix.
   All the fixes are text and none changes scope, so the verdict is READY without a re-run.
-- **Copilot (01.7):** pending.
+- **Copilot (01.7): PASS (CONFIRM).** It ran as an independent subagent. The first pass was RISK → HOLD, with findings
+  F1–F9:
+  - F1: the unmount test used the captured host;
+  - F2: disabled vs re-check clicks (jsdom's `.click()` skips disabled controls) and the Escape-disabled case;
+  - F3: locked button, folder and input test helpers, plus the binding labels;
+  - F4: typed discriminated-union intents;
+  - F5: the fungible ids imported from the engine;
+  - F6: position, rebuild-key order and empty decks;
+  - F7: the theme limitation;
+  - F8: `-E` on the core pin;
+  - F9: the `playerId: ''` case.
+  The delta re-check was PASS. Its leftovers R1–R3 (the §Assumes export list, the empty-options fallback, the
+  label-to-input lookup) are applied.
 - **Lint (00.3):** pending.
