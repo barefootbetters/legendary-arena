@@ -9,14 +9,19 @@
 - [ ] The EXACT target file set = `## Files to Produce`. Any file outside it is a FAIL, surfaced as a blocker. 01.5 runtime-wiring allowance: INVOKED. WP §E is the only existing-test edit.
 
 ## Locked Values (do not re-derive)
-- `OperatorSupplyPile = 'wounds' | 'bystanders' | 'officers' | 'sidekicks'`; `OPERATOR_SUPPLY_PILES = ['wounds', 'bystanders', 'officers', 'sidekicks']`; `OPERATOR_ECONOMY_MAX_AMOUNT = 20`.
-- `OperatorZoneRef = { zone: 'hand' | 'deck' | 'discard' | 'inPlay' | 'victory'; playerId: string } | { zone: 'ko' } | { zone: 'heroDeck' } | { zone: 'hq'; hqIndex: number } | { zone: 'supply'; pile: OperatorSupplyPile }`.
-- The moves, in `OPERATOR_SETTER_MOVE_NAMES` order:
-  - `operatorSetSupplyCount({ pile, count })`; `operatorMoveToDeckTop({ deck: 'villain' | 'hero', cardId })`; `operatorRevealNow({ cardType: 'scheme-twist' | 'mastermind-strike' })`
-  - `operatorMoveCard({ cardId, from, to })`; `operatorAddEconomy({ resource: 'attack' | 'recruit', amount })`; `operatorEscapeVillain({})`
-- `G.operatorSetAside?: { wounds?: CardExtId[]; bystanders?: CardExtId[]; officers?: CardExtId[]; sidekicks?: CardExtId[] }`. It is absent until the first decrease, and a pile's key is kept once created.
-- `canRunOperatorSetter(G, currentPlayer, playerID)` requires all four: `G.isDebugMatch === true`; `playerID === currentPlayer`; `G.currentStage === OPERATOR_SETTER_STAGE` (`TurnStage = 'main'`); and `!isOperatorChoiceOpen(G)`.
-- `isOperatorChoiceOpen` = `hasAnyPendingChoice(G)` || `pendingHeroChoice !== undefined` || a non-empty `pendingDivingBlockWounds` || a non-empty `pendingEscapeProcedures`. Teleport returns don't count.
+- `moves/operatorSetters.types.ts`, verbatim:
+  - `export type OperatorSupplyPile = 'wounds' | 'bystanders' | 'officers' | 'sidekicks';` `export const OPERATOR_SUPPLY_PILES: readonly OperatorSupplyPile[] = ['wounds', 'bystanders', 'officers', 'sidekicks'];`
+  - `export type OperatorDeckName = 'villain' | 'hero';` `export type OperatorRevealCardType = 'scheme-twist' | 'mastermind-strike';` `export type OperatorEconomyResource = 'attack' | 'recruit';` `export const OPERATOR_ECONOMY_MAX_AMOUNT = 20;`
+  - `export type OperatorPlayerZoneName = 'hand' | 'deck' | 'discard' | 'inPlay' | 'victory';` `export type OperatorZoneRef = { zone: OperatorPlayerZoneName; playerId: string } | { zone: 'ko' } | { zone: 'heroDeck' } | { zone: 'hq'; hqIndex: number } | { zone: 'supply'; pile: OperatorSupplyPile };`
+  - `export interface OperatorSetSupplyCountArgs { pile: OperatorSupplyPile; count: number }` `export interface OperatorMoveToDeckTopArgs { deck: OperatorDeckName; cardId: CardExtId }` `export interface OperatorRevealNowArgs { cardType: OperatorRevealCardType }`
+  - `export interface OperatorMoveCardArgs { cardId: CardExtId; from: OperatorZoneRef; to: OperatorZoneRef }` `export interface OperatorAddEconomyArgs { resource: OperatorEconomyResource; amount: number }` `export type OperatorEscapeVillainArgs = Record<string, never>;`
+  - `export type OperatorSetterMoveName = 'operatorSetSupplyCount' | 'operatorMoveToDeckTop' | 'operatorRevealNow' | 'operatorMoveCard' | 'operatorAddEconomy' | 'operatorEscapeVillain';` `export const OPERATOR_SETTER_MOVE_NAMES: readonly OperatorSetterMoveName[] = ['operatorSetSupplyCount', 'operatorMoveToDeckTop', 'operatorRevealNow', 'operatorMoveCard', 'operatorAddEconomy', 'operatorEscapeVillain'];`
+- `G` field: `operatorSetAside?: { wounds?: CardExtId[]; bystanders?: CardExtId[]; officers?: CardExtId[]; sidekicks?: CardExtId[] };`. It is absent until the first decrease, and a pile's key is created on its first decrease and kept, even when it empties.
+- Gate (`moves/operatorSetters.logic.ts`):
+  - `const OPERATOR_SETTER_STAGE: TurnStage = 'main';`
+  - `export function isOperatorChoiceOpen(G: LegendaryGameState): boolean` is true when `hasAnyPendingChoice(G)`, or `G.pendingHeroChoice !== undefined`, or `(G.pendingDivingBlockWounds?.length ?? 0) > 0`, or `(G.pendingEscapeProcedures?.length ?? 0) > 0`. `pendingTeleportReturns` is **not** a choice.
+  - `export function canRunOperatorSetter(G: LegendaryGameState, currentPlayer: string, playerID: string): boolean` is true only when `G.isDebugMatch === true`, `playerID === currentPlayer`, `G.currentStage === OPERATOR_SETTER_STAGE` and `!isOperatorChoiceOpen(G)`.
+- `PILE_LABEL = { wounds: 'Wound', bystanders: 'Bystander', officers: 'S.H.I.E.L.D. Officer', sidekicks: 'Sidekick' }`.
 - Move signature: `({ G, ctx, playerID, ...context }, args: unknown)`.
 - Move order:
   - (1) validate args, never destructured: an object and not null; every nested `from` / `to` an object and not null before any field read; `cardId` a string; union members; `Number.isInteger`; `Object.hasOwn(G.playerZones, id)`. Setter 6 accepts any non-null object and ignores its keys;
@@ -42,7 +47,7 @@
   - `Operator: ${PILE_LABEL} supply set to ${count} (was ${current}).`; `Operator: ${cardRef} moved to the top of the ${Villain|Hero} Deck.`; `Operator: revealing ${cardRef} now.`
   - `Operator: ${cardRef} moved from ${fromLabel} to ${toLabel}.`, plus ` ${displacedRef} went to the bottom of the Hero Deck.` when R4 displaces a card
   - `Operator: +${amount} ${Attack|Recruit} this turn.`; `Operator: ${cardRef} escapes.`
-- Labels: `Player ${p}'s hand|deck|discard pile|play area|Victory Pile`; a deck destination is `the top of Player ${p}'s deck`; `the KO pile`; `the Hero Deck`; `HQ space ${hqIndex + 1}`; `the ${PILE_LABEL} supply`. `PILE_LABEL` = Wound / Bystander / S.H.I.E.L.D. Officer / Sidekick.
+- Labels: `Player ${p}'s hand|deck|discard pile|play area|Victory Pile`; a deck destination is `the top of Player ${p}'s deck`; `the KO pile`; `the Hero Deck`; `HQ space ${hqIndex + 1}`; `the ${PILE_LABEL} supply`.
 - Registration: `{ move, client: false }`, 47 → 53.
 - `OperatorView.setAsideCounts?: OperatorSupplyCounts` is present only when `G.operatorSetAside` exists, built with a conditional spread inside the return literal.
 - `index.ts` (`.`) exports:
@@ -90,7 +95,7 @@
 - [ ] The WP §Verification `Select-String` prints nothing. The sentinel and `replay.execute.test.ts` diffs are empty. `git diff origin/main -- '*.test.ts'` is additions plus the `game.test.ts` pin.
 - [ ] **STOP gate:** the 01.6 post-mortem is written (`docs/ai/REFERENCE/01.6-post-mortem-checklist.md`) before Commit 1.
 - [ ] Commit 1, `EC-843: …`: code + tests + post-mortem, with a `Tests-changed:` trailer (the move pin) and `Vision: §3, §7, §14, §22, §23`.
-- [ ] Commit 2, `SPEC: WP-806 / EC-843 govern-close — …`: D-24713 Active; the ewiki §Build status and OQ7; STATUS; WORK_INDEX `[x]` ("live-verify via WP-807"); EC_INDEX Done; mindmap ✅ + `pnpm roadmap:counts:write` + `:check`; `pnpm ledger:numbers:check`.
+- [ ] Commit 2, `SPEC: WP-806 / EC-843 govern-close — …`: D-24713 Active; the ewiki §Build status and OQ7; STATUS "No user-observable change — infrastructure only; live-verify via WP-807"; WORK_INDEX `[x]` ("live-verify via WP-807"); EC_INDEX Done; mindmap ✅ + `pnpm roadmap:counts:write` + `:check`; `pnpm ledger:numbers:check`.
 - [ ] Neither commit subject contains a Rule 1 token (WIP / fix stuff / misc / tmp / updates / changes / debug). Write "operator match".
 
 ## Common Failure Smells

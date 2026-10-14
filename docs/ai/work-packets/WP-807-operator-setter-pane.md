@@ -199,15 +199,17 @@ baseline before editing. STOP and report, without guessing, if:
       - `from = { zone, playerId }`, with zone `'hand' | 'deck' | 'discard' | 'inPlay' | 'victory'`; `deckTopFirst`
         maps to `'deck'`.
       - `key = ${playerId}|${zone}|${cardId}`.
-      - Label `Player ${playerId} · ${zoneLabel} · ${name}`.
+      - Label `Player ${playerId} · ${zoneLabel} · ${name}`, where `zoneLabel` is `hand`, `deck`, `discard pile`,
+        `play area` or `Victory Pile`.
     - **Supplies:** then, for each `OPERATOR_SUPPLY_PILES` pile whose `supplyCounts` is > 0, one entry.
       - `cardId` is the pile's fungible id, imported from the engine: `WOUND_EXT_ID`, `BYSTANDER_EXT_ID`,
         `SHIELD_OFFICER_EXT_ID` or `SIDEKICK_EXT_ID`.
       - `from = { zone: 'supply', pile }` and `key = supply|${pile}`.
       - Label `${PILE_LABEL} supply (top)`.
   - `buildDestinations(view: OperatorView): OperatorDestination[]`
-    - for each seat, `hand`, `deck` (labelled "deck (top)"), `discard` and `victory`, with `ref = { zone, playerId }`
-      and `key = ${playerId}|${zone}`;
+    - for each seat, `hand`, `deck`, `discard` and `victory`, with `ref = { zone, playerId }`,
+      `key = ${playerId}|${zone}`, and label `Player ${playerId} · ${destinationLabel}`, where `destinationLabel` is
+      `hand`, `deck (top)`, `discard pile` or `Victory Pile`;
     - then `{ zone: 'ko' }`, labelled "KO pile", with key `ko`.
   - `buildDeckCardOptions(cardIds: readonly string[], view: OperatorView): { text: string; value: string }[]` — one
     entry per distinct id, in first-seen order, `text = ${position}. ${name}`. `position` is the index of the id's
@@ -308,8 +310,14 @@ baseline before editing. STOP and report, without guessing, if:
   - the pane renders, the `.tp-fldv_t` texts equal the six folder titles in order, and the hint shows the open text on
     own turn in `main`;
   - "Set supply count" submits `operatorSetSupplyCount` with the bound pile and count, then emits `submitted`;
-  - "Reveal a Scheme Twist now", "Escape the Villain at the City's edge", "Add to this turn" and "Place hero in HQ space"
-    (`hqIndex` = space − 1) submit the locked intents;
+  - each of these buttons submits exactly its locked intent:
+    - "Move villain card to top" (`deck: 'villain'`, with a selected non-first card);
+    - "Move hero card to top" (`deck: 'hero'`);
+    - "Reveal a Scheme Twist now" (`cardType: 'scheme-twist'`);
+    - "Reveal a Master Strike now" (`cardType: 'mastermind-strike'`);
+    - "Escape the Villain at the City's edge";
+    - "Add to this turn";
+    - "Place hero in HQ space" (`hqIndex` = space − 1);
   - "Move card" submits the chosen source's `cardId` / `from` and the chosen destination's `ref`;
   - **stable keys:** select a hand card that is **not** the first option, re-render with a card inserted before it in
     that hand, click "Move card". The same `cardId` is submitted;
@@ -384,6 +392,8 @@ baseline before editing. STOP and report, without guessing, if:
 - `apps/arena-client/src/components/play/OperatorBoardPanel.test.ts` — **modified** — §D cases (additions)
 - `apps/arena-client/src/pages/PlayViewport.vue` — **modified** — two props on the panel mount
 - `apps/arena-client/src/pages/PlayViewport.test.ts` — **modified** — §D case (addition)
+- `docs/ai/post-mortems/01.6-WP-807-operator-setter-pane.md` — **new** — mandatory 01.6 post-mortem, in the `EC-844:`
+  commit
 - `wiki/why-play-needs-a-debug-panel.md`, `docs/ai/STATUS.md`, `docs/ai/work-packets/WORK_INDEX.md`,
   `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — **modified** — governance close
 
@@ -469,6 +479,10 @@ Record the matchId in STATUS, citing WP-806 and WP-807.
 - [ ] STATUS, WORK_INDEX (`[x]` with date), EC_INDEX, the mindmap (✅, counts regenerated) and the ewiki §Build status
       are updated.
 - [ ] DECISIONS.md: no new entry (D-24689 §6, D-24713). Confirm at close.
+- [ ] 01.6 post-mortem written (`docs/ai/post-mortems/01.6-WP-807-operator-setter-pane.md`, per
+      `docs/ai/REFERENCE/01.6-post-mortem-checklist.md`). It is **mandatory**: a new runtime dependency and new runtime
+      wiring (a lazy chunk plus a move-dispatch path). It is a STOP gate before the `EC-844:` commit, and it is committed
+      in that commit.
 - [ ] Two commits in one PR: `EC-844:` (code + tests + dependency) and `SPEC:` (governance close). Neither subject
       contains a commit-msg Rule 1 token.
 - [ ] D-24026 live verification after deploy (§Verification Steps 1–9), recorded as a STATUS flip for WP-806 and WP-807.
@@ -487,7 +501,7 @@ Record the matchId in STATUS, citing WP-806 and WP-807.
 - §16 Performance & Responsiveness: Tweakpane loads in its own lazy chunk, only for an admin in an operator match.
 - §17 Accessibility & Inclusivity: Tweakpane renders native buttons and inputs, keyboard-reachable; the hint explains
   disabled buttons.
-- §22 Determinism & Replay: no client randomness. The moves are WP-806's and replay faithfully.
+- §22 Deterministic & Reproducible Evaluation: no client randomness. The moves are WP-806's and replay faithfully.
 - **Conflict assertion:** No conflict.
 - **NG-1..NG-8:** none crossed. Operator tooling, unreachable by purchase.
 

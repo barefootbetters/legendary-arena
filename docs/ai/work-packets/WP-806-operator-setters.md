@@ -87,7 +87,7 @@ set-aside zone's name and shape.
     (`moves/seatChoice.resolve.ts` L90). That stage is empty, so the global move bag applies. A setter therefore checks
     `playerID === ctx.currentPlayer` itself.
 - **Stage.** Non-core moves check `G.currentStage !== 'main'` with a literal (`recruitOfficer.ts` L176,
-  `phaseCard.ts` L142). `TURN_STAGES` / `TurnStage` are at `turn/turnPhases.types.ts` L28–35.
+  the cleanest precedent). `TURN_STAGES` / `TurnStage` are at `turn/turnPhases.types.ts` L28–35.
 - **Supplies** (`G.piles: GlobalPiles`, `state/zones.types.ts` L77–95). `bystanders`, `wounds`, `officers` and
   `sidekicks` are `CardExtId[]` with index 0 on top (`recruitOfficer.ts` L98–99). Their ids are fungible: `pile-wound`,
   `pile-bystander`, `pile-shield-officer`, `pile-sidekick` (`setup/pilesInit.ts` L22–43). `horrors` is empty in MVP and
@@ -565,7 +565,7 @@ and the hero-deck / HQ question).
 - Setters for the City (place a Villain), Mastermind tactics, the KO pile as a source, `horrors` and the transform
   deck.
 - Any server, persistence, `UIState`, `playerView` or registry change. No API endpoint change.
-- Updating the stale "every move has an entry" comments at `replay/replay.execute.ts` L137 and
+- Updating the stale "every move has an entry" comments at `replay/replay.execute.ts` L134 and
   `simulation/simulation.runner.ts` L327. They predate this packet, so they get a separate hygiene commit.
 
 ## Files Expected to Change
@@ -607,8 +607,8 @@ yet, in two packets instead of one.
    player, the stage isn't `main`, or a choice is open (§D case 1).
 3. Setter 1 moves cards between `G.piles[pile]` and `G.operatorSetAside[pile]` only, and refuses counts above the pile
    plus its set-aside.
-4. Setters 2 and 3 reorder `G.villainDeck.deck` / `G.heroDeck` and draw nothing by chance. Setter 3's card resolves
-   through `performVillainReveal`.
+4. Setter 2 reorders `G.villainDeck.deck` / `G.heroDeck` and never reads `random`. Setter 3 picks the first type match
+   deterministically, and the card resolves through `performVillainReveal`.
 5. Setter 4 allows exactly routes R1–R4, and same-player hand → discard goes through `discardFromHand`. R4 sends the
    displaced card to the hero-deck bottom.
 6. Setter 5 adds 1–20 to the chosen resource only. Setter 6 escapes the space-4 Villain through
@@ -656,8 +656,9 @@ every setter in production, and its live record covers this packet too (cited in
 - [ ] `git diff --name-only origin/main` ⊆ §Files Expected to Change. Revert line-ending-only churn (e.g.
       `lagn-v1.json`).
 - [ ] `docs/ai/DECISIONS.md`: D-24713 landed Active from §D-24713 Content.
-- [ ] STATUS, WORK_INDEX (`[x]` with date), EC_INDEX, the mindmap (✅, counts regenerated) and the ewiki page's §Build
-      status / Open Question 7 are updated.
+- [ ] STATUS ("No user-observable change — infrastructure only; live-verify via WP-807"), WORK_INDEX (`[x]` with
+      date), EC_INDEX, the mindmap (✅, counts regenerated) and the ewiki page's §Build status / Open Question 7 are
+      updated.
 - [ ] 01.6 post-mortem written (`docs/ai/post-mortems/01.6-WP-806-operator-setters.md`, per
       `docs/ai/REFERENCE/01.6-post-mortem-checklist.md`). It is **mandatory**: a new contract that WP-807 consumes, plus
       new runtime wiring. It is a STOP gate before the `EC-843:` commit.
@@ -676,7 +677,7 @@ every setter in production, and its live record covers this packet too (cited in
   §3), and every setter is logged.
 - §7 Strict Layer Separation: the engine owns the setters; the client (WP-807) only submits intent.
 - §14 Explicit Decisions, No Silent Drift: D-24713 records the §7 extensions before code uses them.
-- §22 Determinism & Replay: setters are moves in the log. Their own logic draws nothing by chance; the paths they call
+- §22 Deterministic & Reproducible Evaluation: setters are moves in the log. Their own logic draws nothing by chance; the paths they call
   use `ctx.random` as in play. Normal-match hashes are unchanged (omit-when-off field, no re-pin).
 - §23 Competitive Leaderboards & Submission: an operator match is still refused at submission (`debug_match`).
 - **Conflict assertion:** No conflict.

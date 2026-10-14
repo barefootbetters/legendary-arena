@@ -18,15 +18,16 @@
   - `buildMoveCardIntent(source, to)` → `{ cardId: source.cardId, from: source.from, to }`; `buildEconomyIntent(resource, amount)` → `{ resource, amount }`; `buildEscapeIntent()` → `{}`
 - `OperatorCardSource { key; cardId; from; label }` and `OperatorDestination { key; ref; label }`.
 - `buildCardSources(view)`:
-  - seats in order × `hand`, `deckTopFirst` (as `'deck'`), `discard`, `inPlay`, `victory`, with `from = { zone, playerId }` and `key = ${playerId}|${zone}|${cardId}`;
+  - seats in order × `hand`, `deckTopFirst` (as `'deck'`), `discard`, `inPlay`, `victory`, with `from = { zone, playerId }`, `key = ${playerId}|${zone}|${cardId}` and label `Player ${playerId} · ${zoneLabel} · ${name}`, where `zoneLabel` is `hand` / `deck` / `discard pile` / `play area` / `Victory Pile`;
   - then each supply with a count > 0, with `cardId` its engine-exported fungible id (`WOUND_EXT_ID` / `BYSTANDER_EXT_ID` / `SHIELD_OFFICER_EXT_ID` / `SIDEKICK_EXT_ID`), `from = { zone: 'supply', pile }` and `key = supply|${pile}`.
-- `buildDestinations(view)`: per seat `hand`, `deck` ("deck (top)"), `discard` and `victory`, with `ref = { zone, playerId }` and `key = ${playerId}|${zone}`; then `{ zone: 'ko' }` with key `ko`, labelled "KO pile".
+- `buildDestinations(view)`: per seat `hand`, `deck`, `discard` and `victory`, with `ref = { zone, playerId }`, `key = ${playerId}|${zone}` and label `Player ${playerId} · ${destinationLabel}`, where `destinationLabel` is `hand` / `deck (top)` / `discard pile` / `Victory Pile`; then `{ zone: 'ko' }` with key `ko`, labelled "KO pile".
 - `buildDeckCardOptions(cardIds, view)` = distinct ids, labelled `${position}. ${name}`, where position = first-occurrence index + 1 (`['a','a','b']` gives "1. A", "3. B"). `isSetterWindowOpen(view, playerId)` = `currentStage === 'main' && board.game.activePlayerId === playerId`. `hasEscapeCandidate(view)` = `board.city.spaces[4] != null`.
 - `OperatorSetterPane.vue` (`name: 'OperatorSetterPane'`):
   - **Props:** `operatorView`, `playerId` and `submitMove`, all required. **Emits:** `submitted`.
   - **Test ids:** `operator-setters`, `operator-setters-hint`, `operator-setter-pane`.
   - **Pane:** `new Pane({ container, title: 'Setters' })`, with folders Supply, Villain deck, Hero deck, Move a card, Turn economy, Escape.
-  - **Binding labels:** `Pile`, `Count`, `Villain card`, `Hero card`, `HQ space`, `Card`, `Destination`, `Resource`, `Amount`. An empty deck binds a list with no options; a click with an empty selection submits nothing.
+  - **Binding labels:** `Pile`, `Count`, `Villain card`, `Hero card`, `HQ space`, `Card`, `Destination`, `Resource`, `Amount`.
+  - **Empty decks:** an empty deck binds a list with no options, and a click with an empty selection submits nothing. If Tweakpane 4.0.5 throws on `options: []`, omit that list binding and disable its buttons instead. That isn't a STOP.
 - Buttons: "Set supply count", "Move villain card to top", "Reveal a Scheme Twist now", "Reveal a Master Strike now", "Move hero card to top", "Place hero in HQ space", "Move card", "Add to this turn" (amount 1–`OPERATOR_ECONOMY_MAX_AMOUNT`), "Escape the Villain at the City's edge".
 - "Place hero in HQ space" submits `buildMoveCardIntent({ key: 'heroDeck|' + heroCard, cardId: heroCard, from: { zone: 'heroDeck' }, label: '' }, { zone: 'hq', hqIndex: hqSpace − 1 })`, with `hqSpace` 1–5.
 - "Move card" `source` / `destination` lists are valued by `key`, never by index. On click each key maps back to its entry; a missing key submits nothing.
@@ -63,6 +64,7 @@
 - `apps/arena-client/src/components/play/OperatorSetterPane.vue`, `OperatorSetterPane.test.ts` — **new**
 - `apps/arena-client/src/components/play/OperatorBoardPanel.vue`, `OperatorBoardPanel.test.ts` — **modified**
 - `apps/arena-client/src/pages/PlayViewport.vue`, `PlayViewport.test.ts` — **modified**
+- `docs/ai/post-mortems/01.6-WP-807-operator-setter-pane.md` — **new** — mandatory, in the `EC-844:` commit
 - `wiki/why-play-needs-a-debug-panel.md`, `docs/ai/STATUS.md`, `docs/ai/work-packets/WORK_INDEX.md`, `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — **modified** — governance close
 
 ## After Completing
@@ -75,13 +77,16 @@
   - skip the dispose on rebuild (two `.tp-rotv`);
   - skip the dispose on unmount (the captured host still holds `.tp-rotv`);
   - `hqIndex = hqSpace`;
+  - swap `deck` between the two move-to-top buttons;
+  - swap `cardType` between the two reveal buttons;
   - value "Move card" by index;
   - render the pane without `submitMove`;
   - render it with `playerId: ''`;
   - drop the `playerId` pass-through in `PlayViewport` (the test mounts with `playerId: '0'`);
   - leave `hasEscapeCandidate` out of the Escape disabled state.
 - [ ] `git diff origin/main -- '*.test.ts'` is additions only. `git diff --name-only origin/main` ⊆ Files to Produce.
-- [ ] Commit 1, `EC-844: …`: code + tests + dependencies, with `Vision: §3, §7, §11, §16, §17, §22`.
+- [ ] **STOP gate:** the 01.6 post-mortem is written (`docs/ai/REFERENCE/01.6-post-mortem-checklist.md`) before Commit 1.
+- [ ] Commit 1, `EC-844: …`: code + tests + dependencies + post-mortem, with `Vision: §3, §7, §11, §16, §17, §22`.
 - [ ] Commit 2, `SPEC: WP-807 / EC-844 govern-close — …`: STATUS; the ewiki §Build status; WORK_INDEX `[x]`; EC_INDEX Done; mindmap ✅ + `pnpm roadmap:counts:write` + `:check`; DECISIONS.md: none (D-24689 §6, D-24713); `pnpm ledger:numbers:check`.
 - [ ] Neither commit subject contains a Rule 1 token (WIP / fix stuff / misc / tmp / updates / changes / debug).
 - [ ] Live (D-24026), after merge + deploy only: WP-807 §Verification steps 1–9 as `jefferyjjensen`. The STATUS flip covers WP-806 and WP-807.
