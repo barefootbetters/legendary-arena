@@ -25,7 +25,7 @@ source:
   - ../apps/arena-client/src/components/play/CardTile.vue
   - ../packages/registry/src/gauntletPack.ts
   - ../docs/ai/work-packets/WP-440-gauntlet-pack-contract.md
-last-reviewed: 2026-07-29
+last-reviewed: 2026-10-13
 ---
 
 # LAGN Specification
@@ -55,7 +55,7 @@ the Zod schema in `validator.ts` and the fixtures under
 
 ```json
 {
-  "lagn_version": "1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 | 1.5.0",
+  "lagn_version": "1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 | 1.5.0 | 1.6.0",
   "$schema": "https://legendary-arena.com/schemas/lagn/v1/lagn-v1.json (optional)",
   "game_id": "string",
   "variant": "solo | cooperative | competitive",
@@ -74,7 +74,8 @@ the Zod schema in `validator.ts` and the fixtures under
     "wounds_count": "integer >= 0",
     "shield_officers_count": "integer >= 0",
     "sidekicks_count": "integer >= 0",
-    "support_pools": "object (optional, 1.1.0+ — see below)"
+    "support_pools": "object (optional, 1.1.0+ — see below)",
+    "final_blow": "boolean (optional, 1.6.0+ — see below)"
   },
   "result": {
     "outcome": "victory | defeat",
@@ -90,7 +91,8 @@ Only `lagn_version`, `game_id`, `variant`, `player_count`, and `setup` are
 required at the document root; `result`, `players` (1.4.0+),
 `scoring_profile` (1.4.0+), and `battle_plan` (1.5.0+) are optional, as is
 `result.score` (1.5.0+). Within `setup`,
-`hero_alternates` (1.3.0+) and `support_pools` (1.1.0+) are optional. Heroes are
+`hero_alternates` (1.3.0+), `support_pools` (1.1.0+), and `final_blow` (1.6.0+)
+are optional. Heroes are
 `{ id, name }` entries — `id` is the D-10014 set-qualified `CardExtId`.
 `player_count` accepts **1** (solo) through **5**.
 
@@ -124,7 +126,9 @@ Every variant may also carry the optional 1.2.0+ provenance members
 
 **Tier 3: Replay Log (Optional)**
 
-Deterministic turn-by-turn log for perfect replay and audit:
+A narrated turn-by-turn action log for audit and display. It carries no seed
+or engine move list, so it cannot be re-executed (see
+[Interactions](#interactions)):
 
 ```json
 {
@@ -141,7 +145,7 @@ Deterministic turn-by-turn log for perfect replay and audit:
         ],
         "player_actions": [
           {
-            "seq": "integer (strictly increasing from 0, no gaps)",
+            "seq": "integer >= 0 (contiguous: each action is the previous + 1)",
             "action_type": "villain_reveal | villain_attack | villain_escape | hero_recruit | hero_play | hero_discard | mastermind_twist | mastermind_attack | bystander_capture | bystander_release | wound_dealt | shield_deploy",
             "actor_player_id": "string (optional)",
             "target_card_ext_id": "CardExtId (optional)",
@@ -172,18 +176,18 @@ as a single authoritative Zod schema. The schema:
   schema (see below) — it is not a second hand-maintained description
 - Exports the version constants `LAGN_VERSION`, `LAGN_VERSION_1_0_0`,
   `LAGN_VERSION_1_1_0`, `LAGN_VERSION_1_2_0`, `LAGN_VERSION_1_3_0`,
-  `LAGN_VERSION_1_4_0`, `LAGN_VERSION_1_5_0`, `LAGN_SUPPORTED_VERSIONS`, and
-  `migrateToCurrent()`
+  `LAGN_VERSION_1_4_0`, `LAGN_VERSION_1_5_0`, `LAGN_VERSION_1_6_0`,
+  `LAGN_SUPPORTED_VERSIONS`, and `migrateToCurrent()`
 
-### Versioning (1.0.0 → 1.1.0 → 1.2.0 → 1.3.0 → 1.4.0 → 1.5.0)
+### Versioning (1.0.0 → 1.1.0 → 1.2.0 → 1.3.0 → 1.4.0 → 1.5.0 → 1.6.0)
 
-| | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 | 1.5.0 |
-|---|---|---|---|---|---|---|
-| Read | accepted | accepted | accepted | accepted | accepted | accepted |
-| Written | no | no | no | no | no | **yes — `LAGN_VERSION`** |
-| Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` | optional `players` + `scoring_profile` | optional `battle_plan` + `result.score` |
+| | 1.0.0 | 1.1.0 | 1.2.0 | 1.3.0 | 1.4.0 | 1.5.0 | 1.6.0 |
+|---|---|---|---|---|---|---|---|
+| Read | accepted | accepted | accepted | accepted | accepted | accepted | accepted |
+| Written | no | no | no | no | no | no | **yes — `LAGN_VERSION`** |
+| Adds | — | optional `setup.support_pools` | optional card-metadata provenance | optional `setup.hero_alternates` | optional `players` + `scoring_profile` | optional `battle_plan` + `result.score` | optional `setup.final_blow` |
 
-**Readers accept all six; writers emit only `LAGN_VERSION` (now `1.4.0`).** That asymmetry
+**Readers accept all seven; writers emit only `LAGN_VERSION` (now `1.6.0`).** That asymmetry
 is deliberate and is what keeps stored records readable without a migration
 pass. `LAGN_SUPPORTED_VERSIONS` is the read set; `LAGN_VERSION` is the single
 version this build stamps.
@@ -232,17 +236,19 @@ document carrying one is **rejected**, not silently stripped — and an
 `effect_snapshot` additionally requires a document-level `catalog_ref`, since
 evidence without the snapshot it came from is unverifiable.
 
-**Nothing emits 1.2.0 yet.** `LAGN_VERSION` deliberately stays 1.1.0, so no
-endpoint payload has changed shape; `migrateToCurrent` still targets 1.1.0 and
-the 1.1.0 → 1.2.0 migration step is registered but unreachable. A follow-on
-packet flips the writer together with the producers.
+**No producer emits provenance yet.** When 1.2.0 shipped, `LAGN_VERSION` stayed
+at 1.1.0 and the 1.1.0 → 1.2.0 migration step was unreachable. The writer stamp
+has since moved on (1.4.0 in WP-406, 1.5.0 in WP-641, 1.6.0 in WP-698), so every
+step in the `migrateToCurrent` chain is now reachable. No emitter in `apps/` or
+`packages/` writes `catalog_ref` / `registry_ref` / `effect_snapshot` yet; a
+follow-on packet owns the producers.
 
 **1.3.0 (WP-402 / D-24210) — shipped; the Registry Viewer Loadout tab now emits
 it (WP-404 / D-24213).** Adds optional `setup.hero_alternates`: a bench of reserve
 heroes named in a saved loadout alongside the heroes actually played, so a
 seven-hero shortlist — five played, two held in reserve — survives a
 save/share/re-open round trip instead of losing the reserves. The producer is the
-Registry Viewer's LAGN export, which stamps the current `LAGN_VERSION` (`1.5.0`,
+Registry Viewer's LAGN export, which stamps the current `LAGN_VERSION` (`1.6.0`,
 `>= 1.3.0`); the empty bench omits the key entirely rather than emitting `[]`.
 
 | Block | Location | Carries |
@@ -328,8 +334,9 @@ migrates**. With the writer now at 1.4.0, the `migrateToCurrent` chain
 participants** (migration is forward-only; the roster is the server producer's
 concern).
 
-**1.5.0 (WP-640 contract + WP-641 producer / D-24452) — shipped and emitted (the
-current write stamp, `LAGN_VERSION`).** Adds two optional, DESCRIPTIVE blocks so a server-emitted **result LAGN**
+**1.5.0 (WP-640 contract + WP-641 producer / D-24452) — shipped and emitted;
+superseded as the write stamp by 1.6.0 (WP-698), whose superset carries these
+blocks on the current writer.** Adds two optional, DESCRIPTIVE blocks so a server-emitted **result LAGN**
 can carry the in-match **Battle Plan** and the end-of-match **report card** — the
 original "save the plan and the score in the LAGN" ask:
 
@@ -357,11 +364,27 @@ this contract only *permits* the block, the producer packet owns that discipline
 / `result.score` are **version-gated** — a pre-1.5.0 document carrying either is
 rejected, not silently stripped (the same silent-strip hazard, ordinal per D-24211).
 
-**Nothing emits 1.5.0 yet.** `LAGN_VERSION` deliberately stays 1.4.0, so no stored
-record migrates; the 1.4.0 → 1.5.0 migration step is a pure restamp, **registered but
-unreachable** until a paired producer packet flips the writer and wires
-`GET /api/match/:matchId/result-lagn` to read the Battle Plan table + the
-`competitive_scores` row.
+**The producer (WP-641).** WP-641 flipped `LAGN_VERSION` to 1.5.0 and wired
+`GET /api/match/:matchId/result-lagn` to emit `battle_plan` and `result.score`. No
+stored record migrates; the 1.4.0 → 1.5.0 migration step is a pure restamp.
+
+**1.6.0 (WP-698 / D-24517) — shipped and emitted (the current write stamp,
+`LAGN_VERSION`).** Adds one optional field so a shared loadout keeps the rulebook
+**"Final Blow (Optional)"** Mastermind variant instead of silently dropping it:
+
+| Block | Location | Carries |
+|---|---|---|
+| `final_blow` | `setup` | `boolean` — `true` when the loadout plays the Final Blow rule; **omitted when off** (never written as `false`) |
+
+It is loadout metadata that mirrors the match-setup envelope's `finalBlow` (WP-686 /
+D-24503); the engine consumes the envelope field, never the LAGN one. The Registry
+Viewer LAGN export/import, the in-match loadout LAGN (`GET /api/match/:matchId/lagn`),
+and the arena-client lobby import all carry it.
+
+**One more constraint JSON Schema cannot express** (in the allowlist): `final_blow`
+is **version-gated** — a pre-1.6.0 document carrying it is rejected, not silently
+stripped (ordinal per D-24211). The 1.5.0 → 1.6.0 migration step is a pure restamp,
+and bumping the writer was safe because every version gate is ordinal.
 
 ### TypeScript Types
 
@@ -393,13 +416,13 @@ removes that class of drift by construction.
 **Constraints JSON Schema cannot express.** Derivation silently drops every Zod
 `.refine()` / `.superRefine()` — they are arbitrary predicates with no JSON
 Schema equivalent. Dropping them is unavoidable; dropping them *unrecorded* is
-not. `UNEXPRESSIBLE_CONSTRAINTS` in `validator.ts` names all eleven with a path,
+not. `UNEXPRESSIBLE_CONSTRAINTS` in `validator.ts` names all twelve with a path,
 the constraint, and the reason it cannot be carried (in array order, matching
 `x-lagn-unexpressible-constraints` in the published schema):
 
 1. Support-pool `mode`/`sets` coupling plus per-pool `ext_id` uniqueness
 2. Each pool's `copies` summing to its matching `*_count` field
-3. `seq` increasing by exactly 1 across a turn's actions
+3. `seq` increasing by exactly 1 across a turn's `player_actions`
 4. Any provenance block (`catalog_ref` / `registry_ref` / `effect_snapshot`) requiring `lagn_version` 1.2.0
 5. `effect_snapshot` requiring a document-level `catalog_ref`
 6. `support_pools` requiring `lagn_version` 1.1.0
@@ -408,6 +431,7 @@ the constraint, and the reason it cannot be carried (in array order, matching
 9. `players` / `scoring_profile` requiring `lagn_version` 1.4.0
 10. `players[]` internal consistency — count ≤ `player_count`, each `seat` in `0..player_count-1`, unique seats, unique `player_id`s
 11. `battle_plan` / `result.score` requiring `lagn_version` 1.5.0
+12. `setup.final_blow` requiring `lagn_version` 1.6.0
 
 The list is **enforced, not decorative**: the test suite walks the Zod tree,
 counts refinement nodes, and fails the build if the count disagrees with the
@@ -481,8 +505,13 @@ The open-source publication surface (WP-244 Gate 1):
 - **Registry.** LAGN Tier 2 card catalog is sourced from
   [`@legendary-arena/registry`](../packages/registry/); card `ext_id` format
   matches the registry's `CardExtId` type.
-- **Replay Producer.** [`apps/replay-producer`](../apps/replay-producer) emits
-  LAGN Tier 3 replay logs from deterministic turn sequences.
+- **Replay Producer — not a LAGN emitter.** [`apps/replay-producer`](../apps/replay-producer)
+  emits the engine's `ReplaySnapshotSequence` (a versioned array of per-move
+  `UIState` projections, D-6303), **not** LAGN Tier 3. Nothing in `apps/` or
+  `packages/` writes a Tier 3 `replay` block today; the only Tier 3 documents are
+  the `packages/lagn-spec/examples` fixtures. Tier 3 is also a narrated action log
+  with no seed or engine move list, so a reader cannot re-execute it to rebuild
+  board state.
 - **Third-party tools.** LAGN enables external bot frameworks, analysis
   pipelines, and replay viewers to validate and process Legendary Arena
   game data without importing engine code.
@@ -496,9 +525,11 @@ The open-source publication surface (WP-244 Gate 1):
   format per
   [D-10014](../docs/ai/DECISIONS.md#d-10014).
   Malformed IDs fail validation.
-- **seq constraint.** Replay actions and villain events within a turn are
-  validated as **strictly increasing sequences starting at 0**, with no
-  gaps and no duplicates. Out-of-order or duplicate `seq` values fail.
+- **seq constraint.** Within a turn, `player_actions[].seq` must be
+  **contiguous**: each value is the previous one plus 1, with no gaps and
+  no duplicates. The first value may be any integer ≥ 0, so `0, 1, 2` and
+  `1, 2, 3` both pass. Out-of-order or duplicate `seq` values fail.
+  `villain_events` carry no `seq`.
 - **JSON Schema versioning.** The schema URI includes the MAJOR version
   (`lagn-v1.json`). Minor versions share that file — `lagn_version` is an
   `enum`, not a `const`. Future **major** versions (v2, v3) publish to separate
@@ -523,13 +554,15 @@ The open-source publication surface (WP-244 Gate 1):
 - [`packages/lagn-spec/src/cli.ts`](../packages/lagn-spec/src/cli.ts)
   — CLI entrypoint (shebang `#!/usr/bin/env node`)
 - [`packages/lagn-spec/src/validator.test.ts`](../packages/lagn-spec/src/validator.test.ts)
-  — 102 tests covering all three tiers, seq constraints, `summarize()`,
+  — 107 tests (as of WP-698) covering all three tiers, seq constraints, `summarize()`,
   versioning + support pools, migration, provenance and its two version gates,
   hero alternates and their version + disjointness gates, match participants +
   scoring profile and their version + internal-consistency gates, the Battle
-  Plan + report card and their version gate + grade enum, the ordinal-gate fix,
-  the derived-schema contract, and `ajv` validation of all **eight** shipped
-  fixtures against the generated JSON Schema
+  Plan + report card and their version gate + grade enum, the `final_blow`
+  version gate + 1.6.0 migration, the ordinal-gate fix, the derived-schema
+  contract, and `ajv` validation of **eight** of the nine shipped fixtures
+  against the generated JSON Schema (`tier1-final-blow.lagn.json` is not in
+  that list)
 - [`packages/lagn-spec/src/migrate.ts`](../packages/lagn-spec/src/migrate.ts)
   — forward-only version migration (`migrateToCurrent`)
 - [`packages/lagn-spec/scripts/generate-schema.mjs`](../packages/lagn-spec/scripts/generate-schema.mjs)

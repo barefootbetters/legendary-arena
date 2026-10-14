@@ -36,11 +36,12 @@ work" (the resolver) has been mature for months.
    source of truth**; the JSON Schema is *derived* from it and CI-drift-guarded. AJV is a
    test-only dependency.
 3. **"Resolver not yet built / replay provisional" — both shipped.** The resolver is a
-   mature multi-map dispatch; the Tier-3 replay schema is fully implemented, tested
-   (strictly-increasing `seq` refinement), and emitted by `apps/replay-producer`.
+   mature multi-map dispatch; the Tier-3 replay schema is fully implemented and tested
+   (strictly-increasing `seq` refinement). *Correction 2026-10-13:* nothing emits it —
+   `apps/replay-producer` writes the engine's `ReplaySnapshotSequence`, not LAGN Tier 3.
 
-**LAGN versioning:** shipped through **1.5.0** (battle plan + report card) here, **1.6.0**
-on `main` (final-blow, WP-698); readers accept every version back to 1.0.0, the writer
+**LAGN versioning:** shipped through **1.6.0** (final-blow, WP-698), the current write
+stamp; readers accept every version back to 1.0.0, the writer
 stamps one. Loadout sharing (WP-361/362/363) and the "gauntlet packs are not LAGN" boundary
 are both settled — see `wiki/lagn-v1.md`.
 
@@ -127,8 +128,10 @@ Rationale:
 
 ### Replay half is provisional
 
-> **⚠️ Superseded (2026-09-17):** the replay tier is now fully schema'd, tested (strictly-
-> increasing `seq` refinement), and emitted by `apps/replay-producer`. No longer provisional.
+> **⚠️ Superseded (2026-09-17):** the replay tier is now fully schema'd and tested (strictly-
+> increasing `seq` refinement). *Correction 2026-10-13:* it has no producer —
+> `apps/replay-producer` writes `ReplaySnapshotSequence`, not LAGN — so the "specified but
+> not exercised in production" point below still holds.
 
 The setup and catalog portions of LAGN are exercised in production. The **replay logging
 portion is specified but not implemented** — untested spec is usually wrong in small ways.
