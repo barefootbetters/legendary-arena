@@ -13,6 +13,7 @@
   - `game.ts` `:~510` (`endIf` = `evaluateEndgame(G)`); `competition.logic.ts` `:~54`
   - migrations `025` (no `gameover`, no `match_id` index) and `045` (latest)
 - [ ] Check #2779 (D-24717), #2780 (D-24718) and WP-810 (#2784 drafted; its execution) on `main`. #2779 merged → AC 8 applies. WP-810 executed → rebase the ARCHITECTURE / rules text onto its D-24716 clause.
+- [ ] Confirm #2788 (`bgio.replay_artifacts` in 03.1 + 00.2 §4.1) is on `main`. The `gameover` promotion edits its text; if it has not merged, STOP and ask.
 
 ## Locked Values (do not re-derive)
 - **Migration** `data/migrations/046_add_replay_artifact_gameover.sql`:
@@ -28,6 +29,10 @@
   - `UPDATE bgio.replay_artifacts SET gameover = $2 WHERE replay_hash = $1 AND gameover IS NULL`; returns the sum of each UPDATE's `rowCount`
 - **`ARTIFACT_GAMEOVER_SWEEP_BATCH_SIZE = 5`.** Harvester calls the sweep once per scan, after the capture loop, in its own `try/catch`; logs only when N > 0.
 - **Docs:** each `api-endpoints.md` row's Authorizing WP gains `WP-811 / D-24719`. `.claude/rules/architecture.md` D-24119 parenthetical names the artifact `gameover` derivation. ARCHITECTURE D-24119 replacement ("never written back" narrowed to `bgio.matches`; the verdict is a D-24122 artifact-store write) + D-24153 / D-24169 insertions, `.claude/rules/architecture.md` parentheticals, `api-endpoints.md` three rows (`/lagn`, `/result-lagn`, `/seat-identities`) replaced whole + footer — WP Locked Values verbatim.
+- **`gameover` promotion** (WP Locked Values verbatim): change `bgio.replay_artifacts` from "pending" to live in `docs/03.1-DATA-SOURCES.md` "Durable Replay Artifacts" and in the `00.2-data-requirements.md` §4.1 row.
+  - Add the `gameover` jsonb column, migration 046 and its two indexes; `match_id` is no longer unindexed.
+  - Add the sweep as a `gameover`-only writer and the reaped-match fallback as a reader.
+  - Drop the WP-811 pending clause. Keep WP-810's unless it has executed.
 
 ## Guardrails
 - No edit to `packages/**`, any client app, the reaper, or WP-810's files. `matchLagn.routes.ts` / `seatIdentities.routes.ts`: comments only. No route, status, body, auth or `Cache-Control` change.
@@ -54,6 +59,7 @@
 - `apps/server/src/match/matchLagn.routes.ts`, `seatIdentities.routes.ts` — **modified (comments only)**
 - `apps/server/src/replay/matchCapture.logic.ts` + `.test.ts` (+8, 1 strengthened; the verdict test uses a decisive `SCHEME_LOSS`-latched artifact and asserts the UPDATE text), `captureHarvester.js` + `.test.ts` (+2, 1 counting change) — **modified**
 - `docs/ai/ARCHITECTURE.md`, `.claude/rules/architecture.md`, `docs/ai/REFERENCE/api-endpoints.md` — **modified**
+- `docs/03.1-DATA-SOURCES.md`, `docs/ai/REFERENCE/00.2-data-requirements.md` — **modified** (`gameover` promotion)
 - `docs/ai/DECISIONS.md` (D-24719), `docs/ai/STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — **governance close**
 
 ## After Completing
@@ -70,6 +76,7 @@
 - **`match_not_finished` for an old match:** the legacy branch returns `null` instead of `VERDICT_NOT_RECORDED`.
 - **Live matches slow down / sockets stall every 5 min:** the sweep is unbatched or ran before the capture loop.
 - **The Hall of Legends shows the wrong winner for an old match:** the hash check was skipped.
+- **03.1 / 00.2 still say `gameover` is "pending, not on `main`" after merge:** the promotion step was skipped.
 - **The same artifact is re-reduced every scan:** the throwing-reduction branch did not store `{}`, or the UPDATE lost its `replay_hash` key.
 - **Harvester scheduler test counts off by one per scan:** it still counts every pool call.
 - **An operator match shows on the Hall of Legends after reaping (with #2779 merged):** the fallback built a different object than the live read.
