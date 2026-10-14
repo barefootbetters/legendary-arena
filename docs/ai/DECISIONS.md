@@ -48115,4 +48115,20 @@ D-24026.
 
 ---
 
+### D-24717 — The result LAGN refuses an operator match; the setup LAGN stays open (direct fix, no WP) (Active 2026-10-14)
+
+**Context.** An operator match (WP-802 / D-24689) is an admin test board: the operator can set counts, move cards and end the match at will, and D-24689 §3 keeps it off every score surface. But `GET /api/match/:matchId/result-lagn` (WP-406, guest-readable) had no `isDebugMatch` check, so once an operator match finished, its result LAGN was served like any real game's. The public Legends board (`apps/legends-board`) reads that endpoint. `GET /api/match/:matchId/lagn` had no check either.
+
+**Decision.**
+1. `result-lagn` refuses an operator match with `404 { error: 'not_found' }`, the same response as an unknown or unprojectable match, so the endpoint is no oracle for which matches are operator matches. The check runs right after the projectability gate and before the finished-match gate and every roster, plan and score read.
+2. The flag is read as `matchConfiguration.isDebugMatch === true` from `initial_state`. `Game.setup()` stores the whole payload as `G.matchConfiguration`, and only the admin operator create route can set the key (D-24689), so it is present exactly when `G.isDebugMatch` is. The read stays inside the **D-24153** carve-out (`initialState.G.matchConfiguration`), the D-24658 `finalBlow` precedent; it does not use the D-24689 live-`state` carve-out. `MatchLagnComposition` gains the optional `isDebugMatch` field for this read only. It is never projected into LAGN.
+3. **The setup route stays open.** `GET /api/match/:matchId/lagn` still serves an operator match. The in-match Battle Brief (D-24658) and the View loadout button read it, and a 404 would leave the operator with "lineup unavailable" and a failing button. The setup LAGN carries no player identity and no result, so serving it exposes nothing that the operator match's own board does not.
+4. The `api-endpoints.md` row for `result-lagn` is replaced whole (D-11804).
+
+**Gates.** `pnpm -r build` 0. Server suite 1770 tests, 0 fail (207 skipped: the DB-backed cases, no `TEST_DATABASE_URL`). `matchLagn.routes.test.ts` 17 / 0 (+3: a finished operator match gets the unknown-match 404 with no gameover or roster read; a match whose `isDebugMatch` is not a strict `true` is still served; the setup route still serves an operator match and the document carries no flag). The first case was revert-proofed: it fails with the gate removed. No engine change, no UIState field, no re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24717. Related: WP-802 / D-24689 (operator match), WP-406 / D-24216 (result-LAGN producer), WP-361 / D-24153 (match LAGN projection and blob-read carve-out), D-24446 (public read), D-24658 (Battle Brief reads the setup LAGN), D-11804 (catalog row semantics).
+
+---
+
 Protect this file.
