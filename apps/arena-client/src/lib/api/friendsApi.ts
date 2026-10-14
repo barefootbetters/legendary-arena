@@ -42,9 +42,11 @@ export interface FriendSummary {
 // why: client-local mirror of the server's `FriendApiErrorCode` union
 // (declared in the friendships routes module). The engine/server
 // isolation rule forbids importing server-layer types directly, so the
-// codes are mirrored here by hand; the drift test in friendsApi.test.ts
-// asserts the two stay in sync (set-equality), failing loudly if the
-// server union moves.
+// codes are mirrored here by hand. The drift test in friendsApi.test.ts
+// compares this array against a hand-written expected list, so it
+// catches accidental edits to the client mirror only; it does NOT read
+// the server union and will not fail if the server adds or removes a
+// code. Update this array and that test's list together by hand.
 export const FRIEND_API_ERROR_CODES = [
   'self_friendship',
   'already_pending',

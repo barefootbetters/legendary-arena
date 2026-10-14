@@ -5,7 +5,8 @@
  * success paths (method + Authorization + parsed value), the typed
  * error-code mapping read from `body.error`, the network-throw path, and
  * a drift test pinning the client-local `FRIEND_API_ERROR_CODES` mirror
- * to the WP-351 server union. Pure `node:test` + `node:assert`; no
+ * to a hand-written copy of the WP-351 server union (it does not read
+ * the server code). Pure `node:test` + `node:assert`; no
  * network, no database, no boardgame.io.
  */
 
@@ -266,9 +267,11 @@ test('a null authToken sends no Authorization header', async () => {
 });
 
 test('FRIEND_API_ERROR_CODES mirrors the server union exactly (WP-351 + WP-355) (drift guard)', () => {
-  // why: this list is a client-local mirror of the server's
-  // FriendApiErrorCode union; a failure here means the mirror drifted from
-  // the server contract and must be brought back into lockstep.
+  // why: this list is a hand-written copy of the server's
+  // FriendApiErrorCode union as of WP-351 + WP-355. A failure here means
+  // FRIEND_API_ERROR_CODES was edited without updating this list. The test
+  // cannot see the server union, so a server-side change passes silently
+  // until both lists are updated by hand.
   const expectedServerUnion = [
     'self_friendship',
     'already_pending',
