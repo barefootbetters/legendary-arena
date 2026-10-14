@@ -48036,13 +48036,32 @@ seat names all died. Prod evidence (2026-10-14, gitSha `44724482`): guest autopl
 9. **Exclusions.** Matches never captured (finished before WP-335, or abandoned without gameover) have no artifact and stay
    `404`. Two matches with byte-identical final `G` share one artifact row (`ON CONFLICT DO NOTHING`), so the second has no
    artifact; distinct seeds make this practically impossible and it is not addressed.
-10. **Legacy backlog.** Every artifact captured before 046 starts with `gameover IS NULL`. The prod count at deploy could
-    not be read by the executing session (the permission classifier blocked a read-only query on the droplet, as it did at
-    draft); it is recorded with the D-24026 live-verify. The drain takes (count ÷ 5) scans at 5 minutes each.
+10. **Legacy backlog.** Every artifact captured before 046 starts with `gameover IS NULL`. Prod (droplet database `la`,
+    read-only, run by the operator 2026-10-14): **537** artifacts were captured before the 046 deploy (14:03 UTC), all
+    `NULL` at deploy. The drain is (537 ÷ 5) scans at 5 minutes each, about 9 hours, so it clears around 23:00 UTC.
 
-**Live-verify (D-24026): pending.** After deploy: record the pre-deploy artifact count and the post-drain `gameover =
-'{}'::jsonb` count; `MAYLMfB1PM9` on all three endpoints, with its legends-board label before and after its row is swept; a
-fresh guest autoplay match checked at least 80 minutes after game over; the legends-board view and download.
+**Live-verify (D-24026): CONFIRMED for serving; the legacy verdict drain is pending.** Deploy `4f970023` went live at
+~14:03 UTC on 2026-10-14 and migration 046 applied; the build later moved to `84c3ac69` (WP-812), with no engine change in
+between.
+- **Reaped legacy match `MAYLMfB1PM9`** (captured at `44724482`, reaped 12:14 UTC). At 14:00 UTC, before the deploy,
+  `/lagn`, `/result-lagn` and `/seat-identities` each returned `404`, and the Hall of Legends showed "No result to show —
+  this match is unknown or still in progress". After the deploy all three returned `200`: a valid LAGN 1.6.0 document
+  (Midtown Bank Robbery, 1 player) without `result`, and a one-seat roster. The Hall of Legends then showed **DRAW** with
+  the roster and download (the §7 gap), and **OUTCOME NOT RECORDED** once WP-812 shipped (`resultOmittedReason:
+  "unknown"`). At 18:30 UTC its row was still unswept. It was captured last, so it is swept last; its `result.outcome` is
+  recorded when the drain completes.
+- **Fresh match `9W06xYZc3MM`** (guest autoplay, game over ~14:04:48 UTC, captured 14:10:26 with its verdict copied). At
+  16:18 UTC, 133 minutes after game over and past the reap window, all three endpoints returned `200`, and `/result-lagn`
+  carried `result.outcome: "victory"`. The Hall of Legends showed **VICTORY** with the roster. "Download this match as
+  LAGN" built `match-9W06xYZc3MM.lagn.json` (1011 bytes, LAGN 1.6.0, `outcome: victory`), captured in the page rather
+  than saved to disk.
+- **Sweep behavior** (operator read, ~18:30 UTC). 195 rows swept, **all 195 stored `{}`**, captured 2026-07-24 to
+  2026-09-09. `la-server` logged 195 "no longer reproduces" lines, 0 "Could not re-derive" and 0 failed sweeps, plus
+  39 "Recorded the endgame verdict on 5" lines (39 scans × 5). So every mismatch so far is engine drift on old captures,
+  which the §3 hash check refuses by design, not a sweep fault. 342 rows were still unswept (captured 2026-08-21 to
+  2026-10-14), and 1 row held a capture-time verdict (`9W06xYZc3MM`). Most of the pre-046 history is therefore expected
+  to stay "Outcome not recorded"; rows captured on the current engine (since `44724482`) should reproduce. The final
+  `'{}'` count and `MAYLMfB1PM9`'s outcome are recorded once the backlog drains.
 
 **Reserved by:** NUMBER-LEDGER D-24719 (#2785). Related: D-24095, D-24113, D-24119, D-24122, D-24124, D-24153, D-24169,
 D-24187, D-24214, D-24216, D-24223, D-24716, D-24717, D-24718, D-24720, D-11804, D-24026.
