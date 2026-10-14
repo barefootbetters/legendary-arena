@@ -23,7 +23,9 @@ source:
   - ../docs/ai/DECISIONS.md#d-24559
   - ../apps/server/src/coach/coachModelConfig.ts
   - C:\www\jefferyjjensen-corporate-memory\docs\second-brain\design.md (the design record — private repo barefootbetters/jefferyjjensen-corporate-memory)
-last-reviewed: 2026-10-12
+  - C:\www\jefferyjjensen-corporate-memory\mcp\README.md (the brain's Claude connector — same private repo)
+  - C:\www\jefferyjjensen-corporate-memory\scripts\brain-sources.psd1 (which other repos the connector serves — same private repo)
+last-reviewed: 2026-10-14
 ---
 
 # AI Second Brain
@@ -46,10 +48,11 @@ The AI Second Brain is the operator's self-hosted knowledge platform: an owned
 store of knowledge that is the system of record, with replaceable AI agents in
 front of it (*knowledge is permanent; agents are replaceable*). It spans more
 than Legendary Arena, so its design lives in the operator's own repo, not here.
-For Legendary Arena it means three things: the engine corpus is one of the
-domains it reads, it runs on its own host rather than the game server, and the
-endgame coach is the first proof that the game's AI model can be swapped by
-configuration.
+For Legendary Arena it means four things: the engine corpus is one of the
+domains it reads, this wiki is readable from Claude on the operator's phone
+through the brain's connector, the brain runs on its own host rather than the
+game server, and the endgame coach is the first proof that the game's AI model
+can be swapped by configuration.
 
 ## Mechanics
 
@@ -77,6 +80,28 @@ from the ship's `main`, so the site can trail the repo by a merge or two.
 - **Nothing flows back.** The brain never writes to this repo. Personal,
   consulting, and client material stays in the ship and never appears here,
   because this repo is public.
+
+### Reading this wiki from Claude (the brain's connector)
+
+Since 2026-10-14 the brain's read-only MCP server, added to claude.ai as a
+custom connector, serves every page in `wiki/` to Claude on the web, the
+desktop, and the operator's phone. The pages appear as one folder, `ewiki`,
+beside the ship's own notes.
+
+| What | How it works |
+|---|---|
+| Source | `wiki/*.md` on GitHub `main`, read with a shallow clone when the operator deploys the brain. It never reads a local checkout. |
+| Citations | Every answer names the engine commit it read and links the page on `ewiki.legendary-arena.com`. |
+| Freshness | It's a snapshot. An edit here reaches the phone only after the next brain deploy, not when this site rebuilds. |
+| What ships | All pages, because this repo is public and so already readable by anyone, including any hosted model. Each deploy checks the repo is still public; if it ever goes private, the deploy leaves the wiki out of the connector. |
+| Writes | None to this repo. The connector's one write is a phone-to-desk idea inbox in the ship (below). |
+
+**Ideas from the phone.** In a phone chat, an idea can be sent to the
+operator's desk with the connector's `send_to_desk` tool, in a folder such as
+`legendary-arena`. On the desk it's filed as a draft in the ship's
+`inbox/<folder>/`. It becomes a Work Packet here only after it's checked
+against this repo's rules (`DECISIONS.md`, `WORK_INDEX.md`, this wiki) and the
+operator approves it. A phone brief is a draft, never a decision.
 
 ### Hosting
 
@@ -248,6 +273,12 @@ feature reaching across the network.
   isolation — process/user isolation, separate credentials, independent backups,
   resource limits — never a casual co-tenant. A dedicated host remains the
   end-state; co-location is the temporary, deliberately-fenced start.
+- **The phone reads a snapshot, not the live wiki.** The brain's connector bundles
+  `wiki/` when the operator deploys the brain, so a merged edit here (even one
+  this site already shows) is invisible to Claude on the phone until the next
+  brain deploy. When the phone and the site disagree, the site is newer. Each
+  connector answer names the engine commit it read, so you can check how old
+  it is.
 - **This repo is public.** The ewiki is behind Cloudflare Access, but its
   Markdown source is in a public GitHub repo. Brain content that belongs to the
   operator, a client, or another business goes in the ship, never on this page.
@@ -271,6 +302,11 @@ feature reaching across the network.
   knowledge-inventory template moved to the ship's `docs/second-brain/`
   ([D-24712](../docs/ai/DECISIONS.md#d-24712)). This page now keeps only the
   Legendary Arena side and the coach's gateway routing.
+- **2026-10-13** — The brain's connector went live on claude.ai and the
+  operator's phone, serving the ship's own notes, with the phone-to-desk idea
+  inbox as its only write. The decisions are in the ship's `decisions/log.md`.
+- **2026-10-14** — The connector started serving this wiki (93 pages, folder
+  `ewiki`), read from GitHub `main` at each brain deploy.
 
 ## References
 
@@ -286,3 +322,6 @@ feature reaching across the network.
 - `apps/server/src/coach/coachModelConfig.ts` — the coach's routing shim.
 - [`docs/second-brain/design.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/design.md)
   in the private ship repo — the full design record.
+- [`mcp/README.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/mcp/README.md)
+  in the private ship repo — the brain's Claude connector: what it serves,
+  sign-in, the idea inbox, and how to redeploy it.
