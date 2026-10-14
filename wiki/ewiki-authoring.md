@@ -487,12 +487,15 @@ the page's files live or pass through:
 | Cloudflare Workers | the assets-only Worker `legendary-arena-wiki` (D-24690) serves pages, search index, and `ewiki/<slug>/` assets; deployed from `main` only |
 | Cloudflare Access | gates `ewiki.legendary-arena.com`, the only address |
 | Cloudflare R2 | card art and audio clips pages link, in the `legendary-images` bucket at `images.legendary-arena.com`; uploaded separately |
+| AI Second Brain | the brain's read-only Claude connector serves the page in its `ewiki` folder, a snapshot of `wiki/` on `main` taken at each brain deploy, not each site rebuild ([how it works](ai-second-brain.md#reading-this-wiki-from-claude-the-brains-connector)); the changelog is not served |
 | Other sites | images hot-linked from `www.barefootbetters.com` and `www.legendary-arena.com`; nothing uploaded |
 | Not used | DigitalOcean (game API only), Render (retired by D-24690), Cloudflare Pages, any script CDN |
 
-Only the first two rows change per variant; the rest are the same on every
-page. The rows mirror [DOMAINS.md](https://github.com/barefootbetters/legendary-arena/blob/main/docs/ops/DOMAINS.md#ewiki)
-and the workflow, so a hosting change updates the partial in the same PR.
+Only the Your clone, GitHub, and AI Second Brain rows change per variant;
+the rest are the same on every page. The rows mirror
+[DOMAINS.md](https://github.com/barefootbetters/legendary-arena/blob/main/docs/ops/DOMAINS.md#ewiki),
+the workflow, and [AI Second Brain](ai-second-brain.md), so a hosting or
+connector change updates the partial in the same PR.
 
 On a page that includes sections from other pages, the footer adds one more
 paragraph, whichever variant it is: the **Linked section** blocks are edited

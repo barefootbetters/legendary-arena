@@ -186,9 +186,11 @@
       through, and the services that are NOT involved, so nobody goes looking
       for the wiki on Render or DigitalOcean. Each row was checked against
       docs/ops/domains.json, docs/ops/DOMAINS.md#ewiki, wrangler.jsonc and
-      .github/workflows/wiki-viewer.yml; when hosting changes, update this
-      table with them. The row set is the same on every page (only the paths
-      vary by variant), so the output stays static and deterministic.
+      .github/workflows/wiki-viewer.yml (the AI Second Brain row against
+      wiki/ai-second-brain.md); when hosting changes, update this table with
+      them. The row set is the same on every page (only the paths and the
+      changelog's brain row vary by variant), so the output stays static and
+      deterministic.
     */ -}}
     <p>
       <strong>Where this page goes.</strong> After merge, the
@@ -263,6 +265,31 @@
             the <code>legendary-images</code> bucket, served from
             <code>images.legendary-arena.com</code>; uploaded separately, never by
             this workflow</td>
+        </tr>
+        {{- /*
+          why: since 2026-10-14 the AI Second Brain's Claude connector serves
+          wiki/*.md from GitHub main, snapshotted at each brain deploy — a
+          separate deploy from this site's. Without this row an editor would
+          assume a merged edit is visible from Claude on the phone once the
+          site rebuilds. The changelog comes from docs/, which the connector
+          does not read, so it gets the "not served" wording. Facts per
+          wiki/ai-second-brain.md "Reading this wiki from Claude"; the
+          connector's host stays unnamed here, as on that page.
+        */ -}}
+        <tr>
+          <td>AI Second Brain</td>
+          <td>
+            {{- if eq $name "changelog" -}}
+              not served: the brain's Claude connector reads only
+              <code>wiki/*.md</code>, and this page comes from <code>docs/</code>
+            {{- else -}}
+              the brain's read-only Claude connector serves this page in its
+              <code>ewiki</code> folder, as a snapshot of <code>wiki/</code> on
+              <code>main</code> taken at each brain deploy (not when this site
+              rebuilds); answers name the engine commit and link here.
+              <a href="/ai-second-brain/#reading-this-wiki-from-claude-the-brains-connector">How it works</a>
+            {{- end -}}
+          </td>
         </tr>
         <tr>
           <td>Other sites</td>
