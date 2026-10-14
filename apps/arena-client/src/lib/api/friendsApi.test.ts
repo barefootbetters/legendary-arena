@@ -266,7 +266,7 @@ test('a null authToken sends no Authorization header', async () => {
   }
 });
 
-test('FRIEND_API_ERROR_CODES mirrors the server union exactly (WP-351 + WP-355) (drift guard)', () => {
+test('FRIEND_API_ERROR_CODES matches the hand-written server-union copy (WP-351 + WP-355) (drift guard)', () => {
   // why: this list is a hand-written copy of the server's
   // FriendApiErrorCode union as of WP-351 + WP-355. A failure here means
   // FRIEND_API_ERROR_CODES was edited without updating this list. The test
