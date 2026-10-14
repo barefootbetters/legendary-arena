@@ -450,6 +450,7 @@ high-water: 422
 - WP-809 — match-seed-entropy (Server; the bgio match seed is minted from crypto.randomBytes instead of boardgame.io's Date.now() default, which equals the public createdAt metadata to the millisecond, so a live match's deck order was recoverable from the lobby API; one hardened processed-game object wired into Server() and the three bot/autoplay ProcessGameConfig sites. reserved 2026-10-13, spec/reserve-match-seed-entropy)
 - WP-810 — replay-lagn-producer (Server + lagn-spec writer flip; GET /api/match/:matchId/replay-lagn emits a completed, non-operator match as a LAGN 1.7.0 document carrying the WP-808 replay.execution block, verified by re-executing it from the seed before emit; new D-24095 blob-read carve-out; LAGN_VERSION 1.6.0 -> 1.7.0. BLOCKED on WP-808. reserved 2026-10-13, spec/reserve-replay-lagn)
 - WP-811 — lagn-reaped-match-fallback (Server; GET /api/match/:matchId/lagn and /result-lagn fall back to the durable bgio.replay_artifacts copy once the reaper deletes the live bgio.matches row ~1h after gameover, so a finished match stays viewable and downloadable; capture persists the gameover verdict on the artifact. reserved 2026-10-14, spec/reserve-lagn-reaped-fallback)
+- WP-812 — result-lagn-unknown-outcome-label (Server + legends-board; the /result-lagn envelope names why `lagn.result` is omitted — a tie or an unknown outcome — so the Hall of Legends shows "Draw" only for a real tie and "Outcome not recorded" for a WP-811 legacy or hash-mismatch artifact; no LAGN contract change. BLOCKED on WP-811. reserved 2026-10-14, claude/reserve-result-lagn-unknown-outcome)
 
 ## EC
 
@@ -861,6 +862,7 @@ high-water: 457
 - EC-846 — match-seed-entropy (WP-809. reserved 2026-10-13, spec/reserve-match-seed-entropy)
 - EC-847 — replay-lagn-producer (WP-810. reserved 2026-10-13, spec/reserve-replay-lagn)
 - EC-848 — lagn-reaped-match-fallback (WP-811. reserved 2026-10-14, spec/reserve-lagn-reaped-fallback)
+- EC-849 — result-lagn-unknown-outcome-label (WP-812. reserved 2026-10-14, claude/reserve-result-lagn-unknown-outcome)
 
 ## D
 
@@ -1356,3 +1358,4 @@ section below) and the allocation protocol in
 - D-24715 — match-seed-entropy (WP-809; server-minted high-entropy match seed via a seed getter on the processed LegendaryGame; engine, boardgame.io lock, and replay-from-persisted-initialState unchanged; corrects DESIGN-SEED-CHALLENGES §7(a) — plugin setup never sees setupData, and setupData is public metadata. reserved 2026-10-13, spec/reserve-match-seed-entropy)
 - D-24716 — replay-lagn-producer (WP-810; D-24095 carve-out for the replay-LAGN export read of initialState seed + log; verify-before-emit; amends the D-24714 data_version producer clause. reserved 2026-10-13, spec/reserve-replay-lagn)
 - D-24719 — lagn-reaped-match-fallback (WP-811; widens the D-24153 / D-24169 carve-outs to the durable bgio.replay_artifacts copy when the live row is reaped; adds the capture-time gameover column. reserved 2026-10-14, spec/reserve-lagn-reaped-fallback)
+- D-24720 — result-lagn-unknown-outcome-label (WP-812; the /result-lagn envelope gains an optional `resultOmittedReason` — `tie` or `unknown` — beside `lagn`; the Hall of Legends view reads it, a non-identity widening of the D-24217 pure-consumer rule; LAGN itself unchanged. reserved 2026-10-14, claude/reserve-result-lagn-unknown-outcome)
