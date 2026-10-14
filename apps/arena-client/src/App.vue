@@ -446,10 +446,11 @@ export default defineComponent({
 
     // why: prop-drill submitMove into <PlayView> rather than letting the
     // play components reach into the live client factory. Components stay
-    // pure and prop-driven for testability (a stub function is enough);
-    // the bgioClient remains the sole runtime engine-import site per the
-    // WP-090 grep invariant. The closure reads liveClient.value at call
-    // time so clicks before mount silently no-op rather than crashing.
+    // pure and prop-driven for testability (a stub function is enough) and
+    // never touch the live boardgame.io client; engine imports stay on the
+    // Runtime-Safe `.` surface, never `/setup` (D-14401). The closure reads
+    // liveClient.value at call time so clicks before mount silently no-op
+    // rather than crashing.
     const submitMove: SubmitMove = (name: UiMoveName, args: unknown): void => {
       // why: WP-421 Surface-2 — fire the local tactile move cue at the single
       // dispatch chokepoint, BEFORE relaying intent to the live client, so the

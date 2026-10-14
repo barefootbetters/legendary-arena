@@ -131,8 +131,9 @@ function replayAdvanceStage(context: ReplayMoveContext): void {
 /**
  * Static map from move name strings to move functions.
  *
- * Every move registered in LegendaryGame.moves has an entry here.
- * Unknown move names are handled gracefully (warning + skip).
+ * Covers the moves the determinism harness replays — not every entry in
+ * LegendaryGame.moves. A move name with no entry here (unlisted or unknown)
+ * logs a replay warning and is skipped (see applyReplayStep).
  */
 const MOVE_MAP: Record<string, MoveFn> = {
   drawCards: (context, args) => drawCards(context as never, args as never),

@@ -324,11 +324,12 @@ function simulationAdvanceStage(context: SimulationMoveContext): void {
 /**
  * Static map from simulation move name strings to dispatch functions.
  *
- * Every play-phase move registered in LegendaryGame.moves has an entry
- * here. Lobby moves (setPlayerReady, startMatchIfReady) are deliberately
- * omitted — simulation starts post-lobby by initializing phase = 'play'.
- * Unknown move names are handled gracefully (warning + skip) in
- * dispatchMove.
+ * Covers SIMULATION_MOVE_NAMES (the moves the bot can make), as
+ * simulation.moveDispatch.drift.test.ts enforces — not every entry in
+ * LegendaryGame.moves. Moves the bot never emits are deliberately absent,
+ * as are lobby moves (setPlayerReady, startMatchIfReady), since simulation
+ * starts post-lobby by initializing phase = 'play'. Unknown move names are
+ * handled gracefully (warning + skip) in dispatchMove.
  */
 const MOVE_MAP: Record<string, MoveFn> = {
   drawCards: (context, args) => drawCards(context as never, args as never),

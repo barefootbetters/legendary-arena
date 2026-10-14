@@ -19,7 +19,8 @@ export default defineComponent({
     /**
      * The live client's re-sync callback (`LiveClientHandle.resync`). Invoked
      * by the "Reconnect now" button. Prop-drilled so the banner stays pure and
-     * the bgioClient remains the sole runtime engine-import site (WP-090).
+     * never reaches into the live boardgame.io client (engine imports stay on
+     * the Runtime-Safe `.` surface, never `/setup`, D-14401).
      */
     resync: {
       type: Function as PropType<() => void>,
