@@ -216,9 +216,11 @@ export default defineComponent({
 
 /* why: WP-465 — ineligible (and ended-early, likewise unscored-not-failed) is
    neither success nor error, so it uses a neutral blue/slate, distinct from
-   --submitted (green) and --failed (red). */
+   --submitted (green) and --failed (red). WP-804 — an operator match is likewise
+   never scored, so it shares the neutral rule. */
 .endgame-actions__status--ineligible,
-.endgame-actions__status--ended-early {
+.endgame-actions__status--ended-early,
+.endgame-actions__status--operator-match {
   background: rgba(40, 52, 78, 0.94);
 }
 

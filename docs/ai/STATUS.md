@@ -7,6 +7,15 @@
 
 ## Current State
 
+### WP-804 / EC-841 — Operator panel on the play surface (2026-10-12)
+
+**Admin-only on `play.legendary-arena.com` (after deploy); the badge and the unscored end line show to every seat.** An admin ticks "Operator match (admin, not scored)" in the lobby's bot-ally section and lands on the play mat in an operator match through the normal join flow. A board panel beside the mat shows every seat's zones, the villain, hero and Mastermind-tactics decks top-first, the supplies and piles, the engine counters, the last 10 effect traces and the bot's decisions newest first, refreshed every 3 s while open. Two buttons save the board snapshot and the play surface's UIState as JSON. Every seat sees "Operator match — not scored", and at game over the client sends no score and says "Operator match — not scored."
+
+- **Arena-client only.** No server, engine, UIState or dependency change; the rulings are D-24689 §5 / §6 and D-24697, and no DECISIONS entry was needed.
+- **Cost to normal play: none.** The panel is a lazy chunk (`OperatorBoardPanel-*.js`, never in the entry bundle), and the play surface asks the eligibility route only in an operator match. The lobby probe runs once per visit for a signed-in user (a quiet 403 for non-admins).
+- **Tests.** arena-client 2299 → 2343, 0 fail; typecheck 0; `pnpm -r --no-bail test` 0 fail in every package. The only existing-test edit is the `EXPECTED_BY_STATUS` row (count 9 → 10). Revert proofs 9/9.
+- **Live-verify (D-24026): pending.** After deploy, as `jefferyjjensen`, run the seven WP-804 §Verification live steps (lobby option admin-only; badge; panel zones and villain deck, decision turns matching the log prefix; collapse stops board requests and a normal match makes no eligibility request; both downloads; no `POST /api/competition/scores` at game over; day and night themes) and record the matchId here.
+
 ### D-24705 — Watch Bot Play leads with Do-Over (direct fix) (2026-10-12)
 
 **User-visible on `play.legendary-arena.com` (after deploy), Watch Bot Play only.** When a bot in Watch Bot Play holds Deadpool's "Hey, Can I Get a Do-Over?", it now plays that card first, so its "first Hero you played this turn" ability can fire. Before, it played its hand in order, and Do-Over behind other cards never worked. The rest of the hand still plays in order.
