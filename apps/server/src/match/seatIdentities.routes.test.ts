@@ -189,3 +189,32 @@ describe('GET /api/match/:matchId/seat-identities (INFRA: endgame seat names)', 
     assert.equal(context.headers['Cache-Control'], 'no-store');
   });
 });
+
+describe('WP-811: a reaped finished match keeps its seat roster (production logic)', () => {
+  test('the live row is gone; the artifact answers the seat count and the finished gate', async () => {
+    const database = {
+      query: async (text: string) => {
+        if (/SELECT initial_state FROM bgio\.replay_artifacts/.test(text)) {
+          return {
+            rows: [{ initial_state: { G: { matchConfiguration: VALID_COMPOSITION }, ctx: { numPlayers: 2 } } }],
+          };
+        }
+        if (/SELECT gameover FROM bgio\.replay_artifacts/.test(text)) {
+          return { rows: [{ gameover: { outcome: 'heroes-win' } }] };
+        }
+        return { rows: [] };
+      },
+    } as unknown as DatabaseClient;
+    const router = new FakeRouter();
+    registerSeatIdentitiesRoute(router, database);
+    const context = makeContext('reaped-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { seatIdentities: { playerId: string }[] };
+    assert.deepEqual(
+      body.seatIdentities.map((seat) => seat.playerId),
+      ['0', '1'],
+    );
+  });
+});

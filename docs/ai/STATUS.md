@@ -7,6 +7,15 @@
 
 ## Current State
 
+### WP-811 / EC-848 — Finished matches stay viewable after the reaper (D-24719) (2026-10-14)
+
+**User-visible on `legends.legendary-arena.com` (after deploy).** A finished match's Hall of Legends view, its "Download LAGN", a shared registry-viewer `?lagn=` link and a late-opened report card's seat names keep working after the reaper deletes the live match row, about an hour after the game. Before, all three routes (`/lagn`, `/result-lagn`, `/seat-identities`) returned `404` from then on.
+
+- **Server + migration 046.** When the live row is gone, the readers use the durable `bgio.replay_artifacts` copy. Capture now stores the verdict on the artifact, and the capture harvester fills older artifacts 5 per scan, keeping a verdict only when the re-execution reproduces the captured hash. No route, status, auth, engine or client change.
+- **Known label gap.** An older match shows "Draw" on the Hall of Legends until its verdict is swept, and keeps it if today's engine no longer reproduces its hash. WP-812 (reserved) fixes the label.
+- **Tests.** server 1767 → 1790, 0 fail; every package 0 fail; DB-gated capture test 19 / 0 / 0 skipped against local Postgres with 046. Revert proofs (a)–(e) and the four copilot mutants each fail as the WP predicts.
+- **Live-verify (D-24026): pending.** After deploy: the backlog counts, `MAYLMfB1PM9` on all three endpoints and its legends-board label before and after its sweep, and a fresh autoplay match at least 80 minutes after game over (view + download).
+
 ### WP-806 / EC-843 — Operator setters (2026-10-13)
 
 **No user-observable change — infrastructure only; live-verify via WP-807.** The engine now has six operator-match-only moves that set up a board through the real paths: set a Wound, Bystander, S.H.I.E.L.D. Officer or Sidekick supply to a count (the difference waits in a set-aside zone no rule reads); move a villain-deck or hero-deck card to the top; reveal the next Scheme Twist or Master Strike now; move a card over a closed route table (gain from a supply, KO, between player zones, a hero into an HQ space with the displaced card to the hero-deck bottom); add 1–20 Recruit or Attack this turn; and force the escape-edge Villain to escape. Each runs only in an operator match, on the operator's own turn, in `main`, with no choice open, and writes an "Operator:" log line. Nothing can submit them until WP-807's Tweakpane pane ships.

@@ -163,7 +163,8 @@ export function registerMatchLagnRoutes(
     }
 
     try {
-      // Gate — the match is projectable. Absent row OR null initial_state both
+      // Gate — the match is projectable (live row, or its replay artifact once
+      // reaped — D-24719). Unknown match OR null initial_state both
       // return the SAME 404 so the response never leaks whether the match exists.
       // No session or participant gate (D-24446): the setup LAGN is non-secret
       // game setup with no player identity, so any caller — including a guest
@@ -227,7 +228,8 @@ export function registerMatchLagnRoutes(
     }
 
     try {
-      // Gate 1 — the match is projectable (row present + non-null initial_state).
+      // Gate 1 — the match is projectable: its live row (non-null initial_state)
+      // or, once reaped, its durable replay artifact (D-24719).
       const configuration = await matchLagnLogic.readMatchConfigurationForLagn(
         matchId,
         database,
