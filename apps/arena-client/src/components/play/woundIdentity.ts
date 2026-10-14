@@ -1,9 +1,10 @@
 /**
  * Wound identity for the arena-client play surface (WP-380 / D-24181).
  *
- * Components may not add a runtime `@legendary-arena/game-engine` import
- * (`bgioClient.ts` is the sole runtime engine-import site), so the Wound ext_id
- * is mirrored here as a client-local constant. The drift test in
+ * The Wound ext_id is mirrored here as a client-local constant, kept from
+ * WP-380. The arena-client's actual import invariant is narrower than a ban:
+ * it imports the engine's Runtime-Safe `.` surface only, never `/setup`
+ * (D-14401). The drift test in
  * `woundIdentity.test.ts` asserts it equals the engine's `WOUND_EXT_ID`, so the
  * literal can never drift from the engine.
  */
