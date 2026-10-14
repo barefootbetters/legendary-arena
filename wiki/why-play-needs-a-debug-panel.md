@@ -265,6 +265,20 @@ Four things differ for Legendary Arena:
   ([architecture rules](../.claude/rules/architecture.md), Engine Owns
   Truth). A setter is just another move, validated like every other.
 
+### What it looks like (mockup)
+
+![Mockup of the operator panel beside the play mat in a two-player bot-ally operator match, turn 7. The play mat on the left carries a red OPERATOR · NOT SCORED badge, and its game log shows two amber lines, Operator: Wound supply set to 0 (24 set aside) and Operator: Ymir, Frost Giant King moved to the top of the villain deck. The panel on the right has the WP-804 header buttons Operator board, Refresh, Download operator snapshot and Download as fixture. Its read-only column lists both seats' hand, deck top first, discard, in play, victory and Wounds by zone, with the hand and discard Wound counts highlighted; the villain deck, hero deck and Mastermind tactics top first with Ymir on top; the supply counts with Wounds at 0 and a Set aside line of 24 Wounds; the stage, counters and recent effect traces; and the bot's decisions newest first, each with its turn, seat, forced or policy, move, legal-move count and scored alternatives. A Tweakpane Setters pane holds the six WP-807 folders, Supply, Villain deck, Hero deck, Move a card, Turn economy and Escape, with Escape disabled because the Bridge is empty. A dashed note walks through setting up D-24686 in one turn.](/why-play-needs-a-debug-panel/operator-panel-mockup.svg "width=96%")
+
+*Illustrative mockup, not a screenshot. The read-only column follows
+`OperatorBoardPanel.vue` (WP-804) and the `OperatorView` fields. The Setters
+pane follows WP-807's folder order, binding labels and button titles, and the
+bot lines use the competent policy's `[Bot] Chose:` / `[Bot] Over:`
+`decisionLog` format. The board is staged as the D-24686 setup: Wound supply
+emptied, Ymir moved to the top of the villain deck, and a Wound being moved into
+the bot's discard pile to set up a D-24684 tie. The "Operator:" log wording
+is a placeholder. Hand-authored SVG:
+[operator-panel-mockup.svg](../ewiki/why-play-needs-a-debug-panel/operator-panel-mockup.svg).*
+
 ### What the panel shows (read-only, WP-804)
 
 - **Every zone of every seat:** hand, deck in order, discard, in play,
