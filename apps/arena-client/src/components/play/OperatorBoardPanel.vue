@@ -1,11 +1,16 @@
 <script lang="ts">
-import { computed, defineComponent, ref } from 'vue';
+import { computed, defineAsyncComponent, defineComponent, ref, type PropType } from 'vue';
 import type { UIState } from '@legendary-arena/game-engine';
 
 import { useOperatorBoard, buildOperatorFileName } from '../../composables/useOperatorBoard';
 import type { OperatorBotDecisionWire } from '../../lib/api/operatorMatchApi';
 import { useUiStateStore } from '../../stores/uiState';
 import { downloadTextFile } from '../../lib/downloadTextFile';
+import type { SubmitMove } from './uiMoveName.types';
+
+// why: D-24689 §6 — the Setters pane (and Tweakpane with it) loads as its own
+// lazy chunk, so neither the entry chunk nor this panel's chunk carries Tweakpane.
+const OperatorSetterPane = defineAsyncComponent(() => import('./OperatorSetterPane.vue'));
 
 /** One effect trace from the unfiltered board UIState. */
 type EffectTraceEntry = NonNullable<UIState['effectTraces']>[number];
@@ -25,15 +30,32 @@ const RECENT_EFFECT_TRACE_COUNT = 10;
  * and labels cards by NAME (`operatorView.cardDisplay`, raw id as fallback),
  * never card text, so no marker syntax can reach the screen.
  *
+ * Given `submitMove` and the viewer's `playerId` (WP-807), it also hosts the
+ * lazy Setters pane, which submits WP-806's operator setters as intent only.
+ *
  * Loaded only through `defineAsyncComponent` in `PlayViewport.vue`, so normal
  * play never downloads it. Uses `defineComponent({ setup })` per D-6512.
  */
 export default defineComponent({
   name: 'OperatorBoardPanel',
+  components: { OperatorSetterPane },
   props: {
     matchId: {
       type: String,
       required: true,
+    },
+    // why: WP-807 — optional, so the Setters pane renders only when the mount
+    // passes the move dispatcher and the viewer's seat; without them the panel
+    // stays the WP-804 read-only view. The `[Function, null] as unknown` cast is the
+    // BillingSection `authToken` precedent: `Function as PropType<SubmitMove | null>`
+    // is a vue-tsc TS2352 error (FunctionConstructor does not overlap SubmitMove).
+    submitMove: {
+      type: [Function, null] as unknown as PropType<SubmitMove | null>,
+      default: null,
+    },
+    playerId: {
+      type: String,
+      default: '',
     },
   },
   setup(props) {
@@ -214,6 +236,11 @@ export default defineComponent({
             <dt>KO</dt><dd>{{ formatZone(operatorView.koPile) }}</dd>
             <dt>Escaped</dt><dd>{{ formatZone(operatorView.escapedPile) }}</dd>
           </dl>
+          <p v-if="operatorView.setAsideCounts !== undefined" data-testid="operator-set-aside">
+            Set aside — Wounds {{ operatorView.setAsideCounts.wounds }}, Bystanders
+            {{ operatorView.setAsideCounts.bystanders }}, Officers {{ operatorView.setAsideCounts.officers }},
+            Sidekicks {{ operatorView.setAsideCounts.sidekicks }}
+          </p>
         </section>
 
         <section data-testid="operator-engine" class="operator-board-section">
@@ -231,6 +258,17 @@ export default defineComponent({
             </li>
           </ol>
         </section>
+
+        <!-- why: @submitted refreshes the board at once instead of waiting for the
+             3-second poll. Best effort: submitMove sends over the socket without
+             waiting, so this read can land before the move applies. -->
+        <OperatorSetterPane
+          v-if="operatorView !== null && submitMove !== null && playerId !== ''"
+          :operator-view="operatorView"
+          :player-id="playerId"
+          :submit-move="submitMove"
+          @submitted="refreshNow"
+        />
 
         <section data-testid="operator-bot-decisions" class="operator-board-section">
           <h3>Bot decisions (newest first)</h3>
