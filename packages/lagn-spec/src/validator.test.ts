@@ -1001,7 +1001,8 @@ describe('published JSON Schema accepts the shipped fixtures', () => {
     'tier2-provenance.lagn.json',
     'tier1-hero-alternates.lagn.json',
     'tier1-players.lagn.json',
-    'tier1-battle-plan-report.lagn.json'
+    'tier1-battle-plan-report.lagn.json',
+    'tier1-final-blow.lagn.json'
   ]
 
   for (const fixture of fixtures) {
