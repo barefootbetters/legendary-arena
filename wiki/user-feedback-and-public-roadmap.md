@@ -25,29 +25,37 @@ source:
   - ../docs/01-VISION.md
   - ../docs/09-CHANGELOG.md
   - ../docs/ai/REFERENCE/development-workflow.md
-last-reviewed: 2026-08-25
+  - ../docs/ai/REFERENCE/api-endpoints.md
+  - ../docs/ai/work-packets/WP-604-feedback-intake-and-voting-api.md
+  - ../docs/ai/work-packets/WP-605-feedback-triage-panel.md
+  - C:\www\legendary-arena-com\docs\ai\work-packets\WP-043-public-roadmap-board.md (marketing repo)
+  - C:\www\legendary-arena-com\docs\ai\work-packets\WP-045-interactive-voting.md (marketing repo)
+last-reviewed: 2026-10-14
 ---
 
 # User Feedback and Public Roadmap
 
 ## Summary
 
-*(Draft, planning.)* This page surveys the options for collecting player
-feedback — **bug reports, enhancement requests, and reviews** — and proposes a
-**four-stage enhancement pipeline: intake → tracking → voting → public
-visibility**. Reviews follow a **parallel, marketing-oriented track** and do not
-participate in tracking or voting. It weighs build-vs-buy for each stage,
-recommends identity-gated voting on the existing Hanko login, and recommends a
-**monthly public changelog nested under quarterly roadmap themes** so anyone can
-see what shipped, what's in progress *this month*, and what's coming. Six core
-principles and one authority rule — *players author demand; the operator authors
-status; the codebase authors "done"* — govern every implementation choice; the
-public board is informational only, while the internal Work Packet / DECISIONS /
-git spine remains the system of record. It proposes a design and records a
-recommendation; it defines nothing and reserves no `WP-` / `D-` yet. Once a
-direction is chosen, the concrete decision belongs in
-[DECISIONS.md](../docs/ai/DECISIONS.md) and the build in a Work Packet — not
-here.
+*(Draft — partly built.)* This page is the design authority for the player
+feedback and public-roadmap system. It covers the three feedback types
+(**bug reports, enhancement requests, and reviews**) and the **four-stage
+enhancement pipeline: intake → tracking → voting → public visibility**. Reviews
+follow a **parallel, marketing-oriented track** and do not participate in
+tracking or voting. Six core principles and one authority rule govern every
+implementation choice: *players author demand; the operator authors status; the
+codebase authors "done."* The public board is informational only. The internal
+Work Packet / DECISIONS / git spine remains the system of record.
+
+The build-vs-buy question is settled: **build custom on the existing Postgres +
+Hanko + Dashboard stack** ([D-24414](../docs/ai/DECISIONS.md)). As of the
+**2026-10-14 audit**, the back end, operator triage, and a live votable board at
+[`www.legendary-arena.com/roadmap/`](https://www.legendary-arena.com/roadmap/) have
+shipped. Players still have **no submission surface**, so the public board is
+empty. The player changelog and monthly recap are also unbuilt. See
+*Implementation status* below for the stage-by-stage audit, and *Legendary Arena
+today* for a dated snapshot of the game, written in the board's own
+Shipped / In progress / Planned shape.
 
 ## Mechanics
 
@@ -77,6 +85,96 @@ one of these, the choice is wrong — not the principle.
 > priority decisions, and public roadmap maintenance. It is *not* an
 > infrastructure or system administrator. In the current operating model the
 > operator is the product owner.
+
+### Implementation status (audited 2026-10-14)
+
+The audit compared each stage of this design against the engine repo, the
+marketing repo, and the live endpoints. The back end and both ends of the
+authority split are in place. The pipeline still has no front door.
+
+| Stage / surface | State | Where it lives | Evidence |
+|---|---|---|---|
+| **Decision: build vs buy** | ✅ Decided — build custom | Postgres + Hanko + Dashboard | D-24414 (Active 2026-08-25) |
+| **Intake store** (`feedback_item`, `feedback_vote`) | ✅ Shipped | `legendary.*` schema, `apps/server/src/feedback/` | WP-604 / EC-639 (#1642) |
+| **Intake API** — `POST /api/feedback` (bug / enhancement / review) | ✅ Shipped | `api.legendary-arena.com` | WP-604; [API catalog](../docs/ai/REFERENCE/api-endpoints.md) |
+| **Player submission UI** (in-app widget or `www` form) | ❌ **Not built** | — | No client calls `POST /api/feedback` (arena-client, dashboard, registry-viewer, and `www` all checked) |
+| **Tracking: operator triage** — status + Declined reason | ✅ Shipped | `dashboard.legendary-arena.com/feedback` | WP-605 / EC-640, D-24416 (dashboard is the **sole** status writer) |
+| **Voting** — one account, one vote, unweighted | ✅ Shipped | `POST`/`DELETE /api/feedback/:id/vote` + the `www` board | WP-604 (API), marketing WP-045 (UI, 2026-08-26) |
+| **Public roadmap board** — Planned / In progress / Shipped | ✅ Live, **but empty** | [`www.legendary-arena.com/roadmap/`](https://www.legendary-arena.com/roadmap/) | Marketing WP-043 (2026-08-25). `GET /api/feedback` returned `{"items":[]}` on 2026-10-14 |
+| **"Shipped" derived from the WP/git spine** | ❌ Not built | — | The operator sets Shipped by hand in triage today |
+| **Player-facing changelog** | ❌ Not built | — | No changelog page on `www`. The engineering [Changelog](changelog.md) has no dated entry after 2026-09-10 |
+| **Monthly recap post** | ❌ Not started | — | No recap posts on the `www` blog since the board launched |
+| **Reviews track** (rating + prose, social proof) | 🟡 Intake only | `feedback_type = 'review'` rows | No display surface. Reviews never reach the public `GET` |
+| **Named operator + cadence** (Operational ownership) | ❌ Open | — | No owner or SLA recorded |
+
+**What this means.** Every write path that a player would use exists only as
+an API. An empty board at a public URL is a mild form of the *feedback
+graveyard* (see Edge Cases): it says "nobody has asked for anything," which is
+not true. The next build step with the most leverage is a **submission
+surface**, followed by seeding the board from the snapshot below. Neither step
+needs a new decision. Both sit inside D-24414.
+
+### Legendary Arena today (snapshot, 2026-10-14)
+
+This is a dated snapshot of the game, written in the board's own
+Shipped / In progress / Planned shape. It has two jobs. It is the current-state
+record for this page, and it is **candidate seed content** for the empty
+`/roadmap/` board. The *Theme* and *What it means for players* columns are
+written to be posted as they stand. The *Internal refs* column stays internal,
+because WP/D numbers never reach players (see Stage 2). This snapshot does not
+refresh itself: it is accurate as of the date in its heading, and the
+authoritative record remains [WORK_INDEX.md](../docs/ai/work-packets/WORK_INDEX.md).
+
+**At a glance.**
+
+- **Cards:** 41 card sets in the registry.
+- **Work Packets:** about 780 complete and about two dozen open.
+- **Modes:** multiplayer, solo with a bot ally (since 2026-07), and guest
+  seats with no account required (production-verified 2026-09-29), all on
+  `play.legendary-arena.com`.
+- **Hosting:**
+  - Game server and Postgres on a DigitalOcean droplet since 2026-10-12
+    (D-24707). Deploys run only after CI passes (D-24708).
+  - ewiki and dashboard on Cloudflare Workers behind Access (D-24690).
+- **Commerce:**
+  - Stripe checkout, webhook, and entitlement plumbing exist on the server,
+    and the Legendary Pass entitlement gates the AI Coach.
+  - **No in-app purchase button calls checkout yet.** The "Get the Legendary
+    Pass" link goes to the profile page.
+
+**Shipped (2026-08-25 → 2026-10-14).**
+
+| Theme | What it means for players | Internal refs |
+|---|---|---|
+| Play without an account | Join a friend's table as a guest, or tap "Enter Arena" and play a solo featured table without signing up | WP-627–631, WP-785–788; D-24441, D-24633–24636 |
+| Cards play as printed | Dozens more hero keywords, Mastermind tactics, schemes, Master Strikes, and escape rules now follow the rulebook (Transform, Smash, Undercover, Phasing, split cards, and more). A rulings test suite guards them | WP-653–703, 724–748, 757–767, 772–783, 789–803; WP-704 / D-24524 |
+| The Final Blow | The rulebook's optional fifth fight against the Mastermind is playable, with bigger tactic-hit and victory moments | WP-686, 687, 690; D-24504, D-24507 |
+| A better board | Playmat skins (including licensed mats), a day/night theme, a no-scroll 1280×720 board, slash-to-fight (touch included), and a phone layout that fits | WP-666, 688, 699, 755, 756, 761, 766; D-24505 |
+| Teamwork recognized | Team-contribution scores, shared and Vanguard badges, a synergy report card, and AI-coach tips on casual matches too | WP-612–623, 708–720, 751, 752; D-24427 |
+| Fairer competition | Each gauntlet leg uses its own scheme's hero count; hero and henchman counts follow each scheme; a random player goes first | WP-796, 798–800, 805; D-24671, 24672, 24675, 24700 |
+| Plan together, share the result | A shared three-phase battle plan per match, richer match-result exports, loadout share links, and a copyable game log | WP-635–641, 698, 707; D-24517 |
+| Game feel | New visual and sound beats for shield blocks, wounds, Transform, reshuffles, and Excessive Violence | WP-642, 644–650, 672, 746 |
+| Faster, cheaper, safer hosting | The game moved off Render to a self-hosted server, cutting hosting cost to about a sixth of what it was, and nothing deploys until tests pass | D-24707, D-24708 |
+
+**In progress (drafted, not yet executed).**
+
+| Theme | What it means for players | Internal refs |
+|---|---|---|
+| Replays you can keep | A downloadable replay of any finished match that re-plays exactly. Finished matches stay viewable after the server clears them | WP-808, 810 (blocked on 808), 811; D-24714, 24716, 24719 |
+| Unguessable shuffles | Match seeds are generated on the server and never sent to clients, so nobody can predict the deck | WP-809; D-24715 |
+| Clearer turns | Bot-ally pacing, a YOUR TURN banner and sound, "you can afford this" cues, and a superpower-ready glow on hand cards | WP-773–776 |
+| More cards as printed | Midnight Massacre, Indestructible Man, Killmonger, Zarathos/Haunt, Lightshow, Soaring Flight, Critical Hit counts, and 17 conditional heroes | WP-741, 745, 758, 759, 764, 768–771, 781, 782, 784 |
+| Honest result labels | The Hall of Legends explains a missing result (a tie or an unknown outcome) instead of leaving it blank | WP-812 (reserved); D-24720 |
+
+**Planned (known gaps and named follow-ons; no WP drafted yet — operator to
+confirm before any of these is posted as Planned).**
+
+| Theme | What it means for players |
+|---|---|
+| Tell us what you think | An in-game "Send feedback" control, so requests reach this board (this page's Stage 1) |
+| What's new, in plain words | A player-facing changelog and a monthly recap post (Stage 4) |
+| Buy the Legendary Pass in-app | A purchase button wired to the existing Stripe checkout |
+| Your profile, your history | Gauntlet progress on player profiles, and a rescore of historical competitive results under the current rules |
 
 ### The three feedback types are not one system
 
@@ -113,7 +211,12 @@ is to validate the *idea* of a feedback board before investing in one.
 | **Discord / community** | Where players already are; conversational; zero build | Ephemeral; not rankable; no status tracking; moderation-heavy; feedback evaporates in the scroll | Good *listening post*, bad *system of record* |
 | **Email / embedded form** (Brevo, Typeform) | Trivial to stand up; reuses the [Brevo Email Pipeline](brevo-email-pipeline.md) | Unstructured; no voting; no public visibility; manual triage | Fine as a fallback "contact us", not the backbone |
 
-**Recommendation.** Route **bug reports** into a small custom intake backed by
+> **Decided (D-24414, 2026-08-25).** Build custom on Postgres + Hanko +
+> Dashboard for all three types. Fider and the SaaS boards were not adopted.
+> The store and API shipped in WP-604. The survey and recommendation below are
+> kept as the record of why.
+
+**Recommendation (as proposed).** Route **bug reports** into a small custom intake backed by
 the existing Postgres + Hanko stack, carrying the diagnostics payload straight
 to engineering triage. Give **enhancement requests** a public, votable board —
 self-hosted **Fider** if we want a proven board today with the least build, or a
@@ -205,6 +308,12 @@ identity, weight, and abuse.
   newer and "planned" items reachable so the board doesn't ossify around its
   first popular entries.
 
+*As built:* voting shipped exactly this way. It is one account, one unweighted
+vote, enforced by a `UNIQUE (feedback_item_id, account_ext_id)` constraint.
+It is upvote-only and idempotent: casting a vote or retracting it twice is a
+no-op. The tally is a `COUNT`, never a stored field. The board sorts
+most-voted first, then newest.
+
 Voting does **not** bind the roadmap. It's an input to prioritization, not a
 referendum — the operator still owns sequencing (some low-vote items are
 load-bearing infrastructure; some high-vote items conflict with the
@@ -236,33 +345,48 @@ JavaScript (live vote counts, filtering) — which the **ewiki cannot do** (its
 zero-`<script>` JS-free gate). This page (an ewiki design doc) describes the
 system; the system itself renders on the JS-capable marketing surface.
 
-### The feedback item (illustrative shape)
+**Built (2026-08-25/26).** The roadmap board lives at
+[`www.legendary-arena.com/roadmap/`](https://www.legendary-arena.com/roadmap/)
+(marketing WP-043), not on a `roadmap.` subdomain. It is a read-only client-side
+projection of the guest `GET /api/feedback`, with Planned / In progress /
+Shipped columns. Signed-in visitors vote through the same Hanko bearer token the
+`www` header uses (marketing WP-045). On API failure the page shows a
+full-sentence error rather than a stale board. It hardcodes no roadmap content,
+so it shows exactly what the operator has triaged, and today that is nothing.
+Sub-surfaces 2 and 3 (the player changelog and the monthly recap) are not
+built.
 
-All four surfaces — intake form, roadmap board, dashboard triage, and the
-changelog projection — derive from one underlying record. Sketching it makes the
-governance→implementation bridge concrete for a future Work Packet. This is
-**illustrative, not a schema**: the canonical field names would be locked in the
-WP against
-[00.2-data-requirements](../docs/ai/REFERENCE/00.2-data-requirements.md), not
-here.
+### The feedback item (as built)
+
+All four surfaces (intake form, roadmap board, dashboard triage, and the
+changelog projection) derive from one underlying record. WP-604 locked it as
+two `legendary.*` tables. The canonical definitions are the migrations
+`data/migrations/042_create_feedback_item.sql` and `043_create_feedback_vote.sql`, plus
+`apps/server/src/feedback/feedback.types.ts`. The summary below is for
+orientation only. (The tables are not yet listed in
+[00.2-data-requirements](../docs/ai/REFERENCE/00.2-data-requirements.md).)
 
 ```
-feedback_item
+legendary.feedback_item
   id                 unique identifier
-  type               bug | enhancement | review
-  title              short summary
-  description        body text (may hold PII — see Edge Cases)
-  author             the submitting player account (Hanko identity)
-  vote_count         derived from the votes table; players author, DB owns
-  status             Under review | Planned | In progress | Shipped | Declined
-  resolution_reason  required when status = Declined; the "no, because…"
+  feedback_type      bug | enhancement | review
+  title              short summary (≤ 200 chars)
+  description        body text (≤ 5000 chars; may hold PII — see Edge Cases)
+  author_ext_id      the submitting account (from the session, never the body)
+  status             under_review (default) | planned | in_progress | shipped | declined
+  resolution_reason  required when status = declined; the "no, because…"
   created_at         submission time
   updated_at         last status/edit time
+
+legendary.feedback_vote
+  feedback_item_id + account_ext_id   UNIQUE — one vote per account per item
 ```
 
-Only the **operator** writes `status` and `resolution_reason`; only **players**
-write votes; `vote_count` is a projection, never a hand-set field. That mirrors
-the *Surfaces and authority* split in data terms.
+There is **no stored vote count**. `voteCount` is a `COUNT` projection over
+`feedback_vote` at read time. Only the **operator** writes `status` and
+`resolution_reason`, through `PATCH /api/dash/feedback/:id/status` (D-24416).
+Only **players** write votes. That is the *Surfaces and authority* split in
+data terms.
 
 ### System of record
 
@@ -283,8 +407,8 @@ wrong one own a piece of the truth. The split:
 
 | Surface | Role | Writes | Reads |
 |---|---|---|---|
-| **Public intake + roadmap board** (`www` / `roadmap.`, JS-capable) | Where players submit and vote | Players (identity-gated) | Everyone |
-| **`dashboard.legendary-arena.com`** ([Dashboard](dashboard.md)) | Operator triage: review the queue, assign status, move items to terminal states, watch vote trends | Operator only | Operator only |
+| **Public intake + roadmap board** (`www.legendary-arena.com/roadmap/`, JS-capable) | Where players submit and vote. *Board and voting are live; submission is not built yet.* | Players (identity-gated) | Everyone |
+| **`dashboard.legendary-arena.com/feedback`** ([Dashboard](dashboard.md)) | Operator triage: review the queue, assign status, move items to terminal states, watch vote trends. *Live (WP-605).* | Operator only | Operator only |
 | **WP / EC / [DECISIONS.md](../docs/ai/DECISIONS.md) / git** | The build record — what actually shipped | The engineering loop | — |
 
 The authority rule, in one line:
@@ -402,8 +526,16 @@ player "no."
   to the Vision fairness bright lines.
 - **[Blog Post Authoring](blog-post-authoring.md)** — the monthly recap post is a
   Mode-C blog artifact on the marketing site.
-- **[Seed Challenges](seed-challenges.md)** — an example of a proposed feature
-  that a public roadmap board would track from "Planned" to "Shipped."
+- **[Seed Challenges](seed-challenges.md)** — an example of a feature that went
+  from proposal to shipped (WP-422) with no public board to show the journey.
+  This is the kind of arc the board exists to make visible.
+- **`www.legendary-arena.com/roadmap/`** (marketing repo, WP-043 + WP-045) is the
+  live public board and vote surface. It reads the guest `GET /api/feedback` and
+  writes votes with the visitor's Hanko token. Its layout is
+  `layouts/roadmap/list.html` and its script is `assets/js/roadmap.js`.
+- **[API catalog](../docs/ai/REFERENCE/api-endpoints.md)** — the authoritative
+  rows for `/api/feedback`, `/api/feedback/:id/vote`, and `/api/dash/feedback`
+  (request/response shapes, auth class, status-code domains).
 
 ## Edge Cases
 
@@ -411,6 +543,12 @@ player "no."
   than no board — it advertises inattention. Every item needs a terminal state
   (Shipped or Declined-with-reason); a monthly triage that touches every stale
   "Under review" item is the maintenance cost of running this at all.
+- **The empty board (observed 2026-10-14).** This is the graveyard's quieter
+  twin. The board went live on 2026-08-25. Seven weeks later it still shows
+  "The roadmap is empty for now," because players have no way to submit and
+  the operator has not posted any items. A shipped surface with no content
+  reads as abandoned, just as an untriaged one does. The fix is operational, not
+  architectural: seed it, then open intake.
 - **Roadmap-as-promise.** A public "Planned" item is read as a commitment.
   Hedge the surface ("directional, not a guarantee; priorities shift") and prefer
   moving items to Declined over letting them rot, so the board stays honest.
@@ -432,24 +570,35 @@ player "no."
 
 ## Open Questions
 
-- **Build vs buy for the enhancement board** — self-hosted Fider, a fully custom
-  board on Postgres+Hanko, or a SaaS validation phase first? Not yet decided;
-  needs a `DECISIONS.md` entry once chosen.
-- **Where the public roadmap renders** — a section of `www.legendary-arena.com`
-  or a dedicated `roadmap.legendary-arena.com` subdomain? (Check the subdomain
-  manifest before assuming a host.)
+*Resolved since the 2026-08-25 draft:* build-vs-buy → **build custom**
+(D-24414). Where the board renders → **`www.legendary-arena.com/roadmap/`**
+(marketing WP-043). Who may set status → **the dashboard only** (D-24416).
+
+- **Where players submit.** Options: an in-app "Send feedback" control in the
+  play client (which can attach a [Play Diagnostics](play-diagnostics.md)
+  payload to a bug), a form on `www/roadmap/`, or both. The API already accepts
+  all three types. This is the missing front door and the next WP to draft.
+- **Seeding the board.** The operator can post enhancement items through
+  `POST /api/feedback` from their own account and then move them to Planned or
+  In progress in triage. Decide whether to seed from the *Legendary Arena
+  today* snapshot below. A dashboard "create item" action would make this a
+  one-step job; it does not exist yet.
 - **Player-facing changelog authoring** — hand-written plain-language sibling, or
   a filtered auto-projection of `docs/09-CHANGELOG.md`? The former reads better;
-  the latter can't drift.
+  the latter can't drift. Either way the engineering changelog has to be kept
+  current first. It has no dated entry after 2026-09-10.
+- **Auto-derived "Shipped."** Today the operator sets Shipped by hand. Linking
+  a feedback item to the WP(s) that delivered it, so Shipped flips on merge, is
+  still unbuilt and still unspecified.
 - **Vote weighting** — start unweighted; revisit only if raw counts get gamed or
   if weighting becomes a deliberate Legendary Pass perk (a Vision-fairness
   question, not just an engineering one).
 - **Who is the named operator?** The *Operational ownership* section makes an
   owner a launch precondition; it does not yet name one or set an SLA. That
   assignment is the open decision.
-- **No `WP-` / `D-` reserved yet.** This page is a proposal. Reserve numbers and
-  draft the Work Packet(s) when a direction is chosen — do not treat this page as
-  authorization to build.
+- **Remaining follow-ons, each citing D-24414:** player submission surface,
+  player changelog, monthly recap, auto-derived Shipped, and the reviews display
+  surface. None has a WP reserved as of 2026-10-14.
 
 ## References
 
@@ -462,7 +611,14 @@ player "no."
   — the WP → deploy loop a "Shipped" status derives from.
 - [WORK_INDEX.md](../docs/ai/work-packets/WORK_INDEX.md) and
   [DECISIONS.md](../docs/ai/DECISIONS.md) — the internal work spine the public
-  board projects.
+  board projects. D-24414 (build custom) and D-24416 (dashboard is the sole
+  status writer) are the two decisions this page's design produced.
+- [WP-604](../docs/ai/work-packets/WP-604-feedback-intake-and-voting-api.md)
+  (intake + voting API) and
+  [WP-605](../docs/ai/work-packets/WP-605-feedback-triage-panel.md) (operator
+  triage) — the shipped engine-side packets.
+- Marketing repo `docs/ai/work-packets/WP-043-public-roadmap-board.md` and
+  `WP-045-interactive-voting.md` — the shipped `www` board and voting UI.
 - [Dashboard](dashboard.md), [Development Workflow](development-workflow.md),
   [Changelog](changelog.md), [Profile Login](profile-login.md),
   [Monetization Model](monetization-model.md),
