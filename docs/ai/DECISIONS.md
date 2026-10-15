@@ -48040,7 +48040,7 @@ seat names all died. Prod evidence (2026-10-14, gitSha `44724482`): guest autopl
     read-only, run by the operator 2026-10-14): **537** artifacts were captured before the 046 deploy (14:03 UTC), all
     `NULL` at deploy. The drain is (537 ÷ 5) scans at 5 minutes each, about 9 hours, so it clears around 23:00 UTC.
 
-**Live-verify (D-24026): CONFIRMED for serving; the legacy verdict drain is pending.** Deploy `4f970023` went live at
+**Live-verify (D-24026): CONFIRMED for serving. The legacy drain was cut short by the cleanup below.** Deploy `4f970023` went live at
 ~14:03 UTC on 2026-10-14 and migration 046 applied; the build later moved to `84c3ac69` (WP-812), with no engine change in
 between.
 - **Reaped legacy match `MAYLMfB1PM9`** (captured at `44724482`, reaped 12:14 UTC). At 14:00 UTC, before the deploy,
@@ -48061,7 +48061,31 @@ between.
   which the §3 hash check refuses by design, not a sweep fault. 342 rows were still unswept (captured 2026-08-21 to
   2026-10-14), and 1 row held a capture-time verdict (`9W06xYZc3MM`). Most of the pre-046 history is therefore expected
   to stay "Outcome not recorded"; rows captured on the current engine (since `44724482`) should reproduce. The final
-  `'{}'` count and `MAYLMfB1PM9`'s outcome are recorded once the backlog drains.
+  `'{}'` count and `MAYLMfB1PM9`'s outcome were never recorded: the cleanup below removed the backlog first.
+
+**One-time test-data cleanup (operator, 2026-10-15 ~01:10 UTC).** Jeff confirmed that every pre-046 capture was test
+data. In one transaction (read-only dry run first, abort unless exactly 537 rows matched), the operator deleted every
+artifact captured before the 046 deploy (`captured_at < 2026-10-14 14:03 UTC`), together with each row pointing at one:
+
+| Rows deleted | Count |
+|---|---|
+| `bgio.replay_artifacts` | 537 of 541 |
+| `legendary.competitive_scores` (by `replay_hash`) | 239 |
+| `legendary.player_badges` (`source_kind = 'competitive_score'`, sourced from those scores) | 413 |
+| `legendary.replay_ownership` | 541 |
+| `legendary.coach_reports` | 16 |
+| `legendary.replay_blobs` | 0 |
+
+- **Afterwards:** 4 artifacts remain, all captured after the deploy (among them `9W06xYZc3MM`, still `200`); none
+  predates 046. `MAYLMfB1PM9` is back to `404` on all three routes because it has no artifact, the fail-closed
+  never-captured case of §9.
+- **Left in place:** history and veteran badges (`source_kind = 'competitive_history'`, no single source score);
+  `legendary.match_seat_accounts` and `battle_plan` rows, which are keyed by match id and unread without an artifact; and
+  the published legends leaderboards until the publisher's next run.
+- **What it supersedes:** this is a deliberate operator deletion. It supersedes, for these rows only, D-24122's "kept
+  forever" and the data docs' "never deleted"; no code path deletes artifacts.
+- **The sweep after the cleanup:** it has no legacy rows left to sweep. Every artifact now carries its verdict from
+  capture, so the §3 sweep is a no-op until an old row reappears.
 
 **Reserved by:** NUMBER-LEDGER D-24719 (#2785). Related: D-24095, D-24113, D-24119, D-24122, D-24124, D-24153, D-24169,
 D-24187, D-24214, D-24216, D-24223, D-24716, D-24717, D-24718, D-24720, D-11804, D-24026.
