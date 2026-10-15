@@ -39,12 +39,14 @@ import { markInProgressBotAllyMatchesInterrupted } from './bot-ally/botAllyRoute
 // ownership leases so the surviving instance claims those matches on its next poll
 // tick (a near-instant handoff) instead of waiting out the crash-recovery TTL.
 import { SERVER_INSTANCE_ID, releaseBotAllyLeasesForOwner } from './bot-ally/botAllyOwnership.mjs';
+import { closeRealtimeConnections } from './realtimeDrain.mjs';
 
 /**
  * Initialises the server and registers the shutdown handler.
  */
 async function main() {
   let httpServer;
+  let socketServer;
   let pool;
   let legendsPublisherHandle;
   let matchReaperHandle;
@@ -53,6 +55,7 @@ async function main() {
   try {
     const started = await startServer();
     httpServer = started.appServer;
+    socketServer = started.socketServer;
     pool = started.pool;
 
     // why: conditionally start the legends publisher only when
@@ -231,6 +234,12 @@ async function main() {
       }
       process.exit(0);
     });
+    // why: close() above stops accepting, then waits for every open connection.
+    // A connected player's websocket never ends on its own, so without this the
+    // callback never fired and systemd SIGKILLed the process after
+    // TimeoutStopSec (30 s), all of it with the listener already closed. The
+    // clients see a transport close and reconnect to the new process.
+    closeRealtimeConnections(socketServer);
   });
 }
 
