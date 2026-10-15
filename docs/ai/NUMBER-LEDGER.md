@@ -865,6 +865,7 @@ high-water: 457
 - EC-848 — lagn-reaped-match-fallback (WP-811. reserved 2026-10-14, spec/reserve-lagn-reaped-fallback)
 - EC-849 — result-lagn-unknown-outcome-label (WP-812. reserved 2026-10-14, claude/reserve-result-lagn-unknown-outcome)
 - EC-850 — feedback-submission-section (WP-813. reserved 2026-10-14, claude/wp-feedback-submission)
+- EC-851 — play-saved-loadout (WP-303; grandfathered WP number below the high-water. reserved 2026-10-14, claude/wp303-reserve)
 
 ## D
 
@@ -1364,3 +1365,4 @@ section below) and the allocation protocol in
 - D-24719 — lagn-reaped-match-fallback (WP-811; widens the D-24153 / D-24169 carve-outs to the durable bgio.replay_artifacts copy when the live row is reaped; adds the capture-time gameover column. reserved 2026-10-14, spec/reserve-lagn-reaped-fallback)
 - D-24720 — result-lagn-unknown-outcome-label (WP-812; the /result-lagn envelope gains an optional `resultOmittedReason` — `tie` or `unknown` — beside `lagn`; the Hall of Legends view reads it, a non-identity widening of the D-24217 pure-consumer rule; LAGN itself unchanged. reserved 2026-10-14, claude/reserve-result-lagn-unknown-outcome)
 - D-24721 — feedback-submission-section (WP-813; the player intake surface for D-24414 lives in the play client's signed-in profile page, not on www; v1 posts text only — no diagnostics payload. reserved 2026-10-14, claude/wp-feedback-submission)
+- D-24722 — play-saved-loadout (WP-303; the profile Saved Loadouts row launches a match from its stored LAGN via launchMatchFromComposition, reading the opaque lagn through the lobby's existing hand-rolled LAGN reader — refines D-24087, no validator import, no server read. reserved 2026-10-14, claude/wp303-reserve)
