@@ -1,5 +1,5 @@
 <script lang="ts">
-import { computed, defineComponent, onMounted, ref, watch } from 'vue';
+import { computed, defineComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import {
   changeHandle,
@@ -35,6 +35,7 @@ import {
 import { launchMatchFromComposition } from '../lobby/useCreateMatchFromComposition';
 import type { MatchSetupConfig } from '@legendary-arena/game-engine';
 import { summarizeLoadout } from '../lib/loadoutSummary';
+import { planSavedLoadoutLaunch } from '../lib/savedLoadoutLaunch';
 import BillingSection from '../components/BillingSection.vue';
 import FriendsSection from '../components/FriendsSection.vue';
 import MatchInvitesSection from '../components/MatchInvitesSection.vue';
@@ -381,7 +382,10 @@ export default defineComponent({
     // `createLagnText` back the paste-create form; the three message
     // refs carry inline feedback (list-load error, create error, row
     // mutation error) and the best-effort copy line — each independent
-    // so one surface's feedback never clobbers another's.
+    // so one surface's feedback never clobbers another's. WP-303 adds
+    // `loadoutPlayError` (the Play this loadout failure line, its own
+    // surface for the same reason) and `loadoutLaunchInFlight`, which
+    // disables every Play button while one launch is under way.
     const loadoutRows = ref<LoadoutRow[]>([]);
     const loadoutsError = ref<string>('');
     const createName = ref<string>('');
@@ -390,6 +394,8 @@ export default defineComponent({
     const createInFlight = ref<boolean>(false);
     const rowError = ref<string>('');
     const copyMessage = ref<string>('');
+    const loadoutPlayError = ref<string>('');
+    const loadoutLaunchInFlight = ref<boolean>(false);
 
     // why: WP-339 — the owner's submitted competitive scores (the "My Scores"
     // read). Loaded on mount from GET /api/me/scores; independent loading/error
@@ -1020,11 +1026,91 @@ export default defineComponent({
       }
     }
 
+    /**
+     * Launch a match from one saved loadout (WP-303 / D-24722). Plans the
+     * launch from the row's stored LAGN with `planSavedLoadoutLaunch`, then
+     * hands the config and seat count to the WP-448 primitive, which seats
+     * the owner in seat 0 and opens the play surface. Every failure lands in
+     * the inline play error; an unreadable loadout and a failed launch are
+     * prefixed with the row's name. Writes nothing to the loadout. Never
+     * throws.
+     */
+    async function playSavedLoadout(row: LoadoutRow): Promise<void> {
+      if (loadoutLaunchInFlight.value === true) {
+        return;
+      }
+      loadoutPlayError.value = '';
+      const authToken = readAuthToken();
+      if (authToken === null) {
+        loadoutPlayError.value =
+          'You are not signed in. Sign in to play a saved loadout.';
+        return;
+      }
+      const playerName = (
+        view.value?.displayName ?? view.value?.handleCanonical ?? ''
+      ).trim();
+      // why: when the owner profile fails to load, `view` is null while the
+      // Saved Loadouts section still renders. Launching with an empty seat
+      // name lets the primitive create the match and then boardgame.io
+      // refuses the nameless join with a 403, orphaning the match. Same
+      // guard and copy as playLeg.
+      if (playerName === '') {
+        loadoutPlayError.value =
+          "Your profile hasn't finished loading, so your seat has no name yet. Reload the page and try again.";
+        return;
+      }
+      const plan = planSavedLoadoutLaunch(row.view.lagn);
+      if (plan.ok === false) {
+        loadoutPlayError.value = `${row.view.name} — ${plan.message}`;
+        return;
+      }
+      loadoutLaunchInFlight.value = true;
+      // why: D-24268 — one primitive. The launch is exactly one
+      // launchMatchFromComposition call, the same create → join seat 0 →
+      // navigate path the lobby and playLeg use; no new create-and-join chain.
+      const result = await launchMatchFromComposition({
+        config: plan.config,
+        playerCount: plan.playerCount,
+        playerName,
+        authToken,
+      });
+      if (result.ok === true) {
+        // why: the primitive sets window.location.search and returns before
+        // the page unloads. Leaving `loadoutLaunchInFlight` set until the
+        // navigation completes keeps a second click from creating a second
+        // match; resetLaunchOnPageRestore re-enables Play after Back.
+        return;
+      }
+      loadoutPlayError.value = `${row.view.name} — ${result.message}`;
+      loadoutLaunchInFlight.value = false;
+    }
+
+    /**
+     * Re-enable the Play this loadout buttons when the browser restores this
+     * page from its back/forward cache. A fresh load needs nothing: the
+     * in-flight ref starts false.
+     */
+    function resetLaunchOnPageRestore(event: PageTransitionEvent): void {
+      // why: a successful launch leaves `loadoutLaunchInFlight` set until
+      // the page navigates away. A back/forward-cache restore (the grind
+      // loop's "finish the match, press Back to ?route=me") brings that
+      // frozen state back, so without this reset every Play button would
+      // stay disabled until a reload.
+      if (event.persisted === true) {
+        loadoutLaunchInFlight.value = false;
+      }
+    }
+
     onMounted(() => {
       void load();
       void loadLoadouts();
       void loadScores();
       void loadGauntletRuns();
+      window.addEventListener('pageshow', resetLaunchOnPageRestore);
+    });
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('pageshow', resetLaunchOnPageRestore);
     });
 
     return {
@@ -1084,11 +1170,14 @@ export default defineComponent({
       createInFlight,
       rowError,
       copyMessage,
+      loadoutPlayError,
+      loadoutLaunchInFlight,
       submitCreateLoadout,
       renameLoadout,
       toggleLoadoutVisibility,
       removeLoadout,
       copyShareLink,
+      playSavedLoadout,
       summarizeLoadout,
       shareLinkForSlug,
       formatTeamSizeLabel,
@@ -1425,14 +1514,17 @@ export default defineComponent({
 
       <!-- why: WP-302 — the Saved Loadouts library (Vision §19b). Saved
            loadouts are decorative, user-authored content (§19a) — never a
-           competitive-submission path. The create path is paste-LAGN only;
-           lobby "Save this loadout" / "Load into lobby" integration is a
-           deferred follow-on (WP-303 / D-24087). -->
+           competitive-submission path. The create path is paste-LAGN only.
+           WP-303 / D-24722 ships the play action: each row's Play this
+           loadout button launches a match straight from the stored LAGN and
+           writes nothing to the loadout. Lobby "Save this loadout" / "Load
+           into lobby" integration stays out (D-24087). -->
       <section class="profile-loadouts" data-testid="my-profile-loadouts">
         <h2>Saved Loadouts</h2>
         <p class="profile-help">
           Save a loadout by pasting a LAGN document exported from the loadout
           builder. Make one public to get a share link anyone can open.
+          Press Play this loadout to start a match with that lineup.
         </p>
 
         <div class="profile-loadout-create" data-testid="my-profile-loadout-create">
@@ -1526,6 +1618,14 @@ export default defineComponent({
             </p>
 
             <div class="profile-loadout-controls">
+              <button
+                type="button"
+                :data-testid="`my-profile-loadout-play-${row.view.id}`"
+                :disabled="loadoutLaunchInFlight"
+                @click="playSavedLoadout(row)"
+              >
+                Play this loadout
+              </button>
               <span
                 class="profile-loadout-visibility"
                 :data-testid="`my-profile-loadout-visibility-${row.view.id}`"
@@ -1570,6 +1670,13 @@ export default defineComponent({
           </li>
         </ul>
 
+        <p
+          v-if="loadoutPlayError !== ''"
+          class="profile-upload-error"
+          data-testid="my-profile-loadout-play-error"
+        >
+          {{ loadoutPlayError }}
+        </p>
         <p
           v-if="rowError !== ''"
           class="profile-upload-error"

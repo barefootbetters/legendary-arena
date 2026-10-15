@@ -48265,4 +48265,31 @@ D-24169, D-11804, D-24026.
 
 ---
 
+### D-24722 — "Play this loadout" launches a saved loadout directly through the launch primitive; the lobby readers carry the opaque `lagn` (Active 2026-10-14 — WP-303 / EC-851)
+
+"Play this loadout" on a profile Saved Loadouts row launches a match directly through `launchMatchFromComposition`
+(D-24268), with no lobby hand-off. The row's opaque `lagn` reaches the launch through the lobby's existing hand-rolled
+reader pair (`convertLagnUpload` → `parseLoadoutJson`). This narrowly refines D-24087 for the launch path only:
+- arena-client still imports no LAGN validator and sends `lagn` verbatim on writes;
+- the server stays the LAGN validation authority, and `Game.setup()` the ext_id authority;
+- no new server read is added.
+
+The seat name is the owner view's `displayName`, falling back to `handleCanonical` (the D-24269 precedent). This
+refinement licenses no client-side LAGN interpretation beyond launch: grouping by mastermind, the won/lost join, and the
+showcase stay server-side reads (the ewiki grind-loop posture). Launching writes nothing to the loadout (§19a
+decorative lock unchanged).
+
+**Implementation (EC-851).** `apps/arena-client/src/lib/savedLoadoutLaunch.ts` (`planSavedLoadoutLaunch`, 12 tests) and
+`MyProfilePage.vue` (`playSavedLoadout`: in-flight guard → clear error → auth guard → empty-seat-name guard → plan →
+one launch call; in-flight cleared only on failure, reset by a `pageshow` back/forward-cache listener). arena-client
+2351 → 2363 pass, 0 fail; build 0; typecheck 0.
+
+**Live-verify (D-24026): pending.** After the deploy, signed in as `jefferyjjensen` on `play.legendary-arena.com/?route=me`:
+Play this loadout on a saved 1-seat loadout lands on `?match=<id>&player=0…` with that mastermind and scheme; a fast
+double-click creates exactly one match; Back to `?route=me` leaves Play this loadout enabled.
+
+**Reserved by:** NUMBER-LEDGER D-24722 (#2811). Related: D-24087, D-24268, D-24269, D-24658, D-24086, D-24018, D-24026.
+
+---
+
 Protect this file.
