@@ -22,6 +22,40 @@ export const serverUrl: string =
   import.meta.env?.VITE_SERVER_URL ?? 'http://localhost:8000';
 
 /**
+ * Calls `fetch` and turns a transport failure into a full-sentence error.
+ *
+ * A browser `fetch` rejects with a bare `TypeError: Failed to fetch` when no
+ * HTTP response arrives — the server is restarting after a deploy, the
+ * player is offline, or an error page came back without CORS headers. That
+ * text alone tells a player nothing, so it is replaced with one that says
+ * what failed and that a retry usually works. HTTP error statuses still
+ * resolve normally and are handled by each caller.
+ *
+ * @param endpoint  Absolute URL being requested (named in the error).
+ * @param init  Optional `fetch` init (method, headers, body).
+ * @returns The `Response`, whatever its status.
+ * @throws Error with a full-sentence message when no response arrives.
+ */
+async function fetchFromServer(
+  endpoint: string,
+  init?: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(endpoint, init);
+  } catch (transportError) {
+    const cause =
+      transportError instanceof Error
+        ? transportError.message
+        : String(transportError);
+    throw new Error(
+      `Could not reach the game server at ${endpoint} (${cause}). ` +
+        'The server may be restarting after an update, or your connection ' +
+        'dropped. Wait a few seconds and try again.',
+    );
+  }
+}
+
+/**
  * Per-match summary returned by the lobby list endpoint.
  *
  * Shape is mapped from the raw boardgame.io response (see D-90xx). `players`
@@ -57,7 +91,7 @@ export async function createMatch(
   authToken: string,
 ): Promise<{ matchID: string }> {
   const endpoint = `${serverUrl}/api/match/create`;
-  const response = await fetch(endpoint, {
+  const response = await fetchFromServer(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -104,7 +138,7 @@ export async function createMatchWithBot(
   authToken: string,
 ): Promise<{ matchId: string }> {
   const endpoint = `${serverUrl}/api/match/create-with-bot`;
-  const response = await fetch(endpoint, {
+  const response = await fetchFromServer(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -151,7 +185,7 @@ export async function fetchSetupRequirements(schemeId?: string): Promise<SetupRe
     trimmedSchemeId === ''
       ? `${serverUrl}/api/match/setup-requirements`
       : `${serverUrl}/api/match/setup-requirements?schemeId=${encodeURIComponent(trimmedSchemeId)}`;
-  const response = await fetch(endpoint);
+  const response = await fetchFromServer(endpoint);
   if (!response.ok) {
     throw new Error(
       `Failed to fetch setup requirements at ${endpoint}: server returned HTTP ${response.status}.`,
@@ -190,7 +224,7 @@ export async function listMatches(): Promise<LobbyMatchSummary[]> {
   // `gameover` field. This is a bandwidth optimization; the client filter is the
   // guaranteed mechanism (WP-326 / D-24112).
   const endpoint = `${serverUrl}/games/legendary-arena?isGameover=false`;
-  const response = await fetch(endpoint);
+  const response = await fetchFromServer(endpoint);
 
   if (!response.ok) {
     throw new Error(
@@ -248,7 +282,7 @@ export async function joinMatch(
   authToken: string,
 ): Promise<{ playerCredentials: string }> {
   const endpoint = `${serverUrl}/api/match/join`;
-  const response = await fetch(endpoint, {
+  const response = await fetchFromServer(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -285,7 +319,7 @@ export async function addGuest(
   authToken: string,
 ): Promise<{ matchId: string; seat: string; credentials: string }> {
   const endpoint = `${serverUrl}/api/match/add-guest`;
-  const response = await fetch(endpoint, {
+  const response = await fetchFromServer(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -350,7 +384,7 @@ export async function setGuestAccess(
   authToken: string,
 ): Promise<{ matchId: string } & GuestAccessMeta> {
   const endpoint = `${serverUrl}/api/match/set-guest-access`;
-  const response = await fetch(endpoint, {
+  const response = await fetchFromServer(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -407,7 +441,7 @@ export async function createGuestSoloMatch(): Promise<{
   // why: a headerless, bodyless POST is a CORS simple request (no preflight), and
   // the route is public and bodyless (WP-787 / D-24635) — there is no account to
   // authorize and no composition to send.
-  const response = await fetch(endpoint, { method: 'POST' });
+  const response = await fetchFromServer(endpoint, { method: 'POST' });
 
   if (!response.ok) {
     const errorBody = await response.text();
@@ -451,7 +485,7 @@ export async function joinAsGuest(
   const endpoint = `${serverUrl}/api/match/join-as-guest`;
   // why: no Authorization header — a guest has no account; this endpoint is
   // public by necessity and defended by the password + server rate limit.
-  const response = await fetch(endpoint, {
+  const response = await fetchFromServer(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ matchId, password }),
@@ -559,7 +593,7 @@ export async function fetchMatch(
   matchID: string,
 ): Promise<LobbyMatchSummary | null> {
   const endpoint = `${serverUrl}/games/legendary-arena/${encodeURIComponent(matchID)}`;
-  const response = await fetch(endpoint);
+  const response = await fetchFromServer(endpoint);
 
   if (response.status === 404) {
     // why: an unknown match ID is a normal "not found" the caller renders as
