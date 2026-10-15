@@ -853,8 +853,19 @@ export default defineComponent({
         officersCount: run.launch.officersCount,
         sidekicksCount: run.launch.sidekicksCount,
       };
-      const playerName =
-        view.value?.displayName ?? view.value?.handleCanonical ?? '';
+      const playerName = (
+        view.value?.displayName ?? view.value?.handleCanonical ?? ''
+      ).trim();
+      // why: when the owner profile fails to load, `view` is null while the
+      // Gauntlet section still renders. Launching with an empty seat name lets
+      // the primitive create the match and then boardgame.io refuses the
+      // nameless join with a 403, orphaning the match. Same guard as the lobby
+      // and WP-303's saved-loadout launch.
+      if (playerName === '') {
+        gauntletPlayError.value =
+          "Your profile hasn't finished loading, so your seat has no name yet. Reload the page and try again.";
+        return;
+      }
       const result = await launchMatchFromComposition({
         config,
         playerCount: run.playerCount,
