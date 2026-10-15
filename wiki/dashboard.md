@@ -59,7 +59,7 @@ synthetic data by default and flips to a live API source only when the deploy
 environment enables it.
 
 > **Frozen, moving out (D-24723, 2026-10-15).** The dashboard is becoming its
-> own repo, `barefootbetters/dashboard`, a reader that renders any project from
+> own repo, `barefootbetters/bb-studio-dashboard`, a reader that renders any project from
 > a `dashboard.json`. It was seeded from `apps/dashboard` with its history.
 > Until Legendary Arena's cutover to it, `apps/dashboard` takes no feature
 > work; a bug fix lands in both repos. This page describes the copy here and
