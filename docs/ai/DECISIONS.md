@@ -48171,4 +48171,92 @@ D-24026.
 
 ---
 
+### D-24715 — Match seeds are minted from crypto on the server and never sent to clients (Active 2026-10-14 — WP-809 / EC-846)
+
+**Problem.** Two leaks let anyone foresee a live match's cards: villain deck, hero deck and HQ refills, every
+draw pile.
+
+1. **The seed was guessable.** `LegendaryGame` defines no `seed`, so boardgame.io 0.50.2 seeded every match with
+   `Date.now().toString(36)`. The lobby API returns match metadata to anyone (`createClientMatchData` strips only
+   credentials), and its `createdAt` is stamped by `Date.now()` a fraction of a millisecond before the seed.
+   - Draft PoC on the real `createMatch`: 296/300 seeds equalled `base36(createdAt)` and 4/300 were +1 ms.
+   - The repo and the card data are public, so the first guess reproduced each match's full initial `G` in about
+     7 ms.
+   - Even without `createdAt`, a ±60 s guess is about 120k candidates, roughly 15 single-core minutes.
+2. **The seed was sent to clients.** boardgame.io's socket `sync` answer is
+   `{ state, log, filteredMetadata, initialState }`. Its player-view filter redacts `state` and `log` but passes
+   `initialState` (the seed and the unfiltered initial `G`) through raw, to any socket, spectators with no
+   credentials included.
+
+The harm lands on the scored boards (PAR, Gauntlet, competition). Replay verification proves every move was
+legal; it cannot detect foreknowledge.
+
+**Decision.**
+
+1. **The seed seam.** `apps/server/src/game/matchSeed.mjs` builds `serverLegendaryGame`, the processed
+   `LegendaryGame`, and gives it a `seed` getter that returns `randomBytes(16).toString('hex')` (128 bits,
+   `/^[0-9a-f]{32}$/`) on every read.
+   - boardgame.io 0.50 has no per-match seed hook, but its random plugin reads `game.seed` exactly once per
+     `InitializeGame`.
+   - The getter must sit on the processed object. Game processing copies an unprocessed game, which would read
+     the getter once and freeze one value; `Server()` and `Master` pass an already-processed game through
+     unchanged.
+2. **The redaction.** `apps/server/src/game/syncRedaction.mjs` is a namespace middleware (the D-24701 shape)
+   that wraps each socket's `emit` and deletes `initialState` from every outgoing `sync` frame.
+   - `sync` is only ever sent through the requesting socket's `emit`. `patch` and `update` are built from
+     filtered state, and `matchData` is credential-stripped.
+   - It deletes one key from a framework frame and never reads or interprets the match blob, so it needs no
+     D-24095 carve-out.
+   - The client only stores the field for `getInitialState()`. The arena-client never reads it, and
+     boardgame.io's dev-only Debug panel log rewind loses its baseline on multiplayer matches (expected, not a
+     regression).
+3. **One object everywhere.** `server.mjs` hands `serverLegendaryGame` to `Server({ games })`, the D-24701 guard
+   and the redaction. Bot-ally (two sites) and autoplay use it for their `Master` move submission. No other game
+   processing of `LegendaryGame` remains in non-test `apps/server/src` (grep-gated).
+4. **The bare-copy hazard.** A copy of `serverLegendaryGame` that does not set its own `seed` freezes one random
+   value. A caller that needs a specific seed (replay, a future seed challenge) sets `seed` in the copy, and a
+   pinned seed reproduces a board exactly.
+5. **Determinism and replay unchanged.** The seed is still persisted at
+   `initialState.plugins.random.data.seed`. Replay, capture, the competitive verifier and the coach re-run the
+   persisted `initialState + log` (D-24119). The engine, the PRNG and every hash oracle are untouched.
+6. **Rejected alternatives.**
+   - A static `seed` on `LegendaryGame`: every match would share it.
+   - A getter on `LegendaryGame` itself: frozen by processing.
+   - Koa middleware that sets `game.seed` per request: `koaBody()` awaits before `createMatch`, so concurrent
+     creates race.
+   - `pnpm patch` of `Random.seed()`: vendored dist edits that survive upgrades badly.
+   - Hiding or coarsening `createdAt`: the blind search still works, and the lobby and D-24169 read it.
+   - A custom random plugin: plugin `setup` never sees `setupData`.
+   - Splitting the two fixes into two packets: neither alone closes foreseeability.
+7. **Seed challenges.** DESIGN-SEED-CHALLENGES §7(a) is corrected.
+   - A challenge create path calls `createMatch` over a copy of `serverLegendaryGame` with the challenge seed set,
+     then stores the result itself.
+   - A seed must never ride on `setupData`, because `createMetadata` copies `setupData` into public metadata.
+8. **Matches live at deploy** keep their clock seeds until they end. After the deploy, the redaction stops sending
+   those seeds, so only the `createdAt` guess remains for them.
+9. **WP-808 / WP-810.** Their drafted text says today's seed is `Date.now()`-derived. This decision supersedes
+   that premise, and their executors reconcile it. D-24714's completed-matches-only seed export becomes the real
+   protection for live matches, not defense in depth.
+10. **API catalog.** The `POST /games/legendary-arena/create` row's seed sentence also covers `playAgain`, which
+    creates through the same game object; both rows were replaced whole (D-11804).
+
+**Evidence.**
+- Server tests: 1814 → 1828, 0 fail, 207 DB-gated skips (+6 seed, +6 redaction, +2 wiring). The only existing
+  assertion changed is the D-24701 pinned string.
+- Revert proofs: 4/4, and the copilot's drop-`log` redaction mutant fails 3 tests.
+- Both grep gates exact.
+- Draft-time gates: pre-flight READY (round 2; round 1 found the `sync` leak), copilot PASS / CONFIRM (round 3),
+  lint PASS 21/21 (round 3). Delta pre-flight at `a5db28d0`: still READY.
+
+**Live-verify (D-24026): pending.** After the deploy, Jeff runs these steps:
+1. Create one spectator match ("Watch Bot Play") and one seated match.
+2. Run a read-only seed query keyed on their match ids. Both seeds must be 32 hex characters and differ.
+3. In DevTools → Network → WS, neither `sync` frame carries `initialState`. The seated board renders and a move
+   commits.
+
+**Reserved by:** NUMBER-LEDGER D-24715 (#2777). Related: D-24119, D-24094, D-24689 §2, D-24701, D-24095, D-24714,
+D-24169, D-11804, D-24026.
+
+---
+
 Protect this file.

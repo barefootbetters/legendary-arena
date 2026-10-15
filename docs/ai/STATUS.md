@@ -7,6 +7,20 @@
 
 ## Current State
 
+### WP-809 / EC-846 — Hidden, unguessable match seeds (D-24715) (2026-10-14)
+
+**User-visible on `play.legendary-arena.com` only in DevTools (after deploy).** Each new match gets a 128-bit seed minted from `crypto.randomBytes` instead of boardgame.io's clock seed, which equalled the public `createdAt` to the millisecond. The socket `sync` frame no longer carries `initialState` (the seed and the initial decks), so no player or spectator can foresee the cards. Boards, rules and timing are unchanged.
+
+- **Server only.**
+  - `game/matchSeed.mjs` (`serverLegendaryGame`, a per-read seed getter on the processed game) and `game/syncRedaction.mjs` (drops `initialState` from outgoing `sync`).
+  - Wired into `Server({ games })`, the D-24701 guard, and the bot-ally / autoplay `Master` sites.
+  - Engine, boardgame.io lock, client and replay unchanged.
+- **Tests.** server 1814 → 1828, 0 fail; `pnpm -r --no-bail test` 0 fail in every package. Revert proofs 4/4; the drop-`log` redaction mutant is killed.
+- **Live-verify (D-24026): pending.** After the deploy:
+  - Create one "Watch Bot Play" match and one seated match.
+  - The read-only seed query keyed on their ids shows 32-hex seeds that differ.
+  - DevTools → WS shows no `initialState` in either `sync` frame, and the seated board renders and a move commits.
+
 ### WP-812 / EC-849 — The Hall of Legends stops saying "Draw" for a match that was not a tie (D-24720) (2026-10-14)
 
 **User-visible on `legends.legendary-arena.com` (after deploy).** A match whose outcome the server does not know reads "Outcome not recorded", and a match the players ended with "End Game" reads "Ended early". Only a real deck-exhaustion tie still reads "Draw"; wins and losses are unchanged.
