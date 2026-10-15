@@ -778,10 +778,10 @@
       "card": "Sentinel",
       "ability": "koHeroCurrentPlayer",
       "wp": "WP-185",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "verified",
+      "date": "2026-10-15",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff).",
+      "note": "Hand side unexercised — every fight came after the whole hand was played."
     },
     {
       "key": "core-villain-skrulls-skrull-queen-veranke|captureHqHeroHighestCost",
