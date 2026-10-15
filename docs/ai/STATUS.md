@@ -7,6 +7,22 @@
 
 ## Current State
 
+### WP-303 / EC-851 — Play a saved loadout from the profile (D-24722) (2026-10-14)
+
+**User-visible on `play.legendary-arena.com/?route=me` (after deploy).** Each Saved Loadouts row has a **Play this loadout** button. One click starts a match with that lineup, seats the player in seat 0, and opens the board: the mastermind grind loop's one-click reload. An unreadable loadout or a failed launch shows a full-sentence error under the list, naming the row.
+
+- **arena-client only.**
+  - New `lib/savedLoadoutLaunch.ts` (`planSavedLoadoutLaunch`) reads the row's stored `lagn` with the lobby's `convertLagnUpload` → `parseLoadoutJson`. Final Blow is omit-when-off; `hero_alternates` are never played.
+  - `MyProfilePage.vue`: the button, `playSavedLoadout` (one `launchMatchFromComposition` call; signed-out and empty-seat-name guards; in-flight cleared only on failure), the error line, the help sentence, and a `pageshow` reset so Back from a match re-enables Play.
+  - No server, engine, registry, or lobby change; no validator import; no new server read; nothing written to the loadout.
+- **Tests.** arena-client 2351 → 2363 pass, 0 fail (+12 helper tests); `pnpm -r build` 0; arena-client `typecheck` 0. Verification greps clean; the `EC-851:` commit is exactly 3 files.
+- **Limitation.** A multi-seat loadout opens a match that waits for the other seats, as the lobby's loadout path does.
+- **Live-verify (D-24026): pending.** After the deploy, signed in as `jefferyjjensen`:
+  - Play this loadout on a saved 1-seat loadout lands on `?match=<id>&player=0…` with that mastermind and scheme.
+  - A fast double-click creates exactly one match.
+  - Back to `?route=me` leaves Play this loadout enabled.
+  - Record the match id and deployed SHA here.
+
 ### WP-809 / EC-846 — Hidden, unguessable match seeds (D-24715) (2026-10-14)
 
 **User-visible on `play.legendary-arena.com` only in DevTools (after deploy).** Each new match gets a 128-bit seed minted from `crypto.randomBytes` instead of boardgame.io's clock seed, which equalled the public `createdAt` to the millisecond. The socket `sync` frame no longer carries `initialState` (the seed and the initial decks), so no player or spectator can foresee the cards. Boards, rules and timing are unchanged.
