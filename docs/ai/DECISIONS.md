@@ -48292,4 +48292,32 @@ double-click creates exactly one match; Back to `?route=me` leaves Play this loa
 
 ---
 
+### D-24723 — The operator dashboard leaves this repo for `barefootbetters/dashboard`; `apps/dashboard` is frozen until the cutover (Active 2026-10-15 — no WP)
+
+Jeff's call, 2026-10-15: the operator dashboard becomes its own repo, `barefootbetters/dashboard`, a project-agnostic
+reader that renders any project from a `dashboard.json` the project keeps in its own repo. It was seeded from this
+repo's `apps/dashboard` with its history (`git subtree split` of `main` at `a8cc4bc4`). Herbs vs. Ailments goes live on
+it first; Legendary Arena moves over only after the new build matches this one page by page.
+
+**Until that cutover, `apps/dashboard` is frozen:**
+- no feature work here; new dashboard work goes to `barefootbetters/dashboard` as a work packet there;
+- a bug fix here lands in both repos (note the other PR in each);
+- `dashboard-deploy.yml` keeps deploying `dashboard.legendary-arena.com` from this repo's `main` until the cutover
+  disables it, so two repos never deploy the same Worker.
+
+**Why:** the dashboard is tooling that serves several projects, so it shouldn't live inside one. The freeze stops
+the two copies drifting while the new one is built. D-24690 (one door per private site) carries over unchanged:
+every instance there keeps `workers_dev` and `preview_urls` off.
+
+**Cutover (a later WP here):** disable `dashboard-deploy.yml`; remove `apps/dashboard`, the Dashboard Gates job
+(`ci.yml` §3c) and its `!@legendary-arena/dashboard` test filter, `dash:*` and the dashboard `--dist` in
+`check:spa-assets`, and `roadmap-schedule-nightly.yml` (moves with the roadmap); move the WORK_INDEX row-format check
+out of the dashboard suite into this repo's CI; update `domains.json`, `DOMAINS.md`, and the ewiki pages that
+describe the dashboard. The domain, its Access app, and the API's CORS allowlist don't change.
+
+Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard.md` and `docs/ai/decision-log/`.
+
+**Reserved by:** NUMBER-LEDGER D-24723. Related: D-24690, D-19701, D-20601, D-24003, D-24004.
+
+---
 Protect this file.
