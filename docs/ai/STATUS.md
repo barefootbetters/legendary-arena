@@ -16,10 +16,11 @@
   - Wired into `Server({ games })`, the D-24701 guard, and the bot-ally / autoplay `Master` sites.
   - Engine, boardgame.io lock, client and replay unchanged.
 - **Tests.** server 1814 → 1828, 0 fail; `pnpm -r --no-bail test` 0 fail in every package. Revert proofs 4/4; the drop-`log` redaction mutant is killed.
-- **Live-verify (D-24026): pending.** After the deploy:
-  - Create one "Watch Bot Play" match and one seated match.
-  - The read-only seed query keyed on their ids shows 32-hex seeds that differ.
-  - DevTools → WS shows no `initialState` in either `sync` frame, and the seated board renders and a move commits.
+- **Live-verify (D-24026): CONFIRMED 2026-10-15** on deploy `2cb9dff7`.
+  - **Spectator.** A "Watch Bot Play" match (`UYVSIucbDVQ`, synced with no seat) gets a `sync` frame with exactly `filteredMetadata` / `log` / `state`. It has no `initialState` and no seed anywhere.
+  - **Seated.** A guest solo match (`OdlQCwboMW5`, seat 0) gets the same three keys, with the state delivered. Its `setPlayerReady` and `startMatchIfReady` moves commit (stateID 0 → 1 → 2, lobby → play), and neither update frame carries `initialState`.
+  - **Method.** These frames came from a socket client against production (the same `sync` frame a browser receives), not a DevTools capture.
+  - **Seeds.** Jeff's read-only query on the droplet found `939aba92e00a2ac1a9682d386f3830b7` and `0f2a2b593bc8e94b74f356e0a229151c`: 32 hex characters each, different from each other, and unlike the clock seeds their `createdAt` values would have produced (`mv8xqz54`, `mv8xqzj1`).
 
 ### WP-812 / EC-849 — The Hall of Legends stops saying "Draw" for a match that was not a tie (D-24720) (2026-10-14)
 

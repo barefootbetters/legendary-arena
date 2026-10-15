@@ -48248,11 +48248,17 @@ legal; it cannot detect foreknowledge.
 - Draft-time gates: pre-flight READY (round 2; round 1 found the `sync` leak), copilot PASS / CONFIRM (round 3),
   lint PASS 21/21 (round 3). Delta pre-flight at `a5db28d0`: still READY.
 
-**Live-verify (D-24026): pending.** After the deploy, Jeff runs these steps:
-1. Create one spectator match ("Watch Bot Play") and one seated match.
-2. Run a read-only seed query keyed on their match ids. Both seeds must be 32 hex characters and differ.
-3. In DevTools → Network → WS, neither `sync` frame carries `initialState`. The seated board renders and a move
-   commits.
+**Live-verify (D-24026): CONFIRMED 2026-10-15** on deploy `2cb9dff7`.
+1. **Spectator `sync`** (`UYVSIucbDVQ`, a "Watch Bot Play" match, no seat): the frame's keys are exactly
+   `filteredMetadata` / `log` / `state`. It has no `initialState` and no seed anywhere.
+2. **Seated `sync`** (`OdlQCwboMW5`, guest solo, seat 0): the same three keys, and the state is delivered.
+3. **Seated moves:** `setPlayerReady` then `startMatchIfReady` committed (stateID 0 → 1 → 2, lobby → play). Neither
+   update frame carried `initialState`.
+4. **Method:** the frames were read with a socket client against production. That is the same `sync` frame a
+   browser receives; no DevTools capture was taken.
+5. **Seeds:** Jeff's read-only query on the droplet found `939aba92e00a2ac1a9682d386f3830b7` and
+   `0f2a2b593bc8e94b74f356e0a229151c`. Both are 32 hex characters and they differ. Neither resembles the clock seed
+   its `createdAt` would have produced (`mv8xqz54`, `mv8xqzj1`).
 
 **Reserved by:** NUMBER-LEDGER D-24715 (#2777). Related: D-24119, D-24094, D-24689 §2, D-24701, D-24095, D-24714,
 D-24169, D-11804, D-24026.
