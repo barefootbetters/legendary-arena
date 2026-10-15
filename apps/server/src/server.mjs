@@ -556,9 +556,10 @@ export function tryConstructHankoVerifier() {
  * from PostgreSQL. Both startup tasks must succeed before the server accepts
  * requests. On failure, logs a full-sentence error and exits.
  *
- * @returns {Promise<{ appServer: import('http').Server, gauntletCatalog: import('./legends/gauntlet.logic.js').GauntletDefinition[], setDetailsCatalog: import('./legends/legends.types.js').SetDetails[], leaderboardDeps: import('./leaderboards/leaderboard.types.js').LeaderboardDependencies, pool: import('pg').Pool }>}
+ * @returns {Promise<{ appServer: import('http').Server, gauntletCatalog: import('./legends/gauntlet.logic.js').GauntletDefinition[], setDetailsCatalog: import('./legends/legends.types.js').SetDetails[], leaderboardDeps: import('./leaderboards/leaderboard.types.js').LeaderboardDependencies, pool: import('pg').Pool, socketServer: { engine: { close: () => void } } | undefined }>}
  *   The running HTTP server instance, the leaderboard deps bundle (for
- *   the legends publisher), and the long-lived `pg.Pool`. The caller
+ *   the legends publisher), the long-lived `pg.Pool`, and the socket.io
+ *   server whose connections the SIGTERM path closes. The caller
  *   (`apps/server/src/index.mjs`) closes the pool from the SIGTERM
  *   path after the HTTP server's graceful-shutdown step resolves.
  */
@@ -1780,5 +1781,9 @@ export async function startServer() {
       getScenarioKeysForTheme,
     },
     pool,
+    // why: index.mjs closes these connections on SIGTERM; an open player
+    // websocket otherwise keeps appServer.close() from ever finishing (see
+    // realtimeDrain.mjs). boardgame.io itself reads socket.io from app._io.
+    socketServer: server.app._io,
   };
 }
