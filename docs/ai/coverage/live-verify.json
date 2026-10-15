@@ -602,10 +602,10 @@
       "card": "Destroyer",
       "ability": "koHeroEachPlayerMag2",
       "wp": "WP-202",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Destroyer escaped (13.1.2); its Escape KO'd two of Player 0's Heroes (13.1.3), auto-picked with no prompt, then the rulebook HQ KO ran (13.1.4). D-24669 choice seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win — Destroyer escaped (13.1.2), \"the active player must KO two heroes\" (13.1.3), and both KOs resolved through the KO-choice move (13.1.4–13.1.5), then the rulebook HQ KO (13.1.6).",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "verified",
+      "date": "2026-10-15",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match nNR91fCRKsX (build 17ccd6b) — a Final Blow win — Destroyer escaped at the start of Player 1's turn (19.1.2); the off-turn Player 0 KO'd two S.H.I.E.L.D. Agents from their hand (19.1.3), and the active Player 1 picked two Heroes from their hand through the KO-choice move (19.1.4–19.1.5); nothing came from either discard pile; then the rulebook HQ KO (19.1.6). Earlier: solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Destroyer escaped (13.1.2); its Escape KO'd two of Player 0's Heroes (13.1.3), auto-picked with no prompt, then the rulebook HQ KO ran (13.1.4). D-24669 choice seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win — Destroyer escaped (13.1.2), \"the active player must KO two heroes\" (13.1.3), and both KOs resolved through the KO-choice move (13.1.4–13.1.5), then the rulebook HQ KO (13.1.6).",
+      "note": "Each-player escape with both players KOing from hand confirmed. The play side is unexercised (the escape fires before anything is played)."
     },
     {
       "key": "core-villain-spider-foes-doctor-octopus|override-next-hand-size",
@@ -712,10 +712,10 @@
       "card": "Maestro",
       "ability": "ko-heroes-current-count-by-trait",
       "wp": "WP-544",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "WP-544 live-verify, matches NPyIIWIjd1Q + iFdZ8t9xFsP (#1421)",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "partial",
+      "date": "2026-10-15",
+      "evidence": "Zero-count branch seen live under D-24687: 2p bot-ally Loki / Negative Zone Prison Breakout, match nNR91fCRKsX (build 17ccd6b) — Player 0 fought Maestro holding only Wolverine (Instinct) and S.H.I.E.L.D. cards: \"no strength Heroes — nothing to KO\" (10.2.13–10.2.14). Earlier: WP-544 live-verify, matches NPyIIWIjd1Q + iFdZ8t9xFsP (#1421).",
+      "note": "Count ≥ 1 branch still needs a live fight under the hand + play default: fight Maestro with Strength Heroes in hand or play."
     },
     {
       "key": "core-villain-masters-of-evil-melter|ko-cullable-each-deck-top",
@@ -780,7 +780,7 @@
       "wp": "WP-185",
       "state": "verified",
       "date": "2026-10-15",
-      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff).",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Repeated in match nNR91fCRKsX (build 17ccd6b): eight more Sentinel fights, all from played cards. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff).",
       "note": "Hand side unexercised — every fight came after the whole hand was played."
     },
     {
