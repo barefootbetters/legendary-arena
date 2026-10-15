@@ -250,11 +250,23 @@ succeeds on a push to `main`:
   changed since the live commit.
 - It connects as the restricted `deployer` user, whose key can only ask for
   `status` or `deploy <commit on main, not older than live>`.
-- The droplet side then runs `40-app-deploy.ps1`: frozen install, build,
-  migrations, restart, and a health gate, in about 35 s.
+- The droplet side then runs `40-app-deploy.ps1`. It builds the commit in its
+  own release directory, `/opt/la-app/releases/<sha>` (frozen install, build,
+  migrations), while the old release keeps serving. Then it switches
+  `/opt/la-app/current` to the new release and restarts `la-server`.
+- During that restart, `la-server-standby` runs the new build on `:3001`.
+  Nginx's `la_server` upstream lists it as a backup, so requests the
+  restarting server refuses go there instead of failing (lab #39, 2026-10-15).
+  Before this, every restart dropped requests: 6 s with nobody connected, 36 s
+  with a player's websocket open (fixed in #2819).
+- The commit is recorded as live (`/var/lib/la-deploy/live-commit`, which the
+  gate's `status` reads) only after the health gate passes. The droplet keeps
+  `current` and `previous`; `40-app-deploy.ps1 -Rollback` switches between
+  them with no rebuild (lab #40).
 
-Logs: `journalctl -u la-server` (the server) and `journalctl -t la-deploy`
-(the gate).
+Logs: `journalctl -u la-server` (the server), `journalctl -u
+la-server-standby` (the standby during a deploy), and `journalctl -t
+la-deploy` (the gate).
 
 ### Offsite backups (R2 + pCloud)
 

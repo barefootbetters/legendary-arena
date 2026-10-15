@@ -108,7 +108,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 2. **Claude Code builds it** — builds to the WP/EC contract, runs local gates, commits with two-commit topology (`EC-NNN:` implementation + `SPEC:` governance close).
 3. **GitHub takes it** — branch → PR → CI. Four checks are required to merge (Workspace Unit Tests, Typecheck Arena Client, Server DB Tests, Coverage & Ledger Gates); the rest also run on every PR (build, commit hygiene, reward-integrity guards, registry validation, Dashboard Gates, LAGN drift, SPA asset masking, Pages preview).
 4. **Approve from the phone** — merge PR via GitHub UI (phone-friendly).
-5. **It ships** — Cloudflare rebuilds front-ends automatically + R2 serves assets; once CI passes, `deploy-server.yml` deploys server changes to the droplet (`40-app-deploy.ps1`: build + migrations + restart + health gate); `wiki/` changes rebuild the ewiki and the `wiki-viewer` workflow deploys it to its Cloudflare Worker; the `dashboard-deploy` workflow does the same for the dashboard. Live across `*.legendary-arena.com`.
+5. **It ships** — Cloudflare rebuilds front-ends automatically + R2 serves assets; once CI passes, `deploy-server.yml` deploys server changes to the droplet (`40-app-deploy.ps1`: release-directory build + migrations, restart behind a standby so no request fails, health gate); `wiki/` changes rebuild the ewiki and the `wiki-viewer` workflow deploys it to its Cloudflare Worker; the `dashboard-deploy` workflow does the same for the dashboard. Live across `*.legendary-arena.com`.
 6. **It feeds itself** — nightly Claude CI Inspector triage; WP auto-verification loop (WP-231/233); new findings generate new WPs → re-enter at step 1.
 
 ### Remote execution model
@@ -329,7 +329,7 @@ with no operator at the keyboard.
 | Architecture inventory | Weekly Monday 06:00 UTC (`architecture-inventory.yml`) | Regenerates `wiki/architecture-inventory.md`, opens PR on diff |
 | Roadmap counts | Weekly Monday 06:00 UTC (`roadmap-counts.yml`) | Regenerates the ROADMAP count table, opens PR on diff |
 | Roadmap schedule watch | Daily 13:00 UTC (`roadmap-schedule-nightly.yml`) | Maintains one `schedule-watch` issue when roadmap tasks slip |
-| Server deploy (droplet) | After CI succeeds on a push to `main` (`deploy-server.yml`, D-24708); skipped when no server-relevant file changed since the live commit | Deploys the exact commit CI tested through the droplet's `la-deploy` gate → `40-app-deploy.ps1` (frozen install, build, migrations, restart, origin health gate, ~35 s), then checks `api./health` through Cloudflare |
+| Server deploy (droplet) | After CI succeeds on a push to `main` (`deploy-server.yml`, D-24708); skipped when no server-relevant file changed since the live commit | Deploys the exact commit CI tested through the droplet's `la-deploy` gate → `40-app-deploy.ps1` (frozen install, build, and migrations in a new release directory; restart behind `la-server-standby` with no failed requests; origin health gate), then checks `api./health` through Cloudflare |
 | Auto-deploy (ewiki) | On merge touching `wiki/**` (`wiki-viewer.yml` → `wrangler deploy`) | Rebuilds the ewiki and deploys it to its Worker |
 | Auto-deploy (dashboard) | On merge to `main` (`dashboard-deploy.yml` → `wrangler deploy`) | Rebuilds the dashboard and deploys it to its Worker |
 | Auto-deploy (Cloudflare Pages) | On merge to `main` | Rebuilds the public front-ends |
@@ -912,12 +912,20 @@ Each platform manages its own configuration and secrets independently.
   (D-24708) runs when CI succeeds on a push to `main`. If server-relevant files
   changed since the live commit, it deploys the tested commit over SSH as the
   restricted `deployer` user, whose key is pinned to the `la-deploy` gate. The
-  gate runs `40-app-deploy.ps1`: an exact-commit checkout,
-  `pnpm install --frozen-lockfile`, build, migrations, restart, and a health
-  gate (~35 s). Pause deploys with the repository variable
-  `DEPLOY_ENABLED=false`. Re-run or pick a commit from **Actions →
-  deploy-server → Run workflow**. Roll back with a hand deploy of the older
-  commit on the droplet (the gate refuses to go backwards).
+  gate runs `40-app-deploy.ps1`. It builds the commit in its own release
+  directory (`/opt/la-app/releases/<sha>`, with `pnpm install
+  --frozen-lockfile`, build, and migrations) while the old release keeps
+  serving. Then it points `/opt/la-app/current` at the new release and
+  restarts `la-server` behind `la-server-standby`. The standby is the new
+  build on `:3001`, and Nginx falls back to it, so the restart fails no
+  request. The commit is recorded as live only after the health gate passes;
+  a release that never gets healthy leaves the old one serving. Pause deploys
+  with the repository variable `DEPLOY_ENABLED=false`. Re-run or pick a
+  commit from **Actions → deploy-server → Run workflow**. Roll back with
+  `40-app-deploy.ps1 -Rollback` on the droplet. That switches back to the
+  previous release with no rebuild and doesn't reverse migrations. Anything
+  older is a hand deploy with `DEPLOY_REF=<sha>`, since the gate refuses to
+  go backwards.
 - **Cost:** ~$24/mo.
 
 **Render** — server + database until 2026-10-12 (history):
@@ -1072,7 +1080,7 @@ Each deploy surface has a deterministic rollback path.
 
 | Surface | Fail signal | Rollback action | Verification |
 |---|---|---|---|
-| **DigitalOcean droplet** (server) | Health gate fails, migration error, 5xx spike | Revert the PR on GitHub → merge the revert to `main` → `deploy-server.yml` deploys it once CI passes. For an immediate rollback, hand-deploy the previous commit on the droplet (`DEPLOY_REF=<sha>` with `40-app-deploy.ps1`; the CI gate refuses older commits by design). During the 7-day window after the 2026-10-12 cutover, a whole-platform rollback is also possible: restore the DNS-only CNAME `api` → `legendary-arena-server.onrender.com` and resume the suspended Render service | `curl $GAME_SERVER_URL/health` returns 200 |
+| **DigitalOcean droplet** (server) | Health gate fails, migration error, 5xx spike | Revert the PR on GitHub → merge the revert to `main` → `deploy-server.yml` deploys it once CI passes. For an immediate rollback, run `sudo flock -w 600 /run/la-deploy.lock pwsh -NoProfile -File /opt/la-lab/infra/scripts/40-app-deploy.ps1 -Rollback` on the droplet. It switches `/opt/la-app/current` back to the previous release behind the standby, with no rebuild and no migration reversed. For an older commit, hand-deploy it (`DEPLOY_REF=<sha>` with `40-app-deploy.ps1`); the CI gate refuses older commits by design. During the 7-day window after the 2026-10-12 cutover, a whole-platform rollback is also possible: restore the DNS-only CNAME `api` → `legendary-arena-server.onrender.com` and resume the suspended Render service | `curl $GAME_SERVER_URL/health` returns 200 |
 | **Cloudflare Worker** (ewiki) | Build failure, missing page, stale content | Revert the PR → merge to `main` → `wiki-viewer` workflow rebuilds and redeploys the Worker | Page content updated on `ewiki.legendary-arena.com` (after the Access login) |
 | **Cloudflare Worker** (dashboard) | Build failure, blank page, wrong data source | Revert the PR → merge to `main` → `dashboard-deploy` workflow rebuilds and redeploys the Worker | Dashboard loads at `dashboard.legendary-arena.com` (after the Access login) |
 | **Cloudflare Pages** (public front-ends) | Build failure, missing assets, blank page | Revert the PR → merge to `main` → Pages auto-rebuilds | Site loads at `play.legendary-arena.com` |

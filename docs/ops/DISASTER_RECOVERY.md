@@ -346,9 +346,13 @@ downstream — so each step has what the next one needs:
   Postgres). If only the app is broken, this is the lowest-risk scenario. **If
   the droplet itself is lost, the database went with it** — that is DR-01 on a
   fresh droplet.
-- **Procedure (droplet intact):** redeploy with the lab's `40-app-deploy.ps1`
-  (checkout, frozen install, build, migrations, restart, health gate). A known-
-  good commit is a hand deploy with `DEPLOY_REF=<sha>`.
+- **Procedure (droplet intact):** if the last deploy broke it, run
+  `40-app-deploy.ps1 -Rollback` (under `flock /run/la-deploy.lock`). It
+  switches `/opt/la-app/current` back to the previous release with no
+  rebuild. Otherwise redeploy with the lab's `40-app-deploy.ps1`: a release
+  directory build (frozen install, build, migrations), then a restart behind
+  `la-server-standby` and a health gate. A known-good commit is a hand deploy
+  with `DEPLOY_REF=<sha>`.
 - **Procedure (droplet lost):** create a droplet (Ubuntu 24.04) with the lab's
   cloud-init → run the provisioners in order (`05` SSH, `06` UFW, `07`, `08`
   swap, `10` Node/pnpm, `20` Nginx, `21` Cloudflare origin TLS with the Origin Certificate, `30`
