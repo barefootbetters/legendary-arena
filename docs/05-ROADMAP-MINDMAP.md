@@ -619,6 +619,7 @@ mindmap
         ["WP-300 ✅ Public profile link-preview meta (Open Graph / Twitter Card via the repo's first Cloudflare Pages Function — functions/_middleware.ts uses HTMLRewriter to inject per-player preview meta tags into the SPA shell for ?profile=handle, fail-soft on any API failure/bad handle; buildProfileMeta.ts unit-tested attribute-escaping + §23 guard; extends client-app category to functions/; D-24085 edge-subsurface classification; EC-331; test 624→634/typecheck 0/build 0)"]
         ["WP-301 ✅ Profile loadout library — data model + endpoints (server) (migration 022_create_player_loadouts.sql — player_id FK CASCADE, lagn_json jsonb, visibility CHECK, partial-unique share_slug; loadoutLibrary.{types,logic,routes}.ts + tests; 5 endpoints POST/GET /api/me/loadouts + PATCH/DELETE /api/me/loadouts/:id + guest GET /api/loadouts/:shareSlug public-only; server-side LAGN validate on every write, 50-cap, decorative-not-merit §19b; D-24086; EC-332; server suite 716→746/build 0)"]
         ["WP-302 ✅ Profile loadout library — owner UI + public share view (client) (consumes the WP-301 endpoints, no new server surface; MyProfilePage.vue Saved Loadouts section — paste-LAGN create / list / rename / public-private toggle / delete / copy-share-link; net-new unguarded ?loadout=<shareSlug> SharedLoadoutPage.vue — name + displayHandle + composition summary, 404 on private/missing, never an account id; loadoutLibraryApi.ts Bearer client + guest read + loadoutSummary.ts defensive helper, lagn opaque unknown no @legendary-arena/lagn import, no new npm dep; decorative-not-merit §19b/§19a; D-24087; EC-333; arena-client test 634→650/typecheck 0/build 0; lobby integration deferred WP-303)"]
+        ["WP-303 📝 Play a saved loadout from the profile arena-client. A Play this loadout button on each route me Saved Loadouts row launches the stored LAGN through the existing WP-448 launchMatchFromComposition via the lobby readers convertLagnUpload and parseLoadoutJson, no server read, no validator import, no new chain. Step 1 of the ewiki mastermind grind loop. D-24722. EC-851."]
         ["WP-305 ✅ Owner-page identity fields — accountId / displayName / handleCanonical on OwnerProfileView + an editable display name; EC-335"]
 
       Architecture & API Governance
@@ -988,7 +989,7 @@ mindmap
 | User Feedback & Public Roadmap | 2/3 | 1 open |
 | Agent Triage Pipeline | 8/8 | — |
 | Admin & Route Wiring | 4/4 | — |
-| Phase 9 — Profile Surface Follow-ups | 11/11 | — |
+| Phase 9 — Profile Surface Follow-ups | 11/12 | 1 open |
 | Architecture & API Governance | 4/4 | — |
 | Complete-Game Testing | 1/1 | — |
 | Cross-App Infrastructure | 2/2 | — |
@@ -1002,9 +1003,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 3/4 | 1 open |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **787/809 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 21 open |
+| **Total** | **787/810 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 22 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 22):** WP-813 open; WP-810 open; WP-808 open; WP-807 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 23):** WP-813 open; WP-810 open; WP-808 open; WP-807 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked; WP-303 open.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
