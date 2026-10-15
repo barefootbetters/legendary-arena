@@ -98,7 +98,7 @@ describe('apps/server/src/server.mjs — registry wiring contract (WP-113 PS-5)'
 });
 
 describe('apps/server/src/server.mjs — client action guard wiring (D-24701)', () => {
-  it('imports installClientActionGuard and installs it on the constructed Server for LegendaryGame', async () => {
+  it('imports installClientActionGuard and installs it on the constructed Server for serverLegendaryGame', async () => {
     const text = await readFile(serverPath, 'utf8');
 
     assert.match(
@@ -107,11 +107,11 @@ describe('apps/server/src/server.mjs — client action guard wiring (D-24701)', 
       'server.mjs must import installClientActionGuard from ./game/clientActionGuard.mjs',
     );
     const serverConstructIndex = text.indexOf('const server = Server({');
-    const guardCallIndex = text.indexOf('installClientActionGuard(server, [LegendaryGame]);');
+    const guardCallIndex = text.indexOf('installClientActionGuard(server, [serverLegendaryGame]);');
     assert.ok(serverConstructIndex > -1, 'Server({...}) construction must exist');
     assert.ok(
       guardCallIndex > serverConstructIndex,
-      'installClientActionGuard(server, [LegendaryGame]) must be called after Server({...}) is constructed — without it a client can send raw GAME_EVENT / UPDATE / PATCH / UNDO actions straight to the match',
+      'installClientActionGuard(server, [serverLegendaryGame]) must be called after Server({...}) is constructed — without it a client can send raw GAME_EVENT / UPDATE / PATCH / UNDO actions straight to the match',
     );
     const runIndex = text.indexOf('await server.run(');
     assert.ok(runIndex > -1, 'server.run(...) must exist');
@@ -119,6 +119,41 @@ describe('apps/server/src/server.mjs — client action guard wiring (D-24701)', 
       guardCallIndex < runIndex,
       'installClientActionGuard must be called before server.run(...) so no socket connects without the filter',
     );
+  });
+});
+
+describe('apps/server/src/server.mjs — high-entropy match seed wiring (WP-809 / D-24715)', () => {
+  it('constructs Server() with serverLegendaryGame from ./game/matchSeed.mjs', async () => {
+    const text = await readFile(serverPath, 'utf8');
+
+    assert.match(
+      text,
+      /import\s*\{\s*serverLegendaryGame\s*\}\s*from\s*['"]\.\/game\/matchSeed\.mjs['"]/,
+      'server.mjs must import serverLegendaryGame from ./game/matchSeed.mjs',
+    );
+    assert.match(
+      text,
+      /const server = Server\(\{\s*games:\s*\[serverLegendaryGame\]/,
+      'Server({ games }) must receive serverLegendaryGame — the bare LegendaryGame seeds every match from Date.now(), which the public createdAt reveals',
+    );
+  });
+
+  it('installs the sync redaction after Server({...}) and before server.run(...)', async () => {
+    const text = await readFile(serverPath, 'utf8');
+
+    assert.match(
+      text,
+      /import\s*\{\s*installSyncRedaction\s*\}\s*from\s*['"]\.\/game\/syncRedaction\.mjs['"]/,
+      'server.mjs must import installSyncRedaction from ./game/syncRedaction.mjs',
+    );
+    const serverConstructIndex = text.indexOf('const server = Server({');
+    const redactionCallIndex = text.indexOf('installSyncRedaction(server, [serverLegendaryGame]);');
+    const runIndex = text.indexOf('await server.run(');
+    assert.ok(
+      redactionCallIndex > serverConstructIndex,
+      'installSyncRedaction(server, [serverLegendaryGame]) must be called after Server({...}) — without it every socket sync hands out the seed and the initial decks',
+    );
+    assert.ok(redactionCallIndex < runIndex, 'installSyncRedaction must be called before server.run(...)');
   });
 });
 

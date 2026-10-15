@@ -57,6 +57,7 @@ import { createAnthropicCoachClient } from './coach/coachClient.js';
 import { registerFeedbackRoutes } from './feedback/feedback.routes.js';
 import { registerBattlePlanRoutes } from './match/battlePlan.routes.js';
 import { installClientActionGuard } from './game/clientActionGuard.mjs';
+import { installSyncRedaction } from './game/syncRedaction.mjs';
 import { resolveCoachModelConfig } from './coach/coachModelConfig.js';
 import {
   createNativeLobbyGuard,
@@ -95,7 +96,8 @@ import {
   enqueuePlayerToMarketingList,
 } from './marketing/brevoEnqueue.logic.js';
 import { createBrevoTransactionalSender } from './marketing/brevoTransactional.logic.js';
-import { LegendaryGame, setRegistryForSetup } from '@legendary-arena/game-engine';
+import { setRegistryForSetup } from '@legendary-arena/game-engine';
+import { serverLegendaryGame } from './game/matchSeed.mjs';
 import { getVersionInfo } from './version.mjs';
 
 // why: boardgame.io v0.50 only ships a CJS server bundle (dist/cjs/server.js)
@@ -789,7 +791,7 @@ export async function startServer() {
   // game state sync) traffic on a single port. Render's load balancer
   // upgrades WebSocket connections automatically -- no separate WS port needed.
   const server = Server({
-    games: [LegendaryGame],
+    games: [serverLegendaryGame],
     // why: CORS origins are written as a literal array per code style Rule 7.
     // Authorized cross-origin consumers of the boardgame.io lobby + match API:
     //   - https://play.legendary-arena.com — the production arena-client SPA
@@ -867,7 +869,11 @@ export async function startServer() {
   // endTurn, ...), whole-state UPDATE / SYNC / RESET / PATCH, and UNDO / REDO
   // for an active seat, skipping move validation. Admit player moves
   // (MAKE_MOVE) only. Installed before run() so every socket gets the filter.
-  installClientActionGuard(server, [LegendaryGame]);
+  installClientActionGuard(server, [serverLegendaryGame]);
+  // why: D-24715 — boardgame.io's sync answer carries the raw initialState
+  // (the match seed and every initial deck order) past its player-view
+  // filter, to any socket including spectators. Drop it before it leaves.
+  installSyncRedaction(server, [serverLegendaryGame]);
 
   registerHealthRoute(server.router);
   // why: D-24711 — /health never touches PostgreSQL, so a dead database left
