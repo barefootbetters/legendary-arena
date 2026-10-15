@@ -69,7 +69,7 @@ const GITHUB_ISSUES_PER_PAGE = 100;
  * returns PRs too, newest first, and this repo opens ~20 PRs a day — an
  * unfiltered first page held 100 PRs and zero drill issues (2026-10-08), so the
  * tile reported "On track" while three drill issues sat open. Both the drill
- * issues (`dr-drill-reminder.yml`) and the backup-mirror alert (`db-backup.yml`)
+ * issues (`dr-drill-reminder.yml`) and the backup-mirror alert (`db-backup.yml`, deleted 2026-10-16)
  * are opened by the Actions `GITHUB_TOKEN`, i.e. `github-actions[bot]`.
  */
 const GITHUB_ISSUE_CREATOR = 'github-actions%5Bbot%5D';

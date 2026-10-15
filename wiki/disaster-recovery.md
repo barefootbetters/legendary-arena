@@ -28,8 +28,7 @@ source:
   - ../docs/ai/DECISIONS.md
   - legendary-arena/legendary-arena-lab infra/scripts/50-backup.ps1 and 51-restore.ps1 (droplet backup and restore, production since 2026-10-12)
   - ../render.yaml
-  - ../.github/workflows/db-backup.yml
-last-reviewed: 2026-10-12
+last-reviewed: 2026-10-16
 canonical-source: docs/ops/DISASTER_RECOVERY.md
 ---
 
@@ -83,9 +82,9 @@ of the canonical doc, recovery assumes it is lost.
 
 | Layer | Source | Where | Notes |
 |---|---|---|---|
-| Managed (internal) | None since 2026-10-12. Self-hosted PostgreSQL on the droplet has no managed snapshots or PITR. | — | Until the 2026-10-12 cutover, Render Postgres snapshots + PITR were this layer. Render's snapshots exist only until the Render database is deleted (~2026-10-20, end of the rollback window). |
+| Managed (internal) | None since 2026-10-12. Self-hosted PostgreSQL on the droplet has no managed snapshots or PITR. | — | Until the 2026-10-12 cutover, Render Postgres snapshots + PITR were this layer. Render's snapshots went with the Render database, deleted 2026-10-16 (Phase 7); a final dump of it is kept under `render-final/` in the production R2 bucket and pCloud. |
 | Local (on the droplet) | `pg_dump -Fc` by the lab's `50-backup.ps1` | the droplet's local disk, last 7 dumps | Fastest restore source; lost with the droplet. |
-| External (provider-independent) | the same dump, daily 09:17 UTC by the droplet's `la-backup` systemd timer (`50-backup.ps1` in `legendary-arena-lab`), which then pings the healthchecks.io check `la-droplet-backup` | private Cloudflare R2 bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | **Primary** offsite copy. GFS retention: 35 daily · 12 weekly · 12 monthly. Same key layout and retention as the WP-416 / D-24236 GitHub Actions nightly ([`db-backup.yml`](../.github/workflows/db-backup.yml)), which ran from 2026-08-09 and was disabled at the 2026-10-12 cutover. Restore from R2 drilled 2026-10-11/12 (`51-restore.ps1`, `RESTORE_FROM_R2=latest`). |
+| External (provider-independent) | the same dump, daily 09:17 UTC by the droplet's `la-backup` systemd timer (`50-backup.ps1` in `legendary-arena-lab`), which then pings the healthchecks.io check `la-droplet-backup` | private Cloudflare R2 bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | **Primary** offsite copy. GFS retention: 35 daily · 12 weekly · 12 monthly. Same key layout and retention as the WP-416 / D-24236 GitHub Actions nightly (`db-backup.yml`), which ran from 2026-08-09, was disabled at the 2026-10-12 cutover, and was deleted 2026-10-16. Restore from R2 drilled 2026-10-11/12 (`51-restore.ps1`, `RESTORE_FROM_R2=latest`). |
 | Second offsite (3-2-1) | the same dump, `rclone` in the same `50-backup.ps1` run, on every production backup; it reports to its own healthchecks.io check `la-droplet-pcloud` | pCloud, `db-backups/` (US region, `api.pcloud.com`) | Vendor independent of Cloudflare, same GFS policy. Ran in the GitHub Actions nightly from 2026-08-10 (restore drilled 2026-08-10). It is permanent on the droplet (lab #30): a missing `BACKUP_PCLOUD_TOKEN` or a failed copy pings `la-droplet-pcloud` as failed, while `la-droplet-backup` stays green because R2 already holds the dump. The first droplet mirror landed 2026-10-12, byte-identical to the R2 object. How it runs, the token, and the checks: [Ubuntu Lab Provisioning § Offsite backups](ubuntu-lab-provisioning.md#offsite-backups-r2--pcloud). |
 
 The external layers are the ones that make a provider-loss recoverable. They
@@ -156,10 +155,9 @@ age of the newest backup, so a timer that silently stops firing alerts too.
 
 ### Reading a `DB Backup` run (history, until 2026-10-12)
 
-The engine's [`db-backup.yml`](../.github/workflows/db-backup.yml) was the
-nightly backup from 2026-08-09 until the cutover, when it was disabled. It is
-deleted after the rollback window. The guidance below applies only to its
-past runs.
+The engine's `db-backup.yml` was the nightly backup from 2026-08-09 until the
+cutover, when it was disabled. It was deleted on 2026-10-16 (Phase 7). The
+guidance below applies only to its past runs.
 
 | Run result | Meaning | Action |
 |---|---|---|
@@ -303,10 +301,9 @@ one can log in has not recovered anything.
   healthchecks.io pings for the backup and the mirror), `51-restore.ps1` (restore, including
   `RESTORE_FROM_R2=latest`), and `60-monitor.ps1` (the on-box check); the
   engine-side summary is [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
-- [`.github/workflows/db-backup.yml`](../.github/workflows/db-backup.yml) —
-  the daily `pg_dump` → R2 → pCloud workflow from 2026-08-09; disabled at the
-  2026-10-12 cutover and superseded by the lab's `50-backup.ps1`. Deleted
-  after the rollback window.
+- `.github/workflows/db-backup.yml` (deleted) — the daily `pg_dump` → R2 →
+  pCloud workflow from 2026-08-09; disabled at the 2026-10-12 cutover,
+  superseded by the lab's `50-backup.ps1`, and deleted 2026-10-16 (Phase 7).
 - [ARCHITECTURE.md §Persistence Boundary](../docs/ai/ARCHITECTURE.md) and
   [DECISIONS.md](../docs/ai/DECISIONS.md) D-24095 (framework-store
   exemption), D-24236 (WP-416 backup pipeline).

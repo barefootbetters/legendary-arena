@@ -1,5 +1,15 @@
-# Legendary Arena — Render.com Infrastructure
-# Run: render deploy  (or commit to main — Render auto-deploys)
+# Legendary Arena — Render.com Infrastructure (HISTORICAL — nothing reads this file)
+#
+# Production left Render on 2026-10-12 (D-24707) for a self-hosted DigitalOcean
+# droplet, provisioned and deployed by the `legendary-arena-lab` repo's
+# infra/scripts. Render's services, database, and this Blueprint were deleted in
+# Phase 7 on 2026-10-16; the database's final dump is under `render-final/` in the
+# production R2 backup bucket and pCloud.
+#
+# Kept only as the inventory of the server's secret names (`sync: false` envVars)
+# and as history. It is NOT the complete list: apps/server also reads keys that
+# never appeared here (see docs/ops/DISASTER_RECOVERY.md). Editing it changes
+# nothing anywhere.
 
 services:
   # Game server — boardgame.io authoritative WebSocket server
