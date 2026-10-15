@@ -416,6 +416,7 @@ infrastructure component.
 - [ ] `systemctl is-active la-server` → `active`; no errors in `journalctl -u la-server`
 - [ ] Nginx healthy; TLS valid at the Cloudflare edge and at the origin (SSL Full (strict) on `api.`)
 - [ ] `curl https://api.legendary-arena.com/health` → HTTP 200 (through Cloudflare)
+- [ ] `pwsh scripts/Test-ApiDeployment.ps1 -OriginIp <new droplet IP>` → `SUMMARY: … 0 failure(s)`. Beyond the API surface, it proves the origin lock: Cloudflare refuses a client-supplied `cf-connecting-ip` (403), the droplet IP's 443 and 3000 are unreachable directly, and port 80 only redirects. The guest rate limiters trust that header, so a rebuild that skips `21` (UFW to Cloudflare) or `LISTEN_HOST=127.0.0.1` fails here.
 - [ ] healthchecks.io `la-droplet-monitor` green; UptimeRobot `api./health/db` up
 
 **Phase 2 — Database & data integrity**

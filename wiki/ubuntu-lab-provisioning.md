@@ -27,7 +27,7 @@ source:
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
   - C:\pcloud\LA\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
-last-reviewed: 2026-10-12
+last-reviewed: 2026-10-14
 ---
 
 # Ubuntu Lab Provisioning
@@ -320,6 +320,40 @@ Restoring from either copy, and the provider-loss scenarios, are on
 from R2 (`RESTORE_FROM_R2=latest`). A pCloud dump restores through
 `RESTORE_DUMP=<file>` after downloading it.
 
+### Verifying the droplet
+
+Two checks cover the box, one from each side:
+
+- **From outside:** `pwsh scripts/Test-ApiDeployment.ps1 -OriginIp <droplet IP>`
+  (IP from `doctl compute droplet list`). It probes the public API surface and
+  its auth gates through `api.`. It then checks that Cloudflare refuses a
+  request bringing its own `cf-connecting-ip` (403), and that the droplet IP's
+  443 and 3000 don't answer while port 80 only 301s. The guest rate limiters key
+  on that header (D-24635 §3), so these lines are the proof that a client can't
+  reach Node without Cloudflare and pick its own bucket. All 12 probes passed on
+  2026-10-14. Run it after every rebuild ([Disaster Recovery](disaster-recovery.md)
+  §6) and after any UFW or Nginx change.
+- **On the box:** the lab's `60-monitor.ps1`, run every 5 minutes by
+  `la-health.timer`. It checks that `la-server` is active, `/health` and
+  `/health/db` return 200, `:3000` listens on loopback only, and that disk use
+  and backup age are within limits, then pings `la-droplet-monitor`. A failed
+  weekly Cloudflare-range refresh (`22-cloudflare-ufw-refresh.ps1`) also fails it.
+
+The origin lock has three parts, each set by a provisioner:
+- UFW admits 443 only from Cloudflare's published ranges (`21`), refreshed
+  weekly (`22`, lab #37).
+- Nginx's port-80 server only redirects.
+- `LISTEN_HOST=127.0.0.1` in `/etc/la/.env` keeps Node on loopback (engine
+  #2804, lab #36).
+
+There's no DigitalOcean cloud firewall, so UFW is the only network gate.
+
+```text
+journalctl -u la-health -n 5 --no-pager         # "[60-monitor] All checks passed."
+ss -Htln 'sport = :3000'                        # 127.0.0.1:3000 only
+systemctl list-timers la-cf-ufw-refresh.timer   # next weekly refresh
+```
+
 ### Prerequisites & effort
 
 - A DigitalOcean account with an SSH key pair already uploaded.
@@ -606,6 +640,12 @@ operator can, unaided —
   [Cutover](#cutover-2026-10-12)). The same day, the pCloud mirror became a
   permanent part of every production backup, with its own `la-droplet-pcloud`
   check (lab #30), and deploys became automatic after CI (D-24708).
+- **2026-10-14** — Verified the origin lock: Cloudflare refuses a client
+  `cf-connecting-ip`, and the droplet IP is unreachable on 443 and 3000. Node
+  moved to loopback (`LISTEN_HOST`, engine #2804 / lab #36), the Cloudflare
+  ranges started refreshing weekly (lab #37), and `Test-RenderDeployment.ps1`
+  became `Test-ApiDeployment.ps1` with the origin checks (see
+  [Verifying the droplet](#verifying-the-droplet)).
 
 ## Open Questions
 
