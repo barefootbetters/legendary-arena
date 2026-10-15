@@ -833,10 +833,10 @@
       "card": "Super-Skrull",
       "ability": "koHeroEachPlayer",
       "wp": "WP-189",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): every player KO'd a Hero on both fights (11.2.10, 32.2.27). D-24669 current-player choice seen live: solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf) — all three Super-Skrull fights (8.2.12, 9.2.11, 30.2.16) resolved through the KO choice move (\"Player 0 KO'd S.H.I.E.L.D. Trooper (starting-shield-trooper).\", the koHeroChoice.resolve line).",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "verified",
+      "date": "2026-10-15",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil + Skrulls; Doombot Legion; Iron Man, Black Widow, Captain America, Hulk, Spider-Man), match j05XBbvv5qt (build 1ef3ad1) — a Final Blow win — three Super-Skrull fights (17.2.9, 18.2.12, 32.2.9). Each time the off-turn player KO'd one Hero from their hand and the active player picked one from the cards they played this turn through the KO-choice move (17.2.10–17.2.11, 18.2.13–18.2.14, 32.2.10–32.2.11); nothing came from a discard pile. Earlier: 2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): every player KO'd a Hero on both fights (11.2.10, 32.2.27). D-24669 current-player choice seen live: solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf) — all three Super-Skrull fights (8.2.12, 9.2.11, 30.2.16) resolved through the KO choice move (\"Player 0 KO'd S.H.I.E.L.D. Trooper (starting-shield-trooper).\", the koHeroChoice.resolve line).",
+      "note": "Both zones exercised: hand (off-turn player) and play (active player)."
     },
     {
       "key": "core-villain-hydra-supreme-hydra|scoring:dynamic-vp",
