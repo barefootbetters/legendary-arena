@@ -27,8 +27,8 @@ themes or move to one shared platform; which theme that platform uses
 is a second, smaller question. Converging is decided (D-24725). A Hextra
 pilot on a low-risk wiki will settle which theme, and the marketing site
 stays on PaperMod for now. The page also covers selling on a static site
-and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude Chat
-and three Copilot reviews (2026-10-16).
+and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude Chat,
+three Copilot reviews, and a Grok review (2026-10-16).
 
 ## Mechanics
 
@@ -111,14 +111,19 @@ multi-level navigation, search, dark mode, and a responsive layout.
 Upstream maintains it, so the platform stops carrying its own CSS,
 navigation, and accessibility fixes. Its README says sites need no
 Node.js to use it, which answers WP-139's original reason for rejecting
-it ("introduces Tailwind tooling"). For the engine ewiki, adopting it
-changes more than the theme:
+it ("introduces Tailwind tooling"). That holds for sites using the theme,
+since its Tailwind CSS comes precompiled; only the theme's maintainers
+need Node. Hextra needs Hugo 0.146.0 or later (its `theme.toml`), and we
+pin 0.161.1. For the engine ewiki, adopting it changes more than the
+theme:
 
 - **The JS-free gate.** Hextra's built-in search is FlexSearch, which
-  runs in the browser, and its interactive pieces use script. The
-  ewiki's CI fails any build that ships JavaScript other than the
-  Pagefind loader (D-24293). Adopting Hextra means amending that
-  decision, the build rules that enforce it, and the search setup.
+  runs in the browser, and its interactive pieces (theme toggle,
+  sidebar, tabs, code copy) use script too. Search can be turned off
+  (`params.search.enable`), but the rest still ships. The ewiki's CI
+  fails any build that ships JavaScript other than the Pagefind loader
+  (D-24293). Adopting Hextra means amending that decision, the build
+  rules that enforce it, and the search setup.
 - **Search, twice.** The ewiki already ships Pagefind. We would keep one
   and switch off the other.
 - **Determinism and Access.** The byte-identical build gate and the
@@ -145,6 +150,21 @@ the alternative. **Not the engine ewiki:** its governance gates, JS-free
 rule, determinism check, production history, and existing readers make
 it the most expensive place to experiment. The WP-139 theme lock and the
 JS-free gate govern only the engine ewiki, so the pilot is free of both.
+
+**What the pilot measures.** The evaluation has to answer these, because
+they are the reasons Hextra could still lose:
+
+| Question | Why it matters |
+|---|---|
+| How much JavaScript ships, with search on and with search off? Which feature does each script drive? | Sizes the D-24293 amendment the engine ewiki would need, and whether Pagefind could stand in for FlexSearch |
+| Is the build byte-identical across two runs? | The engine ewiki's determinism gate requires it |
+| Does the Hugo Modules install work in CI next to the existing `module.mounts`, and does it need Go on the runner? | The shared platform would most likely be consumed as a module |
+| How much override did branding take (CSS variables, `custom.css`, partials)? | Heavy overrides bring back the custom-theme maintenance we are trying to drop |
+| How many of the old `layouts/` files were deleted, and how many kept? | The direct measure of maintenance moved upstream |
+
+The pilot runs in its own session on a branch of `herbs-vs-ailments` and
+ends in a PR with a written evaluation. It is not deployed until the
+comparison is done.
 
 **After the pilot:**
 
