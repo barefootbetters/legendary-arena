@@ -26,6 +26,7 @@ import {
   buildSupplyCountIntent,
   hasEscapeCandidate,
   isSetterWindowOpen,
+  toWholeNumberInRange,
   type OperatorListOption,
   type OperatorSetterIntent,
 } from '../../lib/operatorSetterIntents';
@@ -194,6 +195,36 @@ export default defineComponent({
     }
 
     /**
+     * Add a whole-number text field that snaps back into range on every change.
+     *
+     * // why: no `max` on the binding, so Tweakpane draws a plain text field and no
+     * slider. A slider click on a 0-px track sets NaN (live match cDfRs-e8CqM, the
+     * Turn economy Amount); the range is enforced here instead.
+     *
+     * @param folder The folder to add to.
+     * @param key The bound number field.
+     * @param label The field label.
+     * @param min The smallest allowed value.
+     * @param max The largest allowed value (Infinity for none).
+     */
+    function addWholeNumberBinding(
+      folder: FolderApi,
+      key: 'count' | 'hqSpace' | 'amount',
+      label: string,
+      min: number,
+      max: number,
+    ): void {
+      const binding = folder.addBinding(params, key, { label, step: 1 });
+      binding.on('change', () => {
+        const snapped = toWholeNumberInRange(params[key], min, max);
+        if (snapped !== params[key]) {
+          params[key] = snapped;
+          binding.refresh();
+        }
+      });
+    }
+
+    /**
      * The Supply folder: set a pile to a count.
      *
      * @param target The pane.
@@ -205,7 +236,7 @@ export default defineComponent({
         pileOptions.push({ text: PILE_LABEL[pile], value: pile });
       }
       folder.addBinding(params, 'pile', { label: 'Pile', options: pileOptions });
-      folder.addBinding(params, 'count', { label: 'Count', min: 0, step: 1 });
+      addWholeNumberBinding(folder, 'count', 'Count', 0, Number.POSITIVE_INFINITY);
       addSetterButton(folder, 'Set supply count', true, () =>
         buildSupplyCountIntent(params.pile, params.count),
       );
@@ -245,7 +276,7 @@ export default defineComponent({
         }
         return buildDeckTopIntent('hero', params.heroCard);
       });
-      folder.addBinding(params, 'hqSpace', { label: 'HQ space', min: 1, max: 5, step: 1 });
+      addWholeNumberBinding(folder, 'hqSpace', 'HQ space', 1, 5);
       addSetterButton(folder, 'Place hero in HQ space', true, () => {
         if (!isListedCard(params.heroCard, heroOptions.value)) {
           return null;
@@ -289,7 +320,7 @@ export default defineComponent({
     function buildEconomyAndEscapeFolders(target: Pane): void {
       const economy = target.addFolder({ title: 'Turn economy' });
       economy.addBinding(params, 'resource', { label: 'Resource', options: [...RESOURCE_OPTIONS] });
-      economy.addBinding(params, 'amount', { label: 'Amount', min: 1, max: OPERATOR_ECONOMY_MAX_AMOUNT, step: 1 });
+      addWholeNumberBinding(economy, 'amount', 'Amount', 1, OPERATOR_ECONOMY_MAX_AMOUNT);
       addSetterButton(economy, 'Add to this turn', true, () => buildEconomyIntent(params.resource, params.amount));
 
       const escape = target.addFolder({ title: 'Escape' });
