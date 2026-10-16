@@ -206,10 +206,10 @@
       "card": "Emma Frost",
       "ability": "Psychic Link",
       "wp": "WP-659",
-      "state": "partial",
-      "date": "2026-09-07",
-      "evidence": "Emma Frost arc — two Magneto / Midtown Bank Robbery matches (STATUS 2026-09-07)",
-      "note": "Hand reveal verified. D-24731 (2026-10-16) lets the playing player also reveal an X-Men Hero played this turn; that path is pending live-verify (play Keen Senses, then Psychic Link, with no other X-Men Hero in hand)."
+      "state": "verified",
+      "date": "2026-10-16",
+      "evidence": "Emma Frost arc — two Magneto / Midtown Bank Robbery matches (STATUS 2026-09-07); D-24731 played-card reveal: Operator match nQAUnp0T4uY (server build 6f5a8d1c, the #2846 merge), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Emma Frost, Wolverine, Rogue, Captain America, Hulk), won with the Final Blow at 19.3.1. Player 0's only X-Men cards were the two Psychic Links (#0, #2), both recruited on turn 1 (1.2.5, 1.2.8); no operator move put a card in a hand. Psychic Link #0 drew off the already-played #2 at 7.2.6; no self-reveal at 9.2.5 / 13.2.1 / 15.2.13.",
+      "note": "Hand reveal (WP-659) and played-card reveal (D-24731) both verified."
     },
     {
       "key": "core/gambit|put-hand-on-deck-top",

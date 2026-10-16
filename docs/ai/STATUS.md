@@ -13,7 +13,7 @@
 
 - **Engine only.** `heroEffectRevealFromHand` (`hero/heroEffects.execute.ts`) gains `playerCanRevealMatch` and `playedCardMatchesRevealCriterion`; `collectXMenHeroesYouHave` (`rules/tacticHandlers.ts`) reads the played team through `cardHasTeamWhenPlayed`. No G field, `UIState`, server or client change.
 - **Tests.** Six new Psychic Link cases and one Electromagnetic Bubble case; the three positive cases fail against the old code.
-- **Live-verify (D-24026): pending.** Operator match (lobby → Play with a bot ally → Operator match, 2 players, heroes include Emma Frost and Wolverine): use the setters to get Keen Senses and Psychic Link into your hand with no other X-Men Hero (Place in HQ, recruit, then Move a card discard → hand). Play Keen Senses, then Psychic Link: expect a draw and a "revealed a matching Hero for Psychic Link and drew a card" log line for your seat Optionally Move an X-Men Hero to the bot's hand first: the bot draws too. Record the match id and server build here and in D-24731.
+- **Live-verify (D-24026): PASS.** Operator match `nQAUnp0T4uY` (server build `6f5a8d1c`, the #2846 merge), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Emma Frost, Wolverine, Rogue, Captain America, Hulk), won with the Final Blow at 19.3.1. Player 0's only X-Men cards were the two Psychic Links (#0, #2), both recruited on turn 1 (1.2.5, 1.2.8); no operator move put a card in a hand. On turn 7, Psychic Link #0 drew off the already-played #2 (7.2.6), with no X-Men Hero left in hand. Psychic Link never revealed itself (9.2.5, 13.2.1, 15.2.13), and the bot kept drawing from its hand. See D-24731.
 
 ### WP-807 / EC-844 — Operator setter pane (2026-10-16)
 

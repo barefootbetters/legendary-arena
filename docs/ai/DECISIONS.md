@@ -48472,6 +48472,12 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 
 **Live re-check.** In an operator match (lobby → Play with a bot ally → Operator match, 2 players, heroes include Emma Frost and Wolverine): use the setters to get Keen Senses and Psychic Link into your hand with no other X-Men Hero (Place in HQ, recruit, then Move a card discard → hand). Play Keen Senses, then Psychic Link: you draw a card. Optionally, first Move an X-Men Hero to the bot's hand: the bot draws too.
 
+**Live-verify (D-24026), 2026-10-16: PASS.** Operator match `nQAUnp0T4uY` (server build `6f5a8d1c`, the #2846 merge), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Emma Frost, Wolverine, Rogue, Captain America, Hulk), won with the Final Blow at 19.3.1. Player 0's only X-Men cards were the two Psychic Links (#0, #2), both recruited on turn 1 (1.2.5, 1.2.8); no operator move put a card in a hand.
+- **Played card revealed (the fix).** On turn 7 Player 0 played Crazed Rampage, then Psychic Link #2, which drew from the hand-held #0 (7.2.4). Then Psychic Link #0 drew too (7.2.6): the only other X-Men Hero Player 0 had was #2, already in play. Under D-24470's hand-only scan, 7.2.6 draws nothing.
+- **"Another" holds.** Psychic Link played with no other X-Men Hero in hand or play gave Player 0 no draw three times (9.2.5, 13.2.1, 15.2.13), although the resolving card is itself an X-Men Hero in play.
+- **Other players stay hand-only.** The bot drew from an X-Men Hero in hand on each of those plays (9.2.6, 13.2.2, 15.2.14), and both players drew on both turn-19 plays (19.2.2-19.2.3, 19.2.7-19.2.8).
+- **Not exercised live:** a Copy Powers copy (Copy Powers is printed X-Men in Core, so it cannot tell the difference) and a played card that left play (no Core card moves one mid-turn). The unit tests cover both.
+
 **Reserved by:** NUMBER-LEDGER D-24731. Related: WP-659 / D-24470 (reveal-from-hand), D-24651 (Diving Block reveal from play), D-24668 (no-reveal line), D-24692 (Out of Time), D-24391 / D-24726 (copied team), D-24645 (Electromagnetic Bubble "your Heroes").
 
 ---
