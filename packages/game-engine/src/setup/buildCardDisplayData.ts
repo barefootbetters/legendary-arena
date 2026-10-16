@@ -36,6 +36,7 @@ import {
   buildCardCountsNameLookup,
   resolveHeroCardCopyCount,
 } from './buildHeroDeck.js';
+import { resolveEffectiveTwistCount } from './schemeSetupSizing.js';
 
 // ---------------------------------------------------------------------------
 // parseCostNullable — null-distinction wrapper around parseCardStatValue
@@ -321,9 +322,10 @@ function parseQualifiedIdForSetup(
  *   moves and projections handle missing entries via the
  *   UNKNOWN_DISPLAY_PLACEHOLDER fallback in uiState.build.ts.
  * @param matchConfig - Match setup configuration with selected entity IDs.
- * @param numPlayers - Number of players in the match. Read only by
- *   section 7 as the bystander-count fallback when the scheme does not
- *   carry `villainDeckBystanderCount`. DO NOT replace `numPlayers`
+ * @param numPlayers - Number of players in the match. Read by section 7
+ *   as the bystander-count fallback when the scheme does not carry
+ *   `villainDeckBystanderCount`, and by the scheme-twist section for a
+ *   per-player-count twist stack (D-24733). DO NOT replace `numPlayers`
  *   usage with `matchConfig.bystandersCount`; these represent different
  *   domains:
  *
@@ -673,10 +675,17 @@ export function buildCardDisplayData(
       // inlined verbatim from `villainDeck.setup.ts:124` SCHEME_TWIST_COUNT
       // (D-1411 default). Two-file literal duplication is the RS-1 / Rule
       // §16.1 pattern; do not extract a helper across files.
-      let twistCount = 8;
+      let baseTwistCount = 8;
       if (typeof scheme.villainDeckTwistCount === 'number') {
-        twistCount = scheme.villainDeckTwistCount;
+        baseTwistCount = scheme.villainDeckTwistCount;
       }
+      // why: D-24733 — the same per-player-count sizing buildVillainDeck applies,
+      // so the display keys match the twist copies actually built.
+      const twistCount = resolveEffectiveTwistCount(
+        matchConfig.schemeId,
+        numPlayers,
+        baseTwistCount,
+      );
 
       let twistImageUrl = '';
       const tierOneTwist = findOtherEntryByCardType(schemeSetData, 'scheme-twist');

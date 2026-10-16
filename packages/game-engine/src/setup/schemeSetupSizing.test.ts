@@ -3,14 +3,19 @@
  *
  * resolveEffectiveWoundsCount returns 6×players for Legacy Virus (its printed
  * "6 Wounds per player" setup, deliberately below the 30 config-floor) and the
- * requested count for every other scheme (passthrough).
+ * requested count for every other scheme (passthrough). resolveEffectiveTwistCount
+ * sizes Super Hero Civil War's twist stack to its printed 8 / 5 split (D-24733).
  *
  * Pure helper — no boardgame.io, no G. node:test + node:assert only.
  */
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveEffectiveWoundsCount, resolveEffectiveHeroDeckIds } from './schemeSetupSizing.js';
+import {
+  resolveEffectiveWoundsCount,
+  resolveEffectiveHeroDeckIds,
+  resolveEffectiveTwistCount,
+} from './schemeSetupSizing.js';
 
 const LEGACY_VIRUS = 'core/legacy-virus-the';
 const CIVIL_WAR = 'core/super-hero-civil-war';
@@ -65,5 +70,34 @@ describe('resolveEffectiveHeroDeckIds (WP-515 / D-24328)', () => {
     // why: matchSetup.validate requires 5 ids at 2p, but the helper must not throw or
     // over-shrink a shorter list — slice(0, 4) returns a <4-id list intact.
     assert.deepStrictEqual(resolveEffectiveHeroDeckIds(CIVIL_WAR, 2, ['a', 'b', 'c']), ['a', 'b', 'c']);
+  });
+});
+
+describe('resolveEffectiveTwistCount (D-24733)', () => {
+  it('sizes core Civil War at its printed 8 twists for 2-3 players and 5 for 4-5', () => {
+    assert.equal(resolveEffectiveTwistCount(CIVIL_WAR, 2, 8), 8);
+    assert.equal(resolveEffectiveTwistCount(CIVIL_WAR, 3, 8), 8);
+    assert.equal(resolveEffectiveTwistCount(CIVIL_WAR, 4, 8), 5);
+    assert.equal(resolveEffectiveTwistCount(CIVIL_WAR, 5, 8), 5);
+  });
+
+  it('keeps 8 twists for solo Civil War (1 player mirrors 2, as its loss map does)', () => {
+    assert.equal(resolveEffectiveTwistCount(CIVIL_WAR, 1, 8), 8);
+  });
+
+  it('sizes the msp1 reprint, which prints the same clause, identically', () => {
+    assert.equal(resolveEffectiveTwistCount('msp1/super-hero-civil-war', 3, 8), 8);
+    assert.equal(resolveEffectiveTwistCount('msp1/super-hero-civil-war', 4, 8), 5);
+    assert.equal(resolveEffectiveTwistCount('msp1/super-hero-civil-war', 5, 8), 5);
+  });
+
+  it('passes every other scheme through unchanged at 4-5 players, including Civil War reprints with a different split', () => {
+    assert.equal(resolveEffectiveTwistCount('core/midtown-bank-robbery', 4, 8), 8);
+    assert.equal(resolveEffectiveTwistCount('core/replace-earths-leaders-with-killbots', 5, 5), 5);
+    assert.equal(resolveEffectiveTwistCount(LEGACY_VIRUS, 5, 8), 8);
+    assert.equal(resolveEffectiveTwistCount('test/test-scheme-001', 4, 11), 11);
+    // why: co2e prints 6 / 5 and cvwr Epic prints 9 / 6 — not the core clause, so out of scope here.
+    assert.equal(resolveEffectiveTwistCount('co2e/super-hero-civil-war', 4, 8), 8);
+    assert.equal(resolveEffectiveTwistCount('cvwr/epic-super-hero-civil-war', 5, 8), 8);
   });
 });

@@ -1224,6 +1224,17 @@
       "note": "Both: the Hero-Deck loss, and 4 Heroes at 2 players."
     },
     {
+      "key": "scheme:core/super-hero-civil-war|twist-count",
+      "kind": "scheme",
+      "card": "Super Hero Civil War",
+      "ability": "8 Twists at 2-3 players, 5 Twists at 4-5 players",
+      "wp": "D-24733",
+      "state": "pending",
+      "date": "",
+      "evidence": "",
+      "note": "Recipe (after deploy): lobby, Play with a bot ally, 4 seats / 3 bot allies, Operator match, Super Hero Civil War (3 villain groups, 2 henchmen groups, 5 heroes); the operator panel's Villain-deck list shows 5 Scheme Twists and the HUD twist readout reads 0/5. Unit evidence: buildInitialGameState.civilWarSizing.test.ts (8/8/5/5 at 2-5 players)."
+    },
+    {
       "key": "scheme:core/legacy-virus-the|wound-loss",
       "kind": "scheme",
       "card": "The Legacy Virus",
