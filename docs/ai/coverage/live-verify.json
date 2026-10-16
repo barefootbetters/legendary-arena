@@ -714,8 +714,8 @@
       "wp": "WP-544",
       "state": "partial",
       "date": "2026-10-15",
-      "evidence": "Zero-count branch seen live under D-24687: 2p bot-ally Loki / Negative Zone Prison Breakout, match nNR91fCRKsX (build 17ccd6b) — Player 0 fought Maestro holding only Wolverine (Instinct) and S.H.I.E.L.D. cards: \"no strength Heroes — nothing to KO\" (10.2.13–10.2.14). Earlier: WP-544 live-verify, matches NPyIIWIjd1Q + iFdZ8t9xFsP (#1421).",
-      "note": "Count ≥ 1 branch still needs a live fight under the hand + play default: fight Maestro with Strength Heroes in hand or play."
+      "evidence": "Zero-count branch seen live under D-24687: 2p bot-ally Loki / Negative Zone Prison Breakout, match nNR91fCRKsX (build 17ccd6b) — Player 0 fought Maestro holding only Wolverine (Instinct) and S.H.I.E.L.D. cards: \"no strength Heroes — nothing to KO\" (10.2.13–10.2.14). Count ≥ 1 branch seen live: 2p bot-ally Dr. Doom / Negative Zone Prison Breakout, match kIZGg6MXhua (build 9e62c96) — Player 1 fought Maestro twice (11.2.12, 23.2.14), each time owing \"KO 1 of your Heroes (one per your strength Hero)\" and picking from played cards. Both times Player 1 had played Perfect Teamwork (Strength) AND Copy Powers copying it (11.2.7, 23.2.7), which is \"both Covert and the color you copy\", so the count should have been at least 2. Earlier: WP-544 live-verify, matches NPyIIWIjd1Q + iFdZ8t9xFsP (#1421).",
+      "note": "UNDERCOUNT: countPlayerHeroesMatchingTrait (villainEffects.execute.ts) reads raw G.cardTraits for in-play Heroes and ignores the class Copy Powers / Size-Changing grant via G.cardSizeChangingClasses (cardHasClassWhenPlayed is the effective-class source). Re-verify after the fix."
     },
     {
       "key": "core-villain-masters-of-evil-melter|ko-cullable-each-deck-top",
@@ -910,10 +910,10 @@
       "card": "Whirlwind",
       "ability": "ko-hero",
       "wp": "WP-252",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b)",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "verified",
+      "date": "2026-10-15",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Dr. Doom / Negative Zone Prison Breakout (Masters of Evil + Radiation; Doombot Legion + Hand Ninjas), match kIZGg6MXhua (build 9e62c96) — a Final Blow win. Player 0 fought Whirlwind on the Bridge (city space 4, 12.2.10): \"KO 2 of your Heroes — choose which\", both KOs from the cards played this turn (12.2.11–12.2.12). The off-location branch also ran: the second Whirlwind fought at city space 1 — \"not fought on the Rooftops or Bridge; no effect\" (29.2.21–29.2.22). Earlier: solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b).",
+      "note": "Both location branches confirmed. Hand side unexercised."
     },
     {
       "key": "core-villain-enemies-of-asgard-ymir-frost-giant-king|ko-wounds-current-hand-and-discard",
