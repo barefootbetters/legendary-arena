@@ -10,6 +10,8 @@ related:
   - hugo-web-system.md
   - hugo-onboarding.md
   - private-site-hosting.md
+  - video-commerce.md
+  - disaster-recovery.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\wiki-viewer.md (this page — https://ewiki.legendary-arena.com/wiki-viewer/)
@@ -18,7 +20,7 @@ source:
   - ../apps/wiki-viewer/README.md
   - ../apps/wiki-viewer/wrangler.jsonc
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-06-20
+last-reviewed: 2026-10-15
 ---
 
 ## Repository base URLs
@@ -438,6 +440,86 @@ Key layout features:
 
 The theme is defined in `apps/wiki-viewer/layouts/` and
 `apps/wiki-viewer/assets/css/style.css`.
+
+### Hugo, Hextra, and the publishing pipeline (laptop to live site)
+
+Captured from a 2026-10-15 Claude Chat about reusing this Hugo setup as a
+Studio product, using Hextra for the marketing site, and where selling fits.
+
+**1. One template, many ewikis.** The plan is two ewikis live and a third
+coming, so treat "ewiki" as something you stamp out, not three sites you
+maintain. Build one Hugo setup with the Studio branding and shared partials
+(header, footer, nav). Each ewiki is then just a content folder plus a small
+config naming its domain and project. That makes the ewiki a reusable Studio
+product, not a chore.
+
+Today's state, for whoever builds that template:
+
+| Site | Theme | Hosting |
+|---|---|---|
+| This ewiki | Hand-rolled (`apps/wiki-viewer/layouts/`); the README records the theme choice as locked, so moving to Hextra or Docsy needs a DECISIONS entry that supersedes it | Cloudflare Worker, deployed by GitHub Actions |
+| Marketing (`www.legendary-arena.com`) | PaperMod plus project overrides ([Hugo Web System](hugo-web-system.md)) | Cloudflare Pages |
+
+**2. Hextra for marketing: yes for content, no for the cart itself.**
+Hextra handles landing pages, product pages, blog posts, and newsletters
+well. A shopping cart is a different problem: Hugo is a static site
+generator. It builds plain HTML ahead of time and has no server running
+when a visitor arrives. A cart needs live work (the basket, payment,
+inventory), and a static site can't do that alone.
+
+You don't need WooCommerce. For a small catalog, keep the site static and
+let a hosted service handle the money:
+
+| Option | How it works |
+|---|---|
+| **Snipcart** (what we use) | Add buy buttons to any static page; Snipcart runs the cart and checkout, with Stripe taking payment |
+| Stripe Payment Links | Each product gets a checkout link; Stripe handles everything |
+
+We already sell this way. `/shop/` on the marketing site is Hugo plus
+Snipcart and Stripe, and it is the full catalog and cart of record.
+Fourthwall is a separate YouTube-facing shelf that mirrors a camera-friendly
+subset of SKUs ([Video Commerce](video-commerce.md)). Because Snipcart works
+on any static site, it moves onto a Hextra site the same way it sits on the
+current Hugo setup. Switching themes needs no new store tooling.
+
+**3. The pipeline, laptop to live site.**
+
+1. **Laptop.** The repo is cloned locally. You write and edit Markdown
+   there, with Claude Code helping, and preview with the local Hugo server
+   (*How to preview locally* above) before anything goes public.
+2. **Hard drive.** The files live in a git repository, a folder git tracks.
+   A **commit** saves a snapshot of your changes.
+3. **GitHub.** A **push** uploads those snapshots. GitHub is your cloud
+   copy, your backup, and your history in one place.
+4. **Cloudflare.** Cloudflare is connected to the repo once, and after that
+   every push to `main` publishes on its own. You never press a deploy
+   button; the push is the deploy. The two sites get there differently:
+   - **Marketing:** Cloudflare Pages watches the GitHub repo, pulls the
+     files, runs Hugo, and serves the result.
+   - **This ewiki:** GitHub Actions (`.github/workflows/wiki-viewer.yml`)
+     runs the link check and the Hugo build, then deploys that exact build
+     to the Cloudflare Worker.
+
+Day to day, the only part you touch is "write and push"; everything after
+GitHub runs itself. Hextra is built for this GitHub-to-Cloudflare flow,
+which is why it fits.
+
+**4. pCloud: a separate safety net, not a step in the pipeline.** Laptop,
+GitHub, and Cloudflare are the publishing path. pCloud sits beside it.
+GitHub already backs up the Markdown and site code, so pCloud earns its
+place in two ways:
+
+- **It guards against GitHub itself:** account lockout, or a repo deleted
+  by mistake. No one provider holds everything (the 3-2-1 backup rule:
+  three copies, two kinds of storage, one off-site).
+- **It holds what git doesn't:** off-site copies of the nightly database
+  dumps (R2 is the primary copy; pCloud is the mirror) and the card-image
+  originals. See [Disaster Recovery](disaster-recovery.md).
+
+One wrinkle: the engine repo's own checkout lives on the pCloud sync drive
+(`C:\pcloud\BB\DEV\legendary-arena`), so pCloud also syncs its `.git`
+folder. That works, but a commit from a parallel session can appear in your
+checkout mid-work. A move off the sync drive is planned and deferred.
 
 ## Interactions
 
