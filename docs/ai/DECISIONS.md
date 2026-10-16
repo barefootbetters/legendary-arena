@@ -48537,3 +48537,33 @@ The counter the count needs, `TurnEconomy.cardsDrawn` (WP-665 / D-24476), was in
 
 ---
 Protect this file.
+
+### D-24733 — Super Hero Civil War builds 8 Scheme Twists at 1-3 players and 5 at 4-5 (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** The Core audit (2026-10-16, §1.3) found that Super Hero Civil War built 8 Scheme Twists at every player count. The card prints "For 2-3 players, use 8 Twists. For 4-5 players, use 5 Twists." `data/cards/core.json` carries no `villainDeckTwistCount` for this scheme, so `buildVillainDeck` used its flat `SCHEME_TWIST_COUNT = 8`. The real `buildVillainDeck` with the local registry gave 8 at 2, 3, 4 and 5 players. Each extra twist is a "KO all the Heroes in the HQ", which drains the Hero Deck faster. Running out of Heroes is Civil War's Evil Wins (D-24318), so 4-5 player games were harder than printed. The engine already held the printed split as `lossThresholdByPlayerCount { 1:8, 2:8, 3:8, 4:5, 5:5 }` in `schemeTwistConfigs.ts`. That map is inert for loss, but it still feeds the HUD twist readout's denominator (`progress.schemeTwistThreshold`). So at 4-5 players the HUD could show "Twists: 6/5".
+
+**Decision.**
+1. **New `resolveEffectiveTwistCount(schemeId, numPlayers, defaultTwistCount)`** in `setup/schemeSetupSizing.ts`. It sits beside the D-24321 Wound sizing and the D-24328 Hero Deck sizing. For Civil War it returns 5 at 4-5 players and 8 at 1-3. One player mirrors two, matching the loss map's `'1': 8` (D-24371 §6). Every other scheme gets `defaultTwistCount` back unchanged.
+2. **Both twist builders call it.** `buildVillainDeck` sizes the deck with it. `buildCardDisplayData` sizes the twist display keys with it, so `G.cardDisplayData` holds exactly one entry per built twist copy.
+3. **Scope: core and msp1.** The msp1 reprint prints the same clause word for word, so it is covered. Its loss config has no per-player map, so its twist readout falls through to the twist count in the built deck (D-24595) and agrees automatically. The other reprints print different splits and are **not** changed here: co2e Civil War (1-3p 6 / 4-5p 5), cvwr Epic Super Hero Civil War (9 / 6), and dead Deadpool Kills the Marvel Universe (6 / 5). Each still builds 8. They are a separate follow-up.
+4. **Hero Deck sizing unchanged.** The 2-player 4-Hero rule (D-24328 / D-24385) is untouched. The new test also confirms that a 4-player Civil War match still builds the full 5-group Hero Deck.
+
+**Surfaces that read the count.** Each was checked against the built deck at 4-5 players:
+- `progress.schemeTwistThreshold` (the SchemeTile / TopHudBar "Twists: n/T" readout) now equals the built count at every player count. The test asserts this.
+- The loss meter and the danger meter key on the Hero Deck (`pile-depleted`, D-24318), not on twists, so they are unchanged.
+- `scheme.twistCount` counts revealed twists (`twistPile.length`). PAR's `schemeTwistNegativeCount` reads `G.counters.schemeTwistCount`. Both count what is revealed, so neither needs a change.
+- The operator panel's Villain-deck list reads the built deck.
+- No loadout surface shows a twist count. The registry-viewer shows twist patterns only, and LAGN is composition only.
+
+**Hashes.** Only Civil War at 4-5 players changes. No pinned replay or state hash runs Civil War at 4 or more players: the full suite passes with no re-pin, and the PAR seed scenarios do not build a deck. Four committed PAR profiles are 5-player Civil War sims (`super-hero-civil-war--*` with four villain groups) and were simulated with the old 8-twist deck. They are diagnostic-only (`authoritative: false`), not gated, and refresh at the next `generate-par-profiles.mjs` sweep. They are not re-pinned here.
+
+**Tests.** `schemeSetupSizing.test.ts`: the resolver at 1-5 players for core and msp1, plus passthrough for other schemes, co2e and cvwr. `buildInitialGameState.civilWarSizing.test.ts`: a full G build at 2/3/4/5 players gives 8/8/5/5 twists in `G.villainDeck.deck` and in `villainDeckCardTypes`, the same number of twist display keys, and a matching `resolveTwistLossThreshold`. It also checks that a 5-player non-Civil-War match keeps 8 and a 4-player Civil War match keeps 5 Hero groups. `villainDeck.setup.test.ts`: a non-Civil-War scheme keeps 8 at 4 and 5 players. With the builder wiring bypassed, the 4-player and 5-player cases fail.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5284); `sim:runtime-observed:check`, `sim:coverage --check`, `par:seed:test`, dashboard `prebuild:par` and `ledger:numbers:check` all pass. No generated-artifact churn. On the real registry, core and msp1 Civil War now build 8/8/8/5/5 twists at 1-5 players; co2e and Midtown stay at 8.
+
+**Live-verify (D-24026): pending.** After deploy: lobby → Play with a bot ally → 4 seats / 3 bot allies → Operator match → Super Hero Civil War (3 villain groups, 2 henchmen groups, 5 heroes). The operator panel's Villain-deck list should show 5 Scheme Twists, and the HUD should read "Twists: 0/5". Record the match id and build in `docs/ai/coverage/live-verify.json` (`scheme:core/super-hero-civil-war|twist-count`).
+
+**Reserved by:** NUMBER-LEDGER D-24733. Related: D-24318 (Hero Deck loss), D-24328 / D-24385 (2-player 4-Hero sizing), D-24321 (scheme setup sizing), D-24349 (KO-all twist), D-24371 (twist readout), D-24595 (last-twist fallback).
+
+---
+Protect this file.

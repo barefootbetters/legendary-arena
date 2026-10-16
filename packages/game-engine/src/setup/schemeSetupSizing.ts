@@ -26,6 +26,23 @@ const CIVIL_WAR_SCHEME_ID = 'core/super-hero-civil-war';
 /** Super Hero Civil War prints "If only 2 players, use only 4 Heroes in the Hero Deck". */
 const CIVIL_WAR_2P_HERO_GROUPS = 4;
 
+// why: the scheme ids that print Civil War's "For 2-3 players, use 8 Twists. For 4-5
+// players, use 5 Twists" clause word for word — core and its msp1 reprint (D-24733).
+// co2e (6/5) and cvwr Epic (9/6) print different splits and are not covered here.
+const CIVIL_WAR_TWIST_SPLIT_SCHEME_IDS: readonly string[] = [
+  CIVIL_WAR_SCHEME_ID,
+  'msp1/super-hero-civil-war',
+];
+
+/** Civil War's printed twist stack at 1-3 players (1 player mirrors 2, as its loss map does). */
+const CIVIL_WAR_LOW_PLAYER_TWIST_COUNT = 8;
+
+/** Civil War's printed twist stack at 4-5 players. */
+const CIVIL_WAR_HIGH_PLAYER_TWIST_COUNT = 5;
+
+/** The smallest player count that uses Civil War's 5-twist stack. */
+const CIVIL_WAR_HIGH_PLAYER_FLOOR = 4;
+
 /**
  * Returns the effective Wound-stack size for a match, applying any
  * scheme-specific setup sizing.
@@ -94,4 +111,34 @@ export function resolveEffectiveHeroDeckIds(
     return requestedHeroDeckIds.slice(0, CIVIL_WAR_2P_HERO_GROUPS);
   }
   return requestedHeroDeckIds;
+}
+
+/**
+ * Returns the effective Scheme Twist count for the Villain Deck, applying any
+ * scheme-specific setup sizing (D-24733).
+ *
+ * Super Hero Civil War (core and its msp1 reprint) prints "For 2-3 players, use 8
+ * Twists. For 4-5 players, use 5 Twists." The scheme data carries no
+ * villainDeckTwistCount, so the deck builder's flat default of 8 used to apply at
+ * every player count — three extra "KO all the Heroes in the HQ" twists at 4-5
+ * players, draining the Hero Deck (its Evil Wins clock, D-24318) faster than printed.
+ * Every other scheme keeps its resolved count unchanged.
+ *
+ * @param schemeId - The selected scheme ext_id (`config.schemeId`).
+ * @param numPlayers - The match player count (`ctx.numPlayers`).
+ * @param defaultTwistCount - The scheme's villainDeckTwistCount, or the builder's default.
+ * @returns The number of Scheme Twist cards to build into the Villain Deck.
+ */
+export function resolveEffectiveTwistCount(
+  schemeId: string,
+  numPlayers: number,
+  defaultTwistCount: number,
+): number {
+  if (!CIVIL_WAR_TWIST_SPLIT_SCHEME_IDS.includes(schemeId)) {
+    return defaultTwistCount;
+  }
+  if (numPlayers >= CIVIL_WAR_HIGH_PLAYER_FLOOR) {
+    return CIVIL_WAR_HIGH_PLAYER_TWIST_COUNT;
+  }
+  return CIVIL_WAR_LOW_PLAYER_TWIST_COUNT;
 }

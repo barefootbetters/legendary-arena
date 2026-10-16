@@ -488,6 +488,22 @@ describe('buildVillainDeck', () => {
     );
   });
 
+  it('twist fallback: a non-Civil-War scheme keeps 8 twists at 4 and 5 players (D-24733)', () => {
+    // why: the D-24733 per-player-count twist sizing is Civil-War-only; every
+    // other scheme's twist count is independent of the seat count.
+    const registry = createMockRegistry();
+    const config = createTestConfig();
+
+    for (const numPlayers of [4, 5]) {
+      const result = buildVillainDeck(config, registry, makeMockCtx({ numPlayers }));
+      assert.equal(
+        countByType(result, 'scheme-twist'),
+        8,
+        `A non-Civil-War scheme must still build 8 twists at ${numPlayers} players`,
+      );
+    }
+  });
+
   it('bystander fallback: a scheme with no villainDeckBystanderCount yields numPlayers bystanders', () => {
     // test-scheme declares no villainDeckBystanderCount, so the count falls
     // back to numPlayers.

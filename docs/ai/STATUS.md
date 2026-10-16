@@ -7,6 +7,15 @@
 
 ## Current State
 
+### D-24733 — Super Hero Civil War uses 5 Scheme Twists at 4-5 players (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A 4- or 5-player Super Hero Civil War match now shuffles 5 Scheme Twists into the Villain Deck, as the card prints, instead of 8. That is three fewer "KO all the Heroes in the HQ" twists, so the Hero Deck lasts longer and the game is no longer harder than printed. The HUD's "Twists: n/5" readout now matches the deck; before, a 4-player game could reach "Twists: 6/5". Games with 1 to 3 players keep 8 twists, and the 2-player 4-Hero rule is unchanged. The msp1 reprint, which prints the same clause, gets the same fix.
+
+- **Engine only.** New `resolveEffectiveTwistCount` in `setup/schemeSetupSizing.ts`, called by `buildVillainDeck` and `buildCardDisplayData`. No G-shape change. No pinned replay runs Civil War at 4 or more players, so nothing was re-pinned.
+- **Not covered.** co2e Civil War (6/5), cvwr Epic Super Hero Civil War (9/6) and Deadpool Kills the Marvel Universe (6/5) print different splits and still build 8 twists. They are a separate follow-up.
+- **Tests.** game-engine 5273 → 5284, every package 0 fail; `sim:runtime-observed:check`, `sim:coverage --check`, `par:seed:test` and `prebuild:par` all pass. Without the builder wiring, the 4-player and 5-player tests fail.
+- **Live-verify (D-24026): pending.** After deploy: lobby → Play with a bot ally → 4 seats / 3 bot allies → Operator match → Super Hero Civil War. The operator panel's Villain-deck list should show 5 Scheme Twists, and the HUD should read "Twists: 0/5". Record the result in `live-verify.json` (`scheme:core/super-hero-civil-war|twist-count`).
+
 ### D-24732 — Berserker Rage adds +1 attack per extra card drawn this turn (direct fix) (2026-10-16)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Wolverine's **Berserker Rage** now gives +1 attack for
