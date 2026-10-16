@@ -1596,9 +1596,9 @@ function heroEffectDraw(
   // why: WP-665 / D-24476 — count the REALIZED effect-draw toward the current
   // player's per-turn draw total, which the `cardsDrawnThisTurnAtLeast` gate reads
   // ("if you drew two cards this turn", Gamma-Draining Nanites). heroEffectDraw is
-  // the `draw:N` keyword path and always runs for the current player, so this is the
-  // single count site; the start-of-turn hand refill (drawCardsIntoHand) is a
-  // different helper and is deliberately NOT counted (else the gate is trivially met).
+  // the `draw:N` keyword path and always runs for the current player. D-24732 adds the
+  // other effect-draw sites (see TurnEconomy.cardsDrawn); the end-of-turn hand fill
+  // (drawCardsIntoHand) is deliberately NOT counted (else the gate is trivially met).
   G.turnEconomy.cardsDrawn += drawnCount;
   // why: WP-417 / D-24237 — the draw handler was silent, so "Draw a card." on the
   // play line was the ONLY evidence the ability existed and a short draw (deck and
@@ -2269,7 +2269,14 @@ function applyRevealAction(
   action: RevealAction,
 ): boolean {
   if (action.kind === 'draw') {
-    return applyRevealDraw(playerZones, topCardId);
+    const isDrawn = applyRevealDraw(playerZones, topCardId);
+    // why: D-24732 — a reveal rule's "draw it" (Spider-Man's cost-2-or-less reveals, Card
+    // Shark) is a real draw by the active player, so it counts toward cardsDrawn.
+    // The turnEconomy guard matches this pipeline's legacy tolerance of an absent economy.
+    if (isDrawn && G.turnEconomy) {
+      G.turnEconomy.cardsDrawn += 1;
+    }
+    return isDrawn;
   }
   if (action.kind === 'ko') {
     return applyRevealKo(G, playerZones, topCardId);
@@ -3148,6 +3155,9 @@ function heroEffectPutHandOnDeckTop(
   // Part 1: draw the printed number of cards into the acting player's hand.
   const requestedCount = effect.magnitude ?? 1;
   const drawnCount = drawFromPlayerDeck(G, playerID, requestedCount, ctx as ShuffleProvider);
+  // why: D-24732 — an effect draw by the current player is an "extra card drawn this turn"
+  // (Berserker Rage's extra-cards-drawn-this-turn source, the cardsDrawnThisTurnAtLeast gate).
+  G.turnEconomy.cardsDrawn += drawnCount;
   if (drawnCount < requestedCount) {
     // why: WP-434 — a short draw (deck + discard empty) is `partial`; name the realized amount.
     pushLog(G,
@@ -5443,6 +5453,8 @@ function heroEffectInvestigate(
     const moveResult = moveCardFromZone(playerZones.deck, playerZones.hand, drawnCardId);
     playerZones.deck = moveResult.from;
     playerZones.hand = moveResult.to;
+    // why: D-24732 — Investigate draws the matching card, an extra card drawn this turn.
+    G.turnEconomy.cardsDrawn += 1;
   }
 
   // why: WP-564 / D-24373 — put the non-selected looked-at cards on the BOTTOM in look
@@ -5494,14 +5506,14 @@ const INVESTIGATE_HANDLER_DEFAULT_LOOK_COUNT = 2;
  *
  * @param G - Game state (mutated under Immer draft).
  * @param ctx - Context narrowed to ShuffleProvider for the draw reshuffle.
- * @param _playerID - The playing player (unused — the effect touches every player).
+ * @param playerID - The playing player; only their own draw counts toward turnEconomy.cardsDrawn (D-24732).
  * @param cardId - The played card (for the log reference).
  * @param effect - The effect descriptor carrying the single revealCriterion.
  */
 function heroEffectRevealFromHand(
   G: LegendaryGameState,
   ctx: unknown,
-  _playerID: string,
+  playerID: string,
   cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
@@ -5532,6 +5544,11 @@ function heroEffectRevealFromHand(
     }
     anyPlayerRevealed = true;
     const drawnCount = drawFromPlayerDeck(G, eachPlayerId, 1, ctx as ShuffleProvider);
+    // why: D-24732 — only the playing player's draw is one of "your" extra cards this turn;
+    // turnEconomy belongs to the current player, so another seat's draw never counts.
+    if (eachPlayerId === playerID) {
+      G.turnEconomy.cardsDrawn += drawnCount;
+    }
     if (drawnCount > 0) {
       pushLog(G,
         `Player ${eachPlayerId} revealed a matching Hero for ${formatCardRef(G.cardDisplayData, cardId)} and drew a card.`,

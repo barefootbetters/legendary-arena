@@ -7,6 +7,22 @@
 
 ## Current State
 
+### D-24732 — Berserker Rage adds +1 attack per extra card drawn this turn (direct fix) (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Wolverine's **Berserker Rage** now gives +1 attack for
+*each* extra card you've drawn this turn when you've played another Instinct Hero. Its own three draws count, so it
+gives at least +3. Before, it always gave a flat +1. Ant-Man's **Giant Ego** (antm) and Totally Awesome Hulk's
+**7th Smartest Man in the World** (chmp) print the same clause and get the same fix. Reveal-draws (Spider-Man),
+Psychic Link, Diving Block, Dodge, Investigate, Stack the Deck, HYDRA Conspiracy and Enchantress draws now count as
+extra cards too, which also feeds Gamma-Draining Nanites' "if you drew two cards this turn".
+
+- **Engine + card data.** New `extra-cards-drawn-this-turn` count source over `TurnEconomy.cardsDrawn`, markers on
+  the three lines, and the counter widened to every effect draw by the current player. No new G field, move or UI field.
+- **Counts.** game-engine 5273 → 5288, 0 fail in all 12 packages; data gates current; no hash re-pin.
+- **Live-verify (D-24026): pending.** Operator match with Wolverine: Place in HQ, recruit, then Move discard → hand
+  Healing Factor, Keen Senses and Berserker Rage; play them in that order. Keen Senses draws 1, Berserker Rage draws 3,
+  and the log reads "Count-scaled attack: +4 (1 per extra card drawn this turn; count 4)."
+
 ### WP-807 / EC-844 — Operator setter pane (2026-10-16)
 
 **User-visible on `play.legendary-arena.com` (after deploy), to an admin in an operator match only.** The operator panel gains a **Setters** pane (Tweakpane, loaded as its own lazy chunk) with six folders that stage a board through WP-806's moves: Supply (set a pile to a count), Villain deck (a card to the top; reveal a Scheme Twist or Master Strike now), Hero deck (a card to the top; place a card in HQ space 1–5), Move a card (any seat zone or supply top to any seat's hand / deck top / discard / Victory Pile, or the KO pile), Turn economy (add 1–20 Attack or Recruit), and Escape (the Villain at the City's edge escapes). Buttons are enabled only on the admin's own turn in `main`; each submit refreshes the board at once. The panel's Piles section adds a "Set aside — …" line once a supply has been lowered.

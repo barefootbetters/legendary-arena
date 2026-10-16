@@ -52,7 +52,7 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 15 canonical count-source values', () => {
+  it('contains exactly the 16 canonical count-source values', () => {
     const expectedSources = [
       'victory-bystanders',
       'worthy-cards-played-this-turn',
@@ -71,12 +71,14 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
       'covert-heroes-played-this-turn',
       // why: D-24655 — X-Men United's other-X-Men team count.
       'x-men-played-this-turn',
+      // why: D-24732 — Berserker Rage's extra-cards-drawn counter source.
+      'extra-cards-drawn-this-turn',
     ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      15,
-      'HERO_COUNT_SOURCES must have exactly 15 entries',
+      16,
+      'HERO_COUNT_SOURCES must have exactly 16 entries',
     );
 
     assert.deepStrictEqual(
@@ -1073,5 +1075,29 @@ describe('explainCountSourceInputs — distinct hero classes you have exclude a 
 
     assert.deepStrictEqual(explainCountSourceInputs(state, '0', 'distinct-hero-classes-played-this-turn'), [inPlayCard]);
     assert.equal(resolveCountSource(state, '0', 'distinct-hero-classes-played-this-turn'), 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24732 — extra-cards-drawn-this-turn (Berserker Rage)
+// ---------------------------------------------------------------------------
+
+describe('resolveCountSource extra-cards-drawn-this-turn (D-24732)', () => {
+  it('reads G.turnEconomy.cardsDrawn, ignoring the cards in play', () => {
+    const gameState = {
+      ...makeStateWithVictory([]),
+      turnEconomy: { cardsDrawn: 4 },
+    } as unknown as LegendaryGameState;
+    assert.equal(
+      resolveCountSource(gameState, '0', 'extra-cards-drawn-this-turn', 'berserker-rage#0'),
+      4,
+      'the count is the per-turn effect-draw counter',
+    );
+  });
+
+  it('is 0 when no turnEconomy is present (narrow mock), and explains to no inputs', () => {
+    const gameState = makeStateWithVictory([]);
+    assert.equal(resolveCountSource(gameState, '0', 'extra-cards-drawn-this-turn'), 0);
+    assert.deepStrictEqual(explainCountSourceInputs(gameState, '0', 'extra-cards-drawn-this-turn'), []);
   });
 });

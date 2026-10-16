@@ -531,6 +531,17 @@
       "note": "Surge of Power waited and fired retroactively."
     },
     {
+      "key": "core/wolverine|attack-per-count",
+      "kind": "hero",
+      "card": "Wolverine",
+      "ability": "Berserker Rage",
+      "wp": "D-24732",
+      "state": "pending",
+      "date": "2026-10-16",
+      "evidence": "",
+      "note": "D-24732: +1 attack per extra card drawn this turn (was a flat +1). Recipe: Healing Factor, Keen Senses (draws 1), Berserker Rage (draws 3) → +4."
+    },
+    {
       "key": "core/wolverine|draw",
       "kind": "hero",
       "card": "Wolverine",
