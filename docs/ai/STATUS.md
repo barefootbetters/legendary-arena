@@ -14,6 +14,7 @@
 - **Engine only.** `heroEffectRevealFromHand` (`hero/heroEffects.execute.ts`) gains `playerCanRevealMatch` and `playedCardMatchesRevealCriterion`; `collectXMenHeroesYouHave` (`rules/tacticHandlers.ts`) reads the played team through `cardHasTeamWhenPlayed`. No G field, `UIState`, server or client change.
 - **Tests.** Six new Psychic Link cases and one Electromagnetic Bubble case; the three positive cases fail against the old code.
 - **Live-verify (D-24026): pending.** Operator match (lobby → Play with a bot ally → Operator match, 2 players, heroes include Emma Frost and Wolverine): use the setters to get Keen Senses and Psychic Link into your hand with no other X-Men Hero (Place in HQ, recruit, then Move a card discard → hand). Play Keen Senses, then Psychic Link: expect a draw and a "revealed a matching Hero for Psychic Link and drew a card" log line for your seat Optionally Move an X-Men Hero to the bot's hand first: the bot draws too. Record the match id and server build here and in D-24731.
+
 ### D-24735 — Clash of the Monsters Unleashed builds its printed 10 Scheme Twists (2026-10-16)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** A Clash of the Monsters Unleashed match now shuffles the printed 10 Scheme Twists into the Villain Deck instead of 8. It still loses on its last twist (D-24595 interim rule), so the game now runs to the 10th twist.

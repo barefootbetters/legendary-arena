@@ -48473,6 +48473,9 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 **Live re-check.** In an operator match (lobby → Play with a bot ally → Operator match, 2 players, heroes include Emma Frost and Wolverine): use the setters to get Keen Senses and Psychic Link into your hand with no other X-Men Hero (Place in HQ, recruit, then Move a card discard → hand). Play Keen Senses, then Psychic Link: you draw a card. Optionally, first Move an X-Men Hero to the bot's hand: the bot draws too.
 
 **Reserved by:** NUMBER-LEDGER D-24731. Related: WP-659 / D-24470 (reveal-from-hand), D-24651 (Diving Block reveal from play), D-24668 (no-reveal line), D-24692 (Out of Time), D-24391 / D-24726 (copied team), D-24645 (Electromagnetic Bubble "your Heroes").
+
+---
+
 ### D-24735 — Clash of the Monsters Unleashed builds its printed 10 Scheme Twists (direct fix, no WP) (Active 2026-10-16)
 
 **Context.** `chmp/clash-of-the-monsters-unleashed` prints "Setup: 10 Twists. 6 Wounds per player in the Wound Stack. …", but `data/cards/chmp.json` had no `villainDeckTwistCount`, so `buildVillainDeck` built the default 8. The D-24734 sweep surfaced it. The cause is not a parser: twist counts reach the card data only through the hand-curated `scripts/convert-cards/inputs/scheme-deck-counts.json` (WP-169 / D-16803), which both converters apply. WP-169's manual census missed this scheme. It is neither encoded nor in the D-16804 carve-out list. The likely trigger is the "per player" in the Wound clause, which reads like a per-player twist count, but the census left no trace that confirms it.
