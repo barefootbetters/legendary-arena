@@ -66,15 +66,15 @@ case directly, and shows what the bot weighed. It's modelled on the
 and adapted to a turn-based, hidden-information, server-authoritative game.
 It started as a proposal. D-24689 turned it into a four-step arc. The first
 two steps are merged: the server and engine half is live-verified, and the
-client panel is waiting on its live-verify. The third step's engine half, the
-six setter moves (WP-806, D-24713), is done; its Tweakpane pane (WP-807) comes
-next. See [Build status](#build-status).
+client panel is waiting on its live-verify. The third step is done too: the six
+setter moves (WP-806, D-24713) and the Tweakpane pane that submits them
+(WP-807), with one live-verify covering both. See [Build status](#build-status).
 
 ## Mechanics
 
 ### Build status
 
-As of 2026-10-13, checked against `main` (`9cfd635d`):
+As of 2026-10-16, checked against `main` (`c488d7e9`):
 
 | Step | What | Status |
 |---|---|---|
@@ -82,13 +82,14 @@ As of 2026-10-13, checked against `main` (`9cfd635d`):
 | D-24697 | The bot decisions use the turn number the board and game log show | Done (#2728) |
 | WP-804 / EC-841 | The operator panel on play: an admin-only "Operator match" checkbox in the lobby's bot-ally section, a read-only reveal-all board panel, a "not scored" badge every seat sees, no score submit at game over, and two downloads (operator snapshot, UIState fixture) | **Done 2026-10-12, merged 2026-10-13** ([PR #2735](https://github.com/barefootbetters/legendary-arena/pull/2735), `9cfd635d`). **Live-verify pending**: the seven WP-804 §Verification steps, run as `jefferyjjensen` after deploy. No new dependency, no Tweakpane |
 | WP-806 / EC-843 / D-24713 | Follow-on 2, engine half: six operator-match-only setter moves (supply count with the `G.operatorSetAside` zone, deck top for the villain and hero decks, reveal a Scheme Twist or Master Strike now, move a card over a closed route table including a hero into the HQ, add Recruit or Attack, force an escape), each logged "Operator:" and absent from bot and simulation dispatch | **Done 2026-10-13.** No user-observable change on its own; live-verify via WP-807 |
-| WP-807 / EC-844 | Follow-on 2, client half: a **Tweakpane** control pane inside the WP-804 panel that submits the six setters | Drafted; executes after WP-806. Its live-verify covers both packets |
+| WP-807 / EC-844 | Follow-on 2, client half: a **Tweakpane** control pane inside the WP-804 panel that submits the six setters | **Done 2026-10-16.** A lazy `OperatorSetterPane` chunk with six folders (Supply, Villain deck, Hero deck, Move a card, Turn economy, Escape), enabled on the admin's own turn in `main`. **Live-verify pending**: WP-807 §Verification 1–9 after deploy, covering WP-806 too |
 | Follow-on 3 (no WP yet) | Jump to turn N of any match: a read-only board rebuilt by replay, labelled "played on build X, replayed on build Y" | Designed in D-24689 §8. Needs its own DECISIONS carve-out |
 
 With WP-804 deployed, an admin ticks "Operator match" in the lobby instead
 of creating one with `Invoke-RestMethod` and a pasted admin token, and reads
-the board in the panel instead of as raw JSON. Tweakpane doesn't exist
-anywhere in the repo yet. Follow-on 2 is the next packet to draft.
+the board in the panel instead of as raw JSON. With WP-807 deployed, the
+panel's Setters pane (Tweakpane, its own lazy chunk) stages a board on the
+admin's own turn instead of playing until the right cards line up.
 
 ### What exists today (verified against code, 2026-10-11)
 

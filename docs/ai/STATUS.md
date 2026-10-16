@@ -7,6 +7,14 @@
 
 ## Current State
 
+### WP-807 / EC-844 — Operator setter pane (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy), to an admin in an operator match only.** The operator panel gains a **Setters** pane (Tweakpane, loaded as its own lazy chunk) with six folders that stage a board through WP-806's moves: Supply (set a pile to a count), Villain deck (a card to the top; reveal a Scheme Twist or Master Strike now), Hero deck (a card to the top; place a card in HQ space 1–5), Move a card (any seat zone or supply top to any seat's hand / deck top / discard / Victory Pile, or the KO pile), Turn economy (add 1–20 Attack or Recruit), and Escape (the Villain at the City's edge escapes). Buttons are enabled only on the admin's own turn in `main`; each submit refreshes the board at once. The panel's Piles section adds a "Set aside — …" line once a supply has been lowered.
+
+- **arena-client only.** New `lib/operatorSetterIntents.ts` (pure intent and option builders, options valued by stable keys) and `components/play/OperatorSetterPane.vue`; `OperatorBoardPanel.vue` gains optional `submitMove` / `playerId` props, the lazy pane and the set-aside line; `PlayViewport.vue` passes both props; `UiMoveName` gains the six `operator*` names. New dependency `tweakpane` ^4.0.5 (types-only devDependency `@tweakpane/core` 2.0.5). No engine, server, `UIState` or persistence change.
+- **Tests.** arena-client 2364 → 2387 (23 new), every package 0 fail; existing tests additions only; typecheck 0; `tp-rotv` only in the `OperatorSetterPane` chunk. Revert proofs 13/13. 01.6 post-mortem `docs/ai/post-mortems/01.6-WP-807-operator-setter-pane.md`.
+- **Live-verify (D-24026): pending, covers WP-806 + WP-807.** After deploy, signed in as `jefferyjjensen`, in a fresh 2p operator match, run WP-807 §Verification 1–9 and record the match id here.
+
 ### WP-303 / EC-851 — Play a saved loadout from the profile (D-24722) (2026-10-14)
 
 **User-visible on `play.legendary-arena.com/?route=me` (after deploy).** Each Saved Loadouts row has a **Play this loadout** button. One click starts a match with that lineup, seats the player in seat 0, and opens the board: the mastermind grind loop's one-click reload. An unreadable loadout or a failed launch shows a full-sentence error under the list, naming the row.
