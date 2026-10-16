@@ -48444,6 +48444,8 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 
 **Live re-check.** In an operator match, have one Copy Powers copy a Strength Hero, then on a later turn copy a non-Strength Hero and fight Maestro: his named-card line must not list Copy Powers.
 
+**Live-verify (D-24026), 2026-10-16: PASS.** Operator match `8Mw9mLkcgQ4` (server build `7e2b45bd`, the #2843 merge), 2p Dr. Doom / Negative Zone Prison Breakout. On turn 9, Copy Powers #0 copied Borrowed Brawn (Strength), and Maestro listed "Copy Powers (played, granted strength)" (9.2.11). On turn 13, the same card copied Energy Drain (Covert). Borrowed Brawn was blocked for lack of another Strength Hero (13.2.12), and Maestro's line was "KO 1 of your Heroes (one per your strength Hero: Borrowed Brawn (played))" (13.2.22). Borrowed Brawn stayed blocked on turns 15 and 17, when Copy Powers #0 copied Diving Block (Tech). On turn 17, Baron Zemo counted Copy Powers as an Avenger from that turn's own copy (17.2.13).
+
 **Reserved by:** NUMBER-LEDGER D-24730. Related: D-24345 (Copy Powers), D-24391 (copied team), D-24074 (Size-Changing), D-24724 / D-24726 (villain reads count the copy), D-24729 (the log line that exposed this), D-24520 (end-of-turn cleanup).
 
 ---
