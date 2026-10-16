@@ -44,12 +44,18 @@ const WOLVERINE_CARDS = [
 ];
 const SPIDER_MAN_CARDS = [
   { slug: 'astonishing-strength', abilities: ['Reveal the top card of your deck. If that card costs 2 or less, draw it. [keyword:reveal:2]'] },
+  {
+    slug: 'the-amazing-spider-man',
+    abilities: ['Reveal the top three cards of your deck. Put any that cost 2 or less into your hand. Put the rest back in any order. [keyword:reveal:cost-lte-2:draw][keyword:reveal-count:3][keyword:reveal-reorder]'],
+  },
 ];
 
 const BERSERKER_RAGE = 'core/wolverine/berserker-rage#0';
 const KEEN_SENSES = 'core/wolverine/keen-senses#0';
 const HEALING_FACTOR = 'core/wolverine/healing-factor#0';
 const ASTONISHING_STRENGTH = 'core/spider-man/astonishing-strength#0';
+const THE_AMAZING_SPIDER_MAN = 'core/spider-man/the-amazing-spider-man#0';
+const EXPENSIVE_HERO = 'expensive-hero';
 const AGENT = 'starting-shield-agent';
 const TROOPER = 'starting-shield-trooper';
 
@@ -113,6 +119,7 @@ function makeState(inPlay: string[], deck: string[]): LegendaryGameState {
       [KEEN_SENSES]: { heroClass: 'instinct', team: 'x-men' },
       [HEALING_FACTOR]: { heroClass: 'instinct', team: 'x-men' },
       [ASTONISHING_STRENGTH]: { heroClass: 'strength', team: 'spider-friends' },
+      [THE_AMAZING_SPIDER_MAN]: { heroClass: 'covert', team: 'spider-friends' },
     },
     cardStats: {
       [AGENT]: { cost: 0, attack: 0, recruit: 1 },
@@ -171,6 +178,19 @@ describe('core Berserker Rage — +1 attack per extra card drawn this turn (D-24
     gameState.playerZones['0']!.inPlay.push(BERSERKER_RAGE);
     executeHeroEffects(gameState, heroCtx, '0', BERSERKER_RAGE);
     assert.equal(gameState.turnEconomy.attack, 4, '1 reveal-draw + 3 own draws = +4');
+  });
+
+  it('The Amazing Spider-Man put-into-hand cards count as extra cards drawn (Jeff ruling, D-24732 §5)', () => {
+    // why: Jeff ruled 2026-10-16 that the player gets both benefits — the cards in hand
+    // and Berserker Rage's extra-card count — although the card says "put into your hand".
+    const gameState = makeState([HEALING_FACTOR, THE_AMAZING_SPIDER_MAN], [AGENT, TROOPER, EXPENSIVE_HERO, ...starterDeck()]);
+    gameState.cardStats[EXPENSIVE_HERO] = { cost: 6, attack: 0, recruit: 0 } as LegendaryGameState['cardStats'][string];
+    executeHeroEffects(gameState, heroCtx, '0', THE_AMAZING_SPIDER_MAN);
+    assert.deepEqual(gameState.playerZones['0']!.hand, [AGENT, TROOPER], 'the two cost-0 cards went into the hand');
+    assert.equal(gameState.turnEconomy.cardsDrawn, 2, 'both count as extra cards drawn');
+    gameState.playerZones['0']!.inPlay.push(BERSERKER_RAGE);
+    executeHeroEffects(gameState, heroCtx, '0', BERSERKER_RAGE);
+    assert.equal(gameState.turnEconomy.attack, 5, '2 put into hand + 3 own draws = +5');
   });
 
   it('a reveal that leaves the card on top (cost above 2) counts nothing', () => {
