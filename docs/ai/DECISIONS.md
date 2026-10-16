@@ -48567,3 +48567,39 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24734 — Every scheme whose printed twist count depends on the player count builds that count (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** D-24733 sized core and msp1 Super Hero Civil War's twist stack by player count. A sweep of every scheme's Setup line in `data/cards/*.json` found 19 more schemes whose printed twist count depends on the player count. The card data can only carry a scalar `villainDeckTwistCount`, and none of these schemes has one, so each built the flat default of 8 at every player count. They fall into two groups:
+- **An explicit split by player count:** co2e Civil War, cvwr Epic Super Hero Civil War, dead Deadpool Kills the Marvel Universe, dstr Duels of Science and Magic, rvlt Secret HYDRA Corruption, ssw2 The Fountain of Eternal Life, and wpnx Go After Heroes' Loved Ones.
+- **A formula:** "Twists equal to the number of players plus N", "N Twists, minus 1 Twist per player", and "1 Twist, plus 2 Twists per player". These are antm Transform Commuters into Giant Ants, bkpt Poison Lakes with Nanite Microbots, bkwd Train Black Widows in the Red Room, bkwd Sniper Rifle Assassins, co2e Negative Zone Prison Outbreak, co2e Enshrouded Identity, gotg Unite the Shards, mdns Ritual Sacrifice to Summon Chthon, msis Sacrifice for the Soul Stone, nmut Trapped in the Insane Asylum, rlmk Devolve with Xerogen Crystals, and wpnx Wipe Heroes' Memories.
+
+The miss was not small. Train Black Widows built 8 twists where it prints 3 to 7. Trapped in the Insane Asylum prints 3 to 11. Five of these schemes lose when the Villain Deck runs out, so for them the twist count is the game's length.
+
+**Decision.**
+1. **One keyed table.** `resolveEffectiveTwistCount` in `setup/schemeSetupSizing.ts` now reads `SCHEME_TWIST_COUNT_BY_PLAYERS`. Each row is a scheme's printed twist count at 1, 2, 3, 4 and 5 players, written out as five numbers rather than a formula, with the printed clause quoted above it. The Civil War branch from D-24733 becomes two rows of that table, and its counts are unchanged. Any scheme not in the table keeps its resolved count.
+2. **Solo.** Where a card prints nothing for 1 player, 1 player mirrors 2 (D-24371 §6). That applies only to core and msp1 Civil War. Every other row's card prints a 1-player count or a formula that covers it.
+3. **Lilith.** Ritual Sacrifice to Summon Chthon prints "If using Lilith: Use 1 Twist total". That is the one twist count keyed on the Mastermind, so the resolver gains a `mastermindId` parameter and one explicit branch for it. `buildVillainDeck` and `buildCardDisplayData` pass `config.mastermindId`.
+4. **Pinned to the card text.** `schemeSetupSizing.test.ts` reads each row's set file from `data/cards`. It asserts the scheme's Setup line still contains the quoted clause, and that the resolver returns the row at 1 to 5 players. If a card's text changes, that test fails rather than the row silently drifting.
+5. **Out of scope.** Two schemes split the Villain Deck itself, which is a structural feature the engine does not model. ssw1 Fragmented Realities gives each player a Villain Deck with 2 Twists. wtif Breach the Nexus of All Realities adds 2 Twists to each "Reality" stack. Neither is touched here. One fixed-count data gap also turned up: chmp Clash of the Monsters Unleashed prints "10 Twists" but had no `villainDeckTwistCount`, so it built 8. That was a card-data miss, not a per-player rule; D-24735 (#2850) curated it at the source, so it is not in this table.
+
+**Twist readout and loss.** None of the 21 table schemes has a scalar `lossThreshold`. Only core Civil War has a per-player map, and it matches its row. So `progress.schemeTwistThreshold` falls through to the twist count in the built deck (D-24595) and agrees with the deck by construction. Ten table schemes have no twist config at all; under the D-24595 fallback they lose on the last twist in the Villain Deck. For those ten, the loss now comes at the printed count instead of the 8th twist: dstr Duels, rvlt Secret HYDRA, ssw2 Fountain, antm Giant Ants, bkwd Sniper Rifle, gotg Unite the Shards, mdns Chthon, msis Soul Stone, nmut Insane Asylum, and wpnx Wipe Memories. The others declare a resource loss: Hero Deck, Villain Deck, or Wound stack running out. Those losses are unchanged, but the Villain-Deck ones now run on the printed deck size.
+
+**Hashes.** The change touches only matches on these 21 schemes. The full suite passes with no re-pin. No pinned replay, state hash or PAR seed runs any of them except core Civil War, which D-24733 already covered.
+
+**Tests.** `schemeSetupSizing.test.ts`:
+- 21 card-text pins;
+- the Civil War variants;
+- the formula rows at 1 to 5 players;
+- Chthon with and without Lilith;
+- passthrough for every scheme outside the table;
+- a player count outside 1 to 5.
+
+`villainDeck.setup.test.ts` adds a `buildVillainDeck` wiring test: at 3 players, Chthon builds 9 twists with Zarathos and 1 with Lilith, which proves the mastermind id reaches the resolver.
+
+**Live re-check (after deploy).** Run an operator match on Train Black Widows in the Red Room at 2 players: the operator panel's Villain-deck list shows 6 Scheme Twists and the HUD reads "Twists: 0/6". Optionally, run co2e Super Hero Civil War at 4 players: 5 twists. These are not Core cards, so there is no `live-verify.json` row.
+
+**Reserved by:** NUMBER-LEDGER D-24734. Related: D-24733 (Civil War twist split), D-24595 (last-twist fallback), D-24371 (twist readout; solo mirrors 2), D-24318 (Hero Deck loss).
+
+---
+Protect this file.

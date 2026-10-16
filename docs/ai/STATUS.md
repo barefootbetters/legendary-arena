@@ -7,6 +7,14 @@
 
 ## Current State
 
+### D-24734 — Schemes whose twist count depends on the player count now build that count (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Nineteen more schemes now shuffle their printed number of Scheme Twists into the Villain Deck for the table's player count; until now each built a flat 8. Examples: Train Black Widows in the Red Room builds 7 twists at 1 player down to 3 at 5, and Trapped in the Insane Asylum builds 3 up to 11. The co2e, Epic and Deadpool versions of Civil War use their own splits, and Ritual Sacrifice to Summon Chthon with Lilith uses 1 twist. Where a scheme loses when the Villain Deck runs out, or on its last twist, the game now runs to the printed length. The HUD twist readout matches the deck for all of them.
+
+- **Engine only.** `resolveEffectiveTwistCount` now reads a keyed table of printed counts at 1 to 5 players (21 schemes, including core and msp1 Civil War from D-24733), plus one Lilith branch. Every row is pinned to its card's Setup text by a test. No G-shape change and no re-pin.
+- **Not covered.** ssw1 Fragmented Realities and wtif Breach the Nexus split the Villain Deck itself, a structural feature. chmp Clash of the Monsters Unleashed (prints 10 twists) was a card-data gap, fixed separately by D-24735.
+- **Live re-check (after deploy).** In a 2-player operator match on Train Black Widows in the Red Room, the operator panel's Villain-deck list shows 6 Scheme Twists and the HUD reads "Twists: 0/6".
+
 ### D-24733 — Super Hero Civil War uses 5 Scheme Twists at 4-5 players (2026-10-16)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** A 4- or 5-player Super Hero Civil War match now shuffles 5 Scheme Twists into the Villain Deck, as the card prints, instead of 8. That is three fewer "KO all the Heroes in the HQ" twists, so the Hero Deck lasts longer and the game is no longer harder than printed. The HUD's "Twists: n/5" readout now matches the deck; before, a 4-player game could reach "Twists: 6/5". Games with 1 to 3 players keep 8 twists, and the 2-player 4-Hero rule is unchanged. The msp1 reprint, which prints the same clause, gets the same fix.
