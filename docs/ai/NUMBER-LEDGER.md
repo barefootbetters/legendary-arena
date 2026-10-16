@@ -452,6 +452,7 @@ high-water: 422
 - WP-811 — lagn-reaped-match-fallback (Server; GET /api/match/:matchId/lagn and /result-lagn fall back to the durable bgio.replay_artifacts copy once the reaper deletes the live bgio.matches row ~1h after gameover, so a finished match stays viewable and downloadable; capture persists the gameover verdict on the artifact. reserved 2026-10-14, spec/reserve-lagn-reaped-fallback)
 - WP-812 — result-lagn-unknown-outcome-label (Server + legends-board; the /result-lagn envelope names why `lagn.result` is omitted — a tie or an unknown outcome — so the Hall of Legends shows "Draw" only for a real tie and "Outcome not recorded" for a WP-811 legacy or hash-mismatch artifact; no LAGN contract change. BLOCKED on WP-811. reserved 2026-10-14, claude/reserve-result-lagn-unknown-outcome)
 - WP-813 — feedback-submission-section (Arena Client; a signed-in "Send feedback" section on ?route=me that posts bug / enhancement / review items to the existing WP-604 POST /api/feedback, so the empty www /roadmap/ board can fill — the D-24414 Stage 1 front door. reserved 2026-10-14, claude/wp-feedback-submission)
+- WP-814 — shared-wiki-theme-extraction (Shared wiki platform; extract the hand-rolled Hugo wiki theme into one shared copy every ewiki consumes, per D-24725 + D-24727; engine ewiki migrates last. reserved 2026-10-16, claude/wp-shared-wiki-theme-draft)
 
 ## EC
 
@@ -866,6 +867,7 @@ high-water: 457
 - EC-849 — result-lagn-unknown-outcome-label (WP-812. reserved 2026-10-14, claude/reserve-result-lagn-unknown-outcome)
 - EC-850 — feedback-submission-section (WP-813. reserved 2026-10-14, claude/wp-feedback-submission)
 - EC-851 — play-saved-loadout (WP-303; grandfathered WP number below the high-water. reserved 2026-10-14, claude/wp303-reserve)
+- EC-852 — shared-wiki-theme-extraction (WP-814. reserved 2026-10-16, claude/wp-shared-wiki-theme-draft)
 
 ## D
 
@@ -1371,3 +1373,4 @@ section below) and the allocation protocol in
 - D-24725 — wiki-platform-consolidation (direct decision, no WP — every ewiki moves onto one shared Hugo wiki platform; the theme stays open pending a Hextra pilot (Herbs vs. Ailments preferred, or the next new ewiki); the engine ewiki keeps the WP-139 theme lock and D-24293 until superseded. reserved 2026-10-16, claude/spec-wiki-platform-consolidation)
 - D-24726 — villain-trait-reads-copied-team (direct fix, no WP — the team half of D-24724: villain-side in-play team reads (Baron Zemo count, reveal-or-wound, KO-by-trait, defeat requirement) count the copied team Copy Powers grants via cardHasTeamWhenPlayed. reserved 2026-10-16, claude/villain-team-reads-copied-team)
 - D-24727 — wiki-platform-theme (direct decision, no WP — the D-24725 shared wiki platform uses the current hand-rolled theme extracted into one shared copy, absorbing the no-JS Hextra wins (TOC, heading anchors, skip link, breadcrumbs); Hextra not adopted per the herbs-vs-ailments#247 pilot; WP-139 lock and D-24293 unchanged. reserved 2026-10-16, claude/spec-wiki-platform-theme)
+- D-24728 — shared-wiki-theme-extraction (WP-814; where the shared wiki theme lives and how each ewiki consumes it — the D-24727 §3 open choice. reserved 2026-10-16, claude/wp-shared-wiki-theme-draft)
