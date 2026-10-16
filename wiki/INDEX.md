@@ -38,6 +38,10 @@ Discrete in-game mechanics with specific triggers and effects.
 
 Coordinated subsystems spanning multiple files / phases.
 
+- [Wiki Viewer Architecture](wiki-viewer-architecture.md) — How the
+  ewiki is built, gated (link check, page count, determinism, JS-free),
+  deployed to the Access-gated Cloudflare Worker, and themed; plus the
+  Render-to-Worker hosting history.
 - [Card Effect System](card-effect-system.md) — How printed card
   text becomes executable, deterministic state changes: inline data
   markers → setup-time descriptors on `G` → a small closed set of
@@ -106,6 +110,10 @@ Coordinated subsystems spanning multiple files / phases.
 
 Abstract data shapes, contracts, and design concepts.
 
+- [Hugo Platform Strategy](hugo-platform-strategy.md) — *(draft)* the
+  family of Hugo sites, the plan to stamp ewikis out of one shared
+  template, the open Hextra-vs-own-theme decision, selling with Snipcart
+  on a static site, and the laptop-to-live publishing flow.
 - [CardExtId](cardextid.md) — Named `string` alias for card
   identifiers; format `<setAbbr>/<slug>`; the zone-storage
   invariant — every zone in `G` stores `CardExtId` strings only.
@@ -458,8 +466,8 @@ Cross-cutting governance, methodology, and readiness assessments.
 Step-by-step walkthroughs for completing specific tasks.
 
 - [Wiki Viewer](wiki-viewer.md) — How to create, edit, preview,
-  and publish ewiki pages: page template, commit prefixes, build
-  pipeline, markdown syntax, and local dev server.
+  and publish ewiki pages: page template, commit prefixes, markdown
+  syntax, and local dev server.
 - [Hugo Onboarding](hugo-onboarding.md) — Day-one ramp for the
   `www.legendary-arena.com` marketing site: WordPress→Hugo mental
   model, from-scratch local setup, project tour, and step-by-step
@@ -617,6 +625,8 @@ following are useful entry points:
   pages — see individual front-matter for the full set).
 - **`hugo`** — Pages covering Hugo site infrastructure:
   [Wiki Viewer](wiki-viewer.md),
+  [Wiki Viewer Architecture](wiki-viewer-architecture.md),
+  [Hugo Platform Strategy](hugo-platform-strategy.md),
   [Hugo Web System](hugo-web-system.md),
   [Hugo Onboarding](hugo-onboarding.md),
   [Ewiki Authoring](ewiki-authoring.md)
