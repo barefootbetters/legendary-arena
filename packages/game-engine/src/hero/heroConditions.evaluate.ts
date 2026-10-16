@@ -246,7 +246,8 @@ export function evaluateCondition(
 
     case 'cardsDrawnThisTurnAtLeast': {
       // why: WP-665 / D-24476 — reads G.turnEconomy.cardsDrawn, the per-turn count of
-      // cards drawn from EFFECTS this turn (the start-of-turn hand refill is excluded).
+      // cards drawn from EFFECTS this turn (the end-of-turn hand fill is excluded). D-24732
+      // widened the counter from the draw:N path to every effect draw by the current player.
       // Gamma-Draining Nanites' "if you drew two cards this turn" gate. A wait-and-see
       // condition (deferredConditionalGrants) so it re-checks each move this turn.
       const drawThreshold = parseInt(condition.value, 10);

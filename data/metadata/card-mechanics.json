@@ -99,13 +99,15 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 30,
+      "cardCount": 33,
       "cardIds": [
+        "antm/ant-man",
         "asrd/thor",
         "bkwd/falcon-winter-soldier",
         "bkwd/red-guardian",
         "ca75/captain-america-1941",
         "ca75/captain-america-falcon",
+        "chmp/totally-awesome-hulk",
         "co2e/black-widow",
         "co2e/captain-america",
         "co2e/cyclops",
@@ -116,6 +118,7 @@
         "core/deadpool",
         "core/iron-man",
         "core/nick-fury",
+        "core/wolverine",
         "cvwr/goliath",
         "dkcy/iceman",
         "ff04/thing",
@@ -2566,6 +2569,7 @@
     },
     "antm/ant-man": {
       "mechanics": [
+        "attack-per-count",
         "draw",
         "microscopic-size-changing",
         "optional-discard-draw",
@@ -2780,6 +2784,7 @@
     },
     "chmp/totally-awesome-hulk": {
       "mechanics": [
+        "attack-per-count",
         "cheering-crowds",
         "draw",
         "size-changing"
@@ -2986,6 +2991,7 @@
     },
     "core/wolverine": {
       "mechanics": [
+        "attack-per-count",
         "draw",
         "ko-wound-reward"
       ]

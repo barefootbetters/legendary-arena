@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1972,
+    "totalEntries": 1975,
     "byScope": {
-      "hero": 794,
+      "hero": 797,
       "villain": 722,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 565,
+      "executable": 568,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
@@ -2278,6 +2278,23 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
       "wp": "WP-185",
       "decision": "D-18503"
+    },
+    {
+      "extId": "antm/ant-man",
+      "name": "Ant-Man",
+      "set": "antm",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "giant-ego",
+          "name": "Giant Ego"
+        }
+      ]
     },
     {
       "extId": "antm/ant-man",
@@ -5300,6 +5317,23 @@
       "name": "Totally Awesome Hulk",
       "set": "chmp",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "7th-smartest-man-in-the-world",
+          "name": "7th Smartest Man in the World"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/totally-awesome-hulk",
+      "name": "Totally Awesome Hulk",
+      "set": "chmp",
+      "scope": "hero",
       "mechanic": "cheering-crowds",
       "status": "unsupported",
       "handler": "",
@@ -7870,6 +7904,23 @@
         {
           "slug": "surge-of-power",
           "name": "Surge of Power"
+        }
+      ]
+    },
+    {
+      "extId": "core/wolverine",
+      "name": "Wolverine",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "berserker-rage",
+          "name": "Berserker Rage"
         }
       ]
     },
@@ -29082,6 +29133,7 @@
     "antm/ant-man": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw",
         "microscopic-size-changing",
         "optional-discard-draw",
@@ -29859,6 +29911,7 @@
     "chmp/totally-awesome-hulk": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "cheering-crowds",
         "draw",
         "size-changing"
@@ -30678,6 +30731,7 @@
     "core/wolverine": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw",
         "ko-wound-reward"
       ]

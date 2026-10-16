@@ -300,3 +300,30 @@ describe('Diving Block — reveal / decline resolution (WP-682 / D-24499)', () =
     assert.equal(G.playerZones['1']!.discard.includes(WOUND_EXT_ID), false);
   });
 });
+
+// why: D-24732 — the reveal's draw-instead is an "extra card drawn this turn" (Berserker
+// Rage) only for the turn's active player; turnEconomy is that player's alone.
+describe('Diving Block — the draw-instead counts toward cardsDrawn for the active player only (D-24732)', () => {
+  /** A move context whose ctx names the turn's current player. */
+  function makeTurnContext(G: LegendaryGameState, playerID: string, currentPlayer: string): Parameters<typeof resolveSeatChoice>[0] {
+    return { G, playerID, ctx: { currentPlayer }, events: {}, random: IDENTITY_RANDOM, log: {} } as unknown as Parameters<typeof resolveSeatChoice>[0];
+  }
+
+  it('the active player revealing draws a card that counts', () => {
+    const G = makeState({ hands: { '0': [DIVING_BLOCK_ID] }, decks: { '0': ['draw-a#0'] }, woundCount: 1 });
+    gainWoundForPlayer(G, '0');
+    openDivingBlockSeatChoiceIfNeeded(G, undefined);
+    resolveSeatChoice(makeTurnContext(G, '0', '0'), { optionIndex: 0 });
+    assert.deepEqual(G.playerZones['0']!.hand, [DIVING_BLOCK_ID, 'draw-a#0']);
+    assert.equal(G.turnEconomy.cardsDrawn, 1);
+  });
+
+  it('another seat revealing on the active player\'s turn draws a card that does not count', () => {
+    const G = makeState({ hands: { '0': [], '1': [DIVING_BLOCK_ID] }, decks: { '1': ['draw-b#0'] }, woundCount: 1 });
+    gainWoundForPlayer(G, '1');
+    openDivingBlockSeatChoiceIfNeeded(G, undefined);
+    resolveSeatChoice(makeTurnContext(G, '1', '0'), { optionIndex: 0 });
+    assert.deepEqual(G.playerZones['1']!.hand, [DIVING_BLOCK_ID, 'draw-b#0'], 'seat 1 still drew');
+    assert.equal(G.turnEconomy.cardsDrawn, 0, 'not the active player\'s draw');
+  });
+});

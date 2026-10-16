@@ -298,11 +298,14 @@ export function openDivingBlockSeatChoiceIfNeeded(
  * @param G - The game state, mutated in place.
  * @param choice - The fully-submitted Diving-Block seat choice.
  * @param shuffleContext - Deterministic reshuffle source for the reveal draw.
+ * @param currentPlayer - The turn's active player, if known; only that seat's reveal draw
+ *   counts toward turnEconomy.cardsDrawn (D-24732).
  */
 export function applyDivingBlockResolvedSeatChoice(
   G: LegendaryGameState,
   choice: PendingSeatChoice,
   shuffleContext: ShuffleProvider | undefined,
+  currentPlayer?: string,
 ): void {
   const seatsInApplyOrder = [...choice.addressedSeats].sort();
   for (const seat of seatsInApplyOrder) {
@@ -320,7 +323,7 @@ export function applyDivingBlockResolvedSeatChoice(
     }
     const woundEntry = queue[woundIndex]!;
     if (submission.optionIndex === DIVING_BLOCK_REVEAL_OPTION_INDEX) {
-      applyDivingBlockReveal(G, seat, woundEntry.woundCardId, shuffleContext);
+      applyDivingBlockReveal(G, seat, woundEntry.woundCardId, shuffleContext, seat === currentPlayer);
     } else {
       pushLog(G,
         `Player ${seat} took the Wound (declined Diving Block).`,
@@ -343,12 +346,14 @@ export function applyDivingBlockResolvedSeatChoice(
  * @param seat - The revealing seat.
  * @param woundCardId - The Wound card to return to the supply.
  * @param shuffleContext - Deterministic reshuffle source for the draw.
+ * @param isCurrentPlayer - Whether the revealing seat is the turn's active player.
  */
 function applyDivingBlockReveal(
   G: LegendaryGameState,
   seat: string,
   woundCardId: CardExtId,
   shuffleContext: ShuffleProvider | undefined,
+  isCurrentPlayer: boolean,
 ): void {
   const playerZones = G.playerZones[seat];
   if (!playerZones) {
@@ -362,7 +367,7 @@ function applyDivingBlockReveal(
   if (!moveResult.found) {
     // why: the Wound is no longer in discard (should not happen while the board is
     // frozen) — skip the return but still draw, so the reveal is never a dead no-op.
-    drawCardsIntoHandGuarded(G, seat, shuffleContext);
+    drawCardsIntoHandGuarded(G, seat, shuffleContext, isCurrentPlayer);
     pushLog(G,
       `Player ${seat} revealed Diving Block and drew a card.`,
     );
@@ -370,7 +375,7 @@ function applyDivingBlockReveal(
   }
   playerZones.discard = moveResult.from;
   G.piles.wounds = moveResult.to;
-  drawCardsIntoHandGuarded(G, seat, shuffleContext);
+  drawCardsIntoHandGuarded(G, seat, shuffleContext, isCurrentPlayer);
   pushLog(G,
     `Player ${seat} revealed Diving Block: prevented the Wound and drew a card.`,
   );
@@ -387,15 +392,24 @@ function applyDivingBlockReveal(
  * @param G - The game state, mutated in place.
  * @param seat - The seat drawing a card.
  * @param shuffleContext - Deterministic reshuffle source, or undefined.
+ * @param isCurrentPlayer - Whether the seat is the turn's active player.
  */
 function drawCardsIntoHandGuarded(
   G: LegendaryGameState,
   seat: string,
   shuffleContext: ShuffleProvider | undefined,
+  isCurrentPlayer: boolean,
 ): void {
   const playerZones = G.playerZones[seat];
   if (!playerZones || shuffleContext === undefined) {
     return;
   }
+  const handSizeBefore = playerZones.hand.length;
   drawCardsIntoHand(playerZones, 1, shuffleContext);
+  // why: D-24732 — the active player's draw-instead is an extra card drawn this turn.
+  // Another seat's reveal (a Master Strike wounds every player) is not, because
+  // turnEconomy belongs to the active player alone.
+  if (isCurrentPlayer) {
+    G.turnEconomy.cardsDrawn += playerZones.hand.length - handSizeBefore;
+  }
 }

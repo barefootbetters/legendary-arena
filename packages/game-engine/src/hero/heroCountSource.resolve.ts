@@ -440,6 +440,16 @@ export function resolveCountSource(
     case 'covert-heroes-played-this-turn': {
       return countHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'covert');
     }
+    case 'extra-cards-drawn-this-turn': {
+      // why: D-24732 — "for each extra card you've drawn this turn" counts every card the
+      // current player drew this turn other than the hand drawn at end of turn. Every
+      // effect-draw site for the current player increments turnEconomy.cardsDrawn and the
+      // start-of-turn fill never does, so the counter IS the count. Self-inclusive: a
+      // card's own earlier draw line has already landed when its count line resolves.
+      // playerID / triggeringCardId are unused because turnEconomy is the current
+      // player's alone; the ?? 0 guards narrow test mocks that omit the field.
+      return G.turnEconomy?.cardsDrawn ?? 0;
+    }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must
       // resolve to 0 (a skipped no-op grant) rather than throw.
@@ -792,6 +802,12 @@ export function explainCountSourceInputs(
     }
     case 'covert-heroes-played-this-turn': {
       return collectHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'covert');
+    }
+    case 'extra-cards-drawn-this-turn': {
+      // why: D-24732 — a counter source, not a card list: turnEconomy.cardsDrawn records
+      // how many cards were drawn, not which, so there are no inputs to name (like the
+      // victory-pile sources, countedInputs is omitted for it).
+      return [];
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source explains to no

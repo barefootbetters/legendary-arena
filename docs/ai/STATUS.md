@@ -7,6 +7,22 @@
 
 ## Current State
 
+### D-24732 — Berserker Rage adds +1 attack per extra card drawn this turn (direct fix) (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Wolverine's **Berserker Rage** now gives +1 attack for
+*each* extra card you've drawn this turn when you've played another Instinct Hero. Its own three draws count, so it
+gives at least +3. Before, it always gave a flat +1. Ant-Man's **Giant Ego** (antm) and Totally Awesome Hulk's
+**7th Smartest Man in the World** (chmp) print the same clause and get the same fix. Reveal-draws (Spider-Man),
+Psychic Link, Diving Block, Dodge, Investigate, Stack the Deck, HYDRA Conspiracy and Enchantress draws now count as
+extra cards too, which also feeds Gamma-Draining Nanites' "if you drew two cards this turn".
+
+- **Engine + card data.** New `extra-cards-drawn-this-turn` count source over `TurnEconomy.cardsDrawn`, markers on
+  the three lines, and the counter widened to every effect draw by the current player. No new G field, move or UI field.
+- **Counts.** game-engine 5273 → 5288, 0 fail in all 12 packages; data gates current; no hash re-pin.
+- **Live-verify (D-24026): pending.** Operator match with Wolverine: Place in HQ, recruit, then Move discard → hand
+  Healing Factor, Keen Senses and Berserker Rage; play them in that order. Keen Senses draws 1, Berserker Rage draws 3,
+  and the log reads "Count-scaled attack: +4 (1 per extra card drawn this turn; count 4)."
+
 ### D-24731 — Psychic Link reveals an X-Men Hero you already played (2026-10-16)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Emma Frost's Psychic Link ("Each player may reveal another X-Men Hero. Each player who does draws a card.") now lets the player who plays it reveal an X-Men Hero they already played this turn, not only one in hand (rules v23 "Revealing a Card"). Play Keen Senses, then Psychic Link, with no other X-Men Hero in hand, and you draw a card; before, nobody drew and the log said no player had a matching Hero. Psychic Link never reveals itself, a card that left play does not count, and a Copy Powers copy of an X-Men Hero does. Other players still reveal from hand. Magneto's Electromagnetic Bubble tactic now also offers a played Copy Powers copy of an X-Men Hero.

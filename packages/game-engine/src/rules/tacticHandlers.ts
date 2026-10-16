@@ -531,6 +531,9 @@ export function resolveHydraConspiracy(
   // line claiming an undelivered draw is the misattribution class this arc exists
   // to remove.
   const drawn = playerZones.hand.length - handBefore;
+  // why: D-24732 — HYDRA Conspiracy's draws are the defeating (current) player's extra
+  // cards drawn this turn, unlike the next-hand bonuses that only grow the end-of-turn draw.
+  G.turnEconomy.cardsDrawn += drawn;
   pushLog(G,
     `Fight effect: Player ${currentPlayer} drew ${drawn} card(s) - ${HYDRA_CONSPIRACY_BASE_DRAW} plus ${hydraVillains} HYDRA Villain(s) in their Victory Pile (HYDRA Conspiracy).`,
     'applied',

@@ -2044,6 +2044,8 @@ function villainEffectDrawCardsCurrent(
   const handSizeBefore = zones.hand.length;
   drawCardsIntoHand(zones, drawCount, shuffleContext);
   const drawn = zones.hand.length - handSizeBefore;
+  // why: D-24732 — the defeating player's Fight draw is an extra card drawn this turn.
+  G.turnEconomy.cardsDrawn += drawn;
   // why: D-24290 — all three Tier-A primitives are Fight-timed (the markers are
   // authored under `.fight`), so the label is hardcoded "Fight effect:" as the
   // scry-ko handler does for the Fight-only Doombot; a draw that moved 0 cards
@@ -2125,6 +2127,9 @@ function villainEffectRevealTopDrawIfCostLte(
   }
   zones.deck = moveResult.from;
   zones.hand = moveResult.to;
+  // why: D-24732 — "draw it" is a real draw by the current player (only the draw lock is
+  // waived above), so it counts as an extra card drawn this turn.
+  G.turnEconomy.cardsDrawn += 1;
   pushLog(G, `Fight effect: revealed "${topName}" (cost ${String(cost)}) — drew it.`, 'applied', topCardId);
   return { targets: [topCardId] };
 }

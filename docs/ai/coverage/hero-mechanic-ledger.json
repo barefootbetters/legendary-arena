@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 794,
+    "totalRows": 797,
     "byStatus": {
-      "executable": 408,
+      "executable": 411,
       "deferred": 16,
       "condition": 49,
       "unsupported": 290,
@@ -1023,6 +1023,22 @@
         {
           "slug": "put-to-the-torch",
           "name": "Put to the Torch"
+        }
+      ]
+    },
+    {
+      "extId": "antm/ant-man",
+      "heroName": "Ant-Man",
+      "set": "antm",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "giant-ego",
+          "name": "Giant Ego"
         }
       ]
     },
@@ -2954,6 +2970,22 @@
       "extId": "chmp/totally-awesome-hulk",
       "heroName": "Totally Awesome Hulk",
       "set": "chmp",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "7th-smartest-man-in-the-world",
+          "name": "7th Smartest Man in the World"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/totally-awesome-hulk",
+      "heroName": "Totally Awesome Hulk",
+      "set": "chmp",
       "mechanic": "cheering-crowds",
       "status": "unsupported",
       "wp": "",
@@ -4324,6 +4356,22 @@
         {
           "slug": "surge-of-power",
           "name": "Surge of Power"
+        }
+      ]
+    },
+    {
+      "extId": "core/wolverine",
+      "heroName": "Wolverine",
+      "set": "core",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "berserker-rage",
+          "name": "Berserker Rage"
         }
       ]
     },
