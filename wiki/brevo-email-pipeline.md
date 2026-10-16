@@ -289,7 +289,7 @@ is authoritative at
 | 2 | Hook | 1-2 sentence teaser summarizing the issue |
 | 3 | Tip / Strategy | Main value block: 2-3 paragraphs of actionable content (deck-building, meta analysis, scenario strategy) |
 | 4 | Challenge | A specific in-game challenge for the week, tied to the tip content |
-| 5 | Read more | Link to companion blog post at `/posts/<slug>/` (slug must match `newsletter_slug`) |
+| 5 | Read more | Link to companion blog post at `/blog/<slug>/` (slug must match `newsletter_slug`) |
 | 6 | CTA | Primary action button: Play, Newsletter, or Tournament (one per email, from `cta` front-matter) |
 | 8 | Featured from the Shop | Single product spotlight with UTM-tagged link to `/shop/` — text link, not button, below the primary CTA |
 | 9 | Share / Forward | One-line prompt to forward the email or share the companion blog post canonical URL |
@@ -327,7 +327,7 @@ The content pipeline produces a matched pair for each edition: one blog
 post and one newsletter. Each step feeds the next.
 
 ```
-1. Write blog post -> content/posts/<slug>.md
+1. Write blog post -> content/blog/<slug>.md
    - Includes: hero image, CTA block, shop link, internal cross-links
    - Front-matter: series, cta, newsletter_week, newsletter_slug
 
@@ -364,11 +364,11 @@ attribution tracking silently.
 Newsletter images reuse production URLs from the marketing site:
 
 ```
-https://www.legendary-arena.com/images/posts/<slug>/hero.webp
+https://www.legendary-arena.com/images/blog/<slug>/hero.webp
 ```
 
 Images must exist in the marketing repo at
-`C:\www\legendary-arena-com\static\images\posts\<slug>\` and be
+`C:\www\legendary-arena-com\static\images\blog\<slug>\` and be
 deployed before the newsletter send.
 
 - Alt text required on all images.
@@ -450,10 +450,10 @@ Outlook (Insert → Picture in the signature editor):
 
 | Link | Points to | Format |
 |---|---|---|
-| Read more | `/posts/<slug>/` (canonical blog URL) | Text link |
+| Read more | `/blog/<slug>/` (canonical blog URL) | Text link |
 | Primary CTA | `play.legendary-arena.com` or tournament URL | Button (`#7a1d1f` bg, white text) |
 | Shop | `/shop/?utm_source=newsletter&utm_medium=email&utm_campaign=<slug>&utm_content=featured-product` | Text link |
-| Share | `/posts/<slug>/` (canonical blog URL) | Text link |
+| Share | `/blog/<slug>/` (canonical blog URL) | Text link |
 
 All links must point to production URLs, never preview or localhost.
 

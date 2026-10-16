@@ -213,7 +213,7 @@ C:\www\legendary-arena-com\
 ├── hugo.toml              # site config: params, menus, markup, Snipcart key, Schema
 ├── content\               # the pages (Markdown + front matter)
 │   ├── _index.md          # home (rendered by layouts/index.html)
-│   ├── about\, brand\, posts\, shop\, tournaments\, leaderboard\, diorama\
+│   ├── about\, brand\, blog\, shop\, tournaments\, leaderboard\, diorama\
 ├── layouts\               # template overrides (shadow the PaperMod theme)
 │   ├── baseof.html        # page skeleton
 │   ├── index.html         # home override (hero, tournaments, featured gear)
@@ -384,8 +384,8 @@ below). The commit **prefix** matters — it's hook-enforced.
 
 **Publish a blog post**
 1. `pwsh scripts/git/new-post.ps1 -Slug "<kebab-case-slug>"` scaffolds
-   `content\posts\YYYY-MM-DD-<slug>.md` from the archetype.
-2. Write the post; drop images under `static\images\posts\<slug>\`.
+   `content\blog\YYYY-MM-DD-<slug>.md` from the archetype.
+2. Write the post; drop images under `static\images\blog\<slug>\`.
 3. Commit prefix: `POST: <YYYY-MM-DD — summary>` (content lane only).
 
 **Edit the newsletter form**
