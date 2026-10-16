@@ -406,8 +406,8 @@
       "wp": "WP-582",
       "state": "verified",
       "date": "2026-08-22",
-      "evidence": "WP-582 live-verify, 2p Red Skull / Midtown (#1561)",
-      "note": ""
+      "evidence": "WP-582 live-verify, 2p Red Skull / Midtown (#1561). Per-play copy (D-24730): 2p operator match 8Mw9mLkcgQ4 (server build 7e2b45bd) — Copy Powers #0 copied Borrowed Brawn (Strength) on turn 9, then Energy Drain (Covert) on turn 13: Borrowed Brawn was blocked (13.2.12) and Maestro counted only \"Borrowed Brawn (played)\" (13.2.22).",
+      "note": "D-24730: a copy's class and team last only for that play; before the fix the turn-9 Strength copy carried over (L3yPdfS179l, 16.2.8 / 16.2.10)."
     },
     {
       "key": "core/rogue|optional-ko-reward",
