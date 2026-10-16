@@ -21,13 +21,14 @@ last-reviewed: 2026-10-16
 
 ## Summary
 
-We run several Hugo sites, and each wiki carries its own copy of a
-hand-rolled theme. This page records the plan to make "ewiki" a template
-we stamp out as a Studio product. It also covers whether Hextra should
-become the shared theme, how selling fits a static site, and the
-laptop-to-live publishing flow. It came from a 2026-10-15 Claude Chat and
-a Copilot review of the Wiki Viewer page on 2026-10-16. The theme
-decision is still open.
+We run four Hugo wikis, and each carries its own forked copy of a
+hand-rolled theme. The real question is whether to keep four diverging
+themes or move to one shared platform; which theme that platform uses
+is a second, smaller question. This page recommends converging, proposes
+a Hextra pilot on the next new wiki to settle which theme, and keeps the
+marketing site on PaperMod for now. It also covers selling on a static
+site and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude
+Chat and two Copilot reviews (2026-10-16).
 
 ## Mechanics
 
@@ -46,6 +47,28 @@ A dash means this page hasn't recorded the host yet. Checked 2026-10-16:
 the engine ewiki and the Herbs vs. Ailments ewiki differ in 20 layout
 files, so the copies are already drifting.
 
+### Where this is headed
+
+```
+Today                                   Future
+
+Engine ewiki      -> theme copy A       Studio Hugo platform
+Herbs ewiki       -> theme copy B       ├── shared theme
+Personal wiki     -> theme copy C       ├── shared search
+Corporate memory  -> theme copy D       ├── shared branding
+Marketing         -> PaperMod           ├── shared components
+                                        └── shared deployment guidance
+
+                                        Sites on the platform
+                                        ├── Engine ewiki
+                                        ├── Herbs ewiki
+                                        ├── Personal wiki
+                                        ├── Corporate memory
+                                        └── future customer ewikis
+
+                                        Marketing stays on PaperMod
+```
+
 ### One template, many ewikis
 
 Treat "ewiki" as something we stamp out, not sites we maintain one by
@@ -54,49 +77,78 @@ one. Build one Hugo setup with the Studio branding and shared partials
 small config with its domain and project name, and a logo. That is what
 makes the ewiki a reusable Studio product.
 
-The four hand-rolled copies are the real maintenance cost: every fix to
-navigation, CSS, search, or accessibility has to land four times. The
-code-style rule "abstract when a third copy appears" was passed at the
-fourth copy. Making a shared theme is the right move whichever theme it
-ends up being.
+### The cost of doing nothing
 
-### The theme question: Hextra or our own shared theme
+- **Every fix lands four times.** A navigation, CSS, search, or
+  accessibility fix has to be made in each copy. In practice it gets
+  made in one, and the others fall behind. That is how the engine and
+  Herbs copies came to differ in 20 layout files.
+- **Every Hugo upgrade lands four times.** Each copy has to be checked
+  against each new Hugo release on its own.
+- **The Studio product can't ship as a template.** Each new customer
+  ewiki would fork a fifth copy, so the maintenance cost grows with
+  every sale instead of staying flat.
+- **The code-style rule has already been passed.** "Abstract when a
+  third copy appears" — we are at four.
 
-Copilot recommends standardizing every site on Hextra, a
-documentation-first Hugo theme (MIT license). Its case is good on several
-points: Hextra is built for docs and knowledge bases, not blogs. It
-brings multi-level navigation, search, dark mode, and a responsive
-layout. Upstream maintains it, so we stop carrying custom CSS,
-navigation, and accessibility fixes ourselves. Its README says sites need
-no Node.js to use it. That answers WP-139's original reason for
-rejecting it ("introduces Tailwind tooling").
+### The platform question
 
-What it would change for the engine ewiki specifically:
+There are two decisions, in order.
+
+**Decision 1: converge on one shared wiki theme.** Recommended, for the
+reasons above. It is pending owner sign-off; once signed off it becomes
+a DECISIONS entry.
+
+**Decision 2: which shared theme.** Open, with two options.
+
+**(a) Hextra.** Hextra is a documentation-first Hugo theme (MIT
+license), built for docs and knowledge bases, not blogs. It brings
+multi-level navigation, search, dark mode, and a responsive layout.
+Upstream maintains it, so the platform stops carrying its own CSS,
+navigation, and accessibility fixes. Its README says sites need no
+Node.js to use it, which answers WP-139's original reason for rejecting
+it ("introduces Tailwind tooling"). For the engine ewiki, adopting it
+changes more than the theme:
 
 - **The JS-free gate.** Hextra's built-in search is FlexSearch, which
   runs in the browser, and its interactive pieces use script. The
   ewiki's CI fails any build that ships JavaScript other than the
   Pagefind loader (D-24293). Adopting Hextra means amending that
-  decision, not just swapping a theme.
+  decision, the build rules that enforce it, and the search setup.
 - **Search, twice.** The ewiki already ships Pagefind. We would keep one
   and switch off the other.
 - **Determinism and Access.** The byte-identical build gate and the
   single Access-gated hostname still apply. Both should be fine, but the
   first Hextra build has to prove it.
 
-The other option is to pull the current hand-rolled theme out into one
-shared theme that the four wikis use. That keeps every existing gate as
-it is, but we keep maintaining it ourselves.
+**(b) The current theme, extracted.** Pull the hand-rolled theme out
+into one shared copy that all four wikis use. Every existing gate stays
+as it is, but we keep maintaining the theme ourselves.
+
+### Recommended next step
+
+Build the next new ewiki on Hextra as a pilot. It needs no migration,
+and the WP-139 theme lock and the JS-free gate govern only the engine
+ewiki, so a new wiki is free to try it. Then put the pilot next to the
+engine ewiki and decide Decision 2:
+
+- **If Hextra wins,** write the DECISIONS entry that supersedes the
+  WP-139 lock, amend D-24293 for Hextra's script, and move the existing
+  wikis over one at a time, starting with the smallest.
+- **If it doesn't,** extract the current theme into the shared copy and
+  move the wikis onto that instead.
+
+Either way, Decision 1 holds: the four copies converge.
 
 ### The marketing site: keep PaperMod for now
 
-Copilot also recommends moving the marketing site from PaperMod to
-Hextra. Its point that PaperMod is blog-first is fair. But the marketing
-site's job is conversion: the homepage, `/shop/` with Snipcart, the
-Cloudflare Pages Functions for email signup, and the redirect map. A
-theme migration there is a large job that doesn't sell anything. Revisit
-it when the marketing site needs a docs-style section that PaperMod
-can't do.
+Moving the marketing site from PaperMod to Hextra has also been proposed.
+PaperMod is blog-first, which is a fair point against it. But the
+marketing site's job is conversion: the homepage, `/shop/` with
+Snipcart, the Cloudflare Pages Functions for email signup, and the
+redirect map. A theme migration there is a large job that doesn't sell
+anything. Revisit it when the marketing site needs a docs-style section
+that PaperMod can't do.
 
 ### Selling on a static site
 
@@ -177,17 +229,19 @@ drive is planned and deferred.
 - **A Hextra pilot on a new wiki is not bound by those locks.** They
   govern the engine ewiki only, so a new wiki is the cheap place to try
   Hextra.
+- **Marketing is out of scope for convergence.** The shared platform is
+  for the wikis. The marketing and Barefoot Betters sites stay on
+  PaperMod until there is a business reason to move them.
 
 ## Open Questions
 
-1. **Which theme should the shared ewiki template use?** (a) Hextra, or
-   (b) the current hand-rolled theme pulled out into one shared copy.
-   Suggested next step: build the next new ewiki on Hextra as a pilot,
-   since no migration is needed, and decide after seeing it next to the
-   engine ewiki. A Hextra decision then needs the DECISIONS entry and
-   the JS-free amendment above before the engine ewiki moves.
-2. **Does the marketing site leave PaperMod?** Not now (see above).
-   Revisit when it needs a docs-style section.
+1. **Decision 1 sign-off.** Converge the four wiki themes into one
+   shared theme? Recommended; needs a DECISIONS entry once signed off.
+2. **Decision 2: which shared theme?** Hextra or the extracted current
+   theme. Settled by the Hextra pilot on the next new ewiki (see
+   *Recommended next step*).
+3. **Does the marketing site leave PaperMod?** Not now. Revisit when it
+   needs a docs-style section.
 
 ## References
 
