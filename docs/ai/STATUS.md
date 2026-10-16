@@ -19,9 +19,9 @@ extra cards too, which also feeds Gamma-Draining Nanites' "if you drew two cards
 - **Engine + card data.** New `extra-cards-drawn-this-turn` count source over `TurnEconomy.cardsDrawn`, markers on
   the three lines, and the counter widened to every effect draw by the current player. No new G field, move or UI field.
 - **Counts.** game-engine 5273 → 5288, 0 fail in all 12 packages; data gates current; no hash re-pin.
-- **Live-verify (D-24026): pending.** Operator match with Wolverine: Place in HQ, recruit, then Move discard → hand
-  Healing Factor, Keen Senses and Berserker Rage; play them in that order. Keen Senses draws 1, Berserker Rage draws 3,
-  and the log reads "Count-scaled attack: +4 (1 per extra card drawn this turn; count 4)."
+- **Live-verify (D-24026): PASS.** Operator match `Bi6gSbwebWx` (server build `e4c2c0a0`, which includes the #2848 merge; client `d7b2717`), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout (HYDRA + Spider-Foes; Wolverine, Gambit, Emma Frost, Spider-Man, Captain America), won with the Final Blow at 22.3.1. Healing Factor ×2, Keen Senses and Berserker Rage were placed and recruited on turn 2 (2.2.5–2.2.10). Turn 6 logged `Count-scaled attack: +5 (1 per extra card drawn this turn; count 5).`
+  (Mental Discipline 1 + Keen Senses 1 + Berserker Rage 3, 6.2.9); turn 14 gave the +3 minimum (14.2.5); turn 10 was blocked
+  without another Instinct Hero (10.2.11).
 
 ### D-24731 — Psychic Link reveals an X-Men Hero you already played (2026-10-16)
 

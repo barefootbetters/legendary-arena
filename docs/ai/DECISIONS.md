@@ -48526,6 +48526,12 @@ The counter the count needs, `TurnEconomy.cardsDrawn` (WP-665 / D-24476), was in
 
 **Live-verify (D-24026): pending.** `live-verify.json` gains `core/wolverine|attack-per-count` (Berserker Rage) as `pending`. Recipe: an operator match with Wolverine; Place in HQ, recruit, then Move discard → hand Healing Factor, Keen Senses and Berserker Rage; play them in that order. Keen Senses draws 1, Berserker Rage draws 3 and grants +4 (was +1).
 
+**Live-verify (D-24026), 2026-10-16: PASS.** Operator match `Bi6gSbwebWx` (server build `e4c2c0a0`, which includes the #2848 merge; client `d7b2717`), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout (HYDRA + Spider-Foes; Wolverine, Gambit, Emma Frost, Spider-Man, Captain America), won with the Final Blow at 22.3.1. Healing Factor ×2, Keen Senses and Berserker Rage were placed and recruited on turn 2 (2.2.5–2.2.10).
+- **Counts every effect draw this turn.** Turn 6: Mental Discipline drew 1 (6.2.2), Frenzied Slashing was blocked without another Instinct Hero (6.2.4), Keen Senses drew 1 (6.2.6), and Berserker Rage drew 3 (6.2.8) and logged `Count-scaled attack: +5 (1 per extra card drawn this turn; count 5).` (6.2.9). That is 1 + 1 + 3, so a non-Wolverine draw (Mental Discipline) counts too. Before the fix this was a flat +1.
+- **Its own three draws count.** Turn 14: Healing Factor (no Wound, no draw) then Berserker Rage drew 3 and logged `+3 … count 3` (14.2.5), the minimum with the gate met.
+- **The Instinct gate holds.** Turn 10: Berserker Rage after two Mental Disciplines and no Instinct Hero drew 3 but its count line was blocked (10.2.11).
+- **Not exercised live:** the other newly counted sites (reveal-draws, Psychic Link, Diving Block, Dodge, Investigate, Stack the Deck, HYDRA Conspiracy, Enchantress) and the antm / chmp twins. The unit tests cover the reveal-draw, Psychic Link and Diving Block cases.
+
 **Reserved by:** NUMBER-LEDGER D-24732. Related: D-24476 (the `cardsDrawn` counter and Gamma-Draining Nanites), D-24016 (attack-per-count and the flat-icon suppression), D-24655 (the X-Men United per-count precedent), D-24731 (Psychic Link reveals played cards; same handler), D-24499 / D-24651 / D-24673 (Diving Block), D-24051 (Dodge).
 
 ---
