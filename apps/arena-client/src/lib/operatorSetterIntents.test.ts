@@ -24,6 +24,7 @@ import {
   buildSupplyCountIntent,
   hasEscapeCandidate,
   isSetterWindowOpen,
+  seatLabel,
 } from './operatorSetterIntents';
 
 /**
@@ -104,7 +105,7 @@ describe('operatorSetterIntents — intent builders (WP-807)', () => {
 
 describe('operatorSetterIntents — option builders (WP-807)', () => {
   test('buildCardSources lists seats in order across five zones, then supplies with cards', () => {
-    const sources = buildCardSources(buildView());
+    const sources = buildCardSources(buildView(), '0');
     assert.deepEqual(
       sources.map((source) => source.key),
       [
@@ -121,11 +122,11 @@ describe('operatorSetterIntents — option builders (WP-807)', () => {
     assert.deepEqual(
       sources.map((source) => source.label),
       [
-        'Player 0 · hand · Hand Card',
-        'Player 0 · deck · deck-card',
-        'Player 0 · discard pile · discard-card',
-        'Player 0 · play area · play-card',
-        'Player 0 · Victory Pile · victory-card',
+        'You (Player 0) · hand · Hand Card',
+        'You (Player 0) · deck · deck-card',
+        'You (Player 0) · discard pile · discard-card',
+        'You (Player 0) · play area · play-card',
+        'You (Player 0) · Victory Pile · victory-card',
         'Player 1 · hand · other-hand',
         'Wound supply (top)',
         'Bystander supply (top)',
@@ -138,17 +139,31 @@ describe('operatorSetterIntents — option builders (WP-807)', () => {
   });
 
   test('buildDestinations lists four zones per seat plus the KO pile', () => {
-    const destinations = buildDestinations(buildView());
+    const destinations = buildDestinations(buildView(), '0');
     assert.deepEqual(
       destinations.map((destination) => destination.key),
       ['0|hand', '0|deck', '0|discard', '0|victory', '1|hand', '1|deck', '1|discard', '1|victory', 'ko'],
     );
     assert.deepEqual(
       destinations.slice(0, 4).map((destination) => destination.label),
-      ['Player 0 · hand', 'Player 0 · deck (top)', 'Player 0 · discard pile', 'Player 0 · Victory Pile'],
+      ['You (Player 0) · hand', 'You (Player 0) · deck (top)', 'You (Player 0) · discard pile', 'You (Player 0) · Victory Pile'],
     );
     assert.deepEqual(destinations[8], { key: 'ko', ref: { zone: 'ko' }, label: 'KO pile' });
     assert.deepEqual(destinations[5]!.ref, { zone: 'deck', playerId: '1' });
+  });
+
+  test('seatLabel marks only the viewer seat as "You"; other seats keep their number', () => {
+    assert.equal(seatLabel('0', '0'), 'You (Player 0)');
+    assert.equal(seatLabel('1', '0'), 'Player 1');
+    assert.equal(seatLabel('1', '1'), 'You (Player 1)');
+  });
+
+  test('the "You" label follows the viewer seat, not seat 0', () => {
+    const destinations = buildDestinations(buildView(), '1');
+    assert.equal(destinations[0]!.label, 'Player 0 · hand');
+    assert.equal(destinations[4]!.label, 'You (Player 1) · hand');
+    const sources = buildCardSources(buildView(), '1');
+    assert.equal(sources[5]!.label, 'You (Player 1) · hand · other-hand');
   });
 
   test('buildDeckCardOptions keeps distinct ids labelled by first position', () => {

@@ -167,6 +167,24 @@ export function buildEscapeIntent(): OperatorSetterIntent {
   return { name: 'operatorEscapeVillain', args: {} };
 }
 
+// why: the viewer's own seat is marked so a "Move a card" pick can't land in the
+// bot's hand by mistake (live operator match dmV240-Qb8j, 7.2.5). Other seats keep
+// their plain number: the client has no per-seat bot flag, and an operator match
+// may leave an open human seat, so it never guesses "Bot Ally".
+/**
+ * The seat label for the setter lists: "You (Player N)" for the viewer, else "Player N".
+ *
+ * @param seatPlayerId The seat being labelled.
+ * @param viewerPlayerId The viewer's own seat.
+ * @returns The seat label.
+ */
+export function seatLabel(seatPlayerId: string, viewerPlayerId: string): string {
+  if (seatPlayerId === viewerPlayerId) {
+    return `You (Player ${seatPlayerId})`;
+  }
+  return `Player ${seatPlayerId}`;
+}
+
 /**
  * The display name of a card, or its raw id when the view has no entry.
  *
@@ -185,6 +203,7 @@ function cardName(cardId: string, view: OperatorView): string {
  * @param zone The zone name.
  * @param cardIds The zone's cards.
  * @param view The operator view, for card names.
+ * @param viewerPlayerId The viewer's own seat, for the seat label.
  * @returns One source entry per card.
  */
 function buildSeatZoneSources(
@@ -192,6 +211,7 @@ function buildSeatZoneSources(
   zone: OperatorPlayerZoneName,
   cardIds: readonly string[],
   view: OperatorView,
+  viewerPlayerId: string,
 ): OperatorCardSource[] {
   const sources: OperatorCardSource[] = [];
   for (const cardId of cardIds) {
@@ -201,7 +221,7 @@ function buildSeatZoneSources(
       key: `${seat.playerId}|${zone}|${cardId}`,
       cardId,
       from: { zone, playerId: seat.playerId },
-      label: `Player ${seat.playerId} · ${SOURCE_ZONE_LABEL[zone]} · ${cardName(cardId, view)}`,
+      label: `${seatLabel(seat.playerId, viewerPlayerId)} · ${SOURCE_ZONE_LABEL[zone]} · ${cardName(cardId, view)}`,
     });
   }
   return sources;
@@ -212,16 +232,17 @@ function buildSeatZoneSources(
  * order, then the top of each non-empty supply.
  *
  * @param view The operator view.
+ * @param viewerPlayerId The viewer's own seat, for the seat label.
  * @returns The source entries, in list order.
  */
-export function buildCardSources(view: OperatorView): OperatorCardSource[] {
+export function buildCardSources(view: OperatorView, viewerPlayerId: string): OperatorCardSource[] {
   const sources: OperatorCardSource[] = [];
   for (const seat of view.seats) {
-    sources.push(...buildSeatZoneSources(seat, 'hand', seat.hand, view));
-    sources.push(...buildSeatZoneSources(seat, 'deck', seat.deckTopFirst, view));
-    sources.push(...buildSeatZoneSources(seat, 'discard', seat.discard, view));
-    sources.push(...buildSeatZoneSources(seat, 'inPlay', seat.inPlay, view));
-    sources.push(...buildSeatZoneSources(seat, 'victory', seat.victory, view));
+    sources.push(...buildSeatZoneSources(seat, 'hand', seat.hand, view, viewerPlayerId));
+    sources.push(...buildSeatZoneSources(seat, 'deck', seat.deckTopFirst, view, viewerPlayerId));
+    sources.push(...buildSeatZoneSources(seat, 'discard', seat.discard, view, viewerPlayerId));
+    sources.push(...buildSeatZoneSources(seat, 'inPlay', seat.inPlay, view, viewerPlayerId));
+    sources.push(...buildSeatZoneSources(seat, 'victory', seat.victory, view, viewerPlayerId));
   }
   for (const pile of OPERATOR_SUPPLY_PILES) {
     if (view.supplyCounts[pile] > 0) {
@@ -241,16 +262,17 @@ export function buildCardSources(view: OperatorView): OperatorCardSource[] {
  * per seat, then the KO pile.
  *
  * @param view The operator view.
+ * @param viewerPlayerId The viewer's own seat, for the seat label.
  * @returns The destination entries, in list order.
  */
-export function buildDestinations(view: OperatorView): OperatorDestination[] {
+export function buildDestinations(view: OperatorView, viewerPlayerId: string): OperatorDestination[] {
   const destinations: OperatorDestination[] = [];
   for (const seat of view.seats) {
     for (const zone of DESTINATION_ZONES) {
       destinations.push({
         key: `${seat.playerId}|${zone}`,
         ref: { zone, playerId: seat.playerId },
-        label: `Player ${seat.playerId} · ${DESTINATION_ZONE_LABEL[zone]}`,
+        label: `${seatLabel(seat.playerId, viewerPlayerId)} · ${DESTINATION_ZONE_LABEL[zone]}`,
       });
     }
   }

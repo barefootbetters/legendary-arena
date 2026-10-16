@@ -109,8 +109,8 @@ export default defineComponent({
       amount: 1,
     });
 
-    const cardSources = computed(() => buildCardSources(props.operatorView));
-    const destinations = computed(() => buildDestinations(props.operatorView));
+    const cardSources = computed(() => buildCardSources(props.operatorView, props.playerId));
+    const destinations = computed(() => buildDestinations(props.operatorView, props.playerId));
     const villainOptions = computed(() =>
       buildDeckCardOptions(props.operatorView.villainDeckTopFirst, props.operatorView),
     );
