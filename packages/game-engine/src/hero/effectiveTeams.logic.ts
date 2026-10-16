@@ -5,7 +5,8 @@
  * `G.cardTraits[id].team` PLUS any team in `G.cardCopiedTeams[id]`. The copied-team
  * grant is realized here at team-read time. Today the only writer of
  * `G.cardCopiedTeams` is Rogue's Copy Powers (D-24391 / WP-582 — a full duplicate of
- * the copied Hero, so the Copy Powers card counts as the copied Hero's team).
+ * the copied Hero, so the Copy Powers card counts as the copied Hero's team). The map is
+ * deleted at end-of-turn cleanup (D-24730), so a copied team lasts for one play.
  *
  * This module is the SINGLE effective-team source for hero team-synergy. The
  * `requiresTeam` read in heroConditions.evaluate.ts derives team membership from these

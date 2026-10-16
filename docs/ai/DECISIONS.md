@@ -48424,4 +48424,27 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 **Reserved by:** NUMBER-LEDGER D-24729. Related: D-24726 (the live-verify this closes the gap for), D-24724, D-24391, D-24290 (Baron Zemo), D-24353 (Maestro), D-24693 (KO lines name their zone).
 
 ---
+
+### D-24730 — Copy Powers' copied class and team last for one play of the card (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** Operator match `L3yPdfS179l` (server build `7ae1baa2`). On turn 6, Copy Powers #0 copied Crazed Rampage (Strength). On turn 16 the same card copied Silent Sniper (Covert, Avengers), yet at 16.2.8 Borrowed Brawn's "Strength: +3 attack" fired with that Copy Powers as the only other Strength Hero, and at 16.2.10 Maestro counted "Copy Powers (played, granted strength)". The D-24729 named-card log line is what exposed it. `applyCopyPowers` wrote the copied class into `G.cardSizeChangingClasses[sourceCardId]` and the copied team into `G.cardCopiedTeams[sourceCardId]`, keyed by card instance, and nothing removed either entry. So Copy Powers kept every class and team it had ever copied for the rest of the game. `cardSizeChangingClasses` also holds the setup-time Size-Changing grants, which are printed and must stay, so that map could not simply be cleared.
+
+**Decision.**
+1. **New G field `cardCopiedClasses?: Record<CardExtId, string[]>`.** `applyCopyPowers` writes the copied class here instead of `cardSizeChangingClasses`. It is lazy and omit-when-empty, like `cardCopiedTeams`. `cardSizeChangingClasses` is now built at setup only and never written at runtime.
+2. **Turn-scoped.** `applyEndOfTurnCleanup` gains Step 7, `clearCopyPowersGrants`, which deletes `cardCopiedClasses` and `cardCopiedTeams` outright. Only the active player plays cards, so the whole map belongs to the turn that is ending. Deleting the keys (not emptying them) returns the state to the omit-when-empty shape. `applyEndOfTurnCleanup` is the single turn-end site for both live paths and all three bgio-bypassing harnesses, so nothing else needs the clear. The grant lasts until turn end, not until the card leaves play: a played card that moved elsewhere still counts as "played this turn" (D-24692), so the copy keeps counting for the rest of that turn.
+3. **Single sources kept.** `cardHasClassWhenPlayed` stays the one effective-class source (D-24074): printed class, Size-Changing grant (`getGrantedClasses`), or this play's copy (new `getCopiedClasses`). `cardHasTeamWhenPlayed` stays the one effective-team source (D-24391) and is unchanged. The two class-set readers that walked `getGrantedClasses` directly (`countDistinctHeroClassesYouHave` and its diagnostics mirror in `heroCountSource.resolve.ts`) also add `getCopiedClasses`, so Copy Powers still contributes its copied color there.
+4. **Side fix: a copy is not Size-Changing.** `cheapOrSizeChangingAtLeast` and its failure count treat "has any `getGrantedClasses` entry" as Size-Changing. Their own comment said that map was distinct from Copy Powers' maps, but it wasn't, so a 5-cost Copy Powers that copied a classed Hero counted as cheap-or-Size-Changing. Moving the copy to its own map makes the comment true.
+5. **Log text unchanged.** The D-24729 label `(played, granted <class>)` still covers both Copy Powers and Size-Changing.
+
+**Hashes.** `cardCopiedClasses` is lazily created only when Copy Powers copies a classed Hero, and both copy maps are deleted at turn end, so games without Copy Powers have the same G shape as before. No pinned replay (`sentinel-core-doom-2p`, the `PRE_WP080_HASH` fixtures, PAR / seed pins) plays Copy Powers. No re-pin; the full test run confirms it.
+
+**Tests.** New `hero/copyPowersPerPlay.test.ts` runs the real chain (`applyCopyPowers`, `applyEndOfTurnCleanup`, then the readers) across two turns: cleanup deletes both copy maps and keeps the Size-Changing grant; a Strength copy then a later Covert copy counts as Covert only; Borrowed Brawn's Strength gate does not fire off the stale copy but does off a same-turn one; Maestro's line names only Borrowed Brawn; Baron Zemo does not count a stale Avengers copy; a Copy Powers copy is not Size-Changing (with a positive control); a Size-Changing card's setup grant applies on every play. With the Step 7 clear commented out, five of the eight fail. The Copy Powers fixtures in `copyPowersChoice.resolve.test.ts`, `villainEffects.execute.test.ts` and `villainDefeatRequirement.logic.test.ts` now seed and assert `cardCopiedClasses`, since that is where the copy is written.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5265 → 5273); no generated-artifact churn.
+
+**Live re-check.** In an operator match, have one Copy Powers copy a Strength Hero, then on a later turn copy a non-Strength Hero and fight Maestro: his named-card line must not list Copy Powers.
+
+**Reserved by:** NUMBER-LEDGER D-24730. Related: D-24345 (Copy Powers), D-24391 (copied team), D-24074 (Size-Changing), D-24724 / D-24726 (villain reads count the copy), D-24729 (the log line that exposed this), D-24520 (end-of-turn cleanup).
+
+---
 Protect this file.

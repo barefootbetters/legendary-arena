@@ -34,7 +34,7 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // why: WP-711 / D-24534 — the per-hero-class-played count sources match a played card's
 // class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
 // the class analogue of cardCountsAsTeamMember used by the team sources.
-import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
 import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
@@ -700,7 +700,10 @@ function collectDistinctHeroClassCards(
     const hasSecondClass =
       traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0;
     // why: D-24074 — a Size-Changing card contributes each granted class too.
-    const hasGrantedClass = getGrantedClasses(G, playedCardId as CardExtId).length > 0;
+    // why: D-24730 — and Copy Powers contributes the class it copied this play.
+    const hasGrantedClass =
+      getGrantedClasses(G, playedCardId as CardExtId).length > 0 ||
+      getCopiedClasses(G, playedCardId as CardExtId).length > 0;
     if (hasPrintedClass || hasSecondClass || hasGrantedClass) {
       matchedCardIds.push(playedCardId as CardExtId);
     }

@@ -1643,15 +1643,16 @@ function cardTraitMatches(
  * Hero Class (printed hc / hc2 OR a class granted when played) and its effective team
  * (printed team OR a team granted when played).
  *
- * @param G - Game state (reads G.cardTraits, G.cardSizeChangingClasses and G.cardCopiedTeams).
+ * @param G - Game state (reads G.cardTraits, G.cardSizeChangingClasses, G.cardCopiedClasses and G.cardCopiedTeams).
  * @param playedCardId - The in-play card being tested.
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
  * @returns True when the played card matches the predicate.
  */
 // why: D-24724 — a played card counts as each class it was granted on play: Rogue's Copy
-// Powers ("This card is both Covert and the color you copy") and Size-Changing both write
-// G.cardSizeChangingClasses, and cardHasClassWhenPlayed is the single effective-class source
+// Powers ("This card is both Covert and the color you copy", G.cardCopiedClasses since
+// D-24730) and Size-Changing (G.cardSizeChangingClasses) both grant one, and
+// cardHasClassWhenPlayed is the single effective-class source
 // (D-24074). Reading raw G.cardTraits here undercounted Maestro (live match kIZGg6MXhua).
 // The hand stays on offPlayCardTraits (a grant applies only in play).
 // why: D-24726 — the team half of the same fix: Copy Powers is a full duplicate and also

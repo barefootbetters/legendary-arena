@@ -42,6 +42,8 @@ import { composeDeckReshuffledNarrative } from '../events/notableEvents.compose.
  *      it runs AFTER the discard so the chosen X-Men Hero (played or held) has moved to
  *      discard where the injection helper can find it, and AFTER the fill so it
  *      lands as the extra (seventh) card on top of the fresh hand.
+ *   6. Return teleport-on-discard cards set aside this turn (D-24526).
+ *   7. Delete this turn's Copy Powers copied-class / copied-team grants (D-24730).
  *
  * // why: D-24520 — the draw is at END of turn (this function), not the former
  * start-of-turn onBegin auto-draw, so a player holds their hand during
@@ -107,6 +109,32 @@ export function applyEndOfTurnCleanup(
   // per turn-end at EVERY path (both live turn-end sub-paths + all bgio-bypassing harnesses),
   // so this single co-located drain covers them all — no per-harness replication needed.
   consumeTeleportReturns(G);
+
+  // Step 7: end every Copy Powers copy made this turn (D-24730).
+  clearCopyPowersGrants(G);
+}
+
+/**
+ * Deletes the turn-scoped Copy Powers grant maps (D-24730).
+ *
+ * // why: Copy Powers counts as the copied Hero's class and team for that one play
+ * only. Both maps are keyed by card instance, so a grant left in place would follow the
+ * card into its next play (live L3yPdfS179l: a Copy Powers that copied a Strength Hero
+ * on turn 6 still counted as Strength when it copied a Covert Hero on turn 16). Only the
+ * active player plays cards, so dropping every entry at that player's turn end clears
+ * exactly this turn's copies. The keys are deleted, not emptied, so a game returns to
+ * the omit-when-empty shape. The setup Size-Changing grants in cardSizeChangingClasses
+ * are printed and stay.
+ *
+ * @param G - Game state, mutated in place.
+ */
+function clearCopyPowersGrants(G: LegendaryGameState): void {
+  if (G.cardCopiedClasses !== undefined) {
+    delete G.cardCopiedClasses;
+  }
+  if (G.cardCopiedTeams !== undefined) {
+    delete G.cardCopiedTeams;
+  }
 }
 
 /**
