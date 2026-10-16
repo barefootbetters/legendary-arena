@@ -1313,6 +1313,30 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     assert.equal(G.piles.wounds.length, 1);
   });
 
+  it('D-24724 a Copy Powers copy of a Strength Hero satisfies a Strength reveal (Zzzax); an unconverted Copy Powers does not', () => {
+    // why: D-24724 — the copied class lives in G.cardSizeChangingClasses, not G.cardTraits, so
+    // the in-play read must go through the effective-class source (cardHasClassWhenPlayed).
+    const COPY_A = 'core/rogue/copy-powers#0' as CardExtId;
+    const COPY_B = 'core/rogue/copy-powers#1' as CardExtId;
+    const G = makeG({
+      hooks: [rowHook('v-zzzax', 'onFight', 'hero-class', 'strength')],
+      playerZones: {
+        '0': zone([PLAIN], [COPY_A]), // Copy Powers copied a Strength Hero → reveals
+        '1': zone([PLAIN], [COPY_B]), // Copy Powers with no Strength grant → wounded
+      },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: {
+        ...TRAITS,
+        [COPY_A]: { heroClass: 'covert', team: 'x-men' },
+        [COPY_B]: { heroClass: 'covert', team: 'x-men' },
+      },
+    });
+    G.cardSizeChangingClasses = { [COPY_A]: ['strength'], [COPY_B]: ['ranged'] };
+    executeVillainAbilities(G, CTX, 'v-zzzax' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'the granted Strength class reveals — no wound');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'a Ranged grant is not Strength → wounded');
+  });
+
   it('WP-646 an onAmbush reveal emits one strikeBlocked (ambush) for the revealing player; a wounded player gets none', () => {
     const G = makeG({
       hooks: [rowHook('v-ambusher', 'onAmbush', 'team', 'x-men')],
@@ -1731,6 +1755,32 @@ describe('executeVillainAbilities — ko-heroes-current-by-trait (WP-485 / D-242
     assert.match(G.messages![0]!.text, /Fight effect: KO'd 0 of your shield Hero\(es\)\./);
     assert.equal(G.messages![0]!.outcome, 'blocked');
   });
+
+  it('D-24724 a hero-class predicate KOs an in-play card through its granted class', () => {
+    const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+    const G = makeG({
+      hooks: [
+        {
+          cardId: 'v-class-ko' as CardExtId,
+          timing: 'onFight',
+          keywords: [],
+          effects: [
+            { primitive: 'ko-heroes-current-by-trait', requireKind: 'hero-class', requireValue: 'ranged' },
+          ],
+        },
+      ],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [COPY_POWERS, OTHER], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: { ...TRAITS, [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' } },
+      messages: [],
+    });
+    G.cardSizeChangingClasses = { [COPY_POWERS]: ['ranged'] };
+    executeVillainAbilities(G, CTX, 'v-class-ko' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [COPY_POWERS], 'Copy Powers as Ranged is KO’d; the covert X-Men Hero stays');
+    assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER]);
+  });
 });
 
 describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 / D-24353)', () => {
@@ -1864,6 +1914,35 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
       [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
       'both in-play Strength Heroes counted',
     );
+  });
+
+  it('D-24724 Copy Powers copying a Strength Hero counts as a second Strength Hero (live match kIZGg6MXhua)', () => {
+    // why: D-24724 — Rogue's Copy Powers "is both Covert and the color you copy"; applyCopyPowers
+    // grants the copied class into G.cardSizeChangingClasses, so Perfect Teamwork (Strength) plus
+    // Copy Powers copying it is TWO Strength Heroes in play. The raw printed read owed only 1.
+    const PERFECT_TEAMWORK = 'core/captain-america/perfect-teamwork#0' as CardExtId;
+    const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+    const G = makeG({
+      hooks: [maestroHook()],
+      playerZones: {
+        '0': { deck: [], hand: [RANGED, COVERT], discard: [], inPlay: [PERFECT_TEAMWORK, COPY_POWERS], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: {
+        ...TRAITS,
+        [PERFECT_TEAMWORK]: { heroClass: 'strength', team: 'avengers' },
+        [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' },
+      },
+      messages: [],
+    });
+    G.cardSizeChangingClasses = { [COPY_POWERS]: ['strength'] };
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(
+      G.pendingKoHeroChoices,
+      [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
+      'owed = 2: the printed Strength Hero plus Copy Powers as Strength',
+    );
+    assert.match(G.messages.at(-1)!.text, /KO 2 of your Heroes \(one per your strength Hero\)/);
   });
 
   it('AC-4 discard is out of scope — a discarded Strength Hero adds no count', () => {

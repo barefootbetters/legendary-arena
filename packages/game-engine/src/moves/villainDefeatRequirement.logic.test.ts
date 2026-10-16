@@ -179,3 +179,21 @@ describe('playerMeetsDefeatRequirement — a split card Penumbra played both-sid
     assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), true, 'marked: face b is covert');
   });
 });
+
+describe('playerMeetsDefeatRequirement — a class granted on play (D-24724)', () => {
+  const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+  const TECH_ONLY = { [COPY_POWERS]: { heroClass: 'tech', team: 'x-men' } };
+
+  it('an in-play card meets a hero-class requirement through its granted class', () => {
+    const state = makeState({ inPlay: [COPY_POWERS], traits: TECH_ONLY });
+    assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), false, 'printed tech only');
+    state.cardSizeChangingClasses = { [COPY_POWERS]: ['covert'] };
+    assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), true, 'granted covert counts in play');
+  });
+
+  it('a granted class does not count for a card in hand (the grant applies only in play)', () => {
+    const state = makeState({ hand: [COPY_POWERS], traits: TECH_ONLY });
+    state.cardSizeChangingClasses = { [COPY_POWERS]: ['covert'] };
+    assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), false);
+  });
+});

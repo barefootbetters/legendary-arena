@@ -20,6 +20,7 @@ import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, 
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 import { offPlayCardTraits, playedCardIdsStillInPlay } from '../hero/splitCard.logic.js';
+import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import type {
   VillainAbilityTiming,
   VillainAbilityHook,
@@ -1636,6 +1637,33 @@ function cardTraitMatches(
   return trait.heroClass === value || trait.heroClass2 === value;
 }
 
+/**
+ * Returns whether a card IN PLAY matches the trait predicate, counting its effective
+ * Hero Class (printed hc / hc2 OR a class granted when played).
+ *
+ * @param G - Game state (reads G.cardTraits and G.cardSizeChangingClasses).
+ * @param playedCardId - The in-play card being tested.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug to match.
+ * @returns True when the played card matches the predicate.
+ */
+// why: D-24724 — a played card counts as each class it was granted on play: Rogue's Copy
+// Powers ("This card is both Covert and the color you copy") and Size-Changing both write
+// G.cardSizeChangingClasses, and cardHasClassWhenPlayed is the single effective-class source
+// (D-24074). Reading raw G.cardTraits here undercounted Maestro (live match kIZGg6MXhua).
+// The team branch is unchanged; the hand stays on offPlayCardTraits (a grant applies only in play).
+function playedCardTraitMatches(
+  G: LegendaryGameState,
+  playedCardId: CardExtId,
+  kind: 'team' | 'hero-class',
+  value: string,
+): boolean {
+  if (kind === 'hero-class') {
+    return cardHasClassWhenPlayed(G, playedCardId, value);
+  }
+  return cardTraitMatches(G.cardTraits[playedCardId], kind, value);
+}
+
 // why: D-24281 (AMENDED 2026-07-31) — scans HAND + IN-PLAY, matching the D-24076
 // defeat-requirement's `playerMeetsDefeatRequirement` scope. WP-469 originally
 // shipped this HAND-ONLY ("the printed reveal is a hand action"), but the
@@ -1671,7 +1699,7 @@ function playerHasHeroMatchingTrait(
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
   for (const playedCardId of playedCardIdsStillInPlay(G, zones.inPlay)) {
-    if (cardTraitMatches(G.cardTraits[playedCardId], kind, value)) {
+    if (playedCardTraitMatches(G, playedCardId, kind, value)) {
       return true;
     }
   }
@@ -1709,7 +1737,7 @@ function countPlayerHeroesMatchingTrait(
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
   for (const playedCardId of playedCardIdsStillInPlay(G, zones.inPlay)) {
-    if (cardTraitMatches(G.cardTraits[playedCardId], kind, value)) {
+    if (playedCardTraitMatches(G, playedCardId, kind, value)) {
       count += 1;
     }
   }
@@ -2515,20 +2543,22 @@ const BASIC_SHIELD_EXT_IDS: ReadonlySet<CardExtId> = new Set([
  * UNCHANGED, so the corpus-wide `[team:shield]` synergies and Baron Zemo's
  * rescue-by-count are unaffected (narrow fix — operator ruling 2026-08-03).
  *
- * @param trait - The card's trait entry (the off-play view for a hand card), or undefined.
+ * @param isTraitMatch - Whether the card already matches the predicate (the zone's own read).
  * @param cardId - The card being tested.
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
  * @returns True if the card matches the trait, or is a basic S.H.I.E.L.D. card
  *   under a `team:shield` predicate.
  */
+// why: D-24724 — the caller passes the zone's own match (off-play traits for the hand, the
+// effective class for in-play), so this helper adds only the basic-S.H.I.E.L.D. widening.
 function koHeroMatchesTraitOrBasicShield(
-  trait: CardTraitEntry | undefined,
+  isTraitMatch: boolean,
   cardId: CardExtId,
   kind: 'team' | 'hero-class',
   value: string,
 ): boolean {
-  if (cardTraitMatches(trait, kind, value)) {
+  if (isTraitMatch) {
     return true;
   }
   // why: only a team:shield predicate rescues the teamless basic-S.H.I.E.L.D. cards;
@@ -2578,7 +2608,8 @@ function villainEffectKoHeroesCurrentByTrait(
   // why: WP-772 / D-24604 — the hand is off play, so a split card there matches on either half's
   // class (via the split-face map); the in-play loop below keeps the chosen face only.
   for (const cardId of zones.hand) {
-    if (koHeroMatchesTraitOrBasicShield(offPlayCardTraits(G, cardId), cardId, requireKind, requireValue)) {
+    const isHandMatch = cardTraitMatches(offPlayCardTraits(G, cardId), requireKind, requireValue);
+    if (koHeroMatchesTraitOrBasicShield(isHandMatch, cardId, requireKind, requireValue)) {
       targets.push(cardId);
       targetZones.push('hand');
     } else {
@@ -2587,7 +2618,8 @@ function villainEffectKoHeroesCurrentByTrait(
   }
   const remainingInPlay: CardExtId[] = [];
   for (const cardId of zones.inPlay) {
-    if (koHeroMatchesTraitOrBasicShield(G.cardTraits[cardId], cardId, requireKind, requireValue)) {
+    const isInPlayMatch = playedCardTraitMatches(G, cardId, requireKind, requireValue);
+    if (koHeroMatchesTraitOrBasicShield(isInPlayMatch, cardId, requireKind, requireValue)) {
       targets.push(cardId);
       targetZones.push('inPlay');
     } else {

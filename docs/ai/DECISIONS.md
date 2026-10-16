@@ -48320,4 +48320,25 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 **Reserved by:** NUMBER-LEDGER D-24723. Related: D-24690, D-19701, D-20601, D-24003, D-24004.
 
 ---
+
+### D-24724 — Villain-side in-play hero-class reads count a class granted on play (Copy Powers, Size-Changing) (direct fix, no WP) (Active 2026-10-15)
+
+**Context.** In 2p match `kIZGg6MXhua` (build `9e62c96`, Dr. Doom / Negative Zone Prison Breakout), Player 1 twice played Perfect Teamwork (Strength) and Rogue's Copy Powers copying it ("This card is both Covert and the color you copy"), then fought Maestro ("Fight: For each of your [Strength] Heroes, KO one of your Heroes"). Both times (11.2.x, 23.2.x) the log read "KO 1 of your Heroes (one per your strength Hero)". It should have owed 2. `applyCopyPowers` and Size-Changing write the granted class into `G.cardSizeChangingClasses`, and `cardHasClassWhenPlayed` (`hero/sizeChanging.logic.ts`) is the single effective-class source (D-24074). The hero-side reads already go through it. The villain-side reads tested in-play cards against the raw printed `G.cardTraits` instead.
+
+**Decision.**
+1. **`villainEffects.execute.ts`.** A new `playedCardTraitMatches(G, playedCardId, kind, value)` routes the `hero-class` branch through `cardHasClassWhenPlayed` (printed hc / hc2 OR granted) and leaves the `team` branch on `cardTraitMatches`. The in-play loops of `playerHasHeroMatchingTrait` (reveal-or-wound: Sabretooth, Frost Giant, Ymir, Ultron, Zzzax) and `countPlayerHeroesMatchingTrait` (Maestro, Baron Zemo) use it. So does the in-play loop of `ko-heroes-current-by-trait`: `koHeroMatchesTraitOrBasicShield` now takes the zone's precomputed match and adds only the D-24296 basic-S.H.I.E.L.D. widening.
+2. **`villainDefeatRequirement.logic.ts`.** `playerMeetsDefeatRequirement` gets the same in-play hero-class read. It is the same raw read behind a different gate.
+3. **Unchanged.** The hand reads stay on `offPlayCardTraits`, because a played-card grant applies only in play. Team predicates stay on printed team. The Copy Powers team grant (`cardCopiedTeams`, D-24391) is not read villain-side; that is a separate question, not settled here. The mastermind, tactic, and scheme-twist trait reads scan the hand or HQ only, so they are off play and unaffected. No G field, no re-pin.
+
+**Tests (new, all fail on the pre-fix source).**
+- `villainEffects.execute.test.ts`: Maestro owes 2 with Perfect Teamwork plus Copy Powers-as-Strength in play. A Strength reveal-or-wound (Zzzax) is satisfied by a Copy Powers copy of a Strength Hero, and a Ranged grant still wounds. A hero-class `ko-heroes-current-by-trait` KOs Copy Powers through its granted class.
+- `villainDefeatRequirement.logic.test.ts`: an in-play card meets a hero-class requirement through its granted class, and the same card in hand does not.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5254 → 5259); no generated-artifact churn.
+
+**Live-verify (D-24026): pending.** Maestro's row in `docs/ai/coverage/live-verify.json` (currently "partial", PR #2815) needs one more live fight with Copy Powers copying a Strength Hero after this deploys.
+
+**Reserved by:** NUMBER-LEDGER D-24724. Related: D-24074 (Size-Changing effective class), D-24345 / D-24391 (Copy Powers), D-24353 / WP-544 (Maestro), D-24281 (reveal-or-wound), D-24290 / D-24296 (KO-by-trait), D-24076 (defeat requirement), D-24687 (the re-verify pass that surfaced it).
+
+---
 Protect this file.
