@@ -48376,7 +48376,7 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5259 → 5263); no generated-artifact churn.
 
-**Live-verify (D-24026): pending.** Baron Zemo's row in `docs/ai/coverage/live-verify.json` stays "verified" (its evidence never involved Copy Powers). The live check is a Zemo fight with Copy Powers copying an Avengers Hero, which should count one more Avenger.
+**Live-verify (D-24026), 2026-10-16: PASS.** Match `SoDnMI9IjqU` (server build `20dcd923`, 2p operator match, Dr. Doom / Negative Zone Prison Breakout). On turn 27 Player 0 played A Day Unlike Any Other (the only printed Avenger played) and Copy Powers copying it (27.2.1–27.2.4), then fought Baron Zemo. Zemo rescued 2, "one per your avengers Hero" (27.2.9), which is one printed Avenger plus Copy Powers. The log does not list the two hand cards Player 0 left unplayed that turn, and Zemo also counts the hand. They are read as Wounds: Player 0 played every Hero card drawn on every other turn, and was carrying five Crazed Rampage / Zzzax Wounds at the time. A baseline fight earlier in the same match (turn 6: Diving Block + Dangerous Rescue, empty hand) rescued 2. Baron Zemo's row in `live-verify.json` cites both.
 
 **Reserved by:** NUMBER-LEDGER D-24726. Related: D-24724 (the class half), D-24391 (Copy Powers team grant; this closes its deferred parity follow-up for the villain-side reads), D-24290 (Baron Zemo), D-24281 (reveal-or-wound), D-24296 (basic-S.H.I.E.L.D. widening, kept local), D-24076 (defeat requirement), D-24026.
 

@@ -13,7 +13,20 @@
 
 - **arena-client only.** New `lib/operatorSetterIntents.ts` (pure intent and option builders, options valued by stable keys) and `components/play/OperatorSetterPane.vue`; `OperatorBoardPanel.vue` gains optional `submitMove` / `playerId` props, the lazy pane and the set-aside line; `PlayViewport.vue` passes both props; `UiMoveName` gains the six `operator*` names. New dependency `tweakpane` ^4.0.5 (types-only devDependency `@tweakpane/core` 2.0.5). No engine, server, `UIState` or persistence change.
 - **Tests.** arena-client 2364 → 2387 (23 new), every package 0 fail; existing tests additions only; typecheck 0; `tp-rotv` only in the `OperatorSetterPane` chunk. Revert proofs 13/13. 01.6 post-mortem `docs/ai/post-mortems/01.6-WP-807-operator-setter-pane.md`.
-- **Live-verify (D-24026): pending, covers WP-806 + WP-807.** After deploy, signed in as `jefferyjjensen`, in a fresh 2p operator match, run WP-807 §Verification 1–9 and record the match id here.
+- **Live-verify (D-24026): partial, covers WP-806 + WP-807.** Operator match `9IQsWa-F-t-` (2026-10-16, server and client `20dcd923`, Dr. Doom / Negative Zone Prison Breakout, 2p with a bot ally; log `C:\pcloud\matches\Core\DrDoom\doom-NegativeZone-LOG-2p.txt`). Verified in play, each with its "Operator:" log line:
+  - Turn economy, 10 submits (Recruit and Attack, +15 to +20; 2.2.7 … 24.2.18);
+  - Hero deck to top: Diving Block (10.2.9) and Steal Abilities (10.2.21), each recruited later;
+  - Hero deck to HQ space 1: Diving Block #1, with the displaced Repulsor Rays to the hero-deck bottom (22.2.17), recruited at 24.2.19.
+  The game played normally around the setters and ended in a win (31.3.1).
+  - **Second match `TV8XzB3YMDF`** (same build and lineup, won at 22.3.1):
+    - Villain deck to top: Baron Zemo moved to the top at 5.2.1. The next reveal, on the bot's turn, brought him into the City at 6.1.1.
+    - Supply count: `Operator: Bystander supply set to 0 (was 29).` at 5.2.8. Every later Bystander rescue logs "the Bystander supply is empty", including Zemo's fight at 11.2.8, so the Zemo count could not be observed.
+  - **D-24726: PASS** in match `SoDnMI9IjqU` (same build). Zemo was moved to the villain-deck top (4.2.7) and revealed at 5.1.1. A Day Unlike Any Other plus Copy Powers copying it rescued 2 at 27.2.9. A turn-6 baseline with two printed Avengers rescued 2. See D-24726.
+  - **Still pending:**
+    - the set-aside line (not visible in the log);
+    - reveal now, and Escape;
+    - the Move-a-card supply / KO / between-player routes;
+    - disabled buttons on the bot's turn.
 
 ### WP-303 / EC-851 — Play a saved loadout from the profile (D-24722) (2026-10-14)
 
