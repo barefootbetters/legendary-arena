@@ -17,7 +17,16 @@
   - Turn economy, 10 submits (Recruit and Attack, +15 to +20; 2.2.7 … 24.2.18);
   - Hero deck to top: Diving Block (10.2.9) and Steal Abilities (10.2.21), each recruited later;
   - Hero deck to HQ space 1: Diving Block #1, with the displaced Repulsor Rays to the hero-deck bottom (22.2.17), recruited at 24.2.19.
-  The game played normally around the setters and ended in a win (31.3.1). **Still pending:** Supply count / set-aside line, villain deck to top, reveal now, Escape, the Move-a-card supply / KO / between-player routes, and disabled buttons on the bot's turn. The next operator match stages the D-24726 Baron Zemo + Copy Powers check through Move a card.
+  The game played normally around the setters and ended in a win (31.3.1).
+  - **Second match `TV8XzB3YMDF`** (same build and lineup, won at 22.3.1):
+    - Villain deck to top: Baron Zemo moved to the top at 5.2.1. The next reveal, on the bot's turn, brought him into the City at 6.1.1.
+    - Supply count: `Operator: Bystander supply set to 0 (was 29).` at 5.2.8. Every later Bystander rescue logs "the Bystander supply is empty", including Zemo's fight at 11.2.8, so the Zemo count could not be observed.
+  - **Still pending:**
+    - the set-aside line (not visible in the log);
+    - reveal now, and Escape;
+    - the Move-a-card supply / KO / between-player routes;
+    - disabled buttons on the bot's turn;
+    - **D-24726.** Zemo has to be fought with the Bystander supply non-empty and Copy Powers copying an Avenger in Player 0's play. In `TV8XzB3YMDF` the bot recruited Copy Powers; Move a card from Player 1's zone to Player 0's hand is the route for that.
 
 ### WP-303 / EC-851 — Play a saved loadout from the profile (D-24722) (2026-10-14)
 
