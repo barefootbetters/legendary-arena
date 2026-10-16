@@ -16,6 +16,7 @@ import type { CardExtId } from '../state/zones.types.js';
 import type { VillainDefeatRequirement } from '../rules/villainAbility.types.js';
 import { offPlayCardTraits, playedCardIdsStillInPlay } from '../hero/splitCard.logic.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
+import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 
 /**
@@ -76,6 +77,11 @@ export function playerMeetsDefeatRequirement(
     // why: D-24724 — a played card meets a hero-class requirement on its effective class
     // (printed hc / hc2 OR a class granted on play by Copy Powers / Size-Changing, D-24074).
     if (requirement.kind === 'hero-class' && cardHasClassWhenPlayed(state, playedCardId, requirement.value)) {
+      return true;
+    }
+    // why: D-24726 — and a team requirement on its effective team (printed team OR the
+    // copied Hero's team that Copy Powers grants on play, D-24391).
+    if (requirement.kind === 'team' && cardHasTeamWhenPlayed(state, playedCardId, requirement.value)) {
       return true;
     }
     if (traitMeetsDefeatRequirement(state.cardTraits[playedCardId], requirement)) {

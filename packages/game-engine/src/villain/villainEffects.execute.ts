@@ -21,6 +21,7 @@ import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 import { offPlayCardTraits, playedCardIdsStillInPlay } from '../hero/splitCard.logic.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
+import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import type {
   VillainAbilityTiming,
   VillainAbilityHook,
@@ -1639,9 +1640,10 @@ function cardTraitMatches(
 
 /**
  * Returns whether a card IN PLAY matches the trait predicate, counting its effective
- * Hero Class (printed hc / hc2 OR a class granted when played).
+ * Hero Class (printed hc / hc2 OR a class granted when played) and its effective team
+ * (printed team OR a team granted when played).
  *
- * @param G - Game state (reads G.cardTraits and G.cardSizeChangingClasses).
+ * @param G - Game state (reads G.cardTraits, G.cardSizeChangingClasses and G.cardCopiedTeams).
  * @param playedCardId - The in-play card being tested.
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
@@ -1651,7 +1653,12 @@ function cardTraitMatches(
 // Powers ("This card is both Covert and the color you copy") and Size-Changing both write
 // G.cardSizeChangingClasses, and cardHasClassWhenPlayed is the single effective-class source
 // (D-24074). Reading raw G.cardTraits here undercounted Maestro (live match kIZGg6MXhua).
-// The team branch is unchanged; the hand stays on offPlayCardTraits (a grant applies only in play).
+// The hand stays on offPlayCardTraits (a grant applies only in play).
+// why: D-24726 — the team half of the same fix: Copy Powers is a full duplicate and also
+// counts as the copied Hero's team (D-24391, G.cardCopiedTeams), read through
+// cardHasTeamWhenPlayed. Baron Zemo rescued 3, not 4, with Copy Powers copying an Avenger
+// (live match xW_Kmg0UF8s, 27.2.16). Deliberately NOT cardCountsAsTeamMember: the basic
+// S.H.I.E.L.D.-token widening stays local to the Destroyer KO (D-24296).
 function playedCardTraitMatches(
   G: LegendaryGameState,
   playedCardId: CardExtId,
@@ -1661,7 +1668,8 @@ function playedCardTraitMatches(
   if (kind === 'hero-class') {
     return cardHasClassWhenPlayed(G, playedCardId, value);
   }
-  return cardTraitMatches(G.cardTraits[playedCardId], kind, value);
+  // why: the kind union is closed to 'team' | 'hero-class', so the remaining case is 'team'.
+  return cardHasTeamWhenPlayed(G, playedCardId, value);
 }
 
 // why: D-24281 (AMENDED 2026-07-31) — scans HAND + IN-PLAY, matching the D-24076
@@ -2550,8 +2558,8 @@ const BASIC_SHIELD_EXT_IDS: ReadonlySet<CardExtId> = new Set([
  * @returns True if the card matches the trait, or is a basic S.H.I.E.L.D. card
  *   under a `team:shield` predicate.
  */
-// why: D-24724 — the caller passes the zone's own match (off-play traits for the hand, the
-// effective class for in-play), so this helper adds only the basic-S.H.I.E.L.D. widening.
+// why: D-24724 / D-24726 — the caller passes the zone's own match (off-play traits for the hand, the
+// effective class and team for in-play), so this helper adds only the basic-S.H.I.E.L.D. widening.
 function koHeroMatchesTraitOrBasicShield(
   isTraitMatch: boolean,
   cardId: CardExtId,
