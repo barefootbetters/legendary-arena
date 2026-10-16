@@ -48403,4 +48403,25 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 **Reserved by:** NUMBER-LEDGER D-24727. Related: D-24725 (one shared wiki platform), WP-139 (theme lock), D-24293 (JS-free gate and Pagefind).
 
 ---
+
+### D-24729 — Villain trait-count log lines name each counted Hero and where it was counted from (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** The D-24726 live-verify (match `SoDnMI9IjqU`) passed, but its record had to infer that the two cards Player 0 left in hand were Wounds. Baron Zemo's line said only "rescued 2 Bystander(s) (one per your avengers Hero)", and the game log never lists the cards a player leaves unplayed in hand. Both Zemo and Maestro count the hand (off-play traits) plus the cards in play (effective class / team, including what Copy Powers copies, D-24391 / D-24724 / D-24726). From the log alone, a count from a Copy Powers copy and a count from an Avenger left in hand look the same.
+
+**Decision.**
+1. **`villainEffects.execute.ts`.** `countPlayerHeroesMatchingTrait` becomes `listPlayerHeroesMatchingTrait`. It runs the same scan and returns the counted cards, each tagged `hand` or `played`. Both callers use its length as the count, so the counting does not change.
+2. **Log text.** The Zemo rescue line and both Maestro lines (the parked "choose which" line and the auto-KO line) add the counted Heroes after "one per your X Hero:". The Zemo line reads, for example, `rescued 3 Bystander(s) (one per your avengers Hero: Avengers Assemble! (hand), A Day Unlike Any Other (played), Copy Powers (played, copied avengers)).` Names come from `G.cardDisplayData` through the existing `resolveCardDisplayName`.
+3. **Source labels.** A hand card is `(hand)`. A played card whose printed `G.cardTraits` row matches is `(played)`. A played card that matches only through a grant is `(played, copied <team>)` for a team, since Copy Powers is the only team grant, or `(played, granted <class>)` for a class, since Copy Powers or Size-Changing can grant one.
+4. **The copied card itself is not named.** G does not record which Hero Copy Powers copied, and adding a G field to improve a log line isn't worth it. The Copy Powers play line in the same log ("Player 0's Copy Powers copied X.") already names the copied card.
+5. **Supply run-out.** When the Bystander supply runs out before every counted Hero is paid, the Zemo line adds `; the Bystander supply ran out after N`. Otherwise the list would be longer than the rescue and look like a miscount.
+
+**Hashes.** `G.messages` is hashed by `computeStateHash`, but no pinned replay (`sentinel-core-doom-2p`, the `PRE_WP080_HASH` fixtures, PAR / seed pins) fights Baron Zemo or Maestro. No re-pin; the full test run confirms it.
+
+**Tests.** `villainEffects.execute.test.ts` asserts these lines exactly: Zemo with a hand Avenger, a printed played Avenger and Copy Powers counted through its copied team; Maestro's parked line with Copy Powers counted through its granted Strength; and the Maestro auto-KO line with a hand and a played Strength Hero. The existing Zemo / Maestro message assertions are updated to the new text, and the supply-bounded Zemo case asserts the run-out clause.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5263 → 5265); no generated-artifact churn.
+
+**Reserved by:** NUMBER-LEDGER D-24729. Related: D-24726 (the live-verify this closes the gap for), D-24724, D-24391, D-24290 (Baron Zemo), D-24353 (Maestro), D-24693 (KO lines name their zone).
+
+---
 Protect this file.
