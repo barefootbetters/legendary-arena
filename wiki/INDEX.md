@@ -111,9 +111,9 @@ Coordinated subsystems spanning multiple files / phases.
 Abstract data shapes, contracts, and design concepts.
 
 - [Hugo Platform Strategy](hugo-platform-strategy.md) — *(draft)* the
-  family of Hugo sites, the plan to stamp ewikis out of one shared
-  template, the open Hextra-vs-own-theme decision, selling with Snipcart
-  on a static site, and the laptop-to-live publishing flow.
+  family of Hugo sites, the recommendation to converge four forked wiki
+  themes onto one shared platform, a Hextra pilot to pick the theme,
+  selling with Snipcart on a static site, and the laptop-to-live flow.
 - [CardExtId](cardextid.md) — Named `string` alias for card
   identifiers; format `<setAbbr>/<slug>`; the zone-storage
   invariant — every zone in `G` stores `CardExtId` strings only.
