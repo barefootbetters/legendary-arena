@@ -86,9 +86,10 @@ The theme is defined in `apps/wiki-viewer/layouts/` and
 The theme choice is recorded as locked in WP-139 (Open Decision B):
 Docsy and Hextra were both considered and rejected at the time, and a
 move to a third-party theme needs a DECISIONS entry that supersedes the
-lock. D-24725 moves every ewiki onto one shared wiki platform, but the
-engine ewiki keeps this lock and the JS-free gate until a follow-on entry
-picks the platform's theme. It moves last. See
+lock. D-24725 moves every ewiki onto one shared wiki platform, and
+D-24727 makes this theme, extracted into one shared copy, the platform's
+theme, after a Hextra pilot. The lock and the JS-free gate stand. The
+engine ewiki moves onto the shared copy last. See
 [Hugo Platform Strategy](hugo-platform-strategy.md).
 
 ## Interactions
