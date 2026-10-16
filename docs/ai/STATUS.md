@@ -13,7 +13,11 @@
 
 - **arena-client only.** New `lib/operatorSetterIntents.ts` (pure intent and option builders, options valued by stable keys) and `components/play/OperatorSetterPane.vue`; `OperatorBoardPanel.vue` gains optional `submitMove` / `playerId` props, the lazy pane and the set-aside line; `PlayViewport.vue` passes both props; `UiMoveName` gains the six `operator*` names. New dependency `tweakpane` ^4.0.5 (types-only devDependency `@tweakpane/core` 2.0.5). No engine, server, `UIState` or persistence change.
 - **Tests.** arena-client 2364 → 2387 (23 new), every package 0 fail; existing tests additions only; typecheck 0; `tp-rotv` only in the `OperatorSetterPane` chunk. Revert proofs 13/13. 01.6 post-mortem `docs/ai/post-mortems/01.6-WP-807-operator-setter-pane.md`.
-- **Live-verify (D-24026): pending, covers WP-806 + WP-807.** After deploy, signed in as `jefferyjjensen`, in a fresh 2p operator match, run WP-807 §Verification 1–9 and record the match id here.
+- **Live-verify (D-24026): partial, covers WP-806 + WP-807.** Operator match `9IQsWa-F-t-` (2026-10-16, server and client `20dcd923`, Dr. Doom / Negative Zone Prison Breakout, 2p with a bot ally; log `C:\pcloud\matches\Core\DrDoom\doom-NegativeZone-LOG-2p.txt`). Verified in play, each with its "Operator:" log line:
+  - Turn economy, 10 submits (Recruit and Attack, +15 to +20; 2.2.7 … 24.2.18);
+  - Hero deck to top: Diving Block (10.2.9) and Steal Abilities (10.2.21), each recruited later;
+  - Hero deck to HQ space 1: Diving Block #1, with the displaced Repulsor Rays to the hero-deck bottom (22.2.17), recruited at 24.2.19.
+  The game played normally around the setters and ended in a win (31.3.1). **Still pending:** Supply count / set-aside line, villain deck to top, reveal now, Escape, the Move-a-card supply / KO / between-player routes, and disabled buttons on the bot's turn. The next operator match stages the D-24726 Baron Zemo + Copy Powers check through Move a card.
 
 ### WP-303 / EC-851 — Play a saved loadout from the profile (D-24722) (2026-10-14)
 
