@@ -347,3 +347,57 @@ describe('OperatorSetterPane (WP-807)', () => {
     assert.equal(host.querySelector('.tp-rotv'), null);
   });
 });
+
+describe('OperatorSetterPane number fields never hold NaN (live match cDfRs-e8CqM)', () => {
+  /**
+   * The text input of the binding with this label.
+   *
+   * @param label The binding label.
+   * @returns The input element.
+   */
+  function numberInput(label: string): HTMLInputElement {
+    return findControl(label) as HTMLInputElement;
+  }
+
+  /**
+   * Type raw text into a binding and fire `change`, as a user edit would.
+   *
+   * @param label The binding label.
+   * @param text The raw text.
+   */
+  function typeText(label: string, text: string): void {
+    const input = numberInput(label);
+    input.value = text;
+    input.dispatchEvent(new window.Event('change'));
+  }
+
+  test('Count, HQ space and Amount render as text fields with no slider', async () => {
+    await mountPane();
+    // why: a slider click on a 0-px track maps 0/0 and stored NaN in Amount.
+    assert.equal(document.querySelectorAll('.tp-sldv').length, 0, 'no slider in the pane');
+    assert.equal(numberInput('Count').value, '0');
+    assert.equal(numberInput('HQ space').value, '1');
+    assert.equal(numberInput('Amount').value, '1');
+  });
+
+  test('an expression that evaluates to NaN snaps Amount back to 1 and still submits', async () => {
+    const { submitted } = await mountPane();
+    typeText('Amount', '0/0');
+    assert.equal(numberInput('Amount').value, '1');
+    assert.deepEqual(clickAndTakeSubmit('Add to this turn', submitted), {
+      name: 'operatorAddEconomy',
+      args: { resource: 'attack', amount: 1 },
+    });
+  });
+
+  test('out-of-range values clamp to the engine limits', async () => {
+    const { submitted } = await mountPane();
+    typeText('Amount', '25');
+    assert.equal(numberInput('Amount').value, '20');
+    assert.deepEqual(clickAndTakeSubmit('Add to this turn', submitted).args, { resource: 'attack', amount: 20 });
+    typeText('HQ space', '9');
+    assert.equal(numberInput('HQ space').value, '5');
+    typeText('Count', '-4');
+    assert.equal(numberInput('Count').value, '0');
+  });
+});

@@ -105,6 +105,27 @@ const DESTINATION_ZONE_LABEL: Readonly<Record<OperatorPlayerZoneName, string>> =
 };
 
 /**
+ * Snap a number-field value to a whole number inside its range.
+ *
+ * // why: a Tweakpane number field can hold NaN — a click on a min/max slider whose
+ * track measures 0 px wide maps 0/0, and the text field evaluates expressions such as
+ * "0/0". The engine refuses a non-integer silently (WP-806), so the setter looked
+ * broken with "NaN" in the field (live operator match cDfRs-e8CqM). Anything not
+ * finite falls back to `min`; anything else is rounded and clamped.
+ *
+ * @param value The field's current value.
+ * @param min The smallest allowed value.
+ * @param max The largest allowed value (Infinity for none).
+ * @returns A whole number in [min, max].
+ */
+export function toWholeNumberInRange(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+  return Math.min(Math.max(Math.round(value), min), max);
+}
+
+/**
  * Build the intent that sets a supply pile to a count.
  *
  * @param pile The supply pile.
