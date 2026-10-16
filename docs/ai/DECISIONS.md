@@ -48548,7 +48548,7 @@ The counter the count needs, `TurnEconomy.cardsDrawn` (WP-665 / D-24476), was in
    - Printed Attack is `fightCost`, or `fightCostBase` for an "N+" Villain; modifiers such as Dark Portals don't count.
 4. **Evil Wins.** Config `resourceLossCondition: { kind: 'pile-depleted', piles: ['wounds', 'monsterPit'] }`, with no twist proxy. `SchemeLossPile` gains `'monsterPit'` (`G.monsterPit`, setup size the printed 8). `SchemeLossKind` gains `'monster-pit'`, and the client labels it "Monster Pit". The log line reads "the Monster Pit has run out". The 8-card Pit empties on Twist 10, the scheme's last twist. Clash leaves the Excluded list.
 
-**Interpretation to confirm (not verified against a published ruling).** A player with no Villain in their Victory Pile has no Gladiator. The engine treats that as weaker than any Monster, so they gain a Wound. The card text doesn't say, and the repo holds no ruling. The other reading, no Gladiator means no comparison and no Wound, is a single branch in `woundPlayerIfGladiatorIsWeaker`.
+**Operator ruling (Jeff, 2026-10-16): no Gladiator gains a Wound.** A player with no Villain in their Victory Pile has no Gladiator, and is treated as weaker than any Monster, so they gain a Wound. The card text doesn't say and no published ruling was found, so this is a house ruling, not a verified one. It lives in one branch of `woundPlayerIfGladiatorIsWeaker`.
 
 **Hashes.** `G.monsterPit` exists only in Clash games, and the villain build config differs from the loadout only for Clash, so every other game is byte-identical. No pinned replay, state hash or PAR seed runs Clash. The full suite passes with no re-pin.
 

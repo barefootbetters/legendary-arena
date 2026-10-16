@@ -853,7 +853,7 @@ function portals(
  * (chooseGladiator: the highest printed Attack), then the Pit's top Monster
  * enters the city, then each player whose Gladiator is weaker gains a Wound. A
  * player with no Villain in their Victory Pile has no Gladiator to match the
- * Monster, so they gain a Wound too.
+ * Monster, so they gain a Wound too (operator ruling, D-24736).
  *
  * @param gameState - Game state to mutate (Pit + city + wounds + log + event).
  * @param context - Reveal context threaded into the Monster's city entry.

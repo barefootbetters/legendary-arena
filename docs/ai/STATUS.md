@@ -12,7 +12,7 @@
 **User-visible on `play.legendary-arena.com` (after deploy).** Clash of the Monsters Unleashed now builds its Wound Stack at 6 per player and a face-down Monster Pit of the 8 Monsters Unleashed Villains. From Twist 3, each player's Gladiator (their highest printed-Attack Villain in the Victory Pile) faces the Monster that climbs out of the Pit and enters the city, Ambush and all. Each player whose Gladiator is weaker gains a Wound. The game is lost when the Wound Stack or the Monster Pit runs out (the Pit empties on Twist 10), and the danger meter can read "Monster Pit".
 
 - **Engine, plus one client label.** New `rules/clashMonsterPit.logic.ts`, the `clash-monster-pit` resolver, a Clash Wound-sizing branch, an omit-when-absent `G.monsterPit`, and a `monsterPit` loss pile with its `monster-pit` meter kind (`menaceDisplay.ts`). Every other game is byte-identical, so nothing was re-pinned.
-- **To confirm.** A player with no Villain in their Victory Pile is treated as having no Gladiator and gains a Wound. The card does not say this outright; see D-24736.
+- **Operator ruling.** A player with no Villain in their Victory Pile has no Gladiator and gains a Wound (Jeff, 2026-10-16; the card does not say, see D-24736).
 - **Tests.** 19 new cases on the shipped `chmp.json`. Full suite 0 fail.
 - **Live re-check (after deploy).** In a 2-player operator match on Clash, the Wound Stack holds 12. Twists 1-2 keep the Pit shut, and Twist 3 sends a Monster into the city with Gladiator lines in the log.
 
