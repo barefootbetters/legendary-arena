@@ -1314,7 +1314,7 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
   });
 
   it('D-24724 a Copy Powers copy of a Strength Hero satisfies a Strength reveal (Zzzax); an unconverted Copy Powers does not', () => {
-    // why: D-24724 — the copied class lives in G.cardSizeChangingClasses, not G.cardTraits, so
+    // why: D-24724 — the copied class lives in G.cardCopiedClasses (D-24730), not G.cardTraits, so
     // the in-play read must go through the effective-class source (cardHasClassWhenPlayed).
     const COPY_A = 'core/rogue/copy-powers#0' as CardExtId;
     const COPY_B = 'core/rogue/copy-powers#1' as CardExtId;
@@ -1331,7 +1331,7 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
         [COPY_B]: { heroClass: 'covert', team: 'x-men' },
       },
     });
-    G.cardSizeChangingClasses = { [COPY_A]: ['strength'], [COPY_B]: ['ranged'] };
+    G.cardCopiedClasses = { [COPY_A]: ['strength'], [COPY_B]: ['ranged'] };
     executeVillainAbilities(G, CTX, 'v-zzzax' as CardExtId, 'onFight');
     assert.equal(G.playerZones['0']!.discard.length, 0, 'the granted Strength class reveals — no wound');
     assert.equal(G.playerZones['1']!.discard.length, 1, 'a Ranged grant is not Strength → wounded');
@@ -1799,7 +1799,7 @@ describe('executeVillainAbilities — ko-heroes-current-by-trait (WP-485 / D-242
       cardTraits: { ...TRAITS, [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' } },
       messages: [],
     });
-    G.cardSizeChangingClasses = { [COPY_POWERS]: ['ranged'] };
+    G.cardCopiedClasses = { [COPY_POWERS]: ['ranged'] };
     executeVillainAbilities(G, CTX, 'v-class-ko' as CardExtId, 'onFight');
     assert.deepStrictEqual(G.ko, [COPY_POWERS], 'Copy Powers as Ranged is KO’d; the covert X-Men Hero stays');
     assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER]);
@@ -1960,7 +1960,7 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
 
   it('D-24724 Copy Powers copying a Strength Hero counts as a second Strength Hero (live match kIZGg6MXhua)', () => {
     // why: D-24724 — Rogue's Copy Powers "is both Covert and the color you copy"; applyCopyPowers
-    // grants the copied class into G.cardSizeChangingClasses, so Perfect Teamwork (Strength) plus
+    // grants the copied class into G.cardCopiedClasses (D-24730), so Perfect Teamwork (Strength) plus
     // Copy Powers copying it is TWO Strength Heroes in play. The raw printed read owed only 1.
     const PERFECT_TEAMWORK = 'core/captain-america/perfect-teamwork#0' as CardExtId;
     const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
@@ -1981,7 +1981,7 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
       },
       messages: [],
     });
-    G.cardSizeChangingClasses = { [COPY_POWERS]: ['strength'] };
+    G.cardCopiedClasses = { [COPY_POWERS]: ['strength'] };
     executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
     assert.deepStrictEqual(
       G.pendingKoHeroChoices,

@@ -187,7 +187,7 @@ describe('playerMeetsDefeatRequirement — a class granted on play (D-24724)', (
   it('an in-play card meets a hero-class requirement through its granted class', () => {
     const state = makeState({ inPlay: [COPY_POWERS], traits: TECH_ONLY });
     assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), false, 'printed tech only');
-    state.cardSizeChangingClasses = { [COPY_POWERS]: ['covert'] };
+    state.cardCopiedClasses = { [COPY_POWERS]: ['covert'] };
     assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), true, 'granted covert counts in play');
   });
 
@@ -204,7 +204,7 @@ describe('playerMeetsDefeatRequirement — a class granted on play (D-24724)', (
 
   it('a granted class does not count for a card in hand (the grant applies only in play)', () => {
     const state = makeState({ hand: [COPY_POWERS], traits: TECH_ONLY });
-    state.cardSizeChangingClasses = { [COPY_POWERS]: ['covert'] };
+    state.cardCopiedClasses = { [COPY_POWERS]: ['covert'] };
     assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), false);
   });
 });

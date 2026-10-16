@@ -4906,7 +4906,7 @@ export function buildCopyPowersTargets(
  *
  * // why (dual-class): Copy Powers "is both covert and the color you copy." Covert is
  * already baked in card data (core.json `hc:covert`); this writes the copied class into
- * the EXISTING runtime `cardSizeChangingClasses` map (D-24074 reuse — no new G field), so
+ * the turn-scoped `cardCopiedClasses` map (D-24730; cleared at end-of-turn cleanup), so
  * every downstream `[hc:<copied>]` gate counts Copy Powers as that class too. cardTraits
  * is never mutated. The class is granted BEFORE the re-fire so Copy Powers already counts
  * as the copied class if the copied ability itself reads classes.
@@ -4930,15 +4930,17 @@ export function applyCopyPowers(
     sourceCardId, // why: WP-438 — the Copy Powers card that produced the copy.
   );
 
-  // Grant the copied class into the existing runtime dual-class map (D-24074 reuse).
+  // why: D-24730 — the copied class goes into the turn-scoped cardCopiedClasses map, not
+  // the setup Size-Changing map: end-of-turn cleanup deletes it, so this play's copy does
+  // not follow the card into its next play.
   const copiedClass = G.cardTraits[chosenHeroId]?.heroClass;
   if (typeof copiedClass === 'string' && copiedClass.length > 0) {
-    if (!G.cardSizeChangingClasses) {
-      G.cardSizeChangingClasses = {};
+    if (!G.cardCopiedClasses) {
+      G.cardCopiedClasses = {};
     }
-    const existingClasses = G.cardSizeChangingClasses[sourceCardId];
+    const existingClasses = G.cardCopiedClasses[sourceCardId];
     if (existingClasses === undefined) {
-      G.cardSizeChangingClasses[sourceCardId] = [copiedClass];
+      G.cardCopiedClasses[sourceCardId] = [copiedClass];
     } else if (!existingClasses.includes(copiedClass)) {
       existingClasses.push(copiedClass);
     }
