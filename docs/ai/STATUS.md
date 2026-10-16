@@ -31,6 +31,15 @@ extra cards too, which also feeds Gamma-Draining Nanites' "if you drew two cards
 - **Tests.** Six new Psychic Link cases and one Electromagnetic Bubble case; the three positive cases fail against the old code.
 - **Live-verify (D-24026): PASS.** Operator match `nQAUnp0T4uY` (server build `6f5a8d1c`, the #2846 merge), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Emma Frost, Wolverine, Rogue, Captain America, Hulk), won with the Final Blow at 19.3.1. Player 0's only X-Men cards were the two Psychic Links (#0, #2), both recruited on turn 1 (1.2.5, 1.2.8); no operator move put a card in a hand. On turn 7, Psychic Link #0 drew off the already-played #2 (7.2.6), with no X-Men Hero left in hand. Psychic Link never revealed itself (9.2.5, 13.2.1, 15.2.13), and the bot kept drawing from its hand. See D-24731.
 
+### D-24735 — Clash of the Monsters Unleashed builds its printed 10 Scheme Twists (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A Clash of the Monsters Unleashed match now shuffles the printed 10 Scheme Twists into the Villain Deck instead of 8. It still loses on its last twist (D-24595 interim rule), so the game now runs to the 10th twist.
+
+- **Card data only.** One entry in `scripts/convert-cards/inputs/scheme-deck-counts.json`, regenerated into `data/cards/chmp.json`. WP-169's manual census had missed the scheme. `pnpm cards:check` is clean.
+- **Guard.** A registry census test asserts that every scheme whose Setup line prints a fixed "N Twists." builds N (161 schemes). It fails on the old data with exactly this scheme. No other fixed-count scheme is off.
+- **Not covered.** Clash's "6 Wounds per player in the Wound Stack", its Twist 3-10 Gladiator / Monster Pit effect, and its Evil Wins (Wound Stack or Monster Pit runs out) are not implemented. See D-24735.
+- **Live re-check (after deploy).** In an operator match on Clash, the operator panel's Villain-deck list shows 10 Scheme Twists and the HUD reads "Twists: 0/10".
+
 ### WP-807 / EC-844 — Operator setter pane (2026-10-16)
 
 **User-visible on `play.legendary-arena.com` (after deploy), to an admin in an operator match only.** The operator panel gains a **Setters** pane (Tweakpane, loaded as its own lazy chunk) with six folders that stage a board through WP-806's moves: Supply (set a pile to a count), Villain deck (a card to the top; reveal a Scheme Twist or Master Strike now), Hero deck (a card to the top; place a card in HQ space 1–5), Move a card (any seat zone or supply top to any seat's hand / deck top / discard / Victory Pile, or the KO pile), Turn economy (add 1–20 Attack or Recruit), and Escape (the Villain at the City's edge escapes). Buttons are enabled only on the admin's own turn in `main`; each submit refreshes the board at once. The panel's Piles section adds a "Set aside — …" line once a supply has been lowered.

@@ -896,7 +896,8 @@
             "Evil Wins: When the Wound Stack or Monster Pit Deck runs out."
           ]
         }
-      ]
+      ],
+      "villainDeckTwistCount": 10
     },
     {
       "id": 89,
