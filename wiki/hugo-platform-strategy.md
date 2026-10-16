@@ -24,9 +24,10 @@ last-reviewed: 2026-10-16
 We run four Hugo wikis, and each carries its own forked copy of a
 hand-rolled theme. The real question is whether to keep four diverging
 themes or move to one shared platform; which theme that platform uses
-is a second, smaller question. Converging is decided (D-24725). A Hextra
-pilot on a low-risk wiki will settle which theme, and the marketing site
-stays on PaperMod for now. The page also covers selling on a static site
+is a second, smaller question. Both are decided: converge (D-24725), on
+the current theme extracted into one shared copy (D-24727), after a
+Hextra pilot showed Hextra doesn't fix the drift. The marketing site stays
+on PaperMod for now. The page also covers selling on a static site
 and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude Chat,
 three Copilot reviews, and a Grok review (2026-10-16).
 
@@ -93,88 +94,81 @@ makes the ewiki a reusable Studio product.
 
 ### The platform question
 
-There are two decisions, in order.
+There were two decisions, in order. Both are now made.
 
 **Decision 1: converge on one shared wiki platform.** Decided
 2026-10-16 ([D-24725](../docs/ai/DECISIONS.md)). Every ewiki moves onto
 one shared platform: one source of truth for the theme, layouts,
-shortcodes, search, and branding. No new theme copy gets forked. This
-holds whichever theme wins.
+shortcodes, search, and branding. No new theme copy gets forked.
 
-**Decision 2: which theme powers the platform.** Open, with two options.
-It is deliberately not decided yet: D-24725 does not commit the engine
-ewiki, or any other wiki, to Hextra.
+**Decision 2: which theme powers the platform.** Decided 2026-10-16
+([D-24727](../docs/ai/DECISIONS.md)): **the current hand-rolled theme,
+extracted into one shared copy.** Hextra is not adopted. The candidates
+were:
 
-**(a) Hextra.** Hextra is a documentation-first Hugo theme (MIT
-license), built for docs and knowledge bases, not blogs. It brings
-multi-level navigation, search, dark mode, and a responsive layout.
-Upstream maintains it, so the platform stops carrying its own CSS,
-navigation, and accessibility fixes. Its README says sites need no
-Node.js to use it, which answers WP-139's original reason for rejecting
-it ("introduces Tailwind tooling"). That holds for sites using the theme,
-since its Tailwind CSS comes precompiled; only the theme's maintainers
-need Node. Hextra needs Hugo 0.146.0 or later (its `theme.toml`), and we
-pin 0.161.1. For the engine ewiki, adopting it changes more than the
-theme:
+- **(a) Hextra,** a documentation-first Hugo theme (MIT). It brings
+  multi-level navigation, search, dark mode, a mobile drawer, and an
+  accessibility baseline, with upstream doing the maintenance. Its
+  Tailwind CSS comes precompiled, so sites using it need no Node, and it
+  needs Hugo 0.146.0 or later (we pin 0.161.1).
+- **(b) The current theme, extracted.** One shared copy of the theme the
+  wikis already use. Every existing gate stays as it is, and we keep
+  maintaining the theme ourselves.
 
-- **The JS-free gate.** Hextra's built-in search is FlexSearch, which
-  runs in the browser, and its interactive pieces (theme toggle,
-  sidebar, tabs, code copy) use script too. Search can be turned off
-  (`params.search.enable`), but the rest still ships. The ewiki's CI
-  fails any build that ships JavaScript other than the Pagefind loader
-  (D-24293). Adopting Hextra means amending that decision, the build
-  rules that enforce it, and the search setup.
-- **Search, twice.** The ewiki already ships Pagefind. We would keep one
-  and switch off the other.
-- **Determinism and Access.** The byte-identical build gate and the
-  single Access-gated hostname still apply. Both should be fine, but the
-  first Hextra build has to prove it.
+A pilot settled it.
 
-**(b) The current theme, extracted.** Pull the hand-rolled theme out
-into one shared copy that all four wikis use. Every existing gate stays
-as it is, but we keep maintaining the theme ourselves.
+### The Hextra pilot: results
 
-### Recommended next step
+The pilot moved the Herbs vs. Ailments design wiki (409 pages) onto
+Hextra v0.13.0 on a branch. It was not deployed. The full evaluation is
+`apps/ewiki/HEXTRA-PILOT.md` in
+[barefootbetters/herbs-vs-ailments#247](https://github.com/barefootbetters/herbs-vs-ailments/pull/247),
+which was closed unmerged.
 
-Run a Hextra pilot on a low-risk wiki with real content, a real
-deployment, and real readers, then decide on that evidence:
-
-```
-Pilot wiki -> Hextra -> real content -> real deployment -> real readers -> Decision 2
-```
-
-**Which wiki.** The Herbs vs. Ailments ewiki is the preferred pilot. It
-is growing, heavy on content, documentation-shaped, and already drifted
-from the engine copy, so it has the least to lose. The next new ewiki is
-the alternative. **Not the engine ewiki:** its governance gates, JS-free
-rule, determinism check, production history, and existing readers make
-it the most expensive place to experiment. The WP-139 theme lock and the
-JS-free gate govern only the engine ewiki, so the pilot is free of both.
-
-**What the pilot measures.** The evaluation has to answer these, because
-they are the reasons Hextra could still lose:
-
-| Question | Why it matters |
+| Question | Answer |
 |---|---|
-| How much JavaScript ships, with search on and with search off? Which feature does each script drive? | Sizes the D-24293 amendment the engine ewiki would need, and whether Pagefind could stand in for FlexSearch |
-| Is the build byte-identical across two runs? | The engine ewiki's determinism gate requires it |
-| Does the Hugo Modules install work in CI next to the existing `module.mounts`, and does it need Go on the runner? | The shared platform would most likely be consumed as a module |
-| How much override did branding take (CSS variables, `custom.css`, partials)? | Heavy overrides bring back the custom-theme maintenance we are trying to drop |
-| How many of the old `layouts/` files were deleted, and how many kept? | The direct measure of maintenance moved upstream |
+| How much JavaScript ships? | Search on: 5 scripts per page, about 75 KB (24 KB gzipped), plus a 1.2 MB search index fetched when search opens. Search off: 2 scripts. Diagram pages add a 5.5 MB Mermaid (1.6 MB gzipped). |
+| Could it pass the engine ewiki's one-script rule (D-24293)? | No. With Pagefind swapped in for Hextra's search, the best case is 3 scripts against 1. Dropping Hextra's own two breaks dark mode (a JS-set class) and mobile navigation (a JS-opened drawer). Fixing either is a fork. |
+| Is the build byte-identical? | Yes, across five builds. But on a cold cache it fetches Mermaid and FlexSearch over the network. |
+| Does the Hugo Modules install work? | In CI, yes, but only because Go happens to be preinstalled on GitHub's runner image. Locally it needs Go, which the repo doesn't otherwise require. Vendoring the theme works everywhere. |
+| How much override did branding take? | The accent color took 4 CSS variables. Beyond that: about 95 lines of `custom.css`, plus replacing Hextra's own favicons and web manifest. Precompiled Tailwind means any new style has to be plain CSS. |
+| How many old layout files were deleted? | 5 of 13 deleted, 8 kept, 5 new. Two of the new files replace Hextra's own (`sidebar.html`, `docs/single.html`) and have to be re-checked against every Hextra release. |
 
-The pilot runs in its own session on a branch of `herbs-vs-ailments` and
-ends in a PR with a written evaluation. It is not deployed until the
-comparison is done.
+What Hextra did well: an "On this page" table of contents, a light/dark
+toggle, a mobile drawer, better search, and an accessibility baseline.
 
-**After the pilot:**
+Why it lost:
 
-- **If Hextra wins,** write a follow-on D-entry choosing it. Supersede
-  the WP-139 lock, amend D-24293 for Hextra's script, and move the other
-  wikis over one at a time, the engine ewiki last.
-- **If it doesn't,** extract the current theme into the shared copy and
-  move the wikis onto that instead.
+1. **It doesn't fix the drift.** The four copies drifted in the
+   wiki-specific layouts: link and image hooks, include-section, footer,
+   and nav. Under Hextra all of that stays our code, plus two overrides
+   of Hextra's files that drift against upstream (seven Hextra releases
+   so far in 2026). Hextra replaced only the generic chrome, which wasn't
+   drifting.
+2. **The flagship can't use it as-is.** The engine ewiki would need its
+   JS-free gate amended or Hextra forked. A platform the flagship can't
+   use isn't one platform.
+3. **The weight goes the wrong way.** HTML pages went from 13 KB to
+   20 KB gzipped, even after trimming the sidebar. Hugo ran about 2.7
+   times slower, and diagram pages got far heavier.
 
-Either way, Decision 1 holds and the forked copies go away.
+### Next step: extract the theme
+
+Pull the current hand-rolled theme out into one shared copy that every
+ewiki consumes. Then move the wikis onto it one at a time, the engine
+ewiki last. While extracting, absorb the Hextra wins that need no
+JavaScript:
+
+- an "On this page" table of contents (Hugo's `.TableOfContents`)
+- heading permalink anchors
+- a skip-to-content link
+- breadcrumbs
+
+A light/dark toggle is in only if it passes the JS-free gate; otherwise
+the theme keeps following the reader's system setting. The extraction
+work also picks where the platform lives. Vendoring the theme needs
+nothing extra. A Hugo module needs a pinned Go in CI and Go on every
+author's machine.
 
 ### The marketing site: keep PaperMod for now
 
@@ -258,25 +252,21 @@ drive is planned and deferred.
 
 ## Edge Cases
 
-- **The theme lock is real.** WP-139 records the hand-rolled theme as
-  locked. Adopting Hextra for the engine ewiki needs a DECISIONS entry
-  that supersedes it, plus an amendment to the JS-free decision
-  (D-24293).
-- **A Hextra pilot on another wiki is not bound by those locks.** They
-  govern the engine ewiki only, so Herbs vs. Ailments or a new wiki is
-  the cheap place to try Hextra.
+- **The theme lock and the JS-free gate stand.** The extracted theme is
+  the theme WP-139 already locks and D-24293 already gates, so neither
+  changes. Anything added during extraction has to pass the JS-free gate.
+- **Hextra stays out unless a new D-entry brings it back** (D-24727 §4).
+  A customer ewiki goes on the shared platform like every other ewiki.
 - **Marketing is out of scope for convergence.** The shared platform is
   for the wikis. The marketing and Barefoot Betters sites stay on
   PaperMod until there is a business reason to move them.
 
 ## Open Questions
 
-1. **Decision 2: which theme powers the platform?** Hextra or the
-   extracted current theme. Settled by the Hextra pilot (see
-   *Recommended next step*).
-2. **Where does the platform live?** Its own repo or a Hugo module.
-   Chosen with the theme (D-24725 §2).
-3. **Does the marketing site leave PaperMod?** Not now. Revisit when it
+1. **Where does the platform live, and how do wikis consume it?** Its
+   own repo, as a vendored copy or a Hugo module. Chosen by the
+   extraction work (D-24727 §3).
+2. **Does the marketing site leave PaperMod?** Not now. Revisit when it
    needs a docs-style section.
 
 ## References
@@ -284,5 +274,6 @@ drive is planned and deferred.
 - [WP-139](../docs/ai/work-packets/WP-139-engineering-wiki-viewer.md) — the engine ewiki's theme lock and the original Docsy/Hextra rejection
 - [apps/wiki-viewer/README.md](../apps/wiki-viewer/README.md) — "Theme" section (lock and supersede rule)
 - [.github/workflows/wiki-viewer.yml](../.github/workflows/wiki-viewer.yml) — the JS-free and determinism gates
-- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24725 (one shared wiki platform; theme open), D-24293 (Pagefind and the JS-free amendment), D-24690 (Worker hosting)
-- [Hextra on GitHub](https://github.com/imfing/hextra) — the theme (MIT; FlexSearch search; no Node.js needed to use it)
+- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24725 (one shared wiki platform), D-24727 (theme: the current theme, extracted; Hextra not adopted), D-24293 (Pagefind and the JS-free amendment), D-24690 (Worker hosting)
+- [herbs-vs-ailments#247](https://github.com/barefootbetters/herbs-vs-ailments/pull/247) — the Hextra pilot and its evaluation (`apps/ewiki/HEXTRA-PILOT.md`), closed unmerged
+- [Hextra on GitHub](https://github.com/imfing/hextra) — the theme evaluated (MIT; FlexSearch search; no Node.js needed to use it)

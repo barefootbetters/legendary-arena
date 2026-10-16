@@ -48381,4 +48381,26 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 **Reserved by:** NUMBER-LEDGER D-24726. Related: D-24724 (the class half), D-24391 (Copy Powers team grant; this closes its deferred parity follow-up for the villain-side reads), D-24290 (Baron Zemo), D-24281 (reveal-or-wound), D-24296 (basic-S.H.I.E.L.D. widening, kept local), D-24076 (defeat requirement), D-24026.
 
 ---
+
+### D-24727 — The shared wiki platform's theme is the current hand-rolled theme, extracted into one shared copy; Hextra is not adopted (Active 2026-10-16)
+
+**Context.** D-24725 put every ewiki on one shared Hugo wiki platform and left the theme open until a Hextra pilot reported. The pilot moved the Herbs vs. Ailments design wiki (409 pages) onto Hextra v0.13.0 on a branch: [barefootbetters/herbs-vs-ailments#247](https://github.com/barefootbetters/herbs-vs-ailments/pull/247), closed unmerged, with the full evaluation in `apps/ewiki/HEXTRA-PILOT.md` at commit `9143d153`. Findings:
+- **The drift isn't where Hextra helps.** The four copies drifted in the wiki-specific layouts (link and image hooks, include-section, footer, nav). Under Hextra all of that stays our code. On top of it come two overrides of Hextra's own files (`sidebar.html`, `docs/single.html`) that have to be re-checked against every Hextra release; there were seven releases in 2026 so far. Hextra replaced only the generic chrome (about 540 lines), which wasn't drifting.
+- **The engine ewiki can't use it as-is.** With search off and Pagefind swapped in, the best case is 3 scripts per page against D-24293's allowance of 1. Dropping Hextra's two scripts breaks dark mode (a JS-set `.dark` class) and mobile navigation (a JS-opened drawer). Fixing either means recompiling Hextra's Tailwind or overriding its navbar, which amounts to a fork.
+- **The weight goes the wrong way.** HTML pages grew from 13 KB to 20 KB gzipped, even after trimming the sidebar from 288 KB to 92 KB raw. Diagram pages load a 1.6 MB gzipped Mermaid, Hugo runs about 2.7 times slower, and the build fetches Mermaid and FlexSearch over the network on a cold cache.
+- **What Hextra did well:** an "On this page" TOC, a light/dark toggle, a mobile drawer, better search, an accessibility baseline, and deterministic output (five byte-identical builds).
+
+**Decision.**
+1. **The platform theme is the current hand-rolled theme, extracted** into one shared copy that every ewiki consumes. Hextra is not adopted for the platform. The WP-139 theme lock and the D-24293 JS-free gate stand unchanged, because the extracted theme is the theme they already govern.
+2. **The extraction absorbs Hextra's reader wins that need no JavaScript:** an "On this page" table of contents (Hugo's `.TableOfContents`), heading permalink anchors, a skip-to-content link, and breadcrumbs. A light/dark toggle is in scope only if it passes the JS-free gate; otherwise the theme keeps following `prefers-color-scheme`.
+3. **Where the platform lives** (its own repo, consumed as a vendored copy or as a Hugo module) is chosen by the extraction work. Evidence from the pilot: a Hugo module works on GitHub's runners, but only because Go happens to be preinstalled on the image, so it would need `actions/setup-go` pinned and `go.sum` committed. It also requires Go on every author's machine for local builds. Vendoring needs neither.
+4. **Hextra stays out unless a new D-entry brings it back.** D-24725 keeps every ewiki, customer ewikis included, on the one platform.
+
+**Why.** D-24725's goal is to stop the copies drifting. Extraction fixes that directly; Hextra would add a fifth thing to keep in step and still leave the drifting code ours. The engine ewiki, the flagship, could not use Hextra without amending a decided gate, and a platform the flagship can't use is not one platform.
+
+**Consequences.** No code changes in this entry. The extraction is follow-on work. The ewiki page Hugo Platform Strategy records the pilot results and this decision.
+
+**Reserved by:** NUMBER-LEDGER D-24727. Related: D-24725 (one shared wiki platform), WP-139 (theme lock), D-24293 (JS-free gate and Pagefind).
+
+---
 Protect this file.
