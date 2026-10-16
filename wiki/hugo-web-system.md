@@ -949,7 +949,7 @@ header and footer partials:
 | Item | URL | Weight |
 |---|---|---|
 | About | `/about/` | 10 |
-| Blog | `/posts/` | 20 |
+| Blog | `/blog/` | 20 |
 | Tags | `/tags/` | 22 |
 | Shop | `/shop/` | 25 |
 | Brand | `/brand/` | 30 |
@@ -979,7 +979,7 @@ session) but never auth-*owning* (no login form / broker / session mutation).
 | Item | URL | Weight |
 |---|---|---|
 | About | `/about/` | 10 |
-| Blog | `/posts/` | 20 |
+| Blog | `/blog/` | 20 |
 | Shop | `/shop/` | 22 |
 | Brand | `/brand/` | 25 |
 | Play | `https://play.legendary-arena.com/` | 30 |
@@ -1008,7 +1008,7 @@ apply them.
 **Current reality:** content images (hero art, product shots, brand
 graphics) are hand-authored and dropped into
 `C:\www\legendary-arena-com\static\images\` — frequently already
-converted to `.webp` (e.g. `static/images/posts/week-01-deck-checklist/
+converted to `.webp` (e.g. `static/images/blog/week-01-deck-checklist/
 hero.webp`) or authored as `.svg`. Files in `static/` are served
 **byte-for-byte with no processing**.
 
@@ -1331,7 +1331,7 @@ regenerate the render with `mmdc`.*
 C:\www\legendary-arena-com\content\
   _index.md            -> home page (/)        (rendered by layouts/index.html)
   about\_index.md      -> /about/
-  posts\*.md           -> /posts/<slug>/       (blog)
+  blog\*.md            -> /blog/<slug>/        (blog)
   shop\                -> /shop/               (Snipcart products)
   brand\_index.md      -> /brand/              (raw-HTML brand guide, WP-014)
   tournaments\         -> /tournaments/        (events; featured 3 on home)

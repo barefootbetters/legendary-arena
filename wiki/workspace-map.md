@@ -78,7 +78,7 @@ up not knowing which one is current.
 |---|---|---|
 | Engine / server / client source | Git | `legendary-arena` repo |
 | A wiki page | Git | `legendary-arena/wiki/` |
-| A blog post + its images | Git | `legendary-arena-com/content/posts/` + `static/images/posts/<slug>/` — see [Blog Post Authoring](blog-post-authoring.md) |
+| A blog post + its images | Git | `legendary-arena-com/content/blog/` + `static/images/blog/<slug>/` — see [Blog Post Authoring](blog-post-authoring.md) |
 | Card face art (published) | Hosted | Cloudflare R2 `legendary-images` — see [Data & File Locations](data-file-locations.md) |
 | Raw video footage, Premiere project | pCloud | `C:\pcloud\LA\videos\{prefix}-{NNN}-{slug}\` — see [Video Production Workflow](video-production-workflow.md) |
 | Finished video (published) | Hosted | YouTube. The blog embeds it; the file itself never enters git. |
