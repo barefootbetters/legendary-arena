@@ -2505,6 +2505,15 @@ export interface LegendaryGameState {
   /** Villain Deck setup size; absent unless the scheme loses on the Villain Deck. */
   schemeLossVillainDeckSetupSize?: number;
 
+  // why: D-24736 — Clash of the Monsters Unleashed's face-down "Monster Pit": the 8
+  // Monsters Unleashed Villains, split out of the shuffled villain deck at setup
+  // (top = index 0). Each Twist 3-10 sends the top card into the city; the Pit
+  // running out is half of the scheme's Evil Wins. Materialized LAZILY — only for
+  // Clash — so every other game's state hash is unchanged. Its cards keep their
+  // 'villain' entry in villainDeckCardTypes and every per-card setup snapshot.
+  /** The Monster Pit deck (CardExtIds); absent unless the scheme is Clash. */
+  monsterPit?: CardExtId[];
+
   // why: WP-568 / D-24377 — hero abilities whose NUMERIC-THRESHOLD gate failed at
   // play time and are waiting for the threshold to be reached later in the SAME
   // turn (Surge of Power's "if you made 8 or more recruit this turn"). Materialized

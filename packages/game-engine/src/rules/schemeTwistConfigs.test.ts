@@ -263,8 +263,8 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
     assert.equal(entryCount, 25);
   });
 
-  it('the registry holds exactly the 8 core entries plus the 67 audit entries', () => {
-    assert.equal(SCHEME_TWIST_CONFIGS.size, 8 + 67);
+  it('the registry holds exactly the 8 core entries, the 67 audit entries and Clash (D-24736)', () => {
+    assert.equal(SCHEME_TWIST_CONFIGS.size, 8 + 67 + 1);
     let coreCount = 0;
     for (const schemeId of SCHEME_TWIST_CONFIGS.keys()) {
       if (schemeId.startsWith('core/')) {
@@ -290,7 +290,6 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
 
   it('the Excluded schemes stay unconfigured (they use the last-twist fallback)', () => {
     const excluded = [
-      'chmp/clash-of-the-monsters-unleashed',
       'chmp/divide-and-conquer',
       'noir/five-families-of-crime',
       'rvlt/secret-hydra-corruption',

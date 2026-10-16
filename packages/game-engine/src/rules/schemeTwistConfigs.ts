@@ -867,4 +867,17 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       twistFallbackWithResourceLoss: true,
     },
   ],
+  [
+    'chmp/clash-of-the-monsters-unleashed',
+    {
+      schemeId: 'chmp/clash-of-the-monsters-unleashed',
+      resolverId: 'clash-monster-pit',
+      params: {},
+      // why: D-24736 — the printed Evil Wins, "When the Wound Stack or Monster Pit Deck
+      // runs out". Both piles are modelled: the Wound Stack is 6 per player (setup
+      // sizing) and the Monster Pit is G.monsterPit, so no twist proxy is kept. The
+      // 8-card Pit empties on Twist 10, the scheme's last twist.
+      resourceLossCondition: { kind: 'pile-depleted', piles: ['wounds', 'monsterPit'] },
+    },
+  ],
 ]);

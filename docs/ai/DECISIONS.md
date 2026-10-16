@@ -48529,4 +48529,52 @@ The counter the count needs, `TurnEconomy.cardsDrawn` (WP-665 / D-24476), was in
 **Reserved by:** NUMBER-LEDGER D-24732. Related: D-24476 (the `cardsDrawn` counter and Gamma-Draining Nanites), D-24016 (attack-per-count and the flat-icon suppression), D-24655 (the X-Men United per-count precedent), D-24731 (Psychic Link reveals played cards; same handler), D-24499 / D-24651 / D-24673 (Diving Block), D-24051 (Dodge).
 
 ---
+
+### D-24736 — Clash of the Monsters Unleashed plays as printed: 6 Wounds per player, the Monster Pit, Gladiators, and its Evil Wins (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** D-24735 gave `chmp/clash-of-the-monsters-unleashed` its printed 10 Scheme Twists and named the rest as follow-ups. The card prints: "Setup: 10 Twists. 6 Wounds per player in the Wound Stack. Shuffle 8 Monsters Unleashed Villains into a face-down 'Monster Pit' deck." / "Twist 3-10: Each player chooses a Villain from their Victory Pile as their 'Gladiator.' Then the top card of the Monster Pit enters the city. Each player whose Gladiator has a lower printed Attack than that Monster gains a Wound." / "Evil Wins: When the Wound Stack or Monster Pit Deck runs out." Before this, the Wound Stack was the requested 30, there was no Pit, Twists did nothing, and the scheme was in D-24595's Excluded list, losing on its last twist.
+
+**Decision.**
+1. **Wound Stack.** `resolveEffectiveWoundsCount` (D-24321) gains a Clash branch: 6 × players, below the 30 config floor exactly as Legacy Virus.
+2. **Monster Pit (setup).** `rules/clashMonsterPit.logic.ts`:
+   - `resolveEffectiveVillainGroupIds` adds `chmp/monsters-unleashed` to the villain groups setup builds, once. Every per-card villain builder (villain deck, cardStats, keywords, traits, defeat requirements, Blood Frenzy, VP, display data, ability hooks) therefore registers the 8 Monsters.
+   - `splitMonsterPitFromVillainDeck` then lifts them out of the shuffled deck into the new omit-when-absent `G.monsterPit` (top = index 0). Their relative deck order is the Pit's shuffle, so setup takes no extra random draw.
+   - `G.selection` and `matchConfiguration` keep the loadout's own groups. A loadout that already picked Monsters Unleashed is not doubled; its 8 cards all go to the Pit.
+   - `checkNoCardInMultipleZones` scans the Pit.
+3. **Twist 3-10 (`clash-monster-pit` resolver, event key `clashMonsterPit`).** Twists 1-2 log that the Pit stays shut. From Twist 3:
+   - **Gladiators first.** Each player's Gladiator is the Villain (Henchmen count, D-24608; a Killbot does not) in their Victory Pile with the highest printed Attack. The Monster is face down when Gladiators are picked, so the highest is never a worse choice. The engine picks it rather than asking, because pending choices are active-player-only (D-24284, the Magneto auto-pick precedent).
+   - **The Monster enters the city.** The Pit's top card is placed on top of the Villain Deck and played through `performVillainReveal`, so it is a full Villain entry: Ambush fires, a full city pushes a Villain out to escape, and the rule hooks see a revealed Villain. It leaves the deck at once, so the deck's size and run-out latch are unchanged.
+   - **Wounds.** Each player whose Gladiator's printed Attack is below the Monster's gains a Wound through `gainWoundForPlayer` (Diving Block reachable on any seat). An equal Gladiator holds. An empty Wound Stack logs instead.
+   - Printed Attack is `fightCost`, or `fightCostBase` for an "N+" Villain; modifiers such as Dark Portals don't count.
+4. **Evil Wins.** Config `resourceLossCondition: { kind: 'pile-depleted', piles: ['wounds', 'monsterPit'] }`, with no twist proxy. `SchemeLossPile` gains `'monsterPit'` (`G.monsterPit`, setup size the printed 8). `SchemeLossKind` gains `'monster-pit'`, and the client labels it "Monster Pit". The log line reads "the Monster Pit has run out". The 8-card Pit empties on Twist 10, the scheme's last twist. Clash leaves the Excluded list.
+
+**Interpretation to confirm (not verified against a published ruling).** A player with no Villain in their Victory Pile has no Gladiator. The engine treats that as weaker than any Monster, so they gain a Wound. The card text doesn't say, and the repo holds no ruling. The other reading, no Gladiator means no comparison and no Wound, is a single branch in `woundPlayerIfGladiatorIsWeaker`.
+
+**Hashes.** `G.monsterPit` exists only in Clash games, and the villain build config differs from the loadout only for Clash, so every other game is byte-identical. No pinned replay, state hash or PAR seed runs Clash. The full suite passes with no re-pin.
+
+**Tests.** `rules/clashMonsterPit.test.ts` (19) runs on the shipped `chmp.json`. It covers:
+- the Wound Stack at 1/2/4/5 players;
+- the 8-card Pit out of the Villain Deck, every Monster with stats and display data;
+- the loadout's groups kept, and no doubling;
+- a non-Clash scheme with no Pit key;
+- Twists 1-2 shut;
+- Twist 3 sending Goom into the city, with its Ambush capturing a Bystander (proof of the reveal-pipeline entry), a stronger Gladiator holding and no Gladiator wounded;
+- weaker Gladiators wounded;
+- the highest-Attack pick;
+- an empty Wound Stack;
+- both loss halves, with the Pit emptying on Twist 10;
+- the meter kind.
+
+Drift pins move with the unions, as product changes: `SCHEME_TWIST_RESOLVER_KEYS`, `SCHEME_LOSS_KINDS`, `SCHEME_LOSS_PILES`, the config count (8 + 67 + 1) and the Excluded-list pin. A revert proof that swaps the reveal-pipeline entry for a plain city push fails the Ambush assertion.
+
+**Live re-check (after deploy).** Run an operator match on Clash of the Monsters Unleashed at 2 players:
+- The Wound Stack holds 12.
+- Using the setter pane, reveal Scheme Twists. Twists 1-2 log "the Monster Pit stays shut". Twist 3 logs "[Monster Pit] … climbs out of the Monster Pit", the Monster enters the city (with any Ambush), and each player's Gladiator line follows.
+- The danger meter can show "Monster Pit".
+
+Clash is not a Core card, so there is no `live-verify.json` row.
+
+**Reserved by:** NUMBER-LEDGER D-24736. Related: D-24735 (10-twist count), D-24595 (Excluded list; last-twist fallback), D-24321 (scheme Wound sizing), D-24284 (active-player-only choices), D-24608 (Henchmen are Villains), D-24499 (wound chokepoint), D-24673 (Diving Block "would gain").
+
+---
 Protect this file.

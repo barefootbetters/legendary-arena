@@ -32,6 +32,11 @@ import {
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import {
+  FIRST_MONSTER_PIT_TWIST,
+  chooseGladiator,
+  readPrintedVillainAttack,
+} from './clashMonsterPit.logic.js';
 
 // ---------------------------------------------------------------------------
 // Internal — narrative name lookup
@@ -834,6 +839,145 @@ function portals(
   });
 }
 
+// -------------------------------------------------------------------------
+// clash-monster-pit
+// -------------------------------------------------------------------------
+
+/**
+ * Clash of the Monsters Unleashed (D-24736). "Twist 3-10: Each player chooses a
+ * Villain from their Victory Pile as their 'Gladiator.' Then the top card of the
+ * Monster Pit enters the city. Each player whose Gladiator has a lower printed
+ * Attack than that Monster gains a Wound."
+ *
+ * Twists 1-2 do nothing. From twist 3, every player's Gladiator is chosen first
+ * (chooseGladiator: the highest printed Attack), then the Pit's top Monster
+ * enters the city, then each player whose Gladiator is weaker gains a Wound. A
+ * player with no Villain in their Victory Pile has no Gladiator to match the
+ * Monster, so they gain a Wound too.
+ *
+ * @param gameState - Game state to mutate (Pit + city + wounds + log + event).
+ * @param context - Reveal context threaded into the Monster's city entry.
+ * @param implementationMap - Handler map threaded into the Monster's city entry.
+ * @param _params - Unused (no resolver params).
+ * @param twistCardId - The scheme-twist card instance that triggered.
+ */
+function clashMonsterPit(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  // why: the resolver runs before the dispatcher's schemeTwistCount +1, so the
+  // pre-increment count + 1 is THIS twist's number (the woundAll escalation read).
+  const currentTwist = (gameState.counters.schemeTwistCount ?? 0) + 1;
+  const monsterPit = gameState.monsterPit ?? [];
+
+  if (currentTwist < FIRST_MONSTER_PIT_TWIST) {
+    pushLog(
+      gameState,
+      `[Monster Pit] Twist ${currentTwist}: the Monster Pit stays shut (Monsters climb out on Twists 3-10).`,
+    );
+  } else if (monsterPit.length === 0) {
+    pushLog(gameState, `[Monster Pit] Twist ${currentTwist}: the Monster Pit is empty.`);
+  } else {
+    releaseMonsterAgainstGladiators(gameState, context, implementationMap, currentTwist);
+  }
+
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'clashMonsterPit',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'clashMonsterPit',
+    ),
+  });
+}
+
+/**
+ * Chooses every player's Gladiator, sends the Pit's top Monster into the city,
+ * then wounds each player whose Gladiator has a lower printed Attack.
+ *
+ * @param gameState - Game state to mutate.
+ * @param context - Reveal context for the Monster's city entry.
+ * @param implementationMap - Handler map for the Monster's city entry.
+ * @param currentTwist - This twist's number (3-10), for the log.
+ */
+function releaseMonsterAgainstGladiators(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  currentTwist: number,
+): void {
+  // why: the card orders it — Gladiators are chosen BEFORE the Monster is revealed.
+  const playerIds = Object.keys(gameState.playerZones);
+  const gladiators = new Map<string, { cardId: CardExtId; printedAttack: number } | null>();
+  for (const playerId of playerIds) {
+    gladiators.set(playerId, chooseGladiator(gameState, playerId));
+  }
+
+  const monsterId = (gameState.monsterPit ?? [])[0]!;
+  gameState.monsterPit = (gameState.monsterPit ?? []).slice(1);
+  const monsterAttack = readPrintedVillainAttack(gameState, monsterId);
+  pushLog(
+    gameState,
+    `[Monster Pit] Twist ${currentTwist}: ${resolveCardName(gameState, monsterId)} (printed ${monsterAttack} Attack) climbs out of the Monster Pit. ${gameState.monsterPit.length} Monster(s) remain.`,
+    'threat',
+  );
+
+  // why: "enters the city" is a full Villain entry — Ambush fires, a full city
+  // pushes a Villain out to escape, and the rule hooks see a revealed Villain. The
+  // Monster is placed on top of the Villain Deck and played through the one reveal
+  // pipeline rather than a second copy of it. It leaves the deck at once, so the
+  // deck's size, and its run-out latch, are unchanged.
+  gameState.villainDeck.deck = [monsterId, ...gameState.villainDeck.deck];
+  performVillainReveal(gameState, context, implementationMap);
+
+  for (const playerId of playerIds) {
+    woundPlayerIfGladiatorIsWeaker(gameState, playerId, gladiators.get(playerId) ?? null, monsterAttack);
+  }
+}
+
+/**
+ * Wounds one player when their Gladiator's printed Attack is below the Monster's.
+ *
+ * @param gameState - Game state to mutate.
+ * @param playerId - The player compared.
+ * @param gladiator - The player's Gladiator, or null when they have none.
+ * @param monsterAttack - The Monster's printed Attack.
+ */
+function woundPlayerIfGladiatorIsWeaker(
+  gameState: LegendaryGameState,
+  playerId: string,
+  gladiator: { cardId: CardExtId; printedAttack: number } | null,
+  monsterAttack: number,
+): void {
+  if (gladiator !== null && gladiator.printedAttack >= monsterAttack) {
+    pushLog(
+      gameState,
+      `[Monster Pit] Player ${playerId}'s Gladiator ${resolveCardName(gameState, gladiator.cardId)} (${gladiator.printedAttack}) holds against the Monster.`,
+    );
+    return;
+  }
+  const reason = gladiator === null
+    ? 'has no Villain in their Victory Pile to be a Gladiator'
+    : `has Gladiator ${resolveCardName(gameState, gladiator.cardId)} (${gladiator.printedAttack}), weaker than the Monster`;
+  if (gameState.piles.wounds.length === 0) {
+    pushLog(gameState, `[Monster Pit] Player ${playerId} ${reason}, but the Wound Stack is empty.`);
+    return;
+  }
+  const divingBlockPendingBefore = countPendingDivingBlockWounds(gameState, playerId);
+  // why: WP-682 / D-24499 — the gainWoundForPlayer chokepoint, so a non-active
+  // seat's Diving Block can still prevent the Wound.
+  gainWoundForPlayer(gameState, playerId);
+  // why: D-24673 — while a Diving Block reveal is pending, say "would gain".
+  const isParkedByDivingBlock = countPendingDivingBlockWounds(gameState, playerId) > divingBlockPendingBefore;
+  const outcome = isParkedByDivingBlock ? 'would gain a Wound — Diving Block can prevent it' : 'gains a Wound';
+  pushLog(gameState, `[Monster Pit] Player ${playerId} ${reason}, and ${outcome}.`);
+}
+
 /**
  * Counter-only resolver (WP-763 / D-24595). Deliberately does nothing.
  *
@@ -857,5 +1001,6 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'killbots': killbots,
   'secret-invasion': secretInvasion,
   'portals': portals,
+  'clash-monster-pit': clashMonsterPit,
   'counter-only': counterOnly,
 };

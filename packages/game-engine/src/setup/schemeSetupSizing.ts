@@ -21,6 +21,11 @@ const LEGACY_VIRUS_SCHEME_ID = 'core/legacy-virus-the';
 /** Legacy Virus prints "Wound stack holds 6 Wounds per player". */
 const LEGACY_VIRUS_WOUNDS_PER_PLAYER = 6;
 
+const CLASH_SCHEME_ID = 'chmp/clash-of-the-monsters-unleashed';
+
+/** Clash of the Monsters Unleashed prints "6 Wounds per player in the Wound Stack". */
+const CLASH_WOUNDS_PER_PLAYER = 6;
+
 const CIVIL_WAR_SCHEME_ID = 'core/super-hero-civil-war';
 
 /** Super Hero Civil War prints "If only 2 players, use only 4 Heroes in the Hero Deck". */
@@ -30,10 +35,11 @@ const CIVIL_WAR_2P_HERO_GROUPS = 4;
  * Returns the effective Wound-stack size for a match, applying any
  * scheme-specific setup sizing.
  *
- * For Legacy Virus, the stack is `6 × numPlayers` (its printed setup) — this is
- * deliberately below the 30 woundsCount config-floor (D-24032); the floor
- * validates the requested config, this rule sizes the built pile. Every other
- * scheme uses the requested count unchanged.
+ * For Legacy Virus and Clash of the Monsters Unleashed, the stack is
+ * `6 × numPlayers` (each card's printed setup) — this is deliberately below the
+ * 30 woundsCount config-floor (D-24032); the floor validates the requested
+ * config, this rule sizes the built pile. Every other scheme uses the requested
+ * count unchanged.
  *
  * @param schemeId - The selected scheme ext_id (`G.selection.schemeId`).
  * @param numPlayers - The match player count (`ctx.numPlayers`).
@@ -50,6 +56,12 @@ export function resolveEffectiveWoundsCount(
     // the 30 config-floor — the small stack IS Legacy Virus's doom clock, and
     // the loss ("If the Wound stack runs out") is unreachable at the flat 30.
     return LEGACY_VIRUS_WOUNDS_PER_PLAYER * numPlayers;
+  }
+  if (schemeId === CLASH_SCHEME_ID) {
+    // why: D-24736 — the card's printed setup ("6 Wounds per player in the Wound
+    // Stack"); the Wound Stack running out is half of Clash's Evil Wins, and the
+    // Monster Pit's Wounds are what drain it.
+    return CLASH_WOUNDS_PER_PLAYER * numPlayers;
   }
   return requestedWoundsCount;
 }
