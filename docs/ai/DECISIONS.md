@@ -48473,6 +48473,27 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 **Live re-check.** In an operator match (lobby → Play with a bot ally → Operator match, 2 players, heroes include Emma Frost and Wolverine): use the setters to get Keen Senses and Psychic Link into your hand with no other X-Men Hero (Place in HQ, recruit, then Move a card discard → hand). Play Keen Senses, then Psychic Link: you draw a card. Optionally, first Move an X-Men Hero to the bot's hand: the bot draws too.
 
 **Reserved by:** NUMBER-LEDGER D-24731. Related: WP-659 / D-24470 (reveal-from-hand), D-24651 (Diving Block reveal from play), D-24668 (no-reveal line), D-24692 (Out of Time), D-24391 / D-24726 (copied team), D-24645 (Electromagnetic Bubble "your Heroes").
+### D-24735 — Clash of the Monsters Unleashed builds its printed 10 Scheme Twists (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** `chmp/clash-of-the-monsters-unleashed` prints "Setup: 10 Twists. 6 Wounds per player in the Wound Stack. …", but `data/cards/chmp.json` had no `villainDeckTwistCount`, so `buildVillainDeck` built the default 8. The D-24734 sweep surfaced it. The cause is not a parser: twist counts reach the card data only through the hand-curated `scripts/convert-cards/inputs/scheme-deck-counts.json` (WP-169 / D-16803), which both converters apply. WP-169's manual census missed this scheme. It is neither encoded nor in the D-16804 carve-out list. The likely trigger is the "per player" in the Wound clause, which reads like a per-player twist count, but the census left no trace that confirms it.
+
+**Decision.**
+1. **Curate the count at the source.** Add `chmp.clash-of-the-monsters-unleashed: { villainDeckTwistCount: 10 }` to `scheme-deck-counts.json` and regenerate. The only data change is that one field in `chmp.json`. `pnpm cards:check` is clean.
+2. **Census test.** `packages/registry/src/schema.schemeDeckCounts.test.ts` now checks every scheme whose Setup line holds a sentence that is exactly "N Twist(s)." and asserts it builds N (`villainDeckTwistCount ?? 8`). 161 schemes match. Per-player clauses ("11 Twists, minus 1 Twist per player", "Twists equal to the number of players plus 4") don't match, so they stay with D-24734's engine table. The test fails on the old `chmp.json` with exactly this scheme, so the next census miss fails CI instead of slipping through.
+3. **Sweep result.** No other scheme that prints a fixed count builds a different one. The four remaining mismatches from a looser sweep are all per-player: bkwd Sniper Rifle Assassins, co2e Enshrouded Identity, mdns Ritual Sacrifice to Summon Chthon, and nmut Trapped in the Insane Asylum. All four are rows in D-24734's `SCHEME_TWIST_COUNT_BY_PLAYERS`.
+
+**Gameplay effect.** Clash has no twist config. It stays in D-24595's Excluded list (the Monster Pit is a non-standard pile), so it loses on the last Scheme Twist in its Villain Deck. That loss now comes at the printed 10th twist instead of the 8th.
+
+**Still not implemented (named follow-ups, not fixed here).**
+- **Wound Stack sizing.** "6 Wounds per player in the Wound Stack" is not applied. `resolveEffectiveWoundsCount` (D-24321) has only the Legacy Virus branch, so Clash builds the requested Wound count (default 30) instead of 6 × players.
+- **Twist effect.** "Twist 3-10" (each player picks a Gladiator, a Monster Pit card enters the city, and players whose Gladiator has a lower printed Attack gain a Wound) has no resolver. The Monster Pit deck is not built.
+- **Evil Wins.** "When the Wound Stack or Monster Pit Deck runs out" is not modelled. The last-twist interim rule (D-24595) stands in for it.
+
+**Hashes.** No pinned replay, state hash or PAR seed runs Clash. The full suite passes with no re-pin.
+
+**Live re-check (after deploy).** In an operator match on Clash of the Monsters Unleashed, the operator panel's Villain-deck list shows 10 Scheme Twists and the HUD reads "Twists: 0/10". Clash is not a Core card, so there is no `live-verify.json` row.
+
+**Reserved by:** NUMBER-LEDGER D-24735. Related: D-16803 / D-16804 (WP-169 curation and carve-outs), D-24734 (per-player twist table; it flagged this gap), D-24595 (last-twist fallback; Excluded list), D-24321 (scheme Wound sizing), D-1411 (8-twist default).
 
 ---
 Protect this file.

@@ -14,6 +14,14 @@
 - **Engine only.** `heroEffectRevealFromHand` (`hero/heroEffects.execute.ts`) gains `playerCanRevealMatch` and `playedCardMatchesRevealCriterion`; `collectXMenHeroesYouHave` (`rules/tacticHandlers.ts`) reads the played team through `cardHasTeamWhenPlayed`. No G field, `UIState`, server or client change.
 - **Tests.** Six new Psychic Link cases and one Electromagnetic Bubble case; the three positive cases fail against the old code.
 - **Live-verify (D-24026): pending.** Operator match (lobby → Play with a bot ally → Operator match, 2 players, heroes include Emma Frost and Wolverine): use the setters to get Keen Senses and Psychic Link into your hand with no other X-Men Hero (Place in HQ, recruit, then Move a card discard → hand). Play Keen Senses, then Psychic Link: expect a draw and a "revealed a matching Hero for Psychic Link and drew a card" log line for your seat Optionally Move an X-Men Hero to the bot's hand first: the bot draws too. Record the match id and server build here and in D-24731.
+### D-24735 — Clash of the Monsters Unleashed builds its printed 10 Scheme Twists (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A Clash of the Monsters Unleashed match now shuffles the printed 10 Scheme Twists into the Villain Deck instead of 8. It still loses on its last twist (D-24595 interim rule), so the game now runs to the 10th twist.
+
+- **Card data only.** One entry in `scripts/convert-cards/inputs/scheme-deck-counts.json`, regenerated into `data/cards/chmp.json`. WP-169's manual census had missed the scheme. `pnpm cards:check` is clean.
+- **Guard.** A registry census test asserts that every scheme whose Setup line prints a fixed "N Twists." builds N (161 schemes). It fails on the old data with exactly this scheme. No other fixed-count scheme is off.
+- **Not covered.** Clash's "6 Wounds per player in the Wound Stack", its Twist 3-10 Gladiator / Monster Pit effect, and its Evil Wins (Wound Stack or Monster Pit runs out) are not implemented. See D-24735.
+- **Live re-check (after deploy).** In an operator match on Clash, the operator panel's Villain-deck list shows 10 Scheme Twists and the HUD reads "Twists: 0/10".
 
 ### WP-807 / EC-844 — Operator setter pane (2026-10-16)
 
