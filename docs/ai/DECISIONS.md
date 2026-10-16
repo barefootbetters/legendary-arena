@@ -48449,6 +48449,32 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 **Reserved by:** NUMBER-LEDGER D-24730. Related: D-24345 (Copy Powers), D-24391 (copied team), D-24074 (Size-Changing), D-24724 / D-24726 (villain reads count the copy), D-24729 (the log line that exposed this), D-24520 (end-of-turn cleanup).
 
 ---
+
+### D-24731 — Psychic Link can reveal an X-Men Hero played this turn, not only one in hand (amends D-24470; direct fix, no WP) (Active 2026-10-16)
+
+**Context.** The 2026-10-16 Core audit (§1.2) found that Emma Frost's Psychic Link ("Each player may reveal another [team:x-men] Hero. Each player who does draws a card.") only scanned each player's hand. `heroEffectRevealFromHand` (WP-659 / D-24470) checked `playerZones.hand` for every player. Rules v23 "Revealing a Card" (L3186-3190) says: "You can reveal a card from your hand or you can reveal a card in front of you that you have already played this turn." So a player who played Wolverine's Keen Senses and then Psychic Link, with no other X-Men Hero in hand, drew nothing and got the D-24668 "No player had a matching Hero" line. A throwaway test on the WP-659 fixture reproduced it: `inPlay: [x-men card, psychic-link]` plus a non-X-Men hand gave no draw. D-24651 fixed the same reading for Diving Block.
+
+**Decision.**
+1. **The playing player can also reveal a played card.** A new helper, `playerCanRevealMatch`, scans the hand for every player, as before. For the player resolving the card, it also scans `playedCardIdsStillInPlay(G, inPlay)`.
+2. **"Another" excludes the resolving card.** Psychic Link is itself an X-Men Hero and is in play when its effect resolves, so its own instance id is skipped. Another copy of Psychic Link played earlier this turn has a different instance id and counts.
+3. **Only cards still in front of the player count.** `playedCardIdsStillInPlay` reads the play area (with the D-24619 both-sides expansion), not the Out of Time ledger. A card played this turn and then moved elsewhere cannot be revealed (D-24692).
+4. **Effective team and class.** A played card matches through `cardHasTeamWhenPlayed` for a team criterion (D-24391 / D-24726) and `cardHasClassWhenPlayed` for a class criterion (D-24074 / D-24730), so a Copy Powers copy of an X-Men Hero counts. Hand cards keep the printed-trait match (`investigateCardMatchesCriteria`), the same split as `countXMenHeroesYouHave`.
+5. **Other players stay hand-only.** Only the active player plays cards, so the other players have nothing "already played this turn".
+6. **D-24668 unchanged.** The "No player had a matching Hero to reveal" line still fires exactly when no player revealed. It now also fires when the only X-Men Hero in play is Psychic Link itself.
+7. **Corpus scope.** `core/emma-frost/psychic-link` is the only card that carries `[keyword:reveal-from-hand]`. The same text appears unmarked in `co2e.json`, which the handler does not reach; when it is marked, the same reading applies. The keyword name stays as it is (renaming touches the setup parser, `HeroKeyword`, and the handler-completeness list for no behavior change); this entry records that "from hand" now means "hand or played this turn" for the playing player.
+8. **Ride-along: Electromagnetic Bubble.** `collectXMenHeroesYouHave` (Magneto's tactic, "one of your [team:x-men] Heroes") read a played card's team from raw `G.cardTraits`. It now uses `cardHasTeamWhenPlayed`, matching its sibling `countXMenHeroesYouHave` (Xavier's Nemesis), so a Copy Powers copy of an X-Men Hero is eligible. The undefined-map guard keeps the WP-695 legacy-state posture. The play area already holds only cards still in play, so there was no Out of Time gap.
+
+**Hashes.** No G field is added or written. Psychic Link now draws in states where it used to draw nothing, so a pinned replay that plays it after another X-Men Hero would change. The full test run passes with no re-pin, so no pinned replay reaches that state.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5280); `pnpm sim:runtime-observed:check` OK; no generated-artifact churn. `live-verify.json`'s Psychic Link row moves from `verified` to `partial` until the played-card path is seen live.
+
+**Tests.** `psychicLink.revealFromHand.test.ts` gains six cases: a played X-Men Hero with a non-X-Men hand draws (and the reveal moves nothing); Psychic Link alone in play does not reveal itself and the D-24668 line fires; another player with an X-Men Hero in hand still draws; another player's play area does not count; a played card that went Out of Time does not count; a played Copy Powers copy of an X-Men team counts. `electromagneticBubbleChoice.resolve.test.ts` gains a Copy Powers eligibility case. Against the old handler, the three positive cases fail and the three guard cases pass.
+
+**Live re-check.** In an operator match (lobby → Play with a bot ally → Operator match, 2 players, heroes include Emma Frost and Wolverine): use the setters to get Keen Senses and Psychic Link into your hand with no other X-Men Hero (Place in HQ, recruit, then Move a card discard → hand). Play Keen Senses, then Psychic Link: you draw a card. Optionally, first Move an X-Men Hero to the bot's hand: the bot draws too.
+
+**Reserved by:** NUMBER-LEDGER D-24731. Related: WP-659 / D-24470 (reveal-from-hand), D-24651 (Diving Block reveal from play), D-24668 (no-reveal line), D-24692 (Out of Time), D-24391 / D-24726 (copied team), D-24645 (Electromagnetic Bubble "your Heroes").
+
+---
 Protect this file.
 
 ### D-24732 — Berserker Rage grants +1 attack per extra card drawn this turn, not a flat +1, and every effect draw by the current player now counts (direct fix, no WP) (Active 2026-10-16)

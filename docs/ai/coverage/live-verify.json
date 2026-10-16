@@ -206,10 +206,10 @@
       "card": "Emma Frost",
       "ability": "Psychic Link",
       "wp": "WP-659",
-      "state": "verified",
+      "state": "partial",
       "date": "2026-09-07",
       "evidence": "Emma Frost arc — two Magneto / Midtown Bank Robbery matches (STATUS 2026-09-07)",
-      "note": ""
+      "note": "Hand reveal verified. D-24731 (2026-10-16) lets the playing player also reveal an X-Men Hero played this turn; that path is pending live-verify (play Keen Senses, then Psychic Link, with no other X-Men Hero in hand)."
     },
     {
       "key": "core/gambit|put-hand-on-deck-top",
