@@ -10,12 +10,17 @@
  * pure `resolveEffectiveHeroDeckIds` slice): here we build a full G from a 5-hero-group
  * fixture and assert the applied deck size, plus the AC-4 loss-wiring assertion that the
  * sized deck feeds the shipped depletion loss. node:test + node:assert only.
+ *
+ * D-24733 adds the twist-stack sizing: Civil War prints "For 2-3 players, use 8 Twists.
+ * For 4-5 players, use 5 Twists", so the built Villain Deck (and the display data for
+ * its twist copies) holds 8 twists at 2-3 players and 5 at 4-5.
  */
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildInitialGameState } from './buildInitialGameState.js';
 import { applyPileDepletionResourceLoss } from '../rules/schemeResourceLoss.js';
+import { resolveTwistLossThreshold } from '../rules/schemeLossProgress.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -204,5 +209,58 @@ describe('buildInitialGameState — Super Hero Civil War 2p Hero-Deck sizing (WP
     applyPileDepletionResourceLoss(gameState);
 
     assert.equal(gameState.counters.schemeLoss, 1, 'empty G.heroDeck latches SCHEME_LOSS for 2p Civil War');
+  });
+});
+
+/** Counts the setup Scheme Twists recorded for the built Villain Deck. */
+function countSetupTwists(gameState: ReturnType<typeof buildInitialGameState>): number {
+  let twistCount = 0;
+  for (const cardType of Object.values(gameState.villainDeckCardTypes)) {
+    if (cardType === 'scheme-twist') {
+      twistCount = twistCount + 1;
+    }
+  }
+  return twistCount;
+}
+
+describe('buildInitialGameState — Super Hero Civil War twist-stack sizing (D-24733)', () => {
+  for (const [numPlayers, expectedTwists] of [[2, 8], [3, 8], [4, 5], [5, 5]] as const) {
+    it(`a ${numPlayers}-player Civil War match builds ${expectedTwists} Scheme Twists into the Villain Deck`, () => {
+      const registry = buildCivilWarRegistry();
+      const config = buildCivilWarConfig(CIVIL_WAR_SCHEME_ID);
+      const context = makeMockCtx({ numPlayers });
+
+      const gameState = buildInitialGameState(config, registry, context);
+
+      const twistsInDeck = gameState.villainDeck.deck.filter((cardId) => cardId.startsWith('scheme-twist-'));
+      assert.equal(twistsInDeck.length, expectedTwists, `${expectedTwists} twist copies in G.villainDeck.deck`);
+      assert.equal(countSetupTwists(gameState), expectedTwists, 'villainDeckCardTypes records the same twist count');
+      const twistDisplayKeys = Object.keys(gameState.cardDisplayData).filter((key) => key.startsWith('scheme-twist-'));
+      assert.equal(twistDisplayKeys.length, expectedTwists, 'cardDisplayData carries one entry per built twist copy');
+      // why: the HUD twist readout's denominator (UIState progress.schemeTwistThreshold)
+      // reads the config's printed 8/5 map; before D-24733 it said 5 at 4-5p while the
+      // deck held 8, so "Twists: 6/5" was reachable. The two must agree.
+      assert.equal(resolveTwistLossThreshold(gameState), expectedTwists, 'twist readout denominator matches the built deck');
+    });
+  }
+
+  it('a 5-player non-Civil-War match keeps the default 8 Scheme Twists', () => {
+    const registry = buildCivilWarRegistry();
+    const config = buildCivilWarConfig('core/midtown-bank-robbery');
+    const context = makeMockCtx({ numPlayers: 5 });
+
+    const gameState = buildInitialGameState(config, registry, context);
+
+    assert.equal(countSetupTwists(gameState), 8, 'the twist sizing is Civil-War-only');
+  });
+
+  it('a 4-player Civil War match still builds the full 5-group Hero Deck (the 4-Hero rule is 2p-only)', () => {
+    const registry = buildCivilWarRegistry();
+    const config = buildCivilWarConfig(CIVIL_WAR_SCHEME_ID);
+    const context = makeMockCtx({ numPlayers: 4 });
+
+    const gameState = buildInitialGameState(config, registry, context);
+
+    assert.equal(distinctHeroGroups(gameState).size, 5, 'all 5 hero groups at 4p Civil War');
   });
 });

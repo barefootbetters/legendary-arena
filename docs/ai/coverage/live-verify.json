@@ -536,10 +536,10 @@
       "card": "Wolverine",
       "ability": "Berserker Rage",
       "wp": "D-24732",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-10-16",
-      "evidence": "",
-      "note": "D-24732: +1 attack per extra card drawn this turn (was a flat +1). Recipe: Healing Factor, Keen Senses (draws 1), Berserker Rage (draws 3) → +4."
+      "evidence": "Operator match Bi6gSbwebWx (server build e4c2c0a0, incl. #2848), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout: Mental Discipline 1 + Keen Senses 1 + Berserker Rage 3 → Count-scaled attack +5 (count 5, 6.2.9); own three draws only → +3 (14.2.5); blocked without another Instinct Hero (10.2.11).",
+      "note": "D-24732: +1 attack per extra card drawn this turn (was a flat +1)."
     },
     {
       "key": "core/wolverine|draw",
@@ -1222,6 +1222,17 @@
       "date": "2026-10-10",
       "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Black Widow, Wolverine), match 5oJXzZqbdys (build 39c8244): the 2-player setup used exactly 4 Heroes (56-card Hero Deck); Twist #6 KO’d the HQ and the refill ran the Hero Deck out, so Evil Wins (21.1.8).",
       "note": "Both: the Hero-Deck loss, and 4 Heroes at 2 players."
+    },
+    {
+      "key": "scheme:core/super-hero-civil-war|twist-count",
+      "kind": "scheme",
+      "card": "Super Hero Civil War",
+      "ability": "8 Twists at 2-3 players, 5 Twists at 4-5 players",
+      "wp": "D-24733",
+      "state": "pending",
+      "date": "",
+      "evidence": "",
+      "note": "Recipe (after deploy): lobby, Play with a bot ally, 4 seats / 3 bot allies, Operator match, Super Hero Civil War (3 villain groups, 2 henchmen groups, 5 heroes); the operator panel's Villain-deck list shows 5 Scheme Twists and the HUD twist readout reads 0/5. Unit evidence: buildInitialGameState.civilWarSizing.test.ts (8/8/5/5 at 2-5 players)."
     },
     {
       "key": "scheme:core/legacy-virus-the|wound-loss",

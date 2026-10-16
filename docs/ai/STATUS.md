@@ -16,6 +16,23 @@
 - **Tests.** 19 new cases on the shipped `chmp.json`. Full suite 0 fail.
 - **Live re-check (after deploy).** In a 2-player operator match on Clash, the Wound Stack holds 12. Twists 1-2 keep the Pit shut, and Twist 3 sends a Monster into the city with Gladiator lines in the log.
 
+### D-24734 — Schemes whose twist count depends on the player count now build that count (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Nineteen more schemes now shuffle their printed number of Scheme Twists into the Villain Deck for the table's player count; until now each built a flat 8. Examples: Train Black Widows in the Red Room builds 7 twists at 1 player down to 3 at 5, and Trapped in the Insane Asylum builds 3 up to 11. The co2e, Epic and Deadpool versions of Civil War use their own splits, and Ritual Sacrifice to Summon Chthon with Lilith uses 1 twist. Where a scheme loses when the Villain Deck runs out, or on its last twist, the game now runs to the printed length. The HUD twist readout matches the deck for all of them.
+
+- **Engine only.** `resolveEffectiveTwistCount` now reads a keyed table of printed counts at 1 to 5 players (21 schemes, including core and msp1 Civil War from D-24733), plus one Lilith branch. Every row is pinned to its card's Setup text by a test. No G-shape change and no re-pin.
+- **Not covered.** ssw1 Fragmented Realities and wtif Breach the Nexus split the Villain Deck itself, a structural feature. chmp Clash of the Monsters Unleashed (prints 10 twists) was a card-data gap, fixed separately by D-24735.
+- **Live re-check (after deploy).** In a 2-player operator match on Train Black Widows in the Red Room, the operator panel's Villain-deck list shows 6 Scheme Twists and the HUD reads "Twists: 0/6".
+
+### D-24733 — Super Hero Civil War uses 5 Scheme Twists at 4-5 players (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A 4- or 5-player Super Hero Civil War match now shuffles 5 Scheme Twists into the Villain Deck, as the card prints, instead of 8. That is three fewer "KO all the Heroes in the HQ" twists, so the Hero Deck lasts longer and the game is no longer harder than printed. The HUD's "Twists: n/5" readout now matches the deck; before, a 4-player game could reach "Twists: 6/5". Games with 1 to 3 players keep 8 twists, and the 2-player 4-Hero rule is unchanged. The msp1 reprint, which prints the same clause, gets the same fix.
+
+- **Engine only.** New `resolveEffectiveTwistCount` in `setup/schemeSetupSizing.ts`, called by `buildVillainDeck` and `buildCardDisplayData`. No G-shape change. No pinned replay runs Civil War at 4 or more players, so nothing was re-pinned.
+- **Not covered.** co2e Civil War (6/5), cvwr Epic Super Hero Civil War (9/6) and Deadpool Kills the Marvel Universe (6/5) print different splits and still build 8 twists. They are a separate follow-up.
+- **Tests.** game-engine 5273 → 5284, every package 0 fail; `sim:runtime-observed:check`, `sim:coverage --check`, `par:seed:test` and `prebuild:par` all pass. Without the builder wiring, the 4-player and 5-player tests fail.
+- **Live-verify (D-24026): pending.** After deploy: lobby → Play with a bot ally → 4 seats / 3 bot allies → Operator match → Super Hero Civil War. The operator panel's Villain-deck list should show 5 Scheme Twists, and the HUD should read "Twists: 0/5". Record the result in `live-verify.json` (`scheme:core/super-hero-civil-war|twist-count`).
+
 ### D-24732 — Berserker Rage adds +1 attack per extra card drawn this turn (direct fix) (2026-10-16)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Wolverine's **Berserker Rage** now gives +1 attack for
@@ -28,9 +45,9 @@ extra cards too, which also feeds Gamma-Draining Nanites' "if you drew two cards
 - **Engine + card data.** New `extra-cards-drawn-this-turn` count source over `TurnEconomy.cardsDrawn`, markers on
   the three lines, and the counter widened to every effect draw by the current player. No new G field, move or UI field.
 - **Counts.** game-engine 5273 → 5288, 0 fail in all 12 packages; data gates current; no hash re-pin.
-- **Live-verify (D-24026): pending.** Operator match with Wolverine: Place in HQ, recruit, then Move discard → hand
-  Healing Factor, Keen Senses and Berserker Rage; play them in that order. Keen Senses draws 1, Berserker Rage draws 3,
-  and the log reads "Count-scaled attack: +4 (1 per extra card drawn this turn; count 4)."
+- **Live-verify (D-24026): PASS.** Operator match `Bi6gSbwebWx` (server build `e4c2c0a0`, which includes the #2848 merge; client `d7b2717`), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout (HYDRA + Spider-Foes; Wolverine, Gambit, Emma Frost, Spider-Man, Captain America), won with the Final Blow at 22.3.1. Healing Factor ×2, Keen Senses and Berserker Rage were placed and recruited on turn 2 (2.2.5–2.2.10). Turn 6 logged `Count-scaled attack: +5 (1 per extra card drawn this turn; count 5).`
+  (Mental Discipline 1 + Keen Senses 1 + Berserker Rage 3, 6.2.9); turn 14 gave the +3 minimum (14.2.5); turn 10 was blocked
+  without another Instinct Hero (10.2.11).
 
 ### D-24731 — Psychic Link reveals an X-Men Hero you already played (2026-10-16)
 

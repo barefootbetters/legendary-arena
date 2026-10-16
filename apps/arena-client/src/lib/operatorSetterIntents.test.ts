@@ -25,6 +25,7 @@ import {
   hasEscapeCandidate,
   isSetterWindowOpen,
   seatLabel,
+  toWholeNumberInRange,
 } from './operatorSetterIntents';
 
 /**
@@ -188,5 +189,21 @@ describe('operatorSetterIntents — option builders (WP-807)', () => {
       } as unknown as UIState,
     });
     assert.equal(hasEscapeCandidate(emptyEdge), false);
+  });
+});
+
+describe('toWholeNumberInRange (live match cDfRs-e8CqM)', () => {
+  test('NaN and infinities fall back to the minimum', () => {
+    assert.equal(toWholeNumberInRange(Number.NaN, 1, 20), 1);
+    assert.equal(toWholeNumberInRange(Number.POSITIVE_INFINITY, 1, 20), 1);
+    assert.equal(toWholeNumberInRange(Number.NEGATIVE_INFINITY, 0, Number.POSITIVE_INFINITY), 0);
+  });
+
+  test('rounds to a whole number and clamps into the range', () => {
+    assert.equal(toWholeNumberInRange(7, 1, 20), 7);
+    assert.equal(toWholeNumberInRange(4.6, 1, 20), 5);
+    assert.equal(toWholeNumberInRange(25, 1, 20), 20);
+    assert.equal(toWholeNumberInRange(-3, 1, 5), 1);
+    assert.equal(toWholeNumberInRange(40, 0, Number.POSITIVE_INFINITY), 40);
   });
 });
