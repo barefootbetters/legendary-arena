@@ -679,10 +679,11 @@ export function buildCardDisplayData(
       if (typeof scheme.villainDeckTwistCount === 'number') {
         baseTwistCount = scheme.villainDeckTwistCount;
       }
-      // why: D-24733 — the same per-player-count sizing buildVillainDeck applies,
+      // why: D-24733 / D-24734 — the same per-player-count sizing buildVillainDeck applies,
       // so the display keys match the twist copies actually built.
       const twistCount = resolveEffectiveTwistCount(
         matchConfig.schemeId,
+        matchConfig.mastermindId,
         numPlayers,
         baseTwistCount,
       );
