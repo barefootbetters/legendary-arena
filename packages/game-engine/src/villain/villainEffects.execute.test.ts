@@ -1337,6 +1337,29 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     assert.equal(G.playerZones['1']!.discard.length, 1, 'a Ranged grant is not Strength → wounded');
   });
 
+  it('D-24726 a Copy Powers copy of an Avengers Hero satisfies an Avengers reveal; a copied X-Men team does not', () => {
+    // why: D-24726 — the copied team lives in G.cardCopiedTeams, read through cardHasTeamWhenPlayed.
+    const COPY_A = 'core/rogue/copy-powers#0' as CardExtId;
+    const COPY_B = 'core/rogue/copy-powers#1' as CardExtId;
+    const G = makeG({
+      hooks: [rowHook('v-avengers-reveal', 'onFight', 'team', 'avengers')],
+      playerZones: {
+        '0': zone([PLAIN], [COPY_A]), // copied an Avenger → reveals
+        '1': zone([PLAIN], [COPY_B]), // copied an X-Man → wounded
+      },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: {
+        ...TRAITS,
+        [COPY_A]: { heroClass: 'covert', team: 'x-men' },
+        [COPY_B]: { heroClass: 'covert', team: 'x-men' },
+      },
+    });
+    G.cardCopiedTeams = { [COPY_A]: ['avengers'], [COPY_B]: ['x-men'] };
+    executeVillainAbilities(G, CTX, 'v-avengers-reveal' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'the copied Avengers team reveals — no wound');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'no Avengers team printed or copied → wounded');
+  });
+
   it('WP-646 an onAmbush reveal emits one strikeBlocked (ambush) for the revealing player; a wounded player gets none', () => {
     const G = makeG({
       hooks: [rowHook('v-ambusher', 'onAmbush', 'team', 'x-men')],
@@ -1781,6 +1804,23 @@ describe('executeVillainAbilities — ko-heroes-current-by-trait (WP-485 / D-242
     assert.deepStrictEqual(G.ko, [COPY_POWERS], 'Copy Powers as Ranged is KO’d; the covert X-Men Hero stays');
     assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER]);
   });
+
+  it('D-24726 a team predicate KOs an in-play card through its copied team (Destroyer)', () => {
+    const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+    const G = makeG({
+      hooks: [kotHook('v-destroyer')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [COPY_POWERS, OTHER], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: { ...TRAITS, [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' } },
+      messages: [],
+    });
+    G.cardCopiedTeams = { [COPY_POWERS]: ['shield'] };
+    executeVillainAbilities(G, CTX, 'v-destroyer' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [COPY_POWERS], 'Copy Powers that copied a S.H.I.E.L.D. Hero is KO’d');
+    assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER]);
+  });
 });
 
 describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 / D-24353)', () => {
@@ -2153,6 +2193,43 @@ describe('executeVillainAbilities — rescue-bystanders-current-by-trait-count (
     assert.deepStrictEqual(G.attachedBystanders, {}, 'no stranded attachment left on the villain');
     assert.match(G.messages![0]!.text, /Fight effect: rescued 2 Bystander\(s\) \(one per your avengers Hero\)\./);
     assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('D-24726 Copy Powers copying an Avengers Hero counts as a fourth Avenger (live match xW_Kmg0UF8s, 27.2.16)', () => {
+    // why: D-24726 — Copy Powers is a full duplicate, so it also counts as the copied Hero's
+    // team (D-24391, G.cardCopiedTeams). Live: Endless Invention, Perfect Teamwork and Growing
+    // Anger (all Avengers) plus Copy Powers copying Growing Anger, hand empty → owed 4, got 3.
+    const ENDLESS_INVENTION = 'core/iron-man/endless-invention#3' as CardExtId;
+    const PERFECT_TEAMWORK = 'core/captain-america/perfect-teamwork#0' as CardExtId;
+    const GROWING_ANGER = 'core/hulk/growing-anger#1' as CardExtId;
+    const COPY_POWERS = 'core/rogue/copy-powers#1' as CardExtId;
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [],
+          discard: [],
+          // why: the played S.H.I.E.L.D. tokens carry no trait row and are not Avengers.
+          inPlay: [ENDLESS_INVENTION, PERFECT_TEAMWORK, GROWING_ANGER, COPY_POWERS, 'starting-shield-agent' as CardExtId],
+          victory: [],
+        },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      bystanders: ['bys0', 'bys1', 'bys2', 'bys3', 'bys4'] as CardExtId[],
+      messages: [],
+      cardTraits: {
+        ...TRAITS,
+        [ENDLESS_INVENTION]: { heroClass: 'tech', team: 'avengers' },
+        [PERFECT_TEAMWORK]: { heroClass: 'strength', team: 'avengers' },
+        [GROWING_ANGER]: { heroClass: 'strength', team: 'avengers' },
+        [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' },
+      },
+    });
+    G.cardCopiedTeams = { [COPY_POWERS]: ['avengers'] };
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.victory.length, 4, 'three printed Avengers plus Copy Powers as an Avenger');
+    assert.match(G.messages![0]!.text, /Fight effect: rescued 4 Bystander\(s\) \(one per your avengers Hero\)\./);
   });
 
   it('AC-3 is bounded by the Bystander supply', () => {

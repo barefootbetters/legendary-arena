@@ -48359,4 +48359,26 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 **Reserved by:** NUMBER-LEDGER D-24725. Related: WP-139 (theme lock), D-24293 (JS-free gate and Pagefind), D-24690 (Worker hosting, one door per private site), D-24712 (the ship's viewer), D-24723 (the same extract-to-one-source pattern for the dashboard).
 
 ---
+
+### D-24726 — Villain-side in-play team reads count the team Copy Powers copies; the team half of D-24724 (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** In 2p match `xW_Kmg0UF8s` (build `21b630d`, Dr. Doom / Negative Zone Prison Breakout), Player 0 played Endless Invention, Perfect Teamwork and Growing Anger (all Avengers), then Copy Powers copying Growing Anger (27.2.10). Player 0 had played all 7 cards, so the hand was empty. Player 0 then fought Baron Zemo ("rescue a Bystander for each of your [Avengers] Heroes"), and the engine rescued 3 (27.2.16). D-24391 rules that Copy Powers is a full duplicate and also counts as the copied Hero's team: `applyCopyPowers` writes it to `G.cardCopiedTeams`, and `cardHasTeamWhenPlayed` (`hero/effectiveTeams.logic.ts`) reads it. The rescue should have been 4. D-24391 left full team/class parity across the non-hero read sites as a deferred follow-up. D-24724 did the class half for the villain-side reads; this is the team half.
+
+**Decision.**
+1. **`villainEffects.execute.ts`.** `playedCardTraitMatches` routes the `team` branch through `cardHasTeamWhenPlayed` (printed team OR copied team). The same four in-play reads that D-24724 changed pick this up: reveal-or-wound (`playerHasHeroMatchingTrait`), the Baron Zemo / Maestro count (`countPlayerHeroesMatchingTrait`), and the in-play loop of `ko-heroes-current-by-trait`.
+2. **`villainDefeatRequirement.logic.ts`.** `playerMeetsDefeatRequirement` gets the same in-play team read.
+3. **Not `cardCountsAsTeamMember`.** That helper also counts the teamless basic S.H.I.E.L.D. tokens as `shield`. Under D-24296 that widening stays local to the Destroyer KO, so the shared villain-side reads use the plain printed-or-copied team.
+4. **Unchanged.** The hand reads stay on `offPlayCardTraits`, because a copy grant applies only in play. The mastermind, tactic and scheme-twist reads scan the hand or HQ only. No G field, no re-pin.
+
+**Tests (new, all fail on the pre-fix source).**
+- `villainEffects.execute.test.ts`: Baron Zemo rescues 4 in the live 27.2.16 board. An Avengers reveal-or-wound is satisfied by Copy Powers that copied an Avenger, and a copied X-Men team still wounds. A `team:shield` KO-by-trait KOs Copy Powers that copied a S.H.I.E.L.D. Hero.
+- `villainDefeatRequirement.logic.test.ts`: an in-play card meets a team requirement through its copied team.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5259 → 5263); no generated-artifact churn.
+
+**Live-verify (D-24026): pending.** Baron Zemo's row in `docs/ai/coverage/live-verify.json` stays "verified" (its evidence never involved Copy Powers). The live check is a Zemo fight with Copy Powers copying an Avengers Hero, which should count one more Avenger.
+
+**Reserved by:** NUMBER-LEDGER D-24726. Related: D-24724 (the class half), D-24391 (Copy Powers team grant; this closes its deferred parity follow-up for the villain-side reads), D-24290 (Baron Zemo), D-24281 (reveal-or-wound), D-24296 (basic-S.H.I.E.L.D. widening, kept local), D-24076 (defeat requirement), D-24026.
+
+---
 Protect this file.
