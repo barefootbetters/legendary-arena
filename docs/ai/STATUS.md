@@ -21,12 +21,12 @@
   - **Second match `TV8XzB3YMDF`** (same build and lineup, won at 22.3.1):
     - Villain deck to top: Baron Zemo moved to the top at 5.2.1. The next reveal, on the bot's turn, brought him into the City at 6.1.1.
     - Supply count: `Operator: Bystander supply set to 0 (was 29).` at 5.2.8. Every later Bystander rescue logs "the Bystander supply is empty", including Zemo's fight at 11.2.8, so the Zemo count could not be observed.
+  - **D-24726: PASS** in match `SoDnMI9IjqU` (same build). Zemo was moved to the villain-deck top (4.2.7) and revealed at 5.1.1. A Day Unlike Any Other plus Copy Powers copying it rescued 2 at 27.2.9. A turn-6 baseline with two printed Avengers rescued 2. See D-24726.
   - **Still pending:**
     - the set-aside line (not visible in the log);
     - reveal now, and Escape;
     - the Move-a-card supply / KO / between-player routes;
-    - disabled buttons on the bot's turn;
-    - **D-24726.** Zemo has to be fought with the Bystander supply non-empty and Copy Powers copying an Avenger in Player 0's play. In `TV8XzB3YMDF` the bot recruited Copy Powers; Move a card from Player 1's zone to Player 0's hand is the route for that.
+    - disabled buttons on the bot's turn.
 
 ### WP-303 / EC-851 — Play a saved loadout from the profile (D-24722) (2026-10-14)
 
