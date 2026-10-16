@@ -24,11 +24,11 @@ last-reviewed: 2026-10-16
 We run four Hugo wikis, and each carries its own forked copy of a
 hand-rolled theme. The real question is whether to keep four diverging
 themes or move to one shared platform; which theme that platform uses
-is a second, smaller question. This page recommends converging, proposes
-a Hextra pilot on the next new wiki to settle which theme, and keeps the
-marketing site on PaperMod for now. It also covers selling on a static
-site and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude
-Chat and two Copilot reviews (2026-10-16).
+is a second, smaller question. Converging is decided (D-24725). A Hextra
+pilot on a low-risk wiki will settle which theme, and the marketing site
+stays on PaperMod for now. The page also covers selling on a static site
+and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude Chat
+and three Copilot reviews (2026-10-16).
 
 ## Mechanics
 
@@ -95,11 +95,15 @@ makes the ewiki a reusable Studio product.
 
 There are two decisions, in order.
 
-**Decision 1: converge on one shared wiki theme.** Recommended, for the
-reasons above. It is pending owner sign-off; once signed off it becomes
-a DECISIONS entry.
+**Decision 1: converge on one shared wiki platform.** Decided
+2026-10-16 ([D-24725](../docs/ai/DECISIONS.md)). Every ewiki moves onto
+one shared platform: one source of truth for the theme, layouts,
+shortcodes, search, and branding. No new theme copy gets forked. This
+holds whichever theme wins.
 
-**Decision 2: which shared theme.** Open, with two options.
+**Decision 2: which theme powers the platform.** Open, with two options.
+It is deliberately not decided yet: D-24725 does not commit the engine
+ewiki, or any other wiki, to Hextra.
 
 **(a) Hextra.** Hextra is a documentation-first Hugo theme (MIT
 license), built for docs and knowledge bases, not blogs. It brings
@@ -127,18 +131,30 @@ as it is, but we keep maintaining the theme ourselves.
 
 ### Recommended next step
 
-Build the next new ewiki on Hextra as a pilot. It needs no migration,
-and the WP-139 theme lock and the JS-free gate govern only the engine
-ewiki, so a new wiki is free to try it. Then put the pilot next to the
-engine ewiki and decide Decision 2:
+Run a Hextra pilot on a low-risk wiki with real content, a real
+deployment, and real readers, then decide on that evidence:
 
-- **If Hextra wins,** write the DECISIONS entry that supersedes the
-  WP-139 lock, amend D-24293 for Hextra's script, and move the existing
-  wikis over one at a time, starting with the smallest.
+```
+Pilot wiki -> Hextra -> real content -> real deployment -> real readers -> Decision 2
+```
+
+**Which wiki.** The Herbs vs. Ailments ewiki is the preferred pilot. It
+is growing, heavy on content, documentation-shaped, and already drifted
+from the engine copy, so it has the least to lose. The next new ewiki is
+the alternative. **Not the engine ewiki:** its governance gates, JS-free
+rule, determinism check, production history, and existing readers make
+it the most expensive place to experiment. The WP-139 theme lock and the
+JS-free gate govern only the engine ewiki, so the pilot is free of both.
+
+**After the pilot:**
+
+- **If Hextra wins,** write a follow-on D-entry choosing it. Supersede
+  the WP-139 lock, amend D-24293 for Hextra's script, and move the other
+  wikis over one at a time, the engine ewiki last.
 - **If it doesn't,** extract the current theme into the shared copy and
   move the wikis onto that instead.
 
-Either way, Decision 1 holds: the four copies converge.
+Either way, Decision 1 holds and the forked copies go away.
 
 ### The marketing site: keep PaperMod for now
 
@@ -226,20 +242,20 @@ drive is planned and deferred.
   locked. Adopting Hextra for the engine ewiki needs a DECISIONS entry
   that supersedes it, plus an amendment to the JS-free decision
   (D-24293).
-- **A Hextra pilot on a new wiki is not bound by those locks.** They
-  govern the engine ewiki only, so a new wiki is the cheap place to try
-  Hextra.
+- **A Hextra pilot on another wiki is not bound by those locks.** They
+  govern the engine ewiki only, so Herbs vs. Ailments or a new wiki is
+  the cheap place to try Hextra.
 - **Marketing is out of scope for convergence.** The shared platform is
   for the wikis. The marketing and Barefoot Betters sites stay on
   PaperMod until there is a business reason to move them.
 
 ## Open Questions
 
-1. **Decision 1 sign-off.** Converge the four wiki themes into one
-   shared theme? Recommended; needs a DECISIONS entry once signed off.
-2. **Decision 2: which shared theme?** Hextra or the extracted current
-   theme. Settled by the Hextra pilot on the next new ewiki (see
+1. **Decision 2: which theme powers the platform?** Hextra or the
+   extracted current theme. Settled by the Hextra pilot (see
    *Recommended next step*).
+2. **Where does the platform live?** Its own repo or a Hugo module.
+   Chosen with the theme (D-24725 §2).
 3. **Does the marketing site leave PaperMod?** Not now. Revisit when it
    needs a docs-style section.
 
@@ -248,5 +264,5 @@ drive is planned and deferred.
 - [WP-139](../docs/ai/work-packets/WP-139-engineering-wiki-viewer.md) — the engine ewiki's theme lock and the original Docsy/Hextra rejection
 - [apps/wiki-viewer/README.md](../apps/wiki-viewer/README.md) — "Theme" section (lock and supersede rule)
 - [.github/workflows/wiki-viewer.yml](../.github/workflows/wiki-viewer.yml) — the JS-free and determinism gates
-- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24293 (Pagefind and the JS-free amendment), D-24690 (Worker hosting)
+- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24725 (one shared wiki platform; theme open), D-24293 (Pagefind and the JS-free amendment), D-24690 (Worker hosting)
 - [Hextra on GitHub](https://github.com/imfing/hextra) — the theme (MIT; FlexSearch search; no Node.js needed to use it)

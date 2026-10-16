@@ -48341,4 +48341,22 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 **Reserved by:** NUMBER-LEDGER D-24724. Related: D-24074 (Size-Changing effective class), D-24345 / D-24391 (Copy Powers), D-24353 / WP-544 (Maestro), D-24281 (reveal-or-wound), D-24290 / D-24296 (KO-by-trait), D-24076 (defeat requirement), D-24687 (the re-verify pass that surfaced it).
 
 ---
+
+### D-24725 — Every ewiki moves onto one shared Hugo wiki platform; the theme stays open pending a Hextra pilot (Active 2026-10-16)
+
+**Context.** Four Hugo wikis each carry their own copy of a hand-rolled theme: the engine ewiki (`apps/wiki-viewer/`), the Herbs vs. Ailments ewiki (`herbs-vs-ailments` `apps/ewiki/`), the corporate-memory viewer (`jefferyjjensen-corporate-memory` `viewer/`), and the personal wiki (`jefferyjjensen-wiki`). The copies have drifted: on 2026-10-16 the engine and Herbs vs. Ailments copies differed in 20 layout files. Every navigation, CSS, search, accessibility, or Hugo-upgrade fix has to land in each copy, and each new customer ewiki (the Studio product) would add another. The analysis, two outside reviews, and the options are on the ewiki page [Hugo Platform Strategy](../../wiki/hugo-platform-strategy.md).
+
+**Decision.**
+1. **One platform.** Every ewiki (the four above, plus future customer ewikis) moves onto one shared Hugo wiki platform: a single source of truth for the theme, layouts, shortcodes, search, and branding. Each ewiki then supplies only its content, a small config, and its logo. No new independently maintained theme copy is started; a new ewiki starts from the platform, or from the pilot below.
+2. **The theme is not chosen yet.** The candidates are (a) Hextra or (b) the current hand-rolled theme pulled out into one shared copy. A Hextra pilot on a low-risk wiki, with real content and a real deployment, decides it. The Herbs vs. Ailments ewiki is the preferred pilot; the next new ewiki is the alternative. A follow-on D-entry records the result. Where the platform lives (its own repo, or a Hugo module) is chosen with the theme.
+3. **The engine ewiki is not committed to Hextra.** The WP-139 theme lock (Open Decision B) and the JS-free gate (D-24293) stay in force for the engine ewiki until a follow-on entry supersedes them. The engine ewiki moves last, because its governance gates, determinism check, and Access posture make it the most expensive test bed.
+4. **Out of scope.** The marketing sites (`legendary-arena-com`, `barefootbetters-www`) stay on PaperMod; the platform is for the wikis.
+
+**Why.** The maintenance cost comes from the forked copies, not from the choice of theme, so converging pays off whichever theme wins. Making it a decision now stops a fifth copy from being forked while the pilot runs.
+
+**Consequences.** No code changes in this entry. The ewiki page Hugo Platform Strategy records Decision 1 as made and the pilot as the next step.
+
+**Reserved by:** NUMBER-LEDGER D-24725. Related: WP-139 (theme lock), D-24293 (JS-free gate and Pagefind), D-24690 (Worker hosting, one door per private site), D-24712 (the ship's viewer), D-24723 (the same extract-to-one-source pattern for the dashboard).
+
+---
 Protect this file.
