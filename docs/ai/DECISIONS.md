@@ -48336,7 +48336,7 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5254 → 5259); no generated-artifact churn.
 
-**Live-verify (D-24026): pending.** Maestro's row in `docs/ai/coverage/live-verify.json` (currently "partial", PR #2815) needs one more live fight with Copy Powers copying a Strength Hero after this deploys.
+**Live-verify (D-24026), 2026-10-16: PASS.** Match `TGGnM-TEVRe` (server build `34d28b7`, 2p Dr. Doom / Negative Zone Prison Breakout): Player 0 played Crazed Rampage (Strength) and Copy Powers copying it (18.2.1–18.2.4), then fought Maestro, which owed "KO 2 of your Heroes (one per your strength Hero)" (18.2.9). Player 0's only other Strength card had been discarded after that turn-16 reshuffle, so the 2 is one printed Strength Hero plus Copy Powers. The Maestro row in `live-verify.json` is now "verified".
 
 **Reserved by:** NUMBER-LEDGER D-24724. Related: D-24074 (Size-Changing effective class), D-24345 / D-24391 (Copy Powers), D-24353 / WP-544 (Maestro), D-24281 (reveal-or-wound), D-24290 / D-24296 (KO-by-trait), D-24076 (defeat requirement), D-24687 (the re-verify pass that surfaced it).
 
