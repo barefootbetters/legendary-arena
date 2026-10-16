@@ -571,7 +571,7 @@
       "wp": "WP-485",
       "state": "verified",
       "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b). Copy Powers (D-24726): 2p operator match SoDnMI9IjqU (build 20dcd923), turn 27.",
+      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b). Copy Powers (D-24726): 2p operator match SoDnMI9IjqU (build 20dcd923), turn 27. Confirmed by the D-24729 named-card log lines in operator match L3yPdfS179l (server build 7ae1baa2): \"rescued 2 Bystander(s) (one per your avengers Hero: Crazed Rampage (played), Copy Powers (played, copied avengers))\" (6.2.7) and \"rescued 3 … Silent Sniper (played), Copy Powers (played, copied avengers), Unstoppable Hulk (played)\" (14.2.23).",
       "note": "0 rescued with no Avengers Hero, 1 rescued with one (Covert Operation). D-24726: A Day Unlike Any Other plus Copy Powers copying it rescued 2 (27.2.9); the two unplayed hand cards are read as Wounds. Turn 6 of the same match, two printed Avengers with an empty hand, rescued 2."
     },
     {
