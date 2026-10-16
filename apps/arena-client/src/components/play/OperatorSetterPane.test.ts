@@ -261,7 +261,7 @@ describe('OperatorSetterPane (WP-807)', () => {
 
   test('"Move card" submits the chosen source and destination', async () => {
     const { submitted } = await mountPane();
-    setList('Card', 'Player 0 · hand · hand-second');
+    setList('Card', 'You (Player 0) · hand · hand-second');
     setList('Destination', 'Player 1 · discard pile');
     assert.deepEqual(clickAndTakeSubmit('Move card', submitted), {
       name: 'operatorMoveCard',
@@ -275,7 +275,7 @@ describe('OperatorSetterPane (WP-807)', () => {
 
   test('"Move card" keeps its card by stable key when a card is inserted before it', async () => {
     const { wrapper, submitted } = await mountPane();
-    setList('Card', 'Player 0 · hand · hand-second');
+    setList('Card', 'You (Player 0) · hand · hand-second');
     setList('Destination', 'KO pile');
     const view = buildView();
     const shifted = buildView({
