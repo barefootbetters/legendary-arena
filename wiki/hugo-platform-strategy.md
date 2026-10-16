@@ -26,7 +26,9 @@ hand-rolled theme. The real question is whether to keep four diverging
 themes or move to one shared platform; which theme that platform uses
 is a second, smaller question. Both are decided: converge (D-24725), on
 the current theme extracted into one shared copy (D-24727), after a
-Hextra pilot showed Hextra doesn't fix the drift. The marketing site stays
+Hextra pilot showed Hextra doesn't fix the drift. The extracted theme is
+released as `barefootbetters/ewiki-theme` `v1.0.0`, vendored into each
+wiki (D-24728); the wikis move onto it one at a time. The marketing site stays
 on PaperMod for now. The page also covers selling on a static site
 and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude Chat,
 three Copilot reviews, and a Grok review (2026-10-16).
@@ -35,18 +37,20 @@ three Copilot reviews, and a Grok review (2026-10-16).
 
 ### The sites today
 
-| Site | Repo | Theme | Hosting |
-|---|---|---|---|
-| Engine ewiki (`ewiki.legendary-arena.com`) | `legendary-arena` (`apps/wiki-viewer/`) | Hand-rolled | Cloudflare Worker, deployed by GitHub Actions |
-| Herbs vs. Ailments ewiki | `herbs-vs-ailments` (`apps/ewiki/`) | Hand-rolled, a drifted copy | — |
-| Corporate-memory viewer | `jefferyjjensen-corporate-memory` (`viewer/`) | Hand-rolled | Cloudflare Pages |
-| Personal wiki | `jefferyjjensen-wiki` | Hand-rolled | — |
-| Marketing (`www.legendary-arena.com`) | `legendary-arena-com` | PaperMod plus overrides | Cloudflare Pages |
-| Barefoot Betters (`barefootbetters.com`) | `barefootbetters-www` | PaperMod | — |
+| Site | Repo | Theme | Theme source | Hosting |
+|---|---|---|---|---|
+| Engine ewiki (`ewiki.legendary-arena.com`) | `legendary-arena` (`apps/wiki-viewer/`) | Hand-rolled | Its own copy, until its migration packet (step 4) | Cloudflare Worker, deployed by GitHub Actions |
+| Herbs vs. Ailments ewiki | `herbs-vs-ailments` (`apps/ewiki/`) | Hand-rolled, a drifted copy | Its own copy, until its migration packet (step 2) | — |
+| Corporate-memory viewer | `jefferyjjensen-corporate-memory` (`viewer/`) | Hand-rolled | Its own copy, until its migration packet (step 1) | Cloudflare Pages |
+| Personal wiki | `jefferyjjensen-wiki` | Hand-rolled | Its own copy, until its migration packet (step 3) | — |
+| Marketing (`www.legendary-arena.com`) | `legendary-arena-com` | PaperMod plus overrides | PaperMod upstream (not on the platform) | Cloudflare Pages |
+| Barefoot Betters (`barefootbetters.com`) | `barefootbetters-www` | PaperMod | PaperMod upstream (not on the platform) | — |
 
 A dash means this page hasn't recorded the host yet. Checked 2026-10-16:
 the engine ewiki and the Herbs vs. Ailments ewiki differ in 20 layout
-files, so the copies are already drifting.
+files, so the copies are already drifting. Each wiki's theme source
+becomes `barefootbetters/ewiki-theme` (a vendored tag) when its migration
+packet lands.
 
 ### Where this is headed
 
@@ -152,23 +156,42 @@ Why it lost:
    20 KB gzipped, even after trimming the sidebar. Hugo ran about 2.7
    times slower, and diagram pages got far heavier.
 
-### Next step: extract the theme
+### Next step: move the wikis onto `ewiki-theme` v1.0.0
 
-Pull the current hand-rolled theme out into one shared copy that every
-ewiki consumes. Then move the wikis onto it one at a time, the engine
-ewiki last. While extracting, absorb the Hextra wins that need no
-JavaScript:
+The theme is extracted (WP-814). Its one shared copy is the private repo
+`barefootbetters/ewiki-theme`, released as `v1.0.0` (commit `52f6c1b5`,
+manifest digest `d3e03f52…` in the release notes). D-24728 records where
+it lives and how a wiki consumes it:
 
-- an "On this page" table of contents (Hugo's `.TableOfContents`)
-- heading permalink anchors
-- a skip-to-content link
-- breadcrumbs
+- **Vendored, not a Hugo module.** A wiki commits a tagged copy under
+  `themes/ewiki/`, so no build needs Go, CI credentials for the private
+  repo, or the network.
+- **Read-only.** A manifest of every vendored file, a digest the wiki pins
+  outside that copy, and a checker that fails on any edit or on a wiki
+  file shadowing a core theme file keep the copy from drifting.
+- **Closed extension points.** A wiki supplies its config, its brand
+  tokens and logo, and a fixed set of extension partials (sidebar,
+  metadata, after-content, editing-extra, head-end, body-end).
 
-A light/dark toggle is in only if it passes the JS-free gate; otherwise
-the theme keeps following the reader's system setting. The extraction
-work also picks where the platform lives. Vendoring the theme needs
-nothing extra. A Hugo module needs a pinned Go in CI and Go on every
-author's machine.
+The extraction absorbed the Hextra wins that need no JavaScript: an "On
+this page" table of contents (Hugo's `.TableOfContents`), heading
+permalink anchors, a skip-to-content link and breadcrumbs. Dark mode
+follows the reader's system setting, since a remembered toggle would need
+script storage. The core still emits one script, the Pagefind loader.
+
+Before the tag, a scratch shadow build of the engine ewiki on the theme
+passed all five engine gates, with every link and image target kept. The
+one exception is folder links, which now go to GitHub's folder view
+instead of a redirect.
+
+The wikis move in this order, each in its own packet:
+
+1. corporate memory
+2. Herbs vs. Ailments
+3. the personal wiki
+4. the engine ewiki, last
+
+Each migration compares its wiki's build before and after the switch.
 
 ### The marketing site: keep PaperMod for now
 
@@ -263,17 +286,23 @@ drive is planned and deferred.
 
 ## Open Questions
 
-1. **Where does the platform live, and how do wikis consume it?** Its
-   own repo, as a vendored copy or a Hugo module. Chosen by the
-   extraction work (D-24727 §3).
-2. **Does the marketing site leave PaperMod?** Not now. Revisit when it
+1. **Does the marketing site leave PaperMod?** Not now. Revisit when it
    needs a docs-style section.
+
+Resolved:
+
+- **Where does the platform live, and how do wikis consume it?** In its
+  own private repo, `barefootbetters/ewiki-theme`, vendored into each wiki
+  under `themes/ewiki/` rather than fetched as a Hugo module (D-24728,
+  2026-10-16).
 
 ## References
 
 - [WP-139](../docs/ai/work-packets/WP-139-engineering-wiki-viewer.md) — the engine ewiki's theme lock and the original Docsy/Hextra rejection
 - [apps/wiki-viewer/README.md](../apps/wiki-viewer/README.md) — "Theme" section (lock and supersede rule)
 - [.github/workflows/wiki-viewer.yml](../.github/workflows/wiki-viewer.yml) — the JS-free and determinism gates
-- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24725 (one shared wiki platform), D-24727 (theme: the current theme, extracted; Hextra not adopted), D-24293 (Pagefind and the JS-free amendment), D-24690 (Worker hosting)
+- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24725 (one shared wiki platform), D-24727 (theme: the current theme, extracted; Hextra not adopted), D-24728 (the theme lives in `barefootbetters/ewiki-theme`, vendored), D-24293 (Pagefind and the JS-free amendment), D-24690 (Worker hosting)
+- [WP-814](../docs/ai/work-packets/WP-814-shared-wiki-theme-extraction.md) — the extraction: the survey of the four copies, the contract, and the shadow-build record
+- [barefootbetters/ewiki-theme](https://github.com/barefootbetters/ewiki-theme) — the shared theme (private); `v1.0.0` release notes carry the manifest digest
 - [herbs-vs-ailments#247](https://github.com/barefootbetters/herbs-vs-ailments/pull/247) — the Hextra pilot and its evaluation (`apps/ewiki/HEXTRA-PILOT.md`), closed unmerged
 - [Hextra on GitHub](https://github.com/imfing/hextra) — the theme evaluated (MIT; FlexSearch search; no Node.js needed to use it)
