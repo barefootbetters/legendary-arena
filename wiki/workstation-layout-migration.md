@@ -19,11 +19,11 @@ last-reviewed: 2026-10-17
 
 # Workstation Layout Migration
 
-> **Governance status.** Proposed by Jeff on 2026-10-17; tracked here. The
-> convention is not yet a decision: Phase 0 records it in `DECISIONS.md`,
-> superseding the parts of D-24208 it replaces. Until then this page is a
-> plan, and [Workspace Map](workspace-map.md) remains the description of
-> what is true today.
+> **Governance status.** The convention is
+> [D-24739](../docs/ai/DECISIONS.md) (Jeff, 2026-10-17), which supersedes
+> D-24208 in part. It is an operator workstation migration with no Work
+> Packet. Until each phase lands, [Workspace Map](workspace-map.md) remains
+> the description of what is true today.
 
 ## Summary
 
@@ -43,7 +43,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 
 | Phase | What | Status |
 |---|---|---|
-| 0 | Record the convention as a decision | Not started |
+| 0 | Record the convention as a decision | In review: D-24739 (reserve PR #2871, entry PR #2872) |
 | 0.5 | Baseline snapshot and environment inventory | Not started |
 | 1 | Back up the loose files that have no backup today | Not started |
 | 2 | Add an unpushed-work check | Not started (not blocking) |
@@ -346,8 +346,8 @@ phase; it only makes the convention exact.
   loose BB PDF goes to `C:\pcloud\BB\DOCS\`; the upstream-less branches
   are reviewed before archiving; the gitignored scratchpads are archived
   once as a zip under `C:\pcloud\LA\code-archive\scratchpads\`; Phase 8 is
-  deferred. Still open: the credentials gate before Phase 6. No phase
-  started.
+  deferred. Still open: the credentials gate before Phase 6. Phase 0
+  started: D-24739 reserved (PR #2871) and written (PR #2872).
 
 ## Interactions
 
