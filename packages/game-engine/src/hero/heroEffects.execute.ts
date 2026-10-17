@@ -51,6 +51,8 @@ import { reshuffleDiscardIntoDeck } from '../moves/drawCards.logic.js';
 import { addResources, enableRecruitSpendableAsAttack, enableDrawLock, enrollExcessiveViolenceCard, enablePlayBothSides, addRestrictedAttack, formatAttackTargets, addFightCostReduction, recordOutOfTimePlayed } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
+// why: D-24741 — Pure Fury reads a target's current Attack from the single fight-cost authorities.
+import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
@@ -4682,46 +4684,30 @@ export function countShieldHeroesInKo(G: LegendaryGameState): number {
 }
 
 /**
- * The PRINTED attack of a Villain / Mastermind defeat target (WP-682 / D-24499).
- *
- * // why: Pure Fury compares the target's PRINTED attack (the base fight
- * requirement), not the runtime-inflated cost. A STATIC villain carries its printed
- * attack in cardStats.fightCost (fightCostBase is 0 for it); a DYNAMIC "N+" villain
- * carries the printed base N in fightCostBase — so read fightCostBase for dynamic,
- * fightCost for static. Masterminds are static, so fightCost is their printed attack.
- * A "*" fully-dynamic villain has no printed base (0), so it is always eligible when
- * any S.H.I.E.L.D. Hero sits in the KO pile — a faithful reading of a 0 printed value.
- *
- * @param G - The game state to inspect (not mutated).
- * @param cardId - The target's stats key (villain ext_id or mastermind baseCardId).
- * @returns The printed attack value (0 when no stats row exists).
- */
-function getPrintedAttackForDefeatTarget(
-  G: LegendaryGameState,
-  cardId: CardExtId,
-): number {
-  const stats = G.cardStats[cardId];
-  if (stats === undefined) {
-    return 0;
-  }
-  return stats.fightCostMode === 'dynamic' ? stats.fightCostBase : stats.fightCost;
-}
-
-/**
  * Builds the deterministic list of eligible Pure Fury targets (WP-682 / D-24499).
  *
- * A target is eligible when its PRINTED attack is STRICTLY LESS THAN the count of
+ * A target is eligible when its CURRENT Attack is STRICTLY LESS THAN the count of
  * S.H.I.E.L.D. Heroes in the global KO pile: a City Villain (any occupied space),
  * or the Mastermind when at least one tactic remains (defeating the Mastermind
  * defeats one tactic). Order is pinned — City spaces ascending, Mastermind appended
  * last — matching buildDefeatWithBystanderTargets, because this order feeds BOTH the
  * UIState projection and the ai.legalMoves bot/sim default.
  *
+ * // why: D-24741 (Jeff ruling, amends D-24499) — "whose Attack is less than" reads the
+ * target's current Attack, the value you would have to beat to fight it: Dark Portals,
+ * Bank Robbery Bystanders, captured Heroes, Blood Frenzy and "-N attack" reductions all
+ * count. D-24499 compared the printed value, so in tXTkG2Pardt Pure Fury defeated Loki
+ * (printed 10, +1 Dark Portal) with 11 S.H.I.E.L.D. Heroes in the KO pile. The single
+ * fight-cost authorities supply the value, so Pure Fury and a normal fight never disagree.
+ *
  * @param G - The game state to inspect (not mutated).
+ * @param fightingPlayerId - The player resolving Pure Fury (for Blood Frenzy's
+ *   per-player count). When omitted, Blood Frenzy adds 0.
  * @returns The eligible targets in pinned order (City ascending, Mastermind last).
  */
 export function buildPureFuryTargets(
   G: LegendaryGameState,
+  fightingPlayerId?: string,
 ): DefeatWithBystanderTarget[] {
   const koShieldHeroCount = countShieldHeroesInKo(G);
   const targets: DefeatWithBystanderTarget[] = [];
@@ -4731,8 +4717,8 @@ export function buildPureFuryTargets(
     if (cardId === null || cardId === undefined) {
       continue;
     }
-    // why: WP-682 / D-24499 — STRICTLY less than (printedAttack < count), per the text.
-    if (getPrintedAttackForDefeatTarget(G, cardId) < koShieldHeroCount) {
+    // why: WP-682 / D-24499 — STRICTLY less than (attack < count), per the text.
+    if (resolveFightCost(G, cardId, fightingPlayerId) < koShieldHeroCount) {
       targets.push({ kind: 'villain', cityIndex, cardId });
     }
   }
@@ -4744,7 +4730,7 @@ export function buildPureFuryTargets(
   // in the shared isMastermindFreeDefeatTarget predicate.
   if (isMastermindFreeDefeatTarget(G)) {
     const mastermindCardId = G.mastermind.baseCardId;
-    if (getPrintedAttackForDefeatTarget(G, mastermindCardId) < koShieldHeroCount) {
+    if (resolveMastermindFightCost(G) < koShieldHeroCount) {
       targets.push({ kind: 'mastermind', cardId: mastermindCardId });
     }
   }
@@ -4776,7 +4762,7 @@ function heroEffectPureFury(
   cardId: CardExtId,
   _effect: HeroEffectDescriptor,
 ): void {
-  const targets = buildPureFuryTargets(G);
+  const targets = buildPureFuryTargets(G, playerID);
 
   if (targets.length === 0) {
     // why: WP-434 — no legal target (no Villain/Mastermind weak enough) → `blocked`.
