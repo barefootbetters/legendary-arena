@@ -1321,6 +1321,61 @@
       "date": "2026-10-08",
       "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): X-Men United counted other X-Men Heroes played earlier this turn, 2 / 2 / 3 / 5 (16.2.7, 22.2.10, 28.2.10, 35.2.21), each matching the cards played (D-24655 fix live).",
       "note": ""
+    },
+    {
+      "key": "core/hawkeye|attack",
+      "kind": "hero",
+      "card": "Hawkeye",
+      "ability": "Team Player",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): +1 after another Avengers Hero (Hulk Smash! and Growing Anger, 10.2.6; the bot's after Endless Invention, 5.2.8); blocked when played first (the bot, 21.2.2).",
+      "note": "Unmarked \"[team:avengers]: +1\" superpower; no ledger mechanic."
+    },
+    {
+      "key": "core/hulk|attack",
+      "kind": "hero",
+      "card": "Hulk",
+      "ability": "Growing Anger, Hulk Smash!",
+      "wp": "",
+      "state": "partial",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): Growing Anger +1 after another Strength Hero (Odinson 8.2.4; Hulk Smash! 10.2.4, 18.2.4) and blocked when played first (16.2.2). Hulk Smash! was blocked every time it was played first (10.2.2, 14.2.2, 18.2.2, 20.2.2, 22.2.2, 26.2.2, 30.2.2).",
+      "note": "Hulk Smash!'s +5 firing half is still unexercised: play it after Growing Anger or Odinson."
+    },
+    {
+      "key": "core/iron-man|attack",
+      "kind": "hero",
+      "card": "Iron Man",
+      "ability": "Repulsor Rays",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): +1 after another Ranged Hero (Call Lightning 12.2.6; the bot's second Repulsor Rays 23.2.9); blocked when played first (6.2.2, 14.2.6).",
+      "note": "Unmarked \"[hc:ranged]: +1\" superpower; no ledger mechanic."
+    },
+    {
+      "key": "core/thor|attack",
+      "kind": "hero",
+      "card": "Thor",
+      "ability": "Call Lightning",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): +3 after another Ranged Hero (Repulsor Rays 14.2.8, 18.2.10); blocked with no other Ranged Hero (8.2.6, 12.2.4).",
+      "note": "Unmarked \"[hc:ranged]: +3\" superpower; no ledger mechanic."
+    },
+    {
+      "key": "core/thor|recruit",
+      "kind": "hero",
+      "card": "Thor",
+      "ability": "Odinson",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): +2 Recruit after another Strength Hero (Hulk Smash! 14.2.4; Growing Anger 18.2.6); blocked when played first (8.2.2, 12.2.2).",
+      "note": "Unmarked \"[hc:strength]: +2 Recruit\" superpower; no ledger mechanic."
     }
   ]
 }

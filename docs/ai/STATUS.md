@@ -308,7 +308,7 @@ extra cards too, which also feeds Gamma-Draining Nanites' "if you drew two cards
 **User-visible on `play.legendary-arena.com` (after deploy).** When a villain's "each player reveals a ___ Hero or gains a Wound" effect fires after the Wound supply runs out, the log now says "the Wound supply is empty, so no Wound was gained (Player 0, Player 1 had no Ranged Hero)". Before, it said "every player revealed a Ranged Hero" even when nobody could (2p match `sDBnFxiigDL`, Ymir's Ambush at 37.1.2). Viper's Victory-Pile version is fixed the same way.
 
 - **Engine only, text only.** No rules or state change.
-- **Live-verify (D-24026):** pending.
+- **Live-verify (D-24026), 2026-10-17: PASS.** Operator match `mzasQjZ3DU2` (server `3c9f632d`), Wound supply set to 0: Frost Giant logged "the Wound supply is empty, so no Wound was gained …" (8.2.10, 9.2.12) and Loki's Master Strike said the same (5.1.1–5.1.2).
 
 ### D-24685 — Cosmic Cube's 8th Twist no longer hands out Wounds (direct fix) (2026-10-11)
 
