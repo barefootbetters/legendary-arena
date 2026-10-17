@@ -162,15 +162,25 @@ export function allSeatsSubmitted(choice: PendingSeatChoice): boolean {
  *
  * @param choice - The open pending seat choice.
  * @param activePlayerToSkip - The active player id (ctx.currentPlayer), omitted from
- *   the map so the already-active player is never redundantly stage-ridden (D-24648).
- * @returns A per-seat { stage, moveLimit } map (may be empty when every addressed seat
- *   is the active player).
+ *   the map when it is the ONLY addressed seat, so a one-seat active choice is never
+ *   redundantly stage-ridden (D-24648). In a mixed ride it is admitted like any seat.
+ * @returns A per-seat { stage, moveLimit } map (empty when the active player is the
+ *   only addressed seat).
  */
 export function buildSeatChoiceActivePlayersValue(
   choice: PendingSeatChoice,
   activePlayerToSkip?: string,
 ): Record<string, { stage: string; moveLimit: number }> {
   const value: Record<string, { stage: string; moveLimit: number }> = {};
+  // why: D-24743 — setActivePlayers REPLACES the activePlayers map, so a ride that admits
+  // only the non-active seats drops the active player out of it, and boardgame.io refuses
+  // the active seat's own resolveSeatChoice (InactivePlayer) until every other seat has
+  // answered. A bot answering its own active seat first never lands, and the bot-ally
+  // driver faults (4p match Y1w7rCsC8Ek: a Loki Master Strike wounded Diving Block holders
+  // 1 and 3 on seat 1's turn). So the D-24648 skip applies only to a one-seat choice
+  // addressed to the active player; a mixed ride admits the active seat too.
+  const isActiveSeatOnly =
+    choice.addressedSeats.length === 1 && choice.addressedSeats[0] === activePlayerToSkip;
   for (const seat of choice.addressedSeats) {
     // why: D-24648 — never stage-ride the ACTIVE player. They are already the
     // ctx.currentPlayer of the { currentPlayer: 'playTurn' } turn, and the stages are
@@ -181,7 +191,7 @@ export function buildSeatChoiceActivePlayersValue(
     // until the player reloaded (spectator-stale resync). Skipping the active seat removes
     // the unnecessary transition. Non-active seats (Random Acts / Monarch's Decree /
     // Diving Block on someone else's wound) still ride.
-    if (seat === activePlayerToSkip) {
+    if (isActiveSeatOnly) {
       continue;
     }
     value[seat] = { stage: SEAT_CHOICE_STAGE, moveLimit: 1 };
