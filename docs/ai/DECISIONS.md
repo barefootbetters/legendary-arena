@@ -47127,6 +47127,8 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5030 → 5031, server 1678, arena-client 2298); `sim:runtime-observed:check` current; no generated-artifact churn.
 
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `SdnvQA0P4Zj` (server build `85771ab6`), 2p with a bot ally, Loki / Portals to the Dark Dimension, Final Blow on. Player 0 emptied the City (9.2.3–9.2.12) with 12 S.H.I.E.L.D. Heroes in the KO pile against Loki's 11. Pure Fury then defeated Loki on its own, with no prompt (9.2.14), taking Vanishing Illusions (9.2.15). The bot ally KO'd HYDRA Kidnappers from its Victory Pile (9.2.16–9.2.17), and the game went on to turn 10 with no bot stall. Silent Sniper shares the same one-target path; its own multi-seat case wasn't exercised.
+
 **Reserved by:** NUMBER-LEDGER D-24681. Related: D-24511 / WP-694 (multi-seat tactics), D-24593 (bot-ally seat choice), D-24501 / WP-684 (seat choice), D-24291 / WP-486 (Silent Sniper), D-24499 / WP-682 (Pure Fury), D-24026 (the live session that surfaced it).
 
 ---
