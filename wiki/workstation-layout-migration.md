@@ -43,7 +43,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 
 | Phase | What | Status |
 |---|---|---|
-| 0 | Record the convention as a decision | In review: D-24739 (reserve PR #2871, entry PR #2872) |
+| 0 | Record the convention as a decision | Done: D-24739 (reserve #2871, entry #2872) |
 | 0.5 | Baseline snapshot and environment inventory | Not started |
 | 1 | Back up the loose files that have no backup today | Not started |
 | 2 | Add an unpushed-work check | Not started (not blocking) |
@@ -346,8 +346,11 @@ phase; it only makes the convention exact.
   loose BB PDF goes to `C:\pcloud\BB\DOCS\`; the upstream-less branches
   are reviewed before archiving; the gitignored scratchpads are archived
   once as a zip under `C:\pcloud\LA\code-archive\scratchpads\`; Phase 8 is
-  deferred. Still open: the credentials gate before Phase 6. Phase 0
-  started: D-24739 reserved (PR #2871) and written (PR #2872).
+  deferred. Still open: the credentials gate before Phase 6.
+- **2026-10-17** — **Phase 0 done.** D-24739 reserved (#2871) and recorded
+  (#2872), superseding D-24208 in part. It was rebuilt on `main` once after
+  D-24740 landed at the same file ends. Next: Phase 0.5 (baseline snapshot)
+  and Phase 1 (loose files).
 
 ## Interactions
 
