@@ -47235,6 +47235,8 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Live-verify (D-24026):** pending. A game where a reveal-or-Wound villain fires after the Wound supply runs out. Cosmic Cube can empty it (`sDBnFxiigDL`, `ZVUtr7aaCom`) but often doesn't: three later Cosmic Cube games (including `mAmjZ9Cm9L9` and `xGw-94HDhBj`) never ran it out, and `Cq_czI1TQH0` ended with 20 Wounds left.
 
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye), with the Wound supply set to 0 by the operator setter (2.2.1). Frost Giant's Fight logged "the Wound supply is empty, so no Wound was gained (Player 1 had no Ranged Hero)" (8.2.10) and, with neither player holding a Ranged Hero, "(Player 0, Player 1 had no Ranged Hero)" (9.2.12); again at 20.2.14. Loki's Master Strike logged "has no Strength Hero in hand and the Wound supply is empty — no effect" for both seats (5.1.1–5.1.2).
+
 **Reserved by:** NUMBER-LEDGER D-24686. Related: D-24281 / WP-469 (reveal-or-wound), D-24299 / WP-494 (the Victory-Pile variant), D-24679 (naming the trait checked), D-24683 (player attribution), D-24026.
 
 ---
