@@ -48744,3 +48744,33 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24740 — Under Final Blow, a free defeat (Pure Fury, Silent Sniper) can strike the final blow (operator ruling; direct fix, no WP; amends D-24504) (Active 2026-10-17)
+
+**Context.** The optional Final Blow rule (rules v23 L2840–2847; D-24503 / D-24504) requires a 5th, final fight of the Mastermind card after its four Tactics. D-24504 put that award only in `fightMastermind`. The free-defeat target builders, `buildPureFuryTargets` (`hero/heroEffects.execute.ts`) and `buildDefeatWithBystanderTargets` (`moves/defeatChoice.resolve.ts`), offered the Mastermind only while `tacticsDeck.length > 0`. In operator match `Er6Uj0zeyDW` (server `6dbeb6d7`, Loki / Portals to the Dark Dimension, Final Blow on), Pure Fury defeated Loki's four Tactics (11.2.3, 13.2.3, 15.2.3, 17.2.3). Once "Loki requires a final blow" (17.2.4), every later Pure Fury prompt left Loki out (19.2.2, 21.2.2, 23.2.2, 25.2.5), and only a paid fight could finish him (25.2.17).
+
+**Decision (operator ruling, 2026-10-17).**
+1. Under Final Blow, once the Mastermind's Tactics are gone, a free defeat that may target the Mastermind can strike the final blow: Pure Fury ("Defeat any Villain or Mastermind whose [icon:attack] is less than …") and Silent Sniper ("Defeat a Villain or Mastermind that has a Bystander"). This is the same reading as D-24737: a free defeat counts as the defeat.
+2. **Eligibility.** New `isMastermindFreeDefeatTarget` (`moves/defeatChoice.resolve.ts`) is true when the Mastermind is not haunting and either a Tactic remains or `isFinalBlowAvailable` holds. Both builders use it. Pure Fury still requires printed attack < the S.H.I.E.L.D. count, and Silent Sniper still requires a Bystander on the Mastermind.
+3. **Award.** `dispatchDefeatWithBystanderTarget` routes a Mastermind target to `awardMastermindOnFinalBlow` (now exported from `moves/fightMastermind.ts`, the single award site) when `isFinalBlowAvailable`, and to `defeatMastermindTacticCore` otherwise. The free defeat spends no attack and sets no acted flag. The award puts the Mastermind card in the Victory Pile, rescues any Bystanders it holds, clears `finalBlowPending`, and latches `MASTERMIND_DEFEATED_PENDING` (the WP-732 turn-end win), exactly as the paid 5th fight does.
+4. **Unchanged.** With Final Blow off, or once the final blow is struck, a Tactic-less Mastermind is still not a target. Cruel Ruler targets only City Villains.
+
+**Tests.** `hero/pureFury.logic.test.ts` adds seven cases:
+- Pure Fury targets the Mastermind while the final blow is pending;
+- not after the final blow is struck;
+- not with Final Blow off;
+- a chosen final blow awards the card for free and latches the win;
+- a one-target Pure Fury play strikes it with no prompt;
+- Silent Sniper strikes it and rescues the held Bystander;
+- the predicate's three cases.
+
+Revert proof: without the engine change, the five behavior cases fail and the two "unchanged" guards pass.
+
+**Hashes.** `G` shape unchanged. Final Blow is off in every pinned replay, PAR and seed fixture, so nothing re-pins.
+
+**Live-verify (D-24026):** pending. In an operator match with Final Blow on, defeat the Mastermind's four Tactics, then play Pure Fury (enough S.H.I.E.L.D. Heroes in the KO pile) or Silent Sniper (the Mastermind holding a Bystander). Expect the Mastermind among the targets, and choosing it to log "struck the final blow and defeated …" and win at turn end.
+
+**Reserved by:** NUMBER-LEDGER D-24740. Related: D-24503 / D-24504 (Final Blow), D-24737 (free defeats ignore "can't defeat unless"), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24553 (turn-end win), D-24026.
+
+---
+Protect this file.

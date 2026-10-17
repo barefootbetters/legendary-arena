@@ -10,8 +10,15 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { countShieldHeroesInKo, buildPureFuryTargets } from './heroEffects.execute.js';
-import { resolveDefeatChoice, hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
+import { countShieldHeroesInKo, buildPureFuryTargets, executeSingleEffect } from './heroEffects.execute.js';
+import {
+  resolveDefeatChoice,
+  hasPendingDefeatChoice,
+  buildDefeatWithBystanderTargets,
+  dispatchDefeatWithBystanderTarget,
+  isMastermindFreeDefeatTarget,
+} from '../moves/defeatChoice.resolve.js';
+import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
@@ -219,5 +226,117 @@ describe('resolveDefeatChoice — pure-fury discriminant (WP-682 / D-24499)', ()
     assert.equal(G.turnEconomy.attack, 0, 'no attack was spent (free defeat)');
     assert.equal(G.turnEconomy.spentAttack, 0, 'no attack was spent (free defeat)');
     assert.equal(hasPendingDefeatChoice(G), false, 'the pending choice is front-popped');
+  });
+});
+
+describe('free defeats strike the Final Blow (D-24739)', () => {
+  const SHIELD_KO: CardExtId[] = ['sh-1', 'sh-2', 'sh-3'] as CardExtId[];
+  const SHIELD_TRAITS = {
+    'sh-1': { heroClass: 'tech', team: 'shield' },
+    'sh-2': { heroClass: 'covert', team: 'shield' },
+    'sh-3': { heroClass: 'ranged', team: 'shield' },
+  };
+
+  /**
+   * A Final Blow state with every Tactic defeated: the Mastermind's printed attack is 2,
+   * the KO pile holds 3 S.H.I.E.L.D. Heroes, and the City is empty unless `city` is given.
+   */
+  function finalBlowG(options: {
+    finalBlow?: boolean;
+    finalBlowPending?: boolean;
+    city?: (CardExtId | null)[];
+    mastermindBystanders?: CardExtId[];
+    pendingDefeatChoices?: LegendaryGameState['pendingDefeatChoices'];
+  }): LegendaryGameState {
+    const G = makeG({
+      ko: SHIELD_KO,
+      cardTraits: SHIELD_TRAITS,
+      city: options.city ?? [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(2), 'villain-a': staticFightStats(0) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: [],
+      ...(options.pendingDefeatChoices ? { pendingDefeatChoices: options.pendingDefeatChoices } : {}),
+    });
+    if (options.finalBlow !== undefined) {
+      (G as unknown as { finalBlow: boolean }).finalBlow = options.finalBlow;
+    }
+    G.mastermind = {
+      ...G.mastermind,
+      tacticsDefeated: ['t1', 't2', 't3', 't4'] as CardExtId[],
+      attachedBystanders: options.mastermindBystanders ?? [],
+      ...(options.finalBlowPending !== undefined ? { finalBlowPending: options.finalBlowPending } : {}),
+    };
+    return G;
+  }
+
+  it('Pure Fury targets the Mastermind while the final blow is pending', () => {
+    const G = finalBlowG({ finalBlow: true, finalBlowPending: true });
+    assert.deepStrictEqual(buildPureFuryTargets(G), [{ kind: 'mastermind', cardId: 'mm-base' }]);
+  });
+
+  it('a vanquished Mastermind (final blow already struck) is not a target', () => {
+    const G = finalBlowG({ finalBlow: true, finalBlowPending: false });
+    assert.deepStrictEqual(buildPureFuryTargets(G), []);
+  });
+
+  it('with Final Blow off, a tactic-less Mastermind stays excluded (unchanged)', () => {
+    const G = finalBlowG({});
+    assert.deepStrictEqual(buildPureFuryTargets(G), []);
+  });
+
+  it('a chosen Pure Fury final blow awards the Mastermind card for free and latches the win', () => {
+    const G = finalBlowG({
+      finalBlow: true,
+      finalBlowPending: true,
+      city: ['villain-a', null, null, null, null],
+      pendingDefeatChoices: [
+        {
+          choiceType: 'pure-fury',
+          playerID: '0',
+          targets: [
+            { kind: 'villain', cityIndex: 0, cardId: 'villain-a' as CardExtId },
+            { kind: 'mastermind', cardId: 'mm-base' as CardExtId },
+          ],
+        },
+      ],
+    });
+    resolveDefeatChoice(makeMoveContext(G) as never, { targetKind: 'mastermind' });
+
+    assert.ok(G.playerZones['0']!.victory.includes('mm-base' as CardExtId), 'the Mastermind card is in the Victory Pile');
+    assert.equal(G.mastermind.finalBlowPending, false, 'the final blow is no longer pending');
+    assert.equal(G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], 1, 'the win is latched for turn end');
+    assert.equal(G.turnEconomy.spentAttack, 0, 'no attack was spent (free defeat)');
+    assert.equal(G.city[0], 'villain-a', 'the un-chosen Villain is untouched');
+    assert.ok(G.messages.some((entry) => /struck the final blow and defeated/.test(entry.text)));
+  });
+
+  it('a one-target Pure Fury play strikes the final blow with no prompt', () => {
+    const G = finalBlowG({ finalBlow: true, finalBlowPending: true });
+    const context = makeMoveContext(G);
+    executeSingleEffect(G, context, '0', 'core/nick-fury/pure-fury#0' as CardExtId, { type: 'pure-fury' });
+
+    assert.equal(hasPendingDefeatChoice(G), false, 'no prompt for a single target');
+    assert.ok(G.playerZones['0']!.victory.includes('mm-base' as CardExtId));
+    assert.equal(G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], 1);
+  });
+
+  it('Silent Sniper can strike the final blow on a Mastermind holding a Bystander, rescuing it', () => {
+    const G = finalBlowG({ finalBlow: true, finalBlowPending: true, mastermindBystanders: ['pile-bystander' as CardExtId] });
+    assert.deepStrictEqual(buildDefeatWithBystanderTargets(G), [{ kind: 'mastermind', cardId: 'mm-base' }]);
+    dispatchDefeatWithBystanderTarget(G, { currentPlayer: '0', turn: 1 }, { kind: 'mastermind', cardId: 'mm-base' as CardExtId }, { random: makeMockCtx().random });
+
+    const victory = G.playerZones['0']!.victory;
+    assert.ok(victory.includes('mm-base' as CardExtId));
+    assert.ok(victory.includes('pile-bystander' as CardExtId), 'the held Bystander is rescued');
+    assert.deepStrictEqual(G.mastermind.attachedBystanders, []);
+  });
+
+  it('isMastermindFreeDefeatTarget: tactic left, final blow pending, or neither', () => {
+    assert.equal(isMastermindFreeDefeatTarget(finalBlowG({ finalBlow: true, finalBlowPending: true })), true);
+    assert.equal(isMastermindFreeDefeatTarget(finalBlowG({ finalBlow: true, finalBlowPending: false })), false);
+    assert.equal(isMastermindFreeDefeatTarget(finalBlowG({})), false);
+    const withTactic = finalBlowG({});
+    withTactic.mastermind = { ...withTactic.mastermind, tacticsDeck: ['t5'] as CardExtId[] };
+    assert.equal(isMastermindFreeDefeatTarget(withTactic), true);
   });
 });
