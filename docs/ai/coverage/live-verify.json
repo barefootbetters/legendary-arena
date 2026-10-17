@@ -1298,7 +1298,7 @@
       "state": "partial",
       "date": "2026-10-17",
       "evidence": "Operator match PF9JUILsmcT (server build 3c9f632d), 2p with a bot ally, Red Skull / Secret Invasion of the Skrull Shapeshifters (HYDRA + Skrulls; Black Widow, Deadpool, Rogue, Captain America, Spider-Man, Storm): six Skrull Heroes escaped — Oddball (6.1.2), Oddball (7.1.2), Random Acts of Unkindness (10.1.2), A Day Unlike Any Other (17.1.2), Copy Powers (25.1.2), Oddball (31.1.2) — and the scheme won at 31.1.3 (\"Scheme loss triggered — 6 Skrulls escaped (threshold 6)\"). Escaped non-Hero Villains (HYDRA Kidnappers, Endless Armies of HYDRA, Skrull Shapeshifters, Skrull Queen Veranke) did not count.",
-      "note": "Open ruling: two Heroes captured from the HQ were carried into the Escape pile by their Skrull captors (Energy Drain with Skrull Shapeshifters at 3.2.19, Spinning Cyclone with Veranke at 13.1.2; D-24657). The engine counts only Skrull-converted Heroes. Read literally (\"6 Heroes … in the Escaped Villains pile\"), the captured ones count too and Evil would have won at 17.1.2."
+      "note": "Ruled 2026-10-17 (D-24738): Heroes a captor carries into the Escape pile count toward the six. In this match Energy Drain (with Skrull Shapeshifters, 3.2.19) and Spinning Cyclone (with Veranke, 13.1.2) were captured Heroes in the pile, so the loss should have come at 17.1.2. Stays partial until a live re-check on a build with D-24738: expect the loss at 6 counted Heroes, the line \"N Heroes escaped (X Skrulls, Y captured)\" and the meter \"Heroes N/6\"."
     },
     {
       "key": "scheme:core/portals-to-the-dark-dimension|dark-portals",
