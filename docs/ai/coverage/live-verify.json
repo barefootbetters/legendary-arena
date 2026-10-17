@@ -1318,9 +1318,9 @@
       "ability": "Twists place Dark Portals (+attack)",
       "wp": "WP-539",
       "state": "verified",
-      "date": "2026-09-21",
-      "evidence": "WP-727 live-verify — overlay shows the served buff (#2224)",
-      "note": ""
+      "date": "2026-10-17",
+      "evidence": "WP-727 live-verify — overlay shows the served buff (#2224) Full twist schedule: Operator match Z4uVw-dsjqz (server 6dbeb6d7), 2p with a bot ally, Loki / Portals to the Dark Dimension (Enemies of Asgard + HYDRA; Hulk, Nick Fury, Thor, Iron Man, Captain America) — Twist 1 opened a Dark Portal above the Mastermind (2.1.1; Loki then cost 11, paid with 12 at 8.2.9); Twists 2–6 opened portals leftmost-first: Bridge (5.1.1), Streets (9.1.1), Rooftops (12.1.1), Bank (14.1.1), Sewers (24.1.1); Twist 7 ended the game, \"The seventh Dark Portal tears open\" / \"Scheme loss triggered — twist threshold reached\" (29.1.1–29.1.3).",
+      "note": "Mastermind +1, the five city portals in order, and Twist 7 Evil Wins all seen live."
     },
     {
       "key": "scheme:core/unleash-the-power-of-the-cosmic-cube|twist",
@@ -1361,10 +1361,10 @@
       "card": "Hulk",
       "ability": "Growing Anger, Hulk Smash!",
       "wp": "",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-10-17",
-      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): Growing Anger +1 after another Strength Hero (Odinson 8.2.4; Hulk Smash! 10.2.4, 18.2.4) and blocked when played first (16.2.2). Hulk Smash! was blocked every time it was played first (10.2.2, 14.2.2, 18.2.2, 20.2.2, 22.2.2, 26.2.2, 30.2.2).",
-      "note": "Hulk Smash!'s +5 firing half is still unexercised: play it after Growing Anger or Odinson."
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): Growing Anger +1 after another Strength Hero (Odinson 8.2.4; Hulk Smash! 10.2.4, 18.2.4) and blocked when played first (16.2.2). Hulk Smash! was blocked every time it was played first (10.2.2, 14.2.2, 18.2.2, 20.2.2, 22.2.2, 26.2.2, 30.2.2). Hulk Smash! firing half: Operator match Z4uVw-dsjqz (server 6dbeb6d7), 2p with a bot ally, Loki / Portals to the Dark Dimension (Enemies of Asgard + HYDRA; Hulk, Nick Fury, Thor, Iron Man, Captain America) — after Growing Anger (Strength) it gained +5 (8.2.4, 14.2.4, 16.2.9, 28.2.4; turn 8 totalled 2 + 5 + 5 = 12 attack); blocked when played first (18.2.5, 22.2.2, 24.2.2).",
+      "note": "Growing Anger and Hulk Smash! both seen fire and block. Unmarked \"[hc:strength]\" superpowers; no ledger mechanic."
     },
     {
       "key": "core/iron-man|attack",
