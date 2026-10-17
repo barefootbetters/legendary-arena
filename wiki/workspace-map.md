@@ -10,6 +10,7 @@ tags:
 related:
   - branding.md
   - data-file-locations.md
+  - workstation-layout-migration.md
   - video-production-workflow.md
   - youtube-channel-plan.md
   - blog-post-authoring.md
@@ -418,7 +419,9 @@ asked. Two pointers keep it reachable:
      only your own commits are listed.
 
   Moving the engine repo off pCloud is planned and currently deferred by
-  operator decision. The target is **`C:\dev\legendary-arena`**: code
+  operator decision; the plan and its progress are tracked on
+  [Workstation Layout Migration](workstation-layout-migration.md). The
+  target is **`C:\dev\legendary-arena`**: code
   checkouts go under `C:\dev\` and website checkouts under `C:\www\`
   (operator decision, 2026-10-17). That replaces the
   `C:\www\legendary-arena` target named in D-24208's rationale. Do not
