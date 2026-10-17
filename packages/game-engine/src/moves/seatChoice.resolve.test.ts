@@ -244,13 +244,29 @@ describe('boardgame.io stage-ride admission', () => {
     assert.ok(captured !== undefined, 'seats admitted via the framework ride');
   });
 
-  // why: D-24648 — the active player is already ctx.currentPlayer in an empty-stage turn,
-  // so stage-riding them is unnecessary AND the extra open/revert framework frame froze a
-  // Diving-Block-on-your-own-turn start-stage escape wound until reload.
-  it('buildSeatChoiceActivePlayersValue skips the active player', () => {
+  // why: D-24743 — setActivePlayers replaces the activePlayers map, so a MIXED ride that
+  // skipped the active seat left it unable to submit its own answer (InactivePlayer) until
+  // every other seat answered; the bot-ally driver faulted on it (match Y1w7rCsC8Ek). A
+  // mixed ride admits the active seat too. (This case asserted the skip before D-24743.)
+  it('buildSeatChoiceActivePlayersValue admits the active player in a mixed ride', () => {
     const value = buildSeatChoiceActivePlayersValue(multiSeatChoice(['1', '2']), '1');
-    assert.deepEqual(value, { '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 } });
+    assert.deepEqual(value, {
+      '1': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+      '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+    });
   });
+
+  it('buildSeatChoiceActivePlayersValue never adds an active player who is not addressed', () => {
+    const value = buildSeatChoiceActivePlayersValue(multiSeatChoice(['1', '2']), '0');
+    assert.deepEqual(value, {
+      '1': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+      '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+    });
+  });
+
+  // why: D-24648 — the active player is already ctx.currentPlayer in an empty-stage turn,
+  // so stage-riding them ALONE is unnecessary AND the extra open/revert framework frame froze
+  // a Diving-Block-on-your-own-turn start-stage escape wound until reload.
 
   it('buildSeatChoiceActivePlayersValue returns empty when the only addressed seat is the active player', () => {
     const value = buildSeatChoiceActivePlayersValue(singleSeatChoice('1'), '1');
@@ -264,12 +280,17 @@ describe('boardgame.io stage-ride admission', () => {
     assert.equal(called, false, 'no stage transition for the active player alone — no frame to drop');
   });
 
-  it('admitSeatsForPendingSeatChoice still rides a NON-active seat while skipping the active one', () => {
+  // why: D-24743 — a mixed ride admits the active seat as well (before D-24743 this case
+  // asserted the active seat was skipped, which left it unable to submit).
+  it('admitSeatsForPendingSeatChoice rides a NON-active seat AND the active one in a mixed ride', () => {
     let captured: unknown;
     const events = { setActivePlayers: (arg: unknown) => { captured = arg; } };
     admitSeatsForPendingSeatChoice(events, multiSeatChoice(['1', '2']), '1');
     assert.deepEqual(captured, {
-      value: { '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 } },
+      value: {
+        '1': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+        '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+      },
       revert: true,
     });
   });
