@@ -1,5 +1,14 @@
 # Wiki Index
 
+## Legendary Arena at a glance
+
+Product background — sites, repositories, the second brain, and backups.
+Source page: [Legendary Arena at a Glance](legendary-arena-at-a-glance.md).
+
+{{< include-section page="legendary-arena-at-a-glance" section="at-a-glance" >}}
+
+---
+
 > **75 / 78** entity pages.
 > Last regenerated: 2026-09-28.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
@@ -150,6 +159,10 @@ High-level card categorizations recognised by the engine.
 
 Cross-cutting governance, methodology, and readiness assessments.
 
+- [Legendary Arena at a Glance](legendary-arena-at-a-glance.md) — *(draft)*
+  the one-screen product background shown at the top of this page: local
+  roots, every `legendary-arena.com` site and where it runs, the three
+  repositories, how the second brain reads this repo, and the backup layers.
 - [Card Image Acquisition](card-image-acquisition.md) — *(draft)* the
   card-image staging chain (scrape → convert → rename): per-set
   PowerShell scrapers pull card face JPEGs from the
