@@ -56,19 +56,25 @@ what the files are and how they are kept safe:
 | Root | Holds | Kept safe by |
 |------|-------|--------------|
 | `C:\www\` | Website and web-app checkouts — Hugo sites, the marketing repo, the lab, the shared wiki theme | GitHub (push); deployed to Cloudflare |
-| `C:\dev\` | Intended home for code checkouts — engines, libraries, tools. **Today it holds only an empty `legendary-arena\` placeholder** | GitHub (push) |
+| `C:\dev\` | Code checkouts — engines, libraries, tools. The engine monorepo's off-pCloud home is `C:\dev\legendary-arena` (an empty placeholder until the move) | GitHub (push) |
 | `C:\pcloud\` | Business records, staging, work-in-progress docs, media masters. Legendary Arena's working root is `C:\pcloud\LA\` | pCloud sync |
 
-The engine monorepo is the exception: it currently lives on the sync
-drive at `C:\pcloud\BB\DEV\legendary-arena`, which is a known hazard,
-not the pattern — see [Workspace Map](workspace-map.md) for the hazard,
-the mitigations, and what belongs in each pCloud folder.
+**Two kinds of backup, never mixed.** GitHub is the backup for anything
+in a git repo — push is what makes code durable. pCloud is the backup
+for work-in-progress files that are not in git. A git checkout does not
+belong on pCloud: pCloud syncs the `.git` folder too, and the two clash.
+
+The engine monorepo still breaks that rule: it lives on the sync drive at
+`C:\pcloud\BB\DEV\legendary-arena` until it moves to
+`C:\dev\legendary-arena` (operator decision, 2026-10-17). See
+[Workspace Map](workspace-map.md) for the hazard, the mitigations, and
+what belongs in each pCloud folder.
 
 **Git checkouts that make up Legendary Arena:**
 
 | Local path | GitHub remote | What it is |
 |------------|---------------|------------|
-| `C:\pcloud\BB\DEV\legendary-arena` | `barefootbetters/legendary-arena` | **The engine monorepo** — engine, API server, every Vue app, card data, and this wiki's source. The canonical checkout. |
+| `C:\pcloud\BB\DEV\legendary-arena` | `barefootbetters/legendary-arena` | **The engine monorepo** — engine, API server, every Vue app, card data, and this wiki's source. The canonical checkout today; moving to `C:\dev\legendary-arena`. |
 | `C:\www\legendary-arena-com` | `legendary-arena/legendary-arena-website` | Hugo marketing site and blog → `www.legendary-arena.com`. |
 | `C:\www\legendary-arena-lab` | `legendary-arena/legendary-arena-lab` | API droplet provisioning (`infra/scripts/NN-*.ps1`) and the droplet side of the server deploy. |
 | `C:\www\ewiki-theme` | `barefootbetters/ewiki-theme` | Shared Hugo theme the wikis build with (D-24728). |
@@ -311,11 +317,12 @@ match start** rather than bundling audio into the build. Full pipeline:
 - **Two clones of the engine repo, one of them stale.**
   `C:\www\legendary-arena` shares the engine remote but is far behind
   `main`; a search across `C:\www\` can return its superseded files. The
-  canonical checkout is `C:\pcloud\BB\DEV\legendary-arena`. The planned
-  off-pCloud home is not settled either: [Workspace Map](workspace-map.md)
-  names `C:\www\legendary-arena` (where the stale clone sits), while the
-  `C:\dev\` convention — code projects live there — points at the empty
-  `C:\dev\legendary-arena` placeholder. Pick one before the move happens.
+  canonical checkout is `C:\pcloud\BB\DEV\legendary-arena`. The off-pCloud
+  move target is `C:\dev\legendary-arena`, set by operator decision on
+  2026-10-17. It replaces the `C:\www\legendary-arena` target named in
+  D-24208's rationale, which was where the stale clone sat, and follows
+  the `C:\dev\` = code convention. The stale clone has no role in the
+  move and can be deleted.
 - **`legends.` is the scoreboard, and `ewiki.` is private.** The Legends
   board is a Vue SPA showing competitive standings, not a lore site, and
   the engineering wiki sits behind Cloudflare Access — a 302/401/403 from
