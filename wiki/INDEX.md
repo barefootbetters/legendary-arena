@@ -268,6 +268,11 @@ Cross-cutting governance, methodology, and readiness assessments.
   each, and where video, vendor attachments, and work-in-progress
   stage. Defers to [Data & File Locations](data-file-locations.md) at
   the repo boundary.
+- [Workstation Layout Migration](workstation-layout-migration.md) —
+  *(draft)* The plan and progress record for moving to one folder name
+  per product in `C:\dev`, `C:\www` and `C:\pcloud`, starting with the
+  engine leaving the pCloud sync drive. Phases with done-when checks and
+  rollbacks, and a dated progress log.
 - [Development Workflow](development-workflow.md) — The
   develop-from-anywhere loop: laptop / workstation / phone drive
   Claude Code sessions on WP/EC contracts → GitHub → front-ends
