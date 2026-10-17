@@ -894,6 +894,17 @@
       "note": ""
     },
     {
+      "key": "core-villain-spider-foes-venom|setup:require-to-defeat",
+      "kind": "villain",
+      "card": "Venom",
+      "ability": "setup:require-to-defeat",
+      "wp": "WP-292",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Refusal branch: operator-observed live on 2026-10-17 (Jeff) — with no Covert Hero in hand or in play, the game would not let him fight Venom. A refused fight is a silent return (fightVillain.ts defeat-requirement precondition, D-24076), so there is no log line to cite. Allowed branch: 2p bot-ally Dr. Doom / Killbots, match zE7zTyM-ziJ (build 28bc08a) — Venom fought with a Covert Hero in play (28.2.11).",
+      "note": "Same requirement path as Blob (hand + play, D-24076). A free defeat (Cruel Ruler, Pure Fury, Silent Sniper) ignores the restriction by ruling D-24737 (Cruel Ruler defeated Venom with no Covert Hero, mzasQjZ3DU2 26.2.13)."
+    },
+    {
       "key": "core-villain-spider-foes-venom|gainWoundEachPlayer",
       "kind": "villain",
       "card": "Venom",
