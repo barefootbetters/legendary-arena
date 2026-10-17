@@ -12,7 +12,7 @@
 **User-visible on `play.legendary-arena.com` (after deploy).** With the optional Final Blow rule on, once the Mastermind's four Tactics are defeated, Nick Fury's Pure Fury and Black Widow's Silent Sniper can now pick the Mastermind and strike the final blow for free (operator ruling). Before, they stopped offering the Mastermind after its last Tactic, so only a paid fight could win (match `Er6Uj0zeyDW`, 19.2.2–25.2.17).
 
 - **Engine only.** No G-shape change, no re-pin; Final Blow off is unchanged.
-- **Live-verify (D-24026):** pending. Final Blow match: defeat the four Tactics, then play Pure Fury with Loki (or the Mastermind) as a target and expect "struck the final blow".
+- **Live-verify (D-24026), 2026-10-17: PASS.** Operator match `tXTkG2Pardt` (server `d72fbbb1`, the #2873 merge), Loki / Portals, Final Blow on: Pure Fury took all four Tactics, then struck the final blow on Loki (16.2.3) and the heroes won at 16.3.1. Silent Sniper's final blow was not exercised.
 
 ### D-24738 — Secret Invasion counts captured Heroes in the Escape pile toward its six (direct fix) (2026-10-17)
 
