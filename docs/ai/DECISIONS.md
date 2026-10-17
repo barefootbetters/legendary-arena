@@ -48792,7 +48792,7 @@ Protect this file.
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5366 → 5371); `sim:coverage --check`, `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check` and `ledger:numbers:check` all OK. No replay, PAR or hash pin moved, so nothing was re-pinned.
 
-**Live-verify (D-24026): pending.** Operator match, Loki / Portals to the Dark Dimension: after twist 1 (the Mastermind Dark Portal), get exactly 11 S.H.I.E.L.D. Heroes into the KO pile and play Pure Fury with the City empty. Expect "found no Villain or Mastermind weak enough for Pure Fury"; with 12, Loki is a target.
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `WsQDr4yybrp` (server build `85771ab6`, the #2879 merge), 2p with a bot ally, Loki / Portals to the Dark Dimension (Enemies of Asgard + HYDRA), Final Blow on. Twist 1 opened the Mastermind Dark Portal (2.1.1), putting Loki at 10 + 1 = 11. With exactly 11 S.H.I.E.L.D. Heroes in the KO pile and the City empty, Pure Fury "found no Villain or Mastermind weak enough" (8.2.2). Under D-24499's printed 10, Loki would have been a target. With 13, Pure Fury took Loki on its own (14.2.2, Cruel Ruler). With 16, it struck the final blow (24.2.13–24.2.14).
 
 **Reserved by:** NUMBER-LEDGER D-24741. Related: WP-682 / D-24499 (Pure Fury), D-24740 (free Final Blow), WP-539 / D-24348 and WP-728 / D-24549 (Dark Portals), WP-748 / D-24572 (Bank Robbery Bystanders), WP-760 / D-24589 (Blood Frenzy), WP-794 / D-24663 (fight-cost reductions).
 
