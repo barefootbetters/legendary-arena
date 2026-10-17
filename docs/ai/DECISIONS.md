@@ -48770,9 +48770,31 @@ Revert proof: without the engine change, the five behavior cases fail and the tw
 
 **Live-verify recipe.** In an operator match with Final Blow on, defeat the Mastermind's four Tactics, then play Pure Fury (enough S.H.I.E.L.D. Heroes in the KO pile) or Silent Sniper (the Mastermind holding a Bystander). Expect the Mastermind among the targets, and choosing it to log "struck the final blow and defeated …" and win at turn end.
 
-**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `tXTkG2Pardt` (server build `d72fbbb1`, the #2873 merge), 2p with a bot ally, Loki / Portals to the Dark Dimension (HYDRA + Enemies of Asgard; Captain America, Hulk, Nick Fury, Thor, Iron Man), Final Blow on. Pure Fury took all four Tactics through the choose prompt (6.2.13, 8.2.3, 10.2.3, 12.2.3; "All tactics defeated — Loki requires a final blow" at 12.2.4). On turn 16 Pure Fury offered Loki again and "Player 0 struck the final blow and defeated Loki!" (16.2.3), with the win at turn end (16.3.1). Silent Sniper's final blow was not exercised; it shares the same isMastermindFreeDefeatTarget predicate.
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `tXTkG2Pardt` (server build `d72fbbb1`, the #2873 merge), 2p with a bot ally, Loki / Portals to the Dark Dimension (HYDRA + Enemies of Asgard; Captain America, Hulk, Nick Fury, Thor, Iron Man), Final Blow on. Pure Fury took all four Tactics through the choose prompt (6.2.13, 8.2.3, 10.2.3, 12.2.3; "All tactics defeated — Loki requires a final blow" at 12.2.4). On turn 16 Pure Fury offered Loki again and "Player 0 struck the final blow and defeated Loki!" (16.2.3), with the win at turn end (16.3.1). Silent Sniper's final blow was not exercised; it shares the same isMastermindFreeDefeatTarget predicate. This match ran on Pure Fury's printed-Attack comparison: Loki was 10 + 1 Dark Portal = 11 against 11 S.H.I.E.L.D. Heroes, so under D-24741 (current Attack, merged after) he would not have been a target. What D-24740 changed, the Mastermind staying a free-defeat target while the final blow is pending, is unaffected.
 
 **Reserved by:** NUMBER-LEDGER D-24740. Related: D-24503 / D-24504 (Final Blow), D-24737 (free defeats ignore "can't defeat unless"), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24553 (turn-end win), D-24026.
+
+---
+Protect this file.
+
+### D-24741 — Pure Fury compares a target's current Attack, not its printed Attack (Jeff ruling, direct fix, amends D-24499) (Active 2026-10-17)
+
+**Context.** Nick Fury's **Pure Fury** prints "Defeat any Villain or Mastermind whose Attack is less than the number of S.H.I.E.L.D. Heroes in the KO pile." WP-682 / D-24499 implemented the comparison against the target's **printed** Attack (`getPrintedAttackForDefeatTarget`: `fightCost`, or `fightCostBase` for a dynamic Villain). That was an implementation choice, not a ruling, and rules v23 does not settle it. In operator match `tXTkG2Pardt` (server `d72fbbb1`, Loki / Portals to the Dark Dimension) the KO pile held 11 S.H.I.E.L.D. Heroes and the twist-1 Dark Portal gave Loki +1 (4.1.1), so his current Attack was 11. Pure Fury still took all four Tactics and the final blow (6.2.13 … 16.2.3), because printed 10 < 11.
+
+**Ruling (Jeff, 2026-10-17).** Pure Fury compares the target's **current** Attack, including modifiers such as Dark Portals.
+
+**Decision.**
+1. `buildPureFuryTargets(G, fightingPlayerId?)` reads a City Villain's Attack from `resolveFightCost(G, cardId, fightingPlayerId)` and the Mastermind's from `resolveMastermindFightCost(G)`, the single fight-cost authorities that the fight moves, the bot and the City / Mastermind `fightCost` projections already use. So Dark Portals (Mastermind and City spaces), the Bank Robbery family's +1 per Bystander, a dynamic Villain's captured Heroes, Blood Frenzy (for the player resolving Pure Fury) and "-N attack" reductions this turn all count. The comparison stays STRICTLY less than. `getPrintedAttackForDefeatTarget` is removed.
+2. Patrol is not part of a Villain's Attack (the fight move adds it after `resolveFightCost`), so it does not affect Pure Fury.
+3. A fully-dynamic `*` Villain is no longer always eligible: its current Attack (base plus captured Heroes) is compared like any other.
+
+**Tests.** `hero/pureFury.logic.test.ts` gains five cases, all failing against the D-24499 code: the `tXTkG2Pardt` numbers (printed 10 + Dark Portal = 11 is not below 11; 12 S.H.I.E.L.D. Heroes bring it back), a Villain in a Dark Portal City space, a dynamic Villain with a captured Hero, a "-N attack" reduction bringing the Mastermind into range, and a Pure Fury play with only a portal-boosted Mastermind logging "found no Villain or Mastermind weak enough". Existing Pure Fury tests use unmodified static stats and are unchanged.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5366 → 5371); `sim:coverage --check`, `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check` and `ledger:numbers:check` all OK. No replay, PAR or hash pin moved, so nothing was re-pinned.
+
+**Live-verify (D-24026): pending.** Operator match, Loki / Portals to the Dark Dimension: after twist 1 (the Mastermind Dark Portal), get exactly 11 S.H.I.E.L.D. Heroes into the KO pile and play Pure Fury with the City empty. Expect "found no Villain or Mastermind weak enough for Pure Fury"; with 12, Loki is a target.
+
+**Reserved by:** NUMBER-LEDGER D-24741. Related: WP-682 / D-24499 (Pure Fury), D-24740 (free Final Blow), WP-539 / D-24348 and WP-728 / D-24549 (Dark Portals), WP-748 / D-24572 (Bank Robbery Bystanders), WP-760 / D-24589 (Blood Frenzy), WP-794 / D-24663 (fight-cost reductions).
 
 ---
 Protect this file.
