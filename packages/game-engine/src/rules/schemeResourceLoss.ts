@@ -109,6 +109,53 @@ export function countEscapedByConvertedOrigin(
 }
 
 /**
+ * Counts the Heroes a captor carried into the Escaped Villains pile (D-24657).
+ *
+ * A Hero card is one with a `G.cardTraits` entry (built from every registry Hero
+ * instance); a converted-villain origin marks a converted Skrull Hero instead,
+ * which `countEscapedByConvertedOrigin` counts, so those are skipped here and no
+ * Hero is counted twice. Villains, Henchmen and Bystanders carry no trait entry.
+ *
+ * @param gameState - The current game state (read-only).
+ * @returns The number of captured Heroes in `G.escapedPile`.
+ */
+export function countEscapedCapturedHeroes(gameState: LegendaryGameState): number {
+  // why: map-level `??` — legacy / unit states predate WP-179 and leave the maps
+  // undefined; a missing map means nothing matches rather than a throw.
+  const traits = gameState.cardTraits ?? {};
+  const origins = gameState.convertedVillainOrigins ?? {};
+  let matchCount = 0;
+  for (const escapedCardId of gameState.escapedPile) {
+    if (traits[escapedCardId] !== undefined && origins[escapedCardId] === undefined) {
+      matchCount = matchCount + 1;
+    }
+  }
+  return matchCount;
+}
+
+/**
+ * The count an `'escaped-converted-count'` loss compares with its threshold.
+ *
+ * The converted-origin count, plus the captured Heroes in the pile when the
+ * condition sets `includeCapturedHeroes` (Secret Invasion, D-24738). The loss
+ * check and the loss meter both read this, so they cannot disagree.
+ *
+ * @param gameState - The current game state (read-only).
+ * @param condition - The escaped-converted-count condition.
+ * @returns The number of counted entries in `G.escapedPile`.
+ */
+export function countEscapedConvertedLoss(
+  gameState: LegendaryGameState,
+  condition: Extract<SchemeResourceLossCondition, { kind: 'escaped-converted-count' }>,
+): number {
+  const convertedCount = countEscapedByConvertedOrigin(gameState, condition.origin);
+  if (condition.includeCapturedHeroes !== true) {
+    return convertedCount;
+  }
+  return convertedCount + countEscapedCapturedHeroes(gameState);
+}
+
+/**
  * Applies the active scheme's escaped-pile resource-loss condition, if any.
  *
  * Handles both escape-pile loss kinds — `'escaped-pile-count'` (by card type,
@@ -146,7 +193,7 @@ export function applyEscapedPileResourceLoss(
   const matchCount =
     condition.kind === 'escaped-pile-count'
       ? countEscapedPileByType(gameState, condition.cardTypes)
-      : countEscapedByConvertedOrigin(gameState, condition.origin);
+      : countEscapedConvertedLoss(gameState, condition);
   if (matchCount >= condition.threshold) {
     // why: SCHEME_LOSS is set HERE, in the escape path, rather than derived
     // inside evaluateEndgame, because evaluateEndgame reads only G.counters
@@ -155,7 +202,7 @@ export function applyEscapedPileResourceLoss(
     gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
     pushLog(
       gameState,
-      `Scheme loss triggered — ${describeEscapedLoss(condition, matchCount)} (threshold ${condition.threshold}).`,
+      `Scheme loss triggered — ${describeEscapedLoss(gameState, condition, matchCount)} (threshold ${condition.threshold}).`,
     );
   }
 }
@@ -168,11 +215,13 @@ export function applyEscapedPileResourceLoss(
  * carried away" line misdescribed three of the four escaped-pile schemes (match
  * 38KtA2vWDg9 logged "5 killbot card(s) carried away by escaping villains").
  *
+ * @param gameState - The current game state (read-only), for the captured-Hero split.
  * @param condition - The escaped-pile resource-loss condition that triggered.
  * @param matchCount - How many matching cards are in the escaped pile.
  * @returns The phrase naming the count and what escaped, without the threshold.
  */
 function describeEscapedLoss(
+  gameState: LegendaryGameState,
   condition: Extract<
     SchemeResourceLossCondition,
     { kind: 'escaped-pile-count' } | { kind: 'escaped-converted-count' }
@@ -182,6 +231,12 @@ function describeEscapedLoss(
   if (condition.kind === 'escaped-converted-count') {
     if (condition.origin === 'killbot') {
       return `${matchCount} Killbots escaped`;
+    }
+    // why: D-24738 — when captured Heroes count too, name both parts so the line
+    // matches the printed "6 Heroes" and the player can see where the count came from.
+    const capturedCount = condition.includeCapturedHeroes === true ? countEscapedCapturedHeroes(gameState) : 0;
+    if (capturedCount > 0) {
+      return `${matchCount} Heroes escaped (${matchCount - capturedCount} Skrulls, ${capturedCount} captured)`;
     }
     return `${matchCount} Skrulls escaped`;
   }

@@ -63,7 +63,8 @@ export const SCHEME_LOSS_PILES: readonly SchemeLossPile[] = [
  *   `threshold` entries in `G.escapedPile` carry a converted-villain `origin`
  *   (`G.convertedVillainOrigins`) — counts converted cards distinctly from real
  *   villains. Killbots: `origin: 'killbot'`, `threshold: 5`. Secret Invasion:
- *   `origin: 'skrull'`, `threshold: 6` (6 Heroes into the Escaped Villains pile).
+ *   `origin: 'skrull'`, `threshold: 6` (6 Heroes into the Escaped Villains pile),
+ *   with `includeCapturedHeroes: true` (D-24738).
  */
 export type SchemeResourceLossCondition =
   | {
@@ -99,6 +100,13 @@ export type SchemeResourceLossCondition =
       origin: ConvertedVillainOrigin;
       /** The count at which the scheme is lost (evil wins). */
       threshold: number;
+      /**
+       * D-24738 — also count the Heroes a captor carried into the pile with it
+       * (D-24657). Secret Invasion prints "If 6 Heroes get into the Escaped
+       * Villains pile", and a captured Hero there is a Hero (operator ruling
+       * 2026-10-17). Omitted (Killbots) counts the origin only.
+       */
+      includeCapturedHeroes?: true;
     };
 
 /**

@@ -17,9 +17,12 @@ import {
   applyEscapedPileResourceLoss,
   applyPileDepletionResourceLoss,
   countEscapedByConvertedOrigin,
+  countEscapedCapturedHeroes,
+  countEscapedConvertedLoss,
   listConditionPiles,
   remainingPileCount,
 } from './schemeResourceLoss.js';
+import { moveAttachedHeroesToEscapedPile } from '../board/heroCapture.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
@@ -616,5 +619,132 @@ describe('escaped-converted-count — Secret Invasion (WP-514 / D-24326)', () =>
     const result = evaluateEndgame(state);
     assert.ok(result, 'endgame must have resolved');
     assert.equal(result!.outcome, 'scheme-wins');
+  });
+});
+
+describe('Secret Invasion counts captured Heroes carried into the Escape pile (D-24738)', () => {
+  const SECRET_INVASION = 'core/secret-invasion-of-the-skrull-shapeshifters';
+  const KILLBOTS = 'core/replace-earths-leaders-with-killbots';
+
+  /**
+   * A state whose Escaped Villains pile holds `skrulls` escaped Skrull Heroes
+   * (origin 'skrull' AND a Hero trait entry, as in a real match), `realVillains`
+   * escaped Villains (typed 'villain', no trait entry), and `captured` Heroes a
+   * captor carried in (a Hero trait entry, no origin).
+   */
+  function escapedState(
+    schemeId: string,
+    skrulls: number,
+    captured: number,
+    realVillains = 0,
+  ): LegendaryGameState {
+    const escapedPile: string[] = [];
+    const convertedVillainOrigins: Record<string, 'skrull'> = {};
+    const cardTraits: Record<string, { heroClass: string | null; team: string | null }> = {};
+    const villainDeckCardTypes: Record<string, RevealedCardType> = {};
+    for (let i = 0; i < skrulls; i++) {
+      const id = `core/deadpool/oddball#${i}`;
+      escapedPile.push(id);
+      convertedVillainOrigins[id] = 'skrull';
+      cardTraits[id] = { heroClass: 'covert', team: null };
+      villainDeckCardTypes[id] = 'villain';
+    }
+    for (let i = 0; i < realVillains; i++) {
+      const id = `core-villain-skrulls-skrull-shapeshifters-0${i}`;
+      escapedPile.push(id);
+      villainDeckCardTypes[id] = 'villain';
+    }
+    for (let i = 0; i < captured; i++) {
+      const id = `core/rogue/energy-drain#${i}`;
+      escapedPile.push(id);
+      cardTraits[id] = { heroClass: 'covert', team: 'x-men' };
+    }
+    return {
+      selection: {
+        schemeId,
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      escapedPile,
+      convertedVillainOrigins,
+      cardTraits,
+      villainDeckCardTypes,
+      counters: {},
+      messages: [],
+    } as unknown as LegendaryGameState;
+  }
+
+  it('counts each captured Hero once, and never a converted Skrull Hero as captured', () => {
+    const state = escapedState(SECRET_INVASION, 4, 2, 3);
+    assert.equal(countEscapedCapturedHeroes(state), 2);
+    assert.equal(countEscapedByConvertedOrigin(state, 'skrull'), 4);
+    assert.equal(
+      countEscapedConvertedLoss(state, {
+        kind: 'escaped-converted-count',
+        origin: 'skrull',
+        threshold: 6,
+        includeCapturedHeroes: true,
+      }),
+      6,
+    );
+  });
+
+  it('4 Skrull Heroes + 2 captured Heroes loses, and the line names both parts', () => {
+    // why: match PF9JUILsmcT — Energy Drain (3.2.19) and Spinning Cyclone (13.1.2)
+    // went into the pile with their Skrull captors; by the operator ruling the sixth
+    // Hero reached the pile at 17.1.2, not 31.1.2.
+    const state = escapedState(SECRET_INVASION, 4, 2, 3);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    assert.equal(
+      state.messages[0]?.text,
+      'Scheme loss triggered — 6 Heroes escaped (4 Skrulls, 2 captured) (threshold 6).',
+    );
+    assert.equal(evaluateEndgame(state)?.outcome, 'scheme-wins');
+  });
+
+  it('5 Skrull Heroes alone do not lose; escaped non-Hero Villains never count', () => {
+    const state = escapedState(SECRET_INVASION, 5, 0, 4);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+
+  it('a captor escaping with 2 captured Heroes takes the count from 4 to 6 on that escape', () => {
+    // why: the escape path appends the captor, then its captured Heroes
+    // (moveAttachedHeroesToEscapedPile, D-24657), then runs the loss check once.
+    const state = escapedState(SECRET_INVASION, 4, 0);
+    const captor = 'core-villain-skrulls-skrull-queen-veranke-00';
+    const capturedHeroIds = ['core/storm/spinning-cyclone#1', 'core/rogue/copy-powers#2'];
+    (state as unknown as { villainAttachedHeroes: Record<string, string[]> }).villainAttachedHeroes = {
+      [captor]: capturedHeroIds,
+    };
+    for (const heroId of capturedHeroIds) {
+      state.cardTraits[heroId] = { heroClass: 'covert', team: 'x-men' };
+    }
+    state.villainDeckCardTypes[captor] = 'villain';
+    state.escapedPile = [...state.escapedPile, captor];
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined, 'the captor alone is not a Hero');
+    moveAttachedHeroesToEscapedPile(state, captor);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+  });
+
+  it('6 Skrull Heroes and no captured Hero keeps the original line', () => {
+    const state = escapedState(SECRET_INVASION, 6, 0);
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.messages[0]?.text, 'Scheme loss triggered — 6 Skrulls escaped (threshold 6).');
+  });
+
+  it('Killbots does not count captured Heroes (no includeCapturedHeroes)', () => {
+    const state = escapedState(KILLBOTS, 0, 5);
+    assert.equal(
+      countEscapedConvertedLoss(state, { kind: 'escaped-converted-count', origin: 'killbot', threshold: 5 }),
+      0,
+    );
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
   });
 });

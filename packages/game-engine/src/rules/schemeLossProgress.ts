@@ -23,7 +23,7 @@ import { SCHEME_TWIST_CONFIGS } from './schemeTwistConfigs.js';
 import { MONSTER_PIT_SETUP_SIZE } from './clashMonsterPit.logic.js';
 import {
   countEscapedPileByType,
-  countEscapedByConvertedOrigin,
+  countEscapedConvertedLoss,
   listConditionPiles,
   remainingPileCount,
 } from './schemeResourceLoss.js';
@@ -393,9 +393,11 @@ function collectResourceConditions(
   if (condition.kind === 'escaped-converted-count') {
     // why: WP-623 / D-24434 — name the converted origin so the meter reads
     // "Killbots N/5" / "Skrulls N/5", not the generic "Escaped".
+    // why: D-24738 — the same count the loss turns on, so Secret Invasion's meter
+    // includes the captured Heroes carried into the pile.
     conditions.push({
       kind: escapedConvertedKind(condition.origin),
-      progress: countEscapedByConvertedOrigin(gameState, condition.origin),
+      progress: countEscapedConvertedLoss(gameState, condition),
       threshold: condition.threshold,
       isThresholdReported: true,
     });
