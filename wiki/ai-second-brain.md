@@ -25,7 +25,7 @@ source:
   - C:\www\jefferyjjensen-corporate-memory\docs\second-brain\design.md (the design record — private repo barefootbetters/jefferyjjensen-corporate-memory)
   - C:\www\jefferyjjensen-corporate-memory\mcp\README.md (the brain's Claude connector — same private repo)
   - C:\www\jefferyjjensen-corporate-memory\scripts\brain-sources.psd1 (which other repos the connector serves — same private repo)
-last-reviewed: 2026-10-14
+last-reviewed: 2026-10-17
 ---
 
 # AI Second Brain
@@ -102,6 +102,50 @@ operator's desk with the connector's `send_to_desk` tool, in a folder such as
 `inbox/<folder>/`. It becomes a Work Packet here only after it's checked
 against this repo's rules (`DECISIONS.md`, `WORK_INDEX.md`, this wiki) and the
 operator approves it. A phone brief is a draft, never a decision.
+
+### Asking the brain's agents for work
+
+Two habits make an agent's output easier to check against this corpus. Both
+are prompting conventions, not new infrastructure, and they hold whichever
+model sits behind the connector.
+
+**Show examples, not just a description.** An agent matches a standard more
+closely when it can see real artifacts that already meet it. The corpus has
+plenty: a shipped Work Packet and its Execution Checklist, a `DECISIONS.md`
+entry, a finished ewiki page. To get a new one, point the agent at three to
+five existing examples of the same kind. Ask it to name their structure and
+constraints first, then write the new one to match. A prose description of
+"what a good Work Packet looks like" gets a generic one back. The examples
+stay fixed when the model changes, so they double as the yardstick for a
+model swap. The coach's `coach:eval` fixtures already work this way (see
+[Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch)).
+
+**Tag how sure each claim is.** When an agent analyses source material (this
+wiki, a repo, a transcript, someone else's process), it marks each claim:
+
+| Tag | Meaning |
+|---|---|
+| **Seen** | Stated in the source; it cites the page, file, or commit. |
+| **Inferred** | Strongly suggested by the source but not stated there. |
+| **Unknown** | The material it had doesn't settle it. |
+
+This keeps a guess from reading as confidently as a fact. It matters most for
+phone answers, which come from a snapshot (see [Edge Cases](#edge-cases)), and
+for phone-to-desk ideas, which are checked against this repo before they become
+Work Packets.
+
+**Capturing an outside idea from the phone.** When a `send_to_desk` idea
+reverse-engineers something external (a video, an article, another product's
+feature), the brief does five things:
+
+1. Names the one behaviour it's about, not the whole source.
+2. Opens with a short summary before any detail.
+3. Tags its claims Seen, Inferred, or Unknown.
+4. Links one to three examples of the output it wants.
+5. Says how a rebuilt version would be tested against the original.
+
+That gives the desk-side check something concrete to verify, and turns "build
+something like this" into a testable Work Packet candidate.
 
 ### Hosting
 
@@ -307,6 +351,11 @@ feature reaching across the network.
   inbox as its only write. The decisions are in the ship's `decisions/log.md`.
 - **2026-10-14** — The connector started serving this wiki (93 pages, folder
   `ewiki`), read from GitHub `main` at each brain deploy.
+- **2026-10-17** — Added [Asking the brain's agents for work](#asking-the-brains-agents-for-work):
+  example-driven requests, Seen / Inferred / Unknown tags, and a five-step
+  brief for outside ideas sent from the phone. Taken from an outside review of
+  this page; the parts that would change hosting, the connector, or the coach
+  were left out.
 
 ## References
 
