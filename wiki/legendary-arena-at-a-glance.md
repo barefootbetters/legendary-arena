@@ -40,70 +40,73 @@ that owns the detail; this page orients, it does not decide.
 
 ## Mechanics {#at-a-glance}
 
-**Product:** Legendary Arena — a digital, multiplayer web version of the
-Legendary deck-building card game.
+```text
+C:\www\        ← website sources (Hugo, .md files) - saved on github and deployed to Cloudflare
+C:\dev\        ← code projects (engines, libraries, tools) - saved on github repositories
+C:\pcloud\     ← personal & business records, staging, work-in-progress docs, etc. - saved on pcloud
 
-### Where the files are
+Product: Legendary Arena (digital card game)
+Cloudflare Pages:
+    www.legendary-arena.com      ← public marketing site (Hugo)
+    play.legendary-arena.com     ← public game client (Vue 3 SPA)
+    legends.legendary-arena.com  ← public scoreboard (Vue 3 SPA, apps/legends-board)
+    cards.legendary-arena.com    ← public card database (Vue 3 SPA)
+Cloudflare Workers (private, behind Cloudflare Access):
+    dashboard.legendary-arena.com  ← admin dashboard (Vue 3 SPA)
+    ewiki.legendary-arena.com      ← engineering wiki (Hugo)
+Cloudflare R2:
+    images.legendary-arena.com   ← bucket legendary-images (card images, avatars, audio)
+        e.g. https://images.legendary-arena.com/mdns/mdns-hr-blade-daywalker-ride-by-moonlight.webp
+DigitalOcean droplet (Ubuntu VPS):
+    api.legendary-arena.com      ← game server + PostgreSQL
 
-**Local roots on the workstation:**
+Repositories:
+    https://github.com/barefootbetters/legendary-arena          ← engine monorepo (all the apps above except www)
+        - Current - C:\pcloud\BB\DEV\legendary-arena (on pCloud until moved to C:\dev)
+        - Future  - C:\dev\legendary-arena
+        - Stale   - C:\www\legendary-arena (safe to delete)
+    https://github.com/legendary-arena/legendary-arena-website  ← marketing site (www)
+        - C:\www\legendary-arena-com
+    https://github.com/legendary-arena/legendary-arena-lab      ← the api droplet's setup + operator runbooks
+        - C:\www\legendary-arena-lab
+        - infra\  = the executable, authoritative versions: cloud-init, numbered provisioners
+                    (infra\scripts\NN-*.ps1), systemd units, nginx, env template, la-deploy gate
+        - content\ = Hugo operator wiki (runbooks)
+        - ewiki overview: https://ewiki.legendary-arena.com/ubuntu-lab-provisioning/
 
-| Root | Holds | Kept safe by |
-|------|-------|--------------|
-| `C:\www\` | Website sources (Hugo, `.md` files) | GitHub, deployed to Cloudflare |
-| `C:\dev\` | Code projects (engines, libraries, tools) | GitHub repositories |
-| `C:\pcloud\` | Personal and business records, staging, work-in-progress docs | pCloud |
+Shared with the second brain:
+    Brain repo: https://github.com/barefootbetters/jefferyjjensen-corporate-memory (private)
+        - C:\www\jefferyjjensen-corporate-memory
+    Rule: the brain reads Legendary Arena from GitHub main ONLY, never a local checkout
+          (connections.md rows 8-9). Unmerged work is invisible to it.
+    1. Brain MCP connector (Claude web/desktop/phone) - https://brain-mcp.barefootbetters.com/mcp (Access)
+        - folder "ewiki" = engine repo wiki\ (public repo, so every page ships
+          unless its front matter says sensitivity: owner-only)
+        - source list: scripts\brain-sources.psd1 (sparse-clones main at deploy time)
+        - it's a snapshot: merging an ewiki edit does NOT update it. Redeploy from the brain repo's clean main:
+              pwsh -File scripts\brain-mcp.ps1 -Deploy
+    2. Live reads by Claude sessions in the brain repo (raw.githubusercontent.com / gh api, main):
+        - engine:    docs\ai\STATUS.md, docs\ai\DECISIONS.md, docs\ai\work-packets\WORK_INDEX.md, wiki\
+        - marketing: legendary-arena-website docs\corporate-memory\ (business brief, decisions, KPIs), content\blog\
+    3. Web viewer https://brain.barefootbetters.com (Access) - the brain repo's own notes, not LA files
+    To share an LA file: merge it into engine wiki\ or marketing docs\corporate-memory\, then redeploy the MCP.
+    To keep an ewiki page out of Claude: sensitivity: owner-only in its front matter.
 
-**Repositories:**
+Backups - database (nightly 09:17 UTC, la-backup timer on the droplet, 50-backup.ps1):
+    Local     - droplet /var/backups/la, last 7 dumps (lost with the droplet)
+    Offsite 1 - Cloudflare R2 bucket legendary-arena-db-backups (primary; 30-day bucket lock;
+                keeps 35 daily / 12 weekly / 12 monthly)
+    Offsite 2 - pCloud mirror, same db-backups/YYYY/MM/DD/ keys (second vendor)
+    Restore   - https://ewiki.legendary-arena.com/disaster-recovery/
+Backups - work in progress: pCloud (C:\pcloud\LA) - never sync GitHub repos there, it clashes with .git folders
+Backups - code: GitHub repos (push)
+```
 
-| Repository | Holds | Local checkout |
-|------------|-------|----------------|
-| [`barefootbetters/legendary-arena`](https://github.com/barefootbetters/legendary-arena) | Engine monorepo — every app below except `www` | `C:\pcloud\BB\DEV\legendary-arena` today (on pCloud until moved); `C:\dev\legendary-arena` in future |
-| [`legendary-arena/legendary-arena-website`](https://github.com/legendary-arena/legendary-arena-website) | Marketing site (`www`) | `C:\www\legendary-arena-com` |
-| [`legendary-arena/legendary-arena-lab`](https://github.com/legendary-arena/legendary-arena-lab) | The API droplet's setup and operator runbooks | `C:\www\legendary-arena-lab` |
-
-In the lab repo, `infra\` holds the executable, authoritative versions —
-cloud-init, numbered provisioners (`infra\scripts\NN-*.ps1`), systemd
-units, nginx, the env template, and the `la-deploy` gate — and
-`content\` is the Hugo operator wiki of runbooks. Overview:
-[Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
-
-**What runs where:**
-
-| Hostname | What it is | Built from | Runs on | Access |
-|----------|-----------|------------|---------|--------|
-| `www.legendary-arena.com` | Marketing site (Hugo) | `legendary-arena-website` | Cloudflare Pages | Public |
-| `play.legendary-arena.com` | Game client (Vue 3 SPA) | `apps/arena-client` | Cloudflare Pages | Public |
-| `legends.legendary-arena.com` | Scoreboard (Vue 3 SPA) | `apps/legends-board` | Cloudflare Pages | Public |
-| `cards.legendary-arena.com` | Card database (Vue 3 SPA) | `apps/registry-viewer` | Cloudflare Pages | Public |
-| `dashboard.legendary-arena.com` | Admin dashboard (Vue 3 SPA) | `apps/dashboard` | Cloudflare Worker | Private — Cloudflare Access |
-| `ewiki.legendary-arena.com` | This engineering wiki (Hugo) | `wiki/` via `apps/wiki-viewer` | Cloudflare Worker | Private — Cloudflare Access |
-| `images.legendary-arena.com` | Card images, avatars, audio, card-data mirror | R2 bucket `legendary-images` | Cloudflare R2 | Public per key |
-| `api.legendary-arena.com` | Game server + PostgreSQL | `apps/server` | DigitalOcean droplet (Ubuntu VPS) | Public API |
-
-Image example:
-`https://images.legendary-arena.com/mdns/mdns-hr-blade-daywalker-ride-by-moonlight.webp`.
-Authoritative hostname table: [`docs/ops/DOMAINS.md`](../docs/ops/DOMAINS.md).
-Deeper locator: [Data & File Locations](data-file-locations.md) and
-[Workspace Map](workspace-map.md).
-
-### How it is backed up
-
-**Database** — nightly at 09:17 UTC, by the `la-backup` timer on the
-droplet (`50-backup.ps1`):
-
-| Copy | Where | Retention |
-|------|-------|-----------|
-| Local | Droplet `/var/backups/la` | Last 7 dumps; lost with the droplet |
-| Offsite 1 (primary) | Cloudflare R2 bucket `legendary-arena-db-backups` | 30-day bucket lock; keeps 35 daily / 12 weekly / 12 monthly |
-| Offsite 2 (second vendor) | pCloud mirror, same `db-backups/YYYY/MM/DD/` keys | Mirrors R2 |
-
-Restore: [Disaster Recovery](disaster-recovery.md).
-
-**Work in progress** — pCloud (`C:\pcloud\LA`). Never sync a GitHub repo
-there; pCloud clashes with `.git` folders.
-
-**Code** — the GitHub repos. Push is the backup; unpushed work exists only
-on the workstation.
+Deeper detail: [Data & File Locations](data-file-locations.md),
+[Workspace Map](workspace-map.md),
+[Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md),
+[AI Second Brain](ai-second-brain.md), and
+[Disaster Recovery](disaster-recovery.md).
 
 ### Which files you can edit
 
@@ -153,38 +156,6 @@ Card-data edits do not reach `cards.legendary-arena.com` until the R2
 What breaks when each one is down, and where to check:
 [Service Dependency Map](service-dependency-map.md), rendered from
 [`docs/ops/service-dependencies.json`](../docs/ops/service-dependencies.json).
-
-### Shared with the second brain
-
-The brain repo is
-[`barefootbetters/jefferyjjensen-corporate-memory`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory)
-(private), checked out at `C:\www\jefferyjjensen-corporate-memory`.
-
-**Rule:** the brain reads Legendary Arena from GitHub `main` only, never a
-local checkout (`connections.md` rows 8–9). Unmerged work is invisible to
-it.
-
-1. **Brain MCP connector** (Claude web, desktop, phone) —
-   `https://brain-mcp.barefootbetters.com/mcp`, behind Cloudflare Access.
-   - Folder `ewiki` is this repo's `wiki\`. The repo is public, so every
-     page ships unless its front matter says `sensitivity: owner-only`.
-   - Source list: `scripts\brain-sources.psd1` in the brain repo
-     (sparse-clones `main` at deploy time).
-   - It is a snapshot: merging an ewiki edit does **not** update it.
-     Redeploy from the brain repo's clean `main` with
-     `pwsh -File scripts\brain-mcp.ps1 -Deploy`.
-2. **Live reads by Claude sessions in the brain repo**
-   (`raw.githubusercontent.com` / `gh api`, `main`):
-   - Engine: `docs\ai\STATUS.md`, `docs\ai\DECISIONS.md`,
-     `docs\ai\work-packets\WORK_INDEX.md`, `wiki\`.
-   - Marketing: `legendary-arena-website` `docs\corporate-memory\`
-     (business brief, decisions, KPIs) and `content\blog\`.
-3. **Web viewer** — `https://brain.barefootbetters.com` (Access). The
-   brain repo's own notes, not Legendary Arena files.
-
-To share a Legendary Arena file, merge it into the engine `wiki\` or
-marketing `docs\corporate-memory\`, then redeploy the MCP. More in
-[AI Second Brain](ai-second-brain.md).
 
 ## Interactions
 
