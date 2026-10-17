@@ -45,15 +45,36 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 |---|---|---|
 | 0 | Record the convention as a decision | Not started |
 | 1 | Back up the loose files that have no backup today | Not started |
-| 2 | Add an unpushed-work check | Not started |
-| 3 | Re-clone the engine into `C:\dev\legendary-arena` | Not started (needs a quiet window) |
-| 4 | Re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments` | Not started (needs a quiet window) |
-| 5 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena`; create `C:\pcloud\herbs-vs-ailments` | Not started |
-| 6 | Move shared tools to `C:\dev` | Optional |
-| 7 | Clean up leftovers | Not started |
+| 2 | Add an unpushed-work check | Not started (not blocking) |
+| 3 | **Rehearsal:** re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments` | Not started (quiet window for HvA) |
+| 4 | Fold the rehearsal's lessons into Phases 5–6 | Not started |
+| 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Not started (no quiet window needed) |
+| 6 | **Cut over** the engine | Not started (quiet window for LA) |
+| 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Not started |
+| 8 | Move shared tools to `C:\dev` | Optional |
+| 9 | Clean up leftovers | Not started |
 
 Update the Status column and add a line to the Progress log whenever a
-phase moves.
+phase moves. The step-by-step commands live in the operator's execution
+plan on pCloud (`C:\pcloud\LA\workstation-layout-migration-plan.md`); this
+page records the phases, the checks, and the outcome.
+
+### Why this order
+
+Herbs vs. Ailments goes first as the rehearsal, because it is the cheap
+place to find the bugs: 9 registered worktrees against the engine's 50, 13
+memory files against 242, no `.env` files, and no live users. It exercises
+the worktree audit, the branch bundle, the re-clone, the memory copy,
+re-pointing Claude Desktop, a fresh desktop worktree from the new clone,
+the hardcoded `$repoRoot` in its `editing-this-page.html`, and the
+`.RETIRED` rollback.
+
+What it can't exercise is covered by splitting the engine move in two.
+Herbs vs. Ailments has no commit hooks, nothing near the engine's scale,
+and no `.env` files. But cloning a second copy of the engine touches
+nothing in the old checkout, so Phase 5 can build it, test it, and prove
+its hooks fire while sessions keep working in the old one. Only Phase 6,
+the worktree cleanup, memory copy, and switch, needs a quiet window.
 
 ### The convention
 
@@ -80,16 +101,16 @@ the shared `bb-studio-dashboard` repo, and each project only keeps a
 C:\dev\
     legendary-arena\            engine, server, apps, wiki\ (the LA ewiki)
     herbs-vs-ailments\          engine, server, client, docs\ (the HvA ewiki)
-    bb-studio-dashboard\        shared dashboard tool + studio ewiki      (Phase 6)
-    ewiki-theme\                shared Hugo theme                         (Phase 6)
-    legendary-arena-lab\        api droplet provisioning + runbooks       (Phase 6)
+    bb-studio-dashboard\        shared dashboard tool + studio ewiki      (Phase 8)
+    ewiki-theme\                shared Hugo theme                         (Phase 8)
+    legendary-arena-lab\        api droplet provisioning + runbooks       (Phase 8)
 C:\www\
     legendary-arena-com\        LA marketing site
     herbs-vs-ailments-com\      HvA marketing site, when it exists
     barefootbetters-www\  jefferyjjensen-corporate-memory\  ...
 C:\pcloud\
-    legendary-arena\            today's C:\pcloud\LA (Phase 5)
-    herbs-vs-ailments\          new (Phase 5)
+    legendary-arena\            today's C:\pcloud\LA (Phase 7)
+    herbs-vs-ailments\          new (Phase 1)
 ```
 
 ### Current state (2026-10-17)
@@ -118,7 +139,7 @@ governance note cites it.
 ### Phase 1 — Back up the loose files
 
 1. Move the workstation README to pCloud: `C:\www\README.md` →
-   `C:\pcloud\LA\README.md` (it moves with the folder in Phase 5). Delete
+   `C:\pcloud\LA\README.md` (it moves with the folder in Phase 7). Delete
    the untracked copy `C:\www\legendary-arena\README-LA.md`.
 2. Move `C:\www\herbs-vs-ailments\README-HvA.md` →
    `C:\pcloud\herbs-vs-ailments\README.md` (creating that folder early; it
@@ -143,69 +164,98 @@ with the laptop.
 **Done when** the weekly report carries the list and the first run is
 clean or triaged.
 
-### Phase 3 — Re-clone the engine into `C:\dev\legendary-arena`
+### Phase 3 — Rehearsal: re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments`
 
-Re-clone; do not move the folder. Moving it breaks the worktree links
+Re-clone; never move a checkout. Moving breaks the worktree links
 registered in `.git`, and carries over any damage pCloud sync has already
-done to `.git`.
+done to it.
 
-**Preflight** (in a window with no Claude Code session running in the
-engine):
+1. **Preflight**, with no Claude Code session open in the repo: audit every
+   registered worktree (9 on 2026-10-17, including two in temp scratchpads,
+   one on a detached HEAD) for uncommitted changes and unpushed commits;
+   push or discard each; remove the clean ones; `git worktree prune`.
+2. Bundle every local-only commit (`git bundle create … --branches --not
+   --remotes=origin`) into `C:\pcloud\herbs-vs-ailments\code-archive\`.
+3. Clone `barefootbetters/herbs-vs-ailments` into `C:\dev\herbs-vs-ailments`;
+   `pnpm install`, `pnpm test`, `pnpm typecheck`.
+4. Copy Claude Code's project memory, `C--www-herbs-vs-ailments\memory\`
+   (13 files), to `C--dev-herbs-vs-ailments\memory\`. Claude Code keys
+   memory by project path, so without this a session in the new folder
+   starts with none.
+5. Rename the old checkout to `herbs-vs-ailments.RETIRED-<date>`.
+6. Start a session on the new folder; confirm it sees its memory and that a
+   fresh desktop worktree lands under `C:\claude-worktrees\herbs-vs-ailments\`.
+7. Fix the one in-repo path, `$repoRoot` in
+   `apps/ewiki/layouts/partials/editing-this-page.html`.
 
-1. Push or finish in-flight work. The canonical checkout may hold
-   uncommitted changes from a running session; let that session finish.
-2. Inventory `git worktree list`: push each worktree's branch or remove the
-   worktree.
-3. Check `git stash list` (0 on 2026-10-17) and local branches with no
-   upstream; push or delete.
-4. Note the gitignored files that matter (`.env`); they do not come with a
-   clone.
+Every surprise goes in the execution plan's Rehearsal log.
 
-**Steps:**
+**Done when** tests pass in the new folder, a session there loads its
+memory, and a new worktree works. Delete the `.RETIRED` folder 14 days
+later. **Rollback:** rename the old folder back.
 
-1. `git clone https://github.com/barefootbetters/legendary-arena.git C:\dev\legendary-arena`
-2. Copy `.env` across.
+### Phase 4 — Fold the lessons in
+
+Walk the Rehearsal log; for each entry, fix a command, add a check, or mark
+it HvA-only. Update Phases 5–6 here and in the execution plan.
+
+**Done when** every Rehearsal log entry has a disposition.
+
+### Phase 5 — Pre-stage the engine clone (no switch-over)
+
+Builds and checks the new clone while sessions keep working in the old
+checkout. No Claude Code session opens in the new folder yet: the first one
+would start that folder's memory directory before the real memory is
+copied in.
+
+1. Clone `barefootbetters/legendary-arena` into `C:\dev\legendary-arena`
+   (the empty placeholder; the `C:\www\DEV-LegendaryArena.lnk` shortcut
+   already points there).
+2. Copy the gitignored files a clone doesn't bring: `.env`,
+   `apps/dashboard/.env`, `apps/legends-board/.env.local`,
+   `.claude/settings.local.json`.
 3. `git config core.hooksPath .githooks` — **relative**. The shared config
    on 2026-10-17 held the absolute `C:\pcloud\BB\DEV\legendary-arena\.githooks`;
    once the old checkout is gone, an absolute path to it silently runs no
-   hooks at all. Verify with `git config --show-origin core.hooksPath`.
+   hooks at all.
 4. `pnpm install`, `pnpm -r build`, `pnpm -r --no-bail test`.
-5. Copy Claude Code's project memory:
-   `~\.claude\projects\C--pcloud-BB-DEV-legendary-arena\memory\` (242 files)
-   → `~\.claude\projects\C--dev-legendary-arena\memory\`. Claude Code keys
-   memory by the project path, so without this a session in the new folder
-   starts with none of it.
-6. Point the desktop app's project and the `C:\www\DEV-LegendaryArena.lnk`
-   shortcut at the new folder; start new sessions there.
-7. Update live path references (Edge Cases lists them); leave historical
-   records alone.
-8. Delete the stale clone `C:\www\legendary-arena`.
+5. Prove the hooks fire: on a scratch branch, `git commit --allow-empty -m
+   "hook test"` must be **rejected** by the commit-msg hook (no `EC-###:` /
+   `SPEC:` / `INFRA:` prefix). Delete the scratch branch.
 
-**Done when** build and tests pass in the new folder, a Claude Code session
-there loads its memory and its commit hooks fire, and nothing has needed the
-old checkout for 14 days. Then delete `C:\pcloud\BB\DEV\legendary-arena`.
-**Rollback:** the old checkout is untouched until that 14-day mark; reopen
-it.
+**Done when** the build passes, tests match `main`'s CI, and the test
+commit is rejected. **Rollback:** empty the folder; nothing else changed.
 
-### Phase 4 — Re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments`
+### Phase 6 — Cut over the engine
 
-The same procedure as Phase 3: preflight its 9 registered worktrees, clone
-`barefootbetters/herbs-vs-ailments`, and copy the memory directory
-`C--www-herbs-vs-ailments\memory\` (13 files) to
-`C--dev-herbs-vs-ailments\memory\`. Its own docs name the old path once.
+In a quiet window, with no session open in the engine or its worktrees:
 
-**Done when** `pnpm test` passes in the new folder and a session there loads
-its memory. **Rollback:** reopen `C:\www\herbs-vs-ailments` until it is
-deleted.
+1. Audit the registered worktrees (50 on 2026-10-17) the same way as
+   Phase 3; push or discard; remove; prune.
+2. Bundle local-only commits (183 local branches had no upstream or a
+   deleted one on 2026-10-17) into `C:\pcloud\LA\code-archive\`.
+3. `git pull --ff-only` in the new clone; re-copy the gitignored files.
+4. Copy `C--pcloud-BB-DEV-legendary-arena\memory\` (242 files on
+   2026-10-17) to `C--dev-legendary-arena\memory\`.
+5. Rename the old checkout to `legendary-arena.RETIRED-<date>`; delete the
+   stale clone `C:\www\legendary-arena`.
+6. Start a session on the new folder; confirm its memory loads and that a
+   new worktree's `core.hooksPath` is the relative `.githooks`.
+7. Sweep the live path references (Edge Cases) and the memory files that
+   name the old path.
 
-### Phase 5 — pCloud folders named for their repos
+**Done when** a session in the new folder loads its memory, its worktrees
+run the hooks, and nothing has needed the old checkout for 14 days. Then
+delete the `.RETIRED` folder. **Rollback:** until then, rename it back.
+
+### Phase 7 — pCloud folders named for their repos
 
 1. Jeff renames `C:\pcloud\LA` → `C:\pcloud\legendary-arena` in Explorer
-   (a pCloud operation on his machine).
+   (a pCloud operation on his machine), with sync idle.
 2. Sweep the references to `C:\pcloud\LA`: 97 in 16 files of this repo's
    wiki and docs, 19 in 3 files of the marketing repo, the brain repo's,
    and `C:\www\WIP-LegendaryArena.lnk`.
-3. Create `C:\pcloud\herbs-vs-ailments` if Phase 1 has not.
+3. `C:\pcloud\herbs-vs-ailments` already exists from Phase 1.
 
 The droplet's nightly backup mirror is unaffected: it writes to
 `db-backups/` at the top of the pCloud account, not inside `LA\`.
@@ -213,7 +263,7 @@ The droplet's nightly backup mirror is unaffected: it writes to
 **Done when** a search of all three repos finds no live `C:\pcloud\LA`
 reference. **Rollback:** rename the folder back; the sweep is a revert.
 
-### Phase 6 — Shared tools to `C:\dev` (optional)
+### Phase 8 — Shared tools to `C:\dev` (optional)
 
 Move `ewiki-theme`, `bb-studio-dashboard` and `legendary-arena-lab` from
 `C:\www` to `C:\dev` (re-clone, as above). The one known local-path
@@ -221,23 +271,25 @@ reference is the brain repo's `viewer/README.md`, which runs
 `C:\www\ewiki-theme\tools\Sync-EwikiTheme.ps1`. Nothing gets safer by this
 phase; it only makes the convention exact.
 
-### Phase 7 — Clean up leftovers
+### Phase 9 — Clean up leftovers
 
 - `C:\dev\null`: a 120 KB stray file from a shell redirect.
 - `C:\www\hva-wp004-knobs`: not a git repo, no backup; delete if unneeded.
 - `bb-studio-dashboard\wrangler.jsonc` still names the live
   `legendary-arena-dashboard` Worker on `dashboard.legendary-arena.com`. No
   workflow deploys it, but a hand `wrangler deploy` there would overwrite
-  the live dashboard. Rename it or drop its route until that repo's Phase 3.
-- `C:\pcloud\BB\DEV\` is empty after Phase 3; update the `BB\` notes on
+  the live dashboard. Rename it or drop its route until that repo's own
+  Phase 3 cutover.
+- `C:\pcloud\BB\DEV\` is empty after Phase 6; update the `BB\` notes on
   [Workspace Map](workspace-map.md).
 
 ### Progress log
 
 - **2026-10-17** — Plan drafted from a working session with Jeff. Decided in
   conversation: repo names, not `LA` / `HvA`; the engine goes to `C:\dev`;
-  wikis stay in their repos; dashboards use `bb-studio-dashboard`. No phase
-  started.
+  wikis stay in their repos; dashboards use `bb-studio-dashboard`. Same
+  day, reordered: Herbs vs. Ailments first as the rehearsal, and the engine
+  move split into a pre-stage and a cut-over. No phase started.
 
 ## Interactions
 
@@ -245,10 +297,10 @@ phase; it only makes the convention exact.
   owns the sync-drive hazard this migration removes. Update it as each phase
   lands; this page records the move, that page records the result.
 - **[Data & File Locations](data-file-locations.md)** carries the local-roots
-  table and the repo list; update it after Phases 3–6.
+  table and the repo list; update it after Phases 3–8.
 - **[AI Second Brain](ai-second-brain.md)** reads every repo from GitHub
   `main`, never a local checkout, so the moves do not affect it. Its repo's
-  notes name a few local paths that Phase 5 sweeps.
+  notes name a few local paths that Phases 6–7 sweep.
 - **[Development Workflow](development-workflow.md)** owns the worktree and
   commit discipline the preflights rely on.
 
@@ -267,11 +319,11 @@ phase; it only makes the convention exact.
   `memory\` needs carrying over.
 - **Hooks fail silently, not loudly.** A `core.hooksPath` pointing at a
   folder that no longer exists makes git run no hooks and report nothing.
-  The relative setting in Phase 3 step 3 avoids it; the user-level
+  The relative setting in Phase 5 step 3 avoids it; the user-level
   worktree hooks-path guard still applies to new worktrees.
 - **Sessions running during the move.** A session started in the old folder
   keeps writing there. The preflight's "no session running" is the guard;
-  do not start Phase 3 while one is open.
+  do not start Phase 3 or Phase 6 while one is open.
 - **This page is in a public repo.** It names folders, never secrets or
   credential files.
 
