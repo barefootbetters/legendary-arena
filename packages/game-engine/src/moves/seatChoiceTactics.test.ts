@@ -32,13 +32,19 @@ import {
 // reshuffle ran when a draw exhausts the deck and pulls the discard back in.
 const SHUFFLE = { random: { Shuffle: <T,>(items: T[]): T[] => [...items].reverse() } };
 
-/** Minimal G carrying only the fields these tactic builders/appliers touch. */
+/**
+ * Minimal G carrying only the fields these tactic builders/appliers touch.
+ * `villainDeckCardTypes` is the setup-time type map Vanishing Illusions reads to tell a
+ * Villain or Henchman from a Bystander or Tactic (D-24742); `convertedVillainOrigins`
+ * marks a converted Killbot.
+ */
 function makeState(zonesBySeat: Record<string, {
   deck?: string[];
   hand?: string[];
   discard?: string[];
   victory?: string[];
-}>): LegendaryGameState {
+}>, villainDeckCardTypes: Record<string, string> = {},
+convertedVillainOrigins?: Record<string, string>): LegendaryGameState {
   const playerZones: Record<string, unknown> = {};
   for (const seat of Object.keys(zonesBySeat)) {
     const z = zonesBySeat[seat]!;
@@ -55,8 +61,28 @@ function makeState(zonesBySeat: Record<string, {
     ko: [],
     cardDisplayData: {},
     messages: [],
+    villainDeckCardTypes: { ...villainDeckCardTypes },
+    convertedVillainOrigins,
   } as unknown as LegendaryGameState;
 }
+
+/** Types each id the way setup's villainDeckCardTypes map would (all one type). */
+function typeAll(cardType: string, ids: string[]): Record<string, string> {
+  const types: Record<string, string> = {};
+  for (const id of ids) {
+    types[id] = cardType;
+  }
+  return types;
+}
+
+/** The Villain ids the Vanishing Illusions tests below place in Victory Piles. */
+const VILLAIN_TYPES = typeAll('villain', [
+  'core-villain-hydra-elite-a#0',
+  'core-villain-hydra-elite-b#0',
+  'core-villain-hydra-a#0',
+  'core-villain-hydra-b#0',
+  'core-villain-brotherhood-c#0',
+]);
 
 /** Records a submission onto a choice (the seat's chosen option index). */
 function submit(choice: PendingSeatChoice, seat: string, optionIndex: number): void {
@@ -195,7 +221,7 @@ describe('buildVanishingIllusionsChoice (WP-694 / D-24511)', () => {
       '1': { victory: ['core-villain-hydra-elite-a#0', 'core-villain-hydra-elite-b#0'] },
       '2': { victory: [] }, // no villain → not addressed
       '3': { victory: ['core-villain-brotherhood-c#0'] },
-    });
+    }, VILLAIN_TYPES);
     const choice = buildVanishingIllusionsChoice(G, ['1', '2', '3']);
     assert.ok(choice !== undefined);
     assert.equal(choice!.kind, VANISHING_ILLUSIONS_KO_KIND);
@@ -205,18 +231,60 @@ describe('buildVanishingIllusionsChoice (WP-694 / D-24511)', () => {
     assert.equal(choice!.defaultOptionIndex, 0);
   });
 
-  it('excludes rescued Bystanders (bystander-villain-deck-NN) and non-villain victory cards', () => {
+  it('D-24742: a seat whose Victory Pile holds only Henchmen is addressed and KOs one', () => {
+    // why: Henchmen are Villains (rules v23 "Henchmen Are Villains"; D-24603 / D-24608).
+    // Live match Y1w7rCsC8Ek skipped a seat holding only Sentinels and Hand Ninjas.
+    const G = makeState({
+      '1': { victory: ['henchman-sentinel-03', 'henchman-hand-ninjas-04', 'henchman-sentinel-09'] },
+    }, typeAll('henchman', ['henchman-sentinel-03', 'henchman-hand-ninjas-04', 'henchman-sentinel-09']));
+    const choice = buildVanishingIllusionsChoice(G, ['1']);
+    assert.ok(choice !== undefined, 'the Henchmen-only seat qualifies');
+    assert.deepEqual(choice!.addressedSeats, ['1']);
+    assert.deepEqual(
+      choice!.seatPrompts['1']!.options.map((option) => option.cardId),
+      ['henchman-sentinel-03', 'henchman-hand-ninjas-04', 'henchman-sentinel-09'],
+    );
+    submit(choice!, '1', 1); // KO hand-ninjas-04
+    applyVanishingIllusionsKo(G, choice!);
+    assert.deepEqual(G.playerZones['1']!.victory, ['henchman-sentinel-03', 'henchman-sentinel-09']);
+    assert.deepEqual(G.ko, ['henchman-hand-ninjas-04'], 'the Henchman KOs to G.ko');
+  });
+
+  it('still excludes rescued Bystanders, a converted Killbot, and Mastermind Tactics', () => {
     const G = makeState({
       '1': {
         victory: [
           'bystander-villain-deck-05', // contains "-villain-" but is a Bystander
-          'core-henchman-doombot-a#0', // henchman, not a villain
-          'core-mastermind-dr-doom-monarchs-decree', // a defeated tactic
+          'bystander', // a supply Bystander (never in the villain-deck map)
+          'bystander-villain-deck-07', // a defeated Killbot: typed 'villain', counts as a Bystander
+          'core-mastermind-dr-doom-monarchs-decree', // a defeated tactic (never in the map)
+          'core-mastermind-loki', // the mastermind itself (never in the map)
         ],
       },
-    });
-    // No real Villain present → no seat qualifies → nothing to park.
+    }, {
+      'bystander-villain-deck-05': 'bystander',
+      'bystander-villain-deck-07': 'villain',
+    }, { 'bystander-villain-deck-07': 'killbot' });
+    // No Villain or Henchman present → no seat qualifies → nothing to park.
     assert.equal(buildVanishingIllusionsChoice(G, ['1']), undefined);
+  });
+
+  it('offers only the Villains and Henchmen from a mixed Victory Pile', () => {
+    const G = makeState({
+      '1': {
+        victory: [
+          'bystander-villain-deck-05',
+          'henchman-sentinel-03',
+          'core-mastermind-loki-cruel-ruler',
+          'core-villain-hydra-a#0',
+        ],
+      },
+    }, { ...VILLAIN_TYPES, 'henchman-sentinel-03': 'henchman', 'bystander-villain-deck-05': 'bystander' });
+    const choice = buildVanishingIllusionsChoice(G, ['1']);
+    assert.deepEqual(
+      choice!.seatPrompts['1']!.options.map((option) => option.cardId),
+      ['henchman-sentinel-03', 'core-villain-hydra-a#0'],
+    );
   });
 
   it('returns undefined when no other seat has a Victory-Pile Villain', () => {
@@ -230,7 +298,7 @@ describe('applyVanishingIllusionsKo — atomic multi-seat (WP-694 / D-24511)', (
     const G = makeState({
       '1': { victory: ['core-villain-hydra-a#0', 'core-villain-hydra-b#0'] },
       '2': { victory: ['core-villain-brotherhood-c#0'] },
-    });
+    }, VILLAIN_TYPES);
     const choice = buildVanishingIllusionsChoice(G, ['1', '2'])!;
     submit(choice, '1', 1); // KO hydra-b
     submit(choice, '2', 0); // KO brotherhood-c
@@ -245,7 +313,7 @@ describe('applyVanishingIllusionsKo — atomic multi-seat (WP-694 / D-24511)', (
       const G = makeState({
         '1': { victory: ['core-villain-hydra-a#0'] },
         '2': { victory: ['core-villain-brotherhood-c#0'] },
-      });
+      }, VILLAIN_TYPES);
       const choice = buildVanishingIllusionsChoice(G, ['1', '2'])!;
       return { G, choice };
     };

@@ -12,8 +12,8 @@
  *     player picks one hand card to discard).
  *   - Vanishing Illusions (Loki) — "Each other player KOs a Villain from their
  *     Victory Pile." A SIMULTANEOUS MULTI-SEAT choice (kind 'vanishing-illusions-ko',
- *     each other player picks one Victory-Pile Villain to KO); a seat with no
- *     Victory-Pile Villain is not addressed (no-op).
+ *     each other player picks one Victory-Pile Villain to KO, Henchmen included per
+ *     D-24742); a seat with no Victory-Pile Villain is not addressed (no-op).
  *
  * This module holds ONLY pure builders + state appliers (no boardgame.io import,
  * no parkSeatChoice import) so it never cycles with seatChoice.resolve.ts — that
@@ -32,7 +32,6 @@ import type {
   PendingSeatChoice,
   SeatChoiceOption,
 } from '../types.js';
-import type { CardExtId } from '../state/zones.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { discardFromHand } from './discardFromHand.js';
 import { drawCardsIntoHand } from './drawCards.logic.js';
@@ -40,6 +39,7 @@ import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
+import { getEligibleVictoryVillains } from './resolveVictoryPileCardPick.js';
 
 /** Discriminant for Monarch's Decree's active single-seat draw-vs-discard mode choice. */
 export const MONARCHS_DECREE_MODE_KIND = 'monarchs-decree-mode';
@@ -58,24 +58,6 @@ const MONARCHS_DECREE_DRAW_COUNT = 1;
 // mode is read back from the active seat's submitted optionIndex against this order.
 const MONARCHS_DECREE_DRAW_OPTION_INDEX = 0;
 const MONARCHS_DECREE_DISCARD_OPTION_INDEX = 1;
-
-/**
- * Whether a Victory-Pile card is a real Villain, from the ext_id id-grammar.
- *
- * // why: WP-694 / D-24511 — a Villain's ext_id is `${setAbbr}-villain-${group}-${slug}`,
- * so the `-villain-` infix identifies a Villain from the id grammar alone — the
- * countVictoryPileGroupVillains / victoryPileHasOtherGroupVillain precedent — WITHOUT a new
- * hashed villain-group map (which would re-pin every committed fixture). The
- * `bystander-villain-deck-NN` rescued-Bystander form ALSO contains `-villain-`, so exclude
- * any `bystander-`-prefixed id; `-henchman-` / `-mastermind-` ext_ids never contain
- * `-villain-` and so are excluded naturally.
- *
- * @param cardExtId - A card ext_id from a player's Victory Pile.
- * @returns Whether the card is a Villain (not a Bystander / Henchman / Mastermind / Tactic).
- */
-function isVictoryPileVillain(cardExtId: CardExtId): boolean {
-  return cardExtId.includes('-villain-') && !cardExtId.startsWith('bystander-');
-}
 
 /**
  * Builds Monarch's Decree's active single-seat draw-vs-discard mode choice, addressed
@@ -287,11 +269,17 @@ export function buildVanishingIllusionsChoice(
     if (!zones) {
       continue;
     }
+    // why: D-24742 — "a Villain" is the broad term, so a Henchman in the Victory Pile
+    // counts (rules v23 "Henchmen Are Villains": "Henchman Villain cards are indeed
+    // Villains"; D-24603 / D-24608). getEligibleVictoryVillains is the shared
+    // Victory-Pile Villain test: the villain + henchman entries of the setup-time
+    // villainDeckCardTypes map. Rescued Bystanders are typed 'bystander', a defeated
+    // Killbot counts as a Bystander, and Mastermind Tactics never enter the map, so all
+    // three stay excluded. The old `-villain-` id-grammar test dropped every Henchman,
+    // whose ext_id is `henchman-{group}-NN`.
     const options: SeatChoiceOption[] = [];
-    for (const cardId of zones.victory) {
-      if (isVictoryPileVillain(cardId)) {
-        options.push({ label: resolveCardName(G.cardDisplayData, cardId), cardId });
-      }
+    for (const cardId of getEligibleVictoryVillains(G, seat)) {
+      options.push({ label: resolveCardName(G.cardDisplayData, cardId), cardId });
     }
     if (options.length === 0) {
       continue;

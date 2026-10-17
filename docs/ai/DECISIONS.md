@@ -48837,3 +48837,24 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24742 — Vanishing Illusions: a Henchman in another player's Victory Pile is "a Villain" they must KO (direct fix, no WP; corrects the D-24511 henchman exclusion) (Active 2026-10-17)
+
+**Context.** Loki's Tactic **Vanishing Illusions** prints "Each other player KOs a Villain from their Victory Pile." WP-694 / D-24511 built the per-seat option list in `buildVanishingIllusionsChoice` (`packages/game-engine/src/moves/seatChoiceTactics.ts`) with a private `isVictoryPileVillain` id-grammar test: the ext_id contains `-villain-` and does not start with `bystander-`. Its comment said Henchman ext_ids "are excluded naturally". Henchman ext_ids are `henchman-{group}-NN`, so every Henchman was dropped. Rules v23 §"Henchmen Are Villains/Adversaries" says "Henchman Villain cards are indeed Villains", and D-24603 / D-24608 already made the same correction for the defeat trigger and the Ebony Blade Victory-Pile pick. It was seen in two 4p operator matches on server `85771ab6` (Loki / Super Hero Civil War, Sentinel and Hand Ninjas Henchmen). In `Y1w7rCsC8Ek`, Player 0's Pure Fury took Vanishing Illusions at 22.2.3 and only Player 3 KO'd a Villain (22.2.5). Player 1's Victory Pile held only Henchmen (Sentinel 03 and 09, Hand Ninjas 04) and was never addressed. In `6jTAMKHlgq_`, Player 0 defeated Vanishing Illusions at 11.2.22 and the log said "no other player had a Villain in their Victory Pile to KO" (11.2.24). But Player 3 held Sentinels 03 and 04, fought at 6.2.7 and 10.2.9.
+
+**Decision.**
+1. `buildVanishingIllusionsChoice` takes its per-seat options from `getEligibleVictoryVillains(G, seat)` (`moves/resolveVictoryPileCardPick.ts`), the shared "Villain in your Victory Pile" test from D-24608. It accepts the `'villain'` and `'henchman'` entries of the setup-time `G.villainDeckCardTypes` map, in Victory Pile order. `isVictoryPileVillain` is removed.
+2. Still excluded: rescued Bystanders (typed `'bystander'`, or the supply `bystander` id, which is not in the map); a defeated Killbot (`convertedVillainOrigins` `'killbot'`, which counts as a Bystander per rules v23); and Mastermind Tactics and the Mastermind, which never enter the map. A seat with none of the eligible cards is still not addressed.
+3. The bot / disconnect default (`defaultOptionIndex` 0, the first eligible card in Victory Pile order) and the ascending-seat atomic apply are unchanged.
+4. **Audit of the other Victory-Pile Villain tests:** the Ebony Blade pick (`getEligibleVictoryVillains`) and the Gladiator scheme twist (`chooseGladiator`) already count Henchmen (D-24608). Viper's "another HYDRA Villain" (`victoryPileHasOtherGroupVillain`), Red Skull's HYDRA Conspiracy (`countVictoryPileGroupVillains`) and Supreme HYDRA's VP are scoped to a Villain *group* by ext_id prefix, so they are left alone. The remaining Victory-Pile scans count Bystanders or S.H.I.E.L.D. cards, not Villains. Vanishing Illusions was the only site with the henchman exclusion.
+
+**Tests.** `moves/seatChoiceTactics.test.ts`: a Henchmen-only Victory Pile is addressed and KOs one; rescued Bystanders, the supply Bystander, a converted Killbot, a defeated Tactic and the Mastermind id still yield no choice; a mixed pile offers only its Henchman and Villain. The old case that asserted a Henchman is "not a villain" asserted the defect and is replaced. `rules/tacticHandlers.test.ts`: a 3-seat dispatch where seat 1 holds only Henchmen (plus a rescued Bystander) and seat 2 holds a Villain. Both seats are addressed, both resolve through `resolveSeatChoice`, and the two KOs land in G.ko in ascending-seat order. Both test files' minimal states now carry `villainDeckCardTypes`, which the builder reads.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5374, net +3 tests). `sim:coverage --check`, `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check` and `ledger:numbers:check` all OK. The seed-locked `simulation/seatChoiceDispatch.test.ts` Vanishing Illusions replay still passes. No replay, PAR or hash pin moved, so nothing was re-pinned.
+
+**Live re-check (D-24026).** Run an operator match with 3+ seats (Loki as Mastermind, with a bot ally). Use the setter pane so that a non-defeating seat's Victory Pile holds only Henchmen, then defeat Vanishing Illusions. That seat must be addressed and must KO one Henchman, and the log must not say "no other player had a Villain".
+
+**Reserved by:** NUMBER-LEDGER D-24742. Related: WP-694 / D-24511 (Vanishing Illusions), D-24603 (Henchmen are Villains for defeat triggers), D-24608 (Victory-Pile pick includes Henchmen), D-24681 (one-target Pure Fury on Vanishing Illusions).
+
+---
+Protect this file.
