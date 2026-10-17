@@ -48738,6 +48738,8 @@ Protect this file.
 
 **Live-verify (D-24026):** pending. In an operator match on Secret Invasion, let Veranke or the Skrull Shapeshifters capture an HQ Hero, then push the captor and Skrull Heroes out with "Reveal a Scheme Twist now" and "Escape the Villain at the City's edge". Expect the loss once Skrull Heroes plus captured Heroes in the pile reach 6, with the new line, and the meter to read "Heroes N/6".
 
+**Live-verify (D-24026), 2026-10-17: PASS.** 2p operator match cLZ0_pzMFmd (server 6dbeb6d7, the #2867 merge), Red Skull / Secret Invasion of the Skrull Shapeshifters: five Skrull Heroes escaped (Avengers Assemble! 4.2.6, Web-Shooters 4.2.11, Gathering Stormclouds 7.1.2, Energy Drain 8.1.2, Perfect Teamwork 9.1.2) and Skrull Queen Veranke carried her captured A Day Unlike Any Other (4.1.2) into the pile when she escaped (4.2.21); the scheme won at 9.1.3 with "Scheme loss triggered — 6 Heroes escaped (5 Skrulls, 1 captured) (threshold 6)." Escaped Super-Skrull and Veranke did not count; the old count would still have read 5. The meter projected schemeLossProgress 6 / 6 on escaped-skrull ("Heroes").
+
 **Reserved by:** NUMBER-LEDGER D-24738. Related: D-24326 (Secret Invasion conversion + loss), D-24657 (captured Heroes into the Escape pile), D-24325 (escaped-converted-count), D-24434 (meter names the converted enemy), D-24680 (loss lines name what escaped), D-24026.
 
 ---
