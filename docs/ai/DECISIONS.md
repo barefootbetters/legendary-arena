@@ -48651,3 +48651,27 @@ The miss was not small. Train Black Widows built 8 twists where it prints 3 to 7
 
 ---
 Protect this file.
+
+### D-24737 — A free defeat ignores "can't defeat unless" restrictions (operator ruling, no code change) (Active 2026-10-17)
+
+**Context.** In operator match `mzasQjZ3DU2` (server `3c9f632d`, Loki / Negative Zone Prison Breakout), Player 0 defeated Loki's Cruel Ruler tactic and chose Venom for its free defeat (26.2.11–26.2.14). Venom prints "You can't defeat Venom unless you have a [hc:covert] Hero." Player 0 had no Covert Hero in hand or in play; their only Heroes were Hulk, Thor, Iron Man and Hawkeye cards. Venom was defeated anyway. The 2026-10-16 Core audit flagged this as an open question. Rules v23 doesn't settle it directly. The closest ruling is Total Fury (L2563–2566): a card that tells you to defeat an Adversary ignores restrictions like Iron Fist's. Iron Fist's restriction is worded as a fight requirement ("To fight Iron Fist, you must also reveal…"), while Venom's and Blob's say "can't defeat".
+
+**Decision (operator ruling, 2026-10-17).**
+1. An effect that defeats a Villain for free ignores the target's "You can't defeat X unless you have …" restriction. This covers Loki's Cruel Ruler ("Defeat a Villain in the City for free"), Nick Fury's Pure Fury and Black Widow's Silent Sniper, and any later free-defeat effect. The restriction gates only a normal fight. This is the same reading as the Total Fury / Iron Fist ruling.
+2. Core cards with the restriction are Blob ("unless you have an [team:x-men] Hero") and Venom ("unless you have a [hc:covert] Hero"). The same holds for every other `require-to-defeat` card (D-24076), e.g. Zombie Venom.
+
+**Engine (no change).** The engine already behaves this way:
+- `playerMeetsDefeatRequirement` (D-24076) is checked only in the `fightVillain` move (`packages/game-engine/src/moves/fightVillain.ts`, the defeat-requirement precondition before the stage gate);
+- `ai.legalMoves` mirrors that check for the bot's normal fights;
+- the free-defeat paths reach `defeatCityVillainCore` without that gate.
+
+This entry records the ruling so a later change doesn't "fix" the free-defeat paths into checking the requirement.
+
+**Live evidence.** `mzasQjZ3DU2` 26.2.11–26.2.14: Cruel Ruler defeated Venom with no Covert Hero, and its captured Bystander was rescued.
+
+**Still open (separate).** Venom's own refusal of a normal fight without a Covert Hero has no live evidence yet; a refused fight is silent and isn't logged. Blob's equivalent is verified (`live-verify.json`).
+
+**Reserved by:** NUMBER-LEDGER D-24737. Related: D-24076 (defeat requirements, hand + play), D-24724 / D-24726 (granted class / team count toward the requirement), D-24510 (Cruel Ruler), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24662 / D-24681 (one-target free defeats).
+
+---
+Protect this file.
