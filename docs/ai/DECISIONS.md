@@ -48796,3 +48796,40 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24739 — Workstation layout: one repo-named folder per product in three roots, each with one backup method (operator decision, no WP; supersedes D-24208 in part) (Active 2026-10-17)
+
+**Status:** Active (governance) 2026-10-17. **Supersedes D-24208 in part:** its point 1 (the `C:\pcloud\LA\` rename is declined), the "Nothing existing is renamed to comply" sentence of its point 3, and the `C:\www\legendary-arena` move target stated in its rationale. Its withdrawal of D-24207's `C:\pcloud\BB\DEV\<repo-name>\` clause stands.
+
+**User-Visible Surface:** none — operator workstation convention.
+
+**Context.** The engine checkout lives on the pCloud sync drive at `C:\pcloud\BB\DEV\legendary-arena`. That placement is behind every serious sync incident recorded on [Workspace Map](../../wiki/workspace-map.md): conflict-suffixed files, edits silently reverting, `HEAD` moving mid-session, and a commit reaching an unrelated PR. D-24208 deferred the off-pCloud move, named `C:\www\legendary-arena` as its target, and declined renaming `C:\pcloud\LA\`. It also set a revisit condition: "If the off-pCloud migration proceeds, the pCloud tree may be tidied in the same pass." This decision proceeds with the migration, so that condition now applies. Since D-24208, Herbs vs. Ailments has joined as a second product, and its checkout is also under `C:\www\`.
+
+**Decision (operator, 2026-10-17).**
+1. **Three roots, one backup method each.**
+   - `C:\dev\<repo>`: code — product monorepos and shared code tools. Backed up by GitHub (push) only; the laptop copy has no other backup.
+   - `C:\www\<repo>`: repos whose main output is published content — marketing sites, the second-brain notes. Backed up by GitHub (push) only.
+   - `C:\pcloud\<repo>`: business operations, brand, media, and work in progress — everything not in git. Backed up by pCloud sync.
+
+   A git checkout never lives on pCloud.
+2. **Folder names match the GitHub repository name** in all three roots: `legendary-arena`, `herbs-vs-ailments`. No per-product abbreviations (`LA`, `HvA`). **Marketing sites take the suffix `-www`:** `legendary-arena-www`, `herbs-vs-ailments-www`, `barefootbetters-www`. The suffix names the role, not a domain, so it holds even where a product's main domain isn't its hyphenated name (Herbs vs. Ailments' is `herbsvsailments.com`).
+3. **Move targets.**
+   - The engine → `C:\dev\legendary-arena`, replacing D-24208's `C:\www\legendary-arena`.
+   - Herbs vs. Ailments → `C:\dev\herbs-vs-ailments`.
+   - `C:\pcloud\LA\` → `C:\pcloud\legendary-arena\`, and a new `C:\pcloud\herbs-vs-ailments\`.
+   - The shared tools (`ewiki-theme`, `bb-studio-dashboard`, `legendary-arena-lab`) → `C:\dev\`, deferred until the engine has run from `C:\dev` for 1–2 weeks. The studio ewiki is the `ewiki/` folder inside `bb-studio-dashboard` and gets no folder of its own.
+   - Two marketing repos don't match the rule yet and are renamed in that same deferred cleanup: GitHub `legendary-arena/legendary-arena-website` → `legendary-arena-www`, with the local `C:\www\legendary-arena-com` → `C:\www\legendary-arena-www`; and GitHub `barefootbetters/www` → `barefootbetters-www` (its local folder already matches). **Precondition:** confirm that each site's Cloudflare Pages project keeps its Git connection through a GitHub repo rename before renaming. Herbs vs. Ailments' marketing repo, when created, is `herbs-vs-ailments-www`.
+4. **Wikis and dashboards get no folders of their own.** Each ewiki stays in the repo it documents (the engine's `wiki/`, Herbs vs. Ailments' `docs/`), so a page changes in the same PR as its code. Dashboards are instances of the shared `bb-studio-dashboard` repo, and each project keeps only a `dashboard.json`.
+5. **How the moves happen.** Re-clone; never move a checkout. Herbs vs. Ailments goes first, as the rehearsal. The engine is pre-staged, then cut over in a quiet window. Each old checkout is kept as `<repo>.RETIRED-<date>` for 14 days as the rollback. The phases, checks, and progress live on [Workstation Layout Migration](../../wiki/workstation-layout-migration.md); the step-by-step commands are in the operator's execution plan on pCloud.
+6. **Path references.** Live documents are updated to the new paths. Historical records keep the paths that were true when written: Work Packets, execution checklists, post-mortems, invocations, and `DECISIONS.md` entries, including D-24207 and D-24208.
+
+**Why the rename is now accepted.** D-24208 declined it as a 38-reference, two-repo sweep for a marginal gain. The sweep has grown since (97 references in 16 files of this repo, 19 in 3 files of the marketing repo). But two things changed. The sweep now rides on a migration that touches paths anyway, which is exactly D-24208's revisit condition. And with two products, the gain is no longer marginal: one name in three places is itself the lookup, while a per-product abbreviation is one more mapping to keep.
+
+**Why `C:\dev`, not `C:\www`.** `C:\www` holds content sites; the engine is code. And `C:\www\legendary-arena` already holds a stale clone of the engine, far behind `main`, so D-24208's target would have collided with it.
+
+**Not changed.** Layer boundaries, CI, and deploys: none of them read a local path. The second brain reads every repo from GitHub `main`, never a local checkout, so the moves don't affect it. Claude Code worktrees stay in `C:\claude-worktrees\`. The `C:\pcloud\LA\ops\` and `LA\brand\` taxonomy (D-24220) is unchanged and moves with its folder.
+
+**Reserved by:** NUMBER-LEDGER D-24739. Related: D-24207 and D-24208 (superseded in part), D-24220 (`LA\ops` / `LA\brand` taxonomy), D-24643 (worktree hooks-path guard).
+
+---
+Protect this file.
