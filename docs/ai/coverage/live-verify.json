@@ -1251,10 +1251,10 @@
       "card": "Super Hero Civil War",
       "ability": "8 Twists at 2-3 players, 5 Twists at 4-5 players",
       "wp": "D-24733",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "Recipe (after deploy): lobby, Play with a bot ally, 4 seats / 3 bot allies, Operator match, Super Hero Civil War (3 villain groups, 2 henchmen groups, 5 heroes); the operator panel's Villain-deck list shows 5 Scheme Twists and the HUD twist readout reads 0/5. Unit evidence: buildInitialGameState.civilWarSizing.test.ts (8/8/5/5 at 2-5 players)."
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "4p operator match Y1w7rCsC8Ek (server 85771ab6), Loki / Super Hero Civil War, 3 bot allies: the engine reported schemeTwistThreshold 5; after Twist 1 (18.1.1–18.1.7, KO'd all 5 HQ Heroes) the Villain Deck still held scheme-twist-super-hero-civil-war-00, -02, -03 and -04 — 5 in all.",
+      "note": "Unit evidence: buildInitialGameState.civilWarSizing.test.ts (8/8/5/5 at 2-5 players). The match was stopped at turn 23 by a bot-ally fault, unrelated to the twist count."
     },
     {
       "key": "scheme:core/legacy-virus-the|wound-loss",

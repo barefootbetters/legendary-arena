@@ -48646,7 +48646,7 @@ Protect this file.
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5284); `sim:runtime-observed:check`, `sim:coverage --check`, `par:seed:test`, dashboard `prebuild:par` and `ledger:numbers:check` all pass. No generated-artifact churn. On the real registry, core and msp1 Civil War now build 8/8/8/5/5 twists at 1-5 players; co2e and Midtown stay at 8.
 
-**Live-verify (D-24026): pending.** After deploy: lobby → Play with a bot ally → 4 seats / 3 bot allies → Operator match → Super Hero Civil War (3 villain groups, 2 henchmen groups, 5 heroes). The operator panel's Villain-deck list should show 5 Scheme Twists, and the HUD should read "Twists: 0/5". Record the match id and build in `docs/ai/coverage/live-verify.json` (`scheme:core/super-hero-civil-war|twist-count`).
+**Live-verify (D-24026), 2026-10-17: PASS.** 4p operator match `Y1w7rCsC8Ek` (server build `85771ab6`), Loki / Super Hero Civil War, 3 bot allies. The engine reported a twist threshold of 5. After Twist 1 (18.1.1–18.1.7), the Villain Deck still held the other four Scheme Twists (`-00`, `-02`, `-03`, `-04`), so 5 in all. A bot-ally fault stopped the match at turn 23, unrelated to the twist count.
 
 **Reserved by:** NUMBER-LEDGER D-24733. Related: D-24318 (Hero Deck loss), D-24328 / D-24385 (2-player 4-Hero sizing), D-24321 (scheme setup sizing), D-24349 (KO-all twist), D-24371 (twist readout), D-24595 (last-twist fallback).
 
