@@ -531,6 +531,9 @@ export function resolveHydraConspiracy(
   // line claiming an undelivered draw is the misattribution class this arc exists
   // to remove.
   const drawn = playerZones.hand.length - handBefore;
+  // why: D-24732 — HYDRA Conspiracy's draws are the defeating (current) player's extra
+  // cards drawn this turn, unlike the next-hand bonuses that only grow the end-of-turn draw.
+  G.turnEconomy.cardsDrawn += drawn;
   pushLog(G,
     `Fight effect: Player ${currentPlayer} drew ${drawn} card(s) - ${HYDRA_CONSPIRACY_BASE_DRAW} plus ${hydraVillains} HYDRA Villain(s) in their Victory Pile (HYDRA Conspiracy).`,
     'applied',
@@ -1266,11 +1269,12 @@ export function resolveRuthlessDictator(
  * Bubble eligibility scan ("one of your [team:x-men] Heroes"; D-24645: rules v23 "Your
  * Heroes" = hand + cards played this turn).
  *
- * TEAM-ONLY match against the setup-time `G.cardTraits` snapshot (the WP-506 precedent:
- * only Heroes carry a team, so Wounds / Bystanders / the teamless basic S.H.I.E.L.D.
- * cards never false-match). Map-level defensive `?.` — a legacy state predating WP-179
- * leaves the map undefined and matches nothing rather than throwing. Do NOT add a
- * heroClass guard and do NOT drop the map-level `?.` (WP-695 non-negotiable).
+ * TEAM-ONLY match against the setup-time `G.cardTraits` snapshot plus, for a played card,
+ * its Copy Powers copied team (the WP-506 precedent: only Heroes carry a team, so Wounds /
+ * Bystanders / the teamless basic S.H.I.E.L.D. cards never false-match). Map-level
+ * defensive guard — a legacy state predating WP-179 leaves the map undefined and matches
+ * nothing rather than throwing. Do NOT add a heroClass guard and do NOT drop the map-level
+ * guard (WP-695 non-negotiable).
  *
  * @param G - The game state (read-only here; supplies `cardTraits`).
  * @param inPlay - The acting player's in-play zone, in order.
@@ -1284,7 +1288,10 @@ function collectXMenHeroesYouHave(
 ): CardExtId[] {
   const eligible: CardExtId[] = [];
   for (const cardExtId of inPlay) {
-    if (G.cardTraits?.[cardExtId]?.team === TEAM_X_MEN) {
+    // why: D-24731 — the effective when-played team (D-24391), so a Copy Powers copy of an
+    // X-Men Hero is eligible, matching countXMenHeroesYouHave. The undefined-map guard keeps
+    // the WP-695 legacy-state posture (cardHasTeamWhenPlayed reads the map directly).
+    if (G.cardTraits !== undefined && cardHasTeamWhenPlayed(G, cardExtId, TEAM_X_MEN)) {
       eligible.push(cardExtId);
     }
   }

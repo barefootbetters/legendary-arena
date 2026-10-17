@@ -34,7 +34,7 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // why: WP-711 / D-24534 — the per-hero-class-played count sources match a played card's
 // class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
 // the class analogue of cardCountsAsTeamMember used by the team sources.
-import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
 import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
@@ -440,6 +440,16 @@ export function resolveCountSource(
     case 'covert-heroes-played-this-turn': {
       return countHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'covert');
     }
+    case 'extra-cards-drawn-this-turn': {
+      // why: D-24732 — "for each extra card you've drawn this turn" counts every card the
+      // current player drew this turn other than the hand drawn at end of turn. Every
+      // effect-draw site for the current player increments turnEconomy.cardsDrawn and the
+      // start-of-turn fill never does, so the counter IS the count. Self-inclusive: a
+      // card's own earlier draw line has already landed when its count line resolves.
+      // playerID / triggeringCardId are unused because turnEconomy is the current
+      // player's alone; the ?? 0 guards narrow test mocks that omit the field.
+      return G.turnEconomy?.cardsDrawn ?? 0;
+    }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must
       // resolve to 0 (a skipped no-op grant) rather than throw.
@@ -700,7 +710,10 @@ function collectDistinctHeroClassCards(
     const hasSecondClass =
       traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0;
     // why: D-24074 — a Size-Changing card contributes each granted class too.
-    const hasGrantedClass = getGrantedClasses(G, playedCardId as CardExtId).length > 0;
+    // why: D-24730 — and Copy Powers contributes the class it copied this play.
+    const hasGrantedClass =
+      getGrantedClasses(G, playedCardId as CardExtId).length > 0 ||
+      getCopiedClasses(G, playedCardId as CardExtId).length > 0;
     if (hasPrintedClass || hasSecondClass || hasGrantedClass) {
       matchedCardIds.push(playedCardId as CardExtId);
     }
@@ -789,6 +802,12 @@ export function explainCountSourceInputs(
     }
     case 'covert-heroes-played-this-turn': {
       return collectHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'covert');
+    }
+    case 'extra-cards-drawn-this-turn': {
+      // why: D-24732 — a counter source, not a card list: turnEconomy.cardsDrawn records
+      // how many cards were drawn, not which, so there are no inputs to name (like the
+      // victory-pile sources, countedInputs is omitted for it).
+      return [];
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source explains to no

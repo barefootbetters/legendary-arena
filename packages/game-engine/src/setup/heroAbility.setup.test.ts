@@ -964,6 +964,56 @@ describe('buildHeroAbilityHooks — X-Men United other-X-Men count (D-24655)', (
 });
 
 // ---------------------------------------------------------------------------
+// Berserker Rage + twins — extra-cards-drawn-this-turn count (D-24732)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — extra-cards-drawn-this-turn count (D-24732)', () => {
+  // why: the exact generated lines (printed text + the markers the markers pass appends).
+  // Before D-24732 the count line had no marker, so the icon extractor read
+  // "+1[icon:attack]" as a flat +1 whatever the draws (core audit 2026-10-16 §1.1).
+  const BERSERKER_RAGE_DRAW = 'Draw three cards. [keyword:draw:3]';
+  const BERSERKER_RAGE_COUNT =
+    "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn. [keyword:attack-per-count:extra-cards-drawn-this-turn:1]";
+  const DREW_THIS_TURN_COUNT =
+    'You get +1[icon:attack] for each extra card you drew this turn. [keyword:attack-per-count:extra-cards-drawn-this-turn:1]';
+
+  const cases = [
+    { name: 'core Berserker Rage', setAbbr: 'core', heroSlug: 'wolverine', cardSlug: 'berserker-rage', abilities: [BERSERKER_RAGE_DRAW, BERSERKER_RAGE_COUNT], isInstinctGated: true },
+    { name: 'antm Giant Ego', setAbbr: 'antm', heroSlug: 'ant-man', cardSlug: 'giant-ego', abilities: ['[keyword:Size-Changing] [hc:tech]', DREW_THIS_TURN_COUNT], isInstinctGated: false },
+    { name: 'chmp 7th Smartest Man in the World', setAbbr: 'chmp', heroSlug: 'totally-awesome-hulk', cardSlug: '7th-smartest-man-in-the-world', abilities: ['[keyword:Size-Changing]: [hc:tech], [hc:strength]', DREW_THIS_TURN_COUNT], isInstinctGated: false },
+  ];
+
+  for (const testCase of cases) {
+    it(`${testCase.name}: attack-per-count on extra-cards-drawn-this-turn, flat icon suppressed`, () => {
+      const registry = makeRegistry(testCase.setAbbr, testCase.heroSlug, [{ slug: testCase.cardSlug, abilities: testCase.abilities }]);
+      const hooks = buildHeroAbilityHooks(registry, makeConfig(`${testCase.setAbbr}/${testCase.heroSlug}`));
+      const countHook = hooks.find((hook) => (hook.effects ?? []).some((entry) => entry.type === 'attack-per-count'));
+      assert.ok(countHook !== undefined, 'an attack-per-count effect is emitted');
+      const effect = countHook!.effects!.find((entry) => entry.type === 'attack-per-count')!;
+      assert.equal(effect.countSource, 'extra-cards-drawn-this-turn', 'the count source is extra-cards-drawn-this-turn');
+      assert.equal(effect.magnitude, 1, 'the per-unit rate is the printed +1');
+      for (const hook of hooks) {
+        assert.ok(!hook.keywords.includes('attack'), 'no flat attack keyword alongside the count-scaled effect');
+        assert.ok((hook.effects ?? []).every((entry) => entry.type !== 'attack'), 'no phantom flat +1 attack effect');
+      }
+      const conditions = countHook!.conditions ?? [];
+      assert.equal(
+        conditions.some((condition) => condition.type === 'heroClassMatch' && condition.value === 'instinct'),
+        testCase.isInstinctGated,
+        'only Berserker Rage keeps its [hc:instinct]: gate on the count line',
+      );
+    });
+  }
+
+  it('core Berserker Rage keeps its draw:3 line ahead of the count line', () => {
+    const registry = makeRegistry('core', 'wolverine', [{ slug: 'berserker-rage', abilities: [BERSERKER_RAGE_DRAW, BERSERKER_RAGE_COUNT] }]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/wolverine'));
+    const effectTypes = hooks.flatMap((hook) => (hook.effects ?? []).map((entry) => entry.type));
+    assert.deepStrictEqual(effectTypes, ['draw', 'attack-per-count'], 'draw resolves before the count is read');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // cost-four-plus count-scaled attack/recruit siblings (WP-674 / EC-711 / D-24489)
 // ---------------------------------------------------------------------------
 

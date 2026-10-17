@@ -59,7 +59,8 @@ import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
-import { offPlayCardStats, offPlayCardTraits } from './splitCard.logic.js';
+import { offPlayCardStats, offPlayCardTraits, playedCardIdsStillInPlay } from './splitCard.logic.js';
+import { cardHasClassWhenPlayed } from './sizeChanging.logic.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
 import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostDiscard.js';
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
@@ -1596,9 +1597,9 @@ function heroEffectDraw(
   // why: WP-665 / D-24476 — count the REALIZED effect-draw toward the current
   // player's per-turn draw total, which the `cardsDrawnThisTurnAtLeast` gate reads
   // ("if you drew two cards this turn", Gamma-Draining Nanites). heroEffectDraw is
-  // the `draw:N` keyword path and always runs for the current player, so this is the
-  // single count site; the start-of-turn hand refill (drawCardsIntoHand) is a
-  // different helper and is deliberately NOT counted (else the gate is trivially met).
+  // the `draw:N` keyword path and always runs for the current player. D-24732 adds the
+  // other effect-draw sites (see TurnEconomy.cardsDrawn); the end-of-turn hand fill
+  // (drawCardsIntoHand) is deliberately NOT counted (else the gate is trivially met).
   G.turnEconomy.cardsDrawn += drawnCount;
   // why: WP-417 / D-24237 — the draw handler was silent, so "Draw a card." on the
   // play line was the ONLY evidence the ability existed and a short draw (deck and
@@ -2269,7 +2270,14 @@ function applyRevealAction(
   action: RevealAction,
 ): boolean {
   if (action.kind === 'draw') {
-    return applyRevealDraw(playerZones, topCardId);
+    const isDrawn = applyRevealDraw(playerZones, topCardId);
+    // why: D-24732 — a reveal rule's "draw it" (Spider-Man's cost-2-or-less reveals, Card
+    // Shark) is a real draw by the active player, so it counts toward cardsDrawn.
+    // The turnEconomy guard matches this pipeline's legacy tolerance of an absent economy.
+    if (isDrawn && G.turnEconomy) {
+      G.turnEconomy.cardsDrawn += 1;
+    }
+    return isDrawn;
   }
   if (action.kind === 'ko') {
     return applyRevealKo(G, playerZones, topCardId);
@@ -3148,6 +3156,9 @@ function heroEffectPutHandOnDeckTop(
   // Part 1: draw the printed number of cards into the acting player's hand.
   const requestedCount = effect.magnitude ?? 1;
   const drawnCount = drawFromPlayerDeck(G, playerID, requestedCount, ctx as ShuffleProvider);
+  // why: D-24732 — an effect draw by the current player is an "extra card drawn this turn"
+  // (Berserker Rage's extra-cards-drawn-this-turn source, the cardsDrawnThisTurnAtLeast gate).
+  G.turnEconomy.cardsDrawn += drawnCount;
   if (drawnCount < requestedCount) {
     // why: WP-434 — a short draw (deck + discard empty) is `partial`; name the realized amount.
     pushLog(G,
@@ -4906,7 +4917,7 @@ export function buildCopyPowersTargets(
  *
  * // why (dual-class): Copy Powers "is both covert and the color you copy." Covert is
  * already baked in card data (core.json `hc:covert`); this writes the copied class into
- * the EXISTING runtime `cardSizeChangingClasses` map (D-24074 reuse — no new G field), so
+ * the turn-scoped `cardCopiedClasses` map (D-24730; cleared at end-of-turn cleanup), so
  * every downstream `[hc:<copied>]` gate counts Copy Powers as that class too. cardTraits
  * is never mutated. The class is granted BEFORE the re-fire so Copy Powers already counts
  * as the copied class if the copied ability itself reads classes.
@@ -4930,15 +4941,17 @@ export function applyCopyPowers(
     sourceCardId, // why: WP-438 — the Copy Powers card that produced the copy.
   );
 
-  // Grant the copied class into the existing runtime dual-class map (D-24074 reuse).
+  // why: D-24730 — the copied class goes into the turn-scoped cardCopiedClasses map, not
+  // the setup Size-Changing map: end-of-turn cleanup deletes it, so this play's copy does
+  // not follow the card into its next play.
   const copiedClass = G.cardTraits[chosenHeroId]?.heroClass;
   if (typeof copiedClass === 'string' && copiedClass.length > 0) {
-    if (!G.cardSizeChangingClasses) {
-      G.cardSizeChangingClasses = {};
+    if (!G.cardCopiedClasses) {
+      G.cardCopiedClasses = {};
     }
-    const existingClasses = G.cardSizeChangingClasses[sourceCardId];
+    const existingClasses = G.cardCopiedClasses[sourceCardId];
     if (existingClasses === undefined) {
-      G.cardSizeChangingClasses[sourceCardId] = [copiedClass];
+      G.cardCopiedClasses[sourceCardId] = [copiedClass];
     } else if (!existingClasses.includes(copiedClass)) {
       existingClasses.push(copiedClass);
     }
@@ -5441,6 +5454,8 @@ function heroEffectInvestigate(
     const moveResult = moveCardFromZone(playerZones.deck, playerZones.hand, drawnCardId);
     playerZones.deck = moveResult.from;
     playerZones.hand = moveResult.to;
+    // why: D-24732 — Investigate draws the matching card, an extra card drawn this turn.
+    G.turnEconomy.cardsDrawn += 1;
   }
 
   // why: WP-564 / D-24373 — put the non-selected looked-at cards on the BOTTOM in look
@@ -5480,11 +5495,12 @@ const INVESTIGATE_HANDLER_DEFAULT_LOOK_COUNT = 2;
  * another [team]/[hc] Hero. Each player who does draws a card."
  *
  * For every player in deterministic seat order (`Object.keys(G.playerZones).sort()` — the
- * gain-wound-each / steal-abilities precedent), if that player's hand holds a card matching
+ * gain-wound-each / steal-abilities precedent), if that player can reveal a card matching
  * the reveal criterion, they draw one card. The printed "may" is auto-taken: revealing costs
  * nothing and yields a draw, so declining is strictly dominated — no pending-choice park
- * (D-24470). Reveal is state-neutral (the matched card STAYS in hand — the only mutation is
- * the draw). "another" needs no self-exclusion — the played card has already left the hand.
+ * (D-24470). Reveal is state-neutral (the matched card STAYS where it is — the only mutation
+ * is the draw). The playing player may also reveal a card they played this turn (D-24731);
+ * every other player reveals from hand only (see playerCanRevealMatch).
  *
  * Deterministic: fixed seat order; the draw reshuffles the discard through the single
  * `ctx.random` shuffle envelope on an empty deck (drawFromPlayerDeck). Never throws — an
@@ -5492,14 +5508,14 @@ const INVESTIGATE_HANDLER_DEFAULT_LOOK_COUNT = 2;
  *
  * @param G - Game state (mutated under Immer draft).
  * @param ctx - Context narrowed to ShuffleProvider for the draw reshuffle.
- * @param _playerID - The playing player (unused — the effect touches every player).
- * @param cardId - The played card (for the log reference).
+ * @param playerID - The playing player (the only one who can reveal a played card); only their own draw counts toward turnEconomy.cardsDrawn (D-24732).
+ * @param cardId - The played card (for the log reference; never revealed by itself).
  * @param effect - The effect descriptor carrying the single revealCriterion.
  */
 function heroEffectRevealFromHand(
   G: LegendaryGameState,
   ctx: unknown,
-  _playerID: string,
+  playerID: string,
   cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
@@ -5515,21 +5531,17 @@ function heroEffectRevealFromHand(
     if (!playerZones) {
       continue;
     }
-    let handHasMatch = false;
-    for (const handCardId of playerZones.hand) {
-      // why: reuse investigateCardMatchesCriteria (zone-agnostic — projects the card's
-      // stats/traits and matches) with the single criterion wrapped in a 1-element list, the
-      // OR-combined form the shared matcher takes.
-      if (investigateCardMatchesCriteria(G, handCardId, [criterion])) {
-        handHasMatch = true;
-        break;
-      }
-    }
-    if (!handHasMatch) {
+    const isPlayingPlayer = eachPlayerId === playerID;
+    if (!playerCanRevealMatch(G, playerZones, isPlayingPlayer, cardId, criterion)) {
       continue;
     }
     anyPlayerRevealed = true;
     const drawnCount = drawFromPlayerDeck(G, eachPlayerId, 1, ctx as ShuffleProvider);
+    // why: D-24732 — only the playing player's draw is one of "your" extra cards this turn;
+    // turnEconomy belongs to the current player, so another seat's draw never counts.
+    if (eachPlayerId === playerID) {
+      G.turnEconomy.cardsDrawn += drawnCount;
+    }
     if (drawnCount > 0) {
       pushLog(G,
         `Player ${eachPlayerId} revealed a matching Hero for ${formatCardRef(G.cardDisplayData, cardId)} and drew a card.`,
@@ -5556,6 +5568,81 @@ function heroEffectRevealFromHand(
       cardId,
     );
   }
+}
+
+/**
+ * Returns whether a player can reveal a card matching a reveal-from-hand criterion
+ * (Psychic Link's "reveal another [team:x-men] Hero").
+ *
+ * Every player can reveal from hand. The playing player can also reveal a card they played
+ * this turn that is still in play, other than the resolving card itself ("another").
+ *
+ * @param G - Game state (read-only).
+ * @param playerZones - The revealing player's zones.
+ * @param isPlayingPlayer - Whether this player is the one resolving the card.
+ * @param resolvingCardId - The card whose effect is resolving (never revealed by itself).
+ * @param criterion - The single reveal criterion.
+ * @returns Whether the player holds or has played a matching card.
+ */
+function playerCanRevealMatch(
+  G: LegendaryGameState,
+  playerZones: PlayerZones,
+  isPlayingPlayer: boolean,
+  resolvingCardId: CardExtId,
+  criterion: InvestigateCriterion,
+): boolean {
+  for (const handCardId of playerZones.hand) {
+    // why: reuse investigateCardMatchesCriteria (zone-agnostic — projects the card's
+    // stats/traits and matches) with the single criterion wrapped in a 1-element list, the
+    // OR-combined form the shared matcher takes.
+    if (investigateCardMatchesCriteria(G, handCardId, [criterion])) {
+      return true;
+    }
+  }
+  // why: D-24731 — rules v23 "Revealing a Card" (L3186-3190): "You can reveal a card from
+  // your hand or you can reveal a card in front of you that you have already played this
+  // turn." Only the playing player has played cards on this turn, so the other players stay
+  // hand-only. The D-24651 Diving Block precedent; the Array.isArray guard covers minimal
+  // test states that omit the play area.
+  if (!isPlayingPlayer || !Array.isArray(playerZones.inPlay)) {
+    return false;
+  }
+  // why: D-24692 — a played card that went Out of Time is not "in front of you" any more.
+  for (const playedCardId of playedCardIdsStillInPlay(G, playerZones.inPlay)) {
+    // why: "another" — the resolving card is in play but cannot reveal itself.
+    if (playedCardId === resolvingCardId) {
+      continue;
+    }
+    if (playedCardMatchesRevealCriterion(G, playedCardId, criterion)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns whether a played card matches a reveal criterion, reading its effective
+ * when-played team and class so a Copy Powers copy or a Size-Changing grant counts.
+ *
+ * @param G - Game state (read-only).
+ * @param playedCardId - A card the playing player has in play.
+ * @param criterion - The single reveal criterion.
+ * @returns Whether the played card matches.
+ */
+function playedCardMatchesRevealCriterion(
+  G: LegendaryGameState,
+  playedCardId: CardExtId,
+  criterion: InvestigateCriterion,
+): boolean {
+  // why: D-24391 / D-24726 — the single effective-team source for a card in play.
+  if (criterion.kind === 'team') {
+    return cardHasTeamWhenPlayed(G, playedCardId, criterion.team);
+  }
+  // why: D-24074 / D-24730 — the single effective-class source for a card in play.
+  if (criterion.kind === 'hero-class') {
+    return cardHasClassWhenPlayed(G, playedCardId, criterion.heroClass);
+  }
+  return investigateCardMatchesCriteria(G, playedCardId, [criterion]);
 }
 
 /**

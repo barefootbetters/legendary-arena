@@ -207,9 +207,9 @@
       "ability": "Psychic Link",
       "wp": "WP-659",
       "state": "verified",
-      "date": "2026-09-07",
-      "evidence": "Emma Frost arc — two Magneto / Midtown Bank Robbery matches (STATUS 2026-09-07)",
-      "note": ""
+      "date": "2026-10-16",
+      "evidence": "Emma Frost arc — two Magneto / Midtown Bank Robbery matches (STATUS 2026-09-07); D-24731 played-card reveal: Operator match nQAUnp0T4uY (server build 6f5a8d1c, the #2846 merge), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Emma Frost, Wolverine, Rogue, Captain America, Hulk), won with the Final Blow at 19.3.1. Player 0's only X-Men cards were the two Psychic Links (#0, #2), both recruited on turn 1 (1.2.5, 1.2.8); no operator move put a card in a hand. Psychic Link #0 drew off the already-played #2 at 7.2.6; no self-reveal at 9.2.5 / 13.2.1 / 15.2.13.",
+      "note": "Hand reveal (WP-659) and played-card reveal (D-24731) both verified."
     },
     {
       "key": "core/gambit|put-hand-on-deck-top",
@@ -406,8 +406,8 @@
       "wp": "WP-582",
       "state": "verified",
       "date": "2026-08-22",
-      "evidence": "WP-582 live-verify, 2p Red Skull / Midtown (#1561)",
-      "note": ""
+      "evidence": "WP-582 live-verify, 2p Red Skull / Midtown (#1561). Per-play copy (D-24730): 2p operator match 8Mw9mLkcgQ4 (server build 7e2b45bd) — Copy Powers #0 copied Borrowed Brawn (Strength) on turn 9, then Energy Drain (Covert) on turn 13: Borrowed Brawn was blocked (13.2.12) and Maestro counted only \"Borrowed Brawn (played)\" (13.2.22).",
+      "note": "D-24730: a copy's class and team last only for that play; before the fix the turn-9 Strength copy carried over (L3yPdfS179l, 16.2.8 / 16.2.10)."
     },
     {
       "key": "core/rogue|optional-ko-reward",
@@ -531,6 +531,17 @@
       "note": "Surge of Power waited and fired retroactively."
     },
     {
+      "key": "core/wolverine|attack-per-count",
+      "kind": "hero",
+      "card": "Wolverine",
+      "ability": "Berserker Rage",
+      "wp": "D-24732",
+      "state": "verified",
+      "date": "2026-10-16",
+      "evidence": "Operator match Bi6gSbwebWx (server build e4c2c0a0, incl. #2848), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout: Mental Discipline 1 + Keen Senses 1 + Berserker Rage 3 → Count-scaled attack +5 (count 5, 6.2.9); own three draws only → +3 (14.2.5); blocked without another Instinct Hero (10.2.11).",
+      "note": "D-24732: +1 attack per extra card drawn this turn (was a flat +1)."
+    },
+    {
       "key": "core/wolverine|draw",
       "kind": "hero",
       "card": "Wolverine",
@@ -571,7 +582,7 @@
       "wp": "WP-485",
       "state": "verified",
       "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b). Copy Powers (D-24726): 2p operator match SoDnMI9IjqU (build 20dcd923), turn 27.",
+      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b). Copy Powers (D-24726): 2p operator match SoDnMI9IjqU (build 20dcd923), turn 27. Confirmed by the D-24729 named-card log lines in operator match L3yPdfS179l (server build 7ae1baa2): \"rescued 2 Bystander(s) (one per your avengers Hero: Crazed Rampage (played), Copy Powers (played, copied avengers))\" (6.2.7) and \"rescued 3 … Silent Sniper (played), Copy Powers (played, copied avengers), Unstoppable Hulk (played)\" (14.2.23).",
       "note": "0 rescued with no Avengers Hero, 1 rescued with one (Covert Operation). D-24726: A Day Unlike Any Other plus Copy Powers copying it rescued 2 (27.2.9); the two unplayed hand cards are read as Wounds. Turn 6 of the same match, two printed Avengers with an empty hand, rescued 2."
     },
     {
@@ -1191,6 +1202,17 @@
       "note": ""
     },
     {
+      "key": "scheme:core/negative-zone-prison-breakout|twist",
+      "kind": "scheme",
+      "card": "Negative Zone Prison Breakout",
+      "ability": "Twist: play the top 2 cards of the Villain Deck",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-16",
+      "evidence": "Operator match Bi6gSbwebWx (server build e4c2c0a0), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout (HYDRA + Spider-Foes; Hand Ninjas + Sentinel): Twist #1 played HYDRA Kidnappers and Hand Ninjas (12.1.1–12.1.3). Turn 15 chained three Twists: #2 revealed Venom and Twist #3, #3 revealed Hand Ninjas and Twist #4, #4 revealed Endless Armies of HYDRA and Hand Ninjas, and the overflow escape ran (15.1.1–15.1.12). Endless Armies of HYDRA's Fight revealed Twists #5 and #6 mid-turn, and each played 2 more cards (16.2.25–16.2.36).",
+      "note": "A Twist revealed by a Twist resolves too."
+    },
+    {
       "key": "scheme:core/super-hero-civil-war|twist",
       "kind": "scheme",
       "card": "Super Hero Civil War",
@@ -1211,6 +1233,17 @@
       "date": "2026-10-10",
       "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Black Widow, Wolverine), match 5oJXzZqbdys (build 39c8244): the 2-player setup used exactly 4 Heroes (56-card Hero Deck); Twist #6 KO’d the HQ and the refill ran the Hero Deck out, so Evil Wins (21.1.8).",
       "note": "Both: the Hero-Deck loss, and 4 Heroes at 2 players."
+    },
+    {
+      "key": "scheme:core/super-hero-civil-war|twist-count",
+      "kind": "scheme",
+      "card": "Super Hero Civil War",
+      "ability": "8 Twists at 2-3 players, 5 Twists at 4-5 players",
+      "wp": "D-24733",
+      "state": "pending",
+      "date": "",
+      "evidence": "",
+      "note": "Recipe (after deploy): lobby, Play with a bot ally, 4 seats / 3 bot allies, Operator match, Super Hero Civil War (3 villain groups, 2 henchmen groups, 5 heroes); the operator panel's Villain-deck list shows 5 Scheme Twists and the HUD twist readout reads 0/5. Unit evidence: buildInitialGameState.civilWarSizing.test.ts (8/8/5/5 at 2-5 players)."
     },
     {
       "key": "scheme:core/legacy-virus-the|wound-loss",

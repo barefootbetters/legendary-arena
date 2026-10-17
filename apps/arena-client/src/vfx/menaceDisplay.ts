@@ -34,6 +34,8 @@ const SCHEME_LOSS_NOUNS: Record<SchemeLossKind, string> = {
   // why: WP-763 / D-24595 — a scheme whose Evil Wins includes "the Villain Deck
   // runs out" (Midnight Massacre, Halve All Life, the compound escape schemes).
   'villain-deck': 'Villain Deck',
+  // why: D-24736 — Clash of the Monsters Unleashed loses when its Monster Pit runs out.
+  'monster-pit': 'Monster Pit',
   'escaped-pile': 'Escaped',
   // why: WP-612 — a bystander-counting escaped-pile scheme (Midtown Bank Robbery)
   // tracks BYSTANDERS carried into the escaped pile, so it reads "Bystanders N/8",

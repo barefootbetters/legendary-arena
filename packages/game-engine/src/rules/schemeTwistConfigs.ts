@@ -139,7 +139,8 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       // Deck runs out", modeled as the 'pile-depleted' kind on G.heroDeck.
       // Declaring resourceLossCondition SUPPRESSES the twist-count doom-clock
       // proxy for this scheme; lossThresholdByPlayerCount (the printed 8/5-twist
-      // stack) is retained but now INERT for loss (D-24178 / D-24318). The
+      // stack) is retained but now INERT for loss (D-24178 / D-24318). The deck
+      // is sized to that same 8/5 split by resolveEffectiveTwistCount (D-24733). The
       // per-player hero-deck SIZING ("4 Heroes at 2 players") is deferred to
       // WP-511; until then 2p full-deck may under-loss (reachable at 3-5p).
       // why: WP-562 / D-24371 §6 — the '1' key. Solo mirrors 2-player in
@@ -865,6 +866,19 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       params: {},
       resourceLossCondition: { kind: 'pile-depleted', pile: 'wounds' },
       twistFallbackWithResourceLoss: true,
+    },
+  ],
+  [
+    'chmp/clash-of-the-monsters-unleashed',
+    {
+      schemeId: 'chmp/clash-of-the-monsters-unleashed',
+      resolverId: 'clash-monster-pit',
+      params: {},
+      // why: D-24736 — the printed Evil Wins, "When the Wound Stack or Monster Pit Deck
+      // runs out". Both piles are modelled: the Wound Stack is 6 per player (setup
+      // sizing) and the Monster Pit is G.monsterPit, so no twist proxy is kept. The
+      // 8-card Pit empties on Twist 10, the scheme's last twist.
+      resourceLossCondition: { kind: 'pile-depleted', piles: ['wounds', 'monsterPit'] },
     },
   ],
 ]);

@@ -1616,7 +1616,7 @@ function villainEffectTimingLabel(timing: VillainAbilityTiming): string {
  * @returns True when the trait matches the predicate.
  */
 // why: D-24290 — the per-card trait match, extracted at the third caller
-// (playerHasHeroMatchingTrait, countPlayerHeroesMatchingTrait, and the
+// (playerHasHeroMatchingTrait, listPlayerHeroesMatchingTrait, and the
 // ko-heroes-current-by-trait handler) per the duplicate-first / abstract-on-third
 // rule (§Abstraction). A `team` predicate matches `trait.team`; a `hero-class`
 // predicate matches `trait.heroClass`. `value` is normalized at parse time, so
@@ -1643,15 +1643,16 @@ function cardTraitMatches(
  * Hero Class (printed hc / hc2 OR a class granted when played) and its effective team
  * (printed team OR a team granted when played).
  *
- * @param G - Game state (reads G.cardTraits, G.cardSizeChangingClasses and G.cardCopiedTeams).
+ * @param G - Game state (reads G.cardTraits, G.cardSizeChangingClasses, G.cardCopiedClasses and G.cardCopiedTeams).
  * @param playedCardId - The in-play card being tested.
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
  * @returns True when the played card matches the predicate.
  */
 // why: D-24724 — a played card counts as each class it was granted on play: Rogue's Copy
-// Powers ("This card is both Covert and the color you copy") and Size-Changing both write
-// G.cardSizeChangingClasses, and cardHasClassWhenPlayed is the single effective-class source
+// Powers ("This card is both Covert and the color you copy", G.cardCopiedClasses since
+// D-24730) and Size-Changing (G.cardSizeChangingClasses) both grant one, and
+// cardHasClassWhenPlayed is the single effective-class source
 // (D-24074). Reading raw G.cardTraits here undercounted Maestro (live match kIZGg6MXhua).
 // The hand stays on offPlayCardTraits (a grant applies only in play).
 // why: D-24726 — the team half of the same fix: Copy Powers is a full duplicate and also
@@ -1714,42 +1715,113 @@ function playerHasHeroMatchingTrait(
   return false;
 }
 
+/** One Hero a trait count counted, and the zone it was counted from (D-24729). */
+interface TraitCountedHero {
+  cardId: CardExtId;
+  zone: 'hand' | 'played';
+}
+
 /**
- * Returns HOW MANY of a player's Heroes — in hand OR in play — match the trait
- * predicate (the count sibling of `playerHasHeroMatchingTrait`, D-24290).
+ * Returns WHICH of a player's Heroes — in hand OR in play — match the trait predicate
+ * (the count sibling of `playerHasHeroMatchingTrait`, D-24290). The count is the
+ * list's length.
  *
  * Same hand+in-play scope and same `G.cardTraits` snapshot as its boolean sibling;
- * used by `rescue-bystanders-current-by-trait-count` (Baron Zemo) to size the
- * rescue by the number of matching Heroes rather than a mere has/has-not.
+ * used by `rescue-bystanders-current-by-trait-count` (Baron Zemo) and
+ * `ko-heroes-current-count-by-trait` (Maestro) to size the effect by the number of
+ * matching Heroes rather than a mere has/has-not.
  *
  * @param G - Game state (reads G.cardTraits and the split-face map).
  * @param zones - The player's zones (hand + inPlay are scanned).
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
- * @returns The number of matching Heroes across hand + in-play.
+ * @returns The matching Heroes across hand + in-play, hand first, in zone order.
  */
-function countPlayerHeroesMatchingTrait(
+// why: D-24729 — returns the counted cards, not just the number, so the Zemo / Maestro
+// log lines can name what they counted. The game log never lists the cards a player left
+// in hand, so without the names a live-verify cannot tell a Copy Powers copy from a
+// matching Hero left unplayed. The scan itself is unchanged.
+function listPlayerHeroesMatchingTrait(
   G: LegendaryGameState,
   zones: PlayerZones,
   kind: 'team' | 'hero-class',
   value: string,
-): number {
-  let count = 0;
+): TraitCountedHero[] {
+  const counted: TraitCountedHero[] = [];
   // why: WP-772 / D-24604 — hand (off play) reads the split-face map's both-halves view; inPlay
   // reads the chosen face only (same zone split as playerHasHeroMatchingTrait).
   for (const handCardId of zones.hand) {
     if (cardTraitMatches(offPlayCardTraits(G, handCardId), kind, value)) {
-      count += 1;
+      counted.push({ cardId: handCardId, zone: 'hand' });
     }
   }
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
   for (const playedCardId of playedCardIdsStillInPlay(G, zones.inPlay)) {
     if (playedCardTraitMatches(G, playedCardId, kind, value)) {
-      count += 1;
+      counted.push({ cardId: playedCardId, zone: 'played' });
     }
   }
-  return count;
+  return counted;
+}
+
+/**
+ * Names one counted Hero with where it was counted from, for a trait-count log line.
+ *
+ * A hand card reads `Name (hand)`; a played card whose printed trait matches reads
+ * `Name (played)`. A played card that matches only through a trait granted on play reads
+ * `Name (played, copied avengers)` for a team (Copy Powers, the only team grant) or
+ * `Name (played, granted strength)` for a class (Copy Powers or Size-Changing).
+ *
+ * @param G - Game state (reads G.cardTraits and G.cardDisplayData).
+ * @param counted - The counted Hero and its zone.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug that was matched.
+ * @returns The labeled card name.
+ */
+// why: D-24729 — a printed match and a granted match are told apart by re-testing the
+// printed G.cardTraits row: cardHasTeamWhenPlayed / cardHasClassWhenPlayed check that row
+// first and fall back to the grant, so "matched but not by print" means "by grant". The
+// copied card itself is not in G; the Copy Powers play line ("… copied X.") names it.
+function describeTraitCountedHero(
+  G: LegendaryGameState,
+  counted: TraitCountedHero,
+  kind: 'team' | 'hero-class',
+  value: string,
+): string {
+  const name = resolveCardDisplayName(G, counted.cardId);
+  if (counted.zone === 'hand') {
+    return `${name} (hand)`;
+  }
+  if (cardTraitMatches(G.cardTraits[counted.cardId], kind, value)) {
+    return `${name} (played)`;
+  }
+  if (kind === 'team') {
+    return `${name} (played, copied ${value})`;
+  }
+  return `${name} (played, granted ${value})`;
+}
+
+/**
+ * Joins the counted Heroes into the `: A (hand), B (played)` tail of a trait-count line.
+ *
+ * @param G - Game state.
+ * @param countedHeroes - The counted Heroes, in scan order.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug that was matched.
+ * @returns The `: names` tail, or an empty string when nothing was counted.
+ */
+function describeTraitCountedHeroes(
+  G: LegendaryGameState,
+  countedHeroes: readonly TraitCountedHero[],
+  kind: 'team' | 'hero-class',
+  value: string,
+): string {
+  if (countedHeroes.length === 0) {
+    return '';
+  }
+  const names = countedHeroes.map((counted) => describeTraitCountedHero(G, counted, kind, value));
+  return `: ${names.join(', ')}`;
 }
 
 /**
@@ -1972,6 +2044,8 @@ function villainEffectDrawCardsCurrent(
   const handSizeBefore = zones.hand.length;
   drawCardsIntoHand(zones, drawCount, shuffleContext);
   const drawn = zones.hand.length - handSizeBefore;
+  // why: D-24732 — the defeating player's Fight draw is an extra card drawn this turn.
+  G.turnEconomy.cardsDrawn += drawn;
   // why: D-24290 — all three Tier-A primitives are Fight-timed (the markers are
   // authored under `.fight`), so the label is hardcoded "Fight effect:" as the
   // scry-ko handler does for the Fight-only Doombot; a draw that moved 0 cards
@@ -2053,6 +2127,9 @@ function villainEffectRevealTopDrawIfCostLte(
   }
   zones.deck = moveResult.from;
   zones.hand = moveResult.to;
+  // why: D-24732 — "draw it" is a real draw by the current player (only the draw lock is
+  // waived above), so it counts as an extra card drawn this turn.
+  G.turnEconomy.cardsDrawn += 1;
   pushLog(G, `Fight effect: revealed "${topName}" (cost ${String(cost)}) — drew it.`, 'applied', topCardId);
   return { targets: [topCardId] };
 }
@@ -2547,7 +2624,7 @@ const BASIC_SHIELD_EXT_IDS: ReadonlySet<CardExtId> = new Set([
  * teamless basic-S.H.I.E.L.D. cards (D-24296).
  *
  * Deliberately local to the Destroyer KO handler: the shared `cardTraitMatches`,
- * `playerHasHeroMatchingTrait`, and `countPlayerHeroesMatchingTrait` are LEFT
+ * `playerHasHeroMatchingTrait`, and `listPlayerHeroesMatchingTrait` are LEFT
  * UNCHANGED, so the corpus-wide `[team:shield]` synergies and Baron Zemo's
  * rescue-by-count are unaffected (narrow fix — operator ruling 2026-08-03).
  *
@@ -2692,12 +2769,15 @@ function villainEffectKoHeroesCurrentCountByTrait(
   // Heroes). The scan covers hand + in-play because "your Heroes" includes Heroes played
   // this turn — they sit in `inPlay`, since the Fight effect resolves after the play
   // phase (the operator ruling precedent from `villainEffectKoHeroesCurrentByTrait`).
-  const owedFromTrait = countPlayerHeroesMatchingTrait(
+  const countedHeroes = listPlayerHeroesMatchingTrait(
     G,
     zones,
     requireKind,
     requireValue,
   );
+  const owedFromTrait = countedHeroes.length;
+  // why: D-24729 — named BEFORE the KO loop below moves any counted card to the KO pile.
+  const countedNames = describeTraitCountedHeroes(G, countedHeroes, requireKind, requireValue);
 
   // why: D-24353 — this loop + park block is the `villainEffectKoHero` `target: 'current'`
   // body DUPLICATED verbatim with a trait-derived count in place of `descriptor.magnitude`.
@@ -2745,14 +2825,14 @@ function villainEffectKoHeroesCurrentCountByTrait(
   if (parked) {
     pushLog(
       G,
-      `Fight effect: KO ${String(owed)} of your Heroes (one per your ${requireValue} Hero) — choose which.`,
+      `Fight effect: KO ${String(owed)} of your Heroes (one per your ${requireValue} Hero${countedNames}) — choose which.`,
       'neutral',
     );
   } else if (targets.length > 0) {
     const names = targets.map((koedId, targetIndex) => nameKoTarget(G, koedId, targetZones[targetIndex])).join(', ');
     pushLog(
       G,
-      `Fight effect: KO'd ${String(targets.length)} of your Heroes (${names}) — one per your ${requireValue} Hero.`,
+      `Fight effect: KO'd ${String(targets.length)} of your Heroes (${names}) — one per your ${requireValue} Hero${countedNames}.`,
       'applied',
     );
   } else {
@@ -2800,12 +2880,13 @@ function villainEffectRescueBystandersCurrentByTraitCount(
   if (!zones) {
     return { targets: [] };
   }
-  const rescueCount = countPlayerHeroesMatchingTrait(
+  const countedHeroes = listPlayerHeroesMatchingTrait(
     G,
     zones,
     requireKind,
     requireValue,
   );
+  const rescueCount = countedHeroes.length;
   // why: D-24290 — "rescue a Bystander" = award one from the supply to the current
   // player's Victory Pile, reusing the `capture-bystander` onFight player-award
   // mechanism (attach one to the triggering card, then award it). At the Fight fire
@@ -2851,9 +2932,16 @@ function villainEffectRescueBystandersCurrentByTraitCount(
     );
     return { targets: [] };
   }
+  // why: D-24729 — name the counted Heroes and where each was counted from. When the supply
+  // ran out first, say so, so a list longer than the rescue doesn't read as a miscount.
+  const countedNames = describeTraitCountedHeroes(G, countedHeroes, requireKind, requireValue);
+  let supplyClause = '';
+  if (rescued < rescueCount) {
+    supplyClause = `; the Bystander supply ran out after ${String(rescued)}`;
+  }
   pushLog(
     G,
-    `Fight effect: rescued ${String(rescued)} Bystander(s) (one per your ${requireValue} Hero).`,
+    `Fight effect: rescued ${String(rescued)} Bystander(s) (one per your ${requireValue} Hero${countedNames}${supplyClause}).`,
     'applied',
   );
   return { targets: [] };
@@ -2865,7 +2953,7 @@ function villainEffectRescueBystandersCurrentByTraitCount(
  * The engine's first HQ-by-trait scan: it iterates the five `G.hq` slots, skips the
  * empty (`null`) ones, and counts those whose `G.cardTraits` entry matches via the
  * shared `cardTraitMatches`. Deliberately separate from the player-zone scanners
- * (`countPlayerHeroesMatchingTrait`), which read hand + in-play — this reads the HQ.
+ * (`listPlayerHeroesMatchingTrait`), which read hand + in-play — this reads the HQ.
  *
  * @param G - Game state (reads G.hq, G.cardTraits and the split-face map).
  * @param kind - The predicate kind ('team' | 'hero-class').

@@ -65,11 +65,15 @@ export interface TurnEconomy {
   /** Number of wound cards drawn by the current player this turn. */
   woundsDrawn: number;
   /**
-   * WP-665 / D-24476 — total cards the current player drew from EFFECTS this
-   * turn (the `draw:N` handler path). Used by the `cardsDrawnThisTurnAtLeast`
-   * condition ("if you drew two cards this turn", Gamma-Draining Nanites). The
-   * start-of-turn hand refill is NOT counted (it uses `drawCardsIntoHand`, not
-   * the effect-draw path), so the count reflects only effect-driven draws.
+   * WP-665 / D-24476, widened by D-24732 — total cards the current player drew
+   * from EFFECTS this turn: every "extra card" drawn, i.e. every card drawn other
+   * than the hand drawn at end of turn. Each effect-draw site for the current
+   * player increments it (`draw:N`, put-hand-on-deck-top, reveal-rule draws,
+   * Psychic Link, Investigate, Dodge, Diving Block, Do Over, Smash, reveal-three,
+   * HYDRA Conspiracy, Enchantress, villain reveal-draws). The end-of-turn hand
+   * fill, next-hand bonuses, setup deal and other seats' draws are NOT counted.
+   * Read by the `cardsDrawnThisTurnAtLeast` condition (Gamma-Draining Nanites)
+   * and the `extra-cards-drawn-this-turn` count source (Berserker Rage).
    * Reset to 0 by `resetTurnEconomy`; carried by every rebuild helper.
    */
   cardsDrawn: number;

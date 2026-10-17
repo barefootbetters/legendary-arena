@@ -276,7 +276,11 @@ export function applyRandomActsWoundGain(
     // why: D-24678 — Diving Block replaces the gain: the Wound stays in the supply and
     // the player draws a card instead; Diving Block itself is only revealed, never moved.
     if (shuffleContext !== undefined) {
+      const handSizeBefore = zones.hand.length;
       drawCardsIntoHand(zones, 1, shuffleContext);
+      // why: D-24732 — the Random Acts wound step is addressed to the active seat only, so
+      // this draw-instead is the current player's extra card drawn this turn.
+      G.turnEconomy.cardsDrawn += zones.hand.length - handSizeBefore;
     }
     pushLog(G, `Player ${seat} revealed Diving Block: drew a card instead of gaining the Wound (Random Acts of Unkindness).`, 'applied');
     return;

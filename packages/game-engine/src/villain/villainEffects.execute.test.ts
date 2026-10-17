@@ -1314,7 +1314,7 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
   });
 
   it('D-24724 a Copy Powers copy of a Strength Hero satisfies a Strength reveal (Zzzax); an unconverted Copy Powers does not', () => {
-    // why: D-24724 — the copied class lives in G.cardSizeChangingClasses, not G.cardTraits, so
+    // why: D-24724 — the copied class lives in G.cardCopiedClasses (D-24730), not G.cardTraits, so
     // the in-play read must go through the effective-class source (cardHasClassWhenPlayed).
     const COPY_A = 'core/rogue/copy-powers#0' as CardExtId;
     const COPY_B = 'core/rogue/copy-powers#1' as CardExtId;
@@ -1331,7 +1331,7 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
         [COPY_B]: { heroClass: 'covert', team: 'x-men' },
       },
     });
-    G.cardSizeChangingClasses = { [COPY_A]: ['strength'], [COPY_B]: ['ranged'] };
+    G.cardCopiedClasses = { [COPY_A]: ['strength'], [COPY_B]: ['ranged'] };
     executeVillainAbilities(G, CTX, 'v-zzzax' as CardExtId, 'onFight');
     assert.equal(G.playerZones['0']!.discard.length, 0, 'the granted Strength class reveals — no wound');
     assert.equal(G.playerZones['1']!.discard.length, 1, 'a Ranged grant is not Strength → wounded');
@@ -1799,7 +1799,7 @@ describe('executeVillainAbilities — ko-heroes-current-by-trait (WP-485 / D-242
       cardTraits: { ...TRAITS, [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' } },
       messages: [],
     });
-    G.cardSizeChangingClasses = { [COPY_POWERS]: ['ranged'] };
+    G.cardCopiedClasses = { [COPY_POWERS]: ['ranged'] };
     executeVillainAbilities(G, CTX, 'v-class-ko' as CardExtId, 'onFight');
     assert.deepStrictEqual(G.ko, [COPY_POWERS], 'Copy Powers as Ranged is KO’d; the covert X-Men Hero stays');
     assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER]);
@@ -1873,9 +1873,11 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
       'owed = 2 Strength Heroes; the player picks WHICH two die',
     );
     assert.deepStrictEqual(G.ko, [], 'nothing auto-KO’d — a genuine choice remains');
-    assert.match(
+    // why: D-24729 — the line names each counted Hero and where it was counted from (no
+    // cardDisplayData here, so the names fall back to the ext_ids).
+    assert.equal(
       G.messages.at(-1)!.text,
-      /Fight effect: KO 2 of your Heroes \(one per your strength Hero\) — choose which\./,
+      `Fight effect: KO 2 of your Heroes (one per your strength Hero: ${STRENGTH_A} (hand), ${STRENGTH_B} (hand)) — choose which.`,
     );
     assert.equal(G.messages.at(-1)!.outcome, 'neutral');
   });
@@ -1898,7 +1900,7 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
     executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
     assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park — both die, no meaningful choice');
     assert.deepStrictEqual([...G.ko].sort(), [STRENGTH_A, STRENGTH_B].sort());
-    assert.match(G.messages.at(-1)!.text, /Fight effect: KO'd 2 of your Heroes \(.*\) — one per your strength Hero\./);
+    assert.match(G.messages.at(-1)!.text, /Fight effect: KO'd 2 of your Heroes \(.*\) — one per your strength Hero: .+ \(hand\), .+ \(hand\)\./);
     assert.equal(G.messages.at(-1)!.outcome, 'applied');
   });
 
@@ -1958,7 +1960,7 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
 
   it('D-24724 Copy Powers copying a Strength Hero counts as a second Strength Hero (live match kIZGg6MXhua)', () => {
     // why: D-24724 — Rogue's Copy Powers "is both Covert and the color you copy"; applyCopyPowers
-    // grants the copied class into G.cardSizeChangingClasses, so Perfect Teamwork (Strength) plus
+    // grants the copied class into G.cardCopiedClasses (D-24730), so Perfect Teamwork (Strength) plus
     // Copy Powers copying it is TWO Strength Heroes in play. The raw printed read owed only 1.
     const PERFECT_TEAMWORK = 'core/captain-america/perfect-teamwork#0' as CardExtId;
     const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
@@ -1973,16 +1975,49 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
         [PERFECT_TEAMWORK]: { heroClass: 'strength', team: 'avengers' },
         [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' },
       },
+      cardDisplayData: {
+        [PERFECT_TEAMWORK]: { name: 'Perfect Teamwork' },
+        [COPY_POWERS]: { name: 'Copy Powers' },
+      },
       messages: [],
     });
-    G.cardSizeChangingClasses = { [COPY_POWERS]: ['strength'] };
+    G.cardCopiedClasses = { [COPY_POWERS]: ['strength'] };
     executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
     assert.deepStrictEqual(
       G.pendingKoHeroChoices,
       [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
       'owed = 2: the printed Strength Hero plus Copy Powers as Strength',
     );
-    assert.match(G.messages.at(-1)!.text, /KO 2 of your Heroes \(one per your strength Hero\)/);
+    // why: D-24729 — the copy is named as counted through its granted class, so the log
+    // alone shows the second Strength Hero was Copy Powers, not a Strength Hero in hand.
+    assert.equal(
+      G.messages.at(-1)!.text,
+      'Fight effect: KO 2 of your Heroes (one per your strength Hero: Perfect Teamwork (played), Copy Powers (played, granted strength)) — choose which.',
+    );
+  });
+
+  it('D-24729 the auto-KO line names the counted Heroes from hand and from play', () => {
+    // why: a Strength Hero in hand and one in play, nothing else KO-able — both are forced
+    // to die, so the auto path's line carries the counted list after the KO'd names.
+    const G = makeG({
+      hooks: [maestroHook()],
+      playerZones: {
+        '0': { deck: [], hand: [STRENGTH_A], discard: [], inPlay: [STRENGTH_B], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      cardDisplayData: {
+        [STRENGTH_A]: { name: 'Hulk Smash' },
+        [STRENGTH_B]: { name: 'Crazed Rampage' },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.equal(G.ko.length, 2, 'both Strength Heroes are forced to die');
+    assert.match(
+      G.messages.at(-1)!.text,
+      /^Fight effect: KO'd 2 of your Heroes \(.+\) — one per your strength Hero: Hulk Smash \(hand\), Crazed Rampage \(played\)\.$/,
+    );
   });
 
   it('AC-4 discard is out of scope — a discarded Strength Hero adds no count', () => {
@@ -2191,7 +2226,10 @@ describe('executeVillainAbilities — rescue-bystanders-current-by-trait-count (
     assert.equal(G.playerZones['0']!.victory.length, 2, 'two Avengers → two Bystanders rescued');
     assert.equal(G.piles.bystanders.length, 1, 'the supply dropped by two');
     assert.deepStrictEqual(G.attachedBystanders, {}, 'no stranded attachment left on the villain');
-    assert.match(G.messages![0]!.text, /Fight effect: rescued 2 Bystander\(s\) \(one per your avengers Hero\)\./);
+    assert.equal(
+      G.messages![0]!.text,
+      `Fight effect: rescued 2 Bystander(s) (one per your avengers Hero: ${AV_A} (hand), ${AV_B} (played)).`,
+    );
     assert.equal(G.messages![0]!.outcome, 'applied');
   });
 
@@ -2229,7 +2267,43 @@ describe('executeVillainAbilities — rescue-bystanders-current-by-trait-count (
     G.cardCopiedTeams = { [COPY_POWERS]: ['avengers'] };
     executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
     assert.equal(G.playerZones['0']!.victory.length, 4, 'three printed Avengers plus Copy Powers as an Avenger');
-    assert.match(G.messages![0]!.text, /Fight effect: rescued 4 Bystander\(s\) \(one per your avengers Hero\)\./);
+    assert.match(G.messages![0]!.text, /^Fight effect: rescued 4 Bystander\(s\) \(one per your avengers Hero: .+\)\.$/);
+  });
+
+  it('D-24729 names each counted Avenger with its source: a hand card and a Copy Powers copy (live match SoDnMI9IjqU)', () => {
+    // why: D-24729 — the SoDnMI9IjqU record had to infer what Zemo counted, because the log
+    // never lists unplayed hand cards. The line now names a hand Avenger, the printed played
+    // Avenger, and Copy Powers counted through the team it copied.
+    const A_DAY = 'core/captain-america/a-day-unlike-any-other#0' as CardExtId;
+    const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      playerZones: {
+        '0': { deck: [], hand: [AV_A, OTHER], discard: [], inPlay: [A_DAY, COPY_POWERS], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      bystanders: ['bys0', 'bys1', 'bys2', 'bys3'] as CardExtId[],
+      messages: [],
+      cardTraits: {
+        ...TRAITS,
+        [A_DAY]: { heroClass: 'covert', team: 'avengers' },
+        [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' },
+      },
+      cardDisplayData: {
+        [AV_A]: { name: 'Avengers Assemble!' },
+        [OTHER]: { name: 'Berserker Rage' },
+        [A_DAY]: { name: 'A Day Unlike Any Other' },
+        [COPY_POWERS]: { name: 'Copy Powers' },
+      },
+    });
+    G.cardCopiedTeams = { [COPY_POWERS]: ['avengers'] };
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.victory.length, 3, 'one hand Avenger, one played, one copy');
+    assert.equal(
+      G.messages![0]!.text,
+      'Fight effect: rescued 3 Bystander(s) (one per your avengers Hero: Avengers Assemble! (hand), A Day Unlike Any Other (played), Copy Powers (played, copied avengers)).',
+    );
+    assert.equal(G.messages![0]!.outcome, 'applied');
   });
 
   it('AC-3 is bounded by the Bystander supply', () => {
@@ -2247,6 +2321,8 @@ describe('executeVillainAbilities — rescue-bystanders-current-by-trait-count (
     assert.equal(G.playerZones['0']!.victory.length, 1, 'only one Bystander available to rescue');
     assert.equal(G.piles.bystanders.length, 0, 'supply exhausted');
     assert.match(G.messages![0]!.text, /Fight effect: rescued 1 Bystander\(s\)/);
+    // why: D-24729 — two Avengers are listed but only one was rescued, so the line says why.
+    assert.match(G.messages![0]!.text, /\(hand\); the Bystander supply ran out after 1\)\.$/);
   });
 
   it('AC-3 zero matching heroes rescues nothing (no error)', () => {

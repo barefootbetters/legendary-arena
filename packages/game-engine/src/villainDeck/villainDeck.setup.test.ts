@@ -488,6 +488,58 @@ describe('buildVillainDeck', () => {
     );
   });
 
+  it('twist fallback: a non-Civil-War scheme keeps 8 twists at 4 and 5 players (D-24733)', () => {
+    // why: the D-24733 per-player-count twist sizing is Civil-War-only; every
+    // other scheme's twist count is independent of the seat count.
+    const registry = createMockRegistry();
+    const config = createTestConfig();
+
+    for (const numPlayers of [4, 5]) {
+      const result = buildVillainDeck(config, registry, makeMockCtx({ numPlayers }));
+      assert.equal(
+        countByType(result, 'scheme-twist'),
+        8,
+        `A non-Civil-War scheme must still build 8 twists at ${numPlayers} players`,
+      );
+    }
+  });
+
+  it('twist sizing: Chthon builds 6 plus 1 per player, and 1 Twist with Lilith (D-24734)', () => {
+    // why: the mastermind id must reach the twist resolver — "If using Lilith: Use
+    // 1 Twist total" is the one printed twist count keyed on the Mastermind.
+    const midtownRegistry = createMidtownMockRegistry();
+    const mdnsSetData = {
+      abbr: 'mdns',
+      henchmen: [],
+      masterminds: [],
+      villains: [],
+      schemes: [{ id: 1, slug: 'ritual-sacrifice-to-summon-chthon', name: 'Ritual Sacrifice to Summon Chthon', cards: [] }],
+    };
+    const registry: VillainDeckRegistryReader = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }, { abbr: 'mdns' }],
+      getSet: (abbr: string) => (abbr === 'mdns' ? mdnsSetData : midtownRegistry.getSet(abbr)),
+    };
+    const chthonConfig: MatchSetupConfig = {
+      ...createMidtownConfig(),
+      schemeId: 'mdns/ritual-sacrifice-to-summon-chthon',
+    };
+
+    const withZarathos = buildVillainDeck(
+      { ...chthonConfig, mastermindId: 'mdns/zarathos' },
+      registry,
+      makeMockCtx({ numPlayers: 3 }),
+    );
+    const withLilith = buildVillainDeck(
+      { ...chthonConfig, mastermindId: 'mdns/lilith-mother-of-demons' },
+      registry,
+      makeMockCtx({ numPlayers: 3 }),
+    );
+
+    assert.equal(countByType(withZarathos, 'scheme-twist'), 9, '3 players: 6 Twists plus 1 per player');
+    assert.equal(countByType(withLilith, 'scheme-twist'), 1, 'with Lilith: 1 Twist total');
+  });
+
   it('bystander fallback: a scheme with no villainDeckBystanderCount yields numPlayers bystanders', () => {
     // test-scheme declares no villainDeckBystanderCount, so the count falls
     // back to numPlayers.

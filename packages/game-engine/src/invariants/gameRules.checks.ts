@@ -123,6 +123,9 @@ export function checkNoCardInMultipleZones(G: LegendaryGameState): void {
   scanZone(G.ko, 'ko', firstSeenZone);
   scanZone(G.villainDeck.deck, 'villainDeck.deck', firstSeenZone);
   scanZone(G.villainDeck.discard, 'villainDeck.discard', firstSeenZone);
+  // why: D-24736 — the Clash Monster Pit is a card container (absent for every other
+  // scheme); a Monster must leave it when it enters the city.
+  scanZone(G.monsterPit ?? [], 'monsterPit', firstSeenZone);
   scanZone(G.mastermind.tacticsDeck, 'mastermind.tacticsDeck', firstSeenZone);
   scanZone(G.mastermind.tacticsDefeated, 'mastermind.tacticsDefeated', firstSeenZone);
 

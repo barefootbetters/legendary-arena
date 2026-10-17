@@ -20,8 +20,12 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
  * why (D-24595): many printed conditions read "when the Hero Deck or Villain Deck
  * runs out" / "when the Wound Stack or Villain Deck runs out", so the Villain Deck
  * joins the two piles WP-510 / WP-511 introduced, and a condition may name several.
+ *
+ * why (D-24736): Clash of the Monsters Unleashed loses "When the Wound Stack or
+ * Monster Pit Deck runs out", so its scheme-owned Monster Pit (`G.monsterPit`)
+ * is a pile too.
  */
-export type SchemeLossPile = 'heroDeck' | 'wounds' | 'villainDeck';
+export type SchemeLossPile = 'heroDeck' | 'wounds' | 'villainDeck' | 'monsterPit';
 
 /**
  * Canonical ordered list of SchemeLossPile values.
@@ -33,6 +37,7 @@ export const SCHEME_LOSS_PILES: readonly SchemeLossPile[] = [
   'heroDeck',
   'wounds',
   'villainDeck',
+  'monsterPit',
 ];
 
 /**
@@ -108,6 +113,7 @@ export type SchemeTwistResolverId =
   | 'killbots'
   | 'secret-invasion'
   | 'portals'
+  | 'clash-monster-pit'
   | 'counter-only';
 
 /**
