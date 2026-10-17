@@ -44,6 +44,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | Phase | What | Status |
 |---|---|---|
 | 0 | Record the convention as a decision | Not started |
+| 0.5 | Baseline snapshot and environment inventory | Not started |
 | 1 | Back up the loose files that have no backup today | Not started |
 | 2 | Add an unpushed-work check | Not started (not blocking) |
 | 3 | **Rehearsal:** re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments` | Not started (quiet window for HvA) |
@@ -58,6 +59,19 @@ Update the Status column and add a line to the Progress log whenever a
 phase moves. The step-by-step commands live in the operator's execution
 plan on pCloud (`C:\pcloud\LA\workstation-layout-migration-plan.md`); this
 page records the phases, the checks, and the outcome.
+
+### Success criteria
+
+The migration is done when: both product repos run from `C:\dev`, with no
+checkout left under `C:\pcloud\` or at their old `C:\www` paths; sessions in
+both load their full, hash-verified memory, and commit hooks fire in the
+engine checkout and in a fresh engine worktree; builds and tests match
+`main`'s CI; every local-only commit is pushed or in a verified bundle, and
+the engine's upstream-less branches have each been triaged; both pCloud
+folders carry their repo's name and no repo has a live old-path reference;
+both `.RETIRED` folders are deleted after 14 days with no rollback; the
+weekly check reports unpushed work and detached HEADs; and Workspace Map
+and Data & File Locations describe the new layout.
 
 ### Why this order
 
@@ -136,6 +150,21 @@ C:\pcloud\
 **Done when** the entry is Active in `DECISIONS.md` and this page's
 governance note cites it.
 
+### Phase 0.5 — Baseline snapshot and environment inventory
+
+Before anything moves, record into
+`C:\pcloud\LA\code-archive\migration-snapshots\`: tool versions (git,
+pwsh, node, pnpm, claude); each repo's worktree list, branches and local
+git config; the global git config and `gh auth status`; every Claude Code
+project folder with its memory count; SSH key names (never contents); a
+pCloud baseline (sync status, quota, selective-sync exclusions); and an
+inventory of laptop-held credentials, existence and storage location only.
+Deploy secrets that live in GitHub Actions, Cloudflare, or on the droplet
+are outside it: re-cloning can't lose them.
+
+**Done when** the snapshot folder holds all of the above and `gh` shows a
+valid login.
+
 ### Phase 1 — Back up the loose files
 
 1. Move the workstation README to pCloud: `C:\www\README.md` →
@@ -179,9 +208,10 @@ done to it.
 3. Clone `barefootbetters/herbs-vs-ailments` into `C:\dev\herbs-vs-ailments`;
    `pnpm install`, `pnpm test`, `pnpm typecheck`.
 4. Copy Claude Code's project memory, `C--www-herbs-vs-ailments\memory\`
-   (13 files), to `C--dev-herbs-vs-ailments\memory\`. Claude Code keys
-   memory by project path, so without this a session in the new folder
-   starts with none.
+   (13 files), to `C--dev-herbs-vs-ailments\memory\`, and hash-compare the
+   two trees. Claude Code keys memory by project path, so without this a
+   session in the new folder starts with none. Check `git remote -v` and
+   that `pnpm install --frozen-lockfile` leaves `git status` clean.
 5. Rename the old checkout to `herbs-vs-ailments.RETIRED-<date>`.
 6. Start a session on the new folder; confirm it sees its memory and that a
    fresh desktop worktree lands under `C:\claude-worktrees\herbs-vs-ailments\`.
@@ -199,7 +229,15 @@ later. **Rollback:** rename the old folder back.
 Walk the Rehearsal log; for each entry, fix a command, add a check, or mark
 it HvA-only. Update Phases 5–6 here and in the execution plan.
 
-**Done when** every Rehearsal log entry has a disposition.
+Triage the engine's upstream-less local branches (183 on 2026-10-17):
+list each branch whose changes aren't on `origin/main` (`git cherry`, so
+squash-merged work mostly drops out), cross-checked with
+`scripts/prune-empty-claude-branch.mjs --verbose`; Jeff marks each push,
+bundle-only, or delete. Phase 6 bundles all of them regardless, so triage
+decides what gets resumed, not what gets kept.
+
+**Done when** every Rehearsal log entry and every triaged branch has a
+disposition.
 
 ### Phase 5 — Pre-stage the engine clone (no switch-over)
 
@@ -218,13 +256,18 @@ copied in.
    on 2026-10-17 held the absolute `C:\pcloud\BB\DEV\legendary-arena\.githooks`;
    once the old checkout is gone, an absolute path to it silently runs no
    hooks at all.
-4. `pnpm install`, `pnpm -r build`, `pnpm -r --no-bail test`.
-5. Prove the hooks fire: on a scratch branch, `git commit --allow-empty -m
-   "hook test"` must be **rejected** by the commit-msg hook (no `EC-###:` /
-   `SPEC:` / `INFRA:` prefix). Delete the scratch branch.
+4. Re-add the second remote a clone doesn't carry:
+   `lagn-MIRROR-do-not-deploy` → `legendary-arena/lagn-spec`.
+5. `pnpm install --frozen-lockfile`, `pnpm -r build`, `pnpm -r --no-bail test`.
+6. Prove all three hooks run, since a hook can exist and still fail at
+   runtime (`sh`, `node`, `pnpm`). On a scratch branch,
+   `git commit --allow-empty -m "hook test"` must be **rejected** by
+   commit-msg. A commit with an `INFRA:` subject passes commit-msg and
+   pre-commit, and `git push --dry-run` must show pre-push output. Delete
+   the scratch branch.
 
-**Done when** the build passes, tests match `main`'s CI, and the test
-commit is rejected. **Rollback:** empty the folder; nothing else changed.
+**Done when** the build passes, tests match `main`'s CI, both remotes are
+present, and all three hooks demonstrably run. **Rollback:** empty the folder; nothing else changed.
 
 ### Phase 6 — Cut over the engine
 
@@ -237,10 +280,11 @@ In a quiet window, with no session open in the engine or its worktrees:
 3. `git pull --ff-only` in the new clone; re-copy the gitignored files.
 4. Copy `C--pcloud-BB-DEV-legendary-arena\memory\` (242 files on
    2026-10-17) to `C--dev-legendary-arena\memory\`.
-5. Rename the old checkout to `legendary-arena.RETIRED-<date>`; delete the
-   stale clone `C:\www\legendary-arena`.
+5. Rename the old checkout to `legendary-arena.RETIRED-<date>`.
 6. Start a session on the new folder; confirm its memory loads and that a
-   new worktree's `core.hooksPath` is the relative `.githooks`.
+   new worktree's `core.hooksPath` is the relative `.githooks`. Only then
+   delete the stale clone `C:\www\legendary-arena`. Destructive steps come
+   last.
 7. Sweep the live path references (Edge Cases) and the memory files that
    name the old path.
 
@@ -289,7 +333,12 @@ phase; it only makes the convention exact.
   conversation: repo names, not `LA` / `HvA`; the engine goes to `C:\dev`;
   wikis stay in their repos; dashboards use `bb-studio-dashboard`. Same
   day, reordered: Herbs vs. Ailments first as the rehearsal, and the engine
-  move split into a pre-stage and a cut-over. No phase started.
+  move split into a pre-stage and a cut-over. Two Copilot reviews folded
+  in: success criteria, a Phase 0.5 baseline and environment inventory,
+  hash-verified memory copies, branch triage, all-three-hooks checks, and
+  destructive steps last. Checking them found that the engine checkout has
+  a second git remote (`lagn-MIRROR-do-not-deploy`) a fresh clone would
+  drop; Phase 5 re-adds it. No phase started.
 
 ## Interactions
 
