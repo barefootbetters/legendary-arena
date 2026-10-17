@@ -33,7 +33,7 @@ corporate-memory viewer is the first on it. The marketing site stays
 on PaperMod for now. The page also covers selling on a static site
 and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude Chat,
 four Copilot reviews, and a Grok review (2026-10-16). The studio ewiki
-joined the list on 2026-10-17 (bb-studio-dashboard PR #24).
+joined the list on 2026-10-17 ([bb-studio-dashboard decision 2026-10-17-01](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-01-the-studio-ewiki-is-the-studios-own-wiki.md)).
 
 ## Mechanics
 
@@ -44,7 +44,7 @@ joined the list on 2026-10-17 (bb-studio-dashboard PR #24).
 | Engine ewiki (`ewiki.legendary-arena.com`) | `legendary-arena` (`apps/wiki-viewer/`) | Hand-rolled | Its own copy, until its migration packet (step 4) | Cloudflare Worker, deployed by GitHub Actions |
 | Herbs vs. Ailments ewiki | `herbs-vs-ailments` (`apps/ewiki/`) | Hand-rolled, a drifted copy | Its own copy, until its migration packet (step 2) | — |
 | Corporate-memory viewer | `jefferyjjensen-corporate-memory` (`viewer/`) | The shared theme | `barefootbetters/ewiki-theme` `v1.1.1`, vendored (step 1, done 2026-10-16) | Cloudflare Pages |
-| Studio ewiki (`studio-ewiki.barefootbetters.com`) | `bb-studio-dashboard` (`ewiki/`, rendering that repo's `docs/`) | Hand-rolled, copied from the herbs copy on 2026-10-15 | Its own copy, until its migration packet (WP-014 there, draft) | Cloudflare Worker `bb-studio-ewiki`, behind Access |
+| Studio ewiki (`studio-ewiki.barefootbetters.com`) | `bb-studio-dashboard` (`ewiki/`, rendering that repo's `docs/`) | Hand-rolled, copied from the herbs copy on 2026-10-15 | Its own copy, until its migration packet ([WP-014](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/work-packets/WP-014-studio-ewiki-on-the-shared-theme.md) there, draft) | Cloudflare Worker `bb-studio-ewiki`, behind Access |
 | Personal wiki | `jefferyjjensen-wiki` | Hand-rolled | Its own copy, until its migration packet (step 3) | — |
 | Marketing (`www.legendary-arena.com`) | `legendary-arena-com` | PaperMod plus overrides | PaperMod upstream (not on the platform) | Cloudflare Pages |
 | Barefoot Betters (`barefootbetters.com`) | `barefootbetters-www` | PaperMod | PaperMod upstream (not on the platform) | — |
@@ -88,9 +88,9 @@ one. Build one Hugo setup with the Studio branding and shared partials
 (header, footer, nav, search). Each ewiki is then a content folder, a
 small config with its domain and project name, and a logo. That is what
 makes the ewiki a reusable Studio product. The studio's own wiki is the
-first one built that way (bb-studio-dashboard decision 2026-10-17-01), and
-the product's public page is `studio.barefootbetters.com/ewiki`
-(decision 2026-10-17-02); both decisions are in bb-studio-dashboard PR #24.
+first one built that way ([bb-studio-dashboard decision 2026-10-17-01](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-01-the-studio-ewiki-is-the-studios-own-wiki.md)),
+and the product's public page is `studio.barefootbetters.com/ewiki`
+([decision 2026-10-17-02](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-02-the-ewiki-products-marketing-page.md)).
 
 ### The cost of doing nothing
 
@@ -254,8 +254,8 @@ The wikis move in this order, each in its own packet:
 
 1. corporate memory (done 2026-10-16, now on `v1.1.1`)
 2. Herbs vs. Ailments (herbs WP-005, drafted; waits on theme `v1.2.0`)
-   - **Proposed:** the studio ewiki right after herbs (bb-studio-dashboard
-     WP-014, draft). It has the same shape as herbs (a `docs/` mount,
+   - **Proposed:** the studio ewiki right after herbs ([bb-studio-dashboard
+     WP-014](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/work-packets/WP-014-studio-ewiki-on-the-shared-theme.md), draft). It has the same shape as herbs (a `docs/` mount,
      Mermaid, the same footer), so herbs settles the open questions first.
      Its position is WP-014's call 4a, still Jeff's to make. A scratch
      trial on `v1.1.1` passed every gate but JS-free, which fails on one
@@ -375,6 +375,7 @@ Resolved:
 - [.github/workflows/wiki-viewer.yml](../.github/workflows/wiki-viewer.yml) — the JS-free and determinism gates
 - [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24725 (one shared wiki platform), D-24727 (theme: the current theme, extracted; Hextra not adopted), D-24728 (the theme lives in `barefootbetters/ewiki-theme`, vendored), D-24293 (Pagefind and the JS-free amendment), D-24690 (Worker hosting)
 - [WP-814](../docs/ai/work-packets/WP-814-shared-wiki-theme-extraction.md) — the extraction: the survey of the four copies, the contract, and the shadow-build record
+- [bb-studio-dashboard WP-014](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/work-packets/WP-014-studio-ewiki-on-the-shared-theme.md) — the studio ewiki's migration packet (draft); decisions [2026-10-17-01](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-01-the-studio-ewiki-is-the-studios-own-wiki.md) (the studio's own wiki) and [2026-10-17-02](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-02-the-ewiki-products-marketing-page.md) (the product page)
 - [barefootbetters/ewiki-theme](https://github.com/barefootbetters/ewiki-theme) — the shared theme (private); `v1.0.0` release notes carry the manifest digest
 - [herbs-vs-ailments#247](https://github.com/barefootbetters/herbs-vs-ailments/pull/247) — the Hextra pilot and its evaluation (`apps/ewiki/HEXTRA-PILOT.md`), closed unmerged
 - [Hextra on GitHub](https://github.com/imfing/hextra) — the theme evaluated (MIT; FlexSearch search; no Node.js needed to use it)
