@@ -16,23 +16,24 @@ source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-platform-strategy.md (this page — https://ewiki.legendary-arena.com/hugo-platform-strategy/)
   - ../docs/ai/work-packets/WP-139-engineering-wiki-viewer.md
   - ../apps/wiki-viewer/README.md
-last-reviewed: 2026-10-16
+last-reviewed: 2026-10-17
 ---
 
 ## Summary
 
-We run four Hugo wikis, and each carries its own forked copy of a
+We run five Hugo wikis, and each carries its own forked copy of a
 hand-rolled theme. The real question is whether to keep four diverging
 themes or move to one shared platform; which theme that platform uses
 is a second, smaller question. Both are decided: converge (D-24725), on
 the current theme extracted into one shared copy (D-24727), after a
 Hextra pilot showed Hextra doesn't fix the drift. The extracted theme is
-released as `barefootbetters/ewiki-theme` (`v1.0.0`, then `v1.1.0`), vendored
+released as `barefootbetters/ewiki-theme` (now `v1.1.1`), vendored
 into each wiki (D-24728); the wikis move onto it one at a time, and the
 corporate-memory viewer is the first on it. The marketing site stays
 on PaperMod for now. The page also covers selling on a static site
 and the laptop-to-live publishing flow. Sources: a 2026-10-15 Claude Chat,
-four Copilot reviews, and a Grok review (2026-10-16).
+four Copilot reviews, and a Grok review (2026-10-16). The studio ewiki
+joined the list on 2026-10-17 ([bb-studio-dashboard decision 2026-10-17-01](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-01-the-studio-ewiki-is-the-studios-own-wiki.md)).
 
 ## Mechanics
 
@@ -42,14 +43,17 @@ four Copilot reviews, and a Grok review (2026-10-16).
 |---|---|---|---|---|
 | Engine ewiki (`ewiki.legendary-arena.com`) | `legendary-arena` (`apps/wiki-viewer/`) | Hand-rolled | Its own copy, until its migration packet (step 4) | Cloudflare Worker, deployed by GitHub Actions |
 | Herbs vs. Ailments ewiki | `herbs-vs-ailments` (`apps/ewiki/`) | Hand-rolled, a drifted copy | Its own copy, until its migration packet (step 2) | — |
-| Corporate-memory viewer | `jefferyjjensen-corporate-memory` (`viewer/`) | The shared theme | `barefootbetters/ewiki-theme` `v1.1.0`, vendored (step 1, done 2026-10-16) | Cloudflare Pages |
+| Corporate-memory viewer | `jefferyjjensen-corporate-memory` (`viewer/`) | The shared theme | `barefootbetters/ewiki-theme` `v1.1.1`, vendored (step 1, done 2026-10-16) | Cloudflare Pages |
+| Studio ewiki (`studio-ewiki.barefootbetters.com`) | `bb-studio-dashboard` (`ewiki/`, rendering that repo's `docs/`) | Hand-rolled, copied from the herbs copy on 2026-10-15 | Its own copy, until its migration packet ([WP-014](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/work-packets/WP-014-studio-ewiki-on-the-shared-theme.md) there, draft) | Cloudflare Worker `bb-studio-ewiki`, behind Access |
 | Personal wiki | `jefferyjjensen-wiki` | Hand-rolled | Its own copy, until its migration packet (step 3) | — |
 | Marketing (`www.legendary-arena.com`) | `legendary-arena-com` | PaperMod plus overrides | PaperMod upstream (not on the platform) | Cloudflare Pages |
 | Barefoot Betters (`barefootbetters.com`) | `barefootbetters-www` | PaperMod | PaperMod upstream (not on the platform) | — |
 
 A dash means this page hasn't recorded the host yet. Checked 2026-10-16:
 the engine ewiki and the Herbs vs. Ailments ewiki differ in 20 layout
-files, so the copies are already drifting. Each wiki's theme source
+files, so the copies are already drifting. Checked 2026-10-17: 7 of the
+studio ewiki's 13 layout files already differ from the herbs copy it was
+made from two days earlier. Each wiki's theme source
 becomes `barefootbetters/ewiki-theme` (a vendored tag) when its migration
 packet lands.
 
@@ -62,6 +66,7 @@ Engine ewiki      -> theme copy A       Studio Hugo platform
 Herbs ewiki       -> theme copy B       ├── shared theme
 Personal wiki     -> theme copy C       ├── shared search
 Corporate memory  -> theme copy D       ├── shared branding
+Studio ewiki      -> theme copy E
 Marketing         -> PaperMod           ├── shared components
                                         └── shared deployment guidance
 
@@ -70,6 +75,7 @@ Marketing         -> PaperMod           ├── shared components
                                         ├── Herbs ewiki
                                         ├── Personal wiki
                                         ├── Corporate memory
+                                        ├── Studio ewiki
                                         └── future customer ewikis
 
                                         Marketing stays on PaperMod
@@ -81,21 +87,24 @@ Treat "ewiki" as something we stamp out, not sites we maintain one by
 one. Build one Hugo setup with the Studio branding and shared partials
 (header, footer, nav, search). Each ewiki is then a content folder, a
 small config with its domain and project name, and a logo. That is what
-makes the ewiki a reusable Studio product.
+makes the ewiki a reusable Studio product. The studio's own wiki is the
+first one built that way ([bb-studio-dashboard decision 2026-10-17-01](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-01-the-studio-ewiki-is-the-studios-own-wiki.md)),
+and the product's public page is `studio.barefootbetters.com/ewiki`
+([decision 2026-10-17-02](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-02-the-ewiki-products-marketing-page.md)).
 
 ### The cost of doing nothing
 
-- **Every fix lands four times.** A navigation, CSS, search, or
+- **Every fix lands five times.** A navigation, CSS, search, or
   accessibility fix has to be made in each copy. In practice it gets
   made in one, and the others fall behind. That is how the engine and
   Herbs copies came to differ in 20 layout files.
-- **Every Hugo upgrade lands four times.** Each copy has to be checked
+- **Every Hugo upgrade lands five times.** Each copy has to be checked
   against each new Hugo release on its own.
 - **The Studio product can't ship as a template.** Each new customer
-  ewiki would fork a fifth copy, so the maintenance cost grows with
+  ewiki would fork a sixth copy, so the maintenance cost grows with
   every sale instead of staying flat.
 - **The code-style rule has already been passed.** "Abstract when a
-  third copy appears" — we are at four.
+  third copy appears" — we are at five.
 
 ### The platform question
 
@@ -201,11 +210,12 @@ cheaper until WP-814 ran. Its actuals:
 - **Packaging.** A vendored copy from a private repo, with no npm and no
   Go. A Hugo module was rejected because it needs Go and private-repo
   credentials in CI (D-24728). A git submodule wasn't evaluated.
-- **The four migrations, measured one at a time.** Each is its own
-  packet, so the cost lands one wiki at a time. Corporate memory went
-  first and is live on `v1.1.0` (2026-10-16). Herbs vs. Ailments is
-  next (a packet is being drafted), then the personal wiki, then the
-  engine ewiki last.
+- **The migrations, measured one at a time.** Each is its own packet, so
+  the cost lands one wiki at a time. Corporate memory went first and is
+  live on `v1.1.1` (2026-10-16). Herbs vs. Ailments is next: its packet
+  (herbs WP-005) is drafted and waits on a theme `v1.2.0` allowance for
+  its Mermaid diagrams. Then the studio ewiki (proposed), the personal
+  wiki, and the engine ewiki last.
 
 ### Next step: move the remaining wikis onto `ewiki-theme`
 
@@ -215,8 +225,9 @@ manifest digest `d3e03f52…` in the release notes). `v1.1.0` (commit
 `b0971be5`) added two opt-in params for the corporate-memory viewer: a
 folder's README as its section page, and folder links that open a
 section page. Both are off by default, so a wiki that doesn't set them
-renders as on `v1.0.0`. D-24728 records where the theme lives and how a
-wiki consumes it:
+renders as on `v1.0.0`. `v1.1.1` (commit `12400df5`) wraps long URLs on
+narrow screens. D-24728 records where the theme lives and how a wiki
+consumes it:
 
 - **Vendored, not a Hugo module.** A wiki commits a tagged copy under
   `themes/ewiki/`, so no build needs Go, CI credentials for the private
@@ -241,8 +252,14 @@ instead of a redirect.
 
 The wikis move in this order, each in its own packet:
 
-1. corporate memory (done 2026-10-16, on `v1.1.0`)
-2. Herbs vs. Ailments
+1. corporate memory (done 2026-10-16, now on `v1.1.1`)
+2. Herbs vs. Ailments (herbs WP-005, drafted; waits on theme `v1.2.0`)
+   - **Proposed:** the studio ewiki right after herbs ([bb-studio-dashboard
+     WP-014](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/work-packets/WP-014-studio-ewiki-on-the-shared-theme.md), draft). It has the same shape as herbs (a `docs/` mount,
+     Mermaid, the same footer), so herbs settles the open questions first.
+     Its position is WP-014's call 4a, still Jeff's to make. A scratch
+     trial on `v1.1.1` passed every gate but JS-free, which fails on one
+     Mermaid page and waits on the same `v1.2.0` allowance.
 3. the personal wiki
 4. the engine ewiki, last
 
@@ -358,6 +375,7 @@ Resolved:
 - [.github/workflows/wiki-viewer.yml](../.github/workflows/wiki-viewer.yml) — the JS-free and determinism gates
 - [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24725 (one shared wiki platform), D-24727 (theme: the current theme, extracted; Hextra not adopted), D-24728 (the theme lives in `barefootbetters/ewiki-theme`, vendored), D-24293 (Pagefind and the JS-free amendment), D-24690 (Worker hosting)
 - [WP-814](../docs/ai/work-packets/WP-814-shared-wiki-theme-extraction.md) — the extraction: the survey of the four copies, the contract, and the shadow-build record
+- [bb-studio-dashboard WP-014](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/work-packets/WP-014-studio-ewiki-on-the-shared-theme.md) — the studio ewiki's migration packet (draft); decisions [2026-10-17-01](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-01-the-studio-ewiki-is-the-studios-own-wiki.md) (the studio's own wiki) and [2026-10-17-02](https://github.com/barefootbetters/bb-studio-dashboard/blob/main/docs/ai/decision-log/2026-10-17-02-the-ewiki-products-marketing-page.md) (the product page)
 - [barefootbetters/ewiki-theme](https://github.com/barefootbetters/ewiki-theme) — the shared theme (private); `v1.0.0` release notes carry the manifest digest
 - [herbs-vs-ailments#247](https://github.com/barefootbetters/herbs-vs-ailments/pull/247) — the Hextra pilot and its evaluation (`apps/ewiki/HEXTRA-PILOT.md`), closed unmerged
 - [Hextra on GitHub](https://github.com/imfing/hextra) — the theme evaluated (MIT; FlexSearch search; no Node.js needed to use it)
