@@ -105,9 +105,22 @@ operator approves it. A phone brief is a draft, never a decision.
 
 ### Asking the brain's agents for work
 
-Two habits make an agent's output easier to check against this corpus. Both
-are prompting conventions, not new infrastructure, and they hold whichever
-model sits behind the connector.
+These habits make an agent's output easier to check against this corpus.
+They are working conventions, not new infrastructure, and they hold whichever
+model sits behind the connector. The underlying problem is an intent gap: an
+agent can't tell what the operator cares about unless it's written down
+somewhere it reads, and a stronger model doesn't close that gap.
+
+**Write down what you care about, where the agent reads it.** Priorities,
+quality bars, and non-negotiables belong in the corpus, not repeated in each
+chat. In this repo they already are: `.claude/CLAUDE.md` and
+`.claude/rules/` for standing rules, an Execution Checklist's locked values
+for one Work Packet, `DECISIONS.md` for the reasons, and
+[`docs/10-GLOSSARY.md`](../docs/10-GLOSSARY.md) for shared terms. When an
+agent's output drifts the same way twice, fix the document it read, not just
+the prompt. The fix then reaches every later session and every model. The
+same goes for the rest of the agent's working environment: a stale build, a
+misleading log line, or a missing test degrades output from any model.
 
 **Show examples, not just a description.** An agent matches a standard more
 closely when it can see real artifacts that already meet it. The corpus has
@@ -136,13 +149,23 @@ Work Packets.
 
 **Capturing an outside idea from the phone.** When a `send_to_desk` idea
 reverse-engineers something external (a video, an article, another product's
-feature), the brief does five things:
+feature), the brief does six things:
 
 1. Names the one behaviour it's about, not the whole source.
 2. Opens with a short summary before any detail.
 3. Tags its claims Seen, Inferred, or Unknown.
 4. Links one to three examples of the output it wants.
 5. Says how a rebuilt version would be tested against the original.
+6. Lists the open questions, so the desk-side check starts there.
+
+For the sixth step, the agent interviews the operator before it files the
+brief: what matters most, what's off-limits, which terms already have a
+meaning in the glossary, and how it's deployed and secured. Whatever stays
+unanswered is listed as Unknown. On the desk, the Work Packet drafting
+preflight
+([`01.0a`](../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md)) and the lint gate
+([`00.3`](../docs/ai/REFERENCE/00.3-prompt-lint-checklist.md)) do the same
+job in more depth before anything is built.
 
 That gives the desk-side check something concrete to verify, and turns "build
 something like this" into a testable Work Packet candidate.
@@ -352,10 +375,11 @@ feature reaching across the network.
 - **2026-10-14** — The connector started serving this wiki (93 pages, folder
   `ewiki`), read from GitHub `main` at each brain deploy.
 - **2026-10-17** — Added [Asking the brain's agents for work](#asking-the-brains-agents-for-work):
-  example-driven requests, Seen / Inferred / Unknown tags, and a five-step
-  brief for outside ideas sent from the phone. Taken from an outside review of
-  this page; the parts that would change hosting, the connector, or the coach
-  were left out.
+  write down what you care about where the agent reads it, example-driven
+  requests, Seen / Inferred / Unknown tags, and a six-step brief (with an
+  interview step) for outside ideas sent from the phone. Taken from two
+  outside reviews of this page; the parts that would change hosting, the
+  connector, or the coach were left out.
 
 ## References
 
