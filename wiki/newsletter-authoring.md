@@ -93,7 +93,7 @@ tied to the tip content when possible.>
 
 ## Read more
 
-https://www.legendary-arena.com/posts/<slug>/
+https://www.legendary-arena.com/blog/<slug>/
 
 ## CTA
 
@@ -264,7 +264,7 @@ Any deviation is a layout violation.
 ### Blog-to-Email Pipeline
 
 ```
-1. Write blog post (content/posts/<slug>.md)
+1. Write blog post (content/blog/<slug>.md)
    - Front-matter: series, cta, newsletter_week, newsletter_slug
 
 2. Write newsletter draft (docs/brevo/newsletter-drafts/week-NN.md)
@@ -296,15 +296,15 @@ file *is*, not by which newsletter it belongs to.
 | `C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\qa-log.md` | QA results and post-send metrics. Append-only. |
 | `C:\www\legendary-arena-com\docs\brevo\newsletter-template.md` | The 10-section template spec. |
 | `C:\www\legendary-arena-com\docs\brevo\email-automation.md` | Brevo pipeline architecture. |
-| `C:\www\legendary-arena-com\content\posts\<slug>.md` | The companion blog post. |
-| `C:\www\legendary-arena-com\static\images\posts\<slug>\` | Images the newsletter hot-links. Directory name matches the post slug exactly. |
+| `C:\www\legendary-arena-com\content\blog\<slug>.md` | The companion blog post. |
+| `C:\www\legendary-arena-com\static\images\blog\<slug>\` | Images the newsletter hot-links. Directory name matches the post slug exactly. |
 
 Drafts are committed with the marketing repo's content-lane prefixes —
 see [Blog Post Authoring](blog-post-authoring.md).
 
 **Newsletter images are not a separate asset class.** The newsletter
 references the *blog post's* production image URLs
-(`https://www.legendary-arena.com/images/posts/<slug>/hero.webp`), so
+(`https://www.legendary-arena.com/images/blog/<slug>/hero.webp`), so
 there is no newsletter image directory to maintain. This is also why the
 blog post must deploy before the send — see Edge Cases.
 
@@ -381,7 +381,7 @@ here", "Start playing now", generic phrases.
 
 **Images:**
 - Use production URLs:
-  `https://www.legendary-arena.com/images/posts/<slug>/hero.webp`
+  `https://www.legendary-arena.com/images/blog/<slug>/hero.webp`
 - Images must be deployed before the newsletter send
 - Alt text required on all images
 - Email must remain comprehensible with images blocked
@@ -498,7 +498,7 @@ difference in your next session.
 
 ## Read more
 
-https://www.legendary-arena.com/posts/week-04-deck-construction/
+https://www.legendary-arena.com/blog/week-04-deck-construction/
 
 ## CTA
 

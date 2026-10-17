@@ -153,6 +153,12 @@
       "cardSlug": "incredible-mind-awesome-body",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "totally-awesome-hulk",
+      "cardSlug": "7th-smartest-man-in-the-world",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
     }
   ],
   "co2e": [
@@ -553,6 +559,12 @@
       "cardSlug": "berserker-rage",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:3]"
+    },
+    {
+      "heroSlug": "wolverine",
+      "cardSlug": "berserker-rage",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
     },
     {
       "heroSlug": "wolverine",
@@ -1527,6 +1539,12 @@
       "cardSlug": "risky-science",
       "abilityIndex": 1,
       "markupToken": "[keyword:optional-discard-draw:1]"
+    },
+    {
+      "heroSlug": "ant-man",
+      "cardSlug": "giant-ego",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
     }
   ],
   "asrd": [

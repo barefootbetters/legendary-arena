@@ -7,6 +7,121 @@
 
 ## Current State
 
+### D-24740 — Pure Fury and Silent Sniper can strike the Final Blow (direct fix) (2026-10-17)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** With the optional Final Blow rule on, once the Mastermind's four Tactics are defeated, Nick Fury's Pure Fury and Black Widow's Silent Sniper can now pick the Mastermind and strike the final blow for free (operator ruling). Before, they stopped offering the Mastermind after its last Tactic, so only a paid fight could win (match `Er6Uj0zeyDW`, 19.2.2–25.2.17).
+
+- **Engine only.** No G-shape change, no re-pin; Final Blow off is unchanged.
+- **Live-verify (D-24026):** pending. Final Blow match: defeat the four Tactics, then play Pure Fury with Loki (or the Mastermind) as a target and expect "struck the final blow".
+
+### D-24738 — Secret Invasion counts captured Heroes in the Escape pile toward its six (direct fix) (2026-10-17)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** On Secret Invasion of the Skrull Shapeshifters, a Hero that Skrull Queen Veranke or the Skrull Shapeshifters captured from the HQ now counts toward "6 Heroes in the Escaped Villains pile" once its captor escapes, alongside the escaped Skrull Heroes (operator ruling). The loss line names both parts, e.g. "6 Heroes escaped (4 Skrulls, 2 captured)", and the danger meter reads "Heroes N/6". In match `PF9JUILsmcT` two captured Heroes were in the pile, so Evil would have won at 17.1.2 instead of 31.1.3.
+
+- **Engine + one client label.** No G-shape change, no re-pin; Killbots, Negative Zone and Midtown count exactly as before.
+- **Live-verify (D-24026), 2026-10-17: PASS.** Operator match `cLZ0_pzMFmd` (server `6dbeb6d7`): 5 Skrull Heroes + Veranke's captured A Day Unlike Any Other ended the game at 9.1.3, "6 Heroes escaped (5 Skrulls, 1 captured)"; the old count would have read 5.
+
+### WP-814 / EC-852 — The shared wiki theme, extracted (D-24728) (2026-10-16)
+
+**No user-observable change — infrastructure only.** No wiki changes its theme in this packet. The four hand-rolled Hugo wiki themes (engine ewiki, Herbs vs. Ailments, corporate memory, personal wiki) are reconciled into one shared copy, released as **`barefootbetters/ewiki-theme` `v1.0.0`**. The repo is private, and the tag sits on `52f6c1b5` with manifest digest `d3e03f528052d23b404160bbd2d5bf9911017002839b2c4fc18ac0867b687b80` (in the release notes; the digest a wiki pins).
+
+- **The theme.**
+  - One core: layouts, render hooks, the `include-section` / `audio` / `audio-inline` / `swatch` shortcodes, and CSS.
+  - A closed list of extension points, with params under `[params.ewiki]`.
+  - New no-script reader features: a TOC, heading anchors, a skip link, breadcrumbs, and dark mode from `prefers-color-scheme`.
+  - The Pagefind loader stays the only script (D-24293).
+  - Wikis vendor a tag into `themes/ewiki/` with `Sync-EwikiTheme.ps1`. The manifest, the externally pinned digest and `Test-EwikiTheme.ps1` (manifest plus core-shadow check) keep the copy read-only. `Invoke-WikiGates.ps1` and `Compare-WikiBuild.ps1` prove a migration.
+- **Proof.**
+  - Theme CI is green on the `main` and `v1.0.0` runs: fixture gates, a 206/206 render check, and the AC 5 matrix (5 must-pass, 14 must-fail).
+  - A scratch shadow build of the engine ewiki on the vendored commit passed all five gates, with 96/96 pages, plus the verbatim `wiki-viewer.yml` gates and `check-links`.
+  - `Compare-WikiBuild` found an identical page set and paired 6656 links, 949 footer targets and 265 images. The only target change is 23 folder links going blob → tree. All 298 text hunks map to the intended changes (WP-814 §Visible changes 2/3/4/7).
+- **Governance.** D-24728 Active. The ewiki page *Hugo Platform Strategy* now names the repo and the order. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-814-shared-wiki-theme-extraction.md`.
+- **Queued, in order, each its own packet:**
+  1. Corporate memory (`jefferyjjensen-corporate-memory` `viewer/`).
+  2. Herbs vs. Ailments (`apps/ewiki/`).
+  3. The personal wiki.
+  4. The engine ewiki (`apps/wiki-viewer/`, a future WP here). It vendors the theme, moves E's wiki-specific files behind the extension points, makes `project-wiki.mjs` / `architecture-inventory.mjs` emit `canonical-source` / `links_from: repo-root`, and adds the digest and shadow checks to `wiki-viewer.yml`.
+
+### D-24736 — Clash of the Monsters Unleashed plays as printed (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Clash of the Monsters Unleashed now builds its Wound Stack at 6 per player and a face-down Monster Pit of the 8 Monsters Unleashed Villains. From Twist 3, each player's Gladiator (their highest printed-Attack Villain in the Victory Pile) faces the Monster that climbs out of the Pit and enters the city, Ambush and all. Each player whose Gladiator is weaker gains a Wound. The game is lost when the Wound Stack or the Monster Pit runs out (the Pit empties on Twist 10), and the danger meter can read "Monster Pit".
+
+- **Engine, plus one client label.** New `rules/clashMonsterPit.logic.ts`, the `clash-monster-pit` resolver, a Clash Wound-sizing branch, an omit-when-absent `G.monsterPit`, and a `monsterPit` loss pile with its `monster-pit` meter kind (`menaceDisplay.ts`). Every other game is byte-identical, so nothing was re-pinned.
+- **Operator ruling.** A player with no Villain in their Victory Pile has no Gladiator and gains a Wound (Jeff, 2026-10-16; the card does not say, see D-24736).
+- **Tests.** 19 new cases on the shipped `chmp.json`. Full suite 0 fail.
+- **Live re-check (after deploy).** In a 2-player operator match on Clash, the Wound Stack holds 12. Twists 1-2 keep the Pit shut, and Twist 3 sends a Monster into the city with Gladiator lines in the log.
+
+### D-24734 — Schemes whose twist count depends on the player count now build that count (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Nineteen more schemes now shuffle their printed number of Scheme Twists into the Villain Deck for the table's player count; until now each built a flat 8. Examples: Train Black Widows in the Red Room builds 7 twists at 1 player down to 3 at 5, and Trapped in the Insane Asylum builds 3 up to 11. The co2e, Epic and Deadpool versions of Civil War use their own splits, and Ritual Sacrifice to Summon Chthon with Lilith uses 1 twist. Where a scheme loses when the Villain Deck runs out, or on its last twist, the game now runs to the printed length. The HUD twist readout matches the deck for all of them.
+
+- **Engine only.** `resolveEffectiveTwistCount` now reads a keyed table of printed counts at 1 to 5 players (21 schemes, including core and msp1 Civil War from D-24733), plus one Lilith branch. Every row is pinned to its card's Setup text by a test. No G-shape change and no re-pin.
+- **Not covered.** ssw1 Fragmented Realities and wtif Breach the Nexus split the Villain Deck itself, a structural feature. chmp Clash of the Monsters Unleashed (prints 10 twists) was a card-data gap, fixed separately by D-24735.
+- **Live re-check (after deploy).** In a 2-player operator match on Train Black Widows in the Red Room, the operator panel's Villain-deck list shows 6 Scheme Twists and the HUD reads "Twists: 0/6".
+
+### D-24733 — Super Hero Civil War uses 5 Scheme Twists at 4-5 players (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A 4- or 5-player Super Hero Civil War match now shuffles 5 Scheme Twists into the Villain Deck, as the card prints, instead of 8. That is three fewer "KO all the Heroes in the HQ" twists, so the Hero Deck lasts longer and the game is no longer harder than printed. The HUD's "Twists: n/5" readout now matches the deck; before, a 4-player game could reach "Twists: 6/5". Games with 1 to 3 players keep 8 twists, and the 2-player 4-Hero rule is unchanged. The msp1 reprint, which prints the same clause, gets the same fix.
+
+- **Engine only.** New `resolveEffectiveTwistCount` in `setup/schemeSetupSizing.ts`, called by `buildVillainDeck` and `buildCardDisplayData`. No G-shape change. No pinned replay runs Civil War at 4 or more players, so nothing was re-pinned.
+- **Not covered.** co2e Civil War (6/5), cvwr Epic Super Hero Civil War (9/6) and Deadpool Kills the Marvel Universe (6/5) print different splits and still build 8 twists. They are a separate follow-up.
+- **Tests.** game-engine 5273 → 5284, every package 0 fail; `sim:runtime-observed:check`, `sim:coverage --check`, `par:seed:test` and `prebuild:par` all pass. Without the builder wiring, the 4-player and 5-player tests fail.
+- **Live-verify (D-24026): pending.** After deploy: lobby → Play with a bot ally → 4 seats / 3 bot allies → Operator match → Super Hero Civil War. The operator panel's Villain-deck list should show 5 Scheme Twists, and the HUD should read "Twists: 0/5". Record the result in `live-verify.json` (`scheme:core/super-hero-civil-war|twist-count`).
+
+### D-24732 — Berserker Rage adds +1 attack per extra card drawn this turn (direct fix) (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Wolverine's **Berserker Rage** now gives +1 attack for
+*each* extra card you've drawn this turn when you've played another Instinct Hero. Its own three draws count, so it
+gives at least +3. Before, it always gave a flat +1. Ant-Man's **Giant Ego** (antm) and Totally Awesome Hulk's
+**7th Smartest Man in the World** (chmp) print the same clause and get the same fix. Reveal-draws (Spider-Man),
+Psychic Link, Diving Block, Dodge, Investigate, Stack the Deck, HYDRA Conspiracy and Enchantress draws now count as
+extra cards too, which also feeds Gamma-Draining Nanites' "if you drew two cards this turn".
+
+- **Engine + card data.** New `extra-cards-drawn-this-turn` count source over `TurnEconomy.cardsDrawn`, markers on
+  the three lines, and the counter widened to every effect draw by the current player. No new G field, move or UI field.
+- **Counts.** game-engine 5273 → 5288, 0 fail in all 12 packages; data gates current; no hash re-pin.
+- **Live-verify (D-24026): PASS.** Operator match `Bi6gSbwebWx` (server build `e4c2c0a0`, which includes the #2848 merge; client `d7b2717`), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout (HYDRA + Spider-Foes; Wolverine, Gambit, Emma Frost, Spider-Man, Captain America), won with the Final Blow at 22.3.1. Healing Factor ×2, Keen Senses and Berserker Rage were placed and recruited on turn 2 (2.2.5–2.2.10). Turn 6 logged `Count-scaled attack: +5 (1 per extra card drawn this turn; count 5).`
+  (Mental Discipline 1 + Keen Senses 1 + Berserker Rage 3, 6.2.9); turn 14 gave the +3 minimum (14.2.5); turn 10 was blocked
+  without another Instinct Hero (10.2.11).
+
+### D-24731 — Psychic Link reveals an X-Men Hero you already played (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Emma Frost's Psychic Link ("Each player may reveal another X-Men Hero. Each player who does draws a card.") now lets the player who plays it reveal an X-Men Hero they already played this turn, not only one in hand (rules v23 "Revealing a Card"). Play Keen Senses, then Psychic Link, with no other X-Men Hero in hand, and you draw a card; before, nobody drew and the log said no player had a matching Hero. Psychic Link never reveals itself, a card that left play does not count, and a Copy Powers copy of an X-Men Hero does. Other players still reveal from hand. Magneto's Electromagnetic Bubble tactic now also offers a played Copy Powers copy of an X-Men Hero.
+
+- **Engine only.** `heroEffectRevealFromHand` (`hero/heroEffects.execute.ts`) gains `playerCanRevealMatch` and `playedCardMatchesRevealCriterion`; `collectXMenHeroesYouHave` (`rules/tacticHandlers.ts`) reads the played team through `cardHasTeamWhenPlayed`. No G field, `UIState`, server or client change.
+- **Tests.** Six new Psychic Link cases and one Electromagnetic Bubble case; the three positive cases fail against the old code.
+- **Live-verify (D-24026): PASS.** Operator match `nQAUnp0T4uY` (server build `6f5a8d1c`, the #2846 merge), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Emma Frost, Wolverine, Rogue, Captain America, Hulk), won with the Final Blow at 19.3.1. Player 0's only X-Men cards were the two Psychic Links (#0, #2), both recruited on turn 1 (1.2.5, 1.2.8); no operator move put a card in a hand. On turn 7, Psychic Link #0 drew off the already-played #2 (7.2.6), with no X-Men Hero left in hand. Psychic Link never revealed itself (9.2.5, 13.2.1, 15.2.13), and the bot kept drawing from its hand. See D-24731.
+
+### D-24735 — Clash of the Monsters Unleashed builds its printed 10 Scheme Twists (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** A Clash of the Monsters Unleashed match now shuffles the printed 10 Scheme Twists into the Villain Deck instead of 8. It still loses on its last twist (D-24595 interim rule), so the game now runs to the 10th twist.
+
+- **Card data only.** One entry in `scripts/convert-cards/inputs/scheme-deck-counts.json`, regenerated into `data/cards/chmp.json`. WP-169's manual census had missed the scheme. `pnpm cards:check` is clean.
+- **Guard.** A registry census test asserts that every scheme whose Setup line prints a fixed "N Twists." builds N (161 schemes). It fails on the old data with exactly this scheme. No other fixed-count scheme is off.
+- **Not covered.** Clash's "6 Wounds per player in the Wound Stack", its Twist 3-10 Gladiator / Monster Pit effect, and its Evil Wins (Wound Stack or Monster Pit runs out) are not implemented. See D-24735.
+- **Live re-check (after deploy).** In an operator match on Clash, the operator panel's Villain-deck list shows 10 Scheme Twists and the HUD reads "Twists: 0/10".
+
+### WP-807 / EC-844 — Operator setter pane (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy), to an admin in an operator match only.** The operator panel gains a **Setters** pane (Tweakpane, loaded as its own lazy chunk) with six folders that stage a board through WP-806's moves: Supply (set a pile to a count), Villain deck (a card to the top; reveal a Scheme Twist or Master Strike now), Hero deck (a card to the top; place a card in HQ space 1–5), Move a card (any seat zone or supply top to any seat's hand / deck top / discard / Victory Pile, or the KO pile), Turn economy (add 1–20 Attack or Recruit), and Escape (the Villain at the City's edge escapes). Buttons are enabled only on the admin's own turn in `main`; each submit refreshes the board at once. The panel's Piles section adds a "Set aside — …" line once a supply has been lowered.
+
+- **arena-client only.** New `lib/operatorSetterIntents.ts` (pure intent and option builders, options valued by stable keys) and `components/play/OperatorSetterPane.vue`; `OperatorBoardPanel.vue` gains optional `submitMove` / `playerId` props, the lazy pane and the set-aside line; `PlayViewport.vue` passes both props; `UiMoveName` gains the six `operator*` names. New dependency `tweakpane` ^4.0.5 (types-only devDependency `@tweakpane/core` 2.0.5). No engine, server, `UIState` or persistence change.
+- **Tests.** arena-client 2364 → 2387 (23 new), every package 0 fail; existing tests additions only; typecheck 0; `tp-rotv` only in the `OperatorSetterPane` chunk. Revert proofs 13/13. 01.6 post-mortem `docs/ai/post-mortems/01.6-WP-807-operator-setter-pane.md`.
+- **Live-verify (D-24026): partial, covers WP-806 + WP-807.** Operator match `9IQsWa-F-t-` (2026-10-16, server and client `20dcd923`, Dr. Doom / Negative Zone Prison Breakout, 2p with a bot ally; log `C:\pcloud\matches\Core\DrDoom\doom-NegativeZone-LOG-2p.txt`). Verified in play, each with its "Operator:" log line:
+  - Turn economy, 10 submits (Recruit and Attack, +15 to +20; 2.2.7 … 24.2.18);
+  - Hero deck to top: Diving Block (10.2.9) and Steal Abilities (10.2.21), each recruited later;
+  - Hero deck to HQ space 1: Diving Block #1, with the displaced Repulsor Rays to the hero-deck bottom (22.2.17), recruited at 24.2.19.
+  The game played normally around the setters and ended in a win (31.3.1).
+  - **Second match `TV8XzB3YMDF`** (same build and lineup, won at 22.3.1):
+    - Villain deck to top: Baron Zemo moved to the top at 5.2.1. The next reveal, on the bot's turn, brought him into the City at 6.1.1.
+    - Supply count: `Operator: Bystander supply set to 0 (was 29).` at 5.2.8. Every later Bystander rescue logs "the Bystander supply is empty", including Zemo's fight at 11.2.8, so the Zemo count could not be observed.
+  - **D-24726: PASS** in match `SoDnMI9IjqU` (same build). Zemo was moved to the villain-deck top (4.2.7) and revealed at 5.1.1. A Day Unlike Any Other plus Copy Powers copying it rescued 2 at 27.2.9. A turn-6 baseline with two printed Avengers rescued 2. See D-24726.
+  - **Still pending:**
+    - the set-aside line (not visible in the log);
+    - reveal now, and Escape;
+    - the Move-a-card supply / KO / between-player routes;
+    - disabled buttons on the bot's turn.
+
 ### WP-303 / EC-851 — Play a saved loadout from the profile (D-24722) (2026-10-14)
 
 **User-visible on `play.legendary-arena.com/?route=me` (after deploy).** Each Saved Loadouts row has a **Play this loadout** button. One click starts a match with that lineup, seats the player in seat 0, and opens the board: the mastermind grind loop's one-click reload. An unreadable loadout or a failed launch shows a full-sentence error under the list, naming the row.
@@ -228,7 +343,7 @@
 **User-visible on `play.legendary-arena.com` (after deploy).** When a villain's "each player reveals a ___ Hero or gains a Wound" effect fires after the Wound supply runs out, the log now says "the Wound supply is empty, so no Wound was gained (Player 0, Player 1 had no Ranged Hero)". Before, it said "every player revealed a Ranged Hero" even when nobody could (2p match `sDBnFxiigDL`, Ymir's Ambush at 37.1.2). Viper's Victory-Pile version is fixed the same way.
 
 - **Engine only, text only.** No rules or state change.
-- **Live-verify (D-24026):** pending.
+- **Live-verify (D-24026), 2026-10-17: PASS.** Operator match `mzasQjZ3DU2` (server `3c9f632d`), Wound supply set to 0: Frost Giant logged "the Wound supply is empty, so no Wound was gained …" (8.2.10, 9.2.12) and Loki's Master Strike said the same (5.1.1–5.1.2).
 
 ### D-24685 — Cosmic Cube's 8th Twist no longer hands out Wounds (direct fix) (2026-10-11)
 

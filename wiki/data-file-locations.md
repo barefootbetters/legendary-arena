@@ -8,6 +8,8 @@ tags:
   - findability
   - governance
 related:
+  - workspace-map.md
+  - architecture-inventory.md
   - r2-image-naming-convention.md
   - lagn-v1.md
   - card-type-taxonomy.md
@@ -15,28 +17,31 @@ related:
   - operational-health-checks.md
   - complete-game-fixtures.md
   - music-authoring.md
-  - workspace-map.md
   - blog-post-authoring.md
   - hugo-web-system.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\data-file-locations.md (this page — https://ewiki.legendary-arena.com/data-file-locations/)
   - ../docs/01-REPO-FOLDER-STRUCTURE.md
+  - ../docs/ops/DOMAINS.md
   - ../docs/ai/REFERENCE/00.2-data-requirements.md
   - ../packages/registry/src/heroImageUrl.ts
   - ../apps/server/src/profile/avatarUpload.logic.ts
   - ../render.yaml
   - legendary-arena/legendary-arena-lab infra/scripts (the API droplet, production since 2026-10-12)
+  - C:\www\README.md (operator's machine-level notes, folded in 2026-10-17)
   - ../.github/workflows/wiki-viewer.yml
   - C:\www\legendary-arena-com\ (marketing repo — content/blog/, static/images/blog/)
-last-reviewed: 2026-10-15
+last-reviewed: 2026-10-17
 ---
 
 # Data & File Locations
 
 ## Summary
 
-A single locator map for "where does *X* live in this repo?" — card
+A single locator map for "where does *X* live?" — first at the machine
+level (the three local roots, the git checkouts, and which source builds
+which `legendary-arena.com` site), then inside the engine repo: card
 data, metadata, the database schema, Cloudflare R2 object storage,
 replays, LAGN, env/config, and the docs/coverage data dirs — plus a
 trace of how one published file travels from a pCloud draft to the live
@@ -44,9 +49,65 @@ site, copy by copy. It is a
 **navigation hub**: for each subsystem it gives the path and points at
 the deep page that owns the detail. It does not restate those pages or
 make any decision — the authoritative locations are the code, the
-migrations, and the pages cited here.
+migrations, [`docs/ops/DOMAINS.md`](../docs/ops/DOMAINS.md) for
+hostnames, and the pages cited here.
 
 ## Mechanics
+
+### Start here — local roots, repos, and public sites
+
+**Local roots on the workstation.** Three top-level folders, split by
+what the files are and how they are kept safe:
+
+| Root | Holds | Kept safe by |
+|------|-------|--------------|
+| `C:\www\` | Website and web-app checkouts — Hugo sites, the marketing repo, the lab, the shared wiki theme | GitHub (push); deployed to Cloudflare |
+| `C:\dev\` | Code checkouts — engines, libraries, tools. The engine monorepo's off-pCloud home is `C:\dev\legendary-arena` (an empty placeholder until the move) | GitHub (push) |
+| `C:\pcloud\` | Business records, staging, work-in-progress docs, media masters. Legendary Arena's working root is `C:\pcloud\LA\` | pCloud sync |
+
+**Two kinds of backup, never mixed.** GitHub is the backup for anything
+in a git repo — push is what makes code durable. pCloud is the backup
+for work-in-progress files that are not in git. A git checkout does not
+belong on pCloud: pCloud syncs the `.git` folder too, and the two clash.
+
+The engine monorepo still breaks that rule: it lives on the sync drive at
+`C:\pcloud\BB\DEV\legendary-arena` until it moves to
+`C:\dev\legendary-arena` (operator decision, 2026-10-17). See
+[Workspace Map](workspace-map.md) for the hazard, the mitigations, and
+what belongs in each pCloud folder.
+
+**Git checkouts that make up Legendary Arena:**
+
+| Local path | GitHub remote | What it is |
+|------------|---------------|------------|
+| `C:\pcloud\BB\DEV\legendary-arena` | `barefootbetters/legendary-arena` | **The engine monorepo** — engine, API server, every Vue app, card data, and this wiki's source. The canonical checkout today; moving to `C:\dev\legendary-arena`. |
+| `C:\www\legendary-arena-com` | `legendary-arena/legendary-arena-website` | Hugo marketing site and blog → `www.legendary-arena.com`. |
+| `C:\www\legendary-arena-lab` | `legendary-arena/legendary-arena-lab` | API droplet provisioning (`infra/scripts/NN-*.ps1`) and the droplet side of the server deploy. |
+| `C:\www\ewiki-theme` | `barefootbetters/ewiki-theme` | Shared Hugo theme the wikis build with (D-24728). |
+| `C:\www\legendary-arena` | `barefootbetters/legendary-arena` | **Stale second clone** — far behind `main`; nothing deploys from it. Do not edit or search it. |
+
+The apps (`arena-client`, `registry-viewer`, …) are folders under
+`apps/` in the engine monorepo, not repositories of their own.
+
+**Public sites — which source builds which hostname.** The authoritative
+table and probe runbook is [`docs/ops/DOMAINS.md`](../docs/ops/DOMAINS.md)
+(machine-readable `docs/ops/domains.json`, probed by
+`scripts/check-subdomains.mjs`). Snapshot at this revision:
+
+| Hostname | What it is | Source | Hosted on | Access |
+|----------|-----------|--------|-----------|--------|
+| `www.legendary-arena.com` | Marketing site + blog (Hugo) | `C:\www\legendary-arena-com` | Cloudflare Pages | Public; the apex `legendary-arena.com` 301s here |
+| `play.legendary-arena.com` | Game client (Vue 3 SPA) | `apps/arena-client` | Cloudflare Pages | Public |
+| `cards.legendary-arena.com` | Card database / browser (Vue 3 SPA) | `apps/registry-viewer` | Cloudflare Pages | Public; reads the R2 `metadata/` mirror, not the repo |
+| `legends.legendary-arena.com` | Public scoreboard / attract board (Vue 3 SPA) | `apps/legends-board` | Cloudflare Pages | Public |
+| `api.legendary-arena.com` | Game server REST + Socket.IO, with its PostgreSQL | `apps/server` | DigitalOcean droplet behind Cloudflare (since 2026-10-12) | Public API |
+| `dashboard.legendary-arena.com` | Admin dashboard (Vue 3 SPA) | `apps/dashboard` | Cloudflare Worker | **Private** — Cloudflare Access |
+| `ewiki.legendary-arena.com` | This engineering wiki (Hugo) | `apps/wiki-viewer` building `wiki/` | Cloudflare Worker | **Private** — Cloudflare Access |
+| `images.legendary-arena.com` | Card images, avatars, audio, metadata mirror | R2 bucket `legendary-images` | Cloudflare R2 + CDN | Public per key, e.g. `/mdns/mdns-hr-blade-daywalker-ride-by-moonlight.webp` |
+| `wiki.legendary-arena.com` | Public player wiki | not yet authored | Cloudflare Pages | Planned |
+
+Every hostname is hyphenated — `legendary-arena.com`, never
+`legendaryarena.com`.
 
 ### Card data and the convert pipeline
 
@@ -62,6 +123,11 @@ Game-ready card data is one JSON file per set under
 | 2 | `apply-card-counts.mjs` | Attaches per-hero `cardCounts` from `scripts/convert-cards/inputs/hero-card-counts.json`. |
 | 3 | `apply-hero-ability-markers.mjs` | Marks hero abilities with metadata (scaling, free activations). |
 | 4 | `apply-effect-markers.mjs` | Applies effect / follow-up-taxonomy markers used by coverage tooling. |
+| 5 | `apply-defeat-requirement-markers.mjs` | Appends `[require-to-defeat:…]` markers ("can't defeat X unless you have a [class] Hero") from `inputs/villain-defeat-requirements.json`. |
+
+Four outlier sets (`2099`, `amwp`, `wpnx`, `wtif`) have no stage-1 source
+and are produced by `apply-card-counts.mjs` alone. Full stage order:
+[`docs/03-DATA-PIPELINE.md`](../docs/03-DATA-PIPELINE.md).
 
 Running only stage 1 regresses the data — the marker stages must run in
 order. The image-URL convention each card carries is documented in full
@@ -98,7 +164,7 @@ this metadata into PostgreSQL at startup.
 ### Database (PostgreSQL, schema `legendary`)
 
 All tables live in the `legendary` schema. Migrations are numbered SQL
-files under [`data/migrations/`](../data/migrations/) (`001`…`034` at this
+files under [`data/migrations/`](../data/migrations/) (`001`…`046` at this
 revision). Canonical field-name rules:
 [00.2-data-requirements.md](../docs/ai/REFERENCE/00.2-data-requirements.md).
 
@@ -174,11 +240,12 @@ match start** rather than bundling audio into the build. Full pipeline:
 | `packages/vue-sfc-loader/` | Test-time Vue SFC loader hook (dev/test only). |
 | `apps/server/` | boardgame.io server + REST API + persistence wiring. |
 | `apps/arena-client/` | Gameplay client SPA (`play.legendary-arena.com`). |
-| `apps/dashboard/` | Internal admin dashboard SPA. |
-| `apps/registry-viewer/` | Card browser (Cloudflare Pages). |
-| `apps/legends-board/` | Public read-only Legends scoreboard. |
+| `apps/dashboard/` | Internal admin dashboard SPA (`dashboard.legendary-arena.com`). |
+| `apps/registry-viewer/` | Card browser (`cards.legendary-arena.com`). |
+| `apps/legends-board/` | Public read-only Legends scoreboard (`legends.legendary-arena.com`). |
+| `apps/engine-runner/` | Headless bot-vs-bot simulation runner CLI (D-24088). |
 | `apps/replay-producer/` | CLI that emits deterministic replay sequences. |
-| `apps/wiki-viewer/` | Hugo build of this wiki. |
+| `apps/wiki-viewer/` | Hugo build of this wiki (`ewiki.legendary-arena.com`). |
 
 ### Config, env and deploy
 
@@ -293,9 +360,23 @@ not through a Hugo build.
   image-ribbon prefixes; the authoritative prefix registry is the *upstream*
   `modern-master-strike/src/data/card-types.json` (sibling repo). See
   [R2 Image Naming Convention](r2-image-naming-convention.md).
-- **`03-DATA-PIPELINE.md` is stale.** The authoritative card pipeline is the
-  four-stage `scripts/convert-cards/` chain documented above, not the older
-  single-converter description in `docs/03-DATA-PIPELINE.md`.
+- **`03-DATA-PIPELINE.md` was stale and is current again.** It once
+  described a single converter; since PR #1780 it documents the full
+  multi-stage `scripts/convert-cards/` chain and is the place to check
+  stage order. Older copies of this page called it stale.
+- **Two clones of the engine repo, one of them stale.**
+  `C:\www\legendary-arena` shares the engine remote but is far behind
+  `main`; a search across `C:\www\` can return its superseded files. The
+  canonical checkout is `C:\pcloud\BB\DEV\legendary-arena`. The off-pCloud
+  move target is `C:\dev\legendary-arena`, set by operator decision on
+  2026-10-17. It replaces the `C:\www\legendary-arena` target named in
+  D-24208's rationale, which was where the stale clone sat, and follows
+  the `C:\dev\` = code convention. The stale clone has no role in the
+  move and can be deleted.
+- **`legends.` is the scoreboard, and `ewiki.` is private.** The Legends
+  board is a Vue SPA showing competitive standings, not a lore site, and
+  the engineering wiki sits behind Cloudflare Access — a 302/401/403 from
+  either gated host is the healthy response, not an outage.
 - **The R2 `metadata/` mirror is synced by hand — a repo commit changes
   nothing the viewer shows.** The Registry Viewer fetches
   `{metadataBaseUrl}/metadata/sets.json` and `/metadata/{abbr}.json` from R2
@@ -368,7 +449,10 @@ not through a Hugo build.
 - **The ewiki's chain differs in two places.** (a) The engine repo itself
   lives on a pCloud-synced path (`C:\pcloud\BB\DEV\legendary-arena`), so
   copy #3 is *also* mirrored by pCloud. For the ewiki, pCloud's job does
-  not end when the file reaches the repo. (b) The build (#5) runs in
+  not end when the file reaches the repo. That is the known exception to
+  "git checkouts don't belong on pCloud" (see
+  [Start here](#start-here--local-roots-repos-and-public-sites)), and it
+  goes away when the repo moves to `C:\dev\legendary-arena`. (b) The build (#5) runs in
   GitHub Actions, not in Cloudflare. `.github/workflows/wiki-viewer.yml`
   projects `wiki/` into the gitignored `apps/wiki-viewer/content/` (one
   more generated copy you never touch), runs `hugo --source

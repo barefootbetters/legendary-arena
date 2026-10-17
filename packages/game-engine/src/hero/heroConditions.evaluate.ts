@@ -15,7 +15,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
-import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
@@ -246,7 +246,8 @@ export function evaluateCondition(
 
     case 'cardsDrawnThisTurnAtLeast': {
       // why: WP-665 / D-24476 — reads G.turnEconomy.cardsDrawn, the per-turn count of
-      // cards drawn from EFFECTS this turn (the start-of-turn hand refill is excluded).
+      // cards drawn from EFFECTS this turn (the end-of-turn hand fill is excluded). D-24732
+      // widened the counter from the draw:N path to every effect draw by the current player.
       // Gamma-Draining Nanites' "if you drew two cards this turn" gate. A wait-and-see
       // condition (deferredConditionalGrants) so it re-checks each move this turn.
       const drawThreshold = parseInt(condition.value, 10);
@@ -359,8 +360,9 @@ export function evaluateCondition(
           const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
           const isCheap = cost === 1 || cost === 2;
           // why: getGrantedClasses reads G.cardSizeChangingClasses (the
-          // Size-Changing grant map), distinct from Copy-Powers' class/team maps,
-          // so a non-empty list identifies Size-Changing specifically — not a copy.
+          // Size-Changing grant map), distinct from Copy-Powers' class/team maps
+          // (cardCopiedClasses / cardCopiedTeams, D-24730), so a non-empty list
+          // identifies Size-Changing specifically — not a copy.
           const isSizeChanging = getGrantedClasses(G, cardId as CardExtId).length > 0;
           if (isCheap || isSizeChanging) {
             matchCount += 1;
@@ -630,6 +632,10 @@ export function countDistinctHeroClassesYouHave(
     }
     for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
       distinctClasses.add(grantedClass);
+    }
+    // why: D-24730 — Copy Powers' copied class lives in its own turn-scoped map.
+    for (const copiedClass of getCopiedClasses(G, playedCardId as CardExtId)) {
+      distinctClasses.add(copiedClass);
     }
   }
   return distinctClasses.size;

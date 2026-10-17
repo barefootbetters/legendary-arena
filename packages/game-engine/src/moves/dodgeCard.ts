@@ -178,6 +178,9 @@ export function dodgeCard({ G, ctx, ...context }: MoveContext, { cardId }: Dodge
   // the empty-deck reshuffle (the same idiom drawCards uses); ctx itself has no
   // random, so passing context — not ctx — keeps the reshuffle path from throwing.
   drawCardsIntoHand(playerZones, 1, context as ShuffleProvider);
+  // why: D-24732 — Dodge's replacement card is an extra card drawn this turn (Dodge is
+  // "during your turn" and always draws exactly one: the discard above guarantees a source).
+  G.turnEconomy.cardsDrawn += 1;
 
   // why: D-24051 — the log line is replay-visible and snapshotted; the format is
   // locked at this site to byte-equality (the recruitHero precedent). One push per

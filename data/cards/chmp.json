@@ -414,7 +414,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Size-Changing]: [hc:tech], [hc:strength]",
-            "You get +1[icon:attack] for each extra card you drew this turn."
+            "You get +1[icon:attack] for each extra card you drew this turn. [keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
           ]
         }
       ],
@@ -896,7 +896,8 @@
             "Evil Wins: When the Wound Stack or Monster Pit Deck runs out."
           ]
         }
-      ]
+      ],
+      "villainDeckTwistCount": 10
     },
     {
       "id": 89,

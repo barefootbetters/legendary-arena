@@ -49,6 +49,8 @@ export function describeCountSource(countSource: string): string {
       return 'other Covert Hero played this turn';
     case 'x-men-played-this-turn':
       return 'other X-Men Hero played this turn';
+    case 'extra-cards-drawn-this-turn':
+      return 'extra card drawn this turn';
     default:
       return countSource.replace(/-/g, ' ');
   }

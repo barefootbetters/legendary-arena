@@ -651,7 +651,12 @@ export default defineComponent({
       // here at the shared viewport root so it covers both play surfaces. Shown
       // only in an operator match, to an eligible admin, with a live match id.
     -->
-    <OperatorBoardPanel v-if="isOperatorPanelVisible" :match-id="matchId" />
+    <OperatorBoardPanel
+      v-if="isOperatorPanelVisible"
+      :match-id="matchId"
+      :player-id="playerId"
+      :submit-move="submitMove"
+    />
     <!--
       // why: WP-607 — <DeckProbabilityPanel> is mounted ONCE at the shared viewport
       // root, inside the utility dock above, so the collapsible plain card counter

@@ -34,6 +34,8 @@ const SCHEME_LOSS_NOUNS: Record<SchemeLossKind, string> = {
   // why: WP-763 / D-24595 — a scheme whose Evil Wins includes "the Villain Deck
   // runs out" (Midnight Massacre, Halve All Life, the compound escape schemes).
   'villain-deck': 'Villain Deck',
+  // why: D-24736 — Clash of the Monsters Unleashed loses when its Monster Pit runs out.
+  'monster-pit': 'Monster Pit',
   'escaped-pile': 'Escaped',
   // why: WP-612 — a bystander-counting escaped-pile scheme (Midtown Bank Robbery)
   // tracks BYSTANDERS carried into the escaped pile, so it reads "Bystanders N/8",
@@ -47,7 +49,10 @@ const SCHEME_LOSS_NOUNS: Record<SchemeLossKind, string> = {
   // the quantity and collided with the raw escaped-villain count (WP-612 fixed
   // the same collision for bystanders).
   'escaped-killbot': 'Killbots',
-  'escaped-skrull': 'Skrulls',
+  // why: D-24738 — Secret Invasion counts every Hero in the Escaped Villains pile
+  // (escaped Skrull Heroes plus Heroes a captor carried in), so the meter uses the
+  // printed word: "Heroes N/6".
+  'escaped-skrull': 'Heroes',
   twists: 'Twists',
   // why: WP-763 / D-24595 — the operator's interim rule (Evil Wins at the last
   // twist in the deck) stands in for a printed condition the engine does not

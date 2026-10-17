@@ -1243,7 +1243,7 @@ function parseAbilityText(
       // why: WP-535 fix-forward — on a copy-powers line the [hc:X] is the DESCRIPTIVE class
       // ("This card is both [hc:covert] and the color you copy"), NOT a play gate. Covert is
       // already the card's printed heroClass (cardTraits), and the copied class is granted at
-      // runtime by heroEffectCopyPowers → cardSizeChangingClasses; emit NO heroClassMatch
+      // runtime by heroEffectCopyPowers → cardCopiedClasses; emit NO heroClassMatch
       // condition so the copy always fires (mirrors the size-changing exclusion above). Not
       // pushed to the grant list either — covert is already printed, so a grant is redundant.
     } else if (lineHasResolvedInvestigate) {

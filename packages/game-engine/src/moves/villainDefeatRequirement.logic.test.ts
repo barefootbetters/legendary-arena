@@ -179,3 +179,32 @@ describe('playerMeetsDefeatRequirement — a split card Penumbra played both-sid
     assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), true, 'marked: face b is covert');
   });
 });
+
+describe('playerMeetsDefeatRequirement — a class granted on play (D-24724)', () => {
+  const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+  const TECH_ONLY = { [COPY_POWERS]: { heroClass: 'tech', team: 'x-men' } };
+
+  it('an in-play card meets a hero-class requirement through its granted class', () => {
+    const state = makeState({ inPlay: [COPY_POWERS], traits: TECH_ONLY });
+    assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), false, 'printed tech only');
+    state.cardCopiedClasses = { [COPY_POWERS]: ['covert'] };
+    assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), true, 'granted covert counts in play');
+  });
+
+  it('D-24726 an in-play card meets a team requirement through its copied team', () => {
+    const avengersCopy = 'core/rogue/copy-powers#1' as CardExtId;
+    const state = makeState({
+      inPlay: [avengersCopy],
+      traits: { [avengersCopy]: { heroClass: 'covert', team: 'avengers' } },
+    });
+    assert.equal(playerMeetsDefeatRequirement(state, '0', TEAM_REQ), false, 'printed avengers only');
+    state.cardCopiedTeams = { [avengersCopy]: ['x-men'] };
+    assert.equal(playerMeetsDefeatRequirement(state, '0', TEAM_REQ), true, 'copied x-men team counts in play');
+  });
+
+  it('a granted class does not count for a card in hand (the grant applies only in play)', () => {
+    const state = makeState({ hand: [COPY_POWERS], traits: TECH_ONLY });
+    state.cardCopiedClasses = { [COPY_POWERS]: ['covert'] };
+    assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), false);
+  });
+});

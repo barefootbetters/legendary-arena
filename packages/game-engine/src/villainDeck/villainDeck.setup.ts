@@ -28,6 +28,7 @@ import type { MatchSetupConfig } from '../matchSetup.types.js';
 const KILLBOTS_SCHEME_ID = 'core/replace-earths-leaders-with-killbots';
 import type { SetupContext } from '../types.js';
 import { shuffleDeck } from '../setup/shuffle.js';
+import { resolveEffectiveTwistCount } from '../setup/schemeSetupSizing.js';
 
 // ---------------------------------------------------------------------------
 // VillainDeckRegistryReader — local structural interface
@@ -264,8 +265,17 @@ export function buildVillainDeck(
   if (scheme !== null) {
     // why: the twist count comes from the scheme's villainDeckTwistCount; the
     // SCHEME_TWIST_COUNT default applies only when the scheme omits the field.
+    // D-24733 / D-24734 — a scheme whose printed stack varies by player count
+    // (Super Hero Civil War: 8 at 2-3 players, 5 at 4-5; "players plus 6"; ...) is
+    // then sized by the seat count.
     const twistFromScheme = readSchemeTwistCount(scheme);
-    const twistCount = twistFromScheme === null ? SCHEME_TWIST_COUNT : twistFromScheme;
+    const baseTwistCount = twistFromScheme === null ? SCHEME_TWIST_COUNT : twistFromScheme;
+    const twistCount = resolveEffectiveTwistCount(
+      config.schemeId,
+      config.mastermindId,
+      context.ctx.numPlayers,
+      baseTwistCount,
+    );
 
     for (let twistIndex = 0; twistIndex < twistCount; twistIndex++) {
       const paddedIndex = String(twistIndex).padStart(2, '0');

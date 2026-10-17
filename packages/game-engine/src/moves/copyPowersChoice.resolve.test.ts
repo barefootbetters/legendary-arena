@@ -7,7 +7,7 @@
  * Covers: eligible = real in-play Heroes minus the copy-powers ext_id (ALL copies),
  * deduplicated; 0 → no-op, 1 → auto-copy, ≥2 → park; the copy RE-FIRES the chosen Hero's
  * ability (a copied draw-2 actually draws via the threaded ctx.random) and grants Copy
- * Powers the copied class via cardSizeChangingClasses; front-pop on success only; invalid
+ * Powers the copied class via cardCopiedClasses; front-pop on success only; invalid
  * / stale / wrong-player targets are silent no-ops; two Copy Powers never target each
  * other (no copy-of-copy recursion).
  *
@@ -52,7 +52,7 @@ function makeG(options: {
   cardTraits?: Record<string, { heroClass: string | null; team: string | null }>;
   cardStats?: Record<string, { cost?: number; attack?: number; recruit?: number }>;
   heroAbilityHooks?: HeroAbilityHook[];
-  cardSizeChangingClasses?: Record<string, string[]>;
+  cardCopiedClasses?: Record<string, string[]>;
   cardCopiedTeams?: Record<string, string[]>;
   turnEconomy?: { attack: number; recruit: number; spentAttack: number; spentRecruit: number; piercing: number; woundsDrawn: number };
 }): LegendaryGameState {
@@ -62,7 +62,7 @@ function makeG(options: {
       '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
     },
     ...(options.pending !== undefined ? { pendingCopyPowersChoices: options.pending } : {}),
-    ...(options.cardSizeChangingClasses !== undefined ? { cardSizeChangingClasses: options.cardSizeChangingClasses } : {}),
+    ...(options.cardCopiedClasses !== undefined ? { cardCopiedClasses: options.cardCopiedClasses } : {}),
     ...(options.cardCopiedTeams !== undefined ? { cardCopiedTeams: options.cardCopiedTeams } : {}),
     cardTraits: (options.cardTraits ?? {
       [COPY]: { heroClass: 'covert', team: null },
@@ -153,7 +153,7 @@ describe('heroEffectCopyPowers handler (via executeHeroEffects)', () => {
     const G = makeG({ inPlay0: [COPY, WOUND], heroAbilityHooks: [copyHook] });
     executeHeroEffects(G, ctx, '0', COPY);
     assert.equal(G.pendingCopyPowersChoices, undefined, 'no pending parked');
-    assert.equal(G.cardSizeChangingClasses, undefined, 'no class granted');
+    assert.equal(G.cardCopiedClasses, undefined, 'no class granted');
   });
 
   it('1 gray Hero eligible → auto-copies the S.H.I.E.L.D. basic: doubles economy, grants no class', () => {
@@ -172,7 +172,7 @@ describe('heroEffectCopyPowers handler (via executeHeroEffects)', () => {
     executeHeroEffects(G, ctx, '0', COPY);
     assert.equal(G.pendingCopyPowersChoices, undefined, 'exactly 1 eligible auto-copies, no park');
     assert.equal(G.turnEconomy.recruit, 1, 'the copied Agent’s +1 recruit is duplicated');
-    assert.equal(G.cardSizeChangingClasses, undefined, 'a gray Hero grants no copied class');
+    assert.equal(G.cardCopiedClasses, undefined, 'a gray Hero grants no copied class');
     assert.deepStrictEqual(G.cardCopiedTeams?.[COPY], ['shield'], 'Copy Powers gains the copied S.H.I.E.L.D. team');
   });
 
@@ -188,7 +188,7 @@ describe('heroEffectCopyPowers handler (via executeHeroEffects)', () => {
     });
     executeHeroEffects(G, ctx, '0', COPY);
     assert.equal(G.pendingCopyPowersChoices, undefined, 'exactly 1 eligible auto-copies, no park');
-    assert.deepStrictEqual(G.cardSizeChangingClasses?.[COPY], ['instinct'], 'Copy Powers gains Wolverine’s instinct class');
+    assert.deepStrictEqual(G.cardCopiedClasses?.[COPY], ['instinct'], 'Copy Powers gains Wolverine’s instinct class');
     assert.deepStrictEqual(G.playerZones['0']!.hand, ['d1', 'd2'], 'the copied draw-2 actually drew');
   });
 
@@ -197,7 +197,7 @@ describe('heroEffectCopyPowers handler (via executeHeroEffects)', () => {
     executeHeroEffects(G, ctx, '0', COPY);
     assert.equal(G.pendingCopyPowersChoices?.length, 1, 'parked one pending entry');
     assert.deepStrictEqual(G.pendingCopyPowersChoices?.[0], { choiceType: 'copy-powers', playerID: '0', sourceCardId: COPY });
-    assert.equal(G.cardSizeChangingClasses, undefined, 'no class granted until resolved');
+    assert.equal(G.cardCopiedClasses, undefined, 'no class granted until resolved');
   });
 });
 
@@ -221,7 +221,7 @@ describe('resolveCopyPowersChoice', () => {
     });
     resolveCopyPowersChoice(makeContext(G, '0'), { cardId: WOLVERINE });
     assert.deepStrictEqual(G.playerZones['0']!.hand, ['d1', 'd2'], 'copied Wolverine draw-2 fired via ctx.random');
-    assert.deepStrictEqual(G.cardSizeChangingClasses?.[COPY], ['instinct'], 'Copy Powers gained the copied class');
+    assert.deepStrictEqual(G.cardCopiedClasses?.[COPY], ['instinct'], 'Copy Powers gained the copied class');
     assert.equal(G.pendingCopyPowersChoices?.length, 0, 'front-popped on success');
   });
 
@@ -229,7 +229,7 @@ describe('resolveCopyPowersChoice', () => {
     const G = makeG({ inPlay0: [COPY, GAMBIT, WOLVERINE], pending: [PENDING] });
     resolveCopyPowersChoice(makeContext(G, '0'), { cardId: 'core/hulk/smash' as CardExtId });
     assert.equal(G.pendingCopyPowersChoices?.length, 1, 'not-in-play target leaves the queue intact');
-    assert.equal(G.cardSizeChangingClasses, undefined, 'no class granted');
+    assert.equal(G.cardCopiedClasses, undefined, 'no class granted');
   });
 
   it('no-op when the caller is not the front entry’s player', () => {
@@ -252,7 +252,7 @@ describe('resolveCopyPowersChoice', () => {
       assert.doesNotThrow(() => resolveCopyPowersChoice(makeContext(G, '0'), badArgs as never));
       assert.equal(G.pendingCopyPowersChoices?.length, 1, `${String(badArgs)} args → queue intact`);
       assert.deepStrictEqual(G.playerZones['0']!.inPlay, [COPY, GAMBIT, WOLVERINE], 'inPlay unchanged');
-      assert.equal(G.cardSizeChangingClasses, undefined, 'no class granted');
+      assert.equal(G.cardCopiedClasses, undefined, 'no class granted');
     }
   });
 });
@@ -346,12 +346,12 @@ describe('two Copy Powers — no copy-of-copy recursion (Finding 5)', () => {
 
   it('applyCopyPowers unions a second copied class onto the same Copy Powers ext_id', () => {
     const ctx = makeMockCtx();
-    const G = makeG({ inPlay0: [COPY, GAMBIT, WOLVERINE], cardSizeChangingClasses: { [COPY]: ['ranged'] } });
+    const G = makeG({ inPlay0: [COPY, GAMBIT, WOLVERINE], cardCopiedClasses: { [COPY]: ['ranged'] } });
     applyCopyPowers(G, ctx, '0', COPY, GAMBIT);
-    assert.deepStrictEqual(G.cardSizeChangingClasses?.[COPY], ['ranged', 'instinct'], 'unions, no duplicates');
+    assert.deepStrictEqual(G.cardCopiedClasses?.[COPY], ['ranged', 'instinct'], 'unions, no duplicates');
     // Re-applying the same class does not duplicate it.
     applyCopyPowers(G, ctx, '0', COPY, WOLVERINE);
-    assert.deepStrictEqual(G.cardSizeChangingClasses?.[COPY], ['ranged', 'instinct'], 'instinct already present, not re-added');
+    assert.deepStrictEqual(G.cardCopiedClasses?.[COPY], ['ranged', 'instinct'], 'instinct already present, not re-added');
   });
 });
 

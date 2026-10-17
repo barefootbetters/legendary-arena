@@ -365,7 +365,8 @@ export function resolveSeatChoice(
         : undefined;
     // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
     // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
-    applySeatChoiceByKind(G, choice, { random });
+    // why: D-24732 — ctx?. because narrow test contexts omit ctx; moves never throw.
+    applySeatChoiceByKind(G, choice, { random }, ctx?.currentPlayer);
     delete G.pendingSeatChoice;
     // why: WP-683 / D-24500 — Random Acts is two steps: the active-scoped optional wound
     // gain (step 1) CHAINS the simultaneous multi-seat pass-left (step 2). The chain parks
@@ -403,14 +404,17 @@ export function resolveSeatChoice(
  * @param G - The game state to mutate.
  * @param choice - The fully-submitted pending seat choice.
  * @param shuffleContext - Deterministic reshuffle source, or undefined (timeout path).
+ * @param currentPlayer - The turn's active player (ctx.currentPlayer), or undefined on the
+ *   timeout path; a Diving Block draw counts toward cardsDrawn only for this seat (D-24732).
  */
 function applySeatChoiceByKind(
   G: LegendaryGameState,
   choice: PendingSeatChoice,
   shuffleContext: { random: { Shuffle: <T>(deck: T[]) => T[] } } | undefined,
+  currentPlayer?: string,
 ): void {
   if (choice.kind === DIVING_BLOCK_SEAT_CHOICE_KIND) {
-    applyDivingBlockResolvedSeatChoice(G, choice, shuffleContext);
+    applyDivingBlockResolvedSeatChoice(G, choice, shuffleContext, currentPlayer);
     return;
   }
   // why: WP-694 / D-24511 — Monarch's Decree mode apply: the "draw" branch draws for each

@@ -29,8 +29,9 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState, DefeatWithBystanderTarget } from '../types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { isMastermindHaunting } from '../board/haunt.logic.js';
+import { isFinalBlowAvailable } from '../mastermind/mastermind.logic.js';
 import { defeatCityVillainCore } from './fightVillain.js';
-import { defeatMastermindTacticCore } from './fightMastermind.js';
+import { awardMastermindOnFinalBlow, defeatMastermindTacticCore } from './fightMastermind.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -75,6 +76,27 @@ export function hasPendingDefeatChoice(G: LegendaryGameState): boolean {
 }
 
 /**
+ * Whether a free-defeat effect (Silent Sniper, Pure Fury) may target the Mastermind.
+ *
+ * True when the Mastermind is not haunting (WP-757 / D-24587) and either a Tactic
+ * remains (the free defeat defeats one Tactic) or, under the optional Final Blow rule,
+ * the final blow is pending (D-24739 — the free defeat strikes it). A Mastermind that
+ * is already vanquished is never a target.
+ *
+ * @param G - The game state to inspect (not mutated).
+ * @returns true when the Mastermind is a valid free-defeat target.
+ */
+export function isMastermindFreeDefeatTarget(G: LegendaryGameState): boolean {
+  if (isMastermindHaunting(G)) {
+    return false;
+  }
+  if (G.mastermind.tacticsDeck.length > 0) {
+    return true;
+  }
+  return isFinalBlowAvailable(G.mastermind, G.finalBlow);
+}
+
+/**
  * Builds the deterministic list of eligible `defeat-with-bystander` targets.
  *
  * A target is eligible when it holds ≥1 captured Bystander: a City Villain whose
@@ -111,15 +133,12 @@ export function buildDefeatWithBystanderTargets(
   // why: the Mastermind's captured Bystanders live in a DIFFERENT store
   // (G.mastermind.attachedBystanders), so it is checked separately and appended
   // LAST. Require a remaining tactic — defeating "the Mastermind" defeats one
-  // tactic, so a mastermind with no tactics left is not a defeatable target.
+  // tactic — or, under Final Blow, a pending final blow (D-24739); a vanquished
+  // Mastermind is not a defeatable target.
   // why: WP-757 / D-24587 — a haunting Mastermind can't be fought, so a free defeat
-  // can't target it either (the shared isMastermindHaunting predicate).
+  // can't target it either (inside isMastermindFreeDefeatTarget).
   const mastermindBystanders = G.mastermind.attachedBystanders ?? [];
-  if (
-    mastermindBystanders.length > 0 &&
-    G.mastermind.tacticsDeck.length > 0 &&
-    !isMastermindHaunting(G)
-  ) {
+  if (mastermindBystanders.length > 0 && isMastermindFreeDefeatTarget(G)) {
     targets.push({ kind: 'mastermind', cardId: G.mastermind.baseCardId });
   }
 
@@ -193,6 +212,13 @@ export function dispatchDefeatWithBystanderTarget(
   events?: TacticSeatChoiceEvents,
 ): void {
   if (target.kind === 'mastermind') {
+    // why: D-24739 — under Final Blow with every Tactic gone, the free defeat strikes the
+    // final blow through fightMastermind's own award (operator ruling 2026-10-17); the
+    // tactic core would no-op on the empty deck.
+    if (isFinalBlowAvailable(G.mastermind, G.finalBlow)) {
+      awardMastermindOnFinalBlow(G, ctx);
+      return;
+    }
     // why: WP-694 / D-24511 — forward events so a Silent Sniper / Pure Fury free defeat of a
     // Monarch's Decree / Vanishing Illusions tactic can park a WP-684 multi-seat seat choice.
     defeatMastermindTacticCore(G, ctx, shuffleContext, events);

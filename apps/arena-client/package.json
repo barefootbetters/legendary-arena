@@ -21,13 +21,15 @@
     "canvas-confetti": "^1.9.3",
     "howler": "^2.2.4",
     "pinia": "^2.1.7",
+    "tweakpane": "^4.0.5",
     "vue": "^3.4.27"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260701.1",
-    "@types/canvas-confetti": "^1.9.0",
     "@legendary-arena/game-engine": "workspace:*",
     "@legendary-arena/vue-sfc-loader": "workspace:*",
+    "@tweakpane/core": "2.0.5",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/howler": "^2.2.13",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^22.19.17",

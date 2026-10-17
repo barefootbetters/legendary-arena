@@ -47235,6 +47235,8 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Live-verify (D-24026):** pending. A game where a reveal-or-Wound villain fires after the Wound supply runs out. Cosmic Cube can empty it (`sDBnFxiigDL`, `ZVUtr7aaCom`) but often doesn't: three later Cosmic Cube games (including `mAmjZ9Cm9L9` and `xGw-94HDhBj`) never ran it out, and `Cq_czI1TQH0` ended with 20 Wounds left.
 
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye), with the Wound supply set to 0 by the operator setter (2.2.1). Frost Giant's Fight logged "the Wound supply is empty, so no Wound was gained (Player 1 had no Ranged Hero)" (8.2.10) and, with neither player holding a Ranged Hero, "(Player 0, Player 1 had no Ranged Hero)" (9.2.12); again at 20.2.14. Loki's Master Strike logged "has no Strength Hero in hand and the Wound supply is empty — no effect" for both seats (5.1.1–5.1.2).
+
 **Reserved by:** NUMBER-LEDGER D-24686. Related: D-24281 / WP-469 (reveal-or-wound), D-24299 / WP-494 (the Victory-Pile variant), D-24679 (naming the trait checked), D-24683 (player attribution), D-24026.
 
 ---
@@ -48318,6 +48320,457 @@ describe the dashboard. The domain, its Access app, and the API's CORS allowlist
 Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard.md` and `docs/ai/decision-log/`.
 
 **Reserved by:** NUMBER-LEDGER D-24723. Related: D-24690, D-19701, D-20601, D-24003, D-24004.
+
+---
+
+### D-24724 — Villain-side in-play hero-class reads count a class granted on play (Copy Powers, Size-Changing) (direct fix, no WP) (Active 2026-10-15)
+
+**Context.** In 2p match `kIZGg6MXhua` (build `9e62c96`, Dr. Doom / Negative Zone Prison Breakout), Player 1 twice played Perfect Teamwork (Strength) and Rogue's Copy Powers copying it ("This card is both Covert and the color you copy"), then fought Maestro ("Fight: For each of your [Strength] Heroes, KO one of your Heroes"). Both times (11.2.x, 23.2.x) the log read "KO 1 of your Heroes (one per your strength Hero)". It should have owed 2. `applyCopyPowers` and Size-Changing write the granted class into `G.cardSizeChangingClasses`, and `cardHasClassWhenPlayed` (`hero/sizeChanging.logic.ts`) is the single effective-class source (D-24074). The hero-side reads already go through it. The villain-side reads tested in-play cards against the raw printed `G.cardTraits` instead.
+
+**Decision.**
+1. **`villainEffects.execute.ts`.** A new `playedCardTraitMatches(G, playedCardId, kind, value)` routes the `hero-class` branch through `cardHasClassWhenPlayed` (printed hc / hc2 OR granted) and leaves the `team` branch on `cardTraitMatches`. The in-play loops of `playerHasHeroMatchingTrait` (reveal-or-wound: Sabretooth, Frost Giant, Ymir, Ultron, Zzzax) and `countPlayerHeroesMatchingTrait` (Maestro, Baron Zemo) use it. So does the in-play loop of `ko-heroes-current-by-trait`: `koHeroMatchesTraitOrBasicShield` now takes the zone's precomputed match and adds only the D-24296 basic-S.H.I.E.L.D. widening.
+2. **`villainDefeatRequirement.logic.ts`.** `playerMeetsDefeatRequirement` gets the same in-play hero-class read. It is the same raw read behind a different gate.
+3. **Unchanged.** The hand reads stay on `offPlayCardTraits`, because a played-card grant applies only in play. Team predicates stay on printed team. The Copy Powers team grant (`cardCopiedTeams`, D-24391) is not read villain-side; that is a separate question, not settled here. The mastermind, tactic, and scheme-twist trait reads scan the hand or HQ only, so they are off play and unaffected. No G field, no re-pin.
+
+**Tests (new, all fail on the pre-fix source).**
+- `villainEffects.execute.test.ts`: Maestro owes 2 with Perfect Teamwork plus Copy Powers-as-Strength in play. A Strength reveal-or-wound (Zzzax) is satisfied by a Copy Powers copy of a Strength Hero, and a Ranged grant still wounds. A hero-class `ko-heroes-current-by-trait` KOs Copy Powers through its granted class.
+- `villainDefeatRequirement.logic.test.ts`: an in-play card meets a hero-class requirement through its granted class, and the same card in hand does not.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5254 → 5259); no generated-artifact churn.
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Match `TGGnM-TEVRe` (server build `34d28b7`, 2p Dr. Doom / Negative Zone Prison Breakout): Player 0 played Crazed Rampage (Strength) and Copy Powers copying it (18.2.1–18.2.4), then fought Maestro, which owed "KO 2 of your Heroes (one per your strength Hero)" (18.2.9). Player 0's only other Strength card had been discarded after that turn-16 reshuffle, so the 2 is one printed Strength Hero plus Copy Powers. The Maestro row in `live-verify.json` is now "verified".
+
+**Reserved by:** NUMBER-LEDGER D-24724. Related: D-24074 (Size-Changing effective class), D-24345 / D-24391 (Copy Powers), D-24353 / WP-544 (Maestro), D-24281 (reveal-or-wound), D-24290 / D-24296 (KO-by-trait), D-24076 (defeat requirement), D-24687 (the re-verify pass that surfaced it).
+
+---
+
+### D-24725 — Every ewiki moves onto one shared Hugo wiki platform; the theme stays open pending a Hextra pilot (Active 2026-10-16)
+
+**Context.** Four Hugo wikis each carry their own copy of a hand-rolled theme: the engine ewiki (`apps/wiki-viewer/`), the Herbs vs. Ailments ewiki (`herbs-vs-ailments` `apps/ewiki/`), the corporate-memory viewer (`jefferyjjensen-corporate-memory` `viewer/`), and the personal wiki (`jefferyjjensen-wiki`). The copies have drifted: on 2026-10-16 the engine and Herbs vs. Ailments copies differed in 20 layout files. Every navigation, CSS, search, accessibility, or Hugo-upgrade fix has to land in each copy, and each new customer ewiki (the Studio product) would add another. The analysis, two outside reviews, and the options are on the ewiki page [Hugo Platform Strategy](../../wiki/hugo-platform-strategy.md).
+
+**Decision.**
+1. **One platform.** Every ewiki (the four above, plus future customer ewikis) moves onto one shared Hugo wiki platform: a single source of truth for the theme, layouts, shortcodes, search, and branding. Each ewiki then supplies only its content, a small config, and its logo. No new independently maintained theme copy is started; a new ewiki starts from the platform, or from the pilot below.
+2. **The theme is not chosen yet.** The candidates are (a) Hextra or (b) the current hand-rolled theme pulled out into one shared copy. A Hextra pilot on a low-risk wiki, with real content and a real deployment, decides it. The Herbs vs. Ailments ewiki is the preferred pilot; the next new ewiki is the alternative. A follow-on D-entry records the result. Where the platform lives (its own repo, or a Hugo module) is chosen with the theme.
+3. **The engine ewiki is not committed to Hextra.** The WP-139 theme lock (Open Decision B) and the JS-free gate (D-24293) stay in force for the engine ewiki until a follow-on entry supersedes them. The engine ewiki moves last, because its governance gates, determinism check, and Access posture make it the most expensive test bed.
+4. **Out of scope.** The marketing sites (`legendary-arena-com`, `barefootbetters-www`) stay on PaperMod; the platform is for the wikis.
+
+**Why.** The maintenance cost comes from the forked copies, not from the choice of theme, so converging pays off whichever theme wins. Making it a decision now stops a fifth copy from being forked while the pilot runs.
+
+**Consequences.** No code changes in this entry. The ewiki page Hugo Platform Strategy records Decision 1 as made and the pilot as the next step.
+
+**Reserved by:** NUMBER-LEDGER D-24725. Related: WP-139 (theme lock), D-24293 (JS-free gate and Pagefind), D-24690 (Worker hosting, one door per private site), D-24712 (the ship's viewer), D-24723 (the same extract-to-one-source pattern for the dashboard).
+
+---
+
+### D-24726 — Villain-side in-play team reads count the team Copy Powers copies; the team half of D-24724 (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** In 2p match `xW_Kmg0UF8s` (build `21b630d`, Dr. Doom / Negative Zone Prison Breakout), Player 0 played Endless Invention, Perfect Teamwork and Growing Anger (all Avengers), then Copy Powers copying Growing Anger (27.2.10). Player 0 had played all 7 cards, so the hand was empty. Player 0 then fought Baron Zemo ("rescue a Bystander for each of your [Avengers] Heroes"), and the engine rescued 3 (27.2.16). D-24391 rules that Copy Powers is a full duplicate and also counts as the copied Hero's team: `applyCopyPowers` writes it to `G.cardCopiedTeams`, and `cardHasTeamWhenPlayed` (`hero/effectiveTeams.logic.ts`) reads it. The rescue should have been 4. D-24391 left full team/class parity across the non-hero read sites as a deferred follow-up. D-24724 did the class half for the villain-side reads; this is the team half.
+
+**Decision.**
+1. **`villainEffects.execute.ts`.** `playedCardTraitMatches` routes the `team` branch through `cardHasTeamWhenPlayed` (printed team OR copied team). The same four in-play reads that D-24724 changed pick this up: reveal-or-wound (`playerHasHeroMatchingTrait`), the Baron Zemo / Maestro count (`countPlayerHeroesMatchingTrait`), and the in-play loop of `ko-heroes-current-by-trait`.
+2. **`villainDefeatRequirement.logic.ts`.** `playerMeetsDefeatRequirement` gets the same in-play team read.
+3. **Not `cardCountsAsTeamMember`.** That helper also counts the teamless basic S.H.I.E.L.D. tokens as `shield`. Under D-24296 that widening stays local to the Destroyer KO, so the shared villain-side reads use the plain printed-or-copied team.
+4. **Unchanged.** The hand reads stay on `offPlayCardTraits`, because a copy grant applies only in play. The mastermind, tactic and scheme-twist reads scan the hand or HQ only. No G field, no re-pin.
+
+**Tests (new, all fail on the pre-fix source).**
+- `villainEffects.execute.test.ts`: Baron Zemo rescues 4 in the live 27.2.16 board. An Avengers reveal-or-wound is satisfied by Copy Powers that copied an Avenger, and a copied X-Men team still wounds. A `team:shield` KO-by-trait KOs Copy Powers that copied a S.H.I.E.L.D. Hero.
+- `villainDefeatRequirement.logic.test.ts`: an in-play card meets a team requirement through its copied team.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5259 → 5263); no generated-artifact churn.
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Match `SoDnMI9IjqU` (server build `20dcd923`, 2p operator match, Dr. Doom / Negative Zone Prison Breakout). On turn 27 Player 0 played A Day Unlike Any Other (the only printed Avenger played) and Copy Powers copying it (27.2.1–27.2.4), then fought Baron Zemo. Zemo rescued 2, "one per your avengers Hero" (27.2.9), which is one printed Avenger plus Copy Powers. The log does not list the two hand cards Player 0 left unplayed that turn, and Zemo also counts the hand. They are read as Wounds: Player 0 played every Hero card drawn on every other turn, and was carrying five Crazed Rampage / Zzzax Wounds at the time. A baseline fight earlier in the same match (turn 6: Diving Block + Dangerous Rescue, empty hand) rescued 2. Baron Zemo's row in `live-verify.json` cites both.
+
+**Reserved by:** NUMBER-LEDGER D-24726. Related: D-24724 (the class half), D-24391 (Copy Powers team grant; this closes its deferred parity follow-up for the villain-side reads), D-24290 (Baron Zemo), D-24281 (reveal-or-wound), D-24296 (basic-S.H.I.E.L.D. widening, kept local), D-24076 (defeat requirement), D-24026.
+
+---
+
+### D-24727 — The shared wiki platform's theme is the current hand-rolled theme, extracted into one shared copy; Hextra is not adopted (Active 2026-10-16)
+
+**Context.** D-24725 put every ewiki on one shared Hugo wiki platform and left the theme open until a Hextra pilot reported. The pilot moved the Herbs vs. Ailments design wiki (409 pages) onto Hextra v0.13.0 on a branch: [barefootbetters/herbs-vs-ailments#247](https://github.com/barefootbetters/herbs-vs-ailments/pull/247), closed unmerged, with the full evaluation in `apps/ewiki/HEXTRA-PILOT.md` at commit `9143d153`. Findings:
+- **The drift isn't where Hextra helps.** The four copies drifted in the wiki-specific layouts (link and image hooks, include-section, footer, nav). Under Hextra all of that stays our code. On top of it come two overrides of Hextra's own files (`sidebar.html`, `docs/single.html`) that have to be re-checked against every Hextra release; there were seven releases in 2026 so far. Hextra replaced only the generic chrome (about 540 lines), which wasn't drifting.
+- **The engine ewiki can't use it as-is.** With search off and Pagefind swapped in, the best case is 3 scripts per page against D-24293's allowance of 1. Dropping Hextra's two scripts breaks dark mode (a JS-set `.dark` class) and mobile navigation (a JS-opened drawer). Fixing either means recompiling Hextra's Tailwind or overriding its navbar, which amounts to a fork.
+- **The weight goes the wrong way.** HTML pages grew from 13 KB to 20 KB gzipped, even after trimming the sidebar from 288 KB to 92 KB raw. Diagram pages load a 1.6 MB gzipped Mermaid, Hugo runs about 2.7 times slower, and the build fetches Mermaid and FlexSearch over the network on a cold cache.
+- **What Hextra did well:** an "On this page" TOC, a light/dark toggle, a mobile drawer, better search, an accessibility baseline, and deterministic output (five byte-identical builds).
+
+**Decision.**
+1. **The platform theme is the current hand-rolled theme, extracted** into one shared copy that every ewiki consumes. Hextra is not adopted for the platform. The WP-139 theme lock and the D-24293 JS-free gate stand unchanged, because the extracted theme is the theme they already govern.
+2. **The extraction absorbs Hextra's reader wins that need no JavaScript:** an "On this page" table of contents (Hugo's `.TableOfContents`), heading permalink anchors, a skip-to-content link, and breadcrumbs. A light/dark toggle is in scope only if it passes the JS-free gate; otherwise the theme keeps following `prefers-color-scheme`.
+3. **Where the platform lives** (its own repo, consumed as a vendored copy or as a Hugo module) is chosen by the extraction work. Evidence from the pilot: a Hugo module works on GitHub's runners, but only because Go happens to be preinstalled on the image, so it would need `actions/setup-go` pinned and `go.sum` committed. It also requires Go on every author's machine for local builds. Vendoring needs neither.
+4. **Hextra stays out unless a new D-entry brings it back.** D-24725 keeps every ewiki, customer ewikis included, on the one platform.
+
+**Why.** D-24725's goal is to stop the copies drifting. Extraction fixes that directly; Hextra would add a fifth thing to keep in step and still leave the drifting code ours. The engine ewiki, the flagship, could not use Hextra without amending a decided gate, and a platform the flagship can't use is not one platform.
+
+**Consequences.** No code changes in this entry. The extraction is follow-on work. The ewiki page Hugo Platform Strategy records the pilot results and this decision.
+
+**Reserved by:** NUMBER-LEDGER D-24727. Related: D-24725 (one shared wiki platform), WP-139 (theme lock), D-24293 (JS-free gate and Pagefind).
+
+---
+
+### D-24728 — The shared wiki theme lives in `barefootbetters/ewiki-theme` and is vendored into each wiki (Active 2026-10-16 — WP-814 / EC-852)
+
+**Context.** D-24727 chose the platform theme (the current hand-rolled theme, extracted) and left §3 open: where the one shared copy lives and how each ewiki consumes it, a separate repo consumed as a vendored copy or as a Hugo module. WP-814 built the extraction: it reconciled the engine, herbs, corporate-memory and personal copies into one core, and proved it with a scratch shadow build of the engine ewiki that passed all five engine gates and kept every link and image target.
+
+**Decision.**
+1. **One source.** The theme's single source is the private repo `barefootbetters/ewiki-theme`, released as annotated `vX.Y.Z` tags. Each tag's GitHub release notes record its manifest digest (the SHA-256 of the LF-normalized manifest).
+2. **Vendored, not a Hugo module.** Each wiki vendors a tag into `<site>/themes/ewiki/` with `tools/Sync-EwikiTheme.ps1`. The sync uses `git archive` with autocrlf off and a fixed pathspec, and writes `THEME-VERSION` plus a manifest of LF-normalized SHA-256s. A Hugo module was rejected for three reasons:
+   - it needs Go locally and in CI;
+   - it needs private-repo credentials in CI;
+   - it would add a network fetch to the engine's determinism rebuild.
+
+   Vendored, the engine theme stays "inside this app", so the WP-139 lock holds literally.
+3. **Vendored files are read-only.** Each wiki's CI pins the manifest digest outside the vendored tree. It checks the manifest and the checker script's hash with plain shell, then runs `tools/Test-EwikiTheme.ps1`, which fails on:
+   - any manifest or digest mismatch;
+   - any consumer file that shadows a core theme file, through any of Hugo's equivalent layout paths or through a module mount.
+
+   A change goes to the theme repo, then a re-sync.
+4. **Closed extension points.** Wiki-specific behavior enters only through the closed extension-point list (WP-814 §Contract). Changing that list, or the brand → core → site CSS order, is a MAJOR release.
+5. **One script.** Core emits no script except the Pagefind loader, which stays D-24293's only sanctioned script.
+
+The migration order is corporate memory, herbs, personal, then the engine ewiki last (D-24725 §3).
+
+**Why.** The pilot's evidence (D-24727 §3) and the shadow build agree: vendoring needs no Go, no CI credentials for a private repo and no network during a build, so every wiki's determinism gate keeps rebuilding offline. The cost, a copy that could drift again, is what the manifest, the externally pinned digest and the shadow check close.
+
+**Consequences.**
+- `barefootbetters/ewiki-theme` `v1.0.0` is tagged on `52f6c1b5`, with manifest digest `d3e03f528052d23b404160bbd2d5bf9911017002839b2c4fc18ac0867b687b80` in its release notes.
+- No wiki has migrated yet; each keeps its own copy until its migration packet, in the order above.
+- Engine migration (step 4) vendors the theme, moves E's wiki-specific files behind the extension points, makes `project-wiki.mjs` and `architecture-inventory.mjs` emit `canonical-source` and `links_from: repo-root`, and adds the digest and shadow checks to `wiki-viewer.yml`. D-24293 and the WP-139 lock are unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24728 (#2836). Related: D-24725 (one shared wiki platform), D-24727 (the theme, extracted), D-24293 (the JS-free gate and Pagefind), WP-139 / D-13808 (the engine ewiki's theme lock).
+
+---
+
+### D-24729 — Villain trait-count log lines name each counted Hero and where it was counted from (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** The D-24726 live-verify (match `SoDnMI9IjqU`) passed, but its record had to infer that the two cards Player 0 left in hand were Wounds. Baron Zemo's line said only "rescued 2 Bystander(s) (one per your avengers Hero)", and the game log never lists the cards a player leaves unplayed in hand. Both Zemo and Maestro count the hand (off-play traits) plus the cards in play (effective class / team, including what Copy Powers copies, D-24391 / D-24724 / D-24726). From the log alone, a count from a Copy Powers copy and a count from an Avenger left in hand look the same.
+
+**Decision.**
+1. **`villainEffects.execute.ts`.** `countPlayerHeroesMatchingTrait` becomes `listPlayerHeroesMatchingTrait`. It runs the same scan and returns the counted cards, each tagged `hand` or `played`. Both callers use its length as the count, so the counting does not change.
+2. **Log text.** The Zemo rescue line and both Maestro lines (the parked "choose which" line and the auto-KO line) add the counted Heroes after "one per your X Hero:". The Zemo line reads, for example, `rescued 3 Bystander(s) (one per your avengers Hero: Avengers Assemble! (hand), A Day Unlike Any Other (played), Copy Powers (played, copied avengers)).` Names come from `G.cardDisplayData` through the existing `resolveCardDisplayName`.
+3. **Source labels.** A hand card is `(hand)`. A played card whose printed `G.cardTraits` row matches is `(played)`. A played card that matches only through a grant is `(played, copied <team>)` for a team, since Copy Powers is the only team grant, or `(played, granted <class>)` for a class, since Copy Powers or Size-Changing can grant one.
+4. **The copied card itself is not named.** G does not record which Hero Copy Powers copied, and adding a G field to improve a log line isn't worth it. The Copy Powers play line in the same log ("Player 0's Copy Powers copied X.") already names the copied card.
+5. **Supply run-out.** When the Bystander supply runs out before every counted Hero is paid, the Zemo line adds `; the Bystander supply ran out after N`. Otherwise the list would be longer than the rescue and look like a miscount.
+
+**Hashes.** `G.messages` is hashed by `computeStateHash`, but no pinned replay (`sentinel-core-doom-2p`, the `PRE_WP080_HASH` fixtures, PAR / seed pins) fights Baron Zemo or Maestro. No re-pin; the full test run confirms it.
+
+**Tests.** `villainEffects.execute.test.ts` asserts these lines exactly: Zemo with a hand Avenger, a printed played Avenger and Copy Powers counted through its copied team; Maestro's parked line with Copy Powers counted through its granted Strength; and the Maestro auto-KO line with a hand and a played Strength Hero. The existing Zemo / Maestro message assertions are updated to the new text, and the supply-bounded Zemo case asserts the run-out clause.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5263 → 5265); no generated-artifact churn.
+
+**Reserved by:** NUMBER-LEDGER D-24729. Related: D-24726 (the live-verify this closes the gap for), D-24724, D-24391, D-24290 (Baron Zemo), D-24353 (Maestro), D-24693 (KO lines name their zone).
+
+---
+
+### D-24730 — Copy Powers' copied class and team last for one play of the card (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** Operator match `L3yPdfS179l` (server build `7ae1baa2`). On turn 6, Copy Powers #0 copied Crazed Rampage (Strength). On turn 16 the same card copied Silent Sniper (Covert, Avengers), yet at 16.2.8 Borrowed Brawn's "Strength: +3 attack" fired with that Copy Powers as the only other Strength Hero, and at 16.2.10 Maestro counted "Copy Powers (played, granted strength)". The D-24729 named-card log line is what exposed it. `applyCopyPowers` wrote the copied class into `G.cardSizeChangingClasses[sourceCardId]` and the copied team into `G.cardCopiedTeams[sourceCardId]`, keyed by card instance, and nothing removed either entry. So Copy Powers kept every class and team it had ever copied for the rest of the game. `cardSizeChangingClasses` also holds the setup-time Size-Changing grants, which are printed and must stay, so that map could not simply be cleared.
+
+**Decision.**
+1. **New G field `cardCopiedClasses?: Record<CardExtId, string[]>`.** `applyCopyPowers` writes the copied class here instead of `cardSizeChangingClasses`. It is lazy and omit-when-empty, like `cardCopiedTeams`. `cardSizeChangingClasses` is now built at setup only and never written at runtime.
+2. **Turn-scoped.** `applyEndOfTurnCleanup` gains Step 7, `clearCopyPowersGrants`, which deletes `cardCopiedClasses` and `cardCopiedTeams` outright. Only the active player plays cards, so the whole map belongs to the turn that is ending. Deleting the keys (not emptying them) returns the state to the omit-when-empty shape. `applyEndOfTurnCleanup` is the single turn-end site for both live paths and all three bgio-bypassing harnesses, so nothing else needs the clear. The grant lasts until turn end, not until the card leaves play: a played card that moved elsewhere still counts as "played this turn" (D-24692), so the copy keeps counting for the rest of that turn.
+3. **Single sources kept.** `cardHasClassWhenPlayed` stays the one effective-class source (D-24074): printed class, Size-Changing grant (`getGrantedClasses`), or this play's copy (new `getCopiedClasses`). `cardHasTeamWhenPlayed` stays the one effective-team source (D-24391) and is unchanged. The two class-set readers that walked `getGrantedClasses` directly (`countDistinctHeroClassesYouHave` and its diagnostics mirror in `heroCountSource.resolve.ts`) also add `getCopiedClasses`, so Copy Powers still contributes its copied color there.
+4. **Side fix: a copy is not Size-Changing.** `cheapOrSizeChangingAtLeast` and its failure count treat "has any `getGrantedClasses` entry" as Size-Changing. Their own comment said that map was distinct from Copy Powers' maps, but it wasn't, so a 5-cost Copy Powers that copied a classed Hero counted as cheap-or-Size-Changing. Moving the copy to its own map makes the comment true.
+5. **Log text unchanged.** The D-24729 label `(played, granted <class>)` still covers both Copy Powers and Size-Changing.
+
+**Hashes.** `cardCopiedClasses` is lazily created only when Copy Powers copies a classed Hero, and both copy maps are deleted at turn end, so games without Copy Powers have the same G shape as before. No pinned replay (`sentinel-core-doom-2p`, the `PRE_WP080_HASH` fixtures, PAR / seed pins) plays Copy Powers. No re-pin; the full test run confirms it.
+
+**Tests.** New `hero/copyPowersPerPlay.test.ts` runs the real chain (`applyCopyPowers`, `applyEndOfTurnCleanup`, then the readers) across two turns: cleanup deletes both copy maps and keeps the Size-Changing grant; a Strength copy then a later Covert copy counts as Covert only; Borrowed Brawn's Strength gate does not fire off the stale copy but does off a same-turn one; Maestro's line names only Borrowed Brawn; Baron Zemo does not count a stale Avengers copy; a Copy Powers copy is not Size-Changing (with a positive control); a Size-Changing card's setup grant applies on every play. With the Step 7 clear commented out, five of the eight fail. The Copy Powers fixtures in `copyPowersChoice.resolve.test.ts`, `villainEffects.execute.test.ts` and `villainDefeatRequirement.logic.test.ts` now seed and assert `cardCopiedClasses`, since that is where the copy is written.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5265 → 5273); no generated-artifact churn.
+
+**Live re-check.** In an operator match, have one Copy Powers copy a Strength Hero, then on a later turn copy a non-Strength Hero and fight Maestro: his named-card line must not list Copy Powers.
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Operator match `8Mw9mLkcgQ4` (server build `7e2b45bd`, the #2843 merge), 2p Dr. Doom / Negative Zone Prison Breakout. On turn 9, Copy Powers #0 copied Borrowed Brawn (Strength), and Maestro listed "Copy Powers (played, granted strength)" (9.2.11). On turn 13, the same card copied Energy Drain (Covert). Borrowed Brawn was blocked for lack of another Strength Hero (13.2.12), and Maestro's line was "KO 1 of your Heroes (one per your strength Hero: Borrowed Brawn (played))" (13.2.22). Borrowed Brawn stayed blocked on turns 15 and 17, when Copy Powers #0 copied Diving Block (Tech). On turn 17, Baron Zemo counted Copy Powers as an Avenger from that turn's own copy (17.2.13).
+
+**Reserved by:** NUMBER-LEDGER D-24730. Related: D-24345 (Copy Powers), D-24391 (copied team), D-24074 (Size-Changing), D-24724 / D-24726 (villain reads count the copy), D-24729 (the log line that exposed this), D-24520 (end-of-turn cleanup).
+
+---
+
+### D-24731 — Psychic Link can reveal an X-Men Hero played this turn, not only one in hand (amends D-24470; direct fix, no WP) (Active 2026-10-16)
+
+**Context.** The 2026-10-16 Core audit (§1.2) found that Emma Frost's Psychic Link ("Each player may reveal another [team:x-men] Hero. Each player who does draws a card.") only scanned each player's hand. `heroEffectRevealFromHand` (WP-659 / D-24470) checked `playerZones.hand` for every player. Rules v23 "Revealing a Card" (L3186-3190) says: "You can reveal a card from your hand or you can reveal a card in front of you that you have already played this turn." So a player who played Wolverine's Keen Senses and then Psychic Link, with no other X-Men Hero in hand, drew nothing and got the D-24668 "No player had a matching Hero" line. A throwaway test on the WP-659 fixture reproduced it: `inPlay: [x-men card, psychic-link]` plus a non-X-Men hand gave no draw. D-24651 fixed the same reading for Diving Block.
+
+**Decision.**
+1. **The playing player can also reveal a played card.** A new helper, `playerCanRevealMatch`, scans the hand for every player, as before. For the player resolving the card, it also scans `playedCardIdsStillInPlay(G, inPlay)`.
+2. **"Another" excludes the resolving card.** Psychic Link is itself an X-Men Hero and is in play when its effect resolves, so its own instance id is skipped. Another copy of Psychic Link played earlier this turn has a different instance id and counts.
+3. **Only cards still in front of the player count.** `playedCardIdsStillInPlay` reads the play area (with the D-24619 both-sides expansion), not the Out of Time ledger. A card played this turn and then moved elsewhere cannot be revealed (D-24692).
+4. **Effective team and class.** A played card matches through `cardHasTeamWhenPlayed` for a team criterion (D-24391 / D-24726) and `cardHasClassWhenPlayed` for a class criterion (D-24074 / D-24730), so a Copy Powers copy of an X-Men Hero counts. Hand cards keep the printed-trait match (`investigateCardMatchesCriteria`), the same split as `countXMenHeroesYouHave`.
+5. **Other players stay hand-only.** Only the active player plays cards, so the other players have nothing "already played this turn".
+6. **D-24668 unchanged.** The "No player had a matching Hero to reveal" line still fires exactly when no player revealed. It now also fires when the only X-Men Hero in play is Psychic Link itself.
+7. **Corpus scope.** `core/emma-frost/psychic-link` is the only card that carries `[keyword:reveal-from-hand]`. The same text appears unmarked in `co2e.json`, which the handler does not reach; when it is marked, the same reading applies. The keyword name stays as it is (renaming touches the setup parser, `HeroKeyword`, and the handler-completeness list for no behavior change); this entry records that "from hand" now means "hand or played this turn" for the playing player.
+8. **Ride-along: Electromagnetic Bubble.** `collectXMenHeroesYouHave` (Magneto's tactic, "one of your [team:x-men] Heroes") read a played card's team from raw `G.cardTraits`. It now uses `cardHasTeamWhenPlayed`, matching its sibling `countXMenHeroesYouHave` (Xavier's Nemesis), so a Copy Powers copy of an X-Men Hero is eligible. The undefined-map guard keeps the WP-695 legacy-state posture. The play area already holds only cards still in play, so there was no Out of Time gap.
+
+**Hashes.** No G field is added or written. Psychic Link now draws in states where it used to draw nothing, so a pinned replay that plays it after another X-Men Hero would change. The full test run passes with no re-pin, so no pinned replay reaches that state.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5280); `pnpm sim:runtime-observed:check` OK; no generated-artifact churn. `live-verify.json`'s Psychic Link row moves from `verified` to `partial` until the played-card path is seen live.
+
+**Tests.** `psychicLink.revealFromHand.test.ts` gains six cases: a played X-Men Hero with a non-X-Men hand draws (and the reveal moves nothing); Psychic Link alone in play does not reveal itself and the D-24668 line fires; another player with an X-Men Hero in hand still draws; another player's play area does not count; a played card that went Out of Time does not count; a played Copy Powers copy of an X-Men team counts. `electromagneticBubbleChoice.resolve.test.ts` gains a Copy Powers eligibility case. Against the old handler, the three positive cases fail and the three guard cases pass.
+
+**Live re-check.** In an operator match (lobby → Play with a bot ally → Operator match, 2 players, heroes include Emma Frost and Wolverine): use the setters to get Keen Senses and Psychic Link into your hand with no other X-Men Hero (Place in HQ, recruit, then Move a card discard → hand). Play Keen Senses, then Psychic Link: you draw a card. Optionally, first Move an X-Men Hero to the bot's hand: the bot draws too.
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Operator match `nQAUnp0T4uY` (server build `6f5a8d1c`, the #2846 merge), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Emma Frost, Wolverine, Rogue, Captain America, Hulk), won with the Final Blow at 19.3.1. Player 0's only X-Men cards were the two Psychic Links (#0, #2), both recruited on turn 1 (1.2.5, 1.2.8); no operator move put a card in a hand.
+- **Played card revealed (the fix).** On turn 7 Player 0 played Crazed Rampage, then Psychic Link #2, which drew from the hand-held #0 (7.2.4). Then Psychic Link #0 drew too (7.2.6): the only other X-Men Hero Player 0 had was #2, already in play. Under D-24470's hand-only scan, 7.2.6 draws nothing.
+- **"Another" holds.** Psychic Link played with no other X-Men Hero in hand or play gave Player 0 no draw three times (9.2.5, 13.2.1, 15.2.13), although the resolving card is itself an X-Men Hero in play.
+- **Other players stay hand-only.** The bot drew from an X-Men Hero in hand on each of those plays (9.2.6, 13.2.2, 15.2.14), and both players drew on both turn-19 plays (19.2.2-19.2.3, 19.2.7-19.2.8).
+- **Not exercised live:** a Copy Powers copy (Copy Powers is printed X-Men in Core, so it cannot tell the difference) and a played card that left play (no Core card moves one mid-turn). The unit tests cover both.
+
+**Reserved by:** NUMBER-LEDGER D-24731. Related: WP-659 / D-24470 (reveal-from-hand), D-24651 (Diving Block reveal from play), D-24668 (no-reveal line), D-24692 (Out of Time), D-24391 / D-24726 (copied team), D-24645 (Electromagnetic Bubble "your Heroes").
+
+---
+
+### D-24735 — Clash of the Monsters Unleashed builds its printed 10 Scheme Twists (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** `chmp/clash-of-the-monsters-unleashed` prints "Setup: 10 Twists. 6 Wounds per player in the Wound Stack. …", but `data/cards/chmp.json` had no `villainDeckTwistCount`, so `buildVillainDeck` built the default 8. The D-24734 sweep surfaced it. The cause is not a parser: twist counts reach the card data only through the hand-curated `scripts/convert-cards/inputs/scheme-deck-counts.json` (WP-169 / D-16803), which both converters apply. WP-169's manual census missed this scheme. It is neither encoded nor in the D-16804 carve-out list. The likely trigger is the "per player" in the Wound clause, which reads like a per-player twist count, but the census left no trace that confirms it.
+
+**Decision.**
+1. **Curate the count at the source.** Add `chmp.clash-of-the-monsters-unleashed: { villainDeckTwistCount: 10 }` to `scheme-deck-counts.json` and regenerate. The only data change is that one field in `chmp.json`. `pnpm cards:check` is clean.
+2. **Census test.** `packages/registry/src/schema.schemeDeckCounts.test.ts` now checks every scheme whose Setup line holds a sentence that is exactly "N Twist(s)." and asserts it builds N (`villainDeckTwistCount ?? 8`). 161 schemes match. Per-player clauses ("11 Twists, minus 1 Twist per player", "Twists equal to the number of players plus 4") don't match, so they stay with D-24734's engine table. The test fails on the old `chmp.json` with exactly this scheme, so the next census miss fails CI instead of slipping through.
+3. **Sweep result.** No other scheme that prints a fixed count builds a different one. The four remaining mismatches from a looser sweep are all per-player: bkwd Sniper Rifle Assassins, co2e Enshrouded Identity, mdns Ritual Sacrifice to Summon Chthon, and nmut Trapped in the Insane Asylum. All four are rows in D-24734's `SCHEME_TWIST_COUNT_BY_PLAYERS`.
+
+**Gameplay effect.** Clash has no twist config. It stays in D-24595's Excluded list (the Monster Pit is a non-standard pile), so it loses on the last Scheme Twist in its Villain Deck. That loss now comes at the printed 10th twist instead of the 8th.
+
+**Still not implemented (named follow-ups, not fixed here).**
+- **Wound Stack sizing.** "6 Wounds per player in the Wound Stack" is not applied. `resolveEffectiveWoundsCount` (D-24321) has only the Legacy Virus branch, so Clash builds the requested Wound count (default 30) instead of 6 × players.
+- **Twist effect.** "Twist 3-10" (each player picks a Gladiator, a Monster Pit card enters the city, and players whose Gladiator has a lower printed Attack gain a Wound) has no resolver. The Monster Pit deck is not built.
+- **Evil Wins.** "When the Wound Stack or Monster Pit Deck runs out" is not modelled. The last-twist interim rule (D-24595) stands in for it.
+
+**Hashes.** No pinned replay, state hash or PAR seed runs Clash. The full suite passes with no re-pin.
+
+**Live re-check (after deploy).** In an operator match on Clash of the Monsters Unleashed, the operator panel's Villain-deck list shows 10 Scheme Twists and the HUD reads "Twists: 0/10". Clash is not a Core card, so there is no `live-verify.json` row.
+
+**Reserved by:** NUMBER-LEDGER D-24735. Related: D-16803 / D-16804 (WP-169 curation and carve-outs), D-24734 (per-player twist table; it flagged this gap), D-24595 (last-twist fallback; Excluded list), D-24321 (scheme Wound sizing), D-1411 (8-twist default).
+
+---
+Protect this file.
+
+### D-24732 — Berserker Rage grants +1 attack per extra card drawn this turn, not a flat +1, and every effect draw by the current player now counts (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** Wolverine's **Berserker Rage** (core) prints "Draw three cards." / "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn." The second line carried no marker, so the hero parser's icon extractor (`heroAbility.setup.ts` `ICON_MAGNITUDE_PATTERN`) read "+1[icon:attack]" as a **flat +1**. With the Instinct gate met the card owes at least +3 (its own three draws), often 4–6 with Keen Senses, Frenzied Slashing or Healing Factor. Found by the Core audit of 2026-10-16 (§1.1). The `core/wolverine|draw` live-verify row covered only the draw half, so `/coverage` never showed the gap. Two other cards print the same clause: antm Ant-Man **Giant Ego** and chmp Totally Awesome Hulk **7th Smartest Man in the World** ("…for each extra card you drew this turn.", ungated). Both parsed as the same flat +1.
+
+The counter the count needs, `TurnEconomy.cardsDrawn` (WP-665 / D-24476), was incremented only by the `draw:N` handler, Do Over, reveal-three-assign and Smash. Many other effect draws were invisible to it, Core ones included: reveal-rule draws (Spider-Man's cost-2-or-less reveals, Card Shark), Psychic Link, Diving Block's draw-instead, Enchantress's Fight draw and Red Skull's HYDRA Conspiracy.
+
+**Decision.**
+1. **New `HeroCountSource` `extra-cards-drawn-this-turn`.** It resolves to `G.turnEconomy.cardsDrawn` (`?? 0` for narrow mocks). It is self-inclusive: Berserker Rage's own line-1 draws have landed when its line-2 count resolves, and the `[hc:instinct]` gate stays an on-play check. It is a counter, not a card list, so `explainCountSourceInputs` returns `[]` for it (like the victory-pile sources). Label: "extra card drawn this turn". `HERO_COUNT_SOURCES` 15 → 16, with the union and canonical array moved together (runtime drift pin).
+2. **Curated markers** (`hero-ability-markers.json`): ability index 1 of core `wolverine/berserker-rage`, antm `ant-man/giant-ego` and chmp `totally-awesome-hulk/7th-smartest-man-in-the-world` gets `[keyword:attack-per-count:extra-cards-drawn-this-turn:1]`. The D-24016 suppression drops the flat icon, so there is no phantom +1. Regenerated through the pipeline (3 lines).
+3. **"Extra card" = every card the current player draws this turn other than the hand drawn at end of turn.** `cardsDrawn` now also increments at these sites, for the current player only: put-hand-on-deck-top (Stack the Deck), the reveal-rule `draw` action, Psychic Link (`heroEffectRevealFromHand`, the playing player's own draw only), Investigate, Dodge, Diving Block's draw-instead (both the wound-chokepoint seat choice, via a new optional `currentPlayer` threaded from `resolveSeatChoice` to `applyDivingBlockResolvedSeatChoice`, and the Random Acts wound step), HYDRA Conspiracy, Enchantress `draw-cards-current`, and the villain `reveal-top-draw-if-cost-lte` draw. Not counted: the end-of-turn hand fill and its next-hand overrides (Treasures of Latveria, Savage Land Mutates, Doc Ock), the setup deal, the guarded `drawCards` move, Phasing's swap (rules v23 says it isn't drawing), and other seats' draws (Monarch's Decree, Covering Fire, another player's Psychic Link or Diving Block draw), because `turnEconomy` belongs to the active player.
+4. **D-24476 amended, not changed in meaning.** `cardsDrawnThisTurnAtLeast` (Gamma-Draining Nanites, "if you drew two cards this turn") still excludes the hand fill, as D-24476 says. It now also sees the effect draws listed above that it used to miss, which is the printed reading.
+5. **The Amazing Spider-Man's cards count (Jeff ruling, 2026-10-16).** The card prints "Put any that cost 2 or less into your hand". The engine models it with the same reveal `draw` action, so each card it puts into your hand counts toward `cardsDrawn`. Jeff ruled that this is correct: the player gets both benefits, the cards in hand and the extra cards drawn for Berserker Rage. Pinned by a test in `hero/coreBerserkerRage.test.ts`. A future change that gives this card its own action kind must keep it counting.
+
+**Tests.** New `hero/coreBerserkerRage.test.ts` runs the real parser over the generated core lines: +3 after one other Instinct play; +4 after Keen Senses drew 1; the gate blocks the grant without another Instinct Hero (the draw still lands); an Astonishing Strength reveal-draw counts and a reveal that leaves the card on top does not; the end-of-turn hand fill with a next-hand override adds nothing; Psychic Link counts only the playing player's draw. Parse tests for all three lines (count source, no flat attack, gate kept only on Berserker Rage, draw before count). Resolver and drift-pin tests (16 sources). Diving Block counts for the active seat and not for another seat. One existing pin changed with the behavior: WP-789's reveal-overlay test asserted that a Card Shark reveal-draw left `cardsDrawn` at 0; it now asserts 1.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5288). Hero ledger +3 rows (`attack-per-count` on core Wolverine, antm Ant-Man, chmp Totally Awesome Hulk); `card-mechanics.json` and the effect index regenerated; `cards:check` reproducible; villain ledger and `ledger:numbers:check` OK; `sim:coverage --check` and `sim:runtime-observed:check` OK with no baseline change. No replay or PAR hash moved, so nothing was re-pinned.
+
+**Live-verify (D-24026): pending.** `live-verify.json` gains `core/wolverine|attack-per-count` (Berserker Rage) as `pending`. Recipe: an operator match with Wolverine; Place in HQ, recruit, then Move discard → hand Healing Factor, Keen Senses and Berserker Rage; play them in that order. Keen Senses draws 1, Berserker Rage draws 3 and grants +4 (was +1).
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Operator match `Bi6gSbwebWx` (server build `e4c2c0a0`, which includes the #2848 merge; client `d7b2717`), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout (HYDRA + Spider-Foes; Wolverine, Gambit, Emma Frost, Spider-Man, Captain America), won with the Final Blow at 22.3.1. Healing Factor ×2, Keen Senses and Berserker Rage were placed and recruited on turn 2 (2.2.5–2.2.10).
+- **Counts every effect draw this turn.** Turn 6: Mental Discipline drew 1 (6.2.2), Frenzied Slashing was blocked without another Instinct Hero (6.2.4), Keen Senses drew 1 (6.2.6), and Berserker Rage drew 3 (6.2.8) and logged `Count-scaled attack: +5 (1 per extra card drawn this turn; count 5).` (6.2.9). That is 1 + 1 + 3, so a non-Wolverine draw (Mental Discipline) counts too. Before the fix this was a flat +1.
+- **Its own three draws count.** Turn 14: Healing Factor (no Wound, no draw) then Berserker Rage drew 3 and logged `+3 … count 3` (14.2.5), the minimum with the gate met.
+- **The Instinct gate holds.** Turn 10: Berserker Rage after two Mental Disciplines and no Instinct Hero drew 3 but its count line was blocked (10.2.11).
+- **Only cards actually drawn count, and Healing Factor's reward draw counts.** Once the deck and discard ran dry, the count followed the real draws, not the printed ones. Turn 18: Mental Discipline 1, Healing Factor 1 (KO-a-Wound reward), Keen Senses 1, Frenzied Slashing 1 of 2, Berserker Rage 0 of 3 → count 4 (18.2.12). Turn 20: 1 + 1 + 2 of 3 → count 4 (20.2.9). Turn 22: 1 + 2 of 3 → count 3 (22.2.7). Turn 16: Mental Discipline 1 + Frenzied Slashing 2 + Berserker Rage 3 → count 6 (16.2.9).
+- **Not exercised live:** the other newly counted sites (reveal-draws, Psychic Link, Diving Block, Dodge, Investigate, Stack the Deck, HYDRA Conspiracy, Enchantress) and the antm / chmp twins. The unit tests cover the reveal-draw, Psychic Link and Diving Block cases.
+
+**Reserved by:** NUMBER-LEDGER D-24732. Related: D-24476 (the `cardsDrawn` counter and Gamma-Draining Nanites), D-24016 (attack-per-count and the flat-icon suppression), D-24655 (the X-Men United per-count precedent), D-24731 (Psychic Link reveals played cards; same handler), D-24499 / D-24651 / D-24673 (Diving Block), D-24051 (Dodge).
+
+---
+
+### D-24736 — Clash of the Monsters Unleashed plays as printed: 6 Wounds per player, the Monster Pit, Gladiators, and its Evil Wins (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** D-24735 gave `chmp/clash-of-the-monsters-unleashed` its printed 10 Scheme Twists and named the rest as follow-ups. The card prints: "Setup: 10 Twists. 6 Wounds per player in the Wound Stack. Shuffle 8 Monsters Unleashed Villains into a face-down 'Monster Pit' deck." / "Twist 3-10: Each player chooses a Villain from their Victory Pile as their 'Gladiator.' Then the top card of the Monster Pit enters the city. Each player whose Gladiator has a lower printed Attack than that Monster gains a Wound." / "Evil Wins: When the Wound Stack or Monster Pit Deck runs out." Before this, the Wound Stack was the requested 30, there was no Pit, Twists did nothing, and the scheme was in D-24595's Excluded list, losing on its last twist.
+
+**Decision.**
+1. **Wound Stack.** `resolveEffectiveWoundsCount` (D-24321) gains a Clash branch: 6 × players, below the 30 config floor exactly as Legacy Virus.
+2. **Monster Pit (setup).** `rules/clashMonsterPit.logic.ts`:
+   - `resolveEffectiveVillainGroupIds` adds `chmp/monsters-unleashed` to the villain groups setup builds, once. Every per-card villain builder (villain deck, cardStats, keywords, traits, defeat requirements, Blood Frenzy, VP, display data, ability hooks) therefore registers the 8 Monsters.
+   - `splitMonsterPitFromVillainDeck` then lifts them out of the shuffled deck into the new omit-when-absent `G.monsterPit` (top = index 0). Their relative deck order is the Pit's shuffle, so setup takes no extra random draw.
+   - `G.selection` and `matchConfiguration` keep the loadout's own groups. A loadout that already picked Monsters Unleashed is not doubled; its 8 cards all go to the Pit.
+   - `checkNoCardInMultipleZones` scans the Pit.
+3. **Twist 3-10 (`clash-monster-pit` resolver, event key `clashMonsterPit`).** Twists 1-2 log that the Pit stays shut. From Twist 3:
+   - **Gladiators first.** Each player's Gladiator is the Villain (Henchmen count, D-24608; a Killbot does not) in their Victory Pile with the highest printed Attack. The Monster is face down when Gladiators are picked, so the highest is never a worse choice. The engine picks it rather than asking, because pending choices are active-player-only (D-24284, the Magneto auto-pick precedent).
+   - **The Monster enters the city.** The Pit's top card is placed on top of the Villain Deck and played through `performVillainReveal`, so it is a full Villain entry: Ambush fires, a full city pushes a Villain out to escape, and the rule hooks see a revealed Villain. It leaves the deck at once, so the deck's size and run-out latch are unchanged.
+   - **Wounds.** Each player whose Gladiator's printed Attack is below the Monster's gains a Wound through `gainWoundForPlayer` (Diving Block reachable on any seat). An equal Gladiator holds. An empty Wound Stack logs instead.
+   - Printed Attack is `fightCost`, or `fightCostBase` for an "N+" Villain; modifiers such as Dark Portals don't count.
+4. **Evil Wins.** Config `resourceLossCondition: { kind: 'pile-depleted', piles: ['wounds', 'monsterPit'] }`, with no twist proxy. `SchemeLossPile` gains `'monsterPit'` (`G.monsterPit`, setup size the printed 8). `SchemeLossKind` gains `'monster-pit'`, and the client labels it "Monster Pit". The log line reads "the Monster Pit has run out". The 8-card Pit empties on Twist 10, the scheme's last twist. Clash leaves the Excluded list.
+
+**Operator ruling (Jeff, 2026-10-16): no Gladiator gains a Wound.** A player with no Villain in their Victory Pile has no Gladiator, and is treated as weaker than any Monster, so they gain a Wound. The card text doesn't say and no published ruling was found, so this is a house ruling, not a verified one. It lives in one branch of `woundPlayerIfGladiatorIsWeaker`.
+
+**Hashes.** `G.monsterPit` exists only in Clash games, and the villain build config differs from the loadout only for Clash, so every other game is byte-identical. No pinned replay, state hash or PAR seed runs Clash. The full suite passes with no re-pin.
+
+**Tests.** `rules/clashMonsterPit.test.ts` (19) runs on the shipped `chmp.json`. It covers:
+- the Wound Stack at 1/2/4/5 players;
+- the 8-card Pit out of the Villain Deck, every Monster with stats and display data;
+- the loadout's groups kept, and no doubling;
+- a non-Clash scheme with no Pit key;
+- Twists 1-2 shut;
+- Twist 3 sending Goom into the city, with its Ambush capturing a Bystander (proof of the reveal-pipeline entry), a stronger Gladiator holding and no Gladiator wounded;
+- weaker Gladiators wounded;
+- the highest-Attack pick;
+- an empty Wound Stack;
+- both loss halves, with the Pit emptying on Twist 10;
+- the meter kind.
+
+Drift pins move with the unions, as product changes: `SCHEME_TWIST_RESOLVER_KEYS`, `SCHEME_LOSS_KINDS`, `SCHEME_LOSS_PILES`, the config count (8 + 67 + 1) and the Excluded-list pin. A revert proof that swaps the reveal-pipeline entry for a plain city push fails the Ambush assertion.
+
+**Live re-check (after deploy).** Run an operator match on Clash of the Monsters Unleashed at 2 players:
+- The Wound Stack holds 12.
+- Using the setter pane, reveal Scheme Twists. Twists 1-2 log "the Monster Pit stays shut". Twist 3 logs "[Monster Pit] … climbs out of the Monster Pit", the Monster enters the city (with any Ambush), and each player's Gladiator line follows.
+- The danger meter can show "Monster Pit".
+
+Clash is not a Core card, so there is no `live-verify.json` row.
+
+**Reserved by:** NUMBER-LEDGER D-24736. Related: D-24735 (10-twist count), D-24595 (Excluded list; last-twist fallback), D-24321 (scheme Wound sizing), D-24284 (active-player-only choices), D-24608 (Henchmen are Villains), D-24499 (wound chokepoint), D-24673 (Diving Block "would gain").
+
+---
+Protect this file.
+
+### D-24733 — Super Hero Civil War builds 8 Scheme Twists at 1-3 players and 5 at 4-5 (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** The Core audit (2026-10-16, §1.3) found that Super Hero Civil War built 8 Scheme Twists at every player count. The card prints "For 2-3 players, use 8 Twists. For 4-5 players, use 5 Twists." `data/cards/core.json` carries no `villainDeckTwistCount` for this scheme, so `buildVillainDeck` used its flat `SCHEME_TWIST_COUNT = 8`. The real `buildVillainDeck` with the local registry gave 8 at 2, 3, 4 and 5 players. Each extra twist is a "KO all the Heroes in the HQ", which drains the Hero Deck faster. Running out of Heroes is Civil War's Evil Wins (D-24318), so 4-5 player games were harder than printed. The engine already held the printed split as `lossThresholdByPlayerCount { 1:8, 2:8, 3:8, 4:5, 5:5 }` in `schemeTwistConfigs.ts`. That map is inert for loss, but it still feeds the HUD twist readout's denominator (`progress.schemeTwistThreshold`). So at 4-5 players the HUD could show "Twists: 6/5".
+
+**Decision.**
+1. **New `resolveEffectiveTwistCount(schemeId, numPlayers, defaultTwistCount)`** in `setup/schemeSetupSizing.ts`. It sits beside the D-24321 Wound sizing and the D-24328 Hero Deck sizing. For Civil War it returns 5 at 4-5 players and 8 at 1-3. One player mirrors two, matching the loss map's `'1': 8` (D-24371 §6). Every other scheme gets `defaultTwistCount` back unchanged.
+2. **Both twist builders call it.** `buildVillainDeck` sizes the deck with it. `buildCardDisplayData` sizes the twist display keys with it, so `G.cardDisplayData` holds exactly one entry per built twist copy.
+3. **Scope: core and msp1.** The msp1 reprint prints the same clause word for word, so it is covered. Its loss config has no per-player map, so its twist readout falls through to the twist count in the built deck (D-24595) and agrees automatically. The other reprints print different splits and are **not** changed here: co2e Civil War (1-3p 6 / 4-5p 5), cvwr Epic Super Hero Civil War (9 / 6), and dead Deadpool Kills the Marvel Universe (6 / 5). Each still builds 8. They are a separate follow-up.
+4. **Hero Deck sizing unchanged.** The 2-player 4-Hero rule (D-24328 / D-24385) is untouched. The new test also confirms that a 4-player Civil War match still builds the full 5-group Hero Deck.
+
+**Surfaces that read the count.** Each was checked against the built deck at 4-5 players:
+- `progress.schemeTwistThreshold` (the SchemeTile / TopHudBar "Twists: n/T" readout) now equals the built count at every player count. The test asserts this.
+- The loss meter and the danger meter key on the Hero Deck (`pile-depleted`, D-24318), not on twists, so they are unchanged.
+- `scheme.twistCount` counts revealed twists (`twistPile.length`). PAR's `schemeTwistNegativeCount` reads `G.counters.schemeTwistCount`. Both count what is revealed, so neither needs a change.
+- The operator panel's Villain-deck list reads the built deck.
+- No loadout surface shows a twist count. The registry-viewer shows twist patterns only, and LAGN is composition only.
+
+**Hashes.** Only Civil War at 4-5 players changes. No pinned replay or state hash runs Civil War at 4 or more players: the full suite passes with no re-pin, and the PAR seed scenarios do not build a deck. Four committed PAR profiles are 5-player Civil War sims (`super-hero-civil-war--*` with four villain groups) and were simulated with the old 8-twist deck. They are diagnostic-only (`authoritative: false`), not gated, and refresh at the next `generate-par-profiles.mjs` sweep. They are not re-pinned here.
+
+**Tests.** `schemeSetupSizing.test.ts`: the resolver at 1-5 players for core and msp1, plus passthrough for other schemes, co2e and cvwr. `buildInitialGameState.civilWarSizing.test.ts`: a full G build at 2/3/4/5 players gives 8/8/5/5 twists in `G.villainDeck.deck` and in `villainDeckCardTypes`, the same number of twist display keys, and a matching `resolveTwistLossThreshold`. It also checks that a 5-player non-Civil-War match keeps 8 and a 4-player Civil War match keeps 5 Hero groups. `villainDeck.setup.test.ts`: a non-Civil-War scheme keeps 8 at 4 and 5 players. With the builder wiring bypassed, the 4-player and 5-player cases fail.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5284); `sim:runtime-observed:check`, `sim:coverage --check`, `par:seed:test`, dashboard `prebuild:par` and `ledger:numbers:check` all pass. No generated-artifact churn. On the real registry, core and msp1 Civil War now build 8/8/8/5/5 twists at 1-5 players; co2e and Midtown stay at 8.
+
+**Live-verify (D-24026): pending.** After deploy: lobby → Play with a bot ally → 4 seats / 3 bot allies → Operator match → Super Hero Civil War (3 villain groups, 2 henchmen groups, 5 heroes). The operator panel's Villain-deck list should show 5 Scheme Twists, and the HUD should read "Twists: 0/5". Record the match id and build in `docs/ai/coverage/live-verify.json` (`scheme:core/super-hero-civil-war|twist-count`).
+
+**Reserved by:** NUMBER-LEDGER D-24733. Related: D-24318 (Hero Deck loss), D-24328 / D-24385 (2-player 4-Hero sizing), D-24321 (scheme setup sizing), D-24349 (KO-all twist), D-24371 (twist readout), D-24595 (last-twist fallback).
+
+---
+Protect this file.
+
+### D-24734 — Every scheme whose printed twist count depends on the player count builds that count (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** D-24733 sized core and msp1 Super Hero Civil War's twist stack by player count. A sweep of every scheme's Setup line in `data/cards/*.json` found 19 more schemes whose printed twist count depends on the player count. The card data can only carry a scalar `villainDeckTwistCount`, and none of these schemes has one, so each built the flat default of 8 at every player count. They fall into two groups:
+- **An explicit split by player count:** co2e Civil War, cvwr Epic Super Hero Civil War, dead Deadpool Kills the Marvel Universe, dstr Duels of Science and Magic, rvlt Secret HYDRA Corruption, ssw2 The Fountain of Eternal Life, and wpnx Go After Heroes' Loved Ones.
+- **A formula:** "Twists equal to the number of players plus N", "N Twists, minus 1 Twist per player", and "1 Twist, plus 2 Twists per player". These are antm Transform Commuters into Giant Ants, bkpt Poison Lakes with Nanite Microbots, bkwd Train Black Widows in the Red Room, bkwd Sniper Rifle Assassins, co2e Negative Zone Prison Outbreak, co2e Enshrouded Identity, gotg Unite the Shards, mdns Ritual Sacrifice to Summon Chthon, msis Sacrifice for the Soul Stone, nmut Trapped in the Insane Asylum, rlmk Devolve with Xerogen Crystals, and wpnx Wipe Heroes' Memories.
+
+The miss was not small. Train Black Widows built 8 twists where it prints 3 to 7. Trapped in the Insane Asylum prints 3 to 11. Five of these schemes lose when the Villain Deck runs out, so for them the twist count is the game's length.
+
+**Decision.**
+1. **One keyed table.** `resolveEffectiveTwistCount` in `setup/schemeSetupSizing.ts` now reads `SCHEME_TWIST_COUNT_BY_PLAYERS`. Each row is a scheme's printed twist count at 1, 2, 3, 4 and 5 players, written out as five numbers rather than a formula, with the printed clause quoted above it. The Civil War branch from D-24733 becomes two rows of that table, and its counts are unchanged. Any scheme not in the table keeps its resolved count.
+2. **Solo.** Where a card prints nothing for 1 player, 1 player mirrors 2 (D-24371 §6). That applies only to core and msp1 Civil War. Every other row's card prints a 1-player count or a formula that covers it.
+3. **Lilith.** Ritual Sacrifice to Summon Chthon prints "If using Lilith: Use 1 Twist total". That is the one twist count keyed on the Mastermind, so the resolver gains a `mastermindId` parameter and one explicit branch for it. `buildVillainDeck` and `buildCardDisplayData` pass `config.mastermindId`.
+4. **Pinned to the card text.** `schemeSetupSizing.test.ts` reads each row's set file from `data/cards`. It asserts the scheme's Setup line still contains the quoted clause, and that the resolver returns the row at 1 to 5 players. If a card's text changes, that test fails rather than the row silently drifting.
+5. **Out of scope.** Two schemes split the Villain Deck itself, which is a structural feature the engine does not model. ssw1 Fragmented Realities gives each player a Villain Deck with 2 Twists. wtif Breach the Nexus of All Realities adds 2 Twists to each "Reality" stack. Neither is touched here. One fixed-count data gap also turned up: chmp Clash of the Monsters Unleashed prints "10 Twists" but had no `villainDeckTwistCount`, so it built 8. That was a card-data miss, not a per-player rule; D-24735 (#2850) curated it at the source, so it is not in this table.
+
+**Twist readout and loss.** None of the 21 table schemes has a scalar `lossThreshold`. Only core Civil War has a per-player map, and it matches its row. So `progress.schemeTwistThreshold` falls through to the twist count in the built deck (D-24595) and agrees with the deck by construction. Ten table schemes have no twist config at all; under the D-24595 fallback they lose on the last twist in the Villain Deck. For those ten, the loss now comes at the printed count instead of the 8th twist: dstr Duels, rvlt Secret HYDRA, ssw2 Fountain, antm Giant Ants, bkwd Sniper Rifle, gotg Unite the Shards, mdns Chthon, msis Soul Stone, nmut Insane Asylum, and wpnx Wipe Memories. The others declare a resource loss: Hero Deck, Villain Deck, or Wound stack running out. Those losses are unchanged, but the Villain-Deck ones now run on the printed deck size.
+
+**Hashes.** The change touches only matches on these 21 schemes. The full suite passes with no re-pin. No pinned replay, state hash or PAR seed runs any of them except core Civil War, which D-24733 already covered.
+
+**Tests.** `schemeSetupSizing.test.ts`:
+- 21 card-text pins;
+- the Civil War variants;
+- the formula rows at 1 to 5 players;
+- Chthon with and without Lilith;
+- passthrough for every scheme outside the table;
+- a player count outside 1 to 5.
+
+`villainDeck.setup.test.ts` adds a `buildVillainDeck` wiring test: at 3 players, Chthon builds 9 twists with Zarathos and 1 with Lilith, which proves the mastermind id reaches the resolver.
+
+**Live re-check (after deploy).** Run an operator match on Train Black Widows in the Red Room at 2 players: the operator panel's Villain-deck list shows 6 Scheme Twists and the HUD reads "Twists: 0/6". Optionally, run co2e Super Hero Civil War at 4 players: 5 twists. These are not Core cards, so there is no `live-verify.json` row.
+
+**Reserved by:** NUMBER-LEDGER D-24734. Related: D-24733 (Civil War twist split), D-24595 (last-twist fallback), D-24371 (twist readout; solo mirrors 2), D-24318 (Hero Deck loss).
+
+---
+Protect this file.
+
+### D-24737 — A free defeat ignores "can't defeat unless" restrictions (operator ruling, no code change) (Active 2026-10-17)
+
+**Context.** In operator match `mzasQjZ3DU2` (server `3c9f632d`, Loki / Negative Zone Prison Breakout), Player 0 defeated Loki's Cruel Ruler tactic and chose Venom for its free defeat (26.2.11–26.2.14). Venom prints "You can't defeat Venom unless you have a [hc:covert] Hero." Player 0 had no Covert Hero in hand or in play; their only Heroes were Hulk, Thor, Iron Man and Hawkeye cards. Venom was defeated anyway. The 2026-10-16 Core audit flagged this as an open question. Rules v23 doesn't settle it directly. The closest ruling is Total Fury (L2563–2566): a card that tells you to defeat an Adversary ignores restrictions like Iron Fist's. Iron Fist's restriction is worded as a fight requirement ("To fight Iron Fist, you must also reveal…"), while Venom's and Blob's say "can't defeat".
+
+**Decision (operator ruling, 2026-10-17).**
+1. An effect that defeats a Villain for free ignores the target's "You can't defeat X unless you have …" restriction. This covers Loki's Cruel Ruler ("Defeat a Villain in the City for free"), Nick Fury's Pure Fury and Black Widow's Silent Sniper, and any later free-defeat effect. The restriction gates only a normal fight. This is the same reading as the Total Fury / Iron Fist ruling.
+2. Core cards with the restriction are Blob ("unless you have an [team:x-men] Hero") and Venom ("unless you have a [hc:covert] Hero"). The same holds for every other `require-to-defeat` card (D-24076), e.g. Zombie Venom.
+
+**Engine (no change).** The engine already behaves this way:
+- `playerMeetsDefeatRequirement` (D-24076) is checked only in the `fightVillain` move (`packages/game-engine/src/moves/fightVillain.ts`, the defeat-requirement precondition before the stage gate);
+- `ai.legalMoves` mirrors that check for the bot's normal fights;
+- the free-defeat paths reach `defeatCityVillainCore` without that gate.
+
+This entry records the ruling so a later change doesn't "fix" the free-defeat paths into checking the requirement.
+
+**Live evidence.** `mzasQjZ3DU2` 26.2.11–26.2.14: Cruel Ruler defeated Venom with no Covert Hero, and its captured Bystander was rescued.
+
+**Still open (separate).** Venom's own refusal of a normal fight without a Covert Hero has no live evidence yet; a refused fight is silent and isn't logged. Blob's equivalent is verified (`live-verify.json`).
+
+**Reserved by:** NUMBER-LEDGER D-24737. Related: D-24076 (defeat requirements, hand + play), D-24724 / D-24726 (granted class / team count toward the requirement), D-24510 (Cruel Ruler), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24662 / D-24681 (one-target free defeats).
+
+---
+Protect this file.
+
+### D-24738 — Secret Invasion counts Heroes a captor carried into the Escape pile toward its six (operator ruling; direct fix, no WP; amends D-24326 and D-24657 §3) (Active 2026-10-17)
+
+**Context.** Secret Invasion of the Skrull Shapeshifters prints "Evil Wins: If 6 Heroes get into the Escaped Villains pile." D-24326 counted only the Skrull-converted Heroes (`escaped-converted-count`, origin `'skrull'`). D-24657 then made a Villain that escapes with captured Heroes carry them into the Escape pile (rules v23 "Villains Escaping with Captured Heroes": they "just stay in the Escape Pile"), and its §3 left the escaped-pile loss counts unchanged. On Secret Invasion the Skrull Villain Group is required, and Skrull Queen Veranke and the Skrull Shapeshifters capture HQ Heroes, so most games put captured Heroes into that pile. In operator match `PF9JUILsmcT` (server `3c9f632d`), Energy Drain went in with Skrull Shapeshifters (3.2.19) and Spinning Cyclone with Veranke (13.1.2). The engine still waited for six Skrull Heroes and logged the loss at 31.1.3.
+
+**Decision (operator ruling, 2026-10-17).**
+1. Heroes captured by a Villain and carried into the Escape pile count toward Secret Invasion's six, together with the escaped Skrull Heroes. In `PF9JUILsmcT` the sixth Hero reached the pile at 17.1.2.
+2. **Engine.** The `escaped-converted-count` condition gains an optional `includeCapturedHeroes?: true` (`rules/schemeTwistConfig.types.ts`), set only on core Secret Invasion (`rules/schemeTwistConfigs.ts`). `countEscapedConvertedLoss` (`rules/schemeResourceLoss.ts`) returns the converted-origin count plus, when the flag is set, `countEscapedCapturedHeroes`.
+3. **A captured Hero** is an Escape-pile entry with a `G.cardTraits` entry (every registry Hero instance has one) and no converted-villain origin. A converted Skrull Hero is counted once, by origin. Villains, Henchmen and Bystanders have no trait entry.
+4. **One count.** `applyEscapedPileResourceLoss` and the loss meter (`schemeLossProgress.ts`) both read `countEscapedConvertedLoss`, so the HUD's N/6 matches the loss.
+5. **Timing.** Every escape goes through `resolveVillainEscape`, which appends the captor, then its captured Heroes (`moveAttachedHeroesToEscapedPile`), then runs the loss check. A captor escaping with two Heroes can take the count from 4 to 6 on that one escape.
+6. **Display.** When captured Heroes are part of the count, the loss line reads "Scheme loss triggered — 6 Heroes escaped (4 Skrulls, 2 captured) (threshold 6)." With none, it is unchanged ("6 Skrulls escaped"). The arena-client meter label for `escaped-skrull` changes from "Skrulls" to the printed "Heroes".
+7. **Unchanged.** Killbots (`origin: 'killbot'`, no flag) and the `escaped-pile-count` schemes (Negative Zone, Midtown) count exactly as before. Only core Secret Invasion carries this config; no reprint has its own twist config.
+
+**Tests.** `schemeResourceLoss.test.ts` adds six cases:
+- a captured Hero is counted once, and a converted Skrull Hero is never counted as captured;
+- 4 Skrull Heroes + 2 captured Heroes loses, with the new line;
+- 5 Skrull Heroes plus 4 escaped Villains does not lose;
+- a captor's escape takes the count from 4 to 6 (escape order mirrored);
+- 6 Skrull Heroes with no captured Hero keeps the old line;
+- Killbots ignores captured Heroes.
+
+`schemeLossProgress.test.ts` adds the meter case. `menaceDisplay.test.ts`'s Secret Invasion label pin changes to "Heroes"; this is the authorized label change in point 6. Revert proof: removing the config flag fails exactly the two loss cases.
+
+**Hashes.** `G` shape unchanged. No pinned replay, PAR or seed fixture runs Secret Invasion (D-24326), so nothing re-pins.
+
+**Live-verify (D-24026):** pending. In an operator match on Secret Invasion, let Veranke or the Skrull Shapeshifters capture an HQ Hero, then push the captor and Skrull Heroes out with "Reveal a Scheme Twist now" and "Escape the Villain at the City's edge". Expect the loss once Skrull Heroes plus captured Heroes in the pile reach 6, with the new line, and the meter to read "Heroes N/6".
+
+**Live-verify (D-24026), 2026-10-17: PASS.** 2p operator match cLZ0_pzMFmd (server 6dbeb6d7, the #2867 merge), Red Skull / Secret Invasion of the Skrull Shapeshifters: five Skrull Heroes escaped (Avengers Assemble! 4.2.6, Web-Shooters 4.2.11, Gathering Stormclouds 7.1.2, Energy Drain 8.1.2, Perfect Teamwork 9.1.2) and Skrull Queen Veranke carried her captured A Day Unlike Any Other (4.1.2) into the pile when she escaped (4.2.21); the scheme won at 9.1.3 with "Scheme loss triggered — 6 Heroes escaped (5 Skrulls, 1 captured) (threshold 6)." Escaped Super-Skrull and Veranke did not count; the old count would still have read 5. The meter projected schemeLossProgress 6 / 6 on escaped-skrull ("Heroes").
+
+**Reserved by:** NUMBER-LEDGER D-24738. Related: D-24326 (Secret Invasion conversion + loss), D-24657 (captured Heroes into the Escape pile), D-24325 (escaped-converted-count), D-24434 (meter names the converted enemy), D-24680 (loss lines name what escaped), D-24026.
+
+---
+Protect this file.
+
+### D-24740 — Under Final Blow, a free defeat (Pure Fury, Silent Sniper) can strike the final blow (operator ruling; direct fix, no WP; amends D-24504) (Active 2026-10-17)
+
+**Context.** The optional Final Blow rule (rules v23 L2840–2847; D-24503 / D-24504) requires a 5th, final fight of the Mastermind card after its four Tactics. D-24504 put that award only in `fightMastermind`. The free-defeat target builders, `buildPureFuryTargets` (`hero/heroEffects.execute.ts`) and `buildDefeatWithBystanderTargets` (`moves/defeatChoice.resolve.ts`), offered the Mastermind only while `tacticsDeck.length > 0`. In operator match `Er6Uj0zeyDW` (server `6dbeb6d7`, Loki / Portals to the Dark Dimension, Final Blow on), Pure Fury defeated Loki's four Tactics (11.2.3, 13.2.3, 15.2.3, 17.2.3). Once "Loki requires a final blow" (17.2.4), every later Pure Fury prompt left Loki out (19.2.2, 21.2.2, 23.2.2, 25.2.5), and only a paid fight could finish him (25.2.17).
+
+**Decision (operator ruling, 2026-10-17).**
+1. Under Final Blow, once the Mastermind's Tactics are gone, a free defeat that may target the Mastermind can strike the final blow: Pure Fury ("Defeat any Villain or Mastermind whose [icon:attack] is less than …") and Silent Sniper ("Defeat a Villain or Mastermind that has a Bystander"). This is the same reading as D-24737: a free defeat counts as the defeat.
+2. **Eligibility.** New `isMastermindFreeDefeatTarget` (`moves/defeatChoice.resolve.ts`) is true when the Mastermind is not haunting and either a Tactic remains or `isFinalBlowAvailable` holds. Both builders use it. Pure Fury still requires printed attack < the S.H.I.E.L.D. count, and Silent Sniper still requires a Bystander on the Mastermind.
+3. **Award.** `dispatchDefeatWithBystanderTarget` routes a Mastermind target to `awardMastermindOnFinalBlow` (now exported from `moves/fightMastermind.ts`, the single award site) when `isFinalBlowAvailable`, and to `defeatMastermindTacticCore` otherwise. The free defeat spends no attack and sets no acted flag. The award puts the Mastermind card in the Victory Pile, rescues any Bystanders it holds, clears `finalBlowPending`, and latches `MASTERMIND_DEFEATED_PENDING` (the WP-732 turn-end win), exactly as the paid 5th fight does.
+4. **Unchanged.** With Final Blow off, or once the final blow is struck, a Tactic-less Mastermind is still not a target. Cruel Ruler targets only City Villains.
+
+**Tests.** `hero/pureFury.logic.test.ts` adds seven cases:
+- Pure Fury targets the Mastermind while the final blow is pending;
+- not after the final blow is struck;
+- not with Final Blow off;
+- a chosen final blow awards the card for free and latches the win;
+- a one-target Pure Fury play strikes it with no prompt;
+- Silent Sniper strikes it and rescues the held Bystander;
+- the predicate's three cases.
+
+Revert proof: without the engine change, the five behavior cases fail and the two "unchanged" guards pass.
+
+**Hashes.** `G` shape unchanged. Final Blow is off in every pinned replay, PAR and seed fixture, so nothing re-pins.
+
+**Live-verify (D-24026):** pending. In an operator match with Final Blow on, defeat the Mastermind's four Tactics, then play Pure Fury (enough S.H.I.E.L.D. Heroes in the KO pile) or Silent Sniper (the Mastermind holding a Bystander). Expect the Mastermind among the targets, and choosing it to log "struck the final blow and defeated …" and win at turn end.
+
+**Reserved by:** NUMBER-LEDGER D-24740. Related: D-24503 / D-24504 (Final Blow), D-24737 (free defeats ignore "can't defeat unless"), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24553 (turn-end win), D-24026.
 
 ---
 Protect this file.

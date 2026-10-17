@@ -78,7 +78,7 @@ up not knowing which one is current.
 |---|---|---|
 | Engine / server / client source | Git | `legendary-arena` repo |
 | A wiki page | Git | `legendary-arena/wiki/` |
-| A blog post + its images | Git | `legendary-arena-com/content/posts/` + `static/images/posts/<slug>/` — see [Blog Post Authoring](blog-post-authoring.md) |
+| A blog post + its images | Git | `legendary-arena-com/content/blog/` + `static/images/blog/<slug>/` — see [Blog Post Authoring](blog-post-authoring.md) |
 | Card face art (published) | Hosted | Cloudflare R2 `legendary-images` — see [Data & File Locations](data-file-locations.md) |
 | Raw video footage, Premiere project | pCloud | `C:\pcloud\LA\videos\{prefix}-{NNN}-{slug}\` — see [Video Production Workflow](video-production-workflow.md) |
 | Finished video (published) | Hosted | YouTube. The blog embeds it; the file itself never enters git. |
@@ -368,7 +368,9 @@ asked. Two pointers keep it reachable:
   remote but is hundreds of commits behind `main`. It is not a worktree
   and nothing deploys from it. Searches run against `C:\www\` can match
   its files and return long-superseded content — the canonical checkout is
-  `C:\pcloud\BB\DEV\legendary-arena`.
+  `C:\pcloud\BB\DEV\legendary-arena`. It is not the move target either
+  (that is `C:\dev\legendary-arena`, see below), so it can simply be
+  deleted.
 - **`C:\pcloud\BB\DEV\README.md` is a stale chat transcript, not a
   README.** It describes `cards.barefootbetters.com` and a `data/raw/`
   directory, neither of which is current. It is the closest thing to an
@@ -416,9 +418,11 @@ asked. Two pointers keep it reachable:
      only your own commits are listed.
 
   Moving the engine repo off pCloud is planned and currently deferred by
-  operator decision — the target is `C:\www\legendary-arena`, alongside
-  the marketing repo, which is already correctly off the sync drive. Do
-  not start that migration without an explicit instruction.
+  operator decision. The target is **`C:\dev\legendary-arena`**: code
+  checkouts go under `C:\dev\` and website checkouts under `C:\www\`
+  (operator decision, 2026-10-17). That replaces the
+  `C:\www\legendary-arena` target named in D-24208's rationale. Do not
+  start that migration without an explicit instruction.
 - **Sync is not backup, and for a git repo it is worse than neither.**
   The durability of work in either repo comes from pushing to GitHub. A
   checkout is not made safer by living on a synced drive; it is made

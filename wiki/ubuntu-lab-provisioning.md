@@ -27,7 +27,7 @@ source:
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
   - C:\pcloud\LA\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
-last-reviewed: 2026-10-14
+last-reviewed: 2026-10-17
 ---
 
 # Ubuntu Lab Provisioning
@@ -42,7 +42,8 @@ last-reviewed: 2026-10-14
 
 The Ubuntu 24.04 DigitalOcean host that replaced Render for the game server
 and its PostgreSQL on 2026-10-12: one box running Nginx behind Cloudflare, the Node server,
-and a self-hosted PostgreSQL under systemd, with backups to Cloudflare R2. This
+and a self-hosted PostgreSQL under systemd, with nightly backups to Cloudflare
+R2 and a pCloud mirror. This
 page records the target architecture, what the operator takes over, and the
 provisioning, restore and rebuild procedure. The cost, sizing and vendor
 analysis behind it is on the Render Migration Analysis page.
@@ -58,10 +59,11 @@ Cloudflare  (DNS, proxy, TLS to the origin)
    │
 DigitalOcean droplet, Ubuntu 24.04 LTS, sfo3
    ├─ Nginx          (reverse proxy, WebSocket upgrade for Socket.IO)
-   ├─ apps/server    (Node 24.18.0, under systemd)
+   ├─ apps/server    (Node 24.18.0, systemd la-server on 127.0.0.1:3000;
+   │                  la-server-standby on :3001 only during a deploy restart)
    └─ PostgreSQL 18  (localhost only)
    │
-pg_dump  →  Cloudflare R2  (backups)
+pg_dump  →  Cloudflare R2 (primary)  →  pCloud (mirror)   nightly 09:17 UTC
 ```
 
 - **Is:** the production host for `apps/server` and a self-hosted
@@ -170,8 +172,8 @@ Configuration Rule `Origin TLS strict — api hosts`, so no other site on the
 zone is affected. The Cloudflare Origin Certificate covers
 `api.legendary-arena.com` and `api-next.legendary-arena.com` only (no wildcard)
 and is valid to 2041. The operator created it and installed it on the droplet
-personally; the private key went nowhere else. At cutover, `api.` joins the
-rule, and its record changes from today's DNS-only CNAME to Render into a
+personally; the private key went nowhere else. At cutover `api.` joined the
+rule, and its record changed from the DNS-only CNAME to Render into a
 proxied A record to the droplet. Rollback restores that CNAME exactly.
 
 **External uptime monitor (2026-10-12).** UptimeRobot (free plan) checks
@@ -276,7 +278,7 @@ Every night at 09:17 UTC the droplet's `la-backup` timer runs the lab's
 | Copy | Where | Kept | Health check |
 |---|---|---|---|
 | Local | the droplet's `/var/backups/la`, last 7 dumps | lost with the droplet | `la-droplet-monitor` alerts if the newest is over 26 h old |
-| **Primary offsite** | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/legendary-arena-<stamp>.dump` | GFS: 35 daily, 12 weekly, 12 monthly | `la-droplet-backup` (dump + R2 upload) |
+| **Primary offsite** | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/legendary-arena-<stamp>.dump` | GFS: 35 daily, 12 weekly, 12 monthly. Since 2026-10-13 the bucket lock rule `la-db-backup-lock` (prefix `db-backups`, 30 days) blocks deleting or overwriting any dump in its first 30 days, even with the droplet's credentials | `la-droplet-backup` (dump + R2 upload) |
 | **Second offsite (pCloud)** | pCloud (US region), the same `db-backups/YYYY/MM/DD/` keys | the same GFS pruning, applied to pCloud separately | `la-droplet-pcloud` (the mirror only) |
 
 That is 3-2-1: the live database, plus two offsite copies with independent
@@ -605,11 +607,15 @@ operator can, unaided —
   origin round-trip time still reaches live matches through Cloudflare, so keep
   the West Coast pin. A central-US host would trade West Coast latency for
   national evenness.
-- **Never point the lab at production data.** The credential-gated `0.0.0.0/0`
-  inbound rule makes prod *reachable* — that convenience is exactly the footgun.
-  Always run against a restored copy.
-- **Do not copy production secrets onto the box.** Use test-mode credentials for
-  the `sync: false` env set. A learning box is a soft target.
+- **A rehearsal box never gets production data or secrets — the production
+  droplet does.** Since cutover the production droplet holds the live database
+  and the real secrets in `/etc/la/.env` and `/etc/la/backup.env`. Any *other*
+  box built from these steps (a rehearsal, a rebuild test, a learning lab) runs
+  against a restored copy with test-mode credentials for the `sync: false` env
+  set, and never gets the pCloud token or the production backup bucket (see
+  "Production data only" above). Until Render is deleted, its managed Postgres
+  is still credential-reachable from anywhere (`0.0.0.0/0`); never point a
+  rehearsal box at it.
 - **"Stateless" is persistence-stateless, not connection-stateless.** One droplet
   is fine. A future multi-node app tier would additionally need a Socket.IO Redis
   adapter (WebSocket fan-out) and leader-election / single-owner scheduling for the

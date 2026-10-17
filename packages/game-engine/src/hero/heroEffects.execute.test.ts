@@ -2336,7 +2336,9 @@ describe('executeHeroEffects', () => {
     assert.deepEqual(hitState.playerZones['0']!.hand, ['x-hero'], 'hit: the revealed card was drawn.');
     assert.equal(hitState.turnEconomy.attack, 0, 'hit: no attack.');
     assert.equal(hitState.turnEconomy.recruit, 0, 'hit: no recruit.');
-    assert.equal(hitState.turnEconomy.cardsDrawn, 0, 'hit: the reveal draw is not an effect-draw count.');
+    // why: D-24732 — a reveal rule's "draw it" is a real draw, so it now counts toward
+    // cardsDrawn (Berserker Rage's extra cards drawn); the WP-789 overlay emit itself adds nothing.
+    assert.equal(hitState.turnEconomy.cardsDrawn, 1, 'hit: the reveal draw counts as one card drawn (D-24732).');
     const hitLines = hitState.messages.filter((entry) => entry.text.includes(' revealed '));
     assert.deepEqual(hitLines.map((entry) => entry.text),
       ['Player 0 revealed x-hero (x-hero) (cost 5) — a x-men card matched: drew it.'],

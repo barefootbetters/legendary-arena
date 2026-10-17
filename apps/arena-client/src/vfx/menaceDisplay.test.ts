@@ -122,7 +122,8 @@ describe('menaceDisplay (WP-562) — the kind label', () => {
     // (Killbots / Skrulls), not the generic "Escaped" that both mislabeled the
     // subset count and collided with the raw escaped-villain count.
     assert.equal(menaceKindLabel('escaped-killbot'), 'Killbots');
-    assert.equal(menaceKindLabel('escaped-skrull'), 'Skrulls');
+    // why: D-24738 — Secret Invasion's count includes captured Heroes, so it reads "Heroes".
+    assert.equal(menaceKindLabel('escaped-skrull'), 'Heroes');
     assert.equal(
       `${menaceKindLabel('escaped-killbot')} ${menaceRatioLabel(3, 5)}`,
       'Killbots 3/5',

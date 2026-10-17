@@ -10,6 +10,9 @@ related:
   - hugo-web-system.md
   - hugo-onboarding.md
   - private-site-hosting.md
+  - wiki-viewer-architecture.md
+  - hugo-platform-strategy.md
+  - ewiki-authoring.md
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\wiki-viewer.md (this page — https://ewiki.legendary-arena.com/wiki-viewer/)
@@ -18,7 +21,7 @@ source:
   - ../apps/wiki-viewer/README.md
   - ../apps/wiki-viewer/wrangler.jsonc
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-06-20
+last-reviewed: 2026-10-16
 ---
 
 ## Repository base URLs
@@ -394,26 +397,13 @@ page against current code or docs (not needed for typo fixes).
 If the edit changes a page's `type`, `status`, or filename, also
 regenerate `INDEX.md` in the same commit.
 
-### Build pipeline (what runs on push)
+### How it is built and hosted
 
-1. **Projection** (`pnpm wiki-viewer:project`) — copies every
-   `wiki/*.md` file into `apps/wiki-viewer/content/`. Renames the
-   copy of `INDEX.md` to `_index.md` (Hugo home page convention).
-   The source file under `wiki/` is never modified.
-2. **Link check** (`pnpm wiki-viewer:check-links`) — case-sensitive
-   validation of every internal `<page>.md` link. A broken link fails
-   the build.
-3. **Hugo render** (`hugo --source apps/wiki-viewer --minify`) —
-   generates `apps/wiki-viewer/public/`. External `../path` links are
-   rewritten to GitHub blob URLs by the markdown render hook.
-4. **Gates and search index** — a page-count assert, a determinism
-   check, the Pagefind search index, and a JS-free gate. The result is
-   uploaded as the `wiki-viewer-public` artifact.
-5. **Deploy** (`main` only: a push or a manual run) — downloads the
-   `wiki-viewer-public` artifact and runs
-   `pnpm dlx wrangler@4.149.0 deploy --config apps/wiki-viewer/wrangler.jsonc`.
-   It ships the gated artifact byte-for-byte; nothing is rebuilt on the
-   hosting side.
+You don't need the internals to author pages. The build pipeline, the CI
+gates, the Cloudflare Worker deployment, the theme, and the hosting
+history are in [Wiki Viewer Architecture](wiki-viewer-architecture.md).
+Whether the ewiki keeps its own theme or moves to a shared one such as
+Hextra is an open question on [Hugo Platform Strategy](hugo-platform-strategy.md).
 
 ### Status promotion
 
@@ -423,41 +413,25 @@ Pages start as `draft`. Promote to `canonical` when:
 - `Open Questions` section is empty or removed.
 - `last-reviewed` reflects current verification date.
 
-### Theme and layout
-
-The wiki viewer uses a hand-rolled theme (no third-party framework).
-Key layout features:
-
-- **Sidebar nav** — pages grouped by `type`, sorted alphabetically.
-- **Metadata panel** — renders `type`, `status` (color-coded badge),
-  `tags` (pill badges), and `last-reviewed`.
-- **Related pages** and **source citations** render as panels below
-  the main content.
-- **Link rewriting** — a markdown render hook converts `slug.md` links
-  to `/<slug>/` and `../path` links to GitHub blob URLs.
-
-The theme is defined in `apps/wiki-viewer/layouts/` and
-`apps/wiki-viewer/assets/css/style.css`.
-
 ## Interactions
 
+- [Wiki Viewer Architecture](wiki-viewer-architecture.md) — how the
+  site is built, gated, deployed, and themed.
+- [Hugo Platform Strategy](hugo-platform-strategy.md) — where this
+  viewer fits in the family of Hugo sites, and the open theme decision.
+- [Ewiki Authoring](ewiki-authoring.md) — writing conventions for page
+  content.
 - [Hugo Web System](hugo-web-system.md) — the marketing site at
   `www.legendary-arena.com` is a separate Hugo site with its own theme
-  (PaperMod). The wiki viewer is independent.
+  (PaperMod).
 - [architecture-inventory.md](architecture-inventory.md) — generated
   page exempt from front-matter schema. Sole writer is
   `scripts/architecture-inventory.mjs`.
 - **SCHEMA.md** — the entity-page contract. Defines the closed sets
   for `type` and `status`, required sections, file naming, and the
-  50-page flat-structure cap.
-- **INDEX.md** — categorized list of all wiki pages. Must be
-  regenerated when a page is added, renamed, or has its type/status
-  changed.
-- **Cloudflare Worker deployment** — `apps/wiki-viewer/wrangler.jsonc`
-  declares the assets-only Worker `legendary-arena-wiki`, serving
-  `./public` on the custom domain `ewiki.legendary-arena.com` with
-  `workers_dev` and `preview_urls` both off. CI runs the build gates on
-  PRs and `main` pushes; only `main` deploys.
+  flat-structure cap.
+- **INDEX.md** — categorized list of all wiki pages. Update it by hand
+  when a page is added, renamed, or has its type/status changed.
 
 ## Edge Cases
 
@@ -467,74 +441,24 @@ The theme is defined in `apps/wiki-viewer/layouts/` and
 - **INDEX.md rename.** The projection script renames `INDEX.md` to
   `_index.md` only in the copy under `apps/wiki-viewer/content/`.
   Never rename the source file in `wiki/`.
-- **Flat-structure cap.** The wiki supports up to 50 entity pages.
-  Beyond 50 requires a SCHEMA amendment before adding more pages.
+- **Flat-structure cap.** The wiki supports up to 150 entity pages
+  (D-24586). Beyond 150 requires a SCHEMA amendment before adding more
+  pages.
 - **No subdirectories.** All entity pages are flat in `wiki/`.
   Categorization is by front-matter `type`, surfaced in INDEX.md.
 - **Syntax highlighting disabled.** Fenced code blocks render as
-  plain `<pre><code>` to maintain byte-identical deterministic builds.
+  plain `<pre><code>`, because builds must be byte-identical (see
+  [Wiki Viewer Architecture](wiki-viewer-architecture.md)).
 - **No raw HTML.** Goldmark's `unsafe` is set to `false` in the wiki
   viewer config.
-- **Only one door.** Cloudflare Access gates the hostname
-  `ewiki.legendary-arena.com`, not the content. Any other public hostname
-  serving the same files bypasses the gate. Keep `workers_dev` and
-  `preview_urls` set to `false` in `apps/wiki-viewer/wrangler.jsonc`;
-  turning either on adds an ungated address.
-
-## History
-
-- **2026-10-11 — moved from Render to a Cloudflare Worker (D-24690).**
-  *Found:* Render's default host
-  `https://legendary-arena-wiki.onrender.com` served the full wiki with
-  HTTP 200 and no Access gate (verified 2026-10-05; still open
-  2026-10-11), because Access gates only the custom hostname. The
-  dashboard's production `legendary-arena-dashboard.pages.dev` alias had
-  the same gap. *Tried:* PR #2603 set `renderSubdomainPolicy: disabled`
-  in `render.yaml` and added probes, but the Render dashboard toggle
-  could not take effect: Render shows `ewiki` as "Waiting for DNS /
-  Waiting for Verification" because the record is Cloudflare-proxied.
-  PRs #2662 and #2673 corrected the dashboard's `pages.dev` Access
-  runbook and its live-mode build notes. *Changed:* the ewiki now runs on
-  the assets-only Worker `legendary-arena-wiki`
-  (`apps/wiki-viewer/wrangler.jsonc`), which has no default public
-  hostname with `workers_dev` and `preview_urls` off, so the Access-gated
-  custom domain is the only door. The wiki-viewer workflow's deploy job
-  runs `wrangler deploy` on the gated artifact (on push to `main` or a
-  manual run), replacing the Render deploy hook; the
-  `RENDER_WIKI_DEPLOY_HOOK` secret and the Render service are retired.
-  The hostname-based Access application carries over unchanged. This
-  supersedes D-13811's hosting target. The game server and Postgres stay
-  on Render. *Cutover:* add the `CLOUDFLARE_API_TOKEN` /
-  `CLOUDFLARE_ACCOUNT_ID` repo secrets, remove the old `ewiki` CNAME to
-  Render, merge (or run the wiki-viewer workflow on `main`) so Wrangler
-  attaches the custom domain, confirm the Access redirect, then delete the
-  Render service and the `RENDER_WIKI_DEPLOY_HOOK` secret by hand.
-  Full steps: [DOMAINS.md §ewiki](../docs/ops/DOMAINS.md#ewiki).
-- **2026-10-11 — cutover done (D-24690, #2697).** The old `ewiki` record
-  turned out to point at the *game server's* Render host
-  (`legendary-arena-server.onrender.com`), not the wiki service's, which is
-  why Render never verified the wiki's custom domain and the #2603 toggle
-  could not stick. The first deploy uploaded the Worker but could not
-  attach `ewiki.legendary-arena.com` until the old DNS record was deleted;
-  re-running the failed job attached it. Right after the domain attached,
-  two probes briefly got `200` before Access applied to the new hostname;
-  every probe since redirects to Access (48 of 48 across both sites). The
-  Render static site was deleted the same day, and
-  `legendary-arena-wiki.onrender.com` now returns `404`. The dashboard's
-  Pages project (5,852 deployments) was deleted after its deployments were
-  cleared through the API; `legendary-arena-dashboard.pages.dev` answered
-  `530` (no such project) for a few minutes and then dropped out of DNS.
+- **No JavaScript in pages.** A CI gate fails the build if a page
+  carries script; only the site's own search loader is allowed.
 
 ## References
 
 - [SCHEMA.md](SCHEMA.md) — the entity-page contract
 - [README.md](README.md) — purpose, conventions, authority
-- [apps/wiki-viewer/hugo.toml](../apps/wiki-viewer/hugo.toml) — Hugo config
+- [Wiki Viewer Architecture](wiki-viewer-architecture.md) — build, gates, deploy, theme, history
 - [apps/wiki-viewer/scripts/project-wiki.mjs](../apps/wiki-viewer/scripts/project-wiki.mjs) — content projection script
 - [apps/wiki-viewer/scripts/check-links.mjs](../apps/wiki-viewer/scripts/check-links.mjs) — link integrity check
-- [apps/wiki-viewer/wrangler.jsonc](../apps/wiki-viewer/wrangler.jsonc) — Cloudflare Worker config (D-24690)
 - [.github/workflows/wiki-viewer.yml](../.github/workflows/wiki-viewer.yml) — build gates and deploy job
-- [DOMAINS.md §ewiki](../docs/ops/DOMAINS.md#ewiki) — hostname, Access gate, and cutover steps
-- [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24690 (ewiki and dashboard move to Workers)
-- [apps/wiki-viewer/layouts/](../apps/wiki-viewer/layouts/) — theme layouts
-- [apps/wiki-viewer/assets/css/style.css](../apps/wiki-viewer/assets/css/style.css) — theme stylesheet

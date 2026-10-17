@@ -2288,8 +2288,8 @@ export interface LegendaryGameState {
   // Powers). Optional so existing test-state literals need no update; **lazily initialized
   // at the park site, never in Game.setup** — an undefined field is omitted from canonical
   // JSON, keeping the empty-replay PRE_WP080_HASH / hashGameState oracles from re-pinning.
-  // Absent (undefined) or empty [] both mean "no pending choice". The copied class reuses
-  // the EXISTING lazy cardSizeChangingClasses map (D-24074), so no second new G field.
+  // Absent (undefined) or empty [] both mean "no pending choice". The copied class lives
+  // in the lazy, turn-scoped cardCopiedClasses map (D-24730).
   /** FIFO queue of pending Copy Powers choices awaiting player resolution (WP-535). */
   pendingCopyPowersChoices?: PendingCopyPowersChoice[] | undefined;
 
@@ -2505,6 +2505,15 @@ export interface LegendaryGameState {
   /** Villain Deck setup size; absent unless the scheme loses on the Villain Deck. */
   schemeLossVillainDeckSetupSize?: number;
 
+  // why: D-24736 — Clash of the Monsters Unleashed's face-down "Monster Pit": the 8
+  // Monsters Unleashed Villains, split out of the shuffled villain deck at setup
+  // (top = index 0). Each Twist 3-10 sends the top card into the city; the Pit
+  // running out is half of the scheme's Evil Wins. Materialized LAZILY — only for
+  // Clash — so every other game's state hash is unchanged. Its cards keep their
+  // 'villain' entry in villainDeckCardTypes and every per-card setup snapshot.
+  /** The Monster Pit deck (CardExtIds); absent unless the scheme is Clash. */
+  monsterPit?: CardExtId[];
+
   // why: WP-568 / D-24377 — hero abilities whose NUMERIC-THRESHOLD gate failed at
   // play time and are waiting for the threshold to be reached later in the SAME
   // turn (Surge of Power's "if you made 8 or more recruit this turn"). Materialized
@@ -2575,13 +2584,25 @@ export interface LegendaryGameState {
   // play this card, it has the [Class] class"). A SECOND, static class source sibling
   // to cardTraits.heroClass — NOT a mutation of it. A card in inPlay is treated as
   // having class C iff C is its printed cardTraits[id].heroClass OR C ∈
-  // cardSizeChangingClasses[id]; the grant expires naturally when inPlay clears (no
-  // cleanup). Built from the parsed Size-Changing hooks AND written at runtime by
-  // Rogue's Copy Powers (D-24345 — the copy counts as the copied Hero's class); read
-  // via the sizeChanging.logic.ts helper, never mutated in place elsewhere. Additive
-  // optional / lazy: absent means no card grants a class.
-  /** Per-card Size-Changing / Copy-Powers granted Hero Classes. Setup + runtime-written; read via sizeChanging.logic.ts. */
+  // cardSizeChangingClasses[id]. A printed property, so the grant applies on every play
+  // and the map is never cleared. Built ONLY from the parsed Size-Changing hooks at
+  // setup (D-24730 moved the Copy Powers runtime grant to cardCopiedClasses, below);
+  // read via the sizeChanging.logic.ts helper. Additive optional: absent means no card
+  // grants a class.
+  /** Per-card Size-Changing granted Hero Classes. Setup-only; read via sizeChanging.logic.ts. */
   cardSizeChangingClasses?: Record<CardExtId, string[]>;
+
+  // why: D-24730 — per-card Copy-Powers copied Hero Classes ("This card is both Covert
+  // and the color you copy", D-24345). Unlike Size-Changing, the copied class belongs to
+  // ONE play of the card: written by applyCopyPowers, and the whole map is deleted at
+  // end-of-turn cleanup (applyEndOfTurnCleanup) along with cardCopiedTeams, so the next
+  // play of the same card instance starts clean. Kept apart from cardSizeChangingClasses
+  // because that map's setup grants must survive cleanup. Read through
+  // cardHasClassWhenPlayed, still the single effective-class source (D-24074).
+  // Lazy-materialized and omit-when-empty, so games without Copy Powers keep
+  // byte-identical finalStateHash / PRE_WP080_HASH.
+  /** Per-card Copy-Powers copied Hero Classes for this turn. Runtime-written by applyCopyPowers; cleared at turn cleanup. */
+  cardCopiedClasses?: Record<CardExtId, string[]>;
 
   // why: D-24391 / WP-582 — per-card Copy-Powers granted teams. Rogue's Copy Powers
   // is a full duplicate of the copied Hero, so the Copy Powers card counts as the
@@ -2590,10 +2611,11 @@ export interface LegendaryGameState {
   // having team T iff T is its printed cardTraits[id].team OR T ∈ cardCopiedTeams[id];
   // read via the effectiveTeams.logic.ts helper. Lazy-materialized (undefined by
   // default, created at the grant site in applyCopyPowers, never in Game.setup) and
-  // omit-when-empty — mirroring cardSizeChangingClasses — so non-Copy-Powers games
+  // omit-when-empty — mirroring cardCopiedClasses — so non-Copy-Powers games
   // keep byte-identical finalStateHash / PRE_WP080_HASH. Additive optional: absent
-  // means no card grants a team.
-  /** Per-card Copy-Powers granted teams. Runtime-written by applyCopyPowers; read via effectiveTeams.logic.ts. */
+  // means no card grants a team. D-24730: deleted at end-of-turn cleanup, so a copied
+  // team lasts for that one play of the card only.
+  /** Per-card Copy-Powers granted teams for this turn. Runtime-written by applyCopyPowers; cleared at turn cleanup. */
   cardCopiedTeams?: Record<CardExtId, string[]>;
 
   // why: D-24157 / WP-365 — printed victory points for VP-bearing cards (villains,
