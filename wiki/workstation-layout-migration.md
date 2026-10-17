@@ -52,7 +52,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Not started (no quiet window needed) |
 | 6 | **Cut over** the engine | Not started (quiet window for LA) |
 | 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Not started |
-| 8 | Move shared tools to `C:\dev` | Optional |
+| 8 | Move shared tools to `C:\dev` | Deferred until the engine has run 1–2 weeks from `C:\dev` |
 | 9 | Clean up leftovers | Not started |
 
 Update the Status column and add a line to the Progress log whenever a
@@ -307,7 +307,11 @@ The droplet's nightly backup mirror is unaffected: it writes to
 **Done when** a search of all three repos finds no live `C:\pcloud\LA`
 reference. **Rollback:** rename the folder back; the sweep is a revert.
 
-### Phase 8 — Shared tools to `C:\dev` (optional)
+### Phase 8 — Shared tools to `C:\dev` (deferred)
+
+Decided 2026-10-17: do it, but only after the engine has run from `C:\dev`
+for 1–2 weeks with no rollback, as a separate cleanup outside the
+critical path.
 
 Move `ewiki-theme`, `bb-studio-dashboard` and `legendary-arena-lab` from
 `C:\www` to `C:\dev` (re-clone, as above). The one known local-path
@@ -338,7 +342,12 @@ phase; it only makes the convention exact.
   hash-verified memory copies, branch triage, all-three-hooks checks, and
   destructive steps last. Checking them found that the engine checkout has
   a second git remote (`lagn-MIRROR-do-not-deploy`) a fresh clone would
-  drop; Phase 5 re-adds it. No phase started.
+  drop; Phase 5 re-adds it. Jeff's decisions on the open questions: the
+  loose BB PDF goes to `C:\pcloud\BB\DOCS\`; the upstream-less branches
+  are reviewed before archiving; the gitignored scratchpads are archived
+  once as a zip under `C:\pcloud\LA\code-archive\scratchpads\`; Phase 8 is
+  deferred. Still open: the credentials gate before Phase 6. No phase
+  started.
 
 ## Interactions
 
