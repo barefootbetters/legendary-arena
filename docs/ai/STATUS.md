@@ -12,7 +12,7 @@
 **User-visible on `play.legendary-arena.com` (after deploy).** On Secret Invasion of the Skrull Shapeshifters, a Hero that Skrull Queen Veranke or the Skrull Shapeshifters captured from the HQ now counts toward "6 Heroes in the Escaped Villains pile" once its captor escapes, alongside the escaped Skrull Heroes (operator ruling). The loss line names both parts, e.g. "6 Heroes escaped (4 Skrulls, 2 captured)", and the danger meter reads "Heroes N/6". In match `PF9JUILsmcT` two captured Heroes were in the pile, so Evil would have won at 17.1.2 instead of 31.1.3.
 
 - **Engine + one client label.** No G-shape change, no re-pin; Killbots, Negative Zone and Midtown count exactly as before.
-- **Live-verify (D-24026):** pending. Operator match on Secret Invasion: let a Skrull capture an HQ Hero, push it and Skrull Heroes out with "Reveal a Scheme Twist now" and "Escape the Villain at the City's edge", and expect the loss at 6 counted Heroes.
+- **Live-verify (D-24026), 2026-10-17: PASS.** Operator match `cLZ0_pzMFmd` (server `6dbeb6d7`): 5 Skrull Heroes + Veranke's captured A Day Unlike Any Other ended the game at 9.1.3, "6 Heroes escaped (5 Skrulls, 1 captured)"; the old count would have read 5.
 
 ### WP-814 / EC-852 — The shared wiki theme, extracted (D-24728) (2026-10-16)
 
