@@ -62,10 +62,10 @@ jobs:
         env:
           # why (D-20702): the shared-secret token; rotated by the operator
           # in the GitHub Actions repository secrets surface alongside the
-          # Render dashboard SWEEP_SUBMIT_TOKEN env var. Both ends MUST be in
+          # server's SWEEP_SUBMIT_TOKEN (the droplet's /etc/la/.env). Both ends MUST be in
           # lockstep for the POST to succeed.
           SWEEP_SUBMIT_TOKEN: ${{ secrets.SWEEP_SUBMIT_TOKEN }}
           # why (WP-209): production API base URL (e.g.,
-          # `https://legendary-arena-server.onrender.com`); the submission
+          # `https://api.legendary-arena.com`); the submission
           # script appends `/api/sweep/runs` to this value. No trailing slash.
           API_BASE_URL: ${{ secrets.API_BASE_URL }}

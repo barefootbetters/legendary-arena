@@ -28,7 +28,7 @@ define new architectural boundaries.
 | `legendary-arena-wiki.onrender.com` | Retired Render origin of the eng wiki — must 404 (it was an Access bypass) | Render (service deleted 2026-10-11) | none — retired by D-24690 | live (404 since 2026-10-11; regression probe) |
 | `legends.legendary-arena.com` | Public scoreboard (attract board) | Cloudflare Pages | [apps/legends-board](../../apps/legends-board) (WP-143) | live (domain since 2026-07-08; SPA shipped 2026-05-15, WP-143) |
 | `api.legendary-arena.com` | Game server REST + Socket.IO | DigitalOcean droplet (proxied Cloudflare A record; Origin cert, Full strict) | [apps/server](../../apps/server) | live (on the droplet since 2026-10-12; Render 2026-05-09 to 2026-10-12) |
-| `legendary-arena-server.onrender.com` | Retired Render origin of the API — rollback only | Render (suspended 2026-10-12; deleted after the 7-day rollback window) | none — not a production hostname since 2026-10-12 | live probe, expects `503` (suspended) or `404` (deleted) |
+| `legendary-arena-server.onrender.com` | Retired Render origin of the API — must 404 | Render (suspended 2026-10-12; service deleted 2026-10-16, Phase 7) | none — not a production hostname since 2026-10-12 | live (404 since 2026-10-16; regression probe) |
 | `dashboard.legendary-arena.com` | Internal admin dashboard | Cloudflare Worker + Access | [apps/dashboard](../../apps/dashboard); Worker `legendary-arena-dashboard` (D-24690) | live, gated |
 | `images.legendary-arena.com` | Card image CDN | Cloudflare R2 | external | live (canonical since 2026-07-16; legacy `images.barefootbetters.com` serves the same bucket, no redirect) |
 
@@ -310,7 +310,7 @@ Depends on:
 **`api.legendary-arena.com`** (live since 2026-05-09) — game server. Since
 the 2026-10-12 cutover it runs on a self-hosted DigitalOcean droplet;
 **`legendary-arena-server.onrender.com`** (the Render origin until then) is
-retired and kept only as the rollback target during the 7-day window.
+retired; the Render service and database were deleted on 2026-10-16 (Phase 7).
 
 - **Source:** [apps/server](../../apps/server)
 - **Host:** DigitalOcean droplet (Ubuntu 24.04, `sfo3`). Cloudflare record
@@ -328,11 +328,12 @@ retired and kept only as the rollback target during the 7-day window.
 
 **Healthy response:** `200` with a small JSON or text body from the health route.
 
-**Retired Render origin.** `legendary-arena-server.onrender.com/health` is
-expected to answer `503` while the Render service is suspended and `404` once
-it is deleted (~2026-10-20). A `200` means the Render service is running
-again — expected only during a rollback, which restores the DNS-only CNAME
-`api` → `legendary-arena-server.onrender.com` and resumes the service.
+**Retired Render origin.** `legendary-arena-server.onrender.com/health` must
+return `404` (Render answers `404` for a deleted service; deleted 2026-10-16).
+Its row in [domains.json](./domains.json) is a regression probe: a `200` there
+means a `legendary-arena-server` service exists on Render again — delete it.
+There is no Render rollback; a final dump of the Render database is kept under
+`render-final/` in the production R2 bucket and pCloud.
 
 Depends on (server-side runtime):
 - PostgreSQL 18 on the droplet (`localhost`)
@@ -354,7 +355,7 @@ proxied A record to the droplet and joined the strict-TLS rule. Details:
 **Updates that are NOT part of the `api.` cutover** (despite being on a previous draft of this runbook — that was wrong):
 
 - **`PUBLIC_BASE_URL`** points at the **client**, not the API. It controls Stripe Checkout success/cancel redirects, which need to land on a page the user can see. **Updated 2026-05-10** from `https://legendary-arena-server.onrender.com` to `https://play.legendary-arena.com` once WP-007a locked the `play.` deploy (see Render dashboard env vars; redeploy completed cleanly with all startup probes green). Stripe Checkout success/cancel redirects now land on the live arena-client SPA per `apps/server/src/billing/billing.routes.ts:339-340`. Note: `.env.example` and test fixtures still reference `app.` per the original WP-133 plan; refresh those in a future cleanup pass when convenient.
-- **Stripe webhook endpoint URL** points at the API and CAN be updated to `https://api.legendary-arena.com/<webhook-path>` now. It's optional — both hostnames serve the same routes during the dual-running window. Prefer the friendly hostname for any new webhook configs.
+- **Stripe webhook endpoint URL** points at the API and CAN be updated to `https://api.legendary-arena.com/<webhook-path>` now. It was optional while both hostnames served the same routes; since the Render service was deleted (2026-10-16) the onrender.com hostname serves nothing, so a webhook still pointing there is broken and must use `api.`.
 - **Hanko allowed origins / audience** — only matters when a client at a new origin calls Hanko. Update when adding new client origins (e.g., `play.`), not when the API hostname changes.
 - **Server CORS allowlist** — update when adding new client origins, same reason.
 - **arena-client's `VITE_API_BASE_URL`** — **shipped by WP-161 (2026-05-18).** Must be set to `https://api.legendary-arena.com` in the CF Pages `legendary-arena-play` project's Production env vars. Without it, all `/api/me/*` fetches resolve to `pages.dev/api/…` and hang. Validated post-deploy by `pnpm check` → "Arena-client bundle env" probe.
@@ -486,9 +487,9 @@ accepted under Full (strict). The healthchecks.io check `la-droplet-monitor`
 and UptimeRobot alert on this too. See
 [`docs/ops/INCIDENT_RESPONSE.md`](./INCIDENT_RESPONSE.md).
 
-**`legendary-arena-server.onrender.com` returns `200` outside a rollback.**
-The suspended Render service was resumed. Suspend or delete it, and confirm
-`api` still points at the droplet.
+**`legendary-arena-server.onrender.com` returns `200`.** A service named
+`legendary-arena-server` exists on Render again (it was deleted 2026-10-16).
+Delete it, and confirm `api` still points at the droplet.
 
 **`api` returns CORS error in browser but `/health` is 200 from curl.** The
 new client origin is not in the server's CORS allowlist. Update the server

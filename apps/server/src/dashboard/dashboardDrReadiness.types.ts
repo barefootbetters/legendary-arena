@@ -51,8 +51,9 @@ export interface LastDrill {
 }
 
 /**
- * An open `Backup mirror failing — pCloud` issue, which `db-backup.yml` opens when
- * the pCloud second-offsite copy fails and closes when it next succeeds.
+ * An open `Backup mirror failing — pCloud` issue, which `db-backup.yml` opened when
+ * the pCloud second-offsite copy failed and closed when it next succeeded. That
+ * workflow was deleted 2026-10-16, so nothing opens this issue any more.
  */
 export interface BackupMirrorAlert {
   /** UTC `YYYY-MM-DD` the tracking issue was opened (the first failing night), or `null` if the payload lacked it. */

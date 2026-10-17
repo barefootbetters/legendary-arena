@@ -138,7 +138,7 @@ wins.
 | `cards.legendary-arena.com` | `apps/registry-viewer` | Cloudflare Pages | live | Migrated 2026-07-16; legacy `cards.barefootbetters.com` 301-redirects here (CF zone Redirect Rule, path+query preserved) |
 | `ewiki.legendary-arena.com` | `apps/wiki-viewer` | Cloudflare Worker (assets-only, `legendary-arena-wiki`) | live | Gated behind Cloudflare Access (302/401/403 expected). Moved off the Render static site by D-24690; `workers_dev` / `preview_urls` off, so no other public hostname |
 | `dashboard.legendary-arena.com` | `apps/dashboard` | Cloudflare Worker (assets-only, `legendary-arena-dashboard`) | live | Gated behind Cloudflare Access (302/401/403 expected). Moved off Cloudflare Pages by D-24690; deployed by `dashboard-deploy.yml` |
-| `api.legendary-arena.com` | `apps/server` | Render | live | CNAME to `legendary-arena-server.onrender.com` (not CF-proxied — Render needs direct origin for TLS + WebSocket) |
+| `api.legendary-arena.com` | `apps/server` | DigitalOcean droplet (self-hosted, behind Cloudflare) | live | Proxied A record to the droplet since the 2026-10-12 cutover (D-24707); Nginx → `la-server`, SSL Full (strict). Was a DNS-only CNAME to Render until then; Render was deleted 2026-10-16 |
 | `legends.legendary-arena.com` | `apps/legends-board` (WP-143) | Cloudflare Pages (`legendary-arena-legends`) | live | Public scoreboard; reads R2 snapshots, no server API calls. Live since 2026-07-08 (SPA shipped 2026-05-15) |
 | `wiki.legendary-arena.com` | TBD (separate Hugo site) | Cloudflare Pages | planned | Public player wiki; not yet authored |
 | `images.legendary-arena.com` | R2 bucket (external) | Cloudflare R2 + CDN | live | Card images; bucket index returns 403/404, individual keys return 200 |

@@ -192,8 +192,8 @@ const OPERATOR_OPS_TOOLCHAIN = [
   },
 ];
 
-// why: some vendor accounts appear in no manifest — render.yaml and
-// domains.json can't see them — so the Infrastructure-services table would
+// why: some vendor accounts appear in no manifest — domains.json can't
+// see them — so the Infrastructure-services table would
 // silently omit them. List them here. Never put ping URLs, IPs, hostnames, or
 // resource IDs in this block: the generated page is public, and a ping URL is a
 // credential.
@@ -2138,9 +2138,8 @@ async function renderReport({
 
   // why: infrastructure services is the "where does it run" companion to
   // deployment topology's "what domain points where." Derived from
-  // docs/ops/domains.json (Cloudflare services), render.yaml (the retired
-  // Render blueprint), and curated vendor rows (the production droplet,
-  // monitors). Answers the question a new engineer asks:
+  // docs/ops/domains.json (Cloudflare services) and curated vendor rows (the
+  // production droplet, monitors). Answers the question a new engineer asks:
   // "what vendor accounts and managed services does this project depend on?"
   lines.push(`## Infrastructure services`);
   lines.push('');
@@ -2937,9 +2936,9 @@ async function renderDeploymentTopologySection() {
 /**
  * Render the "Infrastructure services" section: managed services the
  * project depends on, derived from `docs/ops/domains.json` (Cloudflare
- * services), `render.yaml` (the retired Render blueprint: what is still
- * on Render through the rollback window), and the curated
- * `CURATED_INFRASTRUCTURE_SERVICES` (the production droplet and monitors).
+ * services) and the curated `CURATED_INFRASTRUCTURE_SERVICES` (the
+ * production droplet and monitors). Render was listed here from render.yaml
+ * until it was deleted in Phase 7 (2026-10-16).
  *
  * This is the "where does it run" companion to Deployment topology's
  * "what domain points where." The two tables share source data but cut
@@ -2952,88 +2951,6 @@ async function renderDeploymentTopologySection() {
 async function renderInfrastructureServicesSection() {
   const lines = [];
   const services = [];
-
-  // ── Render services (from render.yaml) ──────────────────────────────
-  // why: render.yaml no longer governs production (D-24707 §3) but stays in
-  // the repo, and its services still exist on Render through the rollback
-  // window. Keep listing them, labelled as retired, so the table never
-  // presents Render as the production host; drop this when Render is deleted.
-  const renderRetiredLabel = 'retired from production 2026-10-12 (D-24707), kept for rollback until ~2026-10-20';
-  const renderYamlPath = join(REPO_ROOT, 'render.yaml');
-  if (existsSync(renderYamlPath)) {
-    const renderRaw = await readFile(renderYamlPath, 'utf8');
-
-    // why: full YAML parsing without a dependency would be its own
-    // project. render.yaml has a stable, shallow structure — regex
-    // extraction of service names, types, and database names is
-    // reliable for this file and avoids adding a YAML parser dep.
-    // If render.yaml ever becomes complex enough to defeat this,
-    // switch to a proper parser.
-
-    // Extract web/worker services: `- type: web` or `- type: worker`
-    // followed by `name: <value>`.
-    const servicePattern = /- type:\s*(web|worker|static)\s*\n\s*name:\s*(.+)/g;
-    let match;
-    while ((match = servicePattern.exec(renderRaw)) !== null) {
-      const serviceType = match[1].trim();
-      const serviceName = match[2].trim();
-
-      // why: derive the public URL from the service name. Render's
-      // convention is `<name>.onrender.com` for web/worker services.
-      // Static sites follow the same pattern but may have a custom
-      // domain (handled by the domains.json cross-reference).
-      // why: a service with `renderSubdomainPolicy: disabled` 404s on its
-      // onrender.com host (it serves only via its custom domain), so listing
-      // that URL would advertise a dead — and, for a gated service, formerly
-      // bypassing — origin. Scope the check to this service's own block
-      // (up to the next `- type:` entry or the `databases:` section).
-      const blockStart = match.index + match[0].length;
-      const boundaryPattern = /\n\s*- type:|\ndatabases:/g;
-      boundaryPattern.lastIndex = blockStart;
-      const boundary = boundaryPattern.exec(renderRaw);
-      const serviceBlock = renderRaw.slice(blockStart, boundary ? boundary.index : renderRaw.length);
-      const isRenderSubdomainDisabled = /^\s*renderSubdomainPolicy:\s*disabled\b/m.test(serviceBlock);
-      const renderUrl = isRenderSubdomainDisabled
-        ? `_onrender.com subdomain disabled (custom domain only)_`
-        : `https://${serviceName}.onrender.com`;
-
-      // why: detect the runtime from the YAML to label the service
-      // accurately. Node web services, static sites, and worker
-      // services have different operational profiles.
-      const runtimeLabel = serviceType === 'static'
-        ? `Render Static Site — ${renderRetiredLabel}`
-        : `Render Web Service — ${renderRetiredLabel}`;
-
-      services.push({
-        name: serviceName,
-        provider: 'Render',
-        kind: runtimeLabel,
-        url: renderUrl,
-      });
-    }
-
-    // Extract databases: `- name: <value>` under `databases:` block,
-    // followed by `plan: <value>` (possibly separated by comment lines).
-    // why: normalise line endings first — pCloud-synced repos on Windows
-    // store CRLF, and the regex anchors depend on `\n`-only endings.
-    const renderNormalised = renderRaw.replace(/\r\n/g, '\n');
-    const dbBlockIndex = renderNormalised.indexOf('\ndatabases:');
-    if (dbBlockIndex !== -1) {
-      const dbBlock = renderNormalised.slice(dbBlockIndex);
-      const dbPattern = /-\s*name:\s*(.+)\n(?:\s*(?:#[^\n]*)?\n)*\s*plan:\s*(.+)/g;
-      let dbMatch;
-      while ((dbMatch = dbPattern.exec(dbBlock)) !== null) {
-        const dbName = dbMatch[1].trim();
-        const dbPlan = dbMatch[2].trim();
-        services.push({
-          name: dbName,
-          provider: 'Render',
-          kind: `Managed PostgreSQL (${dbPlan}) — ${renderRetiredLabel}`,
-          url: '_internal (connection string via env)_',
-        });
-      }
-    }
-  }
 
   // ── Cloudflare services (from domains.json) ─────────────────────────
   // why: domains.json is the canonical record of which subdomains map
@@ -3113,8 +3030,7 @@ async function renderInfrastructureServicesSection() {
 
   // ── Render table ────────────────────────────────────────────────────
   lines.push(`Managed services the project depends on, derived from`);
-  lines.push(`\`docs/ops/domains.json\` and \`render.yaml\` (the retired Render blueprint,`);
-  lines.push(`listed until Render is deleted), plus vendor accounts no manifest`);
+  lines.push(`\`docs/ops/domains.json\`, plus vendor accounts no manifest`);
   lines.push(`declares (curated in \`CURATED_INFRASTRUCTURE_SERVICES\`), including the`);
   lines.push(`DigitalOcean droplet that runs production. Answers "what`);
   lines.push(`vendor accounts and managed services does this project`);

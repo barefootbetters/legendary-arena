@@ -167,13 +167,13 @@ jobs:
       - name: Hero-effect coverage gate
         run: pnpm sim:coverage --check
 
-      # why (WP-400 / D-24205): the Node version is restated across 21 workflow
-      # entries and two render.yaml envVars. A partial bump is invisible until a
-      # version-sensitive failure reproduces in one environment and not another
-      # — two Pages builds three days apart reported 22.22.0 and 22.16.0 from
-      # this repo. This gate asserts .node-version is exact, that render.yaml
-      # (whose NODE_VERSION OUTRANKS the file) agrees, that no workflow restates
-      # a literal, and that engines stays a floor.
+      # why (WP-400 / D-24205): the Node version was restated across 21 workflow
+      # entries. A partial bump is invisible until a version-sensitive failure
+      # reproduces in one environment and not another — two Pages builds three
+      # days apart reported 22.22.0 and 22.16.0 from this repo. This gate asserts
+      # .node-version is exact, that no workflow restates a literal, and that
+      # engines stays a floor. (The render.yaml rule went with Render in Phase 7;
+      # the droplet's Node is pinned by the lab repo's 10-node.ps1.)
       - name: Node toolchain pin
         run: pnpm check:node-pin
 

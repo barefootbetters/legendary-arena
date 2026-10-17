@@ -294,15 +294,11 @@ test('findBackupMirrorAlert: an undated open issue still alerts, with openedAt n
   );
 });
 
-const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url));
-
-test('the alert title matches the issue title db-backup.yml opens, byte for byte', async () => {
-  const workflow = await readFile(`${repoRoot}.github/workflows/db-backup.yml`, 'utf8');
-  assert.ok(
-    workflow.includes(`const title = '${BACKUP_MIRROR_ALERT_TITLE}';`),
-    'db-backup.yml must open the issue under BACKUP_MIRROR_ALERT_TITLE',
-  );
-});
+// why: a byte-for-byte pin against `.github/workflows/db-backup.yml`'s issue title
+// lived here. That workflow, the only thing that opened the issue, was deleted in
+// Phase 7 (2026-10-16; disabled since the 2026-10-12 cutover), so there is no
+// longer a producer to pin against. The droplet's pCloud mirror reports to
+// healthchecks.io (`la-droplet-pcloud`) instead.
 
 test('the live fetch filters to github-actions[bot] issues so PRs cannot crowd out the first page', async () => {
   const routes = await readFile(

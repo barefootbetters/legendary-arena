@@ -10,7 +10,7 @@ tags:
 
 # Architecture & Library Adoption Inventory
 
-_Generated 2026-10-14 by `scripts/architecture-inventory.mjs`._
+_Generated 2026-10-15 by `scripts/architecture-inventory.mjs`._
 
 This is a deterministic snapshot of installed dependencies,
 their actual import usage across the workspace, and SaaS /
@@ -68,14 +68,13 @@ Canonical source: `docs/ops/domains.json`. Ops runbook: `docs/ops/DOMAINS.md`.
 | `legends.legendary-arena.com` | apps/legends-board | Cloudflare Pages | live |
 | `dashboard.legendary-arena.com` | apps/dashboard | Cloudflare Workers + Cloudflare Access | live |
 | `api.legendary-arena.com` | apps/server | DigitalOcean droplet (proxied; Origin cert, Full strict) | live |
-| `legendary-arena-server.onrender.com` | none — Render web service legendary-arena-server, suspended at the 2026-10-12 cutover | Render (suspended) | live |
+| `legendary-arena-server.onrender.com` | none — Render web service legendary-arena-server, suspended at the 2026-10-12 cutover and deleted 2026-10-16 (Phase 7) | Render | live |
 | `images.legendary-arena.com` | external (BarefootBetters image bucket) | Cloudflare R2 + Cloudflare CDN | live |
 
 ## Infrastructure services
 
 Managed services the project depends on, derived from
-`docs/ops/domains.json` and `render.yaml` (the retired Render blueprint,
-listed until Render is deleted), plus vendor accounts no manifest
+`docs/ops/domains.json`, plus vendor accounts no manifest
 declares (curated in `CURATED_INFRASTRUCTURE_SERVICES`), including the
 DigitalOcean droplet that runs production. Answers "what
 vendor accounts and managed services does this project
@@ -102,13 +101,6 @@ answers "what URL maps to what app."
 | Service | Kind | URL / Scope |
 |---|---|---|
 | Healthchecks.io (dead-man's switch) | Uptime + scheduled-job monitoring (free Hobbyist plan, $0) | Three checks for the self-hosted API droplet (D-24707 §6): `la-droplet-monitor` (5-min period, 10-min grace; pinged by the lab repo's `60-monitor.ps1` on-box health / disk / backup-age check), `la-droplet-backup` (cron `17 9 * * *` UTC, 2-h grace; pinged by `50-backup.ps1`), and `la-droplet-pcloud` (same schedule; the pCloud mirror only, so a mirror failure never reads as a failed backup). Alerts on a `/fail` ping or a missing ping. Ping URLs live only in the droplet's root-only `/etc/la/*.env`. |
-
-### Render
-
-| Service | Kind | URL / Scope |
-|---|---|---|
-| `legendary-arena-db` | Managed PostgreSQL (pro-4gb) — retired from production 2026-10-12 (D-24707), kept for rollback until ~2026-10-20 | _internal (connection string via env)_ |
-| `legendary-arena-server` | Render Web Service — retired from production 2026-10-12 (D-24707), kept for rollback until ~2026-10-20 | https://legendary-arena-server.onrender.com |
 
 ### UptimeRobot
 
@@ -300,9 +292,9 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 1422 |
+| TypeScript | 1427 |
 | Vue SFC | 195 |
-| JavaScript | 152 |
+| JavaScript | 155 |
 | JSON | 114 |
 | Markdown | 114 |
 | HTML | 21 |
@@ -315,11 +307,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 1417 |
+| `.ts` | 1422 |
 | `.vue` | 195 |
 | `.json` | 114 |
 | `.md` | 114 |
-| `.mjs` | 110 |
+| `.mjs` | 113 |
 | `.js` | 40 |
 | `.html` | 21 |
 | `.css` | 12 |
@@ -390,7 +382,7 @@ _Other candidates in this category not currently installed:_ `@vue/runtime-core`
 
 | Package | Version(s) | Files importing | Declared in |
 |---|---|---:|---|
-| `boardgame.io` | ^0.50.0 | 83 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
+| `boardgame.io` | ^0.50.0 | 87 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
 
 _Other candidates in this category not currently installed:_ `koa`, `@koa/router`, `koa-bodyparser`, `koa-static`, `express`, `fastify`, `hono`
 
@@ -644,7 +636,7 @@ become load-bearing.
 |---|---|---:|---|
 | `@cloudflare/workers-types` | ^4.20260701.1, ^4.20240620.0 | 3 _(partial)_ | `apps/arena-client/package.json` (dev); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev); `packages/registry/package.json` (dev) |
 | `@koa/multer` | ^3.0.2 | 1 _(minimal)_ | `apps/server/package.json` (dep) |
-| `@legendary-arena/game-engine` | workspace:* | 265 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
+| `@legendary-arena/game-engine` | workspace:* | 269 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
 | `@legendary-arena/lagn` | workspace:* | 10 _(partial)_ | `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep) |
 | `@legendary-arena/preplan` | workspace:* | 11 _(partial)_ | `apps/arena-client/package.json` (dep) |
 | `@legendary-arena/registry` | workspace:* | 60 _(comprehensive)_ | `apps/dashboard/package.json` (dep); `apps/engine-runner/package.json` (dep); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev) |
@@ -722,7 +714,7 @@ installed but not yet placed surfaces under "Not yet classified".
 
 | Package | Version(s) | Adoption | Files importing |
 |---|---|---|---:|
-| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 83 _(comprehensive)_ |
+| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 87 _(comprehensive)_ |
 | `pg` | ^8.13.0 | direct dep — `apps/server/package.json` | 55 _(comprehensive)_ |
 | `typescript` | ^5.4.5, ^5.2.2 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json`, `apps/replay-producer/package.json`, `package.json`, `packages/game-engine/package.json`, `packages/lagn-spec/package.json`, `packages/preplan/package.json`, `packages/registry/package.json`, `packages/vue-sfc-loader/package.json` | 1 _(minimal)_ |
 | `zod` | ^3.23.8, ^3.22.4 | direct dep — `apps/registry-viewer/package.json`, `packages/lagn-spec/package.json`, `packages/registry/package.json` | 19 _(comprehensive)_ |

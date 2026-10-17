@@ -33,8 +33,8 @@ GFS: 35 daily · 12 weekly · 12 monthly) → a **permanent pCloud mirror** (the
 second vendor). Each offsite copy reports to its own healthchecks.io check. The
 first production backup landed in R2 and pCloud on 2026-10-12, byte-identical.
 The WP-416 GitHub Actions nightly (`.github/workflows/db-backup.yml`, D-24236),
-which backed up Render from 2026-08-09, was **disabled at cutover** and is deleted
-after the rollback window. The key layout and retention are unchanged, so the R2
+which backed up Render from 2026-08-09, was **disabled at cutover** and deleted
+on 2026-10-16 (Phase 7). The key layout and retention are unchanged, so the R2
 and pCloud history is continuous.
 
 Consequence, stated plainly so it is not discovered during a crisis:
@@ -49,13 +49,13 @@ Consequence, stated plainly so it is not discovered during a crisis:
   from R2 (2026-08-09, and onto the droplet 2026-10-12) and from pCloud
   (2026-08-10) — §7.
 
-**Rollback window (to ~2026-10-20).** The Render web service is suspended, not
-deleted, and Render's database snapshots exist until that database is deleted.
-Rolling back is the D-24707 §8 procedure: restore the DNS-only CNAME `api.` →
-`legendary-arena-server.onrender.com`, resume the service, swap
-`LEGENDS_PUBLISHER_ENABLED`, and **re-add `api.` as a Render custom domain**
-(Render's Cloudflare-for-SaaS hostname overrides the zone record). After the
-window, Render is deleted and this paragraph goes.
+**Render is gone (Phase 7, 2026-10-16).** The Render web service
+`legendary-arena-server`, the Render Postgres `legendary-arena-db`, and the
+Blueprint were deleted, ending the D-24707 §8 rollback-to-Render path early. A
+final dump of Render's database was kept in the production R2 bucket and pCloud
+under `render-final/`. Rolling back the app now means the droplet's own
+`40-app-deploy.ps1 -Rollback` (the previous release) or a hand deploy with
+`DEPLOY_REF=<sha>`; recovering data means the droplet's nightly backups.
 
 ---
 
@@ -136,7 +136,7 @@ secrets.** The server is replaceable; those three are not.
 
 | What | Source | Method | Storage | Retention | Verified by |
 |---|---|---|---|---|---|
-| Database (managed) | — | **None since 2026-10-12.** Self-hosted Postgres has no managed snapshots or PITR. Render's snapshots of the pre-cutover database exist until that database is deleted (~2026-10-20). | — | — | — |
+| Database (managed) | — | **None since 2026-10-12.** Self-hosted Postgres has no managed snapshots or PITR. Render's snapshots went with its database (deleted 2026-10-16); the pre-cutover database survives only as the final dump under `render-final/` in R2 and pCloud. | — | — | — |
 | Database (local) | Droplet Postgres | `pg_dump -Fc`, lab `50-backup.ps1`, nightly 09:17 UTC (`la-backup` timer) | Droplet `/var/backups/la` | Last 7 dumps; lost with the droplet | `la-droplet-monitor` alerts if the newest is over 26 h old |
 | Database (external) | the same dump | Uploaded by the same run | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09; restored onto the droplet 2026-10-12 (§7)** |
 | Database (2nd offsite) | the same dump | `rclone` mirror in the same run | pCloud (US region), `db-backups/` — independent of Cloudflare | Same GFS policy, pruned separately | **Drilled 2026-08-10 (§7)**; first droplet mirror byte-identical to R2, 2026-10-12 |
