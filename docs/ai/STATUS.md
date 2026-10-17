@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24740 — Pure Fury and Silent Sniper can strike the Final Blow (direct fix) (2026-10-17)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** With the optional Final Blow rule on, once the Mastermind's four Tactics are defeated, Nick Fury's Pure Fury and Black Widow's Silent Sniper can now pick the Mastermind and strike the final blow for free (operator ruling). Before, they stopped offering the Mastermind after its last Tactic, so only a paid fight could win (match `Er6Uj0zeyDW`, 19.2.2–25.2.17).
+
+- **Engine only.** No G-shape change, no re-pin; Final Blow off is unchanged.
+- **Live-verify (D-24026):** pending. Final Blow match: defeat the four Tactics, then play Pure Fury with Loki (or the Mastermind) as a target and expect "struck the final blow".
+
 ### D-24738 — Secret Invasion counts captured Heroes in the Escape pile toward its six (direct fix) (2026-10-17)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** On Secret Invasion of the Skrull Shapeshifters, a Hero that Skrull Queen Veranke or the Skrull Shapeshifters captured from the HQ now counts toward "6 Heroes in the Escaped Villains pile" once its captor escapes, alongside the escaped Skrull Heroes (operator ruling). The loss line names both parts, e.g. "6 Heroes escaped (4 Skrulls, 2 captured)", and the danger meter reads "Heroes N/6". In match `PF9JUILsmcT` two captured Heroes were in the pile, so Evil would have won at 17.1.2 instead of 31.1.3.

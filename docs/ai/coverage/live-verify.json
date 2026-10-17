@@ -394,9 +394,9 @@
       "ability": "Pure Fury",
       "wp": "WP-682",
       "state": "verified",
-      "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
-      "note": "Defeated three Dr. Doom Tactics, each with Doom's attack below the S.H.I.E.L.D. count in the KO pile. (Its trace also logs a phantom attack no-handler hollow.)"
+      "date": "2026-10-17",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b) 2p bot-ally operator matches on server 6dbeb6d7, Loki / Portals to the Dark Dimension: one-target auto defeats (Z4uVw-dsjqz 16.2.2 Frost Giant, 20.2.5 HYDRA Kidnappers; the target's Fight effect still ran, 16.2.3); the 2+ target prompt (5oVhoJoFjpE 5.2.14, 11.2.11); and free defeats of Loki's Tactics through the prompt (Er6Uj0zeyDW 11.2.3 Cruel Ruler, 13.2.3 Vanishing Illusions — the bot KO'd Frost Giant from its Victory Pile and the game continued, 13.2.5).",
+      "note": "Still to see live: D-24681's one-target free defeat of a multi-seat Tactic (Loki the only target), and D-24740's free Final Blow (Er6Uj0zeyDW showed the pre-fix gap: Loki left out of every prompt after his last Tactic, 19.2.2–25.2.5)."
     },
     {
       "key": "core/rogue|copy-powers",

@@ -53,7 +53,6 @@ import type { AttackTargetName } from '../economy/economy.types.js';
 import { countDistinctVictoryPointValues } from '../economy/bloodFrenzy.logic.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
-import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
 import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
@@ -67,6 +66,7 @@ import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js'
 import {
   buildDefeatWithBystanderTargets,
   dispatchDefeatWithBystanderTarget,
+  isMastermindFreeDefeatTarget,
 } from '../moves/defeatChoice.resolve.js';
 import type { TacticSeatChoiceEvents } from '../moves/defeatChoice.resolve.js';
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
@@ -4737,11 +4737,12 @@ export function buildPureFuryTargets(
     }
   }
 
-  // why: Masterminds are explicitly eligible (the text names them); a Mastermind with
-  // no tactics left is not a defeatable target (mirrors buildDefeatWithBystanderTargets).
-  // why: WP-757 / D-24587 — a haunting Mastermind can't be fought, so Pure Fury can't
-  // defeat it either (the shared isMastermindHaunting predicate).
-  if (G.mastermind.tacticsDeck.length > 0 && !isMastermindHaunting(G)) {
+  // why: Masterminds are explicitly eligible (the text names them); a vanquished
+  // Mastermind is not a defeatable target (mirrors buildDefeatWithBystanderTargets).
+  // why: D-24739 — under Final Blow a pending final blow keeps the Mastermind eligible
+  // after its last Tactic; WP-757 / D-24587 — a haunting Mastermind never is. Both live
+  // in the shared isMastermindFreeDefeatTarget predicate.
+  if (isMastermindFreeDefeatTarget(G)) {
     const mastermindCardId = G.mastermind.baseCardId;
     if (getPrintedAttackForDefeatTarget(G, mastermindCardId) < koShieldHeroCount) {
       targets.push({ kind: 'mastermind', cardId: mastermindCardId });
