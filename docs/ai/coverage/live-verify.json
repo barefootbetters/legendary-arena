@@ -1376,6 +1376,17 @@
       "date": "2026-10-17",
       "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): +2 Recruit after another Strength Hero (Hulk Smash! 14.2.4; Growing Anger 18.2.6); blocked when played first (8.2.2, 12.2.2).",
       "note": "Unmarked \"[hc:strength]: +2 Recruit\" superpower; no ledger mechanic."
+    },
+    {
+      "key": "core/rogue|attack",
+      "kind": "hero",
+      "card": "Rogue",
+      "ability": "Borrowed Brawn",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match G0nCu29pk28 (server build 3c9f632d), 2p with a bot ally, Red Skull / Secret Invasion of the Skrull Shapeshifters (HYDRA + Skrulls; Black Widow, Deadpool, Rogue, Captain America, Spider-Man, Storm): +3 after Perfect Teamwork (Strength) at 14.2.4, 20.2.4 and 26.2.21; the bot's +3 after Astonishing Strength (15.2.12) and after a first Borrowed Brawn that was itself blocked (23.2.5 → 23.2.9); blocked when played first (8.2.2; the bot's 9.2.5 / 19.2.5). A Steal Abilities copy of Borrowed Brawn also fired its +3 (30.2.13–30.2.14). Earlier blocked half: 8Mw9mLkcgQ4 13.2.12.",
+      "note": "Unmarked \"[hc:strength]: +3\" superpower; no ledger mechanic. The L3yPdfS179l 16.2.8 firing was the D-24730 carry-over bug, not this evidence."
     }
   ]
 }
