@@ -2,7 +2,7 @@
  * Tests for Nick Fury's Pure Fury — conditional free defeat (WP-682 / EC-719 / D-24499).
  *
  * Covers: countShieldHeroesInKo (S.H.I.E.L.D.-team Heroes in the GLOBAL KO pile, HYDRA
- * excluded); buildPureFuryTargets (printed attack STRICTLY less than the count; City
+ * excluded); buildPureFuryTargets (current Attack STRICTLY less than the count, D-24741; City
  * Villains + the Mastermind; a tactic-less Mastermind excluded; 0/1/≥2 cardinality); and
  * resolveDefeatChoice accepting the 'pure-fury' discriminant to defeat the chosen target
  * for FREE (no attack spent) through the shared defeat path. node:test + node:assert only.
@@ -20,6 +20,7 @@ import {
 } from '../moves/defeatChoice.resolve.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import type { LegendaryGameState } from '../types.js';
+import { DARK_PORTAL_COUNT } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
@@ -338,5 +339,111 @@ describe('free defeats strike the Final Blow (D-24739)', () => {
     const withTactic = finalBlowG({});
     withTactic.mastermind = { ...withTactic.mastermind, tacticsDeck: ['t5'] as CardExtId[] };
     assert.equal(isMastermindFreeDefeatTarget(withTactic), true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24741 — Pure Fury compares the target's CURRENT Attack (Jeff ruling)
+// ---------------------------------------------------------------------------
+
+describe('buildPureFuryTargets reads the current Attack (D-24741)', () => {
+  /**
+   * N S.H.I.E.L.D. Heroes for the KO pile, with their traits.
+   *
+   * @param count How many S.H.I.E.L.D. Heroes.
+   * @returns The KO ids and the cardTraits rows.
+   */
+  function shieldKo(count: number): { ko: CardExtId[]; cardTraits: Record<string, { heroClass: string | null; team: string | null }> } {
+    const ko: CardExtId[] = [];
+    const cardTraits: Record<string, { heroClass: string | null; team: string | null }> = {};
+    for (let index = 0; index < count; index++) {
+      const cardId = `sh-${String(index)}` as CardExtId;
+      ko.push(cardId);
+      cardTraits[cardId] = { heroClass: 'tech', team: 'shield' };
+    }
+    return { ko, cardTraits };
+  }
+
+  /**
+   * Turns a test state into a Portals game with `portalCount` Dark Portals open.
+   *
+   * @param G The state to change.
+   * @param portalCount Dark Portals opened so far (1 = above the Mastermind).
+   */
+  function openDarkPortals(G: LegendaryGameState, portalCount: number): void {
+    G.selection = { ...G.selection, schemeId: 'core/portals-to-the-dark-dimension' };
+    G.counters = { ...G.counters, [DARK_PORTAL_COUNT]: portalCount };
+  }
+
+  it('tXTkG2Pardt: Loki printed 10 with the Mastermind Dark Portal is 11, not below 11 S.H.I.E.L.D. Heroes', () => {
+    const G = makeG({
+      ...shieldKo(11),
+      city: [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(10) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: ['t1'],
+    });
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [{ kind: 'mastermind', cardId: 'mm-base' }], 'printed 10 < 11 without a portal');
+    openDarkPortals(G, 1);
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [], '10 + 1 Dark Portal = 11 is not less than 11');
+    G.ko = shieldKo(12).ko;
+    G.cardTraits = shieldKo(12).cardTraits;
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [{ kind: 'mastermind', cardId: 'mm-base' }], '11 < 12');
+  });
+
+  it('a Villain standing in a Dark Portal space counts its +1', () => {
+    const G = makeG({
+      ...shieldKo(3),
+      city: ['villain-a', null, null, null, 'villain-b'],
+      cardStats: { 'villain-a': staticFightStats(2), 'villain-b': staticFightStats(2) },
+    });
+    // why: two Dark Portals → the Mastermind and City space 4 (the Bridge) are portal'd.
+    openDarkPortals(G, 2);
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+    ], 'villain-b is 2 + 1 = 3, not below 3');
+  });
+
+  it('a dynamic Villain counts its captured Heroes, not just its printed base', () => {
+    const G = makeG({
+      ...shieldKo(3),
+      city: ['villain-dyn', null, null, null, null],
+      cardStats: {
+        'villain-dyn': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'dynamic', fightCostBase: 1 },
+        'captured-hero': { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+    });
+    G.villainAttachedHeroes = { 'villain-dyn': ['captured-hero' as CardExtId] };
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [], 'base 1 + captured cost 2 = 3, not below 3');
+  });
+
+  it('a "-N attack" reduction this turn lowers the Mastermind into range', () => {
+    const G = makeG({
+      ...shieldKo(3),
+      city: [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(4) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: ['t1'],
+    });
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [], 'printed 4 is not below 3');
+    G.turnEconomy = { ...G.turnEconomy, fightCostReductions: [{ target: 'mastermind', amount: 2, sourceCardId: 'storm-card' as CardExtId }] };
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [{ kind: 'mastermind', cardId: 'mm-base' }], '4 - 2 = 2 < 3');
+  });
+
+  it('playing Pure Fury with only a portal-boosted Mastermind logs that nothing is weak enough', () => {
+    const G = makeG({
+      ...shieldKo(11),
+      city: [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(10) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: ['t1'],
+    });
+    openDarkPortals(G, 1);
+    executeSingleEffect(G, makeMoveContext(G), '0', 'core/nick-fury/pure-fury#0' as CardExtId, { type: 'pure-fury' });
+    assert.deepStrictEqual(G.mastermind.tacticsDefeated, [], 'no Tactic was defeated');
+    assert.ok(
+      G.messages.some((entry) => entry.text.includes('found no Villain or Mastermind weak enough for Pure Fury')),
+      'the blocked line explains why',
+    );
   });
 });

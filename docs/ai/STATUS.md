@@ -7,6 +7,18 @@
 
 ## Current State
 
+### D-24741 — Pure Fury compares the target's current Attack (Jeff ruling, direct fix) (2026-10-17)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Nick Fury's **Pure Fury** now defeats only a Villain or
+Mastermind whose *current* Attack is below the number of S.H.I.E.L.D. Heroes in the KO pile. Dark Portals, Bank Robbery
+Bystanders, captured Heroes and "-N attack" effects now count. Before, it compared the printed Attack, so in match
+`tXTkG2Pardt` it defeated Loki (10, +1 Dark Portal) with only 11 S.H.I.E.L.D. Heroes in the KO pile.
+
+- **Engine only.** `buildPureFuryTargets` reads `resolveFightCost` / `resolveMastermindFightCost`; no new G field, move or UI field.
+- **Counts.** game-engine 5366 → 5371 (5 new Pure Fury cases, each failing on the old code), 0 fail in all 12 packages; data gates current; no re-pin.
+- **Live-verify (D-24026): pending.** Loki / Portals operator match, after twist 1, City empty: 11 S.H.I.E.L.D. Heroes in
+  the KO pile → Pure Fury finds no target; 12 → Loki is a target.
+
 ### D-24740 — Pure Fury and Silent Sniper can strike the Final Blow (direct fix) (2026-10-17)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** With the optional Final Blow rule on, once the Mastermind's four Tactics are defeated, Nick Fury's Pure Fury and Black Widow's Silent Sniper can now pick the Mastermind and strike the final blow for free (operator ruling). Before, they stopped offering the Mastermind after its last Tactic, so only a paid fight could win (match `Er6Uj0zeyDW`, 19.2.2–25.2.17).
