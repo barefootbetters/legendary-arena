@@ -20,9 +20,9 @@
       "ability": "Silent Sniper",
       "wp": "WP-486",
       "state": "verified",
-      "date": "2026-10-06",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): the bot's Silent Sniper defeated the Skrull Oddball holding a Bystander for free, attributed live (29.2.7, D-24662). Earlier one-target auto defeat: match s1jtBcEAOfw 38.2.10.",
-      "note": "≥2-target prompt unexercised."
+      "date": "2026-10-17",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): the bot's Silent Sniper defeated the Skrull Oddball holding a Bystander for free, attributed live (29.2.7, D-24662). Earlier one-target auto defeat: match s1jtBcEAOfw 38.2.10. Two-target prompt: Operator match PF9JUILsmcT (server build 3c9f632d), 2p with a bot ally, Red Skull / Secret Invasion of the Skrull Shapeshifters (HYDRA + Skrulls; Black Widow, Deadpool, Rogue, Captain America, Spider-Man, Storm) — with the Skrull Heroes Dangerous Rescue and Copy Powers each holding a Bystander, Silent Sniper prompted \"choose which Villain or Mastermind to defeat\" (23.2.2) and defeated the chosen Dangerous Rescue, rescuing its Bystander (23.2.3–23.2.5). No-target line: 7.2.2, 13.2.2.",
+      "note": "One-target auto defeat, two-target prompt and no-target line all seen live."
     },
     {
       "key": "core/black-widow|draw",
@@ -1288,6 +1288,17 @@
       "date": "2026-10-06",
       "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): 6 Hero decks in setup; Skrull Heroes entered from the Villain Deck and were gained on defeat; twists moved the highest-cost HQ Hero to the Sewers (7 twists).",
       "note": "Evil Wins (6 Heroes escaped) not reached."
+    },
+    {
+      "key": "scheme:core/secret-invasion-of-the-skrull-shapeshifters|escape-loss",
+      "kind": "scheme",
+      "card": "Secret Invasion of the Skrull Shapeshifters",
+      "ability": "Evil Wins: 6 Heroes in the Escaped Villains pile",
+      "wp": "",
+      "state": "partial",
+      "date": "2026-10-17",
+      "evidence": "Operator match PF9JUILsmcT (server build 3c9f632d), 2p with a bot ally, Red Skull / Secret Invasion of the Skrull Shapeshifters (HYDRA + Skrulls; Black Widow, Deadpool, Rogue, Captain America, Spider-Man, Storm): six Skrull Heroes escaped — Oddball (6.1.2), Oddball (7.1.2), Random Acts of Unkindness (10.1.2), A Day Unlike Any Other (17.1.2), Copy Powers (25.1.2), Oddball (31.1.2) — and the scheme won at 31.1.3 (\"Scheme loss triggered — 6 Skrulls escaped (threshold 6)\"). Escaped non-Hero Villains (HYDRA Kidnappers, Endless Armies of HYDRA, Skrull Shapeshifters, Skrull Queen Veranke) did not count.",
+      "note": "Open ruling: two Heroes captured from the HQ were carried into the Escape pile by their Skrull captors (Energy Drain with Skrull Shapeshifters at 3.2.19, Spinning Cyclone with Veranke at 13.1.2; D-24657). The engine counts only Skrull-converted Heroes. Read literally (\"6 Heroes … in the Escaped Villains pile\"), the captured ones count too and Evil would have won at 17.1.2."
     },
     {
       "key": "scheme:core/portals-to-the-dark-dimension|dark-portals",
