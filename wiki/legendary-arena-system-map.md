@@ -1,5 +1,5 @@
 ---
-title: Legendary Arena at a Glance
+title: Legendary Arena System Map
 type: Guide
 tags:
   - findability
@@ -18,7 +18,7 @@ related:
   - system-backup.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\legendary-arena-at-a-glance.md (this page — https://ewiki.legendary-arena.com/legendary-arena-at-a-glance/)
+  - C:\pcloud\BB\DEV\legendary-arena\wiki\legendary-arena-system-map.md (this page — https://ewiki.legendary-arena.com/legendary-arena-system-map/)
   - C:\www\legendary-arena\README-LA.md (operator's product background draft, folded in 2026-10-17)
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
@@ -27,18 +27,21 @@ source:
 last-reviewed: 2026-10-17
 ---
 
-# Legendary Arena at a Glance
+# Legendary Arena System Map
 
 ## Summary
 
-The one-screen background on the product, answering four questions:
-where Legendary Arena's files live, how they are backed up, which files
-you can edit (and which are generated or stale), and which outside
-services it depends on — DigitalOcean, GitHub, Cloudflare, and the rest.
-It renders at the top of the wiki home page. Each topic links to the page
-that owns the detail; this page orients, it does not decide.
+The system map of Legendary Arena: every piece of the product and how
+they connect, on one screen. It answers four questions — where the files
+live, how they are backed up, which files you can edit (and which are
+generated or stale), and which outside services the product depends on
+(DigitalOcean, GitHub, Cloudflare, and the rest). It renders at the top
+of the wiki home page. Its siblings go deeper on one slice each:
+[Workspace Map](workspace-map.md) for which storage surface owns what, and
+[Service Dependency Map](service-dependency-map.md) for what breaks when a
+vendor is down. This page orients; it does not decide.
 
-## Mechanics {#at-a-glance}
+## Mechanics {#system-map}
 
 ```text
 C:\www\        ← website sources (Hugo, .md files) - saved on github and deployed to Cloudflare
