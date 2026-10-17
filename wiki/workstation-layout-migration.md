@@ -44,8 +44,8 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | Phase | What | Status |
 |---|---|---|
 | 0 | Record the convention as a decision | Done: D-24739 (reserve #2871, entry #2872) |
-| 0.5 | Baseline snapshot and environment inventory | Not started |
-| 1 | Back up the loose files that have no backup today | Not started |
+| 0.5 | Baseline snapshot and environment inventory | Done 2026-10-17 (found pCloud sync off since about April; re-enabled and verified) |
+| 1 | Back up the loose files that have no backup today | Done 2026-10-17 |
 | 2 | Add an unpushed-work check | Not started (not blocking) |
 | 3 | **Rehearsal:** re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments` | Not started (quiet window for HvA) |
 | 4 | Fold the rehearsal's lessons into Phases 5–6 | Not started |
@@ -370,6 +370,25 @@ Nothing gets safer by this phase; it only makes the convention exact.
   (#2872), superseding D-24208 in part. It was rebuilt on `main` once after
   D-24740 landed at the same file ends. Next: Phase 0.5 (baseline snapshot)
   and Phase 1 (loose files).
+- **2026-10-17** — **Phase 0.5 done**, with a finding. The baseline snapshot
+  is in `C:\pcloud\LA\code-archive\migration-snapshots\baseline-2026-10-17\`.
+  **pCloud sync had been disabled since about April 2026**, and
+  `C:\pcloud\LA` had never been uploaded, so its business documents, brand
+  files and audio masters existed only on the laptop. pCloud's cloud side
+  also held a stale copy of the engine repo under `/pcloud/BB/DEV/`. Sync
+  was re-enabled as four per-folder pairs, never including `BB\DEV`:
+  `LA` → `/LA`, `BB\DOCS` → `/DOCS`, `BB\MEDIA` → `/MEDIA`, and
+  `herbs-vs-ailments` → `/herbs-vs-ailments`. Each was hash-verified with
+  `rclone check` (LA 491 files, DOCS 19, MEDIA 3; 0 differences). Moving the
+  cloud-side names to `/legendary-arena` and `/BB/...` is folded into
+  Phase 7. Account: 7.12 GB of 2 TB used. The Phase 6 credentials gate
+  passed: all three engine `.env` files are in 1Password.
+- **2026-10-17** — **Phase 1 done.** The workstation README went to
+  `C:\pcloud\LA\README.md` and the HvA README to
+  `C:\pcloud\herbs-vs-ailments\README.md`. The untracked `README-LA.md` copy
+  (byte-identical) was deleted, and the loose BB PDF went to
+  `C:\pcloud\BB\DOCS\`. All three files are confirmed on pCloud.
+  `C:\www\` now holds only repo folders and the two shortcuts.
 
 ## Interactions
 
