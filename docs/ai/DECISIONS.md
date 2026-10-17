@@ -48404,6 +48404,39 @@ Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard
 
 ---
 
+### D-24728 — The shared wiki theme lives in `barefootbetters/ewiki-theme` and is vendored into each wiki (Active 2026-10-16 — WP-814 / EC-852)
+
+**Context.** D-24727 chose the platform theme (the current hand-rolled theme, extracted) and left §3 open: where the one shared copy lives and how each ewiki consumes it, a separate repo consumed as a vendored copy or as a Hugo module. WP-814 built the extraction: it reconciled the engine, herbs, corporate-memory and personal copies into one core, and proved it with a scratch shadow build of the engine ewiki that passed all five engine gates and kept every link and image target.
+
+**Decision.**
+1. **One source.** The theme's single source is the private repo `barefootbetters/ewiki-theme`, released as annotated `vX.Y.Z` tags. Each tag's GitHub release notes record its manifest digest (the SHA-256 of the LF-normalized manifest).
+2. **Vendored, not a Hugo module.** Each wiki vendors a tag into `<site>/themes/ewiki/` with `tools/Sync-EwikiTheme.ps1`. The sync uses `git archive` with autocrlf off and a fixed pathspec, and writes `THEME-VERSION` plus a manifest of LF-normalized SHA-256s. A Hugo module was rejected for three reasons:
+   - it needs Go locally and in CI;
+   - it needs private-repo credentials in CI;
+   - it would add a network fetch to the engine's determinism rebuild.
+
+   Vendored, the engine theme stays "inside this app", so the WP-139 lock holds literally.
+3. **Vendored files are read-only.** Each wiki's CI pins the manifest digest outside the vendored tree. It checks the manifest and the checker script's hash with plain shell, then runs `tools/Test-EwikiTheme.ps1`, which fails on:
+   - any manifest or digest mismatch;
+   - any consumer file that shadows a core theme file, through any of Hugo's equivalent layout paths or through a module mount.
+
+   A change goes to the theme repo, then a re-sync.
+4. **Closed extension points.** Wiki-specific behavior enters only through the closed extension-point list (WP-814 §Contract). Changing that list, or the brand → core → site CSS order, is a MAJOR release.
+5. **One script.** Core emits no script except the Pagefind loader, which stays D-24293's only sanctioned script.
+
+The migration order is corporate memory, herbs, personal, then the engine ewiki last (D-24725 §3).
+
+**Why.** The pilot's evidence (D-24727 §3) and the shadow build agree: vendoring needs no Go, no CI credentials for a private repo and no network during a build, so every wiki's determinism gate keeps rebuilding offline. The cost, a copy that could drift again, is what the manifest, the externally pinned digest and the shadow check close.
+
+**Consequences.**
+- `barefootbetters/ewiki-theme` `v1.0.0` is tagged on `52f6c1b5`, with manifest digest `d3e03f528052d23b404160bbd2d5bf9911017002839b2c4fc18ac0867b687b80` in its release notes.
+- No wiki has migrated yet; each keeps its own copy until its migration packet, in the order above.
+- Engine migration (step 4) vendors the theme, moves E's wiki-specific files behind the extension points, makes `project-wiki.mjs` and `architecture-inventory.mjs` emit `canonical-source` and `links_from: repo-root`, and adds the digest and shadow checks to `wiki-viewer.yml`. D-24293 and the WP-139 lock are unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24728 (#2836). Related: D-24725 (one shared wiki platform), D-24727 (the theme, extracted), D-24293 (the JS-free gate and Pagefind), WP-139 / D-13808 (the engine ewiki's theme lock).
+
+---
+
 ### D-24729 — Villain trait-count log lines name each counted Hero and where it was counted from (direct fix, no WP) (Active 2026-10-16)
 
 **Context.** The D-24726 live-verify (match `SoDnMI9IjqU`) passed, but its record had to infer that the two cards Player 0 left in hand were Wounds. Baron Zemo's line said only "rescued 2 Bystander(s) (one per your avengers Hero)", and the game log never lists the cards a player leaves unplayed in hand. Both Zemo and Maestro count the hand (off-play traits) plus the cards in play (effective class / team, including what Copy Powers copies, D-24391 / D-24724 / D-24726). From the log alone, a count from a Copy Powers copy and a count from an Avenger left in hand look the same.

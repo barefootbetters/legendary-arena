@@ -7,6 +7,27 @@
 
 ## Current State
 
+### WP-814 / EC-852 — The shared wiki theme, extracted (D-24728) (2026-10-16)
+
+**No user-observable change — infrastructure only.** No wiki changes its theme in this packet. The four hand-rolled Hugo wiki themes (engine ewiki, Herbs vs. Ailments, corporate memory, personal wiki) are reconciled into one shared copy, released as **`barefootbetters/ewiki-theme` `v1.0.0`**. The repo is private, and the tag sits on `52f6c1b5` with manifest digest `d3e03f528052d23b404160bbd2d5bf9911017002839b2c4fc18ac0867b687b80` (in the release notes; the digest a wiki pins).
+
+- **The theme.**
+  - One core: layouts, render hooks, the `include-section` / `audio` / `audio-inline` / `swatch` shortcodes, and CSS.
+  - A closed list of extension points, with params under `[params.ewiki]`.
+  - New no-script reader features: a TOC, heading anchors, a skip link, breadcrumbs, and dark mode from `prefers-color-scheme`.
+  - The Pagefind loader stays the only script (D-24293).
+  - Wikis vendor a tag into `themes/ewiki/` with `Sync-EwikiTheme.ps1`. The manifest, the externally pinned digest and `Test-EwikiTheme.ps1` (manifest plus core-shadow check) keep the copy read-only. `Invoke-WikiGates.ps1` and `Compare-WikiBuild.ps1` prove a migration.
+- **Proof.**
+  - Theme CI is green on the `main` and `v1.0.0` runs: fixture gates, a 206/206 render check, and the AC 5 matrix (5 must-pass, 14 must-fail).
+  - A scratch shadow build of the engine ewiki on the vendored commit passed all five gates, with 96/96 pages, plus the verbatim `wiki-viewer.yml` gates and `check-links`.
+  - `Compare-WikiBuild` found an identical page set and paired 6656 links, 949 footer targets and 265 images. The only target change is 23 folder links going blob → tree. All 298 text hunks map to the intended changes (WP-814 §Visible changes 2/3/4/7).
+- **Governance.** D-24728 Active. The ewiki page *Hugo Platform Strategy* now names the repo and the order. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-814-shared-wiki-theme-extraction.md`.
+- **Queued, in order, each its own packet:**
+  1. Corporate memory (`jefferyjjensen-corporate-memory` `viewer/`).
+  2. Herbs vs. Ailments (`apps/ewiki/`).
+  3. The personal wiki.
+  4. The engine ewiki (`apps/wiki-viewer/`, a future WP here). It vendors the theme, moves E's wiki-specific files behind the extension points, makes `project-wiki.mjs` / `architecture-inventory.mjs` emit `canonical-source` / `links_from: repo-root`, and adds the digest and shadow checks to `wiki-viewer.yml`.
+
 ### D-24736 — Clash of the Monsters Unleashed plays as printed (2026-10-16)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Clash of the Monsters Unleashed now builds its Wound Stack at 6 per player and a face-down Monster Pit of the 8 Monsters Unleashed Villains. From Twist 3, each player's Gladiator (their highest printed-Attack Villain in the Victory Pile) faces the Monster that climbs out of the Pit and enters the city, Ambush and all. Each player whose Gladiator is weaker gains a Wound. The game is lost when the Wound Stack or the Monster Pit runs out (the Pit empties on Twist 10), and the danger meter can read "Monster Pit".

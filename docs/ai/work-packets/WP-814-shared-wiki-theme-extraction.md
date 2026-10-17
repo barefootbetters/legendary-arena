@@ -1318,6 +1318,164 @@ findings were applied in place:
 
 ---
 
+## Execution Notes (2026-10-16)
+
+Executed in one session from the session prompt
+`docs/ai/invocations/session-wp814-shared-wiki-theme-extraction.md`. §Scope E
+passed, so the checkpoint didn't trigger and `v1.0.0` is tagged.
+
+**Pre-execution.**
+- #2836 and #2837 merged (`aa66f8a1`, `1b6fa76e`). The NUMBER-LEDGER on
+  `origin/main` carries WP-814 / EC-852 / D-24728.
+- Toolchain: Hugo 0.161.1 Extended, pwsh 7.6.6, `gh` authenticated as
+  `barefootbetters` with `repo` scope. Node is 24.21.0, not the EC's 22; Jeff
+  accepted that before execution. Node runs only `npx pagefind@1.5.2` and the
+  roadmap scripts here, and CI uses Node 22.
+- Consumers, read-only at their `origin/main`:
+  - herbs `5b8bb898`: no `apps/ewiki` change since the baseline `616a44c`.
+  - corporate memory `2cc6c090` = baseline.
+  - personal wiki `932e7b9c` = baseline.
+- Engine shadow baseline: `origin/main` `20dcd923` (WP-807 merged after the WP
+  baseline `c86309fa`; no `apps/wiki-viewer`, `wiki/` or workflow change
+  between them).
+
+**The theme repo.** `barefootbetters/ewiki-theme` (private) was created with
+`gh repo create --private`.
+- Commit order: `f3d6f79` (the fixture and `exampleSite/expected-render.json`,
+  every entry tagged with its resolver branch) landed on `main` before `dbd9eda`
+  (the render hooks and the rest of the core).
+- PR #1 merged as `98c260c`. PR #2 (`52f6c1b`, below) merged after the shadow
+  found a 404 search defect.
+- CI was green on each PR branch, then on `main`.
+
+**The tag.**
+- `v1.0.0` is annotated, on `52f6c1b50d214a8e11f5515401bc3788de06fd5e`, the
+  commit the final shadow build vendored.
+- Manifest digest: `d3e03f528052d23b404160bbd2d5bf9911017002839b2c4fc18ac0867b687b80`,
+  recorded in the GitHub release notes for `v1.0.0`.
+- That digest is the same four ways: from a Windows sync of HEAD, from the
+  Linux CI run on `main`, from a sync of `v1.0.0` into an empty directory, and
+  from that tree after a CRLF rewrite (AC 6).
+- A synced tree holds only `layouts assets tools theme.toml README.md`, plus
+  `THEME-VERSION` and `.theme-manifest.txt`.
+- `gh run list --commit 52f6c1b`: the `main` push run and the `v1.0.0` tag run,
+  both `success` (AC 1).
+
+**Fixture and matrix.**
+- `Invoke-WikiGates.ps1 -Site exampleSite -PanicOnWarning`: 12 = 12 pages,
+  determinism `7da0f21a…`, Pagefind, and JS-free 13/13 loaders.
+- `Test-FixtureRender.ps1`: 206/206 checks.
+- AC 5 matrix: the 5 must-pass and 14 must-fail cases, each failure naming its
+  file. All 19 are right on Linux CI and on Windows.
+- The fixture render check ran on Windows on `52f6c1b` before tagging and
+  passed, with every CI step 1–6 run from `ci.yml`'s own blocks. Hygiene greps
+  are clean: `<script` appears only in `search.html`, there is no
+  `now`/`time.Now`/`GitInfo` action, and `ewiki.css` declares no custom
+  property.
+
+**Engine shadow (§Scope E) on vendored `52f6c1b`.** The scratch directory was
+outside every repo and was deleted afterwards.
+- `Test-EwikiTheme.ps1`: passed. 36 vendored files match the manifest, and
+  nothing shadows core.
+- `Invoke-WikiGates.ps1`: build; page count 96 = 96 (the baseline's count);
+  determinism, with both builds at
+  `0428a92d833c41e2165df215c3978150d10ea1fd45a3b2008029dafce42350ab`; Pagefind;
+  JS-free, with 97 loaders out of 97 `<script` tags and the bundle present.
+- `pnpm wiki-viewer:check-links`: "Link-integrity check passed across 96
+  projected files."
+- The verbatim `wiki-viewer.yml` gates in Git Bash, run from the engine
+  worktree after `rm -rf` of the scratch `public/`:
+  - "Assert wiki pages rendered passed: all 96 projected wiki pages rendered
+    to HTML."
+  - "Determinism check passed:
+    38cb39e1fd9e3a38807bd3bab98de90ae4e90b1e69cf613cfd835c477bae62b0", with
+    the first hash equal to the second.
+  - Pagefind indexed 96 pages.
+  - "JS-free-except-Pagefind gate passed: all 97 rendered-HTML `<script>`
+    tag(s) are the sanctioned Pagefind loader, and the Pagefind bundle is
+    present."
+- **Hash pair.** Each determinism gate hashed two consecutive builds and got
+  the same value: `0428a92d…` from the pwsh gate (`<hash>  <path>` listing)
+  and `38cb39e1…` from the bash gate (`sha256sum` listing). The two tools
+  hash different listings, so the two values differ from each other.
+- `Compare-WikiBuild.ps1 -Baseline baseline-public -Candidate site/public`:
+
+  ```
+  Page set: 96 baseline pages, 96 candidate pages, 0 different.
+  Links paired: 6656; footer targets checked: 949; images paired: 265; allowed folder changes (blob -> tree): 23.
+  Text hunks: 298 on 95 page(s).
+  Compare-WikiBuild passed: identical page set, every baseline link and image paired, and no changed target beyond the allowed folder rule.
+  ```
+
+  The 23 folder changes are on 7 pages: card-image-acquisition 3,
+  data-file-locations 12, lagn-v1 2, operational-health-checks 1, readme 3,
+  visual-effects 1, and wiki-viewer-architecture 1. Each is `/blob/main/<p>`
+  → `/tree/main/<p>` with the same `<p>`. The one page without a hunk is the
+  home page.
+
+**Text hunks → §Visible changes.** Every hunk line is mapped by reading the
+page's own HTML: the candidate's `nav.toc`, `nav.crumbs` and footer text, and
+the baseline's template H1 and footer text. No line was left unmapped.
+
+| Visible change | Hunk lines | Pages |
+|---|---|---|
+| 2 — duplicate H1 removed (template H1 dropped where the body owns one) | 70 `-` lines | 73 baseline pages had two H1s, 0 do now |
+| 3 — TOC on pages with 3+ h2–h4 | 1,910 `+` lines ("On this page" and the entries) | pages over the threshold |
+| 4 — "Editing this page" wording (shared skeleton + E's `editing-extra`) | 472 `+`/`-` lines | 95 |
+| 7 — breadcrumbs (Home › Page) | 95 `+` lines | 95 (every page but home) |
+| 1, 5, 6, 8, 9 — dark mode, heading anchors, skip link, `loading="lazy"`, `noindex` | 0 (CSS, attributes, an empty anchor, or outside `<main>`) | — |
+| 10 — folder links blob → tree | 0 text; 23 link targets (above) | 7 |
+| Unmapped | **0** | — |
+
+Every baseline footer target survives in the candidate (949 checked): the
+paths, the GitHub view and edit links, the commit rules and the deploy target.
+
+**Reconciliation notes.** These are details the WP left to the build. Notes
+1, 2 and 5 also appear in the theme's `docs/SURVEY.md`:
+
+1. **A root page's folder on Windows.** Hugo 0.161.1 returns `File.Dir` as `\`
+   at the content root, and the locked normalization turns that into `/`.
+   `path.Join "/" "../x"` then clamps to `/x`, which defeats the `..` rule; the
+   fixture's `../README.md` warned. The hooks and `include-section` also drop
+   a leading `/` from `$dir`.
+2. **The home list.** E's home is `_index.md` on the list layout, and E has no
+   sections, so a flat page list there would repeat all 95 pages, which is not
+   a §Visible change. The list layout shows subsections on the home page but no
+   flat page list. Sections list theirs.
+3. **`links_from: repo-root` on the inventory page.** E special-cases
+   `architecture-inventory.md` by filename. The shadow added
+   `links_from: repo-root` to the scratch copy's front matter, as it added
+   `canonical-source` to the changelog. Step 4 makes
+   `scripts/architecture-inventory.mjs` emit it. Without it, 4 links warned
+   and would have gone to `wiki/docs/...`.
+4. **The 404 page and search.** The first shadow pass showed Pagefind indexing
+   97 pages against the baseline's 96: the new `404.html` sat inside
+   `data-pagefind-body`. Its `<main>` now carries no `data-pagefind-body`
+   (ewiki-theme PR #2, `52f6c1b`). The fixture asserts this, and the final
+   shadow indexes 96.
+5. **`Compare-WikiBuild.ps1` leaves `nav.crumbs` out of the candidate's link
+   pairing,** alongside `nav.toc` and `a.heading-anchor`, because a baseline
+   has none of them. Its tag patterns skip quoted `>` (E has an alt text
+   holding `>`).
+6. **Pagefind's own CSS custom properties** (`--pagefind-ui-*`) moved from
+   E's `style.css` into the brand file, before its dark block, so `ewiki.css`
+   declares no custom property.
+7. **The E shadow overrides:**
+   - the sidebar, metadata (the six-field lock, gated on `type`),
+     `after-content` (calling E's `related.html` and `source-citations.html`)
+     and `editing-extra` partials;
+   - the `motif-table` and `service-impact` shortcodes;
+   - the `service-dependencies-data` partial;
+   - `ewiki-site.css` (`.service-impact*` and `.editing-this-page-where`).
+
+   Step 4 inherits them.
+
+**Acceptance criteria.** AC 1–10 all pass. AC 10: the `SPEC:` govern-close
+commit is exactly the 8 §Files paths, and no commit landed in herbs,
+corporate memory or the personal wiki.
+
+---
+
 ## See Also
 
 - `docs/ai/DECISIONS.md` — D-24725, D-24727, D-24293, D-13808, D-24709, D-24243, D-24304, D-24310
