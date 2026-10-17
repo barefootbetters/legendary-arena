@@ -7,6 +7,13 @@
 
 ## Current State
 
+### D-24738 — Secret Invasion counts captured Heroes in the Escape pile toward its six (direct fix) (2026-10-17)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** On Secret Invasion of the Skrull Shapeshifters, a Hero that Skrull Queen Veranke or the Skrull Shapeshifters captured from the HQ now counts toward "6 Heroes in the Escaped Villains pile" once its captor escapes, alongside the escaped Skrull Heroes (operator ruling). The loss line names both parts, e.g. "6 Heroes escaped (4 Skrulls, 2 captured)", and the danger meter reads "Heroes N/6". In match `PF9JUILsmcT` two captured Heroes were in the pile, so Evil would have won at 17.1.2 instead of 31.1.3.
+
+- **Engine + one client label.** No G-shape change, no re-pin; Killbots, Negative Zone and Midtown count exactly as before.
+- **Live-verify (D-24026):** pending. Operator match on Secret Invasion: let a Skrull capture an HQ Hero, push it and Skrull Heroes out with "Reveal a Scheme Twist now" and "Escape the Villain at the City's edge", and expect the loss at 6 counted Heroes.
+
 ### WP-814 / EC-852 — The shared wiki theme, extracted (D-24728) (2026-10-16)
 
 **No user-observable change — infrastructure only.** No wiki changes its theme in this packet. The four hand-rolled Hugo wiki themes (engine ewiki, Herbs vs. Ailments, corporate memory, personal wiki) are reconciled into one shared copy, released as **`barefootbetters/ewiki-theme` `v1.0.0`**. The repo is private, and the tag sits on `52f6c1b5` with manifest digest `d3e03f528052d23b404160bbd2d5bf9911017002839b2c4fc18ac0867b687b80` (in the release notes; the digest a wiki pins).

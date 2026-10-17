@@ -266,6 +266,27 @@ describe('resolveSchemeLossProgress — the condition-aware numerator', () => {
     assert.equal(resolveSchemeLossProgress(gameState), 2);
   });
 
+  it('D-24738: Secret Invasion also counts captured Heroes a captor carried into the pile', () => {
+    // why: the meter reads the same count the loss turns on, so "Heroes N/6"
+    // includes Heroes that went into the pile with their Skrull captor (D-24657).
+    const gameState = makeTestState({
+      schemeId: 'core/secret-invasion-of-the-skrull-shapeshifters',
+      escapedPile: ['skrull-a', 'skrull-b', 'villain-real', 'captured-hero'],
+      villainDeckCardTypes: {
+        'skrull-a': 'villain',
+        'skrull-b': 'villain',
+        'villain-real': 'villain',
+      },
+      convertedVillainOrigins: { 'skrull-a': 'skrull', 'skrull-b': 'skrull' },
+    });
+    gameState.cardTraits = {
+      'skrull-a': { heroClass: 'covert', team: null },
+      'skrull-b': { heroClass: 'tech', team: null },
+      'captured-hero': { heroClass: 'covert', team: 'x-men' },
+    };
+    assert.equal(resolveSchemeLossProgress(gameState), 3);
+  });
+
   it('counts resolved twists for a twist-loss scheme', () => {
     const gameState = makeTestState({
       schemeId: 'core/unleash-the-power-of-the-cosmic-cube',

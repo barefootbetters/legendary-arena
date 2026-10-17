@@ -48710,3 +48710,35 @@ This entry records the ruling so a later change doesn't "fix" the free-defeat pa
 
 ---
 Protect this file.
+
+### D-24738 — Secret Invasion counts Heroes a captor carried into the Escape pile toward its six (operator ruling; direct fix, no WP; amends D-24326 and D-24657 §3) (Active 2026-10-17)
+
+**Context.** Secret Invasion of the Skrull Shapeshifters prints "Evil Wins: If 6 Heroes get into the Escaped Villains pile." D-24326 counted only the Skrull-converted Heroes (`escaped-converted-count`, origin `'skrull'`). D-24657 then made a Villain that escapes with captured Heroes carry them into the Escape pile (rules v23 "Villains Escaping with Captured Heroes": they "just stay in the Escape Pile"), and its §3 left the escaped-pile loss counts unchanged. On Secret Invasion the Skrull Villain Group is required, and Skrull Queen Veranke and the Skrull Shapeshifters capture HQ Heroes, so most games put captured Heroes into that pile. In operator match `PF9JUILsmcT` (server `3c9f632d`), Energy Drain went in with Skrull Shapeshifters (3.2.19) and Spinning Cyclone with Veranke (13.1.2). The engine still waited for six Skrull Heroes and logged the loss at 31.1.3.
+
+**Decision (operator ruling, 2026-10-17).**
+1. Heroes captured by a Villain and carried into the Escape pile count toward Secret Invasion's six, together with the escaped Skrull Heroes. In `PF9JUILsmcT` the sixth Hero reached the pile at 17.1.2.
+2. **Engine.** The `escaped-converted-count` condition gains an optional `includeCapturedHeroes?: true` (`rules/schemeTwistConfig.types.ts`), set only on core Secret Invasion (`rules/schemeTwistConfigs.ts`). `countEscapedConvertedLoss` (`rules/schemeResourceLoss.ts`) returns the converted-origin count plus, when the flag is set, `countEscapedCapturedHeroes`.
+3. **A captured Hero** is an Escape-pile entry with a `G.cardTraits` entry (every registry Hero instance has one) and no converted-villain origin. A converted Skrull Hero is counted once, by origin. Villains, Henchmen and Bystanders have no trait entry.
+4. **One count.** `applyEscapedPileResourceLoss` and the loss meter (`schemeLossProgress.ts`) both read `countEscapedConvertedLoss`, so the HUD's N/6 matches the loss.
+5. **Timing.** Every escape goes through `resolveVillainEscape`, which appends the captor, then its captured Heroes (`moveAttachedHeroesToEscapedPile`), then runs the loss check. A captor escaping with two Heroes can take the count from 4 to 6 on that one escape.
+6. **Display.** When captured Heroes are part of the count, the loss line reads "Scheme loss triggered — 6 Heroes escaped (4 Skrulls, 2 captured) (threshold 6)." With none, it is unchanged ("6 Skrulls escaped"). The arena-client meter label for `escaped-skrull` changes from "Skrulls" to the printed "Heroes".
+7. **Unchanged.** Killbots (`origin: 'killbot'`, no flag) and the `escaped-pile-count` schemes (Negative Zone, Midtown) count exactly as before. Only core Secret Invasion carries this config; no reprint has its own twist config.
+
+**Tests.** `schemeResourceLoss.test.ts` adds six cases:
+- a captured Hero is counted once, and a converted Skrull Hero is never counted as captured;
+- 4 Skrull Heroes + 2 captured Heroes loses, with the new line;
+- 5 Skrull Heroes plus 4 escaped Villains does not lose;
+- a captor's escape takes the count from 4 to 6 (escape order mirrored);
+- 6 Skrull Heroes with no captured Hero keeps the old line;
+- Killbots ignores captured Heroes.
+
+`schemeLossProgress.test.ts` adds the meter case. `menaceDisplay.test.ts`'s Secret Invasion label pin changes to "Heroes"; this is the authorized label change in point 6. Revert proof: removing the config flag fails exactly the two loss cases.
+
+**Hashes.** `G` shape unchanged. No pinned replay, PAR or seed fixture runs Secret Invasion (D-24326), so nothing re-pins.
+
+**Live-verify (D-24026):** pending. In an operator match on Secret Invasion, let Veranke or the Skrull Shapeshifters capture an HQ Hero, then push the captor and Skrull Heroes out with "Reveal a Scheme Twist now" and "Escape the Villain at the City's edge". Expect the loss once Skrull Heroes plus captured Heroes in the pile reach 6, with the new line, and the meter to read "Heroes N/6".
+
+**Reserved by:** NUMBER-LEDGER D-24738. Related: D-24326 (Secret Invasion conversion + loss), D-24657 (captured Heroes into the Escape pile), D-24325 (escaped-converted-count), D-24434 (meter names the converted enemy), D-24680 (loss lines name what escaped), D-24026.
+
+---
+Protect this file.
