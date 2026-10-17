@@ -48768,7 +48768,9 @@ Revert proof: without the engine change, the five behavior cases fail and the tw
 
 **Hashes.** `G` shape unchanged. Final Blow is off in every pinned replay, PAR and seed fixture, so nothing re-pins.
 
-**Live-verify (D-24026):** pending. In an operator match with Final Blow on, defeat the Mastermind's four Tactics, then play Pure Fury (enough S.H.I.E.L.D. Heroes in the KO pile) or Silent Sniper (the Mastermind holding a Bystander). Expect the Mastermind among the targets, and choosing it to log "struck the final blow and defeated …" and win at turn end.
+**Live-verify recipe.** In an operator match with Final Blow on, defeat the Mastermind's four Tactics, then play Pure Fury (enough S.H.I.E.L.D. Heroes in the KO pile) or Silent Sniper (the Mastermind holding a Bystander). Expect the Mastermind among the targets, and choosing it to log "struck the final blow and defeated …" and win at turn end.
+
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `tXTkG2Pardt` (server build `d72fbbb1`, the #2873 merge), 2p with a bot ally, Loki / Portals to the Dark Dimension (HYDRA + Enemies of Asgard; Captain America, Hulk, Nick Fury, Thor, Iron Man), Final Blow on. Pure Fury took all four Tactics through the choose prompt (6.2.13, 8.2.3, 10.2.3, 12.2.3; "All tactics defeated — Loki requires a final blow" at 12.2.4). On turn 16 Pure Fury offered Loki again and "Player 0 struck the final blow and defeated Loki!" (16.2.3), with the win at turn end (16.3.1). Silent Sniper's final blow was not exercised; it shares the same isMastermindFreeDefeatTarget predicate. This match ran on Pure Fury's printed-Attack comparison: Loki was 10 + 1 Dark Portal = 11 against 11 S.H.I.E.L.D. Heroes, so under D-24741 (current Attack, merged after) he would not have been a target. What D-24740 changed, the Mastermind staying a free-defeat target while the final blow is pending, is unaffected.
 
 **Reserved by:** NUMBER-LEDGER D-24740. Related: D-24503 / D-24504 (Final Blow), D-24737 (free defeats ignore "can't defeat unless"), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24553 (turn-end win), D-24026.
 
