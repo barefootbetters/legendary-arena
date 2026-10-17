@@ -119,8 +119,8 @@ C:\dev\
     ewiki-theme\                shared Hugo theme                         (Phase 8)
     legendary-arena-lab\        api droplet provisioning + runbooks       (Phase 8)
 C:\www\
-    legendary-arena-com\        LA marketing site
-    herbs-vs-ailments-com\      HvA marketing site, when it exists
+    legendary-arena-www\        LA marketing site (today legendary-arena-com; Phase 8)
+    herbs-vs-ailments-www\      HvA marketing site, when it exists
     barefootbetters-www\  jefferyjjensen-corporate-memory\  ...
 C:\pcloud\
     legendary-arena\            today's C:\pcloud\LA (Phase 7)
@@ -316,8 +316,27 @@ critical path.
 Move `ewiki-theme`, `bb-studio-dashboard` and `legendary-arena-lab` from
 `C:\www` to `C:\dev` (re-clone, as above). The one known local-path
 reference is the brain repo's `viewer/README.md`, which runs
-`C:\www\ewiki-theme\tools\Sync-EwikiTheme.ps1`. Nothing gets safer by this
-phase; it only makes the convention exact.
+`C:\www\ewiki-theme\tools\Sync-EwikiTheme.ps1`. The studio ewiki is the
+`ewiki/` folder inside `bb-studio-dashboard`, not a repo, so it moves with
+it.
+
+The same step renames the two marketing repos to the `-www` suffix
+(D-24739 point 2):
+
+- GitHub `legendary-arena/legendary-arena-website` → `legendary-arena-www`,
+  and the local `C:\www\legendary-arena-com` → `C:\www\legendary-arena-www`.
+  The local rename also moves its Claude Code project memory
+  (`C--www-legendary-arena-com`, 13 files) and its in-repo `.worktrees\`.
+- GitHub `barefootbetters/www` → `barefootbetters-www`; the local folder
+  already matches.
+
+**Precondition:** confirm that each site's Cloudflare Pages project keeps
+its Git connection through a GitHub repo rename, since both sites deploy
+from these repos. Afterwards, update the remote URLs, the brain repo's
+`connections.md` and `portfolio.md`, and the repo table on
+[Data & File Locations](data-file-locations.md).
+
+Nothing gets safer by this phase; it only makes the convention exact.
 
 ### Phase 9 — Clean up leftovers
 
