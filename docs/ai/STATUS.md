@@ -7,6 +7,15 @@
 
 ## Current State
 
+### D-24736 — Clash of the Monsters Unleashed plays as printed (2026-10-16)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Clash of the Monsters Unleashed now builds its Wound Stack at 6 per player and a face-down Monster Pit of the 8 Monsters Unleashed Villains. From Twist 3, each player's Gladiator (their highest printed-Attack Villain in the Victory Pile) faces the Monster that climbs out of the Pit and enters the city, Ambush and all. Each player whose Gladiator is weaker gains a Wound. The game is lost when the Wound Stack or the Monster Pit runs out (the Pit empties on Twist 10), and the danger meter can read "Monster Pit".
+
+- **Engine, plus one client label.** New `rules/clashMonsterPit.logic.ts`, the `clash-monster-pit` resolver, a Clash Wound-sizing branch, an omit-when-absent `G.monsterPit`, and a `monsterPit` loss pile with its `monster-pit` meter kind (`menaceDisplay.ts`). Every other game is byte-identical, so nothing was re-pinned.
+- **Operator ruling.** A player with no Villain in their Victory Pile has no Gladiator and gains a Wound (Jeff, 2026-10-16; the card does not say, see D-24736).
+- **Tests.** 19 new cases on the shipped `chmp.json`. Full suite 0 fail.
+- **Live re-check (after deploy).** In a 2-player operator match on Clash, the Wound Stack holds 12. Twists 1-2 keep the Pit shut, and Twist 3 sends a Monster into the city with Gladiator lines in the log.
+
 ### D-24734 — Schemes whose twist count depends on the player count now build that count (2026-10-16)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Nineteen more schemes now shuffle their printed number of Scheme Twists into the Villain Deck for the table's player count; until now each built a flat 8. Examples: Train Black Widows in the Red Room builds 7 twists at 1 player down to 3 at 5, and Trapped in the Insane Asylum builds 3 up to 11. The co2e, Epic and Deadpool versions of Civil War use their own splits, and Ritual Sacrifice to Summon Chthon with Lilith uses 1 twist. Where a scheme loses when the Villain Deck runs out, or on its last twist, the game now runs to the printed length. The HUD twist readout matches the deck for all of them.

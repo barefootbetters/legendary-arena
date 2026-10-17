@@ -20,6 +20,7 @@
 import type { ConvertedVillainOrigin, LegendaryGameState } from '../types.js';
 import type { SchemeLossPile } from './schemeTwistConfig.types.js';
 import { SCHEME_TWIST_CONFIGS } from './schemeTwistConfigs.js';
+import { MONSTER_PIT_SETUP_SIZE } from './clashMonsterPit.logic.js';
 import {
   countEscapedPileByType,
   countEscapedByConvertedOrigin,
@@ -64,6 +65,7 @@ export type SchemeLossKind =
   | 'hero-deck'
   | 'wound-stack'
   | 'villain-deck'
+  | 'monster-pit'
   | 'escaped-pile'
   | 'escaped-bystander'
   | 'escaped-killbot'
@@ -81,6 +83,7 @@ export const SCHEME_LOSS_KINDS: readonly SchemeLossKind[] = [
   'hero-deck',
   'wound-stack',
   'villain-deck',
+  'monster-pit',
   'escaped-pile',
   'escaped-bystander',
   'escaped-killbot',
@@ -249,6 +252,7 @@ export function resolveSchemeLossPileSetupSize(
       case 'wounds':
         return woundStackSetupSize;
       case 'villainDeck':
+      case 'monsterPit':
         break;
     }
   }
@@ -297,6 +301,11 @@ function readPileSetupSize(
     case 'villainDeck':
       setupSize = gameState.schemeLossVillainDeckSetupSize;
       break;
+    case 'monsterPit':
+      // why: D-24736 — the Pit's size is printed ("Shuffle 8 Monsters Unleashed
+      // Villains"), so it needs no captured G field.
+      setupSize = MONSTER_PIT_SETUP_SIZE;
+      break;
   }
   // why: a non-positive capture is treated as absent. A zero-sized pile is
   // already depleted at setup, so 0/0 expresses no progress — the honest
@@ -323,6 +332,8 @@ function pileLossKind(pile: SchemeLossPile): SchemeLossKind {
       return 'wound-stack';
     case 'villainDeck':
       return 'villain-deck';
+    case 'monsterPit':
+      return 'monster-pit';
   }
 }
 

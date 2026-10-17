@@ -547,6 +547,7 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
       'hero-deck',
       'wound-stack',
       'villain-deck',
+      'monster-pit',
       'escaped-pile',
       'escaped-bystander',
       'escaped-killbot',
@@ -559,7 +560,7 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
 
   it('SCHEME_LOSS_PILES matches the SchemeLossPile union exactly (WP-763)', () => {
     // why: canonical-array drift pin, asserted at runtime (WP-563 / D-24372).
-    const everyPile = ['heroDeck', 'wounds', 'villainDeck'] satisfies SchemeLossPile[];
+    const everyPile = ['heroDeck', 'wounds', 'villainDeck', 'monsterPit'] satisfies SchemeLossPile[];
     assert.deepStrictEqual([...SCHEME_LOSS_PILES], everyPile);
   });
 

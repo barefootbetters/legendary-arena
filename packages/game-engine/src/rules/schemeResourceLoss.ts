@@ -242,6 +242,10 @@ export function remainingPileCount(
       return gameState.piles.wounds.length;
     case 'villainDeck':
       return gameState.villainDeck.deck.length;
+    case 'monsterPit':
+      // why: D-24736 — only Clash names the Monster Pit, and Clash setup always
+      // builds it; an absent Pit reads as empty.
+      return gameState.monsterPit?.length ?? 0;
   }
 }
 
@@ -329,5 +333,7 @@ function pileDisplayName(pile: SchemeLossPile): string {
       return 'Wound Stack';
     case 'villainDeck':
       return 'Villain Deck';
+    case 'monsterPit':
+      return 'Monster Pit';
   }
 }

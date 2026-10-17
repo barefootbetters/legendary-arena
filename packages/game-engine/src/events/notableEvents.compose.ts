@@ -327,6 +327,7 @@ const RESOLVER_KEY_PHRASES: Readonly<Record<SchemeTwistResolverKey, string>> = {
   killbots: 'a Twist was placed next to the Scheme, raising every Killbot’s attack',
   secretInvasion: 'the highest-cost HQ Hero moved into the Sewers as a Skrull Villain',
   portals: 'a Dark Portal opened, raising the attack of the Mastermind or the Villains beneath it',
+  clashMonsterPit: 'a Monster climbed out of the Monster Pit to face each player’s Gladiator',
 };
 
 /**

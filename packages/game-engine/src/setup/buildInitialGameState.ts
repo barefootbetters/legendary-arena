@@ -37,6 +37,10 @@ import {
   SIDEKICK_EXT_ID,
 } from './pilesInit.js';
 import { resolveEffectiveWoundsCount, resolveEffectiveHeroDeckIds } from './schemeSetupSizing.js';
+import {
+  resolveEffectiveVillainGroupIds,
+  splitMonsterPitFromVillainDeck,
+} from '../rules/clashMonsterPit.logic.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import {
   resolveSchemeLossPileSetupSize,
@@ -356,7 +360,18 @@ export function buildInitialGameState(
   // that only implement CardRegistryReader (listCards with {key} only) will
   // lack listSets/getSet — buildVillainDeck handles this gracefully by
   // producing an empty deck, which the reveal pipeline already supports.
-  const villainDeckResult = buildVillainDeck(config, registry, context);
+  // why: D-24736 — Clash of the Monsters Unleashed shuffles the 8 Monsters Unleashed
+  // Villains into a face-down Monster Pit. villainBuildConfig adds that group so every
+  // per-card villain builder below (deck, cardStats, keywords, traits, defeat
+  // requirements, Blood Frenzy, VP, display data, ability hooks) registers the Monsters;
+  // splitMonsterPitFromVillainDeck then lifts them out of the shuffled deck. For every
+  // other scheme villainBuildConfig carries the same ids, so their setup is unchanged.
+  // G.selection / matchConfiguration keep the loadout's own ids.
+  const villainBuildConfig: MatchConfiguration = {
+    ...config,
+    villainGroupIds: resolveEffectiveVillainGroupIds(config.schemeId, config.villainGroupIds),
+  };
+  const villainDeckResult = buildVillainDeck(villainBuildConfig, registry, context);
 
   // why: WP-513 — the Killbots "twists next to this Scheme" counter (D-24325) is
   // seeded at 3 (the card's "3 additional Twists next to this Scheme" placed at
@@ -375,16 +390,16 @@ export function buildInitialGameState(
   // why: cardStats extracted to local variable so buildMastermindState
   // can add the mastermind base card entry to it. buildMastermindState
   // MUST execute after buildCardStats (ordering invariant — EC-019).
-  const cardStats = buildCardStats(registry as unknown, config);
+  const cardStats = buildCardStats(registry as unknown, villainBuildConfig);
 
   // why: card keywords resolved at setup from registry so moves never query
   // registry at runtime — same pattern as G.cardStats (WP-018) and
   // G.villainDeckCardTypes (WP-014B).
-  const cardKeywords = buildCardKeywords(registry as unknown, config);
+  const cardKeywords = buildCardKeywords(registry as unknown, villainBuildConfig);
 
   // why: WP-179 — categorical traits (heroClass, team) resolved at setup from
   // registry. Same sibling-snapshot pattern as cardStats/cardKeywords/cardDisplayData.
-  const cardTraits = buildCardTraits(registry as unknown, config);
+  const cardTraits = buildCardTraits(registry as unknown, villainBuildConfig);
 
   // why: D-24074 / WP-290 — hero ability hooks are hoisted to a local so the
   // Size-Changing granted-class snapshot can be derived from them (the parser parked the
@@ -402,13 +417,13 @@ export function buildInitialGameState(
   // test mocks → empty record (conditional-spread below keeps the G shape stable).
   const villainDefeatRequirements = buildVillainDefeatRequirements(
     registry as unknown,
-    config,
+    villainBuildConfig,
   );
 
   // why: WP-760 / D-24589 — Blood Frenzy villain instances (Metarchus, Salomé),
   // scanned once at setup from the selected villain groups and read only by
   // resolveFightCost. Narrow test mocks → empty record (omitted below).
-  const villainBloodFrenzy = buildVillainBloodFrenzy(registry as unknown, config);
+  const villainBloodFrenzy = buildVillainBloodFrenzy(registry as unknown, villainBuildConfig);
 
   // why: scheme setup runs after base construction, before first turn.
   // Instructions configure the board (counters, keywords, city state).
@@ -435,7 +450,7 @@ export function buildInitialGameState(
   // baseCardId that call just computed.
   const cardVictoryPoints = buildCardVictoryPoints(
     registry as unknown,
-    config,
+    villainBuildConfig,
     mastermindState.baseCardId,
   );
 
@@ -452,7 +467,7 @@ export function buildInitialGameState(
   // substitute `config.bystandersCount` (that sizes the rescue-pile
   // supply in `G.sharedPiles.bystanders`, a different domain — see the
   // `numPlayers` @param JSDoc in `buildCardDisplayData.ts`).
-  const cardDisplayData = buildCardDisplayData(registry as unknown, config, numPlayers);
+  const cardDisplayData = buildCardDisplayData(registry as unknown, villainBuildConfig, numPlayers);
   // why: D-24668 — Killbot-converted villain-deck Bystanders display as "Killbot", so the
   // log, City card and Victory Pile name them as the Villains they are. A no-op for every
   // scheme without Killbots.
@@ -597,6 +612,13 @@ export function buildInitialGameState(
     context,
   );
   const convertedVillainOrigins = skrullConversion.convertedOrigins;
+  // why: D-24736 — lift the Monster Pit out of the shuffled villain deck (Clash only;
+  // a passthrough with monsterPit undefined for every other scheme). Keeping the
+  // Monsters' relative deck order gives a shuffled Pit with no extra random draw.
+  const monsterPitSplit = splitMonsterPitFromVillainDeck(
+    config.schemeId,
+    skrullConversion.villainDeckState,
+  );
   const hasConvertedVillains = Object.keys(convertedVillainOrigins).length > 0;
   const filledHqResult = fillHqFromDeck(skrullConversion.heroReservoir, HQ_SLOT_COUNT);
 
@@ -626,7 +648,7 @@ export function buildInitialGameState(
   // from the villainDeckCardTypes key count, which a Secret Invasion twist mutates.
   const schemeLossVillainDeckSetupSize = resolveSchemeLossVillainDeckSetupSize(
     config.schemeId,
-    skrullConversion.villainDeckState.deck.length,
+    monsterPitSplit.villainDeckState.deck.length,
   );
 
   // why: build the base state first, then apply scheme setup instructions.
@@ -688,8 +710,11 @@ export function buildInitialGameState(
     // Secret Invasion the deck + card-type map are the skrull-augmented versions
     // (12 Heroes injected as 'villain'-typed Skrulls); passthrough for every other
     // scheme (byte-identical to villainDeckResult.state / .cardTypes).
-    villainDeck: skrullConversion.villainDeckState,
+    villainDeck: monsterPitSplit.villainDeckState,
     villainDeckCardTypes: skrullConversion.villainDeckCardTypes,
+    // why: D-24736 — omit-when-absent: only a Clash game carries a Monster Pit, so
+    // every other game's state hash is unchanged (the convertedVillainOrigins pattern).
+    ...(monsterPitSplit.monsterPit !== undefined ? { monsterPit: monsterPitSplit.monsterPit } : {}),
     // why: WP-513 / D-24324 + WP-514 / D-24326 — lazy: include the converted-villain
     // overlay ONLY when a scheme converted cards (Killbots or Secret Invasion), so
     // non-converting games omit the key entirely and their state hash is unchanged (RS-1).
@@ -776,7 +801,7 @@ export function buildInitialGameState(
     // why: villain/henchman ability hooks built from registry at setup — same
     // pattern as heroAbilityHooks. Immutable during gameplay; executed at the
     // Fight/Ambush fire sites (WP-185). Narrow test mocks → empty table.
-    villainAbilityHooks: buildVillainAbilityHooks(registry, config),
+    villainAbilityHooks: buildVillainAbilityHooks(registry, villainBuildConfig),
     // why: WP-200 — append-only structured event log initialised empty.
     // Populated at runtime by the four fire-site emissions
     // (fightVillain.ts / villainDeck.reveal.ts ambush branch /
