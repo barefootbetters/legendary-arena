@@ -22,7 +22,7 @@ last-reviewed: 2026-05-13
 |---|---|---|
 | Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
-| Research / Notes | `C:\pcloud\LA\ewiki\` | (not published) |
+| Research / Notes | `C:\pcloud\legendary-arena\ewiki\` | (not published) |
 
 ## Summary
 

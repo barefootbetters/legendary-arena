@@ -16,7 +16,7 @@ related:
 status: canonical
 source:
   - C:\dev\legendary-arena\wiki\branding.md (this page — https://ewiki.legendary-arena.com/branding/)
-  - C:\pcloud\LA\brand\README.txt
+  - C:\pcloud\legendary-arena\brand\README.txt
   - C:\www\legendary-arena-com\static\brand-tokens.css
 last-reviewed: 2026-09-04
 ---
@@ -26,7 +26,7 @@ last-reviewed: 2026-09-04
 > This page is the visual index of the **approved** Legendary Arena marks —
 > which logo is current, what each variant is for, and where the master
 > files live. It shows the marks; it does not own them. The approved
-> master files live in `C:\pcloud\LA\brand\` and the colour/type tokens
+> master files live in `C:\pcloud\legendary-arena\brand\` and the colour/type tokens
 > live in the marketing repo's `brand-tokens.css`. Where this page and
 > those sources disagree, the sources win.
 
@@ -113,15 +113,15 @@ Inkscape on PATH). The transparent masters are `logo-la-lockup.svg` and
 
 | Mark | On-wiki artifact (`ewiki/branding/`) | Approved master (source of truth) |
 |---|---|---|
-| Horizontal lockup (raster) | `logo-la-lockup-black.png` (1600 px wide) | `C:\pcloud\LA\brand\Legendary Arena-400x200.ai` |
+| Horizontal lockup (raster) | `logo-la-lockup-black.png` (1600 px wide) | `C:\pcloud\legendary-arena\brand\Legendary Arena-400x200.ai` |
 | Horizontal lockup (vector master) | `logo-la-lockup.svg` (transparent) | extracted from the `.ai` |
 | Horizontal lockup (vector, dark plate) | `logo-la-lockup-on-dark.svg` | same extraction, for light-background display |
 | Wordmark (vector master) | `logo-la-wordmark.svg` (transparent) | extracted from the `.ai` |
 | Wordmark (vector, dark plate) | `logo-la-wordmark-on-dark.svg` | same extraction, for light-background display |
-| Square emblem (raster) | `logo-la-emblem-black.jpg` (1408 × 1408) | `C:\pcloud\LA\brand\logo-la-black.jpg` |
-| Square emblem (vector master) | `logo-la-emblem.svg` (transparent) | traced from `C:\pcloud\LA\brand\segments.zip` |
+| Square emblem (raster) | `logo-la-emblem-black.jpg` (1408 × 1408) | `C:\pcloud\legendary-arena\brand\logo-la-black.jpg` |
+| Square emblem (vector master) | `logo-la-emblem.svg` (transparent) | traced from `C:\pcloud\legendary-arena\brand\segments.zip` |
 | Square emblem (vector, dark plate) | `logo-la-emblem-on-dark.svg` | same trace, for light-background display |
-| Gold hero half | `logo-la-hero-gold.png` (800 × 800, transparent) | `C:\pcloud\LA\brand\Logo-LA-800x800.png` |
+| Gold hero half | `logo-la-hero-gold.png` (800 × 800, transparent) | `C:\pcloud\legendary-arena\brand\Logo-LA-800x800.png` |
 
 The emblem SVGs (plus their trace input `emblem-trace-source.png`) come from
 `build-emblem-svg.py`; the four lockup/wordmark SVGs come from
@@ -131,7 +131,7 @@ deterministic — re-running on the same input is byte-identical.
 
 The layered/editable sources — the `.ai` master and `segments.zip`
 (the emblem's raster layers: the gold wing, the stylized face, the
-background) — stay in `C:\pcloud\LA\brand\` and are **not** copied into this
+background) — stay in `C:\pcloud\legendary-arena\brand\` and are **not** copied into this
 repo. The one exception is the flattened `emblem-trace-source.png` committed
 here so the emblem SVG is reproducible from repo contents. The brand
 folder's own rule is that
@@ -162,7 +162,7 @@ treat it as a code change, not a design tweak.
   is the shipped result of that process; that page is how you rebuild or
   extend it.
 - [Workspace Map](workspace-map.md) — the authoritative map of which
-  surface owns which kind of work. It is where `C:\pcloud\LA\brand\` is
+  surface owns which kind of work. It is where `C:\pcloud\legendary-arena\brand\` is
   established as the home for approved brand assets; this page is the
   visual index of what is filed there.
 - [Public brand system](https://www.legendary-arena.com/brand/) — the
@@ -188,13 +188,13 @@ treat it as a code change, not a design tweak.
   you edit the `.ai`, then re-run `build-lockup-svg.py` to regenerate the
   SVGs and re-export the PNG — you do not edit the SVGs or PNG by hand.
 - **Two sources of truth, by design.** The *marks* are governed by
-  `C:\pcloud\LA\brand\` (README rule: if a file is in that folder it is
+  `C:\pcloud\legendary-arena\brand\` (README rule: if a file is in that folder it is
   current and cleared for use). The *tokens* are governed by
   `brand-tokens.css` in the marketing repo. This page mirrors both and
   owns neither; when it drifts from either, the source wins and this page
   is what gets corrected.
 - **Version by replacement, not by suffix.** When a mark is superseded,
-  the old master moves out of `C:\pcloud\LA\brand\` (to `LA\logo-drafts\`
+  the old master moves out of `C:\pcloud\legendary-arena\brand\` (to `legendary-arena\logo-drafts\`
   or deletion) — it does not linger with a longer filename. If you update
   a master, re-render the matching artifact under `ewiki/branding/` in the
   same change so the wiki does not show a stale mark.
@@ -209,7 +209,7 @@ treat it as a code change, not a design tweak.
   minimum size, the light/dark pairing matrix, and do/don't are specified in
   [`docs/brand/logo-usage.md`](https://github.com/legendary-arena/legendary-arena-website/blob/main/docs/brand/logo-usage.md)
   and rendered on the public [brand page](https://www.legendary-arena.com/brand/).
-  An operator copy under `C:\pcloud\LA\brand\guidelines\` is optional, not required.
+  An operator copy under `C:\pcloud\legendary-arena\brand\guidelines\` is optional, not required.
 - **The emblem SVG is an autotrace, not a hand-built master.** `logo-la-emblem.svg`
   is a faithful, fully scalable vtracer trace of the emblem raster — good for
   the favicon, HUD badge, and web scaling. It is not a hand-tuned vector: a
@@ -228,11 +228,11 @@ treat it as a code change, not a design tweak.
 
 ## References
 
-- `C:\pcloud\LA\brand\README.txt` — the approved-assets folder contract:
+- `C:\pcloud\legendary-arena\brand\README.txt` — the approved-assets folder contract:
   what is cleared for use, the approved-vs-drafts split, the
   version-by-replacement and don't-copy-sources rules, and the naming
   convention.
-- `C:\pcloud\LA\brand\` — the approved masters: `Legendary Arena-400x200.ai`
+- `C:\pcloud\legendary-arena\brand\` — the approved masters: `Legendary Arena-400x200.ai`
   (lockup + wordmark, the editable vector master the SVGs are extracted from),
   `logo-la-black.jpg` (emblem), `Logo-LA-800x800.png` (gold hero half), and
   `segments.zip` (the emblem's raster layers, the trace input for
@@ -248,5 +248,5 @@ treat it as a code change, not a design tweak.
   pairing, and do/don't.
 - [Figma Logo Design](figma-logo-design.md) — the construction pipeline
   that produces the marks.
-- [Workspace Map](workspace-map.md) — establishes `C:\pcloud\LA\brand\` as
+- [Workspace Map](workspace-map.md) — establishes `C:\pcloud\legendary-arena\brand\` as
   the home of approved brand assets.

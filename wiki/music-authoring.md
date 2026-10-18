@@ -16,7 +16,7 @@ related:
 status: draft
 source:
   - C:\dev\legendary-arena\wiki\music-authoring.md (this page — https://ewiki.legendary-arena.com/music-authoring/)
-  - C:\pcloud\LA\audio\audio-motif-map.json (the motif system — team keys, class instruments, rules)
+  - C:\pcloud\legendary-arena\audio\audio-motif-map.json (the motif system — team keys, class instruments, rules)
   - ../content/themes/age-of-apocalypse.json
   - ../content/themes/CATALOG.md
   - ../content/themes/THEME-INDEX.md
@@ -134,7 +134,7 @@ worked example — it carries the `musicAIPrompt` seed and the eight
 Audio spans three storage surfaces, one job each (see
 [Workspace Map](workspace-map.md) for the surface rules):
 
-- **Working binaries (pCloud, `C:\pcloud\LA\audio\`):** the WAV masters,
+- **Working binaries (pCloud, `C:\pcloud\legendary-arena\audio\`):** the WAV masters,
   their local MP3 derivatives, and cover images (`*.jpg`) are working
   files kept on pCloud — **never committed to git and never in the repo
   tree.** An MP3 is not diffable, so it fails the git test regardless of
@@ -401,12 +401,12 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
 
 - **No audio in git — masters live on pCloud.** The WAV masters, their
   local MP3 derivatives, and cover images live on pCloud
-  (`C:\pcloud\LA\audio\`), not in the repo tree; only the authoring
+  (`C:\pcloud\legendary-arena\audio\`), not in the repo tree; only the authoring
   guide, hero research, template, index, and crop scripts under
   `content/media/` are tracked and version-controlled, and the runtime
   theme JSON in `content/themes/` is tracked as before. The ~141 MB
   produced so far has been moved out of `content/media/` to
-  `C:\pcloud\LA\audio\` and the crop scripts repointed to run against it.
+  `C:\pcloud\legendary-arena\audio\` and the crop scripts repointed to run against it.
   This split is locked by D-24219 — see [Workspace Map](workspace-map.md).
 - **Masters are never uploaded.** Only the MP3 derivatives ship to R2;
   the `_MASTER.wav` seed stays local. Batch-encode recipes guard against
@@ -435,7 +435,7 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   (tracked in git; this wiki page summarizes it).
 - `content/media/heroes/HERO-INDEX.json` — generated hero index (279
   heroes across 40 sets) driving hero-theme research (gitignored).
-- `C:\pcloud\LA\audio\audio-motif-map.json` — the authoritative motif
+- `C:\pcloud\legendary-arena\audio\audio-motif-map.json` — the authoritative motif
   system: the 26 team→key rows (twelve chromatic roots), the 5
   class→instrument rows, and the locked rules (mode, resolution direction,
   interval weight, mirroring, families). Lives on pCloud alongside the WAV
@@ -478,12 +478,12 @@ the `audio` shortcode (see [Ewiki Authoring](ewiki-authoring.md)):
   the optional `musicTheme` / `musicAIPrompt` / `musicAssets` fields);
   D-22101 (later additive fields kept v2 without a bump); D-24219 (audio
   storage lock: R2 is the sole delivery surface, masters live on
-  `C:\pcloud\LA\audio\`, nothing audio in git); D-24225 (the motif generator
+  `C:\pcloud\legendary-arena\audio\`, nothing audio in git); D-24225 (the motif generator
   — deterministic MIDI-master + MuseScore-default / synth-fallback render,
   outputs on pCloud); D-24226 (motif layers on the theme sting at −6/−9 dB);
   D-24227 (motif lookup ships as a slim runtime registry generated into the
   client build).
-- `C:\pcloud\LA\audio\audio-motif-map.json` — the motif system data
+- `C:\pcloud\legendary-arena\audio\audio-motif-map.json` — the motif system data
   (team keys, class instruments, rules) this page's [motif matrix](#motif-matrix)
   documents.
 - [Sound Effects](sound-effects.md) — the SFX + adaptive-music-design

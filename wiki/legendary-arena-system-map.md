@@ -19,7 +19,7 @@ related:
 status: draft
 source:
   - C:\dev\legendary-arena\wiki\legendary-arena-system-map.md (this page — https://ewiki.legendary-arena.com/legendary-arena-system-map/)
-  - C:\pcloud\LA\README.md (source of truth for the system map; copied here 2026-10-17)
+  - C:\pcloud\legendary-arena\README.md (source of truth for the system map; copied here 2026-10-17)
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
   - ../docs/ops/service-dependencies.json
@@ -42,8 +42,8 @@ of the wiki home page. Its siblings go deeper on one slice each:
 vendor is down. This page orients; it does not decide.
 
 **Source of truth:** the system map block below is a published copy of
-`C:\pcloud\LA\README.md`, the operator's workstation map (synced to pCloud
-`/LA/README.md`). Edit the README first, then copy it here; when the two
+`C:\pcloud\legendary-arena\README.md`, the operator's workstation map (synced to pCloud
+`/legendary-arena/README.md`). Edit the README first, then copy it here; when the two
 differ, the README wins. Last copied 2026-10-17. The README moves to
 `C:\pcloud\legendary-arena\README.md` in Phase 7 of
 [Workstation Layout Migration](workstation-layout-migration.md).
@@ -106,7 +106,7 @@ Backups - database (nightly 09:17 UTC, la-backup timer on the droplet, 50-backup
                 keeps 35 daily / 12 weekly / 12 monthly)
     Offsite 2 - pCloud mirror, same db-backups/YYYY/MM/DD/ keys (second vendor)
     Restore   - https://ewiki.legendary-arena.com/disaster-recovery/
-Backups - work in progress: pCloud (C:\pcloud\LA) - never sync GitHub repos there, it clashes with .git folders
+Backups - work in progress: pCloud (C:\pcloud\legendary-arena) - never sync GitHub repos there, it clashes with .git folders
 Backups - code: GitHub repos (push)
 ```
 
@@ -127,7 +127,7 @@ Deeper detail: [Data & File Locations](data-file-locations.md),
 | `data\cards\co2e.json` | Core Set 2nd Edition — the one hand-authored set file. |
 | `C:\www\legendary-arena-com` | The marketing site and blog. |
 | `infra\` in `C:\www\legendary-arena-lab` | The droplet's setup — the authoritative version; re-run the provisioner after changing it. |
-| `C:\pcloud\LA` | Work-in-progress business files. |
+| `C:\pcloud\legendary-arena` | Work-in-progress business files. |
 
 | Don't edit this | Why |
 |-----------------|-----|
@@ -200,7 +200,7 @@ What breaks when each one is down, and where to check:
 
 ## References
 
-- `C:\pcloud\LA\README.md` — the source of truth this page copies
+- `C:\pcloud\legendary-arena\README.md` — the source of truth this page copies
   (moved there from `C:\www\README.md` in migration Phase 1, 2026-10-17).
 - [`docs/ops/DOMAINS.md`](../docs/ops/DOMAINS.md) and
   [`docs/ops/domains.json`](../docs/ops/domains.json) — authoritative

@@ -187,7 +187,7 @@ Reference in markdown:
 both are build output directories wiped and regenerated on every
 build. Anything placed there is silently deleted.
 
-**Research files and notes:** Save to `C:\pcloud\LA\ewiki\`.
+**Research files and notes:** Save to `C:\pcloud\legendary-arena\ewiki\`.
 This is the working directory for drafts, reference material, and
 scratch notes that support wiki content but are not published to the
 site.

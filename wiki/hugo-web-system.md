@@ -53,7 +53,7 @@ last-reviewed: 2026-09-01
 |---|---|---|
 | Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
-| Research / Notes | `C:\pcloud\LA\ewiki\` | (not published) |
+| Research / Notes | `C:\pcloud\legendary-arena\ewiki\` | (not published) |
 
 ### Where files are drafted and where they get published
 

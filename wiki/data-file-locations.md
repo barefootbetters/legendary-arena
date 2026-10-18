@@ -57,7 +57,7 @@ hostnames, and the pages cited here.
 ### Start here — local roots, repos, and public sites
 
 The workstation's local paths have one source of truth,
-`C:\pcloud\LA\README.md`, published as the
+`C:\pcloud\legendary-arena\README.md`, published as the
 [Legendary Arena System Map](legendary-arena-system-map.md). The tables
 below summarize it for this page; when they differ, the README wins.
 
@@ -68,7 +68,7 @@ what the files are and how they are kept safe:
 |------|-------|--------------|
 | `C:\www\` | Website and web-app checkouts — Hugo sites, the marketing repo, the lab, the shared wiki theme | GitHub (push); deployed to Cloudflare |
 | `C:\dev\` | Code checkouts — engines, libraries, tools. The engine monorepo lives at `C:\dev\legendary-arena` (moved off pCloud 2026-10-17) | GitHub (push) |
-| `C:\pcloud\` | Business records, staging, work-in-progress docs, media masters. Legendary Arena's working root is `C:\pcloud\LA\` | pCloud sync |
+| `C:\pcloud\` | Business records, staging, work-in-progress docs, media masters. Legendary Arena's working root is `C:\pcloud\legendary-arena\` | pCloud sync |
 
 **Two kinds of backup, never mixed.** GitHub is the backup for anything
 in a git repo — push is what makes code durable. pCloud is the backup
@@ -214,7 +214,7 @@ above and are the only audio the app fetches. **Nothing audio is
 committed to git.** Only the crop scripts, the authoring guide, and the
 `content/themes/*.json` `musicAssets.*Url` references are tracked; the
 WAV masters and their local MP3 derivatives are working binaries that
-live on pCloud (`C:\pcloud\LA\audio\`), never in the repo tree and never
+live on pCloud (`C:\pcloud\legendary-arena\audio\`), never in the repo tree and never
 uploaded as masters — see [Workspace Map](workspace-map.md). To avoid a
 per-cue R2 round-trip on time-critical stings (e.g. master-strike), the
 arena client **prefetches a theme's stings into decoded audio buffers at
