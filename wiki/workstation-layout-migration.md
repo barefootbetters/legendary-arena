@@ -51,7 +51,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 4 | Fold the rehearsal's lessons into Phases 5–6 | Done 2026-10-17 (all nine findings folded; 3 branch decisions made by Jeff) |
 | 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Done 2026-10-17 (11,132 tests, 0 fail; all three hooks proven) |
 | 6 | **Cut over** the engine | Cut over 2026-10-17: old checkout renamed `legendary-arena.RETIRED-2026-10-17` (rollback until 2026-10-31), 6c checks pass, path sweep shipped, stale clone `C:\www\legendary-arena` deleted. Done; `.RETIRED` folder deleted after 2026-10-31 |
-| 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Local rename and three-repo sweep done 2026-10-17; pCloud pair moving to `/legendary-arena` (Jeff), then `rclone check` and delete `/LA` |
+| 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Done 2026-10-17 (local rename, three-repo sweep, cloud copy `/legendary-arena` verified 516/516, `/LA` deleted) |
 | 8 | Move shared tools to `C:\dev` | Deferred until the engine has run 1–2 weeks from `C:\dev` |
 | 9 | Clean up leftovers | Not started |
 
@@ -469,6 +469,7 @@ Nothing gets safer by this phase; it only makes the convention exact.
   `MUSIC-AUTHORING.md` and the wiki), the marketing repo (3 files) and the
   brain repo (1). Bare `LA\` names in Workspace Map's tree and prose now
   read `legendary-arena\`; `DECISIONS.md` and dated log entries keep `LA`.
+- **2026-10-17** — **Phase 7 done.** The `/legendary-arena` pair uploaded in full; `rclone check --one-way` against the local folder found 516 matching files and 0 differences, and Jeff deleted `/LA`. All three sweep PRs merged (this repo #2888, marketing #270, brain #70).
 
 ## Interactions
 
