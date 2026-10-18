@@ -66,8 +66,8 @@ what the files are and how they are kept safe:
 
 | Root | Holds | Kept safe by |
 |------|-------|--------------|
-| `C:\www\` | Website and web-app checkouts — Hugo sites, the marketing repo, the lab, the shared wiki theme | GitHub (push); deployed to Cloudflare |
-| `C:\dev\` | Code checkouts — engines, libraries, tools. The engine monorepo lives at `C:\dev\legendary-arena` (moved off pCloud 2026-10-17) | GitHub (push) |
+| `C:\www\` | Website checkouts — the marketing repo and other published-content sites | GitHub (push); deployed to Cloudflare |
+| `C:\dev\` | Code checkouts — engines, libraries, tools. The engine monorepo lives at `C:\dev\legendary-arena` (moved off pCloud 2026-10-17); the shared tools (the lab, the wiki theme, the dashboard) moved here 2026-10-18 | GitHub (push) |
 | `C:\pcloud\` | Business records, staging, work-in-progress docs, media masters. Legendary Arena's working root is `C:\pcloud\legendary-arena\` | pCloud sync |
 
 **Two kinds of backup, never mixed.** GitHub is the backup for anything
@@ -86,8 +86,9 @@ the sync drive to `C:\dev\legendary-arena` (operator decision; see
 |------------|---------------|------------|
 | `C:\dev\legendary-arena` | `barefootbetters/legendary-arena` | **The engine monorepo** — engine, API server, every Vue app, card data, and this wiki's source. The canonical checkout (off pCloud since 2026-10-17). |
 | `C:\www\legendary-arena-com` | `legendary-arena/legendary-arena-website` | Hugo marketing site and blog → `www.legendary-arena.com`. |
-| `C:\www\legendary-arena-lab` | `legendary-arena/legendary-arena-lab` | API droplet provisioning (`infra/scripts/NN-*.ps1`) and the droplet side of the server deploy. |
-| `C:\www\ewiki-theme` | `barefootbetters/ewiki-theme` | Shared Hugo theme the wikis build with (D-24728). |
+| `C:\dev\legendary-arena-lab` | `legendary-arena/legendary-arena-lab` | API droplet provisioning (`infra/scripts/NN-*.ps1`) and the droplet side of the server deploy. |
+| `C:\dev\ewiki-theme` | `barefootbetters/ewiki-theme` | Shared Hugo theme the wikis build with (D-24728). |
+| `C:\dev\bb-studio-dashboard` | `barefootbetters/bb-studio-dashboard` | The shared operator dashboard (D-24723); Legendary Arena becomes an instance of it after parity. |
 | ~~`C:\www\legendary-arena`~~ | `barefootbetters/legendary-arena` | **Deleted 2026-10-17** (migration Phase 6c). It was a stale second clone; every branch was merged or superseded on GitHub first. |
 
 The apps (`arena-client`, `registry-viewer`, …) are folders under

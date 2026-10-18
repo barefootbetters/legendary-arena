@@ -52,7 +52,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Done 2026-10-17 (11,132 tests, 0 fail; all three hooks proven) |
 | 6 | **Cut over** the engine | Cut over 2026-10-17: old checkout renamed `legendary-arena.RETIRED-2026-10-17` (rollback until 2026-10-31), 6c checks pass, path sweep shipped, stale clone `C:\www\legendary-arena` deleted. Done; `.RETIRED` folder deleted after 2026-10-31 |
 | 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Done 2026-10-17 (local rename, three-repo sweep, cloud copy `/legendary-arena` verified 516/516, `/LA` deleted) |
-| 8 | Move shared tools to `C:\dev` | Deferred until the engine has run 1–2 weeks from `C:\dev` |
+| 8 | Move shared tools to `C:\dev` | 8a done 2026-10-18 at Jeff's call, ahead of the 1–2 week wait: `ewiki-theme`, `bb-studio-dashboard` and `legendary-arena-lab` re-cloned to `C:\dev` (old checkouts `.RETIRED-2026-10-18`, delete after 2026-11-01). 8b open: the two marketing-repo renames |
 | 9 | Clean up leftovers | Done 2026-10-17 (card-image staging moved to `C:\pcloud\legendary-arena\`, cloud copy verified 12,546/12,546 on 2026-10-18; the legacy app's `.env` and `node_modules` left in `BB\DEV` for Jeff to delete) |
 
 Update the Status column and add a line to the Progress log whenever a
@@ -307,20 +307,18 @@ The droplet's nightly backup mirror is unaffected: it writes to
 **Done when** a search of all three repos finds no live `C:\pcloud\LA`
 reference. **Rollback:** rename the folder back; the sweep is a revert.
 
-### Phase 8 — Shared tools to `C:\dev` (deferred)
+### Phase 8 — Shared tools to `C:\dev`
 
 Decided 2026-10-17: do it, but only after the engine has run from `C:\dev`
 for 1–2 weeks with no rollback, as a separate cleanup outside the
-critical path.
+critical path. On 2026-10-18 Jeff called 8a early.
 
-Move `ewiki-theme`, `bb-studio-dashboard` and `legendary-arena-lab` from
-`C:\www` to `C:\dev` (re-clone, as above). The one known local-path
-reference is the brain repo's `viewer/README.md`, which runs
-`C:\www\ewiki-theme\tools\Sync-EwikiTheme.ps1`. The studio ewiki is the
-`ewiki/` folder inside `bb-studio-dashboard`, not a repo, so it moves with
-it.
+**8a (done 2026-10-18).** Move `ewiki-theme`, `bb-studio-dashboard` and
+`legendary-arena-lab` from `C:\www` to `C:\dev` (re-clone, as above). The
+studio ewiki is the `ewiki/` folder inside `bb-studio-dashboard`, not a
+repo, so it moves with it.
 
-The same step renames the two marketing repos to the `-www` suffix
+**8b (open).** The same phase renames the two marketing repos to the `-www` suffix
 (D-24739 point 2):
 
 - GitHub `legendary-arena/legendary-arena-website` → `legendary-arena-www`,
@@ -546,6 +544,25 @@ Nothing gets safer by this phase; it only makes the convention exact.
   `README.md`. The private engineering wiki went live the same day at
   `scooby-engine-ewiki.barefootbetters.com` (Hugo on the shared ewiki theme,
   Access-gated; scooby-engine #1).
+- **2026-10-18** — **Phase 8a done: shared tools moved to `C:\dev`**, at
+  Jeff's call, ahead of the 1–2 week wait. `ewiki-theme`,
+  `bb-studio-dashboard` and `legendary-arena-lab` were re-cloned from
+  GitHub at `origin/main`. Checks before the move: no unpushed commits,
+  stashes or uncommitted files in any of them, and no process running from
+  them. ewiki-theme kept `core.autocrlf=false` (its manifest hashes depend
+  on it) and its three release tags. The dashboard kept
+  `extensions.worktreeConfig`. The lab's `.claude/settings.local.json` and
+  `.vscode/` were copied across; everything else ignored was build output.
+  Of the dashboard's two worktrees, WP-012's (PR #20, merged) was removed.
+  Phase 3's (`claude/phase-3-packets`, PR #19 open) was re-created from
+  the new clone at the same path and commit. The old checkouts are
+  `C:\www\<repo>.RETIRED-2026-10-18`, deleted after 2026-11-01. Live path
+  references were repointed: this wiki (system map, Data & File
+  Locations), the lab's wiki, the dashboard's ewiki footer, STATUS and
+  WP-014, the Herbs system map, the brain's `viewer/README.md`,
+  `bb-studio-www`'s README, and both pCloud product READMEs. None of the
+  three repos had Claude Code project memory to carry. 8b, the two
+  marketing-repo renames, stays open.
 
 ## Interactions
 
