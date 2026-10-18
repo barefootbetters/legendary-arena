@@ -104,8 +104,9 @@ pCloud has two top-level project roots plus several personal ones:
 ```
 C:\pcloud\
 ├── BB\                     # BarefootBetters — emptying out, see Edge Cases
-│   ├── DEV\                # code checkouts
-│   │   └── legendary-arena\    # ← engine monorepo until 2026-10-17; now C:\dev\legendary-arena (retired copy kept to 2026-10-31)
+│   ├── DEV\                # no checkouts since 2026-10-17; holds only the items below
+│   │   ├── legendary-arena.RETIRED-2026-10-17\   # old engine checkout; rollback until 2026-10-31, then deleted
+│   │   └── barefootbetters-legendary-setup\      # card-image staging (scripts/card-image-*/README.md)
 │   ├── DOCS\
 │   └── MEDIA\
 │
@@ -368,11 +369,12 @@ asked. Two pointers keep it reachable:
   merged or superseded. It shared the engine remote but was hundreds of
   commits behind `main`, and searches across `C:\www\` used to return its
   long-superseded files. The canonical checkout is `C:\dev\legendary-arena`.
-- **`C:\pcloud\BB\DEV\README.md` is a stale chat transcript, not a
-  README.** It describes `cards.barefootbetters.com` and a `data/raw/`
-  directory, neither of which is current. It is the closest thing to an
-  existing manifest and it is wrong — which is the case for replacing it
-  with a pointer to this page.
+- **`C:\pcloud\BB\DEV\` was swept on 2026-10-17.** Its stale
+  chat-transcript `README.md`, 15 empty worktree shells left by
+  `git worktree remove` (`la-wt-*` and `legendary-arena-*`), and a few
+  superseded loose scripts were deleted. Worktrees belong under
+  `C:\claude-worktrees\`, not next to a checkout. What remains is listed in
+  the pCloud tree above.
 - **Credentials are sitting in cleartext at the pCloud root.** Several
   files there are recovery codes and exported credential lists. pCloud
   sync is not a secret store: the files replicate to every synced device
@@ -437,8 +439,9 @@ asked. Two pointers keep it reachable:
   [Workstation Layout Migration](workstation-layout-migration.md).
 - **Per-repo README pointers are proposed but not written.** Each repo
   gaining a short section naming this page — rather than restating it —
-  would make the map findable from inside any checkout. Scope, and whether
-  it replaces the stale `BB\DEV\README.md`, is undecided.
+  would make the map findable from inside any checkout. Scope is
+  undecided. (The stale `BB\DEV\README.md` it might have replaced was
+  deleted on 2026-10-17.)
 - **The non-engine repos under `C:\www\` are not inventoried here.**
   `barefootbetters-www`, `legendary-forge`, `jefferyjjensen-wiki`,
   `stem-diorama-kit`, and others exist but have not been mapped to their
