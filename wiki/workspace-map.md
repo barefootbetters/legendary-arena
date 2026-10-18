@@ -104,14 +104,14 @@ pCloud has two top-level project roots plus several personal ones:
 ```
 C:\pcloud\
 ├── BB\                     # BarefootBetters — emptying out, see Edge Cases
-│   ├── DEV\                # no checkouts since 2026-10-17; holds only the items below
-│   │   ├── legendary-arena.RETIRED-2026-10-17\   # old engine checkout; rollback until 2026-10-31, then deleted
-│   │   └── barefootbetters-legendary-setup\      # card-image staging (scripts/card-image-*/README.md)
+│   ├── DEV\                # no checkouts since 2026-10-17; holds only the item below
+│   │   └── legendary-arena.RETIRED-2026-10-17\   # old engine checkout; rollback until 2026-10-31, then deleted
 │   ├── DOCS\
 │   └── MEDIA\
 │
 ├── legendary-arena\        # Legendary Arena — the working root (named LA\ until 2026-10-17)
 │   ├── audio\              # game music masters + local MP3 derivatives (published MP3s → R2)
+│   ├── barefootbetters-legendary-setup\   # card-image staging (scripts/card-image-*/README.md); from BB\DEV 2026-10-17
 │   ├── ewiki\
 │   ├── logo-drafts\
 │   ├── products\
@@ -295,8 +295,10 @@ were created for exactly this work — but both are **empty**, and `BB\`
 is on a path to holding nothing:
 
 - `BB\DEV\` existed to hold the engine checkout, which moved off pCloud
-  on 2026-10-17 (see the sync-drive hazard under Edge Cases). Once the
-  retired copy is deleted after 2026-10-31, `DEV\` holds no engine code.
+  on 2026-10-17 (see the sync-drive hazard under Edge Cases). The
+  card-image staging area followed it out the same day, to
+  `legendary-arena\`. Once the retired copy is deleted after 2026-10-31,
+  `DEV\` holds nothing.
 - `BB\DOCS\` and `BB\MEDIA\` hold very little.
 - Everything with real content already lives under `legendary-arena\`.
 
@@ -373,8 +375,11 @@ asked. Two pointers keep it reachable:
   chat-transcript `README.md`, 15 empty worktree shells left by
   `git worktree remove` (`la-wt-*` and `legendary-arena-*`), and a few
   superseded loose scripts were deleted. Worktrees belong under
-  `C:\claude-worktrees\`, not next to a checkout. What remains is listed in
-  the pCloud tree above.
+  `C:\claude-worktrees\`, not next to a checkout. The card-image staging
+  area (`barefootbetters-legendary-setup\`, 4 GB of staged scans) moved to
+  `C:\pcloud\legendary-arena\` the same day. `BB\DEV` was never a pCloud
+  sync pair, so until then those scans had no cloud copy. What remains is
+  listed in the pCloud tree above.
 - **Credentials are sitting in cleartext at the pCloud root.** Several
   files there are recovery codes and exported credential lists. pCloud
   sync is not a secret store: the files replicate to every synced device

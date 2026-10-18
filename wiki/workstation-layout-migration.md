@@ -53,7 +53,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 6 | **Cut over** the engine | Cut over 2026-10-17: old checkout renamed `legendary-arena.RETIRED-2026-10-17` (rollback until 2026-10-31), 6c checks pass, path sweep shipped, stale clone `C:\www\legendary-arena` deleted. Done; `.RETIRED` folder deleted after 2026-10-31 |
 | 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Done 2026-10-17 (local rename, three-repo sweep, cloud copy `/legendary-arena` verified 516/516, `/LA` deleted) |
 | 8 | Move shared tools to `C:\dev` | Deferred until the engine has run 1–2 weeks from `C:\dev` |
-| 9 | Clean up leftovers | Mostly done 2026-10-17; open: where the card-image staging area lives |
+| 9 | Clean up leftovers | Done 2026-10-17 (card-image staging moved to `C:\pcloud\legendary-arena\`; the legacy app's `.env` and `node_modules` left in `BB\DEV` for Jeff to delete) |
 
 Update the Status column and add a line to the Progress log whenever a
 phase moves. The step-by-step commands live in the operator's execution
@@ -351,10 +351,19 @@ Nothing gets safer by this phase; it only makes the convention exact.
   caller workflow, so it deploys only with an explicit `--config`.
 - **`C:\pcloud\BB\DEV\` swept 2026-10-17.** 15 empty worktree shells (0
   bytes, no `.git`) were deleted, along with the stale `README.md` and
-  superseded loose scripts; Workspace Map's `BB\` notes are updated. Still
-  open: `barefootbetters-legendary-setup`, the card-image staging area the
-  three `scripts/card-image-*/README.md` files point at. Moving it is its
-  own decision.
+  superseded loose scripts; Workspace Map's `BB\` notes are updated.
+- ~~`barefootbetters-legendary-setup`, the card-image staging area.~~
+  **Moved 2026-10-17** to `C:\pcloud\legendary-arena\barefootbetters-legendary-setup\`
+  (Jeff's call). `BB\DEV` was never a sync pair, so its 4 GB of staged
+  scans had no cloud copy until this move. Two items stayed behind in
+  `BB\DEV\barefootbetters-legendary-setup\` on purpose: `node_modules`
+  (regenerable, not worth syncing) and the legacy app's `.env`
+  (Supabase service-role and AWS keys that should not be uploaded). The
+  41 staging `.ps1` files that hardcoded the old absolute path were
+  repointed. The repo's `generate-rename-scripts.mjs` and
+  `migrate-renamed-to-v16.mjs` defaulted to `<repo-root>\..\`, which
+  resolved to nothing after the Phase 6 cut-over; both now default to the
+  new absolute path.
 
 ### Progress log
 
@@ -478,6 +487,15 @@ Nothing gets safer by this phase; it only makes the convention exact.
   as #2049/#2050. Jeff deleted the shells plus the stale `README.md` and
   superseded loose scripts. `C:\dev\null` and `C:\www\hva-wp004-knobs` are
   gone. Left: `barefootbetters-legendary-setup` (card-image staging) and the
+  `.RETIRED` checkout until 2026-10-31.
+- **2026-10-17** — **Phase 9 done.** Jeff chose `C:\pcloud\legendary-arena\`
+  for the card-image staging area. 12,546 files (4.1 GB) moved by
+  same-volume rename, a count that matches the source less `node_modules`
+  (2,282 files) and `.env`, which were left in `BB\DEV` for Jeff to delete.
+  41 staging scripts were repointed (originals backed up first), and the
+  two convert-cards scripts' broken sibling default was fixed; both
+  dry-runs resolve the new folder. Left: the first upload of the new
+  folder to `/legendary-arena`, then an `rclone check --one-way`; and the
   `.RETIRED` checkout until 2026-10-31.
 
 ## Interactions

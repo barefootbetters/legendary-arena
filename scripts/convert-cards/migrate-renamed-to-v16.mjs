@@ -27,9 +27,9 @@
  *   node scripts/convert-cards/migrate-renamed-to-v16.mjs --output-dir <path>
  *   node scripts/convert-cards/migrate-renamed-to-v16.mjs --input-dir <path>
  *
- * Defaults (all relative to <repo-root>/..):
- *   input  = barefootbetters-legendary-setup/card-images-staging/renamed
- *   output = barefootbetters-legendary-setup/card-images-staging/renamed-v16
+ * Defaults (under C:\pcloud\legendary-arena\barefootbetters-legendary-setup):
+ *   input  = card-images-staging/renamed
+ *   output = card-images-staging/renamed-v16
  */
 
 import { readdir, copyFile, mkdir, readFile } from 'node:fs/promises';
@@ -43,9 +43,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // REPO_ROOT is two levels up from this script (scripts/convert-cards/).
 const REPO_ROOT = resolve(__dirname, '..', '..');
 const DATA_CARDS_DIR = join(REPO_ROOT, 'data', 'cards');
-const STAGING_BASE = resolve(
-  REPO_ROOT, '..', 'barefootbetters-legendary-setup', 'card-images-staging'
-);
+// why: the staging area is not a sibling of the checkout. It moved to the
+// pCloud working root on 2026-10-17 (workstation migration Phase 9) after the
+// checkout moved to C:\dev, so a REPO_ROOT-relative default no longer resolves.
+const STAGING_BASE =
+  'C:\\pcloud\\legendary-arena\\barefootbetters-legendary-setup\\card-images-staging';
 const DEFAULT_INPUT_DIR = join(STAGING_BASE, 'renamed');
 const DEFAULT_OUTPUT_DIR = join(STAGING_BASE, 'renamed-v16');
 
