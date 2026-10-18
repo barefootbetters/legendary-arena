@@ -19,7 +19,7 @@ related:
   - development-workflow.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\disaster-recovery.md (this page — https://ewiki.legendary-arena.com/disaster-recovery/)
+  - C:\dev\legendary-arena\wiki\disaster-recovery.md (this page — https://ewiki.legendary-arena.com/disaster-recovery/)
   - ../docs/ops/DISASTER_RECOVERY.md
   - ../docs/ops/INCIDENT_RESPONSE.md
   - ../docs/ai/work-packets/WP-416-db-backup-pipeline.md

@@ -15,7 +15,7 @@ related:
   - brevo-email-pipeline.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\homepage-appendix.md (this page — https://ewiki.legendary-arena.com/homepage-appendix/)
+  - C:\dev\legendary-arena\wiki\homepage-appendix.md (this page — https://ewiki.legendary-arena.com/homepage-appendix/)
   - ../docs/01-VISION.md
   - ../docs/ai/work-packets/WP-149-public-leaderboard-marketing-page.md
 last-reviewed: 2026-08-05

@@ -16,7 +16,7 @@ related:
   - workspace-map.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\blog-post-authoring.md (this page — https://ewiki.legendary-arena.com/blog-post-authoring/)
+  - C:\dev\legendary-arena\wiki\blog-post-authoring.md (this page — https://ewiki.legendary-arena.com/blog-post-authoring/)
   - C:\www\legendary-arena-com\archetypes\blog.md
   - C:\www\legendary-arena-com\docs\04-CONTENT-CONVENTIONS.md
   - C:\www\legendary-arena-com\docs\05-SEO-CONVENTIONS.md

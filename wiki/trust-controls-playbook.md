@@ -17,7 +17,7 @@ related:
   - monetization-model.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\trust-controls-playbook.md (this page — https://ewiki.legendary-arena.com/trust-controls-playbook/)
+  - C:\dev\legendary-arena\wiki\trust-controls-playbook.md (this page — https://ewiki.legendary-arena.com/trust-controls-playbook/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-07-23
 ---

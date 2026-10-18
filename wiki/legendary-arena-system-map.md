@@ -18,7 +18,7 @@ related:
   - system-backup.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\legendary-arena-system-map.md (this page — https://ewiki.legendary-arena.com/legendary-arena-system-map/)
+  - C:\dev\legendary-arena\wiki\legendary-arena-system-map.md (this page — https://ewiki.legendary-arena.com/legendary-arena-system-map/)
   - C:\pcloud\LA\README.md (source of truth for the system map; copied here 2026-10-17)
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
@@ -72,9 +72,8 @@ DigitalOcean droplet (Ubuntu VPS):
 
 Repositories:
     https://github.com/barefootbetters/legendary-arena          ← engine monorepo (all the apps above except www)
-        - Current - C:\pcloud\BB\DEV\legendary-arena (on pCloud until moved to C:\dev)
-        - Future  - C:\dev\legendary-arena
-        - Stale   - C:\www\legendary-arena (safe to delete)
+        - C:\dev\legendary-arena (off pCloud since 2026-10-17)
+        - Stale   - C:\www\legendary-arena (retired 2026-10-17; delete if still present)
     https://github.com/legendary-arena/legendary-arena-website  ← marketing site (www)
         - C:\www\legendary-arena-com
     https://github.com/legendary-arena/legendary-arena-lab      ← the api droplet's setup + operator runbooks
@@ -185,11 +184,13 @@ What breaks when each one is down, and where to check:
 
 ## Edge Cases
 
-- **The engine monorepo is still on pCloud.** It breaks the
-  "no git checkouts on pCloud" rule until it moves to
-  `C:\dev\legendary-arena`; see [Workspace Map](workspace-map.md).
-- **`C:\www\legendary-arena` is a stale clone.** Nothing deploys from it.
-  Do not edit or search it.
+- **The engine monorepo moved off pCloud on 2026-10-17.** It lives at
+  `C:\dev\legendary-arena`; the old pCloud checkout was renamed
+  `legendary-arena.RETIRED-2026-10-17` and is the rollback until
+  2026-10-31. See [Workstation Layout Migration](workstation-layout-migration.md).
+- **`C:\www\legendary-arena` is a stale clone, retired 2026-10-17.**
+  Nothing deploys from it. Delete it if it is still there; never edit or
+  search it.
 - **The brain MCP lags `main`.** A merged ewiki edit reaches the brain
   connector only after a redeploy from the brain repo.
 - **Everything in `wiki\` is public on GitHub.** The ewiki site is behind

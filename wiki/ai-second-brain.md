@@ -16,7 +16,7 @@ related:
   - development-workflow.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
+  - C:\dev\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ai/DECISIONS.md#d-24712
   - ../docs/ai/DECISIONS.md#d-24403

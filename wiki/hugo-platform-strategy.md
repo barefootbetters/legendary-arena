@@ -13,7 +13,7 @@ related:
   - disaster-recovery.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-platform-strategy.md (this page — https://ewiki.legendary-arena.com/hugo-platform-strategy/)
+  - C:\dev\legendary-arena\wiki\hugo-platform-strategy.md (this page — https://ewiki.legendary-arena.com/hugo-platform-strategy/)
   - ../docs/ai/work-packets/WP-139-engineering-wiki-viewer.md
   - ../apps/wiki-viewer/README.md
 last-reviewed: 2026-10-17

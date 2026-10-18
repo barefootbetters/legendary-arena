@@ -17,7 +17,7 @@ related:
   - ubuntu-lab-provisioning.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\service-dependency-map.md (this page — https://ewiki.legendary-arena.com/service-dependency-map/)
+  - C:\dev\legendary-arena\wiki\service-dependency-map.md (this page — https://ewiki.legendary-arena.com/service-dependency-map/)
   - ../docs/ops/service-dependencies.json
   - ../docs/ops/domains.json
   - ../docs/ops/DOMAINS.md

@@ -107,7 +107,7 @@ Success is allowed. Entropy is not.
 The repository is a pnpm monorepo. Every package has a single, bounded responsibility.
 
 ```
-C:\pcloud\BB\DEV\legendary-arena\
+C:\dev\legendary-arena\
 │
 ├── packages/
 │   ├── game-engine/          @legendary-arena/game-engine

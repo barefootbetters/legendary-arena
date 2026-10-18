@@ -17,7 +17,7 @@ related:
   - villain-deck.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\debug-effects.md (this page — https://ewiki.legendary-arena.com/debug-effects/)
+  - C:\dev\legendary-arena\wiki\debug-effects.md (this page — https://ewiki.legendary-arena.com/debug-effects/)
   - ../scripts/build-effect-implementation-index.mjs
   - ../scripts/coverage/tactic-provenance.json
   - ../scripts/build-card-mechanics-metadata.mjs

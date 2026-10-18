@@ -14,7 +14,7 @@ related:
   - system-backup.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\ewiki-authoring.md (this page — https://ewiki.legendary-arena.com/ewiki-authoring/)
+  - C:\dev\legendary-arena\wiki\ewiki-authoring.md (this page — https://ewiki.legendary-arena.com/ewiki-authoring/)
   - ../apps/wiki-viewer/assets/css/style.css
   - ../apps/wiki-viewer/hugo.toml
   - ../apps/wiki-viewer/layouts/shortcodes/audio.html
@@ -304,7 +304,7 @@ every build, so it can't go stale (D-24709).
   uses that id.
 
 The shortcode
-(`C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\layouts\shortcodes\include-section.html`,
+(`C:\dev\legendary-arena\apps\wiki-viewer\layouts\shortcodes\include-section.html`,
 [on GitHub](../apps/wiki-viewer/layouts/shortcodes/include-section.html))
 looks up the page, cuts the Markdown from that heading to the next heading of
 the same level, and renders it in place. The heading itself is left out, so
@@ -449,7 +449,7 @@ deploys (the `wiki-viewer` workflow's deploy job, to the Cloudflare Worker
 `legendary-arena-wiki`), and where each of its files ends up.
 
 Each file reference shows **both** forms: the full local drafting path —
-e.g. `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md`, the directory to
+e.g. `C:\dev\legendary-arena\wiki\<slug>.md`, the directory to
 `cd` into for a local clone — as plain text, **and** a GitHub link for the
 browser / no-clone path. The full path is deliberately hardcoded to the
 drafting location (matching [SCHEMA.md](SCHEMA.md) §Self-reference); the
@@ -461,7 +461,7 @@ that reference stays GitHub-only.)
 The block has three automatic variants:
 
 - **Native page** (most pages): the wiki page itself is the editable
-  source — full path `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md`,
+  source — full path `C:\dev\legendary-arena\wiki\<slug>.md`,
   linked to `wiki/<slug>.md` on GitHub; the Sources list are files it
   *documents*, not edit targets.
 - **Mirror page:** the page synthesizes one upstream doc that owns the
@@ -544,7 +544,7 @@ first — the six-field surface is locked (WP-139 / EC-142).
 ### Adding an image to a page
 
 Save the image in the repo at
-`C:\pcloud\BB\DEV\legendary-arena\ewiki\<slug>\<name>.png` — where `<slug>`
+`C:\dev\legendary-arena\ewiki\<slug>\<name>.png` — where `<slug>`
 is the page's filename without `.md` (for `wiki/legendary-forge.md`, that
 directory is `…\ewiki\legendary-forge\`). **Commit it.** Then reference it
 in the page markdown as an absolute *site* path:
@@ -561,9 +561,9 @@ Hugo serves the file at `/<slug>/<name>.png`. Shipped examples:
 **Do not save the image into either of these** — both look correct locally
 and fail in production:
 
-- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\static\<slug>\` —
+- `C:\dev\legendary-arena\apps\wiki-viewer\static\<slug>\` —
   gitignored, so it is never committed and 404s once deployed.
-- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\content\` — wiped
+- `C:\dev\legendary-arena\apps\wiki-viewer\content\` — wiped
   (`rmSync`) on every build.
 
 The rule in one line: **page content goes in `wiki\`, image and diagram
@@ -579,8 +579,8 @@ repo-relative paths on GitHub.)
 
 | Copy | Path | Editable? |
 |---|---|---|
-| Source | `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md` | **Yes — this is the only one** |
-| Projection | `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\content\<slug>.md` | No — gitignored, regenerated every build, carries a generated banner |
+| Source | `C:\dev\legendary-arena\wiki\<slug>.md` | **Yes — this is the only one** |
+| Projection | `C:\dev\legendary-arena\apps\wiki-viewer\content\<slug>.md` | No — gitignored, regenerated every build, carries a generated banner |
 | Rendered | `https://ewiki.legendary-arena.com/<slug>/` | No — the published output |
 
 This is exactly why [SCHEMA.md](SCHEMA.md) requires the first
@@ -589,10 +589,10 @@ reader looking at one of three near-identical copies cannot tell which
 one to edit.
 
 **Committed, in this repo** (rooted at
-`C:\pcloud\BB\DEV\legendary-arena\` — the directory to `cd` into):
+`C:\dev\legendary-arena\` — the directory to `cd` into):
 
 ```
-C:\pcloud\BB\DEV\legendary-arena\
+C:\dev\legendary-arena\
   wiki\<slug>.md                            # the page source
   ewiki\<slug>\                             # that page's assets
     ├── diagram.mmd                         #   Mermaid source (editable)
@@ -609,7 +609,7 @@ C:\pcloud\BB\DEV\legendary-arena\
 `content/`, `public/`, `resources/`, and `static/*/`:
 
 ```
-C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\
+C:\dev\legendary-arena\apps\wiki-viewer\
   content\             # ← wiki\*.md projected here
   static\<slug>\       # ← ewiki\<slug>\ projected here
   public\              # Hugo build output
@@ -686,9 +686,9 @@ prefixes.
 
 ## References
 
-- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\assets\css\style.css`
+- `C:\dev\legendary-arena\apps\wiki-viewer\assets\css\style.css`
   — theme stylesheet (authoritative for all style values)
-- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\hugo.toml`
+- `C:\dev\legendary-arena\apps\wiki-viewer\hugo.toml`
   — Hugo config (confirms `unsafe = false`, syntax highlighting off)
 - [Wiki Viewer](wiki-viewer.md) — page creation and publishing
 - [SCHEMA.md](SCHEMA.md) — entity-page contract

@@ -514,8 +514,8 @@ works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
 1. **A clean `main`.** Work in a fresh worktree of `origin/main`, never a
    feature branch. A local deploy ships whatever is in the folder.
    ```powershell
-   git -C C:\pcloud\BB\DEV\legendary-arena fetch origin main
-   git -C C:\pcloud\BB\DEV\legendary-arena worktree add --detach C:\claude-worktrees\legendary-arena\manual-deploy origin/main
+   git -C C:\dev\legendary-arena fetch origin main
+   git -C C:\dev\legendary-arena worktree add --detach C:\claude-worktrees\legendary-arena\manual-deploy origin/main
    Set-Location C:\claude-worktrees\legendary-arena\manual-deploy
    ```
 2. **Sign in to Cloudflare** as yourself: `pnpm dlx wrangler@4.149.0 login`.
@@ -570,7 +570,7 @@ works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
   `preview_urls: false`. A local deploy reads the same file, so it can't
   reopen a default hostname unless someone edited the config.
 - Remove the worktree:
-  `git -C C:\pcloud\BB\DEV\legendary-arena worktree remove C:\claude-worktrees\legendary-arena\manual-deploy`.
+  `git -C C:\dev\legendary-arena worktree remove C:\claude-worktrees\legendary-arena\manual-deploy`.
 - The next successful workflow run on `main` deploys over the manual
   version, so nothing needs reconciling afterwards.
 

@@ -17,7 +17,7 @@ related:
   - operational-health-checks.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\play-board.md (this page — https://ewiki.legendary-arena.com/play-board/)
+  - C:\dev\legendary-arena\wiki\play-board.md (this page — https://ewiki.legendary-arena.com/play-board/)
   - ../apps/arena-client/src/pages/PlayDesktop.vue
   - ../apps/arena-client/src/pages/PlayMobile.vue
   - ../apps/arena-client/src/components/play/CardReaderModal.vue

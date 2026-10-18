@@ -15,7 +15,7 @@ related:
   - ewiki-authoring.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\wiki-viewer.md (this page — https://ewiki.legendary-arena.com/wiki-viewer/)
+  - C:\dev\legendary-arena\wiki\wiki-viewer.md (this page — https://ewiki.legendary-arena.com/wiki-viewer/)
   - ../apps/wiki-viewer/hugo.toml
   - ../apps/wiki-viewer/scripts/project-wiki.mjs
   - ../apps/wiki-viewer/README.md
@@ -28,7 +28,7 @@ last-reviewed: 2026-10-16
 
 | Repo | Base URL (local) | Site |
 |---|---|---|
-| Engine | `C:\pcloud\BB\DEV\legendary-arena\` | `ewiki.legendary-arena.com` |
+| Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
 
 All file paths in this tutorial are relative to the **Engine** base URL
@@ -37,9 +37,9 @@ unless noted otherwise.
 ## Summary
 
 The wiki viewer is the Hugo static site that renders
-`C:\pcloud\BB\DEV\legendary-arena\wiki\*.md` pages into the browsable
+`C:\dev\legendary-arena\wiki\*.md` pages into the browsable
 site at `ewiki.legendary-arena.com`. Content is authored exclusively in
-`C:\pcloud\BB\DEV\legendary-arena\wiki\`, projected into the Hugo
+`C:\dev\legendary-arena\wiki\`, projected into the Hugo
 content tree at build time, and deployed automatically on every push to
 `main` to the assets-only Cloudflare Worker `legendary-arena-wiki`, behind
 Cloudflare Access.
@@ -160,13 +160,13 @@ or absolute paths (`C:\...`).
 ### Where to save files
 
 **Ewiki images (screenshots, diagrams):** Save to a subdirectory
-under `C:\pcloud\BB\DEV\legendary-arena\ewiki\` named by the wiki
+under `C:\dev\legendary-arena\ewiki\` named by the wiki
 page's slug. The projection script copies the entire `ewiki/` tree
 into Hugo's static tree at build time. They are served at
 `/<slug>/` on `ewiki.legendary-arena.com`.
 
 ```
-C:\pcloud\BB\DEV\legendary-arena\ewiki\
+C:\dev\legendary-arena\ewiki\
   brevo-email-pipeline\
     brevo-welcome-workflow.png
   figma-logo-design\
@@ -197,7 +197,7 @@ site.
 **1. Adding an image**
 
 Ewiki images are stored at
-`C:\pcloud\BB\DEV\legendary-arena\ewiki\<page-slug>\`. The projection
+`C:\dev\legendary-arena\ewiki\<page-slug>\`. The projection
 script copies them into Hugo's static tree at build time, served at
 `/<page-slug>/` on the rendered site:
 
@@ -226,7 +226,7 @@ Renders as: a clickable link with "Legendary Arena" as the visible text.
 **3. Link to a file inside the repo (internal document)**
 
 Use a relative path from the wiki page's location
-(`C:\pcloud\BB\DEV\legendary-arena\wiki\`) up one level to the repo
+(`C:\dev\legendary-arena\wiki\`) up one level to the repo
 root:
 
 ```markdown
@@ -294,7 +294,7 @@ matches `apps/wiki-viewer/.hugo-version` (currently 0.161.1).
 The two repos use different commit prefixes enforced by git hooks.
 Using the wrong prefix will block your commit.
 
-**Engine repo** (`C:\pcloud\BB\DEV\legendary-arena\`) — where wiki
+**Engine repo** (`C:\dev\legendary-arena\`) — where wiki
 pages live:
 
 | Prefix | When |
@@ -349,18 +349,18 @@ pages you need a local copy of the repository.
 **First time (clone):**
 
 ```
-git clone https://github.com/barefootbetters/legendary-arena.git C:\pcloud\BB\DEV\legendary-arena
+git clone https://github.com/barefootbetters/legendary-arena.git C:\dev\legendary-arena
 ```
 
 This downloads the full repo including `wiki/` to
-`C:\pcloud\BB\DEV\legendary-arena\`.
+`C:\dev\legendary-arena\`.
 
 **Returning to work (pull latest):**
 
 Before editing, always pull to make sure you have the latest version:
 
 ```
-cd C:\pcloud\BB\DEV\legendary-arena
+cd C:\dev\legendary-arena
 git pull origin main
 ```
 
@@ -370,7 +370,7 @@ pushed changes while you were working.
 ### How to edit an existing page
 
 Pull the latest from git first (see above), then open the page at
-`C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md`, make your changes,
+`C:\dev\legendary-arena\wiki\<slug>.md`, make your changes,
 and commit:
 
 ```

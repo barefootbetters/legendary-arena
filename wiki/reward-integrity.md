@@ -13,7 +13,7 @@ related:
   - dashboard.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\reward-integrity.md (this page — https://ewiki.legendary-arena.com/reward-integrity/)
+  - C:\dev\legendary-arena\wiki\reward-integrity.md (this page — https://ewiki.legendary-arena.com/reward-integrity/)
   - ../.claude/CLAUDE.md
   - ../.claude/rules/architecture.md
   - ../.claude/rules/code-style.md

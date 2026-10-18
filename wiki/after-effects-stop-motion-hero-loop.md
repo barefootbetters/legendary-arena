@@ -12,7 +12,7 @@ related:
   - hugo-web-system.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\after-effects-stop-motion-hero-loop.md (this page — https://ewiki.legendary-arena.com/after-effects-stop-motion-hero-loop/)
+  - C:\dev\legendary-arena\wiki\after-effects-stop-motion-hero-loop.md (this page — https://ewiki.legendary-arena.com/after-effects-stop-motion-hero-loop/)
 last-reviewed: 2026-05-17
 ---
 

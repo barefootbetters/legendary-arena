@@ -21,7 +21,7 @@ related:
   - play-diagnostics.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\card-effect-system.md (this page — https://ewiki.legendary-arena.com/card-effect-system/)
+  - C:\dev\legendary-arena\wiki\card-effect-system.md (this page — https://ewiki.legendary-arena.com/card-effect-system/)
   - ../packages/game-engine/src/rules/villainAbility.types.ts
   - ../packages/game-engine/src/villain/villainEffects.execute.ts
   - ../packages/game-engine/src/rules/effectPrimitive.types.ts

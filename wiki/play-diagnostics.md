@@ -16,7 +16,7 @@ related:
   - why-play-needs-a-debug-panel.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\play-diagnostics.md (this page — https://ewiki.legendary-arena.com/play-diagnostics/)
+  - C:\dev\legendary-arena\wiki\play-diagnostics.md (this page — https://ewiki.legendary-arena.com/play-diagnostics/)
   - ../apps/arena-client/src/diagnostics/diagnostics.ts
   - ../apps/arena-client/src/diagnostics/effectProvenance.ts
   - ../apps/arena-client/src/diagnostics/matchSetupSession.ts

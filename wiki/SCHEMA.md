@@ -193,7 +193,7 @@ related:
   - rule-execution-pipeline.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\master-strike.md (this page — https://ewiki.legendary-arena.com/master-strike/)
+  - C:\dev\legendary-arena\wiki\master-strike.md (this page — https://ewiki.legendary-arena.com/master-strike/)
   - ../docs/ai/ARCHITECTURE.md#section-2-data-flow
   - ../docs/10-GLOSSARY.md
   - ../docs/legendary-universal-rules-v23.md
@@ -222,7 +222,7 @@ and the URL it publishes to:
 
 ```yaml
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md (this page — https://ewiki.legendary-arena.com/<slug>/)
+  - C:\dev\legendary-arena\wiki\<slug>.md (this page — https://ewiki.legendary-arena.com/<slug>/)
 ```
 
 why: the projection step writes a copy of every page into

@@ -48,9 +48,9 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 1 | Back up the loose files that have no backup today | Done 2026-10-17 |
 | 2 | Add an unpushed-work check | Not started (not blocking) |
 | 3 | **Rehearsal:** re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments` | Done 2026-10-17 (nine findings) |
-| 4 | Fold the rehearsal's lessons into Phases 5–6 | Findings folded and branch triage built 2026-10-17; 3 branch decisions pending (Jeff) |
-| 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Not started (no quiet window needed) |
-| 6 | **Cut over** the engine | Not started (quiet window for LA) |
+| 4 | Fold the rehearsal's lessons into Phases 5–6 | Done 2026-10-17 (all nine findings folded; 3 branch decisions made by Jeff) |
+| 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Done 2026-10-17 (11,132 tests, 0 fail; all three hooks proven) |
+| 6 | **Cut over** the engine | 6a–6b done 2026-10-17; 6c checks pass and the path sweep ships with this update; rename to `.RETIRED-2026-10-17` and stale-clone delete pending (Jeff) |
 | 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Not started |
 | 8 | Move shared tools to `C:\dev` | Deferred until the engine has run 1–2 weeks from `C:\dev` |
 | 9 | Clean up leftovers | Not started |
@@ -347,8 +347,13 @@ Nothing gets safer by this phase; it only makes the convention exact.
   workflow deploys it, but a hand `wrangler deploy` there would overwrite
   the live dashboard. Rename it or drop its route until that repo's own
   Phase 3 cutover.
-- `C:\pcloud\BB\DEV\` is empty after Phase 6; update the `BB\` notes on
-  [Workspace Map](workspace-map.md).
+- `C:\pcloud\BB\DEV\` is **not** empty after Phase 6. Besides the
+  `.RETIRED` checkout it holds four old sibling folders
+  (`legendary-arena-diamondfix`, `-flakeseed`, `-worktrees`, `-wt`) and
+  `barefootbetters-legendary-setup`, the card-image staging area that the
+  three `scripts/card-image-*/README.md` files point at. Review the
+  siblings, decide where the staging area lives, then update the `BB\`
+  notes on [Workspace Map](workspace-map.md).
 
 ### Progress log
 
@@ -413,6 +418,40 @@ Nothing gets safer by this phase; it only makes the convention exact.
   drafts (the April `wp-068-preferences-foundation`, which shipped as
   WP-534, and a subagent draft of WP-767, which landed as #2414). The third
   is the open, green PR #2698, the PAR re-pin after WP-801.
+- **2026-10-17** — **Phase 4 done.** Jeff decided the three: delete the two
+  superseded drafts after the Phase 6 bundle verifies; keep #2698, regenerated
+  on current `main`.
+- **2026-10-17** — **Phase 5 done.** `C:\dev\legendary-arena` was cloned on
+  `cd0defc48` (the commit of `main`'s green CI), with the
+  `lagn-MIRROR-do-not-deploy` remote re-added and the four gitignored files
+  copied hash-identical. `core.hooksPath` is the relative `.githooks`. A
+  frozen-lockfile install and `pnpm -r build` pass; `pnpm -r --no-bail test`
+  ran 11,132 tests with 0 failures (207 skipped: `apps/server`'s database
+  tests, which CI runs in its own job). Under `GIT_TRACE`, all three hooks ran.
+- **2026-10-17** — **Phase 6a–6b done.** 51 worktrees audited: 48 clean and
+  removed; 3 held uncommitted work not on `main`, archived as verified patches
+  under `C:\pcloud\LA\code-archive\uncommitted\` before force-removal. 46
+  empty worktree shells swept. Local-only branches bundled (189 heads,
+  2.7 MB, verifies); scratchpads zipped (494 entries). 308 finished sessions
+  on old paths archived. The clone was pulled to `main`, the ignored files
+  re-copied, and memory copied hash-identical.
+- **2026-10-17** — **Phase 6c checks pass.** A session on
+  `C:\dev\legendary-arena` resolves every memory-index entry (184 links,
+  none missing); `git remote -v` and `core.hooksPath` match; a new worktree
+  inherits the relative `.githooks` from `.git/config`, with no pCloud path.
+  The stale clone `C:\www\legendary-arena` checked out clean: no dirty
+  files or stashes, and all ten of its local-only branches are on GitHub as
+  merged PRs, or closed as superseded (#985 → #990). One sweep PR replaced
+  the old checkout path in the live docs, the wiki-viewer
+  `editing-this-page.html` partial, and every wiki page's `source:`
+  self-path; Work Packets, ECs, post-mortems, invocations and `DECISIONS.md`
+  stay as history. The memory files that named the old path were updated.
+  The three `scripts/card-image-*/README.md` files point at
+  `barefootbetters-legendary-setup`, not the engine checkout, so they were
+  left alone (see Phase 9). **Rename blocker found:** Resource Monitor
+  showed no handles, but a Notepad window launched by the old session held
+  the folder as its working directory, and a Claude Desktop session on the
+  folder held a watcher on `.git` until it was archived.
 
 ## Interactions
 

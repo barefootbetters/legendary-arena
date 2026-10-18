@@ -21,7 +21,7 @@ related:
   - soul-of-legendary-arena.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\valuable-assets.md (this page — https://ewiki.legendary-arena.com/valuable-assets/)
+  - C:\dev\legendary-arena\wiki\valuable-assets.md (this page — https://ewiki.legendary-arena.com/valuable-assets/)
   - ../docs/lagn-architecture-brief.md
   - ../docs/ai/ARCHITECTURE.md
   - ../docs/01-VISION.md

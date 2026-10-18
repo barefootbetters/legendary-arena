@@ -14,7 +14,7 @@ related:
   - wiki-viewer.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\github-parallel-session-workflow.md (this page — https://ewiki.legendary-arena.com/github-parallel-session-workflow/)
+  - C:\dev\legendary-arena\wiki\github-parallel-session-workflow.md (this page — https://ewiki.legendary-arena.com/github-parallel-session-workflow/)
   - ../.gitattributes
   - ../.claude/rules/work-packets.md
   - ../docs/ai/REFERENCE/development-workflow.md
@@ -85,7 +85,7 @@ actually tames Problem #2 is the per-file discipline below.
 ### What a worktree *does* solve (Problem #1)
 
 The working-tree race is real and has bitten this repo repeatedly when two
-sessions shared the one checkout at `C:\pcloud\BB\DEV\legendary-arena`.
+sessions shared the one checkout at `C:\dev\legendary-arena`.
 Documented failure modes, all from a **shared** checkout:
 
 - Uncommitted Edits **reverted on disk** mid-task when a concurrent
@@ -298,7 +298,7 @@ the contract landed some other way before deleting.
   Glob/Grep *negative*.
 - **Worktree path discipline.** Inside a worktree, every file-mutating
   command must target a path under `git rev-parse --show-toplevel`. An
-  absolute `C:\pcloud\BB\DEV\legendary-arena\…` path means the *canonical*
+  absolute `C:\dev\legendary-arena\…` path means the *canonical*
   clone, not the worktree — it will silently miss the worktree's in-flight
   output.
 - **A fresh worktree off pCloud has no `node_modules` / `dist`.** Run

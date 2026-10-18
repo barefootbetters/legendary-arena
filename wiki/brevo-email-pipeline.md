@@ -15,7 +15,7 @@ related:
   - newsletter-authoring.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\brevo-email-pipeline.md (this page — https://ewiki.legendary-arena.com/brevo-email-pipeline/)
+  - C:\dev\legendary-arena\wiki\brevo-email-pipeline.md (this page — https://ewiki.legendary-arena.com/brevo-email-pipeline/)
   - C:\www\legendary-arena-com\docs\brevo\email-automation.md
   - C:\www\legendary-arena-com\docs\brevo\newsletter-template.md
   - C:\www\legendary-arena-com\docs\brand\strategy.md
@@ -27,7 +27,7 @@ last-reviewed: 2026-06-17
 
 | Repo | Base URL (local) | Site |
 |---|---|---|
-| Engine | `C:\pcloud\BB\DEV\legendary-arena\` | `ewiki.legendary-arena.com` |
+| Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
 | Research / Notes | `C:\pcloud\LA\ewiki\` | (not published) |
 
@@ -49,8 +49,8 @@ committing:
 | Brand tokens CSS | Marketing | `C:\www\legendary-arena-com\static\brand-tokens.css` |
 | Newsletter drafts | Marketing | `C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\` |
 | QA log | Marketing | `C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\qa-log.md` |
-| This wiki page | Engine | `C:\pcloud\BB\DEV\legendary-arena\wiki\brevo-email-pipeline.md` |
-| Screenshots for this page | Engine | `C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\` |
+| This wiki page | Engine | `C:\dev\legendary-arena\wiki\brevo-email-pipeline.md` |
+| Screenshots for this page | Engine | `C:\dev\legendary-arena\ewiki\brevo-email-pipeline\` |
 
 **Published locations** — where files end up after `git push` and
 deploy:
@@ -70,14 +70,14 @@ The two sites have separate image directories:
 
 | Site | Save images to | Hugo serves them at |
 |---|---|---|
-| `ewiki.legendary-arena.com` | `C:\pcloud\BB\DEV\legendary-arena\ewiki\` | `/<page-slug>/` |
+| `ewiki.legendary-arena.com` | `C:\dev\legendary-arena\ewiki\` | `/<page-slug>/` |
 | `www.legendary-arena.com` | `C:\www\legendary-arena-com\static\images\` | `/images/` |
 
 **How it works:** Each wiki page gets its own asset subdirectory
-under `C:\pcloud\BB\DEV\legendary-arena\ewiki\`, named by the page's
+under `C:\dev\legendary-arena\ewiki\`, named by the page's
 slug. At build time the projection script copies each slug directory
 `ewiki/<slug>/` to
-`C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\static\<slug>\` —
+`C:\dev\legendary-arena\apps\wiki-viewer\static\<slug>\` —
 **not** into a nested `static\ewiki\`. Hugo then copies `static/` into
 the build output directory (`public/`) as-is, which is why the served
 path is `/<slug>/<file>` and not `/ewiki/<slug>/<file>`. Slug
@@ -85,7 +85,7 @@ directories are removed and re-copied on each run; other contents of
 `static/` are left alone.
 
 Example: a file saved at
-`C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\brevo-welcome-workflow.png`
+`C:\dev\legendary-arena\ewiki\brevo-email-pipeline\brevo-welcome-workflow.png`
 becomes
 `https://ewiki.legendary-arena.com/brevo-email-pipeline/brevo-welcome-workflow.png`
 after deploy.
@@ -93,7 +93,7 @@ after deploy.
 Directory layout:
 
 ```
-C:\pcloud\BB\DEV\legendary-arena\ewiki\
+C:\dev\legendary-arena\ewiki\
   brevo-email-pipeline\
     brevo-welcome-workflow.png
     brevo-campaign-setup.png
@@ -109,7 +109,7 @@ projection script. Anything placed there directly
 is silently deleted on the next build.
 
 **For Brevo screenshots:** save them to
-`C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\`. Use
+`C:\dev\legendary-arena\ewiki\brevo-email-pipeline\`. Use
 lowercase kebab-case filenames (e.g., `brevo-welcome-workflow.png`,
 `brevo-campaign-setup.png`). Then reference them in markdown:
 
@@ -135,11 +135,10 @@ consequences specific to Brevo:
   parking it in synced storage. See
   [Newsletter Authoring](newsletter-authoring.md).
 
-> **A note on the drafting paths above.** The engine repo currently sits
-> on the pCloud sync drive, which is a known hazard for a git checkout
-> and is scheduled to move — see the sync-drive edge case on
-> [Workspace Map](workspace-map.md). The `C:\pcloud\BB\DEV\…` paths on
-> this page describe where the checkout is today, not where it belongs.
+> **A note on the drafting paths above.** The engine repo moved off the
+> pCloud sync drive to `C:\dev\legendary-arena` on 2026-10-17 — see the
+> sync-drive edge case on [Workspace Map](workspace-map.md). Older copies
+> of this page used `C:\pcloud\BB\DEV\…` paths; those are retired.
 > `C:\pcloud\LA\ewiki\` is unaffected: it holds research files, not a
 > repository, and sync is the right tool for that.
 
@@ -651,8 +650,8 @@ Marketing repo (authoritative for Brevo config):
   POST: (blog posts), INFRA: / SPEC: / ROADMAP: (non-site)
 
 Engine repo (ewiki companion page):
-- Wiki page: C:\pcloud\BB\DEV\legendary-arena\wiki\brevo-email-pipeline.md
-- Screenshots: C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\
+- Wiki page: C:\dev\legendary-arena\wiki\brevo-email-pipeline.md
+- Screenshots: C:\dev\legendary-arena\ewiki\brevo-email-pipeline\
 - Published at: https://ewiki.legendary-arena.com/brevo-email-pipeline/
 - Commit prefix for wiki edits: INFRA:
 

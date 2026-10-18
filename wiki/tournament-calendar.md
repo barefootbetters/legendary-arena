@@ -13,7 +13,7 @@ related:
   - seed-challenges.md
   - profile-login.md
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\tournament-calendar.md (this page — https://ewiki.legendary-arena.com/tournament-calendar/)
+  - C:\dev\legendary-arena\wiki\tournament-calendar.md (this page — https://ewiki.legendary-arena.com/tournament-calendar/)
   - C:\pcloud\matches\Core\tournament-calendar-and-play-times.md (source draft)
   - ../docs/TOURNAMENT-FUNDING.md
   - ../docs/01-VISION.md

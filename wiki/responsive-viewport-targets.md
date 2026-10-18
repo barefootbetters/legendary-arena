@@ -15,7 +15,7 @@ related:
   - development-workflow.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\responsive-viewport-targets.md (this page — https://ewiki.legendary-arena.com/responsive-viewport-targets/)
+  - C:\dev\legendary-arena\wiki\responsive-viewport-targets.md (this page — https://ewiki.legendary-arena.com/responsive-viewport-targets/)
   - ../apps/arena-client/src/composables/useViewport.ts
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../apps/arena-client/src/pages/PlayDesktop.vue
