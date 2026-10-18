@@ -76,7 +76,7 @@ Repositories:
     https://github.com/legendary-arena/legendary-arena-website  ← marketing site (www)
         - C:\www\legendary-arena-com
     https://github.com/legendary-arena/legendary-arena-lab      ← the api droplet's setup + operator runbooks
-        - C:\www\legendary-arena-lab
+        - C:\dev\legendary-arena-lab
         - infra\  = the executable, authoritative versions: cloud-init, numbered provisioners
                     (infra\scripts\NN-*.ps1), systemd units, nginx, env template, la-deploy gate
         - content\ = Hugo operator wiki (runbooks)
@@ -126,7 +126,7 @@ Deeper detail: [Data & File Locations](data-file-locations.md),
 | `scripts\convert-cards\inputs\` (set sources and `patches\`) | Card data — then rerun the full convert pipeline ([`docs/03-DATA-PIPELINE.md`](../docs/03-DATA-PIPELINE.md)). |
 | `data\cards\co2e.json` | Core Set 2nd Edition — the one hand-authored set file. |
 | `C:\www\legendary-arena-com` | The marketing site and blog. |
-| `infra\` in `C:\www\legendary-arena-lab` | The droplet's setup — the authoritative version; re-run the provisioner after changing it. |
+| `infra\` in `C:\dev\legendary-arena-lab` | The droplet's setup — the authoritative version; re-run the provisioner after changing it. |
 | `C:\pcloud\legendary-arena` | Work-in-progress business files. |
 
 | Don't edit this | Why |
