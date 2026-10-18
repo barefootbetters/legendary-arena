@@ -14,7 +14,7 @@ related:
   - ubuntu-lab-provisioning.md
   - ai-second-brain.md
 status: draft
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-18
 ---
 
 # Workstation Layout Migration
@@ -53,7 +53,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 6 | **Cut over** the engine | Cut over 2026-10-17: old checkout renamed `legendary-arena.RETIRED-2026-10-17` (rollback until 2026-10-31), 6c checks pass, path sweep shipped, stale clone `C:\www\legendary-arena` deleted. Done; `.RETIRED` folder deleted after 2026-10-31 |
 | 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Done 2026-10-17 (local rename, three-repo sweep, cloud copy `/legendary-arena` verified 516/516, `/LA` deleted) |
 | 8 | Move shared tools to `C:\dev` | Deferred until the engine has run 1–2 weeks from `C:\dev` |
-| 9 | Clean up leftovers | Done 2026-10-17 (card-image staging moved to `C:\pcloud\legendary-arena\`; the legacy app's `.env` and `node_modules` left in `BB\DEV` for Jeff to delete) |
+| 9 | Clean up leftovers | Done 2026-10-17 (card-image staging moved to `C:\pcloud\legendary-arena\`, cloud copy verified 12,546/12,546 on 2026-10-18; the legacy app's `.env` and `node_modules` left in `BB\DEV` for Jeff to delete) |
 
 Update the Status column and add a line to the Progress log whenever a
 phase moves. The step-by-step commands live in the operator's execution
@@ -497,6 +497,12 @@ Nothing gets safer by this phase; it only makes the convention exact.
   dry-runs resolve the new folder. Left: the first upload of the new
   folder to `/legendary-arena`, then an `rclone check --one-way`; and the
   `.RETIRED` checkout until 2026-10-31.
+- **2026-10-18** — **Staging cloud copy verified.** The new folder finished
+  uploading to `/legendary-arena/barefootbetters-legendary-setup`;
+  `rclone check --one-way` against the local folder found 12,546 matching
+  files and 0 differences (3.98 GiB). The repo side merged as #2891.
+  Left: Jeff deletes the `.env` and `node_modules` in `BB\DEV`, and the
+  `.RETIRED` checkout after 2026-10-31.
 
 ## Interactions
 
