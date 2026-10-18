@@ -50,7 +50,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 3 | **Rehearsal:** re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments` | Done 2026-10-17 (nine findings) |
 | 4 | Fold the rehearsal's lessons into Phases 5–6 | Done 2026-10-17 (all nine findings folded; 3 branch decisions made by Jeff) |
 | 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Done 2026-10-17 (11,132 tests, 0 fail; all three hooks proven) |
-| 6 | **Cut over** the engine | 6a–6b done 2026-10-17; 6c checks pass and the path sweep ships with this update; rename to `.RETIRED-2026-10-17` and stale-clone delete pending (Jeff) |
+| 6 | **Cut over** the engine | Cut over 2026-10-17: old checkout renamed `legendary-arena.RETIRED-2026-10-17` (rollback until 2026-10-31), 6c checks pass, path sweep shipped; stale-clone delete pending (Jeff) |
 | 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Not started |
 | 8 | Move shared tools to `C:\dev` | Deferred until the engine has run 1–2 weeks from `C:\dev` |
 | 9 | Clean up leftovers | Not started |
@@ -451,7 +451,10 @@ Nothing gets safer by this phase; it only makes the convention exact.
   left alone (see Phase 9). **Rename blocker found:** Resource Monitor
   showed no handles, but a Notepad window launched by the old session held
   the folder as its working directory, and a Claude Desktop session on the
-  folder held a watcher on `.git` until it was archived.
+  folder held a watcher on `.git` until it was archived. With both closed,
+  the Finish Phase 6 script renamed the old checkout to
+  `C:\pcloud\BB\DEV\legendary-arena.RETIRED-2026-10-17`. It is the rollback
+  until 2026-10-31 and is deleted after that.
 
 ## Interactions
 
