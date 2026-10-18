@@ -46,7 +46,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 0 | Record the convention as a decision | Done: D-24739 (reserve #2871, entry #2872) |
 | 0.5 | Baseline snapshot and environment inventory | Done 2026-10-17 (found pCloud sync off since about April; re-enabled and verified) |
 | 1 | Back up the loose files that have no backup today | Done 2026-10-17 |
-| 2 | Add an unpushed-work check | Not started (not blocking) |
+| 2 | Add an unpushed-work check | Done 2026-10-18 (brain repo #71; first run 7 FAILs, triaged: 3 laptop-only drafts for Jeff) |
 | 3 | **Rehearsal:** re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments` | Done 2026-10-17 (nine findings) |
 | 4 | Fold the rehearsal's lessons into Phases 5–6 | Done 2026-10-17 (all nine findings folded; 3 branch decisions made by Jeff) |
 | 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Done 2026-10-17 (11,132 tests, 0 fail; all three hooks proven) |
@@ -503,6 +503,20 @@ Nothing gets safer by this phase; it only makes the convention exact.
   files and 0 differences (3.98 GiB). The repo side merged as #2891.
   Left: Jeff deletes the `.env` and `node_modules` in `BB\DEV`, and the
   `.RETIRED` checkout after 2026-10-31.
+- **2026-10-18** — **Phase 2 done.** The brain repo's `weekly-check.ps1`
+  gained a "Laptop-only work" section (brain repo #71). Per working tree it
+  lists uncommitted and untracked files and commits on a detached HEAD;
+  per repo it lists branches with commits on no remote, and stashes. Each
+  at-risk checkout or repo is a FAIL. Branches whose upstream is gone
+  (normally a squash-merged PR) are notes. It is offline: it compares
+  against local remote-tracking refs and skips `.RETIRED-<date>` copies.
+  First run: 27 checkouts in 17 repos, 7 FAILs, all triaged. Three are
+  real laptop-only work for Jeff to commit or discard: draft WP-009/010/011
+  in `bb-studio-dashboard`, an origin-story video brief and six blog images
+  in `legendary-arena-com`, and a June edit in `scooby`. Two are superseded
+  commits (marketing #121; WP-149 is Done on `main`), one is a generated
+  snapshot, and one was the PR itself. All 28 "upstream gone" branches were
+  confirmed as merged PRs.
 
 ## Interactions
 
