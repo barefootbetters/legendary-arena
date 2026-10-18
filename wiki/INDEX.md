@@ -6,6 +6,12 @@ Product background — where the files are, how they are backed up, which
 files you can edit, and the outside services the product depends on.
 Source page: [Legendary Arena System Map](legendary-arena-system-map.md).
 
+**Source of truth:** `C:\pcloud\LA\README.md` on the operator's
+workstation (synced to pCloud `/LA/README.md`). The map below is a
+published copy; when the two differ, the README wins. The file becomes
+`C:\pcloud\legendary-arena\README.md` in Phase 7 of
+[Workstation Layout Migration](workstation-layout-migration.md).
+
 {{< include-section page="legendary-arena-system-map" section="system-map" >}}
 
 ---

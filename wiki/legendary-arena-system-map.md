@@ -19,7 +19,7 @@ related:
 status: draft
 source:
   - C:\pcloud\BB\DEV\legendary-arena\wiki\legendary-arena-system-map.md (this page — https://ewiki.legendary-arena.com/legendary-arena-system-map/)
-  - C:\www\legendary-arena\README-LA.md (operator's product background draft, folded in 2026-10-17)
+  - C:\pcloud\LA\README.md (source of truth for the system map; copied here 2026-10-17)
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
   - ../docs/ops/service-dependencies.json
@@ -40,6 +40,13 @@ of the wiki home page. Its siblings go deeper on one slice each:
 [Workspace Map](workspace-map.md) for which storage surface owns what, and
 [Service Dependency Map](service-dependency-map.md) for what breaks when a
 vendor is down. This page orients; it does not decide.
+
+**Source of truth:** the system map block below is a published copy of
+`C:\pcloud\LA\README.md`, the operator's workstation map (synced to pCloud
+`/LA/README.md`). Edit the README first, then copy it here; when the two
+differ, the README wins. Last copied 2026-10-17. The README moves to
+`C:\pcloud\legendary-arena\README.md` in Phase 7 of
+[Workstation Layout Migration](workstation-layout-migration.md).
 
 ## Mechanics {#system-map}
 
@@ -194,8 +201,8 @@ What breaks when each one is down, and where to check:
 
 ## References
 
-- `C:\www\legendary-arena\README-LA.md` — the operator's draft this page
-  was built from (2026-10-17).
+- `C:\pcloud\LA\README.md` — the source of truth this page copies
+  (moved there from `C:\www\README.md` in migration Phase 1, 2026-10-17).
 - [`docs/ops/DOMAINS.md`](../docs/ops/DOMAINS.md) and
   [`docs/ops/domains.json`](../docs/ops/domains.json) — authoritative
   hostname table.

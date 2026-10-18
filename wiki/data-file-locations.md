@@ -56,6 +56,11 @@ hostnames, and the pages cited here.
 
 ### Start here — local roots, repos, and public sites
 
+The workstation's local paths have one source of truth,
+`C:\pcloud\LA\README.md`, published as the
+[Legendary Arena System Map](legendary-arena-system-map.md). The tables
+below summarize it for this page; when they differ, the README wins.
+
 **Local roots on the workstation.** Three top-level folders, split by
 what the files are and how they are kept safe:
 
