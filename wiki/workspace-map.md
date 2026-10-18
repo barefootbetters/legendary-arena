@@ -81,18 +81,18 @@ up not knowing which one is current.
 | A wiki page | Git | `legendary-arena/wiki/` |
 | A blog post + its images | Git | `legendary-arena-com/content/blog/` + `static/images/blog/<slug>/` — see [Blog Post Authoring](blog-post-authoring.md) |
 | Card face art (published) | Hosted | Cloudflare R2 `legendary-images` — see [Data & File Locations](data-file-locations.md) |
-| Raw video footage, Premiere project | pCloud | `C:\pcloud\LA\videos\{prefix}-{NNN}-{slug}\` — see [Video Production Workflow](video-production-workflow.md) |
+| Raw video footage, Premiere project | pCloud | `C:\pcloud\legendary-arena\videos\{prefix}-{NNN}-{slug}\` — see [Video Production Workflow](video-production-workflow.md) |
 | Finished video (published) | Hosted | YouTube. The blog embeds it; the file itself never enters git. |
-| Reusable video assets (intros, outros, video BGM, overlays) | pCloud | `C:\pcloud\LA\video-assets\` |
-| Logo drafts, design exploration | pCloud | `C:\pcloud\LA\logo-drafts\` |
-| Vendor attachment, invoice, quote | pCloud | `C:\pcloud\LA\ops\vendors\` — **not** left in Outlook |
-| Signed contract, licence, trademark or entity filing | pCloud | `C:\pcloud\LA\ops\legal\` |
-| Accounting, tax, or bank document | pCloud | `C:\pcloud\LA\ops\accounting\` or `…\taxes\` — never git, never a server disk |
-| Approved logo, brand guideline, press kit | pCloud | `C:\pcloud\LA\brand\` — drafts stay in `C:\pcloud\LA\logo-drafts\`. The approved marks are catalogued (rendered inline, with vector masters) on the [Branding](branding.md) page |
+| Reusable video assets (intros, outros, video BGM, overlays) | pCloud | `C:\pcloud\legendary-arena\video-assets\` |
+| Logo drafts, design exploration | pCloud | `C:\pcloud\legendary-arena\logo-drafts\` |
+| Vendor attachment, invoice, quote | pCloud | `C:\pcloud\legendary-arena\ops\vendors\` — **not** left in Outlook |
+| Signed contract, licence, trademark or entity filing | pCloud | `C:\pcloud\legendary-arena\ops\legal\` |
+| Accounting, tax, or bank document | pCloud | `C:\pcloud\legendary-arena\ops\accounting\` or `…\taxes\` — never git, never a server disk |
+| Approved logo, brand guideline, press kit | pCloud | `C:\pcloud\legendary-arena\brand\` — drafts stay in `C:\pcloud\legendary-arena\logo-drafts\`. The approved marks are catalogued (rendered inline, with vector masters) on the [Branding](branding.md) page |
 | A payment, refund, or chargeback record | Hosted | **Stripe** is the ledger. Postgres keeps references only — see System of record |
 | A player profile, entitlement, or team | Hosted | PostgreSQL `legendary.*` — see System of record |
 | A user-uploaded avatar | Hosted | R2 `avatars/{accountId}.webp`; Postgres stores the URL, never the bytes |
-| Per-theme / per-hero game music — WAV masters + local MP3 derivatives | pCloud | `C:\pcloud\LA\audio\` — working binaries, never git, masters never uploaded; shape locked by D-24219 — see [Music Authoring](music-authoring.md) |
+| Per-theme / per-hero game music — WAV masters + local MP3 derivatives | pCloud | `C:\pcloud\legendary-arena\audio\` — working binaries, never git, masters never uploaded; shape locked by D-24219 — see [Music Authoring](music-authoring.md) |
 | Published game audio (320 kbps MP3 — music + event stings) | Hosted | R2 `legendary-images` `audio/` prefix — the **sole** audio surface; see [Data & File Locations](data-file-locations.md) |
 | A secret or credential | Neither git nor a synced plain-text file | `.env` locally (gitignored), the API droplet's root-only `/etc/la/.env` in production (the Render dashboard until 2026-10-12). See Edge Cases. |
 | A diagnostics JSON or loadout pulled off a live match | pCloud, scoped to a project | Currently accumulating loose at the pCloud root — see Edge Cases |
@@ -109,7 +109,7 @@ C:\pcloud\
 │   ├── DOCS\
 │   └── MEDIA\
 │
-├── LA\                     # Legendary Arena — the working root
+├── legendary-arena\        # Legendary Arena — the working root (named LA\ until 2026-10-17)
 │   ├── audio\              # game music masters + local MP3 derivatives (published MP3s → R2)
 │   ├── ewiki\
 │   ├── logo-drafts\
@@ -124,7 +124,7 @@ C:\pcloud\
 └── (loose files)           # see Edge Cases
 ```
 
-The per-video folder shape under `C:\pcloud\LA\videos\` is owned by
+The per-video folder shape under `C:\pcloud\legendary-arena\videos\` is owned by
 [Video Production Workflow](video-production-workflow.md) and is not
 restated here.
 
@@ -154,7 +154,7 @@ data locations in [Data & File Locations](data-file-locations.md).
 |---|---|---|
 | Cloudflare R2 `legendary-images` | Card images, avatars, the metadata JSON mirror, themes, published audio (music + event stings) | `data/` + `content/` in the engine repo (audio masters on pCloud) — mirrored **by hand**, see [Data & File Locations](data-file-locations.md) |
 | PostgreSQL (`legendary` schema) | Identity, replays, teams, commerce, telemetry | `data/migrations/` |
-| YouTube | Published video | `C:\pcloud\LA\videos\…\05-edit\` |
+| YouTube | Published video | `C:\pcloud\legendary-arena\videos\…\05-edit\` |
 | `www.legendary-arena.com` | Marketing site + blog | `legendary-arena-com` repo |
 | `ewiki.legendary-arena.com` | This wiki | `legendary-arena/wiki/` |
 | Brevo | Newsletter subscribers, campaigns, send metrics | See [Newsletter Authoring](newsletter-authoring.md) |
@@ -229,12 +229,12 @@ Accounting, legal, and brand work produce documents that are not code,
 not content, and not customer data. They are the clearest possible case
 for pCloud: private, binary or near-binary, and needed for years.
 
-**They belong under `C:\pcloud\LA\`, alongside the rest of Legendary
+**They belong under `C:\pcloud\legendary-arena\`, alongside the rest of Legendary
 Arena's working files** — not under `C:\pcloud\BB\`. See the note on
 `BB\` below for why.
 
 ```
-C:\pcloud\LA\
+C:\pcloud\legendary-arena\
 ├── ops\                    # business operations
 │   ├── accounting\
 │   │   ├── stripe\         # payout reports, merchant statements
@@ -270,14 +270,14 @@ C:\pcloud\LA\
 └── videos\
 ```
 
-Lowercase names match the existing children of `C:\pcloud\LA\`.
+Lowercase names match the existing children of `C:\pcloud\legendary-arena\`.
 
 **`brand\` is approved work; `logo-drafts\` is exploration.** They sit
 side by side deliberately: a designer reaching for a mark should never
 have to guess whether they have the current one. Drafts stay in
 `logo-drafts\`; when something ships, its final files move to `brand\`.
 
-> **`LA\ops\` and `LA\brand\` exist; their subfolders do not — and the
+> **`legendary-arena\ops\` and `legendary-arena\brand\` exist; their subfolders do not — and the
 > taxonomy is locked by D-24220.** Both root directories were created on
 > 2026-07-20 and each carries a `README.txt` restating the rules below
 > for whoever opens the folder rather than this page. The subfolders
@@ -297,13 +297,13 @@ is on a path to holding nothing:
   on 2026-10-17 (see the sync-drive hazard under Edge Cases). Once the
   retired copy is deleted after 2026-10-31, `DEV\` holds no engine code.
 - `BB\DOCS\` and `BB\MEDIA\` hold very little.
-- Everything with real content already lives under `LA\`.
+- Everything with real content already lives under `legendary-arena\`.
 
 Filing new business documents into `BB\` would rebuild the *"one product,
-two roots"* split this page's Edge Cases already flag, at the moment that
-split is resolving on its own. **The direction of travel is consolidation
-onto `LA\`** — which is also why the D-24207 rename (`LA\` → `BB\WIP\`)
-was declined under D-24208: it pointed the wrong way.
+two roots"* split this page's Edge Cases already flag. **The direction of
+travel is consolidation onto `legendary-arena\`** — which is also why the
+D-24207 rename (`LA\` → `BB\WIP\`) was declined under D-24208: it pointed
+the wrong way.
 
 Two things that follow from the ownership table above:
 
@@ -339,7 +339,7 @@ asked. Two pointers keep it reachable:
   prefixes, LAGN, coverage ledgers. This page stops at the repo boundary
   and defers.
 - **[Video Production Workflow](video-production-workflow.md)** owns the
-  per-video folder structure under `C:\pcloud\LA\videos\`; this page only
+  per-video folder structure under `C:\pcloud\legendary-arena\videos\`; this page only
   locates the root and states why video files never enter git.
 - **[Blog Post Authoring](blog-post-authoring.md)** owns the marketing
   repo's content lane, including the rule that post images live in-repo
@@ -351,19 +351,18 @@ asked. Two pointers keep it reachable:
 
 ## Edge Cases
 
-- **`BB` and `LA` are two roots for one product — and the split is
-  resolving toward `LA`.** The engine repo still lives under
-  `C:\pcloud\BB\DEV\`, while everything else — video, design, research
-  notes, and now business operations and brand — belongs under
-  `C:\pcloud\LA\`. Nothing on disk records the division, so **the
-  decision table above is the lookup.**
+- **`BB` and `legendary-arena` were two roots for one product — the
+  split has resolved toward `legendary-arena`.** The engine checkout left
+  `C:\pcloud\BB\DEV\` on 2026-10-17, and everything else — video, design,
+  research notes, business operations and brand — belongs under
+  `C:\pcloud\legendary-arena\` (named `LA\` until Phase 7 of the
+  migration). Nothing on disk records the division, so **the decision
+  table above is the lookup.**
 
   Two earlier answers were both wrong about direction. D-24207 proposed
   consolidating onto `BB\WIP\`; D-24208 declined that. Neither
-  anticipated the actual resolution: `LA\` becomes the working root and
-  `BB\` empties out as the checkout leaves `DEV\`. No migration is
-  required for that — it happens by putting new work in the right place
-  and letting `BB\` drain.
+  anticipated the actual resolution: `legendary-arena\` is the working
+  root, and `BB\` empties out now that the checkout has left `DEV\`.
 - **The stale second clone at `C:\www\legendary-arena` was deleted on
   2026-10-17** (migration Phase 6c), after every branch checked out as
   merged or superseded. It shared the engine remote but was hundreds of
@@ -385,7 +384,7 @@ asked. Two pointers keep it reachable:
   useful artifacts — they are just unfindable where they are.
 - **`BB\BRAND\` and `BB\OPS\` were deleted (2026-07-20).** They had
   been created for business documents; that work is filed under
-  `LA\ops\` and `LA\brand\` instead. Removing them was the right call
+  `legendary-arena\ops\` and `legendary-arena\brand\` instead. Removing them was the right call
   rather than leaving them empty — two plausible destinations is worse
   than one, because a document filed into the wrong one is not missing,
   just unfindable.
@@ -418,7 +417,7 @@ asked. Two pointers keep it reachable:
 - **Sync is not backup, and for a git repo it is worse than neither.**
   The durability of work in either repo comes from pushing to GitHub. A
   checkout is not made safer by living on a synced drive; it is made
-  less safe. Content directories — `C:\pcloud\LA\` video assets, design
+  less safe. Content directories — `C:\pcloud\legendary-arena\` video assets, design
   drafts, vendor documents — are the opposite case: no `.git`, nothing
   to corrupt, and sync is exactly the right tool.
 - **The R2 metadata mirror is hand-synced.** A commit to `data/` changes
@@ -427,18 +426,15 @@ asked. Two pointers keep it reachable:
 
 ## Open Questions
 
-- **The folder rename was considered and declined (D-24208).** D-24207
-  proposed renaming `C:\pcloud\LA\` to `C:\pcloud\BB\WIP\legendary-arena\`
-  so the pCloud folder would mirror the repository name. It is **not
-  happening.** `C:\pcloud\LA` is referenced 38 times across 7 pages of
-  this wiki plus three marketing-repo documents, so the migration is a
-  two-repo sweep rather than the single rename D-24207 estimated — and
-  the problem it addressed (not knowing which root an asset class belongs
-  to) is already solved by this page. D-24208 also withdrew D-24207's
-  `C:\pcloud\BB\DEV\<repo-name>\` clause: checkout location belongs to
-  the off-pCloud move, not to a naming convention. What survives is the
-  principle — name a *newly created* pCloud working-files folder for its
-  repository; rename nothing that already exists.
+- **Resolved: the pCloud folder is named for its repo (D-24739,
+  2026-10-17).** D-24207 proposed renaming `C:\pcloud\LA\` to
+  `C:\pcloud\BB\WIP\legendary-arena\`; D-24208 declined that, since it
+  pointed the wrong way and the sweep was two repos, not one rename.
+  D-24739 superseded it in part: one folder name per product across
+  three roots. In migration Phase 7, `C:\pcloud\LA\` became
+  `C:\pcloud\legendary-arena\`, and the sweep covered this repo, the
+  marketing repo and the brain repo in one pass. See
+  [Workstation Layout Migration](workstation-layout-migration.md).
 - **Per-repo README pointers are proposed but not written.** Each repo
   gaining a short section naming this page — rather than restating it —
   would make the map findable from inside any checkout. Scope, and whether

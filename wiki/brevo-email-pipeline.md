@@ -29,7 +29,7 @@ last-reviewed: 2026-06-17
 |---|---|---|
 | Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
-| Research / Notes | `C:\pcloud\LA\ewiki\` | (not published) |
+| Research / Notes | `C:\pcloud\legendary-arena\ewiki\` | (not published) |
 
 ### Where files are drafted and where they get published
 
@@ -118,7 +118,7 @@ lowercase kebab-case filenames (e.g., `brevo-welcome-workflow.png`,
 ```
 
 **For research files and working drafts** that should not be published:
-save to `C:\pcloud\LA\ewiki\`.
+save to `C:\pcloud\legendary-arena\ewiki\`.
 
 **Everything else this pipeline touches follows the general storage
 rule** on [Workspace Map](workspace-map.md) — git for reviewable text,
@@ -139,7 +139,7 @@ consequences specific to Brevo:
 > pCloud sync drive to `C:\dev\legendary-arena` on 2026-10-17 — see the
 > sync-drive edge case on [Workspace Map](workspace-map.md). Older copies
 > of this page used `C:\pcloud\BB\DEV\…` paths; those are retired.
-> `C:\pcloud\LA\ewiki\` is unaffected: it holds research files, not a
+> `C:\pcloud\legendary-arena\ewiki\` is unaffected: it holds research files, not a
 > repository, and sync is the right tool for that.
 
 ## Summary
@@ -623,7 +623,7 @@ pull it in only when relevant.
 
 **Reusable session prompt**
 
-Saved at `C:\pcloud\LA\ewiki\brevo-session-prompt.md`. Paste this at
+Saved at `C:\pcloud\legendary-arena\ewiki\brevo-session-prompt.md`. Paste this at
 the start of a Claude Code session when doing Brevo-related work. It
 gives Claude all the key file locations, account config, pipeline
 architecture, and conventions without warmup.

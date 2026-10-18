@@ -6,8 +6,8 @@ Product background — where the files are, how they are backed up, which
 files you can edit, and the outside services the product depends on.
 Source page: [Legendary Arena System Map](legendary-arena-system-map.md).
 
-**Source of truth:** `C:\pcloud\LA\README.md` on the operator's
-workstation (synced to pCloud `/LA/README.md`). The map below is a
+**Source of truth:** `C:\pcloud\legendary-arena\README.md` on the operator's
+workstation (synced to pCloud `/legendary-arena/README.md`). The map below is a
 published copy; when the two differ, the README wins. The file becomes
 `C:\pcloud\legendary-arena\README.md` in Phase 7 of
 [Workstation Layout Migration](workstation-layout-migration.md).
@@ -589,7 +589,7 @@ Brand governance and commercial-positioning references.
 - [Branding](branding.md) — The visual index of the approved Legendary Arena
   marks: the horizontal lockup, the square hero/villain emblem, the wordmark,
   the monochrome mark, and the gold hero half, each rendered inline, with the
-  vector masters, where the master files live (`C:\pcloud\LA\brand\`), and
+  vector masters, where the master files live (`C:\pcloud\legendary-arena\brand\`), and
   which brand tokens the marks use. The split emblem is the adopted identity
   across the marketing site; this page mirrors the brand-folder and
   `brand-tokens.css` sources and owns neither.

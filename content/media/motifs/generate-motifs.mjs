@@ -44,8 +44,8 @@ const SAMPLE_RATE = 44100;
 
 // why: default working locations follow the D-24219 audio layout — the map
 // and every rendered output live on pCloud, never in the repo tree.
-const DEFAULT_MAP = 'C:\\pcloud\\LA\\audio\\audio-motif-map.json';
-const DEFAULT_OUT = 'C:\\pcloud\\LA\\audio\\motifs';
+const DEFAULT_MAP = 'C:\\pcloud\\legendary-arena\\audio\\audio-motif-map.json';
+const DEFAULT_OUT = 'C:\\pcloud\\legendary-arena\\audio\\motifs';
 
 // why: standard MuseScore 4 install locations, checked in order. Override with
 // --musescore <path> or the MUSESCORE_BIN env var when installed elsewhere.

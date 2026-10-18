@@ -165,7 +165,7 @@ not.
 **Pre-recording checklist:** recording profile loaded · notifications
 off / Do Not Disturb · window locked to 1920×1080 · OBS audio tracks
 verified · mic monitoring on headphones (no speakers) · working folder
-created under `C:\pcloud\LA\videos\…`.
+created under `C:\pcloud\legendary-arena\videos\…`.
 
 #### 2. Capture in OBS (not a Chrome recorder)
 
@@ -215,9 +215,9 @@ Record voice as you play; for this format, live narration is the product.
 
 Working files stage on **pCloud, never git** — per
 [Workspace Map](workspace-map.md), the per-video folder is
-`C:\pcloud\LA\videos\{prefix}-{NNN}-{slug}\` (its shape owned by the
+`C:\pcloud\legendary-arena\videos\{prefix}-{NNN}-{slug}\` (its shape owned by the
 [Video Production Workflow](video-production-workflow.md)); reusable music,
-intros, and outros live in `C:\pcloud\LA\video-assets\`.
+intros, and outros live in `C:\pcloud\legendary-arena\video-assets\`.
 
 Inspect first — and note the stream/track order for every `-map` below:
 
@@ -450,7 +450,7 @@ Any box unchecked → the video stays **draft or Unlisted**.
   song** used as a backing track, which is what the handshake is for.
 - **[Workspace Map](workspace-map.md)** — the authority for where capture
   files and intermediates stage: pCloud, never git, under
-  `C:\pcloud\LA\videos\` and `C:\pcloud\LA\video-assets\`.
+  `C:\pcloud\legendary-arena\videos\` and `C:\pcloud\legendary-arena\video-assets\`.
 - **[After Effects Stop-Motion Hero Loop](after-effects-stop-motion-hero-loop.md)**
   — shares the capture-discipline detail (stability, lighting, screen-vs-
   camera record settings), though it targets a different artifact.
@@ -529,7 +529,7 @@ Any box unchecked → the video stays **draft or Unlisted**.
 - [Music Authoring](music-authoring.md) — the in-app music pipeline
   (contrast with a third-party backing song)
 - [Workspace Map](workspace-map.md) — where capture files and
-  intermediates stage (pCloud `C:\pcloud\LA\videos\` / `video-assets\`)
+  intermediates stage (pCloud `C:\pcloud\legendary-arena\videos\` / `video-assets\`)
 - [After Effects Stop-Motion Hero Loop](after-effects-stop-motion-hero-loop.md)
   — shared capture-discipline reference
 - [`docs/01-VISION.md`](../docs/01-VISION.md) — §Financial Sustainability:

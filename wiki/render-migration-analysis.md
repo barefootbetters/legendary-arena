@@ -18,7 +18,7 @@ status: draft
 source:
   - C:\dev\legendary-arena\wiki\render-migration-analysis.md (this page — https://ewiki.legendary-arena.com/render-migration-analysis/)
   - ../render.yaml
-  - C:\pcloud\LA\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
+  - C:\pcloud\legendary-arena\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
 last-reviewed: 2026-10-12
 ---
 

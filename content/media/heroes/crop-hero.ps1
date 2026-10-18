@@ -19,7 +19,7 @@
 .EXAMPLE
     Workflow for a hero theme (e.g. black-widow):
 
-      1. cd C:\pcloud\LA\audio\heroes\black-widow\   (working audio on pCloud; see Workspace Map)
+      1. cd C:\pcloud\legendary-arena\audio\heroes\black-widow\   (working audio on pCloud; see Workspace Map)
       2. Listen to hero-black-widow_MASTER.wav and note the 4 crop
          ranges (MT01 preview-intro, MT02 match-start, MT03 ambient-loop,
          MT04 main-theme).
@@ -66,7 +66,7 @@ $crops = @(
 )
 
 if (-not (Test-Path -LiteralPath $master)) {
-    Write-Error "master WAV not found at $PWD\$master. Run this script from a hero's pCloud audio folder (e.g. C:\pcloud\LA\audio\heroes\black-widow\)."
+    Write-Error "master WAV not found at $PWD\$master. Run this script from a hero's pCloud audio folder (e.g. C:\pcloud\legendary-arena\audio\heroes\black-widow\)."
     exit 1
 }
 

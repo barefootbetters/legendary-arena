@@ -78,7 +78,7 @@ post on legendary-arena.com.
 ## File System
 
 ```
-C:\pcloud\LA\
+C:\pcloud\legendary-arena\
   video-assets\        # Shared reusable assets (intros, outros, music,
                        #   overlays, fonts, thumbnails, hooks, templates)
   videos\              # Per-video production folders

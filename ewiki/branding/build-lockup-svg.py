@@ -33,7 +33,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-AI_SOURCE = Path(r'C:\pcloud\LA\brand\Legendary Arena-400x200.ai')
+AI_SOURCE = Path(r'C:\pcloud\legendary-arena\brand\Legendary Arena-400x200.ai')
 # Gap (in the .ai's 533-wide user space) between the emblem's right edge and
 # the "L" of LEGENDARY. Elements whose whole bbox is left of this are emblem.
 SPLIT_X = 170.0

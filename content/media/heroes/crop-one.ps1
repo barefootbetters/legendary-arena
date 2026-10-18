@@ -55,7 +55,7 @@
     Windows install:  winget install -e --id Gyan.FFmpeg
 
     Run from a hero's pCloud audio folder so the script can infer the
-    slug from the folder name (e.g. C:\pcloud\LA\audio\heroes\black-widow\).
+    slug from the folder name (e.g. C:\pcloud\legendary-arena\audio\heroes\black-widow\).
 #>
 
 [CmdletBinding()]
@@ -94,7 +94,7 @@ $master = "hero-${slug}_MASTER.wav"
 $output = "hero-${slug}_${Asset}_$($spec.Name).wav"
 
 if (-not (Test-Path -LiteralPath $master)) {
-    Write-Error "master WAV not found at $PWD\$master. Run this script from a hero's pCloud audio folder (e.g. C:\pcloud\LA\audio\heroes\black-widow\)."
+    Write-Error "master WAV not found at $PWD\$master. Run this script from a hero's pCloud audio folder (e.g. C:\pcloud\legendary-arena\audio\heroes\black-widow\)."
     exit 1
 }
 

@@ -10,10 +10,10 @@
 # Sibling: crop-one.sh (single-crop interactive, good for timestamp
 # discovery and MT03 loop experiments via --loop N).
 #
-# Usage — hero audio lives on pCloud (C:/pcloud/LA/audio/heroes/<slug>/,
+# Usage — hero audio lives on pCloud (C:/pcloud/legendary-arena/audio/heroes/<slug>/,
 # see Workspace Map); this template stays tracked in the repo.
 #   1. Copy this template into the hero's pCloud folder as crop.sh:
-#        cd /c/pcloud/LA/audio/heroes/black-widow/
+#        cd /c/pcloud/legendary-arena/audio/heroes/black-widow/
 #        cp "$REPO/content/media/heroes/crop-hero.sh" crop.sh   # $REPO = your checkout
 #   2. Edit the `crops` array below with timestamps from listening to the master.
 #   3. Run:
@@ -52,7 +52,7 @@ crops=(
 
 if [[ ! -f "$master" ]]; then
   echo "Error: master WAV not found at $PWD/$master" >&2
-  echo "Run this script from a hero's pCloud audio folder (e.g. C:/pcloud/LA/audio/heroes/black-widow/)." >&2
+  echo "Run this script from a hero's pCloud audio folder (e.g. C:/pcloud/legendary-arena/audio/heroes/black-widow/)." >&2
   exit 1
 fi
 

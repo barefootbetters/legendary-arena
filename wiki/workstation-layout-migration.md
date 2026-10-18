@@ -51,13 +51,13 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 4 | Fold the rehearsal's lessons into Phases 5–6 | Done 2026-10-17 (all nine findings folded; 3 branch decisions made by Jeff) |
 | 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Done 2026-10-17 (11,132 tests, 0 fail; all three hooks proven) |
 | 6 | **Cut over** the engine | Cut over 2026-10-17: old checkout renamed `legendary-arena.RETIRED-2026-10-17` (rollback until 2026-10-31), 6c checks pass, path sweep shipped, stale clone `C:\www\legendary-arena` deleted. Done; `.RETIRED` folder deleted after 2026-10-31 |
-| 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Not started |
+| 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Local rename and three-repo sweep done 2026-10-17; pCloud pair moving to `/legendary-arena` (Jeff), then `rclone check` and delete `/LA` |
 | 8 | Move shared tools to `C:\dev` | Deferred until the engine has run 1–2 weeks from `C:\dev` |
 | 9 | Clean up leftovers | Not started |
 
 Update the Status column and add a line to the Progress log whenever a
 phase moves. The step-by-step commands live in the operator's execution
-plan on pCloud (`C:\pcloud\LA\workstation-layout-migration-plan.md`); this
+plan on pCloud (`C:\pcloud\legendary-arena\workstation-layout-migration-plan.md`); this
 page records the phases, the checks, and the outcome.
 
 ### Success criteria
@@ -342,11 +342,12 @@ Nothing gets safer by this phase; it only makes the convention exact.
 
 - `C:\dev\null`: a 120 KB stray file from a shell redirect.
 - `C:\www\hva-wp004-knobs`: not a git repo, no backup; delete if unneeded.
-- `bb-studio-dashboard\wrangler.jsonc` still names the live
-  `legendary-arena-dashboard` Worker on `dashboard.legendary-arena.com`. No
-  workflow deploys it, but a hand `wrangler deploy` there would overwrite
-  the live dashboard. Rename it or drop its route until that repo's own
-  Phase 3 cutover.
+- ~~`bb-studio-dashboard\wrangler.jsonc` names the live dashboard
+  Worker.~~ **Done 2026-10-17.** The root file was already gone on that
+  repo's `main` (WP-004); only the local checkout was stale, and a
+  fast-forward removed it. `instances/legendary-arena/wrangler.jsonc` keeps
+  the Worker name on purpose for that repo's WP-011 cutover. It has no
+  caller workflow, so it deploys only with an explicit `--config`.
 - `C:\pcloud\BB\DEV\` is **not** empty after Phase 6. Besides the
   `.RETIRED` checkout it holds four old sibling folders
   (`legendary-arena-diamondfix`, `-flakeseed`, `-worktrees`, `-wt`) and
@@ -455,7 +456,19 @@ Nothing gets safer by this phase; it only makes the convention exact.
   the Finish Phase 6 script renamed the old checkout to
   `C:\pcloud\BB\DEV\legendary-arena.RETIRED-2026-10-17`. It is the rollback
   until 2026-10-31 and is deleted after that. Jeff then deleted the stale
-  clone `C:\www\legendary-arena`. **Phase 6 done.**
+  clone `C:\www\legendary-arena`. The brain repo's `connections.md` and
+  `portfolio.md` got the new path in that repo's PR #69. **Phase 6 done.**
+- **2026-10-17** — **Phase 7, local side done.** Jeff renamed
+  `C:\pcloud\LA` → `C:\pcloud\legendary-arena` in Explorer (516 files).
+  The cloud copy `/LA` was intact afterwards (516 objects, 237.6 MiB), and
+  a new `/legendary-arena` pair had started; the old `/LA` pair is removed
+  and `/LA` is deleted only after `rclone check` shows 0 differences. Moving
+  `/DOCS` and `/MEDIA` under `/BB/` was dropped: it is cosmetic and would
+  break two working pairs. One sweep across three repos: this one (27
+  files: scripts under `content/media/`, the branding build script,
+  `MUSIC-AUTHORING.md` and the wiki), the marketing repo (3 files) and the
+  brain repo (1). Bare `LA\` names in Workspace Map's tree and prose now
+  read `legendary-arena\`; `DECISIONS.md` and dated log entries keep `LA`.
 
 ## Interactions
 

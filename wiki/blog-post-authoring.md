@@ -523,7 +523,7 @@ horn half (and its black artboard) look right only on a dark surface and break
 on the light-theme footer. A single-colour gold mark reads on both. If a future
 footer graphic carries white or black detail, ship a **light/dark pair** and
 swap on `html[data-theme]` — don't assume one asset works everywhere. (Source
-art lives in pCloud, e.g. `C:\pcloud\LA\brand\`; only the optimized web export
+art lives in pCloud, e.g. `C:\pcloud\legendary-arena\brand\`; only the optimized web export
 is committed — the same source-vs-derivative rule as post images.) The
 approved marks, and the same dark-surface reasoning (the full lockup and the
 white villain half read only on dark), are catalogued on the
