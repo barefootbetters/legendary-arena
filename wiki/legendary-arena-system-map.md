@@ -46,7 +46,7 @@ vendor is down. This page orients; it does not decide.
 `/LA/README.md`). Edit the README first, then copy it here; when the two
 differ, the README wins. Last copied 2026-10-17. The README moves to
 `C:\pcloud\legendary-arena\README.md` in Phase 7 of
-[Workstation Layout Migration](workstation-layout-migration.md).
+the Workstation Layout Migration page.
 
 ## Mechanics {#system-map}
 
