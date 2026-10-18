@@ -121,7 +121,10 @@ C:\pcloud\
 │   ├── ops\                # business operations (README.txt; subfolders on first use)
 │   └── brand\              # approved brand assets (README.txt; subfolders on first use)
 │
-├── GISE\  JJJ\  SCOOBY\    # unrelated personal roots
+├── herbs-vs-ailments\      # Herbs vs. Ailments work in progress (its README.md is that product's system map)
+├── scooby-engine\          # Scooby-Doo ScummVM engine: disc ISOs + README-SCOOBY.md system map (renamed from SCOOBY\ 2026-10-18)
+│
+├── GISE\  JJJ\             # unrelated personal roots
 └── (loose files)           # see Edge Cases
 ```
 

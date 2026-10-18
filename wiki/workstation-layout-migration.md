@@ -535,6 +535,17 @@ Nothing gets safer by this phase; it only makes the convention exact.
   folder matches the repo name under D-24739 point 2. Open:
   `C:\pcloud\SCOOBY` (7 disc ISOs) is not a sync pair, but each ISO has an
   archive.org link beside it, so it can be downloaded again.
+- **2026-10-18** — **Scooby pCloud folder renamed and synced.**
+  `C:\pcloud\SCOOBY` → `C:\pcloud\scooby-engine`, renamed *before* its
+  sync pair was created (renaming a pair's root breaks the pair, Phase 7).
+  The scooby-engine docs and `reference\extract.ps1` were repointed
+  (scooby-engine `23c7103`). Jeff added the pair `C:\pcloud\scooby-engine` ↔
+  `/scooby-engine`; `rclone check --one-way` found 17 matching files and 0
+  differences (3.42 GiB). The folder also holds `README-SCOOBY.md`, the
+  product's system map, in the same format as the two other products'
+  `README.md`. The private engineering wiki went live the same day at
+  `scooby-engine-ewiki.barefootbetters.com` (Hugo on the shared ewiki theme,
+  Access-gated; scooby-engine #1).
 
 ## Interactions
 
