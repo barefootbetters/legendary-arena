@@ -73,7 +73,6 @@ DigitalOcean droplet (Ubuntu VPS):
 Repositories:
     https://github.com/barefootbetters/legendary-arena          ← engine monorepo (all the apps above except www)
         - C:\dev\legendary-arena (off pCloud since 2026-10-17)
-        - Stale   - C:\www\legendary-arena (retired 2026-10-17; delete if still present)
     https://github.com/legendary-arena/legendary-arena-website  ← marketing site (www)
         - C:\www\legendary-arena-com
     https://github.com/legendary-arena/legendary-arena-lab      ← the api droplet's setup + operator runbooks
@@ -188,9 +187,8 @@ What breaks when each one is down, and where to check:
   `C:\dev\legendary-arena`; the old pCloud checkout was renamed
   `legendary-arena.RETIRED-2026-10-17` and is the rollback until
   2026-10-31. See [Workstation Layout Migration](workstation-layout-migration.md).
-- **`C:\www\legendary-arena` is a stale clone, retired 2026-10-17.**
-  Nothing deploys from it. Delete it if it is still there; never edit or
-  search it.
+- **The stale clone `C:\www\legendary-arena` was deleted 2026-10-17.**
+  Any reference to it is out of date.
 - **The brain MCP lags `main`.** A merged ewiki edit reaches the brain
   connector only after a redeploy from the brain repo.
 - **Everything in `wiki\` is public on GitHub.** The ewiki site is behind

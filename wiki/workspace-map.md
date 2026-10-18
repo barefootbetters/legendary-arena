@@ -364,14 +364,11 @@ asked. Two pointers keep it reachable:
   `BB\` empties out as the checkout leaves `DEV\`. No migration is
   required for that — it happens by putting new work in the right place
   and letting `BB\` drain.
-- **A stale second clone of the engine repo exists at
-  `C:\www\legendary-arena`.** It shares the `barefootbetters/legendary-arena`
-  remote but is hundreds of commits behind `main`. It is not a worktree
-  and nothing deploys from it. Searches run against `C:\www\` can match
-  its files and return long-superseded content — the canonical checkout is
-  `C:\dev\legendary-arena`. It was retired in migration Phase 6c
-  (2026-10-17) after every branch checked out as merged or superseded;
-  delete it if it is still there.
+- **The stale second clone at `C:\www\legendary-arena` was deleted on
+  2026-10-17** (migration Phase 6c), after every branch checked out as
+  merged or superseded. It shared the engine remote but was hundreds of
+  commits behind `main`, and searches across `C:\www\` used to return its
+  long-superseded files. The canonical checkout is `C:\dev\legendary-arena`.
 - **`C:\pcloud\BB\DEV\README.md` is a stale chat transcript, not a
   README.** It describes `cards.barefootbetters.com` and a `data/raw/`
   directory, neither of which is current. It is the closest thing to an

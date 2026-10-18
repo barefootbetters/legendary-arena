@@ -88,7 +88,7 @@ the sync drive to `C:\dev\legendary-arena` (operator decision; see
 | `C:\www\legendary-arena-com` | `legendary-arena/legendary-arena-website` | Hugo marketing site and blog → `www.legendary-arena.com`. |
 | `C:\www\legendary-arena-lab` | `legendary-arena/legendary-arena-lab` | API droplet provisioning (`infra/scripts/NN-*.ps1`) and the droplet side of the server deploy. |
 | `C:\www\ewiki-theme` | `barefootbetters/ewiki-theme` | Shared Hugo theme the wikis build with (D-24728). |
-| `C:\www\legendary-arena` | `barefootbetters/legendary-arena` | **Stale second clone, retired in migration Phase 6c (2026-10-17)** — every branch was merged or superseded on GitHub. Delete it if it is still there; never edit or search it. |
+| ~~`C:\www\legendary-arena`~~ | `barefootbetters/legendary-arena` | **Deleted 2026-10-17** (migration Phase 6c). It was a stale second clone; every branch was merged or superseded on GitHub first. |
 
 The apps (`arena-client`, `registry-viewer`, …) are folders under
 `apps/` in the engine monorepo, not repositories of their own.
@@ -368,15 +368,13 @@ not through a Hugo build.
   described a single converter; since PR #1780 it documents the full
   multi-stage `scripts/convert-cards/` chain and is the place to check
   stage order. Older copies of this page called it stale.
-- **Two clones of the engine repo, one of them stale.**
-  `C:\www\legendary-arena` shares the engine remote but is far behind
-  `main`; a search across `C:\www\` can return its superseded files. The
-  canonical checkout is `C:\dev\legendary-arena`, where the engine moved
+- **There used to be two clones of the engine repo.** A stale second
+  clone at `C:\www\legendary-arena` shared the engine remote but was far
+  behind `main`, so a search across `C:\www\` could return superseded
+  files; it was deleted on 2026-10-17. The canonical checkout is `C:\dev\legendary-arena`, where the engine moved
   off pCloud on 2026-10-17 (operator decision). That location replaces the
   `C:\www\legendary-arena` target named in D-24208's rationale, which was
   where the stale clone sat, and follows the `C:\dev\` = code convention.
-  The stale clone was retired in migration Phase 6c; delete it if it is
-  still there.
 - **`legends.` is the scoreboard, and `ewiki.` is private.** The Legends
   board is a Vue SPA showing competitive standings, not a lore site, and
   the engineering wiki sits behind Cloudflare Access — a 302/401/403 from
