@@ -116,7 +116,7 @@ C:\dev\
     legendary-arena\            engine, server, apps, wiki\ (the LA ewiki)
     herbs-vs-ailments\          engine, server, client, docs\ (the HvA ewiki)
     bb-studio-dashboard\        shared dashboard tool + studio ewiki      (Phase 8)
-    ewiki-theme\                shared Hugo theme                         (Phase 8)
+    bb-studio-ewiki-theme\      shared Hugo theme (was ewiki-theme)       (Phase 8)
     legendary-arena-lab\        api droplet provisioning + runbooks       (Phase 8)
 C:\www\
     legendary-arena-www\        LA marketing site (today legendary-arena-com; Phase 8)
@@ -563,6 +563,17 @@ Nothing gets safer by this phase; it only makes the convention exact.
   `bb-studio-www`'s README, and both pCloud product READMEs. None of the
   three repos had Claude Code project memory to carry. 8b, the two
   marketing-repo renames, stays open.
+- **2026-10-18** — **`ewiki-theme` renamed `bb-studio-ewiki-theme`** (Jeff),
+  matching its sibling product, `bb-studio-dashboard`. Not
+  `bb-studio-ewiki`: that would read as the studio's own private wiki,
+  which decision 2026-10-17-01 keeps distinct. The GitHub repo was renamed
+  (the old URL redirects), the folder became `C:\dev\bb-studio-ewiki-theme`,
+  and live references were swept across six repos and the Herbs pCloud
+  README. Historical records keep the old name: D-24728, WP-814, EC-852 and
+  their post-mortem, the studio decision log, and the entries above. No
+  vendored copy changes until its next sync. The decision is
+  bb-studio-dashboard 2026-10-18-02. No pCloud folder until there's
+  material for one.
 
 ## Interactions
 
