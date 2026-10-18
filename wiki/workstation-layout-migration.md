@@ -47,8 +47,8 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 0.5 | Baseline snapshot and environment inventory | Done 2026-10-17 (found pCloud sync off since about April; re-enabled and verified) |
 | 1 | Back up the loose files that have no backup today | Done 2026-10-17 |
 | 2 | Add an unpushed-work check | Not started (not blocking) |
-| 3 | **Rehearsal:** re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments` | Not started (quiet window for HvA) |
-| 4 | Fold the rehearsal's lessons into Phases 5–6 | Not started |
+| 3 | **Rehearsal:** re-clone Herbs vs. Ailments into `C:\dev\herbs-vs-ailments` | Done 2026-10-17 (nine findings) |
+| 4 | Fold the rehearsal's lessons into Phases 5–6 | Findings folded and branch triage built 2026-10-17; 3 branch decisions pending (Jeff) |
 | 5 | **Pre-stage** the engine clone in `C:\dev\legendary-arena` — build, test, hooks | Not started (no quiet window needed) |
 | 6 | **Cut over** the engine | Not started (quiet window for LA) |
 | 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Not started |
@@ -389,6 +389,30 @@ Nothing gets safer by this phase; it only makes the convention exact.
   (byte-identical) was deleted, and the loose BB PDF went to
   `C:\pcloud\BB\DOCS\`. All three files are confirmed on pCloud.
   `C:\www\` now holds only repo folders and the two shortcuts.
+- **2026-10-17** — **Phase 3 done** (the Herbs vs. Ailments rehearsal).
+  All 8 extra worktrees were already on `main` or pushed, so they were
+  removed; the branch bundle came back empty because nothing was local-only.
+  The re-clone into `C:\dev\herbs-vs-ailments` checked out clean: the right
+  remote, memory hash-identical (12 memories plus the index), a
+  frozen-lockfile install, 52/52 tests, and a clean typecheck. The old
+  checkout is retired as `C:\www\herbs-vs-ailments.RETIRED-2026-10-17`. A
+  session on the new folder loaded its memory, and worktrees from the new
+  clone opened HvA PRs #253–#255. #255 fixed the last live reference to
+  the old path. Nine findings, the main ones:
+  - `git worktree remove` leaves empty `apps\` / `node_modules\` /
+    `packages\` shells; 12 were swept, including the long-standing
+    `C:\www\hva-wp004-knobs`.
+  - Finished sessions keep pointing at the old folder.
+  - Old-path fixes should be one sweep and one PR.
+  - Memory counts are files, including the `MEMORY.md` index.
+- **2026-10-17** — **Phase 4 (in progress).** All nine findings are folded
+  into the engine's Phase 6 steps. The branch triage covers 202 engine
+  branches with no upstream, a deleted upstream, or unpushed commits:
+  167 have all their work on `main`; 32 are squash-merged PRs with no
+  commits after the merge; 3 need Jeff's decision. Two are superseded
+  drafts (the April `wp-068-preferences-foundation`, which shipped as
+  WP-534, and a subagent draft of WP-767, which landed as #2414). The third
+  is the open, green PR #2698, the PAR re-pin after WP-801.
 
 ## Interactions
 
