@@ -521,7 +521,7 @@ Nothing gets safer by this phase; it only makes the convention exact.
   were already gone). Each tip was confirmed equal to its merged PR's head,
   or to a later merged PR's content. Two clean worktrees that held such
   branches were removed with them.
-- **2026-10-18** — **Scooby moved `C:\www\scooby` → `C:\dev\scooby`** (Jeff:
+- **2026-10-18** — **Scooby moved `C:\www\scooby` → `C:\dev\scooby-engine`** (Jeff:
   it is a development project, so D-24739's `C:\dev` root applies, with no
   new plan). It was re-cloned from `barefootbetters/scooby-engine` at the
   same commit (`6431f79`). The 1.75 GB of gitignored game builds
@@ -529,10 +529,12 @@ Nothing gets safer by this phase; it only makes the convention exact.
   the old tree; 24 differ only in line endings. The uncommitted June edit
   was carried over still uncommitted. The old checkout is
   `C:\www\scooby.RETIRED-2026-10-18`, deleted after 2026-11-01. The repo's
-  live docs were repointed (scooby-engine `1763954`). Open: the folder is
-  `scooby` but the repo is `scooby-engine`, which D-24739 point 2 says
-  should match. `C:\pcloud\SCOOBY` (7 disc ISOs) is not a sync pair; each
-  ISO has an archive.org link beside it, so it can be downloaded again.
+  live docs were repointed (scooby-engine `1763954`, `fa3d639`). The clone
+  first landed at `C:\dev\scooby`, then was renamed to `scooby-engine` (and
+  its Claude Code project folder to `C--dev-scooby-engine`) so that the
+  folder matches the repo name under D-24739 point 2. Open:
+  `C:\pcloud\SCOOBY` (7 disc ISOs) is not a sync pair, but each ISO has an
+  archive.org link beside it, so it can be downloaded again.
 
 ## Interactions
 
