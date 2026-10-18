@@ -53,7 +53,7 @@ record on [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
 | 6 | **Cut over** the engine | Cut over 2026-10-17: old checkout renamed `legendary-arena.RETIRED-2026-10-17` (rollback until 2026-10-31), 6c checks pass, path sweep shipped, stale clone `C:\www\legendary-arena` deleted. Done; `.RETIRED` folder deleted after 2026-10-31 |
 | 7 | Rename `C:\pcloud\LA` → `C:\pcloud\legendary-arena` | Done 2026-10-17 (local rename, three-repo sweep, cloud copy `/legendary-arena` verified 516/516, `/LA` deleted) |
 | 8 | Move shared tools to `C:\dev` | Deferred until the engine has run 1–2 weeks from `C:\dev` |
-| 9 | Clean up leftovers | Not started |
+| 9 | Clean up leftovers | Mostly done 2026-10-17; open: where the card-image staging area lives |
 
 Update the Status column and add a line to the Progress log whenever a
 phase moves. The step-by-step commands live in the operator's execution
@@ -340,21 +340,21 @@ Nothing gets safer by this phase; it only makes the convention exact.
 
 ### Phase 9 — Clean up leftovers
 
-- `C:\dev\null`: a 120 KB stray file from a shell redirect.
-- `C:\www\hva-wp004-knobs`: not a git repo, no backup; delete if unneeded.
+- ~~`C:\dev\null`: a 120 KB stray file from a shell redirect.~~ Gone.
+- ~~`C:\www\hva-wp004-knobs`: not a git repo, no backup.~~ An empty
+  worktree shell; deleted.
 - ~~`bb-studio-dashboard\wrangler.jsonc` names the live dashboard
   Worker.~~ **Done 2026-10-17.** The root file was already gone on that
   repo's `main` (WP-004); only the local checkout was stale, and a
   fast-forward removed it. `instances/legendary-arena/wrangler.jsonc` keeps
   the Worker name on purpose for that repo's WP-011 cutover. It has no
   caller workflow, so it deploys only with an explicit `--config`.
-- `C:\pcloud\BB\DEV\` is **not** empty after Phase 6. Besides the
-  `.RETIRED` checkout it holds four old sibling folders
-  (`legendary-arena-diamondfix`, `-flakeseed`, `-worktrees`, `-wt`) and
-  `barefootbetters-legendary-setup`, the card-image staging area that the
-  three `scripts/card-image-*/README.md` files point at. Review the
-  siblings, decide where the staging area lives, then update the `BB\`
-  notes on [Workspace Map](workspace-map.md).
+- **`C:\pcloud\BB\DEV\` swept 2026-10-17.** 15 empty worktree shells (0
+  bytes, no `.git`) were deleted, along with the stale `README.md` and
+  superseded loose scripts; Workspace Map's `BB\` notes are updated. Still
+  open: `barefootbetters-legendary-setup`, the card-image staging area the
+  three `scripts/card-image-*/README.md` files point at. Moving it is its
+  own decision.
 
 ### Progress log
 
@@ -470,6 +470,15 @@ Nothing gets safer by this phase; it only makes the convention exact.
   brain repo (1). Bare `LA\` names in Workspace Map's tree and prose now
   read `legendary-arena\`; `DECISIONS.md` and dated log entries keep `LA`.
 - **2026-10-17** — **Phase 7 done.** The `/legendary-arena` pair uploaded in full; `rclone check --one-way` against the local folder found 516 matching files and 0 differences, and Jeff deleted `/LA`. All three sweep PRs merged (this repo #2888, marketing #270, brain #70).
+- **2026-10-17** — **Phase 9, mostly done.** `C:\pcloud\BB\DEV\` held 15
+  empty worktree shells that the 6a sweep missed, because they had been
+  created next to the checkout rather than under `C:\claude-worktrees\`.
+  The two still registered at cutover were checked first: one was on
+  `main`, and the other's 2 unpushed commits are in the bundle and merged
+  as #2049/#2050. Jeff deleted the shells plus the stale `README.md` and
+  superseded loose scripts. `C:\dev\null` and `C:\www\hva-wp004-knobs` are
+  gone. Left: `barefootbetters-legendary-setup` (card-image staging) and the
+  `.RETIRED` checkout until 2026-10-31.
 
 ## Interactions
 

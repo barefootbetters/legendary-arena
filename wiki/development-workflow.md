@@ -855,17 +855,17 @@ C:\dev\
 └── legendary-arena-com\       ← marketing repo clone (if needed)
 ```
 
-**Laptop** (current — on pCloud):
+**Laptop** (off pCloud since 2026-10-17):
 
 ```
-C:\pcloud\BB\DEV\
+C:\dev\
 └── legendary-arena\           ← git clone (same repo, different path)
 ```
 
-The laptop repo currently lives on pCloud. A migration to a local path
-(off pCloud) is planned but deferred. pCloud sync creates `[conflicted N]`
-duplicate files and has caused `.git` refs corruption — the workstation
-should NOT use pCloud for the repo clone.
+The laptop repo moved off pCloud on 2026-10-17 (see
+[Workstation Layout Migration](workstation-layout-migration.md)). pCloud
+sync had created `[conflicted N]` duplicate files and corrupted `.git`
+refs. No machine should keep a repo clone on pCloud.
 
 ### Sync rules
 
