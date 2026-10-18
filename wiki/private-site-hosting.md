@@ -17,7 +17,7 @@ related:
   - data-file-locations.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\private-site-hosting.md (this page — https://ewiki.legendary-arena.com/private-site-hosting/)
+  - C:\dev\legendary-arena\wiki\private-site-hosting.md (this page — https://ewiki.legendary-arena.com/private-site-hosting/)
   - ../docs/ai/DECISIONS.md
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json

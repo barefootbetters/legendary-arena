@@ -18,7 +18,7 @@ related:
   - play-board.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\transform.md (this page — https://ewiki.legendary-arena.com/transform/)
+  - C:\dev\legendary-arena\wiki\transform.md (this page — https://ewiki.legendary-arena.com/transform/)
   - ../data/cards/wwhk.json
   - ../data/metadata/keywords-full.json
   - ../docs/ai/coverage/hero-mechanic-ledger.json

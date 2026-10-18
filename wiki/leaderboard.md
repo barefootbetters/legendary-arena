@@ -18,7 +18,7 @@ related:
   - seed-challenges.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\leaderboard.md (this page — https://ewiki.legendary-arena.com/leaderboard/)
+  - C:\dev\legendary-arena\wiki\leaderboard.md (this page — https://ewiki.legendary-arena.com/leaderboard/)
   - ../apps/legends-board/package.json
   - ../apps/legends-board/src/App.vue
   - ../apps/legends-board/src/snapshots/snapshotClient.ts

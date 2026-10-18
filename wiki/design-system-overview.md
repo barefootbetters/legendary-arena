@@ -28,7 +28,7 @@ related:
   - play-board.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\design-system-overview.md (this page — https://ewiki.legendary-arena.com/design-system-overview/)
+  - C:\dev\legendary-arena\wiki\design-system-overview.md (this page — https://ewiki.legendary-arena.com/design-system-overview/)
   - ../packages/game-engine/src/events/notableEvents.types.ts
   - ../packages/game-engine/src/ui/uiState.types.ts
   - ../packages/game-engine/src/moves/coreMoves.impl.ts

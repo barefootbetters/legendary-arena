@@ -18,7 +18,7 @@ related:
   - design-system-overview.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\deck-probability-panel.md (this page — https://ewiki.legendary-arena.com/deck-probability-panel/)
+  - C:\dev\legendary-arena\wiki\deck-probability-panel.md (this page — https://ewiki.legendary-arena.com/deck-probability-panel/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-08-25
 ---

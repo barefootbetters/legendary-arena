@@ -14,7 +14,7 @@ related:
   - villain-deck.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\seed-challenges.md (this page — https://ewiki.legendary-arena.com/seed-challenges/)
+  - C:\dev\legendary-arena\wiki\seed-challenges.md (this page — https://ewiki.legendary-arena.com/seed-challenges/)
   - ../docs/ai/DESIGN-SEED-CHALLENGES.md
   - ../docs/ai/DESIGN-RANKING.md
   - ../docs/ai/DECISIONS.md

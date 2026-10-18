@@ -12,7 +12,7 @@ related:
   - hugo-web-system.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\wiki-viewer-architecture.md (this page — https://ewiki.legendary-arena.com/wiki-viewer-architecture/)
+  - C:\dev\legendary-arena\wiki\wiki-viewer-architecture.md (this page — https://ewiki.legendary-arena.com/wiki-viewer-architecture/)
   - ../apps/wiki-viewer/hugo.toml
   - ../apps/wiki-viewer/wrangler.jsonc
   - ../apps/wiki-viewer/README.md

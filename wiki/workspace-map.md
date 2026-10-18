@@ -21,7 +21,7 @@ related:
   - gameplay-video-production-youtube.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\workspace-map.md (this page — https://ewiki.legendary-arena.com/workspace-map/)
+  - C:\dev\legendary-arena\wiki\workspace-map.md (this page — https://ewiki.legendary-arena.com/workspace-map/)
   - ../docs/01-REPO-FOLDER-STRUCTURE.md
   - ../render.yaml
   - ../.env.example
@@ -105,7 +105,7 @@ pCloud has two top-level project roots plus several personal ones:
 C:\pcloud\
 ├── BB\                     # BarefootBetters — emptying out, see Edge Cases
 │   ├── DEV\                # code checkouts
-│   │   └── legendary-arena\    # ← engine monorepo; scheduled to move off pCloud
+│   │   └── legendary-arena\    # ← engine monorepo until 2026-10-17; now C:\dev\legendary-arena (retired copy kept to 2026-10-31)
 │   ├── DOCS\
 │   └── MEDIA\
 │
@@ -132,7 +132,7 @@ restated here.
 
 | Path | Remote | Owns | Deploys to |
 |---|---|---|---|
-| `C:\pcloud\BB\DEV\legendary-arena` | `barefootbetters/legendary-arena` | Engine, server, clients, card data, the `wiki/` source, all AI governance | DigitalOcean droplet (server, since 2026-10-12; Render before), Cloudflare Pages (viewer, client, legends board), Cloudflare Workers (ewiki, dashboard) |
+| `C:\dev\legendary-arena` | `barefootbetters/legendary-arena` | Engine, server, clients, card data, the `wiki/` source, all AI governance | DigitalOcean droplet (server, since 2026-10-12; Render before), Cloudflare Pages (viewer, client, legends board), Cloudflare Workers (ewiki, dashboard) |
 | `C:\www\legendary-arena-com` | the marketing-site repo | Hugo marketing site: blog posts, brand tokens, layouts, marketing docs, and Legendary Arena's corporate-memory layer (`docs/corporate-memory/`) | Cloudflare Pages → `www.legendary-arena.com` |
 | `C:\www\jefferyjjensen-corporate-memory` | `barefootbetters/jefferyjjensen-corporate-memory` (**private**) | Top node of the distributed corporate memory (owner profile, portfolio routing map, cross-business decision log, personal notes) and, since 2026-09-29, the [AI Second Brain](ai-second-brain.md) "ship" (AIS-OS skills, operating manuals, and since 2026-10-12 the design record in `docs/second-brain/`) | Cloudflare Pages → `brain.barefootbetters.com`, a private viewer behind Cloudflare Access, published by hand with `scripts/viewer.ps1 -Deploy` |
 
@@ -293,9 +293,9 @@ have to guess whether they have the current one. Drafts stay in
 were created for exactly this work — but both are **empty**, and `BB\`
 is on a path to holding nothing:
 
-- `BB\DEV\` exists to hold the engine checkout, which is scheduled to
-  move off pCloud entirely (see the sync-drive hazard under Edge Cases).
-  When it goes, `DEV\` is empty too.
+- `BB\DEV\` existed to hold the engine checkout, which moved off pCloud
+  on 2026-10-17 (see the sync-drive hazard under Edge Cases). Once the
+  retired copy is deleted after 2026-10-31, `DEV\` holds no engine code.
 - `BB\DOCS\` and `BB\MEDIA\` hold very little.
 - Everything with real content already lives under `LA\`.
 
@@ -369,9 +369,9 @@ asked. Two pointers keep it reachable:
   remote but is hundreds of commits behind `main`. It is not a worktree
   and nothing deploys from it. Searches run against `C:\www\` can match
   its files and return long-superseded content — the canonical checkout is
-  `C:\pcloud\BB\DEV\legendary-arena`. It is not the move target either
-  (that is `C:\dev\legendary-arena`, see below), so it can simply be
-  deleted.
+  `C:\dev\legendary-arena`. It was retired in migration Phase 6c
+  (2026-10-17) after every branch checked out as merged or superseded;
+  delete it if it is still there.
 - **`C:\pcloud\BB\DEV\README.md` is a stale chat transcript, not a
   README.** It describes `cards.barefootbetters.com` and a `data/raw/`
   directory, neither of which is current. It is the closest thing to an
@@ -393,13 +393,13 @@ asked. Two pointers keep it reachable:
   than one, because a document filed into the wrong one is not missing,
   just unfindable.
 - **`BB\` is on a path to holding nothing.** Its only substantial
-  content is the engine checkout under `DEV\`, which is scheduled to move
-  off pCloud. When that lands, `BB\` holds a thin `DOCS\` and `MEDIA\`
-  and little else. The *"one product, two roots"* split above resolves by
+  content was the engine checkout under `DEV\`, which moved off pCloud on
+  2026-10-17 (the retired copy there is deleted after 2026-10-31). `BB\`
+  now holds a thin `DOCS\` and `MEDIA\` and little else. The *"one product, two roots"* split above resolves by
   `BB\` emptying, not by a migration.
-- **The engine repo is on the sync drive, and that is a known hazard —
-  not a feature.** `C:\pcloud\BB\DEV\legendary-arena` sits on pCloud,
-  which syncs the `.git` directory itself. Observed consequences, in
+- **The engine repo was on the sync drive until 2026-10-17, and that was
+  a hazard — not a feature.** It sat at `C:\pcloud\BB\DEV\legendary-arena`,
+  where pCloud synced the `.git` directory itself. Observed consequences, in
   increasing severity: `… [conflicted N]` sibling files (the un-suffixed
   file is canonical, and has been the *truncated* one); uncommitted edits
   silently reverting to their committed state with no conflict file at
@@ -408,24 +408,16 @@ asked. Two pointers keep it reachable:
   draft files vanishing outright; and a commit landing on a concurrent
   session's branch and being pushed into an unrelated PR.
 
-  Three mitigations, in order of effect:
-
-  1. **Do sustained git work in an off-pCloud worktree**, not in the
-     canonical tree — `git worktree add C:\claude-worktrees\<name> -b
-     <branch> origin/main`.
-  2. **Commit early and often.** A commit is sync-proof; an uncommitted
-     working tree is not. Untracked work is what gets lost.
-  3. **Run `git log origin/main..HEAD` before every push** and confirm
-     only your own commits are listed.
-
-  Moving the engine repo off pCloud is planned and currently deferred by
-  operator decision; the plan and its progress are tracked on
-  [Workstation Layout Migration](workstation-layout-migration.md). The
-  target is **`C:\dev\legendary-arena`**: code
-  checkouts go under `C:\dev\` and website checkouts under `C:\www\`
-  (operator decision, 2026-10-17). That replaces the
-  `C:\www\legendary-arena` target named in D-24208's rationale. Do not
-  start that migration without an explicit instruction.
+  The fix was the move itself: the engine now lives at
+  **`C:\dev\legendary-arena`**. Code checkouts go under `C:\dev\` and
+  website checkouts under `C:\www\` (operator decision, 2026-10-17), which
+  replaces the `C:\www\legendary-arena` target named in D-24208's
+  rationale. The plan and its record are on
+  [Workstation Layout Migration](workstation-layout-migration.md). Two
+  habits from that era are still worth keeping with parallel sessions:
+  do sustained git work in a worktree under `C:\claude-worktrees\`, and
+  run `git log origin/main..HEAD` before every push to confirm only your
+  own commits are listed.
 - **Sync is not backup, and for a git repo it is worse than neither.**
   The durability of work in either repo comes from pushing to GitHub. A
   checkout is not made safer by living on a synced drive; it is made

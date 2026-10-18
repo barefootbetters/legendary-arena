@@ -27,7 +27,7 @@ related:
   - homepage-spec.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\legendary-arena-tribe-and-trust.md (this page — https://ewiki.legendary-arena.com/legendary-arena-tribe-and-trust/)
+  - C:\dev\legendary-arena\wiki\legendary-arena-tribe-and-trust.md (this page — https://ewiki.legendary-arena.com/legendary-arena-tribe-and-trust/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-07-23
 ---

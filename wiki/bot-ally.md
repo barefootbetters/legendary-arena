@@ -14,7 +14,7 @@ related:
   - tournament-calendar.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\bot-ally.md (this page — https://ewiki.legendary-arena.com/bot-ally/)
+  - C:\dev\legendary-arena\wiki\bot-ally.md (this page — https://ewiki.legendary-arena.com/bot-ally/)
   - ../apps/arena-client/src/lobby/LobbyView.vue
   - ../apps/arena-client/src/components/BotAllyStallBanner.vue
   - ../apps/arena-client/src/composables/useBotAllyStatus.ts

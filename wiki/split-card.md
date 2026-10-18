@@ -17,7 +17,7 @@ related:
   - play-board.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\split-card.md (this page — https://ewiki.legendary-arena.com/split-card/)
+  - C:\dev\legendary-arena\wiki\split-card.md (this page — https://ewiki.legendary-arena.com/split-card/)
   - ../docs/legendary-universal-rules-v23.md
   - ../data/metadata/rules-full.json
   - ../data/cards/cvwr.json

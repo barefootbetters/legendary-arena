@@ -18,7 +18,7 @@ related:
   - ip-licensing.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\youtube-channel-plan.md (this page — https://ewiki.legendary-arena.com/youtube-channel-plan/)
+  - C:\dev\legendary-arena\wiki\youtube-channel-plan.md (this page — https://ewiki.legendary-arena.com/youtube-channel-plan/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-09-27
 ---

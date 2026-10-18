@@ -21,7 +21,7 @@ related:
   - workspace-map.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\gameplay-video-production-youtube.md (this page — https://ewiki.legendary-arena.com/gameplay-video-production-youtube/)
+  - C:\dev\legendary-arena\wiki\gameplay-video-production-youtube.md (this page — https://ewiki.legendary-arena.com/gameplay-video-production-youtube/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-09-03
 ---

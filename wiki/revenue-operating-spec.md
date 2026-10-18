@@ -14,7 +14,7 @@ related:
   - monetization-model.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\revenue-operating-spec.md (this page — https://ewiki.legendary-arena.com/revenue-operating-spec/)
+  - C:\dev\legendary-arena\wiki\revenue-operating-spec.md (this page — https://ewiki.legendary-arena.com/revenue-operating-spec/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-09-02
 canonical-source: docs/marketing/revenue-operating-spec.md

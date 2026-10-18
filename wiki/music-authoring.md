@@ -15,7 +15,7 @@ related:
   - ewiki-authoring.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\music-authoring.md (this page — https://ewiki.legendary-arena.com/music-authoring/)
+  - C:\dev\legendary-arena\wiki\music-authoring.md (this page — https://ewiki.legendary-arena.com/music-authoring/)
   - C:\pcloud\LA\audio\audio-motif-map.json (the motif system — team keys, class instruments, rules)
   - ../content/themes/age-of-apocalypse.json
   - ../content/themes/CATALOG.md

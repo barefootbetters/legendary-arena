@@ -13,7 +13,7 @@ related:
   - data-file-locations.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\guest-accounts.md (this page — https://ewiki.legendary-arena.com/guest-accounts/)
+  - C:\dev\legendary-arena\wiki\guest-accounts.md (this page — https://ewiki.legendary-arena.com/guest-accounts/)
   - ../apps/server/src/identity/identity.types.ts
   - ../apps/server/src/identity/identity.logic.ts
   - ../apps/server/src/match/matchGate.routes.ts

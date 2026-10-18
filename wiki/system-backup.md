@@ -18,7 +18,7 @@ related:
   - service-dependency-map.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\system-backup.md (this page — https://ewiki.legendary-arena.com/system-backup/)
+  - C:\dev\legendary-arena\wiki\system-backup.md (this page — https://ewiki.legendary-arena.com/system-backup/)
   - ../docs/ops/DISASTER_RECOVERY.md
   - ../docs/ai/DECISIONS.md
 last-reviewed: 2026-10-12

@@ -15,7 +15,7 @@ related:
   - soul-of-legendary-arena.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\branding.md (this page — https://ewiki.legendary-arena.com/branding/)
+  - C:\dev\legendary-arena\wiki\branding.md (this page — https://ewiki.legendary-arena.com/branding/)
   - C:\pcloud\LA\brand\README.txt
   - C:\www\legendary-arena-com\static\brand-tokens.css
 last-reviewed: 2026-09-04

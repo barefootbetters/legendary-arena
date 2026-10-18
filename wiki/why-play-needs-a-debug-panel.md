@@ -25,7 +25,7 @@ related:
   - sound-effects.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\why-play-needs-a-debug-panel.md (this page — https://ewiki.legendary-arena.com/why-play-needs-a-debug-panel/)
+  - C:\dev\legendary-arena\wiki\why-play-needs-a-debug-panel.md (this page — https://ewiki.legendary-arena.com/why-play-needs-a-debug-panel/)
   - ../apps/arena-client/src/diagnostics/diagnostics.ts
   - ../apps/arena-client/src/components/DiagnosticExportButton.vue
   - ../apps/arena-client/src/components/GameLogDownloadButton.vue

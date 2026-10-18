@@ -19,7 +19,7 @@ related:
   - system-backup.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\development-workflow.md (this page — https://ewiki.legendary-arena.com/development-workflow/)
+  - C:\dev\legendary-arena\wiki\development-workflow.md (this page — https://ewiki.legendary-arena.com/development-workflow/)
   - ../docs/ai/REFERENCE/development-workflow.md
   - ../docs/ai/REFERENCE/01-render-infrastructure.md
   - ../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md

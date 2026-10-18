@@ -21,7 +21,7 @@ related:
   - brevo-email-pipeline.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-web-system.md (this page — https://ewiki.legendary-arena.com/hugo-web-system/)
+  - C:\dev\legendary-arena\wiki\hugo-web-system.md (this page — https://ewiki.legendary-arena.com/hugo-web-system/)
   - C:\www\legendary-arena-com\hugo.toml
   - C:\www\legendary-arena-com\layouts\baseof.html
   - C:\www\legendary-arena-com\layouts\index.html
@@ -51,7 +51,7 @@ last-reviewed: 2026-09-01
 
 | Repo | Base URL (local) | Site |
 |---|---|---|
-| Engine | `C:\pcloud\BB\DEV\legendary-arena\` | `ewiki.legendary-arena.com` |
+| Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
 | Research / Notes | `C:\pcloud\LA\ewiki\` | (not published) |
 
@@ -80,8 +80,8 @@ committing:
 | Edge redirects | Marketing | `C:\www\legendary-arena-com\static\_redirects` (does not exist yet — see [Edge configuration](#edge-configuration-_headers--_redirects)) |
 | Content pages | Marketing | `C:\www\legendary-arena-com\content\` |
 | Static images | Marketing | `C:\www\legendary-arena-com\static\images\` |
-| This wiki page | Engine | `C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-web-system.md` |
-| Screenshots for this page | Engine | `C:\pcloud\BB\DEV\legendary-arena\ewiki\hugo-web-system\` |
+| This wiki page | Engine | `C:\dev\legendary-arena\wiki\hugo-web-system.md` |
+| Screenshots for this page | Engine | `C:\dev\legendary-arena\ewiki\hugo-web-system\` |
 
 **Published locations** — where files end up after `git push` and
 deploy:

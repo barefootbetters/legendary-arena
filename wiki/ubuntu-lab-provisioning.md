@@ -22,7 +22,7 @@ related:
   - system-backup.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\ubuntu-lab-provisioning.md (this page — https://ewiki.legendary-arena.com/ubuntu-lab-provisioning/)
+  - C:\dev\legendary-arena\wiki\ubuntu-lab-provisioning.md (this page — https://ewiki.legendary-arena.com/ubuntu-lab-provisioning/)
   - ../render.yaml
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
