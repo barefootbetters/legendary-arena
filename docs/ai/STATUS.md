@@ -7,6 +7,32 @@
 
 ## Current State
 
+### D-24741 — Pure Fury compares the target's current Attack (Jeff ruling, direct fix) (2026-10-17)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Nick Fury's **Pure Fury** now defeats only a Villain or
+Mastermind whose *current* Attack is below the number of S.H.I.E.L.D. Heroes in the KO pile. Dark Portals, Bank Robbery
+Bystanders, captured Heroes and "-N attack" effects now count. Before, it compared the printed Attack, so in match
+`tXTkG2Pardt` it defeated Loki (10, +1 Dark Portal) with only 11 S.H.I.E.L.D. Heroes in the KO pile.
+
+- **Engine only.** `buildPureFuryTargets` reads `resolveFightCost` / `resolveMastermindFightCost`; no new G field, move or UI field.
+- **Counts.** game-engine 5366 → 5371 (5 new Pure Fury cases, each failing on the old code), 0 fail in all 12 packages; data gates current; no re-pin.
+- **Live-verify (D-24026): pending.** Loki / Portals operator match, after twist 1, City empty: 11 S.H.I.E.L.D. Heroes in
+  the KO pile → Pure Fury finds no target; 12 → Loki is a target.
+
+### D-24740 — Pure Fury and Silent Sniper can strike the Final Blow (direct fix) (2026-10-17)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** With the optional Final Blow rule on, once the Mastermind's four Tactics are defeated, Nick Fury's Pure Fury and Black Widow's Silent Sniper can now pick the Mastermind and strike the final blow for free (operator ruling). Before, they stopped offering the Mastermind after its last Tactic, so only a paid fight could win (match `Er6Uj0zeyDW`, 19.2.2–25.2.17).
+
+- **Engine only.** No G-shape change, no re-pin; Final Blow off is unchanged.
+- **Live-verify (D-24026), 2026-10-17: PASS.** Operator match `tXTkG2Pardt` (server `d72fbbb1`, the #2873 merge), Loki / Portals, Final Blow on: Pure Fury took all four Tactics, then struck the final blow on Loki (16.2.3) and the heroes won at 16.3.1. Silent Sniper's final blow was not exercised.
+
+### D-24738 — Secret Invasion counts captured Heroes in the Escape pile toward its six (direct fix) (2026-10-17)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** On Secret Invasion of the Skrull Shapeshifters, a Hero that Skrull Queen Veranke or the Skrull Shapeshifters captured from the HQ now counts toward "6 Heroes in the Escaped Villains pile" once its captor escapes, alongside the escaped Skrull Heroes (operator ruling). The loss line names both parts, e.g. "6 Heroes escaped (4 Skrulls, 2 captured)", and the danger meter reads "Heroes N/6". In match `PF9JUILsmcT` two captured Heroes were in the pile, so Evil would have won at 17.1.2 instead of 31.1.3.
+
+- **Engine + one client label.** No G-shape change, no re-pin; Killbots, Negative Zone and Midtown count exactly as before.
+- **Live-verify (D-24026), 2026-10-17: PASS.** Operator match `cLZ0_pzMFmd` (server `6dbeb6d7`): 5 Skrull Heroes + Veranke's captured A Day Unlike Any Other ended the game at 9.1.3, "6 Heroes escaped (5 Skrulls, 1 captured)"; the old count would have read 5.
+
 ### WP-814 / EC-852 — The shared wiki theme, extracted (D-24728) (2026-10-16)
 
 **No user-observable change — infrastructure only.** No wiki changes its theme in this packet. The four hand-rolled Hugo wiki themes (engine ewiki, Herbs vs. Ailments, corporate memory, personal wiki) are reconciled into one shared copy, released as **`barefootbetters/ewiki-theme` `v1.0.0`**. The repo is private, and the tag sits on `52f6c1b5` with manifest digest `d3e03f528052d23b404160bbd2d5bf9911017002839b2c4fc18ac0867b687b80` (in the release notes; the digest a wiki pins).

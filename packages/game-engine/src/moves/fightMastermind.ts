@@ -496,10 +496,14 @@ export function defeatMastermindTacticCore(
  * branch (in `defeatMastermindTacticCore`) never awards it — it only latches
  * final-blow-pending — so this is the sole award site.
  *
+ * why: D-24739 — exported so a free defeat of the Mastermind (Pure Fury, Silent Sniper)
+ * can strike the final blow through this same award (dispatchDefeatWithBystanderTarget),
+ * never a second copy. The free-defeat caller spends no attack and sets no acted flag.
+ *
  * @param G - Game state (mutated under Immer draft).
  * @param ctx - The bare boardgame.io ctx (currentPlayer), typed unknown to avoid a framework import.
  */
-function awardMastermindOnFinalBlow(G: LegendaryGameState, ctx: unknown): void {
+export function awardMastermindOnFinalBlow(G: LegendaryGameState, ctx: unknown): void {
   // why: narrow the unknown ctx to the one field this reads (the fighting player),
   // mirroring defeatMastermindTacticCore — no framework import.
   const currentPlayer = (ctx as { currentPlayer: string }).currentPlayer;

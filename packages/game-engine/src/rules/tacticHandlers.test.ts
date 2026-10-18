@@ -877,13 +877,17 @@ function makeSeatEvents(): { setActivePlayers: (arg: unknown) => void; admitted:
   return { admitted, setActivePlayers: (arg: unknown) => admitted.push(arg) };
 }
 
-/** Minimal multi-seat G carrying only the fields the two tactics touch. */
+/**
+ * Minimal multi-seat G carrying only the fields the two tactics touch.
+ * `villainDeckCardTypes` is the setup-time type map Vanishing Illusions reads to
+ * tell a Villain or Henchman from a Bystander or Tactic (D-24742).
+ */
 function makeSeatState(zonesBySeat: Record<string, {
   deck?: string[];
   hand?: string[];
   discard?: string[];
   victory?: string[];
-}>): LegendaryGameState {
+}>, villainDeckCardTypes: Record<string, string> = {}): LegendaryGameState {
   const playerZones: Record<string, unknown> = {};
   for (const seat of Object.keys(zonesBySeat)) {
     const z = zonesBySeat[seat]!;
@@ -895,8 +899,31 @@ function makeSeatState(zonesBySeat: Record<string, {
       victory: [...(z.victory ?? [])],
     };
   }
-  return { playerZones, ko: [], cardDisplayData: {}, messages: [] } as unknown as LegendaryGameState;
+  return {
+    playerZones,
+    ko: [],
+    cardDisplayData: {},
+    messages: [],
+    villainDeckCardTypes: { ...villainDeckCardTypes },
+  } as unknown as LegendaryGameState;
 }
+
+/** Types each id the way setup's villainDeckCardTypes map would (all one type). */
+function typeAll(cardType: string, ids: string[]): Record<string, string> {
+  const types: Record<string, string> = {};
+  for (const id of ids) {
+    types[id] = cardType;
+  }
+  return types;
+}
+
+/** The Villain ids the Vanishing Illusions dispatch tests below place in Victory Piles. */
+const SEAT_TEST_VILLAIN_TYPES = typeAll('villain', [
+  'core-villain-hydra-own#0',
+  'core-villain-hydra-a#0',
+  'core-villain-hydra-b#0',
+  'core-villain-brotherhood-c#0',
+]);
 
 /** A resolveSeatChoice move context for a submitting seat. */
 function makeSeatResolveCtx(
@@ -987,7 +1014,7 @@ describe('dispatchTacticOnFight — Vanishing Illusions (WP-694 / D-24511)', () 
       '1': { victory: ['core-villain-hydra-a#0', 'core-villain-hydra-b#0'] },
       '2': { victory: [] }, // no villain → not addressed
       '3': { victory: ['core-villain-brotherhood-c#0'] },
-    });
+    }, SEAT_TEST_VILLAIN_TYPES);
     const events = makeSeatEvents();
     dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, events);
     const choice = G.pendingSeatChoice;
@@ -1006,15 +1033,54 @@ describe('dispatchTacticOnFight — Vanishing Illusions (WP-694 / D-24511)', () 
   });
 
   it('a seat with no Victory-Pile Villain no-ops; no other seat qualifying parks nothing', () => {
-    const G = makeSeatState({ '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: [] }, '2': { victory: [] } });
+    const G = makeSeatState(
+      { '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: [] }, '2': { victory: [] } },
+      SEAT_TEST_VILLAIN_TYPES,
+    );
     dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
     assert.equal(G.pendingSeatChoice, undefined, 'no other seat qualifies → nothing parked');
+  });
+
+  it('D-24742: a Henchmen-only seat and a Villain seat are both addressed and both KO one', () => {
+    // why: live match Y1w7rCsC8Ek — a seat whose Victory Pile held only Sentinels was
+    // never addressed, because the id-grammar test treated Henchmen as non-Villains.
+    // Rules v23 "Henchmen Are Villains"; D-24603 / D-24608.
+    const G = makeSeatState({
+      '0': { victory: ['core-villain-hydra-own#0'] }, // defeating player — skipped
+      '1': { victory: ['henchman-sentinel-03', 'bystander-villain-deck-04', 'henchman-hand-ninjas-04'] },
+      '2': { victory: ['core-villain-brotherhood-c#0'] },
+    }, {
+      ...SEAT_TEST_VILLAIN_TYPES,
+      ...typeAll('henchman', ['henchman-sentinel-03', 'henchman-hand-ninjas-04']),
+      'bystander-villain-deck-04': 'bystander',
+    });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, events);
+    const choice = G.pendingSeatChoice;
+    assert.ok(choice !== undefined, 'a KO choice was parked');
+    assert.deepEqual(choice!.addressedSeats, ['1', '2'], 'the Henchmen-only seat is addressed alongside the Villain seat');
+    assert.deepEqual(
+      choice!.seatPrompts['1']!.options.map((option) => option.cardId),
+      ['henchman-sentinel-03', 'henchman-hand-ninjas-04'],
+      'seat 1 is offered its two Henchmen, not its rescued Bystander',
+    );
+    resolveSeatChoice(makeSeatResolveCtx(G, '2'), { optionIndex: 0 }); // KO brotherhood-c
+    assert.ok(G.pendingSeatChoice !== undefined, 'still waiting on seat 1');
+    resolveSeatChoice(makeSeatResolveCtx(G, '1'), { optionIndex: 1 }); // KO hand-ninjas-04
+    assert.equal(G.pendingSeatChoice, undefined, 'applied + cleared once both seats submitted');
+    assert.deepEqual(G.playerZones['1']!.victory, ['henchman-sentinel-03', 'bystander-villain-deck-04']);
+    assert.deepEqual(G.playerZones['2']!.victory, []);
+    assert.deepEqual(G.ko, ['henchman-hand-ninjas-04', 'core-villain-brotherhood-c#0'], 'ascending-seat apply order');
+    assert.deepEqual(G.playerZones['0']!.victory, ['core-villain-hydra-own#0'], 'the defeating player is untouched');
   });
 });
 
 describe('multi-seat tactic disconnect/timeout default (WP-694 / D-24511)', () => {
   it('AC-6 resolves an absent seat to defaultOptionIndex (0) and applies atomically', () => {
-    const G = makeSeatState({ '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: ['core-villain-hydra-a#0'] } });
+    const G = makeSeatState(
+      { '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: ['core-villain-hydra-a#0'] } },
+      SEAT_TEST_VILLAIN_TYPES,
+    );
     dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
     assert.ok(G.pendingSeatChoice !== undefined);
     // Governing-policy default resolves the absent seat to its default (index 0).

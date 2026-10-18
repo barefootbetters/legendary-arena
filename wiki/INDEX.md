@@ -1,5 +1,15 @@
 # Wiki Index
 
+## Legendary Arena system map
+
+Product background — where the files are, how they are backed up, which
+files you can edit, and the outside services the product depends on.
+Source page: [Legendary Arena System Map](legendary-arena-system-map.md).
+
+{{< include-section page="legendary-arena-system-map" section="system-map" >}}
+
+---
+
 > **75 / 78** entity pages.
 > Last regenerated: 2026-09-28.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
@@ -150,6 +160,11 @@ High-level card categorizations recognised by the engine.
 
 Cross-cutting governance, methodology, and readiness assessments.
 
+- [Legendary Arena System Map](legendary-arena-system-map.md) — *(draft)*
+  every piece of the product and how they connect, shown at the top of
+  this page: where the files are, how they are backed up, which files you
+  can edit, and the outside services (GitHub, Cloudflare, DigitalOcean, …)
+  it depends on.
 - [Card Image Acquisition](card-image-acquisition.md) — *(draft)* the
   card-image staging chain (scrape → convert → rename): per-set
   PowerShell scrapers pull card face JPEGs from the

@@ -192,11 +192,15 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       // doom-clock proxy; lossThreshold (the printed 8-twist stack) is retained but
       // now INERT for loss (D-24178 / D-24327). The 'secret-invasion' twist drags the
       // highest-cost HQ Hero into the Sewers as a Skrull (cost + 2 attack, D-24327).
+      // why: D-24738 — Heroes a Skrull Queen Veranke / Skrull Shapeshifters carried
+      // into the pile with them (D-24657) are Heroes in the Escaped Villains pile too,
+      // so they count toward the six alongside the escaped Skrull Heroes.
       lossThreshold: 8,
       resourceLossCondition: {
         kind: 'escaped-converted-count',
         origin: 'skrull',
         threshold: 6,
+        includeCapturedHeroes: true,
       },
     },
   ],

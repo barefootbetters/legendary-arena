@@ -47127,6 +47127,8 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5030 → 5031, server 1678, arena-client 2298); `sim:runtime-observed:check` current; no generated-artifact churn.
 
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `SdnvQA0P4Zj` (server build `85771ab6`), 2p with a bot ally, Loki / Portals to the Dark Dimension, Final Blow on. Player 0 emptied the City (9.2.3–9.2.12) with 12 S.H.I.E.L.D. Heroes in the KO pile against Loki's 11. Pure Fury then defeated Loki on its own, with no prompt (9.2.14), taking Vanishing Illusions (9.2.15). The bot ally KO'd HYDRA Kidnappers from its Victory Pile (9.2.16–9.2.17), and the game went on to turn 10 with no bot stall. Silent Sniper shares the same one-target path; its own multi-seat case wasn't exercised.
+
 **Reserved by:** NUMBER-LEDGER D-24681. Related: D-24511 / WP-694 (multi-seat tactics), D-24593 (bot-ally seat choice), D-24501 / WP-684 (seat choice), D-24291 / WP-486 (Silent Sniper), D-24499 / WP-682 (Pure Fury), D-24026 (the live session that surfaced it).
 
 ---
@@ -48644,7 +48646,7 @@ Protect this file.
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5284); `sim:runtime-observed:check`, `sim:coverage --check`, `par:seed:test`, dashboard `prebuild:par` and `ledger:numbers:check` all pass. No generated-artifact churn. On the real registry, core and msp1 Civil War now build 8/8/8/5/5 twists at 1-5 players; co2e and Midtown stay at 8.
 
-**Live-verify (D-24026): pending.** After deploy: lobby → Play with a bot ally → 4 seats / 3 bot allies → Operator match → Super Hero Civil War (3 villain groups, 2 henchmen groups, 5 heroes). The operator panel's Villain-deck list should show 5 Scheme Twists, and the HUD should read "Twists: 0/5". Record the match id and build in `docs/ai/coverage/live-verify.json` (`scheme:core/super-hero-civil-war|twist-count`).
+**Live-verify (D-24026), 2026-10-17: PASS.** 4p operator match `Y1w7rCsC8Ek` (server build `85771ab6`), Loki / Super Hero Civil War, 3 bot allies. The engine reported a twist threshold of 5. After Twist 1 (18.1.1–18.1.7), the Villain Deck still held the other four Scheme Twists (`-00`, `-02`, `-03`, `-04`), so 5 in all. A bot-ally fault stopped the match at turn 23, unrelated to the twist count.
 
 **Reserved by:** NUMBER-LEDGER D-24733. Related: D-24318 (Hero Deck loss), D-24328 / D-24385 (2-player 4-Hero sizing), D-24321 (scheme setup sizing), D-24349 (KO-all twist), D-24371 (twist readout), D-24595 (last-twist fallback).
 
@@ -48683,6 +48685,194 @@ The miss was not small. Train Black Widows built 8 twists where it prints 3 to 7
 **Live re-check (after deploy).** Run an operator match on Train Black Widows in the Red Room at 2 players: the operator panel's Villain-deck list shows 6 Scheme Twists and the HUD reads "Twists: 0/6". Optionally, run co2e Super Hero Civil War at 4 players: 5 twists. These are not Core cards, so there is no `live-verify.json` row.
 
 **Reserved by:** NUMBER-LEDGER D-24734. Related: D-24733 (Civil War twist split), D-24595 (last-twist fallback), D-24371 (twist readout; solo mirrors 2), D-24318 (Hero Deck loss).
+
+---
+Protect this file.
+
+### D-24737 — A free defeat ignores "can't defeat unless" restrictions (operator ruling, no code change) (Active 2026-10-17)
+
+**Context.** In operator match `mzasQjZ3DU2` (server `3c9f632d`, Loki / Negative Zone Prison Breakout), Player 0 defeated Loki's Cruel Ruler tactic and chose Venom for its free defeat (26.2.11–26.2.14). Venom prints "You can't defeat Venom unless you have a [hc:covert] Hero." Player 0 had no Covert Hero in hand or in play; their only Heroes were Hulk, Thor, Iron Man and Hawkeye cards. Venom was defeated anyway. The 2026-10-16 Core audit flagged this as an open question. Rules v23 doesn't settle it directly. The closest ruling is Total Fury (L2563–2566): a card that tells you to defeat an Adversary ignores restrictions like Iron Fist's. Iron Fist's restriction is worded as a fight requirement ("To fight Iron Fist, you must also reveal…"), while Venom's and Blob's say "can't defeat".
+
+**Decision (operator ruling, 2026-10-17).**
+1. An effect that defeats a Villain for free ignores the target's "You can't defeat X unless you have …" restriction. This covers Loki's Cruel Ruler ("Defeat a Villain in the City for free"), Nick Fury's Pure Fury and Black Widow's Silent Sniper, and any later free-defeat effect. The restriction gates only a normal fight. This is the same reading as the Total Fury / Iron Fist ruling.
+2. Core cards with the restriction are Blob ("unless you have an [team:x-men] Hero") and Venom ("unless you have a [hc:covert] Hero"). The same holds for every other `require-to-defeat` card (D-24076), e.g. Zombie Venom.
+
+**Engine (no change).** The engine already behaves this way:
+- `playerMeetsDefeatRequirement` (D-24076) is checked only in the `fightVillain` move (`packages/game-engine/src/moves/fightVillain.ts`, the defeat-requirement precondition before the stage gate);
+- `ai.legalMoves` mirrors that check for the bot's normal fights;
+- the free-defeat paths reach `defeatCityVillainCore` without that gate.
+
+This entry records the ruling so a later change doesn't "fix" the free-defeat paths into checking the requirement.
+
+**Live evidence.** `mzasQjZ3DU2` 26.2.11–26.2.14: Cruel Ruler defeated Venom with no Covert Hero, and its captured Bystander was rescued.
+
+**Still open (separate).** Venom's own refusal of a normal fight without a Covert Hero has no live evidence yet; a refused fight is silent and isn't logged. Blob's equivalent is verified (`live-verify.json`).
+
+**Reserved by:** NUMBER-LEDGER D-24737. Related: D-24076 (defeat requirements, hand + play), D-24724 / D-24726 (granted class / team count toward the requirement), D-24510 (Cruel Ruler), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24662 / D-24681 (one-target free defeats).
+
+---
+Protect this file.
+
+### D-24738 — Secret Invasion counts Heroes a captor carried into the Escape pile toward its six (operator ruling; direct fix, no WP; amends D-24326 and D-24657 §3) (Active 2026-10-17)
+
+**Context.** Secret Invasion of the Skrull Shapeshifters prints "Evil Wins: If 6 Heroes get into the Escaped Villains pile." D-24326 counted only the Skrull-converted Heroes (`escaped-converted-count`, origin `'skrull'`). D-24657 then made a Villain that escapes with captured Heroes carry them into the Escape pile (rules v23 "Villains Escaping with Captured Heroes": they "just stay in the Escape Pile"), and its §3 left the escaped-pile loss counts unchanged. On Secret Invasion the Skrull Villain Group is required, and Skrull Queen Veranke and the Skrull Shapeshifters capture HQ Heroes, so most games put captured Heroes into that pile. In operator match `PF9JUILsmcT` (server `3c9f632d`), Energy Drain went in with Skrull Shapeshifters (3.2.19) and Spinning Cyclone with Veranke (13.1.2). The engine still waited for six Skrull Heroes and logged the loss at 31.1.3.
+
+**Decision (operator ruling, 2026-10-17).**
+1. Heroes captured by a Villain and carried into the Escape pile count toward Secret Invasion's six, together with the escaped Skrull Heroes. In `PF9JUILsmcT` the sixth Hero reached the pile at 17.1.2.
+2. **Engine.** The `escaped-converted-count` condition gains an optional `includeCapturedHeroes?: true` (`rules/schemeTwistConfig.types.ts`), set only on core Secret Invasion (`rules/schemeTwistConfigs.ts`). `countEscapedConvertedLoss` (`rules/schemeResourceLoss.ts`) returns the converted-origin count plus, when the flag is set, `countEscapedCapturedHeroes`.
+3. **A captured Hero** is an Escape-pile entry with a `G.cardTraits` entry (every registry Hero instance has one) and no converted-villain origin. A converted Skrull Hero is counted once, by origin. Villains, Henchmen and Bystanders have no trait entry.
+4. **One count.** `applyEscapedPileResourceLoss` and the loss meter (`schemeLossProgress.ts`) both read `countEscapedConvertedLoss`, so the HUD's N/6 matches the loss.
+5. **Timing.** Every escape goes through `resolveVillainEscape`, which appends the captor, then its captured Heroes (`moveAttachedHeroesToEscapedPile`), then runs the loss check. A captor escaping with two Heroes can take the count from 4 to 6 on that one escape.
+6. **Display.** When captured Heroes are part of the count, the loss line reads "Scheme loss triggered — 6 Heroes escaped (4 Skrulls, 2 captured) (threshold 6)." With none, it is unchanged ("6 Skrulls escaped"). The arena-client meter label for `escaped-skrull` changes from "Skrulls" to the printed "Heroes".
+7. **Unchanged.** Killbots (`origin: 'killbot'`, no flag) and the `escaped-pile-count` schemes (Negative Zone, Midtown) count exactly as before. Only core Secret Invasion carries this config; no reprint has its own twist config.
+
+**Tests.** `schemeResourceLoss.test.ts` adds six cases:
+- a captured Hero is counted once, and a converted Skrull Hero is never counted as captured;
+- 4 Skrull Heroes + 2 captured Heroes loses, with the new line;
+- 5 Skrull Heroes plus 4 escaped Villains does not lose;
+- a captor's escape takes the count from 4 to 6 (escape order mirrored);
+- 6 Skrull Heroes with no captured Hero keeps the old line;
+- Killbots ignores captured Heroes.
+
+`schemeLossProgress.test.ts` adds the meter case. `menaceDisplay.test.ts`'s Secret Invasion label pin changes to "Heroes"; this is the authorized label change in point 6. Revert proof: removing the config flag fails exactly the two loss cases.
+
+**Hashes.** `G` shape unchanged. No pinned replay, PAR or seed fixture runs Secret Invasion (D-24326), so nothing re-pins.
+
+**Live-verify (D-24026):** pending. In an operator match on Secret Invasion, let Veranke or the Skrull Shapeshifters capture an HQ Hero, then push the captor and Skrull Heroes out with "Reveal a Scheme Twist now" and "Escape the Villain at the City's edge". Expect the loss once Skrull Heroes plus captured Heroes in the pile reach 6, with the new line, and the meter to read "Heroes N/6".
+
+**Live-verify (D-24026), 2026-10-17: PASS.** 2p operator match cLZ0_pzMFmd (server 6dbeb6d7, the #2867 merge), Red Skull / Secret Invasion of the Skrull Shapeshifters: five Skrull Heroes escaped (Avengers Assemble! 4.2.6, Web-Shooters 4.2.11, Gathering Stormclouds 7.1.2, Energy Drain 8.1.2, Perfect Teamwork 9.1.2) and Skrull Queen Veranke carried her captured A Day Unlike Any Other (4.1.2) into the pile when she escaped (4.2.21); the scheme won at 9.1.3 with "Scheme loss triggered — 6 Heroes escaped (5 Skrulls, 1 captured) (threshold 6)." Escaped Super-Skrull and Veranke did not count; the old count would still have read 5. The meter projected schemeLossProgress 6 / 6 on escaped-skrull ("Heroes").
+
+**Reserved by:** NUMBER-LEDGER D-24738. Related: D-24326 (Secret Invasion conversion + loss), D-24657 (captured Heroes into the Escape pile), D-24325 (escaped-converted-count), D-24434 (meter names the converted enemy), D-24680 (loss lines name what escaped), D-24026.
+
+---
+Protect this file.
+
+### D-24740 — Under Final Blow, a free defeat (Pure Fury, Silent Sniper) can strike the final blow (operator ruling; direct fix, no WP; amends D-24504) (Active 2026-10-17)
+
+**Context.** The optional Final Blow rule (rules v23 L2840–2847; D-24503 / D-24504) requires a 5th, final fight of the Mastermind card after its four Tactics. D-24504 put that award only in `fightMastermind`. The free-defeat target builders, `buildPureFuryTargets` (`hero/heroEffects.execute.ts`) and `buildDefeatWithBystanderTargets` (`moves/defeatChoice.resolve.ts`), offered the Mastermind only while `tacticsDeck.length > 0`. In operator match `Er6Uj0zeyDW` (server `6dbeb6d7`, Loki / Portals to the Dark Dimension, Final Blow on), Pure Fury defeated Loki's four Tactics (11.2.3, 13.2.3, 15.2.3, 17.2.3). Once "Loki requires a final blow" (17.2.4), every later Pure Fury prompt left Loki out (19.2.2, 21.2.2, 23.2.2, 25.2.5), and only a paid fight could finish him (25.2.17).
+
+**Decision (operator ruling, 2026-10-17).**
+1. Under Final Blow, once the Mastermind's Tactics are gone, a free defeat that may target the Mastermind can strike the final blow: Pure Fury ("Defeat any Villain or Mastermind whose [icon:attack] is less than …") and Silent Sniper ("Defeat a Villain or Mastermind that has a Bystander"). This is the same reading as D-24737: a free defeat counts as the defeat.
+2. **Eligibility.** New `isMastermindFreeDefeatTarget` (`moves/defeatChoice.resolve.ts`) is true when the Mastermind is not haunting and either a Tactic remains or `isFinalBlowAvailable` holds. Both builders use it. Pure Fury still requires printed attack < the S.H.I.E.L.D. count, and Silent Sniper still requires a Bystander on the Mastermind.
+3. **Award.** `dispatchDefeatWithBystanderTarget` routes a Mastermind target to `awardMastermindOnFinalBlow` (now exported from `moves/fightMastermind.ts`, the single award site) when `isFinalBlowAvailable`, and to `defeatMastermindTacticCore` otherwise. The free defeat spends no attack and sets no acted flag. The award puts the Mastermind card in the Victory Pile, rescues any Bystanders it holds, clears `finalBlowPending`, and latches `MASTERMIND_DEFEATED_PENDING` (the WP-732 turn-end win), exactly as the paid 5th fight does.
+4. **Unchanged.** With Final Blow off, or once the final blow is struck, a Tactic-less Mastermind is still not a target. Cruel Ruler targets only City Villains.
+
+**Tests.** `hero/pureFury.logic.test.ts` adds seven cases:
+- Pure Fury targets the Mastermind while the final blow is pending;
+- not after the final blow is struck;
+- not with Final Blow off;
+- a chosen final blow awards the card for free and latches the win;
+- a one-target Pure Fury play strikes it with no prompt;
+- Silent Sniper strikes it and rescues the held Bystander;
+- the predicate's three cases.
+
+Revert proof: without the engine change, the five behavior cases fail and the two "unchanged" guards pass.
+
+**Hashes.** `G` shape unchanged. Final Blow is off in every pinned replay, PAR and seed fixture, so nothing re-pins.
+
+**Live-verify recipe.** In an operator match with Final Blow on, defeat the Mastermind's four Tactics, then play Pure Fury (enough S.H.I.E.L.D. Heroes in the KO pile) or Silent Sniper (the Mastermind holding a Bystander). Expect the Mastermind among the targets, and choosing it to log "struck the final blow and defeated …" and win at turn end.
+
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `tXTkG2Pardt` (server build `d72fbbb1`, the #2873 merge), 2p with a bot ally, Loki / Portals to the Dark Dimension (HYDRA + Enemies of Asgard; Captain America, Hulk, Nick Fury, Thor, Iron Man), Final Blow on. Pure Fury took all four Tactics through the choose prompt (6.2.13, 8.2.3, 10.2.3, 12.2.3; "All tactics defeated — Loki requires a final blow" at 12.2.4). On turn 16 Pure Fury offered Loki again and "Player 0 struck the final blow and defeated Loki!" (16.2.3), with the win at turn end (16.3.1). Silent Sniper's final blow was not exercised; it shares the same isMastermindFreeDefeatTarget predicate. This match ran on Pure Fury's printed-Attack comparison: Loki was 10 + 1 Dark Portal = 11 against 11 S.H.I.E.L.D. Heroes, so under D-24741 (current Attack, merged after) he would not have been a target. What D-24740 changed, the Mastermind staying a free-defeat target while the final blow is pending, is unaffected.
+
+**Reserved by:** NUMBER-LEDGER D-24740. Related: D-24503 / D-24504 (Final Blow), D-24737 (free defeats ignore "can't defeat unless"), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24553 (turn-end win), D-24026.
+
+---
+Protect this file.
+
+### D-24741 — Pure Fury compares a target's current Attack, not its printed Attack (Jeff ruling, direct fix, amends D-24499) (Active 2026-10-17)
+
+**Context.** Nick Fury's **Pure Fury** prints "Defeat any Villain or Mastermind whose Attack is less than the number of S.H.I.E.L.D. Heroes in the KO pile." WP-682 / D-24499 implemented the comparison against the target's **printed** Attack (`getPrintedAttackForDefeatTarget`: `fightCost`, or `fightCostBase` for a dynamic Villain). That was an implementation choice, not a ruling, and rules v23 does not settle it. In operator match `tXTkG2Pardt` (server `d72fbbb1`, Loki / Portals to the Dark Dimension) the KO pile held 11 S.H.I.E.L.D. Heroes and the twist-1 Dark Portal gave Loki +1 (4.1.1), so his current Attack was 11. Pure Fury still took all four Tactics and the final blow (6.2.13 … 16.2.3), because printed 10 < 11.
+
+**Ruling (Jeff, 2026-10-17).** Pure Fury compares the target's **current** Attack, including modifiers such as Dark Portals.
+
+**Decision.**
+1. `buildPureFuryTargets(G, fightingPlayerId?)` reads a City Villain's Attack from `resolveFightCost(G, cardId, fightingPlayerId)` and the Mastermind's from `resolveMastermindFightCost(G)`, the single fight-cost authorities that the fight moves, the bot and the City / Mastermind `fightCost` projections already use. So Dark Portals (Mastermind and City spaces), the Bank Robbery family's +1 per Bystander, a dynamic Villain's captured Heroes, Blood Frenzy (for the player resolving Pure Fury) and "-N attack" reductions this turn all count. The comparison stays STRICTLY less than. `getPrintedAttackForDefeatTarget` is removed.
+2. Patrol is not part of a Villain's Attack (the fight move adds it after `resolveFightCost`), so it does not affect Pure Fury.
+3. A fully-dynamic `*` Villain is no longer always eligible: its current Attack (base plus captured Heroes) is compared like any other.
+
+**Tests.** `hero/pureFury.logic.test.ts` gains five cases, all failing against the D-24499 code: the `tXTkG2Pardt` numbers (printed 10 + Dark Portal = 11 is not below 11; 12 S.H.I.E.L.D. Heroes bring it back), a Villain in a Dark Portal City space, a dynamic Villain with a captured Hero, a "-N attack" reduction bringing the Mastermind into range, and a Pure Fury play with only a portal-boosted Mastermind logging "found no Villain or Mastermind weak enough". Existing Pure Fury tests use unmodified static stats and are unchanged.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5366 → 5371); `sim:coverage --check`, `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check` and `ledger:numbers:check` all OK. No replay, PAR or hash pin moved, so nothing was re-pinned.
+
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `WsQDr4yybrp` (server build `85771ab6`, the #2879 merge), 2p with a bot ally, Loki / Portals to the Dark Dimension (Enemies of Asgard + HYDRA), Final Blow on. Twist 1 opened the Mastermind Dark Portal (2.1.1), putting Loki at 10 + 1 = 11. With exactly 11 S.H.I.E.L.D. Heroes in the KO pile and the City empty, Pure Fury "found no Villain or Mastermind weak enough" (8.2.2). Under D-24499's printed 10, Loki would have been a target. With 13, Pure Fury took Loki on its own (14.2.2, Cruel Ruler). With 16, it struck the final blow (24.2.13–24.2.14).
+
+**Reserved by:** NUMBER-LEDGER D-24741. Related: WP-682 / D-24499 (Pure Fury), D-24740 (free Final Blow), WP-539 / D-24348 and WP-728 / D-24549 (Dark Portals), WP-748 / D-24572 (Bank Robbery Bystanders), WP-760 / D-24589 (Blood Frenzy), WP-794 / D-24663 (fight-cost reductions).
+
+---
+Protect this file.
+
+### D-24739 — Workstation layout: one repo-named folder per product in three roots, each with one backup method (operator decision, no WP; supersedes D-24208 in part) (Active 2026-10-17)
+
+**Status:** Active (governance) 2026-10-17. **Supersedes D-24208 in part:** its point 1 (the `C:\pcloud\LA\` rename is declined), the "Nothing existing is renamed to comply" sentence of its point 3, and the `C:\www\legendary-arena` move target stated in its rationale. Its withdrawal of D-24207's `C:\pcloud\BB\DEV\<repo-name>\` clause stands.
+
+**User-Visible Surface:** none — operator workstation convention.
+
+**Context.** The engine checkout lives on the pCloud sync drive at `C:\pcloud\BB\DEV\legendary-arena`. That placement is behind every serious sync incident recorded on [Workspace Map](../../wiki/workspace-map.md): conflict-suffixed files, edits silently reverting, `HEAD` moving mid-session, and a commit reaching an unrelated PR. D-24208 deferred the off-pCloud move, named `C:\www\legendary-arena` as its target, and declined renaming `C:\pcloud\LA\`. It also set a revisit condition: "If the off-pCloud migration proceeds, the pCloud tree may be tidied in the same pass." This decision proceeds with the migration, so that condition now applies. Since D-24208, Herbs vs. Ailments has joined as a second product, and its checkout is also under `C:\www\`.
+
+**Decision (operator, 2026-10-17).**
+1. **Three roots, one backup method each.**
+   - `C:\dev\<repo>`: code — product monorepos and shared code tools. Backed up by GitHub (push) only; the laptop copy has no other backup.
+   - `C:\www\<repo>`: repos whose main output is published content — marketing sites, the second-brain notes. Backed up by GitHub (push) only.
+   - `C:\pcloud\<repo>`: business operations, brand, media, and work in progress — everything not in git. Backed up by pCloud sync.
+
+   A git checkout never lives on pCloud.
+2. **Folder names match the GitHub repository name** in all three roots: `legendary-arena`, `herbs-vs-ailments`. No per-product abbreviations (`LA`, `HvA`). **Marketing sites take the suffix `-www`:** `legendary-arena-www`, `herbs-vs-ailments-www`, `barefootbetters-www`. The suffix names the role, not a domain, so it holds even where a product's main domain isn't its hyphenated name (Herbs vs. Ailments' is `herbsvsailments.com`).
+3. **Move targets.**
+   - The engine → `C:\dev\legendary-arena`, replacing D-24208's `C:\www\legendary-arena`.
+   - Herbs vs. Ailments → `C:\dev\herbs-vs-ailments`.
+   - `C:\pcloud\LA\` → `C:\pcloud\legendary-arena\`, and a new `C:\pcloud\herbs-vs-ailments\`.
+   - The shared tools (`ewiki-theme`, `bb-studio-dashboard`, `legendary-arena-lab`) → `C:\dev\`, deferred until the engine has run from `C:\dev` for 1–2 weeks. The studio ewiki is the `ewiki/` folder inside `bb-studio-dashboard` and gets no folder of its own.
+   - Two marketing repos don't match the rule yet and are renamed in that same deferred cleanup: GitHub `legendary-arena/legendary-arena-website` → `legendary-arena-www`, with the local `C:\www\legendary-arena-com` → `C:\www\legendary-arena-www`; and GitHub `barefootbetters/www` → `barefootbetters-www` (its local folder already matches). **Precondition:** confirm that each site's Cloudflare Pages project keeps its Git connection through a GitHub repo rename before renaming. Herbs vs. Ailments' marketing repo, when created, is `herbs-vs-ailments-www`.
+4. **Wikis and dashboards get no folders of their own.** Each ewiki stays in the repo it documents (the engine's `wiki/`, Herbs vs. Ailments' `docs/`), so a page changes in the same PR as its code. Dashboards are instances of the shared `bb-studio-dashboard` repo, and each project keeps only a `dashboard.json`.
+5. **How the moves happen.** Re-clone; never move a checkout. Herbs vs. Ailments goes first, as the rehearsal. The engine is pre-staged, then cut over in a quiet window. Each old checkout is kept as `<repo>.RETIRED-<date>` for 14 days as the rollback. The phases, checks, and progress live on [Workstation Layout Migration](../../wiki/workstation-layout-migration.md); the step-by-step commands are in the operator's execution plan on pCloud.
+6. **Path references.** Live documents are updated to the new paths. Historical records keep the paths that were true when written: Work Packets, execution checklists, post-mortems, invocations, and `DECISIONS.md` entries, including D-24207 and D-24208.
+
+**Why the rename is now accepted.** D-24208 declined it as a 38-reference, two-repo sweep for a marginal gain. The sweep has grown since (97 references in 16 files of this repo, 19 in 3 files of the marketing repo). But two things changed. The sweep now rides on a migration that touches paths anyway, which is exactly D-24208's revisit condition. And with two products, the gain is no longer marginal: one name in three places is itself the lookup, while a per-product abbreviation is one more mapping to keep.
+
+**Why `C:\dev`, not `C:\www`.** `C:\www` holds content sites; the engine is code. And `C:\www\legendary-arena` already holds a stale clone of the engine, far behind `main`, so D-24208's target would have collided with it.
+
+**Not changed.** Layer boundaries, CI, and deploys: none of them read a local path. The second brain reads every repo from GitHub `main`, never a local checkout, so the moves don't affect it. Claude Code worktrees stay in `C:\claude-worktrees\`. The `C:\pcloud\LA\ops\` and `LA\brand\` taxonomy (D-24220) is unchanged and moves with its folder.
+
+**Reserved by:** NUMBER-LEDGER D-24739. Related: D-24207 and D-24208 (superseded in part), D-24220 (`LA\ops` / `LA\brand` taxonomy), D-24643 (worktree hooks-path guard).
+
+---
+Protect this file.
+
+### D-24742 — Vanishing Illusions: a Henchman in another player's Victory Pile is "a Villain" they must KO (direct fix, no WP; corrects the D-24511 henchman exclusion) (Active 2026-10-17)
+
+**Context.** Loki's Tactic **Vanishing Illusions** prints "Each other player KOs a Villain from their Victory Pile." WP-694 / D-24511 built the per-seat option list in `buildVanishingIllusionsChoice` (`packages/game-engine/src/moves/seatChoiceTactics.ts`) with a private `isVictoryPileVillain` id-grammar test: the ext_id contains `-villain-` and does not start with `bystander-`. Its comment said Henchman ext_ids "are excluded naturally". Henchman ext_ids are `henchman-{group}-NN`, so every Henchman was dropped. Rules v23 §"Henchmen Are Villains/Adversaries" says "Henchman Villain cards are indeed Villains", and D-24603 / D-24608 already made the same correction for the defeat trigger and the Ebony Blade Victory-Pile pick. It was seen in two 4p operator matches on server `85771ab6` (Loki / Super Hero Civil War, Sentinel and Hand Ninjas Henchmen). In `Y1w7rCsC8Ek`, Player 0's Pure Fury took Vanishing Illusions at 22.2.3 and only Player 3 KO'd a Villain (22.2.5). Player 1's Victory Pile held only Henchmen (Sentinel 03 and 09, Hand Ninjas 04) and was never addressed. In `6jTAMKHlgq_`, Player 0 defeated Vanishing Illusions at 11.2.22 and the log said "no other player had a Villain in their Victory Pile to KO" (11.2.24). But Player 3 held Sentinels 03 and 04, fought at 6.2.7 and 10.2.9.
+
+**Decision.**
+1. `buildVanishingIllusionsChoice` takes its per-seat options from `getEligibleVictoryVillains(G, seat)` (`moves/resolveVictoryPileCardPick.ts`), the shared "Villain in your Victory Pile" test from D-24608. It accepts the `'villain'` and `'henchman'` entries of the setup-time `G.villainDeckCardTypes` map, in Victory Pile order. `isVictoryPileVillain` is removed.
+2. Still excluded: rescued Bystanders (typed `'bystander'`, or the supply `bystander` id, which is not in the map); a defeated Killbot (`convertedVillainOrigins` `'killbot'`, which counts as a Bystander per rules v23); and Mastermind Tactics and the Mastermind, which never enter the map. A seat with none of the eligible cards is still not addressed.
+3. The bot / disconnect default (`defaultOptionIndex` 0, the first eligible card in Victory Pile order) and the ascending-seat atomic apply are unchanged.
+4. **Audit of the other Victory-Pile Villain tests:** the Ebony Blade pick (`getEligibleVictoryVillains`) and the Gladiator scheme twist (`chooseGladiator`) already count Henchmen (D-24608). Viper's "another HYDRA Villain" (`victoryPileHasOtherGroupVillain`), Red Skull's HYDRA Conspiracy (`countVictoryPileGroupVillains`) and Supreme HYDRA's VP are scoped to a Villain *group* by ext_id prefix, so they are left alone. The remaining Victory-Pile scans count Bystanders or S.H.I.E.L.D. cards, not Villains. Vanishing Illusions was the only site with the henchman exclusion.
+
+**Tests.** `moves/seatChoiceTactics.test.ts`: a Henchmen-only Victory Pile is addressed and KOs one; rescued Bystanders, the supply Bystander, a converted Killbot, a defeated Tactic and the Mastermind id still yield no choice; a mixed pile offers only its Henchman and Villain. The old case that asserted a Henchman is "not a villain" asserted the defect and is replaced. `rules/tacticHandlers.test.ts`: a 3-seat dispatch where seat 1 holds only Henchmen (plus a rescued Bystander) and seat 2 holds a Villain. Both seats are addressed, both resolve through `resolveSeatChoice`, and the two KOs land in G.ko in ascending-seat order. Both test files' minimal states now carry `villainDeckCardTypes`, which the builder reads.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5374, net +3 tests). `sim:coverage --check`, `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check` and `ledger:numbers:check` all OK. The seed-locked `simulation/seatChoiceDispatch.test.ts` Vanishing Illusions replay still passes. No replay, PAR or hash pin moved, so nothing was re-pinned.
+
+**Live re-check (D-24026).** Run an operator match with 3+ seats (Loki as Mastermind, with a bot ally). Use the setter pane so that a non-defeating seat's Victory Pile holds only Henchmen, then defeat Vanishing Illusions. That seat must be addressed and must KO one Henchman, and the log must not say "no other player had a Villain".
+
+**Reserved by:** NUMBER-LEDGER D-24742. Related: WP-694 / D-24511 (Vanishing Illusions), D-24603 (Henchmen are Villains for defeat triggers), D-24608 (Victory-Pile pick includes Henchmen), D-24681 (one-target Pure Fury on Vanishing Illusions).
+
+---
+
+### D-24743 — A mixed seat-choice ride admits the active seat too: a Diving Block wave addressed to the active seat and another seat left the active seat unable to answer (bot-ally fault, direct fix, amends D-24648) (Active 2026-10-17)
+
+**Context.** Operator match `Y1w7rCsC8Ek` (server build `85771ab6`), 4p with three bot allies, Loki / Super Hero Civil War. At 10.2.3 Paibok's Fight gave bot seats 1 and 3 each a Diving Block. On turn 23, seat 1's own turn, the start-stage reveal was a Loki Master Strike: seat 1 (23.1.2) and seat 3 (23.1.4) each gained a Wound. Nothing was logged after that, and `/bot-ally-status` reported `faulted`. The last snapshot showed turn 23, active seat 1, `currentStage: 'start'`, `villainRevealedThisTurn: true`.
+
+**Root cause.** Both Wounds parked at the `gainWoundForPlayer` chokepoint, and the play-phase `turn.onMove` opened one WP-682 wave addressed to `['1', '3']`, as designed. The engine and `getLegalMoves` were consistent: each seat was offered exactly one `resolveSeatChoice` at the default (decline). The fault was in the stage ride. D-24648 made `buildSeatChoiceActivePlayersValue` skip the active seat whenever it was given, so this wave rode only seat 3. `setActivePlayers` **replaces** the `activePlayers` map, so it became `{ '3': 'resolvingSeatChoice' }` and seat 1, the current player, was no longer active. boardgame.io refuses a move from an inactive player (`InactivePlayer`, no state change). The bot driver answers the first bot-owed seat in `addressedSeats` order, which was seat 1, so its submission never landed across the retry budget and the driver faulted ("resolveSeatChoice did not land"). Answering seat 3 first would have worked, since its spent `moveLimit` reverts the map, so the fault depends on order. D-24656 point 3 had already found this for the escape Bystander discard and worked around it at that one call site; the Diving Block opener still passed `ctx.currentPlayer` into a mixed wave. A human in the same spot (the active seat plus a non-active holder) could not answer either until the other seat had.
+
+**Decision.** `buildSeatChoiceActivePlayersValue` skips the active seat only when it is the **only** addressed seat (the D-24648 case, where no stage ride runs at all). In a mixed ride the active seat goes into `resolvingSeatChoice` with `moveLimit: 1`, like every other addressed seat, and `revert: true` restores `{ currentPlayer: 'playTurn' }` once the last seat answers. The fix is in the shared helper rather than the Diving Block opener, so any later caller that passes the active seat into a multi-seat choice is covered too. Today the Diving Block opener is the only one that can: the escape HQ KO and a non-active return-on-discard are one-seat choices, and the escape Bystander discard's call-site guard (D-24656 point 3) stays and is now redundant. No `getLegalMoves` or bot-driver change: their answer was already right and only boardgame.io's admission was wrong. `setActivePlayers` is a framework event, not `G`, so no hash, replay or PAR pin moves; the sim, PAR and fixture loops dispatch seat choices directly and never read `activePlayers`.
+
+**Tests.** `moves/divingBlock.multiSeatWave.test.ts` (new) drives a real 4-seat match through `InitializeGame` + `CreateGameReducer`: core Loki's Master Strike is revealed at the start of seat 1's turn while seats 1 and 3 hold Diving Block, and each seat's move is picked with the real `getLegalMoves`, the driver's call. Before the fix, two cases failed: the wave left seat 1 out of `activePlayers` (`{"3":"resolvingSeatChoice"}`), and seat 1's `resolveSeatChoice` did not land. Both orders now land, both Wounds drain, `activePlayers` reverts to `{ '1': 'playTurn' }`, and `advanceStage` reaches `main`. A one-seat active wave still opens with no stage ride (D-24648 pinned). In `moves/seatChoice.resolve.test.ts`, two cases that asserted the mixed-ride skip now assert the active seat is admitted. That is an intended behavior change, not a weakened check. A new case pins that an active seat who is not addressed is never added.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5376, apps/server 1624 pass + 207 DB-backed skips, arena-client 2394); `ledger:numbers:check` OK. `getLegalMoves` and the bot driver are unchanged, so the `sim:coverage` / `sim:runtime-observed` baselines cannot move. No replay, PAR or hash pin moved.
+
+**Live re-check (D-24026):** PENDING deploy. In an operator match with bot allies, use the setter pane to put a Diving Block in two bot seats' hands (Hero Deck → HQ, recruit, Move a card → "Player N · hand"), and Move Loki's Master Strike to the villain-deck top before one of those bots' turns. The bot's own reveal should wound both holders, both should log "took the Wound (declined Diving Block)", and the bot's turn should continue, with no `faulted` status.
+
+**Reserved by:** NUMBER-LEDGER D-24743. Related: WP-682 / D-24499 (Diving Block), WP-684 / D-24501 (seat choices), D-24648 (amended: the active-seat skip is one-seat only), D-24656 point 3 (the same defect, worked around for the escape discard), D-24593 (bot-ally seat-choice answering).
 
 ---
 Protect this file.
