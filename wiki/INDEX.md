@@ -10,7 +10,7 @@ Source page: [Legendary Arena System Map](legendary-arena-system-map.md).
 workstation (synced to pCloud `/LA/README.md`). The map below is a
 published copy; when the two differ, the README wins. The file becomes
 `C:\pcloud\legendary-arena\README.md` in Phase 7 of
-the Workstation Layout Migration page.
+[Workstation Layout Migration](workstation-layout-migration.md).
 
 {{< include-section page="legendary-arena-system-map" section="system-map" >}}
 
