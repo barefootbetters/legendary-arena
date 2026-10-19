@@ -18,6 +18,9 @@ export interface GitHubActionsAllowance {
   readonly description: string;
   readonly minutesUsed: number;
   readonly includedMinutes: number;
+  // why: the monthly Actions spending budget set in GitHub's billing settings,
+  // in integer cents; `null` when no budget has been recorded for the account.
+  readonly budgetCents: number | null;
   readonly isLegendaryArenaCost: boolean;
 }
 
@@ -51,6 +54,7 @@ export const GITHUB_ACTIONS_CENTS_PER_THOUSAND_MINUTES = 600;
 //   barefootbetters  — run history of the studio's private repos, Oct 1–19
 //                      (GitHub's 2026-10-19 alert said 1,800 of 2,000, 90%).
 //                      herbs-vs-ailments was 1,174 of the 1,815 minutes.
+//                      Actions budget set to $20 a month on 2026-10-19.
 export const GITHUB_ACTIONS_ALLOWANCES: readonly GitHubActionsAllowance[] = [
   {
     account: 'legendary-arena (org)',
@@ -58,6 +62,7 @@ export const GITHUB_ACTIONS_ALLOWANCES: readonly GitHubActionsAllowance[] = [
       'The game. Engine and website repos are public (free); the private lab repo bills here.',
     minutesUsed: 210,
     includedMinutes: 2000,
+    budgetCents: null,
     isLegendaryArenaCost: true,
   },
   {
@@ -66,6 +71,7 @@ export const GITHUB_ACTIONS_ALLOWANCES: readonly GitHubActionsAllowance[] = [
       'Studio private repos, led by herbs-vs-ailments (1,174 of 1,815 minutes). Not a game cost.',
     minutesUsed: 1815,
     includedMinutes: 2000,
+    budgetCents: 2000,
     isLegendaryArenaCost: false,
   },
 ];

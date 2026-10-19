@@ -17,6 +17,7 @@ function makeAllowance(minutesUsed: number): GitHubActionsAllowance {
     description: 'test allowance',
     minutesUsed,
     includedMinutes: 2000,
+    budgetCents: null,
     isLegendaryArenaCost: false,
   };
 }
