@@ -82,6 +82,28 @@ export interface CoverageLedger {
   error?: string;
 }
 
+/** One registered card set's display name — a row of `src/data/coverage-set-names.json`. */
+export interface CoverageSetName {
+  abbr: string;
+  name: string;
+}
+
+/** The build-time set-name table (slim projection of `data/metadata/sets.json`). */
+export interface CoverageSetNames {
+  sets: readonly CoverageSetName[];
+}
+
+/**
+ * One row of the By-set table: a card set's ledger rows rolled up by status.
+ * `percentExecutable` uses the same row-weighted formula as the page headline.
+ */
+export interface SetCoverageEntry {
+  abbr: string;
+  name: string;
+  summary: LedgerSummary;
+  percentExecutable: number;
+}
+
 /**
  * A by-mechanic dictionary entry — the implementation worklist view. One per
  * distinct mechanic, since implementing one mechanic clears every card using it.

@@ -1,8 +1,11 @@
 import { computed, type ComputedRef } from 'vue';
 import ledgerData from '../data/coverage-ledger.json';
 import runtimeObservedData from '../data/runtime-observed-hollows.json';
+import setNamesData from '../data/coverage-set-names.json';
 import type {
   CoverageLedger,
+  CoverageSetName,
+  CoverageSetNames,
   LedgerRow,
   LedgerStatus,
   LedgerSummary,
@@ -10,6 +13,7 @@ import type {
   RuntimeObservedEntry,
   RuntimeObservedHollows,
   RuntimeObservedSummary,
+  SetCoverageEntry,
 } from '../types/coverage.js';
 
 // why: the unmarked sentinel mirrors the generator (`scripts/hero-mechanic-ledger.mjs`)
@@ -122,10 +126,97 @@ export function buildMechanicDictionary(rows: readonly LedgerRow[]): MechanicEnt
  * Zero rows yields 0 (avoids divide-by-zero on the empty-stub ledger).
  */
 export function executablePercent(ledger: CoverageLedger): number {
-  if (ledger.summary.totalRows === 0) {
+  return summaryExecutablePercent(ledger.summary);
+}
+
+/** `executablePercent` for a bare summary — the set-scoped headline and By-set table. */
+export function summaryExecutablePercent(summary: LedgerSummary): number {
+  if (summary.totalRows === 0) {
     return 0;
   }
-  return Math.round((ledger.summary.byStatus.executable / ledger.summary.totalRows) * 1000) / 10;
+  return Math.round((summary.byStatus.executable / summary.totalRows) * 1000) / 10;
+}
+
+/**
+ * Rolls a set of ledger rows up into a `LedgerSummary` — the same shape the
+ * generator writes for the whole ledger, so a set-scoped page reuses the
+ * headline + chips unchanged. `distinctMechanics` excludes the unmarked
+ * sentinel, matching the generator.
+ */
+export function summarizeRows(rows: readonly LedgerRow[]): LedgerSummary {
+  const byStatus = {
+    executable: 0,
+    deferred: 0,
+    condition: 0,
+    unsupported: 0,
+    unmarked: 0,
+    subsystem: 0,
+  };
+  const distinctMechanics = new Set<string>();
+  for (const row of rows) {
+    byStatus[row.status] += 1;
+    if (row.mechanic !== UNMARKED_MECHANIC) {
+      distinctMechanics.add(row.mechanic);
+    }
+  }
+  return { totalRows: rows.length, byStatus, distinctMechanics: distinctMechanics.size };
+}
+
+/** The ledger rows belonging to one set abbr, or every row for the `'all'` sentinel. */
+export function filterRowsBySet(rows: readonly LedgerRow[], set: string): LedgerRow[] {
+  const result = [];
+  for (const row of rows) {
+    if (set === 'all' || row.set === set) {
+      result.push(row);
+    }
+  }
+  return result;
+}
+
+/**
+ * The By-set table: one entry per set present in the ledger, rolled up by
+ * status. Ordered by the set-name table (release order), then any ledger set the
+ * table does not name, alphabetically, labelled by its abbr.
+ */
+export function buildSetBreakdown(
+  rows: readonly LedgerRow[],
+  setNames: readonly CoverageSetName[],
+): SetCoverageEntry[] {
+  const rowsBySet = new Map<string, LedgerRow[]>();
+  for (const row of rows) {
+    const bucket = rowsBySet.get(row.set);
+    if (bucket === undefined) {
+      rowsBySet.set(row.set, [row]);
+    } else {
+      bucket.push(row);
+    }
+  }
+
+  const orderedSets: CoverageSetName[] = [];
+  for (const setName of setNames) {
+    if (rowsBySet.has(setName.abbr)) {
+      orderedSets.push(setName);
+    }
+  }
+  const unnamed = [...rowsBySet.keys()].filter(
+    (abbr) => !setNames.some((setName) => setName.abbr === abbr),
+  );
+  unnamed.sort();
+  for (const abbr of unnamed) {
+    orderedSets.push({ abbr, name: abbr });
+  }
+
+  const entries: SetCoverageEntry[] = [];
+  for (const setName of orderedSets) {
+    const summary = summarizeRows(rowsBySet.get(setName.abbr) ?? []);
+    entries.push({
+      abbr: setName.abbr,
+      name: setName.name,
+      summary,
+      percentExecutable: summaryExecutablePercent(summary),
+    });
+  }
+  return entries;
 }
 
 interface UseCoverageLedgerOptions {
@@ -133,6 +224,8 @@ interface UseCoverageLedgerOptions {
   ledger?: CoverageLedger;
   /** Injectable runtime-observed overlay. Defaults to the build-time bundled artifact. */
   runtimeObserved?: RuntimeObservedHollows;
+  /** Injectable set-name table. Defaults to the build-time bundled table. */
+  setNames?: CoverageSetNames;
 }
 
 interface UseCoverageLedgerReturn {
@@ -145,6 +238,10 @@ interface UseCoverageLedgerReturn {
   runtimeObservedByMechanic: ComputedRef<Record<string, RuntimeObservedEntry>>;
   /** Run-level runtime-observed summary (seed/games provenance + roll-up). */
   runtimeObservedSummary: ComputedRef<RuntimeObservedSummary>;
+  /** Per-set roll-up for the By-set table, in release order. */
+  setBreakdown: ComputedRef<SetCoverageEntry[]>;
+  /** Display name for a set abbr ("core" → "Core Set"); the abbr when unnamed. */
+  setDisplayName: (abbr: string) => string;
 }
 
 /**
@@ -157,7 +254,17 @@ export function useCoverageLedger(options?: UseCoverageLedgerOptions): UseCovera
   const ledger = options?.ledger ?? (ledgerData as unknown as CoverageLedger);
   const runtimeObserved =
     options?.runtimeObserved ?? (runtimeObservedData as unknown as RuntimeObservedHollows);
+  const setNames = (options?.setNames ?? (setNamesData as unknown as CoverageSetNames)).sets;
+
+  /** Looks up a set's display name, falling back to the abbr itself. */
+  function setDisplayName(abbr: string): string {
+    const match = setNames.find((setName: CoverageSetName) => setName.abbr === abbr);
+    return match === undefined ? abbr : match.name;
+  }
+
   return {
+    setBreakdown: computed(() => buildSetBreakdown(ledger.rows, setNames)),
+    setDisplayName,
     summary: computed(() => ledger.summary),
     rows: computed(() => ledger.rows),
     mechanics: computed(() => buildMechanicDictionary(ledger.rows)),
