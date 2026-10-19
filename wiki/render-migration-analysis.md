@@ -19,7 +19,9 @@ source:
   - C:\dev\legendary-arena\wiki\render-migration-analysis.md (this page — https://ewiki.legendary-arena.com/render-migration-analysis/)
   - ../render.yaml
   - C:\pcloud\legendary-arena\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
-last-reviewed: 2026-10-12
+  - GitHub Actions usage alert for barefootbetters (2026-10-19) and the October run history of each repo
+  - https://docs.github.com/en/billing/reference/actions-runner-pricing (runner rates, checked 2026-10-19)
+last-reviewed: 2026-10-19
 ---
 
 # Render Migration Analysis
@@ -29,7 +31,9 @@ last-reviewed: 2026-10-12
 The cost, sizing, vendor and architecture analysis behind moving the game
 server and its PostgreSQL off Render onto one self-hosted DigitalOcean droplet
 (cutover 2026-10-12). It records what Render cost, how the starting droplet size was chosen from
-measured use, and which vendors and architectures were weighed. How to build
+measured use, and which vendors and architectures were weighed. It also records
+what GitHub Actions costs (nothing for Legendary Arena; see
+[GitHub Actions minutes](#github-actions-minutes-october-2026)). How to build
 and run the host is on the Ubuntu Lab Provisioning page.
 
 ## Mechanics
@@ -113,6 +117,44 @@ are recorded in `render.yaml`.
    rollback, and a suspended service isn't billed for compute. The Render
    database stays up as the rollback copy until Render is deleted on day 7
    (~2026-10-20).
+
+### GitHub Actions minutes (October 2026)
+
+Legendary Arena pays nothing for GitHub Actions. The engine repo
+(`barefootbetters/legendary-arena`) and `legendary-arena-website` are public,
+and standard GitHub-hosted runners are free on public repos. The private
+`legendary-arena-lab` repo bills against the `legendary-arena` organization's
+own 2,000 included minutes a month. It used about 210 minutes from 2026-10-01
+to 2026-10-19 (CI, provision smoke, host deploys), well inside that allowance.
+
+The `barefootbetters` account is a separate allowance. Its 2,000 included
+minutes are spent by the studio's private repos, not by this game. GitHub's
+alert on 2026-10-19 put October at 1,800 minutes (90%), and the run history
+matches it:
+
+| Repo | Workflows | Runs | ~Minutes |
+|---|---|---|---|
+| `herbs-vs-ailments` | CI, ewiki, dashboard-ping | 1,000 | 1,174 |
+| `bb-studio-dashboard` | ci, deploys, governance, ewiki | 302 | 464 |
+| `jefferyjjensen-corporate-memory` | viewer-deploy, brain-checks | 110 | 118 |
+| `www`, `bb-studio-www`, `bb-studio-ewiki-theme` | checks, rebuilds | 51 | 59 |
+| **Total (Oct 1–19)** | | **1,463** | **1,815** |
+
+Minutes are wall-clock per run, rounded up to a whole minute. At about 95
+minutes a day the month ends near 3,050 minutes, about 1,050 over the
+allowance. The standard Linux 2-core runner has cost $0.006 a minute since
+2026-01-01 (it was $0.008), so October's overage comes to about **$6–7**. That
+cost belongs to the studio and Herbs vs. Ailments, not to Legendary Arena's
+infrastructure line.
+
+- **Don't set a $0 Actions budget.** It blocks every private-repo workflow,
+  deploys included, until the reset on 2026-11-01. A small cap, such as $20,
+  covers the overage and still stops a runaway loop.
+- **If it recurs, cut it at the source.** `herbs-vs-ailments` drives about 65%
+  of the minutes: two workflows (CI and the ewiki build) run on nearly every
+  PR update, because nearly every PR touches `docs/`. Folding the ewiki PR
+  build into CI's job removes one runner start and one whole-minute
+  rounding per update. That is an estimated 300–400 minutes a month.
 
 
 ### Sizing from measured use (2026-10-11)
@@ -411,6 +453,10 @@ doing. Co-location removed that hop, so the probe is moot.
 - **2026-10-12** — Cutover: `api.` and its PostgreSQL moved to the $24
   droplet, and the Render web service was suspended for the 7-day rollback
   window (see [Cutover](ubuntu-lab-provisioning.md#cutover-2026-10-12)).
+- **2026-10-19** — GitHub warned that the `barefootbetters` account had used 90%
+  of its Actions minutes. The run history put the overage at about $6–7 for
+  October, all from studio repos. Legendary Arena's own Actions cost is $0
+  (see [GitHub Actions minutes](#github-actions-minutes-october-2026)).
 
 ## References
 

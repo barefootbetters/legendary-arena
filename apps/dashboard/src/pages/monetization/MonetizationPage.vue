@@ -73,8 +73,8 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
     <section class="page-references" aria-label="Related plans and governance">
       <h2>Plans &amp; governance</h2>
       <p class="references-intro">
-        The revenue model, gating, and go-to-market policy behind these numbers live in the Eng
-        Wiki:
+        The revenue model, gating, go-to-market policy, and infrastructure costs behind these
+        numbers live in the Eng Wiki:
       </p>
       <ul class="references-list">
         <li>
@@ -109,6 +109,17 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
             >YouTube Channel Plan ↗</a
           >
           <span>the content engine feeding the funnel</span>
+        </li>
+        <li>
+          <a
+            href="https://ewiki.legendary-arena.com/render-migration-analysis/"
+            target="_blank"
+            rel="noopener"
+            >Render Migration Analysis ↗</a
+          >
+          <span
+            >hosting costs: Render to the $24 droplet, and GitHub Actions ($0 for the game)</span
+          >
         </li>
       </ul>
     </section>
