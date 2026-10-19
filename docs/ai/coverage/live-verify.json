@@ -801,9 +801,9 @@
       "ability": "koHeroCurrentPlayer",
       "wp": "WP-185",
       "state": "verified",
-      "date": "2026-10-15",
-      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Repeated in match nNR91fCRKsX (build 17ccd6b): eight more Sentinel fights, all from played cards. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff).",
-      "note": "Hand side unexercised — every fight came after the whole hand was played."
+      "date": "2026-10-19",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Repeated in match nNR91fCRKsX (build 17ccd6b): eight more Sentinel fights, all from played cards. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). Hand side: 2p bot-ally operator match 4-YFzCBfK9L (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on) — Player 0 fought Sentinel after playing two cards with the rest of the hand still held (17.2.6) and KO'd Covering Fire from their hand (17.2.8).",
+      "note": "Both sides seen: KO from the cards played this turn and KO from hand."
     },
     {
       "key": "core-villain-skrulls-skrull-queen-veranke|captureHqHeroHighestCost",
@@ -1132,7 +1132,7 @@
       "wp": "",
       "state": "verified",
       "date": "2026-10-19",
-      "evidence": "2p bot-ally operator match P9oVujYd2B9 (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on): the bot's Victory Pile held only Sentinel (defeated 2.2.8) when Player 0 took Vanishing Illusions (7.2.15); the bot was addressed and KO'd Sentinel (7.2.18). No operator staging was needed. Final state: the bot's Victory Pile is Baron Zemo + a Bystander, with Sentinel gone.",
+      "evidence": "2p bot-ally operator match P9oVujYd2B9 (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on): the bot's Victory Pile held only Sentinel (defeated 2.2.8) when Player 0 took Vanishing Illusions (7.2.15); the bot was addressed and KO'd Sentinel (7.2.18). No operator staging was needed. Final state: the bot's Victory Pile is Baron Zemo + a Bystander, with Sentinel gone. Mixed pile: 2p bot-ally operator match 4-YFzCBfK9L (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on) — with Hand Ninjas x2 and Melter in its Victory Pile, the bot was addressed and KO'd a Hand Ninjas (15.2.39).",
       "note": "D-24742 (#2883): a Henchmen-only Victory Pile is addressed. Before the fix that seat was skipped."
     },
     {
