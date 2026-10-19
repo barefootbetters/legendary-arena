@@ -25,7 +25,7 @@ source:
   - C:\www\jefferyjjensen-corporate-memory\docs\second-brain\design.md (the design record — private repo barefootbetters/jefferyjjensen-corporate-memory)
   - C:\www\jefferyjjensen-corporate-memory\mcp\README.md (the brain's Claude connector — same private repo)
   - C:\www\jefferyjjensen-corporate-memory\scripts\brain-sources.psd1 (which other repos the connector serves — same private repo)
-last-reviewed: 2026-10-17
+last-reviewed: 2026-10-19
 ---
 
 # AI Second Brain
@@ -64,6 +64,7 @@ can be swapped by configuration.
 | Build runbook (was `docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`) | [`docs/second-brain/runbook.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/runbook.md) |
 | Voice addendum (was `docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md`) | [`docs/second-brain/voice-mobile.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/voice-mobile.md) |
 | Knowledge-inventory template (was `docs/ops/KNOWLEDGE_INVENTORY.template.md`) | [`docs/second-brain/knowledge-inventory.template.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/knowledge-inventory.template.md) |
+| Working habits for the brain's agents (a section here 2026-10-17 to 2026-10-19) | [`design.md` § Asking the brain's agents for work](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/design.md#asking-the-brains-agents-for-work) |
 | Decisions about the brain | The ship's [`decisions/log.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/decisions/log.md); D-24341 here is history |
 
 The ship repo is private, so these links work while signed in to GitHub. The
@@ -105,70 +106,30 @@ operator approves it. A phone brief is a draft, never a decision.
 
 ### Asking the brain's agents for work
 
-These habits make an agent's output easier to check against this corpus.
-They are working conventions, not new infrastructure, and they hold whichever
-model sits behind the connector. The underlying problem is an intent gap: an
-agent can't tell what the operator cares about unless it's written down
-somewhere it reads, and a stronger model doesn't close that gap.
+**Moved to the design record on 2026-10-19.** The habits that make an agent's
+output checkable (write down what you care about where the agent reads it,
+show examples rather than a description, tag claims Seen / Inferred / Unknown,
+and the six-step brief for an outside idea sent with `send_to_desk`) apply to
+every domain the brain serves, so they live in the ship:
+[Asking the brain's agents for work](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/design.md#asking-the-brains-agents-for-work).
 
-**Write down what you care about, where the agent reads it.** Priorities,
-quality bars, and non-negotiables belong in the corpus, not repeated in each
-chat. In this repo they already are: `.claude/CLAUDE.md` and
-`.claude/rules/` for standing rules, an Execution Checklist's locked values
-for one Work Packet, `DECISIONS.md` for the reasons, and
-[`docs/10-GLOSSARY.md`](../docs/10-GLOSSARY.md) for shared terms. When an
-agent's output drifts the same way twice, fix the document it read, not just
-the prompt. The fix then reaches every later session and every model. The
-same goes for the rest of the agent's working environment: a stale build, a
-misleading log line, or a missing test degrades output from any model.
+What they mean for this repo:
 
-**Show examples, not just a description.** An agent matches a standard more
-closely when it can see real artifacts that already meet it. The corpus has
-plenty: a shipped Work Packet and its Execution Checklist, a `DECISIONS.md`
-entry, a finished ewiki page. To get a new one, point the agent at three to
-five existing examples of the same kind. Ask it to name their structure and
-constraints first, then write the new one to match. A prose description of
-"what a good Work Packet looks like" gets a generic one back. The examples
-stay fixed when the model changes, so they double as the yardstick for a
-model swap. The coach's `coach:eval` fixtures already work this way (see
-[Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch)).
-
-**Tag how sure each claim is.** When an agent analyses source material (this
-wiki, a repo, a transcript, someone else's process), it marks each claim:
-
-| Tag | Meaning |
-|---|---|
-| **Seen** | Stated in the source; it cites the page, file, or commit. |
-| **Inferred** | Strongly suggested by the source but not stated there. |
-| **Unknown** | The material it had doesn't settle it. |
-
-This keeps a guess from reading as confidently as a fact. It matters most for
-phone answers, which come from a snapshot (see [Edge Cases](#edge-cases)), and
-for phone-to-desk ideas, which are checked against this repo before they become
-Work Packets.
-
-**Capturing an outside idea from the phone.** When a `send_to_desk` idea
-reverse-engineers something external (a video, an article, another product's
-feature), the brief does six things:
-
-1. Names the one behaviour it's about, not the whole source.
-2. Opens with a short summary before any detail.
-3. Tags its claims Seen, Inferred, or Unknown.
-4. Links one to three examples of the output it wants.
-5. Says how a rebuilt version would be tested against the original.
-6. Lists the open questions, so the desk-side check starts there.
-
-For the sixth step, the agent interviews the operator before it files the
-brief: what matters most, what's off-limits, which terms already have a
-meaning in the glossary, and how it's deployed and secured. Whatever stays
-unanswered is listed as Unknown. On the desk, the Work Packet drafting
-preflight
-([`01.0a`](../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md)) and the lint gate
-([`00.3`](../docs/ai/REFERENCE/00.3-prompt-lint-checklist.md)) do the same
-job in more depth before anything is built.
-
-That gives the desk-side check something concrete to verify, and turns "build
-something like this" into a testable Work Packet candidate.
+- **Where the agent reads what you care about:** `.claude/CLAUDE.md` and
+  `.claude/rules/` for standing rules, an Execution Checklist's locked values
+  for one Work Packet, `DECISIONS.md` for the reasons, and
+  [`docs/10-GLOSSARY.md`](../docs/10-GLOSSARY.md) for shared terms. When an
+  agent drifts the same way twice, fix the document it read.
+- **Examples to point an agent at:** three to five shipped Work Packets and
+  their Execution Checklists, `DECISIONS.md` entries, or finished ewiki pages.
+  The coach's `coach:eval` fixtures work the same way (see
+  [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch)).
+- **A `legendary-arena` brief from the phone** is checked on the desk by the
+  Work Packet drafting preflight
+  ([`01.0a`](../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md)) and the lint
+  gate ([`00.3`](../docs/ai/REFERENCE/00.3-prompt-lint-checklist.md)) before
+  it becomes a Work Packet candidate. Phone answers come from a snapshot (see
+  [Edge Cases](#edge-cases)).
 
 ### Hosting
 
@@ -380,6 +341,10 @@ feature reaching across the network.
   interview step) for outside ideas sent from the phone. Taken from two
   outside reviews of this page; the parts that would change hosting, the
   connector, or the coach were left out.
+- **2026-10-19** — The full text of that section moved to the ship's design
+  record, because the habits apply to every domain the brain serves, not only
+  Legendary Arena. This page keeps a pointer and what the habits mean for this
+  repo.
 
 ## References
 
