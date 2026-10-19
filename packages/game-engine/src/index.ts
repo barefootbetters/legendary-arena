@@ -633,6 +633,9 @@ export type { CoopOutcomeCategory } from "./simulation/coopOutcome.js";
 
 // PAR simulation engine (WP-049 / D-4901+)
 export { createCompetentHeuristicPolicy } from "./simulation/ai.competent.js";
+// Playing-seat answers for an open seat choice (D-24744) — the bot ally answers
+// like a present player instead of with the absent-seat defaultOptionIndex.
+export { choosePlayingSeatChoiceOption } from "./simulation/ai.seatChoice.js";
 export {
   aggregateParFromSimulation,
   generateScenarioPar,

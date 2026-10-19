@@ -42,7 +42,7 @@ export const DIVING_BLOCK_SEAT_CHOICE_KIND = 'diving-block';
 // is optional pure-upside, but an absent seat resolves to keeping the Wound, never
 // a phantom free draw). These indices are the contract between the wave builder,
 // the client prompt, and the apply.
-const DIVING_BLOCK_REVEAL_OPTION_INDEX = 0;
+export const DIVING_BLOCK_REVEAL_OPTION_INDEX = 0;
 const DIVING_BLOCK_DECLINE_OPTION_INDEX = 1;
 
 /**

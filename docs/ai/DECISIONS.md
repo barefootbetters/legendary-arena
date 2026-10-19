@@ -48884,3 +48884,40 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24744 — The bot ally answers a seat choice like a playing seat, not with the absent-seat default (Active 2026-10-19 — direct fix, no WP)
+
+**Status:** Active — landed 2026-10-19 (direct engine-policy + `apps/server` bot-ally fix, no WP, the D-24593 precedent). Amends D-24593 §2.
+
+**Context.** Operator match P9oVujYd2B9 (2p bot ally, Loki / Negative Zone Prison Breakout). At 1.2.20 a Loki Master Strike hit the bot while it held Diving Block, and the log read "Player 1 took the Wound (declined Diving Block)". The bot declines Diving Block every time. D-24593 §2 had the driver submit the single `resolveSeatChoice` that `getLegalMoves` offers, which carries `defaultOptionIndex`. That index is the answer for a seat that is NOT there: a disconnected or timed-out seat (WP-684 / D-24501). For Diving Block it is DECLINE on purpose (WP-682 / D-24499), so an absent seat never gets a free draw. A bot ally is a seat that is playing, so for it that default is a lost Wound and a lost card every time.
+
+**Decision.**
+1. The engine owns the playing-seat answer. New pure policy `choosePlayingSeatChoiceOption(G, seat)` in `packages/game-engine/src/simulation/ai.seatChoice.ts`, exported from the `.` barrel next to `createCompetentHeuristicPolicy`. It returns the option index a present player picks, or null when the seat owes nothing. No RNG, no `G` mutation, never throws. It sits in the engine and not in the server because picking an option means knowing what each kind's options do; the server only wires (`.claude/rules/architecture.md` Server Layer).
+2. `decideBotSeatChoiceMove` still enumerates `getLegalMoves` as the bot seat, and that stays the gate: a seat it offers no `resolveSeatChoice` still faults (D-24593 §5). It then submits `choosePlayingSeatChoiceOption`'s index instead of the default. This replaces D-24593 §2's "the engine's own default, never a policy call".
+3. Unchanged: every `defaultOptionIndex`, the timeout path (`applySeatChoiceTimeoutDefault`), and `getLegalMoves`. D-24499 stands. Autoplay (D-24590), the simulation runner and PAR (D-24573) still submit the default, so no PAR, hash or replay pin moves. `DIVING_BLOCK_REVEAL_OPTION_INDEX` and `RANDOM_ACTS_DIVING_BLOCK_OPTION_INDEX` are exported (were module-private) so the policy reads the contract constants, not literals.
+
+**Audit: every kind `parkSeatChoice` opens (2026-10-19).**
+
+| Kind | Absent-seat default | Playing-seat answer |
+|---|---|---|
+| `diving-block` | 1, take the Wound | **0, reveal**: prevents the Wound and draws; Diving Block stays in hand |
+| `random-acts-wound` | 1, decline | **2, reveal Diving Block (draw instead)** when that option is offered; else decline |
+| `monarchs-discard` | 0, first hand card | **a Wound, else the cheapest card** (`cardStats.cost`, earliest on ties) |
+| `escape-bystander-discard` | 0, first hand card | **same as Monarch's discard** |
+| `vanishing-illusions-ko` | 0, first Victory-Pile Villain | **the lowest-VP card** (`victoryPointValueForCard`, scoring's own value) |
+| `monarchs-decree-mode` | 0, each other player draws | default is right: in co-op the other players are teammates |
+| `escape-hq-ko` | 0, cheapest eligible Hero | default is right |
+| `return-on-discard` | 0, return to hand | default is right |
+| `here-hold-this` | 0, first City Villain | default kept (follow-up: pick the Villain the bot will fight) |
+| `random-acts-pass-left` | 0, first hand card | default kept (follow-up: the card stays on the team in co-op, so it is not a clear loss) |
+
+**Follow-ups (not done here).** (a) `here-hold-this` and `random-acts-pass-left` answers. (b) Whether all-bot autoplay should use the same policy; it would move PAR and replay pins, so it needs its own decision.
+
+**Gates.** `packages/game-engine/src/simulation/ai.seatChoice.test.ts` (7 tests) builds each choice with the engine's own builder and checks the playing-seat answer against the absent default. `apps/server/src/bot-ally/botAllySeatChoice.test.ts` adds a real-engine regression: bot seat 1 holds Diving Block when a Master Strike Wound lands on the human's turn, the driver submits `optionIndex: 0`, the real `resolveSeatChoice` returns the Wound to the supply and draws, and the log reads "Player 1 revealed Diving Block". With the driver reverted to the default, that test fails and the other 6 pass.
+
+**Live-verify.** A 2p operator match (Loki scheme) where Player 1 (the bot) holds Diving Block when a Loki Master Strike is revealed with `operatorRevealNow`. Expected: "Player 1 revealed Diving Block: prevented the Wound and drew a card", the bot's discard gains no Wound, and the match keeps running. This changes the D-24743 live-verify's expectation: bot holders now reveal instead of logging "took the Wound (declined Diving Block)".
+
+**Reserved by:** NUMBER-LEDGER D-24744. Related: D-24593 (amended §2), D-24499 (Diving Block absent default, unchanged), D-24501 (seat-choice model), D-24678 (Random Acts Diving Block option), D-24511 (Monarch's Decree / Vanishing Illusions), D-24656 (escape procedure), D-24590 / D-24573 (autoplay and sim keep the default), D-24743 (live-verify expectation changed).
+
+---
+Protect this file.
