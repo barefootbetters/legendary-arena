@@ -10,7 +10,7 @@ tags:
 
 # Architecture & Library Adoption Inventory
 
-_Generated 2026-10-14 by `scripts/architecture-inventory.mjs`._
+_Generated 2026-10-19 by `scripts/architecture-inventory.mjs`._
 
 This is a deterministic snapshot of installed dependencies,
 their actual import usage across the workspace, and SaaS /
@@ -50,7 +50,7 @@ synthesised from the app's own manifests:
 - **`apps/server`** — Legendary Arena boardgame.io game server — wiring layer only
   - Stack: boardgame.io (`boardgame.io@^0.50.0`) over Socket.IO (transitive via `boardgame.io`) + HTTP routes via Koa router (`@koa/router@10.1.1` + `koa@2.16.4`, both transitive via `boardgame.io`) + PostgreSQL via `pg@^8.13.0`.
 - **`apps/wiki-viewer`** — Engineering wiki build pipeline. Build-time, read-only Hugo projection of `wiki/` (no `package.json` — Hugo is a Go binary, not a Node dep). Layer-boundary clean: zero runtime imports of `@legendary-arena/game-engine`, `@legendary-arena/registry`, or `apps/server`. Build pipeline is `pnpm wiki-viewer:project` (copy `wiki/*.md` → `apps/wiki-viewer/content/`) → `pnpm wiki-viewer:check-links` (case-sensitive internal-link gate) → `hugo --minify`.
-  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 93 source pages projected from `wiki/` + deployed as assets-only Cloudflare Worker `legendary-arena-wiki`.
+  - Stack: Hugo Extended (`hugo@0.161.1`, pinned in `apps/wiki-viewer/.hugo-version`) + 97 source pages projected from `wiki/` + deployed as assets-only Cloudflare Worker `legendary-arena-wiki`.
 
 ## Deployment topology
 
@@ -300,11 +300,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Language | Files |
 |---|---:|
-| TypeScript | 1422 |
-| Vue SFC | 195 |
-| JavaScript | 152 |
+| TypeScript | 1435 |
+| Vue SFC | 196 |
+| JavaScript | 155 |
+| Markdown | 118 |
 | JSON | 114 |
-| Markdown | 114 |
 | HTML | 21 |
 | CSS | 12 |
 | PowerShell | 10 |
@@ -315,11 +315,11 @@ Counts derived from on-disk file extensions under `apps/`, `packages/`, `scripts
 
 | Extension | Files |
 |---|---:|
-| `.ts` | 1417 |
-| `.vue` | 195 |
+| `.ts` | 1430 |
+| `.vue` | 196 |
+| `.md` | 118 |
 | `.json` | 114 |
-| `.md` | 114 |
-| `.mjs` | 110 |
+| `.mjs` | 113 |
 | `.js` | 40 |
 | `.html` | 21 |
 | `.css` | 12 |
@@ -357,7 +357,7 @@ Whether each non-Node language's toolchain marker files and source-file extensio
 
 | Manifest | Name | Role | deps | devDeps | peerDeps |
 |---|---|---|---:|---:|---:|
-| `apps/arena-client/package.json` | @legendary-arena/arena-client | Gameplay client SPA for Legendary Arena (Vue 3 + Vite + Pinia, TypeScript) | 7 | 15 | 0 |
+| `apps/arena-client/package.json` | @legendary-arena/arena-client | Gameplay client SPA for Legendary Arena (Vue 3 + Vite + Pinia, TypeScript) | 8 | 16 | 0 |
 | `apps/dashboard/package.json` | @legendary-arena/dashboard | Internal admin dashboard SPA for Legendary Arena (Vue 3 + PrimeVue 4 + Vite) | 10 | 13 | 0 |
 | `apps/engine-runner/package.json` | @legendary-arena/engine-runner | Headless bot-vs-bot simulation runner CLI for the Legendary Arena engine (Windows-exe Target A, Phase 1) | 2 | 1 | 0 |
 | `apps/legends-board/package.json` | @legendary-arena/legends-board | Public Legends Attract Board — read-only scoreboard SPA for legends.legendary-arena.com | 1 | 10 | 0 |
@@ -381,7 +381,7 @@ Whether each non-Node language's toolchain marker files and source-file extensio
 | `@vue/compiler-sfc` | ^3.4.27 | 1 _(minimal)_ | `packages/vue-sfc-loader/package.json` (dev); `packages/vue-sfc-loader/package.json` (peer) |
 | `pinia` | ^2.1.7 | 77 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/dashboard/package.json` (dep); `apps/registry-viewer/package.json` (dep) |
 | `vite` | ^5.3.1 | 7 _(partial)_ | `apps/arena-client/package.json` (dev); `apps/dashboard/package.json` (dev); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev) |
-| `vue` | ^3.4.27 | 292 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/dashboard/package.json` (dep); `apps/legends-board/package.json` (dep); `apps/registry-viewer/package.json` (dep); `packages/vue-sfc-loader/package.json` (dev); `packages/vue-sfc-loader/package.json` (peer) |
+| `vue` | ^3.4.27 | 293 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/dashboard/package.json` (dep); `apps/legends-board/package.json` (dep); `apps/registry-viewer/package.json` (dep); `packages/vue-sfc-loader/package.json` (dev); `packages/vue-sfc-loader/package.json` (peer) |
 | `vue-router` | ^4.3.2 | 6 _(partial)_ | `apps/dashboard/package.json` (dep) |
 
 _Other candidates in this category not currently installed:_ `@vue/runtime-core`
@@ -390,7 +390,7 @@ _Other candidates in this category not currently installed:_ `@vue/runtime-core`
 
 | Package | Version(s) | Files importing | Declared in |
 |---|---|---:|---|
-| `boardgame.io` | ^0.50.0 | 83 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
+| `boardgame.io` | ^0.50.0 | 88 _(comprehensive)_ | `apps/arena-client/package.json` (dep); `apps/server/package.json` (dep); `packages/game-engine/package.json` (dep) |
 
 _Other candidates in this category not currently installed:_ `koa`, `@koa/router`, `koa-bodyparser`, `koa-static`, `express`, `fastify`, `hono`
 
@@ -545,7 +545,7 @@ _Other candidates in this category not currently installed:_ `@aws-sdk/s3-reques
 
 | Package | Version(s) | Files importing | Declared in |
 |---|---|---:|---|
-| `@vue/test-utils` | ^2.4.6 | 107 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `packages/vue-sfc-loader/package.json` (dev) |
+| `@vue/test-utils` | ^2.4.6 | 108 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `packages/vue-sfc-loader/package.json` (dev) |
 | `jsdom` | ^24.1.0 | 2 _(minimal)_ | `apps/arena-client/package.json` (dev); `packages/vue-sfc-loader/package.json` (dev) |
 | `playwright` | ^1.48.0 | 1 _(minimal)_ | `apps/arena-client/package.json` (dev) |
 
@@ -644,11 +644,12 @@ become load-bearing.
 |---|---|---:|---|
 | `@cloudflare/workers-types` | ^4.20260701.1, ^4.20240620.0 | 3 _(partial)_ | `apps/arena-client/package.json` (dev); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dev); `packages/registry/package.json` (dev) |
 | `@koa/multer` | ^3.0.2 | 1 _(minimal)_ | `apps/server/package.json` (dep) |
-| `@legendary-arena/game-engine` | workspace:* | 265 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
+| `@legendary-arena/game-engine` | workspace:* | 273 _(comprehensive)_ | `apps/arena-client/package.json` (dev); `apps/engine-runner/package.json` (dep); `apps/replay-producer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev); `packages/preplan/package.json` (peer) |
 | `@legendary-arena/lagn` | workspace:* | 10 _(partial)_ | `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep) |
 | `@legendary-arena/preplan` | workspace:* | 11 _(partial)_ | `apps/arena-client/package.json` (dep) |
 | `@legendary-arena/registry` | workspace:* | 60 _(comprehensive)_ | `apps/dashboard/package.json` (dep); `apps/engine-runner/package.json` (dep); `apps/legends-board/package.json` (dev); `apps/registry-viewer/package.json` (dep); `apps/server/package.json` (dep); `package.json` (dev) |
 | `@legendary-arena/vue-sfc-loader` | workspace:* | 0 ⚠ | `apps/arena-client/package.json` (dev) |
+| `@tweakpane/core` | 2.0.5 | 0 ⚠ | `apps/arena-client/package.json` (dev) |
 | `@types/canvas-confetti` | ^1.9.0 | 0 _(tooling)_ | `apps/arena-client/package.json` (dev) |
 | `@types/howler` | ^2.2.13 | 0 _(tooling)_ | `apps/arena-client/package.json` (dev) |
 | `@types/jsdom` | ^21.1.7 | 0 _(tooling)_ | `apps/arena-client/package.json` (dev) |
@@ -664,6 +665,7 @@ become load-bearing.
 | `pagefind` | 1.5.2 | 0 ⚠ | `package.json` (dev) |
 | `sharp` | ^0.33.0 | 1 _(minimal)_ | `apps/server/package.json` (dep) |
 | `stripe` | 22.1.0 | 5 _(partial)_ | `apps/server/package.json` (dep) |
+| `tweakpane` | ^4.0.5 | 1 _(minimal)_ | `apps/arena-client/package.json` (dep) |
 | `zod-to-json-schema` | ^3.25.2 | 1 _(minimal)_ | `packages/lagn-spec/package.json` (dep) |
 
 ## SaaS / embedded services
@@ -675,13 +677,17 @@ dependency-based inventory.
 
 | Service | Category | Detected in | Description |
 |---|---|---:|---|
-| `brevo` | marketing / email | 14 files | Transactional + marketing email, newsletter forms, SMTP relay. |
-| `snipcart` | ecommerce | 1 file | Cart overlay via CDN script + HTML data attributes. |
+| `brevo` | marketing / email | 22 files | Transactional + marketing email, newsletter forms, SMTP relay. |
+| `snipcart` | ecommerce | 15 files | Cart overlay via CDN script + HTML data attributes. |
 
 ### SaaS usage detail
 
 #### brevo
 
+- `[legendary-arena-website] docs/ai/work-packets/WP-015-newsletter-brevo.md`
+- `[legendary-arena-website] docs/ai/work-packets/WP-018-brevo-automation.md`
+- `[legendary-arena-website] docs/brevo/email-automation.md`
+- `[legendary-arena-website] functions/api/subscribe.js`
 - `apps/server/src/marketing/brevoEnqueue.logic.test.ts`
 - `apps/server/src/marketing/brevoEnqueue.logic.ts`
 - `apps/server/src/marketing/brevoTransactional.logic.test.ts`
@@ -693,12 +699,30 @@ dependency-based inventory.
 - `docs/ai/work-packets/WP-293-game-signup-brevo-enqueue.md`
 - `docs/ai/work-packets/WP-353-friend-request-email-notifications.md`
 - `docs/ops/service-dependencies.json`
+- `legendary-arena-website/docs/ai/work-packets/WP-015-newsletter-brevo.md`
+- `legendary-arena-website/docs/ai/work-packets/WP-018-brevo-automation.md`
+- `legendary-arena-website/docs/brevo/email-automation.md`
+- `legendary-arena-website/functions/api/subscribe.js`
 - `wiki/brevo-email-pipeline.md`
 - `wiki/hugo-onboarding.md`
 - `wiki/hugo-web-system.md`
 
 #### snipcart
 
+- `[legendary-arena-website] assets/js/snipcart-lazy.js`
+- `[legendary-arena-website] docs/01-VISION.md`
+- `[legendary-arena-website] docs/ai/work-packets/WP-019-snipcart-commerce.md`
+- `[legendary-arena-website] docs/ai/work-packets/WP-044-site-performance-recovery.md`
+- `[legendary-arena-website] layouts/_partials/header.html`
+- `[legendary-arena-website] layouts/shop/list.html`
+- `[legendary-arena-website] layouts/shop/single.html`
+- `legendary-arena-website/assets/js/snipcart-lazy.js`
+- `legendary-arena-website/docs/01-VISION.md`
+- `legendary-arena-website/docs/ai/work-packets/WP-019-snipcart-commerce.md`
+- `legendary-arena-website/docs/ai/work-packets/WP-044-site-performance-recovery.md`
+- `legendary-arena-website/layouts/_partials/header.html`
+- `legendary-arena-website/layouts/shop/list.html`
+- `legendary-arena-website/layouts/shop/single.html`
 - `wiki/hugo-web-system.md`
 
 ## Importance tiering
@@ -722,7 +746,7 @@ installed but not yet placed surfaces under "Not yet classified".
 
 | Package | Version(s) | Adoption | Files importing |
 |---|---|---|---:|
-| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 83 _(comprehensive)_ |
+| `boardgame.io` | ^0.50.0 | direct dep — `apps/arena-client/package.json`, `apps/server/package.json`, `packages/game-engine/package.json` | 88 _(comprehensive)_ |
 | `pg` | ^8.13.0 | direct dep — `apps/server/package.json` | 55 _(comprehensive)_ |
 | `typescript` | ^5.4.5, ^5.2.2 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json`, `apps/replay-producer/package.json`, `package.json`, `packages/game-engine/package.json`, `packages/lagn-spec/package.json`, `packages/preplan/package.json`, `packages/registry/package.json`, `packages/vue-sfc-loader/package.json` | 1 _(minimal)_ |
 | `zod` | ^3.23.8, ^3.22.4 | direct dep — `apps/registry-viewer/package.json`, `packages/lagn-spec/package.json`, `packages/registry/package.json` | 19 _(comprehensive)_ |
@@ -741,7 +765,7 @@ installed but not yet placed surfaces under "Not yet classified".
 | `socket.io` | 3.1.2, 4.8.3 | transitive via `boardgame.io` | _(transitive)_ |
 | `socket.io-client` | 4.8.3 | transitive via `boardgame.io` | _(transitive)_ |
 | `vite` | ^5.3.1 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json` | 7 _(partial)_ |
-| `vue` | ^3.4.27 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json`, `packages/vue-sfc-loader/package.json` | 292 _(comprehensive)_ |
+| `vue` | ^3.4.27 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json`, `packages/vue-sfc-loader/package.json` | 293 _(comprehensive)_ |
 | `vue-router` | ^4.3.2 | direct dep — `apps/dashboard/package.json` | 6 _(partial)_ |
 
 ### Tooling
@@ -756,7 +780,7 @@ installed but not yet placed surfaces under "Not yet classified".
 | `@vitejs/plugin-vue` | ^5.0.5 | direct dep — `apps/arena-client/package.json`, `apps/dashboard/package.json`, `apps/legends-board/package.json`, `apps/registry-viewer/package.json` | 4 _(partial)_ |
 | `@vue/compiler-sfc` | ^3.4.27 | direct dep — `packages/vue-sfc-loader/package.json` | 1 _(minimal)_ |
 | `@vue/eslint-config-typescript` | ^13.0.0 | direct dep — `apps/dashboard/package.json`, `apps/registry-viewer/package.json` | 2 _(minimal)_ |
-| `@vue/test-utils` | ^2.4.6 | direct dep — `apps/arena-client/package.json`, `packages/vue-sfc-loader/package.json` | 107 _(comprehensive)_ |
+| `@vue/test-utils` | ^2.4.6 | direct dep — `apps/arena-client/package.json`, `packages/vue-sfc-loader/package.json` | 108 _(comprehensive)_ |
 | `@vue/tsconfig` | ^0.5.1 | direct dep — `apps/legends-board/package.json`, `apps/registry-viewer/package.json` | 2 _(minimal)_ |
 | `dotenv` | ^16.4.5 | direct dep — `packages/registry/package.json` | 2 _(minimal)_ |
 | `eslint` | ^8.57.1 | direct dep — `apps/dashboard/package.json`, `apps/registry-viewer/package.json` | 0 _(tooling)_ |
@@ -777,6 +801,7 @@ of these become load-bearing for the architecture.
 - `@koa/multer`
 - `@primevue/themes`
 - `@teamhanko/hanko-elements`
+- `@tweakpane/core`
 - `@types/canvas-confetti`
 - `@types/howler`
 - `ajv`
@@ -790,6 +815,7 @@ of these become load-bearing for the architecture.
 - `prettier`
 - `sharp`
 - `stripe`
+- `tweakpane`
 - `vue-echarts`
 - `zod-to-json-schema`
 
@@ -810,6 +836,7 @@ zero-import.
 | Package | Declared in |
 |---|---|
 | `@legendary-arena/vue-sfc-loader` | `apps/arena-client/package.json` (dev) |
+| `@tweakpane/core` | `apps/arena-client/package.json` (dev) |
 | `@typescript-eslint/eslint-plugin` | `apps/dashboard/package.json` (dev); `apps/registry-viewer/package.json` (dev) |
 | `fast-glob` | `packages/registry/package.json` (dev) |
 | `pagefind` | `package.json` (dev) |
@@ -862,7 +889,7 @@ them entirely.
 
 ## Transitive dependencies (lockfile)
 
-Lockfile resolves **630** packages: **48** are direct dependencies declared in some `package.json`, **582** are transitive.
+Lockfile resolves **632** packages: **50** are direct dependencies declared in some `package.json`, **582** are transitive.
 
 ### Transitive packages matching tracked categories
 
