@@ -32,6 +32,7 @@ import {
   filterUIStateForAudience,
   createRandomPolicy,
   createCompetentHeuristicPolicy,
+  choosePlayingSeatChoiceOption,
 } from '@legendary-arena/game-engine';
 import { findPendingChoiceMove } from '../autoplay/botLoopProgress.mjs';
 
@@ -402,13 +403,20 @@ export function findBotOwedSeatChoiceSeat(state, botSeats) {
 
 /**
  * Decides a bot seat's seat-choice submission: enumerates getLegalMoves AS that
- * seat and returns its single `resolveSeatChoice` (the engine's
- * `defaultOptionIndex`), or null when the engine offers that seat no such move.
+ * seat to confirm it owes a `resolveSeatChoice`, then submits the option a
+ * playing seat would pick (`choosePlayingSeatChoiceOption`). Returns null when
+ * the engine offers that seat no such move.
  *
  * // why: D-24593 — getLegalMoves answers for the enumerated seat only, so the
  * bot seat is enumerated even when it is not `ctx.currentPlayer` (the autoplay
- * `decidePendingChoiceDispatch` policy, D-24590). The move is the engine's own
- * default — never a synthesized option, never a policy call.
+ * `decidePendingChoiceDispatch` policy, D-24590). It stays the gate: a seat it
+ * offers nothing is a fault, never a synthesized move.
+ *
+ * // why: D-24744 — the option index getLegalMoves carries is
+ * `defaultOptionIndex`, the ABSENT-seat answer. A bot ally is a seat that is
+ * playing, so the engine's playing-seat policy picks the option instead: it
+ * reveals Diving Block, which the absent-seat default (D-24499) declines. The
+ * engine owns that answer; the driver only submits it.
  *
  * @param {object} state - The fetched match state.
  * @param {string} botSeat - The bot seat that owes a submission.
@@ -419,7 +427,11 @@ export function decideBotSeatChoiceMove(state, botSeat) {
   if (seatLegalMoves.length !== 1 || seatLegalMoves[0].name !== 'resolveSeatChoice') {
     return null;
   }
-  return { name: seatLegalMoves[0].name, args: seatLegalMoves[0].args };
+  const optionIndex = choosePlayingSeatChoiceOption(state.G, botSeat);
+  if (optionIndex === null) {
+    return { name: seatLegalMoves[0].name, args: seatLegalMoves[0].args };
+  }
+  return { name: seatLegalMoves[0].name, args: { optionIndex } };
 }
 
 /**
@@ -766,7 +778,7 @@ async function handleSeatChoiceTick(driver, deps, state, limits) {
 }
 
 /**
- * Submits a bot seat's default `resolveSeatChoice` AS that seat, re-submitting
+ * Submits a bot seat's `resolveSeatChoice` AS that seat, re-submitting
  * with back-off when it does not land, and reports the outcome.
  *
  * // why: D-24593 — the submission is seat-bound (the bot seat's own
