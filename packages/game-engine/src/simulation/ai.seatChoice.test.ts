@@ -13,7 +13,13 @@ import type { LegendaryGameState, PendingSeatChoice } from '../types.js';
 import { choosePlayingSeatChoiceOption } from './ai.seatChoice.js';
 import { getLegalMoves } from './ai.legalMoves.js';
 import { openDivingBlockSeatChoiceIfNeeded } from '../moves/divingBlock.logic.js';
-import { buildRandomActsWoundChoice, buildPassLeftChoice } from '../moves/seatChoiceCards.js';
+import {
+  buildRandomActsWoundChoice,
+  buildPassLeftChoice,
+  buildHereHoldThisChoice,
+  buildHereHoldThisTargets,
+} from '../moves/seatChoiceCards.js';
+import { makeCardStatEntry, makeTurnEconomy } from '../test/fixtureBuilders.js';
 import {
   buildMonarchsDecreeModeChoice,
   buildMonarchsDiscardChoice,
@@ -122,10 +128,62 @@ describe('choosePlayingSeatChoiceOption (D-24744)', () => {
   it("keeps the default where it already is the present-player answer", () => {
     const monarchsMode = withChoice(makeState({ '0': [] }), buildMonarchsDecreeModeChoice('0'));
     assert.equal(choosePlayingSeatChoiceOption(monarchsMode, '0'), 0, 'each other player draws');
+  });
 
-    const passLeft = makeState({ '0': ['a#0', 'b#0'], '1': ['c#0'] });
-    withChoice(passLeft, buildPassLeftChoice(passLeft, ['0', '1']));
-    assert.equal(choosePlayingSeatChoiceOption(passLeft, '0'), 0);
+  it('passes a Wound left for Random Acts, else the cheapest card (D-24745)', () => {
+    const cardStats = { 'hero-expensive#0': { cost: 7 }, 'starting-agent#0': { cost: 0 } };
+    const G = makeState({
+      '0': ['hero-expensive#0', 'starting-agent#0'],
+      '1': ['hero-expensive#1', WOUND_EXT_ID],
+    }, { cardStats });
+    withChoice(G, buildPassLeftChoice(G, ['0', '1']));
+    assert.equal(readAbsentSeatDefault(G), 0, 'the absent-seat default passes the first hand card');
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1, 'the 0-cost starter, not the 7-cost Hero');
+    assert.equal(choosePlayingSeatChoiceOption(G, '1'), 1, 'the Wound');
+
+    const tied = makeState({ '0': ['a#0', 'b#0'], '1': ['c#0'] });
+    withChoice(tied, buildPassLeftChoice(tied, ['0', '1']));
+    assert.equal(choosePlayingSeatChoiceOption(tied, '0'), 0, 'equal cost keeps the earliest card');
+  });
+
+  it('Here, Hold This: the cheapest Villain the seat can fight now (D-24745)', () => {
+    const G = makeCityState(3, ['villain-a#0', null, 'villain-b#0', 'villain-c#0', null], {
+      'villain-a#0': 5, 'villain-b#0': 3, 'villain-c#0': 2,
+    });
+    withChoice(G, buildHereHoldThisChoice(G, '0', buildHereHoldThisTargets(G)));
+    assert.equal(readAbsentSeatDefault(G), 0, 'the absent-seat default picks Villain A, which costs 5 and the seat has 3');
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 2, 'Villain C: affordable and cheapest');
+
+    const guarded = makeCityState(3, ['villain-a#0', 'villain-guard#0', null, null, null], {
+      'villain-a#0': 1, 'villain-guard#0': 3,
+    }, { 'villain-guard#0': ['guard'] });
+    withChoice(guarded, buildHereHoldThisChoice(guarded, '0', buildHereHoldThisTargets(guarded)));
+    assert.equal(choosePlayingSeatChoiceOption(guarded, '0'), 1,
+      'the Guard, because getLegalMoves offers no fight against the cheaper Villain it blocks');
+  });
+
+  it('Here, Hold This: the escape-edge Villain first when the seat can fight it (D-24745)', () => {
+    const G = makeCityState(5, ['villain-a#0', 'villain-b#0', null, null, 'villain-d#0'], {
+      'villain-a#0': 2, 'villain-b#0': 3, 'villain-d#0': 4,
+    });
+    withChoice(G, buildHereHoldThisChoice(G, '0', buildHereHoldThisTargets(G)));
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 2, 'Villain D on the escape edge, which the competent policy fights first');
+  });
+
+  it('Here, Hold This: nothing affordable picks the cheapest Villain that does not escape next (D-24745)', () => {
+    const fullCity = makeCityState(0, ['villain-a#0', 'villain-b#0', 'villain-c#0', 'villain-d#0', 'villain-e#0'], {
+      'villain-a#0': 6, 'villain-b#0': 6, 'villain-c#0': 3, 'villain-d#0': 7, 'villain-e#0': 1,
+    });
+    withChoice(fullCity, buildHereHoldThisChoice(fullCity, '0', buildHereHoldThisTargets(fullCity)));
+    assert.equal(choosePlayingSeatChoiceOption(fullCity, '0'), 2,
+      'Villain C; Villain E is cheaper but escapes on the next reveal, so every player would discard');
+
+    const openCity = makeCityState(0, ['villain-a#0', null, 'villain-c#0', null, 'villain-e#0'], {
+      'villain-a#0': 6, 'villain-c#0': 3, 'villain-e#0': 1,
+    });
+    withChoice(openCity, buildHereHoldThisChoice(openCity, '0', buildHereHoldThisTargets(openCity)));
+    assert.equal(choosePlayingSeatChoiceOption(openCity, '0'), 2,
+      'with an empty space the edge Villain does not escape next, so the cheapest, Villain E');
   });
 
   it('returns null when no choice is open, or the seat is not addressed or already answered', () => {
@@ -139,6 +197,39 @@ describe('choosePlayingSeatChoiceOption (D-24744)', () => {
     assert.equal(choosePlayingSeatChoiceOption(G, '1'), null);
   });
 });
+
+/**
+ * A one-seat main-stage state with a City and an attack pool, carrying the fields
+ * getLegalMoves reads to enumerate fightVillain.
+ *
+ * @param attack - The seat's available attack.
+ * @param city - The five City spaces.
+ * @param fightCosts - Static fight cost per City Villain.
+ * @param cardKeywords - Board keywords per card (Guard, Patrol).
+ * @returns A partial LegendaryGameState.
+ */
+function makeCityState(
+  attack: number,
+  city: (string | null)[],
+  fightCosts: Record<string, number>,
+  cardKeywords: Record<string, string[]> = {},
+): LegendaryGameState {
+  const cardStats: Record<string, unknown> = {};
+  for (const [villainCardId, fightCost] of Object.entries(fightCosts)) {
+    cardStats[villainCardId] = makeCardStatEntry({ fightCost, fightCostBase: fightCost });
+  }
+  return makeState({ '0': [] }, {
+    currentStage: 'main',
+    villainRevealedThisTurn: true,
+    turnEconomy: makeTurnEconomy({ attack }),
+    cardStats,
+    cardKeywords,
+    hq: [null, null, null, null, null],
+    city,
+    piles: { bystanders: ['bystander#0'] },
+    mastermind: { baseCardId: 'core-mastermind-loki', tacticsDeck: [], tacticsDefeated: [] },
+  });
+}
 
 /**
  * Reads the open choice's absent-seat default.

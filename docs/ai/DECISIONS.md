@@ -48921,3 +48921,27 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24745 — The bot ally answers Here, Hold This and Random Acts' pass-left like a playing seat; autoplay, sim and PAR stay on the default (Active 2026-10-19 — direct fix, no WP)
+
+**Status:** Active — landed 2026-10-19 (direct engine-policy fix, no WP, the D-24744 precedent). Closes D-24744's follow-ups (a) and (b).
+
+**Context.** D-24744 gave the bot ally a playing-seat answer for each seat choice but left two kinds on `defaultOptionIndex`, the absent-seat answer, because their best answer is a strategy call: `here-hold-this` (Deadpool's "A Villain of your choice captures a Bystander"; default = the first occupied City space) and `random-acts-pass-left` (Random Acts of Unkindness, "each player passes a card from their hand to the player on their left"; default = the first hand card). It also left open whether all-bot autoplay should use the policy.
+
+**Decision.**
+1. **Here, Hold This: the Villain the seat will fight.** Rescuing the Bystander back is +1 VP (rules v23 "rescue"), and rules v23 "A Villain Might Escape" step 2 makes **every player discard a card** when a Villain escapes with a Bystander. So `choosePlayingSeatChoiceOption` picks, in order:
+   - a Villain the seat can fight **now** (the `fightVillain` set `getLegalMoves` returns for the seat with the open choice set aside, so Guard, defeat requirements, resolved and Patrol cost and restricted attack all come from the single mirror of the move guard): the **escape-edge** Villain first, because the competent policy (`ai.competent.ts`) fights it first (+800), so the Bystander rides a fight the bot was making anyway; otherwise the **cheapest** to fight, which leaves the most attack for other fights;
+   - with nothing affordable, the **cheapest** Villain that does **not** escape on the next reveal (the edge Villain of a full City), so a teammate is likeliest to fight it first. Ties keep the lowest City index, the farthest from escape.
+   The brief's "otherwise the one closest to escaping" was rejected: with nothing affordable that Villain is the one most likely to escape with the Bystander and cost the whole table a discard.
+2. **Random Acts pass-left: a Wound, else the cheapest card** (the same `indexOfLeastValuableCard` Monarch's Decree uses). The Wound is the card's point: its step 1 gains one to the hand so it can be passed. A Wound is dead in any hand, so passing it costs the team nothing, and scoring has no per-player Wound term (`docs/12-SCORING-REFERENCE.md`). The default passes the first hand card, which may be the seat's best.
+3. **Autoplay, the simulation runner and PAR stay on `defaultOptionIndex` (recorded no).** Today all three resolve every seat choice the same way (D-24590 is "same policy as WP-749" / D-24573), which keeps an all-bot autoplay match comparable to its PAR baseline. Switching autoplay alone breaks that parity. Switching the sim moves every PAR profile whose content opens a seat choice (Loki, Dr. Doom, Black Widow's Diving Block, Deadpool) and the published seed PARs and challenges scored against them, plus sentinel replay hashes. That is a worthwhile change, but it belongs to one deliberate PAR re-pin with its own decision, not to a bot-ally fix. Revisit at the next planned PAR re-pin.
+4. Unchanged: every `defaultOptionIndex`, the timeout path, `getLegalMoves`, the D-24744 answers for the other kinds.
+
+**Gates.** `packages/game-engine/src/simulation/ai.seatChoice.test.ts` 7 → 11 tests: pass-left (Wound, cheapest, ties keep the earliest); Here, Hold This cheapest fightable, and a Guard-blocked cheaper Villain skipped; the fightable escape-edge Villain over a cheaper one; nothing affordable with a full City skips the cheaper edge Villain, and with an open space does not. Mutation-checked: neutering the Here, Hold This branch fails 3, the edge preference, the next-reveal-escape test and the pass-left branch fail 1 each. `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5396 pass; server 1625 pass, the rest DB-gated skips); no generated artifact rewritten. No `G`, move, `getLegalMoves` or default change, so no PAR, hash or replay pin moves.
+
+**Live-verify.** A 2p bot-ally match with Deadpool in the bot's Hero deck. When the bot plays "Here, Hold This for a Second" with two or more City Villains, the log's "<Villain> captured a Bystander" names the Villain the bot then fights that turn (or, with too little attack, not the edge Villain of a full City). When anyone plays Random Acts of Unkindness, the bot's "Player 1 passed …" line names a Wound when it holds one.
+
+**Reserved by:** NUMBER-LEDGER D-24745 (#2902). Related: D-24744 (the policy, follow-ups closed), D-24500 (Deadpool seat choices), D-24501 (seat-choice model), D-24590 / D-24573 (autoplay and sim keep the default), WP-049 (competent heuristic policy).
+
+---
+Protect this file.
