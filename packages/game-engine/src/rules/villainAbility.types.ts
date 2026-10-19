@@ -154,6 +154,22 @@ export interface VillainEffectResult {
    * (D-24693), so the log can say "from their hand". Omitted for non-KO effects.
    */
   targetZones?: VillainKoZone[];
+  /**
+   * For a gain-wound effect only, and only when at least one of its Wounds is waiting
+   * on a Diving Block reveal (D-24673): who gained a Wound outright and who only would
+   * gain one, so the log does not call a preventable Wound gained. Omitted otherwise,
+   * so every other line is byte-identical.
+   */
+  woundOutcomes?: VillainWoundOutcomes;
+}
+
+/**
+ * Which players a gain-wound effect wounded outright and which are waiting on a Diving
+ * Block reveal (D-24673). Both lists are in the effect's iteration order.
+ */
+export interface VillainWoundOutcomes {
+  gainedPlayerIds: string[];
+  divingBlockPendingPlayerIds: string[];
 }
 
 /** A player zone a Hero can be KO'd from (D-24693). */

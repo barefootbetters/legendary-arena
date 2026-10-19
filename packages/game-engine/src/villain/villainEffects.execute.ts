@@ -31,6 +31,7 @@ import type {
   VillainEffectPrimitive,
   VillainEffectPlayerTargets,
   VillainKoZone,
+  VillainWoundOutcomes,
 } from '../rules/villainAbility.types.js';
 import {
   getVillainHooksForCard,
@@ -40,12 +41,12 @@ import {
 import type { CitySpaceName } from '../board/citySpaceNames.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { ResolvedEffectResult, ResolvedPlayerTargetNames } from '../events/notableEvents.compose.js';
-import { composeStrikeBlockedNarrative } from '../events/notableEvents.compose.js';
+import { composeStrikeBlockedNarrative, composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
 import type { StrikeBlockThreatKind } from '../events/notableEvents.types.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { gainWoundWithOutcome } from '../board/wounds.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import {
   attachBystanderToVillain,
@@ -216,6 +217,10 @@ export function executeVillainAbilities(
           if (application.targetZones !== undefined && application.targetZones.length > 0) {
             result.targetZones = application.targetZones;
           }
+          // why: D-24673 — present only when a Diving Block reveal is pending.
+          if (application.woundOutcomes !== undefined) {
+            result.woundOutcomes = application.woundOutcomes;
+          }
           results.push(result);
         }
       } else {
@@ -306,6 +311,9 @@ export function resolveEffectResultNames(
         playerTargetNames.push(resolvedShare);
       }
       resolvedResult.playerTargetNames = playerTargetNames;
+    }
+    if (result.woundOutcomes !== undefined) {
+      resolvedResult.woundOutcomes = result.woundOutcomes;
     }
     resolved.push(resolvedResult);
   }
@@ -768,6 +776,9 @@ interface VillainEffectApplication {
   // why: D-24693 — a KO handler reports the zone each target left (index-aligned with
   // `targets`) so the log can name it; every other handler omits it.
   targetZones?: VillainKoZone[];
+  // why: D-24673 — a gain-wound handler reports who is waiting on a Diving Block reveal,
+  // only when someone is; every other handler omits it.
+  woundOutcomes?: VillainWoundOutcomes;
 }
 
 /**
@@ -819,12 +830,15 @@ function villainEffectGainWound(
   if (descriptor.target === 'each-other') {
     const repetitions = descriptor.magnitude ?? 1;
     const woundedPlayerIds: string[] = [];
+    const gainedPlayerIds: string[] = [];
+    const divingBlockPendingPlayerIds: string[] = [];
     for (const playerId of Object.keys(G.playerZones).sort()) {
       // why: "each OTHER player" — the current player is never wounded by this effect.
       if (playerId === currentPlayer) continue;
       const zones = G.playerZones[playerId];
       if (!zones) continue;
       let woundedThisPlayer = false;
+      let isDivingBlockPending = false;
       for (let iteration = 0; iteration < repetitions; iteration++) {
         // why: supply-bounded — stop once the shared Wound pile is empty (a
         // reachable no-op, never a hollow record).
@@ -832,11 +846,18 @@ function villainEffectGainWound(
         // why: WP-682 / D-24499 — route through the gainWoundForPlayer chokepoint so a
         // wounded player holding Diving Block gets the reveal window (Master Strike /
         // scheme wounds reach NON-active seats via the WP-684 seat-choice wave).
-        gainWoundForPlayer(G, playerId);
+        if (gainWoundWithOutcome(G, playerId) === 'diving-block-pending') {
+          isDivingBlockPending = true;
+        }
         woundedThisPlayer = true;
       }
       if (woundedThisPlayer) {
         woundedPlayerIds.push(playerId);
+        if (isDivingBlockPending) {
+          divingBlockPendingPlayerIds.push(playerId);
+        } else {
+          gainedPlayerIds.push(playerId);
+        }
       }
     }
     // why: self-narrate (keyword-less). `G.messages` is hash-excluded (D-24081).
@@ -844,7 +865,10 @@ function villainEffectGainWound(
     // player could be wounded (solo, or empty supply) → `blocked`. woundsDrawn is
     // NOT bumped — the current player is never wounded by each-other.
     const label = villainEffectTimingLabel(timing);
-    if (woundedPlayerIds.length > 0) {
+    if (divingBlockPendingPlayerIds.length > 0) {
+      // why: D-24673 — a Diving Block reveal is pending, so that Wound is not gained yet.
+      pushLog(G, `${label} effect: each other player gains a Wound: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}.`, 'applied');
+    } else if (woundedPlayerIds.length > 0) {
       const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
       pushLog(G, `${label} effect: each other player gained a Wound (${names}).`, 'applied');
     } else {
@@ -855,6 +879,8 @@ function villainEffectGainWound(
   // why: WP-316 — wounds narrate via the generic keyword label, not a card
   // name; targets stays [] for both branches.
   if (descriptor.target === 'each') {
+    const gainedPlayerIds: string[] = [];
+    const divingBlockPendingPlayerIds: string[] = [];
     // why: every player gains 1 wound (subject to wound-pile availability),
     // mirroring the existing escape-wound no-op-on-empty semantics.
     for (const playerId of Object.keys(G.playerZones)) {
@@ -863,12 +889,22 @@ function villainEffectGainWound(
       if (G.piles.wounds.length === 0) continue;
       // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so Diving Block sees
       // every "each player gains a Wound" source (non-active seats via WP-684).
-      gainWoundForPlayer(G, playerId);
+      const woundOutcome = gainWoundWithOutcome(G, playerId);
+      if (woundOutcome === 'diving-block-pending') {
+        divingBlockPendingPlayerIds.push(playerId);
+      } else if (woundOutcome === 'gained') {
+        gainedPlayerIds.push(playerId);
+      }
       if (playerId === currentPlayer) {
         // why: woundsDrawn projects the current player's wounds only (UI
         // economy), matching escape-wound and the deleted Ambush loop.
         G.turnEconomy.woundsDrawn += 1;
       }
+    }
+    // why: D-24673 — report the split only when a Diving Block reveal is pending, so
+    // the keyword-labelled line and narrative are byte-identical otherwise.
+    if (divingBlockPendingPlayerIds.length > 0) {
+      return { targets: [], woundOutcomes: { gainedPlayerIds, divingBlockPendingPlayerIds } };
     }
     return { targets: [] };
   }
@@ -881,8 +917,12 @@ function villainEffectGainWound(
   if (G.piles.wounds.length === 0) return { targets: [] };
   // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint (the current player may
   // hold Diving Block for a villain self-wound too).
-  gainWoundForPlayer(G, currentPlayer);
+  const woundOutcome = gainWoundWithOutcome(G, currentPlayer);
   G.turnEconomy.woundsDrawn += 1;
+  // why: D-24673 — present only when a Diving Block reveal is pending.
+  if (woundOutcome === 'diving-block-pending') {
+    return { targets: [], woundOutcomes: { gainedPlayerIds: [], divingBlockPendingPlayerIds: [currentPlayer] } };
+  }
   return { targets: [] };
 }
 
@@ -1885,6 +1925,8 @@ function villainEffectRevealOrWound(
   // why: sorted player-id iteration for replay determinism (D-18902), matching
   // the each-player gain-wound / ko-hero paths.
   const woundedPlayerIds: string[] = [];
+  const gainedPlayerIds: string[] = [];
+  const divingBlockPendingPlayerIds: string[] = [];
   const emptySupplyPlayerIds: string[] = [];
   for (const playerId of Object.keys(G.playerZones).sort()) {
     const zones = G.playerZones[playerId];
@@ -1926,7 +1968,11 @@ function villainEffectRevealOrWound(
     }
     // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a Master-Strike Wound
     // to a Diving-Block holder (often a NON-active seat) gets the reveal window (WP-684).
-    gainWoundForPlayer(G, playerId);
+    if (gainWoundWithOutcome(G, playerId) === 'diving-block-pending') {
+      divingBlockPendingPlayerIds.push(playerId);
+    } else {
+      gainedPlayerIds.push(playerId);
+    }
     if (playerId === currentPlayer) {
       // why: woundsDrawn projects the CURRENT player's wounds only (UI economy) —
       // bump it only for the current player, parity with gain-wound:each and the
@@ -1947,7 +1993,15 @@ function villainEffectRevealOrWound(
   // from the log alone what the player needed (match BvcATHgYM5k, Ymir's Ambush).
   const requirement = describeRevealRequirement(requireKind, requireValue);
   const emptySupplyClause = composeEmptyWoundSupplyClause(emptySupplyPlayerIds);
-  if (woundedPlayerIds.length > 0) {
+  if (divingBlockPendingPlayerIds.length > 0) {
+    // why: D-24673 — a Diving Block reveal is pending, so that Wound is not gained yet;
+    // the reveal / decline line that follows gives the outcome.
+    pushLog(
+      G,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no ${requirement} Hero: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}${emptySupplyClause}.`,
+      'applied',
+    );
+  } else if (woundedPlayerIds.length > 0) {
     const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
     pushLog(
       G,
@@ -3530,6 +3584,8 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
   // why: sorted player-id iteration for replay determinism (D-18902), matching
   // reveal-or-wound / gain-wound:each.
   const woundedPlayerIds: string[] = [];
+  const gainedPlayerIds: string[] = [];
+  const divingBlockPendingPlayerIds: string[] = [];
   const emptySupplyPlayerIds: string[] = [];
   for (const playerId of Object.keys(G.playerZones).sort()) {
     const zones = G.playerZones[playerId];
@@ -3549,7 +3605,11 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
     }
     // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so Diving Block sees this
     // group-villain Wound source (NON-active recipients via the WP-684 wave).
-    gainWoundForPlayer(G, playerId);
+    if (gainWoundWithOutcome(G, playerId) === 'diving-block-pending') {
+      divingBlockPendingPlayerIds.push(playerId);
+    } else {
+      gainedPlayerIds.push(playerId);
+    }
     if (playerId === currentPlayer) {
       // why: woundsDrawn projects the CURRENT player's wounds only (UI economy) —
       // parity with reveal-or-wound / gain-wound:each; a non-current wounded player
@@ -3564,7 +3624,14 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
   // a wound landed → `applied`; every player was safe → `blocked`.
   const label = villainEffectTimingLabel(timing);
   const emptySupplyClause = composeEmptyWoundSupplyClause(emptySupplyPlayerIds);
-  if (woundedPlayerIds.length > 0) {
+  if (divingBlockPendingPlayerIds.length > 0) {
+    // why: D-24673 — a Diving Block reveal is pending, so that Wound is not gained yet.
+    pushLog(
+      G,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no other ${group} Villain in their Victory Pile: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}${emptySupplyClause}.`,
+      'applied',
+    );
+  } else if (woundedPlayerIds.length > 0) {
     const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
     pushLog(
       G,

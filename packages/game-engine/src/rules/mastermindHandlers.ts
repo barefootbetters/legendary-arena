@@ -27,7 +27,8 @@ import { moveCardFromZone } from '../moves/zoneOps.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import type { WoundGainOutcome } from '../board/wounds.logic.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 // why: WP-669 / D-24483 — the Mastermind Transform flip primitive; resolveGeneralRossStrike
 // swaps the boss face on a Master Strike.
@@ -641,15 +642,33 @@ function discardCardFromHand(
  * to a Diving-Block holder (which is frequently a NON-active seat, since Master
  * Strikes wound every player) gets the reveal window via the WP-684 seat-choice wave.
  *
+ * // why: D-24673 — returns the outcome, not a boolean, so the strike's log line can
+ * say "would gain a Wound — Diving Block can prevent it" while a reveal is pending
+ * (match P9oVujYd2B9: Loki's strike logged "gained a Wound" for a prevented Wound).
+ *
  * @param gameState - The game state to mutate.
  * @param playerId - The player who gains the Wound (may be a non-active seat).
- * @returns True when a Wound was actually taken; false when the supply is empty.
+ * @returns 'no-wound' when the supply is empty, else 'gained' or 'diving-block-pending'.
  */
 function gainWoundToDiscard(
   gameState: LegendaryGameState,
   playerId: string,
-): boolean {
-  return gainWoundForPlayer(gameState, playerId) !== undefined;
+): WoundGainOutcome {
+  return gainWoundWithOutcome(gameState, playerId);
+}
+
+/**
+ * The "gained a Wound" tail of a Master Strike line, honest about a pending Diving
+ * Block reveal (D-24673).
+ *
+ * @param outcome - The outcome of the Wound just dealt ('gained' or 'diving-block-pending').
+ * @returns "gained a Wound" or "would gain a Wound — Diving Block can prevent it".
+ */
+function describeStrikeWound(outcome: WoundGainOutcome): string {
+  if (outcome === 'diving-block-pending') {
+    return 'would gain a Wound — Diving Block can prevent it';
+  }
+  return 'gained a Wound';
 }
 
 /**
@@ -755,10 +774,10 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
     // cannot cover N takes the Wound — the same branch a tabletop player is
     // forced into. Deterministic auto-pick per D-24192; no prompt.
     if (playerZones.hand.length < omenCount) {
-      const tookWound = gainWoundToDiscard(gameState, playerId);
+      const woundOutcome = gainWoundToDiscard(gameState, playerId);
       pushLog(gameState,
-        tookWound
-          ? `[Doctor Doom Master Strike] Player ${playerId} could not discard ${omenCount} card(s) (${omenCount} Omen(s)) and gained a Wound.`
+        woundOutcome !== 'no-wound'
+          ? `[Doctor Doom Master Strike] Player ${playerId} could not discard ${omenCount} card(s) (${omenCount} Omen(s)) and ${describeStrikeWound(woundOutcome)}.`
           : `[Doctor Doom Master Strike] Player ${playerId} could not discard ${omenCount} card(s) and the Wound supply is empty — no effect.`,
       );
       continue;
@@ -840,10 +859,10 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
       continue;
     }
 
-    const tookWound = gainWoundToDiscard(gameState, playerId);
+    const woundOutcome = gainWoundToDiscard(gameState, playerId);
     pushLog(gameState,
-      tookWound
-        ? `[Loki Master Strike] Player ${playerId} has no Strength Hero in hand and gained a Wound.`
+      woundOutcome !== 'no-wound'
+        ? `[Loki Master Strike] Player ${playerId} has no Strength Hero in hand and ${describeStrikeWound(woundOutcome)}.`
         : `[Loki Master Strike] Player ${playerId} has no Strength Hero in hand and the Wound supply is empty — no effect.`,
     );
   }
@@ -955,10 +974,10 @@ function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
     // why: this branch is fully faithful — a player holding no X-Men Hero
     // must take the Wound at the table too, so no fidelity is lost.
     if (targetExtId === null) {
-      const tookWound = gainWoundToDiscard(gameState, playerId);
+      const woundOutcome = gainWoundToDiscard(gameState, playerId);
       pushLog(gameState,
-        tookWound
-          ? `[Magneto Master Strike] Player ${playerId} has no X-Men Hero in hand and gained a Wound.`
+        woundOutcome !== 'no-wound'
+          ? `[Magneto Master Strike] Player ${playerId} has no X-Men Hero in hand and ${describeStrikeWound(woundOutcome)}.`
           : `[Magneto Master Strike] Player ${playerId} has no X-Men Hero in hand and the Wound supply is empty — no effect.`,
       );
       continue;

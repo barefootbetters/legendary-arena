@@ -1196,6 +1196,52 @@ describe('mastermindStrikeHandler — core Loki Master Strike (WP-537 / D-24346)
     assert.deepEqual(gameState.playerZones['1']!.discard, ['wound-1']);
     assert.equal(gameState.piles.wounds.length, 1);
   });
+
+  // why: D-24673 — match P9oVujYd2B9 logged "has no Strength Hero in hand and gained a
+  // Wound" at 1.2.16, then "revealed Diving Block: prevented the Wound" at 1.2.19; the
+  // player ended with 0 Wounds. While the reveal is pending the line says "would gain".
+  it('D-24673: with Diving Block revealable, the line says "would gain", not "gained"', () => {
+    const divingBlockId = 'core/captain-america/diving-block#0';
+    const gameState = makeCo2eState(
+      'core/loki',
+      { '0': ['te-a', divingBlockId] },
+      { 'te-a': co2eStat(1) },
+      { 'te-a': TECH },
+    );
+    gameState.heroAbilityHooks = [
+      { cardId: divingBlockId, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    gameState.piles.wounds = ['wound-1', 'wound-2'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    const texts = gameState.messages.map((message) => message.text);
+    assert.ok(
+      texts.includes('[Loki Master Strike] Player 0 has no Strength Hero in hand and would gain a Wound — Diving Block can prevent it.'),
+      `expected the "would gain" line, got: ${JSON.stringify(texts)}`,
+    );
+    assert.ok(!texts.some((text) => text.includes('gained a Wound')), 'no premature "gained" line');
+    assert.equal(gameState.pendingDivingBlockWounds?.length, 1, 'the Wound awaits its reveal');
+  });
+
+  it('D-24673: without Diving Block the Loki line still says "gained a Wound"', () => {
+    const gameState = makeCo2eState(
+      'core/loki',
+      { '0': ['te-a'] },
+      { 'te-a': co2eStat(1) },
+      { 'te-a': TECH },
+    );
+    gameState.piles.wounds = ['wound-1', 'wound-2'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    const texts = gameState.messages.map((message) => message.text);
+    assert.ok(
+      texts.includes('[Loki Master Strike] Player 0 has no Strength Hero in hand and gained a Wound.'),
+      `got: ${JSON.stringify(texts)}`,
+    );
+    assert.equal(gameState.pendingDivingBlockWounds, undefined, 'nothing to reveal, nothing parked');
+  });
 });
 
 describe('mastermindStrikeHandler — core Dr. Doom Master Strike (WP-538 / D-24347)', () => {
