@@ -14,11 +14,12 @@
  *   - monarchs-decree-mode: "each other player draws" — the co-op answer.
  *   - escape-hq-ko: the cheapest eligible Hero (the builder orders by cost).
  *   - return-on-discard: return the card to hand.
- *   - here-hold-this: which City Villain captures a Bystander (follow-up).
- *   - random-acts-pass-left: the card stays on the team in co-op (follow-up).
+ *
+ * here-hold-this and random-acts-pass-left answers were added by D-24745.
  *
  * The absent-seat default and getLegalMoves are untouched, so autoplay, the
- * simulation runner and PAR keep their D-24590 / D-24573 behaviour.
+ * simulation runner and PAR keep their D-24590 / D-24573 behaviour (D-24745
+ * records why they stay on it).
  *
  * Pure: reads G, never mutates it, never throws, no RNG. No boardgame.io
  * imports. No registry imports. No .reduce().
@@ -30,7 +31,9 @@ import {
   DIVING_BLOCK_SEAT_CHOICE_KIND,
 } from '../moves/divingBlock.logic.js';
 import {
+  HERE_HOLD_THIS_KIND,
   RANDOM_ACTS_DIVING_BLOCK_OPTION_INDEX,
+  RANDOM_ACTS_PASS_LEFT_KIND,
   RANDOM_ACTS_WOUND_KIND,
 } from '../moves/seatChoiceCards.js';
 import {
@@ -41,6 +44,9 @@ import { ESCAPE_BYSTANDER_DISCARD_KIND } from '../villainDeck/villainEscapeProce
 import { hasSeatSubmitted, isSeatAddressed } from '../moves/seatChoice.resolve.js';
 import { victoryPointValueForCard } from '../economy/bloodFrenzy.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { resolveFightCost } from '../economy/economy.resolve.js';
+import { getPatrolModifier } from '../board/boardKeywords.logic.js';
+import { getLegalMoves } from './ai.legalMoves.js';
 
 /**
  * Returns the option index a PLAYING seat submits for the open seat choice, or
@@ -106,7 +112,153 @@ function chooseByKind(
   if (choice.kind === VANISHING_ILLUSIONS_KO_KIND) {
     return indexOfLowestVictoryPointCard(G, seat, options);
   }
+  if (choice.kind === HERE_HOLD_THIS_KIND) {
+    return indexOfHereHoldThisTarget(G, seat, options);
+  }
+  if (choice.kind === RANDOM_ACTS_PASS_LEFT_KIND) {
+    // why: D-24745 — passing a Wound is the card's point (step 1 gains one to the hand
+    // so it can be passed). A Wound is dead in any hand, so passing it costs the team
+    // nothing; otherwise the cheapest card leaves, where the default passes the FIRST
+    // hand card, which may be the best one.
+    return indexOfLeastValuableCard(G, options);
+  }
   return null;
+}
+
+/**
+ * Picks the City Villain that captures Here, Hold This's Bystander: the one the
+ * seat is most likely to fight, so it rescues the Bystander back (+1 VP).
+ *
+ * // why: D-24745 — rules v23 "A Villain Might Escape" step 2: a Villain that escapes
+ * with a Bystander makes EVERY player discard a card. So the pick avoids the Villain
+ * that escapes on the next reveal unless the seat can fight it now.
+ *   1. A Villain the seat can fight now (getLegalMoves' own fightVillain set): the
+ *      escape-edge one first, because the competent policy fights it first (+800)
+ *      and the Bystander rides a fight it was making anyway; else the cheapest,
+ *      which leaves the most attack for other fights.
+ *   2. Nothing affordable: the cheapest Villain that does not escape on the next
+ *      reveal, so a teammate is likeliest to fight it first. Ties keep the earliest
+ *      option, the lowest City index, which is the farthest from escape.
+ *
+ * @param G - The game state (read only).
+ * @param seat - The acting seat (here-hold-this is active-scoped).
+ * @param options - The seat's options; each carries its City space in cityIndex.
+ * @returns The chosen option index, or null when no option names a City space.
+ */
+function indexOfHereHoldThisTarget(
+  G: LegendaryGameState,
+  seat: string,
+  options: readonly SeatChoiceOption[],
+): number | null {
+  const fightableCityIndices = readFightableCityIndices(G, seat);
+  const escapeEdgeIndex = G.city.length - 1;
+  if (fightableCityIndices.has(escapeEdgeIndex)) {
+    for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+      if (options[optionIndex]!.cityIndex === escapeEdgeIndex) {
+        return optionIndex;
+      }
+    }
+  }
+  const cheapestFightable = indexOfCheapestCityTarget(G, seat, options, fightableCityIndices);
+  if (cheapestFightable !== null) {
+    return cheapestFightable;
+  }
+  const safeCityIndices = new Set<number>();
+  for (let cityIndex = 0; cityIndex < G.city.length; cityIndex++) {
+    if (!isNextRevealEscape(G, cityIndex)) {
+      safeCityIndices.add(cityIndex);
+    }
+  }
+  return indexOfCheapestCityTarget(G, seat, options, safeCityIndices);
+}
+
+/**
+ * The City spaces the seat could fight right now, read from getLegalMoves with the
+ * open seat choice set aside.
+ *
+ * // why: getLegalMoves is the single mirror of the fightVillain guard (Guard,
+ * defeat requirements, resolved and Patrol cost, restricted attack). While the seat
+ * choice is open it offers only resolveSeatChoice, so it is asked about the same
+ * state without the choice. The copy is shallow and local; G is never written.
+ *
+ * @param G - The game state (read only).
+ * @param seat - The seat whose fights are enumerated.
+ * @returns The City indices with a legal fightVillain.
+ */
+function readFightableCityIndices(G: LegendaryGameState, seat: string): Set<number> {
+  const stateWithoutSeatChoice = { ...G, pendingSeatChoice: undefined } as LegendaryGameState;
+  const legalMoves = getLegalMoves(stateWithoutSeatChoice, {
+    phase: 'play',
+    turn: 0,
+    currentPlayer: seat,
+    numPlayers: Object.keys(G.playerZones).length,
+  });
+  const fightableCityIndices = new Set<number>();
+  for (const legalMove of legalMoves) {
+    const cityIndex = (legalMove.args as { cityIndex?: number } | undefined)?.cityIndex;
+    if (legalMove.name === 'fightVillain' && cityIndex !== undefined) {
+      fightableCityIndices.add(cityIndex);
+    }
+  }
+  return fightableCityIndices;
+}
+
+/**
+ * Picks the option whose City Villain costs the least to fight, among the allowed
+ * City spaces. Ties keep the earliest option.
+ *
+ * @param G - The game state (read for fight costs).
+ * @param seat - The seat whose fight cost is resolved (Blood Frenzy reads the fighter).
+ * @param options - The seat's options; each carries its City space in cityIndex.
+ * @param allowedCityIndices - The City spaces that may be picked.
+ * @returns The option index of the cheapest allowed Villain, or null when none is allowed.
+ */
+function indexOfCheapestCityTarget(
+  G: LegendaryGameState,
+  seat: string,
+  options: readonly SeatChoiceOption[],
+  allowedCityIndices: ReadonlySet<number>,
+): number | null {
+  let bestIndex: number | null = null;
+  let bestCost = Number.POSITIVE_INFINITY;
+  for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+    const cityIndex = options[optionIndex]!.cityIndex;
+    if (cityIndex === undefined || !allowedCityIndices.has(cityIndex)) {
+      continue;
+    }
+    const villainCardId = G.city[cityIndex];
+    if (villainCardId === null || villainCardId === undefined) {
+      continue;
+    }
+    const fightCost =
+      resolveFightCost(G, villainCardId, seat) + getPatrolModifier(villainCardId, G.cardKeywords ?? {});
+    if (fightCost < bestCost) {
+      bestCost = fightCost;
+      bestIndex = optionIndex;
+    }
+  }
+  return bestIndex;
+}
+
+/**
+ * Whether the Villain at a City space escapes on the next Villain-Deck reveal: it
+ * sits on the escape edge and every space is occupied, so the entering Villain's
+ * push reaches it (rules v23 "Push Other Villains Forward if Necessary").
+ *
+ * @param G - The game state (read for the City).
+ * @param cityIndex - The City space to test.
+ * @returns True when that space's Villain escapes on the next reveal.
+ */
+function isNextRevealEscape(G: LegendaryGameState, cityIndex: number): boolean {
+  if (cityIndex !== G.city.length - 1) {
+    return false;
+  }
+  for (const occupant of G.city) {
+    if (occupant === null || occupant === undefined) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
