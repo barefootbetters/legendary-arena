@@ -140,10 +140,12 @@ matches it:
 | `www`, `bb-studio-www`, `bb-studio-ewiki-theme` | checks, rebuilds | 51 | 59 |
 | **Total (Oct 1–19)** | | **1,463** | **1,815** |
 
-Minutes are wall-clock per run, rounded up to a whole minute. At about 95
-minutes a day the month ends near 3,050 minutes, about 1,050 over the
-allowance. The standard Linux 2-core runner has cost $0.006 a minute since
-2026-01-01 (it was $0.008), so October's overage comes to about **$6–7**. That
+Minutes are wall-clock per run, rounded up to a whole minute. At about 95.5
+minutes a day across October's 31 days, the month ends near 2,961 minutes,
+about 961 over the allowance. The standard Linux 2-core runner has cost $0.006
+a minute since 2026-01-01 (it was $0.008), so October's overage comes to about
+**$5.77**. The dashboard's Monetization page shows the same projection
+(`apps/dashboard/src/config/githubActionsUsage.ts`). That
 cost belongs to the studio and Herbs vs. Ailments, not to Legendary Arena's
 infrastructure line.
 
@@ -454,7 +456,7 @@ doing. Co-location removed that hop, so the probe is moot.
   droplet, and the Render web service was suspended for the 7-day rollback
   window (see [Cutover](ubuntu-lab-provisioning.md#cutover-2026-10-12)).
 - **2026-10-19** — GitHub warned that the `barefootbetters` account had used 90%
-  of its Actions minutes. The run history put the overage at about $6–7 for
+  of its Actions minutes. The run history put the overage at about $5.77 for
   October, all from studio repos. Legendary Arena's own Actions cost is $0
   (see [GitHub Actions minutes](#github-actions-minutes-october-2026)).
 
