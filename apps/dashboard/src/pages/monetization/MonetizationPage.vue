@@ -7,6 +7,7 @@ import { formatCurrency } from '../../utils/format.js';
 import RevenueChartWidget from '../../widgets/RevenueChartWidget.vue';
 import NetRevenueChartWidget from '../../widgets/NetRevenueChartWidget.vue';
 import PaidActionErrorsWidget from '../../widgets/PaidActionErrorsWidget.vue';
+import GitHubActionsCostWidget from '../../widgets/GitHubActionsCostWidget.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
@@ -36,6 +37,7 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
     <div class="widget-grid">
       <NetRevenueChartWidget />
       <PaidActionErrorsWidget />
+      <GitHubActionsCostWidget />
     </div>
 
     <div v-if="loading && !data" class="page-loading">
