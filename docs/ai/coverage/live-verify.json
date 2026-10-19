@@ -85,10 +85,10 @@
       "card": "Captain America",
       "ability": "Diving Block, Wound wave on the active seat and another seat (D-24743)",
       "wp": "",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "D-24743 (#2884, 2026-10-17): a Wound wave that hits the active seat and another seat now lets the active seat answer too; before the fix the bot ally faulted (4p match Y1w7rCsC8Ek, Loki Master Strike). Pinned by divingBlock.multiSeatWave.test.ts; not yet seen live. To exercise: 2p+, both seats holding Diving Block when a Loki Master Strike lands with no Strength Hero to reveal."
+      "state": "verified",
+      "date": "2026-10-19",
+      "evidence": "2p bot-ally operator match P9oVujYd2B9 (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on): one Diving Block staged in each hand (1.2.13-14), then a Loki Master Strike revealed on Player 0's turn (1.2.15) addressed both seats (1.2.16-17). The active seat's reveal landed, preventing the Wound and drawing a card (1.2.19); the bot seat answered (1.2.20) and the game went on with no fault. Final state: Player 0 0 Wounds, Player 1 1, Wound pile 29.",
+      "note": "D-24743 (#2884): the active seat is admitted to a mixed Diving Block wave. The bot ally declined its own reveal because it submits the engine default for an absent seat (Take the Wound); that is bot policy, not this fix."
     },
     {
       "key": "core/captain-america|recruit-per-count",
@@ -1130,10 +1130,10 @@
       "card": "Loki",
       "ability": "Tactic: Vanishing Illusions, Henchmen count as Villains (D-24742)",
       "wp": "",
-      "state": "pending",
-      "date": "",
-      "evidence": "",
-      "note": "D-24742 (#2883, 2026-10-17): another player whose Victory Pile holds only Henchmen is now addressed and KOs one; before the fix that seat was skipped (Y1w7rCsC8Ek, 6jTAMKHlgq_). Unit-tested; not yet seen live. To exercise: 2p+ Loki, take Vanishing Illusions while the other seat's Victory Pile has Henchmen and no other Villain."
+      "state": "verified",
+      "date": "2026-10-19",
+      "evidence": "2p bot-ally operator match P9oVujYd2B9 (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on): the bot's Victory Pile held only Sentinel (defeated 2.2.8) when Player 0 took Vanishing Illusions (7.2.15); the bot was addressed and KO'd Sentinel (7.2.18). No operator staging was needed. Final state: the bot's Victory Pile is Baron Zemo + a Bystander, with Sentinel gone.",
+      "note": "D-24742 (#2883): a Henchmen-only Victory Pile is addressed. Before the fix that seat was skipped."
     },
     {
       "key": "mastermind:core/loki|whispers-and-lies",
