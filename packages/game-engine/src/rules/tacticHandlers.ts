@@ -41,7 +41,7 @@ import {
   dispatchDefeatWithBystanderTarget,
 } from '../moves/defeatChoice.resolve.js';
 import { formatCardRef } from '../log/logDisplay.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { gainWoundWithOutcome } from '../board/wounds.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
@@ -381,23 +381,35 @@ export function resolveCrushingShockwave(
     // pile would net only one Wound. Detect a per-call no-op by the returned
     // woundsPile length not dropping (mirrors gainWoundToDiscard).
     let woundsTaken = 0;
+    let woundsPendingDivingBlock = 0;
     for (let woundIndex = 0; woundIndex < SHOCKWAVE_WOUND_COUNT; woundIndex++) {
       // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a tactic-Fight Wound
       // reaches a Diving-Block holder (possibly a NON-active seat) via the WP-684 wave.
-      // undefined return = supply empty this iteration → stop early (moves never throw).
-      const gainedWoundId = gainWoundForPlayer(G, playerId);
-      if (gainedWoundId === undefined) {
+      // 'no-wound' = supply empty this iteration → stop early (moves never throw).
+      const woundOutcome = gainWoundWithOutcome(G, playerId);
+      if (woundOutcome === 'no-wound') {
         break;
       }
       woundsTaken += 1;
+      if (woundOutcome === 'diving-block-pending') {
+        woundsPendingDivingBlock += 1;
+      }
     }
 
     // why: supply-shortfall path — fewer Wounds available than the printed two is
     // a logged no-op-shortfall; report the count actually taken so the
     // play-by-play reflects the real supply outcome.
-    pushLog(G,
-      `Fight effect: Player ${playerId} held no X-Men Hero and gained ${String(woundsTaken)} Wound(s) (Crushing Shockwave).`,
-    );
+    // why: D-24673 — while Diving Block reveals are pending, say "would gain"; the
+    // reveal / decline lines that follow give the outcome.
+    if (woundsPendingDivingBlock > 0) {
+      pushLog(G,
+        `Fight effect: Player ${playerId} held no X-Men Hero and would gain ${String(woundsTaken)} Wound(s) — Diving Block can prevent ${woundsPendingDivingBlock === 1 ? 'it' : 'each one'} (Crushing Shockwave).`,
+      );
+    } else {
+      pushLog(G,
+        `Fight effect: Player ${playerId} held no X-Men Hero and gained ${String(woundsTaken)} Wound(s) (Crushing Shockwave).`,
+      );
+    }
   }
 }
 

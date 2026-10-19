@@ -10,7 +10,7 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegendaryGameState } from '../types.js';
-import { checkDivingBlock } from '../moves/divingBlock.logic.js';
+import { checkDivingBlock, countPendingDivingBlockWounds } from '../moves/divingBlock.logic.js';
 
 /** Result of a gainWound operation. */
 export interface GainWoundResult {
@@ -90,4 +90,42 @@ export function gainWoundForPlayer(
   // recipient (may be a non-active seat) via the WP-684 seat-choice wave.
   checkDivingBlock(G, playerID, woundCardId);
   return woundCardId;
+}
+
+/**
+ * What one gainWoundForPlayer call did, for the caller's log line (D-24673).
+ *
+ * - `'no-wound'`: the supply was empty (or the player has no zones); nothing landed.
+ * - `'gained'`: the Wound landed and nothing can undo it.
+ * - `'diving-block-pending'`: the Wound landed but a Diving Block reveal is now
+ *   pending for it, so the player only WOULD gain it until the reveal resolves.
+ */
+export type WoundGainOutcome = 'no-wound' | 'gained' | 'diving-block-pending';
+
+/**
+ * Gains one Wound through the gainWoundForPlayer chokepoint and reports whether
+ * Diving Block can still prevent it.
+ *
+ * // why: D-24673 — the Wound lands first and the Diving Block reveal resolves
+ * later (land-then-offer-undo), so a log line written now must not say "gained"
+ * for a Wound a reveal may return. Callers that log the Wound use this outcome to
+ * say "would gain … Diving Block can prevent it" instead. Match P9oVujYd2B9: Loki's
+ * Master Strike logged "gained a Wound", then Diving Block prevented it.
+ *
+ * @param G - The game state, mutated in place (as gainWoundForPlayer).
+ * @param playerID - The player gaining the Wound (may be a non-active seat).
+ * @returns The outcome of this one Wound.
+ */
+export function gainWoundWithOutcome(
+  G: LegendaryGameState,
+  playerID: string,
+): WoundGainOutcome {
+  const pendingBefore = countPendingDivingBlockWounds(G, playerID);
+  if (gainWoundForPlayer(G, playerID) === undefined) {
+    return 'no-wound';
+  }
+  if (countPendingDivingBlockWounds(G, playerID) > pendingBefore) {
+    return 'diving-block-pending';
+  }
+  return 'gained';
 }

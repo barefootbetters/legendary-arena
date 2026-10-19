@@ -16,7 +16,7 @@
  * No `boardgame.io` import. No `@legendary-arena/registry` import.
  */
 
-import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
+import type { VillainEffectKeyword, VillainWoundOutcomes } from '../rules/villainAbility.types.js';
 import type { SchemeTwistResolverKey, StrikeBlockThreatKind } from './notableEvents.types.js';
 
 // ---------------------------------------------------------------------------
@@ -75,6 +75,46 @@ export interface ResolvedEffectResult {
   pending?: boolean;
   /** An each-player KO's per-player split, names resolved (D-24683). */
   playerTargetNames?: ResolvedPlayerTargetNames[];
+  /** A gain-wound effect's outcomes when a Diving Block reveal is pending (D-24673). */
+  woundOutcomes?: VillainWoundOutcomes;
+}
+
+/**
+ * Names who gained a Wound and who only would gain one because a Diving Block reveal
+ * is pending (D-24673): "Player 0 gained a Wound; Player 1 would gain a Wound — Diving
+ * Block can prevent it". Either half is left out when its list is empty.
+ *
+ * // why: D-24673 — the Wound lands first and the reveal resolves afterwards, so a line
+ * written now must not call a preventable Wound gained (match P9oVujYd2B9). The
+ * reveal ("prevented the Wound") or decline ("took the Wound") line that follows
+ * gives the outcome.
+ *
+ * @param gainedPlayerIds - Players whose Wound nothing can undo.
+ * @param divingBlockPendingPlayerIds - Players with a Diving Block reveal pending.
+ * @returns The joined clause, with no leading label and no trailing period.
+ */
+export function composeWoundOutcomeClause(
+  gainedPlayerIds: readonly string[],
+  divingBlockPendingPlayerIds: readonly string[],
+): string {
+  const clauses: string[] = [];
+  if (gainedPlayerIds.length > 0) {
+    clauses.push(`${formatPlayerList(gainedPlayerIds)} gained a Wound`);
+  }
+  if (divingBlockPendingPlayerIds.length > 0) {
+    clauses.push(`${formatPlayerList(divingBlockPendingPlayerIds)} would gain a Wound — Diving Block can prevent it`);
+  }
+  return clauses.join('; ');
+}
+
+/**
+ * Formats player ids as "Player 0, Player 1".
+ *
+ * @param playerIds - The player ids, in order.
+ * @returns The comma-joined player names.
+ */
+function formatPlayerList(playerIds: readonly string[]): string {
+  return playerIds.map((playerId) => `Player ${playerId}`).join(', ');
 }
 
 /**
@@ -144,6 +184,16 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
       return `${pendingClause}; other players KO’d ${result.targetNames.join(', ')}`;
     }
     return pendingClause;
+  }
+  // why: D-24673 — a gain-wound effect with a Diving Block reveal pending must not say
+  // "gained a wound" for that player; the reveal / decline line that follows gives the
+  // outcome. Present only when a reveal is pending, so every other clause is unchanged.
+  if (result.woundOutcomes !== undefined) {
+    if (result.keyword === 'gainWoundCurrentPlayer') {
+      return 'the active player would gain a wound — Diving Block can prevent it';
+    }
+    const outcomes = result.woundOutcomes;
+    return `every player gains a wound: ${composeWoundOutcomeClause(outcomes.gainedPlayerIds, outcomes.divingBlockPendingPlayerIds)}`;
   }
   const label = labelForEffect(result.keyword);
   // why: D-24683 — "every player KO’d two heroes (S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent)"

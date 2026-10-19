@@ -19,7 +19,7 @@ import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { gainWoundForPlayer, gainWoundWithOutcome } from '../board/wounds.logic.js';
 import { countPendingDivingBlockWounds } from '../moves/divingBlock.logic.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { performVillainReveal, resolveVillainEscape } from '../villainDeck/villainDeck.reveal.js';
@@ -171,11 +171,15 @@ function revealOrPunish(
           } else {
             // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a Scheme-Twist
             // Wound to a Diving-Block holder (a NON-active seat) gets the reveal window (WP-684).
-            gainWoundForPlayer(gameState, playerId);
+            const woundOutcome = gainWoundWithOutcome(gameState, playerId);
+            // why: D-24673 — while a Diving Block reveal is pending, say "would gain".
+            const woundClause = woundOutcome === 'diving-block-pending'
+              ? 'would gain a wound; Diving Block can prevent it'
+              : 'gained a wound';
             // why: WP-643-follow-up — the player had no matching Hero and took the
             // Wound penalty; a bad outcome for the player → `blocked` (red).
             pushLog(gameState,
-              `[Scheme Twist] Player ${playerId} has no matching ${condition.field} "${condition.value}" hero — gained a wound.`,
+              `[Scheme Twist] Player ${playerId} has no matching ${condition.field} "${condition.value}" hero — ${woundClause}.`,
               'blocked',
             );
           }

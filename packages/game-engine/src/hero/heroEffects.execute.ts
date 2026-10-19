@@ -56,7 +56,7 @@ import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { gainWoundWithOutcome } from '../board/wounds.logic.js';
 import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
@@ -101,6 +101,7 @@ import {
   composeHeroRevealTopNarrative,
   composeNoOtherDeckNarrative,
   composeExcessiveViolenceFiredNarrative,
+  composeWoundOutcomeClause,
 } from '../events/notableEvents.compose.js';
 
 // ---------------------------------------------------------------------------
@@ -1805,6 +1806,8 @@ function heroEffectGainWound(
       : [playerID];
 
   let anyWoundGained = false;
+  const gainedPlayerIds: string[] = [];
+  const divingBlockPendingPlayerIds: string[] = [];
   for (const targetPlayerId of targetPlayerIds) {
     const targetZones = G.playerZones[targetPlayerId];
     if (!targetZones) {
@@ -1822,7 +1825,11 @@ function heroEffectGainWound(
     // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a hero self-wound
     // (gain-wound-self / gain-wound-each) is also seen by Diving Block; for
     // gain-wound-each a NON-active recipient reaches the reveal via the WP-684 wave.
-    gainWoundForPlayer(G, targetPlayerId);
+    if (gainWoundWithOutcome(G, targetPlayerId) === 'diving-block-pending') {
+      divingBlockPendingPlayerIds.push(targetPlayerId);
+    } else {
+      gainedPlayerIds.push(targetPlayerId);
+    }
     anyWoundGained = true;
     if (targetPlayerId === playerID) {
       // why: woundsDrawn projects the active player's wounds only (UI economy),
@@ -1833,7 +1840,15 @@ function heroEffectGainWound(
 
   // why: D-24017 — surface the wound gain in the game log so a printed penalty
   // that actually landed is observable, not a silent zone move.
-  if (anyWoundGained) {
+  // why: D-24673 — while a Diving Block reveal is pending the Wound is not gained yet;
+  // the reveal / decline line that follows gives the outcome.
+  if (divingBlockPendingPlayerIds.length > 0) {
+    pushLog(G,
+      effect.type === 'gain-wound-each'
+        ? `Each player gains a Wound (${formatCardRef(G.cardDisplayData, cardId)}): ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}.`
+        : `Player ${playerID} would gain a Wound — Diving Block can prevent it (${formatCardRef(G.cardDisplayData, cardId)}).`,
+    );
+  } else if (anyWoundGained) {
     pushLog(G,
       effect.type === 'gain-wound-each'
         ? `Each player gained a Wound (${formatCardRef(G.cardDisplayData, cardId)}).`

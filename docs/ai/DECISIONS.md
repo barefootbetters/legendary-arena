@@ -46971,6 +46971,14 @@ Against the old source, 4 cases fail.
 
 **Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` all green (game-engine 5019, server 1462, arena-client 2297, dashboard 571, registry-viewer 326, registry 281, legends-board 135, lagn-spec 107, preplan 52, engine-runner 20, vue-sfc-loader 11, replay-producer 4; 0 fail). `sim:coverage --check` OK; `sim:runtime-observed:check` current; `ledger:heroes:check` and `effect-index:check` current.
 
+**Amendment (2026-10-19): every wound source.** §2 left "other wound sources" on "gained". Match `P9oVujYd2B9` (core Loki) logged "[Loki Master Strike] Player 0 has no Strength Hero in hand and gained a Wound." at 1.2.16; Diving Block prevented it at 1.2.19 and Player 0 ended with 0 Wounds. Every log line for a Wound that parks a Diving Block interception now says "would gain … Diving Block can prevent it", and keeps "gained" when nothing can be revealed:
+- new `gainWoundWithOutcome` (`board/wounds.logic.ts`) wraps the chokepoint and returns `'no-wound' | 'gained' | 'diving-block-pending'`;
+- the Loki, Magneto (co2e) and Doctor Doom (co2e) Master Strikes, the conditional Scheme Twist wound, Crushing Shockwave, the hero `gain-wound-self` / `gain-wound-each` line, and the villain reveal-or-wound (Sabretooth, Frost Giant, Ymir, Ultron, Zzzax), each-other and victory-group lines use it;
+- multi-player lines name each side through `composeWoundOutcomeClause` ("Player 0 gained a Wound; Player 1 would gain a Wound — Diving Block can prevent it");
+- the keyword-labelled `gainWoundEachPlayer` / `gainWoundCurrentPlayer` clause gets an optional `woundOutcomes` split, set only when a reveal is pending.
+
+Lines with no Diving Block reveal pending are byte-identical. `G.messages` is hash-excluded (D-24081); the `notableEvents` narrative changes only when a keyword gain-wound parks a reveal, which no recorded fixture does, so nothing re-pins.
+
 **Reserved by:** NUMBER-LEDGER D-24673. Amends D-24499 §1 (the one-copy-per-Wound cap) and D-24651 §3 (which deferred it). Related: D-24529 (the hand + play reading of "Heroes you have"), WP-684 (seat-choice waves), D-24026 (the live session that surfaced it).
 
 ---

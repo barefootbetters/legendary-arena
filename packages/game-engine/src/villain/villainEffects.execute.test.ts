@@ -167,6 +167,49 @@ describe('executeVillainAbilities — gainWoundEachPlayer', () => {
   });
 });
 
+describe('executeVillainAbilities — gainWoundEachPlayer with Diving Block (D-24673)', () => {
+  it('reports who is waiting on a reveal, and the keyword line says "would gain" for them', () => {
+    const DIVING_BLOCK = 'core/captain-america/diving-block#0' as CardExtId;
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [DIVING_BLOCK], discard: [], inPlay: [], victory: [] },
+      },
+      wounds: ['w0', 'w1', 'w2'] as CardExtId[],
+    });
+    G.heroAbilityHooks = [
+      { cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+
+    assert.deepEqual(results[0]!.woundOutcomes, {
+      gainedPlayerIds: ['0'],
+      divingBlockPendingPlayerIds: ['1'],
+    });
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(G, results)),
+      'every player gains a wound: Player 0 gained a Wound; Player 1 would gain a Wound — Diving Block can prevent it',
+    );
+  });
+
+  it('without Diving Block the result carries no split and the label is unchanged', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      wounds: ['w0', 'w1', 'w2'] as CardExtId[],
+    });
+
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+
+    assert.equal(results[0]!.woundOutcomes, undefined);
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(G, results)),
+      'every player gained a wound',
+    );
+  });
+});
+
 describe('executeVillainAbilities — gainWoundCurrentPlayer', () => {
   it('gives only the current player a wound', () => {
     const G = makeG({
@@ -1295,6 +1338,58 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     assert.equal(G.playerZones['1']!.discard.length, 0, 'in-play X-Men now satisfies the reveal — no wound');
     assert.equal(G.playerZones['2']!.discard.length, 1, 'no X-Men in hand or play → wounded');
     assert.equal(G.piles.wounds.length, 1, 'exactly one wound left the pile');
+  });
+
+  // why: D-24673 — the Wound lands before the Diving Block reveal resolves, so the line
+  // must not say "gained" for a Wound the reveal can still return (the Loki strike in
+  // match P9oVujYd2B9 had the same defect on the Master Strike path).
+  it('D-24673: Sabretooth line says "would gain" for a Diving Block holder and "gained" for the rest', () => {
+    const DIVING_BLOCK = 'core/captain-america/diving-block#0' as CardExtId;
+    const G = makeG({
+      hooks: [rowHook('v-sabretooth', 'onFight', 'team', 'x-men')],
+      playerZones: {
+        '0': zone([PLAIN]), // no X-Men, no Diving Block → gained
+        '1': zone([PLAIN, DIVING_BLOCK]), // no X-Men, holds Diving Block → would gain
+      },
+      wounds: [WOUND, 'w1' as CardExtId, 'w2' as CardExtId],
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    G.heroAbilityHooks = [
+      { cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+
+    executeVillainAbilities(G, CTX, 'v-sabretooth' as CardExtId, 'onFight');
+
+    const texts = G.messages.map((message) => message.text);
+    assert.deepEqual(texts, [
+      'Fight effect: 2 player(s) had no X-Men Hero: Player 0 gained a Wound; Player 1 would gain a Wound — Diving Block can prevent it.',
+    ]);
+    assert.deepEqual(
+      G.pendingDivingBlockWounds?.map((entry) => entry.playerID),
+      ['1'],
+      'only the Diving Block holder has a reveal pending',
+    );
+  });
+
+  it('D-24673: with no Diving Block anywhere the Sabretooth line keeps "gained a Wound"', () => {
+    const G = makeG({
+      hooks: [rowHook('v-sabretooth', 'onFight', 'team', 'x-men')],
+      playerZones: {
+        '0': zone([PLAIN]),
+        '1': zone([PLAIN]),
+      },
+      wounds: [WOUND, 'w1' as CardExtId, 'w2' as CardExtId],
+      cardTraits: TRAITS,
+      messages: [],
+    });
+
+    executeVillainAbilities(G, CTX, 'v-sabretooth' as CardExtId, 'onFight');
+
+    const texts = G.messages.map((message) => message.text);
+    assert.deepEqual(texts, [
+      'Fight effect: 2 player(s) had no X-Men Hero and gained a Wound (Player 0, Player 1).',
+    ]);
   });
 
   it('AC-4 hero-class predicate over two players wounds only the one lacking a Ranged Hero (sorted order)', () => {
