@@ -117,7 +117,9 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
             rel="noopener"
             >Render Migration Analysis ↗</a
           >
-          <span>hosting costs: Render to the $24 droplet, and GitHub Actions ($0 for the game)</span>
+          <span
+            >hosting costs: Render to the $24 droplet, and GitHub Actions ($0 for the game)</span
+          >
         </li>
       </ul>
     </section>
