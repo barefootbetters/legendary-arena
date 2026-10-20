@@ -88,7 +88,7 @@
       "state": "verified",
       "date": "2026-10-19",
       "evidence": "2p bot-ally operator match P9oVujYd2B9 (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on): one Diving Block staged in each hand (1.2.13-14), then a Loki Master Strike revealed on Player 0's turn (1.2.15) addressed both seats (1.2.16-17). The active seat's reveal landed, preventing the Wound and drawing a card (1.2.19); the bot seat answered (1.2.20) and the game went on with no fault. Final state: Player 0 0 Wounds, Player 1 1, Wound pile 29.",
-      "note": "D-24743 (#2884): the active seat is admitted to a mixed Diving Block wave. The bot ally declined its own reveal because it submits the engine default for an absent seat (Take the Wound); that is bot policy, not this fix."
+      "note": "D-24743 (#2884): the active seat is admitted to a mixed Diving Block wave. In P9oVujYd2B9 the bot ally declined its own reveal (it submitted the absent-seat default); D-24744 (#2900) made the bot reveal, confirmed live in match 2ijakQ1yGsV."
     },
     {
       "key": "core/captain-america|recruit-per-count",
