@@ -16,8 +16,10 @@ were played that turn. Before, the line parsed to a flat +2, so every play got i
 - **Engine only.** A parser text gate pushes the existing `playedThisTurn` condition at N + 1 (the played card is already
   in play when its gate is read). No G field, move, card-data or UI change; no generated artifact or pin moves.
 - **Counts.** game-engine 5396 → 5411 (15 new cases; 9 fail without the arm, 6 fail with an N threshold), 0 fail in all 12 packages.
-- **Live-verify (D-24026): pending.** Play Repulsor Rays early in a turn → base attack only, log names the unmet gate;
-  after 8 other cards → +2.
+- **Live-verify (D-24026), 2026-10-20: PASS (Repulsor Rays).** Operator match `WUCdmP_9JBS` (server `23dcb003`, the
+  #2912 merge), 2p with a bot ally, Red Skull / The Legacy Virus. Repulsor Rays blocked as the 3rd, 3rd and 6th card
+  played (9.2.4, 15.2.7, 21.2.12: "it needs 9 cards played this turn — you have played N") and added +2 after exactly 8
+  other cards three times (11.2.15, 13.2.15, 17.2.17). KGB Training and Human Cannon share the arm and were not played.
 
 ### D-24741 — Pure Fury compares the target's current Attack (Jeff ruling, direct fix) (2026-10-17)
 
