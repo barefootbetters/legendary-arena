@@ -453,6 +453,7 @@ high-water: 422
 - WP-812 — result-lagn-unknown-outcome-label (Server + legends-board; the /result-lagn envelope names why `lagn.result` is omitted — a tie or an unknown outcome — so the Hall of Legends shows "Draw" only for a real tie and "Outcome not recorded" for a WP-811 legacy or hash-mismatch artifact; no LAGN contract change. BLOCKED on WP-811. reserved 2026-10-14, claude/reserve-result-lagn-unknown-outcome)
 - WP-813 — feedback-submission-section (Arena Client; a signed-in "Send feedback" section on ?route=me that posts bug / enhancement / review items to the existing WP-604 POST /api/feedback, so the empty www /roadmap/ board can fill — the D-24414 Stage 1 front door. reserved 2026-10-14, claude/wp-feedback-submission)
 - WP-814 — shared-wiki-theme-extraction (Shared wiki platform; extract the hand-rolled Hugo wiki theme into one shared copy every ewiki consumes, per D-24725 + D-24727; engine ewiki migrates last. reserved 2026-10-16, claude/wp-shared-wiki-theme-draft)
+- WP-815 — abomination-fight-cost (Cap 75th arc #2: Abomination / Double Abomination villains + Ultimate / Double Highest Abomination masterminds get +printed HQ-Hero attack in resolveFightCost / resolveMastermindFightCost. reserved 2026-10-20, claude/reserve-wp815-abomination)
 
 ## EC
 
@@ -868,6 +869,7 @@ high-water: 457
 - EC-850 — feedback-submission-section (WP-813. reserved 2026-10-14, claude/wp-feedback-submission)
 - EC-851 — play-saved-loadout (WP-303; grandfathered WP number below the high-water. reserved 2026-10-14, claude/wp303-reserve)
 - EC-852 — shared-wiki-theme-extraction (WP-814. reserved 2026-10-16, claude/wp-shared-wiki-theme-draft)
+- EC-853 — abomination-fight-cost (WP-815. reserved 2026-10-20, claude/reserve-wp815-abomination)
 
 ## D
 
@@ -1392,3 +1394,4 @@ section below) and the allocation protocol in
 - D-24744 — bot-ally-playing-seat-choice (direct fix, no WP — the bot ally answers a seat choice like a present player instead of with the absent-seat defaultOptionIndex: reveals Diving Block, takes Random Acts' Diving Block draw, discards its least valuable card, KOs its lowest-VP Villain; engine policy choosePlayingSeatChoiceOption, absent-seat default (D-24499) unchanged; amends D-24593 §2; live P9oVujYd2B9. reserved 2026-10-19, claude/nervous-mestorf-383b66)
 - D-24745 — bot-ally-playing-seat-choice-deadpool (direct fix, no WP — extends D-24744 choosePlayingSeatChoiceOption to here-hold-this (the Villain the seat will fight: escape-edge if fightable, else cheapest fightable, else cheapest that does not escape on the next reveal, per rules v23 escape step 2) and random-acts-pass-left (a Wound, else the cheapest card); autoplay / sim / PAR stay on the absent-seat default (recorded no). reserved 2026-10-19, claude/nervous-lederberg-9993d2)
 - D-24746 — played-other-cards-threshold (direct fix, no WP — "If you played at least N other cards this turn, you get +2[icon:attack]" gates on a playedThisTurn N+1 condition (the played card is already in inPlay when its gate is read) instead of granting +2 on every play: ca75 Winter Soldier / KGB Training (7), co2e Iron Man / Repulsor Rays (8), xmen Cannonball / Human Cannon (6). Found in the 2026-10-19 ca75 card-text audit. reserved 2026-10-19, claude/played-other-cards-threshold)
+- D-24747 — abomination-fight-cost (WP-815; the HQ-slot-under-City-space binding hq[4 - cityIndex], the printed-attack read, and the omit-when-empty cardAbomination setup map. reserved 2026-10-20, claude/reserve-wp815-abomination)
