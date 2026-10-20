@@ -569,9 +569,17 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // `out-of-time`, so nothing moves into resolvedObs: the gauge moves only through the smaller
   // denominator. totalObs 8900 -> 8755; resolvedObs stays 1235, so percentResolved rises
   // 13.9 -> 14.1 (1235 / 8755). No alias folding; a sweep-trajectory + denominator re-pin.
+  // 2026-10-20 (dashboard mixed-status fix, re-pin — an intentional METRIC change, not a feed
+  // change): a mechanic's by-mechanic status was its FIRST ledger row's, so `transform`
+  // (2 Executable / 13 Unsupported cards) and `empowered` (6 / 1) read Executable and their
+  // in-play hollows counted as resolved. The dictionary now headlines the LEAST-done status, so
+  // a mechanic resolves only when every card using it does. transform (142) + empowered (2)
+  // leave resolvedObs: 1235 -> 1091; totalObs unchanged at 8755; percentResolved 14.1 -> 12.5.
+  // Nothing became unimplemented — the gauge stopped crediting the 13 transform cards that are not.
   const view = useInPlayCoverage();
   assert.equal(view.totalObs.value, 8755);
-  assert.equal(view.percentResolved.value, 14.1);
+  assert.equal(view.resolvedObs.value, 1091);
+  assert.equal(view.percentResolved.value, 12.5);
   assert.ok(view.remaining.value.length > 0);
 });
 

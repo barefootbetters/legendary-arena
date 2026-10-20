@@ -75,10 +75,34 @@ function statusRank(status: LedgerStatus): number {
 }
 
 /**
+ * Adds one row's status to a mechanic's per-status tally, keeping the tally in
+ * `statusRank` order and the entry's headline `status` at the least-done status.
+ */
+function tallyStatus(entry: MechanicEntry, status: LedgerStatus): void {
+  const existing = entry.statusCounts.find((statusCount) => statusCount.status === status);
+  if (existing === undefined) {
+    entry.statusCounts.push({ status, count: 1 });
+    entry.statusCounts.sort((left, right) => statusRank(left.status) - statusRank(right.status));
+  } else {
+    existing.count += 1;
+  }
+  if (statusRank(status) > statusRank(entry.status)) {
+    entry.status = status;
+  }
+}
+
+/**
  * Builds the by-mechanic dictionary — one entry per distinct mechanic, the
  * implementation worklist (implementing one mechanic clears every card using
- * it). Excludes the `(unmarked)` sentinel. Sorted worklist-first: unsupported
- * before done, then by card count descending, then by name.
+ * it). Excludes the `(unmarked)` sentinel. Sorted done-first (statusRank), then
+ * by card count descending, then by name.
+ *
+ * why: status is decided per card, not per mechanic (by-hook keywords, the
+ * per-pair subsystem allowlist), so one mechanic's cards can disagree —
+ * `reveal-count` is Subsystem on Core Spider-Man and Unsupported on co2e
+ * Spider-Man. The entry keeps every status in `statusCounts` and headlines the
+ * least-done one, so a mechanic only reads as done when all of its cards are.
+ * Attribution (wp/decision/handler) comes from the first row that has it.
  */
 export function buildMechanicDictionary(rows: readonly LedgerRow[]): MechanicEntry[] {
   const byMechanic = new Map<string, MechanicEntry>();
@@ -86,18 +110,29 @@ export function buildMechanicDictionary(rows: readonly LedgerRow[]): MechanicEnt
     if (row.mechanic === UNMARKED_MECHANIC) {
       continue;
     }
-    const existing = byMechanic.get(row.mechanic);
-    if (existing === undefined) {
-      byMechanic.set(row.mechanic, {
+    let entry = byMechanic.get(row.mechanic);
+    if (entry === undefined) {
+      entry = {
         mechanic: row.mechanic,
         status: row.status,
-        cardCount: 1,
-        wp: row.wp,
-        decision: row.decision,
-        handler: row.handler,
-      });
-    } else {
-      existing.cardCount += 1;
+        statusCounts: [],
+        cardCount: 0,
+        wp: '',
+        decision: '',
+        handler: '',
+      };
+      byMechanic.set(row.mechanic, entry);
+    }
+    entry.cardCount += 1;
+    tallyStatus(entry, row.status);
+    if (entry.wp === '') {
+      entry.wp = row.wp;
+    }
+    if (entry.decision === '') {
+      entry.decision = row.decision;
+    }
+    if (entry.handler === '') {
+      entry.handler = row.handler;
     }
   }
 
