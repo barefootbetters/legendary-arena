@@ -48965,4 +48965,29 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24746 (#2911). Related: D-24622 (ungated Lightshow lines, the phantom-grant precedent), WP-023 (`playedThisTurn`), WP-780 / D-24619 and WP-803 / D-24692 (what `playedCardIdsThisTurn` counts).
 
 ---
+
+### D-24747 — Abomination fight cost: Villains and Masterminds add the printed Attack of HQ Heroes (Active 2026-10-20 — WP-815 / EC-853)
+
+**Status:** Active — landed 2026-10-20 with WP-815 / EC-853.
+
+**Context.** Abomination (Villain): "+Attack equal to the printed Attack of the Hero in the HQ space under this Villain's city space"; Double Abomination doubles it; Ultimate Abomination (Mastermind): "+Attack equal to the total printed Attack of all the Heroes in the HQ"; Double Highest Abomination (Mastermind): twice the highest printed Attack in the HQ (`docs/legendary-universal-rules-v23.md` L880-926, glossary L2039-2041). The engine fought every printer of these keywords at its printed base: Arnim Zola at 6 when the HQ usually adds 8 to 12. Found in the 2026-10-19 ca75 card-text audit. The printers are ca75 Captain Zolandia, Doughboy, Man-Fish and Arnim Zola; rlmk Lineage, Omega, Lash, The Unspoken and Maximus the Mad; and co2e Abomination, which prints the rule as a sentence.
+
+**Decision.**
+1. **Board binding, by ordinal.** The HQ space under City index `i` is `hq[4 - i]` (`hqSlotIndexUnderCitySpace`, `board/citySpaceNames.ts`): Sewers ↔ the 5th (rightmost) HQ slot, Bridge ↔ the 1st. It comes from the physical board, D-24295's Sewers(0) … Bridge(4), the DESIGN-BOARD-LAYOUT §7.1 City column order (Bridge … Sewers left to right) and the HQ index order (0 … 4 left to right). It does not depend on on-screen pixel alignment; the arena-client does not column-align the HQ row under the City row today, which is a client presentation follow-up, not a rules question.
+2. **Printed Attack** = `offPlayCardStats(G, heroId)?.attack ?? 0`: a trailing `+` dropped, no icon = 0, a Divided card's two halves totalled (rules v23 Divided Cards). Granted or temporary Attack never counts.
+3. **Four kinds, scoped by family.** `AbominationKind` = `abomination` | `double-abomination` | `ultimate-abomination` | `double-highest-abomination` (`economy/abomination.logic.ts`, drift-pinned by `ABOMINATION_KINDS`). `villainAbominationBonus` acts only on the two villain kinds (the HQ slot under the Villain's current City space, doubled for Double); `mastermindAbominationBonus` acts only on the two mastermind kinds (the HQ sum, or twice the highest; empty slots skipped). Any other kind or no entry → 0.
+4. **One authority each.** The villain term is added inside `resolveFightCost` and the mastermind term inside `resolveMastermindFightCost`, both before the existing reduction and 0 floor. The fight gate, the bot's legal moves, Pure Fury targeting and both UIState `fightCost` projections move together with no caller change. Both terms read `G` at fight time; nothing is cached.
+5. **`G.cardAbomination`** is an omit-when-empty setup map (`setup/buildCardAbomination.ts`), keyed by villain copy ids (`villainCardInstanceExtIds`) and by `G.mastermind.baseCardId`. The mastermind face is matched by equality with the `baseCardId` `buildMastermindState` chose (D-24193), so Maximus's Epic face, which prints the same keyword, never produces a key. It is not a `BoardKeyword` (the Blood Frenzy precedent, D-24589).
+6. **The co2e sentence** "Abomination gets +[icon:attack] equal to the printed [icon:attack] of the Hero in the HQ space under his current city space." is matched by an anchored pattern (`^[^:]*`, so no timing line matches) in place of a missing keyword token. No card-data edit, so the card renders no duplicate keyword chip.
+7. **Out of scope.** rlmk *Devolve with Xerogen Crystals* grants Abomination to Xerogen Experiments; that belongs to that scheme's own WP, which can add its cards to `cardAbomination` at setup. Hero-side Gorgon Abomination, Lineage's Fight and the other open lines on these cards are later WPs.
+8. **No feed change.** No `[effect:X]` token and no `subsystem-coverage.json` entry: every affected Villain keeps another still-unimplemented line, and a subsystem entry would hide it.
+9. **Replay-compat.** A stored replay of a pre-WP-815 match that fought an affected card does not re-execute identically. Core matches carry no `cardAbomination` key, so `finalStateHash` and `PRE_WP080_HASH` are unchanged.
+
+**Gates.** T1-T21 (WP-815 §Test Contract) in `citySpaceNames.test.ts`, `abomination.logic.test.ts`, `economy.resolve.test.ts`, `buildCardAbomination.test.ts` (ability lines copied verbatim from `data/cards/{ca75,rlmk,co2e,core}.json`, with the negatives), `fightVillain.test.ts` and `uiState.build.test.ts`. Revert proofs: without the villain term 9 cases fail, without the mastermind term 3, without the `4 -` 11. Engine 5411 → 5441, 0 fail; `pnpm -r --no-bail test` 0 fail; the feed checks rewrite no file.
+
+**Live-verify (D-24026): pending.** In a live `ca75/arnim-zola` match: the Mastermind tile shows 6 + the total printed HQ Attack and changes after a recruit; an Abomination Villain's tile shows its base + the printed Attack of the HQ Hero in the same ordinal position (Sewers ↔ 5th HQ slot … Bridge ↔ 1st) and changes when it moves; Fight is enabled only at that cost.
+
+**Reserved by:** NUMBER-LEDGER D-24747 (#2915). Related: D-24295 (named City spaces), D-24348 / D-24589 (additive fight-cost terms, omit-when-empty setup map), D-24574 (client Fight gating reads the projected cost), D-24545 (`offPlayCardStats`), D-24193 (mastermind base face), D-24372 (runtime drift pins).
+
+---
 Protect this file.
