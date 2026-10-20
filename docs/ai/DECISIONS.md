@@ -48945,3 +48945,24 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24746 — "If you played at least N other cards this turn" gates its +2 attack on N other cards played (Active 2026-10-19 — direct fix, no WP)
+
+**Status:** Active — landed 2026-10-19 (direct parser-fidelity fix, no WP, the D-24622 / D-24670 precedent).
+
+**Context.** Three Hero lines print "If you played at least N other cards this turn[,] you get +2[icon:attack]": ca75 Winter Soldier / KGB Training (N = 7), co2e Iron Man / Repulsor Rays (N = 8) and xmen Cannonball / Human Cannon (N = 6). None carries a marker, so `buildHeroAbilityHooks` read only the icon and built an ungated `attack:2`: every play of these cards got +2 attack, an over-grant on each play. Found in the 2026-10-19 ca75 card-text audit and confirmed by parsing each line on its own.
+
+**Decision.**
+1. **A text gate, not a data marker.** `PLAYED_OTHER_CARDS_THRESHOLD_PATTERN` (`heroAbility.setup.ts`) recognizes the printed phrase and pushes the existing `playedThisTurn` HeroCondition onto the line's hook, so its +2 fires only when the gate holds. The line already says exactly what it needs, and a text arm covers all three sets without a card-data regen. The "unless you played at least 8 cards" Doctor Octopus lines are Villain / Mastermind text, and asrd's "three other non-grey Heroes" uses a word number and "Heroes", so neither matches.
+2. **The threshold is N + 1.** `applyCardPlay` appends the played card to `inPlay` before `executeHeroEffects` reads its gate, and `playedThisTurn` counts every card played this turn (`playedCardIdsThisTurn`), the played card included. "N other cards" is therefore N + 1 cards played.
+3. **A snapshot gate, read on play.** `playedThisTurn` is not a wait-and-see condition, so cards played after this one do not retro-fire the +2. That matches the printed "If you played", which is read as the card resolves.
+4. Unchanged: the `playedThisTurn` evaluator and its failure message, every other parser arm, card data.
+
+**Gates.** `packages/game-engine/src/hero/playedOtherCardsThreshold.test.ts` (15 tests) parses the shipped line of each card from `data/cards/*.json` (`playedThisTurn` N + 1, `attack:2`, `conditional`), then plays it through `applyCardPlay` after N - 1, N and N + 1 other cards and as the first card of the turn: +0, +2, +2, +0. Revert proof: without the arm, 9 of 15 fail (the 3 parse tests, the 3 N - 1 cases and the 3 first-card cases); with threshold N instead of N + 1, the 3 parse tests and the 3 N - 1 cases fail. `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5396 → 5411). `sim:coverage --check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check` and `sim:runtime-observed:check` pass, and regenerating the coverage baseline, coverage ledger and effect index rewrites no file: these lines were "executable attack" before and still are. No pinned replay reaches these Heroes (the sentinel fixture is core Black Widow + Captain America), so no hash or PAR pin moves.
+
+**Live-verify.** A match with Iron Man (co2e), Winter Soldier (ca75) or Cannonball (xmen): played early in a turn, Repulsor Rays / KGB Training / Human Cannon give only their printed base attack, and the log names the unmet gate; played after 8 / 7 / 6 other cards, they add +2.
+
+**Reserved by:** NUMBER-LEDGER D-24746 (#2911). Related: D-24622 (ungated Lightshow lines, the phantom-grant precedent), WP-023 (`playedThisTurn`), WP-780 / D-24619 and WP-803 / D-24692 (what `playedCardIdsThisTurn` counts).
+
+---
+Protect this file.

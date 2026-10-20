@@ -528,6 +528,12 @@ const FIGHT_COST_REDUCTION_MASTERMIND_PATTERN = /^The Mastermind gets -(\d+)\[ic
 const CONDITION_ICON_PATTERN =
   /(?:at least|for every)\s*\d+\s*\[icon:(?:attack|recruit)\]|\d+\s+or more\s+\[icon:(?:attack|recruit)\]/gi;
 
+// why: D-24746 — "If you played at least N other cards this turn, you get +2[icon:attack]"
+// (ca75 KGB Training N=7, co2e Repulsor Rays N=8, xmen Human Cannon N=6) carries no marker, so
+// the line parsed to an UNGATED attack:2 granted on every play. This text gate pushes a
+// playedThisTurn condition instead. Captures N; non-global so `.exec` is stateless.
+const PLAYED_OTHER_CARDS_THRESHOLD_PATTERN = /\bIf you played at least (\d+) other cards this turn\b/i;
+
 // why: D-24486 — a NEGATIVE-magnitude attack/recruit icon ("gets -2[icon:attack]",
 // "cost -1[icon:recruit]") is a debuff applied to an Adversary or a cost reduction — NEVER a
 // resource the player gains. Its leading "-" is the discriminator: Legendary's vocabulary has
@@ -1787,6 +1793,15 @@ function parseAbilityText(
   // skips the D-24623 unmatched-slug fallback, so no unresolved slug is recorded.
   if (OUT_OF_TIME_LINE_PATTERN.test(abilityText) && !keywords.includes('out-of-time')) {
     keywords.push('out-of-time');
+  }
+  // why: D-24746 — "If you played at least N other cards this turn" gates the line's grant on a
+  // playedThisTurn snapshot condition read as the card resolves. The threshold is N + 1: the
+  // played card is already in inPlay when executeHeroEffects evaluates its gate, and
+  // playedThisTurn counts every played card (itself included), so N OTHER cards is N + 1 played.
+  const playedOtherCardsMatch = PLAYED_OTHER_CARDS_THRESHOLD_PATTERN.exec(abilityText);
+  if (playedOtherCardsMatch !== null) {
+    const otherCardsRequired = parseInt(playedOtherCardsMatch[1]!, 10);
+    conditions.push({ type: 'playedThisTurn', value: String(otherCardsRequired + 1) });
   }
 
   // Step 2b: Extract icon-adjacent magnitudes for attack/recruit keywords.
