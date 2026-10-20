@@ -1,6 +1,6 @@
 # Disaster Recovery — Legendary Arena
 
-> **Last updated:** 2026-10-12
+> **Last updated:** 2026-10-20
 >
 > Operator-focused recovery procedures for restoring **service** (players
 > able to log in and play), not just files, after infrastructure loss,
@@ -140,6 +140,7 @@ secrets.** The server is replaceable; those three are not.
 | Database (local) | Droplet Postgres | `pg_dump -Fc`, lab `50-backup.ps1`, nightly 09:17 UTC (`la-backup` timer) | Droplet `/var/backups/la` | Last 7 dumps; lost with the droplet | `la-droplet-monitor` alerts if the newest is over 26 h old |
 | Database (external) | the same dump | Uploaded by the same run | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09; restored onto the droplet 2026-10-12 (§7)** |
 | Database (2nd offsite) | the same dump | `rclone` mirror in the same run | pCloud (US region), `db-backups/` — independent of Cloudflare | Same GFS policy, pruned separately | **Drilled 2026-08-10 (§7)**; first droplet mirror byte-identical to R2, 2026-10-12 |
+| Droplet disk image | the whole `la-rehearsal-01` disk | DigitalOcean usage-based Droplet backup, plan `custom_daily`, enabled 2026-10-20 (API action 3485061489; the control panel shows it under the **Usage-Based** tab at $0.03/GiB); a crash-consistent image, not a database backup ([Provider-native options](#provider-native-options-digitalocean)) | DigitalOcean, same account as the droplet | 7 days | Daily, 08:00–12:00 UTC window; first image due 2026-10-21. Image restore not yet drilled |
 | Card images | R2 upload pipeline | manual/scripted | Cloudflare R2; source bytes in pCloud `card-images-staging/original/` | indefinite | image loads |
 | Source code | GitHub | git | GitHub + local clones | full history | every clone |
 | Secrets | operator | manual | droplet `/etc/la/*.env` + operator secret store | operator-managed | §4 completeness |
@@ -229,6 +230,63 @@ somewhere else, or not at all:
 | Newsletter contacts | Brevo | Vendor-held. |
 | Source, issues, Actions history | GitHub | Every clone holds the full source history; issues and Actions history are GitHub-only. |
 | Live matches in progress | Runtime only | Not recoverable by design (§9). |
+
+### Provider-native options (DigitalOcean)
+
+An outside review (Grok, 2026-10-20) compared this plan with what DigitalOcean
+offers. Its conclusion matches this doc's. The R2 + pCloud logical dumps are the
+recovery path, because they survive losing DigitalOcean. DigitalOcean's own tools
+add speed, not independence. Each claim below was checked against DigitalOcean's
+docs on 2026-10-20. Where the review was wrong, the table says so.
+
+| Option | What it gives | What it does not give | Verdict |
+|---|---|---|---|
+| **Usage-based Droplet backups** (generally available since 2025-11-26; **enabled 2026-10-20**) | A full disk image every 4 h, 6 h, 12 h, day, or week, taken while the droplet runs. A lost or broken droplet comes back as a new droplet from the image: OS, hardening, Nginx, TLS, `/etc/la/*.env`, and the app, with no provisioner run. | **Not a database backup.** DigitalOcean calls the images crash-consistent (disk only, never memory) and recommends an application-level tool for busy databases, so the image's Postgres is a power-loss copy. **No help for DR-05.** The images live in the same DigitalOcean account, so losing the account loses them. Volumes are not included. | **Enabled 2026-10-20** (§3 inventory). It replaces the untimed full rebuild in DR-02 "droplet lost" with an image restore, while DigitalOcean itself is healthy. Steps: [below](#enabling-droplet-backups). |
+| **Postgres data directory on a Volume** | Moves and resizes the data disk on its own. | Droplet backups skip volumes, and DigitalOcean does not schedule volume snapshots, so this adds a second thing to back up. The database is ~66 MB, so moving it buys nothing. | **Not now.** |
+| **Managed PostgreSQL** | Daily backups plus WAL, restoring to any point in the last 7 days. The review said PITR comes only on higher tiers, but DigitalOcean's feature page doesn't gate it by plan. Optional standby node for failover. | Reverses D-24707. Its backups stay in the DigitalOcean account, so the R2 + pCloud dumps would still be needed for DR-05. | **Not now.** Revisit only if a confirmed RPO under 24 h or the ops load makes it worth the cost. |
+| **WAL archiving to R2 / pCloud** | The self-hosted way to get an RPO under 24 h, and PITR for DR-03. | More moving parts and storage. | **Only if the §1 RPO is confirmed tighter than 24 h.** |
+| **Reserved IP** | The `api.` A record survives a rebuild unchanged. | `api.` is proxied by Cloudflare, so repointing it is one quick edit anyway. | **Low.** Worth doing on the next rebuild, not before. |
+| **Second copy of avatars and audio** (Spaces, or pCloud) | Closes the "no second copy" rows in [Not in any backup](#not-in-any-backup). | — | **Agreed, already a known gap.** What matters is a copy off Cloudflare; which vendor holds it is secondary. |
+| **Client-side encryption of dumps** | — | No DigitalOcean feature covers it. | **Still deferred** (§3 Known gaps, 2). |
+
+The review also flagged §1 RPO / RTO as still unconfirmed. That number decides
+the WAL and Managed rows above.
+
+#### Enabling Droplet backups
+
+Operator-only: it changes the DigitalOcean account and adds a monthly charge.
+
+1. **Settings.** Usage-Based plan, Daily, retention 7 days (the panel allows
+   7–30 for daily). The image is the
+   speed layer and R2 / pCloud keep the history, so a long retention buys
+   nothing. Window: 08:00–12:00 UTC (01:00–05:00 Pacific), the quietest hours.
+   The 13-second nightly dump at 09:17 falls inside it, which is harmless.
+2. **Cost.** The usage-based daily rate is $0.03 per GiB of restorable size per
+   month, measured on used disk, not the 80 GB allocation. The basic daily plan,
+   for comparison, is 30 % of the droplet ($7.20/mo on the $24 droplet). Read
+   the estimate the panel shows before you enable.
+3. **Enable.** Control panel → Droplets → `la-rehearsal-01` → **Backups** →
+   **Setup Automated Backups** → **Usage-Based** tab → set frequency, retention,
+   and window → **Enable Backups**. Without the panel, the API is the path.
+   doctl's `--backup-policy-plan daily` is the **basic** (30 %) plan. The
+   usage-based plans are `custom_daily`, `custom_weekly`, and `intra_daily_*`
+   (`doctl compute droplet backup-policies list-supported`), and they need a
+   `retention_period_days` that doctl has no flag for. A `custom_daily` request
+   without one is refused with a 422. Send it with the token from the doctl config:
+   `curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"type":"enable_backups","backup_policy":{"plan":"custom_daily","hour":8,"retention_period_days":7}}' https://api.digitalocean.com/v2/droplets/<droplet-id>/actions`.
+   (This is how it was enabled on 2026-10-20.)
+4. **Confirm.** `doctl compute droplet backup-policies get <droplet-id>` shows
+   `backup_enabled: true`, the plan, the hour, the retention, and the next
+   window. The droplet's `Features` column did not list `backups` right after
+   enabling, so don't rely on it. The first image then shows on the
+   droplet's Backups page. Record the settings and the date in the §3
+   "Droplet disk image" row.
+5. **Drill once.** Create a throwaway droplet from the newest image and confirm
+   it boots, `la-server` starts, and Postgres comes up clean. Keep it off the
+   production database and off DNS. Set `LEGENDS_PUBLISHER_ENABLED=false` on it
+   before starting `la-server`, because the image carries production's `true`,
+   and that would let two publishers write production R2. Record it in §7, then
+   destroy the droplet.
 
 ### Backup integrity gates
 
@@ -362,6 +420,13 @@ downstream — so each step has what the next one needs:
   point the proxied `api.` A record at the new IP → §6 validation. The
   provisioners are vendor-neutral (CI smoke runs them on plain Ubuntu 24.04), so
   another provider works if DigitalOcean is the problem.
+- **Procedure (droplet lost, from a Droplet backup image — daily since 2026-10-20, §3):**
+  create a droplet from the newest backup image → let Postgres finish crash
+  recovery → if the newest R2 dump that passes the §3 gates is newer than the
+  image, restore it (DR-01) → point the proxied `api.` A record at the new IP →
+  §6 validation. This skips provisioning, but it needs DigitalOcean healthy.
+  **Never use an image after a host compromise:** the image may carry the
+  compromise, so rebuild from the provisioners.
 
 ### DR-03 — Accidental data deletion
 
