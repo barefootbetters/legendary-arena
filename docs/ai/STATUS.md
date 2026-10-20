@@ -7,6 +7,18 @@
 
 ## Current State
 
+### D-24746 — "If you played at least N other cards this turn" gates its +2 attack (direct fix) (2026-10-19)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Winter Soldier's **KGB Training** (ca75), Iron Man's
+**Repulsor Rays** (co2e) and Cannonball's **Human Cannon** (xmen) now add their +2 attack only after 7 / 8 / 6 other cards
+were played that turn. Before, the line parsed to a flat +2, so every play got it.
+
+- **Engine only.** A parser text gate pushes the existing `playedThisTurn` condition at N + 1 (the played card is already
+  in play when its gate is read). No G field, move, card-data or UI change; no generated artifact or pin moves.
+- **Counts.** game-engine 5396 → 5411 (15 new cases; 9 fail without the arm, 6 fail with an N threshold), 0 fail in all 12 packages.
+- **Live-verify (D-24026): pending.** Play Repulsor Rays early in a turn → base attack only, log names the unmet gate;
+  after 8 other cards → +2.
+
 ### D-24741 — Pure Fury compares the target's current Attack (Jeff ruling, direct fix) (2026-10-17)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Nick Fury's **Pure Fury** now defeats only a Villain or
