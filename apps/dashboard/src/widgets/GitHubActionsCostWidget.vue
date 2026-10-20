@@ -31,6 +31,9 @@ const rows = GITHUB_ACTIONS_ALLOWANCES.map((allowance) => ({
         <span class="metric-rate">
           {{ formatCurrency(row.projection.overageCents / 100) }}
           <span class="metric-unit">projected overage this month</span>
+          <span v-if="row.allowance.budgetCents !== null" class="metric-unit">
+            of {{ formatCurrency(row.allowance.budgetCents / 100) }} budget
+          </span>
         </span>
         <span class="metric-fraction">
           {{ formatNumber(row.allowance.minutesUsed) }} /

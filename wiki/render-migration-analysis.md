@@ -149,9 +149,11 @@ a minute since 2026-01-01 (it was $0.008), so October's overage comes to about
 cost belongs to the studio and Herbs vs. Ailments, not to Legendary Arena's
 infrastructure line.
 
-- **Don't set a $0 Actions budget.** It blocks every private-repo workflow,
-  deploys included, until the reset on 2026-11-01. A small cap, such as $20,
-  covers the overage and still stops a runaway loop.
+- **The account's Actions budget is $20 a month (set 2026-10-19).** That covers
+  the projected overage and still stops a runaway loop. A $0 budget would
+  instead block every private-repo workflow, deploys included, until the
+  reset on 2026-11-01. Codespaces, Packages, Git LFS, and AI credits are held
+  at $0; no repo uses paid Packages or LFS.
 - **If it recurs, cut it at the source.** `herbs-vs-ailments` drives about 65%
   of the minutes: two workflows (CI and the ewiki build) run on nearly every
   PR update, because nearly every PR touches `docs/`. Folding the ewiki PR
@@ -458,7 +460,8 @@ doing. Co-location removed that hop, so the probe is moot.
 - **2026-10-19** — GitHub warned that the `barefootbetters` account had used 90%
   of its Actions minutes. The run history put the overage at about $5.77 for
   October, all from studio repos. Legendary Arena's own Actions cost is $0
-  (see [GitHub Actions minutes](#github-actions-minutes-october-2026)).
+  (see [GitHub Actions minutes](#github-actions-minutes-october-2026)). The
+  account's Actions budget was set to $20 a month the same day.
 
 ## References
 
