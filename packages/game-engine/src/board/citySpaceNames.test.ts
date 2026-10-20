@@ -11,7 +11,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { CITY_SPACE_NAMES, citySpaceNameForIndex } from './citySpaceNames.js';
+import { CITY_SPACE_NAMES, citySpaceNameForIndex, hqSlotIndexUnderCitySpace } from './citySpaceNames.js';
 
 describe('CITY_SPACE_NAMES (WP-489 / D-24295)', () => {
   // why: the operator-confirmed binding — Streets MUST be index 3 and Bridge
@@ -46,5 +46,24 @@ describe('citySpaceNameForIndex (WP-489 / D-24295)', () => {
     assert.equal(citySpaceNameForIndex(undefined), undefined);
     assert.equal(citySpaceNameForIndex(2.5), undefined, 'a non-integer index has no space');
     assert.equal(citySpaceNameForIndex(Number.NaN), undefined);
+  });
+});
+
+describe('hqSlotIndexUnderCitySpace (WP-815 / D-24747)', () => {
+  // why: T1 — the HQ space under City index i is hq[4 - i] by ordinal (Sewers ↔ the
+  // 5th HQ slot, Bridge ↔ the 1st). A mirrored binding makes Abomination read the
+  // wrong Hero, so every index is pinned.
+  it('maps City index i to HQ index 4 - i (Sewers ↔ 5th slot, Bridge ↔ 1st)', () => {
+    assert.equal(hqSlotIndexUnderCitySpace(0), 4);
+    assert.equal(hqSlotIndexUnderCitySpace(1), 3);
+    assert.equal(hqSlotIndexUnderCitySpace(2), 2);
+    assert.equal(hqSlotIndexUnderCitySpace(3), 1);
+    assert.equal(hqSlotIndexUnderCitySpace(4), 0);
+  });
+
+  it('returns undefined for an out-of-range or non-integer index (never throws)', () => {
+    assert.equal(hqSlotIndexUnderCitySpace(-1), undefined);
+    assert.equal(hqSlotIndexUnderCitySpace(5), undefined);
+    assert.equal(hqSlotIndexUnderCitySpace(1.5), undefined);
   });
 });

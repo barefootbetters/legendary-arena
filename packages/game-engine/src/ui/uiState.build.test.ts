@@ -2489,6 +2489,47 @@ describe('buildUIState — City fightCost includes villain Blood Frenzy for the 
   });
 });
 
+describe('buildUIState — City and Mastermind fightCost include Abomination (WP-815 / D-24747)', () => {
+  it('projects an Abomination villain at Sewers as base 6 + the printed Attack of hq[4] (3) = 9', () => {
+    const gameState = createTestGameState();
+    const villainId = 'abom-villain' as CardExtId;
+    const heroId = 'hero-under' as CardExtId;
+    gameState.city = [villainId, null, null, null, null];
+    gameState.hq = [null, null, null, null, heroId];
+    gameState.cardStats[villainId] = makeCardStatEntry({ fightCost: 6, fightCostMode: 'dynamic', fightCostBase: 6 });
+    gameState.cardStats[heroId] = makeCardStatEntry({ attack: 3, hasAttackIcon: true });
+
+    assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 6, 'no kind: base only');
+
+    gameState.cardAbomination = { [villainId]: 'abomination' };
+    assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 9);
+  });
+
+  it('projects an Ultimate Abomination Mastermind (base 6) with HQ printed [2, 0, null, 3, 1] as 12', () => {
+    const gameState = createTestGameState();
+    const baseCardId = gameState.mastermind.baseCardId;
+    gameState.cardStats[baseCardId] = makeCardStatEntry({ fightCost: 6 });
+    const hqAttack = [2, 0, null, 3, 1];
+    const hq: (CardExtId | null)[] = [];
+    for (let slotIndex = 0; slotIndex < hqAttack.length; slotIndex++) {
+      const attack = hqAttack[slotIndex];
+      if (attack === null || attack === undefined) {
+        hq.push(null);
+        continue;
+      }
+      const heroId = `hq-hero-${slotIndex}` as CardExtId;
+      gameState.cardStats[heroId] = makeCardStatEntry({ attack });
+      hq.push(heroId);
+    }
+    gameState.hq = hq as LegendaryGameState['hq'];
+    gameState.cardAbomination = { [baseCardId]: 'ultimate-abomination' };
+
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.fightCost, 12);
+    assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState));
+  });
+});
+
 // why: WP-777 / D-24615 — D-24372 runtime keyset pin. The two per-face fields are OPTIONAL in the
 // type, so no `satisfies` pin could catch the builder dropping them; assert them on a BUILT
 // projection instead.
