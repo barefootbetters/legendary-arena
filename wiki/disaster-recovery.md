@@ -88,7 +88,7 @@ of the canonical doc, recovery assumes it is lost.
 | Local (on the droplet) | `pg_dump -Fc` by the lab's `50-backup.ps1` | the droplet's local disk, last 7 dumps | Fastest restore source; lost with the droplet. |
 | External (provider-independent) | the same dump, daily 09:17 UTC by the droplet's `la-backup` systemd timer (`50-backup.ps1` in `legendary-arena-lab`), which then pings the healthchecks.io check `la-droplet-backup` | private Cloudflare R2 bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | **Primary** offsite copy. GFS retention: 35 daily · 12 weekly · 12 monthly. Same key layout and retention as the WP-416 / D-24236 GitHub Actions nightly ([`db-backup.yml`](../.github/workflows/db-backup.yml)), which ran from 2026-08-09 and was disabled at the 2026-10-12 cutover. Restore from R2 drilled 2026-10-11/12 (`51-restore.ps1`, `RESTORE_FROM_R2=latest`). |
 | Second offsite (3-2-1) | the same dump, `rclone` in the same `50-backup.ps1` run, on every production backup; it reports to its own healthchecks.io check `la-droplet-pcloud` | pCloud, `db-backups/` (US region, `api.pcloud.com`) | Vendor independent of Cloudflare, same GFS policy. Ran in the GitHub Actions nightly from 2026-08-10 (restore drilled 2026-08-10). It is permanent on the droplet (lab #30): a missing `BACKUP_PCLOUD_TOKEN` or a failed copy pings `la-droplet-pcloud` as failed, while `la-droplet-backup` stays green because R2 already holds the dump. The first droplet mirror landed 2026-10-12, byte-identical to the R2 object. How it runs, the token, and the checks: [Ubuntu Lab Provisioning § Offsite backups](ubuntu-lab-provisioning.md#offsite-backups-r2--pcloud). |
-| Droplet disk image | the whole droplet disk | — | **Not enabled** (checked 2026-10-20). Proposed as a speed layer for rebuilding a lost droplet; it is not a database backup. See [Provider-native options](#provider-native-options-digitalocean). |
+| Droplet disk image | the whole `la-rehearsal-01` disk | DigitalOcean, same account as the droplet | **Enabled 2026-10-20:** usage-based plan `custom_daily`, 08:00–12:00 UTC window, 7-day retention, first image due 2026-10-21. A speed layer for rebuilding a lost droplet. It is a crash-consistent image, not a database backup, and its restore is not yet drilled. See [Provider-native options](#provider-native-options-digitalocean). |
 
 The external layers are the ones that make a provider-loss recoverable. They
 are a full-database operational `pg_dump` — **not** an application read of
@@ -150,7 +150,7 @@ DigitalOcean's docs. Where the review was wrong, the table says so.
 
 | Option | Verdict | Why |
 |---|---|---|
-| **Usage-based Droplet backups** (a full disk image every 4 h to weekly, generally available 2025-11-26) | **Recommended, not yet enabled** | A lost droplet comes back from an image (OS, config, `/etc/la/*.env`, app) with no provisioner run. The image is **not** a database backup: DigitalOcean calls it crash-consistent and recommends application-level tools for databases. It is **no help for DR-05**, because it lives in the same DigitalOcean account. Volumes are excluded. |
+| **Usage-based Droplet backups** (a full disk image every 4 h to weekly, generally available 2025-11-26) | **Enabled 2026-10-20** | A lost droplet comes back from an image (OS, config, `/etc/la/*.env`, app) with no provisioner run. The image is **not** a database backup: DigitalOcean calls it crash-consistent and recommends application-level tools for databases. It is **no help for DR-05**, because it lives in the same DigitalOcean account. Volumes are excluded. |
 | Postgres data on a Volume | Not now | Droplet backups skip volumes, and volume snapshots aren't scheduled. A ~66 MB database gains nothing from it. |
 | Managed PostgreSQL | Not now | Offers 7-day PITR plus an optional standby node. The review said PITR comes only on higher tiers, but DigitalOcean doesn't gate it by plan. It would reverse D-24707, and its backups stay in the DigitalOcean account, so the dumps would still be needed. Revisit only if a confirmed RPO under 24 h demands it. |
 | WAL archiving to R2 / pCloud | Only if RPO tightens | The self-hosted route to an RPO under 24 h and PITR for DR-03. |
@@ -168,11 +168,16 @@ charge). Canonical steps: [`docs/ops/DISASTER_RECOVERY.md`](../docs/ops/DISASTER
    month. The basic daily plan is 30 % of the droplet, $7.20/mo. Read the
    panel's estimate before you enable.
 3. **Enable:** Droplets → `la-rehearsal-01` → **Backups** → **Setup Automated
-   Backups** → **Usage-Based** → **Enable Backups**. The CLI equivalent is
-   `doctl compute droplet-action enable-backups <droplet-id> --backup-policy-plan daily --backup-policy-hour 8 --wait`.
-   Then check in the panel which pricing model it applied.
-4. **Confirm** the first backup is listed, and that `doctl compute droplet get
-   <droplet-id> --format Features` shows `backups`.
+   Backups** → **Usage-Based** → **Enable Backups**. Without the panel, use
+   the API, not doctl's `--backup-policy-plan daily`, which is the **basic**
+   30 % plan. The usage-based plan is `custom_daily`, and it needs a
+   `retention_period_days` that doctl has no flag for, so POST
+   `{"type":"enable_backups","backup_policy":{"plan":"custom_daily","hour":8,"retention_period_days":7}}`
+   to `/v2/droplets/<droplet-id>/actions`. This is how it was enabled on
+   2026-10-20; the full command is in the canonical doc.
+4. **Confirm** with `doctl compute droplet backup-policies get <droplet-id>`,
+   which shows `backup_enabled: true` and the next window. The droplet's
+   `Features` column lagged, so don't rely on it.
 5. **Drill once** on a throwaway droplet built from the image. Set
    `LEGENDS_PUBLISHER_ENABLED=false` before starting `la-server`, since the
    image carries production's `true`. Keep it off DNS, record the drill, then
@@ -244,7 +249,7 @@ The canonical doc §5 enumerates five scenarios, each with an honest
 | ID | Trigger | Honest recoverability |
 |---|---|---|
 | DR-01 | Database loss / corruption | Yes — restore the latest R2 dump onto the droplet with the lab's `51-restore.ps1` (`RESTORE_FROM_R2=latest`; drilled 2026-10-11/12), or the pCloud copy, then resend Stripe webhook events since the dump. No PITR: anything since the last nightly dump is lost |
-| DR-02 | Application server lost, DB intact | Yes — lowest risk; the server is stateless. Redeploy with the lab's `40-app-deploy.ps1`; if the droplet itself is gone, the database went with it, so this becomes DR-01 on a fresh droplet (re-run the lab provisioners, then `40`). Once Droplet backups are enabled, a droplet built from the newest image skips provisioning; restore the R2 dump on top if it is newer. Never use an image after a host compromise |
+| DR-02 | Application server lost, DB intact | Yes — lowest risk; the server is stateless. Redeploy with the lab's `40-app-deploy.ps1`; if the droplet itself is gone, the database went with it, so this becomes DR-01 on a fresh droplet (re-run the lab provisioners, then `40`). With Droplet backups (daily since 2026-10-20), a droplet built from the newest image skips provisioning; restore the R2 dump on top if it is newer. Never use an image after a host compromise |
 | DR-03 | Accidental data deletion (`DROP TABLE …`) | Yes — restore the last nightly dump (up to ~24 h of loss). No point-in-time recovery on self-hosted Postgres unless WAL archiving is added later |
 | DR-04 | Credential compromise | Yes, operationally — rotate the secret at its source and in the droplet's `/etc/la/.env`, then restart `la-server`; no data restore unless data was tampered with |
 | DR-05 | Cloud-provider / account failure | Yes — the R2 dump survives losing the droplet or DigitalOcean (restore it onto a fresh droplet), and the pCloud copy survives losing Cloudflare; restores drilled (R2 2026-08-09 and again onto the droplet 2026-10-11/12; pCloud 2026-08-10) |
@@ -325,8 +330,7 @@ one can log in has not recovered anything.
 - The confirmed RPO / RTO values (canonical doc §1 still lists them as
   proposed defaults: 24 h / 4 h). That number decides whether WAL archiving
   or Managed PostgreSQL is ever worth it.
-- Whether to enable DigitalOcean Droplet backups. Recommended above; not
-  enabled as of 2026-10-20.
+- The first Droplet-image restore drill (enabled 2026-10-20; not yet drilled).
 - Whether the dashboard DR Readiness tile should also surface backup and
   mirror freshness (for example, an open `Backup mirror failing — pCloud`
   issue). Today it reads drill issues only.
