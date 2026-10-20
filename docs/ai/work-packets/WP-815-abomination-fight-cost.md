@@ -1,6 +1,6 @@
 # WP-815 — Abomination fight cost: Villains and Masterminds add the printed Attack of HQ Heroes (Game Engine)
 
-**Status:** Draft 2026-10-20 (EC-853; **D-24747** reserved (#2915)).
+**Status:** Draft 2026-10-20 — READY TO EXECUTE (EC-853; **D-24747** reserved (#2915); pre-flight READY, copilot CONFIRM, 00.3 PASS — see §Gate Record).
 **Primary Layer:** Game Engine
 **Dependencies:** none open. Builds on WP-214 (dynamic `N+` cost), WP-489 / D-24295 (named City spaces), WP-539 / D-24348 and WP-760 / D-24589 (additive fight-cost terms + omit-when-empty setup flag), WP-750 / D-24574 (client Fight gating reads the projected cost), WP-724 / D-24545 (`offPlayCardStats` split-card view).
 **User-Visible Surface:** `play.legendary-arena.com`
@@ -17,7 +17,7 @@ As a player fighting Arnim Zola, Zola's Creations, the Inhuman Rebellion, Maximu
 
 Today the engine fights every one of them at its printed base. Arnim Zola is fought at 6 when the HQ usually adds 8 to 12 more. After this session:
 
-- **Abomination** (Villain): +Attack equal to the printed Attack of the Hero in the HQ space directly under the Villain's City space.
+- **Abomination** (Villain): +Attack equal to the printed Attack of the Hero in the HQ space under the Villain's City space (by ordinal: `hq[4 - cityIndex]`, Assumes 5).
 - **Double Abomination** (Villain): twice that.
 - **Ultimate Abomination** (Mastermind): +Attack equal to the total printed Attack of all Heroes in the HQ.
 - **Double Highest Abomination** (Mastermind): +Attack equal to twice the highest printed Attack among the Heroes in the HQ.
@@ -62,7 +62,7 @@ Every copy of each villain is flagged (2 copies each; ids like `ca75-villain-zol
    - The binding is **ordinal**, from the physical board and the engine's index orders, not from pixel alignment on screen. On the tabletop the five HQ spaces sit under the five City spaces. The City's five spaces read Bridge … Sewers left to right (`docs/ai/DESIGN-BOARD-LAYOUT.md` §7.1, L307-312; the client renders City index `i` at City column `4 - i`, `apps/arena-client/src/composables/useCityRow.ts:84`). The HQ's five slots read index 0 … 4 left to right (`composables/useHqRow.ts:46`), and the engine's HQ "rightmost" is index 4 (`villain/villainEffects.execute.ts:1158`).
    - Therefore **the HQ space under City index `i` is `G.hq[4 - i]`**: Sewers ↔ the 5th (rightmost) HQ slot, Bridge ↔ the 1st (leftmost).
    - The arena-client does **not** column-align the two rows today: the City row leads with an Escaped Pile cell and the HQ row has no leading spacer (`CityRow.vue`, `HQRow.vue`, `pages/PlayDesktop.vue:907-935`), so on screen the HQ Hero that looks "under" Sewers is not reliably `hq[4]`. That is a client presentation gap (see Out of Scope), not a rules question; this packet binds by ordinal.
-6. **Setup precedent.** `setup/buildVillainBloodFrenzy.ts` scans selected villain groups' ability text and fans out per copy with `villainCardInstanceExtIds` (`villainDeck/villainDeck.setup.ts`). It is called at `setup/buildInitialGameState.ts:426` with `villainBuildConfig` and spread onto `G` only when non-empty (L865). `buildMastermindState` runs at L439 and its `baseCardId` = `` `${setAbbr}-mastermind-${slug}-${baseCard.slug}` `` (`mastermind/mastermind.setup.ts:253`), the base being the first non-tactic face (D-24193). `cardVictoryPoints` already keys the mastermind by that `baseCardId` (L445-449).
+6. **Setup precedent.** `setup/buildVillainBloodFrenzy.ts` scans selected villain groups' ability text and fans out per copy with `villainCardInstanceExtIds` (`villainDeck/villainDeck.setup.ts`). It is called at `setup/buildInitialGameState.ts:426` with `villainBuildConfig` and spread onto `G` only when non-empty (L865). `buildMastermindState` runs at L439 and its `baseCardId` = `` `${setAbbr}-mastermind-${slug}-${baseCard.slug}` `` (`mastermind/mastermind.setup.ts:253`), the base being the first non-tactic face (D-24193). `cardVictoryPoints` already keys the mastermind by that `baseCardId` (`buildCardVictoryPoints(registry as unknown, villainBuildConfig, mastermindState.baseCardId)`, L451-455).
 7. **No hashed fixture includes an affected card.** The sentinel is `core/dr-doom`; `PRE_WP080` is synthetic. A grep of `packages/**` and `apps/**` fixtures for the five group / two mastermind ids finds none (only `data/sweep-fixtures/mastermind-ids.full.json`, an id list).
 8. **Feeds are unaffected.** No `[effect:X]` token is added, so `ledger:villains`, `effect-index`, `mechanics:metadata` and `cards:check` do not change. Doughboy and Man-Fish already read `executable` through their marked lines; every other affected villain carries a still-unimplemented line (Zolandia's Fight, Lineage's Fight, Omega's Fight, Lash / The Unspoken's Ambush + Fight, co2e Abomination's Fight). No `subsystem-coverage.json` entry is added, because it would flip those rows to `subsystem` and hide their open lines. The simulation feeds cannot move either: `scripts/runtime-observed-hollows.mjs:131-140` sweeps only `core/dr-doom` + `core/brotherhood`, and `sim:coverage` (`scripts/hero-effect-coverage.mjs`) is a static hero parse.
 9. `pnpm -r build` exits 0 and `pnpm -r --no-bail test` is green on the baseline.
@@ -74,7 +74,10 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 - The 2026-10-19 ca75 audit (auto-memory `project_cap75_completion_arc`): both ca75 masterminds and three of four Zola's Creations villains are fought at their printed base.
 - WP-760 (`docs/ai/work-packets/WP-760-fallen-fight-side.md`) is the structural template: one omit-when-empty setup map, one additive term per authority.
 - The scope widens past ca75 to every Villain / Mastermind form of the keyword because one helper and one table row each cover them, and leaving rlmk / co2e on the old cost would ship two rules for one keyword.
-- User memory: `reference_client_fight_gating_ignores_fightcost`, `reference_hashed_g_field_dual_repin`.
+- `docs/ai/REFERENCE/00.2-data-requirements.md` §1.3 Mastermind Shape (`slug`, `tactic`, the base face), §1.4 Villain Group Shape (`cards`, `copies`, `abilities`), §5 Ability Text Markup Language (`[keyword:X]`, `[icon:attack]`).
+- `docs/ai/ARCHITECTURE.md` §Zone & Pile Structure (zones hold `CardExtId` only) and Section 3 — Persistence Boundaries (`G` is runtime-only; the new map is a setup snapshot).
+- `docs/ai/DECISIONS.md`: scan D-24295, D-24348, D-24589, D-24574, D-24545, D-24193, D-24372 before coding.
+- User memory: `reference_client_fight_gating_ignores_fightcost`, `reference_hashed_g_field_dual_repin`, `reference_engine_tests_never_typechecked`.
 
 ---
 
@@ -112,7 +115,7 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
   - Villain lines: scan `villainConfig.villainGroupIds` exactly like `buildVillainBloodFrenzy`. A line matching `/\[keyword:\s*double abomination\s*\]/i` → `double-abomination`; else `/\[keyword:\s*abomination\s*\]/i` → `abomination`; else the co2e sentence `/^[^:]*gets \+\[icon:attack\] equal to the printed \[icon:attack\] of the Hero in the HQ space under (?:his|her|its) current city space\.?$/i` → `abomination`. One entry per copy id from `villainCardInstanceExtIds`.
   - Mastermind: in the selected mastermind's non-tactic cards, find the card whose `` `${setAbbr}-mastermind-${slug}-${card.slug}` `` equals `mastermindBaseCardId` (equality, not a re-encoded first-face rule). A line matching `/\[keyword:\s*ultimate abomination\s*\]/i` → `ultimate-abomination`; `/\[keyword:\s*double highest abomination\s*\]/i` → `double-highest-abomination`.
   - Villain scans never emit a mastermind kind and the mastermind scan never emits a villain kind.
-- Wiring: `buildInitialGameState.ts` calls the builder **after** `buildMastermindState` with `mastermindState.baseCardId`, and spreads `...(Object.keys(cardAbomination).length > 0 ? { cardAbomination } : {})`.
+- Wiring: `buildInitialGameState.ts` calls `buildCardAbomination(registry as unknown, villainBuildConfig, config.mastermindId, mastermindState.baseCardId)` **after** `buildMastermindState`. `villainBuildConfig` (not `config`) because it carries the scheme-effective villain groups (`resolveEffectiveVillainGroupIds`), exactly as `buildVillainBloodFrenzy` receives it. It then spreads `...(Object.keys(cardAbomination).length > 0 ? { cardAbomination } : {})`.
 
 ---
 
@@ -131,7 +134,7 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 - **Lineage's Fight** ("Rescue Bystanders equal to the printed Attack of the Hero in the HQ space under Lineage") and every other open line on the affected cards (Zolandia, Omega, Lash, The Unspoken, co2e Abomination's Fight; Primus; both masterminds' strikes and tactics). They are later Cap 75th / rlmk WPs.
 - **Henchmen** (none print Abomination).
 - **Scheme-granted Abomination.** rlmk *Devolve with Xerogen Crystals* prints "All Xerogen Experiments also have [keyword:Abomination]". The scheme is `counter-only` today (`rules/schemeTwistConfigs.ts`), and Xerogen Experiments come from its own setup; both belong to that scheme's own WP, which can add its cards to `cardAbomination` at setup.
-- **Client changes** (WP-750 already renders the projected cost). Separately, the HQ row is not column-aligned under the City row on screen (Assumes 5); a client follow-up (a leading HQ spacer under the Escaped Pile, as on the physical board) is logged as an INFRA item, not part of this packet.
+- **Client changes** (WP-750 already renders the projected cost). Separately, the HQ row is not column-aligned under the City row on screen (Assumes 5); a client follow-up (a leading HQ spacer under the Escaped Pile, as on the physical board) was proposed on 2026-10-20 as its own INFRA session. It is not part of this packet; govern-close records its PR link, or a STATUS follow-up line if it has not landed.
 - **Ledger / feed changes** (Assumes 8).
 - **PAR regeneration** (see Vision Alignment).
 
@@ -169,7 +172,7 @@ Each case builds a minimal `G` (the `economy.resolve.test.ts` fixture style) unl
 | T5 | V not in the City (no index) | 6 | no HQ read |
 | T6 | `double-abomination` V at `city[0]`, `hq[4]` printed 3 | 12 | doubles the read |
 | T7 | `hq[4]` is a split card, faces printed 2 and 1 | +3 | uses `offPlayCardStats` |
-| T8 | `hq[4]` card with `attack` parsed from `"2+"` → 2; card with no stats | +2; +0 | no throw on missing stats |
+| T8 | `hq[4]` card with cardStats `attack: 2` (what `buildCardStats` yields for printed `"2+"`); a card with no cardStats entry | +2; +0 | no throw on missing stats |
 | T9 | T2 plus a Storm `-2` reduction on the Sewers | 7 | term before reduction, 0 floor kept |
 | T10 | V with no `cardAbomination` entry; and V whose entry is `ultimate-abomination` | base only | villain fn ignores mastermind kinds |
 | T11 | Mastermind base `fightCost 6`, `ultimate-abomination`, `hq` printed `[2, 0, null, 3, 1]` | `resolveMastermindFightCost` = 12 | null slot skipped |
@@ -180,8 +183,13 @@ Each case builds a minimal `G` (the `economy.resolve.test.ts` fixture style) unl
 | T16 | Setup: `rlmk/inhuman-rebellion` + `rlmk/maximus-the-mad` | Lineage / Omega / Lash copies `abomination`; The Unspoken copies `double-abomination`; `rlmk-mastermind-maximus-the-mad-maximus-the-mad` → `double-highest-abomination` | exactly 9 keys |
 | T17 | Setup: `co2e/radiation` + mastermind `co2e/doctor-doom` | exactly 2 keys: `co2e-villain-radiation-abomination-00` / `-01` → `abomination` | Maestro, The Leader, Zzzax unflagged |
 | T18 | Setup: the core sentinel config; a registry without `getSet` | builder `{}`; `G` has no `cardAbomination` key | `finalStateHash` and `PRE_WP080_HASH` unchanged |
-| T19 | `fightVillain` with V at `city[0]`, `hq[4]` printed 3, 6 attack available | refused (no `G` change); 9 available → defeated | move never throws |
-| T20 | `buildUIState`: City card V and an `ultimate-abomination` Mastermind | `city.spaces[0].fightCost` = 9; `mastermind.fightCost` = base + HQ sum | projection = resolver |
+| T19 | `fightVillain` with V (base 6) at `city[0]`, `hq[4]` printed 3, 6 attack available | refused (no `G` change); 9 available → defeated | move never throws |
+| T20 | `buildUIState`: City card V (base 6) at `city[0]` with `hq[4]` printed 3, and an `ultimate-abomination` Mastermind (base 6) with HQ printed `[2, 0, null, 3, 1]` | `city.spaces[0].fightCost` = 9; `mastermind.fightCost` = 12 | projection = resolver |
+
+**Setup fixtures (T15-T17).** Each test mock copies the relevant ability lines **verbatim** from `data/cards/{ca75,rlmk,co2e}.json` (a `// why:` comment names the source) and includes the negatives: Primus; Maestro, The Leader, Zzzax; every tactic card; and rlmk `epic-maximus-the-mad`, the second non-tactic face, which also prints `[keyword:Double Highest Abomination]` and must NOT produce a key (a builder that scans every non-tactic face would emit a 10th key in T16).
+
+| # | Input | Expected | Invariant / must NOT |
+|---|---|---|---|
 | T21 | `ABOMINATION_KINDS` drift | array equals the four union members, in order | runtime assertion (D-24372) |
 
 ## Vision Alignment
@@ -190,7 +198,7 @@ Each case builds a minimal `G` (the `economy.resolve.test.ts` fixture style) unl
 
 **Competitive surface:** ca75 Zola's Creations (9 composition rows) and rlmk Inhuman Rebellion (9 rows) appear in published gauntlet loadouts (`packages/registry/src/gauntletLoadouts.generated.ts`), and Arnim Zola (L254) and Maximus the Mad (L1181) are gauntlet masterminds. co2e Radiation is in no loadout. Raising their costs to the printed values makes those legs harder; published PAR for affected seeds may drift. That is the same fidelity shift every card WP carries; PAR regeneration stays with the PAR pipeline.
 
-**Conflict assertion:** None. Card fidelity only; nothing money can buy changes a game outcome (NG-1).
+**Conflict assertion:** No conflict: this WP preserves all touched clauses; none of NG-1..NG-8 is crossed (engine-only card fidelity, no paid or persuasive surface).
 
 **Determinism preservation:**
 - `cardAbomination` is omit-when-empty and built once at setup.
@@ -234,7 +242,9 @@ Each case builds a minimal `G` (the `economy.resolve.test.ts` fixture style) unl
 - [ ] Every Acceptance Criterion passes, the diff is allowlist-only, and the three revert proofs were observed.
 - [ ] D-24747 appended to `DECISIONS.md` as Active. `docs/ai/STATUS.md` updated.
 - [ ] WORK_INDEX `[x]`, EC_INDEX Done, mindmap `✅`, `roadmap:counts:check` exits 0.
+- [ ] `ledger:numbers:check` and `roadmap:counts:check` exit 0 after `pnpm roadmap:counts:write`.
 - [ ] Two-commit topology: `EC-853:` then `SPEC:`.
+- [ ] The client HQ-alignment follow-up is recorded (its PR link, or a STATUS follow-up line).
 - [ ] **D-24026 live-verify** (post-merge, REQUIRED). In a live `ca75/arnim-zola` match on `play.legendary-arena.com`, with the deployed gitSha checked:
   - the Mastermind tile shows `Fight 6 + total HQ printed Attack`, and it changes after a recruit;
   - an Abomination Villain's City tile shows its base + the printed Attack of the HQ Hero in the same ordinal position (Sewers ↔ the 5th HQ slot, Bank ↔ 4th, … Bridge ↔ 1st, counting HQ slots left to right), and the number changes when it moves one space. Judge by ordinal, not by what looks "under" on screen (Assumes 5);
@@ -271,6 +281,44 @@ Each case builds a minimal `G` (the `economy.resolve.test.ts` fixture style) unl
 
 The reviewer ruled no pre-flight re-run is needed: no scope, contract or code-path change.
 
+**Copilot (01.7), round 1 (independent subagent): RISK (HOLD), six text / governance fixes, all applied.** Layers, determinism, mutation, persistence, contracts, timing, failure handling and upgrade story all passed against live code; the regexes hit exactly the 12 intended lines across every villain, mastermind and scheme line.
+1. Lint self-review empty while the prompt claimed READY → the self-review below is filled from the independent 00.3 run, and the prompt reads READY only once the drafting PR merges.
+2. The client HQ-alignment follow-up was not actually logged → proposed as its own INFRA session on 2026-10-20; DoD now requires govern-close to record it.
+3. The session prompt carried steps the WP / EC lacked → `ledger:numbers:check` + `roadmap:counts:write` added to DoD and After Completing; the PR and prune steps are labelled 01.0a §Step 6 boilerplate.
+4. Which config / id the wiring passes → locked to `buildCardAbomination(registry as unknown, villainBuildConfig, config.mastermindId, mastermindState.baseCardId)`.
+5. Setup tests could test the Builder's own transcription → mocks copy ability lines verbatim from the card data and include the negatives, including `epic-maximus-the-mad`.
+6. T8 / T19 / T20 inputs made explicit.
+
+**Copilot (01.7), round 2 (independent subagent): RISK → CONFIRM after three wording fixes, all applied.** Every PS / RS item and round-1 fix re-verified against live code and data (`villainBuildConfig` assignable to `MatchSetupConfig`; the `epic-maximus-the-mad` negative is real; the locked regexes hit exactly 12 lines corpus-wide, the Xerogen scheme line among them and never scanned; no stale wording left). Fixes: the EC `// why:` for `hqSlotIndexUnderCitySpace` now argues by ordinal; the Goal drops "directly under"; this record and the lint table below are filled. Nits fixed: `reference_engine_tests_never_typechecked` added to Context; the `cardVictoryPoints` line cite corrected to L451-455.
+
+**Final gate state:** pre-flight READY TO EXECUTE · copilot CONFIRM · 00.3 PASS.
+
 ## Lint Gate Self-Review (00.3)
 
-Recorded after the independent gate run.
+From the independent 00.3 run (round 2 reviewer). One FAIL (§4) was fixed in place; the table shows the post-fix state.
+
+| § | Result |
+|---|---|
+| §1 | PASS — all required sections present; Out of Scope has 7 items |
+| §2 | PASS — engine-wide block, session protocol, packet-specific constraints, locked values |
+| §3 | PASS — files, exports, line anchors and data listed; no external state |
+| §4 | PASS after fix — Context now cites 00.2 §1.3 / §1.4 / §5, ARCHITECTURE §Zone & Pile Structure + Persistence Boundaries, and the DECISIONS scan list |
+| §5 | PASS — 12 files (4 new, 8 modified, half tests), justified; every referenced file listed |
+| §6 | PASS — canonical `mastermindId` / `villainGroupIds`; `cardAbomination` follows `cardKeywords` / `cardVictoryPoints` |
+| §7 | PASS — no new dependencies |
+| §8 | PASS — engine only, `registry: unknown`, no I/O, `G` stays JSON |
+| §9 | PASS — pnpm commands only |
+| §10 | N/A — no environment variables |
+| §11 | N/A — no auth |
+| §12 | PASS — pure-`G` fixtures and mock registries; hash oracles stand in for the golden test |
+| §13 | PASS — exact commands with exit-0 expectations, diff-scope step, revert proofs |
+| §14 | PASS — 8 binary criteria tied to T-cases |
+| §15 / §15.1 | PASS — STATUS, DECISIONS, indexes in DoD; D-24026 live-verify on `play.legendary-arena.com` |
+| §16 | PASS — style rules mandated; `hqSlotIndexUnderCitySpace` is a locked geometry primitive with a named future consumer |
+| §17 | PASS — §1 / §8 / §22 / §23 / §24 cited; NG-1..NG-8 conflict line; determinism + replay-compat |
+| §18 | N/A — no grep verification step |
+| §19 | N/A at draft — applies to the STATUS entry at close |
+| §20 | PASS — N/A with reason (engine only) |
+| §21 | PASS — N/A with reason; no `apps/server/src` or `api-endpoints.md` reference to the touched functions |
+
+**Verdict:** PASS.

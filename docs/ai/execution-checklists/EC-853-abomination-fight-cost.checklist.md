@@ -18,7 +18,8 @@
 - Printed Attack = `offPlayCardStats(G, heroId)?.attack ?? 0`.
 - Villain term: `cityIndex = G.city?.indexOf(id) ?? -1`; `hqIndex = hqSlotIndexUnderCitySpace(cityIndex)`; `abomination` → printed Attack of `G.hq?.[hqIndex]`; `double-abomination` → twice that; not in the City, `undefined` index, empty slot or any other kind → 0.
 - Mastermind term, keyed by `G.mastermind.baseCardId`: `ultimate-abomination` → sum over non-null HQ slots; `double-highest-abomination` → 2 × the highest (0 if empty); any other kind → 0.
-- Builder `buildCardAbomination(registry: unknown, villainConfig: MatchSetupConfig, mastermindId: string, mastermindBaseCardId: CardExtId)`, called after `buildMastermindState` with `mastermindState.baseCardId`.
+- Builder `buildCardAbomination(registry: unknown, villainConfig: MatchSetupConfig, mastermindId: string, mastermindBaseCardId: CardExtId)`. Call exactly `buildCardAbomination(registry as unknown, villainBuildConfig, config.mastermindId, mastermindState.baseCardId)` after `buildMastermindState` (`villainBuildConfig` carries the scheme-effective groups, the Blood Frenzy precedent).
+- Setup-test mocks copy ability lines verbatim from `data/cards/{ca75,rlmk,co2e}.json` and include the negatives: Primus, Maestro, The Leader, Zzzax, the tactics, and `epic-maximus-the-mad` (no key).
 - Villain patterns, first match wins: `/\[keyword:\s*double abomination\s*\]/i` → `double-abomination`; `/\[keyword:\s*abomination\s*\]/i` → `abomination`; `/^[^:]*gets \+\[icon:attack\] equal to the printed \[icon:attack\] of the Hero in the HQ space under (?:his|her|its) current city space\.?$/i` → `abomination`.
 - Mastermind patterns (on the non-tactic card whose id equals `mastermindBaseCardId`): `/\[keyword:\s*ultimate abomination\s*\]/i`, `/\[keyword:\s*double highest abomination\s*\]/i`.
 - Expected keys: ca75 Zola setup = 7; rlmk Inhuman Rebellion + Maximus = 9; co2e Radiation + `co2e/doctor-doom` = 2 (abomination `-00` / `-01` only).
@@ -34,7 +35,7 @@
 - No `.reduce()`, no nested ternaries; explicit `if` blocks. Nothing throws.
 
 ## Required `// why:` Comments
-- `hqSlotIndexUnderCitySpace`: the City renders right-to-left (Sewers rightmost) over a left-to-right HQ, so the space under index `i` is `4 - i` (D-24747, D-24295).
+- `hqSlotIndexUnderCitySpace`: on the physical board the City reads Bridge … Sewers left to right above HQ slots 0 … 4, so the space under City index `i` is HQ index `4 - i`. The binding is ordinal, not on-screen alignment (D-24747, D-24295).
 - The villain term: rules v23 L880-926, read at fight time because the cost moves with the City and the HQ.
 - `offPlayCardStats`: "printed" Attack drops the trailing `+`, and a Divided card adds both halves (rules v23 Divided Cards).
 - The mastermind lookup matches `baseCardId` by equality so it can never key a different face than `buildMastermindState` chose (D-24193).
@@ -56,7 +57,7 @@
 - [ ] `ledger:villains:check`, `effect-index:check`, `mechanics:metadata:check`, `cards:check` → 0 with no diff. `sim:runtime-observed:check`, `sim:coverage --check` → 0 with no regeneration; if either flags, STOP (WP Assumes 8 is false).
 - [ ] Revert proofs observed: drop each term, and the `4 -`; each fails a T-case.
 - [ ] `finalStateHash` and `PRE_WP080_HASH` unchanged.
-- [ ] D-24747 Active. STATUS updated. WORK_INDEX `[x]`. EC_INDEX Done. Mindmap `✅`. `roadmap:counts:check` 0.
+- [ ] D-24747 Active. STATUS updated (with the client HQ-alignment follow-up recorded). WORK_INDEX `[x]`. EC_INDEX Done. Mindmap `✅` + `pnpm roadmap:counts:write`. `roadmap:counts:check` and `ledger:numbers:check` 0.
 - [ ] Allowlist-only diff. Two-commit topology `EC-853:` then `SPEC:`.
 - [ ] Live-verify (D-24026) post-deploy STATUS-flip.
 
