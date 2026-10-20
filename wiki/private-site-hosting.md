@@ -68,6 +68,10 @@ layer behind Access: its live `/api/dash/*` routes require an admin Hanko
 session and return `401` without one, and the API's CORS allowlist names only
 the custom domain plus local dev
 ([`server.mjs`](../apps/server/src/server.mjs)).
+Both apps also carry a `Claude verify` Service Auth policy so Claude can curl
+the live pages with a service token; the setup, renewal, and troubleshooting
+are in the studio's
+[Access service-token runbook](https://studio-ewiki.barefootbetters.com/ops/cloudflare-access-service-token/).
 
 **Private vs. public sites.** Only these two sites are private. The public
 front-ends (play, cards, legends, www, lab) stay on Cloudflare Pages, where a
@@ -168,6 +172,9 @@ at `legendary-arena.cloudflareaccess.com`). They also keep the retired
   deleted, and #2700 recorded the outcome.
 - **2026-10-12** — #2704 dropped the retired `pages.dev` probe after the name
   left DNS. `check:domains`: 11 ok, 1 pending (`wiki.`), 0 failed.
+- **2026-10-20** — A `claude-verify` service token and a `Claude verify`
+  Service Auth policy were added to both Access apps; anonymous requests
+  still get the Access redirect.
 
 ## References
 
