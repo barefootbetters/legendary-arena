@@ -80,6 +80,17 @@
       "note": ""
     },
     {
+      "key": "core/captain-america|diving-block-mixed-seat",
+      "kind": "hero",
+      "card": "Captain America",
+      "ability": "Diving Block, Wound wave on the active seat and another seat (D-24743)",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-19",
+      "evidence": "2p bot-ally operator match P9oVujYd2B9 (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on): one Diving Block staged in each hand (1.2.13-14), then a Loki Master Strike revealed on Player 0's turn (1.2.15) addressed both seats (1.2.16-17). The active seat's reveal landed, preventing the Wound and drawing a card (1.2.19); the bot seat answered (1.2.20) and the game went on with no fault. Final state: Player 0 0 Wounds, Player 1 1, Wound pile 29.",
+      "note": "D-24743 (#2884): the active seat is admitted to a mixed Diving Block wave. In P9oVujYd2B9 the bot ally declined its own reveal (it submitted the absent-seat default); D-24744 (#2900) made the bot reveal, confirmed live in match 2ijakQ1yGsV."
+    },
+    {
       "key": "core/captain-america|recruit-per-count",
       "kind": "hero",
       "card": "Captain America",
@@ -790,9 +801,9 @@
       "ability": "koHeroCurrentPlayer",
       "wp": "WP-185",
       "state": "verified",
-      "date": "2026-10-15",
-      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Repeated in match nNR91fCRKsX (build 17ccd6b): eight more Sentinel fights, all from played cards. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff).",
-      "note": "Hand side unexercised — every fight came after the whole hand was played."
+      "date": "2026-10-19",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Repeated in match nNR91fCRKsX (build 17ccd6b): eight more Sentinel fights, all from played cards. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). Hand side: 2p bot-ally operator match 4-YFzCBfK9L (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on) — Player 0 fought Sentinel after playing two cards with the rest of the hand still held (17.2.6) and KO'd Covering Fire from their hand (17.2.8).",
+      "note": "Both sides seen: KO from the cards played this turn and KO from hand."
     },
     {
       "key": "core-villain-skrulls-skrull-queen-veranke|captureHqHeroHighestCost",
@@ -1114,6 +1125,17 @@
       "note": "Multi-seat branch confirmed. The one-target free-defeat path (Silent Sniper / Pure Fury, D-24681) has its own live-verify line in STATUS."
     },
     {
+      "key": "mastermind:core/loki|vanishing-illusions-henchmen",
+      "kind": "mastermind",
+      "card": "Loki",
+      "ability": "Tactic: Vanishing Illusions, Henchmen count as Villains (D-24742)",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-19",
+      "evidence": "2p bot-ally operator match P9oVujYd2B9 (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on): the bot's Victory Pile held only Sentinel (defeated 2.2.8) when Player 0 took Vanishing Illusions (7.2.15); the bot was addressed and KO'd Sentinel (7.2.18). No operator staging was needed. Final state: the bot's Victory Pile is Baron Zemo + a Bystander, with Sentinel gone. Mixed pile: 2p bot-ally operator match 4-YFzCBfK9L (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on) — with Hand Ninjas x2 and Melter in its Victory Pile, the bot was addressed and KO'd a Hand Ninjas (15.2.39).",
+      "note": "D-24742 (#2883): a Henchmen-only Victory Pile is addressed. Before the fix that seat was skipped."
+    },
+    {
       "key": "mastermind:core/loki|whispers-and-lies",
       "kind": "mastermind",
       "card": "Loki",
@@ -1254,7 +1276,7 @@
       "state": "verified",
       "date": "2026-10-17",
       "evidence": "4p operator match Y1w7rCsC8Ek (server 85771ab6), Loki / Super Hero Civil War, 3 bot allies: the engine reported schemeTwistThreshold 5; after Twist 1 (18.1.1–18.1.7, KO'd all 5 HQ Heroes) the Villain Deck still held scheme-twist-super-hero-civil-war-00, -02, -03 and -04 — 5 in all.",
-      "note": "Unit evidence: buildInitialGameState.civilWarSizing.test.ts (8/8/5/5 at 2-5 players). The match was stopped at turn 23 by a bot-ally fault, unrelated to the twist count."
+      "note": "Live: 5 Twists at 4 players (Y1w7rCsC8Ek). Unit: buildInitialGameState.civilWarSizing.test.ts pins 8/8/5/5 at 2-5 players."
     },
     {
       "key": "scheme:core/legacy-virus-the|wound-loss",
@@ -1298,7 +1320,7 @@
       "state": "verified",
       "date": "2026-10-06",
       "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): 6 Hero decks in setup; Skrull Heroes entered from the Villain Deck and were gained on defeat; twists moved the highest-cost HQ Hero to the Sewers (7 twists).",
-      "note": "Evil Wins (6 Heroes escaped) not reached."
+      "note": "Evil Wins (6 Heroes in the Escaped Villains pile) is verified on the escape-loss row (2026-10-17)."
     },
     {
       "key": "scheme:core/secret-invasion-of-the-skrull-shapeshifters|escape-loss",
@@ -1409,6 +1431,17 @@
       "date": "2026-10-17",
       "evidence": "Operator match G0nCu29pk28 (server build 3c9f632d), 2p with a bot ally, Red Skull / Secret Invasion of the Skrull Shapeshifters (HYDRA + Skrulls; Black Widow, Deadpool, Rogue, Captain America, Spider-Man, Storm): +3 after Perfect Teamwork (Strength) at 14.2.4, 20.2.4 and 26.2.21; the bot's +3 after Astonishing Strength (15.2.12) and after a first Borrowed Brawn that was itself blocked (23.2.5 → 23.2.9); blocked when played first (8.2.2; the bot's 9.2.5 / 19.2.5). A Steal Abilities copy of Borrowed Brawn also fired its +3 (30.2.13–30.2.14). Earlier blocked half: 8Mw9mLkcgQ4 13.2.12.",
       "note": "Unmarked \"[hc:strength]: +3\" superpower; no ledger mechanic. The L3yPdfS179l 16.2.8 firing was the D-24730 carry-over bug, not this evidence."
+    },
+    {
+      "key": "wound:core/wound|healing",
+      "kind": "wound",
+      "card": "Wound",
+      "ability": "Healing: KO all Wounds from your hand if you did not recruit or fight this turn",
+      "wp": "WP-380",
+      "state": "verified",
+      "date": "2026-07-15",
+      "evidence": "Red Skull game, match 8Qh6W1WAI7j (gitSha 80ba584): Player 0 healed on turns 16, 24 and 32, KO'ing 1-2 Wounds each, with no fight or recruit those turns (WP-380 D-24026, STATUS).",
+      "note": "Row added 2026-10-19; the confirmation predates this record. Heal and the no-fight / no-recruit lock (D-24180) both seen."
     }
   ]
 }
