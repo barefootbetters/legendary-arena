@@ -24,9 +24,20 @@ path; no `path.Join "wiki"` is needed.
 {{- $text := .Text -}}
 {{- $title := "" -}}
 {{- with .Title -}}{{- $title = . -}}{{- end -}}
+{{- /*
+why: a `/`-rooted destination is a site path, never a page slug — the same
+static-asset URL an image uses (`/<slug>/<name>.png`, projected from
+ewiki/<slug>/). It passes through unchanged so an image wrapped in a link to
+its own file opens full size. Without this branch the slug branch below
+rewrote it to `//<slug>/<name>.png/`, a protocol-relative URL to a host named
+after the slug. SCHEMA.md forbids `/`-rooted page links, so no page link
+takes this path; check-links.mjs already exempts `/`-rooted destinations.
+*/ -}}
 {{- $isInventoryPage := eq .Page.File.LogicalName "architecture-inventory.md" -}}
 {{- $githubBase := "https://github.com/barefootbetters/legendary-arena/blob/main/" -}}
 {{- if or (hasPrefix $dest "http://") (hasPrefix $dest "https://") (hasPrefix $dest "mailto:") (hasPrefix $dest "#") -}}
+  <a href="{{ $dest | safeURL }}"{{ with $title }} title="{{ . }}"{{ end }}>{{ $text | safeHTML }}</a>
+{{- else if hasPrefix $dest "/" -}}
   <a href="{{ $dest | safeURL }}"{{ with $title }} title="{{ . }}"{{ end }}>{{ $text | safeHTML }}</a>
 {{- else if hasPrefix $dest "../" -}}
   {{- $abs := path.Join "wiki" $dest -}}
