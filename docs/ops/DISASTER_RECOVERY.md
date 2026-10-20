@@ -140,7 +140,7 @@ secrets.** The server is replaceable; those three are not.
 | Database (local) | Droplet Postgres | `pg_dump -Fc`, lab `50-backup.ps1`, nightly 09:17 UTC (`la-backup` timer) | Droplet `/var/backups/la` | Last 7 dumps; lost with the droplet | `la-droplet-monitor` alerts if the newest is over 26 h old |
 | Database (external) | the same dump | Uploaded by the same run | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09; restored onto the droplet 2026-10-12 (§7)** |
 | Database (2nd offsite) | the same dump | `rclone` mirror in the same run | pCloud (US region), `db-backups/` — independent of Cloudflare | Same GFS policy, pruned separately | **Drilled 2026-08-10 (§7)**; first droplet mirror byte-identical to R2, 2026-10-12 |
-| Droplet disk image | the whole `la-rehearsal-01` disk | DigitalOcean usage-based Droplet backup, plan `custom_daily`, enabled 2026-10-20 (API action 3485061489); a crash-consistent image, not a database backup ([Provider-native options](#provider-native-options-digitalocean)) | DigitalOcean, same account as the droplet | 7 days | Daily, 08:00–12:00 UTC window; first image due 2026-10-21. Image restore not yet drilled |
+| Droplet disk image | the whole `la-rehearsal-01` disk | DigitalOcean usage-based Droplet backup, plan `custom_daily`, enabled 2026-10-20 (API action 3485061489; the control panel shows it under the **Usage-Based** tab at $0.03/GiB); a crash-consistent image, not a database backup ([Provider-native options](#provider-native-options-digitalocean)) | DigitalOcean, same account as the droplet | 7 days | Daily, 08:00–12:00 UTC window; first image due 2026-10-21. Image restore not yet drilled |
 | Card images | R2 upload pipeline | manual/scripted | Cloudflare R2; source bytes in pCloud `card-images-staging/original/` | indefinite | image loads |
 | Source code | GitHub | git | GitHub + local clones | full history | every clone |
 | Secrets | operator | manual | droplet `/etc/la/*.env` + operator secret store | operator-managed | §4 completeness |
@@ -256,7 +256,8 @@ the WAL and Managed rows above.
 
 Operator-only: it changes the DigitalOcean account and adds a monthly charge.
 
-1. **Settings.** Usage-Based plan, Daily, retention 7 days. The image is the
+1. **Settings.** Usage-Based plan, Daily, retention 7 days (the panel allows
+   7–30 for daily). The image is the
    speed layer and R2 / pCloud keep the history, so a long retention buys
    nothing. Window: 08:00–12:00 UTC (01:00–05:00 Pacific), the quietest hours.
    The 13-second nightly dump at 09:17 falls inside it, which is harmless.

@@ -88,7 +88,7 @@ of the canonical doc, recovery assumes it is lost.
 | Local (on the droplet) | `pg_dump -Fc` by the lab's `50-backup.ps1` | the droplet's local disk, last 7 dumps | Fastest restore source; lost with the droplet. |
 | External (provider-independent) | the same dump, daily 09:17 UTC by the droplet's `la-backup` systemd timer (`50-backup.ps1` in `legendary-arena-lab`), which then pings the healthchecks.io check `la-droplet-backup` | private Cloudflare R2 bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | **Primary** offsite copy. GFS retention: 35 daily · 12 weekly · 12 monthly. Same key layout and retention as the WP-416 / D-24236 GitHub Actions nightly ([`db-backup.yml`](../.github/workflows/db-backup.yml)), which ran from 2026-08-09 and was disabled at the 2026-10-12 cutover. Restore from R2 drilled 2026-10-11/12 (`51-restore.ps1`, `RESTORE_FROM_R2=latest`). |
 | Second offsite (3-2-1) | the same dump, `rclone` in the same `50-backup.ps1` run, on every production backup; it reports to its own healthchecks.io check `la-droplet-pcloud` | pCloud, `db-backups/` (US region, `api.pcloud.com`) | Vendor independent of Cloudflare, same GFS policy. Ran in the GitHub Actions nightly from 2026-08-10 (restore drilled 2026-08-10). It is permanent on the droplet (lab #30): a missing `BACKUP_PCLOUD_TOKEN` or a failed copy pings `la-droplet-pcloud` as failed, while `la-droplet-backup` stays green because R2 already holds the dump. The first droplet mirror landed 2026-10-12, byte-identical to the R2 object. How it runs, the token, and the checks: [Ubuntu Lab Provisioning § Offsite backups](ubuntu-lab-provisioning.md#offsite-backups-r2--pcloud). |
-| Droplet disk image | the whole `la-rehearsal-01` disk | DigitalOcean, same account as the droplet | **Enabled 2026-10-20:** usage-based plan `custom_daily`, 08:00–12:00 UTC window, 7-day retention, first image due 2026-10-21. A speed layer for rebuilding a lost droplet. It is a crash-consistent image, not a database backup, and its restore is not yet drilled. See [Provider-native options](#provider-native-options-digitalocean). |
+| Droplet disk image | the whole `la-rehearsal-01` disk | DigitalOcean, same account as the droplet | **Enabled 2026-10-20:** usage-based plan `custom_daily` (the panel's Usage-Based tab, $0.03/GiB), 08:00–12:00 UTC window, 7-day retention, first image due 2026-10-21. A speed layer for rebuilding a lost droplet. It is a crash-consistent image, not a database backup, and its restore is not yet drilled. See [Provider-native options](#provider-native-options-digitalocean). |
 
 The external layers are the ones that make a provider-loss recoverable. They
 are a full-database operational `pg_dump` — **not** an application read of
@@ -162,8 +162,8 @@ DigitalOcean's docs. Where the review was wrong, the table says so.
 charge). Canonical steps: [`docs/ops/DISASTER_RECOVERY.md`](../docs/ops/DISASTER_RECOVERY.md)
 §3 *Enabling Droplet backups*.
 
-1. **Settings:** Usage-Based, Daily, 7-day retention (R2 and pCloud keep the
-   history), window 08:00–12:00 UTC (01:00–05:00 Pacific).
+1. **Settings:** Usage-Based, Daily, 7-day retention (7–30 allowed; R2 and
+   pCloud keep the history), window 08:00–12:00 UTC (01:00–05:00 Pacific).
 2. **Cost:** the daily rate is $0.03 per GiB of restorable (used) disk per
    month. The basic daily plan is 30 % of the droplet, $7.20/mo. Read the
    panel's estimate before you enable.
