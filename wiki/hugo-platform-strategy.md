@@ -21,10 +21,10 @@ last-reviewed: 2026-10-20
 
 ## Summary
 
-We run five Hugo wikis, and each carries its own forked copy of a
-hand-rolled theme. The real question is whether to keep four diverging
-themes or move to one shared platform; which theme that platform uses
-is a second, smaller question. Both are decided: converge (D-24725), on
+Our Hugo wikis each started on their own forked copy of a hand-rolled
+theme. The real question was whether to keep those diverging copies or
+move to one shared platform; which theme that platform uses was a
+second, smaller question. Both are decided: converge (D-24725), on
 the current theme extracted into one shared copy (D-24727), after a
 Hextra pilot showed Hextra doesn't fix the drift. The extracted theme is
 released as `barefootbetters/bb-studio-ewiki-theme` (renamed from
@@ -73,6 +73,8 @@ Herbs ewiki       -> shared theme       ├── shared theme
 Personal wiki     -> theme copy C       ├── shared search
 Corporate memory  -> shared theme       ├── shared branding
 Studio ewiki      -> shared theme
+Scooby wiki       -> shared theme
+Studio site       -> shared theme
 Marketing         -> PaperMod           ├── shared components
                                         └── shared deployment guidance
 
@@ -82,6 +84,8 @@ Marketing         -> PaperMod           ├── shared components
                                         ├── Personal wiki
                                         ├── Corporate memory
                                         ├── Studio ewiki
+                                        ├── Scooby engine wiki
+                                        ├── Studio site
                                         └── future customer ewikis
 
                                         Marketing stays on PaperMod
