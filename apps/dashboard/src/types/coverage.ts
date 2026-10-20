@@ -104,13 +104,22 @@ export interface SetCoverageEntry {
   percentExecutable: number;
 }
 
+/** How many of a mechanic's card rows carry one status. */
+export interface MechanicStatusCount {
+  status: LedgerStatus;
+  count: number;
+}
+
 /**
  * A by-mechanic dictionary entry — the implementation worklist view. One per
  * distinct mechanic, since implementing one mechanic clears every card using it.
  */
 export interface MechanicEntry {
   mechanic: string;
+  /** The least-done status among this mechanic's cards (done only when all are). */
   status: LedgerStatus;
+  /** Card rows per status, done-first; more than one entry means the cards disagree. */
+  statusCounts: MechanicStatusCount[];
   cardCount: number;
   wp: string;
   decision: string;

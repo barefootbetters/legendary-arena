@@ -255,3 +255,45 @@ test('the bundled ledger rolls up to one breakdown entry per set, summing to the
   assert.equal(totalRows, view.summary.value.totalRows);
   assert.deepEqual(summarizeRows(view.rows.value), view.summary.value);
 });
+
+test('buildMechanicDictionary keeps every status of a mixed mechanic and headlines the least-done', () => {
+  const rows: LedgerRow[] = [
+    makeRow({ extId: 'co2e/a', mechanic: 'reveal-count', status: 'unsupported' }),
+    makeRow({
+      extId: 'core/a',
+      mechanic: 'reveal-count',
+      status: 'subsystem',
+      wp: 'WP-478',
+      decision: 'D-24514',
+      handler: 'setup:reveal-count-modifier',
+    }),
+    makeRow({ extId: 'x/a', mechanic: 'transform', status: 'executable' }),
+    makeRow({ extId: 'x/b', mechanic: 'transform', status: 'unsupported' }),
+    makeRow({ extId: 'x/c', mechanic: 'transform', status: 'unsupported' }),
+    makeRow({ extId: 'x/d', mechanic: 'draw', status: 'executable' }),
+  ];
+  const dict = buildMechanicDictionary(rows);
+
+  const revealCount = dict.find((entry) => entry.mechanic === 'reveal-count');
+  assert.equal(revealCount?.status, 'unsupported');
+  assert.deepEqual(revealCount?.statusCounts, [
+    { status: 'subsystem', count: 1 },
+    { status: 'unsupported', count: 1 },
+  ]);
+  // attribution comes from the first row that has it, not the first row seen
+  assert.equal(revealCount?.wp, 'WP-478');
+  assert.equal(revealCount?.decision, 'D-24514');
+  assert.equal(revealCount?.handler, 'setup:reveal-count-modifier');
+
+  const transform = dict.find((entry) => entry.mechanic === 'transform');
+  assert.equal(transform?.status, 'unsupported');
+  assert.deepEqual(transform?.statusCounts, [
+    { status: 'executable', count: 1 },
+    { status: 'unsupported', count: 2 },
+  ]);
+
+  const draw = dict.find((entry) => entry.mechanic === 'draw');
+  assert.deepEqual(draw?.statusCounts, [{ status: 'executable', count: 1 }]);
+  // a mixed mechanic sorts with its least-done status, after the fully done one
+  assert.equal(dict[0]?.mechanic, 'draw');
+});

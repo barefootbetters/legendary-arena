@@ -56,6 +56,14 @@ const GENERATED_DATA_FILES = [
     relativePath: join("src", "data", "par-fidelity.json"),
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:par",
   },
+  {
+    relativePath: join("src", "data", "wiki-lint.json"),
+    remedy: "pnpm --filter @legendary-arena/dashboard prebuild:wiki-lint",
+  },
+  {
+    relativePath: join("src", "data", "coach-eval.json"),
+    remedy: "pnpm --filter @legendary-arena/dashboard prebuild:coach-eval",
+  },
 ];
 
 const missingFiles = [];
