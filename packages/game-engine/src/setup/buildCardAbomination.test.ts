@@ -4,7 +4,8 @@
  * Covers T15-T18: the exact key sets for the ca75, rlmk and co2e Abomination
  * cards, the negatives (Primus, Maestro, The Leader, Zzzax, every tactic, and the
  * second non-tactic face `epic-maximus-the-mad`), and the empty map for a core
- * match or a registry without getSet (so setup omits G.cardAbomination).
+ * match or a registry without getSet (so setup omits G.cardAbomination), plus the
+ * positive setup path that keys G.mastermind.baseCardId.
  *
  * Uses node:test only — no boardgame.io imports.
  */
@@ -99,6 +100,9 @@ const CO2E_SET = {
         { slug: 'doctor-doom', tactic: false, abilities: ['If there is at least one Omen of Doom, all Doombot Legions get +1[icon:attack]. If there are at least four Omens, then instead Doctor Doom and all Doombot Legions get +2[icon:attack].', 'Always Leads: Doombot Legions', 'Master Strike: Stack this Strike next to Doctor Doom as "Omen of Doom." Then each player discards cards equal to the number of Omens or gains a Wound.'] },
         { slug: 'epic-doctor-doom', tactic: false, abilities: ['All Doombot Legions get +2[icon:attack]. If there are at least four Omens of Doom, then instead Doctor Doom and all Doombot Legions get +4[icon:attack].', 'Always Leads: Doombot Legions', 'Master Strike: Stack this Strike next to Doctor Doom as an "Omen of Doom." Then each player discards cards equal to one plus the number of Omens or gains a Wound.'] },
         { slug: 'dark-technology', tactic: true, abilities: ['Fight: You may recruit a [hc:tech] or [hc:ranged] Hero from the HQ for free.'] },
+        { slug: 'monarchs-decree', tactic: true, abilities: ['Fight: Choose one: each other player draws a card or each other player discards a card.'] },
+        { slug: 'secrets-of-time-travel', tactic: true, abilities: ['Fight: Take another turn after this one.'] },
+        { slug: 'treasures-of-latveria', tactic: true, abilities: ['Fight: When you draw a new hand of cards at the end of this turn, draw three extra cards.'] },
       ],
     },
   ],
@@ -124,6 +128,9 @@ const CORE_SET = {
       cards: [
         { slug: 'dr-doom', tactic: false, abilities: ['Always Leads: Doombot Legion', 'Master Strike: Each player with exactly 6 cards in hand reveals a [hc:tech] Hero or puts 2 cards from their hand on top of their deck.'] },
         { slug: 'dark-technology', tactic: true, abilities: ['Fight: You may recruit a [hc:tech] or [hc:ranged] Hero from the HQ for free.'] },
+        { slug: 'monarchs-decree', tactic: true, abilities: ['Fight: Choose one: each other player draws a card or each other player discards a card.'] },
+        { slug: 'secrets-of-time-travel', tactic: true, abilities: ['Fight: Take another turn after this one.'] },
+        { slug: 'treasures-of-latveria', tactic: true, abilities: ['Fight: When you draw a new hand of cards at the end of this turn, draw three extra cards.'] },
       ],
     },
   ],
@@ -262,5 +269,29 @@ describe('buildCardAbomination (WP-815 / D-24747)', () => {
       makeMockCtx({ numPlayers: 2 }),
     );
     assert.equal(Object.prototype.hasOwnProperty.call(gameState, 'cardAbomination'), false);
+  });
+
+  // why: buildCardAbomination builds the mastermind key from its own id template, while
+  // setup passes it buildMastermindState's baseCardId. Running the real setup path (with
+  // listSets + getSet, so buildMastermindState resolves the ca75 base face instead of
+  // falling back to the qualified id) catches drift between the two templates.
+  it('setup populates G.cardAbomination for ca75 Zola and keys G.mastermind.baseCardId as ultimate-abomination', () => {
+    const gameState = buildInitialGameState(
+      makeConfig(['ca75/zolas-creations'], 'ca75/arnim-zola'),
+      makeCardRegistryReader({ listSets: () => [{ abbr: 'ca75' }], getSet: REGISTRY.getSet }),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+    assert.equal(gameState.mastermind.baseCardId, 'ca75-mastermind-arnim-zola-arnim-zola');
+    assert.ok(gameState.cardAbomination !== undefined, 'G.cardAbomination is present');
+    assert.deepStrictEqual(gameState.cardAbomination, {
+      'ca75-villain-zolas-creations-captain-zolandia-00': 'abomination',
+      'ca75-villain-zolas-creations-captain-zolandia-01': 'abomination',
+      'ca75-villain-zolas-creations-doughboy-00': 'abomination',
+      'ca75-villain-zolas-creations-doughboy-01': 'abomination',
+      'ca75-villain-zolas-creations-man-fish-00': 'abomination',
+      'ca75-villain-zolas-creations-man-fish-01': 'abomination',
+      'ca75-mastermind-arnim-zola-arnim-zola': 'ultimate-abomination',
+    });
+    assert.equal(gameState.cardAbomination[gameState.mastermind.baseCardId], 'ultimate-abomination');
   });
 });

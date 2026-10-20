@@ -23,7 +23,7 @@ import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { DARK_PORTAL_COUNT } from '../types.js';
 import { makeCardStatEntry } from '../test/fixtureBuilders.js';
-import { resolveMastermindFightCost } from '../economy/economy.resolve.js';
+import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { getLegalMoves } from '../simulation/ai.legalMoves.js';
@@ -2502,7 +2502,9 @@ describe('buildUIState — City and Mastermind fightCost include Abomination (WP
     assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 6, 'no kind: base only');
 
     gameState.cardAbomination = { [villainId]: 'abomination' };
-    assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 9);
+    const projectedFightCost = buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost;
+    assert.equal(projectedFightCost, 9);
+    assert.equal(projectedFightCost, resolveFightCost(gameState, villainId, mockCtx.currentPlayer));
   });
 
   it('projects an Ultimate Abomination Mastermind (base 6) with HQ printed [2, 0, null, 3, 1] as 12', () => {
