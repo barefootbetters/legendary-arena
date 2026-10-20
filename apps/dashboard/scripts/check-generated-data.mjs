@@ -45,6 +45,10 @@ const GENERATED_DATA_FILES = [
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:coverage",
   },
   {
+    relativePath: join("src", "data", "coverage-set-names.json"),
+    remedy: "pnpm --filter @legendary-arena/dashboard prebuild:coverage",
+  },
+  {
     relativePath: join("src", "data", "effect-implementation-index.json"),
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:effect-index",
   },
