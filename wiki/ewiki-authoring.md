@@ -24,9 +24,11 @@ source:
   - ../apps/wiki-viewer/layouts/shortcodes/include-section.html
   - ../apps/wiki-viewer/layouts/shortcodes/service-impact.html
   - ../apps/wiki-viewer/layouts/partials/editing-this-page.html
+  - ../apps/wiki-viewer/layouts/_default/_markup/render-link.html
+  - ../apps/wiki-viewer/scripts/check-links.mjs
   - ../docs/ai/DECISIONS.md
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-10-14
+last-reviewed: 2026-10-19
 ---
 
 # Ewiki Authoring
@@ -49,6 +51,40 @@ formatting tools are available once you're writing content.
 > a PR even when they are one word. CI then rebuilds and deploys.
 > Full steps: the *Fast path* section of
 > [Wiki Viewer](wiki-viewer.md), or [Hugo Onboarding](hugo-onboarding.md).
+
+## Quick start
+
+Four rules cover most of it:
+
+- **The file in `wiki/` is the page.** There's no other copy to edit. The
+  copy under `apps/wiki-viewer/content/` is regenerated on every build, so
+  an edit there is lost. A page's images and diagrams go in `ewiki/<slug>/`.
+- **Write a fact once.** Link to the page that owns it, or show its section
+  in place with `include-section`. Don't copy it: copies drift.
+- **Write links for GitHub,** relative to the page: `scoring.md` for another
+  wiki page, `../docs/ai/DECISIONS.md` for a repo file. The wiki rewrites
+  them. Images are the one exception: they use a site path,
+  `/<slug>/<name>.png`.
+- **The build is strict about links, not about everything.** A broken page
+  link (the case must match), an `include-section` heading that no longer
+  exists, or a `<script>` fails it, and the PR goes red before anything
+  deploys. Raw HTML is dropped without an error, a missing image just 404s,
+  and a missing front-matter field shows up only in the wiki lint report.
+  Preview before you open the PR.
+
+Common tasks:
+
+| To | Do this | More |
+|---|---|---|
+| Add a page | Create `wiki/<slug>.md`, named in lowercase hyphenated words. Start from another page's front matter: `title`, `type`, `tags`, `related`, `status` and `last-reviewed` are required, and `source` opens with the page's own path. Write the five required sections in order, then add a line for it to `wiki/INDEX.md`. | [How to create a new wiki page](wiki-viewer.md#how-to-create-a-new-wiki-page) |
+| Link to a page | `[Master Strike](master-strike.md)`: the file name, lowercase, no folder. A repo file is `../` plus its path from the repo root. | [Cross-reference conventions](SCHEMA.md#cross-reference-conventions) |
+| Show another page's section | The `include-section` shortcode, naming the owner page's slug and the heading's anchor | [Including a section](#including-a-section-from-another-page) |
+| Show an image | Save it in `ewiki/<slug>/` and commit it, then write `![what it shows](/<slug>/<name>.png)` | [Adding an image](#adding-an-image-to-a-page) |
+| Let a reader open an image full size | Not supported yet: the link hook breaks a `/`-rooted link | [Opening an image full size](#opening-an-image-full-size) |
+| Draw a diagram | Write it in Mermaid, commit the `.mmd` and a static `.svg` render under `ewiki/<slug>/`, and show the SVG as an image. A `mermaid` fence won't render: it needs JavaScript. | [Embedding diagrams](#embedding-diagrams) |
+| Preview locally | `pnpm wiki-viewer:dev` from the repo root, then `http://localhost:1313` | [How to preview locally](wiki-viewer.md#how-to-preview-locally) |
+| Publish | Commit with an `INFRA:` message on a new branch, open a PR, and merge it once CI is green. The merge deploys. | [How to publish](wiki-viewer.md#how-to-publish) |
+| Fix a red build | Open the failed `wiki-viewer` run. The step that failed names the page and what's wrong. | [Build pipeline](wiki-viewer-architecture.md#build-pipeline-what-runs-on-push-and-on-prs) |
 
 ## Mechanics
 
@@ -568,6 +604,23 @@ and fail in production:
 
 The rule in one line: **page content goes in `wiki\`, image and diagram
 assets go in `ewiki\<slug>\`, and both get committed.**
+
+### Opening an image full size
+
+Not supported yet. The usual Markdown for it, an image wrapped in a link to
+its own file, renders a broken link here:
+
+```
+[![Exploded view](/legendary-forge/exploded-view.png)](/legendary-forge/exploded-view.png)
+```
+
+The link render hook
+([render-link.html](../apps/wiki-viewer/layouts/_default/_markup/render-link.html))
+treats any link that isn't external, an anchor, or `../` as a wiki page
+slug, so the link comes out as `//legendary-forge/exploded-view.png/`, which
+a browser reads as a host named `legendary-forge`. The image itself still
+shows; only the link is broken. Until the hook passes `/`-rooted links
+through, the image shows at page width only.
 
 ### Where ewiki files are saved
 
