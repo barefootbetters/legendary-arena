@@ -416,6 +416,9 @@ import type {
   VillainDefeatRequirement,
 } from './rules/villainAbility.types.js';
 import type { NotableGameEvent } from './events/notableEvents.types.js';
+// why: WP-815 / D-24747 — G.cardAbomination values are the closed AbominationKind
+// union, which lives beside its consumers (the heroKeywords.js precedent).
+import type { AbominationKind } from './economy/abomination.logic.js';
 // why: WP-257 / D-24034 — GameDiagnostics is the runtime-only hollow-effect
 // channel shape (plain JSON; never persisted, never gameplay input).
 import type { GameDiagnostics } from './diagnostics/hollowEffect.types.js';
@@ -2693,6 +2696,17 @@ export interface LegendaryGameState {
   // a cost modifier, not City-structural (patrol / ambush / guard).
   /** Blood Frenzy villain instances. Built at setup, read-only; absent when none. */
   villainBloodFrenzy?: Record<CardExtId, true>;
+
+  // why: WP-815 / D-24747 — per-card Abomination kind. Villain copies (Abomination /
+  // Double Abomination) are keyed by copy-suffixed instance ext_id; the Mastermind
+  // (Ultimate / Double Highest Abomination) by G.mastermind.baseCardId. Read only by
+  // resolveFightCost and resolveMastermindFightCost, which add the printed Attack of
+  // HQ Heroes at fight time. Built once at setup; OMITTED ENTIRELY when no selected
+  // card prints Abomination, so every other match keeps a byte-identical G (hash
+  // oracles). Not a BoardKeyword: Abomination is a cost modifier (the Blood Frenzy
+  // precedent).
+  /** Abomination kinds by card. Built at setup, read-only; absent when none. */
+  cardAbomination?: Record<CardExtId, AbominationKind>;
 
   // why: WP-200 — append-only structured event log emitted at four fire
   // sites (fightVillain.ts, villainDeck.reveal.ts ambush branch,

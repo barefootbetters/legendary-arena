@@ -7,7 +7,8 @@
  * costs. Scheme bonuses stack on top: the Portals Dark-Portal space bonus
  * (WP-539) and the Midtown Bank Robbery family's +1 per attached Bystander
  * (WP-748). A Blood Frenzy villain adds the fighting player's distinct Victory
- * Point value count (WP-760). The UI must never recompute dynamic values — it consumes the
+ * Point value count (WP-760). An Abomination villain or mastermind adds the printed Attack of
+ * HQ Heroes (WP-815). The UI must never recompute dynamic values — it consumes the
  * engine-resolved projection from UIState.
  *
  * No boardgame.io import. No ctx dependency. No randomness. No .reduce().
@@ -28,6 +29,9 @@ import { countDistinctVictoryPointValues } from './bloodFrenzy.logic.js';
 // why: WP-794 / D-24663 — the only read site of TurnEconomy.fightCostReductions is the
 // shared summing helper, called from the two resolvers below.
 import { getFightCostReduction } from './economy.logic.js';
+// why: WP-815 / D-24747 — the Abomination terms read the HQ at fight time; one
+// helper per resolver, so each family is added in exactly one authority.
+import { villainAbominationBonus, mastermindAbominationBonus } from './abomination.logic.js';
 
 // why: WP-539 / D-24348 — the Portals scheme ext_id, gating the Dark-Portal buffs.
 const PORTALS_SCHEME_ID = 'core/portals-to-the-dark-dimension';
@@ -58,7 +62,8 @@ const VILLAIN_ATTACK_PER_BYSTANDER_SCHEME_IDS: ReadonlySet<string> = new Set([
  * added: the Portals Dark-Portal space bonus (darkPortalVillainBonus) and the
  * Midtown Bank Robbery family's per-Bystander bonus (bystanderVillainAttackBonus).
  * A Blood Frenzy villain then adds the fighting player's distinct Victory Point
- * value count (villainBloodFrenzyBonus).
+ * value count (villainBloodFrenzyBonus), and an Abomination villain the printed
+ * Attack of the HQ Hero under its City space (villainAbominationBonus).
  *
  * Tolerates: missing cardStats entry (returns 0), no attached heroes
  * (returns fightCostBase), missing cardStats for a captured hero (treats
@@ -82,11 +87,15 @@ export function resolveFightCost(
   // single site, so the fight move, the bot's legal moves and the City fightCost
   // projection can never disagree. Blood Frenzy (WP-760 / D-24589) is a villain
   // keyword, not a scheme bonus, but it lives here for the same reason.
+  // why: WP-815 / D-24747 — Abomination / Double Abomination (rules v23 L880-926) adds
+  // the printed Attack of the HQ Hero under the Villain's City space, read at fight
+  // time because the cost moves with the City and the HQ. Added before the reduction.
   const costBeforeReduction =
     resolveBaseFightCost(G, villainCardId) +
     darkPortalVillainBonus(G, villainCardId) +
     bystanderVillainAttackBonus(G, villainCardId) +
-    villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId);
+    villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId) +
+    villainAbominationBonus(G, villainCardId);
   // why: WP-794 / D-24663 — the Storm / Forge "Any Villain you fight on the <space> this turn
   // gets -N attack" reduction is applied HERE, in the single authority, so the fight move, the
   // bot's legal moves and the City fightCost projection all agree by construction.
@@ -330,6 +339,9 @@ export function resolveMastermindFightCost(G: LegendaryGameState): number {
   // and the Mastermind fightCost projection agree. A partial G with no turnEconomy gets 0.
   const mastermindReduction =
     G.turnEconomy === undefined ? 0 : getFightCostReduction(G.turnEconomy, 'mastermind');
+  // why: WP-815 / D-24747 — Ultimate / Double Highest Abomination adds the printed Attack
+  // of the HQ Heroes, read at fight time (the HQ refills); added before the reduction.
+  const abominationBonus = mastermindAbominationBonus(G);
   // why: the 0 floor keeps this function's ">= 0" promise.
-  return Math.max(0, baseFightCost + portalBonus - mastermindReduction);
+  return Math.max(0, baseFightCost + portalBonus + abominationBonus - mastermindReduction);
 }

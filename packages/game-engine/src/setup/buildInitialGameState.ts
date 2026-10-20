@@ -65,6 +65,7 @@ import {
 import { buildVillainAbilityHooks } from './villainAbility.setup.js';
 import { buildVillainDefeatRequirements } from './villainDefeatRequirement.setup.js';
 import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
+import { buildCardAbomination } from './buildCardAbomination.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
 import { buildCardTraits } from './buildCardTraits.js';
 import { buildCardVictoryPoints } from './buildCardVictoryPoints.js';
@@ -441,6 +442,18 @@ export function buildInitialGameState(
     registry as unknown,
     context,
     cardStats,
+  );
+
+  // why: WP-815 / D-24747 — Abomination kinds for the selected villain copies and the
+  // mastermind base face, read only by the two fight-cost resolvers. Placed after
+  // buildMastermindState because it keys the mastermind by the baseCardId that call
+  // just computed; villainBuildConfig carries the scheme-effective villain groups (the
+  // Blood Frenzy precedent). Narrow test mocks → empty record (omitted below).
+  const cardAbomination = buildCardAbomination(
+    registry as unknown,
+    villainBuildConfig,
+    config.mastermindId,
+    mastermindState.baseCardId,
   );
 
   // why: D-24157 — printed victory points for VP-bearing cards (villains,
@@ -863,6 +876,10 @@ export function buildInitialGameState(
     // ONLY when a selected villain group prints Blood Frenzy, so every other match keeps
     // a byte-identical finalStateHash.
     ...(Object.keys(villainBloodFrenzy).length > 0 ? { villainBloodFrenzy } : {}),
+    // why: WP-815 / D-24747 — same hash-stability discipline (the villainBloodFrenzy
+    // precedent): cardAbomination is on G ONLY when a selected villain or the mastermind
+    // prints Abomination, so every other match keeps a byte-identical finalStateHash.
+    ...(Object.keys(cardAbomination).length > 0 ? { cardAbomination } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);

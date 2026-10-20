@@ -540,3 +540,173 @@ describe('resolveFightCost — villain Blood Frenzy (WP-760)', () => {
     assert.equal(resolveFightCost(gameState, METARCHUS as CardExtId, '0'), 3 + 2 + 3);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Abomination — printed Attack of HQ Heroes (WP-815 / D-24747)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — villain Abomination (WP-815)', () => {
+  const VILLAIN = 'abom-villain';
+
+  /**
+   * A G with an `N+` villain (dynamic base 6) at `cityIndex` (-1 = not in the City),
+   * the given HQ, hero cardStats by printed Attack, and the villain's kind.
+   */
+  function makeAbominationG(options: {
+    cityIndex: number;
+    hq: (string | null)[];
+    heroAttack: Record<string, number>;
+    kind?: string;
+    splitFaces?: Record<string, string>;
+    fightCostReductions?: { target: string; amount: number }[];
+  }): LegendaryGameState {
+    const city: (string | null)[] = [null, null, null, null, null];
+    if (options.cityIndex >= 0) city[options.cityIndex] = VILLAIN;
+    const cardStats: Record<string, unknown> = {
+      [VILLAIN]: { fightCost: 6, fightCostMode: 'dynamic', fightCostBase: 6, attack: 0 },
+    };
+    for (const [heroId, attack] of Object.entries(options.heroAttack)) {
+      cardStats[heroId] = { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, attack };
+    }
+    return {
+      cardStats,
+      villainAttachedHeroes: {},
+      city,
+      hq: options.hq,
+      ...(options.kind === undefined ? {} : { cardAbomination: { [VILLAIN]: options.kind } }),
+      ...(options.splitFaces === undefined ? {} : { splitFaces: options.splitFaces }),
+      ...(options.fightCostReductions === undefined
+        ? {}
+        : { turnEconomy: { fightCostReductions: options.fightCostReductions } }),
+    } as unknown as LegendaryGameState;
+  }
+
+  const HQ_FIVE_AND_THREE = ['h5', null, null, null, 'h3'];
+  const FIVE_AND_THREE = { h5: 5, h3: 3 };
+
+  it('T2: at Sewers (city[0]) adds the printed Attack of hq[4], not hq[0] (6 + 3 = 9)', () => {
+    const G = makeAbominationG({ cityIndex: 0, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 9);
+  });
+
+  it('T3: moved to the Bridge (city[4]) the cost follows the space (6 + 5 = 11)', () => {
+    const G = makeAbominationG({ cityIndex: 4, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 11);
+  });
+
+  it('T4: an empty HQ slot under the villain adds 0', () => {
+    const G = makeAbominationG({ cityIndex: 2, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 6);
+  });
+
+  it('T5: a villain not in the City adds 0', () => {
+    const G = makeAbominationG({ cityIndex: -1, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 6);
+  });
+
+  it('T6: Double Abomination doubles the read (6 + 2 × 3 = 12)', () => {
+    const G = makeAbominationG({ cityIndex: 0, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'double-abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 12);
+  });
+
+  it('T7: a Divided Hero under the villain adds both printed halves (2 + 1 = +3)', () => {
+    const G = makeAbominationG({
+      cityIndex: 0,
+      hq: [null, null, null, null, 'split-a#0'],
+      heroAttack: { 'split-a#0': 2, 'split-b#0': 1 },
+      kind: 'abomination',
+      splitFaces: { 'split-a': 'split-b' },
+    });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 6 + 3);
+  });
+
+  it('T8: a printed "2+" Hero (cardStats attack 2) adds 2; a Hero with no cardStats adds 0', () => {
+    const twoPlus = makeAbominationG({ cityIndex: 0, hq: [null, null, null, null, 'h2plus'], heroAttack: { h2plus: 2 }, kind: 'abomination' });
+    assert.equal(resolveFightCost(twoPlus, VILLAIN as CardExtId), 8);
+    const noStats = makeAbominationG({ cityIndex: 0, hq: [null, null, null, null, 'h-unknown'], heroAttack: {}, kind: 'abomination' });
+    assert.doesNotThrow(() => resolveFightCost(noStats, VILLAIN as CardExtId));
+    assert.equal(resolveFightCost(noStats, VILLAIN as CardExtId), 6);
+  });
+
+  it('T9: the term is added before a Sewers -2 reduction (9 - 2 = 7), keeping the 0 floor', () => {
+    const G = makeAbominationG({
+      cityIndex: 0,
+      hq: HQ_FIVE_AND_THREE,
+      heroAttack: FIVE_AND_THREE,
+      kind: 'abomination',
+      fightCostReductions: [{ target: 'sewers', amount: 2 }],
+    });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 7);
+    const floored = makeAbominationG({
+      cityIndex: 0,
+      hq: HQ_FIVE_AND_THREE,
+      heroAttack: FIVE_AND_THREE,
+      kind: 'abomination',
+      fightCostReductions: [{ target: 'sewers', amount: 20 }],
+    });
+    assert.equal(resolveFightCost(floored, VILLAIN as CardExtId), 0);
+  });
+
+  it('T10: no entry, or a mastermind kind on the villain, resolves to the base only', () => {
+    const noEntry = makeAbominationG({ cityIndex: 0, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE });
+    assert.equal(resolveFightCost(noEntry, VILLAIN as CardExtId), 6);
+    const mastermindKind = makeAbominationG({ cityIndex: 0, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'ultimate-abomination' });
+    assert.equal(resolveFightCost(mastermindKind, VILLAIN as CardExtId), 6);
+  });
+});
+
+describe('resolveMastermindFightCost — Mastermind Abomination (WP-815)', () => {
+  /**
+   * A G whose Mastermind base `mm-base` costs `baseFightCost`, with HQ Heroes of the
+   * given printed Attack (null = empty slot) and, optionally, the Mastermind's kind.
+   */
+  function makeMastermindAbominationG(
+    baseFightCost: number,
+    hqAttack: (number | null)[],
+    cardAbomination?: Record<string, string>,
+  ): LegendaryGameState {
+    const cardStats: Record<string, unknown> = {
+      'mm-base': { fightCost: baseFightCost, fightCostMode: 'static', fightCostBase: 0, attack: 0 },
+    };
+    const hq: (string | null)[] = [];
+    for (let slotIndex = 0; slotIndex < hqAttack.length; slotIndex++) {
+      const attack = hqAttack[slotIndex];
+      if (attack === null || attack === undefined) {
+        hq.push(null);
+        continue;
+      }
+      const heroId = `hq-hero-${slotIndex}`;
+      cardStats[heroId] = { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, attack };
+      hq.push(heroId);
+    }
+    return {
+      cardStats,
+      mastermind: { baseCardId: 'mm-base' },
+      selection: { schemeId: 'core/midtown-bank-robbery' },
+      counters: {},
+      hq,
+      ...(cardAbomination === undefined ? {} : { cardAbomination }),
+    } as unknown as LegendaryGameState;
+  }
+
+  it('T11: Ultimate Abomination adds the total printed HQ Attack, skipping empty slots (6 + 6 = 12)', () => {
+    const G = makeMastermindAbominationG(6, [2, 0, null, 3, 1], { 'mm-base': 'ultimate-abomination' });
+    assert.equal(resolveMastermindFightCost(G), 12);
+  });
+
+  it('T12: Ultimate Abomination with an empty HQ adds 0', () => {
+    const G = makeMastermindAbominationG(6, [null, null, null, null, null], { 'mm-base': 'ultimate-abomination' });
+    assert.equal(resolveMastermindFightCost(G), 6);
+  });
+
+  it('T13: Double Highest Abomination adds twice the highest, not the sum (8 + 2 × 4 = 16)', () => {
+    const G = makeMastermindAbominationG(8, [2, 4, 3, 0, null], { 'mm-base': 'double-highest-abomination' });
+    assert.equal(resolveMastermindFightCost(G), 16);
+  });
+
+  it('T14: a villain kind, no entry, or no cardAbomination field resolves to the base only', () => {
+    assert.equal(resolveMastermindFightCost(makeMastermindAbominationG(6, [2, 4, 3, 0, 1], { 'mm-base': 'abomination' })), 6);
+    assert.equal(resolveMastermindFightCost(makeMastermindAbominationG(6, [2, 4, 3, 0, 1], {})), 6);
+    assert.equal(resolveMastermindFightCost(makeMastermindAbominationG(6, [2, 4, 3, 0, 1])), 6);
+  });
+});

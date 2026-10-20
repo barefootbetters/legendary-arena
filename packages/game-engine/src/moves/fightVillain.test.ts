@@ -1240,3 +1240,42 @@ describe('fightVillain — fight-cost reduction (WP-794 / D-24663)', () => {
     assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Abomination — the fight gate charges the HQ Hero's printed Attack (WP-815 / D-24747)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — Abomination (WP-815)', () => {
+  /**
+   * An Abomination villain (dynamic base 6) at City index 0 (Sewers); the Hero in the
+   * HQ space under it is hq[4], printed Attack 3, so the cost is 9.
+   *
+   * @param attack - Attack available to player 0.
+   */
+  function createAbominationState(attack: number): LegendaryGameState {
+    const gameState = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    gameState.cardStats['villain-a' as CardExtId] = makeCardStatEntry({
+      fightCost: 6, fightCostMode: 'dynamic', fightCostBase: 6,
+    });
+    gameState.cardStats['hero-under' as CardExtId] = makeCardStatEntry({ attack: 3, hasAttackIcon: true });
+    gameState.hq = [null, null, null, null, 'hero-under' as CardExtId];
+    gameState.cardAbomination = { ['villain-a' as CardExtId]: 'abomination' };
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  it('refuses the fight at 6 available attack, leaving G unchanged (6 < 6 + 3)', () => {
+    const gameState = createAbominationState(6);
+    const before = JSON.stringify(gameState);
+    const moveContext = createMockMoveContext(gameState);
+    assert.doesNotThrow(() => fightVillain(moveContext, { cityIndex: 0 }));
+    assert.equal(JSON.stringify(moveContext.G), before, 'a refused fight makes no G change');
+  });
+
+  it('defeats it at 9 available attack, spending exactly 9', () => {
+    const moveContext = createMockMoveContext(createAbominationState(9));
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 9);
+  });
+});

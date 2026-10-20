@@ -7,6 +7,15 @@
 
 ## Current State
 
+### WP-815 / EC-853 — Abomination fight cost (D-24747) (2026-10-20)
+
+**User-visible on `play.legendary-arena.com` (after deploy).** Abomination Villains and Masterminds now cost what they print. Captain Zolandia, Doughboy, Man-Fish (ca75 Zola's Creations), Lineage, Omega, Lash (rlmk Inhuman Rebellion) and the co2e Abomination add the printed Attack of the HQ Hero under their City space, and The Unspoken adds twice that. The cost changes as the Villain moves and as the HQ refills. Arnim Zola (Ultimate Abomination) adds the total printed Attack of the HQ, and Maximus the Mad (Double Highest Abomination) twice the highest. The City and Mastermind tiles already show the projected `Fight N` (WP-750), so no client change.
+
+- **Game engine only.** New `economy/abomination.logic.ts` (`AbominationKind`, `ABOMINATION_KINDS`, the two terms) and `setup/buildCardAbomination.ts` (omit-when-empty `G.cardAbomination`); `hqSlotIndexUnderCitySpace` (`hq[4 - cityIndex]`, Sewers ↔ the 5th HQ slot, by ordinal) in `board/citySpaceNames.ts`; the terms are added inside `resolveFightCost` / `resolveMastermindFightCost` only. Printed Attack reads `offPlayCardStats` (Divided halves totalled).
+- **Tests.** game-engine 5411 → 5441 (+30), `pnpm -r --no-bail test` 0 fail in all 12 packages; existing tests additions only. `ledger:villains`, `effect-index`, `mechanics:metadata`, `cards`, `sim:runtime-observed` and `sim:coverage` checks exit 0 with no regeneration; `finalStateHash` / `PRE_WP080_HASH` unchanged. Revert proofs 3/3.
+- **Follow-up (client, not landed).** The arena-client does not column-align the HQ row under the City row (the City row leads with the Escaped Pile cell), so the Hero that looks "under" a Villain on screen is not reliably the one Abomination reads. A leading HQ spacer under the Escaped Pile, as on the physical board, was proposed 2026-10-20 as its own INFRA session; no PR yet.
+- **Live-verify (D-24026): pending.** In a live `ca75/arnim-zola` match, with the deployed gitSha checked: the Mastermind tile shows 6 + the total printed HQ Attack and changes after a recruit; an Abomination Villain shows its base + the printed Attack of the HQ Hero in the same ordinal position (Sewers ↔ 5th HQ slot … Bridge ↔ 1st) and changes when it moves one space; Fight is enabled only at that cost. Record the match id here.
+
 ### D-24746 — "If you played at least N other cards this turn" gates its +2 attack (direct fix) (2026-10-19)
 
 **User-visible on `play.legendary-arena.com` (after deploy).** Winter Soldier's **KGB Training** (ca75), Iron Man's

@@ -61,3 +61,29 @@ export function citySpaceNameForIndex(
   }
   return CITY_SPACE_NAMES[index];
 }
+
+/**
+ * Returns the HQ slot index that sits under a City space (WP-815 / D-24747).
+ *
+ * Abomination reads "the Hero in the HQ space under this Villain's city
+ * space". Fails soft (undefined, never a throw) for a non-integer or
+ * out-of-range City index, so a caller treats it as "no HQ space under".
+ *
+ * @param cityIndex - The 0-based City space index (0 = Sewers … 4 = Bridge).
+ * @returns The HQ slot index (0-4) under that City space, or undefined.
+ */
+export function hqSlotIndexUnderCitySpace(cityIndex: number): number | undefined {
+  if (
+    typeof cityIndex !== 'number' ||
+    !Number.isInteger(cityIndex) ||
+    cityIndex < 0 ||
+    cityIndex >= CITY_SPACE_NAMES.length
+  ) {
+    return undefined;
+  }
+  // why: on the physical board the City reads Bridge … Sewers left to right above
+  // HQ slots 0 … 4, so the space under City index `i` is HQ index `4 - i` (Sewers ↔
+  // the 5th / rightmost HQ slot). The binding is ordinal, not on-screen alignment
+  // (D-24747, D-24295).
+  return (CITY_SPACE_NAMES.length - 1) - cityIndex;
+}
