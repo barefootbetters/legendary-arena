@@ -196,7 +196,20 @@ const LIVE_VERIFY_FILTERS: readonly (LiveVerifyState | 'all')[] = [
   'verified',
   'all',
 ];
-const liveVerifyFilter = ref<LiveVerifyState | 'all'>('pending');
+/** Entry count behind a live-verify filter button. */
+function liveVerifyFilterCount(filter: LiveVerifyState | 'all'): number {
+  if (filter === 'all') {
+    return liveVerifyEntries.value.length;
+  }
+  return liveVerifySummary.value[filter];
+}
+
+// why: the record opens on Not yet (the to-do view), which is empty once every
+// Core entry is verified; open on All then, rather than on a blank table. The
+// record is bundled at build time, so deciding once at setup is enough.
+const liveVerifyFilter = ref<LiveVerifyState | 'all'>(
+  liveVerifyFilterCount('pending') > 0 ? 'pending' : 'all',
+);
 
 const filteredLiveVerifyEntries = computed(() => {
   const result = [];
@@ -587,6 +600,7 @@ function winRateClass(row: ParFidelityRow): string {
           @click="liveVerifyFilter = filter"
         >
           {{ filter === 'all' ? 'All' : liveVerifyLabel(filter) }}
+          <span class="filter-count">{{ liveVerifyFilterCount(filter) }}</span>
         </button>
       </div>
       <table class="cov-table">
