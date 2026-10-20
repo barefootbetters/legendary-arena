@@ -283,7 +283,15 @@ describe('buildCardAbomination (WP-815 / D-24747)', () => {
     );
     assert.equal(gameState.mastermind.baseCardId, 'ca75-mastermind-arnim-zola-arnim-zola');
     assert.ok(gameState.cardAbomination !== undefined, 'G.cardAbomination is present');
-    assert.equal(Object.keys(gameState.cardAbomination).length, 7);
+    assert.deepStrictEqual(gameState.cardAbomination, {
+      'ca75-villain-zolas-creations-captain-zolandia-00': 'abomination',
+      'ca75-villain-zolas-creations-captain-zolandia-01': 'abomination',
+      'ca75-villain-zolas-creations-doughboy-00': 'abomination',
+      'ca75-villain-zolas-creations-doughboy-01': 'abomination',
+      'ca75-villain-zolas-creations-man-fish-00': 'abomination',
+      'ca75-villain-zolas-creations-man-fish-01': 'abomination',
+      'ca75-mastermind-arnim-zola-arnim-zola': 'ultimate-abomination',
+    });
     assert.equal(gameState.cardAbomination[gameState.mastermind.baseCardId], 'ultimate-abomination');
   });
 });
