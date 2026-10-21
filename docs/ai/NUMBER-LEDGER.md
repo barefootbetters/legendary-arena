@@ -456,6 +456,7 @@ high-water: 422
 - WP-815 — abomination-fight-cost (Cap 75th arc #2: Abomination / Double Abomination villains + Ultimate / Double Highest Abomination masterminds get +printed HQ-Hero attack in resolveFightCost / resolveMastermindFightCost. reserved 2026-10-20, claude/reserve-wp815-abomination)
 - WP-816 — villain-savior-gate (Cap 75th arc #3: villain-side Savior — a [effect:] marker condition gate (Savior = 3+ Bystanders in the current player's Victory Pile) for Black Knight / Executioner / Melter (WWII) Fight, a gain-wound each-non-savior target for Radioactive Man Fight/Escape, a new ko-bystander-each-victory-pile primitive for Executioner Escape, and the Man-Fish Fight marker. reserved 2026-10-20, claude/villain-savior-gate)
 - WP-817 — zolandia-primus (Cap 75th arc #6: Captain Zolandia Fight +1 Recruit per Hero Class you have, Primus discard-a-2/3/5/7-cost-card fight cost, Primus Escape each player discards a 2/3/5/7-cost Hero. reserved 2026-10-20, claude/ca75-zolandia-primus-spec-4db242)
+- WP-818 — baron-zemo-mastermind (Cap 75th arc #3: Baron Heinrich Zemo mastermind +9 unless you are a Savior, the 2-Recruit Bystander-rescue passive, Master Strike, 4 tactics. reserved 2026-10-21, claude/reserve-wp818-baron-zemo)
 
 ## EC
 
@@ -874,6 +875,7 @@ high-water: 457
 - EC-853 — abomination-fight-cost (WP-815. reserved 2026-10-20, claude/reserve-wp815-abomination)
 - EC-854 — villain-savior-gate (WP-816. reserved 2026-10-20, claude/villain-savior-gate)
 - EC-855 — zolandia-primus (WP-817. reserved 2026-10-20, claude/ca75-zolandia-primus-spec-4db242)
+- EC-856 — baron-zemo-mastermind (WP-818. reserved 2026-10-21, claude/reserve-wp818-baron-zemo)
 
 ## D
 
@@ -1403,3 +1405,4 @@ section below) and the allocation protocol in
 - D-24749 — villain-savior-gate (WP-816; the villain-marker Savior condition gate grammar + its current-player evaluation and fail-closed narration, the each-non-savior wound target, the ko-bystander-each-victory-pile primitive (first Bystander in pile order, each player), and one Savior predicate shared with the hero gate. reserved 2026-10-20, claude/villain-savior-gate)
 - D-24750 — zolandia-primus (WP-817; the villain fight discard-cost mechanism (how fightVillain learns the discarded card, its pre-commit gate, legalMoves + client gating) and the per-Hero-Class recruit magnitude on a villain Fight. reserved 2026-10-20, claude/ca75-zolandia-primus-spec-4db242)
 - D-24751 — la-dashboard-json (operator decision, no WP — LA keeps its roadmap and infra-cost actuals in a root dashboard.json that bb-studio-dashboard reads; restates the D-24723 apps/dashboard freeze until the cutover. reserved 2026-10-20, spec/d-24750-la-dashboard-json-reserve; renumbered from D-24750 after #2934 claimed it)
+- D-24752 — baron-zemo-mastermind (WP-818; the mastermind Savior fight-cost term, the on-fight-villain pay-Recruit rescue window, and the Zemo strike/tactic primitive shapes. reserved 2026-10-21, claude/reserve-wp818-baron-zemo)
