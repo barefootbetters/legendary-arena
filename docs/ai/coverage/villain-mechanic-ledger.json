@@ -1164,8 +1164,8 @@
       "cardType": "villain",
       "mechanic": "ko-cullable-each-deck-top",
       "status": "executable",
-      "wp": "WP-519",
-      "decision": "D-24332",
+      "wp": "WP-603",
+      "decision": "D-24413",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top"
     },
     {
@@ -1527,8 +1527,8 @@
       "cardType": "villain",
       "mechanic": "ko-cullable-each-deck-top",
       "status": "executable",
-      "wp": "WP-519",
-      "decision": "D-24332",
+      "wp": "WP-603",
+      "decision": "D-24413",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top"
     },
     {
@@ -1934,8 +1934,8 @@
       "cardType": "villain",
       "mechanic": "ko-cullable-each-deck-top",
       "status": "executable",
-      "wp": "WP-519",
-      "decision": "D-24332",
+      "wp": "WP-603",
+      "decision": "D-24413",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top"
     },
     {
