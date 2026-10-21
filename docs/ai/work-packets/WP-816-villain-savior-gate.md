@@ -2,7 +2,7 @@
 
 **Status:** Draft 2026-10-20 (EC-854; **D-24749** reserved (#2928); gates pending — see §Gate Record).
 **Primary Layer:** Game Engine (+ card-data markers and the derived coverage feeds)
-**Dependencies:** none open. Builds on WP-653 / D-24464 (hero-side Savior = `bystandersInVictoryAtLeast:3`), WP-489 / D-24295 (the `@<space>` marker location gate — the structural template), WP-519 / D-24332 (`ko-cullable-each-deck-top`), WP-485 / D-24290 (`draw-cards-current`), WP-252 / D-24023 (descriptor grammar + legacy reverse-map), WP-815 / D-24747 (Man-Fish's Abomination cost, shipped).
+**Dependencies:** none open. Builds on WP-653 / D-24464 (hero-side Savior = `bystandersInVictoryAtLeast:3`), WP-489 / D-24295 (the `@<space>` marker location gate — the structural template), WP-603 / D-24413 (`ko-cullable-each-deck-top`, the interactive per-card KO / keep park; supersedes WP-519 / D-24332), WP-485 / D-24290 (`draw-cards-current`), WP-252 / D-24023 (descriptor grammar + legacy reverse-map), WP-815 / D-24747 (Man-Fish's Abomination cost, shipped).
 **User-Visible Surface:** `play.legendary-arena.com`
 **Lane:** Standard (two-session). It changes a contract file (`rules/villainAbility.types.ts`), adds a villain primitive and a marker grammar suffix, and regenerates card data and feeds.
 **Arc:** Cap 75th (ca75) completion arc, WP 3 (item 2 of the 2026-10-19 audit, auto-memory `project_cap75_completion_arc`).
@@ -50,7 +50,7 @@ Today every one of these lines does nothing. The engine reads villain effects on
 6. **Existing handlers reused unchanged.**
    - `ko-hero:current` → `villainEffectKoHero` (L938), the interactive current-player KO; reverse-maps to `koHeroCurrentPlayer`.
    - `draw-cards-current:<N>` → `villainEffectDrawCardsCurrent` (L2072); parser arm `setup/villainAbility.setup.ts:526-538` accepts N = 1.
-   - `ko-cullable-each-deck-top` → `villainEffectKoCullableEachDeckTop` (L2598). Core Melter's printed line is word-for-word Melter (WWII)'s line after the Savior gate.
+   - `ko-cullable-each-deck-top` → `villainEffectKoCullableEachDeckTop` (L2598). Per D-24413 (doc comment L2581-2597) it reveals every player's deck top and parks ONE `PendingMelterKoChoice` for the fighting player, who chooses KO or keep per card (the bot / sim default-pick keeps non-cullables); it self-narrates and returns `{ targets: [], pending: true }` when it parks. Core Melter's printed line is word-for-word Melter (WWII)'s line after the Savior gate.
    - `gain-wound:each-other[:<N>]` → `villainEffectGainWound` (L817-872), sorted iteration, `gainWoundWithOutcome` (Diving Block), self-narrates.
    - Handler map `VILLAIN_EFFECT_HANDLERS` at L3700.
 7. **Fight ordering already satisfies the rule in Assumes 1.** `moves/fightVillain.ts`: the villain goes to the Victory Pile (L378), its attached Bystanders are awarded (L381-389), and only then `executeVillainAbilities(…, 'onFight', …)` runs (L411). Escape fires `executeVillainAbilities(…, 'onEscape', …)` at `villainDeck/villainDeck.reveal.ts:661`.
@@ -76,7 +76,7 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 - **Why "first Bystander in pile order".** All Bystanders are worth 1 VP in the Victory Pile and a rescued Bystander's ability has already resolved, so which one is KO'd has no game effect; the Whispers and Lies precedent (Assumes 9) is deterministic and needs no choice UI for non-active seats (pending choices are active-player-scoped).
 - `docs/ai/REFERENCE/00.2-data-requirements.md` §1.4 Villain Group Shape (`cards`, `abilities`), §5 Ability Text Markup Language (the printed `[keyword:X]` / `[icon:X]` / `[hc:X]` / `[team:X]` / `[rule:X]` set). `[effect:X]` is not in §5: it is the pipeline-appended engine marker documented in the `_notes` of `scripts/convert-cards/inputs/villain-effect-markers.json`.
 - `docs/ai/ARCHITECTURE.md` §Zone & Pile Structure (zones hold `CardExtId` only; KO via zone moves), Section 3 Persistence Boundaries (`G` runtime-only), §The Rule Execution Pipeline (unknown effects warn, never throw).
-- `docs/ai/DECISIONS.md`: scan D-24023, D-24034, D-24081 (`G.messages` hash-excluded), D-24290, D-24295, D-24332, D-24464, D-24499 / D-24673 (Diving Block wound routing), D-24372 before coding.
+- `docs/ai/DECISIONS.md`: scan D-24023, D-24034, D-24081 (`G.messages` hash-excluded), D-24290, D-24295, D-24332 / D-24413 (Melter), D-24464, D-24499 / D-24673 (Diving Block wound routing), D-24372 before coding.
 - User memory: `reference_villain_effect_vocabulary_extension` (the script's own primitive copy; keyword-less descriptors must self-narrate), `reference_card_data_pipeline` (markers only — never re-run the base converter), `reference_engine_tests_never_typechecked`.
 
 ---
@@ -118,10 +118,14 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 - `export const SAVIOR_BYSTANDER_THRESHOLD = 3;`
 - `export function countVictoryPileBystanders(victory: readonly CardExtId[]): number` — counts ids that `=== BYSTANDER_EXT_ID` or `startsWith('bystander-villain-deck-')` (Assumes 8, the hero predicate verbatim).
 - `export function findFirstVictoryPileBystander(victory: readonly CardExtId[]): CardExtId | undefined` — the first such id in array order.
+- Both helpers' JSDoc carries: "Savior / Bystander id predicate; excludes Killbots. NOT the scoring predicate (`scoring/scoring.logic.ts` `isVictoryPileBystander`)."
 
 **Executor (`villain/villainEffects.execute.ts`):**
-- Gate: when `descriptor.requireCondition === 'savior'`, the gate passes iff `G.playerZones[currentPlayer]` exists and `countVictoryPileBystanders(zones.victory) >= SAVIOR_BYSTANDER_THRESHOLD`. On failure: `pushLog(G, \`${label} effect: Player ${currentPlayer} is not a Savior (${count} of ${SAVIOR_BYSTANDER_THRESHOLD} Bystanders in their Victory Pile); no effect.\`, 'blocked')` where `label = villainEffectTimingLabel(timing)` and `count` is 0 when the zones are missing; then `continue` with no hollow record and no EffectTrace (the location-gate precedent).
-- `gain-wound` `target: 'each-non-savior'`: iterate `Object.keys(G.playerZones).sort()`; skip a player whose `countVictoryPileBystanders(victory) >= SAVIOR_BYSTANDER_THRESHOLD`; otherwise, if `G.piles.wounds.length > 0`, one `gainWoundWithOutcome(G, playerId)`. When the wounded player is `currentPlayer`, `G.turnEconomy.woundsDrawn += 1` (the `'each'` branch rule). Narration:
+- Gate: when `descriptor.requireCondition !== undefined`, evaluate it with an exhaustive `switch (descriptor.requireCondition)`:
+  - `case 'savior'`: passes iff `G.playerZones[currentPlayer]` exists and `countVictoryPileBystanders(zones.victory) >= SAVIOR_BYSTANDER_THRESHOLD`.
+  - `default` (a `never`-typed value: a future union member before its arm exists, or a hand-built hook): fails **closed** — `pushLog(G, \`${label} effect: unrecognized condition '${String(descriptor.requireCondition)}'; no effect.\`, 'blocked')`, then `continue` with no hollow record and no EffectTrace.
+- On a Savior failure: `pushLog(G, \`${label} effect: Player ${currentPlayer} is not a Savior (${count} of ${SAVIOR_BYSTANDER_THRESHOLD} Bystanders in their Victory Pile); no effect.\`, 'blocked')` where `label = villainEffectTimingLabel(timing)` and `count` is 0 when the zones are missing; then `continue` with no hollow record and no EffectTrace (the location-gate precedent).
+- `gain-wound` `target: 'each-non-savior'`: iterate `Object.keys(G.playerZones).sort()`; skip a player whose `countVictoryPileBystanders(victory) >= SAVIOR_BYSTANDER_THRESHOLD`; otherwise, if `G.piles.wounds.length > 0`, one `gainWoundWithOutcome(G, playerId)`. `G.turnEconomy.woundsDrawn += 1` whenever `gainWoundWithOutcome` is called for `currentPlayer`, whatever its outcome (the `'each'` branch verbatim, L881-900). Narration:
   - any Diving Block pending → `` `${label} effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}.` `` `'applied'`;
   - else any wounded → `` `${label} effect: each player who is not a Savior gained a Wound (Player 1, Player 2).` `` (names in sorted order, `, `-joined) `'applied'`;
   - else → `` `${label} effect: no player who is not a Savior gained a Wound.` `` `'blocked'`.
@@ -162,9 +166,9 @@ and the `_unassigned` row for `ca75 / masters-of-evil-wwii / black-knight` (L411
 
 - **Baron Heinrich Zemo** (+9 unless Savior, the 2-recruit rescue passive, the strike, the four tactics incl. *Fallen Idols* "each other player that is not a Savior"). Cap 75th item 3; it reuses `SAVIOR_BYSTANDER_THRESHOLD`, `countVictoryPileBystanders` and `findFirstVictoryPileBystander`.
 - **Hero-side Savior** (WP-653, unchanged) and the hero Mobilize for War batch (Cap 75th item 5).
-- **Killbots as Bystanders.** Rules v23 L2337-2341 make a defeated Killbot count as a Bystander in the Victory Pile, and `scoring/scoring.logic.ts:68` `isVictoryPileBystander` honors that. Neither the hero Savior gate nor this one counts Killbots. Fixing both together is a follow-up; govern-close records it in STATUS.
+- **Killbots as Bystanders.** Rules v23 L2337-2341 make a defeated Killbot count as a Bystander in the Victory Pile, and `scoring/scoring.logic.ts:68` `isVictoryPileBystander` honors that. Neither the hero Savior gate nor this one counts Killbots, and Executioner's Escape KO does not pick one. Fixing all three together is a follow-up; govern-close records it in STATUS.
 - **Other villain condition gates** (ssw2 Pink Sphinx Spectrum, wtif Wolf Demon Soulbind, the anni "If you played a [hc:covert] Hero" line). `VILLAIN_EFFECT_CONDITIONS` is their append point.
-- **Melter's "you choose to KO it or put it back"** fidelity: WP-519's cullable collapse is reused as-is.
+- **Melter's handler.** "You choose to KO it or put it back" is already faithful (the D-24413 KO / keep prompt); this packet reuses it unchanged behind the Savior gate.
 - **Client and bot.** No client file changes; the AI does not read villain hooks.
 - **PAR regeneration** (see Vision Alignment).
 
@@ -196,13 +200,14 @@ That is 9 engine files (5 of them tests), 4 script/input files, 1 card-data file
 
 ## Test Contract
 
-Executor / helper cases build a minimal `G` in the style of the existing test file (`makeG` / `createMockGameState`), with `messages: []` so `pushLog` records. "Bystander ids": `pile-bystander` and `bystander-villain-deck-NN`. Each T-case is at least one `it`, grouped under one `describe('WP-816 …')` per file: T1-T3 in `villainAbility.types.test.ts`; T4-T8 in `villainAbility.setup.test.ts`; T9-T11 in `board/bystanders.logic.test.ts` (T11 imports `evaluateCondition` from `../hero/heroConditions.evaluate.js`); T12-T21 in `villainEffects.execute.test.ts`; T22-T23 in `moves/fightVillain.test.ts`. T2 edits the existing primitive-count pin (`villainAbility.types.test.ts` ~L351-397) from 28 to 29: a value change from an intended product change, said so in the commit body.
+Executor / helper cases build a minimal `G` in the style of the existing test file (`makeG` / `createMockGameState`), with `messages: []` so `pushLog` records. "Bystander ids": `pile-bystander` and `bystander-villain-deck-NN`. Each T-case is at least one `it`, grouped under one `describe('WP-816 …')` per file: T1-T3b in `villainAbility.types.test.ts`; T4-T8 in `villainAbility.setup.test.ts`; T9-T11 in `board/bystanders.logic.test.ts` (T11 imports `evaluateCondition` from `../hero/heroConditions.evaluate.js`); T12-T21 in `villainEffects.execute.test.ts`; T22-T23 in `moves/fightVillain.test.ts`. T2 edits the existing primitive-count pin (`villainAbility.types.test.ts` ~L351-397) from 28 to 29: a value change from an intended product change, said so in the commit body.
 
 | # | Input | Expected | Invariant / must NOT |
 |---|---|---|---|
-| T1 | `VILLAIN_EFFECT_CONDITIONS` | equals `['savior']` | runtime assertion (D-24372) |
+| T1 | `VILLAIN_EFFECT_CONDITIONS` | length 1; `deepStrictEqual` to a typed `VillainEffectCondition[]` `['savior']`; no duplicates; `includes('spectrum') === false` | runtime assertion (D-24372), the `VILLAIN_DEFEAT_REQUIREMENT_KINDS` pin style (types test ~L151-190) |
 | T2 | `VILLAIN_EFFECT_PRIMITIVES` | 29 members, last `ko-bystander-each-victory-pile`; existing parity test still passes | |
 | T3 | `descriptorToLegacyKeyword({ primitive: 'ko-hero', target: 'current', requireCondition: 'savior' })`; and `{ primitive: 'gain-wound', target: 'each-non-savior' }` | `koHeroCurrentPlayer`; `undefined` | condition not in the key |
+| T3b | JSON round-trip of `{ primitive: 'ko-hero', target: 'current', requireCitySpaces: ['sewers'], requireCondition: 'savior' }` and of `{ primitive: 'gain-wound', target: 'each-non-savior' }` | each `deepStrictEqual` to its input | the `requireCitySpaces` round-trip precedent (~L513) |
 | T4 | parse `ko-hero:current!savior`, `draw-cards-current:1!savior`, `ko-cullable-each-deck-top!savior` | `{ko-hero, current, requireCondition: savior}`, `{draw-cards-current, drawCount: 1, requireCondition: savior}`, `{ko-cullable-each-deck-top, requireCondition: savior}` | |
 | T5 | parse `gain-wound:each-non-savior`; `ko-bystander-each-victory-pile`; `gain-wound:each-other@sewers+bridge` | `{gain-wound, each-non-savior}`; `{ko-bystander-each-victory-pile}`; `{gain-wound, each-other, magnitude: 1, requireCitySpaces: [sewers, bridge]}` | Man-Fish shape is the existing one |
 | T6 | parse `ko-hero:current@sewers!savior` | `{ko-hero, current, requireCitySpaces: [sewers], requireCondition: savior}` | both gates |
@@ -213,12 +218,15 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 | T11 | parity: Victory Piles with 0, 2, 3, 4 Bystanders (mixed arms) plus a villain id | `countVictoryPileBystanders(v) >= SAVIOR_BYSTANDER_THRESHOLD` === `evaluateCondition(G, '0', { type: 'bystandersInVictoryAtLeast', value: '3' })` for each | `SAVIOR_BYSTANDER_THRESHOLD === 3` |
 | T12 | onFight hook `[{draw-cards-current, drawCount 1, requireCondition savior}]`, current `'0'` with 3 Bystanders, deck 2 cards; `executeVillainAbilities` called with `{ random: makeMockCtx().random }` as the shuffle context (5th arg) | hand +1; log `Fight effect: drew 1 card(s).` | without a shuffle context the draw handler no-ops (L2093-2097) |
 | T13 | same with 2 Bystanders | hand unchanged; last message `Fight effect: Player 0 is not a Savior (2 of 3 Bystanders in their Victory Pile); no effect.` outcome `blocked`; no hollow record; no EffectTrace for it; results `[]` | gate before dispatch |
+| T13b | T12's hook with `requireCondition: 'spectrum' as VillainEffectCondition` (cast), 3 Bystanders | hand unchanged; last message `Fight effect: unrecognized condition 'spectrum'; no effect.` `blocked`; no hollow record, no EffectTrace | fails closed, never dispatched |
 | T14 | current `'0'` has 0 Bystanders, player `'1'` has 3 | blocked as T13 with `(0 of 3 …)` | reads the current player only |
 | T15 | onFight `[{ko-hero, current, requireCondition savior}]`, 3 Bystanders, two distinct Heroes in hand (`hero-a`, `hero-b`) | `G.pendingKoHeroChoices` equals `[{ choiceType: 'ko-hero', playerID: '0' }]`; results equal `[{ keyword: 'koHeroCurrentPlayer', targets: [], pending: true }]` | legacy narration intact (one Hero would auto-KO instead, L963-990, D-24007) |
+| T15b | onFight `[{ko-cullable-each-deck-top, requireCondition savior}]`, current `'0'` with 3 Bystanders, players `0` and `1` each with a deck card, a shuffle context passed | `G.pendingMelterKoChoices` has exactly one entry, for player `'0'`, whose snapshot lists both deck tops; nothing KO'd yet | the D-24413 prompt behind the gate |
 | T16 | `{ko-hero, current, requireCitySpaces: [sewers], requireCondition: savior}` fought at `cityIndex 4` with 3 Bystanders; then at `cityIndex 0` with 1 Bystander | first: only the location-blocked line; second: only the Savior-blocked line | location checked first |
 | T17 | `{gain-wound, each-non-savior}` onFight; players `0` (3 Bystanders, current), `1` (2), `2` (0); wounds pile 5 | players 1 and 2 gain 1 Wound each, 0 none; message `Fight effect: each player who is not a Savior gained a Wound (Player 1, Player 2).` `applied`; `woundsDrawn` unchanged | sorted order |
 | T18 | same, current `'1'`; and onEscape timing | `woundsDrawn` +1; message starts `Escape effect:` | |
 | T19 | all three players Saviors; and separately an empty wound pile | no Wound moves; `… no player who is not a Savior gained a Wound.` `blocked` | never throws |
+| T19b | T17's setup, with non-Savior player `1` holding Diving Block in hand (the existing Diving Block fixture in `villainEffects.execute.test.ts` ~L189) | last message `` `Fight effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(['2'], ['1'])}.` `` `applied`; player 1's Wound not yet gained | Diving Block routed through `gainWoundWithOutcome` |
 | T20 | `{ko-bystander-each-victory-pile}` onEscape; victory `0: [v, 'bystander-villain-deck-01', 'pile-bystander']`, `1: ['pile-bystander']`, `2: [v2]` | `0` loses `bystander-villain-deck-01`, `1` loses `pile-bystander`, `2` unchanged; `G.ko` ends with those two in that order; `Escape effect: KO'd a Bystander from the Victory Pile of Player 0, Player 1.` `applied` | first in pile order, one per player |
 | T21 | no player has a Bystander | nothing moves; `Escape effect: no player had a Bystander in their Victory Pile to KO.` `blocked` | |
 | T22 | `fightVillain` (integration): villain V in the City with a `cardStats` fight cost and onFight `{draw-cards-current, drawCount 1, requireCondition savior}`; `G.attachedBystanders[V] = ['bystander-villain-deck-01']` (a Savior-counted id, not the `hostage-N` style); current player's Victory Pile holds 2 Bystanders and the deck holds a card; enough Attack | V defeated, the attached Bystander is awarded, Savior passes (3), hand +1 | rules L1849-1851 ordering |
@@ -251,10 +259,10 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 ## Acceptance Criteria
 
 1. **Grammar.** T4-T7 pass in the engine parser. The marker script accepts the seven Locked-Values tokens (Verification 3). It has no test harness and runs `main()` on import, so its rejection side is checked by hand: put each T7 token into the marker map one at a time, run the script, observe a loud failure, revert. Record the eight observed failures in the EC-854 commit body.
-2. **Types.** T1-T3 pass as runtime assertions.
+2. **Types.** T1-T3 and T3b pass as runtime assertions.
 3. **Helpers.** T9-T11 pass.
-4. **Gate.** T12-T16 pass.
-5. **Per-player exclusion.** T17-T19 pass.
+4. **Gate.** T12-T16 pass, including T13b and T15b.
+5. **Per-player exclusion.** T17-T19 pass, including T19b.
 6. **KO-a-Bystander.** T20-T21 pass.
 7. **Rules ordering.** T22-T23 pass.
 8. **Data.** `apply-effect-markers.mjs` prints `ca75.json — 7 new marker(s) this run` and `7 new [effect:] marker(s) appended`, then 0 new markers on a re-run; `git diff data/cards/` touches only `ca75.json`, and only those 7 lines, each gaining one trailing `[effect:…]` token; T8 passes on the regenerated lines.
@@ -280,7 +288,7 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 - [ ] WORK_INDEX `[x]`, EC_INDEX Done, mindmap `✅`; `pnpm roadmap:counts:write`, then `roadmap:counts:check` and `ledger:numbers:check` exit 0.
 - [ ] Two-commit topology: `EC-854:` then `SPEC:`.
 - [ ] **D-24026 live-verify** (post-merge, REQUIRED). In a live match with the deployed gitSha checked, villain group `ca75/masters-of-evil-wwii` (mastermind `ca75/baron-heinrich-zemo`, which always leads it), driven via the operator setter pane or `/api/match/autoplay` setupData:
-  - fight a Masters of Evil (WWII) Savior villain with fewer than 3 Bystanders → the log shows the "is not a Savior" line; with 3+ → the printed reward fires;
+  - fight a Masters of Evil (WWII) Savior villain with fewer than 3 Bystanders → the log shows the "is not a Savior" line; with 3+ → the printed reward fires (Melter (WWII) opens the KO / keep prompt);
   - Radioactive Man's Fight wounds the non-Savior players only;
   - an escaping Executioner removes one Bystander from each Victory Pile that has one;
   - in a 2+-player `ca75/arnim-zola` match (always leads `zolas-creations`), fighting Man-Fish on the Sewers or the Bridge wounds every other player, and on another space logs the location-blocked line.
@@ -290,9 +298,12 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 ## Reserved Decision (lands at execution)
 
 **D-24749 — villain-savior-gate.** It locks:
+- the authorized contract-file change to `rules/villainAbility.types.ts`: `VillainEffectCondition` / `VILLAIN_EFFECT_CONDITIONS`, `requireCondition`, the `each-non-savior` target, primitive #29 `ko-bystander-each-victory-pile`;
+- `VILLAIN_EFFECT_CONDITIONS` is append-only: a new condition updates the union, the array, the script copy and the executor gate arm, with a DECISIONS entry, together; an unrecognized value fails closed;
 - Savior on villain lines as data: the `!<condition>` marker suffix (last, at most one, case-sensitive closed set `VILLAIN_EFFECT_CONDITIONS = ['savior']`), lifted to `requireCondition`, outside `descriptorKey`;
 - the gate's evaluation: the current player at every timing, after the location gate, before dispatch, fail-closed, self-narrated, no hollow record or trace;
-- one Savior predicate for hero and villain (the two-arm Bystander id test, threshold 3), pinned by a parity test; Killbots excluded on both sides until a joint follow-up;
+- one Savior predicate for hero and villain (the two-arm Bystander id test, threshold 3), pinned by a parity test; Killbots excluded on both sides and from Executioner's KO until a joint follow-up;
+- Melter (WWII) reuses the D-24413 KO / keep prompt unchanged (builds on D-24413, which superseded D-24332);
 - `gain-wound` target `each-non-savior` (per-player exemption; the `each-other` precedent);
 - `ko-bystander-each-victory-pile`: every player, first Bystander in pile order, to `G.ko` (the Whispers and Lies precedent), no choice;
 - the rules-ordering note (Bystanders from the defeated villain count, already true by fight ordering);
@@ -329,7 +340,16 @@ The reviewer ruled that only PS-1 needs a re-check (one file added to the allowl
 - **RS-1 (noted):** T12's `makeMockCtx` is a new import (`../test/mockCtx.js`) in the allowlisted executor test file.
 - Verified: the locked normalizer names all 43 existing `[effect:` tokens identically to today (0 differ), so the only ledger changes are the new ca75 rows; each new token resolves `executable` with provenance; T15 parks with two Heroes; T12 / T22 / T23 inputs match the code; Locked Values, Assumes 13-14, replay note, D-24749 limit, Man-Fish live-verify and the WP ↔ EC allowlist all agree.
 
-_Pending: 01.7 copilot check, 00.3 lint gate._
+**Copilot (01.7), round 1 (independent subagent): RISK (HOLD), seven text fixes, all applied; pre-flight stands (no scope change).** All Assumes anchors re-verified at 6dcf5742; no layer, persistence or determinism damage; hidden consumers of `target` and the new primitive checked (only the gain-wound / ko-hero handlers, trace params and `descriptorKey` read `target`; `VILLAIN_EFFECT_HANDLERS` is `Record`-typed); no `[effect:]` reader outside parser / script / ledger.
+1. Mode 26 — Melter semantics were stale (D-24413 superseded D-24332; the handler parks a KO / keep prompt). Builds-on, Assumes 6, Out of Scope, the decision scan, D-24749 and the live-verify now say so; T15b added.
+2. Mode 22 — an unrecognized `requireCondition` would fail open. The gate is now an exhaustive `switch` whose `never` default fails closed; T13b added.
+3. Mode 4 — T1 now pins length, typed equality, no duplicates and a phantom negative; D-24749 names the contract-file change and the append-only rule.
+4. Mode 19 — T3b JSON round-trip added.
+5. Mode 11 — T19b exercises the Diving Block string; the `woundsDrawn` rule is the `'each'` branch verbatim.
+6. Mode 15 — three `// why:` entries added to the EC (descriptorKey exclusion, the drift array, the position-29 note in both copies).
+7. Mode 27 — both helpers' JSDoc names the Killbot exclusion and the scoring predicate; the Killbot follow-up covers Executioner's KO.
+
+_Pending: copilot round 2, 00.3 lint gate._
 
 ## Lint Gate Self-Review (00.3)
 

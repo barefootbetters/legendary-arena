@@ -16,8 +16,11 @@
 - `target` widened to `'current' | 'each' | 'each-other' | 'each-non-savior'`. Primitive `'ko-bystander-each-victory-pile'` appended last.
 - Grammar `<primitive>[:<param>…][@<spaces>][!<condition>]`: split `!` first; >1 `!`, or a suffix not in the set (case-sensitive, empty included) → null. `gain-wound:each-non-savior` exactly 2 parts, no magnitude. Legacy keywords take no suffix.
 - `board/bystanders.logic.ts`: `SAVIOR_BYSTANDER_THRESHOLD = 3`; `countVictoryPileBystanders(victory)`; `findFirstVictoryPileBystander(victory)`; id test = `=== BYSTANDER_EXT_ID` or `startsWith('bystander-villain-deck-')`.
-- Gate block line: `` `${label} effect: Player ${currentPlayer} is not a Savior (${count} of ${SAVIOR_BYSTANDER_THRESHOLD} Bystanders in their Victory Pile); no effect.` `` `'blocked'`.
-- `each-non-savior` lines: `… each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(…)}.` (Diving Block) / `… each player who is not a Savior gained a Wound (Player 1, Player 2).` `'applied'` / `… no player who is not a Savior gained a Wound.` `'blocked'`. `woundsDrawn += 1` when the current player is wounded. Returns `{ targets: [] }` only (no `woundOutcomes`).
+- Gate = exhaustive `switch (descriptor.requireCondition)`; `default` (`never`) fails closed: `` `${label} effect: unrecognized condition '${String(value)}'; no effect.` `` `'blocked'`, `continue`, no hollow / trace.
+- Savior block line: `` `${label} effect: Player ${currentPlayer} is not a Savior (${count} of ${SAVIOR_BYSTANDER_THRESHOLD} Bystanders in their Victory Pile); no effect.` `` `'blocked'`.
+- `each-non-savior` lines: `… each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(…)}.` (Diving Block) / `… each player who is not a Savior gained a Wound (Player 1, Player 2).` `'applied'` / `… no player who is not a Savior gained a Wound.` `'blocked'`. `woundsDrawn += 1` whenever `gainWoundWithOutcome` runs for the current player, any outcome (the `'each'` branch). Returns `{ targets: [] }` only (no `woundOutcomes`).
+- Both helpers' JSDoc: "Savior / Bystander id predicate; excludes Killbots. NOT the scoring predicate (`scoring/scoring.logic.ts` `isVictoryPileBystander`)."
+- Melter (WWII) reuses the D-24413 KO / keep park unchanged (one `PendingMelterKoChoice` for the fighter).
 - `board/bystanders.logic.ts` newly imports `BYSTANDER_EXT_ID` from `'../setup/pilesInit.js'`; update its header comment.
 - Ledger `normalizeEffectToken`: `rawToken.split('!')[0].split('@')[0].split(':')[0].trim()`.
 - KO lines: `` `${label} effect: KO'd a Bystander from the Victory Pile of Player 0, Player 2.` `` `'applied'` / `` `${label} effect: no player had a Bystander in their Victory Pile to KO.` `` `'blocked'`.
@@ -25,7 +28,7 @@
 
 ## Guardrails
 - The condition gate lives only in the executor loop, after the location gate, before dispatch. No handler reads `requireCondition`.
-- The gate reads `ctx.currentPlayer` at every timing and fails closed on missing zones.
+- The gate reads `ctx.currentPlayer` at every timing and fails closed on missing zones and on any unrecognized condition value.
 - Do not edit `hero/heroConditions.evaluate.ts`; the T11 parity test pins the two Savior counts.
 - No villain parser reads `[keyword:Savior]` or English.
 - Regenerate data with `apply-effect-markers.mjs` only; never `convert-cards-v15.mjs`.
@@ -40,6 +43,9 @@
 - `each-non-savior`: per-player exemption, so a target, not the current-player gate (the `each-other` precedent).
 - `findFirstVictoryPileBystander` use: every Victory-Pile Bystander is worth the same, so pile order is a deterministic no-choice pick (Whispers and Lies).
 - The script's condition list: hand-synced copy of the engine array.
+- `requireCondition` on the descriptor: kept out of `descriptorKey` so a gated `ko-hero:current` still reverse-maps to `koHeroCurrentPlayer` (D-24749).
+- The `VILLAIN_EFFECT_CONDITIONS` drift-array comment (append-only; union + array + script copy + gate arm together).
+- The position-29 append note for `ko-bystander-each-victory-pile`, in the types array comment AND the script header.
 
 ## Files to Produce
 - `packages/game-engine/src/rules/villainAbility.types.ts` + test — **modified**
@@ -52,14 +58,14 @@
 - `docs/ai/DECISIONS.md`, `docs/ai/STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md` — **modified** (governance close)
 
 ## After Completing
-- [ ] T1-T23 pass. `pnpm -r build` → 0. `pnpm -r --no-bail test` → 0 fail.
+- [ ] T1-T23 pass, plus T3b, T13b, T15b, T19b. `pnpm -r build` → 0. `pnpm -r --no-bail test` → 0 fail.
 - [ ] Marker script: `7 new [effect:] marker(s) appended`, re-run 0; data diff is `ca75.json` only, 7 lines. The 8 T7 tokens each loud-fail the script when put in the map one at a time (recorded in the commit body).
 - [ ] Ledger: the 6 new rows (Radioactive Man's two markers share one `gain-wound` row) are `executable` with a handler; `ko-bystander-each-victory-pile` has WP-816 / D-24749 provenance; no mechanic name contains `!` or `@`.
 - [ ] T15 uses two Heroes in hand (one Hero auto-KOs). T12 / T22 pass a shuffle context; T22 / T23 attach `bystander-villain-deck-01`.
 - [ ] `pnpm ledger:villains && pnpm effect-index` (after a rebuild); then `cards:check`, `effect-index:check`, `ledger:villains:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check` → 0. The last three need no regeneration; if one flags, STOP.
 - [ ] Revert proofs observed (gate removed; Saviors wounded; last Bystander taken).
 - [ ] `finalStateHash` and `PRE_WP080_HASH` unchanged.
-- [ ] D-24749 Active. STATUS updated (+ the Killbot Savior follow-up). WORK_INDEX `[x]`. EC_INDEX Done. Mindmap `✅` + `pnpm roadmap:counts:write`. `roadmap:counts:check`, `ledger:numbers:check` 0.
+- [ ] D-24749 Active. STATUS updated (+ the Killbot follow-up: hero Savior, villain Savior and Executioner's KO). WORK_INDEX `[x]`. EC_INDEX Done. Mindmap `✅` + `pnpm roadmap:counts:write`. `roadmap:counts:check`, `ledger:numbers:check` 0.
 - [ ] Allowlist-only diff. Two-commit topology `EC-854:` then `SPEC:`.
 - [ ] Live-verify (D-24026) post-deploy STATUS-flip.
 
