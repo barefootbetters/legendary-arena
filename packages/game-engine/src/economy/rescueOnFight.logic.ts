@@ -39,12 +39,6 @@ export function isRescueOnFightOffered(G: LegendaryGameState): boolean {
  * Returns whether the fighter can still pay the rescue's Recruit after the
  * fight's own cost is debited.
  *
- * // why: under the WP-580 recruit-as-attack conversion the fight itself can
- * spend Recruit, so the rescue is judged against a SIMULATED fight debit (the
- * pure spendFightCostForTarget on a copy). The caller folds an open Excessive
- * Violence +1 into `fightDebit`, so a paid rescue never makes the fight or the
- * Excessive Violence extra unaffordable.
- *
  * @param economy - The current turn economy (not mutated).
  * @param fightDebit - The fight cost to simulate, including any open Excessive Violence +1.
  * @param fightTarget - The fought City space, for restricted-attack eligibility.
@@ -55,6 +49,10 @@ export function canPayRescueOnFight(
   fightDebit: number,
   fightTarget: AttackTargetName,
 ): boolean {
+  // why: under the WP-580 recruit-as-attack conversion the fight itself can spend Recruit,
+  // so the rescue is judged against a SIMULATED fight debit (the pure spendFightCostForTarget
+  // on a copy). The caller folds an open Excessive Violence +1 into `fightDebit`, so a paid
+  // rescue never makes the fight or the Excessive Violence extra unaffordable.
   const economyAfterFight = spendFightCostForTarget(economy, fightDebit, fightTarget);
   return getAvailableRecruit(economyAfterFight) >= RESCUE_ON_FIGHT_RECRUIT_COST;
 }
