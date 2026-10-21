@@ -1,6 +1,6 @@
 # WP-816 — Villain-side Savior: a marker condition gate, a per-player Savior exclusion, and KO-a-Bystander-from-each-Victory-Pile (Game Engine + card data)
 
-**Status:** Draft 2026-10-20 (EC-854; **D-24749** reserved (#2928); gates pending — see §Gate Record).
+**Status:** Draft 2026-10-20 — READY TO EXECUTE (EC-854; **D-24749** reserved (#2928); pre-flight READY, copilot CONFIRM, 00.3 PASS — see §Gate Record).
 **Primary Layer:** Game Engine (+ card-data markers and the derived coverage feeds)
 **Dependencies:** none open. Builds on WP-653 / D-24464 (hero-side Savior = `bystandersInVictoryAtLeast:3`), WP-489 / D-24295 (the `@<space>` marker location gate — the structural template), WP-603 / D-24413 (`ko-cullable-each-deck-top`, the interactive per-card KO / keep park; supersedes WP-519 / D-24332), WP-485 / D-24290 (`draw-cards-current`), WP-252 / D-24023 (descriptor grammar + legacy reverse-map), WP-815 / D-24747 (Man-Fish's Abomination cost, shipped).
 **User-Visible Surface:** `play.legendary-arena.com`
@@ -51,7 +51,7 @@ Today every one of these lines does nothing. The engine reads villain effects on
    - `ko-hero:current` → `villainEffectKoHero` (L938), the interactive current-player KO; reverse-maps to `koHeroCurrentPlayer`.
    - `draw-cards-current:<N>` → `villainEffectDrawCardsCurrent` (L2072); parser arm `setup/villainAbility.setup.ts:526-538` accepts N = 1.
    - `ko-cullable-each-deck-top` → `villainEffectKoCullableEachDeckTop` (L2598). Per D-24413 (doc comment L2581-2597) it reveals every player's deck top and parks ONE `PendingMelterKoChoice` for the fighting player, who chooses KO or keep per card (the bot / sim default-pick keeps non-cullables); it self-narrates and returns `{ targets: [], pending: true }` when it parks. Core Melter's printed line is word-for-word Melter (WWII)'s line after the Savior gate.
-   - `gain-wound:each-other[:<N>]` → `villainEffectGainWound` (L817-872), sorted iteration, `gainWoundWithOutcome` (Diving Block), self-narrates.
+   - `gain-wound:each-other[:<N>]` → `villainEffectGainWound` (L817-~925; the `each-other` branch is L830-872), sorted iteration, `gainWoundWithOutcome` (Diving Block), self-narrates.
    - Handler map `VILLAIN_EFFECT_HANDLERS` at L3700.
 7. **Fight ordering already satisfies the rule in Assumes 1.** `moves/fightVillain.ts`: the villain goes to the Victory Pile (L378), its attached Bystanders are awarded (L381-389), and only then `executeVillainAbilities(…, 'onFight', …)` runs (L411). Escape fires `executeVillainAbilities(…, 'onEscape', …)` at `villainDeck/villainDeck.reveal.ts:661`.
 8. **The hero-side Savior count.** `hero/heroConditions.evaluate.ts:325-341` (`bystandersInVictoryAtLeast`) and `countBystandersInVictory` (L687) count a Victory-Pile card as a Bystander when `extId === BYSTANDER_EXT_ID` (`'pile-bystander'`, `setup/pilesInit.ts:22`) or `extId.startsWith('bystander-villain-deck-')`. `setup/heroAbility.setup.ts:1705` builds `{ type: 'bystandersInVictoryAtLeast', value: '3' }` from `[keyword:Savior]`. `evaluateCondition` is exported (L98).
@@ -61,7 +61,8 @@ Today every one of these lines does nothing. The engine reads villain effects on
 12. **The marker script keeps hand-synced copies.** `scripts/convert-cards/apply-effect-markers.mjs` L167 (`VILLAIN_EFFECT_PRIMITIVES`), L204 (`CITY_SPACE_NAMES`), L233-~300 `isValidParameterizedEffectToken` (strips `@`, then the primitive grammar). It does not import `packages/`.
 13. **Feeds.** `ledger:villains` (`scripts/villain-mechanic-ledger.mjs`, reads the engine **dist** parser and `scripts/coverage/mechanic-provenance.json`; its `normalizeEffectToken` (L134-137) names a mechanic by splitting the raw token on `:` only, so `ko-cullable-each-deck-top!savior` would come out as an `unsupported` mechanic named with its suffix — fixed in Scope F) and `effect-index` (`scripts/build-effect-implementation-index.mjs`, reads both ledgers) regenerate from the marked data. `mechanics:metadata` reads only the hero ledger (`scripts/build-card-mechanics-metadata.mjs:51`). `sim:runtime-observed` sweeps only `core/dr-doom` + `core/brotherhood`; `sim:coverage` is a static hero parse. WP-757 (`haunt-hq-hero`) touched exactly: the marker script, the marker map, `mechanic-provenance.json`, the set's card JSON, `data/metadata/effect-implementation-index.json`, `docs/ai/coverage/villain-mechanic-ledger.{json,csv}`.
 14. **No hashed fixture plays these cards.** `masters-of-evil-wwii` appears in `packages/**` / `apps/**` only in `packages/registry/src/gauntletLoadouts.generated.ts` (9 rows) and the untracked dashboard copy of the effect index. `zolas-creations` (Man-Fish) appears only in `setup/buildCardAbomination.test.ts` (inline copied lines, unaffected), `gauntletLoadouts.generated.ts` and `content/themes/red-skull-classic.json`. None is hashed, and no `data/par` artifact references either group. The hash sentinel is `core/dr-doom`; `PRE_WP080` is synthetic.
-15. `pnpm -r build` exits 0 and `pnpm -r --no-bail test` is green on the baseline.
+15. **Helpers and fields the new code and tests use, unchanged.** `composeWoundOutcomeClause` (`events/notableEvents.compose.ts:96`, already imported by the executor at L44); `villainEffectTimingLabel` (executor L1632); `moveCardFromZone` (`moves/zoneOps.ts:54`, already imported at executor L62); `makeMockCtx` (`test/mockCtx.ts:28`, type-only imports; a new import in `villainEffects.execute.test.ts`); `G.pendingKoHeroChoices` / `G.pendingMelterKoChoices` / `G.pendingDivingBlockWounds` (`types.ts` L1931 / L1955 / L2273); the Diving Block test fixture (`villainEffects.execute.test.ts` ~L170-195); Wound-then-undo ordering (`board/wounds.logic.ts` L85-91).
+16. `pnpm -r build` exits 0 and `pnpm -r --no-bail test` is green on the baseline.
 
 If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 
@@ -125,7 +126,7 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
   - `case 'savior'`: passes iff `G.playerZones[currentPlayer]` exists and `countVictoryPileBystanders(zones.victory) >= SAVIOR_BYSTANDER_THRESHOLD`.
   - `default` (a `never`-typed value: a future union member before its arm exists, or a hand-built hook): fails **closed** — `pushLog(G, \`${label} effect: unrecognized condition '${String(descriptor.requireCondition)}'; no effect.\`, 'blocked')`, then `continue` with no hollow record and no EffectTrace.
 - On a Savior failure: `pushLog(G, \`${label} effect: Player ${currentPlayer} is not a Savior (${count} of ${SAVIOR_BYSTANDER_THRESHOLD} Bystanders in their Victory Pile); no effect.\`, 'blocked')` where `label = villainEffectTimingLabel(timing)` and `count` is 0 when the zones are missing; then `continue` with no hollow record and no EffectTrace (the location-gate precedent).
-- `gain-wound` `target: 'each-non-savior'`: iterate `Object.keys(G.playerZones).sort()`; skip a player whose `countVictoryPileBystanders(victory) >= SAVIOR_BYSTANDER_THRESHOLD`; otherwise, if `G.piles.wounds.length > 0`, one `gainWoundWithOutcome(G, playerId)`. `G.turnEconomy.woundsDrawn += 1` whenever `gainWoundWithOutcome` is called for `currentPlayer`, whatever its outcome (the `'each'` branch verbatim, L881-900). Narration:
+- `gain-wound` `target: 'each-non-savior'`: its body is its own JSDoc'd function `applyGainWoundEachNonSavior(G, currentPlayer, timing)`, dispatched from `villainEffectGainWound` by an `if (descriptor.target === 'each-non-savior')` check before the existing branches (the handler is already over one screen). It iterates `Object.keys(G.playerZones).sort()`; skip a player whose `countVictoryPileBystanders(victory) >= SAVIOR_BYSTANDER_THRESHOLD`; otherwise, if `G.piles.wounds.length > 0`, one `gainWoundWithOutcome(G, playerId)`. `G.turnEconomy.woundsDrawn += 1` whenever `gainWoundWithOutcome` is called for `currentPlayer`, whatever its outcome (the `'each'` branch verbatim, L881-900). Narration:
   - any Diving Block pending → `` `${label} effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}.` `` `'applied'`;
   - else any wounded → `` `${label} effect: each player who is not a Savior gained a Wound (Player 1, Player 2).` `` (names in sorted order, `, `-joined) `'applied'`;
   - else → `` `${label} effect: no player who is not a Savior gained a Wound.` `` `'blocked'`.
@@ -354,8 +355,38 @@ The reviewer ruled that only PS-1 needs a re-check (one file added to the allowl
 - Optional tightenings applied: T15b locks the `revealedTops` shape (`types.ts` L589-596); the EC's fail-closed string matches the WP's.
 - Round-1 findings 1-7 confirmed fixed; WP ↔ EC agree; no new failure mode.
 
-_Pending: 00.3 lint gate._
+**Lint (00.3) (independent subagent): FAIL → PASS after one text fix, applied.** §3: helpers and fields the body uses were not enumerated in Assumes → Assumes 15 added (baseline green renumbered to 16). Advisories applied: A1, the `each-non-savior` body is its own JSDoc'd function (the handler is already over one screen) and Assumes 6's range is corrected; A2, the EC carries the grammar and the three narration strings verbatim.
+
+**Final gate state:** pre-flight READY TO EXECUTE · copilot CONFIRM · 00.3 PASS.
 
 ## Lint Gate Self-Review (00.3)
 
-_Pending._
+From the independent 00.3 run. One FAIL (§3) was fixed in place; the table shows the post-fix state.
+
+| § | Result |
+|---|---|
+| §1 | PASS — all required sections present; Out of Scope has 7 items |
+| §2 | PASS — engine-wide block, session protocol, packet-specific constraints, Locked Values; the seven markers match the map |
+| §3 | PASS after fix — Assumes 15 enumerates the helpers, fields and fixtures the new code and tests use |
+| §4 | PASS — 00.2 §1.4 / §5, ARCHITECTURE sections and the DECISIONS scan list cited |
+| §5 | PASS — 17 files, justified; every referenced modified file listed |
+| §6 | PASS — card / group / mastermind slugs match the data; `requireCondition` follows `requireCitySpaces` |
+| §7 | PASS — no new dependencies |
+| §8 | PASS — engine, scripts and data only; `G` stays JSON; no I/O, randomness or post-setup registry access |
+| §9 | PASS — pnpm / node commands only |
+| §10 | N/A — no environment variables |
+| §11 | N/A — no auth |
+| §12 | PASS — node:test, pure-`G` fixtures, no boardgame.io / network / DB; hash oracles stand in for the golden test |
+| §13 | PASS — exact commands with exit-0 / literal-output expectations, diff-scope step, 3 revert proofs |
+| §14 | PASS — 11 binary criteria tied to T-cases; AC 1's by-hand script check is observable and recorded |
+| §15 / §15.1 | PASS — STATUS (+ Killbot follow-up), DECISIONS, indexes in DoD; D-24026 live-verify on `play.legendary-arena.com` |
+| §16 | PASS — style rules mandated; A1 applied (no over-long handler branch) |
+| §17 | PASS — §1 / §8 / §22-24 / NG-1 cited; conflict line; determinism + replay-compat |
+| §18 | N/A — no grep verification step |
+| §19 | N/A at draft — applies to the STATUS entry at close |
+| §20 | PASS — N/A with reason (engine only) |
+| §21 | PASS — N/A with reason; no `apps/server/src` surface |
+
+EC-854 vs EC-TEMPLATE: PASS (within the 100-line ceiling, all sections, marker-ripple and live-verify gated).
+
+**Verdict:** PASS.
