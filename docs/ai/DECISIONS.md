@@ -49017,7 +49017,7 @@ Protect this file.
 
 ### D-24749 — Villain-side Savior: a `!<condition>` marker gate, the `each-non-savior` Wound target and KO-a-Bystander-from-each-Victory-Pile (Active 2026-10-20 — WP-816 / EC-854)
 
-**Status:** Active 2026-10-20. Live-verify (D-24026) operator-pending.
+**Status:** Active 2026-10-20. Live-verify (D-24026) PASS 2026-10-21 (server `df738303`; guest autoplay matches `XOmBWTgjECd`, `_oznsTR_PiL`, `T15-tWl-VpW`, `Z0Zxk2rc0CX`, `nzDdZSD9ZZK`, `QqSXlXIT-sl`, `3mVTZUGrIU7`).
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Black Knight, Executioner and Melter (WWII) (ca75 Masters of Evil (WWII)) give their printed reward on a Fight only to a Savior, and log why when the fighter is not one. Radioactive Man wounds every non-Savior on Fight and on Escape. An escaping Executioner KOs one Bystander from each Victory Pile. Man-Fish wounds every other player when fought on the Sewers or the Bridge.
 
