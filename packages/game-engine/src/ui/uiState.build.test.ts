@@ -2652,3 +2652,38 @@ describe('buildUIState — projected fightCost shows the fight-cost reduction (W
     assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState));
   });
 });
+
+describe('WP-819 buildUIState — economy.rescueOnFightAvailable cue (D-24753)', () => {
+  /**
+   * A built game state with the given Mastermind, Bystander supply size and unspent Recruit.
+   */
+  function createRescueCueState(mastermindId: string, supplyCount: number, recruit: number): LegendaryGameState {
+    const base = createTestGameState();
+    // why: selection is readonly; the Mastermind is set by spreading it.
+    const gameState: LegendaryGameState = {
+      ...base,
+      selection: { ...base.selection, mastermindId },
+    };
+    const supply: CardExtId[] = [];
+    for (let i = 0; i < supplyCount; i++) {
+      supply.push('pile-bystander' as CardExtId);
+    }
+    gameState.piles.bystanders = supply;
+    gameState.turnEconomy = { ...gameState.turnEconomy, recruit, spentRecruit: 0 };
+    return gameState;
+  }
+
+  it('T14: projects true for Zemo with 2 Recruit and a Bystander in the supply', () => {
+    const uiState = buildUIState(createRescueCueState('ca75/baron-heinrich-zemo', 1, 2), mockCtx);
+    assert.equal(uiState.economy.rescueOnFightAvailable, true);
+  });
+
+  it('T14: omits the key with 1 Recruit, an empty supply, or a different Mastermind', () => {
+    const shortRecruit = buildUIState(createRescueCueState('ca75/baron-heinrich-zemo', 1, 1), mockCtx);
+    const emptySupply = buildUIState(createRescueCueState('ca75/baron-heinrich-zemo', 0, 2), mockCtx);
+    const notZemo = buildUIState(createRescueCueState('core/red-skull', 1, 2), mockCtx);
+    for (const uiState of [shortRecruit, emptySupply, notZemo]) {
+      assert.ok(!('rescueOnFightAvailable' in uiState.economy), 'omit-when-absent, never false');
+    }
+  });
+});

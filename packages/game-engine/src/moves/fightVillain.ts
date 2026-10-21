@@ -17,7 +17,14 @@ import type { LegendaryGameState } from '../types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
-import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed } from '../economy/economy.logic.js';
+import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit } from '../economy/economy.logic.js';
+import type { AttackTargetName } from '../economy/economy.types.js';
+import {
+  RESCUE_ON_FIGHT_RECRUIT_COST,
+  canPayRescueOnFight,
+  isRescueOnFightOffered,
+} from '../economy/rescueOnFight.logic.js';
+import { moveCardFromZone } from './zoneOps.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 // why: WP-736 / D-24556 — the fight-time driver that fires every enrolled Excessive Violence
 // ability. Called from THIS move body (never the shared defeatCityVillainCore, which non-fight
@@ -97,6 +104,14 @@ interface FightVillainArgs {
    * (validation-phase silent decline; moves never throw).
    */
   useExcessiveViolence?: boolean;
+  /**
+   * WP-819 / D-24753 — the Baron Zemo opt-in: "Whenever you fight a Villain, you may use 2
+   * Recruit to rescue a Bystander." Optional; absent/false is a normal fight. Ignored (no log
+   * line, byte-identical) unless Baron Zemo is the Mastermind. A request that cannot be paid
+   * (empty Bystander supply, or fewer than 2 Recruit left after the fight's cost) fights
+   * normally and logs why.
+   */
+  payToRescueBystander?: boolean;
 }
 
 /**
@@ -110,7 +125,7 @@ interface FightVillainArgs {
  */
 export function fightVillain(
   { G, ...context }: MoveContext,
-  { cityIndex, useExcessiveViolence }: FightVillainArgs,
+  { cityIndex, useExcessiveViolence, payToRescueBystander }: FightVillainArgs,
 ): void {
   // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
   // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
@@ -249,21 +264,40 @@ export function fightVillain(
   // fight or recruit for the rest of the turn (the reverse lock).
   if (hasHealedThisTurn(G)) return;
 
+  // why: WP-819 / D-24753 — Baron Zemo's rescue is decided HERE, after every silent return
+  // above (so a declined-request line is only ever logged for a fight that happens) and before
+  // the core, which only executes the decision. Its declined lines precede the fight's lines.
+  const isRescuePaid = decideRescueOnFight(
+    G,
+    ctx.currentPlayer,
+    payToRescueBystander,
+    useExcessiveViolence,
+    requiredFightCost,
+    fightTarget,
+  );
+
   // Step 3: Mutate G — reuse the shared villain defeat-core (WP-486 / D-24291),
   // then spend attack + mark acted. Both are EXCLUDED from the shared core and
   // stay here in the fight move: Silent Sniper's defeat spends no attack and is a
   // card play, not a fight, so its onPlay handler must not spend attack or set the
   // acted-this-turn flag. No onFight villain ability reads G.turnEconomy.attack or
-  // G.hasActedThisTurn (the only turnEconomy writes in villainEffects are to
-  // woundsDrawn), so running spendAttack + hasActedThisTurn AFTER the core is
-  // byte-identical to the prior inline order — the unmodified fightVillain tests
-  // are the oracle.
-  defeatCityVillainCore(G, ctx, cityIndex, { random });
-  // why: WP-736 / D-24556 / D-24557 — Excessive Violence opt-in overspend, evaluated on the
-  // PRE-spend economy: the caller asked for it AND one extra [attack] beyond the fight cost is
-  // affordable AND EV has not already been used this turn (once per turn). A false result fights
-  // normally (validation-phase silent decline; moves never throw). defeatCityVillainCore does not
-  // touch attack/recruit spendable, so reading the spendable figure here is still the pre-spend value.
+  // G.hasActedThisTurn, so running the fight debit + hasActedThisTurn AFTER the core
+  // is byte-identical to the prior inline order — the unmodified fightVillain tests
+  // are the oracle. The core's turnEconomy writes are woundsDrawn, Hand Ninjas'
+  // Fight Recruit grant (D-24350) and, WP-819 / D-24753, Baron Zemo's paid rescue,
+  // which spends 2 Recruit inside the core before the Fight effects; none of them
+  // touches attack, and the rescue was judged against the simulated fight debit.
+  // why: WP-819 / D-24753 — only this move passes the rescue option ("Whenever you
+  // fight"); the free defeats (Silent Sniper, Cruel Ruler) call the core without it.
+  defeatCityVillainCore(G, ctx, cityIndex, { random }, { payRescueOnFight: isRescuePaid });
+  // why: WP-736 / D-24556 / D-24557 — Excessive Violence opt-in overspend: the caller asked for
+  // it AND one extra [attack] beyond the fight cost is affordable AND EV has not already been used
+  // this turn (once per turn). A false result fights normally (validation-phase silent decline;
+  // moves never throw). The core may have changed the Recruit side of the economy (Baron Zemo's
+  // paid rescue spends 2 Recruit, WP-819 / D-24753; a Fight effect may grant Recruit, Hand Ninjas,
+  // D-24350) but never attack, and the rescue was paid only when 2 Recruit remained after a
+  // simulated debit that already included the open EV +1. So the spendable figure read here
+  // still decides EV exactly as the pre-core economy would.
   const isExcessiveViolenceActive =
     useExcessiveViolence === true &&
     getSpendableAttackForTarget(G.turnEconomy, fightTarget) >= requiredFightCost + 1 &&
@@ -310,6 +344,90 @@ export function fightVillain(
 }
 
 /**
+ * Decides whether Baron Zemo's rescue on a fight is paid (WP-819 / D-24753),
+ * and logs why when a requested rescue is declined.
+ *
+ * Called by fightVillain after every validation and gate (so the fight is
+ * certain) and before defeatCityVillainCore. Apart from the declined-request
+ * log line it reads G only; the core executes the decision.
+ *
+ * @param G - Game state (a declined request appends one log line).
+ * @param currentPlayer - The fighting player.
+ * @param payToRescueBystander - The move's opt-in argument.
+ * @param useExcessiveViolence - The move's Excessive Violence argument.
+ * @param requiredFightCost - The fight cost the move will debit (cost + Patrol).
+ * @param fightTarget - The fought City space.
+ * @returns True when the core should pay the rescue.
+ */
+function decideRescueOnFight(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  payToRescueBystander: boolean | undefined,
+  useExcessiveViolence: boolean | undefined,
+  requiredFightCost: number,
+  fightTarget: AttackTargetName,
+): boolean {
+  // why: no Zemo, or no request → ignored with no log line, so every other match is byte-identical.
+  const isRescueRequested = payToRescueBystander === true && isRescueOnFightOffered(G);
+  if (!isRescueRequested) {
+    return false;
+  }
+  // why: under the WP-580 conversion the fight itself can spend Recruit, so the rescue is judged
+  // against a simulated fight debit that includes an open Excessive Violence +1; the rescue must
+  // never overdraw the fight or EV.
+  const isExcessiveViolenceOpen =
+    useExcessiveViolence === true && G.turnEconomy.excessiveViolenceUsedThisTurn !== true;
+  const fightDebit = requiredFightCost + (isExcessiveViolenceOpen ? 1 : 0);
+  const isSupplyEmpty = G.piles.bystanders.length === 0;
+  const isRescuePaid = !isSupplyEmpty && canPayRescueOnFight(G.turnEconomy, fightDebit, fightTarget);
+  if (isRescuePaid) {
+    return true;
+  }
+  if (isSupplyEmpty) {
+    pushLog(G,
+      `Player ${currentPlayer} could not rescue a Bystander — the Bystander supply is empty (Baron Zemo).`,
+      'blocked',
+    );
+  } else {
+    pushLog(G,
+      `Player ${currentPlayer} could not pay ${RESCUE_ON_FIGHT_RECRUIT_COST} Recruit to rescue a Bystander after the fight cost (Baron Zemo).`,
+      'blocked',
+    );
+  }
+  return false;
+}
+
+/**
+ * Pays Baron Zemo's rescue inside the defeat core (WP-819 / D-24753): spends 2
+ * Recruit and moves the Bystander supply's top card to the fighter's Victory Pile.
+ *
+ * Writes a fresh `zones.victory` array and never touches the attached-Bystander
+ * award, so the fightResolved event's `bystandersRescued` keeps counting only the
+ * fought Villain's own Bystanders.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param currentPlayer - The fighting player.
+ * @param cardId - The fought Villain, named in the log line.
+ */
+function applyRescueOnFight(G: LegendaryGameState, currentPlayer: string, cardId: string): void {
+  // why: top-of-pile convention — bystanders[0] is the next supply Bystander (D-21501). The move
+  // already checked the supply; an empty one here is a defensive no-op that spends nothing.
+  const topBystander = G.piles.bystanders[0];
+  if (topBystander === undefined) {
+    return;
+  }
+  G.turnEconomy = spendRecruit(G.turnEconomy, RESCUE_ON_FIGHT_RECRUIT_COST);
+  const playerZones = G.playerZones[currentPlayer]!;
+  const moveResult = moveCardFromZone(G.piles.bystanders, playerZones.victory, topBystander);
+  G.piles.bystanders = moveResult.from;
+  playerZones.victory = moveResult.to;
+  pushLog(G,
+    `Player ${currentPlayer} paid ${RESCUE_ON_FIGHT_RECRUIT_COST} Recruit to rescue a Bystander on fighting ${formatCardRef(G.cardDisplayData, cardId)} (Baron Zemo).`,
+    'applied',
+  );
+}
+
+/**
  * Shared villain defeat-core (WP-486 / D-24291).
  *
  * Removes the villain/henchman at `cityIndex` from the City into the current
@@ -320,6 +438,12 @@ export function fightVillain(
  * moves; see fightVillain for why the exclusion is byte-identical). Reused by
  * fightVillain (the normal fight) and by Silent Sniper's `defeat-with-bystander`
  * hero effect / its resolveDefeatChoice move (the free defeat, no attack spend).
+ *
+ * WP-819 / D-24753: when fightVillain passes `options.payRescueOnFight`, the core
+ * also pays Baron Zemo's rescue (spends 2 Recruit and moves the supply's top
+ * Bystander to the Victory Pile) after the attached awards and before the
+ * Villain's Fight effects. Besides a Recruit-granting Fight effect (Hand Ninjas),
+ * that Recruit spend is the core's only write to the attack/recruit spendable.
  *
  * why (WP-486): a documented internal invocation of the existing defeat path —
  * the onFight/onDefeat hook execution and Bystander/hero award live in exactly
@@ -333,12 +457,15 @@ export function fightVillain(
  *   avoid a framework import; forwarded to executeVillainAbilities.
  * @param cityIndex - The City space index of the villain to defeat.
  * @param shuffleContext - ShuffleProvider ({ random }) for a Fight scry reshuffle.
+ * @param options - Optional. `payRescueOnFight: true` pays Baron Zemo's rescue
+ *   (WP-819 / D-24753); only fightVillain passes it, after deciding it is affordable.
  */
 export function defeatCityVillainCore(
   G: LegendaryGameState,
   ctx: unknown,
   cityIndex: number,
   shuffleContext: ShuffleProvider,
+  options?: { payRescueOnFight?: boolean },
 ): void {
   // why: mirrors executeVillainAbilities — narrow the unknown ctx to the one
   // field this core reads (the defeating player), no framework import.
@@ -395,6 +522,15 @@ export function defeatCityVillainCore(
   // append order; empty when the villain captured no HQ hero.
   const heroesReturnedToDiscard = [...(G.villainAttachedHeroes?.[cardId] ?? [])];
   awardAttachedHeroes(G, cardId, currentPlayer);
+
+  // why: WP-819 / D-24753 — Baron Zemo's paid rescue resolves BEFORE the Villain's Fight
+  // effects. Rules v23 L772-792 let the player do the Fight and Rescue effects "in any order";
+  // rescuing first is player-optimal, because the Masters of Evil (WWII) Savior-gated Fight
+  // lines then count the rescued Bystander. The option defaults off, so the free defeats that
+  // reuse this core never pay.
+  if (options?.payRescueOnFight === true) {
+    applyRescueOnFight(G, currentPlayer, cardId);
+  }
 
   // why: Fight: effects fire after the bystander award (Step 3b) and before
   // the message push, so they observe post-award pile state. A Fight:

@@ -820,6 +820,17 @@ export interface UITurnEconomyState {
    */
   excessiveViolenceAvailable?: boolean;
   /**
+   * WP-819 / D-24753 — true iff the active player could pay Baron Zemo's
+   * "Whenever you fight a Villain, you may use 2 Recruit to rescue a Bystander"
+   * this turn: Baron Zemo is the Mastermind, the Bystander supply is not empty,
+   * and the player has at least 2 unspent Recruit. A read-only availability cue
+   * for the WP-820 client control ("Fight + Rescue"); omit-when-absent (present
+   * only when the condition holds) and active-player-only (absent from
+   * `REDACTED_ECONOMY`). Surfaces WHETHER the option exists, nothing else; the
+   * per-villain affordability is the client's mirror and the move's own check.
+   */
+  rescueOnFightAvailable?: boolean;
+  /**
    * WP-783 / D-24629 — the hand cards the active player may phase right now
    * (swap with the top card of their deck), exactly `phasingOptions(G,
    * currentPlayer)` from `moves/phaseCard.ts` — the same predicate the
