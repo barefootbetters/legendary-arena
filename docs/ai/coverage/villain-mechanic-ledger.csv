@@ -103,7 +103,7 @@ ca75-villain-masters-of-evil-wwii-executioner,Executioner,ca75,villain,ko-bystan
 ca75-villain-zolas-creations-man-fish,Man-Fish,ca75,villain,gain-wound,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 ca75-villain-zolas-creations-man-fish,Man-Fish,ca75,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 ca75-villain-masters-of-evil-wwii-melter-wwii,Melter (WWII),ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
-ca75-villain-masters-of-evil-wwii-melter-wwii,Melter (WWII),ca75,villain,ko-cullable-each-deck-top,executable,WP-519,D-24332,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
+ca75-villain-masters-of-evil-wwii-melter-wwii,Melter (WWII),ca75,villain,ko-cullable-each-deck-top,executable,WP-603,D-24413,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
 ca75-villain-zolas-creations-primus,Primus,ca75,villain,(unmarked),unmarked,,,
 ca75-villain-masters-of-evil-wwii-radioactive-man,Radioactive Man,ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 ca75-villain-masters-of-evil-wwii-radioactive-man,Radioactive Man,ca75,villain,gain-wound,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
@@ -136,7 +136,7 @@ henchman-hand-ninjas,Hand Ninjas,co2e,henchman,(unmarked),unmarked,,,
 co2e-villain-sinister-syndicate-hydro-man,Hydro-Man,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-brotherhood-of-mutants-juggernaut,Juggernaut,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-maestro-wasteland-hulk,"Maestro, Wasteland Hulk",co2e,villain,(unmarked),unmarked,,,
-co2e-villain-masters-of-evil-melter,Melter,co2e,villain,ko-cullable-each-deck-top,executable,WP-519,D-24332,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
+co2e-villain-masters-of-evil-melter,Melter,co2e,villain,ko-cullable-each-deck-top,executable,WP-603,D-24413,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
 co2e-villain-brotherhood-of-mutants-mystique,Mystique,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-skulls-paibok-the-power-skrull,Paibok the Power Skrull,co2e,villain,give-hq-hero-each-player,executable,WP-532,D-24343,packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-each-player
 co2e-villain-brotherhood-of-mutants-sabretooth,Sabretooth,co2e,villain,(unmarked),unmarked,,,
@@ -173,7 +173,7 @@ core-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,core,villain,gain-officer-c
 henchman-hand-ninjas,Hand Ninjas,core,henchman,gain-recruit-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current
 core-villain-brotherhood-juggernaut,Juggernaut,core,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 core-villain-radiation-maestro,Maestro,core,villain,ko-heroes-current-count-by-trait,executable,WP-544,D-24353,packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-count-by-trait
-core-villain-masters-of-evil-melter,Melter,core,villain,ko-cullable-each-deck-top,executable,WP-519,D-24332,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
+core-villain-masters-of-evil-melter,Melter,core,villain,ko-cullable-each-deck-top,executable,WP-603,D-24413,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
 core-villain-brotherhood-mystique,Mystique,core,villain,become-scheme-twist,executable,WP-481,D-24287,packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist
 core-villain-skrulls-paibok-the-power-skrull,Paibok the Power Skrull,core,villain,give-hq-hero-each-player,executable,WP-532,D-24343,packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-each-player
 core-villain-brotherhood-sabretooth,Sabretooth,core,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
