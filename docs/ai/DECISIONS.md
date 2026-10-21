@@ -49066,3 +49066,29 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24753 — Baron Zemo's "you may use 2 Recruit to rescue a Bystander" is a `fightVillain` opt-in paid before the Fight effects, with an active-player cue (Active 2026-10-21 — WP-819 / EC-857; covers WP-820's control)
+
+**Status:** Active 2026-10-21 (engine and cue, WP-819). WP-820 carries the client control and the operator-seated live-verify (D-24026) of the fire path.
+
+**User-Visible Surface:** `play.legendary-arena.com`, through WP-820's "Fight + Rescue" button. WP-819 alone adds the move argument and the cue; no client sends the argument until WP-820.
+
+**Context.** Baron Heinrich Zemo's base face (`data/cards/ca75.json`) prints "Whenever you fight a Villain, you may use 2[icon:recruit] to rescue a Bystander." WP-818 deferred the line because it is an opt-in payment at fight time. Rules v23 L772-792: when you fight a Villain you rescue its Bystanders and do its Fight effect, "in any order"; L1849-1851: Bystanders reach the Victory Pile before a Savior ability is checked.
+
+**Decision.**
+1. **Contract-file change (authorized here).** `UITurnEconomyState.rescueOnFightAvailable?: boolean`: active-player-only, omit-when-absent, true iff Baron Zemo is the Mastermind, the Bystander supply is not empty and the player has 2+ unspent Recruit. It follows the 5-step Board-Visible Field contract (built-projection keyset pin, D-24372). `REDACTED_ECONOMY` never carries it.
+2. **The fight move only.** `fightVillain` takes `payToRescueBystander?: boolean`. Villains and Henchmen qualify (D-24603); the Mastermind fight and the free defeats (Silent Sniper, Cruel Ruler) never do. `defeatCityVillainCore` gains an optional `options.payRescueOnFight`, which only `fightVillain` passes.
+3. **The rescue resolves before the fought Villain's Fight effects**, after the attached-Bystander and captured-Hero awards. That is the player-optimal order, because the Masters of Evil (WWII) Savior-gated Fight lines (D-24749) then count the rescued Bystander. Two trades are accepted: a Recruit-granting Fight effect (Hand Ninjas D-24350, Captain Zolandia WP-817) cannot fund the same fight's rescue, and a Fight effect that rescues from the supply runs after the paid rescue, so on a near-empty supply the paid rescue may take the last Bystander.
+4. **Never overdraw.** The move decides after every validation and gate, before the core: the rescue is paid only when 2 Recruit remain after a simulated `spendFightCostForTarget` debit of the fight cost plus an open Excessive Violence +1. So the rescue never makes the fight or a requested EV unaffordable, and the real debits (2 Recruit in the core, then the fight debit in the move) spend the same totals.
+5. **Declines and isolation.** A requested rescue that cannot be paid fights normally and logs why (`'blocked'`: the supply is empty, or 2 Recruit do not remain after the fight cost). With no Zemo, or no argument, the move, the core and the projection are byte-identical (no log line, no economy change, no cue key).
+6. **The rescued Bystander is the supply top** (`G.piles.bystanders[0]`, D-21501), moved with `moveCardFromZone`. The `fightResolved` event's `bystandersRescued` keeps meaning the fought Villain's own attached Bystanders.
+7. **One Zemo id.** `BARON_ZEMO_MASTERMIND_ID = 'ca75/baron-heinrich-zemo'` lives in `economy/rescueOnFight.logic.ts`; WP-818's fight-cost term and Master Strike import it.
+8. **Bots never opt in.** `getLegalMoves` keeps emitting `{ cityIndex }` (the Excessive Violence precedent), so PAR is unchanged.
+9. **WP-820's control:** a separate per-villain "Fight + Rescue" button, shown from the cue plus a client affordability mirror, submitting the intent; the engine stays the authority.
+
+**Gates.** WP-819 §Test Contract T1-T17 (T10 as T10a / T10b; T17 on six declining states). Engine 5475 → 5502, 0 fail; `pnpm -r --no-bail test` 0 fail; arena-client typecheck 0; `finalStateHash` / `PRE_WP080_HASH` unchanged. Revert proofs 5/5: the rescue after the Fight effects fails T5; raw Recruit instead of the simulated debit fails T9 and T10b; the filter pass-through dropped fails T15; the EV +1 dropped fails T10b; the decision above the stage gate fails four T17 cases.
+
+**Reserved by:** NUMBER-LEDGER D-24753 (#2942). Related: D-24556 / D-24557 (Excessive Violence opt-in and pre-spend gate), D-24560 (EV cue), D-24291 (shared defeat core), D-24389 / D-24652 (recruit-as-attack, target-aware fight debit), D-24603 (Henchmen are Villains), D-24749 (villain-side Savior), D-24350 (Hand Ninjas Recruit), D-24372 (runtime drift pins), D-24752 (WP-818, Baron Zemo).
+
+---
+Protect this file.
