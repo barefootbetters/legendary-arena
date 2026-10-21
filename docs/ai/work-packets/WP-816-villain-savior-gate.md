@@ -54,13 +54,13 @@ Today every one of these lines does nothing. The engine reads villain effects on
    - `gain-wound:each-other[:<N>]` → `villainEffectGainWound` (L817-872), sorted iteration, `gainWoundWithOutcome` (Diving Block), self-narrates.
    - Handler map `VILLAIN_EFFECT_HANDLERS` at L3700.
 7. **Fight ordering already satisfies the rule in Assumes 1.** `moves/fightVillain.ts`: the villain goes to the Victory Pile (L378), its attached Bystanders are awarded (L381-389), and only then `executeVillainAbilities(…, 'onFight', …)` runs (L411). Escape fires `executeVillainAbilities(…, 'onEscape', …)` at `villainDeck/villainDeck.reveal.ts:661`.
-8. **The hero-side Savior count.** `hero/heroConditions.evaluate.ts:325-341` (`bystandersInVictoryAtLeast`) and `countBystandersInVictory` (L681-698) count a Victory-Pile card as a Bystander when `extId === BYSTANDER_EXT_ID` (`'pile-bystander'`, `setup/pilesInit.ts:22`) or `extId.startsWith('bystander-villain-deck-')`. `setup/heroAbility.setup.ts:1705` builds `{ type: 'bystandersInVictoryAtLeast', value: '3' }` from `[keyword:Savior]`. `evaluateCondition` is exported (L98).
+8. **The hero-side Savior count.** `hero/heroConditions.evaluate.ts:325-341` (`bystandersInVictoryAtLeast`) and `countBystandersInVictory` (L687) count a Victory-Pile card as a Bystander when `extId === BYSTANDER_EXT_ID` (`'pile-bystander'`, `setup/pilesInit.ts:22`) or `extId.startsWith('bystander-villain-deck-')`. `setup/heroAbility.setup.ts:1705` builds `{ type: 'bystandersInVictoryAtLeast', value: '3' }` from `[keyword:Savior]`. `evaluateCondition` is exported (L98).
 9. **KO-from-Victory-Pile precedent.** `rules/tacticHandlers.ts:744-805` (Loki's Whispers and Lies): the first Bystander in Victory-Pile order (same two-arm predicate, L744-749) moves to `G.ko` via `moveCardFromZone`, per player in sorted id order, self-narrated.
 10. **No Bystander helper is exported from `board/bystanders.logic.ts`** (three pure functions, `attach` / `award` / `carryEscaped`, header L1-11; imports only `CardExtId`). The executor already imports from it (L51-54).
 11. **Primitive vocabulary.** `VillainEffectPrimitive` (L335) / `VILLAIN_EFFECT_PRIMITIVES` (L431) hold **28** members, last `ko-up-to-from-discard-current`; `villainAbility.types.test.ts` asserts bidirectional parity. A no-param primitive needs no parser arm: `parseUngatedEffect`'s tail (`setup/villainAbility.setup.ts:716-721`) returns `{ primitive }` for a 1-part token.
-12. **The marker script keeps hand-synced copies.** `scripts/convert-cards/apply-effect-markers.mjs` L167 (`VILLAIN_EFFECT_PRIMITIVES`), L203 (`CITY_SPACE_NAMES`), L233-~300 `isValidParameterizedEffectToken` (strips `@`, then the primitive grammar). It does not import `packages/`.
-13. **Feeds.** `ledger:villains` (`scripts/villain-mechanic-ledger.mjs`, reads the engine **dist** parser and `scripts/coverage/mechanic-provenance.json`) and `effect-index` (`scripts/build-effect-implementation-index.mjs`, reads both ledgers) regenerate from the marked data. `mechanics:metadata` reads only the hero ledger (`scripts/build-card-mechanics-metadata.mjs:51`). `sim:runtime-observed` sweeps only `core/dr-doom` + `core/brotherhood`; `sim:coverage` is a static hero parse. WP-757 (`haunt-hq-hero`) touched exactly: the marker script, the marker map, `mechanic-provenance.json`, the set's card JSON, `data/metadata/effect-implementation-index.json`, `docs/ai/coverage/villain-mechanic-ledger.{json,csv}`.
-14. **No hashed fixture plays these cards.** `masters-of-evil-wwii` appears in `packages/**` / `apps/**` only in `packages/registry/src/gauntletLoadouts.generated.ts` (9 rows) and the untracked dashboard copy of the effect index. The hash sentinel is `core/dr-doom`; `PRE_WP080` is synthetic.
+12. **The marker script keeps hand-synced copies.** `scripts/convert-cards/apply-effect-markers.mjs` L167 (`VILLAIN_EFFECT_PRIMITIVES`), L204 (`CITY_SPACE_NAMES`), L233-~300 `isValidParameterizedEffectToken` (strips `@`, then the primitive grammar). It does not import `packages/`.
+13. **Feeds.** `ledger:villains` (`scripts/villain-mechanic-ledger.mjs`, reads the engine **dist** parser and `scripts/coverage/mechanic-provenance.json`; its `normalizeEffectToken` (L134-137) names a mechanic by splitting the raw token on `:` only, so `ko-cullable-each-deck-top!savior` would come out as an `unsupported` mechanic named with its suffix — fixed in Scope F) and `effect-index` (`scripts/build-effect-implementation-index.mjs`, reads both ledgers) regenerate from the marked data. `mechanics:metadata` reads only the hero ledger (`scripts/build-card-mechanics-metadata.mjs:51`). `sim:runtime-observed` sweeps only `core/dr-doom` + `core/brotherhood`; `sim:coverage` is a static hero parse. WP-757 (`haunt-hq-hero`) touched exactly: the marker script, the marker map, `mechanic-provenance.json`, the set's card JSON, `data/metadata/effect-implementation-index.json`, `docs/ai/coverage/villain-mechanic-ledger.{json,csv}`.
+14. **No hashed fixture plays these cards.** `masters-of-evil-wwii` appears in `packages/**` / `apps/**` only in `packages/registry/src/gauntletLoadouts.generated.ts` (9 rows) and the untracked dashboard copy of the effect index. `zolas-creations` (Man-Fish) appears only in `setup/buildCardAbomination.test.ts` (inline copied lines, unaffected), `gauntletLoadouts.generated.ts` and `content/themes/red-skull-classic.json`. None is hashed, and no `data/par` artifact references either group. The hash sentinel is `core/dr-doom`; `PRE_WP080` is synthetic.
 15. `pnpm -r build` exits 0 and `pnpm -r --no-bail test` is green on the baseline.
 
 If any item is false, this packet is **BLOCKED**: STOP and reconcile.
@@ -74,7 +74,7 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 - **Why `each-non-savior` is a `gain-wound` target and not a gate.** The gate is about the current player; Radioactive Man's exemption is per player. A new `target` value follows the `'each-other'` precedent exactly (D-24295).
 - **Why one Savior predicate.** Hero and villain Savior must never disagree in one match, so the villain gate counts with the same two-arm predicate as the hero gate, through a new exported helper pinned to the hero evaluator by a parity test.
 - **Why "first Bystander in pile order".** All Bystanders are worth 1 VP in the Victory Pile and a rescued Bystander's ability has already resolved, so which one is KO'd has no game effect; the Whispers and Lies precedent (Assumes 9) is deterministic and needs no choice UI for non-active seats (pending choices are active-player-scoped).
-- `docs/ai/REFERENCE/00.2-data-requirements.md` §1.4 Villain Group Shape (`cards`, `abilities`), §5 Ability Text Markup Language (`[keyword:X]`, `[effect:X]`).
+- `docs/ai/REFERENCE/00.2-data-requirements.md` §1.4 Villain Group Shape (`cards`, `abilities`), §5 Ability Text Markup Language (the printed `[keyword:X]` / `[icon:X]` / `[hc:X]` / `[team:X]` / `[rule:X]` set). `[effect:X]` is not in §5: it is the pipeline-appended engine marker documented in the `_notes` of `scripts/convert-cards/inputs/villain-effect-markers.json`.
 - `docs/ai/ARCHITECTURE.md` §Zone & Pile Structure (zones hold `CardExtId` only; KO via zone moves), Section 3 Persistence Boundaries (`G` runtime-only), §The Rule Execution Pipeline (unknown effects warn, never throw).
 - `docs/ai/DECISIONS.md`: scan D-24023, D-24034, D-24081 (`G.messages` hash-excluded), D-24290, D-24295, D-24332, D-24464, D-24499 / D-24673 (Diving Block wound routing), D-24372 before coding.
 - User memory: `reference_villain_effect_vocabulary_extension` (the script's own primitive copy; keyword-less descriptors must self-narrate), `reference_card_data_pipeline` (markers only — never re-run the base converter), `reference_engine_tests_never_typechecked`.
@@ -114,6 +114,7 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 - Legacy keywords take no suffix: `koHeroCurrentPlayer!savior` → null (unresolved). Gated lines use the parameterized form.
 
 **Savior helpers (`board/bystanders.logic.ts`, pure, no `G`):**
+- The file newly imports `BYSTANDER_EXT_ID` from `'../setup/pilesInit.js'` (no cycle: `pilesInit` imports only `shuffle` and types). Update the header comment, which today lists three functions and a `CardExtId`-only import.
 - `export const SAVIOR_BYSTANDER_THRESHOLD = 3;`
 - `export function countVictoryPileBystanders(victory: readonly CardExtId[]): number` — counts ids that `=== BYSTANDER_EXT_ID` or `startsWith('bystander-villain-deck-')` (Assumes 8, the hero predicate verbatim).
 - `export function findFirstVictoryPileBystander(victory: readonly CardExtId[]): CardExtId | undefined` — the first such id in array order.
@@ -124,7 +125,7 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
   - any Diving Block pending → `` `${label} effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}.` `` `'applied'`;
   - else any wounded → `` `${label} effect: each player who is not a Savior gained a Wound (Player 1, Player 2).` `` (names in sorted order, `, `-joined) `'applied'`;
   - else → `` `${label} effect: no player who is not a Savior gained a Wound.` `` `'blocked'`.
-  - Return `{ targets: [] }`, plus `woundOutcomes: { gainedPlayerIds, divingBlockPendingPlayerIds }` only when a Diving Block reveal is pending (the `'each'` branch shape).
+  - Return `{ targets: [] }` always (the `'each-other'` shape: a keyword-less descriptor's result is never recorded, executor L202, so a `woundOutcomes` field would be dead).
 - `ko-bystander-each-victory-pile` handler `villainEffectKoBystanderEachVictoryPile`: for each player in `Object.keys(G.playerZones).sort()`, `findFirstVictoryPileBystander(zones.victory)`; when found, `moveCardFromZone(zones.victory, G.ko, id)` and write back both arrays (the Whispers and Lies pattern). Narration: some moved → `` `${label} effect: KO'd a Bystander from the Victory Pile of Player 0, Player 2.` `` `'applied'`; none → `` `${label} effect: no player had a Bystander in their Victory Pile to KO.` `` `'blocked'`. Returns `{ targets: [] }`. Registered in `VILLAIN_EFFECT_HANDLERS`.
 
 **Marker map (`scripts/convert-cards/inputs/villain-effect-markers.json`, `villains.ca75`), exactly:**
@@ -142,6 +143,8 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 ```
 and the `_unassigned` row for `ca75 / masters-of-evil-wwii / black-knight` (L411) is deleted.
 
+**Ledger normalizer (`scripts/villain-mechanic-ledger.mjs` `normalizeEffectToken`):** `rawToken.split('!')[0].split('@')[0].split(':')[0].trim()` — strip the condition suffix, then the location gate, then the params, so a gated marker is named by its primitive (the parser's resolved name).
+
 **Provenance:** `scripts/coverage/mechanic-provenance.json` gains `"ko-bystander-each-victory-pile": { "wp": "WP-816", "decision": "D-24749" }` next to the other villain primitives.
 
 ---
@@ -153,7 +156,7 @@ and the `_unassigned` row for `ca75 / masters-of-evil-wwii / black-knight` (L411
 - **C)** `board/bystanders.logic.ts` + test: the three Savior exports; header comment updated.
 - **D)** `villain/villainEffects.execute.ts` + test: the condition gate + its narration helper, the `each-non-savior` branch, the new handler + map entry.
 - **E)** `moves/fightVillain.test.ts` (additions only): the rules-ordering integration cases.
-- **F)** Card data: the marker script (primitive, condition list, `!` validation, `each-non-savior`), the marker map, `data/cards/ca75.json` regenerated by the marker script, `mechanic-provenance.json`, and the regenerated villain ledger + effect index.
+- **F)** Card data: the marker script (primitive, condition list, `!` validation, `each-non-savior`), the marker map, `data/cards/ca75.json` regenerated by the marker script, `mechanic-provenance.json`, the villain-ledger normalizer, and the regenerated villain ledger + effect index.
 
 ## Out of Scope
 
@@ -178,12 +181,13 @@ and the `_unassigned` row for `ca75 / masters-of-evil-wwii / black-knight` (L411
 - `scripts/convert-cards/apply-effect-markers.mjs` — modified
 - `scripts/convert-cards/inputs/villain-effect-markers.json` — modified
 - `scripts/coverage/mechanic-provenance.json` — modified
+- `scripts/villain-mechanic-ledger.mjs` — modified (`normalizeEffectToken` only)
 - `data/cards/ca75.json` — regenerated (7 lines gain a marker)
 - `docs/ai/coverage/villain-mechanic-ledger.json`, `docs/ai/coverage/villain-mechanic-ledger.csv`, `data/metadata/effect-implementation-index.json` — regenerated
 
 **Governance:** `docs/ai/DECISIONS.md` (D-24749), `docs/ai/STATUS.md`, `docs/ai/work-packets/WORK_INDEX.md`, `docs/ai/execution-checklists/EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`
 
-That is 9 engine files (5 of them tests), 3 script/input files, 1 card-data file and 3 generated feeds. Above the ~8 guideline because one mechanic spans parser, executor, script mirror and data; splitting would ship a grammar with no data or data with no grammar.
+That is 9 engine files (5 of them tests), 4 script/input files, 1 card-data file and 3 generated feeds. Above the ~8 guideline because one mechanic spans parser, executor, script mirror and data; splitting would ship a grammar with no data or data with no grammar.
 
 ## Contract
 
@@ -192,7 +196,7 @@ That is 9 engine files (5 of them tests), 3 script/input files, 1 card-data file
 
 ## Test Contract
 
-Executor / helper cases build a minimal `G` in the style of the existing test file. "Bystander ids": `pile-bystander` and `bystander-villain-deck-NN`.
+Executor / helper cases build a minimal `G` in the style of the existing test file (`makeG` / `createMockGameState`), with `messages: []` so `pushLog` records. "Bystander ids": `pile-bystander` and `bystander-villain-deck-NN`. Each T-case is at least one `it`, grouped under one `describe('WP-816 …')` per file: T1-T3 in `villainAbility.types.test.ts`; T4-T8 in `villainAbility.setup.test.ts`; T9-T11 in `board/bystanders.logic.test.ts` (T11 imports `evaluateCondition` from `../hero/heroConditions.evaluate.js`); T12-T21 in `villainEffects.execute.test.ts`; T22-T23 in `moves/fightVillain.test.ts`. T2 edits the existing primitive-count pin (`villainAbility.types.test.ts` ~L351-397) from 28 to 29: a value change from an intended product change, said so in the commit body.
 
 | # | Input | Expected | Invariant / must NOT |
 |---|---|---|---|
@@ -207,24 +211,24 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 | T9 | `countVictoryPileBystanders([v, 'pile-bystander', 'bystander-villain-deck-03', 'pile-wound'])`; `[]` | 2; 0 | pure, input not mutated |
 | T10 | `findFirstVictoryPileBystander([v, 'bystander-villain-deck-03', 'pile-bystander'])`; `[v]` | `'bystander-villain-deck-03'`; `undefined` | |
 | T11 | parity: Victory Piles with 0, 2, 3, 4 Bystanders (mixed arms) plus a villain id | `countVictoryPileBystanders(v) >= SAVIOR_BYSTANDER_THRESHOLD` === `evaluateCondition(G, '0', { type: 'bystandersInVictoryAtLeast', value: '3' })` for each | `SAVIOR_BYSTANDER_THRESHOLD === 3` |
-| T12 | onFight hook `[{draw-cards-current, drawCount 1, requireCondition savior}]`, current `'0'` with 3 Bystanders, deck 2 cards | hand +1; log `Fight effect: drew 1 card(s).` | |
+| T12 | onFight hook `[{draw-cards-current, drawCount 1, requireCondition savior}]`, current `'0'` with 3 Bystanders, deck 2 cards; `executeVillainAbilities` called with `{ random: makeMockCtx().random }` as the shuffle context (5th arg) | hand +1; log `Fight effect: drew 1 card(s).` | without a shuffle context the draw handler no-ops (L2093-2097) |
 | T13 | same with 2 Bystanders | hand unchanged; last message `Fight effect: Player 0 is not a Savior (2 of 3 Bystanders in their Victory Pile); no effect.` outcome `blocked`; no hollow record; no EffectTrace for it; results `[]` | gate before dispatch |
 | T14 | current `'0'` has 0 Bystanders, player `'1'` has 3 | blocked as T13 with `(0 of 3 …)` | reads the current player only |
-| T15 | onFight `[{ko-hero, current, requireCondition savior}]`, 3 Bystanders, a Hero in hand | the existing interactive KO parks; results `[{ keyword: 'koHeroCurrentPlayer', … }]` | legacy narration intact |
+| T15 | onFight `[{ko-hero, current, requireCondition savior}]`, 3 Bystanders, two distinct Heroes in hand (`hero-a`, `hero-b`) | `G.pendingKoHeroChoices` equals `[{ choiceType: 'ko-hero', playerID: '0' }]`; results equal `[{ keyword: 'koHeroCurrentPlayer', targets: [], pending: true }]` | legacy narration intact (one Hero would auto-KO instead, L963-990, D-24007) |
 | T16 | `{ko-hero, current, requireCitySpaces: [sewers], requireCondition: savior}` fought at `cityIndex 4` with 3 Bystanders; then at `cityIndex 0` with 1 Bystander | first: only the location-blocked line; second: only the Savior-blocked line | location checked first |
 | T17 | `{gain-wound, each-non-savior}` onFight; players `0` (3 Bystanders, current), `1` (2), `2` (0); wounds pile 5 | players 1 and 2 gain 1 Wound each, 0 none; message `Fight effect: each player who is not a Savior gained a Wound (Player 1, Player 2).` `applied`; `woundsDrawn` unchanged | sorted order |
 | T18 | same, current `'1'`; and onEscape timing | `woundsDrawn` +1; message starts `Escape effect:` | |
 | T19 | all three players Saviors; and separately an empty wound pile | no Wound moves; `… no player who is not a Savior gained a Wound.` `blocked` | never throws |
 | T20 | `{ko-bystander-each-victory-pile}` onEscape; victory `0: [v, 'bystander-villain-deck-01', 'pile-bystander']`, `1: ['pile-bystander']`, `2: [v2]` | `0` loses `bystander-villain-deck-01`, `1` loses `pile-bystander`, `2` unchanged; `G.ko` ends with those two in that order; `Escape effect: KO'd a Bystander from the Victory Pile of Player 0, Player 1.` `applied` | first in pile order, one per player |
 | T21 | no player has a Bystander | nothing moves; `Escape effect: no player had a Bystander in their Victory Pile to KO.` `blocked` | |
-| T22 | `fightVillain` (integration): villain V with onFight `{draw-cards-current, drawCount 1, requireCondition savior}`, 1 Bystander attached to V, current player's Victory Pile holds 2 Bystanders, enough Attack | V defeated, the attached Bystander is awarded, Savior passes (3), hand +1 | rules L1849-1851 ordering |
+| T22 | `fightVillain` (integration): villain V in the City with a `cardStats` fight cost and onFight `{draw-cards-current, drawCount 1, requireCondition savior}`; `G.attachedBystanders[V] = ['bystander-villain-deck-01']` (a Savior-counted id, not the `hostage-N` style); current player's Victory Pile holds 2 Bystanders and the deck holds a card; enough Attack | V defeated, the attached Bystander is awarded, Savior passes (3), hand +1 | rules L1849-1851 ordering |
 | T23 | same with 1 Bystander in the Victory Pile | defeated; Savior-blocked line `(2 of 3 …)`; hand unchanged | |
 
 ## Vision Alignment
 
 **Vision clauses touched:** §1 (faithful rules), §8 / §22 (determinism), §23 / §24 (competitive integrity), NG-1.
 
-**Competitive surface:** ca75 Masters of Evil (WWII) appears in 9 published gauntlet loadout rows (`packages/registry/src/gauntletLoadouts.generated.ts`). Their Fights now reward Saviors and Radioactive Man / Executioner now punish, so those legs change difficulty and published PAR for affected seeds may drift. That is the same fidelity shift every card WP carries; PAR regeneration stays with the PAR pipeline.
+**Competitive surface:** ca75 Masters of Evil (WWII) appears in 9 published gauntlet loadout rows (`packages/registry/src/gauntletLoadouts.generated.ts`). Their Fights now reward Saviors and Radioactive Man / Executioner now punish, so those legs change difficulty. No committed `data/par` artifact references either group, so nothing is re-pinned here; any future PAR run for those loadouts picks up the new behavior, the same fidelity shift every card WP carries.
 
 **Conflict assertion:** No conflict: this WP preserves all touched clauses; none of NG-1..NG-8 is crossed (engine-only card fidelity, no paid or persuasive surface).
 
@@ -232,7 +236,7 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 - No new `G` field. The gate and both new behaviors read only `G`; iteration is sorted; no randomness beyond the existing draw / deck-reveal shuffle context.
 - Narration goes to hash-excluded `G.messages` (D-24081).
 - No hashed fixture plays these cards (Assumes 14), so `finalStateHash` and `PRE_WP080_HASH` are expected unchanged; if either moves, STOP and explain before any re-pin.
-- **Replay-compat:** stored replays of pre-WP-816 matches that fought or escaped an affected card will not re-execute identically. Recorded in D-24749.
+- **Replay-compat:** the server replays a stored match from its bgio `initialState` (`apps/server/src/replay/matchReplay.logic.ts`), which already holds the setup-time `G.villainAbilityHooks`, so pre-WP-816 matches replay identically on the new code. Only a path that re-runs setup from config + seed sees the new markers. Recorded in D-24749.
 
 ## Funding Surface Gate
 
@@ -246,22 +250,23 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 
 ## Acceptance Criteria
 
-1. **Grammar.** T4-T7 pass in the engine parser, and the marker script accepts exactly the T4-T5 tokens and rejects every T7 token.
+1. **Grammar.** T4-T7 pass in the engine parser. The marker script accepts the seven Locked-Values tokens (Verification 3). It has no test harness and runs `main()` on import, so its rejection side is checked by hand: put each T7 token into the marker map one at a time, run the script, observe a loud failure, revert. Record the eight observed failures in the EC-854 commit body.
 2. **Types.** T1-T3 pass as runtime assertions.
 3. **Helpers.** T9-T11 pass.
 4. **Gate.** T12-T16 pass.
 5. **Per-player exclusion.** T17-T19 pass.
 6. **KO-a-Bystander.** T20-T21 pass.
 7. **Rules ordering.** T22-T23 pass.
-8. **Data.** `apply-effect-markers.mjs` reports 7 lines updated, then 0 on a re-run; `git diff data/cards/` touches only `ca75.json`, and only those 7 lines, each gaining one trailing `[effect:…]` token; T8 passes on the regenerated lines.
+8. **Data.** `apply-effect-markers.mjs` prints `ca75.json — 7 new marker(s) this run` and `7 new [effect:] marker(s) appended`, then 0 new markers on a re-run; `git diff data/cards/` touches only `ca75.json`, and only those 7 lines, each gaining one trailing `[effect:…]` token; T8 passes on the regenerated lines.
 9. **Gates.** `pnpm -r build` exits 0; `pnpm -r --no-bail test` 0 fail; `cards:check`, `effect-index:check`, `ledger:villains:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check` exit 0 after the regeneration in Verification Steps; `mechanics:metadata`, `sim:runtime-observed` and `sim:coverage` need no regeneration.
 10. **Hashes.** `finalStateHash` and `PRE_WP080_HASH` byte-unchanged.
+11. **Ledger rows.** In the regenerated `villain-mechanic-ledger.json`, the 7 new rows (Black Knight `ko-hero`; Executioner `draw-cards-current` and `ko-bystander-each-victory-pile`; Melter (WWII) `ko-cullable-each-deck-top`; Radioactive Man `gain-wound` (fight and escape); Man-Fish `gain-wound`) are `executable` with a handler, and `ko-bystander-each-victory-pile` carries WP-816 / D-24749 provenance. No mechanic name anywhere in the ledger contains `!` or `@`.
 
 ## Verification Steps
 
 1. `pnpm -r build` → exit 0.
 2. `pnpm --filter @legendary-arena/game-engine test` → all pass; record before / after totals.
-3. `node scripts/convert-cards/apply-effect-markers.mjs` → "7 lines updated"; re-run → 0 (idempotent). `git diff --stat -- data/cards/` → only `ca75.json`.
+3. `node scripts/convert-cards/apply-effect-markers.mjs` → `7 new [effect:] marker(s) appended`; re-run → 0 new markers (idempotent). `git diff --stat -- data/cards/` → only `ca75.json`.
 4. `pnpm -r build` again (the ledger reads the engine dist), then `pnpm ledger:villains && pnpm effect-index`.
 5. `pnpm cards:check && pnpm effect-index:check && pnpm ledger:villains:check && pnpm mechanics:metadata:check && pnpm sim:runtime-observed:check && pnpm sim:coverage --check` → each exits 0. If `mechanics:metadata:check`, `sim:runtime-observed:check` or `sim:coverage --check` flags, STOP: Assumes 13 is false.
 6. `pnpm -r --no-bail test` → 0 fail.
@@ -277,7 +282,8 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 - [ ] **D-24026 live-verify** (post-merge, REQUIRED). In a live match with the deployed gitSha checked, villain group `ca75/masters-of-evil-wwii` (mastermind `ca75/baron-heinrich-zemo`, which always leads it), driven via the operator setter pane or `/api/match/autoplay` setupData:
   - fight a Masters of Evil (WWII) Savior villain with fewer than 3 Bystanders → the log shows the "is not a Savior" line; with 3+ → the printed reward fires;
   - Radioactive Man's Fight wounds the non-Savior players only;
-  - an escaping Executioner removes one Bystander from each Victory Pile that has one.
+  - an escaping Executioner removes one Bystander from each Victory Pile that has one;
+  - in a 2+-player `ca75/arnim-zola` match (always leads `zolas-creations`), fighting Man-Fish on the Sewers or the Bridge wounds every other player, and on another space logs the location-blocked line.
 
   Record this as operator-pending until seen.
 
@@ -290,13 +296,35 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 - `gain-wound` target `each-non-savior` (per-player exemption; the `each-other` precedent);
 - `ko-bystander-each-victory-pile`: every player, first Bystander in pile order, to `G.ko` (the Whispers and Lies precedent), no choice;
 - the rules-ordering note (Bystanders from the defeated villain count, already true by fight ordering);
-- the replay-compat note.
+- the limit: code that reads descriptors outside the executor loop (`villainCardEscapeTriggersSchemeTwist` ~L1494, the `play-villain-deck-cards` count reader ~L1607) does not see `requireCondition`, so a future gated marker on those primitives needs its own gate check;
+- the villain-ledger normalizer stripping `!` and `@` suffixes;
+- the replay-compat note (stored `initialState` replays are unaffected).
 
 ---
 
 ## Gate Record
 
-_Pending: 01.4 pre-flight, 01.7 copilot check, 00.3 lint gate (independent subagents)._
+**Pre-flight (01.4), round 1 (independent subagent): NOT READY → two blocking text fixes, applied.**
+- Verified against live code and data: card text verbatim; rules v23 L1844-1853 / L3715-3716; marker map rows and the `_unassigned` row; no existing `[effect:` value contains `!`, and every marker reader uses `[^\]]+`; parser anchors and the T4-T7 outcomes of a `!`-first split; 28 primitives, `descriptorKey`, T3; the executor location gate, handlers and map; fight ordering; the shared two-arm Bystander predicate; T9-T21 arithmetic and strings; feed inputs; no hashed fixture or PAR file; dependencies `[x]`; no layer or persistence issue.
+- **PS-1 (fixed):** the villain ledger's `normalizeEffectToken` splits on `:` only, so `ko-cullable-each-deck-top!savior` would be an `unsupported` mechanic. The ledger script is now in scope with a locked normalizer, Assumes 13 says so, and AC 11 checks the 7 rows.
+- **PS-2 (fixed):** T15 used one Hero, which auto-KOs (L963-990). It now uses two Heroes and locks the parked choice and the result.
+- **RS-1 (fixed):** T12 / T22 / T23 name the shuffle context, `messages: []`, the Bystander id and the fight cost.
+- **RS-2 (fixed):** the script's real output wording.
+- **RS-3 (fixed):** AC 1 states the by-hand rejection method for the script.
+- **RS-4 (fixed):** per-file test placement, `describe` grouping, T11's file and import, and T2's 28 → 29 pin edit.
+- **RS-5 (fixed):** Assumes 14 covers `zolas-creations` and notes no PAR artifact; the Vision line no longer claims PAR drift.
+- **RS-6 (fixed):** replay-compat reworded: stored `initialState` replays keep their setup-time hooks.
+- **RS-7 (fixed):** `each-non-savior` returns `{ targets: [] }` only.
+- **RS-8 (fixed):** the 00.2 §5 citation.
+- **RS-9 (fixed):** the new `BYSTANDER_EXT_ID` import and the header update are locked.
+- **RS-10 (fixed):** D-24749 records that out-of-loop descriptor readers do not see `requireCondition`.
+- **RS-11 (fixed):** the live-verify DoD adds Man-Fish.
+- **RS-12 (fixed):** anchors L687 and L204.
+- **RS-13 (accepted):** the baseline is recorded at execution (EC Before Starting).
+
+The reviewer ruled that only PS-1 needs a re-check (one file added to the allowlist); pre-flight round 2 below.
+
+_Pending: pre-flight round 2, 01.7 copilot check, 00.3 lint gate._
 
 ## Lint Gate Self-Review (00.3)
 
