@@ -260,7 +260,7 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 8. **Data.** `apply-effect-markers.mjs` prints `ca75.json — 7 new marker(s) this run` and `7 new [effect:] marker(s) appended`, then 0 new markers on a re-run; `git diff data/cards/` touches only `ca75.json`, and only those 7 lines, each gaining one trailing `[effect:…]` token; T8 passes on the regenerated lines.
 9. **Gates.** `pnpm -r build` exits 0; `pnpm -r --no-bail test` 0 fail; `cards:check`, `effect-index:check`, `ledger:villains:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check` exit 0 after the regeneration in Verification Steps; `mechanics:metadata`, `sim:runtime-observed` and `sim:coverage` need no regeneration.
 10. **Hashes.** `finalStateHash` and `PRE_WP080_HASH` byte-unchanged.
-11. **Ledger rows.** In the regenerated `villain-mechanic-ledger.json`, the 7 new rows (Black Knight `ko-hero`; Executioner `draw-cards-current` and `ko-bystander-each-victory-pile`; Melter (WWII) `ko-cullable-each-deck-top`; Radioactive Man `gain-wound` (fight and escape); Man-Fish `gain-wound`) are `executable` with a handler, and `ko-bystander-each-victory-pile` carries WP-816 / D-24749 provenance. No mechanic name anywhere in the ledger contains `!` or `@`.
+11. **Ledger rows.** In the regenerated `villain-mechanic-ledger.json`, the 6 new rows (Black Knight `ko-hero`; Executioner `draw-cards-current` and `ko-bystander-each-victory-pile`; Melter (WWII) `ko-cullable-each-deck-top`; Radioactive Man `gain-wound` (one row covering its Fight and Escape markers — the ledger keys rows per card per distinct mechanic); Man-Fish `gain-wound`, beside its existing `gainWoundEachPlayer` row) are `executable` with a handler, and `ko-bystander-each-victory-pile` carries WP-816 / D-24749 provenance. No mechanic name anywhere in the ledger contains `!` or `@`.
 
 ## Verification Steps
 
@@ -324,7 +324,12 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 
 The reviewer ruled that only PS-1 needs a re-check (one file added to the allowlist); pre-flight round 2 below.
 
-_Pending: pre-flight round 2, 01.7 copilot check, 00.3 lint gate._
+**Pre-flight (01.4), round 2 (same independent subagent): READY TO EXECUTE** after one text fix, applied (no round 3 needed per the reviewer).
+- **PS-1 (fixed):** AC 11 / EC said 7 new ledger rows; the ledger keys rows per card per distinct mechanic, so Radioactive Man's two `gain-wound` markers make one row → 6. The marker / line count of 7 (AC 8, Verification 3) stays.
+- **RS-1 (noted):** T12's `makeMockCtx` is a new import (`../test/mockCtx.js`) in the allowlisted executor test file.
+- Verified: the locked normalizer names all 43 existing `[effect:` tokens identically to today (0 differ), so the only ledger changes are the new ca75 rows; each new token resolves `executable` with provenance; T15 parks with two Heroes; T12 / T22 / T23 inputs match the code; Locked Values, Assumes 13-14, replay note, D-24749 limit, Man-Fish live-verify and the WP ↔ EC allowlist all agree.
+
+_Pending: 01.7 copilot check, 00.3 lint gate._
 
 ## Lint Gate Self-Review (00.3)
 

@@ -54,7 +54,7 @@
 ## After Completing
 - [ ] T1-T23 pass. `pnpm -r build` → 0. `pnpm -r --no-bail test` → 0 fail.
 - [ ] Marker script: `7 new [effect:] marker(s) appended`, re-run 0; data diff is `ca75.json` only, 7 lines. The 8 T7 tokens each loud-fail the script when put in the map one at a time (recorded in the commit body).
-- [ ] Ledger: the 7 new rows are `executable` with a handler; `ko-bystander-each-victory-pile` has WP-816 / D-24749 provenance; no mechanic name contains `!` or `@`.
+- [ ] Ledger: the 6 new rows (Radioactive Man's two markers share one `gain-wound` row) are `executable` with a handler; `ko-bystander-each-victory-pile` has WP-816 / D-24749 provenance; no mechanic name contains `!` or `@`.
 - [ ] T15 uses two Heroes in hand (one Hero auto-KOs). T12 / T22 pass a shuffle context; T22 / T23 attach `bystander-villain-deck-01`.
 - [ ] `pnpm ledger:villains && pnpm effect-index` (after a rebuild); then `cards:check`, `effect-index:check`, `ledger:villains:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check` → 0. The last three need no regeneration; if one flags, STOP.
 - [ ] Revert proofs observed (gate removed; Saviors wounded; last Bystander taken).
