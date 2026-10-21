@@ -455,6 +455,7 @@ high-water: 422
 - WP-814 — shared-wiki-theme-extraction (Shared wiki platform; extract the hand-rolled Hugo wiki theme into one shared copy every ewiki consumes, per D-24725 + D-24727; engine ewiki migrates last. reserved 2026-10-16, claude/wp-shared-wiki-theme-draft)
 - WP-815 — abomination-fight-cost (Cap 75th arc #2: Abomination / Double Abomination villains + Ultimate / Double Highest Abomination masterminds get +printed HQ-Hero attack in resolveFightCost / resolveMastermindFightCost. reserved 2026-10-20, claude/reserve-wp815-abomination)
 - WP-816 — villain-savior-gate (Cap 75th arc #3: villain-side Savior — a [effect:] marker condition gate (Savior = 3+ Bystanders in the current player's Victory Pile) for Black Knight / Executioner / Melter (WWII) Fight, a gain-wound each-non-savior target for Radioactive Man Fight/Escape, a new ko-bystander-each-victory-pile primitive for Executioner Escape, and the Man-Fish Fight marker. reserved 2026-10-20, claude/villain-savior-gate)
+- WP-817 — zolandia-primus (Cap 75th arc #6: Captain Zolandia Fight +1 Recruit per Hero Class you have, Primus discard-a-2/3/5/7-cost-card fight cost, Primus Escape each player discards a 2/3/5/7-cost Hero. reserved 2026-10-20, claude/ca75-zolandia-primus-spec-4db242)
 
 ## EC
 
@@ -872,6 +873,7 @@ high-water: 457
 - EC-852 — shared-wiki-theme-extraction (WP-814. reserved 2026-10-16, claude/wp-shared-wiki-theme-draft)
 - EC-853 — abomination-fight-cost (WP-815. reserved 2026-10-20, claude/reserve-wp815-abomination)
 - EC-854 — villain-savior-gate (WP-816. reserved 2026-10-20, claude/villain-savior-gate)
+- EC-855 — zolandia-primus (WP-817. reserved 2026-10-20, claude/ca75-zolandia-primus-spec-4db242)
 
 ## D
 
@@ -1399,3 +1401,4 @@ section below) and the allocation protocol in
 - D-24747 — abomination-fight-cost (WP-815; the HQ-slot-under-City-space binding hq[4 - cityIndex], the printed-attack read, and the omit-when-empty cardAbomination setup map. reserved 2026-10-20, claude/reserve-wp815-abomination)
 - D-24748 — profile-favourites-are-saved-loadouts (operator decision, no WP — a profile "favourite" hero team is a complete saved loadout in player_loadouts, LAGN-validated per D-24086; no heroes-only shape, lagn-v1 setup.required unchanged. Records the 2026-10-14 profile-brief storage call on wiki/profile-login.md. reserved 2026-10-20, spec/d-24748-profile-favourites-reserve)
 - D-24749 — villain-savior-gate (WP-816; the villain-marker Savior condition gate grammar + its current-player evaluation and fail-closed narration, the each-non-savior wound target, the ko-bystander-each-victory-pile primitive (first Bystander in pile order, each player), and one Savior predicate shared with the hero gate. reserved 2026-10-20, claude/villain-savior-gate)
+- D-24750 — zolandia-primus (WP-817; the villain fight discard-cost mechanism (how fightVillain learns the discarded card, its pre-commit gate, legalMoves + client gating) and the per-Hero-Class recruit magnitude on a villain Fight. reserved 2026-10-20, claude/ca75-zolandia-primus-spec-4db242)
