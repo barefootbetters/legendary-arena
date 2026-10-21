@@ -48991,3 +48991,26 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24748 — A profile favourite is a complete saved loadout; no heroes-only LAGN shape (operator decision, no WP) (Active 2026-10-20)
+
+**Status:** Active (governance) 2026-10-20. Decides storage only. The favourites surface itself is unscheduled design direction on [Profile Login](../../wiki/profile-login.md#saved-loadouts-as-a-working-surface--the-mastermind-grind-loop-design-direction-2026-10-14).
+
+**User-Visible Surface:** none yet. No favourites UI exists.
+
+**Context.** A 2026-10-14 operator design conversation produced briefs for a profile "fav five": a favourite hero team picked slot by slot, then opened in the Registry Viewer's loadout builder through `?lagn=` (D-24154) to add a scheme and mastermind. The briefs stored a favourite as a LAGN loadout with no scheme or mastermind. That shape can't be saved: `POST /api/me/loadouts` validates every write with `@legendary-arena/lagn` (D-24086), and `packages/lagn-spec/schemas/lagn-v1.json` lists `mastermind`, `scheme`, `villain_groups`, `henchmen_groups`, `heroes` and the four supply counts in `setup.required`. The `?lagn=` import can't carry it either, because it runs the same published validator (`parseLagnLoadout`, D-24154). Three options were weighed: (A) relax `setup.required` for favourites, with a LAGN version bump; (B) a separate heroes-plus-counts favourites record outside LAGN; (C) favourites are complete saved loadouts only.
+
+**Decision (Jeff, 2026-10-20): option C.**
+1. A favourite is a complete, valid LAGN loadout, stored in `legendary.player_loadouts` through the existing `/api/me/loadouts*` endpoints. Like any saved loadout, it names a mastermind, scheme, villain groups, henchmen groups, heroes and the four supply counts.
+2. `lagn-v1.json` `setup.required` is unchanged. No partial or heroes-only LAGN shape, and no separate favourites table or record.
+3. The supply counts and `support_pools` (D-24194 / D-24195) are remembered because a favourite is a full loadout. Nothing extra stores them.
+4. How a loadout is marked as a favourite (a flag or pin column, a slot list, a derived ordering) is the call of the WP that builds the surface. A new column on `player_loadouts` gets that WP's own D-entry. The marker stays decorative per D-24087 and is never a competitive input.
+
+**Consequences.** The "team fixed, fight open" framing becomes a builder flow, not a storage shape: the player picks heroes in the builder's local draft and saves once the fight is filled in, and "open in builder" opens a complete favourite so the player can swap its fight. Favourites count toward the 50-loadout cap (D-24086). A favourite's hero count follows its scheme (D-24672), so it stays valid for the fight it was saved with; moving the team to a different scheme or player count can change the required count, and the builder warns (D-24165).
+
+**Rejected alternatives.** (A) Relaxing `setup.required` changes a published spec that every LAGN reader relies on (the `?lagn=` import, Play this loadout's lobby readers per D-24722, the public lagn-spec repo) for a profile convenience. (B) A second favourites shape means a new table, endpoints and validator for data that a saved loadout already holds.
+
+**Reserved by:** NUMBER-LEDGER D-24748 (#2925). Related: D-24086 (server LAGN validation, 50 cap), D-24087 (decorative, opaque `lagn` in arena-client), D-24154 (`?lagn=` import), D-24165 (player-count table), D-24672 (scheme hero counts).
+
+---
+Protect this file.
