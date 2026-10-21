@@ -221,12 +221,12 @@ Executor / helper cases build a minimal `G` in the style of the existing test fi
 | T13b | T12's hook with `requireCondition: 'spectrum' as VillainEffectCondition` (cast), 3 Bystanders | hand unchanged; last message `Fight effect: unrecognized condition 'spectrum'; no effect.` `blocked`; no hollow record, no EffectTrace | fails closed, never dispatched |
 | T14 | current `'0'` has 0 Bystanders, player `'1'` has 3 | blocked as T13 with `(0 of 3 …)` | reads the current player only |
 | T15 | onFight `[{ko-hero, current, requireCondition savior}]`, 3 Bystanders, two distinct Heroes in hand (`hero-a`, `hero-b`) | `G.pendingKoHeroChoices` equals `[{ choiceType: 'ko-hero', playerID: '0' }]`; results equal `[{ keyword: 'koHeroCurrentPlayer', targets: [], pending: true }]` | legacy narration intact (one Hero would auto-KO instead, L963-990, D-24007) |
-| T15b | onFight `[{ko-cullable-each-deck-top, requireCondition savior}]`, current `'0'` with 3 Bystanders, players `0` and `1` each with a deck card, a shuffle context passed | `G.pendingMelterKoChoices` has exactly one entry, for player `'0'`, whose snapshot lists both deck tops; nothing KO'd yet | the D-24413 prompt behind the gate |
+| T15b | onFight `[{ko-cullable-each-deck-top, requireCondition savior}]`, current `'0'` with 3 Bystanders, players `0` and `1` each with a deck card, a shuffle context passed | `G.pendingMelterKoChoices` has exactly one entry `{ choiceType: 'melter-ko', playerID: '0', revealedTops: [{ ownerPlayerID: '0', cardId: <0's top> }, { ownerPlayerID: '1', cardId: <1's top> }] }`; nothing KO'd yet | the D-24413 prompt behind the gate |
 | T16 | `{ko-hero, current, requireCitySpaces: [sewers], requireCondition: savior}` fought at `cityIndex 4` with 3 Bystanders; then at `cityIndex 0` with 1 Bystander | first: only the location-blocked line; second: only the Savior-blocked line | location checked first |
 | T17 | `{gain-wound, each-non-savior}` onFight; players `0` (3 Bystanders, current), `1` (2), `2` (0); wounds pile 5 | players 1 and 2 gain 1 Wound each, 0 none; message `Fight effect: each player who is not a Savior gained a Wound (Player 1, Player 2).` `applied`; `woundsDrawn` unchanged | sorted order |
 | T18 | same, current `'1'`; and onEscape timing | `woundsDrawn` +1; message starts `Escape effect:` | |
 | T19 | all three players Saviors; and separately an empty wound pile | no Wound moves; `… no player who is not a Savior gained a Wound.` `blocked` | never throws |
-| T19b | T17's setup, with non-Savior player `1` holding Diving Block in hand (the existing Diving Block fixture in `villainEffects.execute.test.ts` ~L189) | last message `` `Fight effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(['2'], ['1'])}.` `` `applied`; player 1's Wound not yet gained | Diving Block routed through `gainWoundWithOutcome` |
+| T19b | T17's setup, with non-Savior player `1` holding Diving Block in hand and `G.heroAbilityHooks = [{ cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] }]` (the existing Diving Block fixture in `villainEffects.execute.test.ts` ~L170-195; without the hook the reveal is never offered) | last message `` `Fight effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(['2'], ['1'])}.` `` `applied`; player 1's discard holds the Wound and `G.pendingDivingBlockWounds` equals `[{ playerID: '1', woundCardId: <that Wound> }]`; player 2's discard holds a Wound | the Wound lands first, the undo is offered after (D-24673, `board/wounds.logic.ts` L85-91) |
 | T20 | `{ko-bystander-each-victory-pile}` onEscape; victory `0: [v, 'bystander-villain-deck-01', 'pile-bystander']`, `1: ['pile-bystander']`, `2: [v2]` | `0` loses `bystander-villain-deck-01`, `1` loses `pile-bystander`, `2` unchanged; `G.ko` ends with those two in that order; `Escape effect: KO'd a Bystander from the Victory Pile of Player 0, Player 1.` `applied` | first in pile order, one per player |
 | T21 | no player has a Bystander | nothing moves; `Escape effect: no player had a Bystander in their Victory Pile to KO.` `blocked` | |
 | T22 | `fightVillain` (integration): villain V in the City with a `cardStats` fight cost and onFight `{draw-cards-current, drawCount 1, requireCondition savior}`; `G.attachedBystanders[V] = ['bystander-villain-deck-01']` (a Savior-counted id, not the `hostage-N` style); current player's Victory Pile holds 2 Bystanders and the deck holds a card; enough Attack | V defeated, the attached Bystander is awarded, Savior passes (3), hand +1 | rules L1849-1851 ordering |
@@ -349,7 +349,12 @@ The reviewer ruled that only PS-1 needs a re-check (one file added to the allowl
 6. Mode 15 — three `// why:` entries added to the EC (descriptorKey exclusion, the drift array, the position-29 note in both copies).
 7. Mode 27 — both helpers' JSDoc names the Killbot exclusion and the scoring predicate; the Killbot follow-up covers Executioner's KO.
 
-_Pending: copilot round 2, 00.3 lint gate._
+**Copilot (01.7), round 2 (same independent subagent): RISK → CONFIRM after one fix, applied (no round 3, no pre-flight re-run).**
+- **Mode 11 (fixed):** T19b asserted "Wound not yet gained", but Diving Block lands the Wound first and offers the undo after (D-24673, `wounds.logic.ts` L85-91, `divingBlock.logic.ts` L193-196). T19b now asserts the Wound in player 1's discard plus the `pendingDivingBlockWounds` entry, and names the required `diving-block` hero hook in the fixture.
+- Optional tightenings applied: T15b locks the `revealedTops` shape (`types.ts` L589-596); the EC's fail-closed string matches the WP's.
+- Round-1 findings 1-7 confirmed fixed; WP ↔ EC agree; no new failure mode.
+
+_Pending: 00.3 lint gate._
 
 ## Lint Gate Self-Review (00.3)
 
