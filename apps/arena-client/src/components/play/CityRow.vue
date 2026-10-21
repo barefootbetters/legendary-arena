@@ -332,6 +332,47 @@ export default defineComponent({
       props.submitMove('fightVillain', { cityIndex, useExcessiveViolence: true });
     }
 
+    /**
+     * Whether to show the "Fight + Rescue" control (Baron Zemo, WP-819 / WP-820)
+     * on a City cell.
+     *
+     * @param cell - The City cell.
+     * @returns True when the villain is fightable and the fight plus 2 Recruit is payable.
+     */
+    function showRescueFight(cell: CityCell): boolean {
+      // why: WP-820 / D-24753 — shown only from the engine cue (economy
+      // .rescueOnFightAvailable, read inside canFightAndRescue) plus the Fight gate,
+      // the WP-738 / D-24561 Excessive Violence precedent. This gate only decides
+      // whether to SHOW the control; the engine decides the outcome.
+      if (cell.kind !== 'slot' || cell.card === null) {
+        return false;
+      }
+      if (!gateForCell(cell).allowed) {
+        return false;
+      }
+      // why: WP-817 / D-24750 — a villain with a fight discard cost (Primus) is fought
+      // through the discard chooser; this control must not bypass it (a request
+      // without discardCardId would return silently).
+      if (cell.card.fightDiscardCosts !== undefined) {
+        return false;
+      }
+      return useCardCostGating(props.economy).canFightAndRescue(
+        cell.card.fightCost,
+        citySpaceNameForIndex(cell.cityIndex),
+      );
+    }
+
+    /**
+     * Submits a fight that also pays 2 Recruit to rescue a Bystander.
+     *
+     * @param cityIndex - The engine City index of the fought villain.
+     */
+    function onFightRescue(cityIndex: number): void {
+      // why: the client submits INTENT (payToRescueBystander); the engine decides —
+      // it pays and rescues, or logs why it declined and fights normally.
+      props.submitMove('fightVillain', { cityIndex, payToRescueBystander: true });
+    }
+
     function hasDarkPortal(cityIndex: number): boolean {
       // why: a Dark Portal buffs the SPACE, so the marker renders on a portal'd
       // city index whether or not a villain currently occupies it.
@@ -384,6 +425,8 @@ export default defineComponent({
       onFight,
       showEvFight,
       onFightEV,
+      showRescueFight,
+      onFightRescue,
       onPickDiscard,
       onCancelDiscard,
       isDiscardChooserOpen,
@@ -523,6 +566,22 @@ export default defineComponent({
             <CrossedSwordsIcon class="city-space__ev-fight-icon" />
             <span class="city-space__ev-fight-label">Excessive Violence</span>
             <span class="city-space__ev-fight-cost">+1</span>
+          </button>
+          <!-- why: WP-820 / D-24753 — Baron Zemo's "you may use 2 Recruit to rescue a
+               Bystander". A SEPARATE opt-in button beside the EV one (the normal Fight
+               click is unchanged); shown only from the engine cue + the Fight gate.
+               Submitting it sends the payToRescueBystander intent; the engine decides. -->
+          <button
+            v-if="showRescueFight(cell)"
+            type="button"
+            class="city-space__rescue-fight"
+            data-testid="play-city-villain-rescue"
+            :data-city-index="cell.cityIndex"
+            title="Fight this Villain and pay 2 Recruit to rescue a Bystander (Baron Zemo)."
+            @click="onFightRescue(cell.cityIndex)"
+          >
+            <span class="city-space__rescue-fight-label">Fight + Rescue</span>
+            <span class="city-space__rescue-fight-cost">2 Recruit</span>
           </button>
           <!-- why: WP-817 / D-24750 — the discard chooser for a fight discard cost
                (Primus): one button per eligible hand card, plus Cancel. Picking one
@@ -893,6 +952,49 @@ export default defineComponent({
 /* why: the "+1" attack-cost badge — a lighter inset pill so the price of the
    overspend is unmistakable without a separate tooltip read. */
 .city-space__ev-fight-cost {
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.28);
+  font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-820 / D-24753 — the per-villain "Fight + Rescue" opt-in (Baron Zemo), in
+   the Excessive Violence button's shape but filled with the existing Recruit brand
+   token, so it reads as "this fight also spends Recruit". The "2 Recruit" badge
+   spells out the price on the button itself. */
+.city-space__rescue-fight {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  align-self: center;
+  margin-top: 0.2rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 0.35rem;
+  background: var(--la-color-recruit);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.city-space__rescue-fight:hover {
+  filter: brightness(1.1);
+}
+
+.city-space__rescue-fight:active {
+  transform: translateY(1px);
+}
+
+.city-space__rescue-fight-label {
+  line-height: 1.2;
+}
+
+/* why: the "2 Recruit" cost badge — the same lighter inset pill as the EV "+1". */
+.city-space__rescue-fight-cost {
   padding: 0 0.25rem;
   border-radius: 0.25rem;
   background: rgba(0, 0, 0, 0.28);
