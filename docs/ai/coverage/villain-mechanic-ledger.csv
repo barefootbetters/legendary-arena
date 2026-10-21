@@ -95,7 +95,7 @@ bkwd-villain-taskmasters-thunderbolts-joystick,Joystick,bkwd,villain,(unmarked),
 bkwd-villain-elite-assassins-snapdragon,Snapdragon,bkwd,villain,(unmarked),unmarked,,,
 ca75-villain-masters-of-evil-wwii-black-knight,Black Knight,ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 ca75-villain-masters-of-evil-wwii-black-knight,Black Knight,ca75,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-ca75-villain-zolas-creations-captain-zolandia,Captain Zolandia,ca75,villain,(unmarked),unmarked,,,
+ca75-villain-zolas-creations-captain-zolandia,Captain Zolandia,ca75,villain,gain-recruit-current-per-hero-class,executable,WP-817,D-24750,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-per-hero-class
 ca75-villain-zolas-creations-doughboy,Doughboy,ca75,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 ca75-villain-masters-of-evil-wwii-executioner,Executioner,ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 ca75-villain-masters-of-evil-wwii-executioner,Executioner,ca75,villain,draw-cards-current,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current
@@ -104,7 +104,7 @@ ca75-villain-zolas-creations-man-fish,Man-Fish,ca75,villain,gain-wound,executabl
 ca75-villain-zolas-creations-man-fish,Man-Fish,ca75,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 ca75-villain-masters-of-evil-wwii-melter-wwii,Melter (WWII),ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 ca75-villain-masters-of-evil-wwii-melter-wwii,Melter (WWII),ca75,villain,ko-cullable-each-deck-top,executable,WP-603,D-24413,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
-ca75-villain-zolas-creations-primus,Primus,ca75,villain,(unmarked),unmarked,,,
+ca75-villain-zolas-creations-primus,Primus,ca75,villain,discard-hero-each-player-by-cost,executable,WP-817,D-24750,packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-each-player-by-cost
 ca75-villain-masters-of-evil-wwii-radioactive-man,Radioactive Man,ca75,villain,captureBystander,executable,WP-185,D-18506,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 ca75-villain-masters-of-evil-wwii-radioactive-man,Radioactive Man,ca75,villain,gain-wound,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 chmp-villain-wrecking-crew-bulldozer,Bulldozer,chmp,villain,(unmarked),unmarked,,,

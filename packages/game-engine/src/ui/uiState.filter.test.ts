@@ -26,7 +26,8 @@ import type { CardExtId, LegendaryGameState } from '../types.js';
 import type { UIState } from './uiState.types.js';
 import type { UIAudience } from './uiAudience.types.js';
 import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffect.types.js';
-import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
+import { makeCardRegistryReader, makeCardStatEntry } from '../test/fixtureBuilders.js';
+import { SHIELD_OFFICER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /** Audience constants for test readability. */
 const PLAYER_0: UIAudience = { kind: 'player', playerId: '0' };
@@ -3654,6 +3655,50 @@ describe('filterUIStateForAudience — outOfTimeCards public pass-through (WP-80
       assert.notStrictEqual(player0.outOfTimeCards, full.players[0]!.outOfTimeCards);
       const player1 = result.players.find((player) => player.playerId === '1')!;
       assert.equal(Object.keys(player1).includes('outOfTimeCards'), false, 'nothing set aside ⇒ omitted');
+    }
+  });
+});
+
+describe('WP-817 fightDiscardCosts + handCosts projection (D-24750)', () => {
+  /**
+   * Builds a UIState with Primus at City 0 (discard cost 2/3/5/7), a plain villain at
+   * City 1, and player 0 holding an Officer, a Wound and a cost-5 Hero.
+   */
+  function createPrimusUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.city = ['primus-01', 'plain-villain-01', null, null, null] as LegendaryGameState['city'];
+    gameState.villainDeckCardTypes['primus-01' as CardExtId] = 'villain';
+    gameState.villainDeckCardTypes['plain-villain-01' as CardExtId] = 'villain';
+    gameState.villainFightDiscardCosts = { ['primus-01' as CardExtId]: { eligibleCosts: [2, 3, 5, 7] } };
+    gameState.cardStats['hero-cost5' as CardExtId] = makeCardStatEntry({ cost: 5 });
+    gameState.playerZones['0']!.hand = [SHIELD_OFFICER_EXT_ID, WOUND_EXT_ID, 'hero-cost5'] as CardExtId[];
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('T28 (build): the Primus City card carries fightDiscardCosts; handCosts reads the engine cost', () => {
+    const uiState = createPrimusUIState();
+    assert.deepStrictEqual(uiState.city.spaces[0]!.fightDiscardCosts, [2, 3, 5, 7]);
+    assert.equal('fightDiscardCosts' in uiState.city.spaces[1]!, false, 'a plain villain has no such key');
+    const player0 = uiState.players.find((player) => player.playerId === '0')!;
+    assert.deepStrictEqual(player0.handCosts, [3, null, 5], 'Officer → 3, Wound → null, Hero → 5');
+  });
+
+  it('T28 (filter): fightDiscardCosts survives every audience unaliased; handCosts is owner-only', () => {
+    const uiState = createPrimusUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      const primusCard = result.city.spaces[0]!;
+      assert.deepStrictEqual(primusCard.fightDiscardCosts, [2, 3, 5, 7], `${JSON.stringify(audience)} sees the cost`);
+      assert.notEqual(primusCard.fightDiscardCosts, uiState.city.spaces[0]!.fightDiscardCosts, 'not aliased');
+      assert.equal('fightDiscardCosts' in result.city.spaces[1]!, false, 'no key on a plain villain');
+    }
+    const ownView = filterUIStateForAudience(uiState, PLAYER_0);
+    const ownPlayer = ownView.players.find((player) => player.playerId === '0')!;
+    assert.deepStrictEqual(ownPlayer.handCosts, [3, null, 5]);
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      const redactedPlayer = result.players.find((player) => player.playerId === '0')!;
+      assert.equal(redactedPlayer.handCosts, undefined, `${JSON.stringify(audience)} must not see player 0 handCosts`);
     }
   });
 });

@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 574,
+      "executable": 576,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
-      "unmarked": 1046,
+      "unmarked": 1044,
       "subsystem": 5
     }
   },
@@ -4485,11 +4485,11 @@
       "name": "Captain Zolandia",
       "set": "ca75",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-recruit-current-per-hero-class",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-per-hero-class",
+      "wp": "WP-817",
+      "decision": "D-24750"
     },
     {
       "extId": "ca75-villain-zolas-creations-doughboy",
@@ -4529,11 +4529,11 @@
       "name": "Primus",
       "set": "ca75",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "discard-hero-each-player-by-cost",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-each-player-by-cost",
+      "wp": "WP-817",
+      "decision": "D-24750"
     },
     {
       "extId": "ca75/agent-x-13",
@@ -29765,7 +29765,7 @@
     "ca75-villain-zolas-creations-captain-zolandia": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-recruit-current-per-hero-class"
       ]
     },
     "ca75-villain-zolas-creations-doughboy": {
@@ -29784,7 +29784,7 @@
     "ca75-villain-zolas-creations-primus": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "discard-hero-each-player-by-cost"
       ]
     },
     "ca75/agent-x-13": {

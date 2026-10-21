@@ -1893,3 +1893,108 @@ describe('buildVillainAbilityHooks — WP-816 !<condition> suffix + Savior gramm
     }
   });
 });
+
+describe('buildVillainAbilityHooks — WP-817 Captain Zolandia + Primus grammars (D-24750)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'zolandia', token: 'gain-recruit-current-per-hero-class' },
+    { slug: 'primus', token: 'discard-hero-each-player-by-cost:2+3+5+7' },
+    { slug: 'cost-zero', token: 'discard-hero-each-player-by-cost:0' },
+    { slug: 'cost-three', token: 'discard-hero-each-player-by-cost:3' },
+    { slug: 'reject-param', token: 'gain-recruit-current-per-hero-class:1' },
+    { slug: 'reject-bare', token: 'discard-hero-each-player-by-cost' },
+    { slug: 'reject-empty', token: 'discard-hero-each-player-by-cost:' },
+    { slug: 'reject-duplicate', token: 'discard-hero-each-player-by-cost:2+2' },
+    { slug: 'reject-descent', token: 'discard-hero-each-player-by-cost:3+2' },
+    { slug: 'reject-letter', token: 'discard-hero-each-player-by-cost:2+x' },
+    { slug: 'reject-leading-zero', token: 'discard-hero-each-player-by-cost:02' },
+    { slug: 'reject-extra-part', token: 'discard-hero-each-player-by-cost:2+3:5' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp817',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Escape: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp817'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp817-${slug}-00`)!;
+
+  it('T3: parses the no-param Zolandia token and every valid cost list', () => {
+    assert.deepStrictEqual(hookFor('zolandia').effects, [
+      { primitive: 'gain-recruit-current-per-hero-class' },
+    ]);
+    assert.deepStrictEqual(hookFor('primus').effects, [
+      { primitive: 'discard-hero-each-player-by-cost', eligibleCosts: [2, 3, 5, 7] },
+    ]);
+    assert.deepStrictEqual(hookFor('cost-zero').effects, [
+      { primitive: 'discard-hero-each-player-by-cost', eligibleCosts: [0] },
+    ]);
+    assert.deepStrictEqual(hookFor('cost-three').effects, [
+      { primitive: 'discard-hero-each-player-by-cost', eligibleCosts: [3] },
+    ]);
+  });
+
+  it('T4: every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T5: the regenerated ca75 Zolandia and Primus lines build the expected hooks', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/ca75.json.
+    const ca75Registry = makeRegistry(
+      'ca75',
+      [
+        {
+          slug: 'zolas-creations',
+          cards: [
+            {
+              slug: 'captain-zolandia',
+              abilities: [
+                '[keyword:Abomination]',
+                'Fight: You get +1[icon:recruit] for each Hero Class you have. [effect:gain-recruit-current-per-hero-class]',
+              ],
+            },
+            {
+              slug: 'primus',
+              abilities: [
+                'To fight Primus, you must also discard a card that costs 2, 3, 5, or 7. [discard-to-fight:cost:2+3+5+7]',
+                'Escape: each player discards a Hero that costs 2, 3, 5, or 7. [effect:discard-hero-each-player-by-cost:2+3+5+7]',
+              ],
+            },
+          ],
+        },
+      ],
+      [],
+    );
+    const ca75Hooks = buildVillainAbilityHooks(ca75Registry, makeConfig(['ca75/zolas-creations'], []));
+    const hooksFor = (slug: string) =>
+      ca75Hooks.filter((h) => h.cardId === `ca75-villain-zolas-creations-${slug}-00`);
+    const zolandiaHooks = hooksFor('captain-zolandia');
+    assert.equal(zolandiaHooks.length, 1);
+    assert.equal(zolandiaHooks[0]!.timing, 'onFight');
+    assert.deepStrictEqual(zolandiaHooks[0]!.effects, [{ primitive: 'gain-recruit-current-per-hero-class' }]);
+    const primusHooks = hooksFor('primus');
+    assert.equal(primusHooks.length, 1, 'the "To fight" line builds no hook');
+    assert.equal(primusHooks[0]!.timing, 'onEscape');
+    assert.deepStrictEqual(primusHooks[0]!.effects, [
+      { primitive: 'discard-hero-each-player-by-cost', eligibleCosts: [2, 3, 5, 7] },
+    ]);
+    for (const builtHook of ca75Hooks) {
+      assert.deepStrictEqual(builtHook.unresolvedMarkers ?? [], [], `${builtHook.cardId} ${builtHook.timing} has no unresolved marker`);
+    }
+  });
+});

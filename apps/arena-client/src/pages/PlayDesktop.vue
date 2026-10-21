@@ -915,6 +915,9 @@ export default defineComponent({
               :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
               :submit-move="submitMove"
               :is-column-aligned="true"
+              :viewer-hand-cards="viewer?.handCards ?? []"
+              :viewer-hand-display="viewer?.handDisplay ?? []"
+              :viewer-hand-costs="viewer?.handCosts ?? []"
             />
             <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits to the
                  RIGHT of the HQ (it holds the second-forms some HQ heroes transform

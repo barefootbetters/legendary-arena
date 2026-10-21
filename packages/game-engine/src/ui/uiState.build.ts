@@ -147,6 +147,9 @@ import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
+// why: WP-817 / D-24750 — handCosts projects the same off-play cost the fight-discard
+// gate reads (isHandCardCostOneOf), so the client and the engine agree on eligibility.
+import { offPlayCardStats } from '../hero/splitCard.logic.js';
 
 // why: exact structural contract — do not widen or add optional fields.
 // buildUIState MUST NOT depend on any other ctx fields.
@@ -715,8 +718,12 @@ export function buildUIState(
     // (resolveDisplay). filterUIStateForAudience redacts handDisplay
     // alongside handCards (privacy symmetry — see uiState.filter.ts).
     const handDisplay: UICardDisplay[] = [];
+    // why: WP-817 / D-24750 — handCosts is index-aligned with handCards; null for a
+    // card with no cost entry (a Wound). Redacted alongside handCards by the filter.
+    const handCosts: (number | null)[] = [];
     for (const cardExtId of zones.hand) {
       handDisplay.push(resolveDisplay(cardExtId, gameState));
+      handCosts.push(offPlayCardStats(gameState, cardExtId)?.cost ?? null);
     }
 
     // why: WP-128 / D-12803 — inPlayDisplay length-equals-inPlayCards
@@ -805,6 +812,7 @@ export function buildUIState(
       // with G.playerZones[playerId].hand.
       handCards: [...zones.hand],
       handDisplay,
+      handCosts,
       // why: WP-128 / D-12803 — in-play card ext_ids included; filter
       // redacts for non-self / spectator. Spread copy prevents aliasing
       // with G.playerZones[playerId].inPlay.
@@ -858,6 +866,7 @@ export function buildUIState(
       // the ext_ids. This reverses the D-12806 city-villain safe-skip for the
       // count only (D-24311); it is still never flattened onto the mastermind.
       const spaceAttachedBystanders = gameState.attachedBystanders?.[space] ?? [];
+      const spaceFightDiscardCosts = gameState.villainFightDiscardCosts?.[space];
       citySpaces.push({
         extId: space,
         type: gameState.villainDeckCardTypes[space] ?? 'unknown',
@@ -882,6 +891,11 @@ export function buildUIState(
         // active player — the only player who can fight — so a Blood Frenzy villain
         // shows that player's cost to every audience.
         fightCost: resolveFightCost(gameState, space, ctx.currentPlayer),
+        // why: WP-817 / D-24750 — the fight discard cost is public printed card text;
+        // a fresh copy, present only for a villain that has one (Primus).
+        ...(spaceFightDiscardCosts !== undefined
+          ? { fightDiscardCosts: [...spaceFightDiscardCosts.eligibleCosts] }
+          : {}),
       });
     }
   }

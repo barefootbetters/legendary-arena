@@ -29,6 +29,7 @@ import { enterCityIgnoringAmbush } from './villainDeck.enterCity.js';
 import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
 import {
   ESCAPE_BYSTANDER_DISCARD_KIND,
+  ESCAPE_EFFECT_COST_DISCARD_KIND,
   ESCAPE_HQ_KO_KIND,
   ESCAPE_HQ_KO_MAX_COST,
   enqueueEscapeProcedure,
@@ -519,5 +520,118 @@ describe('every escape path enqueues the procedure (WP-793 / D-24656)', () => {
     assert.equal(gameState.hq[3], 'test-hero-slot3-cost2', 'slot 3 was not captured');
     assert.ok(hasLog(gameState, `Villain ${ESCAPER} (${ESCAPER}) escaped from the city.`), 'the shared escape line');
     assert.equal(hasLog(gameState, WOUND_LINE), false);
+  });
+});
+
+describe('WP-817 the owed Primus Escape discard (D-24750)', () => {
+  const PRIMUS = 'primus-01' as CardExtId;
+  const PRIMUS_COSTS = [2, 3, 5, 7];
+  const NO_HERO_LINE_1 = 'Escape effect: Player 1 has no Hero that costs 2, 3, 5, or 7 to discard.';
+
+  /**
+   * Builds a three-seat state with costed hands and one owed Primus discard.
+   *
+   * @param hands - Each seat's hand, keyed by seat id.
+   * @returns The game state.
+   */
+  function buildPrimusState(hands: Record<string, CardExtId[]>): LegendaryGameState {
+    const gameState = buildState(hands);
+    for (const cost of [2, 3, 4, 5, 7]) {
+      gameState.cardStats[`hero-cost${cost}` as CardExtId] = makeCardStatEntry({ cost });
+    }
+    gameState.pendingEscapeEffectDiscards = [{ escapedCardId: PRIMUS, eligibleCosts: [...PRIMUS_COSTS] }];
+    return gameState;
+  }
+
+  it('T23: opens one cost-filtered seat choice and logs the seat with no eligible Hero', () => {
+    const gameState = buildPrimusState({
+      '0': ['hero-cost4', 'hero-cost7', 'hero-cost3'] as CardExtId[],
+      '1': ['hero-cost4'] as CardExtId[],
+      '2': ['hero-cost2'] as CardExtId[],
+    });
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+
+    const choice = openChoice(gameState);
+    assert.equal(choice.kind, ESCAPE_EFFECT_COST_DISCARD_KIND);
+    assert.deepEqual(choice.addressedSeats, ['0', '2']);
+    assert.deepEqual(choice.seatPrompts['0']!.options, [
+      { label: 'hero-cost7 (cost 7)', cardId: 'hero-cost7' },
+      { label: 'hero-cost3 (cost 3)', cardId: 'hero-cost3' },
+    ]);
+    assert.deepEqual(choice.seatPrompts['2']!.options, [{ label: 'hero-cost2 (cost 2)', cardId: 'hero-cost2' }]);
+    assert.equal(choice.defaultOptionIndex, 0);
+    assert.ok(hasLog(gameState, NO_HERO_LINE_1));
+    assert.equal('pendingEscapeEffectDiscards' in gameState, false, 'the drained queue is deleted');
+  });
+
+  it('T24: the resolve dispatch discards each pick in ascending seat order', () => {
+    const gameState = buildPrimusState({
+      '0': ['hero-cost4', 'hero-cost7', 'hero-cost3'] as CardExtId[],
+      '1': ['hero-cost4'] as CardExtId[],
+      '2': ['hero-cost2'] as CardExtId[],
+    });
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    submit(gameState, '2', 0);
+    submit(gameState, '0', 1);
+
+    assert.equal(gameState.pendingSeatChoice, undefined);
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['hero-cost4', 'hero-cost7']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['hero-cost3']);
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['hero-cost2']);
+    assert.deepEqual(gameState.playerZones['1']!.hand, ['hero-cost4'], 'seat 1 keeps its hand');
+    const discardLines = gameState.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.endsWith('(Escape effect).'));
+    assert.deepEqual(discardLines, [
+      'Player 0 discarded hero-cost3 (hero-cost3) (Escape effect).',
+      'Player 2 discarded hero-cost2 (hero-cost2) (Escape effect).',
+    ]);
+  });
+
+  it('T25: the owed Bystander discard opens first; the Primus discard opens on the next call', () => {
+    const gameState = buildPrimusState({
+      '0': ['hero-cost4', 'hero-cost5'] as CardExtId[],
+      '1': ['hero-cost7'] as CardExtId[],
+    });
+    gameState.pendingEscapeProcedures = [
+      { escapedCardId: ESCAPER, chooserPlayerID: '0', hasCarriedBystanders: true, isHqKoResolved: true },
+    ];
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    assert.equal(openChoice(gameState).kind, ESCAPE_BYSTANDER_DISCARD_KIND, 'the step-2 discard opens first');
+    assert.equal(gameState.pendingEscapeEffectDiscards?.length, 1, 'the Primus discard is still owed');
+
+    submit(gameState, '0', 0);
+    submit(gameState, '1', 0);
+    assert.equal(gameState.pendingSeatChoice, undefined);
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+
+    const choice = openChoice(gameState);
+    assert.equal(choice.kind, ESCAPE_EFFECT_COST_DISCARD_KIND);
+    assert.deepEqual(choice.addressedSeats, ['0'], 'seat 1 discarded its only card to the Bystanders');
+    assert.deepEqual(choice.seatPrompts['0']!.options, [{ label: 'hero-cost5 (cost 5)', cardId: 'hero-cost5' }]);
+  });
+
+  it('T26: with no eligible Hero anywhere the queue drains with one line per seat', () => {
+    const gameState = buildPrimusState({
+      '0': ['hero-cost4'] as CardExtId[],
+      '1': [],
+    });
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    assert.equal(gameState.pendingSeatChoice, undefined);
+    assert.equal('pendingEscapeEffectDiscards' in gameState, false);
+    assert.ok(hasLog(gameState, 'Escape effect: Player 0 has no Hero that costs 2, 3, 5, or 7 to discard.'));
+    assert.ok(hasLog(gameState, NO_HERO_LINE_1));
+  });
+
+  it('T26: a decided match opens nothing and leaves the queue owed', () => {
+    const gameState = buildPrimusState({
+      '0': ['hero-cost5'] as CardExtId[],
+      '1': ['hero-cost7'] as CardExtId[],
+    });
+    gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    assert.equal(gameState.pendingSeatChoice, undefined);
+    assert.equal(hasLog(gameState, 'has no Hero that costs'), false);
+    assert.equal(gameState.pendingEscapeEffectDiscards?.length, 1);
   });
 });

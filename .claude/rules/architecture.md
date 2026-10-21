@@ -103,7 +103,9 @@ helpers; (4) return `void`. Moves **never throw**; only `Game.setup()` may throw
 A move MAY reject a play with a **card-specific pre-commit precondition**
 (D-24185) in step 1 — reading the played card and returning `void` before any
 `G` mutation when its cost is unpayable (`discard-to-play`, WP-383, is the first
-case). This is a validation-phase return, distinct from the pending-choice
+case), or the specific villain being fought, whose cost is named by a validated
+move argument (`fightVillain.discardCardId`, WP-817 / D-24750). This is a
+validation-phase return, distinct from the pending-choice
 pattern, which fires after commit.
 
 Source: ARCHITECTURE.md, The Move Validation Contract

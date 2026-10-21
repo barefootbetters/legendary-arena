@@ -68,6 +68,10 @@ import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
 import { describeKoSourceZone } from '../log/logDisplay.js';
+// why: WP-817 / D-24750 — Captain Zolandia counts Hero Classes with the hero side's one
+// counter, and Primus's Escape narrates its costs with the shared cost-list formatter.
+import { countDistinctHeroClassesYouHave } from '../hero/heroConditions.evaluate.js';
+import { formatEligibleCostList } from '../moves/villainDefeatRequirement.logic.js';
 import {
   WOUND_EXT_ID,
   SHIELD_AGENT_EXT_ID,
@@ -2553,6 +2557,77 @@ function villainEffectGainRecruitCurrent(
 }
 
 /**
+ * gain-recruit-current-per-hero-class primitive — the current (defeating) player
+ * gains +1 recruit for each distinct Hero Class they have (Captain Zolandia "Fight:
+ * You get +1 Recruit for each Hero Class you have.", D-24750 / WP-817).
+ *
+ * Adds the count to `G.turnEconomy.recruit`. Keyword-less, so it self-narrates via
+ * `pushLog`; a count of 0 logs a `blocked` line and adds nothing. Returns
+ * `{ targets: [] }` (a recruit gain touches no card).
+ */
+function villainEffectGainRecruitCurrentPerHeroClass(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  // why: D-24529 / D-24694 — "Hero Classes you have" is the hero side's counter over the
+  // cards in hand and the cards played this turn that are still in play (rules v23
+  // L3436-3446); reusing it means Captain America's Avengers Assemble! and Zolandia can
+  // never count differently.
+  const heroClassCount = countDistinctHeroClassesYouHave(G, currentPlayer);
+  const label = villainEffectTimingLabel(timing);
+  if (heroClassCount === 0) {
+    pushLog(G, `${label} effect: you have no Hero Classes in hand or play, so no recruit was gained.`, 'blocked');
+    return { targets: [] };
+  }
+  G.turnEconomy.recruit += heroClassCount;
+  pushLog(
+    G,
+    `${label} effect: gained +${String(heroClassCount)} recruit for the ${String(heroClassCount)} Hero Class(es) you have.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
+ * discard-hero-each-player-by-cost primitive — records that every player owes a
+ * discard of a Hero whose cost is one of `descriptor.eligibleCosts` (Primus "Escape:
+ * each player discards a Hero that costs 2, 3, 5, or 7.", D-24750 / WP-817).
+ *
+ * Mutates only the lazy `G.pendingEscapeEffectDiscards` queue; the escape opener
+ * (villainEscapeProcedure.ts) opens the every-player seat choice after the move.
+ * Keyword-less, self-narrates. Returns `{ targets: [] }`.
+ */
+function villainEffectDiscardHeroEachPlayerByCost(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const eligibleCosts = descriptor.eligibleCosts;
+  if (eligibleCosts === undefined || eligibleCosts.length === 0) {
+    pushLog(G, `${label} effect: no discard costs were given; no effect.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: D-24750 — the executor has no `events`, so it cannot park the multi-seat choice
+  // itself; it records the owed discard for the escape opener, which drains it after
+  // every owed escape procedure (lazy-init here, never in Game.setup).
+  if (G.pendingEscapeEffectDiscards === undefined) {
+    G.pendingEscapeEffectDiscards = [];
+  }
+  G.pendingEscapeEffectDiscards.push({ escapedCardId: cardId, eligibleCosts: [...eligibleCosts] });
+  pushLog(
+    G,
+    `${label} effect: each player must discard a Hero that costs ${formatEligibleCostList(eligibleCosts)}.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
  * gain-officer-current primitive — the current (defeating) player gains one
  * S.H.I.E.L.D. Officer, moved from the shared Officer supply pile to their discard
  * (HYDRA Kidnappers "Fight: You may gain a S.H.I.E.L.D. Officer.", D-24350 / WP-541).
@@ -3908,6 +3983,10 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'ko-up-to-from-discard-current': villainEffectKoUpToFromDiscardCurrent,
   // why: WP-816 / D-24749 — Executioner's Escape; keyword-less, self-narrating.
   'ko-bystander-each-victory-pile': villainEffectKoBystanderEachVictoryPile,
+  // why: WP-817 / D-24750 — Captain Zolandia's Fight and Primus's Escape; both
+  // keyword-less, self-narrating. Primus's Escape only records the owed discard.
+  'gain-recruit-current-per-hero-class': villainEffectGainRecruitCurrentPerHeroClass,
+  'discard-hero-each-player-by-cost': villainEffectDiscardHeroEachPlayerByCost,
 };
 
 /**

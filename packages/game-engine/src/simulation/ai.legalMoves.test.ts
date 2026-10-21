@@ -1585,3 +1585,45 @@ describe('getLegalMoves — the bot\'s Do-Over answer (D-24706)', () => {
     assert.deepEqual(getLegalMoves(makeDoOverG([]), CONTEXT), [{ name: 'resolveDoOver', args: { accept: true } }]);
   });
 });
+
+describe('WP-817 getLegalMoves — Primus fight discard cost mirrors the move guard (D-24750)', () => {
+  /** Primus (static fight cost 3, discard cost 2/3/5/7) at City 0 with the given attack and hand. */
+  function makePrimusG(options: { attack: number; hand: CardExtId[]; withDiscardCost?: boolean }): LegendaryGameState {
+    const gameState = makeG({ hand: options.hand, currentStage: 'main' });
+    gameState.turnEconomy = makeTurnEconomy({ attack: options.attack });
+    gameState.city = ['primus-01' as CardExtId, null, null, null, null];
+    gameState.cardStats = {
+      'primus-01': makeCardStatEntry({ fightCost: 3 }),
+      'hero-cost4': makeCardStatEntry({ cost: 4 }),
+      'hero-cost5': makeCardStatEntry({ cost: 5 }),
+    } as LegendaryGameState['cardStats'];
+    if (options.withDiscardCost !== false) {
+      gameState.villainFightDiscardCosts = { 'primus-01': { eligibleCosts: [2, 3, 5, 7] } };
+    }
+    return gameState;
+  }
+
+  /** Returns the fightVillain intents only. */
+  function fightIntents(gameState: LegendaryGameState) {
+    return getLegalMoves(gameState, CONTEXT).filter((move) => move.name === 'fightVillain');
+  }
+
+  test('T16: offers exactly one fight naming the cheapest eligible card', () => {
+    const gameState = makePrimusG({ attack: 3, hand: ['hero-cost4', 'hero-cost5'] as CardExtId[] });
+    assert.deepStrictEqual(fightIntents(gameState), [
+      { name: 'fightVillain', args: { cityIndex: 0, discardCardId: 'hero-cost5' } },
+    ]);
+  });
+
+  test('T17: no fight without an eligible card, and none when the fight is unaffordable', () => {
+    const noEligible = makePrimusG({ attack: 3, hand: ['hero-cost4'] as CardExtId[] });
+    assert.deepStrictEqual(fightIntents(noEligible), []);
+    const unaffordable = makePrimusG({ attack: 2, hand: ['hero-cost5'] as CardExtId[] });
+    assert.deepStrictEqual(fightIntents(unaffordable), []);
+  });
+
+  test('T18: a villain without a discard cost keeps args { cityIndex } exactly', () => {
+    const gameState = makePrimusG({ attack: 3, hand: ['hero-cost5'] as CardExtId[], withDiscardCost: false });
+    assert.deepStrictEqual(fightIntents(gameState), [{ name: 'fightVillain', args: { cityIndex: 0 } }]);
+  });
+});

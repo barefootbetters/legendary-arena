@@ -1,8 +1,11 @@
 {
-  "_doc": "Curated villain defeat-requirement markers (WP-292 / D-24076). apply-defeat-requirement-markers.mjs appends a [require-to-defeat:<kind>:<value>] marker to the single ability line carrying the inline [<kind>:<value>] token on each named card. `kind` is the marker token: `team` or `hc` (hc → engine 'hero-class'). Pins exact set/group/card so look-alikes (e.g. the cvwr Size-Changing 'Venom') are never touched.",
+  "_doc": "Curated villain defeat-requirement markers (WP-292 / D-24076). apply-defeat-requirement-markers.mjs appends a [require-to-defeat:<kind>:<value>] marker to the single ability line carrying the inline [<kind>:<value>] token on each named card. `kind` is the marker token: `team` or `hc` (hc → engine 'hero-class'). Pins exact set/group/card so look-alikes (e.g. the cvwr Size-Changing 'Venom') are never touched. `fightDiscardCosts` (WP-817 / D-24750) lists villains whose printed 'To fight X, you must also discard a card that costs …' line is a fight discard cost: the overlay appends [discard-to-fight:cost:<c>[+<c>…]] (costs strictly ascending) to the single line beginning with 'To fight ', and the engine reads it into G.villainFightDiscardCosts.",
   "requirements": [
     { "set": "core", "group": "brotherhood", "card": "blob", "kind": "team", "value": "x-men" },
     { "set": "core", "group": "spider-foes", "card": "venom", "kind": "hc", "value": "covert" },
     { "set": "ssw1", "group": "deadlands-the", "card": "zombie-venom", "kind": "hc", "value": "covert" }
+  ],
+  "fightDiscardCosts": [
+    { "set": "ca75", "group": "zolas-creations", "card": "primus", "costs": [2, 3, 5, 7] }
   ]
 }

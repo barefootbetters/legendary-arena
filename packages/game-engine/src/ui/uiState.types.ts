@@ -478,6 +478,18 @@ export interface UIPlayerState {
    */
   handDisplay?: UICardDisplay[];
   /**
+   * Per-hand-card engine cost, parallel-aligned with handCards by index: the
+   * off-play `G.cardStats` cost the engine's fight-discard gate reads, or null
+   * for a card with no cost entry (a Wound). Redacted (omitted) alongside
+   * handCards by filterUIStateForAudience (WP-817 / D-24750).
+   *
+   * // why: the printed `UICardDisplay.cost` is null for S.H.I.E.L.D. Officers
+   * and Sidekicks, whose engine costs are 3 and 2, so a client gating Primus's
+   * Fight on display.cost would hide eligible cards (D-24574: the client gates
+   * on engine-projected data).
+   */
+  handCosts?: (number | null)[];
+  /**
    * In-play card ext_ids for this player's currently-played cards.
    *
    * // why: WP-128 / D-12803 — redacted by `filterUIStateForAudience` for
@@ -627,6 +639,12 @@ export interface UICityCard {
   attachedBystanderCount: number;
   /** Engine-resolved fight cost for this villain (WP-214). Static or dynamic. */
   fightCost: number;
+  /**
+   * The costs a card discarded to fight this villain may have (WP-817 / D-24750;
+   * Primus: [2, 3, 5, 7]). Public printed card text. Absent for every villain
+   * without a fight discard cost.
+   */
+  fightDiscardCosts?: number[];
 }
 
 /**

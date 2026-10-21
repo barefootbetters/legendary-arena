@@ -902,7 +902,9 @@ enough other cards to pay it; an unpayable play returns `void` with no commit
 and no base power granted. This does NOT weaken the contract: it is still a
 validation-phase silent return (no throw), it runs before the `G` mutation, and
 it exists precisely so the base power is not granted on a play the player cannot
-afford. A pre-commit precondition is distinct from the pending-choice pattern
+afford. The same precondition MAY apply to the specific villain being fought,
+whose cost is named by a validated move argument (`fightVillain.discardCardId`,
+WP-817 / D-24750). A pre-commit precondition is distinct from the pending-choice pattern
 (which fires AFTER the card commits); use it only when the outcome must be
 withheld unless the cost is payable.
 

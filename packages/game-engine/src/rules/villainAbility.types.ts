@@ -361,7 +361,9 @@ export type VillainEffectPrimitive =
   | 'haunt-hq-hero'
   | 'reveal-top-draw-if-cost-lte'
   | 'ko-up-to-from-discard-current'
-  | 'ko-bystander-each-victory-pile';
+  | 'ko-bystander-each-victory-pile'
+  | 'gain-recruit-current-per-hero-class'
+  | 'discard-hero-each-player-by-cost';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -468,6 +470,16 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // No-param, keyword-less, self-narrates. The marker script's hand-synced copy
   // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
   'ko-bystander-each-victory-pile',
+  // why: WP-817 / D-24750 — appended at positions 30 and 31. Captain Zolandia's
+  // Fight (`gain-recruit-current-per-hero-class`: +1 Recruit for each Hero Class
+  // you have, no params) and Primus's Escape (`discard-hero-each-player-by-cost:
+  // <c>[+<c>…]`: each player discards a Hero that costs one of the listed costs,
+  // carried on `eligibleCosts`, which stays out of `descriptorKey`). Both
+  // keyword-less, so both self-narrate. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends them at the same
+  // positions.
+  'gain-recruit-current-per-hero-class',
+  'discard-hero-each-player-by-cost',
 ] as const;
 
 // why: WP-816 / D-24749 — the closed set of villain marker CONDITION gates, the
@@ -514,6 +526,12 @@ export const VILLAIN_EFFECT_CONDITIONS: readonly VillainEffectCondition[] = [
  *     Radioactive Man. No `magnitude`.
  *   - `ko-bystander-each-victory-pile` (D-24749): no params; each player KOs the
  *     first Bystander in their Victory Pile — Executioner's Escape.
+ *   - `gain-recruit-current-per-hero-class` (D-24750): no params; the current
+ *     player gains +1 Recruit per distinct Hero Class among the cards in their hand
+ *     and play area — Captain Zolandia's Fight.
+ *   - `discard-hero-each-player-by-cost` (D-24750): `eligibleCosts` lists the costs
+ *     (strictly ascending); each player discards a Hero whose cost is one of them —
+ *     Primus's Escape. Resolved after the move as a multi-seat choice.
  *   - Any effect: optional `requireCondition` (D-24749) is a condition gate — the
  *     effect fires only when the CURRENT player meets the condition (`'savior'`:
  *     at least 3 Bystanders in their Victory Pile). Lifted from the marker's
@@ -622,6 +640,12 @@ export interface VillainEffectDescriptor {
   // LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry), so it reverse-maps to `undefined`
   // and self-narrates; adding it to the key would change nothing.
   victoryVillainGroup?: string;
+  // why: D-24750 — the costs a discarded Hero may have, present ONLY on
+  // `{ primitive: 'discard-hero-each-player-by-cost' }` descriptors (Primus's
+  // Escape: [2, 3, 5, 7]); strictly ascending non-negative integers set by the
+  // parser. Deliberately NOT part of `descriptorKey` below — the primitive is
+  // keyword-less, so it reverse-maps to `undefined` and self-narrates regardless.
+  eligibleCosts?: readonly number[];
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The
@@ -737,6 +761,23 @@ export const VILLAIN_DEFEAT_REQUIREMENT_KINDS: readonly VillainDefeatRequirement
 export interface VillainDefeatRequirement {
   kind: VillainDefeatRequirementKind;
   value: string;
+}
+
+// why: D-24750 — a villain fight discard COST ("To fight Primus, you must also
+// discard a card that costs 2, 3, 5, or 7"), a sibling of the D-24076 defeat
+// requirement: a fight precondition the move checks before commit, built at
+// setup from its own marker rather than a third requirement kind, because a cost
+// paid is not a "have a Hero" test.
+
+/**
+ * The costs a card discarded to fight this villain may have.
+ *
+ * Built once at setup from the `[discard-to-fight:cost:<c>[+<c>…]]` marker and
+ * stored per villain-instance in G.villainFightDiscardCosts; immutable during
+ * gameplay. `eligibleCosts` is strictly ascending.
+ */
+export interface VillainFightDiscardCost {
+  eligibleCosts: number[];
 }
 
 // ---------------------------------------------------------------------------

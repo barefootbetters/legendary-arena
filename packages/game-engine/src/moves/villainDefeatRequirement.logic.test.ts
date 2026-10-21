@@ -13,6 +13,11 @@ import assert from 'node:assert/strict';
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
+  getFightDiscardCost,
+  isHandCardCostOneOf,
+  listEligibleHandCardsByCost,
+  selectDefaultCostDiscardCard,
+  formatEligibleCostList,
 } from './villainDefeatRequirement.logic.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
@@ -206,5 +211,83 @@ describe('playerMeetsDefeatRequirement — a class granted on play (D-24724)', (
     const state = makeState({ hand: [COPY_POWERS], traits: TECH_ONLY });
     state.cardCopiedClasses = { [COPY_POWERS]: ['covert'] };
     assert.equal(playerMeetsDefeatRequirement(state, '0', CLASS_REQ), false);
+  });
+});
+
+describe('WP-817 fight discard cost helpers (D-24750)', () => {
+  const PRIMUS_COSTS = [2, 3, 5, 7];
+
+  /** Builds a minimal state with the costed-hand stats and the given hand for player 0. */
+  function makeCostedState(hand: CardExtId[]): LegendaryGameState {
+    const state = makeState({ hand });
+    (state as unknown as { cardStats: Record<string, { cost: number }> }).cardStats = {
+      'hero-cost2': { cost: 2 },
+      'hero-cost3': { cost: 3 },
+      'hero-cost4': { cost: 4 },
+      'hero-cost5': { cost: 5 },
+      'hero-cost7': { cost: 7 },
+      'pile-shield-officer': { cost: 3 },
+    };
+    return state;
+  }
+
+  it('getFightDiscardCost reads the table and treats a missing table or entry as none', () => {
+    const state = makeCostedState([]);
+    assert.equal(getFightDiscardCost(state, 'primus-01' as CardExtId), null);
+    state.villainFightDiscardCosts = { 'primus-01': { eligibleCosts: PRIMUS_COSTS } };
+    assert.deepStrictEqual(getFightDiscardCost(state, 'primus-01' as CardExtId), { eligibleCosts: PRIMUS_COSTS });
+    assert.equal(getFightDiscardCost(state, 'doughboy-01' as CardExtId), null);
+  });
+
+  it('T8: isHandCardCostOneOf reads the off-play cost; Officer qualifies, cost 4 and a Wound do not', () => {
+    const state = makeCostedState([]);
+    const expectations: Array<[string, boolean]> = [
+      ['hero-cost2', true],
+      ['hero-cost3', true],
+      ['hero-cost4', false],
+      ['hero-cost5', true],
+      ['hero-cost7', true],
+      ['pile-shield-officer', true],
+      ['pile-wound', false],
+    ];
+    for (const [cardId, expected] of expectations) {
+      assert.equal(isHandCardCostOneOf(state, cardId as CardExtId, PRIMUS_COSTS), expected, cardId);
+    }
+  });
+
+  it('T8: a split card in hand qualifies on its face a cost', () => {
+    const faceA = 'cvwr/duo/tech-half#0' as CardExtId;
+    const faceB = 'cvwr/duo/covert-half#0' as CardExtId;
+    const state = makeCostedState([faceB]);
+    state.splitFaces = { 'cvwr/duo/tech-half': 'cvwr/duo/covert-half' } as LegendaryGameState['splitFaces'];
+    const cardStats = (state as unknown as { cardStats: Record<string, { cost: number }> }).cardStats;
+    cardStats[faceA] = { cost: 5 };
+    // why: face b's own entry deliberately differs, so a pass proves the off-play (face a) read.
+    cardStats[faceB] = { cost: 4 };
+    assert.equal(isHandCardCostOneOf(state, faceB, PRIMUS_COSTS), true);
+  });
+
+  it('T9: lists eligible cards in hand order and picks the cheapest without mutating the hand', () => {
+    const hand = ['hero-cost7', 'hero-cost4', 'pile-wound', 'hero-cost2'] as CardExtId[];
+    const state = makeCostedState(hand);
+    assert.deepStrictEqual(listEligibleHandCardsByCost(state, '0', PRIMUS_COSTS), ['hero-cost7', 'hero-cost2']);
+    assert.equal(selectDefaultCostDiscardCard(state, '0', PRIMUS_COSTS), 'hero-cost2');
+    assert.deepStrictEqual(state.playerZones['0']!.hand, ['hero-cost7', 'hero-cost4', 'pile-wound', 'hero-cost2']);
+
+    const noEligible = makeCostedState(['hero-cost4'] as CardExtId[]);
+    assert.deepStrictEqual(listEligibleHandCardsByCost(noEligible, '0', PRIMUS_COSTS), []);
+    assert.equal(selectDefaultCostDiscardCard(noEligible, '0', PRIMUS_COSTS), null);
+    assert.deepStrictEqual(listEligibleHandCardsByCost(noEligible, '9', PRIMUS_COSTS), [], 'missing zones → []');
+  });
+
+  it('T9: a cost tie keeps the earliest card in hand order', () => {
+    const state = makeCostedState(['hero-cost5', 'pile-shield-officer', 'hero-cost3'] as CardExtId[]);
+    assert.equal(selectDefaultCostDiscardCard(state, '0', PRIMUS_COSTS), 'pile-shield-officer');
+  });
+
+  it('T10: formats one, two and many costs', () => {
+    assert.equal(formatEligibleCostList([2]), '2');
+    assert.equal(formatEligibleCostList([2, 3]), '2 or 3');
+    assert.equal(formatEligibleCostList([2, 3, 5, 7]), '2, 3, 5, or 7');
   });
 });
