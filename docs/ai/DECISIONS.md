@@ -49099,7 +49099,7 @@ Protect this file.
 
 ### D-24753 — Baron Zemo's "you may use 2 Recruit to rescue a Bystander" is a `fightVillain` opt-in paid before the Fight effects, with an active-player cue (Active 2026-10-21 — WP-819 / EC-857; covers WP-820's control)
 
-**Status:** Active 2026-10-21 (engine and cue, WP-819). WP-820 carries the client control and the operator-seated live-verify (D-24026) of the fire path.
+**Status:** Active 2026-10-21 (engine and cue, WP-819). Cue live-verify (D-24026) PASS 2026-10-21 (server and client `4a31641c`; guest autoplay matches `ftW83QgpRnZ` (Zemo) and `TklT1A7JGWC` (Magneto smoke); evidence in STATUS.md). WP-820 carries the client control and the operator-seated live-verify of the fire path.
 
 **User-Visible Surface:** `play.legendary-arena.com`, through WP-820's "Fight + Rescue" button. WP-819 alone adds the move argument and the cue; no client sends the argument until WP-820.
 
