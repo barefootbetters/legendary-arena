@@ -454,6 +454,7 @@ high-water: 422
 - WP-813 — feedback-submission-section (Arena Client; a signed-in "Send feedback" section on ?route=me that posts bug / enhancement / review items to the existing WP-604 POST /api/feedback, so the empty www /roadmap/ board can fill — the D-24414 Stage 1 front door. reserved 2026-10-14, claude/wp-feedback-submission)
 - WP-814 — shared-wiki-theme-extraction (Shared wiki platform; extract the hand-rolled Hugo wiki theme into one shared copy every ewiki consumes, per D-24725 + D-24727; engine ewiki migrates last. reserved 2026-10-16, claude/wp-shared-wiki-theme-draft)
 - WP-815 — abomination-fight-cost (Cap 75th arc #2: Abomination / Double Abomination villains + Ultimate / Double Highest Abomination masterminds get +printed HQ-Hero attack in resolveFightCost / resolveMastermindFightCost. reserved 2026-10-20, claude/reserve-wp815-abomination)
+- WP-816 — villain-savior-gate (Cap 75th arc #3: villain-side Savior — a [effect:] marker condition gate (Savior = 3+ Bystanders in the current player's Victory Pile) for Black Knight / Executioner / Melter (WWII) Fight, a gain-wound each-non-savior target for Radioactive Man Fight/Escape, a new ko-bystander-each-victory-pile primitive for Executioner Escape, and the Man-Fish Fight marker. reserved 2026-10-20, claude/villain-savior-gate)
 
 ## EC
 
@@ -870,6 +871,7 @@ high-water: 457
 - EC-851 — play-saved-loadout (WP-303; grandfathered WP number below the high-water. reserved 2026-10-14, claude/wp303-reserve)
 - EC-852 — shared-wiki-theme-extraction (WP-814. reserved 2026-10-16, claude/wp-shared-wiki-theme-draft)
 - EC-853 — abomination-fight-cost (WP-815. reserved 2026-10-20, claude/reserve-wp815-abomination)
+- EC-854 — villain-savior-gate (WP-816. reserved 2026-10-20, claude/villain-savior-gate)
 
 ## D
 
@@ -1396,3 +1398,4 @@ section below) and the allocation protocol in
 - D-24746 — played-other-cards-threshold (direct fix, no WP — "If you played at least N other cards this turn, you get +2[icon:attack]" gates on a playedThisTurn N+1 condition (the played card is already in inPlay when its gate is read) instead of granting +2 on every play: ca75 Winter Soldier / KGB Training (7), co2e Iron Man / Repulsor Rays (8), xmen Cannonball / Human Cannon (6). Found in the 2026-10-19 ca75 card-text audit. reserved 2026-10-19, claude/played-other-cards-threshold)
 - D-24747 — abomination-fight-cost (WP-815; the HQ-slot-under-City-space binding hq[4 - cityIndex], the printed-attack read, and the omit-when-empty cardAbomination setup map. reserved 2026-10-20, claude/reserve-wp815-abomination)
 - D-24748 — profile-favourites-are-saved-loadouts (operator decision, no WP — a profile "favourite" hero team is a complete saved loadout in player_loadouts, LAGN-validated per D-24086; no heroes-only shape, lagn-v1 setup.required unchanged. Records the 2026-10-14 profile-brief storage call on wiki/profile-login.md. reserved 2026-10-20, spec/d-24748-profile-favourites-reserve)
+- D-24749 — villain-savior-gate (WP-816; the villain-marker Savior condition gate grammar + its current-player evaluation and fail-closed narration, the each-non-savior wound target, the ko-bystander-each-victory-pile primitive (first Bystander in pile order, each player), and one Savior predicate shared with the hero gate. reserved 2026-10-20, claude/villain-savior-gate)
