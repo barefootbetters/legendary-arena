@@ -1185,3 +1185,165 @@ describe('CityRow — WP-817 fight discard cost (D-24750)', () => {
     wrapper.unmount();
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-820 / D-24753 — Baron Zemo's "Fight + Rescue" control: the cue + Fight gate,
+// the payToRescueBystander intent, and the WP-817 Primus exclusion.
+// ---------------------------------------------------------------------------
+
+describe('WP-820 CityRow — Fight + Rescue (Baron Zemo, D-24753)', () => {
+  /** A City with one cost-3 villain (doom-bot) at engine index 0. */
+  function singleVillainCity(): UICityState {
+    return { spaces: [villain('doom-bot', 3), null, null, null, null], escapedPile: [] };
+  }
+
+  /** The cue on, with the given attack and Recruit. */
+  function rescueEconomy(
+    attack: number,
+    recruit: number,
+    over: Partial<UITurnEconomyState> = {},
+  ): UITurnEconomyState {
+    return economy({
+      attack,
+      availableAttack: attack,
+      recruit,
+      availableRecruit: recruit,
+      rescueOnFightAvailable: true,
+      ...over,
+    });
+  }
+
+  /** Mounts the row with the single-villain city. */
+  function mountRescue(
+    submitMove: SubmitMove,
+    economyState: UITurnEconomyState,
+    over: { isViewerTurn?: boolean; hasHealedThisTurn?: boolean } = {},
+  ) {
+    return mount(CityRow, {
+      props: {
+        city: singleVillainCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        isViewerTurn: over.isViewerTurn ?? true,
+        hasHealedThisTurn: over.hasHealedThisTurn ?? false,
+        economy: economyState,
+        submitMove,
+      },
+    });
+  }
+
+  test('T4: the button renders with its label and cost and submits payToRescueBystander once', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountRescue(submitMove, rescueEconomy(3, 2));
+    const rescueButton = wrapper.find('[data-testid="play-city-villain-rescue"]');
+    assert.equal(rescueButton.exists(), true);
+    assert.equal(rescueButton.attributes('data-city-index'), '0');
+    assert.equal(rescueButton.attributes('type'), 'button');
+    assert.equal(
+      rescueButton.attributes('title'),
+      'Fight this Villain and pay 2 Recruit to rescue a Bystander (Baron Zemo).',
+    );
+    assert.equal(rescueButton.find('.city-space__rescue-fight-label').text(), 'Fight + Rescue');
+    assert.equal(rescueButton.find('.city-space__rescue-fight-cost').text(), '2 Recruit');
+    await rescueButton.trigger('click');
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 0, payToRescueBystander: true } }]);
+    wrapper.unmount();
+  });
+
+  test('T5: no button without the cue, with 1 Recruit, off the viewer turn, or after a heal', () => {
+    const { submitMove } = recorder();
+    const rescueSelector = '[data-testid="play-city-villain-rescue"]';
+    const cueAbsent = mountRescue(submitMove, economy({ attack: 3, availableAttack: 3, recruit: 2, availableRecruit: 2 }));
+    assert.equal(cueAbsent.find(rescueSelector).exists(), false, 'cue absent');
+    const oneRecruit = mountRescue(submitMove, rescueEconomy(3, 1));
+    assert.equal(oneRecruit.find(rescueSelector).exists(), false, 'recruit 1');
+    const notViewerTurn = mountRescue(submitMove, rescueEconomy(3, 2), { isViewerTurn: false });
+    assert.equal(notViewerTurn.find(rescueSelector).exists(), false, 'not the viewer turn');
+    const healed = mountRescue(submitMove, rescueEconomy(3, 2), { hasHealedThisTurn: true });
+    assert.equal(healed.find(rescueSelector).exists(), false, 'healed this turn');
+    for (const wrapper of [cueAbsent, oneRecruit, notViewerTurn, healed]) {
+      wrapper.unmount();
+    }
+  });
+
+  test('T6: Fight, Excessive Violence and Fight + Rescue each submit their own intent only', async () => {
+    const { calls, submitMove } = recorder();
+    // why: attack 4 clears cost 3 + 1 for the EV button; recruit 2 pays the rescue.
+    const wrapper = mountRescue(submitMove, rescueEconomy(4, 2, { excessiveViolenceAvailable: true }));
+    const fightButton = wrapper.find('[data-testid="play-city-villain"]');
+    const evButton = wrapper.find('[data-testid="play-city-villain-ev"]');
+    const rescueButton = wrapper.find('[data-testid="play-city-villain-rescue"]');
+    assert.equal(evButton.exists(), true, 'the EV button renders');
+    assert.equal(rescueButton.exists(), true, 'the rescue button renders');
+    await fightButton.trigger('click');
+    await evButton.trigger('click');
+    await rescueButton.trigger('click');
+    assert.deepEqual(calls, [
+      { name: 'fightVillain', args: { cityIndex: 0 } },
+      { name: 'fightVillain', args: { cityIndex: 0, useExcessiveViolence: true } },
+      { name: 'fightVillain', args: { cityIndex: 0, payToRescueBystander: true } },
+    ]);
+    wrapper.unmount();
+  });
+
+  test('T6b: Rooftops-restricted attack shows the button on the Rooftops villain only', () => {
+    // why: a local copy of the WP-790 restricted-attack fixture (that describe's helpers
+    // are scoped to it): both villains cost 2, only the Rooftops grant pays, so the
+    // City space must reach canFightAndRescue for the button to show there and not on
+    // the Sewers villain.
+    const { submitMove } = recorder();
+    const city: UICityState = {
+      spaces: [villain('sewers-villain', 2), null, villain('rooftops-villain', 2), null, null],
+      escapedPile: [],
+    };
+    const wrapper = mount(CityRow, {
+      props: {
+        city,
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({
+          attack: 2,
+          availableAttack: 0,
+          recruit: 2,
+          availableRecruit: 2,
+          restrictedAttack: [{ remaining: 2, targets: ['rooftops'], label: 'Rooftops' }],
+          rescueOnFightAvailable: true,
+        }),
+        submitMove,
+      },
+    });
+    const rescueButtons = wrapper.findAll('[data-testid="play-city-villain-rescue"]');
+    assert.deepEqual(rescueButtons.map((button) => button.attributes('data-city-index')), ['2']);
+    wrapper.unmount();
+  });
+
+  test('T7: a Primus cell (fightDiscardCosts) never shows the button; Electro beside it does', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: {
+          spaces: [
+            { ...villain('primus', 3), fightDiscardCosts: [2, 3, 5, 7] },
+            null,
+            villain('electro', 5),
+            null,
+            null,
+          ],
+          escapedPile: [],
+        },
+        decks: DECKS,
+        currentStage: 'main',
+        economy: rescueEconomy(9, 2),
+        submitMove,
+        viewerHandCards: ['hero-cost5'],
+        viewerHandDisplay: [],
+        viewerHandCosts: [5],
+      },
+    });
+    const primusFight = wrapper.find('[data-testid="play-city-villain"][data-card-id="primus"]');
+    assert.equal(primusFight.attributes('disabled'), undefined, 'the Primus fight itself is allowed');
+    const rescueButtons = wrapper.findAll('[data-testid="play-city-villain-rescue"]');
+    assert.deepEqual(rescueButtons.map((button) => button.attributes('data-city-index')), ['2']);
+    wrapper.unmount();
+  });
+});
