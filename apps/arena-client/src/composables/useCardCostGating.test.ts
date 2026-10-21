@@ -1,14 +1,8 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { UICardDisplay, UITurnEconomyState } from '@legendary-arena/game-engine';
-import {
-  RESCUE_ON_FIGHT_RECRUIT_COST,
-  canFight,
-  canFightAndRescue,
-  canFightWithExcessiveViolence,
-  canRecruit,
-  useCardCostGating,
-} from './useCardCostGating';
+import { canFight, canFightWithExcessiveViolence, canRecruit, useCardCostGating } from './useCardCostGating';
+import { RESCUE_ON_FIGHT_RECRUIT_COST, canFightAndRescue } from './useCardCostGating';
 
 function display(cost: number | null): UICardDisplay {
   return {

@@ -1247,6 +1247,7 @@ describe('WP-820 CityRow — Fight + Rescue (Baron Zemo, D-24753)', () => {
     assert.equal(rescueButton.find('.city-space__rescue-fight-cost').text(), '2 Recruit');
     await rescueButton.trigger('click');
     assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 0, payToRescueBystander: true } }]);
+    wrapper.unmount();
   });
 
   test('T5: no button without the cue, with 1 Recruit, off the viewer turn, or after a heal', () => {
@@ -1260,6 +1261,9 @@ describe('WP-820 CityRow — Fight + Rescue (Baron Zemo, D-24753)', () => {
     assert.equal(notViewerTurn.find(rescueSelector).exists(), false, 'not the viewer turn');
     const healed = mountRescue(submitMove, rescueEconomy(3, 2), { hasHealedThisTurn: true });
     assert.equal(healed.find(rescueSelector).exists(), false, 'healed this turn');
+    for (const wrapper of [cueAbsent, oneRecruit, notViewerTurn, healed]) {
+      wrapper.unmount();
+    }
   });
 
   test('T6: Fight, Excessive Violence and Fight + Rescue each submit their own intent only', async () => {
@@ -1279,6 +1283,7 @@ describe('WP-820 CityRow — Fight + Rescue (Baron Zemo, D-24753)', () => {
       { name: 'fightVillain', args: { cityIndex: 0, useExcessiveViolence: true } },
       { name: 'fightVillain', args: { cityIndex: 0, payToRescueBystander: true } },
     ]);
+    wrapper.unmount();
   });
 
   test('T6b: Rooftops-restricted attack shows the button on the Rooftops villain only', () => {
@@ -1309,6 +1314,7 @@ describe('WP-820 CityRow — Fight + Rescue (Baron Zemo, D-24753)', () => {
     });
     const rescueButtons = wrapper.findAll('[data-testid="play-city-villain-rescue"]');
     assert.deepEqual(rescueButtons.map((button) => button.attributes('data-city-index')), ['2']);
+    wrapper.unmount();
   });
 
   test('T7: a Primus cell (fightDiscardCosts) never shows the button; Electro beside it does', () => {
@@ -1338,5 +1344,6 @@ describe('WP-820 CityRow — Fight + Rescue (Baron Zemo, D-24753)', () => {
     assert.equal(primusFight.attributes('disabled'), undefined, 'the Primus fight itself is allowed');
     const rescueButtons = wrapper.findAll('[data-testid="play-city-villain-rescue"]');
     assert.deepEqual(rescueButtons.map((button) => button.attributes('data-city-index')), ['2']);
+    wrapper.unmount();
   });
 });
