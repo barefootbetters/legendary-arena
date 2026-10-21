@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 728,
     "byStatus": {
-      "executable": 146,
+      "executable": 148,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 579,
+      "unmarked": 577,
       "subsystem": 2
     },
-    "distinctMechanics": 37
+    "distinctMechanics": 39
   },
   "rows": [
     {
@@ -1074,11 +1074,11 @@
       "cardName": "Captain Zolandia",
       "set": "ca75",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-recruit-current-per-hero-class",
+      "status": "executable",
+      "wp": "WP-817",
+      "decision": "D-24750",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-per-hero-class"
     },
     {
       "extId": "ca75-villain-zolas-creations-doughboy",
@@ -1173,11 +1173,11 @@
       "cardName": "Primus",
       "set": "ca75",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "discard-hero-each-player-by-cost",
+      "status": "executable",
+      "wp": "WP-817",
+      "decision": "D-24750",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-each-player-by-cost"
     },
     {
       "extId": "ca75-villain-masters-of-evil-wwii-radioactive-man",

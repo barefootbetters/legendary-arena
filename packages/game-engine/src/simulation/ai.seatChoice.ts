@@ -40,7 +40,10 @@ import {
   MONARCHS_DISCARD_KIND,
   VANISHING_ILLUSIONS_KO_KIND,
 } from '../moves/seatChoiceTactics.js';
-import { ESCAPE_BYSTANDER_DISCARD_KIND } from '../villainDeck/villainEscapeProcedure.js';
+import {
+  ESCAPE_BYSTANDER_DISCARD_KIND,
+  ESCAPE_EFFECT_COST_DISCARD_KIND,
+} from '../villainDeck/villainEscapeProcedure.js';
 import { hasSeatSubmitted, isSeatAddressed } from '../moves/seatChoice.resolve.js';
 import { victoryPointValueForCard } from '../economy/bloodFrenzy.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
@@ -106,7 +109,13 @@ function chooseByKind(
     }
     return null;
   }
-  if (choice.kind === MONARCHS_DISCARD_KIND || choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND) {
+  // why: WP-817 / D-24750 — the Primus Escape discard lists only eligible cards, so the
+  // bot-ally discards its cheapest one (autoplay / sim / PAR take defaultOptionIndex 0).
+  if (
+    choice.kind === MONARCHS_DISCARD_KIND ||
+    choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND ||
+    choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND
+  ) {
     return indexOfLeastValuableCard(G, options);
   }
   if (choice.kind === VANISHING_ILLUSIONS_KO_KIND) {

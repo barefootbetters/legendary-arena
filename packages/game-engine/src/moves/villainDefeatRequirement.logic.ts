@@ -13,8 +13,15 @@
 
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
-import type { VillainDefeatRequirement } from '../rules/villainAbility.types.js';
-import { offPlayCardTraits, playedCardIdsStillInPlay } from '../hero/splitCard.logic.js';
+import type {
+  VillainDefeatRequirement,
+  VillainFightDiscardCost,
+} from '../rules/villainAbility.types.js';
+import {
+  offPlayCardStats,
+  offPlayCardTraits,
+  playedCardIdsStillInPlay,
+} from '../hero/splitCard.logic.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
@@ -110,4 +117,122 @@ function traitMeetsDefeatRequirement(
   }
   // why: WP-703 / D-24523 — a dual-class card matches a hero-class requirement on either printed class.
   return requirement.kind === 'hero-class' && (trait.heroClass === requirement.value || trait.heroClass2 === requirement.value);
+}
+
+// ---------------------------------------------------------------------------
+// Fight discard cost (WP-817 / D-24750)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the fight discard cost for a villain instance, or null when it has
+ * none (the common case — only Primus is marked).
+ *
+ * @param state - The runtime game state.
+ * @param cardId - The villain instance ext_id being fought.
+ * @returns The fight discard cost, or null.
+ */
+export function getFightDiscardCost(
+  state: LegendaryGameState,
+  cardId: CardExtId,
+): VillainFightDiscardCost | null {
+  // why: D-24750 — villainFightDiscardCosts is omitted entirely when no marked
+  // villain is in the match, so a missing table OR a missing entry both mean
+  // "no discard cost".
+  return state.villainFightDiscardCosts?.[cardId] ?? null;
+}
+
+/**
+ * Returns whether a hand card's cost is one of the listed costs.
+ *
+ * @param state - The runtime game state.
+ * @param cardId - The hand card to test.
+ * @param eligibleCosts - The costs the card may have.
+ * @returns True when the card has a cost and it is one of `eligibleCosts`.
+ */
+// why: D-24750 — the ONE eligibility predicate for both "discard a card that costs …"
+// (Primus's fight) and "discards a Hero that costs …" (Primus's Escape). The only hand
+// cards that are not Heroes are Wounds, which have no cost entry and so never qualify;
+// Officers and Sidekicks are Heroes and carry costs. The off-play stat view gives a split
+// card in hand its printed (face a) cost.
+export function isHandCardCostOneOf(
+  state: LegendaryGameState,
+  cardId: CardExtId,
+  eligibleCosts: readonly number[],
+): boolean {
+  const cost = offPlayCardStats(state, cardId)?.cost;
+  if (cost === undefined) {
+    return false;
+  }
+  return eligibleCosts.includes(cost);
+}
+
+/**
+ * Lists a player's hand cards whose cost is one of the listed costs, in hand order.
+ *
+ * @param state - The runtime game state.
+ * @param playerId - The player whose hand is scanned.
+ * @param eligibleCosts - The costs a card may have.
+ * @returns The eligible hand card ids in hand order; `[]` when the player has no zones.
+ */
+export function listEligibleHandCardsByCost(
+  state: LegendaryGameState,
+  playerId: string,
+  eligibleCosts: readonly number[],
+): CardExtId[] {
+  const zones = state.playerZones[playerId];
+  if (zones === undefined) {
+    return [];
+  }
+  const eligibleCardIds: CardExtId[] = [];
+  for (const handCardId of zones.hand) {
+    if (isHandCardCostOneOf(state, handCardId, eligibleCosts)) {
+      eligibleCardIds.push(handCardId);
+    }
+  }
+  return eligibleCardIds;
+}
+
+/**
+ * Picks the default card to discard for a cost-filtered discard: the lowest-cost
+ * eligible hand card, keeping the earliest in hand order on a tie.
+ *
+ * @param state - The runtime game state.
+ * @param playerId - The player whose hand is scanned.
+ * @param eligibleCosts - The costs a card may have.
+ * @returns The chosen card id, or null when no hand card is eligible.
+ */
+export function selectDefaultCostDiscardCard(
+  state: LegendaryGameState,
+  playerId: string,
+  eligibleCosts: readonly number[],
+): CardExtId | null {
+  let selectedCardId: CardExtId | null = null;
+  let selectedCost = Number.POSITIVE_INFINITY;
+  for (const cardId of listEligibleHandCardsByCost(state, playerId, eligibleCosts)) {
+    // why: every listed card has a cost (isHandCardCostOneOf rejected the rest).
+    const cost = offPlayCardStats(state, cardId)!.cost;
+    // why: strict `<` keeps the earliest card in hand order on a cost tie.
+    if (cost < selectedCost) {
+      selectedCardId = cardId;
+      selectedCost = cost;
+    }
+  }
+  return selectedCardId;
+}
+
+/**
+ * Formats a cost list for a log line: `2`, `2 or 3`, `2, 3, 5, or 7`.
+ *
+ * @param eligibleCosts - The costs, in order.
+ * @returns The English list with `or` before the last cost.
+ */
+export function formatEligibleCostList(eligibleCosts: readonly number[]): string {
+  if (eligibleCosts.length <= 1) {
+    return eligibleCosts.map((cost) => String(cost)).join('');
+  }
+  if (eligibleCosts.length === 2) {
+    return `${eligibleCosts[0]} or ${eligibleCosts[1]}`;
+  }
+  const leadingCosts = eligibleCosts.slice(0, -1).map((cost) => String(cost)).join(', ');
+  return `${leadingCosts}, or ${eligibleCosts[eligibleCosts.length - 1]}`;
 }

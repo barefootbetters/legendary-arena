@@ -457,7 +457,7 @@ mindmap
         ["WP-803 ✅ Man and Woman Out of Time set the card aside replay it after next turn's villain card then discard it game engine and arena-client EC-840 D-24692 Active DONE 2026-10-12. Cap 75th arc WP 1, ca75 and anni heroes, never twice, copies excluded, Out of Time group in the played row"]
         ["WP-815 ✅ Abomination fight cost Villains and Masterminds add the printed Attack of HQ Heroes game engine EC-853 D-24747 Active DONE 2026-10-20. Cap 75th arc WP 2, Arnim Zola Zola Creations rlmk Inhuman Rebellion and Maximus co2e Abomination"]
         ["WP-816 ✅ Villain-side Savior marker condition gate per-player Savior exclusion and KO a Bystander from each Victory Pile game engine plus card data EC-854 D-24749 Active DONE 2026-10-20. Cap 75th arc WP 3, Masters of Evil WWII and Man-Fish"]
-        ["WP-817 📝 Captain Zolandia and Primus per-Hero-Class Recruit Fight discard-to-fight cost and every-player cost-filtered Escape discard game engine arena-client plus card data DRAFTED 2026-10-20 EC-855 D-24750 reserved. Cap 75th arc WP 4, Zola Creations"]
+        ["WP-817 ✅ Captain Zolandia and Primus per-Hero-Class Recruit Fight discard-to-fight cost and every-player cost-filtered Escape discard game engine arena-client plus card data EC-855 D-24750 Active DONE 2026-10-21. Cap 75th arc WP 4, Zola Creations"]
         ["WP-818 📝 Baron Heinrich Zemo plus 9 unless you are a Savior Master Strike and four Tactics game engine DRAFTED 2026-10-21 EC-856 D-24752 reserved. Cap 75th arc audit item 3"]
         ["WP-819 📝 Baron Zemo rescue on a fight pay 2 Recruit to rescue a Bystander before the Fight effects plus the active-player cue game engine DRAFTED 2026-10-21 EC-857 D-24753 reserved. Cap 75th arc item 3b"]
         ["WP-820 📝 Baron Zemo rescue on a fight City-row Fight plus Rescue control arena-client DRAFTED 2026-10-21 EC-858 D-24753 via WP-819. Depends on WP-819"]
@@ -989,7 +989,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 186/205 | 19 open |
+| Hero Ability Coverage & Markup Pipeline | 187/205 | 18 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1010,9 +1010,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **792/817 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 24 open |
+| **Total** | **793/817 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 23 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 25):** WP-820 open; WP-819 open; WP-818 open; WP-817 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 24):** WP-820 open; WP-819 open; WP-818 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

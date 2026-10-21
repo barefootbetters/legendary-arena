@@ -22,6 +22,7 @@
 
 import type {
   LegendaryGameState,
+  PendingEscapeEffectDiscard,
   PendingEscapeProcedure,
   PendingSeatChoice,
   SeatChoiceOption,
@@ -45,12 +46,23 @@ import { koCard } from '../board/ko.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+// why: WP-817 / D-24750 — the Escape-effect discard reuses the fight-discard cost
+// predicate and formatter (one cost predicate), and labels each option with the same
+// off-play cost that predicate reads.
+import {
+  listEligibleHandCardsByCost,
+  formatEligibleCostList,
+} from '../moves/villainDefeatRequirement.logic.js';
+import { offPlayCardStats } from '../hero/splitCard.logic.js';
 
 /** The seat-choice kind for an escape's HQ-KO pick (step 1). */
 export const ESCAPE_HQ_KO_KIND = 'escape-hq-ko';
 
 /** The seat-choice kind for an escape's every-player Bystander discard (step 2). */
 export const ESCAPE_BYSTANDER_DISCARD_KIND = 'escape-bystander-discard';
+
+/** The seat-choice kind for an owed Escape-effect cost-filtered discard (WP-817 / D-24750). */
+export const ESCAPE_EFFECT_COST_DISCARD_KIND = 'escape-effect-cost-discard';
 
 // why: rules v23 L561 — "the escaping Villain KOs a Hero that costs 6 or less from the HQ".
 // A Hero costing 7 or more is never offered or KO'd.
@@ -266,7 +278,7 @@ export function openEscapeProcedureSeatChoiceIfNeeded(
     const queue = G.pendingEscapeProcedures;
     if (queue.length === 0) {
       delete G.pendingEscapeProcedures;
-      return;
+      break;
     }
     if (hasAnyPendingChoice(G) || G.pendingHeroChoice !== undefined) {
       return;
@@ -292,6 +304,107 @@ export function openEscapeProcedureSeatChoiceIfNeeded(
       return;
     }
   }
+  // why: WP-817 / D-24750 — rule order: steps 1-2 of every escape first, then the owed
+  // Escape-effect discards. Reached only once the escape-procedure queue is absent (every
+  // early return above leaves it owed), so the effect discard never opens while a step is
+  // owed or a choice is open. D-24750 amends D-24656 point 4 for this effect only: it
+  // resolves after the move (and after the new Villain's Ambush), a known deviation from
+  // rules v23 L573-575; every other Escape effect stays inline.
+  openEscapeEffectDiscardIfNeeded(G, events, currentPlayer);
+}
+
+/**
+ * Opens the next owed Escape-effect discard (Primus), draining
+ * `G.pendingEscapeEffectDiscards` in escape order until a seat choice is parked, the
+ * queue is empty, or the match is decided. Called only from the tail of
+ * openEscapeProcedureSeatChoiceIfNeeded, after the escape-procedure queue drains.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move context's boardgame.io events, or undefined.
+ * @param currentPlayer - The active player id, or undefined.
+ */
+export function openEscapeEffectDiscardIfNeeded(
+  G: LegendaryGameState,
+  events: SeatChoiceEvents | undefined,
+  currentPlayer?: string,
+): void {
+  while (G.pendingEscapeEffectDiscards !== undefined) {
+    const queue = G.pendingEscapeEffectDiscards;
+    if (queue.length === 0) {
+      delete G.pendingEscapeEffectDiscards;
+      return;
+    }
+    if (hasAnyPendingChoice(G) || G.pendingHeroChoice !== undefined) {
+      return;
+    }
+    if (evaluateEndgame(G) !== null) {
+      return;
+    }
+    const entry = queue.shift()!;
+    if (queue.length === 0) {
+      delete G.pendingEscapeEffectDiscards;
+    }
+    const choice = buildEscapeEffectCostDiscardChoice(G, entry);
+    if (choice === undefined) {
+      continue;
+    }
+    // why: D-24656 point 3 — the step-2 ride rule verbatim: skip the stage ride only when
+    // the active seat is the sole addressed seat; a mixed ride admits the active seat too.
+    const isActiveSeatOnly =
+      choice.addressedSeats.length === 1 && choice.addressedSeats[0] === currentPlayer;
+    if (isActiveSeatOnly) {
+      parkSeatChoice(G, events, choice, currentPlayer);
+    } else {
+      parkSeatChoice(G, events, choice);
+    }
+    return;
+  }
+}
+
+/**
+ * Builds the every-player cost-filtered discard choice for one owed Escape effect, or
+ * undefined when no seat holds an eligible Hero. Every seat (ascending) with at least one
+ * eligible hand card is addressed, one option per eligible card in hand order; a seat with
+ * none is logged and left out.
+ *
+ * @param G - The game state (read for hands, costs and card names; the log is appended).
+ * @param entry - The owed Escape-effect discard.
+ * @returns The pending discard choice, or undefined when no seat is addressed.
+ */
+export function buildEscapeEffectCostDiscardChoice(
+  G: LegendaryGameState,
+  entry: PendingEscapeEffectDiscard,
+): PendingSeatChoice | undefined {
+  const costList = formatEligibleCostList(entry.eligibleCosts);
+  const addressedSeats: string[] = [];
+  const seatPrompts: PendingSeatChoice['seatPrompts'] = {};
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    const eligibleCardIds = listEligibleHandCardsByCost(G, seat, entry.eligibleCosts);
+    if (eligibleCardIds.length === 0) {
+      pushLog(G, `Escape effect: Player ${seat} has no Hero that costs ${costList} to discard.`, 'blocked');
+      continue;
+    }
+    const options: SeatChoiceOption[] = [];
+    for (const cardId of eligibleCardIds) {
+      // why: every listed card has a cost (the eligibility predicate rejected the rest).
+      const cost = offPlayCardStats(G, cardId)!.cost;
+      options.push({ label: `${resolveCardName(G.cardDisplayData, cardId)} (cost ${String(cost)})`, cardId });
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length === 0) {
+    return undefined;
+  }
+  return {
+    kind: ESCAPE_EFFECT_COST_DISCARD_KIND,
+    addressedSeats,
+    seatPrompts,
+    submissions: {},
+    // why: the sim / autoplay + disconnect default discards each seat's first eligible
+    // card (index 0) — deterministic and always in range.
+    defaultOptionIndex: 0,
+  };
 }
 
 /**
@@ -417,6 +530,31 @@ export function applyEscapeBystanderDiscard(G: LegendaryGameState, choice: Pendi
         `Player ${seat} discarded ${formatCardRef(G.cardDisplayData, cardId)} (Bystanders carried away).`,
         'applied',
       );
+    }
+  }
+}
+
+/**
+ * Applies a fully-submitted Escape-effect cost discard ATOMICALLY: every addressed seat,
+ * in ascending id order, discards its chosen hand card through the `discardFromHand`
+ * chokepoint (WP-817 / D-24750).
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted choice (kind 'escape-effect-cost-discard').
+ */
+export function applyEscapeEffectCostDiscard(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  const seatsInApplyOrder = [...choice.addressedSeats].sort();
+  for (const seat of seatsInApplyOrder) {
+    const submission = choice.submissions[seat];
+    if (submission === undefined) {
+      continue;
+    }
+    const cardId = choice.seatPrompts[seat]?.options[submission.optionIndex]?.cardId;
+    if (cardId === undefined) {
+      continue;
+    }
+    if (discardFromHand(G, seat, cardId)) {
+      pushLog(G, `Player ${seat} discarded ${formatCardRef(G.cardDisplayData, cardId)} (Escape effect).`, 'applied');
     }
   }
 }

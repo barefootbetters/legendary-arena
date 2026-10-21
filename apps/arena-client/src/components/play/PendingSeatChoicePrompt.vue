@@ -111,6 +111,10 @@ export default defineComponent({
           return 'A Villain escaped — choose a Hero in the HQ to KO';
         case 'escape-bystander-discard':
           return 'Bystanders were carried away — choose a card to discard';
+        // why: WP-817 / D-24750 — an owed Escape-effect discard (Primus: each player
+        // discards a Hero that costs 2, 3, 5, or 7); the options are already filtered.
+        case 'escape-effect-cost-discard':
+          return 'A Villain escaped — choose a Hero to discard';
         case 'return-on-discard':
           return 'Return the discarded card to your hand?';
         default:

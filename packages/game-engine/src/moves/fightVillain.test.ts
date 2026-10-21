@@ -1343,3 +1343,98 @@ describe('fightVillain — villain Savior counts the Bystanders rescued from it 
     );
   });
 });
+
+describe('WP-817 fightVillain — Primus fight discard cost (D-24750)', () => {
+  const PRIMUS = 'primus-01';
+  const DISCARD_LINE = `Player 0 discarded hero-cost5 (hero-cost5) to fight ${PRIMUS} (${PRIMUS}).`;
+
+  /** Primus at City 0 (fight cost 3, discard cost 2/3/5/7), attack 3, hand [cost 4, cost 5]. */
+  function primusState(options?: { attack?: number; hand?: string[] }): LegendaryGameState {
+    const gameState = createMockGameState({
+      city: [PRIMUS, null, null, null, null],
+      hand: options?.hand ?? ['hero-cost4', 'hero-cost5'],
+    });
+    gameState.cardStats[PRIMUS as CardExtId] = makeCardStatEntry({ fightCost: 3 });
+    gameState.cardStats['hero-cost4' as CardExtId] = makeCardStatEntry({ cost: 4 });
+    gameState.cardStats['hero-cost5' as CardExtId] = makeCardStatEntry({ cost: 5 });
+    gameState.cardStats['not-in-hand' as CardExtId] = makeCardStatEntry({ cost: 5 });
+    gameState.villainFightDiscardCosts = { [PRIMUS]: { eligibleCosts: [2, 3, 5, 7] } };
+    gameState.turnEconomy = makeTurnEconomy({ attack: options?.attack ?? 3 });
+    return gameState;
+  }
+
+  it('T11: discards the named card, then defeats Primus and spends the fight cost', () => {
+    const moveContext = createMockMoveContext(primusState());
+    fightVillain(moveContext, { cityIndex: 0, discardCardId: 'hero-cost5' as CardExtId });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PRIMUS), 'Primus is defeated');
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.discard, ['hero-cost5']);
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.hand, ['hero-cost4']);
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 3, 'the fight cost is spent');
+    assert.equal(moveContext.G.messages[0]!.text, DISCARD_LINE, 'the discard is logged first, before the defeat');
+    assert.equal(moveContext.G.messages[0]!.outcome, 'applied');
+  });
+
+  it('T12: every invalid or missing discard choice is a silent no-op', () => {
+    const invalidArgs: Array<{ cityIndex: number; discardCardId?: CardExtId }> = [
+      { cityIndex: 0 },
+      { cityIndex: 0, discardCardId: 'hero-cost4' as CardExtId },
+      { cityIndex: 0, discardCardId: 'not-in-hand' as CardExtId },
+      { cityIndex: 0, discardCardId: '' as CardExtId },
+    ];
+    for (const args of invalidArgs) {
+      const gameState = primusState();
+      const before = JSON.parse(JSON.stringify(gameState)) as unknown;
+      const moveContext = createMockMoveContext(gameState);
+      fightVillain(moveContext, args);
+      assert.deepStrictEqual(JSON.parse(JSON.stringify(moveContext.G)), before, `${JSON.stringify(args)} must not mutate G`);
+    }
+  });
+
+  it('T13: a villain without a discard cost ignores discardCardId', () => {
+    const gameState = primusState();
+    delete gameState.villainFightDiscardCosts;
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, discardCardId: 'hero-cost5' as CardExtId });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PRIMUS), 'fought normally');
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.hand, ['hero-cost4', 'hero-cost5'], 'hand unchanged');
+    assert.equal(
+      moveContext.G.messages.some((message) => message.text.includes('to fight')),
+      false,
+      'no discard log line',
+    );
+  });
+
+  it('T14: an Excessive Violence fight pays one discard, debits 4 and fires EV once', () => {
+    const gameState = primusState({ attack: 4 });
+    gameState.playerZones['0']!.deck = ['d-1'] as LegendaryGameState['playerZones']['0']['deck'];
+    gameState.heroAbilityHooks = [{
+      cardId: 'rc' as CardExtId,
+      timing: 'onFight',
+      keywords: ['excessive-violence'],
+      effects: [{ type: 'excessive-violence', excessiveViolenceEffects: [{ type: 'draw', magnitude: 1 }] as never }],
+    }];
+    gameState.turnEconomy = makeTurnEconomy({ attack: 4, excessiveViolencePlayedCards: ['rc' as CardExtId] });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true, discardCardId: 'hero-cost5' as CardExtId });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PRIMUS));
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.discard, ['hero-cost5'], 'exactly one discard');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 4, 'debits the fight cost + 1');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, true);
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.hand, ['hero-cost4', 'd-1'], 'the EV draw fired once');
+  });
+
+  it('T15: the discard goes through the chokepoint, so return-on-discard parks and the fight resolves', () => {
+    const gameState = primusState();
+    gameState.heroAbilityHooks = [
+      { cardId: 'hero-cost5' as CardExtId, timing: 'onDiscard', keywords: ['return-on-discard'] },
+    ] as LegendaryGameState['heroAbilityHooks'];
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, discardCardId: 'hero-cost5' as CardExtId });
+
+    assert.deepStrictEqual(moveContext.G.pendingReturnOnDiscard, [{ playerID: '0', cardId: 'hero-cost5' }]);
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PRIMUS), 'the fight still resolves');
+  });
+});

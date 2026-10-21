@@ -114,6 +114,12 @@ function deepCopyCitySpaces(
         attachedHeroDisplay: space.attachedHeroDisplay.map((entry) => ({ ...entry })),
         attachedBystanderCount: space.attachedBystanderCount,
         fightCost: space.fightCost,
+        // why: WP-817 / D-24750 — the public fight discard cost MUST pass through here
+        // or the whitelist drops it (the EC-206 / PR #1165 failure mode). Conditional
+        // spread (never a literal undefined) with a fresh array copy.
+        ...(space.fightDiscardCosts !== undefined
+          ? { fightDiscardCosts: [...space.fightDiscardCosts] }
+          : {}),
       });
     }
   }
@@ -324,6 +330,13 @@ function preserveHandCards(player: UIPlayerState): UIPlayerState {
       copiedHandDisplay.push({ ...display });
     }
     base.handDisplay = copiedHandDisplay;
+  }
+
+  // why: WP-817 / D-24750 — handCosts is owner-only exactly like handCards /
+  // handDisplay: copied here for the owning audience, never assigned by
+  // redactHandCards. Conditional assignment, fresh copy.
+  if (player.handCosts !== undefined) {
+    base.handCosts = [...player.handCosts];
   }
 
   // why: WP-128 / D-12803 — active player sees own inPlayCards /

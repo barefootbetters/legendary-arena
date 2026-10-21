@@ -21,6 +21,7 @@ import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type {
   VillainDefeatRequirement,
   VillainDefeatRequirementKind,
+  VillainFightDiscardCost,
 } from '../rules/villainAbility.types.js';
 import { normalizeTraitSlug } from '../state/traits.normalize.js';
 // why: D-18704 — defeat requirements must key by the copy-indexed instance
@@ -103,6 +104,65 @@ function parseDefeatRequirementLine(
       const value = normalizeTraitSlug(parts[1]!);
       if (kind !== null && value.length > 0) {
         return { kind, value };
+      }
+    }
+    match = regex.exec(abilityLine);
+  }
+  return null;
+}
+
+/** Regex for the [discard-to-fight:<kind>:<costs>] marker (WP-817 / D-24750). */
+const FIGHT_DISCARD_COST_MARKER_PATTERN = /\[discard-to-fight:([^\]]+)\]/g;
+
+/**
+ * Parses a `+`-joined cost list (`2+3+5+7`) into strictly ascending non-negative
+ * integers, or null when malformed.
+ *
+ * @param token - The raw cost-list token.
+ * @returns The parsed costs, or null.
+ */
+// why: D-24750 — the same cost-list grammar as the `discard-hero-each-player-by-cost`
+// arm in villainAbility.setup.ts (a second copy, kept local per the duplicate-first
+// rule and the D-10014 no-circular-import convention). Each token is `0` or a
+// positive integer without a leading zero; the list is non-empty and strictly
+// ascending.
+function parseEligibleCostList(token: string): number[] | null {
+  const costs: number[] = [];
+  for (const costToken of token.split('+')) {
+    if (!/^(0|[1-9][0-9]*)$/.test(costToken)) {
+      return null;
+    }
+    const cost = Number.parseInt(costToken, 10);
+    const previousCost = costs[costs.length - 1];
+    if (previousCost !== undefined && cost <= previousCost) {
+      return null;
+    }
+    costs.push(cost);
+  }
+  return costs;
+}
+
+/**
+ * Parses the first valid `[discard-to-fight:cost:<c>[+<c>…]]` marker on an
+ * ability line into a fight discard cost, or null when the line carries none.
+ *
+ * Only the `cost` kind exists. A missing kind, another kind, extra colon-separated
+ * tokens, or a malformed cost list yield null — the marker is then inert.
+ *
+ * @param abilityLine - One villain ability text line.
+ * @returns The parsed fight discard cost, or null.
+ */
+export function parseFightDiscardCostLine(
+  abilityLine: string,
+): VillainFightDiscardCost | null {
+  const regex = new RegExp(FIGHT_DISCARD_COST_MARKER_PATTERN.source, 'g');
+  let match: RegExpExecArray | null = regex.exec(abilityLine);
+  while (match !== null) {
+    const parts = match[1]!.split(':');
+    if (parts.length === 2 && parts[0] === 'cost') {
+      const eligibleCosts = parseEligibleCostList(parts[1]!);
+      if (eligibleCosts !== null) {
+        return { eligibleCosts };
       }
     }
     match = regex.exec(abilityLine);
@@ -243,4 +303,74 @@ export function buildVillainDefeatRequirements(
   }
 
   return requirements;
+}
+
+// ---------------------------------------------------------------------------
+// buildVillainFightDiscardCosts — setup-time builder (WP-817 / D-24750)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the per-villain-instance fight-discard-cost table from registry data
+ * at setup.
+ *
+ * Called during Game.setup() via buildInitialGameState, beside
+ * buildVillainDefeatRequirements. Reads villain per-card ability text for the
+ * selected villain groups, parses the first valid
+ * `[discard-to-fight:cost:<c>[+<c>…]]` marker on any line, and fans one entry out
+ * per copy-indexed instance ext_id via the shared villainCardInstanceExtIds
+ * emitter.
+ *
+ * After setup, G.villainFightDiscardCosts is immutable — moves must never
+ * modify it.
+ *
+ * @param registry - Card registry for resolving ability text. Setup-time only.
+ *   Accepts unknown to support narrow test mocks; returns an empty record when
+ *   the registry does not satisfy the reader interface.
+ * @param matchConfig - Validated match setup config (villainGroupIds).
+ * @returns The fight-discard-cost table; empty when no villain is marked.
+ */
+export function buildVillainFightDiscardCosts(
+  registry: unknown,
+  matchConfig: MatchSetupConfig,
+): Record<CardExtId, VillainFightDiscardCost> {
+  const discardCosts: Record<CardExtId, VillainFightDiscardCost> = {};
+  if (!isRegistryReader(registry)) {
+    return discardCosts;
+  }
+
+  for (const villainGroupId of matchConfig.villainGroupIds) {
+    const parsed = parseQualifiedId(villainGroupId);
+    if (parsed === null) continue;
+    const setData = registry.getSet(parsed.setAbbr);
+    const groupCards = findVillainGroupCards(setData, parsed.slug);
+    if (groupCards === null) continue;
+
+    for (const card of groupCards) {
+      if (typeof card.slug !== 'string') continue;
+      if (!Array.isArray(card.abilities)) continue;
+
+      let discardCost: VillainFightDiscardCost | null = null;
+      for (const abilityLine of card.abilities) {
+        if (typeof abilityLine !== 'string') continue;
+        discardCost = parseFightDiscardCostLine(abilityLine);
+        if (discardCost !== null) break;
+      }
+      if (discardCost === null) continue;
+
+      const instanceExtIds = villainCardInstanceExtIds(
+        parsed.setAbbr,
+        parsed.slug,
+        card.slug,
+        card,
+      );
+      // why: a fresh object and a fresh costs array per copy instance, so copies
+      // never alias one another (D-13502) and the fightVillain gate keyed by a
+      // zone-instance ext_id finds its entry.
+      for (const cardId of instanceExtIds) {
+        discardCosts[cardId] = { eligibleCosts: [...discardCost.eligibleCosts] };
+      }
+    }
+  }
+
+  return discardCosts;
 }

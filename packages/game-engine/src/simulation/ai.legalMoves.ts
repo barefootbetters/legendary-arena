@@ -21,6 +21,8 @@ import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
+  getFightDiscardCost,
+  selectDefaultCostDiscardCard,
 } from '../moves/villainDefeatRequirement.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -1087,6 +1089,19 @@ export function getLegalMoves(
       ) {
         continue;
       }
+      // why: WP-817 / D-24750 — mirror the fightVillain move's fight-discard-cost gate with
+      // the same helpers (D-24364: every move precondition ships with its enumeration
+      // mirror). A discard-cost villain (Primus) is offered only with a named card the move
+      // will accept — the cheapest eligible card in hand — and skipped when there is none,
+      // so the bot never submits a fight the reducer silently refuses.
+      const fightDiscardCost = getFightDiscardCost(gameState, cityCard);
+      let discardCardId: CardExtId | null = null;
+      if (fightDiscardCost !== null) {
+        discardCardId = selectDefaultCostDiscardCard(gameState, activePlayer, fightDiscardCost.eligibleCosts);
+        if (discardCardId === null) {
+          continue;
+        }
+      }
       // why: WP-760 / D-24589 — the same fighter the fightVillain move passes, so a
       // Blood Frenzy cost can't diverge between enumeration and the move guard.
       const baseFightCost = resolveFightCost(gameState, cityCard, activePlayer);
@@ -1100,7 +1115,11 @@ export function getLegalMoves(
       const fightTarget = citySpaceNameForIndex(cityIndex);
       if (fightTarget === undefined) continue;
       if (getSpendableAttackForTarget(gameState.turnEconomy, fightTarget) >= requiredFightCost) {
-        legalMoves.push({ name: 'fightVillain', args: { cityIndex } });
+        if (discardCardId !== null) {
+          legalMoves.push({ name: 'fightVillain', args: { cityIndex, discardCardId } });
+        } else {
+          legalMoves.push({ name: 'fightVillain', args: { cityIndex } });
+        }
       }
     }
   }

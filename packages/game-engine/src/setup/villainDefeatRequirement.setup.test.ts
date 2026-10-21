@@ -10,7 +10,10 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildVillainDefeatRequirements } from './villainDefeatRequirement.setup.js';
+import {
+  buildVillainDefeatRequirements,
+  buildVillainFightDiscardCosts,
+} from './villainDefeatRequirement.setup.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
 interface MockVillainCard {
@@ -167,5 +170,62 @@ describe('buildVillainDefeatRequirements — marker parsing', () => {
       buildVillainDefeatRequirements({}, makeConfig(['core/brotherhood'])),
       {},
     );
+  });
+});
+
+describe('WP-817 buildVillainFightDiscardCosts (D-24750)', () => {
+  it('T6: fans the Primus cost out to both copies as fresh objects; a plain villain is absent', () => {
+    // why: the Primus line is copied verbatim from the regenerated data/cards/ca75.json.
+    const registry = makeRegistry('ca75', [
+      {
+        slug: 'zolas-creations',
+        cards: [
+          {
+            slug: 'primus',
+            copies: 2,
+            abilities: [
+              'To fight Primus, you must also discard a card that costs 2, 3, 5, or 7. [discard-to-fight:cost:2+3+5+7]',
+              'Escape: each player discards a Hero that costs 2, 3, 5, or 7. [effect:discard-hero-each-player-by-cost:2+3+5+7]',
+            ],
+          },
+          {
+            slug: 'doughboy',
+            copies: 2,
+            abilities: ['[keyword:Abomination]', 'Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]'],
+          },
+        ],
+      },
+    ]);
+    const discardCosts = buildVillainFightDiscardCosts(registry, makeConfig(['ca75/zolas-creations']));
+    assert.deepStrictEqual(Object.keys(discardCosts).sort(), [
+      'ca75-villain-zolas-creations-primus-00',
+      'ca75-villain-zolas-creations-primus-01',
+    ]);
+    const first = discardCosts['ca75-villain-zolas-creations-primus-00']!;
+    const second = discardCosts['ca75-villain-zolas-creations-primus-01']!;
+    assert.deepStrictEqual(first, { eligibleCosts: [2, 3, 5, 7] });
+    assert.deepStrictEqual(second, { eligibleCosts: [2, 3, 5, 7] });
+    assert.notEqual(first, second, 'copies must not alias one object');
+    assert.notEqual(first.eligibleCosts, second.eligibleCosts, 'copies must not alias one costs array');
+  });
+
+  it('T7: every malformed marker is inert and never throws', () => {
+    const malformedLines = [
+      'To fight X. [discard-to-fight:cost:]',
+      'To fight X. [discard-to-fight:cost:3+2]',
+      'To fight X. [discard-to-fight:2+3]',
+      'To fight X. [discard-to-fight:cost:2+x]',
+    ];
+    for (const line of malformedLines) {
+      const registry = makeRegistry('core', [
+        { slug: 'malformed', cards: [{ slug: 'villain', abilities: [line] }] },
+      ]);
+      const discardCosts = buildVillainFightDiscardCosts(registry, makeConfig(['core/malformed']));
+      assert.deepStrictEqual(discardCosts, {}, `${line} must produce no entry`);
+    }
+  });
+
+  it('returns an empty record for a registry that is not a reader', () => {
+    assert.deepStrictEqual(buildVillainFightDiscardCosts({}, makeConfig(['ca75/zolas-creations'])), {});
   });
 });

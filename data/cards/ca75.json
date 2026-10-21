@@ -701,7 +701,7 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-zolas-creations-captain-zolandia.webp",
           "abilities": [
             "[keyword:Abomination]",
-            "Fight: You get +1[icon:recruit] for each Hero Class you have."
+            "Fight: You get +1[icon:recruit] for each Hero Class you have. [effect:gain-recruit-current-per-hero-class]"
           ],
           "copies": 2
         },
@@ -737,8 +737,8 @@
           "vAttack": "3",
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-zolas-creations-primus.webp",
           "abilities": [
-            "To fight Primus, you must also discard a card that costs 2, 3, 5, or 7.",
-            "Escape: each player discards a Hero that costs 2, 3, 5, or 7."
+            "To fight Primus, you must also discard a card that costs 2, 3, 5, or 7. [discard-to-fight:cost:2+3+5+7]",
+            "Escape: each player discards a Hero that costs 2, 3, 5, or 7. [effect:discard-hero-each-player-by-cost:2+3+5+7]"
           ],
           "copies": 2
         }

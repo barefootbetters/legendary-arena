@@ -167,6 +167,11 @@ function isLockedEffectKeyword(keyword) {
 // `ko-bystander-each-victory-pile` (no-param) appended at position 29 by WP-816 (D-24749 —
 // Executioner's Escape "KO a Bystander from each player's Victory Pile"; validates via the
 // terminal no-param `parts.length === 1` branch).
+// `gain-recruit-current-per-hero-class` (no-param) and `discard-hero-each-player-by-cost`
+// (`:<c>[+<c>…]`) appended at positions 30 and 31 by WP-817 (D-24750 — Captain Zolandia's
+// Fight "+1 Recruit for each Hero Class you have" and Primus's Escape "each player discards a
+// Hero that costs 2, 3, 5, or 7"; the first validates via the terminal no-param branch, the
+// second via its own strictly-ascending cost-list branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -197,6 +202,8 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'reveal-top-draw-if-cost-lte',
   'ko-up-to-from-discard-current',
   'ko-bystander-each-victory-pile',
+  'gain-recruit-current-per-hero-class',
+  'discard-hero-each-player-by-cost',
 ];
 
 // why: WP-816 / D-24749 — hand-synced local copy of the engine's VILLAIN_EFFECT_CONDITIONS
@@ -227,6 +234,25 @@ function isValidCityGateSuffix(spacesToken) {
   if (spacesToken.length === 0) return false;
   for (const rawSpace of spacesToken.split('+')) {
     if (!CITY_SPACE_NAMES.includes(rawSpace)) return false;
+  }
+  return true;
+}
+
+/**
+ * Returns true when a `+`-joined cost list (`2+3+5+7`) is well-formed: at least one
+ * token, each `0` or a positive integer with no leading zero, strictly ascending
+ * (D-24750). Mirrors the engine parser's parseEligibleCostList.
+ *
+ * @param {string} costListToken - the text after the primitive's `:`.
+ * @returns {boolean} true when the list is well-formed.
+ */
+function isValidEligibleCostList(costListToken) {
+  let previousCost = -1;
+  for (const costToken of costListToken.split('+')) {
+    if (!/^(0|[1-9][0-9]*)$/.test(costToken)) return false;
+    const cost = Number(costToken);
+    if (cost <= previousCost) return false;
+    previousCost = cost;
   }
   return true;
 }
@@ -374,6 +400,12 @@ function isValidParameterizedEffectToken(token) {
     // capture-bystander-style branch so producer + consumer agree on the grammar.
     if (parts.length === 1) return true;
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'discard-hero-each-player-by-cost') {
+    // why: D-24750 — grammar discard-hero-each-player-by-cost:<c>[+<c>…] (exactly 2 tokens;
+    // Primus: :2+3+5+7). Mirrors the engine parser's parseEligibleCostList so producer +
+    // consumer agree on the grammar.
+    return parts.length === 2 && isValidEligibleCostList(parts[1]);
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params.
