@@ -360,7 +360,8 @@ export type VillainEffectPrimitive =
   | 'ko-heroes-current-count-by-trait'
   | 'haunt-hq-hero'
   | 'reveal-top-draw-if-cost-lte'
-  | 'ko-up-to-from-discard-current';
+  | 'ko-up-to-from-discard-current'
+  | 'ko-bystander-each-victory-pile';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -461,6 +462,32 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // choice from your own discard). Both keyword-less, so both self-narrate.
   'reveal-top-draw-if-cost-lte',
   'ko-up-to-from-discard-current',
+  // why: WP-816 / D-24749 — appended at position 29. Executioner's Escape ("KO a
+  // Bystander from each player's Victory Pile"): every player KOs the first Bystander
+  // in their Victory Pile, in pile order, to `G.ko` (the Whispers and Lies precedent).
+  // No-param, keyword-less, self-narrates. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
+  'ko-bystander-each-victory-pile',
+] as const;
+
+// why: WP-816 / D-24749 — the closed set of villain marker CONDITION gates, the
+// `!<condition>` suffix on an `[effect:…]` marker. `'savior'` gates a line on the
+// CURRENT player having at least 3 Bystanders in their Victory Pile (rules v23
+// L1844-1853). The append point for the next villain condition gates already in the
+// data (ssw2 Pink Sphinx Spectrum, wtif Wolf Demon Soulbind), so they reuse this one
+// suffix grammar instead of inventing a second.
+/** A villain-effect condition gate value (the marker `!<condition>` suffix). */
+export type VillainEffectCondition = 'savior';
+
+// why: drift-detection array — must match VillainEffectCondition exactly
+// (villainAbility.types.test.ts asserts it at runtime, D-24372). Append-only per
+// D-24749: a new condition updates the union, this array, the marker script's
+// hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) and the
+// executor gate's `switch` arm together, with a DECISIONS entry. An unrecognized
+// value at runtime fails closed in the executor.
+/** All villain effect conditions in canonical order. Single source of truth. */
+export const VILLAIN_EFFECT_CONDITIONS: readonly VillainEffectCondition[] = [
+  'savior',
 ] as const;
 
 /**
@@ -482,6 +509,15 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *     never the discard pile (D-24687).
  *   - `gain-wound` with `target: 'each-other'` (D-24295): every player EXCEPT the
  *     current player gains `magnitude` Wound(s) (default 1) — the Lizard.
+ *   - `gain-wound` with `target: 'each-non-savior'` (D-24749): every player who is
+ *     NOT a Savior (fewer than 3 Bystanders in their Victory Pile) gains one Wound —
+ *     Radioactive Man. No `magnitude`.
+ *   - `ko-bystander-each-victory-pile` (D-24749): no params; each player KOs the
+ *     first Bystander in their Victory Pile — Executioner's Escape.
+ *   - Any effect: optional `requireCondition` (D-24749) is a condition gate — the
+ *     effect fires only when the CURRENT player meets the condition (`'savior'`:
+ *     at least 3 Bystanders in their Victory Pile). Lifted from the marker's
+ *     `!<condition>` suffix.
  *   - `capture-bystander`: optional `magnitude` (D-24295) is a rescue COUNT
  *     (default 1) — the counted variant (Abomination: 3) self-narrates because its
  *     magnitude-bearing descriptor has no legacy reverse-map entry.
@@ -525,7 +561,10 @@ export interface VillainEffectDescriptor {
   // 'current' | 'each' (append-only per D-24034). Not part of `descriptorKey`
   // beyond the existing `target` slot, so a `gain-wound:each-other` descriptor is
   // keyword-less (no legacy reverse-map entry) and self-narrates.
-  target?: 'current' | 'each' | 'each-other';
+  // why: D-24749 — `'each-non-savior'` (Radioactive Man) wounds every player who is
+  // not a Savior. The exemption is per player, so it is a target value (the
+  // `'each-other'` precedent), not the current-player condition gate below.
+  target?: 'current' | 'each' | 'each-other' | 'each-non-savior';
   magnitude?: number;
   // why: WP-757 / D-24587 — widened append-only with `'leftmost' | 'cost-lte-3'` for
   // `haunt-hq-hero`. The capture-hq-hero parser still accepts only its original three
@@ -540,6 +579,13 @@ export interface VillainEffectDescriptor {
   // executor BEFORE handler dispatch and fails closed on an undefined cityIndex
   // (the Ambush/Escape fire sites, which have no fought space).
   requireCitySpaces?: readonly CitySpaceName[];
+  // why: D-24749 — the condition gate lifted from the marker's `!<condition>`
+  // suffix (Black Knight / Executioner / Melter (WWII) `!savior`). Kept OUT of
+  // `descriptorKey` below so a gated `ko-hero:current` still reverse-maps to
+  // `koHeroCurrentPlayer` and narrates its KO exactly as the ungated twin. The
+  // executor checks it after the location gate and before dispatch, reading the
+  // current player, and fails closed on an unrecognized value.
+  requireCondition?: VillainEffectCondition;
   // why: D-24290 — the number of cards the current player draws, present ONLY on
   // `{ primitive: 'draw-cards-current' }` descriptors (Enchantress: 3). A positive
   // integer set by the parser's `draw-cards-current:<N>` grammar. Deliberately NOT

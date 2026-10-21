@@ -49014,3 +49014,34 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24749 — Villain-side Savior: a `!<condition>` marker gate, the `each-non-savior` Wound target and KO-a-Bystander-from-each-Victory-Pile (Active 2026-10-20 — WP-816 / EC-854)
+
+**Status:** Active 2026-10-20. Live-verify (D-24026) operator-pending.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Black Knight, Executioner and Melter (WWII) (ca75 Masters of Evil (WWII)) give their printed reward on a Fight only to a Savior, and log why when the fighter is not one. Radioactive Man wounds every non-Savior on Fight and on Escape. An escaping Executioner KOs one Bystander from each Victory Pile. Man-Fish wounds every other player when fought on the Sewers or the Bridge.
+
+**Context.** Every Fight and Escape line on these cards did nothing: the villain parser reads only `[effect:…]` markers, and none of these lines carried one. Rules v23 L1844-1853: Savior "means 'Use this ability if you have at least 3 Bystanders in your Victory Pile,'" and Bystanders rescued from the defeated Villain go to the Victory Pile before any Savior ability on it is checked.
+
+**Decision.**
+1. **Contract-file change (authorized here).** `rules/villainAbility.types.ts` gains `VillainEffectCondition = 'savior'` and `VILLAIN_EFFECT_CONDITIONS = ['savior']` (runtime drift pin), the optional `VillainEffectDescriptor.requireCondition`, the `gain-wound` target `'each-non-savior'` (appended to `'current' | 'each' | 'each-other'`), and primitive #29 `ko-bystander-each-victory-pile`.
+2. **`VILLAIN_EFFECT_CONDITIONS` is append-only.** A new condition updates the union, the array, the marker script's hand-synced copy and the executor gate's `switch` arm together, with a DECISIONS entry. An unrecognized value fails closed at runtime.
+3. **Savior is data on the marker.** Grammar `<primitive>[:<param>…][@<space>[+<space>…]][!<condition>]`: the `!` suffix is split first, is last, appears at most once, and must be a member of the closed set (case-sensitive; empty rejected). It lifts to `requireCondition`, which is kept out of `descriptorKey`, so a gated `ko-hero:current` still reverse-maps to `koHeroCurrentPlayer`. Legacy keywords take no suffix (`koHeroCurrentPlayer!savior` is unresolved). No villain parser reads `[keyword:Savior]` or English. The marker script mirrors the grammar.
+4. **One gate seam.** `executeVillainAbilities` checks `requireCondition` after the location gate and before dispatch, for the current player at every timing, with an exhaustive `switch` whose `never` default fails closed. A block self-narrates (`'blocked'`) and records no hollow record and no EffectTrace (the D-24295 precedent). No handler reads `requireCondition`.
+5. **One Savior predicate.** `board/bystanders.logic.ts` exports `SAVIOR_BYSTANDER_THRESHOLD = 3`, `countVictoryPileBystanders` and `findFirstVictoryPileBystander`, using the hero gate's two-arm id test (`pile-bystander` or `bystander-villain-deck-*`). `hero/heroConditions.evaluate.ts` is unchanged; a parity test pins the two. Killbots are excluded on both sides and from Executioner's KO until a joint follow-up.
+6. **Melter (WWII)** reuses the D-24413 KO / keep prompt unchanged behind the gate (builds on D-24413, which superseded D-24332).
+7. **`each-non-savior`** is a per-player exemption, so it is a `gain-wound` target (the `each-other` precedent), not the current-player gate: sorted iteration, a Savior skipped, `gainWoundWithOutcome` (Diving Block), `woundsDrawn` bumped for the current player whatever the outcome, self-narrated.
+8. **`ko-bystander-each-victory-pile`**: each player, sorted, KOs the first Bystander in Victory-Pile order to `G.ko`, with no choice (the Whispers and Lies precedent); self-narrated.
+9. **Rules ordering** already holds: `fightVillain` awards the attached Bystanders before `onFight` effects run, so they count toward Savior.
+10. **Limit.** Code that reads descriptors outside the executor loop (`villainCardEscapeTriggersSchemeTwist`, the `play-villain-deck-cards` count reader) does not see `requireCondition`; a future gated marker on those primitives needs its own gate check.
+11. **Ledger normalizer.** `scripts/villain-mechanic-ledger.mjs` names a marker by `split('!')[0].split('@')[0].split(':')[0]`, so gated markers are named by their primitive.
+12. **Replay-compat.** A stored match replays from its bgio `initialState`, which already holds its setup-time `G.villainAbilityHooks`, so pre-WP-816 matches replay identically. Only a path that re-runs setup from config + seed sees the new markers.
+
+**Data.** `scripts/convert-cards/inputs/villain-effect-markers.json` marks the seven lines (`ko-hero:current!savior`; `draw-cards-current:1!savior` + `ko-bystander-each-victory-pile`; `ko-cullable-each-deck-top!savior`; `gain-wound:each-non-savior` ×2; Man-Fish `gain-wound:each-other@sewers+bridge`); Black Knight's `_unassigned` row is deleted. `apply-effect-markers.mjs` changed `data/cards/ca75.json` only (7 lines).
+
+**Gates.** WP-816 §Test Contract T1-T23 plus T3b, T13b, T15b and T19b. The existing primitive-count pin moves 28 → 29 (an intended product change). Revert proofs: without the gate 5 cases fail, wounding Saviors 3, taking the last Bystander 1. The marker script loud-fails on each of the eight T7 tokens. Engine 5444 → 5471, 0 fail; `pnpm -r --no-bail test` 0 fail; villain ledger 722 → 728 rows; `finalStateHash` / `PRE_WP080_HASH` unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24749 (#2928). Related: D-24295 (`@<space>` location gate), D-24464 (hero Savior), D-24413 (Melter KO / keep), D-24290 (`draw-cards-current`), D-24023 / D-24034 (descriptor grammar, unresolved markers), D-24499 / D-24673 (Diving Block wound routing), D-24081 (`G.messages` hash-excluded), D-24372 (runtime drift pins).
+
+---
+Protect this file.

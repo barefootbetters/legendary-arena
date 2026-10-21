@@ -19,11 +19,13 @@ import type {
   VillainEffectKeyword,
   VillainEffectDescriptor,
   VillainEffectPrimitive,
+  VillainEffectCondition,
 } from '../rules/villainAbility.types.js';
 import {
   VILLAIN_ABILITY_TIMINGS,
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
+  VILLAIN_EFFECT_CONDITIONS,
   LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
 } from '../rules/villainAbility.types.js';
 // why: D-24295 — the universal `@<space>` location-gate suffix validates each space
@@ -320,20 +322,79 @@ function isCitySpaceName(value: string): value is CitySpaceName {
 }
 
 /**
- * Parses a full effect marker value into a descriptor, splitting off the
- * universal `@<space>[+<space>…]` location-gate suffix FIRST (D-24295) and then
- * parsing the remaining primitive grammar.
+ * Checks whether a string is one of the canonical villain effect conditions.
+ *
+ * @param value - The candidate condition token (the text after `!`).
+ * @returns True when value is a member of VILLAIN_EFFECT_CONDITIONS.
+ */
+function isVillainEffectCondition(value: string): value is VillainEffectCondition {
+  // why: case-sensitive membership against the closed set; `Savior` and the empty
+  // string are not members, so a mistyped suffix resolves to unresolvedMarkers.
+  for (const condition of VILLAIN_EFFECT_CONDITIONS) {
+    if (condition === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Parses a full effect marker value into a descriptor. Grammar:
+ * `<primitive>[:<param>…][@<space>[+<space>…]][!<condition>]`.
+ *
+ * The `!<condition>` suffix (D-24749) is split off FIRST, then the universal
+ * `@<space>[+<space>…]` location-gate suffix (D-24295), then the remaining
+ * primitive grammar. More than one `!`, a condition outside
+ * `VILLAIN_EFFECT_CONDITIONS` (case-sensitive, empty included), an unknown /
+ * empty space, or more than one `@` returns null (→ `unresolvedMarkers`, never a
+ * silent accept). A present condition is attached as `requireCondition`; a
+ * present location gate as `requireCitySpaces`.
+ *
+ * @param value - The raw marker value (the text inside `[effect:…]`).
+ * @returns The parsed descriptor (with any condition / location gate), or null.
+ */
+function parseParameterizedEffect(
+  value: string,
+): VillainEffectDescriptor | null {
+  // why: D-24749 — Savior is data on the marker, the `@` gate's sibling. Split `!`
+  // first so the condition suffix is always last: `ko-hero:current!savior@sewers`
+  // leaves `savior@sewers` as the condition, which is not a member → null.
+  const conditionSplit = value.split('!');
+  if (conditionSplit.length > 2) {
+    return null;
+  }
+  let requireCondition: VillainEffectCondition | null = null;
+  if (conditionSplit.length === 2) {
+    const conditionToken = conditionSplit[1]!;
+    if (!isVillainEffectCondition(conditionToken)) {
+      return null;
+    }
+    requireCondition = conditionToken;
+  }
+  const descriptor = parseLocationGatedEffect(conditionSplit[0]!);
+  if (descriptor === null) {
+    return null;
+  }
+  if (requireCondition !== null) {
+    descriptor.requireCondition = requireCondition;
+  }
+  return descriptor;
+}
+
+/**
+ * Parses a marker value with any `!<condition>` suffix already removed,
+ * splitting off the universal `@<space>[+<space>…]` location-gate suffix FIRST
+ * (D-24295) and then parsing the remaining primitive grammar.
  *
  * The gate suffix is split before the primitive `:`-grammar so a location gate
  * can decorate ANY effect token. An unknown / empty space, or more than one `@`,
- * returns null (→ `unresolvedMarkers`, never a silent accept). The remaining
- * left side parses by `parseUngatedEffect`; a present gate is attached as
- * `requireCitySpaces`.
+ * returns null. The remaining left side parses by `parseUngatedEffect`; a present
+ * gate is attached as `requireCitySpaces`.
  *
- * @param value - The raw marker value (the text inside `[effect:…]`).
+ * @param value - The marker value minus any `!<condition>` suffix.
  * @returns The parsed descriptor (with any location gate), or null.
  */
-function parseParameterizedEffect(
+function parseLocationGatedEffect(
   value: string,
 ): VillainEffectDescriptor | null {
   const gateSplit = value.split('@');
@@ -360,7 +421,7 @@ function parseParameterizedEffect(
 
 /**
  * Parses a parameterized effect token `<primitive>[:<param>…]` (WITHOUT any
- * `@<space>` gate suffix — the wrapper strips that first) into a descriptor, or
+ * `!<condition>` or `@<space>` gate suffix — the wrappers strip those first) into a descriptor, or
  * null when the token is not a valid parameterized effect.
  *
  * Forward-compatible grammar (WP-252 / D-24023): accepting it makes a future
@@ -368,6 +429,7 @@ function parseParameterizedEffect(
  * code change. Colon-delimited and positional per primitive:
  *   - `ko-hero:current` | `ko-hero:each:<N>`
  *   - `gain-wound:current` | `gain-wound:each` | `gain-wound:each-other[:<N>]` (D-24295)
+ *     | `gain-wound:each-non-savior` (D-24749)
  *   - `capture-hq-hero:rightmost` | `:highest-cost` | `:lowest-cost`
  *   - `haunt-hq-hero:rightmost` | `:leftmost` | `:cost-lte-3`  (D-24587)
  *   - `reveal-or-wound:<kind>:<value>`  (kind `team` | `hc`; D-24281)
@@ -384,7 +446,8 @@ function parseParameterizedEffect(
  *   - `give-hq-hero-by-trait-to-current:<kind>:<value>`  (kind `team` | `hc`; D-24335)
  *   - `capture-bystander` | `capture-bystander:<N>`  (N a rescue count; D-24295)
  *   - `gain-recruit-current` | `gain-recruit-current:<N>`  (N a recruit count, default 1; D-24350)
- *   - `hero-deck-top-to-escape` | `gain-officer-current`  (no params)
+ *   - `hero-deck-top-to-escape` | `gain-officer-current` |
+ *     `ko-bystander-each-victory-pile` (D-24749)  (no params)
  *
  * @param value - The ungated marker value (the text inside `[effect:…]` minus
  *   any `@<space>` suffix).
@@ -460,6 +523,12 @@ function parseUngatedEffect(
         return { primitive: 'gain-wound', target: 'each-other', magnitude };
       }
       return null;
+    }
+    // why: D-24749 — `gain-wound:each-non-savior` (Radioactive Man) wounds every player
+    // who is not a Savior. Exactly 2 tokens and no magnitude: the printed line is one
+    // Wound each, and a 3-token form is rejected rather than silently widened.
+    if (target === 'each-non-savior' && parts.length === 2) {
+      return { primitive: 'gain-wound', target: 'each-non-savior' };
     }
     return null;
   }

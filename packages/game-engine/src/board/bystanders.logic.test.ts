@@ -2,7 +2,8 @@
  * Tests for bystander capture helpers.
  *
  * Verifies attachBystanderToVillain, awardAttachedBystanders, and
- * carryEscapedBystandersToPile behavior, immutability, and JSON serializability.
+ * carryEscapedBystandersToPile behavior, immutability, and JSON serializability,
+ * plus the WP-816 Savior helpers and their parity with the hero Savior gate.
  *
  * Uses node:test and node:assert only — no boardgame.io imports.
  */
@@ -13,7 +14,13 @@ import {
   attachBystanderToVillain,
   awardAttachedBystanders,
   carryEscapedBystandersToPile,
+  SAVIOR_BYSTANDER_THRESHOLD,
+  countVictoryPileBystanders,
+  findFirstVictoryPileBystander,
 } from './bystanders.logic.js';
+import { evaluateCondition } from '../hero/heroConditions.evaluate.js';
+import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
 
 describe('attachBystanderToVillain', () => {
   it('takes pile[0] bystander (top-of-pile convention)', () => {
@@ -198,5 +205,63 @@ describe('bystander helpers — JSON serialization', () => {
       JSON.stringify(carryResult).length > 0,
       'carryEscapedBystandersToPile result must serialize',
     );
+  });
+});
+
+describe('WP-816 Savior helpers (D-24749)', () => {
+  const VILLAIN = 'ca75-villain-masters-of-evil-wwii-black-knight-00' as CardExtId;
+
+  it('T9: countVictoryPileBystanders counts both Bystander arms and nothing else', () => {
+    const victory = [
+      VILLAIN,
+      'pile-bystander',
+      'bystander-villain-deck-03',
+      'pile-wound',
+    ] as CardExtId[];
+    const snapshot = [...victory];
+    assert.equal(countVictoryPileBystanders(victory), 2);
+    assert.deepStrictEqual(victory, snapshot, 'the input must not be mutated');
+    assert.equal(countVictoryPileBystanders([]), 0);
+  });
+
+  it('T10: findFirstVictoryPileBystander returns the first Bystander in pile order', () => {
+    const victory = [VILLAIN, 'bystander-villain-deck-03', 'pile-bystander'] as CardExtId[];
+    assert.equal(findFirstVictoryPileBystander(victory), 'bystander-villain-deck-03');
+    assert.equal(findFirstVictoryPileBystander([VILLAIN]), undefined);
+  });
+
+  it('T11: villain Savior agrees with the hero Savior gate at 0, 2, 3 and 4 Bystanders', () => {
+    // why: hero and villain Savior must never disagree in one match (D-24749); this pins
+    // the new helper to the hero evaluator, which is deliberately left unedited.
+    assert.equal(SAVIOR_BYSTANDER_THRESHOLD, 3);
+    const victoryPiles: CardExtId[][] = [
+      [VILLAIN],
+      [VILLAIN, 'pile-bystander', 'bystander-villain-deck-01'] as CardExtId[],
+      ['pile-bystander', VILLAIN, 'bystander-villain-deck-01', 'pile-bystander'] as CardExtId[],
+      [
+        'bystander-villain-deck-01',
+        'bystander-villain-deck-02',
+        VILLAIN,
+        'pile-bystander',
+        'pile-bystander',
+      ] as CardExtId[],
+    ];
+    for (const victory of victoryPiles) {
+      const G = {
+        playerZones: {
+          '0': { deck: [], hand: [], discard: [], inPlay: [], victory },
+        },
+      } as unknown as LegendaryGameState;
+      const isVillainSavior = countVictoryPileBystanders(victory) >= SAVIOR_BYSTANDER_THRESHOLD;
+      const isHeroSavior = evaluateCondition(G, '0', {
+        type: 'bystandersInVictoryAtLeast',
+        value: '3',
+      });
+      assert.equal(
+        isVillainSavior,
+        isHeroSavior,
+        `hero and villain Savior must agree for Victory Pile ${JSON.stringify(victory)}`,
+      );
+    }
   });
 });

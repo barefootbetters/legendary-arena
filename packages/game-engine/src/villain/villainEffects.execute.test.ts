@@ -22,13 +22,18 @@ import {
   resolveEffectResultNames,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
-import { composeEffectResultLogLine } from '../events/notableEvents.compose.js';
+import { composeEffectResultLogLine, composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
-import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
+import type {
+  VillainAbilityHook,
+  VillainEffectCondition,
+  VillainEffectDescriptor,
+} from '../rules/villainAbility.types.js';
 import { LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR } from '../rules/villainAbility.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+import { makeMockCtx } from '../test/mockCtx.js';
 
 const WOUND = 'pile-wound' as CardExtId;
 const CTX = { currentPlayer: '0' };
@@ -5794,5 +5799,286 @@ describe('"KO one of your Heroes" takes from hand or play, never the discard pil
     executeVillainAbilities(superSkrull, CTX, 'v-super-skrull' as CardExtId, 'onFight');
     assert.equal(superSkrull.pendingKoHeroChoices?.length, 1);
     assert.deepStrictEqual(Object.keys(superSkrull.pendingKoHeroChoices![0]!).sort(), ['choiceType', 'playerID']);
+  });
+});
+
+describe('WP-816 villain-side Savior (D-24749)', () => {
+  const VILLAIN = 'ca75-villain-masters-of-evil-wwii-black-knight-00' as CardExtId;
+  const OTHER_VILLAIN = 'ca75-villain-masters-of-evil-wwii-executioner-00' as CardExtId;
+  const THREE_BYSTANDERS = ['pile-bystander', 'bystander-villain-deck-01', 'pile-bystander'] as CardExtId[];
+  const TWO_BYSTANDERS = ['pile-bystander', 'bystander-villain-deck-01'] as CardExtId[];
+  const DECK_CARD = 'core/x/deck-card#0' as CardExtId;
+
+  /**
+   * Builds a one-descriptor hook for a WP-816 test.
+   */
+  function descriptorHook(
+    timing: 'onAmbush' | 'onFight' | 'onEscape',
+    descriptor: VillainEffectDescriptor,
+  ): VillainAbilityHook {
+    return { cardId: 'v-wp816' as CardExtId, timing, keywords: [], effects: [descriptor] };
+  }
+
+  /**
+   * Builds a player zone with the given victory pile, deck and hand.
+   */
+  function seat(victory: CardExtId[], deck: CardExtId[] = [], hand: CardExtId[] = []) {
+    return { deck: [...deck], hand: [...hand], discard: [], inPlay: [], victory: [...victory] };
+  }
+
+  const shuffleContext: ShuffleProvider = { random: makeMockCtx().random };
+  const SAVIOR_DRAW: VillainEffectDescriptor = {
+    primitive: 'draw-cards-current',
+    drawCount: 1,
+    requireCondition: 'savior',
+  };
+
+  it('T12: a Savior gate passes with 3 Bystanders and the draw fires', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', SAVIOR_DRAW)],
+      playerZones: { '0': seat(THREE_BYSTANDERS, [DECK_CARD, 'core/x/second#0' as CardExtId]), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [DECK_CARD], 'hand +1');
+    assert.equal(G.messages![G.messages!.length - 1]!.text, 'Fight effect: drew 1 card(s).');
+  });
+
+  it('T13: a Savior gate blocks with 2 Bystanders, before dispatch, not hollow, no trace', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', SAVIOR_DRAW)],
+      playerZones: { '0': seat(TWO_BYSTANDERS, [DECK_CARD]), '1': seat([]) },
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [], 'hand unchanged');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(
+      lastMessage.text,
+      'Fight effect: Player 0 is not a Savior (2 of 3 Bystanders in their Victory Pile); no effect.',
+    );
+    assert.equal(lastMessage.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'a blocked gate is not hollow');
+    assert.equal(G.diagnostics?.traces?.length ?? 0, 0, 'a never-dispatched descriptor has no trace');
+    assert.deepStrictEqual(results, []);
+  });
+
+  it('T13b: an unrecognized condition fails closed, never dispatched', () => {
+    const G = makeG({
+      hooks: [
+        descriptorHook('onFight', {
+          ...SAVIOR_DRAW,
+          requireCondition: 'spectrum' as VillainEffectCondition,
+        }),
+      ],
+      playerZones: { '0': seat(THREE_BYSTANDERS, [DECK_CARD]), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [], 'hand unchanged');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, "Fight effect: unrecognized condition 'spectrum'; no effect.");
+    assert.equal(lastMessage.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0);
+    assert.equal(G.diagnostics?.traces?.length ?? 0, 0);
+  });
+
+  it('T14: the gate reads the current player only, not another Savior', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', SAVIOR_DRAW)],
+      playerZones: { '0': seat([], [DECK_CARD]), '1': seat(THREE_BYSTANDERS) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, []);
+    assert.equal(
+      G.messages![G.messages!.length - 1]!.text,
+      'Fight effect: Player 0 is not a Savior (0 of 3 Bystanders in their Victory Pile); no effect.',
+    );
+  });
+
+  it('T15: a Savior-gated ko-hero:current parks the interactive KO and keeps its legacy keyword', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', { primitive: 'ko-hero', target: 'current', requireCondition: 'savior' })],
+      playerZones: {
+        '0': seat(THREE_BYSTANDERS, [], ['hero-a', 'hero-b'] as CardExtId[]),
+        '1': seat([]),
+      },
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0' }]);
+    assert.deepStrictEqual(results, [{ keyword: 'koHeroCurrentPlayer', targets: [], pending: true }]);
+  });
+
+  it('T15b: a Savior-gated Melter (WWII) parks the D-24413 KO / keep prompt', () => {
+    const topZero = 'core/x/top-zero#0' as CardExtId;
+    const topOne = 'core/x/top-one#0' as CardExtId;
+    const G = makeG({
+      hooks: [descriptorHook('onFight', { primitive: 'ko-cullable-each-deck-top', requireCondition: 'savior' })],
+      playerZones: { '0': seat(THREE_BYSTANDERS, [topZero]), '1': seat([], [topOne]) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.pendingMelterKoChoices, [
+      {
+        choiceType: 'melter-ko',
+        playerID: '0',
+        revealedTops: [
+          { ownerPlayerID: '0', cardId: topZero },
+          { ownerPlayerID: '1', cardId: topOne },
+        ],
+      },
+    ]);
+    assert.deepStrictEqual(G.ko, [], "nothing KO'd yet");
+  });
+
+  it('T16: the location gate is checked before the condition gate', () => {
+    const gated: VillainEffectDescriptor = {
+      primitive: 'ko-hero',
+      target: 'current',
+      requireCitySpaces: ['sewers'],
+      requireCondition: 'savior',
+    };
+    const heroes = ['hero-a', 'hero-b'] as CardExtId[];
+    const onBridge = makeG({
+      hooks: [descriptorHook('onFight', gated)],
+      playerZones: { '0': seat(THREE_BYSTANDERS, [], heroes), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(onBridge, CTX, 'v-wp816' as CardExtId, 'onFight', undefined, 4);
+    assert.deepStrictEqual(
+      onBridge.messages!.map((message) => message.text),
+      ['Fight effect: not fought on the Sewers; no effect.'],
+      'only the location-blocked line',
+    );
+    const inSewers = makeG({
+      hooks: [descriptorHook('onFight', gated)],
+      playerZones: { '0': seat(['pile-bystander'] as CardExtId[], [], heroes), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(inSewers, CTX, 'v-wp816' as CardExtId, 'onFight', undefined, 0);
+    assert.deepStrictEqual(
+      inSewers.messages!.map((message) => message.text),
+      ['Fight effect: Player 0 is not a Savior (1 of 3 Bystanders in their Victory Pile); no effect.'],
+      'only the Savior-blocked line',
+    );
+  });
+
+  const NON_SAVIOR_WOUND: VillainEffectDescriptor = { primitive: 'gain-wound', target: 'each-non-savior' };
+  const FIVE_WOUNDS = ['w0', 'w1', 'w2', 'w3', 'w4'] as CardExtId[];
+
+  it('T17: each-non-savior wounds every non-Savior in sorted order and spares the Savior', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: { '0': seat(THREE_BYSTANDERS), '1': seat(TWO_BYSTANDERS), '2': seat([]) },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'the Savior gains no Wound');
+    assert.equal(G.playerZones['1']!.discard.length, 1);
+    assert.equal(G.playerZones['2']!.discard.length, 1);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Fight effect: each player who is not a Savior gained a Wound (Player 1, Player 2).');
+    assert.equal(lastMessage.outcome, 'applied');
+    assert.equal(G.turnEconomy.woundsDrawn, 0, 'the current player was not wounded');
+  });
+
+  it('T18: woundsDrawn counts a wounded current player, and the Escape label is used', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onEscape', NON_SAVIOR_WOUND)],
+      playerZones: { '0': seat(THREE_BYSTANDERS), '1': seat(TWO_BYSTANDERS), '2': seat([]) },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, { currentPlayer: '1' }, 'v-wp816' as CardExtId, 'onEscape');
+    assert.equal(G.turnEconomy.woundsDrawn, 1);
+    assert.ok(G.messages![G.messages!.length - 1]!.text.startsWith('Escape effect:'));
+  });
+
+  it('T19: nobody wounded when every player is a Savior, or when the Wound pile is empty', () => {
+    const allSaviors = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: { '0': seat(THREE_BYSTANDERS), '1': seat(THREE_BYSTANDERS), '2': seat(THREE_BYSTANDERS) },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(allSaviors, CTX, 'v-wp816' as CardExtId, 'onFight');
+    assert.equal(allSaviors.piles.wounds.length, 5, 'no Wound moves');
+    const emptyPile = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: { '0': seat([]), '1': seat([]), '2': seat([]) },
+      wounds: [],
+      messages: [],
+    });
+    executeVillainAbilities(emptyPile, CTX, 'v-wp816' as CardExtId, 'onFight');
+    for (const G of [allSaviors, emptyPile]) {
+      const lastMessage = G.messages![G.messages!.length - 1]!;
+      assert.equal(lastMessage.text, 'Fight effect: no player who is not a Savior gained a Wound.');
+      assert.equal(lastMessage.outcome, 'blocked');
+    }
+  });
+
+  it('T19b: a non-Savior holding Diving Block gets the Wound first, then the undo offer', () => {
+    const DIVING_BLOCK = 'core/captain-america/diving-block#0' as CardExtId;
+    const G = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: {
+        '0': seat(THREE_BYSTANDERS),
+        '1': seat(TWO_BYSTANDERS, [], [DIVING_BLOCK]),
+        '2': seat([]),
+      },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    G.heroAbilityHooks = [
+      { cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(
+      lastMessage.text,
+      `Fight effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(['2'], ['1'])}.`,
+    );
+    assert.equal(lastMessage.outcome, 'applied');
+    const playerOneWound = G.playerZones['1']!.discard[0];
+    assert.ok(playerOneWound !== undefined, 'the Wound lands in player 1 discard before the undo');
+    assert.deepStrictEqual(G.pendingDivingBlockWounds, [{ playerID: '1', woundCardId: playerOneWound }]);
+    assert.equal(G.playerZones['2']!.discard.length, 1, 'player 2 holds a Wound');
+  });
+
+  it('T20: KO the first Bystander in pile order from each Victory Pile', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onEscape', { primitive: 'ko-bystander-each-victory-pile' })],
+      playerZones: {
+        '0': seat([VILLAIN, 'bystander-villain-deck-01', 'pile-bystander'] as CardExtId[]),
+        '1': seat(['pile-bystander'] as CardExtId[]),
+        '2': seat([OTHER_VILLAIN]),
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [VILLAIN, 'pile-bystander']);
+    assert.deepStrictEqual(G.playerZones['1']!.victory, []);
+    assert.deepStrictEqual(G.playerZones['2']!.victory, [OTHER_VILLAIN]);
+    assert.deepStrictEqual(G.ko, ['bystander-villain-deck-01', 'pile-bystander']);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, "Escape effect: KO'd a Bystander from the Victory Pile of Player 0, Player 1.");
+    assert.equal(lastMessage.outcome, 'applied');
+  });
+
+  it('T21: nothing to KO when no player has a Bystander', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onEscape', { primitive: 'ko-bystander-each-victory-pile' })],
+      playerZones: { '0': seat([VILLAIN]), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(G.ko, []);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [VILLAIN]);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Escape effect: no player had a Bystander in their Victory Pile to KO.');
+    assert.equal(lastMessage.outcome, 'blocked');
   });
 });

@@ -68,14 +68,14 @@
     },
     "ca75": {
       "masters-of-evil-wwii": {
-        "black-knight": { "ambush": ["captureBystander"] },
-        "executioner": { "ambush": ["captureBystander"] },
-        "melter-wwii": { "ambush": ["captureBystander"] },
-        "radioactive-man": { "ambush": ["captureBystander"] }
+        "black-knight": { "ambush": ["captureBystander"], "fight": ["ko-hero:current!savior"] },
+        "executioner": { "ambush": ["captureBystander"], "fight": ["draw-cards-current:1!savior"], "escape": ["ko-bystander-each-victory-pile"] },
+        "melter-wwii": { "ambush": ["captureBystander"], "fight": ["ko-cullable-each-deck-top!savior"] },
+        "radioactive-man": { "ambush": ["captureBystander"], "fight": ["gain-wound:each-non-savior"], "escape": ["gain-wound:each-non-savior"] }
       },
       "zolas-creations": {
         "doughboy": { "fight": ["koHeroCurrentPlayer"] },
-        "man-fish": { "escape": ["gainWoundEachPlayer"] }
+        "man-fish": { "fight": ["gain-wound:each-other@sewers+bridge"], "escape": ["gainWoundEachPlayer"] }
       }
     },
     "chmp": {
@@ -408,7 +408,6 @@
     { "set": "dstr", "group": "fear-lords", "card": "dspayre", "timing": "ambush", "text": "Ambush: D'Spayre enters the [keyword:Astral Plane] and captures a Bystander.", "reason": "other" },
 
     { "set": "2099", "group": "alchemax-enforcers", "card": "cyber-nostra", "timing": "fight", "text": "Fight: [keyword:Cyber-Mod][hc:tech]: KO one of your Heroes.", "reason": "conditional" },
-    { "set": "ca75", "group": "masters-of-evil-wwii", "card": "black-knight", "timing": "fight", "text": "Fight: [keyword:Savior]: KO one of your Heroes.", "reason": "conditional" },
     { "set": "ssw2", "group": "deadpools-secret-secret-wars", "card": "pink-sphinx", "timing": "fight", "text": "Fight: [keyword:Spectrum]: KO one of your Heroes.", "reason": "conditional" },
     { "set": "wtif", "group": "stranges-demons", "card": "wolf-demon", "timing": "fight", "text": "Fight: [keyword:Soulbind another Villain]: KO one of your Heroes.", "reason": "conditional" },
     { "set": "anni", "group": "timelines-of-kang", "card": "scarlet-centurion", "timing": "fight", "text": "Fight: If you played a [hc:covert] Hero this turn, KO one of your Heroes.", "reason": "conditional" },

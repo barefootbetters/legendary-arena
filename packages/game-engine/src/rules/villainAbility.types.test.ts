@@ -15,6 +15,7 @@ import {
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
   VILLAIN_DEFEAT_REQUIREMENT_KINDS,
+  VILLAIN_EFFECT_CONDITIONS,
   LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
   descriptorToLegacyKeyword,
   getVillainHooksForCard,
@@ -27,6 +28,7 @@ import type {
   VillainEffectPrimitive,
   VillainEffectDescriptor,
   VillainDefeatRequirementKind,
+  VillainEffectCondition,
 } from './villainAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 
@@ -348,7 +350,10 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // KO; the targets are the player's free interactive choice, reusing the `ko-hero` park).
   // WP-757 (D-24587) appended a twenty-sixth, `haunt-hq-hero`, at position 26 (the Haunt
   // keyword — The Fallen's Ambush moves the Villain out of the City to haunt an HQ Hero).
-  it('contains exactly the 28 canonical primitives in order', () => {
+  // WP-760 (D-24589) appended the twenty-seventh and twenty-eighth. WP-816 (D-24749)
+  // appended a twenty-ninth, `ko-bystander-each-victory-pile`, at position 29
+  // (Executioner's Escape — each player KOs the first Bystander in their Victory Pile).
+  it('contains exactly the 29 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -378,11 +383,17 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'haunt-hq-hero',
       'reveal-top-draw-if-cost-lte',
       'ko-up-to-from-discard-current',
+      'ko-bystander-each-victory-pile',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      28,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 28 entries',
+      29,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 29 entries',
+    );
+    assert.equal(
+      VILLAIN_EFFECT_PRIMITIVES[VILLAIN_EFFECT_PRIMITIVES.length - 1],
+      'ko-bystander-each-victory-pile',
+      'ko-bystander-each-victory-pile must be appended last (position 29)',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
@@ -567,5 +578,65 @@ describe('haunt-hq-hero descriptor (WP-757 / D-24587)', () => {
     const descriptor: VillainEffectDescriptor = { primitive: 'haunt-hq-hero', selector: 'cost-lte-3' };
     const deserialized = JSON.parse(JSON.stringify(descriptor)) as VillainEffectDescriptor;
     assert.deepStrictEqual(deserialized, descriptor);
+  });
+});
+
+describe('WP-816 villain-side Savior types (D-24749)', () => {
+  it('T1: VILLAIN_EFFECT_CONDITIONS is exactly the closed set [savior]', () => {
+    // why: D-24372 — a runtime assertion, not a `satisfies` pin (engine test files are
+    // not type-checked on a normal run). The VILLAIN_DEFEAT_REQUIREMENT_KINDS pin style.
+    const expectedConditions: VillainEffectCondition[] = ['savior'];
+    assert.equal(
+      VILLAIN_EFFECT_CONDITIONS.length,
+      1,
+      'VILLAIN_EFFECT_CONDITIONS must have exactly 1 entry',
+    );
+    assert.deepStrictEqual(
+      [...VILLAIN_EFFECT_CONDITIONS],
+      expectedConditions,
+      'VILLAIN_EFFECT_CONDITIONS must match the canonical conditions in order',
+    );
+    const uniqueConditions = new Set(VILLAIN_EFFECT_CONDITIONS);
+    assert.equal(
+      uniqueConditions.size,
+      VILLAIN_EFFECT_CONDITIONS.length,
+      'VILLAIN_EFFECT_CONDITIONS must have no duplicates',
+    );
+    assert.equal(
+      VILLAIN_EFFECT_CONDITIONS.includes('spectrum' as VillainEffectCondition),
+      false,
+      "VILLAIN_EFFECT_CONDITIONS must not include a phantom condition like 'spectrum'",
+    );
+  });
+
+  it('T2: ko-bystander-each-victory-pile is the 29th and last primitive', () => {
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 29);
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[28], 'ko-bystander-each-victory-pile');
+  });
+
+  it('T3: requireCondition is not part of the descriptor key; each-non-savior is keyword-less', () => {
+    // why: a Savior-gated ko-hero:current must still reverse-map to koHeroCurrentPlayer so
+    // Black Knight's KO narrates exactly as the ungated twin (D-24749).
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'ko-hero', target: 'current', requireCondition: 'savior' }),
+      'koHeroCurrentPlayer',
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'gain-wound', target: 'each-non-savior' }),
+      undefined,
+      'each-non-savior is not a legacy keyword — it must self-narrate',
+    );
+  });
+
+  it('T3b: JSON round-trips descriptors carrying requireCondition and each-non-savior', () => {
+    const gated: VillainEffectDescriptor = {
+      primitive: 'ko-hero',
+      target: 'current',
+      requireCitySpaces: ['sewers'],
+      requireCondition: 'savior',
+    };
+    const nonSavior: VillainEffectDescriptor = { primitive: 'gain-wound', target: 'each-non-savior' };
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(gated)) as VillainEffectDescriptor, gated);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(nonSavior)) as VillainEffectDescriptor, nonSavior);
   });
 });
