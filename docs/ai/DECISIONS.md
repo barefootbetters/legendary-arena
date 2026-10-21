@@ -49045,3 +49045,24 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24751 — Legendary Arena's roadmap and infra-cost actuals live in its root `dashboard.json`; the studio dashboard reads it (operator decision, no WP) (Active 2026-10-20)
+
+**Status:** Active (governance) 2026-10-20. Adds a data file and two doc lines. Nothing in this repo reads the file.
+
+**User-Visible Surface:** none yet. `dashboard.legendary-arena.com` keeps deploying from `apps/dashboard` until the cutover (bb-studio-dashboard WP-011).
+
+**Context.** D-24723 moved the operator dashboard to its own repo, now `barefootbetters/bb-studio-dashboard` (D-24723 names it by its earlier name, `barefootbetters/dashboard`). It renders each project from a `dashboard.json` the project keeps in its own repo (D-24739 §4). The dashboard's Phase 3 (its WP-009 to WP-011, its decision 2026-10-20-03) moves Legendary Arena over: WP-009 builds LA from this repo's file, WP-010 checks that build against the live site page by page, and WP-011 cuts over. Until now LA's roadmap lived in `apps/dashboard/src/data/buildRoadmap.ts` and its infra-cost actuals in `apps/dashboard/src/config/infraCostActuals.ts`.
+
+**Decision (Jeff, 2026-10-20).**
+1. **`dashboard.json` at the repo root is LA's project file** for bb-studio-dashboard (schema v1). It holds the brand, sidebar `pages`, vision, checklist and surfaces; the roadmap as `workstreams` and 18 `milestones`; the `ledger` (per-vendor monthly budgets, plus `actuals`: September's Render, Postgres, Cloudflare and Hanko figures as of 2026-09-30); and `sources` pointing at `WORK_INDEX.md` (`la-checklist`), `DECISIONS.md` (`single-file`), `STATUS.md` and git. It is bb-studio-dashboard's `fixtures/legendary-arena/dashboard.json` (barefootbetters/bb-studio-dashboard#34) copied without its `$schema` line, which resolves only inside that repo. No value was changed, because WP-010's parity check compares against the live site.
+2. **Edit the roadmap and cost actuals here.** When a roadmap milestone or a cost changes, update `dashboard.json` in the same PR (the `STATUS.md` header carries this rule). Validate with `pnpm --dir <bb-studio-dashboard checkout> validate:project <path>/dashboard.json`; it must print `valid (schema v1)`. Until bb-studio-dashboard#34 merges, `milestones[].owner` and `ledger.actuals` validate only against that PR's schema.
+3. **Two copies until the cutover.** The frozen `buildRoadmap.ts` still feeds `roadmap-schedule-nightly.yml` (the slippage watch), and the frozen `infraCostActuals.ts` still feeds the live Monetization page. Treat both as stale; `dashboard.json` is the copy to edit. Dashboard WP-011 moves the schedule watch and deletes `apps/dashboard`.
+4. **The D-24723 freeze stands** (bb-studio-dashboard decision 2026-10-15-03 records the same freeze). `apps/dashboard` takes no feature work, and a bug fix lands in both repos with the other PR noted in each. Six commits on 2026-10-19 added features there anyway: #2904, #2905, #2907, #2908, #2909 and #2910 (the GitHub Actions cost panel and its $20 budget, the Coverage page's per-set scoping, legend and filter fallback, and the Core playtest table's default). They are ported to bb-studio-dashboard in #34. Any further `apps/dashboard` edit before the cutover has to be ported there too.
+
+**Not changed.** `apps/dashboard`, `dashboard-deploy.yml`, CI, and the live deploy of `dashboard.legendary-arena.com`. No schema is vendored here and no CI job in this repo validates the file; bb-studio-dashboard's build validates it when it reads it.
+
+**Reserved by:** NUMBER-LEDGER D-24751 (#2933). Related: D-24723 (extraction and freeze), D-24739 §4 (each project keeps only a `dashboard.json`), D-24690 (one door per private site).
+
+---
+Protect this file.

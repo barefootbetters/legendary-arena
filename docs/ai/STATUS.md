@@ -2,10 +2,27 @@
 
 > Current state of the project after each Work Packet or Foundation Prompt.
 > Updated at the end of every execution session.
+>
+> When the roadmap or an infra cost changes, update the root `dashboard.json` in the same PR
+> (D-24751): its `workstreams` / `milestones` and `ledger` feed the studio dashboard.
 
 ---
 
 ## Current State
+
+### D-24751 — LA's roadmap and infra-cost actuals move to a root `dashboard.json` (operator decision, no WP) (2026-10-20)
+
+**No user-visible change yet.** `dashboard.json` is the project file bb-studio-dashboard reads to build Legendary Arena's
+dashboard (its Phase 3: WP-009 build, WP-010 parity against the live site, WP-011 cutover). `dashboard.legendary-arena.com`
+still deploys from `apps/dashboard` until WP-011.
+
+- **File.** Copied unchanged from bb-studio-dashboard#34 `fixtures/legendary-arena/dashboard.json`, minus its `$schema`
+  line: brand, pages, vision, checklist, surfaces, 4 workstreams and 18 milestones, the ledger (budgets plus September
+  actuals as of 2026-09-30) and sources. `validate:project` prints `valid (schema v1)` against #34's schema.
+- **Two copies until the cutover.** The frozen `apps/dashboard` `buildRoadmap.ts` (nightly schedule watch) and
+  `infraCostActuals.ts` (live Monetization page) are stale; edit `dashboard.json`.
+- **Freeze restated (D-24723).** Six 2026-10-19 commits (#2904, #2905, #2907 to #2910) added features to `apps/dashboard`;
+  they are ported to bb-studio-dashboard. Any further edit there before the cutover is ported too.
 
 ### WP-816 / EC-854 — Villain-side Savior (D-24749) (2026-10-20)
 
