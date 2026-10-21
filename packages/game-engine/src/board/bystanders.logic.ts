@@ -29,7 +29,8 @@ export const SAVIOR_BYSTANDER_THRESHOLD = 3;
  * Whether a Victory-Pile card id is a Bystander for Savior purposes.
  *
  * @param cardId - A card ext_id from a player's Victory Pile.
- * @returns True for a supply Bystander or a rescued villain-deck Bystander.
+ * @returns True for a supply Bystander, a rescued villain-deck Bystander, or a
+ *   defeated Killbot (a converted villain-deck Bystander keeps its id).
  */
 function isSaviorBystanderId(cardId: CardExtId): boolean {
   return cardId === BYSTANDER_EXT_ID || cardId.startsWith('bystander-villain-deck-');
@@ -38,16 +39,18 @@ function isSaviorBystanderId(cardId: CardExtId): boolean {
 /**
  * Counts the Bystanders in a Victory Pile.
  *
- * Savior / Bystander id predicate; excludes Killbots. NOT the scoring predicate
- * (`scoring/scoring.logic.ts` `isVictoryPileBystander`).
+ * Savior / Bystander id predicate. It agrees with the scoring predicate
+ * (`scoring/scoring.logic.ts` `isVictoryPileBystander`) on every Victory-Pile card,
+ * defeated Killbots included.
  *
  * @param victory - A player's Victory Pile (not mutated).
  * @returns How many of its cards are Bystanders.
  */
 // why: the hero gate's predicate verbatim (`hero/heroConditions.evaluate.ts`
 // `bystandersInVictoryAtLeast`) so hero and villain Savior never disagree in one
-// match; the T11 parity test pins the two together. Killbots counting as Bystanders
-// (rules v23 L2337-2341) is a joint follow-up for both gates.
+// match; the T11 parity test pins the two together. A defeated Killbot counts as a
+// Bystander (rules v23 L2337-2341) because it keeps its `bystander-villain-deck-NN`
+// id; the T12 test pins that for both gates, Executioner's KO and scoring.
 export function countVictoryPileBystanders(victory: readonly CardExtId[]): number {
   let count = 0;
   for (const cardId of victory) {
@@ -61,8 +64,9 @@ export function countVictoryPileBystanders(victory: readonly CardExtId[]): numbe
 /**
  * Finds the first Bystander in a Victory Pile, in array order.
  *
- * Savior / Bystander id predicate; excludes Killbots. NOT the scoring predicate
- * (`scoring/scoring.logic.ts` `isVictoryPileBystander`).
+ * Savior / Bystander id predicate. It agrees with the scoring predicate
+ * (`scoring/scoring.logic.ts` `isVictoryPileBystander`) on every Victory-Pile card,
+ * defeated Killbots included.
  *
  * @param victory - A player's Victory Pile (not mutated).
  * @returns The first Bystander's ext_id, or undefined when there is none.

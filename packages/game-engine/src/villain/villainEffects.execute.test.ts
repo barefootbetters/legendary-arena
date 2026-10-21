@@ -6081,4 +6081,66 @@ describe('WP-816 villain-side Savior (D-24749)', () => {
     assert.equal(lastMessage.text, 'Escape effect: no player had a Bystander in their Victory Pile to KO.');
     assert.equal(lastMessage.outcome, 'blocked');
   });
+
+  const KILLBOTS = [
+    'bystander-villain-deck-04',
+    'bystander-villain-deck-11',
+    'bystander-villain-deck-15',
+  ] as CardExtId[];
+
+  /**
+   * Marks the given ids as defeated Killbots, the way Replace Earth's Leaders with
+   * Killbots sets them up (typed 'villain', origin 'killbot').
+   */
+  function markKillbots(G: LegendaryGameState, killbotIds: readonly CardExtId[]): void {
+    G.villainDeckCardTypes = {};
+    G.convertedVillainOrigins = {};
+    for (const killbotId of killbotIds) {
+      G.villainDeckCardTypes[killbotId] = 'villain';
+      G.convertedVillainOrigins[killbotId] = 'killbot';
+    }
+  }
+
+  // why: rules v23 L2337-2341 — a defeated Killbot counts as a Bystander in the Victory
+  // Pile. Killbots keep their `bystander-villain-deck-NN` ids, so the Savior predicate
+  // already counts them; these pin that, so a change to Killbot ids cannot silently
+  // drop them from either Savior gate or Executioner's KO.
+  it('T22: three defeated Killbots make the current player a Savior', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', SAVIOR_DRAW)],
+      playerZones: { '0': seat([VILLAIN, ...KILLBOTS], [DECK_CARD]), '1': seat([]) },
+      messages: [],
+    });
+    markKillbots(G, KILLBOTS);
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [DECK_CARD], 'the Savior draw fires');
+  });
+
+  it('T23: each-non-savior spares a player whose Victory Pile mixes Killbots and Bystanders', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: {
+        '0': seat([KILLBOTS[0]!, 'pile-bystander', KILLBOTS[1]!] as CardExtId[]),
+        '1': seat([VILLAIN, KILLBOTS[2]!] as CardExtId[]),
+      },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    markKillbots(G, KILLBOTS);
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, '2 Killbots + 1 Bystander is a Savior');
+    assert.equal(G.playerZones['1']!.discard.length, 1, '1 Killbot is not');
+  });
+
+  it("T24: Executioner's KO takes a defeated Killbot as a Bystander", () => {
+    const G = makeG({
+      hooks: [descriptorHook('onEscape', { primitive: 'ko-bystander-each-victory-pile' })],
+      playerZones: { '0': seat([VILLAIN, KILLBOTS[0]!, 'pile-bystander'] as CardExtId[]), '1': seat([]) },
+      messages: [],
+    });
+    markKillbots(G, KILLBOTS);
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(G.ko, [KILLBOTS[0]]);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [VILLAIN, 'pile-bystander']);
+  });
 });
