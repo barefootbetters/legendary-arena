@@ -19,6 +19,7 @@ import {
   findFirstVictoryPileBystander,
 } from './bystanders.logic.js';
 import { evaluateCondition } from '../hero/heroConditions.evaluate.js';
+import { isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 
@@ -263,5 +264,48 @@ describe('WP-816 Savior helpers (D-24749)', () => {
         `hero and villain Savior must agree for Victory Pile ${JSON.stringify(victory)}`,
       );
     }
+  });
+
+  it('T12: a defeated Killbot is a Bystander to both Savior gates, Executioner and scoring', () => {
+    // why: rules v23 L2337-2341 — a defeated Killbot counts as a Bystander in the
+    // Victory Pile. Killbots keep their villain-deck Bystander ids (typed 'villain',
+    // origin 'killbot'), so every Victory-Pile card must get the same answer from the
+    // Savior predicate and the scoring predicate.
+    const killbots = [
+      'bystander-villain-deck-02',
+      'bystander-villain-deck-07',
+      'bystander-villain-deck-12',
+    ] as CardExtId[];
+    const victory = [VILLAIN, ...killbots];
+    const G = {
+      villainDeckCardTypes: {
+        [VILLAIN]: 'villain',
+        [killbots[0]!]: 'villain',
+        [killbots[1]!]: 'villain',
+        [killbots[2]!]: 'villain',
+      },
+      convertedVillainOrigins: {
+        [killbots[0]!]: 'killbot',
+        [killbots[1]!]: 'killbot',
+        [killbots[2]!]: 'killbot',
+      },
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory },
+      },
+    } as unknown as LegendaryGameState;
+    for (const cardId of victory) {
+      assert.equal(
+        countVictoryPileBystanders([cardId]) === 1,
+        isVictoryPileBystander(G, cardId),
+        `Savior and scoring must agree on ${cardId}`,
+      );
+    }
+    assert.equal(countVictoryPileBystanders(victory), 3);
+    assert.equal(
+      evaluateCondition(G, '0', { type: 'bystandersInVictoryAtLeast', value: '3' }),
+      true,
+      'three defeated Killbots pass the hero Savior gate',
+    );
+    assert.equal(findFirstVictoryPileBystander(victory), killbots[0]);
   });
 });

@@ -326,7 +326,8 @@ export function evaluateCondition(
       // why: D-24464 — Savior gates on >= N Bystanders in the Victory Pile. The
       // two-arm predicate (a supply Bystander OR a rescued villain-deck Bystander)
       // is re-implemented INLINE here — the heroCountSource.resolve.ts classifier
-      // is non-exported. A CONDITION per D-24055.
+      // is non-exported. A CONDITION per D-24055. A defeated Killbot keeps its
+      // villain-deck Bystander id, so it counts here too (rules v23 L2337-2341).
       const threshold = parseInt(condition.value, 10);
       if (Number.isNaN(threshold)) {
         return false;
