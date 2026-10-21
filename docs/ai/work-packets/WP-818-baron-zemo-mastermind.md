@@ -91,7 +91,7 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 ## Locked Values
 
 **Fight cost (`economy/economy.resolve.ts`):**
-- `const BARON_ZEMO_MASTERMIND_ID = 'ca75/baron-heinrich-zemo';` (module-private) and `export const BARON_ZEMO_NON_SAVIOR_BONUS = 9;`.
+- `const BARON_ZEMO_MASTERMIND_ID = 'ca75/baron-heinrich-zemo';` (module-private) and `export const BARON_ZEMO_NON_SAVIOR_BONUS = 9;`. **If WP-819 has executed first**, import `BARON_ZEMO_MASTERMIND_ID` from `economy/rescueOnFight.logic.ts` here and in `mastermindHandlers.ts` instead of declaring it (one home for the id; WP-819 / D-24753).
 - `function mastermindNonSaviorBonus(G: LegendaryGameState, fightingPlayerId?: string): number`:
   1. `G.selection?.mastermindId !== BARON_ZEMO_MASTERMIND_ID` → `0`;
   2. `fightingPlayerId === undefined` → `BARON_ZEMO_NON_SAVIOR_BONUS`;
@@ -102,7 +102,7 @@ If any item is false, this packet is **BLOCKED**: STOP and reconcile.
 - Callers pass the fighter: `fightMastermind.ts:155` `ctx.currentPlayer`; `ai.legalMoves.ts:1116` `activePlayer`; `uiState.build.ts:986` `ctx.currentPlayer`; `heroEffects.execute.ts:4748` `fightingPlayerId`.
 
 **Master Strike (`rules/mastermindHandlers.ts`):**
-- `const MASTERMIND_BARON_ZEMO = 'ca75/baron-heinrich-zemo';` and a new `else if (mastermindId === MASTERMIND_BARON_ZEMO) { resolveBaronZemoStrike(gameState); }` branch.
+- `const MASTERMIND_BARON_ZEMO = 'ca75/baron-heinrich-zemo';` and a new `else if (mastermindId === MASTERMIND_BARON_ZEMO) { resolveBaronZemoStrike(gameState); }` branch (if WP-819 executed first: no declaration; the branch reads `mastermindId === BARON_ZEMO_MASTERMIND_ID`, imported from `economy/rescueOnFight.logic.ts`).
 - `resolveBaronZemoStrike(gameState)`: for each sorted player, `bystander = findFirstVictoryPileBystander(zones.victory)`:
   - found → `moveCardFromZone(zones.victory, gameState.ko, bystander)`, write both arrays back; `` `[Baron Zemo Master Strike] Player ${playerId} KO'd a Bystander from their Victory Pile.` `` (default outcome, the Loki line style);
   - not found → `outcome = gainWoundToDiscard(gameState, playerId)`; `outcome !== 'no-wound'` → `` `[Baron Zemo Master Strike] Player ${playerId} had no Bystander in their Victory Pile and ${describeStrikeWound(outcome)}.` ``; else `` `[Baron Zemo Master Strike] Player ${playerId} had no Bystander in their Victory Pile and the Wound supply is empty — no effect.` ``.

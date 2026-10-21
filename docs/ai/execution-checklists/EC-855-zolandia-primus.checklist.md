@@ -5,6 +5,7 @@
 
 ## Before Starting
 - [ ] WP-816 merged; `VILLAIN_EFFECT_PRIMITIVES` length recorded (29 at draft).
+- [ ] If WP-819 executed first, `FightVillainArgs` also carries `payToRescueBystander?` and the rescue decision sits after the heal lock: keep it, and put this packet's discard + line before that decision. If WP-820 executed first, `CityRow.vue` `showRescueFight` gains `&& cell.card.fightDiscardCosts === undefined`, with a CityRow case (a Primus cell with the cue on shows no `play-city-villain-rescue`).
 - [ ] `fightVillain` step 1 still ends with the defeat-requirement check before the stage gate; `getLegalMoves` fight branch still mirrors it (~L1082-1100).
 - [ ] `enqueueEscapeProcedure` still runs before the onEscape `executeVillainAbilities` (`villainDeck.reveal.ts` ~L646 / ~L661); the opener's empty-queue branch is still `delete …; return;`.
 - [ ] `countDistinctHeroClassesYouHave` still exported and its imports do not reach `villain/`.
