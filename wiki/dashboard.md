@@ -64,6 +64,10 @@ environment enables it.
 > Until Legendary Arena's cutover to it, `apps/dashboard` takes no feature
 > work; a bug fix lands in both repos. This page describes the copy here and
 > still applies until then.
+>
+> Legendary Arena's own project file is the root [`dashboard.json`](../dashboard.json)
+> (D-24751). Edit the roadmap and infra-cost actuals there; the `apps/dashboard`
+> copies (`buildRoadmap.ts`, `infraCostActuals.ts`) are stale until the cutover.
 
 > **Before trusting any number on the live dashboard:** no site-analytics
 > platform is wired yet (Cloudflare Web Analytics / Plausible for traffic,
