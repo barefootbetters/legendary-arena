@@ -189,3 +189,22 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
     }
   });
 });
+
+describe('PendingSeatChoicePrompt — WP-817 Primus Escape discard (D-24750)', () => {
+  test('T31: the escape-effect-cost-discard kind has its own heading', () => {
+    const { submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'escape-effect-cost-discard',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: { 'player-1': { options: [{ label: 'Hero (cost 3)' }] } },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(
+      wrapper.find('.pending-seat-choice-prompt__heading').text(),
+      'A Villain escaped — choose a Hero to discard',
+    );
+  });
+});

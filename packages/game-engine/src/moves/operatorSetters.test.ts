@@ -212,6 +212,13 @@ const GATE_BLOCKERS: readonly GateBlocker[] = [
     },
     remove: (G) => { Reflect.deleteProperty(G, 'pendingEscapeProcedures'); },
   },
+  {
+    label: 'pendingEscapeEffectDiscards is non-empty',
+    apply: (G) => {
+      G.pendingEscapeEffectDiscards = [{ escapedCardId: 'primus-01', eligibleCosts: [2, 3, 5, 7] }];
+    },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingEscapeEffectDiscards'); },
+  },
 ];
 
 describe('operator setters — gate (WP-806 §D 1)', () => {

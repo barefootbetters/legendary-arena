@@ -25,7 +25,10 @@ import {
   buildMonarchsDiscardChoice,
   buildVanishingIllusionsChoice,
 } from '../moves/seatChoiceTactics.js';
-import { buildEscapeBystanderDiscardChoice } from '../villainDeck/villainEscapeProcedure.js';
+import {
+  buildEscapeBystanderDiscardChoice,
+  buildEscapeEffectCostDiscardChoice,
+} from '../villainDeck/villainEscapeProcedure.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /**
@@ -240,3 +243,25 @@ function makeCityState(
 function readAbsentSeatDefault(G: LegendaryGameState): number {
   return G.pendingSeatChoice!.defaultOptionIndex;
 }
+
+describe('WP-817 bot-ally pick for the Primus Escape discard (D-24750)', () => {
+  it('T27: discards the lowest-cost eligible card (option 1, hero-cost3)', () => {
+    const G = makeState(
+      { '0': ['hero-cost4', 'hero-cost7', 'hero-cost3'], '1': ['hero-cost4'], '2': ['hero-cost2'] },
+      {
+        cardStats: {
+          'hero-cost2': makeCardStatEntry({ cost: 2 }),
+          'hero-cost3': makeCardStatEntry({ cost: 3 }),
+          'hero-cost4': makeCardStatEntry({ cost: 4 }),
+          'hero-cost7': makeCardStatEntry({ cost: 7 }),
+        },
+      },
+    );
+    withChoice(G, buildEscapeEffectCostDiscardChoice(G, { escapedCardId: 'primus-01', eligibleCosts: [2, 3, 5, 7] }));
+    assert.deepEqual(
+      G.pendingSeatChoice!.seatPrompts['0']!.options.map((option) => option.cardId),
+      ['hero-cost7', 'hero-cost3'],
+    );
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
+  });
+});

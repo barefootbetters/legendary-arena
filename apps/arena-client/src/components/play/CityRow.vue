@@ -1,6 +1,7 @@
 <script lang="ts">
 import { defineComponent, ref, type PropType } from 'vue';
 import type {
+  UICardDisplay,
   UICityState,
   UIDecksState,
   UITurnEconomyState,
@@ -23,6 +24,12 @@ import type { SubmitMove } from './uiMoveName.types';
  * Sewers | Villain Deck`. The engine indexes the city `0..4`; cells
  * 1..5 in the rendered row map to those engine indices in left-to-right
  * order.
+ *
+ * Fight discard cost (WP-817 / D-24750): a villain whose City card carries
+ * `fightDiscardCosts` (Primus) is fought by also discarding a hand card of one
+ * of those costs. Fight is disabled with a reason when the viewer holds none;
+ * otherwise Fight / Fight-EV opens a short inline chooser and the pick is sent
+ * as `discardCardId`. The engine re-validates the pick.
  *
  * Cost gating: villains in the city render disabled when
  * `economy.availableAttack < cell.card.fightCost` — the engine's projected
@@ -106,10 +113,67 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    // why: WP-817 / D-24750 — the viewer's own hand (owner-only UIPlayerState
+    // handCards / handDisplay / handCosts, index-aligned), so a Primus fight can
+    // offer only the cards the engine will accept. Eligibility reads handCosts (the
+    // engine cost), never display.cost, which is null for Officers and Sidekicks.
+    viewerHandCards: {
+      type: Array as PropType<string[]>,
+      required: false,
+      default: () => [],
+    },
+    viewerHandDisplay: {
+      type: Array as PropType<UICardDisplay[]>,
+      required: false,
+      default: () => [],
+    },
+    viewerHandCosts: {
+      type: Array as PropType<(number | null)[]>,
+      required: false,
+      default: () => [],
+    },
   },
   setup(props) {
     function buildCells(): CityCell[] {
       return useCityRow(props.city, props.decks).cells;
+    }
+
+    /**
+     * Formats a cost list for the gate reason: `2`, `2 or 3`, `2, 3, 5, or 7`.
+     *
+     * @param costs - The eligible costs, in order.
+     * @returns The English list with `or` before the last cost.
+     */
+    // why: a local copy of the engine's formatEligibleCostList — the client imports
+    // only the engine's runtime-safe surface, never engine internals (Layer Boundary).
+    function formatCostList(costs: number[]): string {
+      if (costs.length <= 1) {
+        return costs.map((cost) => String(cost)).join('');
+      }
+      if (costs.length === 2) {
+        return `${costs[0]} or ${costs[1]}`;
+      }
+      const leadingCosts = costs.slice(0, -1).map((cost) => String(cost)).join(', ');
+      return `${leadingCosts}, or ${costs[costs.length - 1]}`;
+    }
+
+    /**
+     * Lists the viewer's hand cards that may pay a fight discard cost, in hand order.
+     *
+     * @param fightDiscardCosts - The fought villain's eligible costs.
+     * @returns One entry per eligible hand card: its id and display name.
+     */
+    function eligibleDiscardCards(fightDiscardCosts: number[]): { cardId: string; name: string }[] {
+      const eligibleCards: { cardId: string; name: string }[] = [];
+      for (let handIndex = 0; handIndex < props.viewerHandCards.length; handIndex++) {
+        const cost = props.viewerHandCosts[handIndex];
+        if (typeof cost !== 'number' || !fightDiscardCosts.includes(cost)) {
+          continue;
+        }
+        const cardId = props.viewerHandCards[handIndex]!;
+        eligibleCards.push({ cardId, name: props.viewerHandDisplay[handIndex]?.name ?? cardId });
+      }
+      return eligibleCards;
     }
 
     function gateForCell(cell: CityCell): GatingResult {
@@ -138,6 +202,18 @@ export default defineComponent({
         cell.card.fightCost,
         citySpaceNameForIndex(cell.cityIndex),
       );
+      if (!cost.allowed) {
+        return cost;
+      }
+      // why: WP-817 / D-24750 — the fight discard cost gates last (stage → heal →
+      // cost → discard): with no eligible hand card the engine would refuse the fight.
+      const fightDiscardCosts = cell.card.fightDiscardCosts;
+      if (fightDiscardCosts !== undefined && eligibleDiscardCards(fightDiscardCosts).length === 0) {
+        return {
+          allowed: false,
+          reason: `Needs a card that costs ${formatCostList(fightDiscardCosts)} to discard`,
+        };
+      }
       return cost;
     }
 
@@ -176,8 +252,52 @@ export default defineComponent({
       return cell.card.fightCost !== cell.card.display.cost;
     }
 
+    // why: WP-817 / D-24750 — the open discard chooser (one at a time): the City
+    // index being fought and whether the Excessive Violence button opened it.
+    const discardChooser = ref<{ cityIndex: number; useExcessiveViolence: boolean } | null>(null);
+
+    /**
+     * Returns the fight discard costs of the villain at a City index, if any.
+     *
+     * @param cityIndex - The engine City index.
+     * @returns The eligible costs, or undefined when the villain has none.
+     */
+    function fightDiscardCostsAt(cityIndex: number): number[] | undefined {
+      return props.city.spaces[cityIndex]?.fightDiscardCosts;
+    }
+
     function onFight(cityIndex: number): void {
+      if (fightDiscardCostsAt(cityIndex) !== undefined) {
+        discardChooser.value = { cityIndex, useExcessiveViolence: false };
+        return;
+      }
       props.submitMove('fightVillain', { cityIndex });
+    }
+
+    function onPickDiscard(cardId: string): void {
+      const chooser = discardChooser.value;
+      if (chooser === null) {
+        return;
+      }
+      discardChooser.value = null;
+      // why: the client submits intent; the engine re-validates the card and its cost.
+      if (chooser.useExcessiveViolence) {
+        props.submitMove('fightVillain', {
+          cityIndex: chooser.cityIndex,
+          discardCardId: cardId,
+          useExcessiveViolence: true,
+        });
+      } else {
+        props.submitMove('fightVillain', { cityIndex: chooser.cityIndex, discardCardId: cardId });
+      }
+    }
+
+    function onCancelDiscard(): void {
+      discardChooser.value = null;
+    }
+
+    function isDiscardChooserOpen(cityIndex: number): boolean {
+      return discardChooser.value !== null && discardChooser.value.cityIndex === cityIndex;
     }
 
     function showEvFight(cell: CityCell): boolean {
@@ -205,6 +325,10 @@ export default defineComponent({
       // enrolled EV abilities, or silently fights normally if it cannot. Once-per-
       // turn is enforced engine-side: after the EV fight the availability field
       // goes absent and this affordance disappears on the next projection.
+      if (fightDiscardCostsAt(cityIndex) !== undefined) {
+        discardChooser.value = { cityIndex, useExcessiveViolence: true };
+        return;
+      }
       props.submitMove('fightVillain', { cityIndex, useExcessiveViolence: true });
     }
 
@@ -219,6 +343,11 @@ export default defineComponent({
       // button would: the same gateForCell, looked up by engine City index.
       for (const cell of buildCells()) {
         if (cell.kind === 'slot' && cell.cityIndex === cityIndex) {
+          // why: WP-817 / D-24750 — a discard-cost villain needs a card picked, so the
+          // slash gesture never fights it (click only; the chooser never opens mid-stroke).
+          if (cell.card !== null && cell.card.fightDiscardCosts !== undefined) {
+            return false;
+          }
           return cell.card !== null && gateForCell(cell).allowed;
         }
       }
@@ -255,6 +384,10 @@ export default defineComponent({
       onFight,
       showEvFight,
       onFightEV,
+      onPickDiscard,
+      onCancelDiscard,
+      isDiscardChooserOpen,
+      eligibleDiscardCards,
       hasDarkPortal,
       cityRowEl,
       isGestureEnabled,
@@ -391,6 +524,34 @@ export default defineComponent({
             <span class="city-space__ev-fight-label">Excessive Violence</span>
             <span class="city-space__ev-fight-cost">+1</span>
           </button>
+          <!-- why: WP-817 / D-24750 — the discard chooser for a fight discard cost
+               (Primus): one button per eligible hand card, plus Cancel. Picking one
+               submits the fight with that card; the engine re-validates it. -->
+          <div
+            v-if="cell.card !== null && cell.card.fightDiscardCosts !== undefined && isDiscardChooserOpen(cell.cityIndex)"
+            class="city-space__discard-chooser"
+            data-testid="play-city-discard-chooser"
+            :data-city-index="cell.cityIndex"
+            role="group"
+            aria-label="Choose a card to discard"
+          >
+            <span class="city-space__discard-chooser-title">Discard to fight:</span>
+            <button
+              v-for="option in eligibleDiscardCards(cell.card.fightDiscardCosts)"
+              :key="option.cardId"
+              type="button"
+              class="city-space__discard-option"
+              data-testid="play-city-discard-option"
+              :data-card-id="option.cardId"
+              @click="onPickDiscard(option.cardId)"
+            >{{ option.name }}</button>
+            <button
+              type="button"
+              class="city-space__discard-cancel"
+              data-testid="play-city-discard-cancel"
+              @click="onCancelDiscard()"
+            >Cancel</button>
+          </div>
           <!-- why: WP-505 + Jeff feedback — captured cards render to the SIDE of the
                villain tile (was underneath), saving vertical space. Face-up captured
                heroes (attachedHeroDisplay) show as card art; face-down captured
@@ -736,5 +897,39 @@ export default defineComponent({
   border-radius: 0.25rem;
   background: rgba(0, 0, 0, 0.28);
   font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-817 / D-24750 — the Primus discard chooser: a compact stack under the
+   villain tile, so it never widens the space (the scale-to-fit board, D-24505). */
+.city-space__discard-chooser {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  margin-top: 0.2rem;
+  max-width: 100%;
+}
+
+.city-space__discard-chooser-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.city-space__discard-option,
+.city-space__discard-cancel {
+  padding: 0.15rem 0.35rem;
+  border: 1px solid currentColor;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+  font-size: 0.62rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-space__discard-option {
+  font-weight: 700;
 }
 </style>

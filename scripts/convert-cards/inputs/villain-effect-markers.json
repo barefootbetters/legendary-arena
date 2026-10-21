@@ -74,8 +74,10 @@
         "radioactive-man": { "ambush": ["captureBystander"], "fight": ["gain-wound:each-non-savior"], "escape": ["gain-wound:each-non-savior"] }
       },
       "zolas-creations": {
+        "captain-zolandia": { "fight": ["gain-recruit-current-per-hero-class"] },
         "doughboy": { "fight": ["koHeroCurrentPlayer"] },
-        "man-fish": { "fight": ["gain-wound:each-other@sewers+bridge"], "escape": ["gainWoundEachPlayer"] }
+        "man-fish": { "fight": ["gain-wound:each-other@sewers+bridge"], "escape": ["gainWoundEachPlayer"] },
+        "primus": { "escape": ["discard-hero-each-player-by-cost:2+3+5+7"] }
       }
     },
     "chmp": {

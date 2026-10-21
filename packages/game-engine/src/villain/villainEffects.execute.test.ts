@@ -6144,3 +6144,106 @@ describe('WP-816 villain-side Savior (D-24749)', () => {
     assert.deepStrictEqual(G.playerZones['0']!.victory, [VILLAIN, 'pile-bystander']);
   });
 });
+
+describe('WP-817 Captain Zolandia + Primus handlers (D-24750)', () => {
+  const ZOLANDIA = 'ca75-villain-zolas-creations-captain-zolandia-00' as CardExtId;
+  const PRIMUS = 'primus-01' as CardExtId;
+  const shuffleContext: ShuffleProvider = { random: makeMockCtx().random };
+  const CLASS_TRAITS = {
+    'tech-a': { heroClass: 'tech', team: null },
+    'tech-b': { heroClass: 'tech', team: null },
+    'ranged-a': { heroClass: 'ranged', team: null },
+    'strength-a': { heroClass: 'strength', team: null },
+    'starting-shield-agent': { heroClass: null, team: null },
+  };
+
+  /**
+   * Builds a one-descriptor hook for a WP-817 test.
+   */
+  function descriptorHook(
+    cardId: CardExtId,
+    timing: 'onFight' | 'onEscape',
+    descriptor: VillainEffectDescriptor,
+  ): VillainAbilityHook {
+    return { cardId, timing, keywords: [], effects: [descriptor] };
+  }
+
+  it('T19: Zolandia adds +1 recruit per distinct Hero Class across hand and play', () => {
+    const G = makeG({
+      hooks: [descriptorHook(ZOLANDIA, 'onFight', { primitive: 'gain-recruit-current-per-hero-class' })],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: ['tech-a', 'ranged-a'] as CardExtId[],
+          discard: [],
+          inPlay: ['strength-a', 'tech-b'] as CardExtId[],
+          victory: [],
+        },
+      },
+      cardTraits: CLASS_TRAITS,
+      messages: [],
+    });
+    G.turnEconomy.recruit = 1;
+    executeVillainAbilities(G, CTX, ZOLANDIA, 'onFight', shuffleContext);
+    assert.equal(G.turnEconomy.recruit, 4, '1 + 3 classes (tech, ranged, strength)');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Fight effect: gained +3 recruit for the 3 Hero Class(es) you have.');
+    assert.equal(lastMessage.outcome, 'applied');
+  });
+
+  it('T20: with no Hero Class in hand or play, nothing is gained and the line is blocked', () => {
+    const G = makeG({
+      hooks: [descriptorHook(ZOLANDIA, 'onFight', { primitive: 'gain-recruit-current-per-hero-class' })],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: ['starting-shield-agent', 'pile-wound'] as CardExtId[],
+          discard: [],
+          inPlay: ['starting-shield-agent'] as CardExtId[],
+          victory: [],
+        },
+      },
+      cardTraits: CLASS_TRAITS,
+      messages: [],
+    });
+    G.turnEconomy.recruit = 2;
+    executeVillainAbilities(G, CTX, ZOLANDIA, 'onFight', shuffleContext);
+    assert.equal(G.turnEconomy.recruit, 2, 'recruit unchanged');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Fight effect: you have no Hero Classes in hand or play, so no recruit was gained.');
+    assert.equal(lastMessage.outcome, 'blocked');
+  });
+
+  it('T21: Primus Escape records the owed discard and touches no hand', () => {
+    const G = makeG({
+      hooks: [descriptorHook(PRIMUS, 'onEscape', {
+        primitive: 'discard-hero-each-player-by-cost',
+        eligibleCosts: [2, 3, 5, 7],
+      })],
+      playerZones: {
+        '0': { deck: [], hand: ['tech-a'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: ['ranged-a'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, PRIMUS, 'onEscape', shuffleContext);
+    assert.deepStrictEqual(G.pendingEscapeEffectDiscards, [{ escapedCardId: PRIMUS, eligibleCosts: [2, 3, 5, 7] }]);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Escape effect: each player must discard a Hero that costs 2, 3, 5, or 7.');
+    assert.equal(lastMessage.outcome, 'applied');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['tech-a']);
+    assert.deepStrictEqual(G.playerZones['1']!.hand, ['ranged-a']);
+  });
+
+  it('T22: a descriptor without eligibleCosts creates no queue and logs a blocked line', () => {
+    const G = makeG({
+      hooks: [descriptorHook(PRIMUS, 'onEscape', { primitive: 'discard-hero-each-player-by-cost' })],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, PRIMUS, 'onEscape', shuffleContext);
+    assert.equal(G.pendingEscapeEffectDiscards, undefined);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Escape effect: no discard costs were given; no effect.');
+    assert.equal(lastMessage.outcome, 'blocked');
+  });
+});

@@ -199,6 +199,7 @@ export type {
   VillainEffectKeyword,
   VillainDefeatRequirement,
   VillainDefeatRequirementKind,
+  VillainFightDiscardCost,
 } from './rules/villainAbility.types.js';
 export {
   VILLAIN_ABILITY_TIMINGS,
@@ -414,6 +415,7 @@ import type { HeroKeyword } from './rules/heroKeywords.js';
 import type {
   VillainAbilityHook,
   VillainDefeatRequirement,
+  VillainFightDiscardCost,
 } from './rules/villainAbility.types.js';
 import type { NotableGameEvent } from './events/notableEvents.types.js';
 // why: WP-815 / D-24747 — G.cardAbomination values are the closed AbominationKind
@@ -1532,6 +1534,23 @@ export interface PendingEscapeProcedure {
 }
 
 /**
+ * An Escape-effect discard every player still owes (WP-817 / D-24750).
+ *
+ * Primus's Escape ("each player discards a Hero that costs 2, 3, 5, or 7") is a
+ * multi-seat choice, which the onEscape executor cannot park (it has no `events`).
+ * The handler records it here; the escape opener drains this FIFO after every owed
+ * escape procedure, one entry at a time, as an `escape-effect-cost-discard` seat
+ * choice. Runtime-only, never persisted; lazily initialized at the park site and
+ * deleted when it drains.
+ */
+export interface PendingEscapeEffectDiscard {
+  /** The escaped Villain whose Escape effect owes the discard. */
+  escapedCardId: CardExtId;
+  /** The costs an eligible Hero may have (strictly ascending). */
+  eligibleCosts: number[];
+}
+
+/**
  * Pending give-HQ-Hero player choice state (WP-532 / D-24343).
  *
  * Created when the `give-hq-hero-each-player` villain-effect handler (Paibok the
@@ -2280,6 +2299,14 @@ export interface LegendaryGameState {
   // not re-pin. Engine-internal: not projected to UIState.
   /** FIFO queue of escape procedures (HQ KO, Bystander discard) owed by escaped Villains (WP-793). */
   pendingEscapeProcedures?: PendingEscapeProcedure[] | undefined;
+  // why: WP-817 / D-24750 — Escape effects that need a multi-seat choice (Primus's
+  // cost-filtered every-player discard) are recorded here by the onEscape handler and
+  // opened by the same escape opener AFTER pendingEscapeProcedures drains. Optional,
+  // **lazily initialized at the park site, never in Game.setup**, and deleted when
+  // drained, so a match without Primus never creates it and the hash oracles do not
+  // re-pin. Engine-internal: not projected to UIState.
+  /** FIFO queue of Escape-effect discards every player still owes (WP-817). */
+  pendingEscapeEffectDiscards?: PendingEscapeEffectDiscard[] | undefined;
   // why: WP-532 / D-24343 — the current (fighting) player's pending give-HQ-Hero pick
   // (Paibok Fight). Optional so existing test-state literals need no update; **lazily
   // initialized at the park site, never in Game.setup** — an undefined field is omitted
@@ -2686,6 +2713,16 @@ export interface LegendaryGameState {
   // without these villains keep a byte-identical G shape (determinism).
   /** Per-villain defeat requirements. Built at setup, read-only; absent when none. */
   villainDefeatRequirements?: Record<CardExtId, VillainDefeatRequirement>;
+
+  // why: WP-817 / D-24750 — per-villain-instance fight discard cost ("To fight
+  // Primus, you must also discard a card that costs 2, 3, 5, or 7"). A sibling of
+  // villainDefeatRequirements: a fight precondition read by the fightVillain gate,
+  // getLegalMoves and the UIState City projection. Built once at setup from the
+  // [discard-to-fight:cost:<c>[+<c>…]] marker, keyed by copy-suffixed instance
+  // ext_id, never written by a move. OMITTED ENTIRELY when no marked villain is in
+  // the match, so every other match keeps a byte-identical G shape (determinism).
+  /** Per-villain fight discard costs. Built at setup, read-only; absent when none. */
+  villainFightDiscardCosts?: Record<CardExtId, VillainFightDiscardCost>;
 
   // why: WP-760 / D-24589 — per-villain-instance Blood Frenzy flag ("+1 Attack for
   // each different Victory Point value among the cards in your Victory Pile"; The

@@ -353,7 +353,10 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // WP-760 (D-24589) appended the twenty-seventh and twenty-eighth. WP-816 (D-24749)
   // appended a twenty-ninth, `ko-bystander-each-victory-pile`, at position 29
   // (Executioner's Escape — each player KOs the first Bystander in their Victory Pile).
-  it('contains exactly the 29 canonical primitives in order', () => {
+  // WP-817 (D-24750) appended the thirtieth and thirty-first,
+  // `gain-recruit-current-per-hero-class` (Captain Zolandia's Fight) and
+  // `discard-hero-each-player-by-cost` (Primus's Escape).
+  it('contains exactly the 31 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -384,16 +387,18 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'reveal-top-draw-if-cost-lte',
       'ko-up-to-from-discard-current',
       'ko-bystander-each-victory-pile',
+      'gain-recruit-current-per-hero-class',
+      'discard-hero-each-player-by-cost',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      29,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 29 entries',
+      31,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 31 entries',
     );
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES[VILLAIN_EFFECT_PRIMITIVES.length - 1],
-      'ko-bystander-each-victory-pile',
-      'ko-bystander-each-victory-pile must be appended last (position 29)',
+      'discard-hero-each-player-by-cost',
+      'discard-hero-each-player-by-cost must be appended last (position 31)',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
@@ -609,8 +614,9 @@ describe('WP-816 villain-side Savior types (D-24749)', () => {
     );
   });
 
-  it('T2: ko-bystander-each-victory-pile is the 29th and last primitive', () => {
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 29);
+  it('T2: ko-bystander-each-victory-pile is the 29th primitive', () => {
+    // why: WP-817 (D-24750) appended positions 30-31 after it, so the total moved 29 → 31.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 31);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[28], 'ko-bystander-each-victory-pile');
   });
 
@@ -638,5 +644,29 @@ describe('WP-816 villain-side Savior types (D-24749)', () => {
     const nonSavior: VillainEffectDescriptor = { primitive: 'gain-wound', target: 'each-non-savior' };
     assert.deepStrictEqual(JSON.parse(JSON.stringify(gated)) as VillainEffectDescriptor, gated);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(nonSavior)) as VillainEffectDescriptor, nonSavior);
+  });
+});
+
+describe('WP-817 Captain Zolandia + Primus types (D-24750)', () => {
+  it('T1: the two new primitives sit at positions 30 and 31', () => {
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 31);
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[29], 'gain-recruit-current-per-hero-class');
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[30], 'discard-hero-each-player-by-cost');
+  });
+
+  it('T2: both new descriptors are keyword-less and eligibleCosts stays out of the key', () => {
+    const zolandia: VillainEffectDescriptor = { primitive: 'gain-recruit-current-per-hero-class' };
+    const primus: VillainEffectDescriptor = {
+      primitive: 'discard-hero-each-player-by-cost',
+      eligibleCosts: [2, 3, 5, 7],
+    };
+    assert.equal(descriptorToLegacyKeyword(zolandia), undefined);
+    assert.equal(descriptorToLegacyKeyword(primus), undefined);
+    // why: a legacy descriptor carrying eligibleCosts must still reverse-map, which
+    // proves eligibleCosts is not part of descriptorKey.
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'gain-wound', target: 'each', eligibleCosts: [2] }),
+      'gainWoundEachPlayer',
+    );
   });
 });

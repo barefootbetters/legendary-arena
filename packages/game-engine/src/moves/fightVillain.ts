@@ -14,6 +14,7 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
@@ -28,7 +29,12 @@ import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
+  getFightDiscardCost,
+  isHandCardCostOneOf,
 } from './villainDefeatRequirement.logic.js';
+// why: WP-817 / D-24750 — Primus's fight discard cost goes through the one card-effect
+// hand→discard chokepoint, so return-on-discard and the discarded-this-turn counter fire.
+import { discardFromHand } from './discardFromHand.js';
 import {
   executeVillainAbilities,
   resolveEffectResultNames,
@@ -97,6 +103,12 @@ interface FightVillainArgs {
    * (validation-phase silent decline; moves never throw).
    */
   useExcessiveViolence?: boolean;
+  /**
+   * WP-817 / D-24750 — the hand card discarded to pay the fought villain's fight discard
+   * cost (Primus: "you must also discard a card that costs 2, 3, 5, or 7"). Required only
+   * when the fought villain has a fight discard cost; ignored otherwise.
+   */
+  discardCardId?: CardExtId;
 }
 
 /**
@@ -110,7 +122,7 @@ interface FightVillainArgs {
  */
 export function fightVillain(
   { G, ...context }: MoveContext,
-  { cityIndex, useExcessiveViolence }: FightVillainArgs,
+  { cityIndex, useExcessiveViolence, discardCardId }: FightVillainArgs,
 ): void {
   // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
   // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
@@ -181,6 +193,25 @@ export function fightVillain(
     !playerMeetsDefeatRequirement(G, ctx.currentPlayer, defeatRequirement)
   ) {
     return;
+  }
+
+  // why: WP-817 / D-24750 — a fight discard cost is a D-24185 card-specific pre-commit
+  // precondition, extended from a played card to a fought villain: the move argument
+  // names the card, and the move refuses silently, before any G write, unless that card
+  // is in hand and costs one of the listed costs. Paying it in the same move as the fight
+  // keeps the two atomic, so no pending discard can be stranded by a later effect.
+  const fightDiscardCost = getFightDiscardCost(G, cardId);
+  if (fightDiscardCost !== null) {
+    if (typeof discardCardId !== 'string' || discardCardId.length === 0) {
+      return;
+    }
+    const currentHand = G.playerZones[ctx.currentPlayer]?.hand ?? [];
+    if (!currentHand.includes(discardCardId)) {
+      return;
+    }
+    if (!isHandCardCostOneOf(G, discardCardId, fightDiscardCost.eligibleCosts)) {
+      return;
+    }
   }
 
   // Step 2: Stage gate (non-core move, internal gating)
@@ -258,6 +289,18 @@ export function fightVillain(
   // woundsDrawn), so running spendAttack + hasActedThisTurn AFTER the core is
   // byte-identical to the prior inline order — the unmodified fightVillain tests
   // are the oracle.
+  // why: WP-817 / D-24750 — pay the fight discard cost first ("to fight Primus, you must
+  // also discard …"), so the log reads discard then defeat. Only this move pays it; the
+  // shared defeat core (Silent Sniper, defeat choices) never does. Step 1 already proved
+  // discardCardId is a string in hand whenever a cost exists.
+  if (fightDiscardCost !== null && typeof discardCardId === 'string') {
+    discardFromHand(G, ctx.currentPlayer, discardCardId);
+    pushLog(
+      G,
+      `Player ${ctx.currentPlayer} discarded ${formatCardRef(G.cardDisplayData, discardCardId)} to fight ${formatCardRef(G.cardDisplayData, cardId)}.`,
+      'applied',
+    );
+  }
   defeatCityVillainCore(G, ctx, cityIndex, { random });
   // why: WP-736 / D-24556 / D-24557 — Excessive Violence opt-in overspend, evaluated on the
   // PRE-spend economy: the caller asked for it AND one extra [attack] beyond the fight cost is

@@ -230,6 +230,38 @@ function parsePositiveInteger(token: string): number | null {
 }
 
 /**
+ * Parses a `+`-joined cost list (`2+3+5+7`) into strictly ascending non-negative
+ * integers, or null when malformed.
+ *
+ * Each token must be `0` or a positive decimal integer with no sign or leading
+ * zero; the list must hold at least one token and be strictly ascending (a
+ * duplicate or a descent is rejected).
+ *
+ * @param token - The raw cost-list token (the text after the primitive's `:`).
+ * @returns The parsed costs, or null.
+ */
+// why: D-24750 — the same cost-list grammar as the `[discard-to-fight:cost:…]`
+// marker parser in villainDefeatRequirement.setup.ts (a second copy, kept local per
+// the duplicate-first rule). Strict and canonical so two spellings of one cost set
+// can never produce two descriptors.
+function parseEligibleCostList(token: string): number[] | null {
+  const costTokens = token.split('+');
+  const costs: number[] = [];
+  for (const costToken of costTokens) {
+    if (!/^(0|[1-9][0-9]*)$/.test(costToken)) {
+      return null;
+    }
+    const cost = Number.parseInt(costToken, 10);
+    const previousCost = costs[costs.length - 1];
+    if (previousCost !== undefined && cost <= previousCost) {
+      return null;
+    }
+    costs.push(cost);
+  }
+  return costs;
+}
+
+/**
  * Parses the shared `<kind>:<value>` hero-trait predicate tail used by
  * `reveal-or-wound`, `ko-heroes-current-by-trait`, and
  * `rescue-bystanders-current-by-trait-count` (D-24281 / D-24290), or null when
@@ -446,8 +478,10 @@ function parseLocationGatedEffect(
  *   - `give-hq-hero-by-trait-to-current:<kind>:<value>`  (kind `team` | `hc`; D-24335)
  *   - `capture-bystander` | `capture-bystander:<N>`  (N a rescue count; D-24295)
  *   - `gain-recruit-current` | `gain-recruit-current:<N>`  (N a recruit count, default 1; D-24350)
+ *   - `discard-hero-each-player-by-cost:<c>[+<c>…]`  (strictly ascending costs; D-24750)
  *   - `hero-deck-top-to-escape` | `gain-officer-current` |
- *     `ko-bystander-each-victory-pile` (D-24749)  (no params)
+ *     `ko-bystander-each-victory-pile` (D-24749) |
+ *     `gain-recruit-current-per-hero-class` (D-24750)  (no params)
  *
  * @param value - The ungated marker value (the text inside `[effect:…]` minus
  *   any `@<space>` suffix).
@@ -781,6 +815,20 @@ function parseUngatedEffect(
       return { primitive: 'gain-recruit-current', magnitude };
     }
     return null;
+  }
+  if (primitiveToken === 'discard-hero-each-player-by-cost') {
+    // why: D-24750 — grammar `discard-hero-each-player-by-cost:<c>[+<c>…]` (Primus:
+    // `:2+3+5+7`). Exactly 2 colon-parts; the cost list is required (no meaningful
+    // default) and must be strictly ascending. Anything else returns null
+    // (→ unresolvedMarkers).
+    if (parts.length !== 2) {
+      return null;
+    }
+    const eligibleCosts = parseEligibleCostList(parts[1]!);
+    if (eligibleCosts === null) {
+      return null;
+    }
+    return { primitive: 'discard-hero-each-player-by-cost', eligibleCosts };
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params; reject any trailing colon-separated tokens so a

@@ -606,6 +606,9 @@ export default defineComponent({
             :dark-portal-indices="snapshot.scheme.darkPortals?.citySpaceIndices ?? []"
             :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
             :submit-move="submitMove"
+            :viewer-hand-cards="viewer?.handCards ?? []"
+            :viewer-hand-display="viewer?.handDisplay ?? []"
+            :viewer-hand-costs="viewer?.handCosts ?? []"
           />
         </section>
         <section class="play-mobile__band play-mobile__band--scroll-x">

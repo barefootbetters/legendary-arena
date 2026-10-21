@@ -56,8 +56,10 @@ import {
 // bodies, never at module top level), so ESM resolves both bindings by call time.
 import {
   applyEscapeBystanderDiscard,
+  applyEscapeEffectCostDiscard,
   applyEscapeHqKo,
   ESCAPE_BYSTANDER_DISCARD_KIND,
+  ESCAPE_EFFECT_COST_DISCARD_KIND,
   ESCAPE_HQ_KO_KIND,
 } from '../villainDeck/villainEscapeProcedure.js';
 // why: WP-793 / D-24656 — a non-active seat's return-on-discard apply. resolveReturnOnDiscard
@@ -453,6 +455,12 @@ function applySeatChoiceByKind(
   }
   if (choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND) {
     applyEscapeBystanderDiscard(G, choice);
+    return;
+  }
+  // why: WP-817 / D-24750 — the owed Escape-effect discard (Primus), the cost-filtered
+  // sibling of the Bystander discard; applied atomically through discardFromHand.
+  if (choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND) {
+    applyEscapeEffectCostDiscard(G, choice);
     return;
   }
   if (choice.kind === RETURN_ON_DISCARD_SEAT_CHOICE_KIND) {
