@@ -164,6 +164,9 @@ function isLockedEffectKeyword(keyword) {
 // `reveal-top-draw-if-cost-lte` and `ko-up-to-from-discard-current` (`:<N>`) appended by
 // WP-760 (D-24589 — The Fallen's Patriarch and Salomé Fights; the count validates via
 // their own `:<N>` branch below).
+// `ko-bystander-each-victory-pile` (no-param) appended at position 29 by WP-816 (D-24749 —
+// Executioner's Escape "KO a Bystander from each player's Victory Pile"; validates via the
+// terminal no-param `parts.length === 1` branch).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -193,7 +196,16 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'haunt-hq-hero',
   'reveal-top-draw-if-cost-lte',
   'ko-up-to-from-discard-current',
+  'ko-bystander-each-victory-pile',
 ];
+
+// why: WP-816 / D-24749 — hand-synced local copy of the engine's VILLAIN_EFFECT_CONDITIONS
+// (packages/game-engine/src/rules/villainAbility.types.ts). Same no-import-from-packages
+// discipline + loud-fail-on-drift posture as the vocabularies above: the `!<condition>`
+// marker suffix validates against this list (case-sensitive), so a mistyped condition in
+// the marker map is rejected, and a new engine condition breaks this script until it is
+// appended here too.
+const VILLAIN_EFFECT_CONDITIONS = ['savior'];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
 // (packages/game-engine/src/board/citySpaceNames.ts). Same no-import-from-packages
@@ -221,7 +233,7 @@ function isValidCityGateSuffix(spacesToken) {
 
 /**
  * Returns true when a token is a well-formed parameterized effect token
- * `<primitive>[:<param>...]`, mirroring the engine parser's grammar
+ * `<primitive>[:<param>...][@<space>[+<space>...]][!<condition>]`, mirroring the engine parser's grammar
  * (parseParameterizedEffect in setup/villainAbility.setup.ts). Forward-compatible:
  * no curated map entry uses this grammar yet, so the emitter output is unchanged,
  * but a future magnitude (e.g. ko-hero:each:3) validates without a vocabulary
@@ -231,11 +243,17 @@ function isValidCityGateSuffix(spacesToken) {
  * @returns {boolean} True when the token is a valid parameterized effect.
  */
 function isValidParameterizedEffectToken(token) {
-  // why: D-24295 — strip the universal `@<space>[+<space>…]` location-gate suffix
-  // FIRST (mirrors the engine parser's parseParameterizedEffect). Reject more than
-  // one `@`; validate the suffix against CITY_SPACE_NAMES. The remaining left side
-  // parses by the primitive grammar below.
-  const gateSplit = token.split('@');
+  // why: D-24749 — split the `!<condition>` suffix FIRST so it is always last (mirrors
+  // the engine parser's parseParameterizedEffect). Reject more than one `!` and any
+  // condition outside VILLAIN_EFFECT_CONDITIONS (case-sensitive, empty included).
+  const conditionSplit = token.split('!');
+  if (conditionSplit.length > 2) return false;
+  if (conditionSplit.length === 2 && !VILLAIN_EFFECT_CONDITIONS.includes(conditionSplit[1])) return false;
+  // why: D-24295 — then strip the universal `@<space>[+<space>…]` location-gate suffix
+  // (mirrors the engine parser's parseLocationGatedEffect). Reject more than one `@`;
+  // validate the suffix against CITY_SPACE_NAMES. The remaining left side parses by the
+  // primitive grammar below.
+  const gateSplit = conditionSplit[0].split('@');
   if (gateSplit.length > 2) return false;
   if (gateSplit.length === 2 && !isValidCityGateSuffix(gateSplit[1])) return false;
   const parts = gateSplit[0].split(':');
@@ -266,6 +284,9 @@ function isValidParameterizedEffectToken(token) {
     // integer magnitude. Mirrors the engine parser's each-other branch.
     if (parts.length === 2 && parts[1] === 'each-other') return true;
     if (parts.length === 3 && parts[1] === 'each-other' && /^[1-9][0-9]*$/.test(parts[2])) return true;
+    // why: D-24749 — gain-wound:each-non-savior (Radioactive Man), exactly 2 tokens, no
+    // magnitude. Mirrors the engine parser's each-non-savior branch.
+    if (parts.length === 2 && parts[1] === 'each-non-savior') return true;
     return false;
   }
   if (primitive === 'capture-bystander') {

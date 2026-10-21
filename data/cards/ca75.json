@@ -725,7 +725,7 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-zolas-creations-man-fish.webp",
           "abilities": [
             "[keyword:Abomination]",
-            "Fight: If you fought Man-Fish in the Sewers or Bridge, then each other player gains a Wound.",
+            "Fight: If you fought Man-Fish in the Sewers or Bridge, then each other player gains a Wound. [effect:gain-wound:each-other@sewers+bridge]",
             "Escape: Each player gains a Wound. [effect:gainWoundEachPlayer]"
           ],
           "copies": 2
@@ -760,7 +760,7 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-masters-of-evil-wwii-black-knight.webp",
           "abilities": [
             "Ambush: Black Knight captures a Bystander. [effect:captureBystander]",
-            "Fight: [keyword:Savior]: KO one of your Heroes."
+            "Fight: [keyword:Savior]: KO one of your Heroes. [effect:ko-hero:current!savior]"
           ],
           "copies": 2
         },
@@ -772,8 +772,8 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-masters-of-evil-wwii-executioner.webp",
           "abilities": [
             "Ambush: Executioner captures a Bystander. [effect:captureBystander]",
-            "Fight: [keyword:Savior]: Draw a card.",
-            "Escape: KO a Bystander from each player's Victory Pile."
+            "Fight: [keyword:Savior]: Draw a card. [effect:draw-cards-current:1!savior]",
+            "Escape: KO a Bystander from each player's Victory Pile. [effect:ko-bystander-each-victory-pile]"
           ],
           "copies": 2
         },
@@ -785,7 +785,7 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-masters-of-evil-wwii-melter-wwii.webp",
           "abilities": [
             "Ambush: Melter captures a Bystander. [effect:captureBystander]",
-            "Fight: [keyword:Savior]: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back."
+            "Fight: [keyword:Savior]: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back. [effect:ko-cullable-each-deck-top!savior]"
           ],
           "copies": 2
         },
@@ -797,8 +797,8 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-masters-of-evil-wwii-radioactive-man.webp",
           "abilities": [
             "Ambush: Radioactive Man captures a Bystander. [effect:captureBystander]",
-            "Fight: Each player who is not a [keyword:Savior] gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player who is not a [keyword:Savior] gains a Wound. [effect:gain-wound:each-non-savior]",
+            "Escape: Same effect. [effect:gain-wound:each-non-savior]"
           ],
           "copies": 2
         }

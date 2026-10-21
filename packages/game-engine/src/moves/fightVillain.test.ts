@@ -1279,3 +1279,67 @@ describe('fightVillain — Abomination (WP-815)', () => {
     assert.equal(moveContext.G.turnEconomy.spentAttack, 9);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Villain-side Savior — rescued Bystanders count before the Savior check (WP-816 / D-24749)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — villain Savior counts the Bystanders rescued from it (WP-816 / D-24749)', () => {
+  const SAVIOR_VILLAIN = 'villain-savior' as CardExtId;
+  const DECK_CARD = 'core/x/deck-card#0' as CardExtId;
+
+  /**
+   * A 3-cost Savior-gated "draw a card" villain at City index 0 holding one
+   * Savior-counted Bystander, with the given rescued Bystanders already in the
+   * current player's Victory Pile.
+   */
+  function createSaviorFightState(victory: CardExtId[]): LegendaryGameState {
+    const gameState = createMockGameState({
+      city: [SAVIOR_VILLAIN, null, null, null, null],
+      villainAbilityHooks: [
+        {
+          cardId: SAVIOR_VILLAIN,
+          timing: 'onFight',
+          keywords: [],
+          effects: [{ primitive: 'draw-cards-current', drawCount: 1, requireCondition: 'savior' }],
+        },
+      ],
+    });
+    gameState.attachedBystanders = { [SAVIOR_VILLAIN]: ['bystander-villain-deck-01' as CardExtId] };
+    gameState.cardStats[SAVIOR_VILLAIN] = {
+      attack: 0, recruit: 0, cost: 0, fightCost: 3, fightCostMode: 'static', fightCostBase: 0,
+    };
+    gameState.playerZones['0']!.victory = [...victory];
+    gameState.playerZones['0']!.deck = [DECK_CARD];
+    gameState.turnEconomy = makeTurnEconomy({ attack: 3 });
+    return gameState;
+  }
+
+  it('T22: the attached Bystander is awarded first, so 2 + 1 makes a Savior and the draw fires', () => {
+    const moveContext = createMockMoveContext(
+      createSaviorFightState(['pile-bystander', 'bystander-villain-deck-02'] as CardExtId[]),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const playerZones = moveContext.G.playerZones['0']!;
+    assert.ok(playerZones.victory.includes(SAVIOR_VILLAIN), 'the villain is defeated');
+    assert.ok(playerZones.victory.includes('bystander-villain-deck-01'), 'the attached Bystander is awarded');
+    assert.deepStrictEqual(playerZones.hand, [DECK_CARD], 'Savior passes (3) and the player draws a card');
+  });
+
+  it('T23: with 1 + 1 Bystanders the Savior line blocks and nothing is drawn', () => {
+    const moveContext = createMockMoveContext(createSaviorFightState(['pile-bystander'] as CardExtId[]));
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const playerZones = moveContext.G.playerZones['0']!;
+    assert.ok(playerZones.victory.includes(SAVIOR_VILLAIN), 'the villain is defeated');
+    assert.deepStrictEqual(playerZones.hand, [], 'hand unchanged');
+    assert.ok(
+      moveContext.G.messages.some(
+        (message) =>
+          message.text === 'Fight effect: Player 0 is not a Savior (2 of 3 Bystanders in their Victory Pile); no effect.',
+      ),
+      'the Savior-blocked line is logged',
+    );
+  });
+});

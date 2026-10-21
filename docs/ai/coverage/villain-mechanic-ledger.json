@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 722,
+    "totalRows": 728,
     "byStatus": {
-      "executable": 140,
+      "executable": 146,
       "deferred": 0,
       "unsupported": 1,
       "unmarked": 579,
       "subsystem": 2
     },
-    "distinctMechanics": 36
+    "distinctMechanics": 37
   },
   "rows": [
     {
@@ -1059,6 +1059,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
     },
     {
+      "extId": "ca75-villain-masters-of-evil-wwii-black-knight",
+      "cardName": "Black Knight",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
       "extId": "ca75-villain-zolas-creations-captain-zolandia",
       "cardName": "Captain Zolandia",
       "set": "ca75",
@@ -1092,6 +1103,39 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
     },
     {
+      "extId": "ca75-villain-masters-of-evil-wwii-executioner",
+      "cardName": "Executioner",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "draw-cards-current",
+      "status": "executable",
+      "wp": "WP-485",
+      "decision": "D-24290",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current"
+    },
+    {
+      "extId": "ca75-villain-masters-of-evil-wwii-executioner",
+      "cardName": "Executioner",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "ko-bystander-each-victory-pile",
+      "status": "executable",
+      "wp": "WP-816",
+      "decision": "D-24749",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-bystander-each-victory-pile"
+    },
+    {
+      "extId": "ca75-villain-zolas-creations-man-fish",
+      "cardName": "Man-Fish",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
+    },
+    {
       "extId": "ca75-villain-zolas-creations-man-fish",
       "cardName": "Man-Fish",
       "set": "ca75",
@@ -1114,6 +1158,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
     },
     {
+      "extId": "ca75-villain-masters-of-evil-wwii-melter-wwii",
+      "cardName": "Melter (WWII)",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "ko-cullable-each-deck-top",
+      "status": "executable",
+      "wp": "WP-519",
+      "decision": "D-24332",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top"
+    },
+    {
       "extId": "ca75-villain-zolas-creations-primus",
       "cardName": "Primus",
       "set": "ca75",
@@ -1134,6 +1189,17 @@
       "wp": "WP-185",
       "decision": "D-18506",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
+    },
+    {
+      "extId": "ca75-villain-masters-of-evil-wwii-radioactive-man",
+      "cardName": "Radioactive Man",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
       "extId": "chmp-villain-wrecking-crew-bulldozer",

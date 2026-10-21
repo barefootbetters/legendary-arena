@@ -29,6 +29,7 @@ import type {
   VillainEffectResult,
   VillainEffectDescriptor,
   VillainEffectPrimitive,
+  VillainEffectCondition,
   VillainEffectPlayerTargets,
   VillainKoZone,
   VillainWoundOutcomes,
@@ -51,6 +52,9 @@ import { koCard } from '../board/ko.logic.js';
 import {
   attachBystanderToVillain,
   awardAttachedBystanders,
+  countVictoryPileBystanders,
+  findFirstVictoryPileBystander,
+  SAVIOR_BYSTANDER_THRESHOLD,
 } from '../board/bystanders.logic.js';
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
@@ -187,6 +191,18 @@ export function executeVillainAbilities(
         !isCityGateSatisfied(descriptor.requireCitySpaces, cityIndex)
       ) {
         narrateCityGateBlocked(G, timing, descriptor.requireCitySpaces);
+        continue;
+      }
+      // why: WP-816 / D-24749 — the condition gate (rules v23 L1844-1853 Savior), checked
+      // AFTER the location gate and BEFORE dispatch. It reads the CURRENT player at every
+      // timing and fails closed (missing zones, or an unrecognized condition value).
+      // Like the location gate it is NOT hollow (the handler exists — the condition
+      // blocked it), so it records neither a hollow record nor an EffectTrace (the
+      // D-24295 precedent): the descriptor was never dispatched.
+      if (
+        descriptor.requireCondition !== undefined &&
+        !isConditionGateSatisfied(G, currentPlayer, timing, descriptor)
+      ) {
         continue;
       }
       const application = applyVillainEffect(G, currentPlayer, cardId, timing, descriptor, shuffleContext, cityIndex);
@@ -606,6 +622,59 @@ function narrateCityGateBlocked(
 }
 
 /**
+ * Evaluates a descriptor's `requireCondition` gate for the current player, and
+ * self-narrates the "no effect" line when it blocks (WP-816 / D-24749).
+ *
+ * Exhaustive over `VillainEffectCondition`: `'savior'` passes when the current
+ * player has at least `SAVIOR_BYSTANDER_THRESHOLD` Bystanders in their Victory
+ * Pile (0 when their zones are missing). The `never` default (a future union
+ * member before its arm exists, or a hand-built hook) fails CLOSED. `G.messages`
+ * is hash-excluded (D-24081); outcome `blocked` per the WP-434 contract.
+ *
+ * @param G - Game state (mutated only via the hash-excluded message log).
+ * @param currentPlayer - The active player id the condition is read for.
+ * @param timing - The timing that fired (for the "<Fight|Ambush|Escape> effect:" label).
+ * @param descriptor - The gated descriptor (its `requireCondition` is defined).
+ * @returns True when the condition holds and the descriptor may dispatch.
+ */
+function isConditionGateSatisfied(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): boolean {
+  const label = villainEffectTimingLabel(timing);
+  // why: the executor loop calls this only when `requireCondition` is defined, so the
+  // switch below is exhaustive over the closed union (a new member fails to compile here).
+  const condition = descriptor.requireCondition as VillainEffectCondition;
+  switch (condition) {
+    case 'savior': {
+      const zones = G.playerZones[currentPlayer];
+      const count = zones ? countVictoryPileBystanders(zones.victory) : 0;
+      if (zones && count >= SAVIOR_BYSTANDER_THRESHOLD) {
+        return true;
+      }
+      pushLog(
+        G,
+        `${label} effect: Player ${currentPlayer} is not a Savior (${count} of ${SAVIOR_BYSTANDER_THRESHOLD} Bystanders in their Victory Pile); no effect.`,
+        'blocked',
+      );
+      return false;
+    }
+    default: {
+      // why: fail closed — an unrecognized condition must never fire its effect.
+      const unrecognized: never = condition;
+      pushLog(
+        G,
+        `${label} effect: unrecognized condition '${String(unrecognized)}'; no effect.`,
+        'blocked',
+      );
+      return false;
+    }
+  }
+}
+
+/**
  * Formats a City-space list into readable prose with a single leading "the"
  * (e.g. `['streets','bridge']` → "the Streets or Bridge"; `['sewers']` → "the
  * Sewers").
@@ -821,6 +890,12 @@ function villainEffectGainWound(
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
+  // why: WP-816 / D-24749 — Radioactive Man "each player who is not a Savior gains a
+  // Wound". The exemption is per player, so it is a target (the `each-other`
+  // precedent), not the current-player condition gate; its body is its own function.
+  if (descriptor.target === 'each-non-savior') {
+    return applyGainWoundEachNonSavior(G, currentPlayer, timing);
+  }
   // why: WP-489 / D-24295 — the Lizard "each OTHER player gains a Wound": wound
   // every player EXCEPT the current one. Sorted iteration (D-18902 determinism),
   // supply-bounded, `magnitude` repetitions (default 1) mirroring ko-hero:each so a
@@ -922,6 +997,107 @@ function villainEffectGainWound(
   // why: D-24673 — present only when a Diving Block reveal is pending.
   if (woundOutcome === 'diving-block-pending') {
     return { targets: [], woundOutcomes: { gainedPlayerIds: [], divingBlockPendingPlayerIds: [currentPlayer] } };
+  }
+  return { targets: [] };
+}
+
+/**
+ * gain-wound `target: 'each-non-savior'` — every player who is not a Savior gains
+ * one Wound (Radioactive Man, WP-816 / D-24749).
+ *
+ * Sorted iteration (D-18902 determinism); a player with at least
+ * `SAVIOR_BYSTANDER_THRESHOLD` Bystanders in their Victory Pile is skipped;
+ * supply-bounded. Routes through `gainWoundWithOutcome` so Diving Block sees the
+ * Wound (D-24499 / D-24673). Keyword-less (no legacy reverse-map), so it
+ * self-narrates; `G.messages` is hash-excluded (D-24081).
+ *
+ * @param G - Game state (mutated: wounds supply, discards, woundsDrawn, messages).
+ * @param currentPlayer - The active player id (for the woundsDrawn projection).
+ * @param timing - The timing that fired (for the "<Fight|Escape> effect:" label).
+ * @returns `{ targets: [] }` always — a keyword-less result is never recorded.
+ */
+function applyGainWoundEachNonSavior(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  const woundedPlayerIds: string[] = [];
+  const gainedPlayerIds: string[] = [];
+  const divingBlockPendingPlayerIds: string[] = [];
+  for (const playerId of Object.keys(G.playerZones).sort()) {
+    const zones = G.playerZones[playerId];
+    if (!zones) continue;
+    // why: the per-player Savior exemption — each player's OWN Victory Pile decides.
+    if (countVictoryPileBystanders(zones.victory) >= SAVIOR_BYSTANDER_THRESHOLD) continue;
+    // why: supply-bounded — an empty Wound pile is a reachable no-op, never a throw.
+    if (G.piles.wounds.length === 0) continue;
+    const woundOutcome = gainWoundWithOutcome(G, playerId);
+    if (playerId === currentPlayer) {
+      // why: woundsDrawn projects the current player's wounds only, whatever the
+      // outcome — the `'each'` branch rule verbatim.
+      G.turnEconomy.woundsDrawn += 1;
+    }
+    if (woundOutcome === 'diving-block-pending') {
+      woundedPlayerIds.push(playerId);
+      divingBlockPendingPlayerIds.push(playerId);
+    } else if (woundOutcome === 'gained') {
+      woundedPlayerIds.push(playerId);
+      gainedPlayerIds.push(playerId);
+    }
+  }
+  const label = villainEffectTimingLabel(timing);
+  if (divingBlockPendingPlayerIds.length > 0) {
+    // why: D-24673 — a Diving Block reveal is pending, so that Wound is not final yet.
+    pushLog(G, `${label} effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}.`, 'applied');
+  } else if (woundedPlayerIds.length > 0) {
+    const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(G, `${label} effect: each player who is not a Savior gained a Wound (${names}).`, 'applied');
+  } else {
+    pushLog(G, `${label} effect: no player who is not a Savior gained a Wound.`, 'blocked');
+  }
+  return { targets: [] };
+}
+
+/**
+ * ko-bystander-each-victory-pile primitive — each player KOs one Bystander from
+ * their Victory Pile (Executioner's Escape, WP-816 / D-24749).
+ *
+ * For every player in sorted id order, the first Bystander in Victory-Pile order
+ * moves to `G.ko` via `moveCardFromZone`; a player with none is untouched.
+ * No-param, keyword-less, self-narrates; never throws.
+ *
+ * @param G - Game state (mutated: Victory Piles, the KO pile, messages).
+ * @param _currentPlayer - Unused; the effect hits every player.
+ * @param _cardId - Unused.
+ * @param timing - The timing that fired (for the "<Fight|Escape> effect:" label).
+ * @returns `{ targets: [] }` always — a keyword-less result is never recorded.
+ */
+function villainEffectKoBystanderEachVictoryPile(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  const koedPlayerIds: string[] = [];
+  for (const playerId of Object.keys(G.playerZones).sort()) {
+    const zones = G.playerZones[playerId];
+    if (!zones) continue;
+    // why: every Victory-Pile Bystander is worth the same (1 VP, its rescue ability
+    // already resolved), so pile order is a deterministic no-choice pick that needs no
+    // non-active-seat prompt (the Whispers and Lies precedent).
+    const bystanderId = findFirstVictoryPileBystander(zones.victory);
+    if (bystanderId === undefined) continue;
+    const moveResult = moveCardFromZone(zones.victory, G.ko, bystanderId);
+    zones.victory = moveResult.from;
+    G.ko = moveResult.to;
+    koedPlayerIds.push(playerId);
+  }
+  const label = villainEffectTimingLabel(timing);
+  if (koedPlayerIds.length > 0) {
+    const names = koedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(G, `${label} effect: KO'd a Bystander from the Victory Pile of ${names}.`, 'applied');
+  } else {
+    pushLog(G, `${label} effect: no player had a Bystander in their Victory Pile to KO.`, 'blocked');
   }
   return { targets: [] };
 }
@@ -3730,6 +3906,8 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   // Salomé (ko-up-to-from-discard-current:2) Fights; both keyword-less, self-narrating.
   'reveal-top-draw-if-cost-lte': villainEffectRevealTopDrawIfCostLte,
   'ko-up-to-from-discard-current': villainEffectKoUpToFromDiscardCurrent,
+  // why: WP-816 / D-24749 — Executioner's Escape; keyword-less, self-narrating.
+  'ko-bystander-each-victory-pile': villainEffectKoBystanderEachVictoryPile,
 };
 
 /**

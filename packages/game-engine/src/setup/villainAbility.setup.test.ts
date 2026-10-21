@@ -1723,3 +1723,173 @@ describe('buildVillainAbilityHooks — haunt-hq-hero marker (WP-757 / D-24587)',
     });
   }
 });
+
+describe('buildVillainAbilityHooks — WP-816 !<condition> suffix + Savior grammars (D-24749)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'savior-ko', token: 'ko-hero:current!savior' },
+    { slug: 'savior-draw', token: 'draw-cards-current:1!savior' },
+    { slug: 'savior-melter', token: 'ko-cullable-each-deck-top!savior' },
+    { slug: 'non-savior', token: 'gain-wound:each-non-savior' },
+    { slug: 'ko-bystander', token: 'ko-bystander-each-victory-pile' },
+    { slug: 'man-fish-shape', token: 'gain-wound:each-other@sewers+bridge' },
+    { slug: 'both-gates', token: 'ko-hero:current@sewers!savior' },
+    { slug: 'reject-empty', token: 'ko-hero:current!' },
+    { slug: 'reject-unknown', token: 'ko-hero:current!spectrum' },
+    { slug: 'reject-case', token: 'ko-hero:current!Savior' },
+    { slug: 'reject-double', token: 'ko-hero:current!savior!savior' },
+    { slug: 'reject-order', token: 'ko-hero:current!savior@sewers' },
+    { slug: 'reject-legacy', token: 'koHeroCurrentPlayer!savior' },
+    { slug: 'reject-magnitude', token: 'gain-wound:each-non-savior:2' },
+    { slug: 'reject-param', token: 'ko-bystander-each-victory-pile:1' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp816',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Fight: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp816'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp816-${slug}-00`)!;
+
+  it('T4: lifts !savior onto ko-hero:current, draw-cards-current:1 and ko-cullable-each-deck-top', () => {
+    assert.deepStrictEqual(hookFor('savior-ko').effects, [
+      { primitive: 'ko-hero', target: 'current', requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(hookFor('savior-draw').effects, [
+      { primitive: 'draw-cards-current', drawCount: 1, requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(hookFor('savior-melter').effects, [
+      { primitive: 'ko-cullable-each-deck-top', requireCondition: 'savior' },
+    ]);
+  });
+
+  it('T5: parses each-non-savior, ko-bystander-each-victory-pile and the Man-Fish shape', () => {
+    assert.deepStrictEqual(hookFor('non-savior').effects, [
+      { primitive: 'gain-wound', target: 'each-non-savior' },
+    ]);
+    assert.deepStrictEqual(hookFor('ko-bystander').effects, [
+      { primitive: 'ko-bystander-each-victory-pile' },
+    ]);
+    assert.deepStrictEqual(hookFor('man-fish-shape').effects, [
+      { primitive: 'gain-wound', target: 'each-other', magnitude: 1, requireCitySpaces: ['sewers', 'bridge'] },
+    ]);
+  });
+
+  it('T6: carries both the location gate and the condition gate', () => {
+    assert.deepStrictEqual(hookFor('both-gates').effects, [
+      { primitive: 'ko-hero', target: 'current', requireCitySpaces: ['sewers'], requireCondition: 'savior' },
+    ]);
+  });
+
+  it('T7: every malformed suffix or param resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T8: the regenerated ca75 lines build the expected hooks', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/ca75.json.
+    const ca75Registry = makeRegistry(
+      'ca75',
+      [
+        {
+          slug: 'masters-of-evil-wwii',
+          cards: [
+            {
+              slug: 'black-knight',
+              abilities: [
+                'Ambush: Black Knight captures a Bystander. [effect:captureBystander]',
+                'Fight: [keyword:Savior]: KO one of your Heroes. [effect:ko-hero:current!savior]',
+              ],
+            },
+            {
+              slug: 'executioner',
+              abilities: [
+                'Ambush: Executioner captures a Bystander. [effect:captureBystander]',
+                'Fight: [keyword:Savior]: Draw a card. [effect:draw-cards-current:1!savior]',
+                "Escape: KO a Bystander from each player's Victory Pile. [effect:ko-bystander-each-victory-pile]",
+              ],
+            },
+            {
+              slug: 'melter-wwii',
+              abilities: [
+                'Ambush: Melter captures a Bystander. [effect:captureBystander]',
+                'Fight: [keyword:Savior]: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back. [effect:ko-cullable-each-deck-top!savior]',
+              ],
+            },
+            {
+              slug: 'radioactive-man',
+              abilities: [
+                'Ambush: Radioactive Man captures a Bystander. [effect:captureBystander]',
+                'Fight: Each player who is not a [keyword:Savior] gains a Wound. [effect:gain-wound:each-non-savior]',
+                'Escape: Same effect. [effect:gain-wound:each-non-savior]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'zolas-creations',
+          cards: [
+            {
+              slug: 'man-fish',
+              abilities: [
+                '[keyword:Abomination]',
+                'Fight: If you fought Man-Fish in the Sewers or Bridge, then each other player gains a Wound. [effect:gain-wound:each-other@sewers+bridge]',
+                'Escape: Each player gains a Wound. [effect:gainWoundEachPlayer]',
+              ],
+            },
+          ],
+        },
+      ],
+      [],
+    );
+    const ca75Hooks = buildVillainAbilityHooks(
+      ca75Registry,
+      makeConfig(['ca75/masters-of-evil-wwii', 'ca75/zolas-creations'], []),
+    );
+    const effectsAt = (group: string, slug: string, timing: string) =>
+      ca75Hooks.find((h) => h.cardId === `ca75-villain-${group}-${slug}-00` && h.timing === timing)!.effects;
+    const moe = 'masters-of-evil-wwii';
+    assert.deepStrictEqual(effectsAt(moe, 'black-knight', 'onFight'), [
+      { primitive: 'ko-hero', target: 'current', requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'executioner', 'onFight'), [
+      { primitive: 'draw-cards-current', drawCount: 1, requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'executioner', 'onEscape'), [
+      { primitive: 'ko-bystander-each-victory-pile' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'melter-wwii', 'onFight'), [
+      { primitive: 'ko-cullable-each-deck-top', requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'radioactive-man', 'onFight'), [
+      { primitive: 'gain-wound', target: 'each-non-savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'radioactive-man', 'onEscape'), [
+      { primitive: 'gain-wound', target: 'each-non-savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt('zolas-creations', 'man-fish', 'onFight'), [
+      { primitive: 'gain-wound', target: 'each-other', magnitude: 1, requireCitySpaces: ['sewers', 'bridge'] },
+    ]);
+    for (const slug of ['black-knight', 'executioner', 'melter-wwii', 'radioactive-man']) {
+      assert.deepStrictEqual(effectsAt(moe, slug, 'onAmbush'), [{ primitive: 'capture-bystander' }], `${slug} Ambush unchanged`);
+    }
+    for (const builtHook of ca75Hooks) {
+      assert.deepStrictEqual(builtHook.unresolvedMarkers ?? [], [], `${builtHook.cardId} ${builtHook.timing} has no unresolved marker`);
+    }
+  });
+});
