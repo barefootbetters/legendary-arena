@@ -900,6 +900,75 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     );
   });
 
+  it('WP-819 UITurnEconomyState.rescueOnFightAvailable is pinned on a BUILT projection (D-24753)', () => {
+    // why: the OPTIONAL rescueOnFightAvailable is omit-when-absent, so only a runtime keyset
+    // assertion on a REAL built projection catches buildUIState dropping it (WP-563 / D-24372).
+    const setData = {
+      abbr: 'core',
+      schemes: [{ slug: 's' }],
+      masterminds: [{ slug: 'mm', cards: [{ slug: 'mm-base', tactic: false }] }],
+      henchmen: [{ slug: 'h' }],
+      villains: [{ slug: 'v', cards: [{ slug: 'v1', vAttack: '4' }] }],
+      heroes: [
+        {
+          slug: 'hero-x',
+          cards: [
+            { slug: 'card-c1', rarityLabel: 'Common 1' },
+            { slug: 'card-c2', rarityLabel: 'Common 2' },
+            { slug: 'card-uncommon', rarityLabel: 'Uncommon' },
+            { slug: 'card-rare', rarityLabel: 'Rare' },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const builtState = buildInitialGameState(
+      config,
+      registry,
+      makeMockCtx({ numPlayers: 1 }),
+    );
+    // why: selection is readonly, so Baron Zemo is selected on a spread copy (no @ts-ignore).
+    const gameState = {
+      ...builtState,
+      selection: { ...builtState.selection, mastermindId: 'ca75/baron-heinrich-zemo' },
+    };
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    gameState.turnEconomy.recruit = 2;
+    const present = buildUIState(gameState, uiCtx);
+    assert.deepStrictEqual(Object.keys(present.economy).sort(), [
+      'attack',
+      'availableAttack',
+      'availableRecruit',
+      'piercing',
+      'recruit',
+      'rescueOnFightAvailable',
+      'woundsDrawn',
+    ]);
+
+    gameState.turnEconomy.recruit = 1;
+    const absent = buildUIState(gameState, uiCtx);
+    assert.ok(
+      !('rescueOnFightAvailable' in absent.economy),
+      'with 1 Recruit the rescue cue must be omitted entirely',
+    );
+  });
+
   it('UITurnEconomyState.phasingOptions is pinned on a BUILT and FILTERED projection (WP-783)', () => {
     // why: WP-783 / D-24629 — phasingOptions is OPTIONAL and omit-when-absent, so a
     // `satisfies`/literal pin gives it NO drift protection (WP-563 / D-24372). Only a

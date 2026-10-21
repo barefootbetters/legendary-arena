@@ -10,6 +10,15 @@
 
 ## Current State
 
+### WP-819 / EC-857 — Baron Zemo rescue on a fight, engine (D-24753) (2026-10-21)
+
+**No user-visible change until WP-820.** With Baron Zemo as the Mastermind, `fightVillain({ cityIndex, payToRescueBystander: true })` now pays his printed "Whenever you fight a Villain, you may use 2 Recruit to rescue a Bystander": it spends 2 Recruit and moves the supply's top Bystander to the fighter's Victory Pile before the Villain's Fight effects, so a Masters of Evil (WWII) Savior gate counts it. No client sends the argument until WP-820's "Fight + Rescue" button; bots never opt in.
+
+- **Engine.** New `economy/rescueOnFight.logic.ts` (`RESCUE_ON_FIGHT_RECRUIT_COST`, the shared `BARON_ZEMO_MASTERMIND_ID`, `isRescueOnFightOffered`, `canPayRescueOnFight`, `isRescueOnFightCueOn`). `fightVillain` decides after every gate (`decideRescueOnFight`) against a simulated fight debit that includes an open Excessive Violence +1, so the rescue never overdraws the fight or EV; a declined request fights normally and logs why. `defeatCityVillainCore` takes an optional `options.payRescueOnFight` that only the fight move passes. No Zemo or no argument: byte-identical. No `G` field.
+- **Cue.** `UIState.economy.rescueOnFightAvailable` (active-player-only, omit-when-absent; Zemo + a supply Bystander + 2 unspent Recruit), through all 5 steps of the Board-Visible Field contract, including the JSON round-trip and a built-projection keyset pin.
+- **Tests.** game-engine 5475 → 5502 (+27), then 5544 after the WP-817 merge (5515 + 29, incl. T18a / T18b), 0 fail; `pnpm -r --no-bail test` 0 fail; arena-client typecheck 0; `finalStateHash` / `PRE_WP080_HASH` unchanged. Revert proofs 5/5 (rescue after the Fight effects; raw Recruit instead of the simulated debit; filter pass-through dropped; EV +1 dropped; decision above the stage gate).
+- **Live-verify (D-24026): pending.** The cue in a staged Zemo match's Play Diagnostics `uiStateSnapshot` plus a non-Zemo smoke after deploy; the rescue's fire path is verified with WP-820.
+
 ### D-24751 — LA's roadmap and infra-cost actuals move to a root `dashboard.json` (operator decision, no WP) (2026-10-20)
 
 **No user-visible change yet.** `dashboard.json` is the project file bb-studio-dashboard reads to build Legendary Arena's

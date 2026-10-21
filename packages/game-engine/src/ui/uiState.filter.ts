@@ -500,6 +500,13 @@ export function filterUIStateForAudience(
       ...(uiState.economy.excessiveViolenceAvailable === true
         ? { excessiveViolenceAvailable: true as const }
         : {}),
+      // why: WP-819 / D-24753 — pass Baron Zemo's rescue-on-fight cue through for the
+      // ACTIVE player only, omit-when-absent, exactly like the Excessive Violence cue. The
+      // filter is a whitelist: a field it does not name is silently dropped (EC-206), and
+      // the WP-820 control would never appear. REDACTED_ECONOMY never carries it.
+      ...(uiState.economy.rescueOnFightAvailable === true
+        ? { rescueOnFightAvailable: true as const }
+        : {}),
       // why: WP-783 / D-24629 — the Phasing options name cards in the owner's hand, so
       // they pass through for the ACTIVE player only, as a copied array, omit-when-absent.
       // REDACTED_ECONOMY (non-active players + spectators) never carries them. A field that

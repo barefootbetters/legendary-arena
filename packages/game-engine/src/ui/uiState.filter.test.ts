@@ -2728,6 +2728,37 @@ describe('filterUIStateForAudience — Excessive Violence availability cue (WP-7
   });
 });
 
+describe('WP-819 filterUIStateForAudience — Baron Zemo rescue-on-fight cue (D-24753)', () => {
+  // why: the cue rides the active-player-only economy block like the EV cue. It must
+  // survive the whitelist (and the Play Diagnostics uiStateSnapshot JSON round-trip)
+  // for the active player, be omitted when unset, and never reach another audience.
+  it('T15: passes rescueOnFightAvailable through for the active player, surviving the JSON round-trip', () => {
+    const uiState = createTestUIState();
+    uiState.economy.rescueOnFightAvailable = true;
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.rescueOnFightAvailable, true);
+    const serialized = JSON.parse(JSON.stringify(result)) as UIState;
+    assert.equal(serialized.economy.rescueOnFightAvailable, true, 'the uiStateSnapshot carries the cue');
+  });
+
+  it('T15: omits rescueOnFightAvailable for the active player when unset (omit-when-absent)', () => {
+    const result = filterUIStateForAudience(createTestUIState(), PLAYER_0);
+    assert.ok(!('rescueOnFightAvailable' in result.economy));
+  });
+
+  it('T15: never exposes rescueOnFightAvailable to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.rescueOnFightAvailable = true;
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(
+        !('rescueOnFightAvailable' in result.economy),
+        'non-active audiences see REDACTED_ECONOMY without the rescue cue',
+      );
+    }
+  });
+});
+
 describe('filterUIStateForAudience — Phasing options (WP-783 / D-24629)', () => {
   // why: the Phasing options name cards in the active player's hand, so they ride the
   // active-player-only economy block: they must survive the whitelist for the active

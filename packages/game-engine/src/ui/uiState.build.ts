@@ -130,6 +130,7 @@ import { phasingOptions } from '../moves/phaseCard.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
 import { getAvailableRecruit, getSpendableAttack, formatAttackTargets } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
+import { isRescueOnFightCueOn } from '../economy/rescueOnFight.logic.js';
 import {
   resolveFightCost,
   resolveMastermindFightCost,
@@ -1106,6 +1107,11 @@ export function buildUIState(
     gameState.turnEconomy.excessiveViolenceUsedThisTurn !== true
       ? { excessiveViolenceAvailable: true as const }
       : {}),
+    // why: WP-819 / D-24753 — project Baron Zemo's rescue-on-fight availability cue
+    // active-player-only and omit-when-absent (present only when true), so every match
+    // without Zemo keeps the economy block byte-identical and the WP-820 client offers
+    // "Fight + Rescue" only when it could do something.
+    ...(isRescueOnFightCueOn(gameState) ? { rescueOnFightAvailable: true as const } : {}),
     // why: WP-783 / D-24629 — project the Phasing options omit-when-absent (present only
     // when at least one hand card is phasable), so a turn without Phasing keeps the
     // economy block byte-identical and the client renders Phase buttons only when legal.
