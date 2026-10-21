@@ -72,3 +72,6 @@
 - Primus's Fight is disabled for a player holding only an Officer / Sidekick → eligibility read `display.cost` instead of `handCosts`.
 - The Primus discard prompt appears before the Bystander discard → the effect opener ran before the escape-procedure loop drained.
 - A sentinel hash moved → a new `G` key is written for matches without Primus.
+
+## Execution Amendment (2026-10-21)
+- `villainDeck/villainEscapeProcedure.ts` also imports `offPlayCardStats` (`hero/splitCard.logic.js`), beyond the WP Assumes 17 import list, to label each Escape-discard option `<name> (cost N)` with the same off-play cost `isHandCardCostOneOf` reads. No cycle (`villainDefeatRequirement.logic.ts`, already imported, imports the same module). Eligibility still goes only through `isHandCardCostOneOf`.
