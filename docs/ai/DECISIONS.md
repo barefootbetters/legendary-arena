@@ -48985,7 +48985,7 @@ Protect this file.
 
 **Gates.** T1-T21 (WP-815 §Test Contract) in `citySpaceNames.test.ts`, `abomination.logic.test.ts`, `economy.resolve.test.ts`, `buildCardAbomination.test.ts` (ability lines copied verbatim from `data/cards/{ca75,rlmk,co2e,core}.json`, with the negatives), `fightVillain.test.ts` and `uiState.build.test.ts`. Revert proofs: without the villain term 9 cases fail, without the mastermind term 3, without the `4 -` 11. Engine 5411 → 5441, 0 fail; `pnpm -r --no-bail test` 0 fail; the feed checks rewrite no file.
 
-**Live-verify (D-24026): pending.** In a live `ca75/arnim-zola` match: the Mastermind tile shows 6 + the total printed HQ Attack and changes after a recruit; an Abomination Villain's tile shows its base + the printed Attack of the HQ Hero in the same ordinal position (Sewers ↔ 5th HQ slot … Bridge ↔ 1st) and changes when it moves; Fight is enabled only at that cost.
+**Live-verify (D-24026): PASS 2026-10-20** in guest autoplay match `eyPOi5L-fAU` (server `f39573ad`). The Mastermind cost followed the HQ total (16, 18, 14). Doughboy read 4 in the Sewers, 7 in the Bank and 5 on the Rooftops, and went back to 4 when the Hero under him changed. Fight stayed disabled at 4 Attack against Fight 5 and was enabled once Attack reached his cost. Streets and Bridge were not reached. Details are in STATUS.md.
 
 **Reserved by:** NUMBER-LEDGER D-24747 (#2915). Related: D-24295 (named City spaces), D-24348 / D-24589 (additive fight-cost terms, omit-when-empty setup map), D-24574 (client Fight gating reads the projected cost), D-24545 (`offPlayCardStats`), D-24193 (mastermind base face), D-24372 (runtime drift pins).
 
