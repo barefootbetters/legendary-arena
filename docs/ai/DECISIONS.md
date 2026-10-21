@@ -49069,7 +49069,7 @@ Protect this file.
 
 ### D-24750 — Captain Zolandia and Primus: a per-Hero-Class Recruit Fight, a villain fight discard cost named by a move argument, and an owed every-player Escape discard (Active 2026-10-21 — WP-817 / EC-855)
 
-**Status:** Active 2026-10-21. Live-verify (D-24026) pending post-deploy.
+**Status:** Active 2026-10-21. Live-verify (D-24026) PASS 2026-10-21 (server and client `5a6dee60`; guest autoplay matches `mBQYQoMmPsc`, `pV10PHyDji4`, `c3kt4rlQMmN`, `zFd68HEShS6`, `QU8C5kTYsZD`, `XZ1ha-xR3O0`; evidence in STATUS.md).
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Fighting Captain Zolandia gives +1 Recruit for each Hero Class among the cards in the fighter's hand and play area. Primus's Fight is disabled, with a reason, unless the viewer holds a card that costs 2, 3, 5 or 7; clicking it opens a short list of those cards, and the pick is discarded as Primus is fought. When Primus escapes, every player holding such a Hero picks one to discard; a player with none is logged.
 
