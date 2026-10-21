@@ -5,7 +5,8 @@
  * cards, the negatives (Primus, Maestro, The Leader, Zzzax, every tactic, and the
  * second non-tactic face `epic-maximus-the-mad`), and the empty map for a core
  * match or a registry without getSet (so setup omits G.cardAbomination), plus the
- * positive setup path that keys G.mastermind.baseCardId.
+ * positive setup path that keys G.mastermind.baseCardId, and (synthetic cards) the
+ * line-order independence of the kind and the throw on a both-kinds mastermind.
  *
  * Uses node:test only — no boardgame.io imports.
  */
@@ -155,6 +156,35 @@ const REGISTRY = {
   },
 };
 
+// why: SYNTHETIC — no printed card carries two Abomination-family lines (all of
+// data/cards checked 2026-10-20). These mocks pin that the kind never depends on
+// line order, which a first-matching-line scan would get wrong.
+const SYNTHETIC_SET = {
+  villains: [
+    {
+      slug: 'mixed-abominations',
+      cards: [
+        { slug: 'plain-then-double', copies: 1, abilities: ['[keyword:Abomination]', '[keyword:Double Abomination]'] },
+        { slug: 'double-then-plain', copies: 1, abilities: ['[keyword:Double Abomination]', '[keyword:Abomination]'] },
+        { slug: 'sentence-then-double', copies: 1, abilities: ['Mixer gets +[icon:attack] equal to the printed [icon:attack] of the Hero in the HQ space under its current city space.', '[keyword:Double Abomination]'] },
+      ],
+    },
+  ],
+  masterminds: [
+    {
+      slug: 'both-kinds',
+      cards: [
+        { slug: 'both-kinds', tactic: false, abilities: ['[keyword:Ultimate Abomination]', '[keyword:Double Highest Abomination]'] },
+      ],
+    },
+  ],
+};
+
+/** A registry reader exposing only SYNTHETIC_SET, as set `synt`. */
+const SYNTHETIC_REGISTRY = {
+  getSet: (abbr: string) => (abbr === 'synt' ? SYNTHETIC_SET : undefined),
+};
+
 /**
  * A setup config selecting the given villain groups and mastermind.
  *
@@ -293,5 +323,32 @@ describe('buildCardAbomination (WP-815 / D-24747)', () => {
       'ca75-mastermind-arnim-zola-arnim-zola': 'ultimate-abomination',
     });
     assert.equal(gameState.cardAbomination[gameState.mastermind.baseCardId], 'ultimate-abomination');
+  });
+
+  it('a villain printing both Abomination and Double Abomination is Double, whatever the line order', () => {
+    const result = buildCardAbomination(
+      SYNTHETIC_REGISTRY,
+      makeConfig(['synt/mixed-abominations'], 'synt/missing-mastermind'),
+      'synt/missing-mastermind',
+      'synt-mastermind-missing-mastermind-missing-mastermind' as CardExtId,
+    );
+    assert.deepStrictEqual(result, {
+      'synt-villain-mixed-abominations-plain-then-double-00': 'double-abomination',
+      'synt-villain-mixed-abominations-double-then-plain-00': 'double-abomination',
+      'synt-villain-mixed-abominations-sentence-then-double-00': 'double-abomination',
+    });
+  });
+
+  it('a mastermind face printing both Ultimate and Double Highest Abomination throws at setup', () => {
+    assert.throws(
+      () =>
+        buildCardAbomination(
+          SYNTHETIC_REGISTRY,
+          makeConfig([], 'synt/both-kinds'),
+          'synt/both-kinds',
+          'synt-mastermind-both-kinds-both-kinds' as CardExtId,
+        ),
+      /Mastermind card "synt-mastermind-both-kinds-both-kinds" prints both Ultimate Abomination and Double Highest Abomination/,
+    );
   });
 });

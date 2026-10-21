@@ -49,8 +49,8 @@ interface AbominationRegistryReader {
 }
 
 // why: matched case-insensitively and tolerant of spacing inside the brackets, so
-// a data-casing change can't silently drop a kind. Double is tested before the
-// plain keyword (first match wins).
+// a data-casing change can't silently drop a kind. Every ability line is scanned
+// before a kind is chosen, so the result never depends on line order.
 const DOUBLE_ABOMINATION_PATTERN = /\[keyword:\s*double abomination\s*\]/i;
 const ABOMINATION_PATTERN = /\[keyword:\s*abomination\s*\]/i;
 // why: the co2e Abomination prints the rule in words with no keyword token; matching
@@ -116,16 +116,26 @@ function villainAbominationKind(abilities: unknown): AbominationKind | null {
   if (!Array.isArray(abilities)) {
     return null;
   }
+  let hasDoubleAbomination = false;
+  let hasAbomination = false;
   for (const line of abilities) {
     if (typeof line !== 'string') {
       continue;
     }
     if (DOUBLE_ABOMINATION_PATTERN.test(line)) {
-      return 'double-abomination';
+      hasDoubleAbomination = true;
     }
     if (ABOMINATION_PATTERN.test(line) || ABOMINATION_SENTENCE_PATTERN.test(line)) {
-      return 'abomination';
+      hasAbomination = true;
     }
+  }
+  // why: Double Abomination is plain Abomination counted twice, so a card printing
+  // both is the Double card; it wins whichever line comes first.
+  if (hasDoubleAbomination) {
+    return 'double-abomination';
+  }
+  if (hasAbomination) {
+    return 'abomination';
   }
   return null;
 }
@@ -134,22 +144,42 @@ function villainAbominationKind(abilities: unknown): AbominationKind | null {
  * The mastermind-family Abomination kind printed on a mastermind card, if any.
  *
  * @param abilities - The card's ability lines (may be missing on malformed data).
+ * @param cardId - The mastermind face id, named in the error message.
  * @returns 'ultimate-abomination', 'double-highest-abomination', or null.
+ * @throws When the face prints both kinds.
  */
-function mastermindAbominationKind(abilities: unknown): AbominationKind | null {
+function mastermindAbominationKind(abilities: unknown, cardId: string): AbominationKind | null {
   if (!Array.isArray(abilities)) {
     return null;
   }
+  let hasUltimateAbomination = false;
+  let hasDoubleHighestAbomination = false;
   for (const line of abilities) {
     if (typeof line !== 'string') {
       continue;
     }
     if (ULTIMATE_ABOMINATION_PATTERN.test(line)) {
-      return 'ultimate-abomination';
+      hasUltimateAbomination = true;
     }
     if (DOUBLE_HIGHEST_ABOMINATION_PATTERN.test(line)) {
-      return 'double-highest-abomination';
+      hasDoubleHighestAbomination = true;
     }
+  }
+  // why: the two mastermind kinds are different sums (every HQ Hero vs twice the
+  // highest) and the rules rank neither above the other, so a face printing both is
+  // contradictory data. Setup is the one place allowed to throw; picking one would
+  // silently invent a ruling.
+  if (hasUltimateAbomination && hasDoubleHighestAbomination) {
+    throw new Error(
+      `Mastermind card "${cardId}" prints both Ultimate Abomination and Double Highest Abomination; ` +
+        'the fight cost cannot be chosen. Fix that card\'s abilities in data/cards so it prints one kind.',
+    );
+  }
+  if (hasUltimateAbomination) {
+    return 'ultimate-abomination';
+  }
+  if (hasDoubleHighestAbomination) {
+    return 'double-highest-abomination';
   }
   return null;
 }
@@ -224,7 +254,7 @@ function addMastermindAbomination(
       if (cardId !== mastermindBaseCardId) {
         continue;
       }
-      const kind = mastermindAbominationKind(mastermindCard.abilities);
+      const kind = mastermindAbominationKind(mastermindCard.abilities, cardId);
       if (kind !== null) {
         result[mastermindBaseCardId] = kind;
       }
@@ -247,6 +277,7 @@ function addMastermindAbomination(
  * @param mastermindId - The selected mastermind, `<setAbbr>/<mastermindSlug>`.
  * @param mastermindBaseCardId - G.mastermind.baseCardId from buildMastermindState.
  * @returns A map from each Abomination villain copy id and the mastermind base id to its kind.
+ * @throws When the mastermind base face prints both mastermind Abomination kinds.
  */
 export function buildCardAbomination(
   registry: unknown,
