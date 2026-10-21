@@ -33,6 +33,10 @@ import type { SubmitMove } from './uiMoveName.types';
  * → structural). The reason is bound from useTurnActions / useCardCostGating
  * — never composed ad-hoc.
  *
+ * Column alignment: with `isColumnAligned`, each cell takes a fixed width from
+ * the parent's `--board-edge-column-width` / `--board-space-column-width`, so an
+ * `HQRow` with the same flag lines up under it column for column.
+ *
  * Per the EC-132 §2 SFC authoring whitelist: this is a tested non-leaf
  * composer that USES composables, so it MUST use
  * `defineComponent({ setup() { return {...} } })` per P6-30 / P6-46 /
@@ -91,6 +95,16 @@ export default defineComponent({
     submitMove: {
       type: Function as PropType<SubmitMove>,
       required: true,
+    },
+    // why: D-24747 — Abomination reads the HQ Hero under each City space by
+    // position (Sewers over the 5th HQ slot … Bridge over the 1st). With content-
+    // sized cells the HQ drifts out from under the City, so the Hero that looks
+    // "under" a Villain is not the one that counts. The desktop playmat sets this,
+    // together with HQRow's flag, to give both rows the same fixed columns.
+    isColumnAligned: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   setup(props) {
@@ -255,6 +269,7 @@ export default defineComponent({
 <template>
   <section
     class="city-row"
+    :class="{ 'city-row--column-aligned': isColumnAligned }"
     data-testid="play-city-row"
     aria-label="City"
   >
@@ -280,6 +295,7 @@ export default defineComponent({
         v-for="(cell, position) in buildCells()"
         :key="position"
         class="city-space"
+        :class="cell.kind === 'slot' ? 'city-space--space-column' : 'city-space--edge-column'"
       >
         <template v-if="cell.kind === 'escaped'">
           <EscapedPile :pile="cell.entries" />
@@ -495,6 +511,23 @@ export default defineComponent({
   align-items: stretch;
   gap: 0.15rem;
   min-width: 0;
+}
+
+/* why: D-24747 — fixed columns shared with HQRow, so each HQ slot sits under the
+   City space Abomination pairs it with. The edge columns (Escaped Pile, Villain
+   Deck) and the five spaces take the parent's width tokens; the edge cell's
+   content fills its column. */
+.city-row--column-aligned .city-space--edge-column {
+  flex: 0 0 var(--board-edge-column-width, auto);
+}
+
+.city-row--column-aligned .city-space--edge-column > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.city-row--column-aligned .city-space--space-column {
+  flex: 0 0 var(--board-space-column-width, auto);
 }
 
 /* why: WP-750 — the villain button is the positioning context for the Fight N

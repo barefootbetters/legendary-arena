@@ -914,6 +914,7 @@ export default defineComponent({
               :dark-portal-indices="snapshot.scheme.darkPortals?.citySpaceIndices ?? []"
               :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
               :submit-move="submitMove"
+              :is-column-aligned="true"
             />
             <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits to the
                  RIGHT of the HQ (it holds the second-forms some HQ heroes transform
@@ -929,6 +930,7 @@ export default defineComponent({
                 :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
                 :economy="snapshot.economy"
                 :submit-move="submitMove"
+                :is-column-aligned="true"
               />
               <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
             </div>
@@ -1485,6 +1487,12 @@ export default defineComponent({
   --card-width-md: 80px;
   --card-width-lg: 108px;
   --play-gutter: 10px;
+  /* why: D-24747 — the shared City / HQ column widths (CityRow and HQRow
+     isColumnAligned). A space fits the side label (~21px), the Villain button
+     (~96px) and its captured column (~40px) with their gaps; narrower edge
+     columns (Escaped Pile / Villain Deck) leave room for the Transform deck. */
+  --board-edge-column-width: 128px;
+  --board-space-column-width: 164px;
 }
 
 /* why: WP-689 / D-24506 — the TurnActionBar is `position: sticky; bottom: 0`
@@ -1570,6 +1578,11 @@ export default defineComponent({
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
+  /* why: D-24747 — the frosted-panel left padding + border that
+     styles/playmat-slots.css puts on this zone on the stage (0.4rem + 1px) and
+     the City row does not have; HQRow's leading cell subtracts it so the HQ
+     columns stay under the City columns. Keep in step with that file. */
+  --board-hq-row-inset: calc(0.4rem + 1px);
 }
 
 .play-desktop__hq-zone > .transform-deck {
