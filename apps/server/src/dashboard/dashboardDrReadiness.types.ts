@@ -59,6 +59,30 @@ export interface BackupMirrorAlert {
   readonly openedAt: string | null;
 }
 
+/**
+ * The quarterly full-service rebuild drill (`docs/ops/DISASTER_RECOVERY.md` §7
+ * cadence). Only the January / April / July / October drill issues carry the
+ * `**Quarterly — full-service rebuild drill.**` checkbox, so this cadence is
+ * tracked apart from the monthly restore drill.
+ */
+export interface RebuildDrill {
+  /**
+   * Newest CLOSED quarterly issue whose rebuild checkbox is checked: its close
+   * date plus its `Drill passed` result. `null` when no rebuild has been recorded.
+   */
+  readonly lastRebuild: LastDrill | null;
+  /**
+   * UTC `YYYY-MM-DD`: the 1st of the current quarter while this quarter's rebuild
+   * is still outstanding, else the 1st of the next quarter.
+   */
+  readonly nextDue: string;
+  /**
+   * `true` once the quarter's issue month (Jan/Apr/Jul/Oct) has passed with no
+   * rebuild recorded since the quarter began.
+   */
+  readonly overdue: boolean;
+}
+
 /** The DR-readiness projection returned in the `{ data }` envelope. */
 export interface DrReadiness {
   /** Newest CLOSED drill issue's date + result, or `null` when none has closed yet. */
@@ -72,6 +96,8 @@ export interface DrReadiness {
    * means "no alert", not "mirror verified healthy": a skipped mirror opens nothing.
    */
   readonly backupMirrorAlert: BackupMirrorAlert | null;
+  /** The quarterly full-service rebuild drill's own last / next-due / overdue. */
+  readonly rebuildDrill: RebuildDrill;
   /**
    * `github` when derived from live drill issues; `mock` when the feed served
    * the mock-first fallback (no/invalid `DASH_GITHUB_TOKEN`, or a GitHub fetch
