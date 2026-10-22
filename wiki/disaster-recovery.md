@@ -59,7 +59,7 @@ page is about *infrastructure* recovery.
 | **What is backed up** | PostgreSQL only (`legendary.*` + `bgio`). Everything else is recovered another way — see [Not in any backup](#not-in-any-backup). |
 | **Schedule** | Nightly at 09:17 UTC on the droplet. No point-in-time recovery. |
 | **RPO** | ≤ 24 h — everything written after the last good dump is lost. 24 h is a proposed default, not yet confirmed. |
-| **RTO** | Proposed default 4 h. Measured: the database restore itself takes seconds (~15 MB dump); moving production to a pre-provisioned droplet took **10 m 10 s** of downtime (2026-10-12). A full rebuild on a new droplet is not yet timed. |
+| **RTO** | Proposed default 4 h. Measured: the database restore itself takes seconds (~15 MB dump); moving production to a pre-provisioned droplet took **10 m 10 s** of downtime (2026-10-12). A full rebuild on a new droplet from the provisioners took **13 m 31 s** of hands-on steps (2026-10-22 drill, DNS not moved). |
 | **Retention** | GFS on both offsite copies: 35 daily · 12 weekly · 12 monthly. The droplet keeps the last 7 locally. |
 | **Encryption** | R2 encrypts at rest (AES-256, Cloudflare-managed keys). Dumps are **not** encrypted client-side — see [Known gaps](#known-gaps). |
 | **Verification** | Every dump must be over 1024 bytes and pass `pg_restore --list` before upload; its SHA-256 is logged and sent in the success ping. Restores were drilled from R2 (2026-08-09, onto the droplet 2026-10-12) and pCloud (2026-08-10). A backup counts only after a restore drill within 90 days. |

@@ -86,7 +86,7 @@ Postgres (`legendary.*` and `bgio.*`).
 | Dump production + restore it onto the droplet | 13 s dump (14.6 MB) + restore | 2026-10-12 cutover |
 | End-to-end move of production to a pre-provisioned droplet (freeze, dump, restore, DNS switch) | **10 m 10 s** of downtime (UptimeRobot) | 2026-10-12 cutover |
 | App deploy (`40-app-deploy.ps1`: install, build, migrations, restart, health gate) | 71 s | 2026-10-11 rehearsal |
-| Full rebuild on a **new** droplet (provision, harden, Postgres, TLS, restore, deploy, DNS) | **Not yet timed** — the next full-rebuild drill measures it | — |
+| Full rebuild on a **new** droplet (provision, harden, Postgres, TLS, restore, deploy; DNS not moved) | **13 m 31 s** of hands-on steps (provisioning ~6.5 min of it) | 2026-10-22 rebuild drill |
 
 The database is small (~66 MB live, ~15 MB dump), so the restore itself is
 seconds. RTO is bounded by provisioning a host and repointing DNS, not by the
@@ -241,7 +241,7 @@ docs on 2026-10-20. Where the review was wrong, the table says so.
 
 | Option | What it gives | What it does not give | Verdict |
 |---|---|---|---|
-| **Usage-based Droplet backups** (generally available since 2025-11-26; **enabled 2026-10-20**) | A full disk image every 4 h, 6 h, 12 h, day, or week, taken while the droplet runs. A lost or broken droplet comes back as a new droplet from the image: OS, hardening, Nginx, TLS, `/etc/la/*.env`, and the app, with no provisioner run. | **Not a database backup.** DigitalOcean calls the images crash-consistent (disk only, never memory) and recommends an application-level tool for busy databases, so the image's Postgres is a power-loss copy. **No help for DR-05.** The images live in the same DigitalOcean account, so losing the account loses them. Volumes are not included. | **Enabled 2026-10-20** (§3 inventory). It replaces the untimed full rebuild in DR-02 "droplet lost" with an image restore, while DigitalOcean itself is healthy. Steps: [below](#enabling-droplet-backups). |
+| **Usage-based Droplet backups** (generally available since 2025-11-26; **enabled 2026-10-20**) | A full disk image every 4 h, 6 h, 12 h, day, or week, taken while the droplet runs. A lost or broken droplet comes back as a new droplet from the image: OS, hardening, Nginx, TLS, `/etc/la/*.env`, and the app, with no provisioner run. | **Not a database backup.** DigitalOcean calls the images crash-consistent (disk only, never memory) and recommends an application-level tool for busy databases, so the image's Postgres is a power-loss copy. **No help for DR-05.** The images live in the same DigitalOcean account, so losing the account loses them. Volumes are not included. | **Enabled 2026-10-20** (§3 inventory). It replaces the full rebuild in DR-02 "droplet lost" (13 m 31 s hands-on, 2026-10-22 drill) with an image restore, while DigitalOcean itself is healthy. Steps: [below](#enabling-droplet-backups). |
 | **Postgres data directory on a Volume** | Moves and resizes the data disk on its own. | Droplet backups skip volumes, and DigitalOcean does not schedule volume snapshots, so this adds a second thing to back up. The database is ~66 MB, so moving it buys nothing. | **Not now.** |
 | **Managed PostgreSQL** | Daily backups plus WAL, restoring to any point in the last 7 days. The review said PITR comes only on higher tiers, but DigitalOcean's feature page doesn't gate it by plan. Optional standby node for failover. | Reverses D-24707. Its backups stay in the DigitalOcean account, so the R2 + pCloud dumps would still be needed for DR-05. | **Not now.** Revisit only if a confirmed RPO under 24 h or the ops load makes it worth the cost. |
 | **WAL archiving to R2 / pCloud** | The self-hosted way to get an RPO under 24 h, and PITR for DR-03. | More moving parts and storage. | **Only if the §1 RPO is confirmed tighter than 24 h.** |
@@ -334,10 +334,14 @@ that uses `render.yaml` as its checklist misses them:
 `BREVO_FRIEND_REQUEST_TEMPLATE_ID`, `BREVO_FRIEND_ACCEPTED_TEMPLATE_ID`,
 `BREVO_MATCH_INVITE_TEMPLATE_ID`.
 
-**`/etc/la/.env` — droplet-owned** (written by the provisioners, not copied from
-anywhere): `DATABASE_URL` (the local role), `NODE_ENV`, `NODE_VERSION`, `PORT`,
-and `LEGENDS_PUBLISHER_ENABLED` (`true` only on the box holding the live database,
-because the publisher writes production R2 from its own database).
+**`/etc/la/.env` — droplet-owned** (written by hand on each box; no provisioner
+writes them, and the secret store's `DATABASE_URL` is the deleted Render
+database): `DATABASE_URL=postgres://la:<password>@localhost:5432/la` (the password
+given to `30-postgres.ps1` as `LA_DB_PASSWORD`), `NODE_ENV=production`,
+`PORT=3000`, `LISTEN_HOST=127.0.0.1` (the origin lock; `60-monitor` alerts without
+it), `WEB_CONCURRENCY=1`, and `LEGENDS_PUBLISHER_ENABLED` (`true` only on the box
+holding the live database, because the publisher writes production R2 from its own
+database; `false` on any drill box).
 
 **`/etc/la/backup.env`:** the R2 credentials and bucket for the backup, the pCloud
 token (`BACKUP_PCLOUD_TOKEN`), and the healthchecks.io ping URLs
@@ -411,15 +415,34 @@ downstream — so each step has what the next one needs:
   directory build (frozen install, build, migrations), then a restart behind
   `la-server-standby` and a health gate. A known-good commit is a hand deploy
   with `DEPLOY_REF=<sha>`.
-- **Procedure (droplet lost):** create a droplet (Ubuntu 24.04) with the lab's
-  cloud-init → run the provisioners in order (`05` SSH, `06` UFW, `07`, `08`
-  swap, `10` Node/pnpm, `20` Nginx, `21` Cloudflare origin TLS with the Origin Certificate, `30`
-  PostgreSQL) →
-  install `/etc/la/.env` and `/etc/la/backup.env` (§4) → DR-01 restore from R2
-  → `40-app-deploy.ps1` → `50`/`60 -Install` (backup and monitor timers) →
-  point the proxied `api.` A record at the new IP → §6 validation. The
-  provisioners are vendor-neutral (CI smoke runs them on plain Ubuntu 24.04), so
-  another provider works if DigitalOcean is the problem.
+- **Procedure (droplet lost):** timed at 13 m 31 s of hands-on steps
+  (2026-10-22 drill, §7). Run every provisioner as
+  `sudo pwsh -NoProfile -NonInteractive -File <script>` from
+  `/opt/la-lab/infra/scripts`.
+  1. Create an Ubuntu 24.04 droplet (`s-2vcpu-4gb`; if the region refuses the
+     size, use a neighbor such as sfo2 or the `-intel` size) with the lab's
+     `infra/cloud-init.yaml`, its `REPLACE_WITH_OPERATOR_PUBLIC_KEY` replaced
+     with the operator's public key. Wait for `cloud-init status` → `done`.
+  2. Copy the lab tree: `git archive --format=tar origin/main infra | ssh
+     operator@<ip> "sudo mkdir -p /opt/la-lab && sudo chown operator:operator
+     /opt/la-lab && tar -x -C /opt/la-lab"`.
+  3. `05` SSH, `06` UFW, `07` fail2ban/upgrades, `08` swap, `10` Node/pnpm,
+     `20` Nginx, `30` PostgreSQL (with a new `LA_DB_PASSWORD`).
+  4. Install `/etc/la/.env`, `/etc/la/backup.env` and `/etc/la/monitor.env`
+     (§4; write the droplet-owned keys by hand), and the origin cert and key at
+     `/etc/ssl/cloudflare/origin.{crt,key}` → `21` Cloudflare origin TLS.
+  5. `50 -Install` **before** the restore: it installs rclone, which `51` needs.
+  6. DR-01 restore from R2 (`RESTORE_FROM_R2=latest`, `RESTORE_TARGET_DB=la`,
+     `RESTORE_ALLOW_LIVE_TARGET=true`).
+  7. `40-app-deploy.ps1` with `DEPLOY_REF=<last live sha>`.
+  8. `50` once (the first local backup; until it exists `la-health` fails with
+     "no backup found"), then `60 -Install`, `22 -Install`, and `41` with
+     `DEPLOY_PUBLIC_KEY_FILE` (the public half of `DEPLOY_SSH_KEY`) so automatic
+     deploys work; update the `DEPLOY_HOST` / `DEPLOY_KNOWN_HOSTS` secrets.
+  9. Point the proxied `api.` A record at the new IP → §6 validation.
+
+  The provisioners are vendor-neutral (CI smoke runs them on plain Ubuntu
+  24.04), so another provider works if DigitalOcean is the problem.
 - **Procedure (droplet lost, from a Droplet backup image — daily since 2026-10-20, §3):**
   create a droplet from the newest backup image → let Postgres finish crash
   recovery → if the newest R2 dump that passes the §3 gates is newer than the
@@ -705,6 +728,71 @@ Corrective action:   recorded in D-24707 §8 and §0 above.
 **Scope.** The cutover exercised a real restore plus §6 Phases 1–5 (health,
 data, login, a match, WebSocket). It did not run Phases 6–10 as a checklist; the
 next full-rebuild drill covers those.
+
+**2026-10-22 — DR-02 "droplet lost" full rebuild on a new droplet (no image).**
+
+```
+Date:                2026-10-22 (05:57–06:06 and 12:58–13:04 UTC)
+Scenario:            DR-02 droplet lost — a throwaway droplet (la-drill-01, sfo2,
+                     s-2vcpu-4gb, tag la-drill) built only from lab cloud-init +
+                     provisioners (lab a46e9fd) and the operator secret store, then
+                     destroyed. Production untouched.
+Backup object key:   db-backups/2026/10/22/legendary-arena-20261022T091717Z.dump
+                     (1,940,060 bytes; RESTORE_FROM_R2=latest — inferred as the
+                     newest nightly at restore time; 51's download line was not
+                     captured)
+Commit SHA restored: 4a31641c (production's live commit); schema_migrations 46,
+                     0 migrations pending
+Observed RPO:        ~3 h 45 m (dump age at restore)
+Observed RTO:        13 m 31 s of hands-on steps; 7 h 6 m wall clock, almost all of
+                     it waiting for the operator to run the restore
+Duration:            see the metrics table below
+Result:              PASS for §6 Phase 1 at the origin and Phase 2. la-health "All
+                     checks passed"; /health, /health/db, /version 200 over origin
+                     TLS (Cloudflare Origin CA cert); WebSocket upgrade 101;
+                     :3000 on loopback; from outside, 443 and 3000 time out and 80
+                     redirects. Row counts identical to production (players 9,
+                     player_profiles 1, friendships 3, competitive_scores 0,
+                     bgio.matches 0); the box's first local dump was byte-size
+                     identical to the source (1,940,060).
+Issues found:        1. s-2vcpu-4gb was not creatable in sfo3 (422 "Size is not
+                        available in this region"); sfo3 offered only the -intel
+                        size ($28). Used sfo2.
+                     2. DR-02 never said how lab infra/ gets onto the box.
+                     3. 51-restore needs rclone, which only `50-backup.ps1 -Install`
+                        installs, and DR-02 ran that after the restore: the restore
+                        failed until 50 -Install ran.
+                     4. §4 said the provisioners write the droplet-owned .env keys;
+                        none does. LISTEN_HOST and WEB_CONCURRENCY were not listed;
+                        NODE_VERSION was listed but production does not set it.
+                     5. The secret store (render-secrets*.env) lacks DASH_GITHUB_REPO,
+                        and its DATABASE_URL is the deleted Render database.
+                     6. DR-02 omitted 22 (Cloudflare-range UFW refresh) and 41
+                        (deploy user for automatic deploys).
+                     7. A fresh box fails la-health with "no backup found" until its
+                        first 50-backup run.
+Corrective action:   DR-02 procedure and §4 rewritten in this commit (1–4, 6, 7).
+                     Item 5 is the operator's: add DASH_GITHUB_REPO to the secret
+                     store and mark its DATABASE_URL as obsolete.
+```
+
+| Metric | Result |
+|---|---|
+| Time to provision host (create through `30`, incl. cloud-init ~3 min) | 6 m 28 s |
+| Time to restore secrets (+ origin cert, then `21`) | 36 s + 6 s |
+| Time to restore database (`50 -Install` for rclone, then `51`) | 7 s + 6 s |
+| Time to deploy app (`40`) | 69 s |
+| Timers, first backup, deploy user (`60`/`22 -Install`, `50`, `41`) | 12 s |
+| Time to first successful login | not exercised |
+| Time to first successful match | not exercised |
+| **Total recovery time (hands-on)** | **13 m 31 s** |
+
+**Scope.** The `api.` record was not moved and the `api-next` flip was not made,
+so the drill did not cover the Cloudflare edge path (proven at the 2026-10-12
+cutover) or §6 Phases 3–10, which need a client pointed at the rebuilt box.
+Add about a minute for the proxied A-record edit. Destroying the box removed the
+production secrets and data copy it held. Next full rebuild is due by
+2027-01-22 (quarterly).
 
 ---
 
