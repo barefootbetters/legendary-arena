@@ -78,11 +78,10 @@ pg_dump  →  Cloudflare R2 (primary)  →  pCloud (mirror)   nightly 09:17 UTC
   proxied Cloudflare A record to this droplet, and its PostgreSQL 18 holds the
   production data (see [Cutover](#cutover-2026-10-12)). Before cutover the box
   was rehearsed only against a **copy** of the data, never the live prod DB.
-  Render's managed Postgres allows credential-gated public inbound
+  Render's managed Postgres allowed credential-gated public inbound
   (`ipAllowList: ['0.0.0.0/0']` in `render.yaml`) — a footgun, not an
-  invitation; it stays up only as the rollback copy. The Render web service is
-  suspended as the rollback target for the 7-day window, then Render is
-  deleted (~2026-10-20).
+  invitation; it stayed up only as the rollback copy. Render was deleted on
+  2026-10-22, after the 7-day rollback window.
 
 ### Why the platform is changing
 
@@ -230,7 +229,7 @@ The steps performed:
    (15.4 MB) landed in both places, byte-identical. The healthchecks.io checks
    `la-droplet-monitor`, `la-droplet-backup` and `la-droplet-pcloud` are green.
    This repo's `db-backup.yml` nightly was disabled (`gh workflow disable`) and
-   is deleted after the rollback window.
+   was deleted on 2026-10-22.
 
 **Rollback (7-day window, to ~2026-10-20).**
 1. Restore the DNS-only CNAME `api` → `legendary-arena-server.onrender.com`.
@@ -613,9 +612,7 @@ operator can, unaided —
   box built from these steps (a rehearsal, a rebuild test, a learning lab) runs
   against a restored copy with test-mode credentials for the `sync: false` env
   set, and never gets the pCloud token or the production backup bucket (see
-  "Production data only" above). Until Render is deleted, its managed Postgres
-  is still credential-reachable from anywhere (`0.0.0.0/0`); never point a
-  rehearsal box at it.
+  "Production data only" above).
 - **"Stateless" is persistence-stateless, not connection-stateless.** One droplet
   is fine. A future multi-node app tier would additionally need a Socket.IO Redis
   adapter (WebSocket fan-out) and leader-election / single-owner scheduling for the
@@ -692,8 +689,10 @@ operator can, unaided —
    `legendary-arena-db-backups`, and `db-backup.yml` is disabled: its source,
    Render, stopped being the truth, and the droplet's Postgres is
    localhost-only, so the workflow could not reach it.
-5. Decommission Render after the 7-day rollback window (~2026-10-20), and
-   delete `db-backup.yml` the same day.
+5. ~~Decommission Render after the 7-day rollback window (~2026-10-20), and
+   delete `db-backup.yml` the same day.~~ Done 2026-10-22: the web service,
+   the database, and the Blueprint are deleted in Render, and `db-backup.yml`
+   is deleted from this repo.
 
 ## References
 

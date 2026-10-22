@@ -99,7 +99,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 | **Phone** | Mobile control surface — PR review + merge, deploy monitoring, remote session steering via Tailscale. Does not author. |
 | **Claude** | Two roles: **Claude Code** (laptop or workstation) builds to WP/EC contract; **Claude-in-CI** runs the nightly Inspector triage agent. |
 | **GitHub** | Branch → PR → squash-merge `main`; holds the governance ledger; runs CI; merge triggers deploy. |
-| **DigitalOcean droplet** | Game server + PostgreSQL 18 (`localhost`) on one self-hosted Ubuntu 24.04 box (2 vCPU / 4 GB, ~$24/mo) behind Cloudflare, since the 2026-10-12 cutover. The server deploys on merge to `main` once CI passes ([`deploy-server.yml`](../.github/workflows/deploy-server.yml), D-24708), through the `legendary-arena-lab` repo's `40-app-deploy.ps1`; wiki-, docs-, and front-end-only pushes are skipped. Render (production until 2026-10-12; September 2026 bill **$146.35**) was suspended at cutover for a 7-day rollback window ([Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026), [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)). |
+| **DigitalOcean droplet** | Game server + PostgreSQL 18 (`localhost`) on one self-hosted Ubuntu 24.04 box (2 vCPU / 4 GB, ~$24/mo) behind Cloudflare, since the 2026-10-12 cutover. The server deploys on merge to `main` once CI passes ([`deploy-server.yml`](../.github/workflows/deploy-server.yml), D-24708), through the `legendary-arena-lab` repo's `40-app-deploy.ps1`; wiki-, docs-, and front-end-only pushes are skipped. Render (production until 2026-10-12; September 2026 bill **$146.35**) was suspended at cutover for a 7-day rollback window and deleted on 2026-10-22 ([Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026), [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)). |
 | **Cloudflare** | Pages hosts the public front-ends (`www`, `play`, `cards`, `legends`); assets-only Workers host the two Access-gated sites, the ewiki and `dashboard` (D-24690), deployed by GitHub Actions; R2 hosts card images (`images.legendary-arena.com`) and the private nightly DB backups. |
 
 ### Round trip (idea to live)
@@ -935,8 +935,9 @@ Each platform manages its own configuration and secrets independently.
   `render.yaml`. The server auto-deployed on merge to `main` (skipping
   `buildFilter.ignoredPaths` pushes) and ran migrations in `buildCommand`.
 - At the 2026-10-12 cutover the web service was suspended, kept for a 7-day
-  rollback window with the Render database as the rollback copy; Render is
-  deleted after the window (~2026-10-20).
+  rollback window with the Render database as the rollback copy. After the
+  window, the web service, the database, and the `render.yaml` Blueprint were
+  deleted on 2026-10-22. The Render workspace is empty, on the free Hobby plan.
 - **Cost:** $146.35 for September 2026 (server $85.00, Postgres $55.30,
   builds $5.00, bandwidth $1.05); August was $146.50, so ~$146/mo was the
   steady rate. The comparison is in

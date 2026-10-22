@@ -33,8 +33,8 @@ GFS: 35 daily · 12 weekly · 12 monthly) → a **permanent pCloud mirror** (the
 second vendor). Each offsite copy reports to its own healthchecks.io check. The
 first production backup landed in R2 and pCloud on 2026-10-12, byte-identical.
 The WP-416 GitHub Actions nightly (`.github/workflows/db-backup.yml`, D-24236),
-which backed up Render from 2026-08-09, was **disabled at cutover** and is deleted
-after the rollback window. The key layout and retention are unchanged, so the R2
+which backed up Render from 2026-08-09, was **disabled at cutover** and deleted on
+2026-10-22 with Render. The key layout and retention are unchanged, so the R2
 and pCloud history is continuous.
 
 Consequence, stated plainly so it is not discovered during a crisis:
@@ -49,13 +49,11 @@ Consequence, stated plainly so it is not discovered during a crisis:
   from R2 (2026-08-09, and onto the droplet 2026-10-12) and from pCloud
   (2026-08-10) — §7.
 
-**Rollback window (to ~2026-10-20).** The Render web service is suspended, not
-deleted, and Render's database snapshots exist until that database is deleted.
-Rolling back is the D-24707 §8 procedure: restore the DNS-only CNAME `api.` →
-`legendary-arena-server.onrender.com`, resume the service, swap
-`LEGENDS_PUBLISHER_ENABLED`, and **re-add `api.` as a Render custom domain**
-(Render's Cloudflare-for-SaaS hostname overrides the zone record). After the
-window, Render is deleted and this paragraph goes.
+**Render is deleted (2026-10-22).** The D-24707 §8 rollback window ended
+~2026-10-20, and the Render web service, its database, and the `render.yaml`
+Blueprint were deleted on 2026-10-22. There is no Render rollback target and no
+Render database snapshot: the droplet's nightly dumps in R2 and pCloud are the
+only copies.
 
 ---
 

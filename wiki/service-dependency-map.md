@@ -103,8 +103,8 @@ The build checks the file and fails, naming the problem, when:
   live hostname has an entry, not that every entry lists every dependency. A
   new outbound call (a new vendor API in `apps/server`, a new CDN in a
   front-end) needs its edge added by hand.
-- **Rollback window.** Until Render is deleted (~2026-10-20), a D-24707
-  rollback would move `api.` back to Render; this map describes the droplet.
+- **No Render rollback.** Render was deleted on 2026-10-22, so the droplet is
+  the only production host; this map describes it.
 - **The raw Markdown shows shortcode lines, not the tables.** Read the JSON
   file directly on GitHub or as an agent; it is the source.
 
