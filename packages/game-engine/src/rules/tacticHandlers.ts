@@ -48,7 +48,6 @@ import { drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
-import { refillHqSlot } from '../board/city.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { isHqSlotHaunted } from '../board/haunt.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
@@ -62,7 +61,17 @@ import {
   buildMonarchsDecreeModeChoice,
   buildVanishingIllusionsChoice,
   buildFallenIdolsDiscardChoice,
+  // why: WP-821 / D-24754 — the free HQ gain moved to the pure seatChoiceTactics module
+  // (Dominate the Weak's apply shares it), plus Arnim Zola's tactic builders.
+  gainHqHeroToDiscard,
+  buildComputerUploadedGeniusDiscardChoice,
+  buildDominateTheWeakChoice,
+  gainDominateTheWeakHero,
+  buildCrushPacifistResistanceChoice,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
 } from '../moves/seatChoiceTactics.js';
+// why: WP-821 / D-24754 — the one "less than 2 printed Attack" HQ read.
+import { listZolaWeakHqSlots } from '../mastermind/arnimZola.logic.js';
 // why: WP-818 / D-24752 — Baron Zemo's tactics read Savior status and the first
 // Victory-Pile Bystander through the shared WP-816 helpers (defeated Killbots included).
 import {
@@ -189,6 +198,33 @@ export const FINDING_ZEMO_REVEAL_COUNT = 5;
 // why: the normalized team slug for Hatred for the Avengers and Prisoners of War, the
 // same lowercase form as TEAM_X_MEN.
 const TEAM_AVENGERS = 'avengers';
+
+// why: WP-821 / D-24754 — ca75 Arnim Zola's four tactic ext_ids, same
+// `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}` grammar as the constants above.
+// Printed Fight text (data/cards/ca75.json):
+//   Dominate the Weak          "The player of your choice gains a Hero from the HQ that has
+//                               less than 2 printed [icon:attack]."
+//   Computer-Uploaded Genius   "Each other player reveals a [hc:tech] Hero or discards a card."
+//   Pet Projects               "Each other player reveals a Zola's Creations Villain from their
+//                               Victory Pile or gains a Wound."
+//   Crush Pacifist Resistance  "KO up to two of your Heroes that have less than 2 printed
+//                               [icon:attack]."
+const ZOLA_DOMINATE_THE_WEAK_TACTIC_ID: CardExtId =
+  'ca75-mastermind-arnim-zola-dominate-the-weak';
+const ZOLA_COMPUTER_UPLOADED_GENIUS_TACTIC_ID: CardExtId =
+  'ca75-mastermind-arnim-zola-computer-uploaded-genius';
+const ZOLA_PET_PROJECTS_TACTIC_ID: CardExtId =
+  'ca75-mastermind-arnim-zola-pet-projects';
+const ZOLA_CRUSH_PACIFIST_RESISTANCE_TACTIC_ID: CardExtId =
+  'ca75-mastermind-arnim-zola-crush-pacifist-resistance';
+
+// why: the normalized hero-class slug for Computer-Uploaded Genius, matching
+// G.cardTraits[extId].heroClass / heroClass2 (D-24523).
+const HERO_CLASS_TECH = 'tech';
+
+// why: WP-821 / D-24754 — the anchored Zola's Creations villain-group prefix
+// (`${setAbbr}-villain-${group}-`, D-24299) for Pet Projects' Victory-Pile reveal.
+const ZOLAS_CREATIONS_VILLAIN_PREFIX = 'ca75-villain-zolas-creations-';
 
 // why: WP-696 / D-24513 — core Dr. Doom's "Secrets of Time Travel" tactic ext_id,
 // same `${setAbbr}-mastermind-${slug}-${tacticSlug}` grammar as the constants above
@@ -936,39 +972,6 @@ function collectEligibleHqIndices(
 }
 
 /**
- * Gains the HQ Hero at `hqIndex` to `playerId`'s discard for FREE — the forced
- * single-eligible free-recruit path (WP-692 / D-24509).
- *
- * @param G - Game state (mutated: `G.hq`, `G.heroDeck`, the recipient's discard).
- * @param playerId - The recipient whose discard the Hero enters.
- * @param hqIndex - The HQ slot to take (expected to hold a non-null Hero).
- * @returns The gained Hero ext_id, or null when the slot was empty.
- */
-function gainHqHeroFree(
-  G: LegendaryGameState,
-  playerId: string,
-  hqIndex: number,
-): CardExtId | null {
-  const heroId = G.hq[hqIndex];
-  if (heroId === null || heroId === undefined) {
-    return null;
-  }
-  // why: WP-692 / D-24509 — FREE recruit: vacate the slot + refill from G.heroDeck via
-  // refillHqSlot, but NEVER read or spend `turnEconomy.recruit` (the whole point of the
-  // "for free" tactics vs the normal cost-paying recruit path). D-24327 — the gain routes
-  // to the recipient's DISCARD, never the victory pile.
-  G.hq[hqIndex] = null;
-  const refillResult = refillHqSlot(G.hq, hqIndex, G.heroDeck);
-  G.hq = refillResult.hq;
-  G.heroDeck = refillResult.heroDeck;
-  const zones = G.playerZones[playerId];
-  if (zones) {
-    zones.discard.push(heroId);
-  }
-  return heroId;
-}
-
-/**
  * Shared filtered-free-recruit-from-HQ mechanic for the two core mastermind tactics
  * (WP-692 / D-24509): the defeating player recruits an eligible HQ Hero for free.
  *
@@ -1005,7 +1008,7 @@ function freeRecruitFromHqByFilter(
     // why: EC-729 — a mandatory tactic (Bitter Captor) with exactly one eligible Hero is a
     // FORCED gain, so auto-resolve it now (no prompt); the parked path would offer a
     // one-option pick with no decline, which is just ceremony.
-    const gainedId = gainHqHeroFree(G, currentPlayer, eligibleIndices[0]!);
+    const gainedId = gainHqHeroToDiscard(G, currentPlayer, eligibleIndices[0]!);
     if (gainedId !== null) {
       pushLog(G,
         `Fight effect: Player ${currentPlayer} recruited ${formatCardRef(G.cardDisplayData, gainedId)} from the HQ for free (${tacticName}).`,
@@ -1588,6 +1591,29 @@ export function dispatchTacticOnFight(
     resolvePrisonersOfWar(G, currentPlayer);
     return;
   }
+  // why: WP-821 / D-24754 — Arnim Zola's Dominate the Weak: one active-seat "Player N gains
+  // <Hero>" choice (a single option resolves at once).
+  if (defeatedTacticId === ZOLA_DOMINATE_THE_WEAK_TACTIC_ID) {
+    resolveDominateTheWeak(G, events, currentPlayer);
+    return;
+  }
+  // why: WP-821 / D-24754 — Computer-Uploaded Genius: hand Tech reveals, then a multi-seat
+  // discard for the rest (threads events for the stage ride).
+  if (defeatedTacticId === ZOLA_COMPUTER_UPLOADED_GENIUS_TACTIC_ID) {
+    resolveComputerUploadedGenius(G, events, currentPlayer);
+    return;
+  }
+  // why: WP-821 / D-24754 — Pet Projects: Victory-Pile reveal or a Wound (auto-resolved).
+  if (defeatedTacticId === ZOLA_PET_PROJECTS_TACTIC_ID) {
+    resolvePetProjects(G, currentPlayer);
+    return;
+  }
+  // why: WP-821 / D-24754 — Crush Pacifist Resistance: the first of up to two active-seat
+  // KO picks (seatChoice.resolve.ts chains the second).
+  if (defeatedTacticId === ZOLA_CRUSH_PACIFIST_RESISTANCE_TACTIC_ID) {
+    resolveCrushPacifistResistance(G, events, currentPlayer);
+    return;
+  }
 }
 
 /**
@@ -1872,4 +1898,226 @@ export function resolvePrisonersOfWar(
       'applied',
     );
   }
+}
+
+/**
+ * Resolves Arnim Zola's "Dominate the Weak" tactic Fight effect (WP-821 / D-24754): "The
+ * player of your choice gains a Hero from the HQ that has less than 2 printed
+ * [icon:attack]."
+ *
+ * Parks one active-seat choice whose options pair a recipient with an eligible HQ Hero.
+ * A single possible option (solo, one eligible Hero) resolves at once. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ * @param currentPlayer - The player who defeated the tactic (the chooser).
+ */
+export function resolveDominateTheWeak(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  const slots = listZolaWeakHqSlots(G);
+  if (slots.length === 0) {
+    pushLog(G,
+      `Fight effect: no Hero in the HQ has less than 2 printed Attack, so no one gains a Hero (Dominate the Weak).`,
+      'blocked',
+    );
+    return;
+  }
+
+  const choice = buildDominateTheWeakChoice(G, currentPlayer, slots);
+  if (choice.seatPrompts[currentPlayer]!.options.length === 1) {
+    // why: one recipient and one Hero is a forced pick, so it resolves now (the Bitter
+    // Captor single-eligible rule, EC-729). Both fields are always set by construction;
+    // the guard keeps exactOptionalPropertyTypes honest without a cast.
+    const onlyOption = choice.seatPrompts[currentPlayer]!.options[0]!;
+    if (onlyOption.cardId !== undefined && onlyOption.recipientSeat !== undefined) {
+      gainDominateTheWeakHero(G, onlyOption.cardId, onlyOption.recipientSeat);
+    }
+    return;
+  }
+  // why: D-24648 — the defeating player is the only addressed seat, so no stage ride runs.
+  parkSeatChoice(G, events, choice, currentPlayer);
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} chooses a player to gain a Hero with less than 2 printed Attack from the HQ (Dominate the Weak).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves Arnim Zola's "Computer-Uploaded Genius" tactic Fight effect (WP-821 /
+ * D-24754): "Each other player reveals a [hc:tech] Hero or discards a card."
+ *
+ * Each other player with a Tech Hero in hand reveals it; each other player with an empty
+ * hand is narrated; the rest get one simultaneous multi-seat discard. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission); optional
+ *   so a unit/replay context parks on G and resolves directly.
+ * @param currentPlayer - The player who defeated the tactic. Skipped ("each other player").
+ */
+export function resolveComputerUploadedGenius(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to reveal a Tech Hero or discard a card (Computer-Uploaded Genius).`,
+      'neutral',
+    );
+    return;
+  }
+
+  const discardSeats = collectGeniusDiscardSeats(G, otherSeats);
+  const discardChoice = buildComputerUploadedGeniusDiscardChoice(G, discardSeats);
+  if (discardChoice === undefined) {
+    pushLog(G,
+      `Fight effect: no other player must discard a card (Computer-Uploaded Genius).`,
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, discardChoice);
+  pushLog(G,
+    `Fight effect: each other player without a Tech Hero must discard a card (Computer-Uploaded Genius).`,
+    'neutral',
+  );
+}
+
+/**
+ * Narrates each other seat's Tech reveal or empty hand for Computer-Uploaded Genius and
+ * returns the seats that must discard.
+ *
+ * @param G - The game state (read for hands + traits; G.messages appended).
+ * @param otherSeats - Every seat except the defeating player (ascending).
+ * @returns The seats with no Tech Hero and at least one hand card (ascending).
+ */
+function collectGeniusDiscardSeats(G: LegendaryGameState, otherSeats: readonly string[]): string[] {
+  const discardSeats: string[] = [];
+  for (const seat of otherSeats) {
+    const zones = G.playerZones[seat];
+    if (!zones) {
+      continue;
+    }
+    // why: during your turn another player's Heroes are in their hand, so the reveal reads
+    // the hand only (the Crushing Shockwave / Prisoners of War precedent), either class slot
+    // (D-24523). A free reveal always beats a discard (D-24312), so a Tech holder is never asked.
+    const techHero = zones.hand.find((cardExtId) => {
+      const traits = offPlayCardTraits(G, cardExtId);
+      return traits?.heroClass === HERO_CLASS_TECH || traits?.heroClass2 === HERO_CLASS_TECH;
+    });
+    if (techHero !== undefined) {
+      pushLog(G,
+        `Fight effect: Player ${seat} revealed ${formatCardRef(G.cardDisplayData, techHero)} — no discard (Computer-Uploaded Genius).`,
+        'neutral',
+      );
+      continue;
+    }
+    if (zones.hand.length === 0) {
+      pushLog(G,
+        `Fight effect: Player ${seat} has no card to discard (Computer-Uploaded Genius).`,
+        'neutral',
+      );
+      continue;
+    }
+    discardSeats.push(seat);
+  }
+  return discardSeats;
+}
+
+/**
+ * Resolves Arnim Zola's "Pet Projects" tactic Fight effect (WP-821 / D-24754): "Each
+ * other player reveals a Zola's Creations Villain from their Victory Pile or gains a
+ * Wound."
+ *
+ * Each other player (sorted) with any Zola's Creations Villain in their Victory Pile
+ * reveals it; every other one gains a Wound through the Diving Block chokepoint. Never
+ * throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ */
+export function resolvePetProjects(G: LegendaryGameState, currentPlayer: string): void {
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to reveal a Zola's Creations Villain or gain a Wound (Pet Projects).`,
+      'neutral',
+    );
+    return;
+  }
+
+  for (const seat of otherSeats) {
+    const zones = G.playerZones[seat];
+    if (!zones) {
+      continue;
+    }
+    if (countVictoryPileGroupVillains(zones.victory, ZOLAS_CREATIONS_VILLAIN_PREFIX) > 0) {
+      pushLog(G,
+        `Fight effect: Player ${seat} revealed a Zola's Creations Villain from their Victory Pile — no Wound (Pet Projects).`,
+        'neutral',
+      );
+      continue;
+    }
+    // why: WP-682 / D-24499 — the Wound chokepoint, so a Diving-Block holder (a non-active
+    // seat here) gets the reveal window; D-24673 wording while it is pending.
+    const woundOutcome = gainWoundWithOutcome(G, seat);
+    if (woundOutcome === 'gained') {
+      pushLog(G, `Fight effect: Player ${seat} gained a Wound (Pet Projects).`, 'applied');
+    } else if (woundOutcome === 'diving-block-pending') {
+      pushLog(G,
+        `Fight effect: Player ${seat} would gain a Wound — Diving Block can prevent it (Pet Projects).`,
+        'neutral',
+      );
+    } else {
+      pushLog(G,
+        `Fight effect: Player ${seat} gained no Wound — the Wound supply is empty (Pet Projects).`,
+        'blocked',
+      );
+    }
+  }
+}
+
+/**
+ * Resolves Arnim Zola's "Crush Pacifist Resistance" tactic Fight effect (WP-821 /
+ * D-24754): "KO up to two of your Heroes that have less than 2 printed [icon:attack]."
+ *
+ * Parks the first of up to two active-seat KO picks over the defeating player's hand and
+ * played cards, with "KO nothing" last and the default. seatChoice.resolve.ts chains the
+ * second pick after a KO. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ * @param currentPlayer - The player who defeated the tactic (the one who KOs).
+ */
+export function resolveCrushPacifistResistance(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  const choice = buildCrushPacifistResistanceChoice(
+    G,
+    currentPlayer,
+    CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  );
+  if (choice === undefined) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has no Hero with less than 2 printed Attack to KO (Crush Pacifist Resistance).`,
+      'blocked',
+    );
+    return;
+  }
+  // why: D-24648 — the defeating player is the only addressed seat, so no stage ride runs.
+  parkSeatChoice(G, events, choice, currentPlayer);
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} may KO up to two Heroes with less than 2 printed Attack (Crush Pacifist Resistance).`,
+    'neutral',
+  );
 }

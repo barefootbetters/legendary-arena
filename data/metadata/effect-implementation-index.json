@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 580,
+      "executable": 584,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
-      "unmarked": 1040,
+      "unmarked": 1036,
       "subsystem": 5
     }
   },
@@ -4299,10 +4299,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "computer-uploaded-genius",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveComputerUploadedGenius",
+      "wp": "WP-821",
+      "decision": "D-24754"
     },
     {
       "extId": "ca75-mastermind-arnim-zola-crush-pacifist-resistance",
@@ -4310,10 +4310,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "crush-pacifist-resistance",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCrushPacifistResistance",
+      "wp": "WP-821",
+      "decision": "D-24754"
     },
     {
       "extId": "ca75-mastermind-arnim-zola-dominate-the-weak",
@@ -4321,10 +4321,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "dominate-the-weak",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveDominateTheWeak",
+      "wp": "WP-821",
+      "decision": "D-24754"
     },
     {
       "extId": "ca75-mastermind-arnim-zola-pet-projects",
@@ -4332,10 +4332,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "pet-projects",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolvePetProjects",
+      "wp": "WP-821",
+      "decision": "D-24754"
     },
     {
       "extId": "ca75-mastermind-baron-heinrich-zemo-fallen-idols",

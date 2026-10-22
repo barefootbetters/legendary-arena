@@ -43,7 +43,7 @@ export const ABOMINATION_KINDS: readonly AbominationKind[] = [
  * @param heroId - The Hero card instance ext_id (an HQ slot).
  * @returns The printed Attack, or 0 when the card has no stats.
  */
-function printedHeroAttack(G: LegendaryGameState, heroId: CardExtId): number {
+export function printedHeroAttack(G: LegendaryGameState, heroId: CardExtId): number {
   // why: "printed" Attack drops the trailing `+`, and a Divided card adds both
   // halves (rules v23 Divided Cards); offPlayCardStats is the off-play view that
   // does both. Granted or temporary Attack never counts.

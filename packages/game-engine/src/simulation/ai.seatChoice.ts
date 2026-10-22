@@ -40,6 +40,9 @@ import {
   MONARCHS_DISCARD_KIND,
   VANISHING_ILLUSIONS_KO_KIND,
   FALLEN_IDOLS_DISCARD_KIND,
+  COMPUTER_UPLOADED_GENIUS_DISCARD_KIND,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
 } from '../moves/seatChoiceTactics.js';
 import {
   ESCAPE_BYSTANDER_DISCARD_KIND,
@@ -113,13 +116,24 @@ function chooseByKind(
   // why: WP-817 / D-24750 — the Primus Escape discard lists only eligible cards, so the
   // bot-ally discards its cheapest one (autoplay / sim / PAR take defaultOptionIndex 0).
   // WP-818 / D-24752: Fallen Idols is the same any-hand-card discard as Monarch's.
+  // WP-821 / D-24754: so is Computer-Uploaded Genius.
   if (
     choice.kind === MONARCHS_DISCARD_KIND ||
     choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND ||
     choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND ||
-    choice.kind === FALLEN_IDOLS_DISCARD_KIND
+    choice.kind === FALLEN_IDOLS_DISCARD_KIND ||
+    choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND
   ) {
     return indexOfLeastValuableCard(G, options);
+  }
+  // why: WP-821 / D-24754 — Crush Pacifist Resistance is optional; the bot-ally KOs a
+  // 0-cost Hero (deck thinning) or declines. Dominate the Weak keeps its default (you gain
+  // the highest-cost eligible Hero, D-24343).
+  if (
+    choice.kind === CRUSH_PACIFIST_RESISTANCE_KO_KIND ||
+    choice.kind === CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND
+  ) {
+    return indexOfZeroCostKoOption(G, options);
   }
   if (choice.kind === VANISHING_ILLUSIONS_KO_KIND) {
     return indexOfLowestVictoryPointCard(G, seat, options);
@@ -306,6 +320,33 @@ function indexOfLeastValuableCard(
     }
   }
   return bestIndex;
+}
+
+/**
+ * Picks the first KO option whose card costs 0, else the last option ("KO nothing").
+ *
+ * // why: a 0-cost Hero is a S.H.I.E.L.D. starter (seeded cost 0,
+ * buildInitialGameState.ts ~L526); KOing one thins the deck, the classic good KO. Any
+ * other weak Hero is worth keeping, so the bot declines.
+ *
+ * @param G - The game state (read for cardStats).
+ * @param options - The seat's options; KO options carry the card in cardId, the last is the decline.
+ * @returns The chosen option index.
+ */
+function indexOfZeroCostKoOption(
+  G: LegendaryGameState,
+  options: readonly SeatChoiceOption[],
+): number {
+  for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+    const cardId = options[optionIndex]!.cardId;
+    if (cardId === undefined) {
+      continue;
+    }
+    if ((G.cardStats[cardId]?.cost ?? 0) === 0) {
+      return optionIndex;
+    }
+  }
+  return options.length - 1;
 }
 
 /**

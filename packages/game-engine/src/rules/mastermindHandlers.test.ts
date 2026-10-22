@@ -2027,3 +2027,166 @@ describe('WP-818 mastermindStrikeHandler — Baron Zemo Master Strike (D-24752)'
     assert.deepEqual(zemoStrikeLines(gameState), []);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-821 / D-24754 — Arnim Zola's Master Strike
+// ---------------------------------------------------------------------------
+
+import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
+
+describe('WP-821 mastermindStrikeHandler — Arnim Zola Master Strike (D-24754)', () => {
+  /** A Hero stat entry with the given printed Attack and cost. */
+  function zolaStat(attack: number, cost: number) {
+    return { ...co2eStat(cost), attack };
+  }
+
+  /** S1's card stats: HQ Heroes, Hero Deck cards and the players' hand cards. */
+  const S1_STATS = {
+    h3a: zolaStat(1, 3), h4: zolaStat(2, 4), h5: zolaStat(0, 5), h6: zolaStat(3, 6), h3b: zolaStat(0, 3),
+    d1: zolaStat(0, 2), d2: zolaStat(3, 7), d3: zolaStat(3, 7), d4: zolaStat(3, 7),
+    x: zolaStat(2, 3), y: zolaStat(2, 5), z: zolaStat(2, 3), q: zolaStat(2, 4),
+  };
+
+  /** A Zola strike state with the given Mastermind, hands, HQ and Hero Deck. */
+  function makeZolaStrikeState(
+    mastermindId: string,
+    hands: Record<string, string[]>,
+    hq: (string | null)[],
+    heroDeck: string[],
+    cardStats: Record<string, ReturnType<typeof zolaStat>> = S1_STATS,
+  ): LegendaryGameState {
+    const gameState = makeCo2eState(mastermindId, hands, cardStats);
+    gameState.hq = [...hq] as LegendaryGameState['hq'];
+    gameState.heroDeck = [...heroDeck] as CardExtId[];
+    return gameState;
+  }
+
+  /** The strike's own log lines, in order. */
+  function zolaStrikeLines(gameState: LegendaryGameState): string[] {
+    return gameState.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.startsWith('[Arnim Zola Master Strike]'));
+  }
+
+  /** The "went to the bottom" line for a Hero. */
+  function movedLine(gameState: LegendaryGameState, heroId: string): string {
+    return `[Arnim Zola Master Strike] ${formatCardRef(gameState.cardDisplayData, heroId)} has less than 2 printed Attack and went to the bottom of the Hero Deck.`;
+  }
+
+  /** The "discarded" line for a player and card. */
+  function discardedLine(gameState: LegendaryGameState, playerId: string, cardId: string, cost: number): string {
+    return `[Arnim Zola Master Strike] Player ${playerId} discarded ${resolveCardName(gameState.cardDisplayData, cardId)} (cost ${cost}).`;
+  }
+
+  it('S1: snapshots the weak HQ Heroes, bottoms each in slot order, refills, and each player discards that cost', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': ['x', 'y', 'z'], '1': ['q'] },
+      ['h3a', 'h4', 'h5', 'h6', 'h3b'],
+      ['d1', 'd2', 'd3', 'd4'],
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.hq, ['d1', 'h4', 'd2', 'h6', 'd3'], 'the refilled weak d1 is never moved');
+    assert.deepEqual(gameState.heroDeck, ['d4', 'h3a', 'h5', 'h3b']);
+    assert.equal(gameState.heroDeck.length, 4, 'the Hero Deck length is unchanged');
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['x', 'y', 'z']);
+    assert.deepEqual(gameState.playerZones['0']!.hand, []);
+    assert.deepEqual(gameState.playerZones['1']!.hand, ['q']);
+    assert.deepEqual(zolaStrikeLines(gameState), [
+      movedLine(gameState, 'h3a'),
+      discardedLine(gameState, '0', 'x', 3),
+      '[Arnim Zola Master Strike] Player 1 has no card that costs 3 to discard.',
+      movedLine(gameState, 'h5'),
+      discardedLine(gameState, '0', 'y', 5),
+      '[Arnim Zola Master Strike] Player 1 has no card that costs 5 to discard.',
+      movedLine(gameState, 'h3b'),
+      discardedLine(gameState, '0', 'z', 3),
+      '[Arnim Zola Master Strike] Player 1 has no card that costs 3 to discard.',
+    ]);
+  });
+
+  it('S2: with no weak HQ Hero the strike logs one no-effect line and changes nothing', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': ['x'], '1': ['q'] },
+      ['h4', 'h6', null, 'h4', 'h6'],
+      ['d1'],
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.hq, ['h4', 'h6', null, 'h4', 'h6']);
+    assert.deepEqual(gameState.heroDeck, ['d1']);
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['x']);
+    assert.deepEqual(gameState.playerZones['1']!.hand, ['q']);
+    assert.deepEqual(zolaStrikeLines(gameState), [
+      '[Arnim Zola Master Strike] No Hero in the HQ has less than 2 printed Attack — no effect.',
+    ]);
+  });
+
+  it('S3: with an empty Hero Deck the same Hero returns to its slot and the discard still happens', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': ['c4'] },
+      ['w4', 'h6', 'h6', 'h6', 'h6'],
+      [],
+      { w4: zolaStat(1, 4), h6: zolaStat(3, 6), c4: zolaStat(2, 4) },
+    );
+
+    assert.doesNotThrow(() => mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {}));
+
+    assert.equal(gameState.hq[0], 'w4');
+    assert.deepEqual(gameState.heroDeck, []);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['c4']);
+  });
+
+  it('S4: another Mastermind moves no HQ Hero and logs no Arnim Zola line', () => {
+    const gameState = makeZolaStrikeState(
+      'core/loki',
+      { '0': ['x', 'y', 'z'], '1': ['q'] },
+      ['h3a', 'h4', 'h5', 'h6', 'h3b'],
+      ['d1', 'd2', 'd3', 'd4'],
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.hq, ['h3a', 'h4', 'h5', 'h6', 'h3b']);
+    assert.deepEqual(gameState.heroDeck, ['d1', 'd2', 'd3', 'd4']);
+    assert.deepEqual(zolaStrikeLines(gameState), []);
+  });
+
+  it('S5: a Haunted slot keeps its haunter when its weak Hero is bottomed and the slot refills', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': [] },
+      ['h6', 'h6', 'h5', 'h6', 'h6'],
+      ['d2'],
+    );
+    gameState.hqHaunters = [null, null, { kind: 'villain', cardId: 'villain-ghost#0' as CardExtId }, null, null];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.equal(gameState.hq[2], 'd2', 'the slot refilled');
+    assert.deepEqual(gameState.heroDeck, ['h5'], 'the weak Hero went to the bottom');
+    assert.deepEqual(gameState.hqHaunters![2], { kind: 'villain', cardId: 'villain-ghost#0' });
+  });
+
+  it('S6: the discard goes through discardFromHand, so a return-on-discard card offers its return', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': ['x'] },
+      ['h3a', 'h6', 'h6', 'h6', 'h6'],
+      ['d2'],
+    );
+    gameState.heroAbilityHooks = [
+      { cardId: 'x', timing: 'onDiscard', keywords: ['return-on-discard'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['x']);
+    assert.deepEqual(gameState.pendingReturnOnDiscard, [{ playerID: '0', cardId: 'x' }]);
+  });
+});

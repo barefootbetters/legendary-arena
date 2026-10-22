@@ -278,3 +278,45 @@ describe('WP-818 bot-ally pick for the Fallen Idols discard (D-24752)', () => {
     assert.equal(choosePlayingSeatChoiceOption(G, '1'), 1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-821 / D-24754 — Arnim Zola's seat choices for a playing seat
+// ---------------------------------------------------------------------------
+
+import {
+  buildComputerUploadedGeniusDiscardChoice,
+  buildCrushPacifistResistanceChoice,
+  buildDominateTheWeakChoice,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
+} from '../moves/seatChoiceTactics.js';
+
+describe('WP-821 choosePlayingSeatChoiceOption — Arnim Zola kinds (D-24754)', () => {
+  /** Card stats for the Zola bot cases (the Agent carries its real setup stats). */
+  const ZOLA_BOT_STATS = {
+    hero5: { attack: 3, cost: 5 },
+    atk1Hero: { attack: 1, cost: 3 },
+    'starting-shield-agent': { attack: 0, cost: 0 },
+    hA: { attack: 1, cost: 3 },
+    hB: { attack: 0, cost: 5 },
+  };
+
+  it('T18: Genius discards the Wound; Crush KOs a 0-cost Hero or declines; Dominate keeps its default', () => {
+    const genius = makeState({ '0': [], '1': ['hero5', WOUND_EXT_ID] }, { cardStats: ZOLA_BOT_STATS });
+    genius.pendingSeatChoice = buildComputerUploadedGeniusDiscardChoice(genius, ['1']);
+    assert.equal(choosePlayingSeatChoiceOption(genius, '1'), 1, 'the Wound');
+
+    const crush = makeState({ '0': ['atk1Hero', 'starting-shield-agent'] }, { cardStats: ZOLA_BOT_STATS });
+    crush.pendingSeatChoice = buildCrushPacifistResistanceChoice(crush, '0', CRUSH_PACIFIST_RESISTANCE_KO_KIND);
+    assert.equal(crush.pendingSeatChoice!.seatPrompts['0']!.options.length, 3);
+    assert.equal(choosePlayingSeatChoiceOption(crush, '0'), 1, 'the 0-cost starter');
+
+    const noStarter = makeState({ '0': ['atk1Hero'] }, { cardStats: ZOLA_BOT_STATS });
+    noStarter.pendingSeatChoice = buildCrushPacifistResistanceChoice(noStarter, '0', CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND);
+    assert.equal(choosePlayingSeatChoiceOption(noStarter, '0'), 1, '"KO nothing"');
+
+    const dominate = makeState({ '0': [], '1': [] }, { cardStats: ZOLA_BOT_STATS, hq: ['hA', 'hB', null, null, null] });
+    dominate.pendingSeatChoice = buildDominateTheWeakChoice(dominate, '0', [0, 1]);
+    assert.equal(choosePlayingSeatChoiceOption(dominate, '0'), 0, 'you gain the highest-cost Hero');
+  });
+});

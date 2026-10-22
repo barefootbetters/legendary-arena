@@ -37,12 +37,19 @@ import { transformMastermind } from '../mastermind/mastermind.logic.js';
 // ko-hero choice for the current player, reusing the same eligibility helpers the
 // villain ko-hero effect + the UIState projection use (one source, D-24007).
 import { buildKoEligibleTargets, countKoableHeroes } from '../villain/villainEffects.execute.js';
-import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import { offPlayCardStats, offPlayCardTraits } from '../hero/splitCard.logic.js';
 // why: WP-818 / D-24752 — Baron Zemo's strike KOs the first Victory-Pile Bystander through
 // the shared WP-816 helper (defeated Killbots included), and reads the Zemo id from its one
 // home (WP-819 / D-24753).
 import { findFirstVictoryPileBystander } from '../board/bystanders.logic.js';
 import { BARON_ZEMO_MASTERMIND_ID } from '../economy/rescueOnFight.logic.js';
+// why: WP-821 / D-24754 — Arnim Zola's strike reads the one "less than 2 printed Attack" HQ
+// predicate, puts each such Hero on the Hero Deck bottom and refills its slot (the
+// resolveOptionalPutBottomHQ idiom), and auto-picks each player's discard through the
+// WP-817 cost-filtered default pick.
+import { ARNIM_ZOLA_MASTERMIND_ID, listZolaWeakHqSlots } from '../mastermind/arnimZola.logic.js';
+import { refillHqSlot } from '../board/city.logic.js';
+import { selectDefaultCostDiscardCard } from '../moves/villainDefeatRequirement.logic.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -917,6 +924,79 @@ function resolveBaronZemoStrike(gameState: LegendaryGameState): void {
 }
 
 /**
+ * Resolves Arnim Zola's Master Strike (WP-821 / D-24754): "For each Hero in the HQ that
+ * has less than 2 printed [icon:attack], put that Hero on the bottom of the Hero Deck, and
+ * each player discards a card of that Hero's cost."
+ *
+ * In HQ slot order, each qualifying Hero goes to the bottom of the Hero Deck, its slot
+ * refills from the top, and each player discards a hand card of that Hero's cost. Never
+ * throws.
+ *
+ * @param gameState - The game state to mutate.
+ */
+function resolveArnimZolaStrike(gameState: LegendaryGameState): void {
+  // why: "for each Hero in the HQ" names the Heroes there when the strike resolves, so the
+  // slots are snapshotted first. A Hero that refills a vacated slot is never re-checked,
+  // even when weak; iterating the live HQ would chain refills through the Hero Deck.
+  const weakSlots = listZolaWeakHqSlots(gameState);
+  if (weakSlots.length === 0) {
+    pushLog(gameState,
+      `[Arnim Zola Master Strike] No Hero in the HQ has less than 2 printed Attack — no effect.`,
+    );
+    return;
+  }
+
+  for (const slot of weakSlots) {
+    const heroId = gameState.hq[slot];
+    if (heroId === null || heroId === undefined) {
+      continue;
+    }
+    // why: the discard cost is the moved Hero's own off-play cost, read before the refill.
+    const cost = offPlayCardStats(gameState, heroId)?.cost ?? 0;
+    // why: the bottom of the Hero Deck is the array end (heroDeck[0] is the top); push then
+    // refill, so the strike never changes the Hero Deck's length, and with an empty deck the
+    // same Hero returns to its slot (the resolveOptionalPutBottomHQ behavior).
+    gameState.heroDeck.push(heroId);
+    const refillResult = refillHqSlot(gameState.hq, slot, gameState.heroDeck);
+    gameState.hq = refillResult.hq;
+    gameState.heroDeck = refillResult.heroDeck;
+    pushLog(gameState,
+      `[Arnim Zola Master Strike] ${formatCardRef(gameState.cardDisplayData, heroId)} has less than 2 printed Attack and went to the bottom of the Hero Deck.`,
+    );
+    discardCardOfCostForEachPlayer(gameState, cost);
+  }
+}
+
+/**
+ * Makes each player discard one hand card of the given cost, if they hold one, for
+ * Arnim Zola's Master Strike.
+ *
+ * // why: WP-821 / D-24754 — a Master Strike has no `events`, so it cannot park a
+ * multi-seat choice inline, and every candidate shares the same cost. The engine
+ * auto-picks inline at strike timing: the earliest such card in hand order, the card the
+ * WP-817 seat-choice default picks. An interactive pick is out of scope.
+ *
+ * @param gameState - The game state to mutate.
+ * @param cost - The removed Hero's cost.
+ */
+function discardCardOfCostForEachPlayer(gameState: LegendaryGameState, cost: number): void {
+  const playerIds = Object.keys(gameState.playerZones).sort();
+  for (const playerId of playerIds) {
+    const cardId = selectDefaultCostDiscardCard(gameState, playerId, [cost]);
+    if (cardId === null) {
+      pushLog(gameState,
+        `[Arnim Zola Master Strike] Player ${playerId} has no card that costs ${cost} to discard.`,
+      );
+      continue;
+    }
+    discardCardFromHand(gameState, playerId, cardId);
+    pushLog(gameState,
+      `[Arnim Zola Master Strike] Player ${playerId} discarded ${resolveCardName(gameState.cardDisplayData, cardId)} (cost ${cost}).`,
+    );
+  }
+}
+
+/**
  * Resolves co2e Loki's Master Strike: "Each player discards a
  * [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki
  * as a Hypno-Thrall."
@@ -1281,6 +1361,11 @@ export function mastermindStrikeHandler(
     // why: WP-818 / D-24752 — "Each player KOs a Bystander from their Victory Pile. Any
     // player who cannot do so gains a Wound."
     resolveBaronZemoStrike(gameState);
+  } else if (mastermindId === ARNIM_ZOLA_MASTERMIND_ID) {
+    // why: WP-821 / D-24754 — "For each Hero in the HQ that has less than 2 printed
+    // [icon:attack], put that Hero on the bottom of the Hero Deck, and each player discards
+    // a card of that Hero's cost."
+    resolveArnimZolaStrike(gameState);
   }
 
   // why: WP-200 — terminal emission AFTER the per-mastermind text effect

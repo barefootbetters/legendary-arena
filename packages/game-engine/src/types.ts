@@ -1349,6 +1349,16 @@ export interface SeatChoiceOption {
   // unique, so the atomic apply moves this exact card. Absent for every other kind. NOT
   // projected to the client.
   cardId?: CardExtId;
+  // why: WP-821 / D-24754 — for a 'dominate-the-weak-gain' option, recipientSeat names
+  // the player who gains the option's HQ Hero (cardId), so one option pairs the
+  // recipient with the Hero. Consumer-added, like cityIndex / cardId. Absent for every
+  // other kind. NOT projected to the client.
+  recipientSeat?: string;
+  // why: WP-821 / D-24754 — for a Crush Pacifist Resistance KO option, sourceZone names
+  // the zone the cardId is KO'd from, because S.H.I.E.L.D. starter ids repeat across the
+  // hand and the cards played this turn. Consumer-added. Absent for every other kind.
+  // NOT projected to the client.
+  sourceZone?: 'hand' | 'inPlay';
 }
 
 /**
