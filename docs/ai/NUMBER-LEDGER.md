@@ -459,6 +459,7 @@ high-water: 422
 - WP-818 — baron-zemo-mastermind (Cap 75th arc #3: Baron Heinrich Zemo mastermind +9 unless you are a Savior, the 2-Recruit Bystander-rescue passive, Master Strike, 4 tactics. reserved 2026-10-21, claude/reserve-wp818-baron-zemo)
 - WP-819 — zemo-rescue-on-fight-engine (Cap 75th arc item 3b: Baron Zemo passive "Whenever you fight a Villain, you may use 2 Recruit to rescue a Bystander" — fightVillain payToRescueBystander opt-in + active-player UIState availability cue. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - WP-820 — zemo-rescue-on-fight-client (arena-client per-villain "Fight + rescue" control for WP-819. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
+- WP-821 — arnim-zola-mastermind (Cap 75th arc item 4: Arnim Zola Master Strike + 4 tactics — Dominate the Weak, Computer-Uploaded Genius, Pet Projects, Crush Pacifist Resistance. reserved 2026-10-22, claude/reserve-wp821-arnim-zola)
 
 ## EC
 
@@ -880,6 +881,7 @@ high-water: 457
 - EC-856 — baron-zemo-mastermind (WP-818. reserved 2026-10-21, claude/reserve-wp818-baron-zemo)
 - EC-857 — zemo-rescue-on-fight-engine (WP-819. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - EC-858 — zemo-rescue-on-fight-client (WP-820. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
+- EC-859 — arnim-zola-mastermind (WP-821. reserved 2026-10-22, claude/reserve-wp821-arnim-zola)
 
 ## D
 
@@ -1411,3 +1413,4 @@ section below) and the allocation protocol in
 - D-24751 — la-dashboard-json (operator decision, no WP — LA keeps its roadmap and infra-cost actuals in a root dashboard.json that bb-studio-dashboard reads; restates the D-24723 apps/dashboard freeze until the cutover. reserved 2026-10-20, spec/d-24750-la-dashboard-json-reserve; renumbered from D-24750 after #2934 claimed it)
 - D-24752 — baron-zemo-mastermind (WP-818; the mastermind Savior fight-cost term and the Zemo strike/tactic resolvers; the on-fight-villain pay-Recruit rescue passive is deferred to its own opt-in arc. reserved 2026-10-21, claude/reserve-wp818-baron-zemo)
 - D-24753 — zemo-rescue-on-fight (WP-819 + WP-820; the pay-Recruit rescue window on a fight: fight move only, rescue before the Villain's Fight effects, affordability against the simulated fight debit, the availability cue, and the per-target client control. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
+- D-24754 — arnim-zola-mastermind (WP-821; the Zola strike and tactic resolvers over Heroes with less than 2 printed Attack. reserved 2026-10-22, claude/reserve-wp821-arnim-zola)
