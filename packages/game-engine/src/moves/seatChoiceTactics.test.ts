@@ -363,3 +363,133 @@ describe('WP-818 applyFallenIdolsDiscard — atomic multi-seat (D-24752)', () =>
     assert.equal(buildFallenIdolsDiscardChoice(G, ['1']), undefined);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-821 / D-24754 — Arnim Zola's seat-choice appliers
+// ---------------------------------------------------------------------------
+
+import {
+  applyComputerUploadedGeniusDiscard,
+  applyCrushPacifistResistanceKo,
+  applyDominateTheWeakGain,
+  buildComputerUploadedGeniusDiscardChoice,
+  buildCrushPacifistResistanceChoice,
+  buildDominateTheWeakChoice,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+} from './seatChoiceTactics.js';
+import { resolveCardName } from '../log/logDisplay.js';
+
+/**
+ * Builds a Zola apply state: per-seat hands and played cards, an HQ and Hero Deck,
+ * 4 Recruit, and the stats / names of the test cards.
+ *
+ * @param zonesBySeat - Each seat's hand and played cards.
+ * @param board - The HQ and Hero Deck.
+ * @returns A LegendaryGameState carrying only the fields the appliers read.
+ */
+function makeZolaApplyState(
+  zonesBySeat: Record<string, { hand?: string[]; inPlay?: string[] }>,
+  board: { hq?: (string | null)[]; heroDeck?: string[] } = {},
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const zones = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [],
+      hand: [...(zones.hand ?? [])],
+      discard: [],
+      inPlay: [...(zones.inPlay ?? [])],
+      victory: [],
+    };
+  }
+  return {
+    playerZones,
+    hq: [...(board.hq ?? [null, null, null, null, null])],
+    heroDeck: [...(board.heroDeck ?? [])],
+    ko: [],
+    turnEconomy: { attack: 0, recruit: 4, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+    cardStats: {
+      hA: { attack: 1, cost: 3 },
+      hB: { attack: 0, cost: 5 },
+      'starting-shield-trooper': { attack: 1, cost: 0 },
+    },
+    cardDisplayData: { hA: { name: 'Hero Alpha' }, hB: { name: 'Hero Bravo' }, 'card-a': { name: 'Alpha' } },
+    messages: [],
+  } as unknown as LegendaryGameState;
+}
+
+describe('WP-821 Arnim Zola seat-choice appliers (D-24754)', () => {
+  it('T11: the chosen recipient gains the HQ Hero to their discard, the slot refills, and no Recruit is spent', () => {
+    const G = makeZolaApplyState(
+      { '0': {}, '1': {}, '2': {} },
+      { hq: ['hA', 'hB', 'hC', null, 'hD'], heroDeck: ['d1'] },
+    );
+    const choice = buildDominateTheWeakChoice(G, '1', [0, 1]);
+    assert.equal(choice.seatPrompts['1']!.options[1]!.label, `Player 1 gains ${resolveCardName(G.cardDisplayData, 'hA')}`);
+    choice.submissions['1'] = { optionIndex: 1 };
+
+    applyDominateTheWeakGain(G, choice);
+
+    assert.equal(G.hq[0], 'd1', 'hA left slot 0 and the slot refilled');
+    assert.deepEqual(G.heroDeck, []);
+    assert.deepEqual(G.playerZones['1']!.discard, ['hA']);
+    assert.equal(G.turnEconomy.recruit, 4, 'no Recruit is spent');
+    assert.deepEqual(G.messages, [
+      { text: `Player 1 gained ${resolveCardName(G.cardDisplayData, 'hA')} from the HQ (Dominate the Weak).`, outcome: 'applied' },
+    ]);
+  });
+
+  it('T12: each addressed seat discards its pick through discardFromHand, in ascending seat order', () => {
+    const G = makeZolaApplyState({
+      '0': {},
+      '2': { hand: ['card-a', 'card-b'] },
+      '4': { hand: ['card-c'] },
+    });
+    const choice = buildComputerUploadedGeniusDiscardChoice(G, ['2', '4'])!;
+    choice.submissions['4'] = { optionIndex: 0 };
+    choice.submissions['2'] = { optionIndex: 1 };
+
+    applyComputerUploadedGeniusDiscard(G, choice);
+
+    assert.deepEqual(G.playerZones['2']!.hand, ['card-a']);
+    assert.deepEqual(G.playerZones['2']!.discard, ['card-b']);
+    assert.deepEqual(G.playerZones['4']!.hand, []);
+    assert.deepEqual(G.playerZones['4']!.discard, ['card-c']);
+    assert.deepEqual(G.messages.map((entry) => entry.text), [
+      `Player 2 discarded ${resolveCardName(G.cardDisplayData, 'card-b')} (Computer-Uploaded Genius).`,
+      `Player 4 discarded ${resolveCardName(G.cardDisplayData, 'card-c')} (Computer-Uploaded Genius).`,
+    ]);
+  });
+
+  it('T13: a KO reads the option\'s zone exactly, and "KO nothing" moves nothing', () => {
+    const G = makeZolaApplyState({
+      '0': { hand: ['starting-shield-trooper'], inPlay: ['starting-shield-trooper'] },
+    });
+    const choice = buildCrushPacifistResistanceChoice(G, '0', CRUSH_PACIFIST_RESISTANCE_KO_KIND)!;
+    const inPlayIndex = choice.seatPrompts['0']!.options.findIndex((option) => option.sourceZone === 'inPlay');
+    choice.submissions['0'] = { optionIndex: inPlayIndex };
+
+    applyCrushPacifistResistanceKo(G, choice);
+
+    assert.deepEqual(G.playerZones['0']!.inPlay, [], 'the played copy is KOd');
+    assert.deepEqual(G.playerZones['0']!.hand, ['starting-shield-trooper'], 'the hand copy is kept');
+    assert.deepEqual(G.ko, ['starting-shield-trooper']);
+    assert.deepEqual(G.messages, [
+      {
+        text: `Player 0 KO'd ${resolveCardName(G.cardDisplayData, 'starting-shield-trooper')} from the cards they played this turn (Crush Pacifist Resistance).`,
+        outcome: 'applied',
+      },
+    ]);
+
+    const declined = buildCrushPacifistResistanceChoice(G, '0', CRUSH_PACIFIST_RESISTANCE_KO_KIND)!;
+    declined.submissions['0'] = { optionIndex: declined.seatPrompts['0']!.options.length - 1 };
+    applyCrushPacifistResistanceKo(G, declined);
+
+    assert.deepEqual(G.playerZones['0']!.hand, ['starting-shield-trooper'], 'nothing moves on a decline');
+    assert.deepEqual(G.ko, ['starting-shield-trooper']);
+    assert.deepEqual(G.messages[1], {
+      text: 'Player 0 chose not to KO a Hero (Crush Pacifist Resistance).',
+      outcome: 'neutral',
+    });
+  });
+});

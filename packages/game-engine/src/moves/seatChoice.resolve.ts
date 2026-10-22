@@ -51,6 +51,17 @@ import {
   MONARCHS_DISCARD_KIND,
   VANISHING_ILLUSIONS_KO_KIND,
   FALLEN_IDOLS_DISCARD_KIND,
+  // why: WP-821 / D-24754 — Arnim Zola's three seat-choice tactics: the kinds, their
+  // appliers, and the Crush Pacifist Resistance chain's builder + KO reader.
+  applyComputerUploadedGeniusDiscard,
+  applyDominateTheWeakGain,
+  applyCrushPacifistResistanceKo,
+  buildCrushPacifistResistanceChoice,
+  didCrushChooseKo,
+  COMPUTER_UPLOADED_GENIUS_DISCARD_KIND,
+  DOMINATE_THE_WEAK_GAIN_KIND,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
 } from './seatChoiceTactics.js';
 // why: WP-793 / D-24656 — the rulebook escape procedure's two kind-specific applies (HQ KO,
 // Bystander discard). villainEscapeProcedure imports parkSeatChoice from this module, so the
@@ -377,6 +388,12 @@ export function resolveSeatChoice(
       appliedKind === MONARCHS_DECREE_MODE_KIND
         ? readMonarchsDecreeSelectedMode(choice)
         : undefined;
+    // why: WP-821 / D-24754 — capture Crush Pacifist Resistance's active seat and whether its
+    // FIRST pick KO'd a Hero before the apply clears the choice, beside the Monarch's capture.
+    const crushActiveSeat =
+      appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND ? choice.addressedSeats[0] : undefined;
+    const crushChoseKo =
+      appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND && didCrushChooseKo(choice);
     // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
     // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
     // why: D-24732 — ctx?. because narrow test contexts omit ctx; moves never throw.
@@ -398,6 +415,12 @@ export function resolveSeatChoice(
     // nothing.
     if (monarchsMode === 'discard' && monarchsActiveSeat !== undefined) {
       chainMonarchsDiscard(G, monarchsActiveSeat, events);
+    }
+    // why: WP-821 / D-24754 — "KO up to two" is two picks; the second chains here only after
+    // the first KO'd a Hero, exactly where Monarch's Decree chains its discard (D-24511). The
+    // last-ko kind never chains, so at most two KOs.
+    if (crushChoseKo && crushActiveSeat !== undefined) {
+      chainCrushPacifistResistanceLastKo(G, crushActiveSeat, events);
     }
   }
 }
@@ -452,6 +475,24 @@ function applySeatChoiceByKind(
   // apply for the other non-Savior seats (atomic, ascending seats, no draw).
   if (choice.kind === FALLEN_IDOLS_DISCARD_KIND) {
     applyFallenIdolsDiscard(G, choice);
+    return;
+  }
+  // why: WP-821 / D-24754 — Arnim Zola's tactics: Computer-Uploaded Genius' discard (the
+  // Fallen Idols body), Dominate the Weak's gain, and both Crush Pacifist Resistance picks
+  // (one applier). None draws, so none needs the shuffle context.
+  if (choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND) {
+    applyComputerUploadedGeniusDiscard(G, choice);
+    return;
+  }
+  if (choice.kind === DOMINATE_THE_WEAK_GAIN_KIND) {
+    applyDominateTheWeakGain(G, choice);
+    return;
+  }
+  if (
+    choice.kind === CRUSH_PACIFIST_RESISTANCE_KO_KIND ||
+    choice.kind === CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND
+  ) {
+    applyCrushPacifistResistanceKo(G, choice);
     return;
   }
   // why: WP-793 / D-24656 — the escape procedure's HQ KO (the current player's pick) and
@@ -549,6 +590,43 @@ function chainMonarchsDiscard(
   }
   parkSeatChoice(G, events, discardChoice);
   pushLog(G, `Each other player must choose a card to discard (Monarch's Decree).`, 'neutral');
+}
+
+/**
+ * Chains Crush Pacifist Resistance's second KO pick after the first pick KO'd a Hero:
+ * builds the last-ko choice from the active seat's remaining eligible Heroes and parks
+ * it for that seat alone.
+ *
+ * // why: WP-821 / D-24754 — parked from the live move context, like chainMonarchsDiscard
+ * (D-24511). The timeout path never reaches this (applySeatChoiceTimeoutDefault does not
+ * chain, D-24501), and a defaulted first pick is "KO nothing" anyway.
+ *
+ * @param G - Game state (mutated: may set G.pendingSeatChoice for the second pick).
+ * @param activeSeat - The defeating player who made the first pick.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ */
+function chainCrushPacifistResistanceLastKo(
+  G: LegendaryGameState,
+  activeSeat: string,
+  events: SeatChoiceEvents | undefined,
+): void {
+  const lastChoice = buildCrushPacifistResistanceChoice(
+    G,
+    activeSeat,
+    CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
+  );
+  if (lastChoice === undefined) {
+    pushLog(G,
+      `Fight effect: Player ${activeSeat} has no other Hero with less than 2 printed Attack to KO (Crush Pacifist Resistance).`,
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, lastChoice, activeSeat);
+  pushLog(G,
+    `Fight effect: Player ${activeSeat} may KO one more Hero with less than 2 printed Attack (Crush Pacifist Resistance).`,
+    'neutral',
+  );
 }
 
 /**
