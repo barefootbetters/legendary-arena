@@ -412,14 +412,6 @@ test('findBackupMirrorAlert: an undated open issue still alerts, with openedAt n
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url));
 
-test('the alert title matches the issue title db-backup.yml opens, byte for byte', async () => {
-  const workflow = await readFile(`${repoRoot}.github/workflows/db-backup.yml`, 'utf8');
-  assert.ok(
-    workflow.includes(`const title = '${BACKUP_MIRROR_ALERT_TITLE}';`),
-    'db-backup.yml must open the issue under BACKUP_MIRROR_ALERT_TITLE',
-  );
-});
-
 test('the live fetch filters to github-actions[bot] issues so PRs cannot crowd out the first page', async () => {
   const routes = await readFile(
     fileURLToPath(new URL('./dashboardDrReadiness.routes.ts', import.meta.url)),

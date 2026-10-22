@@ -29,9 +29,11 @@ import type {
 const DR_DRILL_TITLE_PREFIX = 'DR drill due — ';
 
 /**
- * Exact title of the tracking issue `.github/workflows/db-backup.yml` opens when
- * the pCloud mirror fails (EM DASH, U+2014). The workflow and this constant must
- * match byte-for-byte; the routes test pins them together.
+ * Exact title of the tracking issue the retired `db-backup.yml` workflow opened
+ * when the pCloud mirror failed (EM DASH, U+2014). why: that workflow was deleted
+ * on 2026-10-22 with Render, and nothing opens this issue now. The droplet's
+ * mirror reports to the healthchecks.io check `la-droplet-pcloud` instead, so
+ * `backupMirrorAlert` reads `null` unless an old issue is still open.
  */
 export const BACKUP_MIRROR_ALERT_TITLE = 'Backup mirror failing — pCloud';
 

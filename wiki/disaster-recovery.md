@@ -28,7 +28,6 @@ source:
   - ../docs/ai/DECISIONS.md
   - legendary-arena/legendary-arena-lab infra/scripts/50-backup.ps1 and 51-restore.ps1 (droplet backup and restore, production since 2026-10-12)
   - ../render.yaml
-  - ../.github/workflows/db-backup.yml
   - DigitalOcean docs, checked 2026-10-20 — docs.digitalocean.com/products/backups/ (details/limits, details/pricing) and products/databases/postgresql/details/features/
 last-reviewed: 2026-10-20
 canonical-source: docs/ops/DISASTER_RECOVERY.md
@@ -201,9 +200,9 @@ age of the newest backup, so a timer that silently stops firing alerts too.
 
 ### Reading a `DB Backup` run (history, until 2026-10-12)
 
-The engine's [`db-backup.yml`](../.github/workflows/db-backup.yml) was the
-nightly backup from 2026-08-09 until the cutover, when it was disabled. It is
-deleted after the rollback window. The guidance below applies only to its
+The engine's [`db-backup.yml`](https://github.com/barefootbetters/legendary-arena/blob/66cb9566/.github/workflows/db-backup.yml) was the
+nightly backup from 2026-08-09 until the cutover, when it was disabled. It was
+deleted on 2026-10-22 with Render. The guidance below applies only to its
 past runs.
 
 | Run result | Meaning | Action |
@@ -350,10 +349,10 @@ one can log in has not recovered anything.
   healthchecks.io pings for the backup and the mirror), `51-restore.ps1` (restore, including
   `RESTORE_FROM_R2=latest`), and `60-monitor.ps1` (the on-box check); the
   engine-side summary is [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md).
-- [`.github/workflows/db-backup.yml`](../.github/workflows/db-backup.yml) —
-  the daily `pg_dump` → R2 → pCloud workflow from 2026-08-09; disabled at the
-  2026-10-12 cutover and superseded by the lab's `50-backup.ps1`. Deleted
-  after the rollback window.
+- [`.github/workflows/db-backup.yml`](https://github.com/barefootbetters/legendary-arena/blob/66cb9566/.github/workflows/db-backup.yml)
+  (last version) — the daily `pg_dump` → R2 → pCloud workflow from 2026-08-09;
+  disabled at the 2026-10-12 cutover and superseded by the lab's
+  `50-backup.ps1`. Deleted 2026-10-22 with Render.
 - [ARCHITECTURE.md §Persistence Boundary](../docs/ai/ARCHITECTURE.md) and
   [DECISIONS.md](../docs/ai/DECISIONS.md) D-24095 (framework-store
   exemption), D-24236 (WP-416 backup pipeline).
