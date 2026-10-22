@@ -49125,7 +49125,7 @@ Protect this file.
 
 ### D-24752 — Baron Heinrich Zemo: "+9 unless you are a Savior" is a mastermind-id-keyed fight-cost term read for the fighter, plus his Master Strike and four Tactics (Active 2026-10-21 — WP-818 / EC-856)
 
-**Status:** Active 2026-10-21. Live-verify (D-24026) pending post-deploy.
+**Status:** Active 2026-10-21. Live-verify (D-24026) PASS 2026-10-22 (server `d990b787`, client `cc67442`; guest autoplay matches, 2-player and solo; evidence in STATUS.md).
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Baron Zemo's tile shows a `Fight 18` badge until the active player has 3 Bystanders in their Victory Pile; then the badge goes away (the projected cost equals the printed 9) and Fight enables at 9 Attack. His Master Strike KOs a Victory-Pile Bystander from each player, or wounds a player with none. Each of his four Tactics does what it prints when defeated, and the log says why when it does nothing.
 
