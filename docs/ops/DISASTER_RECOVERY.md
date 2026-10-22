@@ -318,6 +318,16 @@ On any rebuild, these values must be restored from the operator's secret store
 (they are **not** in the repo). Production reads them from the droplet's
 root-only `/etc/la/.env`; the backup job reads `/etc/la/backup.env`.
 
+**The store copy is `la-prod.env`** in the operator's private ops folder, beside
+`backup.env`, `monitor.env` and `origin.{crt,key}`. It is a verbatim copy of
+production's `/etc/la/.env` (34 keys, verified identical by key name and value hash
+on 2026-10-22), so it is the one file a rebuild reads. Refresh it after any
+production secret change:
+`ssh operator@<droplet ip> "sudo -n cat /etc/la/.env" > la-prod.env`.
+It replaced two Render-era exports (`render-secrets*.env`, renamed
+`*.RETIRED-20261022`) that disagreed with each other and with production on up to
+20 keys, including `JWT_SECRET` and the Stripe keys.
+
 **`/etc/la/.env` — application secrets** (the `sync: false` set in the retired
 [`render.yaml`](../../render.yaml)):
 `JWT_SECRET`, `HANKO_TENANT_BASE_URL`, `HANKO_EXPECTED_AUDIENCE`,
@@ -335,8 +345,8 @@ that uses `render.yaml` as its checklist misses them:
 `BREVO_MATCH_INVITE_TEMPLATE_ID`.
 
 **`/etc/la/.env` — droplet-owned** (written by hand on each box; no provisioner
-writes them, and the secret store's `DATABASE_URL` is the deleted Render
-database): `DATABASE_URL=postgres://la:<password>@localhost:5432/la` (the password
+writes them, and `la-prod.env` carries the old box's values, so overwrite them):
+`DATABASE_URL=postgres://la:<password>@localhost:5432/la` (the password
 given to `30-postgres.ps1` as `LA_DB_PASSWORD`), `NODE_ENV=production`,
 `PORT=3000`, `LISTEN_HOST=127.0.0.1` (the origin lock; `60-monitor` alerts without
 it), `WEB_CONCURRENCY=1`, and `LEGENDS_PUBLISHER_ENABLED` (`true` only on the box
@@ -772,8 +782,9 @@ Issues found:        1. s-2vcpu-4gb was not creatable in sfo3 (422 "Size is not
                      7. A fresh box fails la-health with "no backup found" until its
                         first 50-backup run.
 Corrective action:   DR-02 procedure and §4 rewritten in this commit (1–4, 6, 7).
-                     Item 5 is the operator's: add DASH_GITHUB_REPO to the secret
-                     store and mark its DATABASE_URL as obsolete.
+                     Item 5 done the same day: the store is now la-prod.env, a
+                     verbatim copy of production's .env (§4); the two Render
+                     exports also disagreed with each other and were retired.
 ```
 
 | Metric | Result |
