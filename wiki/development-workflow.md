@@ -978,6 +978,17 @@ Each platform manages its own configuration and secrets independently.
 - No configuration in the repo — purely operator-managed
 - Admin console at `login.tailscale.com`
 
+**Anthropic** — Claude Code subscription:
+
+- Plan: Claude Max 20x, billed to the `jeff@barefootbetters.com` organization
+  on the 21st of each month. It covers the Claude Code sessions that build
+  the project.
+- **Cost:** $200/mo. The 2026-10-21 payment covers Oct 21 to Nov 21, 2026.
+  The invoice and receipt are filed in pCloud under
+  `legendary-arena/ops/accounting/expenses2026/`.
+- The AI coach's Anthropic API usage (`ANTHROPIC_API_KEY`) is metered
+  separately and is not on this bill.
+
 ### What pCloud is and isn't
 
 pCloud is a **backup layer**, not a sync mechanism and not a source of

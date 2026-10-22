@@ -178,6 +178,14 @@
   ],
   "ledger": {
     "currency": "USD",
+    "projectCosts": [
+      {
+        "item": "Claude Max 20x (Claude Code)",
+        "vendor": "Anthropic",
+        "monthly": 200,
+        "note": "Paid 2026-10-21 for Oct 21 to Nov 21, 2026; renews on the 21st. The AI coach's API usage is not on this bill."
+      }
+    ],
     "budget": {
       "tolerance": 0.2,
       "byVendor": [
