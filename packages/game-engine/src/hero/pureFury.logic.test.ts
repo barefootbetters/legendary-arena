@@ -447,3 +447,42 @@ describe('buildPureFuryTargets reads the current Attack (D-24741)', () => {
     );
   });
 });
+
+describe('WP-818 buildPureFuryTargets — Baron Zemo reads the resolving player (D-24752)', () => {
+  /**
+   * A Zemo state (printed 9, a tactic left) with 10 S.H.I.E.L.D. Heroes in the KO pile.
+   *
+   * @param victory Player 0's Victory Pile.
+   * @returns The state.
+   */
+  function makeZemoPureFuryG(victory: CardExtId[]): LegendaryGameState {
+    const ko: CardExtId[] = [];
+    const cardTraits: Record<string, { heroClass: string | null; team: string | null }> = {};
+    for (let index = 0; index < 10; index++) {
+      const cardId = `sh-${String(index)}` as CardExtId;
+      ko.push(cardId);
+      cardTraits[cardId] = { heroClass: 'tech', team: 'shield' };
+    }
+    const G = makeG({
+      ko,
+      cardTraits,
+      city: [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(9) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: ['t1'],
+    });
+    G.selection = { ...G.selection, mastermindId: 'ca75/baron-heinrich-zemo' };
+    G.playerZones['0']!.victory = victory;
+    return G;
+  }
+
+  it('T8b: a Savior sees the Mastermind as a target (9 < 10)', () => {
+    const G = makeZemoPureFuryG(['pile-bystander', 'pile-bystander', 'pile-bystander']);
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [{ kind: 'mastermind', cardId: 'mm-base' }]);
+  });
+
+  it('T8b: a non-Savior does not (9 + 9 = 18 is not below 10)', () => {
+    const G = makeZemoPureFuryG(['pile-bystander']);
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), []);
+  });
+});

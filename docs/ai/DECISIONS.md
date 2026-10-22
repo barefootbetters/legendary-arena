@@ -49122,3 +49122,32 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24752 — Baron Heinrich Zemo: "+9 unless you are a Savior" is a mastermind-id-keyed fight-cost term read for the fighter, plus his Master Strike and four Tactics (Active 2026-10-21 — WP-818 / EC-856)
+
+**Status:** Active 2026-10-21. Live-verify (D-24026) pending post-deploy.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Baron Zemo's tile shows a `Fight 18` badge until the active player has 3 Bystanders in their Victory Pile; then the badge goes away (the projected cost equals the printed 9) and Fight enables at 9 Attack. His Master Strike KOs a Victory-Pile Bystander from each player, or wounds a player with none. Each of his four Tactics does what it prints when defeated, and the log says why when it does nothing.
+
+**Context.** The 2026-10-19 ca75 audit (Cap 75th arc item 3) found Zemo fought at 9 for everyone, his Master Strike inert and his four Tactics unhandled. Rules v23 L1844-1853: a Savior has at least 3 Bystanders in their Victory Pile; L772-792: a Tactic's Fight effect and its rescues resolve "in any order"; L2337-2341: a defeated Killbot counts as a Bystander in the Victory Pile.
+
+**Decision.**
+1. **One cost authority.** `resolveMastermindFightCost(G, fightingPlayerId?)` adds `BARON_ZEMO_NON_SAVIOR_BONUS = 9` when `G.selection.mastermindId` is `ca75/baron-heinrich-zemo` and the fighter is not a Savior, before the Mastermind reduction and the 0 floor. It is keyed on the Mastermind id like the Master Strike dispatch (D-24300), because Zemo is the only Mastermind that prints "+N unless you are a Savior"; no `G` field is added. The id is the one `BARON_ZEMO_MASTERMIND_ID` in `economy/rescueOnFight.logic.ts` (D-24753 point 7).
+2. **The fighter is an optional parameter** (the WP-760 `resolveFightCost` precedent). The four callers pass it: `fightMastermind` and the `uiState.build` projection `ctx.currentPlayer`, `getLegalMoves` `activePlayer`, Pure Fury `fightingPlayerId`. **Fail-expensive default:** an omitted fighter, or one with no zones, is not a Savior and pays the +9.
+3. **The Savior read is the shared WP-816 helper** (`countVictoryPileBystanders` ≥ `SAVIOR_BYSTANDER_THRESHOLD`), so defeated Killbots count and the cost agrees with every Savior gate. It counts only the fighter's Victory Pile: the Bystanders Zemo holds are rescued after the fight, so they never lower the cost that must be known to fight at all.
+4. **The projection reads the active player.** `UIMastermindState.fightCost` is the active player's cost, so an off-turn viewer sees the active player's 18 or 9 (the WP-760 villain precedent).
+5. **Master Strike.** Every player, in sorted seat order, KOs the first Bystander in their Victory Pile (pile order; every Victory-Pile Bystander is worth the same, the D-24749 Executioner precedent) to `G.ko`; a player with none gains a Wound through the Diving Block chokepoint (D-24499 / D-24673), or logs a no-op when the supply is empty.
+6. **Fallen Idols** parks a `fallen-idols-discard` multi-seat seat choice (the D-24511 Monarch's discard shape) addressed to every other non-Savior seat with a card in hand, with "Discard <card>" option labels so the client's generic prompt heading needs no change. Saviors and empty hands are narrated, not addressed. The bot-ally discards its least valuable card, like Monarch's discard.
+7. **Finding Zemo** reveals the top 5 Villain-Deck cards (fewer when the deck is short). Only cards typed `bystander` in `villainDeckCardTypes` count, so Killbots in the deck stay villains (D-24324). The revealed Bystanders go to `G.ko` in revealed order; when any were KO'd, each other player gains one Wound however many there were. The other revealed cards go back on top, reshuffled with the move's `random.Shuffle`, called only when 2 or more go back.
+8. **Hatred for the Avengers** rescues one supply Bystander per Avengers Hero in hand or still in play, the Xavier's Nemesis rule (D-24645 / D-24692). The count is generalized to `countTeamHeroesYouHave(G, inPlay, hand, team)`; Xavier's Nemesis passes `x-men` and is unchanged.
+9. **Prisoners of War is auto-resolved.** Each other player reveals an Avengers Hero from their hand when they hold one (a free reveal beats giving up a Bystander, D-24312); otherwise their first Victory-Pile Bystander moves to the fighter's Victory Pile. The reveal is hand-only.
+10. **Intended follow-on effects.** Finding Zemo can empty the Villain Deck, which feeds the end-of-move final-turn and pile-depletion checks; Bystanders KO'd by the strike or Finding Zemo count toward Chthon's KO-pile transform. Neither is suppressed.
+11. **The passive "may use 2 Recruit to rescue a Bystander" is not here.** It is an opt-in payment at fight time; it shipped as its own arc (WP-819 engine + WP-820 control, D-24753).
+12. **Replay-compat.** A stored pre-WP-818 match that fought Zemo, hit his strike or defeated a Tactic replays differently. No hashed fixture plays Zemo, so `finalStateHash` and `PRE_WP080_HASH` are unchanged. The weekly full-mastermind sweep (`.github/workflows/sweep-weekly.yml`, not a hash gate) shifts for Zemo, and he is a gauntlet Mastermind whose legs get harder; no committed PAR artifact references him.
+
+**Gates.** WP-818 §Test Contract T1-T24 with T3b and T8b. Engine 5544 → 5578, 0 fail; `pnpm -r --no-bail test` 0 fail. `pnpm effect-index` flips only the four Zemo Tactic rows to `executable` (plus `summary.byStatus`); the other feed checks exit 0 with no regeneration. Revert proofs 5/5: dropping the term fails T1 / T3 / T3b / T5; `>` for `>=` fails T2 / T5; skipping the strike's Wound fallback fails T9 / T10; addressing Saviors in Fallen Idols fails T12 / T13; skipping Finding Zemo's reshuffle fails T16 / T17.
+
+**Reserved by:** NUMBER-LEDGER D-24752 (#2939). Related: D-24300 (id-keyed strike and tactic dispatch), D-24312 (auto-resolved reveals), D-24324 (Killbots are villains in the deck), D-24499 / D-24673 (Wound chokepoint, Diving Block wording), D-24501 / D-24511 (multi-seat seat choices, Monarch's discard), D-24508 / D-24645 / D-24692 (Xavier's Nemesis, "Heroes you have"), D-24589 (optional fighter on the fight cost), D-24747 (the WP-815 mastermind cost term), D-24749 (villain-side Savior helpers), D-24753 (the Zemo rescue passive), D-24081 (`G.messages` hash-excluded).
+
+---
+Protect this file.

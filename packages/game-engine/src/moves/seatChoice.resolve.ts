@@ -44,11 +44,13 @@ import {
   applyMonarchsDecreeMode,
   applyMonarchsDiscard,
   applyVanishingIllusionsKo,
+  applyFallenIdolsDiscard,
   buildMonarchsDiscardChoice,
   readMonarchsDecreeSelectedMode,
   MONARCHS_DECREE_MODE_KIND,
   MONARCHS_DISCARD_KIND,
   VANISHING_ILLUSIONS_KO_KIND,
+  FALLEN_IDOLS_DISCARD_KIND,
 } from './seatChoiceTactics.js';
 // why: WP-793 / D-24656 — the rulebook escape procedure's two kind-specific applies (HQ KO,
 // Bystander discard). villainEscapeProcedure imports parkSeatChoice from this module, so the
@@ -444,6 +446,12 @@ function applySeatChoiceByKind(
   }
   if (choice.kind === VANISHING_ILLUSIONS_KO_KIND) {
     applyVanishingIllusionsKo(G, choice);
+    return;
+  }
+  // why: WP-818 / D-24752 — Baron Zemo's Fallen Idols discard, the Monarch's discard
+  // apply for the other non-Savior seats (atomic, ascending seats, no draw).
+  if (choice.kind === FALLEN_IDOLS_DISCARD_KIND) {
+    applyFallenIdolsDiscard(G, choice);
     return;
   }
   // why: WP-793 / D-24656 — the escape procedure's HQ KO (the current player's pick) and

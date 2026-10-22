@@ -39,6 +39,7 @@ import {
 import {
   MONARCHS_DISCARD_KIND,
   VANISHING_ILLUSIONS_KO_KIND,
+  FALLEN_IDOLS_DISCARD_KIND,
 } from '../moves/seatChoiceTactics.js';
 import {
   ESCAPE_BYSTANDER_DISCARD_KIND,
@@ -111,10 +112,12 @@ function chooseByKind(
   }
   // why: WP-817 / D-24750 — the Primus Escape discard lists only eligible cards, so the
   // bot-ally discards its cheapest one (autoplay / sim / PAR take defaultOptionIndex 0).
+  // WP-818 / D-24752: Fallen Idols is the same any-hand-card discard as Monarch's.
   if (
     choice.kind === MONARCHS_DISCARD_KIND ||
     choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND ||
-    choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND
+    choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND ||
+    choice.kind === FALLEN_IDOLS_DISCARD_KIND
   ) {
     return indexOfLeastValuableCard(G, options);
   }

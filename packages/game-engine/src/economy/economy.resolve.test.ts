@@ -16,7 +16,10 @@ import {
   resolveMastermindFightCost,
   darkPortalLocations,
   DARK_PORTAL_ATTACK_BONUS,
+  BARON_ZEMO_NON_SAVIOR_BONUS,
 } from './economy.resolve.js';
+import { addFightCostReduction } from './economy.logic.js';
+import { makeTurnEconomy } from '../test/fixtureBuilders.js';
 import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 
 /**
@@ -708,5 +711,83 @@ describe('resolveMastermindFightCost — Mastermind Abomination (WP-815)', () =>
     assert.equal(resolveMastermindFightCost(makeMastermindAbominationG(6, [2, 4, 3, 0, 1], { 'mm-base': 'abomination' })), 6);
     assert.equal(resolveMastermindFightCost(makeMastermindAbominationG(6, [2, 4, 3, 0, 1], {})), 6);
     assert.equal(resolveMastermindFightCost(makeMastermindAbominationG(6, [2, 4, 3, 0, 1])), 6);
+  });
+});
+
+const ZEMO_ID = 'ca75/baron-heinrich-zemo';
+const ZEMO_BASE_CARD = 'ca75-mastermind-baron-heinrich-zemo-baron-heinrich-zemo';
+
+/**
+ * Builds a minimal G with a chosen Mastermind and each player's Victory Pile.
+ *
+ * @param mastermindId - The qualified `set/slug` Mastermind id.
+ * @param victoryPiles - Victory Pile contents keyed by player id.
+ * @param baseFightCost - The printed base fight cost.
+ */
+function makeZemoG(
+  mastermindId: string,
+  victoryPiles: Record<string, CardExtId[]>,
+  baseFightCost = 9,
+): LegendaryGameState {
+  const playerZones: Record<string, { victory: CardExtId[] }> = {};
+  for (const [playerId, victory] of Object.entries(victoryPiles)) {
+    playerZones[playerId] = { victory };
+  }
+  return {
+    cardStats: { [ZEMO_BASE_CARD]: { fightCost: baseFightCost, fightCostMode: 'static', fightCostBase: 0 } },
+    mastermind: { baseCardId: ZEMO_BASE_CARD, attachedBystanders: [] },
+    selection: { schemeId: 'core/midtown-bank-robbery', mastermindId },
+    counters: {},
+    playerZones,
+  } as unknown as LegendaryGameState;
+}
+
+describe('WP-818 resolveMastermindFightCost — Baron Zemo +9 unless you are a Savior', () => {
+  it('T1: a fighter with 2 Victory-Pile Bystanders pays 9 + 9 = 18', () => {
+    const G = makeZemoG(ZEMO_ID, { '0': ['pile-bystander', 'pile-bystander', 'core-villain-hydra-01'] });
+    assert.equal(BARON_ZEMO_NON_SAVIOR_BONUS, 9);
+    assert.equal(resolveMastermindFightCost(G, '0'), 18);
+  });
+
+  it('T2: a Savior (3 Bystanders, a villain-deck one included) pays the printed 9', () => {
+    const G = makeZemoG(ZEMO_ID, {
+      '0': ['pile-bystander', 'pile-bystander', 'bystander-villain-deck-01'],
+    });
+    assert.equal(resolveMastermindFightCost(G, '0'), 9);
+  });
+
+  it('T3: an omitted fighter, or one with no zones, pays the +9', () => {
+    const G = makeZemoG(ZEMO_ID, { '0': ['pile-bystander', 'pile-bystander', 'pile-bystander'] });
+    assert.equal(resolveMastermindFightCost(G), 18);
+    assert.equal(resolveMastermindFightCost(G, '9'), 18);
+  });
+
+  it('T3b: Bystanders Zemo holds never count toward the fighter being a Savior', () => {
+    const G = makeZemoG(ZEMO_ID, { '0': ['pile-bystander', 'pile-bystander'] });
+    G.mastermind.attachedBystanders = ['pile-bystander'];
+    assert.equal(resolveMastermindFightCost(G, '0'), 18);
+  });
+
+  it('T4: another Mastermind, or a partial G with no selection, is unchanged', () => {
+    const redSkull = makeZemoG('core/red-skull', { '0': [] }, 7);
+    assert.equal(resolveMastermindFightCost(redSkull), 7);
+    assert.equal(resolveMastermindFightCost(redSkull, '0'), 7);
+    const partial = makeZemoG(ZEMO_ID, { '0': [] }, 7);
+    delete (partial as { selection?: unknown }).selection;
+    assert.equal(resolveMastermindFightCost(partial), 7);
+    assert.equal(resolveMastermindFightCost(partial, '0'), 7);
+  });
+
+  it('T5: the term is added before the Mastermind reduction (Storm -2)', () => {
+    const G = makeZemoG(ZEMO_ID, { '0': ['pile-bystander'] });
+    G.turnEconomy = addFightCostReduction(
+      makeTurnEconomy(),
+      'mastermind',
+      2,
+      'core/storm/tidal-wave#0' as CardExtId,
+    );
+    assert.equal(resolveMastermindFightCost(G, '0'), 16);
+    G.playerZones['0']!.victory = ['pile-bystander', 'pile-bystander', 'pile-bystander'];
+    assert.equal(resolveMastermindFightCost(G, '0'), 7);
   });
 });

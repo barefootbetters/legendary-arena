@@ -4745,7 +4745,7 @@ export function buildPureFuryTargets(
   // in the shared isMastermindFreeDefeatTarget predicate.
   if (isMastermindFreeDefeatTarget(G)) {
     const mastermindCardId = G.mastermind.baseCardId;
-    if (resolveMastermindFightCost(G) < koShieldHeroCount) {
+    if (resolveMastermindFightCost(G, fightingPlayerId) < koShieldHeroCount) {
       targets.push({ kind: 'mastermind', cardId: mastermindCardId });
     }
   }

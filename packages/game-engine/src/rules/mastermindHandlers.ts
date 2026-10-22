@@ -38,6 +38,11 @@ import { transformMastermind } from '../mastermind/mastermind.logic.js';
 // villain ko-hero effect + the UIState projection use (one source, D-24007).
 import { buildKoEligibleTargets, countKoableHeroes } from '../villain/villainEffects.execute.js';
 import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+// why: WP-818 / D-24752 — Baron Zemo's strike KOs the first Victory-Pile Bystander through
+// the shared WP-816 helper (defeated Killbots included), and reads the Zemo id from its one
+// home (WP-819 / D-24753).
+import { findFirstVictoryPileBystander } from '../board/bystanders.logic.js';
+import { BARON_ZEMO_MASTERMIND_ID } from '../economy/rescueOnFight.logic.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -869,6 +874,49 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
 }
 
 /**
+ * Resolves Baron Heinrich Zemo's Master Strike (WP-818 / D-24752): "Each player
+ * KOs a Bystander from their Victory Pile. Any player who cannot do so gains a
+ * Wound."
+ *
+ * Each player (in sorted id order) KOs the first Bystander in their Victory
+ * Pile to the KO pile; a player with none gains a Wound (or takes a logged
+ * no-op when the Wound supply is empty). One durable log line per player.
+ *
+ * @param gameState - The game state to mutate.
+ */
+function resolveBaronZemoStrike(gameState: LegendaryGameState): void {
+  const playerIds = Object.keys(gameState.playerZones).sort();
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+    // why: every Victory-Pile Bystander is worth the same 1 VP with its rescue ability
+    // spent, so the first in pile order loses nothing (the D-24749 Executioner precedent).
+    const bystander = findFirstVictoryPileBystander(playerZones.victory);
+
+    if (bystander !== undefined) {
+      const moved = moveCardFromZone(playerZones.victory, gameState.ko, bystander);
+      playerZones.victory = moved.from;
+      gameState.ko = moved.to;
+      pushLog(gameState,
+        `[Baron Zemo Master Strike] Player ${playerId} KO'd a Bystander from their Victory Pile.`,
+      );
+      continue;
+    }
+
+    const woundOutcome = gainWoundToDiscard(gameState, playerId);
+    if (woundOutcome !== 'no-wound') {
+      pushLog(gameState,
+        `[Baron Zemo Master Strike] Player ${playerId} had no Bystander in their Victory Pile and ${describeStrikeWound(woundOutcome)}.`,
+      );
+    } else {
+      pushLog(gameState,
+        `[Baron Zemo Master Strike] Player ${playerId} had no Bystander in their Victory Pile and the Wound supply is empty — no effect.`,
+      );
+    }
+  }
+}
+
+/**
  * Resolves co2e Loki's Master Strike: "Each player discards a
  * [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki
  * as a Hypno-Thrall."
@@ -1229,6 +1277,10 @@ export function mastermindStrikeHandler(
     // why: WP-669 / D-24483 — General Ross's Master Strike flips the Mastermind
     // to its other boss face (General Ross ⇄ Red Hulk).
     resolveGeneralRossStrike(gameState);
+  } else if (mastermindId === BARON_ZEMO_MASTERMIND_ID) {
+    // why: WP-818 / D-24752 — "Each player KOs a Bystander from their Victory Pile. Any
+    // player who cannot do so gains a Wound."
+    resolveBaronZemoStrike(gameState);
   }
 
   // why: WP-200 — terminal emission AFTER the per-mastermind text effect

@@ -998,7 +998,9 @@ export function buildUIState(
     // why: WP-750 / D-24574 — the projected fight cost, from the same
     // resolveMastermindFightCost the fightMastermind guard and the bot read, so the
     // tile's Fight gate can never disagree with the engine (printed + Dark Portal).
-    fightCost: resolveMastermindFightCost(gameState),
+    // WP-818 / D-24752: read for the active player (the only one who can fight), so
+    // Baron Zemo's "+9 unless you are a Savior" shows that player's cost to everyone.
+    fightCost: resolveMastermindFightCost(gameState, ctx.currentPlayer),
     // why: WP-757 / D-24587 — omit-when-absent: the key exists only while the Mastermind
     // haunts, read from the same isMastermindHaunting predicate fightMastermind uses.
     ...(isMastermindHaunting(gameState) ? { isHaunting: true as const } : {}),
