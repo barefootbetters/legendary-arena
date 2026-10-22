@@ -14,6 +14,9 @@
  *     Victory Pile." A SIMULTANEOUS MULTI-SEAT choice (kind 'vanishing-illusions-ko',
  *     each other player picks one Victory-Pile Villain to KO, Henchmen included per
  *     D-24742); a seat with no Victory-Pile Villain is not addressed (no-op).
+ *   - Fallen Idols (Baron Zemo, WP-818 / D-24752) — "Each other player that is not a
+ *     Savior discards a card." A SIMULTANEOUS MULTI-SEAT discard (kind
+ *     'fallen-idols-discard') for the other non-Savior seats, the Monarch's discard shape.
  *
  * This module holds ONLY pure builders + state appliers (no boardgame.io import,
  * no parkSeatChoice import) so it never cycles with seatChoice.resolve.ts — that
@@ -47,6 +50,8 @@ export const MONARCHS_DECREE_MODE_KIND = 'monarchs-decree-mode';
 export const MONARCHS_DISCARD_KIND = 'monarchs-discard';
 /** Discriminant for Vanishing Illusions' simultaneous multi-seat KO-a-Victory-Pile-Villain choice. */
 export const VANISHING_ILLUSIONS_KO_KIND = 'vanishing-illusions-ko';
+/** Discriminant for Baron Zemo's Fallen Idols multi-seat discard (WP-818 / D-24752). */
+export const FALLEN_IDOLS_DISCARD_KIND = 'fallen-idols-discard';
 
 // why: WP-694 / D-24511 — Monarch's Decree draws exactly one card per OTHER player on
 // the "draw" branch (the printed "each other player draws a card"). Named, not inlined,
@@ -344,5 +349,82 @@ export function applyVanishingIllusionsKo(G: LegendaryGameState, choice: Pending
       `Player ${seat} KO'd ${resolveCardName(G.cardDisplayData, cardId)} from their Victory Pile (Vanishing Illusions).`,
       'applied',
     );
+  }
+}
+
+/**
+ * Builds Baron Zemo's Fallen Idols multi-seat discard choice (WP-818 / D-24752), or
+ * undefined when no given seat holds a card to discard.
+ *
+ * Every seat in `seats` that holds ≥1 hand card is addressed with one option per hand
+ * card, carrying the exact hand instance in `cardId`. The caller has already removed
+ * the Saviors and the defeating player.
+ *
+ * @param G - The game state (read for hands + card display names).
+ * @param seats - The other non-Savior seats (ascending).
+ * @returns The pending discard choice, or undefined when no seat can discard.
+ */
+export function buildFallenIdolsDiscardChoice(
+  G: LegendaryGameState,
+  seats: readonly string[],
+): PendingSeatChoice | undefined {
+  const addressedSeats: string[] = [];
+  const seatPrompts: Record<string, { options: SeatChoiceOption[] }> = {};
+  for (const seat of seats) {
+    const zones = G.playerZones[seat];
+    if (!zones || zones.hand.length === 0) {
+      continue;
+    }
+    const options: SeatChoiceOption[] = [];
+    for (const cardId of zones.hand) {
+      // why: the "Discard <card>" label says what the pick does, so the client's generic
+      // "Your choice" prompt heading is enough and no client file changes.
+      options.push({ label: `Discard ${resolveCardName(G.cardDisplayData, cardId)}`, cardId });
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length === 0) {
+    return undefined;
+  }
+  return {
+    kind: FALLEN_IDOLS_DISCARD_KIND,
+    addressedSeats,
+    seatPrompts,
+    submissions: {},
+    // why: the sim + disconnect default discards each seat's FIRST hand card (index 0) —
+    // deterministic and always in range.
+    defaultOptionIndex: 0,
+  };
+}
+
+/**
+ * Applies a fully-submitted Fallen Idols discard atomically: every addressed seat
+ * discards its chosen hand card via the enforced discardFromHand chokepoint, in
+ * ascending seat order (the Monarch's discard apply, WP-818 / D-24752).
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param choice - The fully-submitted pending choice (kind 'fallen-idols-discard').
+ */
+export function applyFallenIdolsDiscard(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  const seatsInApplyOrder = [...choice.addressedSeats].sort();
+  for (const seat of seatsInApplyOrder) {
+    const submission = choice.submissions[seat];
+    if (submission === undefined) {
+      continue;
+    }
+    const option = choice.seatPrompts[seat]?.options[submission.optionIndex];
+    const cardId = option?.cardId;
+    if (cardId === undefined) {
+      continue;
+    }
+    const discarded = discardFromHand(G, seat, cardId);
+    if (discarded) {
+      pushLog(
+        G,
+        `Player ${seat} discarded ${resolveCardName(G.cardDisplayData, cardId)} (Fallen Idols).`,
+        'applied',
+      );
+    }
   }
 }

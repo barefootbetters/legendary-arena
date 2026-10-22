@@ -32,9 +32,21 @@ import { getFightCostReduction } from './economy.logic.js';
 // why: WP-815 / D-24747 — the Abomination terms read the HQ at fight time; one
 // helper per resolver, so each family is added in exactly one authority.
 import { villainAbominationBonus, mastermindAbominationBonus } from './abomination.logic.js';
+// why: WP-818 / D-24752 — Baron Zemo's "+9 unless you are a Savior" reads the fighter's
+// Savior status through the shared WP-816 helpers, so the cost and every Savior gate count
+// the same Bystanders (defeated Killbots included).
+import { SAVIOR_BYSTANDER_THRESHOLD, countVictoryPileBystanders } from '../board/bystanders.logic.js';
+// why: WP-818 / D-24752 — the Zemo mastermind id has one home (WP-819 / D-24753); it is
+// id-keyed like the Master Strike dispatch (D-24300), because Zemo is the only Mastermind
+// that prints "+N unless you are a Savior".
+import { BARON_ZEMO_MASTERMIND_ID } from './rescueOnFight.logic.js';
 
 // why: WP-539 / D-24348 — the Portals scheme ext_id, gating the Dark-Portal buffs.
 const PORTALS_SCHEME_ID = 'core/portals-to-the-dark-dimension';
+
+// why: WP-818 / D-24752 — Baron Zemo's printed "+9[icon:attack] unless you are a Savior".
+/** The Attack Baron Zemo gains against a fighter who is not a Savior. */
+export const BARON_ZEMO_NON_SAVIOR_BONUS = 9;
 
 // why: WP-728 / D-24549 — the +N attack a single Dark Portal grants (the
 // Mastermind, or Villains in a portal'd city space). A named constant so the
@@ -325,10 +337,15 @@ function resolveBaseFightCost(
  * uiState.build, and ai.legalMoves previously read inline, so combat, the UI, and
  * the bot never disagree on affordability.
  *
+ * Baron Zemo adds BARON_ZEMO_NON_SAVIOR_BONUS for a fighter who is not a Savior
+ * (WP-818 / D-24752).
+ *
  * @param G - Game state (read-only).
+ * @param fightingPlayerId - The player fighting the Mastermind. Optional; when
+ *   omitted, a fighter-dependent term assumes the costlier case.
  * @returns The mastermind fight requirement as a non-negative integer.
  */
-export function resolveMastermindFightCost(G: LegendaryGameState): number {
+export function resolveMastermindFightCost(G: LegendaryGameState, fightingPlayerId?: string): number {
   const baseFightCost = G.cardStats[G.mastermind.baseCardId]?.fightCost ?? 0;
   // why: the twist-1 Dark Portal above the Mastermind adds DARK_PORTAL_ATTACK_BONUS;
   // darkPortalLocations is the single source (scheme gate + counter read), so this
@@ -342,6 +359,42 @@ export function resolveMastermindFightCost(G: LegendaryGameState): number {
   // why: WP-815 / D-24747 — Ultimate / Double Highest Abomination adds the printed Attack
   // of the HQ Heroes, read at fight time (the HQ refills); added before the reduction.
   const abominationBonus = mastermindAbominationBonus(G);
+  // why: WP-818 / D-24752 — Baron Zemo's +9 unless the fighter is a Savior; added
+  // before the reduction, like the Abomination term.
+  const nonSaviorBonus = mastermindNonSaviorBonus(G, fightingPlayerId);
   // why: the 0 floor keeps this function's ">= 0" promise.
-  return Math.max(0, baseFightCost + portalBonus + abominationBonus - mastermindReduction);
+  return Math.max(
+    0,
+    baseFightCost + portalBonus + abominationBonus + nonSaviorBonus - mastermindReduction,
+  );
+}
+
+/**
+ * Baron Zemo's "+9 unless you are a Savior" term (WP-818 / D-24752).
+ *
+ * @param G - Game state (read-only; `selection` may be absent on partial test states).
+ * @param fightingPlayerId - The player fighting the Mastermind, when known.
+ * @returns BARON_ZEMO_NON_SAVIOR_BONUS when Baron Zemo is the Mastermind and the
+ *   fighter is not a Savior, otherwise 0.
+ */
+function mastermindNonSaviorBonus(G: LegendaryGameState, fightingPlayerId?: string): number {
+  if (G.selection?.mastermindId !== BARON_ZEMO_MASTERMIND_ID) {
+    return 0;
+  }
+  // why: rules v23 L1844-1853 — "unless you are a Savior" is about the fighter. An omitted
+  // or unknown fighter pays the +9 (D-24752), so a caller can never get the cheaper cost
+  // by forgetting the argument.
+  if (fightingPlayerId === undefined) {
+    return BARON_ZEMO_NON_SAVIOR_BONUS;
+  }
+  const zones = G.playerZones?.[fightingPlayerId];
+  if (zones === undefined) {
+    return BARON_ZEMO_NON_SAVIOR_BONUS;
+  }
+  // why: only the fighter's Victory Pile counts. The Bystanders Zemo holds are rescued
+  // after the fight, so they never lower the cost that must be known to fight at all.
+  if (countVictoryPileBystanders(zones.victory) >= SAVIOR_BYSTANDER_THRESHOLD) {
+    return 0;
+  }
+  return BARON_ZEMO_NON_SAVIOR_BONUS;
 }

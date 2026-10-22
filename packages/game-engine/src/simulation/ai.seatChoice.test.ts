@@ -265,3 +265,16 @@ describe('WP-817 bot-ally pick for the Primus Escape discard (D-24750)', () => {
     assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
   });
 });
+
+import { buildFallenIdolsDiscardChoice } from '../moves/seatChoiceTactics.js';
+
+describe('WP-818 bot-ally pick for the Fallen Idols discard (D-24752)', () => {
+  it('T15: discards the Wound, the same pick as the Monarch discard', () => {
+    const G = makeState({ '0': [], '1': ['hero-cost-5#0', WOUND_EXT_ID] }, {
+      cardStats: { 'hero-cost-5#0': { cost: 5 } },
+    });
+    withChoice(G, buildFallenIdolsDiscardChoice(G, ['1']));
+    assert.equal(G.pendingSeatChoice?.kind, 'fallen-idols-discard');
+    assert.equal(choosePlayingSeatChoiceOption(G, '1'), 1);
+  });
+});

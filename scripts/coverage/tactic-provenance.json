@@ -103,6 +103,30 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveElectromagneticBubble",
       "wp": "WP-695",
       "decision": "D-24512"
+    },
+    "ca75-mastermind-baron-heinrich-zemo-fallen-idols": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveFallenIdols",
+      "wp": "WP-818",
+      "decision": "D-24752"
+    },
+    "ca75-mastermind-baron-heinrich-zemo-finding-zemo": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveFindingZemo",
+      "wp": "WP-818",
+      "decision": "D-24752"
+    },
+    "ca75-mastermind-baron-heinrich-zemo-hatred-for-the-avengers": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveHatredForTheAvengers",
+      "wp": "WP-818",
+      "decision": "D-24752"
+    },
+    "ca75-mastermind-baron-heinrich-zemo-prisoners-of-war": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolvePrisonersOfWar",
+      "wp": "WP-818",
+      "decision": "D-24752"
     }
   }
 }

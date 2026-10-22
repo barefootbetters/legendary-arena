@@ -1627,3 +1627,36 @@ describe('WP-817 getLegalMoves — Primus fight discard cost mirrors the move gu
     assert.deepStrictEqual(fightIntents(gameState), [{ name: 'fightVillain', args: { cityIndex: 0 } }]);
   });
 });
+
+describe('WP-818 getLegalMoves — Baron Zemo fightMastermind mirrors the move guard (D-24752)', () => {
+  /** A main-stage Zemo state (printed 9, tactics left) with the given attack and Victory Pile. */
+  function makeZemoG(attack: number, victory: CardExtId[]): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main' });
+    (gameState as { selection: unknown }).selection = { mastermindId: 'ca75/baron-heinrich-zemo' };
+    gameState.cardStats = { 'm-base': makeCardStatEntry({ fightCost: 9 }) } as LegendaryGameState['cardStats'];
+    gameState.mastermind = { baseCardId: 'm-base', tacticsDeck: ['t-1'] } as unknown as LegendaryGameState['mastermind'];
+    gameState.playerZones['0']!.victory = victory;
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  /** Whether getLegalMoves offers fightMastermind. */
+  function offersFightMastermind(gameState: LegendaryGameState): boolean {
+    return getLegalMoves(gameState, CONTEXT).some((move) => move.name === 'fightMastermind');
+  }
+
+  test('T8: a non-Savior with 9 attack is not offered fightMastermind', () => {
+    assert.equal(offersFightMastermind(makeZemoG(9, ['pile-bystander', 'pile-bystander'])), false);
+  });
+
+  test('T8: a non-Savior with 18 attack is offered fightMastermind', () => {
+    assert.equal(offersFightMastermind(makeZemoG(18, ['pile-bystander', 'pile-bystander'])), true);
+  });
+
+  test('T8: a Savior with 9 attack is offered fightMastermind', () => {
+    assert.equal(
+      offersFightMastermind(makeZemoG(9, ['pile-bystander', 'pile-bystander', 'pile-bystander'])),
+      true,
+    );
+  });
+});

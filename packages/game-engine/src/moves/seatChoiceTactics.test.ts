@@ -331,3 +331,35 @@ describe('applyVanishingIllusionsKo — atomic multi-seat (WP-694 / D-24511)', (
     assert.deepEqual(forward.G.playerZones, reverse.G.playerZones);
   });
 });
+
+import { applyFallenIdolsDiscard, buildFallenIdolsDiscardChoice } from './seatChoiceTactics.js';
+
+describe('WP-818 applyFallenIdolsDiscard — atomic multi-seat (D-24752)', () => {
+  it('T14: seats 1 and 3 each discard their chosen card in ascending seat order', () => {
+    const G = makeState({
+      '1': { hand: ['h1a', 'h1b'] },
+      '3': { hand: ['h3a'] },
+    });
+    const choice = buildFallenIdolsDiscardChoice(G, ['1', '3'])!;
+    assert.equal(choice.seatPrompts['1']!.options[1]!.label, 'Discard h1b');
+    submit(choice, '3', 0);
+    submit(choice, '1', 1);
+    applyFallenIdolsDiscard(G, choice);
+    assert.deepEqual(G.playerZones['1']!.hand, ['h1a']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['h1b']);
+    assert.deepEqual(G.playerZones['3']!.hand, []);
+    assert.deepEqual(G.playerZones['3']!.discard, ['h3a']);
+    assert.deepEqual(
+      G.messages.map((entry) => ({ text: entry.text, outcome: entry.outcome })),
+      [
+        { text: 'Player 1 discarded h1b (Fallen Idols).', outcome: 'applied' },
+        { text: 'Player 3 discarded h3a (Fallen Idols).', outcome: 'applied' },
+      ],
+    );
+  });
+
+  it('T14: builds nothing when no given seat holds a card', () => {
+    const G = makeState({ '1': { hand: [] } });
+    assert.equal(buildFallenIdolsDiscardChoice(G, ['1']), undefined);
+  });
+});

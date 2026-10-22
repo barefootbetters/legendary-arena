@@ -2687,3 +2687,28 @@ describe('WP-819 buildUIState — economy.rescueOnFightAvailable cue (D-24753)',
     }
   });
 });
+
+describe('WP-818 buildUIState — Baron Zemo mastermind.fightCost reads the active player (D-24752)', () => {
+  /** A test G with Baron Zemo (printed 9) and the active player's Victory Pile. */
+  function zemoState(victory: CardExtId[]): LegendaryGameState {
+    const gameState = createTestGameState();
+    gameState.selection.mastermindId = 'ca75/baron-heinrich-zemo';
+    gameState.cardStats[gameState.mastermind.baseCardId] = makeCardStatEntry({ fightCost: 9 });
+    gameState.playerZones['0']!.victory = victory;
+    return gameState;
+  }
+
+  it('T7: projects 18 for a non-Savior active player (2 Bystanders)', () => {
+    const gameState = zemoState(['pile-bystander', 'pile-bystander']);
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.fightCost, 18);
+    assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState, '0'));
+  });
+
+  it('T7: projects the printed 9 once the active player is a Savior (3 Bystanders)', () => {
+    const gameState = zemoState(['pile-bystander', 'pile-bystander', 'pile-bystander']);
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.fightCost, 9);
+    assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState, '0'));
+  });
+});

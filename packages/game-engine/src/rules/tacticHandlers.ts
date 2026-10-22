@@ -18,8 +18,9 @@
  *
  * Pure handlers: they mutate `G` directly and never throw. No boardgame.io
  * import (`ctx` is narrowed via `unknown`, mirroring `defeatMastermindTacticCore`).
- * No registry import. No `.reduce()`. No `ctx.random.*` (nothing here reveals or
- * shuffles).
+ * No registry import. No `.reduce()`. No direct `ctx.random.*`: the only shuffle is
+ * Baron Zemo's Finding Zemo, through the move's `shuffleContext.random.Shuffle`
+ * (WP-818 / D-24752).
  */
 
 import type {
@@ -48,6 +49,7 @@ import { moveCardFromZone } from '../moves/zoneOps.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { refillHqSlot } from '../board/city.logic.js';
+import { koCard } from '../board/ko.logic.js';
 import { isHqSlotHaunted } from '../board/haunt.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 // why: WP-694 / D-24511 — the two multi-seat tactics PARK a WP-684 pending seat choice.
@@ -59,7 +61,15 @@ import { offPlayCardTraits, playedCardIdsStillInPlay } from '../hero/splitCard.l
 import {
   buildMonarchsDecreeModeChoice,
   buildVanishingIllusionsChoice,
+  buildFallenIdolsDiscardChoice,
 } from '../moves/seatChoiceTactics.js';
+// why: WP-818 / D-24752 — Baron Zemo's tactics read Savior status and the first
+// Victory-Pile Bystander through the shared WP-816 helpers (defeated Killbots included).
+import {
+  SAVIOR_BYSTANDER_THRESHOLD,
+  countVictoryPileBystanders,
+  findFirstVictoryPileBystander,
+} from '../board/bystanders.logic.js';
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
 // of Valence Electrons" tactic (co2e, corrected 9→8 in #1214) — distinct from
@@ -152,6 +162,33 @@ export const TREASURES_EXTRA_CARDS = 3;
 // Bystanders from their Victory Pile; a player with fewer than two KOs all they
 // have (clamped by the count present). The max per other player.
 export const WHISPERS_BYSTANDER_KO = 2;
+
+// why: WP-818 / D-24752 — ca75 Baron Heinrich Zemo's four tactic ext_ids, same
+// `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}` grammar as the constants above.
+// Printed Fight text (data/cards/ca75.json):
+//   Fallen Idols            "Each other player that is not a Savior discards a card."
+//   Finding Zemo            "Reveal the top five cards of the Villain Deck. If you revealed
+//                            any Bystanders, KO them and each other player gains a Wound.
+//                            Put the rest back in random order."
+//   Hatred for the Avengers "For each of your [team:avengers] Heroes, rescue a Bystander."
+//   Prisoners of War        "Each other player reveals an [team:avengers] Hero or chooses a
+//                            Bystander from their Victory Pile, and you rescue that Bystander."
+const ZEMO_FALLEN_IDOLS_TACTIC_ID: CardExtId =
+  'ca75-mastermind-baron-heinrich-zemo-fallen-idols';
+const ZEMO_FINDING_ZEMO_TACTIC_ID: CardExtId =
+  'ca75-mastermind-baron-heinrich-zemo-finding-zemo';
+const ZEMO_HATRED_FOR_THE_AVENGERS_TACTIC_ID: CardExtId =
+  'ca75-mastermind-baron-heinrich-zemo-hatred-for-the-avengers';
+const ZEMO_PRISONERS_OF_WAR_TACTIC_ID: CardExtId =
+  'ca75-mastermind-baron-heinrich-zemo-prisoners-of-war';
+
+// why: WP-818 / D-24752 — Finding Zemo's printed "top five cards". Fewer are revealed
+// when the Villain Deck is shorter.
+export const FINDING_ZEMO_REVEAL_COUNT = 5;
+
+// why: the normalized team slug for Hatred for the Avengers and Prisoners of War, the
+// same lowercase form as TEAM_X_MEN.
+const TEAM_AVENGERS = 'avengers';
 
 // why: WP-696 / D-24513 — core Dr. Doom's "Secrets of Time Travel" tactic ext_id,
 // same `${setAbbr}-mastermind-${slug}-${tacticSlug}` grammar as the constants above
@@ -623,30 +660,35 @@ export function resolveSecretsOfTimeTravel(
 }
 
 /**
- * Counts the acting player's X-Men Heroes — Xavier's Nemesis's "for each of your
- * [team:x-men] Heroes" scan, over the hand AND the cards played this turn.
+ * Counts the acting player's Heroes of one team — the "for each of your [team:X]
+ * Heroes" scan (Xavier's Nemesis, Hatred for the Avengers), over the hand AND the
+ * cards played this turn.
  *
  * In play, reads effective team membership via `cardHasTeamWhenPlayed` (printed
  * `G.cardTraits.team` OR a Copy-Powers granted team), so a Rogue Copy Powers card
- * that copied an X-Men Hero counts. In hand, reads the printed team through
+ * that copied a Hero of the team counts. In hand, reads the printed team through
  * `offPlayCardTraits` (a Copy-Powers grant applies only in play; a Divided Card off
  * play carries its faces' team).
  *
  * @param G - The game state (read-only here).
  * @param inPlay - The acting player's played-this-turn cards, in order.
  * @param hand - The acting player's hand, in order.
- * @returns How many cards in hand or play count as team `x-men`.
+ * @param team - The normalized team slug to count (e.g. `x-men`, `avengers`).
+ * @returns How many cards in hand or play count as that team.
  */
-function countXMenHeroesYouHave(
+// why: WP-818 / D-24752 — generalized from the X-Men-only count for its second team use
+// (Hatred for the Avengers), so both tactics read "your Heroes" by the same D-24645 rule.
+function countTeamHeroesYouHave(
   G: LegendaryGameState,
   inPlay: readonly CardExtId[],
   hand: readonly CardExtId[],
+  team: string,
 ): number {
   // why: explicit loops, not .reduce() — effect application counts as rule work
   // (.claude/rules/code-style.md Patterns to Avoid).
   let total = 0;
   for (const cardExtId of inPlay) {
-    if (cardHasTeamWhenPlayed(G, cardExtId, TEAM_X_MEN)) {
+    if (cardHasTeamWhenPlayed(G, cardExtId, team)) {
       total = total + 1;
     }
   }
@@ -654,7 +696,7 @@ function countXMenHeroesYouHave(
   // phrases include the cards in your hand as well as the cards played this turn
   // (the D-24529 Perfect Teamwork precedent). D-24508 counted play only.
   for (const cardExtId of hand) {
-    if (offPlayCardTraits(G, cardExtId)?.team === TEAM_X_MEN) {
+    if (offPlayCardTraits(G, cardExtId)?.team === team) {
       total = total + 1;
     }
   }
@@ -686,10 +728,11 @@ export function resolveXaviersNemesis(
 
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
-  const xMenCount = countXMenHeroesYouHave(
+  const xMenCount = countTeamHeroesYouHave(
     G,
     playedCardIdsStillInPlay(G, playerZones.inPlay),
     playerZones.hand,
+    TEAM_X_MEN,
   );
   // why: nothing to rescue is a no-effect outcome, logged `blocked` with its reason —
   // the Electromagnetic Bubble "has no X-Men Hero" precedent — never an `applied`
@@ -1301,7 +1344,7 @@ function collectXMenHeroesYouHave(
   const eligible: CardExtId[] = [];
   for (const cardExtId of inPlay) {
     // why: D-24731 — the effective when-played team (D-24391), so a Copy Powers copy of an
-    // X-Men Hero is eligible, matching countXMenHeroesYouHave. The undefined-map guard keeps
+    // X-Men Hero is eligible, matching countTeamHeroesYouHave. The undefined-map guard keeps
     // the WP-695 legacy-state posture (cardHasTeamWhenPlayed reads the map directly).
     if (G.cardTraits !== undefined && cardHasTeamWhenPlayed(G, cardExtId, TEAM_X_MEN)) {
       eligible.push(cardExtId);
@@ -1521,5 +1564,312 @@ export function dispatchTacticOnFight(
   if (defeatedTacticId === MAGNETO_ELECTROMAGNETIC_BUBBLE_TACTIC_ID) {
     resolveElectromagneticBubble(G, currentPlayer);
     return;
+  }
+  // why: WP-818 / D-24752 — Baron Zemo's Fallen Idols parks a multi-seat discard for the
+  // other non-Savior seats (the Monarch's discard shape; threads events for the stage ride).
+  if (defeatedTacticId === ZEMO_FALLEN_IDOLS_TACTIC_ID) {
+    resolveFallenIdols(G, events, currentPlayer);
+    return;
+  }
+  // why: WP-818 / D-24752 — Baron Zemo's Finding Zemo reveals the top 5 Villain-Deck cards;
+  // the shuffle context reorders the rest it puts back.
+  if (defeatedTacticId === ZEMO_FINDING_ZEMO_TACTIC_ID) {
+    resolveFindingZemo(G, currentPlayer, shuffleContext);
+    return;
+  }
+  // why: WP-818 / D-24752 — Hatred for the Avengers, the Xavier's Nemesis rule with Avengers.
+  if (defeatedTacticId === ZEMO_HATRED_FOR_THE_AVENGERS_TACTIC_ID) {
+    resolveHatredForTheAvengers(G, currentPlayer);
+    return;
+  }
+  // why: WP-818 / D-24752 — Prisoners of War: each other player reveals an Avengers Hero
+  // or gives the defeating player a Victory-Pile Bystander (auto-resolved).
+  if (defeatedTacticId === ZEMO_PRISONERS_OF_WAR_TACTIC_ID) {
+    resolvePrisonersOfWar(G, currentPlayer);
+    return;
+  }
+}
+
+/**
+ * Resolves Baron Zemo's "Fallen Idols" tactic Fight effect (WP-818 / D-24752): "Each
+ * other player that is not a Savior discards a card."
+ *
+ * Narrates each other Savior seat and each other non-Savior seat with an empty hand,
+ * then parks a simultaneous multi-seat discard for the rest. Nothing is parked when no
+ * seat qualifies. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission); optional
+ *   so a unit/replay context parks on G and resolves directly.
+ * @param currentPlayer - The player who defeated the tactic. Skipped ("each other player").
+ */
+export function resolveFallenIdols(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to discard a card (Fallen Idols).`,
+      'neutral',
+    );
+    return;
+  }
+
+  const nonSaviorSeats: string[] = [];
+  for (const seat of otherSeats) {
+    const zones = G.playerZones[seat]!;
+    if (countVictoryPileBystanders(zones.victory) >= SAVIOR_BYSTANDER_THRESHOLD) {
+      pushLog(G,
+        `Fight effect: Player ${seat} is a Savior and discards nothing (Fallen Idols).`,
+        'neutral',
+      );
+      continue;
+    }
+    if (zones.hand.length === 0) {
+      pushLog(G,
+        `Fight effect: Player ${seat} has no card to discard (Fallen Idols).`,
+        'neutral',
+      );
+      continue;
+    }
+    nonSaviorSeats.push(seat);
+  }
+
+  const discardChoice = buildFallenIdolsDiscardChoice(G, nonSaviorSeats);
+  if (discardChoice === undefined) {
+    pushLog(G,
+      `Fight effect: no other player who is not a Savior has a card to discard (Fallen Idols).`,
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, discardChoice);
+  pushLog(G,
+    `Fight effect: each other player who is not a Savior must discard a card (Fallen Idols).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves Baron Zemo's "Finding Zemo" tactic Fight effect (WP-818 / D-24752): "Reveal
+ * the top five cards of the Villain Deck. If you revealed any Bystanders, KO them and
+ * each other player gains a Wound. Put the rest back in random order."
+ *
+ * The revealed Bystanders go to the KO pile in revealed order; the other revealed cards
+ * go back on top of the Villain Deck, reshuffled. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (takes no Wound).
+ * @param shuffleContext - The move's deterministic shuffle for the cards put back.
+ */
+export function resolveFindingZemo(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  shuffleContext: ShuffleProvider,
+): void {
+  const deck = G.villainDeck.deck;
+  const revealCount = Math.min(FINDING_ZEMO_REVEAL_COUNT, deck.length);
+  if (revealCount === 0) {
+    pushLog(G,
+      `Fight effect: the Villain Deck is empty, so nothing is revealed (Finding Zemo).`,
+      'blocked',
+    );
+    return;
+  }
+
+  // why: only cards typed 'bystander' count. On the Killbots scheme the villain-deck
+  // Bystanders are typed 'villain' (D-24324): they are Killbots while in the deck.
+  let koedCount = 0;
+  let rest: CardExtId[] = [];
+  for (const cardExtId of deck.slice(0, revealCount)) {
+    if (G.villainDeckCardTypes[cardExtId] === 'bystander') {
+      G.ko = koCard(G.ko, cardExtId);
+      koedCount += 1;
+    } else {
+      rest.push(cardExtId);
+    }
+  }
+  // why: "in random order" — the move's seeded Shuffle, called only when 2+ cards go back
+  // (one card or none has a single order, so the call would only spend randomness).
+  if (rest.length >= 2) {
+    rest = shuffleContext.random.Shuffle([...rest]);
+  }
+  G.villainDeck.deck = [...rest, ...deck.slice(revealCount)];
+
+  if (koedCount === 0) {
+    pushLog(G,
+      `Fight effect: revealed the top ${String(revealCount)} card(s) of the Villain Deck — no Bystanders (Finding Zemo).`,
+      'blocked',
+    );
+    return;
+  }
+  pushLog(G,
+    `Fight effect: revealed the top ${String(revealCount)} card(s) of the Villain Deck and KO'd ${String(koedCount)} Bystander(s) (Finding Zemo).`,
+    'applied',
+  );
+  dealFindingZemoWounds(G, currentPlayer);
+}
+
+/**
+ * Deals Finding Zemo's Wounds: each other player gains one Wound, however many
+ * Bystanders were revealed (WP-818 / D-24752).
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ */
+function dealFindingZemoWounds(G: LegendaryGameState, currentPlayer: string): void {
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to gain a Wound (Finding Zemo).`,
+      'neutral',
+    );
+    return;
+  }
+  for (const seat of otherSeats) {
+    // why: WP-682 / D-24499 — the Wound chokepoint, so a Diving-Block holder (often a
+    // non-active seat) gets the reveal window; D-24673 wording while it is pending.
+    const woundOutcome = gainWoundWithOutcome(G, seat);
+    if (woundOutcome === 'gained') {
+      pushLog(G, `Fight effect: Player ${seat} gained a Wound (Finding Zemo).`, 'applied');
+    } else if (woundOutcome === 'diving-block-pending') {
+      pushLog(G,
+        `Fight effect: Player ${seat} would gain a Wound — Diving Block can prevent it (Finding Zemo).`,
+        'neutral',
+      );
+    } else {
+      pushLog(G,
+        `Fight effect: Player ${seat} gained no Wound — the Wound supply is empty (Finding Zemo).`,
+        'blocked',
+      );
+    }
+  }
+}
+
+/**
+ * Resolves Baron Zemo's "Hatred for the Avengers" tactic Fight effect (WP-818 /
+ * D-24752): "For each of your [team:avengers] Heroes, rescue a Bystander."
+ *
+ * Rescues one supply Bystander into the defeating player's Victory Pile per Avengers
+ * Hero in their hand or still in play (the Xavier's Nemesis rule, D-24645 / D-24692).
+ * Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the beneficiary).
+ */
+export function resolveHatredForTheAvengers(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  const playerZones = G.playerZones[currentPlayer];
+  if (!playerZones) {
+    return;
+  }
+
+  const avengersCount = countTeamHeroesYouHave(
+    G,
+    playedCardIdsStillInPlay(G, playerZones.inPlay),
+    playerZones.hand,
+    TEAM_AVENGERS,
+  );
+  if (avengersCount === 0) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has no Avengers Hero in hand or play, so no Bystander is rescued (Hatred for the Avengers).`,
+      'blocked',
+    );
+    return;
+  }
+  let rescuedCount = 0;
+  for (let rescueIndex = 0; rescueIndex < avengersCount; rescueIndex++) {
+    // why: top-of-pile convention — bystanders[0] is the next supply Bystander (D-21501).
+    const topBystander = G.piles.bystanders[0];
+    if (topBystander === undefined) {
+      break;
+    }
+    const moveResult = moveCardFromZone(G.piles.bystanders, playerZones.victory, topBystander);
+    G.piles.bystanders = moveResult.from;
+    playerZones.victory = moveResult.to;
+    rescuedCount += 1;
+  }
+
+  if (rescuedCount === 0) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has Avengers Heroes but the Bystander supply is empty, so no Bystander is rescued (Hatred for the Avengers).`,
+      'blocked',
+    );
+    return;
+  }
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} rescued ${String(rescuedCount)} Bystander(s) — one per Avengers Hero in hand or play (Hatred for the Avengers).`,
+    'applied',
+  );
+}
+
+/**
+ * Resolves Baron Zemo's "Prisoners of War" tactic Fight effect (WP-818 / D-24752):
+ * "Each other player reveals an [team:avengers] Hero or chooses a Bystander from their
+ * Victory Pile, and you rescue that Bystander."
+ *
+ * Each other player (sorted) reveals an Avengers Hero from their hand when they hold
+ * one; otherwise their first Victory-Pile Bystander moves to the defeating player's
+ * Victory Pile. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the beneficiary).
+ */
+export function resolvePrisonersOfWar(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  const currentZones = G.playerZones[currentPlayer];
+  if (!currentZones) {
+    return;
+  }
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to reveal an Avengers Hero or give up a Bystander (Prisoners of War).`,
+      'neutral',
+    );
+    return;
+  }
+
+  for (const seat of otherSeats) {
+    const seatZones = G.playerZones[seat]!;
+    // why: a free reveal always beats giving up a Bystander (D-24312), and every
+    // Victory-Pile Bystander is worth the same, so the auto-pick is player-optimal.
+    const revealedHero = seatZones.hand.find(
+      (cardExtId) => offPlayCardTraits(G, cardExtId)?.team === TEAM_AVENGERS,
+    );
+    if (revealedHero !== undefined) {
+      pushLog(G,
+        `Fight effect: Player ${seat} revealed ${formatCardRef(G.cardDisplayData, revealedHero)} — no Bystander (Prisoners of War).`,
+        'neutral',
+      );
+      continue;
+    }
+    const bystander = findFirstVictoryPileBystander(seatZones.victory);
+    if (bystander === undefined) {
+      pushLog(G,
+        `Fight effect: Player ${seat} had no Avengers Hero and no Bystander in their Victory Pile (Prisoners of War).`,
+        'blocked',
+      );
+      continue;
+    }
+    const moveResult = moveCardFromZone(seatZones.victory, currentZones.victory, bystander);
+    seatZones.victory = moveResult.from;
+    currentZones.victory = moveResult.to;
+    pushLog(G,
+      `Fight effect: Player ${seat} had no Avengers Hero, so Player ${currentPlayer} rescued a Bystander from their Victory Pile (Prisoners of War).`,
+      'applied',
+    );
   }
 }

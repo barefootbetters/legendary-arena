@@ -1132,7 +1132,7 @@ export function getLegalMoves(
     gameState.mastermind.tacticsDeck.length > 0 &&
     !isMastermindHaunting(gameState)
   ) {
-    const mastermindFightCost = resolveMastermindFightCost(gameState);
+    const mastermindFightCost = resolveMastermindFightCost(gameState, activePlayer);
     // why: WP-790 / D-24652 — the same per-target figure the fightMastermind move gates on.
     if (getSpendableAttackForTarget(gameState.turnEconomy, 'mastermind') >= mastermindFightCost) {
       legalMoves.push({ name: 'fightMastermind', args: {} });

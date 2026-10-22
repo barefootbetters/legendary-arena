@@ -1170,3 +1170,298 @@ describe("Xavier's Nemesis count vs Electromagnetic Bubble targets for a both-si
     assert.deepEqual(G.deferredHandInjections, { '0': [LEGION_FACE_A] }, 'the physical face-a entry, once');
   });
 });
+
+import { FINDING_ZEMO_REVEAL_COUNT } from './tacticHandlers.js';
+import { FALLEN_IDOLS_DISCARD_KIND } from '../moves/seatChoiceTactics.js';
+import { makeMockCtx } from '../test/mockCtx.js';
+
+const ZEMO_FALLEN_IDOLS_ID = 'ca75-mastermind-baron-heinrich-zemo-fallen-idols' as CardExtId;
+const ZEMO_FINDING_ZEMO_ID = 'ca75-mastermind-baron-heinrich-zemo-finding-zemo' as CardExtId;
+const ZEMO_HATRED_ID = 'ca75-mastermind-baron-heinrich-zemo-hatred-for-the-avengers' as CardExtId;
+const ZEMO_PRISONERS_ID = 'ca75-mastermind-baron-heinrich-zemo-prisoners-of-war' as CardExtId;
+const ZEMO_AVENGERS_HERO: CardExtId = 'ca75-hero-captain-america-shield-throw';
+const ZEMO_AVENGERS_HERO_2: CardExtId = 'ca75-hero-bucky-barnes-sniper';
+const ZEMO_X_MEN_HERO: CardExtId = 'core-hero-cyclops-optic-blast';
+const THREE_BYSTANDERS: CardExtId[] = ['pile-bystander', 'pile-bystander', 'pile-bystander'];
+
+/**
+ * Builds a Zemo-tactic state: per-seat zones, a Bystander and Wound supply, the
+ * Villain Deck with its type map, and team traits for the test Heroes.
+ *
+ * @param zonesBySeat - Each seat's hand / discard / inPlay / victory.
+ * @param options - Supply sizes and the Villain Deck.
+ * @returns A LegendaryGameState carrying only the fields the resolvers read.
+ */
+function makeZemoTacticState(
+  zonesBySeat: Record<string, { hand?: CardExtId[]; discard?: CardExtId[]; inPlay?: CardExtId[]; victory?: CardExtId[] }>,
+  options: { bystanders?: number; wounds?: number; deck?: CardExtId[]; deckTypes?: Record<string, string> } = {},
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const zones = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [],
+      hand: [...(zones.hand ?? [])],
+      discard: [...(zones.discard ?? [])],
+      inPlay: [...(zones.inPlay ?? [])],
+      victory: [...(zones.victory ?? [])],
+    };
+  }
+  const bystanders: CardExtId[] = [];
+  for (let index = 0; index < (options.bystanders ?? 0); index++) {
+    bystanders.push('pile-bystander');
+  }
+  const wounds: CardExtId[] = [];
+  for (let index = 0; index < (options.wounds ?? 0); index++) {
+    wounds.push(WOUND);
+  }
+  return {
+    messages: [],
+    playerZones,
+    piles: { bystanders, wounds },
+    ko: [],
+    villainDeck: { deck: [...(options.deck ?? [])], discard: [] },
+    villainDeckCardTypes: { ...(options.deckTypes ?? {}) },
+    cardDisplayData: {
+      'card-a': { name: 'Alpha' },
+      'card-b': { name: 'Bravo' },
+      'card-c': { name: 'Charlie' },
+    },
+    cardTraits: {
+      [ZEMO_AVENGERS_HERO]: { heroClass: null, team: 'avengers' },
+      [ZEMO_AVENGERS_HERO_2]: { heroClass: null, team: 'avengers' },
+      [ZEMO_X_MEN_HERO]: { heroClass: null, team: 'x-men' },
+    },
+  } as unknown as LegendaryGameState;
+}
+
+/** The text and outcome of every log line, in order. */
+function zemoLogLines(G: LegendaryGameState): Array<{ text: string; outcome: string | undefined }> {
+  return G.messages.map((entry) => ({ text: entry.text, outcome: entry.outcome }));
+}
+
+describe('WP-818 dispatchTacticOnFight — Baron Zemo tactics (D-24752)', () => {
+  it('T12: Fallen Idols addresses only the other non-Saviors holding a card, narrating the rest', () => {
+    const G = makeZemoTacticState({
+      '0': { hand: ['card-c'] },
+      '1': { hand: ['card-a', 'card-b'] },
+      '2': { hand: ['card-c'], victory: THREE_BYSTANDERS },
+      '3': { hand: [] },
+    });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FALLEN_IDOLS_ID, SHUFFLE, events);
+    assert.deepEqual(G.pendingSeatChoice, {
+      kind: FALLEN_IDOLS_DISCARD_KIND,
+      addressedSeats: ['1'],
+      seatPrompts: {
+        '1': { options: [{ label: 'Discard Alpha', cardId: 'card-a' }, { label: 'Discard Bravo', cardId: 'card-b' }] },
+      },
+      submissions: {},
+      defaultOptionIndex: 0,
+    });
+    assert.equal(events.admitted.length, 1, 'the addressed seat is admitted');
+    assert.deepEqual(zemoLogLines(G), [
+      { text: 'Fight effect: Player 2 is a Savior and discards nothing (Fallen Idols).', outcome: 'neutral' },
+      { text: 'Fight effect: Player 3 has no card to discard (Fallen Idols).', outcome: 'neutral' },
+      { text: 'Fight effect: each other player who is not a Savior must discard a card (Fallen Idols).', outcome: 'neutral' },
+    ]);
+    resolveSeatChoice(makeSeatResolveCtx(G, '1'), { optionIndex: 1 });
+    assert.equal(G.pendingSeatChoice, undefined, 'applied + cleared');
+    assert.deepEqual(G.playerZones['1']!.hand, ['card-a']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['card-b']);
+  });
+
+  it('T13: Fallen Idols solo, and with every other seat a Savior, parks nothing', () => {
+    const solo = makeZemoTacticState({ '0': { hand: ['card-a'] } });
+    dispatchTacticOnFight(solo, { currentPlayer: '0' }, ZEMO_FALLEN_IDOLS_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(solo.pendingSeatChoice, undefined);
+    assert.deepEqual(zemoLogLines(solo), [
+      { text: 'Fight effect: there is no other player to discard a card (Fallen Idols).', outcome: 'neutral' },
+    ]);
+
+    const allSaviors = makeZemoTacticState({
+      '0': { hand: ['card-a'] },
+      '1': { hand: ['card-b'], victory: THREE_BYSTANDERS },
+      '2': { hand: ['card-c'], victory: ['pile-bystander', 'pile-bystander', 'bystander-villain-deck-01'] },
+    });
+    dispatchTacticOnFight(allSaviors, { currentPlayer: '0' }, ZEMO_FALLEN_IDOLS_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(allSaviors.pendingSeatChoice, undefined);
+    assert.deepEqual(zemoLogLines(allSaviors).map((line) => line.text), [
+      'Fight effect: Player 1 is a Savior and discards nothing (Fallen Idols).',
+      'Fight effect: Player 2 is a Savior and discards nothing (Fallen Idols).',
+      'Fight effect: no other player who is not a Savior has a card to discard (Fallen Idols).',
+    ]);
+  });
+
+  it('T16: Finding Zemo KOs the revealed Bystanders, wounds each other player once, and reshuffles the rest on top', () => {
+    const G = makeZemoTacticState(
+      { '0': {}, '1': {}, '2': {} },
+      {
+        wounds: 5,
+        deck: ['v1', 'b1', 'v2', 'b2', 's1', 'v3'],
+        deckTypes: { v1: 'villain', v2: 'villain', v3: 'villain', b1: 'bystander', b2: 'bystander', s1: 'scheme-twist' },
+      },
+    );
+    assert.equal(FINDING_ZEMO_REVEAL_COUNT, 5);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(G.ko, ['b1', 'b2']);
+    assert.deepEqual(G.villainDeck.deck, ['s1', 'v2', 'v1', 'v3'], 'the rest reversed by the mock Shuffle, on top');
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.playerZones['1']!.discard, [WOUND]);
+    assert.deepEqual(G.playerZones['2']!.discard, [WOUND]);
+    assert.deepEqual(zemoLogLines(G), [
+      { text: "Fight effect: revealed the top 5 card(s) of the Villain Deck and KO'd 2 Bystander(s) (Finding Zemo).", outcome: 'applied' },
+      { text: 'Fight effect: Player 1 gained a Wound (Finding Zemo).', outcome: 'applied' },
+      { text: 'Fight effect: Player 2 gained a Wound (Finding Zemo).', outcome: 'applied' },
+    ]);
+  });
+
+  it('T17: Finding Zemo with no Bystander revealed still reshuffles the top 5 and deals no Wound', () => {
+    const deck: CardExtId[] = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'];
+    const G = makeZemoTacticState({ '0': {}, '1': {} }, { wounds: 5, deck, deckTypes: typeAll('villain', deck) });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(G.ko, []);
+    assert.deepEqual(G.villainDeck.deck, ['v5', 'v4', 'v3', 'v2', 'v1', 'v6', 'v7']);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+    assert.deepEqual(zemoLogLines(G), [
+      { text: 'Fight effect: revealed the top 5 card(s) of the Villain Deck — no Bystanders (Finding Zemo).', outcome: 'blocked' },
+    ]);
+  });
+
+  it('T18: Finding Zemo on a 1-card deck and on an empty deck never calls Shuffle', () => {
+    let shuffleCalls = 0;
+    const countingShuffle = {
+      random: {
+        Shuffle: <T,>(items: T[]): T[] => {
+          shuffleCalls += 1;
+          return [...items].reverse();
+        },
+      },
+    };
+    const oneCard = makeZemoTacticState({ '0': {}, '1': {} }, { wounds: 5, deck: ['b1'], deckTypes: { b1: 'bystander' } });
+    dispatchTacticOnFight(oneCard, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, countingShuffle);
+    assert.deepEqual(oneCard.ko, ['b1']);
+    assert.deepEqual(oneCard.villainDeck.deck, []);
+    assert.deepEqual(oneCard.playerZones['1']!.discard, [WOUND]);
+
+    const empty = makeZemoTacticState({ '0': {}, '1': {} }, { wounds: 5 });
+    dispatchTacticOnFight(empty, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, countingShuffle);
+    assert.deepEqual(zemoLogLines(empty), [
+      { text: 'Fight effect: the Villain Deck is empty, so nothing is revealed (Finding Zemo).', outcome: 'blocked' },
+    ]);
+    assert.equal(shuffleCalls, 0);
+  });
+
+  it('T18: Finding Zemo solo logs that there is no other player to gain a Wound', () => {
+    const G = makeZemoTacticState({ '0': {} }, { wounds: 5, deck: ['b1'], deckTypes: { b1: 'bystander' } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(zemoLogLines(G)[1], {
+      text: 'Fight effect: there is no other player to gain a Wound (Finding Zemo).',
+      outcome: 'neutral',
+    });
+  });
+
+  it('T18: Finding Zemo with an empty Wound supply logs the blocked Wound line', () => {
+    const G = makeZemoTacticState({ '0': {}, '1': {} }, { wounds: 0, deck: ['b1'], deckTypes: { b1: 'bystander' } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(zemoLogLines(G)[1], {
+      text: 'Fight effect: Player 1 gained no Wound — the Wound supply is empty (Finding Zemo).',
+      outcome: 'blocked',
+    });
+  });
+
+  it('T19: on a Killbots deck a villain-deck Bystander typed villain is not KOed', () => {
+    const G = makeZemoTacticState(
+      { '0': {}, '1': {} },
+      { wounds: 5, deck: ['bystander-villain-deck-01', 'v1'], deckTypes: { 'bystander-villain-deck-01': 'villain', v1: 'villain' } },
+    );
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(G.ko, []);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+  });
+
+  it('T20: Hatred for the Avengers rescues one Bystander per Avengers Hero in hand or play', () => {
+    const G = makeZemoTacticState(
+      { '0': { hand: [ZEMO_AVENGERS_HERO], inPlay: [ZEMO_AVENGERS_HERO_2, ZEMO_X_MEN_HERO] }, '1': {} },
+      { bystanders: 5 },
+    );
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_HATRED_ID, SHUFFLE);
+    assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander', 'pile-bystander']);
+    assert.equal(G.piles.bystanders.length, 3);
+    assert.deepEqual(zemoLogLines(G), [
+      {
+        text: 'Fight effect: Player 0 rescued 2 Bystander(s) — one per Avengers Hero in hand or play (Hatred for the Avengers).',
+        outcome: 'applied',
+      },
+    ]);
+  });
+
+  it('T21: Hatred for the Avengers with no Avengers Hero, or an empty supply, rescues nothing', () => {
+    const noAvengers = makeZemoTacticState({ '0': { hand: [ZEMO_X_MEN_HERO] } }, { bystanders: 5 });
+    dispatchTacticOnFight(noAvengers, { currentPlayer: '0' }, ZEMO_HATRED_ID, SHUFFLE);
+    assert.deepEqual(noAvengers.playerZones['0']!.victory, []);
+    assert.deepEqual(zemoLogLines(noAvengers), [
+      {
+        text: 'Fight effect: Player 0 has no Avengers Hero in hand or play, so no Bystander is rescued (Hatred for the Avengers).',
+        outcome: 'blocked',
+      },
+    ]);
+
+    const emptySupply = makeZemoTacticState({ '0': { hand: [ZEMO_AVENGERS_HERO] } }, { bystanders: 0 });
+    dispatchTacticOnFight(emptySupply, { currentPlayer: '0' }, ZEMO_HATRED_ID, SHUFFLE);
+    assert.deepEqual(emptySupply.playerZones['0']!.victory, []);
+    assert.deepEqual(zemoLogLines(emptySupply), [
+      {
+        text: 'Fight effect: Player 0 has Avengers Heroes but the Bystander supply is empty, so no Bystander is rescued (Hatred for the Avengers).',
+        outcome: 'blocked',
+      },
+    ]);
+  });
+
+  it('T23: Prisoners of War — a hand reveal keeps the Bystander; otherwise the first one moves to the fighter', () => {
+    const G = makeZemoTacticState({
+      '0': { victory: ['v0'] },
+      '1': { hand: [ZEMO_AVENGERS_HERO], victory: ['pile-bystander'] },
+      '2': { hand: [ZEMO_X_MEN_HERO], victory: ['v', 'bystander-villain-deck-04', 'pile-bystander'] },
+      '3': { hand: [], victory: ['v3'] },
+    });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_PRISONERS_ID, SHUFFLE);
+    assert.deepEqual(G.playerZones['1']!.victory, ['pile-bystander'], 'the revealing seat keeps its Bystander');
+    assert.deepEqual(G.playerZones['2']!.victory, ['v', 'pile-bystander']);
+    assert.deepEqual(G.playerZones['0']!.victory, ['v0', 'bystander-villain-deck-04']);
+    assert.deepEqual(G.playerZones['3']!.victory, ['v3']);
+    assert.deepEqual(zemoLogLines(G), [
+      {
+        text: `Fight effect: Player 1 revealed ${ZEMO_AVENGERS_HERO} (${ZEMO_AVENGERS_HERO}) — no Bystander (Prisoners of War).`,
+        outcome: 'neutral',
+      },
+      {
+        text: 'Fight effect: Player 2 had no Avengers Hero, so Player 0 rescued a Bystander from their Victory Pile (Prisoners of War).',
+        outcome: 'applied',
+      },
+      {
+        text: 'Fight effect: Player 3 had no Avengers Hero and no Bystander in their Victory Pile (Prisoners of War).',
+        outcome: 'blocked',
+      },
+    ]);
+  });
+
+  it('T24: Prisoners of War reveals from the hand only, and logs the solo no-op', () => {
+    const G = makeZemoTacticState({
+      '0': {},
+      '2': { discard: [ZEMO_AVENGERS_HERO], victory: ['pile-bystander'] },
+    });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_PRISONERS_ID, SHUFFLE);
+    assert.deepEqual(G.playerZones['2']!.victory, []);
+    assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander']);
+
+    const solo = makeZemoTacticState({ '0': {} });
+    dispatchTacticOnFight(solo, { currentPlayer: '0' }, ZEMO_PRISONERS_ID, SHUFFLE);
+    assert.deepEqual(zemoLogLines(solo), [
+      {
+        text: 'Fight effect: there is no other player to reveal an Avengers Hero or give up a Bystander (Prisoners of War).',
+        outcome: 'neutral',
+      },
+    ]);
+  });
+});

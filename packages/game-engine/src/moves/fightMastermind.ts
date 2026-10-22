@@ -152,7 +152,7 @@ export function fightMastermind(
   // why: baseCardId is the canonical stats key; fightCost is the fight
   // requirement field per WP-018 D-1805; never use G.mastermind.id or
   // any tactic card ID for stat lookup
-  const requiredFightCost = resolveMastermindFightCost(G);
+  const requiredFightCost = resolveMastermindFightCost(G, ctx.currentPlayer);
   // why: WP-580 / D-24389 — the spendable figure folds in unspent recruit when the
   // recruit-as-attack conversion is active this turn; equal to getAvailableAttack
   // otherwise, so the gate is unchanged on every non-conversion turn.

@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 576,
+      "executable": 580,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
-      "unmarked": 1044,
+      "unmarked": 1040,
       "subsystem": 5
     }
   },
@@ -4343,10 +4343,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "fallen-idols",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveFallenIdols",
+      "wp": "WP-818",
+      "decision": "D-24752"
     },
     {
       "extId": "ca75-mastermind-baron-heinrich-zemo-finding-zemo",
@@ -4354,10 +4354,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "finding-zemo",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveFindingZemo",
+      "wp": "WP-818",
+      "decision": "D-24752"
     },
     {
       "extId": "ca75-mastermind-baron-heinrich-zemo-hatred-for-the-avengers",
@@ -4365,10 +4365,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "hatred-for-the-avengers",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveHatredForTheAvengers",
+      "wp": "WP-818",
+      "decision": "D-24752"
     },
     {
       "extId": "ca75-mastermind-baron-heinrich-zemo-prisoners-of-war",
@@ -4376,10 +4376,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "prisoners-of-war",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolvePrisonersOfWar",
+      "wp": "WP-818",
+      "decision": "D-24752"
     },
     {
       "extId": "ca75-villain-masters-of-evil-wwii-black-knight",

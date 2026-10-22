@@ -1967,3 +1967,63 @@ describe('mastermindStrikeHandler — log lines use plain words, not card markup
     assert.ok(!messages.some((text) => RAW_MARKUP.test(text)), 'no raw [hc:…] markup reaches the log');
   });
 });
+
+describe('WP-818 mastermindStrikeHandler — Baron Zemo Master Strike (D-24752)', () => {
+  /** A three-player strike state with the given Mastermind and T9's Victory Piles. */
+  function makeZemoStrikeState(mastermindId: string, wounds: string[]): LegendaryGameState {
+    const gameState = makeCo2eState(mastermindId, { '0': [], '1': [], '2': [] });
+    gameState.playerZones['0']!.victory = ['v', 'bystander-villain-deck-02', 'pile-bystander'];
+    gameState.playerZones['1']!.victory = ['pile-bystander'];
+    gameState.playerZones['2']!.victory = ['v2'];
+    gameState.piles.wounds = wounds;
+    return gameState;
+  }
+
+  /** The strike's own log lines, in order. */
+  function zemoStrikeLines(gameState: LegendaryGameState): string[] {
+    return gameState.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.startsWith('[Baron Zemo Master Strike]'));
+  }
+
+  it('T9: each player KOs their first Victory-Pile Bystander; a player with none gains a Wound', () => {
+    const gameState = makeZemoStrikeState('ca75/baron-heinrich-zemo', [WOUND_EXT_ID, WOUND_EXT_ID, WOUND_EXT_ID]);
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.victory, ['v', 'pile-bystander']);
+    assert.deepEqual(gameState.playerZones['1']!.victory, []);
+    assert.deepEqual(gameState.playerZones['2']!.victory, ['v2']);
+    assert.deepEqual(gameState.ko, ['bystander-villain-deck-02', 'pile-bystander']);
+    assert.deepEqual(gameState.playerZones['2']!.discard, [WOUND_EXT_ID]);
+    assert.equal(gameState.piles.wounds.length, 2);
+    assert.deepEqual(zemoStrikeLines(gameState), [
+      "[Baron Zemo Master Strike] Player 0 KO'd a Bystander from their Victory Pile.",
+      "[Baron Zemo Master Strike] Player 1 KO'd a Bystander from their Victory Pile.",
+      '[Baron Zemo Master Strike] Player 2 had no Bystander in their Victory Pile and gained a Wound.',
+    ]);
+  });
+
+  it('T10: with an empty Wound supply the Bystander-less player gains nothing, and the strike never throws', () => {
+    const gameState = makeZemoStrikeState('ca75/baron-heinrich-zemo', []);
+
+    assert.doesNotThrow(() => mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {}));
+
+    assert.deepEqual(gameState.playerZones['2']!.discard, []);
+    assert.equal(
+      zemoStrikeLines(gameState)[2],
+      '[Baron Zemo Master Strike] Player 2 had no Bystander in their Victory Pile and the Wound supply is empty — no effect.',
+    );
+  });
+
+  it('T11: another Mastermind moves no Bystander and logs no Baron Zemo line', () => {
+    const gameState = makeZemoStrikeState('core/loki', [WOUND_EXT_ID, WOUND_EXT_ID, WOUND_EXT_ID]);
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.victory, ['v', 'bystander-villain-deck-02', 'pile-bystander']);
+    assert.deepEqual(gameState.playerZones['1']!.victory, ['pile-bystander']);
+    assert.deepEqual(gameState.ko, []);
+    assert.deepEqual(zemoStrikeLines(gameState), []);
+  });
+});
