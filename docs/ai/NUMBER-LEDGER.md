@@ -460,6 +460,7 @@ high-water: 422
 - WP-819 — zemo-rescue-on-fight-engine (Cap 75th arc item 3b: Baron Zemo passive "Whenever you fight a Villain, you may use 2 Recruit to rescue a Bystander" — fightVillain payToRescueBystander opt-in + active-player UIState availability cue. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - WP-820 — zemo-rescue-on-fight-client (arena-client per-villain "Fight + rescue" control for WP-819. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - WP-821 — arnim-zola-mastermind (Cap 75th arc item 4: Arnim Zola Master Strike + 4 tactics — Dominate the Weak, Computer-Uploaded Genius, Pet Projects, Crush Pacifist Resistance. reserved 2026-10-22, claude/reserve-wp821-arnim-zola)
+- WP-822 — bot-abomination-recruit (competent bot prefers recruiting the highest-printed-Attack HQ Hero under Ultimate / Double Highest Abomination, via a read-only per-slot UIState projection; follow-up to the Arnim Zola 2p investigation. reserved 2026-10-22, claude/reserve-wp822-abomination-recruit)
 
 ## EC
 
@@ -882,6 +883,7 @@ high-water: 457
 - EC-857 — zemo-rescue-on-fight-engine (WP-819. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - EC-858 — zemo-rescue-on-fight-client (WP-820. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - EC-859 — arnim-zola-mastermind (WP-821. reserved 2026-10-22, claude/reserve-wp821-arnim-zola)
+- EC-860 — bot-abomination-recruit (WP-822. reserved 2026-10-22, claude/reserve-wp822-abomination-recruit)
 
 ## D
 
@@ -1414,3 +1416,4 @@ section below) and the allocation protocol in
 - D-24752 — baron-zemo-mastermind (WP-818; the mastermind Savior fight-cost term and the Zemo strike/tactic resolvers; the on-fight-villain pay-Recruit rescue passive is deferred to its own opt-in arc. reserved 2026-10-21, claude/reserve-wp818-baron-zemo)
 - D-24753 — zemo-rescue-on-fight (WP-819 + WP-820; the pay-Recruit rescue window on a fight: fight move only, rescue before the Villain's Fight effects, affordability against the simulated fight debit, the availability cue, and the per-target client control. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - D-24754 — arnim-zola-mastermind (WP-821; the Zola strike and tactic resolvers over Heroes with less than 2 printed Attack. reserved 2026-10-22, claude/reserve-wp821-arnim-zola)
+- D-24755 — bot-abomination-recruit (WP-822; the UIMastermindState per-slot printed-Attack projection under mastermind-family Abomination and the competent-bot recruit bonus it feeds. reserved 2026-10-22, claude/reserve-wp822-abomination-recruit)
