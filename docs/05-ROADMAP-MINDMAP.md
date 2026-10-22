@@ -461,6 +461,7 @@ mindmap
         ["WP-818 ✅ Baron Heinrich Zemo plus 9 unless you are a Savior Master Strike and four Tactics game engine EC-856 D-24752 Active DONE 2026-10-21. Cap 75th arc audit item 3"]
         ["WP-819 ✅ Baron Zemo rescue on a fight pay 2 Recruit to rescue a Bystander before the Fight effects plus the active-player cue game engine EC-857 D-24753 Active DONE 2026-10-21. Cap 75th arc item 3b"]
         ["WP-820 ✅ Baron Zemo rescue on a fight City-row Fight plus Rescue control arena-client EC-858 D-24753 Active via WP-819 DONE 2026-10-21. Cap 75th arc item 3b, pairs with WP-819"]
+        ["WP-821 📝 Arnim Zola Master Strike and four Tactics Heroes with less than 2 printed Attack game engine DRAFTED 2026-10-22 EC-859 D-24754 reserved. Cap 75th arc audit item 4"]
         ["WP-805 ✅ A random player goes first the play phase opens on a seeded-random seat not always seat 1 rules v23 L524 game engine EC-842 D-24700 Active DONE 2026-10-12. Omit-when-off G flag keeps stored logs and solo unchanged"]
         ["WP-782 📝 Soaring Flight executor a recruited Soaring Flight Hero is set aside and joins your new hand at end of turn game engine plus card data DRAFTED 2026-09-27 EC-819 D-24627 reserved"]
         ["WP-784 📝 Deck-top discards count toward If you discarded any cards this turn game engine DRAFTED 2026-09-28 EC-821 D-24631 reserved"]
@@ -989,7 +990,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 190/205 | 15 open |
+| Hero Ability Coverage & Markup Pipeline | 190/206 | 16 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1010,9 +1011,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **796/817 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 20 open |
+| **Total** | **796/818 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 21 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 21):** WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 22):** WP-821 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-741 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
