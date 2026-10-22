@@ -593,6 +593,36 @@ greppable. A drill with no record is treated as **not performed**.
 **quarterly**; complete platform recovery **semiannually**; re-run **all**
 after any major infrastructure change.
 
+### Running the quarterly rebuild drill
+
+The drill is §5 DR-02 "droplet lost", run in order on a **throwaway** droplet
+(tag `la-drill`), never on production. First run: 2026-10-22 (record below).
+
+- **Secrets come from the store** (`la-prod.env`, §4), so the drill also proves
+  the store is complete. Three overrides keep the box from touching production:
+  `LEGENDS_PUBLISHER_ENABLED=false` (only one box may publish), a `backup.env`
+  with `BACKUP_LOCAL_ONLY=true` and no healthchecks or pCloud keys, and a
+  `monitor.env` with an empty `MONITOR_HEALTHCHECK_URL` (a drill box must never
+  ping the production checks).
+- **Never touch `api.`.** To check the Cloudflare edge, run `21` with
+  `DOMAIN=api-next.legendary-arena.com`, point the proxied `api-next` A record at
+  the drill box, run `pwsh scripts/Test-ApiDeployment.ps1 -BaseUrl
+  https://api-next.legendary-arena.com -OriginIp <drill ip>`, then point
+  `api-next` back. Without the flip, check at the origin: `/health`, `/health/db`
+  and a WebSocket upgrade (`--http1.1`) over `curl --resolve
+  api-next.legendary-arena.com:443:127.0.0.1` on the box, and from outside, 443
+  and 3000 time out while 80 redirects.
+- **§6 Phases 3–10** need a client pointed at the rebuilt box, which the
+  front-ends do not support on a side hostname; they are proven at a real cutover.
+  Record them as not exercised.
+- **Time it:** log each step's UTC finish and report hands-on time apart from any
+  wait for the operator.
+- **Tear down:** destroy the droplet (it holds production secrets and a data copy),
+  drop its host key from `known_hosts`, and put `api-next` back if it moved.
+- **Record it:** add the §7 entry, and on that quarter's `DR drill due` issue tick
+  `**Quarterly — full-service rebuild drill.**` and `Drill passed` before closing
+  it. The dashboard DR Readiness tile reads those two boxes for the last rebuild.
+
 ### Drill history
 
 **2026-08-09 — DR-05 restore-mechanics drill (local `pg_restore` of a prod dump).**
@@ -853,12 +883,10 @@ Kept close to **one** document (duplicate-first: split only when a section grows
 unwieldy). Current split:
 
 - `DISASTER_RECOVERY.md` — this overview + scenarios + acceptance (stays).
-- [`SERVER_REBUILD_RUNBOOK.md`](SERVER_REBUILD_RUNBOOK.md) — **split out
-  2026-08-09**: the step-by-step **quarterly full-service rebuild drill** (bare
-  host → running service → §6 capability validation). **It predates the
-  2026-10-12 droplet cutover** (it still describes PM2 and Render). Until it is
-  updated, the executable rebuild is the `legendary-arena-lab` provisioners in
-  the order given in §5 DR-02.
+- `SERVER_REBUILD_RUNBOOK.md` — **retired 2026-10-22.** Split out 2026-08-09 for
+  the quarterly rebuild drill, it described the Render / PM2 / certbot host and
+  went stale at the 2026-10-12 cutover. The rebuild is now §5 DR-02 (drilled
+  2026-10-22) and the drill wrapper is §7 "Running the quarterly rebuild drill".
 - `POSTGRES_RESTORE_RUNBOOK.md` — not yet split. On the droplet, restores are the
   lab's `51-restore.ps1` (§5 DR-01, DR-03).
 
