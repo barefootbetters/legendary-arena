@@ -157,7 +157,7 @@ failure never reads as a failed backup:
 |---|---|---|
 | healthchecks.io `la-droplet-backup` down or late (email) | The dump or the R2 upload failed — no good offsite backup that night | **Urgent**, same day; the RPO clock is running. Read `journalctl -u la-backup`. |
 | healthchecks.io `la-droplet-pcloud` down (email, reason in the ping body) | R2 is safe; the pCloud mirror failed, or `BACKUP_PCLOUD_TOKEN` is missing | Fix within days. A revoked pCloud token (`pcloud error: Revoked 'access_token' … (2095)`) is the usual cause: re-mint with `rclone authorize "pcloud"`, write it into the operator's `backup.env`, and reinstall it on the droplet. |
-| `la-droplet-monitor` down | On-box health, disk, or backup age failed | Read the ping body, then the matching journal. |
+| `la-droplet-monitor` down | On-box health, disk, backup age, or a stuck deploy failed | Read the ping body, then follow the triage steps in [lab Monitoring](https://lab.legendary-arena.com/ops/monitoring/#when-la-droplet-monitor-goes-down). A deploy restart no longer trips it (lab #43). |
 
 Nights missed during a pCloud outage exist only on R2; back-copy them with
 `rclone copy r2:<bucket>/db-backups/<yyyy>/<mm> pcloud:db-backups/<yyyy>/<mm>`.
