@@ -51,7 +51,10 @@ test('mockDrReadiness carries a healthy quarterly rebuild due at the next quarte
     overdue: false,
   });
   // December rolls into the next year's January quarter.
-  assert.equal(mockDrReadiness(Date.UTC(2026, 11, 15, 0, 0, 0)).data.rebuildDrill?.nextDue, '2027-01-01');
+  assert.equal(
+    mockDrReadiness(Date.UTC(2026, 11, 15, 0, 0, 0)).data.rebuildDrill?.nextDue,
+    '2027-01-01',
+  );
 });
 
 test('an overdue quarterly rebuild turns the tile Overdue and the row shows the due date', async () => {
@@ -65,7 +68,10 @@ test('an overdue quarterly rebuild turns the tile Overdue and the row shows the 
   assert.match(source, /<dt>Full rebuild \(quarterly\)<\/dt>/);
   assert.match(source, /`Overdue — due since \$\{rebuildDrill\.nextDue\}`/);
   // An older server payload without the field hides the row instead of crashing.
-  assert.match(source, /const rebuildDrill = computed\(\(\) => data\.value\?\.rebuildDrill \?\? null\);/);
+  assert.match(
+    source,
+    /const rebuildDrill = computed\(\(\) => data\.value\?\.rebuildDrill \?\? null\);/,
+  );
   assert.match(source, /<div v-if="rebuildDrill" class="metric">/);
 });
 
