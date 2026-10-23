@@ -461,6 +461,7 @@ high-water: 422
 - WP-820 — zemo-rescue-on-fight-client (arena-client per-villain "Fight + rescue" control for WP-819. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - WP-821 — arnim-zola-mastermind (Cap 75th arc item 4: Arnim Zola Master Strike + 4 tactics — Dominate the Weak, Computer-Uploaded Genius, Pet Projects, Crush Pacifist Resistance. reserved 2026-10-22, claude/reserve-wp821-arnim-zola)
 - WP-822 — bot-abomination-recruit (competent bot prefers recruiting the highest-printed-Attack HQ Hero under Ultimate / Double Highest Abomination, via a read-only per-slot UIState projection; follow-up to the Arnim Zola 2p investigation. reserved 2026-10-22, claude/reserve-wp822-abomination-recruit)
+- WP-823 — brainwash-the-military (Cap 75th scheme Brainwash the Military plays as printed: 12 S.H.I.E.L.D. Officers in the Villain Deck as Villains at 3 + stacked Twists, gained as a Hero on defeat, Twists 1-6 stack and play another card, Twist 7 every City Officer escapes, Evil Wins at 5 escaped Officers. reserved 2026-10-23, claude/reserve-wp823-brainwash-the-military)
 
 ## EC
 
@@ -884,6 +885,7 @@ high-water: 457
 - EC-858 — zemo-rescue-on-fight-client (WP-820. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - EC-859 — arnim-zola-mastermind (WP-821. reserved 2026-10-22, claude/reserve-wp821-arnim-zola)
 - EC-860 — bot-abomination-recruit (WP-822. reserved 2026-10-22, claude/reserve-wp822-abomination-recruit)
+- EC-861 — brainwash-the-military (WP-823. reserved 2026-10-23, claude/reserve-wp823-brainwash-the-military)
 
 ## D
 
@@ -1417,3 +1419,4 @@ section below) and the allocation protocol in
 - D-24753 — zemo-rescue-on-fight (WP-819 + WP-820; the pay-Recruit rescue window on a fight: fight move only, rescue before the Villain's Fight effects, affordability against the simulated fight debit, the availability cue, and the per-target client control. reserved 2026-10-21, claude/zemo-rescue-passive-spec)
 - D-24754 — arnim-zola-mastermind (WP-821; the Zola strike and tactic resolvers over Heroes with less than 2 printed Attack. reserved 2026-10-22, claude/reserve-wp821-arnim-zola)
 - D-24755 — bot-abomination-recruit (WP-822; the UIMastermindState per-slot printed-Attack projection under mastermind-family Abomination and the competent-bot recruit bonus it feeds. reserved 2026-10-22, claude/reserve-wp822-abomination-recruit)
+- D-24756 — brainwash-the-military (WP-823; Officers as converted Villains (origin, attack, gain-as-Hero token swap, Officer-stack draw-down), the stacked-Twist counter that numbers the twist, and the escaped-Officer loss. reserved 2026-10-23, claude/reserve-wp823-brainwash-the-military)
