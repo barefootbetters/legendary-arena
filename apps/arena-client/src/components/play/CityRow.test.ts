@@ -1143,6 +1143,25 @@ describe('CityRow — WP-817 fight discard cost (D-24750)', () => {
     ]);
   });
 
+  test('a placeholder or missing display name falls back to the humanized card id', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: primusCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        viewerHandCards: ['pile-shield-officer', 'sm-amazing-friend'],
+        viewerHandDisplay: [{ extId: 'pile-shield-officer', name: '<unknown>', imageUrl: '', cost: null }],
+        viewerHandCosts: [3, 2],
+      },
+    });
+    await primusButton(wrapper).trigger('click');
+    const options = wrapper.findAll('[data-testid="play-city-discard-option"]');
+    assert.deepEqual(options.map((option) => option.text()), ['pile shield officer', 'sm amazing friend']);
+  });
+
   test('T29: the Excessive Violence button also opens the chooser and sends the EV intent', async () => {
     const { calls, submitMove } = recorder();
     const wrapper = mount(CityRow, {
