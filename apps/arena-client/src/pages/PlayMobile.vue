@@ -28,6 +28,7 @@ import YourDeckDiscardZone from '../components/play/YourDeckDiscardZone.vue';
 import YourVictoryPile from '../components/play/YourVictoryPile.vue';
 import TurnActionBar from '../components/play/TurnActionBar.vue';
 import { handHasWound } from '../components/play/woundIdentity';
+import { fightDiscardEligibleCardIds } from '../components/play/fightDiscardEligibility';
 import LobbyControls from '../components/play/LobbyControls.vue';
 import PileBrowseModal from '../components/play/PileBrowseModal.vue';
 import CardReaderModal from '../components/play/CardReaderModal.vue';
@@ -481,6 +482,17 @@ export default defineComponent({
     // this). handHasWound tolerates a redacted / absent hand (spectator) as false.
     const hasWoundInHand = computed<boolean>(() => handHasWound(viewer.value?.handCards));
 
+    // why: WP-817 / D-24750 — the hand cards that would pay a City villain's fight
+    // discard cost (Primus), tagged in HandRow so the player holds one back.
+    const discardEligibleCardIds = computed<string[]>(() =>
+      fightDiscardEligibleCardIds(
+        snapshot.value?.city,
+        viewer.value?.handCards,
+        viewer.value?.handCosts,
+        isViewerTurn.value,
+      ),
+    );
+
     return {
       snapshot,
       viewer,
@@ -528,6 +540,7 @@ export default defineComponent({
       hasPendingGiveHqHeroChoice,
       hasPendingCopyPowersChoice,
       hasWoundInHand,
+      discardEligibleCardIds,
     };
   },
 });
@@ -684,6 +697,7 @@ export default defineComponent({
             :is-viewer-turn="isViewerTurn"
             :submit-move="submitMove"
             :phasing-card-ids="snapshot.economy.phasingOptions ?? []"
+            :discard-eligible-card-ids="discardEligibleCardIds"
           />
         </section>
         <!-- why: WP-318 — the persistent game log (G.messages -> UIState.log)
