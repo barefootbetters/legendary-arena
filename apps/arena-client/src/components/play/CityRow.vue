@@ -1096,13 +1096,26 @@ export default defineComponent({
 
 /* why: WP-817 / D-24750 — the Primus discard chooser: a compact stack under the
    villain tile, so it never widens the space (the scale-to-fit board, D-24505). */
+/* why (Jeff, matches OSth9-iV03C and qrOX7mNm9Wa): as a `.city-space` flex-row
+   child the chooser was squeezed into the gap beside the tile and painted under
+   the next space's label (or the Villain Deck), so its buttons could not be
+   clicked and Primus could never be fought. It now overlays the space it belongs
+   to, above the portal marker (z-index 2), and scrolls inside the tile rather
+   than overflowing the `.city-spaces` scroll container. */
 .city-space__discard-chooser {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0.2rem;
-  margin-top: 0.2rem;
-  max-width: 100%;
+  padding: 0.25rem;
+  overflow-y: auto;
+  border-radius: 0.35rem;
+  background: rgba(0, 0, 0, 0.88);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .city-space__discard-chooser-title {
