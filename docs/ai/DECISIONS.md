@@ -44028,6 +44028,8 @@ audience-filter redaction matrix), D-24372 (the built-projection keyset-pin requ
 
 ### D-24562 — Play to the Crowd: standalone `perEach` + a digest-scoped doubled-condition count (Active 2026-09-22 — WP-740 / EC-777)
 
+**Amended by D-24563 (2026-10-23, WP-741):** lock 1 and lock 4's evaluator-untouched clause are superseded by D-24563; lock 5 is narrowed to mixed distinct-icon lines. Lock 4's "never persisted" is corrected: match blobs persist setup-time hooks (D-24095).
+
 Un-defers the D-24555 §5 hollow on `vnom/venompool/play-to-the-crowd`. Live Dr. Doom / Legacy Virus 2p,
 turn 30: the card granted a flat +1 (its Digest line's `+1[icon:attack]` parsed unfused) and logged a
 parse-unrecognized Indigestion. The faithful result was **+2**: Victory Pile 10 cards / 4 Bystanders,
@@ -44818,6 +44820,8 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 ---
 
 ### D-24598 — Sunlight / Moonlight: the day-night rule, gated hero lines, the `day-night-both` fusion, and hero Blood Frenzy on a shared helper (Active 2026-09-25 — WP-765 / EC-802)
+
+**Amended by D-24563 (2026-10-23, WP-741):** Nanite's descriptor count of 4 is superseded by `bothCondition.requiredMatches` 4.
 
 **Status:** Active — landed 2026-09-25 (WP-765 / EC-802). The client badge is WP-766 / EC-803.
 
@@ -45748,6 +45752,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 **Reserved by:** NUMBER-LEDGER D-24626. Related: D-24034 (WP-257 records), WP-258 / EC-289 (panel), D-24618, D-24623, D-24624.
 
 ### D-24628 — A `[team:X]` in the body after an explicit gate prefix is descriptive, not a play gate; two unmodeled conditional grants become honest hollows (Active 2026-09-27 — direct fix, no WP; extends the D-24470 / D-24498 / D-24530 descriptive-token suppression)
+
+**Amended by D-24563 (2026-10-23, WP-741):** Reassign to Civilian Duty keeps one count-3 gate after the D-24563 collapse; its body token stays dropped.
 
 **Status:** Active — landed 2026-09-27 (direct fix; parser Step 1b plus a conditional-grant suppression in `packages/game-engine/src/setup/heroAbility.setup.ts`).
 
@@ -47583,6 +47589,8 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 
 ### D-24692 — Man / Woman Out of Time: set the card aside, replay it on the next start → main advance, then discard it (WP-803 / EC-840) (Active 2026-10-12)
 
+**Lock 10 amended by D-24563 (2026-10-23, WP-741):** Sniper Squad and Reshape Reality now need 4 / 2 other cards.
+
 **Context.** Legendary's **Man (and Woman) Out of Time** (rules v23 L1667-1694, rulebook p.29): "After you use this card's abilities, set it aside. At the beginning of your next turn, play this card a second time and then discard it." The returning card is played "after the 'Play a Villain Card' part of your turn and before you start playing out your hand" (L1678), counts as played on both turns (L1682), can never go Out of Time a third time (L1674), and a copy can't use it (L1689). Before this decision the token matched no parser arm, so all 16 printed hero lines (14 self-keyword lines plus Winter Soldier's two "2>4" grant lines) recorded `parse-unrecognized` hollows on every play (`runtime-observed-hollows.json`: `man-out-of-time` 77, `woman-out-of-time` 66, `man/woman-out-of-time` 28), and the hero ledger's six `out-of-time` rows read `unsupported`.
 
 **Decision.**
@@ -49200,6 +49208,29 @@ Protect this file.
 **Gates.** WP-823 §Test Contract B1-B3, B1b, A1-A2, D1-D2, T1-T6, L1-L4, P1-P4. game-engine 5605 → 5623 (+18), 0 fail; arena-client 2435 / 0 fail and `typecheck` 0; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail (server 1836 / 1629 pass, 207 skipped as on the baseline). `effect-index`, `ledger:villains`, `ledger:heroes`, `mechanics:metadata`, `cards`, `cards:count-markers`, `sim:runtime-observed` and `sim:coverage` checks exit 0 with nothing regenerated. `finalStateHash` / `PRE_WP080_HASH` unchanged. Revert proofs 8/8 (stack numbering → T2-T6; instance id to discard, Officer to `victory` → D1; no Stack draw-down → B1; no attack branch → A1 / T2; Twist 7 escapes every City card → T4; `'villain'`-typed escape count → L1-L3; bypassing `resolveVillainEscape` → T4 / L1).
 
 **Reserved by:** NUMBER-LEDGER D-24756 (#2973). Related: D-24324 / D-24325 (Killbots overlay and loss), D-24326 / D-24327 / D-24331 (Secret Invasion conversion and gain clause), D-24351 (`playTopVillainDeckCards`), D-24434 (origin-named meter kinds), D-24595 (last-twist fallback), D-24656 (full effect-caused escape), D-24668 / D-24680 (converted display, escaped-loss lines), D-24178 / D-24315 (resource losses suppress the twist proxy), D-24081 (`G.messages` hash-excluded).
+
+---
+Protect this file.
+
+### D-24563 — A repeated icon in a Superpower's leading prefix needs that many OTHER matching cards; the count rides `HeroCondition.requiredMatches` (Active 2026-10-23 — WP-741 / EC-778)
+
+**Status:** Active 2026-10-23. Live-verify (D-24026) pending deploy: Dark City Bishop's Concussive Blast after one other Ranged Hero grants no +3 and logs "it needs 2 other ranged Heroes played this turn"; after two, it grants +3. Use a match created after the deploy (in-flight matches keep their setup-time hooks).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). 35 printed lines across 34 hero decks gate on their printed count: Bishop's Concussive Blast, Janet van Dyne's Subatomic Size, Captain Marvel's Cosmic Energies, Crystal of Kadavus's repeat, Agent X-13's Sniper Squad (4 other S.H.I.E.L.D. cards) and Psi-Lord's Reshape Reality among them. No Core card is affected. A failed doubled gate names its count.
+
+**Context.** Rules v23 L683-696 ("Critical Hit" Superpowers): a Superpower with two icons needs cards with both icons played earlier this turn; the card does not satisfy itself and another copy does. The parser emitted one condition per prefix token and `evaluateCondition` returned true on the first match, so a repeated icon was satisfied by ONE other card everywhere except the two fused cards WP-740 / WP-765 handled with a descriptor count.
+
+**Decision.**
+1. **Rule.** A Superpower whose leading icon prefix repeats an icon m times needs m distinct OTHER played-this-turn cards bearing that icon. The card itself never counts; another copy (a different `#N`) does. The rulebook states the two-icon rule as "cards with both of those icons"; that two IDENTICAL icons need two cards is an inference from that wording (the extracted text strips the glyphs), recorded here as the ruling this engine follows.
+2. **Source of multiplicity.** Only the leading icon run of a line: the D-24628 `LEADING_GATE_PREFIX_PATTERN` match, reused, not duplicated. Tokens anywhere else never add multiplicity. That protects the 42 lines that repeat a condition token mid-sentence (core and msp1 Arc Reactor, Absorb Energies, Radiation Focus Array, the Cyber-Mod lines and others), which keep two plain identical conditions.
+3. **Representation.** `HeroCondition.requiredMatches?: number`, emitted only when ≥ 2, produced by `collapseLeadingRepeatedIconConditions` right after the class-then-team concat and before the Empowered splices. The first emitted matching condition gains the count, the next m − 1 identical ones are dropped, extra mid-sentence ones stay, and a condition is never synthesized. Only `heroClassMatch` / `requiresTeam` honor it, through `countOtherInPlayMatchingCondition` (`triggeringCardId` is now optional). Absent, 1, 0 or non-integer ≡ 1.
+4. **Counting.** Counts read `playedCardIdsThisTurn`: cards you played, wherever they went, so a card set aside Out of Time counts (L3443-3446), never `playedCardIdsStillInPlay`. A card matching several distinct icons (multiclass, dual-class, Size-Changing, copied team, the teamless basic S.H.I.E.L.D. tokens for `shield`) counts toward each (rulebook Multiclass L3110-3116). Mixed distinct pairs are unchanged. A Penumbra both-sides split card counts as its two face ids (D-24619 §4), so one such card whose faces both bear the icon satisfies a ×2 gate: a rules reading for Jeff to confirm.
+5. **The WP-740 descriptor count is retired from both fusions.** The doubled "both" line now arrives as one `bothCondition` carrying `requiredMatches`, and `isDigestBothConditionMet` is plain `evaluateAllConditions`. This supersedes D-24562 lock 1, the evaluator-untouched clause of D-24562 lock 4, and D-24598's Nanite count derivation; D-24562 lock 5 is narrowed to mixed distinct-icon lines. No schema migration: pre-deploy match blobs keep their setup-time hooks and play at count 1 as they did. Accepted window: Play to the Crowd and Nanite Shapeshifter matches created between their deploy and this one lose their count gate in flight or on replay. Stored `competitive_scores` stay frozen (D-24616 §5).
+6. **Scope limit.** Cyber-Mod and Size-Changing repeated tokens are out of scope; neither is a leading icon run.
+
+**Gates.** Engine 5605 → 5631 (+26), 0 fail; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail. A before/after build of all 1975 hero lines alone changed exactly the 35 repeated-prefix lines. `runtime-observed-hollows.json` regenerated, 7834 → 7794 observations. `finalStateHash` / `PRE_WP080_HASH` unchanged (no hashed fixture plays an affected hero).
+
+**Reserved by:** NUMBER-LEDGER D-24563 (2026-09-22). Related: D-24562 (WP-740), D-24598 (WP-765), D-24628 (leading gate prefixes), D-24692 lock 10 (Out of Time repeated gates), D-24391 (S.H.I.E.L.D. tokens), D-24523 (dual class), D-24074 (Size-Changing), D-24619 (Penumbra), D-24095 / D-24119 (persisted hooks, replay), D-24026.
 
 ---
 Protect this file.
