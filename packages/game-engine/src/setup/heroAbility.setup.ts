@@ -715,7 +715,8 @@ const X_GENE_CARDS: ReadonlySet<string> = new Set<string>([
 // Indigestion line (the Cauldron of the Cosmos single-branch shape).
 // why: WP-740 / D-24562 — play-to-the-crowd un-deferred: its Digest branch is attack-per-count
 // over victory-bystanders with perEach 2 (the widened COUNT_SCALED_PATTERN), its Indigestion
-// branch is rescue 2, and its doubled [team:venomverse] "both" line carries bothConditionCount 2.
+// branch is rescue 2, and its doubled [team:venomverse] "both" line parses to one condition
+// carrying requiredMatches 2 (D-24563).
 const DIGEST_INDIGESTION_CARDS: ReadonlySet<string> = new Set<string>([
   'vnom/venompool/digest-that-chimichanga',
   'vnom/carnage/carnivore',
@@ -789,7 +790,7 @@ const SELF_COMPUTED_ATTACK_KEYWORDS: ReadonlySet<string> = new Set<string>([
 // lines as separate hooks would double-fire a branch when the upgrade holds AND that branch's
 // day/night state is also in effect. Keyed by the canonical `{setAbbr}/{heroSlug}/{cardSlug}`
 // (the DIGEST_INDIGESTION_CARDS allowlist posture). Nanite's upgrade line is four [team:x-men]
-// tokens, which countRepeatedBothCondition turns into bothConditionCount 4.
+// tokens, which the parser collapses into one condition carrying requiredMatches 4 (D-24563).
 const DAY_NIGHT_BOTH_CARDS: ReadonlySet<string> = new Set<string>([
   'mdns/werewolf-by-night/release-the-beast',
   'nmut/warlock/analyze-planetary-rotation',
@@ -1323,7 +1324,13 @@ function parseAbilityText(
 
   // Condition emission order: all heroClassMatch first, then requiresTeam
   // (deterministic, independent of markup position in text).
-  const conditions: HeroCondition[] = [...heroClassConditions, ...teamConditions];
+  // why: D-24563 — a repeated icon in the leading gate prefix ("[hc:ranged][hc:ranged]:") becomes
+  // ONE condition carrying requiredMatches. The collapse runs here, before the Empowered param
+  // splices below, so a splice can never remove a collapsed prefix gate.
+  const conditions: HeroCondition[] = collapseLeadingRepeatedIconConditions(
+    leadingGatePrefixMatch?.[0] ?? '',
+    [...heroClassConditions, ...teamConditions],
+  );
 
   // Pre-pass: resolve the choose-one Empowered form before the KEYWORD_PATTERN loop.
   // why: D-24063 — the choose-one line must produce ONE composition for the whole line;
@@ -3132,6 +3139,73 @@ function tryResolveEmpoweredConditionalPrefix(
 }
 
 /**
+ * Counts how many times each [hc:X] / [team:X] token appears in a line's leading gate prefix
+ * (D-24563), keyed by the condition it emits ("heroClassMatch|ranged", "requiresTeam|shield").
+ *
+ * @param gatePrefix - The leading gate prefix text, or '' when the line has none.
+ * @returns The count of each prefix token, keyed by condition type and normalized value.
+ */
+function countLeadingPrefixIcons(gatePrefix: string): Map<string, number> {
+  const prefixCounts = new Map<string, number>();
+  // why: fresh RegExp instances, as Step 1a / 1b use — the shared /g pattern constants carry
+  // lastIndex between calls, so reusing them could skip a token.
+  for (const match of gatePrefix.matchAll(new RegExp(HERO_CLASS_PATTERN.source, 'g'))) {
+    const key = `heroClassMatch|${normalizeTraitSlug(match[1]!)}`;
+    prefixCounts.set(key, (prefixCounts.get(key) ?? 0) + 1);
+  }
+  for (const match of gatePrefix.matchAll(new RegExp(TEAM_PATTERN.source, 'g'))) {
+    const key = `requiresTeam|${normalizeTraitSlug(match[1]!)}`;
+    prefixCounts.set(key, (prefixCounts.get(key) ?? 0) + 1);
+  }
+  return prefixCounts;
+}
+
+/**
+ * Collapses a line's repeated leading-prefix icon conditions into one counted condition (D-24563).
+ *
+ * For each (type, value) the leading gate prefix repeats m ≥ 2 times, the first emitted matching
+ * condition gains `requiredMatches: m` and the next m − 1 emitted identical conditions are dropped.
+ * Further identical conditions (mid-sentence tokens D-24628 did not suppress) stay as plain
+ * conditions. When fewer than m were emitted (a suppression flag skipped them), they are left
+ * untouched; a condition is never synthesized. Survivors keep their relative order, and a line
+ * with no repeated prefix token comes back unchanged.
+ *
+ * // why: D-24563 — the prefix is the only source of multiplicity (the D-24628
+ * LEADING_GATE_PREFIX_PATTERN match, reused, not re-implemented). Mid-sentence repeats are prose,
+ * not gates: Arc Reactor's "[hc:tech]: … for each other[hc:tech] Hero" must keep needing one.
+ *
+ * @param gatePrefix - The line's leading gate prefix match, or '' when the line has none.
+ * @param conditions - The line's emitted conditions, in hook order.
+ * @returns The conditions with each repeated prefix icon collapsed to one counted condition.
+ */
+function collapseLeadingRepeatedIconConditions(gatePrefix: string, conditions: HeroCondition[]): HeroCondition[] {
+  const prefixCounts = countLeadingPrefixIcons(gatePrefix);
+  const emittedCounts = new Map<string, number>();
+  for (const condition of conditions) {
+    const key = `${condition.type}|${condition.value}`;
+    emittedCounts.set(key, (emittedCounts.get(key) ?? 0) + 1);
+  }
+  const collapsed: HeroCondition[] = [];
+  const seenCounts = new Map<string, number>();
+  for (const condition of conditions) {
+    const key = `${condition.type}|${condition.value}`;
+    const multiplicity = prefixCounts.get(key) ?? 0;
+    if (multiplicity < 2 || (emittedCounts.get(key) ?? 0) < multiplicity) {
+      collapsed.push(condition);
+      continue;
+    }
+    const seen = seenCounts.get(key) ?? 0;
+    seenCounts.set(key, seen + 1);
+    if (seen === 0) {
+      collapsed.push({ ...condition, requiredMatches: multiplicity });
+    } else if (seen >= multiplicity) {
+      collapsed.push(condition);
+    }
+  }
+  return collapsed;
+}
+
+/**
  * Finds the index of the first `heroClassMatch` condition whose value equals the given
  * NORMALIZED slug, or -1 when none matches. Used both to confirm the consumed Empowered
  * count param exists (detection) and to suppress exactly one occurrence of it (the caller),
@@ -3880,31 +3954,6 @@ export function isHeroAbilityRegistryReader(
 // at runtime.
 
 /**
- * Returns how many OTHER matching cards a Digest "Instead … both" line requires (WP-740 / D-24562).
- *
- * A doubled line such as "[team:venomverse][team:venomverse]" parses to repeated identical
- * conditions. The count is returned ONLY when there are more than one AND every condition equals
- * the first (same type + value). A single condition (the Core-4) or a mixed line such as
- * "[hc:X][hc:Y]" returns undefined, so the fused hook carries no bothConditionCount and keeps
- * today's any-one-other evaluation (D-24562 lock 5: mixed lines are out of scope).
- *
- * @param conditions - The "both" line's parsed conditions, in hook order.
- * @returns The repeat count (>= 2), or undefined when the line is single or mixed.
- */
-function countRepeatedBothCondition(conditions: HeroCondition[]): number | undefined {
-  const firstCondition = conditions[0];
-  if (firstCondition === undefined || conditions.length < 2) {
-    return undefined;
-  }
-  for (const condition of conditions) {
-    if (condition.type !== firstCondition.type || condition.value !== firstCondition.value) {
-      return undefined;
-    }
-  }
-  return conditions.length;
-}
-
-/**
  * Fuses an allowlisted Venomverse card's "Digest N / Indigestion" lines into one
  * digest-indigestion hook (WP-735 / D-24555).
  *
@@ -3953,24 +4002,17 @@ function buildDigestIndigestionFusion(
 
   // why: WP-735 / D-24555 — the "Instead … both" upgrade line, if present. Its single [hc:X]
   // condition (Core-4 uses [hc:strength] / [hc:instinct]) is the bothCondition.
-  // why: WP-740 / D-24562 — a DOUBLED "[team:X][team:X]" / "[hc:X][hc:X]" line (Play to the Crowd)
-  // parses to repeated identical conditions; per the rulebook's "Critical Hit" two-icon rule it
-  // needs that many OTHER matching cards, carried as bothConditionCount (see
-  // countRepeatedBothCondition). This replaces the earlier note that the double form belonged only
-  // to deferred cards.
+  // why: D-24563 — a DOUBLED "[team:X][team:X]" / "[hc:X][hc:X]" line (Play to the Crowd) now
+  // arrives from the parser as ONE condition carrying requiredMatches (the rulebook's "Critical
+  // Hit" rule: that many OTHER matching cards), so bothCondition = conditions[0] carries the count
+  // and the old WP-740 descriptor count field is retired.
   const bothIndex = abilityLines.findIndex(
     (line) => typeof line === 'string' && DIGEST_BOTH_LINE_PATTERN.test(line),
   );
   let bothCondition: HeroCondition | undefined;
-  let bothConditionCount: number | undefined;
   if (bothIndex !== -1) {
     consumedIndices.add(bothIndex);
-    const bothConditions = parseAbilityText(abilityLines[bothIndex]!).conditions;
-    const firstCondition = bothConditions[0];
-    if (firstCondition !== undefined) {
-      bothCondition = firstCondition;
-      bothConditionCount = countRepeatedBothCondition(bothConditions);
-    }
+    bothCondition = parseAbilityText(abilityLines[bothIndex]!).conditions[0];
   }
 
   const effect: HeroEffectDescriptor = { type: 'digest-indigestion', digestThreshold, digestEffects };
@@ -3979,9 +4021,6 @@ function buildDigestIndigestionFusion(
   }
   if (bothCondition !== undefined) {
     effect.bothCondition = bothCondition;
-  }
-  if (bothConditionCount !== undefined) {
-    effect.bothConditionCount = bothConditionCount;
   }
   const hook: HeroAbilityHook = {
     cardId,
@@ -4046,8 +4085,8 @@ function buildExcessiveViolenceFusion(
  *
  * Parses each branch line's inline effects via the shared parseAbilityText (the branch's own
  * day/night condition is discarded — the handler selects the branch), reads the upgrade line's
- * condition into bothCondition (+ bothConditionCount for a repeated token, e.g. Nanite's four
- * [team:x-men]), and returns the single fused hook plus the consumed line indices so the caller
+ * condition into bothCondition (a repeated token arrives as one condition carrying requiredMatches,
+ * e.g. Nanite's four [team:x-men] → 4, D-24563), and returns the single fused hook plus the consumed line indices so the caller
  * skips them. Returns undefined when the card lacks a Sunlight or Moonlight line (defensive —
  * every allowlisted card has both).
  *
@@ -4073,29 +4112,22 @@ function buildDayNightBothFusion(
   const consumedIndices = new Set<number>([sunlightIndex, moonlightIndex]);
 
   // why: WP-765 / D-24598 — the "Instead, you get both." upgrade line (the same detector the
-  // digest fusion uses). Its class/team tokens are the bothCondition; a repeated identical token
-  // needs that many OTHER matching cards (WP-740 / D-24562 countRepeatedBothCondition).
+  // digest fusion uses). Its class/team tokens are the bothCondition.
+  // why: D-24563 — a repeated identical token (Nanite's four [team:x-men]) arrives from the parser
+  // as ONE condition carrying requiredMatches, so bothCondition = conditions[0] carries the count;
+  // the old WP-740 descriptor count field is retired.
   const bothIndex = abilityLines.findIndex(
     (line) => typeof line === 'string' && DIGEST_BOTH_LINE_PATTERN.test(line),
   );
   let bothCondition: HeroCondition | undefined;
-  let bothConditionCount: number | undefined;
   if (bothIndex !== -1) {
     consumedIndices.add(bothIndex);
-    const bothConditions = parseAbilityText(abilityLines[bothIndex]!).conditions;
-    const firstCondition = bothConditions[0];
-    if (firstCondition !== undefined) {
-      bothCondition = firstCondition;
-      bothConditionCount = countRepeatedBothCondition(bothConditions);
-    }
+    bothCondition = parseAbilityText(abilityLines[bothIndex]!).conditions[0];
   }
 
   const effect: HeroEffectDescriptor = { type: 'day-night-both', sunlightEffects, moonlightEffects };
   if (bothCondition !== undefined) {
     effect.bothCondition = bothCondition;
-  }
-  if (bothConditionCount !== undefined) {
-    effect.bothConditionCount = bothConditionCount;
   }
   const hook: HeroAbilityHook = {
     cardId,

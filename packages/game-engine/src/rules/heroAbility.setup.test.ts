@@ -2539,12 +2539,11 @@ describe('buildHeroAbilityHooks — play-to-the-crowd fusion + standalone perEac
       digestThreshold: 7,
       digestEffects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'victory-bystanders', perEach: 2 }],
       indigestionEffects: [{ type: 'rescue', magnitude: 2 }],
-      bothCondition: { type: 'requiresTeam', value: 'venomverse' },
-      bothConditionCount: 2,
+      bothCondition: { type: 'requiresTeam', value: 'venomverse', requiredMatches: 2 },
     }]);
   });
 
-  it('leaves bothConditionCount unset for a mixed "both" line (D-24562 lock 5)', () => {
+  it('carries no requiredMatches for a mixed "both" line (D-24562 lock 5 / D-24563)', () => {
     const registry = makeHeroRegistry('vnom', 'venompool', [
       { slug: 'play-to-the-crowd', rarityLabel: 'Rare', abilities: [
         '[keyword:Digest 7]: You get +1[icon:attack] for each two Bystanders in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1:2]',
@@ -2553,7 +2552,7 @@ describe('buildHeroAbilityHooks — play-to-the-crowd fusion + standalone perEac
       ]},
     ]);
     const effect = buildHeroAbilityHooks(registry, venompoolConfig())[0]!.effects![0]!;
-    assert.equal(effect.bothConditionCount, undefined, 'a mixed line is never counted');
+    assert.equal(effect.bothCondition?.requiredMatches, undefined, 'a mixed line is never counted');
     assert.deepEqual(effect.bothCondition, { type: 'heroClassMatch', value: 'strength' });
   });
 
