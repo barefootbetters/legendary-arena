@@ -28,7 +28,7 @@ import type { SubmitMove } from './uiMoveName.types';
  * Fight discard cost (WP-817 / D-24750): a villain whose City card carries
  * `fightDiscardCosts` (Primus) is fought by also discarding a hand card of one
  * of those costs. Fight is disabled with a reason when the viewer holds none;
- * otherwise Fight / Fight-EV opens a short inline chooser and the pick is sent
+ * otherwise Fight / Fight-EV opens a chooser over that City space and the pick is sent
  * as `discardCardId`. The engine re-validates the pick. A `Discard 2/3/5/7` cue
  * is always on the tile, and turns loud when it is the reason Fight is disabled.
  *
@@ -172,7 +172,13 @@ export default defineComponent({
           continue;
         }
         const cardId = props.viewerHandCards[handIndex]!;
-        eligibleCards.push({ cardId, name: props.viewerHandDisplay[handIndex]?.name ?? cardId });
+        // why: the WP-111 placeholder name '<unknown>' (or no display entry) falls
+        // back to the humanized id, as HandRow labels the same card.
+        const displayName = props.viewerHandDisplay[handIndex]?.name;
+        const name = displayName === undefined || displayName === '<unknown>'
+          ? cardId.replace(/-/g, ' ')
+          : displayName;
+        eligibleCards.push({ cardId, name });
       }
       return eligibleCards;
     }
@@ -1094,24 +1100,43 @@ export default defineComponent({
   font-variant-numeric: tabular-nums;
 }
 
-/* why: WP-817 / D-24750 — the Primus discard chooser: a compact stack under the
-   villain tile, so it never widens the space (the scale-to-fit board, D-24505). */
+/* why: WP-817 / D-24750 — the Primus discard chooser, an overlay on its own City
+   space. As a flex sibling of the villain tile it landed to the RIGHT of the tile
+   (the space is a horizontal row), overflowed the fixed D-24747 column, and the
+   next cell (the Villain Deck, for Sewers) painted over it, so the options could
+   be neither seen nor clicked (Jeff feedback). Inset to the space, it never widens
+   the row (the scale-to-fit board, D-24505) and stays inside the overflow-x
+   scroller, which also clips vertically; a long hand scrolls inside it. z-index 3
+   clears the Dark-Portal marker (2). */
 .city-space__discard-chooser {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0.2rem;
-  margin-top: 0.2rem;
-  max-width: 100%;
+  padding: 0.25rem;
+  overflow-y: auto;
+  border: 1px solid #ffd700;
+  border-radius: 0.35rem;
+  background: rgba(16, 20, 36, 0.95);
+  color: #fff;
 }
 
 .city-space__discard-chooser-title {
   font-size: 0.6rem;
   font-weight: 700;
+  color: #ffd700;
 }
 
+/* why: flex: none keeps each button its natural height inside the overlay; a
+   hand with many eligible cards scrolls the chooser instead of squashing the
+   labels. */
 .city-space__discard-option,
 .city-space__discard-cancel {
+  flex: none;
+  line-height: 1.2;
   padding: 0.15rem 0.35rem;
   border: 1px solid currentColor;
   border-radius: 0.3rem;
