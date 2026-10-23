@@ -1165,6 +1165,85 @@ describe('CityRow — WP-817 fight discard cost (D-24750)', () => {
     ]);
   });
 
+  describe('the always-visible discard cost cue', () => {
+    const UNPAYABLE = 'city-space__discard-cost--unpayable';
+
+    /** Mounts Primus (and Electro) with the given hand and turn state. */
+    function mountCue(options: {
+      handCosts: (number | null)[];
+      currentStage?: string;
+      isViewerTurn?: boolean;
+      hasHealedThisTurn?: boolean;
+      city?: UICityState;
+    }) {
+      const cardIds = options.handCosts.map((_cost, handIndex) => `hand-card-${handIndex}`);
+      return mount(CityRow, {
+        props: {
+          city: options.city ?? primusCity(),
+          decks: DECKS,
+          currentStage: options.currentStage ?? 'main',
+          isViewerTurn: options.isViewerTurn ?? true,
+          hasHealedThisTurn: options.hasHealedThisTurn ?? false,
+          economy: economy({ attack: 9, availableAttack: 9 }),
+          submitMove: recorder().submitMove,
+          viewerHandCards: cardIds,
+          viewerHandDisplay: [],
+          viewerHandCosts: options.handCosts,
+        },
+      });
+    }
+
+    function primusCue(wrapper: ReturnType<typeof mount>) {
+      return primusButton(wrapper).find('[data-testid="play-city-discard-cost"]');
+    }
+
+    test('shows "Discard 2/3/5/7" on Primus only, never on a villain without fightDiscardCosts', () => {
+      const wrapper = mountCue({ handCosts: [5] });
+      assert.equal(primusCue(wrapper).text(), 'Discard 2/3/5/7');
+      const electro = wrapper.find('[data-testid="play-city-villain"][data-card-id="electro"]');
+      assert.equal(electro.find('[data-testid="play-city-discard-cost"]').exists(), false);
+      assert.equal(wrapper.findAll('[data-testid="play-city-discard-cost"]').length, 1);
+    });
+
+    test('is loud in the viewer\'s Main stage when no hand card can pay', () => {
+      const wrapper = mountCue({ handCosts: [4, 6] });
+      assert.equal(primusCue(wrapper).classes().includes(UNPAYABLE), true);
+    });
+
+    test('is loud with an empty hand (the whole hand was played)', () => {
+      const wrapper = mountCue({ handCosts: [] });
+      assert.equal(primusCue(wrapper).classes().includes(UNPAYABLE), true);
+    });
+
+    test('stays quiet when a hand card can pay', () => {
+      const wrapper = mountCue({ handCosts: [4, 7] });
+      assert.equal(primusCue(wrapper).classes().includes(UNPAYABLE), false);
+    });
+
+    test('stays quiet outside the Main stage and on another player\'s turn', () => {
+      const startStage = mountCue({ handCosts: [4], currentStage: 'start' });
+      assert.equal(primusCue(startStage).exists(), true, 'the cue still shows');
+      assert.equal(primusCue(startStage).classes().includes(UNPAYABLE), false);
+      const otherTurn = mountCue({ handCosts: [4], isViewerTurn: false });
+      assert.equal(primusCue(otherTurn).classes().includes(UNPAYABLE), false);
+    });
+
+    test('stays quiet under the heal lock (the heal lock, not the discard cost, disables Fight)', () => {
+      const wrapper = mountCue({ handCosts: [4], hasHealedThisTurn: true });
+      assert.equal(primusCue(wrapper).classes().includes(UNPAYABLE), false);
+    });
+
+    test('stacks above the Fight N badge when both show', () => {
+      const quiet = mountCue({ handCosts: [5] });
+      assert.equal(primusCue(quiet).classes().includes('city-space__discard-cost--stacked'), false);
+      const city = primusCity();
+      city.spaces[0] = { ...city.spaces[0]!, fightCost: 5 };
+      const withBadge = mountCue({ handCosts: [5], city });
+      assert.equal(primusButton(withBadge).find('[data-testid="play-city-fight-cost"]').text(), 'Fight 5');
+      assert.equal(primusCue(withBadge).classes().includes('city-space__discard-cost--stacked'), true);
+    });
+  });
+
   test('T30: a villain without fightDiscardCosts submits { cityIndex } exactly', async () => {
     const { calls, submitMove } = recorder();
     const wrapper = mountPrimus(submitMove, { cardIds: ['hero-cost5'], displayCosts: [5], handCosts: [5] });

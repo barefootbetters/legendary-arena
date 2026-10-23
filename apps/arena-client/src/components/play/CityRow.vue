@@ -29,7 +29,8 @@ import type { SubmitMove } from './uiMoveName.types';
  * `fightDiscardCosts` (Primus) is fought by also discarding a hand card of one
  * of those costs. Fight is disabled with a reason when the viewer holds none;
  * otherwise Fight / Fight-EV opens a short inline chooser and the pick is sent
- * as `discardCardId`. The engine re-validates the pick.
+ * as `discardCardId`. The engine re-validates the pick. A `Discard 2/3/5/7` cue
+ * is always on the tile, and turns loud when it is the reason Fight is disabled.
  *
  * Cost gating: villains in the city render disabled when
  * `economy.availableAttack < cell.card.fightCost` — the engine's projected
@@ -242,6 +243,42 @@ export default defineComponent({
       ).allowed;
     }
 
+    /**
+     * Builds the always-visible fight discard cost cue text, e.g. `Discard 2/3/5/7`.
+     *
+     * @param fightDiscardCosts - The villain's eligible discard costs, in order.
+     * @returns The short cue text.
+     */
+    // why: slashes, not formatCostList's "2, 3, 5, or 7" — the cue sits on an 80px
+    // desktop tile, where the English list would not fit. The gate reason keeps the
+    // full sentence.
+    function discardCostCue(fightDiscardCosts: number[]): string {
+      return `Discard ${fightDiscardCosts.join('/')}`;
+    }
+
+    function isFightDiscardUnpayable(cell: CityCell): boolean {
+      // why (Jeff feedback, match OSth9-iV03C): a player who had played every
+      // card costing 2/3/5/7 saw Primus's Fight disabled with no visible reason,
+      // because the reason lives only in the shadowed tooltip. Like the Fight N
+      // badge, the discard cue goes loud only in the window where it explains a
+      // disabled Fight: the viewer's Main stage, no heal lock, and no hand card
+      // the engine would accept.
+      if (cell.kind !== 'slot' || cell.card === null) {
+        return false;
+      }
+      const fightDiscardCosts = cell.card.fightDiscardCosts;
+      if (fightDiscardCosts === undefined) {
+        return false;
+      }
+      if (!useTurnActions(props.currentStage, props.isViewerTurn).canFightVillain().allowed) {
+        return false;
+      }
+      if (!healLockGate(props.hasHealedThisTurn).allowed) {
+        return false;
+      }
+      return eligibleDiscardCards(fightDiscardCosts).length === 0;
+    }
+
     function hasFightCostBadge(cell: CityCell): boolean {
       // why: WP-750 / D-24574 — players see the number the engine will actually
       // charge. Shown only when it differs from the printed cost (a null printed
@@ -422,6 +459,8 @@ export default defineComponent({
       gateForCell,
       hasFightCostBadge,
       isFightCostUnaffordable,
+      discardCostCue,
+      isFightDiscardUnpayable,
       onFight,
       showEvFight,
       onFightEV,
@@ -538,6 +577,18 @@ export default defineComponent({
               :class="{ 'city-space__fight-cost--unaffordable': isFightCostUnaffordable(cell) }"
               data-testid="play-city-fight-cost"
             >Fight {{ cell.card.fightCost }}</span>
+            <!-- why: WP-817 / D-24750 — the fight discard cost (Primus), always on the
+                 tile so a player knows to hold an eligible card back. Same pinned
+                 pill as the Fight N badge, stacked above it when both show. -->
+            <span
+              v-if="cell.card.fightDiscardCosts !== undefined"
+              class="city-space__discard-cost"
+              :class="{
+                'city-space__discard-cost--stacked': hasFightCostBadge(cell),
+                'city-space__discard-cost--unpayable': isFightDiscardUnpayable(cell),
+              }"
+              data-testid="play-city-discard-cost"
+            >{{ discardCostCue(cell.card.fightDiscardCosts) }}</span>
           </button>
           <!-- why (Jeff feedback): the empty placeholder no longer prints the slot
                name inside it — the name is now the side label above. It stays a
@@ -799,6 +850,48 @@ export default defineComponent({
 
 @media (prefers-reduced-motion: reduce) {
   .city-space__fight-cost--unaffordable {
+    animation: none;
+  }
+}
+
+/* why: WP-817 / D-24750 — the fight discard cost cue, the Fight N badge's pill.
+   It may wrap to two lines ("Discard" / "2/3/5/7") so it never overflows the
+   80px desktop tile. */
+.city-space__discard-cost {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100% - 6px);
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* why: clears the Fight N badge below it, including its larger loud state. */
+.city-space__discard-cost--stacked {
+  bottom: 1.45rem;
+}
+
+/* why (Jeff feedback, match OSth9-iV03C): loud only when no hand card can pay —
+   the same red, ring and single pulse as the unaffordable Fight N badge. */
+.city-space__discard-cost--unpayable {
+  background: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 10px rgba(185, 28, 28, 0.85);
+  animation: city-space__fight-cost-pulse 700ms ease-out 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-space__discard-cost--unpayable {
     animation: none;
   }
 }
