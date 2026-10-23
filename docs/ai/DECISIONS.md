@@ -49154,7 +49154,7 @@ Protect this file.
 
 ### D-24754 — Arnim Zola: "less than 2 printed Attack" is one shared off-play read; his Master Strike auto-discards inline, and three Tactics ride seat choices (Active 2026-10-22 — WP-821 / EC-859)
 
-**Status:** Active 2026-10-22. Live-verify (D-24026) PARTIAL PASS 2026-10-22 (server `66cb9566`, client `66cb956`; solo guest autoplay `NB11wNr0PQU` fired the strike and all four Tactics, 2-player `29R4y8wlZwf` the strike's per-player discards and Pet Projects' reveal; evidence in STATUS.md). Operator-pending: Genius' discard prompt, Pet Projects' Wound, Dominate's multi-player options and Crush's second KO in a seated 2-player match.
+**Status:** Active 2026-10-22. Live-verify (D-24026) PARTIAL PASS 2026-10-22 (server `66cb9566`, client `66cb956`; solo guest autoplay `NB11wNr0PQU` fired the strike and all four Tactics, 2-player `29R4y8wlZwf` the strike's per-player discards and Pet Projects' reveal; evidence in STATUS.md). Seated 2-player `OSth9-iV03C` (2026-10-23) added Genius' discard prompt and Dominate's multi-player prompt. Operator-pending: Pet Projects' Wound, a Dominate gain into another player's discard, and Crush's second KO.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). An Arnim Zola Master Strike moves each HQ Hero with less than 2 printed Attack to the bottom of the Hero Deck, refills its slot, and makes each player discard a card of that Hero's cost. Each of his four Tactics does what it prints when defeated; Dominate the Weak, Computer-Uploaded Genius and Crush Pacifist Resistance open the existing seat-choice prompt with self-describing option labels. The log says why when anything does nothing.
 
