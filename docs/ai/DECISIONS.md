@@ -3399,6 +3399,8 @@ WP-026 and requires its own WP with architectural review.
 **Affected WPs:** WP-026, future City resize WP
 **Immutability:** Interim — future WP may convert CityZone to dynamic and enable
 `modifyCitySize` behavior.
+**Premise superseded:** D-24764 (WP-831, 2026-10-24) converted `CityZone` to a 1-6 space
+array. `modifyCitySize` stays an unwired no-op because no scheme sets a setup-time City size.
 
 ### D-2603 — Scheme Setup Builder Location (src/setup/)
 **Decision:** `buildSchemeSetupInstructions.ts` lives in
@@ -49436,6 +49438,29 @@ Protect this file.
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 failures (registry 310 → 311, every other package unchanged); both gauntlet `:check` OK (`313 313`, 51 menus); `par:seed:test` 2 / 0; revert proof (restoring the combined sort fails the new pin and the WWII-ids test). One pre-existing assertion edited as mandated (the WP-833 WWII-ids test).
 
 **Reserved by:** NUMBER-LEDGER D-24767 (#3008). Related: D-24199 (fill rule), D-24278 (single variant), D-24283 (per-scheme overlay), D-24666 / D-24766 (scheme overrides), D-24372 (runtime drift pins), D-24026 (live-verify).
+
+---
+
+### D-24764 — A City of 1 to 6 spaces: `CityZone` becomes an array, names stay on engine indices, the HQ stays five (Active 2026-10-24 — WP-831 / EC-869)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: any match created after the deploy shows the unchanged 5-space board; the resized views are verified with WP-832.
+
+**User-Visible Surface:** `play.legendary-arena.com` — none at 5 spaces. It is the foundation for Change the Outcome of WWII (WP-832, "The number of city spaces changes": 1 to 6).
+
+**Context.** D-2602 deferred City resizing "until `CityZone` is converted from a fixed tuple to a dynamic array", in its own WP with architectural review. The rulebook (v23, the WWII / Ego / Galactus notes) fixes the model: start in the normal City; the far edge moves ("mark the new edge of the city"); the HQ is unaffected; a removed space "no longer exists" and its name no longer applies.
+
+**Decision.**
+1. **Contract.** `CityZone` is `CitySpace[]` of `CITY_MIN_SIZE..CITY_MAX_SIZE` (1-6) spaces, `CITY_DEFAULT_SIZE` (5) by default; `validateCityShape` and the structural invariant check that range. This supersedes D-2602's fixed-tuple premise. `HqZone` stays a 5-tuple.
+2. **Shape of the City.** The entry is index 0 (the Sewers) and the escape edge is the LAST index, so `pushVillainIntoCity` escapes `city[length - 1]`. A smaller City has lost its far spaces (they simply do not exist; nothing can be in them); a larger one has unnamed spaces beyond the Bridge. Names stay bound to engine indices 0-4; `hqSlotIndexUnderCitySpace` gives no HQ slot past index 4.
+3. **Rules on a resized City.** A fight or move names only a space that exists (`fightVillain`, `resolveMoveVillainChoice`, `operatorEscapeVillain` read `G.city.length`); a Guard blocks up to the current edge; an unnamed space's fight target is `UNNAMED_CITY_SPACE_TARGET` (a new `AttackTargetName` member no restricted grant names, so plain Attack only), and Spinning Cyclone labels it "an unnamed City space". The bot mirrors the moves (D-24364): it enumerates a sixth-space fight and declines a move-a-Villain choice in a 1-space City.
+4. **Board.** The client names cells by engine index; a smaller City keeps five columns with its removed spaces as hatched "gone" columns; a larger one adds a leftmost column, the desktop HQ a matching blank cell (Hero 1 stays under the Bridge), and the authored stage widens by one space column per extra space so the scale-to-fit board shrinks instead of the rows overflowing apart.
+5. **Not done here.** Nothing resizes the City yet. The `modifyCitySize` setup instruction stays an unwired no-op (no scheme sets a setup-time size).
+6. **Obligations and limits for later packets.** A resize helper (WP-832) must escape each removed space's Villain through `resolveVillainEscape`, far edge only. The model removes far spaces only: Galactus's destruction of a specific named space needs its own model. A mastermind-driven resize (Ego, Galactus) would reopen the scheme-only index assumptions (Dark Portals, Midtown Bank Robbery's Bank, Brainwash the Military's name loop).
+7. **Replay-compat.** At 5 spaces every function returns what it did and the City serializes as the same five-element array; no `G` or UIState field was added; `finalStateHash` / `PRE_WP080_HASH` are unchanged.
+
+**Gates.** game-engine 5672 → 5682, arena-client 2435 → 2444, 0 fail; twenty revert proofs each fail their locked tests; a 1280x720 board check at 5 / 6 / 3 spaces (stage 1500 → 1668px, no overflow, Hero 1 under the Bridge, hatched gone columns); every card / coverage `:check` 0, nothing regenerated. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-831-variable-city-size.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24764 (#2999). Related: D-2602 (premise superseded), D-24652 (fight targets by space), D-24747 / D-24295 (the HQ under the City), D-24505 (scale-to-fit), D-24364 (bot mirrors the move guard), D-24765 (WP-832), D-24026.
 
 ---
 Protect this file.
