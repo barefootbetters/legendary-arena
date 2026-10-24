@@ -463,6 +463,7 @@ high-water: 422
 - WP-822 — bot-abomination-recruit (competent bot prefers recruiting the highest-printed-Attack HQ Hero under Ultimate / Double Highest Abomination, via a read-only per-slot UIState projection; follow-up to the Arnim Zola 2p investigation. reserved 2026-10-22, claude/reserve-wp822-abomination-recruit)
 - WP-823 — brainwash-the-military (Cap 75th scheme Brainwash the Military plays as printed: 12 S.H.I.E.L.D. Officers in the Villain Deck as Villains at 3 + stacked Twists, gained as a Hero on defeat, Twists 1-6 stack and play another card, Twist 7 every City Officer escapes, Evil Wins at 5 escaped Officers. reserved 2026-10-23, claude/reserve-wp823-brainwash-the-military)
 - WP-824 — ca75-count-scaled-hero-lines (Cap 75th International Strike Force and Star-Spangled Hero Savior lines grant per Hero Class you have, Paramilitary Ops grants per other S.H.I.E.L.D. Hero played this turn that costs 1 or more. reserved 2026-10-23, claude/reserve-wp824-ca75-count-scaled-hero-lines)
+- WP-825 — stealth-assault-squad-costed-shield-gate (co2e Nick Fury Stealth Assault Squad gates its +2 Attack on another S.H.I.E.L.D. Hero played this turn that costs 1 or more, so the cost-0 starters no longer unlock it. reserved 2026-10-24, claude/reserve-wp825-stealth-assault-squad)
 
 ## EC
 
@@ -888,6 +889,7 @@ high-water: 457
 - EC-860 — bot-abomination-recruit (WP-822. reserved 2026-10-22, claude/reserve-wp822-abomination-recruit)
 - EC-861 — brainwash-the-military (WP-823. reserved 2026-10-23, claude/reserve-wp823-brainwash-the-military)
 - EC-862 — ca75-count-scaled-hero-lines (WP-824. reserved 2026-10-23, claude/reserve-wp824-ca75-count-scaled-hero-lines)
+- EC-863 — stealth-assault-squad-costed-shield-gate (WP-825. reserved 2026-10-24, claude/reserve-wp825-stealth-assault-squad)
 
 ## D
 
@@ -1423,3 +1425,4 @@ section below) and the allocation protocol in
 - D-24755 — bot-abomination-recruit (WP-822; the UIMastermindState per-slot printed-Attack projection under mastermind-family Abomination and the competent-bot recruit bonus it feeds. reserved 2026-10-22, claude/reserve-wp822-abomination-recruit)
 - D-24756 — brainwash-the-military (WP-823; Officers as converted Villains (origin, attack, gain-as-Hero token swap, Officer-stack draw-down), the stacked-Twist counter that numbers the twist, and the escaped-Officer loss. reserved 2026-10-23, claude/reserve-wp823-brainwash-the-military)
 - D-24757 — ca75-count-scaled-hero-lines (WP-824; Savior gate composed with the distinct-hero-classes count markers, and the shield-heroes-cost-one-plus-played-this-turn count source. reserved 2026-10-23, claude/reserve-wp824-ca75-count-scaled-hero-lines)
+- D-24758 — stealth-assault-squad-costed-shield-gate (WP-825; HeroCondition.minimumCost, a printed cost floor on the requiresTeam / heroClassMatch other-card gate. reserved 2026-10-24, claude/reserve-wp825-stealth-assault-squad)
