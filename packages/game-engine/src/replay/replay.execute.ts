@@ -149,7 +149,8 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-648 — a recorded human game that recruits an Officer replays through
   // this dispatch map; recruitOfficer takes no args (empty payload).
   recruitOfficer: (context) => recruitOfficer(context as never),
-  fightMastermind: (context) => fightMastermind(context as never),
+  // why: WP-830 / D-24763 — pass the args through: the Enigma Code guess rides on them.
+  fightMastermind: (context, args) => fightMastermind(context as never, args as never),
   setPlayerReady: (context, args) => setPlayerReady(context as never, args as never),
   startMatchIfReady: (context) => startMatchIfReady(context as never),
 };

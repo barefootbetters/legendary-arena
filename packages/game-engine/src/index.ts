@@ -67,6 +67,8 @@ export type {
   MoveResult,
 } from "./moves/coreMoves.types.js";
 export { CORE_MOVE_NAMES } from "./moves/coreMoves.types.js";
+// why: WP-830 / D-24763 — the six Enigma Code colors, so the client labels exactly the guesses the engine accepts.
+export { ENIGMA_COLORS } from "./rules/enigmaCode.logic.js";
 export {
   MOVE_ALLOWED_STAGES,
   isMoveAllowedInStage,
@@ -391,6 +393,8 @@ export type {
   UIHQState,
   UIMastermindState,
   UISchemeState,
+  UIEnigmaCodeState,
+  UIEnigmaCard,
   UITurnEconomyState,
   UIGameOverState,
   UIProgressCounters,

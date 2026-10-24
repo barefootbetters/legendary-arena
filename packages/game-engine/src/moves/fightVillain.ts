@@ -97,6 +97,7 @@ import {
   composeEffectResultLogLine,
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
+import { queueEnigmaPeekOffer } from '../rules/enigmaCode.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -386,6 +387,12 @@ export function fightVillain(
     G.deferredConditionalGrants.length > 0
   ) {
     G.villainOrMastermindDefeatedSinceResolve = true;
+  }
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code: "Whenever you fight a Villain, you may pay
+  // 1 [recruit] to look at one of the face-down Enigma Cards." Only this move fights (the free
+  // defeats never offer it); the offer opens after the move. Absent outside the scheme.
+  if (G.enigmaCode !== undefined) {
+    queueEnigmaPeekOffer(G, ctx.currentPlayer);
   }
 }
 

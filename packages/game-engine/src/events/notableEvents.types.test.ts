@@ -113,6 +113,7 @@ describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
         'clashMonsterPit',
         'brainwashTheMilitary',
         'goBackInTime',
+        'enigmaCode',
       ],
     );
   });
@@ -135,6 +136,7 @@ describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
       'clashMonsterPit',
       'brainwashTheMilitary',
       'goBackInTime',
+      'enigmaCode',
     ];
     for (const member of unionMembers) {
       assert.ok(

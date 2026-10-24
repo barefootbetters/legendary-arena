@@ -779,6 +779,32 @@ export interface UISchemeState {
   // audience filter is silently dropped (the EC-206 failure mode) — see
   // uiState.filter.ts.
   darkPortals?: UIDarkPortalState;
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code. Present only while the scheme's code holds
+  // a card (omitted otherwise). PER-AUDIENCE: the filter keeps a card's display / colors only for a
+  // viewer who has looked at it, or for everyone once a right guess revealed the code.
+  enigmaCode?: UIEnigmaCodeState;
+}
+
+/**
+ * The face-down Enigma Code of The Unbreakable Enigma Code scheme (WP-830 / D-24763).
+ */
+export interface UIEnigmaCodeState {
+  /** True after a right guess, until the next mix: every card is shown to every viewer. */
+  isRevealed: boolean;
+  /** The Enigma cards in their current face-down order. */
+  cards: UIEnigmaCard[];
+}
+
+/**
+ * One Enigma card. `display` and `colors` are present only for a viewer allowed to see it.
+ */
+export interface UIEnigmaCard {
+  /** The seats that have looked at this card since the last mix (public, like the peek log). */
+  peekedBy: string[];
+  /** The card, for a viewer who has seen it (or once the code is revealed). */
+  display?: UICardDisplay;
+  /** Its colors (`strength` / `instinct` / `covert` / `tech` / `ranged` / `grey`), with `display`. */
+  colors?: string[];
 }
 
 /**

@@ -44,6 +44,7 @@ import {
   composeStrikeBlockedNarrative,
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
+import { addHeroDeckCardToEnigmaCode } from './enigmaCode.logic.js';
 import { offPlayCardTraits } from '../hero/splitCard.logic.js';
 import {
   FIRST_MONSTER_PIT_TWIST,
@@ -1151,6 +1152,38 @@ function goBackInTime(
   });
 }
 
+/**
+ * The Unbreakable Enigma Code (WP-830 / D-24763): "Twists 1-5: Put a card from the Hero Deck face
+ * down next to the scheme as part of the 'Enigma Code.' Mix up those cards face-down." Twist 6 is
+ * the scheme's loss (its lossThreshold), so this resolver adds nothing then.
+ *
+ * @param gameState - The game state, mutated in place (Hero Deck, code, log, notable event).
+ * @param context - The reveal context (its random mixes the code).
+ * @param _implementationMap - Unused.
+ * @param _params - Unused.
+ * @param twistCardId - The Twist card that triggered.
+ */
+function unbreakableEnigmaCode(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  _implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  // why: WP-830 / D-24763 — the mix uses the reveal context's deterministic random (ctx.random).
+  addHeroDeckCardToEnigmaCode(gameState, context.random);
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'enigmaCode',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'enigmaCode',
+    ),
+  });
+}
+
 export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistResolver> = {
   'reveal-or-punish': revealOrPunish,
   'chained-reveals': chainedReveals,
@@ -1163,5 +1196,6 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'clash-monster-pit': clashMonsterPit,
   'brainwash-the-military': brainwashTheMilitary,
   'go-back-in-time': goBackInTime,
+  'enigma-code': unbreakableEnigmaCode,
   'counter-only': counterOnly,
 };

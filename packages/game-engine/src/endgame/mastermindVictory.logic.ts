@@ -96,6 +96,7 @@ export function dropAllPendingPlayerChoices(gameState: LegendaryGameState): void
   gameState.pendingDoOverChoices = undefined;
   gameState.pendingDrawOrEmpowered = undefined;
   gameState.pendingElectromagneticBubbleChoices = undefined;
+  gameState.pendingEnigmaPeekOffers = undefined; // why: WP-830 / D-24763 — owed Enigma peek offers join the end-of-game drop set (D-24518); a decided match never opens them
   gameState.pendingEscapeEffectDiscards = undefined; // why: WP-817 / D-24750 — the owed Escape-effect discard queue (Primus) joins the end-of-game drop set beside the escape-procedure queue; a decided match never opens it
   gameState.pendingEscapeProcedures = undefined; // why: WP-793 / D-24656 — the escape-procedure queue (owed HQ KO + Bystander discard) joins the end-of-game drop set (D-24518); a decided match never opens it
   gameState.pendingFlyingShieldBlockWounds = undefined; // why: WP-827 / D-24760 — the Flying Shield Block wound queue joins the end-of-game drop set (D-24518); a decided match never opens it

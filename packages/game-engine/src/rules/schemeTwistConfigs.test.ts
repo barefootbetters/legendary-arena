@@ -223,6 +223,12 @@ const AUDIT_PURE_RESOLVER_EXCEPTIONS: Record<string, string> = {
   'ca75/go-back-in-time-to-slay-heroes-ancestors': 'go-back-in-time',
 };
 
+// why: WP-830 / D-24763 — a printed-count scheme whose Twist now does something keeps its printed N
+// (still asserted below) but no longer uses the counter-only resolver. Each exception is named.
+const AUDIT_PRINTED_RESOLVER_EXCEPTIONS: Record<string, string> = {
+  'ca75/unbreakable-enigma-code-the': 'enigma-code',
+};
+
 describe('WP-763 §Audit configuration (D-24595)', () => {
   it('A: 27 printed twist-count schemes carry exactly their printed N', () => {
     let entryCount = 0;
@@ -230,7 +236,7 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
       for (const schemeId of schemeIds) {
         const config = SCHEME_TWIST_CONFIGS.get(schemeId);
         assert.equal(config?.lossThreshold, Number(threshold), schemeId);
-        assert.equal(config?.resolverId, 'counter-only', schemeId);
+        assert.equal(config?.resolverId, AUDIT_PRINTED_RESOLVER_EXCEPTIONS[schemeId] ?? 'counter-only', schemeId);
         assert.equal(config?.resourceLossCondition, undefined, schemeId);
         assert.equal(config?.twistFallbackWithResourceLoss, undefined, schemeId);
         entryCount = entryCount + 1;

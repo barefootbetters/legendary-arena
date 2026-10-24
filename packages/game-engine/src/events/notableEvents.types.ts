@@ -110,7 +110,7 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
  *
  * The eleven resolver framework entries (WP-182 shipped five; WP-513 added
  * `killbots`; WP-514 added `secretInvasion`; WP-539 added `portals`; D-24736
- * added `clashMonsterPit`; WP-823 / D-24756 added `brainwashTheMilitary`; WP-829 / D-24762 added `goBackInTime`). Each key maps to a resolver
+ * added `clashMonsterPit`; WP-823 / D-24756 added `brainwashTheMilitary`; WP-829 / D-24762 added `goBackInTime`; WP-830 / D-24763 added `enigmaCode`). Each key maps to a resolver
  * function in `schemeTwistResolvers.ts`. The resolver registry keys are
  * hyphen-case identifiers (`'reveal-or-punish'`, etc.) — this union is the
  * camelCase form embedded in `SchemeTwistResolvedEvent.resolverKey` so UI
@@ -127,7 +127,8 @@ export type SchemeTwistResolverKey =
   | 'portals'
   | 'clashMonsterPit'
   | 'brainwashTheMilitary'
-  | 'goBackInTime';
+  | 'goBackInTime'
+  | 'enigmaCode';
 
 // why: drift-detection array — must match `SchemeTwistResolverKey` exactly.
 // The eleven-entry canonical order tracks the resolver framework byte-for-byte.
@@ -148,6 +149,7 @@ export const SCHEME_TWIST_RESOLVER_KEYS: readonly SchemeTwistResolverKey[] = [
   'clashMonsterPit',
   'brainwashTheMilitary',
   'goBackInTime',
+  'enigmaCode',
 ] as const;
 
 // ---------------------------------------------------------------------------

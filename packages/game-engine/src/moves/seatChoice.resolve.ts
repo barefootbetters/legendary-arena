@@ -97,6 +97,11 @@ import {
   applyTimestreamPurgeResolvedSeatChoice,
   TIMESTREAM_PURGE_SEAT_CHOICE_KIND,
 } from '../rules/timestreamPurge.logic.js';
+// why: WP-830 / D-24763 — the Enigma peek apply (a runtime-safe cycle: function-body references only).
+import {
+  applyEnigmaPeekResolvedSeatChoice,
+  ENIGMA_PEEK_SEAT_CHOICE_KIND,
+} from '../rules/enigmaCode.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -532,6 +537,11 @@ function applySeatChoiceByKind(
   // why: WP-829 / D-24762 — Go Back in Time: the chosen HQ Hero is Purged from the Timestream.
   if (choice.kind === TIMESTREAM_PURGE_SEAT_CHOICE_KIND) {
     applyTimestreamPurgeResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code: pay 1 Recruit and look, or decline.
+  if (choice.kind === ENIGMA_PEEK_SEAT_CHOICE_KIND) {
+    applyEnigmaPeekResolvedSeatChoice(G, choice);
     return;
   }
   if (choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND) {

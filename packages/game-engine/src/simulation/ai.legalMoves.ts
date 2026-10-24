@@ -11,6 +11,7 @@
  */
 
 import type { LegendaryGameState } from '../types.js';
+import { chooseBotEnigmaGuess } from '../rules/enigmaCode.logic.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegalMove } from './ai.types.js';
 import { getAvailableRecruit, getSpendableAttackForTarget } from '../economy/economy.logic.js';
@@ -1137,7 +1138,17 @@ export function getLegalMoves(
     const mastermindFightCost = resolveMastermindFightCost(gameState, activePlayer);
     // why: WP-790 / D-24652 — the same per-target figure the fightMastermind move gates on.
     if (getSpendableAttackForTarget(gameState.turnEconomy, 'mastermind') >= mastermindFightCost) {
-      legalMoves.push({ name: 'fightMastermind', args: {} });
+      // why: WP-830 / D-24763 — under The Unbreakable Enigma Code the fight needs a guess. The bot
+      // offers the fight only once it has seen the whole code, so it never throws its turn on a
+      // wrong guess (which would also mix away its partners' peeks).
+      if ((gameState.enigmaCode?.length ?? 0) === 0) {
+        legalMoves.push({ name: 'fightMastermind', args: {} });
+      } else {
+        const enigmaGuess = chooseBotEnigmaGuess(gameState, activePlayer);
+        if (enigmaGuess !== null) {
+          legalMoves.push({ name: 'fightMastermind', args: { enigmaGuess } });
+        }
+      }
     }
   }
 
