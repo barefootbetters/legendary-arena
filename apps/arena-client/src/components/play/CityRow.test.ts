@@ -1445,3 +1445,21 @@ describe('WP-820 CityRow — Fight + Rescue (Baron Zemo, D-24753)', () => {
     wrapper.unmount();
   });
 });
+
+describe('CityRow — a resized City (WP-831 / D-24764)', () => {
+  test('a 3-space City renders its two removed far spaces as gone columns, holding nothing', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: { spaces: [villain('villain-a', 3), null, null], escapedPile: [] },
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const gone = wrapper.findAll('[data-testid="play-city-gone"]');
+    assert.deepEqual(gone.map((cell) => cell.attributes('data-city-index')), ['4', '3']);
+    assert.equal(wrapper.findAll('[data-testid="play-city-villain"]').length + wrapper.findAll('[data-testid="play-city-empty"]').length, 3);
+  });
+});

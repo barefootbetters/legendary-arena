@@ -1681,7 +1681,7 @@ export interface UIPendingMoveVillainChoice {
   // why: D-24664 — the redaction key; the chooser-only filter compares
   // audience.playerId against this, mirroring UIPendingCoveringFireChoice.playerID.
   playerID: string;
-  /** The ascending engine indices (0..4) of the City spaces holding a Villain, from the live City. */
+  /** The ascending engine indices (0..length-1, WP-831) of the City spaces holding a Villain, from the live City. */
   villainCityIndices: number[];
 }
 

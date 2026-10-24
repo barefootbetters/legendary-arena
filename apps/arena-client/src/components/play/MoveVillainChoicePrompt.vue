@@ -14,10 +14,24 @@ interface CitySpaceOption {
   villainName: string | null;
 }
 
-// why: the board renders the City left-to-right as Bridge → Sewers (engine index 4 → 0, see
-// useCityRow.ts), so the prompt lists spaces in that same visual order. The order is display
-// only — every option carries its ENGINE index, which is what the prompt submits.
-const VISUAL_ORDER_ENGINE_INDICES: readonly number[] = [4, 3, 2, 1, 0];
+/**
+ * The City's engine indices in board order (escape edge → entry).
+ *
+ * // why: the board renders the City left-to-right from its escape edge to the Sewers (engine
+ * index length-1 → 0, see useCityRow.ts), so the prompt lists spaces in that same visual order.
+ * WP-831 / D-24764 — the length is the current City size. The order is display only — every
+ * option carries its ENGINE index, which is what the prompt submits.
+ *
+ * @param citySize - The number of City spaces.
+ * @returns The engine indices, highest first.
+ */
+function visualOrderEngineIndices(citySize: number): number[] {
+  const indices: number[] = [];
+  for (let cityIndex = citySize - 1; cityIndex >= 0; cityIndex--) {
+    indices.push(cityIndex);
+  }
+  return indices;
+}
 
 /**
  * Inline prompt for resolving a pending Spinning Cyclone move-a-Villain choice (WP-795 /
@@ -99,7 +113,8 @@ export default defineComponent({
 
     function buildOption(cityIndex: number): CitySpaceOption {
       const spaceName = citySpaceNameForIndex(cityIndex);
-      let spaceLabel = `Space ${cityIndex}`;
+      // why: WP-831 / D-24764 — an unnamed space is numbered from 1, as on the board ("Space 6").
+      let spaceLabel = `Space ${cityIndex + 1}`;
       if (spaceName !== undefined) {
         spaceLabel = formatAttackTargets([spaceName]);
       }
@@ -115,7 +130,7 @@ export default defineComponent({
       const options: CitySpaceOption[] = [];
       const pending = props.pendingMoveVillainChoice;
       if (pending === undefined) return options;
-      for (const cityIndex of VISUAL_ORDER_ENGINE_INDICES) {
+      for (const cityIndex of visualOrderEngineIndices(props.city.spaces.length)) {
         if (pending.villainCityIndices.includes(cityIndex)) {
           options.push(buildOption(cityIndex));
         }
@@ -126,7 +141,7 @@ export default defineComponent({
     function destinationOptions(): CitySpaceOption[] {
       const options: CitySpaceOption[] = [];
       if (selectedSourceIndex.value === null) return options;
-      for (const cityIndex of VISUAL_ORDER_ENGINE_INDICES) {
+      for (const cityIndex of visualOrderEngineIndices(props.city.spaces.length)) {
         if (cityIndex !== selectedSourceIndex.value) {
           options.push(buildOption(cityIndex));
         }

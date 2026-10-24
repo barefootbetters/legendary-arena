@@ -53,11 +53,11 @@ export function getPatrolModifier(
  * Returns true if a Guard card at a higher index blocks the target.
  *
  * // why: Guard blocking direction — Guard at a higher City index (closer
- * to the escape edge at space 4) blocks fighting cards at lower indices
+ * to the escape edge, the City's last space) blocks fighting cards at lower indices
  * (further from escape). The Guard card itself is NOT blocked (you can
  * fight the Guard to remove the blocker).
  *
- * @param city - The current City zone (5-tuple).
+ * @param city - The current City zone (any size, WP-831).
  * @param targetIndex - The index of the card the player wants to fight.
  * @param cardKeywords - The keyword lookup from G.cardKeywords.
  * @returns True if a Guard blocks the target, false otherwise.
@@ -67,7 +67,8 @@ export function isGuardBlocking(
   targetIndex: number,
   cardKeywords: Record<CardExtId, BoardKeyword[]>,
 ): boolean {
-  for (let index = targetIndex + 1; index <= 4; index++) {
+  // why: WP-831 / D-24764 — every space past the target up to the City's current escape edge.
+  for (let index = targetIndex + 1; index < city.length; index++) {
     const cardAtSpace = city[index];
 
     if (cardAtSpace === null || cardAtSpace === undefined) {

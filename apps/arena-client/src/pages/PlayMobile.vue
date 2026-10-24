@@ -51,6 +51,7 @@ import DoOverPrompt from '../components/play/DoOverPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CoveringFireChoicePrompt from '../components/play/CoveringFireChoicePrompt.vue';
 import MoveVillainChoicePrompt from '../components/play/MoveVillainChoicePrompt.vue';
+import { extraCityColumns } from '../composables/useCityRow';
 import { useBuildProvenanceStore } from '../stores/buildProvenance';
 import { formatProvenanceHeaderLines } from '../diagnostics/buildProvenance';
 import SplitFaceChoicePrompt from '../components/play/SplitFaceChoicePrompt.vue';
@@ -494,6 +495,7 @@ export default defineComponent({
     );
 
     return {
+      extraCityColumns,
       snapshot,
       viewer,
       opponents,
@@ -628,6 +630,7 @@ export default defineComponent({
         <section class="play-mobile__band play-mobile__band--scroll-x">
           <HQRow
             :hq="snapshot.hq"
+            :extra-city-spaces="extraCityColumns(snapshot.city.spaces.length)"
             :decks="snapshot.decks"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"

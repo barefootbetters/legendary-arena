@@ -58,6 +58,13 @@ export default defineComponent({
       required: false,
       default: true,
     },
+    // why: WP-831 / D-24764 — City spaces beyond the normal five (a scheme can add them). Each adds
+    // a blank leading cell so Hero 1 stays under the Bridge; the HQ itself is always 5 (rules v23).
+    extraCitySpaces: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
     // why: D-24614 — UIState.game.hasHealedThisTurn. The engine refuses
     // recruit and fight for the rest of a turn in which the viewer healed
     // (D-24180 heal lock), so the button gate must see it too.
@@ -146,6 +153,13 @@ export default defineComponent({
         v-if="isColumnAligned"
         class="hq-slot hq-slot--edge-column"
         data-testid="play-hq-spacer"
+        aria-hidden="true"
+      />
+      <li
+        v-for="extraIndex in (isColumnAligned ? extraCitySpaces : 0)"
+        :key="`extra-${extraIndex}`"
+        class="hq-slot hq-slot--space-column"
+        data-testid="play-hq-extra-spacer"
         aria-hidden="true"
       />
       <!-- why: 6-cell visual layout locked per EC-132 §2:

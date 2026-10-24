@@ -153,3 +153,39 @@ describe('MoveVillainChoicePrompt (WP-795 / EC-832)', () => {
     assert.equal(calls.length, 2);
   });
 });
+
+describe('MoveVillainChoicePrompt — a resized City (WP-831 / D-24764)', () => {
+  test('a 3-space City offers only the spaces that exist', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MoveVillainChoicePrompt, {
+      props: {
+        pendingMoveVillainChoice: { playerID: 'player-0', villainCityIndices: [0] },
+        city: { spaces: [cityCard('villain-sewers', 'HYDRA Kidnappers'), null, null], escapedPile: [] },
+        viewerPlayerId: 'player-0',
+        submitMove,
+      },
+    });
+    await wrapper.find('[data-testid="move-villain-source"]').trigger('click');
+    const destinations = wrapper.findAll('[data-testid="move-villain-destination"]').map((destination) => destination.text());
+    assert.equal(destinations.length, 2, 'the Bank and the Rooftops only');
+    assert.ok(destinations.every((text) => !text.includes('Bridge') && !text.includes('Streets')));
+  });
+});
+
+describe('MoveVillainChoicePrompt — a 6-space City (WP-831 / D-24764)', () => {
+  test('the unnamed sixth space is offered as "Space 6", numbered as on the board', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MoveVillainChoicePrompt, {
+      props: {
+        pendingMoveVillainChoice: { playerID: 'player-0', villainCityIndices: [0] },
+        city: { spaces: [cityCard('villain-sewers', 'HYDRA Kidnappers'), null, null, null, null, null], escapedPile: [] },
+        viewerPlayerId: 'player-0',
+        submitMove,
+      },
+    });
+    await wrapper.find('[data-testid="move-villain-source"]').trigger('click');
+    const destinations = wrapper.findAll('[data-testid="move-villain-destination"]').map((destination) => destination.text());
+    assert.equal(destinations.length, 5);
+    assert.ok(destinations.some((text) => text.includes('Space 6')));
+  });
+});

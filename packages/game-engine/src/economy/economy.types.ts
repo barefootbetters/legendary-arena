@@ -14,7 +14,13 @@ import type { CitySpaceName } from '../board/citySpaceNames.js';
  * A fight target restricted attack may be spent on (WP-790 / D-24652): one of
  * the five named City spaces, or the Mastermind.
  */
-export type AttackTargetName = CitySpaceName | 'mastermind';
+export type AttackTargetName = CitySpaceName | 'mastermind' | typeof UNNAMED_CITY_SPACE_TARGET;
+
+// why: WP-831 / D-24764 — a City larger than five spaces (Change the Outcome of WWII's USSR) has a
+// sixth space with no name. Fighting there targets this value, which no restricted-attack grant
+// ever names (grants are parsed from printed space names), so only plain Attack can pay for it.
+/** The fight target of an unnamed City space (a space beyond the normal five). */
+export const UNNAMED_CITY_SPACE_TARGET = 'unnamed-city-space';
 
 /**
  * One "usable only against …" attack grant (WP-790 / D-24652).

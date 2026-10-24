@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { UICityState, UIDecksState } from '@legendary-arena/game-engine';
-import { useCityRow, type CityCell } from './useCityRow';
+import { extraCityColumns, useCityRow, type CityCell } from './useCityRow';
 
 function makeCity(spaces: (string | null)[]): UICityState {
   return {
@@ -117,5 +117,43 @@ describe('useCityRow (WP-129)', () => {
     assert.equal(streets.slotName, 'Streets');
     assert.equal(streets.cityIndex, 3);
     assert.equal(streets.card?.extId, 'doom');
+  });
+});
+
+describe('useCityRow — a resized City (WP-831 / D-24764)', () => {
+  test('a 3-space City keeps five columns: the two removed far spaces are gone cells, names by engine index', () => {
+    const { cells } = useCityRow(makeCity(['a', null, 'c']), decks);
+    assert.equal(cells.length, 7);
+    assert.deepEqual(
+      cells.slice(1, 6).map((cell) => (cell.kind === 'gone' || cell.kind === 'slot' ? `${cell.kind}:${cell.cityIndex}:${cell.slotName}` : cell.kind)),
+      ['gone:4:Bridge', 'gone:3:Streets', 'slot:2:Rooftops', 'slot:1:Bank', 'slot:0:Sewers'],
+    );
+  });
+
+  test('a 6-space City adds an unnamed space to the left of the Bridge', () => {
+    const { cells } = useCityRow(makeCity([null, null, null, null, null, 'f']), decks);
+    assert.equal(cells.length, 8);
+    const first = cells[1]!;
+    assert.equal(first.kind, 'slot');
+    if (first.kind === 'slot') {
+      assert.equal(first.cityIndex, 5);
+      assert.equal(first.slotName, 'Space 6');
+      assert.equal(first.card?.extId, 'f');
+    }
+    const second = cells[2]!;
+    assert.equal(second.kind === 'slot' ? second.slotName : '', 'Bridge');
+  });
+
+  test('the normal City is unchanged (no gone cells)', () => {
+    const { cells } = useCityRow(makeCity([null, null, null, null, null]), decks);
+    assert.equal(cells.some((cell) => cell.kind === 'gone'), false);
+  });
+});
+
+describe('extraCityColumns (WP-831 / D-24764)', () => {
+  test('counts only the City spaces beyond five (the HQ spacers and the stage widening)', () => {
+    assert.equal(extraCityColumns(1), 0);
+    assert.equal(extraCityColumns(5), 0);
+    assert.equal(extraCityColumns(6), 1);
   });
 });

@@ -63,6 +63,7 @@ import DoOverPrompt from '../components/play/DoOverPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CoveringFireChoicePrompt from '../components/play/CoveringFireChoicePrompt.vue';
 import MoveVillainChoicePrompt from '../components/play/MoveVillainChoicePrompt.vue';
+import { extraCityColumns } from '../composables/useCityRow';
 import { useBuildProvenanceStore } from '../stores/buildProvenance';
 import { formatProvenanceHeaderLines } from '../diagnostics/buildProvenance';
 import SplitFaceChoicePrompt from '../components/play/SplitFaceChoicePrompt.vue';
@@ -260,6 +261,10 @@ export default defineComponent({
     // scoped CSS owns the `transform: scale()` string + `transform-origin`.
     const fitStageStyle = computed<Record<string, string>>(() => ({
       '--play-fit-scale': String(fitScale.value),
+      // why: WP-831 / D-24764 — a City larger than five spaces widens the authored stage by one
+      // space column each, so the stage ResizeObserver refits and the board scales down instead of
+      // the City and HQ rows overflowing (and scrolling apart, which would break their alignment).
+      '--play-extra-city-columns': String(extraCityColumns(snapshot.value?.city.spaces.length ?? 0)),
     }));
     // why: Jeff feedback (D-24505 carve-out) — reserve the FULL scaled board height
     // as the fit container's min-height, so a response prompt that grows the board
@@ -716,6 +721,7 @@ export default defineComponent({
     );
 
     return {
+      extraCityColumns,
       snapshot,
       viewer,
       opponents,
@@ -941,6 +947,7 @@ export default defineComponent({
             <div class="play-desktop__hq-zone">
               <HQRow
                 :hq="snapshot.hq"
+                :extra-city-spaces="extraCityColumns(snapshot.city.spaces.length)"
                 :decks="snapshot.decks"
                 :current-stage="snapshot.game.currentStage"
                 :is-viewer-turn="isViewerTurn"
@@ -1494,7 +1501,8 @@ export default defineComponent({
   position: absolute;
   top: 0;
   left: 50%;
-  width: var(--play-authoring-width);
+  /* why: WP-831 / D-24764 — one space column (plus the row gap) per City space beyond five. */
+  width: calc(var(--play-authoring-width) + var(--play-extra-city-columns, 0) * (var(--board-space-column-width) + 0.25rem));
   transform: translateX(-50%) scale(var(--play-fit-scale, 1));
   transform-origin: top center;
   display: flex;

@@ -11,6 +11,7 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { CityZone, HqZone } from './city.types.js';
+import { CITY_DEFAULT_SIZE } from './city.types.js';
 
 // ---------------------------------------------------------------------------
 // Push result
@@ -22,7 +23,7 @@ import type { CityZone, HqZone } from './city.types.js';
 export interface PushVillainResult {
   /** The new City state after the push. */
   city: CityZone;
-  /** The card that escaped from space 4, or null when no card was pushed off. */
+  /** The card that escaped from the last space, or null when no card was pushed off. */
   escapedCard: CardExtId | null;
 }
 
@@ -36,7 +37,7 @@ export interface PushVillainResult {
  * The new card enters at space 0 and only the contiguous block of cards
  * starting at space 0 advances one space toward the escape edge. The
  * leftmost (lowest-index) empty space absorbs the push — every space to the
- * right of it is unchanged. A card on space 4 escapes ONLY when the City
+ * right of it is unchanged. A card on the last space escapes ONLY when the City
  * has no empty space (i.e., the entry-side block reaches all the way to
  * the escape edge).
  *
@@ -48,7 +49,7 @@ export interface PushVillainResult {
  * Example (full city):
  *   `[A, B, C, D, E]` + `N` → `[N, A, B, C, D]` with `escapedCard = E`.
  *
- * @param city - The current City zone (5-tuple). Not mutated.
+ * @param city - The current City zone (any size). Not mutated.
  * @param cardId - The card to place at space 0.
  * @returns The new City state and the escaped card (or null).
  */
@@ -71,17 +72,18 @@ export function pushVillainIntoCity(
   // why: start from a copy so spaces past the empty slot (or all spaces in
   // the full-city escape branch) carry over unchanged without per-slot
   // re-assignment.
-  const newCity: CityZone = [city[0], city[1], city[2], city[3], city[4]];
+  const newCity: CityZone = [...city];
+  const lastIndex = city.length - 1;
 
   let escapedCard: CardExtId | null = null;
 
   if (leftmostEmptyIndex === -1) {
-    // City is full — space 4 escapes and the entire row shifts up by one.
-    escapedCard = city[4];
-    newCity[4] = city[3];
-    newCity[3] = city[2];
-    newCity[2] = city[1];
-    newCity[1] = city[0];
+    // City is full — the last space escapes and the entire row shifts up by one.
+    // why: WP-831 / D-24764 — the escape edge is the last space of the current City.
+    escapedCard = city[lastIndex] ?? null;
+    for (let spaceIndex = lastIndex; spaceIndex >= 1; spaceIndex--) {
+      newCity[spaceIndex] = city[spaceIndex - 1]!;
+    }
   } else {
     // Shift the contiguous entry-side block one space toward the escape
     // edge, terminating at the leftmost empty slot. Iterate top-down so
@@ -104,12 +106,17 @@ export function pushVillainIntoCity(
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an empty City zone for game setup.
+ * Creates an empty City zone.
  *
- * @returns A 5-element tuple of nulls.
+ * @param size - The number of spaces (`CITY_DEFAULT_SIZE` at setup).
+ * @returns `size` nulls.
  */
-export function initializeCity(): CityZone {
-  return [null, null, null, null, null];
+export function initializeCity(size: number = CITY_DEFAULT_SIZE): CityZone {
+  const city: CityZone = [];
+  for (let spaceIndex = 0; spaceIndex < size; spaceIndex++) {
+    city.push(null);
+  }
+  return city;
 }
 
 /**
