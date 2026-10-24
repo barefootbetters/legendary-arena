@@ -163,6 +163,18 @@
       "cardSlug": "flying-shield-block",
       "abilityIndex": 0,
       "markupToken": "[keyword:flying-shield-block]"
+    },
+    {
+      "heroSlug": "winter-soldier",
+      "cardSlug": "2-4",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:grant-out-of-time]"
+    },
+    {
+      "heroSlug": "winter-soldier",
+      "cardSlug": "2-4",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:grant-out-of-time]"
     }
   ],
   "chmp": [

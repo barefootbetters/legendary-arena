@@ -30,6 +30,7 @@ import {
   DIVING_BLOCK_REVEAL_OPTION_INDEX,
   DIVING_BLOCK_SEAT_CHOICE_KIND,
 } from '../moves/divingBlock.logic.js';
+import { OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND } from '../moves/outOfTimeGrant.logic.js';
 import {
   FLYING_SHIELD_BLOCK_REVEAL_OPTION_INDEX,
   FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND,
@@ -113,6 +114,11 @@ function chooseByKind(
     // why: WP-827 / D-24760 — revealing prevents a Wound (any player's) and rescues a
     // Bystander for the bot; the card stays put, so a present bot always reveals.
     return FLYING_SHIELD_BLOCK_REVEAL_OPTION_INDEX;
+  }
+  if (choice.kind === OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND) {
+    // why: WP-828 / D-24761 — the granted Hero is played again next turn, so the bot grants the
+    // highest-cost listed Hero (first listed on a tie).
+    return chooseHighestCostOption(G, options);
   }
   if (choice.kind === RANDOM_ACTS_WOUND_KIND) {
     // why: D-24678 — the Diving Block option exists only when the seat can reveal it,
@@ -401,4 +407,31 @@ function indexOfLowestVictoryPointCard(
  */
 function clampDefault(choice: PendingSeatChoice, options: readonly SeatChoiceOption[]): number {
   return Math.max(0, Math.min(choice.defaultOptionIndex, options.length - 1));
+}
+
+/**
+ * The index of the option whose `cardId` has the highest printed cost (first on a tie).
+ *
+ * @param G - The game state (read only; cardStats).
+ * @param options - The seat's options, each carrying a `cardId`.
+ * @returns The chosen option index (0 when no option carries a card).
+ */
+function chooseHighestCostOption(
+  G: LegendaryGameState,
+  options: readonly SeatChoiceOption[],
+): number {
+  let bestIndex = 0;
+  let bestCost = Number.NEGATIVE_INFINITY;
+  for (let optionIndex = 0; optionIndex < options.length; optionIndex++) {
+    const cardId = options[optionIndex]!.cardId;
+    if (cardId === undefined) {
+      continue;
+    }
+    const cost = G.cardStats?.[cardId]?.cost ?? 0;
+    if (cost > bestCost) {
+      bestCost = cost;
+      bestIndex = optionIndex;
+    }
+  }
+  return bestIndex;
 }

@@ -35,6 +35,11 @@ import {
   applyFlyingShieldBlockResolvedSeatChoice,
   FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND,
 } from './flyingShieldBlock.logic.js';
+// why: WP-828 / D-24761 — the Man Out of Time grant's apply (same runtime-safe cycle).
+import {
+  applyOutOfTimeGrantResolvedSeatChoice,
+  OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND,
+} from './outOfTimeGrant.logic.js';
 // why: WP-683 / D-24500 — the two Deadpool consumers' kind-specific applies + the
 // Random-Acts wound→pass chain builder.
 import {
@@ -464,6 +469,11 @@ function applySeatChoiceByKind(
   // reveal. No draw, so no shuffle context.
   if (choice.kind === FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND) {
     applyFlyingShieldBlockResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-828 / D-24761 — the chosen hand Hero gains Man Out of Time this turn.
+  if (choice.kind === OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND) {
+    applyOutOfTimeGrantResolvedSeatChoice(G, choice);
     return;
   }
   // why: WP-694 / D-24511 — Monarch's Decree mode apply: the "draw" branch draws for each

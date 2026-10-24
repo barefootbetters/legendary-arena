@@ -219,6 +219,13 @@ const GATE_BLOCKERS: readonly GateBlocker[] = [
     },
     remove: (G) => { Reflect.deleteProperty(G, 'pendingEscapeEffectDiscards'); },
   },
+  {
+    // why: WP-828 / D-24761 — owed Man Out of Time grants (Winter Soldier's 2>4) are opened into a
+    // seat choice after the move, like the escape queues above.
+    label: 'pendingOutOfTimeGrants is non-empty',
+    apply: (G) => { G.pendingOutOfTimeGrants = [{ playerID: '0', sourceCardId: 'ca75/winter-soldier/2-4#0' }]; },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingOutOfTimeGrants'); },
+  },
 ];
 
 describe('operator setters — gate (WP-806 §D 1)', () => {

@@ -592,10 +592,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // observations leave the sweep (feed regenerated: 7793 -> 7777 raw observations, 79 mechanics,
   // 0 dropped). totalObs 8714 -> 8698 (-16, equal to the raw feed fall); resolvedObs stays 1091, so
   // percentResolved stays 12.5 (1091 / 8698). A denominator re-pin; no mechanic changed status.
+  // 2026-10-24 (WP-828 / D-24761, re-pin): Winter Soldier's 2>4 now grants Man Out of Time, so its
+  // 11 `man-out-of-time` hollow observations leave the sweep (feed regenerated: 7777 -> 7766 raw
+  // observations, 79 -> 78 mechanics, 0 dropped). totalObs 8698 -> 8687 (-11, equal to the raw feed
+  // fall); resolvedObs stays 1091, so percentResolved rounds up 12.5 -> 12.6 (1091 / 8687). A denominator
+  // re-pin: the one mechanic that left was a hollow, not a resolved one.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8698);
+  assert.equal(view.totalObs.value, 8687);
   assert.equal(view.resolvedObs.value, 1091);
-  assert.equal(view.percentResolved.value, 12.5);
+  assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);
 });
 

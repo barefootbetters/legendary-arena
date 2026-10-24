@@ -19,6 +19,7 @@ import { applyEndOfTurnCleanup } from './endOfTurnCleanup.logic.js';
 import { HAND_SIZE, drawCardsIntoHand } from './drawCards.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { executeHeroEffects } from '../hero/heroEffects.execute.js';
+import { applyGrantedOutOfTime } from './outOfTimeGrant.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
@@ -329,6 +330,11 @@ export function applyCardPlay(
   // cue; excluded from the finalStateHash oracle (observability-only), and not seeded at
   // setup, so no sentinel or PRE_WP080 hash re-pin is required.
   G.lastPlayEffectsFired = executeHeroEffects(G, context, playerID, cardId);
+  // why: WP-828 / D-24761 — a hand Hero granted Man Out of Time this turn (Winter Soldier's 2>4)
+  // is set aside Out of Time after its abilities, exactly where its own printed keyword would
+  // (the last effect of the play). Shared core (hand play and the turn-2 replay); the replay is
+  // never re-granted (the grant list is cleared at turn start, and guard 1 blocks a second set-aside).
+  applyGrantedOutOfTime(G, context, playerID, cardId);
 }
 
 /**

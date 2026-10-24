@@ -72,6 +72,9 @@ import {
 import type { TacticSeatChoiceEvents } from '../moves/defeatChoice.resolve.js';
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
 import { countRevealableDivingBlockCopies } from '../moves/divingBlock.logic.js';
+// why: WP-828 / D-24761 — the grant handler only queues; the module references this one back only
+// inside function bodies (a runtime-safe cycle).
+import { queueOutOfTimeGrant } from '../moves/outOfTimeGrant.logic.js';
 import {
   revealTopThreeForAssign,
   buildAllRevealThreeAssignDispositions,
@@ -323,6 +326,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   'ko-up-to-shield-hand-discard',
   'attack-per-ko-this-way',
   'optional-ko-shield-played-rescue',
+  // why: WP-828 / D-24761 — Winter Soldier's 2>4 "A Hero in your hand gains Man Out of Time this
+  // turn"; has a HERO_EFFECT_HANDLERS entry (heroEffectGrantOutOfTime) that queues one owed grant,
+  // so it belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'grant-out-of-time',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -584,6 +591,9 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // why: WP-803 / D-24692 — out-of-time carries NO magnitude (it moves the played card itself),
   // so the magnitude pre-gate must not drop it, or heroEffectOutOfTime never sets the card aside.
   'out-of-time',
+  // why: WP-828 / D-24761 — grant-out-of-time carries NO magnitude (one grant per line), so the
+  // magnitude pre-gate must not drop it, or heroEffectGrantOutOfTime never queues the grant.
+  'grant-out-of-time',
   // why: WP-735 / D-24555 — digest-indigestion carries NO top-level magnitude (the branch
   // magnitudes ride the nested inline effects: +attack / +recruit / draw:N / rescue:N). The
   // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
@@ -5503,6 +5513,29 @@ function heroEffectOutOfTime(
 }
 
 /**
+ * Handler for the `grant-out-of-time` hero keyword (WP-828 / D-24761).
+ *
+ * Winter Soldier's 2>4: "A Hero in your hand gains [keyword:Man Out of Time] this turn." (and
+ * the [hc:tech]-gated "Another Hero …" line). Queues one owed grant; the choice of Hero is made
+ * after the play by openOutOfTimeGrantSeatChoiceIfNeeded (see moves/outOfTimeGrant.logic.ts).
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the grant resolves after the play).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (recorded as the grant's source).
+ * @param _effect - The `{ type: 'grant-out-of-time' }` descriptor (no magnitude).
+ */
+function heroEffectGrantOutOfTime(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  queueOutOfTimeGrant(G, playerID, cardId);
+}
+
+/**
  * Hero handler for the `fight-cost-reduction` keyword (WP-794 / D-24663).
  *
  * core Storm Lightning Bolt / Tidal Wave, cvwr Storm & Black Panther Lightning Strike and
@@ -6629,6 +6662,9 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // (koZones ['inPlay'], koTeamFilter 'shield') with a rescue reward on the optional-ko-reward
   // queue. Carries a magnitude (Bystanders rescued) → NOT in NO_MAGNITUDE_KEYWORDS.
   'optional-ko-shield-played-rescue': heroEffectOptionalKoShieldPlayedRescue,
+  // why: WP-828 / D-24761 — Winter Soldier's 2>4: queues one owed Man Out of Time grant for a hand
+  // Hero, resolved after the play by the onMove opener. NO magnitude.
+  'grant-out-of-time': heroEffectGrantOutOfTime,
 };
 
 // ---------------------------------------------------------------------------
