@@ -56,7 +56,8 @@ export type HeroCountSource =
   | 'tech-heroes-played-this-turn'
   | 'covert-heroes-played-this-turn'
   | 'x-men-played-this-turn' // why: D-24655 — the count of OTHER cards played this turn on the X-Men team (cardHasTeamWhenPlayed, honors Copy-Powers teams per D-24391), the X-Men analogue of avengers-played-this-turn; Cyclops' X-Men United "+2 attack for each other X-Men Hero you played this turn" (core) and its co2e "+1" twin. Self-exclusive. Before this, the line parsed as a flat +2 and under-granted with two or more other X-Men
-  | 'extra-cards-drawn-this-turn'; // why: D-24732 — the cards the current player has drawn this turn OTHER than the hand drawn at end of turn: reads G.turnEconomy.cardsDrawn, which every effect draw the current player makes increments (draw:N, reveal-rule draws, Psychic Link, Investigate, Dodge, Diving Block, Stack the Deck, HYDRA Conspiracy, Enchantress, ...) and the start-of-turn fill / end-of-turn hand / next-hand bonuses never do. Self-INCLUSIVE of the resolving card's own draws (Berserker Rage counts its own three). Wolverine's Berserker Rage (core) + the antm Giant Ego / chmp 7th Smartest Man twins, "+1 attack for each extra card you've drawn this turn". Not a card list — a counter
+  | 'extra-cards-drawn-this-turn' // why: D-24732 — the cards the current player has drawn this turn OTHER than the hand drawn at end of turn: reads G.turnEconomy.cardsDrawn, which every effect draw the current player makes increments (draw:N, reveal-rule draws, Psychic Link, Investigate, Dodge, Diving Block, Stack the Deck, HYDRA Conspiracy, Enchantress, ...) and the start-of-turn fill / end-of-turn hand / next-hand bonuses never do. Self-INCLUSIVE of the resolving card's own draws (Berserker Rage counts its own three). Wolverine's Berserker Rage (core) + the antm Giant Ego / chmp 7th Smartest Man twins, "+1 attack for each extra card you've drawn this turn". Not a card list — a counter
+  | 'shield-heroes-cost-one-plus-played-this-turn'; // why: WP-824 / D-24757 — the count of OTHER cards played this turn on the S.H.I.E.L.D. team (cardCountsAsTeamMember, so the basic Officer counts) whose printed cost is 1 or more; Agent X-13's Paramilitary Ops (ca75) "+1 attack for each other S.H.I.E.L.D. Hero you played this turn that costs 1 or more". The cost-filtered sibling of shield-heroes-played-this-turn: the cost-0 S.H.I.E.L.D. Agent / Trooper starters never count. Self-exclusive. The slug spells "one" because a count-source slug can't contain a digit (the cost-four-plus precedent)
 
 // why: canonical array for drift-detection. Must match HeroCountSource union
 // exactly. Drift-detection test in hero/heroCountSource.resolve.test.ts asserts
@@ -82,6 +83,7 @@ export const HERO_COUNT_SOURCES: readonly HeroCountSource[] = [
   'covert-heroes-played-this-turn', // why: WP-711 / D-24534 — OTHER Covert-class cards played this turn (self-exclusive); the bkwd covert line
   'x-men-played-this-turn', // why: D-24655 — OTHER X-Men-team cards played this turn (self-exclusive); X-Men United (core + co2e)
   'extra-cards-drawn-this-turn', // why: D-24732 — G.turnEconomy.cardsDrawn, the effect draws this turn (never the start/end-of-turn hand); Berserker Rage + antm/chmp twins
+  'shield-heroes-cost-one-plus-played-this-turn', // why: WP-824 / D-24757 — OTHER S.H.I.E.L.D.-team cards played this turn costing 1 or more (self-exclusive; starters excluded); Paramilitary Ops (ca75)
 ] as const;
 
 // ---------------------------------------------------------------------------

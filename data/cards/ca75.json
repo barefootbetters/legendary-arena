@@ -42,7 +42,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each other [team:shield] Hero you played this turn that costs 1 or more."
+            "You get +1[icon:attack] for each other [team:shield] Hero you played this turn that costs 1 or more. [keyword:attack-per-count:shield-heroes-cost-one-plus-played-this-turn:1]"
           ]
         },
         {
@@ -183,7 +183,7 @@
           "recruit": "0+",
           "abilities": [
             "You get +2[icon:attack] for each Hero Class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:2]",
-            "[keyword:Savior]: You get +2[icon:recruit] for each Hero Class you have."
+            "[keyword:Savior]: You get +2[icon:recruit] for each Hero Class you have. [keyword:recruit-per-count:distinct-hero-classes-played-this-turn:2]"
           ]
         }
       ],
@@ -358,7 +358,7 @@
           "recruit": "0+",
           "abilities": [
             "You get +1[icon:recruit] for each Hero Class you have. [keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]",
-            "[keyword:Savior]: You get +1[icon:attack] for each Hero Class you have."
+            "[keyword:Savior]: You get +1[icon:attack] for each Hero Class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
           ]
         },
         {

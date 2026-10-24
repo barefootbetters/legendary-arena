@@ -99,14 +99,16 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 33,
+      "cardCount": 35,
       "cardIds": [
         "antm/ant-man",
         "asrd/thor",
         "bkwd/falcon-winter-soldier",
         "bkwd/red-guardian",
+        "ca75/agent-x-13",
         "ca75/captain-america-1941",
         "ca75/captain-america-falcon",
+        "ca75/steve-rogers-director-of-shield",
         "chmp/totally-awesome-hulk",
         "co2e/black-widow",
         "co2e/captain-america",
@@ -1363,8 +1365,9 @@
       "label": "Recruit Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 9,
+      "cardCount": 10,
       "cardIds": [
+        "ca75/captain-america-falcon",
         "ca75/steve-rogers-director-of-shield",
         "co2e/captain-america",
         "core/captain-america",
@@ -2721,6 +2724,7 @@
     "ca75/agent-x-13": {
       "mechanics": [
         "attack",
+        "attack-per-count",
         "gain-officer",
         "out-of-time",
         "savior"
@@ -2738,12 +2742,14 @@
     "ca75/captain-america-falcon": {
       "mechanics": [
         "attack-per-count",
+        "recruit-per-count",
         "rescue",
         "savior"
       ]
     },
     "ca75/steve-rogers-director-of-shield": {
       "mechanics": [
+        "attack-per-count",
         "out-of-time",
         "recruit-per-count",
         "rescue",

@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 797,
+    "totalRows": 800,
     "byStatus": {
-      "executable": 411,
+      "executable": 414,
       "deferred": 16,
       "condition": 49,
       "unsupported": 290,
@@ -2406,6 +2406,22 @@
       "extId": "ca75/agent-x-13",
       "heroName": "Agent X-13",
       "set": "ca75",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "paramilitary-ops",
+          "name": "Paramilitary Ops"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "heroName": "Agent X-13",
+      "set": "ca75",
       "mechanic": "gain-officer",
       "status": "subsystem",
       "wp": "",
@@ -2463,6 +2479,22 @@
       "wp": "WP-247",
       "decision": "D-24016",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "star-spangled-hero",
+          "name": "Star-Spangled Hero"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-falcon",
+      "heroName": "Captain America (Falcon)",
+      "set": "ca75",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
       "designs": [
         {
           "slug": "star-spangled-hero",
@@ -2599,6 +2631,22 @@
         {
           "slug": "punch-evil-in-the-face",
           "name": "Punch Evil in the Face"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/steve-rogers-director-of-shield",
+      "heroName": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "set": "ca75",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "international-strike-force",
+          "name": "International Strike Force"
         }
       ]
     },
