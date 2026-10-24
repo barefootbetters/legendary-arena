@@ -51,6 +51,16 @@
 - **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches are unchanged.
 - **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with Winter Soldier: the prompt lists your hand Heroes, the picked Hero is set aside after play and replays next turn, and with [hc:tech] the second prompt leaves out the first pick.
 
+### WP-829 / EC-867 — Go Back in Time to Slay Heroes' Ancestors: the Purge Twist and the HQ KO rule (D-24762) (2026-10-24)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Each Go Back in Time Twist makes you Purge a Hero from the HQ: you pick it (a prompt listing each HQ Hero with its cost) when there are two or more. The Purged Hero is set aside, not KO'd, and from then on every card of that Hero that reaches the HQ is KO'd, draining the Hero Deck toward the scheme's loss.
+
+- **Engine.** A new `go-back-in-time` resolver queues an owed Purge (`rules/timestreamPurge.logic.ts`), opened after the move as the active player's seat choice (auto with one HQ Hero, a no-op with none); a repeat-until-clean sweep KOs same-name HQ Heroes inside each Purge and at every move, before any HQ pick is listed. A `goBackInTime` notable-event key. No new move.
+- **Client.** The prompt heading "Go Back in Time — choose a Hero in the HQ to Purge from the Timestream".
+- **Tests.** game-engine 5672 → 5694 (+22 tests / +4 suites), arena-client +1, 0 fail; thirteen revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; every `:check` 0, nothing regenerated. 01.6 post-mortem WP COMPLETE.
+- **Replay-compat.** The resolver is read from the config at runtime, so a stored pre-deploy Go Back in Time match no longer replays to its recorded state (the WP-823 precedent).
+- **Live-verify (D-24026): pending deploy.** A 2-player operator match with this scheme created after the deploy: a staged Twist prompts the Purge; the picked Hero leaves the HQ unKO'd while its same-Hero HQ card is KO'd; a later same-Hero arrival is KO'd after the move.
+
 ### WP-825 / EC-863 — co2e Stealth Assault Squad: the "another S.H.I.E.L.D. Hero that costs 1 or more" gate (D-24758) (2026-10-24)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Nick Fury's Stealth Assault Squad (co2e) gives its +2 Attack only after another S.H.I.E.L.D. Hero that costs 1 or more: the Officer (cost 3) or another costed S.H.I.E.L.D. Hero counts, the cost-0 Agent and Trooper no longer do. A failed gate logs "it needs another shield Hero that costs 1 or more played this turn".
