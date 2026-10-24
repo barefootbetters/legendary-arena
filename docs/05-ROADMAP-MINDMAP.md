@@ -472,6 +472,7 @@ mindmap
         ["WP-829 📝 Go Back in Time to Slay Heroes Ancestors Twist Purges an HQ Hero chosen by the active player HQ Heroes sharing a Purged Hero Name are KOd game engine DRAFTED 2026-10-24 EC-867 D-24762 reserved. Cap 75th arc item 7"]
         ["WP-830 📝 The Unbreakable Enigma Code Twists build a face-down code a paid peek after a Villain fight a color guess gates the Mastermind fight game engine plus client DRAFTED 2026-10-24 EC-868 D-24763 reserved. Cap 75th arc item 8"]
         ["WP-831 📝 A City of 1 to 6 spaces the variable City size foundation CityZone becomes an array names stay on engine indices the HQ stays five game engine plus client DRAFTED 2026-10-24 EC-869 D-24764 reserved. Cap 75th arc item 9 part 1"]
+        ["WP-832 📝 Change the Outcome of WWII each Twist invades the next country and resizes the City an escape per country conquers a capital Evil wins at 3 game engine DRAFTED 2026-10-24 EC-870 D-24765 reserved. Cap 75th arc item 9 part 2"]
         ["WP-805 ✅ A random player goes first the play phase opens on a seeded-random seat not always seat 1 rules v23 L524 game engine EC-842 D-24700 Active DONE 2026-10-12. Omit-when-off G flag keeps stored logs and solo unchanged"]
         ["WP-782 📝 Soaring Flight executor a recruited Soaring Flight Hero is set aside and joins your new hand at end of turn game engine plus card data DRAFTED 2026-09-27 EC-819 D-24627 reserved"]
         ["WP-784 📝 Deck-top discards count toward If you discarded any cards this turn game engine DRAFTED 2026-09-28 EC-821 D-24631 reserved"]
@@ -1000,7 +1001,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 195/216 | 21 open |
+| Hero Ability Coverage & Markup Pipeline | 195/217 | 22 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1021,9 +1022,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **801/828 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 26 open |
+| **Total** | **801/829 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 27 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 27):** WP-831 open; WP-830 open; WP-829 open; WP-828 open; WP-827 open; WP-826 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 28):** WP-832 open; WP-831 open; WP-830 open; WP-829 open; WP-828 open; WP-827 open; WP-826 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
