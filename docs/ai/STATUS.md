@@ -31,6 +31,16 @@
 - **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches keep the old behavior. No hashed fixture plays a ca75 hero.
 - **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with Agent X-13 and Steve Rogers: Mobilize's two S.H.I.E.L.D.-only prompts (no reward unless Savior, `+1 Attack` each as a Savior) and Reassign's played-this-turn prompt that rescues a Bystander.
 
+### WP-827 / EC-865 — Flying Shield Block: any seat may reveal it, once per turn, to stop a Wound and rescue a Bystander (D-24760) (2026-10-24)
+
+**User-visible on `play.legendary-arena.com` after deploy.** When any player would gain a Wound, a seat holding Captain America (Falcon)'s Flying Shield Block may reveal it (the recipient first, then the other seats) to stop the Wound and rescue a Bystander for itself; each copy once per turn; the recipient's own Diving Block is offered first.
+
+- **Engine.** A sibling of the Diving Block interception (`moves/flyingShieldBlock.logic.ts`): its own queue and seat-choice kind, chained after a declined Diving Block, once per turn per copy reset in both turn loops. No new move.
+- **Client.** The seat-choice prompt heading "A player would gain a Wound — Flying Shield Block?".
+- **Tests.** game-engine 5672 → 5689 (+17), arena-client +1, 0 fail; eight revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; every `:check` 0. 01.6 post-mortem WP COMPLETE.
+- **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches have no Flying Shield Block hook.
+- **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with Captain America (Falcon): stop the bot's Wound from your hand, no second prompt that turn, your own Wound next turn, and a Master Strike on the bot's turn (you are asked about your Wound, then the bot's).
+
 ### WP-825 / EC-863 — co2e Stealth Assault Squad: the "another S.H.I.E.L.D. Hero that costs 1 or more" gate (D-24758) (2026-10-24)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Nick Fury's Stealth Assault Squad (co2e) gives its +2 Attack only after another S.H.I.E.L.D. Hero that costs 1 or more: the Officer (cost 3) or another costed S.H.I.E.L.D. Hero counts, the cost-0 Agent and Trooper no longer do. A failed gate logs "it needs another shield Hero that costs 1 or more played this turn".

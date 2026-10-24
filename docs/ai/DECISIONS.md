@@ -49325,4 +49325,27 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24759 (#2984). Related: D-24019 (optional-KO queue), D-24442 (in-play KO source), D-24480 (`koZones`), D-24498 (`koTeamFilter`, S.H.I.E.L.D. tokens), D-24600 (`allowDiscard`), D-24563 (triple gate), D-24628 (body team tokens), D-24398 (icon suppression), D-24464 (Savior), D-24026.
 
 ---
+
+### D-24760 — Flying Shield Block: a reactive Wound interception any seat may reveal, once per turn per copy, after the recipient's Diving Block (Active 2026-10-24 — WP-827 / EC-865)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match created after the deploy.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Captain America (Falcon)'s Flying Shield Block ("Once per turn, if a player would gain a Wound, you may reveal this card and rescue a Bystander instead.") lets any seat holding it stop any player's Wound and rescue a Bystander for itself.
+
+**Context.** The line built an empty hook. Diving Block (D-24499) is the only reactive Wound interception, and it serves only the recipient.
+
+**Decision.**
+1. **Sibling module.** `moves/flyingShieldBlock.logic.ts` mirrors `divingBlock.logic.ts` with its own runtime-only queue `G.pendingFlyingShieldBlockWounds` (`PendingFlyingShieldBlockWound { recipientID, woundCardId, candidateSeats, addressedSeat? }`) and seat-choice kind `'flying-shield-block'` (no new move). The keyword `flying-shield-block` is wound-time executed (`WOUND_TIME_EXECUTED_KEYWORDS`), with no play-time handler.
+2. **Who is asked.** Every seat with a copy it can still reveal (hand, or played this turn, D-24651): the recipient first, then the other seats in ascending order. Whoever reveals rescues the Bystander, so the order is a rule. Each wave asks a seat about one Wound; an entry waits when its next candidate is already asked this wave. The shown Wound is stamped (`addressedSeat`): the opener clears every stamp before stamping and the apply clears it on every resolve. A decline passes the Wound to its next candidate; the recipient keeps it when none is left. The disconnect default is decline; the bot always reveals.
+3. **Reveal.** The landed Wound returns to the supply and the revealer rescues the top Bystander; an empty supply still prevents the Wound, and a Wound already gone from the discard still lets the reveal rescue (both logged).
+4. **Once per turn per copy.** A revealed copy is recorded in `G.flyingShieldBlockUsedThisTurn`, deleted at turn start in `game.ts` onBegin and `applyOnBeginParity`. Not on `G.turnEconomy` (its rebuild helpers drop unknown fields, and a non-active seat's reveal is not the active player's economy).
+5. **Order with Diving Block.** `checkDivingBlock` returns `boolean`; the chokepoint offers Flying Shield Block only when Diving Block was not offered, and a declined Diving Block hands the Wound on. The Flying Shield Block wave waits while any Diving Block Wound is pending. So one Wound never has two open interceptions.
+6. **Replay-compat.** Stored matches replay from their bgio `initialState`, which holds the setup-time hooks, so pre-deploy matches carry no `flying-shield-block` hook. Both `G` fields are lazily created, so `finalStateHash` / `PRE_WP080_HASH` are unchanged. Sims, PAR and the fixture runner leave both openers unmirrored, by the existing rule.
+7. **Known gaps.** The wound-source log line (`gainWoundWithOutcome`, 12 call sites) still reports a Flying-Shield-pending Wound as gained; the reveal line that follows says it was prevented. Wounds gained to hand outside the chokepoint (Random Acts, D-24678) get no offer. The co-printed "reveal this card and Investigate instead" sibling is a follow-up.
+
+**Gates.** game-engine 5672 → 5689 (+17 / +4 suites), arena-client 2435 → 2436, 0 fail; eight revert proofs each fail their locked tests (including the live onMove opener and onBegin reset, and the stamp lookup); `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; every card / coverage `:check` 0 after regenerating the hero ledger, the effect index (+1 executable) and card-mechanics (+1). The draft had said the last two stayed current: its scaffold ran those checks before rebuilding. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-827-flying-shield-block.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24760 (#2987). Related: D-24499 (Diving Block), D-24501 (seat choice), D-24648 (no stage ride for the active seat), D-24651 (reveal from play), D-24673 (one interception per Wound), D-24678 (Random Acts), D-24518 (end-of-game drop), D-24026.
+
+---
 Protect this file.
