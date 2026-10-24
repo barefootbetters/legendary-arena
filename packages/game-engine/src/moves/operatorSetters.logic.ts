@@ -75,6 +75,8 @@ export function isOperatorChoiceOpen(G: LegendaryGameState): boolean {
   if (hasAnyPendingChoice(G)) return true;
   if (G.pendingHeroChoice !== undefined) return true;
   if ((G.pendingDivingBlockWounds?.length ?? 0) > 0) return true;
+  // why: WP-827 / D-24760 — the Flying Shield Block queue is opened the same way.
+  if ((G.pendingFlyingShieldBlockWounds?.length ?? 0) > 0) return true;
   if ((G.pendingEscapeProcedures?.length ?? 0) > 0) return true;
   // why: WP-817 / D-24750 — an owed Escape-effect discard (Primus) is opened into a seat
   // choice after the move, exactly like the escape-procedure queue above.

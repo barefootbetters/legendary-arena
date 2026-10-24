@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 803,
+    "totalRows": 804,
     "byStatus": {
-      "executable": 417,
+      "executable": 418,
       "deferred": 16,
       "condition": 49,
       "unsupported": 290,
       "unmarked": 28,
       "subsystem": 3
     },
-    "distinctMechanics": 164
+    "distinctMechanics": 165
   },
   "rows": [
     {
@@ -2515,6 +2515,22 @@
         {
           "slug": "star-spangled-hero",
           "name": "Star-Spangled Hero"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-falcon",
+      "heroName": "Captain America (Falcon)",
+      "set": "ca75",
+      "mechanic": "flying-shield-block",
+      "status": "executable",
+      "wp": "WP-827",
+      "decision": "D-24760",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#flying-shield-block",
+      "designs": [
+        {
+          "slug": "flying-shield-block",
+          "name": "Flying Shield Block"
         }
       ]
     },

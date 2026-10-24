@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1987,
+    "totalEntries": 1988,
     "byScope": {
-      "hero": 803,
+      "hero": 804,
       "villain": 728,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 590,
+      "executable": 591,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
@@ -4773,6 +4773,23 @@
         {
           "slug": "star-spangled-hero",
           "name": "Star-Spangled Hero"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-falcon",
+      "name": "Captain America (Falcon)",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "flying-shield-block",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#flying-shield-block",
+      "wp": "WP-827",
+      "decision": "D-24760",
+      "designs": [
+        {
+          "slug": "flying-shield-block",
+          "name": "Flying Shield Block"
         }
       ]
     },
@@ -29915,6 +29932,7 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
+        "flying-shield-block",
         "recruit-per-count",
         "rescue",
         "savior"

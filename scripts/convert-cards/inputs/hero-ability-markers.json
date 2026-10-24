@@ -157,6 +157,12 @@
       "cardSlug": "reassign-to-civilian-duty",
       "abilityIndex": 0,
       "markupToken": "[keyword:optional-ko-shield-played-rescue:1]"
+    },
+    {
+      "heroSlug": "captain-america-falcon",
+      "cardSlug": "flying-shield-block",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:flying-shield-block]"
     }
   ],
   "chmp": [

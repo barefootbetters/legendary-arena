@@ -31,6 +31,10 @@ import {
   DIVING_BLOCK_SEAT_CHOICE_KIND,
 } from '../moves/divingBlock.logic.js';
 import {
+  FLYING_SHIELD_BLOCK_REVEAL_OPTION_INDEX,
+  FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND,
+} from '../moves/flyingShieldBlock.logic.js';
+import {
   HERE_HOLD_THIS_KIND,
   RANDOM_ACTS_DIVING_BLOCK_OPTION_INDEX,
   RANDOM_ACTS_PASS_LEFT_KIND,
@@ -104,6 +108,11 @@ function chooseByKind(
     // why: D-24499 — revealing prevents the Wound and draws a card; it never costs
     // anything (Diving Block stays in hand), so a present player always reveals.
     return DIVING_BLOCK_REVEAL_OPTION_INDEX;
+  }
+  if (choice.kind === FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND) {
+    // why: WP-827 / D-24760 — revealing prevents a Wound (any player's) and rescues a
+    // Bystander for the bot; the card stays put, so a present bot always reveals.
+    return FLYING_SHIELD_BLOCK_REVEAL_OPTION_INDEX;
   }
   if (choice.kind === RANDOM_ACTS_WOUND_KIND) {
     // why: D-24678 — the Diving Block option exists only when the seat can reveal it,

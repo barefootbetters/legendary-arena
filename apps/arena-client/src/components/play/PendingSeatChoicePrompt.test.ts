@@ -125,6 +125,25 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
     assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Reveal Diving Block: prevent the Wound and draw a card');
   });
 
+  // why: WP-827 / D-24760 — Flying Shield Block may be about another player's Wound, so the
+  // heading names no owner and the option labels say whose Wound it is.
+  test('renders the Flying Shield Block heading for the flying-shield-block kind (WP-827)', () => {
+    const { submitMove } = recorder();
+    const flyingShieldBlockChoice: UIPendingSeatChoice = {
+      kind: 'flying-shield-block',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: {
+        'player-1': { options: [{ label: "Reveal Flying Shield Block: prevent Player 0's Wound and rescue a Bystander" }, { label: 'Let Player 0 take the Wound' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: flyingShieldBlockChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'A player would gain a Wound — Flying Shield Block?');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), "Reveal Flying Shield Block: prevent Player 0's Wound and rescue a Bystander");
+  });
+
   test('keeps the generic "Your choice" heading for a non-diving-block kind', () => {
     const { submitMove } = recorder();
     const wrapper = mount(PendingSeatChoicePrompt, {

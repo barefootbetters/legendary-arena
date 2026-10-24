@@ -11,6 +11,7 @@
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegendaryGameState } from '../types.js';
 import { checkDivingBlock, countPendingDivingBlockWounds } from '../moves/divingBlock.logic.js';
+import { checkFlyingShieldBlock } from '../moves/flyingShieldBlock.logic.js';
 
 /** Result of a gainWound operation. */
 export interface GainWoundResult {
@@ -88,7 +89,12 @@ export function gainWoundForPlayer(
   // why: WP-682 / D-24499 — the reactive interception runs AFTER the Wound landed,
   // so a reveal undoes THIS Wound (return to supply + draw). Offered to the wound
   // recipient (may be a non-active seat) via the WP-684 seat-choice wave.
-  checkDivingBlock(G, playerID, woundCardId);
+  // why: WP-827 / D-24760 — Flying Shield Block (any seat may reveal) is offered only when the
+  // recipient's own Diving Block was not; a declined Diving Block offers it then
+  // (applyDivingBlockResolvedSeatChoice), so one Wound never has two open interceptions.
+  if (!checkDivingBlock(G, playerID, woundCardId)) {
+    checkFlyingShieldBlock(G, playerID, woundCardId);
+  }
   return woundCardId;
 }
 

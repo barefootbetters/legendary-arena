@@ -38,6 +38,7 @@
     "ko-up-to-shield-hand-discard": { "wp": "WP-826", "decision": "D-24759" },
     "attack-per-ko-this-way": { "wp": "WP-826", "decision": "D-24759" },
     "optional-ko-shield-played-rescue": { "wp": "WP-826", "decision": "D-24759" },
+    "flying-shield-block": { "wp": "WP-827", "decision": "D-24760" },
     "berserk": { "wp": "WP-256", "decision": "D-24031" },
     "empowered": { "wp": "WP-267", "decision": "D-24044" },
     "gainWoundEachPlayer": { "wp": "WP-185", "decision": "D-18502" },

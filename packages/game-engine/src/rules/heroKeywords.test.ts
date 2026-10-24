@@ -62,15 +62,16 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 81 entries after WP-826 optional-KO S.H.I.E.L.D. family', () => {
+  it('HERO_KEYWORDS array has exactly 82 entries after WP-827 flying-shield-block', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      81,
-      'HERO_KEYWORDS must have exactly 81 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619) + phasing (WP-783 / D-24629) + fight-cost-reduction (WP-794 / D-24663) + spinning-cyclone (WP-795 / D-24664) + out-of-time (WP-803 / D-24692) + ko-up-to-shield-hand-discard + attack-per-ko-this-way + optional-ko-shield-played-rescue (WP-826 / D-24759))',
+      82,
+      'HERO_KEYWORDS must have exactly 82 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619) + phasing (WP-783 / D-24629) + fight-cost-reduction (WP-794 / D-24663) + spinning-cyclone (WP-795 / D-24664) + out-of-time (WP-803 / D-24692) + ko-up-to-shield-hand-discard + attack-per-ko-this-way + optional-ko-shield-played-rescue (WP-826 / D-24759) + flying-shield-block (WP-827 / D-24760))',
     );
     assert.ok(HERO_KEYWORDS.includes('ko-up-to-shield-hand-discard'), 'ko-up-to-shield-hand-discard must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('attack-per-ko-this-way'), 'attack-per-ko-this-way must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('optional-ko-shield-played-rescue'), 'optional-ko-shield-played-rescue must be in HERO_KEYWORDS array');
+    assert.ok(HERO_KEYWORDS.includes('flying-shield-block'), 'flying-shield-block must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('out-of-time'), 'out-of-time must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('fight-cost-reduction'), 'fight-cost-reduction must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('spinning-cyclone'), 'spinning-cyclone must be in HERO_KEYWORDS array');

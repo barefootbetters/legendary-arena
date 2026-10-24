@@ -1531,6 +1531,27 @@ export interface PendingDivingBlockWound {
 }
 
 /**
+ * Pending reactive Flying-Shield-Block wound-interception entry (WP-827 / D-24760).
+ *
+ * Parked at the `gainWoundForPlayer` chokepoint (or by a declined Diving Block) when any seat
+ * holds a Flying Shield Block copy it can still reveal this turn ("Once per turn, if a player
+ * would gain a Wound, you may reveal this card and rescue a Bystander instead."). The Wound
+ * has ALREADY landed in the recipient's discard; a reveal returns it to the supply and the
+ * revealing seat rescues a Bystander. Drained one wave at a time through G.pendingSeatChoice
+ * (kind 'flying-shield-block'). Runtime-only; lazily initialized at the park site.
+ */
+export interface PendingFlyingShieldBlockWound {
+  /** The player who gained the Wound (may be non-active). */
+  recipientID: string;
+  /** The just-gained Wound card (now in the recipient's discard pile) a reveal will undo. */
+  woundCardId: CardExtId;
+  /** Seats that may still be asked to reveal, ascending; a decline removes that seat. */
+  candidateSeats: string[];
+  /** The seat the open wave asked about this Wound; set by the wave-opener, cleared on apply. */
+  addressedSeat?: string;
+}
+
+/**
  * The rulebook escape procedure an escaped Villain still owes (WP-793 / D-24656).
  *
  * Rules v23 L556–L570: an escape (1) KOs an HQ Hero costing 6 or less, chosen by the
@@ -2309,6 +2330,18 @@ export interface LegendaryGameState {
   // oracles from re-pinning. Absent (undefined) or empty [] both mean "no pending Wound".
   /** FIFO queue of pending reactive Diving-Block wound interceptions awaiting resolution (WP-682). */
   pendingDivingBlockWounds?: PendingDivingBlockWound[] | undefined;
+  // why: WP-827 / D-24760 — a Wound any seat may intercept with Captain America (Falcon)'s
+  // Flying Shield Block parks one entry here (checkFlyingShieldBlock), drained one wave at a
+  // time via G.pendingSeatChoice (kind 'flying-shield-block') after the Diving Block queue.
+  // Lazily initialized at the park site, never in Game.setup, so the hash oracles hold.
+  /** FIFO queue of pending reactive Flying-Shield-Block wound interceptions (WP-827). */
+  pendingFlyingShieldBlockWounds?: PendingFlyingShieldBlockWound[] | undefined;
+  // why: WP-827 / D-24760 — "Once per turn" per copy: a Flying Shield Block copy revealed this
+  // turn is recorded here and cannot be revealed again until the next turn. Lazily set on the
+  // first reveal and deleted at turn start (game.ts onBegin + applyOnBeginParity), so a match
+  // that never reveals one carries no field.
+  /** Flying Shield Block copies revealed this turn (WP-827). */
+  flyingShieldBlockUsedThisTurn?: CardExtId[] | undefined;
   // why: WP-793 / D-24656 — every Villain escape records the rulebook HQ KO + Bystander
   // discard it owes; the play-phase turn.onMove escape opener drains the FIFO one entry at
   // a time through the WP-684 seat-choice capability (the Diving Block precedent). Optional

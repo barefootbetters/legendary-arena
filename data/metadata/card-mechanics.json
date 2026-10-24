@@ -787,6 +787,17 @@
       "hidden": true
     },
     {
+      "slug": "flying-shield-block",
+      "label": "Flying Shield Block",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "ca75/captain-america-falcon"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "focus",
       "label": "Focus",
       "scope": "hero",
@@ -2777,6 +2788,7 @@
     "ca75/captain-america-falcon": {
       "mechanics": [
         "attack-per-count",
+        "flying-shield-block",
         "recruit-per-count",
         "rescue",
         "savior"
