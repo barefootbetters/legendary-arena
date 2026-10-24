@@ -49180,7 +49180,7 @@ Protect this file.
 
 ### D-24756 — Brainwash the Military: 12 S.H.I.E.L.D. Officers are converted Villains (3 + the Traitor Battalion), gained as a Hero on defeat; Twists are numbered from the stack; Evil Wins at 5 escaped Officers (Active 2026-10-23 — WP-823 / EC-861)
 
-**Status:** Active 2026-10-23. Live-verify (D-24026) operator-pending post-deploy.
+**Status:** Active 2026-10-23. Live-verify (D-24026) PASS 2026-10-24: seated 2-player operator match `1oDjFITY7nP` (Jeff + a Competent bot ally; server `37c57162`, client `37c5716`; Red Skull, HYDRA + Masters of Evil (WWII), Sentinel); every rule observed live, evidence in STATUS.md. An earlier attempt, `kDC_g7_GRO-`, ran on the pre-merge server `4beb7ce5` and is the pre-fix baseline (no Officers, the twist-7 proxy loss).
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). A Brainwash the Military match puts 12 S.H.I.E.L.D. Officers into the Villain Deck. A revealed Officer fights you as a Villain with Attack 3 plus the Twists stacked next to the Scheme; defeating one puts a S.H.I.E.L.D. Officer in your discard. Twists 1-6 grow the Traitor Battalion and play another card; Twist 7 makes every Officer in the City escape; five escaped Officers lose the game. The danger meter reads "Officers N/5".
 
