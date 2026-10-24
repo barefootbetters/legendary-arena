@@ -10,6 +10,17 @@
 
 ## Current State
 
+### WP-824 / EC-862 — Cap 75th count-scaled hero lines: two Savior lines per Hero Class, Paramilitary Ops per costed S.H.I.E.L.D. Hero (D-24757) (2026-10-23)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Three Cap 75th hero lines now grant what they print. International Strike Force line 2 gives a Savior +1 Attack per Hero Class they have (hand + play), not a flat +1. Star-Spangled Hero line 2 gives a Savior +2 Recruit per Hero Class, not a flat +2. Paramilitary Ops gives +1 Attack per other S.H.I.E.L.D. Hero played this turn that costs 1 or more: the cost-3 Officer counts, the cost-0 Agent and Trooper never do (before, one starter unlocked a flat +1).
+
+- **Engine.** New count source `shield-heroes-cost-one-plus-played-this-turn` (counter, explain collector and log label in lockstep; `HERO_COUNT_SOURCES` 16 → 17). No parser change: the Savior condition already composes with a per-count marker on one hook.
+- **Card data.** Three curated markers in `hero-ability-markers.json`; `data/cards/ca75.json` regenerated (3 lines). The two ca75 Savior deferrals in `check-hero-count-markers.mjs` are gone.
+- **Tests.** game-engine 5649 → 5662 (+13), 0 fail; the new real-data tests fail 7 of 10 on the baseline card data; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; dashboard 584 / 0, typecheck 0. Regenerated: hero ledger, effect index, card-mechanics, runtime-observed feed (7794 → 7793), with the dashboard totalObs pin 8715 → 8714.
+- **Replay-compat.** A stored match that played one of these cards replays to a different total from that play on. No hashed fixture plays a ca75 hero.
+- **Follow-up.** co2e Nick Fury Stealth Assault Squad has the same starter-unlocks-it defect as a flat gate (D-24757 §5).
+- **Live-verify (D-24026): pending deploy.** 2-player operator match with the three heroes: each Savior line scales with 3 Bystanders and grants nothing with 2; Paramilitary Ops shows `count 0` after only starters and `+2` after an Officer and another costed S.H.I.E.L.D. Hero.
+
 ### WP-741 / EC-778 — Doubled Superpower icons need that many OTHER matching cards (D-24563) (2026-10-23)
 
 **User-visible on `play.legendary-arena.com` after deploy.** A Superpower whose printed icon prefix repeats an icon now needs that many other cards played this turn bearing it, as the rulebook's "Critical Hit" rule prints (v23 L683-696). Bishop's Concussive Blast (`[hc:ranged][hc:ranged]: +3`) needs two other Ranged Heroes, not one; Agent X-13's Sniper Squad needs four other S.H.I.E.L.D. cards; Cosmic Energies needs two Strength and two Ranged. A failed gate says "it needs 2 other ranged Heroes played this turn". 35 lines across 34 hero decks change; no Core card does.
