@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 79,
-    "totalObservations": 7834,
+    "totalObservations": 7794,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7313
+      "parse-unrecognized": 7273
     }
   },
   "byMechanic": {
@@ -263,12 +263,12 @@
       ]
     },
     "attack-no-magnitude": {
-      "hitCount": 416,
+      "hitCount": 413,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 416
+        "parse-unrecognized": 413
       },
       "examples": [
         {
@@ -345,12 +345,12 @@
       ]
     },
     "bridge-conqueror": {
-      "hitCount": 13,
-      "lastSeenTurn": 27,
+      "hitCount": 14,
+      "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 13
+        "parse-unrecognized": 14
       },
       "examples": [
         {
@@ -550,14 +550,20 @@
       ]
     },
     "conqueror": {
-      "hitCount": 41,
+      "hitCount": 43,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 41
+        "parse-unrecognized": 43
       },
       "examples": [
+        {
+          "cardId": "anni/super-skrull/rock-solid#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
         {
           "cardId": "anni/super-skrull/rock-solid#1",
           "cardType": "hero",
@@ -572,12 +578,6 @@
         },
         {
           "cardId": "anni/super-skrull/rock-solid#2",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "anni/super-skrull/rock-solid#3",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1140,12 +1140,12 @@
       ]
     },
     "focus": {
-      "hitCount": 928,
+      "hitCount": 926,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 928
+        "parse-unrecognized": 926
       },
       "examples": [
         {
@@ -1181,12 +1181,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 487,
+      "hitCount": 454,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 487
+        "parse-unrecognized": 454
       },
       "examples": [
         {
@@ -1527,7 +1527,7 @@
     },
     "man-out-of-time": {
       "hitCount": 13,
-      "lastSeenTurn": 23,
+      "lastSeenTurn": 24,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -1895,12 +1895,12 @@
       ]
     },
     "recruit-no-magnitude": {
-      "hitCount": 419,
+      "hitCount": 415,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 419
+        "parse-unrecognized": 415
       },
       "examples": [
         {
@@ -2573,12 +2573,12 @@
       ]
     },
     "teleport": {
-      "hitCount": 207,
+      "hitCount": 206,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 207
+        "parse-unrecognized": 206
       },
       "examples": [
         {

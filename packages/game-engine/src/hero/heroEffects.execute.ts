@@ -32,7 +32,6 @@ import type { EffectNode } from '../rules/effectPrimitive.types.js';
 import type { RevealRule, RevealAction, RevealPredicate, RevealActionKind } from '../rules/revealRule.js';
 import {
   evaluateAllConditions,
-  countOtherInPlayMatchingCondition,
   findFailedCondition,
   describeFailedCondition,
 } from './heroConditions.evaluate.js';
@@ -5930,20 +5929,20 @@ function runDigestIndigestionBranch(
 }
 
 /**
- * Decides whether a 'digest-indigestion' effect's "Instead … both" upgrade holds (WP-740 / D-24562).
+ * Decides whether a fused effect's "Instead … both" upgrade holds (WP-740 / D-24562, D-24563).
  *
- * No bothCondition → false. A bothConditionCount above 1 (a doubled "[team:X][team:X]" line) needs
- * that many OTHER in-play cards matching the condition — the rulebook's "Critical Hit" two-icon rule.
- * Otherwise (absent / 1, the Core-4) the D-24555 any-one-other evaluateAllConditions path is used.
+ * No bothCondition → false. Otherwise the condition goes through evaluateAllConditions, which is
+ * count-aware: a doubled "[team:X][team:X]" line arrives as one bothCondition carrying
+ * requiredMatches, so it needs that many OTHER played-this-turn cards matching it (the rulebook's
+ * "Critical Hit" rule), while a single-icon line (the Core-4) needs one.
  *
- * why: the count gate is scoped to digest-indigestion on purpose — evaluateCondition /
- * evaluateAllConditions (and every other doubled-icon card's gating) are deliberately untouched;
- * the repo-wide doubled-icon under-gate is a separate follow-up (D-24562 lock 4).
+ * why: D-24563 — the count now rides bothCondition.requiredMatches and the general evaluator
+ * enforces it, so the old WP-740 descriptor count field and its digest-only branch are retired.
  *
  * @param G - Game state (read-only here).
  * @param playerID - Active player ID.
  * @param cardId - The played card; excluded from the count by exact instance id.
- * @param effect - The 'digest-indigestion' descriptor.
+ * @param effect - The 'digest-indigestion' or 'day-night-both' descriptor.
  * @returns Whether both branches should run.
  */
 function isDigestBothConditionMet(
@@ -5952,14 +5951,7 @@ function isDigestBothConditionMet(
   cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): boolean {
-  if (effect.bothCondition === undefined) {
-    return false;
-  }
-  if (effect.bothConditionCount !== undefined && effect.bothConditionCount > 1) {
-    const matchCount = countOtherInPlayMatchingCondition(G, playerID, effect.bothCondition, cardId);
-    return matchCount >= effect.bothConditionCount;
-  }
-  return evaluateAllConditions(G, playerID, [effect.bothCondition], cardId);
+  return effect.bothCondition !== undefined && evaluateAllConditions(G, playerID, [effect.bothCondition], cardId);
 }
 
 /**
@@ -5976,7 +5968,7 @@ function isDigestBothConditionMet(
  * @param ctx - Context, forwarded to each branch effect's handler.
  * @param playerID - Active player ID.
  * @param cardId - The played hero card's CardExtId.
- * @param effect - The 'digest-indigestion' descriptor { digestThreshold, digestEffects, indigestionEffects?, bothCondition?, bothConditionCount? }.
+ * @param effect - The 'digest-indigestion' descriptor { digestThreshold, digestEffects, indigestionEffects?, bothCondition? }.
  * @returns void.
  */
 function heroEffectDigestIndigestion(
@@ -6098,14 +6090,15 @@ function heroEffectBloodFrenzyRecruit(
  *
  * // why: the digest-indigestion composite precedent (D-24555). HeroCondition has no OR, so the
  * three printed lines cannot be separate hooks without double-firing a branch under the upgrade;
- * the upgrade check reuses isDigestBothConditionMet, whose bothConditionCount path handles
- * Nanite's four [team:x-men] (WP-740 / D-24562). Day/night is read here, as the hook resolves.
+ * the upgrade check reuses isDigestBothConditionMet. Nanite's four [team:x-men] arrive as one
+ * bothCondition carrying requiredMatches 4, which the evaluator enforces (D-24563). Day/night is
+ * read here, as the hook resolves.
  *
  * @param G - Game state (mutated by the dispatched branch effects).
  * @param ctx - Context, forwarded to each branch effect's handler.
  * @param playerID - Active player ID.
  * @param cardId - The played hero card's CardExtId.
- * @param effect - The 'day-night-both' descriptor { sunlightEffects, moonlightEffects, bothCondition?, bothConditionCount? }.
+ * @param effect - The 'day-night-both' descriptor { sunlightEffects, moonlightEffects, bothCondition? }.
  * @returns void.
  */
 function heroEffectDayNightBoth(

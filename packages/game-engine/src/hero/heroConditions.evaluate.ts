@@ -107,47 +107,19 @@ export function evaluateCondition(
   }
 
   switch (condition.type) {
-    case 'heroClassMatch': {
-      // why: self is excluded from scan — a card's own class does not satisfy
-      // its own superpower. The physical card game rule requires *another*
-      // card of the same class to have been played this turn.
-      if (!G.cardTraits) {
-        return false;
-      }
-
-      // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-      for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
-        if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
-          continue;
-        }
-        // why: D-24074 — an in-play Size-Changing card counts as each of its effective classes (printed plus granted), via the shared cardHasClassWhenPlayed helper
-        if (cardHasClassWhenPlayed(G, playedCardId as CardExtId, condition.value)) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
+    case 'heroClassMatch':
     case 'requiresTeam': {
-      // why: self is excluded from scan — a card's own team does not satisfy
-      // its own superpower. Same self-exclusion logic as heroClassMatch.
-      if (!G.cardTraits) {
-        return false;
-      }
-
-      // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-      for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
-        if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
-          continue;
-        }
-        // why: D-24391 — an in-play card counts as its printed team OR any team granted by Copy Powers (cardCopiedTeams). why (Jeff feedback): via cardCountsAsTeamMember, so a requiresTeam 'shield' gate also counts the teamless basic S.H.I.E.L.D. tokens (Officer/Agent/Trooper), matching the KO/Undercover carve-out. Mirrors heroClassMatch routing through cardHasClassWhenPlayed; the self-exclusion loop above is preserved.
-        if (cardCountsAsTeamMember(G, playedCardId as CardExtId, condition.value)) {
-          return true;
-        }
-      }
-
-      return false;
+      // why: self is excluded from the count — a card's own class or team does not satisfy its
+      // own superpower; the rule requires *another* matching card played this turn.
+      // why: D-24563 — counted through the shared countOtherInPlayMatchingCondition helper, so a
+      // repeated prefix icon ("[hc:ranged][hc:ranged]:", requiredMatches 2) needs that many OTHER
+      // matching cards. Distinct conditions are counted independently, so a multiclass card counts
+      // toward each one it matches. The helper reads playedCardIdsThisTurn, so a card set aside
+      // Out of Time earlier this turn still counts (rules v23 L3443-3446).
+      return (
+        countOtherInPlayMatchingCondition(G, playerID, condition, triggeringCardId) >=
+        effectiveRequiredMatches(condition)
+      );
     }
 
     case 'requiresKeyword': {
@@ -440,14 +412,32 @@ export function evaluateCondition(
 // ---------------------------------------------------------------------------
 
 /**
- * Counts the OTHER cards in the player's play area that satisfy one condition.
+ * Returns how many OTHER matching cards a condition requires (D-24563).
  *
- * WP-740 / D-24562 — the counting primitive behind a doubled "both" line such as
- * "[team:venomverse][team:venomverse]" (the rulebook's "Critical Hit" two-icon rule needs two
- * OTHER matching cards; evaluateCondition answers only "at least one"). Uses the same membership
- * helpers as evaluateCondition (cardCountsAsTeamMember / cardHasClassWhenPlayed), so Copy-Powers
- * teams and Size-Changing classes count identically. Only heroClassMatch and requiresTeam are
- * countable; any other type returns 0 (fails closed).
+ * `requiredMatches` when it is an integer above 1, else 1 — so an absent, 1, 0 or non-integer
+ * value behaves exactly like a plain single-icon gate.
+ *
+ * @param condition - The condition being evaluated or described.
+ * @returns The effective required count (always at least 1).
+ */
+function effectiveRequiredMatches(condition: HeroCondition): number {
+  const requiredMatches = condition.requiredMatches;
+  if (typeof requiredMatches === 'number' && Number.isInteger(requiredMatches) && requiredMatches > 1) {
+    return requiredMatches;
+  }
+  return 1;
+}
+
+/**
+ * Counts the OTHER cards the player played this turn that satisfy one condition.
+ *
+ * WP-740 / D-24562 introduced it for a doubled "both" line; since D-24563 it is the counting
+ * primitive behind every heroClassMatch / requiresTeam gate — evaluateCondition calls it and
+ * compares the count with the condition's requiredMatches (the rulebook's "Critical Hit" rule:
+ * a repeated icon needs that many OTHER matching cards). Uses the shared membership helpers
+ * (cardCountsAsTeamMember / cardHasClassWhenPlayed), so Copy-Powers teams, dual classes,
+ * Size-Changing classes and the teamless basic S.H.I.E.L.D. tokens count identically. Only
+ * heroClassMatch and requiresTeam are countable; any other type returns 0 (fails closed).
  *
  * why: this deliberately duplicates the module-private played-this-turn counters in
  * heroCountSource.resolve.ts (duplicate-first, 00.6 Rule 1) — those are count sources for
@@ -456,15 +446,16 @@ export function evaluateCondition(
  * @param G - Current game state (read-only).
  * @param playerID - Active player ID.
  * @param condition - The condition each counted card must satisfy.
- * @param triggeringCardId - The card being evaluated; skipped by exact instance id, so a
- *   second copy of the same card (a different #N) still counts.
- * @returns The number of other in-play cards that satisfy the condition.
+ * @param triggeringCardId - Optional: the card being evaluated, skipped by exact instance id,
+ *   so a second copy of the same card (a different #N) still counts. When undefined, nothing
+ *   is skipped.
+ * @returns The number of other played-this-turn cards that satisfy the condition.
  */
 export function countOtherInPlayMatchingCondition(
   G: LegendaryGameState,
   playerID: string,
   condition: HeroCondition,
-  triggeringCardId: CardExtId,
+  triggeringCardId?: CardExtId,
 ): number {
   const playerZones = G.playerZones[playerID];
   // why: cardHasClassWhenPlayed dereferences G.cardTraits[cardId] unguarded, so a missing
@@ -478,7 +469,7 @@ export function countOtherInPlayMatchingCondition(
   let matchCount = 0;
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
-    if (playedCardId === triggeringCardId) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
     const cardId = playedCardId as CardExtId;
@@ -798,10 +789,14 @@ export function describeFailedCondition(
 ): string {
   switch (condition.type) {
     case 'heroClassMatch':
+    case 'requiresTeam': {
+      // why: D-24563 — a repeated prefix icon names its count; the single-icon wording is unchanged.
+      const requiredMatches = effectiveRequiredMatches(condition);
+      if (requiredMatches > 1) {
+        return `it needs ${requiredMatches} other ${condition.value} Heroes played this turn`;
+      }
       return `it needs another ${condition.value} Hero played this turn`;
-
-    case 'requiresTeam':
-      return `it needs another ${condition.value} Hero played this turn`;
+    }
 
     case 'requiresKeyword':
       return `it needs another ${condition.value} card played this turn`;

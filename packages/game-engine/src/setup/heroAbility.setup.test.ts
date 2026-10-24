@@ -1770,7 +1770,7 @@ describe('buildHeroAbilityHooks — Sunlight / Moonlight (WP-765 / D-24598)', ()
     }]);
   });
 
-  it('Nanite Shapeshifter fuses with bothConditionCount 4 from its four [team:x-men] tokens', () => {
+  it('Nanite Shapeshifter fuses with bothCondition.requiredMatches 4 from its four [team:x-men] tokens (D-24563)', () => {
     const hooks = buildDayNightCardHooks('nmut', 'warlock', 'nanite-shapeshifter', DAY_NIGHT_LINES.naniteShapeshifter);
     assert.equal(hooks.length, 1);
     const effect = hooks[0]!.effects![0]!;
@@ -1779,8 +1779,7 @@ describe('buildHeroAbilityHooks — Sunlight / Moonlight (WP-765 / D-24598)', ()
     assert.equal(effect.moonlightEffects!.length, 2);
     assert.ok(effect.moonlightEffects!.some((branch) => branch.type === 'recruit' && branch.magnitude === 3));
     assert.ok(effect.moonlightEffects!.some((branch) => branch.type === 'attack' && branch.magnitude === 3));
-    assert.deepStrictEqual(effect.bothCondition, { type: 'requiresTeam', value: 'x-men' });
-    assert.equal(effect.bothConditionCount, 4);
+    assert.deepStrictEqual(effect.bothCondition, { type: 'requiresTeam', value: 'x-men', requiredMatches: 4 });
   });
 
   it('a non-allowlisted card with the same text shape is NOT fused (the allowlist gates the fusion)', () => {
@@ -2313,5 +2312,81 @@ describe('buildHeroAbilityHooks — Man / Woman Out of Time (WP-803 / D-24692)',
     const gatedGrantLine = parseOneOutOfTimeLine('[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn.');
     assert.equal(gatedGrantLine.keywords.includes('out-of-time'), false);
     assert.deepEqual(gatedGrantLine.unresolvedMarkers, ['man-out-of-time']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Repeated leading-prefix icons collapse to one counted condition (WP-741 / D-24563)
+// ---------------------------------------------------------------------------
+
+/** Builds the single hook of a one-line test card and returns its conditions. */
+function parseOneLineConditions(line: string) {
+  const hooks = buildHeroAbilityHooks(
+    makeRegistry('test', 'doubled-icon-hero', [{ slug: 'doubled-icon-card', abilities: [line] }]),
+    makeConfig('test/doubled-icon-hero'),
+  );
+  assert.equal(hooks.length, 1, `one hook for: ${line}`);
+  return hooks[0]!.conditions;
+}
+
+describe('buildHeroAbilityHooks — repeated leading-prefix icons (WP-741 / D-24563)', () => {
+  // why: each row is a full printed line from data/cards (dkcy Bishop, core Iron Man, shld
+  // Victoria Hand, ssw1 Captain Marvel, msis Bruce Banner, 2099 Ghost Rider 2099, vnom Venompool,
+  // nmut Warlock), the WP-741 §Contract parse-examples table.
+  it('[hc:ranged][hc:ranged] → one ranged condition needing 2 (Concussive Blast)', () => {
+    assert.deepEqual(parseOneLineConditions('[hc:ranged][hc:ranged]: You get +3[icon:attack].'), [
+      { type: 'heroClassMatch', value: 'ranged', requiredMatches: 2 },
+    ]);
+  });
+
+  it('a mid-sentence repeat stays two plain conditions (Arc Reactor)', () => {
+    assert.deepEqual(
+      parseOneLineConditions(
+        '[hc:tech]: You get +1[icon:attack] for each other[hc:tech] Hero you played this turn. [keyword:attack-per-count:tech-heroes-played-this-turn:1]',
+      ),
+      [{ type: 'heroClassMatch', value: 'tech' }, { type: 'heroClassMatch', value: 'tech' }],
+    );
+  });
+
+  it('three [team:shield] prefix tokens → one shield condition needing 3; the body token stays dropped (Victoria Hand)', () => {
+    assert.deepEqual(
+      parseOneLineConditions(
+        '[team:shield][team:shield][team:shield]: You may send this Hero or a [team:shield] Hero from your hand [keyword:Undercover].',
+      ),
+      [{ type: 'requiresTeam', value: 'shield', requiredMatches: 3 }],
+    );
+  });
+
+  it('a doubled mixed prefix counts each icon independently (Cosmic Energies)', () => {
+    assert.deepEqual(parseOneLineConditions('[hc:strength][hc:strength][hc:ranged][hc:ranged]: You get +6[icon:attack].'), [
+      { type: 'heroClassMatch', value: 'strength', requiredMatches: 2 },
+      { type: 'heroClassMatch', value: 'ranged', requiredMatches: 2 },
+    ]);
+  });
+
+  it('a distinct mixed pair is unchanged (Brains and Brawn)', () => {
+    assert.deepEqual(parseOneLineConditions('[hc:tech][hc:strength]: You get +2[icon:attack].'), [
+      { type: 'heroClassMatch', value: 'tech' },
+      { type: 'heroClassMatch', value: 'strength' },
+    ]);
+  });
+
+  it('a keyword-led repeat is not a leading prefix and stays two plain conditions (Cyber-Mod)', () => {
+    assert.deepEqual(parseOneLineConditions('[keyword:Cyber-Mod][hc:tech][hc:tech]: Draw a card.'), [
+      { type: 'heroClassMatch', value: 'tech' },
+      { type: 'heroClassMatch', value: 'tech' },
+    ]);
+  });
+
+  it('a doubled Venomverse "both" line → one condition needing 2 (Play to the Crowd)', () => {
+    assert.deepEqual(parseOneLineConditions('[team:venomverse][team:venomverse]: Instead, do both (in order).'), [
+      { type: 'requiresTeam', value: 'venomverse', requiredMatches: 2 },
+    ]);
+  });
+
+  it('four [team:x-men] tokens → one condition needing 4 (Nanite Shapeshifter)', () => {
+    assert.deepEqual(parseOneLineConditions('[team:x-men][team:x-men][team:x-men][team:x-men]: Instead, you get both.'), [
+      { type: 'requiresTeam', value: 'x-men', requiredMatches: 4 },
+    ]);
   });
 });

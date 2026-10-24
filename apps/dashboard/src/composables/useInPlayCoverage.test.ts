@@ -576,8 +576,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // a mechanic resolves only when every card using it does. transform (142) + empowered (2)
   // leave resolvedObs: 1235 -> 1091; totalObs unchanged at 8755; percentResolved 14.1 -> 12.5.
   // Nothing became unimplemented — the gauge stopped crediting the 13 transform cards that are not.
+  // 2026-10-23 (WP-741 / D-24563, re-pin): a repeated leading-prefix icon now needs that many
+  // OTHER matching cards, so doubled-gate lines fire less often in the sweep (feed regenerated:
+  // 7834 -> 7794 raw observations, 79 mechanics, 0 dropped). totalObs 8755 -> 8715 (-40, equal to
+  // the raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.5 (1091 / 8715). A
+  // sweep-trajectory + denominator re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8755);
+  assert.equal(view.totalObs.value, 8715);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.5);
   assert.ok(view.remaining.value.length > 0);

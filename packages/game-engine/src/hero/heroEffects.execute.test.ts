@@ -8012,8 +8012,7 @@ describe('play-to-the-crowd digest-indigestion (WP-740 / D-24562)', () => {
         digestThreshold: 7,
         digestEffects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'victory-bystanders', perEach: 2 }],
         indigestionEffects: [{ type: 'rescue', magnitude: 2 }],
-        bothCondition: { type: 'requiresTeam', value: 'venomverse' },
-        bothConditionCount: 2,
+        bothCondition: { type: 'requiresTeam', value: 'venomverse', requiredMatches: 2 },
       }],
     };
   }
