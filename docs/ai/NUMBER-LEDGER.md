@@ -471,6 +471,7 @@ high-water: 422
 - WP-830 — enigma-code (Cap 75th scheme The Unbreakable Enigma Code: Twists 1-5 put a Hero Deck card face down into the Enigma Code; after a Villain fight you may pay 1 Recruit to look at one; before a Mastermind fight you guess each card's color, and a wrong guess ends your turn and re-mixes the code. reserved 2026-10-24, claude/reserve-wp830-enigma-code)
 - WP-831 — variable-city-size (the City becomes a 1-6 space array instead of a fixed five-space tuple: every five-space assumption in the engine reads the current size, spaces past the edge do not exist, extra spaces are unnamed, the HQ stays five; the client renders missing and extra spaces with the HQ aligned; byte-identical at five spaces. reserved 2026-10-24, claude/reserve-wp831-wp832-wwii)
 - WP-832 — change-the-outcome-of-wwii (Cap 75th scheme Change the Outcome of WWII: an extra Villain Group; each Twist returns the City's Villains and Bystanders to the bottom of the Villain Deck, resizes the City to the next country's spaces and plays 2 cards; an escape in a country stacks a conquered capital; Evil wins at 3. reserved 2026-10-24, claude/reserve-wp831-wp832-wwii)
+- WP-833 — extra-villain-group (the printed "Add an extra Villain Group" setup requirement, starting with Change the Outcome of WWII: the scheme requires one more Villain Group than the player count, enforced and surfaced wherever the Hero and Henchman requirement increases already are. reserved 2026-10-24, claude/reserve-wp833-extra-villain-group)
 
 ## EC
 
@@ -904,6 +905,7 @@ high-water: 457
 - EC-868 — enigma-code (WP-830. reserved 2026-10-24, claude/reserve-wp830-enigma-code)
 - EC-869 — variable-city-size (WP-831. reserved 2026-10-24, claude/reserve-wp831-wp832-wwii)
 - EC-870 — change-the-outcome-of-wwii (WP-832. reserved 2026-10-24, claude/reserve-wp831-wp832-wwii)
+- EC-871 — extra-villain-group (WP-833. reserved 2026-10-24, claude/reserve-wp833-extra-villain-group)
 
 ## D
 
@@ -1447,3 +1449,4 @@ section below) and the allocation protocol in
 - D-24763 — enigma-code (WP-830; the face-down Enigma Code built from the Hero Deck by Twists 1-5, the pay-1-Recruit peek offered after a Villain fight and known only to the peeking player, and the color guess that gates a Mastermind fight: a wrong guess ends the turn and re-mixes the code. reserved 2026-10-24, claude/reserve-wp830-enigma-code)
 - D-24764 — variable-city-size (WP-831; the City as a variable-length array of 1-6 spaces, names by index for the first five, unnamed spaces beyond, the HQ unchanged at five, and the client layout for missing and extra spaces. reserved 2026-10-24, claude/reserve-wp831-wp832-wwii)
 - D-24765 — change-the-outcome-of-wwii (WP-832; the extra Villain Group requirement, the country Twist (return the City to the Villain Deck bottom, resize, play 2), conquered capitals from an escape per country, and the 3-capital loss replacing the Twist-7 false loss. reserved 2026-10-24, claude/reserve-wp831-wp832-wwii)
+- D-24766 — extra-villain-group (WP-833; a scheme-keyed Villain Group requirement increase, mirroring the extra Henchman Group rule, across setup validation, the loadout builders and the match gate. reserved 2026-10-24, claude/reserve-wp833-extra-villain-group)
