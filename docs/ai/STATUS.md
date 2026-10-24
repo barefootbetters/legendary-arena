@@ -17,9 +17,9 @@
 - **Engine.** New count source `shield-heroes-cost-one-plus-played-this-turn` (counter, explain collector and log label in lockstep; `HERO_COUNT_SOURCES` 16 → 17). No parser change: the Savior condition already composes with a per-count marker on one hook.
 - **Card data.** Three curated markers in `hero-ability-markers.json`; `data/cards/ca75.json` regenerated (3 lines). The two ca75 Savior deferrals in `check-hero-count-markers.mjs` are gone.
 - **Tests.** game-engine 5649 → 5662 (+13), 0 fail; the new real-data tests fail 7 of 10 on the baseline card data; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; dashboard 584 / 0, typecheck 0. Regenerated: hero ledger, effect index, card-mechanics, runtime-observed feed (7794 → 7793), with the dashboard totalObs pin 8715 → 8714.
-- **Replay-compat.** A stored match that played one of these cards replays to a different total from that play on. No hashed fixture plays a ca75 hero.
+- **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches play and replay with the old flat grants; only matches created after the deploy scale. No hashed fixture plays a ca75 hero.
 - **Follow-up.** co2e Nick Fury Stealth Assault Squad has the same starter-unlocks-it defect as a flat gate (D-24757 §5).
-- **Live-verify (D-24026): pending deploy.** 2-player operator match with the three heroes: each Savior line scales with 3 Bystanders and grants nothing with 2; Paramilitary Ops shows `count 0` after only starters and `+2` after an Officer and another costed S.H.I.E.L.D. Hero.
+- **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy, with the three heroes: each Savior line scales with 3 Bystanders and grants nothing with 2; Paramilitary Ops shows `count 0` after only starters and `+2` after an Officer and another costed S.H.I.E.L.D. Hero.
 
 ### WP-741 / EC-778 — Doubled Superpower icons need that many OTHER matching cards (D-24563) (2026-10-23)
 

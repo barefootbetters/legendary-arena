@@ -193,7 +193,7 @@ Real-data cases (`ca75CountScaledHeroLines.test.ts`) build hooks from `data/card
 **Determinism preservation:**
 - The resolver is a pure read of `G`. No new randomness.
 - The hooks change only for three ca75 lines. `finalStateHash` / `PRE_WP080_HASH` fixtures play no ca75 hero (the scaffold's full engine run is the evidence; a moved hash is a STOP).
-- **Replay compat:** a stored match that played one of these cards replays to a different Attack / Recruit total from that play onward (the rule changed). That is the intended correction. No stored-match migration.
+- **Replay compat:** a stored match replays from its bgio `initialState`, which holds its setup-time hooks, so a pre-deploy match keeps the flat grants and replays identically (corrected at govern-close; the drafted text said the opposite). Only matches created after the deploy carry the per-count grants. No stored-match migration.
 - The fixed-seed runtime-observed sweep shifts by one observation (§Scaffold). It is a coverage feed, not a hash gate, and it is regenerated in this packet.
 
 ## Funding Surface Gate
