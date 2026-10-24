@@ -16,6 +16,9 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
+// why: WP-823 / D-24756 — a defeated Brainwash the Military Officer is gained as the
+// fungible S.H.I.E.L.D. Officer token.
+import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
 import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit } from '../economy/economy.logic.js';
@@ -537,12 +540,27 @@ export function defeatCityVillainCore(
   // the fightResolved narrative (composed after the origin overlay is cleared) can
   // announce the gain in the center-screen overlay, not only in the durable log.
   let skrullGained = false;
+  let officerGained = false;
   if (G.convertedVillainOrigins?.[cardId] === 'skrull') {
     skrullGained = true;
     G.playerZones[currentPlayer]!.discard.push(cardId);
     delete G.convertedVillainOrigins[cardId];
     pushLog(G,
       `Player ${currentPlayer} defeated the Skrull ${formatCardRef(G.cardDisplayData, cardId)} and gained the Hero into their discard pile.`,
+    );
+  } else if (G.convertedVillainOrigins?.[cardId] === 'shield-officer') {
+    // why: WP-823 / D-24756 — Brainwash the Military "When you defeat a S.H.I.E.L.D.
+    // Officer, gain it as a Hero." Every Officer is identical, and the engine holds an
+    // Officer Hero as the fungible SHIELD_OFFICER_EXT_ID token, which already carries
+    // its stats, team, display and the invariant exemption. So the instance leaves play
+    // and the token goes to the defeater's discard. It is the same card, so nothing is
+    // drawn from G.piles.officers, and it never enters the Victory Pile (it scores as no
+    // Villain or Bystander, and Savior never counts it).
+    officerGained = true;
+    G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
+    delete G.convertedVillainOrigins[cardId];
+    pushLog(G,
+      `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`,
     );
   } else {
     G.playerZones[currentPlayer]!.victory.push(cardId);
@@ -661,7 +679,9 @@ export function defeatCityVillainCore(
       resolvedFightResults,
       // why: WP-518 / D-24331 — announce the Secret Invasion Skrull gain in the
       // overlay; false for every ordinary villain defeat (byte-identical narrative).
-      skrullGained,
+      // WP-823 / D-24756: a Brainwash the Military Officer gained as a Hero shares the
+      // same "gained the Hero" clause.
+      skrullGained || officerGained,
     ),
   });
 

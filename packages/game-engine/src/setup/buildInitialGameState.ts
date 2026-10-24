@@ -41,6 +41,10 @@ import {
   resolveEffectiveVillainGroupIds,
   splitMonsterPitFromVillainDeck,
 } from '../rules/clashMonsterPit.logic.js';
+import {
+  applyBrainwashedOfficerDisplay,
+  countBrainwashedOfficers,
+} from '../rules/brainwashTheMilitary.logic.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import {
   resolveSchemeLossPileSetupSize,
@@ -377,6 +381,15 @@ export function buildInitialGameState(
   };
   const villainDeckResult = buildVillainDeck(villainBuildConfig, registry, context);
 
+  // why: WP-823 / D-24756 — Brainwash the Military's 12 Officers come from the
+  // S.H.I.E.L.D. Officer Stack, so the Stack starts that many cards smaller. The
+  // tokens are identical and the Stack's shuffle already ran, so this slice draws
+  // nothing at random. 0 (no write) for every other scheme.
+  const brainwashedOfficerCount = countBrainwashedOfficers(villainDeckResult.convertedOrigins);
+  if (brainwashedOfficerCount > 0) {
+    piles.officers = piles.officers.slice(brainwashedOfficerCount);
+  }
+
   // why: WP-513 — the Killbots "twists next to this Scheme" counter (D-24325) is
   // seeded at 3 (the card's "3 additional Twists next to this Scheme" placed at
   // setup) and drives every Killbot's attack. hasKillbots is decided by
@@ -496,6 +509,9 @@ export function buildInitialGameState(
   // log, City card and Victory Pile name them as the Villains they are. A no-op for every
   // scheme without Killbots.
   applyKillbotDisplayNames(cardDisplayData, villainDeckResult.convertedOrigins);
+  // why: WP-823 / D-24756 — each Brainwash the Military Officer displays as a
+  // S.H.I.E.L.D. Officer (name and art). A no-op for every scheme without Officers.
+  applyBrainwashedOfficerDisplay(cardDisplayData, villainDeckResult.convertedOrigins);
 
   // why: WP-111 / EC-118 / PS-8 — setup-time diagnostic surface for missing
   // display entries. Preserves WP-028 D-2801 projection-purity contract:

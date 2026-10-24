@@ -20,6 +20,10 @@ import type { LegendaryGameState } from '../types.js';
 // why: WP-513 / D-24325 — value import for the Killbots per-scheme twist counter key.
 // why: WP-539 / D-24348 — DARK_PORTAL_COUNT drives the Portals Dark-Portal buffs.
 import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
+// why: WP-823 / D-24756 — the Traitor Battalion counter and the Officer base Attack
+// drive a Brainwash the Military Officer's fight cost.
+import { TRAITOR_BATTALION_TWISTS } from '../types.js';
+import { BRAINWASHED_OFFICER_BASE_ATTACK } from '../rules/brainwashTheMilitary.logic.js';
 // why: WP-728 / D-24549 — the fixed City space count bounds the Dark-Portal
 // location scan; CITY_SPACE_NAMES is the single source of the 5-space board.
 import { CITY_SPACE_NAMES, citySpaceNameForIndex } from '../board/citySpaceNames.js';
@@ -298,6 +302,14 @@ function resolveBaseFightCost(
   // runs slightly higher than VP, so Skrulls skew a touch harder than printed.
   if (G.convertedVillainOrigins?.[villainCardId] === 'skrull') {
     return (G.cardStats[villainCardId]?.cost ?? 0) + 2;
+  }
+
+  // why: WP-823 / D-24756 — a Brainwash the Military Officer's Attack "is 3 plus the
+  // number of Twists stacked next to this Scheme" (the Traitor Battalion). Checked
+  // OVERLAY-FIRST, beside the Killbot / Skrull branches, because a converted Officer
+  // carries no cardStats row (the guard below would return 0).
+  if (G.convertedVillainOrigins?.[villainCardId] === 'shield-officer') {
+    return BRAINWASHED_OFFICER_BASE_ATTACK + (G.counters[TRAITOR_BATTALION_TWISTS] ?? 0);
   }
 
   const villainStats = G.cardStats[villainCardId];

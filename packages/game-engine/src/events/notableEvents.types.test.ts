@@ -98,7 +98,7 @@ describe('NOTABLE_EVENT_TYPES drift detection', () => {
 });
 
 describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
-  it('contains exactly nine entries in canonical order', () => {
+  it('contains exactly ten entries in canonical order', () => {
     assert.deepStrictEqual(
       [...SCHEME_TWIST_RESOLVER_KEYS],
       [
@@ -111,6 +111,7 @@ describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
         'secretInvasion',
         'portals',
         'clashMonsterPit',
+        'brainwashTheMilitary',
       ],
     );
   });
@@ -131,6 +132,7 @@ describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
       'secretInvasion',
       'portals',
       'clashMonsterPit',
+      'brainwashTheMilitary',
     ];
     for (const member of unionMembers) {
       assert.ok(

@@ -232,6 +232,10 @@ function describeEscapedLoss(
     if (condition.origin === 'killbot') {
       return `${matchCount} Killbots escaped`;
     }
+    // why: WP-823 / D-24756 — Brainwash the Military prints "When 5 S.H.I.E.L.D. Officers escape."
+    if (condition.origin === 'shield-officer') {
+      return `${matchCount} S.H.I.E.L.D. Officers escaped`;
+    }
     // why: D-24738 — when captured Heroes count too, name both parts so the line
     // matches the printed "6 Heroes" and the player can see where the count came from.
     const capturedCount = condition.includeCapturedHeroes === true ? countEscapedCapturedHeroes(gameState) : 0;

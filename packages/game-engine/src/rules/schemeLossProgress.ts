@@ -70,6 +70,7 @@ export type SchemeLossKind =
   | 'escaped-bystander'
   | 'escaped-killbot'
   | 'escaped-skrull'
+  | 'escaped-officer'
   | 'twists'
   | 'twists-fallback';
 
@@ -88,6 +89,7 @@ export const SCHEME_LOSS_KINDS: readonly SchemeLossKind[] = [
   'escaped-bystander',
   'escaped-killbot',
   'escaped-skrull',
+  'escaped-officer',
   'twists',
   'twists-fallback',
 ];
@@ -351,6 +353,9 @@ function escapedConvertedKind(origin: ConvertedVillainOrigin): SchemeLossKind {
       return 'escaped-killbot';
     case 'skrull':
       return 'escaped-skrull';
+    // why: WP-823 / D-24756 — Brainwash the Military counts escaped S.H.I.E.L.D. Officers.
+    case 'shield-officer':
+      return 'escaped-officer';
   }
 }
 

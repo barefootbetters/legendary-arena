@@ -11,6 +11,8 @@
  * entry it lost at twist 7 only by coincidence (the MVP fallback equals 7).
  * Killbots (WP-513 / D-24325) and Secret Invasion (WP-514 / D-24327) are the two
  * conversion schemes, configured with their escaped-converted-count losses.
+ * Beyond core, Brainwash the Military (WP-823 / D-24756) is a third conversion
+ * scheme: 12 S.H.I.E.L.D. Officers in the Villain Deck, lost at 5 escaped Officers.
  *
  * why (D-24178): each config's lossThreshold is the scheme's PRINTED twist-stack
  * size, so no scheme resolves a twist early. Only twist-loss schemes (printed
@@ -217,6 +219,29 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       // The `portals` resolver bumps DARK_PORTAL_COUNT, which drives the Dark-Portal
       // attack buffs (mastermind +1 once >= 1; a Villain +1 in a portal'd city space).
       lossThreshold: 7,
+    },
+  ],
+  [
+    'ca75/brainwash-the-military',
+    {
+      schemeId: 'ca75/brainwash-the-military',
+      resolverId: 'brainwash-the-military',
+      params: {},
+      // why: WP-823 / D-24756 — real Evil-Wins is "When 5 S.H.I.E.L.D. Officers
+      // escape", counted as 'shield-officer'-origin entries in G.escapedPile (the 12
+      // Officers added to the Villain Deck are converted Villains, the Killbots
+      // pattern). Declaring resourceLossCondition SUPPRESSES the twist-count proxy;
+      // lossThreshold (the printed 7-twist stack) is retained but INERT for loss
+      // (D-24178). Before this entry the scheme lost at the D-24595 last-twist
+      // fallback (WP-763's FALSE-LOSS row). The resolver stacks Twists 1-6 as the
+      // Traitor Battalion (Officer Attack 3 + stack) and plays another card; Twist 7
+      // makes every Officer in the City escape.
+      lossThreshold: 7,
+      resourceLossCondition: {
+        kind: 'escaped-converted-count',
+        origin: 'shield-officer',
+        threshold: 5,
+      },
     },
   ],
   // -------------------------------------------------------------------------

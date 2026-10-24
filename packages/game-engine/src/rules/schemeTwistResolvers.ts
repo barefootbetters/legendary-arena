@@ -22,7 +22,19 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
 import { gainWoundForPlayer, gainWoundWithOutcome } from '../board/wounds.logic.js';
 import { countPendingDivingBlockWounds } from '../moves/divingBlock.logic.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
-import { performVillainReveal, resolveVillainEscape } from '../villainDeck/villainDeck.reveal.js';
+import {
+  performVillainReveal,
+  playTopVillainDeckCards,
+  resolveVillainEscape,
+} from '../villainDeck/villainDeck.reveal.js';
+// why: WP-823 / D-24756 — the Traitor Battalion counter key and the Brainwash the
+// Military constants / City scan.
+import { TRAITOR_BATTALION_TWISTS } from '../types.js';
+import {
+  BRAINWASHED_OFFICER_BASE_ATTACK,
+  TRAITOR_BATTALION_STACK_LIMIT,
+  listCityBrainwashedOfficers,
+} from './brainwashTheMilitary.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { refillHqSlot, pushVillainIntoCity } from '../board/city.logic.js';
 import { attachBystanderToVillain } from '../board/bystanders.logic.js';
@@ -982,6 +994,110 @@ function woundPlayerIfGladiatorIsWeaker(
   pushLog(gameState, `[Monster Pit] Player ${playerId} ${reason}, and ${outcome}.`);
 }
 
+// -------------------------------------------------------------------------
+// brainwash-the-military
+// -------------------------------------------------------------------------
+
+/**
+ * Brainwash the Military (WP-823 / D-24756). "Twist 1-6: Stack this Twist next to
+ * the Scheme as a 'Traitor Battalion.' Play another card from the Villain Deck.
+ * Twist 7: All S.H.I.E.L.D. Officers in the city escape."
+ *
+ * Twists 1-6 raise the Traitor Battalion counter (`TRAITOR_BATTALION_TWISTS`), which
+ * gives every Officer +1 Attack (`resolveFightCost`), then play the top card of the
+ * Villain Deck through the normal reveal. Once six are stacked, the Twist is Twist 7:
+ * every Officer in the City escapes. Emits one `schemeTwistResolved` event.
+ *
+ * @param gameState - Game state to mutate (counter + City + escapes + log + event).
+ * @param context - Reveal context threaded into the extra play and the escapes.
+ * @param implementationMap - Handler map threaded into the extra play and the escapes.
+ * @param _params - Unused (no resolver params).
+ * @param twistCardId - The scheme-twist card instance that triggered.
+ */
+function brainwashTheMilitary(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  // why: the Twist is numbered from the stack, NOT from schemeTwistCount. "Play
+  // another card" can reveal another Twist, which re-enters this resolver before the
+  // dispatcher increments schemeTwistCount (it does so after the resolver returns),
+  // so schemeTwistCount + 1 would give the nested Twist the outer Twist's number. The
+  // stack is raised BEFORE the extra card is played, so a nested Twist reads the
+  // right number. A Twist after six are stacked (a Mystique Escape) runs Twist 7 too;
+  // the card defines no Twist 8.
+  const stackedCount = gameState.counters[TRAITOR_BATTALION_TWISTS] ?? 0;
+  if (stackedCount < TRAITOR_BATTALION_STACK_LIMIT) {
+    const nextCount = stackedCount + 1;
+    gameState.counters[TRAITOR_BATTALION_TWISTS] = nextCount;
+    pushLog(
+      gameState,
+      `[Brainwash the Military] Twist ${nextCount} joins the Traitor Battalion next to the Scheme — S.H.I.E.L.D. Officers now have ${BRAINWASHED_OFFICER_BASE_ATTACK + nextCount} Attack. Another card is played from the Villain Deck.`,
+      'threat',
+    );
+    playTopVillainDeckCards(gameState, context, implementationMap, 1);
+  } else {
+    escapeEveryCityOfficer(gameState, context, implementationMap);
+  }
+
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'brainwashTheMilitary',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'brainwashTheMilitary',
+    ),
+  });
+}
+
+/**
+ * Twist 7 of Brainwash the Military: every S.H.I.E.L.D. Officer in the City escapes.
+ *
+ * @param gameState - Game state to mutate (City + escapes + log).
+ * @param context - Reveal context threaded into each escape.
+ * @param implementationMap - Handler map threaded into each escape.
+ */
+function escapeEveryCityOfficer(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+): void {
+  const officerIndices = listCityBrainwashedOfficers(gameState);
+  if (officerIndices.length === 0) {
+    pushLog(gameState, '[Brainwash the Military] Twist 7: no S.H.I.E.L.D. Officer is in the City, so none escapes.');
+    return;
+  }
+  pushLog(
+    gameState,
+    `[Brainwash the Military] Twist 7: all ${officerIndices.length} S.H.I.E.L.D. Officer(s) in the City escape.`,
+    'threat',
+  );
+  // why: Bridge first (listCityBrainwashedOfficers), the order Villains leave the
+  // City in. Each is a full escape (D-24656: an escape caused by a card effect
+  // "causes all the same effects"), so each owes its own HQ KO, its carried
+  // Bystanders' discard, and the loss check, whose latch is idempotent. The space is
+  // re-read before each escape, since an earlier escape's effects may have moved it.
+  for (const cityIndex of officerIndices) {
+    const cardId = gameState.city[cityIndex];
+    if (cardId === null || cardId === undefined) {
+      continue;
+    }
+    if (gameState.convertedVillainOrigins?.[cardId] !== 'shield-officer') {
+      continue;
+    }
+    // why: resolveVillainEscape does not touch G.city (its callers clear the space
+    // first), as in operatorEscapeVillain.
+    const city = [...gameState.city] as typeof gameState.city;
+    city[cityIndex] = null;
+    gameState.city = city;
+    resolveVillainEscape(gameState, context, implementationMap, cardId);
+  }
+}
+
 /**
  * Counter-only resolver (WP-763 / D-24595). Deliberately does nothing.
  *
@@ -1006,5 +1122,6 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'secret-invasion': secretInvasion,
   'portals': portals,
   'clash-monster-pit': clashMonsterPit,
+  'brainwash-the-military': brainwashTheMilitary,
   'counter-only': counterOnly,
 };
