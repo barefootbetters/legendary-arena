@@ -17,7 +17,7 @@
 - **Engine.** New optional `HeroCondition.minimumCost` (absent ≡ no floor), set by a parser text arm on the printed clause and honored inside `countOtherInPlayMatchingCondition`. The sequence teacher scopes floored gates out. No card-data or server change.
 - **Tests.** game-engine 5662 → 5672 (+10, rebased onto WP-824), 0 fail; four revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; every card / coverage `:check` unchanged. 01.6 post-mortem WP COMPLETE.
 - **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches keep the old gate. No hashed fixture plays co2e Nick Fury.
-- **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with co2e Nick Fury: the Squad after an Agent gives no +2 and logs the floor; after an Officer it gives +2.
+- **Live-verify (D-24026): PASS 2026-10-24.** Operator match `8OUaWVCDcGp` created after the deploy (server `f0cfc6fe`, client `f0cfc6f`; Jeff + a Competent bot ally; co2e Nick Fury + four ca75 heroes). Stealth Assault Squad after an Agent and a Trooper gave only its printed +1 and logged "ability did not activate — it needs another shield Hero that costs 1 or more played this turn"; a second copy after an Officer (and the first copy) gave +1 and "+2 attack from Stealth Assault Squad" (Attack 2 → 5).
 
 ### WP-824 / EC-862 — Cap 75th count-scaled hero lines: two Savior lines per Hero Class, Paramilitary Ops per costed S.H.I.E.L.D. Hero (D-24757) (2026-10-23)
 
@@ -28,7 +28,7 @@
 - **Tests.** game-engine 5649 → 5662 (+13), 0 fail; the new real-data tests fail 7 of 10 on the baseline card data; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; dashboard 584 / 0, typecheck 0. Regenerated: hero ledger, effect index, card-mechanics, runtime-observed feed (7794 → 7793), with the dashboard totalObs pin 8715 → 8714.
 - **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches play and replay with the old flat grants; only matches created after the deploy scale. No hashed fixture plays a ca75 hero.
 - **Follow-up.** co2e Nick Fury Stealth Assault Squad has the same starter-unlocks-it defect as a flat gate (D-24757 §5).
-- **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy, with the three heroes: each Savior line scales with 3 Bystanders and grants nothing with 2; Paramilitary Ops shows `count 0` after only starters and `+2` after an Officer and another costed S.H.I.E.L.D. Hero.
+- **Live-verify (D-24026): PASS 2026-10-24.** Operator match `dSuOp6VyrDx` created after the deploy (server `f0cfc6fe`, client `f0cfc6f`; Jeff + a Competent bot ally; Red Skull, Midtown Bank Robbery, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. With 3 Bystanders: Paramilitary Ops after an Agent and a Trooper logged "Count-scaled attack: +0 (…; count 0)" (Attack 3 = Trooper 1 + its printed 2); Star-Spangled Hero's Savior line "Count-scaled recruit: +6 (…; count 3)" and International Strike Force's "Count-scaled attack: +3 (…; count 3)". With 2 Bystanders: both Savior lines logged "did not activate … it needs 3 Bystanders in your Victory Pile — you have 2" while each line 1 still scaled; Paramilitary Ops after an Agent, an Officer and International Strike Force logged "+2 (…; count 2)".
 
 ### WP-741 / EC-778 — Doubled Superpower icons need that many OTHER matching cards (D-24563) (2026-10-23)
 
