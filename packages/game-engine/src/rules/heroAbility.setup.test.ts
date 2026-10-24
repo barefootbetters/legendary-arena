@@ -677,12 +677,15 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'fight-cost-reduction', // why: WP-794 / D-24663 — "Any Villain you fight on the <space> this turn gets -N" / "The Mastermind gets -N this turn" — appends to the lazy G.turnEconomy.fightCostReductions list the two fight-cost resolvers subtract
     'spinning-cyclone', // why: WP-795 / D-24664 — core Storm Spinning Cyclone ("You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain."; swap if occupied) — parks a move-a-Villain choice for the active player
     'out-of-time', // why: WP-803 / D-24692 — Man / Woman Out of Time (rules v23 L1667): set the just-played card aside, replay it on the next start → main advance, then discard it
+    'ko-up-to-shield-hand-discard', // why: WP-826 / D-24759 — Mobilize for War's "KO up to two [team:shield] Heroes from your hand and/or discard pile" — parks up to N shield-only optional-KO entries
+    'attack-per-ko-this-way', // why: WP-826 / D-24759 — Mobilize for War's Savior line "For each card KO'd this way, +1 Attack" — upgrades this card's parked KO entries to an attack reward
+    'optional-ko-shield-played-rescue', // why: WP-826 / D-24759 — Reassign to Civilian Duty's "You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander."
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      78,
-      'HERO_KEYWORDS must have exactly 78 entries',
+      81,
+      'HERO_KEYWORDS must have exactly 81 entries',
     );
 
     assert.deepStrictEqual(

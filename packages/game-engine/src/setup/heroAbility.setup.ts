@@ -1167,6 +1167,10 @@ function parseAbilityText(
   // the reveal-from-hand / investigate criterion suppression). The engine's koTeamFilter enforces
   // the S.H.I.E.L.D.-only KO target at resolve time; the setup gate must not also block the play.
   const lineHasOptionalKoShieldOfficer = abilityText.includes('[keyword:optional-ko-shield-officer]');
+  // why: WP-826 / D-24759 — likewise on a Mobilize for War line ([keyword:ko-up-to-shield-hand-discard])
+  // the `[team:shield]` names the KO TARGET ("KO up to two [team:shield] Heroes"), not a play-gate; the
+  // entry's koTeamFilter enforces it at resolve time, so Step 1b emits no requiresTeam gate for it.
+  const lineHasKoUpToShield = abilityText.includes('[keyword:ko-up-to-shield-hand-discard:');
   // why: D-24530 — on a Pure Fury line ([keyword:pure-fury]) the co-located `[team:shield]`
   // describes WHICH Heroes to count in the KO pile ("less than the number of [team:shield]
   // Heroes in the KO pile"), NOT a requiresTeam play-gate. Suppress it from Step 1b so the
@@ -1321,7 +1325,7 @@ function parseAbilityText(
     // why: D-24628 — likewise a [team:X] in the body after an explicit leading gate prefix is
     // descriptive (see leadingGatePrefixLength), so emit NO requiresTeam gate for it.
     const isBodyTokenAfterGatePrefix = leadingGatePrefixLength > 0 && teamMatch.index >= leadingGatePrefixLength;
-    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasPureFury && !lineHasRevealTraitCriterion && !isBodyTokenAfterGatePrefix) {
+    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasKoUpToShield && !lineHasPureFury && !lineHasRevealTraitCriterion && !isBodyTokenAfterGatePrefix) {
       teamConditions.push({
         type: 'requiresTeam',
         value: normalizeTraitSlug(teamMatch[1]!),
@@ -2265,6 +2269,30 @@ function parseAbilityText(
     }
     uniqueKeywords = keywordsWithoutRewardIcon;
     magnitudes.delete(optionalKoRewardType);
+  }
+
+  // Icon-suppression (sibling): an attack-per-ko-this-way effect subsumes the printed attack
+  // icon on the same line. Mobilize for War's "[keyword:Savior]: For each card KO'd this way, you
+  // get +1[icon:attack]." would otherwise also emit a plain 'attack' effect (Steps 2b/3) granted
+  // once the Savior gate passes, with or without a KO. Drop it so only the per-KO reward remains.
+  // why: WP-826 / D-24759 — the per-KO reward subsumes the printed attack icon (mirrors the
+  // D-24398 optional-ko-reward suppression above).
+  let lineHasAttackPerKoThisWay = false;
+  for (const keyword of uniqueKeywords) {
+    if (keyword === 'attack-per-ko-this-way') {
+      lineHasAttackPerKoThisWay = true;
+      break;
+    }
+  }
+  if (lineHasAttackPerKoThisWay) {
+    const keywordsWithoutAttackIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack') {
+        keywordsWithoutAttackIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutAttackIcon;
+    magnitudes.delete('attack');
   }
 
   // Icon-suppression (sibling): a ko-wound-reward effect whose reward is an icon

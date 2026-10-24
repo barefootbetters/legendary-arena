@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1984,
+    "totalEntries": 1987,
     "byScope": {
-      "hero": 800,
+      "hero": 803,
       "villain": 728,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 587,
+      "executable": 590,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
@@ -4574,6 +4574,23 @@
       "name": "Agent X-13",
       "set": "ca75",
       "scope": "hero",
+      "mechanic": "attack-per-ko-this-way",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-ko-this-way",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "designs": [
+        {
+          "slug": "mobilize-for-war",
+          "name": "Mobilize for War"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "name": "Agent X-13",
+      "set": "ca75",
+      "scope": "hero",
       "mechanic": "gain-officer",
       "status": "subsystem",
       "handler": "choose-one:count-scaled-choose-option",
@@ -4583,6 +4600,23 @@
         {
           "slug": "spy-network",
           "name": "Spy Network"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "name": "Agent X-13",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "ko-up-to-shield-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-up-to-shield-hand-discard",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "designs": [
+        {
+          "slug": "mobilize-for-war",
+          "name": "Mobilize for War"
         }
       ]
     },
@@ -4811,6 +4845,23 @@
         {
           "slug": "international-strike-force",
           "name": "International Strike Force"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/steve-rogers-director-of-shield",
+      "name": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "optional-ko-shield-played-rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-shield-played-rescue",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "designs": [
+        {
+          "slug": "reassign-to-civilian-duty",
+          "name": "Reassign to Civilian Duty"
         }
       ]
     },
@@ -29843,7 +29894,9 @@
       "mechanics": [
         "attack",
         "attack-per-count",
+        "attack-per-ko-this-way",
         "gain-officer",
+        "ko-up-to-shield-hand-discard",
         "out-of-time",
         "savior"
       ]
@@ -29871,6 +29924,7 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
+        "optional-ko-shield-played-rescue",
         "out-of-time",
         "recruit-per-count",
         "rescue",

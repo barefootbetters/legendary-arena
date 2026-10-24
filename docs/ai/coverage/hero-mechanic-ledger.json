@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 800,
+    "totalRows": 803,
     "byStatus": {
-      "executable": 414,
+      "executable": 417,
       "deferred": 16,
       "condition": 49,
       "unsupported": 290,
       "unmarked": 28,
       "subsystem": 3
     },
-    "distinctMechanics": 161
+    "distinctMechanics": 164
   },
   "rows": [
     {
@@ -2422,6 +2422,22 @@
       "extId": "ca75/agent-x-13",
       "heroName": "Agent X-13",
       "set": "ca75",
+      "mechanic": "attack-per-ko-this-way",
+      "status": "executable",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-ko-this-way",
+      "designs": [
+        {
+          "slug": "mobilize-for-war",
+          "name": "Mobilize for War"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "heroName": "Agent X-13",
+      "set": "ca75",
       "mechanic": "gain-officer",
       "status": "subsystem",
       "wp": "",
@@ -2431,6 +2447,22 @@
         {
           "slug": "spy-network",
           "name": "Spy Network"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "heroName": "Agent X-13",
+      "set": "ca75",
+      "mechanic": "ko-up-to-shield-hand-discard",
+      "status": "executable",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-up-to-shield-hand-discard",
+      "designs": [
+        {
+          "slug": "mobilize-for-war",
+          "name": "Mobilize for War"
         }
       ]
     },
@@ -2647,6 +2679,22 @@
         {
           "slug": "international-strike-force",
           "name": "International Strike Force"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/steve-rogers-director-of-shield",
+      "heroName": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "set": "ca75",
+      "mechanic": "optional-ko-shield-played-rescue",
+      "status": "executable",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-shield-played-rescue",
+      "designs": [
+        {
+          "slug": "reassign-to-civilian-duty",
+          "name": "Reassign to Civilian Duty"
         }
       ]
     },

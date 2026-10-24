@@ -73,8 +73,8 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "KO up to two [team:shield] Heroes from your hand and/or discard pile.",
-            "[keyword:Savior]: For each card KO'd this way, you get +1[icon:attack]."
+            "KO up to two [team:shield] Heroes from your hand and/or discard pile. [keyword:ko-up-to-shield-hand-discard:2]",
+            "[keyword:Savior]: For each card KO'd this way, you get +1[icon:attack]. [keyword:attack-per-ko-this-way:1]"
           ]
         }
       ],
@@ -373,7 +373,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[team:shield][team:shield][team:shield]: You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander."
+            "[team:shield][team:shield][team:shield]: You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander. [keyword:optional-ko-shield-played-rescue:1]"
           ]
         },
         {

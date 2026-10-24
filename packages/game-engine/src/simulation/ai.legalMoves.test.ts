@@ -340,6 +340,32 @@ describe('getLegalMoves — pending optional-KO-reward short-circuit (WP-248 / D
       'the cheapest S.H.I.E.L.D. Hero; the cost-0 non-S.H.I.E.L.D. discard card is skipped');
   });
 
+  test('WP-826: a Reassign to Civilian Duty entry picks the cheapest played S.H.I.E.L.D. Hero, never a hand or discard card', () => {
+    // why: WP-826 / D-24759 — the entry permits only inPlay; a hand or discard target would be
+    // rejected by the resolve and hang the sim. Cheaper S.H.I.E.L.D. cards sit in hand and discard
+    // to prove both scans are skipped, and a cheaper non-S.H.I.E.L.D. played card to prove the filter.
+    const gameState = makeG({
+      discard: ['starting-shield-trooper' as CardExtId],
+      hand: ['starting-shield-agent' as CardExtId],
+      inPlay: ['avenger-played' as CardExtId, 'pile-shield-officer' as CardExtId, 'reassign' as CardExtId],
+      currentStage: 'main',
+    });
+    gameState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'rescue', rewardMagnitude: 1, sourceCardId: 'reassign' as CardExtId,
+      koZones: ['inPlay'], koTeamFilter: 'shield',
+    }];
+    gameState.cardStats = costsOf({ 'avenger-played': 1, 'pile-shield-officer': 3, reassign: 5 });
+    gameState.cardTraits = {
+      'avenger-played': { heroClass: null, team: 'avengers' },
+      reassign: { heroClass: null, team: 'shield' },
+    } as unknown as LegendaryGameState['cardTraits'];
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1);
+    assert.deepStrictEqual(legalMoves[0]!.args, { zone: 'inPlay', cardId: 'pile-shield-officer' });
+  });
+
   test('no resolveOptionalKoReward and normal enumeration when no optional-KO-reward is pending', () => {
     const gameState = makeG({ hand: ['hero-a' as CardExtId], currentStage: 'main' });
     const legalMoves = getLegalMoves(gameState, CONTEXT);
