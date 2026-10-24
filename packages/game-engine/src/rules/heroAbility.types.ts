@@ -101,6 +101,13 @@ export interface HeroCondition {
   // and only when the count is 2 or more (absent ≡ 1, so every other hook is unchanged). Only
   // heroClassMatch and requiresTeam honor it; other condition types ignore it.
   requiredMatches?: number;
+  // why: WP-825 / D-24758 — a printed cost floor on the OTHER card a heroClassMatch /
+  // requiresTeam gate needs ("if you played another [team:shield] Hero that costs 1 or more this
+  // turn", co2e Stealth Assault Squad): only another matching card whose G.cardStats cost is at
+  // least minimumCost counts, so the cost-0 S.H.I.E.L.D. Agent / Trooper starters never satisfy
+  // it. The parser sets it only from that printed clause, and only when it is 1 or more (absent ≡
+  // no floor, so every other hook is unchanged). Only heroClassMatch and requiresTeam honor it.
+  minimumCost?: number;
 }
 
 // ---------------------------------------------------------------------------

@@ -534,6 +534,14 @@ const CONDITION_ICON_PATTERN =
 // playedThisTurn condition instead. Captures N; non-global so `.exec` is stateless.
 const PLAYED_OTHER_CARDS_THRESHOLD_PATTERN = /\bIf you played at least (\d+) other cards this turn\b/i;
 
+// why: WP-825 / D-24758 — "if you played another [team:X] Hero that costs N or more this turn"
+// (co2e Nick Fury's Stealth Assault Squad, N=1). Step 1b already pushes the requiresTeam gate for
+// the inline [team:X]; this text arm sets its printed cost floor, so the cost-0 S.H.I.E.L.D.
+// Agent / Trooper starters no longer satisfy it. Captures the team slug and N; non-global so
+// `.exec` is stateless.
+const ANOTHER_TEAM_HERO_COST_FLOOR_PATTERN =
+  /\bif you played another\s*\[team:([^\]]+)\]\s*Hero that costs (\d+) or more this turn\b/i;
+
 // why: D-24486 — a NEGATIVE-magnitude attack/recruit icon ("gets -2[icon:attack]",
 // "cost -1[icon:recruit]") is a debuff applied to an Adversary or a cost reduction — NEVER a
 // resource the player gains. Its leading "-" is the discriminator: Legendary's vocabulary has
@@ -1331,6 +1339,7 @@ function parseAbilityText(
     leadingGatePrefixMatch?.[0] ?? '',
     [...heroClassConditions, ...teamConditions],
   );
+  applyAnotherTeamHeroCostFloor(abilityText, conditions);
 
   // Pre-pass: resolve the choose-one Empowered form before the KEYWORD_PATTERN loop.
   // why: D-24063 — the choose-one line must produce ONE composition for the whole line;
@@ -3870,6 +3879,35 @@ function deduplicateKeywords(keywords: HeroKeyword[]): HeroKeyword[] {
     }
   }
   return result;
+}
+
+/**
+ * Sets the printed cost floor on a line's "another [team:X] Hero that costs N or more" gate
+ * (WP-825 / D-24758).
+ *
+ * Finds the first requiresTeam condition naming the clause's team and sets its minimumCost to N
+ * when N is 1 or more. A line without the clause, or with N = 0, is left untouched. Mutates the
+ * freshly built conditions array in place (setup-time, before the hook is stored).
+ *
+ * @param abilityText - The ability line.
+ * @param conditions - The line's conditions, as built by Step 1 / 1b.
+ */
+function applyAnotherTeamHeroCostFloor(abilityText: string, conditions: HeroCondition[]): void {
+  const costFloorMatch = ANOTHER_TEAM_HERO_COST_FLOOR_PATTERN.exec(abilityText);
+  if (costFloorMatch === null) {
+    return;
+  }
+  const teamSlug = normalizeTraitSlug(costFloorMatch[1]!);
+  const minimumCost = parseInt(costFloorMatch[2]!, 10);
+  if (!Number.isInteger(minimumCost) || minimumCost < 1) {
+    return;
+  }
+  for (const condition of conditions) {
+    if (condition.type === 'requiresTeam' && condition.value === teamSlug) {
+      condition.minimumCost = minimumCost;
+      return;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

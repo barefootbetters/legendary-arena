@@ -91,7 +91,8 @@ describe('a body [team:X] after a gate prefix is not a gate (D-24628)', () => {
   });
 
   it('a line with no gate prefix keeps its inline condition', () => {
-    assert.deepEqual(buildHook(STEALTH_ASSAULT_ABILITY).conditions, [{ type: 'requiresTeam', value: 'shield' }]);
+    // why: WP-825 / D-24758 — the gate also carries the printed "costs 1 or more" floor.
+    assert.deepEqual(buildHook(STEALTH_ASSAULT_ABILITY).conditions, [{ type: 'requiresTeam', value: 'shield', minimumCost: 1 }]);
   });
 
   it('a keyword-led prefix keeps its team gate', () => {
