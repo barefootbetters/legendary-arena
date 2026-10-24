@@ -465,6 +465,7 @@ high-water: 422
 - WP-824 — ca75-count-scaled-hero-lines (Cap 75th International Strike Force and Star-Spangled Hero Savior lines grant per Hero Class you have, Paramilitary Ops grants per other S.H.I.E.L.D. Hero played this turn that costs 1 or more. reserved 2026-10-23, claude/reserve-wp824-ca75-count-scaled-hero-lines)
 - WP-825 — stealth-assault-squad-costed-shield-gate (co2e Nick Fury Stealth Assault Squad gates its +2 Attack on another S.H.I.E.L.D. Hero played this turn that costs 1 or more, so the cost-0 starters no longer unlock it. reserved 2026-10-24, claude/reserve-wp825-stealth-assault-squad)
 - WP-826 — ca75-optional-ko-shield (Cap 75th Mobilize for War KOs up to two S.H.I.E.L.D. Heroes from hand and/or discard with Savior +1 Attack per card KO'd, and Reassign to Civilian Duty may KO a S.H.I.E.L.D. Hero played this turn to rescue a Bystander. reserved 2026-10-24, claude/reserve-wp826-ca75-optional-ko-shield)
+- WP-827 — flying-shield-block (Cap 75th Falcon Flying Shield Block: once per turn, when any player would gain a Wound, the holder may reveal it and rescue a Bystander instead; extends the D-24499 Diving Block reactive wound wave. reserved 2026-10-24, claude/reserve-wp827-flying-shield-block)
 
 ## EC
 
@@ -892,6 +893,7 @@ high-water: 457
 - EC-862 — ca75-count-scaled-hero-lines (WP-824. reserved 2026-10-23, claude/reserve-wp824-ca75-count-scaled-hero-lines)
 - EC-863 — stealth-assault-squad-costed-shield-gate (WP-825. reserved 2026-10-24, claude/reserve-wp825-stealth-assault-squad)
 - EC-864 — ca75-optional-ko-shield (WP-826. reserved 2026-10-24, claude/reserve-wp826-ca75-optional-ko-shield)
+- EC-865 — flying-shield-block (WP-827. reserved 2026-10-24, claude/reserve-wp827-flying-shield-block)
 
 ## D
 
@@ -1429,3 +1431,4 @@ section below) and the allocation protocol in
 - D-24757 — ca75-count-scaled-hero-lines (WP-824; Savior gate composed with the distinct-hero-classes count markers, and the shield-heroes-cost-one-plus-played-this-turn count source. reserved 2026-10-23, claude/reserve-wp824-ca75-count-scaled-hero-lines)
 - D-24758 — stealth-assault-squad-costed-shield-gate (WP-825; HeroCondition.minimumCost, a printed cost floor on the requiresTeam / heroClassMatch other-card gate. reserved 2026-10-24, claude/reserve-wp825-stealth-assault-squad)
 - D-24759 — ca75-optional-ko-shield (WP-826; up-to-N S.H.I.E.L.D. KO parks on the shared optional-KO queue, a later line's per-KO reward upgrades those parked entries, and the played-this-turn S.H.I.E.L.D. KO-then-rescue entry. reserved 2026-10-24, claude/reserve-wp826-ca75-optional-ko-shield)
+- D-24760 — flying-shield-block (WP-827; a reactive wound interception offered to a seat other than the wound recipient, once per turn per copy, chained after a declined Diving Block, with a rescue reward. reserved 2026-10-24, claude/reserve-wp827-flying-shield-block)
