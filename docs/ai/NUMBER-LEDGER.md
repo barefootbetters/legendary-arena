@@ -468,6 +468,7 @@ high-water: 422
 - WP-827 — flying-shield-block (Cap 75th Falcon Flying Shield Block: once per turn, when any player would gain a Wound, the holder may reveal it and rescue a Bystander instead; extends the D-24499 Diving Block reactive wound wave. reserved 2026-10-24, claude/reserve-wp827-flying-shield-block)
 - WP-828 — winter-soldier-out-of-time-grant (Cap 75th Winter Soldier 2>4: a Hero in your hand gains Man Out of Time this turn, and with [hc:tech] another one does; the chosen Hero is set aside Out of Time after its abilities when played this turn. reserved 2026-10-24, claude/reserve-wp828-winter-soldier-out-of-time)
 - WP-829 — go-back-in-time-purge (Cap 75th scheme Go Back in Time to Slay Heroes' Ancestors: each Twist Purges an HQ Hero chosen by the active player, and any HQ Hero sharing a Purged Hero's name is KO'd whenever it is in the HQ. reserved 2026-10-24, claude/reserve-wp829-go-back-in-time)
+- WP-830 — enigma-code (Cap 75th scheme The Unbreakable Enigma Code: Twists 1-5 put a Hero Deck card face down into the Enigma Code; after a Villain fight you may pay 1 Recruit to look at one; before a Mastermind fight you guess each card's color, and a wrong guess ends your turn and re-mixes the code. reserved 2026-10-24, claude/reserve-wp830-enigma-code)
 
 ## EC
 
@@ -898,6 +899,7 @@ high-water: 457
 - EC-865 — flying-shield-block (WP-827. reserved 2026-10-24, claude/reserve-wp827-flying-shield-block)
 - EC-866 — winter-soldier-out-of-time-grant (WP-828. reserved 2026-10-24, claude/reserve-wp828-winter-soldier-out-of-time)
 - EC-867 — go-back-in-time-purge (WP-829. reserved 2026-10-24, claude/reserve-wp829-go-back-in-time)
+- EC-868 — enigma-code (WP-830. reserved 2026-10-24, claude/reserve-wp830-enigma-code)
 
 ## D
 
@@ -1438,3 +1440,4 @@ section below) and the allocation protocol in
 - D-24760 — flying-shield-block (WP-827; a reactive wound interception offered to a seat other than the wound recipient, once per turn per copy, chained after a declined Diving Block, with a rescue reward. reserved 2026-10-24, claude/reserve-wp827-flying-shield-block)
 - D-24761 — winter-soldier-out-of-time-grant (WP-828; granting Man Out of Time to a chosen hand Hero for the turn: the owed-grant queue opened as the active seat choice, the turn-scoped grant list, and the set-aside after the granted card's abilities in applyCardPlay. reserved 2026-10-24, claude/reserve-wp828-winter-soldier-out-of-time)
 - D-24762 — go-back-in-time-purge (WP-829; the owed-Purge queue opened as the active seat choice, the Purged-from-the-Timestream list, and the HQ sweep that KOs a Purged Hero name after each Purge and each move. reserved 2026-10-24, claude/reserve-wp829-go-back-in-time)
+- D-24763 — enigma-code (WP-830; the face-down Enigma Code built from the Hero Deck by Twists 1-5, the pay-1-Recruit peek offered after a Villain fight and known only to the peeking player, and the color guess that gates a Mastermind fight: a wrong guess ends the turn and re-mixes the code. reserved 2026-10-24, claude/reserve-wp830-enigma-code)
