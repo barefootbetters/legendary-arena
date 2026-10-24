@@ -108,9 +108,9 @@ export const NOTABLE_EVENT_TYPES: readonly NotableGameEventType[] = [
 /**
  * Closed canonical union of camelCase scheme-twist resolver keys.
  *
- * The ten resolver framework entries (WP-182 shipped five; WP-513 added
+ * The eleven resolver framework entries (WP-182 shipped five; WP-513 added
  * `killbots`; WP-514 added `secretInvasion`; WP-539 added `portals`; D-24736
- * added `clashMonsterPit`; WP-823 / D-24756 added `brainwashTheMilitary`). Each key maps to a resolver
+ * added `clashMonsterPit`; WP-823 / D-24756 added `brainwashTheMilitary`; WP-829 / D-24762 added `goBackInTime`). Each key maps to a resolver
  * function in `schemeTwistResolvers.ts`. The resolver registry keys are
  * hyphen-case identifiers (`'reveal-or-punish'`, etc.) — this union is the
  * camelCase form embedded in `SchemeTwistResolvedEvent.resolverKey` so UI
@@ -126,10 +126,11 @@ export type SchemeTwistResolverKey =
   | 'secretInvasion'
   | 'portals'
   | 'clashMonsterPit'
-  | 'brainwashTheMilitary';
+  | 'brainwashTheMilitary'
+  | 'goBackInTime';
 
 // why: drift-detection array — must match `SchemeTwistResolverKey` exactly.
-// The ten-entry canonical order tracks the resolver framework byte-for-byte.
+// The eleven-entry canonical order tracks the resolver framework byte-for-byte.
 // Adding a resolver key tracks with the resolver framework, not WP-200 — the
 // framework owns its own vocabulary.
 /**
@@ -146,6 +147,7 @@ export const SCHEME_TWIST_RESOLVER_KEYS: readonly SchemeTwistResolverKey[] = [
   'portals',
   'clashMonsterPit',
   'brainwashTheMilitary',
+  'goBackInTime',
 ] as const;
 
 // ---------------------------------------------------------------------------

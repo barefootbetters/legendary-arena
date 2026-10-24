@@ -44,6 +44,7 @@ import { openDivingBlockSeatChoiceIfNeeded } from './moves/divingBlock.logic.js'
 import { openFlyingShieldBlockSeatChoiceIfNeeded } from './moves/flyingShieldBlock.logic.js';
 import { openOutOfTimeGrantSeatChoiceIfNeeded } from './moves/outOfTimeGrant.logic.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEscapeProcedure.js';
+import { openTimestreamPurgeSeatChoiceIfNeeded, sweepPurgedHeroesFromHq } from './rules/timestreamPurge.logic.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -888,7 +889,22 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // order and no escape adds a Wound any more, so a Diving Block wave from a step-3
           // Escape Wound waits behind them. ctx.currentPlayer is the escape's chooser and the
           // seat the D-24648 stage-ride skip applies to. Early no-op when nothing is queued.
+          // why: WP-829 / D-24762 — Go Back in Time: KO every HQ Hero sharing a Purged Hero Name
+          // (a recruit or KO refill this move may have drawn one) BEFORE any opener lists the HQ,
+          // so no HQ pick (escape or Purge) offers a Hero the rule is about to KO. No-op until
+          // the scheme has Purged something.
+          sweepPurgedHeroesFromHq(G);
           openEscapeProcedureSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-829 / D-24762 — open the next owed Purge (the active player's HQ pick; it
+          // sweeps again itself before listing). Then sweep once more for an escape auto-KO's
+          // refill, but only while no seat choice is parked: a sweep under an open HQ pick
+          // would KO one of its options. A parked choice blocks every move, and the sweep at the
+          // top of the next onMove catches what was left. The re-runs just below catch a
+          // refill that emptied the Hero Deck.
+          openTimestreamPurgeSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          if (G.pendingSeatChoice === undefined) {
+            sweepPurgedHeroesFromHq(G);
+          }
           // why: WP-793 / D-24656 — both checks above ran BEFORE the openers, so an automatic
           // escape KO whose HQ refill emptied the Hero Deck would only be caught on the NEXT
           // move. Re-run them (both idempotent) so the deck-out latch and Super Hero Civil

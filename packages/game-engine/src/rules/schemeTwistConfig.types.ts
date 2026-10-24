@@ -123,6 +123,9 @@ export type SchemeTwistResolverId =
   | 'portals'
   | 'clash-monster-pit'
   | 'brainwash-the-military'
+  // why: WP-829 / D-24762 — Go Back in Time to Slay Heroes' Ancestors: each Twist owes one
+  // Purge of an HQ Hero (contract change recorded in D-24762).
+  | 'go-back-in-time'
   | 'counter-only';
 
 /**

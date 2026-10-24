@@ -1502,6 +1502,21 @@ export interface PendingTeleportReturn {
 }
 
 /**
+ * One owed "Purged from the Timestream" pick (WP-829 / D-24762).
+ *
+ * Appended by the `go-back-in-time` Scheme Twist resolver (Go Back in Time to Slay Heroes'
+ * Ancestors) and resolved by the play-phase onMove opener: Purged with no prompt when the HQ
+ * holds one Hero, else chosen through G.pendingSeatChoice (kind 'timestream-purge').
+ * Runtime-only; lazily created.
+ */
+export interface PendingTimestreamPurge {
+  /** The active player, who picks the HQ Hero to Purge. */
+  chooserPlayerID: string;
+  /** The Scheme Twist that owes the Purge. */
+  twistCardId: CardExtId;
+}
+
+/**
  * Pending reactive Diving-Block wound-interception entry (WP-682 / D-24499).
  *
  * Created at the `gainWoundForPlayer` chokepoint (checkDivingBlock) when a player
@@ -2367,6 +2382,16 @@ export interface LegendaryGameState {
   // grant and deleted at turn start (game.ts onBegin + applyOnBeginParity).
   /** Card ids granted Man Out of Time this turn (WP-828). */
   outOfTimeGrantedThisTurn?: CardExtId[] | undefined;
+  // why: WP-829 / D-24762 — each Go Back in Time Twist owes one Purge, resolved by the
+  // play-phase onMove opener (auto with one HQ Hero, else the active player's seat choice).
+  // Lazily created.
+  /** FIFO queue of owed "Purged from the Timestream" picks (WP-829). */
+  pendingTimestreamPurges?: PendingTimestreamPurge[] | undefined;
+  // why: WP-829 / D-24762 — the Heroes set next to the Scheme, "Purged from the Timestream".
+  // An HQ Hero sharing one's Hero Name is KO'd after each Purge and each move. Lazily created
+  // on the first Purge; never cleared during the match (the Purge is permanent).
+  /** Hero cards Purged from the Timestream, in Purge order (WP-829). */
+  purgedFromTimestream?: CardExtId[] | undefined;
   // why: WP-793 / D-24656 — every Villain escape records the rulebook HQ KO + Bystander
   // discard it owes; the play-phase turn.onMove escape opener drains the FIFO one entry at
   // a time through the WP-684 seat-choice capability (the Diving Block precedent). Optional

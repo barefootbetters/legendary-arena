@@ -113,6 +113,9 @@ export default defineComponent({
         // why: WP-793 / D-24656 — the rulebook escape procedure (the current player's HQ
         // KO pick, then every player's Bystander discard) and a non-active seat's own
         // return-on-discard answer.
+        // why: WP-829 / D-24762 — Go Back in Time: every HQ Hero sharing the pick's name is KO'd.
+        case 'timestream-purge':
+          return 'Go Back in Time — choose a Hero in the HQ to Purge from the Timestream';
         case 'escape-hq-ko':
           return 'A Villain escaped — choose a Hero in the HQ to KO';
         case 'escape-bystander-discard':

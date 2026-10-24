@@ -508,7 +508,10 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
     'ca75/go-back-in-time-to-slay-heroes-ancestors',
     {
       schemeId: 'ca75/go-back-in-time-to-slay-heroes-ancestors',
-      resolverId: 'counter-only',
+      // why: WP-829 / D-24762 — each Twist Purges an HQ Hero from the Timestream (the active
+      // player's pick), and any HQ Hero sharing a Purged Hero Name is KO'd. The loss is still the
+      // Hero Deck running out (the resource condition below).
+      resolverId: 'go-back-in-time',
       params: {},
       resourceLossCondition: { kind: 'pile-depleted', pile: 'heroDeck' },
     },

@@ -18,6 +18,7 @@ import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
+import { queueTimestreamPurge } from './timestreamPurge.logic.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
 import { gainWoundForPlayer, gainWoundWithOutcome } from '../board/wounds.logic.js';
 import { countPendingDivingBlockWounds } from '../moves/divingBlock.logic.js';
@@ -1112,6 +1113,44 @@ function counterOnly(): void {
   return;
 }
 
+/**
+ * Go Back in Time to Slay Heroes' Ancestors (WP-829 / D-24762): "Twist: Put a Hero from the HQ
+ * next to the Scheme, 'Purged from the Timestream.'" Queues one owed Purge for the active
+ * player; the play-phase onMove opener resolves it after the move (see timestreamPurge.logic.ts).
+ *
+ * @param gameState - The game state, mutated in place (queue appended).
+ * @param context - The reveal context (the active player picks the Hero).
+ * @param _implementationMap - Unused.
+ * @param _params - Unused.
+ * @param twistCardId - The Twist card that triggered.
+ */
+function goBackInTime(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  _implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  // why: WP-829 / D-24762 — the Twist resolves inside a Villain Deck reveal, where no seat
+  // choice can be answered, so it owes the Purge and the onMove opener makes it after the move.
+  queueTimestreamPurge(gameState, context.ctx.currentPlayer, resolvedTwistCardId);
+  pushLog(gameState,
+    `[Go Back in Time] Player ${context.ctx.currentPlayer} must Purge a Hero in the HQ from the Timestream.`,
+    'threat',
+    resolvedTwistCardId,
+  );
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'goBackInTime',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'goBackInTime',
+    ),
+  });
+}
+
 export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistResolver> = {
   'reveal-or-punish': revealOrPunish,
   'chained-reveals': chainedReveals,
@@ -1123,5 +1162,6 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'portals': portals,
   'clash-monster-pit': clashMonsterPit,
   'brainwash-the-military': brainwashTheMilitary,
+  'go-back-in-time': goBackInTime,
   'counter-only': counterOnly,
 };

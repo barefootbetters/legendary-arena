@@ -380,6 +380,7 @@ const RESOLVER_KEY_PHRASES: Readonly<Record<SchemeTwistResolverKey, string>> = {
   portals: 'a Dark Portal opened, raising the attack of the Mastermind or the Villains beneath it',
   clashMonsterPit: 'a Monster climbed out of the Monster Pit to face each player’s Gladiator',
   brainwashTheMilitary: 'a Twist joined the Traitor Battalion, or every S.H.I.E.L.D. Officer in the City escaped',
+  goBackInTime: 'a Hero in the HQ must be Purged from the Timestream',
 };
 
 /**
