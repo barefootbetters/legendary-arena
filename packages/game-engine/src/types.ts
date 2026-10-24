@@ -64,15 +64,24 @@ export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 // why: WP-513 / D-24324 — a converted card's "counts-as" villain identity, kept
 // as a scheme-runtime overlay (G.convertedVillainOrigins), distinct from the
 // card's RevealedCardType. 'killbot' (Killbots, WP-513); 'skrull' (Secret Invasion,
-// WP-514 / D-24326 — 12 Heroes shuffled into the Villain Deck count as Skrull villains).
+// WP-514 / D-24326 — 12 Heroes shuffled into the Villain Deck count as Skrull villains);
+// 'shield-officer' (Brainwash the Military, WP-823 / D-24756 — 12 S.H.I.E.L.D. Officers
+// in the Villain Deck are Villains, gained as a Hero on defeat).
 /** Converted-card villain origin — the named villain group a card "counts as". */
-export type ConvertedVillainOrigin = 'killbot' | 'skrull';
+export type ConvertedVillainOrigin = 'killbot' | 'skrull' | 'shield-officer';
 
 // why: WP-513 / D-24325 — Killbots' "number of Twists next to this Scheme" counter
 // key (G.counters). Seeded 3 at setup, +1 per Killbots twist; a Killbot's attack
 // equals this value. A plain counter key (not an endgame condition).
 /** G.counters key for Killbots' "twists next to this Scheme" (drives Killbot attack). */
 export const KILLBOT_TWISTS_NEXT_TO_SCHEME = 'killbotTwistsNextToScheme';
+
+// why: WP-823 / D-24756 — Brainwash the Military's "Traitor Battalion", the Twists
+// stacked next to the Scheme. Never seeded (reads `?? 0`), +1 per Twist 1-6; an
+// Officer's Attack is 3 plus this value, and the twist resolver numbers each Twist
+// from it (a nested Twist reads the pre-increment schemeTwistCount). A plain counter.
+/** G.counters key for Brainwash the Military's Traitor Battalion (Twists stacked next to the Scheme). */
+export const TRAITOR_BATTALION_TWISTS = 'traitorBattalionTwists';
 
 // why: WP-539 / D-24348 — Portals-specific counter, one per Dark Portal placed
 // (mirrors KILLBOT_TWISTS_NEXT_TO_SCHEME). Twist 1 places the Mastermind portal;

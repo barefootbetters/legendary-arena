@@ -261,7 +261,8 @@ const NO_TARGET_KO_LABELS: Readonly<Partial<Record<VillainEffectKeyword, string>
  *   ext_ids already resolved to display names (WP-319).
  * @param skrullGained - True when the defeated card was a Secret Invasion Skrull
  *   (a Hero acting as a Villain) gained into the defeating player's discard
- *   (WP-518 / D-24331). Defaults to false so every non-Skrull caller and the
+ *   (WP-518 / D-24331), or a Brainwash the Military Officer gained as a Hero
+ *   (WP-823 / D-24756). Defaults to false so every non-Skrull caller and the
  *   existing golden tests stay byte-identical.
  * @returns Single English sentence describing the resolved fight.
  */
@@ -378,6 +379,7 @@ const RESOLVER_KEY_PHRASES: Readonly<Record<SchemeTwistResolverKey, string>> = {
   secretInvasion: 'the highest-cost HQ Hero moved into the Sewers as a Skrull Villain',
   portals: 'a Dark Portal opened, raising the attack of the Mastermind or the Villains beneath it',
   clashMonsterPit: 'a Monster climbed out of the Monster Pit to face each player’s Gladiator',
+  brainwashTheMilitary: 'a Twist joined the Traitor Battalion, or every S.H.I.E.L.D. Officer in the City escaped',
 };
 
 /**

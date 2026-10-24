@@ -263,8 +263,8 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
     assert.equal(entryCount, 25);
   });
 
-  it('the registry holds exactly the 8 core entries, the 67 audit entries and Clash (D-24736)', () => {
-    assert.equal(SCHEME_TWIST_CONFIGS.size, 8 + 67 + 1);
+  it('the registry holds exactly the 8 core entries, the 67 audit entries, Clash (D-24736) and Brainwash the Military (D-24756)', () => {
+    assert.equal(SCHEME_TWIST_CONFIGS.size, 8 + 67 + 2);
     let coreCount = 0;
     for (const schemeId of SCHEME_TWIST_CONFIGS.keys()) {
       if (schemeId.startsWith('core/')) {

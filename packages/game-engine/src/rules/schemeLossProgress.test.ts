@@ -573,6 +573,7 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
       'escaped-bystander',
       'escaped-killbot',
       'escaped-skrull',
+      'escaped-officer',
       'twists',
       'twists-fallback',
     ] satisfies SchemeLossKind[];
@@ -620,6 +621,11 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
       ),
       'escaped-skrull',
     );
+    // why: WP-823 / D-24756 — Brainwash the Military counts escaped S.H.I.E.L.D. Officers.
+    assert.equal(
+      resolveSchemeLossKind(makeTestState({ schemeId: 'ca75/brainwash-the-military' })),
+      'escaped-officer',
+    );
   });
 
   it('every configured scheme resolves to a member of the canonical array', () => {
@@ -632,6 +638,7 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
       'core/replace-earths-leaders-with-killbots',
       'core/secret-invasion-of-the-skrull-shapeshifters',
       'core/portals-to-the-dark-dimension',
+      'ca75/brainwash-the-military',
       'not-a-real-scheme',
     ];
     for (const schemeId of schemeIds) {

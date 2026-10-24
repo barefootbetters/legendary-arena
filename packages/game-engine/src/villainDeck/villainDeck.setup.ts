@@ -29,6 +29,10 @@ const KILLBOTS_SCHEME_ID = 'core/replace-earths-leaders-with-killbots';
 import type { SetupContext } from '../types.js';
 import { shuffleDeck } from '../setup/shuffle.js';
 import { resolveEffectiveTwistCount } from '../setup/schemeSetupSizing.js';
+import {
+  brainwashedOfficerExtId,
+  resolveBrainwashedOfficerCount,
+} from '../rules/brainwashTheMilitary.logic.js';
 
 // ---------------------------------------------------------------------------
 // VillainDeckRegistryReader — local structural interface
@@ -321,6 +325,21 @@ export function buildVillainDeck(
     } else {
       cardTypes[extId] = 'bystander';
     }
+  }
+
+  // --- 4b. Brainwash the Military's S.H.I.E.L.D. Officers (WP-823 / D-24756) ---
+  // why: "Add 12 S.H.I.E.L.D. Officers to the Villain Deck. S.H.I.E.L.D. Officers in
+  // the Villain Deck are Villains." Converted at this one co-located site, as Killbots
+  // are (D-24324): typed 'villain' so the reveal, fight and escape paths route them
+  // natively, and tagged 'shield-officer' so the attack, the gain-as-a-Hero defeat and
+  // the escaped-Officer loss read the overlay. They join the deck BEFORE the sort and
+  // the single shuffle below, so no new random draw. 0 for every other scheme.
+  const officerCount = resolveBrainwashedOfficerCount(config.schemeId, config.officersCount);
+  for (let officerIndex = 0; officerIndex < officerCount; officerIndex++) {
+    const extId = brainwashedOfficerExtId(officerIndex);
+    deck.push(extId);
+    cardTypes[extId] = 'villain';
+    convertedOrigins[extId] = 'shield-officer';
   }
 
   // --- 5. Master Strikes (generic virtual instanced cards) ---

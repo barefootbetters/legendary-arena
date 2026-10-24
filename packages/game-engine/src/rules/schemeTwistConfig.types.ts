@@ -122,6 +122,7 @@ export type SchemeTwistResolverId =
   | 'secret-invasion'
   | 'portals'
   | 'clash-monster-pit'
+  | 'brainwash-the-military'
   | 'counter-only';
 
 /**

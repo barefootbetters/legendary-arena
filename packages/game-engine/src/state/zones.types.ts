@@ -83,7 +83,10 @@ export interface GlobalPiles {
    * built pile length is the runtime source of truth (see resolveEffectiveWoundsCount).
    */
   wounds: Zone;
-  /** S.H.I.E.L.D. Officer cards. Size equals config.officersCount. */
+  /**
+   * S.H.I.E.L.D. Officer cards. Starts at config.officersCount, minus the Officers
+   * Brainwash the Military puts in the Villain Deck (WP-823 / D-24756).
+   */
   officers: Zone;
   /** Sidekick cards. Size equals config.sidekicksCount. */
   sidekicks: Zone;
