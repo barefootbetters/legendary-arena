@@ -49254,4 +49254,25 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24757 (#2977). Related: D-24016 (attack-per-count + icon suppression), D-24489 (recruit-per-count), D-24497 / D-24529 (distinct Hero Classes you have), D-24464 (Savior), D-24498 / D-24391 (S.H.I.E.L.D. tokens, team membership), D-24655 (the previous count-source addition), D-24026.
 
 ---
+
+### D-24758 — A printed cost floor on the "another [team:X] Hero" gate: `HeroCondition.minimumCost`; co2e Stealth Assault Squad needs a S.H.I.E.L.D. Hero that costs 1 or more (Active 2026-10-24 — WP-825 / EC-863)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: in a 2-player operator match created after the deploy (older matches keep their setup-time hooks) with co2e Nick Fury, Stealth Assault Squad played after only a S.H.I.E.L.D. Agent gives no +2 and logs "it needs another shield Hero that costs 1 or more played this turn"; after an Officer or another costed S.H.I.E.L.D. Hero it gives +2.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Nick Fury's Stealth Assault Squad (co2e) prints "You get +2[icon:attack] if you played another [team:shield] Hero that costs 1 or more this turn." One cost-0 Agent or Trooper used to unlock it; now only the Officer (cost 3) or another costed S.H.I.E.L.D. Hero does.
+
+**Context.** Step 1b turns the inline `[team:shield]` into a plain `requiresTeam: shield` gate, and `cardCountsAsTeamMember` counts the cost-0 basic tokens as S.H.I.E.L.D. Heroes (D-24391 / D-24498), so the printed cost floor was dropped. Recorded as a follow-up in D-24757 §5 (WP-824).
+
+**Decision.**
+1. **Contract field.** `HeroCondition.minimumCost?: number` (`rules/heroAbility.types.ts`, after `requiredMatches`). Absent, 0, negative or non-integer ≡ no floor (`effectiveMinimumCost`), so every other hook is unchanged. Only `heroClassMatch` / `requiresTeam` honor it, inside `countOtherInPlayMatchingCondition` (the one counting primitive, D-24563): a matching OTHER played card counts only when `G.cardStats?.[id]?.cost ?? 0` is at least the floor. The Agent / Trooper carry cost-0 rows, the Officer cost 3.
+2. **Parser.** A text arm (the D-24746 precedent, no marker, no card-data change): `ANOTHER_TEAM_HERO_COST_FLOOR_PATTERN` matches "if you played another [team:X] Hero that costs N or more this turn" (exactly one corpus line) and `applyAnotherTeamHeroCostFloor` sets `minimumCost: N` on the line's first matching `requiresTeam` condition. It mutates only the array `collapseLeadingRepeatedIconConditions` just returned in the same `parseAbilityText` call, before the array is attached to a hook.
+3. **Wording.** `describeFailedCondition` names the floor: "it needs another shield Hero that costs 1 or more played this turn" (plural: "…Heroes that cost N or more…").
+4. **Sequence teacher.** `heroConditionHoldsForInPlay` returns `'unsupported'` for a floored gate: its card-data slice has no `cardStats`, so it would report a false whiff. Same scope-out as size-changing / copy-powers; `apps/server` is unchanged.
+5. **Replay-compat.** A stored match replays from its bgio `initialState`, which holds its setup-time hooks, so pre-deploy matches keep the unfloored gate and replay identically. Only matches created after the deploy carry the floor. Stored `competitive_scores` stay frozen (D-24616 §5). No hashed fixture, PAR file or coverage sweep includes co2e Nick Fury (`finalStateHash` / `PRE_WP080_HASH` unchanged).
+
+**Gates.** game-engine 5662 → 5672 (+10, rebased onto WP-824 / +2 suites), 0 fail; four revert proofs (parser arm, counter floor, teacher scope-out, wording) each fail their locked tests; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; all eight card / coverage `:check`s unchanged. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-825-stealth-assault-squad-costed-shield-gate.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24758 (#2980). Related: D-24563 (`requiredMatches`, the field precedent), D-24746 (parser text arm), D-24628 (body team tokens), D-24391 / D-24498 (S.H.I.E.L.D. tokens), D-24533 (sequence teacher), D-24757 (WP-824), D-24616, D-24026.
+
+---
 Protect this file.

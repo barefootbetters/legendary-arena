@@ -465,7 +465,7 @@ mindmap
         ["WP-822 📝 Competent bot recruits the highest printed Attack HQ Hero under Ultimate and Double Highest Abomination game engine DRAFTED 2026-10-22 EC-860 D-24755 reserved. Follow-up to the Arnim Zola 2p investigation"]
         ["WP-823 ✅ Brainwash the Military S.H.I.E.L.D. Officers as Villains Traitor Battalion Twists escaped-Officer Evil Wins game engine plus arena-client meter noun EC-861 D-24756 Active DONE 2026-10-23. Cap 75th arc scheme item 1"]
         ["WP-824 ✅ Cap 75th count-scaled hero lines International Strike Force and Star-Spangled Hero Savior lines per Hero Class Paramilitary Ops per other S.H.I.E.L.D. Hero costing 1 or more game engine plus card data EC-862 D-24757 Active DONE 2026-10-23. Cap 75th arc item 3"]
-        ["WP-825 📝 co2e Stealth Assault Squad another S.H.I.E.L.D. Hero that costs 1 or more gate HeroCondition minimumCost game engine DRAFTED 2026-10-24 EC-863 D-24758 reserved. Follow-up to WP-824"]
+        ["WP-825 ✅ co2e Stealth Assault Squad another S.H.I.E.L.D. Hero that costs 1 or more gate HeroCondition minimumCost game engine EC-863 D-24758 Active DONE 2026-10-24. Follow-up to WP-824"]
         ["WP-805 ✅ A random player goes first the play phase opens on a seeded-random seat not always seat 1 rules v23 L524 game engine EC-842 D-24700 Active DONE 2026-10-12. Omit-when-off G flag keeps stored logs and solo unchanged"]
         ["WP-782 📝 Soaring Flight executor a recruited Soaring Flight Hero is set aside and joins your new hand at end of turn game engine plus card data DRAFTED 2026-09-27 EC-819 D-24627 reserved"]
         ["WP-784 📝 Deck-top discards count toward If you discarded any cards this turn game engine DRAFTED 2026-09-28 EC-821 D-24631 reserved"]
@@ -994,7 +994,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 194/210 | 16 open |
+| Hero Ability Coverage & Markup Pipeline | 195/210 | 15 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1015,9 +1015,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **800/822 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 21 open |
+| **Total** | **801/822 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 20 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 22):** WP-825 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 21):** WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
