@@ -429,6 +429,23 @@ function effectiveRequiredMatches(condition: HeroCondition): number {
 }
 
 /**
+ * Returns the printed cost floor a counted OTHER card must meet (WP-825 / D-24758).
+ *
+ * `minimumCost` when it is an integer of 1 or more, else 0 — so an absent, 0, negative or
+ * non-integer value behaves exactly like a gate with no cost floor.
+ *
+ * @param condition - The condition being evaluated or described.
+ * @returns The effective minimum printed cost (0 = no floor).
+ */
+function effectiveMinimumCost(condition: HeroCondition): number {
+  const minimumCost = condition.minimumCost;
+  if (typeof minimumCost === 'number' && Number.isInteger(minimumCost) && minimumCost >= 1) {
+    return minimumCost;
+  }
+  return 0;
+}
+
+/**
  * Counts the OTHER cards the player played this turn that satisfy one condition.
  *
  * WP-740 / D-24562 introduced it for a doubled "both" line; since D-24563 it is the counting
@@ -466,6 +483,7 @@ export function countOtherInPlayMatchingCondition(
   if (condition.type !== 'requiresTeam' && condition.type !== 'heroClassMatch') {
     return 0;
   }
+  const minimumCost = effectiveMinimumCost(condition);
   let matchCount = 0;
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
@@ -478,6 +496,13 @@ export function countOtherInPlayMatchingCondition(
       isMatch = cardCountsAsTeamMember(G, cardId, condition.value);
     } else {
       isMatch = cardHasClassWhenPlayed(G, cardId, condition.value);
+    }
+    // why: WP-825 / D-24758 — a printed "that costs N or more" floor. The cost reads
+    // G.cardStats (the S.H.I.E.L.D. Agent / Trooper carry cost-0 rows, the Officer cost 3);
+    // `?? 0` covers a card with no row, which never meets a floor of 1 or more.
+    if (isMatch && minimumCost > 0) {
+      const cost = G.cardStats?.[cardId]?.cost ?? 0;
+      isMatch = cost >= minimumCost;
     }
     if (isMatch) {
       matchCount += 1;
@@ -792,10 +817,15 @@ export function describeFailedCondition(
     case 'requiresTeam': {
       // why: D-24563 — a repeated prefix icon names its count; the single-icon wording is unchanged.
       const requiredMatches = effectiveRequiredMatches(condition);
+      // why: WP-825 / D-24758 — a cost floor names the printed cost, so the log says why a
+      // played cost-0 starter didn't count.
+      const minimumCost = effectiveMinimumCost(condition);
       if (requiredMatches > 1) {
-        return `it needs ${requiredMatches} other ${condition.value} Heroes played this turn`;
+        const pluralCostClause = minimumCost > 0 ? ` that cost ${minimumCost} or more` : '';
+        return `it needs ${requiredMatches} other ${condition.value} Heroes${pluralCostClause} played this turn`;
       }
-      return `it needs another ${condition.value} Hero played this turn`;
+      const costClause = minimumCost > 0 ? ` that costs ${minimumCost} or more` : '';
+      return `it needs another ${condition.value} Hero${costClause} played this turn`;
     }
 
     case 'requiresKeyword':
@@ -988,6 +1018,11 @@ export function heroConditionHoldsForInPlay(
     if (isSizeChangingOrCopyPowers(cardData, candidateId)) {
       return 'unsupported';
     }
+  }
+  // why: WP-825 / D-24758 — fidelity scope-out: the card-data slice carries no cardStats, so a
+  // cost-floored gate would read every candidate as cost 0 and report a false whiff.
+  if (effectiveMinimumCost(condition) > 0) {
+    return 'unsupported';
   }
   // why: reconstruct the minimal G slice evaluateCondition's class/team/keyword gates
   // read (the four card-data maps + one seat's inPlay), then delegate to the real

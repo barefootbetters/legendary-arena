@@ -10,6 +10,15 @@
 
 ## Current State
 
+### WP-825 / EC-863 — co2e Stealth Assault Squad: the "another S.H.I.E.L.D. Hero that costs 1 or more" gate (D-24758) (2026-10-24)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Nick Fury's Stealth Assault Squad (co2e) gives its +2 Attack only after another S.H.I.E.L.D. Hero that costs 1 or more: the Officer (cost 3) or another costed S.H.I.E.L.D. Hero counts, the cost-0 Agent and Trooper no longer do. A failed gate logs "it needs another shield Hero that costs 1 or more played this turn".
+
+- **Engine.** New optional `HeroCondition.minimumCost` (absent ≡ no floor), set by a parser text arm on the printed clause and honored inside `countOtherInPlayMatchingCondition`. The sequence teacher scopes floored gates out. No card-data or server change.
+- **Tests.** game-engine 5662 → 5672 (+10, rebased onto WP-824), 0 fail; four revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; every card / coverage `:check` unchanged. 01.6 post-mortem WP COMPLETE.
+- **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches keep the old gate. No hashed fixture plays co2e Nick Fury.
+- **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with co2e Nick Fury: the Squad after an Agent gives no +2 and logs the floor; after an Officer it gives +2.
+
 ### WP-824 / EC-862 — Cap 75th count-scaled hero lines: two Savior lines per Hero Class, Paramilitary Ops per costed S.H.I.E.L.D. Hero (D-24757) (2026-10-23)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Three Cap 75th hero lines now grant what they print. International Strike Force line 2 gives a Savior +1 Attack per Hero Class they have (hand + play), not a flat +1. Star-Spangled Hero line 2 gives a Savior +2 Recruit per Hero Class, not a flat +2. Paramilitary Ops gives +1 Attack per other S.H.I.E.L.D. Hero played this turn that costs 1 or more: the cost-3 Officer counts, the cost-0 Agent and Trooper never do (before, one starter unlocked a flat +1).
