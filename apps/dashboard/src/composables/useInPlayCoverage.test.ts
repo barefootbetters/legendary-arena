@@ -581,8 +581,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // 7834 -> 7794 raw observations, 79 mechanics, 0 dropped). totalObs 8755 -> 8715 (-40, equal to
   // the raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.5 (1091 / 8715). A
   // sweep-trajectory + denominator re-pin; no mechanic changed status.
+  // 2026-10-23 (WP-824 / D-24757, re-pin): three ca75 hero lines now grant per count (two Savior
+  // lines per Hero Class you have, Paramilitary Ops per other S.H.I.E.L.D. Hero costing 1 or more),
+  // which shifts the fixed-seed sweep trajectory by one gate-only observation (feed regenerated:
+  // 7794 -> 7793 raw observations, 79 mechanics, 0 dropped). totalObs 8715 -> 8714 (-1, equal to the
+  // raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.5 (1091 / 8714). A
+  // sweep-trajectory + denominator re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8715);
+  assert.equal(view.totalObs.value, 8714);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.5);
   assert.ok(view.remaining.value.length > 0);

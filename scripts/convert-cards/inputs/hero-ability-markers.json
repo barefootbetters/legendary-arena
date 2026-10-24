@@ -121,6 +121,24 @@
       "cardSlug": "international-strike-force",
       "abilityIndex": 0,
       "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america-falcon",
+      "cardSlug": "star-spangled-hero",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:2]"
+    },
+    {
+      "heroSlug": "steve-rogers-director-of-shield",
+      "cardSlug": "international-strike-force",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "agent-x-13",
+      "cardSlug": "paramilitary-ops",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:shield-heroes-cost-one-plus-played-this-turn:1]"
     }
   ],
   "chmp": [

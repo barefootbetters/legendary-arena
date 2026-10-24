@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1981,
+    "totalEntries": 1984,
     "byScope": {
-      "hero": 797,
+      "hero": 800,
       "villain": 728,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 584,
+      "executable": 587,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
@@ -4557,6 +4557,23 @@
       "name": "Agent X-13",
       "set": "ca75",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "paramilitary-ops",
+          "name": "Paramilitary Ops"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "name": "Agent X-13",
+      "set": "ca75",
+      "scope": "hero",
       "mechanic": "gain-officer",
       "status": "subsystem",
       "handler": "choose-one:count-scaled-choose-option",
@@ -4730,6 +4747,23 @@
       "name": "Captain America (Falcon)",
       "set": "ca75",
       "scope": "hero",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "designs": [
+        {
+          "slug": "star-spangled-hero",
+          "name": "Star-Spangled Hero"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-falcon",
+      "name": "Captain America (Falcon)",
+      "set": "ca75",
+      "scope": "hero",
       "mechanic": "rescue",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
@@ -4760,6 +4794,23 @@
         {
           "slug": "winged-salvation",
           "name": "Winged Salvation"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/steve-rogers-director-of-shield",
+      "name": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "international-strike-force",
+          "name": "International Strike Force"
         }
       ]
     },
@@ -29791,6 +29842,7 @@
       "scope": "hero",
       "mechanics": [
         "attack",
+        "attack-per-count",
         "gain-officer",
         "out-of-time",
         "savior"
@@ -29810,6 +29862,7 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
+        "recruit-per-count",
         "rescue",
         "savior"
       ]
@@ -29817,6 +29870,7 @@
     "ca75/steve-rogers-director-of-shield": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "out-of-time",
         "recruit-per-count",
         "rescue",

@@ -152,23 +152,10 @@ export function evaluateLine(line) {
 // why: the entries below are the gated / non-standard variants of the Perfect
 // Teamwork family that the 2026-09-26 backfill left unmarked on purpose (the
 // plain ungated lines were marked). Each is a tracked follow-up.
+// why: WP-824 / D-24757 — the two ca75 Savior-gated lines (Star-Spangled Hero and
+// International Strike Force, ability 1) are now marked: the Savior condition and the
+// distinct-hero-classes count marker compose on one hook, so their entries are removed.
 export const DEFERRED = [
-  {
-    set: 'ca75',
-    hero: 'captain-america-falcon',
-    card: 'star-spangled-hero',
-    abilityIndex: 1,
-    reason:
-      'Savior-gated per-class recruit line: still a flat +2 under the Savior gate until the marker is composed with that gate and verified.',
-  },
-  {
-    set: 'ca75',
-    hero: 'steve-rogers-director-of-shield',
-    card: 'international-strike-force',
-    abilityIndex: 1,
-    reason:
-      'Savior-gated per-class attack line: still a flat +1 under the Savior gate until the marker is composed with that gate and verified.',
-  },
   {
     set: 'bkpt',
     hero: 'king-black-panther',
