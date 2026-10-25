@@ -71,6 +71,7 @@ export type SchemeLossKind =
   | 'escaped-killbot'
   | 'escaped-skrull'
   | 'escaped-officer'
+  | 'conquered-capitals'
   | 'twists'
   | 'twists-fallback';
 
@@ -90,6 +91,7 @@ export const SCHEME_LOSS_KINDS: readonly SchemeLossKind[] = [
   'escaped-killbot',
   'escaped-skrull',
   'escaped-officer',
+  'conquered-capitals',
   'twists',
   'twists-fallback',
 ];
@@ -390,6 +392,17 @@ function collectResourceConditions(
     conditions.push({
       kind,
       progress: countEscapedPileByType(gameState, condition.cardTypes),
+      threshold: condition.threshold,
+      isThresholdReported: true,
+    });
+    return conditions;
+  }
+  if (condition.kind === 'scheme-counter') {
+    // why: WP-832 / D-24765 — the scheme's own tally (Change the Outcome of WWII: conquered
+    // capitals), read from the same counter applySchemeCounterResourceLoss decides the loss on.
+    conditions.push({
+      kind: condition.meterKind,
+      progress: gameState.counters[condition.counter] ?? 0,
       threshold: condition.threshold,
       isThresholdReported: true,
     });

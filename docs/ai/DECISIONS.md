@@ -49463,4 +49463,27 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24764 (#2999). Related: D-2602 (premise superseded), D-24652 (fight targets by space), D-24747 / D-24295 (the HQ under the City), D-24505 (scale-to-fit), D-24364 (bot mirrors the move guard), D-24765 (WP-832), D-24026.
 
 ---
+
+### D-24765 — Change the Outcome of WWII: country Twists resize the City, an escape per country conquers a capital, Evil wins at 3 (Active 2026-10-24 — WP-832 / EC-870)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match with this scheme created after the deploy (with WP-831's City).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). The scheme's Twist ("The Axis invades a new country. Put all Villains and Bystanders from the city on the bottom of the Villain Deck. The number of city spaces changes. Play 2 cards from the Villain Deck. If any Villains escape this country, stack a Twist next to the scheme as a 'conquered capital.'"; Poland 4, France 3, USSR 6, England 3, USA 5, Australia 2, Switzerland 1) and its loss ("When 3 capitals are conquered") now work; the danger meter reads "Capitals N/3".
+
+**Context.** The scheme had no config: its Twists only counted and it lost at the seventh Twist (the D-24595 fallback; WP-763's FALSE-LOSS row). WP-831 / D-24764 made the City resizable.
+
+**Decision.**
+1. **Contract.** `SchemeTwistResolverId` gains `'change-the-outcome-of-wwii'`; `SchemeResourceLossCondition` gains the generic `'scheme-counter'` kind (`counter`, `threshold`, `meterKind`, `lossDescription`); `SchemeLossKind` gains `'conquered-capitals'` (client label "Capitals"). Declaring the condition suppresses the twist proxy (D-24315); `lossThreshold: 7` stays inert (D-24178). A `changeTheOutcomeOfWwii` notable-event key.
+2. **The invasion.** Each Twist settles the current country, raises its own country counter (BEFORE the plays, so a Twist among them invades the next country), returns each City Villain then its Bystanders to the bottom of the Villain Deck in City order (typing a pile Bystander `'bystander'` so its later reveal resolves; a Villain's captured Heroes travel with it), resizes the City to the country's spaces (`initializeCity`), plays 2 cards, and settles again. No eighth country is printed: a later Twist changes nothing.
+3. **"This country".** A capital is conquered once per country, at the first escaped Villain (Henchmen included, D-24609) since the invasion. The settle runs at the end of `resolveVillainEscape` — the one path every escape takes — so the live game, the sim / PAR / fixture loops and replay agree, and a third capital latches before the escape-procedure opener. The normal City before Twist 1 is not a country (rules v23).
+4. **The loss.** `applySchemeCounterResourceLoss` latches SCHEME_LOSS once at 3 capitals; the meter reads the same counter.
+5. **State.** The tallies are lazily created `G.counters` keys (countries invaded, capitals, the escape baseline, the current country conquered); constants live in a leaf module so the static config table imports them without a load-time cycle. A match without the scheme is byte-identical. D-24764 §6 (a resize escapes a removed space's Villain) is met by emptying the City before the resize.
+6. **Replay-compat.** The resolver is read from the config at runtime, so a completed pre-deploy WWII match no longer reproduces its recorded state under D-24119 (the WP-823 precedent), and a match in flight across the deploy starts at Poland on its next Twist.
+7. **Known gaps.** The extra Villain Group setup requirement is WP-833 / D-24766. A Villain whose Escape "becomes a Scheme Twist" (core Mystique), pushed out by an entering Ambush Villain, fires this Twist mid-reveal: the entering Villain returns to the Villain Deck and its Ambush still resolves.
+
+**Gates.** game-engine → 5692 on the WP-831 base, arena-client 2444, 0 fail; fifteen revert proofs each fail their locked tests; every card / coverage `:check` 0, nothing regenerated. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-832-change-the-outcome-of-wwii.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24765 (#2999). Related: D-24764 (the City), D-24595 (the fallback replaced), D-24756 (the WP-823 precedent), D-24315 / D-24178 (suppression), D-24609 (Henchmen are Villains), D-24766 (WP-833), D-24119, D-24026.
+
+---
 Protect this file.

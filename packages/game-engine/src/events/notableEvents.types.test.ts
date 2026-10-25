@@ -114,6 +114,7 @@ describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
         'brainwashTheMilitary',
         'goBackInTime',
         'enigmaCode',
+        'changeTheOutcomeOfWwii',
       ],
     );
   });
@@ -137,6 +138,7 @@ describe('SCHEME_TWIST_RESOLVER_KEYS drift detection', () => {
       'brainwashTheMilitary',
       'goBackInTime',
       'enigmaCode',
+      'changeTheOutcomeOfWwii',
     ];
     for (const member of unionMembers) {
       assert.ok(

@@ -208,6 +208,31 @@ export function applyEscapedPileResourceLoss(
 }
 
 /**
+ * Sets the scheme loss when the active scheme's `'scheme-counter'` tally reaches its threshold
+ * (WP-832 / D-24765: Change the Outcome of WWII's conquered capitals).
+ *
+ * Idempotent (a latched loss is never re-counted or re-logged) and a no-op for any other
+ * condition. Called by the scheme's own logic right after it raises the counter, the escape-path
+ * precedent: evaluateEndgame reads only G.counters. Never throws.
+ *
+ * @param gameState - The game state to mutate (counters + log only).
+ */
+export function applySchemeCounterResourceLoss(gameState: LegendaryGameState): void {
+  const condition = SCHEME_TWIST_CONFIGS.get(gameState.selection.schemeId)?.resourceLossCondition;
+  if (condition === undefined || condition.kind !== 'scheme-counter') {
+    return;
+  }
+  if ((gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] ?? 0) >= 1) {
+    return;
+  }
+  const count = gameState.counters[condition.counter] ?? 0;
+  if (count >= condition.threshold) {
+    gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
+    pushLog(gameState, `Scheme loss triggered — ${count} ${condition.lossDescription} (threshold ${condition.threshold}).`);
+  }
+}
+
+/**
  * Describes what reached an escaped-pile loss threshold, in the printed rule's terms.
  *
  * why: only Bystanders are "carried away by escaping Villains" (Midtown Bank Robbery).

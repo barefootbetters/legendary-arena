@@ -26,6 +26,8 @@ import { validateCityShape } from '../board/city.validate.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { carryEscapedBystandersToPile } from '../board/bystanders.logic.js';
 import { applyEscapedPileResourceLoss } from '../rules/schemeResourceLoss.js';
+// why: WP-832 / D-24765 — a function-level cycle (the WWII invasion plays cards through this module).
+import { settleWwiiConquest } from '../rules/changeTheOutcomeOfWwii.logic.js';
 import { hasAmbush } from '../board/boardKeywords.logic.js';
 import { moveAttachedHeroesToEscapedPile } from '../board/heroCapture.logic.js';
 // why: WP-793 / D-24656 — the escape records the rulebook HQ KO + Bystander discard it owes.
@@ -740,6 +742,11 @@ export function resolveVillainEscape(
   // Invasion Skrull push (D-24656) — grows G.escapedPile here, so the count
   // reflects the full escape. No-op for schemes with no resourceLossCondition.
   applyEscapedPileResourceLoss(G);
+  // why: WP-832 / D-24765 — Change the Outcome of WWII: an escape conquers the current country's
+  // capital AT the escape, here on the one path every escape takes, so the live game, the sim /
+  // PAR / fixture loops and replay all count it the same way, and a third capital latches before
+  // the escape-procedure opener runs. No-op until a country has been invaded.
+  settleWwiiConquest(G);
 }
 
 /**
