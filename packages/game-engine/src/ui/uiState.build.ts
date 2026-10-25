@@ -29,6 +29,8 @@ import { computeDayNight } from '../rules/dayNight.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   UIState,
+  UIEnigmaCard,
+  UIEnigmaCodeState,
   UIPlayerState,
   UICityCard,
   UIGameOverState,
@@ -150,6 +152,7 @@ import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
 // why: WP-817 / D-24750 — handCosts projects the same off-play cost the fight-discard
 // gate reads (isHandCardCostOneOf), so the client and the engine agree on eligibility.
 import { offPlayCardStats } from '../hero/splitCard.logic.js';
+import { enigmaColorsOf } from '../rules/enigmaCode.logic.js';
 
 // why: exact structural contract — do not widen or add optional fields.
 // buildUIState MUST NOT depend on any other ctx fields.
@@ -1041,6 +1044,7 @@ export function buildUIState(
   const portalLocations = darkPortalLocations(gameState);
   const hasDarkPortals =
     portalLocations.onMastermind || portalLocations.citySpaceIndices.length > 0;
+  const enigmaCode = buildEnigmaCodeProjection(gameState);
   const scheme = {
     id: gameState.selection.schemeId,
     twistCount,
@@ -1059,6 +1063,9 @@ export function buildUIState(
           },
         }
       : {}),
+    // why: WP-830 / D-24763 — the full code (every card's display + colors); the audience filter
+    // strips what a viewer has not seen. Omitted while the code is empty or absent.
+    ...(enigmaCode !== undefined ? { enigmaCode } : {}),
   };
 
   // --- 7. Project economy ---
@@ -2560,4 +2567,30 @@ export function buildUIState(
     // isDebugMatch key at all (no `false` literal, no fixture backfill).
     ...(gameState.isDebugMatch === true ? { isDebugMatch: true } : {}),
   };
+}
+
+/**
+ * Projects The Unbreakable Enigma Code with every card visible (WP-830 / D-24763). The audience
+ * filter removes the cards a viewer has not seen, so this full form never reaches a client.
+ *
+ * @param gameState - The game state (not mutated).
+ * @returns The projection, or undefined while the code is empty or absent.
+ */
+function buildEnigmaCodeProjection(gameState: LegendaryGameState): UIEnigmaCodeState | undefined {
+  const code = gameState.enigmaCode;
+  if (code === undefined || code.length === 0) {
+    return undefined;
+  }
+  const cards: UIEnigmaCard[] = [];
+  for (let position = 0; position < code.length; position++) {
+    const cardId = code[position]!;
+    const peekedBy: string[] = [];
+    for (const [playerID, positions] of Object.entries(gameState.enigmaPeeks ?? {})) {
+      if (positions.includes(position)) {
+        peekedBy.push(playerID);
+      }
+    }
+    cards.push({ peekedBy, display: resolveDisplay(cardId, gameState), colors: enigmaColorsOf(gameState, cardId) });
+  }
+  return { isRevealed: gameState.isEnigmaCodeRevealed === true, cards };
 }

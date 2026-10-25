@@ -22,6 +22,8 @@
 
 import type {
   UIState,
+  UIEnigmaCard,
+  UIEnigmaCodeState,
   UIPlayerState,
   UITurnEconomyState,
   UICityCard,
@@ -653,6 +655,12 @@ export function filterUIStateForAudience(
               citySpaceAttackBonus: uiState.scheme.darkPortals.citySpaceAttackBonus,
             },
           }
+        : {}),
+      // why: WP-830 / D-24763 — the Enigma Code is PER-AUDIENCE: a card's display / colors survive
+      // only for a viewer who has looked at it, or for everyone once a right guess revealed the
+      // code. Every viewer keeps the card count and who has peeked (the peek log is public).
+      ...(uiState.scheme.enigmaCode !== undefined
+        ? { enigmaCode: filterEnigmaCodeForAudience(uiState.scheme.enigmaCode, audience) }
         : {}),
     },
     economy,
@@ -1667,4 +1675,26 @@ export function filterUIStateForAudience(
   }
 
   return result;
+}
+
+/**
+ * Redacts the Enigma Code for one audience (WP-830 / D-24763).
+ *
+ * @param enigmaCode - The full projection from buildUIState.
+ * @param audience - The viewer.
+ * @returns A fresh projection: unseen cards carry only `peekedBy`.
+ */
+function filterEnigmaCodeForAudience(enigmaCode: UIEnigmaCodeState, audience: UIAudience): UIEnigmaCodeState {
+  const cards: UIEnigmaCard[] = [];
+  for (const card of enigmaCode.cards) {
+    const isViewerAllowed =
+      enigmaCode.isRevealed ||
+      (audience.kind === 'player' && card.peekedBy.includes(audience.playerId));
+    if (isViewerAllowed && card.display !== undefined) {
+      cards.push({ peekedBy: [...card.peekedBy], display: { ...card.display }, colors: [...(card.colors ?? [])] });
+    } else {
+      cards.push({ peekedBy: [...card.peekedBy] });
+    }
+  }
+  return { isRevealed: enigmaCode.isRevealed, cards };
 }

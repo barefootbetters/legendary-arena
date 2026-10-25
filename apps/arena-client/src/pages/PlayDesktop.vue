@@ -888,6 +888,7 @@ export default defineComponent({
                   :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
                   :economy="snapshot.economy"
                   :dark-portal-bonus="snapshot.scheme.darkPortals?.mastermindAttackBonus ?? 0"
+                  :enigma-code="snapshot.scheme.enigmaCode"
                   :is-game-over="isGameOver"
                   :submit-move="submitMove"
                   @read="onCardRead"

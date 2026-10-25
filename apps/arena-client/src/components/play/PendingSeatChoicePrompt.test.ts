@@ -245,6 +245,25 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
   });
 });
 
+describe('PendingSeatChoicePrompt — WP-830 Enigma Code peek (D-24763)', () => {
+  test('the enigma-peek kind has its own heading', () => {
+    const { submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'enigma-peek',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: { 'player-1': { options: [{ label: 'Pay 1 Recruit: look at Enigma card 1' }, { label: "Don't look" }] } },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(
+      wrapper.find('.pending-seat-choice-prompt__heading').text(),
+      'Enigma Code — pay 1 Recruit to look at a face-down card?',
+    );
+  });
+});
+
 describe('PendingSeatChoicePrompt — WP-817 Primus Escape discard (D-24750)', () => {
   test('T31: the escape-effect-cost-discard kind has its own heading', () => {
     const { submitMove } = recorder();

@@ -1,6 +1,7 @@
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, ref, watch, type PropType } from 'vue';
 import type {
+  UIEnigmaCodeState,
   UIMastermindState,
   UITurnEconomyState,
 } from '@legendary-arena/game-engine';
@@ -9,6 +10,7 @@ import { useCardCostGating, type GatingResult } from '../../composables/useCardC
 import CardTile from './CardTile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
 import CrossedSwordsIcon from './CrossedSwordsIcon.vue';
+import EnigmaGuessPicker from './EnigmaGuessPicker.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
 /**
@@ -48,7 +50,7 @@ import type { SubmitMove } from './uiMoveName.types';
  */
 export default defineComponent({
   name: 'MastermindTile',
-  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon },
+  components: { CardTile, DarkPortalMarker, CrossedSwordsIcon, EnigmaGuessPicker },
   emits: ['read'],
   props: {
     mastermind: {
@@ -95,8 +97,55 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    // why: WP-830 / D-24763 — The Unbreakable Enigma Code (scheme.enigmaCode). While it holds a
+    // card, a Mastermind fight starts with a guess, so both Fight buttons open the guess picker.
+    enigmaCode: {
+      type: Object as PropType<UIEnigmaCodeState | undefined>,
+      required: false,
+      default: undefined,
+    },
   },
   setup(props, { emit }) {
+    // why: WP-830 / D-24763 — null while no guess is being made; otherwise whether the fight the
+    // guess starts uses Excessive Violence.
+    const enigmaGuessFight = ref<null | { useExcessiveViolence: boolean }>(null);
+
+    /**
+     * Whether a Mastermind fight needs an Enigma Code guess first.
+     *
+     * @returns true while the code holds a card.
+     */
+    function needsEnigmaGuess(): boolean {
+      return (props.enigmaCode?.cards.length ?? 0) > 0;
+    }
+
+    /**
+     * The picker's identity: it changes whenever the code this viewer sees changes.
+     *
+     * @returns A key built from each card's visible state.
+     */
+    function enigmaPickerKey(): string {
+      // why: WP-830 / D-24763 — a mid-turn Twist or a mix changes the code under an open picker;
+      // a new key remounts it, so it never submits colors for the old positions.
+      const parts: string[] = [String(props.enigmaCode?.isRevealed === true)];
+      for (const card of props.enigmaCode?.cards ?? []) {
+        parts.push(`${card.display?.extId ?? '?'}:${card.peekedBy.join(',')}`);
+      }
+      return parts.join('|');
+    }
+
+    /**
+     * Submits the fight with the guess the picker made.
+     *
+     * @param guess - One color per Enigma card, in code order.
+     */
+    function onEnigmaGuess(guess: string[]): void {
+      const useExcessiveViolence = enigmaGuessFight.value?.useExcessiveViolence === true;
+      enigmaGuessFight.value = null;
+      // why: the client submits INTENT; the engine reveals the code and decides.
+      props.submitMove('fightMastermind', useExcessiveViolence ? { enigmaGuess: guess, useExcessiveViolence: true } : { enigmaGuess: guess });
+    }
+
     function mastermindFightCost(): number | null {
       // why: WP-750 / D-24574 — the engine's projected cost
       // (resolveMastermindFightCost: printed + the Portals Dark-Portal bonus) is
@@ -170,7 +219,23 @@ export default defineComponent({
       return { allowed: true, reason: null };
     }
 
+    // why: WP-830 / D-24763 — an open picker closes once the fight is no longer possible (the turn
+    // ended or left the main stage, the Attack is gone, the game is over), so it never lingers
+    // into another turn.
+    watch(
+      () => gateForFight().allowed && !props.isGameOver,
+      (isFightPossible) => {
+        if (!isFightPossible) {
+          enigmaGuessFight.value = null;
+        }
+      },
+    );
+
     function onFight(): void {
+      if (needsEnigmaGuess()) {
+        enigmaGuessFight.value = { useExcessiveViolence: false };
+        return;
+      }
       // why: empty-object payload — fightMastermind takes no arguments by
       // engine design. The move always defeats the top tactic.
       props.submitMove('fightMastermind', {});
@@ -224,10 +289,17 @@ export default defineComponent({
       // fights normally if it cannot. Once-per-turn is enforced engine-side — the
       // availability field goes absent after the EV fight and this affordance
       // disappears on the next projection.
+      if (needsEnigmaGuess()) {
+        enigmaGuessFight.value = { useExcessiveViolence: true };
+        return;
+      }
       props.submitMove('fightMastermind', { useExcessiveViolence: true });
     }
 
     return {
+      enigmaGuessFight,
+      enigmaPickerKey,
+      onEnigmaGuess,
       gateForFight,
       hasFightCostBadge,
       isFightCostUnaffordable,
@@ -337,6 +409,15 @@ export default defineComponent({
       <span class="mastermind-ev-fight-label">Excessive Violence</span>
       <span class="mastermind-ev-fight-cost">+1</span>
     </button>
+    <!-- why: WP-830 / D-24763 — the Enigma Code guess a Mastermind fight starts with. -->
+    <EnigmaGuessPicker
+      v-if="enigmaGuessFight !== null && enigmaCode !== undefined"
+      :key="enigmaPickerKey()"
+      class="mastermind-tile__enigma-guess"
+      :enigma-code="enigmaCode"
+      @submit="onEnigmaGuess"
+      @cancel="enigmaGuessFight = null"
+    />
     <!-- why: the full card + Master-Strike / special rules open in the shared
          CardReaderModal instead of rendering inline, so the tile stays short
          (Jeff: the top row wasted vertical space without being readable). -->
@@ -390,7 +471,19 @@ export default defineComponent({
 </template>
 
 <style scoped>
+/* why: WP-830 / D-24763 — the Enigma guess opens ON TOP of the tile (the #2970 Primus chooser
+   precedent), never inline: an inline picker would grow the nowrap adversary band and make
+   useScaleToFit shrink the whole 1280x720 board mid-guess. */
+.mastermind-tile__enigma-guess {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow-y: auto;
+}
+
 .mastermind-tile {
+  /* why: WP-830 / D-24763 — the positioning context of the Enigma guess overlay. */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;

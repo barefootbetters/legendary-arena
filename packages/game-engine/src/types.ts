@@ -1604,6 +1604,22 @@ export interface PendingEscapeProcedure {
 }
 
 /**
+ * One owed Enigma Code peek offer (WP-830 / D-24763).
+ *
+ * The Unbreakable Enigma Code: "Whenever you fight a Villain, you may pay 1 [recruit] to look at
+ * one of the face-down Enigma Cards." Appended by fightVillain after a successful fight and opened
+ * by the play-phase onMove opener as the fighter's seat choice (kind 'enigma-peek'). `positions`
+ * is filled when the offer opens: option i looks at position `positions[i]` (the options carry no
+ * card id). Runtime-only; lazily created.
+ */
+export interface PendingEnigmaPeekOffer {
+  /** The fighter, who may pay to look. */
+  playerID: string;
+  /** The unseen positions the open offer lists, in option order. */
+  positions: number[];
+}
+
+/**
  * An Escape-effect discard every player still owes (WP-817 / D-24750).
  *
  * Primus's Escape ("each player discards a Hero that costs 2, 3, 5, or 7") is a
@@ -2409,6 +2425,21 @@ export interface LegendaryGameState {
   // re-pin. Engine-internal: not projected to UIState.
   /** FIFO queue of Escape-effect discards every player still owes (WP-817). */
   pendingEscapeEffectDiscards?: PendingEscapeEffectDiscard[] | undefined;
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code. `enigmaCode` holds the face-down Enigma
+  // cards (Hero Deck cards put there by Twists 1-5) in their current order; `enigmaPeeks` the
+  // positions each player has looked at since the last mix; `isEnigmaCodeRevealed` is set by a right
+  // guess (every card shown to everyone until the next mix); `pendingEnigmaPeekOffers` the owed
+  // pay-1-Recruit peeks from Villain fights. All optional, **lazily initialized, never in
+  // Game.setup**, so a match without the scheme serializes byte-identically (hash oracles unmoved).
+  // The card ids reach a client only through the audience-filtered scheme.enigmaCode projection.
+  /** The face-down Enigma Code, in its current order (WP-830). */
+  enigmaCode?: CardExtId[] | undefined;
+  /** Per player: the Enigma positions they have looked at since the last mix (WP-830). */
+  enigmaPeeks?: Record<string, number[]> | undefined;
+  /** True after a right guess, until the next mix: every Enigma card is shown to everyone (WP-830). */
+  isEnigmaCodeRevealed?: boolean | undefined;
+  /** FIFO of owed Enigma peek offers from Villain fights (WP-830). */
+  pendingEnigmaPeekOffers?: PendingEnigmaPeekOffer[] | undefined;
   // why: WP-532 / D-24343 — the current (fighting) player's pending give-HQ-Hero pick
   // (Paibok Fight). Optional so existing test-state literals need no update; **lazily
   // initialized at the park site, never in Game.setup** — an undefined field is omitted

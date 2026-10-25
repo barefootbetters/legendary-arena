@@ -498,7 +498,8 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-757 / D-24587 — getLegalMoves emits exorciseHauntedHero per affordable Haunted
   // HQ slot; a missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
   exorciseHauntedHero: (context, args) => exorciseHauntedHero(context as never, args as never),
-  fightMastermind: (context) => fightMastermind(context as never),
+  // why: WP-830 / D-24763 — pass the args through: the Enigma Code guess rides on them.
+  fightMastermind: (context, args) => fightMastermind(context as never, args as never),
   // why: WP-286 — must be dispatchable (One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally; the block-all guard freezes every other move until it resolves).
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),

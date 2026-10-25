@@ -265,7 +265,9 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
     'ca75/unbreakable-enigma-code-the',
     {
       schemeId: 'ca75/unbreakable-enigma-code-the',
-      resolverId: 'counter-only',
+      // why: WP-830 / D-24763 — Twists 1-5 build the face-down Enigma Code; Twist 6 is still the
+      // loss (lossThreshold below).
+      resolverId: 'enigma-code',
       params: {},
       lossThreshold: 6,
     },

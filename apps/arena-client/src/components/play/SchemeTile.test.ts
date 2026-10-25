@@ -86,3 +86,14 @@ describe('SchemeTile', () => {
     assert.equal(payload.gameText.length, 0);
   });
 });
+
+describe('SchemeTile — WP-830 Enigma Code (D-24763)', () => {
+  test('mounts the Enigma Code readout only while the scheme projects a code', () => {
+    const withCode = mount(SchemeTile, {
+      props: { scheme: scheme({ enigmaCode: { isRevealed: false, cards: [{ peekedBy: [] }] } }), twistThreshold: 6 },
+    });
+    assert.ok(withCode.find('[data-testid="play-enigma-code"]').exists());
+    const withoutCode = mount(SchemeTile, { props: { scheme: scheme(), twistThreshold: 6 } });
+    assert.ok(!withoutCode.find('[data-testid="play-enigma-code"]').exists());
+  });
+});

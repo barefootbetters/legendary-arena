@@ -126,6 +126,9 @@ export type SchemeTwistResolverId =
   // why: WP-829 / D-24762 — Go Back in Time to Slay Heroes' Ancestors: each Twist owes one
   // Purge of an HQ Hero (contract change recorded in D-24762).
   | 'go-back-in-time'
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code: Twists 1-5 put a Hero Deck card face down
+  // into the Enigma Code (contract change recorded in D-24763).
+  | 'enigma-code'
   | 'counter-only';
 
 /**
