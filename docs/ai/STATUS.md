@@ -39,7 +39,7 @@
 - **Card data.** Three curated markers in `ca75.json`; hero ledger, effect index, card-mechanics (162 → 164), runtime-observed (7793 → 7777) regenerated; dashboard totalObs 8714 → 8698.
 - **Tests.** game-engine 5672 → 5687 (+15), 0 fail; four revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; every card / coverage `:check` 0. 01.6 post-mortem WP COMPLETE.
 - **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches keep the old behavior. No hashed fixture plays a ca75 hero.
-- **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with Agent X-13 and Steve Rogers: Mobilize's two S.H.I.E.L.D.-only prompts (no reward unless Savior, `+1 Attack` each as a Savior) and Reassign's played-this-turn prompt that rescues a Bystander.
+- **Live-verify (D-24026): PASS 2026-10-25.** Operator match `3woVv0ZfCLV` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Loki, The Unbreakable Enigma Code, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. Mobilize for War with 0 Bystanders logged the Savior line "did not activate … you have 0" and opened two prompts listing only S.H.I.E.L.D. cards, no reward. With 5 Bystanders both prompts read "KO a card for a reward (+1 Attack)", Flying Shield Block in hand was left out, and KO one + decline the other gave Attack 4 → 5. Reassign to Civilian Duty after Mobilize and International Strike Force logged "it needs 3 other shield Heroes played this turn" with no prompt; a second Reassign after those three opened one "Rescue a Bystander" prompt over the cards played this turn, and KO-ing the first Reassign rescued (Victory Pile 3 → 4).
 
 ### WP-827 / EC-865 — Flying Shield Block: any seat may reveal it, once per turn, to stop a Wound and rescue a Bystander (D-24760) (2026-10-24)
 
@@ -49,7 +49,7 @@
 - **Client.** The seat-choice prompt heading "A player would gain a Wound — Flying Shield Block?".
 - **Tests.** game-engine 5672 → 5689 (+17), arena-client +1, 0 fail; eight revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; every `:check` 0. 01.6 post-mortem WP COMPLETE.
 - **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches have no Flying Shield Block hook.
-- **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with Captain America (Falcon): stop the bot's Wound from your hand, no second prompt that turn, your own Wound next turn, and a Master Strike on the bot's turn (you are asked about your Wound, then the bot's).
+- **Live-verify (D-24026): PASS 2026-10-25.** Operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters, and step 4 in operator match `3woVv0ZfCLV` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Loki, The Unbreakable Enigma Code, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. Crazed Rampage (each player gains a Wound) asked "prevent your Wound" first; after the decline it asked "prevent Player 1's Wound", and the reveal logged "prevented Player 1's Wound and rescued a Bystander" (Victory Pile 0 → 1; Player 1 held no Wound). A second Crazed Rampage that turn gave both seats a Wound with no prompt. On the next turn my own Wound offered "prevent your Wound" again and the decline kept it. On the bot's turn, Loki's Master Strike asked me (non-active) about my Wound first, then (after a decline) about the bot's; the reveal resolved and the bot's turn went on with no reload.
 
 ### WP-828 / EC-866 — Winter Soldier 2>4: a Hero in your hand gains Man Out of Time this turn (D-24761) (2026-10-24)
 
@@ -59,7 +59,7 @@
 - **Client.** The prompt heading "Choose a Hero in your hand to gain Man Out of Time this turn".
 - **Tests.** game-engine 5672 → 5693 (+21), arena-client +1, 0 fail; twelve revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; every `:check` 0; runtime-observed 7793 → 7780, dashboard totalObs 8714 → 8701. 01.6 post-mortem WP COMPLETE.
 - **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches are unchanged.
-- **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with Winter Soldier: the prompt lists your hand Heroes, the picked Hero is set aside after play and replays next turn, and with [hc:tech] the second prompt leaves out the first pick.
+- **Live-verify (D-24026): PASS 2026-10-25.** Operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters. 2>4 with no Tech played logged the Tech line as not activated and prompted over the hand Heroes; Storm the Beachhead was picked ("gains Man Out of Time this turn"), set aside Out of Time after its abilities, "returns from Out of Time and is played a second time" on the next start → main, and went to the discard pile ("not set aside again"). After Web-Shooters (Tech), 2>4 granted twice: the first prompt offered Agent and Trooper; the second grant left the first pick out and, with one eligible card left (every starting Agent shares one card id), auto-granted the Trooper.
 
 ### WP-829 / EC-867 — Go Back in Time to Slay Heroes' Ancestors: the Purge Twist and the HQ KO rule (D-24762) (2026-10-24)
 
@@ -69,7 +69,7 @@
 - **Client.** The prompt heading "Go Back in Time — choose a Hero in the HQ to Purge from the Timestream".
 - **Tests.** game-engine 5672 → 5694 (+22 tests / +4 suites), arena-client +1, 0 fail; thirteen revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; every `:check` 0, nothing regenerated. 01.6 post-mortem WP COMPLETE.
 - **Replay-compat.** The resolver is read from the config at runtime, so a stored pre-deploy Go Back in Time match no longer replays to its recorded state (the WP-823 precedent).
-- **Live-verify (D-24026): pending deploy.** A 2-player operator match with this scheme created after the deploy: a staged Twist prompts the Purge; the picked Hero leaves the HQ unKO'd while its same-Hero HQ card is KO'd; a later same-Hero arrival is KO'd after the move.
+- **Live-verify (D-24026): PASS 2026-10-25.** Operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters. The first Villain-Deck card was a Twist: the active seat got "Go Back in Time — choose a Hero in the HQ to Purge from the Timestream" over the five HQ Heroes with costs. Purging Spy Network (Agent X-13) KO'd Paramilitary Ops (Agent X-13) from the HQ and both slots refilled; an Agent X-13 card placed in the HQ later was KO'd right after that move.
 
 ### WP-830 / EC-868 — The Unbreakable Enigma Code: the face-down code, the paid peek and the Mastermind guess (D-24763) (2026-10-24)
 
@@ -79,7 +79,7 @@
 - **Client.** `EnigmaCodePanel.vue` on the scheme tile, `EnigmaGuessPicker.vue` over the Mastermind tile, the peek heading.
 - **Tests.** game-engine 5672 → 5697, arena-client 2435 → 2446, 0 fail; twenty-seven revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; every `:check` 0, nothing regenerated. 01.6 post-mortem WP COMPLETE.
 - **Replay-compat.** The resolver is read from the config at runtime, so a stored pre-deploy Enigma Code match no longer replays to its recorded state (the WP-823 precedent).
-- **Live-verify (D-24026): pending deploy.** A 2-player operator match with this scheme created after the deploy: staged Twists build the code; a paid peek shows a card to that seat only (Play Diagnostics per seat); a wrong guess ends the turn with a new hand and mixes the code; a right guess lets the fight go ahead; the picker fits the 1280x720 board.
+- **Live-verify (D-24026): PASS 2026-10-25 for the rules.** Operator match `3woVv0ZfCLV` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Loki, The Unbreakable Enigma Code, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. Two Twists built a 2-card code whose view carried only `peekedBy: []`. Fighting a Sentinel opened the pay-1-Recruit peek only after the Sentinel's own KO resolved; paying (Recruit 3 → 2) showed card 1 (Winged Salvation, Ranged) to seat 0 only, card 2 stayed hidden, and the public log named no card. A wrong guess (Strength, Strength) revealed the code in the log, ended the turn and re-mixed it (peeks cleared). After a fresh peek, the right guess (Strength, Ranged) let the fight go ahead (Loki's Maniacal Tyrant tactic defeated). The other seat's redaction was not checked live (no spectator view; the audience-filter tests cover it). Follow-up: the guess picker renders inside the Mastermind tile, about 90px wide, so its text clips and it scrolls both ways.
 
 ### WP-832 / EC-870 — Change the Outcome of WWII: the country Twists, conquered capitals and the 3-capital loss (D-24765) (2026-10-24)
 
@@ -88,7 +88,7 @@
 - **Engine.** A `change-the-outcome-of-wwii` resolver and `rules/changeTheOutcomeOfWwii.logic.ts`; the capital settled on the shared escape path; a generic `scheme-counter` loss kind and a `conquered-capitals` meter kind. No new `G` field (counter keys).
 - **Client.** The meter label "Capitals".
 - **Tests.** game-engine → 5692 on the WP-831 base, 0 fail; fifteen revert proofs; every `:check` 0. 01.6 post-mortem WP COMPLETE.
-- **Live-verify (D-24026): pending deploy.** A 2-player operator match with this scheme: a Twist resizes the City and plays 2; an escape conquers a capital; the USSR's 6 spaces fit the board; Twist 7 does not end the game.
+- **Live-verify (D-24026): PASS 2026-10-25.** Operator match `5NxWV2uuwtQ` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Red Skull, Change the Outcome of WWII, Skrulls + HYDRA + Brotherhood, Sentinel; the five ca75 heroes), Twists and escapes staged with the operator setters. Twist 1 logged "invades Poland. 1 card from the City goes to the bottom of the Villain Deck; the City now has 4 spaces. 2 cards are played" and played the 2. Twist 3 (USSR) showed 6 spaces on the board without overflow. In Australia (2 spaces) an escape logged "its capital is conquered (1 of 3)" and the meter read "Capitals 1/3". Twist 7 (Switzerland, 1 space) played 2 cards, the push-out escaped ("2 of 3"), the Twist count reached 7 and the game went on.
 
 ### WP-831 / EC-869 — A City of 1 to 6 spaces: the variable City size foundation (D-24764) (2026-10-24)
 
@@ -97,7 +97,7 @@
 - **Engine.** `CityZone` is a 1-6 space array (D-2602's fixed tuple superseded): villains escape off the last space; fights, moves, Guard and the operator escape read the current size; a sixth space is unnamed and fought with plain Attack only; the bot mirrors the moves. Nothing resizes the City yet.
 - **Client.** Names by engine index; removed spaces drawn as hatched columns; an extra space as a leftmost column with a matching HQ spacer and a widened stage.
 - **Tests.** game-engine 5672 → 5682, arena-client 2435 → 2444, 0 fail; twenty revert proofs; a 1280x720 board check at 5 / 6 / 3 spaces; every `:check` 0. 01.6 post-mortem WP COMPLETE.
-- **Live-verify (D-24026): pending deploy.** Any new match shows the unchanged 5-space board.
+- **Live-verify (D-24026): PASS 2026-10-25.** Operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters shows the unchanged 5-space City (Bridge, Streets, Rooftops, Bank, Sewers). The resized views pass with WP-832 (match `5NxWV2uuwtQ`): 4, 3, 6, 3, 5, 2 and 1 spaces, the 6-space City fits the playmat with the unnamed space on the escape side.
 
 ### WP-825 / EC-863 — co2e Stealth Assault Squad: the "another S.H.I.E.L.D. Hero that costs 1 or more" gate (D-24758) (2026-10-24)
 
