@@ -28,10 +28,12 @@
  * authored file covers only the sets/masterminds/schemes that carry curated
  * per-scheme variety (Core today). A leg with no authored config whose scheme
  * prints "Add an extra Henchman group" (D-24666 — msp1 Asgard Under Siege, vnom
- * Invasion of the Venom Symbiotes) returns the per-mastermind menu's generated
- * `schemeOverrides` entry (variant 0 plus one henchmen group, emitted by
+ * Invasion of the Venom Symbiotes) or "Add an extra Villain Group" (D-24766 —
+ * Change the Outcome of WWII and the other `SCHEMES_WITH_EXTRA_VILLAIN_GROUP`
+ * schemes) returns the per-mastermind menu's generated `schemeOverrides` entry
+ * (variant 0 plus one henchmen group or one villain group, emitted by
  * `scripts/generate-gauntlet-loadouts.mjs`), so its approved composition is legal
- * under the scheme-aware Henchman requirement. Every other non-authored leg
+ * under the scheme-aware requirements. Every other non-authored leg
  * returns `undefined` and the consumer falls back to the per-mastermind
  * `GAUNTLET_LOADOUT_MENUS` (the WP-472 absent-scheme → menu-fallback model). The
  * loader never invents a composition: both sources are generated or authored data.
@@ -42,6 +44,14 @@
  * Zone Prison Breakout pools carry a third entry (`core/sentinel`) that makes
  * 4–5 players (3 groups) satisfiable. `validateGauntletConfigs` rejects a pool
  * too short for its scheme's 5-player effective count.
+ *
+ * why the villain slice is scheme-effective too (D-24766): an authored leg's
+ * villains are sliced by `resolveEffectiveVillainGroupCount` (base + 1 for the
+ * extra-Villain-Group schemes), and `validateGauntletConfigs` rejects a
+ * `villainPool` too short for its scheme's 5-player effective count. No authored
+ * leg uses an extra-Villain-Group scheme today (they are all outside Core), so
+ * every authored villain slice is unchanged; the rule is here so a future authored
+ * leg cannot silently field the base count.
  *
  * why the year key exists but only the active year is exposed: the file is keyed
  * by championship year so a future annual rollover can add a new year's block
@@ -63,10 +73,12 @@ import {
   PLAYER_COUNT_SETUP,
   getPlayerCountSetup,
   resolveEffectiveHenchmenCount,
+  resolveEffectiveVillainGroupCount,
 } from "./playerCountSetup.js";
 import type { SupportedPlayerCount } from "./playerCountSetup.js";
-// why: D-24666 — a leg with no authored config reads the generated per-mastermind
-// menu's `schemeOverrides` (the extra-Henchman schemes' scheme-aware compositions).
+// why: D-24666 / D-24766 — a leg with no authored config reads the generated
+// per-mastermind menu's `schemeOverrides` (the extra-Henchman and
+// extra-Villain-Group schemes' scheme-aware compositions).
 // gauntletLoadouts.js imports only its generated literal (browser-safe, no Node
 // built-ins) and never this module, so the import creates no cycle.
 import { getGauntletLoadoutMenu } from "./gauntletLoadouts.js";
@@ -238,12 +250,13 @@ function describeSchemaIssues(error: z.ZodError): string {
  * present in `years` — a file whose active year points at a missing block is
  * malformed even though every field is individually well-typed — and that every
  * leg's `henchmanPool` is long enough for its scheme's 5-player effective
- * Henchman count (D-24666).
+ * Henchman count (D-24666) and every leg's `villainPool` for its scheme's
+ * 5-player effective Villain Group count (D-24766).
  *
  * @param input the untrusted value to validate (for example a parsed JSON file).
  * @returns the validated gauntlet-configs file.
  * @throws Error on any shape violation, a dangling active year, or a short
- *   henchman pool.
+ *   henchman or villain pool.
  */
 export function validateGauntletConfigs(input: unknown): GauntletConfigsFile {
   const result = GauntletConfigsFileSchema.safeParse(input);
@@ -268,6 +281,7 @@ export function validateGauntletConfigs(input: unknown): GauntletConfigsFile {
   }
   assertExactlyOneAnchor(file);
   assertHenchmanPoolsCoverEffectiveCount(file);
+  assertVillainPoolsCoverEffectiveCount(file);
   return file;
 }
 
@@ -340,6 +354,44 @@ function assertHenchmanPoolsCoverEffectiveCount(file: GauntletConfigsFile): void
   }
 }
 
+/**
+ * Throws a full-sentence `Error` naming the set, mastermind and scheme of the
+ * first leg whose `villainPool` is shorter than its scheme's 5-player effective
+ * Villain Group count.
+ *
+ * why: D-24766 — `getGauntletConfig` slices a leg's villains by the
+ * scheme-effective count (base + 1 for the "Add an extra Villain Group"
+ * schemes), so a pool shorter than the largest (5-player) effective count would
+ * silently yield an illegal composition. The bound comes from the table and the
+ * resolver; no table value is hard-coded here.
+ *
+ * @param file the structurally valid gauntlet-configs file.
+ * @throws Error when any leg's villain pool is too short.
+ */
+function assertVillainPoolsCoverEffectiveCount(file: GauntletConfigsFile): void {
+  for (const yearConfig of Object.values(file.years)) {
+    for (const [setAbbr, setConfig] of Object.entries(yearConfig.sets)) {
+      for (const [mastermindSlug, mastermindConfig] of Object.entries(setConfig.masterminds)) {
+        for (const [schemeSlug, leg] of Object.entries(mastermindConfig.schemes)) {
+          const requiredPoolLength = resolveEffectiveVillainGroupCount(
+            `${setAbbr}/${schemeSlug}`,
+            5,
+            PLAYER_COUNT_SETUP[5].villainGroupCount,
+          );
+          if (leg.villainPool.length < requiredPoolLength) {
+            throw new Error(
+              `The gauntlet leg for set "${setAbbr}", mastermind "${mastermindSlug}", scheme ` +
+                `"${schemeSlug}" has a villainPool of ${leg.villainPool.length} groups, but the ` +
+                `scheme requires ${requiredPoolLength} Villain Groups at 5 players. Add groups to ` +
+                `that leg's villainPool in data/gauntlet-configs.json and run \`pnpm gauntlet:configs\`.`,
+            );
+          }
+        }
+      }
+    }
+  }
+}
+
 // why: validate the baked literal once at module load (registry setup-time throw
 // is allowed) — the same validate-at-load semantics the file-read path had, now
 // on the in-memory generated literal instead of a `readFileSync`. A malformed
@@ -366,9 +418,11 @@ export function getActiveYear(): string {
  * scheme override (D-24666), else `undefined`.
  *
  * Authored leg: its ordered pools are scaled to the player count by taking the
- * first `villainGroupCount` groups from `PLAYER_COUNT_SETUP` (the single canonical
- * per-count sizing, WP-370 / D-24165) and the first scheme-effective Henchman
- * count — `resolveEffectiveHenchmenCount`, which is the table's
+ * first scheme-effective Villain Group count — `resolveEffectiveVillainGroupCount`,
+ * which is the table's `villainGroupCount` from `PLAYER_COUNT_SETUP` (the single
+ * canonical per-count sizing, WP-370 / D-24165) for most schemes and base + 1 for
+ * the "Add an extra Villain Group" schemes (D-24766) — and the first scheme-effective
+ * Henchman count — `resolveEffectiveHenchmenCount`, which is the table's
  * `henchmenGroupCount` for most schemes and base + 1 for the "Add an extra
  * Henchman group" schemes (D-24666). The stored ext_ids are already set-qualified
  * and are returned unchanged.
@@ -376,8 +430,9 @@ export function getActiveYear(): string {
  * No authored leg: when the mastermind's generated `GAUNTLET_LOADOUT_MENUS` entry
  * carries a `schemeOverrides` entry for the scheme (an extra-Henchman scheme in
  * the mastermind's own set — msp1 Asgard Under Siege, vnom Invasion of the Venom
- * Symbiotes), that composition is returned: variant 0's villains and one more
- * henchmen group. Otherwise `undefined` is returned — when the active year has no
+ * Symbiotes — or an extra-Villain-Group scheme, such as ca75 Change the Outcome of
+ * WWII), that composition is returned: variant 0 with one more henchmen group or
+ * one more villain group. Otherwise `undefined` is returned — when the active year has no
  * block for the set, the set has no config for the mastermind, the mastermind has
  * no authored leg for the scheme, or the player count is out of range — meaning
  * "no per-scheme override": the consumer falls back to the per-mastermind
@@ -404,13 +459,18 @@ export function getGauntletConfig(
   if (setupRow === undefined) {
     return undefined;
   }
+  const villainGroupCount = resolveEffectiveVillainGroupCount(
+    `${setAbbr}/${schemeSlug}`,
+    playerCount,
+    setupRow.villainGroupCount,
+  );
   const henchmenGroupCount = resolveEffectiveHenchmenCount(
     `${setAbbr}/${schemeSlug}`,
     playerCount,
     setupRow.henchmenGroupCount,
   );
   return {
-    villainGroupIds: leg.villainPool.slice(0, setupRow.villainGroupCount),
+    villainGroupIds: leg.villainPool.slice(0, villainGroupCount),
     henchmanGroupIds: leg.henchmanPool.slice(0, henchmenGroupCount),
   };
 }
@@ -420,9 +480,9 @@ export function getGauntletConfig(
  * authored config, or `undefined` when the mastermind's menu carries none for the
  * scheme at that player count.
  *
- * why: D-24666 — menu-fallback legs whose scheme prints "Add an extra Henchman
- * group" get a scheme-aware composition (the generator's `schemeOverrides`, built
- * with the D-24199 fill rule) without new seed-PAR scenarios: seed PAR enumerates
+ * why: D-24666 / D-24766 — menu-fallback legs whose scheme prints "Add an extra
+ * Henchman group" or "Add an extra Villain Group" get a scheme-aware composition
+ * (the generator's `schemeOverrides`, built with the D-24199 fill rule) without new seed-PAR scenarios: seed PAR enumerates
  * its scenarios from data/gauntlet-configs.json, never from the menu.
  *
  * @param setAbbr the gauntlet's home set abbreviation.

@@ -264,6 +264,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'change-the-outcome-of-wwii': {
+        1: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations', 'co2e/brotherhood-of-mutants'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations', 'co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations', 'co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations', 'co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'ca75',
@@ -280,6 +289,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'change-the-outcome-of-wwii': {
+        1: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations', 'co2e/brotherhood-of-mutants'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations', 'co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations', 'co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['ca75/masters-of-evil-wwii', 'ca75/zolas-creations', 'co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'chmp',
@@ -328,6 +346,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'bank-robbery-hostage-crisis': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/radiation'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+      'negative-zone-prison-outbreak': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/radiation'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'co2e',
@@ -344,6 +378,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'bank-robbery-hostage-crisis': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+      'negative-zone-prison-outbreak': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/sinister-spider-foes'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'co2e',
@@ -360,6 +410,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'bank-robbery-hostage-crisis': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/radiation'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+      'negative-zone-prison-outbreak': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/radiation'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'co2e',
@@ -376,6 +442,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'bank-robbery-hostage-crisis': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/radiation'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+      'negative-zone-prison-outbreak': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/radiation'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'co2e',
@@ -392,6 +474,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'bank-robbery-hostage-crisis': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/radiation'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+      'negative-zone-prison-outbreak': {
+        1: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'co2e/masters-of-evil', 'co2e/radiation'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'core',
@@ -556,6 +654,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'predict-future-crime': {
+        1: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/superhuman-registration-act'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        2: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/superhuman-registration-act'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        3: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/superhuman-registration-act'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        4: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/superhuman-registration-act'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+        5: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/registration-enforcers', 'cvwr/superhuman-registration-act'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+      },
+    },
   },
   {
     setAbbr: 'cvwr',
@@ -572,6 +679,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'predict-future-crime': {
+        1: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/thunderbolts'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        2: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/thunderbolts'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        3: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/thunderbolts'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        4: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/thunderbolts'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+        5: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/registration-enforcers', 'cvwr/thunderbolts'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+      },
+    },
   },
   {
     setAbbr: 'cvwr',
@@ -588,6 +704,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'predict-future-crime': {
+        1: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/shield-elite'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        2: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/shield-elite'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        3: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/shield-elite'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        4: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/shield-elite'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+        5: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/registration-enforcers', 'cvwr/shield-elite'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+      },
+    },
   },
   {
     setAbbr: 'cvwr',
@@ -604,6 +729,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'predict-future-crime': {
+        1: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/heroes-for-hire'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        2: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        3: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/registration-enforcers'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        4: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/registration-enforcers'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+        5: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/registration-enforcers', 'cvwr/shield-elite'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+      },
+    },
   },
   {
     setAbbr: 'cvwr',
@@ -620,6 +754,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'predict-future-crime': {
+        1: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/registration-enforcers'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        2: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/registration-enforcers'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        3: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/registration-enforcers'], henchmanGroupIds: ['cvwr/cape-killers'] },
+        4: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/registration-enforcers'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+        5: { villainGroupIds: ['cvwr/csa-special-marshals', 'cvwr/great-lakes-avengers', 'cvwr/heroes-for-hire', 'cvwr/registration-enforcers', 'cvwr/shield-elite'], henchmanGroupIds: ['cvwr/cape-killers', 'cvwr/mandroid'] },
+      },
+    },
   },
   {
     setAbbr: 'dead',
@@ -668,6 +811,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'steal-the-weaponized-plutonium': {
+        1: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        2: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        3: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        4: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+        5: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front', 'dkcy/streets-of-new-york'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+      },
+    },
   },
   {
     setAbbr: 'dkcy',
@@ -684,6 +836,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'steal-the-weaponized-plutonium': {
+        1: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/streets-of-new-york'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        2: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/streets-of-new-york'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        3: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/streets-of-new-york'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        4: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/streets-of-new-york'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+        5: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front', 'dkcy/streets-of-new-york'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+      },
+    },
   },
   {
     setAbbr: 'dkcy',
@@ -700,6 +861,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'steal-the-weaponized-plutonium': {
+        1: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        2: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        3: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        4: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+        5: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front', 'dkcy/underworld'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+      },
+    },
   },
   {
     setAbbr: 'dkcy',
@@ -716,6 +886,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'steal-the-weaponized-plutonium': {
+        1: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/marauders'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        2: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        3: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        4: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+        5: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front', 'dkcy/streets-of-new-york'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+      },
+    },
   },
   {
     setAbbr: 'dkcy',
@@ -732,6 +911,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'steal-the-weaponized-plutonium': {
+        1: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/mutant-liberation-front'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        2: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/mutant-liberation-front'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        3: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front'], henchmanGroupIds: ['dkcy/maggia-goons'] },
+        4: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+        5: { villainGroupIds: ['dkcy/emissaries-of-evil', 'dkcy/four-horsemen', 'dkcy/marauders', 'dkcy/mutant-liberation-front', 'dkcy/streets-of-new-york'], henchmanGroupIds: ['dkcy/maggia-goons', 'dkcy/phalanx'] },
+      },
+    },
   },
   {
     setAbbr: 'dstr',
@@ -748,6 +936,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'cursed-pages-of-the-darkhold-tome': {
+        1: { villainGroupIds: ['dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+      'war-for-the-dream-dimension': {
+        1: { villainGroupIds: ['dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'dstr',
@@ -764,6 +968,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'cursed-pages-of-the-darkhold-tome': {
+        1: { villainGroupIds: ['dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+      'war-for-the-dream-dimension': {
+        1: { villainGroupIds: ['dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'dstr/fear-lords', 'dstr/lords-of-the-netherworld'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'fear',
@@ -892,6 +1112,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'inescapable-kyln-space-prison': {
+        1: { villainGroupIds: ['mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+      'provoke-the-sovereign-war-fleet': {
+        1: { villainGroupIds: ['mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'mgtg',
@@ -908,6 +1144,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'inescapable-kyln-space-prison': {
+        1: { villainGroupIds: ['mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+      'provoke-the-sovereign-war-fleet': {
+        1: { villainGroupIds: ['mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'mgtg/followers-of-ronan', 'mgtg/ravagers'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'msis',
@@ -1079,6 +1331,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'superhuman-baseball-game': {
+        1: { villainGroupIds: ['nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'nmut',
@@ -1095,6 +1356,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'superhuman-baseball-game': {
+        1: { villainGroupIds: ['nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        2: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        3: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion'] },
+        4: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/hydra', 'nmut/demons-of-limbo', 'nmut/hellions'], henchmanGroupIds: ['co2e/doombot-legion', 'co2e/hand-ninjas'] },
+      },
+    },
   },
   {
     setAbbr: 'noir',
@@ -1207,6 +1477,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'earthquake-drains-the-ocean': {
+        1: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base'] },
+        2: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base'] },
+        3: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base'] },
+        4: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base', 'rvlt/mandarins-rings'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base', 'rvlt/mandarins-rings'] },
+      },
+    },
   },
   {
     setAbbr: 'rvlt',
@@ -1223,6 +1502,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'earthquake-drains-the-ocean': {
+        1: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/hoods-gang'], henchmanGroupIds: ['rvlt/hydra-base'] },
+        2: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang'], henchmanGroupIds: ['rvlt/hydra-base'] },
+        3: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base'] },
+        4: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base', 'rvlt/mandarins-rings'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base', 'rvlt/mandarins-rings'] },
+      },
+    },
   },
   {
     setAbbr: 'rvlt',
@@ -1239,6 +1527,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'earthquake-drains-the-ocean': {
+        1: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers'], henchmanGroupIds: ['rvlt/mandarins-rings'] },
+        2: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang'], henchmanGroupIds: ['rvlt/mandarins-rings'] },
+        3: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/mandarins-rings'] },
+        4: { villainGroupIds: ['rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base', 'rvlt/mandarins-rings'] },
+        5: { villainGroupIds: ['co2e/brotherhood-of-mutants', 'rvlt/army-of-evil', 'rvlt/dark-avengers', 'rvlt/hoods-gang', 'rvlt/lethal-legion'], henchmanGroupIds: ['rvlt/hydra-base', 'rvlt/mandarins-rings'] },
+      },
+    },
   },
   {
     setAbbr: 'shld',
@@ -1319,6 +1616,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'fragmented-realities': {
+        1: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/limbo'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        2: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        3: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        4: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+        5: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+      },
+      'smash-two-dimensions-together': {
+        1: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/limbo'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        2: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        3: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        4: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+        5: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+      },
+    },
   },
   {
     setAbbr: 'ssw1',
@@ -1335,6 +1648,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'fragmented-realities': {
+        1: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        2: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        3: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        4: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+        5: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+      },
+      'smash-two-dimensions-together': {
+        1: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        2: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        3: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        4: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+        5: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+      },
+    },
   },
   {
     setAbbr: 'ssw1',
@@ -1351,6 +1680,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'fragmented-realities': {
+        1: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        2: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        3: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        4: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+        5: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+      },
+      'smash-two-dimensions-together': {
+        1: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        2: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        3: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        4: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+        5: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610', 'ssw1/wasteland'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+      },
+    },
   },
   {
     setAbbr: 'ssw1',
@@ -1367,6 +1712,22 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'fragmented-realities': {
+        1: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        2: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        3: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        4: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+        5: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+      },
+      'smash-two-dimensions-together': {
+        1: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        2: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        3: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610'], henchmanGroupIds: ['ssw1/ghost-racers'] },
+        4: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+        5: { villainGroupIds: ['ssw1/deadlands-the', 'ssw1/domain-of-apocalypse', 'ssw1/limbo', 'ssw1/manhattan-earth-1610', 'ssw1/sentinel-territories'], henchmanGroupIds: ['ssw1/ghost-racers', 'ssw1/m-o-d-o-k-s'] },
+      },
+    },
   },
   {
     setAbbr: 'ssw2',
@@ -1383,6 +1744,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'deadlands-hordes-charge-the-wall': {
+        1: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/kun-lun'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
+        2: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
+        3: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
+        4: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/magma-men'] },
+        5: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis', 'ssw2/utopolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/magma-men'] },
+      },
+    },
   },
   {
     setAbbr: 'ssw2',
@@ -1399,6 +1769,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'deadlands-hordes-charge-the-wall': {
+        1: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/utopolis'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
+        2: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/utopolis'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
+        3: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/utopolis'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
+        4: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/utopolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/magma-men'] },
+        5: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis', 'ssw2/utopolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/magma-men'] },
+      },
+    },
   },
   {
     setAbbr: 'ssw2',
@@ -1415,6 +1794,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'deadlands-hordes-charge-the-wall': {
+        1: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
+        2: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
+        3: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/khonshu-guardians'] },
+        4: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/magma-men'] },
+        5: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis', 'ssw2/utopolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/magma-men'] },
+      },
+    },
   },
   {
     setAbbr: 'ssw2',
@@ -1431,6 +1819,15 @@ export const GAUNTLET_LOADOUT_MENUS: readonly GauntletLoadoutMenu[] = [
         },
       },
     ],
+    schemeOverrides: {
+      'deadlands-hordes-charge-the-wall': {
+        1: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere'], henchmanGroupIds: ['ssw2/spider-infected'] },
+        2: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun'], henchmanGroupIds: ['ssw2/spider-infected'] },
+        3: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/spider-infected'] },
+        4: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/spider-infected'] },
+        5: { villainGroupIds: ['ssw2/deadpools-secret-secret-wars', 'ssw2/guardians-of-knowhere', 'ssw2/kun-lun', 'ssw2/monster-metropolis', 'ssw2/utopolis'], henchmanGroupIds: ['ssw2/khonshu-guardians', 'ssw2/spider-infected'] },
+      },
+    },
   },
   {
     setAbbr: 'vill',

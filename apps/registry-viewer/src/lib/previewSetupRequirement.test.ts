@@ -92,6 +92,29 @@ describe("resolveSetupRequirement", () => {
     assert.deepEqual(henchmenCounts, [2, 2, 2, 3, 3]);
   });
 
+  it("requires base + 1 Villain Groups for Change the Outcome of WWII (D-24766)", () => {
+    const villainCounts: number[] = [];
+    for (const playerCount of [1, 2, 3, 4, 5]) {
+      const requirement = resolveSetupRequirement(
+        makePreviewDocument("ca75/change-the-outcome-of-wwii", playerCount),
+      );
+      assert.ok(requirement, `expected a requirement for ${playerCount} players`);
+      villainCounts.push(requirement.row.villainGroupCount);
+    }
+    assert.deepEqual(villainCounts, [2, 3, 4, 4, 5]);
+  });
+
+  it("keeps the base Villain Group count for Midtown Bank Robbery", () => {
+    assert.equal(
+      resolveSetupRequirement(makePreviewDocument("core/midtown-bank-robbery", 1))?.row.villainGroupCount,
+      1,
+    );
+    assert.equal(
+      resolveSetupRequirement(makePreviewDocument("core/midtown-bank-robbery", 5))?.row.villainGroupCount,
+      4,
+    );
+  });
+
   it("keeps the base Henchman count for Midtown Bank Robbery", () => {
     assert.equal(
       resolveSetupRequirement(makePreviewDocument("core/midtown-bank-robbery", 1))?.row.henchmenGroupCount,
