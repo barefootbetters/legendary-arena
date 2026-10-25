@@ -23,6 +23,7 @@ import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
 import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
+import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
 import {
   RESCUE_ON_FIGHT_RECRUIT_COST,
   canPayRescueOnFight,
@@ -104,7 +105,7 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 
 /** Arguments for the fightVillain move. */
 interface FightVillainArgs {
-  /** 0-based index of the City space to fight (0-4). */
+  /** 0-based index of the City space to fight (0..length-1 of the current City, WP-831). */
   cityIndex: number;
   /**
    * WP-736 / D-24556 — opt-in to fight "using Excessive Violence": spend 1 extra [attack]
@@ -155,7 +156,8 @@ export function fightVillain(
     !Number.isFinite(cityIndex) ||
     !Number.isInteger(cityIndex) ||
     cityIndex < 0 ||
-    cityIndex > 4
+    // why: WP-831 / D-24764 — a space that exists in the current City (a scheme can resize it).
+    cityIndex >= G.city.length
   ) {
     return;
   }
@@ -166,12 +168,10 @@ export function fightVillain(
   }
 
   // why: WP-790 / D-24652 — the fight's restricted-attack target is the named City space of
-  // the fought index. An index with no named space fails closed (silent return, like the index
-  // guard above) rather than fighting with a target no restricted grant could ever match.
-  const fightTarget = citySpaceNameForIndex(cityIndex);
-  if (fightTarget === undefined) {
-    return;
-  }
+  // the fought index. WP-831 / D-24764 — a space beyond the normal five exists but has no name;
+  // its target is UNNAMED_CITY_SPACE_TARGET, which no restricted grant names, so it is fought
+  // with plain Attack only. (The index guard above already proved the space exists.)
+  const fightTarget: AttackTargetName = citySpaceNameForIndex(cityIndex) ?? UNNAMED_CITY_SPACE_TARGET;
 
   // why: Guard blocks access to lower-index City cards. A Guard at a higher
   // index (closer to escape) prevents fighting villains behind it. You must

@@ -516,11 +516,21 @@ export default defineComponent({
         v-for="(cell, position) in buildCells()"
         :key="position"
         class="city-space"
-        :class="cell.kind === 'slot' ? 'city-space--space-column' : 'city-space--edge-column'"
+        :class="cell.kind === 'slot' || cell.kind === 'gone' ? 'city-space--space-column' : 'city-space--edge-column'"
       >
         <template v-if="cell.kind === 'escaped'">
           <EscapedPile :pile="cell.entries" />
         </template>
+        <!-- why: WP-831 / D-24764 — a space a scheme removed from the City keeps its column (so the
+             HQ stays aligned) but holds nothing and has no name any more. -->
+        <div
+          v-else-if="cell.kind === 'gone'"
+          class="city-space-gone"
+          data-testid="play-city-gone"
+          :data-city-index="cell.cityIndex"
+          :title="`The ${cell.slotName} is not part of the City right now.`"
+          aria-label="Not part of the City"
+        ></div>
         <template v-else-if="cell.kind === 'slot'">
           <!-- why: WP-727 / D-24548 — the Portals Dark Portal over this city space
                (twists 2-6). Rendered even when the space is EMPTY, because the
@@ -716,6 +726,16 @@ export default defineComponent({
 </template>
 
 <style scoped>
+/* why: WP-831 / D-24764 — a removed City space: a faint hatched box in its usual column. */
+.city-space-gone {
+  width: 100%;
+  min-height: 4rem;
+  border: 1px dashed var(--color-foreground, #999);
+  border-radius: 0.35rem;
+  opacity: 0.25;
+  background: repeating-linear-gradient(45deg, transparent 0 6px, rgba(128, 128, 128, 0.35) 6px 8px);
+}
+
 .city-row {
   display: flex;
   flex-direction: column;

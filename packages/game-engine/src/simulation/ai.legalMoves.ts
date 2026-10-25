@@ -16,6 +16,8 @@ import type { CardExtId } from '../state/zones.types.js';
 import type { LegalMove } from './ai.types.js';
 import { getAvailableRecruit, getSpendableAttackForTarget } from '../economy/economy.logic.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
+import type { AttackTargetName } from '../economy/economy.types.js';
+import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
 import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
@@ -317,6 +319,10 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
  * @returns The move payload: a move between two City indices, or a decline.
  */
 function selectDefaultMoveVillainArgs(gameState: LegendaryGameState): ResolveMoveVillainChoiceArgs {
+  // why: WP-831 / D-24764 — a 1-space City has no other space to move a Villain to.
+  if (gameState.city.length < 2) {
+    return { decline: true };
+  }
   for (let fromCityIndex = 0; fromCityIndex < gameState.city.length; fromCityIndex++) {
     const villainId = gameState.city[fromCityIndex];
     if (villainId === null || villainId === undefined) {
@@ -1113,10 +1119,10 @@ export function getLegalMoves(
       // why: WP-580 / D-24389 + WP-790 / D-24652 — the per-target spendable figure (unspent
       // recruit under the recruit-as-attack conversion, plus restricted attack whose grant
       // names this City space), exactly mirroring the fightVillain move guard so the bot never
-      // enumerates a fight the reducer would refuse (or skips one it allows). An index with no
-      // named space is refused by the move, so it is skipped here too.
-      const fightTarget = citySpaceNameForIndex(cityIndex);
-      if (fightTarget === undefined) continue;
+      // enumerates a fight the reducer would refuse (or skips one it allows). WP-831 / D-24764 —
+      // a space beyond the normal five has no name; the move fights it with plain Attack only
+      // (UNNAMED_CITY_SPACE_TARGET), so the bot enumerates it the same way.
+      const fightTarget: AttackTargetName = citySpaceNameForIndex(cityIndex) ?? UNNAMED_CITY_SPACE_TARGET;
       if (getSpendableAttackForTarget(gameState.turnEconomy, fightTarget) >= requiredFightCost) {
         if (discardCardId !== null) {
           legalMoves.push({ name: 'fightVillain', args: { cityIndex, discardCardId } });

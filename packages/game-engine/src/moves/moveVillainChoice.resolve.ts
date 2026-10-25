@@ -28,6 +28,8 @@ import type { CitySpaceName } from '../board/citySpaceNames.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { formatAttackTargets } from '../economy/economy.logic.js';
+import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
+import { CITY_MAX_SIZE } from '../board/city.types.js';
 import { pushLog } from '../log/logPush.js';
 import { formatCardRef } from '../log/logDisplay.js';
 
@@ -38,7 +40,8 @@ type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
  * Payload for the resolveMoveVillainChoice move.
  *
  * Either decline the optional move, or name the Villain's current City index and the
- * destination City index (engine indices: 0 = Sewers … 4 = Bridge).
+ * destination City index (engine indices: 0 = Sewers … 4 = Bridge, 5 = an unnamed sixth space
+ * when a scheme enlarges the City, WP-831).
  */
 export type ResolveMoveVillainChoiceArgs =
   | { decline: true }
@@ -66,13 +69,16 @@ export function hasPendingMoveVillainChoice(G: LegendaryGameState): boolean {
 }
 
 /**
- * Whether a value is an integer City index (0..4).
+ * Whether a value is an integer City index (0..CITY_MAX_SIZE - 1).
+ *
+ * // why: WP-831 / D-24764 — the shape check only; whether the space exists in the CURRENT City is
+ * checked against G.city.length when the move resolves.
  *
  * @param value - The untrusted index from the move payload.
- * @returns true for an integer in 0..4.
+ * @returns true for an integer in 0..CITY_MAX_SIZE - 1.
  */
 function isCityIndex(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 4;
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value < CITY_MAX_SIZE;
 }
 
 /**
@@ -116,7 +122,7 @@ function readMoveVillainAnswer(args: unknown): MoveVillainAnswer | null {
  * Resolves the FRONT pending Spinning Cyclone move-a-Villain choice.
  *
  * Atomic sequence (HARD — exact order, mirrors coveringFireChoice.resolve.ts):
- *   1. Validate args — a decline, or two integer City indices 0..4; anything else is a silent
+ *   1. Validate args — a decline, or two integer City indices 0..CITY_MAX_SIZE-1; anything else is a silent
  *      no-op (queue intact).
  *   2. Validate the front pending entry — non-empty queue, front.playerID match.
  *   3. Decline → log and pop. Move → validate `from !== to` and a Villain at `from`, swap the
@@ -163,17 +169,20 @@ export function resolveMoveVillainChoice(
   if (fromCityIndex === toCityIndex) {
     return;
   }
+  // why: WP-831 / D-24764 — both spaces must exist in the current City (a scheme can shrink it).
+  if (fromCityIndex >= G.city.length || toCityIndex >= G.city.length) {
+    return;
+  }
   const movedId = G.city[fromCityIndex];
   if (movedId === null || movedId === undefined) {
     return;
   }
+  // why: WP-831 / D-24764 — a sixth space exists but has no name; it is labelled "an unnamed City
+  // space" rather than refused (only a REMOVED space cannot be moved into, and it does not exist).
   const fromSpaceName: CitySpaceName | undefined = citySpaceNameForIndex(fromCityIndex);
   const toSpaceName: CitySpaceName | undefined = citySpaceNameForIndex(toCityIndex);
-  if (fromSpaceName === undefined || toSpaceName === undefined) {
-    return;
-  }
-  const fromLabel = formatAttackTargets([fromSpaceName]);
-  const toLabel = formatAttackTargets([toSpaceName]);
+  const fromLabel = formatAttackTargets([fromSpaceName ?? UNNAMED_CITY_SPACE_TARGET]);
+  const toLabel = formatAttackTargets([toSpaceName ?? UNNAMED_CITY_SPACE_TARGET]);
   const swappedId = G.city[toCityIndex] ?? null;
 
   // why: D-24336 precedent (villainEffectSwapTwoCityVillains) — swap the two City slots by

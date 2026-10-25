@@ -702,6 +702,7 @@ const ATTACK_TARGET_LABELS: Readonly<Record<AttackTargetName, string>> = {
   streets: 'Streets',
   bridge: 'Bridge',
   mastermind: 'Mastermind',
+  'unnamed-city-space': 'an unnamed City space',
 };
 
 /**

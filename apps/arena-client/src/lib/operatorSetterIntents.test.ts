@@ -190,6 +190,16 @@ describe('operatorSetterIntents — option builders (WP-807)', () => {
     });
     assert.equal(hasEscapeCandidate(emptyEdge), false);
   });
+
+  test('hasEscapeCandidate reads the LAST space of a resized City (WP-831)', () => {
+    const smallCity = buildView({
+      board: {
+        game: { activePlayerId: '0' },
+        city: { spaces: [null, { extId: 'villain-edge' }], escapedPile: [] },
+      } as unknown as UIState,
+    });
+    assert.equal(hasEscapeCandidate(smallCity), true);
+  });
 });
 
 describe('toWholeNumberInRange (live match cDfRs-e8CqM)', () => {

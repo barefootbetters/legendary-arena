@@ -337,11 +337,13 @@ export function isSetterWindowOpen(view: OperatorView, playerId: string): boolea
 }
 
 /**
- * Whether a Villain stands at the City's escape edge (space index 4).
+ * Whether a Villain stands at the City's escape edge (its last space).
  *
  * @param view The operator view.
- * @returns True when City space 4 holds a card.
+ * @returns True when the last City space holds a card.
  */
 export function hasEscapeCandidate(view: OperatorView): boolean {
-  return view.board.city.spaces[4] != null;
+  // why: WP-831 / D-24764 — the escape edge is the last space of the current City.
+  const spaces = view.board.city.spaces;
+  return spaces[spaces.length - 1] != null;
 }

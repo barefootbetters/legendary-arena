@@ -81,6 +81,15 @@
 - **Replay-compat.** The resolver is read from the config at runtime, so a stored pre-deploy Enigma Code match no longer replays to its recorded state (the WP-823 precedent).
 - **Live-verify (D-24026): pending deploy.** A 2-player operator match with this scheme created after the deploy: staged Twists build the code; a paid peek shows a card to that seat only (Play Diagnostics per seat); a wrong guess ends the turn with a new hand and mixes the code; a right guess lets the fight go ahead; the picker fits the 1280x720 board.
 
+### WP-831 / EC-869 — A City of 1 to 6 spaces: the variable City size foundation (D-24764) (2026-10-24)
+
+**No visible change in any current match (always 5 spaces).** The City can now have 1 to 6 spaces, the foundation for Change the Outcome of WWII (WP-832).
+
+- **Engine.** `CityZone` is a 1-6 space array (D-2602's fixed tuple superseded): villains escape off the last space; fights, moves, Guard and the operator escape read the current size; a sixth space is unnamed and fought with plain Attack only; the bot mirrors the moves. Nothing resizes the City yet.
+- **Client.** Names by engine index; removed spaces drawn as hatched columns; an extra space as a leftmost column with a matching HQ spacer and a widened stage.
+- **Tests.** game-engine 5672 → 5682, arena-client 2435 → 2444, 0 fail; twenty revert proofs; a 1280x720 board check at 5 / 6 / 3 spaces; every `:check` 0. 01.6 post-mortem WP COMPLETE.
+- **Live-verify (D-24026): pending deploy.** Any new match shows the unchanged 5-space board.
+
 ### WP-825 / EC-863 — co2e Stealth Assault Squad: the "another S.H.I.E.L.D. Hero that costs 1 or more" gate (D-24758) (2026-10-24)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Nick Fury's Stealth Assault Squad (co2e) gives its +2 Attack only after another S.H.I.E.L.D. Hero that costs 1 or more: the Officer (cost 3) or another costed S.H.I.E.L.D. Hero counts, the cost-0 Agent and Trooper no longer do. A failed gate logs "it needs another shield Hero that costs 1 or more played this turn".
