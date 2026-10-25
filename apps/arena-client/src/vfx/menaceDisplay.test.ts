@@ -126,6 +126,8 @@ describe('menaceDisplay (WP-562) — the kind label', () => {
     assert.equal(menaceKindLabel('escaped-skrull'), 'Heroes');
     // why: WP-823 / D-24756 — Brainwash the Military counts escaped S.H.I.E.L.D. Officers.
     assert.equal(menaceKindLabel('escaped-officer'), 'Officers');
+    // why: WP-832 / D-24765 — Change the Outcome of WWII counts conquered capitals.
+    assert.equal(menaceKindLabel('conquered-capitals'), 'Capitals');
     assert.equal(
       `${menaceKindLabel('escaped-killbot')} ${menaceRatioLabel(3, 5)}`,
       'Killbots 3/5',

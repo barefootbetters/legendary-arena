@@ -9,6 +9,7 @@
  */
 
 import type { LegendaryGameState, ConvertedVillainOrigin } from '../types.js';
+import type { SchemeLossKind } from './schemeLossProgress.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealedCardType } from '../villainDeck/villainDeck.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
@@ -107,6 +108,22 @@ export type SchemeResourceLossCondition =
        * 2026-10-17). Omitted (Killbots) counts the origin only.
        */
       includeCapturedHeroes?: true;
+    }
+  | {
+      /**
+       * WP-832 / D-24765 — a scheme-kept `G.counters` tally reaching a threshold is the loss
+       * (Change the Outcome of WWII: conquered capitals, 3). The scheme's own logic raises the
+       * counter and calls applySchemeCounterResourceLoss.
+       */
+      kind: 'scheme-counter';
+      /** The `G.counters` key the scheme raises. */
+      counter: string;
+      /** The count at which the scheme is lost (evil wins). */
+      threshold: number;
+      /** The danger-meter kind the client labels this tally from (D-24371: an enum, no copy). */
+      meterKind: SchemeLossKind;
+      /** What the tally counts, for the loss log line ("capitals conquered"). */
+      lossDescription: string;
     };
 
 /**
@@ -129,6 +146,9 @@ export type SchemeTwistResolverId =
   // why: WP-830 / D-24763 — The Unbreakable Enigma Code: Twists 1-5 put a Hero Deck card face down
   // into the Enigma Code (contract change recorded in D-24763).
   | 'enigma-code'
+  // why: WP-832 / D-24765 — Change the Outcome of WWII: each Twist invades the next country
+  // (contract change recorded in D-24765).
+  | 'change-the-outcome-of-wwii'
   | 'counter-only';
 
 /**

@@ -574,6 +574,7 @@ describe('resolveSchemeLossKind — the enum the client labels from (D-24371 §3
       'escaped-killbot',
       'escaped-skrull',
       'escaped-officer',
+      'conquered-capitals',
       'twists',
       'twists-fallback',
     ] satisfies SchemeLossKind[];

@@ -56,6 +56,9 @@ const SCHEME_LOSS_NOUNS: Record<SchemeLossKind, string> = {
   // why: WP-823 / D-24756 — Brainwash the Military loses when 5 S.H.I.E.L.D. Officers
   // escape, so the meter names them: "Officers N/5".
   'escaped-officer': 'Officers',
+  // why: WP-832 / D-24765 — Change the Outcome of WWII loses at 3 conquered capitals:
+  // "Capitals N/3".
+  'conquered-capitals': 'Capitals',
   twists: 'Twists',
   // why: WP-763 / D-24595 — the operator's interim rule (Evil Wins at the last
   // twist in the deck) stands in for a printed condition the engine does not

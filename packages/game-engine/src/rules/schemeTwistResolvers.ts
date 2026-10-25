@@ -45,6 +45,7 @@ import {
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 import { addHeroDeckCardToEnigmaCode } from './enigmaCode.logic.js';
+import { invadeNextCountry } from './changeTheOutcomeOfWwii.logic.js';
 import { offPlayCardTraits } from '../hero/splitCard.logic.js';
 import {
   FIRST_MONSTER_PIT_TWIST,
@@ -1184,6 +1185,39 @@ function unbreakableEnigmaCode(
   });
 }
 
+/**
+ * Change the Outcome of WWII (WP-832 / D-24765): "Twist: The Axis invades a new country. Put all
+ * Villains and Bystanders from the city on the bottom of the Villain Deck. The number of city
+ * spaces changes. Play 2 cards from the Villain Deck. If any Villains escape this country, stack a
+ * Twist next to the scheme as a 'conquered capital.'"
+ *
+ * @param gameState - The game state, mutated in place.
+ * @param context - The reveal context (the 2 plays use it).
+ * @param implementationMap - The rule handler map (the 2 plays use it).
+ * @param _params - Unused.
+ * @param twistCardId - The Twist card that triggered.
+ */
+function changeTheOutcomeOfWwii(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  // why: WP-832 / D-24765 — the invasion (return, resize, play 2, settle) lives in its module.
+  invadeNextCountry(gameState, context, implementationMap);
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'changeTheOutcomeOfWwii',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'changeTheOutcomeOfWwii',
+    ),
+  });
+}
+
 export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistResolver> = {
   'reveal-or-punish': revealOrPunish,
   'chained-reveals': chainedReveals,
@@ -1197,5 +1231,6 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'brainwash-the-military': brainwashTheMilitary,
   'go-back-in-time': goBackInTime,
   'enigma-code': unbreakableEnigmaCode,
+  'change-the-outcome-of-wwii': changeTheOutcomeOfWwii,
   'counter-only': counterOnly,
 };

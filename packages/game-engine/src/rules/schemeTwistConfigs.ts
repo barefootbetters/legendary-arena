@@ -33,6 +33,7 @@
  */
 
 import type { SchemeTwistConfig } from './schemeTwistConfig.types.js';
+import { WWII_CAPITALS_TO_WIN, WWII_CONQUERED_CAPITALS } from './changeTheOutcomeOfWwii.constants.js';
 
 /**
  * Scheme twist config entries keyed by scheme ext_id.
@@ -219,6 +220,28 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       // The `portals` resolver bumps DARK_PORTAL_COUNT, which drives the Dark-Portal
       // attack buffs (mastermind +1 once >= 1; a Villain +1 in a portal'd city space).
       lossThreshold: 7,
+    },
+  ],
+  [
+    'ca75/change-the-outcome-of-wwii',
+    {
+      schemeId: 'ca75/change-the-outcome-of-wwii',
+      // why: WP-832 / D-24765 — each Twist invades the next country (the City returns to the
+      // Villain Deck, resizes, and 2 cards are played); an escape in a country conquers its
+      // capital. Real Evil-Wins is "When 3 capitals are conquered": declaring the scheme-counter
+      // resourceLossCondition SUPPRESSES the twist-count proxy, so lossThreshold (the printed 7
+      // Twists) is retained but INERT for loss (D-24178). Before this entry the scheme lost at the
+      // D-24595 last-twist fallback (WP-763's FALSE-LOSS row).
+      resolverId: 'change-the-outcome-of-wwii',
+      params: {},
+      lossThreshold: 7,
+      resourceLossCondition: {
+        kind: 'scheme-counter',
+        counter: WWII_CONQUERED_CAPITALS,
+        threshold: WWII_CAPITALS_TO_WIN,
+        meterKind: 'conquered-capitals',
+        lossDescription: 'capitals conquered',
+      },
     },
   ],
   [
