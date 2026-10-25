@@ -71,6 +71,16 @@
 - **Replay-compat.** The resolver is read from the config at runtime, so a stored pre-deploy Go Back in Time match no longer replays to its recorded state (the WP-823 precedent).
 - **Live-verify (D-24026): pending deploy.** A 2-player operator match with this scheme created after the deploy: a staged Twist prompts the Purge; the picked Hero leaves the HQ unKO'd while its same-Hero HQ card is KO'd; a later same-Hero arrival is KO'd after the move.
 
+### WP-830 / EC-868 — The Unbreakable Enigma Code: the face-down code, the paid peek and the Mastermind guess (D-24763) (2026-10-24)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Twists 1-5 put a Hero Deck card face down into the Enigma Code (shown on the scheme tile, "?" until you have seen a card). After a Villain fight you may pay 1 Recruit to look at one card (only you see it). Fighting the Mastermind opens a guess picker: guess each card's color; right reveals the code and the fight goes ahead, wrong ends your turn and mixes the code.
+
+- **Engine.** A new `enigma-code` resolver and `rules/enigmaCode.logic.ts`; the peek is an owed seat choice (`enigma-peek`) opened last after the move; `fightMastermind` takes an `enigmaGuess`; a wrong guess ends the turn through the `endTurn` move's cleanup; a per-audience `UIState.scheme.enigmaCode`; the bot fights only with the whole code seen. A `enigmaCode` notable-event key. No new move.
+- **Client.** `EnigmaCodePanel.vue` on the scheme tile, `EnigmaGuessPicker.vue` over the Mastermind tile, the peek heading.
+- **Tests.** game-engine 5672 → 5697, arena-client 2435 → 2446, 0 fail; twenty-seven revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; every `:check` 0, nothing regenerated. 01.6 post-mortem WP COMPLETE.
+- **Replay-compat.** The resolver is read from the config at runtime, so a stored pre-deploy Enigma Code match no longer replays to its recorded state (the WP-823 precedent).
+- **Live-verify (D-24026): pending deploy.** A 2-player operator match with this scheme created after the deploy: staged Twists build the code; a paid peek shows a card to that seat only (Play Diagnostics per seat); a wrong guess ends the turn with a new hand and mixes the code; a right guess lets the fight go ahead; the picker fits the 1280x720 board.
+
 ### WP-825 / EC-863 — co2e Stealth Assault Squad: the "another S.H.I.E.L.D. Hero that costs 1 or more" gate (D-24758) (2026-10-24)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Nick Fury's Stealth Assault Squad (co2e) gives its +2 Attack only after another S.H.I.E.L.D. Hero that costs 1 or more: the Officer (cost 3) or another costed S.H.I.E.L.D. Hero counts, the cost-0 Agent and Trooper no longer do. A failed gate logs "it needs another shield Hero that costs 1 or more played this turn".

@@ -55,6 +55,7 @@ import {
 } from '../villainDeck/villainEscapeProcedure.js';
 import { hasSeatSubmitted, isSeatAddressed } from '../moves/seatChoice.resolve.js';
 import { TIMESTREAM_PURGE_SEAT_CHOICE_KIND } from '../rules/timestreamPurge.logic.js';
+import { ENIGMA_PEEK_SEAT_CHOICE_KIND } from '../rules/enigmaCode.logic.js';
 import { victoryPointValueForCard } from '../economy/bloodFrenzy.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { resolveFightCost } from '../economy/economy.resolve.js';
@@ -120,6 +121,11 @@ function chooseByKind(
     // why: WP-828 / D-24761 — the granted Hero is played again next turn, so the bot grants the
     // highest-cost listed Hero (first listed on a tie).
     return chooseHighestCostOption(G, options);
+  }
+  if (choice.kind === ENIGMA_PEEK_SEAT_CHOICE_KIND) {
+    // why: WP-830 / D-24763 — a seen Enigma card is a right guess later, worth the 1 Recruit; the
+    // bot looks at the first unseen card (the offer lists only those, the decline last).
+    return 0;
   }
   if (choice.kind === RANDOM_ACTS_WOUND_KIND) {
     // why: D-24678 — the Diving Block option exists only when the seat can reveal it,

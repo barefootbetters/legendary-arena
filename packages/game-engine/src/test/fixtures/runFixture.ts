@@ -197,7 +197,8 @@ const MOVE_MAP: Record<string, MoveDispatch> = {
   revealVillainCard: (context) => revealVillainCard(context as never),
   fightVillain: (context, args) => fightVillain(context as never, args as never),
   recruitHero: (context, args) => recruitHero(context as never, args as never),
-  fightMastermind: (context) => fightMastermind(context as never),
+  // why: WP-830 / D-24763 — pass the args through: the Enigma Code guess rides on them.
+  fightMastermind: (context, args) => fightMastermind(context as never, args as never),
   setPlayerReady: (context, args) =>
     setPlayerReady(context as never, args as never),
   startMatchIfReady: (context) => startMatchIfReady(context as never),

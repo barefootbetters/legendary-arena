@@ -233,6 +233,13 @@ const GATE_BLOCKERS: readonly GateBlocker[] = [
     apply: (G) => { G.pendingTimestreamPurges = [{ chooserPlayerID: '0', twistCardId: 'scheme-twist-01' }]; },
     remove: (G) => { Reflect.deleteProperty(G, 'pendingTimestreamPurges'); },
   },
+  {
+    // why: WP-830 / D-24763 — owed Enigma peek offers are opened into a seat choice after the
+    // move, like the escape queues above.
+    label: 'pendingEnigmaPeekOffers is non-empty',
+    apply: (G) => { G.pendingEnigmaPeekOffers = [{ playerID: '0', positions: [] }]; },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingEnigmaPeekOffers'); },
+  },
 ];
 
 describe('operator setters — gate (WP-806 §D 1)', () => {

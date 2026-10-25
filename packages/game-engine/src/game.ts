@@ -45,6 +45,7 @@ import { openFlyingShieldBlockSeatChoiceIfNeeded } from './moves/flyingShieldBlo
 import { openOutOfTimeGrantSeatChoiceIfNeeded } from './moves/outOfTimeGrant.logic.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEscapeProcedure.js';
 import { openTimestreamPurgeSeatChoiceIfNeeded, sweepPurgedHeroesFromHq } from './rules/timestreamPurge.logic.js';
+import { openEnigmaPeekSeatChoiceIfNeeded } from './rules/enigmaCode.logic.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -934,6 +935,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // after the move that played the card: auto for one eligible hand Hero, else the
           // active player's seat choice. No-op while another seat choice is open.
           openOutOfTimeGrantSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-830 / D-24763 — The Unbreakable Enigma Code: open the next owed pay-1-Recruit
+          // peek offer from a Villain fight (the fighter's own choice). LAST, so every reaction the
+          // fight caused (an escape's steps, a Diving Block wave) resolves first: the peek is
+          // decided once the fight has fully resolved. No-op until the scheme queues one.
+          openEnigmaPeekSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
         },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent

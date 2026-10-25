@@ -69,6 +69,7 @@ import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { hasHealedThisTurn } from './healWounds.js';
 import { resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+import { isEnigmaGuessWellFormed, settleEnigmaGuess } from '../rules/enigmaCode.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -83,6 +84,12 @@ interface FightMastermindArgs {
    * (validation-phase silent decline; moves never throw).
    */
   useExcessiveViolence?: boolean;
+  /**
+   * WP-830 / D-24763 — The Unbreakable Enigma Code: the guessed color of each Enigma card, in code
+   * order (`strength` / `instinct` / `covert` / `tech` / `ranged` / `grey`). Required while the code
+   * holds a card; ignored otherwise. A missing or malformed guess rejects the fight silently.
+   */
+  enigmaGuess?: readonly string[];
 }
 
 /**
@@ -116,7 +123,7 @@ interface TacticSeatChoiceEvents {
 // execution; tactic Fight was scoped out of WP-316/386/388 and had no owner).
 export function fightMastermind(
   { G, ...context }: MoveContext,
-  { useExcessiveViolence }: FightMastermindArgs = {},
+  { useExcessiveViolence, enigmaGuess }: FightMastermindArgs = {},
 ): void {
   // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
   // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
@@ -229,6 +236,15 @@ export function fightMastermind(
   // why: D-24180 — a player who used the Wound Healing ability this turn may not
   // fight or recruit for the rest of the turn (the reverse lock).
   if (hasHealedThisTurn(G)) return;
+
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code: "When you fight the Mastermind, first guess
+  // the color of each Enigma card, and then reveal them. If you guessed them right, fight the
+  // Mastermind as normal. If not, your turn ends." Settled after every other gate, so a guess is
+  // only spent on a fight that would happen; a malformed guess is an invalid request (silent).
+  if ((G.enigmaCode?.length ?? 0) > 0) {
+    if (!isEnigmaGuessWellFormed(G, enigmaGuess)) return;
+    if (!settleEnigmaGuess(G, ctx.currentPlayer, enigmaGuess, random, events)) return;
+  }
 
   // Step 3: Mutate G.
   // why: WP-687 / D-24504 — the Final Blow 5th, final fight is a DISTINCT branch
