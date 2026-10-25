@@ -479,6 +479,7 @@ high-water: 422
 - WP-838 — co2e-capture-family (co2e Enchantress, HYDRA Kidnappers, Venom and Baron Strucker: capture Bystanders from Victory Piles, capture Officers/Sidekicks/cheap HQ Heroes, gain one captured Hero, shuffle Bystanders into the Villain Deck. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - WP-839 — co2e-city-movement-effects (co2e Green Goblin, Speed Demon, Boomerang and Ymir Ambush: move to the Bridge, move extra spaces, take a revealed Villain's place, a Victory Pile Villain re-enters the City. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - WP-840 — co2e-the-blob-guards-the-mastermind (co2e The Blob Ambush: he sits left of the Mastermind, nothing moves him, and the Mastermind cannot be fought while he is there. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- WP-841 — co2e-variable-attack-passives (co2e Baron Strucker, Paibok, Super-Skrull and Hydro-Man fight for their printed variable Attack. reserved 2026-10-25, claude/reserve-wp841-co2e-variable-attack)
 
 ## EC
 
@@ -920,6 +921,7 @@ high-water: 457
 - EC-876 — co2e-capture-family (WP-838. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - EC-877 — co2e-city-movement-effects (WP-839. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - EC-878 — co2e-the-blob-guards-the-mastermind (WP-840. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- EC-879 — co2e-variable-attack-passives (WP-841. reserved 2026-10-25, claude/reserve-wp841-co2e-variable-attack)
 
 ## D
 
@@ -1471,3 +1473,4 @@ section below) and the allocation protocol in
 - D-24771 — co2e-capture-family (WP-838; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - D-24772 — co2e-city-movement-effects (WP-839; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - D-24773 — co2e-the-blob-guards-the-mastermind (WP-840; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- D-24774 — co2e-variable-attack-passives (WP-841; the variable-Attack table, marker grammar and HYDRA-Villain reading. reserved 2026-10-25, claude/reserve-wp841-co2e-variable-attack)
