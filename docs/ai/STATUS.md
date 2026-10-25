@@ -10,6 +10,16 @@
 
 ## Current State
 
+### WP-834 / EC-872 — Ranked gauntlet loadouts fill out-of-set slots from Core before Core 2E (D-24767) (2026-10-25)
+
+**User-visible on `legends.legendary-arena.com` and in gauntlet "Play this leg" after deploy.** When a mastermind's own set can't fill every villain or henchmen slot, the approved ranked loadout now takes the Core Set's groups before Core 2E's. Most Core 2E villain groups (and the Hand Ninjas / Savage Land Mutates henchmen) have no implemented effects, so ranked legs were fielding villains whose printed effects did nothing. 51 non-Core masterminds' approved loadouts change (48 base, 13 scheme overrides); for example the ca75 Change the Outcome of WWII leg now fields `core/brotherhood` at 2 players and `core/doombot-legion` henchmen. Casual play is unchanged.
+
+- **Measured.** Compositions with a hollow Core 2E fallback group: 592 → 0; Core 2E groups in non-co2e menus: 388 → 0; 203 compositions become free of any unimplemented group.
+- **Scores.** None affected: no PAR is published for any non-Core scenario and `/api/leaderboards/scenarios` was empty (checked 2026-10-25). No migration: runs store hero picks only.
+- **Counts.** registry 310 → 311; every other package unchanged; 0 fail. Both gauntlet `:check` OK; `par:seed:test` 2 / 0; revert proof done.
+- **Named follow-ups:** implementing the co2e villain / henchmen effects (its own session); the other unmarked in-set groups; stale comments in `server.mjs` :700–703 and `gauntlet.logic.test.ts`; the co2e group slugged `Skulls` (Skrulls).
+- **Live-verify (D-24026): pending deploy.** Expected: the published legends index (`legends/v1/gauntlet-index.json`) shows the ca75 WWII leg at 2p with `core/brotherhood` and `core/doombot-legion` and no `co2e/` group outside co2e gauntlets; a 2p match from that leg loadout starts.
+
 ### WP-833 / EC-871 — "Add an extra Villain Group" schemes require the extra group (D-24766) (2026-10-24)
 
 **User-visible on `cards.legendary-arena.com` and `play.legendary-arena.com` after deploy.** The 14 schemes that print "Add an extra Villain Group." (Change the Outcome of WWII, Bank Robbery Hostage Crisis, Negative Zone Prison Outbreak, Predict Future Crime, Steal the Weaponized Plutonium, War for the Dream Dimension, Cursed Pages of the Darkhold Tome, Inescapable "Kyln" Space Prison, Provoke the Sovereign War Fleet, Superhuman Baseball Game, Earthquake Drains the Ocean, Fragmented Realities, Smash Two Dimensions Together, Deadlands Hordes Charge the Wall) now require one more Villain Group than the player count normally uses: 2/3/4/4/5 at 1–5 players. The loadout builder's required row and preview, the play lobby's requirement line and create gate, and `Game.setup` all agree, and the base count is rejected ("A 1-player match requires 2 villain groups, but the loadout provides 1."). Every other scheme is unchanged. Saved or exported base-count loadouts for these schemes are flagged on load, not rewritten.
