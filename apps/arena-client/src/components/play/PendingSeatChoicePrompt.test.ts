@@ -162,6 +162,24 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
     assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'Hero B');
   });
 
+  // why: WP-829 / D-24762 — Go Back in Time: the options are the HQ Heroes by name and cost.
+  test('renders the Purge heading for the timestream-purge kind (WP-829)', () => {
+    const { submitMove } = recorder();
+    const purgeChoice: UIPendingSeatChoice = {
+      kind: 'timestream-purge',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: {
+        'player-1': { options: [{ label: 'Hero A (cost 3)' }, { label: 'Hero B (cost 5)' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: purgeChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Go Back in Time — choose a Hero in the HQ to Purge from the Timestream');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'Hero B (cost 5)');
+  });
+
   test('keeps the generic "Your choice" heading for a non-diving-block kind', () => {
     const { submitMove } = recorder();
     const wrapper = mount(PendingSeatChoicePrompt, {

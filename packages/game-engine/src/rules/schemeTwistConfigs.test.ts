@@ -217,6 +217,12 @@ function configPiles(schemeId: string): readonly string[] {
   return [condition.pile];
 }
 
+// why: WP-829 / D-24762 — a D-pure scheme whose Twist now does something keeps its pile-runout loss
+// (still asserted below) but no longer uses the counter-only resolver. Each exception is named.
+const AUDIT_PURE_RESOLVER_EXCEPTIONS: Record<string, string> = {
+  'ca75/go-back-in-time-to-slay-heroes-ancestors': 'go-back-in-time',
+};
+
 describe('WP-763 §Audit configuration (D-24595)', () => {
   it('A: 27 printed twist-count schemes carry exactly their printed N', () => {
     let entryCount = 0;
@@ -239,7 +245,7 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
       for (const schemeId of schemeIds) {
         const config = SCHEME_TWIST_CONFIGS.get(schemeId);
         assert.deepEqual(configPiles(schemeId), piles, schemeId);
-        assert.equal(config?.resolverId, 'counter-only', schemeId);
+        assert.equal(config?.resolverId, AUDIT_PURE_RESOLVER_EXCEPTIONS[schemeId] ?? 'counter-only', schemeId);
         assert.equal(config?.lossThreshold, undefined, schemeId);
         assert.equal(config?.twistFallbackWithResourceLoss, undefined, schemeId);
         entryCount = entryCount + 1;

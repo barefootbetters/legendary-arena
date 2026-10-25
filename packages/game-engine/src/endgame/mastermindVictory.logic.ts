@@ -120,6 +120,7 @@ export function dropAllPendingPlayerChoices(gameState: LegendaryGameState): void
   gameState.pendingScryKoChoices = undefined;
   gameState.pendingSeatChoice = undefined;
   gameState.pendingSmashDiscards = undefined;
+  gameState.pendingTimestreamPurges = undefined; // why: WP-829 / D-24762 — owed Purges join the end-of-game drop set (D-24518); a decided match never opens them
   gameState.pendingUndercoverChoice = undefined;
   gameState.pendingVictoryPileCardPick = undefined;
 }

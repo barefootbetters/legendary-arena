@@ -49371,4 +49371,28 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24761 (#2990). Related: D-24692 (Out of Time), D-24501 (seat choice), D-24511 (card-pick options), D-24563 (the [hc:tech] gate), D-24760 (WP-827's sibling opener), D-24518 (end-of-game drop), D-24026.
 
 ---
+
+### D-24762 — Go Back in Time to Slay Heroes' Ancestors: each Twist Purges an HQ Hero from the Timestream, and HQ Heroes sharing a Purged Hero Name are KO'd (Active 2026-10-24 — WP-829 / EC-867)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match with this scheme created after the deploy.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). The scheme's Twist ("Put a Hero from the HQ next to the Scheme, 'Purged from the Timestream.'") and its special rule ("Whenever a Hero is in the HQ whose Hero Name has been Purged from the Timestream, KO that Hero.") now work: you pick the HQ Hero to Purge, and every card of a Purged Hero that reaches the HQ is KO'd.
+
+**Context.** The scheme was `counter-only` (D-24595 §Configuration recorded it as a D-pure pile-runout scheme): Twists only counted. Its 8-Hero setup and its loss (the Hero Deck runs out) were already right.
+
+**Decision.**
+1. **Resolver.** `SchemeTwistResolverId` gains `'go-back-in-time'` (a contract change); the scheme's config switches to it, `params` and the `pile-depleted` heroDeck loss unchanged. This amends D-24595 §Configuration for this scheme. The resolver queues one owed Purge for the active player on the runtime-only `G.pendingTimestreamPurges`, logs it, and pushes a `schemeTwistResolved` notable event under the new `goBackInTime` key (the WP-823 lockstep).
+2. **Opening a Purge.** A Twist resolves inside a Villain Deck reveal, where no seat choice can be answered, so the play-phase onMove opener makes it after the move (the D-24656 escape pattern), waiting while `G.pendingSeatChoice`, `hasAnyPendingChoice(G)` or `G.pendingHeroChoice` is open or the match is decided. Two or more HQ Heroes → the active player's seat choice (kind `timestream-purge`, options in slot order carrying `cardId`); one → Purged with no prompt; none → a logged no-op. The chooser is always the active player (an inference: the card does not say), and the queue drains within the move's turn. The Purge is mandatory: the timeout default is the leftmost Hero; the bot picks the least valuable (cheapest).
+3. **Purged is not KO'd.** The Purged card leaves the HQ for the permanent `G.purgedFromTimestream` list; its slot refills from the Hero Deck.
+4. **Hero Name** is the Hero deck, the first two segments of the card id (`{set}/{hero}`) — an inference, exact for every loadout that does not field two Hero decks with one printed name.
+5. **The "whenever" rule** is a repeat-until-clean sweep: every HQ card sharing a Purged Hero Name is KO'd and its slot refilled, until a pass KOs nothing. It runs inside each Purge, at the top of every onMove (before any opener lists the HQ), inside the Purge opener after its waits (before listing), and once more after the openers only while no seat choice is parked, so no HQ pick ever lists a Hero the rule is about to KO. A parked seat choice blocks every move, so the next onMove's first sweep catches what it left. If a picked Hero has nonetheless left the HQ, nothing is Purged, a "still owed" line is logged, and the Purge re-opens on the next onMove. When one move owes both an escape procedure and a Purge, the escape's steps resolve first (deliberate: they are owed in rule order by the move that caused them).
+6. **Loss.** Each Purge and each opener sweep re-checks `applyPileDepletionResourceLoss`, so a refill that empties the Hero Deck decides the match on that move.
+7. **Replay-compat.** The resolver id is read from the static config table at runtime, not stored in `initialState`: a stored pre-deploy Go Back in Time match replays its Twists through the new resolver, so its D-24119 replay verification no longer reproduces the final state (the WP-823 precedent). A match in flight across the deploy picks up the resolver mid-match; both fields are lazily created, so that is benign. `finalStateHash` / `PRE_WP080_HASH` are unchanged.
+8. **Known gaps.** No board readout of the Purged Heroes (the log names each; a UIState field is a later five-step contract). The sim runner, PAR aggregator, fixture runner and autoplay leave the opener and sweep unmirrored: the resolver still runs, so the queue grows and never drains there (nothing reads it; the operator setters stay closed on such a state), and no Hero is Purged or KO'd. Two Hero decks sharing one printed name would not share a Purge.
+
+**Gates.** game-engine 5672 → 5694 (+22 tests / +4 suites), arena-client 2435 → 2436, 0 fail; thirteen revert proofs each fail their locked tests (the config, the live onMove opener and sweeps, the sweep and loss inside the Purge, the waits, the repeat, the dispatch route, the bot case, the setter guard, the sweep-before-listing order, the still-owed path, the notable key); `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; every card / coverage `:check` 0; dashboard `test:coverage` / `typecheck` / `format:check` 0. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-829-go-back-in-time-purge.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24762 (#2993). Related: D-24595 (amended), D-24656 (the escape opener), D-24349 (`ko-from-hq` auto-pick), D-24501 (seat choice), D-24318 (pile-depletion loss), D-24756 (the WP-823 config-change precedent), D-24119, D-24026.
+
+---
 Protect this file.

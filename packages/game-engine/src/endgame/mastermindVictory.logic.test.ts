@@ -126,7 +126,7 @@ const ALL_PENDING_FIELDS = [
   'pendingOptionalPutBottomHQ', 'pendingOutOfTimeGrants', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
   'pendingPutCardsOnDeckChoices', 'pendingPutHandOnDeckTop', 'pendingReorderChoices', 'pendingReturnOnDiscard',
   'pendingReturnZeroCostDiscard', 'pendingRevealThreeAssign', 'pendingRevealTopDispose', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
-  'pendingSeatChoice', 'pendingSmashDiscards', 'pendingUndercoverChoice',
+  'pendingSeatChoice', 'pendingSmashDiscards', 'pendingTimestreamPurges', 'pendingUndercoverChoice',
   'pendingVictoryPileCardPick',
 ] as const;
 const SINGLE_VALUE_PENDING_FIELDS = new Set(['pendingHeroChoice', 'pendingSeatChoice']);

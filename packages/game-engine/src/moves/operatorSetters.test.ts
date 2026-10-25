@@ -226,6 +226,13 @@ const GATE_BLOCKERS: readonly GateBlocker[] = [
     apply: (G) => { G.pendingOutOfTimeGrants = [{ playerID: '0', sourceCardId: 'ca75/winter-soldier/2-4#0' }]; },
     remove: (G) => { Reflect.deleteProperty(G, 'pendingOutOfTimeGrants'); },
   },
+  {
+    // why: WP-829 / D-24762 — owed Go Back in Time Purges are opened into a seat choice after
+    // the move, like the escape queues above.
+    label: 'pendingTimestreamPurges is non-empty',
+    apply: (G) => { G.pendingTimestreamPurges = [{ chooserPlayerID: '0', twistCardId: 'scheme-twist-01' }]; },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingTimestreamPurges'); },
+  },
 ];
 
 describe('operator setters — gate (WP-806 §D 1)', () => {
