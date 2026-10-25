@@ -81,6 +81,15 @@
 - **Replay-compat.** The resolver is read from the config at runtime, so a stored pre-deploy Enigma Code match no longer replays to its recorded state (the WP-823 precedent).
 - **Live-verify (D-24026): pending deploy.** A 2-player operator match with this scheme created after the deploy: staged Twists build the code; a paid peek shows a card to that seat only (Play Diagnostics per seat); a wrong guess ends the turn with a new hand and mixes the code; a right guess lets the fight go ahead; the picker fits the 1280x720 board.
 
+### WP-832 / EC-870 — Change the Outcome of WWII: the country Twists, conquered capitals and the 3-capital loss (D-24765) (2026-10-24)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Each Twist invades the next country: the City's Villains and Bystanders go to the bottom of the Villain Deck, the City takes the country's spaces (Poland 4 … Switzerland 1), and 2 cards are played. The first Villain to escape a country conquers its capital; at 3, Evil wins. The danger meter reads "Capitals N/3". The seventh Twist is no longer a loss.
+
+- **Engine.** A `change-the-outcome-of-wwii` resolver and `rules/changeTheOutcomeOfWwii.logic.ts`; the capital settled on the shared escape path; a generic `scheme-counter` loss kind and a `conquered-capitals` meter kind. No new `G` field (counter keys).
+- **Client.** The meter label "Capitals".
+- **Tests.** game-engine → 5692 on the WP-831 base, 0 fail; fifteen revert proofs; every `:check` 0. 01.6 post-mortem WP COMPLETE.
+- **Live-verify (D-24026): pending deploy.** A 2-player operator match with this scheme: a Twist resizes the City and plays 2; an escape conquers a capital; the USSR's 6 spaces fit the board; Twist 7 does not end the game.
+
 ### WP-831 / EC-869 — A City of 1 to 6 spaces: the variable City size foundation (D-24764) (2026-10-24)
 
 **No visible change in any current match (always 5 spaces).** The City can now have 1 to 6 spaces, the foundation for Change the Outcome of WWII (WP-832).
