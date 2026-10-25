@@ -1,6 +1,6 @@
 # WP-834 — Core-first gauntlet fill: ranked loadouts take Core groups before Core 2E
 
-**Status:** Done 2026-10-25 (EC-872 `94915538`; **D-24767** Active). Live-verify pending deploy.
+**Status:** Done 2026-10-25 (EC-872 `94915538`; **D-24767** Active). Live-verify PASS 2026-10-25 (STATUS).
 **Primary Layer:** Shared tooling (`scripts/generate-gauntlet-loadouts.mjs`) + Registry (its generated module
 `packages/registry/src/gauntletLoadouts.generated.ts`, and one registry test file)
 **User-Visible Surface:** legends.legendary-arena.com gauntlet boards and play.legendary-arena.com "Play this leg" (the

@@ -18,7 +18,7 @@
 - **Scores.** None affected: no PAR is published for any non-Core scenario and `/api/leaderboards/scenarios` was empty (checked 2026-10-25). No migration: runs store hero picks only.
 - **Counts.** registry 310 → 311; every other package unchanged; 0 fail. Both gauntlet `:check` OK; `par:seed:test` 2 / 0; revert proof done.
 - **Named follow-ups:** implementing the co2e villain / henchmen effects (its own session); the other unmarked in-set groups; stale comments in `server.mjs` :700–703 and `gauntlet.logic.test.ts`; the co2e group slugged `Skulls` (Skrulls).
-- **Live-verify (D-24026): pending deploy.** Expected: the published legends index (`legends/v1/gauntlet-index.json`) shows the ca75 WWII leg at 2p with `core/brotherhood` and `core/doombot-legion` and no `co2e/` group outside co2e gauntlets; a 2p match from that leg loadout starts.
+- **Live-verify (D-24026): PASS 2026-10-25** (server `6b43007f`). The legends index the new server published one second after boot (`legends/v1/gauntlet-index.json`, generatedAt 22:54:50Z) carries no Core 2E group in any non-co2e gauntlet across all 110 gauntlets / 3,195 leg compositions, and both ca75 Change the Outcome of WWII legs field `core/brotherhood` at 2p, `core/brotherhood`, `core/enemies-of-asgard`, `core/hydra` at 5p, and `core/doombot-legion` henchmen (+ `core/hand-ninjas` at 4–5p). A 2p match from that leg loadout (`dL3D0rvK5Nj`, also `1cdT4NwAVHs`) played 17 turns with no unhandled-effect line (the co2e Brotherhood game `cfWSKCGr0ZL` logged 13); core Juggernaut's Ambush KO'd two Heroes from each player's discard pile.
 
 ### WP-833 / EC-871 — "Add an extra Villain Group" schemes require the extra group (D-24766) (2026-10-24)
 

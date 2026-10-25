@@ -49439,6 +49439,8 @@ Protect this file.
 
 **Reserved by:** NUMBER-LEDGER D-24767 (#3008). Related: D-24199 (fill rule), D-24278 (single variant), D-24283 (per-scheme overlay), D-24666 / D-24766 (scheme overrides), D-24372 (runtime drift pins), D-24026 (live-verify).
 
+**Live-verify (D-24026): PASS 2026-10-25** (server `6b43007f`). The legends index the new server published one second after boot (`legends/v1/gauntlet-index.json`, generatedAt 22:54:50Z) carries no Core 2E group in any non-co2e gauntlet across all 110 gauntlets / 3,195 leg compositions, and both ca75 Change the Outcome of WWII legs field `core/brotherhood` at 2p, `core/brotherhood`, `core/enemies-of-asgard`, `core/hydra` at 5p, and `core/doombot-legion` henchmen (+ `core/hand-ninjas` at 4–5p). A 2p match from that leg loadout (`dL3D0rvK5Nj`, also `1cdT4NwAVHs`) played 17 turns with no unhandled-effect line (the co2e Brotherhood game `cfWSKCGr0ZL` logged 13); core Juggernaut's Ambush KO'd two Heroes from each player's discard pile.
+
 ---
 
 ### D-24764 — A City of 1 to 6 spaces: `CityZone` becomes an array, names stay on engine indices, the HQ stays five (Active 2026-10-24 — WP-831 / EC-869)
