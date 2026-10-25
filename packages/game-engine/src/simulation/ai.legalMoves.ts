@@ -678,8 +678,10 @@ export function getLegalMoves(
     // why: WP-767 / D-24600 — mirrors allowInPlay: a koZones that omits discard (Snarling
     // Fangs' hand + played-this-turn entry) must not yield a discard target the resolve rejects.
     const allowDiscard = front.koZones === undefined || front.koZones.includes('discard');
+    // why: WP-826 / D-24759 — Reassign to Civilian Duty's played-this-turn entry omits hand.
+    const allowHand = front.koZones === undefined || front.koZones.includes('hand');
     const defaultTarget = selectDefaultOptionalKoTarget(
-      zones, gameState.cardStats, isEligible, allowInPlay, allowDiscard,
+      zones, gameState.cardStats, isEligible, allowInPlay, allowDiscard, allowHand,
     );
     if (defaultTarget !== null) {
       return [{ name: 'resolveOptionalKoReward', args: defaultTarget }];

@@ -587,8 +587,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // 7794 -> 7793 raw observations, 79 mechanics, 0 dropped). totalObs 8715 -> 8714 (-1, equal to the
   // raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.5 (1091 / 8714). A
   // sweep-trajectory + denominator re-pin; no mechanic changed status.
+  // 2026-10-24 (WP-826 / D-24759, re-pin): Mobilize for War and Reassign to Civilian Duty now park
+  // their optional S.H.I.E.L.D. KOs instead of firing a bare gate, so their gate-only hollow
+  // observations leave the sweep (feed regenerated: 7793 -> 7777 raw observations, 79 mechanics,
+  // 0 dropped). totalObs 8714 -> 8698 (-16, equal to the raw feed fall); resolvedObs stays 1091, so
+  // percentResolved stays 12.5 (1091 / 8698). A denominator re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8714);
+  assert.equal(view.totalObs.value, 8698);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.5);
   assert.ok(view.remaining.value.length > 0);

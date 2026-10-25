@@ -140,6 +140,17 @@
       "hidden": true
     },
     {
+      "slug": "attack-per-ko-this-way",
+      "label": "Attack Per Ko This Way",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "ca75/agent-x-13"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "berserk",
       "label": "Berserk",
       "scope": "hero",
@@ -954,6 +965,17 @@
       "hidden": true
     },
     {
+      "slug": "ko-up-to-shield-hand-discard",
+      "label": "Ko Up To Shield Hand Discard",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "ca75/agent-x-13"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "ko-wound",
       "label": "Ko Wound",
       "scope": "hero",
@@ -1147,6 +1169,17 @@
       "cardCount": 1,
       "cardIds": [
         "core/nick-fury"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "optional-ko-shield-played-rescue",
+      "label": "Optional Ko Shield Played Rescue",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "ca75/steve-rogers-director-of-shield"
       ],
       "hidden": true
     },
@@ -2725,7 +2758,9 @@
       "mechanics": [
         "attack",
         "attack-per-count",
+        "attack-per-ko-this-way",
         "gain-officer",
+        "ko-up-to-shield-hand-discard",
         "out-of-time",
         "savior"
       ]
@@ -2750,6 +2785,7 @@
     "ca75/steve-rogers-director-of-shield": {
       "mechanics": [
         "attack-per-count",
+        "optional-ko-shield-played-rescue",
         "out-of-time",
         "recruit-per-count",
         "rescue",

@@ -317,6 +317,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // (heroEffectFightCostReduction) that appends to the lazy fightCostReductions list, so it
   // belongs here. Carries a magnitude (the amount) → NOT in NO_MAGNITUDE_KEYWORDS.
   'fight-cost-reduction',
+  // why: WP-826 / D-24759 — the Cap 75th optional-KO S.H.I.E.L.D. family. Each has a
+  // HERO_EFFECT_HANDLERS entry that parks (or upgrades) entries on the shared optional-ko-reward
+  // queue, so each belongs here. All three carry a magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
+  'ko-up-to-shield-hand-discard',
+  'attack-per-ko-this-way',
+  'optional-ko-shield-played-rescue',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -3997,6 +4003,167 @@ function heroEffectOptionalKoShieldOfficer(
 }
 
 /**
+ * Park handler for the `ko-up-to-shield-hand-discard` hero keyword (WP-826 / D-24759).
+ *
+ * Agent X-13's Mobilize for War: "KO up to two [team:shield] Heroes from your hand and/or
+ * discard pile." Reuses the shipped optional-ko-reward pending queue: it parks one no-reward
+ * PendingOptionalKoReward per KO the card allows (koZones ['hand','discard'], koTeamFilter
+ * 'shield'), capped at the number of eligible S.H.I.E.L.D. Heroes, so "up to" is a sequence
+ * of independent optional choices (decline any of them). A later line of the same card can
+ * attach a per-KO reward to these entries (see heroEffectAttackPerKoThisWay).
+ *
+ * 0 eligible → a logged no-op that parks nothing (never a throw).
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the KOs happen at resolve time).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (recorded for the resolve-move log and the reward upgrade).
+ * @param effect - The effect descriptor; its magnitude is the printed KO cap ("up to N").
+ */
+function heroEffectKoUpToShieldHandDiscard(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  let eligibleCount = 0;
+  for (const zone of [playerZones.hand, playerZones.discard]) {
+    for (const zoneCardId of zone) {
+      if (cardCountsAsShieldHero(G, zoneCardId as CardExtId)) {
+        eligibleCount += 1;
+      }
+    }
+  }
+  if (eligibleCount === 0) {
+    pushLog(G,
+      `Player ${playerID} could not KO a S.H.I.E.L.D. Hero for ${formatCardRef(G.cardDisplayData, cardId)}'s ability — their hand and discard pile hold no S.H.I.E.L.D. Hero.`,
+    );
+    return;
+  }
+  // why: D-24759 — one entry per KO the card allows, but never more than there are eligible
+  // S.H.I.E.L.D. Heroes right now: a KO never adds a S.H.I.E.L.D. Hero to hand or discard, so a
+  // surplus entry could only ever be declined. The magnitude pre-gate already confirmed N >= 1.
+  const koCap = effect.magnitude ?? 1;
+  const entryCount = Math.min(koCap, eligibleCount);
+  if (!G.pendingOptionalKoRewards) { G.pendingOptionalKoRewards = []; }
+  for (let entryIndex = 0; entryIndex < entryCount; entryIndex++) {
+    G.pendingOptionalKoRewards.push({
+      playerID,
+      rewardType: 'none',
+      rewardMagnitude: 0,
+      sourceCardId: cardId,
+      koZones: ['hand', 'discard'],
+      koTeamFilter: 'shield',
+    });
+  }
+}
+
+/**
+ * Handler for the `attack-per-ko-this-way` hero keyword (WP-826 / D-24759).
+ *
+ * Mobilize for War's second line: "[keyword:Savior]: For each card KO'd this way, you get
+ * +1[icon:attack]." The KOs belong to the card's first line, which parked them as no-reward
+ * optional-ko entries a moment earlier in the same play. This handler gives each of those
+ * still-pending entries an attack reward of `magnitude`, so every KO the player actually makes
+ * grants +N at resolve time and a declined KO grants nothing. The line's own gate (Savior)
+ * decides whether this runs at all: without it, the entries stay no-reward.
+ *
+ * Only entries parked by THIS card for THIS player with no reward are upgraded. The block-all
+ * guard stops another card being played while the queue is non-empty, so every matching entry
+ * belongs to this play.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused.
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card whose earlier line parked the KO entries.
+ * @param effect - The effect descriptor; its magnitude is the Attack per card KO'd.
+ */
+function heroEffectAttackPerKoThisWay(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const attackPerKo = effect.magnitude ?? 1;
+  let upgradedCount = 0;
+  // why: D-24759 — every matching entry is this play's: the block-all guard stops a card being
+  // played while the queue is non-empty, and line 0 parked these a moment earlier in the same
+  // executeHeroEffects call (hooks run in ability-line order). A declined KO grants nothing,
+  // because the reward is dispatched only on an actual KO.
+  for (const entry of G.pendingOptionalKoRewards ?? []) {
+    if (entry.playerID === playerID && entry.sourceCardId === cardId && entry.rewardType === 'none') {
+      entry.rewardType = 'attack';
+      entry.rewardMagnitude = attackPerKo;
+      upgradedCount += 1;
+    }
+  }
+  // why: D-24759 — when the KO line parked nothing (no S.H.I.E.L.D. Hero to KO), there is no
+  // card to reward; say so, so a met Savior gate does not read as a missing grant.
+  if (upgradedCount === 0) {
+    pushLog(G,
+      `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} gives +${attackPerKo} Attack for each card KO'd this way, but no card can be KO'd.`,
+      'neutral',
+      cardId,
+    );
+  }
+}
+
+/**
+ * Park handler for the `optional-ko-shield-played-rescue` hero keyword (WP-826 / D-24759).
+ *
+ * Steve Rogers' Reassign to Civilian Duty: "[team:shield][team:shield][team:shield]: You may KO
+ * a [team:shield] Hero that you played this turn. If you do, rescue a Bystander." The triple
+ * S.H.I.E.L.D. gate is the hook's condition (D-24563). This parks one PendingOptionalKoReward on
+ * the shared queue with koZones ['inPlay'] (cards played this turn only), koTeamFilter 'shield'
+ * and the existing rescue reward, dispatched by resolveOptionalKoReward only on an actual KO.
+ * The card itself is a S.H.I.E.L.D. Hero played this turn, so it is a legal target too; a KO'd
+ * played card keeps the Attack it already produced (D-24442).
+ *
+ * 0 eligible → a logged no-op that parks nothing (never a throw).
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused (the KO + rescue happen at resolve time).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card (recorded for the resolve-move log).
+ * @param effect - The effect descriptor; its magnitude is the number of Bystanders rescued.
+ */
+function heroEffectOptionalKoShieldPlayedRescue(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) { return; }
+  let eligibleCount = 0;
+  for (const inPlayCardId of playerZones.inPlay) {
+    if (cardCountsAsShieldHero(G, inPlayCardId as CardExtId)) {
+      eligibleCount += 1;
+    }
+  }
+  if (eligibleCount === 0) {
+    pushLog(G,
+      `Player ${playerID} could not KO a S.H.I.E.L.D. Hero for ${formatCardRef(G.cardDisplayData, cardId)}'s ability — they played no S.H.I.E.L.D. Hero this turn.`,
+    );
+    return;
+  }
+  if (!G.pendingOptionalKoRewards) { G.pendingOptionalKoRewards = []; }
+  G.pendingOptionalKoRewards.push({
+    playerID,
+    rewardType: 'rescue',
+    rewardMagnitude: effect.magnitude ?? 1,
+    sourceCardId: cardId,
+    koZones: ['inPlay'],
+    koTeamFilter: 'shield',
+  });
+}
+
+/**
  * Handler for the `optional-play-villain-top` hero keyword (WP-663 / D-24474).
  *
  * Shadowed Thoughts' "[hc:covert]: You may play the top card of the Villain Deck. If you
@@ -6446,6 +6613,20 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // Mastermind gets -N this turn": appends a turn-scoped reduction that resolveFightCost /
   // resolveMastermindFightCost subtract. Carries a magnitude (the amount).
   'fight-cost-reduction': heroEffectFightCostReduction,
+  // why: WP-826 / D-24759 — Mobilize for War's "KO up to two [team:shield] Heroes from your
+  // hand and/or discard pile": parks up to N no-reward shield-only hand/discard entries on the
+  // optional-ko-reward queue (koZones hand / discard, koTeamFilter 'shield'), each resolved by
+  // resolveOptionalKoReward. Carries a magnitude (the KO cap) → NOT in NO_MAGNITUDE_KEYWORDS.
+  'ko-up-to-shield-hand-discard': heroEffectKoUpToShieldHandDiscard,
+  // why: WP-826 / D-24759 — Mobilize for War's Savior line "For each card KO'd this way, you
+  // get +1 Attack": upgrades this card's just-parked no-reward entries (rewardType /
+  // rewardMagnitude) to an attack:N reward. Carries a magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
+  'attack-per-ko-this-way': heroEffectAttackPerKoThisWay,
+  // why: WP-826 / D-24759 — Reassign to Civilian Duty's "You may KO a [team:shield] Hero that
+  // you played this turn. If you do, rescue a Bystander.": parks one inPlay shield-only entry
+  // (koZones ['inPlay'], koTeamFilter 'shield') with a rescue reward on the optional-ko-reward
+  // queue. Carries a magnitude (Bystanders rescued) → NOT in NO_MAGNITUDE_KEYWORDS.
+  'optional-ko-shield-played-rescue': heroEffectOptionalKoShieldPlayedRescue,
 };
 
 // ---------------------------------------------------------------------------
@@ -6560,6 +6741,7 @@ export interface OptionalKoTarget {
  * @param isEligible - Target filter (default accept-all).
  * @param allowInPlay - Whether the inPlay fallback may be returned (default true).
  * @param allowDiscard - Whether the discard scan runs (default true; WP-767 / D-24600).
+ * @param allowHand - Whether the hand scan runs (default true; WP-826 / D-24759).
  * @returns The default KO target, or null when all three zones are empty.
  */
 export function selectDefaultOptionalKoTarget(
@@ -6568,6 +6750,7 @@ export function selectDefaultOptionalKoTarget(
   isEligible: (cardId: CardExtId) => boolean = () => true,
   allowInPlay: boolean = true,
   allowDiscard: boolean = true,
+  allowHand: boolean = true,
 ): OptionalKoTarget | null {
   // why: iterate discard fully (index ascending) then hand (index ascending),
   // replacing the candidate ONLY on a STRICTLY lower cost. Because the scan
@@ -6591,6 +6774,12 @@ export function selectDefaultOptionalKoTarget(
     // resolve rejects (a sim hang). Skipping only the discard scan leaves the hand scan order
     // and tie-break unchanged, and the default true keeps every existing caller's pick.
     if (zoneName === 'discard' && !allowDiscard) {
+      continue;
+    }
+    // why: WP-826 / D-24759 — the same for hand: Reassign to Civilian Duty's entry permits only
+    // inPlay, so a hand target would be rejected (a sim hang). Skipping both scans falls through
+    // to the inPlay scan below; the default true keeps every existing caller's pick.
+    if (zoneName === 'hand' && !allowHand) {
       continue;
     }
     const zoneArray = zones[zoneName];

@@ -1654,6 +1654,35 @@ describe('buildUIState — pendingOptionalKoReward projection (WP-249 / D-24020)
     assert.ok(rejectedCount >= 4, 'the hand Wound, the in-play Wound and the discard cards were all exercised');
   });
 
+  it('WP-826: a koZones inPlay + koTeamFilter shield entry lists only played S.H.I.E.L.D. Heroes', () => {
+    // why: WP-826 / D-24759 — Reassign to Civilian Duty's entry ("a [team:shield] Hero that you
+    // played this turn") is the first entry that omits hand and the first shield-only entry that
+    // permits inPlay. The hand and discard hold S.H.I.E.L.D. tokens to prove they are not offered.
+    const gameState = withOptionalReward('rescue', 1);
+    gameState.playerZones['0']!.hand = ['starting-shield-agent' as CardExtId, 'hero-h1' as CardExtId];
+    gameState.playerZones['0']!.discard = ['starting-shield-trooper' as CardExtId];
+    gameState.playerZones['0']!.inPlay = ['hero-p1' as CardExtId, 'starting-shield-trooper' as CardExtId, 'pile-shield-officer' as CardExtId];
+    gameState.pendingOptionalKoRewards = [
+      {
+        playerID: '0',
+        rewardType: 'rescue',
+        rewardMagnitude: 1,
+        sourceCardId: 'ca75/steve-rogers-director-of-shield/reassign-to-civilian-duty#0' as CardExtId,
+        koZones: ['inPlay'],
+        koTeamFilter: 'shield',
+      },
+    ];
+    const projection = buildUIState(gameState, mockCtx).pendingOptionalKoReward!;
+    assert.deepStrictEqual(projection.eligibleHand, [], 'the hand is not offered (koZones omits hand)');
+    assert.deepStrictEqual(projection.eligibleDiscard, [], 'the discard pile is not offered (koZones omits discard)');
+    assert.deepStrictEqual(
+      projection.eligibleInPlay.map((entry) => entry.cardId),
+      ['starting-shield-trooper', 'pile-shield-officer'],
+      'played S.H.I.E.L.D. Heroes only, in play order; the non-S.H.I.E.L.D. played card is omitted',
+    );
+    assert.equal(projection.rewardLabel, 'Rescue a Bystander');
+  });
+
   it('eligible order follows array index, not Object.keys (reversed-array pin)', () => {
     const gameState = withOptionalReward('draw', 1);
     gameState.playerZones['0']!.discard = [...gameState.playerZones['0']!.discard].reverse();

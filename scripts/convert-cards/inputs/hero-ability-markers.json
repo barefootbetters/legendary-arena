@@ -139,6 +139,24 @@
       "cardSlug": "paramilitary-ops",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:shield-heroes-cost-one-plus-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "agent-x-13",
+      "cardSlug": "mobilize-for-war",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-up-to-shield-hand-discard:2]"
+    },
+    {
+      "heroSlug": "agent-x-13",
+      "cardSlug": "mobilize-for-war",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-ko-this-way:1]"
+    },
+    {
+      "heroSlug": "steve-rogers-director-of-shield",
+      "cardSlug": "reassign-to-civilian-duty",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-shield-played-rescue:1]"
     }
   ],
   "chmp": [
