@@ -144,6 +144,24 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
     assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), "Reveal Flying Shield Block: prevent Player 0's Wound and rescue a Bystander");
   });
 
+  // why: WP-828 / D-24761 — Winter Soldier's 2>4: the options are the hand Heroes by name.
+  test('renders the Man Out of Time grant heading for the out-of-time-grant kind (WP-828)', () => {
+    const { submitMove } = recorder();
+    const grantChoice: UIPendingSeatChoice = {
+      kind: 'out-of-time-grant',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: {
+        'player-1': { options: [{ label: 'Hero A' }, { label: 'Hero B' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: grantChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Choose a Hero in your hand to gain Man Out of Time this turn');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'Hero B');
+  });
+
   test('keeps the generic "Your choice" heading for a non-diving-block kind', () => {
     const { submitMove } = recorder();
     const wrapper = mount(PendingSeatChoicePrompt, {

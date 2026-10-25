@@ -106,6 +106,7 @@ export function dropAllPendingPlayerChoices(gameState: LegendaryGameState): void
   gameState.pendingMelterKoChoices = undefined;
   gameState.pendingOptionalKoRewards = undefined;
   gameState.pendingOptionalPutBottomHQ = undefined;
+  gameState.pendingOutOfTimeGrants = undefined; // why: WP-828 / D-24761 — owed Man Out of Time grants join the end-of-game drop set (D-24518); a decided match never opens them
   gameState.pendingPlayVillainTopChoices = undefined;
   gameState.pendingPutAnyNumberBottomHQ = undefined;
   gameState.pendingPutCardsOnDeckChoices = undefined;

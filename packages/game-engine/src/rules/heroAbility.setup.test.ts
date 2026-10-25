@@ -681,12 +681,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'attack-per-ko-this-way', // why: WP-826 / D-24759 — Mobilize for War's Savior line "For each card KO'd this way, +1 Attack" — upgrades this card's parked KO entries to an attack reward
     'optional-ko-shield-played-rescue', // why: WP-826 / D-24759 — Reassign to Civilian Duty's "You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander."
     'flying-shield-block', // why: WP-827 / D-24760 — Captain America (Falcon) "Flying Shield Block": any seat holding a copy may reveal it once per turn when a player would gain a Wound, preventing it and rescuing a Bystander
+    'grant-out-of-time', // why: WP-828 / D-24761 — Winter Soldier 2>4 "A Hero in your hand gains Man Out of Time this turn": queues one owed grant; the granted card goes Out of Time when played this turn
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      82,
-      'HERO_KEYWORDS must have exactly 82 entries',
+      83,
+      'HERO_KEYWORDS must have exactly 83 entries',
     );
 
     assert.deepStrictEqual(

@@ -1523,6 +1523,21 @@ export interface PendingTeleportReturn {
  * initialized at the park site, never in Game.setup (so an untriggered match
  * leaves it undefined and the empty-replay hash oracles do not re-pin).
  */
+/**
+ * One owed "a Hero in your hand gains Man Out of Time this turn" grant (WP-828 / D-24761).
+ *
+ * Appended by the `grant-out-of-time` handler (Winter Soldier's 2>4, one entry per line that
+ * fires) and resolved front to back by the play-phase onMove opener: auto-granted when exactly
+ * one hand Hero is eligible, else chosen through G.pendingSeatChoice (kind 'out-of-time-grant').
+ * Runtime-only; lazily created and deleted at turn start.
+ */
+export interface PendingOutOfTimeGrant {
+  /** The player whose hand Hero gains Man Out of Time (the active player). */
+  playerID: string;
+  /** The card whose ability owes the grant. */
+  sourceCardId: CardExtId;
+}
+
 export interface PendingDivingBlockWound {
   /** The player who gained the Wound and holds Diving Block (may be non-active). */
   playerID: string;
@@ -2342,6 +2357,16 @@ export interface LegendaryGameState {
   // that never reveals one carries no field.
   /** Flying Shield Block copies revealed this turn (WP-827). */
   flyingShieldBlockUsedThisTurn?: CardExtId[] | undefined;
+  // why: WP-828 / D-24761 — each fired "a Hero in your hand gains Man Out of Time this turn"
+  // line owes one grant here, resolved by the play-phase onMove opener (auto or via
+  // G.pendingSeatChoice, kind 'out-of-time-grant'). Lazily created, deleted at turn start.
+  /** FIFO queue of owed Man Out of Time grants (WP-828). */
+  pendingOutOfTimeGrants?: PendingOutOfTimeGrant[] | undefined;
+  // why: WP-828 / D-24761 — hand Heroes granted Man Out of Time this turn; applyCardPlay sets
+  // one aside Out of Time after its abilities when it is played. Lazily created on the first
+  // grant and deleted at turn start (game.ts onBegin + applyOnBeginParity).
+  /** Card ids granted Man Out of Time this turn (WP-828). */
+  outOfTimeGrantedThisTurn?: CardExtId[] | undefined;
   // why: WP-793 / D-24656 — every Villain escape records the rulebook HQ KO + Bystander
   // discard it owes; the play-phase turn.onMove escape opener drains the FIFO one entry at
   // a time through the WP-684 seat-choice capability (the Diving Block precedent). Optional

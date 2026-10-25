@@ -123,7 +123,7 @@ const ALL_PENDING_FIELDS = [
   'pendingDoOverChoices', 'pendingDrawOrEmpowered', 'pendingElectromagneticBubbleChoices', 'pendingEscapeEffectDiscards', 'pendingEscapeProcedures', 'pendingFlyingShieldBlockWounds',
   'pendingGiveHqHeroChoices', 'pendingHeroChoice', 'pendingKoDiscardChoices',
   'pendingKoHeroChoices', 'pendingMelterKoChoices', 'pendingOptionalKoRewards',
-  'pendingOptionalPutBottomHQ', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
+  'pendingOptionalPutBottomHQ', 'pendingOutOfTimeGrants', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
   'pendingPutCardsOnDeckChoices', 'pendingPutHandOnDeckTop', 'pendingReorderChoices', 'pendingReturnOnDiscard',
   'pendingReturnZeroCostDiscard', 'pendingRevealThreeAssign', 'pendingRevealTopDispose', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
   'pendingSeatChoice', 'pendingSmashDiscards', 'pendingUndercoverChoice',

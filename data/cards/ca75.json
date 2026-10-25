@@ -513,8 +513,8 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "A Hero in your hand gains [keyword:Man Out of Time] this turn.",
-            "[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn."
+            "A Hero in your hand gains [keyword:Man Out of Time] this turn. [keyword:grant-out-of-time]",
+            "[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn. [keyword:grant-out-of-time]"
           ]
         }
       ],

@@ -49348,4 +49348,27 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24760 (#2987). Related: D-24499 (Diving Block), D-24501 (seat choice), D-24648 (no stage ride for the active seat), D-24651 (reveal from play), D-24673 (one interception per Wound), D-24678 (Random Acts), D-24518 (end-of-game drop), D-24026.
 
 ---
+
+### D-24761 — Granting Man Out of Time to a Hero in hand for the turn: owed grants opened after the play, set aside at the end of applyCardPlay (Active 2026-10-24 — WP-828 / EC-866)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match created after the deploy.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Winter Soldier's 2>4 ("A Hero in your hand gains [keyword:Man Out of Time] this turn." / "[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn.") now grants Man Out of Time: the chosen Hero, played this turn, is set aside and plays again at the start of the next turn.
+
+**Context.** Both lines left an unresolved `man-out-of-time` marker (D-24692 recorded 2>4 as a runtime hollow). The two lines run in one `executeHeroEffects` call, and the second must exclude the first's pick.
+
+**Decision.**
+1. **Keyword and queue.** `grant-out-of-time` (no magnitude) has a play-time handler that only appends `{ playerID, sourceCardId }` to the runtime-only `G.pendingOutOfTimeGrants`.
+2. **Opening a grant.** The play-phase onMove opener (`openOutOfTimeGrantSeatChoiceIfNeeded`) resolves the queue front to back, waiting while `G.pendingSeatChoice`, `hasAnyPendingChoice(G)` or `G.pendingHeroChoice` is open or the match is decided (the escape-opener precedent). Eligible = hand Heroes in hand order (not a Wound or a Bystander), minus Heroes already granted this turn ("Another Hero"), deduplicated. None → a logged no-op; one → granted with no prompt; two or more → the active player's seat choice (kind `out-of-time-grant`, options carrying `cardId`, the Monarch's Decree pattern). The grant is mandatory, so the timeout default is the first listed Hero; the bot picks the highest cost (first on a tie).
+3. **The grant.** A granted card is listed in `G.outOfTimeGrantedThisTurn`. At the end of `applyCardPlay` (after its abilities, where a printed keyword's hook runs) a granted card is set aside through the WP-803 `out-of-time` handler and its guards; it is skipped silently when it already went Out of Time (its own keyword, the replay, a copy sharing its id) or is no longer the last card in play.
+4. **Turn boundary.** Both fields are deleted at turn start in `game.ts` onBegin and `applyOnBeginParity`; a grant on a card not played this turn lapses.
+5. **Replay-compat.** Stored matches replay from their bgio `initialState` (setup-time hooks), so pre-deploy matches have no `grant-out-of-time` hook. Both fields are lazily created, so `finalStateHash` / `PRE_WP080_HASH` are unchanged. The runtime-observed sweep loses the 13 `man-out-of-time` hollow observations (7793 → 7780, 79 → 78 mechanics); the dashboard `totalObs` pin moves 8714 → 8701 (resolvedObs 1091, 12.5% unchanged). The hero ledger folds `grant-out-of-time` into its existing `out-of-time` row.
+6. **Supersedes** D-24692's "2>4 stays a runtime hollow" clause.
+7. **Known gaps.** A split card chosen for a grant lapses (the split-face path does not run `applyCardPlay`). Sims and PAR leave the opener unmirrored, so grants lapse there. Each S.H.I.E.L.D. starter shares one id, so a second copy can never be "Another Hero". A granted card whose ability opens a choice is set aside before that choice resolves.
+
+**Gates.** game-engine 5672 → 5693 (+21), arena-client 2435 → 2436, 0 fail; twelve revert proofs each fail their locked tests (including the live onMove opener and onBegin reset, the setter guard, both waits, the dispatch route and the bot case); `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; every card / coverage `:check` 0; dashboard `test:coverage` / `typecheck` / `format:check` 0. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-828-winter-soldier-out-of-time-grant.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24761 (#2990). Related: D-24692 (Out of Time), D-24501 (seat choice), D-24511 (card-pick options), D-24563 (the [hc:tech] gate), D-24760 (WP-827's sibling opener), D-24518 (end-of-game drop), D-24026.
+
+---
 Protect this file.

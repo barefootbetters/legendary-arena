@@ -77,6 +77,8 @@ export function isOperatorChoiceOpen(G: LegendaryGameState): boolean {
   if ((G.pendingDivingBlockWounds?.length ?? 0) > 0) return true;
   // why: WP-827 / D-24760 — the Flying Shield Block queue is opened the same way.
   if ((G.pendingFlyingShieldBlockWounds?.length ?? 0) > 0) return true;
+  // why: WP-828 / D-24761 — owed Man Out of Time grants are opened the same way.
+  if ((G.pendingOutOfTimeGrants?.length ?? 0) > 0) return true;
   if ((G.pendingEscapeProcedures?.length ?? 0) > 0) return true;
   // why: WP-817 / D-24750 — an owed Escape-effect discard (Primus) is opened into a seat
   // choice after the move, exactly like the escape-procedure queue above.

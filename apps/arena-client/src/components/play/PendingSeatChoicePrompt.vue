@@ -92,6 +92,9 @@ export default defineComponent({
         // why: WP-827 / D-24760 — the Wound may be another player's; the option labels name whose.
         case 'flying-shield-block':
           return 'A player would gain a Wound — Flying Shield Block?';
+        // why: WP-828 / D-24761 — Winter Soldier's 2>4: pick the hand Hero that goes Out of Time.
+        case 'out-of-time-grant':
+          return 'Choose a Hero in your hand to gain Man Out of Time this turn';
         case 'here-hold-this':
           return 'Choose a Villain to capture a Bystander';
         case 'random-acts-wound':

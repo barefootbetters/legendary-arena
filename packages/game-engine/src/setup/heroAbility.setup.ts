@@ -136,7 +136,8 @@ const LEADING_GATE_PREFIX_PATTERN = /^\s*(?:\[(?:hc|team):[^\]]+\]\s*)+:/;
 // is hc / team only (D-24628) and must not be widened (D-24628 and the fight-cost clause read it);
 // the Savior condition itself is still built by the Step 2 `savior` arm. A line where the token sits
 // inside other text (Winter Soldier's "A Hero in your hand gains [keyword:Man Out of Time] this turn")
-// is a different capability (granting the keyword) and deliberately does not match.
+// is a different capability (granting the keyword) and deliberately does not match; those lines
+// resolve `grant-out-of-time` from their `[keyword:grant-out-of-time]` marker (WP-828 / D-24761).
 /** Regex for a whole line that is the Man / Woman Out of Time token behind an optional gate. */
 const OUT_OF_TIME_LINE_PATTERN = /^\s*(?:(?:(?:\[(?:hc|team):[^\]]+\]|\[keyword:Savior\])\s*)+:\s*)?\[keyword:(?:Man|Woman|Man\/Woman) Out of Time\]\s*$/;
 
@@ -432,8 +433,9 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   'gain-officer',
   // why: WP-803 / D-24692 — the three Out of Time spellings (normalized like the coverage probe:
   // "Man Out of Time" → man-out-of-time). OUT_OF_TIME_LINE_PATTERN resolves a whole-line token to
-  // the `out-of-time` keyword; a line it does not match (Winter Soldier's 2>4 grant lines) keeps
-  // the slug in unresolvedMarkers, so the probe still flags that hero.
+  // the `out-of-time` keyword; an unmarked line it does not match keeps the slug in
+  // unresolvedMarkers, so the probe flags it. (Winter Soldier's 2>4 grant lines resolve
+  // `grant-out-of-time` from their marker since WP-828 / D-24761.)
   'man-out-of-time',
   'woman-out-of-time',
   'man/woman-out-of-time',

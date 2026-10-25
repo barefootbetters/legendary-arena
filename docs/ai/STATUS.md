@@ -41,6 +41,16 @@
 - **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches have no Flying Shield Block hook.
 - **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with Captain America (Falcon): stop the bot's Wound from your hand, no second prompt that turn, your own Wound next turn, and a Master Strike on the bot's turn (you are asked about your Wound, then the bot's).
 
+### WP-828 / EC-866 — Winter Soldier 2>4: a Hero in your hand gains Man Out of Time this turn (D-24761) (2026-10-24)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Winter Soldier's 2>4 grants Man Out of Time to a Hero in your hand (another one with [hc:tech]): you pick it when there are two or more; played this turn, it is set aside and plays again at the start of your next turn.
+
+- **Engine.** Each fired line queues an owed grant (`moves/outOfTimeGrant.logic.ts`), opened after the play (auto with one Hero, else the active player's seat choice; already-granted Heroes excluded); the granted card is set aside at the end of `applyCardPlay` through the WP-803 handler. No new move.
+- **Client.** The prompt heading "Choose a Hero in your hand to gain Man Out of Time this turn".
+- **Tests.** game-engine 5672 → 5693 (+21), arena-client +1, 0 fail; twelve revert proofs each fail their locked tests; `pnpm -r --no-bail test` 0 fail; every `:check` 0; runtime-observed 7793 → 7780, dashboard totalObs 8714 → 8701. 01.6 post-mortem WP COMPLETE.
+- **Replay-compat.** Match blobs keep their setup-time hooks, so pre-deploy matches are unchanged.
+- **Live-verify (D-24026): pending deploy.** A 2-player operator match created after the deploy with Winter Soldier: the prompt lists your hand Heroes, the picked Hero is set aside after play and replays next turn, and with [hc:tech] the second prompt leaves out the first pick.
+
 ### WP-825 / EC-863 — co2e Stealth Assault Squad: the "another S.H.I.E.L.D. Hero that costs 1 or more" gate (D-24758) (2026-10-24)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Nick Fury's Stealth Assault Squad (co2e) gives its +2 Attack only after another S.H.I.E.L.D. Hero that costs 1 or more: the Officer (cost 3) or another costed S.H.I.E.L.D. Hero counts, the cost-0 Agent and Trooper no longer do. A failed gate logs "it needs another shield Hero that costs 1 or more played this turn".

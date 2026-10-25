@@ -42,6 +42,7 @@ import { resolveUndercoverChoice, hasPendingUndercoverChoice } from './moves/und
 import { resolveSeatChoice, hasPendingSeatChoice, SEAT_CHOICE_STAGE } from './moves/seatChoice.resolve.js';
 import { openDivingBlockSeatChoiceIfNeeded } from './moves/divingBlock.logic.js';
 import { openFlyingShieldBlockSeatChoiceIfNeeded } from './moves/flyingShieldBlock.logic.js';
+import { openOutOfTimeGrantSeatChoiceIfNeeded } from './moves/outOfTimeGrant.logic.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEscapeProcedure.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
@@ -913,6 +914,10 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // why: WP-827 / D-24760 — then the Flying Shield Block wave (any seat may reveal);
           // it waits while a Diving Block Wound is pending, since a decline there can park one.
           openFlyingShieldBlockSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-828 / D-24761 — resolve owed Man Out of Time grants (Winter Soldier's 2>4)
+          // after the move that played the card: auto for one eligible hand Hero, else the
+          // active player's seat choice. No-op while another seat choice is open.
+          openOutOfTimeGrantSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
         },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent
@@ -961,6 +966,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // applyOnBeginParity mirrors it for the rebuilt loops.
           if (G.flyingShieldBlockUsedThisTurn !== undefined) {
             delete G.flyingShieldBlockUsedThisTurn;
+          }
+          // why: WP-828 / D-24761 — a Man Out of Time grant lasts this turn only. Guarded deletes,
+          // so a match that never granted one is byte-unchanged; applyOnBeginParity mirrors them.
+          if (G.outOfTimeGrantedThisTurn !== undefined) {
+            delete G.outOfTimeGrantedThisTurn;
+          }
+          if (G.pendingOutOfTimeGrants !== undefined) {
+            delete G.pendingOutOfTimeGrants;
           }
 
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and
