@@ -473,6 +473,12 @@ high-water: 422
 - WP-832 — change-the-outcome-of-wwii (Cap 75th scheme Change the Outcome of WWII: an extra Villain Group; each Twist returns the City's Villains and Bystanders to the bottom of the Villain Deck, resizes the City to the next country's spaces and plays 2 cards; an escape in a country stacks a conquered capital; Evil wins at 3. reserved 2026-10-24, claude/reserve-wp831-wp832-wwii)
 - WP-833 — extra-villain-group (the printed "Add an extra Villain Group" setup requirement, starting with Change the Outcome of WWII: the scheme requires one more Villain Group than the player count, enforced and surfaced wherever the Hero and Henchman requirement increases already are. reserved 2026-10-24, claude/reserve-wp833-extra-villain-group)
 - WP-834 — core-first-gauntlet-fill (the gauntlet menu generator fills out-of-set Villain and Henchman slots from Core before Core 2E, so ranked loadouts stop fielding the co2e groups whose printed effects are unimplemented; regenerated menus re-key the affected masterminds. reserved 2026-10-25, claude/reserve-wp834-core-first-fill)
+- WP-835 — co2e-villains-mark-covered-lines (the co2e Villain and Henchman Ambush/Fight/Escape lines that existing primitives already express get their [effect:] markers; card data only. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- WP-836 — co2e-grey-hero-and-trait-count-effects (co2e Destroyer, Frost Giant Warrior, Ymir Fight, Abomination Fight, Beetle Fight, Savage Land Mutates: grey/non-grey discard KOs, per-trait recruit and draw, reveal-top grey-KO/trait-draw. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- WP-837 — co2e-each-player-discard-and-reveal-gated-ambushes (co2e Mystique, Frost Giant Warrior, Juggernaut, Scorpion and The Leader Ambushes: each-player discard by trait, discard-or-wound, discard by HQ card name, City-group gate, reveal-or-play. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- WP-838 — co2e-capture-family (co2e Enchantress, HYDRA Kidnappers, Venom and Baron Strucker: capture Bystanders from Victory Piles, capture Officers/Sidekicks/cheap HQ Heroes, gain one captured Hero, shuffle Bystanders into the Villain Deck. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- WP-839 — co2e-city-movement-effects (co2e Green Goblin, Speed Demon, Boomerang and Ymir Ambush: move to the Bridge, move extra spaces, take a revealed Villain's place, a Victory Pile Villain re-enters the City. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- WP-840 — co2e-the-blob-guards-the-mastermind (co2e The Blob Ambush: he sits left of the Mastermind, nothing moves him, and the Mastermind cannot be fought while he is there. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 
 ## EC
 
@@ -908,6 +914,12 @@ high-water: 457
 - EC-870 — change-the-outcome-of-wwii (WP-832. reserved 2026-10-24, claude/reserve-wp831-wp832-wwii)
 - EC-871 — extra-villain-group (WP-833. reserved 2026-10-24, claude/reserve-wp833-extra-villain-group)
 - EC-872 — core-first-gauntlet-fill (WP-834. reserved 2026-10-25, claude/reserve-wp834-core-first-fill)
+- EC-873 — co2e-villains-mark-covered-lines (WP-835. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- EC-874 — co2e-grey-hero-and-trait-count-effects (WP-836. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- EC-875 — co2e-each-player-discard-and-reveal-gated-ambushes (WP-837. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- EC-876 — co2e-capture-family (WP-838. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- EC-877 — co2e-city-movement-effects (WP-839. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- EC-878 — co2e-the-blob-guards-the-mastermind (WP-840. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 
 ## D
 
@@ -1453,3 +1465,9 @@ section below) and the allocation protocol in
 - D-24765 — change-the-outcome-of-wwii (WP-832; the country Twist (return the City to the Villain Deck bottom, resize, play 2), conquered capitals from an escape per country, and the 3-capital loss replacing the Twist-7 false loss. reserved 2026-10-24, claude/reserve-wp831-wp832-wwii)
 - D-24766 — extra-villain-group (WP-833; a scheme-keyed Villain Group requirement increase, mirroring the extra Henchman Group rule, across setup validation, the loadout builders and the match gate. reserved 2026-10-24, claude/reserve-wp833-extra-villain-group)
 - D-24767 — core-first-gauntlet-fill (WP-834; the D-24199 Core fallback pool orders Core before Core 2E, superseding its combined sort for out-of-set fill. reserved 2026-10-25, claude/reserve-wp834-core-first-fill)
+- D-24768 — co2e-villains-mark-covered-lines (WP-835; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- D-24769 — co2e-grey-hero-and-trait-count-effects (WP-836; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- D-24770 — co2e-each-player-discard-and-reveal-gated-ambushes (WP-837; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- D-24771 — co2e-capture-family (WP-838; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- D-24772 — co2e-city-movement-effects (WP-839; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- D-24773 — co2e-the-blob-guards-the-mastermind (WP-840; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
