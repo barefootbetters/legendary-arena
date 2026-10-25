@@ -49305,7 +49305,7 @@ Protect this file.
 
 ### D-24759 — The Cap 75th optional-KO S.H.I.E.L.D. family on the shared optional-KO queue: "KO up to N", a later line's per-KO reward, and the played-this-turn KO-then-rescue (Active 2026-10-24 — WP-826 / EC-864)
 
-**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match created after the deploy.
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `3woVv0ZfCLV` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Loki, The Unbreakable Enigma Code, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. Mobilize for War with 0 Bystanders logged the Savior line "did not activate … you have 0" and opened two prompts listing only S.H.I.E.L.D. cards, no reward. With 5 Bystanders both prompts read "KO a card for a reward (+1 Attack)", Flying Shield Block in hand was left out, and KO one + decline the other gave Attack 4 → 5. Reassign to Civilian Duty after Mobilize and International Strike Force logged "it needs 3 other shield Heroes played this turn" with no prompt; a second Reassign after those three opened one "Rescue a Bystander" prompt over the cards played this turn, and KO-ing the first Reassign rescued (Victory Pile 3 → 4).
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Agent X-13's Mobilize for War offers up to two optional KOs of S.H.I.E.L.D. Heroes from hand or discard and, as a Savior, +1 Attack per card actually KO'd. Steve Rogers' Reassign to Civilian Duty, after three other S.H.I.E.L.D. cards, offers one optional KO of a S.H.I.E.L.D. Hero played this turn that rescues a Bystander.
 
@@ -49330,7 +49330,7 @@ Protect this file.
 
 ### D-24760 — Flying Shield Block: a reactive Wound interception any seat may reveal, once per turn per copy, after the recipient's Diving Block (Active 2026-10-24 — WP-827 / EC-865)
 
-**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match created after the deploy.
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters, and step 4 in operator match `3woVv0ZfCLV` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Loki, The Unbreakable Enigma Code, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. Crazed Rampage (each player gains a Wound) asked "prevent your Wound" first; after the decline it asked "prevent Player 1's Wound", and the reveal logged "prevented Player 1's Wound and rescued a Bystander" (Victory Pile 0 → 1; Player 1 held no Wound). A second Crazed Rampage that turn gave both seats a Wound with no prompt. On the next turn my own Wound offered "prevent your Wound" again and the decline kept it. On the bot's turn, Loki's Master Strike asked me (non-active) about my Wound first, then (after a decline) about the bot's; the reveal resolved and the bot's turn went on with no reload.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Captain America (Falcon)'s Flying Shield Block ("Once per turn, if a player would gain a Wound, you may reveal this card and rescue a Bystander instead.") lets any seat holding it stop any player's Wound and rescue a Bystander for itself.
 
@@ -49353,7 +49353,7 @@ Protect this file.
 
 ### D-24761 — Granting Man Out of Time to a Hero in hand for the turn: owed grants opened after the play, set aside at the end of applyCardPlay (Active 2026-10-24 — WP-828 / EC-866)
 
-**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match created after the deploy.
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters. 2>4 with no Tech played logged the Tech line as not activated and prompted over the hand Heroes; Storm the Beachhead was picked ("gains Man Out of Time this turn"), set aside Out of Time after its abilities, "returns from Out of Time and is played a second time" on the next start → main, and went to the discard pile ("not set aside again"). After Web-Shooters (Tech), 2>4 granted twice: the first prompt offered Agent and Trooper; the second grant left the first pick out and, with one eligible card left (every starting Agent shares one card id), auto-granted the Trooper.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Winter Soldier's 2>4 ("A Hero in your hand gains [keyword:Man Out of Time] this turn." / "[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn.") now grants Man Out of Time: the chosen Hero, played this turn, is set aside and plays again at the start of the next turn.
 
@@ -49376,7 +49376,7 @@ Protect this file.
 
 ### D-24762 — Go Back in Time to Slay Heroes' Ancestors: each Twist Purges an HQ Hero from the Timestream, and HQ Heroes sharing a Purged Hero Name are KO'd (Active 2026-10-24 — WP-829 / EC-867)
 
-**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match with this scheme created after the deploy.
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters. The first Villain-Deck card was a Twist: the active seat got "Go Back in Time — choose a Hero in the HQ to Purge from the Timestream" over the five HQ Heroes with costs. Purging Spy Network (Agent X-13) KO'd Paramilitary Ops (Agent X-13) from the HQ and both slots refilled; an Agent X-13 card placed in the HQ later was KO'd right after that move.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). The scheme's Twist ("Put a Hero from the HQ next to the Scheme, 'Purged from the Timestream.'") and its special rule ("Whenever a Hero is in the HQ whose Hero Name has been Purged from the Timestream, KO that Hero.") now work: you pick the HQ Hero to Purge, and every card of a Purged Hero that reaches the HQ is KO'd.
 
@@ -49400,7 +49400,7 @@ Protect this file.
 
 ### D-24763 — The Unbreakable Enigma Code: a face-down code built by Twists 1-5, a paid private peek after a Villain fight, and a color guess that gates the Mastermind fight (Active 2026-10-24 — WP-830 / EC-868)
 
-**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match with this scheme created after the deploy.
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25 for the rules: operator match `3woVv0ZfCLV` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Loki, The Unbreakable Enigma Code, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. Two Twists built a 2-card code whose view carried only `peekedBy: []`. Fighting a Sentinel opened the pay-1-Recruit peek only after the Sentinel's own KO resolved; paying (Recruit 3 → 2) showed card 1 (Winged Salvation, Ranged) to seat 0 only, card 2 stayed hidden, and the public log named no card. A wrong guess (Strength, Strength) revealed the code in the log, ended the turn and re-mixed it (peeks cleared). After a fresh peek, the right guess (Strength, Ranged) let the fight go ahead (Loki's Maniacal Tyrant tactic defeated). The other seat's redaction was not checked live (no spectator view; the audience-filter tests cover it). Follow-up: the guess picker renders inside the Mastermind tile, about 90px wide, so its text clips and it scrolls both ways.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). The scheme's Twists ("Twists 1-5: Put a card from the Hero Deck face down next to the scheme as part of the 'Enigma Code.' Mix up those cards face-down.") and its special rules ("Whenever you fight a Villain, you may pay 1 [recruit] to look at one of the face-down Enigma Cards. When you fight the Mastermind, first guess the color of each Enigma card, and then reveal them. If you guessed them right, fight the Mastermind as normal. If not, your turn ends, and mix up the Enigma cards face-down.") now work, with a code readout on the scheme tile and a guess picker over the Mastermind tile.
 
@@ -49443,7 +49443,7 @@ Protect this file.
 
 ### D-24764 — A City of 1 to 6 spaces: `CityZone` becomes an array, names stay on engine indices, the HQ stays five (Active 2026-10-24 — WP-831 / EC-869)
 
-**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: any match created after the deploy shows the unchanged 5-space board; the resized views are verified with WP-832.
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters shows the unchanged 5-space City (Bridge, Streets, Rooftops, Bank, Sewers). The resized views pass with WP-832 (match `5NxWV2uuwtQ`): 4, 3, 6, 3, 5, 2 and 1 spaces, the 6-space City fits the playmat with the unnamed space on the escape side.
 
 **User-Visible Surface:** `play.legendary-arena.com` — none at 5 spaces. It is the foundation for Change the Outcome of WWII (WP-832, "The number of city spaces changes": 1 to 6).
 
@@ -49466,7 +49466,7 @@ Protect this file.
 
 ### D-24765 — Change the Outcome of WWII: country Twists resize the City, an escape per country conquers a capital, Evil wins at 3 (Active 2026-10-24 — WP-832 / EC-870)
 
-**Status:** Active 2026-10-24. Live-verify (D-24026) pending deploy: a 2-player operator match with this scheme created after the deploy (with WP-831's City).
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `5NxWV2uuwtQ` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Red Skull, Change the Outcome of WWII, Skrulls + HYDRA + Brotherhood, Sentinel; the five ca75 heroes), Twists and escapes staged with the operator setters. Twist 1 logged "invades Poland. 1 card from the City goes to the bottom of the Villain Deck; the City now has 4 spaces. 2 cards are played" and played the 2. Twist 3 (USSR) showed 6 spaces on the board without overflow. In Australia (2 spaces) an escape logged "its capital is conquered (1 of 3)" and the meter read "Capitals 1/3". Twist 7 (Switzerland, 1 space) played 2 cards, the push-out escaped ("2 of 3"), the Twist count reached 7 and the game went on.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). The scheme's Twist ("The Axis invades a new country. Put all Villains and Bystanders from the city on the bottom of the Villain Deck. The number of city spaces changes. Play 2 cards from the Villain Deck. If any Villains escape this country, stack a Twist next to the scheme as a 'conquered capital.'"; Poland 4, France 3, USSR 6, England 3, USA 5, Australia 2, Switzerland 1) and its loss ("When 3 capitals are conquered") now work; the danger meter reads "Capitals N/3".
 
