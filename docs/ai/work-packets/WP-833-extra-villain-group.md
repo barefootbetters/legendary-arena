@@ -1,6 +1,6 @@
 # WP-833 — "Add an extra Villain Group": a scheme-aware Villain Group requirement (Change the Outcome of WWII and 13 more)
 
-**Status:** Done 2026-10-24 (EC-871 `c47e0cd2`; **D-24766** Active). Live-verify pending deploy.
+**Status:** Done 2026-10-24 (EC-871 `c47e0cd2`; **D-24766** Active). Live-verify PASS 2026-10-25 (STATUS).
 **Primary Layer:** Registry (source of truth) + Game Engine (`Game.setup` gate) + Server (setup-requirements
 projection) + App (registry-viewer loadout builder) + gauntlet tooling (menu generator, configs loader)
 **User-Visible Surface:** cards.legendary-arena.com loadout builder, play.legendary-arena.com lobby and gauntlet
