@@ -78,7 +78,7 @@ Exactly the WP-833 §Files Expected to Change allowlist (governance: STATUS, DEC
 - [ ] An independent subagent reviews the final diff against this EC before the `EC-871:` commit; verdict in STATUS.
 - [ ] `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail with the locked counts: registry 295 → 310, game-engine
       5672 → 5676, server 1836 → 1838, registry-viewer 329 → 335, every other package unchanged; registry-viewer
-      typecheck 0; both gauntlet `:check` 0 (56 additive `schemeOverrides`); replay fixtures byte-identical.
+      typecheck 0; both gauntlet `:check` 0 (47 additive `schemeOverrides` across 34 menus; corrected at execution); replay fixtures byte-identical.
 - [ ] `docs/ai/REFERENCE/api-endpoints.md` setup-requirements row replaced whole (D-11804).
 - [ ] D-24766 Active (five points); STATUS updated; WORK_INDEX `[x]` with date; EC_INDEX Done; mindmap `✅`;
       `pnpm roadmap:counts:write`; `roadmap:counts:check`, `ledger:numbers:check` 0. Allowlist-only diff (revert
