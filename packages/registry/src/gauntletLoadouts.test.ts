@@ -238,6 +238,45 @@ test("menus for masterminds without an extra-Henchman or extra-Villain-Group sch
   }
 });
 
+// why: D-24767 — out-of-set slots fill from the Core Set before Core 2E. Core's 7
+// Villain Groups and 4 Henchman groups cover the largest out-of-set demand, so no
+// menu outside Core 2E ever reaches a Core 2E group. The generator runs main() on
+// import, so this pins the order through its OUTPUT (the D-24666 precedent).
+test("out-of-set slots fill from Core before Core 2E", () => {
+  let checkedMenus = 0;
+  let coreIdsSeen = 0;
+  for (const menu of GAUNTLET_LOADOUT_MENUS) {
+    if (menu.setAbbr === "co2e") {
+      continue;
+    }
+    checkedMenus += 1;
+    const compositions: GauntletLoadoutComposition[] = [];
+    for (const variant of menu.variants) {
+      for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+        compositions.push(variant.compositionsByPlayerCount[playerCount]);
+      }
+    }
+    for (const compositionsByPlayerCount of Object.values(menu.schemeOverrides ?? {})) {
+      for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+        compositions.push(compositionsByPlayerCount[playerCount]);
+      }
+    }
+    for (const composition of compositions) {
+      for (const groupId of [...composition.villainGroupIds, ...composition.henchmanGroupIds]) {
+        assert.ok(
+          !groupId.startsWith("co2e/"),
+          `${menu.setAbbr}/${menu.mastermindSlug} fields the Core 2E group ${groupId}; Core must fill first.`,
+        );
+        if (groupId.startsWith("core/")) {
+          coreIdsSeen += 1;
+        }
+      }
+    }
+  }
+  assert.ok(checkedMenus > 0, "Expected at least one menu outside Core 2E to check.");
+  assert.ok(coreIdsSeen > 0, "Expected at least one Core fallback group outside Core 2E menus.");
+});
+
 // why: pnpm --filter sets CWD to packages/registry/; the card data lives at the
 // monorepo root, two directory levels up.
 const cardsDirectory = join(process.cwd(), "..", "..", "data", "cards");

@@ -49419,4 +49419,23 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24763 (#2996). Related: D-24595 (amended), D-24656 (owed choices after the move), D-24501 (seat choice), D-24753 (a paid fight option), D-24520 / D-24513 (cleanup, extra turns), D-24549 (a scheme-only UIState field), D-24756 (the config-change precedent), D-12803 (the audience filter), D-24372 (runtime keyset pins), D-24502 (the 1280x720 fit), D-24119, D-24026.
 
 ---
+
+### D-24767 — The gauntlet Core fallback pool is ordered Core Set, then Core 2E (WP-834 / EC-872) (Active 2026-10-25)
+
+**Context.** D-24199 fills a mastermind's out-of-set villain and henchmen slots from "the Core Set / Core 2E pool" without fixing an order. The generator's comment said the pool was "the two Core sets, in this order" (`['core', 'co2e']`), but it then sorted the combined list, and `co2e/…` sorts before `core/…`, so every out-of-set slot took the Core 2E group first. Six of the eight co2e villain groups carry no `[effect:]` marker (Skulls has 1 of 6), and co2e Hand Ninjas and Savage Land Mutates are unmarked, while their Core versions are fully marked. Ranked loadouts therefore fielded villains whose printed effects did nothing; Jeff's 2-player WWII match `cfWSKCGr0ZL` (2026-10-25) logged 13 unhandled-effect lines from co2e Brotherhood of Mutants.
+
+**Decision.**
+
+1. **Order.** The D-24199 Core fallback pool is ordered Core Set, then Core 2E, each set's groups sorted by id. It applies to villain and henchmen slots, base variants and `schemeOverrides` alike. Because Core has 7 Villain Groups and 4 Henchman groups, more than the largest out-of-set demand (5 villain, 3 henchmen at 5 players with an extra-group override), no menu outside Core 2E fields a Core 2E group; an output-derived pin in `gauntletLoadouts.test.ts` locks that consequence. If a future set legitimately needs Core 2E spill, amend this decision rather than loosen the pin.
+2. **Why set order, not marker status.** A fixed order keeps approved ranked loadouts stable as effects land; Core is the set every player is assumed to own; it matches the pool's original intent.
+3. **No score impact, no migration.** Submission rejects a scenario without published PAR before any insert, only the Core seed PAR is published (no sim index is committed or deployed), and on 2026-10-25 `competitive_scores` held no publicly visible scenario key (`/api/leaderboards/scenarios` empty; all 110 gauntlet boards at 0). Runs store hero picks only; leg clears and leg launch are derived at read time; Gauntlet Packs carry no composition. Core and Core 2E menus are unchanged. 51 non-Core masterminds are re-keyed (48 base variants, 13 `schemeOverrides`); compositions with a hollow co2e fallback group go from 592 to 0.
+4. **Not covered** (named follow-ups): marking the co2e villain and henchmen effects (in progress as its own task); the other unmarked in-set groups; the stale `server.mjs` :700–703 and `gauntlet.logic.test.ts` fixture comments; the co2e group slugged `Skulls` whose cards are Skrulls.
+
+**Determinism.** The generator is a pure function of card data; no engine, `G`, replay or seed-PAR artifact changes.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 failures (registry 310 → 311, every other package unchanged); both gauntlet `:check` OK (`313 313`, 51 menus); `par:seed:test` 2 / 0; revert proof (restoring the combined sort fails the new pin and the WWII-ids test). One pre-existing assertion edited as mandated (the WP-833 WWII-ids test).
+
+**Reserved by:** NUMBER-LEDGER D-24767 (#3008). Related: D-24199 (fill rule), D-24278 (single variant), D-24283 (per-scheme overlay), D-24666 / D-24766 (scheme overrides), D-24372 (runtime drift pins), D-24026 (live-verify).
+
+---
 Protect this file.

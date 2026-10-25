@@ -483,6 +483,8 @@ describe("getGauntletConfig — extra Villain Group (D-24766)", () => {
 
   it("names the generated Change the Outcome of WWII villains at 1p and 5p", () => {
     // why: both ca75 masterminds' 1-player WWII leg fields both ca75 Villain Groups.
+    // D-24767 — out-of-set slots fill from the Core Set before Core 2E, so the 5-player
+    // extra groups are Core's (they were Core 2E groups with unimplemented effects).
     for (const mastermindSlug of ["arnim-zola", "baron-heinrich-zemo"]) {
       assert.deepEqual(
         getGauntletConfig("ca75", mastermindSlug, "change-the-outcome-of-wwii", 1)?.villainGroupIds,
@@ -493,9 +495,9 @@ describe("getGauntletConfig — extra Villain Group (D-24766)", () => {
         [
           "ca75/masters-of-evil-wwii",
           "ca75/zolas-creations",
-          "co2e/brotherhood-of-mutants",
-          "co2e/enemies-of-asgard",
-          "co2e/hydra",
+          "core/brotherhood",
+          "core/enemies-of-asgard",
+          "core/hydra",
         ],
       );
     }
