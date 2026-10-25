@@ -22,8 +22,8 @@
  *      `alwaysLeads` groups and the henchmen slots with its printed
  *      `alwaysLeadsHenchmen` groups — the game's own rules make those canonical.
  *   3. Fill the remaining villain and henchmen slots per player count from the
- *      mastermind's own set first, then from the Core Set / Core 2E pool
- *      (the D-24199 core-fallback rule).
+ *      mastermind's own set first, then from the Core Set, then Core 2E (the
+ *      D-24199 core-fallback rule, ordered by D-24767).
  *   4. Emit one canonical variant (variant 0) per mastermind — the single
  *      approved configuration ranked qualification uses (D-24278). Casual play
  *      keeps free selection; only ranked qualification is fixed.
@@ -492,8 +492,10 @@ function buildLoadoutMenus(sets) {
       fallbackHenchmenIds.push(henchmanId);
     }
   }
-  fallbackVillainIds.sort();
-  fallbackHenchmenIds.sort();
+  // why: D-24767 — the pool keeps CORE_FALLBACK_SET_ABBRS order (Core, then Core
+  // 2E), each set's ids sorted by buildGroupIds. A combined sort put `co2e/` before
+  // `core/`, so out-of-set slots took Core 2E groups first, and most of those print
+  // effects the engine does not implement while their Core versions do.
 
   // why: a set with no scheme hosts no gauntlet board (D-24131 §1, the same
   // filter buildGauntletCatalog applies), so it needs no approved loadout.
