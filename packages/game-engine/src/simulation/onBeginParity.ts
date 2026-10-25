@@ -106,6 +106,11 @@ export function applyOnBeginParity(
   if (gameState.ambushVillainPlayedThisTurn !== undefined) {
     delete gameState.ambushVillainPlayedThisTurn;
   }
+  // why: WP-827 / D-24760 — mirrors game.ts onBegin's Flying Shield Block once-per-turn reset.
+  // Guarded so a never-set G stays byte-unchanged.
+  if (gameState.flyingShieldBlockUsedThisTurn !== undefined) {
+    delete gameState.flyingShieldBlockUsedThisTurn;
+  }
   // why: WP-328 — mirrors game.ts onBegin's logMeta stamp so harness log lines carry
   // the same play-relative {turn}.{step}.{action} prefix as live play. Live derives the
   // turn from ctx.turn offset by the first play turn; the harnesses have no framework

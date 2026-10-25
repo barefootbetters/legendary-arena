@@ -467,7 +467,7 @@ mindmap
         ["WP-824 ✅ Cap 75th count-scaled hero lines International Strike Force and Star-Spangled Hero Savior lines per Hero Class Paramilitary Ops per other S.H.I.E.L.D. Hero costing 1 or more game engine plus card data EC-862 D-24757 Active DONE 2026-10-23. Cap 75th arc item 3"]
         ["WP-825 ✅ co2e Stealth Assault Squad another S.H.I.E.L.D. Hero that costs 1 or more gate HeroCondition minimumCost game engine EC-863 D-24758 Active DONE 2026-10-24. Follow-up to WP-824"]
         ["WP-826 ✅ Cap 75th optional-KO S.H.I.E.L.D. family Mobilize for War KO up to two S.H.I.E.L.D. Heroes Savior plus 1 Attack per card KO'd Reassign to Civilian Duty KO a played S.H.I.E.L.D. Hero rescue a Bystander game engine plus card data EC-864 D-24759 Active DONE 2026-10-24. Cap 75th arc item 4"]
-        ["WP-827 📝 Flying Shield Block any seat may reveal it once per turn when a player would gain a Wound prevent it and rescue a Bystander after the recipient's Diving Block game engine plus card data DRAFTED 2026-10-24 EC-865 D-24760 reserved. Cap 75th arc item 5"]
+        ["WP-827 ✅ Flying Shield Block any seat may reveal it once per turn when a player would gain a Wound prevent it and rescue a Bystander after the recipient's Diving Block game engine plus card data EC-865 D-24760 Active DONE 2026-10-24. Cap 75th arc item 5"]
         ["WP-828 📝 Winter Soldier 2>4 a Hero in your hand gains Man Out of Time this turn another with Tech chosen after the play set aside after its abilities game engine plus card data DRAFTED 2026-10-24 EC-866 D-24761 reserved. Cap 75th arc item 6"]
         ["WP-829 📝 Go Back in Time to Slay Heroes Ancestors Twist Purges an HQ Hero chosen by the active player HQ Heroes sharing a Purged Hero Name are KOd game engine DRAFTED 2026-10-24 EC-867 D-24762 reserved. Cap 75th arc item 7"]
         ["WP-830 📝 The Unbreakable Enigma Code Twists build a face-down code a paid peek after a Villain fight a color guess gates the Mastermind fight game engine plus client DRAFTED 2026-10-24 EC-868 D-24763 reserved. Cap 75th arc item 8"]
@@ -1002,7 +1002,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 197/218 | 21 open |
+| Hero Ability Coverage & Markup Pipeline | 198/218 | 20 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1023,9 +1023,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **803/830 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 26 open |
+| **Total** | **804/830 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 25 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 27):** WP-832 open; WP-831 open; WP-830 open; WP-829 open; WP-828 open; WP-827 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 26):** WP-832 open; WP-831 open; WP-830 open; WP-829 open; WP-828 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.

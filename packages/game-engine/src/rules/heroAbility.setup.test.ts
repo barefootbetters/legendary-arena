@@ -680,12 +680,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'ko-up-to-shield-hand-discard', // why: WP-826 / D-24759 — Mobilize for War's "KO up to two [team:shield] Heroes from your hand and/or discard pile" — parks up to N shield-only optional-KO entries
     'attack-per-ko-this-way', // why: WP-826 / D-24759 — Mobilize for War's Savior line "For each card KO'd this way, +1 Attack" — upgrades this card's parked KO entries to an attack reward
     'optional-ko-shield-played-rescue', // why: WP-826 / D-24759 — Reassign to Civilian Duty's "You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander."
+    'flying-shield-block', // why: WP-827 / D-24760 — Captain America (Falcon) "Flying Shield Block": any seat holding a copy may reveal it once per turn when a player would gain a Wound, preventing it and rescuing a Bystander
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      81,
-      'HERO_KEYWORDS must have exactly 81 entries',
+      82,
+      'HERO_KEYWORDS must have exactly 82 entries',
     );
 
     assert.deepStrictEqual(

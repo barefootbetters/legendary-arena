@@ -41,6 +41,7 @@ import { resolveCountScaledChoice, hasPendingCountScaledChoice } from './moves/c
 import { resolveUndercoverChoice, hasPendingUndercoverChoice } from './moves/undercover.resolve.js';
 import { resolveSeatChoice, hasPendingSeatChoice, SEAT_CHOICE_STAGE } from './moves/seatChoice.resolve.js';
 import { openDivingBlockSeatChoiceIfNeeded } from './moves/divingBlock.logic.js';
+import { openFlyingShieldBlockSeatChoiceIfNeeded } from './moves/flyingShieldBlock.logic.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEscapeProcedure.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
@@ -909,6 +910,9 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // an absent ctx yields currentPlayer=undefined, which admits every addressed
           // seat exactly as before (the pre-D-24648 behaviour), never a throw.
           openDivingBlockSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-827 / D-24760 — then the Flying Shield Block wave (any seat may reveal);
+          // it waits while a Diving Block Wound is pending, since a decline there can park one.
+          openFlyingShieldBlockSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
         },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent
@@ -951,6 +955,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           }
           if (G.ambushVillainPlayedThisTurn !== undefined) {
             delete G.ambushVillainPlayedThisTurn;
+          }
+          // why: WP-827 / D-24760 — Flying Shield Block's "once per turn" resets each turn.
+          // Guarded delete, so a match that never revealed one is byte-unchanged;
+          // applyOnBeginParity mirrors it for the rebuilt loops.
+          if (G.flyingShieldBlockUsedThisTurn !== undefined) {
+            delete G.flyingShieldBlockUsedThisTurn;
           }
 
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and

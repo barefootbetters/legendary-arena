@@ -33,6 +33,9 @@ import { drawCardsIntoHand } from './drawCards.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { parkSeatChoice } from './seatChoice.resolve.js';
 import { pushLog } from '../log/logPush.js';
+// why: WP-827 / D-24760 — a declined Diving Block hands the Wound to Flying Shield Block.
+// flyingShieldBlock.logic and this module reference each other only inside function bodies.
+import { checkFlyingShieldBlock } from './flyingShieldBlock.logic.js';
 
 /** The seat-choice kind discriminant for a Diving-Block reveal/decline wave. */
 export const DIVING_BLOCK_SEAT_CHOICE_KIND = 'diving-block';
@@ -177,23 +180,26 @@ export function hasPendingDivingBlockWounds(G: LegendaryGameState): boolean {
  * @param G - The game state, mutated in place (pending FIFO appended).
  * @param playerID - The player who just gained the Wound.
  * @param woundCardId - The Wound card now in the player's discard pile.
+ * @returns true when an interception was parked (WP-827 / D-24760: the chokepoint then skips
+ *   Flying Shield Block for this Wound).
  */
 export function checkDivingBlock(
   G: LegendaryGameState,
   playerID: string,
   woundCardId: CardExtId,
-): void {
+): boolean {
   // why: D-24673 — rules v23 "Revealing a Card": "You can reveal the same card
   // multiple times in a turn if necessary." Revealing never uses Diving Block up, so
   // ONE revealable copy can stop every Wound; each Wound parks its own interception.
   // (D-24499 had capped the reveals at one per copy.)
   if (countRevealableDivingBlockCopies(G, playerID) === 0) {
-    return;
+    return false;
   }
   if (G.pendingDivingBlockWounds === undefined) {
     G.pendingDivingBlockWounds = [];
   }
   G.pendingDivingBlockWounds.push({ playerID, woundCardId });
+  return true;
 }
 
 /**
@@ -328,6 +334,9 @@ export function applyDivingBlockResolvedSeatChoice(
       pushLog(G,
         `Player ${seat} took the Wound (declined Diving Block).`,
       );
+      // why: WP-827 / D-24760 — the Wound is kept, so a seat holding Flying Shield Block may
+      // still prevent it; its wave opens after the Diving Block queue drains.
+      checkFlyingShieldBlock(G, seat, woundEntry.woundCardId);
     }
     // Drain this seat's resolved Wound from the FIFO (front-pop per seat).
     queue.splice(woundIndex, 1);

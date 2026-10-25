@@ -425,7 +425,9 @@ export const DISCARD_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
 // chokepoints); NOT in HANDLED_KEYWORDS (no handler) and NOT in NO_MAGNITUDE_KEYWORDS (it
 // never runs at play time, exactly like return-on-discard — the pre-gate drop is the
 // correct no-op there).
-export const WOUND_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['diving-block'];
+// why: WP-827 / D-24760 — flying-shield-block executes at the same chokepoint
+// (checkFlyingShieldBlock), so it joins this set for the same two reasons.
+export const WOUND_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['diving-block', 'flying-shield-block'];
 
 // why (WP-251 / D-24024; D-24049; D-24051; D-24060): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the
 // frozen-translated reveal keywords ∪ the recruit-time-executed keywords ∪ the

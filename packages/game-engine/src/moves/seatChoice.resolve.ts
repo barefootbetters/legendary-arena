@@ -30,6 +30,11 @@ import {
   applyDivingBlockResolvedSeatChoice,
   DIVING_BLOCK_SEAT_CHOICE_KIND,
 } from './divingBlock.logic.js';
+// why: WP-827 / D-24760 — Flying Shield Block's kind-specific apply (same runtime-safe cycle).
+import {
+  applyFlyingShieldBlockResolvedSeatChoice,
+  FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND,
+} from './flyingShieldBlock.logic.js';
 // why: WP-683 / D-24500 — the two Deadpool consumers' kind-specific applies + the
 // Random-Acts wound→pass chain builder.
 import {
@@ -452,6 +457,13 @@ function applySeatChoiceByKind(
 ): void {
   if (choice.kind === DIVING_BLOCK_SEAT_CHOICE_KIND) {
     applyDivingBlockResolvedSeatChoice(G, choice, shuffleContext, currentPlayer);
+    return;
+  }
+  // why: WP-827 / D-24760 — Flying Shield Block: a reveal returns the Wound and rescues a
+  // Bystander for the revealing seat; a decline passes the Wound to the next seat that could
+  // reveal. No draw, so no shuffle context.
+  if (choice.kind === FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND) {
+    applyFlyingShieldBlockResolvedSeatChoice(G, choice);
     return;
   }
   // why: WP-694 / D-24511 — Monarch's Decree mode apply: the "draw" branch draws for each

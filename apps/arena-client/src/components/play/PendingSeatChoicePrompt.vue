@@ -89,6 +89,9 @@ export default defineComponent({
       switch (props.pendingSeatChoice?.kind) {
         case 'diving-block':
           return 'You would gain a Wound — Diving Block?';
+        // why: WP-827 / D-24760 — the Wound may be another player's; the option labels name whose.
+        case 'flying-shield-block':
+          return 'A player would gain a Wound — Flying Shield Block?';
         case 'here-hold-this':
           return 'Choose a Villain to capture a Bystander';
         case 'random-acts-wound':
