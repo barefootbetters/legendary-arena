@@ -243,6 +243,63 @@ export function resolveEffectiveHenchmenCount(
   return baseHenchmenCount;
 }
 
+/**
+ * The schemes whose printed setup says "Add an extra Villain Group" (D-24766), as
+ * a plain sentence with no other shape: one more standard Villain Group at every
+ * player count. A closed list in set order. A named group ("Add Lilin as an extra
+ * Villain Group"), "two extra Villain Groups", a solo-only extra, and a
+ * mastermind's extra group are different shapes and are not listed.
+ */
+export const SCHEMES_WITH_EXTRA_VILLAIN_GROUP: readonly string[] = [
+  'ca75/change-the-outcome-of-wwii',
+  'co2e/bank-robbery-hostage-crisis',
+  'co2e/negative-zone-prison-outbreak',
+  'cvwr/predict-future-crime',
+  'dkcy/steal-the-weaponized-plutonium',
+  'dstr/war-for-the-dream-dimension',
+  'dstr/cursed-pages-of-the-darkhold-tome',
+  'mgtg/inescapable-kyln-space-prison',
+  'mgtg/provoke-the-sovereign-war-fleet',
+  'nmut/superhuman-baseball-game',
+  'rvlt/earthquake-drains-the-ocean',
+  'ssw1/fragmented-realities',
+  'ssw1/smash-two-dimensions-together',
+  'ssw2/deadlands-hordes-charge-the-wall',
+];
+
+/**
+ * Returns the effective Villain Group count a match must supply, applying the
+ * printed "Add an extra Villain Group" setup clause (D-24766).
+ *
+ * A listed scheme requires exactly `baseVillainGroupCount + 1` at every player
+ * count (2/3/4/4/5 at 1–5p); every other scheme returns the base count unchanged.
+ *
+ * why: the card prints "Add an extra Villain Group" — a REQUIREMENT increase like
+ * the extra Henchman group (D-24666), not a build-side downsize. The operator must
+ * actually SUPPLY the extra group, so it lives on the requirement side (this
+ * resolver) and every Villain Group enforcement site reaches this one definition:
+ * `checkPlayerCountComposition` (below), the game engine's
+ * `validatePlayerCountComposition` (via the registry object it reads
+ * structurally), the server setup-requirements projection, the loadout builder,
+ * and `getGauntletConfig`. The base `PLAYER_COUNT_SETUP` table is never mutated.
+ *
+ * @param schemeId - The selected scheme ext_id (`MatchSetupConfig.schemeId`).
+ * @param numPlayers - The match player count (accepted for signature parity with
+ *   `resolveEffectiveHeroCount`; unused today).
+ * @param baseVillainGroupCount - The standard `PLAYER_COUNT_SETUP[numPlayers].villainGroupCount`.
+ * @returns The Villain Group count the match must supply for this scheme.
+ */
+export function resolveEffectiveVillainGroupCount(
+  schemeId: string,
+  numPlayers: number,
+  baseVillainGroupCount: number,
+): number {
+  if (SCHEMES_WITH_EXTRA_VILLAIN_GROUP.includes(schemeId)) {
+    return baseVillainGroupCount + 1;
+  }
+  return baseVillainGroupCount;
+}
+
 /** One composition-count mismatch against the player-count table. */
 export interface PlayerCountCompositionMismatch {
   /** The composition array field whose length is wrong. */
@@ -262,10 +319,11 @@ export interface PlayerCountCompositionInput {
   readonly henchmanGroupIds: readonly unknown[];
   readonly heroDeckIds: readonly unknown[];
   /**
-   * The selected scheme ext_id, so the hero-count and Henchman-count
-   * requirements can be scheme-aware (D-24337 — Secret Invasion requires 6
-   * heroes; D-24666 — "Add an extra Henchman group"). Optional: when absent the
-   * base `heroCount` / `henchmenGroupCount` are used, so existing callers that
+   * The selected scheme ext_id, so the hero-count, Henchman-count and Villain
+   * Group requirements can be scheme-aware (D-24337 — Secret Invasion requires 6
+   * heroes; D-24666 — "Add an extra Henchman group"; D-24766 — "Add an extra
+   * Villain Group"). Optional: when absent the base `heroCount` /
+   * `henchmenGroupCount` / `villainGroupCount` are used, so existing callers that
    * omit it keep the standard behaviour.
    */
   readonly schemeId?: string;
@@ -289,11 +347,18 @@ export function checkPlayerCountComposition(
     return [];
   }
   const mismatches: PlayerCountCompositionMismatch[] = [];
-  if (input.villainGroupIds.length !== row.villainGroupCount) {
+  // why: the Villain Group requirement is scheme-aware (D-24766). A missing
+  // schemeId resolves to the base count, so callers that omit it are unaffected.
+  const requiredVillainGroupCount = resolveEffectiveVillainGroupCount(
+    input.schemeId ?? '',
+    input.playerCount,
+    row.villainGroupCount,
+  );
+  if (input.villainGroupIds.length !== requiredVillainGroupCount) {
     mismatches.push({
       field: 'villainGroupIds',
       label: 'villain groups',
-      required: row.villainGroupCount,
+      required: requiredVillainGroupCount,
       actual: input.villainGroupIds.length,
     });
   }

@@ -8,7 +8,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -17,7 +17,9 @@ import {
   checkPlayerCountComposition,
   resolveEffectiveHeroCount,
   resolveEffectiveHenchmenCount,
+  resolveEffectiveVillainGroupCount,
   SCHEMES_WITH_EXTRA_HENCHMAN_GROUP,
+  SCHEMES_WITH_EXTRA_VILLAIN_GROUP,
   SCHEME_HERO_COUNT_RULES,
 } from './playerCountSetup.js';
 
@@ -465,5 +467,172 @@ describe('checkPlayerCountComposition — extra Henchman group (D-24666)', () =>
 
   it('leaves a 1p Midtown loadout with 1 group clean', () => {
     assert.deepEqual(checkPlayerCountComposition(soloInput(MIDTOWN_BANK_ROBBERY, 1)), []);
+  });
+});
+
+/** The Cap 75th scheme whose printed setup says "Add an extra Villain Group" (D-24766). */
+const CHANGE_THE_OUTCOME_OF_WWII = 'ca75/change-the-outcome-of-wwii';
+
+/** The exact printed sentence the extra-Villain-Group list is drawn from. */
+const EXTRA_VILLAIN_GROUP_SENTENCE = /(^|\. |: )Add an extra Villain Group\./;
+
+/**
+ * Returns every scheme ext_id in data/cards whose printed ability text carries the
+ * plain sentence "Add an extra Villain Group.", in file then scheme order.
+ *
+ * @returns The scheme ext_ids that print the sentence.
+ */
+function scanSchemesPrintingExtraVillainGroup(): string[] {
+  // why: pnpm --filter sets CWD to packages/registry/; the card data lives at the
+  // monorepo root, two directory levels up.
+  const cardsDirectory = join(process.cwd(), '..', '..', 'data', 'cards');
+  const schemeIds: string[] = [];
+  const fileNames = readdirSync(cardsDirectory)
+    .filter((fileName) => fileName.endsWith('.json'))
+    .sort();
+  for (const fileName of fileNames) {
+    const setData = JSON.parse(readFileSync(join(cardsDirectory, fileName), 'utf8')) as {
+      abbr?: string;
+      schemes?: { slug: string; cards?: { abilities?: string[] }[] }[];
+    };
+    const setAbbr = setData.abbr ?? fileName.replace('.json', '');
+    for (const scheme of setData.schemes ?? []) {
+      let printsSentence = false;
+      for (const card of scheme.cards ?? []) {
+        for (const ability of card.abilities ?? []) {
+          if (EXTRA_VILLAIN_GROUP_SENTENCE.test(ability)) {
+            printsSentence = true;
+          }
+        }
+      }
+      if (printsSentence) {
+        schemeIds.push(`${setAbbr}/${scheme.slug}`);
+      }
+    }
+  }
+  return schemeIds;
+}
+
+describe('SCHEMES_WITH_EXTRA_VILLAIN_GROUP (D-24766)', () => {
+  it('lists exactly the fourteen "Add an extra Villain Group" schemes, in order', () => {
+    // why: D-24372 runtime drift pin — the closed list is a locked value.
+    assert.deepEqual(
+      [...SCHEMES_WITH_EXTRA_VILLAIN_GROUP],
+      [
+        'ca75/change-the-outcome-of-wwii',
+        'co2e/bank-robbery-hostage-crisis',
+        'co2e/negative-zone-prison-outbreak',
+        'cvwr/predict-future-crime',
+        'dkcy/steal-the-weaponized-plutonium',
+        'dstr/war-for-the-dream-dimension',
+        'dstr/cursed-pages-of-the-darkhold-tome',
+        'mgtg/inescapable-kyln-space-prison',
+        'mgtg/provoke-the-sovereign-war-fleet',
+        'nmut/superhuman-baseball-game',
+        'rvlt/earthquake-drains-the-ocean',
+        'ssw1/fragmented-realities',
+        'ssw1/smash-two-dimensions-together',
+        'ssw2/deadlands-hordes-charge-the-wall',
+      ],
+    );
+  });
+
+  it('equals the set of schemes in data/cards that print the plain sentence', () => {
+    // why: fail-loud both ways — a scheme added to the card data that prints the
+    // sentence must join the list, and a listed id that is a typo or no longer
+    // prints it must leave. The named-group, two-group, solo-only and mastermind
+    // shapes do not print this exact sentence, so they stay out by construction.
+    assert.deepEqual(
+      [...scanSchemesPrintingExtraVillainGroup()].sort(),
+      [...SCHEMES_WITH_EXTRA_VILLAIN_GROUP].sort(),
+    );
+  });
+
+  it('shares no scheme with the extra Henchman group list', () => {
+    for (const schemeId of SCHEMES_WITH_EXTRA_VILLAIN_GROUP) {
+      assert.equal(SCHEMES_WITH_EXTRA_HENCHMAN_GROUP.includes(schemeId), false, `${schemeId} is on both lists`);
+    }
+  });
+});
+
+describe('resolveEffectiveVillainGroupCount (D-24766)', () => {
+  it('returns base + 1 (2/3/4/4/5) for every listed scheme at 1–5 players', () => {
+    for (const schemeId of SCHEMES_WITH_EXTRA_VILLAIN_GROUP) {
+      const effectiveCounts: number[] = [];
+      for (const playerCount of [1, 2, 3, 4, 5] as const) {
+        effectiveCounts.push(
+          resolveEffectiveVillainGroupCount(
+            schemeId,
+            playerCount,
+            PLAYER_COUNT_SETUP[playerCount].villainGroupCount,
+          ),
+        );
+      }
+      assert.deepEqual(effectiveCounts, [2, 3, 4, 4, 5], `wrong effective counts for ${schemeId}`);
+    }
+  });
+
+  it('returns the base count unchanged for an unlisted or empty scheme', () => {
+    assert.equal(resolveEffectiveVillainGroupCount(MIDTOWN_BANK_ROBBERY, 1, 1), 1);
+    assert.equal(resolveEffectiveVillainGroupCount(MIDTOWN_BANK_ROBBERY, 5, 4), 4);
+    assert.equal(resolveEffectiveVillainGroupCount('', 3, 3), 3);
+    assert.equal(resolveEffectiveVillainGroupCount(NEGATIVE_ZONE_PRISON_BREAKOUT, 1, 1), 1);
+    // why: the named-group shape ("Add Lilin as an extra Villain Group") is out of
+    // scope (D-24766 §4), so it keeps the base count.
+    assert.equal(resolveEffectiveVillainGroupCount('mdns/ritual-sacrifice-to-summon-chthon', 1, 1), 1);
+  });
+
+  it('never mutates the base PLAYER_COUNT_SETUP table', () => {
+    resolveEffectiveVillainGroupCount(CHANGE_THE_OUTCOME_OF_WWII, 1, PLAYER_COUNT_SETUP[1].villainGroupCount);
+    assert.equal(PLAYER_COUNT_SETUP[1].villainGroupCount, 1);
+  });
+});
+
+describe('checkPlayerCountComposition — extra Villain Group (D-24766)', () => {
+  /**
+   * Builds a composition input for the given scheme, player count and villain-group
+   * count, with the base Henchman and hero counts for that player count.
+   */
+  function villainInput(schemeId: string, playerCount: 1 | 2 | 3 | 4 | 5, villainGroupCount: number) {
+    const villainGroupIds: string[] = [];
+    for (let index = 0; index < villainGroupCount; index += 1) {
+      villainGroupIds.push(`v${index}`);
+    }
+    const henchmanGroupIds: string[] = [];
+    for (let index = 0; index < PLAYER_COUNT_SETUP[playerCount].henchmenGroupCount; index += 1) {
+      henchmanGroupIds.push(`h${index}`);
+    }
+    const heroDeckIds: string[] = [];
+    for (let index = 0; index < PLAYER_COUNT_SETUP[playerCount].heroCount; index += 1) {
+      heroDeckIds.push(`hero${index}`);
+    }
+    return { playerCount, schemeId, villainGroupIds, henchmanGroupIds, heroDeckIds };
+  }
+
+  it('reports one villain mismatch (required 2) for a 1p WWII loadout with the base 1 group', () => {
+    assert.deepEqual(checkPlayerCountComposition(villainInput(CHANGE_THE_OUTCOME_OF_WWII, 1, 1)), [
+      { field: 'villainGroupIds', label: 'villain groups', required: 2, actual: 1 },
+    ]);
+  });
+
+  it('passes a 1p WWII loadout with 2 groups', () => {
+    assert.deepEqual(checkPlayerCountComposition(villainInput(CHANGE_THE_OUTCOME_OF_WWII, 1, 2)), []);
+  });
+
+  it('rejects a 1p WWII loadout with 3 groups (exactly base + 1)', () => {
+    assert.deepEqual(checkPlayerCountComposition(villainInput(CHANGE_THE_OUTCOME_OF_WWII, 1, 3)), [
+      { field: 'villainGroupIds', label: 'villain groups', required: 2, actual: 3 },
+    ]);
+  });
+
+  it('reports required 5 for a 5p WWII loadout with the base 4 groups, and passes 5', () => {
+    assert.deepEqual(checkPlayerCountComposition(villainInput(CHANGE_THE_OUTCOME_OF_WWII, 5, 4)), [
+      { field: 'villainGroupIds', label: 'villain groups', required: 5, actual: 4 },
+    ]);
+    assert.deepEqual(checkPlayerCountComposition(villainInput(CHANGE_THE_OUTCOME_OF_WWII, 5, 5)), []);
+  });
+
+  it('leaves a 1p Midtown loadout with 1 group clean', () => {
+    assert.deepEqual(checkPlayerCountComposition(villainInput(MIDTOWN_BANK_ROBBERY, 1, 1)), []);
   });
 });

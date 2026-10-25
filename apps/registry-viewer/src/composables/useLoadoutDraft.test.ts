@@ -470,6 +470,71 @@ describe("useLoadoutDraft — extra Henchman group (WP-796 / D-24666)", () => {
   });
 });
 
+// A registry carrying ca75 Change the Outcome of WWII (its printed "Add an extra
+// Villain Group", D-24766) and two Villain Groups, so a 1-player WWII draft can be
+// built with either 1 or 2 groups.
+const WWII_REGISTRY = makeRegistry([
+  { extId: "ca75/change-the-outcome-of-wwii", cardType: "scheme" },
+  { extId: "core/midtown-bank-robbery", cardType: "scheme" },
+  { extId: "ca75/arnim-zola", cardType: "mastermind" },
+  { extId: "ca75/zolas-creations", cardType: "villain" },
+  { extId: "ca75/masters-of-evil-wwii", cardType: "villain" },
+  { extId: "core/sentinel", cardType: "henchman" },
+  { extId: "core/spider-man", cardType: "hero" },
+  { extId: "core/wolverine", cardType: "hero" },
+  { extId: "core/storm", cardType: "hero" },
+]);
+
+/** Builds a 1-player draft on WWII_REGISTRY for a scheme and its Villain Groups. */
+function makeSoloVillainDraft(schemeSlug: string, villainGroupIds: string[]) {
+  const api = useLoadoutDraft(WWII_REGISTRY);
+  api.setPlayerCount(1); // base: 1 villain / 1 henchman / 3 heroes
+  api.prefillFromTheme(
+    makeTheme(
+      makeSetupIntent({
+        schemeId: schemeSlug,
+        mastermindId: "arnim-zola",
+        villainGroupIds,
+        henchmanGroupIds: ["sentinel"],
+        heroDeckIds: ["spider-man", "wolverine", "storm"],
+      }),
+    ),
+  );
+  return api;
+}
+
+describe("useLoadoutDraft — extra Villain Group (WP-833 / D-24766)", () => {
+  it("the required row shows 2 Villain Groups for a 1p Change the Outcome of WWII draft", () => {
+    const api = makeSoloVillainDraft("change-the-outcome-of-wwii", ["zolas-creations"]);
+    assert.equal(api.requiredPlayerCountSetup.value?.villainGroupCount, 2);
+    api.setPlayerCount(5);
+    assert.equal(api.requiredPlayerCountSetup.value?.villainGroupCount, 5);
+  });
+
+  it("a 1-group 1p WWII draft is not ready (villain groups required 2, actual 1)", () => {
+    const api = makeSoloVillainDraft("change-the-outcome-of-wwii", ["zolas-creations"]);
+    assert.deepEqual(api.errors.value, []);
+    const mismatches: ReadonlyArray<{ field: string; required: number; actual: number }> =
+      api.playerCountCompositionMismatches.value;
+    const villain = mismatches.find((mismatch) => mismatch.field === "villainGroupIds");
+    assert.equal(villain?.required, 2);
+    assert.equal(villain?.actual, 1);
+    assert.equal(api.isReady.value, false);
+  });
+
+  it("a 2-group 1p WWII draft is ready", () => {
+    const api = makeSoloVillainDraft("change-the-outcome-of-wwii", ["zolas-creations", "masters-of-evil-wwii"]);
+    assert.deepEqual(api.playerCountCompositionMismatches.value, []);
+    assert.equal(api.isReady.value, true);
+  });
+
+  it("leaves Midtown Bank Robbery on the base Villain Group count", () => {
+    const api = makeSoloVillainDraft("midtown-bank-robbery", ["zolas-creations"]);
+    assert.equal(api.requiredPlayerCountSetup.value?.villainGroupCount, 1);
+    assert.equal(api.isReady.value, true);
+  });
+});
+
 // A registry whose core/magneto mastermind carries an Always-Leads clause
 // (Magneto Always Leads the Brotherhood), plus a cross-set case: an
 // xmen/magneto mastermind that also leads "brotherhood", with a same-set

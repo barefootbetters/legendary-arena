@@ -1,6 +1,6 @@
 # WP-833 — "Add an extra Villain Group": a scheme-aware Villain Group requirement (Change the Outcome of WWII and 13 more)
 
-**Status:** Draft 2026-10-24 (EC-871; **D-24766** reserved, #3002).
+**Status:** Done 2026-10-24 (EC-871 `c47e0cd2`; **D-24766** Active). Live-verify pending deploy.
 **Primary Layer:** Registry (source of truth) + Game Engine (`Game.setup` gate) + Server (setup-requirements
 projection) + App (registry-viewer loadout builder) + gauntlet tooling (menu generator, configs loader)
 **User-Visible Surface:** cards.legendary-arena.com loadout builder, play.legendary-arena.com lobby and gauntlet
@@ -302,7 +302,8 @@ The production change (§A–§E, no new tests) was implemented on the baseline 
   gauntletConfigs 28, matchSetup.contracts 75, matchGate.routes 18, the two viewer files 63).
 - **Locked post-execution counts** (`pnpm -r --no-bail test`, 0 fail everywhere): registry 295 → 310 (+15), game-engine
   5672 → 5676 (+4), server 1836 → 1838 (+2), registry-viewer 329 → 335 (+6); every other package unchanged. The menu
-  diff is +397 / −0: 56 `schemeOverrides` entries, each covering 1–5 players. A different count is STOP-and-report.
+  diff is +397 / −0: 47 new `schemeOverrides` entries across 34 menus (56 in total with the 9 pre-existing Henchman
+  ones), each covering 1–5 players (corrected at execution; the draft said 56 new). A different count is STOP-and-report.
 
 ## Contract
 
@@ -337,7 +338,7 @@ The production change (§A–§E, no new tests) was implemented on the baseline 
 pnpm gauntlet:loadouts; pnpm gauntlet:configs
 pnpm gauntlet:loadouts:check && pnpm gauntlet:configs:check
 git diff --numstat -- packages/registry/src/gauntletLoadouts.generated.ts
-# Expected: exit 0; "397 0" — 56 schemeOverrides added (ca75, co2e, cvwr, dkcy, dstr, mgtg, nmut, rvlt, ssw1, ssw2)
+# Expected: exit 0; "397 0" — 47 schemeOverrides added (34 menus) (ca75, co2e, cvwr, dkcy, dstr, mgtg, nmut, rvlt, ssw1, ssw2)
 pnpm -r build
 pnpm -r --no-bail test
 # Expected: 0 failures; registry 310, game-engine 5676, server 1838, registry-viewer 335, others unchanged
@@ -437,7 +438,7 @@ EC-871 vs EC-TEMPLATE: PASS (69 content lines); Locked Values agree with the WP.
 re-run needed).** It independently re-ran the touched suites in the scaffold worktree (registry 310 / 0, game-engine
 5676 / 0, server 1838 / 0, registry-viewer 335 / 0 and typecheck 0, both gauntlet `:check` OK, `par:seed:test` 2 / 0,
 `themes:check-slugs:check` 0 unresolved), ran the baseline copies of the two gauntlet test files against the new source
-(exactly the four mandated tests fail, 32 pass), validated all 56 overrides (villains +1, henchmen +0, no duplicate
+(exactly the four mandated tests fail, 32 pass), validated all 56 overrides (47 new: villains +1, henchmen +0; 9 pre-existing Henchman ones unchanged; no duplicate
 slug, WWII ids as locked), re-ran the corpus scan (exactly the 14), and traced "Play this leg" end to end.
 - **PS-1 (blocking, fixed):** §Assumes 3 claimed the WP-796 live-verify proved the menu-override path; STATUS :711–713
   says it was unit-tested only → the four-step trace, and the DoD's WWII "Play this leg" is marked its first live

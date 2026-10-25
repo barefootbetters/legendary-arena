@@ -35,6 +35,7 @@ import type { GauntletLoadoutComposition } from "./gauntletLoadouts.js";
 import {
   PLAYER_COUNT_SETUP,
   SCHEMES_WITH_EXTRA_HENCHMAN_GROUP,
+  SCHEMES_WITH_EXTRA_VILLAIN_GROUP,
   resolveEffectiveHenchmenCount,
 } from "./playerCountSetup.js";
 import type { SupportedPlayerCount } from "./playerCountSetup.js";
@@ -291,7 +292,13 @@ describe("getGauntletConfig — extra Henchman group (D-24666)", () => {
     const yearBlock = committedConfigs.years[committedConfigs.activeYear];
     for (const menu of GAUNTLET_LOADOUT_MENUS) {
       for (const scheme of readSet(menu.setAbbr).schemes ?? []) {
-        if (SCHEMES_WITH_EXTRA_HENCHMAN_GROUP.includes(`${menu.setAbbr}/${scheme.slug}`)) {
+        // why: D-24766 — an extra-Villain-Group scheme's leg now resolves to its
+        // generated override, so it is no longer "unlisted" either.
+        const schemeId = `${menu.setAbbr}/${scheme.slug}`;
+        if (
+          SCHEMES_WITH_EXTRA_HENCHMAN_GROUP.includes(schemeId) ||
+          SCHEMES_WITH_EXTRA_VILLAIN_GROUP.includes(schemeId)
+        ) {
           continue;
         }
         const leg = yearBlock?.sets[menu.setAbbr]?.masterminds[menu.mastermindSlug]?.schemes[scheme.slug];
@@ -439,5 +446,84 @@ describe("generated literal freshness (WP-483 — enforcing drift gate)", () => 
     // convenience mirror, not CI-wired (matching gauntlet:loadouts:check).
     const sourceJson = JSON.parse(readFileSync(configsPath, "utf8"));
     assert.deepEqual(GAUNTLET_CONFIGS_DATA, sourceJson);
+  });
+});
+
+describe("getGauntletConfig — extra Villain Group (D-24766)", () => {
+  it("returns the menu's scheme override, base villains plus one, for every extra-Villain-Group leg", () => {
+    let checkedLegs = 0;
+    for (const schemeId of SCHEMES_WITH_EXTRA_VILLAIN_GROUP) {
+      const setAbbr = schemeId.slice(0, schemeId.indexOf("/"));
+      const schemeSlug = schemeId.slice(schemeId.indexOf("/") + 1);
+      const menus = GAUNTLET_LOADOUT_MENUS.filter((menu) => menu.setAbbr === setAbbr);
+      assert.ok(menus.length > 0, `Expected at least one gauntlet menu in set ${setAbbr}.`);
+      for (const menu of menus) {
+        const baseVariant = menu.variants[0];
+        assert.ok(baseVariant !== undefined, `No variant 0 found for ${setAbbr}/${menu.mastermindSlug}.`);
+        for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+          const label = `${setAbbr}/${menu.mastermindSlug}/${schemeSlug} at ${playerCount} players`;
+          const config = getGauntletConfig(setAbbr, menu.mastermindSlug, schemeSlug, playerCount);
+          const baseComposition: GauntletLoadoutComposition = baseVariant.compositionsByPlayerCount[playerCount];
+          assert.ok(config !== undefined, `Expected a scheme-aware composition for ${label}.`);
+          assert.deepEqual(config.henchmanGroupIds, baseComposition.henchmanGroupIds, `Henchmen changed for ${label}.`);
+          assert.equal(
+            config.villainGroupIds.length,
+            PLAYER_COUNT_SETUP[playerCount].villainGroupCount + 1,
+            `Expected one more Villain Group for ${label}.`,
+          );
+          for (const baseVillainId of baseComposition.villainGroupIds) {
+            assert.ok(config.villainGroupIds.includes(baseVillainId), `${label} dropped ${baseVillainId}.`);
+          }
+          checkedLegs += 1;
+        }
+      }
+    }
+    assert.ok(checkedLegs > 0, "Expected at least one extra-Villain-Group leg to check.");
+  });
+
+  it("names the generated Change the Outcome of WWII villains at 1p and 5p", () => {
+    // why: both ca75 masterminds' 1-player WWII leg fields both ca75 Villain Groups.
+    for (const mastermindSlug of ["arnim-zola", "baron-heinrich-zemo"]) {
+      assert.deepEqual(
+        getGauntletConfig("ca75", mastermindSlug, "change-the-outcome-of-wwii", 1)?.villainGroupIds,
+        ["ca75/masters-of-evil-wwii", "ca75/zolas-creations"],
+      );
+      assert.deepEqual(
+        getGauntletConfig("ca75", mastermindSlug, "change-the-outcome-of-wwii", 5)?.villainGroupIds,
+        [
+          "ca75/masters-of-evil-wwii",
+          "ca75/zolas-creations",
+          "co2e/brotherhood-of-mutants",
+          "co2e/enemies-of-asgard",
+          "co2e/hydra",
+        ],
+      );
+    }
+  });
+
+  it("rejects an authored extra-Villain-Group leg whose villain pool is shorter than its 5-player effective count", () => {
+    const configs = JSON.parse(readFileSync(configsPath, "utf8"));
+    const coreMagneto = configs.years["2026"].sets.core.masterminds.magneto;
+    const midtownLeg = coreMagneto.schemes["midtown-bank-robbery"];
+    // why: no authored leg uses an extra-Villain-Group scheme, so one is synthesized
+    // under ca75 from a Core leg whose 4-group pool covers the base 5-player count.
+    configs.years["2026"].sets.ca75 = {
+      setName: "Captain America 75th Anniversary",
+      masterminds: {
+        "arnim-zola": {
+          ...coreMagneto,
+          schemes: { "change-the-outcome-of-wwii": { ...midtownLeg, villainPool: midtownLeg.villainPool.slice(0, 4) } },
+        },
+      },
+    };
+    assert.throws(
+      () => validateGauntletConfigs(configs),
+      /set "ca75", mastermind "arnim-zola", scheme "change-the-outcome-of-wwii".*requires 5 Villain Groups at 5 players/,
+    );
+    configs.years["2026"].sets.ca75.masterminds["arnim-zola"].schemes["change-the-outcome-of-wwii"].villainPool = [
+      ...midtownLeg.villainPool.slice(0, 4),
+      "ca75/zolas-creations",
+    ];
+    assert.doesNotThrow(() => validateGauntletConfigs(configs));
   });
 });
