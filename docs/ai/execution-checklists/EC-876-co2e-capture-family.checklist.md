@@ -9,7 +9,8 @@
 - [ ] If WP-835 / 836 / 837 / 839 created the `co2e` `hydra`, `enemies-of-asgard` or `sinister-spider-foes` objects in the marker map, merge into them; never replace a sibling's row.
 - [ ] `defeatCityVillainCore` (or `defeatVillainCardCore`, if WP-840 landed) Step 3c still copies the attached list then calls `awardAttachedHeroes` before `executeVillainAbilities(…, 'onFight', shuffleContext, cityIndex)`; the `play-villain-deck-cards` play still fires last (`fightVillain.ts` ~L579-715).
 - [ ] `performVillainReveal` step 3 still reads `G.villainDeckCardTypes[cardId]` and fails closed on a miss (`villainDeck.reveal.ts` ~L250).
-- [ ] `resolveBaseFightCost`'s dynamic branch still sums captured-Hero costs (`economy.resolve.ts` ~L326-340).
+- [ ] `resolveBaseFightCost`'s dynamic branch still sums captured-Hero costs (`economy.resolve.ts` ~L326-340), apart from WP-841's early return if it landed first.
+- [ ] If WP-841 executed first: keep its `variableAttack` list, `buildVillainVariableAttack`, the `villainVariableAttack?` field and spread, and its dynamic-branch early return (merge the two early returns as one `||`); keep its `[variable-attack:]` count and name in the overlay's final line and start banner (four markers) and its header doc-comment paragraph; keep its `+ villainVariableAttackBonus(G, villainCardId)` term in `costBeforeReduction` (both packets' terms sit before the reduction; their order is irrelevant); in the console text `[attack-per-captured:]` comes before `[variable-attack:]`, and the final line keeps the leading `\n` the live script prints (L500); drop Strucker's passive from the STATUS follow-ups, Out of Scope and the D-24771 residuals (WP-841 / D-24774 owns it).
 - [ ] `pnpm -r build` → 0; `pnpm --filter @legendary-arena/arena-client typecheck` → 0; record the engine and arena-client test totals.
 
 ## Locked Values (do not re-derive)
