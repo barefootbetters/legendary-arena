@@ -833,6 +833,7 @@ mindmap
         ["WP-526 ✅ URL-preview scheme-aware setup-requirement display (registry-viewer; LIGHTWEIGHT LANE follow-up to the Secret Invasion 6 Heroes epic surfaced from a live cards.legendary-arena.com test. A shared schemeId deep-link loads a read-only PREVIEW WP-114 whose Edit this loadout button is the only draft-promotion path D-114XX but the preview showed the composition with NO setup requirement so a Secret Invasion link read needs 5 heroes from the EMPTY editor draft below until you clicked Edit. New pure resolveSetupRequirement previewDocument in lib previewSetupRequirement.ts returns playerCount and a row with a scheme-aware heroCount via getPlayerCountSetup plus resolveEffectiveHeroCount the WP-524 browser-safe subpath and LoadoutPreview.vue calls it in a computed and renders a preview-setup-requirement line mirroring the builder For a N-player match line. Respects the locked read-only preview-first design purely additive display no draft mutation no promotion change. Pure helper for testability registry-viewer tests are node test no component mounting. registry-viewer 210 pass 0 fail after pnpm build the three LAGN failures were stale fresh-worktree dist not this change vue-tsc typecheck clean control-revert non-vacuous neuter the resolver the SI-6 helper test fails others green pnpm build 0. No new D-entry applies D-24337 to the preview surface no registry engine server contract determinism surface. Section 17 section 3 faithful setup display. Section 20 N A. Section 21 N A. User-visible surface cards.legendary-arena.com D-24026 operator-pending. EC-561 lightweight lane. Reserves EC-561 no D-entry. Hard-dep WP-524 D-24337)"]
         ["WP-796 ✅ Scheme extra Henchman group Negative Zone Prison Breakout Asgard Under Siege Venom Symbiotes require base plus 1 henchmen groups registry plus engine plus server plus registry-viewer plus gauntlet configs EC-833 D-24666 Active DONE 2026-10-07"]
         ["WP-797 ✅ Always Leads fidelity Henchman group leads alwaysLeadsHenchmen plus printed versus data villain lead corrections card-data pipeline plus registry plus registry-viewer plus gauntlet configs plus seed PAR Dr Doom re-anchor EC-834 D-24667 Active DONE 2026-10-07"]
+        ["WP-834 📝 Core-first gauntlet fill out-of-set villain and henchmen slots take Core groups before Core 2E so ranked loadouts stop fielding unmarked co2e groups 51 non-Core masterminds re-keyed gauntlet tooling DRAFTED 2026-10-25 EC-872 D-24767 reserved"]
         ["WP-798 ✅ Gauntlet per-leg hero count each leg asks for its scheme hero count and the pool budget fits the largest leg server plus arena-client plus blog tooling EC-835 D-24671 Active DONE 2026-10-08"]
         ["WP-799 ✅ Printed Hero Deck counts one scheme hero-count table for resolveEffectiveHeroCount 24 schemes registry EC-836 D-24672 Active DONE 2026-10-08"]
         ["WP-800 ✅ The Time Heist hero count exactly 4 Heroes one SCHEME_HERO_COUNT_RULES row registry EC-837 D-24675 Active DONE 2026-10-09"]
@@ -1017,15 +1018,15 @@ mindmap
 | Hero/Villain Effects & Diagnostics (2026-07) | 6/6 | — |
 | Live-Play HUD & Pending-Choice UX (2026-07) | 20/21 | 1 open |
 | Competitive Score Submission & Verification (2026-07) | 10/10 | — |
-| Gauntlet Leaderboards (Legends) (2026-07) | 179/181 | 2 open |
+| Gauntlet Leaderboards (Legends) (2026-07) | 179/182 | 3 open |
 | Friends & Ranked Trust (2026-07) | 18/19 | 1 open |
 | Play Lobby Entrance (2026-09) | 4/4 | — |
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **805/830 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 24 open |
+| **Total** | **805/831 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 25 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 25):** WP-832 open; WP-831 open; WP-830 open; WP-829 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 26):** WP-834 open; WP-832 open; WP-831 open; WP-830 open; WP-829 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
