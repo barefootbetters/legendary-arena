@@ -186,8 +186,9 @@ export interface HeroEffectDescriptor {
   // static criterion (the printed "another X-Men Hero" is one criterion — distinct from
   // investigate's OR-combined `investigateCriteria[]`) that the handler tests each player's
   // hand against; a player holding a match draws 1. Captured from the co-located [team:X]/
-  // [hc:X] token the reveal-from-hand marker suppresses from the play-gate conditions. Other
-  // keywords ignore it.
+  // [hc:X] token the reveal-from-hand marker suppresses from the play-gate conditions.
+  // WP-843 / D-24777 — a 'reveal-or-gain-wound-each' effect carries the same criterion,
+  // captured the same way; a player with no match gains a Wound. Other keywords ignore it.
   revealCriterion?: InvestigateCriterion;
   // why: WP-735 / D-24555 — for a 'digest-indigestion' effect, digestThreshold is the printed
   // "Digest N" Victory-Pile-size threshold (keywords-full id 54): the Digest branch runs only

@@ -52,6 +52,7 @@ import { HERO_KEYWORDS } from '../packages/game-engine/dist/rules/heroKeywords.j
 // supported composition leaves the unsupported-mechanic scan. Sourced from the engine
 // dist so the probe never duplicates the vocabulary.
 import { HERO_COMPOSITION_MARKER_NAMES } from '../packages/game-engine/dist/rules/heroCompositions.js';
+import { MVP_KEYWORDS } from '../packages/game-engine/dist/hero/heroEffects.execute.js';
 
 // why: __dirname is unavailable in ESM; anchor data + baseline paths to the
 // repo root (one level above scripts/) regardless of the invoking cwd.
@@ -74,36 +75,18 @@ const KNOWN_MARKUP_KEYWORDS = new Set([...HERO_KEYWORDS, ...HERO_COMPOSITION_MAR
 // make a token supported — see isParserRecognizedForHero.
 const PARSER_RECOGNIZED_MARKERS = new Set(HERO_PARSER_RECOGNIZED_MARKER_NAMES);
 
-// why: the keywords whose executor branch actually mutates G today (mirrors
-// MVP_KEYWORDS in heroEffects.execute.ts). This list is INFORMATIONAL ONLY —
-// it drives the EXECUTABLE vs PARSED_NOT_EXECUTED split for the human report,
-// and per the D-24021 decoupling invariant it MUST NOT appear in runCheck /
-// compareCoverage or any exit-code decision. The gate keys on `noEffect` (pure
-// parser output) so it never depends on this list; drift here can only mislabel
-// the informational split, never the gate verdict.
-const EXECUTED_KEYWORDS = new Set([
-  'draw', 'attack', 'recruit', 'ko', 'rescue', 'reveal', 'reveal-ko',
-  'reveal-min', 'reveal-ko-or-draw', 'reveal-cost-attack', 'reveal-odd-draw',
-  'reveal-attack-choose', 'reveal-ko-attack', 'attack-per-count',
-  // why: D-24132 — the put-any-number-bottom-hq park keyword is executable (parks a pending
-  // multi-select choice resolved by resolvePutAnyNumberBottomHQ). Informational only — this
-  // list drives the human report's EXECUTABLE split, never the exit-code gate (keyed on
-  // `noEffect`). (The sibling optional-put-bottom-hq is a pre-existing omission here.)
-  'put-any-number-bottom-hq',
-  // why: D-24139 — the return-zero-cost-discard park keyword is executable (parks a pending
-  // mandatory discard-to-hand return resolved by resolveReturnZeroCostDiscard). Informational
-  // only, same as the D-24132 entry above.
-  'return-zero-cost-discard',
-  // why: D-24670 — victory-villain-attack is in MVP_KEYWORDS (heroEffectVictoryVillainAttack).
-  // Its antm hook was only counted EXECUTABLE through the phantom 'attack' icon effect that
-  // D-24670 suppresses; listing it keeps the informational split honest.
-  'victory-villain-attack',
-  // why: D-24696 — count-scaled-choose is in MVP_KEYWORDS (heroEffectCountScaledChoose parks a
-  // choose-one resolved by resolveCountScaledChoice). Its omission here read vnom / shld choose-
-  // ones as PARSED_NOT_EXECUTED, and ca75 Spy Network's hook would have dropped from EXECUTABLE
-  // when its phantom flat 'attack' was folded into the choice. Informational only, as above.
-  'count-scaled-choose',
-]);
+// why: the keywords whose executor actually mutates G today, sourced from the engine's
+// MVP_KEYWORDS (HANDLED_KEYWORDS plus the frozen reveal-* translations and the recruit-,
+// hand-action-, class-grant-, discard- and wound-time keywords) instead of a hand-kept
+// copy. The copy drifted: it omitted handler keywords such as gain-wound-each,
+// reveal-from-hand and reveal-or-gain-wound-each (D-24777), so their hooks read as
+// PARSED_NOT_EXECUTED. hero-mechanic-ledger.mjs classifies `executable` from the same set,
+// so the two reports now agree. This set is INFORMATIONAL ONLY: it drives the EXECUTABLE
+// vs PARSED_NOT_EXECUTED split for the human report, and per the D-24021 decoupling
+// invariant it MUST NOT appear in runCheck / compareCoverage or any exit-code decision.
+// The gate keys on `noEffect` (pure parser output), so importing the engine set cannot
+// change a gate verdict.
+const EXECUTED_KEYWORDS = MVP_KEYWORDS;
 
 /** Error type signalling a probe failure (exit code 2). */
 class ProbeFailure extends Error {}
