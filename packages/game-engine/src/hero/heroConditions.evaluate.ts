@@ -20,6 +20,7 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
+import { heroClassDisplayName, teamDisplayName } from '../log/logDisplay.js';
 
 // why: WP-777 / D-24616 — the one literal for "If you discarded any cards this turn"
 // (New Wings, Pumpkin Bombs). The setup marker arm, the evaluate + describe cases, the
@@ -820,12 +821,18 @@ export function describeFailedCondition(
       // why: WP-825 / D-24758 — a cost floor names the printed cost, so the log says why a
       // played cost-0 starter didn't count.
       const minimumCost = effectiveMinimumCost(condition);
+      // why: name the class or team as printed ("Instinct", "S.H.I.E.L.D."), matching how the
+      // play line renders the same gate's [hc:] / [team:] token.
+      const gateName =
+        condition.type === 'requiresTeam'
+          ? teamDisplayName(condition.value)
+          : heroClassDisplayName(condition.value);
       if (requiredMatches > 1) {
         const pluralCostClause = minimumCost > 0 ? ` that cost ${minimumCost} or more` : '';
-        return `it needs ${requiredMatches} other ${condition.value} Heroes${pluralCostClause} played this turn`;
+        return `it needs ${requiredMatches} other ${gateName} Heroes${pluralCostClause} played this turn`;
       }
       const costClause = minimumCost > 0 ? ` that costs ${minimumCost} or more` : '';
-      return `it needs another ${condition.value} Hero${costClause} played this turn`;
+      return `it needs another ${gateName} Hero${costClause} played this turn`;
     }
 
     case 'requiresKeyword':

@@ -155,7 +155,7 @@ describe('co2e Stealth Assault Squad — another S.H.I.E.L.D. Hero that costs 1 
   it('the failed-gate log names the cost floor', () => {
     const G = playSquadAfter([SHIELD_AGENT]);
     const logText = JSON.stringify(G.messages);
-    assert.match(logText, /it needs another shield Hero that costs 1 or more played this turn/);
+    assert.match(logText, /it needs another S\.H\.I\.E\.L\.D\. Hero that costs 1 or more played this turn/);
   });
 });
 
@@ -180,14 +180,14 @@ describe('HeroCondition.minimumCost (WP-825 / D-24758)', () => {
 
   it('describeFailedCondition keeps the plain wording when there is no floor', () => {
     const G = makeState();
-    assert.equal(describeFailedCondition(G, '0', plainGate), 'it needs another shield Hero played this turn');
+    assert.equal(describeFailedCondition(G, '0', plainGate), 'it needs another S.H.I.E.L.D. Hero played this turn');
     assert.equal(
       describeFailedCondition(G, '0', flooredGate),
-      'it needs another shield Hero that costs 1 or more played this turn',
+      'it needs another S.H.I.E.L.D. Hero that costs 1 or more played this turn',
     );
     assert.equal(
       describeFailedCondition(G, '0', { ...flooredGate, requiredMatches: 2 }),
-      'it needs 2 other shield Heroes that cost 1 or more played this turn',
+      'it needs 2 other S.H.I.E.L.D. Heroes that cost 1 or more played this turn',
       'the plural form agrees',
     );
   });

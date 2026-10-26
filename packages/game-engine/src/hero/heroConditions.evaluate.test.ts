@@ -1117,10 +1117,10 @@ describe('describeFailedCondition (WP-566 / D-24375)', () => {
   it('AC-3: the two the old message got RIGHT stay right', () => {
     const G = makeTestState();
     const classText = describeFailedCondition(G, '0', { type: 'heroClassMatch', value: 'instinct' });
-    assert.match(classText, /another instinct Hero/);
+    assert.match(classText, /another Instinct Hero/);
 
     const teamText = describeFailedCondition(G, '0', { type: 'requiresTeam', value: 'x-men' });
-    assert.match(teamText, /another x-men Hero/);
+    assert.match(teamText, /another X-Men Hero/);
   });
 
   it('WP-729 Part B: heroClassInDiscardPile message is article-aware (an instinct / a strength)', () => {
@@ -2011,19 +2011,19 @@ describe('requiredMatches — repeated prefix icons need that many OTHER cards (
     const gameState = makeTestState();
     assert.equal(
       describeFailedCondition(gameState, '0', { type: 'heroClassMatch', value: 'ranged', requiredMatches: 2 }),
-      'it needs 2 other ranged Heroes played this turn',
+      'it needs 2 other Ranged Heroes played this turn',
     );
     assert.equal(
       describeFailedCondition(gameState, '0', { type: 'requiresTeam', value: 'shield', requiredMatches: 4 }),
-      'it needs 4 other shield Heroes played this turn',
+      'it needs 4 other S.H.I.E.L.D. Heroes played this turn',
     );
     assert.equal(
       describeFailedCondition(gameState, '0', { type: 'heroClassMatch', value: 'ranged' }),
-      'it needs another ranged Hero played this turn',
+      'it needs another Ranged Hero played this turn',
     );
     assert.equal(
       describeFailedCondition(gameState, '0', { type: 'requiresTeam', value: 'shield', requiredMatches: 1 }),
-      'it needs another shield Hero played this turn',
+      'it needs another S.H.I.E.L.D. Hero played this turn',
     );
   });
 });
