@@ -142,7 +142,8 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // optional-ko-shield-played-rescue handlers (Mobilize for War, Reassign to Civilian Duty) (61 → 64).
     // WP-828 / D-24761 added the grant-out-of-time handler (Winter Soldier's 2>4) (64 → 65).
     // WP-843 / D-24777 added the reveal-or-gain-wound-each handler (co2e Crazed Rampage) (65 → 66).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 66);
+    // WP-844 / D-24778 added the gain-sidekick handler ("Gain a [rule:Sidekick]") (66 → 67).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 67);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7880,8 +7881,8 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // WP-803's out-of-time handler, D-24692, and WP-826's three optional-KO S.H.I.E.L.D. handlers,
     // D-24759, and WP-828's grant-out-of-time handler, D-24761, and WP-843's
     // reveal-or-gain-wound-each handler, D-24777 — 66).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 66,
-      'HERO_EFFECT_HANDLERS stays 66 (X-Gene is not an effect handler)');
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 67,
+      'HERO_EFFECT_HANDLERS stays 67 (X-Gene is not an effect handler; WP-844 / D-24778 gain-sidekick added)');
   });
 });
 

@@ -75,6 +75,9 @@ import { countRevealableDivingBlockCopies } from '../moves/divingBlock.logic.js'
 // why: WP-828 / D-24761 — the grant handler only queues; the module references this one back only
 // inside function bodies (a runtime-safe cycle).
 import { queueOutOfTimeGrant } from '../moves/outOfTimeGrant.logic.js';
+// why: WP-844 / D-24778 — a type-import-only module, so the executor stays off recruitSidekick.ts's
+// pending-choice guard graph and no cycle is added.
+import { gainSidekickToDiscard } from '../moves/gainSidekick.logic.js';
 import {
   revealTopThreeForAssign,
   buildAllRevealThreeAssignDispositions,
@@ -334,6 +337,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // or gains a Wound"; has a HERO_EFFECT_HANDLERS entry (heroEffectRevealOrGainWoundEach), so it
   // belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'reveal-or-gain-wound-each',
+  // why: WP-844 / D-24778 — "Gain a [rule:Sidekick]" / "Gain three [rule:Sidekicks]"; has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectGainSidekick), so it belongs here. Carries a magnitude
+  // (the Sidekicks gained) → NOT in NO_MAGNITUDE_KEYWORDS.
+  'gain-sidekick',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -1879,6 +1886,55 @@ function heroEffectGainWound(
         ? `Each player gained a Wound (${formatCardRef(G.cardDisplayData, cardId)}).`
         : `Player ${playerID} gained a Wound (${formatCardRef(G.cardDisplayData, cardId)}).`,
     );
+  }
+}
+
+/**
+ * Hero handler for the `gain-sidekick` keyword (WP-844 / D-24778).
+ *
+ * "Gain a [rule:Sidekick]" / "Gain three [rule:Sidekicks]": moves up to `magnitude`
+ * Sidekicks, top of `G.piles.sidekicks` first, into the playing player's discard pile
+ * through `gainSidekickToDiscard`, stopping at an empty Stack. Writes one log line —
+ * `applied` (all gained), `partial` (some) or `blocked` (none). No randomness, no
+ * targeting, never throws.
+ */
+function heroEffectGainSidekick(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: D-24778 — the magnitude pre-gate admits 0 (isValidMagnitude), but the marker
+  // pattern never emits one; a request below 1 is a defensive silent no-op.
+  const requestedCount = effect.magnitude ?? 0;
+  if (requestedCount < 1) {
+    return;
+  }
+
+  // why: D-24778 — rules v23 L1170: "Gain" means "put it into your discard pile", and the
+  // top of the Stack (pile[0]) goes first, so the gain is deterministic. Rules v23
+  // L3216-3218: a card-effect gain does not count against the once-per-turn Sidekick
+  // recruit, so this never reads or writes hasRecruitedSidekickThisTurn (D-24776) and
+  // spends no Recruit. It also never sets hasActedThisTurn: that flag means "recruited or
+  // fought this turn" and bars Healing (D-24179 / D-24180), and a gain is neither.
+  let gainedCount = 0;
+  for (let i = 0; i < requestedCount; i++) {
+    if (!gainSidekickToDiscard(G, playerID)) {
+      break;
+    }
+    gainedCount += 1;
+  }
+
+  // why: D-24017 — an empty or short Stack is a legitimate no-op, but a silent skip reads
+  // as "the card did nothing"; the partial / blocked lines make the shortfall observable.
+  const card = formatCardRef(G.cardDisplayData, cardId);
+  if (gainedCount === requestedCount) {
+    pushLog(G, `Player ${playerID} gained ${String(gainedCount)} Sidekick(s) from the Sidekick Stack (${card}).`, 'applied', cardId);
+  } else if (gainedCount > 0) {
+    pushLog(G, `Player ${playerID} gained ${String(gainedCount)} of ${String(requestedCount)} Sidekick(s) — the Sidekick Stack ran out (${card}).`, 'partial', cardId);
+  } else {
+    pushLog(G, `Player ${playerID} could not gain a Sidekick — the Sidekick Stack is empty (${card}).`, 'blocked', cardId);
   }
 }
 
@@ -6825,6 +6881,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // Hero or gains a Wound": each player who cannot reveal another matching Hero gains a Wound
   // through gainWoundWithOutcome (auto-reveal, sorted seat order). NO magnitude.
   'reveal-or-gain-wound-each': heroEffectRevealOrGainWoundEach,
+  // why: WP-844 / D-24778 — "Gain a [rule:Sidekick]": up to N Sidekicks from the top of the
+  // Sidekick Stack into the playing player's discard, outside the once-per-turn recruit. Carries
+  // a magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
+  'gain-sidekick': heroEffectGainSidekick,
 };
 
 // ---------------------------------------------------------------------------

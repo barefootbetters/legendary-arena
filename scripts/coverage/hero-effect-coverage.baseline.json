@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3713,
+    "executable": 3759,
     "heroes": 324,
     "hooks": 6383,
-    "noEffect": 2566,
+    "noEffect": 2520,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -58,9 +58,9 @@
       "noEffect": 76
     },
     "co2e": {
-      "executable": 191,
+      "executable": 196,
       "hooks": 241,
-      "noEffect": 50
+      "noEffect": 45
     },
     "core": {
       "executable": 229,
@@ -73,9 +73,9 @@
       "noEffect": 163
     },
     "cvwr": {
-      "executable": 293,
+      "executable": 313,
       "hooks": 400,
-      "noEffect": 107
+      "noEffect": 87
     },
     "dead": {
       "executable": 46,
@@ -173,9 +173,9 @@
       "noEffect": 75
     },
     "ssw1": {
-      "executable": 135,
+      "executable": 156,
       "hooks": 221,
-      "noEffect": 86
+      "noEffect": 65
     },
     "ssw2": {
       "executable": 187,

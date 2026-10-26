@@ -683,12 +683,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'flying-shield-block', // why: WP-827 / D-24760 — Captain America (Falcon) "Flying Shield Block": any seat holding a copy may reveal it once per turn when a player would gain a Wound, preventing it and rescuing a Bystander
     'grant-out-of-time', // why: WP-828 / D-24761 — Winter Soldier 2>4 "A Hero in your hand gains Man Out of Time this turn": queues one owed grant; the granted card goes Out of Time when played this turn
     'reveal-or-gain-wound-each', // why: WP-843 / D-24777 — co2e Crazed Rampage "Each player reveals another [hc:strength] Hero or gains a Wound": each player who cannot reveal another matching Hero gains a Wound
+    'gain-sidekick', // why: WP-844 / D-24778 — "Gain a [rule:Sidekick]" / "Gain three [rule:Sidekicks]": up to N Sidekicks from the top of the Sidekick Stack into the playing player's discard, outside the once-per-turn recruit
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      84,
-      'HERO_KEYWORDS must have exactly 84 entries',
+      85,
+      'HERO_KEYWORDS must have exactly 85 entries (gain-sidekick, WP-844 / D-24778, appended last)',
     );
 
     assert.deepStrictEqual(

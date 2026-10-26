@@ -839,6 +839,25 @@
       "hidden": true
     },
     {
+      "slug": "gain-sidekick",
+      "label": "Gain Sidekick",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 9,
+      "cardIds": [
+        "co2e/spider-man",
+        "cvwr/captain-america-secret-avenger",
+        "cvwr/falcon",
+        "cvwr/peter-parker",
+        "cvwr/tigra",
+        "ssw1/black-panther",
+        "ssw1/magik",
+        "ssw1/namor-the-sub-mariner",
+        "ssw1/ultimate-spider-man"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "gain-wound-each",
       "label": "Gain Wound Each",
       "scope": "hero",
@@ -2233,7 +2252,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 28,
+      "cardCount": 27,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
@@ -2244,7 +2263,6 @@
         "co2e/storm",
         "cosm/nebula",
         "cvwr/daredevil",
-        "cvwr/falcon",
         "cvwr/patriot",
         "dkcy/angel",
         "dkcy/blade",
@@ -2926,6 +2944,7 @@
     },
     "co2e/spider-man": {
       "mechanics": [
+        "gain-sidekick",
         "reveal",
         "reveal-count"
       ]
@@ -3114,6 +3133,7 @@
     },
     "cvwr/captain-america-secret-avenger": {
       "mechanics": [
+        "gain-sidekick",
         "recruit-per-count"
       ]
     },
@@ -3132,7 +3152,7 @@
     },
     "cvwr/falcon": {
       "mechanics": [
-        "unmarked"
+        "gain-sidekick"
       ]
     },
     "cvwr/goliath": {
@@ -3169,6 +3189,7 @@
     },
     "cvwr/peter-parker": {
       "mechanics": [
+        "gain-sidekick",
         "ko-wound",
         "rescue",
         "reveal"
@@ -3193,6 +3214,7 @@
     "cvwr/tigra": {
       "mechanics": [
         "draw",
+        "gain-sidekick",
         "reveal-top-dispose"
       ]
     },
@@ -3988,7 +4010,8 @@
     },
     "ssw1/black-panther": {
       "mechanics": [
-        "draw"
+        "draw",
+        "gain-sidekick"
       ]
     },
     "ssw1/captain-marvel": {
@@ -4011,6 +4034,7 @@
     },
     "ssw1/magik": {
       "mechanics": [
+        "gain-sidekick",
         "teleport"
       ]
     },
@@ -4021,6 +4045,7 @@
     },
     "ssw1/namor-the-sub-mariner": {
       "mechanics": [
+        "gain-sidekick",
         "optional-ko-reward"
       ]
     },
@@ -4046,6 +4071,7 @@
     },
     "ssw1/ultimate-spider-man": {
       "mechanics": [
+        "gain-sidekick",
         "reveal"
       ]
     },

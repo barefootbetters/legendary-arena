@@ -293,6 +293,12 @@
       "cardSlug": "crazed-rampage",
       "abilityIndex": 0,
       "markupToken": "[keyword:reveal-or-gain-wound-each]"
+    },
+    {
+      "heroSlug": "spider-man",
+      "cardSlug": "witty-banter",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
     }
   ],
   "core": [
@@ -821,6 +827,30 @@
       "cardSlug": "bold-leadership",
       "abilityIndex": 0,
       "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america-secret-avenger",
+      "cardSlug": "inspire-a-nation",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "falcon",
+      "cardSlug": "talk-with-birds",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "peter-parker",
+      "cardSlug": "spider-man-unmasked",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "tigra",
+      "cardSlug": "friendship",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
     }
   ],
   "dkcy": [
@@ -1247,6 +1277,36 @@
       "cardSlug": "optimized-technology",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "black-panther",
+      "cardSlug": "king-of-wakanda",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:3]"
+    },
+    {
+      "heroSlug": "magik",
+      "cardSlug": "rally-the-new-mutants",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "magik",
+      "cardSlug": "rally-the-new-mutants",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "namor-the-sub-mariner",
+      "cardSlug": "lead-the-armies-of-atlantis",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "ultimate-spider-man",
+      "cardSlug": "marvel-team-up",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
     }
   ],
   "gotg": [
