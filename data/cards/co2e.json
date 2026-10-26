@@ -712,7 +712,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "Each player reveals another [hc:strength] Hero or gains a Wound."
+            "Each player reveals another [hc:strength] Hero or gains a Wound. [keyword:reveal-or-gain-wound-each]"
           ]
         },
         {

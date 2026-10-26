@@ -287,6 +287,12 @@
       "cardSlug": "a-day-unlike-any-other",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "hulk",
+      "cardSlug": "crazed-rampage",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-or-gain-wound-each]"
     }
   ],
   "core": [

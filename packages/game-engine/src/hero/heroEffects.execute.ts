@@ -330,6 +330,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // turn"; has a HERO_EFFECT_HANDLERS entry (heroEffectGrantOutOfTime) that queues one owed grant,
   // so it belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'grant-out-of-time',
+  // why: WP-843 / D-24777 — co2e Crazed Rampage's "Each player reveals another [hc:strength] Hero
+  // or gains a Wound"; has a HERO_EFFECT_HANDLERS entry (heroEffectRevealOrGainWoundEach), so it
+  // belongs here. Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'reveal-or-gain-wound-each',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -594,6 +598,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // why: WP-828 / D-24761 — grant-out-of-time carries NO magnitude (one grant per line), so the
   // magnitude pre-gate must not drop it, or heroEffectGrantOutOfTime never queues the grant.
   'grant-out-of-time',
+  // why: WP-843 / D-24777 — reveal-or-gain-wound-each carries NO magnitude (each player who
+  // cannot reveal gains exactly one Wound), so the magnitude pre-gate must not drop it, or
+  // heroEffectRevealOrGainWoundEach never runs and no Wound lands.
+  'reveal-or-gain-wound-each',
   // why: WP-735 / D-24555 — digest-indigestion carries NO top-level magnitude (the branch
   // magnitudes ride the nested inline effects: +attack / +recruit / draw:N / rescue:N). The
   // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
@@ -5849,6 +5857,154 @@ function playedCardMatchesRevealCriterion(
 }
 
 /**
+ * Reveal-or-gain-a-Wound for each player (WP-843 / D-24777). co2e Crazed Rampage's "Each
+ * player reveals another [hc:strength] Hero or gains a Wound."
+ *
+ * For every player in deterministic seat order (`Object.keys(G.playerZones).sort()` — the
+ * gain-wound-each / reveal-from-hand precedent), a player who can reveal another Hero matching
+ * the criterion reveals it (no mutation — the card stays where it is); every other player
+ * gains one Wound. An empty Wound supply is a logged no-op for that player. Deterministic (no
+ * RNG — the Wound is top-of-pile) and never throws.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Unused; no shuffle or randomness is involved.
+ * @param playerID - The playing player (the only one who can reveal a played card); only their own Wound counts toward turnEconomy.woundsDrawn.
+ * @param cardId - The played card (for the log reference; never revealed by itself).
+ * @param effect - The effect descriptor carrying the single revealCriterion.
+ */
+function heroEffectRevealOrGainWoundEach(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  const criterion = effect.revealCriterion;
+  // why: defensive — the parser only emits this effect once its criterion resolves (the
+  // Honest-Partial branch); a criterion-less effect is unreachable, no-op here.
+  if (criterion === undefined) {
+    return;
+  }
+  const cardRef = formatCardRef(G.cardDisplayData, cardId);
+  const requirement = describeHeroRevealRequirement(criterion);
+  let anyPlayerLackedMatch = false;
+  const gainedPlayerIds: string[] = [];
+  const divingBlockPendingPlayerIds: string[] = [];
+  for (const eachPlayerId of Object.keys(G.playerZones).sort()) {
+    const playerZones = G.playerZones[eachPlayerId];
+    if (!playerZones) {
+      continue;
+    }
+    const isPlayingPlayer = eachPlayerId === playerID;
+    // why: auto-reveal is the D-24281 documented simplification — rules v23 "Revealing a Card"
+    // (L3196-3200) lets a player decline and take the Wound instead; that per-seat choice is
+    // deferred with D-24281's interactive choice. playerCanRevealMatch is the D-24731 "another"
+    // scope: hand for every player, plus played-this-turn for the playing player, never the
+    // resolving card itself.
+    if (playerCanRevealMatch(G, playerZones, isPlayingPlayer, cardId, criterion)) {
+      continue;
+    }
+    anyPlayerLackedMatch = true;
+    // why: gainWoundWithOutcome is the gainWoundForPlayer chokepoint, so Diving Block / Flying
+    // Shield Block still intercept this Wound (WP-682 / WP-827 parity with heroEffectGainWound).
+    const woundOutcome = gainWoundWithOutcome(G, eachPlayerId);
+    if (woundOutcome === 'no-wound') {
+      pushLog(G,
+        `Player ${eachPlayerId} could not gain a Wound — the Wound supply is empty.`,
+        'blocked',
+        cardId, // why: WP-438 — attribute the empty-supply no-op to the played card.
+      );
+      continue;
+    }
+    if (woundOutcome === 'diving-block-pending') {
+      divingBlockPendingPlayerIds.push(eachPlayerId);
+    } else {
+      gainedPlayerIds.push(eachPlayerId);
+    }
+    // why: woundsDrawn projects the playing player's wounds only (UI economy), matching
+    // heroEffectGainWound; another seat's Wound never moves it.
+    if (isPlayingPlayer) {
+      G.turnEconomy.woundsDrawn += 1;
+    }
+  }
+  logRevealOrGainWoundOutcome(G, cardId, cardRef, requirement, anyPlayerLackedMatch, gainedPlayerIds, divingBlockPendingPlayerIds);
+}
+
+/**
+ * Writes the summary log line for a reveal-or-gain-wound-each resolution (WP-843 / D-24777).
+ *
+ * @param G - Game state (the log is appended).
+ * @param cardId - The played card, for WP-438 attribution.
+ * @param cardRef - The formatted card reference.
+ * @param requirement - The title-cased criterion label (e.g. `Strength`).
+ * @param anyPlayerLackedMatch - Whether any player could not reveal a match.
+ * @param gainedPlayerIds - Players whose Wound landed.
+ * @param divingBlockPendingPlayerIds - Players whose Wound a Diving Block reveal may still prevent.
+ */
+function logRevealOrGainWoundOutcome(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  cardRef: string,
+  requirement: string,
+  anyPlayerLackedMatch: boolean,
+  gainedPlayerIds: readonly string[],
+  divingBlockPendingPlayerIds: readonly string[],
+): void {
+  if (divingBlockPendingPlayerIds.length > 0) {
+    // why: D-24673 — while a Diving Block reveal is pending the Wound is not gained yet; the
+    // reveal / decline line that follows gives the outcome.
+    pushLog(G,
+      `Each player without another ${requirement} Hero gains a Wound (${cardRef}): ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}.`,
+      'applied',
+      cardId,
+    );
+    return;
+  }
+  if (gainedPlayerIds.length > 0) {
+    const playerNames = gainedPlayerIds.map((gainedPlayerId) => `Player ${gainedPlayerId}`).join(', ');
+    pushLog(G,
+      `Each player without another ${requirement} Hero gained a Wound (${cardRef}): ${playerNames}.`,
+      'applied',
+      cardId,
+    );
+    return;
+  }
+  // why: D-24686 — a player who lacked a match but met an empty supply already got the
+  // empty-supply line; saying "every player revealed" would be false.
+  if (!anyPlayerLackedMatch) {
+    pushLog(G,
+      `Every player revealed another ${requirement} Hero for ${cardRef}, so no one gained a Wound.`,
+      'blocked',
+      cardId,
+    );
+  }
+}
+
+/**
+ * Returns the printed label for a hero reveal criterion, title-casing its slug
+ * (`strength` → `Strength`, `x-men` → `X-Men`).
+ *
+ * // why: duplicate-first — the villain file's describeRevealRequirement is private to the
+ * villain layer and takes a different shape; a third copy would justify a shared helper.
+ *
+ * @param criterion - The single reveal criterion.
+ * @returns The criterion label for a log line.
+ */
+function describeHeroRevealRequirement(criterion: InvestigateCriterion): string {
+  let slug = 'matching';
+  if (criterion.kind === 'hero-class') {
+    slug = criterion.heroClass;
+  } else if (criterion.kind === 'team') {
+    slug = criterion.team;
+  }
+  const words: string[] = [];
+  for (const word of slug.split('-')) {
+    words.push(word.length > 0 ? word[0]!.toUpperCase() + word.slice(1) : word);
+  }
+  return words.join('-');
+}
+
+/**
  * Returns whether a deck card matches an investigate criterion list, projecting the card's
  * runtime facts from `G.cardStats` (icon / cost) and `G.cardTraits` (hero-class / team).
  * A card with no stat / trait entry yields `undefined` for the missing facts, so the
@@ -6665,6 +6821,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-828 / D-24761 — Winter Soldier's 2>4: queues one owed Man Out of Time grant for a hand
   // Hero, resolved after the play by the onMove opener. NO magnitude.
   'grant-out-of-time': heroEffectGrantOutOfTime,
+  // why: WP-843 / D-24777 — co2e Crazed Rampage's "Each player reveals another [hc:strength]
+  // Hero or gains a Wound": each player who cannot reveal another matching Hero gains a Wound
+  // through gainWoundWithOutcome (auto-reveal, sorted seat order). NO magnitude.
+  'reveal-or-gain-wound-each': heroEffectRevealOrGainWoundEach,
 };
 
 // ---------------------------------------------------------------------------

@@ -10,6 +10,16 @@
 
 ## Current State
 
+### WP-843 / EC-881 — co2e Crazed Rampage: each player reveals another Strength Hero or gains a Wound (D-24777) (2026-10-26)
+
+**User-visible on `play.legendary-arena.com` after deploy.** co2e Hulk's Crazed Rampage ("Each player reveals another [hc:strength] Hero or gains a Wound.") did nothing: it logged "needs another Strength Hero played this turn", or, after another Strength Hero, a `gate-only` hollow (matches `27l38-Qb17h`, `qj12dWK_y3v`). It now wounds each player, the player who played it included, who has no other Strength Hero to reveal (from hand, or for the playing player a Hero played earlier this turn). The log names each wounded player, or says every player revealed. Core / 3dtc / msp1 Crazed Rampage are unchanged.
+
+- **Engine.** New hero keyword `reveal-or-gain-wound-each` (union + `HERO_KEYWORDS`, `HANDLED_KEYWORDS`, `NO_MAGNITUDE_KEYWORDS`, `HERO_EFFECT_HANDLERS`). The reveal-from-hand criterion resolver reads its `[hc:X]` / `[team:X]`, so the D-24470 suppression drops the spurious gate. `heroEffectRevealOrGainWoundEach` reuses `playerCanRevealMatch` and `gainWoundWithOutcome` (Diving Block / Flying Shield Block still intercept). Auto-reveal and sorted seat order are documented simplifications (D-24777).
+- **Card data.** `[keyword:reveal-or-gain-wound-each]` on `co2e/hulk/crazed-rampage` ability 0 via `apply-hero-ability-markers.mjs`; hero ledger, effect index, card-mechanics feed and coverage baseline regenerated (the baseline also takes in ca75 drift already on `main`).
+- **Tests.** game-engine 5851 → 5864 / 0 fail (+13); `pnpm -r --no-bail test` 0 fail; every EC `:check` gate 0; control run (keyword out of `NO_MAGNITUDE_KEYWORDS`) fails AC-3; hash oracles unchanged.
+- **Named follow-ups:** (1) a decline-and-take-the-Wound choice per seat (rules v23 L3196-3200), with D-24281's deferred interactive choice; (2) each-player loops start at the current player (rules v23 L2247); (3) the stale `revealCriterion` comment in `rules/heroAbility.types.ts`; (4) `scripts/hero-effect-coverage.mjs` `EXECUTED_KEYWORDS` (report-only) omits handler keywords such as `gain-wound-each`, `reveal-from-hand` and this one, so they show as `parsedNotExecuted`.
+- **Live-verify (D-24026): operator-pending.** On `play.legendary-arena.com`, in a co2e Hulk match created after the deploy: play Crazed Rampage once with no other Strength Hero (you gain a Wound, no "needs another Strength Hero" block) and once after another Strength Hero (no Wound for you; each other seat is wounded unless it holds a Strength Hero in hand).
+
 ### WP-842 / EC-880 — Recruitable Sidekick Stack: recruit one Sidekick per turn for 2; a played Sidekick returns to the Stack and draws two (D-24776) (2026-10-26)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Lobby, featured-table and guest-solo matches already built a 12-card Sidekick Stack, shown as `Sidekicks [12]`, that nothing could take from. The Sidekicks cell is now a recruit button showing the Sidekick card: during your Main step it spends 2 Recruit and puts a Sidekick in your discard, once per turn. When you play a Sidekick it goes to the bottom of the Stack and you draw two cards (automatic; the printed "may" collapsed, D-24776). New ewiki page `ewiki.legendary-arena.com/sidekicks/`.
