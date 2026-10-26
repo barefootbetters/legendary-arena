@@ -240,6 +240,21 @@ const GATE_BLOCKERS: readonly GateBlocker[] = [
     apply: (G) => { G.pendingEnigmaPeekOffers = [{ playerID: '0', positions: [] }]; },
     remove: (G) => { Reflect.deleteProperty(G, 'pendingEnigmaPeekOffers'); },
   },
+  {
+    // why: WP-845 / D-24779 — owed reveal-or-gain-a-Wound choices are opened into a seat choice
+    // after the move, like the escape queues above.
+    label: 'pendingRevealOrWoundChoices is non-empty',
+    apply: (G) => {
+      G.pendingRevealOrWoundChoices = [{
+        sourceCardId: 'core/brotherhood/sabretooth#0',
+        currentPlayerID: '0',
+        revealOptionLabel: 'Reveal a matching X-Men Hero',
+        revealingSeats: ['1'],
+        strikeBlockThreatKind: 'fight',
+      }];
+    },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingRevealOrWoundChoices'); },
+  },
 ];
 
 describe('operator setters — gate (WP-806 §D 1)', () => {

@@ -426,7 +426,7 @@ import type {
   VillainDefeatRequirement,
   VillainFightDiscardCost,
 } from './rules/villainAbility.types.js';
-import type { NotableGameEvent } from './events/notableEvents.types.js';
+import type { NotableGameEvent, StrikeBlockThreatKind } from './events/notableEvents.types.js';
 // why: WP-815 / D-24747 — G.cardAbomination values are the closed AbominationKind
 // union, which lives beside its consumers (the heroKeywords.js precedent).
 import type { AbominationKind } from './economy/abomination.logic.js';
@@ -1640,6 +1640,30 @@ export interface PendingEscapeEffectDiscard {
 }
 
 /**
+ * One owed "reveal … or gain a Wound" choice for the players who could reveal (WP-845 /
+ * D-24779).
+ *
+ * Recorded by the villain primitive `reveal-or-wound` or the hero keyword
+ * `reveal-or-gain-wound-each` when at least one player holds a qualifying Hero; the players
+ * who cannot reveal gain their Wound inline. The play-phase opener parks the front entry as a
+ * `reveal-or-wound` seat choice and leaves it queued until the apply reads it and shifts it
+ * off. Runtime-only, never persisted; lazily initialized at the enqueue site and deleted when
+ * it drains.
+ */
+export interface PendingRevealOrWoundChoice {
+  /** The card whose effect owes the choice (the Villain or the played Hero). */
+  sourceCardId: CardExtId;
+  /** The turn's current player; only their Wound moves `turnEconomy.woundsDrawn`. */
+  currentPlayerID: string;
+  /** The label of option 0 (e.g. `Reveal a matching X-Men Hero`). */
+  revealOptionLabel: string;
+  /** The players who could reveal when the effect resolved, ascending. */
+  revealingSeats: string[];
+  /** The villain timing's shield-block class; absent for a hero source. */
+  strikeBlockThreatKind?: StrikeBlockThreatKind;
+}
+
+/**
  * Pending give-HQ-Hero player choice state (WP-532 / D-24343).
  *
  * Created when the `give-hq-hero-each-player` villain-effect handler (Paibok the
@@ -2428,6 +2452,14 @@ export interface LegendaryGameState {
   // re-pin. Engine-internal: not projected to UIState.
   /** FIFO queue of Escape-effect discards every player still owes (WP-817). */
   pendingEscapeEffectDiscards?: PendingEscapeEffectDiscard[] | undefined;
+  // why: WP-845 / D-24779 — the D-24750 lazy-queue shape: the villain executor has no
+  // `events`, so a "reveal … or gain a Wound" whose revealers may decline (rules v23
+  // L3196-3200) records them here, and the play-phase opener parks the seat choice after the
+  // move. **Lazily initialized at the enqueue site, never in Game.setup**, and deleted when
+  // drained, so a match where nobody could reveal never creates it. Engine-internal: not
+  // projected to UIState.
+  /** FIFO queue of owed reveal-or-gain-a-Wound choices (WP-845). */
+  pendingRevealOrWoundChoices?: PendingRevealOrWoundChoice[] | undefined;
   // why: WP-830 / D-24763 — The Unbreakable Enigma Code. `enigmaCode` holds the face-down Enigma
   // cards (Hero Deck cards put there by Twists 1-5) in their current order; `enigmaPeeks` the
   // positions each player has looked at since the last mix; `isEnigmaCodeRevealed` is set by a right

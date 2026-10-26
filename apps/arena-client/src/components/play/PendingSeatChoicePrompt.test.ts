@@ -282,3 +282,25 @@ describe('PendingSeatChoicePrompt — WP-817 Primus Escape discard (D-24750)', (
     );
   });
 });
+
+describe('PendingSeatChoicePrompt — WP-845 reveal or gain a Wound (D-24779)', () => {
+  test('AC-10: the reveal-or-wound kind shows its heading and both options, and option 1 submits optionIndex 1', async () => {
+    const { calls, submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'reveal-or-wound',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: { 'player-1': { options: [{ label: 'Reveal a matching X-Men Hero' }, { label: 'Gain a Wound instead' }] } },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Reveal a Hero or gain a Wound?');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Reveal a matching X-Men Hero');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'Gain a Wound instead');
+    await wrapper.find('[data-testid="pending-seat-choice-option-1"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'resolveSeatChoice');
+    assert.deepEqual(calls[0]!.args, { optionIndex: 1 });
+  });
+});

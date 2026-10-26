@@ -45,6 +45,7 @@ import { resolveDeferredHeroGrants } from '../../hero/heroEffects.execute.js';
 // seatChoice.resolve reference each other only inside function bodies.
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../../villainDeck/villainEscapeProcedure.js';
+import { openRevealOrWoundSeatChoiceIfNeeded } from '../../moves/revealOrWoundChoice.logic.js';
 import { applyEndOfTurnCleanup } from '../../moves/endOfTurnCleanup.logic.js';
 import { replayOutOfTimeCards } from '../../moves/outOfTime.logic.js';
 import { revealVillainCard } from '../../villainDeck/villainDeck.reveal.js';
@@ -418,6 +419,11 @@ function dispatchSingleMove(
   // depletion (out of scope since WP-749).
   openNonActiveReturnOnDiscardSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
   openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
+  // why: WP-845 / D-24779 — the lockstep partner of the simulation.runner.ts reveal-or-gain-a-
+  // Wound mirror: a sim-captured trace answers the choice with resolveSeatChoice moves, so the
+  // replay must park it too. Directly after the escape opener (this harness has no depletion
+  // re-check to order against).
+  openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, cursor.currentPlayer);
 
   if (endTurnFlag.triggered) {
     rotateToNextTurn(gameState, cursor, fixture.input.playerOrder, numPlayers, nextRandom, endTurnFlag.nextPlayer);
