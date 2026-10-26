@@ -10,6 +10,17 @@
 
 ## Current State
 
+### WP-835 / EC-873 — co2e Villains and Henchmen: the 20 timing lines existing primitives express now fire (D-24768) (2026-10-25)
+
+**User-visible on `play.legendary-arena.com` after deploy.** In a match with Core 2nd-edition Villains, twenty printed Ambush / Fight / Escape lines that did nothing (and logged an "unmarked ability" line, match `cfWSKCGr0ZL`) now do what the card says: Juggernaut's Fight KOs two of your Heroes, Sabretooth and Zzzax make each player reveal or gain a Wound, Endless Armies of HYDRA has each player KO a Hero and then plays two Villain Deck cards, Viper wounds players without another co2e HYDRA Villain, the Skrull Queen and Shapeshifter capture an HQ Hero (fight cost rises by its cost) and the fighter gains it, Hand Ninjas KO in the Sewers / Rooftops and give +1 Recruit elsewhere.
+
+- **Card data.** 23 `[effect:]` markers on 20 lines across Brotherhood of Mutants, HYDRA, Radiation, Sinister Spider-Foes, Sinister Syndicate, Skulls and Hand Ninjas, all reusing shipped primitives. No engine change.
+- **Coverage.** Villain ledger: 15 `(unmarked)` rows gone, 20 `executable` rows added; effect index regenerated. Juggernaut, Mystique, Scorpion and Beetle each keep one hollow line (WP-836 / WP-837).
+- **Tests.** `pnpm -r --no-bail test` 0 fail, counts unchanged (game-engine 5825); `pnpm -r build` 0; every card / coverage `:check` 0; hash oracles unchanged.
+- **Residuals (D-24768):** Hand Ninjas on an unnamed sixth City space fire neither half; co2e Viper counts only co2e HYDRA; Endless Armies' fighter KO choice may resolve after the two plays.
+- **Next:** WP-836..840 (the other 24 co2e lines, each a new engine behavior).
+- **Live-verify (D-24026): operator-pending.** A 2-player co2e match created after the deploy with Brotherhood of Mutants + HYDRA + Skulls and Hand Ninjas: fight Juggernaut, let Sabretooth ambush, fight Endless Armies, Viper, a Skrull Shapeshifter after it captures, and Hand Ninjas off the Sewers / Rooftops; each logs its effect and no unmarked-ability line appears.
+
 ### D-24775 — a Scheme Twist is counted before its resolver runs; nested Twists are numbered in reveal order (direct fix, no WP) (2026-10-25)
 
 **User-visible in the `play.legendary-arena.com` game log after deploy.** When one Twist's plays reveal another Twist (Change the Outcome of WWII chained Twists 2→3→4 in playtest `mMFRcae60Sz`), each "Scheme Twist #N revealed" line now sits right before that Twist's own effects, numbered in reveal order. Before, all three lines printed after the chain, innermost-first.

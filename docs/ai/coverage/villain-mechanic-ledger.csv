@@ -123,41 +123,46 @@ chmp-villain-monsters-unleashed-zzutak,Zzutak,chmp,villain,(unmarked),unmarked,,
 co2e-villain-radiation-abomination,Abomination,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-hydra-baron-strucker-supreme-hydra,"Baron Strucker, Supreme Hydra",co2e,villain,(unmarked),unmarked,,,
 co2e-villain-masters-of-evil-baron-zemo,Baron Zemo,co2e,villain,capture-bystanders-plus-per-hq-hero-by-trait,executable,WP-521,D-24334,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystanders-plus-per-hq-hero-by-trait
-co2e-villain-sinister-syndicate-beetle,Beetle,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-sinister-syndicate-beetle,Beetle,co2e,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 co2e-villain-sinister-syndicate-boomerang,Boomerang,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-enemies-of-asgard-destroyer,Destroyer,co2e,villain,(unmarked),unmarked,,,
 henchman-doombot-legion,Doombot Legion,co2e,henchman,scry-ko-own-deck,executable,WP-447,D-24267,packages/game-engine/src/villain/villainEffects.execute.ts#scry-ko-own-deck
 co2e-villain-enemies-of-asgard-enchantress,Enchantress,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,co2e,villain,koHeroEachPlayer,executable,WP-189,D-18901,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+co2e-villain-hydra-endless-armies-of-hydra,Endless Armies of HYDRA,co2e,villain,play-villain-deck-cards,executable,WP-542,D-24351,packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards
 co2e-villain-enemies-of-asgard-frost-giant-warrior,Frost Giant Warrior,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-sinister-spider-foes-green-goblin,Green Goblin,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-hydra-hydra-kidnappers,HYDRA Kidnappers,co2e,villain,(unmarked),unmarked,,,
-henchman-hand-ninjas,Hand Ninjas,co2e,henchman,(unmarked),unmarked,,,
-co2e-villain-sinister-syndicate-hydro-man,Hydro-Man,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-brotherhood-of-mutants-juggernaut,Juggernaut,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-radiation-maestro-wasteland-hulk,"Maestro, Wasteland Hulk",co2e,villain,(unmarked),unmarked,,,
+henchman-hand-ninjas,Hand Ninjas,co2e,henchman,gain-recruit-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current
+henchman-hand-ninjas,Hand Ninjas,co2e,henchman,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+co2e-villain-sinister-syndicate-hydro-man,Hydro-Man,co2e,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+co2e-villain-brotherhood-of-mutants-juggernaut,Juggernaut,co2e,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+co2e-villain-radiation-maestro-wasteland-hulk,"Maestro, Wasteland Hulk",co2e,villain,ko-heroes-current-count-by-trait,executable,WP-544,D-24353,packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-count-by-trait
 co2e-villain-masters-of-evil-melter,Melter,co2e,villain,ko-cullable-each-deck-top,executable,WP-603,D-24413,packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top
-co2e-villain-brotherhood-of-mutants-mystique,Mystique,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-brotherhood-of-mutants-mystique,Mystique,co2e,villain,become-scheme-twist,executable,WP-481,D-24287,packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist
 co2e-villain-skulls-paibok-the-power-skrull,Paibok the Power Skrull,co2e,villain,give-hq-hero-each-player,executable,WP-532,D-24343,packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-each-player
-co2e-villain-brotherhood-of-mutants-sabretooth,Sabretooth,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-brotherhood-of-mutants-sabretooth,Sabretooth,co2e,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 henchman-savage-land-mutates,Savage Land Mutates,co2e,henchman,(unmarked),unmarked,,,
-co2e-villain-sinister-spider-foes-scorpion,Scorpion,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-sinister-spider-foes-scorpion,Scorpion,co2e,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 henchman-sentinel,Sentinel,co2e,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-co2e-villain-skulls-skrull-queen-veranke,Skrull Queen Veranke,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-skulls-skrull-shapeshifter,Skrull Shapeshifter,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-skulls-skrull-queen-veranke,Skrull Queen Veranke,co2e,villain,captureHqHeroHighestCost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
+co2e-villain-skulls-skrull-queen-veranke,Skrull Queen Veranke,co2e,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
+co2e-villain-skulls-skrull-shapeshifter,Skrull Shapeshifter,co2e,villain,captureHqHeroRightmost,executable,WP-214,D-21401,packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero
+co2e-villain-skulls-skrull-shapeshifter,Skrull Shapeshifter,co2e,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 co2e-villain-sinister-syndicate-speed-demon,Speed Demon,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-skulls-super-skrull,Super-Skrull,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-skulls-super-skrull,Super-Skrull,co2e,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 co2e-villain-brotherhood-of-mutants-the-blob,The Blob,co2e,villain,(unmarked),unmarked,,,
 co2e-villain-radiation-the-leader,The Leader,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-sinister-spider-foes-the-lizard,The Lizard,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-sinister-spider-foes-the-lizard,The Lizard,co2e,villain,gain-wound,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
+co2e-villain-sinister-spider-foes-the-lizard,The Lizard,co2e,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 co2e-villain-masters-of-evil-ultron,Ultron,co2e,villain,give-hq-hero-by-trait-to-current,executable,WP-522,D-24335,packages/game-engine/src/villain/villainEffects.execute.ts#give-hq-hero-by-trait-to-current
 co2e-villain-masters-of-evil-ultron,Ultron,co2e,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 co2e-villain-sinister-spider-foes-venom,Venom,co2e,villain,(unmarked),unmarked,,,
-co2e-villain-hydra-viper,Viper,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-hydra-viper,Viper,co2e,villain,gain-wound-unless-victory-villain-group,executable,WP-494,D-24299,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound-unless-victory-villain-group
 co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,ko-hero,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 co2e-villain-masters-of-evil-whirlwind,Whirlwind,co2e,villain,swap-two-city-villains,executable,WP-523,D-24336,packages/game-engine/src/villain/villainEffects.execute.ts#swap-two-city-villains
 co2e-villain-enemies-of-asgard-ymir-frost-giant-king,"Ymir, Frost Giant King",co2e,villain,(unmarked),unmarked,,,
-co2e-villain-radiation-zzzax,Zzzax,co2e,villain,(unmarked),unmarked,,,
+co2e-villain-radiation-zzzax,Zzzax,co2e,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 core-villain-radiation-abomination,Abomination,core,villain,capture-bystander,executable,WP-252,D-24023,packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander
 core-villain-masters-of-evil-baron-zemo,Baron Zemo,core,villain,rescue-bystanders-current-by-trait-count,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#rescue-bystanders-current-by-trait-count
 core-villain-brotherhood-blob,Blob,core,villain,setup:require-to-defeat,subsystem,WP-292,D-24076,

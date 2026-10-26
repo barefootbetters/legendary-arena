@@ -49534,4 +49534,27 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24775 (this change, claude/twist-count-before-resolver). Related: D-18201 (amended), D-24349 / D-24685 (Cosmic Cube escalation), D-24736 (Clash), D-24763 (Enigma Code), D-24765 (WWII), D-24756 (Brainwash the Military), D-24287 (Mystique becomes a Twist), D-24026.
 
 ---
+
+### D-24768 — co2e Villains and Henchmen: the 20 timing lines existing primitives express get their markers (Active 2026-10-25 — WP-835 / EC-873)
+
+**Status:** Active 2026-10-25. Live-verify (D-24026) operator-pending: a co2e match created after the deploy.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Twenty printed Ambush / Fight / Escape lines on co2e Villains and Hand Ninjas did nothing and logged the D-24266 `unmarked-ability` breadcrumb (match `cfWSKCGr0ZL`). They now resolve what the card prints and log it.
+
+**Context.** Six of the seven in-scope co2e Villain groups had no marked timing line, and Skulls had one. 44 lines were hollow; 20 reduce exactly to a villain-effect primitive that already ships. The other 24 need new engine behavior (WP-836..840).
+
+**Decision.**
+1. **The 23 markers on 20 lines.** `villain-effect-markers.json` `villains.co2e` gains `brotherhood-of-mutants` (Juggernaut fight `ko-hero:current:2`; Mystique escape `become-scheme-twist`; Sabretooth ambush + escape `reveal-or-wound:hc:instinct`), `hydra` (Endless Armies of HYDRA fight `koHeroEachPlayer`, `play-villain-deck-cards:2`; Viper fight + escape `gain-wound-unless-victory-villain-group:hydra`), `radiation` (Maestro, Wasteland Hulk fight `ko-heroes-current-count-by-trait:hc:strength`; Zzzax fight + escape `reveal-or-wound:hc:strength`), `sinister-spider-foes` (Scorpion fight `koHeroCurrentPlayer`; The Lizard fight `ko-hero:current@sewers`, `gain-wound:each-other@sewers`), `sinister-syndicate` (Beetle escape `reveal-or-wound:hc:covert`; Hydro-Man fight `ko-hero:current@sewers+bridge`), and `skulls` adds Skrull Queen Veranke (ambush `captureHqHeroHighestCost`, fight `gain-attached-hero`), Skrull Shapeshifter (ambush `captureHqHeroRightmost`, fight `gain-attached-hero`) and Super-Skrull (fight `koHeroCurrentPlayer`). `henchmen.co2e.hand-ninjas` fight: `ko-hero:current@sewers+rooftops`, `gain-recruit-current:1@bank+streets+bridge`. Each line inherits its primitive's owning WP / D; no provenance row.
+2. **Magnitude 1 is the bare form.** "KO one of your Heroes" is `koHeroCurrentPlayer` / `ko-hero:current`, never `ko-hero:current:1` (D-24298).
+3. **KO-or-gift collapses to the gift.** Veranke and Shapeshifter's "Either KO that Hero or choose a player to gain it" resolve as the fighting player gains it, via the generic `awardAttachedHeroes` (the D-24335 co2e Ultron collapse). `gain-attached-hero` classifies the line as handled (D-24270). Their dynamic fight cost (`2+` / `1+`) is the existing base + captured-Hero cost; they have no D-24774 table entry.
+4. **Hand Ninjas "Otherwise".** The complement of Sewers + Rooftops is Bank + Streets + Bridge, via the existing `@` gate. Residual: on an unnamed sixth City space (a WP-831 / WP-832 resized City) neither half fires.
+5. **Endless Armies ordering.** The each-player KO runs in the executor; the two Villain Deck plays fire afterwards from the `fightVillain.ts` site (D-24351). A current-player KO with a real choice parks (D-24669) and resolves after the plays. Accepted.
+6. **Viper is set-scoped** (D-24299 Path B): co2e Viper counts only co2e HYDRA Villains in a Victory Pile. Residual in a mixed Core + co2e HYDRA match; accepted.
+7. **Determinism and replay.** Setup-only: the markers change `villainAbilityHooks` built at setup for matches with these groups. Stored matches replay from their `initialState`, which holds the old hooks, so nothing changes for them; only matches created after the deploy get the effects. No hashed oracle uses an in-scope group.
+
+**Gates.** `apply-effect-markers.mjs` → `co2e.json — 23 new marker(s)`, every other set 0, re-run 0; a throwaway `buildVillainAbilityHooks` probe gives the WP-835 §Contract descriptors on 102 hooks with no `unresolvedMarkers`. Villain ledger: 15 `(unmarked)` rows removed, 20 `executable` added (18 villain + 2 Hand Ninjas). `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail, counts unchanged (game-engine 5825); every card / coverage `:check` 0 (only `ledger:villains` and `effect-index` regenerated).
+
+**Reserved by:** NUMBER-LEDGER D-24768 (#3010). Related: D-24266 (the breadcrumb removed), D-24023 / D-24298 / D-24669 / D-24687 (`ko-hero`), D-24295 (`@` gate, `each-other`), D-24281, D-24287, D-24351, D-24299, D-24353, D-21401, D-24270, D-24350, D-24335, D-24774 (WP-841 passives), D-24769..D-24773 (WP-836..840), D-24026.
+
+---
 Protect this file.
