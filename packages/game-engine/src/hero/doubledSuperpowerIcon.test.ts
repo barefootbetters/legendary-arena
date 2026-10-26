@@ -236,7 +236,7 @@ describe('Bishop — Concussive Blast end to end (WP-741 / D-24563)', () => {
     assert.equal(G.turnEconomy.attack, 0);
     const blocked = logTexts(G).find((text) => text.includes('ability did not activate'));
     assert.ok(blocked !== undefined, 'the gated line is logged');
-    assert.ok(blocked.includes('— it needs 2 other ranged Heroes played this turn.'), blocked);
+    assert.ok(blocked.includes('— it needs 2 other Ranged Heroes played this turn.'), blocked);
     assert.ok(!blocked.includes('not supported yet'), 'a real payoff has no hollow tail');
   });
 
@@ -320,7 +320,7 @@ describe('Crystal of Kadavus — "Do this ability again" (WP-741 / D-24563)', ()
     playAfter(G, ['venom-a#0'], crystal);
     assert.equal(G.pendingRevealThreeAssign?.[0]?.remainingRepeats, 0);
     assert.ok(
-      logTexts(G).some((text) => text.includes('did not activate one of its abilities — it needs 2 other venomverse Heroes played this turn.')),
+      logTexts(G).some((text) => text.includes('did not activate one of its abilities — it needs 2 other Venomverse Heroes played this turn.')),
     );
   });
 

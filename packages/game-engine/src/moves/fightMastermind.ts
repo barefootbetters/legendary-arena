@@ -413,6 +413,10 @@ export function defeatMastermindTacticCore(
     );
   }
 
+  // why: the all-tactics announcement is logged AFTER the defeated tactic's own Fight
+  // ability below, so the log reads in play order (the tactic's effect, then "requires a
+  // final blow" / "vanquished"). Only the log line moves; the state changes stay here.
+  let allTacticsDefeatedMessage: string | null = null;
   if (areAllTacticsDefeated(G.mastermind)) {
     if (G.finalBlow === true) {
       // why: WP-687 / D-24504 — the optional Final Blow rule (Universal Rules v23
@@ -426,9 +430,8 @@ export function defeatMastermindTacticCore(
       // Final Blow also defers — rulebook-correct.
       G.mastermind = setFinalBlowPending(G.mastermind, true);
       // why: WP-323 — reuse the mastermind display name resolved above.
-      pushLog(G,
-        `All tactics defeated — ${mastermindDisplayName} requires a final blow: fight the Mastermind once more to win.`,
-      );
+      allTacticsDefeatedMessage =
+        `All tactics defeated — ${mastermindDisplayName} requires a final blow: fight the Mastermind once more to win.`;
     } else {
       // why: WP-732 / D-24553 — DEFER the win. Per Universal Rules v23 §"Players
       // Win", defeating the final Tactic assures victory but the current player
@@ -441,9 +444,8 @@ export function defeatMastermindTacticCore(
       // but the game does not end at the vanquish.
       G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING] = 1;
       // why: WP-323 — reuse the mastermind display name resolved above.
-      pushLog(G,
-        `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished! Victory is assured; finish your turn.`,
-      );
+      allTacticsDefeatedMessage =
+        `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished! Victory is assured; finish your turn.`;
 
       // why: D-20008 parity with fightVillain's fightResolved event — surface
       // a player-visible "mastermind defeated + bystanders rescued" notable
@@ -485,6 +487,10 @@ export function defeatMastermindTacticCore(
   // why: WP-694 / D-24511 - forward events so Monarch's Decree / Vanishing Illusions can
   // park a WP-684 multi-seat seat choice (setActivePlayers admits the non-active seats).
   dispatchTacticOnFight(G, ctx, defeatedTacticId, shuffleContext, events);
+
+  if (allTacticsDefeatedMessage !== null) {
+    pushLog(G, allTacticsDefeatedMessage);
+  }
 
   // why: WP-732 / D-24553 — the D-24518 pending-choice drop is RELOCATED from this
   // vanquish site to the turn-end promotion (promoteMastermindVictoryIfPending in

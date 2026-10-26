@@ -1221,3 +1221,42 @@ describe('WP-818 fightMastermind — Baron Zemo +9 unless you are a Savior (D-24
     assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 9);
   });
 });
+
+describe('fightMastermind — the all-tactics line follows the last tactic\'s Fight effect', () => {
+  const FINDING_ZEMO_TACTIC_ID = 'ca75-mastermind-baron-heinrich-zemo-finding-zemo' as CardExtId;
+
+  /**
+   * Fights the last tactic (Finding Zemo, whose Fight logs a line) and returns the log text.
+   *
+   * @param isFinalBlow - Whether the optional Final Blow rule is on.
+   * @returns The G.messages texts after the fight.
+   */
+  function fightLastTacticLog(isFinalBlow: boolean): string[] {
+    const gameState = {
+      ...createMockGameState({
+        turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+        mastermind: { ...lastTacticMastermind(), tacticsDeck: [FINDING_ZEMO_TACTIC_ID] },
+      }),
+      ...(isFinalBlow ? { finalBlow: true } : {}),
+    };
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    return moveContext.G.messages.map((message) => message.text);
+  }
+
+  it('Final Blow on: "requires a final blow" is logged after the tactic\'s Fight line', () => {
+    const texts = fightLastTacticLog(true);
+    const tacticEffectIndex = texts.findIndex((text) => text.includes('(Finding Zemo)'));
+    const finalBlowIndex = texts.findIndex((text) => text.includes('requires a final blow'));
+    assert.ok(tacticEffectIndex >= 0, 'the Finding Zemo Fight line is logged');
+    assert.ok(finalBlowIndex > tacticEffectIndex, texts.join('\n'));
+  });
+
+  it('Final Blow off: "is vanquished!" is logged after the tactic\'s Fight line', () => {
+    const texts = fightLastTacticLog(false);
+    const tacticEffectIndex = texts.findIndex((text) => text.includes('(Finding Zemo)'));
+    const vanquishedIndex = texts.findIndex((text) => text.includes('is vanquished!'));
+    assert.ok(tacticEffectIndex >= 0, 'the Finding Zemo Fight line is logged');
+    assert.ok(vanquishedIndex > tacticEffectIndex, texts.join('\n'));
+  });
+});

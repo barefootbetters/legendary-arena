@@ -65,23 +65,80 @@ export function isEngineEffectMarker(tokenValue: string): boolean {
   return ENGINE_EFFECT_MARKER_SHAPE.test(tokenValue);
 }
 
+// why: team names whose printed form is not plain title case of the slug. Every other
+// team slug in the corpus title-cases word by word ("spider-friends" → "Spider Friends").
+const TEAM_DISPLAY_NAME_EXCEPTIONS: Readonly<Record<string, string>> = {
+  shield: 'S.H.I.E.L.D.',
+  hydra: 'HYDRA',
+  'x-men': 'X-Men',
+  'x-force': 'X-Force',
+  'x-factor-investigations': 'X-Factor Investigations',
+};
+
+// why: the small words a printed team name keeps lower-case ("Guardians of the Galaxy",
+// "Mercs for Money"); the first word is always capitalized.
+const TEAM_NAME_LOWER_CASE_WORDS: readonly string[] = ['of', 'for', 'the'];
+
+/**
+ * Returns the printed name of a Hero team from its slug, for log lines.
+ *
+ * @param teamSlug The team slug (`avengers`, `shield`, `guardians-of-the-galaxy`, ...).
+ * @returns The printed team name (`Avengers`, `S.H.I.E.L.D.`, `Guardians of the Galaxy`).
+ */
+export function teamDisplayName(teamSlug: string): string {
+  const exception = TEAM_DISPLAY_NAME_EXCEPTIONS[teamSlug];
+  if (exception !== undefined) {
+    return exception;
+  }
+  const words: string[] = [];
+  for (const word of teamSlug.split('-')) {
+    let isLowerCaseWord = false;
+    for (const lowerCaseWord of TEAM_NAME_LOWER_CASE_WORDS) {
+      if (lowerCaseWord === word) {
+        isLowerCaseWord = true;
+      }
+    }
+    if (isLowerCaseWord && words.length > 0) {
+      words.push(word);
+    } else {
+      words.push(word.charAt(0).toUpperCase() + word.slice(1));
+    }
+  }
+  return words.join(' ');
+}
+
+/**
+ * Returns the printed name of a Hero Class from its slug, for log lines.
+ *
+ * @param classSlug The class slug (`strength`, `instinct`, ...).
+ * @returns The title-cased class name (`Strength`, `Instinct`, ...).
+ */
+export function heroClassDisplayName(classSlug: string): string {
+  const spacedValue = classSlug.replace(/-/g, ' ');
+  return spacedValue.charAt(0).toUpperCase() + spacedValue.slice(1);
+}
+
 /**
  * Humanizes a single `[type:value]` ability-markup token into readable text.
- * Hero-class tokens are title-cased; every other token keeps its text with
- * hyphens rendered as spaces.
+ * Hero-class tokens are title-cased and team tokens take their printed team name;
+ * every other token keeps its text with hyphens rendered as spaces.
  *
- * @param tokenType The token type (`icon`, `keyword`, `hc`, ...).
+ * @param tokenType The token type (`icon`, `keyword`, `hc`, `team`, ...).
  * @param tokenValue The token value (`recruit`, `What If...?`, `strength`, ...).
  * @returns The humanized word.
  */
 function humanizeAbilityToken(tokenType: string, tokenValue: string): string {
-  const spacedValue = tokenValue.replace(/-/g, ' ');
-  // why: hero-class tokens ([hc:strength]) read best title-cased ("Strength");
-  // icon/keyword values keep their given casing ("recruit", "What If...?").
+  // why: hero-class tokens ([hc:strength]) read best title-cased ("Strength"), and team
+  // tokens ([team:avengers]) as the printed team name ("Avengers", "S.H.I.E.L.D."), so a
+  // team-gated line reads like a class-gated one; icon/keyword values keep their given
+  // casing ("recruit", "What If...?").
   if (tokenType === 'hc') {
-    return spacedValue.charAt(0).toUpperCase() + spacedValue.slice(1);
+    return heroClassDisplayName(tokenValue);
   }
-  return spacedValue;
+  if (tokenType === 'team') {
+    return teamDisplayName(tokenValue);
+  }
+  return tokenValue.replace(/-/g, ' ');
 }
 
 /**
