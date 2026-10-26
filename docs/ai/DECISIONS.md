@@ -49629,4 +49629,25 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24778 (#3030). Related: D-24776 (the Stack and `recruitSidekick`), D-24156 (`gain-wound-self`, the keyword shape), D-24696 (`gainOfficerToDiscard`), D-24618 / D-24623 (hollow reporting), D-24017 (empty-supply logging), D-24179 / D-24180 (heal lock), D-24021 (coverage gate keys on `noEffect`), D-24372 (runtime drift pins), D-24026.
 
 ---
+
+### D-24781 — The engine ewiki moves onto the shared theme next, ahead of the personal wiki; amends D-24728's migration order (Active 2026-10-26 — Jeff's call; WP-847 / EC-885 executes it)
+
+**Status:** Active 2026-10-26.
+
+**Context.** D-24725 §3 put the engine ewiki last onto the shared wiki platform, because its gates, determinism check and Access posture make it the costliest test bed, and D-24728 fixed the order as corporate memory, herbs, personal, then the engine. By 2026-10-26 every other wiki had moved: the corporate-memory viewer, Herbs vs. Ailments, the studio ewiki, Organized Walls and the Scooby engine wiki run the theme, now `barefootbetters/bb-studio-ewiki-theme` (named `ewiki-theme` until 2026-10-18), at `v1.1.1` to `v1.3.0`. The personal wiki has not moved. On 2026-10-26 the theme's `v1.3.0` collapsible sidebar and search filters had to be written into the engine ewiki's own layouts by hand (#3029), because it is the one wiki still on its own copy, and that copy keeps drifting.
+
+**Decision.**
+1. **The engine ewiki moves next,** ahead of the personal wiki: WP-847 / EC-885 migrates `apps/wiki-viewer` onto `bb-studio-ewiki-theme` `v1.3.0`.
+2. **The personal wiki moves after it.** It has no pending feature, so nothing is lost by waiting.
+3. **Nothing else in D-24725 or D-24728 changes:** vendored, read-only, the digest pinned outside the vendored tree, the closed extension points, one script (D-24293), and the WP-139 lock, which vendoring keeps literal. The migration's own calls are WP-847's D-24782.
+
+**Why.** The engine's costs (its gates, the determinism check, Access) are what the theme's CI, `Test-EwikiTheme.ps1` and `Compare-WikiBuild.ps1` were built to carry, and WP-814's trial build already passed every engine gate on the theme. Waiting costs a hand-port into the engine's copy for every theme feature.
+
+**Consequences.**
+- D-24728's sentence "The migration order is corporate memory, herbs, personal, then the engine ewiki last" now reads: corporate memory, herbs, the engine ewiki, then personal.
+- `wiki/hugo-platform-strategy.md` records the order when WP-847 executes (its Scope In 7). The theme repo's own Consumers table and "Queued next" line follow in that repo after WP-847 merges.
+
+**Reserved by:** NUMBER-LEDGER D-24781 (#3036). Related: D-24725 (one shared wiki platform), D-24727 (the theme), D-24728 (vendoring and the order this amends), D-24293 (one script), WP-139 / D-13808 (the engine ewiki's theme lock), WP-814 (the extraction and the trial build), #3029 (the hand-port).
+
+---
 Protect this file.
