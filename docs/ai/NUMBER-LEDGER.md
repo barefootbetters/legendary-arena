@@ -482,6 +482,7 @@ high-water: 422
 - WP-841 — co2e-variable-attack-passives (co2e Baron Strucker, Paibok, Super-Skrull and Hydro-Man fight for their printed variable Attack. reserved 2026-10-25, claude/reserve-wp841-co2e-variable-attack)
 - WP-842 — recruitable-sidekick-stack (players recruit one Sidekick per turn for 2 Recruit; a played Sidekick returns to the bottom of the Sidekick Stack and draws two. reserved 2026-10-26, claude/wp-recruitable-sidekick-reserve)
 - WP-843 — co2e-crazed-rampage-reveal-or-wound (co2e Hulk Crazed Rampage: each player reveals another [hc:strength] Hero or gains a Wound; new hero keyword reveal-or-gain-wound-each. reserved 2026-10-26, claude/wp843-reserve; LANDED 2026-10-26)
+- WP-844 — gain-sidekick-card-effects (hero lines that print "Gain a [rule:Sidekick]" take one or more Sidekicks from the Sidekick Stack to the discard pile; new hero keyword gain-sidekick. reserved 2026-10-26, claude/wp844-gain-sidekick-reserve)
 
 ## EC
 
@@ -926,6 +927,7 @@ high-water: 457
 - EC-879 — co2e-variable-attack-passives (WP-841. reserved 2026-10-25, claude/reserve-wp841-co2e-variable-attack)
 - EC-880 — recruitable-sidekick-stack (WP-842. reserved 2026-10-26, claude/wp-recruitable-sidekick-reserve)
 - EC-881 — co2e-crazed-rampage-reveal-or-wound (WP-843. reserved 2026-10-26, claude/wp843-reserve; LANDED 2026-10-26)
+- EC-882 — gain-sidekick-card-effects (WP-844. reserved 2026-10-26, claude/wp844-gain-sidekick-reserve)
 
 ## D
 
@@ -1481,3 +1483,4 @@ section below) and the allocation protocol in
 - D-24775 — twist-count-before-resolver (direct fix, no WP — the scheme-twist dispatcher raises schemeTwistCount and logs the Scheme Twist #N line BEFORE the resolver, so nested Twists are numbered in reveal order; the wound-all, clash-monster-pit and enigma-code resolvers read the count directly. Amends D-18201. reserved 2026-10-25, claude/twist-count-before-resolver)
 - D-24776 — recruitable-sidekick-stack (WP-842; once-per-turn Sidekick recruit + automatic return-and-draw-two on play. reserved 2026-10-26, claude/wp-recruitable-sidekick-reserve)
 - D-24777 — co2e-crazed-rampage-reveal-or-wound (WP-843; hero reveal-or-gain-wound-each semantics: reveal scope, auto-reveal, the line class token is the criterion not a play-gate. reserved 2026-10-26, claude/wp843-reserve; LANDED 2026-10-26)
+- D-24778 — gain-sidekick-card-effects (WP-844; the gain-sidekick hero keyword: Stack top to discard, magnitude N, outside the once-per-turn recruit limit, empty Stack a logged no-op. reserved 2026-10-26, claude/wp844-gain-sidekick-reserve)
