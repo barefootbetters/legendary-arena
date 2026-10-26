@@ -49557,4 +49557,28 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24768 (#3010). Related: D-24266 (the breadcrumb removed), D-24023 / D-24298 / D-24669 / D-24687 (`ko-hero`), D-24295 (`@` gate, `each-other`), D-24281, D-24287, D-24351, D-24299, D-24353, D-21401, D-24270, D-24350, D-24335, D-24774 (WP-841 passives), D-24769..D-24773 (WP-836..840), D-24026.
 
 ---
+
+### D-24776 — recruitable Sidekick Stack: recruit one Sidekick per turn for 2; a played Sidekick returns to the bottom of the Stack and draws two (Active 2026-10-26 — WP-842 / EC-880)
+
+**Status:** Active 2026-10-26. Live-verify (D-24026) operator-pending: a match created after the deploy on `play.legendary-arena.com`, plus `ewiki.legendary-arena.com/sidekicks/` 200.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Matches built a 12-card Sidekick Stack (`G.piles.sidekicks`, `pile-sidekick` tokens) that no move could take from. The Sidekicks cell is now a recruit button; a played Sidekick returns to the Stack and draws two.
+
+**Context.** Rules v23 L727-729: recruit "Sidekicks (no more than once per turn, using Recruit points) from the Sidekick stack". L3212-3233: "When you play any Sidekick, return it to the bottom of the Sidekick Stack"; "You still 'played' that Sidekick"; gained Sidekicks don't count against the limit. The printed Secret Wars Vol. 1 Sidekick (cost 2): "You may return this card to the Sidekick Stack. If you do, draw two cards." That text exists nowhere in card data.
+
+**Decision.**
+1. **The move.** `recruitSidekick` is a non-core, internally gated move mirroring `recruitOfficer` (D-24460): the block-all guard list copied verbatim, cost `G.cardStats['pile-sidekick'].cost ?? SIDEKICK_RECRUIT_COST` (2), registered `client: false` (D-10008), dispatchable in replay, NOT in `CORE_MOVE_NAMES` or `SIMULATION_MOVE_NAMES` (every determinism oracle stays byte-identical).
+2. **Once per turn.** `TurnEconomy.hasRecruitedSidekickThisTurn?: true`, lazily materialized, carried by `carryConversionFlag`, dropped by `resetTurnEconomy`. Set ONLY by `recruitSidekick`; a future card-effect gain must not set it (rules v23 L3216-3218).
+3. **Automatic return and draw.** The printed "may" is collapsed (Jeff, 2026-10-25: "Use auto-return + draw 2 on play for v1"): a plain Sidekick has no Attack, Recruit or class, so declining is dominated. `returnPlayedSidekick` is the last statement of `applyCardPlay`, after `applyGrantedOutOfTime`; it fires only while `pile-sidekick` is the last `inPlay` entry (so a granted Out of Time set-aside wins), appends the token to the END (bottom) of the Stack, draws `SIDEKICK_RETURN_DRAW_COUNT` (2) unless `drawsLocked` (D-24552; logged `blocked`, the return still happens), and adds the realized draw to `cardsDrawn` (D-24476 / D-24732). The interactive accept/decline (the Do-Over pattern, D-24498) is a follow-up only if a later card makes declining useful.
+4. **Still played.** `TurnEconomy.sidekicksReturnedThisTurn?: number` counts returns; `playedCardIdsThisTurn` appends `pile-sidekick` that many times (a count because every token shares one id), right after `playedCardIdsStillInPlay` and BEFORE the Out of Time loop, so a Sidekick replayed from Out of Time and then returned counts once. Accepted residual: two Sidekicks in one turn, one set aside by a granted Out of Time, count as one (T11c pins it).
+5. **Out of Time replay.** On the turn-2 replay the return-and-draw runs inside the replayed play, so the Sidekick goes to the bottom of the Stack instead of the keyword's discard (T10b).
+6. **Scope.** The hook and the count cover the fungible `pile-sidekick` only. A Special Sidekick WP must extend the hook to its ids and record them in an id ledger, not this count.
+7. **UIState.** `economy.hasRecruitedSidekickThisTurn?: true` (active player only, omit-when-absent, absent from `REDACTED_ECONOMY`) and `piles.sidekickDisplay?: UICardDisplay` (always built via `resolveDisplay`, public, fresh-copied in the filter). `UiMoveName` gains `'recruitSidekick'`. These are the contract-file changes to `economy.types.ts`, `uiState.types.ts` and `uiMoveName.types.ts`.
+8. **Replay-compat.** A stored match that never played a Sidekick replays identically. A match created before the deploy in which an operator-setter Sidekick was played replays differently; operator matches are not scored or verified, so this is accepted. Live-verify uses a match created after the deploy.
+
+**Gates.** game-engine 5825 → 5851 / 0 fail (+26); arena-client 2458 → 2462 / 0 fail, typecheck 0; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; hash oracles unchanged; `sim:runtime-observed:check` and `sim:coverage --check` 0, nothing regenerated; ten revert proofs each fail their locked tests; a local match's Play Diagnostics `uiStateSnapshot` carries both new fields. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-842-recruitable-sidekick-stack.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24776 (#3021). Related: D-24460 (`recruitOfficer`), D-3103 (fungible pile tokens), D-10008, D-24180 (heal lock), D-24552 (draw lock), D-24476 / D-24732 (`cardsDrawn`), D-24692 (played-this-turn ledger), D-24761 (granted Out of Time), D-24618 (hollow "gain a Sidekick" lines), D-24498 (Do-Over), D-24372 (runtime drift pins), D-12803 (UIState pass-through), D-24026.
+
+---
 Protect this file.
