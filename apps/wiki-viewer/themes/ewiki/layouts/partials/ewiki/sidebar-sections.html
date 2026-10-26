@@ -1,0 +1,37 @@
+{{- /*
+  Core: the default sidebar's section list, each top-level section with its
+  pages by title. The default sidebar.html renders it after the root pages,
+  and a wiki's own sidebar override may call it too.
+
+  why: with params.ewiki.sidebarCollapsible (v1.3.0, off by default) each
+  section is a <details class="sidebar-group"> whose summary links the
+  section and counts its pages, and only the group holding the page being
+  read starts open, so a long wiki shows its sections and one open list.
+  It's plain HTML: the one-script rule (D-24293) holds. With the param off
+  the markup is the default sidebar's, unchanged.
+*/ -}}
+{{- $current := . -}}
+{{- $collapsible := index (site.Params.ewiki | default dict) "sidebarcollapsible" | default false -}}
+        {{- range site.Sections.ByTitle }}
+        {{- if $collapsible }}
+        {{- $section := . }}
+        {{- $pages := .RegularPagesRecursive.ByTitle }}
+        {{- $open := eq .RelPermalink $current.RelPermalink }}
+        {{- with $current.FirstSection }}{{ if eq .RelPermalink $section.RelPermalink }}{{ $open = true }}{{ end }}{{ end }}
+        <details class="sidebar-group"{{ if $open }} open{{ end }}>
+          <summary class="sidebar-section"><a href="{{ .RelPermalink }}"{{ if eq .RelPermalink $current.RelPermalink }} aria-current="page"{{ end }}>{{ partial "ewiki/short-title.html" . }}</a> <span class="sidebar-count">{{ len $pages }}</span></summary>
+          <ul class="sidebar-list">
+            {{- range $pages }}
+            <li><a href="{{ .RelPermalink }}"{{ if eq .RelPermalink $current.RelPermalink }} aria-current="page"{{ end }}>{{ partial "ewiki/short-title.html" . }}</a></li>
+            {{- end }}
+          </ul>
+        </details>
+        {{- else }}
+        <h3 class="sidebar-section"><a href="{{ .RelPermalink }}"{{ if eq .RelPermalink $current.RelPermalink }} aria-current="page"{{ end }}>{{ partial "ewiki/short-title.html" . }}</a></h3>
+        <ul class="sidebar-list">
+          {{- range .RegularPagesRecursive.ByTitle }}
+          <li><a href="{{ .RelPermalink }}"{{ if eq .RelPermalink $current.RelPermalink }} aria-current="page"{{ end }}>{{ partial "ewiki/short-title.html" . }}</a></li>
+          {{- end }}
+        </ul>
+        {{- end }}
+        {{- end -}}

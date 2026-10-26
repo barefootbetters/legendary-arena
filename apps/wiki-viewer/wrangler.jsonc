@@ -16,7 +16,9 @@
     // why: Hugo writes pretty URLs (/page/index.html). The default
     // html_handling (auto-trailing-slash) serves /page/ from that file and
     // redirects /page to /page/, matching Hugo's own link style. No
-    // not_found_handling: the site has no 404 layout, so a miss is a plain 404.
+    // not_found_handling: the shared theme (D-24782) now builds
+    // public/404.html, but without not_found_handling a miss is still a plain
+    // 404. Serving that page needs not_found_handling: "404-page", a follow-up.
     "directory": "./public"
   },
   // why: these two lines are the point of D-24690. workers_dev: false removes

@@ -2087,6 +2087,12 @@ async function renderReport({
   lines.push(`title: Architecture & Library Adoption Inventory`);
   lines.push(`type: Generated`);
   lines.push(`status: evergreen`);
+  // why: this page's body links are written from the repo root (docs/...,
+  // packages/...), not from wiki/. links_from: repo-root tells the shared ewiki
+  // theme's link hook to send each one to GitHub as written, never to look it
+  // up as a page. The key replaces the by-file-name case for this page in the
+  // engine's old link hook (D-24728 Consequences, D-24782).
+  lines.push(`links_from: repo-root`);
   lines.push(`tags:`);
   lines.push(`  - generated`);
   lines.push(`  - architecture`);

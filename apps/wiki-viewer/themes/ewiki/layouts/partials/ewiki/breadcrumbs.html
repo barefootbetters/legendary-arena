@@ -1,0 +1,21 @@
+{{- /*
+  why: breadcrumbs, promoted from J (D-24727 section 2): Home, then each
+  ancestor section, then the page, from .Ancestors.Reverse. They never render
+  on the home page, where there is nothing above, or on the 404 page.
+  params.ewiki.breadcrumbs = false turns them off.
+
+  why: they sit at the top of <main> and carry data-pagefind-ignore, so the
+  trail never lands in the search index. Titles strip params.ewiki.titlePrefix,
+  as lists do.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $show := true -}}
+{{- if isset $ewiki "breadcrumbs" -}}{{- $show = index $ewiki "breadcrumbs" -}}{{- end -}}
+{{- if and $show (not .IsHome) (ne .Kind "404") }}
+      <nav class="crumbs" aria-label="Breadcrumb" data-pagefind-ignore>
+        {{- range .Ancestors.Reverse }}
+        <a href="{{ .RelPermalink }}">{{ if .IsHome }}Home{{ else }}{{ partial "ewiki/short-title.html" . }}{{ end }}</a> <span aria-hidden="true">›</span>
+        {{- end }}
+        <span aria-current="page">{{ partial "ewiki/short-title.html" . }}</span>
+      </nav>
+{{- end -}}

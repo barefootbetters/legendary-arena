@@ -1,0 +1,492 @@
+/* The ewiki theme's core stylesheet.
+
+   why: this is the engine ewiki's stylesheet, reconciled with the other
+   copies: the herbs ewiki's aria-current, .muted and .page-list rules, the
+   corporate memory's .page-path, and rules for the new no-script reader
+   features (skip link, table of contents, heading anchors, breadcrumbs,
+   scrolling tables). Every colour and font is a token read through var().
+   This file declares no custom property: the tokens, light and dark, live
+   only in ewiki-brand.css, which loads first (D-24728 section 4), so dark
+   mode reaches every rule here. Wiki-specific selectors live in
+   ewiki-site.css, which loads last. */
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-stack);
+  line-height: 1.55;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover { text-decoration: underline; }
+
+img { max-width: 100%; }
+
+/* An image linked to its own file opens full size (render-link.html). */
+a.full-size img { cursor: zoom-in; }
+
+code, pre {
+  font-family: var(--mono-stack);
+  font-size: 0.92em;
+}
+
+pre {
+  background: var(--color-surface);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+code {
+  background: var(--color-surface);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+}
+
+pre code { background: transparent; padding: 0; }
+
+.muted { color: var(--color-muted); }
+
+/* The skip link stays off screen until it has keyboard focus. */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -4rem;
+  z-index: 100;
+  padding: 0.5rem 0.8rem;
+  background: var(--color-bg);
+  color: var(--color-accent);
+  border: 2px solid var(--color-accent);
+  border-radius: 6px;
+}
+
+.skip-link:focus { top: 0.75rem; }
+
+.site-header {
+  border-bottom: 1px solid var(--color-border);
+  padding: 1rem 1.5rem;
+  /* why: title on the left, search box on the right (D-24293). flex-wrap
+     drops the search box below the title on a narrow viewport. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  /* why: the positioned ancestor for the Pagefind results drawer, so the
+     drawer anchors to the header rather than the viewport. */
+  position: relative;
+}
+
+.site-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--color-fg);
+}
+
+.site-logo { height: 1.6rem; width: auto; }
+
+/* Pagefind search (D-24293). The stub input is the server-rendered
+   affordance; Pagefind's UI mounts into #wiki-search on first use. */
+.header-search {
+  flex: 0 1 320px;
+  min-width: 180px;
+}
+
+#wiki-search-stub {
+  width: 100%;
+  padding: 0.4rem 0.7rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--color-fg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+#wiki-search-stub:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* why: the default UI's results drawer would grow the header; float it over
+   the content instead, so the header height stays put while searching. */
+#wiki-search .pagefind-ui__drawer {
+  position: absolute;
+  z-index: 20;
+  right: 1.5rem;
+  left: auto;
+  width: min(420px, calc(100vw - 3rem));
+  max-height: 70vh;
+  overflow-y: auto;
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.sidebar {
+  border-right: 1px solid var(--color-border);
+  padding-right: 1.5rem;
+  font-size: 0.92rem;
+}
+
+.sidebar-heading {
+  font-size: 1rem;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.sidebar-section {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+}
+
+.sidebar-section a { color: var(--color-muted); }
+
+.sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-list li { margin: 0.2rem 0; }
+
+.sidebar a[aria-current="page"] { font-weight: 600; color: var(--color-fg); }
+
+/* sidebarCollapsible (v1.3.0): each section is a <details>; the summary
+   keeps the section heading's look and its marker is the open/closed cue. */
+.sidebar-group > summary {
+  cursor: pointer;
+  margin-top: 0.9rem;
+}
+.sidebar-group > summary::marker { color: var(--color-muted); }
+.sidebar-group[open] > summary { margin-bottom: 0.4rem; }
+.sidebar-group > .sidebar-list { margin-left: 0.9rem; }
+.sidebar-count {
+  color: var(--color-muted);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.content { min-width: 0; }
+
+/* why: a bare URL used as link text, or a long path in inline code, has no
+   break opportunity, so on a phone it pushed the page into a horizontal
+   scroll (a 375px viewport, v1.1.1). anywhere, not break-word, so it also
+   shrinks the min-content width a grid, flex or table cell sizes from; pre
+   keeps white-space: pre and still scrolls. */
+.content a, .content code { overflow-wrap: anywhere; }
+
+.content h1 {
+  margin-top: 0;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.5rem;
+}
+
+/* Breadcrumbs: a quiet trail above the title. */
+.crumbs {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  margin: 0 0 0.75rem;
+}
+
+.crumbs a { color: var(--color-muted); }
+
+.crumbs a:hover { color: var(--color-accent); }
+
+/* Heading anchors: the link is empty and the glyph is drawn here, so it adds
+   no text to the page or the search index. It shows on hover and focus. */
+.heading-anchor {
+  margin-left: 0.4rem;
+  color: var(--color-muted);
+  font-weight: 400;
+  opacity: 0;
+  text-decoration: none;
+}
+
+.heading-anchor::after { content: "#"; }
+
+h1:hover > .heading-anchor,
+h2:hover > .heading-anchor,
+h3:hover > .heading-anchor,
+h4:hover > .heading-anchor,
+h5:hover > .heading-anchor,
+h6:hover > .heading-anchor,
+.heading-anchor:focus { opacity: 1; }
+
+.heading-anchor:hover { color: var(--color-accent); text-decoration: none; }
+
+/* The "On this page" table of contents. */
+.toc {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+}
+
+.toc-heading {
+  margin: 0 0 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.toc ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.toc li { margin: 0.15rem 0; }
+
+.page-list { padding-left: 1.25rem; }
+
+.page-list li { margin: 0.3rem 0; }
+
+.page-path {
+  color: var(--color-muted);
+  font-family: var(--mono-stack);
+  font-size: 0.8rem;
+  margin-left: 0.4rem;
+}
+
+.metadata-panel {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.92rem;
+}
+
+.metadata-panel dt {
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.metadata-panel dd { margin: 0; }
+
+.tag-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.tag {
+  background: var(--color-tag-bg);
+  color: var(--color-tag-fg);
+  padding: 0.05rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.82rem;
+}
+
+.tag a { color: inherit; }
+
+.tag a:hover { text-decoration: underline; }
+
+.tag-count {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.tags-index .tag-heading {
+  margin-top: 1.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 1rem;
+}
+
+.tags-index .tag-page-list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.4rem 0;
+}
+
+.status-canonical { color: var(--color-status-canonical); font-weight: 600; }
+.status-draft { color: var(--color-status-draft); font-weight: 600; }
+.status-deprecated { color: var(--color-status-deprecated); font-weight: 600; }
+
+.source-list {
+  padding-left: 1.1rem;
+  margin: 0;
+}
+
+.editing-this-page {
+  margin-top: 2rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+}
+
+.editing-this-page > summary {
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-fg);
+}
+
+.editing-this-page-body {
+  margin-top: 0.6rem;
+  color: var(--color-muted);
+}
+
+.editing-this-page-body p { margin: 0.5rem 0; }
+
+.editing-this-page-body p:last-child { margin-bottom: 0; }
+
+/* why: the footer sits outside .body, so the page-table rules don't reach a
+   table in it. Long local paths wrap rather than push a phone into a
+   horizontal scroll. */
+.editing-this-page-body table {
+  border-collapse: collapse;
+  margin: 0.5rem 0 0;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.editing-this-page-body th, .editing-this-page-body td {
+  border: 1px solid var(--color-border);
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.editing-this-page-body th { background: var(--color-surface); }
+
+.editing-this-page-body td:first-child { white-space: nowrap; }
+
+.editing-this-page-body code { overflow-wrap: anywhere; }
+
+.editing-this-page-body kbd {
+  font-family: var(--mono-stack);
+  font-size: 0.85em;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+}
+
+blockquote {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: 4px;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+}
+
+blockquote > p:first-child { margin-top: 0; }
+blockquote > p:last-child { margin-bottom: 0; }
+
+/* why: include-section blocks (D-24709). One standard design for every
+   linked section: a left rule around the block and a caption bar with a
+   "Linked section" label, the owner page › section link and the owner's
+   source file, so a reader edits the text at its owner. */
+.included-section {
+  border-left: 3px solid var(--color-border);
+  margin: 1rem 0;
+  padding: 0 0 0 1rem;
+}
+
+.included-section > .included-from {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.included-section .included-label {
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-right: 0.4rem;
+  text-transform: uppercase;
+}
+
+/* Wide tables scroll inside the content column instead of the page. */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.body table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.body .table-scroll > table { margin: 0; }
+
+.body table th, .body table td {
+  border: 1px solid var(--color-border);
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.body table th { background: var(--color-surface); }
+
+.wiki-audio { margin: 1rem 0; }
+
+.wiki-audio audio { width: 100%; }
+
+.wiki-audio figcaption {
+  color: var(--color-muted);
+  font-size: 0.85em;
+  margin-top: 0.25rem;
+}
+
+/* why: the audio-inline shortcode drops the figure wrapper so a native
+   audio play button fits in a table cell; cap its size so the row stays
+   compact. */
+.wiki-audio-inline {
+  height: 32px;
+  max-width: 220px;
+  vertical-align: middle;
+}
+
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; padding: 1rem; }
+  .site-header { padding: 1rem; }
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    padding-right: 0;
+    padding-bottom: 1rem;
+  }
+}

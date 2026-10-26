@@ -1,0 +1,23 @@
+{{- /*
+  why: the one place lists, the default sidebar, breadcrumbs and
+  include-section captions strip params.ewiki.titlePrefix (H's "Herbs vs.
+  Ailments: ") from ewiki/title.html's full title. Core, not an extension
+  point; the page's own H1 and <title> keep the full title.
+
+  why: params.ewiki.titlePrefixCapitalize (opt-in, v1.2.0; off by default)
+  uppercases the first letter of what's left, so H's "Herbs vs. Ailments: the
+  river module" lists as "The river module". It applies only when the prefix
+  was stripped; a title without it keeps its case.
+
+  Input: a page. Returns the title with the prefix stripped.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $prefix := index $ewiki "titleprefix" | default "" -}}
+{{- $title := partial "ewiki/title.html" . -}}
+{{- if and $prefix (strings.HasPrefix $title $prefix) -}}
+  {{- $title = strings.TrimPrefix $prefix $title -}}
+  {{- if index $ewiki "titleprefixcapitalize" -}}
+    {{- $title = strings.FirstUpper $title -}}
+  {{- end -}}
+{{- end -}}
+{{- return $title -}}

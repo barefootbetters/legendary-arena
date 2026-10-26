@@ -1,0 +1,5 @@
+/* Extension point: a wiki's own selectors (the engine's service-impact tables,
+   the corporate memory's sensitivity labels). A wiki overrides this file with
+   its own assets/css/ewiki-site.css. It loads last, after core, and reads the
+   brand tokens through var() only: it may not declare a custom property, so
+   it can never override the brand file's dark block. This default is empty. */

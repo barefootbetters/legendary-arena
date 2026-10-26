@@ -69,8 +69,10 @@ missing.
 
 ### Theme and layout
 
-The wiki viewer uses a hand-rolled theme (no third-party framework).
-Key layout features:
+The wiki viewer uses the studio's own shared ewiki theme,
+`bb-studio-ewiki-theme` `v1.3.0` (no third-party framework), vendored
+read-only into `apps/wiki-viewer/themes/ewiki/` (D-24782). The engine's own
+features sit behind the theme's extension points. Key layout features:
 
 - **Sidebar nav** — pages grouped by `type`, sorted alphabetically.
 - **Metadata panel** — renders `type`, `status` (color-coded badge),
@@ -80,8 +82,11 @@ Key layout features:
 - **Link rewriting** — a markdown render hook converts `slug.md` links
   to `/<slug>/` and `../path` links to GitHub blob URLs.
 
-The theme is defined in `apps/wiki-viewer/layouts/` and
-`apps/wiki-viewer/assets/css/style.css`.
+The theme's core is `apps/wiki-viewer/themes/ewiki/` (templates, render
+hooks, shared shortcodes and `assets/css/ewiki.css`); the engine's own
+templates are in `apps/wiki-viewer/layouts/` (its extension partials under
+`layouts/partials/ewiki/`), and its styles in
+`apps/wiki-viewer/assets/css/ewiki-brand.css` and `ewiki-site.css`.
 
 The theme choice is recorded as locked in WP-139 (Open Decision B):
 Docsy and Hextra were both considered and rejected at the time, and a
@@ -89,7 +94,8 @@ move to a third-party theme needs a DECISIONS entry that supersedes the
 lock. D-24725 moves every ewiki onto one shared wiki platform, and
 D-24727 makes this theme, extracted into one shared copy, the platform's
 theme, after a Hextra pilot. The lock and the JS-free gate stand. The
-engine ewiki moves onto the shared copy last. See
+engine ewiki moved onto the shared copy ahead of the personal wiki
+(D-24781), vendored inside this app so the lock holds (D-24782). See
 [Hugo Platform Strategy](hugo-platform-strategy.md).
 
 ## Interactions
@@ -171,4 +177,4 @@ engine ewiki moves onto the shared copy last. See
 - [DOMAINS.md §ewiki](../docs/ops/DOMAINS.md#ewiki) — hostname, Access gate, and cutover steps
 - [DECISIONS.md](../docs/ai/DECISIONS.md) — D-24690 (move to Workers), D-24293 (Pagefind and the JS-free amendment)
 - [apps/wiki-viewer/layouts/](../apps/wiki-viewer/layouts/) — theme layouts
-- [apps/wiki-viewer/assets/css/style.css](../apps/wiki-viewer/assets/css/style.css) — theme stylesheet
+- [apps/wiki-viewer/themes/ewiki/assets/css/ewiki.css](../apps/wiki-viewer/themes/ewiki/assets/css/ewiki.css) — theme stylesheet

@@ -2,6 +2,7 @@
 title: Architecture & Library Adoption Inventory
 type: Generated
 status: evergreen
+links_from: repo-root
 tags:
   - generated
   - architecture

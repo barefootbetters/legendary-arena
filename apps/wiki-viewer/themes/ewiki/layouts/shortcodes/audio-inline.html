@@ -1,0 +1,26 @@
+{{- /*
+  Inline audio player shortcode, promoted from E: a compact variant of
+  `audio` sized to sit inside a markdown table cell.
+
+  Usage:
+    | Clip | Play |
+    |---|---|
+    | Main theme | {{< audio-inline src="https://example.com/clip.mp3" >}} |
+
+  why: a native <audio controls> element is the browser's own play button,
+  with no script element, so it keeps the JS-free invariant. A site's
+  `unsafe = false` strips raw <audio> written in markdown but not shortcode
+  output, which is why a table "play" column can't be hand-written HTML.
+
+  why: unlike `audio`, this emits no <figure> wrapper and no newlines, a
+  single inline element, so it doesn't break goldmark's pipe-table row
+  parsing. Output is static, so two builds match.
+
+  Params:
+    src (required): the URL of the audio file.
+*/ -}}
+{{- $src := .Get "src" -}}
+{{- if not $src -}}
+  {{- errorf "audio-inline shortcode at %s is missing its src parameter. Add src=\"<audio file URL>\"." .Position -}}
+{{- end -}}
+<audio class="wiki-audio-inline" controls preload="none" src="{{ $src }}">{{ printf "<a href=%q>Download</a>" $src | safeHTML }}</audio>

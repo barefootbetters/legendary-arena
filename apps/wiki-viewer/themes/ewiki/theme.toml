@@ -1,0 +1,11 @@
+# Theme metadata only. Each consumer's own .hugo-version pins the Hugo
+# version; nothing here enforces it.
+name = "ewiki"
+license = "Proprietary"
+description = "The shared hand-rolled wiki theme for the Barefoot Betters ewikis: one core, a closed set of extension points, and no JavaScript beyond the Pagefind search loader."
+homepage = "https://github.com/barefootbetters/bb-studio-ewiki-theme"
+tags = ["wiki", "documentation", "no-javascript"]
+features = ["table of contents", "heading anchors", "skip link", "breadcrumbs", "dark mode", "Pagefind search"]
+
+[author]
+  name = "Barefoot Betters"
