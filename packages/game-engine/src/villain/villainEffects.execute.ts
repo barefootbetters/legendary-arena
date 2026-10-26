@@ -42,12 +42,19 @@ import {
 import type { CitySpaceName } from '../board/citySpaceNames.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { ResolvedEffectResult, ResolvedPlayerTargetNames } from '../events/notableEvents.compose.js';
-import { composeStrikeBlockedNarrative, composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
+import { composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
 import type { StrikeBlockThreatKind } from '../events/notableEvents.types.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+// why: WP-845 / D-24779 — the reveal-or-gain-a-Wound queue writer. The module reaches back to this
+// file through phaseCard → playVillainTop.resolve → villainDeck.reveal; every binding is read
+// inside function bodies only, so the cycle is runtime-safe.
+import {
+  enqueueRevealOrWoundChoice,
+  formatRevealOrWoundPlayerNames,
+} from '../moves/revealOrWoundChoice.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import {
   attachBystanderToVillain,
@@ -2051,10 +2058,11 @@ function describeTraitCountedHeroes(
  * Sabretooth's "Fight: Each player reveals an X-Men Hero or gains a Wound." and the
  * core siblings (Frost Giant, Ymir, Ultron, Zzzax) across Fight / Ambush / Escape timings.
  *
- * Auto-resolved (a Wound-averse player always reveals when able, so no player
- * choice is parked) and deterministic — each player in
- * `Object.keys(G.playerZones).sort()`, the hand+in-play trait predicate, one Wound on
- * no match. Self-narrates via `pushLog` (like scry-ko, reveal-or-wound is not a
+ * Each player in `Object.keys(G.playerZones).sort()` is tested with the hand+in-play
+ * trait predicate: a player with no match gains one Wound at once; the players with a
+ * match are queued on `G.pendingRevealOrWoundChoices` and each chooses after the move
+ * whether to reveal or gain the Wound (WP-845 / D-24779, rules v23 L3196-3200).
+ * Deterministic. Self-narrates via `pushLog` (like scry-ko, reveal-or-wound is not a
  * legacy keyword — `descriptorToLegacyKeyword` returns undefined, so no
  * `VillainEffectResult` is recorded and the generic `<timing> effect:` line never
  * fires). Returns `{ targets: [] }`; the log line is the user-visible surface.
@@ -2087,7 +2095,7 @@ function composeEmptyWoundSupplyClause(emptySupplyPlayerIds: readonly string[]):
 function villainEffectRevealOrWound(
   G: LegendaryGameState,
   currentPlayer: string,
-  _cardId: CardExtId,
+  cardId: CardExtId,
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
@@ -2108,6 +2116,7 @@ function villainEffectRevealOrWound(
   const gainedPlayerIds: string[] = [];
   const divingBlockPendingPlayerIds: string[] = [];
   const emptySupplyPlayerIds: string[] = [];
+  const revealingPlayerIds: string[] = [];
   for (const playerId of Object.keys(G.playerZones).sort()) {
     const zones = G.playerZones[playerId];
     if (!zones) {
@@ -2121,21 +2130,12 @@ function villainEffectRevealOrWound(
         requireValue,
       )
     ) {
-      // why: the player HAS a matching Hero in hand or in play — no Wound, no
-      // mutation (D-24281 amended: in-play Heroes count, see the helper).
-      // why: WP-646 / D-24458 + WP-651 / D-24463 — this reveal AVOIDED a villain
-      // reveal-or-wound; announce it with a strikeBlocked, one per revealing
-      // player (the WP-644/645 push idiom; setup guarantees the array). The threat
-      // class depends on the timing that fired — onAmbush → 'ambush', onFight →
-      // 'fight', onEscape → 'escape' (the total map above). The wound/log
-      // behaviour is otherwise unchanged.
-      const threatKind = STRIKE_BLOCK_THREAT_KIND_BY_TIMING[timing];
-      G.notableEvents.push({
-        type: 'strikeBlocked',
-        playerId,
-        threatKind,
-        narrative: composeStrikeBlockedNarrative(threatKind),
-      });
+      // why: WP-845 / D-24779 (amends D-24281 Semantics) — rules v23 "Revealing a Card"
+      // (L3196-3200) lets a player who HAS a matching Hero (hand or play) decline and take the
+      // Wound instead, so the player is queued for a choice after the move. The predicate is
+      // fixed now, at effect time. Their WP-646 / WP-651 strikeBlocked moves to the apply,
+      // pushed only when they Reveal.
+      revealingPlayerIds.push(playerId);
       continue;
     }
     // why: no matching Hero in hand or in play — gain one Wound. Empty pile is a reachable
@@ -2198,13 +2198,52 @@ function villainEffectRevealOrWound(
       `${label} effect: the Wound supply is empty, so no Wound was gained (${names} had no ${requirement} Hero).`,
       'blocked',
     );
-  } else {
+  } else if (revealingPlayerIds.length === 0) {
+    // why: WP-845 / D-24779 — reachable only with no seats at all now: a player who could
+    // reveal is queued below and has not chosen yet, so "every player revealed" would be false.
     // why: "an" before a vowel sound — the vowels plus "X" (read "ex"), as in the printed
     // "reveals an X-Men Hero".
     const article = /^[AEIOUX]/.test(requirement) ? 'an' : 'a';
     pushLog(G, `${label} effect: every player revealed ${article} ${requirement} Hero.`, 'blocked');
   }
+  if (revealingPlayerIds.length > 0) {
+    queueVillainRevealOrWoundChoice(G, currentPlayer, cardId, timing, requirement, revealingPlayerIds);
+  }
   return { targets: [] };
+}
+
+/**
+ * Queues the players who can reveal for a reveal-or-gain-a-Wound choice after the move, and
+ * logs who will choose (WP-845 / D-24779). The entry carries the timing's shield-block class
+ * so the apply can push each revealer's `strikeBlocked` (WP-646 / WP-651).
+ *
+ * @param G - Game state (queue appended, log appended).
+ * @param currentPlayer - The turn's current player.
+ * @param cardId - The Villain whose effect fired.
+ * @param timing - The timing that fired (selects the shield-block class).
+ * @param requirement - The trait label (e.g. `X-Men`).
+ * @param revealingPlayerIds - The players who can reveal, in seat order.
+ */
+function queueVillainRevealOrWoundChoice(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  requirement: string,
+  revealingPlayerIds: readonly string[],
+): void {
+  enqueueRevealOrWoundChoice(G, {
+    sourceCardId: cardId,
+    currentPlayerID: currentPlayer,
+    revealOptionLabel: `Reveal a matching ${requirement} Hero`,
+    revealingSeats: [...revealingPlayerIds],
+    strikeBlockThreatKind: STRIKE_BLOCK_THREAT_KIND_BY_TIMING[timing],
+  });
+  pushLog(
+    G,
+    `${villainEffectTimingLabel(timing)} effect: ${formatRevealOrWoundPlayerNames(revealingPlayerIds)} can reveal a matching ${requirement} Hero and will choose whether to reveal it or gain a Wound.`,
+    'neutral',
+  );
 }
 
 // why: D-24679 — display labels for the team slugs whose printed name is not a simple

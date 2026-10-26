@@ -125,7 +125,7 @@ const ALL_PENDING_FIELDS = [
   'pendingKoHeroChoices', 'pendingMelterKoChoices', 'pendingOptionalKoRewards',
   'pendingOptionalPutBottomHQ', 'pendingOutOfTimeGrants', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
   'pendingPutCardsOnDeckChoices', 'pendingPutHandOnDeckTop', 'pendingReorderChoices', 'pendingReturnOnDiscard',
-  'pendingReturnZeroCostDiscard', 'pendingRevealThreeAssign', 'pendingRevealTopDispose', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
+  'pendingReturnZeroCostDiscard', 'pendingRevealOrWoundChoices', 'pendingRevealThreeAssign', 'pendingRevealTopDispose', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
   'pendingSeatChoice', 'pendingSmashDiscards', 'pendingTimestreamPurges', 'pendingUndercoverChoice',
   'pendingVictoryPileCardPick',
 ] as const;

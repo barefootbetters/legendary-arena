@@ -19,6 +19,9 @@ import { buildHeroAbilityHooks } from '../setup/heroAbility.setup.js';
 import { executeSingleEffect } from './heroEffects.execute.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
+import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
+import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
+import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroEffectDescriptor } from '../rules/heroAbility.types.js';
@@ -123,6 +126,16 @@ function resolveRampage(G: LegendaryGameState): void {
 
 const RAMPAGE_REF = formatCardRef({}, RESOLVING_RAMPAGE);
 
+/**
+ * The seats queued to choose reveal-or-gain-a-Wound (WP-845 / D-24779), or [] when none.
+ *
+ * @param G - The game state after the effect.
+ * @returns The front entry's revealing seats.
+ */
+function queuedSeats(G: LegendaryGameState): string[] {
+  return G.pendingRevealOrWoundChoices?.[0]?.revealingSeats ?? [];
+}
+
 describe('Crazed Rampage parser (WP-843 / D-24777)', () => {
   it('AC-1: emits the reveal-or-gain-wound-each effect with the strength criterion and no gate', () => {
     const hooks = buildHeroAbilityHooks(makeHulkRegistry(CRAZED_RAMPAGE_LINE), makeConfig());
@@ -177,13 +190,22 @@ describe('Crazed Rampage handler (WP-843 / D-24777)', () => {
     assert.equal(G.turnEconomy.woundsDrawn, 1, 'the playing player woundsDrawn bumped');
     assert.deepStrictEqual(G.playerZones['1']!.hand, [STRENGTH_CARD], 'player 1 hand unchanged');
     assert.deepStrictEqual(G.playerZones['1']!.discard, [], 'player 1 gained nothing');
-    assert.equal(G.messages.length, 1, 'exactly one log line');
+    // why: WP-845 / D-24779 — player 1 can reveal, so they are queued to choose after the move;
+    // the cannot-reveal line comes first, then the enqueue line (was: exactly one log line).
+    assert.equal(G.messages.length, 2, 'the cannot-reveal line, then the enqueue line');
     assert.equal(
       G.messages[0]!.text,
       `Each player without another Strength Hero gained a Wound (${RAMPAGE_REF}): Player 0.`,
     );
     assert.equal(G.messages[0]!.outcome, 'applied');
     assert.equal(G.messages[0]!.card, RESOLVING_RAMPAGE, 'attributed to the resolving card');
+    assert.equal(
+      G.messages[1]!.text,
+      `Player 1 can reveal another Strength Hero and will choose whether to reveal it or gain a Wound (${RAMPAGE_REF}).`,
+    );
+    assert.equal(G.messages[1]!.outcome, 'neutral');
+    assert.equal(G.messages[1]!.card, RESOLVING_RAMPAGE);
+    assert.deepStrictEqual(G.pendingRevealOrWoundChoices?.map((entry) => entry.revealingSeats), [['1']]);
   });
 
   it('every player without a match is wounded, listed in sorted seat order', () => {
@@ -216,6 +238,8 @@ describe('Crazed Rampage "another" scope (WP-843 / D-24731)', () => {
     assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'player 0 revealed the played Strength Hero');
     assert.deepStrictEqual(G.playerZones['0']!.inPlay, [STRENGTH_CARD, RESOLVING_RAMPAGE], 'the reveal moves nothing');
     assert.equal(G.turnEconomy.woundsDrawn, 0);
+    // why: WP-845 / D-24779 — "can reveal" now queues the player's choice instead of revealing.
+    assert.deepStrictEqual(queuedSeats(G), ['0', '1'], 'the played Strength Hero lets player 0 choose');
   });
 
   it('AC-4: the resolving Crazed Rampage alone in play does not count as another', () => {
@@ -227,6 +251,7 @@ describe('Crazed Rampage "another" scope (WP-843 / D-24731)', () => {
     resolveRampage(G);
 
     assert.deepStrictEqual(G.playerZones['0']!.discard, ['wound-a'], 'the card cannot reveal itself');
+    assert.deepStrictEqual(queuedSeats(G), ['1'], 'only player 1 is queued');
   });
 
   it('AC-4: a Strength Hero in a non-playing player play area does not count for them', () => {
@@ -239,6 +264,7 @@ describe('Crazed Rampage "another" scope (WP-843 / D-24731)', () => {
 
     assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'player 0 revealed from hand');
     assert.deepStrictEqual(G.playerZones['1']!.discard, ['wound-a'], 'player 1 reveals from hand only');
+    assert.deepStrictEqual(queuedSeats(G), ['0'], 'player 0 can reveal from hand and is queued');
   });
 
   it('AC-4: a second Crazed Rampage copy in hand counts as another Strength Hero', () => {
@@ -250,6 +276,7 @@ describe('Crazed Rampage "another" scope (WP-843 / D-24731)', () => {
     resolveRampage(G);
 
     assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'the second copy in hand is revealed');
+    assert.deepStrictEqual(queuedSeats(G), ['0', '1'], 'the second copy in hand lets player 0 choose');
   });
 
   it('AC-4: a second Crazed Rampage copy played earlier this turn counts as another Strength Hero', () => {
@@ -261,10 +288,14 @@ describe('Crazed Rampage "another" scope (WP-843 / D-24731)', () => {
     resolveRampage(G);
 
     assert.deepStrictEqual(G.playerZones['0']!.discard, [], 'the earlier-played copy is revealed');
+    assert.deepStrictEqual(queuedSeats(G), ['0', '1'], 'the earlier-played copy lets player 0 choose');
   });
 });
 
 describe('Crazed Rampage no-Wound outcomes (WP-843 / D-24686)', () => {
+  // why: WP-845 / D-24779 — was "one blocked 'Every player revealed …' line" at effect time. Every
+  // player can reveal, so both are queued (one neutral enqueue line), and the blocked outcome
+  // comes from the apply once both choose Reveal.
   it('AC-5: every player reveals → no Wound and one blocked line', () => {
     const G = makeRampageState(
       { '0': [STRENGTH_CARD], '1': [STRENGTH_CARD] },
@@ -277,10 +308,21 @@ describe('Crazed Rampage no-Wound outcomes (WP-843 / D-24686)', () => {
     assert.equal(G.messages.length, 1);
     assert.equal(
       G.messages[0]!.text,
-      `Every player revealed another Strength Hero for ${RAMPAGE_REF}, so no one gained a Wound.`,
+      `Player 0, Player 1 can reveal another Strength Hero and will choose whether to reveal it or gain a Wound (${RAMPAGE_REF}).`,
     );
-    assert.equal(G.messages[0]!.outcome, 'blocked');
+    assert.equal(G.messages[0]!.outcome, 'neutral');
     assert.equal(G.messages[0]!.card, RESOLVING_RAMPAGE);
+
+    G.counters = {};
+    openRevealOrWoundSeatChoiceIfNeeded(G, undefined, '0');
+    for (const seat of ['0', '1']) {
+      resolveSeatChoice(makeMockMoveContext(G, { playerID: seat, numPlayers: 2 }), { optionIndex: 0 });
+    }
+    assert.deepStrictEqual(G.piles.wounds, ['wound-a'], 'no Wound left the supply');
+    const applyLine = G.messages.at(-1)!;
+    assert.equal(applyLine.text, `Reveal or gain a Wound (${RAMPAGE_REF}): Player 0, Player 1 revealed.`);
+    assert.equal(applyLine.outcome, 'blocked');
+    assert.equal(applyLine.card, RESOLVING_RAMPAGE);
   });
 
   it('AC-5: an empty Wound supply logs the empty-supply line and never says every player revealed', () => {
@@ -294,7 +336,12 @@ describe('Crazed Rampage no-Wound outcomes (WP-843 / D-24686)', () => {
     assert.deepStrictEqual(G.playerZones['0']!.discard, []);
     assert.equal(G.turnEconomy.woundsDrawn, 0, 'no woundsDrawn bump for a Wound that never landed');
     const texts = G.messages.map((entry) => entry.text);
-    assert.deepStrictEqual(texts, ['Player 0 could not gain a Wound — the Wound supply is empty.']);
+    // why: WP-845 / D-24779 — player 1 can reveal and is queued, so the enqueue line follows the
+    // empty-supply line (was: the empty-supply line alone).
+    assert.deepStrictEqual(texts, [
+      'Player 0 could not gain a Wound — the Wound supply is empty.',
+      `Player 1 can reveal another Strength Hero and will choose whether to reveal it or gain a Wound (${RAMPAGE_REF}).`,
+    ]);
     assert.equal(G.messages[0]!.outcome, 'blocked');
     assert.ok(!texts.some((text) => text.startsWith('Every player revealed')), 'the D-24686 bug class stays fixed');
   });
@@ -330,7 +377,11 @@ describe('Crazed Rampage woundsDrawn and Diving Block (WP-843 / D-24777)', () =>
 
     assert.deepStrictEqual(G.playerZones['1']!.discard, ['wound-a'], 'the Wound lands before the undo');
     assert.deepStrictEqual(G.pendingDivingBlockWounds, [{ playerID: '1', woundCardId: 'wound-a' }]);
-    const lastMessage = G.messages[G.messages.length - 1]!;
+    // why: WP-845 / D-24779 — player 0 can reveal, so the enqueue line now follows the summary
+    // line; the summary is the one before it (was: the last message).
+    const lastMessage = G.messages[G.messages.length - 2]!;
+    assert.equal(G.messages.length, 2);
+    assert.match(G.messages[1]!.text, /^Player 0 can reveal another Strength Hero/);
     assert.equal(
       lastMessage.text,
       `Each player without another Strength Hero gains a Wound (${RAMPAGE_REF}): ${composeWoundOutcomeClause([], ['1'])}.`,

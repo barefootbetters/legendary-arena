@@ -1453,6 +1453,17 @@
       "date": "2026-10-26",
       "evidence": "2-player operator match `CGZCvfU3Jmd` (core Magneto / Midtown Bank Robbery; Captain America, Secret Avenger, Spider-Man, Hulk, Wolverine, Black Widow; `sidekicksCount` 12), created after the deploy (server `72231815`, client `7223181`, then `c0589b5`, a docs-only SPEC on top of the merge): playing Inspire a Nation took the Sidekick Stack 12 -> 11 and put pile-sidekick in the discard, logging the applied line (1.2.7); the once-per-turn Sidekick recruit then succeeded (11 -> 10, 1.2.9).",
       "note": "Gain a Sidekick: Stack -1, discard +1, applied log line, recruit button still enabled after the gain. D-24778."
+    },
+    {
+      "key": "core-villain-brotherhood-sabretooth|reveal-or-wound",
+      "kind": "villain",
+      "card": "Sabretooth",
+      "ability": "Fight: Each player reveals an X-Men Hero or gains a Wound",
+      "wp": "WP-845",
+      "state": "pending",
+      "date": "2026-10-26",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com 2-player match created after the WP-845 deploy where a reveal-or-wound fires with a revealer, per the WP-845 DoD.",
+      "note": "The revealer sees 'Reveal a Hero or gain a Wound?' on their own seat; Reveal avoids the Wound, Gain a Wound instead takes it; cannot-reveal seats are wounded at once. D-24779."
     }
   ]
 }

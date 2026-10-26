@@ -108,6 +108,13 @@ import {
   composeExcessiveViolenceFiredNarrative,
   composeWoundOutcomeClause,
 } from '../events/notableEvents.compose.js';
+// why: WP-845 / D-24779 — the reveal-or-gain-a-Wound queue writer. The module imports
+// phaseCard and seatChoice.resolve; every binding is read inside function bodies only, so the
+// cycle is runtime-safe.
+import {
+  enqueueRevealOrWoundChoice,
+  formatRevealOrWoundPlayerNames,
+} from '../moves/revealOrWoundChoice.logic.js';
 
 // ---------------------------------------------------------------------------
 // MVP keyword set
@@ -5917,10 +5924,11 @@ function playedCardMatchesRevealCriterion(
  * player reveals another [hc:strength] Hero or gains a Wound."
  *
  * For every player in deterministic seat order (`Object.keys(G.playerZones).sort()` — the
- * gain-wound-each / reveal-from-hand precedent), a player who can reveal another Hero matching
- * the criterion reveals it (no mutation — the card stays where it is); every other player
- * gains one Wound. An empty Wound supply is a logged no-op for that player. Deterministic (no
- * RNG — the Wound is top-of-pile) and never throws.
+ * gain-wound-each / reveal-from-hand precedent), a player who cannot reveal another Hero
+ * matching the criterion gains one Wound at once; the players who can are queued on
+ * `G.pendingRevealOrWoundChoices`, and each chooses after the move whether to reveal or gain
+ * the Wound (WP-845 / D-24779). An empty Wound supply is a logged no-op for that player.
+ * Deterministic (no RNG — the Wound is top-of-pile) and never throws.
  *
  * @param G - Game state (mutated under Immer draft).
  * @param _ctx - Unused; no shuffle or randomness is involved.
@@ -5946,18 +5954,20 @@ function heroEffectRevealOrGainWoundEach(
   let anyPlayerLackedMatch = false;
   const gainedPlayerIds: string[] = [];
   const divingBlockPendingPlayerIds: string[] = [];
+  const revealingPlayerIds: string[] = [];
   for (const eachPlayerId of Object.keys(G.playerZones).sort()) {
     const playerZones = G.playerZones[eachPlayerId];
     if (!playerZones) {
       continue;
     }
     const isPlayingPlayer = eachPlayerId === playerID;
-    // why: auto-reveal is the D-24281 documented simplification — rules v23 "Revealing a Card"
-    // (L3196-3200) lets a player decline and take the Wound instead; that per-seat choice is
-    // deferred with D-24281's interactive choice. playerCanRevealMatch is the D-24731 "another"
-    // scope: hand for every player, plus played-this-turn for the playing player, never the
-    // resolving card itself.
+    // why: WP-845 / D-24779 (amends D-24777 §5) — rules v23 "Revealing a Card" (L3196-3200) lets
+    // a player who can reveal decline and take the Wound instead, so that player is queued for a
+    // choice after the move rather than auto-revealing. The predicate is fixed now, at effect
+    // time. playerCanRevealMatch is the D-24731 "another" scope: hand for every player, plus
+    // played-this-turn for the playing player, never the resolving card itself.
     if (playerCanRevealMatch(G, playerZones, isPlayingPlayer, cardId, criterion)) {
+      revealingPlayerIds.push(eachPlayerId);
       continue;
     }
     anyPlayerLackedMatch = true;
@@ -5983,7 +5993,47 @@ function heroEffectRevealOrGainWoundEach(
       G.turnEconomy.woundsDrawn += 1;
     }
   }
-  logRevealOrGainWoundOutcome(G, cardId, cardRef, requirement, anyPlayerLackedMatch, gainedPlayerIds, divingBlockPendingPlayerIds);
+  // why: WP-845 / D-24779 — with nobody queued this is today's call, unchanged. With players
+  // queued, the summary still names the cannot-reveal players first, but its "every player
+  // revealed" line would be false (the queued players have not chosen yet), so it is skipped.
+  if (revealingPlayerIds.length === 0 || anyPlayerLackedMatch) {
+    logRevealOrGainWoundOutcome(G, cardId, cardRef, requirement, anyPlayerLackedMatch, gainedPlayerIds, divingBlockPendingPlayerIds);
+  }
+  if (revealingPlayerIds.length > 0) {
+    queueRevealOrGainWoundEachChoice(G, playerID, cardId, cardRef, requirement, revealingPlayerIds);
+  }
+}
+
+/**
+ * Queues the players who can reveal for a reveal-or-gain-a-Wound choice after the move, and
+ * logs who will choose (WP-845 / D-24779).
+ *
+ * @param G - Game state (queue appended, log appended).
+ * @param playerID - The playing (current) player.
+ * @param cardId - The played card.
+ * @param cardRef - The formatted card reference.
+ * @param requirement - The title-cased criterion label (e.g. `Strength`).
+ * @param revealingPlayerIds - The players who can reveal, in seat order.
+ */
+function queueRevealOrGainWoundEachChoice(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+  cardRef: string,
+  requirement: string,
+  revealingPlayerIds: readonly string[],
+): void {
+  enqueueRevealOrWoundChoice(G, {
+    sourceCardId: cardId,
+    currentPlayerID: playerID,
+    revealOptionLabel: `Reveal another ${requirement} Hero`,
+    revealingSeats: [...revealingPlayerIds],
+  });
+  pushLog(G,
+    `${formatRevealOrWoundPlayerNames(revealingPlayerIds)} can reveal another ${requirement} Hero and will choose whether to reveal it or gain a Wound (${cardRef}).`,
+    'neutral',
+    cardId, // why: WP-438 — attribute the line to the played card.
+  );
 }
 
 /**

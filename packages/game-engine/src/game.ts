@@ -46,6 +46,7 @@ import { openOutOfTimeGrantSeatChoiceIfNeeded } from './moves/outOfTimeGrant.log
 import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEscapeProcedure.js';
 import { openTimestreamPurgeSeatChoiceIfNeeded, sweepPurgedHeroesFromHq } from './rules/timestreamPurge.logic.js';
 import { openEnigmaPeekSeatChoiceIfNeeded } from './rules/enigmaCode.logic.js';
+import { openRevealOrWoundSeatChoiceIfNeeded } from './moves/revealOrWoundChoice.logic.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -918,6 +919,15 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // War's loss land on this move.
           latchFinalTurnIfDeckExhausted(G);
           applyPileDepletionResourceLoss(G);
+          // why: WP-845 / D-24779 — open the next owed reveal-or-gain-a-Wound choice for the
+          // players who could reveal (rules v23 L3196-3200). AFTER the escape and Purge openers
+          // and the re-check above, so an Escape-timing entry resolves after that escape's steps
+          // 1-2 (the D-24750 order) and evaluateEndgame already sees a scheme loss; BEFORE the
+          // Diving Block opener, so a Diving Block wave from an inline cannot-reveal Wound waits
+          // until the revealers answer. An empty Wound supply resolves the entry as all revealing
+          // with no prompt (declining is not an option then, L3199-3200). Early no-op when
+          // nothing is queued.
+          openRevealOrWoundSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
           // why: WP-682 / D-24499 — after every move, open (or re-open) the next
           // Diving-Block reveal/decline WAVE for any Wounds parked at the
           // gainWoundForPlayer chokepoint this move. Runs here (not in each

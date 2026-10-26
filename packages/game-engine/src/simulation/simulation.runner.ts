@@ -52,6 +52,7 @@ import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
 // top-level cross-reference.
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEscapeProcedure.js';
+import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
 import { resetTurnEconomy } from '../economy/economy.logic.js';
 import { applyOnBeginParity } from './onBeginParity.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
@@ -703,6 +704,10 @@ function runPerTurnLoop(
         openNonActiveReturnOnDiscardSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         applyPileDepletionResourceLoss(gameState);
+        // why: WP-845 / D-24779 — mirror the live reveal-or-gain-a-Wound opener at its live
+        // position (after the escape opener and the depletion re-check, before the unmirrored
+        // Diving Block opener), so a queued revealer is asked in the sim too.
+        openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         continue;
       }
     }
@@ -805,6 +810,11 @@ function runPerTurnLoop(
     openNonActiveReturnOnDiscardSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
     openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
     applyPileDepletionResourceLoss(gameState);
+    // why: WP-845 / D-24779 — mirror the live reveal-or-gain-a-Wound opener at its live position
+    // (after the escape opener and the depletion re-check, before the unmirrored Diving Block
+    // opener). The getLegalMoves seat-choice short-circuit and the WP-749 non-active dispatch
+    // then answer it at its default (Reveal).
+    openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
 
     // why: zero-legal-moves + endTurn-illegal fallback (RS-6 second clause).
     // If the policy returned endTurn when the stage is not cleanup, the
