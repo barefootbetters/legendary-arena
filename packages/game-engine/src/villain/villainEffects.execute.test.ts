@@ -24,6 +24,9 @@ import {
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { composeEffectResultLogLine, composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
+import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
+import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
@@ -1327,6 +1330,23 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     };
   }
 
+  /**
+   * Opens the queued reveal-or-wound choice and answers every addressed seat with Reveal.
+   *
+   * // why: WP-845 / D-24779 — a player who can reveal is queued at effect time and chooses after
+   * the move; option 0 (Reveal) is the path that pushes the WP-646 / WP-651 strikeBlocked (moved
+   * from effect time to the apply).
+   *
+   * @param G - The game state after executeVillainAbilities.
+   */
+  function revealEveryQueuedSeat(G: LegendaryGameState): void {
+    G.counters = {};
+    openRevealOrWoundSeatChoiceIfNeeded(G, undefined, CTX.currentPlayer);
+    for (const seat of G.pendingSeatChoice?.addressedSeats ?? []) {
+      resolveSeatChoice(makeMockMoveContext(G, { playerID: seat, numPlayers: 2 }), { optionIndex: 0 });
+    }
+  }
+
   it('AC-3 team predicate (D-24281 amended): an X-Men Hero in HAND or IN PLAY avoids the Wound; none anywhere gains one', () => {
     const G = makeG({
       hooks: [rowHook('v-sabretooth', 'onFight', 'team', 'x-men')],
@@ -1471,6 +1491,9 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-ambusher' as CardExtId, 'onAmbush');
+    // why: WP-845 / D-24779 — the strikeBlocked is pushed when the Reveal is applied, not at
+    // effect time (was: asserted straight after executeVillainAbilities).
+    revealEveryQueuedSeat(G);
     const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
     assert.equal(blocked.length, 1, 'exactly one strikeBlocked — only the revealing player');
     const event = blocked[0]!;
@@ -1489,6 +1512,8 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-ambusher' as CardExtId, 'onAmbush');
+    // why: WP-845 / D-24779 — pushed at apply time once both choose Reveal (was: at effect time).
+    revealEveryQueuedSeat(G);
     const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
     assert.equal(blocked.length, 2, 'one strikeBlocked per revealing player');
     assert.deepEqual(
@@ -1505,6 +1530,8 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    // why: WP-845 / D-24779 — pushed at apply time once the seat chooses Reveal (was: at effect time).
+    revealEveryQueuedSeat(G);
     const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
     assert.equal(blocked.length, 1, 'exactly one strikeBlocked on the onFight timing');
     const event = blocked[0]!;
@@ -1523,6 +1550,8 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
+    // why: WP-845 / D-24779 — pushed at apply time once the seat chooses Reveal (was: at effect time).
+    revealEveryQueuedSeat(G);
     const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
     assert.equal(blocked.length, 1, 'exactly one strikeBlocked on the onEscape timing');
     const event = blocked[0]!;
@@ -1674,9 +1703,15 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
     assert.equal(G.playerZones['0']!.discard.length, 0);
     assert.equal(G.playerZones['1']!.discard.length, 0);
+    // why: WP-845 / D-24779 — both players can reveal, so they are queued (one neutral enqueue
+    // line) and the blocked "all revealed" outcome is the apply line once both choose Reveal
+    // (was: one blocked "every player revealed a Ranged Hero." line at effect time).
     assert.equal(G.messages!.length, 1, 'exactly one log line pushed');
-    assert.match(G.messages![0]!.text, /Escape effect: every player revealed a Ranged Hero\./);
-    assert.equal(G.messages![0]!.outcome, 'blocked', 'no wound landed → blocked');
+    assert.match(G.messages![0]!.text, /Escape effect: Player 0, Player 1 can reveal a matching Ranged Hero and will choose whether to reveal it or gain a Wound\./);
+    assert.equal(G.messages![0]!.outcome, 'neutral', 'nobody has chosen yet → neutral');
+    revealEveryQueuedSeat(G);
+    assert.match(G.messages!.at(-1)!.text, /^Reveal or gain a Wound \(.+\): Player 0, Player 1 revealed\.$/);
+    assert.equal(G.messages!.at(-1)!.outcome, 'blocked', 'no wound landed → blocked');
     assert.equal(G.piles.wounds.length, 1, 'wound pile untouched');
   });
 
@@ -1707,7 +1742,9 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       messages: [],
     });
     executeVillainAbilities(revealed, CTX, 'v-x' as CardExtId, 'onAmbush');
-    assert.match(revealed.messages![0]!.text, /Ambush effect: every player revealed an X-Men Hero\./);
+    // why: WP-845 / D-24779 — the revealer is queued, so the printed label is checked on the
+    // enqueue line (was: "every player revealed an X-Men Hero.", now reachable only with no seats).
+    assert.match(revealed.messages![0]!.text, /Ambush effect: Player 0 can reveal a matching X-Men Hero and will choose/);
   });
 });
 

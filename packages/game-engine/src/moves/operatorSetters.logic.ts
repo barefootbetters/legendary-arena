@@ -87,6 +87,9 @@ export function isOperatorChoiceOpen(G: LegendaryGameState): boolean {
   // why: WP-817 / D-24750 — an owed Escape-effect discard (Primus) is opened into a seat
   // choice after the move, exactly like the escape-procedure queue above.
   if ((G.pendingEscapeEffectDiscards?.length ?? 0) > 0) return true;
+  // why: WP-845 / D-24779 — an owed reveal-or-gain-a-Wound choice is opened into a seat choice
+  // after the move, like the queues above.
+  if ((G.pendingRevealOrWoundChoices?.length ?? 0) > 0) return true;
   return false;
 }
 

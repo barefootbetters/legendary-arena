@@ -478,3 +478,154 @@ describe('escape-procedure discard across the rebuilt turn loops (WP-793 / D-246
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-845 / D-24779 — reveal or gain a Wound. A seat that can reveal is queued at effect time
+// and asked after the move, so the sim's and runFixture's opener mirrors must park the choice
+// (or a captured trace's resolveSeatChoice would answer nothing on replay). This drives a seeded
+// two-seat game whose unfightable Villains all carry "Escape: Each player reveals a
+// [team:spider-friends] Hero or gains a Wound": only seat 1 recruits (every Spider-Man card
+// costs 0), so seat 1 is the revealer when an escape fires on seat 0's turn. The mock registry
+// lists no cards, so no Ambush board keyword is emitted; Escape timing needs none.
+// ---------------------------------------------------------------------------
+
+// why: the locked WP-845 apply line for a PROMPTED choice (moves/revealOrWoundChoice.logic.ts),
+// with its `turn.stage.sequence` prefix: the turn, then the revealing seat. The empty-supply
+// resolution reads "…: the Wound supply is empty, so Player N revealed." and never matches.
+const REVEAL_OR_WOUND_PROMPTED_APPLY_PATTERN = /^(\d+)\.\d+\.\d+ Reveal or gain a Wound \(.+\): Player (\d) revealed/;
+const REVEAL_OR_WOUND_APPLY_PATTERN = /Reveal or gain a Wound \(.+\): /;
+const REVEAL_OR_WOUND_SEED = 'wp845-reveal-or-wound-seed';
+
+/**
+ * Builds the unfightable registry with every Villain carrying a reveal-or-wound Escape and the
+ * Spider-Man Hero deck on the Spider Friends team at cost 0.
+ *
+ * @returns A hand-built registry reader (engine tests never import the registry layer).
+ */
+function buildRevealOrWoundRegistry(): CardRegistryReader {
+  const unfightable = buildUnfightableRegistry() as unknown as {
+    getSet: (abbr: string) => {
+      villains: Array<{ cards: Array<{ abilities: string[] }> }>;
+      heroes: Array<{ team?: string; cards: Array<{ cost: number }> }>;
+    };
+  };
+  const setData = structuredClone(unfightable.getSet('core'));
+  for (const group of setData.villains) {
+    for (const card of group.cards) {
+      card.abilities = [
+        'Escape: Each player reveals a [team:spider-friends] Hero or gains a Wound. [effect:reveal-or-wound:team:spider-friends]',
+      ];
+    }
+  }
+  for (const hero of setData.heroes) {
+    hero.team = 'spider-friends';
+    // why: a seat that plays no cards has 0 Recruit, so every Spider-Man card costs 0 and the
+    // recruiting seat's deck soon holds a Spider Friends Hero in most hands.
+    for (const card of hero.cards) {
+      card.cost = 0;
+    }
+  }
+  return {
+    listCards: () => [],
+    listSets: () => [{ abbr: 'core' }],
+    getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+  } as unknown as CardRegistryReader;
+}
+
+/**
+ * A policy that answers any seat choice it is offered, otherwise reveals, recruits any Hero it is
+ * offered (seat 1 only), advances and ends its turn — it never fights or plays. Records which
+ * seat was active on each turn and every log line it observed.
+ *
+ * @param seat - The seat this policy drives.
+ * @param activeSeatByTurn - The sink of each turn's active seat.
+ * @param observedLogs - The sink of every log line the policy observed.
+ * @returns The AIPolicy for the seat.
+ */
+function createRevealOrWoundPolicy(
+  seat: string,
+  activeSeatByTurn: Map<number, string>,
+  observedLogs: Set<string>,
+): AIPolicy {
+  return {
+    name: `wp845-reveal-or-wound-seat-${seat}`,
+    decideTurn(playerView: UIState, legalMoves: LegalMove[]): ClientTurnIntent {
+      activeSeatByTurn.set(playerView.game.turn, playerView.game.activePlayerId);
+      for (const entry of playerView.log) {
+        observedLogs.add(entry.text);
+      }
+      const recruitMove = seat === '1' ? findMove(legalMoves, 'recruitHero') : undefined;
+      const chosen =
+        findMove(legalMoves, 'resolveSeatChoice') ??
+        findMove(legalMoves, 'revealVillainCard') ??
+        recruitMove ??
+        findMove(legalMoves, 'advanceStage') ??
+        findMove(legalMoves, 'endTurn') ??
+        { name: 'endTurn', args: {} };
+      return {
+        matchId: `simulation-${REVEAL_OR_WOUND_SEED}`,
+        playerId: playerView.game.activePlayerId,
+        turnNumber: playerView.game.turn,
+        move: { name: chosen.name, args: chosen.args },
+      };
+    },
+  };
+}
+
+describe('reveal-or-wound seat choice across the rebuilt turn loops (WP-845 / D-24779)', () => {
+  test('a non-active revealer is asked in the sim, answers, and runFixture replays the same apply lines', () => {
+    const setupConfig = buildLokiConfig();
+    const registry = buildRevealOrWoundRegistry();
+    const activeSeatByTurn = new Map<number, string>();
+    const observedLogs = new Set<string>();
+    const policies: AIPolicy[] = [
+      createRevealOrWoundPolicy('0', activeSeatByTurn, observedLogs),
+      createRevealOrWoundPolicy('1', activeSeatByTurn, observedLogs),
+    ];
+
+    const captured = simulateOneGameAndCaptureMoves(setupConfig, registry, policies, REVEAL_OR_WOUND_SEED, 0);
+    const fixture = buildFixtureFromCapture(captured.moves, REVEAL_OR_WOUND_SEED, setupConfig, 'wp845-reveal-or-wound');
+    const replay = runFixture(fixture, registry);
+
+    // Loud precondition: a prompted reveal-or-wound was answered by a seat that was NOT active on
+    // that turn (the sim's WP-749 dispatch answers it at its default, Reveal).
+    let nonActivePromptedApplies = 0;
+    for (const entry of replay.messages) {
+      const match = REVEAL_OR_WOUND_PROMPTED_APPLY_PATTERN.exec(entry.text);
+      if (match === null) {
+        continue;
+      }
+      const activeSeat = activeSeatByTurn.get(Number(match[1]));
+      assert.ok(activeSeat !== undefined, `the policies must have acted on turn ${match[1]!}`);
+      if (match[2] !== activeSeat) {
+        nonActivePromptedApplies += 1;
+      }
+    }
+    assert.notEqual(
+      nonActivePromptedApplies,
+      0,
+      'Precondition failed: no prompted reveal-or-wound was answered by a non-active seat; the locked seed no longer puts a Spider Friends Hero in seat 1\'s hand at an escape on seat 0\'s turn.',
+    );
+    assert.ok(
+      captured.moves.some((move) => move.moveName === 'resolveSeatChoice' && move.playerId === '1'),
+      'seat 1 submitted its own resolveSeatChoice in the capture',
+    );
+    assert.equal(captured.endgameReached, true, 'the game terminates rather than being flagged stuck');
+
+    // The capture -> replay lockstep: every apply line the sim produced, runFixture reproduces.
+    const replayApplyLines = new Set<string>();
+    for (const entry of replay.messages) {
+      if (REVEAL_OR_WOUND_APPLY_PATTERN.test(entry.text)) {
+        replayApplyLines.add(entry.text);
+      }
+    }
+    const simApplyLines = [...observedLogs].filter((text) => REVEAL_OR_WOUND_APPLY_PATTERN.test(text));
+    assert.notEqual(simApplyLines.length, 0, 'the sim applied at least one reveal-or-wound choice');
+    for (const line of simApplyLines) {
+      assert.ok(
+        replayApplyLines.has(line),
+        `runFixture must park and resolve the same reveal-or-wound choice the sim did (the D-24273 capture -> replay lockstep): ${line}`,
+      );
+    }
+  });
+});

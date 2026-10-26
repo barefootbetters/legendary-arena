@@ -129,6 +129,10 @@ export default defineComponent({
           return 'Enigma Code — pay 1 Recruit to look at a face-down card?';
         case 'return-on-discard':
           return 'Return the discarded card to your hand?';
+        // why: WP-845 / D-24779 — a player who can reveal for "reveal … or gain a Wound" may
+        // decline and take the Wound (rules v23 L3196-3200); the options name the Hero needed.
+        case 'reveal-or-wound':
+          return 'Reveal a Hero or gain a Wound?';
         default:
           return 'Your choice';
       }

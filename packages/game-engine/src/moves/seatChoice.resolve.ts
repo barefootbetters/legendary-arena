@@ -102,6 +102,12 @@ import {
   applyEnigmaPeekResolvedSeatChoice,
   ENIGMA_PEEK_SEAT_CHOICE_KIND,
 } from '../rules/enigmaCode.logic.js';
+// why: WP-845 / D-24779 — the reveal-or-gain-a-Wound apply. revealOrWoundChoice imports
+// parkSeatChoice from this module: the same runtime-safe cycle (function-body references only).
+import {
+  applyRevealOrWoundSeatChoice,
+  REVEAL_OR_WOUND_SEAT_CHOICE_KIND,
+} from './revealOrWoundChoice.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -556,6 +562,14 @@ function applySeatChoiceByKind(
   }
   if (choice.kind === RETURN_ON_DISCARD_SEAT_CHOICE_KIND) {
     applyReturnOnDiscardSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-845 / D-24779 — reveal or gain a Wound (rules v23 L3196-3200). The applier reads the
+  // front G.pendingRevealOrWoundChoices entry for its card, current player and threat kind (the
+  // timeout path passes no current player), applies the seats in ascending order, and bumps
+  // woundsDrawn only for the entry's current player. No draw, so no shuffle context.
+  if (choice.kind === REVEAL_OR_WOUND_SEAT_CHOICE_KIND) {
+    applyRevealOrWoundSeatChoice(G, choice);
     return;
   }
   // why: D-24678 — the shuffle context reaches Random Acts' Diving Block draw.
