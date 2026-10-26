@@ -146,7 +146,7 @@ import { computeFinalScores, isVictoryPileBystander } from '../scoring/scoring.l
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
 import { isFinalBlowAvailable } from '../mastermind/mastermind.logic.js';
 import { isMastermindHaunting } from '../board/haunt.logic.js';
-import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import { SHIELD_OFFICER_EXT_ID, SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
 // why: WP-817 / D-24750 — handCosts projects the same off-play cost the fight-discard
@@ -1121,6 +1121,12 @@ export function buildUIState(
     // without Zemo keeps the economy block byte-identical and the WP-820 client offers
     // "Fight + Rescue" only when it could do something.
     ...(isRescueOnFightCueOn(gameState) ? { rescueOnFightAvailable: true as const } : {}),
+    // why: WP-842 / D-24776 — project the once-per-turn Sidekick recruit cue omit-when-absent
+    // (present only when set), so a turn without a Sidekick recruit keeps the economy block
+    // byte-identical. The filter passes it to the active player only.
+    ...(gameState.turnEconomy.hasRecruitedSidekickThisTurn === true
+      ? { hasRecruitedSidekickThisTurn: true as const }
+      : {}),
     // why: WP-783 / D-24629 — project the Phasing options omit-when-absent (present only
     // when at least one hand card is phasable), so a turn without Phasing keeps the
     // economy block byte-identical and the client renders Phase buttons only when legal.
@@ -1185,6 +1191,9 @@ export function buildUIState(
     // falls back to the UNKNOWN placeholder if the display entry is absent
     // (narrow test mocks), matching every other display projection in this file.
     officerDisplay: resolveDisplay(SHIELD_OFFICER_EXT_ID, gameState),
+    // why: WP-842 / D-24776 — the Sidekicks cell is the second recruitable supply pile; its
+    // card face is projected the same way (fresh copy, UNKNOWN fallback) and always built.
+    sidekickDisplay: resolveDisplay(SIDEKICK_EXT_ID, gameState),
   };
 
   // --- 12. Project KO pile ---

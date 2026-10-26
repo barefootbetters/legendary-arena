@@ -322,3 +322,43 @@ describe('playedCardIdsThisTurn / playedCardIdsStillInPlay — Out of Time ledge
     assert.deepEqual(inPlay, [PLAIN_CARD]);
   });
 });
+
+describe('playedCardIdsThisTurn — returned Sidekicks (WP-842 / D-24776)', () => {
+  const SIDEKICK = 'pile-sidekick' as CardExtId;
+  const AGENT = 'starting-shield-agent' as CardExtId;
+
+  /** Builds a state whose turn economy carries the given Sidekick count and Out of Time ledger. */
+  function makeSidekickState(sidekicksReturnedThisTurn: number | undefined, outOfTimePlayedCardIds: CardExtId[] | undefined): LegendaryGameState {
+    const state = makeState({});
+    const turnEconomy: Record<string, unknown> = { attack: 0, recruit: 0 };
+    if (sidekicksReturnedThisTurn !== undefined) {
+      turnEconomy.sidekicksReturnedThisTurn = sidekicksReturnedThisTurn;
+    }
+    if (outOfTimePlayedCardIds !== undefined) {
+      turnEconomy.outOfTimePlayedCardIds = outOfTimePlayedCardIds;
+    }
+    state.turnEconomy = turnEconomy as unknown as LegendaryGameState['turnEconomy'];
+    return state;
+  }
+
+  it('T11: two returned Sidekicks count twice beside the cards still in play (no de-duplication)', () => {
+    const state = makeSidekickState(2, undefined);
+    assert.deepEqual(playedCardIdsThisTurn(state, [AGENT]), [AGENT, SIDEKICK, SIDEKICK]);
+    assert.deepEqual(playedCardIdsStillInPlay(state, [AGENT]), [AGENT], 'the still-in-play view never sees them');
+  });
+
+  it('T11b: a Sidekick replayed from Out of Time and then returned counts once', () => {
+    const state = makeSidekickState(1, [SIDEKICK]);
+    assert.deepEqual(playedCardIdsThisTurn(state, []), [SIDEKICK]);
+  });
+
+  it('T11c: the accepted residual — a set-aside Sidekick plus a second returned one collapse to one (D-24776)', () => {
+    const state = makeSidekickState(1, [SIDEKICK]);
+    assert.deepEqual(playedCardIdsThisTurn(state, []), [SIDEKICK]);
+  });
+
+  it('T12: with no Sidekick count and no Out of Time ledger the output is unchanged', () => {
+    assert.deepEqual(playedCardIdsThisTurn(makeSidekickState(undefined, undefined), [AGENT, PLAIN_CARD]), [AGENT, PLAIN_CARD]);
+    assert.deepEqual(playedCardIdsThisTurn(makeState({}), [AGENT]), [AGENT], 'no turnEconomy at all (the minimal-G slice)');
+  });
+});

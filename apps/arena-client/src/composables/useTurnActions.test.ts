@@ -620,6 +620,18 @@ describe('useTurnActions — heal lock on recruit and fight (D-24180 / D-24614)'
     assert.equal(actions.canFightMastermind().allowed, true);
   });
 
+  test('T20 (WP-842): canRecruitSidekick gates on turn, then stage, then the heal lock', () => {
+    const offTurn = useTurnActions('main', false, ...NO_PENDING_FLAGS, false, false, false).canRecruitSidekick();
+    assert.deepEqual(offTurn, { allowed: false, reason: 'It is not your turn.' });
+    const atStart = useTurnActions('start', true, ...NO_PENDING_FLAGS, false, false, false).canRecruitSidekick();
+    assert.equal(atStart.allowed, false);
+    assert.match(atStart.reason!, /Only available during the Main/);
+    const healed = useTurnActions('main', true, ...NO_PENDING_FLAGS, false, false, true).canRecruitSidekick();
+    assert.deepEqual(healed, { allowed: false, reason: HEAL_LOCK_REASON });
+    const atMain = useTurnActions('main', true, ...NO_PENDING_FLAGS, false, false, false).canRecruitSidekick();
+    assert.deepEqual(atMain, { allowed: true, reason: null });
+  });
+
   test('turn and stage reasons take precedence over the heal lock', () => {
     const offTurn = useTurnActions('main', false, ...NO_PENDING_FLAGS, false, false, true).canFightVillain();
     assert.equal(offTurn.reason, 'It is not your turn.');

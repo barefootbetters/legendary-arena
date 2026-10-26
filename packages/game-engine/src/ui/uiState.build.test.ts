@@ -24,7 +24,7 @@ import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { DARK_PORTAL_COUNT } from '../types.js';
 import { makeCardStatEntry } from '../test/fixtureBuilders.js';
 import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
-import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import { SHIELD_OFFICER_EXT_ID, SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { getLegalMoves } from '../simulation/ai.legalMoves.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
@@ -2762,5 +2762,38 @@ describe('buildUIState — City fightCost includes a variable-Attack passive (WP
     const projectedFightCost = buildUIState(gameState, mockCtx).city.spaces[1]!.fightCost;
     assert.equal(projectedFightCost, 7);
     assert.equal(projectedFightCost, resolveFightCost(gameState, paibokId, mockCtx.currentPlayer));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-842 / D-24776 — economy.hasRecruitedSidekickThisTurn cue + piles.sidekickDisplay
+// ---------------------------------------------------------------------------
+
+describe('WP-842 buildUIState — Sidekick recruit cue and card face (D-24776)', () => {
+  it('T16: projects hasRecruitedSidekickThisTurn after a recruit and omits the key before one', () => {
+    const before = buildUIState(createTestGameState(), mockCtx);
+    assert.ok(!Object.keys(before.economy).includes('hasRecruitedSidekickThisTurn'), 'omit-when-absent, never false');
+
+    const gameState = createTestGameState();
+    gameState.turnEconomy = { ...gameState.turnEconomy, hasRecruitedSidekickThisTurn: true };
+    const after = buildUIState(gameState, mockCtx);
+    assert.equal(after.economy.hasRecruitedSidekickThisTurn, true);
+    assert.ok(Object.keys(after.economy).includes('hasRecruitedSidekickThisTurn'), 'the key is on the built projection');
+  });
+
+  it('T17: always projects sidekickDisplay as the resolveDisplay shape, a fresh copy', () => {
+    const gameState = createTestGameState();
+    const sidekickFace: UICardDisplay = {
+      extId: SIDEKICK_EXT_ID,
+      name: 'Sidekick',
+      imageUrl: 'https://images.legendary-arena.com/ssw1/ssw1-sk-sidekick.webp',
+      cost: null,
+    };
+    gameState.cardDisplayData[SIDEKICK_EXT_ID] = sidekickFace;
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    assert.deepStrictEqual(ui.piles.sidekickDisplay, { ...sidekickFace, heroClass: null, team: null });
+    assert.notStrictEqual(ui.piles.sidekickDisplay, sidekickFace, 'never a reference into G.cardDisplayData');
   });
 });

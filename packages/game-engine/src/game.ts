@@ -66,6 +66,7 @@ import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
 import { recruitOfficer } from './moves/recruitOfficer.js';
+import { recruitSidekick } from './moves/recruitSidekick.js';
 import { exorciseHauntedHero } from './moves/exorciseHauntedHero.js';
 import { healWounds } from './moves/healWounds.js';
 import { endMatchEarly } from './moves/endMatchEarly.js';
@@ -565,6 +566,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // false) per D-10008 — it mutates real G (G.piles.officers / playerZones /
     // turnEconomy), absent on UIState.
     recruitOfficer: { move: recruitOfficer, client: false },
+    // why: WP-842 / D-24776 — recruitSidekick buys the top Sidekick Stack token for 2
+    // recruit into the current player's discard, once per turn. Non-core, internally
+    // stage-gated (the recruitOfficer pattern). Server-only (client: false) per D-10008 —
+    // it mutates real G (G.piles.sidekicks / playerZones / turnEconomy).
+    recruitSidekick: { move: recruitSidekick, client: false },
     // why: WP-757 / D-24587 — exorciseHauntedHero pays a Haunted Hero's cost, KOs or
     // gives that Hero, and releases its haunter (a Villain enters the City ignoring
     // Ambush). Non-core, internally stage-gated (the recruitHero pattern). Server-only

@@ -162,6 +162,7 @@ export { revealVillainCard } from "./villainDeck/villainDeck.reveal.js";
 export { fightVillain } from "./moves/fightVillain.js";
 export { recruitHero } from "./moves/recruitHero.js";
 export { recruitOfficer, OFFICER_RECRUIT_COST } from "./moves/recruitOfficer.js";
+export { recruitSidekick, returnPlayedSidekick, SIDEKICK_RECRUIT_COST, SIDEKICK_RETURN_DRAW_COUNT } from "./moves/recruitSidekick.js";
 // why: WP-757 / D-24587 — the Haunt contract WP-758 (Zarathos) and WP-759 (client)
 // consume verbatim: the exorcise move + args and the three haunt helpers.
 export { exorciseHauntedHero } from "./moves/exorciseHauntedHero.js";

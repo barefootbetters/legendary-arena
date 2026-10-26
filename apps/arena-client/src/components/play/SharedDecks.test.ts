@@ -183,7 +183,10 @@ describe('SharedDecks (WP-648 — recruitable S.H.I.E.L.D. Officer supply)', () 
     assert.equal(button.find('[data-testid="card-tile-fallback"]').exists(), true);
   });
 
-  test('the other four supply cells stay static counts (only the officers cell is a button)', () => {
+  // why: WP-842 / D-24776 — intended behavior change. This case pinned "exactly one
+  // recruit button (Officers only)"; the Sidekicks cell is now the second recruit
+  // button, so it pins two buttons (Officers, Sidekicks) and three static cells.
+  test('the other three supply cells stay static counts (Officers and Sidekicks are buttons)', () => {
     const { submitMove } = recorder();
     const wrapper = mount(SharedDecks, {
       props: {
@@ -193,7 +196,16 @@ describe('SharedDecks (WP-648 — recruitable S.H.I.E.L.D. Officer supply)', () 
         submitMove,
       },
     });
-    assert.equal(wrapper.findAll('button').length, 1, 'exactly one recruit button (Officers only)');
+    assert.equal(wrapper.findAll('button').length, 2, 'exactly two recruit buttons (Officers, Sidekicks)');
+    assert.equal(wrapper.find('[data-testid="play-recruit-officer"]').exists(), true);
+    assert.equal(wrapper.find('[data-testid="play-recruit-sidekick"]').exists(), true);
+    for (const staticCell of ['wounds', 'horrors', 'bystanders']) {
+      assert.equal(
+        wrapper.find(`[data-testid="play-shared-deck-${staticCell}"]`).find('button').exists(),
+        false,
+        `${staticCell} stays a static count`,
+      );
+    }
     assert.match(wrapper.find('[data-testid="play-shared-deck-wounds"]').text(), /\[2\]/);
     assert.match(wrapper.find('[data-testid="play-shared-deck-bystanders"]').text(), /\[27\]/);
   });
@@ -217,5 +229,86 @@ describe('SharedDecks — heal lock (D-24180 / D-24614)', () => {
     assert.match(button.find('[data-testid="card-tile"]').attributes('title')!, /cannot recruit or fight after healing this turn/);
     await button.trigger('click');
     assert.equal(calls.length, 0);
+  });
+});
+
+describe('SharedDecks — recruitable Sidekick Stack (WP-842 / D-24776)', () => {
+  const SIDEKICK_FACE = {
+    extId: 'pile-sidekick',
+    name: 'Sidekick',
+    imageUrl: 'https://images.legendary-arena.com/ssw1/ssw1-sk-sidekick.webp',
+    cost: null,
+  };
+
+  /** Mounts SharedDecks with a 12-card Sidekick Stack and the given overrides. */
+  function mountSidekicks(options: {
+    economyOver?: Partial<UITurnEconomyState>;
+    pilesOver?: Partial<UISharedPilesState>;
+    isViewerTurn?: boolean;
+  }) {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles({ sidekicksCount: 12, sidekickDisplay: { ...SIDEKICK_FACE }, ...options.pilesOver }),
+        currentStage: 'main',
+        isViewerTurn: options.isViewerTurn ?? true,
+        economy: economy({ recruit: 5, availableRecruit: 5, ...options.economyOver }),
+        submitMove,
+      },
+    });
+    return { calls, wrapper };
+  }
+
+  test('T21: allowed — the Sidekicks button is enabled, shows the card face, and clicking emits recruitSidekick', async () => {
+    const { calls, wrapper } = mountSidekicks({});
+    const button = wrapper.find('[data-testid="play-recruit-sidekick"]');
+    assert.equal(button.attributes('disabled'), undefined);
+    assert.equal(button.attributes('title'), 'Recruit a Sidekick for 2 recruit (once per turn)');
+    assert.match(button.text(), /\[12\]/);
+    assert.match(button.text(), /Recruit: 2/);
+    assert.equal(button.find('[data-testid="card-tile-image"]').exists(), true);
+    await button.trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'recruitSidekick');
+    assert.deepEqual(calls[0]!.args, {});
+  });
+
+  test('T21: each block disables the button with its locked reason, and the Officers button is unaffected', async () => {
+    const cases: { label: string; options: Parameters<typeof mountSidekicks>[0]; reason: string }[] = [
+      { label: 'already recruited', options: { economyOver: { hasRecruitedSidekickThisTurn: true } }, reason: 'You already recruited a Sidekick this turn.' },
+      { label: 'empty Stack', options: { pilesOver: { sidekicksCount: 0 } }, reason: 'No Sidekicks remain in the Sidekick Stack.' },
+      { label: '1 recruit', options: { economyOver: { recruit: 1, availableRecruit: 1 } }, reason: 'Needs 2 recruit, you have 1.' },
+      { label: 'not your turn', options: { isViewerTurn: false }, reason: 'It is not your turn.' },
+    ];
+    for (const testCase of cases) {
+      const { calls, wrapper } = mountSidekicks(testCase.options);
+      const button = wrapper.find('[data-testid="play-recruit-sidekick"]');
+      assert.equal(button.attributes('disabled'), '', `${testCase.label}: disabled`);
+      assert.equal(button.attributes('title'), testCase.reason, `${testCase.label}: locked reason`);
+      await button.trigger('click');
+      assert.equal(calls.length, 0, `${testCase.label}: a click submits nothing`);
+    }
+    const { wrapper } = mountSidekicks({ economyOver: { hasRecruitedSidekickThisTurn: true } });
+    assert.equal(
+      wrapper.find('[data-testid="play-recruit-officer"]').attributes('disabled'),
+      undefined,
+      'a Sidekick recruit this turn never disables the Officers button',
+    );
+  });
+
+  test('T22: falls back to the Sidekick name when sidekickDisplay is absent (older snapshots)', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: {
+        piles: piles({ sidekicksCount: 12 }),
+        currentStage: 'main',
+        economy: economy({ recruit: 5, availableRecruit: 5 }),
+        submitMove,
+      },
+    });
+    const button = wrapper.find('[data-testid="play-recruit-sidekick"]');
+    assert.equal(button.find('[data-testid="card-tile-image"]').exists(), false);
+    assert.equal(button.find('[data-testid="card-tile-fallback"]').exists(), true);
+    assert.match(button.text(), /Sidekick/);
   });
 });

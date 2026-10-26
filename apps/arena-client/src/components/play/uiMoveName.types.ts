@@ -54,6 +54,10 @@ export type UiMoveName =
   // recruit into the viewer's discard. Dispatched with an empty payload; the
   // engine move takes no arguments (all Officers are identical tokens).
   | 'recruitOfficer'
+  // why: WP-842 / D-24776 — buys the top Sidekick Stack token for 2 recruit into the
+  // viewer's discard, once per turn. Dispatched with an empty payload; the engine
+  // move takes no arguments (all Sidekicks are identical tokens).
+  | 'recruitSidekick'
   | 'fightMastermind'
   | 'resolveHeroChoice'
   | 'resolveKoHeroChoice'

@@ -3702,3 +3702,45 @@ describe('WP-817 fightDiscardCosts + handCosts projection (D-24750)', () => {
     }
   });
 });
+
+describe('WP-842 filterUIStateForAudience — Sidekick recruit cue and card face (D-24776)', () => {
+  // why: the cue rides the active-player-only economy block; the card face rides the
+  // public piles block. Both are optional, so a filter that forgot either would drop it
+  // silently (EC-206) — these pins catch that.
+  const sidekickFace = {
+    extId: 'pile-sidekick',
+    name: 'Sidekick',
+    imageUrl: 'https://images.legendary-arena.com/ssw1/ssw1-sk-sidekick.webp',
+    cost: null,
+  };
+
+  it('T18: the active player sees hasRecruitedSidekickThisTurn, surviving the JSON round-trip', () => {
+    const uiState = createTestUIState();
+    uiState.economy.hasRecruitedSidekickThisTurn = true;
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.hasRecruitedSidekickThisTurn, true);
+    const serialized = JSON.parse(JSON.stringify(result)) as UIState;
+    assert.equal(serialized.economy.hasRecruitedSidekickThisTurn, true, 'the uiStateSnapshot carries the cue');
+  });
+
+  it('T18: another player and a spectator never see the cue', () => {
+    const uiState = createTestUIState();
+    uiState.economy.hasRecruitedSidekickThisTurn = true;
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(!('hasRecruitedSidekickThisTurn' in result.economy), 'REDACTED_ECONOMY has no Sidekick cue');
+    }
+  });
+
+  it('T18: every audience sees sidekickDisplay as an independent, value-identical copy', () => {
+    const uiState = createTestUIState();
+    uiState.piles.sidekickDisplay = { ...sidekickFace };
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const filtered = filterUIStateForAudience(uiState, audience);
+      assert.deepStrictEqual(filtered.piles.sidekickDisplay, sidekickFace);
+      assert.notStrictEqual(filtered.piles.sidekickDisplay, uiState.piles.sidekickDisplay, 'not aliased to the full UIState');
+      const serialized = JSON.parse(JSON.stringify(filtered)) as UIState;
+      assert.deepStrictEqual(serialized.piles.sidekickDisplay, sidekickFace, 'survives the JSON round-trip');
+    }
+  });
+});

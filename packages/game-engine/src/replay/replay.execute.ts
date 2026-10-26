@@ -58,6 +58,7 @@ import { fightVillain } from '../moves/fightVillain.js';
 import { recruitHero } from '../moves/recruitHero.js';
 import { exorciseHauntedHero } from '../moves/exorciseHauntedHero.js';
 import { recruitOfficer } from '../moves/recruitOfficer.js';
+import { recruitSidekick } from '../moves/recruitSidekick.js';
 import { fightMastermind } from '../moves/fightMastermind.js';
 import { setPlayerReady, startMatchIfReady } from '../lobby/lobby.moves.js';
 import { advanceTurnStage } from '../turn/turnLoop.js';
@@ -149,6 +150,9 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-648 — a recorded human game that recruits an Officer replays through
   // this dispatch map; recruitOfficer takes no args (empty payload).
   recruitOfficer: (context) => recruitOfficer(context as never),
+  // why: WP-842 / D-24776 — a recorded human game that recruits a Sidekick replays through
+  // this dispatch map; recruitSidekick takes no args (empty payload).
+  recruitSidekick: (context) => recruitSidekick(context as never),
   // why: WP-830 / D-24763 — pass the args through: the Enigma Code guess rides on them.
   fightMastermind: (context, args) => fightMastermind(context as never, args as never),
   setPlayerReady: (context, args) => setPlayerReady(context as never, args as never),
