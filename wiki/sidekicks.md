@@ -20,6 +20,9 @@ status: canonical
 source:
   - C:\dev\legendary-arena\wiki\sidekicks.md (this page — https://ewiki.legendary-arena.com/sidekicks/)
   - ../packages/game-engine/src/moves/recruitSidekick.ts
+  - ../packages/game-engine/src/moves/gainSidekick.logic.ts
+  - ../packages/game-engine/src/hero/heroEffects.execute.ts
+  - ../scripts/convert-cards/inputs/hero-ability-markers.json
   - ../packages/game-engine/src/moves/recruitOfficer.ts
   - ../packages/game-engine/src/moves/coreMoves.impl.ts
   - ../packages/game-engine/src/hero/splitCard.logic.ts
@@ -94,7 +97,57 @@ Every refusal is a silent no-op; moves never throw.
 The once-per-turn flag is a lazily materialized `TurnEconomy` field: absent
 until the first recruit, dropped by `resetTurnEconomy` at the start of every
 turn. Only this move sets it. Rules v23 says a card effect that tells you to
-"gain a Sidekick" does **not** count against the limit.
+"gain a Sidekick" does **not** count against the limit (see
+[Gaining a Sidekick](#gaining-a-sidekick) below).
+
+### Gaining a Sidekick
+
+Ten hero lines print "Gain a Sidekick" (WP-844 / D-24778). Each carries the
+curated marker `[keyword:gain-sidekick:N]`, and the `gain-sidekick` hero keyword
+moves up to **N** Sidekicks from the **top** of the Stack into the playing
+player's **discard pile** (rules v23: "Gain" means "put it into your discard
+pile"):
+
+| Set | Hero | Card | Printed line | N |
+|---|---|---|---|---|
+| Civil War | Captain America, Secret Avenger | Inspire a Nation | Gain a Sidekick. | 1 |
+| Civil War | Falcon | Talk with Birds | [Ranged]: Gain a Sidekick. | 1 |
+| Civil War | Peter Parker | Spider-Man Unmasked | Gain a Sidekick. | 1 |
+| Civil War | Tigra | Friendship | [Covert]: Gain a Sidekick. | 1 |
+| Secret Wars Vol 1 | Black Panther | King of Wakanda | Gain three Sidekicks. | 3 |
+| Secret Wars Vol 1 | Magik | Rally the New Mutants | Gain a Sidekick. | 1 |
+| Secret Wars Vol 1 | Magik | Rally the New Mutants | [Covert]: Gain another Sidekick. | 1 |
+| Secret Wars Vol 1 | Namor, the Sub-Mariner | Lead the Armies of Atlantis | [Instinct]: Gain a Sidekick. | 1 |
+| Secret Wars Vol 1 | Ultimate Spider-Man | Marvel Team-Up | Gain a Sidekick. | 1 |
+| Core Set (2nd Edition) | Spider-Man | Witty Banter | [Instinct]: Gain a Sidekick. | 1 |
+
+- **Free and outside the limit.** A gain spends no Recruit and never reads or
+  writes `hasRecruitedSidekickThisTurn`, so you can still recruit a Sidekick that
+  turn. It does not set `hasActedThisTurn` either: a gain is not a recruit or a
+  fight, so Healing stays available (D-24179 / D-24180).
+- **Class gates.** A leading `[hc:X]:` is the same play-gate other hero lines use:
+  the gain happens only when you played another card of that class this turn.
+- **Empty or short Stack.** The gain stops when the Stack runs out and never
+  fails the play. The log says *"Player 0 gained 1 Sidekick(s) from the Sidekick
+  Stack (…)."* (`applied`), *"Player 0 gained 2 of 3 Sidekick(s) — the Sidekick
+  Stack ran out (…)."* (`partial`) or *"Player 0 could not gain a Sidekick — the
+  Sidekick Stack is empty (…)."* (`blocked`).
+- **Loadout-builder default.** The cards.legendary-arena.com loadout builder
+  defaults to 0 Sidekicks (`DEFAULT_SIDEKICKS_COUNT = 0`), so a loadout built
+  there has an empty Stack and these lines log `blocked`. The lobby form, guest
+  solo and autoplay build 12; set a Sidekick count when you pick one of these
+  heroes.
+- **New matches only.** Hero hooks are captured when a match is set up, so a
+  match created before WP-844 shipped keeps the old line, which does nothing.
+
+**Not wired yet** (each needs a primitive that does not exist): the "put that /
+them on top of your deck" riders (Peter Parker *Spider-Man Unmasked*, Black
+Panther *King of Wakanda*; their gain still goes to discard); Daredevil
+*Roundhouse Side Kick* (choose a number); Storm & Black Panther *King & Queen of
+Wakanda* (reveal-count); Maximus *Enslave the Will* (a defeat trigger); Stepford
+Cuckoos *Find Mutants with Cerebro* (Investigate the Stack); Werewolf by Night
+*Track the Captives*; and the villain, tactic, bystander and scheme lines that
+gain or capture Sidekicks.
 
 ### Playing a Sidekick (the return and draw)
 
@@ -168,9 +221,9 @@ empty payload, and the engine re-validates.
 - **Two Sidekicks, one set aside.** If you play two Sidekicks in one turn and a
   granted Out of Time sets one aside, the played count records one Sidekick, not
   two (an accepted undercount named in D-24776).
-- **"Gain a Sidekick" effects** (Civil War, Secret Wars, and others) are not wired
-  yet; when they are, they will take from this Stack without touching the
-  once-per-turn flag.
+- **"Gain a Sidekick" effects** take from this Stack without touching the
+  once-per-turn flag; see [Gaining a Sidekick](#gaining-a-sidekick) for the ten
+  wired lines and the ones that still need a primitive.
 - **Special Sidekicks** with their own abilities are out of scope; the Stack holds
   plain fungible `pile-sidekick` tokens only.
 - **"Played This Turn" row.** The client's played-cards count reads the cards
@@ -180,6 +233,12 @@ empty payload, and the engine re-validates.
 
 - [`packages/game-engine/src/moves/recruitSidekick.ts`](../packages/game-engine/src/moves/recruitSidekick.ts)
   — `recruitSidekick`, `returnPlayedSidekick`, `SIDEKICK_RECRUIT_COST`, `SIDEKICK_RETURN_DRAW_COUNT`
+- [`packages/game-engine/src/moves/gainSidekick.logic.ts`](../packages/game-engine/src/moves/gainSidekick.logic.ts)
+  — `gainSidekickToDiscard`, the card-effect gain (D-24778)
+- [`packages/game-engine/src/hero/heroEffects.execute.ts`](../packages/game-engine/src/hero/heroEffects.execute.ts)
+  — the `gain-sidekick` keyword handler (`heroEffectGainSidekick`, D-24778)
+- [`scripts/convert-cards/inputs/hero-ability-markers.json`](../scripts/convert-cards/inputs/hero-ability-markers.json)
+  — the ten curated `[keyword:gain-sidekick:N]` markers
 - [`packages/game-engine/src/moves/coreMoves.impl.ts`](../packages/game-engine/src/moves/coreMoves.impl.ts)
   — the return hook at the end of `applyCardPlay`
 - [`packages/game-engine/src/hero/splitCard.logic.ts`](../packages/game-engine/src/hero/splitCard.logic.ts)
@@ -201,6 +260,9 @@ empty payload, and the engine re-validates.
   return-and-draw-two on play, the played-this-turn count, and the SharedDecks
   recruit button. Before this the Stack was built and shown but nothing could
   take from it.
+- WP-844 / D-24778 (2026-10-26): "Gain a Sidekick" — the `gain-sidekick` hero
+  keyword and ten curated card lines take Sidekicks from the top of the Stack into
+  your discard, free and outside the once-per-turn recruit.
 
 ## References
 
@@ -209,6 +271,7 @@ empty payload, and the engine re-validates.
   and "Sidekicks & Special Sidekicks" (return to the bottom of the Stack; you
   still played it; gained Sidekicks don't count against the limit)
 - [`docs/ai/DECISIONS.md`](../docs/ai/DECISIONS.md) — D-24776 (this feature),
+  D-24778 ("Gain a Sidekick" card effects),
   D-24460 (`recruitOfficer`), D-24552 (draw lock), D-24692 (played-this-turn
   ledger), D-24180 (heal lock), D-3103 (fungible pile tokens)
 - [S.H.I.E.L.D. Officer](shield-officer.md), [Play Board](play-board.md)

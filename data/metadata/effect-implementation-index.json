@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1994,
+    "totalEntries": 2002,
     "byScope": {
-      "hero": 805,
+      "hero": 813,
       "villain": 733,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 612,
+      "executable": 621,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
-      "unmarked": 1021,
+      "unmarked": 1020,
       "subsystem": 5
     }
   },
@@ -6663,6 +6663,23 @@
       "name": "Spider-Man",
       "set": "co2e",
       "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "witty-banter",
+          "name": "Witty Banter"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/spider-man",
+      "name": "Spider-Man",
+      "set": "co2e",
+      "scope": "hero",
       "mechanic": "reveal",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
@@ -9347,6 +9364,23 @@
       "name": "Captain America, Secret Avenger",
       "set": "cvwr",
       "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "inspire-a-nation",
+          "name": "Inspire a Nation"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/captain-america-secret-avenger",
+      "name": "Captain America, Secret Avenger",
+      "set": "cvwr",
+      "scope": "hero",
       "mechanic": "recruit-per-count",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
@@ -9447,11 +9481,17 @@
       "name": "Falcon",
       "set": "cvwr",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "talk-with-birds",
+          "name": "Talk with Birds"
+        }
+      ]
     },
     {
       "extId": "cvwr/goliath",
@@ -9688,6 +9728,23 @@
       "name": "Peter Parker",
       "set": "cvwr",
       "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "spider-man-unmasked",
+          "name": "Spider-Man Unmasked"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/peter-parker",
+      "name": "Peter Parker",
+      "set": "cvwr",
+      "scope": "hero",
       "mechanic": "ko-wound",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound",
@@ -9840,6 +9897,23 @@
         {
           "slug": "ferocity",
           "name": "Ferocity"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/tigra",
+      "name": "Tigra",
+      "set": "cvwr",
+      "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "friendship",
+          "name": "Friendship"
         }
       ]
     },
@@ -20794,6 +20868,23 @@
       ]
     },
     {
+      "extId": "ssw1/black-panther",
+      "name": "Black Panther",
+      "set": "ssw1",
+      "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "king-of-wakanda",
+          "name": "King of Wakanda"
+        }
+      ]
+    },
+    {
       "extId": "ssw1/captain-marvel",
       "name": "Captain Marvel",
       "set": "ssw1",
@@ -20912,6 +21003,23 @@
       "name": "Magik",
       "set": "ssw1",
       "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "rally-the-new-mutants",
+          "name": "Rally the New Mutants"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/magik",
+      "name": "Magik",
+      "set": "ssw1",
+      "scope": "hero",
       "mechanic": "teleport",
       "status": "unsupported",
       "handler": "",
@@ -20942,6 +21050,23 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "ssw1/namor-the-sub-mariner",
+      "name": "Namor, the Sub-Mariner",
+      "set": "ssw1",
+      "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "lead-the-armies-of-atlantis",
+          "name": "Lead the Armies of Atlantis"
+        }
+      ]
     },
     {
       "extId": "ssw1/namor-the-sub-mariner",
@@ -21019,6 +21144,23 @@
         {
           "slug": "transdimensional-overlord",
           "name": "Transdimensional Overlord"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/ultimate-spider-man",
+      "name": "Ultimate Spider-Man",
+      "set": "ssw1",
+      "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "marvel-team-up",
+          "name": "Marvel Team-Up"
         }
       ]
     },
@@ -30588,6 +30730,7 @@
     "co2e/spider-man": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "reveal",
         "reveal-count"
       ]
@@ -31541,6 +31684,7 @@
     "cvwr/captain-america-secret-avenger": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "recruit-per-count"
       ]
     },
@@ -31562,7 +31706,7 @@
     "cvwr/falcon": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "gain-sidekick"
       ]
     },
     "cvwr/goliath": {
@@ -31605,6 +31749,7 @@
     "cvwr/peter-parker": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "ko-wound",
         "rescue",
         "reveal"
@@ -31633,6 +31778,7 @@
       "scope": "hero",
       "mechanics": [
         "draw",
+        "gain-sidekick",
         "reveal-top-dispose"
       ]
     },
@@ -35490,7 +35636,8 @@
     "ssw1/black-panther": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "gain-sidekick"
       ]
     },
     "ssw1/captain-marvel": {
@@ -35517,6 +35664,7 @@
     "ssw1/magik": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "teleport"
       ]
     },
@@ -35529,6 +35677,7 @@
     "ssw1/namor-the-sub-mariner": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "optional-ko-reward"
       ]
     },
@@ -35559,6 +35708,7 @@
     "ssw1/ultimate-spider-man": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "reveal"
       ]
     },

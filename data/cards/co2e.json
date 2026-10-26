@@ -1116,7 +1116,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[hc:instinct]: Gain a Sidekick."
+            "[hc:instinct]: Gain a Sidekick. [keyword:gain-sidekick:1]"
           ]
         },
         {

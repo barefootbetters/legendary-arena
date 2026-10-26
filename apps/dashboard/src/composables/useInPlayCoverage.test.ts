@@ -597,8 +597,13 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // observations, 79 -> 78 mechanics, 0 dropped). totalObs 8698 -> 8687 (-11, equal to the raw feed
   // fall); resolvedObs stays 1091, so percentResolved rounds up 12.5 -> 12.6 (1091 / 8687). A denominator
   // re-pin: the one mechanic that left was a hollow, not a resolved one.
+  // 2026-10-26 (WP-844 / D-24778, re-pin): ten "Gain a [rule:Sidekick]" hero lines now gain
+  // Sidekicks from the Sidekick Stack, so one `rule:sidekick` hollow observation leaves the sweep
+  // (feed regenerated: 7766 -> 7765 raw observations, 78 mechanics, 0 dropped; rule:sidekick
+  // 42 -> 41). totalObs 8687 -> 8686 (-1, equal to the raw feed fall); resolvedObs stays 1091, so
+  // percentResolved stays 12.6 (1091 / 8686). A denominator re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8687);
+  assert.equal(view.totalObs.value, 8686);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);

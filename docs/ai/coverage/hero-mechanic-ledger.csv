@@ -191,6 +191,7 @@ co2e/iron-man,Iron Man,co2e,attack-per-count,executable,WP-247,D-24016,packages/
 co2e/iron-man,Iron Man,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-invention|quantum-breakthrough
 co2e/nick-fury,Nick Fury,co2e,(unmarked),unmarked,,,,
 co2e/rogue,Rogue,co2e,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,energy-drain
+co2e/spider-man,Spider-Man,co2e,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,witty-banter
 co2e/spider-man,Spider-Man,co2e,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,astonishing-strength|web-shooters|with-great-power
 co2e/spider-man,Spider-Man,co2e,reveal-count,unsupported,,,,with-great-power
 co2e/spider-man-miles-morales,Spider-Man (Miles Morales),co2e,(unmarked),unmarked,,,,
@@ -263,13 +264,14 @@ cosm/ronan-the-accuser,Ronan the Accuser,cosm,contest-of-champions,unsupported,,
 cosm/ronan-the-accuser,Ronan the Accuser,cosm,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,rally-kree-warriors
 cosm/yondu,Yondu,cosm,burn-shards,unsupported,,,,whistling-arrow
 cosm/yondu,Yondu,cosm,danger-sense,unsupported,,,,anticipate-their-movements|interstellar-hunter
+cvwr/captain-america-secret-avenger,"Captain America, Secret Avenger",cvwr,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,inspire-a-nation
 cvwr/captain-america-secret-avenger,"Captain America, Secret Avenger",cvwr,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,bold-leadership
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,phasing,executable,WP-783,D-24629,packages/game-engine/src/moves/phaseCard.ts,fight|flee
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,play-both-sides,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#play-both-sides,penumbra
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,darkness
 cvwr/cloak-dagger,Cloak & Dagger,cvwr,reveal-min,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-min,light
 cvwr/daredevil,Daredevil,cvwr,(unmarked),unmarked,,,,
-cvwr/falcon,Falcon,cvwr,(unmarked),unmarked,,,,
+cvwr/falcon,Falcon,cvwr,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,talk-with-birds
 cvwr/goliath,Goliath,cvwr,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,being-big-is-best
 cvwr/goliath,Goliath,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,growth-industry
 cvwr/goliath,Goliath,cvwr,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,being-big-is-best|brilliant-biochemist|enormous-implications|growth-industry|massive-warrior
@@ -282,6 +284,7 @@ cvwr/hulkling,Hulkling,cvwr,size-changing,executable,WP-290,D-24074,packages/gam
 cvwr/luke-cage,Luke Cage,cvwr,fortify,unsupported,,,,unbreakable-skin
 cvwr/luke-cage,Luke Cage,cvwr,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,reckless
 cvwr/patriot,Patriot,cvwr,(unmarked),unmarked,,,,
+cvwr/peter-parker,Peter Parker,cvwr,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,spider-man-unmasked
 cvwr/peter-parker,Peter Parker,cvwr,ko-wound,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound,hot-bowl-of-soup
 cvwr/peter-parker,Peter Parker,cvwr,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,protect-my-family
 cvwr/peter-parker,Peter Parker,cvwr,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,conflicted-loyalties
@@ -290,6 +293,7 @@ cvwr/stature,Stature,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src
 cvwr/stature,Stature,cvwr,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,crush-ants|crush-file-sizes|growing-confidence|shrink-to-nothing|trample-the-tiny
 cvwr/storm-black-panther,Storm & Black Panther,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,gathering-clues|gathering-rain-clouds
 cvwr/tigra,Tigra,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,ferocity
+cvwr/tigra,Tigra,cvwr,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,friendship
 cvwr/tigra,Tigra,cvwr,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,supernatural-senses
 cvwr/vision,Vision,cvwr,phasing,executable,WP-783,D-24629,packages/game-engine/src/moves/phaseCard.ts,harder-than-diamond|insubstantial-accomplishments|lighter-than-air|solar-energy|through-solid-objects
 cvwr/vision,Vision,cvwr,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,harder-than-diamond|lighter-than-air
@@ -570,19 +574,23 @@ smhc/tony-stark,Tony Stark,smhc,danger-sense,unsupported,,,,little-grey-area|sta
 ssw1/apocalyptic-kitty-pryde,Apocalyptic Kitty Pryde,ssw1,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,phase-out
 ssw1/black-bolt,Black Bolt,ssw1,(unmarked),unmarked,,,,
 ssw1/black-panther,Black Panther,ssw1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,catlike-reflexes
+ssw1/black-panther,Black Panther,ssw1,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,king-of-wakanda
 ssw1/captain-marvel,Captain Marvel,ssw1,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,marvelous-strength
 ssw1/captain-marvel,Captain Marvel,ssw1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,supersonic-flight
 ssw1/captain-marvel,Captain Marvel,ssw1,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,absorb-energies
 ssw1/dr-strange,Dr. Strange,ssw1,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,trust-me-im-a-doctor
 ssw1/dr-strange,Dr. Strange,ssw1,teleport,unsupported,,,,cloak-of-levitation|sorcerer-supreme
 ssw1/lady-thor,Lady Thor,ssw1,recruit-threshold,condition,,,,chosen-by-asgard|living-thunderstorm|mysterious-origin
+ssw1/magik,Magik,ssw1,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,rally-the-new-mutants
 ssw1/magik,Magik,ssw1,teleport,unsupported,,,,dimensional-portal|travel-through-limbo|wield-the-soulsword
 ssw1/maximus,Maximus,ssw1,(unmarked),unmarked,,,,
+ssw1/namor-the-sub-mariner,"Namor, the Sub-Mariner",ssw1,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,lead-the-armies-of-atlantis
 ssw1/namor-the-sub-mariner,"Namor, the Sub-Mariner",ssw1,optional-ko-reward,executable,WP-248,D-24019,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-reward,feed-the-sharks
 ssw1/old-man-logan,Old Man Logan,ssw1,cross-dimensional-rampage,unsupported,,,,rage-out
 ssw1/proxima-midnight,Proxima Midnight,ssw1,(unmarked),unmarked,,,,
 ssw1/superior-iron-man,Superior Iron Man,ssw1,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,optimized-technology
 ssw1/thanos,Thanos,ssw1,teleport,unsupported,,,,transdimensional-overlord
+ssw1/ultimate-spider-man,Ultimate Spider-Man,ssw1,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,marvel-team-up
 ssw1/ultimate-spider-man,Ultimate Spider-Man,ssw1,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,leaping-spider|marvel-team-up|web-slinger
 ssw2/agent-venom,Agent Venom,ssw2,patrol,unsupported,,,,big-slimeportunity|government-payroll
 ssw2/agent-venom,Agent Venom,ssw2,spectrum,condition,,,,multi-gun

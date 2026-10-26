@@ -1442,6 +1442,17 @@
       "date": "2026-07-15",
       "evidence": "Red Skull game, match 8Qh6W1WAI7j (gitSha 80ba584): Player 0 healed on turns 16, 24 and 32, KO'ing 1-2 Wounds each, with no fight or recruit those turns (WP-380 D-24026, STATUS).",
       "note": "Row added 2026-10-19; the confirmation predates this record. Heal and the no-fight / no-recruit lock (D-24180) both seen."
+    },
+    {
+      "key": "cvwr/captain-america-secret-avenger|gain-sidekick",
+      "kind": "hero",
+      "card": "Captain America, Secret Avenger",
+      "ability": "Inspire a Nation",
+      "wp": "WP-844",
+      "state": "pending",
+      "date": "2026-10-26",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-844 deploy, per the WP-844 DoD recipe.",
+      "note": "Gain a Sidekick: Stack -1, discard +1, applied log line, Sidekicks recruit button still enabled. D-24778."
     }
   ]
 }

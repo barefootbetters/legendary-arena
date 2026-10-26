@@ -86,6 +86,7 @@
     "gain-wound-self": { "wp": "WP-364", "decision": "D-24156" },
     "gain-wound-each": { "wp": "WP-364", "decision": "D-24156" },
     "reveal-or-gain-wound-each": { "wp": "WP-843", "decision": "D-24777" },
+    "gain-sidekick": { "wp": "WP-844", "decision": "D-24778" },
     "ko-wound-reward": { "wp": "WP-382", "decision": "D-24183" },
     "discard-to-play": { "wp": "WP-383", "decision": "D-24184" },
     "return-on-discard": { "wp": "WP-498", "decision": "D-24301" },

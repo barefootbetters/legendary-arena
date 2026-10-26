@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 78,
-    "totalObservations": 7766,
+    "totalObservations": 7765,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7245
+      "parse-unrecognized": 7244
     }
   },
   "byMechanic": {
@@ -2053,12 +2053,12 @@
       ]
     },
     "rule:sidekick": {
-      "hitCount": 42,
+      "hitCount": 41,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 42
+        "parse-unrecognized": 41
       },
       "examples": [
         {
