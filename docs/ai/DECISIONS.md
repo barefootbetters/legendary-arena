@@ -49560,7 +49560,7 @@ Protect this file.
 
 ### D-24776 — recruitable Sidekick Stack: recruit one Sidekick per turn for 2; a played Sidekick returns to the bottom of the Stack and draws two (Active 2026-10-26 — WP-842 / EC-880)
 
-**Status:** Active 2026-10-26. Live-verify (D-24026) operator-pending: a match created after the deploy on `play.legendary-arena.com`, plus `ewiki.legendary-arena.com/sidekicks/` 200.
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-26: match `gffDRiqAnOf` on server `7cf56406`, plus `ewiki.legendary-arena.com/sidekicks/` 200 (STATUS.md WP-842 entry).
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Matches built a 12-card Sidekick Stack (`G.piles.sidekicks`, `pile-sidekick` tokens) that no move could take from. The Sidekicks cell is now a recruit button; a played Sidekick returns to the Stack and draws two.
 
