@@ -49537,7 +49537,7 @@ Protect this file.
 
 ### D-24768 — co2e Villains and Henchmen: the 20 timing lines existing primitives express get their markers (Active 2026-10-25 — WP-835 / EC-873)
 
-**Status:** Active 2026-10-25. Live-verify (D-24026) operator-pending: a co2e match created after the deploy.
+**Status:** Active 2026-10-25. Live-verify (D-24026) PASS 2026-10-26: match `qj12dWK_y3v` on server `68ea7cea` (STATUS.md WP-835 entry).
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Twenty printed Ambush / Fight / Escape lines on co2e Villains and Hand Ninjas did nothing and logged the D-24266 `unmarked-ability` breadcrumb (match `cfWSKCGr0ZL`). They now resolve what the card prints and log it.
 
