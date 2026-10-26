@@ -10,6 +10,16 @@
 
 ## Current State
 
+### WP-841 / EC-879 — co2e variable-Attack passives: Baron Strucker, Paibok, Super-Skrull and Hydro-Man fight for what they print (D-24774) (2026-10-25)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Four Core 2nd-edition villains fought at their flat printed base (6, 5, 2 and 4) because the engine ignored their printed passives. They now cost what they print, and the City tile's `Fight N` badge shows it: Baron Strucker gets +1 for each other HYDRA Villain in the City and Escape Pile; Paibok the Power Skrull and Super-Skrull get +1 for each Hero Class among the HQ Heroes (0 to 5); Hydro-Man gets +2 in the Sewers or on the Bridge.
+
+- **Engine.** One omit-when-empty setup table, `G.villainVariableAttack`, built from a curated `[variable-attack:<source>:<N>[@<spaces>]]` marker and read by one term in `resolveFightCost`, so the fight gate, the bots and the City projection agree with no caller change. A captured Hero adds nothing on these four (F2). HYDRA is read by card or Villain Group name (F1).
+- **Card data.** `apply-defeat-requirement-markers.mjs` gains an optional `variableAttack` list; `co2e.json` 4 passive lines gain a marker. No ledger, feed or coverage change (the three cards' `Fight:` lines stay with WP-835 / WP-838).
+- **Tests.** game-engine 5796 → 5819 / 0 fail (+23); `pnpm -r --no-bail test` 0 fail; hash oracles unchanged; seven revert proofs; every card / coverage `:check` 0. 01.6 post-mortem WP COMPLETE.
+- **Named follow-ups:** (F3) rows for other villains whose passive fits a source: the "wolf form" / "giant-size" villains (a three-space gate plus their other clauses), Ultron "per Tech Hero in the HQ" (a new source), and the rest of the WP-841 corpus scan. (Fold) WP-838's `G.villainAttackPerCaptured` into this table as `per-captured-hero` / `per-captured-bystander` sources, and the three (four with WP-838) copies of the setup registry walk into one, in a later packet (D-24774 §8-9).
+- **Live-verify (D-24026): operator-pending.** In a match created after the deploy with `co2e/hydra`, `co2e/skulls` and `co2e/sinister-syndicate`: Hydro-Man reads `Fight 6` in the Sewers and on the Bridge and `Fight 4` elsewhere; Paibok / Super-Skrull read base + the distinct HQ classes and change after a recruit refills a slot; Strucker reads 6 + the other HYDRA Villains in the City and Escape Pile; Fight is enabled only at that cost.
+
 ### WP-834 / EC-872 — Ranked gauntlet loadouts fill out-of-set slots from Core before Core 2E (D-24767) (2026-10-25)
 
 **User-visible on `legends.legendary-arena.com` and in gauntlet "Play this leg" after deploy.** When a mastermind's own set can't fill every villain or henchmen slot, the approved ranked loadout now takes the Core Set's groups before Core 2E's. Most Core 2E villain groups (and the Hand Ninjas / Savage Land Mutates henchmen) have no implemented effects, so ranked legs were fielding villains whose printed effects did nothing. 51 non-Core masterminds' approved loadouts change (48 base, 13 scheme overrides); for example the ca75 Change the Outcome of WWII leg now fields `core/brotherhood` at 2 players and `core/doombot-legion` henchmen. Casual play is unchanged.
