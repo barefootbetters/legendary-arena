@@ -24,6 +24,16 @@ import type {
   VillainFightDiscardCost,
 } from '../rules/villainAbility.types.js';
 import { normalizeTraitSlug } from '../state/traits.normalize.js';
+// why: WP-841 / D-24774 — the variable-Attack entry type and its source list live in
+// the fight-cost logic file (the WP-815 precedent); the marker parser validates the
+// source and the City gate against these canonical arrays.
+import type {
+  VillainVariableAttack,
+  VillainVariableAttackSource,
+} from '../economy/villainVariableAttack.logic.js';
+import { VILLAIN_VARIABLE_ATTACK_SOURCES } from '../economy/villainVariableAttack.logic.js';
+import type { CitySpaceName } from '../board/citySpaceNames.js';
+import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 // why: D-18704 — defeat requirements must key by the copy-indexed instance
 // ext_id (matching the fightVillain fire site, which passes a zone id), fanning
 // out exactly like the villain hook path. The shared emitter is imported, not
@@ -373,4 +383,225 @@ export function buildVillainFightDiscardCosts(
   }
 
   return discardCosts;
+}
+
+// ---------------------------------------------------------------------------
+// Variable-Attack marker (WP-841 / D-24774)
+// ---------------------------------------------------------------------------
+
+/** Regex for the [variable-attack:<source>:<N>[@<space>[+<space>…]]] marker. */
+const VARIABLE_ATTACK_MARKER_PATTERN = /\[variable-attack:([^\]]+)\]/g;
+
+/**
+ * Checks whether a string is one of the canonical variable-Attack sources.
+ *
+ * @param value - The candidate source token.
+ * @returns True when value is a member of VILLAIN_VARIABLE_ATTACK_SOURCES.
+ */
+function isVariableAttackSource(value: string): value is VillainVariableAttackSource {
+  for (const source of VILLAIN_VARIABLE_ATTACK_SOURCES) {
+    if (source === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Checks whether a string is one of the canonical City space names.
+ *
+ * @param value - The candidate space token.
+ * @returns True when value is a member of CITY_SPACE_NAMES.
+ */
+function isVariableAttackCitySpaceName(value: string): value is CitySpaceName {
+  for (const spaceName of CITY_SPACE_NAMES) {
+    if (spaceName === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Validates a `+`-joined City space list and lifts it to a `requireCitySpaces`
+ * list, or null when it is empty, names an unknown space, or repeats a space.
+ *
+ * @param spacesToken - The text after the `@` (e.g. `sewers+bridge`).
+ * @returns The validated space list, or null.
+ */
+// why: a second copy of villainAbility.setup.ts's private parseCityGateSuffix (the
+// D-24295 grammar) plus a no-repeat check, kept local per the duplicate-first rule;
+// the third copy is the one that gets abstracted.
+function parseVariableAttackCityGate(spacesToken: string): CitySpaceName[] | null {
+  if (spacesToken.length === 0) {
+    return null;
+  }
+  const spaces: CitySpaceName[] = [];
+  for (const rawSpace of spacesToken.split('+')) {
+    if (!isVariableAttackCitySpaceName(rawSpace)) {
+      return null;
+    }
+    for (const listedSpace of spaces) {
+      if (listedSpace === rawSpace) {
+        return null;
+      }
+    }
+    spaces.push(rawSpace);
+  }
+  return spaces;
+}
+
+/**
+ * Parses one `[variable-attack:…]` marker value into an entry, or null when it is
+ * malformed.
+ *
+ * @param markerValue - The text inside the marker after `variable-attack:`.
+ * @returns The parsed entry, or null.
+ */
+function parseVariableAttackMarkerValue(markerValue: string): VillainVariableAttack | null {
+  const gateParts = markerValue.split('@');
+  if (gateParts.length > 2) {
+    return null;
+  }
+  const valueParts = gateParts[0]!.split(':');
+  if (valueParts.length !== 2) {
+    return null;
+  }
+  const source = valueParts[0]!;
+  const attackToken = valueParts[1]!;
+  if (!isVariableAttackSource(source) || !/^[1-9][0-9]*$/.test(attackToken)) {
+    return null;
+  }
+  const attackPerUnit = Number.parseInt(attackToken, 10);
+  if (gateParts.length === 1) {
+    // why: a flat bonus with no gate would apply everywhere; every printed flat
+    // passive names its spaces, so an ungated flat marker is malformed (inert).
+    if (source === 'flat') {
+      return null;
+    }
+    return { source, attackPerUnit };
+  }
+  const requireCitySpaces = parseVariableAttackCityGate(gateParts[1]!);
+  if (requireCitySpaces === null) {
+    return null;
+  }
+  return { source, attackPerUnit, requireCitySpaces };
+}
+
+/**
+ * Parses the first valid `[variable-attack:<source>:<N>[@<space>[+<space>…]]]`
+ * marker on an ability line into a variable-Attack entry, or null when the line
+ * carries none.
+ *
+ * An unknown source, an `N` that is not a positive integer, extra colon-separated
+ * tokens, more than one `@`, an empty / unknown / repeated space, or an ungated
+ * `flat` yield null — the marker is then inert. An ungated entry has no
+ * `requireCitySpaces` key at all.
+ *
+ * @param abilityLine - One villain ability text line.
+ * @returns The parsed entry, or null.
+ */
+export function parseVariableAttackLine(abilityLine: string): VillainVariableAttack | null {
+  const regex = new RegExp(VARIABLE_ATTACK_MARKER_PATTERN.source, 'g');
+  let match: RegExpExecArray | null = regex.exec(abilityLine);
+  while (match !== null) {
+    const entry = parseVariableAttackMarkerValue(match[1]!);
+    if (entry !== null) {
+      return entry;
+    }
+    match = regex.exec(abilityLine);
+  }
+  return null;
+}
+
+/**
+ * Copies a parsed entry into a fresh object for one villain copy.
+ *
+ * @param entry - The parsed entry.
+ * @returns A fresh entry with its own `requireCitySpaces` array, or no such key
+ *   when the parsed entry is ungated.
+ */
+function copyVariableAttackEntry(entry: VillainVariableAttack): VillainVariableAttack {
+  // why: the engine has exactOptionalPropertyTypes, so an ungated entry omits
+  // requireCitySpaces rather than carrying `requireCitySpaces: undefined`.
+  if (entry.requireCitySpaces === undefined) {
+    return { source: entry.source, attackPerUnit: entry.attackPerUnit };
+  }
+  return {
+    source: entry.source,
+    attackPerUnit: entry.attackPerUnit,
+    requireCitySpaces: [...entry.requireCitySpaces],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// buildVillainVariableAttack — setup-time builder (WP-841 / D-24774)
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds the per-villain-instance variable-Attack table from registry data at
+ * setup.
+ *
+ * Called during Game.setup() via buildInitialGameState, beside
+ * buildVillainFightDiscardCosts. Reads villain per-card ability text for the
+ * selected villain groups, parses the first valid `[variable-attack:…]` marker on
+ * any line, and fans one entry out per copy-indexed instance ext_id via the shared
+ * villainCardInstanceExtIds emitter.
+ *
+ * After setup, G.villainVariableAttack is immutable — moves must never modify it.
+ *
+ * @param registry - Card registry for resolving ability text. Setup-time only.
+ *   Accepts unknown to support narrow test mocks; returns an empty record when
+ *   the registry does not satisfy the reader interface.
+ * @param matchConfig - Validated match setup config (villainGroupIds).
+ * @returns The variable-Attack table; empty when no villain is marked.
+ */
+// why: D-24774 — a deliberate third copy of the setup registry walk (beside
+// buildVillainDefeatRequirements and buildVillainFightDiscardCosts). A shared walk
+// would put the two shipped tables at risk for no behavior gain; folding the walks
+// is a STATUS follow-up.
+export function buildVillainVariableAttack(
+  registry: unknown,
+  matchConfig: MatchSetupConfig,
+): Record<CardExtId, VillainVariableAttack> {
+  const variableAttack: Record<CardExtId, VillainVariableAttack> = {};
+  if (!isRegistryReader(registry)) {
+    return variableAttack;
+  }
+
+  for (const villainGroupId of matchConfig.villainGroupIds) {
+    const parsed = parseQualifiedId(villainGroupId);
+    if (parsed === null) continue;
+    const setData = registry.getSet(parsed.setAbbr);
+    const groupCards = findVillainGroupCards(setData, parsed.slug);
+    if (groupCards === null) continue;
+
+    for (const card of groupCards) {
+      if (typeof card.slug !== 'string') continue;
+      if (!Array.isArray(card.abilities)) continue;
+
+      let entry: VillainVariableAttack | null = null;
+      for (const abilityLine of card.abilities) {
+        if (typeof abilityLine !== 'string') continue;
+        entry = parseVariableAttackLine(abilityLine);
+        if (entry !== null) break;
+      }
+      if (entry === null) continue;
+
+      const instanceExtIds = villainCardInstanceExtIds(
+        parsed.setAbbr,
+        parsed.slug,
+        card.slug,
+        card,
+      );
+      // why: a fresh object and a fresh requireCitySpaces array per copy instance, so
+      // copies never alias one another (D-13502) and resolveFightCost keyed by a
+      // zone-instance ext_id finds its entry.
+      for (const cardId of instanceExtIds) {
+        variableAttack[cardId] = copyVariableAttackEntry(entry);
+      }
+    }
+  }
+
+  return variableAttack;
 }

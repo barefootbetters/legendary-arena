@@ -2173,7 +2173,7 @@
           "vAttack": "6+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-baron-strucker-supreme-hydra.webp",
           "abilities": [
-            "Baron Strucker gets +1[icon:attack] for each other HYDRA Villain in the city and/or Escape Pile.",
+            "Baron Strucker gets +1[icon:attack] for each other HYDRA Villain in the city and/or Escape Pile. [variable-attack:per-other-hydra-villain:1]",
             "Fight: Shuffle four cards from the Bystander Deck into the Villain Deck. Then play two cards from the Villain Deck."
           ],
           "copies": 2
@@ -2418,7 +2418,7 @@
           "vAttack": "4+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-hydro-man.webp",
           "abilities": [
-            "Hydro-Man gets +2[icon:attack] in the Sewers and Bridge.",
+            "Hydro-Man gets +2[icon:attack] in the Sewers and Bridge. [variable-attack:flat:2@sewers+bridge]",
             "Fight: If you fight Hydro-Man in the Sewers or Bridge, KO one of your Heroes."
           ],
           "copies": 2
@@ -2449,7 +2449,7 @@
           "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-paibok-the-power-skrull.webp",
           "abilities": [
-            "Paibok gets +1[icon:attack] for each Hero Class among Heroes in the HQ.",
+            "Paibok gets +1[icon:attack] for each Hero Class among Heroes in the HQ. [variable-attack:per-hq-hero-class:1]",
             "Fight: Choose a Hero from the HQ for each player. Each player gains that Hero. [effect:give-hq-hero-each-player]"
           ],
           "copies": 2
@@ -2485,7 +2485,7 @@
           "vAttack": "2+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-super-skrull.webp",
           "abilities": [
-            "Super-Skrull gets +1[icon:attack] for each Hero Class among Heroes in the HQ.",
+            "Super-Skrull gets +1[icon:attack] for each Hero Class among Heroes in the HQ. [variable-attack:per-hq-hero-class:1]",
             "Fight: KO one of your Heroes."
           ],
           "copies": 2

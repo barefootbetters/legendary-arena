@@ -49488,4 +49488,29 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24765 (#2999). Related: D-24764 (the City), D-24595 (the fallback replaced), D-24756 (the WP-823 precedent), D-24315 / D-24178 (suppression), D-24609 (Henchmen are Villains), D-24766 (WP-833), D-24119, D-24026.
 
 ---
+
+### D-24774 — co2e variable-Attack passives: Baron Strucker, Paibok, Super-Skrull and Hydro-Man fight for their printed Attack (Active 2026-10-25 — WP-841 / EC-879)
+
+**Status:** Active 2026-10-25. Live-verify (D-24026) operator-pending: a match created after the deploy with `co2e/hydra`, `co2e/skulls` and `co2e/sinister-syndicate`.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Four co2e villains printed a variable-Attack passive that the engine ignored, so they fought at their flat base (6, 5, 2 and 4). They now cost what they print, and the City tile's `Fight N` badge (WP-750) shows it: Strucker +1 per other HYDRA Villain in the City and Escape Pile, Paibok and Super-Skrull +1 per Hero Class among the HQ Heroes, Hydro-Man +2 in the Sewers or on the Bridge.
+
+**Context.** The cards' `vAttack` reads `N+` (`fightCostMode: 'dynamic'`), which the engine resolved as base + captured-Hero costs. The same wording appears on other cards with different numbers or scope (Mastermind passives co2e Epic Red Skull, shld Hydra High Council Viper, cvwr Ragnarok; the "wolf form" / "giant-size" villains), so a sentence scan would widen silently.
+
+**Decision.**
+1. **The table.** `G.villainVariableAttack?: Record<CardExtId, VillainVariableAttack>` (`{ source, attackPerUnit, requireCitySpaces? }`), built once at setup by `buildVillainVariableAttack` (`setup/villainDefeatRequirement.setup.ts`) from the curated `[variable-attack:<source>:<N>[@<space>[+<space>…]]]` marker, one fresh entry per copy id, spread onto `G` only when non-empty. An ungated entry omits `requireCitySpaces`. Read only by `resolveFightCost`. The source union, its array and the entry type live in `economy/villainVariableAttack.logic.ts` (the WP-815 precedent); no `.types.ts` contract file changes.
+2. **The marker.** At most one `@`; the left side is exactly `<source>:<N>` with `N` a positive integer; spaces are `CITY_SPACE_NAMES` members, non-empty, no repeats; `flat` requires a gate. Anything else is inert. `apply-defeat-requirement-markers.mjs` appends it from the optional `variableAttack` list of `villain-defeat-requirements.json` onto the single line containing " gets +" and "[icon:attack]" (loud-fail on 0 or more than one). Markers over a sentence scan, so look-alike passives stay unflagged until curated (Operator fork F3: the four co2e cards only).
+3. **The sources.** `per-other-hydra-villain`: Villains and Henchmen typed in `villainDeckCardTypes`, with no `convertedVillainOrigins` entry, whose id contains "hydra" (card name or Villain Group name, F1; the D-24493 S.H.I.E.L.D. / HYDRA Level reading), counted over the City then the Escape Pile, excluding only the fought copy, each id once. `per-hq-hero-class`: the distinct `HERO_CLASSES` members among `heroClass` / `heroClass2` of `offPlayCardTraits` over the HQ (dual-class and Divided cards count both; grey counts none). `flat`: `N`.
+4. **The term.** `villainVariableAttackBonus` is added last in `costBeforeReduction`, before the City reduction and the 0 floor. A gate reads `citySpaceNameForIndex(G.city.indexOf(id))` and fails closed outside the City and on an unnamed sixth space (D-24764).
+5. **Captured Heroes (F2).** An entry returns `fightCostBase` from the dynamic branch: the `+` marks the printed passive, so a captured Hero adds nothing on these four.
+6. **Feeds.** No `[effect:]` marker, so the villain ledger, effect index and mechanics feed do not change; no `subsystem-coverage.json` entry while Strucker, Super-Skrull and Hydro-Man keep open `Fight:` lines (WP-835 / WP-838).
+7. **Replay-compat.** The term and the early return are inert without the table, and a pre-deploy match's `initialState` has none, so every stored match replays and plays as before. Only matches created after the deploy get the new cost; live-verify uses one.
+8. **Sibling table.** WP-838's drafted `G.villainAttackPerCaptured { kind; attackPerCard }` stays separate. This table says `attackPerUnit` because the unit is not always a card (a Hero Class, or `flat`). The fold path is `per-captured-hero` / `per-captured-bystander` as sources of this table, in a later packet.
+9. **Third registry walk.** `buildVillainVariableAttack` is a deliberate third copy of the setup registry walk (beside `buildVillainDefeatRequirements` and `buildVillainFightDiscardCosts`), against the abstract-at-third rule: a shared walk would put the two shipped tables at risk for no behavior gain. Folding the walks is a STATUS follow-up.
+
+**Gates.** game-engine 5796 → 5819 / 0 fail (+23); `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; hash oracles unchanged; the overlay applies 4 markers and re-runs at 0, with six hand-checked loud-fails; every card / coverage `:check` 0, nothing regenerated; seven revert proofs each fail their locked tests. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-841-co2e-variable-attack-passives.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24774 (#3014). Related: D-24076 / D-24750 (the sibling setup tables and overlay), D-24747 (the fight-cost term precedent), D-24589, D-24295 (the City gate grammar), D-24493 (HYDRA by name), D-24355, D-24764 (the sixth space), D-24372 (runtime drift pins), D-24771 (WP-838, drafted), D-24026.
+
+---
 Protect this file.
