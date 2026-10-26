@@ -1083,3 +1083,133 @@ describe('counter-only resolver (WP-763 / D-24595)', () => {
     assert.equal(gameState.notableEvents.length, 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — each-player Scheme Twists start with the current player, then clockwise
+// ---------------------------------------------------------------------------
+
+/**
+ * The parts of G an each-player Scheme Twist writes, for literal comparison.
+ *
+ * @param gameState - The game state after the twist.
+ * @returns The Wound supply, each seat's hand and discard pile, and the log text.
+ */
+function twistOutcome(gameState: LegendaryGameState): unknown {
+  const seats: Record<string, { hand: string[]; discard: string[] }> = {};
+  for (const seat of Object.keys(gameState.playerZones).sort()) {
+    seats[seat] = {
+      hand: [...gameState.playerZones[seat]!.hand],
+      discard: [...gameState.playerZones[seat]!.discard],
+    };
+  }
+  return {
+    wounds: [...gameState.piles.wounds],
+    seats,
+    messages: gameState.messages.map((line) => line.text),
+  };
+}
+
+describe('WP-846 / D-24780 — Scheme Twist each-player order (AC-5 seat-0 / solo identity)', () => {
+  it('AC-5 scheme: a 3-player seat-0 wound-all with a short supply matches the pre-WP-846 baseline', () => {
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a', 'w-b'] });
+    SCHEME_TWIST_RESOLVERS['wound-all'](gameState, makeRevealContext('0'), emptyImplementationMap, { woundCount: 1 });
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(twistOutcome(gameState), { wounds: [], seats: { '0': { hand: [], discard: ['w-a'] }, '1': { hand: [], discard: ['w-b'] }, '2': { hand: [], discard: [] } }, messages: ['[Scheme Twist] Player 0 gained 1 wound(s).', '[Scheme Twist] Player 1 gained 1 wound(s).', '[Scheme Twist] Wound supply exhausted — player 2 gained 0 of 1 wounds.'] });
+  });
+
+  it('AC-5 scheme: a solo wound-all matches the pre-WP-846 baseline', () => {
+    const gameState = makeResolverState({ playerCount: 1, wounds: ['w-a', 'w-b'] });
+    SCHEME_TWIST_RESOLVERS['wound-all'](gameState, makeRevealContext('0'), emptyImplementationMap, { woundCount: 1 });
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(twistOutcome(gameState), { wounds: ['w-b'], seats: { '0': { hand: [], discard: ['w-a'] } }, messages: ['[Scheme Twist] Player 0 gained 1 wound(s).'] });
+  });
+});
+
+/**
+ * The seats named by a twist's per-player log lines, in log order.
+ *
+ * @param gameState - The game state after the twist.
+ * @param prefix - The twist's log prefix, e.g. `[Scheme Twist]`.
+ * @returns The seat ids, in the order the twist logged them.
+ */
+function twistSeatOrder(gameState: LegendaryGameState, prefix: string): string[] {
+  const seats: string[] = [];
+  for (const line of gameState.messages) {
+    if (!line.text.startsWith(prefix)) {
+      continue;
+    }
+    const match = / [Pp]layer (\d+)/.exec(line.text);
+    if (match !== null) {
+      seats.push(match[1]!);
+    }
+  }
+  return seats;
+}
+
+describe('WP-846 / D-24780 — Scheme Twist each-player order (AC-8 rotation, AC-2, AC-4)', () => {
+  it('AC-8 S1: reveal-or-punish (gain a Wound) on seat 1\'s turn resolves seats 1, 2, 0', () => {
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a', 'w-b', 'w-c'] });
+    SCHEME_TWIST_RESOLVERS['reveal-or-punish'](gameState, makeRevealContext('1'), emptyImplementationMap, {
+      condition: { field: 'heroClass', value: 'tech' },
+      penalty: 'gainWound',
+    });
+    assert.deepEqual(twistSeatOrder(gameState, '[Scheme Twist]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-4 S1: the discard-hand penalty on seat 1\'s turn queues return-on-discard reactions 1, 2, 0', () => {
+    const gameState = makeResolverState({ playerCount: 3 });
+    gameState.heroAbilityHooks = [
+      { cardId: 'cyclops-0', timing: 'onPlay', keywords: ['return-on-discard'] },
+      { cardId: 'cyclops-1', timing: 'onPlay', keywords: ['return-on-discard'] },
+      { cardId: 'cyclops-2', timing: 'onPlay', keywords: ['return-on-discard'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    for (const seat of ['0', '1', '2']) {
+      gameState.playerZones[seat]!.hand = [`cyclops-${seat}`];
+    }
+    SCHEME_TWIST_RESOLVERS['reveal-or-punish'](gameState, makeRevealContext('1'), emptyImplementationMap, {
+      condition: { field: 'heroClass', value: 'tech' },
+      penalty: 'discardHand',
+    });
+    assert.deepEqual(
+      (gameState.pendingReturnOnDiscard ?? []).map((entry) => entry.playerID),
+      ['1', '2', '0'],
+    );
+  });
+
+  it('AC-8 S2: wound-all on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a', 'w-b', 'w-c'] });
+    SCHEME_TWIST_RESOLVERS['wound-all'](gameState, makeRevealContext('1'), emptyImplementationMap, { woundCount: 1 });
+    assert.deepEqual(twistSeatOrder(gameState, '[Scheme Twist]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['w-b']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['w-c']);
+  });
+
+  it('AC-2 S2: with one Wound left on seat 2\'s turn, seat 2 gains it and seats 0 and 1 gain none', () => {
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a'] });
+    SCHEME_TWIST_RESOLVERS['wound-all'](gameState, makeRevealContext('2'), emptyImplementationMap, { woundCount: 1 });
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+    assert.deepEqual(gameState.playerZones['1']!.discard, []);
+    assert.deepEqual(gameState.messages.map((line) => line.text).slice(0, 3), [
+      '[Scheme Twist] Player 2 gained 1 wound(s).',
+      '[Scheme Twist] Wound supply exhausted — player 0 gained 0 of 1 wounds.',
+      '[Scheme Twist] Wound supply exhausted — player 1 gained 0 of 1 wounds.',
+    ]);
+  });
+
+  it('AC-8 S4: Clash of the Monsters on seat 1\'s turn wounds the weaker Gladiators 1, 2, 0', () => {
+    const monsterId = 'chmp-villain-monsters-unleashed-goom-00';
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a', 'w-b', 'w-c'] });
+    gameState.counters.schemeTwistCount = 3;
+    gameState.monsterPit = [monsterId];
+    gameState.villainDeckCardTypes = { [monsterId]: 'villain' };
+    gameState.cardStats = {
+      [monsterId]: { attack: 0, recruit: 0, cost: 0, fightCost: 6, fightCostMode: 'static', fightCostBase: 6 },
+    } as unknown as LegendaryGameState['cardStats'];
+    SCHEME_TWIST_RESOLVERS['clash-monster-pit'](gameState, makeRevealContext('1'), emptyImplementationMap, {});
+    assert.deepEqual(twistSeatOrder(gameState, '[Monster Pit] Player'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+  });
+});

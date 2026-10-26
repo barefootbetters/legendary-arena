@@ -1762,3 +1762,96 @@ describe('WP-821 dispatchTacticOnFight — Arnim Zola tactics (D-24754)', () => 
     ]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — each-other tactics start after the current player, then clockwise
+// ---------------------------------------------------------------------------
+
+/**
+ * The parts of G an each-other tactic writes, for literal comparison.
+ *
+ * @param G - The game state after the tactic.
+ * @returns The Wound supply, each seat's discard pile, and the log text.
+ */
+function tacticOutcome(G: LegendaryGameState): unknown {
+  const discards: Record<string, string[]> = {};
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    discards[seat] = [...G.playerZones[seat]!.discard];
+  }
+  return {
+    wounds: [...G.piles.wounds],
+    discards,
+    messages: G.messages.map((entry) => entry.text),
+  };
+}
+
+describe('WP-846 / D-24780 — tactic each-other order (AC-5 seat-0 / solo identity)', () => {
+  it('AC-5 tactic: a 3-player seat-0 Crushing Shockwave with a short supply matches the pre-WP-846 baseline', () => {
+    const G = makeShockwaveState({ '0': [], '1': [NON_X_MEN_CARD], '2': [NON_X_MEN_CARD] }, 3);
+    resolveCrushingShockwave(G, '0');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(tacticOutcome(G), { wounds: [], discards: { '0': [], '1': ['wound', 'wound'], '2': ['wound'] }, messages: ['Fight effect: Player 1 held no X-Men Hero and gained 2 Wound(s) (Crushing Shockwave).', 'Fight effect: Player 2 held no X-Men Hero and gained 1 Wound(s) (Crushing Shockwave).'] });
+  });
+
+  it('AC-5 tactic: a solo Crushing Shockwave matches the pre-WP-846 baseline', () => {
+    const G = makeShockwaveState({ '0': [NON_X_MEN_CARD] }, 3);
+    resolveCrushingShockwave(G, '0');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(tacticOutcome(G), { wounds: ['wound', 'wound', 'wound'], discards: { '0': [] }, messages: ['Fight effect: there is no other player to reveal an X-Men Hero or gain Wounds (Crushing Shockwave).'] });
+  });
+});
+
+import { resolvePetProjects } from './tacticHandlers.js';
+
+/**
+ * The seats named by a tactic's per-player log lines, in log order.
+ *
+ * @param G - The game state after the tactic.
+ * @returns The seat ids, in the order the tactic logged them.
+ */
+function tacticSeatOrder(G: LegendaryGameState): string[] {
+  const seats: string[] = [];
+  for (const entry of G.messages) {
+    const match = /^Fight effect: Player (\d+) /.exec(entry.text);
+    if (match !== null) {
+      seats.push(match[1]!);
+    }
+  }
+  return seats;
+}
+
+describe('WP-846 / D-24780 — tactic each-other order (AC-8 rotation, AC-2, AC-2b)', () => {
+  it('AC-8 T1: Crushing Shockwave on seat 1\'s turn wounds seats 2, 0', () => {
+    const G = makeShockwaveState({ '0': [NON_X_MEN_CARD], '1': [NON_X_MEN_CARD], '2': [NON_X_MEN_CARD] }, 6);
+    resolveCrushingShockwave(G, '1');
+    assert.deepEqual(tacticSeatOrder(G), ['2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, [], 'the defeating player is skipped');
+  });
+
+  it('AC-2 T1: with one Wound left on seat 1\'s turn, seat 2 gains it and seat 0 gains none', () => {
+    const G = makeShockwaveState({ '0': [NON_X_MEN_CARD], '1': [NON_X_MEN_CARD], '2': [NON_X_MEN_CARD] }, 1);
+    resolveCrushingShockwave(G, '1');
+    assert.deepEqual(G.playerZones['2']!.discard, [WOUND]);
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+  });
+
+  it('AC-8 / AC-2b T6: Finding Zemo on seat 1\'s turn wounds seats 2, 0 (rotate first, then filter)', () => {
+    const G = makeZemoTacticState(
+      { '0': {}, '1': {}, '2': {} },
+      { wounds: 5, deck: ['b1', 'v1'], deckTypes: { b1: 'bystander', v1: 'villain' } },
+    );
+    dispatchTacticOnFight(G, { currentPlayer: '1' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(zemoLogLines(G).slice(1), [
+      { text: 'Fight effect: Player 2 gained a Wound (Finding Zemo).', outcome: 'applied' },
+      { text: 'Fight effect: Player 0 gained a Wound (Finding Zemo).', outcome: 'applied' },
+    ]);
+  });
+
+  it('AC-8 / AC-2b T9: Pet Projects on seat 1\'s turn wounds seats 2, 0 (rotate first, then filter)', () => {
+    const G = makeZolaTacticState({ '0': {}, '1': {}, '2': {} }, { wounds: 5 });
+    resolvePetProjects(G, '1');
+    assert.deepEqual(tacticSeatOrder(G), ['2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, [], 'the defeating player is skipped');
+  });
+});

@@ -357,3 +357,98 @@ describe('heroEffectCoveringFire park handler + [hc:tech] gate (WP-719 / D-24541
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — Covering Fire starts after the chooser, then clockwise
+// ---------------------------------------------------------------------------
+
+const RETURN_ON_DISCARD_HOOKS: HeroAbilityHook[] = [
+  { cardId: 'cyclops-a' as CardExtId, timing: 'onPlay', keywords: ['return-on-discard'] },
+  { cardId: 'cyclops-b' as CardExtId, timing: 'onPlay', keywords: ['return-on-discard'] },
+  { cardId: 'cyclops-c' as CardExtId, timing: 'onPlay', keywords: ['return-on-discard'] },
+];
+
+/**
+ * Seats each holding one return-on-discard card, with Covering Fire parked for `chooser`.
+ *
+ * @param seatIds - The seats to build.
+ * @param chooser - The active player who parked Covering Fire.
+ * @returns The game state.
+ */
+function makeReturnOnDiscardState(seatIds: string[], chooser: string): LegendaryGameState {
+  const handBySeat: Record<string, CardExtId> = {
+    '0': 'cyclops-a' as CardExtId,
+    '1': 'cyclops-b' as CardExtId,
+    '2': 'cyclops-c' as CardExtId,
+  };
+  const seats: Record<string, SeatOverride> = {};
+  for (const seat of seatIds) {
+    seats[seat] = { hand: [handBySeat[seat]!], deck: [`deck-${seat}` as CardExtId] };
+  }
+  return makeTestGameState(seats, {
+    pendingCoveringFireChoices: [{ playerID: chooser, sourceCardId: 'covering-fire#0' as CardExtId }],
+    heroAbilityHooks: RETURN_ON_DISCARD_HOOKS,
+  });
+}
+
+/**
+ * The parts of G a Covering Fire resolution writes, for literal comparison.
+ *
+ * @param gameState - The game state after the choice.
+ * @returns Each seat's hand and discard pile, the return-on-discard queue and the log text.
+ */
+function coveringFireOutcome(gameState: LegendaryGameState): unknown {
+  const seats: Record<string, { hand: string[]; discard: string[] }> = {};
+  for (const seat of Object.keys(gameState.playerZones).sort()) {
+    seats[seat] = {
+      hand: [...gameState.playerZones[seat]!.hand],
+      discard: [...gameState.playerZones[seat]!.discard],
+    };
+  }
+  return {
+    seats,
+    pendingReturnOnDiscard: gameState.pendingReturnOnDiscard ?? [],
+    messages: gameState.messages.map((line) => line.text),
+  };
+}
+
+describe('WP-846 / D-24780 — Covering Fire each-other order (AC-5 seat-0 / solo identity)', () => {
+  it('AC-5 covering fire: a 3-player seat-0 discard matches the pre-WP-846 baseline', () => {
+    const gameState = makeReturnOnDiscardState(['0', '1', '2'], '0');
+    resolveCoveringFireChoice(makeMoveContext(gameState, '0'), { choice: 'discard' });
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(coveringFireOutcome(gameState), { seats: { '0': { hand: ['cyclops-a'], discard: [] }, '1': { hand: [], discard: ['cyclops-b'] }, '2': { hand: [], discard: ['cyclops-c'] } }, pendingReturnOnDiscard: [{ playerID: '1', cardId: 'cyclops-b' }, { playerID: '2', cardId: 'cyclops-c' }], messages: ['Player 1 discarded cyclops-b (cyclops-b) for covering-fire#0 (covering-fire#0).', 'Player 2 discarded cyclops-c (cyclops-c) for covering-fire#0 (covering-fire#0).'] });
+  });
+
+  it('AC-5 covering fire: a solo discard matches the pre-WP-846 baseline', () => {
+    const gameState = makeReturnOnDiscardState(['0'], '0');
+    resolveCoveringFireChoice(makeMoveContext(gameState, '0'), { choice: 'discard' });
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(coveringFireOutcome(gameState), { seats: { '0': { hand: ['cyclops-a'], discard: [] } }, pendingReturnOnDiscard: [], messages: [] });
+  });
+});
+
+describe('WP-846 / D-24780 — Covering Fire each-other order (AC-8 rotation)', () => {
+  it('AC-8 M1: the discard branch chosen by seat 1 resolves seats 2, 0 and queues their reactions 2, 0', () => {
+    const gameState = makeReturnOnDiscardState(['0', '1', '2'], '1');
+    resolveCoveringFireChoice(makeMoveContext(gameState, '1'), { choice: 'discard' });
+    assert.deepEqual(
+      (gameState.pendingReturnOnDiscard ?? []).map((entry) => entry.playerID),
+      ['2', '0'],
+    );
+    assert.deepEqual(gameState.messages.map((line) => line.text), [
+      'Player 2 discarded cyclops-c (cyclops-c) for covering-fire#0 (covering-fire#0).',
+      'Player 0 discarded cyclops-a (cyclops-a) for covering-fire#0 (covering-fire#0).',
+    ]);
+    assert.deepEqual(gameState.playerZones['1']!.hand, ['cyclops-b'], 'the chooser is skipped');
+  });
+
+  it('AC-8 M1: the draw branch chosen by seat 1 draws for seats 2, 0', () => {
+    const gameState = makeReturnOnDiscardState(['0', '1', '2'], '1');
+    resolveCoveringFireChoice(makeMoveContext(gameState, '1'), { choice: 'draw' });
+    const drawingSeats = gameState.messages
+      .map((line) => /^Player (\d+) drew a card/.exec(line.text)?.[1])
+      .filter((seat) => seat !== undefined);
+    assert.deepEqual(drawingSeats, ['2', '0']);
+  });
+});

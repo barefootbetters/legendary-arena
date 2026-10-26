@@ -394,3 +394,34 @@ describe('Crazed Rampage woundsDrawn and Diving Block (WP-843 / D-24777)', () =>
     assert.equal(lastMessage.card, RESOLVING_RAMPAGE);
   });
 });
+
+describe('Crazed Rampage each-player order (WP-846 / D-24780)', () => {
+  it('AC-8 H7: on seat 1\'s turn the cannot-reveal seats gain Wounds in order 1, 2, 0', () => {
+    const G = makeRampageState(
+      { '0': [RANGED_CARD], '1': [RANGED_CARD], '2': [RANGED_CARD] },
+      { '1': [RESOLVING_RAMPAGE] },
+      ['wound-a', 'wound-b', 'wound-c'] as CardExtId[],
+    );
+    executeSingleEffect(G, mockCtx, '1', RESOLVING_RAMPAGE, RAMPAGE_EFFECT);
+
+    assert.deepStrictEqual(G.playerZones['1']!.discard, ['wound-a'], 'the current player takes the top Wound');
+    assert.deepStrictEqual(G.playerZones['2']!.discard, ['wound-b']);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['wound-c']);
+    assert.equal(
+      G.messages[0]!.text,
+      `Each player without another Strength Hero gained a Wound (${RAMPAGE_REF}): Player 1, Player 2, Player 0.`,
+    );
+  });
+
+  it('AC-8 H7: the queued revealers stay ascending (WP-845 apply order) while the log follows turn order', () => {
+    const G = makeRampageState(
+      { '0': [STRENGTH_CARD], '1': [RANGED_CARD], '2': [STRENGTH_CARD] },
+      { '1': [RESOLVING_RAMPAGE] },
+      ['wound-a', 'wound-b'] as CardExtId[],
+    );
+    executeSingleEffect(G, mockCtx, '1', RESOLVING_RAMPAGE, RAMPAGE_EFFECT);
+
+    assert.deepStrictEqual(queuedSeats(G), ['0', '2'], 'enqueueRevealOrWoundChoice sorts the revealers ascending');
+    assert.match(G.messages[1]!.text, /^Player 2, Player 0 can reveal another Strength Hero/);
+  });
+});

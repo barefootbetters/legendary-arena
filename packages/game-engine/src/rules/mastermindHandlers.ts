@@ -28,6 +28,7 @@ import { discardFromHand } from '../moves/discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import type { WoundGainOutcome } from '../board/wounds.logic.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 // why: WP-669 / D-24483 — the Mastermind Transform flip primitive; resolveGeneralRossStrike
@@ -307,7 +308,7 @@ export function selectDiscardToLimitCards(
  * Resolves Magneto's Master Strike: "Each player reveals an [team:x-men] Hero
  * or discards down to four cards." (WP-476 / D-24284.)
  *
- * Each player (in sorted id order): a player holding an X-Men Hero in hand
+ * Each player (current player first, then clockwise; D-24780): a player holding an X-Men Hero in hand
  * reveals it and discards nothing; otherwise a player over the limit discards
  * down to four. The CURRENT player discards INTERACTIVELY — a PendingDiscardChoice
  * is parked and they pick which cards (the printed player choice restored).
@@ -327,7 +328,9 @@ function resolveMagnetoStrike(
   gameState: LegendaryGameState,
   currentPlayer: string | null,
 ): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -764,12 +767,17 @@ function resolveRedSkullStrike(
  * Doctor Doom as 'Omen of Doom.' Then each player discards cards equal to
  * the number of Omens or gains a Wound."
  *
- * Each player (in sorted id order) whose hand can cover the Omen count
+ * Each player (current player first, then clockwise; D-24780) whose hand can cover the Omen count
  * discards that many cards, lowest-cost first; everyone else gains a Wound.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
+function resolveDoctorDoomStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
   // why: D-24192 — the Omen count is DERIVED, not stored. Every Doom strike
   // stacks exactly one Omen, so the Omen total is the strike count. The
   // generic `modifyCounter` effect is applied by the pipeline AFTER this
@@ -777,7 +785,9 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
   // the strike being resolved is `+ 1`. `?? 0` because G.counters is not
   // seeded at setup. No Omen zone is created.
   const omenCount = (gameState.counters.masterStrikeCount ?? 0) + 1;
-  const playerIds = Object.keys(gameState.playerZones).sort();
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -825,7 +835,7 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
  * Resolves core Loki's Master Strike: "Each player reveals a [hc:strength]
  * Hero or gains a Wound."
  *
- * Each player (in sorted id order) who holds a Strength Hero reveals it and
+ * Each player (current player first, then clockwise; D-24780) who holds a Strength Hero reveals it and
  * KEEPS it — reveal is the printed escape, not a cost. A player holding none
  * gains a Wound (or takes a logged no-op when the Wound supply is empty).
  *
@@ -837,9 +847,16 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
  * per player.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+function resolveCoreLokiStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -885,14 +902,21 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
  * KOs a Bystander from their Victory Pile. Any player who cannot do so gains a
  * Wound."
  *
- * Each player (in sorted id order) KOs the first Bystander in their Victory
+ * Each player (current player first, then clockwise; D-24780) KOs the first Bystander in their Victory
  * Pile to the KO pile; a player with none gains a Wound (or takes a logged
  * no-op when the Wound supply is empty). One durable log line per player.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveBaronZemoStrike(gameState: LegendaryGameState): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+function resolveBaronZemoStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -933,8 +957,13 @@ function resolveBaronZemoStrike(gameState: LegendaryGameState): void {
  * throws.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveArnimZolaStrike(gameState: LegendaryGameState): void {
+function resolveArnimZolaStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
   // why: "for each Hero in the HQ" names the Heroes there when the strike resolves, so the
   // slots are snapshotted first. A Hero that refills a vacated slot is never re-checked,
   // even when weak; iterating the live HQ would chain refills through the Hero Deck.
@@ -963,7 +992,7 @@ function resolveArnimZolaStrike(gameState: LegendaryGameState): void {
     pushLog(gameState,
       `[Arnim Zola Master Strike] ${formatCardRef(gameState.cardDisplayData, heroId)} has less than 2 printed Attack and went to the bottom of the Hero Deck.`,
     );
-    discardCardOfCostForEachPlayer(gameState, cost);
+    discardCardOfCostForEachPlayer(gameState, cost, currentPlayer);
   }
 }
 
@@ -978,9 +1007,17 @@ function resolveArnimZolaStrike(gameState: LegendaryGameState): void {
  *
  * @param gameState - The game state to mutate.
  * @param cost - The removed Hero's cost.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function discardCardOfCostForEachPlayer(gameState: LegendaryGameState, cost: number): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+function discardCardOfCostForEachPlayer(
+  gameState: LegendaryGameState,
+  cost: number,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
   for (const playerId of playerIds) {
     const cardId = selectDefaultCostDiscardCard(gameState, playerId, [cost]);
     if (cardId === null) {
@@ -1001,7 +1038,7 @@ function discardCardOfCostForEachPlayer(gameState: LegendaryGameState, cost: num
  * [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki
  * as a Hypno-Thrall."
  *
- * Each player (in sorted id order): a player holding a Strength Hero discards
+ * Each player (current player first, then clockwise; D-24780): a player holding a Strength Hero discards
  * their lowest-cost one (the printed first cost). A player with no Strength
  * Hero but at least one non-grey Hero has their lowest-cost non-grey Hero
  * stacked next to Loki as a Hypno-Thrall (WP-398, closing the WP-388 gap). A
@@ -1009,9 +1046,16 @@ function discardCardOfCostForEachPlayer(gameState: LegendaryGameState, cost: num
  * nothing is stacked.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveLokiStrike(gameState: LegendaryGameState): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+function resolveLokiStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -1082,13 +1126,20 @@ function resolveLokiStrike(gameState: LegendaryGameState): void {
  * Resolves co2e Magneto's Master Strike: "Each player discards an
  * [team:x-men] Hero or gains a Wound."
  *
- * Each player (in sorted id order) discards their lowest-cost X-Men Hero, or
+ * Each player (current player first, then clockwise; D-24780) discards their lowest-cost X-Men Hero, or
  * gains a Wound when they hold none.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+function resolveCo2eMagnetoStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -1124,16 +1175,22 @@ function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
  * cards of their deck, discard all non-grey Heroes revealed, and put the rest
  * back in random order."
  *
- * Each player (in sorted id order) discards their lowest-cost Spider-Friends
+ * Each player (current player first, then clockwise; D-24780) discards their lowest-cost Spider-Friends
  * Hero.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
 function resolveDoctorOctopusStrike(
   gameState: LegendaryGameState,
   shuffleFunction: (<T>(items: T[]) => T[]) | null,
+  currentPlayer: string | null,
 ): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order. The reveal branch reshuffles in
+  // this order too, so the RNG stream follows it.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -1328,6 +1385,9 @@ export function mastermindStrikeHandler(
   // matching none of them takes no branch and the strike is generic
   // bookkeeping only (its printed text is not yet implemented).
   const mastermindId = gameState.selection.mastermindId;
+  // why: WP-846 / D-24780 — each each-player strike receives the active player
+  // (resolveCurrentPlayer; null in stub contexts → sorted order) so its loop starts with the
+  // current player and goes clockwise (rules v23 L2247).
   if (mastermindId === MASTERMIND_MAGNETO) {
     // why: WP-476 / D-24284 — pass the active player so the strike can park an
     // interactive discard choice for the current player (narrowed from the
@@ -1339,20 +1399,24 @@ export function mastermindStrikeHandler(
     // resolveMagnetoStrike current-parks / allies-auto pattern, D-24284).
     resolveRedSkullStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CORE_LOKI) {
-    resolveCoreLokiStrike(gameState);
+    resolveCoreLokiStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CORE_DR_DOOM) {
     // why: WP-538 / D-24347 — pass the active player so the strike can park an
     // interactive put-cards-on-deck choice for the current player (mirroring
     // the resolveMagnetoStrike interactive branch).
     resolveCoreDoomStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_DOOM) {
-    resolveDoctorDoomStrike(gameState);
+    resolveDoctorDoomStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CO2E_LOKI) {
-    resolveLokiStrike(gameState);
+    resolveLokiStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CO2E_MAGNETO) {
-    resolveCo2eMagnetoStrike(gameState);
+    resolveCo2eMagnetoStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_OCTOPUS) {
-    resolveDoctorOctopusStrike(gameState, resolveShuffleFunction(strikeContext));
+    resolveDoctorOctopusStrike(
+      gameState,
+      resolveShuffleFunction(strikeContext),
+      resolveCurrentPlayer(strikeContext),
+    );
   } else if (mastermindId === MASTERMIND_GENERAL_ROSS) {
     // why: WP-669 / D-24483 — General Ross's Master Strike flips the Mastermind
     // to its other boss face (General Ross ⇄ Red Hulk).
@@ -1360,12 +1424,12 @@ export function mastermindStrikeHandler(
   } else if (mastermindId === BARON_ZEMO_MASTERMIND_ID) {
     // why: WP-818 / D-24752 — "Each player KOs a Bystander from their Victory Pile. Any
     // player who cannot do so gains a Wound."
-    resolveBaronZemoStrike(gameState);
+    resolveBaronZemoStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === ARNIM_ZOLA_MASTERMIND_ID) {
     // why: WP-821 / D-24754 — "For each Hero in the HQ that has less than 2 printed
     // [icon:attack], put that Hero on the bottom of the Hero Deck, and each player discards
     // a card of that Hero's cost."
-    resolveArnimZolaStrike(gameState);
+    resolveArnimZolaStrike(gameState, resolveCurrentPlayer(strikeContext));
   }
 
   // why: WP-200 — terminal emission AFTER the per-mastermind text effect

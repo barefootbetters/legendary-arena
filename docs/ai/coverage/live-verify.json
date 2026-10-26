@@ -1464,6 +1464,17 @@
       "date": "2026-10-26",
       "evidence": "Operator-pending (D-24026): a play.legendary-arena.com 2-player match created after the WP-845 deploy where a reveal-or-wound fires with a revealer, per the WP-845 DoD.",
       "note": "The revealer sees 'Reveal a Hero or gain a Wound?' on their own seat; Reveal avoids the Wound, Gain a Wound instead takes it; cannot-reveal seats are wounded at once. D-24779."
+    },
+    {
+      "key": "mastermind:core/loki|master-strike-turn-order",
+      "kind": "mastermind",
+      "card": "Loki",
+      "ability": "Master Strike: each player reveals a Strength Hero or gains a Wound, starting with the current player",
+      "wp": "WP-846",
+      "state": "pending",
+      "date": "2026-10-26",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com multiplayer match created after the WP-846 deploy where a per-seat-logging in-scope effect (core Loki strike, a reveal-or-wound villain, or Finding Zemo) fires on a non-seat-0 turn, per the WP-846 DoD.",
+      "note": "The per-seat log lines name the current player first, then clockwise. D-24780."
     }
   ]
 }
