@@ -70,6 +70,7 @@ import { buildVillainAbilityHooks } from './villainAbility.setup.js';
 import {
   buildVillainDefeatRequirements,
   buildVillainFightDiscardCosts,
+  buildVillainVariableAttack,
 } from './villainDefeatRequirement.setup.js';
 import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
 import { buildCardAbomination } from './buildCardAbomination.js';
@@ -441,6 +442,14 @@ export function buildInitialGameState(
   // table of villainDefeatRequirements, built from the same registry read. Narrow
   // test mocks → empty record (omitted below).
   const villainFightDiscardCosts = buildVillainFightDiscardCosts(
+    registry as unknown,
+    villainBuildConfig,
+  );
+
+  // why: WP-841 / D-24774 — per-villain variable-Attack passives (Baron Strucker,
+  // Paibok, Super-Skrull, Hydro-Man), built from the same registry read and read only
+  // by resolveFightCost. Narrow test mocks → empty record (omitted below).
+  const villainVariableAttack = buildVillainVariableAttack(
     registry as unknown,
     villainBuildConfig,
   );
@@ -903,6 +912,10 @@ export function buildInitialGameState(
     // on G ONLY when a selected villain carries a [discard-to-fight:...] marker, so every
     // match without Primus keeps a byte-identical finalStateHash.
     ...(Object.keys(villainFightDiscardCosts).length > 0 ? { villainFightDiscardCosts } : {}),
+    // why: WP-841 / D-24774 — same hash-stability discipline: villainVariableAttack is
+    // on G ONLY when a selected villain carries a [variable-attack:...] marker, so every
+    // match without those four co2e villains keeps a byte-identical finalStateHash.
+    ...(Object.keys(villainVariableAttack).length > 0 ? { villainVariableAttack } : {}),
     // why: WP-760 / D-24589 — same hash-stability discipline: villainBloodFrenzy is on G
     // ONLY when a selected villain group prints Blood Frenzy, so every other match keeps
     // a byte-identical finalStateHash.

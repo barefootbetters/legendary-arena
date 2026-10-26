@@ -791,3 +791,200 @@ describe('WP-818 resolveMastermindFightCost — Baron Zemo +9 unless you are a S
     assert.equal(resolveMastermindFightCost(G, '0'), 7);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Variable-Attack passives (WP-841 / D-24774)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — villain variable-Attack passives (WP-841)', () => {
+  const STRUCKER_00 = 'co2e-villain-hydra-baron-strucker-supreme-hydra-00';
+  const STRUCKER_01 = 'co2e-villain-hydra-baron-strucker-supreme-hydra-01';
+  const VIPER = 'co2e-villain-hydra-viper-00';
+  const GREEN_GOBLIN = 'co2e-villain-sinister-spider-foes-green-goblin-00';
+  const KIDNAPPERS = 'co2e-villain-hydra-hydra-kidnappers-00';
+  const PAIBOK = 'co2e-villain-skulls-paibok-the-power-skrull-00';
+  const SUPER_SKRULL = 'co2e-villain-skulls-super-skrull-00';
+  const HYDRO_MAN = 'co2e-villain-sinister-syndicate-hydro-man-00';
+
+  /** A `N+` dynamic cardStats row with the given printed base. */
+  function dynamicStats(base: number): { fightCost: number; fightCostMode: 'dynamic'; fightCostBase: number } {
+    return { fightCost: base, fightCostMode: 'dynamic', fightCostBase: base };
+  }
+
+  /** A `size`-space City with `villainId` at `cityIndex` (-1 = not in the City). */
+  function cityWith(villainId: string, cityIndex: number, size = 5): (string | null)[] {
+    const city: (string | null)[] = [];
+    for (let index = 0; index < size; index++) {
+      city.push(null);
+    }
+    if (cityIndex >= 0) {
+      city[cityIndex] = villainId;
+    }
+    return city;
+  }
+
+  /** The Hydro-Man G: base 4, `flat:2@sewers+bridge`, at `cityIndex` of a `size`-space City. */
+  function makeHydroManG(cityIndex: number, size = 5): LegendaryGameState {
+    return {
+      cardStats: { [HYDRO_MAN]: dynamicStats(4) },
+      villainAttachedHeroes: {},
+      city: cityWith(HYDRO_MAN, cityIndex, size),
+      hq: [null, null, null, null, null],
+      villainVariableAttack: {
+        [HYDRO_MAN]: { source: 'flat', attackPerUnit: 2, requireCitySpaces: ['sewers', 'bridge'] },
+      },
+    } as unknown as LegendaryGameState;
+  }
+
+  it('T3: Strucker counts the other HYDRA Villains in the City and Escape Pile (6 + 3 = 9)', () => {
+    const G = {
+      cardStats: { [STRUCKER_00]: dynamicStats(6) },
+      villainAttachedHeroes: {},
+      villainDeckCardTypes: {
+        [STRUCKER_00]: 'villain',
+        [STRUCKER_01]: 'villain',
+        [VIPER]: 'villain',
+        [GREEN_GOBLIN]: 'villain',
+        [KIDNAPPERS]: 'villain',
+        'bystander-07': 'bystander',
+      },
+      city: [STRUCKER_00, STRUCKER_01, VIPER, GREEN_GOBLIN, null],
+      escapedPile: [KIDNAPPERS, 'bystander-07', 'co2e-hero-captain-america-01'],
+      villainVariableAttack: {
+        [STRUCKER_00]: { source: 'per-other-hydra-villain', attackPerUnit: 1 },
+      },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, STRUCKER_00 as CardExtId), 9);
+  });
+
+  it('T4: Strucker alone costs his base, with an empty or absent Escape Pile', () => {
+    const G = {
+      cardStats: { [STRUCKER_00]: dynamicStats(6) },
+      villainAttachedHeroes: {},
+      villainDeckCardTypes: { [STRUCKER_00]: 'villain' },
+      city: cityWith(STRUCKER_00, 0),
+      escapedPile: [],
+      villainVariableAttack: {
+        [STRUCKER_00]: { source: 'per-other-hydra-villain', attackPerUnit: 1 },
+      },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, STRUCKER_00 as CardExtId), 6);
+    delete (G as { escapedPile?: unknown }).escapedPile;
+    assert.equal(resolveFightCost(G, STRUCKER_00 as CardExtId), 6);
+  });
+
+  it('T5: Paibok counts distinct HQ Hero Classes; dual class counts both, grey and empty add nothing (5 + 3 = 8)', () => {
+    const G = {
+      cardStats: { [PAIBOK]: dynamicStats(5) },
+      villainAttachedHeroes: {},
+      city: cityWith(PAIBOK, 1),
+      hq: ['covert-a', 'covert-b', 'dual-strength-tech', null, 'sidekick-00'],
+      cardTraits: {
+        'covert-a': { heroClass: 'covert', team: null },
+        'covert-b': { heroClass: 'covert', team: null },
+        'dual-strength-tech': { heroClass: 'strength', heroClass2: 'tech', team: null },
+        'sidekick-00': { heroClass: null, team: null },
+      },
+      villainVariableAttack: { [PAIBOK]: { source: 'per-hq-hero-class', attackPerUnit: 1 } },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, PAIBOK as CardExtId), 8);
+  });
+
+  it('T6: Super-Skrull counts both faces of a Divided card off play (2 + 2 = 4); an empty HQ adds 0', () => {
+    const G = {
+      cardStats: { [SUPER_SKRULL]: dynamicStats(2) },
+      villainAttachedHeroes: {},
+      city: cityWith(SUPER_SKRULL, 2),
+      hq: ['split-a#0', null, null, null, null],
+      splitFaces: { 'split-a': 'split-b' },
+      cardTraits: {
+        'split-a#0': { heroClass: 'ranged', team: null },
+        'split-b#0': { heroClass: 'instinct', team: null },
+      },
+      villainVariableAttack: { [SUPER_SKRULL]: { source: 'per-hq-hero-class', attackPerUnit: 1 } },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, SUPER_SKRULL as CardExtId), 4);
+    G.hq = [null, null, null, null, null];
+    assert.equal(resolveFightCost(G, SUPER_SKRULL as CardExtId), 2);
+  });
+
+  it('T7: Hydro-Man gets +2 only in the Sewers and on the Bridge; the gate fails closed elsewhere', () => {
+    assert.equal(resolveFightCost(makeHydroManG(0), HYDRO_MAN as CardExtId), 6, 'Sewers');
+    assert.equal(resolveFightCost(makeHydroManG(4), HYDRO_MAN as CardExtId), 6, 'Bridge');
+    assert.equal(resolveFightCost(makeHydroManG(2), HYDRO_MAN as CardExtId), 4, 'Rooftops');
+    assert.equal(resolveFightCost(makeHydroManG(-1), HYDRO_MAN as CardExtId), 4, 'not in the City');
+    assert.equal(resolveFightCost(makeHydroManG(5, 6), HYDRO_MAN as CardExtId), 4, 'unnamed sixth space');
+    assert.equal(resolveFightCost(makeHydroManG(3, 4), HYDRO_MAN as CardExtId), 4, 'a 4-space City has no Bridge');
+  });
+
+  it('T8: the term is added before three Sewers -2 reductions and the 0 floor (4 + 2 - 6 = 0)', () => {
+    const G = makeHydroManG(0);
+    let economy = makeTurnEconomy();
+    for (let copy = 0; copy < 3; copy++) {
+      economy = addFightCostReduction(economy, 'sewers', 2, `core/storm/tidal-wave#${copy}` as CardExtId);
+    }
+    G.turnEconomy = economy;
+    assert.equal(resolveFightCost(G, HYDRO_MAN as CardExtId), 0);
+  });
+
+  it('T9: an entry replaces the captured-Hero cost sum; a villain with no entry keeps it', () => {
+    const OTHER_DYNAMIC = 'core-villain-other-dynamic-00';
+    const G = {
+      cardStats: {
+        [SUPER_SKRULL]: dynamicStats(2),
+        [OTHER_DYNAMIC]: dynamicStats(3),
+        'captured-hero': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 5 },
+      },
+      villainAttachedHeroes: { [SUPER_SKRULL]: ['captured-hero'], [OTHER_DYNAMIC]: ['captured-hero'] },
+      city: [SUPER_SKRULL, OTHER_DYNAMIC, null, null, null],
+      hq: [null, null, null, null, null],
+      villainVariableAttack: { [SUPER_SKRULL]: { source: 'per-hq-hero-class', attackPerUnit: 1 } },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, SUPER_SKRULL as CardExtId), 2);
+    assert.equal(resolveFightCost(G, OTHER_DYNAMIC as CardExtId), 3 + 5);
+  });
+
+  it('T10: a City gate also gates a per-count source', () => {
+    const GATED = 'co2e-villain-test-gated-00';
+    /** A gated per-HQ-class villain (base 1, Rooftops only) at `cityIndex`, with 3 HQ classes. */
+    function makeGatedG(cityIndex: number): LegendaryGameState {
+      return {
+        cardStats: { [GATED]: dynamicStats(1) },
+        villainAttachedHeroes: {},
+        city: cityWith(GATED, cityIndex),
+        hq: ['h-tech', 'h-covert', 'h-ranged', null, null],
+        cardTraits: {
+          'h-tech': { heroClass: 'tech', team: null },
+          'h-covert': { heroClass: 'covert', team: null },
+          'h-ranged': { heroClass: 'ranged', team: null },
+        },
+        villainVariableAttack: {
+          [GATED]: { source: 'per-hq-hero-class', attackPerUnit: 1, requireCitySpaces: ['rooftops'] },
+        },
+      } as unknown as LegendaryGameState;
+    }
+    assert.equal(resolveFightCost(makeGatedG(0), GATED as CardExtId), 1 + 0);
+    assert.equal(resolveFightCost(makeGatedG(2), GATED as CardExtId), 1 + 3);
+  });
+
+  it('T11: a villain with no entry, or a G with no table, resolves exactly as before', () => {
+    const G = makeG({
+      cardStats: {
+        'villain-static': { fightCost: 7, fightCostMode: 'static', fightCostBase: 0 },
+        'villain-dynamic': { fightCost: 3, fightCostMode: 'dynamic', fightCostBase: 3 },
+        'captured-hero': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 4 },
+      },
+      villainAttachedHeroes: { 'villain-dynamic': ['captured-hero' as CardExtId] },
+    });
+    assert.equal(resolveFightCost(G, 'villain-static' as CardExtId), 7);
+    assert.equal(resolveFightCost(G, 'villain-dynamic' as CardExtId), 7);
+    const withTable = {
+      ...G,
+      villainVariableAttack: {
+        [HYDRO_MAN]: { source: 'flat', attackPerUnit: 2, requireCitySpaces: ['sewers'] },
+      },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(withTable, 'villain-static' as CardExtId), 7);
+    assert.equal(resolveFightCost(withTable, 'villain-dynamic' as CardExtId), 7);
+  });
+});

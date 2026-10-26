@@ -2741,3 +2741,26 @@ describe('WP-818 buildUIState — Baron Zemo mastermind.fightCost reads the acti
     assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState, '0'));
   });
 });
+
+describe('buildUIState — City fightCost includes a variable-Attack passive (WP-841 / D-24774)', () => {
+  it('T17: projects Paibok (base 5) at city[1] with 2 distinct HQ Hero Classes as 7', () => {
+    const gameState = createTestGameState();
+    const paibokId = 'co2e-villain-skulls-paibok-the-power-skrull-00' as CardExtId;
+    gameState.city = [null, paibokId, null, null, null];
+    gameState.hq = ['hq-covert-a' as CardExtId, 'hq-covert-b' as CardExtId, 'hq-tech' as CardExtId, null, null];
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      ['hq-covert-a' as CardExtId]: { heroClass: 'covert', team: null },
+      ['hq-covert-b' as CardExtId]: { heroClass: 'covert', team: null },
+      ['hq-tech' as CardExtId]: { heroClass: 'tech', team: null },
+    };
+    gameState.cardStats[paibokId] = makeCardStatEntry({ fightCost: 5, fightCostMode: 'dynamic', fightCostBase: 5 });
+
+    assert.equal(buildUIState(gameState, mockCtx).city.spaces[1]!.fightCost, 5, 'no entry: base only');
+
+    gameState.villainVariableAttack = { [paibokId]: { source: 'per-hq-hero-class', attackPerUnit: 1 } };
+    const projectedFightCost = buildUIState(gameState, mockCtx).city.spaces[1]!.fightCost;
+    assert.equal(projectedFightCost, 7);
+    assert.equal(projectedFightCost, resolveFightCost(gameState, paibokId, mockCtx.currentPlayer));
+  });
+});

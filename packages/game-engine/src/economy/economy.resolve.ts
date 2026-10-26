@@ -8,7 +8,8 @@
  * (WP-539) and the Midtown Bank Robbery family's +1 per attached Bystander
  * (WP-748). A Blood Frenzy villain adds the fighting player's distinct Victory
  * Point value count (WP-760). An Abomination villain or mastermind adds the printed Attack of
- * HQ Heroes (WP-815). The UI must never recompute dynamic values — it consumes the
+ * HQ Heroes (WP-815). A variable-Attack villain adds its printed passive, counted at
+ * fight time (WP-841). The UI must never recompute dynamic values — it consumes the
  * engine-resolved projection from UIState.
  *
  * No boardgame.io import. No ctx dependency. No randomness. No .reduce().
@@ -36,6 +37,9 @@ import { getFightCostReduction } from './economy.logic.js';
 // why: WP-815 / D-24747 — the Abomination terms read the HQ at fight time; one
 // helper per resolver, so each family is added in exactly one authority.
 import { villainAbominationBonus, mastermindAbominationBonus } from './abomination.logic.js';
+// why: WP-841 / D-24774 — the variable-Attack passives read the City, the Escape Pile
+// and the HQ at fight time; the villain resolver is their only reader.
+import { villainVariableAttackBonus } from './villainVariableAttack.logic.js';
 // why: WP-818 / D-24752 — Baron Zemo's "+9 unless you are a Savior" reads the fighter's
 // Savior status through the shared WP-816 helpers, so the cost and every Savior gate count
 // the same Bystanders (defeated Killbots included).
@@ -106,12 +110,16 @@ export function resolveFightCost(
   // why: WP-815 / D-24747 — Abomination / Double Abomination (rules v23 L880-926) adds
   // the printed Attack of the HQ Hero under the Villain's City space, read at fight
   // time because the cost moves with the City and the HQ. Added before the reduction.
+  // why: WP-841 / D-24774 — a printed "<Villain> gets +N Attack …" passive (Baron
+  // Strucker, Paibok, Super-Skrull, Hydro-Man) is read at fight time from the City,
+  // the Escape Pile and the HQ, and added before the reduction and the 0 floor.
   const costBeforeReduction =
     resolveBaseFightCost(G, villainCardId) +
     darkPortalVillainBonus(G, villainCardId) +
     bystanderVillainAttackBonus(G, villainCardId) +
     villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId) +
-    villainAbominationBonus(G, villainCardId);
+    villainAbominationBonus(G, villainCardId) +
+    villainVariableAttackBonus(G, villainCardId);
   // why: WP-794 / D-24663 — the Storm / Forge "Any Villain you fight on the <space> this turn
   // gets -N attack" reduction is applied HERE, in the single authority, so the fight move, the
   // bot's legal moves and the City fightCost projection all agree by construction.
@@ -325,6 +333,13 @@ function resolveBaseFightCost(
 
   // Dynamic mode: base + sum of captured hero recruit costs
   const base = villainStats.fightCostBase;
+
+  // why: WP-841 / D-24774 (Operator fork F2) — on a variable-Attack villain the `+`
+  // marks the printed passive, not a captured-Hero cost, so the passive term in
+  // resolveFightCost is the whole variable part and a captured Hero adds nothing.
+  if (G.villainVariableAttack?.[villainCardId] !== undefined) {
+    return base;
+  }
 
   // why: reads CardStatEntry.cost (hero recruit cost), NOT fightCost
   // (which is the villain's own fight requirement, always 0 for heroes).

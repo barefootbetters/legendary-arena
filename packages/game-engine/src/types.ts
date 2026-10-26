@@ -430,6 +430,9 @@ import type { NotableGameEvent } from './events/notableEvents.types.js';
 // why: WP-815 / D-24747 — G.cardAbomination values are the closed AbominationKind
 // union, which lives beside its consumers (the heroKeywords.js precedent).
 import type { AbominationKind } from './economy/abomination.logic.js';
+// why: WP-841 / D-24774 — the variable-Attack entry type lives beside its only
+// reader, the fight-cost term (the AbominationKind precedent).
+import type { VillainVariableAttack } from './economy/villainVariableAttack.logic.js';
 // why: WP-257 / D-24034 — GameDiagnostics is the runtime-only hollow-effect
 // channel shape (plain JSON; never persisted, never gameplay input).
 import type { GameDiagnostics } from './diagnostics/hollowEffect.types.js';
@@ -2856,6 +2859,16 @@ export interface LegendaryGameState {
   // the match, so every other match keeps a byte-identical G shape (determinism).
   /** Per-villain fight discard costs. Built at setup, read-only; absent when none. */
   villainFightDiscardCosts?: Record<CardExtId, VillainFightDiscardCost>;
+
+  // why: WP-841 / D-24774 — per-villain-instance variable-Attack passive (Baron
+  // Strucker, Paibok, Super-Skrull, Hydro-Man: "<Villain> gets +N Attack …"). Read by
+  // resolveFightCost only, which counts the City / Escape Pile / HQ at fight time.
+  // Built once at setup from the [variable-attack:<source>:<N>[@<spaces>]] marker,
+  // keyed by copy-suffixed instance ext_id, never written by a move. OMITTED ENTIRELY
+  // when no marked villain is in the match, so every other match keeps a
+  // byte-identical G (hash oracles).
+  /** Per-villain variable-Attack passives. Built at setup, read-only; absent when none. */
+  villainVariableAttack?: Record<CardExtId, VillainVariableAttack>;
 
   // why: WP-760 / D-24589 — per-villain-instance Blood Frenzy flag ("+1 Attack for
   // each different Victory Point value among the cards in your Victory Pile"; The

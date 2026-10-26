@@ -13,6 +13,8 @@ import assert from 'node:assert/strict';
 import {
   buildVillainDefeatRequirements,
   buildVillainFightDiscardCosts,
+  buildVillainVariableAttack,
+  parseVariableAttackLine,
 } from './villainDefeatRequirement.setup.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -227,5 +229,175 @@ describe('WP-817 buildVillainFightDiscardCosts (D-24750)', () => {
 
   it('returns an empty record for a registry that is not a reader', () => {
     assert.deepStrictEqual(buildVillainFightDiscardCosts({}, makeConfig(['ca75/zolas-creations'])), {});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-841 — parseVariableAttackLine / buildVillainVariableAttack (D-24774)
+// ---------------------------------------------------------------------------
+
+// why: the four passive lines, and the negatives' lines, copied verbatim from the
+// regenerated data/cards/co2e.json (the overlay's output).
+const STRUCKER_LINE =
+  'Baron Strucker gets +1[icon:attack] for each other HYDRA Villain in the city and/or Escape Pile. [variable-attack:per-other-hydra-villain:1]';
+const PAIBOK_LINE =
+  'Paibok gets +1[icon:attack] for each Hero Class among Heroes in the HQ. [variable-attack:per-hq-hero-class:1]';
+const SUPER_SKRULL_LINE =
+  'Super-Skrull gets +1[icon:attack] for each Hero Class among Heroes in the HQ. [variable-attack:per-hq-hero-class:1]';
+const HYDRO_MAN_LINE =
+  'Hydro-Man gets +2[icon:attack] in the Sewers and Bridge. [variable-attack:flat:2@sewers+bridge]';
+
+describe('WP-841 parseVariableAttackLine (D-24774)', () => {
+  it('T12: the four regenerated lines and a gated per-count marker parse; ungated entries have no requireCitySpaces key', () => {
+    const strucker = parseVariableAttackLine(STRUCKER_LINE);
+    const paibok = parseVariableAttackLine(PAIBOK_LINE);
+    const superSkrull = parseVariableAttackLine(SUPER_SKRULL_LINE);
+    assert.deepStrictEqual(strucker, { source: 'per-other-hydra-villain', attackPerUnit: 1 });
+    assert.deepStrictEqual(paibok, { source: 'per-hq-hero-class', attackPerUnit: 1 });
+    assert.deepStrictEqual(superSkrull, { source: 'per-hq-hero-class', attackPerUnit: 1 });
+    for (const entry of [strucker, paibok, superSkrull]) {
+      assert.equal(Object.prototype.hasOwnProperty.call(entry, 'requireCitySpaces'), false);
+    }
+    assert.deepStrictEqual(parseVariableAttackLine(HYDRO_MAN_LINE), {
+      source: 'flat',
+      attackPerUnit: 2,
+      requireCitySpaces: ['sewers', 'bridge'],
+    });
+    assert.deepStrictEqual(parseVariableAttackLine('X gets +1. [variable-attack:per-hq-hero-class:1@rooftops]'), {
+      source: 'per-hq-hero-class',
+      attackPerUnit: 1,
+      requireCitySpaces: ['rooftops'],
+    });
+  });
+
+  it('T13: every malformed marker, and a line with no marker, is inert and never throws', () => {
+    const malformedLines = [
+      'X gets +2. [variable-attack:flat:2]',
+      'X gets +0. [variable-attack:per-hq-hero-class:0]',
+      'X gets +1. [variable-attack:wound:1]',
+      'X gets +1. [variable-attack:per-hq-hero-class:1:2]',
+      'X gets +1. [variable-attack:per-hq-hero-class:x]',
+      'X gets +2. [variable-attack:flat:2@sewers+lagoon]',
+      'X gets +2. [variable-attack:flat:2@]',
+      'X gets +2. [variable-attack:flat:2@sewers@bridge]',
+      'X gets +2. [variable-attack:flat:2@sewers+sewers]',
+      'Fight: KO one of your Heroes.',
+    ];
+    for (const line of malformedLines) {
+      assert.doesNotThrow(() => parseVariableAttackLine(line));
+      assert.equal(parseVariableAttackLine(line), null, `${line} must produce no entry`);
+    }
+  });
+});
+
+describe('WP-841 buildVillainVariableAttack (D-24774)', () => {
+  it('T14: the co2e groups yield exactly the four cards x two copies, unaliased; negatives unflagged', () => {
+    const registry = makeRegistry('co2e', [
+      {
+        slug: 'hydra',
+        cards: [
+          {
+            slug: 'baron-strucker-supreme-hydra',
+            copies: 2,
+            abilities: [
+              STRUCKER_LINE,
+              'Fight: Shuffle four cards from the Bystander Deck into the Villain Deck. Then play two cards from the Villain Deck.',
+            ],
+          },
+          {
+            slug: 'viper',
+            copies: 2,
+            abilities: [
+              'Fight: Each player without another HYDRA Villain in their Victory Pile gains a Wound.',
+              'Escape: Same effect.',
+            ],
+          },
+        ],
+      },
+      {
+        slug: 'skulls',
+        cards: [
+          {
+            slug: 'paibok-the-power-skrull',
+            copies: 2,
+            abilities: [
+              PAIBOK_LINE,
+              'Fight: Choose a Hero from the HQ for each player. Each player gains that Hero. [effect:give-hq-hero-each-player]',
+            ],
+          },
+          {
+            slug: 'skrull-queen-veranke',
+            copies: 2,
+            abilities: [
+              'Ambush: Skrull Queen Veranke captures the highest-cost Hero from the HQ. She gets +[icon:attack] equal to its cost.',
+              'Fight: Either KO that Hero or choose a player to gain it.',
+            ],
+          },
+          {
+            slug: 'skrull-shapeshifter',
+            copies: 2,
+            abilities: [
+              "Ambush: Skrull Shapeshifter captures the rightmost Hero from the HQ. It gets +[icon:attack] equal to that Hero's cost.",
+              'Fight: Either KO that Hero or choose a player to gain it.',
+            ],
+          },
+          {
+            slug: 'super-skrull',
+            copies: 2,
+            abilities: [SUPER_SKRULL_LINE, 'Fight: KO one of your Heroes.'],
+          },
+        ],
+      },
+      {
+        slug: 'sinister-syndicate',
+        cards: [
+          {
+            slug: 'beetle',
+            copies: 2,
+            abilities: [
+              'Fight: Count your [hc:covert] Heroes, then draw that many cards.',
+              'Escape: Each player reveals a [hc:covert] Hero or gains a Wound.',
+            ],
+          },
+          {
+            slug: 'hydro-man',
+            copies: 2,
+            abilities: [
+              HYDRO_MAN_LINE,
+              'Fight: If you fight Hydro-Man in the Sewers or Bridge, KO one of your Heroes.',
+            ],
+          },
+        ],
+      },
+    ]);
+    const variableAttack = buildVillainVariableAttack(
+      registry,
+      makeConfig(['co2e/hydra', 'co2e/skulls', 'co2e/sinister-syndicate']),
+    );
+    const perHqHeroClass = { source: 'per-hq-hero-class', attackPerUnit: 1 };
+    const hydroMan = { source: 'flat', attackPerUnit: 2, requireCitySpaces: ['sewers', 'bridge'] };
+    assert.deepStrictEqual(variableAttack, {
+      'co2e-villain-hydra-baron-strucker-supreme-hydra-00': { source: 'per-other-hydra-villain', attackPerUnit: 1 },
+      'co2e-villain-hydra-baron-strucker-supreme-hydra-01': { source: 'per-other-hydra-villain', attackPerUnit: 1 },
+      'co2e-villain-skulls-paibok-the-power-skrull-00': perHqHeroClass,
+      'co2e-villain-skulls-paibok-the-power-skrull-01': perHqHeroClass,
+      'co2e-villain-skulls-super-skrull-00': perHqHeroClass,
+      'co2e-villain-skulls-super-skrull-01': perHqHeroClass,
+      'co2e-villain-sinister-syndicate-hydro-man-00': hydroMan,
+      'co2e-villain-sinister-syndicate-hydro-man-01': hydroMan,
+    });
+    for (const entry of Object.values(variableAttack)) {
+      if (entry.source !== 'flat') {
+        assert.equal(Object.prototype.hasOwnProperty.call(entry, 'requireCitySpaces'), false);
+      }
+    }
+    const first = variableAttack['co2e-villain-sinister-syndicate-hydro-man-00']!;
+    const second = variableAttack['co2e-villain-sinister-syndicate-hydro-man-01']!;
+    assert.notEqual(first, second, 'copies must not alias one object');
+    assert.notEqual(first.requireCitySpaces, second.requireCitySpaces, 'copies must not alias one spaces array');
+  });
+
+  it('returns an empty record for a registry that is not a reader', () => {
+    assert.deepStrictEqual(buildVillainVariableAttack({}, makeConfig(['co2e/hydra'])), {});
   });
 });

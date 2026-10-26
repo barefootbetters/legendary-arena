@@ -1798,3 +1798,44 @@ describe('WP-819 × WP-817 fightVillain — the Primus discard, then the Zemo re
     assert.equal(G.messages[1]!.text, COULD_NOT_PAY_LINE, 'the declined line follows it');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Variable-Attack passive — the fight gate charges the printed bonus (WP-841 / D-24774)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — variable-Attack passive (WP-841)', () => {
+  const HYDRO_MAN = 'co2e-villain-sinister-syndicate-hydro-man-00' as CardExtId;
+
+  /**
+   * Hydro-Man (dynamic base 4, +2 in the Sewers and Bridge) at City index 0 (Sewers),
+   * so the cost is 6.
+   *
+   * @param attack - Attack available to player 0.
+   */
+  function createHydroManState(attack: number): LegendaryGameState {
+    const gameState = createMockGameState({ city: [HYDRO_MAN, null, null, null, null] });
+    gameState.cardStats[HYDRO_MAN] = makeCardStatEntry({
+      fightCost: 4, fightCostMode: 'dynamic', fightCostBase: 4,
+    });
+    gameState.villainVariableAttack = {
+      [HYDRO_MAN]: { source: 'flat', attackPerUnit: 2, requireCitySpaces: ['sewers', 'bridge'] },
+    };
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  it('T16: refuses the fight at 5 available attack, leaving G unchanged (5 < 4 + 2)', () => {
+    const gameState = createHydroManState(5);
+    const before = JSON.stringify(gameState);
+    const moveContext = createMockMoveContext(gameState);
+    assert.doesNotThrow(() => fightVillain(moveContext, { cityIndex: 0 }));
+    assert.equal(JSON.stringify(moveContext.G), before, 'a refused fight makes no G change');
+  });
+
+  it('T16: defeats Hydro-Man at 6 available attack, spending exactly 6', () => {
+    const moveContext = createMockMoveContext(createHydroManState(6));
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(HYDRO_MAN), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 6);
+  });
+});
