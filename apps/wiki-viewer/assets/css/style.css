@@ -164,6 +164,15 @@ pre code { background: transparent; padding: 0; }
 
 .sidebar-list li { margin: 0.2rem 0; }
 
+/* Collapsible type groups (layouts/_default/baseof.html): the summary keeps
+   the section heading's look, and its marker is the open/closed cue. */
+.sidebar-group > summary { cursor: pointer; margin-top: 0.9rem; }
+.sidebar-group > summary::marker { color: var(--color-muted); }
+.sidebar-group[open] > summary { margin-bottom: 0.4rem; }
+.sidebar-group > .sidebar-list { margin-left: 0.9rem; }
+.sidebar-count { color: var(--color-muted); font-weight: 400; letter-spacing: 0; }
+.sidebar a[aria-current="page"] { font-weight: 600; color: var(--color-fg); }
+
 .content { min-width: 0; }
 
 article.entity h1, .section-landing h1 {

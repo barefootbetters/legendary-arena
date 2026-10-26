@@ -37,14 +37,22 @@
           <li><a href="/readme/">Readme</a></li>
           <li><a href="/schema/">Schema</a></li>
         </ul>
+        {{- /* why: each type is a collapsible group (the shared ewiki
+             theme's sidebar-group, bb-studio-ewiki-theme v1.3.0, written
+             here until this wiki moves onto that theme), counted, and only
+             the group holding the page being read starts open. Plain
+             <details>: no script, so the one-script rule (D-24293) holds. */ -}}
+        {{- $current := . -}}
         {{- $entityPages := where .Site.RegularPages "Params.type" "ne" nil -}}
         {{- range ($entityPages.GroupByParam "type") -}}
-          <h3 class="sidebar-section">{{ .Key }}</h3>
+          <details class="sidebar-group"{{ if eq (string $current.Params.type) (string .Key) }} open{{ end }}>
+          <summary class="sidebar-section">{{ .Key }} <span class="sidebar-count">{{ len .Pages }}</span></summary>
           <ul class="sidebar-list">
           {{- range sort .Pages "Title" -}}
-            <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+            <li><a href="{{ .RelPermalink }}"{{ if eq .RelPermalink $current.RelPermalink }} aria-current="page"{{ end }}>{{ .Title }}</a></li>
           {{- end -}}
           </ul>
+          </details>
         {{- end -}}
       </nav>
     </aside>
