@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1993,
+    "totalEntries": 1994,
     "byScope": {
-      "hero": 804,
+      "hero": 805,
       "villain": 733,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 611,
+      "executable": 612,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
@@ -6572,6 +6572,23 @@
         {
           "slug": "dont-make-me-angry",
           "name": "Don't Make Me Angry"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/hulk",
+      "name": "Hulk",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "reveal-or-gain-wound-each",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-or-gain-wound-each",
+      "wp": "WP-843",
+      "decision": "D-24777",
+      "designs": [
+        {
+          "slug": "crazed-rampage",
+          "name": "Crazed Rampage"
         }
       ]
     },
@@ -30545,7 +30562,8 @@
     "co2e/hulk": {
       "scope": "hero",
       "mechanics": [
-        "ko-wound-reward"
+        "ko-wound-reward",
+        "reveal-or-gain-wound-each"
       ]
     },
     "co2e/iron-man": {

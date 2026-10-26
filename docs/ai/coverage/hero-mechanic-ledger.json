@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 804,
+    "totalRows": 805,
     "byStatus": {
-      "executable": 418,
+      "executable": 419,
       "deferred": 16,
       "condition": 49,
       "unsupported": 290,
       "unmarked": 28,
       "subsystem": 3
     },
-    "distinctMechanics": 165
+    "distinctMechanics": 166
   },
   "rows": [
     {
@@ -3491,6 +3491,22 @@
         {
           "slug": "dont-make-me-angry",
           "name": "Don't Make Me Angry"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/hulk",
+      "heroName": "Hulk",
+      "set": "co2e",
+      "mechanic": "reveal-or-gain-wound-each",
+      "status": "executable",
+      "wp": "WP-843",
+      "decision": "D-24777",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-or-gain-wound-each",
+      "designs": [
+        {
+          "slug": "crazed-rampage",
+          "name": "Crazed Rampage"
         }
       ]
     },

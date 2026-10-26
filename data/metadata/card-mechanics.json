@@ -1639,6 +1639,17 @@
       "hidden": false
     },
     {
+      "slug": "reveal-or-gain-wound-each",
+      "label": "Reveal Or Gain Wound Each",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "co2e/hulk"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "reveal-reorder",
       "label": "Reveal Reorder",
       "scope": "hero",
@@ -2893,7 +2904,8 @@
     },
     "co2e/hulk": {
       "mechanics": [
-        "ko-wound-reward"
+        "ko-wound-reward",
+        "reveal-or-gain-wound-each"
       ]
     },
     "co2e/iron-man": {
