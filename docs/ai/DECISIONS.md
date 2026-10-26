@@ -49584,7 +49584,7 @@ Protect this file.
 
 ### D-24777 — co2e Crazed Rampage's "Each player reveals another [hc:strength] Hero or gains a Wound" is a new hero keyword `reveal-or-gain-wound-each` (Active 2026-10-26 — WP-843 / EC-881)
 
-**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-26: match `ewS5AON36Zi` on server `07b25f42` (STATUS.md WP-843 entry); the playing-player-wounded branch was not reached live and rests on AC-3.
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-26: matches `ewS5AON36Zi` and `9IluuRbdoFD` on server `07b25f42` (STATUS.md WP-843 entry), covering the playing player wounded, the other seat wounded, both wounded, and every player revealing.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Playing co2e Crazed Rampage now wounds each player, the player who played it included, who has no other Strength Hero to reveal. The log names each wounded player, or says every player revealed. Core / 3dtc / msp1 Crazed Rampage ("Each player gains a Wound.", `gain-wound-each`) are unchanged.
 
