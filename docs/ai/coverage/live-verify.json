@@ -1449,10 +1449,10 @@
       "card": "Captain America, Secret Avenger",
       "ability": "Inspire a Nation",
       "wp": "WP-844",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-10-26",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-844 deploy, per the WP-844 DoD recipe.",
-      "note": "Gain a Sidekick: Stack -1, discard +1, applied log line, Sidekicks recruit button still enabled. D-24778."
+      "evidence": "2-player operator match `CGZCvfU3Jmd` (core Magneto / Midtown Bank Robbery; Captain America, Secret Avenger, Spider-Man, Hulk, Wolverine, Black Widow; `sidekicksCount` 12), created after the deploy (server `72231815`, client `7223181`, then `c0589b5`, a docs-only SPEC on top of the merge): playing Inspire a Nation took the Sidekick Stack 12 -> 11 and put pile-sidekick in the discard, logging the applied line (1.2.7); the once-per-turn Sidekick recruit then succeeded (11 -> 10, 1.2.9).",
+      "note": "Gain a Sidekick: Stack -1, discard +1, applied log line, recruit button still enabled after the gain. D-24778."
     }
   ]
 }

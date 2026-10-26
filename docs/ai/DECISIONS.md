@@ -49607,7 +49607,7 @@ Protect this file.
 
 ### D-24778 — "Gain a [rule:Sidekick]" hero lines gain Sidekicks from the Sidekick Stack through a new magnitude-bearing hero keyword `gain-sidekick` (Active 2026-10-26 — WP-844 / EC-882)
 
-**Status:** Active 2026-10-26. Live-verify (D-24026) operator-pending: a `play.legendary-arena.com` match created after the deploy, plus the ewiki `/sidekicks/` page (STATUS.md WP-844 entry).
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-26: operator match `CGZCvfU3Jmd` on server `72231815` (STATUS.md WP-844 entry): Inspire a Nation took the Stack 12 → 11 into the discard with the `applied` line, and the once-per-turn recruit still succeeded afterwards; the ewiki `/sidekicks/` page returned 200 with the new section.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy) and `ewiki.legendary-arena.com/sidekicks/`. Playing one of the ten lines below puts the printed number of Sidekicks from the Sidekicks cell into your discard pile, with an `applied` / `partial` / `blocked` log line; the Sidekicks recruit button is unaffected.
 
