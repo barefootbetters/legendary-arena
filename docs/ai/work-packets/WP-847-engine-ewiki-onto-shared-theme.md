@@ -1,6 +1,6 @@
 # WP-847 — The engine ewiki moves onto the shared theme, `bb-studio-ewiki-theme` v1.3.0 (ewiki app + scripts + CI)
 
-**Status:** Draft 2026-10-26 — pre-flight (01.4) READY TO EXECUTE (after PS-1..4; re-confirmed after every later edit); copilot (01.7) RISK → PASS (CONFIRM, round 3); lint (00.3) FAIL → PASS (run 2). EC-885; **D-24781** Active (the migration order, landed in this draft); **D-24782** reserved (#3036). See §Gate Record.
+**Status:** Done 2026-10-26 (EC-885 `9f99e98b`, INFRA `b98f23f5`; D-24782 Active; live-verify pending, D-24026). Drafted 2026-10-26 — pre-flight (01.4) READY TO EXECUTE (after PS-1..4; re-confirmed after every later edit); copilot (01.7) RISK → PASS (CONFIRM, round 3); lint (00.3) FAIL → PASS (run 2). EC-885; **D-24781** Active (the migration order, landed in this draft); **D-24782** reserved (#3036). See §Gate Record.
 **Primary Layer:** ewiki tooling: `apps/wiki-viewer/` (Hugo site), `apps/wiki-viewer/scripts/project-wiki.mjs`, `scripts/architecture-inventory.mjs`, `.github/workflows/wiki-viewer.yml`, and the ewiki pages that name the moved files. No game engine, registry, server, client or persistence code.
 **Dependencies:** none open. WP-814 ✅ (theme extracted, D-24728), WP-139 ✅ (the engine ewiki), WP-423 ✅ (Hugo 0.161.1 pin and the page-count gate), D-24293 (one script), D-24725, D-24727, D-24781 (this draft). The theme release `v1.3.0` exists (see Assumes 2).
 **User-Visible Surface:** `ewiki.legendary-arena.com` (behind Cloudflare Access).
@@ -318,3 +318,83 @@ Also applied: per-file descriptions and a size line in §Files Expected to Chang
 **Copilot (01.7), round 1: RISK (HOLD), nine fixes, all applied:** a three-commit topology (`EC-885:` → `INFRA:` for `wiki-viewer.yml`, which D-24444 Guard A blocks in an EC commit → `SPEC:`); "The build is strict" and the multiset footer count; changelog branches keyed on `canonical-source` with T7 asserting no `/wiki/changelog.md` target and `INFRA:`; `check-links` skips `../` targets, so T3b runs `Test-Path` per new target; the `wrangler.jsonc` / 404 wording (built, not served on a miss) with a live-verify check and a follow-up; the SCHEMA `links_from` row and a D-24782 bullet; the wiki-edit rule, the WP's §Execution Notes in the allowlist, the T3b SCHEMA note; job-level env, Sync run from a `v1.3.0` checkout, Verification step 3; and Assumes 10 (the theme's files become public here). **Round 2: RISK (HOLD)**, two wording fixes applied (the `EC-885:` commit takes no governance-close file; Assumes 10 is recorded in the WP, not in D-24782); CONFIRM waited on Jeff's answer, recorded in Assumes 10 on 2026-10-26. **Round 3: PASS (CONFIRM), 2026-10-26; re-confirmed PASS (CONFIRM) after the lint edits.**
 
 **Final gate state:** pre-flight READY TO EXECUTE (re-confirmed after every later edit) · copilot PASS (CONFIRM; rounds 3 and the post-lint re-confirm) · 00.3 PASS (run 2).
+
+---
+
+## Execution Notes (2026-10-26, EC-885 `9f99e98b` + INFRA `b98f23f5`)
+
+**Re-baseline.** Executed on `origin/main` `762cc118` (one SPEC commit past the WP's `c0589b52`, WP-844's live-verify record; nothing in scope). Assumes 1-10 re-verified: `v1.3.0` → `2c735f5a`; release notes give digest `6e266245…6624`; Sync printed the same (39 files); Jeff's publish OK is in Assumes 10. The theme clone was returned to `main` after the Sync.
+
+**Baseline** (fresh worktree at `762cc118`, `pnpm install --frozen-lockfile`, `pnpm wiki-viewer:build`, then the yml blocks in Git Bash): 99 projected / 99 rendered; determinism `b1cbad98…f641`; Pagefind 99 pages, 3 filters; JS-free 99 / 99. `hugo` warnings: the `.Site.Data` deprecation and raw HTML in `tournament-calendar.md` only. The §Locked Values baseline-rewrite script, run on the copy only (`pwsh -File rewrite-baseline.ps1 -Root <copy>`, the locked body plus a closing count line), rewrote **97 files**; `/ewiki-authoring/` kept 2 old URLs and `/system-backup/` 1 (3 in total), as expected.
+
+**T1 Theme pin.** `Test-EwikiTheme.ps1 -Site apps/wiki-viewer -ExpectedManifestSha256 6e266245…6624`: "39 vendored files match the manifest … shadows no core file". The two locked shell checks, extracted verbatim from the committed `wiki-viewer.yml` step and run in Git Bash: pass (digest `6e266245…6624`, checker hash `107062c8…6d35` matches its manifest line). **Control:** one space appended to `themes/ewiki/layouts/_default/single.html` → "This vendored file differs from the manifest … Test-EwikiTheme failed with 1 problem(s)"; restored, passes again.
+
+**T2 Gates** (the yml's bash blocks in Git Bash, `public/` removed first):
+
+| Build | Projected / rendered | Determinism | Pagefind | JS-free | check-links | New `hugo` warnings |
+|---|---|---|---|---|---|---|
+| Baseline | 99 / 99 | `b1cbad98…` pass | 99 pages, 3 filters | 99 / 99 | 0 (99 files) | — |
+| Candidate-1 | 99 / 99 | `212a3743…` pass | 99 pages, 3 filters | 100 / 100 | 0 (99 files) | none |
+| Candidate-2 | 99 / 99 | `c7727112…` pass | 99 pages, 3 filters | 100 / 100 | 0 (99 files) | none |
+
+`hugo` now reports 100 pages: the theme's `404.html`, which is not an `index.html` (the Assert gate stays 99 = 99) and carries no `data-pagefind-body` (Pagefind stays at 99). Its loader is the 100th sanctioned script.
+
+**T3 Equivalence (Candidate-1 vs the rewritten baseline): PASS.** `Compare-WikiBuild.ps1`: identical page set (99 / 99); links paired 6884; footer targets checked 979; images paired 267; 23 allowed folder changes (blob → tree); "Compare-WikiBuild passed". 407 text hunks on 98 pages, every line mapped by a scratch classifier that checks each line against the page itself (the candidate's `nav.crumbs` and `nav.toc`, the baseline's template `<h1>`, the footer sentence openings, the changelog's `section.sources`):
+
+| Hunk category | Lines | What it is |
+|---|---|---|
+| Breadcrumbs | 98 | `+ Home › <title>` on every page but the home page |
+| "On this page" | 1966 | the box heading plus its h2–h4 entries, on pages with three or more such headings |
+| Template H1 dropped / body H1 moved above the panel | 73 | `- <title>`: the 73 pages whose body opens with its own `# Title` lose the template's duplicate H1 |
+| "Editing this page" wording | 875 | the theme's core footer sentences and the engine's re-flowed paragraphs (incl. the include-section note on `/system-backup/`) |
+| "Sources" on `/changelog/` | 2 | `+ Sources`, `+ ../docs/09-CHANGELOG.md` |
+| Unmapped | **0** | |
+
+**T3b Doc retargets (Candidate-2 vs a Candidate-1 copy):** exits 1 by design with exactly 11 failure lines, every one a Scope In 7 edit; the only text hunks are on the four edited pages (`ewiki-authoring` 11, `hugo-platform-strategy` 6, `schema` 5, `wiki-viewer-architecture` 3). `schema` has no link row: its references are code spans.
+
+| Page | Link text | Old → new target (repo path) |
+|---|---|---|
+| ewiki-authoring | on GitHub | `apps/wiki-viewer/layouts/shortcodes/include-section.html` → `apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html` |
+| ewiki-authoring | render-link.html | `apps/wiki-viewer/layouts/_default/_markup/render-link.html` → `apps/wiki-viewer/themes/ewiki/layouts/_default/_markup/render-link.html` |
+| ewiki-authoring | Sources `../apps/wiki-viewer/assets/css/style.css` | has no partner → `themes/ewiki/assets/css/ewiki.css`, `assets/css/ewiki-brand.css`, `assets/css/ewiki-site.css` |
+| ewiki-authoring | Sources `…/layouts/shortcodes/audio.html` | has no partner → `themes/ewiki/layouts/shortcodes/audio.html` |
+| ewiki-authoring | Sources `…/layouts/shortcodes/audio-inline.html` | has no partner → `themes/ewiki/layouts/shortcodes/audio-inline.html` |
+| ewiki-authoring | Sources `…/layouts/shortcodes/swatch.html` | has no partner → `themes/ewiki/layouts/shortcodes/swatch.html` |
+| ewiki-authoring | Sources `…/layouts/shortcodes/include-section.html` | has no partner → `themes/ewiki/layouts/shortcodes/include-section.html` |
+| ewiki-authoring | Sources `…/layouts/partials/editing-this-page.html` | has no partner → `themes/ewiki/layouts/partials/ewiki/editing-this-page.html`, `layouts/partials/ewiki/editing-extra.html` |
+| ewiki-authoring | Sources `…/layouts/_default/_markup/render-link.html` | has no partner → `themes/ewiki/layouts/_default/_markup/render-link.html` |
+| system-backup | include-section.html | `apps/wiki-viewer/layouts/shortcodes/include-section.html` → `apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html` |
+| wiki-viewer-architecture | `apps/wiki-viewer/assets/css/style.css` | has no partner → `apps/wiki-viewer/themes/ewiki/assets/css/ewiki.css` |
+
+`Test-Path -LiteralPath <path> -PathType Leaf` is `True` for every new target: `apps/wiki-viewer/themes/ewiki/layouts/shortcodes/{include-section,audio,audio-inline,swatch}.html`, `themes/ewiki/layouts/_default/_markup/render-link.html`, `themes/ewiki/layouts/_default/tags.html`, `themes/ewiki/assets/css/ewiki.css`, `themes/ewiki/layouts/partials/ewiki/editing-this-page.html`, `apps/wiki-viewer/assets/css/{ewiki-brand,ewiki-site}.css`, `apps/wiki-viewer/layouts/partials/ewiki/{editing-extra,metadata}.html`; and no `../apps/wiki-viewer/…` target in the three edited pages is missing (0).
+
+**T4 Sidebar: PASS.** On all 99 pages the sidebar's top links, group titles, counts, open state and link targets equal the baseline's. `/master-strike/`: 9 `details.sidebar-group` in the baseline order (Brand 3, Card-Type 1, Concept 6, Generated 1, Guide 49, Mechanic 7, System 13, Tool 6, Tutorial 9), only "Mechanic" open, `aria-current` on `/master-strike/`.
+
+**T5 Filters: PASS.** On all 99 pages the ordered `data-pagefind-filter` values equal the baseline's; `/master-strike/`: `Type:Mechanic`, `Status:Canonical`, then its six tags. No `Kind:` filter anywhere (the literal "Kind:" appears only as body text on the same four pages as the baseline).
+
+**T6 Six-field lock: PASS.** On all 99 pages the metadata panel's text equals the baseline's; the four pages without `type` (home, `readme`, `schema`, `tags`) have no panel.
+
+**T7 Front matter: PASS.** `/changelog/`: the footer names `C:\dev\legendary-arena\docs\09-CHANGELOG.md` as the source; its targets are `blob/main/docs/09-CHANGELOG.md`, `edit/main/docs/09-CHANGELOG.md`, github.dev, `/ewiki-authoring/`, `/wiki-viewer/`, `/hugo-onboarding/`, `/ewiki-authoring/`, the vendored `include-section.html`, `/ewiki-authoring/#including-a-section-from-another-page`; no `/wiki/changelog.md` target; names `INFRA:`, not `SPEC:`; "Where this page goes" rows equal the baseline's; "Sources" lists `../docs/09-CHANGELOG.md`. `/architecture-inventory/`: no href containing `/wiki/docs/` or `/wiki/packages/`; its repo-root links outside the footer equal the baseline's (4 = 4).
+
+**T8 Repo checks: PASS.** `node scripts/architecture-inventory.mjs` stdout carries `links_from: repo-root`, and its front-matter block equals the committed file's byte for byte (CR stripped). `node scripts/wiki-lint.mjs` (exit 0): the report equals the baseline worktree's line for line (24 lines).
+
+**AC 8 Files.** `git status --porcelain` before the commits equalled §Files Expected to Change exactly: 41 vendored, 6 new, 12 modified (incl. `wiki-viewer.yml`), 13 deleted. No `lagn-v1.json` churn.
+
+**AC 9 Docs.** `git grep` on each deleted file's full path (both slash forms), outside `apps/wiki-viewer/themes/` and the `docs/ai/` history: **0 hits**. Bare names under `wiki/` and `apps/wiki-viewer/`, each hit reviewed: `apps/wiki-viewer/README.md` L127-128 (names the theme's own files, in its `themes/ewiki/` bullet); `check-links.mjs` L200 (reviewed, no change); `hugo-onboarding.md`, `hugo-web-system.md`, `blog-post-authoring.md` and `hugo-platform-strategy.md`'s Hextra rows (the marketing site's own `baseof.html` / `single.html`, not this app); `workstation-layout-migration.md` (history, reviewed no change). Beyond the WP's line list, the same files' code-span references were updated too: `ewiki-authoring.md` (the stylesheet, `audio.html`, the footer partial, `metadata-panel.html`, the folder tree and References), `SCHEMA.md` (the `tags.md` rows and the footer / panel why-paragraph), and `README.md` §Theme.
+
+**AC 10 Locked text, config and CSS.**
+- (a) `wiki/SCHEMA.md` §Field reference has `| links_from | no | repo-root | Generated inventory only: … (theme render-link branch 4a; replaces the by-name case, D-24782). |`; the `architecture-inventory.md` reserved-file row names `links_from: repo-root`.
+- (b) `wiki/hugo-platform-strategy.md`'s engine row: "The shared theme | `barefootbetters/bb-studio-ewiki-theme` `v1.3.0`, vendored (step 4, WP-847 / D-24782; moved ahead of the personal wiki by D-24781)"; the summary, the migrations bullet and the order list cite D-24781 (engine step 4, personal wiki step 5).
+- (c) `apps/wiki-viewer/wrangler.jsonc`: "the shared theme (D-24782) now builds public/404.html, but without not_found_handling a miss is still a plain 404. Serving that page needs not_found_handling: "404-page", a follow-up."
+- (d) `assets/css/ewiki-brand.css` declares the vendored default's 21 names (same set); its dark block, light `:root` block and Pagefind block are byte-identical to the default's (the ten tokens the engine set equal the default's, which was cut from the engine's light tokens; the other three take the default's). `ewiki-site.css`: 0 custom-property declarations, 0 `.sidebar-group` / `.sidebar-count` / `.source-list` selectors.
+- (e) `hugo.toml`: `theme = "ewiki"` at L32, `[markup]` at L34; the nine `[params.ewiki]` keys as locked; none of the six excluded keys is set (`searchFilters` appears once, in the required `# why:` comment explaining why it stays off).
+
+**Deviations and notes (for the Inspector).**
+1. **`ewiki-brand.css` was briefly dark-block only.** A shell `cd` into the just-emptied `assets/css/` failed, so the first write left the file with only the dark block. AC 10 (d)'s name-set check caught it (11 names, not 21) before any commit; the file was rewritten in full and both candidates were rebuilt, so every T2-T7 result above is from the corrected file. No gate in T2-T7 looks at CSS, so AC 10 (d) is the check that covers it.
+2. **Candidate-1 was rebuilt once.** The first Candidate-1 carried an extra phrase in the where-table's GitHub Actions row ("theme pin,"), which T7 flagged against the baseline; it was dropped from `editing-extra.html`. Candidate-1 was then rebuilt from the final code minus the Scope In 7 docs (a scratch worktree with only Scope In 1-6), and T3 and T3b were rerun; the tables above are from that rebuild.
+3. **Visual check.** A local browser preview of `public/` was not run (adding a temporary preview entry to `.claude/launch.json` was declined by the session's permission check). Instead, the built `ewiki.bundle.min.<hash>.css` was read: brand (light `:root`, Pagefind mapping, dark block), then core, then the site rules, in that order. The live-verify covers the rendered site.
+4. `last-reviewed` on the edited wiki pages was left as it was: bumping it changes the metadata panel, which T6 requires to equal the baseline's.
+
+**Commits.** `EC-885:` `9f99e98b` (71 paths: vendored, new, modified except the workflow, deleted); `INFRA:` `b98f23f5` (`.github/workflows/wiki-viewer.yml` only, D-24444 Guard A); `SPEC:` (this governance close). PR CI (the two theme steps and the five gates): recorded in the PR.
+
+**D-24026 live-verify:** pending, post-merge (WP §Definition of Done); recorded in STATUS and D-24782 when it runs.
