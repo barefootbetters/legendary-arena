@@ -49513,4 +49513,25 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24774 (#3014). Related: D-24076 / D-24750 (the sibling setup tables and overlay), D-24747 (the fight-cost term precedent), D-24589, D-24295 (the City gate grammar), D-24493 (HYDRA by name), D-24355, D-24764 (the sixth space), D-24372 (runtime drift pins), D-24771 (WP-838, drafted), D-24026.
 
 ---
+
+### D-24775 — a Scheme Twist is counted before its resolver runs, so nested Twists are numbered in reveal order (Active 2026-10-25 — direct fix, no WP; amends D-18201)
+
+**Status:** Active 2026-10-25. Live-verify (D-24026) operator-pending: a Change the Outcome of WWII match created after the deploy where one Twist's 2 plays reveal another Twist.
+
+**User-Visible Surface:** `play.legendary-arena.com` game log (after deploy). In playtest match `mMFRcae60Sz` Twists 2→3→4 fired in one reveal, and the log printed "Scheme Twist #2 / #3 / #4 revealed" after all three Twists' results, numbered innermost-first. Now each "#N" line sits right before its own Twist's effects, numbered in the order the Twists were revealed.
+
+**Context.** D-18201 had the dispatcher (`rules/schemeHandlers.ts`) call the resolver first and return the `schemeTwistCount` +1 and its log line as effects, applied after. A resolver that plays Villain Deck cards can reveal another Twist, which re-enters the dispatcher before the outer one returns, so the nested Twist read the outer Twist's number (`schemeTwistCount + 1`) and the log lines came out in the order the Twists finished. Change the Outcome of WWII and Brainwash the Military worked around this with their own counters.
+
+**Decision.**
+1. **Count first.** `schemeTwistHandler` raises `G.counters.schemeTwistCount` and logs "Scheme Twist #N revealed — the Scheme advances; twist count incremented[ (N of T to Evil Wins)]." (`threat`) **before** it calls the resolver (`countAndAnnounceTwist`). The twist-threshold loss is still a returned effect, gated on this Twist's number (`buildTwistLossEffects`). The threshold and suppression are fixed for the match, so they are read before the resolver.
+2. **Resolvers read the count.** `wound-all` (the Cosmic Cube escalation), `clash-monster-pit` and the Enigma Code's `addHeroDeckCardToEnigmaCode` read `schemeTwistCount` as this Twist's number (no `+ 1`). A Twist set off inside another Twist (a Monster pushing a Mystique out on Clash) now reads its own number. Change the Outcome of WWII and Brainwash the Military keep their own counters (they count countries and stacked Twists, which differ from the Twist count after the printed ones run out).
+3. **The rule pipeline exception.** D-18201 already lets the twist dispatcher's resolvers mutate `G` inside `executeRuleHooks`; this extends that exception to the dispatcher's own counter and log line. Every other hook still returns effects only. ARCHITECTURE.md §The Rule Execution Pipeline does not yet name the D-18201 exception (pre-existing drift, noted as a follow-up; not edited here).
+4. **Determinism and replay.** The final `schemeTwistCount` is unchanged, and a Twist that reveals no other Twist behaves exactly as before; only the log line moves ahead of the resolver's own lines. A stored match replays to the same state except where a Twist was revealed inside another Twist on Cosmic Cube, Clash of the Monsters Unleashed or The Unbreakable Enigma Code, and those now get the rulebook-correct number. The hash oracles are unchanged (no pinned fixture reveals a Twist).
+5. **PAR anchors.** The literal "twist count incremented" stays, so `scripts/extract-par-anchors.mjs` counts the same Twists.
+
+**Gates.** game-engine 5819 → 5820 / 0 fail (X11 added; existing tests that set the count to N−1 for Twist N, or asserted the returned counter effect, now pin the new contract); `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; hash oracles unchanged; four revert proofs each fail their tests (counting after the resolver fails X11; `+ 1` in wound-all, clash and enigma fails their schedule tests). `wiki/scheme-twist.md` updated.
+
+**Reserved by:** NUMBER-LEDGER D-24775 (this change, claude/twist-count-before-resolver). Related: D-18201 (amended), D-24349 / D-24685 (Cosmic Cube escalation), D-24736 (Clash), D-24763 (Enigma Code), D-24765 (WWII), D-24756 (Brainwash the Military), D-24287 (Mystique becomes a Twist), D-24026.
+
+---
 Protect this file.

@@ -92,8 +92,9 @@ function buildMatch(): LegendaryGameState {
  * @param G - The game state, mutated in place.
  */
 function twist(G: LegendaryGameState): void {
-  SCHEME_TWIST_RESOLVERS['enigma-code'](G, REVEAL_CONTEXT, DEFAULT_IMPLEMENTATION_MAP, {}, TWIST_ID);
+  // why: D-24775 — the dispatcher raises the count before the resolver runs.
   G.counters.schemeTwistCount = (G.counters.schemeTwistCount ?? 0) + 1;
+  SCHEME_TWIST_RESOLVERS['enigma-code'](G, REVEAL_CONTEXT, DEFAULT_IMPLEMENTATION_MAP, {}, TWIST_ID);
 }
 
 /** The live play-phase turn hooks, read once. */

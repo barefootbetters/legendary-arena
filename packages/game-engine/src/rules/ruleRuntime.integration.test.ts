@@ -166,16 +166,22 @@ describe('rule execution pipeline — integration', () => {
     );
   });
 
-  it('executeRuleHooks does not modify G besides messages — calling twice produces the same G', () => {
+  it('executeRuleHooks does not modify G besides messages and the twist count', () => {
     const config = createTestConfig();
     const context = makeMockCtx({ numPlayers: 1 });
     const registry = createMockRegistry();
     const gameState = buildInitialGameState(config, registry, context);
+    const twistCountBefore = gameState.counters.schemeTwistCount ?? 0;
 
     // why: the config-driven scheme twist dispatcher (WP-182) pushes a
-    // diagnostic message for unconfigured schemes. Exclude messages from the
-    // no-mutation check — messages are the intended mutation surface.
-    const snapshotBefore = JSON.stringify({ ...gameState, messages: [] });
+    // diagnostic message for unconfigured schemes, and since D-24775 it raises
+    // schemeTwistCount itself before the resolver (D-18201 already lets twist
+    // resolvers mutate G). Exclude those two from the no-mutation check.
+    const snapshotBefore = JSON.stringify({
+      ...gameState,
+      messages: [],
+      counters: { ...gameState.counters, schemeTwistCount: twistCountBefore },
+    });
 
     executeRuleHooks(
       gameState,
@@ -186,12 +192,17 @@ describe('rule execution pipeline — integration', () => {
       DEFAULT_IMPLEMENTATION_MAP,
     );
 
-    const snapshotAfter = JSON.stringify({ ...gameState, messages: [] });
+    assert.equal(gameState.counters.schemeTwistCount, twistCountBefore + 1, 'the Twist is counted once');
+    const snapshotAfter = JSON.stringify({
+      ...gameState,
+      messages: [],
+      counters: { ...gameState.counters, schemeTwistCount: twistCountBefore },
+    });
 
     assert.equal(
       snapshotBefore,
       snapshotAfter,
-      'executeRuleHooks must not modify G besides messages — snapshots must be identical',
+      'executeRuleHooks must not modify G besides messages and the twist count — snapshots must be identical',
     );
   });
 

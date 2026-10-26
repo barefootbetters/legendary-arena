@@ -79,7 +79,7 @@ export const KILLBOT_TWISTS_NEXT_TO_SCHEME = 'killbotTwistsNextToScheme';
 // why: WP-823 / D-24756 — Brainwash the Military's "Traitor Battalion", the Twists
 // stacked next to the Scheme. Never seeded (reads `?? 0`), +1 per Twist 1-6; an
 // Officer's Attack is 3 plus this value, and the twist resolver numbers each Twist
-// from it (a nested Twist reads the pre-increment schemeTwistCount). A plain counter.
+// from it (the stack position, which schemeTwistCount does not track). A plain counter.
 /** G.counters key for Brainwash the Military's Traitor Battalion (Twists stacked next to the Scheme). */
 export const TRAITOR_BATTALION_TWISTS = 'traitorBattalionTwists';
 

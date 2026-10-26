@@ -344,9 +344,9 @@ describe('wound-all resolver', () => {
   });
 
   // why: WP-540 / D-24349 — Unleash the Cosmic Cube's printed escalation. The
-  // resolver runs BEFORE the schemeTwistCount +1 effect, so currentTwist =
-  // schemeTwistCount + 1: prior count 0-3 → twists 1-4 (0 wounds), 4-5 → twists
-  // 5-6 (1 wound), 6 → twist 7 (3 wounds, the MAX matching step).
+  // dispatcher raises schemeTwistCount BEFORE the resolver runs (D-24775), so
+  // currentTwist = schemeTwistCount: twists 1-4 (0 wounds), 5-6 (1 wound), 7 (3
+  // wounds, the MAX matching step), 8 (0, "Evil Wins!").
   const COSMIC_ESCALATION = [
     { atOrAfterTwist: 5, throughTwist: 6, woundCount: 1 },
     { atOrAfterTwist: 7, throughTwist: 7, woundCount: 3 },
@@ -354,12 +354,12 @@ describe('wound-all resolver', () => {
 
   it('escalation deals the printed Cosmic Cube schedule (0 on twists 1-4, 1 on 5-6, 3 on 7, 0 on 8)', () => {
     const scenarios = [
-      { priorTwistCount: 0, currentTwist: 1, expectedWounds: 0 },
-      { priorTwistCount: 3, currentTwist: 4, expectedWounds: 0 },
-      { priorTwistCount: 4, currentTwist: 5, expectedWounds: 1 },
-      { priorTwistCount: 5, currentTwist: 6, expectedWounds: 1 },
-      { priorTwistCount: 6, currentTwist: 7, expectedWounds: 3 },
-      { priorTwistCount: 7, currentTwist: 8, expectedWounds: 0 },
+      { currentTwist: 1, expectedWounds: 0 },
+      { currentTwist: 4, expectedWounds: 0 },
+      { currentTwist: 5, expectedWounds: 1 },
+      { currentTwist: 6, expectedWounds: 1 },
+      { currentTwist: 7, expectedWounds: 3 },
+      { currentTwist: 8, expectedWounds: 0 },
     ];
 
     for (const scenario of scenarios) {
@@ -367,7 +367,7 @@ describe('wound-all resolver', () => {
         playerCount: 1,
         wounds: ['w1', 'w2', 'w3', 'w4', 'w5'],
       });
-      gameState.counters.schemeTwistCount = scenario.priorTwistCount;
+      gameState.counters.schemeTwistCount = scenario.currentTwist;
 
       resolver(gameState, makeRevealContext(), emptyImplementationMap, {
         escalation: COSMIC_ESCALATION,
@@ -383,7 +383,7 @@ describe('wound-all resolver', () => {
 
   it('escalation at twist 7 takes the MAX matching step (3 wounds), not the first (1)', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
-    gameState.counters.schemeTwistCount = 6; // currentTwist 7 — matches both open-ended steps
+    gameState.counters.schemeTwistCount = 7; // currentTwist 7 — matches both open-ended steps
 
     // why: D-24685 closed the Cosmic Cube steps, so open-ended steps keep the
     // overlapping case this test pins.
@@ -402,7 +402,7 @@ describe('wound-all resolver', () => {
   it('D-24673: with Diving Block revealable, the line says "would gain", not "gained"', () => {
     const divingBlockId = 'core/captain-america/diving-block#0';
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
-    gameState.counters.schemeTwistCount = 6;
+    gameState.counters.schemeTwistCount = 7;
     gameState.playerZones['0']!.hand = [divingBlockId];
     gameState.heroAbilityHooks = [
       { cardId: divingBlockId, timing: 'onPlay', keywords: ['diving-block'] },
@@ -423,7 +423,7 @@ describe('wound-all resolver', () => {
 
   it('D-24673: without Diving Block the line still says "gained"', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
-    gameState.counters.schemeTwistCount = 6;
+    gameState.counters.schemeTwistCount = 7;
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       escalation: COSMIC_ESCALATION,
@@ -438,7 +438,7 @@ describe('wound-all resolver', () => {
       playerCount: 2,
       wounds: ['w1', 'w2', 'w3', 'w4', 'w5', 'w6'],
     });
-    gameState.counters.schemeTwistCount = 6; // currentTwist 7 → 3 wounds each
+    gameState.counters.schemeTwistCount = 7; // currentTwist 7 → 3 wounds each
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       escalation: COSMIC_ESCALATION,
@@ -450,7 +450,7 @@ describe('wound-all resolver', () => {
 
   it('D-24685: twist 8 ("Evil Wins!") deals no Wounds and logs it, with Wounds still in the supply', () => {
     const gameState = makeResolverState({ playerCount: 2, wounds: ['w1', 'w2', 'w3', 'w4', 'w5', 'w6'] });
-    gameState.counters.schemeTwistCount = 7; // currentTwist 8 — past the 3-Wound step
+    gameState.counters.schemeTwistCount = 8; // currentTwist 8 — past the 3-Wound step
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       escalation: COSMIC_ESCALATION,
@@ -468,7 +468,7 @@ describe('wound-all resolver', () => {
 
   it('a step without throughTwist stays open on later twists', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
-    gameState.counters.schemeTwistCount = 7; // currentTwist 8
+    gameState.counters.schemeTwistCount = 8; // currentTwist 8
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       escalation: [{ atOrAfterTwist: 7, woundCount: 2 }],
@@ -479,7 +479,7 @@ describe('wound-all resolver', () => {
 
   it('escalation below the threshold is a logged no-op (no wounds, no throw)', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1'] });
-    gameState.counters.schemeTwistCount = 0; // currentTwist 1 — below the first step
+    gameState.counters.schemeTwistCount = 1; // currentTwist 1 — below the first step
 
     assert.doesNotThrow(() => {
       resolver(gameState, makeRevealContext(), emptyImplementationMap, {
@@ -497,7 +497,7 @@ describe('wound-all resolver', () => {
 
   it('flat woundCount path is unchanged when escalation is absent (ignores schemeTwistCount)', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3'] });
-    gameState.counters.schemeTwistCount = 6; // would be twist 7 under escalation — must be ignored
+    gameState.counters.schemeTwistCount = 7; // would be twist 7 under escalation — must be ignored
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, { woundCount: 2 });
 

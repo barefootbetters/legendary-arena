@@ -10,6 +10,15 @@
 
 ## Current State
 
+### D-24775 — a Scheme Twist is counted before its resolver runs; nested Twists are numbered in reveal order (direct fix, no WP) (2026-10-25)
+
+**User-visible in the `play.legendary-arena.com` game log after deploy.** When one Twist's plays reveal another Twist (Change the Outcome of WWII chained Twists 2→3→4 in playtest `mMFRcae60Sz`), each "Scheme Twist #N revealed" line now sits right before that Twist's own effects, numbered in reveal order. Before, all three lines printed after the chain, innermost-first.
+
+- **Engine.** `schemeTwistHandler` raises `schemeTwistCount` and logs the Twist line before calling the resolver; only the twist-threshold loss stays a returned effect. The Cosmic Cube escalation, Clash of the Monsters' Monster Pit and the Enigma Code read the count as this Twist's number, so a Twist set off inside another Twist on those schemes gets its own number. Amends D-18201; the final count, the loss timing and the PAR-anchor text are unchanged.
+- **Tests.** game-engine 5819 → 5820 / 0 fail; `pnpm -r --no-bail test` 0 fail; hash oracles unchanged; four revert proofs. Existing tests that set the count to N−1 for Twist N now set N.
+- **Follow-up:** `docs/ai/ARCHITECTURE.md` §The Rule Execution Pipeline says `executeRuleHooks` never modifies `G`; the scheme-twist dispatcher has been the D-18201 exception since WP-182 and the section does not name it.
+- **Live-verify (D-24026): operator-pending.** A WWII match created after the deploy where a Twist's 2 plays reveal another Twist: "#N" lines in reveal order, each before its country line.
+
 ### WP-841 / EC-879 — co2e variable-Attack passives: Baron Strucker, Paibok, Super-Skrull and Hydro-Man fight for what they print (D-24774) (2026-10-25)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Four Core 2nd-edition villains fought at their flat printed base (6, 5, 2 and 4) because the engine ignored their printed passives. They now cost what they print, and the City tile's `Fight N` badge shows it: Baron Strucker gets +1 for each other HYDRA Villain in the City and Escape Pile; Paibok the Power Skrull and Super-Skrull get +1 for each Hero Class among the HQ Heroes (0 to 5); Hydro-Man gets +2 in the Sewers or on the Bridge.

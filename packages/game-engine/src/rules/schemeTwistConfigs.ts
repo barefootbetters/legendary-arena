@@ -113,7 +113,7 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       resolverId: 'wound-all',
       // why: WP-540 / D-24349 — the printed escalation: nothing on twists 1-4,
       // each player gains 1 Wound on twists 5-6, and 3 Wounds on twist 7 (twist 8
-      // = Evil Wins, below). Keyed on currentTwist = schemeTwistCount + 1; the
+      // = Evil Wins, below). Keyed on currentTwist = schemeTwistCount (raised before the resolver, D-24775); the
       // resolver takes the MAX matching step, replacing the flat 1-per-twist that both over-punished early and
       // under-punished the twist-7 spike. D-24685 — each step closes at its printed
       // last twist (`throughTwist`): the printed twist 8 is only "Evil Wins!", so it

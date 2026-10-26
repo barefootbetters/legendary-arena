@@ -128,14 +128,14 @@ function mixEnigmaCode(G: LegendaryGameState, random: ShuffleProvider['random'])
 /**
  * Twists 1-5: the top card of the Hero Deck joins the Enigma Code face down, and the code is mixed.
  *
- * // why: the Twist number is schemeTwistCount + 1 (the dispatcher increments the counter after
- * the resolver returns, and this Twist reveals nothing, so no nested Twist can read a stale count).
+ * // why: D-24775 — the Twist number is schemeTwistCount: the dispatcher raises the counter
+ * before it calls the resolver.
  *
  * @param G - The game state, mutated in place.
  * @param random - The deterministic shuffle source (the reveal context's random).
  */
 export function addHeroDeckCardToEnigmaCode(G: LegendaryGameState, random: ShuffleProvider['random']): void {
-  const twistNumber = (G.counters.schemeTwistCount ?? 0) + 1;
+  const twistNumber = G.counters.schemeTwistCount ?? 0;
   if (twistNumber > ENIGMA_CODE_LAST_BUILDING_TWIST) {
     return;
   }
