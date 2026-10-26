@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1988,
+    "totalEntries": 1993,
     "byScope": {
       "hero": 804,
-      "villain": 728,
+      "villain": 733,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 591,
+      "executable": 611,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
-      "unmarked": 1036,
+      "unmarked": 1021,
       "subsystem": 5
     }
   },
@@ -5857,33 +5857,33 @@
       "name": "Juggernaut",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-mystique",
       "name": "Mystique",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "become-scheme-twist",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist",
+      "wp": "WP-481",
+      "decision": "D-24287"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-sabretooth",
       "name": "Sabretooth",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-the-blob",
@@ -5956,11 +5956,22 @@
       "name": "Endless Armies of HYDRA",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "koHeroEachPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-189",
+      "decision": "D-18901"
+    },
+    {
+      "extId": "co2e-villain-hydra-endless-armies-of-hydra",
+      "name": "Endless Armies of HYDRA",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards",
+      "wp": "WP-542",
+      "decision": "D-24351"
     },
     {
       "extId": "co2e-villain-hydra-hydra-kidnappers",
@@ -5978,11 +5989,11 @@
       "name": "Viper",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-wound-unless-victory-villain-group",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound-unless-victory-villain-group",
+      "wp": "WP-494",
+      "decision": "D-24299"
     },
     {
       "extId": "co2e-villain-masters-of-evil-baron-zemo",
@@ -6066,11 +6077,11 @@
       "name": "Maestro, Wasteland Hulk",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-heroes-current-count-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-count-by-trait",
+      "wp": "WP-544",
+      "decision": "D-24353"
     },
     {
       "extId": "co2e-villain-radiation-the-leader",
@@ -6088,11 +6099,11 @@
       "name": "Zzzax",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-green-goblin",
@@ -6110,22 +6121,33 @@
       "name": "Scorpion",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-the-lizard",
       "name": "The Lizard",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
+      "wp": "WP-252",
+      "decision": "D-24023"
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-the-lizard",
+      "name": "The Lizard",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-venom",
@@ -6143,11 +6165,11 @@
       "name": "Beetle",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-boomerang",
@@ -6165,11 +6187,11 @@
       "name": "Hydro-Man",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-speed-demon",
@@ -6198,33 +6220,55 @@
       "name": "Skrull Queen Veranke",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "captureHqHeroHighestCost",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero",
+      "wp": "WP-214",
+      "decision": "D-21401"
+    },
+    {
+      "extId": "co2e-villain-skulls-skrull-queen-veranke",
+      "name": "Skrull Queen Veranke",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero",
+      "wp": "WP-450",
+      "decision": "D-24270"
     },
     {
       "extId": "co2e-villain-skulls-skrull-shapeshifter",
       "name": "Skrull Shapeshifter",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "captureHqHeroRightmost",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero",
+      "wp": "WP-214",
+      "decision": "D-21401"
+    },
+    {
+      "extId": "co2e-villain-skulls-skrull-shapeshifter",
+      "name": "Skrull Shapeshifter",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero",
+      "wp": "WP-450",
+      "decision": "D-24270"
     },
     {
       "extId": "co2e-villain-skulls-super-skrull",
       "name": "Super-Skrull",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
     },
     {
       "extId": "co2e/black-widow",
@@ -12871,11 +12915,11 @@
       "name": "Hand Ninjas",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-recruit-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current",
+      "wp": "WP-541",
+      "decision": "D-24350"
     },
     {
       "extId": "henchman-hand-ninjas",
@@ -12887,6 +12931,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current",
       "wp": "WP-541",
       "decision": "D-24350"
+    },
+    {
+      "extId": "henchman-hand-ninjas",
+      "name": "Hand Ninjas",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "henchman-hellfire-cult",
@@ -30246,19 +30301,19 @@
     "co2e-villain-brotherhood-of-mutants-juggernaut": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-hero"
       ]
     },
     "co2e-villain-brotherhood-of-mutants-mystique": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "become-scheme-twist"
       ]
     },
     "co2e-villain-brotherhood-of-mutants-sabretooth": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "co2e-villain-brotherhood-of-mutants-the-blob": {
@@ -30300,7 +30355,8 @@
     "co2e-villain-hydra-endless-armies-of-hydra": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "koHeroEachPlayer",
+        "play-villain-deck-cards"
       ]
     },
     "co2e-villain-hydra-hydra-kidnappers": {
@@ -30312,7 +30368,7 @@
     "co2e-villain-hydra-viper": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-wound-unless-victory-villain-group"
       ]
     },
     "co2e-villain-masters-of-evil-baron-zemo": {
@@ -30350,7 +30406,7 @@
     "co2e-villain-radiation-maestro-wasteland-hulk": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-heroes-current-count-by-trait"
       ]
     },
     "co2e-villain-radiation-the-leader": {
@@ -30362,7 +30418,7 @@
     "co2e-villain-radiation-zzzax": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "co2e-villain-sinister-spider-foes-green-goblin": {
@@ -30374,13 +30430,14 @@
     "co2e-villain-sinister-spider-foes-scorpion": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "koHeroCurrentPlayer"
       ]
     },
     "co2e-villain-sinister-spider-foes-the-lizard": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-wound",
+        "ko-hero"
       ]
     },
     "co2e-villain-sinister-spider-foes-venom": {
@@ -30392,7 +30449,7 @@
     "co2e-villain-sinister-syndicate-beetle": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "co2e-villain-sinister-syndicate-boomerang": {
@@ -30404,7 +30461,7 @@
     "co2e-villain-sinister-syndicate-hydro-man": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-hero"
       ]
     },
     "co2e-villain-sinister-syndicate-speed-demon": {
@@ -30422,19 +30479,21 @@
     "co2e-villain-skulls-skrull-queen-veranke": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "captureHqHeroHighestCost",
+        "gain-attached-hero"
       ]
     },
     "co2e-villain-skulls-skrull-shapeshifter": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "captureHqHeroRightmost",
+        "gain-attached-hero"
       ]
     },
     "co2e-villain-skulls-super-skrull": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "koHeroCurrentPlayer"
       ]
     },
     "co2e/black-widow": {
@@ -32738,8 +32797,8 @@
     "henchman-hand-ninjas": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)",
-        "gain-recruit-current"
+        "gain-recruit-current",
+        "ko-hero"
       ]
     },
     "henchman-hellfire-cult": {

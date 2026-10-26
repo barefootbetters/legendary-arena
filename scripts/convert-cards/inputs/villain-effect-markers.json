@@ -89,14 +89,38 @@
       }
     },
     "co2e": {
+      "brotherhood-of-mutants": {
+        "juggernaut": { "fight": ["ko-hero:current:2"] },
+        "mystique": { "escape": ["become-scheme-twist"] },
+        "sabretooth": { "ambush": ["reveal-or-wound:hc:instinct"], "escape": ["reveal-or-wound:hc:instinct"] }
+      },
+      "hydra": {
+        "endless-armies-of-hydra": { "fight": ["koHeroEachPlayer", "play-villain-deck-cards:2"] },
+        "viper": { "fight": ["gain-wound-unless-victory-villain-group:hydra"], "escape": ["gain-wound-unless-victory-villain-group:hydra"] }
+      },
       "masters-of-evil": {
         "baron-zemo": { "ambush": ["capture-bystanders-plus-per-hq-hero-by-trait:team:avengers"] },
         "melter": { "fight": ["ko-cullable-each-deck-top"] },
         "ultron": { "fight": ["give-hq-hero-by-trait-to-current:hc:tech"], "escape": ["reveal-or-wound:hc:tech"] },
         "whirlwind": { "fight": ["ko-hero:current@rooftops+bridge"], "ambush": ["swap-two-city-villains"] }
       },
+      "radiation": {
+        "maestro-wasteland-hulk": { "fight": ["ko-heroes-current-count-by-trait:hc:strength"] },
+        "zzzax": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
+      },
+      "sinister-spider-foes": {
+        "scorpion": { "fight": ["koHeroCurrentPlayer"] },
+        "the-lizard": { "fight": ["ko-hero:current@sewers", "gain-wound:each-other@sewers"] }
+      },
+      "sinister-syndicate": {
+        "beetle": { "escape": ["reveal-or-wound:hc:covert"] },
+        "hydro-man": { "fight": ["ko-hero:current@sewers+bridge"] }
+      },
       "skulls": {
-        "paibok-the-power-skrull": { "fight": ["give-hq-hero-each-player"] }
+        "paibok-the-power-skrull": { "fight": ["give-hq-hero-each-player"] },
+        "skrull-queen-veranke": { "ambush": ["captureHqHeroHighestCost"], "fight": ["gain-attached-hero"] },
+        "skrull-shapeshifter": { "ambush": ["captureHqHeroRightmost"], "fight": ["gain-attached-hero"] },
+        "super-skrull": { "fight": ["koHeroCurrentPlayer"] }
       }
     },
     "core": {
@@ -342,7 +366,8 @@
       "quantumnauts": { "fight": ["koHeroCurrentPlayer"] }
     },
     "co2e": {
-      "doombot-legion": { "fight": ["scry-ko-own-deck"] }
+      "doombot-legion": { "fight": ["scry-ko-own-deck"] },
+      "hand-ninjas": { "fight": ["ko-hero:current@sewers+rooftops", "gain-recruit-current:1@bank+streets+bridge"] }
     },
     "core": {
       "doombot-legion": { "fight": ["scry-ko-own-deck"] },
