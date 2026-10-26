@@ -875,6 +875,14 @@ export interface UITurnEconomyState {
    */
   rescueOnFightAvailable?: boolean;
   /**
+   * WP-842 / D-24776 — true iff the active player already used this turn's one
+   * Sidekick recruit (`G.turnEconomy.hasRecruitedSidekickThisTurn`). Drives the
+   * client's "You already recruited a Sidekick this turn." gate on the Sidekicks
+   * cell. Omit-when-absent (present only when set) and active-player-only (absent
+   * from `REDACTED_ECONOMY`).
+   */
+  hasRecruitedSidekickThisTurn?: true;
+  /**
    * WP-783 / D-24629 — the hand cards the active player may phase right now
    * (swap with the top card of their deck), exactly `phasingOptions(G,
    * currentPlayer)` from `moves/phaseCard.ts` — the same predicate the
@@ -944,6 +952,13 @@ export interface UISharedPilesState {
   // pre-existing hand-written UISharedPilesState fixtures need no backfill
   // (the WP-179 pattern); `uiState.build.ts` ALWAYS populates it.
   officerDisplay?: UICardDisplay;
+  // why: WP-842 / D-24776 — the Sidekicks cell is now a recruitable supply pile too
+  // (2 Recruit, once per turn); the Sidekick card face (resolved from
+  // G.cardDisplayData[SIDEKICK_EXT_ID]) lets the client paint the card like the
+  // Officers cell. PUBLIC for the same reason as officerDisplay. Optional in the
+  // type ONLY so hand-written fixtures need no backfill; `uiState.build.ts` ALWAYS
+  // populates it.
+  sidekickDisplay?: UICardDisplay;
 }
 
 /**

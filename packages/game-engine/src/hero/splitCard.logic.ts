@@ -18,6 +18,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
+import { SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
 
 /**
  * Splits an instance ext_id into its copy-agnostic base key and its `#copyIndex` suffix.
@@ -173,6 +174,17 @@ export function offPlayCardStats(G: LegendaryGameState, cardId: string): CardSta
  */
 export function playedCardIdsThisTurn(G: LegendaryGameState, inPlay: readonly CardExtId[]): CardExtId[] {
   const played = playedCardIdsStillInPlay(G, inPlay);
+  // why: WP-842 / D-24776 — rules v23 "You still 'played' that Sidekick": a played Sidekick
+  // returned to the Sidekick Stack left inPlay, so the turn count supplies it. A COUNT (not an
+  // id ledger) because every Sidekick token shares one id, so these appends are never
+  // de-duplicated among themselves. Placed BEFORE the Out of Time loop so a Sidekick replayed
+  // from Out of Time and then returned (in both histories) is absorbed by that loop's
+  // `includes` and counts once. Accepted residual (D-24776): two Sidekicks in one turn, one set
+  // aside by a granted Out of Time, also collapse to one.
+  const sidekicksReturned = G.turnEconomy?.sidekicksReturnedThisTurn ?? 0;
+  for (let i = 0; i < sidekicksReturned; i++) {
+    played.push(SIDEKICK_EXT_ID);
+  }
   // why: WP-803 / D-24692 — rules v23 L1682 ("You 'played' a Man Out of Time card on both the
   // first turn you played it and the second turn when you replayed it") + L3441-3453 (a card
   // you played that moved elsewhere still counts as "cards you played this turn"). The card

@@ -509,6 +509,13 @@ export function filterUIStateForAudience(
       ...(uiState.economy.rescueOnFightAvailable === true
         ? { rescueOnFightAvailable: true as const }
         : {}),
+      // why: WP-842 / D-24776 — pass the once-per-turn Sidekick recruit cue through for the
+      // ACTIVE player only, omit-when-absent. The filter is a whitelist: a field it does not
+      // name is silently dropped (EC-206), and the Sidekicks cell would never disable after a
+      // recruit. REDACTED_ECONOMY never carries it.
+      ...(uiState.economy.hasRecruitedSidekickThisTurn === true
+        ? { hasRecruitedSidekickThisTurn: true as const }
+        : {}),
       // why: WP-783 / D-24629 — the Phasing options name cards in the owner's hand, so
       // they pass through for the ACTIVE player only, as a copied array, omit-when-absent.
       // REDACTED_ECONOMY (non-active players + spectators) never carries them. A field that
@@ -700,6 +707,11 @@ export function filterUIStateForAudience(
       ...uiState.piles,
       ...(uiState.piles.officerDisplay !== undefined
         ? { officerDisplay: { ...uiState.piles.officerDisplay } }
+        : {}),
+      // why: WP-842 / D-24776 — the Sidekick card face is public too and fresh-copied the
+      // same way, so the filtered UIState never aliases the full one's object.
+      ...(uiState.piles.sidekickDisplay !== undefined
+        ? { sidekickDisplay: { ...uiState.piles.sidekickDisplay } }
         : {}),
     },
     koPile: deepCopyKoPile(uiState.koPile),

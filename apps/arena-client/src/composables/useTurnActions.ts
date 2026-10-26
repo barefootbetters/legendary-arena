@@ -94,6 +94,7 @@ const NOT_YOUR_TURN: GatingResult = {
  *   - `canFightVillain`    → `fightVillain` at `play.main`
  *   - `canRecruitHero`     → `recruitHero` at `play.main`
  *   - `canRecruitOfficer`  → `recruitOfficer` at `play.main` (WP-648)
+ *   - `canRecruitSidekick` → `recruitSidekick` at `play.main` (WP-842)
  *   - `canFightMastermind` → `fightMastermind` at `play.main`
  *   - `canPassPriority`    → `advanceStage` at any stage (canonical
  *                             stage-advance per D-10011)
@@ -321,6 +322,7 @@ export function useTurnActions(
   canFightVillain: () => GatingResult;
   canRecruitHero: () => GatingResult;
   canRecruitOfficer: () => GatingResult;
+  canRecruitSidekick: () => GatingResult;
   canFightMastermind: () => GatingResult;
   canPassPriority: () => GatingResult;
   canEndTurn: () => GatingResult;
@@ -367,6 +369,17 @@ export function useTurnActions(
     // checks layer on top at the SharedDecks call-site via useCardCostGating (the
     // HQRow precedent) so this composable stays free of economy/pile inputs.
     canRecruitOfficer: () => {
+      if (!isViewerTurn) return NOT_YOUR_TURN;
+      if (currentStage !== 'main') {
+        return { allowed: false, reason: stageGateReason(currentStage, 'main') };
+      }
+      return healLockGate(hasHealedThisTurn);
+    },
+    // why: WP-842 / D-24776 — the turn + stage + heal-lock gate for recruiting a
+    // Sidekick from the Sidekick Stack, identical to canRecruitOfficer. The
+    // once-per-turn, empty-Stack and affordability checks layer on top at the
+    // SharedDecks call-site so this composable stays free of economy/pile inputs.
+    canRecruitSidekick: () => {
       if (!isViewerTurn) return NOT_YOUR_TURN;
       if (currentStage !== 'main') {
         return { allowed: false, reason: stageGateReason(currentStage, 'main') };

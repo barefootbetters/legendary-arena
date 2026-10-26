@@ -114,6 +114,32 @@ export interface TurnEconomy {
    */
   drawsLocked?: boolean;
   /**
+   * WP-842 / D-24776 — whether the current player already used this turn's one
+   * Sidekick recruit (rules v23 L727-729: "Sidekicks (no more than once per turn,
+   * using Recruit points)"). Set ONLY by the `recruitSidekick` move (via
+   * `markSidekickRecruited`); a card effect that gains a Sidekick never sets it
+   * (rules v23 L3216-3218: such gains don't count against the limit).
+   *
+   * LAZILY MATERIALIZED, exactly like `drawsLocked`: absent until the first
+   * Sidekick recruit, dropped by `resetTurnEconomy` at turn start, carried across
+   * every rebuild by `carryConversionFlag`. Absent ≡ not yet; omitted by
+   * `JSON.stringify`, so a turn with no Sidekick recruit serializes
+   * byte-identically and neither state-hash oracle moves.
+   */
+  hasRecruitedSidekickThisTurn?: true;
+  /**
+   * WP-842 / D-24776 — how many Sidekicks the current player played this turn and
+   * returned to the bottom of the Sidekick Stack. Rules v23 says "You still 'played'
+   * that Sidekick", so `playedCardIdsThisTurn` appends `pile-sidekick` this many
+   * times. A COUNT, not an id ledger, because every Sidekick token shares one id.
+   *
+   * ACTIVE-PLAYER-SCOPED, like `outOfTimePlayedCardIds`. LAZILY MATERIALIZED: absent
+   * until the first return (`recordSidekickReturned`), dropped by `resetTurnEconomy`
+   * at turn start, carried by `carryConversionFlag`. Absent ≡ 0; omitted by
+   * `JSON.stringify`, so a turn with no Sidekick play serializes byte-identically.
+   */
+  sidekicksReturnedThisTurn?: number;
+  /**
    * WP-736 / D-24556 — the ordered ledger of "Excessive Violence" cards the current
    * player has played this turn (Venomverse's Excessive Violence, keywords-full id 30).
    * Playing an allowlisted EV card appends its CardExtId here (via

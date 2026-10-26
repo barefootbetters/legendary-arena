@@ -52,7 +52,8 @@ import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
 import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { SIDEKICK_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { returnPlayedSidekick } from './recruitSidekick.js';
 import { consumeExtraTurn } from '../turn/turnLoop.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -335,6 +336,12 @@ export function applyCardPlay(
   // (the last effect of the play). Shared core (hand play and the turn-2 replay); the replay is
   // never re-granted (the grant list is cleared at turn start, and guard 1 blocks a second set-aside).
   applyGrantedOutOfTime(G, context, playerID, cardId);
+  // why: WP-842 / D-24776 — a played Sidekick returns to the bottom of the Sidekick Stack
+  // and draws two. Last, after Out of Time, so a granted Out of Time set-aside wins (the
+  // return only fires while the Sidekick is still the last inPlay entry).
+  if (cardId === SIDEKICK_EXT_ID) {
+    returnPlayedSidekick(G, context, playerID);
+  }
 }
 
 /**

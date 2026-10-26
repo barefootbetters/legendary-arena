@@ -638,6 +638,13 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
         imageUrl: 'https://images.legendary-arena.com/core/core-so-officer.webp',
         cost: null,
       },
+      // why: WP-842 / D-24776 — the projected Sidekick card face, optional like officerDisplay.
+      sidekickDisplay: {
+        extId: 'pile-sidekick',
+        name: 'Sidekick',
+        imageUrl: '',
+        cost: null,
+      },
     } satisfies UISharedPilesState;
 
     assert.deepStrictEqual(Object.keys(fixture).sort(), [
@@ -645,9 +652,51 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
       'horrorsCount',
       'officerDisplay',
       'officersCount',
+      'sidekickDisplay',
       'sidekicksCount',
       'woundsCount',
     ]);
+  });
+
+  it('WP-842 built-projection pins: piles.sidekickDisplay and economy.hasRecruitedSidekickThisTurn (D-24776)', () => {
+    // why: both fields are OPTIONAL, so a `satisfies` or a hand-written keyset can never
+    // catch a dropped name (D-24372). Assert the keys of a REAL built projection, then of
+    // the active player's filtered view (the whitelist step).
+    const setData = {
+      abbr: 'core',
+      schemes: [{ slug: 's' }],
+      masterminds: [{ slug: 'mm', cards: [{ slug: 'mm-base', tactic: false }] }],
+      henchmen: [{ slug: 'h' }],
+      villains: [{ slug: 'v', cards: [{ slug: 'v1', vAttack: '4' }] }],
+      heroes: [{ slug: 'hero-x', cards: [{ slug: 'card-c1', rarityLabel: 'Common 1' }] }],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx({ numPlayers: 1 }));
+    gameState.turnEconomy = { ...gameState.turnEconomy, hasRecruitedSidekickThisTurn: true };
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    const built = buildUIState(gameState, uiCtx);
+    assert.ok(Object.keys(built.piles).includes('sidekickDisplay'), 'built piles carry sidekickDisplay');
+    assert.ok(Object.keys(built.economy).includes('hasRecruitedSidekickThisTurn'), 'built economy carries the cue');
+
+    const filtered = filterUIStateForAudience(built, { kind: 'player', playerId: '0' });
+    assert.ok(Object.keys(filtered.piles).includes('sidekickDisplay'), 'filtered piles keep sidekickDisplay');
+    assert.ok(Object.keys(filtered.economy).includes('hasRecruitedSidekickThisTurn'), 'the active player keeps the cue');
   });
 
   it('UIKoPileState pins count + topCard + cards (count must be number; topCard nullable)', () => {

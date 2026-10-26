@@ -490,6 +490,8 @@ type CarriedTurnFields = Partial<
     | 'restrictedAttack'
     | 'fightCostReductions'
     | 'outOfTimePlayedCardIds'
+    | 'hasRecruitedSidekickThisTurn'
+    | 'sidekicksReturnedThisTurn'
   >
 >;
 
@@ -565,6 +567,17 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   // Superpower would stop seeing the set-aside card as played this turn.
   if (economy.outOfTimePlayedCardIds !== undefined) {
     carried.outOfTimePlayedCardIds = economy.outOfTimePlayedCardIds;
+  }
+  // why: WP-842 / D-24776 — carry the once-per-turn Sidekick recruit flag and the
+  // returned-Sidekick count ONLY when present (omit-when-absent keeps both hash oracles
+  // byte-stable). Without the carry, the next addResources / spend rebuild would drop the
+  // flag (a second Sidekick recruit would be allowed) or the count (a returned Sidekick
+  // would stop counting as played this turn).
+  if (economy.hasRecruitedSidekickThisTurn !== undefined) {
+    carried.hasRecruitedSidekickThisTurn = economy.hasRecruitedSidekickThisTurn;
+  }
+  if (economy.sidekicksReturnedThisTurn !== undefined) {
+    carried.sidekicksReturnedThisTurn = economy.sidekicksReturnedThisTurn;
   }
   return carried;
 }
@@ -964,6 +977,58 @@ export function enablePlayBothSides(economy: TurnEconomy): TurnEconomy {
     // drops a flag or ledger set earlier this turn. The explicit assignment then sets this one.
     ...carryConversionFlag(economy),
     isPlayBothSidesActive: true,
+  };
+}
+
+/**
+ * Marks this turn's one Sidekick recruit as used (WP-842 / D-24776).
+ *
+ * Called only by the `recruitSidekick` move. Sets `hasRecruitedSidekickThisTurn`; every
+ * other field is carried unchanged through the single carry chokepoint.
+ * `resetTurnEconomy` drops the flag at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @returns New TurnEconomy with `hasRecruitedSidekickThisTurn` set true.
+ */
+export function markSidekickRecruited(economy: TurnEconomy): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: spread the single carry chokepoint so marking the recruit never drops a flag or
+    // ledger set earlier this turn. The explicit assignment then sets this one.
+    ...carryConversionFlag(economy),
+    hasRecruitedSidekickThisTurn: true,
+  };
+}
+
+/**
+ * Records one played Sidekick returned to the Sidekick Stack this turn (WP-842 / D-24776).
+ *
+ * Called by `returnPlayedSidekick`. Increments `sidekicksReturnedThisTurn`, materializing it
+ * at 1 on the first call. Every other field is carried unchanged through the single carry
+ * chokepoint. `resetTurnEconomy` drops the count at the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @returns New TurnEconomy with `sidekicksReturnedThisTurn` one higher.
+ */
+export function recordSidekickReturned(economy: TurnEconomy): TurnEconomy {
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: spread the single carry chokepoint so recording the return never drops a flag or
+    // ledger set earlier this turn. The explicit assignment then sets this one.
+    ...carryConversionFlag(economy),
+    sidekicksReturnedThisTurn: (economy.sidekicksReturnedThisTurn ?? 0) + 1,
   };
 }
 
