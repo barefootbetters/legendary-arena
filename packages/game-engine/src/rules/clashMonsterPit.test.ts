@@ -103,11 +103,11 @@ function makeRevealContext(): RevealContext {
 }
 
 /**
- * Runs the Clash twist resolver as twist number `twistNumber` (the resolver reads
- * the pre-increment counter, so the counter is set to twistNumber - 1).
+ * Runs the Clash twist resolver as twist number `twistNumber` (the dispatcher raises
+ * the counter before the resolver runs, D-24775, so the counter is set to twistNumber).
  */
 function runClashTwist(gameState: LegendaryGameState, twistNumber: number): void {
-  gameState.counters.schemeTwistCount = twistNumber - 1;
+  gameState.counters.schemeTwistCount = twistNumber;
   SCHEME_TWIST_RESOLVERS['clash-monster-pit'](
     gameState,
     makeRevealContext(),

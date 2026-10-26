@@ -83,8 +83,9 @@ function buildMatch(): { G: LegendaryGameState; villains: CardExtId[] } {
  * @param G - The game state, mutated in place.
  */
 function twist(G: LegendaryGameState): void {
-  SCHEME_TWIST_RESOLVERS['change-the-outcome-of-wwii'](G, REVEAL_CONTEXT, DEFAULT_IMPLEMENTATION_MAP, {}, TWIST_ID);
+  // why: D-24775 — the dispatcher raises the count before the resolver runs.
   G.counters.schemeTwistCount = (G.counters.schemeTwistCount ?? 0) + 1;
+  SCHEME_TWIST_RESOLVERS['change-the-outcome-of-wwii'](G, REVEAL_CONTEXT, DEFAULT_IMPLEMENTATION_MAP, {}, TWIST_ID);
 }
 
 /**
@@ -220,6 +221,26 @@ describe('Change the Outcome of WWII — conquered capitals (WP-832)', () => {
     assert.equal(G.city.length, 3, 'France');
     assert.ok(logText(G).some((line) => line.includes('Twist 2: the Axis invades France')));
     assert.deepEqual(G.city.filter((cardId) => cardId !== null), [villains[2], villains[1]], "the nested Twist's 2 plays, in France");
+  });
+
+  it('X11 (D-24775) a nested Twist is numbered and logged in reveal order on the real reveal path', () => {
+    const { G, villains } = buildMatch();
+    const twistCards = Object.keys(G.villainDeckCardTypes).filter((cardId) => G.villainDeckCardTypes[cardId] === 'scheme-twist');
+    G.villainDeck.deck = [twistCards[0]!, villains[0]!, twistCards[1]!, villains[1]!, villains[2]!, villains[3]!];
+    G.currentStage = 'start';
+    G.villainRevealedThisTurn = false;
+    revealVillainCard(makeMockMoveContext(G, { numPlayers: 2 }));
+
+    assert.equal(G.counters.schemeTwistCount, 2, 'both Twists counted once');
+    const lines = logText(G);
+    const firstTwistLine = lines.findIndex((line) => line.startsWith('Scheme Twist #1 revealed'));
+    const poland = lines.findIndex((line) => line.includes('Twist 1: the Axis invades Poland'));
+    const secondTwistLine = lines.findIndex((line) => line.startsWith('Scheme Twist #2 revealed'));
+    const france = lines.findIndex((line) => line.includes('Twist 2: the Axis invades France'));
+    assert.ok(firstTwistLine >= 0 && secondTwistLine >= 0, lines.join('\n'));
+    assert.ok(firstTwistLine < poland, '#1 comes before its Poland line');
+    assert.ok(poland < secondTwistLine, 'the nested Twist is announced after Poland');
+    assert.ok(secondTwistLine < france, '#2 comes before its France line');
   });
 
   it('X8 the third conquered capital is the loss, and the meter reads Capitals N/3', () => {

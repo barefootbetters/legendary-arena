@@ -349,11 +349,10 @@ function woundAll(
   } else {
     let effectiveWoundCount: number;
     if (escalation !== undefined) {
-      // why: the resolver runs BEFORE schemeHandlers applies the schemeTwistCount
-      // +1 modifyCounter effect (schemeHandlers.ts calls the resolver, then
-      // returns the increment for applyRuleEffects), so the pre-increment count
-      // + 1 is THIS twist's number.
-      const currentTwist = (gameState.counters.schemeTwistCount ?? 0) + 1;
+      // why: D-24775 — the dispatcher (schemeHandlers.ts) raises schemeTwistCount
+      // BEFORE it calls the resolver, so the count is THIS twist's number, also
+      // for a Twist revealed while another Twist is still resolving.
+      const currentTwist = gameState.counters.schemeTwistCount ?? 0;
 
       // why: a twist can match more than one escalation step (twist 7 matches
       // both the 5→1 and 7→3 steps), so take the MAX matching step's woundCount
@@ -887,9 +886,10 @@ function clashMonsterPit(
   _params: Record<string, unknown>,
   twistCardId?: CardExtId,
 ): void {
-  // why: the resolver runs before the dispatcher's schemeTwistCount +1, so the
-  // pre-increment count + 1 is THIS twist's number (the woundAll escalation read).
-  const currentTwist = (gameState.counters.schemeTwistCount ?? 0) + 1;
+  // why: D-24775 — the dispatcher raises schemeTwistCount before the resolver runs,
+  // so the count is THIS twist's number (the woundAll escalation read). A Twist set off
+  // inside this one (a Monster pushing a Mystique out) reads its own, later number.
+  const currentTwist = gameState.counters.schemeTwistCount ?? 0;
   const monsterPit = gameState.monsterPit ?? [];
 
   if (currentTwist < FIRST_MONSTER_PIT_TWIST) {
@@ -1024,13 +1024,12 @@ function brainwashTheMilitary(
   _params: Record<string, unknown>,
   twistCardId?: CardExtId,
 ): void {
-  // why: the Twist is numbered from the stack, NOT from schemeTwistCount. "Play
-  // another card" can reveal another Twist, which re-enters this resolver before the
-  // dispatcher increments schemeTwistCount (it does so after the resolver returns),
-  // so schemeTwistCount + 1 would give the nested Twist the outer Twist's number. The
-  // stack is raised BEFORE the extra card is played, so a nested Twist reads the
-  // right number. A Twist after six are stacked (a Mystique Escape) runs Twist 7 too;
-  // the card defines no Twist 8.
+  // why: the Twist is numbered from the stack, NOT from schemeTwistCount: the stack
+  // counts only the Twists stacked next to the Scheme, and it is raised BEFORE the
+  // extra card is played, so a nested Twist reads the right stack position. (Since
+  // D-24775 schemeTwistCount is also raised before the resolver, but it counts every
+  // Twist, including ones that changed nothing.) A Twist after six are stacked (a
+  // Mystique Escape) runs Twist 7 too; the card defines no Twist 8.
   const stackedCount = gameState.counters[TRAITOR_BATTALION_TWISTS] ?? 0;
   if (stackedCount < TRAITOR_BATTALION_STACK_LIMIT) {
     const nextCount = stackedCount + 1;

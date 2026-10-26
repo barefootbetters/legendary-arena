@@ -1474,3 +1474,4 @@ section below) and the allocation protocol in
 - D-24772 — co2e-city-movement-effects (WP-839; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - D-24773 — co2e-the-blob-guards-the-mastermind (WP-840; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - D-24774 — co2e-variable-attack-passives (WP-841; the variable-Attack table, marker grammar and HYDRA-Villain reading. reserved 2026-10-25, claude/reserve-wp841-co2e-variable-attack)
+- D-24775 — twist-count-before-resolver (direct fix, no WP — the scheme-twist dispatcher raises schemeTwistCount and logs the Scheme Twist #N line BEFORE the resolver, so nested Twists are numbered in reveal order; the wound-all, clash-monster-pit and enigma-code resolvers read the count directly. Amends D-18201. reserved 2026-10-25, claude/twist-count-before-resolver)

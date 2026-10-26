@@ -125,8 +125,8 @@ export function settleWwiiConquest(G: LegendaryGameState): void {
  * the country's spaces, and 2 cards are played.
  *
  * // why: the country is numbered from its own counter, raised BEFORE the 2 cards are played: a
- * Twist among them re-enters this resolver before the dispatcher increments schemeTwistCount, and
- * must invade the NEXT country. The previous country is settled first, so an escape there counts
+ * Twist among them re-enters this resolver and must invade the NEXT country. (schemeTwistCount
+ * also counts a Twist that changes nothing, such as a Mystique Escape after Switzerland.) The previous country is settled first, so an escape there counts
  * for it. A Twist after the seventh country (no eighth is printed) changes nothing.
  *
  * @param G - The game state, mutated in place.

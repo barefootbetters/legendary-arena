@@ -695,8 +695,8 @@ export function resolveVillainEscape(
   // no-op (it cannot reach the rule pipeline); the actual twist fires HERE, where
   // the hookRegistry + implementationMap + RevealContext are in scope. Run the
   // SAME two-call pattern the reveal path uses for a revealed scheme-twist card
-  // (Step 5/6 above): the active scheme's twist resolver runs, schemeTwistCount
-  // increments, and the loss threshold is checked. The escaped card stays in the
+  // (Step 5/6 above): schemeTwistCount increments, the active scheme's twist
+  // resolver runs (D-24775: count first), and the loss threshold is checked. The escaped card stays in the
   // escaped pile — resolvers use the cardId only to stamp a schemeTwistResolved
   // notableEvent, never to route a card. "Takes effect immediately" → after the
   // escape's own in-move consequences (bystander carry-away / escape effects / captured heroes to the
