@@ -35,6 +35,13 @@ const githubDocsBlobBase =
 // why: a Hugo page needs frontmatter for its title + nav; the source docs file
 // carries none (it is a plain doc), so the ewiki-specific frontmatter is injected
 // here at projection time rather than polluting the source.
+// why: canonical-source names the doc that owns this page's text, so the shared
+// ewiki theme's "Editing this page" footer sends the editor to
+// docs/09-CHANGELOG.md. That key replaces the by-file-name changelog case the
+// engine's own footer carried (D-24728 Consequences, D-24782). The source: entry
+// satisfies the mirror rule in wiki/SCHEMA.md §Mirror pages: a same-repo
+// canonical-source must also be listed in source:, which check-links.mjs
+// enforces.
 const changelogFrontmatter = [
   '---',
   'title: Changelog',
@@ -44,6 +51,9 @@ const changelogFrontmatter = [
   '  - milestones',
   '  - project',
   'status: canonical',
+  'canonical-source: docs/09-CHANGELOG.md',
+  'source:',
+  '  - ../docs/09-CHANGELOG.md',
   '---',
   '',
   '<!-- Auto-projected from docs/09-CHANGELOG.md by project-wiki.mjs (D-24164). Edit the source, not this copy. -->',

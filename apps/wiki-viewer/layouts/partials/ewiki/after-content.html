@@ -1,0 +1,13 @@
+{{- /*
+  why: the engine's Related and Sources sections, after the body and before
+  the "Editing this page" footer, in that order and under the same conditions
+  as before the move onto the shared theme (D-24782). They render the last two
+  of the six locked front-matter fields (WP-139 §Locked Values / D-13808);
+  metadata.html renders the other four. It receives the page.
+*/ -}}
+{{- with .Params.related -}}
+  {{ partial "related.html" (dict "items" . "page" $.Page) }}
+{{- end -}}
+{{- with .Params.source -}}
+  {{ partial "source-citations.html" (dict "items" . "page" $.Page) }}
+{{- end -}}

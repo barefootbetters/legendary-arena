@@ -107,7 +107,7 @@ wiki/
 ├── README.md                     # purpose, conventions, authority
 ├── INDEX.md                      # categorized list of all pages
 ├── architecture-inventory.md     # generated; sole writer is scripts/architecture-inventory.mjs
-├── tags.md                       # Hugo taxonomy stub; rendered by layouts/_default/tags.html
+├── tags.md                       # Hugo taxonomy stub; rendered by the theme's layouts/_default/tags.html
 └── <slug>.md                     # entity pages (one per entity)
 ```
 
@@ -123,8 +123,8 @@ is exempt for a different reason:
 | `SCHEMA.md` | the contract itself |
 | `README.md` | purpose / conventions / authority |
 | `INDEX.md` | categorized list of pages; Hugo home (`_index.md` after projection) |
-| `architecture-inventory.md` | generated — sole writer is `scripts/architecture-inventory.mjs`; carries `type: Generated` / `status: evergreen`, which are deliberately outside the closed sets |
-| `tags.md` | Hugo taxonomy stub — `layout: tags`, rendered by `apps/wiki-viewer/layouts/_default/tags.html`. Four lines, no prose. There is no content to cite sources for or to review against code, so the entity-page fields are meaningless here. |
+| `architecture-inventory.md` | generated — sole writer is `scripts/architecture-inventory.mjs`; carries `type: Generated` / `status: evergreen`, which are deliberately outside the closed sets, and `links_from: repo-root`, because its links are written from the repo root |
+| `tags.md` | Hugo taxonomy stub — `layout: tags`, rendered by the shared theme's `apps/wiki-viewer/themes/ewiki/layouts/_default/tags.html`. Four lines, no prose. There is no content to cite sources for or to review against code, so the entity-page fields are meaningless here. |
 
 A file being reserved is not a licence to skip front matter generally —
 it means the entity-page contract does not describe what the file is. Any
@@ -214,6 +214,7 @@ last-reviewed: 2026-05-07
 | `last-reviewed` | yes | date `YYYY-MM-DD` | When the page was last verified against current code/docs. |
 | `canonical-source` | no | single path | **Mirror pages only** (see below). Names the one upstream doc that owns this page's canonical prose. Singular, not a list. For a **same-repo** mirror it is repo-root-relative and the same file **must** also be cited in `source`; for a **cross-repo** mirror it is relative to `canonical-source-repo`'s root. Absent on every native page. |
 | `canonical-source-repo` | no | GitHub `owner/repo` slug | **Cross-repo mirror pages only.** Present when the canonical doc lives in a *different* repo (e.g. `legendary-arena/legendary-arena-website`). Makes `canonical-source` relative to that repo's `main`; the footer links there. Omit for a same-repo mirror. |
+| `links_from` | no | `repo-root` | Generated inventory only: its links are written from the repo root, so none is looked up as a page (theme render-link branch 4a; replaces the by-name case, D-24782). |
 
 #### Self-reference (first `source` entry)
 
@@ -256,12 +257,14 @@ Documenting code, or citing a data spec such as
 qualify — those are native pages whose `source` entries are references, not
 owners. When in doubt, the page is native and omits the field.
 
-why: the "Editing this page" affordance (`layouts/partials/editing-this-page.html`)
+why: the "Editing this page" affordance (the shared theme's
+`apps/wiki-viewer/themes/ewiki/layouts/partials/ewiki/editing-this-page.html`,
+with the engine's paragraphs in `apps/wiki-viewer/layouts/partials/ewiki/editing-extra.html`)
 uses `canonical-source` to direct an editor to the upstream doc and back on
 mirror pages, instead of the native "edit `wiki/<slug>.md`" instruction which
 would wrongly imply the wiki page is the source of truth. The field is consumed
-only by that partial — it is **not** rendered in the metadata panel, so the
-six-field panel surface lock (`layouts/_default/single.html`, WP-139 / EC-142)
+only by that footer — it is **not** rendered in the metadata panel, so the
+six-field panel surface lock (`apps/wiki-viewer/layouts/partials/ewiki/metadata.html`, WP-139 / EC-142)
 is unaffected. Decision: `docs/ai/DECISIONS.md` D-24304.
 
 Path form (same-repo): repo-root-relative

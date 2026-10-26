@@ -1,0 +1,53 @@
+{{- /*
+  why: front-matter field surface lock per WP-139 §Locked Values / D-13808.
+  The engine renders exactly six locked fields: type, status, tags and
+  last-reviewed here, related and source in after-content.html. The panel
+  renders only when the page sets type, as it always has, so INDEX, README,
+  SCHEMA and tags show none. Adding a field silently expands the schema's
+  rendered surface and drifts from wiki/SCHEMA.md §Front-Matter Format; a new
+  field needs a SCHEMA.md amendment first, never a template-side widening.
+  It receives the page and renders between the title and the body, inside the
+  theme's core dl.metadata-panel styling (D-24782).
+*/ -}}
+{{- if .Params.type -}}
+<dl class="metadata-panel">
+  {{- with .Params.type -}}
+    <dt>Type</dt><dd>{{ . }}</dd>
+  {{- end -}}
+  {{- with .Params.status -}}
+    <dt>Status</dt><dd class="status status-{{ . }}">{{ . }}</dd>
+  {{- end -}}
+  {{- with .Params.tags -}}
+    <dt>Tags</dt>
+    <dd>
+      <ul class="tag-list">
+        {{- range . -}}
+          <li class="tag"><a href="/tags/#{{ . }}">{{ . }}</a></li>
+        {{- end -}}
+      </ul>
+    </dd>
+  {{- end -}}
+  {{- with .Params.last_reviewed -}}
+    <dt>Last reviewed</dt><dd>{{ . }}</dd>
+  {{- else -}}
+    {{- with index .Params "last-reviewed" -}}
+      <dt>Last reviewed</dt><dd>{{ . }}</dd>
+    {{- end -}}
+  {{- end -}}
+</dl>
+{{- end -}}
+{{- /*
+  why: search filters. Pagefind reads data-pagefind-filter anywhere, even
+  inside data-pagefind-ignore, so these hidden spans give search Type, Status
+  and Tag checkboxes beside its results with no script of their own (D-24293).
+  They read three of the six locked fields and render no new field, so the
+  surface lock above is unaffected. They sit outside the type gate and render
+  for every page, as they did before the move onto the shared theme. The
+  theme's own searchFilters stays off (hugo.toml), so these are the only
+  filter spans.
+*/ -}}
+<div hidden data-pagefind-ignore class="search-filters">
+  {{- with .Params.type }}<span data-pagefind-filter="Type:{{ . }}"></span>{{ end -}}
+  {{- with .Params.status }}<span data-pagefind-filter="Status:{{ replace . "-" " " | humanize }}"></span>{{ end -}}
+  {{- range .Params.tags }}<span data-pagefind-filter="Tag:{{ . }}"></span>{{ end -}}
+</div>

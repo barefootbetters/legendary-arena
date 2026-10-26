@@ -1,0 +1,114 @@
+{{- /*
+  why: one link resolver for every wiki, reconciled from the largest drift in
+  the four copies: E rewrote flat slugs and sent `../` to GitHub; H resolved
+  repo-relative note paths, served docs/ images as downloads, opened
+  image-only links full size and sent folders to GitHub tree; C resolved
+  folder-relative pages and sent the rest to blob; J used Hugo's default.
+  Links are written for GitHub, relative to the linking file, and this hook
+  turns each into the page it means here.
+
+  why: lookups are content-relative. $dir is the linking page's folder with
+  backslashes turned into slashes (on Windows, Hugo 0.161.1 returns
+  `sec\sub\`; C already normalized it this way) and any leading slash dropped
+  (a root page's folder is `\` on Windows, which would join as `/` and clamp
+  `../x` onto `/x`), the destination is parsed
+  with urls.Parse so a #fragment never defeats the lookup, and
+  $target = path.Join $dir path. params.ewiki.contentRoot is never part of a
+  page lookup; it is joined in only for GitHub URLs. A $target that starts
+  with `..` has left the content root, and it never does a lookup, because
+  joining it onto "/" would clamp it onto a same-named content page.
+
+  Branches, in order; the first match wins:
+    1. External, anchor-only and root-relative: a scheme (http, https,
+       mailto), `#...` or `/...` passes through unchanged.
+    2. Image-only link (its text is one <img>, pointing at an image file):
+       the file opens full size in a new tab.
+    3. Trailing `/`: GitHub tree. With params.ewiki.folderLinks = "section"
+       (opt-in, v1.1.0), a folder that is a rendered section goes to that
+       section page instead (3s), and any other folder still goes to GitHub.
+    4. Image destination under the content root: its published asset, as a
+       download. Each wiki mounts its content-root images at
+       assets/<contentRoot>.
+    4a. A `links_from: repo-root` page writes its links from the repository
+       root (E's generated architecture inventory), so none is looked up and
+       each goes to GitHub at the cleaned path itself.
+    5. params.ewiki.homeSource (E's INDEX.md, C's README.md): the home page.
+    6. Page lookup: site.GetPage "/<target>"; a found page becomes its
+       permalink plus the fragment.
+    7. Everything else: GitHub blob. An in-tree .md that matched no page
+       warns, so a --panicOnWarning build fails on a broken link.
+
+  why: a links_from: repo-root page also skips branch 4, whose paths are
+  content-relative, and its folder links (branch 3) use the same repo-root
+  path as its blob links.
+
+  why: folderLinks = "section" is C's behavior (a README's folder table opens
+  the viewer's own section pages). It stays opt-in: E's and H's folder links
+  point at code folders, which only GitHub can show.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $github := printf "https://github.com/%s" (index $ewiki "repo") -}}
+{{- $branch := index $ewiki "branch" | default "main" -}}
+{{- $contentRoot := index $ewiki "contentroot" | default "" -}}
+{{- $homeSource := index $ewiki "homesource" | default "" -}}
+{{- $folderLinks := index $ewiki "folderlinks" | default "github" -}}
+{{- if not (in (slice "github" "section") $folderLinks) -}}
+  {{- errorf "ewiki theme: params.ewiki.folderLinks is %q. Set it to \"github\" (the default) or \"section\"." $folderLinks -}}
+{{- end -}}
+{{- $dest := .Destination -}}
+{{- $u := urls.Parse $dest -}}
+{{- $href := $dest -}}
+{{- $download := "" -}}
+{{- $newTab := false -}}
+{{- $text := trim (string .Text) " \n" -}}
+{{- $wrapsImage := and (hasPrefix $text "<img ") (strings.HasSuffix $text ">") (eq (len (findRE `<img ` $text)) 1) -}}
+{{- $isImage := findRE `(?i)\.(svg|png|jpe?g|gif|webp|avif)$` $u.Path 1 -}}
+{{- if and $dest (not $u.Scheme) (not (hasPrefix $dest "#")) (not (hasPrefix $dest "/")) -}}
+  {{- $suffix := "" -}}
+  {{- with $u.RawQuery -}}{{- $suffix = printf "?%s" . -}}{{- end -}}
+  {{- with $u.Fragment -}}{{- $suffix = printf "%s#%s" $suffix . -}}{{- end -}}
+  {{- $dir := "" -}}
+  {{- with .Page.File -}}{{- $dir = strings.TrimPrefix "/" (replace .Dir "\\" "/") -}}{{- end -}}
+  {{- $target := path.Join $dir $u.Path -}}
+  {{- $escapes := or (eq $target "..") (hasPrefix $target "../") -}}
+  {{- $repoRoot := eq (index .Page.Params "links_from") "repo-root" -}}
+  {{- $githubPath := path.Join $contentRoot $target -}}
+  {{- if $repoRoot -}}{{- $target = path.Clean $u.Path -}}{{- $githubPath = $target -}}{{- end -}}
+  {{- $inTree := and (not $escapes) (not $repoRoot) -}}
+  {{- $asset := false -}}
+  {{- if and $inTree $isImage -}}{{- $asset = resources.Get (path.Join $contentRoot $target) -}}{{- end -}}
+  {{- if and $wrapsImage $isImage $asset -}}
+    {{- $href = $asset.RelPermalink -}}
+    {{- $newTab = true -}}
+  {{- else if strings.HasSuffix $u.Path "/" -}}
+    {{- $section := false -}}
+    {{- if and (eq $folderLinks "section") $inTree -}}
+      {{- with site.GetPage (printf "/%s" $target) -}}{{- if eq .Kind "section" -}}{{- $section = . -}}{{- end -}}{{- end -}}
+    {{- end -}}
+    {{- if $section -}}
+      {{- $href = printf "%s%s" $section.RelPermalink $suffix -}}
+    {{- else -}}
+      {{- $href = printf "%s/tree/%s/%s%s" $github $branch $githubPath $suffix -}}
+    {{- end -}}
+  {{- else if $asset -}}
+    {{- $href = $asset.RelPermalink -}}
+    {{- $download = path.Base $target -}}
+  {{- else if $repoRoot -}}
+    {{- $href = printf "%s/blob/%s/%s%s" $github $branch $githubPath $suffix -}}
+  {{- else if and $homeSource $inTree (eq $target (path.Clean $homeSource)) -}}
+    {{- $href = printf "%s%s" ("/" | relURL) $suffix -}}
+  {{- else -}}
+    {{- $found := false -}}
+    {{- if $inTree -}}{{- $found = site.GetPage (printf "/%s" $target) -}}{{- end -}}
+    {{- if $found -}}
+      {{- $href = printf "%s%s" $found.RelPermalink $suffix -}}
+    {{- else -}}
+      {{- if and $inTree (or $isImage (strings.HasSuffix $u.Path ".md")) -}}
+        {{- warnf "ewiki theme: %s links to %s, which is not a page or an image in the content root. Fix the link, or write it as ../ if it points outside the content root." .Page.File.Path $dest -}}
+      {{- end -}}
+      {{- $href = printf "%s/blob/%s/%s%s" $github $branch $githubPath $suffix -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+<a href="{{ $href | safeURL }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ with $download }} download="{{ . }}"{{ end }}{{ if $newTab }} class="full-size" target="_blank" rel="noopener"{{ end }}>{{ .Text | safeHTML }}</a>
+{{- /* keep: no trailing newline in output */ -}}

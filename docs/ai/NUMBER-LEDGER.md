@@ -484,7 +484,7 @@ high-water: 422
 - WP-843 — co2e-crazed-rampage-reveal-or-wound (co2e Hulk Crazed Rampage: each player reveals another [hc:strength] Hero or gains a Wound; new hero keyword reveal-or-gain-wound-each. reserved 2026-10-26, claude/wp843-reserve; LANDED 2026-10-26)
 - WP-846 — each-player-turn-order (each-player effects start with the current player and go clockwise, rules v23 L2247; WP-843 follow-up. reserved 2026-10-26, claude/wp846-reserve)
 - WP-844 — gain-sidekick-card-effects (hero lines that print "Gain a [rule:Sidekick]" take one or more Sidekicks from the Sidekick Stack to the discard pile; new hero keyword gain-sidekick. reserved 2026-10-26, claude/wp844-gain-sidekick-reserve; LANDED 2026-10-26)
-- WP-847 — engine-ewiki-onto-shared-theme (the engine ewiki, apps/wiki-viewer, moves onto bb-studio-ewiki-theme v1.3.0, D-24728 step 4. reserved 2026-10-26, claude/wp847-reserve)
+- WP-847 — engine-ewiki-onto-shared-theme (the engine ewiki, apps/wiki-viewer, moves onto bb-studio-ewiki-theme v1.3.0, D-24728 step 4. reserved 2026-10-26, claude/wp847-reserve; LANDED 2026-10-26)
 - WP-845 — reveal-or-wound-seat-choice (a player who can reveal may decline and take the Wound instead, rules v23 L3196-3200; multi-seat pendingSeatChoice wave. reserved 2026-10-26, claude/wp845-reserve; LANDED 2026-10-26)
 
 ## EC
@@ -932,7 +932,7 @@ high-water: 457
 - EC-881 — co2e-crazed-rampage-reveal-or-wound (WP-843. reserved 2026-10-26, claude/wp843-reserve; LANDED 2026-10-26)
 - EC-884 — each-player-turn-order (WP-846. reserved 2026-10-26, claude/wp846-reserve)
 - EC-882 — gain-sidekick-card-effects (WP-844. reserved 2026-10-26, claude/wp844-gain-sidekick-reserve; LANDED 2026-10-26)
-- EC-885 — engine-ewiki-onto-shared-theme (WP-847. reserved 2026-10-26, claude/wp847-reserve)
+- EC-885 — engine-ewiki-onto-shared-theme (WP-847. reserved 2026-10-26, claude/wp847-reserve; LANDED 2026-10-26)
 - EC-883 — reveal-or-wound-seat-choice (WP-845. reserved 2026-10-26, claude/wp845-reserve; LANDED 2026-10-26)
 
 ## D
@@ -1492,5 +1492,5 @@ section below) and the allocation protocol in
 - D-24780 — each-player-turn-order (WP-846; order-sensitive each-player loops start with the current player and go clockwise, rules v23 L2247; scope = Wound-stack and discard-reaction loops; RNG-only, log-only, Paibok and simultaneous-apply sites stay. reserved 2026-10-26, claude/wp846-reserve)
 - D-24778 — gain-sidekick-card-effects (WP-844; the gain-sidekick hero keyword: Stack top to discard, magnitude N, outside the once-per-turn recruit limit, empty Stack a logged no-op. reserved 2026-10-26, claude/wp844-gain-sidekick-reserve; LANDED 2026-10-26)
 - D-24781 — engine-ewiki-onto-shared-theme (migration order: the engine ewiki moves onto bb-studio-ewiki-theme next, ahead of the personal wiki; amends D-24728's order from D-24725 §3. Jeff's call 2026-10-26. reserved 2026-10-26, claude/wp847-reserve; LANDED 2026-10-26)
-- D-24782 — engine-ewiki-onto-shared-theme (WP-847; the engine ewiki's migration calls onto theme v1.3.0: which engine files move behind which extension points, the gates, the WP-139 lock under vendoring. reserved 2026-10-26, claude/wp847-reserve)
+- D-24782 — engine-ewiki-onto-shared-theme (WP-847; the engine ewiki's migration calls onto theme v1.3.0: which engine files move behind which extension points, the gates, the WP-139 lock under vendoring. reserved 2026-10-26, claude/wp847-reserve; LANDED 2026-10-26)
 - D-24779 — reveal-or-wound-seat-choice (WP-845; a player who can reveal chooses to reveal or take the Wound, through a multi-seat pendingSeatChoice, for the hero reveal-or-gain-wound-each and the villain reveal-or-wound primitive. reserved 2026-10-26, claude/wp845-reserve; LANDED 2026-10-26)

@@ -128,5 +128,5 @@ failed service takes down, and what to check, in order, when a product is down.
   convention.
 - [SCHEMA.md §Section includes](SCHEMA.md#section-includes-write-once-show-in-many-places)
   — how to use it.
-- [`include-section.html`](../apps/wiki-viewer/layouts/shortcodes/include-section.html)
+- [`include-section.html`](../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html)
   — the shortcode.

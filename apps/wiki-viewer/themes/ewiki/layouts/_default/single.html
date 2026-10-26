@@ -1,0 +1,50 @@
+{{ define "main" }}
+  {{- /*
+    why: one page layout, reconciled from E, H, C and J. E always wrote an H1,
+    so the 73 of its 95 pages whose body opens with "# Title" rendered two; H
+    never wrote one; C and J wrote one only when the body had none. The theme
+    takes C and J's rule, tested on the rendered body: the template adds an H1
+    only when findRE "<h1[ >]" .Content finds none. Testing rendered HTML, not
+    .RawContent, means a "# comment" inside a code fence can't fool it (C's
+    raw-text test also saw only a first-line H1).
+
+    why: the order is the title, the metadata panel (extension point), the
+    table of contents, the body, the after-content extension point, then the
+    "Editing this page" footer, placed last so editor housekeeping never gates
+    the content a reader came for.
+
+    why: a body that opens with its own "# Title" (only whitespace before the
+    <h1>) has that H1 lifted out and rendered where the template's would go,
+    so the title sits above the metadata panel and the table of contents
+    (v1.2.1; before, on H, herbs and the engine pages, it sat below both). The
+    element moves as rendered, with its id, attributes and heading anchor,
+    and stays inside <main data-pagefind-body>. A body whose first H1 comes
+    after other content keeps it where it is: that H1 isn't the page title.
+  */ -}}
+  {{- $ewiki := site.Params.ewiki | default dict -}}
+  {{- $editingFooter := true -}}
+  {{- if isset $ewiki "editingfooter" -}}{{- $editingFooter = index $ewiki "editingfooter" -}}{{- end -}}
+  {{- $title := "" -}}
+  {{- $content := .Content -}}
+  {{- with findRE `^\s*<h1[ >](?s:.*?)</h1>` .Content 1 -}}
+    {{- $title = strings.TrimSpace (index . 0) -}}
+    {{- $content = strings.TrimPrefix (index . 0) $content -}}
+  {{- end }}
+      <article class="entity">
+        {{- if $title }}
+        {{ $title | safeHTML }}
+        {{- else if not (findRE "<h1[ >]" .Content 1) }}
+        <h1>{{ partial "ewiki/title.html" . }}</h1>
+        {{- end }}
+        {{- partial "ewiki/metadata.html" . }}
+        {{- partial "ewiki/search-filters.html" . }}
+        {{- partial "ewiki/toc.html" . }}
+        <div class="body">
+          {{ $content | safeHTML }}
+        </div>
+        {{- partial "ewiki/after-content.html" . }}
+        {{- if $editingFooter }}
+        {{ partial "ewiki/editing-this-page.html" . }}
+        {{- end }}
+      </article>
+{{ end }}

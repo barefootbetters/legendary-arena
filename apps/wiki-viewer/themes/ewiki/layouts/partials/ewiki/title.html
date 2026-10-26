@@ -1,0 +1,22 @@
+{{- /*
+  why: one page-title fallback, reconciled from H's label.html, C's
+  page-title.html and J's H1 sniff: the front-matter title, then the first H1
+  in the body, then the humanized file name. Many root files (README, STATUS)
+  carry no front matter, and this keeps them named in the title bar, the
+  sidebar and lists.
+
+  Input: a page. Returns the full title. Lists, the sidebar, breadcrumbs and
+  include-section captions take ewiki/short-title.html instead, which strips
+  params.ewiki.titlePrefix (H's "Herbs vs. Ailments: "); the page's own H1
+  and <title> keep the full text.
+*/ -}}
+{{- $title := .Title -}}
+{{- if not $title -}}
+  {{- with findRESubmatch `(?m)^#[ \t]+(.+?)[ \t#]*$` .RawContent 1 -}}
+    {{- $title = index (index . 0) 1 -}}
+  {{- end -}}
+{{- end -}}
+{{- if and (not $title) .File -}}
+  {{- $title = .File.ContentBaseName | humanize -}}
+{{- end -}}
+{{- return $title -}}

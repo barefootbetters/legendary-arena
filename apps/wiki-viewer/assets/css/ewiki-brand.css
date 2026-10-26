@@ -1,0 +1,64 @@
+/* The engine ewiki's brand tokens (D-24782), the theme's brand extension
+   point (bb-studio-ewiki-theme v1.3.0, themes/ewiki/assets/css/ewiki-brand.css).
+
+   why: this file owns every custom property in the bundle, so it declares
+   every token the theme's default brand file declares: the 13 color and font
+   tokens, the 8-entry Pagefind mapping, and a dark block. The bundle joins
+   brand, then core (ewiki.css), then the site file (ewiki-site.css), and only
+   this file declares tokens, so nothing later can override the dark block.
+
+   why: the light values are the engine's, from the :root block of its old
+   assets/css/style.css; it never set --color-surface, --color-tag-bg or
+   --color-tag-fg, so those three take the theme default's values, which are
+   the colors the engine wrote literally into its code, tag and table rules.
+   The engine had no dark palette, so the dark block is the theme default's,
+   verbatim, until a branded one is drawn (a follow-up). */
+
+:root {
+  --color-bg: #ffffff;
+  --color-fg: #1f2933;
+  --color-muted: #6b7280;
+  --color-accent: #1d4ed8;
+  --color-border: #e5e7eb;
+  --color-surface: #f3f4f6;
+  --color-tag-bg: #eef2ff;
+  --color-tag-fg: #3730a3;
+  --color-status-canonical: #047857;
+  --color-status-draft: #a16207;
+  --color-status-deprecated: #b91c1c;
+  --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono-stack: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  color-scheme: light;
+}
+
+/* why: Pagefind's default UI reads its own custom properties (D-24293).
+   Mapping them to the wiki tokens here, before the dark block, keeps them in
+   the brand file and lets them follow the dark values automatically. The
+   engine mapped seven of them; --pagefind-ui-tag is the theme default's. */
+#wiki-search .pagefind-ui {
+  --pagefind-ui-primary: var(--color-accent);
+  --pagefind-ui-text: var(--color-fg);
+  --pagefind-ui-background: var(--color-bg);
+  --pagefind-ui-border: var(--color-border);
+  --pagefind-ui-tag: var(--color-surface);
+  --pagefind-ui-font: var(--font-stack);
+  --pagefind-ui-border-radius: 6px;
+  --pagefind-ui-scale: 0.85;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #121714;
+    --color-fg: #e3ebe5;
+    --color-muted: #94a39a;
+    --color-accent: #6cc58f;
+    --color-border: #2a342e;
+    --color-surface: #1a221d;
+    --color-tag-bg: #1f3328;
+    --color-tag-fg: #9fdcb6;
+    --color-status-canonical: #6ee7b7;
+    --color-status-draft: #fcd34d;
+    --color-status-deprecated: #fca5a5;
+    color-scheme: dark;
+  }
+}
