@@ -14,6 +14,18 @@
     {{- if .Params.type -}}
       {{ partial "metadata-panel.html" . }}
     {{- end -}}
+    {{- /*
+    why: search filters. Pagefind reads data-pagefind-filter anywhere, even
+    inside data-pagefind-ignore, so these hidden spans give search Type,
+    Status and Tag checkboxes beside its results with no script of their own
+    (D-24293). They read three of the six locked fields and render no new
+    field, so the surface lock above is unaffected.
+    */ -}}
+    <div hidden data-pagefind-ignore class="search-filters">
+      {{- with .Params.type }}<span data-pagefind-filter="Type:{{ . }}"></span>{{ end -}}
+      {{- with .Params.status }}<span data-pagefind-filter="Status:{{ replace . "-" " " | humanize }}"></span>{{ end -}}
+      {{- range .Params.tags }}<span data-pagefind-filter="Tag:{{ . }}"></span>{{ end -}}
+    </div>
     <div class="body">
       {{ .Content }}
     </div>
