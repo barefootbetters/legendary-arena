@@ -21,6 +21,7 @@ import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
 import { queueTimestreamPurge } from './timestreamPurge.logic.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
 import { gainWoundForPlayer, gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { countPendingDivingBlockWounds } from '../moves/divingBlock.logic.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import {
@@ -75,6 +76,22 @@ function resolveCardName(
   return cardId;
 }
 
+/**
+ * Reads the active player off a twist's reveal context (WP-846 / D-24780).
+ *
+ * @param context - The reveal context the twist dispatcher passed.
+ * @returns The current player id, or null when the context carries none.
+ */
+function readTwistCurrentPlayer(context: RevealContext): string | null {
+  // why: hand-built test contexts may omit `ctx`; a missing current player keeps the sorted
+  // order in seatsInTurnOrderFrom (duplicate-first of mastermindHandlers' resolveCurrentPlayer).
+  const currentPlayer = (context as { ctx?: { currentPlayer?: unknown } } | undefined)?.ctx?.currentPlayer;
+  if (typeof currentPlayer !== 'string' || currentPlayer.length === 0) {
+    return null;
+  }
+  return currentPlayer;
+}
+
 // why: WP-200 — sentinel ext_id used when a legacy test calls a resolver
 // directly without passing the 5th `twistCardId` argument. The production
 // dispatch path (`schemeHandlers.ts:schemeTwistHandler`) always passes the
@@ -105,18 +122,19 @@ const MIDTOWN_BYSTANDERS_PER_TWIST = 2;
 /**
  * "Each player reveals a [heroClass/team] hero or [suffers penalty]."
  *
- * Iterates players in canonical order. For each player, checks if any
+ * Iterates players starting with the current player, then clockwise (rules v23
+ * L2247, D-24780). For each player, checks if any
  * card in hand matches the condition. If matched, pushes a message.
  * If not matched, applies the penalty (gainWound or discardHand).
  *
  * @param gameState - Game state to mutate.
- * @param _context - RevealContext (unused by this resolver).
+ * @param context - RevealContext; its current player starts the each-player loop (D-24780).
  * @param _implementationMap - Handler map (unused by this resolver).
  * @param params - Expected: condition { field, value }, penalty.
  */
 function revealOrPunish(
   gameState: LegendaryGameState,
-  _context: RevealContext,
+  context: RevealContext,
   _implementationMap: ImplementationMap,
   params: Record<string, unknown>,
   twistCardId?: CardExtId,
@@ -139,7 +157,8 @@ function revealOrPunish(
       '[Scheme Twist] reveal-or-punish resolver received invalid params — expected condition { field, value } and penalty string.',
     );
   } else {
-    const playerIds = Object.keys(gameState.playerZones);
+    // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+    const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), readTwistCurrentPlayer(context));
 
     for (const playerId of playerIds) {
       const playerHand = gameState.playerZones[playerId]!.hand;
@@ -315,17 +334,18 @@ function chainedReveals(
 /**
  * "Each player gains N Wound(s)."
  *
- * Iterates players in canonical order. Each player gains woundCount
+ * Iterates players starting with the current player, then clockwise (rules v23
+ * L2247, D-24780). Each player gains woundCount
  * wounds via gainWound. Stops early per-player if wound supply runs out.
  *
  * @param gameState - Game state to mutate.
- * @param _context - RevealContext (unused by this resolver).
+ * @param context - RevealContext; its current player starts the each-player loop (D-24780).
  * @param _implementationMap - Handler map (unused by this resolver).
  * @param params - Expected: woundCount (integer >= 1) OR escalation ({ atOrAfterTwist, woundCount }[]).
  */
 function woundAll(
   gameState: LegendaryGameState,
-  _context: RevealContext,
+  context: RevealContext,
   _implementationMap: ImplementationMap,
   params: Record<string, unknown>,
   twistCardId?: CardExtId,
@@ -383,7 +403,8 @@ function woundAll(
       effectiveWoundCount = woundCount as number;
     }
 
-    const playerIds = Object.keys(gameState.playerZones);
+    // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+    const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), readTwistCurrentPlayer(context));
 
     for (const playerId of playerIds) {
       const divingBlockPendingBefore = countPendingDivingBlockWounds(gameState, playerId);
@@ -931,7 +952,10 @@ function releaseMonsterAgainstGladiators(
   currentTwist: number,
 ): void {
   // why: the card orders it — Gladiators are chosen BEFORE the Monster is revealed.
-  const playerIds = Object.keys(gameState.playerZones);
+  // why: rules v23 L2247 — the Wound loop below starts with the current player, then
+  // clockwise (D-24780); the Gladiator pass shares the order (each pick reads only its
+  // own Victory Pile, so it is order-free).
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), readTwistCurrentPlayer(context));
   const gladiators = new Map<string, { cardId: CardExtId; printedAttack: number } | null>();
   for (const playerId of playerIds) {
     gladiators.set(playerId, chooseGladiator(gameState, playerId));

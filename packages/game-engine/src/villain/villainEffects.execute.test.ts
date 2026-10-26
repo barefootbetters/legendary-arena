@@ -6284,3 +6284,226 @@ describe('WP-817 Captain Zolandia + Primus handlers (D-24750)', () => {
     assert.equal(lastMessage.outcome, 'blocked');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — each-player villain effects start with the current player, then clockwise
+// ---------------------------------------------------------------------------
+
+/** `playerCount` empty seats '0'..'n-1'. */
+function emptySeats(playerCount: number): NonNullable<MakeGOptions['playerZones']> {
+  const zones: NonNullable<MakeGOptions['playerZones']> = {};
+  for (let seatIndex = 0; seatIndex < playerCount; seatIndex++) {
+    zones[String(seatIndex)] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+  }
+  return zones;
+}
+
+/**
+ * The parts of G an each-player villain effect writes, for literal comparison.
+ *
+ * @param G - The game state after the effect.
+ * @returns The Wound supply, each seat's discard pile, woundsDrawn and the log text.
+ */
+function villainEachOutcome(G: LegendaryGameState): unknown {
+  const discards: Record<string, string[]> = {};
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    discards[seat] = [...G.playerZones[seat]!.discard];
+  }
+  return {
+    wounds: [...G.piles.wounds],
+    discards,
+    woundsDrawn: G.turnEconomy.woundsDrawn,
+    messages: (G.messages ?? []).map((line) => line.text),
+  };
+}
+
+describe('WP-846 / D-24780 — villain each-player order (AC-5 seat-0 / solo identity)', () => {
+  it('AC-5 villain: a 3-player seat-0 gain-wound each with a short supply matches the pre-WP-846 baseline', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: emptySeats(3),
+      wounds: ['w-a', 'w-b'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(villainEachOutcome(G), { wounds: [], discards: { '0': ['w-a'], '1': ['w-b'], '2': [] }, woundsDrawn: 1, messages: [] });
+  });
+
+  it('AC-5 villain: a solo gain-wound each matches the pre-WP-846 baseline', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: emptySeats(1),
+      wounds: ['w-a', 'w-b'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(villainEachOutcome(G), { wounds: ['w-b'], discards: { '0': ['w-a'] }, woundsDrawn: 1, messages: [] });
+  });
+});
+
+/**
+ * A hook carrying one descriptor on the given card and timing.
+ *
+ * @param cardId - The villain card.
+ * @param timing - The timing that fires.
+ * @param descriptor - The single effect descriptor.
+ * @returns The hook.
+ */
+function singleEffectHook(
+  cardId: string,
+  timing: 'onAmbush' | 'onFight' | 'onEscape',
+  descriptor: VillainEffectDescriptor,
+): VillainAbilityHook {
+  return { cardId: cardId as CardExtId, timing, keywords: [], effects: [descriptor] };
+}
+
+/**
+ * The player names listed in the last log line's parentheses, e.g. `(Player 1, Player 2)`.
+ *
+ * @param G - The game state after the effect.
+ * @returns The seat ids, in the order the line names them.
+ */
+function lastLineSeatOrder(G: LegendaryGameState): string[] {
+  const lastText = G.messages![G.messages!.length - 1]!.text;
+  const seats: string[] = [];
+  for (const match of lastText.matchAll(/Player (\d+)/g)) {
+    seats.push(match[1]!);
+  }
+  return seats;
+}
+
+describe('WP-846 / D-24780 — villain each-player order (AC-8 rotation, AC-2, AC-3, AC-6)', () => {
+  const ROTATION_CTX = { currentPlayer: '1' };
+  const THREE_WOUNDS = ['w-a', 'w-b', 'w-c'] as CardExtId[];
+
+  it('AC-8 V1: gain-wound each-other on seat 1\'s turn wounds seats 2, 0', () => {
+    const G = makeG({
+      hooks: [singleEffectHook('v-x', 'onFight', { primitive: 'gain-wound', target: 'each-other' })],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepEqual(lastLineSeatOrder(G), ['2', '0']);
+    assert.deepEqual(G.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(G.playerZones['0']!.discard, ['w-b']);
+  });
+
+  it('AC-2 V1: each-other with one Wound left on seat 1\'s turn wounds seat 2 only', () => {
+    const G = makeG({
+      hooks: [singleEffectHook('v-x', 'onFight', { primitive: 'gain-wound', target: 'each-other' })],
+      playerZones: emptySeats(3),
+      wounds: ['w-a'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepEqual(G.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+  });
+
+  it('AC-8 V2: gain-wound each on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onAmbush');
+    assert.deepEqual(G.playerZones['1']!.discard, ['w-a'], 'the current player takes the top Wound');
+    assert.deepEqual(G.playerZones['2']!.discard, ['w-b']);
+    assert.deepEqual(G.playerZones['0']!.discard, ['w-c']);
+  });
+
+  it('AC-2 V2: with one Wound left on seat 2\'s turn, seat 2 gains it and seats 0 and 1 gain none', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: emptySeats(3),
+      wounds: ['w-a'] as CardExtId[],
+    });
+    executeVillainAbilities(G, { currentPlayer: '2' }, 'v-x' as CardExtId, 'onAmbush');
+    assert.deepEqual(G.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+  });
+
+  it('AC-3 V2: every seat holding Diving Block queues its Wound in order 1, 2, 0', () => {
+    const DIVING_BLOCK = 'core/captain-america/diving-block#0' as CardExtId;
+    const zones = emptySeats(3);
+    for (const seat of ['0', '1', '2']) {
+      zones[seat]!.hand = [DIVING_BLOCK];
+    }
+    const G = makeG({ hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])], playerZones: zones, wounds: THREE_WOUNDS });
+    G.heroAbilityHooks = [
+      { cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onAmbush');
+    assert.deepEqual(
+      (G.pendingDivingBlockWounds ?? []).map((entry) => entry.playerID),
+      ['1', '2', '0'],
+    );
+  });
+
+  it('AC-8 V3: each-non-savior on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const G = makeG({
+      hooks: [singleEffectHook('v-x', 'onFight', { primitive: 'gain-wound', target: 'each-non-savior' })],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepEqual(lastLineSeatOrder(G), ['1', '2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-8 V6: reveal-or-wound on seat 1\'s turn wounds the seats with no match 1, 2, 0', () => {
+    const G = makeG({
+      hooks: [
+        singleEffectHook('v-x', 'onFight', { primitive: 'reveal-or-wound', requireKind: 'hero-class', requireValue: 'strength' }),
+      ],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+      messages: [],
+      cardTraits: {},
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepEqual(lastLineSeatOrder(G), ['1', '2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-8 V10: gain-wound-unless-victory-villain-group on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const VIPER = 'core-villain-hydra-viper-00' as CardExtId;
+    const G = makeG({
+      hooks: [
+        {
+          cardId: VIPER,
+          timing: 'onFight',
+          keywords: [],
+          effects: [{ primitive: 'gain-wound-unless-victory-villain-group', victoryVillainGroup: 'hydra' }],
+        },
+      ],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, ROTATION_CTX, VIPER, 'onFight');
+    assert.deepEqual(lastLineSeatOrder(G), ['1', '2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-6: Paibok (excluded, D-24343) on seat 1\'s turn still serves the other players ascending, then parks seat 1', () => {
+    const G = makeG({
+      hooks: [singleEffectHook('v-paibok', 'onFight', { primitive: 'give-hq-hero-each-player' })],
+      hq: ['h0', 'h1', 'h2', 'h3', 'h4'] as LegendaryGameState['hq'],
+      heroDeck: ['r0', 'r1', 'r2', 'r3'] as CardExtId[],
+      cardStats: { h0: { cost: 3 }, h1: { cost: 7 }, h2: { cost: 2 }, h3: { cost: 5 }, h4: { cost: 1 }, r0: { cost: 9 }, r1: { cost: 9 }, r2: { cost: 0 }, r3: { cost: 0 } },
+      messages: [],
+      playerZones: emptySeats(3),
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-paibok' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['h1'], 'seat 0 (lowest non-current) gains first');
+    assert.deepStrictEqual(G.playerZones['2']!.discard, ['r0']);
+    assert.deepStrictEqual(G.pendingGiveHqHeroChoices, [{ choiceType: 'give-hq-hero', playerID: '1' }]);
+  });
+});

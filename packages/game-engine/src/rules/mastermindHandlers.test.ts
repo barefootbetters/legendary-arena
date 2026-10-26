@@ -2190,3 +2190,191 @@ describe('WP-821 mastermindStrikeHandler — Arnim Zola Master Strike (D-24754)'
     assert.deepEqual(gameState.pendingReturnOnDiscard, [{ playerID: '0', cardId: 'x' }]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — each-player strikes start with the current player, then clockwise
+// ---------------------------------------------------------------------------
+
+/**
+ * A strike context carrying the active player, the shape the villain-reveal pipeline passes.
+ *
+ * @param currentPlayer - The active player id.
+ * @returns The context.
+ */
+function strikeContextFor(currentPlayer: string): unknown {
+  return { random: { Shuffle: <T,>(items: T[]): T[] => [...items] }, ctx: { currentPlayer, turn: 1 } };
+}
+
+/**
+ * The parts of G an each-player strike writes, for literal comparison.
+ *
+ * @param gameState - The game state after the strike.
+ * @returns The Wound supply, each seat's hand and discard pile, and the log text.
+ */
+function strikeOutcome(gameState: LegendaryGameState): unknown {
+  const seats: Record<string, { hand: string[]; discard: string[] }> = {};
+  for (const seat of Object.keys(gameState.playerZones).sort()) {
+    seats[seat] = {
+      hand: [...gameState.playerZones[seat]!.hand],
+      discard: [...gameState.playerZones[seat]!.discard],
+    };
+  }
+  return {
+    wounds: [...gameState.piles.wounds],
+    seats,
+    messages: gameState.messages.map((line) => line.text),
+  };
+}
+
+describe('WP-846 / D-24780 — Master Strike each-player order (AC-5 seat-0 / solo identity)', () => {
+  it('AC-5 strike: a 3-player seat-0 core Loki strike with a short supply matches the pre-WP-846 baseline', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = ['w-a', 'w-b'];
+    mastermindStrikeHandler(gameState, strikeContextFor('0'), { cardId: 'strike' }, {});
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(strikeOutcome(gameState), { wounds: [], seats: { '0': { hand: [], discard: ['w-a'] }, '1': { hand: [], discard: ['w-b'] }, '2': { hand: [], discard: [] } }, messages: ['[Loki Master Strike] Player 0 has no Strength Hero in hand and gained a Wound.', '[Loki Master Strike] Player 1 has no Strength Hero in hand and gained a Wound.', '[Loki Master Strike] Player 2 has no Strength Hero in hand and the Wound supply is empty — no effect.'] });
+  });
+
+  it('AC-5 strike: a solo core Loki strike matches the pre-WP-846 baseline', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [] });
+    gameState.piles.wounds = ['w-a', 'w-b'];
+    mastermindStrikeHandler(gameState, strikeContextFor('0'), { cardId: 'strike' }, {});
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(strikeOutcome(gameState), { wounds: ['w-b'], seats: { '0': { hand: [], discard: ['w-a'] } }, messages: ['[Loki Master Strike] Player 0 has no Strength Hero in hand and gained a Wound.'] });
+  });
+});
+
+/**
+ * The seats named by a strike's per-player log lines, in log order.
+ *
+ * @param gameState - The game state after the strike.
+ * @param prefix - The strike's log prefix, e.g. `[Loki Master Strike]`.
+ * @returns The seat ids, in the order the strike logged them.
+ */
+function strikeSeatOrder(gameState: LegendaryGameState, prefix: string): string[] {
+  const seats: string[] = [];
+  for (const line of gameState.messages) {
+    if (!line.text.startsWith(prefix)) {
+      continue;
+    }
+    const match = / Player (\d+) /.exec(line.text);
+    if (match !== null) {
+      seats.push(match[1]!);
+    }
+  }
+  return seats;
+}
+
+describe('WP-846 / D-24780 — Master Strike each-player order (AC-8 rotation, AC-2, AC-4)', () => {
+  const THREE_WOUNDS = ['w-a', 'w-b', 'w-c'];
+
+  it('AC-8 R1: core Magneto on seat 1\'s turn resolves seats 1, 2, 0 (seat 1 still parks its discard)', () => {
+    const fiveCards = (seat: string) => ['a', 'b', 'c', 'd', 'e'].map((card) => `${card}-${seat}`);
+    const gameState = makeCo2eState('core/magneto', { '0': fiveCards('0'), '1': fiveCards('1'), '2': fiveCards('2') });
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Magneto Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.pendingDiscardChoices, [{ choiceType: 'discard-to-limit', playerID: '1', limit: 4 }]);
+  });
+
+  it('AC-8 R4: co2e Doctor Doom on seat 1\'s turn resolves seats 1, 2, 0', () => {
+    const gameState = makeCo2eState('co2e/doctor-doom', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = [...THREE_WOUNDS];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Doctor Doom Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-8 R5: core Loki on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = [...THREE_WOUNDS];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Loki Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['w-b']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['w-c']);
+  });
+
+  it('AC-8 R6: Baron Zemo on seat 1\'s turn resolves seats 1, 2, 0', () => {
+    const gameState = makeCo2eState('ca75/baron-heinrich-zemo', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = [...THREE_WOUNDS];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Baron Zemo Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-8 R7: Arnim Zola on seat 1\'s turn discards for seats 1, 2, 0', () => {
+    const weakHeroStat = { ...co2eStat(3), attack: 1 };
+    const gameState = makeCo2eState(
+      'ca75/arnim-zola',
+      { '0': ['c3-0'], '1': ['c3-1'], '2': ['c3-2'] },
+      { weak: weakHeroStat, 'c3-0': co2eStat(3), 'c3-1': co2eStat(3), 'c3-2': co2eStat(3) },
+    );
+    gameState.hq = ['weak', null, null, null, null] as LegendaryGameState['hq'];
+    gameState.heroDeck = [];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Arnim Zola Master Strike]'), ['1', '2', '0']);
+  });
+
+  it('AC-8 R8: co2e Loki on seat 1\'s turn discards for seats 1, 2, 0', () => {
+    const gameState = makeCo2eState(
+      'co2e/loki',
+      { '0': ['st-0'], '1': ['st-1'], '2': ['st-2'] },
+      {},
+      { 'st-0': STRENGTH, 'st-1': STRENGTH, 'st-2': STRENGTH },
+    );
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Loki Master Strike]'), ['1', '2', '0']);
+  });
+
+  it('AC-8 R9 + AC-4: co2e Magneto on seat 1\'s turn discards for seats 1, 2, 0 and queues return-on-discard 1, 2, 0', () => {
+    const gameState = makeCo2eState(
+      'co2e/magneto',
+      { '0': ['xm-0'], '1': ['xm-1'], '2': ['xm-2'] },
+      {},
+      { 'xm-0': XMEN, 'xm-1': XMEN, 'xm-2': XMEN },
+    );
+    gameState.heroAbilityHooks = [
+      { cardId: 'xm-0', timing: 'onPlay', keywords: ['return-on-discard'] },
+      { cardId: 'xm-1', timing: 'onPlay', keywords: ['return-on-discard'] },
+      { cardId: 'xm-2', timing: 'onPlay', keywords: ['return-on-discard'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Magneto Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(
+      (gameState.pendingReturnOnDiscard ?? []).map((entry) => entry.playerID),
+      ['1', '2', '0'],
+    );
+  });
+
+  it('AC-8 R10: co2e Doctor Octopus on seat 1\'s turn discards for seats 1, 2, 0', () => {
+    const gameState = makeCo2eState(
+      'co2e/doctor-octopus',
+      { '0': ['sf-0'], '1': ['sf-1'], '2': ['sf-2'] },
+      {},
+      { 'sf-0': SPIDER, 'sf-1': SPIDER, 'sf-2': SPIDER },
+    );
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Doctor Octopus Master Strike]'), ['1', '2', '0']);
+  });
+
+  it('AC-2 R5: with one Wound left on seat 2\'s turn, seat 2 gains it and seats 0 and 1 gain none', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = ['w-a'];
+    mastermindStrikeHandler(gameState, strikeContextFor('2'), { cardId: 'strike' }, {});
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+    assert.deepEqual(gameState.playerZones['1']!.discard, []);
+    assert.deepEqual(gameState.messages.map((line) => line.text), [
+      '[Loki Master Strike] Player 2 has no Strength Hero in hand and gained a Wound.',
+      '[Loki Master Strike] Player 0 has no Strength Hero in hand and the Wound supply is empty — no effect.',
+      '[Loki Master Strike] Player 1 has no Strength Hero in hand and the Wound supply is empty — no effect.',
+    ]);
+  });
+
+  it('a stub context with no current player keeps the sorted order', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = [...THREE_WOUNDS];
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Loki Master Strike]'), ['0', '1', '2']);
+  });
+});

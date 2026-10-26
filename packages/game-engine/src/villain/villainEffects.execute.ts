@@ -48,6 +48,7 @@ import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diag
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
 import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 // why: WP-845 / D-24779 — the reveal-or-gain-a-Wound queue writer. The module reaches back to this
 // file through phaseCard → playVillainTop.resolve → villainDeck.reveal; every binding is read
 // inside function bodies only, so the cycle is runtime-safe.
@@ -908,7 +909,7 @@ function villainEffectGainWound(
     return applyGainWoundEachNonSavior(G, currentPlayer, timing);
   }
   // why: WP-489 / D-24295 — the Lizard "each OTHER player gains a Wound": wound
-  // every player EXCEPT the current one. Sorted iteration (D-18902 determinism),
+  // every player EXCEPT the current one. Clockwise from the current player (D-24780),
   // supply-bounded, `magnitude` repetitions (default 1) mirroring ko-hero:each so a
   // future N-wound each-other line is data-only. Keyword-less (no legacy reverse-
   // map, see descriptorKey), so it MUST self-narrate — the generic
@@ -918,7 +919,8 @@ function villainEffectGainWound(
     const woundedPlayerIds: string[] = [];
     const gainedPlayerIds: string[] = [];
     const divingBlockPendingPlayerIds: string[] = [];
-    for (const playerId of Object.keys(G.playerZones).sort()) {
+    // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+    for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
       // why: "each OTHER player" — the current player is never wounded by this effect.
       if (playerId === currentPlayer) continue;
       const zones = G.playerZones[playerId];
@@ -969,7 +971,8 @@ function villainEffectGainWound(
     const divingBlockPendingPlayerIds: string[] = [];
     // why: every player gains 1 wound (subject to wound-pile availability),
     // mirroring the existing escape-wound no-op-on-empty semantics.
-    for (const playerId of Object.keys(G.playerZones)) {
+    // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+    for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
       const zones = G.playerZones[playerId];
       if (!zones) continue;
       if (G.piles.wounds.length === 0) continue;
@@ -1016,7 +1019,7 @@ function villainEffectGainWound(
  * gain-wound `target: 'each-non-savior'` — every player who is not a Savior gains
  * one Wound (Radioactive Man, WP-816 / D-24749).
  *
- * Sorted iteration (D-18902 determinism); a player with at least
+ * Clockwise from the current player (rules v23 L2247, D-24780); a player with at least
  * `SAVIOR_BYSTANDER_THRESHOLD` Bystanders in their Victory Pile is skipped;
  * supply-bounded. Routes through `gainWoundWithOutcome` so Diving Block sees the
  * Wound (D-24499 / D-24673). Keyword-less (no legacy reverse-map), so it
@@ -1035,7 +1038,8 @@ function applyGainWoundEachNonSavior(
   const woundedPlayerIds: string[] = [];
   const gainedPlayerIds: string[] = [];
   const divingBlockPendingPlayerIds: string[] = [];
-  for (const playerId of Object.keys(G.playerZones).sort()) {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+  for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
     const zones = G.playerZones[playerId];
     if (!zones) continue;
     // why: the per-player Savior exemption — each player's OWN Victory Pile decides.
@@ -2058,7 +2062,7 @@ function describeTraitCountedHeroes(
  * Sabretooth's "Fight: Each player reveals an X-Men Hero or gains a Wound." and the
  * core siblings (Frost Giant, Ymir, Ultron, Zzzax) across Fight / Ambush / Escape timings.
  *
- * Each player in `Object.keys(G.playerZones).sort()` is tested with the hand+in-play
+ * Each player, starting with the current player and going clockwise (D-24780), is tested with the hand+in-play
  * trait predicate: a player with no match gains one Wound at once; the players with a
  * match are queued on `G.pendingRevealOrWoundChoices` and each chooses after the move
  * whether to reveal or gain the Wound (WP-845 / D-24779, rules v23 L3196-3200).
@@ -2110,14 +2114,15 @@ function villainEffectRevealOrWound(
     return { targets: [] };
   }
 
-  // why: sorted player-id iteration for replay determinism (D-18902), matching
-  // the each-player gain-wound / ko-hero paths.
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780, amends
+  // D-24281's sorted order). The queued revealers are re-sorted ascending by
+  // enqueueRevealOrWoundChoice, so WP-845's apply stays ascending (D-24501).
   const woundedPlayerIds: string[] = [];
   const gainedPlayerIds: string[] = [];
   const divingBlockPendingPlayerIds: string[] = [];
   const emptySupplyPlayerIds: string[] = [];
   const revealingPlayerIds: string[] = [];
-  for (const playerId of Object.keys(G.playerZones).sort()) {
+  for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
     const zones = G.playerZones[playerId];
     if (!zones) {
       continue;
@@ -3871,13 +3876,12 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
   const setAbbr = cardId.slice(0, infixIndex);
   const groupPrefix = `${setAbbr}${villainInfix}${group}-`;
 
-  // why: sorted player-id iteration for replay determinism (D-18902), matching
-  // reveal-or-wound / gain-wound:each.
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
   const woundedPlayerIds: string[] = [];
   const gainedPlayerIds: string[] = [];
   const divingBlockPendingPlayerIds: string[] = [];
   const emptySupplyPlayerIds: string[] = [];
-  for (const playerId of Object.keys(G.playerZones).sort()) {
+  for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
     const zones = G.playerZones[playerId];
     if (!zones) {
       continue;

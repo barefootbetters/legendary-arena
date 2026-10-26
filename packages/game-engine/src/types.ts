@@ -1218,8 +1218,8 @@ export interface PendingDrawOrEmpowered {
  * block-all guards).
  *
  * // why: D-24541 — the CHOICE is made by the active player (freeze-safe D-24284 scoping);
- * both resolved branches iterate EACH OTHER seat (Object.keys(G.playerZones).sort(), skipping
- * the active player). The pending entry records only the choosing player and the source card
+ * both resolved branches iterate EACH OTHER seat (clockwise from the active player, D-24780,
+ * skipping the active player). The pending entry records only the choosing player and the source card
  * (for log attribution) — non-active seats never choose (the discard branch auto-picks their
  * card deterministically, D-24284), so no per-seat data is stored.
  */

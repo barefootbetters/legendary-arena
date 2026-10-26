@@ -56,6 +56,7 @@ import { computeDayNight } from '../rules/dayNight.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID, BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.resolve.js';
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
@@ -1836,12 +1837,13 @@ function heroEffectGainWound(
   cardId: CardExtId,
   effect: HeroEffectDescriptor,
 ): void {
-  // why: D-24156 — `each` iterates a sorted key order (matching scoring.logic.ts)
-  // so the wound distribution replays identically; `self` targets the active
-  // player only.
+  // why: rules v23 L2247 — `each` starts with the current player, then clockwise
+  // (D-24780, amends D-24156's sorted order), so who misses the last Wound follows the
+  // printed rule; a pure function of the seat ids, so it replays identically. `self`
+  // targets the active player only.
   const targetPlayerIds =
     effect.type === 'gain-wound-each'
-      ? Object.keys(G.playerZones).sort()
+      ? seatsInTurnOrderFrom(Object.keys(G.playerZones), playerID)
       : [playerID];
 
   let anyWoundGained = false;
@@ -5923,8 +5925,8 @@ function playedCardMatchesRevealCriterion(
  * Reveal-or-gain-a-Wound for each player (WP-843 / D-24777). co2e Crazed Rampage's "Each
  * player reveals another [hc:strength] Hero or gains a Wound."
  *
- * For every player in deterministic seat order (`Object.keys(G.playerZones).sort()` — the
- * gain-wound-each / reveal-from-hand precedent), a player who cannot reveal another Hero
+ * For every player, starting with the playing player and going clockwise (rules v23 L2247,
+ * D-24780), a player who cannot reveal another Hero
  * matching the criterion gains one Wound at once; the players who can are queued on
  * `G.pendingRevealOrWoundChoices`, and each chooses after the move whether to reveal or gain
  * the Wound (WP-845 / D-24779). An empty Wound supply is a logged no-op for that player.
@@ -5955,7 +5957,9 @@ function heroEffectRevealOrGainWoundEach(
   const gainedPlayerIds: string[] = [];
   const divingBlockPendingPlayerIds: string[] = [];
   const revealingPlayerIds: string[] = [];
-  for (const eachPlayerId of Object.keys(G.playerZones).sort()) {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780). The
+  // queued revealers are re-sorted ascending by enqueueRevealOrWoundChoice (D-24501).
+  for (const eachPlayerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), playerID)) {
     const playerZones = G.playerZones[eachPlayerId];
     if (!playerZones) {
       continue;

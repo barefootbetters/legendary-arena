@@ -9431,3 +9431,177 @@ describe('executeHeroEffects out-of-time handler (WP-803 / D-24692)', () => {
     assert.equal(Object.keys(gameState).includes('outOfTimeCards'), false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — each-player effects start with the current player, then clockwise
+// ---------------------------------------------------------------------------
+
+import { openFlyingShieldBlockSeatChoiceIfNeeded } from '../moves/flyingShieldBlock.logic.js';
+
+/**
+ * A gain-wound-each test state with `playerCount` seats and the given Wound supply. The
+ * playing card is in the playing seat's play area; other seats' hands come from `seatHands`.
+ *
+ * @param playerCount - How many seats ('0'..'n-1').
+ * @param wounds - The Wound supply, top first.
+ * @param playingSeat - The seat playing the card (the current player).
+ * @param extraHooks - Hooks beyond the gain-wound-each one (Diving Block, Flying Shield Block).
+ * @param seatHands - Per-seat hands.
+ * @returns The game state.
+ */
+function makeEachPlayerWoundState(
+  playerCount: number,
+  wounds: string[],
+  playingSeat: string = '0',
+  extraHooks: HeroAbilityHook[] = [],
+  seatHands: Record<string, string[]> = {},
+): LegendaryGameState {
+  const gameState = makeTestState({
+    inPlay: ['hero-x'],
+    heroAbilityHooks: [
+      { cardId: 'hero-x', timing: 'onPlay', keywords: ['gain-wound-each'], effects: [{ type: 'gain-wound-each' }] },
+      ...extraHooks,
+    ],
+  });
+  for (let seatIndex = 0; seatIndex < playerCount; seatIndex++) {
+    const seat = String(seatIndex);
+    const existing = gameState.playerZones[seat];
+    gameState.playerZones[seat] = {
+      ...(existing ?? makePlayerZones()),
+      deck: [],
+      hand: seatHands[seat] ?? [],
+      discard: [],
+      inPlay: seat === playingSeat ? ['hero-x'] : [],
+      victory: [],
+    };
+  }
+  gameState.piles.wounds = [...wounds];
+  return gameState;
+}
+
+/**
+ * The parts of G a gain-wound-each resolution writes, for literal comparison.
+ *
+ * @param gameState - The game state after the effect.
+ * @returns The Wound supply, each seat's discard pile, and the log text.
+ */
+function eachPlayerWoundOutcome(gameState: LegendaryGameState): unknown {
+  const discards: Record<string, string[]> = {};
+  for (const seat of Object.keys(gameState.playerZones).sort()) {
+    discards[seat] = [...gameState.playerZones[seat]!.discard];
+  }
+  return {
+    wounds: [...gameState.piles.wounds],
+    discards,
+    woundsDrawn: gameState.turnEconomy.woundsDrawn,
+    messages: gameState.messages.map((line) => line.text),
+  };
+}
+
+describe('WP-846 / D-24780 — hero each-player order (AC-5 seat-0 / solo identity)', () => {
+  const mockCtx = makeMockCtx();
+
+  it('AC-5 hero: a 3-player seat-0 gain-wound-each with a short supply matches the pre-WP-846 baseline', () => {
+    const gameState = makeEachPlayerWoundState(3, ['w-a', 'w-b']);
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(eachPlayerWoundOutcome(gameState), { wounds: [], discards: { '0': ['w-a'], '1': ['w-b'], '2': [] }, woundsDrawn: 1, messages: ['Player 2 could not gain a Wound — the Wound supply is empty.', 'Each player gained a Wound (hero-x (hero-x)).'] });
+  });
+
+  it('AC-5 hero: a solo gain-wound-each matches the pre-WP-846 baseline', () => {
+    const gameState = makeEachPlayerWoundState(1, ['w-a', 'w-b']);
+    executeHeroEffects(gameState, mockCtx, '0', 'hero-x');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(eachPlayerWoundOutcome(gameState), { wounds: ['w-b'], discards: { '0': ['w-a'] }, woundsDrawn: 1, messages: ['Each player gained a Wound (hero-x (hero-x)).'] });
+  });
+});
+
+describe('WP-846 / D-24780 — hero each-player order (rotation, short supply, reactions)', () => {
+  const mockCtx = makeMockCtx();
+  const DIVING_BLOCK_HOOK: HeroAbilityHook = { cardId: 'diving-block', timing: 'onPlay', keywords: ['diving-block'] };
+  const FLYING_SHIELD_BLOCK_HOOK: HeroAbilityHook = {
+    cardId: 'flying-shield-block',
+    timing: 'onPlay',
+    keywords: ['flying-shield-block'],
+  };
+
+  it('AC-8 H1: gain-wound-each on seat 1\'s turn wounds seats 1, 2, 0 in that order', () => {
+    const gameState = makeEachPlayerWoundState(3, ['w-a', 'w-b', 'w-c'], '1');
+    executeHeroEffects(gameState, mockCtx, '1', 'hero-x');
+    assert.deepStrictEqual(gameState.playerZones['1']!.discard, ['w-a'], 'the current player takes the top Wound');
+    assert.deepStrictEqual(gameState.playerZones['2']!.discard, ['w-b']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, ['w-c']);
+  });
+
+  it('AC-2 H1: with one Wound left on seat 2\'s turn, seat 2 gains it and seats 0 and 1 gain none', () => {
+    const gameState = makeEachPlayerWoundState(3, ['w-a'], '2');
+    executeHeroEffects(gameState, mockCtx, '2', 'hero-x');
+    assert.deepStrictEqual(gameState.playerZones['2']!.discard, ['w-a']);
+    assert.deepStrictEqual(gameState.playerZones['0']!.discard, []);
+    assert.deepStrictEqual(gameState.playerZones['1']!.discard, []);
+    assert.deepStrictEqual(gameState.messages.map((line) => line.text).slice(0, 2), [
+      'Player 0 could not gain a Wound — the Wound supply is empty.',
+      'Player 1 could not gain a Wound — the Wound supply is empty.',
+    ]);
+  });
+
+  it('AC-3 H1: every seat holding Diving Block queues its Wound in order 1, 2, 0', () => {
+    const gameState = makeEachPlayerWoundState(3, ['w-a', 'w-b', 'w-c'], '1', [DIVING_BLOCK_HOOK], {
+      '0': ['diving-block'],
+      '1': ['diving-block'],
+      '2': ['diving-block'],
+    });
+    executeHeroEffects(gameState, mockCtx, '1', 'hero-x');
+    assert.deepStrictEqual(
+      (gameState.pendingDivingBlockWounds ?? []).map((entry) => entry.playerID),
+      ['1', '2', '0'],
+    );
+  });
+
+  it('AC-3b H1: only seat 0 holds Flying Shield Block; the first wave asks seat 0 about Player 1\'s Wound', () => {
+    const gameState = makeEachPlayerWoundState(3, ['w-a', 'w-b', 'w-c'], '1', [FLYING_SHIELD_BLOCK_HOOK], {
+      '0': ['flying-shield-block'],
+    });
+    executeHeroEffects(gameState, mockCtx, '1', 'hero-x');
+    assert.deepStrictEqual(
+      (gameState.pendingFlyingShieldBlockWounds ?? []).map((entry) => entry.recipientID),
+      ['1', '2', '0'],
+    );
+    openFlyingShieldBlockSeatChoiceIfNeeded(gameState, undefined, '1');
+    assert.deepStrictEqual(gameState.pendingSeatChoice?.addressedSeats, ['0']);
+    assert.equal(
+      gameState.pendingSeatChoice?.seatPrompts['0']?.options[0]?.label,
+      'Reveal Flying Shield Block: prevent Player 1\'s Wound and rescue a Bystander',
+    );
+  });
+
+  it('AC-6: Psychic Link (an excluded RNG-only loop) still draws in ascending seat order on seat 1\'s turn', () => {
+    const gameState = makeTestState({
+      inPlay: [],
+      heroAbilityHooks: [
+        {
+          cardId: 'psychic-link',
+          timing: 'onPlay',
+          keywords: ['reveal-from-hand'],
+          effects: [{ type: 'reveal-from-hand', revealCriterion: { kind: 'team', team: 'x-men' } }],
+        },
+      ],
+      cardTraits: { 'xmen-card': { team: 'x-men', heroClass: 'instinct' } },
+    });
+    for (const seat of ['0', '1', '2']) {
+      gameState.playerZones[seat] = {
+        ...makePlayerZones(),
+        deck: [`deck-${seat}`],
+        hand: ['xmen-card'],
+        discard: [],
+        inPlay: seat === '1' ? ['psychic-link'] : [],
+        victory: [],
+      };
+    }
+    executeHeroEffects(gameState, mockCtx, '1', 'psychic-link');
+    const drawingSeats = gameState.messages
+      .map((line) => /^Player (\d) revealed a matching Hero/.exec(line.text)?.[1])
+      .filter((seat) => seat !== undefined);
+    assert.deepStrictEqual(drawingSeats, ['0', '1', '2']);
+  });
+});

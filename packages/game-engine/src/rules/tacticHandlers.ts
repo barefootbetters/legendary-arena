@@ -43,6 +43,7 @@ import {
 } from '../moves/defeatChoice.resolve.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
@@ -398,7 +399,7 @@ function handHasXMenHero(
  * Resolves core Magneto's "Crushing Shockwave" tactic Fight effect:
  * "Each other player reveals an [team:x-men] Hero or gains two Wounds."
  *
- * For every player EXCEPT the defeating player (sorted id order): a player who
+ * For every player EXCEPT the defeating player (clockwise from them, D-24780): a player who
  * holds an X-Men Hero in hand reveals it and loses nothing (a pure log event);
  * a player who cannot reveal gains up to two Wounds from the supply. Mutates
  * `G.piles.wounds` and the penalized players' discard zones directly; never
@@ -412,7 +413,8 @@ export function resolveCrushingShockwave(
   G: LegendaryGameState,
   currentPlayer: string,
 ): void {
-  const playerIds = Object.keys(G.playerZones).sort();
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+  const playerIds = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer);
 
   // why: D-24665 — with no other seat (a solo match) the effect has no one to
   // reveal or take Wounds; log the no-op so the tactic does not resolve silently
@@ -1748,9 +1750,10 @@ export function resolveFindingZemo(
  * @param currentPlayer - The player who defeated the tactic (skipped).
  */
 function dealFindingZemoWounds(G: LegendaryGameState, currentPlayer: string): void {
-  const otherSeats = Object.keys(G.playerZones)
-    .filter((seat) => seat !== currentPlayer)
-    .sort();
+  // why: rules v23 L2247 — clockwise from the current player (D-24780). Rotate first, then
+  // drop the current player: a list without them would fall back to sorted order.
+  const otherSeats = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)
+    .filter((seat) => seat !== currentPlayer);
   if (otherSeats.length === 0) {
     pushLog(G,
       `Fight effect: there is no other player to gain a Wound (Finding Zemo).`,
@@ -2035,7 +2038,7 @@ function collectGeniusDiscardSeats(G: LegendaryGameState, otherSeats: readonly s
  * other player reveals a Zola's Creations Villain from their Victory Pile or gains a
  * Wound."
  *
- * Each other player (sorted) with any Zola's Creations Villain in their Victory Pile
+ * Each other player (clockwise from the defeating player, D-24780) with any Zola's Creations Villain in their Victory Pile
  * reveals it; every other one gains a Wound through the Diving Block chokepoint. Never
  * throws.
  *
@@ -2043,9 +2046,10 @@ function collectGeniusDiscardSeats(G: LegendaryGameState, otherSeats: readonly s
  * @param currentPlayer - The player who defeated the tactic (skipped).
  */
 export function resolvePetProjects(G: LegendaryGameState, currentPlayer: string): void {
-  const otherSeats = Object.keys(G.playerZones)
-    .filter((seat) => seat !== currentPlayer)
-    .sort();
+  // why: rules v23 L2247 — clockwise from the current player (D-24780). Rotate first, then
+  // drop the current player: a list without them would fall back to sorted order.
+  const otherSeats = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)
+    .filter((seat) => seat !== currentPlayer);
   if (otherSeats.length === 0) {
     pushLog(G,
       `Fight effect: there is no other player to reveal a Zola's Creations Villain or gain a Wound (Pet Projects).`,
