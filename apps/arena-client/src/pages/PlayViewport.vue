@@ -46,6 +46,7 @@ import { useOperatorEligibility } from '../composables/useOperatorEligibility';
 import { useUiStateStore } from '../stores/uiState';
 import { useAuthStore } from '../stores/auth';
 import { useBuildProvenanceStore } from '../stores/buildProvenance';
+import { useConnectionStore } from '../stores/connection';
 import { serverUrl } from '../lobby/lobbyApi';
 import { readMatchSetup, readBotAllySetup } from '../diagnostics/matchSetupSession';
 import {
@@ -361,17 +362,25 @@ export default defineComponent({
     // once per match id here at the play root so the export click handlers read it
     // synchronously. Fail-soft: a failed probe leaves the exports unchanged.
     const buildProvenanceStore = useBuildProvenanceStore();
+    const clientBuild = { gitSha: __GIT_SHA__, buildTimestamp: __BUILD_TIMESTAMP__ };
     watch(
       () => props.matchId,
       (matchId) => {
-        void buildProvenanceStore.load(
-          serverUrl,
-          matchId,
-          { gitSha: __GIT_SHA__, buildTimestamp: __BUILD_TIMESTAMP__ },
-          (url) => fetch(url),
-        );
+        void buildProvenanceStore.load(serverUrl, matchId, clientBuild, (url) => fetch(url));
       },
       { immediate: true },
+    );
+    // why: a server deploy drops every socket and the client reconnects to the new
+    // build. Re-read the server build after each reconnect, or the exports keep
+    // naming the build the match started on and miss that the match now predates
+    // the running server (match NVDdebFa9eA, 2026-10-26: created 22:48 on
+    // 72231815, server restarted as 1c037ce4 at 22:49, export still said 72231815).
+    const connectionStore = useConnectionStore();
+    watch(
+      () => connectionStore.transportReconnectCount,
+      () => {
+        void buildProvenanceStore.refresh(serverUrl, props.matchId, clientBuild, (url) => fetch(url));
+      },
     );
 
     // why: the reload is USER-INITIATED (a button), never automatic — a forced
