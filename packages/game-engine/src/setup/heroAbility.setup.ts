@@ -883,6 +883,14 @@ const COPY_POWERS_MARKER_PATTERN = /\[keyword:copy-powers\]/i;
 // investigate. Non-global, stateless `.test`; case-insensitive to match the [keyword:X] casing.
 const REVEAL_FROM_HAND_MARKER_PATTERN = /\[keyword:reveal-from-hand\]/i;
 
+// why: WP-843 / D-24777 — detects a reveal-or-gain-wound line (co2e Crazed Rampage: "Each
+// player reveals another [hc:strength] Hero or gains a Wound."). The reveal-from-hand resolver
+// also reads this marker's criterion, so the co-located [hc:X] / [team:X] is a reveal
+// CRITERION, not a heroClassMatch / requiresTeam play-gate — the existing Step 1a / 1b
+// suppression drops it with no new flag (the D-24470 / D-24530 family). Non-global, stateless
+// `.test`; case-insensitive to match the [keyword:X] casing.
+const REVEAL_OR_GAIN_WOUND_EACH_MARKER_PATTERN = /\[keyword:reveal-or-gain-wound-each\]/i;
+
 // why: WP-659 / D-24470 — the first [hc:X] / [team:X] token on a reveal-from-hand line is the
 // reveal criterion. Two dedicated stateless patterns (mirroring the investigate clause
 // patterns) so the resolver reads exactly one token into an InvestigateCriterion.
@@ -1476,6 +1484,18 @@ function parseAbilityText(
         keywords.push('reveal-from-hand');
       } else {
         unresolvedMarkers.push('reveal-from-hand');
+      }
+    } else if (normalizedKeyword === 'reveal-or-gain-wound-each') {
+      // why: WP-843 / D-24777 — reveal-or-gain-wound-each IS a HeroKeyword, but its keyword +
+      // effect are recorded ONLY when the co-located [hc:X]/[team:X] criterion resolves (the
+      // shared reveal-from-hand resolver). A marker with no class/team token records the
+      // keyword as an unresolved marker so the line stays an honest hollow — the Honest-Partial
+      // Invariant (mirrors the reveal-from-hand branch above). Checked BEFORE isValidHeroKeyword
+      // so the generic push does not fire for it.
+      if (revealFromHandCriterion !== undefined) {
+        keywords.push('reveal-or-gain-wound-each');
+      } else {
+        unresolvedMarkers.push('reveal-or-gain-wound-each');
       }
     } else if (normalizedKeyword === 'transform') {
       // why: WP-658 / D-24469 — transform IS a HeroKeyword, but its keyword +
@@ -2596,6 +2616,13 @@ function parseAbilityText(
         if (revealFromHandCriterion !== undefined) {
           effects.push({ type: 'reveal-from-hand', revealCriterion: revealFromHandCriterion });
         }
+      } else if (keyword === 'reveal-or-gain-wound-each') {
+        // why: WP-843 / D-24777 — the reveal-or-gain-wound descriptor carries the same single
+        // reveal criterion (the reveal AVOIDS a Wound instead of earning a draw). The keyword is
+        // only present when the criterion resolved (Step 2 Honest-Partial), so the guard is defensive.
+        if (revealFromHandCriterion !== undefined) {
+          effects.push({ type: 'reveal-or-gain-wound-each', revealCriterion: revealFromHandCriterion });
+        }
       } else if (magnitude !== undefined) {
         effects.push({ type: keyword, magnitude });
       } else {
@@ -3602,8 +3629,9 @@ function tryResolveEmpoweredDynamic(textAfterMarker: string): EffectNode | undef
 
 /**
  * Resolves the reveal-from-hand criterion from a full ability line, or undefined when the
- * line has no `[keyword:reveal-from-hand]` marker or carries no `[hc:X]` / `[team:X]` token
- * to read as the criterion (WP-659 / D-24470).
+ * line has no `[keyword:reveal-from-hand]` or `[keyword:reveal-or-gain-wound-each]` marker or
+ * carries no `[hc:X]` / `[team:X]` token to read as the criterion (WP-659 / D-24470;
+ * WP-843 / D-24777).
  *
  * The printed form is "Each player may reveal another [team:X]/[hc:X] Hero. …" — a SINGLE
  * criterion (not the OR-combined investigate list), so the resolver reads the first such
@@ -3616,7 +3644,13 @@ function tryResolveEmpoweredDynamic(textAfterMarker: string): EffectNode | undef
  * @returns The single reveal criterion, or undefined for a non-reveal-from-hand line.
  */
 function tryResolveRevealFromHandCriterion(abilityText: string): InvestigateCriterion | undefined {
-  if (!REVEAL_FROM_HAND_MARKER_PATTERN.test(abilityText)) {
+  // why: WP-843 / D-24777 — Crazed Rampage's "reveals another [hc:strength] Hero or gains a
+  // Wound" reads its criterion exactly as Psychic Link does, so accepting the marker here makes
+  // lineHasRevealFromHand true and the Step 1a / 1b suppression drop the spurious gate.
+  const hasRevealMarker =
+    REVEAL_FROM_HAND_MARKER_PATTERN.test(abilityText) ||
+    REVEAL_OR_GAIN_WOUND_EACH_MARKER_PATTERN.test(abilityText);
+  if (!hasRevealMarker) {
     return undefined;
   }
   const teamMatch = REVEAL_FROM_HAND_TEAM_PATTERN.exec(abilityText);

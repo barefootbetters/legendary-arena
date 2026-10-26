@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2585,
+    "executable": 2583,
     "heroes": 324,
     "hooks": 6383,
-    "noEffect": 2580,
-    "parsedNotExecuted": 1218
+    "noEffect": 2566,
+    "parsedNotExecuted": 1234
   },
   "perSet": {
     "2099": {
@@ -48,9 +48,9 @@
       "noEffect": 24
     },
     "ca75": {
-      "executable": 52,
+      "executable": 50,
       "hooks": 100,
-      "noEffect": 11
+      "noEffect": 0
     },
     "chmp": {
       "executable": 29,
@@ -60,7 +60,7 @@
     "co2e": {
       "executable": 143,
       "hooks": 241,
-      "noEffect": 53
+      "noEffect": 50
     },
     "core": {
       "executable": 132,
@@ -264,7 +264,6 @@
     "last-stand": 3,
     "liberate": 7,
     "lightshow": 16,
-    "man-out-of-time": 4,
     "microscopic-size-changing": 13,
     "moonlight": 10,
     "patrol-any-city-space": 3,

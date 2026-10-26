@@ -186,6 +186,7 @@ co2e/gambit,Gambit,co2e,reveal-top-dispose-ko,executable,,D-24558,packages/game-
 co2e/gambit,Gambit,co2e,reveal-top-dispose-others,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose-others,hypnotic-charm
 co2e/hawkeye,Hawkeye,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,quick-draw
 co2e/hulk,Hulk,co2e,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,dont-make-me-angry
+co2e/hulk,Hulk,co2e,reveal-or-gain-wound-each,executable,WP-843,D-24777,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-or-gain-wound-each,crazed-rampage
 co2e/iron-man,Iron Man,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,overloaded-unibeam
 co2e/iron-man,Iron Man,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-invention|quantum-breakthrough
 co2e/nick-fury,Nick Fury,co2e,(unmarked),unmarked,,,,

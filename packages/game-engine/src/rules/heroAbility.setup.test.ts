@@ -682,12 +682,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'optional-ko-shield-played-rescue', // why: WP-826 / D-24759 — Reassign to Civilian Duty's "You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander."
     'flying-shield-block', // why: WP-827 / D-24760 — Captain America (Falcon) "Flying Shield Block": any seat holding a copy may reveal it once per turn when a player would gain a Wound, preventing it and rescuing a Bystander
     'grant-out-of-time', // why: WP-828 / D-24761 — Winter Soldier 2>4 "A Hero in your hand gains Man Out of Time this turn": queues one owed grant; the granted card goes Out of Time when played this turn
+    'reveal-or-gain-wound-each', // why: WP-843 / D-24777 — co2e Crazed Rampage "Each player reveals another [hc:strength] Hero or gains a Wound": each player who cannot reveal another matching Hero gains a Wound
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      83,
-      'HERO_KEYWORDS must have exactly 83 entries',
+      84,
+      'HERO_KEYWORDS must have exactly 84 entries',
     );
 
     assert.deepStrictEqual(
