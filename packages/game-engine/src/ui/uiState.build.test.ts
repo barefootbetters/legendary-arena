@@ -2797,3 +2797,45 @@ describe('WP-842 buildUIState — Sidekick recruit cue and card face (D-24776)',
     assert.notStrictEqual(ui.piles.sidekickDisplay, sidekickFace, 'never a reference into G.cardDisplayData');
   });
 });
+
+describe('buildUIState — WP-836 grey-filtered KO projections (D-24769)', () => {
+  const AGENT = 'starting-shield-agent' as CardExtId;
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+
+  /** A state whose player 0 discard is `discard`, with tech-a / tech-b classed. */
+  function withGreyDiscard(discard: CardExtId[]): LegendaryGameState {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.playerZones['0']!.discard = discard;
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      'tech-a': { heroClass: 'tech', team: null },
+      'tech-b': { heroClass: 'tech', team: null },
+    } as LegendaryGameState['cardTraits'];
+    return gameState;
+  }
+
+  it('T20: a non-grey KO-a-Hero entry lists only the classed discard Heroes', () => {
+    const gameState = withGreyDiscard([AGENT, 'tech-a' as CardExtId, 'tech-b' as CardExtId]);
+    gameState.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'], greyFilter: 'non-grey' }];
+    assert.deepStrictEqual(
+      buildUIState(gameState, mockCtx).pendingKoHeroChoice!.eligible.map((e) => e.cardId),
+      ['tech-a', 'tech-b'],
+    );
+  });
+
+  it('T20: a grey KO-from-discard entry lists only grey Heroes, in order; an unfiltered one lists the whole discard', () => {
+    const discard = [WOUND, 'tech-a' as CardExtId, AGENT, AGENT, OFFICER];
+    const greyState = withGreyDiscard(discard);
+    greyState.pendingKoDiscardChoices = [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, greyFilter: 'grey' }];
+    assert.deepStrictEqual(
+      buildUIState(greyState, mockCtx).pendingKoDiscardChoice!.discard.map((entry) => entry.cardId),
+      [AGENT, AGENT, OFFICER],
+    );
+    const plainState = withGreyDiscard(discard);
+    plainState.pendingKoDiscardChoices = [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2 }];
+    assert.deepStrictEqual(
+      buildUIState(plainState, mockCtx).pendingKoDiscardChoice!.discard.map((entry) => entry.cardId),
+      discard,
+    );
+  });
+});

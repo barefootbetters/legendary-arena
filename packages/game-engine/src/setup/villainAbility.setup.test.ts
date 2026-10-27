@@ -1998,3 +1998,188 @@ describe('buildVillainAbilityHooks — WP-817 Captain Zolandia + Primus grammars
     }
   });
 });
+
+describe('buildVillainAbilityHooks — WP-836 grey-Hero and Hero-count grammars (D-24769)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'destroyer-ko', token: 'ko-hero:each:1:discard:non-grey' },
+    { slug: 'grey-two', token: 'ko-up-to-from-discard-current:2:grey' },
+    { slug: 'grey-one', token: 'ko-up-to-from-discard-current:1:grey' },
+    { slug: 'abomination', token: 'gain-recruit-current-count-by-trait:hc:strength' },
+    { slug: 'beetle', token: 'draw-cards-current-count-by-trait:hc:covert' },
+    { slug: 'savage-land', token: 'reveal-top-ko-grey-or-draw-by-class:strength+instinct' },
+    { slug: 'savage-land-case', token: 'reveal-top-ko-grey-or-draw-by-class:Strength' },
+    { slug: 'reject-ko-grey', token: 'ko-hero:each:1:discard:grey' },
+    { slug: 'reject-ko-hand', token: 'ko-hero:each:1:hand:non-grey' },
+    { slug: 'reject-ko-nongrey', token: 'ko-hero:each:1:discard:nongrey' },
+    { slug: 'reject-ko-extra', token: 'ko-hero:each:1:discard:non-grey:x' },
+    { slug: 'reject-upto-nongrey', token: 'ko-up-to-from-discard-current:2:non-grey' },
+    { slug: 'reject-upto-empty', token: 'ko-up-to-from-discard-current:2:' },
+    { slug: 'reject-upto-no-count', token: 'ko-up-to-from-discard-current:grey' },
+    { slug: 'reject-reveal-draw-grey', token: 'reveal-top-draw-if-cost-lte:3:grey' },
+    { slug: 'reject-recruit-bare', token: 'gain-recruit-current-count-by-trait' },
+    { slug: 'reject-recruit-kind-only', token: 'gain-recruit-current-count-by-trait:hc' },
+    { slug: 'reject-recruit-bad-kind', token: 'gain-recruit-current-count-by-trait:xx:strength' },
+    { slug: 'reject-draw-empty', token: 'draw-cards-current-count-by-trait:hc:' },
+    { slug: 'reject-class-bare', token: 'reveal-top-ko-grey-or-draw-by-class' },
+    { slug: 'reject-class-empty', token: 'reveal-top-ko-grey-or-draw-by-class:' },
+    { slug: 'reject-class-trailing', token: 'reveal-top-ko-grey-or-draw-by-class:strength+' },
+    { slug: 'reject-class-duplicate', token: 'reveal-top-ko-grey-or-draw-by-class:strength+strength' },
+    { slug: 'reject-class-unknown', token: 'reveal-top-ko-grey-or-draw-by-class:strength+psychic' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp836',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Fight: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp836'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp836-${slug}-00`)!;
+
+  it('T3: parses the seven accepted tokens to the locked descriptors', () => {
+    assert.deepStrictEqual(hookFor('destroyer-ko').effects, [
+      { primitive: 'ko-hero', target: 'each', magnitude: 1, zone: 'discard', greyFilter: 'non-grey' },
+    ]);
+    assert.deepStrictEqual(hookFor('grey-two').effects, [
+      { primitive: 'ko-up-to-from-discard-current', magnitude: 2, greyFilter: 'grey' },
+    ]);
+    assert.deepStrictEqual(hookFor('grey-one').effects, [
+      { primitive: 'ko-up-to-from-discard-current', magnitude: 1, greyFilter: 'grey' },
+    ]);
+    assert.deepStrictEqual(hookFor('abomination').effects, [
+      { primitive: 'gain-recruit-current-count-by-trait', requireKind: 'hero-class', requireValue: 'strength' },
+    ]);
+    assert.deepStrictEqual(hookFor('beetle').effects, [
+      { primitive: 'draw-cards-current-count-by-trait', requireKind: 'hero-class', requireValue: 'covert' },
+    ]);
+    assert.deepStrictEqual(hookFor('savage-land').effects, [
+      { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses: ['strength', 'instinct'] },
+    ]);
+    assert.deepStrictEqual(hookFor('savage-land-case').effects, [
+      { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses: ['strength'] },
+    ]);
+  });
+
+  it('T4: every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T5: the regenerated co2e lines build the expected hooks', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/co2e.json.
+    const co2eRegistry = makeRegistry(
+      'co2e',
+      [
+        {
+          slug: 'enemies-of-asgard',
+          cards: [
+            {
+              slug: 'destroyer',
+              abilities: [
+                'Ambush: Each player KOs a non-grey Hero from their discard pile. [effect:ko-hero:each:1:discard:non-grey]',
+                'Fight: KO up to two grey Heroes from your discard pile. [effect:ko-up-to-from-discard-current:2:grey]',
+                'Escape: Repeat the Ambush effect. [effect:ko-hero:each:1:discard:non-grey]',
+              ],
+            },
+            {
+              slug: 'frost-giant-warrior',
+              abilities: [
+                'Ambush: Each player discards a [hc:ranged] Hero or gains a Wound.',
+                'Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]',
+              ],
+            },
+            {
+              slug: 'ymir-frost-giant-king',
+              abilities: [
+                "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city.",
+                'Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'radiation',
+          cards: [
+            {
+              slug: 'abomination',
+              abilities: [
+                'Abomination gets +[icon:attack] equal to the printed [icon:attack] of the Hero in the HQ space under his current city space.',
+                'Fight: You get +1[icon:recruit] for each of your [hc:strength] Heroes. [effect:gain-recruit-current-count-by-trait:hc:strength]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'sinister-syndicate',
+          cards: [
+            {
+              slug: 'beetle',
+              abilities: [
+                'Fight: Count your [hc:covert] Heroes, then draw that many cards. [effect:draw-cards-current-count-by-trait:hc:covert]',
+                'Escape: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]',
+              ],
+            },
+          ],
+        },
+      ],
+      [
+        {
+          slug: 'savage-land-mutates',
+          abilities: [
+            "Fight: Reveal the top card of your deck. If it's grey, KO it. If it's [hc:strength] or [hc:instinct], draw it. [effect:reveal-top-ko-grey-or-draw-by-class:strength+instinct]",
+          ],
+        },
+      ],
+    );
+    const co2eHooks = buildVillainAbilityHooks(
+      co2eRegistry,
+      makeConfig(
+        ['co2e/enemies-of-asgard', 'co2e/radiation', 'co2e/sinister-syndicate'],
+        ['co2e/savage-land-mutates'],
+      ),
+    );
+    const effectsFor = (cardId: string, timing: string) =>
+      co2eHooks.find((h) => h.cardId === cardId && h.timing === timing)?.effects;
+    const destroyerKo = { primitive: 'ko-hero', target: 'each', magnitude: 1, zone: 'discard', greyFilter: 'non-grey' };
+    const destroyerId = 'co2e-villain-enemies-of-asgard-destroyer-00';
+    assert.deepStrictEqual(effectsFor(destroyerId, 'onAmbush'), [destroyerKo]);
+    assert.deepStrictEqual(effectsFor(destroyerId, 'onEscape'), [destroyerKo]);
+    assert.deepStrictEqual(effectsFor(destroyerId, 'onFight'), [
+      { primitive: 'ko-up-to-from-discard-current', magnitude: 2, greyFilter: 'grey' },
+    ]);
+    for (const cardSlug of ['frost-giant-warrior', 'ymir-frost-giant-king']) {
+      assert.deepStrictEqual(effectsFor(`co2e-villain-enemies-of-asgard-${cardSlug}-00`, 'onFight'), [
+        { primitive: 'ko-up-to-from-discard-current', magnitude: 1, greyFilter: 'grey' },
+      ]);
+    }
+    assert.deepStrictEqual(effectsFor('co2e-villain-radiation-abomination-00', 'onFight'), [
+      { primitive: 'gain-recruit-current-count-by-trait', requireKind: 'hero-class', requireValue: 'strength' },
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-sinister-syndicate-beetle-00', 'onFight'), [
+      { primitive: 'draw-cards-current-count-by-trait', requireKind: 'hero-class', requireValue: 'covert' },
+    ]);
+    for (let copyIndex = 0; copyIndex < 10; copyIndex++) {
+      const henchmanId = `henchman-savage-land-mutates-${String(copyIndex).padStart(2, '0')}`;
+      assert.deepStrictEqual(effectsFor(henchmanId, 'onFight'), [
+        { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses: ['strength', 'instinct'] },
+      ]);
+    }
+    for (const hook of co2eHooks) {
+      assert.deepStrictEqual(hook.unresolvedMarkers ?? [], [], `${hook.cardId} must have no unresolved markers`);
+    }
+  });
+});

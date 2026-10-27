@@ -18,7 +18,8 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
-import { SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
+import type { GreyHeroFilter } from '../rules/villainAbility.types.js';
+import { BYSTANDER_EXT_ID, SIDEKICK_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /**
  * Splits an instance ext_id into its copy-agnostic base key and its `#copyIndex` suffix.
@@ -153,6 +154,57 @@ export function offPlayCardStats(G: LegendaryGameState, cardId: string): CardSta
     hasAttackIcon: faceAStats.hasAttackIcon || faceBStats.hasAttackIcon,
     hasRecruitIcon: faceAStats.hasRecruitIcon || faceBStats.hasRecruitIcon,
   };
+}
+
+/**
+ * Returns true when a card in a player zone is a grey Hero (WP-836 / D-24769).
+ *
+ * A grey Hero is a Hero with no Hero Class: the synthetic S.H.I.E.L.D. Agent / Trooper /
+ * Officer and Sidekick cards (no G.cardTraits entry) and any registry Hero printed without a
+ * class. A Wound and a Bystander are not Heroes, so they are never grey.
+ *
+ * @param G - The game state (reads G.cardTraits and the split-face map).
+ * @param cardId - The card instance ext_id, in a zone other than inPlay.
+ * @returns True when the card is a grey Hero.
+ */
+export function isGreyHero(G: LegendaryGameState, cardId: string): boolean {
+  if (cardId === WOUND_EXT_ID || cardId === BYSTANDER_EXT_ID) {
+    return false;
+  }
+  // why: rules v23 L1487-1492 — "grey Heroes" are the cards with no Hero Class (S.H.I.E.L.D.
+  // Agents, Troopers, Officers, Sidekicks); L3404-3407 — Wounds have no color, "not even grey".
+  // The off-play view is read so a split card counts as its faces' classes (never grey).
+  const traits = offPlayCardTraits(G, cardId);
+  if (traits === undefined) {
+    return true;
+  }
+  const hasHeroClass = typeof traits.heroClass === 'string' && traits.heroClass !== '';
+  const hasHeroClass2 = typeof traits.heroClass2 === 'string' && traits.heroClass2 !== '';
+  return !hasHeroClass && !hasHeroClass2;
+}
+
+/**
+ * Returns true when a card in a player zone passes a grey-Hero filter (WP-836 / D-24769).
+ *
+ * A Wound and a Bystander fail both filters: they are not Heroes.
+ *
+ * @param G - The game state (reads G.cardTraits and the split-face map).
+ * @param cardId - The card instance ext_id, in a zone other than inPlay.
+ * @param greyFilter - `'grey'` accepts grey Heroes; `'non-grey'` accepts Heroes with a class.
+ * @returns True when the card passes the filter.
+ */
+export function matchesGreyHeroFilter(
+  G: LegendaryGameState,
+  cardId: string,
+  greyFilter: GreyHeroFilter,
+): boolean {
+  if (cardId === WOUND_EXT_ID || cardId === BYSTANDER_EXT_ID) {
+    return false;
+  }
+  if (greyFilter === 'grey') {
+    return isGreyHero(G, cardId);
+  }
+  return !isGreyHero(G, cardId);
 }
 
 /**

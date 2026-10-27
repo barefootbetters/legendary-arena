@@ -19,10 +19,17 @@
 import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
-import { offPlayCardTraits, playedCardIdsStillInPlay } from '../hero/splitCard.logic.js';
+import {
+  isGreyHero,
+  matchesGreyHeroFilter,
+  offPlayCardStats,
+  offPlayCardTraits,
+  playedCardIdsStillInPlay,
+} from '../hero/splitCard.logic.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import type {
+  GreyHeroFilter,
   VillainAbilityTiming,
   VillainAbilityHook,
   VillainEffectKeyword,
@@ -97,6 +104,15 @@ import {
 export interface KoHeroTarget {
   zone: 'discard' | 'hand' | 'inPlay';
   cardId: CardExtId;
+}
+
+/**
+ * A grey-Hero filter for the KO eligibility helpers, with the state it reads
+ * (WP-836 / D-24769). The helpers take zones, not G, so the filter brings G along.
+ */
+export interface KoHeroGreyFilterRead {
+  gameState: LegendaryGameState;
+  greyFilter: GreyHeroFilter;
 }
 
 /**
@@ -1241,12 +1257,17 @@ function villainEffectKoHero(
       // other players still auto-pick, because pending choices are current-player
       // scoped (D-24284). A forced KO (no more Heroes than owed, or every copy
       // identical) auto-resolves with no prompt.
-      if (playerId === currentPlayer && parkZoneKoChoice(G, playerId, descriptor.zone, repetitions)) {
+      // why: D-24769 — Destroyer's `greyFilter` ('non-grey') rides into both the park and
+      // the auto-pick; absent, both take today's unfiltered path.
+      if (
+        playerId === currentPlayer &&
+        parkZoneKoChoice(G, playerId, descriptor.zone, repetitions, descriptor.greyFilter)
+      ) {
         parked = true;
         playerShare.pending = true;
         continue;
       }
-      const koedIds = koHeroesFromZoneForPlayer(G, playerId, descriptor.zone, repetitions);
+      const koedIds = koHeroesFromZoneForPlayer(G, playerId, descriptor.zone, repetitions, descriptor.greyFilter);
       for (const koedId of koedIds) {
         targets.push(koedId);
         targetZones.push(descriptor.zone);
@@ -1300,6 +1321,7 @@ function villainEffectKoHero(
  * @param playerId - The current player.
  * @param zone - The zone the printed effect restricts the KO to, or undefined for none.
  * @param magnitude - How many Heroes the player must KO.
+ * @param greyFilter - An optional grey-Hero filter on the KO (D-24769, Destroyer).
  * @returns True when a pending choice was parked.
  */
 function parkZoneKoChoice(
@@ -1307,15 +1329,18 @@ function parkZoneKoChoice(
   playerId: string,
   zone: 'discard' | 'hand' | undefined,
   magnitude: number,
+  greyFilter?: GreyHeroFilter,
 ): boolean {
   const zones = G.playerZones[playerId];
   if (!zones) return false;
   const allowedZones: readonly KoHeroTarget['zone'][] | undefined = zone === undefined ? undefined : [zone];
+  const greyFilterRead: KoHeroGreyFilterRead | undefined =
+    greyFilter === undefined ? undefined : { gameState: G, greyFilter };
   // why: mirror the current-player ko-hero parker (WP-492 / D-24298): a choice exists
   // only when the player can spare some Heroes AND the options are not all identical.
   // A KO never grows the option count, so a forced start stays forced throughout.
-  if (countKoableHeroes(zones, allowedZones) <= magnitude) return false;
-  if (buildKoEligibleTargets(zones, allowedZones).length < 2) return false;
+  if (countKoableHeroes(zones, allowedZones, greyFilterRead) <= magnitude) return false;
+  if (buildKoEligibleTargets(zones, allowedZones, greyFilterRead).length < 2) return false;
   if (!G.pendingKoHeroChoices) G.pendingKoHeroChoices = [];
   const entry: PendingKoHeroChoice = { choiceType: 'ko-hero', playerID: playerId };
   // why: D-24669 — an unqualified KO carries no `zones` field (absent ≡ "your Heroes",
@@ -1326,6 +1351,10 @@ function parkZoneKoChoice(
   // why: omit `remaining` for a single KO (absent ≡ 1), matching the WP-492 parker.
   if (magnitude >= 2) {
     entry.remaining = magnitude;
+  }
+  // why: D-24769 — omit-when-absent, so every unfiltered park keeps its shape.
+  if (greyFilter !== undefined) {
+    entry.greyFilter = greyFilter;
   }
   G.pendingKoHeroChoices.push(entry);
   return true;
@@ -2425,7 +2454,7 @@ function villainEffectKoUpToFromDiscardCurrent(
   G: LegendaryGameState,
   currentPlayer: string,
   cardId: CardExtId,
-  _timing: VillainAbilityTiming,
+  timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
   const maxCount = descriptor.magnitude;
@@ -2437,6 +2466,9 @@ function villainEffectKoUpToFromDiscardCurrent(
     return { targets: [] };
   }
   const sourceName = resolveCardDisplayName(G, cardId);
+  if (descriptor.greyFilter !== undefined) {
+    return parkGreyKoUpToFromDiscard(G, currentPlayer, cardId, timing, maxCount, descriptor.greyFilter);
+  }
   if (zones.discard.length === 0) {
     pushLog(G, `Fight effect: your discard pile is empty (${sourceName}); nothing to KO.`, 'blocked');
     return { targets: [] };
@@ -2456,6 +2488,213 @@ function villainEffectKoUpToFromDiscardCurrent(
   G.pendingKoDiscardChoices.push(entry);
   pushLog(G, `Fight effect: KO up to ${String(maxCount)} cards from your discard pile (${sourceName}).`, 'neutral');
   return { targets: [], pending: true };
+}
+
+/**
+ * The filtered branch of ko-up-to-from-discard-current (WP-836 / D-24769): the current
+ * player may KO up to `maxCount` grey Heroes from their discard pile (co2e Destroyer
+ * "KO up to two grey Heroes", Frost Giant Warrior / Ymir "You may KO a grey Hero").
+ *
+ * Parks the PendingKoDiscardChoice with `greyFilter` when at least one discard card
+ * passes the filter; otherwise logs a `blocked` no-op and parks nothing.
+ *
+ * @param G - Game state (the pending queue is lazily created on a park).
+ * @param currentPlayer - The defeating player.
+ * @param cardId - The villain whose Fight parked the choice.
+ * @param timing - The timing that fired (names the log line).
+ * @param maxCount - The most cards the player may KO.
+ * @param greyFilter - The grey-Hero filter the KO is limited to.
+ * @returns `{ pending: true }` on a park, else `{ targets: [] }`.
+ */
+function parkGreyKoUpToFromDiscard(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  maxCount: number,
+  greyFilter: GreyHeroFilter,
+): VillainEffectApplication {
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  const label = villainEffectTimingLabel(timing);
+  const sourceName = resolveCardDisplayName(G, cardId);
+  // why: "up to" / "may" — the choice parks whenever an eligible card exists (the Salomé
+  // shape); with none, the prompt would offer nothing, so it is a logged no-op instead.
+  const hasEligibleCard = zones.discard.some((discardCardId) => matchesGreyHeroFilter(G, discardCardId, greyFilter));
+  if (!hasEligibleCard) {
+    pushLog(G, `${label} effect: no ${greyFilter} Heroes in your discard pile (${sourceName}); nothing to KO.`, 'blocked');
+    return { targets: [] };
+  }
+  if (!G.pendingKoDiscardChoices) {
+    G.pendingKoDiscardChoices = [];
+  }
+  const entry: PendingKoDiscardChoice = {
+    choiceType: 'ko-from-discard',
+    playerID: currentPlayer,
+    maxCount,
+    sourceCardId: cardId,
+    greyFilter,
+  };
+  G.pendingKoDiscardChoices.push(entry);
+  pushLog(
+    G,
+    `${label} effect: KO up to ${String(maxCount)} ${greyFilter} Hero(es) from your discard pile (${sourceName}).`,
+    'neutral',
+  );
+  return { targets: [], pending: true };
+}
+
+/**
+ * gain-recruit-current-count-by-trait primitive — the current (defeating) player gains
+ * +1 recruit for each of their Heroes matching the trait (co2e Abomination "Fight: You
+ * get +1 Recruit for each of your [hc:strength] Heroes.", WP-836 / D-24769).
+ *
+ * "Your Heroes" is the hand + the cards played this turn still in play, read through the
+ * Maestro / Baron Zemo counter. Keyword-less, so it self-narrates via `pushLog`.
+ */
+function villainEffectGainRecruitCurrentCountByTrait(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const kind = descriptor.requireKind;
+  const value = descriptor.requireValue;
+  const zones = G.playerZones[currentPlayer];
+  if (kind === undefined || value === undefined || !zones) {
+    return { targets: [] };
+  }
+  // why: rules v23 L3436-3447 — "your Heroes" = hand + still in play (D-24529 / D-24692),
+  // the same counter Maestro and Baron Zemo read, so the three can never count differently.
+  const countedHeroes = listPlayerHeroesMatchingTrait(G, zones, kind, value);
+  const label = villainEffectTimingLabel(timing);
+  const heroCount = countedHeroes.length;
+  if (heroCount === 0) {
+    pushLog(G, `${label} effect: you have no ${value} Heroes, so no recruit was gained.`, 'blocked');
+    return { targets: [] };
+  }
+  G.turnEconomy.recruit += heroCount;
+  const names = describeTraitCountedHeroes(G, countedHeroes, kind, value);
+  pushLog(
+    G,
+    `${label} effect: gained +${String(heroCount)} recruit for your ${String(heroCount)} ${value} Hero(es)${names}.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
+ * draw-cards-current-count-by-trait primitive — the current (defeating) player counts
+ * their Heroes matching the trait, then draws that many cards (co2e Beetle "Fight: Count
+ * your [hc:covert] Heroes, then draw that many cards.", WP-836 / D-24769).
+ *
+ * Keyword-less, so it self-narrates via `pushLog`. Without a shuffle source it no-ops
+ * silently (the `draw-cards-current` precedent: a draw may reshuffle the discard).
+ */
+function villainEffectDrawCardsCurrentCountByTrait(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const kind = descriptor.requireKind;
+  const value = descriptor.requireValue;
+  const zones = G.playerZones[currentPlayer];
+  if (kind === undefined || value === undefined || !zones) {
+    return { targets: [] };
+  }
+  // why: "Count …, then draw" — the count (and the names) are taken before the draw, so a
+  // drawn Covert Hero never counts itself.
+  const countedHeroes = listPlayerHeroesMatchingTrait(G, zones, kind, value);
+  const heroCount = countedHeroes.length;
+  const label = villainEffectTimingLabel(timing);
+  if (heroCount === 0) {
+    pushLog(G, `${label} effect: you have no ${value} Heroes, so no cards were drawn.`, 'blocked');
+    return { targets: [] };
+  }
+  if (shuffleContext === undefined) {
+    return { targets: [] };
+  }
+  const names = describeTraitCountedHeroes(G, countedHeroes, kind, value);
+  const handSizeBefore = zones.hand.length;
+  drawCardsIntoHand(zones, heroCount, shuffleContext);
+  const drawn = zones.hand.length - handSizeBefore;
+  // why: D-24732 — the defeating player's Fight draw is an extra card drawn this turn.
+  G.turnEconomy.cardsDrawn += drawn;
+  pushLog(
+    G,
+    `${label} effect: drew ${String(drawn)} card(s) for your ${String(heroCount)} ${value} Hero(es)${names}.`,
+    drawn > 0 ? 'applied' : 'blocked',
+  );
+  return { targets: [] };
+}
+
+/**
+ * reveal-top-ko-grey-or-draw-by-class primitive — the current (defeating) player reveals
+ * the top card of their deck: a grey Hero is KO'd, a card with one of the listed Hero
+ * Classes is drawn, anything else stays on top (co2e Savage Land Mutates "Fight: Reveal
+ * the top card of your deck. If it's grey, KO it. If it's [hc:strength] or
+ * [hc:instinct], draw it.", WP-836 / D-24769).
+ *
+ * Keyword-less, so it self-narrates via `pushLog`, each line referencing the revealed card.
+ */
+function villainEffectRevealTopKoGreyOrDrawByClass(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const drawHeroClasses = descriptor.drawHeroClasses;
+  const zones = G.playerZones[currentPlayer];
+  if (drawHeroClasses === undefined || !zones) {
+    return { targets: [] };
+  }
+  const label = villainEffectTimingLabel(timing);
+  // why: D-24285 — a reveal on an empty deck reshuffles the discard first (a no-op on an
+  // empty discard or a missing shuffle source, so an exhausted deck falls through below).
+  if (zones.deck.length === 0) {
+    reshuffleDiscardIntoDeck(zones, shuffleContext);
+  }
+  const topCardId = zones.deck[0];
+  if (topCardId === undefined) {
+    pushLog(G, `${label} effect: no card to reveal — your deck and discard pile are empty.`, 'blocked');
+    return { targets: [] };
+  }
+  const topName = resolveCardDisplayName(G, topCardId);
+  // why: the three outcomes are disjoint — a grey card has no class, so it can never also be
+  // Strength or Instinct. A Wound is not grey (rules v23 L3404-3407) and has no class, so it
+  // stays on top: "reveal" with no destination leaves the card there (L3201-3207).
+  if (isGreyHero(G, topCardId)) {
+    zones.deck = zones.deck.slice(1);
+    G.ko = koCard(G.ko, topCardId);
+    pushLog(G, `${label} effect: revealed "${topName}" (grey) — KO'd it.`, 'applied', topCardId);
+    return { targets: [topCardId] };
+  }
+  const topTraits = offPlayCardTraits(G, topCardId);
+  const drawnClass = drawHeroClasses.find((heroClass) => cardTraitMatches(topTraits, 'hero-class', heroClass));
+  if (drawnClass === undefined) {
+    pushLog(G, `${label} effect: revealed "${topName}" — left on top of your deck.`, 'blocked', topCardId);
+    return { targets: [] };
+  }
+  // why: "draw it" is a real draw (deck → hand, counted in cardsDrawn, D-24732), moved
+  // directly rather than through the hero-effect draw path, so the draw lock does not
+  // apply — the Patriarch / WP-731 precedent for villain-driven draws.
+  const moveResult = moveCardFromZone(zones.deck, zones.hand, topCardId);
+  if (!moveResult.found) {
+    return { targets: [] };
+  }
+  zones.deck = moveResult.from;
+  zones.hand = moveResult.to;
+  G.turnEconomy.cardsDrawn += 1;
+  pushLog(G, `${label} effect: revealed "${topName}" (${drawnClass}) — drew it.`, 'applied', topCardId);
+  return { targets: [topCardId] };
 }
 
 /**
@@ -4030,6 +4269,11 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   // keyword-less, self-narrating. Primus's Escape only records the owed discard.
   'gain-recruit-current-per-hero-class': villainEffectGainRecruitCurrentPerHeroClass,
   'discard-hero-each-player-by-cost': villainEffectDiscardHeroEachPlayerByCost,
+  // why: WP-836 / D-24769 — co2e Abomination, Beetle and Savage Land Mutates Fights; all
+  // keyword-less, self-narrating.
+  'gain-recruit-current-count-by-trait': villainEffectGainRecruitCurrentCountByTrait,
+  'draw-cards-current-count-by-trait': villainEffectDrawCardsCurrentCountByTrait,
+  'reveal-top-ko-grey-or-draw-by-class': villainEffectRevealTopKoGreyOrDrawByClass,
 };
 
 /**
@@ -4191,12 +4435,18 @@ function koHeroesFromZoneForPlayer(
   playerId: string,
   zone: 'discard' | 'hand',
   magnitude: number,
+  greyFilter?: GreyHeroFilter,
 ): CardExtId[] {
   const zones = G.playerZones[playerId];
   if (!zones) return [];
   const koedIds: CardExtId[] = [];
   for (let iteration = 0; iteration < magnitude; iteration++) {
-    const target = selectKoHeroTarget(zones[zone]);
+    // why: D-24769 — a filtered KO (Destroyer, 'non-grey') picks only among the cards
+    // that pass the filter; absent, today's starter-first pick is unchanged.
+    const target =
+      greyFilter === undefined
+        ? selectKoHeroTarget(zones[zone])
+        : selectKoHeroTargetByGreyFilter(G, zones[zone], greyFilter);
     if (target === null) {
       // why: the zone holds no more heroes — stop (no fallback to another zone).
       break;
@@ -4254,6 +4504,47 @@ export function selectKoHeroTarget(zone: CardExtId[]): CardExtId | null {
   return startingSelected ?? otherSelected;
 }
 
+/**
+ * Selects the auto-KO target in a zone for a grey-filtered KO, or null (WP-836 / D-24769).
+ *
+ * Only cards passing `matchesGreyHeroFilter` are candidates. `'grey'` reuses
+ * `selectKoHeroTarget` (starter-first, then lexical); `'non-grey'` takes the lowest-cost
+ * candidate, ties broken by the lexically smallest ext_id.
+ *
+ * @param G - Game state (reads G.cardTraits, G.cardStats and the split-face map).
+ * @param zoneCards - The zone's cards (not mutated).
+ * @param greyFilter - The grey-Hero filter the KO is limited to.
+ * @returns The KO target ext_id, or null when no card passes the filter.
+ */
+export function selectKoHeroTargetByGreyFilter(
+  G: LegendaryGameState,
+  zoneCards: readonly CardExtId[],
+  greyFilter: GreyHeroFilter,
+): CardExtId | null {
+  const candidates: CardExtId[] = [];
+  for (const candidate of zoneCards) {
+    if (matchesGreyHeroFilter(G, candidate, greyFilter)) {
+      candidates.push(candidate);
+    }
+  }
+  if (greyFilter === 'grey') {
+    return selectKoHeroTarget(candidates);
+  }
+  // why: D-24769 — "each player KOs a non-grey Hero" is each player's choice; the rational
+  // pick is the cheapest one. The D-24644 starter-first rule cannot apply because starters
+  // are grey. The bot and every other seat take this same pick (D-24009 parity).
+  let selected: CardExtId | null = null;
+  let selectedCost = 0;
+  for (const candidate of candidates) {
+    const cost = offPlayCardStats(G, candidate)?.cost ?? 0;
+    if (selected === null || cost < selectedCost || (cost === selectedCost && candidate < selected)) {
+      selected = candidate;
+      selectedCost = cost;
+    }
+  }
+  return selected;
+}
+
 // ---------------------------------------------------------------------------
 // Interactive KO-a-Hero helpers (WP-242)
 // ---------------------------------------------------------------------------
@@ -4274,11 +4565,13 @@ export function selectKoHeroTarget(zone: CardExtId[]): CardExtId | null {
  *
  * @param zones - The player's card zones.
  * @param allowedZones - The zones the KO may take from; absent means "your Heroes".
+ * @param greyFilterRead - An optional grey-Hero filter (D-24769); cards failing it are skipped.
  * @returns The eligible KO targets in deterministic scan order.
  */
 export function buildKoEligibleTargets(
   zones: PlayerZones,
   allowedZones?: readonly KoHeroTarget['zone'][],
+  greyFilterRead?: KoHeroGreyFilterRead,
 ): KoHeroTarget[] {
   // why: per-zone (zone, cardId) dedupe — the same ext_id can legitimately
   // appear twice within one zone (e.g., two starting-shield-agent in discard);
@@ -4297,6 +4590,12 @@ export function buildKoEligibleTargets(
       // why: a wound is never a "hero" for KO purposes (D-18503 carries
       // forward); wounds are excluded even when sitting in an otherwise-valid zone.
       if (cardId === WOUND_EXT_ID) continue;
+      if (
+        greyFilterRead !== undefined &&
+        !matchesGreyHeroFilter(greyFilterRead.gameState, cardId, greyFilterRead.greyFilter)
+      ) {
+        continue;
+      }
       const key = `${zoneName}:${cardId}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -4320,11 +4619,13 @@ export function buildKoEligibleTargets(
  *
  * @param zones - The player's card zones.
  * @param allowedZones - The zones the KO may take from; absent means "your Heroes".
+ * @param greyFilterRead - An optional grey-Hero filter (D-24769); cards failing it are not counted.
  * @returns The number of non-wound cards in the allowed zones.
  */
 export function countKoableHeroes(
   zones: PlayerZones,
   allowedZones?: readonly KoHeroTarget['zone'][],
+  greyFilterRead?: KoHeroGreyFilterRead,
 ): number {
   let count = 0;
   const orderedZones: KoHeroTarget['zone'][] = ['discard', 'hand', 'inPlay'];
@@ -4336,6 +4637,12 @@ export function countKoableHeroes(
     for (const cardId of zones[zoneName]) {
       // why: a wound is never a "hero" for KO purposes (D-18503) — excluded here too.
       if (cardId === WOUND_EXT_ID) continue;
+      if (
+        greyFilterRead !== undefined &&
+        !matchesGreyHeroFilter(greyFilterRead.gameState, cardId, greyFilterRead.greyFilter)
+      ) {
+        continue;
+      }
       count += 1;
     }
   }

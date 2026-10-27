@@ -30,6 +30,8 @@ import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
 import { pushLog } from '../log/logPush.js';
+import type { GreyHeroFilter } from '../rules/villainAbility.types.js';
+import { matchesGreyHeroFilter } from '../hero/splitCard.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -64,19 +66,33 @@ export function hasPendingKoDiscardChoice(G: LegendaryGameState): boolean {
  * the discard while the choice is pending, so the projection and the resolve move both
  * read the live discard and agree byte-for-byte (the round-trip rule).
  *
+ * With a grey-Hero filter (WP-836 / D-24769) only the discard cards passing it are
+ * returned, still in discard order with duplicates kept.
+ *
  * @param G - The game state to inspect (not mutated).
  * @param playerID - The chooser whose discard is the KO source.
- * @returns The chooser's discard cards in order, or an empty array when the player is unknown.
+ * @param greyFilter - An optional grey-Hero filter on the KO.
+ * @returns The chooser's eligible discard cards in order, or an empty array when the player is unknown.
  */
 export function getEligibleKoDiscardCards(
   G: LegendaryGameState,
   playerID: string,
+  greyFilter?: GreyHeroFilter,
 ): CardExtId[] {
   const playerZones = G.playerZones[playerID];
   if (!playerZones) {
     return [];
   }
-  return [...playerZones.discard];
+  if (greyFilter === undefined) {
+    return [...playerZones.discard];
+  }
+  const eligibleCards: CardExtId[] = [];
+  for (const cardId of playerZones.discard) {
+    if (matchesGreyHeroFilter(G, cardId, greyFilter)) {
+      eligibleCards.push(cardId);
+    }
+  }
+  return eligibleCards;
 }
 
 /**
@@ -122,6 +138,13 @@ export function resolveKoDiscardChoice(
   // (front.maxCount); a selection larger than it is invalid (the discard-size clamp is
   // enforced implicitly by the in-discard presence check below).
   if (args.cardIds.length > front.maxCount) { return; }
+  // why: WP-836 / D-24769 — a filtered entry (Destroyer / Frost Giant Warrior / Ymir: grey
+  // Heroes only) rejects the whole selection when any id fails the filter, queue intact.
+  if (front.greyFilter !== undefined) {
+    for (const cardId of args.cardIds) {
+      if (!matchesGreyHeroFilter(G, cardId, front.greyFilter)) { return; }
+    }
+  }
 
   // Step 3: Resolve against CURRENT G — each chosen id must be present in the chooser's
   // discard now. The block-all guard freezes the discard while pending, so the discard

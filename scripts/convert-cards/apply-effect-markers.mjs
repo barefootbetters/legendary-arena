@@ -172,6 +172,11 @@ function isLockedEffectKeyword(keyword) {
 // Fight "+1 Recruit for each Hero Class you have" and Primus's Escape "each player discards a
 // Hero that costs 2, 3, 5, or 7"; the first validates via the terminal no-param branch, the
 // second via its own strictly-ascending cost-list branch below).
+// `gain-recruit-current-count-by-trait`, `draw-cards-current-count-by-trait` (both
+// `:<kind>:<value>`) and `reveal-top-ko-grey-or-draw-by-class` (`:<c>[+<c>…]`) appended at
+// positions 32, 33 and 34 by WP-836 (D-24769 — co2e Abomination, Beetle and Savage Land
+// Mutates Fights; the first two validate via the shared trait-predicate branch, the third via
+// its own Hero Class list branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -204,7 +209,16 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-bystander-each-victory-pile',
   'gain-recruit-current-per-hero-class',
   'discard-hero-each-player-by-cost',
+  'gain-recruit-current-count-by-trait',
+  'draw-cards-current-count-by-trait',
+  'reveal-top-ko-grey-or-draw-by-class',
 ];
+
+// why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
+// (packages/game-engine/src/content/content.schemas.ts). Same no-import-from-packages
+// discipline as CITY_SPACE_NAMES below: the reveal-top-ko-grey-or-draw-by-class class list
+// validates against it, so a mistyped class in the marker map is rejected.
+const HERO_CLASSES = ['tech', 'covert', 'strength', 'ranged', 'instinct'];
 
 // why: WP-816 / D-24749 — hand-synced local copy of the engine's VILLAIN_EFFECT_CONDITIONS
 // (packages/game-engine/src/rules/villainAbility.types.ts). Same no-import-from-packages
@@ -258,6 +272,25 @@ function isValidEligibleCostList(costListToken) {
 }
 
 /**
+ * Returns true when a `+`-joined Hero Class list (`strength+instinct`) is well-formed: every
+ * token, after trim + lowercase, a member of HERO_CLASSES, with no repeats (D-24769). Mirrors
+ * the engine parser's parseHeroClassList.
+ *
+ * @param {string} classListToken - the text after the primitive's `:`.
+ * @returns {boolean} true when the list is well-formed.
+ */
+function isValidHeroClassList(classListToken) {
+  const seenClasses = [];
+  for (const rawClass of classListToken.split('+')) {
+    const heroClass = rawClass.trim().toLowerCase();
+    if (!HERO_CLASSES.includes(heroClass)) return false;
+    if (seenClasses.includes(heroClass)) return false;
+    seenClasses.push(heroClass);
+  }
+  return true;
+}
+
+/**
  * Returns true when a token is a well-formed parameterized effect token
  * `<primitive>[:<param>...][@<space>[+<space>...]][!<condition>]`, mirroring the engine parser's grammar
  * (parseParameterizedEffect in setup/villainAbility.setup.ts). Forward-compatible:
@@ -299,6 +332,17 @@ function isValidParameterizedEffectToken(token) {
       parts[1] === 'each' &&
       /^[1-9][0-9]*$/.test(parts[2]) &&
       (parts[3] === 'discard' || parts[3] === 'hand')
+    ) {
+      return true;
+    }
+    // why: D-24769 — the 5-token ko-hero:each:N:discard:non-grey form (co2e Destroyer).
+    // Mirrors the engine parser's ko-hero:each 5-token branch.
+    if (
+      parts.length === 5 &&
+      parts[1] === 'each' &&
+      /^[1-9][0-9]*$/.test(parts[2]) &&
+      parts[3] === 'discard' &&
+      parts[4] === 'non-grey'
     ) {
       return true;
     }
@@ -365,7 +409,18 @@ function isValidParameterizedEffectToken(token) {
     // why: D-24589 — grammar <primitive>:<N> (exactly 2 tokens); N is a positive integer
     // (Patriarch's cost ceiling 3, Salomé's KO cap 2). Mirrors the engine parser's
     // parsePositiveInteger branch so producer + consumer agree on the grammar.
+    // why: D-24769 — ko-up-to-from-discard-current:<N>:grey (co2e Destroyer / Frost Giant
+    // Warrior / Ymir) limits the KO to grey Heroes; the reveal-draw sibling stays 2 tokens.
+    if (primitive === 'ko-up-to-from-discard-current' && parts.length === 3) {
+      return /^[1-9][0-9]*$/.test(parts[1]) && parts[2] === 'grey';
+    }
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'reveal-top-ko-grey-or-draw-by-class') {
+    // why: D-24769 — grammar reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…] (exactly 2
+    // tokens; co2e Savage Land Mutates: :strength+instinct). Mirrors the engine parser's
+    // parseHeroClassList so producer + consumer accept the same tokens.
+    return parts.length === 2 && isValidHeroClassList(parts[1]);
   }
   if (primitive === 'play-villain-deck-cards') {
     // why: D-24351 — grammar play-villain-deck-cards:<N> (exactly 2 tokens); N is the
@@ -379,7 +434,9 @@ function isValidParameterizedEffectToken(token) {
     primitive === 'ko-heroes-current-count-by-trait' ||
     primitive === 'rescue-bystanders-current-by-trait-count' ||
     primitive === 'capture-bystanders-plus-per-hq-hero-by-trait' ||
-    primitive === 'give-hq-hero-by-trait-to-current'
+    primitive === 'give-hq-hero-by-trait-to-current' ||
+    primitive === 'gain-recruit-current-count-by-trait' ||
+    primitive === 'draw-cards-current-count-by-trait'
   ) {
     // why: D-24290 / D-24334 / D-24335 / D-24353 — all use the shared trait-predicate
     // grammar <kind>:<value> (exactly 3 tokens; kind team | hc; non-empty value), mirroring

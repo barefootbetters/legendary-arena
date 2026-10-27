@@ -422,6 +422,7 @@ import type { HeroAbilityHook } from './rules/heroAbility.types.js';
 // HeroKeyword union (the reward dispatched on KO).
 import type { HeroKeyword } from './rules/heroKeywords.js';
 import type {
+  GreyHeroFilter,
   VillainAbilityHook,
   VillainDefeatRequirement,
   VillainFightDiscardCost,
@@ -536,6 +537,11 @@ export interface PendingKoHeroChoice {
   // prompt, the resolve move, and the bot default follow the printed zone.
   // Additive + append-only (D-24034); a bare entry omits it.
   zones?: readonly ('hand' | 'discard' | 'inPlay')[];
+  // why: WP-836 / D-24769 — an OPTIONAL grey-Hero filter on the KO (co2e Destroyer's
+  // "KOs a non-grey Hero from their discard pile" parks `'non-grey'`). ABSENT means no
+  // filter, so every other entry is byte-identical. The resolve move, the projection
+  // and the bot default all test it with `matchesGreyHeroFilter`.
+  greyFilter?: GreyHeroFilter;
 }
 
 /**
@@ -980,6 +986,13 @@ export interface PendingKoDiscardChoice {
    * names the card from G.cardDisplayData.
    */
   sourceCardId?: CardExtId;
+  /**
+   * An optional grey-Hero filter (WP-836 / D-24769): `'grey'` limits the KO to grey
+   * Heroes (co2e Destroyer / Frost Giant Warrior / Ymir "KO … grey Heroes from your
+   * discard pile"). Omit-when-absent, so Maniacal Tyrant's and Salomé's entries are
+   * byte-identical; the resolve, the projection and the bot default all test it.
+   */
+  greyFilter?: GreyHeroFilter;
 }
 
 /**

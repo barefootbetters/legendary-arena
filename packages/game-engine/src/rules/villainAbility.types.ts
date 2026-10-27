@@ -12,6 +12,7 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { CitySpaceName } from '../board/citySpaceNames.js';
+import type { HeroClass } from '../content/content.schemas.js';
 
 // ---------------------------------------------------------------------------
 // VillainAbilityTiming
@@ -363,7 +364,10 @@ export type VillainEffectPrimitive =
   | 'ko-up-to-from-discard-current'
   | 'ko-bystander-each-victory-pile'
   | 'gain-recruit-current-per-hero-class'
-  | 'discard-hero-each-player-by-cost';
+  | 'discard-hero-each-player-by-cost'
+  | 'gain-recruit-current-count-by-trait'
+  | 'draw-cards-current-count-by-trait'
+  | 'reveal-top-ko-grey-or-draw-by-class';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -480,7 +484,26 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // positions.
   'gain-recruit-current-per-hero-class',
   'discard-hero-each-player-by-cost',
+  // why: WP-836 / D-24769 — appended at positions 32, 33 and 34. Abomination's Fight
+  // (`gain-recruit-current-count-by-trait:<kind>:<value>`: +1 Recruit per Hero you have
+  // that matches the trait), Beetle's Fight (`draw-cards-current-count-by-trait:<kind>:
+  // <value>`: count the matching Heroes you have, then draw that many) and co2e Savage
+  // Land Mutates' Fight (`reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`: reveal your
+  // deck top; KO it if grey, draw it if it has a listed Hero Class, else leave it). All
+  // three keyword-less, so all three self-narrate. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends them at the same positions.
+  'gain-recruit-current-count-by-trait',
+  'draw-cards-current-count-by-trait',
+  'reveal-top-ko-grey-or-draw-by-class',
 ] as const;
+
+/**
+ * Which side of the grey line a KO accepts (WP-836 / D-24769). Rules v23 L1487-1492:
+ * "grey Heroes" are the grey-colored cards with no Hero Class (S.H.I.E.L.D. Agents,
+ * Troopers, Officers, Sidekicks). `'grey'` accepts only those; `'non-grey'` accepts only
+ * Heroes with a Hero Class. A Wound is neither (L3404-3407).
+ */
+export type GreyHeroFilter = 'grey' | 'non-grey';
 
 // why: WP-816 / D-24749 — the closed set of villain marker CONDITION gates, the
 // `!<condition>` suffix on an `[effect:…]` marker. `'savior'` gates a line on the
@@ -532,6 +555,19 @@ export const VILLAIN_EFFECT_CONDITIONS: readonly VillainEffectCondition[] = [
  *   - `discard-hero-each-player-by-cost` (D-24750): `eligibleCosts` lists the costs
  *     (strictly ascending); each player discards a Hero whose cost is one of them —
  *     Primus's Escape. Resolved after the move as a multi-seat choice.
+ *   - `ko-hero` with `target: 'each'` and `zone: 'discard'`: optional `greyFilter`
+ *     (D-24769) `'non-grey'` — each player KOs a Hero with a Hero Class from their
+ *     discard pile (co2e Destroyer's Ambush / Escape).
+ *   - `ko-up-to-from-discard-current`: optional `greyFilter` (D-24769) `'grey'` — only
+ *     grey Heroes may be KO'd (co2e Destroyer / Frost Giant Warrior / Ymir Fight).
+ *   - `gain-recruit-current-count-by-trait` (D-24769): `requireKind` + `requireValue`;
+ *     +1 Recruit per matching Hero in the current player's hand and play area
+ *     (co2e Abomination's Fight).
+ *   - `draw-cards-current-count-by-trait` (D-24769): `requireKind` + `requireValue`;
+ *     count the matching Heroes in hand and play area, then draw that many (Beetle).
+ *   - `reveal-top-ko-grey-or-draw-by-class` (D-24769): `drawHeroClasses` lists the
+ *     classes that draw the revealed card; a grey card is KO'd, anything else stays
+ *     on top (co2e Savage Land Mutates' Fight).
  *   - Any effect: optional `requireCondition` (D-24749) is a condition gate — the
  *     effect fires only when the CURRENT player meets the condition (`'savior'`:
  *     at least 3 Bystanders in their Victory Pile). Lifted from the marker's
@@ -646,6 +682,18 @@ export interface VillainEffectDescriptor {
   // parser. Deliberately NOT part of `descriptorKey` below — the primitive is
   // keyword-less, so it reverse-maps to `undefined` and self-narrates regardless.
   eligibleCosts?: readonly number[];
+  // why: D-24769 — the grey-Hero restriction on two existing KO primitives: `'non-grey'`
+  // on the each-player discard `ko-hero` (Destroyer's Ambush / Escape) and `'grey'` on
+  // `ko-up-to-from-discard-current` (Destroyer / Frost Giant Warrior / Ymir Fight).
+  // Deliberately NOT part of `descriptorKey` below, so a filtered each-player KO still
+  // reverse-maps to `koHeroEachPlayer` and narrates through the generic line, exactly
+  // as the zone does (D-24280).
+  greyFilter?: GreyHeroFilter;
+  // why: D-24769 — the Hero Classes that draw the revealed card, present ONLY on
+  // `{ primitive: 'reveal-top-ko-grey-or-draw-by-class' }` descriptors (co2e Savage Land
+  // Mutates: ['strength', 'instinct']), in marker order. Deliberately NOT part of
+  // `descriptorKey` below — the primitive is keyword-less, so it self-narrates regardless.
+  drawHeroClasses?: readonly HeroClass[];
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The

@@ -39,6 +39,8 @@ import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 // requirement setup use — reusing it here keeps marker values and trait slugs
 // in one space; a second normalizer would be a drift source.
 import { normalizeTraitSlug } from '../state/traits.normalize.js';
+import { HERO_CLASSES } from '../content/content.schemas.js';
+import type { HeroClass } from '../content/content.schemas.js';
 // why: D-18704 / D-18706 — villain hooks must key by the copy-indexed
 // instance ext_id (matching the Fight/Ambush fire sites that pass a zone id),
 // fanning out exactly like the henchman path already does. The shared emitter
@@ -311,6 +313,32 @@ function parseTraitPredicateTokens(
 }
 
 /**
+ * Parses a `+`-joined Hero Class list (`strength+instinct`) into normalized class slugs,
+ * in token order, or null when malformed (WP-836 / D-24769).
+ *
+ * Each token is normalized (trim + lowercase) and must be one of `HERO_CLASSES`; an
+ * empty token, an unknown class or a repeated class returns null.
+ *
+ * @param token - The raw class-list token (the text after the primitive's `:`).
+ * @returns The parsed classes, or null.
+ */
+function parseHeroClassList(token: string): HeroClass[] | null {
+  const heroClasses: HeroClass[] = [];
+  for (const rawClass of token.split('+')) {
+    const normalizedClass = normalizeTraitSlug(rawClass);
+    const heroClass = HERO_CLASSES.find((candidate) => candidate === normalizedClass);
+    if (heroClass === undefined) {
+      return null;
+    }
+    if (heroClasses.includes(heroClass)) {
+      return null;
+    }
+    heroClasses.push(heroClass);
+  }
+  return heroClasses;
+}
+
+/**
  * Validates a `@<space>[+<space>…]` gate suffix and lifts it to a
  * `requireCitySpaces` list, or null when it is empty or names an unknown space
  * (D-24295).
@@ -459,7 +487,8 @@ function parseLocationGatedEffect(
  * Forward-compatible grammar (WP-252 / D-24023): accepting it makes a future
  * magnitude (e.g. `ko-hero:each:3`) or selector data-only — no new keyword, no
  * code change. Colon-delimited and positional per primitive:
- *   - `ko-hero:current` | `ko-hero:each:<N>`
+ *   - `ko-hero:current` | `ko-hero:each:<N>` | `ko-hero:each:<N>:<zone>` (D-24280)
+ *     | `ko-hero:each:<N>:discard:non-grey` (D-24769)
  *   - `gain-wound:current` | `gain-wound:each` | `gain-wound:each-other[:<N>]` (D-24295)
  *     | `gain-wound:each-non-savior` (D-24749)
  *   - `capture-hq-hero:rightmost` | `:highest-cost` | `:lowest-cost`
@@ -471,6 +500,10 @@ function parseLocationGatedEffect(
  *   - `play-villain-deck-cards:<N>`  (N top villain-deck cards to play; D-24351)
  *   - `reveal-top-draw-if-cost-lte:<N>`  (draw the deck top if it costs ≤ N; D-24589)
  *   - `ko-up-to-from-discard-current:<N>`  (KO up to N cards from your discard; D-24589)
+ *     | `ko-up-to-from-discard-current:<N>:grey`  (only grey Heroes; D-24769)
+ *   - `gain-recruit-current-count-by-trait:<kind>:<value>` and
+ *     `draw-cards-current-count-by-trait:<kind>:<value>`  (count-sized; D-24769)
+ *   - `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`  (Hero Classes that draw; D-24769)
  *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
  *   - `ko-heroes-current-count-by-trait:<kind>:<value>`  (the trait sizes the COUNT, not
  *     the KO filter; kind `team` | `hc`; D-24353)
@@ -533,6 +566,16 @@ function parseUngatedEffect(
         return null;
       }
       return { primitive: 'ko-hero', target: 'each', magnitude, zone };
+    }
+    // why: WP-836 / D-24769 — the 5-token `ko-hero:each:<N>:discard:non-grey` form (co2e
+    // Destroyer's "Each player KOs a non-grey Hero from their discard pile"). Only the
+    // discard zone and only `non-grey` are printed, so any other 5-token form is null.
+    if (target === 'each' && parts.length === 5) {
+      const magnitude = parsePositiveInteger(parts[2]!);
+      if (magnitude === null || parts[3] !== 'discard' || parts[4] !== 'non-grey') {
+        return null;
+      }
+      return { primitive: 'ko-hero', target: 'each', magnitude, zone: 'discard', greyFilter: 'non-grey' };
     }
     return null;
   }
@@ -677,6 +720,16 @@ function parseUngatedEffect(
     // `magnitude`: the cost ceiling for Patriarch's reveal-draw (3), the KO cap for
     // Salomé's discard KO (2). A missing or non-positive count falls through to null
     // (→ unresolvedMarkers) — neither effect has a meaningful default.
+    // why: WP-836 / D-24769 — `ko-up-to-from-discard-current:<N>:grey` (co2e Destroyer /
+    // Frost Giant Warrior / Ymir "KO … grey Heroes from your discard pile") limits the KO
+    // to grey Heroes. Only `grey` is printed; the reveal-draw sibling stays 2 tokens.
+    if (primitiveToken === 'ko-up-to-from-discard-current' && parts.length === 3) {
+      const magnitude = parsePositiveInteger(parts[1]!);
+      if (magnitude === null || parts[2] !== 'grey') {
+        return null;
+      }
+      return { primitive: 'ko-up-to-from-discard-current', magnitude, greyFilter: 'grey' };
+    }
     if (parts.length !== 2) {
       return null;
     }
@@ -685,6 +738,37 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: primitiveToken, magnitude };
+  }
+  if (
+    primitiveToken === 'gain-recruit-current-count-by-trait' ||
+    primitiveToken === 'draw-cards-current-count-by-trait'
+  ) {
+    // why: WP-836 / D-24769 — grammar `<primitive>:<kind>:<value>` (co2e Abomination:
+    // `gain-recruit-current-count-by-trait:hc:strength`; Beetle:
+    // `draw-cards-current-count-by-trait:hc:covert`). The shared trait-predicate parser
+    // sizes the count; a malformed tail returns null.
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
+      return null;
+    }
+    return {
+      primitive: primitiveToken,
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
+  }
+  if (primitiveToken === 'reveal-top-ko-grey-or-draw-by-class') {
+    // why: WP-836 / D-24769 — grammar `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`
+    // (co2e Savage Land Mutates: `:strength+instinct`). Exactly 2 colon-parts; the class
+    // list is required, each a Hero Class, no repeats. Anything else returns null.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const drawHeroClasses = parseHeroClassList(parts[1]!);
+    if (drawHeroClasses === null) {
+      return null;
+    }
+    return { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses };
   }
   if (primitiveToken === 'play-villain-deck-cards') {
     // why: D-24351 — grammar `play-villain-deck-cards:<N>` (exactly 2 tokens); N is the

@@ -42,9 +42,11 @@ import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mast
 import {
   selectDefaultKoTarget,
   selectKoHeroTarget,
+  selectKoHeroTargetByGreyFilter,
   selectScryKoTarget,
   isCullableDeckTopCard,
 } from '../villain/villainEffects.execute.js';
+import { matchesGreyHeroFilter } from '../hero/splitCard.logic.js';
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -285,7 +287,14 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
   if (front === undefined) {
     return [];
   }
-  const discard = gameState.playerZones[front.playerID]?.discard ?? [];
+  const fullDiscard = gameState.playerZones[front.playerID]?.discard ?? [];
+  // why: D-24769 — a filtered entry (grey Heroes only) mirrors the resolve's filter, or the
+  // block-all guard never lifts: a Wound is never offered, and Officers stay kept.
+  const greyFilter = front.greyFilter;
+  const discard =
+    greyFilter === undefined
+      ? fullDiscard
+      : fullDiscard.filter((cardId) => matchesGreyHeroFilter(gameState, cardId, greyFilter));
   const chosen: CardExtId[] = [];
   // why: D-24688 — Wounds first (a dead card is the best KO), then the starting
   // S.H.I.E.L.D. cards; two passes keep the order deterministic and capped.
@@ -737,7 +746,13 @@ export function getLegalMoves(
       // reads the discard pile (D-24687), so it would return null here, the bot
       // would have no legal move, and the block-all guard would never lift
       // (scaffold: 225 of 312 sweep games stalled). A hand card would be rejected.
-      const discardTarget = selectKoHeroTarget(zones.discard);
+      // why: D-24769 — a filtered entry (Destroyer, 'non-grey') must offer a card the
+      // resolve's filter accepts, or the block-all guard never lifts; the filtered pick is
+      // the same lowest-cost card the other seats auto-KO (D-24009 parity).
+      const discardTarget =
+        front.greyFilter === undefined
+          ? selectKoHeroTarget(zones.discard)
+          : selectKoHeroTargetByGreyFilter(gameState, zones.discard, front.greyFilter);
       defaultTarget = discardTarget === null ? null : { zone: 'discard', cardId: discardTarget };
     } else {
       defaultTarget = selectDefaultKoTarget(zones);

@@ -355,8 +355,9 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // (Executioner's Escape — each player KOs the first Bystander in their Victory Pile).
   // WP-817 (D-24750) appended the thirtieth and thirty-first,
   // `gain-recruit-current-per-hero-class` (Captain Zolandia's Fight) and
-  // `discard-hero-each-player-by-cost` (Primus's Escape).
-  it('contains exactly the 31 canonical primitives in order', () => {
+  // `discard-hero-each-player-by-cost` (Primus's Escape). WP-836 (D-24769) appended the
+  // thirty-second to thirty-fourth (co2e Abomination, Beetle, Savage Land Mutates Fights).
+  it('contains exactly the 34 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -389,16 +390,19 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'ko-bystander-each-victory-pile',
       'gain-recruit-current-per-hero-class',
       'discard-hero-each-player-by-cost',
+      'gain-recruit-current-count-by-trait',
+      'draw-cards-current-count-by-trait',
+      'reveal-top-ko-grey-or-draw-by-class',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      31,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 31 entries',
+      34,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 34 entries',
     );
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES[VILLAIN_EFFECT_PRIMITIVES.length - 1],
-      'discard-hero-each-player-by-cost',
-      'discard-hero-each-player-by-cost must be appended last (position 31)',
+      'reveal-top-ko-grey-or-draw-by-class',
+      'reveal-top-ko-grey-or-draw-by-class must be appended last (position 34)',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
@@ -615,8 +619,9 @@ describe('WP-816 villain-side Savior types (D-24749)', () => {
   });
 
   it('T2: ko-bystander-each-victory-pile is the 29th primitive', () => {
-    // why: WP-817 (D-24750) appended positions 30-31 after it, so the total moved 29 → 31.
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 31);
+    // why: WP-817 (D-24750) appended positions 30-31 after it and WP-836 (D-24769) 32-34,
+    // so the total moved 29 → 31 → 34.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 34);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[28], 'ko-bystander-each-victory-pile');
   });
 
@@ -649,7 +654,8 @@ describe('WP-816 villain-side Savior types (D-24749)', () => {
 
 describe('WP-817 Captain Zolandia + Primus types (D-24750)', () => {
   it('T1: the two new primitives sit at positions 30 and 31', () => {
-    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 31);
+    // why: WP-836 (D-24769) appended positions 32-34 after them, so the total is 34.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 34);
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[29], 'gain-recruit-current-per-hero-class');
     assert.equal(VILLAIN_EFFECT_PRIMITIVES[30], 'discard-hero-each-player-by-cost');
   });
@@ -667,6 +673,57 @@ describe('WP-817 Captain Zolandia + Primus types (D-24750)', () => {
     assert.equal(
       descriptorToLegacyKeyword({ primitive: 'gain-wound', target: 'each', eligibleCosts: [2] }),
       'gainWoundEachPlayer',
+    );
+  });
+});
+
+describe('WP-836 co2e grey-Hero and Hero-count types (D-24769)', () => {
+  it('T1: the three new primitives sit at positions 32, 33 and 34', () => {
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 34);
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[31], 'gain-recruit-current-count-by-trait');
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[32], 'draw-cards-current-count-by-trait');
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[33], 'reveal-top-ko-grey-or-draw-by-class');
+  });
+
+  it('T2: greyFilter stays out of the descriptor key; the new primitives are keyword-less', () => {
+    // why: a filtered each-player discard KO must still reverse-map to koHeroEachPlayer so it
+    // narrates through the generic line, exactly as the zone does (D-24280).
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'ko-hero',
+        target: 'each',
+        magnitude: 1,
+        zone: 'discard',
+        greyFilter: 'non-grey',
+      }),
+      'koHeroEachPlayer',
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'gain-recruit-current-count-by-trait',
+        requireKind: 'hero-class',
+        requireValue: 'strength',
+      }),
+      undefined,
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'draw-cards-current-count-by-trait',
+        requireKind: 'hero-class',
+        requireValue: 'covert',
+      }),
+      undefined,
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'reveal-top-ko-grey-or-draw-by-class',
+        drawHeroClasses: ['strength', 'instinct'],
+      }),
+      undefined,
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'ko-up-to-from-discard-current', magnitude: 2, greyFilter: 'grey' }),
+      undefined,
     );
   });
 });
