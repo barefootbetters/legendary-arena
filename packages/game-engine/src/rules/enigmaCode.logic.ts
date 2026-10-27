@@ -25,7 +25,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { parkSeatChoice } from '../moves/seatChoice.resolve.js';
 import { hasAnyPendingChoice } from '../moves/phaseCard.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
-import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import { isGreyHero, offPlayCardTraits } from '../hero/splitCard.logic.js';
 import { getAvailableRecruit, spendRecruit } from '../economy/economy.logic.js';
 import { applyEndOfTurnCleanup } from '../moves/endOfTurnCleanup.logic.js';
 import { consumeExtraTurn } from '../turn/turnLoop.js';
@@ -97,6 +97,10 @@ export function isEnigmaColor(value: unknown): value is EnigmaColor {
  * @returns One or two colors, never empty.
  */
 export function enigmaColorsOf(G: LegendaryGameState, cardId: CardExtId): EnigmaColor[] {
+  // why: D-24783 — grey is the shared grey-Hero predicate's call, not a local class scan.
+  if (isGreyHero(G, cardId)) {
+    return ['grey'];
+  }
   const traits = offPlayCardTraits(G, cardId);
   const colors: EnigmaColor[] = [];
   for (const heroClass of [traits?.heroClass, traits?.heroClass2]) {
@@ -104,6 +108,8 @@ export function enigmaColorsOf(G: LegendaryGameState, cardId: CardExtId): Enigma
       colors.push(heroClass);
     }
   }
+  // why: the code holds Hero Deck cards, so this only catches a card that is not a Hero (a
+  // Wound) or carries a class outside the five; "never empty" keeps every guess check total.
   if (colors.length === 0) {
     colors.push('grey');
   }

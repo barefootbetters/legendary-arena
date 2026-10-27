@@ -2831,11 +2831,15 @@ describe('buildUIState — WP-836 grey-filtered KO projections (D-24769)', () =>
       buildUIState(greyState, mockCtx).pendingKoDiscardChoice!.discard.map((entry) => entry.cardId),
       [AGENT, AGENT, OFFICER],
     );
+    // why: D-24783 — the filter rides on the projection (the prompt names grey Heroes); an
+    // unfiltered entry carries no greyFilter key at all.
+    assert.equal(buildUIState(greyState, mockCtx).pendingKoDiscardChoice!.greyFilter, 'grey');
     const plainState = withGreyDiscard(discard);
     plainState.pendingKoDiscardChoices = [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2 }];
     assert.deepStrictEqual(
       buildUIState(plainState, mockCtx).pendingKoDiscardChoice!.discard.map((entry) => entry.cardId),
       discard,
     );
+    assert.equal(Object.keys(buildUIState(plainState, mockCtx).pendingKoDiscardChoice!).includes('greyFilter'), false);
   });
 });

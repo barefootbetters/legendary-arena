@@ -24,6 +24,7 @@ import type { FinalScoreSummary } from "../scoring/scoring.types.js";
 import type { NotableGameEvent } from "../events/notableEvents.types.js";
 import type { LogEntry } from "../log/logOutcome.types.js";
 import type { CardExtId } from "../state/zones.types.js";
+import type { GreyHeroFilter } from "../rules/villainAbility.types.js";
 import type { AttackTargetName } from "../economy/economy.types.js";
 import type { MenaceTier, SchemeLossKind } from "../rules/schemeLossProgress.js";
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
@@ -1505,14 +1506,19 @@ export interface UIPendingDefeatChoice {
  * "KO nothing" choice. Each entry's instance `cardId` (NOT `display.extId`) is what the
  * engine resolve matches against the live discard (the round-trip rule).
  *
+ * // why: D-24783 — `greyFilter` is present only on a grey-filtered entry (Frost Giant Warrior /
+ * Ymir: `'grey'`), so the prompt can say "grey Heroes"; `discard` is already filtered to match.
+ * Absent on an unfiltered entry (Loki's Maniacal Tyrant, Salomé).
+ *
  * @see WP-693 §Scope (In)
  * @see EC-730 Locked Values
- * @see DECISIONS.md D-24510
+ * @see DECISIONS.md D-24510, D-24769, D-24783
  */
 export interface UIPendingKoDiscardChoice {
   choiceType: "ko-from-discard";
   playerID: string;
   maxCount: number;
+  greyFilter?: GreyHeroFilter;
   discard: UIDiscardChoiceHandCard[];
 }
 

@@ -1135,6 +1135,22 @@ describe('filterUIStateForAudience — pendingKoDiscardChoice redaction (D-24510
     filterUIStateForAudience(uiState, PLAYER_1);
     assert.ok(uiState.pendingKoDiscardChoice !== undefined, 'source UIState unchanged');
   });
+
+  it('D-24783: a grey-filtered entry keeps greyFilter for the chooser only; an unfiltered entry has none', () => {
+    const config = createTestConfig();
+    const gameState = buildInitialGameState(config, createMockRegistry(), makeMockCtx());
+    gameState.playerZones['0']!.discard = ['kodiscard-grey-a' as CardExtId];
+    gameState.pendingKoDiscardChoices = [
+      { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, greyFilter: 'grey' },
+    ];
+    const greyUIState = buildUIState(gameState, mockCtx);
+    assert.equal(filterUIStateForAudience(greyUIState, PLAYER_0).pendingKoDiscardChoice!.greyFilter, 'grey');
+    assert.equal(filterUIStateForAudience(greyUIState, PLAYER_1).pendingKoDiscardChoice, undefined);
+    assert.equal(filterUIStateForAudience(greyUIState, SPECTATOR).pendingKoDiscardChoice, undefined);
+
+    const plainChoice = filterUIStateForAudience(createKoDiscardChoiceUIState(), PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(Object.keys(plainChoice).includes('greyFilter'), false, 'no greyFilter key on an unfiltered entry');
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@
  * No `boardgame.io` import. No `@legendary-arena/registry` import.
  */
 
-import type { VillainEffectKeyword, VillainWoundOutcomes } from '../rules/villainAbility.types.js';
+import type { GreyHeroFilter, VillainEffectKeyword, VillainWoundOutcomes } from '../rules/villainAbility.types.js';
 import type { SchemeTwistResolverKey, StrikeBlockThreatKind } from './notableEvents.types.js';
 
 // ---------------------------------------------------------------------------
@@ -77,6 +77,8 @@ export interface ResolvedEffectResult {
   playerTargetNames?: ResolvedPlayerTargetNames[];
   /** A gain-wound effect's outcomes when a Diving Block reveal is pending (D-24673). */
   woundOutcomes?: VillainWoundOutcomes;
+  /** A grey-filtered each-player KO's filter (D-24783, Destroyer's `'non-grey'`). */
+  greyFilter?: GreyHeroFilter;
 }
 
 /**
@@ -169,10 +171,18 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     if (result.keyword === 'koHeroEachPlayerMag2') {
       pendingClause = 'the active player must KO two heroes';
     }
+    // why: D-24783 — a grey-filtered KO (Destroyer: "KOs a non-grey Hero") names the filter.
+    if (result.greyFilter !== undefined) {
+      if (result.keyword === 'koHeroEachPlayerMag2') {
+        pendingClause = `the active player must KO two ${greyHeroNoun(result.greyFilter, 2)}`;
+      } else {
+        pendingClause = `the active player must KO a ${greyHeroNoun(result.greyFilter, 1)}`;
+      }
+    }
     // why: D-24683 — with the per-player split, name each other player's outcome
     // ("Player 1 KO’d …" / "Player 1 had no hero to KO") instead of a flat list.
     if (result.playerTargetNames !== undefined) {
-      const otherClauses = composePlayerKoClauses(result.playerTargetNames);
+      const otherClauses = composePlayerKoClauses(result.playerTargetNames, result.greyFilter);
       if (otherClauses.length > 0) {
         return `${pendingClause}; ${otherClauses.join('; ')}`;
       }
@@ -201,7 +211,7 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
   // O7iMuNBh9E5). With the per-player split, say who KO'd what. Nothing KO'd at all keeps
   // the D-24646 "no player had a hero to KO" wording below.
   if (result.playerTargetNames !== undefined && result.targetNames.length > 0) {
-    return composePlayerKoClauses(result.playerTargetNames).join('; ');
+    return composePlayerKoClauses(result.playerTargetNames, result.greyFilter).join('; ');
   }
   if (result.targetNames.length > 0) {
     return `${label} (${result.targetNames.join(', ')})`;
@@ -210,6 +220,11 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
   // that found no Hero to take (an empty discard pile, say) must not claim one happened.
   const noTargetLabel = NO_TARGET_KO_LABELS[result.keyword];
   if (noTargetLabel !== undefined) {
+    // why: D-24783 — a grey-filtered each-player KO that found nothing says which Heroes
+    // were missing ("no player had a non-grey Hero to KO").
+    if (result.greyFilter !== undefined && result.keyword !== 'koHeroCurrentPlayer') {
+      return `no player had a ${greyHeroNoun(result.greyFilter, 1)} to KO`;
+    }
     return noTargetLabel;
   }
   return label;
@@ -220,9 +235,19 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
  * whose pick is still pending (the caller names that one).
  *
  * @param playerTargetNames - Each player's share, in seat order.
+ * @param greyFilter - The KO's grey-Hero filter (D-24783), or undefined for an unfiltered KO.
  * @returns "Player N KO’d A, B" or "Player N had no hero to KO", one per non-pending player.
  */
-function composePlayerKoClauses(playerTargetNames: readonly ResolvedPlayerTargetNames[]): string[] {
+function composePlayerKoClauses(
+  playerTargetNames: readonly ResolvedPlayerTargetNames[],
+  greyFilter?: GreyHeroFilter,
+): string[] {
+  // why: D-24783 — Destroyer's 'non-grey' KO skips grey Heroes, so a player holding only
+  // S.H.I.E.L.D. starters had no NON-GREY Hero to KO; "no hero" would be false.
+  let noHeroClause = 'had no hero to KO';
+  if (greyFilter !== undefined) {
+    noHeroClause = `had no ${greyHeroNoun(greyFilter, 1)} to KO`;
+  }
   const clauses: string[] = [];
   for (const playerShare of playerTargetNames) {
     if (playerShare.pending === true) {
@@ -231,10 +256,22 @@ function composePlayerKoClauses(playerTargetNames: readonly ResolvedPlayerTarget
     if (playerShare.names.length > 0) {
       clauses.push(`Player ${playerShare.playerId} KO’d ${playerShare.names.join(', ')}`);
     } else {
-      clauses.push(`Player ${playerShare.playerId} had no hero to KO`);
+      clauses.push(`Player ${playerShare.playerId} ${noHeroClause}`);
     }
   }
   return clauses;
+}
+
+/**
+ * Names the Heroes a grey filter admits, for a KO log clause (D-24783).
+ *
+ * @param greyFilter - `'grey'` or `'non-grey'`.
+ * @param count - 1 for the singular, anything else for the plural.
+ * @returns "non-grey Hero", "grey Heroes", and so on.
+ */
+function greyHeroNoun(greyFilter: GreyHeroFilter, count: number): string {
+  const heroWord = count === 1 ? 'Hero' : 'Heroes';
+  return `${greyFilter} ${heroWord}`;
 }
 
 // why: D-24646 — the resolved-nothing wording for the three KO-a-Hero keywords, the only

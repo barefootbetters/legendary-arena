@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { mastermindStrikeHandler, selectDiscardToLimitCards } from './mastermindHandlers.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
@@ -1866,6 +1866,54 @@ describe('mastermindStrikeHandler — Doctor Octopus reveal-eight (WP-397)', () 
     // deck, even now that a shuffle function is available to the handler.
     assert.deepEqual(loki.playerZones['0']!.deck, ['d1', 'd2']);
     assert.deepEqual(loki.playerZones['0']!.discard, ['st-a']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24783 — Loki's and Doctor Octopus's non-grey reads use the shared grey predicate
+// ---------------------------------------------------------------------------
+
+/**
+ * Gives a state one split card whose face a has no class of its own and whose face b is Tech.
+ * Off play the card counts as both faces' classes (rules v23 p.49), so it is non-grey; its own
+ * raw `G.cardTraits` entry alone says grey. Real split faces all carry a class, so this is the
+ * smallest fixture where reading the off-play view and reading the raw entry disagree.
+ */
+function addClasslessFaceSplitCard(gameState: LegendaryGameState): void {
+  gameState.splitFaces = { 'split-a': 'split-b' } as LegendaryGameState['splitFaces'];
+  gameState.cardTraits['split-a#0'] = { heroClass: null, team: null } as never;
+  gameState.cardTraits['split-b#0'] = TECH as never;
+  gameState.cardStats['split-a#0'] = co2eStat(2);
+}
+
+describe('D-24783 — non-grey strike reads go through matchesGreyHeroFilter', () => {
+  it('co2e Loki stacks a split card whose other face has a class as a Hypno-Thrall', () => {
+    const gameState = makeCo2eState('co2e/loki', { '0': ['split-a#0'] }, {}, {});
+    addClasslessFaceSplitCard(gameState);
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.mastermind.hypnoThralls, ['split-a#0']);
+    assert.deepEqual(gameState.playerZones['0']!.hand, []);
+  });
+
+  it('Doctor Octopus discards a revealed split card whose other face has a class', () => {
+    const gameState = makeOctopusRevealState(['split-a#0', 'grey-x'], {});
+    addClasslessFaceSplitCard(gameState);
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['split-a#0']);
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['grey-x']);
+  });
+
+  it('Doctor Octopus still returns a revealed Bystander and Wound to the deck', () => {
+    const gameState = makeOctopusRevealState([BYSTANDER_EXT_ID, WOUND_EXT_ID], {});
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+    assert.deepEqual(sortedCopy(gameState.playerZones['0']!.deck), sortedCopy([BYSTANDER_EXT_ID, WOUND_EXT_ID]));
   });
 });
 

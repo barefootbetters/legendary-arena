@@ -178,14 +178,22 @@ describe('resolveKoDiscardChoice — source naming (WP-760 / D-24589)', () => {
     resolveKoDiscardChoice(makeContext(G), { cardIds: ['a', 'c'] });
     assert.deepStrictEqual(G.ko, ['a', 'c']);
     const lastMessage = G.messages![G.messages!.length - 1]!;
-    assert.equal(lastMessage.text, "Player 0 KO'd 2 card(s) from their discard pile (Salomé, Sorceress Supreme).");
+    // why: D-24783 — the line names each KO'd card (no display entry → the raw ext-id).
+    assert.equal(lastMessage.text, "Player 0 KO'd a (a), c (c) from their discard pile (Salomé, Sorceress Supreme).");
   });
 
-  it('keeps the Maniacal Tyrant log byte-identical when no sourceCardId is set', () => {
+  it('names Maniacal Tyrant as the source when no sourceCardId is set', () => {
     const G = makeG({ discard: ['a', 'b'] as CardExtId[], pending: parked() });
     resolveKoDiscardChoice(makeContext(G), { cardIds: ['a'] });
     const lastMessage = G.messages![G.messages!.length - 1]!;
-    assert.equal(lastMessage.text, "Player 0 KO'd 1 card(s) from their discard pile (Maniacal Tyrant).");
+    assert.equal(lastMessage.text, "Player 0 KO'd a (a) from their discard pile (Maniacal Tyrant).");
+  });
+
+  it('D-24783: an empty selection says "no cards"', () => {
+    const G = makeG({ discard: ['a', 'b'] as CardExtId[], pending: parked() });
+    resolveKoDiscardChoice(makeContext(G), { cardIds: [] });
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, "Player 0 KO'd no cards from their discard pile (Maniacal Tyrant).");
   });
 
   it('enforces the Salomé cap of 2 (a 3-card selection is rejected, queue intact)', () => {
@@ -233,6 +241,23 @@ describe('resolveKoDiscardChoice — WP-836 grey-Hero filter (D-24769)', () => {
     const emptyG = greyG();
     resolveKoDiscardChoice(makeContext(emptyG), { cardIds: [] });
     assert.equal(hasPendingKoDiscardChoice(emptyG), false);
+  });
+
+  it("D-24783: the grey KO line names each KO'd card and the source", () => {
+    const ymir = 'co2e-villain-enemies-of-asgard-ymir-frost-giant-king-00' as CardExtId;
+    const G = greyG();
+    G.pendingKoDiscardChoices![0]!.sourceCardId = ymir;
+    (G as { cardDisplayData?: unknown }).cardDisplayData = {
+      [AGENT]: { name: 'S.H.I.E.L.D. Agent' },
+      [OFFICER]: { name: 'S.H.I.E.L.D. Officer' },
+      [ymir]: { name: 'Ymir, Frost Giant King' },
+    };
+    resolveKoDiscardChoice(makeContext(G), { cardIds: [AGENT, OFFICER] });
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(
+      lastMessage.text,
+      "Player 0 KO'd S.H.I.E.L.D. Agent (starting-shield-agent), S.H.I.E.L.D. Officer (pile-shield-officer) from their discard pile (Ymir, Frost Giant King).",
+    );
   });
 
   it('T17: the filtered eligible list keeps discard order and duplicates; unfiltered stays whole', () => {

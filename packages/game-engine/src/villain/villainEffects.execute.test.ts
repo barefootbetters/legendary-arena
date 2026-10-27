@@ -6604,6 +6604,43 @@ describe('WP-836 co2e grey-Hero and Hero-count effects (D-24769)', () => {
     assert.deepStrictEqual(G.ko, ['covert-c']);
   });
 
+  it('D-24783: the Destroyer line says a grey-only player had no NON-GREY Hero to KO', () => {
+    const G = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {
+      '0': seat({ discard: [AGENT, 'tech-a' as CardExtId, 'tech-b' as CardExtId] }),
+      '1': seat({ discard: [AGENT, OFFICER] }),
+    });
+    const results = executeVillainAbilities(G, CTX, DESTROYER, 'onAmbush');
+    assert.equal(results[0]!.greyFilter, 'non-grey');
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(G, results)),
+      'the active player must KO a non-grey Hero; Player 1 had no non-grey Hero to KO',
+    );
+
+    const nobodyG = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {
+      '0': seat({ discard: [AGENT] }),
+      '1': seat({ discard: [OFFICER] }),
+    });
+    const nobodyResults = executeVillainAbilities(nobodyG, CTX, DESTROYER, 'onAmbush');
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(nobodyG, nobodyResults)),
+      'no player had a non-grey Hero to KO',
+    );
+  });
+
+  it('D-24783: an unfiltered each-player discard KO carries no greyFilter and keeps "no hero"', () => {
+    const plainKo: VillainEffectDescriptor = { primitive: 'ko-hero', target: 'each', magnitude: 1, zone: 'discard' };
+    const G = wp836G([wp836Hook(DESTROYER, 'onAmbush', plainKo)], {
+      '0': seat({ discard: [AGENT] }),
+      '1': seat({}),
+    });
+    const results = executeVillainAbilities(G, CTX, DESTROYER, 'onAmbush');
+    assert.equal(Object.keys(results[0]!).includes('greyFilter'), false);
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(G, results)),
+      'Player 0 KO’d S.H.I.E.L.D. Agent from their discard pile; Player 1 had no hero to KO',
+    );
+  });
+
   it('T8: a single non-grey option is auto-KOd with no park', () => {
     const G = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {
       '0': seat({ discard: [AGENT, 'tech-a' as CardExtId] }),

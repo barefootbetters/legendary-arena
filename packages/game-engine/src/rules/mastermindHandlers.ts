@@ -38,7 +38,7 @@ import { transformMastermind } from '../mastermind/mastermind.logic.js';
 // ko-hero choice for the current player, reusing the same eligibility helpers the
 // villain ko-hero effect + the UIState projection use (one source, D-24007).
 import { buildKoEligibleTargets, countKoableHeroes } from '../villain/villainEffects.execute.js';
-import { offPlayCardStats, offPlayCardTraits } from '../hero/splitCard.logic.js';
+import { matchesGreyHeroFilter, offPlayCardStats, offPlayCardTraits } from '../hero/splitCard.logic.js';
 // why: WP-818 / D-24752 — Baron Zemo's strike KOs the first Victory-Pile Bystander through
 // the shared WP-816 helper (defeated Killbots included), and reads the Zemo id from its one
 // home (WP-819 / D-24753).
@@ -131,27 +131,6 @@ const DOOM_PUT_ON_DECK_COUNT = 2;
 // why: WP-397 — Doctor Octopus's printed strike reveals the top 8 cards of the
 // deck for any player who does not discard a Spider-Friends Hero.
 const DOCTOR_OCTOPUS_REVEAL_COUNT = 8;
-
-/**
- * Whether a card is a "non-grey Hero" in the tabletop sense.
- *
- * @param gameState - The game state (read-only; supplies cardTraits).
- * @param cardExtId - The card to classify.
- * @returns True when the card carries a Hero Class.
- */
-function isNonGreyHero(
-  gameState: LegendaryGameState,
-  cardExtId: CardExtId,
-): boolean {
-  // why: the rulebook defines "grey Heroes" as grey-coloured cards with NO
-  // Hero Class (S.H.I.E.L.D. Agents, Troopers, Officers, Sidekicks), so
-  // non-grey is exactly "has a Hero Class". Loose `!=` so both null and
-  // undefined read as grey. Wounds carry no Hero Class and are therefore grey
-  // — they are never discarded by this branch, which is correct: a Wound is
-  // not a Hero. Defensive `?.` on the map itself for legacy states predating
-  // WP-179.
-  return gameState.cardTraits?.[cardExtId]?.heroClass != null;
-}
 
 /**
  * Narrows the rule-pipeline context to its deterministic shuffle function.
@@ -589,20 +568,18 @@ function selectLowestCostHero(
       // precedent in this file — legacy test states predate G.cardTraits
       // (WP-179) and leave it undefined. Production setup always builds it.
       // A missing map means nothing matches rather than a throw (AC-9).
-      // why: WP-772 / D-24604 — every caller passes a HAND (off play), so a split card counts
-      // as both halves' classes (rules v23 p.49), resolved through the split-face map.
-      const traitEntry = offPlayCardTraits(gameState, cardExtId);
       if (traitKind === 'non-grey') {
-        // why: WP-398 — the rulebook "Grey Heroes" are grey cards with NO Hero
-        // Class, so non-grey ⟺ heroClass != null. This is an EXISTENCE gate,
-        // not a slug match — traitSlug is ignored — used by co2e Loki's
-        // Hypno-Thrall branch to stack the lowest-cost non-grey Hero. Loose
-        // `!=` so both null and undefined read as grey; Wounds are already
-        // skipped above, so they are never stacked.
-        if (traitEntry?.heroClass == null) {
+        // why: WP-398 — an EXISTENCE gate, not a slug match (traitSlug is ignored), used by
+        // co2e Loki's Hypno-Thrall branch to stack the lowest-cost non-grey Hero. D-24783 —
+        // the shared grey predicate decides it: a card with a class on EITHER off-play slot
+        // (a dual-class card, or a split card through the split-face map) is non-grey.
+        if (!matchesGreyHeroFilter(gameState, cardExtId, 'non-grey')) {
           continue;
         }
       } else {
+        // why: WP-772 / D-24604 — every caller passes a HAND (off play), so a split card counts
+        // as both halves' classes (rules v23 p.49), resolved through the split-face map.
+        const traitEntry = offPlayCardTraits(gameState, cardExtId);
         // why: 'team' / 'heroClass' match the corresponding G.cardTraits field
         // against the requested slug.
         // why: WP-703 / D-24523 — on a heroClass kind a dual-class card matches on EITHER printed class.
@@ -1274,7 +1251,9 @@ function resolveDoctorOctopusReveal(
   const discardedCards: CardExtId[] = [];
   const returnedCards: CardExtId[] = [];
   for (const cardExtId of revealed) {
-    if (isNonGreyHero(gameState, cardExtId)) {
+    // why: D-24783 — the revealed cards are off play (the deck), so the shared grey predicate
+    // reads a split card as both faces' classes; a Wound or Bystander is not a Hero and stays.
+    if (matchesGreyHeroFilter(gameState, cardExtId, 'non-grey')) {
       discardedCards.push(cardExtId);
     } else {
       returnedCards.push(cardExtId);

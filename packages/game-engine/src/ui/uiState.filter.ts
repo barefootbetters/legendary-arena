@@ -1105,6 +1105,11 @@ export function filterUIStateForAudience(
       choiceType: uiState.pendingKoDiscardChoice.choiceType,
       playerID: uiState.pendingKoDiscardChoice.playerID,
       maxCount: uiState.pendingKoDiscardChoice.maxCount,
+      // why: D-24783 — pass the grey filter through to the chooser (the whitelist drops any
+      // field it does not name); omitted on an unfiltered entry.
+      ...(uiState.pendingKoDiscardChoice.greyFilter !== undefined
+        ? { greyFilter: uiState.pendingKoDiscardChoice.greyFilter }
+        : {}),
       discard: discardCopy,
     };
   }

@@ -49758,4 +49758,23 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24769 (#3010). Related: D-24023 / D-24280 / D-24644 / D-24687 (`ko-hero` each), D-24589 (`ko-up-to-from-discard-current`, Patriarch), D-24510 / D-24682 / D-24688 (KO-from-discard choice and bot default), D-24009 / D-24364 (bot parity, legalMoves ↔ guard), D-24284 (current-player choices), D-24290 / D-24353 (trait predicate, count-sized primitives), D-24529 / D-24692 / D-24724 / D-24729 (the counter and its names), D-24285 (reshuffle on reveal), D-24732 (`cardsDrawn`), D-24081, D-24780, D-24768 (WP-835), D-24026.
 
 ---
+
+### D-24783 — Grey-Hero follow-ups to D-24769: every grey read goes through the shared predicate, and the grey prompt and KO log lines say what they mean (Active 2026-10-27 — direct fix, no WP)
+
+**Status:** Active 2026-10-27. Live-verify (D-24026) pending: STATUS.md entry of 2026-10-27 holds the recipe (a match created after the deploy).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). The KO-from-discard prompt says "KO up to 1 grey Hero from your discard pile" for Frost Giant Warrior / Ymir (Destroyer's Fight: "up to 2 grey Heroes"); the KO-from-discard log line names each card KO'd; Destroyer's each-player line says "Player 1 had no non-grey Hero to KO" when that player held only grey Heroes. Loki's and Doctor Octopus's Master Strikes read split cards the way the rest of the engine does.
+
+**Context.** D-24769 §10 and the WP-836 live-verify (match `fYMag9FU7eP`) left four follow-ups: three private grey reads (Doctor Octopus's `isNonGreyHero` on raw `G.cardTraits` — D-24769 §10 named it Loki's; Loki's Hypno-Thrall `'non-grey'` kind of `selectLowestCostHero`; WP-830's `enigmaColorsOf`), a prompt heading that said "cards" over a grey-only list, a KO log that gave a count but no names (23.2.15 "KO'd 1 card(s) … (Ymir, Frost Giant King)"), and "Player 1 had no hero to KO" (6.1.2) when Player 1 held only starters, which Destroyer's non-grey KO skips.
+
+**Decision.**
+1. **One grey read.** Doctor Octopus's reveal-eight discard and Loki's Hypno-Thrall pick call `matchesGreyHeroFilter(G, cardId, 'non-grey')`; `enigmaColorsOf` returns `['grey']` when `isGreyHero` says so and keeps its class collection only for the colors. No inline class scan decides grey anywhere in the engine. Fidelity change, stated plainly: Doctor Octopus read the card's own raw trait entry and Loki read only the off-play `heroClass` slot, so a split card whose own face carried no class while its other face did read grey; both now read the off-play view (rules v23 p.49), so it is non-grey. Every split face in the current card data carries a class, so no current card changes outcome; the case is pinned by a synthetic fixture. A Wound or Bystander stays "not a Hero" (returned by Doctor Octopus, never stacked by Loki), and an empty-string class now reads grey in both.
+2. **Board-visible field (contract change, `ui/uiState.types.ts`).** `UIPendingKoDiscardChoice.greyFilter?: GreyHeroFilter`, built from the front entry, passed through `filterUIStateForAudience` to the chooser only, omitted (no key) on an unfiltered entry. The prompt header is "KO up to N grey Hero(es)" / "non-grey Hero(es)" with a filter and today's "KO up to N card(s)" without one.
+3. **KO-from-discard log.** `resolveKoDiscardChoice` names each card KO'd as `{Name} ({ext-id})`, comma-joined, or "no cards" for an empty pick, for every entry (Loki's Maniacal Tyrant and Salomé too, not only grey): "Player 0 KO'd S.H.I.E.L.D. Trooper (…) from their discard pile (Ymir, Frost Giant King)." The old count-only text is retired; its two test pins change on purpose.
+4. **Each-player KO narration (contract change, `rules/villainAbility.types.ts`).** `VillainEffectResult.greyFilter?` carries a grey-filtered `ko-hero` each (Destroyer) to the composer: "Player N had no non-grey Hero to KO", "the active player must KO a non-grey Hero", "no player had a non-grey Hero to KO". Absent (every unfiltered KO), the result object and every string are byte-identical.
+5. **Determinism.** Nothing here reads randomness or adds `G` state; all text goes to hash-excluded `G.messages` (D-24081) and the result field never reaches `G.notableEvents`. Hash oracles unchanged. No current card's outcome changes (§1), so a stored match replays to the same state; live-verify uses a match created after the deploy.
+
+**Reserved by:** NUMBER-LEDGER D-24783 (this PR). Related: D-24769 (the grey predicate, its §10 follow-up), D-24510 / D-24589 (KO-from-discard choice and its source naming), D-24683 / D-24646 (each-player KO clauses), D-24604 / D-24545 (off-play split traits), D-24201 / D-24200 (Loki Thralls, Doctor Octopus reveal), D-24763 (Enigma Code), D-24081, D-24026.
+
+---
 Protect this file.
