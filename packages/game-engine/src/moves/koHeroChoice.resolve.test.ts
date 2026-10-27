@@ -736,3 +736,23 @@ describe('resolveKoHeroChoice — zoneless entry is "your Heroes" (WP-801 / D-24
     assert.equal(gameState.pendingKoHeroChoices!.length, 0, 'queue front-popped');
   });
 });
+
+describe('resolveKoHeroChoice — WP-836 grey-Hero filter (D-24769)', () => {
+  it('T16: a non-grey entry rejects an Agent (queue intact) and KOs a classed Hero', () => {
+    const state = makeTestGameState({
+      discard: ['starting-shield-agent', 'tech-a', 'tech-b'] as CardExtId[],
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'], greyFilter: 'non-grey' }],
+    });
+    state.cardTraits = {
+      'tech-a': { heroClass: 'tech', team: null },
+      'tech-b': { heroClass: 'tech', team: null },
+    } as LegendaryGameState['cardTraits'];
+    const before = structuredClone(state);
+    resolveKoHeroChoice({ G: state, playerID: '0' } as never, { zone: 'discard', cardId: 'starting-shield-agent' as CardExtId });
+    assert.deepStrictEqual(state, before, 'a grey card is refused; G is unchanged');
+    resolveKoHeroChoice({ G: state, playerID: '0' } as never, { zone: 'discard', cardId: 'tech-a' as CardExtId });
+    assert.deepStrictEqual(state.ko, ['tech-a']);
+    assert.deepStrictEqual(state.playerZones['0']!.discard, ['starting-shield-agent', 'tech-b']);
+    assert.deepStrictEqual(state.pendingKoHeroChoices, [], 'front-popped');
+  });
+});

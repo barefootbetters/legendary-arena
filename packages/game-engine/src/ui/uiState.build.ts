@@ -29,6 +29,8 @@ import { computeDayNight } from '../rules/dayNight.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   UIState,
+  UIEnigmaCard,
+  UIEnigmaCodeState,
   UIPlayerState,
   UICityCard,
   UIGameOverState,
@@ -130,6 +132,7 @@ import { phasingOptions } from '../moves/phaseCard.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
 import { getAvailableRecruit, getSpendableAttack, formatAttackTargets } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
+import { isRescueOnFightCueOn } from '../economy/rescueOnFight.logic.js';
 import {
   resolveFightCost,
   resolveMastermindFightCost,
@@ -143,9 +146,14 @@ import { computeFinalScores, isVictoryPileBystander } from '../scoring/scoring.l
 import { WOUND_EXT_ID } from '../setup/buildInitialGameState.js';
 import { isFinalBlowAvailable } from '../mastermind/mastermind.logic.js';
 import { isMastermindHaunting } from '../board/haunt.logic.js';
-import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import { SHIELD_OFFICER_EXT_ID, SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
+import { getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
+// why: WP-817 / D-24750 — handCosts projects the same off-play cost the fight-discard
+// gate reads (isHandCardCostOneOf), so the client and the engine agree on eligibility.
+import { offPlayCardStats } from '../hero/splitCard.logic.js';
+import { enigmaColorsOf } from '../rules/enigmaCode.logic.js';
 
 // why: exact structural contract — do not widen or add optional fields.
 // buildUIState MUST NOT depend on any other ctx fields.
@@ -714,8 +722,12 @@ export function buildUIState(
     // (resolveDisplay). filterUIStateForAudience redacts handDisplay
     // alongside handCards (privacy symmetry — see uiState.filter.ts).
     const handDisplay: UICardDisplay[] = [];
+    // why: WP-817 / D-24750 — handCosts is index-aligned with handCards; null for a
+    // card with no cost entry (a Wound). Redacted alongside handCards by the filter.
+    const handCosts: (number | null)[] = [];
     for (const cardExtId of zones.hand) {
       handDisplay.push(resolveDisplay(cardExtId, gameState));
+      handCosts.push(offPlayCardStats(gameState, cardExtId)?.cost ?? null);
     }
 
     // why: WP-128 / D-12803 — inPlayDisplay length-equals-inPlayCards
@@ -804,6 +816,7 @@ export function buildUIState(
       // with G.playerZones[playerId].hand.
       handCards: [...zones.hand],
       handDisplay,
+      handCosts,
       // why: WP-128 / D-12803 — in-play card ext_ids included; filter
       // redacts for non-self / spectator. Spread copy prevents aliasing
       // with G.playerZones[playerId].inPlay.
@@ -857,6 +870,7 @@ export function buildUIState(
       // the ext_ids. This reverses the D-12806 city-villain safe-skip for the
       // count only (D-24311); it is still never flattened onto the mastermind.
       const spaceAttachedBystanders = gameState.attachedBystanders?.[space] ?? [];
+      const spaceFightDiscardCosts = gameState.villainFightDiscardCosts?.[space];
       citySpaces.push({
         extId: space,
         type: gameState.villainDeckCardTypes[space] ?? 'unknown',
@@ -881,6 +895,11 @@ export function buildUIState(
         // active player — the only player who can fight — so a Blood Frenzy villain
         // shows that player's cost to every audience.
         fightCost: resolveFightCost(gameState, space, ctx.currentPlayer),
+        // why: WP-817 / D-24750 — the fight discard cost is public printed card text;
+        // a fresh copy, present only for a villain that has one (Primus).
+        ...(spaceFightDiscardCosts !== undefined
+          ? { fightDiscardCosts: [...spaceFightDiscardCosts.eligibleCosts] }
+          : {}),
       });
     }
   }
@@ -983,7 +1002,9 @@ export function buildUIState(
     // why: WP-750 / D-24574 — the projected fight cost, from the same
     // resolveMastermindFightCost the fightMastermind guard and the bot read, so the
     // tile's Fight gate can never disagree with the engine (printed + Dark Portal).
-    fightCost: resolveMastermindFightCost(gameState),
+    // WP-818 / D-24752: read for the active player (the only one who can fight), so
+    // Baron Zemo's "+9 unless you are a Savior" shows that player's cost to everyone.
+    fightCost: resolveMastermindFightCost(gameState, ctx.currentPlayer),
     // why: WP-757 / D-24587 — omit-when-absent: the key exists only while the Mastermind
     // haunts, read from the same isMastermindHaunting predicate fightMastermind uses.
     ...(isMastermindHaunting(gameState) ? { isHaunting: true as const } : {}),
@@ -1024,6 +1045,7 @@ export function buildUIState(
   const portalLocations = darkPortalLocations(gameState);
   const hasDarkPortals =
     portalLocations.onMastermind || portalLocations.citySpaceIndices.length > 0;
+  const enigmaCode = buildEnigmaCodeProjection(gameState);
   const scheme = {
     id: gameState.selection.schemeId,
     twistCount,
@@ -1042,6 +1064,9 @@ export function buildUIState(
           },
         }
       : {}),
+    // why: WP-830 / D-24763 — the full code (every card's display + colors); the audience filter
+    // strips what a viewer has not seen. Omitted while the code is empty or absent.
+    ...(enigmaCode !== undefined ? { enigmaCode } : {}),
   };
 
   // --- 7. Project economy ---
@@ -1091,6 +1116,17 @@ export function buildUIState(
     ...((gameState.turnEconomy.excessiveViolencePlayedCards?.length ?? 0) > 0 &&
     gameState.turnEconomy.excessiveViolenceUsedThisTurn !== true
       ? { excessiveViolenceAvailable: true as const }
+      : {}),
+    // why: WP-819 / D-24753 — project Baron Zemo's rescue-on-fight availability cue
+    // active-player-only and omit-when-absent (present only when true), so every match
+    // without Zemo keeps the economy block byte-identical and the WP-820 client offers
+    // "Fight + Rescue" only when it could do something.
+    ...(isRescueOnFightCueOn(gameState) ? { rescueOnFightAvailable: true as const } : {}),
+    // why: WP-842 / D-24776 — project the once-per-turn Sidekick recruit cue omit-when-absent
+    // (present only when set), so a turn without a Sidekick recruit keeps the economy block
+    // byte-identical. The filter passes it to the active player only.
+    ...(gameState.turnEconomy.hasRecruitedSidekickThisTurn === true
+      ? { hasRecruitedSidekickThisTurn: true as const }
       : {}),
     // why: WP-783 / D-24629 — project the Phasing options omit-when-absent (present only
     // when at least one hand card is phasable), so a turn without Phasing keeps the
@@ -1156,6 +1192,9 @@ export function buildUIState(
     // falls back to the UNKNOWN placeholder if the display entry is absent
     // (narrow test mocks), matching every other display projection in this file.
     officerDisplay: resolveDisplay(SHIELD_OFFICER_EXT_ID, gameState),
+    // why: WP-842 / D-24776 — the Sidekicks cell is the second recruitable supply pile; its
+    // card face is projected the same way (fresh copy, UNKNOWN fallback) and always built.
+    sidekickDisplay: resolveDisplay(SIDEKICK_EXT_ID, gameState),
   };
 
   // --- 12. Project KO pile ---
@@ -1239,7 +1278,11 @@ export function buildUIState(
       // why: WP-577 — a hand-scoped entry (Red Skull) projects hand Heroes only, so
       // the prompt offers exactly the printed "from their hand" targets. Absent
       // `zones` ⇒ "your Heroes", hand + inPlay with no discard card (D-24687).
-      const eligibleTargets = buildKoEligibleTargets(chooserZones, frontChoice.zones);
+      // why: WP-836 / D-24769 — a filtered entry (Destroyer, 'non-grey') projects only the
+      // cards its resolve accepts.
+      const greyFilterRead =
+        frontChoice.greyFilter === undefined ? undefined : { gameState, greyFilter: frontChoice.greyFilter };
+      const eligibleTargets = buildKoEligibleTargets(chooserZones, frontChoice.zones, greyFilterRead);
       const eligible: UIEligibleKoHeroCard[] = [];
       for (const target of eligibleTargets) {
         eligible.push({
@@ -1572,7 +1615,10 @@ export function buildUIState(
     const chooserZones = gameState.playerZones[frontChoice.playerID];
     if (chooserZones !== undefined) {
       const discard: UIDiscardChoiceHandCard[] = [];
-      for (const cardId of chooserZones.discard) {
+      // why: WP-836 / D-24769 — the eligibility helper the resolve shares, so a grey-only
+      // entry (Destroyer / Frost Giant Warrior / Ymir) lists only the grey Heroes; an
+      // unfiltered entry still lists the whole discard.
+      for (const cardId of getEligibleKoDiscardCards(gameState, frontChoice.playerID, frontChoice.greyFilter)) {
         discard.push({
           cardId,
           display: { ...resolveDisplay(cardId, gameState) },
@@ -1582,6 +1628,9 @@ export function buildUIState(
         choiceType: frontChoice.choiceType,
         playerID: frontChoice.playerID,
         maxCount: frontChoice.maxCount,
+        // why: D-24783 — the filter rides along so the prompt can name grey Heroes; omitted
+        // (never an `undefined` literal) on an unfiltered entry.
+        ...(frontChoice.greyFilter !== undefined ? { greyFilter: frontChoice.greyFilter } : {}),
         discard,
       };
     }
@@ -1618,15 +1667,23 @@ export function buildUIState(
       // Wounds from all three lists, matching the resolve's Wound rejection. Absent = no
       // filter, so every existing entry lists every card unchanged.
       const heroesOnly = frontReward.koHeroesOnly === true;
+      // why: WP-826 / D-24759 — mirrors the discard / inPlay gates below: list hand cards ONLY
+      // when the entry's koZones permits hand. Reassign to Civilian Duty's entry sets ['inPlay']
+      // (a Hero you played this turn), so its hand list is empty. Absent koZones = the wide set,
+      // and every existing koZones includes 'hand', so existing entries project hand unchanged.
+      const handPermitted =
+        frontReward.koZones === undefined || frontReward.koZones.includes('hand');
       const eligibleHand: UIEligibleKoHeroCard[] = [];
-      for (const cardId of chooserZones.hand) {
-        if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
-        if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
-        eligibleHand.push({
-          zone: 'hand',
-          cardId,
-          display: { ...resolveDisplay(cardId, gameState) },
-        });
+      if (handPermitted) {
+        for (const cardId of chooserZones.hand) {
+          if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
+          if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
+          eligibleHand.push({
+            zone: 'hand',
+            cardId,
+            display: { ...resolveDisplay(cardId, gameState) },
+          });
+        }
       }
       // why: WP-767 / D-24600 — mirrors the inPlay gate below: list discard cards ONLY when
       // the entry's koZones permits discard. Snarling Fangs' entry sets ['hand','inPlay'], so
@@ -1660,6 +1717,10 @@ export function buildUIState(
       const eligibleInPlay: UIEligibleKoHeroCard[] = [];
       if (inPlayPermitted) {
         for (const cardId of chooserZones.inPlay) {
+          // why: WP-826 / D-24759 — Reassign to Civilian Duty is the first shield-only entry that
+          // permits inPlay, so the S.H.I.E.L.D. filter applies here too (the resolve rejects a
+          // non-shield played card). Every earlier shield-only entry omits inPlay, so no change.
+          if (shieldOnly && !cardCountsAsShieldHero(gameState, cardId)) { continue; }
           if (heroesOnly && cardId === WOUND_EXT_ID) { continue; }
           eligibleInPlay.push({
             zone: 'inPlay',
@@ -2526,4 +2587,30 @@ export function buildUIState(
     // isDebugMatch key at all (no `false` literal, no fixture backfill).
     ...(gameState.isDebugMatch === true ? { isDebugMatch: true } : {}),
   };
+}
+
+/**
+ * Projects The Unbreakable Enigma Code with every card visible (WP-830 / D-24763). The audience
+ * filter removes the cards a viewer has not seen, so this full form never reaches a client.
+ *
+ * @param gameState - The game state (not mutated).
+ * @returns The projection, or undefined while the code is empty or absent.
+ */
+function buildEnigmaCodeProjection(gameState: LegendaryGameState): UIEnigmaCodeState | undefined {
+  const code = gameState.enigmaCode;
+  if (code === undefined || code.length === 0) {
+    return undefined;
+  }
+  const cards: UIEnigmaCard[] = [];
+  for (let position = 0; position < code.length; position++) {
+    const cardId = code[position]!;
+    const peekedBy: string[] = [];
+    for (const [playerID, positions] of Object.entries(gameState.enigmaPeeks ?? {})) {
+      if (positions.includes(position)) {
+        peekedBy.push(playerID);
+      }
+    }
+    cards.push({ peekedBy, display: resolveDisplay(cardId, gameState), colors: enigmaColorsOf(gameState, cardId) });
+  }
+  return { isRevealed: gameState.isEnigmaCodeRevealed === true, cards };
 }

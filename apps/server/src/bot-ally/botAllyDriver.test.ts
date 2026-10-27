@@ -29,6 +29,10 @@ import {
   progressFingerprint,
   dispatchMadeRealProgress,
   FINGERPRINT_UNAVAILABLE,
+  BOT_SLOW_TICK_WARN_MS,
+  BOT_LEASE_DEFERRAL_LOG_INTERVAL_MS,
+  describeStuckTick,
+  botSeatsInSeatChoiceStage,
 } from './botAllyDriver.mjs';
 
 // why: every test registers drivers in the shared module-scope map; clear it
@@ -1124,4 +1128,117 @@ test('a real engine setup state parks no pending choices (structural scan stays 
     summarizeBotTurnState(state, '1').includes('pending=[none]'),
     'a freshly set-up match has no parked pending choices',
   );
+});
+
+// ---------------------------------------------------------------------------
+// Stall diagnostics (2026-10-27, match CIwhBoEVHZ0): a bot-owed seat choice went
+// unanswered for ~2 minutes with nothing in the server log.
+// ---------------------------------------------------------------------------
+
+/**
+ * Captures console.warn lines while `body` runs.
+ */
+async function captureWarnings(body: () => Promise<void>): Promise<string[]> {
+  const warningLines: string[] = [];
+  const originalWarn = console.warn;
+  console.warn = (message?: unknown) => {
+    warningLines.push(String(message));
+  };
+  try {
+    await body();
+  } finally {
+    console.warn = originalWarn;
+  }
+  return warningLines;
+}
+
+test('a poll tick that runs past the threshold logs its time and last phase', async () => {
+  const clock = { nowMs: 1000 };
+  const { deps } = makeDeps({
+    initial: fakeState('0', 7),
+    overrides: { now: () => clock.nowMs },
+  });
+  const slowFetch = deps.fetchState as () => Promise<unknown>;
+  deps.fetchState = async () => {
+    clock.nowMs += BOT_SLOW_TICK_WARN_MS + 1000;
+    return slowFetch();
+  };
+  const driver = createBotAllyDriver({ matchId: 'm-slow', botSeats: ['1'], deps });
+
+  const warnings = await captureWarnings(() => driver.tick());
+
+  assert.deepEqual(warnings, ['[bot-ally] match m-slow slow poll tick: 6.0s (last phase: fetch).']);
+});
+
+test('a fast poll tick logs nothing', async () => {
+  const { deps } = makeDeps({ initial: fakeState('0', 7), overrides: { now: () => 1000 } });
+  const driver = createBotAllyDriver({ matchId: 'm-fast', botSeats: ['1'], deps });
+
+  const warnings = await captureWarnings(() => driver.tick());
+
+  assert.deepEqual(warnings, []);
+});
+
+test('describeStuckTick reports a running tick once it passes the threshold, and only once', () => {
+  const driver = { matchId: 'm-stuck', tickStartedAtMs: 10000, tickPhase: 'lease', hasWarnedStuckTick: false };
+
+  assert.equal(describeStuckTick(driver, 10000 + BOT_SLOW_TICK_WARN_MS - 1, BOT_SLOW_TICK_WARN_MS), null);
+  assert.equal(
+    describeStuckTick(driver, 10000 + 120000, BOT_SLOW_TICK_WARN_MS),
+    '[bot-ally] match m-stuck poll tick still running after 120.0s (phase: lease); the bot answers nothing until it returns.',
+  );
+  driver.hasWarnedStuckTick = true;
+  assert.equal(describeStuckTick(driver, 10000 + 130000, BOT_SLOW_TICK_WARN_MS), null, 'one line per stuck tick');
+  assert.equal(
+    describeStuckTick({ ...driver, tickStartedAtMs: null, hasWarnedStuckTick: false }, 999999, BOT_SLOW_TICK_WARN_MS),
+    null,
+    'no tick running',
+  );
+});
+
+test('a lease deferral is logged at most once per interval', async () => {
+  const clock = { nowMs: 0 };
+  const { deps, submitCalls } = makeDeps({
+    initial: fakeState('1', 1),
+    overrides: { renewOrAcquireLease: async () => false, now: () => clock.nowMs },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-defer', botSeats: ['1'], deps });
+
+  const warnings = await captureWarnings(async () => {
+    await driver.tick();
+    clock.nowMs = BOT_LEASE_DEFERRAL_LOG_INTERVAL_MS / 2;
+    await driver.tick();
+    clock.nowMs = BOT_LEASE_DEFERRAL_LOG_INTERVAL_MS + 1;
+    await driver.tick();
+  });
+
+  const deferralLine =
+    '[bot-ally] match m-defer is deferring: another server instance holds its bot-ally lease, so this instance submits nothing.';
+  assert.deepEqual(warnings, [deferralLine, deferralLine]);
+  assert.equal(submitCalls.length, 0, 'deferring still submits nothing');
+});
+
+test('a bot seat in the seat-choice stage with no bot-owed choice is logged once per state id', async () => {
+  const { deps, submitCalls } = makeDeps({
+    initial: { ...fakeState('0', 31), ctx: { ...fakeState('0', 31).ctx, activePlayers: { '1': 'resolvingSeatChoice' } } },
+    overrides: { now: () => 0 },
+  });
+  const driver = createBotAllyDriver({ matchId: 'm-blind', botSeats: ['1'], deps });
+
+  const warnings = await captureWarnings(async () => {
+    await driver.tick();
+    await driver.tick();
+  });
+
+  assert.deepEqual(warnings, [
+    '[bot-ally] match m-blind bot seat(s) 1 ride the seat-choice stage at stateID 31, but no seat choice is owed by a bot seat (pendingSeatChoice absent).',
+  ]);
+  assert.equal(submitCalls.length, 0, 'the diagnostic never submits a move');
+});
+
+test('botSeatsInSeatChoiceStage reads only bot seats in the seat-choice stage', () => {
+  const state = { ctx: { activePlayers: { '0': 'playTurn', '1': 'resolvingSeatChoice', '2': 'resolvingSeatChoice' } } };
+  assert.deepEqual(botSeatsInSeatChoiceStage(state, ['2', '1']), ['1', '2']);
+  assert.deepEqual(botSeatsInSeatChoiceStage(state, ['3']), []);
+  assert.deepEqual(botSeatsInSeatChoiceStage({ ctx: { activePlayers: null } }, ['1']), []);
 });

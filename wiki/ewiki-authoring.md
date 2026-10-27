@@ -14,19 +14,24 @@ related:
   - system-backup.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\ewiki-authoring.md (this page — https://ewiki.legendary-arena.com/ewiki-authoring/)
-  - ../apps/wiki-viewer/assets/css/style.css
+  - C:\dev\legendary-arena\wiki\ewiki-authoring.md (this page — https://ewiki.legendary-arena.com/ewiki-authoring/)
+  - ../apps/wiki-viewer/themes/ewiki/assets/css/ewiki.css
+  - ../apps/wiki-viewer/assets/css/ewiki-brand.css
+  - ../apps/wiki-viewer/assets/css/ewiki-site.css
   - ../apps/wiki-viewer/hugo.toml
-  - ../apps/wiki-viewer/layouts/shortcodes/audio.html
-  - ../apps/wiki-viewer/layouts/shortcodes/audio-inline.html
+  - ../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/audio.html
+  - ../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/audio-inline.html
   - ../apps/wiki-viewer/layouts/shortcodes/motif-table.html
-  - ../apps/wiki-viewer/layouts/shortcodes/swatch.html
-  - ../apps/wiki-viewer/layouts/shortcodes/include-section.html
+  - ../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/swatch.html
+  - ../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html
   - ../apps/wiki-viewer/layouts/shortcodes/service-impact.html
-  - ../apps/wiki-viewer/layouts/partials/editing-this-page.html
+  - ../apps/wiki-viewer/themes/ewiki/layouts/partials/ewiki/editing-this-page.html
+  - ../apps/wiki-viewer/layouts/partials/ewiki/editing-extra.html
+  - ../apps/wiki-viewer/themes/ewiki/layouts/_default/_markup/render-link.html
+  - ../apps/wiki-viewer/scripts/check-links.mjs
   - ../docs/ai/DECISIONS.md
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-10-14
+last-reviewed: 2026-10-19
 ---
 
 # Ewiki Authoring
@@ -50,11 +55,47 @@ formatting tools are available once you're writing content.
 > Full steps: the *Fast path* section of
 > [Wiki Viewer](wiki-viewer.md), or [Hugo Onboarding](hugo-onboarding.md).
 
+## Quick start
+
+Four rules cover most of it:
+
+- **The file in `wiki/` is the page.** There's no other copy to edit. The
+  copy under `apps/wiki-viewer/content/` is regenerated on every build, so
+  an edit there is lost. A page's images and diagrams go in `ewiki/<slug>/`.
+- **Write a fact once.** Link to the page that owns it, or show its section
+  in place with `include-section`. Don't copy it: copies drift.
+- **Write links for GitHub,** relative to the page: `scoring.md` for another
+  wiki page, `../docs/ai/DECISIONS.md` for a repo file. The wiki rewrites
+  them. Images are the one exception: they use a site path,
+  `/<slug>/<name>.png`.
+- **The build is strict about links, not about everything.** A broken page
+  link (the case must match), an `include-section` heading that no longer
+  exists, or a `<script>` fails it, and the PR goes red before anything
+  deploys. Raw HTML is dropped without an error, a missing image just 404s,
+  and a missing front-matter field shows up only in the wiki lint report.
+  Preview before you open the PR.
+
+Common tasks:
+
+| To | Do this | More |
+|---|---|---|
+| Add a page | Create `wiki/<slug>.md`, named in lowercase hyphenated words. Start from another page's front matter: `title`, `type`, `tags`, `related`, `status` and `last-reviewed` are required, and `source` opens with the page's own path. Write the five required sections in order, then add a line for it to `wiki/INDEX.md`. | [How to create a new wiki page](wiki-viewer.md#how-to-create-a-new-wiki-page) |
+| Link to a page | `[Master Strike](master-strike.md)`: the file name, lowercase, no folder. A repo file is `../` plus its path from the repo root. | [Cross-reference conventions](SCHEMA.md#cross-reference-conventions) |
+| Show another page's section | The `include-section` shortcode, naming the owner page's slug and the heading's anchor | [Including a section](#including-a-section-from-another-page) |
+| Show an image | Save it in `ewiki/<slug>/` and commit it, then write `![what it shows](/<slug>/<name>.png)` | [Adding an image](#adding-an-image-to-a-page) |
+| Let a reader open an image full size | Wrap the image in a link to its own file: `[![alt](/<slug>/<name>.png)](/<slug>/<name>.png)` | [Opening an image full size](#opening-an-image-full-size) |
+| Draw a diagram | Write it in Mermaid, commit the `.mmd` and a static `.svg` render under `ewiki/<slug>/`, and show the SVG as an image. A `mermaid` fence won't render: it needs JavaScript. | [Embedding diagrams](#embedding-diagrams) |
+| Preview locally | `pnpm wiki-viewer:dev` from the repo root, then `http://localhost:1313` | [How to preview locally](wiki-viewer.md#how-to-preview-locally) |
+| Publish | Commit with an `INFRA:` message on a new branch, open a PR, and merge it once CI is green. The merge deploys. | [How to publish](wiki-viewer.md#how-to-publish) |
+| Fix a red build | Open the failed `wiki-viewer` run. The step that failed names the page and what's wrong. | [Build pipeline](wiki-viewer-architecture.md#build-pipeline-what-runs-on-push-and-on-prs) |
+
 ## Mechanics
 
 ### Available Styles
 
-The wiki viewer theme (`apps/wiki-viewer/assets/css/style.css`)
+The wiki viewer's stylesheet (the shared theme's core
+`apps/wiki-viewer/themes/ewiki/assets/css/ewiki.css`, plus the engine's
+`apps/wiki-viewer/assets/css/ewiki-brand.css` and `ewiki-site.css`)
 provides the following visual elements. Raw HTML is disabled
 (`unsafe = false` in Hugo config), so all styling must be achieved
 through standard markdown.
@@ -238,8 +279,8 @@ repo, and reference it by absolute URL:
 Use **MP3**: it plays in the native `<audio>` element across every
 browser with no JavaScript, which is exactly what the JS-free constraint
 wants. Implementation lives in
-`apps/wiki-viewer/layouts/shortcodes/audio.html`, styled by the
-`.wiki-audio` rule in the theme stylesheet.
+`apps/wiki-viewer/themes/ewiki/layouts/shortcodes/audio.html` (the shared
+theme's shortcode), styled by the `.wiki-audio` rule in the theme stylesheet.
 
 For a player **inside a markdown table cell**, use `audio-inline`
 instead. The `audio` shortcode wraps its player in a `<figure>` with
@@ -304,8 +345,8 @@ every build, so it can't go stale (D-24709).
   uses that id.
 
 The shortcode
-(`C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\layouts\shortcodes\include-section.html`,
-[on GitHub](../apps/wiki-viewer/layouts/shortcodes/include-section.html))
+(`C:\dev\legendary-arena\apps\wiki-viewer\themes\ewiki\layouts\shortcodes\include-section.html`,
+[on GitHub](../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html))
 looks up the page, cuts the Markdown from that heading to the next heading of
 the same level, and renders it in place. The heading itself is left out, so
 the including page writes its own.
@@ -440,8 +481,10 @@ in wiki content, so they are already literal and need no escaping. See the
 
 Every ewiki page renders an **"Editing this page"** block at the foot of
 the page, collapsed by default (a native `<details>` element, so it needs
-no JavaScript). It is generated by the
-`apps/wiki-viewer/layouts/partials/editing-this-page.html` partial — you
+no JavaScript). It is generated by the shared theme's
+`apps/wiki-viewer/themes/ewiki/layouts/partials/ewiki/editing-this-page.html`
+partial, with the engine's own paragraphs from
+`apps/wiki-viewer/layouts/partials/ewiki/editing-extra.html` — you
 never hand-write it. It states where the editable source lives, a
 one-click GitHub edit link for this exact page, the commit prefix
 (`INFRA:` for ewiki page edits), the strict-build rules, and how the page
@@ -449,7 +492,7 @@ deploys (the `wiki-viewer` workflow's deploy job, to the Cloudflare Worker
 `legendary-arena-wiki`), and where each of its files ends up.
 
 Each file reference shows **both** forms: the full local drafting path —
-e.g. `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md`, the directory to
+e.g. `C:\dev\legendary-arena\wiki\<slug>.md`, the directory to
 `cd` into for a local clone — as plain text, **and** a GitHub link for the
 browser / no-clone path. The full path is deliberately hardcoded to the
 drafting location (matching [SCHEMA.md](SCHEMA.md) §Self-reference); the
@@ -461,7 +504,7 @@ that reference stays GitHub-only.)
 The block has three automatic variants:
 
 - **Native page** (most pages): the wiki page itself is the editable
-  source — full path `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md`,
+  source — full path `C:\dev\legendary-arena\wiki\<slug>.md`,
   linked to `wiki/<slug>.md` on GitHub; the Sources list are files it
   *documents*, not edit targets.
 - **Mirror page:** the page synthesizes one upstream doc that owns the
@@ -524,7 +567,7 @@ lines. Every footer also carries a short *Write it once* note pointing to
 The Hugo layout renders six locked front-matter fields automatically —
 you never write them in markdown. They land in **two** places, not one:
 
-- **Top metadata panel** (`metadata-panel.html`): `type`, `status`,
+- **Top metadata panel** (`layouts/partials/ewiki/metadata.html`): `type`, `status`,
   `tags`, and `last-reviewed`.
 - **After the body**, as their own blocks: `related` (a related-pages
   list, `related.html`) and `source` (a citations list,
@@ -544,7 +587,7 @@ first — the six-field surface is locked (WP-139 / EC-142).
 ### Adding an image to a page
 
 Save the image in the repo at
-`C:\pcloud\BB\DEV\legendary-arena\ewiki\<slug>\<name>.png` — where `<slug>`
+`C:\dev\legendary-arena\ewiki\<slug>\<name>.png` — where `<slug>`
 is the page's filename without `.md` (for `wiki/legendary-forge.md`, that
 directory is `…\ewiki\legendary-forge\`). **Commit it.** Then reference it
 in the page markdown as an absolute *site* path:
@@ -561,13 +604,32 @@ Hugo serves the file at `/<slug>/<name>.png`. Shipped examples:
 **Do not save the image into either of these** — both look correct locally
 and fail in production:
 
-- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\static\<slug>\` —
+- `C:\dev\legendary-arena\apps\wiki-viewer\static\<slug>\` —
   gitignored, so it is never committed and 404s once deployed.
-- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\content\` — wiped
+- `C:\dev\legendary-arena\apps\wiki-viewer\content\` — wiped
   (`rmSync`) on every build.
 
 The rule in one line: **page content goes in `wiki\`, image and diagram
 assets go in `ewiki\<slug>\`, and both get committed.**
+
+### Opening an image full size
+
+To let a reader click an image to open it at full size, wrap the image in a
+link to its own file. Both use the same site path. Pair it with `width=` to
+show a smaller copy on the page:
+
+```
+[![Exploded view of the Legendary Forge.](/legendary-forge/exploded-view.png "width=40%")](/legendary-forge/exploded-view.png)
+```
+
+[![Exploded view of the Legendary Forge.](/legendary-forge/exploded-view.png "width=40%")](/legendary-forge/exploded-view.png)
+
+The link render hook
+([render-link.html](../apps/wiki-viewer/themes/ewiki/layouts/_default/_markup/render-link.html))
+passes a `/`-rooted link through unchanged, because it's a site path and
+never a page. Link to pages with `slug.md`, not `/slug/`. The link checker
+doesn't check `/`-rooted paths, so a typo in the file name builds and then
+404s: click the image in the preview before you open the PR.
 
 ### Where ewiki files are saved
 
@@ -579,8 +641,8 @@ repo-relative paths on GitHub.)
 
 | Copy | Path | Editable? |
 |---|---|---|
-| Source | `C:\pcloud\BB\DEV\legendary-arena\wiki\<slug>.md` | **Yes — this is the only one** |
-| Projection | `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\content\<slug>.md` | No — gitignored, regenerated every build, carries a generated banner |
+| Source | `C:\dev\legendary-arena\wiki\<slug>.md` | **Yes — this is the only one** |
+| Projection | `C:\dev\legendary-arena\apps\wiki-viewer\content\<slug>.md` | No — gitignored, regenerated every build, carries a generated banner |
 | Rendered | `https://ewiki.legendary-arena.com/<slug>/` | No — the published output |
 
 This is exactly why [SCHEMA.md](SCHEMA.md) requires the first
@@ -589,19 +651,22 @@ reader looking at one of three near-identical copies cannot tell which
 one to edit.
 
 **Committed, in this repo** (rooted at
-`C:\pcloud\BB\DEV\legendary-arena\` — the directory to `cd` into):
+`C:\dev\legendary-arena\` — the directory to `cd` into):
 
 ```
-C:\pcloud\BB\DEV\legendary-arena\
+C:\dev\legendary-arena\
   wiki\<slug>.md                            # the page source
   ewiki\<slug>\                             # that page's assets
     ├── diagram.mmd                         #   Mermaid source (editable)
     ├── diagram.svg                         #   rendered artifact (published)
     └── screenshot.png
   apps\wiki-viewer\
-    ├── assets\css\style.css                # theme — authoritative for style values
+    ├── assets\css\ewiki-brand.css          # brand tokens, light and dark
+    ├── assets\css\ewiki-site.css           # the engine-only style rules
     ├── hugo.toml                           # unsafe = false, highlighting off
-    ├── layouts\                            # templates, partials, shortcodes\*.html
+    ├── layouts\                            # the engine's partials and shortcodes
+    ├── themes\ewiki\                       # shared theme, vendored read-only
+    │                                       #   (core templates, ewiki.css)
     └── scripts\project-wiki.mjs            # the projection step itself
 ```
 
@@ -609,7 +674,7 @@ C:\pcloud\BB\DEV\legendary-arena\
 `content/`, `public/`, `resources/`, and `static/*/`:
 
 ```
-C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\
+C:\dev\legendary-arena\apps\wiki-viewer\
   content\             # ← wiki\*.md projected here
   static\<slug>\       # ← ewiki\<slug>\ projected here
   public\              # Hugo build output
@@ -686,9 +751,11 @@ prefixes.
 
 ## References
 
-- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\assets\css\style.css`
-  — theme stylesheet (authoritative for all style values)
-- `C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\hugo.toml`
+- `C:\dev\legendary-arena\apps\wiki-viewer\themes\ewiki\assets\css\ewiki.css`
+  — the shared theme's core stylesheet, with the engine's
+  `apps\wiki-viewer\assets\css\ewiki-brand.css` (tokens) and
+  `ewiki-site.css` (authoritative together for all style values)
+- `C:\dev\legendary-arena\apps\wiki-viewer\hugo.toml`
   — Hugo config (confirms `unsafe = false`, syntax highlighting off)
 - [Wiki Viewer](wiki-viewer.md) — page creation and publishing
 - [SCHEMA.md](SCHEMA.md) — entity-page contract

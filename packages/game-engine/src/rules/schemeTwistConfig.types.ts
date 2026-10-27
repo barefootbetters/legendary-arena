@@ -9,6 +9,7 @@
  */
 
 import type { LegendaryGameState, ConvertedVillainOrigin } from '../types.js';
+import type { SchemeLossKind } from './schemeLossProgress.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealedCardType } from '../villainDeck/villainDeck.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
@@ -20,8 +21,12 @@ import type { ImplementationMap } from './ruleRuntime.execute.js';
  * why (D-24595): many printed conditions read "when the Hero Deck or Villain Deck
  * runs out" / "when the Wound Stack or Villain Deck runs out", so the Villain Deck
  * joins the two piles WP-510 / WP-511 introduced, and a condition may name several.
+ *
+ * why (D-24736): Clash of the Monsters Unleashed loses "When the Wound Stack or
+ * Monster Pit Deck runs out", so its scheme-owned Monster Pit (`G.monsterPit`)
+ * is a pile too.
  */
-export type SchemeLossPile = 'heroDeck' | 'wounds' | 'villainDeck';
+export type SchemeLossPile = 'heroDeck' | 'wounds' | 'villainDeck' | 'monsterPit';
 
 /**
  * Canonical ordered list of SchemeLossPile values.
@@ -33,6 +38,7 @@ export const SCHEME_LOSS_PILES: readonly SchemeLossPile[] = [
   'heroDeck',
   'wounds',
   'villainDeck',
+  'monsterPit',
 ];
 
 /**
@@ -58,7 +64,8 @@ export const SCHEME_LOSS_PILES: readonly SchemeLossPile[] = [
  *   `threshold` entries in `G.escapedPile` carry a converted-villain `origin`
  *   (`G.convertedVillainOrigins`) — counts converted cards distinctly from real
  *   villains. Killbots: `origin: 'killbot'`, `threshold: 5`. Secret Invasion:
- *   `origin: 'skrull'`, `threshold: 6` (6 Heroes into the Escaped Villains pile).
+ *   `origin: 'skrull'`, `threshold: 6` (6 Heroes into the Escaped Villains pile),
+ *   with `includeCapturedHeroes: true` (D-24738).
  */
 export type SchemeResourceLossCondition =
   | {
@@ -94,6 +101,29 @@ export type SchemeResourceLossCondition =
       origin: ConvertedVillainOrigin;
       /** The count at which the scheme is lost (evil wins). */
       threshold: number;
+      /**
+       * D-24738 — also count the Heroes a captor carried into the pile with it
+       * (D-24657). Secret Invasion prints "If 6 Heroes get into the Escaped
+       * Villains pile", and a captured Hero there is a Hero (operator ruling
+       * 2026-10-17). Omitted (Killbots) counts the origin only.
+       */
+      includeCapturedHeroes?: true;
+    }
+  | {
+      /**
+       * WP-832 / D-24765 — a scheme-kept `G.counters` tally reaching a threshold is the loss
+       * (Change the Outcome of WWII: conquered capitals, 3). The scheme's own logic raises the
+       * counter and calls applySchemeCounterResourceLoss.
+       */
+      kind: 'scheme-counter';
+      /** The `G.counters` key the scheme raises. */
+      counter: string;
+      /** The count at which the scheme is lost (evil wins). */
+      threshold: number;
+      /** The danger-meter kind the client labels this tally from (D-24371: an enum, no copy). */
+      meterKind: SchemeLossKind;
+      /** What the tally counts, for the loss log line ("capitals conquered"). */
+      lossDescription: string;
     };
 
 /**
@@ -108,6 +138,17 @@ export type SchemeTwistResolverId =
   | 'killbots'
   | 'secret-invasion'
   | 'portals'
+  | 'clash-monster-pit'
+  | 'brainwash-the-military'
+  // why: WP-829 / D-24762 — Go Back in Time to Slay Heroes' Ancestors: each Twist owes one
+  // Purge of an HQ Hero (contract change recorded in D-24762).
+  | 'go-back-in-time'
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code: Twists 1-5 put a Hero Deck card face down
+  // into the Enigma Code (contract change recorded in D-24763).
+  | 'enigma-code'
+  // why: WP-832 / D-24765 — Change the Outcome of WWII: each Twist invades the next country
+  // (contract change recorded in D-24765).
+  | 'change-the-outcome-of-wwii'
   | 'counter-only';
 
 /**

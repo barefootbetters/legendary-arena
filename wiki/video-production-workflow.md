@@ -17,7 +17,7 @@ related:
   - gameplay-video-production-youtube.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\video-production-workflow.md (this page — https://ewiki.legendary-arena.com/video-production-workflow/)
+  - C:\dev\legendary-arena\wiki\video-production-workflow.md (this page — https://ewiki.legendary-arena.com/video-production-workflow/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-06-04
 ---
@@ -78,7 +78,7 @@ post on legendary-arena.com.
 ## File System
 
 ```
-C:\pcloud\LA\
+C:\pcloud\legendary-arena\
   video-assets\        # Shared reusable assets (intros, outros, music,
                        #   overlays, fonts, thumbnails, hooks, templates)
   videos\              # Per-video production folders

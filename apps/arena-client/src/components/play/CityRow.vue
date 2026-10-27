@@ -1,6 +1,7 @@
 <script lang="ts">
 import { defineComponent, ref, type PropType } from 'vue';
 import type {
+  UICardDisplay,
   UICityState,
   UIDecksState,
   UITurnEconomyState,
@@ -24,6 +25,13 @@ import type { SubmitMove } from './uiMoveName.types';
  * 1..5 in the rendered row map to those engine indices in left-to-right
  * order.
  *
+ * Fight discard cost (WP-817 / D-24750): a villain whose City card carries
+ * `fightDiscardCosts` (Primus) is fought by also discarding a hand card of one
+ * of those costs. Fight is disabled with a reason when the viewer holds none;
+ * otherwise Fight / Fight-EV opens a chooser over that City space and the pick is sent
+ * as `discardCardId`. The engine re-validates the pick. A `Discard 2/3/5/7` cue
+ * is always on the tile, and turns loud when it is the reason Fight is disabled.
+ *
  * Cost gating: villains in the city render disabled when
  * `economy.availableAttack < cell.card.fightCost` — the engine's projected
  * fight cost (WP-750 / D-24574), not the printed cost — per the WP-128
@@ -32,6 +40,10 @@ import type { SubmitMove } from './uiMoveName.types';
  * Disabled-state tooltip precedence locked at EC-132 §3 (stage → resource
  * → structural). The reason is bound from useTurnActions / useCardCostGating
  * — never composed ad-hoc.
+ *
+ * Column alignment: with `isColumnAligned`, each cell takes a fixed width from
+ * the parent's `--board-edge-column-width` / `--board-space-column-width`, so an
+ * `HQRow` with the same flag lines up under it column for column.
  *
  * Per the EC-132 §2 SFC authoring whitelist: this is a tested non-leaf
  * composer that USES composables, so it MUST use
@@ -92,10 +104,83 @@ export default defineComponent({
       type: Function as PropType<SubmitMove>,
       required: true,
     },
+    // why: D-24747 — Abomination reads the HQ Hero under each City space by
+    // position (Sewers over the 5th HQ slot … Bridge over the 1st). With content-
+    // sized cells the HQ drifts out from under the City, so the Hero that looks
+    // "under" a Villain is not the one that counts. The desktop playmat sets this,
+    // together with HQRow's flag, to give both rows the same fixed columns.
+    isColumnAligned: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    // why: WP-817 / D-24750 — the viewer's own hand (owner-only UIPlayerState
+    // handCards / handDisplay / handCosts, index-aligned), so a Primus fight can
+    // offer only the cards the engine will accept. Eligibility reads handCosts (the
+    // engine cost), never display.cost, which is null for Officers and Sidekicks.
+    viewerHandCards: {
+      type: Array as PropType<string[]>,
+      required: false,
+      default: () => [],
+    },
+    viewerHandDisplay: {
+      type: Array as PropType<UICardDisplay[]>,
+      required: false,
+      default: () => [],
+    },
+    viewerHandCosts: {
+      type: Array as PropType<(number | null)[]>,
+      required: false,
+      default: () => [],
+    },
   },
   setup(props) {
     function buildCells(): CityCell[] {
       return useCityRow(props.city, props.decks).cells;
+    }
+
+    /**
+     * Formats a cost list for the gate reason: `2`, `2 or 3`, `2, 3, 5, or 7`.
+     *
+     * @param costs - The eligible costs, in order.
+     * @returns The English list with `or` before the last cost.
+     */
+    // why: a local copy of the engine's formatEligibleCostList — the client imports
+    // only the engine's runtime-safe surface, never engine internals (Layer Boundary).
+    function formatCostList(costs: number[]): string {
+      if (costs.length <= 1) {
+        return costs.map((cost) => String(cost)).join('');
+      }
+      if (costs.length === 2) {
+        return `${costs[0]} or ${costs[1]}`;
+      }
+      const leadingCosts = costs.slice(0, -1).map((cost) => String(cost)).join(', ');
+      return `${leadingCosts}, or ${costs[costs.length - 1]}`;
+    }
+
+    /**
+     * Lists the viewer's hand cards that may pay a fight discard cost, in hand order.
+     *
+     * @param fightDiscardCosts - The fought villain's eligible costs.
+     * @returns One entry per eligible hand card: its id and display name.
+     */
+    function eligibleDiscardCards(fightDiscardCosts: number[]): { cardId: string; name: string }[] {
+      const eligibleCards: { cardId: string; name: string }[] = [];
+      for (let handIndex = 0; handIndex < props.viewerHandCards.length; handIndex++) {
+        const cost = props.viewerHandCosts[handIndex];
+        if (typeof cost !== 'number' || !fightDiscardCosts.includes(cost)) {
+          continue;
+        }
+        const cardId = props.viewerHandCards[handIndex]!;
+        // why: the WP-111 placeholder name '<unknown>' (or no display entry) falls
+        // back to the humanized id, as HandRow labels the same card.
+        const displayName = props.viewerHandDisplay[handIndex]?.name;
+        const name = displayName === undefined || displayName === '<unknown>'
+          ? cardId.replace(/-/g, ' ')
+          : displayName;
+        eligibleCards.push({ cardId, name });
+      }
+      return eligibleCards;
     }
 
     function gateForCell(cell: CityCell): GatingResult {
@@ -124,6 +209,18 @@ export default defineComponent({
         cell.card.fightCost,
         citySpaceNameForIndex(cell.cityIndex),
       );
+      if (!cost.allowed) {
+        return cost;
+      }
+      // why: WP-817 / D-24750 — the fight discard cost gates last (stage → heal →
+      // cost → discard): with no eligible hand card the engine would refuse the fight.
+      const fightDiscardCosts = cell.card.fightDiscardCosts;
+      if (fightDiscardCosts !== undefined && eligibleDiscardCards(fightDiscardCosts).length === 0) {
+        return {
+          allowed: false,
+          reason: `Needs a card that costs ${formatCostList(fightDiscardCosts)} to discard`,
+        };
+      }
       return cost;
     }
 
@@ -152,6 +249,42 @@ export default defineComponent({
       ).allowed;
     }
 
+    /**
+     * Builds the always-visible fight discard cost cue text, e.g. `Discard 2/3/5/7`.
+     *
+     * @param fightDiscardCosts - The villain's eligible discard costs, in order.
+     * @returns The short cue text.
+     */
+    // why: slashes, not formatCostList's "2, 3, 5, or 7" — the cue sits on an 80px
+    // desktop tile, where the English list would not fit. The gate reason keeps the
+    // full sentence.
+    function discardCostCue(fightDiscardCosts: number[]): string {
+      return `Discard ${fightDiscardCosts.join('/')}`;
+    }
+
+    function isFightDiscardUnpayable(cell: CityCell): boolean {
+      // why (Jeff feedback, match OSth9-iV03C): a player who had played every
+      // card costing 2/3/5/7 saw Primus's Fight disabled with no visible reason,
+      // because the reason lives only in the shadowed tooltip. Like the Fight N
+      // badge, the discard cue goes loud only in the window where it explains a
+      // disabled Fight: the viewer's Main stage, no heal lock, and no hand card
+      // the engine would accept.
+      if (cell.kind !== 'slot' || cell.card === null) {
+        return false;
+      }
+      const fightDiscardCosts = cell.card.fightDiscardCosts;
+      if (fightDiscardCosts === undefined) {
+        return false;
+      }
+      if (!useTurnActions(props.currentStage, props.isViewerTurn).canFightVillain().allowed) {
+        return false;
+      }
+      if (!healLockGate(props.hasHealedThisTurn).allowed) {
+        return false;
+      }
+      return eligibleDiscardCards(fightDiscardCosts).length === 0;
+    }
+
     function hasFightCostBadge(cell: CityCell): boolean {
       // why: WP-750 / D-24574 — players see the number the engine will actually
       // charge. Shown only when it differs from the printed cost (a null printed
@@ -162,8 +295,52 @@ export default defineComponent({
       return cell.card.fightCost !== cell.card.display.cost;
     }
 
+    // why: WP-817 / D-24750 — the open discard chooser (one at a time): the City
+    // index being fought and whether the Excessive Violence button opened it.
+    const discardChooser = ref<{ cityIndex: number; useExcessiveViolence: boolean } | null>(null);
+
+    /**
+     * Returns the fight discard costs of the villain at a City index, if any.
+     *
+     * @param cityIndex - The engine City index.
+     * @returns The eligible costs, or undefined when the villain has none.
+     */
+    function fightDiscardCostsAt(cityIndex: number): number[] | undefined {
+      return props.city.spaces[cityIndex]?.fightDiscardCosts;
+    }
+
     function onFight(cityIndex: number): void {
+      if (fightDiscardCostsAt(cityIndex) !== undefined) {
+        discardChooser.value = { cityIndex, useExcessiveViolence: false };
+        return;
+      }
       props.submitMove('fightVillain', { cityIndex });
+    }
+
+    function onPickDiscard(cardId: string): void {
+      const chooser = discardChooser.value;
+      if (chooser === null) {
+        return;
+      }
+      discardChooser.value = null;
+      // why: the client submits intent; the engine re-validates the card and its cost.
+      if (chooser.useExcessiveViolence) {
+        props.submitMove('fightVillain', {
+          cityIndex: chooser.cityIndex,
+          discardCardId: cardId,
+          useExcessiveViolence: true,
+        });
+      } else {
+        props.submitMove('fightVillain', { cityIndex: chooser.cityIndex, discardCardId: cardId });
+      }
+    }
+
+    function onCancelDiscard(): void {
+      discardChooser.value = null;
+    }
+
+    function isDiscardChooserOpen(cityIndex: number): boolean {
+      return discardChooser.value !== null && discardChooser.value.cityIndex === cityIndex;
     }
 
     function showEvFight(cell: CityCell): boolean {
@@ -191,7 +368,52 @@ export default defineComponent({
       // enrolled EV abilities, or silently fights normally if it cannot. Once-per-
       // turn is enforced engine-side: after the EV fight the availability field
       // goes absent and this affordance disappears on the next projection.
+      if (fightDiscardCostsAt(cityIndex) !== undefined) {
+        discardChooser.value = { cityIndex, useExcessiveViolence: true };
+        return;
+      }
       props.submitMove('fightVillain', { cityIndex, useExcessiveViolence: true });
+    }
+
+    /**
+     * Whether to show the "Fight + Rescue" control (Baron Zemo, WP-819 / WP-820)
+     * on a City cell.
+     *
+     * @param cell - The City cell.
+     * @returns True when the villain is fightable and the fight plus 2 Recruit is payable.
+     */
+    function showRescueFight(cell: CityCell): boolean {
+      // why: WP-820 / D-24753 — shown only from the engine cue (economy
+      // .rescueOnFightAvailable, read inside canFightAndRescue) plus the Fight gate,
+      // the WP-738 / D-24561 Excessive Violence precedent. This gate only decides
+      // whether to SHOW the control; the engine decides the outcome.
+      if (cell.kind !== 'slot' || cell.card === null) {
+        return false;
+      }
+      if (!gateForCell(cell).allowed) {
+        return false;
+      }
+      // why: WP-817 / D-24750 — a villain with a fight discard cost (Primus) is fought
+      // through the discard chooser; this control must not bypass it (a request
+      // without discardCardId would return silently).
+      if (cell.card.fightDiscardCosts !== undefined) {
+        return false;
+      }
+      return useCardCostGating(props.economy).canFightAndRescue(
+        cell.card.fightCost,
+        citySpaceNameForIndex(cell.cityIndex),
+      );
+    }
+
+    /**
+     * Submits a fight that also pays 2 Recruit to rescue a Bystander.
+     *
+     * @param cityIndex - The engine City index of the fought villain.
+     */
+    function onFightRescue(cityIndex: number): void {
+      // why: the client submits INTENT (payToRescueBystander); the engine decides —
+      // it pays and rescues, or logs why it declined and fights normally.
+      props.submitMove('fightVillain', { cityIndex, payToRescueBystander: true });
     }
 
     function hasDarkPortal(cityIndex: number): boolean {
@@ -205,6 +427,11 @@ export default defineComponent({
       // button would: the same gateForCell, looked up by engine City index.
       for (const cell of buildCells()) {
         if (cell.kind === 'slot' && cell.cityIndex === cityIndex) {
+          // why: WP-817 / D-24750 — a discard-cost villain needs a card picked, so the
+          // slash gesture never fights it (click only; the chooser never opens mid-stroke).
+          if (cell.card !== null && cell.card.fightDiscardCosts !== undefined) {
+            return false;
+          }
           return cell.card !== null && gateForCell(cell).allowed;
         }
       }
@@ -238,9 +465,17 @@ export default defineComponent({
       gateForCell,
       hasFightCostBadge,
       isFightCostUnaffordable,
+      discardCostCue,
+      isFightDiscardUnpayable,
       onFight,
       showEvFight,
       onFightEV,
+      showRescueFight,
+      onFightRescue,
+      onPickDiscard,
+      onCancelDiscard,
+      isDiscardChooserOpen,
+      eligibleDiscardCards,
       hasDarkPortal,
       cityRowEl,
       isGestureEnabled,
@@ -255,6 +490,7 @@ export default defineComponent({
 <template>
   <section
     class="city-row"
+    :class="{ 'city-row--column-aligned': isColumnAligned }"
     data-testid="play-city-row"
     aria-label="City"
   >
@@ -280,10 +516,21 @@ export default defineComponent({
         v-for="(cell, position) in buildCells()"
         :key="position"
         class="city-space"
+        :class="cell.kind === 'slot' || cell.kind === 'gone' ? 'city-space--space-column' : 'city-space--edge-column'"
       >
         <template v-if="cell.kind === 'escaped'">
           <EscapedPile :pile="cell.entries" />
         </template>
+        <!-- why: WP-831 / D-24764 — a space a scheme removed from the City keeps its column (so the
+             HQ stays aligned) but holds nothing and has no name any more. -->
+        <div
+          v-else-if="cell.kind === 'gone'"
+          class="city-space-gone"
+          data-testid="play-city-gone"
+          :data-city-index="cell.cityIndex"
+          :title="`The ${cell.slotName} is not part of the City right now.`"
+          aria-label="Not part of the City"
+        ></div>
         <template v-else-if="cell.kind === 'slot'">
           <!-- why: WP-727 / D-24548 — the Portals Dark Portal over this city space
                (twists 2-6). Rendered even when the space is EMPTY, because the
@@ -346,6 +593,18 @@ export default defineComponent({
               :class="{ 'city-space__fight-cost--unaffordable': isFightCostUnaffordable(cell) }"
               data-testid="play-city-fight-cost"
             >Fight {{ cell.card.fightCost }}</span>
+            <!-- why: WP-817 / D-24750 — the fight discard cost (Primus), always on the
+                 tile so a player knows to hold an eligible card back. Same pinned
+                 pill as the Fight N badge, stacked above it when both show. -->
+            <span
+              v-if="cell.card.fightDiscardCosts !== undefined"
+              class="city-space__discard-cost"
+              :class="{
+                'city-space__discard-cost--stacked': hasFightCostBadge(cell),
+                'city-space__discard-cost--unpayable': isFightDiscardUnpayable(cell),
+              }"
+              data-testid="play-city-discard-cost"
+            >{{ discardCostCue(cell.card.fightDiscardCosts) }}</span>
           </button>
           <!-- why (Jeff feedback): the empty placeholder no longer prints the slot
                name inside it — the name is now the side label above. It stays a
@@ -375,6 +634,50 @@ export default defineComponent({
             <span class="city-space__ev-fight-label">Excessive Violence</span>
             <span class="city-space__ev-fight-cost">+1</span>
           </button>
+          <!-- why: WP-820 / D-24753 — Baron Zemo's "you may use 2 Recruit to rescue a
+               Bystander". A SEPARATE opt-in button beside the EV one (the normal Fight
+               click is unchanged); shown only from the engine cue + the Fight gate.
+               Submitting it sends the payToRescueBystander intent; the engine decides. -->
+          <button
+            v-if="showRescueFight(cell)"
+            type="button"
+            class="city-space__rescue-fight"
+            data-testid="play-city-villain-rescue"
+            :data-city-index="cell.cityIndex"
+            title="Fight this Villain and pay 2 Recruit to rescue a Bystander (Baron Zemo)."
+            @click="onFightRescue(cell.cityIndex)"
+          >
+            <span class="city-space__rescue-fight-label">Fight + Rescue</span>
+            <span class="city-space__rescue-fight-cost">2 Recruit</span>
+          </button>
+          <!-- why: WP-817 / D-24750 — the discard chooser for a fight discard cost
+               (Primus): one button per eligible hand card, plus Cancel. Picking one
+               submits the fight with that card; the engine re-validates it. -->
+          <div
+            v-if="cell.card !== null && cell.card.fightDiscardCosts !== undefined && isDiscardChooserOpen(cell.cityIndex)"
+            class="city-space__discard-chooser"
+            data-testid="play-city-discard-chooser"
+            :data-city-index="cell.cityIndex"
+            role="group"
+            aria-label="Choose a card to discard"
+          >
+            <span class="city-space__discard-chooser-title">Discard to fight:</span>
+            <button
+              v-for="option in eligibleDiscardCards(cell.card.fightDiscardCosts)"
+              :key="option.cardId"
+              type="button"
+              class="city-space__discard-option"
+              data-testid="play-city-discard-option"
+              :data-card-id="option.cardId"
+              @click="onPickDiscard(option.cardId)"
+            >{{ option.name }}</button>
+            <button
+              type="button"
+              class="city-space__discard-cancel"
+              data-testid="play-city-discard-cancel"
+              @click="onCancelDiscard()"
+            >Cancel</button>
+          </div>
           <!-- why: WP-505 + Jeff feedback — captured cards render to the SIDE of the
                villain tile (was underneath), saving vertical space. Face-up captured
                heroes (attachedHeroDisplay) show as card art; face-down captured
@@ -423,6 +726,16 @@ export default defineComponent({
 </template>
 
 <style scoped>
+/* why: WP-831 / D-24764 — a removed City space: a faint hatched box in its usual column. */
+.city-space-gone {
+  width: 100%;
+  min-height: 4rem;
+  border: 1px dashed var(--color-foreground, #999);
+  border-radius: 0.35rem;
+  opacity: 0.25;
+  background: repeating-linear-gradient(45deg, transparent 0 6px, rgba(128, 128, 128, 0.35) 6px 8px);
+}
+
 .city-row {
   display: flex;
   flex-direction: column;
@@ -497,6 +810,23 @@ export default defineComponent({
   min-width: 0;
 }
 
+/* why: D-24747 — fixed columns shared with HQRow, so each HQ slot sits under the
+   City space Abomination pairs it with. The edge columns (Escaped Pile, Villain
+   Deck) and the five spaces take the parent's width tokens; the edge cell's
+   content fills its column. */
+.city-row--column-aligned .city-space--edge-column {
+  flex: 0 0 var(--board-edge-column-width, auto);
+}
+
+.city-row--column-aligned .city-space--edge-column > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.city-row--column-aligned .city-space--space-column {
+  flex: 0 0 var(--board-space-column-width, auto);
+}
+
 /* why: WP-750 — the villain button is the positioning context for the Fight N
    badge, so the badge overlays the tile instead of taking layout space. */
 .city-space__villain {
@@ -546,6 +876,48 @@ export default defineComponent({
 
 @media (prefers-reduced-motion: reduce) {
   .city-space__fight-cost--unaffordable {
+    animation: none;
+  }
+}
+
+/* why: WP-817 / D-24750 — the fight discard cost cue, the Fight N badge's pill.
+   It may wrap to two lines ("Discard" / "2/3/5/7") so it never overflows the
+   80px desktop tile. */
+.city-space__discard-cost {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100% - 6px);
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* why: clears the Fight N badge below it, including its larger loud state. */
+.city-space__discard-cost--stacked {
+  bottom: 1.45rem;
+}
+
+/* why (Jeff feedback, match OSth9-iV03C): loud only when no hand card can pay —
+   the same red, ring and single pulse as the unaffordable Fight N badge. */
+.city-space__discard-cost--unpayable {
+  background: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 10px rgba(185, 28, 28, 0.85);
+  animation: city-space__fight-cost-pulse 700ms ease-out 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-space__discard-cost--unpayable {
     animation: none;
   }
 }
@@ -703,5 +1075,101 @@ export default defineComponent({
   border-radius: 0.25rem;
   background: rgba(0, 0, 0, 0.28);
   font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-820 / D-24753 — the per-villain "Fight + Rescue" opt-in (Baron Zemo), in
+   the Excessive Violence button's shape but filled with the existing Recruit brand
+   token, so it reads as "this fight also spends Recruit". The "2 Recruit" badge
+   spells out the price on the button itself. */
+.city-space__rescue-fight {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  align-self: center;
+  margin-top: 0.2rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 0.35rem;
+  background: var(--la-color-recruit);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.city-space__rescue-fight:hover {
+  filter: brightness(1.1);
+}
+
+.city-space__rescue-fight:active {
+  transform: translateY(1px);
+}
+
+.city-space__rescue-fight-label {
+  line-height: 1.2;
+}
+
+/* why: the "2 Recruit" cost badge — the same lighter inset pill as the EV "+1". */
+.city-space__rescue-fight-cost {
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.28);
+  font-variant-numeric: tabular-nums;
+}
+
+/* why: WP-817 / D-24750 — the Primus discard chooser, an overlay on its own City
+   space. As a flex sibling of the villain tile it landed to the RIGHT of the tile
+   (the space is a horizontal row), overflowed the fixed D-24747 column, and the
+   next cell (the Villain Deck, for Sewers) painted over it, so the options could
+   be neither seen nor clicked (Jeff feedback). Inset to the space, it never widens
+   the row (the scale-to-fit board, D-24505) and stays inside the overflow-x
+   scroller, which also clips vertically; a long hand scrolls inside it. z-index 3
+   clears the Dark-Portal marker (2). */
+.city-space__discard-chooser {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  padding: 0.25rem;
+  overflow-y: auto;
+  border: 1px solid #ffd700;
+  border-radius: 0.35rem;
+  background: rgba(16, 20, 36, 0.95);
+  color: #fff;
+}
+
+.city-space__discard-chooser-title {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+/* why: flex: none keeps each button its natural height inside the overlay; a
+   hand with many eligible cards scrolls the chooser instead of squashing the
+   labels. */
+.city-space__discard-option,
+.city-space__discard-cancel {
+  flex: none;
+  line-height: 1.2;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid currentColor;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+  font-size: 0.62rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.city-space__discard-option {
+  font-weight: 700;
 }
 </style>

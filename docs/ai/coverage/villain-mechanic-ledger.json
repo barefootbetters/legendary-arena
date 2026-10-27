@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 722,
+    "totalRows": 740,
     "byStatus": {
-      "executable": 140,
+      "executable": 181,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 579,
+      "unmarked": 556,
       "subsystem": 2
     },
-    "distinctMechanics": 36
+    "distinctMechanics": 46
   },
   "rows": [
     {
@@ -1059,15 +1059,26 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
     },
     {
+      "extId": "ca75-villain-masters-of-evil-wwii-black-knight",
+      "cardName": "Black Knight",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
       "extId": "ca75-villain-zolas-creations-captain-zolandia",
       "cardName": "Captain Zolandia",
       "set": "ca75",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-recruit-current-per-hero-class",
+      "status": "executable",
+      "wp": "WP-817",
+      "decision": "D-24750",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-per-hero-class"
     },
     {
       "extId": "ca75-villain-zolas-creations-doughboy",
@@ -1092,6 +1103,39 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
     },
     {
+      "extId": "ca75-villain-masters-of-evil-wwii-executioner",
+      "cardName": "Executioner",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "draw-cards-current",
+      "status": "executable",
+      "wp": "WP-485",
+      "decision": "D-24290",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current"
+    },
+    {
+      "extId": "ca75-villain-masters-of-evil-wwii-executioner",
+      "cardName": "Executioner",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "ko-bystander-each-victory-pile",
+      "status": "executable",
+      "wp": "WP-816",
+      "decision": "D-24749",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-bystander-each-victory-pile"
+    },
+    {
+      "extId": "ca75-villain-zolas-creations-man-fish",
+      "cardName": "Man-Fish",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
+    },
+    {
       "extId": "ca75-villain-zolas-creations-man-fish",
       "cardName": "Man-Fish",
       "set": "ca75",
@@ -1114,15 +1158,26 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
     },
     {
+      "extId": "ca75-villain-masters-of-evil-wwii-melter-wwii",
+      "cardName": "Melter (WWII)",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "ko-cullable-each-deck-top",
+      "status": "executable",
+      "wp": "WP-603",
+      "decision": "D-24413",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top"
+    },
+    {
       "extId": "ca75-villain-zolas-creations-primus",
       "cardName": "Primus",
       "set": "ca75",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "discard-hero-each-player-by-cost",
+      "status": "executable",
+      "wp": "WP-817",
+      "decision": "D-24750",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-each-player-by-cost"
     },
     {
       "extId": "ca75-villain-masters-of-evil-wwii-radioactive-man",
@@ -1134,6 +1189,17 @@
       "wp": "WP-185",
       "decision": "D-18506",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander"
+    },
+    {
+      "extId": "ca75-villain-masters-of-evil-wwii-radioactive-man",
+      "cardName": "Radioactive Man",
+      "set": "ca75",
+      "cardType": "villain",
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
       "extId": "chmp-villain-wrecking-crew-bulldozer",
@@ -1283,11 +1349,11 @@
       "cardName": "Abomination",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-recruit-current-count-by-trait",
+      "status": "executable",
+      "wp": "WP-836",
+      "decision": "D-24769",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-count-by-trait"
     },
     {
       "extId": "co2e-villain-hydra-baron-strucker-supreme-hydra",
@@ -1316,11 +1382,22 @@
       "cardName": "Beetle",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "draw-cards-current-count-by-trait",
+      "status": "executable",
+      "wp": "WP-836",
+      "decision": "D-24769",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current-count-by-trait"
+    },
+    {
+      "extId": "co2e-villain-sinister-syndicate-beetle",
+      "cardName": "Beetle",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-boomerang",
@@ -1338,11 +1415,22 @@
       "cardName": "Destroyer",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "co2e-villain-enemies-of-asgard-destroyer",
+      "cardName": "Destroyer",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "henchman-doombot-legion",
@@ -1371,22 +1459,44 @@
       "cardName": "Endless Armies of HYDRA",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "koHeroEachPlayer",
+      "status": "executable",
+      "wp": "WP-189",
+      "decision": "D-18901",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "co2e-villain-hydra-endless-armies-of-hydra",
+      "cardName": "Endless Armies of HYDRA",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "wp": "WP-542",
+      "decision": "D-24351",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-frost-giant-warrior",
       "cardName": "Frost Giant Warrior",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "discard-hero-or-wound-each-player-by-trait",
+      "status": "executable",
+      "wp": "WP-837",
+      "decision": "D-24770",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-or-wound-each-player-by-trait"
+    },
+    {
+      "extId": "co2e-villain-enemies-of-asgard-frost-giant-warrior",
+      "cardName": "Frost Giant Warrior",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-green-goblin",
@@ -1415,44 +1525,77 @@
       "cardName": "Hand Ninjas",
       "set": "co2e",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-recruit-current",
+      "status": "executable",
+      "wp": "WP-541",
+      "decision": "D-24350",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current"
+    },
+    {
+      "extId": "henchman-hand-ninjas",
+      "cardName": "Hand Ninjas",
+      "set": "co2e",
+      "cardType": "henchman",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-hydro-man",
       "cardName": "Hydro-Man",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
       "cardName": "Juggernaut",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "discard-hand-matching-hq-card-names-each-player",
+      "status": "executable",
+      "wp": "WP-837",
+      "decision": "D-24770",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hand-matching-hq-card-names-each-player"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
+      "cardName": "Juggernaut",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "hq-heroes-to-hero-deck-bottom",
+      "status": "executable",
+      "wp": "WP-837",
+      "decision": "D-24770",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-to-hero-deck-bottom"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
+      "cardName": "Juggernaut",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "co2e-villain-radiation-maestro-wasteland-hulk",
       "cardName": "Maestro, Wasteland Hulk",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-heroes-current-count-by-trait",
+      "status": "executable",
+      "wp": "WP-544",
+      "decision": "D-24353",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-count-by-trait"
     },
     {
       "extId": "co2e-villain-masters-of-evil-melter",
@@ -1461,8 +1604,8 @@
       "cardType": "villain",
       "mechanic": "ko-cullable-each-deck-top",
       "status": "executable",
-      "wp": "WP-519",
-      "decision": "D-24332",
+      "wp": "WP-603",
+      "decision": "D-24413",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top"
     },
     {
@@ -1470,11 +1613,22 @@
       "cardName": "Mystique",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "become-scheme-twist",
+      "status": "executable",
+      "wp": "WP-481",
+      "decision": "D-24287",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-mystique",
+      "cardName": "Mystique",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "discard-hero-each-player-by-trait",
+      "status": "executable",
+      "wp": "WP-837",
+      "decision": "D-24770",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-each-player-by-trait"
     },
     {
       "extId": "co2e-villain-skulls-paibok-the-power-skrull",
@@ -1492,33 +1646,44 @@
       "cardName": "Sabretooth",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "henchman-savage-land-mutates",
       "cardName": "Savage Land Mutates",
       "set": "co2e",
       "cardType": "henchman",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-top-ko-grey-or-draw-by-class",
+      "status": "executable",
+      "wp": "WP-836",
+      "decision": "D-24769",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-ko-grey-or-draw-by-class"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-scorpion",
       "cardName": "Scorpion",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-scorpion",
+      "cardName": "Scorpion",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "henchman-sentinel",
@@ -1536,22 +1701,44 @@
       "cardName": "Skrull Queen Veranke",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "captureHqHeroHighestCost",
+      "status": "executable",
+      "wp": "WP-214",
+      "decision": "D-21401",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero"
+    },
+    {
+      "extId": "co2e-villain-skulls-skrull-queen-veranke",
+      "cardName": "Skrull Queen Veranke",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
+      "wp": "WP-450",
+      "decision": "D-24270",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero"
     },
     {
       "extId": "co2e-villain-skulls-skrull-shapeshifter",
       "cardName": "Skrull Shapeshifter",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "captureHqHeroRightmost",
+      "status": "executable",
+      "wp": "WP-214",
+      "decision": "D-21401",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero"
+    },
+    {
+      "extId": "co2e-villain-skulls-skrull-shapeshifter",
+      "cardName": "Skrull Shapeshifter",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
+      "wp": "WP-450",
+      "decision": "D-24270",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-speed-demon",
@@ -1569,11 +1756,11 @@
       "cardName": "Super-Skrull",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-the-blob",
@@ -1591,22 +1778,33 @@
       "cardName": "The Leader",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "wp": "WP-542",
+      "decision": "D-24351",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-the-lizard",
       "cardName": "The Lizard",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-the-lizard",
+      "cardName": "The Lizard",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "co2e-villain-masters-of-evil-ultron",
@@ -1646,11 +1844,11 @@
       "cardName": "Viper",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "gain-wound-unless-victory-villain-group",
+      "status": "executable",
+      "wp": "WP-494",
+      "decision": "D-24299",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound-unless-victory-villain-group"
     },
     {
       "extId": "co2e-villain-masters-of-evil-whirlwind",
@@ -1679,22 +1877,22 @@
       "cardName": "Ymir, Frost Giant King",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
     },
     {
       "extId": "co2e-villain-radiation-zzzax",
       "cardName": "Zzzax",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "wp": "WP-469",
+      "decision": "D-24281",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound"
     },
     {
       "extId": "core-villain-radiation-abomination",
@@ -1868,8 +2066,8 @@
       "cardType": "villain",
       "mechanic": "ko-cullable-each-deck-top",
       "status": "executable",
-      "wp": "WP-519",
-      "decision": "D-24332",
+      "wp": "WP-603",
+      "decision": "D-24413",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top"
     },
     {

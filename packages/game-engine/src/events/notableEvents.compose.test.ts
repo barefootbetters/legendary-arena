@@ -346,6 +346,26 @@ describe('composeEffectResultLogLine (WP-316)', () => {
     );
   });
 
+  it('D-24783: a grey-filtered KO names the filter in the pending, per-player and nothing-KO’d clauses', () => {
+    assert.equal(
+      composeEffectResultLogLine([{
+        keyword: 'koHeroEachPlayerMag2',
+        targetNames: [],
+        pending: true,
+        greyFilter: 'non-grey',
+        playerTargetNames: [
+          { playerId: '0', names: [], pending: true },
+          { playerId: '1', names: [] },
+        ],
+      }]),
+      'the active player must KO two non-grey Heroes; Player 1 had no non-grey Hero to KO',
+    );
+    assert.equal(
+      composeEffectResultLogLine([{ keyword: 'koHeroEachPlayer', targetNames: [], greyFilter: 'grey' }]),
+      'no player had a grey Hero to KO',
+    );
+  });
+
   it('D-24644 amendment: a pending two-KO effect (Juggernaut) says "two heroes"; one-KO keywords keep "a hero"', () => {
     assert.equal(
       composeEffectResultLogLine([{ keyword: 'koHeroEachPlayerMag2', targetNames: [], pending: true }]),

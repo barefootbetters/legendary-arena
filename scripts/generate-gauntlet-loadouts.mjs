@@ -22,16 +22,17 @@
  *      `alwaysLeads` groups and the henchmen slots with its printed
  *      `alwaysLeadsHenchmen` groups — the game's own rules make those canonical.
  *   3. Fill the remaining villain and henchmen slots per player count from the
- *      mastermind's own set first, then from the Core Set / Core 2E pool
- *      (the D-24199 core-fallback rule).
+ *      mastermind's own set first, then from the Core Set, then Core 2E (the
+ *      D-24199 core-fallback rule, ordered by D-24767).
  *   4. Emit one canonical variant (variant 0) per mastermind — the single
  *      approved configuration ranked qualification uses (D-24278). Casual play
  *      keeps free selection; only ranked qualification is fixed.
  *   5. For each scheme in the mastermind's own set that prints "Add an extra
- *      Henchman group" (D-24666), emit a `schemeOverrides` entry keyed by scheme
- *      slug: variant 0's villains and the henchmen refilled with the same rule
- *      for one more group. getGauntletConfig returns it for a leg with no
- *      authored config, so the leg's approved composition stays legal.
+ *      Henchman group" (D-24666) or "Add an extra Villain Group" (D-24766), emit
+ *      a `schemeOverrides` entry keyed by scheme slug: variant 0 with that slot
+ *      (henchmen or villains) refilled with the same rule for one more group.
+ *      getGauntletConfig returns it for a leg with no authored config, so the
+ *      leg's approved composition stays legal.
  *   6. Default mode: write the module. --check mode: regenerate in memory and
  *      exit non-zero if the committed module drifts (the CI freshness gate).
  *
@@ -92,6 +93,30 @@ const SCHEMES_WITH_EXTRA_HENCHMAN_GROUP = [
   'core/negative-zone-prison-breakout',
   'msp1/asgard-under-siege',
   'vnom/invasion-of-the-venom-symbiotes',
+];
+
+// why: mirrors SCHEMES_WITH_EXTRA_VILLAIN_GROUP in
+// packages/registry/src/playerCountSetup.ts (D-24766) — the schemes that print
+// "Add an extra Villain Group" and so require base + 1 villain groups.
+// Duplicated rather than imported for the same reason as the Henchman list (this
+// script runs before any build); the output-derived drift pin in
+// gauntletLoadouts.test.ts asserts the emitted villain-override keys equal the
+// registry list.
+const SCHEMES_WITH_EXTRA_VILLAIN_GROUP = [
+  'ca75/change-the-outcome-of-wwii',
+  'co2e/bank-robbery-hostage-crisis',
+  'co2e/negative-zone-prison-outbreak',
+  'cvwr/predict-future-crime',
+  'dkcy/steal-the-weaponized-plutonium',
+  'dstr/war-for-the-dream-dimension',
+  'dstr/cursed-pages-of-the-darkhold-tome',
+  'mgtg/inescapable-kyln-space-prison',
+  'mgtg/provoke-the-sovereign-war-fleet',
+  'nmut/superhuman-baseball-game',
+  'rvlt/earthquake-drains-the-ocean',
+  'ssw1/fragmented-realities',
+  'ssw1/smash-two-dimensions-together',
+  'ssw2/deadlands-hordes-charge-the-wall',
 ];
 
 const SUPPORTED_PLAYER_COUNTS = [1, 2, 3, 4, 5];
@@ -261,30 +286,61 @@ function toBareSlug(groupId) {
 }
 
 /**
+ * Throws a GenerationError unless one slot list of a scheme override is either
+ * the base list unchanged (no extra group for that slot) or the base list plus
+ * exactly one group (the scheme adds one).
+ *
+ * @param {string} label the mastermind / scheme / player-count being checked.
+ * @param {string} slotLabel "henchmen" or "villain" (for the error message).
+ * @param {string[]} baseGroupIds variant 0's ids for this slot.
+ * @param {string[]} overrideGroupIds the override's ids for this slot.
+ * @param {boolean} addsOneGroup whether the scheme adds one group to this slot.
+ */
+function assertOverrideSlot(label, slotLabel, baseGroupIds, overrideGroupIds, addsOneGroup) {
+  // why: fillGroupSlots sorts its output, so the override is checked as a set —
+  // every base id present, plus exactly one more (or none) — not by position.
+  const isSuperset = baseGroupIds.every((groupId) => overrideGroupIds.includes(groupId));
+  let expectedLength = baseGroupIds.length;
+  if (addsOneGroup) {
+    expectedLength = baseGroupIds.length + 1;
+  }
+  if (!isSuperset || overrideGroupIds.length !== expectedLength) {
+    throw new GenerationError(
+      `The scheme override for ${label} is not the base ${slotLabel} groups plus ` +
+        `exactly ${addsOneGroup ? 'one' : 'no'} group: base [${baseGroupIds.join(', ')}], ` +
+        `override [${overrideGroupIds.join(', ')}]. Check the D-24199 fill order for ` +
+        `this mastermind's set.`,
+    );
+  }
+}
+
+/**
  * Throws a GenerationError unless one scheme-override composition is the base
- * composition plus exactly one henchmen group, with no two ids sharing a slug.
+ * composition plus exactly one group on each slot its scheme extends (henchmen
+ * for "Add an extra Henchman group", villains for "Add an extra Villain Group"),
+ * with no two ids sharing a slug.
  *
  * @param {string} label the mastermind / scheme / player-count being checked.
  * @param {object} baseComposition variant 0's composition at this player count.
  * @param {object} overrideComposition the scheme-override composition.
+ * @param {{addsVillainGroup: boolean, addsHenchmanGroup: boolean}} schemeExtras
+ *   which slots the scheme extends.
  */
-function assertOverrideComposition(label, baseComposition, overrideComposition) {
-  // why: fillGroupSlots sorts its output, so the override is checked as a set —
-  // every base henchmen id present, plus exactly one more — not by position.
-  const isSuperset = baseComposition.henchmanGroupIds.every((groupId) =>
-    overrideComposition.henchmanGroupIds.includes(groupId),
+function assertOverrideComposition(label, baseComposition, overrideComposition, schemeExtras) {
+  assertOverrideSlot(
+    label,
+    'henchmen',
+    baseComposition.henchmanGroupIds,
+    overrideComposition.henchmanGroupIds,
+    schemeExtras.addsHenchmanGroup,
   );
-  const hasOneMoreGroup =
-    overrideComposition.henchmanGroupIds.length ===
-    baseComposition.henchmanGroupIds.length + 1;
-  if (!isSuperset || !hasOneMoreGroup) {
-    throw new GenerationError(
-      `The extra-Henchman scheme override for ${label} is not the base henchmen ` +
-        `plus exactly one group: base [${baseComposition.henchmanGroupIds.join(', ')}], ` +
-        `override [${overrideComposition.henchmanGroupIds.join(', ')}]. Check the ` +
-        `D-24199 fill order for this mastermind's set.`,
-    );
-  }
+  assertOverrideSlot(
+    label,
+    'villain',
+    baseComposition.villainGroupIds,
+    overrideComposition.villainGroupIds,
+    schemeExtras.addsVillainGroup,
+  );
   // why: Henchman card ids are built from the BARE slug (henchman-<slug>-NN in the
   // engine's villain-deck setup), so two groups sharing a slug across sets (e.g.
   // core/doombot-legion + co2e/doombot-legion) would collide on card ids.
@@ -296,7 +352,7 @@ function assertOverrideComposition(label, baseComposition, overrideComposition) 
     const slug = toBareSlug(groupId);
     if (seenSlugs.has(slug)) {
       throw new GenerationError(
-        `The extra-Henchman scheme override for ${label} names two groups with the ` +
+        `The scheme override for ${label} names two groups with the ` +
           `slug "${slug}". Card ids are built from the bare slug, so the match would ` +
           `collide; adjust the fill order so the override picks a distinct-slug group.`,
       );
@@ -306,47 +362,80 @@ function assertOverrideComposition(label, baseComposition, overrideComposition) 
 }
 
 /**
+ * Fills one slot of a scheme override: the base list unchanged when the scheme
+ * does not extend the slot, else the slot refilled (same D-24199 rule, same
+ * anchors) for one more group.
+ *
+ * @param {{anchorIds: string[], inSetIds: string[], fallbackIds: string[]}} slotPools
+ *   the slot's printed-lead anchors, in-set ids and Core fallback ids.
+ * @param {string[]} baseGroupIds variant 0's ids for this slot.
+ * @param {number} baseCount the table count for this slot at this player count.
+ * @param {boolean} addsOneGroup whether the scheme adds one group to this slot.
+ * @param {number} variantIndex the base variant's rotation offset.
+ * @returns {string[]} the override's ids for this slot.
+ */
+function fillOverrideSlot(slotPools, baseGroupIds, baseCount, addsOneGroup, variantIndex) {
+  if (!addsOneGroup) {
+    return [...baseGroupIds];
+  }
+  return fillGroupSlots(
+    slotPools.anchorIds,
+    slotPools.inSetIds,
+    slotPools.fallbackIds,
+    baseCount + 1,
+    variantIndex,
+  );
+}
+
+/**
  * Builds the `schemeOverrides` map for one mastermind: for each scheme in its own
- * set that prints "Add an extra Henchman group", variant 0's villains with the
- * henchmen refilled (same D-24199 rule) for one more group, at every player count.
+ * set that prints "Add an extra Henchman group" (D-24666) or "Add an extra
+ * Villain Group" (D-24766), variant 0 with that slot refilled (same D-24199 rule)
+ * for one more group, at every player count.
  *
  * @param {{abbr: string, data: object}} set the mastermind's own set.
  * @param {string} mastermindSlug the mastermind's slug (for error messages).
  * @param {object} baseVariant the mastermind's variant 0.
- * @param {string[]} anchorHenchmenIds the printed Henchman-Group lead ids (may
- *   be empty) — anchored first, exactly as in the base fill (D-24667).
- * @param {string[]} inSetHenchmenIds the set's henchmen group ids.
- * @param {string[]} fallbackHenchmenIds the Core Set / Core 2E henchmen pool.
+ * @param {{anchorIds: string[], inSetIds: string[], fallbackIds: string[]}} villainPools
+ *   the villain slot's printed-lead anchors (may be empty), in-set ids and Core
+ *   fallback ids — anchored first, exactly as in the base fill (D-24667).
+ * @param {{anchorIds: string[], inSetIds: string[], fallbackIds: string[]}} henchmanPools
+ *   the henchmen slot's pools, in the same shape.
  * @returns {object|undefined} the overrides keyed by scheme slug, or undefined
- *   when the set has no extra-Henchman scheme.
+ *   when the set has no extra-Henchman or extra-Villain-Group scheme.
  */
-function buildSchemeOverrides(
-  set,
-  mastermindSlug,
-  baseVariant,
-  anchorHenchmenIds,
-  inSetHenchmenIds,
-  fallbackHenchmenIds,
-) {
+function buildSchemeOverrides(set, mastermindSlug, baseVariant, villainPools, henchmanPools) {
   const sortedSchemes = [...(set.data.schemes ?? [])].sort(
     (firstScheme, secondScheme) =>
       firstScheme.slug < secondScheme.slug ? -1 : 1,
   );
   let schemeOverrides;
   for (const scheme of sortedSchemes) {
-    if (!SCHEMES_WITH_EXTRA_HENCHMAN_GROUP.includes(`${set.abbr}/${scheme.slug}`)) {
+    const schemeId = `${set.abbr}/${scheme.slug}`;
+    const schemeExtras = {
+      addsVillainGroup: SCHEMES_WITH_EXTRA_VILLAIN_GROUP.includes(schemeId),
+      addsHenchmanGroup: SCHEMES_WITH_EXTRA_HENCHMAN_GROUP.includes(schemeId),
+    };
+    if (!schemeExtras.addsVillainGroup && !schemeExtras.addsHenchmanGroup) {
       continue;
     }
     const compositionsByPlayerCount = {};
     for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
       const baseComposition = baseVariant.compositionsByPlayerCount[playerCount];
+      const requiredCounts = REQUIRED_GROUP_COUNTS[playerCount];
       const overrideComposition = {
-        villainGroupIds: [...baseComposition.villainGroupIds],
-        henchmanGroupIds: fillGroupSlots(
-          anchorHenchmenIds,
-          inSetHenchmenIds,
-          fallbackHenchmenIds,
-          REQUIRED_GROUP_COUNTS[playerCount].henchmenGroupCount + 1,
+        villainGroupIds: fillOverrideSlot(
+          villainPools,
+          baseComposition.villainGroupIds,
+          requiredCounts.villainGroupCount,
+          schemeExtras.addsVillainGroup,
+          baseVariant.variantIndex,
+        ),
+        henchmanGroupIds: fillOverrideSlot(
+          henchmanPools,
+          baseComposition.henchmanGroupIds,
+          requiredCounts.henchmenGroupCount,
+          schemeExtras.addsHenchmanGroup,
           baseVariant.variantIndex,
         ),
       };
@@ -354,6 +443,7 @@ function buildSchemeOverrides(
         `"${set.abbr}/${mastermindSlug}" / "${scheme.slug}" at ${playerCount} players`,
         baseComposition,
         overrideComposition,
+        schemeExtras,
       );
       compositionsByPlayerCount[playerCount] = overrideComposition;
     }
@@ -402,8 +492,10 @@ function buildLoadoutMenus(sets) {
       fallbackHenchmenIds.push(henchmanId);
     }
   }
-  fallbackVillainIds.sort();
-  fallbackHenchmenIds.sort();
+  // why: D-24767 — the pool keeps CORE_FALLBACK_SET_ABBRS order (Core, then Core
+  // 2E), each set's ids sorted by buildGroupIds. A combined sort put `co2e/` before
+  // `core/`, so out-of-set slots took Core 2E groups first, and most of those print
+  // effects the engine does not implement while their Core versions do.
 
   // why: a set with no scheme hosts no gauntlet board (D-24131 §1, the same
   // filter buildGauntletCatalog applies), so it needs no approved loadout.
@@ -492,9 +584,16 @@ function buildLoadoutMenus(sets) {
         set,
         mastermind.slug,
         variants[0],
-        anchorHenchmenIds,
-        inSetHenchmenIds,
-        fallbackHenchmenIds,
+        {
+          anchorIds: anchorVillainIds,
+          inSetIds: inSetVillainIds,
+          fallbackIds: fallbackVillainIds,
+        },
+        {
+          anchorIds: anchorHenchmenIds,
+          inSetIds: inSetHenchmenIds,
+          fallbackIds: fallbackHenchmenIds,
+        },
       );
       if (schemeOverrides !== undefined) {
         menu.schemeOverrides = schemeOverrides;

@@ -41,7 +41,12 @@ import { resolveCountScaledChoice, hasPendingCountScaledChoice } from './moves/c
 import { resolveUndercoverChoice, hasPendingUndercoverChoice } from './moves/undercover.resolve.js';
 import { resolveSeatChoice, hasPendingSeatChoice, SEAT_CHOICE_STAGE } from './moves/seatChoice.resolve.js';
 import { openDivingBlockSeatChoiceIfNeeded } from './moves/divingBlock.logic.js';
+import { openFlyingShieldBlockSeatChoiceIfNeeded } from './moves/flyingShieldBlock.logic.js';
+import { openOutOfTimeGrantSeatChoiceIfNeeded } from './moves/outOfTimeGrant.logic.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from './villainDeck/villainEscapeProcedure.js';
+import { openTimestreamPurgeSeatChoiceIfNeeded, sweepPurgedHeroesFromHq } from './rules/timestreamPurge.logic.js';
+import { openEnigmaPeekSeatChoiceIfNeeded } from './rules/enigmaCode.logic.js';
+import { openRevealOrWoundSeatChoiceIfNeeded } from './moves/revealOrWoundChoice.logic.js';
 import { executeRuleHooks } from './rules/ruleRuntime.execute.js';
 import { applyRuleEffects } from './rules/ruleRuntime.effects.js';
 import { DEFAULT_IMPLEMENTATION_MAP } from './rules/ruleRuntime.impl.js';
@@ -62,6 +67,7 @@ import { revealVillainCard } from './villainDeck/villainDeck.reveal.js';
 import { fightVillain } from './moves/fightVillain.js';
 import { recruitHero } from './moves/recruitHero.js';
 import { recruitOfficer } from './moves/recruitOfficer.js';
+import { recruitSidekick } from './moves/recruitSidekick.js';
 import { exorciseHauntedHero } from './moves/exorciseHauntedHero.js';
 import { healWounds } from './moves/healWounds.js';
 import { endMatchEarly } from './moves/endMatchEarly.js';
@@ -561,6 +567,11 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // false) per D-10008 — it mutates real G (G.piles.officers / playerZones /
     // turnEconomy), absent on UIState.
     recruitOfficer: { move: recruitOfficer, client: false },
+    // why: WP-842 / D-24776 — recruitSidekick buys the top Sidekick Stack token for 2
+    // recruit into the current player's discard, once per turn. Non-core, internally
+    // stage-gated (the recruitOfficer pattern). Server-only (client: false) per D-10008 —
+    // it mutates real G (G.piles.sidekicks / playerZones / turnEconomy).
+    recruitSidekick: { move: recruitSidekick, client: false },
     // why: WP-757 / D-24587 — exorciseHauntedHero pays a Haunted Hero's cost, KOs or
     // gives that Hero, and releases its haunter (a Villain enters the City ignoring
     // Ambush). Non-core, internally stage-gated (the recruitHero pattern). Server-only
@@ -886,13 +897,37 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // order and no escape adds a Wound any more, so a Diving Block wave from a step-3
           // Escape Wound waits behind them. ctx.currentPlayer is the escape's chooser and the
           // seat the D-24648 stage-ride skip applies to. Early no-op when nothing is queued.
+          // why: WP-829 / D-24762 — Go Back in Time: KO every HQ Hero sharing a Purged Hero Name
+          // (a recruit or KO refill this move may have drawn one) BEFORE any opener lists the HQ,
+          // so no HQ pick (escape or Purge) offers a Hero the rule is about to KO. No-op until
+          // the scheme has Purged something.
+          sweepPurgedHeroesFromHq(G);
           openEscapeProcedureSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-829 / D-24762 — open the next owed Purge (the active player's HQ pick; it
+          // sweeps again itself before listing). Then sweep once more for an escape auto-KO's
+          // refill, but only while no seat choice is parked: a sweep under an open HQ pick
+          // would KO one of its options. A parked choice blocks every move, and the sweep at the
+          // top of the next onMove catches what was left. The re-runs just below catch a
+          // refill that emptied the Hero Deck.
+          openTimestreamPurgeSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          if (G.pendingSeatChoice === undefined) {
+            sweepPurgedHeroesFromHq(G);
+          }
           // why: WP-793 / D-24656 — both checks above ran BEFORE the openers, so an automatic
           // escape KO whose HQ refill emptied the Hero Deck would only be caught on the NEXT
           // move. Re-run them (both idempotent) so the deck-out latch and Super Hero Civil
           // War's loss land on this move.
           latchFinalTurnIfDeckExhausted(G);
           applyPileDepletionResourceLoss(G);
+          // why: WP-845 / D-24779 — open the next owed reveal-or-gain-a-Wound choice for the
+          // players who could reveal (rules v23 L3196-3200). AFTER the escape and Purge openers
+          // and the re-check above, so an Escape-timing entry resolves after that escape's steps
+          // 1-2 (the D-24750 order) and evaluateEndgame already sees a scheme loss; BEFORE the
+          // Diving Block opener, so a Diving Block wave from an inline cannot-reveal Wound waits
+          // until the revealers answer. An empty Wound supply resolves the entry as all revealing
+          // with no prompt (declining is not an option then, L3199-3200). Early no-op when
+          // nothing is queued.
+          openRevealOrWoundSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
           // why: WP-682 / D-24499 — after every move, open (or re-open) the next
           // Diving-Block reveal/decline WAVE for any Wounds parked at the
           // gainWoundForPlayer chokepoint this move. Runs here (not in each
@@ -909,6 +944,18 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           // an absent ctx yields currentPlayer=undefined, which admits every addressed
           // seat exactly as before (the pre-D-24648 behaviour), never a throw.
           openDivingBlockSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-827 / D-24760 — then the Flying Shield Block wave (any seat may reveal);
+          // it waits while a Diving Block Wound is pending, since a decline there can park one.
+          openFlyingShieldBlockSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-828 / D-24761 — resolve owed Man Out of Time grants (Winter Soldier's 2>4)
+          // after the move that played the card: auto for one eligible hand Hero, else the
+          // active player's seat choice. No-op while another seat choice is open.
+          openOutOfTimeGrantSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
+          // why: WP-830 / D-24763 — The Unbreakable Enigma Code: open the next owed pay-1-Recruit
+          // peek offer from a Villain fight (the fighter's own choice). LAST, so every reaction the
+          // fight caused (an escape's steps, a Diving Block wave) resolves first: the peek is
+          // decided once the fight has fully resolved. No-op until the scheme queues one.
+          openEnigmaPeekSeatChoiceIfNeeded(G, events, ctx?.currentPlayer);
         },
         // why: Each new turn must begin at the first canonical turn stage.
         // TURN_STAGES[0] is used instead of a hardcoded string to prevent
@@ -951,6 +998,20 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
           }
           if (G.ambushVillainPlayedThisTurn !== undefined) {
             delete G.ambushVillainPlayedThisTurn;
+          }
+          // why: WP-827 / D-24760 — Flying Shield Block's "once per turn" resets each turn.
+          // Guarded delete, so a match that never revealed one is byte-unchanged;
+          // applyOnBeginParity mirrors it for the rebuilt loops.
+          if (G.flyingShieldBlockUsedThisTurn !== undefined) {
+            delete G.flyingShieldBlockUsedThisTurn;
+          }
+          // why: WP-828 / D-24761 — a Man Out of Time grant lasts this turn only. Guarded deletes,
+          // so a match that never granted one is byte-unchanged; applyOnBeginParity mirrors them.
+          if (G.outOfTimeGrantedThisTurn !== undefined) {
+            delete G.outOfTimeGrantedThisTurn;
+          }
+          if (G.pendingOutOfTimeGrants !== undefined) {
+            delete G.pendingOutOfTimeGrants;
           }
 
           // why: WP-328 — stamp the turn number into G (ctx.turn lives only in ctx, and

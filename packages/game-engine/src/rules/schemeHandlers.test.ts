@@ -1,8 +1,9 @@
 /**
  * Tests for scheme twist handler (WP-024) and the per-scheme dispatcher.
  *
- * Verifies generic twist counting + scheme-loss triggering at threshold,
- * read-only G invariant for the generic path, ENDGAME_CONDITIONS constant
+ * Verifies generic twist counting (raised before the resolver, D-24775) +
+ * scheme-loss triggering at threshold, the counter-and-log-only mutation of the
+ * generic path, ENDGAME_CONDITIONS constant
  * usage, serialization, AND the Midtown Bank Robbery twist resolver
  * (Bank-villain bystander capture + chained villain-deck reveal).
  *
@@ -140,35 +141,31 @@ function midtownHookRegistry(): HookDefinition[] {
 
 describe('schemeTwistHandler', () => {
   // -------------------------------------------------------------------------
-  // Test 1: handler returns non-empty RuleEffect[]
+  // Test 1: below the threshold the handler returns no effects
   // -------------------------------------------------------------------------
-  it('returns non-empty RuleEffect[]', () => {
+  it('returns an empty RuleEffect[] below the threshold', () => {
     const gameState = makeTestState();
     const effects = schemeTwistHandler(gameState, {}, { cardId: 'test-twist' }, DEFAULT_IMPLEMENTATION_MAP);
 
     assert.ok(Array.isArray(effects), 'result must be an array');
-    assert.ok(effects.length > 0, 'result must not be empty');
+    assert.equal(effects.length, 0, 'only a loss produces effects; the count is raised directly');
   });
 
   // -------------------------------------------------------------------------
-  // Test 2: produces modifyCounter effect for twist count
+  // Test 2: raises schemeTwistCount directly, before the resolver (D-24775)
   // -------------------------------------------------------------------------
-  it('produces modifyCounter effect for schemeTwistCount', () => {
-    const gameState = makeTestState();
+  it('raises schemeTwistCount by 1 directly and returns no schemeTwistCount effect (D-24775)', () => {
+    const gameState = makeTestState({ schemeTwistCount: 2 });
     const effects = schemeTwistHandler(gameState, {}, { cardId: 'test-twist' }, DEFAULT_IMPLEMENTATION_MAP);
 
+    assert.equal(gameState.counters.schemeTwistCount, 3, 'the count rises by exactly 1');
     const counterEffect = effects.find(
-      (effect) =>
-        effect.type === 'modifyCounter' &&
-        'counter' in effect &&
-        (effect as { counter: string }).counter === 'schemeTwistCount',
+      (effect) => (effect as { counter?: string }).counter === 'schemeTwistCount',
     );
-
-    assert.ok(counterEffect, 'must contain modifyCounter for schemeTwistCount');
-    assert.equal(
-      (counterEffect as { delta: number }).delta,
-      1,
-      'delta must be 1',
+    assert.equal(counterEffect, undefined, 'no second increment rides the returned effects');
+    assert.ok(
+      gameState.messages.some((message) => message.text.startsWith('Scheme Twist #3 revealed')),
+      'the #3 line is logged',
     );
   });
 
@@ -201,22 +198,28 @@ describe('schemeTwistHandler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Test 4: handler does not mutate G (except messages)
+  // Test 4: the generic path mutates only the twist counter and messages
   // -------------------------------------------------------------------------
-  it('does not mutate G besides messages', () => {
+  it('mutates only schemeTwistCount and messages on the generic path (D-24775)', () => {
     const gameState = makeTestState({ schemeTwistCount: 3 });
     const snapshot = JSON.parse(JSON.stringify(gameState));
 
     schemeTwistHandler(gameState, {}, { cardId: 'test-twist' }, DEFAULT_IMPLEMENTATION_MAP);
 
-    // why: the config-driven dispatcher (WP-182) pushes a diagnostic message
-    // for unconfigured schemes. Exclude messages from the no-mutation check.
-    const gameStateWithoutMessages = { ...gameState, messages: [] };
+    // why: D-24775 — the dispatcher raises the twist count and logs the Twist line
+    // itself, before the resolver; an unconfigured scheme also logs a diagnostic line.
+    // Nothing else in G may change on the generic path.
+    assert.equal(gameState.counters.schemeTwistCount, 4, 'the count rises by 1');
+    const gameStateWithoutCounterOrMessages = {
+      ...gameState,
+      messages: [],
+      counters: { ...gameState.counters, schemeTwistCount: 3 },
+    };
     const snapshotWithoutMessages = { ...snapshot, messages: [] };
     assert.deepStrictEqual(
-      gameStateWithoutMessages,
+      gameStateWithoutCounterOrMessages,
       snapshotWithoutMessages,
-      'G must not be mutated by handler (except messages)',
+      'G must not be mutated by the generic path beyond the twist count and messages',
     );
   });
 
@@ -442,7 +445,7 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
     );
   });
 
-  it('returns the generic counter-increment effects even on the Midtown path', () => {
+  it('raises the twist count on the Midtown path too', () => {
     const gameState = makeMidtownState({
       bankVillain: 'core/magneto-001',
       bystanderCount: 5,
@@ -457,15 +460,11 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
       DEFAULT_IMPLEMENTATION_MAP,
     );
 
-    const counterEffect = effects.find(
-      (effect) =>
-        effect.type === 'modifyCounter' &&
-        'counter' in effect &&
-        (effect as { counter: string }).counter === 'schemeTwistCount',
-    );
-    assert.ok(
-      counterEffect,
-      'Midtown dispatch must still return the generic schemeTwistCount effect',
+    assert.equal(effects.length, 0, 'no loss below the threshold');
+    assert.equal(
+      gameState.counters.schemeTwistCount,
+      1,
+      'Midtown dispatch must still raise the generic schemeTwistCount',
     );
   });
 
@@ -512,10 +511,7 @@ describe('schemeTwistHandler — Midtown Bank Robbery', () => {
       'Midtown must not trip the twist-count proxy — its loss is the escaped-pile count',
     );
     // proxy suppression is loss-only: the twist count still increments.
-    const counterEffect = effects.find(
-      (effect) => (effect as { counter?: string }).counter === 'schemeTwistCount',
-    );
-    assert.ok(counterEffect, 'twist count still increments under proxy suppression');
+    assert.equal(gameState.counters.schemeTwistCount, 8, 'twist count still increments under proxy suppression');
   });
 });
 
@@ -573,11 +569,11 @@ describe('scheme loss threshold (D-24178)', () => {
     assert.equal(triggersSchemeLoss(makeCivilWar(4, 5)), false, '5p must not trip the proxy at predicted twist 5');
 
     // proxy suppression is loss-only: the twist count still increments.
-    const effects = makeCivilWar(7, 2);
-    const counterEffect = effects.find(
-      (effect) => (effect as { counter?: string }).counter === 'schemeTwistCount',
-    );
-    assert.ok(counterEffect, 'twist count still increments under proxy suppression');
+    const civilWarState = makeTestState({ schemeTwistCount: 7 });
+    civilWarState.selection.schemeId = 'core/super-hero-civil-war';
+    civilWarState.lobby.requiredPlayers = 2;
+    schemeTwistHandler(civilWarState, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP);
+    assert.equal(civilWarState.counters.schemeTwistCount, 8, 'twist count still increments under proxy suppression');
   });
 
   it('Negative Zone suppresses the twist-count proxy at its stack size (real loss is escaped-villain count, D-24316)', () => {
@@ -756,15 +752,15 @@ describe('scheme Evil Wins fidelity (WP-763 / D-24595)', () => {
 
   it('counter-only is a pure no-op: no "No resolver" line, no notable event, generic line kept', () => {
     const state = makeSchemeState('vnom/symbiotic-absorption', 11, 2);
-    const effects = schemeTwistHandler(state, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP);
-    assert.equal(state.messages.length, 0, 'the resolver pushed no log line');
+    schemeTwistHandler(state, {}, { cardId: 't' }, DEFAULT_IMPLEMENTATION_MAP);
+    // why: D-24775 — the generic Twist line is logged directly by the dispatcher, so the
+    // only line in the log is that one; the counter-only resolver adds none.
+    assert.equal(state.messages.length, 1, 'only the generic Twist line is logged');
     assert.equal(state.notableEvents.length, 0, 'the resolver pushed no notable event');
-    const genericLine = effects.find(
-      (effect) =>
-        effect.type === 'queueMessage' &&
-        (effect as { message: string }).message.includes('twist count incremented'),
-    );
     // why: scripts/extract-par-anchors.mjs counts twists by this literal.
-    assert.ok(genericLine, 'the PAR-anchor "twist count incremented" line still emits');
+    assert.ok(
+      state.messages[0]!.text.includes('twist count incremented'),
+      'the PAR-anchor "twist count incremented" line still emits',
+    );
   });
 });

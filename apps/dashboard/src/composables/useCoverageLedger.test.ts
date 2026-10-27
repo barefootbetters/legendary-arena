@@ -4,6 +4,10 @@ import {
   statusLabel,
   buildMechanicDictionary,
   executablePercent,
+  summaryExecutablePercent,
+  summarizeRows,
+  filterRowsBySet,
+  buildSetBreakdown,
   useCoverageLedger,
 } from './useCoverageLedger.js';
 import type {
@@ -170,4 +174,126 @@ test('useCoverageLedger falls back to the bundled runtime-observed artifact when
   // when the committed sweep observed no runtime hollows), summary is present.
   assert.equal(typeof view.runtimeObservedByMechanic.value, 'object');
   assert.ok(view.runtimeObservedSummary.value.distinctMechanics >= 0);
+});
+
+test('summarizeRows matches the generator summary shape and excludes unmarked from distinct mechanics', () => {
+  const rows = [
+    makeRow({ extId: 'a', mechanic: 'draw', status: 'executable' }),
+    makeRow({ extId: 'b', mechanic: 'draw', status: 'executable' }),
+    makeRow({ extId: 'c', mechanic: 'focus', status: 'unsupported' }),
+    makeRow({ extId: 'd', mechanic: '(unmarked)', status: 'unmarked' }),
+  ];
+  assert.deepEqual(summarizeRows(rows), makeLedger(rows).summary);
+  assert.equal(summarizeRows(rows).distinctMechanics, 2);
+  assert.equal(summaryExecutablePercent(summarizeRows(rows)), 50);
+  assert.equal(summaryExecutablePercent(summarizeRows([])), 0);
+});
+
+test('filterRowsBySet keeps one set, and every row for the all sentinel', () => {
+  const rows = [
+    makeRow({ extId: 'core/a', set: 'core' }),
+    makeRow({ extId: 'dkcy/b', set: 'dkcy' }),
+    makeRow({ extId: 'core/c', set: 'core' }),
+  ];
+  assert.deepEqual(
+    filterRowsBySet(rows, 'core').map((row) => row.extId),
+    ['core/a', 'core/c'],
+  );
+  assert.equal(filterRowsBySet(rows, 'all').length, 3);
+  assert.equal(filterRowsBySet(rows, 'nope').length, 0);
+});
+
+test('buildSetBreakdown rolls up per set in name-table order, unnamed sets last by abbr', () => {
+  const rows = [
+    makeRow({ extId: 'zzz/a', set: 'zzz', status: 'unsupported' }),
+    makeRow({ extId: 'dkcy/a', set: 'dkcy', status: 'unsupported' }),
+    makeRow({ extId: 'core/a', set: 'core', status: 'executable' }),
+    makeRow({ extId: 'core/b', set: 'core', status: 'unsupported', mechanic: 'focus' }),
+    makeRow({ extId: 'aaa/a', set: 'aaa', status: 'executable' }),
+  ];
+  const setNames = [
+    { abbr: 'core', name: 'Core Set' },
+    { abbr: 'gone', name: 'A set with no ledger rows' },
+    { abbr: 'dkcy', name: 'Dark City' },
+  ];
+  const breakdown = buildSetBreakdown(rows, setNames);
+  assert.deepEqual(
+    breakdown.map((entry) => `${entry.abbr}:${entry.name}`),
+    ['core:Core Set', 'dkcy:Dark City', 'aaa:aaa', 'zzz:zzz'],
+  );
+  const [core, darkCity] = breakdown;
+  assert.ok(core !== undefined && darkCity !== undefined);
+  assert.equal(core.summary.totalRows, 2);
+  assert.equal(core.summary.byStatus.executable, 1);
+  assert.equal(core.percentExecutable, 50);
+  assert.equal(darkCity.percentExecutable, 0);
+});
+
+test('useCoverageLedger exposes the set breakdown and set display names', () => {
+  const ledger = makeLedger([
+    makeRow({ extId: 'core/a', set: 'core' }),
+    makeRow({ extId: 'dkcy/a', set: 'dkcy', status: 'unsupported' }),
+  ]);
+  const view = useCoverageLedger({
+    ledger,
+    setNames: { sets: [{ abbr: 'core', name: 'Core Set' }] },
+  });
+  assert.deepEqual(
+    view.setBreakdown.value.map((entry) => entry.abbr),
+    ['core', 'dkcy'],
+  );
+  assert.equal(view.setDisplayName('core'), 'Core Set');
+  assert.equal(view.setDisplayName('dkcy'), 'dkcy');
+});
+
+test('the bundled ledger rolls up to one breakdown entry per set, summing to the whole ledger', () => {
+  const view = useCoverageLedger();
+  let totalRows = 0;
+  for (const entry of view.setBreakdown.value) {
+    totalRows += entry.summary.totalRows;
+  }
+  assert.equal(totalRows, view.summary.value.totalRows);
+  assert.deepEqual(summarizeRows(view.rows.value), view.summary.value);
+});
+
+test('buildMechanicDictionary keeps every status of a mixed mechanic and headlines the least-done', () => {
+  const rows: LedgerRow[] = [
+    makeRow({ extId: 'co2e/a', mechanic: 'reveal-count', status: 'unsupported' }),
+    makeRow({
+      extId: 'core/a',
+      mechanic: 'reveal-count',
+      status: 'subsystem',
+      wp: 'WP-478',
+      decision: 'D-24514',
+      handler: 'setup:reveal-count-modifier',
+    }),
+    makeRow({ extId: 'x/a', mechanic: 'transform', status: 'executable' }),
+    makeRow({ extId: 'x/b', mechanic: 'transform', status: 'unsupported' }),
+    makeRow({ extId: 'x/c', mechanic: 'transform', status: 'unsupported' }),
+    makeRow({ extId: 'x/d', mechanic: 'draw', status: 'executable' }),
+  ];
+  const dict = buildMechanicDictionary(rows);
+
+  const revealCount = dict.find((entry) => entry.mechanic === 'reveal-count');
+  assert.equal(revealCount?.status, 'unsupported');
+  assert.deepEqual(revealCount?.statusCounts, [
+    { status: 'subsystem', count: 1 },
+    { status: 'unsupported', count: 1 },
+  ]);
+  // attribution comes from the first row that has it, not the first row seen
+  assert.equal(revealCount?.wp, 'WP-478');
+  assert.equal(revealCount?.decision, 'D-24514');
+  assert.equal(revealCount?.handler, 'setup:reveal-count-modifier');
+
+  const transform = dict.find((entry) => entry.mechanic === 'transform');
+  assert.equal(transform?.status, 'unsupported');
+  assert.deepEqual(transform?.statusCounts, [
+    { status: 'executable', count: 1 },
+    { status: 'unsupported', count: 2 },
+  ]);
+
+  const draw = dict.find((entry) => entry.mechanic === 'draw');
+  assert.deepEqual(draw?.statusCounts, [{ status: 'executable', count: 1 }]);
+  // a mixed mechanic sorts with its least-done status, after the fully done one
+  assert.equal(dict[0]?.mechanic, 'draw');
 });

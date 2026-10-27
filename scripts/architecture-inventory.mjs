@@ -263,7 +263,7 @@ const DATABASE_OPS_NOTES = {
 // Public page: no IPs, droplet hostnames, ping URLs, or resource IDs here.
 const PRODUCTION_HOST_AND_SIZING_NOTES = {
   summary:
-    'Production — `api.legendary-arena.com` (`apps/server`) and its PostgreSQL — runs on ONE self-hosted DigitalOcean droplet behind Cloudflare since the 2026-10-12 cutover (D-24707), provisioned by the numbered `infra/scripts/NN-*.ps1` in the `legendary-arena-lab` repo. Until 2026-10-12 it ran on Render (web service `pro` + managed Postgres `pro-4gb`, ~$146/mo); the Render web service stays suspended for rollback until ~2026-10-20 (D-24707 §8), then Render is deleted.',
+    'Production — `api.legendary-arena.com` (`apps/server`) and its PostgreSQL — runs on ONE self-hosted DigitalOcean droplet behind Cloudflare since the 2026-10-12 cutover (D-24707), provisioned by the numbered `infra/scripts/NN-*.ps1` in the `legendary-arena-lab` repo. Until 2026-10-12 it ran on Render (web service `pro` + managed Postgres `pro-4gb`, ~$146/mo); Render was deleted on 2026-10-22, after the D-24707 §8 rollback window.',
   sizing:
     'Droplet: `s-2vcpu-4gb` (2 vCPU / 4 GB / 80 GB disk, ~$24/mo) plus a 2 GB swapfile (`vm.swappiness=10`), `sfo3`, Ubuntu 24.04 (lab D-002). Measured before cutover: ~200 MB RAM and under 1% of 2 CPUs for the server, ~1 GB for the database. Resize trigger: memory holding above ~70%, CPU above ~50% under real traffic, or swap in use outside deploys → resize CPU and RAM only to 4 vCPU / 8 GB (~$48/mo), keeping the disk so a later downsize stays possible (lab D-002).',
   notes: [
@@ -2087,6 +2087,12 @@ async function renderReport({
   lines.push(`title: Architecture & Library Adoption Inventory`);
   lines.push(`type: Generated`);
   lines.push(`status: evergreen`);
+  // why: this page's body links are written from the repo root (docs/...,
+  // packages/...), not from wiki/. links_from: repo-root tells the shared ewiki
+  // theme's link hook to send each one to GitHub as written, never to look it
+  // up as a page. The key replaces the by-file-name case for this page in the
+  // engine's old link hook (D-24728 Consequences, D-24782).
+  lines.push(`links_from: repo-root`);
   lines.push(`tags:`);
   lines.push(`  - generated`);
   lines.push(`  - architecture`);
@@ -2938,7 +2944,7 @@ async function renderDeploymentTopologySection() {
  * project depends on, derived from `docs/ops/domains.json` (Cloudflare
  * services) and the curated `CURATED_INFRASTRUCTURE_SERVICES` (the
  * production droplet and monitors). Render was listed here from render.yaml
- * until it was deleted in Phase 7 (2026-10-16).
+ * until it was deleted in Phase 7 (2026-10-22).
  *
  * This is the "where does it run" companion to Deployment topology's
  * "what domain points where." The two tables share source data but cut

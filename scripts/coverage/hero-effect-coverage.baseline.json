@@ -1,10 +1,10 @@
 {
   "corpus": {
-    "executable": 2585,
+    "executable": 3759,
     "heroes": 324,
     "hooks": 6383,
-    "noEffect": 2580,
-    "parsedNotExecuted": 1218
+    "noEffect": 2520,
+    "parsedNotExecuted": 104
   },
   "perSet": {
     "2099": {
@@ -13,27 +13,27 @@
       "noEffect": 41
     },
     "3dtc": {
-      "executable": 31,
+      "executable": 41,
       "hooks": 75,
       "noEffect": 34
     },
     "amwp": {
-      "executable": 69,
+      "executable": 96,
       "hooks": 190,
       "noEffect": 94
     },
     "anni": {
-      "executable": 16,
+      "executable": 45,
       "hooks": 122,
       "noEffect": 77
     },
     "antm": {
-      "executable": 47,
+      "executable": 94,
       "hooks": 109,
       "noEffect": 15
     },
     "asrd": {
-      "executable": 42,
+      "executable": 52,
       "hooks": 102,
       "noEffect": 50
     },
@@ -43,39 +43,39 @@
       "noEffect": 77
     },
     "bkwd": {
-      "executable": 30,
+      "executable": 64,
       "hooks": 138,
       "noEffect": 24
     },
     "ca75": {
-      "executable": 52,
+      "executable": 100,
       "hooks": 100,
-      "noEffect": 11
+      "noEffect": 0
     },
     "chmp": {
-      "executable": 29,
+      "executable": 67,
       "hooks": 143,
       "noEffect": 76
     },
     "co2e": {
-      "executable": 143,
+      "executable": 196,
       "hooks": 241,
-      "noEffect": 53
+      "noEffect": 45
     },
     "core": {
-      "executable": 132,
+      "executable": 229,
       "hooks": 232,
       "noEffect": 3
     },
     "cosm": {
-      "executable": 44,
+      "executable": 49,
       "hooks": 212,
       "noEffect": 163
     },
     "cvwr": {
-      "executable": 154,
+      "executable": 313,
       "hooks": 400,
-      "noEffect": 107
+      "noEffect": 87
     },
     "dead": {
       "executable": 46,
@@ -83,17 +83,17 @@
       "noEffect": 36
     },
     "dims": {
-      "executable": 31,
+      "executable": 42,
       "hooks": 105,
       "noEffect": 63
     },
     "dkcy": {
-      "executable": 162,
+      "executable": 177,
       "hooks": 298,
       "noEffect": 121
     },
     "dstr": {
-      "executable": 40,
+      "executable": 53,
       "hooks": 76,
       "noEffect": 23
     },
@@ -103,52 +103,52 @@
       "noEffect": 79
     },
     "ff04": {
-      "executable": 21,
+      "executable": 31,
       "hooks": 74,
       "noEffect": 43
     },
     "gotg": {
-      "executable": 17,
+      "executable": 27,
       "hooks": 105,
       "noEffect": 78
     },
     "mdns": {
-      "executable": 53,
+      "executable": 80,
       "hooks": 122,
       "noEffect": 42
     },
     "mgtg": {
-      "executable": 51,
+      "executable": 53,
       "hooks": 99,
       "noEffect": 46
     },
     "msis": {
-      "executable": 65,
+      "executable": 76,
       "hooks": 101,
       "noEffect": 25
     },
     "msmc": {
-      "executable": 51,
+      "executable": 69,
       "hooks": 182,
       "noEffect": 113
     },
     "msp1": {
-      "executable": 77,
+      "executable": 95,
       "hooks": 109,
       "noEffect": 14
     },
     "nmut": {
-      "executable": 26,
+      "executable": 50,
       "hooks": 86,
       "noEffect": 36
     },
     "noir": {
-      "executable": 16,
+      "executable": 36,
       "hooks": 71,
       "noEffect": 35
     },
     "pttr": {
-      "executable": 48,
+      "executable": 97,
       "hooks": 122,
       "noEffect": 25
     },
@@ -158,57 +158,57 @@
       "noEffect": 87
     },
     "rvlt": {
-      "executable": 61,
+      "executable": 74,
       "hooks": 172,
       "noEffect": 98
     },
     "shld": {
-      "executable": 37,
+      "executable": 43,
       "hooks": 95,
       "noEffect": 21
     },
     "smhc": {
-      "executable": 26,
+      "executable": 44,
       "hooks": 119,
       "noEffect": 75
     },
     "ssw1": {
-      "executable": 117,
+      "executable": 156,
       "hooks": 221,
-      "noEffect": 86
+      "noEffect": 65
     },
     "ssw2": {
-      "executable": 128,
+      "executable": 187,
       "hooks": 271,
       "noEffect": 84
     },
     "vill": {
-      "executable": 120,
+      "executable": 199,
       "hooks": 288,
       "noEffect": 89
     },
     "vnom": {
-      "executable": 23,
+      "executable": 70,
       "hooks": 76,
       "noEffect": 6
     },
     "wpnx": {
-      "executable": 53,
+      "executable": 61,
       "hooks": 97,
       "noEffect": 36
     },
     "wtif": {
-      "executable": 81,
+      "executable": 87,
       "hooks": 140,
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 125,
+      "executable": 215,
       "hooks": 337,
       "noEffect": 122
     },
     "xmen": {
-      "executable": 124,
+      "executable": 148,
       "hooks": 367,
       "noEffect": 219
     }
@@ -264,7 +264,6 @@
     "last-stand": 3,
     "liberate": 7,
     "lightshow": 16,
-    "man-out-of-time": 4,
     "microscopic-size-changing": 13,
     "moonlight": 10,
     "patrol-any-city-space": 3,

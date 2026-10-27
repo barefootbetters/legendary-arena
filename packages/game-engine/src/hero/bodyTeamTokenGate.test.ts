@@ -83,12 +83,16 @@ describe('a body [team:X] after a gate prefix is not a gate (D-24628)', () => {
   });
 
   it('a multi-token team prefix keeps its printed gates and drops the body repeat', () => {
-    const conditions = buildHook(REASSIGN_ABILITY).conditions ?? [];
-    assert.equal(conditions.length, 3, 'three printed [team:shield] gate tokens, not four');
+    assert.deepEqual(
+      buildHook(REASSIGN_ABILITY).conditions,
+      [{ type: 'requiresTeam', value: 'shield', requiredMatches: 3 }],
+      'three printed [team:shield] gate tokens collapse to one count-3 gate; the body repeat stays dropped (D-24628)',
+    );
   });
 
   it('a line with no gate prefix keeps its inline condition', () => {
-    assert.deepEqual(buildHook(STEALTH_ASSAULT_ABILITY).conditions, [{ type: 'requiresTeam', value: 'shield' }]);
+    // why: WP-825 / D-24758 — the gate also carries the printed "costs 1 or more" floor.
+    assert.deepEqual(buildHook(STEALTH_ASSAULT_ABILITY).conditions, [{ type: 'requiresTeam', value: 'shield', minimumCost: 1 }]);
   });
 
   it('a keyword-led prefix keeps its team gate', () => {

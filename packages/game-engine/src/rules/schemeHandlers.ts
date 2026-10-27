@@ -4,8 +4,10 @@
  * The exported `schemeTwistHandler` is a config-driven dispatcher that
  * looks up the active scheme in SCHEME_TWIST_CONFIGS, resolves the
  * matching SchemeTwistResolver, and delegates twist behavior. The
- * generic counter-increment + scheme-loss threshold check runs for
- * every scheme after the resolver (or fallback) completes.
+ * generic counter-increment runs for every scheme BEFORE the resolver (or
+ * fallback), so a resolver reads its own Twist number as
+ * G.counters.schemeTwistCount (D-24775); the scheme-loss threshold check runs
+ * after it completes.
  *
  * No boardgame.io imports. No registry imports.
  */
@@ -25,38 +27,32 @@ import {
 import { pushLog } from '../log/logPush.js';
 
 /**
- * Builds the shared counter-increment + scheme-loss effects that fire for
- * every scheme twist regardless of the card-specific text.
+ * Counts THIS Twist and logs its "Scheme Twist #N revealed" line, before its
+ * resolver runs (D-24775).
  *
- * @param gameState - Current game state (read-only).
+ * @param gameState - Current game state (mutated: the twist counter and the log).
  * @param threshold - Twist count at which the doom-clock proxy loss triggers.
- * @param suppressTwistLoss - When true, the twist-threshold SCHEME_LOSS effect
- *   is NOT emitted because the scheme declares a real resourceLossCondition
- *   (D-24315) whose loss is signalled from the escape path instead. The twist
- *   count increment still fires unconditionally.
- * @returns Generic RuleEffect[] applied to every twist.
+ * @param suppressTwistLoss - When true, the doom-clock clause is omitted because
+ *   the scheme declares a real resourceLossCondition (D-24315).
+ * @returns THIS Twist's number (1 for the first Twist of the match).
  */
-function buildGenericTwistEffects(
+function countAndAnnounceTwist(
   gameState: LegendaryGameState,
   threshold: number,
   suppressTwistLoss: boolean,
-): RuleEffect[] {
-  const effects: RuleEffect[] = [];
+): number {
+  // why: D-24775 — the count is raised HERE, before the resolver, not as a returned
+  // modifyCounter effect applied after it. A resolver can play cards from the Villain
+  // Deck, and a Twist among them re-enters this dispatcher before the outer one
+  // returns; with the old post-resolver increment the nested Twist read the outer
+  // Twist's number and the "#N revealed" lines came out in the order the Twists
+  // finished. Raised first, each Twist is numbered in the order it was revealed, and
+  // every resolver reads its own number as G.counters.schemeTwistCount. The final
+  // count is the same; only the moment it rises moved.
+  const twistNumber = (gameState.counters.schemeTwistCount ?? 0) + 1;
+  gameState.counters.schemeTwistCount = twistNumber;
 
-  effects.push({
-    type: 'modifyCounter',
-    counter: 'schemeTwistCount',
-    delta: 1,
-  });
-
-  // why: scheme-loss is mediated through counters, not direct endgame
-  // calls. The endgame evaluator reads G.counters to determine loss.
-  // We predict the post-effect count by adding 1 to the current value
-  // because applyRuleEffects has not yet applied the increment above.
-  const predictedTwistCount =
-    (gameState.counters.schemeTwistCount ?? 0) + 1;
-
-  // why: WP-643-follow-up — the doom-clock line now names THIS twist's number and,
+  // why: WP-643-follow-up — the doom-clock line names THIS twist's number and,
   // when the twist-threshold proxy is active, how close it is to Evil Wins, so a
   // player reads the pressure at a glance instead of a bare "count incremented".
   // The literal substring "twist count incremented" is PRESERVED verbatim because
@@ -65,18 +61,38 @@ function buildGenericTwistEffects(
   // (villain-purple): a Scheme Twist is the board advancing on the players.
   const doomClockClause = suppressTwistLoss
     ? ''
-    : ` (${predictedTwistCount} of ${threshold} to Evil Wins)`;
-  effects.push({
-    type: 'queueMessage',
-    message: `Scheme Twist #${predictedTwistCount} revealed — the Scheme advances; twist count incremented${doomClockClause}.`,
-    outcome: 'threat',
-  });
+    : ` (${twistNumber} of ${threshold} to Evil Wins)`;
+  pushLog(
+    gameState,
+    `Scheme Twist #${twistNumber} revealed — the Scheme advances; twist count incremented${doomClockClause}.`,
+    'threat',
+  );
+  return twistNumber;
+}
 
-  // why: D-24315 — a scheme that declares a resourceLossCondition loses on that
-  // real condition (signalled from the escape path), so the twist-count
-  // doom-clock proxy is suppressed for it. The twist count still increments
-  // above; only this loss push is gated.
-  if (!suppressTwistLoss && predictedTwistCount >= threshold) {
+/**
+ * Builds the twist-threshold scheme-loss effects for one Twist, applied after its
+ * resolver.
+ *
+ * @param twistNumber - THIS Twist's number (from countAndAnnounceTwist).
+ * @param threshold - Twist count at which the doom-clock proxy loss triggers.
+ * @param suppressTwistLoss - When true, no SCHEME_LOSS effect is emitted because
+ *   the scheme declares a real resourceLossCondition (D-24315) whose loss is
+ *   signalled from the escape path instead.
+ * @returns The loss effects, or an empty array below the threshold.
+ */
+function buildTwistLossEffects(
+  twistNumber: number,
+  threshold: number,
+  suppressTwistLoss: boolean,
+): RuleEffect[] {
+  const effects: RuleEffect[] = [];
+
+  // why: scheme-loss is mediated through counters, not direct endgame calls. The
+  // endgame evaluator reads G.counters to determine loss. D-24315 — a scheme that
+  // declares a resourceLossCondition loses on that real condition, so the
+  // doom-clock proxy is suppressed for it; only this loss push is gated.
+  if (!suppressTwistLoss && twistNumber >= threshold) {
     effects.push({
       type: 'modifyCounter',
       counter: ENDGAME_CONDITIONS.SCHEME_LOSS,
@@ -141,6 +157,19 @@ export function schemeTwistHandler(
     return candidate as CardExtId;
   })();
 
+  // why: the D-24178 threshold-resolution order and the D-24315
+  // resourceLossCondition suppression live in schemeLossProgress.ts, so the
+  // UIState menace projection (D-24366) reads the same rule this dispatcher acts
+  // on instead of carrying a second copy that could drift from it. D-24595: the
+  // threshold for a scheme with no printed count (and for the twist half of a
+  // compound scheme) is the last twist in its Villain Deck, not a flat 7, and a
+  // compound scheme is not suppressed despite declaring a resource condition.
+  // Both are fixed for the match (config + setup), so reading them before the
+  // resolver gives the same values as after it.
+  const effectiveThreshold = resolveTwistLossThreshold(gameState);
+  const suppressTwistLoss = isTwistLossSuppressed(gameState);
+  const twistNumber = countAndAnnounceTwist(gameState, effectiveThreshold, suppressTwistLoss);
+
   if (config) {
     const resolver = SCHEME_TWIST_RESOLVERS[config.resolverId];
 
@@ -163,22 +192,12 @@ export function schemeTwistHandler(
     }
   } else {
     // why: config-not-found is safe because the generic counter-increment
-    // and loss-check still run below. Unconfigured schemes get no card-specific
+    // (above) and loss-check (below) still run. Unconfigured schemes get no card-specific
     // effects, and lose at the D-24595 last-twist fallback threshold.
     pushLog(gameState, 
       `[Scheme Twist] No resolver configured for scheme "${schemeId}" — counter increment only.`,
     );
   }
 
-  // why: the D-24178 threshold-resolution order and the D-24315
-  // resourceLossCondition suppression live in schemeLossProgress.ts, so the
-  // UIState menace projection (D-24366) reads the same rule this dispatcher acts
-  // on instead of carrying a second copy that could drift from it. D-24595: the
-  // threshold for a scheme with no printed count (and for the twist half of a
-  // compound scheme) is the last twist in its Villain Deck, not a flat 7, and a
-  // compound scheme is not suppressed despite declaring a resource condition.
-  const effectiveThreshold = resolveTwistLossThreshold(gameState);
-  const suppressTwistLoss = isTwistLossSuppressed(gameState);
-
-  return buildGenericTwistEffects(gameState, effectiveThreshold, suppressTwistLoss);
+  return buildTwistLossEffects(twistNumber, effectiveThreshold, suppressTwistLoss);
 }

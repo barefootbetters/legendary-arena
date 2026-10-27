@@ -1,0 +1,15 @@
+{{ define "main" }}
+  {{- /*
+    why: a not-found page, promoted from H. Generic text with a way home; the
+    search hint shows only when the site has search. It is 404.html, not an
+    index.html, so page-count gates are unaffected.
+  */ -}}
+  {{- $ewiki := site.Params.ewiki | default dict -}}
+  {{- $search := true -}}
+  {{- if isset $ewiki "search" -}}{{- $search = index $ewiki "search" -}}{{- end }}
+      <section class="section-landing">
+        <h1>Page not found</h1>
+        <p>That page isn't here. It may have moved or been renamed.
+          {{- if $search }} Try the search box, or start from the <a href="{{ "/" | relURL }}">home page</a>.{{ else }} Start from the <a href="{{ "/" | relURL }}">home page</a>.{{ end }}</p>
+      </section>
+{{ end }}

@@ -107,7 +107,7 @@ Success is allowed. Entropy is not.
 The repository is a pnpm monorepo. Every package has a single, bounded responsibility.
 
 ```
-C:\pcloud\BB\DEV\legendary-arena\
+C:\dev\legendary-arena\
 │
 ├── packages/
 │   ├── game-engine/          @legendary-arena/game-engine
@@ -710,7 +710,7 @@ The Class column indicates the authoritative class first; annotations like "Snap
 | `G.villainDeck.discard` | Snapshot → count only | Revealed cards after pipeline resolution; zone contents are Runtime |
 | `G.villainDeckCardTypes` | Runtime | `Record<CardExtId, RevealedCardType>`; populated at setup, consumed by reveal moves; exists specifically to prevent runtime registry access |
 | `G.selection` | Runtime | Match setup selection state; introduced WP-005B |
-| `G.city` | Runtime | 5-tuple of `CardExtId \| null`; villain movement zone; introduced WP-015 |
+| `G.city` | Runtime | Array of 1-6 `CardExtId \| null` spaces (5 by default; a scheme can resize it, D-24764); villain movement zone; introduced WP-015 |
 | `G.hq` | Runtime | 5-tuple of `CardExtId \| null`; hero recruitment zone; introduced WP-015 |
 | `G.ko` | Runtime | `CardExtId[]`; knocked-out cards zone; introduced WP-017 |
 | `G.attachedBystanders` | Runtime | `Record<CardExtId, CardExtId[]>`; bystanders attached to villains; introduced WP-017 |
@@ -902,7 +902,9 @@ enough other cards to pay it; an unpayable play returns `void` with no commit
 and no base power granted. This does NOT weaken the contract: it is still a
 validation-phase silent return (no throw), it runs before the `G` mutation, and
 it exists precisely so the base power is not granted on a play the player cannot
-afford. A pre-commit precondition is distinct from the pending-choice pattern
+afford. The same precondition MAY apply to the specific villain being fought,
+whose cost is named by a validated move argument (`fightVillain.discardCardId`,
+WP-817 / D-24750). A pre-commit precondition is distinct from the pending-choice pattern
 (which fires AFTER the card commits); use it only when the outcome must be
 withheld unless the cost is payable.
 
@@ -1438,8 +1440,9 @@ invariant below is an architectural bug, even if the code compiles.
 - `SchemeSetupType` is a **closed union** — new types require a DECISIONS.md
   entry.
 - Unknown instruction types log a warning and skip — never throw (D-1234).
-- `modifyCitySize` is warn + no-op at MVP while `CityZone` is a fixed
-  tuple (D-2602).
+- `modifyCitySize` is warn + no-op: the City is resizable (`CityZone` is a
+  1-6 space array, D-24764), but no scheme sets a setup-time City size, so the
+  setup instruction stays unwired (D-2602's premise superseded).
 - Scheme **setup** (board config, WP-026) is formally separate from scheme
   **twist** (event reaction, WP-024). These must not be mixed (D-2601).
 - Builder returns `[]` at MVP — no structured registry metadata yet (D-2504).

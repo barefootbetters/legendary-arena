@@ -15,7 +15,7 @@ related:
   - youtube-channel-plan.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\brand-asset-generation.md (this page — https://ewiki.legendary-arena.com/brand-asset-generation/)
+  - C:\dev\legendary-arena\wiki\brand-asset-generation.md (this page — https://ewiki.legendary-arena.com/brand-asset-generation/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-09-01
 canonical-source: docs/marketing/brand-asset-generation.md

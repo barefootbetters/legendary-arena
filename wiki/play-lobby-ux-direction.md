@@ -22,7 +22,7 @@ related:
   - monetization-model.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\play-lobby-ux-direction.md (this page — https://ewiki.legendary-arena.com/play-lobby-ux-direction/)
+  - C:\dev\legendary-arena\wiki\play-lobby-ux-direction.md (this page — https://ewiki.legendary-arena.com/play-lobby-ux-direction/)
   - ../apps/arena-client/src/lobby/LobbyView.vue
   - ../apps/arena-client/src/lobby/playerCountRequirements.ts
   - ../docs/01-VISION.md

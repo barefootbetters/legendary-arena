@@ -23,7 +23,9 @@ import {
   buildMockDrReadiness,
   computeNextDue,
   deriveDrReadiness,
+  deriveRebuildDrill,
   findBackupMirrorAlert,
+  REBUILD_DRILL_CHECKBOX_LABEL,
 } from './dashboardDrReadiness.logic.js';
 import type {
   DashboardDrReadinessRouteDependencies,
@@ -236,15 +238,129 @@ test('computeNextDue rolls December over to the next January (UTC)', () => {
 
 test('buildMockDrReadiness is the locked no-token shape', () => {
   // why: `backupMirrorAlert: null` was added 2026-10-08 with the pCloud-mirror
-  // alert field — an intended shape change, not a loosened assertion.
+  // alert field, and `rebuildDrill` 2026-10-22 with the quarterly rebuild row —
+  // intended shape changes, not loosened assertions. The 2026-08-09 reference sits
+  // past July (the quarter's issue month), so `overdue: false` here is the mock's
+  // own rule: a placeholder never claims an overdue rebuild.
   const mock = buildMockDrReadiness(REFERENCE_DATE);
   assert.deepEqual(mock, {
     lastDrill: null,
     nextDue: '2026-09-01',
     overdue: false,
     backupMirrorAlert: null,
+    rebuildDrill: { lastRebuild: null, nextDue: '2026-07-01', overdue: false },
     source: 'mock',
   });
+});
+
+// ---------------------------------------------------------------------------
+// Quarterly rebuild drill — the Jan/Apr/Jul/Oct issues' rebuild checkbox.
+// ---------------------------------------------------------------------------
+
+const REBUILD_CHECKED = `- [x] ${REBUILD_DRILL_CHECKBOX_LABEL} Follow the runbook.\n- [x] Drill passed`;
+const REBUILD_UNCHECKED = `- [ ] ${REBUILD_DRILL_CHECKBOX_LABEL} Follow the runbook.\n- [x] Drill passed`;
+
+test('deriveRebuildDrill: the newest closed issue with the rebuild box ticked is lastRebuild', () => {
+  const result = deriveRebuildDrill(
+    [
+      drillIssue({
+        title: 'DR drill due — July 2026',
+        state: 'closed',
+        closedAt: '2026-07-20T09:00:00Z',
+        body: REBUILD_CHECKED,
+      }),
+      // Newer, but the rebuild box is unticked: a monthly-only close, not a rebuild.
+      drillIssue({
+        title: 'DR drill due — October 2026',
+        state: 'closed',
+        closedAt: '2026-10-05T09:00:00Z',
+        body: REBUILD_UNCHECKED,
+      }),
+      // A monthly issue has no rebuild box at all.
+      drillIssue({
+        title: 'DR drill due — September 2026',
+        state: 'closed',
+        closedAt: '2026-09-10T09:00:00Z',
+        body: '- [x] Drill passed',
+      }),
+    ],
+    new Date('2026-10-22T12:00:00Z'),
+  );
+  assert.deepEqual(result.lastRebuild, { date: '2026-07-20', result: 'pass' });
+  // October is the quarter's issue month: outstanding, due from 2026-10-01, not yet overdue.
+  assert.equal(result.nextDue, '2026-10-01');
+  assert.equal(result.overdue, false);
+});
+
+test('deriveRebuildDrill: a rebuild this quarter moves nextDue to the next quarter (over a year end)', () => {
+  const result = deriveRebuildDrill(
+    [
+      drillIssue({
+        title: 'DR drill due — October 2026',
+        state: 'closed',
+        closedAt: '2026-10-22T13:30:00Z',
+        body: REBUILD_CHECKED,
+      }),
+    ],
+    new Date('2026-11-15T12:00:00Z'),
+  );
+  assert.deepEqual(result.lastRebuild, { date: '2026-10-22', result: 'pass' });
+  assert.equal(result.nextDue, '2027-01-01');
+  assert.equal(result.overdue, false);
+});
+
+test('deriveRebuildDrill: past the issue month with no rebuild this quarter is overdue', () => {
+  const lastQuarterOnly = deriveRebuildDrill(
+    [
+      drillIssue({
+        title: 'DR drill due — October 2026',
+        state: 'closed',
+        closedAt: '2026-10-22T13:30:00Z',
+        body: REBUILD_CHECKED,
+      }),
+    ],
+    new Date('2027-02-03T12:00:00Z'),
+  );
+  assert.equal(lastQuarterOnly.overdue, true);
+  assert.equal(lastQuarterOnly.nextDue, '2027-01-01');
+
+  const neverRun = deriveRebuildDrill([], new Date('2026-08-09T12:00:00Z'));
+  assert.deepEqual(neverRun, { lastRebuild: null, nextDue: '2026-07-01', overdue: true });
+});
+
+test('deriveDrReadiness carries rebuildDrill from the same drill issues', () => {
+  const result = deriveDrReadiness(
+    [
+      drillIssue({
+        title: 'DR drill due — October 2026',
+        state: 'closed',
+        closedAt: '2026-10-22T13:30:00Z',
+        body: REBUILD_CHECKED,
+      }),
+      // A PR carrying a ticked rebuild box must not count.
+      drillIssue({
+        title: 'DR drill due — October 2026',
+        state: 'closed',
+        closedAt: '2026-10-30T09:00:00Z',
+        body: REBUILD_CHECKED.replace('Drill passed', 'nothing'),
+        isPullRequest: true,
+      }),
+    ],
+    new Date('2026-10-23T12:00:00Z'),
+  );
+  assert.deepEqual(result.rebuildDrill, {
+    lastRebuild: { date: '2026-10-22', result: 'pass' },
+    nextDue: '2027-01-01',
+    overdue: false,
+  });
+});
+
+test('the rebuild checkbox label matches the line dr-drill-reminder.yml writes, byte for byte', async () => {
+  const workflow = await readFile(`${repoRoot}.github/workflows/dr-drill-reminder.yml`, 'utf8');
+  assert.ok(
+    workflow.includes(`'- [ ] ${REBUILD_DRILL_CHECKBOX_LABEL} `),
+    'dr-drill-reminder.yml must write the quarterly checkbox under REBUILD_DRILL_CHECKBOX_LABEL',
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -294,11 +410,7 @@ test('findBackupMirrorAlert: an undated open issue still alerts, with openedAt n
   );
 });
 
-// why: a byte-for-byte pin against `.github/workflows/db-backup.yml`'s issue title
-// lived here. That workflow, the only thing that opened the issue, was deleted in
-// Phase 7 (2026-10-16; disabled since the 2026-10-12 cutover), so there is no
-// longer a producer to pin against. The droplet's pCloud mirror reports to
-// healthchecks.io (`la-droplet-pcloud`) instead.
+const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url));
 
 test('the live fetch filters to github-actions[bot] issues so PRs cannot crowd out the first page', async () => {
   const routes = await readFile(

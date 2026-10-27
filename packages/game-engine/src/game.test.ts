@@ -237,7 +237,7 @@ describe('LegendaryGame', () => {
     );
   });
 
-  it('defines moves: advanceStage, dodgeCard, drawCards, endMatchEarly, endTurn, exorciseHauntedHero, fightMastermind, fightVillain, healWounds, operatorAddEconomy, operatorEscapeVillain, operatorMoveCard, operatorMoveToDeckTop, operatorRevealNow, operatorSetSupplyCount, phaseCard, playCard, recruitHero, recruitOfficer, resolveCopyPowersChoice, resolveCountScaledChoice, resolveCoveringFireChoice, resolveDefeatChoice, resolveDiscardChoice, resolveDiscardToPlay, resolveDoOver, resolveDrawOrEmpowered, resolveElectromagneticBubbleChoice, resolveGiveHqHeroChoice, resolveHeroChoice, resolveKoDiscardChoice, resolveKoHeroChoice, resolveMelterKoChoice, resolveMoveVillainChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePlayVillainTopChoice, resolvePutAnyNumberBottomHQ, resolvePutCardsOnDeckChoice, resolvePutHandOnDeckTop, resolveReorderChoice, resolveReturnOnDiscard, resolveReturnZeroCostDiscard, resolveRevealThreeAssign, resolveRevealTopDispose, resolveRuthlessDictatorChoice, resolveScryKoChoice, resolveSeatChoice, resolveSmashDiscard, resolveSplitFaceChoice, resolveUndercoverChoice, resolveVictoryPileCardPick, and revealVillainCard', () => {
+  it('defines moves: advanceStage, dodgeCard, drawCards, endMatchEarly, endTurn, exorciseHauntedHero, fightMastermind, fightVillain, healWounds, operatorAddEconomy, operatorEscapeVillain, operatorMoveCard, operatorMoveToDeckTop, operatorRevealNow, operatorSetSupplyCount, phaseCard, playCard, recruitHero, recruitOfficer, recruitSidekick, resolveCopyPowersChoice, resolveCountScaledChoice, resolveCoveringFireChoice, resolveDefeatChoice, resolveDiscardChoice, resolveDiscardToPlay, resolveDoOver, resolveDrawOrEmpowered, resolveElectromagneticBubbleChoice, resolveGiveHqHeroChoice, resolveHeroChoice, resolveKoDiscardChoice, resolveKoHeroChoice, resolveMelterKoChoice, resolveMoveVillainChoice, resolveOptionalKoReward, resolveOptionalPutBottomHQ, resolvePlayVillainTopChoice, resolvePutAnyNumberBottomHQ, resolvePutCardsOnDeckChoice, resolvePutHandOnDeckTop, resolveReorderChoice, resolveReturnOnDiscard, resolveReturnZeroCostDiscard, resolveRevealThreeAssign, resolveRevealTopDispose, resolveRuthlessDictatorChoice, resolveScryKoChoice, resolveSeatChoice, resolveSmashDiscard, resolveSplitFaceChoice, resolveUndercoverChoice, resolveVictoryPileCardPick, and revealVillainCard', () => {
     const moveNames = Object.keys(LegendaryGame.moves ?? {});
     assert.deepStrictEqual(
       moveNames.sort(),
@@ -273,8 +273,9 @@ describe('LegendaryGame', () => {
       // WP-783 / D-24629 added phaseCard (45 → 46) — the Phasing hand swap (swap a Phasing card in hand with the top card of the deck); sorts between healWounds and playCard; NOT a CORE_MOVE_NAME (mirrors dodgeCard, internally stage-gated).
       // WP-795 / D-24664 added resolveMoveVillainChoice (46 → 47) — the interactive Spinning Cyclone move-a-Villain pick (core Storm); sorts between resolveMelterKoChoice and resolveOptionalKoReward; NOT a CORE_MOVE_NAME (mirrors resolveCoveringFireChoice). The test title also gains the stale-missing resolveCoveringFireChoice, resolveRevealTopDispose and resolveSplitFaceChoice.
       // WP-806 / D-24713 added the six operator setters (47 → 53) — operatorAddEconomy, operatorEscapeVillain, operatorMoveCard, operatorMoveToDeckTop, operatorRevealNow and operatorSetSupplyCount, operator-match-only; they sort between healWounds and phaseCard; NOT CORE_MOVE_NAMEs and absent from bot / simulation / fixture dispatch (mirrors phaseCard / endMatchEarly).
-      ['advanceStage', 'dodgeCard', 'drawCards', 'endMatchEarly', 'endTurn', 'exorciseHauntedHero', 'fightMastermind', 'fightVillain', 'healWounds', 'operatorAddEconomy', 'operatorEscapeVillain', 'operatorMoveCard', 'operatorMoveToDeckTop', 'operatorRevealNow', 'operatorSetSupplyCount', 'phaseCard', 'playCard', 'recruitHero', 'recruitOfficer', 'resolveCopyPowersChoice', 'resolveCountScaledChoice', 'resolveCoveringFireChoice', 'resolveDefeatChoice', 'resolveDiscardChoice', 'resolveDiscardToPlay', 'resolveDoOver', 'resolveDrawOrEmpowered', 'resolveElectromagneticBubbleChoice', 'resolveGiveHqHeroChoice', 'resolveHeroChoice', 'resolveKoDiscardChoice', 'resolveKoHeroChoice', 'resolveMelterKoChoice', 'resolveMoveVillainChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePlayVillainTopChoice', 'resolvePutAnyNumberBottomHQ', 'resolvePutCardsOnDeckChoice', 'resolvePutHandOnDeckTop', 'resolveReorderChoice', 'resolveReturnOnDiscard', 'resolveReturnZeroCostDiscard', 'resolveRevealThreeAssign', 'resolveRevealTopDispose', 'resolveRuthlessDictatorChoice', 'resolveScryKoChoice', 'resolveSeatChoice', 'resolveSmashDiscard', 'resolveSplitFaceChoice', 'resolveUndercoverChoice', 'resolveVictoryPileCardPick', 'revealVillainCard'],
-      'LegendaryGame must define exactly 53 moves',
+      // WP-842 / D-24776 added recruitSidekick (53 → 54) — the player-initiated once-per-turn buy of a Sidekick from the Sidekick Stack for 2 recruit; sorts between recruitOfficer and resolveCopyPowersChoice; NOT a CORE_MOVE_NAME and absent from SIMULATION_MOVE_NAMES (mirrors recruitOfficer, internally stage-gated).
+      ['advanceStage', 'dodgeCard', 'drawCards', 'endMatchEarly', 'endTurn', 'exorciseHauntedHero', 'fightMastermind', 'fightVillain', 'healWounds', 'operatorAddEconomy', 'operatorEscapeVillain', 'operatorMoveCard', 'operatorMoveToDeckTop', 'operatorRevealNow', 'operatorSetSupplyCount', 'phaseCard', 'playCard', 'recruitHero', 'recruitOfficer', 'recruitSidekick', 'resolveCopyPowersChoice', 'resolveCountScaledChoice', 'resolveCoveringFireChoice', 'resolveDefeatChoice', 'resolveDiscardChoice', 'resolveDiscardToPlay', 'resolveDoOver', 'resolveDrawOrEmpowered', 'resolveElectromagneticBubbleChoice', 'resolveGiveHqHeroChoice', 'resolveHeroChoice', 'resolveKoDiscardChoice', 'resolveKoHeroChoice', 'resolveMelterKoChoice', 'resolveMoveVillainChoice', 'resolveOptionalKoReward', 'resolveOptionalPutBottomHQ', 'resolvePlayVillainTopChoice', 'resolvePutAnyNumberBottomHQ', 'resolvePutCardsOnDeckChoice', 'resolvePutHandOnDeckTop', 'resolveReorderChoice', 'resolveReturnOnDiscard', 'resolveReturnZeroCostDiscard', 'resolveRevealThreeAssign', 'resolveRevealTopDispose', 'resolveRuthlessDictatorChoice', 'resolveScryKoChoice', 'resolveSeatChoice', 'resolveSmashDiscard', 'resolveSplitFaceChoice', 'resolveUndercoverChoice', 'resolveVictoryPileCardPick', 'revealVillainCard'],
+      'LegendaryGame must define exactly 54 moves',
     );
   });
 
@@ -1331,5 +1332,153 @@ describe('advanceStage Out of Time replay wiring (WP-803 / D-24692)', () => {
     assert.ok(texts.some((text) => text.includes('returns from Out of Time and is played a second time.')));
     assert.ok(texts.some((text) => text.includes(`Player ${activeSeat} played `)), 'the play-core log line');
     assert.ok(texts.some((text) => text.endsWith('is not set aside again: a card goes Out of Time only once.')));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-845 / D-24779 — reveal or gain a Wound: a player who can reveal chooses. Only the real
+// reducer proves the turn.onMove opener is wired and that a NON-active seat's answer is accepted
+// (the stage ride); the helper unit tests call the opener directly.
+// ---------------------------------------------------------------------------
+
+/** The reducer-driven move helper the WP-845 cases use. */
+type RevealOrWoundMakeMove = (
+  state: unknown,
+  moveName: string,
+  args: unknown[],
+  playerID: string,
+) => { G: unknown; ctx: { currentPlayer: unknown } };
+
+/** A started two-seat match through the real reducer, with its active and other seat. */
+interface RevealOrWoundMatch {
+  state: { G: unknown; ctx: { currentPlayer: unknown } };
+  makeMove: RevealOrWoundMakeMove;
+  activeSeat: string;
+  otherSeat: string;
+}
+
+const AMBUSHER = 'test-ambusher';
+const XMEN_HERO = 'test/xmen/claws#0';
+const PLAIN_HERO = 'test/plain/punch#0';
+const DIVING_BLOCK_HERO = 'core/captain-america/diving-block#0';
+
+/**
+ * Starts a real two-seat match and injects an X-Men reveal-or-wound Ambush Villain on top of the
+ * Villain Deck, with the given hands.
+ *
+ * @param handFor - Builds each seat's hand from whether it is the active seat.
+ * @returns The started match, ready for the active seat's revealVillainCard.
+ */
+function startRevealOrWoundMatch(handFor: (isActiveSeat: boolean) => string[]): RevealOrWoundMatch {
+  const reducer = CreateGameReducer({ game: LegendaryGame, isClient: false });
+  const makeMove: RevealOrWoundMakeMove = (state, moveName, args, playerID) =>
+    reducer(state, { type: 'MAKE_MOVE', payload: { type: moveName, args, playerID } });
+  const initialState = InitializeGame({ game: LegendaryGame, numPlayers: 2, setupData: createMockMatchConfiguration() });
+  let state = makeMove(initialState, 'setPlayerReady', [{ ready: true }], '0');
+  state = makeMove(state, 'setPlayerReady', [{ ready: true }], '1');
+  state = makeMove(state, 'startMatchIfReady', [], '0');
+  const activeSeat = String(state.ctx.currentPlayer);
+  const otherSeat = activeSeat === '0' ? '1' : '0';
+
+  const injectedG = structuredClone(state.G) as LegendaryGameState;
+  injectedG.playerZones[activeSeat]!.hand = handFor(true);
+  injectedG.playerZones[otherSeat]!.hand = handFor(false);
+  injectedG.villainDeck = { deck: [AMBUSHER], discard: [] };
+  injectedG.villainDeckCardTypes = { ...injectedG.villainDeckCardTypes, [AMBUSHER]: 'villain' };
+  // why: the reveal fires onAmbush only for a card whose board keywords carry 'ambush'.
+  injectedG.cardKeywords = { ...injectedG.cardKeywords, [AMBUSHER]: ['ambush'] };
+  injectedG.villainAbilityHooks = [
+    ...injectedG.villainAbilityHooks,
+    {
+      cardId: AMBUSHER,
+      timing: 'onAmbush',
+      keywords: [],
+      effects: [{ primitive: 'reveal-or-wound', requireKind: 'team', requireValue: 'x-men' }],
+    },
+  ];
+  injectedG.heroAbilityHooks = [
+    ...injectedG.heroAbilityHooks,
+    { cardId: DIVING_BLOCK_HERO, timing: 'onPlay', keywords: ['diving-block'] },
+  ] as LegendaryGameState['heroAbilityHooks'];
+  injectedG.cardTraits = {
+    ...injectedG.cardTraits,
+    [XMEN_HERO]: { heroClass: 'covert', team: 'x-men' },
+    [PLAIN_HERO]: { heroClass: 'covert', team: 'spider-friends' },
+    [DIVING_BLOCK_HERO]: { heroClass: 'instinct', team: 'avengers' },
+  } as LegendaryGameState['cardTraits'];
+  return { state: { ...state, G: injectedG }, makeMove, activeSeat, otherSeat };
+}
+
+describe('play-phase turn.onMove reveal-or-wound wiring (WP-845 / D-24779)', () => {
+  it('real reducer: a NON-active revealer is asked after the reveal, answers, and the turn proceeds', () => {
+    const match = startRevealOrWoundMatch((isActiveSeat) => (isActiveSeat ? [PLAIN_HERO] : [XMEN_HERO]));
+    const { makeMove, activeSeat, otherSeat } = match;
+
+    let state = makeMove(match.state, 'revealVillainCard', [], activeSeat);
+    const parkedG = state.G as LegendaryGameState;
+    assert.equal(parkedG.playerZones[activeSeat]!.discard.length, 1, 'the cannot-reveal active seat was wounded inline');
+    assert.equal(parkedG.pendingSeatChoice?.kind, 'reveal-or-wound', 'onMove opened the choice after the reveal');
+    assert.deepEqual(parkedG.pendingSeatChoice?.addressedSeats, [otherSeat]);
+
+    state = makeMove(state, 'resolveSeatChoice', [{ optionIndex: 0 }], otherSeat);
+    const answeredG = state.G as LegendaryGameState;
+    assert.equal(answeredG.pendingSeatChoice, undefined, 'the reducer accepted the non-active seat answer');
+    assert.equal(answeredG.pendingRevealOrWoundChoices, undefined, 'the queue drained');
+    assert.equal(answeredG.playerZones[otherSeat]!.discard.length, 0, 'Reveal avoided the Wound');
+    assert.ok(
+      answeredG.notableEvents.some(
+        (event) => event.type === 'strikeBlocked' && event.playerId === otherSeat && event.threatKind === 'ambush',
+      ),
+      'the Reveal pushed its strikeBlocked',
+    );
+
+    state = makeMove(state, 'advanceStage', [], activeSeat);
+    assert.equal((state.G as LegendaryGameState).currentStage, 'main', 'the turn proceeds');
+  });
+
+  it('real reducer: a mixed ride (active + non-active) accepts the active seat first, then the other seat decline', () => {
+    const match = startRevealOrWoundMatch(() => [XMEN_HERO]);
+    const { makeMove, activeSeat, otherSeat } = match;
+
+    let state = makeMove(match.state, 'revealVillainCard', [], activeSeat);
+    assert.deepEqual([...(state.G as LegendaryGameState).pendingSeatChoice!.addressedSeats], ['0', '1']);
+
+    state = makeMove(state, 'resolveSeatChoice', [{ optionIndex: 0 }], activeSeat);
+    assert.deepEqual(
+      (state.G as LegendaryGameState).pendingSeatChoice?.submissions[activeSeat],
+      { optionIndex: 0 },
+      'the active seat answer is accepted first (no active-seat skip on a mixed ride)',
+    );
+    const woundsBefore = (state.G as LegendaryGameState).piles.wounds.length;
+    state = makeMove(state, 'resolveSeatChoice', [{ optionIndex: 1 }], otherSeat);
+    const finalG = state.G as LegendaryGameState;
+    assert.equal(finalG.pendingSeatChoice, undefined);
+    assert.equal(finalG.playerZones[activeSeat]!.discard.length, 0, 'the active seat revealed');
+    assert.equal(finalG.playerZones[otherSeat]!.discard.length, 1, 'the other seat chose the Wound');
+    assert.equal(finalG.piles.wounds.length, woundsBefore - 1);
+    assert.equal(finalG.turnEconomy.woundsDrawn, 0, 'only a current-player Wound moves woundsDrawn');
+
+    state = makeMove(state, 'advanceStage', [], activeSeat);
+    assert.equal((state.G as LegendaryGameState).currentStage, 'main', 'the turn proceeds');
+  });
+
+  it('real reducer: a decliner holding Diving Block gets the Wound parked and the Diving Block wave opens in that move', () => {
+    const match = startRevealOrWoundMatch(
+      (isActiveSeat) => (isActiveSeat ? [PLAIN_HERO] : [XMEN_HERO, DIVING_BLOCK_HERO]),
+    );
+    const { makeMove, activeSeat, otherSeat } = match;
+
+    let state = makeMove(match.state, 'revealVillainCard', [], activeSeat);
+    assert.equal((state.G as LegendaryGameState).pendingSeatChoice?.kind, 'reveal-or-wound');
+
+    state = makeMove(state, 'resolveSeatChoice', [{ optionIndex: 1 }], otherSeat);
+    const finalG = state.G as LegendaryGameState;
+    assert.deepEqual(
+      finalG.pendingDivingBlockWounds?.map((entry) => entry.playerID),
+      [otherSeat],
+      'the declined Wound is parked for Diving Block',
+    );
+    assert.equal(finalG.pendingSeatChoice?.kind, 'diving-block', 'the wave opened in the resolve move onMove');
+    assert.deepEqual(finalG.pendingSeatChoice?.addressedSeats, [otherSeat]);
   });
 });

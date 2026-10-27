@@ -1,0 +1,45 @@
+{{- /*
+  why: one image hook, the union of E, H and C (J used Hugo's default).
+  External sources (a scheme) and root-relative sources (`/...`) pass through
+  with no lookup and no warning: E serves 92 `/branding/...`-style images from
+  its projected static/, and an external host is the author's choice. An
+  external image goes out with referrerpolicy="no-referrer" (H and C), because
+  hosts that block hotlinking, Fandom among them, refuse a request whose
+  referrer is the wiki.
+
+  why: any other source is content-relative, like a link: the image's folder
+  is the page's own ($dir with backslashes normalized, as in render-link.html),
+  and the file is found as an asset under assets/<contentRoot>, where each
+  wiki mounts its content-root images, then published once (H). A missing
+  image warns, so a --panicOnWarning build fails like a broken link does.
+
+  why: a markdown title of `width=<css-size>` sizes the image (E), rendering
+  that width with auto height instead of a title attribute. Every image is
+  loading="lazy", which keeps long tables light (H and C).
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $contentRoot := index $ewiki "contentroot" | default "" -}}
+{{- $dest := .Destination -}}
+{{- $u := urls.Parse $dest -}}
+{{- $src := $dest -}}
+{{- if and $dest (not $u.Scheme) (not (hasPrefix $dest "/")) -}}
+  {{- $dir := "" -}}
+  {{- with .Page.File -}}{{- $dir = strings.TrimPrefix "/" (replace .Dir "\\" "/") -}}{{- end -}}
+  {{- $target := path.Join $dir $u.Path -}}
+  {{- $asset := false -}}
+  {{- if not (or (eq $target "..") (hasPrefix $target "../")) -}}
+    {{- $asset = resources.Get (path.Join $contentRoot $target) -}}
+  {{- end -}}
+  {{- with $asset -}}
+    {{- $src = .RelPermalink -}}
+  {{- else -}}
+    {{- warnf "ewiki theme: %s shows %s, which is not an image under assets/%s. Add the file, or check the site mounts its content-root images there." .Page.File.Path $dest $contentRoot -}}
+  {{- end -}}
+{{- end -}}
+{{- $title := .Title -}}
+{{- if hasPrefix $title "width=" -}}
+<img src="{{ $src | safeURL }}" alt="{{ .PlainText }}" style="{{ printf "width:%s;height:auto" (strings.TrimPrefix "width=" $title) | safeCSS }}" loading="lazy">
+{{- else -}}
+<img src="{{ $src | safeURL }}" alt="{{ .PlainText }}"{{ with $title }} title="{{ . }}"{{ end }}{{ if $u.Scheme }} referrerpolicy="no-referrer"{{ end }} loading="lazy">
+{{- end -}}
+{{- /* keep: no trailing newline in output */ -}}

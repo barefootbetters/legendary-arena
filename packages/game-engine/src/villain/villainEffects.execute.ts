@@ -19,16 +19,28 @@
 import type { LegendaryGameState, PendingKoHeroChoice, PendingGiveHqHeroChoice, PendingMelterKoChoice, MelterRevealedTop, PendingKoDiscardChoice } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
-import { offPlayCardTraits, playedCardIdsStillInPlay } from '../hero/splitCard.logic.js';
+import {
+  isGreyHero,
+  matchesGreyHeroFilter,
+  offPlayCardStats,
+  offPlayCardTraits,
+  playedCardIdsStillInPlay,
+  resolveSplitFacePair,
+} from '../hero/splitCard.logic.js';
+import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
+import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import type {
+  GreyHeroFilter,
   VillainAbilityTiming,
   VillainAbilityHook,
   VillainEffectKeyword,
   VillainEffectResult,
   VillainEffectDescriptor,
   VillainEffectPrimitive,
+  VillainEffectCondition,
   VillainEffectPlayerTargets,
   VillainKoZone,
+  VillainWoundOutcomes,
 } from '../rules/villainAbility.types.js';
 import {
   getVillainHooksForCard,
@@ -38,16 +50,27 @@ import {
 import type { CitySpaceName } from '../board/citySpaceNames.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { ResolvedEffectResult, ResolvedPlayerTargetNames } from '../events/notableEvents.compose.js';
-import { composeStrikeBlockedNarrative } from '../events/notableEvents.compose.js';
+import { composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
 import type { StrikeBlockThreatKind } from '../events/notableEvents.types.js';
 import type { HollowEffectRecord, EffectTrace, EffectTraceStatus } from '../diagnostics/hollowEffect.types.js';
 import { recordHollowEffect } from '../diagnostics/hollowEffect.record.js';
 import { recordEffectTrace } from '../diagnostics/effectTrace.record.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
+// why: WP-845 / D-24779 — the reveal-or-gain-a-Wound queue writer. The module reaches back to this
+// file through phaseCard → playVillainTop.resolve → villainDeck.reveal; every binding is read
+// inside function bodies only, so the cycle is runtime-safe.
+import {
+  enqueueRevealOrWoundChoice,
+  formatRevealOrWoundPlayerNames,
+} from '../moves/revealOrWoundChoice.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import {
   attachBystanderToVillain,
   awardAttachedBystanders,
+  countVictoryPileBystanders,
+  findFirstVictoryPileBystander,
+  SAVIOR_BYSTANDER_THRESHOLD,
 } from '../board/bystanders.logic.js';
 import { captureHeroFromHq } from '../board/heroCapture.logic.js';
 import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
@@ -57,10 +80,17 @@ import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { hauntHqSlot, selectUnhauntedHqIndex } from '../board/haunt.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
+// why: WP-837 / D-24770 — Juggernaut's same-name discards go through the single
+// hand→discard chokepoint so return-on-discard / teleport reactions fire.
+import { discardFromHand } from '../moves/discardFromHand.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
 import { describeKoSourceZone } from '../log/logDisplay.js';
+// why: WP-817 / D-24750 — Captain Zolandia counts Hero Classes with the hero side's one
+// counter, and Primus's Escape narrates its costs with the shared cost-list formatter.
+import { countDistinctHeroClassesYouHave } from '../hero/heroConditions.evaluate.js';
+import { formatEligibleCostList } from '../moves/villainDefeatRequirement.logic.js';
 import {
   WOUND_EXT_ID,
   SHIELD_AGENT_EXT_ID,
@@ -78,6 +108,15 @@ import {
 export interface KoHeroTarget {
   zone: 'discard' | 'hand' | 'inPlay';
   cardId: CardExtId;
+}
+
+/**
+ * A grey-Hero filter for the KO eligibility helpers, with the state it reads
+ * (WP-836 / D-24769). The helpers take zones, not G, so the filter brings G along.
+ */
+export interface KoHeroGreyFilterRead {
+  gameState: LegendaryGameState;
+  greyFilter: GreyHeroFilter;
 }
 
 /**
@@ -186,6 +225,18 @@ export function executeVillainAbilities(
         narrateCityGateBlocked(G, timing, descriptor.requireCitySpaces);
         continue;
       }
+      // why: WP-816 / D-24749 — the condition gate (rules v23 L1844-1853 Savior), checked
+      // AFTER the location gate and BEFORE dispatch. It reads the CURRENT player at every
+      // timing and fails closed (missing zones, or an unrecognized condition value).
+      // Like the location gate it is NOT hollow (the handler exists — the condition
+      // blocked it), so it records neither a hollow record nor an EffectTrace (the
+      // D-24295 precedent): the descriptor was never dispatched.
+      if (
+        descriptor.requireCondition !== undefined &&
+        !isConditionGateSatisfied(G, currentPlayer, cardId, timing, descriptor)
+      ) {
+        continue;
+      }
       const application = applyVillainEffect(G, currentPlayer, cardId, timing, descriptor, shuffleContext, cityIndex);
       if (application !== null) {
         // why: D-24023 — each result's `keyword` stays VillainEffectKeyword
@@ -213,6 +264,14 @@ export function executeVillainAbilities(
           // why: D-24693 — omit-when-empty, like `pending`: a KO that took nothing has no zones.
           if (application.targetZones !== undefined && application.targetZones.length > 0) {
             result.targetZones = application.targetZones;
+          }
+          // why: D-24673 — present only when a Diving Block reveal is pending.
+          if (application.woundOutcomes !== undefined) {
+            result.woundOutcomes = application.woundOutcomes;
+          }
+          // why: D-24783 — present only on a grey-filtered each-player KO (Destroyer).
+          if (application.greyFilter !== undefined) {
+            result.greyFilter = application.greyFilter;
           }
           results.push(result);
         }
@@ -304,6 +363,12 @@ export function resolveEffectResultNames(
         playerTargetNames.push(resolvedShare);
       }
       resolvedResult.playerTargetNames = playerTargetNames;
+    }
+    if (result.woundOutcomes !== undefined) {
+      resolvedResult.woundOutcomes = result.woundOutcomes;
+    }
+    if (result.greyFilter !== undefined) {
+      resolvedResult.greyFilter = result.greyFilter;
     }
     resolved.push(resolvedResult);
   }
@@ -596,6 +661,135 @@ function narrateCityGateBlocked(
 }
 
 /**
+ * Evaluates a descriptor's `requireCondition` gate, and self-narrates the "no
+ * effect" line when it blocks (WP-816 / D-24749).
+ *
+ * Exhaustive over `VillainEffectCondition`: `'savior'` passes when the current
+ * player has at least `SAVIOR_BYSTANDER_THRESHOLD` Bystanders in their Victory
+ * Pile (0 when their zones are missing); `'another-group-villain-in-city'`
+ * (D-24770) passes when the City holds another Villain of the triggering card's
+ * own group. The `never` default (a future union member before its arm exists, or
+ * a hand-built hook) fails CLOSED. `G.messages` is hash-excluded (D-24081);
+ * outcome `blocked` per the WP-434 contract.
+ *
+ * @param G - Game state (mutated only via the hash-excluded message log).
+ * @param currentPlayer - The active player id the condition is read for.
+ * @param cardId - The triggering Villain's ext_id (the group condition reads it).
+ * @param timing - The timing that fired (for the "<Fight|Ambush|Escape> effect:" label).
+ * @param descriptor - The gated descriptor (its `requireCondition` is defined).
+ * @returns True when the condition holds and the descriptor may dispatch.
+ */
+function isConditionGateSatisfied(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): boolean {
+  const label = villainEffectTimingLabel(timing);
+  // why: the executor loop calls this only when `requireCondition` is defined, so the
+  // switch below is exhaustive over the closed union (a new member fails to compile here).
+  const condition = descriptor.requireCondition as VillainEffectCondition;
+  switch (condition) {
+    case 'savior': {
+      const zones = G.playerZones[currentPlayer];
+      const count = zones ? countVictoryPileBystanders(zones.victory) : 0;
+      if (zones && count >= SAVIOR_BYSTANDER_THRESHOLD) {
+        return true;
+      }
+      pushLog(
+        G,
+        `${label} effect: Player ${currentPlayer} is not a Savior (${count} of ${SAVIOR_BYSTANDER_THRESHOLD} Bystanders in their Victory Pile); no effect.`,
+        'blocked',
+      );
+      return false;
+    }
+    case 'another-group-villain-in-city': {
+      // why: WP-837 / D-24770 — "another Spider-Foes Villain" is a Villain of the
+      // triggering card's OWN group (the D-24299 own-set precedent). The marker has no slot
+      // for a group, so the group is the longest selected-group prefix of the card id; no
+      // match fails closed (a scheme-added group, or a hand-built hook).
+      const group = resolveVillainGroupPrefix(G, cardId);
+      if (group === null) {
+        pushLog(
+          G,
+          `${label} effect: the Villain's group is not among this match's Villain Groups; no effect.`,
+          'blocked',
+        );
+        return false;
+      }
+      if (cityHoldsOtherGroupVillain(G, group.groupPrefix, cardId)) {
+        return true;
+      }
+      pushLog(G, `${label} effect: no other ${group.groupSlug} Villain is in the City; no effect.`, 'blocked');
+      return false;
+    }
+    default: {
+      // why: fail closed — an unrecognized condition must never fire its effect.
+      const unrecognized: never = condition;
+      pushLog(
+        G,
+        `${label} effect: unrecognized condition '${String(unrecognized)}'; no effect.`,
+        'blocked',
+      );
+      return false;
+    }
+  }
+}
+
+/**
+ * Finds the triggering Villain's own group among the match's selected Villain Groups
+ * (WP-837 / D-24770).
+ *
+ * Each two-part `set/slug` id in `G.selection.villainGroupIds` gives the anchored prefix
+ * `${set}-villain-${slug}-`; the longest prefix the card id starts with wins, so a group
+ * whose slug extends another's (`foes` vs `foes-elite`) resolves to the more specific one.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The Villain instance ext_id.
+ * @returns The group slug and its anchored prefix, or null when no selected group matches.
+ */
+function resolveVillainGroupPrefix(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+): { groupSlug: string; groupPrefix: string } | null {
+  let bestMatch: { groupSlug: string; groupPrefix: string } | null = null;
+  for (const groupId of G.selection?.villainGroupIds ?? []) {
+    const segments = groupId.split('/');
+    if (segments.length !== 2) {
+      continue;
+    }
+    const groupPrefix = `${segments[0]}-villain-${segments[1]}-`;
+    if (!cardId.startsWith(groupPrefix)) {
+      continue;
+    }
+    if (bestMatch === null || groupPrefix.length > bestMatch.groupPrefix.length) {
+      bestMatch = { groupSlug: segments[1]!, groupPrefix };
+    }
+  }
+  return bestMatch;
+}
+
+/**
+ * Whether the City holds a Villain of the group other than the triggering card
+ * (WP-837 / D-24770 — "another" excludes the card itself; a second copy counts).
+ *
+ * @param G - Game state (read-only).
+ * @param groupPrefix - The anchored `${set}-villain-${slug}-` prefix.
+ * @param cardId - The triggering Villain (excluded from the scan).
+ * @returns True when another occupied City space starts with the prefix.
+ */
+function cityHoldsOtherGroupVillain(G: LegendaryGameState, groupPrefix: string, cardId: CardExtId): boolean {
+  for (let cityIndex = 0; cityIndex < G.city.length; cityIndex++) {
+    const occupant = G.city[cityIndex];
+    if (occupant !== null && occupant !== undefined && occupant !== cardId && occupant.startsWith(groupPrefix)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Formats a City-space list into readable prose with a single leading "the"
  * (e.g. `['streets','bridge']` → "the Streets or Bridge"; `['sewers']` → "the
  * Sewers").
@@ -766,6 +960,11 @@ interface VillainEffectApplication {
   // why: D-24693 — a KO handler reports the zone each target left (index-aligned with
   // `targets`) so the log can name it; every other handler omits it.
   targetZones?: VillainKoZone[];
+  // why: D-24673 — a gain-wound handler reports who is waiting on a Diving Block reveal,
+  // only when someone is; every other handler omits it.
+  woundOutcomes?: VillainWoundOutcomes;
+  // why: D-24783 — a grey-filtered each-player KO reports its filter so the log names it.
+  greyFilter?: GreyHeroFilter;
 }
 
 /**
@@ -808,8 +1007,14 @@ function villainEffectGainWound(
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
+  // why: WP-816 / D-24749 — Radioactive Man "each player who is not a Savior gains a
+  // Wound". The exemption is per player, so it is a target (the `each-other`
+  // precedent), not the current-player condition gate; its body is its own function.
+  if (descriptor.target === 'each-non-savior') {
+    return applyGainWoundEachNonSavior(G, currentPlayer, timing);
+  }
   // why: WP-489 / D-24295 — the Lizard "each OTHER player gains a Wound": wound
-  // every player EXCEPT the current one. Sorted iteration (D-18902 determinism),
+  // every player EXCEPT the current one. Clockwise from the current player (D-24780),
   // supply-bounded, `magnitude` repetitions (default 1) mirroring ko-hero:each so a
   // future N-wound each-other line is data-only. Keyword-less (no legacy reverse-
   // map, see descriptorKey), so it MUST self-narrate — the generic
@@ -817,12 +1022,16 @@ function villainEffectGainWound(
   if (descriptor.target === 'each-other') {
     const repetitions = descriptor.magnitude ?? 1;
     const woundedPlayerIds: string[] = [];
-    for (const playerId of Object.keys(G.playerZones).sort()) {
+    const gainedPlayerIds: string[] = [];
+    const divingBlockPendingPlayerIds: string[] = [];
+    // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+    for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
       // why: "each OTHER player" — the current player is never wounded by this effect.
       if (playerId === currentPlayer) continue;
       const zones = G.playerZones[playerId];
       if (!zones) continue;
       let woundedThisPlayer = false;
+      let isDivingBlockPending = false;
       for (let iteration = 0; iteration < repetitions; iteration++) {
         // why: supply-bounded — stop once the shared Wound pile is empty (a
         // reachable no-op, never a hollow record).
@@ -830,11 +1039,18 @@ function villainEffectGainWound(
         // why: WP-682 / D-24499 — route through the gainWoundForPlayer chokepoint so a
         // wounded player holding Diving Block gets the reveal window (Master Strike /
         // scheme wounds reach NON-active seats via the WP-684 seat-choice wave).
-        gainWoundForPlayer(G, playerId);
+        if (gainWoundWithOutcome(G, playerId) === 'diving-block-pending') {
+          isDivingBlockPending = true;
+        }
         woundedThisPlayer = true;
       }
       if (woundedThisPlayer) {
         woundedPlayerIds.push(playerId);
+        if (isDivingBlockPending) {
+          divingBlockPendingPlayerIds.push(playerId);
+        } else {
+          gainedPlayerIds.push(playerId);
+        }
       }
     }
     // why: self-narrate (keyword-less). `G.messages` is hash-excluded (D-24081).
@@ -842,7 +1058,10 @@ function villainEffectGainWound(
     // player could be wounded (solo, or empty supply) → `blocked`. woundsDrawn is
     // NOT bumped — the current player is never wounded by each-other.
     const label = villainEffectTimingLabel(timing);
-    if (woundedPlayerIds.length > 0) {
+    if (divingBlockPendingPlayerIds.length > 0) {
+      // why: D-24673 — a Diving Block reveal is pending, so that Wound is not gained yet.
+      pushLog(G, `${label} effect: each other player gains a Wound: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}.`, 'applied');
+    } else if (woundedPlayerIds.length > 0) {
       const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
       pushLog(G, `${label} effect: each other player gained a Wound (${names}).`, 'applied');
     } else {
@@ -853,20 +1072,33 @@ function villainEffectGainWound(
   // why: WP-316 — wounds narrate via the generic keyword label, not a card
   // name; targets stays [] for both branches.
   if (descriptor.target === 'each') {
+    const gainedPlayerIds: string[] = [];
+    const divingBlockPendingPlayerIds: string[] = [];
     // why: every player gains 1 wound (subject to wound-pile availability),
     // mirroring the existing escape-wound no-op-on-empty semantics.
-    for (const playerId of Object.keys(G.playerZones)) {
+    // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+    for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
       const zones = G.playerZones[playerId];
       if (!zones) continue;
       if (G.piles.wounds.length === 0) continue;
       // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so Diving Block sees
       // every "each player gains a Wound" source (non-active seats via WP-684).
-      gainWoundForPlayer(G, playerId);
+      const woundOutcome = gainWoundWithOutcome(G, playerId);
+      if (woundOutcome === 'diving-block-pending') {
+        divingBlockPendingPlayerIds.push(playerId);
+      } else if (woundOutcome === 'gained') {
+        gainedPlayerIds.push(playerId);
+      }
       if (playerId === currentPlayer) {
         // why: woundsDrawn projects the current player's wounds only (UI
         // economy), matching escape-wound and the deleted Ambush loop.
         G.turnEconomy.woundsDrawn += 1;
       }
+    }
+    // why: D-24673 — report the split only when a Diving Block reveal is pending, so
+    // the keyword-labelled line and narrative are byte-identical otherwise.
+    if (divingBlockPendingPlayerIds.length > 0) {
+      return { targets: [], woundOutcomes: { gainedPlayerIds, divingBlockPendingPlayerIds } };
     }
     return { targets: [] };
   }
@@ -879,8 +1111,114 @@ function villainEffectGainWound(
   if (G.piles.wounds.length === 0) return { targets: [] };
   // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint (the current player may
   // hold Diving Block for a villain self-wound too).
-  gainWoundForPlayer(G, currentPlayer);
+  const woundOutcome = gainWoundWithOutcome(G, currentPlayer);
   G.turnEconomy.woundsDrawn += 1;
+  // why: D-24673 — present only when a Diving Block reveal is pending.
+  if (woundOutcome === 'diving-block-pending') {
+    return { targets: [], woundOutcomes: { gainedPlayerIds: [], divingBlockPendingPlayerIds: [currentPlayer] } };
+  }
+  return { targets: [] };
+}
+
+/**
+ * gain-wound `target: 'each-non-savior'` — every player who is not a Savior gains
+ * one Wound (Radioactive Man, WP-816 / D-24749).
+ *
+ * Clockwise from the current player (rules v23 L2247, D-24780); a player with at least
+ * `SAVIOR_BYSTANDER_THRESHOLD` Bystanders in their Victory Pile is skipped;
+ * supply-bounded. Routes through `gainWoundWithOutcome` so Diving Block sees the
+ * Wound (D-24499 / D-24673). Keyword-less (no legacy reverse-map), so it
+ * self-narrates; `G.messages` is hash-excluded (D-24081).
+ *
+ * @param G - Game state (mutated: wounds supply, discards, woundsDrawn, messages).
+ * @param currentPlayer - The active player id (for the woundsDrawn projection).
+ * @param timing - The timing that fired (for the "<Fight|Escape> effect:" label).
+ * @returns `{ targets: [] }` always — a keyword-less result is never recorded.
+ */
+function applyGainWoundEachNonSavior(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  const woundedPlayerIds: string[] = [];
+  const gainedPlayerIds: string[] = [];
+  const divingBlockPendingPlayerIds: string[] = [];
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+  for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
+    const zones = G.playerZones[playerId];
+    if (!zones) continue;
+    // why: the per-player Savior exemption — each player's OWN Victory Pile decides.
+    if (countVictoryPileBystanders(zones.victory) >= SAVIOR_BYSTANDER_THRESHOLD) continue;
+    // why: supply-bounded — an empty Wound pile is a reachable no-op, never a throw.
+    if (G.piles.wounds.length === 0) continue;
+    const woundOutcome = gainWoundWithOutcome(G, playerId);
+    if (playerId === currentPlayer) {
+      // why: woundsDrawn projects the current player's wounds only, whatever the
+      // outcome — the `'each'` branch rule verbatim.
+      G.turnEconomy.woundsDrawn += 1;
+    }
+    if (woundOutcome === 'diving-block-pending') {
+      woundedPlayerIds.push(playerId);
+      divingBlockPendingPlayerIds.push(playerId);
+    } else if (woundOutcome === 'gained') {
+      woundedPlayerIds.push(playerId);
+      gainedPlayerIds.push(playerId);
+    }
+  }
+  const label = villainEffectTimingLabel(timing);
+  if (divingBlockPendingPlayerIds.length > 0) {
+    // why: D-24673 — a Diving Block reveal is pending, so that Wound is not final yet.
+    pushLog(G, `${label} effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}.`, 'applied');
+  } else if (woundedPlayerIds.length > 0) {
+    const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(G, `${label} effect: each player who is not a Savior gained a Wound (${names}).`, 'applied');
+  } else {
+    pushLog(G, `${label} effect: no player who is not a Savior gained a Wound.`, 'blocked');
+  }
+  return { targets: [] };
+}
+
+/**
+ * ko-bystander-each-victory-pile primitive — each player KOs one Bystander from
+ * their Victory Pile (Executioner's Escape, WP-816 / D-24749).
+ *
+ * For every player in sorted id order, the first Bystander in Victory-Pile order
+ * moves to `G.ko` via `moveCardFromZone`; a player with none is untouched.
+ * No-param, keyword-less, self-narrates; never throws.
+ *
+ * @param G - Game state (mutated: Victory Piles, the KO pile, messages).
+ * @param _currentPlayer - Unused; the effect hits every player.
+ * @param _cardId - Unused.
+ * @param timing - The timing that fired (for the "<Fight|Escape> effect:" label).
+ * @returns `{ targets: [] }` always — a keyword-less result is never recorded.
+ */
+function villainEffectKoBystanderEachVictoryPile(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  const koedPlayerIds: string[] = [];
+  for (const playerId of Object.keys(G.playerZones).sort()) {
+    const zones = G.playerZones[playerId];
+    if (!zones) continue;
+    // why: every Victory-Pile Bystander is worth the same (1 VP, its rescue ability
+    // already resolved), so pile order is a deterministic no-choice pick that needs no
+    // non-active-seat prompt (the Whispers and Lies precedent).
+    const bystanderId = findFirstVictoryPileBystander(zones.victory);
+    if (bystanderId === undefined) continue;
+    const moveResult = moveCardFromZone(zones.victory, G.ko, bystanderId);
+    zones.victory = moveResult.from;
+    G.ko = moveResult.to;
+    koedPlayerIds.push(playerId);
+  }
+  const label = villainEffectTimingLabel(timing);
+  if (koedPlayerIds.length > 0) {
+    const names = koedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
+    pushLog(G, `${label} effect: KO'd a Bystander from the Victory Pile of ${names}.`, 'applied');
+  } else {
+    pushLog(G, `${label} effect: no player had a Bystander in their Victory Pile to KO.`, 'blocked');
+  }
   return { targets: [] };
 }
 
@@ -1008,12 +1346,17 @@ function villainEffectKoHero(
       // other players still auto-pick, because pending choices are current-player
       // scoped (D-24284). A forced KO (no more Heroes than owed, or every copy
       // identical) auto-resolves with no prompt.
-      if (playerId === currentPlayer && parkZoneKoChoice(G, playerId, descriptor.zone, repetitions)) {
+      // why: D-24769 — Destroyer's `greyFilter` ('non-grey') rides into both the park and
+      // the auto-pick; absent, both take today's unfiltered path.
+      if (
+        playerId === currentPlayer &&
+        parkZoneKoChoice(G, playerId, descriptor.zone, repetitions, descriptor.greyFilter)
+      ) {
         parked = true;
         playerShare.pending = true;
         continue;
       }
-      const koedIds = koHeroesFromZoneForPlayer(G, playerId, descriptor.zone, repetitions);
+      const koedIds = koHeroesFromZoneForPlayer(G, playerId, descriptor.zone, repetitions, descriptor.greyFilter);
       for (const koedId of koedIds) {
         targets.push(koedId);
         targetZones.push(descriptor.zone);
@@ -1047,9 +1390,15 @@ function villainEffectKoHero(
   }
   // why: D-24644 — `targets` still names the other players' auto-KOs; pending marks
   // the current player's parked pick (named at resolve time by resolveKoHeroChoice).
-  return parked
+  const application: VillainEffectApplication = parked
     ? { targets, pending: true, targetsByPlayer, targetZones }
     : { targets, targetsByPlayer, targetZones };
+  // why: D-24783 — a grey-filtered KO (Destroyer's 'non-grey') says so in the log
+  // ("had no non-grey Hero to KO"); absent, the application is byte-identical.
+  if (descriptor.greyFilter !== undefined) {
+    application.greyFilter = descriptor.greyFilter;
+  }
+  return application;
 }
 
 /**
@@ -1067,6 +1416,7 @@ function villainEffectKoHero(
  * @param playerId - The current player.
  * @param zone - The zone the printed effect restricts the KO to, or undefined for none.
  * @param magnitude - How many Heroes the player must KO.
+ * @param greyFilter - An optional grey-Hero filter on the KO (D-24769, Destroyer).
  * @returns True when a pending choice was parked.
  */
 function parkZoneKoChoice(
@@ -1074,15 +1424,18 @@ function parkZoneKoChoice(
   playerId: string,
   zone: 'discard' | 'hand' | undefined,
   magnitude: number,
+  greyFilter?: GreyHeroFilter,
 ): boolean {
   const zones = G.playerZones[playerId];
   if (!zones) return false;
   const allowedZones: readonly KoHeroTarget['zone'][] | undefined = zone === undefined ? undefined : [zone];
+  const greyFilterRead: KoHeroGreyFilterRead | undefined =
+    greyFilter === undefined ? undefined : { gameState: G, greyFilter };
   // why: mirror the current-player ko-hero parker (WP-492 / D-24298): a choice exists
   // only when the player can spare some Heroes AND the options are not all identical.
   // A KO never grows the option count, so a forced start stays forced throughout.
-  if (countKoableHeroes(zones, allowedZones) <= magnitude) return false;
-  if (buildKoEligibleTargets(zones, allowedZones).length < 2) return false;
+  if (countKoableHeroes(zones, allowedZones, greyFilterRead) <= magnitude) return false;
+  if (buildKoEligibleTargets(zones, allowedZones, greyFilterRead).length < 2) return false;
   if (!G.pendingKoHeroChoices) G.pendingKoHeroChoices = [];
   const entry: PendingKoHeroChoice = { choiceType: 'ko-hero', playerID: playerId };
   // why: D-24669 — an unqualified KO carries no `zones` field (absent ≡ "your Heroes",
@@ -1093,6 +1446,10 @@ function parkZoneKoChoice(
   // why: omit `remaining` for a single KO (absent ≡ 1), matching the WP-492 parker.
   if (magnitude >= 2) {
     entry.remaining = magnitude;
+  }
+  // why: D-24769 — omit-when-absent, so every unfiltered park keeps its shape.
+  if (greyFilter !== undefined) {
+    entry.greyFilter = greyFilter;
   }
   G.pendingKoHeroChoices.push(entry);
   return true;
@@ -1520,15 +1877,71 @@ export function villainCardHasEscapeAbility(
  * `villainDeck.reveal.ts` (The Leader's onAmbush) via `villainCardPlaysVillainDeckCards`
  * + `playTopVillainDeckCards`, and `fightVillain.ts` (Endless Armies' onFight) the
  * same way. Reachable no-op, never hollow.
+ *
+ * WP-837 / D-24770 — a gated descriptor (The Leader: "Reveal a Strength Hero or play a
+ * card") logs the current player's automatic reveal; it still mutates only the
+ * hash-excluded log, so the primitive stays a deliberate no-op.
  */
 function villainEffectPlayVillainDeckCards(
-  _G: LegendaryGameState,
-  _currentPlayer: string,
+  G: LegendaryGameState,
+  currentPlayer: string,
   _cardId: CardExtId,
-  _timing: VillainAbilityTiming,
-  _descriptor: VillainEffectDescriptor,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
+  // why: D-24281 — the reveal costs nothing and the play only hurts, so the current player
+  // reveals automatically when able; the same predicate decides the fire site's play count.
+  if (currentPlayerRevealsForVillainDeckPlay(G, descriptor, currentPlayer)) {
+    const requirement = describeRevealRequirement(descriptor.requireKind!, descriptor.requireValue!);
+    pushLog(
+      G,
+      `${villainEffectTimingLabel(timing)} effect: Player ${currentPlayer} revealed ${articleFor(requirement)} ${requirement} Hero, so no card is played from the Villain Deck.`,
+      'blocked',
+    );
+  }
   return { targets: [] };
+}
+
+/**
+ * Whether the current player reveals past a gated `play-villain-deck-cards` (WP-837 /
+ * D-24770): the descriptor carries a trait gate and the player has a matching Hero in
+ * hand or still in play.
+ *
+ * @param G - Game state (read-only).
+ * @param descriptor - The `play-villain-deck-cards` descriptor.
+ * @param currentPlayer - The player whose turn it is, or undefined.
+ * @returns True when the gate is present and the player meets it.
+ */
+function currentPlayerRevealsForVillainDeckPlay(
+  G: LegendaryGameState,
+  descriptor: VillainEffectDescriptor,
+  currentPlayer: string | undefined,
+): boolean {
+  if (descriptor.requireKind === undefined || descriptor.requireValue === undefined) {
+    return false;
+  }
+  if (currentPlayer === undefined) {
+    return false;
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (zones === undefined) {
+    return false;
+  }
+  return playerHasHeroMatchingTrait(G, zones, descriptor.requireKind, descriptor.requireValue);
+}
+
+/**
+ * Picks the indefinite article for a trait label (`an X-Men`, `a Ranged`).
+ *
+ * @param label - The display label from `describeRevealRequirement`.
+ * @returns `an` when the label starts with A, E, I, O, U or X; otherwise `a`.
+ */
+function articleFor(label: string): string {
+  // why: "X-Men" is read "ex-men", so X takes `an` like a vowel.
+  if (/^[AEIOUX]/.test(label)) {
+    return 'an';
+  }
+  return 'a';
 }
 
 /**
@@ -1544,15 +1957,21 @@ function villainEffectPlayVillainDeckCards(
  * returns the marked count (from the descriptor's `magnitude`) instead of a
  * boolean. Pure lookup over G.villainAbilityHooks; no mutation.
  *
+ * WP-837 / D-24770 — a gated descriptor (`requireKind` + `requireValue`, The Leader)
+ * plays nothing when the current player reveals a matching Hero, and nothing when no
+ * current player is given (fail closed). An ungated descriptor ignores `currentPlayer`.
+ *
  * @param G - Game state (read-only).
  * @param cardId - The triggering card's zone-instance ext_id.
  * @param timing - The timing to inspect ('onAmbush' | 'onFight' | 'onEscape').
+ * @param currentPlayer - The player whose turn it is (needed only for a gated play).
  * @returns The play count N (default 1 when a descriptor omits `magnitude`), or 0.
  */
 export function villainCardPlaysVillainDeckCards(
   G: LegendaryGameState,
   cardId: CardExtId,
   timing: VillainAbilityTiming,
+  currentPlayer?: string,
 ): number {
   // why: guard against G states / test mocks lacking villainAbilityHooks (mirrors
   // the executeVillainAbilities + villainCardEscapeTriggersSchemeTwist guard) —
@@ -1564,6 +1983,15 @@ export function villainCardPlaysVillainDeckCards(
   for (const hook of hooks) {
     for (const descriptor of hook.effects ?? []) {
       if (descriptor.primitive === 'play-villain-deck-cards') {
+        // why: WP-837 / D-24770 — one predicate with the handler's log line (D-24281
+        // auto-reveal); a gated read with no current player fails closed.
+        const isGated = descriptor.requireKind !== undefined && descriptor.requireValue !== undefined;
+        if (isGated && currentPlayer === undefined) {
+          return 0;
+        }
+        if (isGated && currentPlayerRevealsForVillainDeckPlay(G, descriptor, currentPlayer)) {
+          return 0;
+        }
         // why: the parser always sets `magnitude` (the `:N` count); a malformed
         // hand-built test hook lacking it falls back to 1 rather than returning 0
         // (a marked line always plays at least one card).
@@ -1614,7 +2042,7 @@ function villainEffectTimingLabel(timing: VillainAbilityTiming): string {
  * @returns True when the trait matches the predicate.
  */
 // why: D-24290 — the per-card trait match, extracted at the third caller
-// (playerHasHeroMatchingTrait, countPlayerHeroesMatchingTrait, and the
+// (playerHasHeroMatchingTrait, listPlayerHeroesMatchingTrait, and the
 // ko-heroes-current-by-trait handler) per the duplicate-first / abstract-on-third
 // rule (§Abstraction). A `team` predicate matches `trait.team`; a `hero-class`
 // predicate matches `trait.heroClass`. `value` is normalized at parse time, so
@@ -1634,6 +2062,41 @@ function cardTraitMatches(
   // is 'hero-class' — total without a default branch.
   // why: WP-703 / D-24523 — a dual-class card matches on either printed class.
   return trait.heroClass === value || trait.heroClass2 === value;
+}
+
+/**
+ * Returns whether a card IN PLAY matches the trait predicate, counting its effective
+ * Hero Class (printed hc / hc2 OR a class granted when played) and its effective team
+ * (printed team OR a team granted when played).
+ *
+ * @param G - Game state (reads G.cardTraits, G.cardSizeChangingClasses, G.cardCopiedClasses and G.cardCopiedTeams).
+ * @param playedCardId - The in-play card being tested.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug to match.
+ * @returns True when the played card matches the predicate.
+ */
+// why: D-24724 — a played card counts as each class it was granted on play: Rogue's Copy
+// Powers ("This card is both Covert and the color you copy", G.cardCopiedClasses since
+// D-24730) and Size-Changing (G.cardSizeChangingClasses) both grant one, and
+// cardHasClassWhenPlayed is the single effective-class source
+// (D-24074). Reading raw G.cardTraits here undercounted Maestro (live match kIZGg6MXhua).
+// The hand stays on offPlayCardTraits (a grant applies only in play).
+// why: D-24726 — the team half of the same fix: Copy Powers is a full duplicate and also
+// counts as the copied Hero's team (D-24391, G.cardCopiedTeams), read through
+// cardHasTeamWhenPlayed. Baron Zemo rescued 3, not 4, with Copy Powers copying an Avenger
+// (live match xW_Kmg0UF8s, 27.2.16). Deliberately NOT cardCountsAsTeamMember: the basic
+// S.H.I.E.L.D.-token widening stays local to the Destroyer KO (D-24296).
+function playedCardTraitMatches(
+  G: LegendaryGameState,
+  playedCardId: CardExtId,
+  kind: 'team' | 'hero-class',
+  value: string,
+): boolean {
+  if (kind === 'hero-class') {
+    return cardHasClassWhenPlayed(G, playedCardId, value);
+  }
+  // why: the kind union is closed to 'team' | 'hero-class', so the remaining case is 'team'.
+  return cardHasTeamWhenPlayed(G, playedCardId, value);
 }
 
 // why: D-24281 (AMENDED 2026-07-31) — scans HAND + IN-PLAY, matching the D-24076
@@ -1671,49 +2134,120 @@ function playerHasHeroMatchingTrait(
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
   for (const playedCardId of playedCardIdsStillInPlay(G, zones.inPlay)) {
-    if (cardTraitMatches(G.cardTraits[playedCardId], kind, value)) {
+    if (playedCardTraitMatches(G, playedCardId, kind, value)) {
       return true;
     }
   }
   return false;
 }
 
+/** One Hero a trait count counted, and the zone it was counted from (D-24729). */
+interface TraitCountedHero {
+  cardId: CardExtId;
+  zone: 'hand' | 'played';
+}
+
 /**
- * Returns HOW MANY of a player's Heroes — in hand OR in play — match the trait
- * predicate (the count sibling of `playerHasHeroMatchingTrait`, D-24290).
+ * Returns WHICH of a player's Heroes — in hand OR in play — match the trait predicate
+ * (the count sibling of `playerHasHeroMatchingTrait`, D-24290). The count is the
+ * list's length.
  *
  * Same hand+in-play scope and same `G.cardTraits` snapshot as its boolean sibling;
- * used by `rescue-bystanders-current-by-trait-count` (Baron Zemo) to size the
- * rescue by the number of matching Heroes rather than a mere has/has-not.
+ * used by `rescue-bystanders-current-by-trait-count` (Baron Zemo) and
+ * `ko-heroes-current-count-by-trait` (Maestro) to size the effect by the number of
+ * matching Heroes rather than a mere has/has-not.
  *
  * @param G - Game state (reads G.cardTraits and the split-face map).
  * @param zones - The player's zones (hand + inPlay are scanned).
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
- * @returns The number of matching Heroes across hand + in-play.
+ * @returns The matching Heroes across hand + in-play, hand first, in zone order.
  */
-function countPlayerHeroesMatchingTrait(
+// why: D-24729 — returns the counted cards, not just the number, so the Zemo / Maestro
+// log lines can name what they counted. The game log never lists the cards a player left
+// in hand, so without the names a live-verify cannot tell a Copy Powers copy from a
+// matching Hero left unplayed. The scan itself is unchanged.
+function listPlayerHeroesMatchingTrait(
   G: LegendaryGameState,
   zones: PlayerZones,
   kind: 'team' | 'hero-class',
   value: string,
-): number {
-  let count = 0;
+): TraitCountedHero[] {
+  const counted: TraitCountedHero[] = [];
   // why: WP-772 / D-24604 — hand (off play) reads the split-face map's both-halves view; inPlay
   // reads the chosen face only (same zone split as playerHasHeroMatchingTrait).
   for (const handCardId of zones.hand) {
     if (cardTraitMatches(offPlayCardTraits(G, handCardId), kind, value)) {
-      count += 1;
+      counted.push({ cardId: handCardId, zone: 'hand' });
     }
   }
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
   for (const playedCardId of playedCardIdsStillInPlay(G, zones.inPlay)) {
-    if (cardTraitMatches(G.cardTraits[playedCardId], kind, value)) {
-      count += 1;
+    if (playedCardTraitMatches(G, playedCardId, kind, value)) {
+      counted.push({ cardId: playedCardId, zone: 'played' });
     }
   }
-  return count;
+  return counted;
+}
+
+/**
+ * Names one counted Hero with where it was counted from, for a trait-count log line.
+ *
+ * A hand card reads `Name (hand)`; a played card whose printed trait matches reads
+ * `Name (played)`. A played card that matches only through a trait granted on play reads
+ * `Name (played, copied avengers)` for a team (Copy Powers, the only team grant) or
+ * `Name (played, granted strength)` for a class (Copy Powers or Size-Changing).
+ *
+ * @param G - Game state (reads G.cardTraits and G.cardDisplayData).
+ * @param counted - The counted Hero and its zone.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug that was matched.
+ * @returns The labeled card name.
+ */
+// why: D-24729 — a printed match and a granted match are told apart by re-testing the
+// printed G.cardTraits row: cardHasTeamWhenPlayed / cardHasClassWhenPlayed check that row
+// first and fall back to the grant, so "matched but not by print" means "by grant". The
+// copied card itself is not in G; the Copy Powers play line ("… copied X.") names it.
+function describeTraitCountedHero(
+  G: LegendaryGameState,
+  counted: TraitCountedHero,
+  kind: 'team' | 'hero-class',
+  value: string,
+): string {
+  const name = resolveCardDisplayName(G, counted.cardId);
+  if (counted.zone === 'hand') {
+    return `${name} (hand)`;
+  }
+  if (cardTraitMatches(G.cardTraits[counted.cardId], kind, value)) {
+    return `${name} (played)`;
+  }
+  if (kind === 'team') {
+    return `${name} (played, copied ${value})`;
+  }
+  return `${name} (played, granted ${value})`;
+}
+
+/**
+ * Joins the counted Heroes into the `: A (hand), B (played)` tail of a trait-count line.
+ *
+ * @param G - Game state.
+ * @param countedHeroes - The counted Heroes, in scan order.
+ * @param kind - The predicate kind ('team' | 'hero-class').
+ * @param value - The normalized trait slug that was matched.
+ * @returns The `: names` tail, or an empty string when nothing was counted.
+ */
+function describeTraitCountedHeroes(
+  G: LegendaryGameState,
+  countedHeroes: readonly TraitCountedHero[],
+  kind: 'team' | 'hero-class',
+  value: string,
+): string {
+  if (countedHeroes.length === 0) {
+    return '';
+  }
+  const names = countedHeroes.map((counted) => describeTraitCountedHero(G, counted, kind, value));
+  return `: ${names.join(', ')}`;
 }
 
 /**
@@ -1723,10 +2257,11 @@ function countPlayerHeroesMatchingTrait(
  * Sabretooth's "Fight: Each player reveals an X-Men Hero or gains a Wound." and the
  * core siblings (Frost Giant, Ymir, Ultron, Zzzax) across Fight / Ambush / Escape timings.
  *
- * Auto-resolved (a Wound-averse player always reveals when able, so no player
- * choice is parked) and deterministic — each player in
- * `Object.keys(G.playerZones).sort()`, the hand+in-play trait predicate, one Wound on
- * no match. Self-narrates via `pushLog` (like scry-ko, reveal-or-wound is not a
+ * Each player, starting with the current player and going clockwise (D-24780), is tested with the hand+in-play
+ * trait predicate: a player with no match gains one Wound at once; the players with a
+ * match are queued on `G.pendingRevealOrWoundChoices` and each chooses after the move
+ * whether to reveal or gain the Wound (WP-845 / D-24779, rules v23 L3196-3200).
+ * Deterministic. Self-narrates via `pushLog` (like scry-ko, reveal-or-wound is not a
  * legacy keyword — `descriptorToLegacyKeyword` returns undefined, so no
  * `VillainEffectResult` is recorded and the generic `<timing> effect:` line never
  * fires). Returns `{ targets: [] }`; the log line is the user-visible surface.
@@ -1759,7 +2294,7 @@ function composeEmptyWoundSupplyClause(emptySupplyPlayerIds: readonly string[]):
 function villainEffectRevealOrWound(
   G: LegendaryGameState,
   currentPlayer: string,
-  _cardId: CardExtId,
+  cardId: CardExtId,
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
@@ -1774,11 +2309,15 @@ function villainEffectRevealOrWound(
     return { targets: [] };
   }
 
-  // why: sorted player-id iteration for replay determinism (D-18902), matching
-  // the each-player gain-wound / ko-hero paths.
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780, amends
+  // D-24281's sorted order). The queued revealers are re-sorted ascending by
+  // enqueueRevealOrWoundChoice, so WP-845's apply stays ascending (D-24501).
   const woundedPlayerIds: string[] = [];
+  const gainedPlayerIds: string[] = [];
+  const divingBlockPendingPlayerIds: string[] = [];
   const emptySupplyPlayerIds: string[] = [];
-  for (const playerId of Object.keys(G.playerZones).sort()) {
+  const revealingPlayerIds: string[] = [];
+  for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
     const zones = G.playerZones[playerId];
     if (!zones) {
       continue;
@@ -1791,21 +2330,12 @@ function villainEffectRevealOrWound(
         requireValue,
       )
     ) {
-      // why: the player HAS a matching Hero in hand or in play — no Wound, no
-      // mutation (D-24281 amended: in-play Heroes count, see the helper).
-      // why: WP-646 / D-24458 + WP-651 / D-24463 — this reveal AVOIDED a villain
-      // reveal-or-wound; announce it with a strikeBlocked, one per revealing
-      // player (the WP-644/645 push idiom; setup guarantees the array). The threat
-      // class depends on the timing that fired — onAmbush → 'ambush', onFight →
-      // 'fight', onEscape → 'escape' (the total map above). The wound/log
-      // behaviour is otherwise unchanged.
-      const threatKind = STRIKE_BLOCK_THREAT_KIND_BY_TIMING[timing];
-      G.notableEvents.push({
-        type: 'strikeBlocked',
-        playerId,
-        threatKind,
-        narrative: composeStrikeBlockedNarrative(threatKind),
-      });
+      // why: WP-845 / D-24779 (amends D-24281 Semantics) — rules v23 "Revealing a Card"
+      // (L3196-3200) lets a player who HAS a matching Hero (hand or play) decline and take the
+      // Wound instead, so the player is queued for a choice after the move. The predicate is
+      // fixed now, at effect time. Their WP-646 / WP-651 strikeBlocked moves to the apply,
+      // pushed only when they Reveal.
+      revealingPlayerIds.push(playerId);
       continue;
     }
     // why: no matching Hero in hand or in play — gain one Wound. Empty pile is a reachable
@@ -1818,7 +2348,11 @@ function villainEffectRevealOrWound(
     }
     // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a Master-Strike Wound
     // to a Diving-Block holder (often a NON-active seat) gets the reveal window (WP-684).
-    gainWoundForPlayer(G, playerId);
+    if (gainWoundWithOutcome(G, playerId) === 'diving-block-pending') {
+      divingBlockPendingPlayerIds.push(playerId);
+    } else {
+      gainedPlayerIds.push(playerId);
+    }
     if (playerId === currentPlayer) {
       // why: woundsDrawn projects the CURRENT player's wounds only (UI economy) —
       // bump it only for the current player, parity with gain-wound:each and the
@@ -1839,7 +2373,15 @@ function villainEffectRevealOrWound(
   // from the log alone what the player needed (match BvcATHgYM5k, Ymir's Ambush).
   const requirement = describeRevealRequirement(requireKind, requireValue);
   const emptySupplyClause = composeEmptyWoundSupplyClause(emptySupplyPlayerIds);
-  if (woundedPlayerIds.length > 0) {
+  if (divingBlockPendingPlayerIds.length > 0) {
+    // why: D-24673 — a Diving Block reveal is pending, so that Wound is not gained yet;
+    // the reveal / decline line that follows gives the outcome.
+    pushLog(
+      G,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no ${requirement} Hero: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}${emptySupplyClause}.`,
+      'applied',
+    );
+  } else if (woundedPlayerIds.length > 0) {
     const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
     pushLog(
       G,
@@ -1856,13 +2398,52 @@ function villainEffectRevealOrWound(
       `${label} effect: the Wound supply is empty, so no Wound was gained (${names} had no ${requirement} Hero).`,
       'blocked',
     );
-  } else {
+  } else if (revealingPlayerIds.length === 0) {
+    // why: WP-845 / D-24779 — reachable only with no seats at all now: a player who could
+    // reveal is queued below and has not chosen yet, so "every player revealed" would be false.
     // why: "an" before a vowel sound — the vowels plus "X" (read "ex"), as in the printed
     // "reveals an X-Men Hero".
     const article = /^[AEIOUX]/.test(requirement) ? 'an' : 'a';
     pushLog(G, `${label} effect: every player revealed ${article} ${requirement} Hero.`, 'blocked');
   }
+  if (revealingPlayerIds.length > 0) {
+    queueVillainRevealOrWoundChoice(G, currentPlayer, cardId, timing, requirement, revealingPlayerIds);
+  }
   return { targets: [] };
+}
+
+/**
+ * Queues the players who can reveal for a reveal-or-gain-a-Wound choice after the move, and
+ * logs who will choose (WP-845 / D-24779). The entry carries the timing's shield-block class
+ * so the apply can push each revealer's `strikeBlocked` (WP-646 / WP-651).
+ *
+ * @param G - Game state (queue appended, log appended).
+ * @param currentPlayer - The turn's current player.
+ * @param cardId - The Villain whose effect fired.
+ * @param timing - The timing that fired (selects the shield-block class).
+ * @param requirement - The trait label (e.g. `X-Men`).
+ * @param revealingPlayerIds - The players who can reveal, in seat order.
+ */
+function queueVillainRevealOrWoundChoice(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  requirement: string,
+  revealingPlayerIds: readonly string[],
+): void {
+  enqueueRevealOrWoundChoice(G, {
+    sourceCardId: cardId,
+    currentPlayerID: currentPlayer,
+    revealOptionLabel: `Reveal a matching ${requirement} Hero`,
+    revealingSeats: [...revealingPlayerIds],
+    strikeBlockThreatKind: STRIKE_BLOCK_THREAT_KIND_BY_TIMING[timing],
+  });
+  pushLog(
+    G,
+    `${villainEffectTimingLabel(timing)} effect: ${formatRevealOrWoundPlayerNames(revealingPlayerIds)} can reveal a matching ${requirement} Hero and will choose whether to reveal it or gain a Wound.`,
+    'neutral',
+  );
 }
 
 // why: D-24679 — display labels for the team slugs whose printed name is not a simple
@@ -1936,6 +2517,8 @@ function villainEffectDrawCardsCurrent(
   const handSizeBefore = zones.hand.length;
   drawCardsIntoHand(zones, drawCount, shuffleContext);
   const drawn = zones.hand.length - handSizeBefore;
+  // why: D-24732 — the defeating player's Fight draw is an extra card drawn this turn.
+  G.turnEconomy.cardsDrawn += drawn;
   // why: D-24290 — all three Tier-A primitives are Fight-timed (the markers are
   // authored under `.fight`), so the label is hardcoded "Fight effect:" as the
   // scry-ko handler does for the Fight-only Doombot; a draw that moved 0 cards
@@ -2017,6 +2600,9 @@ function villainEffectRevealTopDrawIfCostLte(
   }
   zones.deck = moveResult.from;
   zones.hand = moveResult.to;
+  // why: D-24732 — "draw it" is a real draw by the current player (only the draw lock is
+  // waived above), so it counts as an extra card drawn this turn.
+  G.turnEconomy.cardsDrawn += 1;
   pushLog(G, `Fight effect: revealed "${topName}" (cost ${String(cost)}) — drew it.`, 'applied', topCardId);
   return { targets: [topCardId] };
 }
@@ -2034,7 +2620,7 @@ function villainEffectKoUpToFromDiscardCurrent(
   G: LegendaryGameState,
   currentPlayer: string,
   cardId: CardExtId,
-  _timing: VillainAbilityTiming,
+  timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
   const maxCount = descriptor.magnitude;
@@ -2046,6 +2632,9 @@ function villainEffectKoUpToFromDiscardCurrent(
     return { targets: [] };
   }
   const sourceName = resolveCardDisplayName(G, cardId);
+  if (descriptor.greyFilter !== undefined) {
+    return parkGreyKoUpToFromDiscard(G, currentPlayer, cardId, timing, maxCount, descriptor.greyFilter);
+  }
   if (zones.discard.length === 0) {
     pushLog(G, `Fight effect: your discard pile is empty (${sourceName}); nothing to KO.`, 'blocked');
     return { targets: [] };
@@ -2065,6 +2654,213 @@ function villainEffectKoUpToFromDiscardCurrent(
   G.pendingKoDiscardChoices.push(entry);
   pushLog(G, `Fight effect: KO up to ${String(maxCount)} cards from your discard pile (${sourceName}).`, 'neutral');
   return { targets: [], pending: true };
+}
+
+/**
+ * The filtered branch of ko-up-to-from-discard-current (WP-836 / D-24769): the current
+ * player may KO up to `maxCount` grey Heroes from their discard pile (co2e Destroyer
+ * "KO up to two grey Heroes", Frost Giant Warrior / Ymir "You may KO a grey Hero").
+ *
+ * Parks the PendingKoDiscardChoice with `greyFilter` when at least one discard card
+ * passes the filter; otherwise logs a `blocked` no-op and parks nothing.
+ *
+ * @param G - Game state (the pending queue is lazily created on a park).
+ * @param currentPlayer - The defeating player.
+ * @param cardId - The villain whose Fight parked the choice.
+ * @param timing - The timing that fired (names the log line).
+ * @param maxCount - The most cards the player may KO.
+ * @param greyFilter - The grey-Hero filter the KO is limited to.
+ * @returns `{ pending: true }` on a park, else `{ targets: [] }`.
+ */
+function parkGreyKoUpToFromDiscard(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  maxCount: number,
+  greyFilter: GreyHeroFilter,
+): VillainEffectApplication {
+  const zones = G.playerZones[currentPlayer];
+  if (!zones) {
+    return { targets: [] };
+  }
+  const label = villainEffectTimingLabel(timing);
+  const sourceName = resolveCardDisplayName(G, cardId);
+  // why: "up to" / "may" — the choice parks whenever an eligible card exists (the Salomé
+  // shape); with none, the prompt would offer nothing, so it is a logged no-op instead.
+  const hasEligibleCard = zones.discard.some((discardCardId) => matchesGreyHeroFilter(G, discardCardId, greyFilter));
+  if (!hasEligibleCard) {
+    pushLog(G, `${label} effect: no ${greyFilter} Heroes in your discard pile (${sourceName}); nothing to KO.`, 'blocked');
+    return { targets: [] };
+  }
+  if (!G.pendingKoDiscardChoices) {
+    G.pendingKoDiscardChoices = [];
+  }
+  const entry: PendingKoDiscardChoice = {
+    choiceType: 'ko-from-discard',
+    playerID: currentPlayer,
+    maxCount,
+    sourceCardId: cardId,
+    greyFilter,
+  };
+  G.pendingKoDiscardChoices.push(entry);
+  pushLog(
+    G,
+    `${label} effect: KO up to ${String(maxCount)} ${greyFilter} Hero(es) from your discard pile (${sourceName}).`,
+    'neutral',
+  );
+  return { targets: [], pending: true };
+}
+
+/**
+ * gain-recruit-current-count-by-trait primitive — the current (defeating) player gains
+ * +1 recruit for each of their Heroes matching the trait (co2e Abomination "Fight: You
+ * get +1 Recruit for each of your [hc:strength] Heroes.", WP-836 / D-24769).
+ *
+ * "Your Heroes" is the hand + the cards played this turn still in play, read through the
+ * Maestro / Baron Zemo counter. Keyword-less, so it self-narrates via `pushLog`.
+ */
+function villainEffectGainRecruitCurrentCountByTrait(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const kind = descriptor.requireKind;
+  const value = descriptor.requireValue;
+  const zones = G.playerZones[currentPlayer];
+  if (kind === undefined || value === undefined || !zones) {
+    return { targets: [] };
+  }
+  // why: rules v23 L3436-3447 — "your Heroes" = hand + still in play (D-24529 / D-24692),
+  // the same counter Maestro and Baron Zemo read, so the three can never count differently.
+  const countedHeroes = listPlayerHeroesMatchingTrait(G, zones, kind, value);
+  const label = villainEffectTimingLabel(timing);
+  const heroCount = countedHeroes.length;
+  if (heroCount === 0) {
+    pushLog(G, `${label} effect: you have no ${value} Heroes, so no recruit was gained.`, 'blocked');
+    return { targets: [] };
+  }
+  G.turnEconomy.recruit += heroCount;
+  const names = describeTraitCountedHeroes(G, countedHeroes, kind, value);
+  pushLog(
+    G,
+    `${label} effect: gained +${String(heroCount)} recruit for your ${String(heroCount)} ${value} Hero(es)${names}.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
+ * draw-cards-current-count-by-trait primitive — the current (defeating) player counts
+ * their Heroes matching the trait, then draws that many cards (co2e Beetle "Fight: Count
+ * your [hc:covert] Heroes, then draw that many cards.", WP-836 / D-24769).
+ *
+ * Keyword-less, so it self-narrates via `pushLog`. Without a shuffle source it no-ops
+ * silently (the `draw-cards-current` precedent: a draw may reshuffle the discard).
+ */
+function villainEffectDrawCardsCurrentCountByTrait(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const kind = descriptor.requireKind;
+  const value = descriptor.requireValue;
+  const zones = G.playerZones[currentPlayer];
+  if (kind === undefined || value === undefined || !zones) {
+    return { targets: [] };
+  }
+  // why: "Count …, then draw" — the count (and the names) are taken before the draw, so a
+  // drawn Covert Hero never counts itself.
+  const countedHeroes = listPlayerHeroesMatchingTrait(G, zones, kind, value);
+  const heroCount = countedHeroes.length;
+  const label = villainEffectTimingLabel(timing);
+  if (heroCount === 0) {
+    pushLog(G, `${label} effect: you have no ${value} Heroes, so no cards were drawn.`, 'blocked');
+    return { targets: [] };
+  }
+  if (shuffleContext === undefined) {
+    return { targets: [] };
+  }
+  const names = describeTraitCountedHeroes(G, countedHeroes, kind, value);
+  const handSizeBefore = zones.hand.length;
+  drawCardsIntoHand(zones, heroCount, shuffleContext);
+  const drawn = zones.hand.length - handSizeBefore;
+  // why: D-24732 — the defeating player's Fight draw is an extra card drawn this turn.
+  G.turnEconomy.cardsDrawn += drawn;
+  pushLog(
+    G,
+    `${label} effect: drew ${String(drawn)} card(s) for your ${String(heroCount)} ${value} Hero(es)${names}.`,
+    drawn > 0 ? 'applied' : 'blocked',
+  );
+  return { targets: [] };
+}
+
+/**
+ * reveal-top-ko-grey-or-draw-by-class primitive — the current (defeating) player reveals
+ * the top card of their deck: a grey Hero is KO'd, a card with one of the listed Hero
+ * Classes is drawn, anything else stays on top (co2e Savage Land Mutates "Fight: Reveal
+ * the top card of your deck. If it's grey, KO it. If it's [hc:strength] or
+ * [hc:instinct], draw it.", WP-836 / D-24769).
+ *
+ * Keyword-less, so it self-narrates via `pushLog`, each line referencing the revealed card.
+ */
+function villainEffectRevealTopKoGreyOrDrawByClass(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  shuffleContext?: ShuffleProvider,
+): VillainEffectApplication {
+  const drawHeroClasses = descriptor.drawHeroClasses;
+  const zones = G.playerZones[currentPlayer];
+  if (drawHeroClasses === undefined || !zones) {
+    return { targets: [] };
+  }
+  const label = villainEffectTimingLabel(timing);
+  // why: D-24285 — a reveal on an empty deck reshuffles the discard first (a no-op on an
+  // empty discard or a missing shuffle source, so an exhausted deck falls through below).
+  if (zones.deck.length === 0) {
+    reshuffleDiscardIntoDeck(zones, shuffleContext);
+  }
+  const topCardId = zones.deck[0];
+  if (topCardId === undefined) {
+    pushLog(G, `${label} effect: no card to reveal — your deck and discard pile are empty.`, 'blocked');
+    return { targets: [] };
+  }
+  const topName = resolveCardDisplayName(G, topCardId);
+  // why: the three outcomes are disjoint — a grey card has no class, so it can never also be
+  // Strength or Instinct. A Wound is not grey (rules v23 L3404-3407) and has no class, so it
+  // stays on top: "reveal" with no destination leaves the card there (L3201-3207).
+  if (isGreyHero(G, topCardId)) {
+    zones.deck = zones.deck.slice(1);
+    G.ko = koCard(G.ko, topCardId);
+    pushLog(G, `${label} effect: revealed "${topName}" (grey) — KO'd it.`, 'applied', topCardId);
+    return { targets: [topCardId] };
+  }
+  const topTraits = offPlayCardTraits(G, topCardId);
+  const drawnClass = drawHeroClasses.find((heroClass) => cardTraitMatches(topTraits, 'hero-class', heroClass));
+  if (drawnClass === undefined) {
+    pushLog(G, `${label} effect: revealed "${topName}" — left on top of your deck.`, 'blocked', topCardId);
+    return { targets: [] };
+  }
+  // why: "draw it" is a real draw (deck → hand, counted in cardsDrawn, D-24732), moved
+  // directly rather than through the hero-effect draw path, so the draw lock does not
+  // apply — the Patriarch / WP-731 precedent for villain-driven draws.
+  const moveResult = moveCardFromZone(zones.deck, zones.hand, topCardId);
+  if (!moveResult.found) {
+    return { targets: [] };
+  }
+  zones.deck = moveResult.from;
+  zones.hand = moveResult.to;
+  G.turnEconomy.cardsDrawn += 1;
+  pushLog(G, `${label} effect: revealed "${topName}" (${drawnClass}) — drew it.`, 'applied', topCardId);
+  return { targets: [topCardId] };
 }
 
 /**
@@ -2206,6 +3002,307 @@ function villainEffectGainRecruitCurrent(
   // Ninjas is Fight-timed) for correctness at any fire site.
   const label = villainEffectTimingLabel(timing);
   pushLog(G, `${label} effect: gained +${String(recruitGain)} recruit.`, 'applied');
+  return { targets: [] };
+}
+
+/**
+ * gain-recruit-current-per-hero-class primitive — the current (defeating) player
+ * gains +1 recruit for each distinct Hero Class they have (Captain Zolandia "Fight:
+ * You get +1 Recruit for each Hero Class you have.", D-24750 / WP-817).
+ *
+ * Adds the count to `G.turnEconomy.recruit`. Keyword-less, so it self-narrates via
+ * `pushLog`; a count of 0 logs a `blocked` line and adds nothing. Returns
+ * `{ targets: [] }` (a recruit gain touches no card).
+ */
+function villainEffectGainRecruitCurrentPerHeroClass(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+): VillainEffectApplication {
+  // why: D-24529 / D-24694 — "Hero Classes you have" is the hero side's counter over the
+  // cards in hand and the cards played this turn that are still in play (rules v23
+  // L3436-3446); reusing it means Captain America's Avengers Assemble! and Zolandia can
+  // never count differently.
+  const heroClassCount = countDistinctHeroClassesYouHave(G, currentPlayer);
+  const label = villainEffectTimingLabel(timing);
+  if (heroClassCount === 0) {
+    pushLog(G, `${label} effect: you have no Hero Classes in hand or play, so no recruit was gained.`, 'blocked');
+    return { targets: [] };
+  }
+  G.turnEconomy.recruit += heroClassCount;
+  pushLog(
+    G,
+    `${label} effect: gained +${String(heroClassCount)} recruit for the ${String(heroClassCount)} Hero Class(es) you have.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
+ * discard-hero-each-player-by-cost primitive — records that every player owes a
+ * discard of a Hero whose cost is one of `descriptor.eligibleCosts` (Primus "Escape:
+ * each player discards a Hero that costs 2, 3, 5, or 7.", D-24750 / WP-817).
+ *
+ * Mutates only the lazy `G.pendingEscapeEffectDiscards` queue; the escape opener
+ * (villainEscapeProcedure.ts) opens the every-player seat choice after the move.
+ * Keyword-less, self-narrates. Returns `{ targets: [] }`.
+ */
+function villainEffectDiscardHeroEachPlayerByCost(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const eligibleCosts = descriptor.eligibleCosts;
+  if (eligibleCosts === undefined || eligibleCosts.length === 0) {
+    pushLog(G, `${label} effect: no discard costs were given; no effect.`, 'blocked');
+    return { targets: [] };
+  }
+  // why: D-24750 — the executor has no `events`, so it cannot park the multi-seat choice
+  // itself; it records the owed discard for the escape opener, which drains it after
+  // every owed escape procedure (lazy-init here, never in Game.setup).
+  if (G.pendingEscapeEffectDiscards === undefined) {
+    G.pendingEscapeEffectDiscards = [];
+  }
+  G.pendingEscapeEffectDiscards.push({ escapedCardId: cardId, eligibleCosts: [...eligibleCosts] });
+  pushLog(
+    G,
+    `${label} effect: each player must discard a Hero that costs ${formatEligibleCostList(eligibleCosts)}.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
+ * discard-hero-each-player-by-trait primitive — records that every player owes a
+ * discard of a Hero with the descriptor's trait (co2e Mystique "Ambush: Each player
+ * discards an X-Men Hero.", D-24770 / WP-837).
+ *
+ * Mutates only the lazy `G.pendingEscapeEffectDiscards` queue; the escape opener opens
+ * the every-player seat choice after the move. Keyword-less, self-narrates.
+ */
+function villainEffectDiscardHeroEachPlayerByTrait(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  return recordOwedTraitDiscard(G, cardId, timing, descriptor, false);
+}
+
+/**
+ * discard-hero-or-wound-each-player-by-trait primitive — the same owed discard, where
+ * each player may gain a Wound instead (co2e Frost Giant Warrior "Ambush: Each player
+ * discards a Ranged Hero or gains a Wound.", D-24770 / WP-837).
+ */
+function villainEffectDiscardHeroOrWoundEachPlayerByTrait(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  return recordOwedTraitDiscard(G, cardId, timing, descriptor, true);
+}
+
+/**
+ * Records an owed every-player trait discard on WP-817's queue and narrates it (shared by
+ * the two trait-discard primitives, D-24770).
+ *
+ * @param G - Game state (mutated: the lazy queue and the hash-excluded log).
+ * @param cardId - The Villain whose effect owes the discard.
+ * @param timing - The timing that fired.
+ * @param descriptor - The descriptor carrying `requireKind` + `requireValue`.
+ * @param hasWoundAlternative - Whether a player may gain a Wound instead.
+ * @returns `{ targets: [] }`.
+ */
+function recordOwedTraitDiscard(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  hasWoundAlternative: boolean,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const requireKind = descriptor.requireKind;
+  const requireValue = descriptor.requireValue;
+  if (requireKind === undefined || requireValue === undefined) {
+    pushLog(G, `${label} effect: no Hero trait was given; no effect.`, 'blocked');
+    return { targets: [] };
+  }
+  const requirementLabel = describeRevealRequirement(requireKind, requireValue);
+  // why: D-24770 — the executor has no `events`, so like Primus's Escape (D-24750) the
+  // handler records the owed discard and the turn.onMove opener parks it after the move.
+  // One FIFO keeps rule order (an escape in the same reveal records first).
+  if (G.pendingEscapeEffectDiscards === undefined) {
+    G.pendingEscapeEffectDiscards = [];
+  }
+  G.pendingEscapeEffectDiscards.push({
+    escapedCardId: cardId,
+    eligibleCosts: [],
+    traitFilter: { requireKind, requireValue, requirementLabel, effectLabel: label, hasWoundAlternative },
+  });
+  let woundClause = '';
+  if (hasWoundAlternative) {
+    woundClause = ' or gain a Wound';
+  }
+  pushLog(
+    G,
+    `${label} effect: each player must discard ${articleFor(requirementLabel)} ${requirementLabel} Hero${woundClause}.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
+ * The card-name keys of a card (WP-837 / D-24770): the card slug of its base id, and of
+ * both faces' base ids for a split card.
+ *
+ * @param G - Game state (read-only; the split-face map).
+ * @param cardId - A Hero card instance id (`{set}/{hero}/{card}#{n}`).
+ * @returns The card slugs; empty for an id without three `/` segments.
+ */
+// why: a card's name key is its card slug (the third `/` segment), so reprints of one
+// printed name under different sets match (core vs co2e Cyclops); a split card counts as
+// both faces' names off play (rules v23 L2773-2778).
+function cardNameKeysOf(G: LegendaryGameState, cardId: CardExtId): string[] {
+  const baseIds: string[] = [];
+  const pair = resolveSplitFacePair(G, cardId);
+  if (pair === null) {
+    baseIds.push(cardId.split('#')[0]!);
+  } else {
+    baseIds.push(pair.faceA.split('#')[0]!);
+    baseIds.push(pair.faceB.split('#')[0]!);
+  }
+  const keys: string[] = [];
+  for (const baseId of baseIds) {
+    const segments = baseId.split('/');
+    if (segments.length === 3) {
+      keys.push(segments[2]!);
+    }
+  }
+  return keys;
+}
+
+/**
+ * Whether any of a card's name keys is in the HQ key set (D-24770).
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The hand card to test.
+ * @param hqKeys - The union of the HQ Heroes' card-name keys.
+ * @returns True when the card shares a card name with an HQ Hero.
+ */
+function cardSharesNameWithHq(G: LegendaryGameState, cardId: CardExtId, hqKeys: ReadonlySet<string>): boolean {
+  for (const key of cardNameKeysOf(G, cardId)) {
+    if (hqKeys.has(key)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * discard-hand-matching-hq-card-names-each-player primitive — every player discards each
+ * hand card that shares a card name with a Hero in the HQ (co2e Juggernaut's Ambush, first
+ * half, D-24770 / WP-837). Auto-resolves; keyword-less, self-narrates.
+ */
+function villainEffectDiscardHandMatchingHqCardNamesEachPlayer(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const hqKeys = new Set<string>();
+  for (const hqCardId of G.hq) {
+    if (hqCardId === null || hqCardId === undefined) {
+      continue;
+    }
+    for (const key of cardNameKeysOf(G, hqCardId)) {
+      hqKeys.add(key);
+    }
+  }
+  if (hqKeys.size === 0) {
+    pushLog(G, `${label} effect: the HQ is empty, so no player discards.`, 'blocked');
+    return { targets: [] };
+  }
+  let hasAnyDiscard = false;
+  // why: D-24780 — start with the current player, then clockwise (rules v23 L2247): the
+  // discards fire return-on-discard / teleport reactions, whose queues fill in loop order.
+  for (const seat of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
+    const zones = G.playerZones[seat];
+    if (zones === undefined) {
+      continue;
+    }
+    const discardedNames: string[] = [];
+    for (const handCardId of [...zones.hand]) {
+      if (cardSharesNameWithHq(G, handCardId, hqKeys) && discardFromHand(G, seat, handCardId)) {
+        discardedNames.push(resolveCardDisplayName(G, handCardId));
+      }
+    }
+    if (discardedNames.length > 0) {
+      hasAnyDiscard = true;
+      pushLog(
+        G,
+        `${label} effect: Player ${seat} discarded ${discardedNames.join(', ')} (same card name as a Hero in the HQ).`,
+        'applied',
+      );
+    }
+  }
+  if (!hasAnyDiscard) {
+    pushLog(G, `${label} effect: no player had a card with the same card name as a Hero in the HQ.`, 'blocked');
+  }
+  return { targets: [] };
+}
+
+/**
+ * hq-heroes-to-hero-deck-bottom primitive — every HQ Hero goes to the bottom of the Hero
+ * Deck in slot order, then the HQ refills (co2e Juggernaut's Ambush, second half,
+ * D-24770 / WP-837). Auto-resolves; keyword-less, self-narrates.
+ */
+function villainEffectHqHeroesToHeroDeckBottom(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const movedNames: string[] = [];
+  // why: rules v23 L749-753 — move every Hero first (a snapshot), then refill; refilling
+  // as each slot empties would draw a Hero just sent to the bottom when the deck is short.
+  // `G.hqHaunters` is never touched: a haunter stays on its space (rules v23 L1539-1541).
+  for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
+    const hqCardId = G.hq[hqIndex];
+    if (hqCardId === null || hqCardId === undefined) {
+      continue;
+    }
+    G.heroDeck.push(hqCardId);
+    G.hq[hqIndex] = null;
+    movedNames.push(resolveCardDisplayName(G, hqCardId));
+  }
+  if (movedNames.length === 0) {
+    pushLog(G, `${label} effect: the HQ is empty; no Hero was put on the bottom of the Hero Deck.`, 'blocked');
+    return { targets: [] };
+  }
+  for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
+    if (G.hq[hqIndex] !== null && G.hq[hqIndex] !== undefined) {
+      continue;
+    }
+    const result = refillHqSlot(G.hq, hqIndex, G.heroDeck);
+    G.hq = result.hq;
+    G.heroDeck = result.heroDeck;
+  }
+  pushLog(
+    G,
+    `${label} effect: put ${String(movedNames.length)} Hero(es) from the HQ on the bottom of the Hero Deck (${movedNames.join(', ')}); the HQ refilled.`,
+    'applied',
+  );
   return { targets: [] };
 }
 
@@ -2511,24 +3608,26 @@ const BASIC_SHIELD_EXT_IDS: ReadonlySet<CardExtId> = new Set([
  * teamless basic-S.H.I.E.L.D. cards (D-24296).
  *
  * Deliberately local to the Destroyer KO handler: the shared `cardTraitMatches`,
- * `playerHasHeroMatchingTrait`, and `countPlayerHeroesMatchingTrait` are LEFT
+ * `playerHasHeroMatchingTrait`, and `listPlayerHeroesMatchingTrait` are LEFT
  * UNCHANGED, so the corpus-wide `[team:shield]` synergies and Baron Zemo's
  * rescue-by-count are unaffected (narrow fix — operator ruling 2026-08-03).
  *
- * @param trait - The card's trait entry (the off-play view for a hand card), or undefined.
+ * @param isTraitMatch - Whether the card already matches the predicate (the zone's own read).
  * @param cardId - The card being tested.
  * @param kind - The predicate kind ('team' | 'hero-class').
  * @param value - The normalized trait slug to match.
  * @returns True if the card matches the trait, or is a basic S.H.I.E.L.D. card
  *   under a `team:shield` predicate.
  */
+// why: D-24724 / D-24726 — the caller passes the zone's own match (off-play traits for the hand, the
+// effective class and team for in-play), so this helper adds only the basic-S.H.I.E.L.D. widening.
 function koHeroMatchesTraitOrBasicShield(
-  trait: CardTraitEntry | undefined,
+  isTraitMatch: boolean,
   cardId: CardExtId,
   kind: 'team' | 'hero-class',
   value: string,
 ): boolean {
-  if (cardTraitMatches(trait, kind, value)) {
+  if (isTraitMatch) {
     return true;
   }
   // why: only a team:shield predicate rescues the teamless basic-S.H.I.E.L.D. cards;
@@ -2578,7 +3677,8 @@ function villainEffectKoHeroesCurrentByTrait(
   // why: WP-772 / D-24604 — the hand is off play, so a split card there matches on either half's
   // class (via the split-face map); the in-play loop below keeps the chosen face only.
   for (const cardId of zones.hand) {
-    if (koHeroMatchesTraitOrBasicShield(offPlayCardTraits(G, cardId), cardId, requireKind, requireValue)) {
+    const isHandMatch = cardTraitMatches(offPlayCardTraits(G, cardId), requireKind, requireValue);
+    if (koHeroMatchesTraitOrBasicShield(isHandMatch, cardId, requireKind, requireValue)) {
       targets.push(cardId);
       targetZones.push('hand');
     } else {
@@ -2587,7 +3687,8 @@ function villainEffectKoHeroesCurrentByTrait(
   }
   const remainingInPlay: CardExtId[] = [];
   for (const cardId of zones.inPlay) {
-    if (koHeroMatchesTraitOrBasicShield(G.cardTraits[cardId], cardId, requireKind, requireValue)) {
+    const isInPlayMatch = playedCardTraitMatches(G, cardId, requireKind, requireValue);
+    if (koHeroMatchesTraitOrBasicShield(isInPlayMatch, cardId, requireKind, requireValue)) {
       targets.push(cardId);
       targetZones.push('inPlay');
     } else {
@@ -2652,12 +3753,15 @@ function villainEffectKoHeroesCurrentCountByTrait(
   // Heroes). The scan covers hand + in-play because "your Heroes" includes Heroes played
   // this turn — they sit in `inPlay`, since the Fight effect resolves after the play
   // phase (the operator ruling precedent from `villainEffectKoHeroesCurrentByTrait`).
-  const owedFromTrait = countPlayerHeroesMatchingTrait(
+  const countedHeroes = listPlayerHeroesMatchingTrait(
     G,
     zones,
     requireKind,
     requireValue,
   );
+  const owedFromTrait = countedHeroes.length;
+  // why: D-24729 — named BEFORE the KO loop below moves any counted card to the KO pile.
+  const countedNames = describeTraitCountedHeroes(G, countedHeroes, requireKind, requireValue);
 
   // why: D-24353 — this loop + park block is the `villainEffectKoHero` `target: 'current'`
   // body DUPLICATED verbatim with a trait-derived count in place of `descriptor.magnitude`.
@@ -2705,14 +3809,14 @@ function villainEffectKoHeroesCurrentCountByTrait(
   if (parked) {
     pushLog(
       G,
-      `Fight effect: KO ${String(owed)} of your Heroes (one per your ${requireValue} Hero) — choose which.`,
+      `Fight effect: KO ${String(owed)} of your Heroes (one per your ${requireValue} Hero${countedNames}) — choose which.`,
       'neutral',
     );
   } else if (targets.length > 0) {
     const names = targets.map((koedId, targetIndex) => nameKoTarget(G, koedId, targetZones[targetIndex])).join(', ');
     pushLog(
       G,
-      `Fight effect: KO'd ${String(targets.length)} of your Heroes (${names}) — one per your ${requireValue} Hero.`,
+      `Fight effect: KO'd ${String(targets.length)} of your Heroes (${names}) — one per your ${requireValue} Hero${countedNames}.`,
       'applied',
     );
   } else {
@@ -2760,12 +3864,13 @@ function villainEffectRescueBystandersCurrentByTraitCount(
   if (!zones) {
     return { targets: [] };
   }
-  const rescueCount = countPlayerHeroesMatchingTrait(
+  const countedHeroes = listPlayerHeroesMatchingTrait(
     G,
     zones,
     requireKind,
     requireValue,
   );
+  const rescueCount = countedHeroes.length;
   // why: D-24290 — "rescue a Bystander" = award one from the supply to the current
   // player's Victory Pile, reusing the `capture-bystander` onFight player-award
   // mechanism (attach one to the triggering card, then award it). At the Fight fire
@@ -2811,9 +3916,16 @@ function villainEffectRescueBystandersCurrentByTraitCount(
     );
     return { targets: [] };
   }
+  // why: D-24729 — name the counted Heroes and where each was counted from. When the supply
+  // ran out first, say so, so a list longer than the rescue doesn't read as a miscount.
+  const countedNames = describeTraitCountedHeroes(G, countedHeroes, requireKind, requireValue);
+  let supplyClause = '';
+  if (rescued < rescueCount) {
+    supplyClause = `; the Bystander supply ran out after ${String(rescued)}`;
+  }
   pushLog(
     G,
-    `Fight effect: rescued ${String(rescued)} Bystander(s) (one per your ${requireValue} Hero).`,
+    `Fight effect: rescued ${String(rescued)} Bystander(s) (one per your ${requireValue} Hero${countedNames}${supplyClause}).`,
     'applied',
   );
   return { targets: [] };
@@ -2825,7 +3937,7 @@ function villainEffectRescueBystandersCurrentByTraitCount(
  * The engine's first HQ-by-trait scan: it iterates the five `G.hq` slots, skips the
  * empty (`null`) ones, and counts those whose `G.cardTraits` entry matches via the
  * shared `cardTraitMatches`. Deliberately separate from the player-zone scanners
- * (`countPlayerHeroesMatchingTrait`), which read hand + in-play — this reads the HQ.
+ * (`listPlayerHeroesMatchingTrait`), which read hand + in-play — this reads the HQ.
  *
  * @param G - Game state (reads G.hq, G.cardTraits and the split-face map).
  * @param kind - The predicate kind ('team' | 'hero-class').
@@ -3399,11 +4511,12 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
   const setAbbr = cardId.slice(0, infixIndex);
   const groupPrefix = `${setAbbr}${villainInfix}${group}-`;
 
-  // why: sorted player-id iteration for replay determinism (D-18902), matching
-  // reveal-or-wound / gain-wound:each.
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
   const woundedPlayerIds: string[] = [];
+  const gainedPlayerIds: string[] = [];
+  const divingBlockPendingPlayerIds: string[] = [];
   const emptySupplyPlayerIds: string[] = [];
-  for (const playerId of Object.keys(G.playerZones).sort()) {
+  for (const playerId of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
     const zones = G.playerZones[playerId];
     if (!zones) {
       continue;
@@ -3421,7 +4534,11 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
     }
     // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so Diving Block sees this
     // group-villain Wound source (NON-active recipients via the WP-684 wave).
-    gainWoundForPlayer(G, playerId);
+    if (gainWoundWithOutcome(G, playerId) === 'diving-block-pending') {
+      divingBlockPendingPlayerIds.push(playerId);
+    } else {
+      gainedPlayerIds.push(playerId);
+    }
     if (playerId === currentPlayer) {
       // why: woundsDrawn projects the CURRENT player's wounds only (UI economy) —
       // parity with reveal-or-wound / gain-wound:each; a non-current wounded player
@@ -3436,7 +4553,14 @@ function villainEffectGainWoundUnlessVictoryVillainGroup(
   // a wound landed → `applied`; every player was safe → `blocked`.
   const label = villainEffectTimingLabel(timing);
   const emptySupplyClause = composeEmptyWoundSupplyClause(emptySupplyPlayerIds);
-  if (woundedPlayerIds.length > 0) {
+  if (divingBlockPendingPlayerIds.length > 0) {
+    // why: D-24673 — a Diving Block reveal is pending, so that Wound is not gained yet.
+    pushLog(
+      G,
+      `${label} effect: ${String(woundedPlayerIds.length)} player(s) had no other ${group} Villain in their Victory Pile: ${composeWoundOutcomeClause(gainedPlayerIds, divingBlockPendingPlayerIds)}${emptySupplyClause}.`,
+      'applied',
+    );
+  } else if (woundedPlayerIds.length > 0) {
     const names = woundedPlayerIds.map((playerId) => `Player ${playerId}`).join(', ');
     pushLog(
       G,
@@ -3535,6 +4659,23 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   // Salomé (ko-up-to-from-discard-current:2) Fights; both keyword-less, self-narrating.
   'reveal-top-draw-if-cost-lte': villainEffectRevealTopDrawIfCostLte,
   'ko-up-to-from-discard-current': villainEffectKoUpToFromDiscardCurrent,
+  // why: WP-816 / D-24749 — Executioner's Escape; keyword-less, self-narrating.
+  'ko-bystander-each-victory-pile': villainEffectKoBystanderEachVictoryPile,
+  // why: WP-817 / D-24750 — Captain Zolandia's Fight and Primus's Escape; both
+  // keyword-less, self-narrating. Primus's Escape only records the owed discard.
+  'gain-recruit-current-per-hero-class': villainEffectGainRecruitCurrentPerHeroClass,
+  'discard-hero-each-player-by-cost': villainEffectDiscardHeroEachPlayerByCost,
+  // why: WP-836 / D-24769 — co2e Abomination, Beetle and Savage Land Mutates Fights; all
+  // keyword-less, self-narrating.
+  'gain-recruit-current-count-by-trait': villainEffectGainRecruitCurrentCountByTrait,
+  'draw-cards-current-count-by-trait': villainEffectDrawCardsCurrentCountByTrait,
+  'reveal-top-ko-grey-or-draw-by-class': villainEffectRevealTopKoGreyOrDrawByClass,
+  // why: WP-837 / D-24770 — co2e Mystique, Frost Giant Warrior and Juggernaut Ambushes;
+  // all keyword-less, self-narrating. The two trait discards only record the owed discard.
+  'discard-hero-each-player-by-trait': villainEffectDiscardHeroEachPlayerByTrait,
+  'discard-hero-or-wound-each-player-by-trait': villainEffectDiscardHeroOrWoundEachPlayerByTrait,
+  'discard-hand-matching-hq-card-names-each-player': villainEffectDiscardHandMatchingHqCardNamesEachPlayer,
+  'hq-heroes-to-hero-deck-bottom': villainEffectHqHeroesToHeroDeckBottom,
 };
 
 /**
@@ -3696,12 +4837,18 @@ function koHeroesFromZoneForPlayer(
   playerId: string,
   zone: 'discard' | 'hand',
   magnitude: number,
+  greyFilter?: GreyHeroFilter,
 ): CardExtId[] {
   const zones = G.playerZones[playerId];
   if (!zones) return [];
   const koedIds: CardExtId[] = [];
   for (let iteration = 0; iteration < magnitude; iteration++) {
-    const target = selectKoHeroTarget(zones[zone]);
+    // why: D-24769 — a filtered KO (Destroyer, 'non-grey') picks only among the cards
+    // that pass the filter; absent, today's starter-first pick is unchanged.
+    const target =
+      greyFilter === undefined
+        ? selectKoHeroTarget(zones[zone])
+        : selectKoHeroTargetByGreyFilter(G, zones[zone], greyFilter);
     if (target === null) {
       // why: the zone holds no more heroes — stop (no fallback to another zone).
       break;
@@ -3759,6 +4906,47 @@ export function selectKoHeroTarget(zone: CardExtId[]): CardExtId | null {
   return startingSelected ?? otherSelected;
 }
 
+/**
+ * Selects the auto-KO target in a zone for a grey-filtered KO, or null (WP-836 / D-24769).
+ *
+ * Only cards passing `matchesGreyHeroFilter` are candidates. `'grey'` reuses
+ * `selectKoHeroTarget` (starter-first, then lexical); `'non-grey'` takes the lowest-cost
+ * candidate, ties broken by the lexically smallest ext_id.
+ *
+ * @param G - Game state (reads G.cardTraits, G.cardStats and the split-face map).
+ * @param zoneCards - The zone's cards (not mutated).
+ * @param greyFilter - The grey-Hero filter the KO is limited to.
+ * @returns The KO target ext_id, or null when no card passes the filter.
+ */
+export function selectKoHeroTargetByGreyFilter(
+  G: LegendaryGameState,
+  zoneCards: readonly CardExtId[],
+  greyFilter: GreyHeroFilter,
+): CardExtId | null {
+  const candidates: CardExtId[] = [];
+  for (const candidate of zoneCards) {
+    if (matchesGreyHeroFilter(G, candidate, greyFilter)) {
+      candidates.push(candidate);
+    }
+  }
+  if (greyFilter === 'grey') {
+    return selectKoHeroTarget(candidates);
+  }
+  // why: D-24769 — "each player KOs a non-grey Hero" is each player's choice; the rational
+  // pick is the cheapest one. The D-24644 starter-first rule cannot apply because starters
+  // are grey. The bot and every other seat take this same pick (D-24009 parity).
+  let selected: CardExtId | null = null;
+  let selectedCost = 0;
+  for (const candidate of candidates) {
+    const cost = offPlayCardStats(G, candidate)?.cost ?? 0;
+    if (selected === null || cost < selectedCost || (cost === selectedCost && candidate < selected)) {
+      selected = candidate;
+      selectedCost = cost;
+    }
+  }
+  return selected;
+}
+
 // ---------------------------------------------------------------------------
 // Interactive KO-a-Hero helpers (WP-242)
 // ---------------------------------------------------------------------------
@@ -3779,11 +4967,13 @@ export function selectKoHeroTarget(zone: CardExtId[]): CardExtId | null {
  *
  * @param zones - The player's card zones.
  * @param allowedZones - The zones the KO may take from; absent means "your Heroes".
+ * @param greyFilterRead - An optional grey-Hero filter (D-24769); cards failing it are skipped.
  * @returns The eligible KO targets in deterministic scan order.
  */
 export function buildKoEligibleTargets(
   zones: PlayerZones,
   allowedZones?: readonly KoHeroTarget['zone'][],
+  greyFilterRead?: KoHeroGreyFilterRead,
 ): KoHeroTarget[] {
   // why: per-zone (zone, cardId) dedupe — the same ext_id can legitimately
   // appear twice within one zone (e.g., two starting-shield-agent in discard);
@@ -3802,6 +4992,12 @@ export function buildKoEligibleTargets(
       // why: a wound is never a "hero" for KO purposes (D-18503 carries
       // forward); wounds are excluded even when sitting in an otherwise-valid zone.
       if (cardId === WOUND_EXT_ID) continue;
+      if (
+        greyFilterRead !== undefined &&
+        !matchesGreyHeroFilter(greyFilterRead.gameState, cardId, greyFilterRead.greyFilter)
+      ) {
+        continue;
+      }
       const key = `${zoneName}:${cardId}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -3825,11 +5021,13 @@ export function buildKoEligibleTargets(
  *
  * @param zones - The player's card zones.
  * @param allowedZones - The zones the KO may take from; absent means "your Heroes".
+ * @param greyFilterRead - An optional grey-Hero filter (D-24769); cards failing it are not counted.
  * @returns The number of non-wound cards in the allowed zones.
  */
 export function countKoableHeroes(
   zones: PlayerZones,
   allowedZones?: readonly KoHeroTarget['zone'][],
+  greyFilterRead?: KoHeroGreyFilterRead,
 ): number {
   let count = 0;
   const orderedZones: KoHeroTarget['zone'][] = ['discard', 'hand', 'inPlay'];
@@ -3841,6 +5039,12 @@ export function countKoableHeroes(
     for (const cardId of zones[zoneName]) {
       // why: a wound is never a "hero" for KO purposes (D-18503) — excluded here too.
       if (cardId === WOUND_EXT_ID) continue;
+      if (
+        greyFilterRead !== undefined &&
+        !matchesGreyHeroFilter(greyFilterRead.gameState, cardId, greyFilterRead.greyFilter)
+      ) {
+        continue;
+      }
       count += 1;
     }
   }

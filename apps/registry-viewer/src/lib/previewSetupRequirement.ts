@@ -21,6 +21,7 @@ import {
   getPlayerCountSetup,
   resolveEffectiveHeroCount,
   resolveEffectiveHenchmenCount,
+  resolveEffectiveVillainGroupCount,
   type PlayerCountSetupRow,
 } from "@legendary-arena/registry/playerCountSetup";
 
@@ -28,7 +29,10 @@ import {
 export interface PreviewSetupRequirement {
   /** The preview's player count (1–5). */
   readonly playerCount: number;
-  /** The required counts, with a scheme-aware `heroCount` and `henchmenGroupCount`. */
+  /**
+   * The required counts, with a scheme-aware `heroCount`, `henchmenGroupCount`
+   * and `villainGroupCount`.
+   */
   readonly row: PlayerCountSetupRow;
 }
 
@@ -40,8 +44,8 @@ export interface PreviewSetupRequirement {
  * @param previewDocument - The URL-driven preview document (carries playerCount
  *   and composition.schemeId), or null when no URL params are present.
  * @returns The required counts (villain groups / henchmen / heroes /
- *   villain-deck bystanders) with `heroCount` and `henchmenGroupCount` resolved
- *   for the scheme, or null.
+ *   villain-deck bystanders) with `heroCount`, `henchmenGroupCount` and
+ *   `villainGroupCount` resolved for the scheme, or null.
  */
 export function resolveSetupRequirement(
   previewDocument: MatchSetupDocument | null,
@@ -55,12 +59,18 @@ export function resolveSetupRequirement(
   }
   // why: WP-526 / D-24337 — the hero count is scheme-aware (Secret Invasion
   // requires 6), and so is the Henchman count (D-24666 — "Add an extra Henchman
-  // group" requires base + 1). Spread a NEW row so the immutable
+  // group" requires base + 1), and so is the Villain Group count (D-24766 — "Add
+  // an extra Villain Group" requires base + 1). Spread a NEW row so the immutable
   // single-source-of-truth PLAYER_COUNT_SETUP row is never mutated.
   return {
     playerCount: previewDocument.playerCount,
     row: {
       ...baseRow,
+      villainGroupCount: resolveEffectiveVillainGroupCount(
+        previewDocument.composition.schemeId,
+        previewDocument.playerCount,
+        baseRow.villainGroupCount,
+      ),
       henchmenGroupCount: resolveEffectiveHenchmenCount(
         previewDocument.composition.schemeId,
         previewDocument.playerCount,

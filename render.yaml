@@ -3,7 +3,7 @@
 # Production left Render on 2026-10-12 (D-24707) for a self-hosted DigitalOcean
 # droplet, provisioned and deployed by the `legendary-arena-lab` repo's
 # infra/scripts. Render's services, database, and this Blueprint were deleted in
-# Phase 7 on 2026-10-16; the database's final dump is under `render-final/` in the
+# Phase 7 on 2026-10-22; the database's final dump is under `render-final/` in the
 # production R2 backup bucket and pCloud.
 #
 # Kept only as the inventory of the server's secret names (`sync: false` envVars)

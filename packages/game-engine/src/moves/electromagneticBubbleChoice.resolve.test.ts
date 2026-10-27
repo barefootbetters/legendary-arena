@@ -141,6 +141,15 @@ describe('resolveElectromagneticBubble resolver (WP-695 / D-24512)', () => {
     assert.deepStrictEqual(zones.discard, [XMEN_B]);
   });
 
+  // why: D-24731 — a played Copy Powers card that copied an X-Men Hero is an X-Men Hero this
+  // play (D-24391), the reading countTeamHeroesYouHave already uses for Xavier's Nemesis.
+  it('D-24731: offers a played Copy Powers card that copied an X-Men team', () => {
+    const G = makeTestGameState({ inPlay: [NON_XMEN], cardTraits: { [NON_XMEN]: { team: 'avengers' } } });
+    G.cardCopiedTeams = { [NON_XMEN]: ['x-men'] };
+    resolveElectromagneticBubble(G, '0');
+    assert.deepStrictEqual(G.deferredHandInjections?.['0'], [NON_XMEN], 'the copy is the sole eligible Hero');
+  });
+
   it('does not false-match a heroClass-only card (team-only eligibility)', () => {
     const G = makeTestGameState({ inPlay: [NON_XMEN], cardTraits: { [NON_XMEN]: { heroClass: 'x-men' } } });
     resolveElectromagneticBubble(G, '0');

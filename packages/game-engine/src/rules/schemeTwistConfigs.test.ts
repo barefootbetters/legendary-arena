@@ -217,6 +217,18 @@ function configPiles(schemeId: string): readonly string[] {
   return [condition.pile];
 }
 
+// why: WP-829 / D-24762 — a D-pure scheme whose Twist now does something keeps its pile-runout loss
+// (still asserted below) but no longer uses the counter-only resolver. Each exception is named.
+const AUDIT_PURE_RESOLVER_EXCEPTIONS: Record<string, string> = {
+  'ca75/go-back-in-time-to-slay-heroes-ancestors': 'go-back-in-time',
+};
+
+// why: WP-830 / D-24763 — a printed-count scheme whose Twist now does something keeps its printed N
+// (still asserted below) but no longer uses the counter-only resolver. Each exception is named.
+const AUDIT_PRINTED_RESOLVER_EXCEPTIONS: Record<string, string> = {
+  'ca75/unbreakable-enigma-code-the': 'enigma-code',
+};
+
 describe('WP-763 §Audit configuration (D-24595)', () => {
   it('A: 27 printed twist-count schemes carry exactly their printed N', () => {
     let entryCount = 0;
@@ -224,7 +236,7 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
       for (const schemeId of schemeIds) {
         const config = SCHEME_TWIST_CONFIGS.get(schemeId);
         assert.equal(config?.lossThreshold, Number(threshold), schemeId);
-        assert.equal(config?.resolverId, 'counter-only', schemeId);
+        assert.equal(config?.resolverId, AUDIT_PRINTED_RESOLVER_EXCEPTIONS[schemeId] ?? 'counter-only', schemeId);
         assert.equal(config?.resourceLossCondition, undefined, schemeId);
         assert.equal(config?.twistFallbackWithResourceLoss, undefined, schemeId);
         entryCount = entryCount + 1;
@@ -239,7 +251,7 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
       for (const schemeId of schemeIds) {
         const config = SCHEME_TWIST_CONFIGS.get(schemeId);
         assert.deepEqual(configPiles(schemeId), piles, schemeId);
-        assert.equal(config?.resolverId, 'counter-only', schemeId);
+        assert.equal(config?.resolverId, AUDIT_PURE_RESOLVER_EXCEPTIONS[schemeId] ?? 'counter-only', schemeId);
         assert.equal(config?.lossThreshold, undefined, schemeId);
         assert.equal(config?.twistFallbackWithResourceLoss, undefined, schemeId);
         entryCount = entryCount + 1;
@@ -263,8 +275,8 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
     assert.equal(entryCount, 25);
   });
 
-  it('the registry holds exactly the 8 core entries plus the 67 audit entries', () => {
-    assert.equal(SCHEME_TWIST_CONFIGS.size, 8 + 67);
+  it('the registry holds exactly the 8 core entries, the 67 audit entries, Clash (D-24736), Brainwash the Military (D-24756) and Change the Outcome of WWII (D-24765)', () => {
+    assert.equal(SCHEME_TWIST_CONFIGS.size, 8 + 67 + 3);
     let coreCount = 0;
     for (const schemeId of SCHEME_TWIST_CONFIGS.keys()) {
       if (schemeId.startsWith('core/')) {
@@ -290,7 +302,6 @@ describe('WP-763 §Audit configuration (D-24595)', () => {
 
   it('the Excluded schemes stay unconfigured (they use the last-twist fallback)', () => {
     const excluded = [
-      'chmp/clash-of-the-monsters-unleashed',
       'chmp/divide-and-conquer',
       'noir/five-families-of-crime',
       'rvlt/secret-hydra-corruption',

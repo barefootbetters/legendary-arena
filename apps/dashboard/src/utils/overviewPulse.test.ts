@@ -440,6 +440,30 @@ test('DR overdue reads the drill with Off track; current reads On track', () => 
   assert.equal(unknownResult.valueLabel, '2026-09-01 · Unknown');
 });
 
+test('DR overdue quarterly rebuild reads Off track even with the monthly drill current', () => {
+  const rebuildOverdue = describeDrDrillCard({
+    data: readiness({
+      rebuildDrill: { lastRebuild: null, nextDue: '2026-10-01', overdue: true },
+    }),
+    error: null,
+    source: 'LIVE',
+  });
+  assert.deepEqual(rebuildOverdue, { valueLabel: '2026-09-01 · PASS', status: 'off-track' });
+
+  const rebuildCurrent = describeDrDrillCard({
+    data: readiness({
+      rebuildDrill: {
+        lastRebuild: { date: '2026-10-22', result: 'pass' },
+        nextDue: '2027-01-01',
+        overdue: false,
+      },
+    }),
+    error: null,
+    source: 'LIVE',
+  });
+  assert.equal(rebuildCurrent.status, 'on-track');
+});
+
 test('DR fetch errors of every kind read "—" with no chip', () => {
   const errors = [
     { message: 'denied', code: '401', retryable: false },

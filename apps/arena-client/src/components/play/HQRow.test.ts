@@ -239,3 +239,18 @@ describe('HQRow — heal lock (D-24180 / D-24614)', () => {
     );
   });
 });
+
+describe('HQRow — a City larger than five spaces (WP-831 / D-24764)', () => {
+  test('each extra City space adds a blank leading cell when column-aligned, none otherwise', () => {
+    const { submitMove } = recorder();
+    const aligned = mount(HQRow, {
+      props: { hq: fullHq(), decks: DECKS, currentStage: 'main', economy: economy(), submitMove, isColumnAligned: true, extraCitySpaces: 1 },
+    });
+    assert.equal(aligned.findAll('[data-testid="play-hq-extra-spacer"]').length, 1);
+    assert.equal(aligned.findAll('[data-testid="play-hq-hero"]').length + aligned.findAll('[data-testid="play-hq-empty"]').length, 5, 'the HQ is still five');
+    const normal = mount(HQRow, {
+      props: { hq: fullHq(), decks: DECKS, currentStage: 'main', economy: economy(), submitMove, isColumnAligned: true },
+    });
+    assert.equal(normal.findAll('[data-testid="play-hq-extra-spacer"]').length, 0);
+  });
+});

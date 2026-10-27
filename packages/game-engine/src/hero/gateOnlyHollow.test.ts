@@ -174,7 +174,7 @@ describe('gate-only hooks at play time (D-24623)', () => {
       'a failed gate is a reachable outcome, never hollow');
     const gateLine = gameState.messages.find((entry) => entry.text.includes('did not activate'));
     assert.ok(gateLine !== undefined, 'the failed gate is still logged');
-    assert.ok(gateLine.text.includes('it needs another covert Hero played this turn'),
+    assert.ok(gateLine.text.includes('it needs another Covert Hero played this turn'),
       'the failed condition is still named');
     assert.ok(gateLine.text.endsWith('Its effect is not supported yet.'),
       `the line must not imply a working effect: ${gateLine.text}`);

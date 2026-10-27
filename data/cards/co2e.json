@@ -276,7 +276,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "When a card effect causes you to discard this card from your hand, you may return it to your hand."
+            "When a card effect causes you to discard this card from your hand, you may return it to your hand. [keyword:return-on-discard]"
           ]
         },
         {
@@ -712,7 +712,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "Each player reveals another [hc:strength] Hero or gains a Wound."
+            "Each player reveals another [hc:strength] Hero or gains a Wound. [keyword:reveal-or-gain-wound-each]"
           ]
         },
         {
@@ -1116,7 +1116,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[hc:instinct]: Gain a Sidekick."
+            "[hc:instinct]: Gain a Sidekick. [keyword:gain-sidekick:1]"
           ]
         },
         {
@@ -2057,8 +2057,8 @@
           "vAttack": "7",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-juggernaut.webp",
           "abilities": [
-            "Ambush: Each player reveals their hand and discards all cards that have the same card names as any Heroes in the HQ. Then put all Heroes from the HQ on the bottom of the Hero Deck.",
-            "Fight: KO two of your Heroes."
+            "Ambush: Each player reveals their hand and discards all cards that have the same card names as any Heroes in the HQ. Then put all Heroes from the HQ on the bottom of the Hero Deck. [effect:discard-hand-matching-hq-card-names-each-player] [effect:hq-heroes-to-hero-deck-bottom]",
+            "Fight: KO two of your Heroes. [effect:ko-hero:current:2]"
           ],
           "copies": 2
         },
@@ -2069,8 +2069,8 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-mystique.webp",
           "abilities": [
-            "Ambush: Each player discards an [team:x-men] Hero.",
-            "Escape: Mystique becomes a Scheme Twist that takes effect immediately."
+            "Ambush: Each player discards an [team:x-men] Hero. [effect:discard-hero-each-player-by-trait:team:x-men]",
+            "Escape: Mystique becomes a Scheme Twist that takes effect immediately. [effect:become-scheme-twist]"
           ],
           "copies": 2
         },
@@ -2081,8 +2081,8 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-sabretooth.webp",
           "abilities": [
-            "Ambush: Each player reveals an [hc:instinct] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Ambush: Each player reveals an [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:instinct]"
           ],
           "copies": 2
         },
@@ -2114,9 +2114,9 @@
           "vAttack": "8",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-destroyer.webp",
           "abilities": [
-            "Ambush: Each player KOs a non-grey Hero from their discard pile.",
-            "Fight: KO up to two grey Heroes from your discard pile.",
-            "Escape: Repeat the Ambush effect."
+            "Ambush: Each player KOs a non-grey Hero from their discard pile. [effect:ko-hero:each:1:discard:non-grey]",
+            "Fight: KO up to two grey Heroes from your discard pile. [effect:ko-up-to-from-discard-current:2:grey]",
+            "Escape: Repeat the Ambush effect. [effect:ko-hero:each:1:discard:non-grey]"
           ],
           "copies": 2
         },
@@ -2139,8 +2139,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-frost-giant-warrior.webp",
           "abilities": [
-            "Ambush: Each player discards a [hc:ranged] Hero or gains a Wound.",
-            "Fight: You may KO a grey Hero from your discard pile."
+            "Ambush: Each player discards a [hc:ranged] Hero or gains a Wound. [effect:discard-hero-or-wound-each-player-by-trait:hc:ranged]",
+            "Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]"
           ],
           "copies": 2
         },
@@ -2152,7 +2152,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-ymir-frost-giant-king.webp",
           "abilities": [
             "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city.",
-            "Fight: You may KO a grey Hero from your discard pile."
+            "Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]"
           ],
           "copies": 2
         }
@@ -2173,7 +2173,7 @@
           "vAttack": "6+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-baron-strucker-supreme-hydra.webp",
           "abilities": [
-            "Baron Strucker gets +1[icon:attack] for each other HYDRA Villain in the city and/or Escape Pile.",
+            "Baron Strucker gets +1[icon:attack] for each other HYDRA Villain in the city and/or Escape Pile. [variable-attack:per-other-hydra-villain:1]",
             "Fight: Shuffle four cards from the Bystander Deck into the Villain Deck. Then play two cards from the Villain Deck."
           ],
           "copies": 2
@@ -2185,7 +2185,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-endless-armies-of-hydra.webp",
           "abilities": [
-            "Fight: Each player KOs one of their Heroes. Then play two cards from the Villain Deck."
+            "Fight: Each player KOs one of their Heroes. Then play two cards from the Villain Deck. [effect:koHeroEachPlayer] [effect:play-villain-deck-cards:2]"
           ],
           "copies": 2
         },
@@ -2208,8 +2208,8 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-hydra-viper.webp",
           "abilities": [
-            "Fight: Each player without another HYDRA Villain in their Victory Pile gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player without another HYDRA Villain in their Victory Pile gains a Wound. [effect:gain-wound-unless-victory-villain-group:hydra]",
+            "Escape: Same effect. [effect:gain-wound-unless-victory-villain-group:hydra]"
           ],
           "copies": 2
         }
@@ -2285,7 +2285,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-abomination.webp",
           "abilities": [
             "Abomination gets +[icon:attack] equal to the printed [icon:attack] of the Hero in the HQ space under his current city space.",
-            "Fight: You get +1[icon:recruit] for each of your [hc:strength] Heroes."
+            "Fight: You get +1[icon:recruit] for each of your [hc:strength] Heroes. [effect:gain-recruit-current-count-by-trait:hc:strength]"
           ],
           "copies": 2
         },
@@ -2296,7 +2296,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-maestro-wasteland-hulk.webp",
           "abilities": [
-            "Fight: Count your [hc:strength] Heroes. KO that many of your Heroes."
+            "Fight: Count your [hc:strength] Heroes. KO that many of your Heroes. [effect:ko-heroes-current-count-by-trait:hc:strength]"
           ],
           "copies": 2
         },
@@ -2307,7 +2307,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-the-leader.webp",
           "abilities": [
-            "Ambush: Reveal a [hc:strength] Hero or play a card from the Villain Deck."
+            "Ambush: Reveal a [hc:strength] Hero or play a card from the Villain Deck. [effect:play-villain-deck-cards:1:hc:strength]"
           ],
           "copies": 2
         },
@@ -2318,8 +2318,8 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-zzzax.webp",
           "abilities": [
-            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound. [effect:reveal-or-wound:hc:strength]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:strength]"
           ],
           "copies": 2
         }
@@ -2351,8 +2351,8 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-scorpion.webp",
           "abilities": [
-            "Ambush: If there is another Spider-Foes Villain in the city, each player gains a Wound.",
-            "Fight: KO one of your Heroes."
+            "Ambush: If there is another Spider-Foes Villain in the city, each player gains a Wound. [effect:gain-wound:each!another-group-villain-in-city]",
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ],
           "copies": 2
         },
@@ -2363,7 +2363,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-the-lizard.webp",
           "abilities": [
-            "Fight: If you fight The Lizard in the Sewers, KO one of your Heroes and each other player gains a Wound."
+            "Fight: If you fight The Lizard in the Sewers, KO one of your Heroes and each other player gains a Wound. [effect:ko-hero:current@sewers] [effect:gain-wound:each-other@sewers]"
           ],
           "copies": 2
         },
@@ -2395,8 +2395,8 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-beetle.webp",
           "abilities": [
-            "Fight: Count your [hc:covert] Heroes, then draw that many cards.",
-            "Escape: Each player reveals a [hc:covert] Hero or gains a Wound."
+            "Fight: Count your [hc:covert] Heroes, then draw that many cards. [effect:draw-cards-current-count-by-trait:hc:covert]",
+            "Escape: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]"
           ],
           "copies": 2
         },
@@ -2418,8 +2418,8 @@
           "vAttack": "4+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-hydro-man.webp",
           "abilities": [
-            "Hydro-Man gets +2[icon:attack] in the Sewers and Bridge.",
-            "Fight: If you fight Hydro-Man in the Sewers or Bridge, KO one of your Heroes."
+            "Hydro-Man gets +2[icon:attack] in the Sewers and Bridge. [variable-attack:flat:2@sewers+bridge]",
+            "Fight: If you fight Hydro-Man in the Sewers or Bridge, KO one of your Heroes. [effect:ko-hero:current@sewers+bridge]"
           ],
           "copies": 2
         },
@@ -2449,7 +2449,7 @@
           "vAttack": "5+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-paibok-the-power-skrull.webp",
           "abilities": [
-            "Paibok gets +1[icon:attack] for each Hero Class among Heroes in the HQ.",
+            "Paibok gets +1[icon:attack] for each Hero Class among Heroes in the HQ. [variable-attack:per-hq-hero-class:1]",
             "Fight: Choose a Hero from the HQ for each player. Each player gains that Hero. [effect:give-hq-hero-each-player]"
           ],
           "copies": 2
@@ -2461,8 +2461,8 @@
           "vAttack": "2+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-skrull-queen-veranke.webp",
           "abilities": [
-            "Ambush: Skrull Queen Veranke captures the highest-cost Hero from the HQ. She gets +[icon:attack] equal to its cost.",
-            "Fight: Either KO that Hero or choose a player to gain it."
+            "Ambush: Skrull Queen Veranke captures the highest-cost Hero from the HQ. She gets +[icon:attack] equal to its cost. [effect:captureHqHeroHighestCost]",
+            "Fight: Either KO that Hero or choose a player to gain it. [effect:gain-attached-hero]"
           ],
           "copies": 2
         },
@@ -2473,8 +2473,8 @@
           "vAttack": "1+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-skrull-shapeshifter.webp",
           "abilities": [
-            "Ambush: Skrull Shapeshifter captures the rightmost Hero from the HQ. It gets +[icon:attack] equal to that Hero's cost.",
-            "Fight: Either KO that Hero or choose a player to gain it."
+            "Ambush: Skrull Shapeshifter captures the rightmost Hero from the HQ. It gets +[icon:attack] equal to that Hero's cost. [effect:captureHqHeroRightmost]",
+            "Fight: Either KO that Hero or choose a player to gain it. [effect:gain-attached-hero]"
           ],
           "copies": 2
         },
@@ -2485,8 +2485,8 @@
           "vAttack": "2+",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-skulls-super-skrull.webp",
           "abilities": [
-            "Super-Skrull gets +1[icon:attack] for each Hero Class among Heroes in the HQ.",
-            "Fight: KO one of your Heroes."
+            "Super-Skrull gets +1[icon:attack] for each Hero Class among Heroes in the HQ. [variable-attack:per-hq-hero-class:1]",
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ],
           "copies": 2
         }
@@ -2515,7 +2515,7 @@
       "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-hand-ninjas.webp",
       "abilities": [
-        "Fight: If you fight Hand Ninjas in the Sewers or Rooftops, KO one of your Heroes. Otherwise, you get +1[icon:recruit]."
+        "Fight: If you fight Hand Ninjas in the Sewers or Rooftops, KO one of your Heroes. Otherwise, you get +1[icon:recruit]. [effect:ko-hero:current@sewers+rooftops] [effect:gain-recruit-current:1@bank+streets+bridge]"
       ],
       "vAttack": "3",
       "vp": "1"
@@ -2527,7 +2527,7 @@
       "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-savage-land-mutates.webp",
       "abilities": [
-        "Fight: Reveal the top card of your deck. If it's grey, KO it. If it's [hc:strength] or [hc:instinct], draw it."
+        "Fight: Reveal the top card of your deck. If it's grey, KO it. If it's [hc:strength] or [hc:instinct], draw it. [effect:reveal-top-ko-grey-or-draw-by-class:strength+instinct]"
       ],
       "vAttack": "3",
       "vp": "1"

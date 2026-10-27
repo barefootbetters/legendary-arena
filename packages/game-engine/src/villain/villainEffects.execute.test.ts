@@ -20,15 +20,24 @@ import {
   YOUR_HEROES_KO_ZONES,
   villainCardPlaysVillainDeckCards,
   resolveEffectResultNames,
+  selectKoHeroTargetByGreyFilter,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
-import { composeEffectResultLogLine } from '../events/notableEvents.compose.js';
+import { composeEffectResultLogLine, composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
 import { resolveDiscardChoice } from '../moves/discardChoice.resolve.js';
+import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
+import { resolveSeatChoice } from '../moves/seatChoice.resolve.js';
+import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
-import type { VillainAbilityHook } from '../rules/villainAbility.types.js';
+import type {
+  VillainAbilityHook,
+  VillainEffectCondition,
+  VillainEffectDescriptor,
+} from '../rules/villainAbility.types.js';
 import { LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR } from '../rules/villainAbility.types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+import { makeMockCtx } from '../test/mockCtx.js';
 
 const WOUND = 'pile-wound' as CardExtId;
 const CTX = { currentPlayer: '0' };
@@ -164,6 +173,49 @@ describe('executeVillainAbilities — gainWoundEachPlayer', () => {
     assert.equal(G.playerZones['1']!.discard.length, 1, 'player 1 gains a wound');
     assert.equal(G.piles.wounds.length, 1, 'wound pile decreased by 2');
     assert.equal(G.turnEconomy.woundsDrawn, 1, 'only current player projected');
+  });
+});
+
+describe('executeVillainAbilities — gainWoundEachPlayer with Diving Block (D-24673)', () => {
+  it('reports who is waiting on a reveal, and the keyword line says "would gain" for them', () => {
+    const DIVING_BLOCK = 'core/captain-america/diving-block#0' as CardExtId;
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: [DIVING_BLOCK], discard: [], inPlay: [], victory: [] },
+      },
+      wounds: ['w0', 'w1', 'w2'] as CardExtId[],
+    });
+    G.heroAbilityHooks = [
+      { cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+
+    assert.deepEqual(results[0]!.woundOutcomes, {
+      gainedPlayerIds: ['0'],
+      divingBlockPendingPlayerIds: ['1'],
+    });
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(G, results)),
+      'every player gains a wound: Player 0 gained a Wound; Player 1 would gain a Wound — Diving Block can prevent it',
+    );
+  });
+
+  it('without Diving Block the result carries no split and the label is unchanged', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      wounds: ['w0', 'w1', 'w2'] as CardExtId[],
+    });
+
+    const results = executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+
+    assert.equal(results[0]!.woundOutcomes, undefined);
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(G, results)),
+      'every player gained a wound',
+    );
   });
 });
 
@@ -1279,6 +1331,23 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     };
   }
 
+  /**
+   * Opens the queued reveal-or-wound choice and answers every addressed seat with Reveal.
+   *
+   * // why: WP-845 / D-24779 — a player who can reveal is queued at effect time and chooses after
+   * the move; option 0 (Reveal) is the path that pushes the WP-646 / WP-651 strikeBlocked (moved
+   * from effect time to the apply).
+   *
+   * @param G - The game state after executeVillainAbilities.
+   */
+  function revealEveryQueuedSeat(G: LegendaryGameState): void {
+    G.counters = {};
+    openRevealOrWoundSeatChoiceIfNeeded(G, undefined, CTX.currentPlayer);
+    for (const seat of G.pendingSeatChoice?.addressedSeats ?? []) {
+      resolveSeatChoice(makeMockMoveContext(G, { playerID: seat, numPlayers: 2 }), { optionIndex: 0 });
+    }
+  }
+
   it('AC-3 team predicate (D-24281 amended): an X-Men Hero in HAND or IN PLAY avoids the Wound; none anywhere gains one', () => {
     const G = makeG({
       hooks: [rowHook('v-sabretooth', 'onFight', 'team', 'x-men')],
@@ -1297,6 +1366,58 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     assert.equal(G.piles.wounds.length, 1, 'exactly one wound left the pile');
   });
 
+  // why: D-24673 — the Wound lands before the Diving Block reveal resolves, so the line
+  // must not say "gained" for a Wound the reveal can still return (the Loki strike in
+  // match P9oVujYd2B9 had the same defect on the Master Strike path).
+  it('D-24673: Sabretooth line says "would gain" for a Diving Block holder and "gained" for the rest', () => {
+    const DIVING_BLOCK = 'core/captain-america/diving-block#0' as CardExtId;
+    const G = makeG({
+      hooks: [rowHook('v-sabretooth', 'onFight', 'team', 'x-men')],
+      playerZones: {
+        '0': zone([PLAIN]), // no X-Men, no Diving Block → gained
+        '1': zone([PLAIN, DIVING_BLOCK]), // no X-Men, holds Diving Block → would gain
+      },
+      wounds: [WOUND, 'w1' as CardExtId, 'w2' as CardExtId],
+      cardTraits: TRAITS,
+      messages: [],
+    });
+    G.heroAbilityHooks = [
+      { cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+
+    executeVillainAbilities(G, CTX, 'v-sabretooth' as CardExtId, 'onFight');
+
+    const texts = G.messages.map((message) => message.text);
+    assert.deepEqual(texts, [
+      'Fight effect: 2 player(s) had no X-Men Hero: Player 0 gained a Wound; Player 1 would gain a Wound — Diving Block can prevent it.',
+    ]);
+    assert.deepEqual(
+      G.pendingDivingBlockWounds?.map((entry) => entry.playerID),
+      ['1'],
+      'only the Diving Block holder has a reveal pending',
+    );
+  });
+
+  it('D-24673: with no Diving Block anywhere the Sabretooth line keeps "gained a Wound"', () => {
+    const G = makeG({
+      hooks: [rowHook('v-sabretooth', 'onFight', 'team', 'x-men')],
+      playerZones: {
+        '0': zone([PLAIN]),
+        '1': zone([PLAIN]),
+      },
+      wounds: [WOUND, 'w1' as CardExtId, 'w2' as CardExtId],
+      cardTraits: TRAITS,
+      messages: [],
+    });
+
+    executeVillainAbilities(G, CTX, 'v-sabretooth' as CardExtId, 'onFight');
+
+    const texts = G.messages.map((message) => message.text);
+    assert.deepEqual(texts, [
+      'Fight effect: 2 player(s) had no X-Men Hero and gained a Wound (Player 0, Player 1).',
+    ]);
+  });
+
   it('AC-4 hero-class predicate over two players wounds only the one lacking a Ranged Hero (sorted order)', () => {
     const G = makeG({
       hooks: [rowHook('v-frost', 'onFight', 'hero-class', 'ranged')],
@@ -1313,6 +1434,53 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     assert.equal(G.piles.wounds.length, 1);
   });
 
+  it('D-24724 a Copy Powers copy of a Strength Hero satisfies a Strength reveal (Zzzax); an unconverted Copy Powers does not', () => {
+    // why: D-24724 — the copied class lives in G.cardCopiedClasses (D-24730), not G.cardTraits, so
+    // the in-play read must go through the effective-class source (cardHasClassWhenPlayed).
+    const COPY_A = 'core/rogue/copy-powers#0' as CardExtId;
+    const COPY_B = 'core/rogue/copy-powers#1' as CardExtId;
+    const G = makeG({
+      hooks: [rowHook('v-zzzax', 'onFight', 'hero-class', 'strength')],
+      playerZones: {
+        '0': zone([PLAIN], [COPY_A]), // Copy Powers copied a Strength Hero → reveals
+        '1': zone([PLAIN], [COPY_B]), // Copy Powers with no Strength grant → wounded
+      },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: {
+        ...TRAITS,
+        [COPY_A]: { heroClass: 'covert', team: 'x-men' },
+        [COPY_B]: { heroClass: 'covert', team: 'x-men' },
+      },
+    });
+    G.cardCopiedClasses = { [COPY_A]: ['strength'], [COPY_B]: ['ranged'] };
+    executeVillainAbilities(G, CTX, 'v-zzzax' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'the granted Strength class reveals — no wound');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'a Ranged grant is not Strength → wounded');
+  });
+
+  it('D-24726 a Copy Powers copy of an Avengers Hero satisfies an Avengers reveal; a copied X-Men team does not', () => {
+    // why: D-24726 — the copied team lives in G.cardCopiedTeams, read through cardHasTeamWhenPlayed.
+    const COPY_A = 'core/rogue/copy-powers#0' as CardExtId;
+    const COPY_B = 'core/rogue/copy-powers#1' as CardExtId;
+    const G = makeG({
+      hooks: [rowHook('v-avengers-reveal', 'onFight', 'team', 'avengers')],
+      playerZones: {
+        '0': zone([PLAIN], [COPY_A]), // copied an Avenger → reveals
+        '1': zone([PLAIN], [COPY_B]), // copied an X-Man → wounded
+      },
+      wounds: [WOUND, 'w1' as CardExtId],
+      cardTraits: {
+        ...TRAITS,
+        [COPY_A]: { heroClass: 'covert', team: 'x-men' },
+        [COPY_B]: { heroClass: 'covert', team: 'x-men' },
+      },
+    });
+    G.cardCopiedTeams = { [COPY_A]: ['avengers'], [COPY_B]: ['x-men'] };
+    executeVillainAbilities(G, CTX, 'v-avengers-reveal' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'the copied Avengers team reveals — no wound');
+    assert.equal(G.playerZones['1']!.discard.length, 1, 'no Avengers team printed or copied → wounded');
+  });
+
   it('WP-646 an onAmbush reveal emits one strikeBlocked (ambush) for the revealing player; a wounded player gets none', () => {
     const G = makeG({
       hooks: [rowHook('v-ambusher', 'onAmbush', 'team', 'x-men')],
@@ -1324,6 +1492,9 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-ambusher' as CardExtId, 'onAmbush');
+    // why: WP-845 / D-24779 — the strikeBlocked is pushed when the Reveal is applied, not at
+    // effect time (was: asserted straight after executeVillainAbilities).
+    revealEveryQueuedSeat(G);
     const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
     assert.equal(blocked.length, 1, 'exactly one strikeBlocked — only the revealing player');
     const event = blocked[0]!;
@@ -1342,6 +1513,8 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-ambusher' as CardExtId, 'onAmbush');
+    // why: WP-845 / D-24779 — pushed at apply time once both choose Reveal (was: at effect time).
+    revealEveryQueuedSeat(G);
     const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
     assert.equal(blocked.length, 2, 'one strikeBlocked per revealing player');
     assert.deepEqual(
@@ -1358,6 +1531,8 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onFight');
+    // why: WP-845 / D-24779 — pushed at apply time once the seat chooses Reveal (was: at effect time).
+    revealEveryQueuedSeat(G);
     const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
     assert.equal(blocked.length, 1, 'exactly one strikeBlocked on the onFight timing');
     const event = blocked[0]!;
@@ -1376,6 +1551,8 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       cardTraits: TRAITS,
     });
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
+    // why: WP-845 / D-24779 — pushed at apply time once the seat chooses Reveal (was: at effect time).
+    revealEveryQueuedSeat(G);
     const blocked = G.notableEvents.filter((event) => event.type === 'strikeBlocked');
     assert.equal(blocked.length, 1, 'exactly one strikeBlocked on the onEscape timing');
     const event = blocked[0]!;
@@ -1527,9 +1704,15 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
     executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onEscape');
     assert.equal(G.playerZones['0']!.discard.length, 0);
     assert.equal(G.playerZones['1']!.discard.length, 0);
+    // why: WP-845 / D-24779 — both players can reveal, so they are queued (one neutral enqueue
+    // line) and the blocked "all revealed" outcome is the apply line once both choose Reveal
+    // (was: one blocked "every player revealed a Ranged Hero." line at effect time).
     assert.equal(G.messages!.length, 1, 'exactly one log line pushed');
-    assert.match(G.messages![0]!.text, /Escape effect: every player revealed a Ranged Hero\./);
-    assert.equal(G.messages![0]!.outcome, 'blocked', 'no wound landed → blocked');
+    assert.match(G.messages![0]!.text, /Escape effect: Player 0, Player 1 can reveal a matching Ranged Hero and will choose whether to reveal it or gain a Wound\./);
+    assert.equal(G.messages![0]!.outcome, 'neutral', 'nobody has chosen yet → neutral');
+    revealEveryQueuedSeat(G);
+    assert.match(G.messages!.at(-1)!.text, /^Reveal or gain a Wound \(.+\): Player 0, Player 1 revealed\.$/);
+    assert.equal(G.messages!.at(-1)!.outcome, 'blocked', 'no wound landed → blocked');
     assert.equal(G.piles.wounds.length, 1, 'wound pile untouched');
   });
 
@@ -1560,7 +1743,9 @@ describe('executeVillainAbilities — reveal-or-wound (WP-469 / D-24281)', () =>
       messages: [],
     });
     executeVillainAbilities(revealed, CTX, 'v-x' as CardExtId, 'onAmbush');
-    assert.match(revealed.messages![0]!.text, /Ambush effect: every player revealed an X-Men Hero\./);
+    // why: WP-845 / D-24779 — the revealer is queued, so the printed label is checked on the
+    // enqueue line (was: "every player revealed an X-Men Hero.", now reachable only with no seats).
+    assert.match(revealed.messages![0]!.text, /Ambush effect: Player 0 can reveal a matching X-Men Hero and will choose/);
   });
 });
 
@@ -1731,6 +1916,49 @@ describe('executeVillainAbilities — ko-heroes-current-by-trait (WP-485 / D-242
     assert.match(G.messages![0]!.text, /Fight effect: KO'd 0 of your shield Hero\(es\)\./);
     assert.equal(G.messages![0]!.outcome, 'blocked');
   });
+
+  it('D-24724 a hero-class predicate KOs an in-play card through its granted class', () => {
+    const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+    const G = makeG({
+      hooks: [
+        {
+          cardId: 'v-class-ko' as CardExtId,
+          timing: 'onFight',
+          keywords: [],
+          effects: [
+            { primitive: 'ko-heroes-current-by-trait', requireKind: 'hero-class', requireValue: 'ranged' },
+          ],
+        },
+      ],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [COPY_POWERS, OTHER], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: { ...TRAITS, [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' } },
+      messages: [],
+    });
+    G.cardCopiedClasses = { [COPY_POWERS]: ['ranged'] };
+    executeVillainAbilities(G, CTX, 'v-class-ko' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [COPY_POWERS], 'Copy Powers as Ranged is KO’d; the covert X-Men Hero stays');
+    assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER]);
+  });
+
+  it('D-24726 a team predicate KOs an in-play card through its copied team (Destroyer)', () => {
+    const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+    const G = makeG({
+      hooks: [kotHook('v-destroyer')],
+      playerZones: {
+        '0': { deck: [], hand: [], discard: [], inPlay: [COPY_POWERS, OTHER], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: { ...TRAITS, [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' } },
+      messages: [],
+    });
+    G.cardCopiedTeams = { [COPY_POWERS]: ['shield'] };
+    executeVillainAbilities(G, CTX, 'v-destroyer' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.ko, [COPY_POWERS], 'Copy Powers that copied a S.H.I.E.L.D. Hero is KO’d');
+    assert.deepStrictEqual(G.playerZones['0']!.inPlay, [OTHER]);
+  });
 });
 
 describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 / D-24353)', () => {
@@ -1783,9 +2011,11 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
       'owed = 2 Strength Heroes; the player picks WHICH two die',
     );
     assert.deepStrictEqual(G.ko, [], 'nothing auto-KO’d — a genuine choice remains');
-    assert.match(
+    // why: D-24729 — the line names each counted Hero and where it was counted from (no
+    // cardDisplayData here, so the names fall back to the ext_ids).
+    assert.equal(
       G.messages.at(-1)!.text,
-      /Fight effect: KO 2 of your Heroes \(one per your strength Hero\) — choose which\./,
+      `Fight effect: KO 2 of your Heroes (one per your strength Hero: ${STRENGTH_A} (hand), ${STRENGTH_B} (hand)) — choose which.`,
     );
     assert.equal(G.messages.at(-1)!.outcome, 'neutral');
   });
@@ -1808,7 +2038,7 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
     executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
     assert.equal(G.pendingKoHeroChoices?.length ?? 0, 0, 'no park — both die, no meaningful choice');
     assert.deepStrictEqual([...G.ko].sort(), [STRENGTH_A, STRENGTH_B].sort());
-    assert.match(G.messages.at(-1)!.text, /Fight effect: KO'd 2 of your Heroes \(.*\) — one per your strength Hero\./);
+    assert.match(G.messages.at(-1)!.text, /Fight effect: KO'd 2 of your Heroes \(.*\) — one per your strength Hero: .+ \(hand\), .+ \(hand\)\./);
     assert.equal(G.messages.at(-1)!.outcome, 'applied');
   });
 
@@ -1863,6 +2093,68 @@ describe('executeVillainAbilities — ko-heroes-current-count-by-trait (WP-544 /
       G.pendingKoHeroChoices,
       [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
       'both in-play Strength Heroes counted',
+    );
+  });
+
+  it('D-24724 Copy Powers copying a Strength Hero counts as a second Strength Hero (live match kIZGg6MXhua)', () => {
+    // why: D-24724 — Rogue's Copy Powers "is both Covert and the color you copy"; applyCopyPowers
+    // grants the copied class into G.cardCopiedClasses (D-24730), so Perfect Teamwork (Strength) plus
+    // Copy Powers copying it is TWO Strength Heroes in play. The raw printed read owed only 1.
+    const PERFECT_TEAMWORK = 'core/captain-america/perfect-teamwork#0' as CardExtId;
+    const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+    const G = makeG({
+      hooks: [maestroHook()],
+      playerZones: {
+        '0': { deck: [], hand: [RANGED, COVERT], discard: [], inPlay: [PERFECT_TEAMWORK, COPY_POWERS], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: {
+        ...TRAITS,
+        [PERFECT_TEAMWORK]: { heroClass: 'strength', team: 'avengers' },
+        [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' },
+      },
+      cardDisplayData: {
+        [PERFECT_TEAMWORK]: { name: 'Perfect Teamwork' },
+        [COPY_POWERS]: { name: 'Copy Powers' },
+      },
+      messages: [],
+    });
+    G.cardCopiedClasses = { [COPY_POWERS]: ['strength'] };
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.deepStrictEqual(
+      G.pendingKoHeroChoices,
+      [{ choiceType: 'ko-hero', playerID: '0', remaining: 2 }],
+      'owed = 2: the printed Strength Hero plus Copy Powers as Strength',
+    );
+    // why: D-24729 — the copy is named as counted through its granted class, so the log
+    // alone shows the second Strength Hero was Copy Powers, not a Strength Hero in hand.
+    assert.equal(
+      G.messages.at(-1)!.text,
+      'Fight effect: KO 2 of your Heroes (one per your strength Hero: Perfect Teamwork (played), Copy Powers (played, granted strength)) — choose which.',
+    );
+  });
+
+  it('D-24729 the auto-KO line names the counted Heroes from hand and from play', () => {
+    // why: a Strength Hero in hand and one in play, nothing else KO-able — both are forced
+    // to die, so the auto path's line carries the counted list after the KO'd names.
+    const G = makeG({
+      hooks: [maestroHook()],
+      playerZones: {
+        '0': { deck: [], hand: [STRENGTH_A], discard: [], inPlay: [STRENGTH_B], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      cardTraits: TRAITS,
+      cardDisplayData: {
+        [STRENGTH_A]: { name: 'Hulk Smash' },
+        [STRENGTH_B]: { name: 'Crazed Rampage' },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-maestro' as CardExtId, 'onFight');
+    assert.equal(G.ko.length, 2, 'both Strength Heroes are forced to die');
+    assert.match(
+      G.messages.at(-1)!.text,
+      /^Fight effect: KO'd 2 of your Heroes \(.+\) — one per your strength Hero: Hulk Smash \(hand\), Crazed Rampage \(played\)\.$/,
     );
   });
 
@@ -2072,7 +2364,83 @@ describe('executeVillainAbilities — rescue-bystanders-current-by-trait-count (
     assert.equal(G.playerZones['0']!.victory.length, 2, 'two Avengers → two Bystanders rescued');
     assert.equal(G.piles.bystanders.length, 1, 'the supply dropped by two');
     assert.deepStrictEqual(G.attachedBystanders, {}, 'no stranded attachment left on the villain');
-    assert.match(G.messages![0]!.text, /Fight effect: rescued 2 Bystander\(s\) \(one per your avengers Hero\)\./);
+    assert.equal(
+      G.messages![0]!.text,
+      `Fight effect: rescued 2 Bystander(s) (one per your avengers Hero: ${AV_A} (hand), ${AV_B} (played)).`,
+    );
+    assert.equal(G.messages![0]!.outcome, 'applied');
+  });
+
+  it('D-24726 Copy Powers copying an Avengers Hero counts as a fourth Avenger (live match xW_Kmg0UF8s, 27.2.16)', () => {
+    // why: D-24726 — Copy Powers is a full duplicate, so it also counts as the copied Hero's
+    // team (D-24391, G.cardCopiedTeams). Live: Endless Invention, Perfect Teamwork and Growing
+    // Anger (all Avengers) plus Copy Powers copying Growing Anger, hand empty → owed 4, got 3.
+    const ENDLESS_INVENTION = 'core/iron-man/endless-invention#3' as CardExtId;
+    const PERFECT_TEAMWORK = 'core/captain-america/perfect-teamwork#0' as CardExtId;
+    const GROWING_ANGER = 'core/hulk/growing-anger#1' as CardExtId;
+    const COPY_POWERS = 'core/rogue/copy-powers#1' as CardExtId;
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [],
+          discard: [],
+          // why: the played S.H.I.E.L.D. tokens carry no trait row and are not Avengers.
+          inPlay: [ENDLESS_INVENTION, PERFECT_TEAMWORK, GROWING_ANGER, COPY_POWERS, 'starting-shield-agent' as CardExtId],
+          victory: [],
+        },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      bystanders: ['bys0', 'bys1', 'bys2', 'bys3', 'bys4'] as CardExtId[],
+      messages: [],
+      cardTraits: {
+        ...TRAITS,
+        [ENDLESS_INVENTION]: { heroClass: 'tech', team: 'avengers' },
+        [PERFECT_TEAMWORK]: { heroClass: 'strength', team: 'avengers' },
+        [GROWING_ANGER]: { heroClass: 'strength', team: 'avengers' },
+        [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' },
+      },
+    });
+    G.cardCopiedTeams = { [COPY_POWERS]: ['avengers'] };
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.victory.length, 4, 'three printed Avengers plus Copy Powers as an Avenger');
+    assert.match(G.messages![0]!.text, /^Fight effect: rescued 4 Bystander\(s\) \(one per your avengers Hero: .+\)\.$/);
+  });
+
+  it('D-24729 names each counted Avenger with its source: a hand card and a Copy Powers copy (live match SoDnMI9IjqU)', () => {
+    // why: D-24729 — the SoDnMI9IjqU record had to infer what Zemo counted, because the log
+    // never lists unplayed hand cards. The line now names a hand Avenger, the printed played
+    // Avenger, and Copy Powers counted through the team it copied.
+    const A_DAY = 'core/captain-america/a-day-unlike-any-other#0' as CardExtId;
+    const COPY_POWERS = 'core/rogue/copy-powers#0' as CardExtId;
+    const G = makeG({
+      hooks: [zemoHook('v-zemo')],
+      playerZones: {
+        '0': { deck: [], hand: [AV_A, OTHER], discard: [], inPlay: [A_DAY, COPY_POWERS], victory: [] },
+        '1': { deck: [], hand: [], discard: [], inPlay: [], victory: [] },
+      },
+      bystanders: ['bys0', 'bys1', 'bys2', 'bys3'] as CardExtId[],
+      messages: [],
+      cardTraits: {
+        ...TRAITS,
+        [A_DAY]: { heroClass: 'covert', team: 'avengers' },
+        [COPY_POWERS]: { heroClass: 'covert', team: 'x-men' },
+      },
+      cardDisplayData: {
+        [AV_A]: { name: 'Avengers Assemble!' },
+        [OTHER]: { name: 'Berserker Rage' },
+        [A_DAY]: { name: 'A Day Unlike Any Other' },
+        [COPY_POWERS]: { name: 'Copy Powers' },
+      },
+    });
+    G.cardCopiedTeams = { [COPY_POWERS]: ['avengers'] };
+    executeVillainAbilities(G, CTX, 'v-zemo' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.victory.length, 3, 'one hand Avenger, one played, one copy');
+    assert.equal(
+      G.messages![0]!.text,
+      'Fight effect: rescued 3 Bystander(s) (one per your avengers Hero: Avengers Assemble! (hand), A Day Unlike Any Other (played), Copy Powers (played, copied avengers)).',
+    );
     assert.equal(G.messages![0]!.outcome, 'applied');
   });
 
@@ -2091,6 +2459,8 @@ describe('executeVillainAbilities — rescue-bystanders-current-by-trait-count (
     assert.equal(G.playerZones['0']!.victory.length, 1, 'only one Bystander available to rescue');
     assert.equal(G.piles.bystanders.length, 0, 'supply exhausted');
     assert.match(G.messages![0]!.text, /Fight effect: rescued 1 Bystander\(s\)/);
+    // why: D-24729 — two Avengers are listed but only one was rescued, so the line says why.
+    assert.match(G.messages![0]!.text, /\(hand\); the Bystander supply ran out after 1\)\.$/);
   });
 
   it('AC-3 zero matching heroes rescues nothing (no error)', () => {
@@ -5467,5 +5837,1347 @@ describe('"KO one of your Heroes" takes from hand or play, never the discard pil
     executeVillainAbilities(superSkrull, CTX, 'v-super-skrull' as CardExtId, 'onFight');
     assert.equal(superSkrull.pendingKoHeroChoices?.length, 1);
     assert.deepStrictEqual(Object.keys(superSkrull.pendingKoHeroChoices![0]!).sort(), ['choiceType', 'playerID']);
+  });
+});
+
+describe('WP-816 villain-side Savior (D-24749)', () => {
+  const VILLAIN = 'ca75-villain-masters-of-evil-wwii-black-knight-00' as CardExtId;
+  const OTHER_VILLAIN = 'ca75-villain-masters-of-evil-wwii-executioner-00' as CardExtId;
+  const THREE_BYSTANDERS = ['pile-bystander', 'bystander-villain-deck-01', 'pile-bystander'] as CardExtId[];
+  const TWO_BYSTANDERS = ['pile-bystander', 'bystander-villain-deck-01'] as CardExtId[];
+  const DECK_CARD = 'core/x/deck-card#0' as CardExtId;
+
+  /**
+   * Builds a one-descriptor hook for a WP-816 test.
+   */
+  function descriptorHook(
+    timing: 'onAmbush' | 'onFight' | 'onEscape',
+    descriptor: VillainEffectDescriptor,
+  ): VillainAbilityHook {
+    return { cardId: 'v-wp816' as CardExtId, timing, keywords: [], effects: [descriptor] };
+  }
+
+  /**
+   * Builds a player zone with the given victory pile, deck and hand.
+   */
+  function seat(victory: CardExtId[], deck: CardExtId[] = [], hand: CardExtId[] = []) {
+    return { deck: [...deck], hand: [...hand], discard: [], inPlay: [], victory: [...victory] };
+  }
+
+  const shuffleContext: ShuffleProvider = { random: makeMockCtx().random };
+  const SAVIOR_DRAW: VillainEffectDescriptor = {
+    primitive: 'draw-cards-current',
+    drawCount: 1,
+    requireCondition: 'savior',
+  };
+
+  it('T12: a Savior gate passes with 3 Bystanders and the draw fires', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', SAVIOR_DRAW)],
+      playerZones: { '0': seat(THREE_BYSTANDERS, [DECK_CARD, 'core/x/second#0' as CardExtId]), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [DECK_CARD], 'hand +1');
+    assert.equal(G.messages![G.messages!.length - 1]!.text, 'Fight effect: drew 1 card(s).');
+  });
+
+  it('T13: a Savior gate blocks with 2 Bystanders, before dispatch, not hollow, no trace', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', SAVIOR_DRAW)],
+      playerZones: { '0': seat(TWO_BYSTANDERS, [DECK_CARD]), '1': seat([]) },
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [], 'hand unchanged');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(
+      lastMessage.text,
+      'Fight effect: Player 0 is not a Savior (2 of 3 Bystanders in their Victory Pile); no effect.',
+    );
+    assert.equal(lastMessage.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0, 'a blocked gate is not hollow');
+    assert.equal(G.diagnostics?.traces?.length ?? 0, 0, 'a never-dispatched descriptor has no trace');
+    assert.deepStrictEqual(results, []);
+  });
+
+  it('T13b: an unrecognized condition fails closed, never dispatched', () => {
+    const G = makeG({
+      hooks: [
+        descriptorHook('onFight', {
+          ...SAVIOR_DRAW,
+          requireCondition: 'spectrum' as VillainEffectCondition,
+        }),
+      ],
+      playerZones: { '0': seat(THREE_BYSTANDERS, [DECK_CARD]), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [], 'hand unchanged');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, "Fight effect: unrecognized condition 'spectrum'; no effect.");
+    assert.equal(lastMessage.outcome, 'blocked');
+    assert.equal(G.diagnostics?.hollowEffects?.length ?? 0, 0);
+    assert.equal(G.diagnostics?.traces?.length ?? 0, 0);
+  });
+
+  it('T14: the gate reads the current player only, not another Savior', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', SAVIOR_DRAW)],
+      playerZones: { '0': seat([], [DECK_CARD]), '1': seat(THREE_BYSTANDERS) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, []);
+    assert.equal(
+      G.messages![G.messages!.length - 1]!.text,
+      'Fight effect: Player 0 is not a Savior (0 of 3 Bystanders in their Victory Pile); no effect.',
+    );
+  });
+
+  it('T15: a Savior-gated ko-hero:current parks the interactive KO and keeps its legacy keyword', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', { primitive: 'ko-hero', target: 'current', requireCondition: 'savior' })],
+      playerZones: {
+        '0': seat(THREE_BYSTANDERS, [], ['hero-a', 'hero-b'] as CardExtId[]),
+        '1': seat([]),
+      },
+      messages: [],
+    });
+    const results = executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.pendingKoHeroChoices, [{ choiceType: 'ko-hero', playerID: '0' }]);
+    assert.deepStrictEqual(results, [{ keyword: 'koHeroCurrentPlayer', targets: [], pending: true }]);
+  });
+
+  it('T15b: a Savior-gated Melter (WWII) parks the D-24413 KO / keep prompt', () => {
+    const topZero = 'core/x/top-zero#0' as CardExtId;
+    const topOne = 'core/x/top-one#0' as CardExtId;
+    const G = makeG({
+      hooks: [descriptorHook('onFight', { primitive: 'ko-cullable-each-deck-top', requireCondition: 'savior' })],
+      playerZones: { '0': seat(THREE_BYSTANDERS, [topZero]), '1': seat([], [topOne]) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.pendingMelterKoChoices, [
+      {
+        choiceType: 'melter-ko',
+        playerID: '0',
+        revealedTops: [
+          { ownerPlayerID: '0', cardId: topZero },
+          { ownerPlayerID: '1', cardId: topOne },
+        ],
+      },
+    ]);
+    assert.deepStrictEqual(G.ko, [], "nothing KO'd yet");
+  });
+
+  it('T16: the location gate is checked before the condition gate', () => {
+    const gated: VillainEffectDescriptor = {
+      primitive: 'ko-hero',
+      target: 'current',
+      requireCitySpaces: ['sewers'],
+      requireCondition: 'savior',
+    };
+    const heroes = ['hero-a', 'hero-b'] as CardExtId[];
+    const onBridge = makeG({
+      hooks: [descriptorHook('onFight', gated)],
+      playerZones: { '0': seat(THREE_BYSTANDERS, [], heroes), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(onBridge, CTX, 'v-wp816' as CardExtId, 'onFight', undefined, 4);
+    assert.deepStrictEqual(
+      onBridge.messages!.map((message) => message.text),
+      ['Fight effect: not fought on the Sewers; no effect.'],
+      'only the location-blocked line',
+    );
+    const inSewers = makeG({
+      hooks: [descriptorHook('onFight', gated)],
+      playerZones: { '0': seat(['pile-bystander'] as CardExtId[], [], heroes), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(inSewers, CTX, 'v-wp816' as CardExtId, 'onFight', undefined, 0);
+    assert.deepStrictEqual(
+      inSewers.messages!.map((message) => message.text),
+      ['Fight effect: Player 0 is not a Savior (1 of 3 Bystanders in their Victory Pile); no effect.'],
+      'only the Savior-blocked line',
+    );
+  });
+
+  const NON_SAVIOR_WOUND: VillainEffectDescriptor = { primitive: 'gain-wound', target: 'each-non-savior' };
+  const FIVE_WOUNDS = ['w0', 'w1', 'w2', 'w3', 'w4'] as CardExtId[];
+
+  it('T17: each-non-savior wounds every non-Savior in sorted order and spares the Savior', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: { '0': seat(THREE_BYSTANDERS), '1': seat(TWO_BYSTANDERS), '2': seat([]) },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'the Savior gains no Wound');
+    assert.equal(G.playerZones['1']!.discard.length, 1);
+    assert.equal(G.playerZones['2']!.discard.length, 1);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Fight effect: each player who is not a Savior gained a Wound (Player 1, Player 2).');
+    assert.equal(lastMessage.outcome, 'applied');
+    assert.equal(G.turnEconomy.woundsDrawn, 0, 'the current player was not wounded');
+  });
+
+  it('T18: woundsDrawn counts a wounded current player, and the Escape label is used', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onEscape', NON_SAVIOR_WOUND)],
+      playerZones: { '0': seat(THREE_BYSTANDERS), '1': seat(TWO_BYSTANDERS), '2': seat([]) },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, { currentPlayer: '1' }, 'v-wp816' as CardExtId, 'onEscape');
+    assert.equal(G.turnEconomy.woundsDrawn, 1);
+    assert.ok(G.messages![G.messages!.length - 1]!.text.startsWith('Escape effect:'));
+  });
+
+  it('T19: nobody wounded when every player is a Savior, or when the Wound pile is empty', () => {
+    const allSaviors = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: { '0': seat(THREE_BYSTANDERS), '1': seat(THREE_BYSTANDERS), '2': seat(THREE_BYSTANDERS) },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(allSaviors, CTX, 'v-wp816' as CardExtId, 'onFight');
+    assert.equal(allSaviors.piles.wounds.length, 5, 'no Wound moves');
+    const emptyPile = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: { '0': seat([]), '1': seat([]), '2': seat([]) },
+      wounds: [],
+      messages: [],
+    });
+    executeVillainAbilities(emptyPile, CTX, 'v-wp816' as CardExtId, 'onFight');
+    for (const G of [allSaviors, emptyPile]) {
+      const lastMessage = G.messages![G.messages!.length - 1]!;
+      assert.equal(lastMessage.text, 'Fight effect: no player who is not a Savior gained a Wound.');
+      assert.equal(lastMessage.outcome, 'blocked');
+    }
+  });
+
+  it('T19b: a non-Savior holding Diving Block gets the Wound first, then the undo offer', () => {
+    const DIVING_BLOCK = 'core/captain-america/diving-block#0' as CardExtId;
+    const G = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: {
+        '0': seat(THREE_BYSTANDERS),
+        '1': seat(TWO_BYSTANDERS, [], [DIVING_BLOCK]),
+        '2': seat([]),
+      },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    G.heroAbilityHooks = [
+      { cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(
+      lastMessage.text,
+      `Fight effect: each player who is not a Savior gains a Wound: ${composeWoundOutcomeClause(['2'], ['1'])}.`,
+    );
+    assert.equal(lastMessage.outcome, 'applied');
+    const playerOneWound = G.playerZones['1']!.discard[0];
+    assert.ok(playerOneWound !== undefined, 'the Wound lands in player 1 discard before the undo');
+    assert.deepStrictEqual(G.pendingDivingBlockWounds, [{ playerID: '1', woundCardId: playerOneWound }]);
+    assert.equal(G.playerZones['2']!.discard.length, 1, 'player 2 holds a Wound');
+  });
+
+  it('T20: KO the first Bystander in pile order from each Victory Pile', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onEscape', { primitive: 'ko-bystander-each-victory-pile' })],
+      playerZones: {
+        '0': seat([VILLAIN, 'bystander-villain-deck-01', 'pile-bystander'] as CardExtId[]),
+        '1': seat(['pile-bystander'] as CardExtId[]),
+        '2': seat([OTHER_VILLAIN]),
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [VILLAIN, 'pile-bystander']);
+    assert.deepStrictEqual(G.playerZones['1']!.victory, []);
+    assert.deepStrictEqual(G.playerZones['2']!.victory, [OTHER_VILLAIN]);
+    assert.deepStrictEqual(G.ko, ['bystander-villain-deck-01', 'pile-bystander']);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, "Escape effect: KO'd a Bystander from the Victory Pile of Player 0, Player 1.");
+    assert.equal(lastMessage.outcome, 'applied');
+  });
+
+  it('T21: nothing to KO when no player has a Bystander', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onEscape', { primitive: 'ko-bystander-each-victory-pile' })],
+      playerZones: { '0': seat([VILLAIN]), '1': seat([]) },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(G.ko, []);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [VILLAIN]);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Escape effect: no player had a Bystander in their Victory Pile to KO.');
+    assert.equal(lastMessage.outcome, 'blocked');
+  });
+
+  const KILLBOTS = [
+    'bystander-villain-deck-04',
+    'bystander-villain-deck-11',
+    'bystander-villain-deck-15',
+  ] as CardExtId[];
+
+  /**
+   * Marks the given ids as defeated Killbots, the way Replace Earth's Leaders with
+   * Killbots sets them up (typed 'villain', origin 'killbot').
+   */
+  function markKillbots(G: LegendaryGameState, killbotIds: readonly CardExtId[]): void {
+    G.villainDeckCardTypes = {};
+    G.convertedVillainOrigins = {};
+    for (const killbotId of killbotIds) {
+      G.villainDeckCardTypes[killbotId] = 'villain';
+      G.convertedVillainOrigins[killbotId] = 'killbot';
+    }
+  }
+
+  // why: rules v23 L2337-2341 — a defeated Killbot counts as a Bystander in the Victory
+  // Pile. Killbots keep their `bystander-villain-deck-NN` ids, so the Savior predicate
+  // already counts them; these pin that, so a change to Killbot ids cannot silently
+  // drop them from either Savior gate or Executioner's KO.
+  it('T22: three defeated Killbots make the current player a Savior', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', SAVIOR_DRAW)],
+      playerZones: { '0': seat([VILLAIN, ...KILLBOTS], [DECK_CARD]), '1': seat([]) },
+      messages: [],
+    });
+    markKillbots(G, KILLBOTS);
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight', shuffleContext);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [DECK_CARD], 'the Savior draw fires');
+  });
+
+  it('T23: each-non-savior spares a player whose Victory Pile mixes Killbots and Bystanders', () => {
+    const G = makeG({
+      hooks: [descriptorHook('onFight', NON_SAVIOR_WOUND)],
+      playerZones: {
+        '0': seat([KILLBOTS[0]!, 'pile-bystander', KILLBOTS[1]!] as CardExtId[]),
+        '1': seat([VILLAIN, KILLBOTS[2]!] as CardExtId[]),
+      },
+      wounds: FIVE_WOUNDS,
+      messages: [],
+    });
+    markKillbots(G, KILLBOTS);
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onFight');
+    assert.equal(G.playerZones['0']!.discard.length, 0, '2 Killbots + 1 Bystander is a Savior');
+    assert.equal(G.playerZones['1']!.discard.length, 1, '1 Killbot is not');
+  });
+
+  it("T24: Executioner's KO takes a defeated Killbot as a Bystander", () => {
+    const G = makeG({
+      hooks: [descriptorHook('onEscape', { primitive: 'ko-bystander-each-victory-pile' })],
+      playerZones: { '0': seat([VILLAIN, KILLBOTS[0]!, 'pile-bystander'] as CardExtId[]), '1': seat([]) },
+      messages: [],
+    });
+    markKillbots(G, KILLBOTS);
+    executeVillainAbilities(G, CTX, 'v-wp816' as CardExtId, 'onEscape');
+    assert.deepStrictEqual(G.ko, [KILLBOTS[0]]);
+    assert.deepStrictEqual(G.playerZones['0']!.victory, [VILLAIN, 'pile-bystander']);
+  });
+});
+
+describe('WP-817 Captain Zolandia + Primus handlers (D-24750)', () => {
+  const ZOLANDIA = 'ca75-villain-zolas-creations-captain-zolandia-00' as CardExtId;
+  const PRIMUS = 'primus-01' as CardExtId;
+  const shuffleContext: ShuffleProvider = { random: makeMockCtx().random };
+  const CLASS_TRAITS = {
+    'tech-a': { heroClass: 'tech', team: null },
+    'tech-b': { heroClass: 'tech', team: null },
+    'ranged-a': { heroClass: 'ranged', team: null },
+    'strength-a': { heroClass: 'strength', team: null },
+    'starting-shield-agent': { heroClass: null, team: null },
+  };
+
+  /**
+   * Builds a one-descriptor hook for a WP-817 test.
+   */
+  function descriptorHook(
+    cardId: CardExtId,
+    timing: 'onFight' | 'onEscape',
+    descriptor: VillainEffectDescriptor,
+  ): VillainAbilityHook {
+    return { cardId, timing, keywords: [], effects: [descriptor] };
+  }
+
+  it('T19: Zolandia adds +1 recruit per distinct Hero Class across hand and play', () => {
+    const G = makeG({
+      hooks: [descriptorHook(ZOLANDIA, 'onFight', { primitive: 'gain-recruit-current-per-hero-class' })],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: ['tech-a', 'ranged-a'] as CardExtId[],
+          discard: [],
+          inPlay: ['strength-a', 'tech-b'] as CardExtId[],
+          victory: [],
+        },
+      },
+      cardTraits: CLASS_TRAITS,
+      messages: [],
+    });
+    G.turnEconomy.recruit = 1;
+    executeVillainAbilities(G, CTX, ZOLANDIA, 'onFight', shuffleContext);
+    assert.equal(G.turnEconomy.recruit, 4, '1 + 3 classes (tech, ranged, strength)');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Fight effect: gained +3 recruit for the 3 Hero Class(es) you have.');
+    assert.equal(lastMessage.outcome, 'applied');
+  });
+
+  it('T20: with no Hero Class in hand or play, nothing is gained and the line is blocked', () => {
+    const G = makeG({
+      hooks: [descriptorHook(ZOLANDIA, 'onFight', { primitive: 'gain-recruit-current-per-hero-class' })],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: ['starting-shield-agent', 'pile-wound'] as CardExtId[],
+          discard: [],
+          inPlay: ['starting-shield-agent'] as CardExtId[],
+          victory: [],
+        },
+      },
+      cardTraits: CLASS_TRAITS,
+      messages: [],
+    });
+    G.turnEconomy.recruit = 2;
+    executeVillainAbilities(G, CTX, ZOLANDIA, 'onFight', shuffleContext);
+    assert.equal(G.turnEconomy.recruit, 2, 'recruit unchanged');
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Fight effect: you have no Hero Classes in hand or play, so no recruit was gained.');
+    assert.equal(lastMessage.outcome, 'blocked');
+  });
+
+  it('T21: Primus Escape records the owed discard and touches no hand', () => {
+    const G = makeG({
+      hooks: [descriptorHook(PRIMUS, 'onEscape', {
+        primitive: 'discard-hero-each-player-by-cost',
+        eligibleCosts: [2, 3, 5, 7],
+      })],
+      playerZones: {
+        '0': { deck: [], hand: ['tech-a'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: ['ranged-a'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, PRIMUS, 'onEscape', shuffleContext);
+    assert.deepStrictEqual(G.pendingEscapeEffectDiscards, [{ escapedCardId: PRIMUS, eligibleCosts: [2, 3, 5, 7] }]);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Escape effect: each player must discard a Hero that costs 2, 3, 5, or 7.');
+    assert.equal(lastMessage.outcome, 'applied');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['tech-a']);
+    assert.deepStrictEqual(G.playerZones['1']!.hand, ['ranged-a']);
+  });
+
+  it('T22: a descriptor without eligibleCosts creates no queue and logs a blocked line', () => {
+    const G = makeG({
+      hooks: [descriptorHook(PRIMUS, 'onEscape', { primitive: 'discard-hero-each-player-by-cost' })],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, PRIMUS, 'onEscape', shuffleContext);
+    assert.equal(G.pendingEscapeEffectDiscards, undefined);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Escape effect: no discard costs were given; no effect.');
+    assert.equal(lastMessage.outcome, 'blocked');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — each-player villain effects start with the current player, then clockwise
+// ---------------------------------------------------------------------------
+
+/** `playerCount` empty seats '0'..'n-1'. */
+function emptySeats(playerCount: number): NonNullable<MakeGOptions['playerZones']> {
+  const zones: NonNullable<MakeGOptions['playerZones']> = {};
+  for (let seatIndex = 0; seatIndex < playerCount; seatIndex++) {
+    zones[String(seatIndex)] = { deck: [], hand: [], discard: [], inPlay: [], victory: [] };
+  }
+  return zones;
+}
+
+/**
+ * The parts of G an each-player villain effect writes, for literal comparison.
+ *
+ * @param G - The game state after the effect.
+ * @returns The Wound supply, each seat's discard pile, woundsDrawn and the log text.
+ */
+function villainEachOutcome(G: LegendaryGameState): unknown {
+  const discards: Record<string, string[]> = {};
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    discards[seat] = [...G.playerZones[seat]!.discard];
+  }
+  return {
+    wounds: [...G.piles.wounds],
+    discards,
+    woundsDrawn: G.turnEconomy.woundsDrawn,
+    messages: (G.messages ?? []).map((line) => line.text),
+  };
+}
+
+describe('WP-846 / D-24780 — villain each-player order (AC-5 seat-0 / solo identity)', () => {
+  it('AC-5 villain: a 3-player seat-0 gain-wound each with a short supply matches the pre-WP-846 baseline', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: emptySeats(3),
+      wounds: ['w-a', 'w-b'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(villainEachOutcome(G), { wounds: [], discards: { '0': ['w-a'], '1': ['w-b'], '2': [] }, woundsDrawn: 1, messages: [] });
+  });
+
+  it('AC-5 villain: a solo gain-wound each matches the pre-WP-846 baseline', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: emptySeats(1),
+      wounds: ['w-a', 'w-b'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, 'v-x' as CardExtId, 'onAmbush');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(villainEachOutcome(G), { wounds: ['w-b'], discards: { '0': ['w-a'] }, woundsDrawn: 1, messages: [] });
+  });
+});
+
+/**
+ * A hook carrying one descriptor on the given card and timing.
+ *
+ * @param cardId - The villain card.
+ * @param timing - The timing that fires.
+ * @param descriptor - The single effect descriptor.
+ * @returns The hook.
+ */
+function singleEffectHook(
+  cardId: string,
+  timing: 'onAmbush' | 'onFight' | 'onEscape',
+  descriptor: VillainEffectDescriptor,
+): VillainAbilityHook {
+  return { cardId: cardId as CardExtId, timing, keywords: [], effects: [descriptor] };
+}
+
+/**
+ * The player names listed in the last log line's parentheses, e.g. `(Player 1, Player 2)`.
+ *
+ * @param G - The game state after the effect.
+ * @returns The seat ids, in the order the line names them.
+ */
+function lastLineSeatOrder(G: LegendaryGameState): string[] {
+  const lastText = G.messages![G.messages!.length - 1]!.text;
+  const seats: string[] = [];
+  for (const match of lastText.matchAll(/Player (\d+)/g)) {
+    seats.push(match[1]!);
+  }
+  return seats;
+}
+
+describe('WP-846 / D-24780 — villain each-player order (AC-8 rotation, AC-2, AC-3, AC-6)', () => {
+  const ROTATION_CTX = { currentPlayer: '1' };
+  const THREE_WOUNDS = ['w-a', 'w-b', 'w-c'] as CardExtId[];
+
+  it('AC-8 V1: gain-wound each-other on seat 1\'s turn wounds seats 2, 0', () => {
+    const G = makeG({
+      hooks: [singleEffectHook('v-x', 'onFight', { primitive: 'gain-wound', target: 'each-other' })],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepEqual(lastLineSeatOrder(G), ['2', '0']);
+    assert.deepEqual(G.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(G.playerZones['0']!.discard, ['w-b']);
+  });
+
+  it('AC-2 V1: each-other with one Wound left on seat 1\'s turn wounds seat 2 only', () => {
+    const G = makeG({
+      hooks: [singleEffectHook('v-x', 'onFight', { primitive: 'gain-wound', target: 'each-other' })],
+      playerZones: emptySeats(3),
+      wounds: ['w-a'] as CardExtId[],
+      messages: [],
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepEqual(G.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+  });
+
+  it('AC-8 V2: gain-wound each on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onAmbush');
+    assert.deepEqual(G.playerZones['1']!.discard, ['w-a'], 'the current player takes the top Wound');
+    assert.deepEqual(G.playerZones['2']!.discard, ['w-b']);
+    assert.deepEqual(G.playerZones['0']!.discard, ['w-c']);
+  });
+
+  it('AC-2 V2: with one Wound left on seat 2\'s turn, seat 2 gains it and seats 0 and 1 gain none', () => {
+    const G = makeG({
+      hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])],
+      playerZones: emptySeats(3),
+      wounds: ['w-a'] as CardExtId[],
+    });
+    executeVillainAbilities(G, { currentPlayer: '2' }, 'v-x' as CardExtId, 'onAmbush');
+    assert.deepEqual(G.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+  });
+
+  it('AC-3 V2: every seat holding Diving Block queues its Wound in order 1, 2, 0', () => {
+    const DIVING_BLOCK = 'core/captain-america/diving-block#0' as CardExtId;
+    const zones = emptySeats(3);
+    for (const seat of ['0', '1', '2']) {
+      zones[seat]!.hand = [DIVING_BLOCK];
+    }
+    const G = makeG({ hooks: [hook('v-x', 'onAmbush', ['gainWoundEachPlayer'])], playerZones: zones, wounds: THREE_WOUNDS });
+    G.heroAbilityHooks = [
+      { cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onAmbush');
+    assert.deepEqual(
+      (G.pendingDivingBlockWounds ?? []).map((entry) => entry.playerID),
+      ['1', '2', '0'],
+    );
+  });
+
+  it('AC-8 V3: each-non-savior on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const G = makeG({
+      hooks: [singleEffectHook('v-x', 'onFight', { primitive: 'gain-wound', target: 'each-non-savior' })],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepEqual(lastLineSeatOrder(G), ['1', '2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-8 V6: reveal-or-wound on seat 1\'s turn wounds the seats with no match 1, 2, 0', () => {
+    const G = makeG({
+      hooks: [
+        singleEffectHook('v-x', 'onFight', { primitive: 'reveal-or-wound', requireKind: 'hero-class', requireValue: 'strength' }),
+      ],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+      messages: [],
+      cardTraits: {},
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-x' as CardExtId, 'onFight');
+    assert.deepEqual(lastLineSeatOrder(G), ['1', '2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-8 V10: gain-wound-unless-victory-villain-group on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const VIPER = 'core-villain-hydra-viper-00' as CardExtId;
+    const G = makeG({
+      hooks: [
+        {
+          cardId: VIPER,
+          timing: 'onFight',
+          keywords: [],
+          effects: [{ primitive: 'gain-wound-unless-victory-villain-group', victoryVillainGroup: 'hydra' }],
+        },
+      ],
+      playerZones: emptySeats(3),
+      wounds: THREE_WOUNDS,
+      messages: [],
+    });
+    executeVillainAbilities(G, ROTATION_CTX, VIPER, 'onFight');
+    assert.deepEqual(lastLineSeatOrder(G), ['1', '2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-6: Paibok (excluded, D-24343) on seat 1\'s turn still serves the other players ascending, then parks seat 1', () => {
+    const G = makeG({
+      hooks: [singleEffectHook('v-paibok', 'onFight', { primitive: 'give-hq-hero-each-player' })],
+      hq: ['h0', 'h1', 'h2', 'h3', 'h4'] as LegendaryGameState['hq'],
+      heroDeck: ['r0', 'r1', 'r2', 'r3'] as CardExtId[],
+      cardStats: { h0: { cost: 3 }, h1: { cost: 7 }, h2: { cost: 2 }, h3: { cost: 5 }, h4: { cost: 1 }, r0: { cost: 9 }, r1: { cost: 9 }, r2: { cost: 0 }, r3: { cost: 0 } },
+      messages: [],
+      playerZones: emptySeats(3),
+    });
+    executeVillainAbilities(G, ROTATION_CTX, 'v-paibok' as CardExtId, 'onFight');
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['h1'], 'seat 0 (lowest non-current) gains first');
+    assert.deepStrictEqual(G.playerZones['2']!.discard, ['r0']);
+    assert.deepStrictEqual(G.pendingGiveHqHeroChoices, [{ choiceType: 'give-hq-hero', playerID: '1' }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-836 / D-24769 — co2e grey-Hero and Hero-count effects
+// ---------------------------------------------------------------------------
+
+describe('WP-836 co2e grey-Hero and Hero-count effects (D-24769)', () => {
+  const AGENT = 'starting-shield-agent' as CardExtId;
+  const TROOPER = 'starting-shield-trooper' as CardExtId;
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+  const DESTROYER = 'co2e-villain-enemies-of-asgard-destroyer-00' as CardExtId;
+  const ABOMINATION = 'co2e-villain-radiation-abomination-00' as CardExtId;
+  const BEETLE = 'co2e-villain-sinister-syndicate-beetle-00' as CardExtId;
+  const SAVAGE_LAND = 'henchman-savage-land-mutates-00' as CardExtId;
+  const reverseShuffle: ShuffleProvider = {
+    random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+  };
+  const FIXTURE_TRAITS = {
+    'tech-a': { heroClass: 'tech', team: null },
+    'tech-b': { heroClass: 'tech', team: null },
+    'covert-c': { heroClass: 'covert', team: null },
+    'strength-d': { heroClass: 'strength', team: null },
+    'instinct-e': { heroClass: 'instinct', team: null },
+    'classless-f': { heroClass: null, team: null },
+    'strength-g': { heroClass: 'strength', team: null },
+    'covert-h': { heroClass: 'covert', team: null },
+    'dual-ti': { heroClass: 'tech', heroClass2: 'instinct', team: null },
+  } as Record<string, { heroClass: string | null; team: string | null }>;
+  const FIXTURE_STATS: Record<string, { cost: number }> = {
+    'tech-a': { cost: 3 },
+    'tech-b': { cost: 5 },
+    'covert-c': { cost: 2 },
+    'strength-d': { cost: 4 },
+    'instinct-e': { cost: 3 },
+    'classless-f': { cost: 2 },
+    'strength-g': { cost: 6 },
+    'covert-h': { cost: 4 },
+    'dual-ti': { cost: 4 },
+    [OFFICER]: { cost: 3 },
+    'pile-sidekick': { cost: 2 },
+  };
+  const FIXTURE_NAMES: Record<string, { name: string }> = {
+    [DESTROYER]: { name: 'Destroyer' },
+    'tech-a': { name: 'Tech A' },
+    'strength-d': { name: 'Strength D' },
+    'strength-g': { name: 'Strength G' },
+    'covert-c': { name: 'Covert C' },
+    'covert-h': { name: 'Covert H' },
+    'classless-f': { name: 'Classless F' },
+    'dual-ti': { name: 'Dual TI' },
+    [AGENT]: { name: 'S.H.I.E.L.D. Agent' },
+    [WOUND]: { name: 'Wound' },
+  };
+
+  /** One-descriptor hook for a WP-836 test. */
+  function wp836Hook(cardId: CardExtId, timing: 'onAmbush' | 'onFight' | 'onEscape', descriptor: VillainEffectDescriptor): VillainAbilityHook {
+    return { cardId, timing, keywords: [], effects: [descriptor] };
+  }
+
+  /** A seat with the given zones; unspecified zones are empty. */
+  function seat(zones: Partial<PlayerZones>): PlayerZones {
+    return { deck: [], hand: [], discard: [], inPlay: [], victory: [], ...zones } as PlayerZones;
+  }
+
+  /** The fixture state: Hero traits, costs and names, an empty log, and cardsDrawn 0. */
+  function wp836G(hooks: VillainAbilityHook[], playerZones: Record<string, PlayerZones>): LegendaryGameState {
+    const G = makeG({
+      hooks,
+      playerZones,
+      cardTraits: FIXTURE_TRAITS,
+      cardStats: FIXTURE_STATS,
+      cardDisplayData: FIXTURE_NAMES,
+      messages: [],
+    });
+    (G.turnEconomy as unknown as { cardsDrawn: number }).cardsDrawn = 0;
+    return G;
+  }
+
+  const destroyerAmbush: VillainEffectDescriptor = {
+    primitive: 'ko-hero', target: 'each', magnitude: 1, zone: 'discard', greyFilter: 'non-grey',
+  };
+
+  it('T7: the current player parks a non-grey choice; others lose their cheapest non-grey Hero', () => {
+    const G = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {
+      '0': seat({ discard: [AGENT, 'tech-a' as CardExtId, 'tech-b' as CardExtId] }),
+      '1': seat({ discard: [AGENT, 'tech-b' as CardExtId, 'covert-c' as CardExtId] }),
+      '2': seat({ discard: [AGENT, OFFICER] }),
+    });
+    executeVillainAbilities(G, CTX, DESTROYER, 'onAmbush');
+    assert.deepStrictEqual(G.pendingKoHeroChoices, [
+      { choiceType: 'ko-hero', playerID: '0', zones: ['discard'], greyFilter: 'non-grey' },
+    ]);
+    assert.deepStrictEqual(G.playerZones['1']!.discard, [AGENT, 'tech-b'], 'player 1 loses covert-c (cost 2)');
+    assert.deepStrictEqual(G.playerZones['2']!.discard, [AGENT, OFFICER], 'player 2 has no non-grey Hero');
+    assert.deepStrictEqual(G.ko, ['covert-c']);
+  });
+
+  it('D-24783: the Destroyer line says a grey-only player had no NON-GREY Hero to KO', () => {
+    const G = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {
+      '0': seat({ discard: [AGENT, 'tech-a' as CardExtId, 'tech-b' as CardExtId] }),
+      '1': seat({ discard: [AGENT, OFFICER] }),
+    });
+    const results = executeVillainAbilities(G, CTX, DESTROYER, 'onAmbush');
+    assert.equal(results[0]!.greyFilter, 'non-grey');
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(G, results)),
+      'the active player must KO a non-grey Hero; Player 1 had no non-grey Hero to KO',
+    );
+
+    const nobodyG = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {
+      '0': seat({ discard: [AGENT] }),
+      '1': seat({ discard: [OFFICER] }),
+    });
+    const nobodyResults = executeVillainAbilities(nobodyG, CTX, DESTROYER, 'onAmbush');
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(nobodyG, nobodyResults)),
+      'no player had a non-grey Hero to KO',
+    );
+  });
+
+  it('D-24783: an unfiltered each-player discard KO carries no greyFilter and keeps "no hero"', () => {
+    const plainKo: VillainEffectDescriptor = { primitive: 'ko-hero', target: 'each', magnitude: 1, zone: 'discard' };
+    const G = wp836G([wp836Hook(DESTROYER, 'onAmbush', plainKo)], {
+      '0': seat({ discard: [AGENT] }),
+      '1': seat({}),
+    });
+    const results = executeVillainAbilities(G, CTX, DESTROYER, 'onAmbush');
+    assert.equal(Object.keys(results[0]!).includes('greyFilter'), false);
+    assert.equal(
+      composeEffectResultLogLine(resolveEffectResultNames(G, results)),
+      'Player 0 KO’d S.H.I.E.L.D. Agent from their discard pile; Player 1 had no hero to KO',
+    );
+  });
+
+  it('T8: a single non-grey option is auto-KOd with no park', () => {
+    const G = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {
+      '0': seat({ discard: [AGENT, 'tech-a' as CardExtId] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(G, CTX, DESTROYER, 'onAmbush');
+    assert.equal(G.pendingKoHeroChoices, undefined);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [AGENT]);
+    assert.deepStrictEqual(G.ko, ['tech-a']);
+  });
+
+  it('T9: the eligibility helpers skip filtered cards only when the filter is passed', () => {
+    const G = wp836G([], { '0': seat({}) });
+    const zones = seat({
+      discard: [AGENT, 'tech-a' as CardExtId, 'tech-a' as CardExtId, WOUND, OFFICER],
+    });
+    const greyFilterRead = { gameState: G, greyFilter: 'non-grey' as const };
+    assert.deepStrictEqual(buildKoEligibleTargets(zones, ['discard'], greyFilterRead), [
+      { zone: 'discard', cardId: 'tech-a' },
+    ]);
+    assert.equal(countKoableHeroes(zones, ['discard'], greyFilterRead), 2);
+    assert.deepStrictEqual(buildKoEligibleTargets(zones, ['discard']), [
+      { zone: 'discard', cardId: AGENT },
+      { zone: 'discard', cardId: 'tech-a' },
+      { zone: 'discard', cardId: OFFICER },
+    ]);
+    assert.equal(countKoableHeroes(zones, ['discard']), 4);
+  });
+
+  it('T10: selectKoHeroTargetByGreyFilter picks the cheapest non-grey, or starter-first grey', () => {
+    const G = wp836G([], { '0': seat({}) });
+    assert.equal(
+      selectKoHeroTargetByGreyFilter(G, ['tech-b', 'covert-c', 'tech-a'] as CardExtId[], 'non-grey'),
+      'covert-c',
+    );
+    assert.equal(selectKoHeroTargetByGreyFilter(G, [AGENT, WOUND], 'non-grey'), null);
+    assert.equal(selectKoHeroTargetByGreyFilter(G, [OFFICER, TROOPER], 'grey'), TROOPER);
+  });
+
+  it('T11: the grey KO-up-to parks with the filter, or logs a blocked no-op', () => {
+    const fightHook = wp836Hook(DESTROYER, 'onFight', {
+      primitive: 'ko-up-to-from-discard-current', magnitude: 2, greyFilter: 'grey',
+    });
+    const G = wp836G([fightHook], {
+      '0': seat({ discard: [WOUND, 'tech-a' as CardExtId, AGENT, OFFICER] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(G, CTX, DESTROYER, 'onFight');
+    assert.deepStrictEqual(G.pendingKoDiscardChoices, [
+      { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, sourceCardId: DESTROYER, greyFilter: 'grey' },
+    ]);
+    assert.equal(G.messages![0]!.text, 'Fight effect: KO up to 2 grey Hero(es) from your discard pile (Destroyer).');
+    assert.equal(G.messages![0]!.outcome, 'neutral');
+
+    const noGreyG = wp836G([fightHook], {
+      '0': seat({ discard: [WOUND, 'tech-a' as CardExtId] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(noGreyG, CTX, DESTROYER, 'onFight');
+    assert.equal(noGreyG.pendingKoDiscardChoices, undefined);
+    assert.equal(
+      noGreyG.messages![0]!.text,
+      'Fight effect: no grey Heroes in your discard pile (Destroyer); nothing to KO.',
+    );
+    assert.equal(noGreyG.messages![0]!.outcome, 'blocked');
+  });
+
+  it('T12: an unfiltered KO-up-to (Salomé) parks no greyFilter key and keeps its strings', () => {
+    const salomeHook = wp836Hook(DESTROYER, 'onFight', { primitive: 'ko-up-to-from-discard-current', magnitude: 2 });
+    const G = wp836G([salomeHook], { '0': seat({ discard: [WOUND] }), '1': seat({}) });
+    executeVillainAbilities(G, CTX, DESTROYER, 'onFight');
+    assert.deepStrictEqual(G.pendingKoDiscardChoices, [
+      { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, sourceCardId: DESTROYER },
+    ]);
+    assert.equal(G.messages![0]!.text, 'Fight effect: KO up to 2 cards from your discard pile (Destroyer).');
+    const emptyG = wp836G([salomeHook], { '0': seat({}), '1': seat({}) });
+    executeVillainAbilities(emptyG, CTX, DESTROYER, 'onFight');
+    assert.equal(emptyG.messages![0]!.text, 'Fight effect: your discard pile is empty (Destroyer); nothing to KO.');
+  });
+
+  it('T13: Abomination gains +1 recruit per Strength Hero in hand and play', () => {
+    const abominationHook = wp836Hook(ABOMINATION, 'onFight', {
+      primitive: 'gain-recruit-current-count-by-trait', requireKind: 'hero-class', requireValue: 'strength',
+    });
+    const G = wp836G([abominationHook], {
+      '0': seat({ hand: ['strength-d', 'tech-a'] as CardExtId[], inPlay: ['strength-g' as CardExtId] }),
+      '1': seat({}),
+    });
+    G.turnEconomy.recruit = 1;
+    executeVillainAbilities(G, CTX, ABOMINATION, 'onFight');
+    assert.equal(G.turnEconomy.recruit, 3);
+    assert.equal(
+      G.messages![0]!.text,
+      'Fight effect: gained +2 recruit for your 2 strength Hero(es): Strength D (hand), Strength G (played).',
+    );
+    assert.equal(G.messages![0]!.outcome, 'applied');
+
+    const noneG = wp836G([abominationHook], { '0': seat({ hand: ['tech-a' as CardExtId] }), '1': seat({}) });
+    executeVillainAbilities(noneG, CTX, ABOMINATION, 'onFight');
+    assert.equal(noneG.turnEconomy.recruit, 0);
+    assert.equal(noneG.messages![0]!.text, 'Fight effect: you have no strength Heroes, so no recruit was gained.');
+    assert.equal(noneG.messages![0]!.outcome, 'blocked');
+  });
+
+  it('T14: Beetle counts Covert Heroes first, then draws that many', () => {
+    const beetleHook = wp836Hook(BEETLE, 'onFight', {
+      primitive: 'draw-cards-current-count-by-trait', requireKind: 'hero-class', requireValue: 'covert',
+    });
+    const G = wp836G([beetleHook], {
+      '0': seat({
+        hand: ['covert-c' as CardExtId],
+        inPlay: ['covert-h', 'tech-a'] as CardExtId[],
+        deck: ['covert-h', 'deck-2', 'deck-3'] as CardExtId[],
+      }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(G, CTX, BEETLE, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['covert-c', 'covert-h', 'deck-2']);
+    assert.equal(G.turnEconomy.cardsDrawn, 2, 'the drawn Covert Hero did not count itself');
+    assert.equal(
+      G.messages![0]!.text,
+      'Fight effect: drew 2 card(s) for your 2 covert Hero(es): Covert C (hand), Covert H (played).',
+    );
+    assert.equal(G.messages![0]!.outcome, 'applied');
+
+    const reshuffleG = wp836G([beetleHook], {
+      '0': seat({
+        hand: ['covert-c' as CardExtId],
+        inPlay: ['covert-h' as CardExtId],
+        deck: ['deck-1' as CardExtId],
+        discard: ['disc-1', 'disc-2', 'disc-3'] as CardExtId[],
+      }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(reshuffleG, CTX, BEETLE, 'onFight', reverseShuffle);
+    assert.equal(reshuffleG.playerZones['0']!.hand.length, 3, 'covert-c + 2 drawn across the reshuffle');
+    assert.equal(reshuffleG.turnEconomy.cardsDrawn, 2);
+
+    const noneG = wp836G([beetleHook], {
+      '0': seat({ hand: ['tech-a' as CardExtId], deck: ['deck-1' as CardExtId] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(noneG, CTX, BEETLE, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(noneG.playerZones['0']!.hand, ['tech-a']);
+    assert.equal(noneG.messages![0]!.text, 'Fight effect: you have no covert Heroes, so no cards were drawn.');
+    assert.equal(noneG.messages![0]!.outcome, 'blocked');
+
+    const noShuffleG = wp836G([beetleHook], {
+      '0': seat({ hand: ['covert-c' as CardExtId], deck: ['deck-1' as CardExtId] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(noShuffleG, CTX, BEETLE, 'onFight');
+    assert.deepStrictEqual(noShuffleG.playerZones['0']!.hand, ['covert-c']);
+    assert.deepStrictEqual(noShuffleG.messages, [], 'no shuffle source: a silent no-op');
+  });
+
+  it('T15: Savage Land KOs a grey top, draws a Strength or Instinct top, else leaves it', () => {
+    const savageHook = wp836Hook(SAVAGE_LAND, 'onFight', {
+      primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses: ['strength', 'instinct'],
+    });
+    /** Fights Savage Land with `deck` / `discard` and returns the state. */
+    function fight(deck: CardExtId[], discard: CardExtId[] = []): LegendaryGameState {
+      const G = wp836G([savageHook], { '0': seat({ deck: [...deck, 'under' as CardExtId], discard }), '1': seat({}) });
+      if (deck.length === 0) {
+        G.playerZones['0']!.deck = [];
+      }
+      executeVillainAbilities(G, CTX, SAVAGE_LAND, 'onFight', reverseShuffle);
+      return G;
+    }
+    for (const greyTop of [AGENT, 'classless-f' as CardExtId]) {
+      const G = fight([greyTop]);
+      assert.deepStrictEqual(G.ko, [greyTop], `${greyTop} is grey, so it is KO'd`);
+      assert.deepStrictEqual(G.playerZones['0']!.deck, ['under']);
+      assert.equal(G.messages![0]!.outcome, 'applied');
+    }
+    const strengthG = fight(['strength-d' as CardExtId]);
+    assert.deepStrictEqual(strengthG.playerZones['0']!.hand, ['strength-d']);
+    assert.equal(strengthG.turnEconomy.cardsDrawn, 1);
+    assert.equal(strengthG.messages![0]!.text, 'Fight effect: revealed "Strength D" (strength) — drew it.');
+    const dualG = fight(['dual-ti' as CardExtId]);
+    assert.deepStrictEqual(dualG.playerZones['0']!.hand, ['dual-ti']);
+    assert.equal(dualG.messages![0]!.text, 'Fight effect: revealed "Dual TI" (instinct) — drew it.');
+    for (const keptTop of [WOUND, 'covert-c' as CardExtId]) {
+      const G = fight([keptTop]);
+      assert.deepStrictEqual(G.ko, [], `${keptTop} is not KO'd`);
+      assert.deepStrictEqual(G.playerZones['0']!.hand, [], `${keptTop} is not drawn`);
+      assert.equal(G.playerZones['0']!.deck[0], keptTop, `${keptTop} stays on top`);
+      assert.equal(G.messages![0]!.outcome, 'blocked');
+    }
+    assert.match(fight([WOUND]).messages![0]!.text, /revealed "Wound" — left on top of your deck\./);
+    const reshuffleG = fight([], ['strength-d' as CardExtId]);
+    assert.deepStrictEqual(reshuffleG.playerZones['0']!.hand, ['strength-d'], 'reshuffled, then drawn');
+    const emptyG = fight([]);
+    assert.equal(emptyG.messages![0]!.text, 'Fight effect: no card to reveal — your deck and discard pile are empty.');
+    assert.equal(emptyG.messages![0]!.outcome, 'blocked');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-837 / D-24770 — co2e each-player discard and reveal-gated Ambushes
+// ---------------------------------------------------------------------------
+
+describe('WP-837 co2e each-player discard and reveal-gated Ambushes (D-24770)', () => {
+  const MYSTIQUE = 'mystique-01' as CardExtId;
+  const FROST_GIANT = 'frost-giant-warrior-01' as CardExtId;
+  const JUGGERNAUT = 'juggernaut-01' as CardExtId;
+  const LEADER = 'co2e-villain-radiation-the-leader-01' as CardExtId;
+  const SCORPION = 'co2e-villain-sinister-spider-foes-scorpion-01' as CardExtId;
+
+  /**
+   * Builds a one-descriptor hook for a WP-837 test.
+   */
+  function descriptorHook(
+    cardId: CardExtId,
+    timing: 'onAmbush' | 'onFight' | 'onEscape',
+    descriptor: VillainEffectDescriptor,
+  ): VillainAbilityHook {
+    return { cardId, timing, keywords: [], effects: [descriptor] };
+  }
+
+  /**
+   * The text of every logged message, in order.
+   */
+  function messageTexts(G: LegendaryGameState): string[] {
+    return (G.messages ?? []).map((message) => message.text);
+  }
+
+  it('T7: Mystique records an owed X-Men discard on the FIFO and touches no hand', () => {
+    const G = makeG({
+      hooks: [descriptorHook(MYSTIQUE, 'onAmbush', {
+        primitive: 'discard-hero-each-player-by-trait',
+        requireKind: 'team',
+        requireValue: 'x-men',
+      })],
+      playerZones: {
+        '0': { deck: [], hand: ['xmen-a'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: ['other-b'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, MYSTIQUE, 'onAmbush');
+    assert.deepStrictEqual(G.pendingEscapeEffectDiscards, [
+      {
+        escapedCardId: MYSTIQUE,
+        eligibleCosts: [],
+        traitFilter: {
+          requireKind: 'team',
+          requireValue: 'x-men',
+          requirementLabel: 'X-Men',
+          effectLabel: 'Ambush',
+          hasWoundAlternative: false,
+        },
+      },
+    ]);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Ambush effect: each player must discard an X-Men Hero.');
+    assert.equal(lastMessage.outcome, 'applied');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['xmen-a']);
+    assert.deepStrictEqual(G.playerZones['1']!.hand, ['other-b']);
+  });
+
+  it('T8: the -or-wound primitive carries the Wound alternative; a trait-less descriptor is blocked', () => {
+    const G = makeG({
+      hooks: [descriptorHook(FROST_GIANT, 'onAmbush', {
+        primitive: 'discard-hero-or-wound-each-player-by-trait',
+        requireKind: 'hero-class',
+        requireValue: 'ranged',
+      })],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, FROST_GIANT, 'onAmbush');
+    assert.equal(G.pendingEscapeEffectDiscards![0]!.traitFilter!.hasWoundAlternative, true);
+    assert.equal(G.pendingEscapeEffectDiscards![0]!.traitFilter!.requirementLabel, 'Ranged');
+    assert.equal(
+      G.messages![G.messages!.length - 1]!.text,
+      'Ambush effect: each player must discard a Ranged Hero or gain a Wound.',
+    );
+
+    const bare = makeG({
+      hooks: [descriptorHook(FROST_GIANT, 'onAmbush', { primitive: 'discard-hero-or-wound-each-player-by-trait' })],
+      messages: [],
+    });
+    executeVillainAbilities(bare, CTX, FROST_GIANT, 'onAmbush');
+    assert.equal(bare.pendingEscapeEffectDiscards, undefined);
+    const lastMessage = bare.messages![bare.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Ambush effect: no Hero trait was given; no effect.');
+    assert.equal(lastMessage.outcome, 'blocked');
+  });
+
+  const SPLIT_HQ = 'test/duo/left-half#0' as CardExtId;
+  const OPTIC_CORE = 'core/cyclops/optic-blast#3' as CardExtId;
+  const OPTIC_CO2E = 'co2e/cyclops/optic-blast#1' as CardExtId;
+  const RIGHT_HALF_MATCH = 'xmen/other/right-half#2' as CardExtId;
+
+  /**
+   * T9's Juggernaut board: an Optic Blast and a split card (faces left-half / right-half) in
+   * the HQ; P0 holds two Optic Blast reprints, P1 nothing named alike, P2 a right-half match.
+   * The P0 core Optic Blast and the P2 match carry return-on-discard.
+   */
+  function makeJuggernautBoard(): LegendaryGameState {
+    const G = makeG({
+      hooks: [
+        descriptorHook(JUGGERNAUT, 'onAmbush', { primitive: 'discard-hand-matching-hq-card-names-each-player' }),
+      ],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [OPTIC_CORE, OPTIC_CO2E, 'starting-shield-agent', 'pile-wound'] as CardExtId[],
+          discard: [],
+          inPlay: [],
+          victory: [],
+        },
+        '1': { deck: [], hand: ['co2e/storm/x#0'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+        '2': { deck: [], hand: [RIGHT_HALF_MATCH] as CardExtId[], discard: [], inPlay: [], victory: [] },
+      },
+      hq: ['core/cyclops/optic-blast#0', SPLIT_HQ, null, null, null] as CardExtId[],
+      messages: [],
+    });
+    G.splitFaces = { 'test/duo/left-half': 'test/duo/right-half' } as LegendaryGameState['splitFaces'];
+    G.heroAbilityHooks = [
+      { cardId: OPTIC_CORE, timing: 'onDiscard', keywords: ['return-on-discard'], effects: [] },
+      { cardId: RIGHT_HALF_MATCH, timing: 'onDiscard', keywords: ['return-on-discard'], effects: [] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    return G;
+  }
+
+  it('T9: Juggernaut discards every hand card sharing a card slug with an HQ Hero (reprints, split faces)', () => {
+    const G = makeJuggernautBoard();
+    executeVillainAbilities(G, CTX, JUGGERNAUT, 'onAmbush');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['starting-shield-agent', 'pile-wound']);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [OPTIC_CORE, OPTIC_CO2E]);
+    assert.deepStrictEqual(G.playerZones['1']!.hand, ['co2e/storm/x#0'], 'P1 has no matching name');
+    assert.deepStrictEqual(G.playerZones['2']!.discard, [RIGHT_HALF_MATCH], 'the split HQ card counts as its face b');
+    assert.deepStrictEqual(messageTexts(G), [
+      `Ambush effect: Player 0 discarded ${OPTIC_CORE}, ${OPTIC_CO2E} (same card name as a Hero in the HQ).`,
+      `Ambush effect: Player 2 discarded ${RIGHT_HALF_MATCH} (same card name as a Hero in the HQ).`,
+    ]);
+    assert.deepStrictEqual(G.pendingReturnOnDiscard, [
+      { playerID: '0', cardId: OPTIC_CORE },
+      { playerID: '2', cardId: RIGHT_HALF_MATCH },
+    ]);
+  });
+
+  it('T10: no match, and an empty HQ, discard nothing and log a blocked line', () => {
+    const noMatch = makeJuggernautBoard();
+    noMatch.hq = ['core/storm/lightning-bolt#0', null, null, null, null] as LegendaryGameState['hq'];
+    const handsBefore = JSON.stringify(noMatch.playerZones);
+    executeVillainAbilities(noMatch, CTX, JUGGERNAUT, 'onAmbush');
+    assert.equal(JSON.stringify(noMatch.playerZones), handsBefore);
+    const noMatchLast = noMatch.messages![noMatch.messages!.length - 1]!;
+    assert.equal(noMatchLast.text, 'Ambush effect: no player had a card with the same card name as a Hero in the HQ.');
+    assert.equal(noMatchLast.outcome, 'blocked');
+
+    const emptyHq = makeJuggernautBoard();
+    emptyHq.hq = [null, null, null, null, null] as LegendaryGameState['hq'];
+    executeVillainAbilities(emptyHq, CTX, JUGGERNAUT, 'onAmbush');
+    assert.equal(JSON.stringify(emptyHq.playerZones), handsBefore);
+    const emptyLast = emptyHq.messages![emptyHq.messages!.length - 1]!;
+    assert.equal(emptyLast.text, 'Ambush effect: the HQ is empty, so no player discards.');
+    assert.equal(emptyLast.outcome, 'blocked');
+  });
+
+  it('T11: HQ Heroes go to the Hero Deck bottom in slot order, then the HQ refills; haunters stay', () => {
+    const G = makeG({
+      hooks: [descriptorHook(JUGGERNAUT, 'onAmbush', { primitive: 'hq-heroes-to-hero-deck-bottom' })],
+      hq: ['a', 'b', null, 'c', 'd'] as CardExtId[],
+      heroDeck: ['x', 'y'] as CardExtId[],
+      messages: [],
+    });
+    G.hqHaunters = ['h', null, null, null, null] as LegendaryGameState['hqHaunters'];
+    executeVillainAbilities(G, CTX, JUGGERNAUT, 'onAmbush');
+    assert.deepStrictEqual(G.hq, ['x', 'y', 'a', 'b', 'c']);
+    assert.deepStrictEqual(G.heroDeck, ['d']);
+    assert.deepStrictEqual(G.hqHaunters, ['h', null, null, null, null]);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(
+      lastMessage.text,
+      'Ambush effect: put 4 Hero(es) from the HQ on the bottom of the Hero Deck (a, b, c, d); the HQ refilled.',
+    );
+    assert.equal(lastMessage.outcome, 'applied');
+  });
+
+  it('T12: an empty HQ and an empty Hero Deck change nothing', () => {
+    const G = makeG({
+      hooks: [descriptorHook(JUGGERNAUT, 'onAmbush', { primitive: 'hq-heroes-to-hero-deck-bottom' })],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, JUGGERNAUT, 'onAmbush');
+    assert.deepStrictEqual(G.hq, [null, null, null, null, null]);
+    assert.deepStrictEqual(G.heroDeck, []);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Ambush effect: the HQ is empty; no Hero was put on the bottom of the Hero Deck.');
+    assert.equal(lastMessage.outcome, 'blocked');
+  });
+
+  const LEADER_GATED: VillainEffectDescriptor = {
+    primitive: 'play-villain-deck-cards',
+    magnitude: 1,
+    requireKind: 'hero-class',
+    requireValue: 'strength',
+  };
+  const STRENGTH_TRAITS = {
+    'strength-hero': { heroClass: 'strength', team: null },
+    'covert-hero': { heroClass: 'covert', team: null },
+  };
+
+  /**
+   * A one-seat Leader board with the given hand and play area.
+   */
+  function makeLeaderBoard(hand: string[], inPlay: string[]): LegendaryGameState {
+    return makeG({
+      hooks: [descriptorHook(LEADER, 'onAmbush', LEADER_GATED)],
+      playerZones: {
+        '0': { deck: [], hand: hand as CardExtId[], discard: [], inPlay: inPlay as CardExtId[], victory: [] },
+      },
+      cardTraits: STRENGTH_TRAITS,
+      messages: [],
+    });
+  }
+
+  it('T13: The Leader plays nothing when the current player has a Strength Hero, and fails closed with no player', () => {
+    const revealLine = 'Ambush effect: Player 0 revealed a Strength Hero, so no card is played from the Villain Deck.';
+    const inHand = makeLeaderBoard(['strength-hero'], []);
+    assert.equal(villainCardPlaysVillainDeckCards(inHand, LEADER, 'onAmbush', '0'), 0);
+    executeVillainAbilities(inHand, CTX, LEADER, 'onAmbush');
+    assert.deepStrictEqual(messageTexts(inHand), [revealLine]);
+    assert.equal(inHand.messages![0]!.outcome, 'blocked');
+
+    const inPlay = makeLeaderBoard([], ['strength-hero']);
+    assert.equal(villainCardPlaysVillainDeckCards(inPlay, LEADER, 'onAmbush', '0'), 0);
+    executeVillainAbilities(inPlay, CTX, LEADER, 'onAmbush');
+    assert.deepStrictEqual(messageTexts(inPlay), [revealLine]);
+
+    const none = makeLeaderBoard(['covert-hero'], []);
+    assert.equal(villainCardPlaysVillainDeckCards(none, LEADER, 'onAmbush', '0'), 1);
+    executeVillainAbilities(none, CTX, LEADER, 'onAmbush');
+    assert.deepStrictEqual(messageTexts(none), [], 'no reveal line when the player cannot reveal');
+
+    assert.equal(villainCardPlaysVillainDeckCards(inHand, LEADER, 'onAmbush', undefined), 0, 'gated + no player fails closed');
+
+    const ungated = makeG({
+      hooks: [descriptorHook(LEADER, 'onAmbush', { primitive: 'play-villain-deck-cards', magnitude: 2 })],
+    });
+    assert.equal(villainCardPlaysVillainDeckCards(ungated, LEADER, 'onAmbush', undefined), 2, 'ungated ignores the player');
+  });
+
+  const SCORPION_GATED: VillainEffectDescriptor = {
+    primitive: 'gain-wound',
+    target: 'each',
+    requireCondition: 'another-group-villain-in-city',
+  };
+
+  /**
+   * A two-seat Scorpion board with the given City and selected Villain Groups.
+   */
+  function makeScorpionBoard(city: (string | null)[], villainGroupIds: string[]): LegendaryGameState {
+    const G = makeG({
+      hooks: [descriptorHook(SCORPION, 'onAmbush', SCORPION_GATED)],
+      wounds: ['w0', 'w1', 'w2'] as CardExtId[],
+      messages: [],
+    });
+    G.city = city as LegendaryGameState['city'];
+    G.selection = { villainGroupIds } as unknown as LegendaryGameState['selection'];
+    return G;
+  }
+
+  it('T14: Scorpion wounds everyone only with another Villain of its own group in the City', () => {
+    const groups = ['co2e/sinister-spider-foes', 'co2e/sinister-syndicate'];
+    const withGoblin = makeScorpionBoard(
+      [SCORPION, 'co2e-villain-sinister-spider-foes-green-goblin-01', null, null, null],
+      groups,
+    );
+    const goblinResults = executeVillainAbilities(withGoblin, CTX, SCORPION, 'onAmbush');
+    assert.equal(withGoblin.playerZones['0']!.discard.length, 1);
+    assert.equal(withGoblin.playerZones['1']!.discard.length, 1);
+    assert.deepStrictEqual(goblinResults.map((result) => result.keyword), ['gainWoundEachPlayer']);
+
+    const secondCopy = makeScorpionBoard(
+      [SCORPION, 'co2e-villain-sinister-spider-foes-scorpion-02', null, null, null],
+      groups,
+    );
+    executeVillainAbilities(secondCopy, CTX, SCORPION, 'onAmbush');
+    assert.equal(secondCopy.playerZones['0']!.discard.length, 1, 'a second Scorpion copy is another group Villain');
+
+    const otherGroups = makeScorpionBoard(
+      [SCORPION, 'co2e-villain-sinister-syndicate-beetle-01', 'core-villain-spider-foes-venom-01', null, null],
+      groups,
+    );
+    const blockedResults = executeVillainAbilities(otherGroups, CTX, SCORPION, 'onAmbush');
+    assert.deepStrictEqual(blockedResults, []);
+    assert.equal(otherGroups.playerZones['0']!.discard.length, 0);
+    assert.equal(otherGroups.playerZones['1']!.discard.length, 0);
+    assert.deepStrictEqual(messageTexts(otherGroups), [
+      'Ambush effect: no other sinister-spider-foes Villain is in the City; no effect.',
+    ]);
+
+    const unselected = makeScorpionBoard(
+      [SCORPION, 'co2e-villain-sinister-spider-foes-green-goblin-01', null, null, null],
+      ['co2e/sinister-syndicate'],
+    );
+    executeVillainAbilities(unselected, CTX, SCORPION, 'onAmbush');
+    assert.equal(unselected.playerZones['0']!.discard.length, 0, 'fails closed');
+    assert.deepStrictEqual(messageTexts(unselected), [
+      "Ambush effect: the Villain's group is not among this match's Villain Groups; no effect.",
+    ]);
+  });
+
+  it('T15: the group is the LONGEST selected prefix of the card id', () => {
+    const eliteCard = 'test-villain-foes-elite-x-01' as CardExtId;
+    const G = makeG({
+      hooks: [descriptorHook(eliteCard, 'onAmbush', SCORPION_GATED)],
+      wounds: ['w0', 'w1'] as CardExtId[],
+      messages: [],
+    });
+    G.city = [eliteCard, 'test-villain-foes-y-01', null, null, null] as LegendaryGameState['city'];
+    G.selection = { villainGroupIds: ['test/foes', 'test/foes-elite'] } as unknown as LegendaryGameState['selection'];
+    executeVillainAbilities(G, CTX, eliteCard, 'onAmbush');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'a foes Villain is not another foes-elite Villain');
+    assert.deepStrictEqual(messageTexts(G), ['Ambush effect: no other foes-elite Villain is in the City; no effect.']);
+  });
+
+  it('T25: Juggernaut discards seat by seat from the current player, then clockwise (D-24780)', () => {
+    const cases: Array<{ ctx: unknown; expectedSeats: string[] }> = [
+      { ctx: { currentPlayer: '2' }, expectedSeats: ['2', '0'] },
+      { ctx: { currentPlayer: '1' }, expectedSeats: ['2', '0'] },
+      { ctx: {}, expectedSeats: ['0', '2'] },
+    ];
+    for (const testCase of cases) {
+      const G = makeJuggernautBoard();
+      executeVillainAbilities(G, testCase.ctx, JUGGERNAUT, 'onAmbush');
+      const loggedSeats = messageTexts(G).map((text) => text.split('Player ')[1]!.split(' ')[0]!);
+      assert.deepStrictEqual(loggedSeats, testCase.expectedSeats, `log order for ${JSON.stringify(testCase.ctx)}`);
+      assert.deepStrictEqual(
+        G.pendingReturnOnDiscard!.map((entry) => entry.playerID),
+        testCase.expectedSeats,
+        `reaction queue order for ${JSON.stringify(testCase.ctx)}`,
+      );
+    }
   });
 });

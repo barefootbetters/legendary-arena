@@ -1,0 +1,53 @@
+{{- /*
+  why: the page shell, reconciled from all four copies (E engine, H herbs,
+  C corporate memory, J personal). The structure is E's, which H and C already
+  share: a header, then a two-column grid of a sidebar <aside> and the
+  <main data-pagefind-body> content column. J's breadcrumbs move into the core
+  (D-24727 section 2), and three no-JavaScript reader features are new: the
+  skip link, the TOC and heading anchors (those two live in single.html and the
+  heading hook).
+
+  why: the skip link is the first focusable element on every page and targets
+  <main id="main">, so a keyboard reader can pass the header and the sidebar in
+  one keystroke. It sits outside <main>, so Pagefind never indexes it.
+
+  why: data-pagefind-body scopes Pagefind's index to <main>. The sidebar (which
+  lists page titles) and the header search chrome sit outside it, so search
+  results carry page content, not navigation (D-24293). The breadcrumbs sit
+  inside <main>, at the top of the content column, and carry
+  data-pagefind-ignore for the same reason. The 404 page's <main> carries no
+  data-pagefind-body, so "Page not found" never shows up as a search result.
+
+  why: the Pagefind loader renders only when params.ewiki.search is true. It is
+  the one script element the theme emits (D-24293), and search = false omits
+  it along with the header stub. J's year-stamped site footer is dropped: no
+  core footer and no clock, so two builds stay byte-identical.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $search := true -}}
+{{- if isset $ewiki "search" -}}{{- $search = index $ewiki "search" -}}{{- end -}}
+<!doctype html>
+<html lang="{{ or site.Language.Lang "en" }}">
+<head>
+  {{- partial "ewiki/head.html" . }}
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  {{- partial "ewiki/header.html" . }}
+  <div class="layout">
+    <aside class="sidebar">
+      <nav aria-label="Site">
+        {{- partial "ewiki/sidebar.html" . }}
+      </nav>
+    </aside>
+    <main id="main" class="content"{{ if ne .Kind "404" }} data-pagefind-body{{ end }}>
+      {{- partial "ewiki/breadcrumbs.html" . }}
+      {{ block "main" . }}{{ end }}
+    </main>
+  </div>
+  {{- if $search }}
+  {{- partial "ewiki/search.html" . }}
+  {{- end }}
+  {{- partial "ewiki/body-end.html" . }}
+</body>
+</html>

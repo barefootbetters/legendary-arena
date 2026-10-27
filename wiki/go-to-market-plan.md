@@ -15,7 +15,7 @@ related:
   - video-production-workflow.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\go-to-market-plan.md (this page — https://ewiki.legendary-arena.com/go-to-market-plan/)
+  - C:\dev\legendary-arena\wiki\go-to-market-plan.md (this page — https://ewiki.legendary-arena.com/go-to-market-plan/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-09-02
 canonical-source: docs/marketing/go-to-market-plan.md

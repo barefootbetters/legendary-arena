@@ -212,6 +212,49 @@ const GATE_BLOCKERS: readonly GateBlocker[] = [
     },
     remove: (G) => { Reflect.deleteProperty(G, 'pendingEscapeProcedures'); },
   },
+  {
+    label: 'pendingEscapeEffectDiscards is non-empty',
+    apply: (G) => {
+      G.pendingEscapeEffectDiscards = [{ escapedCardId: 'primus-01', eligibleCosts: [2, 3, 5, 7] }];
+    },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingEscapeEffectDiscards'); },
+  },
+  {
+    // why: WP-828 / D-24761 — owed Man Out of Time grants (Winter Soldier's 2>4) are opened into a
+    // seat choice after the move, like the escape queues above.
+    label: 'pendingOutOfTimeGrants is non-empty',
+    apply: (G) => { G.pendingOutOfTimeGrants = [{ playerID: '0', sourceCardId: 'ca75/winter-soldier/2-4#0' }]; },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingOutOfTimeGrants'); },
+  },
+  {
+    // why: WP-829 / D-24762 — owed Go Back in Time Purges are opened into a seat choice after
+    // the move, like the escape queues above.
+    label: 'pendingTimestreamPurges is non-empty',
+    apply: (G) => { G.pendingTimestreamPurges = [{ chooserPlayerID: '0', twistCardId: 'scheme-twist-01' }]; },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingTimestreamPurges'); },
+  },
+  {
+    // why: WP-830 / D-24763 — owed Enigma peek offers are opened into a seat choice after the
+    // move, like the escape queues above.
+    label: 'pendingEnigmaPeekOffers is non-empty',
+    apply: (G) => { G.pendingEnigmaPeekOffers = [{ playerID: '0', positions: [] }]; },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingEnigmaPeekOffers'); },
+  },
+  {
+    // why: WP-845 / D-24779 — owed reveal-or-gain-a-Wound choices are opened into a seat choice
+    // after the move, like the escape queues above.
+    label: 'pendingRevealOrWoundChoices is non-empty',
+    apply: (G) => {
+      G.pendingRevealOrWoundChoices = [{
+        sourceCardId: 'core/brotherhood/sabretooth#0',
+        currentPlayerID: '0',
+        revealOptionLabel: 'Reveal a matching X-Men Hero',
+        revealingSeats: ['1'],
+        strikeBlockThreatKind: 'fight',
+      }];
+    },
+    remove: (G) => { Reflect.deleteProperty(G, 'pendingRevealOrWoundChoices'); },
+  },
 ];
 
 describe('operator setters — gate (WP-806 §D 1)', () => {

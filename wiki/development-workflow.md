@@ -19,7 +19,7 @@ related:
   - system-backup.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\development-workflow.md (this page — https://ewiki.legendary-arena.com/development-workflow/)
+  - C:\dev\legendary-arena\wiki\development-workflow.md (this page — https://ewiki.legendary-arena.com/development-workflow/)
   - ../docs/ai/REFERENCE/development-workflow.md
   - ../docs/ai/REFERENCE/01-render-infrastructure.md
   - ../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md
@@ -99,7 +99,7 @@ If `pnpm check` passes and tests are green, the machine is ready.
 | **Phone** | Mobile control surface — PR review + merge, deploy monitoring, remote session steering via Tailscale. Does not author. |
 | **Claude** | Two roles: **Claude Code** (laptop or workstation) builds to WP/EC contract; **Claude-in-CI** runs the nightly Inspector triage agent. |
 | **GitHub** | Branch → PR → squash-merge `main`; holds the governance ledger; runs CI; merge triggers deploy. |
-| **DigitalOcean droplet** | Game server + PostgreSQL 18 (`localhost`) on one self-hosted Ubuntu 24.04 box (2 vCPU / 4 GB, ~$24/mo) behind Cloudflare, since the 2026-10-12 cutover. The server deploys on merge to `main` once CI passes ([`deploy-server.yml`](../.github/workflows/deploy-server.yml), D-24708), through the `legendary-arena-lab` repo's `40-app-deploy.ps1`; wiki-, docs-, and front-end-only pushes are skipped. Render (production until 2026-10-12; September 2026 bill **$146.35**) was suspended at cutover and deleted on 2026-10-16 ([Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026), [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)). |
+| **DigitalOcean droplet** | Game server + PostgreSQL 18 (`localhost`) on one self-hosted Ubuntu 24.04 box (2 vCPU / 4 GB, ~$24/mo) behind Cloudflare, since the 2026-10-12 cutover. The server deploys on merge to `main` once CI passes ([`deploy-server.yml`](../.github/workflows/deploy-server.yml), D-24708), through the `legendary-arena-lab` repo's `40-app-deploy.ps1`; wiki-, docs-, and front-end-only pushes are skipped. Render (production until 2026-10-12; September 2026 bill **$146.35**) was suspended at cutover for a 7-day rollback window and deleted on 2026-10-22 ([Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026), [Ubuntu Lab Provisioning](ubuntu-lab-provisioning.md)). |
 | **Cloudflare** | Pages hosts the public front-ends (`www`, `play`, `cards`, `legends`); assets-only Workers host the two Access-gated sites, the ewiki and `dashboard` (D-24690), deployed by GitHub Actions; R2 hosts card images (`images.legendary-arena.com`) and the private nightly DB backups. |
 
 ### Round trip (idea to live)
@@ -855,17 +855,17 @@ C:\dev\
 └── legendary-arena-com\       ← marketing repo clone (if needed)
 ```
 
-**Laptop** (current — on pCloud):
+**Laptop** (off pCloud since 2026-10-17):
 
 ```
-C:\pcloud\BB\DEV\
+C:\dev\
 └── legendary-arena\           ← git clone (same repo, different path)
 ```
 
-The laptop repo currently lives on pCloud. A migration to a local path
-(off pCloud) is planned but deferred. pCloud sync creates `[conflicted N]`
-duplicate files and has caused `.git` refs corruption — the workstation
-should NOT use pCloud for the repo clone.
+The laptop repo moved off pCloud on 2026-10-17 (see
+[Workstation Layout Migration](workstation-layout-migration.md)). pCloud
+sync had created `[conflicted N]` duplicate files and corrupted `.git`
+refs. No machine should keep a repo clone on pCloud.
 
 ### Sync rules
 
@@ -934,10 +934,10 @@ Each platform manages its own configuration and secrets independently.
   `legendary-arena-db` (managed PostgreSQL, `pro-4gb`), declared in
   `render.yaml`. The server auto-deployed on merge to `main` (skipping
   `buildFilter.ignoredPaths` pushes) and ran migrations in `buildCommand`.
-- At the 2026-10-12 cutover the web service was suspended and kept as a
-  rollback target. On 2026-10-16 (Phase 7) the service, the database and the
-  Blueprint were deleted; a final database dump is kept under `render-final/`
-  in the production R2 bucket and pCloud.
+- At the 2026-10-12 cutover the web service was suspended, kept for a 7-day
+  rollback window with the Render database as the rollback copy. After the
+  window, the web service, the database, and the `render.yaml` Blueprint were
+  deleted on 2026-10-22. The Render workspace is empty, on the free Hobby plan.
 - **Cost:** $146.35 for September 2026 (server $85.00, Postgres $55.30,
   builds $5.00, bandwidth $1.05); August was $146.50, so ~$146/mo was the
   steady rate. The comparison is in
@@ -978,6 +978,17 @@ Each platform manages its own configuration and secrets independently.
 - Connects laptop, workstation, and phone
 - No configuration in the repo — purely operator-managed
 - Admin console at `login.tailscale.com`
+
+**Anthropic** — Claude Code subscription:
+
+- Plan: Claude Max 20x, billed to the `jeff@barefootbetters.com` organization
+  on the 21st of each month. It covers the Claude Code sessions that build
+  the project.
+- **Cost:** $200/mo. The 2026-10-21 payment covers Oct 21 to Nov 21, 2026.
+  The invoice and receipt are filed in pCloud under
+  `legendary-arena/ops/accounting/expenses2026/`.
+- The AI coach's Anthropic API usage (`ANTHROPIC_API_KEY`) is metered
+  separately and is not on this bill.
 
 ### What pCloud is and isn't
 
@@ -1047,7 +1058,7 @@ rotated secret (the droplet, GitHub Actions), restart `la-server` and check
 
 | Tool | Minimum | Pinned where | Upgrade path |
 |---|---|---|---|
-| Node.js | v22+ (`engines`); production pinned at `24.18.0` | `.node-version` (checked by `pnpm check:node-pin`, D-24205); on the production droplet, installed by the `legendary-arena-lab` repo's `10-node.ps1`; `pnpm check` validates the local major | Bump `.node-version` and the lab's `10-node.ps1` pin for the droplet together; run `pnpm -r build && pnpm -r test` after |
+| Node.js | v22+ (`engines`); production pinned at `24.18.0` | `.node-version` + `render.yaml` `NODE_VERSION` (kept equal by `pnpm check:node-pin`, D-24205); on the production droplet, installed by the `legendary-arena-lab` repo's `10-node.ps1`; `pnpm check` validates the local major | Bump `.node-version` and `NODE_VERSION` together, and the lab's `10-node.ps1` pin for the droplet; run `pnpm -r build && pnpm -r test` after |
 | pnpm | v10+ (`engines`); `10.32.1` | `package.json` `packageManager` | `npm install -g pnpm@<version>`; run `pnpm install --frozen-lockfile` to verify lockfile compatibility |
 | boardgame.io | `0.50.x` (locked) | `package.json` + `pnpm check` verifies exact range | Do NOT upgrade without a DECISIONS.md entry — API surface changes are breaking |
 | Hugo | `0.161.1 Extended` | `apps/wiki-viewer/.hugo-version` | Update `.hugo-version` + test with `pnpm wiki-viewer:build`; needs DECISIONS entry |
@@ -1081,7 +1092,7 @@ Each deploy surface has a deterministic rollback path.
 
 | Surface | Fail signal | Rollback action | Verification |
 |---|---|---|---|
-| **DigitalOcean droplet** (server) | Health gate fails, migration error, 5xx spike | Revert the PR on GitHub → merge the revert to `main` → `deploy-server.yml` deploys it once CI passes. For an immediate rollback, run `sudo flock -w 600 /run/la-deploy.lock pwsh -NoProfile -File /opt/la-lab/infra/scripts/40-app-deploy.ps1 -Rollback` on the droplet. It switches `/opt/la-app/current` back to the previous release behind the standby, with no rebuild and no migration reversed. For an older commit, hand-deploy it (`DEPLOY_REF=<sha>` with `40-app-deploy.ps1`); the CI gate refuses older commits by design. | `curl $GAME_SERVER_URL/health` returns 200 |
+| **DigitalOcean droplet** (server) | Health gate fails, migration error, 5xx spike | Revert the PR on GitHub → merge the revert to `main` → `deploy-server.yml` deploys it once CI passes. For an immediate rollback, run `sudo flock -w 600 /run/la-deploy.lock pwsh -NoProfile -File /opt/la-lab/infra/scripts/40-app-deploy.ps1 -Rollback` on the droplet. It switches `/opt/la-app/current` back to the previous release behind the standby, with no rebuild and no migration reversed. For an older commit, hand-deploy it (`DEPLOY_REF=<sha>` with `40-app-deploy.ps1`); the CI gate refuses older commits by design. During the 7-day window after the 2026-10-12 cutover, a whole-platform rollback is also possible: restore the DNS-only CNAME `api` → `legendary-arena-server.onrender.com` and resume the suspended Render service | `curl $GAME_SERVER_URL/health` returns 200 |
 | **Cloudflare Worker** (ewiki) | Build failure, missing page, stale content | Revert the PR → merge to `main` → `wiki-viewer` workflow rebuilds and redeploys the Worker | Page content updated on `ewiki.legendary-arena.com` (after the Access login) |
 | **Cloudflare Worker** (dashboard) | Build failure, blank page, wrong data source | Revert the PR → merge to `main` → `dashboard-deploy` workflow rebuilds and redeploys the Worker | Dashboard loads at `dashboard.legendary-arena.com` (after the Access login) |
 | **Cloudflare Pages** (public front-ends) | Build failure, missing assets, blank page | Revert the PR → merge to `main` → Pages auto-rebuilds | Site loads at `play.legendary-arena.com` |

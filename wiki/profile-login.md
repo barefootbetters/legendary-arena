@@ -19,7 +19,7 @@ related:
   - leaderboard.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\profile-login.md (this page — https://ewiki.legendary-arena.com/profile-login/)
+  - C:\dev\legendary-arena\wiki\profile-login.md (this page — https://ewiki.legendary-arena.com/profile-login/)
   - ../docs/ai/work-packets/WP-102-public-profile-page.md
   - ../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md
   - ../docs/ai/work-packets/WP-160-hanko-client-ui.md
@@ -60,7 +60,9 @@ source:
   - ../data/migrations/022_create_player_loadouts.sql
   - ../data/migrations/034_add_team_key_to_competitive_scores.sql
   - ../docs/ai/work-packets/WORK_INDEX.md
-last-reviewed: 2026-10-14
+  - ../packages/lagn-spec/schemas/lagn-v1.json
+  - ../docs/ai/DECISIONS.md
+last-reviewed: 2026-10-20
 ---
 
 # Profile Login
@@ -404,6 +406,85 @@ profile — **shipped as [WP-303](../docs/ai/work-packets/WP-303-play-saved-load
 stored LAGN; (3) the attempt ↔ verified-score join (`scenario_key` +
 `team_key`) with won/lost markers; (4) the public "toughest taken on"
 showcase projection.
+
+#### Addendum — favourites, "now playing", and builder hand-offs (2026-10-14 briefs)
+
+> **Status: design direction — not scheduled, no WP yet.** The one exception
+> is storage, which Jeff decided on 2026-10-20 (**D-24748**, below). This
+> addendum comes from three desk briefs written in the same 2026-10-14
+> conversation and checked against `main` on 2026-10-20. What those briefs
+> share with shipped work isn't repeated here: saved loadouts (WP-301 / 302),
+> the `?lagn=` import (WP-362, D-24154), the bench (WP-404), player counts
+> (WP-372, D-24165), Play this loadout (WP-303), support pools (WP-391),
+> gauntlet runs (WP-449), and the match-LAGN read (WP-361, D-24153).
+
+**What's new.**
+
+1. **Favourite heroes ("fav five").** The player fills a favourite team on
+   the profile slot by slot, with the Registry Viewer as the picker. One
+   button opens a favourite in the Registry Viewer's loadout builder through
+   `?lagn=`, where the player sets or changes the fight. A favourite also
+   keeps its four supply counts and its `support_pools` composition.
+2. **"Now playing" on the profile.** Shows the setup of the player's live
+   match, linked into the Registry Viewer. The setup itself is already served
+   by `GET /api/match/:matchId/lagn` (WP-361 / D-24153, public per D-24446).
+3. **Next / Now / Favourites as one profile panel.** *Next* is derived at
+   read time, the way gauntlet progress is (D-24262), and is never stored.
+   *Now* is "now playing", and *Favourites* are the fav five.
+4. **"Open in cards builder" on each saved loadout row**, next to Play this
+   loadout. The row builds the `?lagn=` link from its stored LAGN and opens
+   the Registry Viewer's Loadout tab. My reading: base64url-encoding the
+   stored text doesn't parse it, so this fits arena-client's opaque-`lagn`
+   rule (D-24087).
+5. **Auto-filled supply counts.** The builder fills the four supply counts
+   (bystanders, wounds, S.H.I.E.L.D. officers, sidekicks) from a
+   per-player-count table. **No such table exists.** D-24165's
+   `PLAYER_COUNT_SETUP` covers villain groups, henchmen groups, villain-deck
+   bystanders and heroes. The D-24032 floor (bystanders, wounds and officers
+   ≥ 30) is an engine minimum, not a per-count default. A WP would add the
+   table and record where its numbers come from.
+
+**Storage: a favourite is a complete saved loadout (D-24748).** The briefs
+stored a favourite as a LAGN loadout with no scheme or mastermind. That
+can't be saved. `POST /api/me/loadouts` validates every write with
+`@legendary-arena/lagn` (D-24086), and
+[`lagn-v1.json`](../packages/lagn-spec/schemas/lagn-v1.json) lists
+`mastermind`, `scheme`, `villain_groups`, `henchmen_groups`, `heroes` and the
+four supply counts in `setup.required`. The `?lagn=` import runs the same
+published validator, so it can't carry a heroes-only loadout either. Of the
+three options (relax `setup.required` with a LAGN version bump, add a
+separate favourites shape, or keep favourites as full loadouts), Jeff chose
+the third:
+
+- A favourite is an ordinary `player_loadouts` row: fight, heroes, supply
+  counts and support pools. The counts and pools come along with the row, so
+  nothing extra stores them.
+- The Favourites row of the inversion table above (team fixed, fight open) is
+  a **builder flow, not a storage shape**. The player picks heroes in the
+  builder's local draft and saves once the fight is filled in. "Open in
+  builder" opens a complete favourite so the player can swap its fight.
+- The WP decides how a loadout is marked as a favourite (a pin column, a slot
+  list, a derived ordering). A new column gets its own D-entry and stays
+  decorative (D-24087). Favourites count toward the 50-loadout cap.
+
+**Constraints for the WP.**
+
+- **"Five" isn't fixed.** The hero slot count follows the scheme (D-24672).
+  On the standard table, solo is 3 heroes and 2–4 players is 5 (D-24165). That
+  table is standard only: the "What If…?" modified setup is deferred. The
+  profile shows the slots the favourite's scheme and player count call for.
+- **Card images in the picker are open, not forbidden.** D-24087 deferred
+  rendering a loadout as cards in favour of a name-level summary. It didn't
+  rule images out.
+- **"Now playing" reveals that a player is in a live match.** Showing it on
+  the public profile changes the closed `PublicProfileView` projection
+  (WP-102), so it needs its own D-entry. An owner-only first cut avoids the
+  public exposure.
+- **More showcase slots are a paid feature.** The marketing repo's
+  `docs/product/profile-features-free-vs-paid.md` lists "more showcase slots"
+  and pinning runs into showcase slots in the paid column. The number of
+  favourite slots on the free tier is a business call for the WP, not a fixed
+  five.
 
 ### Owner-page identity fields — `accountId`, `displayName`, `handleCanonical`
 

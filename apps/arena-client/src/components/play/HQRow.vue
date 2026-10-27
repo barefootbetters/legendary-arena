@@ -23,6 +23,11 @@ import type { SubmitMove } from './uiMoveName.types';
  * Disabled-state tooltip precedence locked at EC-132 §3 (stage → resource
  * → structural).
  *
+ * Column alignment: with `isColumnAligned`, a blank leading cell sits under the
+ * City's Escaped Pile and every cell takes the same fixed widths as a
+ * column-aligned `CityRow`, so Hero 1 is under the Bridge … Hero 5 under the
+ * Sewers, and the Hero Deck under the Villain Deck, as on the physical board.
+ *
  * Per the EC-132 §2 SFC authoring whitelist: this is a tested non-leaf
  * composer that USES composables, so it MUST use
  * `defineComponent({ setup() { return {...} } })` per P6-30 / P6-46 /
@@ -53,6 +58,13 @@ export default defineComponent({
       required: false,
       default: true,
     },
+    // why: WP-831 / D-24764 — City spaces beyond the normal five (a scheme can add them). Each adds
+    // a blank leading cell so Hero 1 stays under the Bridge; the HQ itself is always 5 (rules v23).
+    extraCitySpaces: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
     // why: D-24614 — UIState.game.hasHealedThisTurn. The engine refuses
     // recruit and fight for the rest of a turn in which the viewer healed
     // (D-24180 heal lock), so the button gate must see it too.
@@ -68,6 +80,14 @@ export default defineComponent({
     submitMove: {
       type: Function as PropType<SubmitMove>,
       required: true,
+    },
+    // why: D-24747 — Abomination pairs each City space with the HQ slot under it
+    // by position. The desktop playmat sets this with CityRow's flag, so the Hero
+    // a player sees under a Villain is the one its fight cost reads.
+    isColumnAligned: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   setup(props) {
@@ -122,10 +142,26 @@ export default defineComponent({
 <template>
   <section
     class="hq-row"
+    :class="{ 'hq-row--column-aligned': isColumnAligned }"
     data-testid="play-hq-row"
     aria-label="HQ"
   >
     <ol class="hq-slots">
+      <!-- why: D-24747 — the blank cell under the City's Escaped Pile, as on the
+           physical board, so Hero 1 lands under the Bridge. Decorative only. -->
+      <li
+        v-if="isColumnAligned"
+        class="hq-slot hq-slot--edge-column"
+        data-testid="play-hq-spacer"
+        aria-hidden="true"
+      />
+      <li
+        v-for="extraIndex in (isColumnAligned ? extraCitySpaces : 0)"
+        :key="`extra-${extraIndex}`"
+        class="hq-slot hq-slot--space-column"
+        data-testid="play-hq-extra-spacer"
+        aria-hidden="true"
+      />
       <!-- why: 6-cell visual layout locked per EC-132 §2:
            Hero1 | Hero2 | Hero3 | Hero4 | Hero5 | Hero Deck.
            Per D-12903, 6-slot scenarios extend gracefully to 7 cells. -->
@@ -133,6 +169,7 @@ export default defineComponent({
         v-for="(cell, position) in buildCells()"
         :key="position"
         class="hq-slot"
+        :class="cell.kind === 'hero' ? 'hq-slot--space-column' : 'hq-slot--edge-column'"
       >
         <template v-if="cell.kind === 'hero'">
           <button
@@ -196,6 +233,27 @@ export default defineComponent({
 
 .hq-slot {
   min-width: 6rem;
+}
+
+/* why: D-24747 — the same fixed columns as a column-aligned CityRow; the Hero is
+   centred in its column so it reads as sitting under that City space. */
+.hq-row--column-aligned .hq-slot--edge-column {
+  flex: 0 0 var(--board-edge-column-width, auto);
+  min-width: 0;
+}
+
+/* why: the HQ can sit inside a padded panel the City row does not have; the
+   parent names that left inset in --board-hq-row-inset, and the blank leading
+   cell gives it back so the columns still line up. */
+.hq-row--column-aligned .hq-slot--edge-column[data-testid='play-hq-spacer'] {
+  flex-basis: calc(var(--board-edge-column-width, 0px) - var(--board-hq-row-inset, 0px));
+}
+
+.hq-row--column-aligned .hq-slot--space-column {
+  flex: 0 0 var(--board-space-column-width, auto);
+  min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .hq-slot-empty {

@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 1972,
+    "totalEntries": 2011,
     "byScope": {
-      "hero": 794,
-      "villain": 722,
+      "hero": 815,
+      "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 565,
+      "executable": 636,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
-      "unmarked": 1046,
+      "unmarked": 1014,
       "subsystem": 5
     }
   },
@@ -2284,6 +2284,23 @@
       "name": "Ant-Man",
       "set": "antm",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "giant-ego",
+          "name": "Giant Ego"
+        }
+      ]
+    },
+    {
+      "extId": "antm/ant-man",
+      "name": "Ant-Man",
+      "set": "antm",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -4282,10 +4299,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "computer-uploaded-genius",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveComputerUploadedGenius",
+      "wp": "WP-821",
+      "decision": "D-24754"
     },
     {
       "extId": "ca75-mastermind-arnim-zola-crush-pacifist-resistance",
@@ -4293,10 +4310,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "crush-pacifist-resistance",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCrushPacifistResistance",
+      "wp": "WP-821",
+      "decision": "D-24754"
     },
     {
       "extId": "ca75-mastermind-arnim-zola-dominate-the-weak",
@@ -4304,10 +4321,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "dominate-the-weak",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveDominateTheWeak",
+      "wp": "WP-821",
+      "decision": "D-24754"
     },
     {
       "extId": "ca75-mastermind-arnim-zola-pet-projects",
@@ -4315,10 +4332,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "pet-projects",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolvePetProjects",
+      "wp": "WP-821",
+      "decision": "D-24754"
     },
     {
       "extId": "ca75-mastermind-baron-heinrich-zemo-fallen-idols",
@@ -4326,10 +4343,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "fallen-idols",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveFallenIdols",
+      "wp": "WP-818",
+      "decision": "D-24752"
     },
     {
       "extId": "ca75-mastermind-baron-heinrich-zemo-finding-zemo",
@@ -4337,10 +4354,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "finding-zemo",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveFindingZemo",
+      "wp": "WP-818",
+      "decision": "D-24752"
     },
     {
       "extId": "ca75-mastermind-baron-heinrich-zemo-hatred-for-the-avengers",
@@ -4348,10 +4365,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "hatred-for-the-avengers",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveHatredForTheAvengers",
+      "wp": "WP-818",
+      "decision": "D-24752"
     },
     {
       "extId": "ca75-mastermind-baron-heinrich-zemo-prisoners-of-war",
@@ -4359,10 +4376,10 @@
       "set": "ca75",
       "scope": "mastermind",
       "mechanic": "prisoners-of-war",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolvePrisonersOfWar",
+      "wp": "WP-818",
+      "decision": "D-24752"
     },
     {
       "extId": "ca75-villain-masters-of-evil-wwii-black-knight",
@@ -4376,6 +4393,17 @@
       "decision": "D-18506"
     },
     {
+      "extId": "ca75-villain-masters-of-evil-wwii-black-knight",
+      "name": "Black Knight",
+      "set": "ca75",
+      "scope": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
+    },
+    {
       "extId": "ca75-villain-masters-of-evil-wwii-executioner",
       "name": "Executioner",
       "set": "ca75",
@@ -4385,6 +4413,28 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-bystander",
       "wp": "WP-185",
       "decision": "D-18506"
+    },
+    {
+      "extId": "ca75-villain-masters-of-evil-wwii-executioner",
+      "name": "Executioner",
+      "set": "ca75",
+      "scope": "villain",
+      "mechanic": "draw-cards-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current",
+      "wp": "WP-485",
+      "decision": "D-24290"
+    },
+    {
+      "extId": "ca75-villain-masters-of-evil-wwii-executioner",
+      "name": "Executioner",
+      "set": "ca75",
+      "scope": "villain",
+      "mechanic": "ko-bystander-each-victory-pile",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-bystander-each-victory-pile",
+      "wp": "WP-816",
+      "decision": "D-24749"
     },
     {
       "extId": "ca75-villain-masters-of-evil-wwii-melter-wwii",
@@ -4398,6 +4448,17 @@
       "decision": "D-18506"
     },
     {
+      "extId": "ca75-villain-masters-of-evil-wwii-melter-wwii",
+      "name": "Melter (WWII)",
+      "set": "ca75",
+      "scope": "villain",
+      "mechanic": "ko-cullable-each-deck-top",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top",
+      "wp": "WP-603",
+      "decision": "D-24413"
+    },
+    {
       "extId": "ca75-villain-masters-of-evil-wwii-radioactive-man",
       "name": "Radioactive Man",
       "set": "ca75",
@@ -4409,15 +4470,26 @@
       "decision": "D-18506"
     },
     {
+      "extId": "ca75-villain-masters-of-evil-wwii-radioactive-man",
+      "name": "Radioactive Man",
+      "set": "ca75",
+      "scope": "villain",
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
+      "wp": "WP-252",
+      "decision": "D-24023"
+    },
+    {
       "extId": "ca75-villain-zolas-creations-captain-zolandia",
       "name": "Captain Zolandia",
       "set": "ca75",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-recruit-current-per-hero-class",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-per-hero-class",
+      "wp": "WP-817",
+      "decision": "D-24750"
     },
     {
       "extId": "ca75-villain-zolas-creations-doughboy",
@@ -4435,6 +4507,17 @@
       "name": "Man-Fish",
       "set": "ca75",
       "scope": "villain",
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
+      "wp": "WP-252",
+      "decision": "D-24023"
+    },
+    {
+      "extId": "ca75-villain-zolas-creations-man-fish",
+      "name": "Man-Fish",
+      "set": "ca75",
+      "scope": "villain",
       "mechanic": "gainWoundEachPlayer",
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
@@ -4446,11 +4529,11 @@
       "name": "Primus",
       "set": "ca75",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "discard-hero-each-player-by-cost",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-each-player-by-cost",
+      "wp": "WP-817",
+      "decision": "D-24750"
     },
     {
       "extId": "ca75/agent-x-13",
@@ -4474,6 +4557,40 @@
       "name": "Agent X-13",
       "set": "ca75",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "paramilitary-ops",
+          "name": "Paramilitary Ops"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "name": "Agent X-13",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "attack-per-ko-this-way",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-ko-this-way",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "designs": [
+        {
+          "slug": "mobilize-for-war",
+          "name": "Mobilize for War"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "name": "Agent X-13",
+      "set": "ca75",
+      "scope": "hero",
       "mechanic": "gain-officer",
       "status": "subsystem",
       "handler": "choose-one:count-scaled-choose-option",
@@ -4483,6 +4600,23 @@
         {
           "slug": "spy-network",
           "name": "Spy Network"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "name": "Agent X-13",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "ko-up-to-shield-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-up-to-shield-hand-discard",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "designs": [
+        {
+          "slug": "mobilize-for-war",
+          "name": "Mobilize for War"
         }
       ]
     },
@@ -4647,6 +4781,40 @@
       "name": "Captain America (Falcon)",
       "set": "ca75",
       "scope": "hero",
+      "mechanic": "flying-shield-block",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#flying-shield-block",
+      "wp": "WP-827",
+      "decision": "D-24760",
+      "designs": [
+        {
+          "slug": "flying-shield-block",
+          "name": "Flying Shield Block"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-falcon",
+      "name": "Captain America (Falcon)",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "designs": [
+        {
+          "slug": "star-spangled-hero",
+          "name": "Star-Spangled Hero"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-falcon",
+      "name": "Captain America (Falcon)",
+      "set": "ca75",
+      "scope": "hero",
       "mechanic": "rescue",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#rescue",
@@ -4677,6 +4845,40 @@
         {
           "slug": "winged-salvation",
           "name": "Winged Salvation"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/steve-rogers-director-of-shield",
+      "name": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "international-strike-force",
+          "name": "International Strike Force"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/steve-rogers-director-of-shield",
+      "name": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "set": "ca75",
+      "scope": "hero",
+      "mechanic": "optional-ko-shield-played-rescue",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-shield-played-rescue",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "designs": [
+        {
+          "slug": "reassign-to-civilian-duty",
+          "name": "Reassign to Civilian Duty"
         }
       ]
     },
@@ -5300,6 +5502,23 @@
       "name": "Totally Awesome Hulk",
       "set": "chmp",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "7th-smartest-man-in-the-world",
+          "name": "7th Smartest Man in the World"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/totally-awesome-hulk",
+      "name": "Totally Awesome Hulk",
+      "set": "chmp",
+      "scope": "hero",
       "mechanic": "cheering-crowds",
       "status": "unsupported",
       "handler": "",
@@ -5638,33 +5857,66 @@
       "name": "Juggernaut",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "discard-hand-matching-hq-card-names-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hand-matching-hq-card-names-each-player",
+      "wp": "WP-837",
+      "decision": "D-24770"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
+      "name": "Juggernaut",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "hq-heroes-to-hero-deck-bottom",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-to-hero-deck-bottom",
+      "wp": "WP-837",
+      "decision": "D-24770"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
+      "name": "Juggernaut",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-mystique",
       "name": "Mystique",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "become-scheme-twist",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist",
+      "wp": "WP-481",
+      "decision": "D-24287"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-mystique",
+      "name": "Mystique",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "discard-hero-each-player-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-each-player-by-trait",
+      "wp": "WP-837",
+      "decision": "D-24770"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-sabretooth",
       "name": "Sabretooth",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-the-blob",
@@ -5682,11 +5934,22 @@
       "name": "Destroyer",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
+    },
+    {
+      "extId": "co2e-villain-enemies-of-asgard-destroyer",
+      "name": "Destroyer",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-enchantress",
@@ -5704,22 +5967,33 @@
       "name": "Frost Giant Warrior",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "discard-hero-or-wound-each-player-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-or-wound-each-player-by-trait",
+      "wp": "WP-837",
+      "decision": "D-24770"
+    },
+    {
+      "extId": "co2e-villain-enemies-of-asgard-frost-giant-warrior",
+      "name": "Frost Giant Warrior",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-ymir-frost-giant-king",
       "name": "Ymir, Frost Giant King",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "co2e-villain-hydra-baron-strucker-supreme-hydra",
@@ -5737,11 +6011,22 @@
       "name": "Endless Armies of HYDRA",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "koHeroEachPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-189",
+      "decision": "D-18901"
+    },
+    {
+      "extId": "co2e-villain-hydra-endless-armies-of-hydra",
+      "name": "Endless Armies of HYDRA",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards",
+      "wp": "WP-542",
+      "decision": "D-24351"
     },
     {
       "extId": "co2e-villain-hydra-hydra-kidnappers",
@@ -5759,11 +6044,11 @@
       "name": "Viper",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-wound-unless-victory-villain-group",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound-unless-victory-villain-group",
+      "wp": "WP-494",
+      "decision": "D-24299"
     },
     {
       "extId": "co2e-villain-masters-of-evil-baron-zemo",
@@ -5784,8 +6069,8 @@
       "mechanic": "ko-cullable-each-deck-top",
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top",
-      "wp": "WP-519",
-      "decision": "D-24332"
+      "wp": "WP-603",
+      "decision": "D-24413"
     },
     {
       "extId": "co2e-villain-masters-of-evil-ultron",
@@ -5836,44 +6121,44 @@
       "name": "Abomination",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-recruit-current-count-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-count-by-trait",
+      "wp": "WP-836",
+      "decision": "D-24769"
     },
     {
       "extId": "co2e-villain-radiation-maestro-wasteland-hulk",
       "name": "Maestro, Wasteland Hulk",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-heroes-current-count-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-heroes-current-count-by-trait",
+      "wp": "WP-544",
+      "decision": "D-24353"
     },
     {
       "extId": "co2e-villain-radiation-the-leader",
       "name": "The Leader",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards",
+      "wp": "WP-542",
+      "decision": "D-24351"
     },
     {
       "extId": "co2e-villain-radiation-zzzax",
       "name": "Zzzax",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-green-goblin",
@@ -5891,22 +6176,44 @@
       "name": "Scorpion",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
+      "wp": "WP-252",
+      "decision": "D-24023"
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-scorpion",
+      "name": "Scorpion",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-the-lizard",
       "name": "The Lizard",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
+      "wp": "WP-252",
+      "decision": "D-24023"
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-the-lizard",
+      "name": "The Lizard",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-venom",
@@ -5924,11 +6231,22 @@
       "name": "Beetle",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "draw-cards-current-count-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current-count-by-trait",
+      "wp": "WP-836",
+      "decision": "D-24769"
+    },
+    {
+      "extId": "co2e-villain-sinister-syndicate-beetle",
+      "name": "Beetle",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-boomerang",
@@ -5946,11 +6264,11 @@
       "name": "Hydro-Man",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-speed-demon",
@@ -5979,33 +6297,55 @@
       "name": "Skrull Queen Veranke",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "captureHqHeroHighestCost",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero",
+      "wp": "WP-214",
+      "decision": "D-21401"
+    },
+    {
+      "extId": "co2e-villain-skulls-skrull-queen-veranke",
+      "name": "Skrull Queen Veranke",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero",
+      "wp": "WP-450",
+      "decision": "D-24270"
     },
     {
       "extId": "co2e-villain-skulls-skrull-shapeshifter",
       "name": "Skrull Shapeshifter",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "captureHqHeroRightmost",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#capture-hq-hero",
+      "wp": "WP-214",
+      "decision": "D-21401"
+    },
+    {
+      "extId": "co2e-villain-skulls-skrull-shapeshifter",
+      "name": "Skrull Shapeshifter",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "gain-attached-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero",
+      "wp": "WP-450",
+      "decision": "D-24270"
     },
     {
       "extId": "co2e-villain-skulls-super-skrull",
       "name": "Super-Skrull",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
     },
     {
       "extId": "co2e/black-widow",
@@ -6156,6 +6496,23 @@
         {
           "slug": "x-men-united",
           "name": "X-Men United"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/cyclops",
+      "name": "Cyclops",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "designs": [
+        {
+          "slug": "unending-energy",
+          "name": "Unending Energy"
         }
       ]
     },
@@ -6313,6 +6670,23 @@
       ]
     },
     {
+      "extId": "co2e/hulk",
+      "name": "Hulk",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "reveal-or-gain-wound-each",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-or-gain-wound-each",
+      "wp": "WP-843",
+      "decision": "D-24777",
+      "designs": [
+        {
+          "slug": "crazed-rampage",
+          "name": "Crazed Rampage"
+        }
+      ]
+    },
+    {
       "extId": "co2e/iron-man",
       "name": "Iron Man",
       "set": "co2e",
@@ -6375,6 +6749,23 @@
         {
           "slug": "energy-drain",
           "name": "Energy Drain"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/spider-man",
+      "name": "Spider-Man",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "witty-banter",
+          "name": "Witty Banter"
         }
       ]
     },
@@ -6854,8 +7245,8 @@
       "mechanic": "ko-cullable-each-deck-top",
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-cullable-each-deck-top",
-      "wp": "WP-519",
-      "decision": "D-24332"
+      "wp": "WP-603",
+      "decision": "D-24413"
     },
     {
       "extId": "core-villain-masters-of-evil-ultron",
@@ -7870,6 +8261,23 @@
         {
           "slug": "surge-of-power",
           "name": "Surge of Power"
+        }
+      ]
+    },
+    {
+      "extId": "core/wolverine",
+      "name": "Wolverine",
+      "set": "core",
+      "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "berserker-rage",
+          "name": "Berserker Rage"
         }
       ]
     },
@@ -9050,6 +9458,23 @@
       "name": "Captain America, Secret Avenger",
       "set": "cvwr",
       "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "inspire-a-nation",
+          "name": "Inspire a Nation"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/captain-america-secret-avenger",
+      "name": "Captain America, Secret Avenger",
+      "set": "cvwr",
+      "scope": "hero",
       "mechanic": "recruit-per-count",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
@@ -9150,11 +9575,17 @@
       "name": "Falcon",
       "set": "cvwr",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "talk-with-birds",
+          "name": "Talk with Birds"
+        }
+      ]
     },
     {
       "extId": "cvwr/goliath",
@@ -9391,6 +9822,23 @@
       "name": "Peter Parker",
       "set": "cvwr",
       "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "spider-man-unmasked",
+          "name": "Spider-Man Unmasked"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/peter-parker",
+      "name": "Peter Parker",
+      "set": "cvwr",
+      "scope": "hero",
       "mechanic": "ko-wound",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound",
@@ -9543,6 +9991,23 @@
         {
           "slug": "ferocity",
           "name": "Ferocity"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/tigra",
+      "name": "Tigra",
+      "set": "cvwr",
+      "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "friendship",
+          "name": "Friendship"
         }
       ]
     },
@@ -12635,11 +13100,11 @@
       "name": "Hand Ninjas",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-recruit-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current",
+      "wp": "WP-541",
+      "decision": "D-24350"
     },
     {
       "extId": "henchman-hand-ninjas",
@@ -12651,6 +13116,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current",
       "wp": "WP-541",
       "decision": "D-24350"
+    },
+    {
+      "extId": "henchman-hand-ninjas",
+      "name": "Hand Ninjas",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "henchman-hellfire-cult",
@@ -12831,17 +13307,6 @@
     {
       "extId": "henchman-savage-land-mutates",
       "name": "Savage Land Mutates",
-      "set": "co2e",
-      "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
-    },
-    {
-      "extId": "henchman-savage-land-mutates",
-      "name": "Savage Land Mutates",
       "set": "core",
       "scope": "villain",
       "mechanic": "add-next-hand-size",
@@ -12849,6 +13314,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size",
       "wp": "WP-543",
       "decision": "D-24352"
+    },
+    {
+      "extId": "henchman-savage-land-mutates",
+      "name": "Savage Land Mutates",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "reveal-top-ko-grey-or-draw-by-class",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-ko-grey-or-draw-by-class",
+      "wp": "WP-836",
+      "decision": "D-24769"
     },
     {
       "extId": "henchman-sentinel",
@@ -20486,6 +20962,23 @@
       ]
     },
     {
+      "extId": "ssw1/black-panther",
+      "name": "Black Panther",
+      "set": "ssw1",
+      "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "king-of-wakanda",
+          "name": "King of Wakanda"
+        }
+      ]
+    },
+    {
       "extId": "ssw1/captain-marvel",
       "name": "Captain Marvel",
       "set": "ssw1",
@@ -20604,6 +21097,23 @@
       "name": "Magik",
       "set": "ssw1",
       "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "rally-the-new-mutants",
+          "name": "Rally the New Mutants"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/magik",
+      "name": "Magik",
+      "set": "ssw1",
+      "scope": "hero",
       "mechanic": "teleport",
       "status": "unsupported",
       "handler": "",
@@ -20634,6 +21144,23 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "ssw1/namor-the-sub-mariner",
+      "name": "Namor, the Sub-Mariner",
+      "set": "ssw1",
+      "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "lead-the-armies-of-atlantis",
+          "name": "Lead the Armies of Atlantis"
+        }
+      ]
     },
     {
       "extId": "ssw1/namor-the-sub-mariner",
@@ -20711,6 +21238,23 @@
         {
           "slug": "transdimensional-overlord",
           "name": "Transdimensional Overlord"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/ultimate-spider-man",
+      "name": "Ultimate Spider-Man",
+      "set": "ssw1",
+      "scope": "hero",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "designs": [
+        {
+          "slug": "marvel-team-up",
+          "name": "Marvel Team-Up"
         }
       ]
     },
@@ -25863,6 +26407,23 @@
       "name": "Gladiator Hulk",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "designs": [
+        {
+          "slug": "hulk-is-king",
+          "name": "Hulk Is King"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/gladiator-hulk",
+      "name": "Gladiator Hulk",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "smash",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
@@ -29082,6 +29643,7 @@
     "antm/ant-man": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw",
         "microscopic-size-changing",
         "optional-discard-draw",
@@ -29618,31 +30180,36 @@
     "ca75-villain-masters-of-evil-wwii-black-knight": {
       "scope": "villain",
       "mechanics": [
-        "captureBystander"
+        "captureBystander",
+        "ko-hero"
       ]
     },
     "ca75-villain-masters-of-evil-wwii-executioner": {
       "scope": "villain",
       "mechanics": [
-        "captureBystander"
+        "captureBystander",
+        "draw-cards-current",
+        "ko-bystander-each-victory-pile"
       ]
     },
     "ca75-villain-masters-of-evil-wwii-melter-wwii": {
       "scope": "villain",
       "mechanics": [
-        "captureBystander"
+        "captureBystander",
+        "ko-cullable-each-deck-top"
       ]
     },
     "ca75-villain-masters-of-evil-wwii-radioactive-man": {
       "scope": "villain",
       "mechanics": [
-        "captureBystander"
+        "captureBystander",
+        "gain-wound"
       ]
     },
     "ca75-villain-zolas-creations-captain-zolandia": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-recruit-current-per-hero-class"
       ]
     },
     "ca75-villain-zolas-creations-doughboy": {
@@ -29654,20 +30221,24 @@
     "ca75-villain-zolas-creations-man-fish": {
       "scope": "villain",
       "mechanics": [
+        "gain-wound",
         "gainWoundEachPlayer"
       ]
     },
     "ca75-villain-zolas-creations-primus": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "discard-hero-each-player-by-cost"
       ]
     },
     "ca75/agent-x-13": {
       "scope": "hero",
       "mechanics": [
         "attack",
+        "attack-per-count",
+        "attack-per-ko-this-way",
         "gain-officer",
+        "ko-up-to-shield-hand-discard",
         "out-of-time",
         "savior"
       ]
@@ -29686,6 +30257,8 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
+        "flying-shield-block",
+        "recruit-per-count",
         "rescue",
         "savior"
       ]
@@ -29693,6 +30266,8 @@
     "ca75/steve-rogers-director-of-shield": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
+        "optional-ko-shield-played-rescue",
         "out-of-time",
         "recruit-per-count",
         "rescue",
@@ -29859,6 +30434,7 @@
     "chmp/totally-awesome-hulk": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "cheering-crowds",
         "draw",
         "size-changing"
@@ -29995,19 +30571,22 @@
     "co2e-villain-brotherhood-of-mutants-juggernaut": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "discard-hand-matching-hq-card-names-each-player",
+        "hq-heroes-to-hero-deck-bottom",
+        "ko-hero"
       ]
     },
     "co2e-villain-brotherhood-of-mutants-mystique": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "become-scheme-twist",
+        "discard-hero-each-player-by-trait"
       ]
     },
     "co2e-villain-brotherhood-of-mutants-sabretooth": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "co2e-villain-brotherhood-of-mutants-the-blob": {
@@ -30019,7 +30598,8 @@
     "co2e-villain-enemies-of-asgard-destroyer": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-hero",
+        "ko-up-to-from-discard-current"
       ]
     },
     "co2e-villain-enemies-of-asgard-enchantress": {
@@ -30031,13 +30611,14 @@
     "co2e-villain-enemies-of-asgard-frost-giant-warrior": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "discard-hero-or-wound-each-player-by-trait",
+        "ko-up-to-from-discard-current"
       ]
     },
     "co2e-villain-enemies-of-asgard-ymir-frost-giant-king": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-up-to-from-discard-current"
       ]
     },
     "co2e-villain-hydra-baron-strucker-supreme-hydra": {
@@ -30049,7 +30630,8 @@
     "co2e-villain-hydra-endless-armies-of-hydra": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "koHeroEachPlayer",
+        "play-villain-deck-cards"
       ]
     },
     "co2e-villain-hydra-hydra-kidnappers": {
@@ -30061,7 +30643,7 @@
     "co2e-villain-hydra-viper": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-wound-unless-victory-villain-group"
       ]
     },
     "co2e-villain-masters-of-evil-baron-zemo": {
@@ -30093,25 +30675,25 @@
     "co2e-villain-radiation-abomination": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-recruit-current-count-by-trait"
       ]
     },
     "co2e-villain-radiation-maestro-wasteland-hulk": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-heroes-current-count-by-trait"
       ]
     },
     "co2e-villain-radiation-the-leader": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "play-villain-deck-cards"
       ]
     },
     "co2e-villain-radiation-zzzax": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "co2e-villain-sinister-spider-foes-green-goblin": {
@@ -30123,13 +30705,15 @@
     "co2e-villain-sinister-spider-foes-scorpion": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-wound",
+        "koHeroCurrentPlayer"
       ]
     },
     "co2e-villain-sinister-spider-foes-the-lizard": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-wound",
+        "ko-hero"
       ]
     },
     "co2e-villain-sinister-spider-foes-venom": {
@@ -30141,7 +30725,8 @@
     "co2e-villain-sinister-syndicate-beetle": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "draw-cards-current-count-by-trait",
+        "reveal-or-wound"
       ]
     },
     "co2e-villain-sinister-syndicate-boomerang": {
@@ -30153,7 +30738,7 @@
     "co2e-villain-sinister-syndicate-hydro-man": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-hero"
       ]
     },
     "co2e-villain-sinister-syndicate-speed-demon": {
@@ -30171,19 +30756,21 @@
     "co2e-villain-skulls-skrull-queen-veranke": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "captureHqHeroHighestCost",
+        "gain-attached-hero"
       ]
     },
     "co2e-villain-skulls-skrull-shapeshifter": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "captureHqHeroRightmost",
+        "gain-attached-hero"
       ]
     },
     "co2e-villain-skulls-super-skrull": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "koHeroCurrentPlayer"
       ]
     },
     "co2e/black-widow": {
@@ -30206,7 +30793,8 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
-        "discard-to-play"
+        "discard-to-play",
+        "return-on-discard"
       ]
     },
     "co2e/emma-frost": {
@@ -30235,7 +30823,8 @@
     "co2e/hulk": {
       "scope": "hero",
       "mechanics": [
-        "ko-wound-reward"
+        "ko-wound-reward",
+        "reveal-or-gain-wound-each"
       ]
     },
     "co2e/iron-man": {
@@ -30260,6 +30849,7 @@
     "co2e/spider-man": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "reveal",
         "reveal-count"
       ]
@@ -30678,6 +31268,7 @@
     "core/wolverine": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
         "draw",
         "ko-wound-reward"
       ]
@@ -31212,6 +31803,7 @@
     "cvwr/captain-america-secret-avenger": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "recruit-per-count"
       ]
     },
@@ -31233,7 +31825,7 @@
     "cvwr/falcon": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "gain-sidekick"
       ]
     },
     "cvwr/goliath": {
@@ -31276,6 +31868,7 @@
     "cvwr/peter-parker": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "ko-wound",
         "rescue",
         "reveal"
@@ -31304,6 +31897,7 @@
       "scope": "hero",
       "mechanics": [
         "draw",
+        "gain-sidekick",
         "reveal-top-dispose"
       ]
     },
@@ -32486,8 +33080,8 @@
     "henchman-hand-ninjas": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)",
-        "gain-recruit-current"
+        "gain-recruit-current",
+        "ko-hero"
       ]
     },
     "henchman-hellfire-cult": {
@@ -32589,8 +33183,8 @@
     "henchman-savage-land-mutates": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)",
-        "add-next-hand-size"
+        "add-next-hand-size",
+        "reveal-top-ko-grey-or-draw-by-class"
       ]
     },
     "henchman-sentinel": {
@@ -35161,7 +35755,8 @@
     "ssw1/black-panther": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "gain-sidekick"
       ]
     },
     "ssw1/captain-marvel": {
@@ -35188,6 +35783,7 @@
     "ssw1/magik": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "teleport"
       ]
     },
@@ -35200,6 +35796,7 @@
     "ssw1/namor-the-sub-mariner": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "optional-ko-reward"
       ]
     },
@@ -35230,6 +35827,7 @@
     "ssw1/ultimate-spider-man": {
       "scope": "hero",
       "mechanics": [
+        "gain-sidekick",
         "reveal"
       ]
     },
@@ -37069,6 +37667,7 @@
       "mechanics": [
         "cross-dimensional-rampage",
         "draw",
+        "return-on-discard",
         "smash",
         "transform",
         "wounded-fury"

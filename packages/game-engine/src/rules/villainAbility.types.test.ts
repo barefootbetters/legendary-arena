@@ -15,6 +15,7 @@ import {
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
   VILLAIN_DEFEAT_REQUIREMENT_KINDS,
+  VILLAIN_EFFECT_CONDITIONS,
   LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
   descriptorToLegacyKeyword,
   getVillainHooksForCard,
@@ -27,6 +28,7 @@ import type {
   VillainEffectPrimitive,
   VillainEffectDescriptor,
   VillainDefeatRequirementKind,
+  VillainEffectCondition,
 } from './villainAbility.types.js';
 import type { CardExtId } from '../state/zones.types.js';
 
@@ -348,7 +350,16 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
   // KO; the targets are the player's free interactive choice, reusing the `ko-hero` park).
   // WP-757 (D-24587) appended a twenty-sixth, `haunt-hq-hero`, at position 26 (the Haunt
   // keyword — The Fallen's Ambush moves the Villain out of the City to haunt an HQ Hero).
-  it('contains exactly the 28 canonical primitives in order', () => {
+  // WP-760 (D-24589) appended the twenty-seventh and twenty-eighth. WP-816 (D-24749)
+  // appended a twenty-ninth, `ko-bystander-each-victory-pile`, at position 29
+  // (Executioner's Escape — each player KOs the first Bystander in their Victory Pile).
+  // WP-817 (D-24750) appended the thirtieth and thirty-first,
+  // `gain-recruit-current-per-hero-class` (Captain Zolandia's Fight) and
+  // `discard-hero-each-player-by-cost` (Primus's Escape). WP-836 (D-24769) appended the
+  // thirty-second to thirty-fourth (co2e Abomination, Beetle, Savage Land Mutates Fights).
+  // WP-837 (D-24770) appended the thirty-fifth to thirty-eighth (co2e Mystique, Frost Giant
+  // Warrior and Juggernaut Ambushes).
+  it('contains exactly the 38 canonical primitives in order', () => {
     const expectedPrimitives: VillainEffectPrimitive[] = [
       'ko-hero',
       'gain-wound',
@@ -378,11 +389,26 @@ describe('VILLAIN_EFFECT_PRIMITIVES drift-detection', () => {
       'haunt-hq-hero',
       'reveal-top-draw-if-cost-lte',
       'ko-up-to-from-discard-current',
+      'ko-bystander-each-victory-pile',
+      'gain-recruit-current-per-hero-class',
+      'discard-hero-each-player-by-cost',
+      'gain-recruit-current-count-by-trait',
+      'draw-cards-current-count-by-trait',
+      'reveal-top-ko-grey-or-draw-by-class',
+      'discard-hero-each-player-by-trait',
+      'discard-hero-or-wound-each-player-by-trait',
+      'discard-hand-matching-hq-card-names-each-player',
+      'hq-heroes-to-hero-deck-bottom',
     ];
     assert.equal(
       VILLAIN_EFFECT_PRIMITIVES.length,
-      28,
-      'VILLAIN_EFFECT_PRIMITIVES must have exactly 28 entries',
+      38,
+      'VILLAIN_EFFECT_PRIMITIVES must have exactly 38 entries',
+    );
+    assert.equal(
+      VILLAIN_EFFECT_PRIMITIVES[VILLAIN_EFFECT_PRIMITIVES.length - 1],
+      'hq-heroes-to-hero-deck-bottom',
+      'hq-heroes-to-hero-deck-bottom must be appended last (position 38)',
     );
     assert.deepStrictEqual(
       [...VILLAIN_EFFECT_PRIMITIVES],
@@ -567,5 +593,183 @@ describe('haunt-hq-hero descriptor (WP-757 / D-24587)', () => {
     const descriptor: VillainEffectDescriptor = { primitive: 'haunt-hq-hero', selector: 'cost-lte-3' };
     const deserialized = JSON.parse(JSON.stringify(descriptor)) as VillainEffectDescriptor;
     assert.deepStrictEqual(deserialized, descriptor);
+  });
+});
+
+describe('WP-816 villain-side Savior types (D-24749)', () => {
+  it('T1: VILLAIN_EFFECT_CONDITIONS is exactly the closed set [savior, another-group-villain-in-city]', () => {
+    // why: D-24372 — a runtime assertion, not a `satisfies` pin (engine test files are
+    // not type-checked on a normal run). The VILLAIN_DEFEAT_REQUIREMENT_KINDS pin style.
+    // WP-837 (D-24770) appended `another-group-villain-in-city`, so the set moved 1 → 2.
+    const expectedConditions: VillainEffectCondition[] = ['savior', 'another-group-villain-in-city'];
+    assert.equal(
+      VILLAIN_EFFECT_CONDITIONS.length,
+      2,
+      'VILLAIN_EFFECT_CONDITIONS must have exactly 2 entries',
+    );
+    assert.deepStrictEqual(
+      [...VILLAIN_EFFECT_CONDITIONS],
+      expectedConditions,
+      'VILLAIN_EFFECT_CONDITIONS must match the canonical conditions in order',
+    );
+    const uniqueConditions = new Set(VILLAIN_EFFECT_CONDITIONS);
+    assert.equal(
+      uniqueConditions.size,
+      VILLAIN_EFFECT_CONDITIONS.length,
+      'VILLAIN_EFFECT_CONDITIONS must have no duplicates',
+    );
+    assert.equal(
+      VILLAIN_EFFECT_CONDITIONS.includes('spectrum' as VillainEffectCondition),
+      false,
+      "VILLAIN_EFFECT_CONDITIONS must not include a phantom condition like 'spectrum'",
+    );
+  });
+
+  it('T2: ko-bystander-each-victory-pile is the 29th primitive', () => {
+    // why: WP-817 (D-24750) appended positions 30-31 after it, WP-836 (D-24769) 32-34 and
+    // WP-837 (D-24770) 35-38, so the total moved 29 → 31 → 34 → 38.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 38);
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[28], 'ko-bystander-each-victory-pile');
+  });
+
+  it('T3: requireCondition is not part of the descriptor key; each-non-savior is keyword-less', () => {
+    // why: a Savior-gated ko-hero:current must still reverse-map to koHeroCurrentPlayer so
+    // Black Knight's KO narrates exactly as the ungated twin (D-24749).
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'ko-hero', target: 'current', requireCondition: 'savior' }),
+      'koHeroCurrentPlayer',
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'gain-wound', target: 'each-non-savior' }),
+      undefined,
+      'each-non-savior is not a legacy keyword — it must self-narrate',
+    );
+  });
+
+  it('T3b: JSON round-trips descriptors carrying requireCondition and each-non-savior', () => {
+    const gated: VillainEffectDescriptor = {
+      primitive: 'ko-hero',
+      target: 'current',
+      requireCitySpaces: ['sewers'],
+      requireCondition: 'savior',
+    };
+    const nonSavior: VillainEffectDescriptor = { primitive: 'gain-wound', target: 'each-non-savior' };
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(gated)) as VillainEffectDescriptor, gated);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(nonSavior)) as VillainEffectDescriptor, nonSavior);
+  });
+});
+
+describe('WP-817 Captain Zolandia + Primus types (D-24750)', () => {
+  it('T1: the two new primitives sit at positions 30 and 31', () => {
+    // why: WP-836 (D-24769) appended positions 32-34 after them and WP-837 (D-24770)
+    // 35-38, so the total is 38.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 38);
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[29], 'gain-recruit-current-per-hero-class');
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[30], 'discard-hero-each-player-by-cost');
+  });
+
+  it('T2: both new descriptors are keyword-less and eligibleCosts stays out of the key', () => {
+    const zolandia: VillainEffectDescriptor = { primitive: 'gain-recruit-current-per-hero-class' };
+    const primus: VillainEffectDescriptor = {
+      primitive: 'discard-hero-each-player-by-cost',
+      eligibleCosts: [2, 3, 5, 7],
+    };
+    assert.equal(descriptorToLegacyKeyword(zolandia), undefined);
+    assert.equal(descriptorToLegacyKeyword(primus), undefined);
+    // why: a legacy descriptor carrying eligibleCosts must still reverse-map, which
+    // proves eligibleCosts is not part of descriptorKey.
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'gain-wound', target: 'each', eligibleCosts: [2] }),
+      'gainWoundEachPlayer',
+    );
+  });
+});
+
+describe('WP-836 co2e grey-Hero and Hero-count types (D-24769)', () => {
+  it('T1: the three new primitives sit at positions 32, 33 and 34', () => {
+    // why: WP-837 (D-24770) appended positions 35-38 after them, so the total is 38.
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 38);
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[31], 'gain-recruit-current-count-by-trait');
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[32], 'draw-cards-current-count-by-trait');
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES[33], 'reveal-top-ko-grey-or-draw-by-class');
+  });
+
+  it('T2: greyFilter stays out of the descriptor key; the new primitives are keyword-less', () => {
+    // why: a filtered each-player discard KO must still reverse-map to koHeroEachPlayer so it
+    // narrates through the generic line, exactly as the zone does (D-24280).
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'ko-hero',
+        target: 'each',
+        magnitude: 1,
+        zone: 'discard',
+        greyFilter: 'non-grey',
+      }),
+      'koHeroEachPlayer',
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'gain-recruit-current-count-by-trait',
+        requireKind: 'hero-class',
+        requireValue: 'strength',
+      }),
+      undefined,
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'draw-cards-current-count-by-trait',
+        requireKind: 'hero-class',
+        requireValue: 'covert',
+      }),
+      undefined,
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'reveal-top-ko-grey-or-draw-by-class',
+        drawHeroClasses: ['strength', 'instinct'],
+      }),
+      undefined,
+    );
+    assert.equal(
+      descriptorToLegacyKeyword({ primitive: 'ko-up-to-from-discard-current', magnitude: 2, greyFilter: 'grey' }),
+      undefined,
+    );
+  });
+});
+
+describe('WP-837 co2e each-player discard and reveal-gated Ambush types (D-24770)', () => {
+  it('T1: the four new primitives sit at positions 35-38 in the locked order', () => {
+    assert.equal(VILLAIN_EFFECT_PRIMITIVES.length, 38);
+    assert.deepStrictEqual(VILLAIN_EFFECT_PRIMITIVES.slice(34), [
+      'discard-hero-each-player-by-trait',
+      'discard-hero-or-wound-each-player-by-trait',
+      'discard-hand-matching-hq-card-names-each-player',
+      'hq-heroes-to-hero-deck-bottom',
+    ]);
+  });
+
+  it('T2: the new condition stays out of the key; the new descriptors are keyword-less', () => {
+    assert.deepStrictEqual([...VILLAIN_EFFECT_CONDITIONS], ['savior', 'another-group-villain-in-city']);
+    // why: Scorpion's gated gain-wound:each must still reverse-map to gainWoundEachPlayer so
+    // it keeps the legacy narration and ambushResolved badge, which proves the condition is
+    // not part of descriptorKey.
+    assert.equal(
+      descriptorToLegacyKeyword({
+        primitive: 'gain-wound',
+        target: 'each',
+        requireCondition: 'another-group-villain-in-city',
+      }),
+      'gainWoundEachPlayer',
+    );
+    const keywordLess: VillainEffectDescriptor[] = [
+      { primitive: 'discard-hero-each-player-by-trait', requireKind: 'team', requireValue: 'x-men' },
+      { primitive: 'discard-hero-or-wound-each-player-by-trait', requireKind: 'hero-class', requireValue: 'ranged' },
+      { primitive: 'discard-hand-matching-hq-card-names-each-player' },
+      { primitive: 'hq-heroes-to-hero-deck-bottom' },
+      { primitive: 'play-villain-deck-cards', magnitude: 1, requireKind: 'hero-class', requireValue: 'strength' },
+    ];
+    for (const descriptor of keywordLess) {
+      assert.equal(descriptorToLegacyKeyword(descriptor), undefined, `${descriptor.primitive} must self-narrate`);
+    }
   });
 });

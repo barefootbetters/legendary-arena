@@ -132,7 +132,11 @@ class ProbeFailure extends Error {}
  * @returns {string} the normalized mechanic name (empty string if malformed).
  */
 function normalizeEffectToken(rawToken) {
-  const segment = rawToken.split(':')[0];
+  // why: WP-816 / D-24749 — strip the `!<condition>` suffix, then the `@<space>`
+  // location gate, then the params, so a gated marker (`ko-cullable-each-deck-top!savior`,
+  // `gain-wound:each-other@sewers+bridge`) is named by its primitive, the parser's
+  // resolved name, never as an `unsupported` mechanic carrying its suffix.
+  const segment = rawToken.split('!')[0].split('@')[0].split(':')[0];
   return segment.trim();
 }
 

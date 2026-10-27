@@ -178,14 +178,22 @@ describe('resolveKoDiscardChoice — source naming (WP-760 / D-24589)', () => {
     resolveKoDiscardChoice(makeContext(G), { cardIds: ['a', 'c'] });
     assert.deepStrictEqual(G.ko, ['a', 'c']);
     const lastMessage = G.messages![G.messages!.length - 1]!;
-    assert.equal(lastMessage.text, "Player 0 KO'd 2 card(s) from their discard pile (Salomé, Sorceress Supreme).");
+    // why: D-24783 — the line names each KO'd card (no display entry → the raw ext-id).
+    assert.equal(lastMessage.text, "Player 0 KO'd a (a), c (c) from their discard pile (Salomé, Sorceress Supreme).");
   });
 
-  it('keeps the Maniacal Tyrant log byte-identical when no sourceCardId is set', () => {
+  it('names Maniacal Tyrant as the source when no sourceCardId is set', () => {
     const G = makeG({ discard: ['a', 'b'] as CardExtId[], pending: parked() });
     resolveKoDiscardChoice(makeContext(G), { cardIds: ['a'] });
     const lastMessage = G.messages![G.messages!.length - 1]!;
-    assert.equal(lastMessage.text, "Player 0 KO'd 1 card(s) from their discard pile (Maniacal Tyrant).");
+    assert.equal(lastMessage.text, "Player 0 KO'd a (a) from their discard pile (Maniacal Tyrant).");
+  });
+
+  it('D-24783: an empty selection says "no cards"', () => {
+    const G = makeG({ discard: ['a', 'b'] as CardExtId[], pending: parked() });
+    resolveKoDiscardChoice(makeContext(G), { cardIds: [] });
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, "Player 0 KO'd no cards from their discard pile (Maniacal Tyrant).");
   });
 
   it('enforces the Salomé cap of 2 (a 3-card selection is rejected, queue intact)', () => {
@@ -197,5 +205,64 @@ describe('resolveKoDiscardChoice — source naming (WP-760 / D-24589)', () => {
     resolveKoDiscardChoice(makeContext(G), { cardIds: ['a', 'b', 'c'] });
     assert.equal(hasPendingKoDiscardChoice(G), true);
     assert.deepStrictEqual(G.ko, []);
+  });
+});
+
+describe('resolveKoDiscardChoice — WP-836 grey-Hero filter (D-24769)', () => {
+  const AGENT = 'starting-shield-agent' as CardExtId;
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+  const WOUND = 'pile-wound' as CardExtId;
+
+  /** A grey-filtered choice (cap 2) over a discard holding a Wound, a classed Hero and grey Heroes. */
+  function greyG(): LegendaryGameState {
+    const G = makeG({
+      discard: [WOUND, 'tech-a' as CardExtId, AGENT, AGENT, OFFICER],
+      pending: [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, greyFilter: 'grey' }],
+    });
+    G.cardTraits = { 'tech-a': { heroClass: 'tech', team: null } } as LegendaryGameState['cardTraits'];
+    return G;
+  }
+
+  it('T17: a Wound or a classed Hero is refused with the queue intact', () => {
+    for (const cardIds of [[WOUND], ['tech-a' as CardExtId]]) {
+      const G = greyG();
+      const before = structuredClone(G);
+      resolveKoDiscardChoice(makeContext(G), { cardIds });
+      assert.deepStrictEqual(G, before, `${cardIds.join(',')} must be refused`);
+    }
+  });
+
+  it('T17: two grey Agents are KOd and the entry pops; an empty pick pops too', () => {
+    const G = greyG();
+    resolveKoDiscardChoice(makeContext(G), { cardIds: [AGENT, AGENT] });
+    assert.deepStrictEqual(G.ko, [AGENT, AGENT]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [WOUND, 'tech-a', OFFICER]);
+    assert.equal(hasPendingKoDiscardChoice(G), false);
+    const emptyG = greyG();
+    resolveKoDiscardChoice(makeContext(emptyG), { cardIds: [] });
+    assert.equal(hasPendingKoDiscardChoice(emptyG), false);
+  });
+
+  it("D-24783: the grey KO line names each KO'd card and the source", () => {
+    const ymir = 'co2e-villain-enemies-of-asgard-ymir-frost-giant-king-00' as CardExtId;
+    const G = greyG();
+    G.pendingKoDiscardChoices![0]!.sourceCardId = ymir;
+    (G as { cardDisplayData?: unknown }).cardDisplayData = {
+      [AGENT]: { name: 'S.H.I.E.L.D. Agent' },
+      [OFFICER]: { name: 'S.H.I.E.L.D. Officer' },
+      [ymir]: { name: 'Ymir, Frost Giant King' },
+    };
+    resolveKoDiscardChoice(makeContext(G), { cardIds: [AGENT, OFFICER] });
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(
+      lastMessage.text,
+      "Player 0 KO'd S.H.I.E.L.D. Agent (starting-shield-agent), S.H.I.E.L.D. Officer (pile-shield-officer) from their discard pile (Ymir, Frost Giant King).",
+    );
+  });
+
+  it('T17: the filtered eligible list keeps discard order and duplicates; unfiltered stays whole', () => {
+    const G = greyG();
+    assert.deepStrictEqual(getEligibleKoDiscardCards(G, '0', 'grey'), [AGENT, AGENT, OFFICER]);
+    assert.deepStrictEqual(getEligibleKoDiscardCards(G, '0'), [WOUND, 'tech-a', AGENT, AGENT, OFFICER]);
   });
 });

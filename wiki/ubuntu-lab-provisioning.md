@@ -22,12 +22,12 @@ related:
   - system-backup.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\ubuntu-lab-provisioning.md (this page — https://ewiki.legendary-arena.com/ubuntu-lab-provisioning/)
+  - C:\dev\legendary-arena\wiki\ubuntu-lab-provisioning.md (this page — https://ewiki.legendary-arena.com/ubuntu-lab-provisioning/)
   - ../render.yaml
   - ../docs/ops/DOMAINS.md
   - ../docs/ops/domains.json
-  - C:\pcloud\LA\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
-last-reviewed: 2026-10-14
+  - C:\pcloud\legendary-arena\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
+last-reviewed: 2026-10-17
 ---
 
 # Ubuntu Lab Provisioning
@@ -42,7 +42,8 @@ last-reviewed: 2026-10-14
 
 The Ubuntu 24.04 DigitalOcean host that replaced Render for the game server
 and its PostgreSQL on 2026-10-12: one box running Nginx behind Cloudflare, the Node server,
-and a self-hosted PostgreSQL under systemd, with backups to Cloudflare R2. This
+and a self-hosted PostgreSQL under systemd, with nightly backups to Cloudflare
+R2 and a pCloud mirror. This
 page records the target architecture, what the operator takes over, and the
 provisioning, restore and rebuild procedure. The cost, sizing and vendor
 analysis behind it is on the Render Migration Analysis page.
@@ -58,10 +59,11 @@ Cloudflare  (DNS, proxy, TLS to the origin)
    │
 DigitalOcean droplet, Ubuntu 24.04 LTS, sfo3
    ├─ Nginx          (reverse proxy, WebSocket upgrade for Socket.IO)
-   ├─ apps/server    (Node 24.18.0, under systemd)
+   ├─ apps/server    (Node 24.18.0, systemd la-server on 127.0.0.1:3000;
+   │                  la-server-standby on :3001 only during a deploy restart)
    └─ PostgreSQL 18  (localhost only)
    │
-pg_dump  →  Cloudflare R2  (backups)
+pg_dump  →  Cloudflare R2 (primary)  →  pCloud (mirror)   nightly 09:17 UTC
 ```
 
 - **Is:** the production host for `apps/server` and a self-hosted
@@ -78,10 +80,8 @@ pg_dump  →  Cloudflare R2  (backups)
   was rehearsed only against a **copy** of the data, never the live prod DB.
   Render's managed Postgres allowed credential-gated public inbound
   (`ipAllowList: ['0.0.0.0/0']` in `render.yaml`) — a footgun, not an
-  invitation. It and the Render web service were kept as the rollback target
-  after cutover, then deleted early on 2026-10-16 (Phase 7); a final dump of
-  the Render database is kept under `render-final/` in the production R2
-  bucket and pCloud.
+  invitation; it stayed up only as the rollback copy. Render was deleted on
+  2026-10-22, after the 7-day rollback window.
 
 ### Why the platform is changing
 
@@ -171,10 +171,9 @@ Configuration Rule `Origin TLS strict — api hosts`, so no other site on the
 zone is affected. The Cloudflare Origin Certificate covers
 `api.legendary-arena.com` and `api-next.legendary-arena.com` only (no wildcard)
 and is valid to 2041. The operator created it and installed it on the droplet
-personally; the private key went nowhere else. At cutover, `api.` joined the
-rule, and its record changed from the DNS-only CNAME to Render into a proxied
-A record to the droplet. The `api-next` record and its entry in the rule were
-deleted on 2026-10-16.
+personally; the private key went nowhere else. At cutover `api.` joined the
+rule, and its record changed from the DNS-only CNAME to Render into a
+proxied A record to the droplet. Rollback restores that CNAME exactly.
 
 **External uptime monitor (2026-10-12).** UptimeRobot (free plan) checks
 `https://api.legendary-arena.com/health/db` every 5 minutes and emails on failure
@@ -230,13 +229,18 @@ The steps performed:
    (15.4 MB) landed in both places, byte-identical. The healthchecks.io checks
    `la-droplet-monitor`, `la-droplet-backup` and `la-droplet-pcloud` are green.
    This repo's `db-backup.yml` nightly was disabled (`gh workflow disable`) and
-   was deleted on 2026-10-16.
+   was deleted on 2026-10-22.
 
-**Rollback.** A rollback to Render (DNS-only CNAME back, resume the service,
-re-add `api.` as a Render custom domain) was possible until 2026-10-16, when
-Phase 7 deleted Render. Rollback is now on the droplet: `40-app-deploy.ps1
--Rollback` switches to the previous release, or hand-deploy an older commit
-with `DEPLOY_REF=<sha>`.
+**Rollback (7-day window, to ~2026-10-20).**
+1. Restore the DNS-only CNAME `api` → `legendary-arena-server.onrender.com`.
+2. Resume the Render service and set Render's `LEGENDS_PUBLISHER_ENABLED`
+   back to `true` (and the droplet's to `false`).
+3. **Re-add `api.legendary-arena.com` as a custom domain in Render**, then wait
+   a few minutes for Render to verify it and issue a certificate. Without it,
+   Render won't answer for `api.`.
+
+Anything written on the droplet after the flip isn't in Render's database. A
+rollback after real traffic needs that data copied back.
 
 **Deploys after cutover.** For the first hours they were manual
 (`40-app-deploy.ps1` over SSH). Since D-24708 (2026-10-12),
@@ -273,7 +277,7 @@ Every night at 09:17 UTC the droplet's `la-backup` timer runs the lab's
 | Copy | Where | Kept | Health check |
 |---|---|---|---|
 | Local | the droplet's `/var/backups/la`, last 7 dumps | lost with the droplet | `la-droplet-monitor` alerts if the newest is over 26 h old |
-| **Primary offsite** | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/legendary-arena-<stamp>.dump` | GFS: 35 daily, 12 weekly, 12 monthly | `la-droplet-backup` (dump + R2 upload) |
+| **Primary offsite** | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/legendary-arena-<stamp>.dump` | GFS: 35 daily, 12 weekly, 12 monthly. Since 2026-10-13 the bucket lock rule `la-db-backup-lock` (prefix `db-backups`, 30 days) blocks deleting or overwriting any dump in its first 30 days, even with the droplet's credentials | `la-droplet-backup` (dump + R2 upload) |
 | **Second offsite (pCloud)** | pCloud (US region), the same `db-backups/YYYY/MM/DD/` keys | the same GFS pruning, applied to pCloud separately | `la-droplet-pcloud` (the mirror only) |
 
 That is 3-2-1: the live database, plus two offsite copies with independent
@@ -602,11 +606,13 @@ operator can, unaided —
   origin round-trip time still reaches live matches through Cloudflare, so keep
   the West Coast pin. A central-US host would trade West Coast latency for
   national evenness.
-- **Never point the lab at production data.** The credential-gated `0.0.0.0/0`
-  inbound rule makes prod *reachable* — that convenience is exactly the footgun.
-  Always run against a restored copy.
-- **Do not copy production secrets onto the box.** Use test-mode credentials for
-  the `sync: false` env set. A learning box is a soft target.
+- **A rehearsal box never gets production data or secrets — the production
+  droplet does.** Since cutover the production droplet holds the live database
+  and the real secrets in `/etc/la/.env` and `/etc/la/backup.env`. Any *other*
+  box built from these steps (a rehearsal, a rebuild test, a learning lab) runs
+  against a restored copy with test-mode credentials for the `sync: false` env
+  set, and never gets the pCloud token or the production backup bucket (see
+  "Production data only" above).
 - **"Stateless" is persistence-stateless, not connection-stateless.** One droplet
   is fine. A future multi-node app tier would additionally need a Socket.IO Redis
   adapter (WebSocket fan-out) and leader-election / single-owner scheduling for the
@@ -655,11 +661,6 @@ operator can, unaided —
   ranges started refreshing weekly (lab #37), and `Test-RenderDeployment.ps1`
   became `Test-ApiDeployment.ps1` with the origin checks (see
   [Verifying the droplet](#verifying-the-droplet)).
-- **2026-10-16** — Phase 7, ahead of the planned ~2026-10-20: a final dump of
-  the Render database went to the production R2 bucket and pCloud under
-  `render-final/`, then the Render web service, database and Blueprint, the
-  R2 rehearsal bucket, the `api-next` record, and `db-backup.yml` were deleted.
-  There is no Render rollback from here.
 
 ## Open Questions
 
@@ -689,8 +690,9 @@ operator can, unaided —
    Render, stopped being the truth, and the droplet's Postgres is
    localhost-only, so the workflow could not reach it.
 5. ~~Decommission Render after the 7-day rollback window (~2026-10-20), and
-   delete `db-backup.yml` the same day.~~ Done early, 2026-10-16 (Phase 7):
-   final dump under `render-final/` in R2 and pCloud.
+   delete `db-backup.yml` the same day.~~ Done 2026-10-22: the web service,
+   the database, and the Blueprint are deleted in Render, and `db-backup.yml`
+   is deleted from this repo.
 
 ## References
 

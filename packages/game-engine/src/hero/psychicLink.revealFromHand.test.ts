@@ -62,11 +62,20 @@ function makeConfig(): MatchSetupConfig {
   };
 }
 
-/** A game state with the given player hands + one X-Men card trait, for handler tests. */
-function makeHandState(hands: Record<string, string[]>, decks: Record<string, string[]>): LegendaryGameState {
+/** A game state with the given player hands, decks and play areas, for handler tests. */
+function makeHandState(
+  hands: Record<string, string[]>,
+  decks: Record<string, string[]>,
+  inPlay: Record<string, string[]> = {},
+): LegendaryGameState {
   const playerZones: Record<string, unknown> = {};
   for (const playerId of Object.keys(hands)) {
-    playerZones[playerId] = { ...makePlayerZones(), hand: hands[playerId], deck: decks[playerId] ?? [] };
+    playerZones[playerId] = {
+      ...makePlayerZones(),
+      hand: hands[playerId],
+      deck: decks[playerId] ?? [],
+      inPlay: inPlay[playerId] ?? [],
+    };
   }
   return {
     messages: [],
@@ -79,6 +88,8 @@ function makeHandState(hands: Record<string, string[]>, decks: Record<string, st
     cardTraits: {
       'xmen-card': { team: 'x-men', heroClass: 'instinct' },
       'shield-card': { team: 'shield', heroClass: null },
+      // why: Psychic Link is itself an X-Men Hero, so the "another" exclusion is load-bearing.
+      'psychic-link': { team: 'x-men', heroClass: 'covert' },
     },
     cardStats: {},
     cardDisplayData: {},
@@ -175,5 +186,88 @@ describe('Psychic Link handler (WP-659 / D-24470)', () => {
     const untypedHand = makeHandState({ '0': ['mystery-card'] }, { '0': ['deck-a'] });
     assert.doesNotThrow(() => executeSingleEffect(untypedHand, mockCtx, '0', 'psychic-link', REVEAL_EFFECT));
     assert.equal(untypedHand.playerZones['0']!.deck.length, 1, 'untyped hand card -> no match -> no draw');
+  });
+});
+
+// why: D-24731 — rules v23 "Revealing a Card" (L3186-3190): "You can reveal a card from your
+// hand or you can reveal a card in front of you that you have already played this turn." The
+// handler used to scan the hand only, so an X-Men Hero played before Psychic Link drew nothing.
+describe('Psychic Link reveals a card played this turn (D-24731)', () => {
+  it('the playing player with a played X-Men Hero and no X-Men in hand draws', () => {
+    const G = makeHandState(
+      { '0': ['shield-card'] },
+      { '0': ['deck-a', 'deck-b'] },
+      { '0': ['xmen-card', 'psychic-link'] },
+    );
+    executeSingleEffect(G, mockCtx, '0', 'psychic-link', REVEAL_EFFECT);
+
+    assert.equal(G.playerZones['0']!.deck.length, 1, 'one card drawn from the deck');
+    assert.equal(G.playerZones['0']!.hand.length, 2, 'the hand gained the drawn card');
+    assert.deepStrictEqual(G.playerZones['0']!.inPlay, ['xmen-card', 'psychic-link'], 'the reveal moves nothing');
+    assert.ok(!G.messages.some((entry) => entry.text.startsWith('No player had a matching Hero')));
+  });
+
+  it('Psychic Link alone in play does not reveal itself ("another")', () => {
+    const G = makeHandState(
+      { '0': ['shield-card'] },
+      { '0': ['deck-a', 'deck-b'] },
+      { '0': ['psychic-link'] },
+    );
+    executeSingleEffect(G, mockCtx, '0', 'psychic-link', REVEAL_EFFECT);
+
+    assert.equal(G.playerZones['0']!.deck.length, 2, 'no draw — the only X-Men in play is the card itself');
+    const noRevealLines = G.messages.filter((entry) => entry.text.startsWith('No player had a matching Hero'));
+    assert.equal(noRevealLines.length, 1, 'the D-24668 no-reveal line still fires');
+  });
+
+  it('another player with an X-Men Hero in hand still draws', () => {
+    const G = makeHandState(
+      { '0': ['shield-card'], '1': ['xmen-card'] },
+      { '0': ['d0a', 'd0b'], '1': ['d1a', 'd1b'] },
+      { '0': ['psychic-link'] },
+    );
+    executeSingleEffect(G, mockCtx, '0', 'psychic-link', REVEAL_EFFECT);
+
+    assert.equal(G.playerZones['0']!.deck.length, 2, 'player 0 has only Psychic Link in play — no draw');
+    assert.equal(G.playerZones['1']!.deck.length, 1, 'player 1 (X-Men in hand) drew');
+  });
+
+  it('another player reveals from hand only, never from their play area', () => {
+    const G = makeHandState(
+      { '0': ['xmen-card'], '1': ['shield-card'] },
+      { '0': ['d0a', 'd0b'], '1': ['d1a', 'd1b'] },
+      { '0': ['psychic-link'], '1': ['xmen-card'] },
+    );
+    executeSingleEffect(G, mockCtx, '0', 'psychic-link', REVEAL_EFFECT);
+
+    assert.equal(G.playerZones['1']!.deck.length, 2, 'player 1 has played nothing this turn — no draw');
+  });
+
+  it('a played card that left play (Out of Time) does not count', () => {
+    const G = makeHandState(
+      { '0': ['shield-card'] },
+      { '0': ['xmen-card', 'deck-a', 'deck-b'] },
+      { '0': ['psychic-link'] },
+    );
+    // why: D-24692 — the X-Men Hero was played this turn, then moved to the deck; the Out of
+    // Time ledger still lists it as played, but it is no longer in front of the player.
+    G.turnEconomy = { ...G.turnEconomy, outOfTimePlayedCardIds: ['xmen-card'] };
+    executeSingleEffect(G, mockCtx, '0', 'psychic-link', REVEAL_EFFECT);
+
+    assert.equal(G.playerZones['0']!.deck.length, 3, 'no draw — the played X-Men Hero is no longer in play');
+  });
+
+  it('a played Copy Powers card that copied an X-Men team counts', () => {
+    const G = makeHandState(
+      { '0': ['shield-card'] },
+      { '0': ['deck-a', 'deck-b'] },
+      { '0': ['copy-card', 'psychic-link'] },
+    );
+    // why: D-24391 / D-24726 — the copied team is the card's team for this play.
+    G.cardTraits['copy-card'] = { team: 'avengers', heroClass: 'covert' };
+    G.cardCopiedTeams = { 'copy-card': ['x-men'] };
+    executeSingleEffect(G, mockCtx, '0', 'psychic-link', REVEAL_EFFECT);
+
+    assert.equal(G.playerZones['0']!.deck.length, 1, 'the copy counts as an X-Men Hero in play');
   });
 });

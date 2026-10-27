@@ -2,6 +2,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { UICardDisplay, UITurnEconomyState } from '@legendary-arena/game-engine';
 import { canFight, canFightWithExcessiveViolence, canRecruit, useCardCostGating } from './useCardCostGating';
+import { RESCUE_ON_FIGHT_RECRUIT_COST, canFightAndRescue } from './useCardCostGating';
 
 function display(cost: number | null): UICardDisplay {
   return {
@@ -154,5 +155,51 @@ describe('restricted attack per fight target (WP-790 / D-24652)', () => {
     assert.equal(gating.canFight(3, 'rooftops').allowed, true);
     assert.equal(gating.canFight(3, 'bridge').allowed, false);
     assert.equal(gating.canFightWithExcessiveViolence(2, 'rooftops'), true);
+  });
+});
+
+describe('WP-820 canFightAndRescue (Baron Zemo, D-24753)', () => {
+  // why: the economy() builder has no cue field, so each case spreads it in (the
+  // evEconomy pattern above).
+  function rescueEconomy(values: { attack: number; recruit: number }): UITurnEconomyState {
+    return { ...economy(values), rescueOnFightAvailable: true };
+  }
+
+  test('the client constant mirrors the engine price of 2 Recruit', () => {
+    assert.equal(RESCUE_ON_FIGHT_RECRUIT_COST, 2);
+  });
+
+  test('T1: true when the cue is on and both the fight and 2 Recruit are payable', () => {
+    assert.equal(canFightAndRescue(3, rescueEconomy({ attack: 3, recruit: 2 })), true);
+  });
+
+  test('T2: false with 1 Recruit, without the cue, with a null cost, and with attack short', () => {
+    assert.equal(canFightAndRescue(3, rescueEconomy({ attack: 3, recruit: 1 })), false, 'recruit 1');
+    assert.equal(canFightAndRescue(3, economy({ attack: 3, recruit: 2 })), false, 'cue absent');
+    assert.equal(canFightAndRescue(null, rescueEconomy({ attack: 3, recruit: 2 })), false, 'cost null');
+    assert.equal(canFightAndRescue(3, rescueEconomy({ attack: 2, recruit: 2 })), false, 'attack 2');
+  });
+
+  test('T3: under recruit-as-attack the fight Recruit is counted (needs cost + 2 combined)', () => {
+    // why: availableAttack already folds Recruit in under the conversion, so cost 5
+    // plus the 2-Recruit rescue needs 7 from it: 7 passes, 6 does not.
+    const payable: UITurnEconomyState = {
+      ...economy({ attack: 3, recruit: 4, available: { attack: 7 } }),
+      recruitSpendableAsAttack: true,
+      rescueOnFightAvailable: true,
+    };
+    assert.equal(canFightAndRescue(5, payable), true);
+    const short: UITurnEconomyState = {
+      ...economy({ attack: 3, recruit: 3, available: { attack: 6 } }),
+      recruitSpendableAsAttack: true,
+      rescueOnFightAvailable: true,
+    };
+    assert.equal(canFightAndRescue(5, short), false);
+  });
+
+  test('useCardCostGating exposes canFightAndRescue bound to the economy', () => {
+    const gating = useCardCostGating(rescueEconomy({ attack: 3, recruit: 2 }));
+    assert.equal(gating.canFightAndRescue(3), true);
+    assert.equal(gating.canFightAndRescue(4), false);
   });
 });

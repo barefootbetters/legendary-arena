@@ -17,11 +17,16 @@ import type { SubmitMove } from './uiMoveName.types';
 
 import PendingKoDiscardChoicePrompt from './PendingKoDiscardChoicePrompt.vue';
 
-function makeChoice(cardIds: string[], maxCount = 4): UIPendingKoDiscardChoice {
+function makeChoice(
+  cardIds: string[],
+  maxCount = 4,
+  greyFilter?: 'grey' | 'non-grey',
+): UIPendingKoDiscardChoice {
   return {
     choiceType: 'ko-from-discard',
     playerID: 'player-0',
     maxCount,
+    ...(greyFilter !== undefined ? { greyFilter } : {}),
     discard: cardIds.map((cardId) => ({ cardId, display: { name: cardId } })),
   } as unknown as UIPendingKoDiscardChoice;
 }
@@ -111,5 +116,26 @@ describe('PendingKoDiscardChoicePrompt — source-neutral header (WP-760 / D-245
       props: { pendingKoDiscardChoice: makeChoice(['a'], 1), viewerPlayerId: 'player-0', submitMove: () => {} },
     });
     assert.equal(wrapper.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO up to 1 card from your discard pile');
+  });
+});
+
+describe('PendingKoDiscardChoicePrompt — grey-filtered header (D-24783)', () => {
+  test('a grey entry says "grey Heroes", singular at a cap of 1', () => {
+    const plural = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeChoice(['a', 'b', 'c'], 3, 'grey'), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    assert.equal(plural.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO up to 3 grey Heroes from your discard pile');
+
+    const single = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeChoice(['a'], 1, 'grey'), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    assert.equal(single.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO up to 1 grey Hero from your discard pile');
+  });
+
+  test('a non-grey entry says "non-grey Heroes"', () => {
+    const wrapper = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeChoice(['a', 'b'], 2, 'non-grey'), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    assert.equal(wrapper.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO up to 2 non-grey Heroes from your discard pile');
   });
 });

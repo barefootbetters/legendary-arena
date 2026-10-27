@@ -340,6 +340,32 @@ describe('getLegalMoves — pending optional-KO-reward short-circuit (WP-248 / D
       'the cheapest S.H.I.E.L.D. Hero; the cost-0 non-S.H.I.E.L.D. discard card is skipped');
   });
 
+  test('WP-826: a Reassign to Civilian Duty entry picks the cheapest played S.H.I.E.L.D. Hero, never a hand or discard card', () => {
+    // why: WP-826 / D-24759 — the entry permits only inPlay; a hand or discard target would be
+    // rejected by the resolve and hang the sim. Cheaper S.H.I.E.L.D. cards sit in hand and discard
+    // to prove both scans are skipped, and a cheaper non-S.H.I.E.L.D. played card to prove the filter.
+    const gameState = makeG({
+      discard: ['starting-shield-trooper' as CardExtId],
+      hand: ['starting-shield-agent' as CardExtId],
+      inPlay: ['avenger-played' as CardExtId, 'pile-shield-officer' as CardExtId, 'reassign' as CardExtId],
+      currentStage: 'main',
+    });
+    gameState.pendingOptionalKoRewards = [{
+      playerID: '0', rewardType: 'rescue', rewardMagnitude: 1, sourceCardId: 'reassign' as CardExtId,
+      koZones: ['inPlay'], koTeamFilter: 'shield',
+    }];
+    gameState.cardStats = costsOf({ 'avenger-played': 1, 'pile-shield-officer': 3, reassign: 5 });
+    gameState.cardTraits = {
+      'avenger-played': { heroClass: null, team: 'avengers' },
+      reassign: { heroClass: null, team: 'shield' },
+    } as unknown as LegendaryGameState['cardTraits'];
+
+    const legalMoves = getLegalMoves(gameState, CONTEXT);
+
+    assert.equal(legalMoves.length, 1);
+    assert.deepStrictEqual(legalMoves[0]!.args, { zone: 'inPlay', cardId: 'pile-shield-officer' });
+  });
+
   test('no resolveOptionalKoReward and normal enumeration when no optional-KO-reward is pending', () => {
     const gameState = makeG({ hand: ['hero-a' as CardExtId], currentStage: 'main' });
     const legalMoves = getLegalMoves(gameState, CONTEXT);
@@ -1583,5 +1609,128 @@ describe('getLegalMoves — the bot\'s Do-Over answer (D-24706)', () => {
 
   test('accepts an empty remaining hand (nothing to lose, four cards to gain)', () => {
     assert.deepEqual(getLegalMoves(makeDoOverG([]), CONTEXT), [{ name: 'resolveDoOver', args: { accept: true } }]);
+  });
+});
+
+describe('WP-817 getLegalMoves — Primus fight discard cost mirrors the move guard (D-24750)', () => {
+  /** Primus (static fight cost 3, discard cost 2/3/5/7) at City 0 with the given attack and hand. */
+  function makePrimusG(options: { attack: number; hand: CardExtId[]; withDiscardCost?: boolean }): LegendaryGameState {
+    const gameState = makeG({ hand: options.hand, currentStage: 'main' });
+    gameState.turnEconomy = makeTurnEconomy({ attack: options.attack });
+    gameState.city = ['primus-01' as CardExtId, null, null, null, null];
+    gameState.cardStats = {
+      'primus-01': makeCardStatEntry({ fightCost: 3 }),
+      'hero-cost4': makeCardStatEntry({ cost: 4 }),
+      'hero-cost5': makeCardStatEntry({ cost: 5 }),
+    } as LegendaryGameState['cardStats'];
+    if (options.withDiscardCost !== false) {
+      gameState.villainFightDiscardCosts = { 'primus-01': { eligibleCosts: [2, 3, 5, 7] } };
+    }
+    return gameState;
+  }
+
+  /** Returns the fightVillain intents only. */
+  function fightIntents(gameState: LegendaryGameState) {
+    return getLegalMoves(gameState, CONTEXT).filter((move) => move.name === 'fightVillain');
+  }
+
+  test('T16: offers exactly one fight naming the cheapest eligible card', () => {
+    const gameState = makePrimusG({ attack: 3, hand: ['hero-cost4', 'hero-cost5'] as CardExtId[] });
+    assert.deepStrictEqual(fightIntents(gameState), [
+      { name: 'fightVillain', args: { cityIndex: 0, discardCardId: 'hero-cost5' } },
+    ]);
+  });
+
+  test('T17: no fight without an eligible card, and none when the fight is unaffordable', () => {
+    const noEligible = makePrimusG({ attack: 3, hand: ['hero-cost4'] as CardExtId[] });
+    assert.deepStrictEqual(fightIntents(noEligible), []);
+    const unaffordable = makePrimusG({ attack: 2, hand: ['hero-cost5'] as CardExtId[] });
+    assert.deepStrictEqual(fightIntents(unaffordable), []);
+  });
+
+  test('T18: a villain without a discard cost keeps args { cityIndex } exactly', () => {
+    const gameState = makePrimusG({ attack: 3, hand: ['hero-cost5'] as CardExtId[], withDiscardCost: false });
+    assert.deepStrictEqual(fightIntents(gameState), [{ name: 'fightVillain', args: { cityIndex: 0 } }]);
+  });
+});
+
+describe('WP-818 getLegalMoves — Baron Zemo fightMastermind mirrors the move guard (D-24752)', () => {
+  /** A main-stage Zemo state (printed 9, tactics left) with the given attack and Victory Pile. */
+  function makeZemoG(attack: number, victory: CardExtId[]): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main' });
+    (gameState as { selection: unknown }).selection = { mastermindId: 'ca75/baron-heinrich-zemo' };
+    gameState.cardStats = { 'm-base': makeCardStatEntry({ fightCost: 9 }) } as LegendaryGameState['cardStats'];
+    gameState.mastermind = { baseCardId: 'm-base', tacticsDeck: ['t-1'] } as unknown as LegendaryGameState['mastermind'];
+    gameState.playerZones['0']!.victory = victory;
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  /** Whether getLegalMoves offers fightMastermind. */
+  function offersFightMastermind(gameState: LegendaryGameState): boolean {
+    return getLegalMoves(gameState, CONTEXT).some((move) => move.name === 'fightMastermind');
+  }
+
+  test('T8: a non-Savior with 9 attack is not offered fightMastermind', () => {
+    assert.equal(offersFightMastermind(makeZemoG(9, ['pile-bystander', 'pile-bystander'])), false);
+  });
+
+  test('T8: a non-Savior with 18 attack is offered fightMastermind', () => {
+    assert.equal(offersFightMastermind(makeZemoG(18, ['pile-bystander', 'pile-bystander'])), true);
+  });
+
+  test('T8: a Savior with 9 attack is offered fightMastermind', () => {
+    assert.equal(
+      offersFightMastermind(makeZemoG(9, ['pile-bystander', 'pile-bystander', 'pile-bystander'])),
+      true,
+    );
+  });
+});
+
+describe('getLegalMoves — WP-836 grey-filtered KO defaults (D-24769)', () => {
+  const TRAITS = {
+    'tech-a': { heroClass: 'tech', team: null },
+    'tech-b': { heroClass: 'tech', team: null },
+  } as unknown as LegendaryGameState['cardTraits'];
+
+  test('T18: a non-grey discard entry offers the cheapest classed Hero, never the Agent', () => {
+    const gameState = makeG({
+      discard: [SHIELD_AGENT_EXT_ID, 'tech-a' as CardExtId, 'tech-b' as CardExtId],
+      currentStage: 'start',
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'], greyFilter: 'non-grey' }],
+    });
+    gameState.cardTraits = TRAITS;
+    gameState.cardStats = {
+      'tech-a': makeCardStatEntry({ cost: 3 }),
+      'tech-b': makeCardStatEntry({ cost: 5 }),
+    } as unknown as LegendaryGameState['cardStats'];
+    assert.deepStrictEqual(getLegalMoves(gameState, CONTEXT), [
+      { name: 'resolveKoHeroChoice', args: { zone: 'discard', cardId: 'tech-a' } },
+    ]);
+  });
+
+  /** A G whose current player has the given discard and a parked KO-up-to-2 choice. */
+  function makeGreyKoDiscardG(discard: CardExtId[], isFiltered: boolean): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main', discard });
+    gameState.cardTraits = TRAITS;
+    gameState.pendingKoDiscardChoices = [
+      isFiltered
+        ? { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, greyFilter: 'grey' }
+        : { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2 },
+    ];
+    return gameState;
+  }
+
+  test('T19: a grey entry never offers a Wound; Agents and Troopers go first; Officers stay', () => {
+    const discard = [WOUND_EXT_ID, SHIELD_AGENT_EXT_ID, 'tech-a' as CardExtId, SHIELD_TROOPER_EXT_ID];
+    assert.deepStrictEqual(getLegalMoves(makeGreyKoDiscardG(discard, true), CONTEXT), [
+      { name: 'resolveKoDiscardChoice', args: { cardIds: [SHIELD_AGENT_EXT_ID, SHIELD_TROOPER_EXT_ID] } },
+    ]);
+    assert.deepStrictEqual(getLegalMoves(makeGreyKoDiscardG([SHIELD_OFFICER_EXT_ID], true), CONTEXT), [
+      { name: 'resolveKoDiscardChoice', args: { cardIds: [] } },
+    ]);
+    assert.deepStrictEqual(getLegalMoves(makeGreyKoDiscardG(discard, false), CONTEXT), [
+      { name: 'resolveKoDiscardChoice', args: { cardIds: [WOUND_EXT_ID, SHIELD_AGENT_EXT_ID] } },
+    ]);
   });
 });

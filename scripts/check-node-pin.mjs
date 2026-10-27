@@ -13,7 +13,7 @@
  * `legendary-arena-lab` repo's `10-node.ps1` installs. This check used to
  * compare render.yaml's `NODE_VERSION` envVars, back when Render built the game
  * server. That rule was removed when Render was deleted in Phase 7
- * (2026-10-16); render.yaml is historical and no longer feeds any host.
+ * (2026-10-22); render.yaml is historical and no longer feeds any host.
  *
  * Exit 0 when every rule holds; exit 1 with a full-sentence message naming the
  * file and the mismatch otherwise.

@@ -1,5 +1,21 @@
 # Wiki Index
 
+## Legendary Arena system map
+
+Product background — where the files are, how they are backed up, which
+files you can edit, and the outside services the product depends on.
+Source page: [Legendary Arena System Map](legendary-arena-system-map.md).
+
+**Source of truth:** `C:\pcloud\legendary-arena\README.md` on the operator's
+workstation (synced to pCloud `/legendary-arena/README.md`). The map below is a
+published copy; when the two differ, the README wins. The file becomes
+`C:\pcloud\legendary-arena\README.md` in Phase 7 of
+[Workstation Layout Migration](workstation-layout-migration.md).
+
+{{< include-section page="legendary-arena-system-map" section="system-map" >}}
+
+---
+
 > **75 / 78** entity pages.
 > Last regenerated: 2026-09-28.
 > See [SCHEMA.md](SCHEMA.md) for the entity-page contract and
@@ -38,6 +54,10 @@ Discrete in-game mechanics with specific triggers and effects.
 
 Coordinated subsystems spanning multiple files / phases.
 
+- [Wiki Viewer Architecture](wiki-viewer-architecture.md) — How the
+  ewiki is built, gated (link check, page count, determinism, JS-free),
+  deployed to the Access-gated Cloudflare Worker, and themed; plus the
+  Render-to-Worker hosting history.
 - [Card Effect System](card-effect-system.md) — How printed card
   text becomes executable, deterministic state changes: inline data
   markers → setup-time descriptors on `G` → a small closed set of
@@ -106,6 +126,11 @@ Coordinated subsystems spanning multiple files / phases.
 
 Abstract data shapes, contracts, and design concepts.
 
+- [Hugo Platform Strategy](hugo-platform-strategy.md) — *(draft)* the
+  family of Hugo sites, the decision to converge four forked wiki themes
+  onto one shared platform (D-24725) built on the current theme extracted
+  (D-24727, after a Hextra pilot), selling with Snipcart on a static site,
+  and the laptop-to-live flow.
 - [CardExtId](cardextid.md) — Named `string` alias for card
   identifiers; format `<setAbbr>/<slug>`; the zone-storage
   invariant — every zone in `G` stores `CardExtId` strings only.
@@ -141,6 +166,11 @@ High-level card categorizations recognised by the engine.
 
 Cross-cutting governance, methodology, and readiness assessments.
 
+- [Legendary Arena System Map](legendary-arena-system-map.md) — *(draft)*
+  every piece of the product and how they connect, shown at the top of
+  this page: where the files are, how they are backed up, which files you
+  can edit, and the outside services (GitHub, Cloudflare, DigitalOcean, …)
+  it depends on.
 - [Card Image Acquisition](card-image-acquisition.md) — *(draft)* the
   card-image staging chain (scrape → convert → rename): per-set
   PowerShell scrapers pull card face JPEGs from the
@@ -244,6 +274,11 @@ Cross-cutting governance, methodology, and readiness assessments.
   each, and where video, vendor attachments, and work-in-progress
   stage. Defers to [Data & File Locations](data-file-locations.md) at
   the repo boundary.
+- [Workstation Layout Migration](workstation-layout-migration.md) —
+  *(draft)* The plan and progress record for moving to one folder name
+  per product in `C:\dev`, `C:\www` and `C:\pcloud`, starting with the
+  engine leaving the pCloud sync drive. Phases with done-when checks and
+  rollbacks, and a dated progress log.
 - [Development Workflow](development-workflow.md) — The
   develop-from-anywhere loop: laptop / workstation / phone drive
   Claude Code sessions on WP/EC contracts → GitHub → front-ends
@@ -458,8 +493,8 @@ Cross-cutting governance, methodology, and readiness assessments.
 Step-by-step walkthroughs for completing specific tasks.
 
 - [Wiki Viewer](wiki-viewer.md) — How to create, edit, preview,
-  and publish ewiki pages: page template, commit prefixes, build
-  pipeline, markdown syntax, and local dev server.
+  and publish ewiki pages: page template, commit prefixes, markdown
+  syntax, and local dev server.
 - [Hugo Onboarding](hugo-onboarding.md) — Day-one ramp for the
   `www.legendary-arena.com` marketing site: WordPress→Hugo mental
   model, from-scratch local setup, project tour, and step-by-step
@@ -554,7 +589,7 @@ Brand governance and commercial-positioning references.
 - [Branding](branding.md) — The visual index of the approved Legendary Arena
   marks: the horizontal lockup, the square hero/villain emblem, the wordmark,
   the monochrome mark, and the gold hero half, each rendered inline, with the
-  vector masters, where the master files live (`C:\pcloud\LA\brand\`), and
+  vector masters, where the master files live (`C:\pcloud\legendary-arena\brand\`), and
   which brand tokens the marks use. The split emblem is the adopted identity
   across the marketing site; this page mirrors the brand-folder and
   `brand-tokens.css` sources and owns neither.
@@ -617,6 +652,8 @@ following are useful entry points:
   pages — see individual front-matter for the full set).
 - **`hugo`** — Pages covering Hugo site infrastructure:
   [Wiki Viewer](wiki-viewer.md),
+  [Wiki Viewer Architecture](wiki-viewer-architecture.md),
+  [Hugo Platform Strategy](hugo-platform-strategy.md),
   [Hugo Web System](hugo-web-system.md),
   [Hugo Onboarding](hugo-onboarding.md),
   [Ewiki Authoring](ewiki-authoring.md)

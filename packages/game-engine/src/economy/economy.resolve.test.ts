@@ -16,7 +16,10 @@ import {
   resolveMastermindFightCost,
   darkPortalLocations,
   DARK_PORTAL_ATTACK_BONUS,
+  BARON_ZEMO_NON_SAVIOR_BONUS,
 } from './economy.resolve.js';
+import { addFightCostReduction } from './economy.logic.js';
+import { makeTurnEconomy } from '../test/fixtureBuilders.js';
 import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 
 /**
@@ -538,5 +541,450 @@ describe('resolveFightCost — villain Blood Frenzy (WP-760)', () => {
     const gameState = makeBloodFrenzyG(true, 'core/midtown-bank-robbery');
     gameState.attachedBystanders = { [METARCHUS as CardExtId]: ['hostage-1' as CardExtId, 'hostage-2' as CardExtId] };
     assert.equal(resolveFightCost(gameState, METARCHUS as CardExtId, '0'), 3 + 2 + 3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Abomination — printed Attack of HQ Heroes (WP-815 / D-24747)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — villain Abomination (WP-815)', () => {
+  const VILLAIN = 'abom-villain';
+
+  /**
+   * A G with an `N+` villain (dynamic base 6) at `cityIndex` (-1 = not in the City),
+   * the given HQ, hero cardStats by printed Attack, and the villain's kind.
+   */
+  function makeAbominationG(options: {
+    cityIndex: number;
+    hq: (string | null)[];
+    heroAttack: Record<string, number>;
+    kind?: string;
+    splitFaces?: Record<string, string>;
+    fightCostReductions?: { target: string; amount: number }[];
+  }): LegendaryGameState {
+    const city: (string | null)[] = [null, null, null, null, null];
+    if (options.cityIndex >= 0) city[options.cityIndex] = VILLAIN;
+    const cardStats: Record<string, unknown> = {
+      [VILLAIN]: { fightCost: 6, fightCostMode: 'dynamic', fightCostBase: 6, attack: 0 },
+    };
+    for (const [heroId, attack] of Object.entries(options.heroAttack)) {
+      cardStats[heroId] = { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, attack };
+    }
+    return {
+      cardStats,
+      villainAttachedHeroes: {},
+      city,
+      hq: options.hq,
+      ...(options.kind === undefined ? {} : { cardAbomination: { [VILLAIN]: options.kind } }),
+      ...(options.splitFaces === undefined ? {} : { splitFaces: options.splitFaces }),
+      ...(options.fightCostReductions === undefined
+        ? {}
+        : { turnEconomy: { fightCostReductions: options.fightCostReductions } }),
+    } as unknown as LegendaryGameState;
+  }
+
+  const HQ_FIVE_AND_THREE = ['h5', null, null, null, 'h3'];
+  const FIVE_AND_THREE = { h5: 5, h3: 3 };
+
+  it('T2: at Sewers (city[0]) adds the printed Attack of hq[4], not hq[0] (6 + 3 = 9)', () => {
+    const G = makeAbominationG({ cityIndex: 0, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 9);
+  });
+
+  it('T3: moved to the Bridge (city[4]) the cost follows the space (6 + 5 = 11)', () => {
+    const G = makeAbominationG({ cityIndex: 4, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 11);
+  });
+
+  it('T4: an empty HQ slot under the villain adds 0', () => {
+    const G = makeAbominationG({ cityIndex: 2, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 6);
+  });
+
+  it('T5: a villain not in the City adds 0', () => {
+    const G = makeAbominationG({ cityIndex: -1, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 6);
+  });
+
+  it('T6: Double Abomination doubles the read (6 + 2 × 3 = 12)', () => {
+    const G = makeAbominationG({ cityIndex: 0, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'double-abomination' });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 12);
+  });
+
+  it('T7: a Divided Hero under the villain adds both printed halves (2 + 1 = +3)', () => {
+    const G = makeAbominationG({
+      cityIndex: 0,
+      hq: [null, null, null, null, 'split-a#0'],
+      heroAttack: { 'split-a#0': 2, 'split-b#0': 1 },
+      kind: 'abomination',
+      splitFaces: { 'split-a': 'split-b' },
+    });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 6 + 3);
+  });
+
+  it('T8: a printed "2+" Hero (cardStats attack 2) adds 2; a Hero with no cardStats adds 0', () => {
+    const twoPlus = makeAbominationG({ cityIndex: 0, hq: [null, null, null, null, 'h2plus'], heroAttack: { h2plus: 2 }, kind: 'abomination' });
+    assert.equal(resolveFightCost(twoPlus, VILLAIN as CardExtId), 8);
+    const noStats = makeAbominationG({ cityIndex: 0, hq: [null, null, null, null, 'h-unknown'], heroAttack: {}, kind: 'abomination' });
+    assert.doesNotThrow(() => resolveFightCost(noStats, VILLAIN as CardExtId));
+    assert.equal(resolveFightCost(noStats, VILLAIN as CardExtId), 6);
+  });
+
+  it('T9: the term is added before a Sewers -2 reduction (9 - 2 = 7), keeping the 0 floor', () => {
+    const G = makeAbominationG({
+      cityIndex: 0,
+      hq: HQ_FIVE_AND_THREE,
+      heroAttack: FIVE_AND_THREE,
+      kind: 'abomination',
+      fightCostReductions: [{ target: 'sewers', amount: 2 }],
+    });
+    assert.equal(resolveFightCost(G, VILLAIN as CardExtId), 7);
+    const floored = makeAbominationG({
+      cityIndex: 0,
+      hq: HQ_FIVE_AND_THREE,
+      heroAttack: FIVE_AND_THREE,
+      kind: 'abomination',
+      fightCostReductions: [{ target: 'sewers', amount: 20 }],
+    });
+    assert.equal(resolveFightCost(floored, VILLAIN as CardExtId), 0);
+  });
+
+  it('T10: no entry, or a mastermind kind on the villain, resolves to the base only', () => {
+    const noEntry = makeAbominationG({ cityIndex: 0, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE });
+    assert.equal(resolveFightCost(noEntry, VILLAIN as CardExtId), 6);
+    const mastermindKind = makeAbominationG({ cityIndex: 0, hq: HQ_FIVE_AND_THREE, heroAttack: FIVE_AND_THREE, kind: 'ultimate-abomination' });
+    assert.equal(resolveFightCost(mastermindKind, VILLAIN as CardExtId), 6);
+  });
+});
+
+describe('resolveMastermindFightCost — Mastermind Abomination (WP-815)', () => {
+  /**
+   * A G whose Mastermind base `mm-base` costs `baseFightCost`, with HQ Heroes of the
+   * given printed Attack (null = empty slot) and, optionally, the Mastermind's kind.
+   */
+  function makeMastermindAbominationG(
+    baseFightCost: number,
+    hqAttack: (number | null)[],
+    cardAbomination?: Record<string, string>,
+  ): LegendaryGameState {
+    const cardStats: Record<string, unknown> = {
+      'mm-base': { fightCost: baseFightCost, fightCostMode: 'static', fightCostBase: 0, attack: 0 },
+    };
+    const hq: (string | null)[] = [];
+    for (let slotIndex = 0; slotIndex < hqAttack.length; slotIndex++) {
+      const attack = hqAttack[slotIndex];
+      if (attack === null || attack === undefined) {
+        hq.push(null);
+        continue;
+      }
+      const heroId = `hq-hero-${slotIndex}`;
+      cardStats[heroId] = { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, attack };
+      hq.push(heroId);
+    }
+    return {
+      cardStats,
+      mastermind: { baseCardId: 'mm-base' },
+      selection: { schemeId: 'core/midtown-bank-robbery' },
+      counters: {},
+      hq,
+      ...(cardAbomination === undefined ? {} : { cardAbomination }),
+    } as unknown as LegendaryGameState;
+  }
+
+  it('T11: Ultimate Abomination adds the total printed HQ Attack, skipping empty slots (6 + 6 = 12)', () => {
+    const G = makeMastermindAbominationG(6, [2, 0, null, 3, 1], { 'mm-base': 'ultimate-abomination' });
+    assert.equal(resolveMastermindFightCost(G), 12);
+  });
+
+  it('T12: Ultimate Abomination with an empty HQ adds 0', () => {
+    const G = makeMastermindAbominationG(6, [null, null, null, null, null], { 'mm-base': 'ultimate-abomination' });
+    assert.equal(resolveMastermindFightCost(G), 6);
+  });
+
+  it('T13: Double Highest Abomination adds twice the highest, not the sum (8 + 2 × 4 = 16)', () => {
+    const G = makeMastermindAbominationG(8, [2, 4, 3, 0, null], { 'mm-base': 'double-highest-abomination' });
+    assert.equal(resolveMastermindFightCost(G), 16);
+  });
+
+  it('T14: a villain kind, no entry, or no cardAbomination field resolves to the base only', () => {
+    assert.equal(resolveMastermindFightCost(makeMastermindAbominationG(6, [2, 4, 3, 0, 1], { 'mm-base': 'abomination' })), 6);
+    assert.equal(resolveMastermindFightCost(makeMastermindAbominationG(6, [2, 4, 3, 0, 1], {})), 6);
+    assert.equal(resolveMastermindFightCost(makeMastermindAbominationG(6, [2, 4, 3, 0, 1])), 6);
+  });
+});
+
+const ZEMO_ID = 'ca75/baron-heinrich-zemo';
+const ZEMO_BASE_CARD = 'ca75-mastermind-baron-heinrich-zemo-baron-heinrich-zemo';
+
+/**
+ * Builds a minimal G with a chosen Mastermind and each player's Victory Pile.
+ *
+ * @param mastermindId - The qualified `set/slug` Mastermind id.
+ * @param victoryPiles - Victory Pile contents keyed by player id.
+ * @param baseFightCost - The printed base fight cost.
+ */
+function makeZemoG(
+  mastermindId: string,
+  victoryPiles: Record<string, CardExtId[]>,
+  baseFightCost = 9,
+): LegendaryGameState {
+  const playerZones: Record<string, { victory: CardExtId[] }> = {};
+  for (const [playerId, victory] of Object.entries(victoryPiles)) {
+    playerZones[playerId] = { victory };
+  }
+  return {
+    cardStats: { [ZEMO_BASE_CARD]: { fightCost: baseFightCost, fightCostMode: 'static', fightCostBase: 0 } },
+    mastermind: { baseCardId: ZEMO_BASE_CARD, attachedBystanders: [] },
+    selection: { schemeId: 'core/midtown-bank-robbery', mastermindId },
+    counters: {},
+    playerZones,
+  } as unknown as LegendaryGameState;
+}
+
+describe('WP-818 resolveMastermindFightCost — Baron Zemo +9 unless you are a Savior', () => {
+  it('T1: a fighter with 2 Victory-Pile Bystanders pays 9 + 9 = 18', () => {
+    const G = makeZemoG(ZEMO_ID, { '0': ['pile-bystander', 'pile-bystander', 'core-villain-hydra-01'] });
+    assert.equal(BARON_ZEMO_NON_SAVIOR_BONUS, 9);
+    assert.equal(resolveMastermindFightCost(G, '0'), 18);
+  });
+
+  it('T2: a Savior (3 Bystanders, a villain-deck one included) pays the printed 9', () => {
+    const G = makeZemoG(ZEMO_ID, {
+      '0': ['pile-bystander', 'pile-bystander', 'bystander-villain-deck-01'],
+    });
+    assert.equal(resolveMastermindFightCost(G, '0'), 9);
+  });
+
+  it('T3: an omitted fighter, or one with no zones, pays the +9', () => {
+    const G = makeZemoG(ZEMO_ID, { '0': ['pile-bystander', 'pile-bystander', 'pile-bystander'] });
+    assert.equal(resolveMastermindFightCost(G), 18);
+    assert.equal(resolveMastermindFightCost(G, '9'), 18);
+  });
+
+  it('T3b: Bystanders Zemo holds never count toward the fighter being a Savior', () => {
+    const G = makeZemoG(ZEMO_ID, { '0': ['pile-bystander', 'pile-bystander'] });
+    G.mastermind.attachedBystanders = ['pile-bystander'];
+    assert.equal(resolveMastermindFightCost(G, '0'), 18);
+  });
+
+  it('T4: another Mastermind, or a partial G with no selection, is unchanged', () => {
+    const redSkull = makeZemoG('core/red-skull', { '0': [] }, 7);
+    assert.equal(resolveMastermindFightCost(redSkull), 7);
+    assert.equal(resolveMastermindFightCost(redSkull, '0'), 7);
+    const partial = makeZemoG(ZEMO_ID, { '0': [] }, 7);
+    delete (partial as { selection?: unknown }).selection;
+    assert.equal(resolveMastermindFightCost(partial), 7);
+    assert.equal(resolveMastermindFightCost(partial, '0'), 7);
+  });
+
+  it('T5: the term is added before the Mastermind reduction (Storm -2)', () => {
+    const G = makeZemoG(ZEMO_ID, { '0': ['pile-bystander'] });
+    G.turnEconomy = addFightCostReduction(
+      makeTurnEconomy(),
+      'mastermind',
+      2,
+      'core/storm/tidal-wave#0' as CardExtId,
+    );
+    assert.equal(resolveMastermindFightCost(G, '0'), 16);
+    G.playerZones['0']!.victory = ['pile-bystander', 'pile-bystander', 'pile-bystander'];
+    assert.equal(resolveMastermindFightCost(G, '0'), 7);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Variable-Attack passives (WP-841 / D-24774)
+// ---------------------------------------------------------------------------
+
+describe('resolveFightCost — villain variable-Attack passives (WP-841)', () => {
+  const STRUCKER_00 = 'co2e-villain-hydra-baron-strucker-supreme-hydra-00';
+  const STRUCKER_01 = 'co2e-villain-hydra-baron-strucker-supreme-hydra-01';
+  const VIPER = 'co2e-villain-hydra-viper-00';
+  const GREEN_GOBLIN = 'co2e-villain-sinister-spider-foes-green-goblin-00';
+  const KIDNAPPERS = 'co2e-villain-hydra-hydra-kidnappers-00';
+  const PAIBOK = 'co2e-villain-skulls-paibok-the-power-skrull-00';
+  const SUPER_SKRULL = 'co2e-villain-skulls-super-skrull-00';
+  const HYDRO_MAN = 'co2e-villain-sinister-syndicate-hydro-man-00';
+
+  /** A `N+` dynamic cardStats row with the given printed base. */
+  function dynamicStats(base: number): { fightCost: number; fightCostMode: 'dynamic'; fightCostBase: number } {
+    return { fightCost: base, fightCostMode: 'dynamic', fightCostBase: base };
+  }
+
+  /** A `size`-space City with `villainId` at `cityIndex` (-1 = not in the City). */
+  function cityWith(villainId: string, cityIndex: number, size = 5): (string | null)[] {
+    const city: (string | null)[] = [];
+    for (let index = 0; index < size; index++) {
+      city.push(null);
+    }
+    if (cityIndex >= 0) {
+      city[cityIndex] = villainId;
+    }
+    return city;
+  }
+
+  /** The Hydro-Man G: base 4, `flat:2@sewers+bridge`, at `cityIndex` of a `size`-space City. */
+  function makeHydroManG(cityIndex: number, size = 5): LegendaryGameState {
+    return {
+      cardStats: { [HYDRO_MAN]: dynamicStats(4) },
+      villainAttachedHeroes: {},
+      city: cityWith(HYDRO_MAN, cityIndex, size),
+      hq: [null, null, null, null, null],
+      villainVariableAttack: {
+        [HYDRO_MAN]: { source: 'flat', attackPerUnit: 2, requireCitySpaces: ['sewers', 'bridge'] },
+      },
+    } as unknown as LegendaryGameState;
+  }
+
+  it('T3: Strucker counts the other HYDRA Villains in the City and Escape Pile (6 + 3 = 9)', () => {
+    const G = {
+      cardStats: { [STRUCKER_00]: dynamicStats(6) },
+      villainAttachedHeroes: {},
+      villainDeckCardTypes: {
+        [STRUCKER_00]: 'villain',
+        [STRUCKER_01]: 'villain',
+        [VIPER]: 'villain',
+        [GREEN_GOBLIN]: 'villain',
+        [KIDNAPPERS]: 'villain',
+        'bystander-07': 'bystander',
+      },
+      city: [STRUCKER_00, STRUCKER_01, VIPER, GREEN_GOBLIN, null],
+      escapedPile: [KIDNAPPERS, 'bystander-07', 'co2e-hero-captain-america-01'],
+      villainVariableAttack: {
+        [STRUCKER_00]: { source: 'per-other-hydra-villain', attackPerUnit: 1 },
+      },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, STRUCKER_00 as CardExtId), 9);
+  });
+
+  it('T4: Strucker alone costs his base, with an empty or absent Escape Pile', () => {
+    const G = {
+      cardStats: { [STRUCKER_00]: dynamicStats(6) },
+      villainAttachedHeroes: {},
+      villainDeckCardTypes: { [STRUCKER_00]: 'villain' },
+      city: cityWith(STRUCKER_00, 0),
+      escapedPile: [],
+      villainVariableAttack: {
+        [STRUCKER_00]: { source: 'per-other-hydra-villain', attackPerUnit: 1 },
+      },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, STRUCKER_00 as CardExtId), 6);
+    delete (G as { escapedPile?: unknown }).escapedPile;
+    assert.equal(resolveFightCost(G, STRUCKER_00 as CardExtId), 6);
+  });
+
+  it('T5: Paibok counts distinct HQ Hero Classes; dual class counts both, grey and empty add nothing (5 + 3 = 8)', () => {
+    const G = {
+      cardStats: { [PAIBOK]: dynamicStats(5) },
+      villainAttachedHeroes: {},
+      city: cityWith(PAIBOK, 1),
+      hq: ['covert-a', 'covert-b', 'dual-strength-tech', null, 'sidekick-00'],
+      cardTraits: {
+        'covert-a': { heroClass: 'covert', team: null },
+        'covert-b': { heroClass: 'covert', team: null },
+        'dual-strength-tech': { heroClass: 'strength', heroClass2: 'tech', team: null },
+        'sidekick-00': { heroClass: null, team: null },
+      },
+      villainVariableAttack: { [PAIBOK]: { source: 'per-hq-hero-class', attackPerUnit: 1 } },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, PAIBOK as CardExtId), 8);
+  });
+
+  it('T6: Super-Skrull counts both faces of a Divided card off play (2 + 2 = 4); an empty HQ adds 0', () => {
+    const G = {
+      cardStats: { [SUPER_SKRULL]: dynamicStats(2) },
+      villainAttachedHeroes: {},
+      city: cityWith(SUPER_SKRULL, 2),
+      hq: ['split-a#0', null, null, null, null],
+      splitFaces: { 'split-a': 'split-b' },
+      cardTraits: {
+        'split-a#0': { heroClass: 'ranged', team: null },
+        'split-b#0': { heroClass: 'instinct', team: null },
+      },
+      villainVariableAttack: { [SUPER_SKRULL]: { source: 'per-hq-hero-class', attackPerUnit: 1 } },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, SUPER_SKRULL as CardExtId), 4);
+    G.hq = [null, null, null, null, null];
+    assert.equal(resolveFightCost(G, SUPER_SKRULL as CardExtId), 2);
+  });
+
+  it('T7: Hydro-Man gets +2 only in the Sewers and on the Bridge; the gate fails closed elsewhere', () => {
+    assert.equal(resolveFightCost(makeHydroManG(0), HYDRO_MAN as CardExtId), 6, 'Sewers');
+    assert.equal(resolveFightCost(makeHydroManG(4), HYDRO_MAN as CardExtId), 6, 'Bridge');
+    assert.equal(resolveFightCost(makeHydroManG(2), HYDRO_MAN as CardExtId), 4, 'Rooftops');
+    assert.equal(resolveFightCost(makeHydroManG(-1), HYDRO_MAN as CardExtId), 4, 'not in the City');
+    assert.equal(resolveFightCost(makeHydroManG(5, 6), HYDRO_MAN as CardExtId), 4, 'unnamed sixth space');
+    assert.equal(resolveFightCost(makeHydroManG(3, 4), HYDRO_MAN as CardExtId), 4, 'a 4-space City has no Bridge');
+  });
+
+  it('T8: the term is added before three Sewers -2 reductions and the 0 floor (4 + 2 - 6 = 0)', () => {
+    const G = makeHydroManG(0);
+    let economy = makeTurnEconomy();
+    for (let copy = 0; copy < 3; copy++) {
+      economy = addFightCostReduction(economy, 'sewers', 2, `core/storm/tidal-wave#${copy}` as CardExtId);
+    }
+    G.turnEconomy = economy;
+    assert.equal(resolveFightCost(G, HYDRO_MAN as CardExtId), 0);
+  });
+
+  it('T9: an entry replaces the captured-Hero cost sum; a villain with no entry keeps it', () => {
+    const OTHER_DYNAMIC = 'core-villain-other-dynamic-00';
+    const G = {
+      cardStats: {
+        [SUPER_SKRULL]: dynamicStats(2),
+        [OTHER_DYNAMIC]: dynamicStats(3),
+        'captured-hero': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 5 },
+      },
+      villainAttachedHeroes: { [SUPER_SKRULL]: ['captured-hero'], [OTHER_DYNAMIC]: ['captured-hero'] },
+      city: [SUPER_SKRULL, OTHER_DYNAMIC, null, null, null],
+      hq: [null, null, null, null, null],
+      villainVariableAttack: { [SUPER_SKRULL]: { source: 'per-hq-hero-class', attackPerUnit: 1 } },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(G, SUPER_SKRULL as CardExtId), 2);
+    assert.equal(resolveFightCost(G, OTHER_DYNAMIC as CardExtId), 3 + 5);
+  });
+
+  it('T10: a City gate also gates a per-count source', () => {
+    const GATED = 'co2e-villain-test-gated-00';
+    /** A gated per-HQ-class villain (base 1, Rooftops only) at `cityIndex`, with 3 HQ classes. */
+    function makeGatedG(cityIndex: number): LegendaryGameState {
+      return {
+        cardStats: { [GATED]: dynamicStats(1) },
+        villainAttachedHeroes: {},
+        city: cityWith(GATED, cityIndex),
+        hq: ['h-tech', 'h-covert', 'h-ranged', null, null],
+        cardTraits: {
+          'h-tech': { heroClass: 'tech', team: null },
+          'h-covert': { heroClass: 'covert', team: null },
+          'h-ranged': { heroClass: 'ranged', team: null },
+        },
+        villainVariableAttack: {
+          [GATED]: { source: 'per-hq-hero-class', attackPerUnit: 1, requireCitySpaces: ['rooftops'] },
+        },
+      } as unknown as LegendaryGameState;
+    }
+    assert.equal(resolveFightCost(makeGatedG(0), GATED as CardExtId), 1 + 0);
+    assert.equal(resolveFightCost(makeGatedG(2), GATED as CardExtId), 1 + 3);
+  });
+
+  it('T11: a villain with no entry, or a G with no table, resolves exactly as before', () => {
+    const G = makeG({
+      cardStats: {
+        'villain-static': { fightCost: 7, fightCostMode: 'static', fightCostBase: 0 },
+        'villain-dynamic': { fightCost: 3, fightCostMode: 'dynamic', fightCostBase: 3 },
+        'captured-hero': { fightCost: 0, fightCostMode: 'static', fightCostBase: 0, cost: 4 },
+      },
+      villainAttachedHeroes: { 'villain-dynamic': ['captured-hero' as CardExtId] },
+    });
+    assert.equal(resolveFightCost(G, 'villain-static' as CardExtId), 7);
+    assert.equal(resolveFightCost(G, 'villain-dynamic' as CardExtId), 7);
+    const withTable = {
+      ...G,
+      villainVariableAttack: {
+        [HYDRO_MAN]: { source: 'flat', attackPerUnit: 2, requireCitySpaces: ['sewers'] },
+      },
+    } as unknown as LegendaryGameState;
+    assert.equal(resolveFightCost(withTable, 'villain-static' as CardExtId), 7);
+    assert.equal(resolveFightCost(withTable, 'villain-dynamic' as CardExtId), 7);
   });
 });

@@ -14,10 +14,22 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
+import type { CardExtId } from '../state/zones.types.js';
 import { formatCardRef } from '../log/logDisplay.js';
+// why: WP-823 / D-24756 — a defeated Brainwash the Military Officer is gained as the
+// fungible S.H.I.E.L.D. Officer token.
+import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
-import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed } from '../economy/economy.logic.js';
+import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit } from '../economy/economy.logic.js';
+import type { AttackTargetName } from '../economy/economy.types.js';
+import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
+import {
+  RESCUE_ON_FIGHT_RECRUIT_COST,
+  canPayRescueOnFight,
+  isRescueOnFightOffered,
+} from '../economy/rescueOnFight.logic.js';
+import { moveCardFromZone } from './zoneOps.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 // why: WP-736 / D-24556 — the fight-time driver that fires every enrolled Excessive Violence
 // ability. Called from THIS move body (never the shared defeatCityVillainCore, which non-fight
@@ -28,7 +40,12 @@ import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
+  getFightDiscardCost,
+  isHandCardCostOneOf,
 } from './villainDefeatRequirement.logic.js';
+// why: WP-817 / D-24750 — Primus's fight discard cost goes through the one card-effect
+// hand→discard chokepoint, so return-on-discard and the discarded-this-turn counter fire.
+import { discardFromHand } from './discardFromHand.js';
 import {
   executeVillainAbilities,
   resolveEffectResultNames,
@@ -81,13 +98,14 @@ import {
   composeEffectResultLogLine,
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
+import { queueEnigmaPeekOffer } from '../rules/enigmaCode.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 
 /** Arguments for the fightVillain move. */
 interface FightVillainArgs {
-  /** 0-based index of the City space to fight (0-4). */
+  /** 0-based index of the City space to fight (0..length-1 of the current City, WP-831). */
   cityIndex: number;
   /**
    * WP-736 / D-24556 — opt-in to fight "using Excessive Violence": spend 1 extra [attack]
@@ -97,6 +115,20 @@ interface FightVillainArgs {
    * (validation-phase silent decline; moves never throw).
    */
   useExcessiveViolence?: boolean;
+  /**
+   * WP-819 / D-24753 — the Baron Zemo opt-in: "Whenever you fight a Villain, you may use 2
+   * Recruit to rescue a Bystander." Optional; absent/false is a normal fight. Ignored (no log
+   * line, byte-identical) unless Baron Zemo is the Mastermind. A request that cannot be paid
+   * (empty Bystander supply, or fewer than 2 Recruit left after the fight's cost) fights
+   * normally and logs why.
+   */
+  payToRescueBystander?: boolean;
+  /**
+   * WP-817 / D-24750 — the hand card discarded to pay the fought villain's fight discard
+   * cost (Primus: "you must also discard a card that costs 2, 3, 5, or 7"). Required only
+   * when the fought villain has a fight discard cost; ignored otherwise.
+   */
+  discardCardId?: CardExtId;
 }
 
 /**
@@ -110,7 +142,7 @@ interface FightVillainArgs {
  */
 export function fightVillain(
   { G, ...context }: MoveContext,
-  { cityIndex, useExcessiveViolence }: FightVillainArgs,
+  { cityIndex, useExcessiveViolence, discardCardId, payToRescueBystander }: FightVillainArgs,
 ): void {
   // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
   // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
@@ -124,7 +156,8 @@ export function fightVillain(
     !Number.isFinite(cityIndex) ||
     !Number.isInteger(cityIndex) ||
     cityIndex < 0 ||
-    cityIndex > 4
+    // why: WP-831 / D-24764 — a space that exists in the current City (a scheme can resize it).
+    cityIndex >= G.city.length
   ) {
     return;
   }
@@ -135,12 +168,10 @@ export function fightVillain(
   }
 
   // why: WP-790 / D-24652 — the fight's restricted-attack target is the named City space of
-  // the fought index. An index with no named space fails closed (silent return, like the index
-  // guard above) rather than fighting with a target no restricted grant could ever match.
-  const fightTarget = citySpaceNameForIndex(cityIndex);
-  if (fightTarget === undefined) {
-    return;
-  }
+  // the fought index. WP-831 / D-24764 — a space beyond the normal five exists but has no name;
+  // its target is UNNAMED_CITY_SPACE_TARGET, which no restricted grant names, so it is fought
+  // with plain Attack only. (The index guard above already proved the space exists.)
+  const fightTarget: AttackTargetName = citySpaceNameForIndex(cityIndex) ?? UNNAMED_CITY_SPACE_TARGET;
 
   // why: Guard blocks access to lower-index City cards. A Guard at a higher
   // index (closer to escape) prevents fighting villains behind it. You must
@@ -181,6 +212,25 @@ export function fightVillain(
     !playerMeetsDefeatRequirement(G, ctx.currentPlayer, defeatRequirement)
   ) {
     return;
+  }
+
+  // why: WP-817 / D-24750 — a fight discard cost is a D-24185 card-specific pre-commit
+  // precondition, extended from a played card to a fought villain: the move argument
+  // names the card, and the move refuses silently, before any G write, unless that card
+  // is in hand and costs one of the listed costs. Paying it in the same move as the fight
+  // keeps the two atomic, so no pending discard can be stranded by a later effect.
+  const fightDiscardCost = getFightDiscardCost(G, cardId);
+  if (fightDiscardCost !== null) {
+    if (typeof discardCardId !== 'string' || discardCardId.length === 0) {
+      return;
+    }
+    const currentHand = G.playerZones[ctx.currentPlayer]?.hand ?? [];
+    if (!currentHand.includes(discardCardId)) {
+      return;
+    }
+    if (!isHandCardCostOneOf(G, discardCardId, fightDiscardCost.eligibleCosts)) {
+      return;
+    }
   }
 
   // Step 2: Stage gate (non-core move, internal gating)
@@ -254,16 +304,47 @@ export function fightVillain(
   // stay here in the fight move: Silent Sniper's defeat spends no attack and is a
   // card play, not a fight, so its onPlay handler must not spend attack or set the
   // acted-this-turn flag. No onFight villain ability reads G.turnEconomy.attack or
-  // G.hasActedThisTurn (the only turnEconomy writes in villainEffects are to
-  // woundsDrawn), so running spendAttack + hasActedThisTurn AFTER the core is
-  // byte-identical to the prior inline order — the unmodified fightVillain tests
-  // are the oracle.
-  defeatCityVillainCore(G, ctx, cityIndex, { random });
-  // why: WP-736 / D-24556 / D-24557 — Excessive Violence opt-in overspend, evaluated on the
-  // PRE-spend economy: the caller asked for it AND one extra [attack] beyond the fight cost is
-  // affordable AND EV has not already been used this turn (once per turn). A false result fights
-  // normally (validation-phase silent decline; moves never throw). defeatCityVillainCore does not
-  // touch attack/recruit spendable, so reading the spendable figure here is still the pre-spend value.
+  // G.hasActedThisTurn, so running the fight debit + hasActedThisTurn AFTER the core
+  // is byte-identical to the prior inline order — the unmodified fightVillain tests
+  // are the oracle. The core's turnEconomy writes are woundsDrawn, Hand Ninjas'
+  // Fight Recruit grant (D-24350) and, WP-819 / D-24753, Baron Zemo's paid rescue,
+  // which spends 2 Recruit inside the core before the Fight effects; none of them
+  // touches attack, and the rescue was judged against the simulated fight debit.
+  // why: WP-817 / D-24750 — pay the fight discard cost first ("to fight Primus, you must
+  // also discard …"), so the log reads discard then defeat. Only this move pays it; the
+  // shared defeat core (Silent Sniper, defeat choices) never does. Step 1 already proved
+  // discardCardId is a string in hand whenever a cost exists.
+  if (fightDiscardCost !== null && typeof discardCardId === 'string') {
+    discardFromHand(G, ctx.currentPlayer, discardCardId);
+    pushLog(
+      G,
+      `Player ${ctx.currentPlayer} discarded ${formatCardRef(G.cardDisplayData, discardCardId)} to fight ${formatCardRef(G.cardDisplayData, cardId)}.`,
+      'applied',
+    );
+  }
+  // why: WP-819 / D-24753 — Baron Zemo's rescue is decided HERE, after every silent return
+  // above (so a declined-request line is only ever logged for a fight that happens), after
+  // WP-817's fight discard and its line (the discard never touches the economy), and before
+  // the core, which only executes the decision. Its declined lines precede the fight's lines.
+  const isRescuePaid = decideRescueOnFight(
+    G,
+    ctx.currentPlayer,
+    payToRescueBystander,
+    useExcessiveViolence,
+    requiredFightCost,
+    fightTarget,
+  );
+  // why: WP-819 / D-24753 — only this move passes the rescue option ("Whenever you
+  // fight"); the free defeats (Silent Sniper, Cruel Ruler) call the core without it.
+  defeatCityVillainCore(G, ctx, cityIndex, { random }, { payRescueOnFight: isRescuePaid });
+  // why: WP-736 / D-24556 / D-24557 — Excessive Violence opt-in overspend: the caller asked for
+  // it AND one extra [attack] beyond the fight cost is affordable AND EV has not already been used
+  // this turn (once per turn). A false result fights normally (validation-phase silent decline;
+  // moves never throw). The core may have changed the Recruit side of the economy (Baron Zemo's
+  // paid rescue spends 2 Recruit, WP-819 / D-24753; a Fight effect may grant Recruit, Hand Ninjas,
+  // D-24350) but never attack, and the rescue was paid only when 2 Recruit remained after a
+  // simulated debit that already included the open EV +1. So the spendable figure read here
+  // still decides EV exactly as the pre-core economy would.
   const isExcessiveViolenceActive =
     useExcessiveViolence === true &&
     getSpendableAttackForTarget(G.turnEconomy, fightTarget) >= requiredFightCost + 1 &&
@@ -307,6 +388,96 @@ export function fightVillain(
   ) {
     G.villainOrMastermindDefeatedSinceResolve = true;
   }
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code: "Whenever you fight a Villain, you may pay
+  // 1 [recruit] to look at one of the face-down Enigma Cards." Only this move fights (the free
+  // defeats never offer it); the offer opens after the move. Absent outside the scheme.
+  if (G.enigmaCode !== undefined) {
+    queueEnigmaPeekOffer(G, ctx.currentPlayer);
+  }
+}
+
+/**
+ * Decides whether Baron Zemo's rescue on a fight is paid (WP-819 / D-24753),
+ * and logs why when a requested rescue is declined.
+ *
+ * Called by fightVillain after every validation and gate (so the fight is
+ * certain) and before defeatCityVillainCore. Apart from the declined-request
+ * log line it reads G only; the core executes the decision.
+ *
+ * @param G - Game state (a declined request appends one log line).
+ * @param currentPlayer - The fighting player.
+ * @param payToRescueBystander - The move's opt-in argument.
+ * @param useExcessiveViolence - The move's Excessive Violence argument.
+ * @param requiredFightCost - The fight cost the move will debit (cost + Patrol).
+ * @param fightTarget - The fought City space.
+ * @returns True when the core should pay the rescue.
+ */
+function decideRescueOnFight(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  payToRescueBystander: boolean | undefined,
+  useExcessiveViolence: boolean | undefined,
+  requiredFightCost: number,
+  fightTarget: AttackTargetName,
+): boolean {
+  // why: no Zemo, or no request → ignored with no log line, so every other match is byte-identical.
+  const isRescueRequested = payToRescueBystander === true && isRescueOnFightOffered(G);
+  if (!isRescueRequested) {
+    return false;
+  }
+  // why: under the WP-580 conversion the fight itself can spend Recruit, so the rescue is judged
+  // against a simulated fight debit that includes an open Excessive Violence +1; the rescue must
+  // never overdraw the fight or EV.
+  const isExcessiveViolenceOpen =
+    useExcessiveViolence === true && G.turnEconomy.excessiveViolenceUsedThisTurn !== true;
+  const fightDebit = requiredFightCost + (isExcessiveViolenceOpen ? 1 : 0);
+  const isSupplyEmpty = G.piles.bystanders.length === 0;
+  const isRescuePaid = !isSupplyEmpty && canPayRescueOnFight(G.turnEconomy, fightDebit, fightTarget);
+  if (isRescuePaid) {
+    return true;
+  }
+  if (isSupplyEmpty) {
+    pushLog(G,
+      `Player ${currentPlayer} could not rescue a Bystander — the Bystander supply is empty (Baron Zemo).`,
+      'blocked',
+    );
+  } else {
+    pushLog(G,
+      `Player ${currentPlayer} could not pay ${RESCUE_ON_FIGHT_RECRUIT_COST} Recruit to rescue a Bystander after the fight cost (Baron Zemo).`,
+      'blocked',
+    );
+  }
+  return false;
+}
+
+/**
+ * Pays Baron Zemo's rescue inside the defeat core (WP-819 / D-24753): spends 2
+ * Recruit and moves the Bystander supply's top card to the fighter's Victory Pile.
+ *
+ * Writes a fresh `zones.victory` array and never touches the attached-Bystander
+ * award, so the fightResolved event's `bystandersRescued` keeps counting only the
+ * fought Villain's own Bystanders.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param currentPlayer - The fighting player.
+ * @param cardId - The fought Villain, named in the log line.
+ */
+function applyRescueOnFight(G: LegendaryGameState, currentPlayer: string, cardId: string): void {
+  // why: top-of-pile convention — bystanders[0] is the next supply Bystander (D-21501). The move
+  // already checked the supply; an empty one here is a defensive no-op that spends nothing.
+  const topBystander = G.piles.bystanders[0];
+  if (topBystander === undefined) {
+    return;
+  }
+  G.turnEconomy = spendRecruit(G.turnEconomy, RESCUE_ON_FIGHT_RECRUIT_COST);
+  const playerZones = G.playerZones[currentPlayer]!;
+  const moveResult = moveCardFromZone(G.piles.bystanders, playerZones.victory, topBystander);
+  G.piles.bystanders = moveResult.from;
+  playerZones.victory = moveResult.to;
+  pushLog(G,
+    `Player ${currentPlayer} paid ${RESCUE_ON_FIGHT_RECRUIT_COST} Recruit to rescue a Bystander on fighting ${formatCardRef(G.cardDisplayData, cardId)} (Baron Zemo).`,
+    'applied',
+  );
 }
 
 /**
@@ -321,6 +492,12 @@ export function fightVillain(
  * fightVillain (the normal fight) and by Silent Sniper's `defeat-with-bystander`
  * hero effect / its resolveDefeatChoice move (the free defeat, no attack spend).
  *
+ * WP-819 / D-24753: when fightVillain passes `options.payRescueOnFight`, the core
+ * also pays Baron Zemo's rescue (spends 2 Recruit and moves the supply's top
+ * Bystander to the Victory Pile) after the attached awards and before the
+ * Villain's Fight effects. Besides a Recruit-granting Fight effect (Hand Ninjas),
+ * that Recruit spend is the core's only write to the attack/recruit spendable.
+ *
  * why (WP-486): a documented internal invocation of the existing defeat path —
  * the onFight/onDefeat hook execution and Bystander/hero award live in exactly
  * one place, so the free defeat can never drift from the paid fight.
@@ -333,12 +510,15 @@ export function fightVillain(
  *   avoid a framework import; forwarded to executeVillainAbilities.
  * @param cityIndex - The City space index of the villain to defeat.
  * @param shuffleContext - ShuffleProvider ({ random }) for a Fight scry reshuffle.
+ * @param options - Optional. `payRescueOnFight: true` pays Baron Zemo's rescue
+ *   (WP-819 / D-24753); only fightVillain passes it, after deciding it is affordable.
  */
 export function defeatCityVillainCore(
   G: LegendaryGameState,
   ctx: unknown,
   cityIndex: number,
   shuffleContext: ShuffleProvider,
+  options?: { payRescueOnFight?: boolean },
 ): void {
   // why: mirrors executeVillainAbilities — narrow the unknown ctx to the one
   // field this core reads (the defeating player), no framework import.
@@ -367,12 +547,27 @@ export function defeatCityVillainCore(
   // the fightResolved narrative (composed after the origin overlay is cleared) can
   // announce the gain in the center-screen overlay, not only in the durable log.
   let skrullGained = false;
+  let officerGained = false;
   if (G.convertedVillainOrigins?.[cardId] === 'skrull') {
     skrullGained = true;
     G.playerZones[currentPlayer]!.discard.push(cardId);
     delete G.convertedVillainOrigins[cardId];
     pushLog(G,
       `Player ${currentPlayer} defeated the Skrull ${formatCardRef(G.cardDisplayData, cardId)} and gained the Hero into their discard pile.`,
+    );
+  } else if (G.convertedVillainOrigins?.[cardId] === 'shield-officer') {
+    // why: WP-823 / D-24756 — Brainwash the Military "When you defeat a S.H.I.E.L.D.
+    // Officer, gain it as a Hero." Every Officer is identical, and the engine holds an
+    // Officer Hero as the fungible SHIELD_OFFICER_EXT_ID token, which already carries
+    // its stats, team, display and the invariant exemption. So the instance leaves play
+    // and the token goes to the defeater's discard. It is the same card, so nothing is
+    // drawn from G.piles.officers, and it never enters the Victory Pile (it scores as no
+    // Villain or Bystander, and Savior never counts it).
+    officerGained = true;
+    G.playerZones[currentPlayer]!.discard.push(SHIELD_OFFICER_EXT_ID);
+    delete G.convertedVillainOrigins[cardId];
+    pushLog(G,
+      `Player ${currentPlayer} defeated ${formatCardRef(G.cardDisplayData, cardId)} and gained it as a Hero into their discard pile.`,
     );
   } else {
     G.playerZones[currentPlayer]!.victory.push(cardId);
@@ -395,6 +590,15 @@ export function defeatCityVillainCore(
   // append order; empty when the villain captured no HQ hero.
   const heroesReturnedToDiscard = [...(G.villainAttachedHeroes?.[cardId] ?? [])];
   awardAttachedHeroes(G, cardId, currentPlayer);
+
+  // why: WP-819 / D-24753 — Baron Zemo's paid rescue resolves BEFORE the Villain's Fight
+  // effects. Rules v23 L772-792 let the player do the Fight and Rescue effects "in any order";
+  // rescuing first is player-optimal, because the Masters of Evil (WWII) Savior-gated Fight
+  // lines then count the rescued Bystander. The option defaults off, so the free defeats that
+  // reuse this core never pay.
+  if (options?.payRescueOnFight === true) {
+    applyRescueOnFight(G, currentPlayer, cardId);
+  }
 
   // why: Fight: effects fire after the bystander award (Step 3b) and before
   // the message push, so they observe post-award pile state. A Fight:
@@ -482,7 +686,9 @@ export function defeatCityVillainCore(
       resolvedFightResults,
       // why: WP-518 / D-24331 — announce the Secret Invasion Skrull gain in the
       // overlay; false for every ordinary villain defeat (byte-identical narrative).
-      skrullGained,
+      // WP-823 / D-24756: a Brainwash the Military Officer gained as a Hero shares the
+      // same "gained the Hero" clause.
+      skrullGained || officerGained,
     ),
   });
 
@@ -495,7 +701,8 @@ export function defeatCityVillainCore(
   // context performVillainReveal reads from the fought ctx + shuffle source and import the
   // STATIC DEFAULT_IMPLEMENTATION_MAP. Each played card resolves as a normal reveal,
   // recursing through the rule pipeline; the both-empty guard terminates the loop.
-  const fightPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onFight');
+  // why: WP-837 / D-24770 — the current player decides a reveal-gated play.
+  const fightPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onFight', currentPlayer);
   if (fightPlayCount > 0) {
     // why: narrate the fight-triggered plays BEFORE the reveals so the log
     // attributes them to this villain. Without it the played cards' consequences

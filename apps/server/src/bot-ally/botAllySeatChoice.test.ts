@@ -22,7 +22,7 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildInitialGameState, LegendaryGame } from '@legendary-arena/game-engine';
+import { buildInitialGameState, LegendaryGame, openDivingBlockSeatChoiceIfNeeded } from '@legendary-arena/game-engine';
 
 import {
   botAllyDrivers,
@@ -33,8 +33,11 @@ import {
 } from './botAllyDriver.mjs';
 
 interface SeatChoiceGameState {
-  playerZones: Record<string, { hand: string[]; victory: string[] }>;
+  playerZones: Record<string, { deck: string[]; hand: string[]; discard: string[]; victory: string[] }>;
   ko: string[];
+  piles: { wounds: string[] };
+  messages: Array<{ text: string }>;
+  pendingDivingBlockWounds?: Array<{ playerID: string; woundCardId: string }>;
   pendingSeatChoice?: {
     kind: string;
     addressedSeats: string[];
@@ -115,6 +118,27 @@ function parkedVanishingIllusionsState(numPlayers: number, activeSeat: string, a
 }
 
 /**
+ * Builds a real 2p match state (seat 0 active, the human) where a Master Strike
+ * just gave bot seat 1 a Wound while it holds Diving Block, then parks the
+ * engine's own Diving-Block wave (`openDivingBlockSeatChoiceIfNeeded`), the
+ * shape of operator match P9oVujYd2B9 at 1.2.20.
+ *
+ * @returns The fetched-state shape ({ G, ctx, _stateID }) the driver consumes.
+ */
+function parkedDivingBlockState(): MatchState {
+  const state = parkedVanishingIllusionsState(2, '0', ['1']);
+  delete state.G.pendingSeatChoice;
+  const botZones = state.G.playerZones['1']!;
+  botZones.hand = ['core-hero-black-widow-diving-block#0'];
+  // why: the Master Strike's Wound has already landed in the discard; the reveal
+  // returns it to the supply (D-24499).
+  botZones.discard = [state.G.piles.wounds.shift()!];
+  state.G.pendingDivingBlockWounds = [{ playerID: '1', woundCardId: botZones.discard[0]! }];
+  openDivingBlockSeatChoiceIfNeeded(state.G as never, undefined);
+  return state;
+}
+
+/**
  * Runs the real engine resolveSeatChoice move as `playerID`, mutating state.G in
  * place (no framework — parkSeatChoice's stage ride is a guarded no-op here).
  */
@@ -162,7 +186,7 @@ function makeRealDeps(initial: MatchState, nextSeatAfterEndTurn: string, decide?
   return { deps, match, submitCalls, persistCalls, decideCalls };
 }
 
-test('human active, seat choice addressed to the bot: the bot submits its default resolveSeatChoice as its own seat (regression)', async () => {
+test('human active, seat choice addressed to the bot: the bot submits its resolveSeatChoice as its own seat (regression)', async () => {
   const { deps, match, submitCalls, persistCalls } = makeRealDeps(parkedVanishingIllusionsState(2, '0', ['1']), '1');
   const driver = createBotAllyDriver({ matchId: 'm-human-loki', botSeats: ['1'], deps });
 
@@ -230,6 +254,35 @@ test('bot active and itself addressed: it answers its own seat choice', async ()
 
   assert.deepEqual(submitCalls[0], { seat: '1', moveName: 'resolveSeatChoice', moveArgs: { optionIndex: 0 } });
   assert.equal(match.value.G.pendingSeatChoice, undefined);
+});
+
+test('bot holding Diving Block reveals it on a Master Strike Wound instead of taking the absent-seat default (D-24744 regression)', async () => {
+  const initial = parkedDivingBlockState();
+  assert.equal(initial.G.pendingSeatChoice!.kind, 'diving-block');
+  assert.equal(initial.G.pendingSeatChoice!.defaultOptionIndex, 1, 'the absent-seat default stays decline (D-24499)');
+  const woundsInSupply = initial.G.piles.wounds.length;
+  const deckBefore = initial.G.playerZones['1']!.deck.length;
+  const { deps, match, submitCalls, persistCalls } = makeRealDeps(initial, '1');
+  const driver = createBotAllyDriver({ matchId: 'm-diving-block', botSeats: ['1'], deps });
+
+  await driver.tick();
+
+  assert.deepEqual(
+    submitCalls,
+    [{ seat: '1', moveName: 'resolveSeatChoice', moveArgs: { optionIndex: 0 } }],
+    'before the fix the bot submitted the decline default (optionIndex 1)',
+  );
+  const botZones = match.value.G.playerZones['1']!;
+  assert.equal(match.value.G.pendingSeatChoice, undefined);
+  assert.deepEqual(botZones.discard, [], 'the Wound left the bot’s discard');
+  assert.equal(match.value.G.piles.wounds.length, woundsInSupply + 1, 'the Wound went back to the supply');
+  assert.equal(botZones.deck.length, deckBefore - 1, 'the bot drew a card');
+  assert.ok(botZones.hand.includes('core-hero-black-widow-diving-block#0'), 'Diving Block stays in hand');
+  assert.ok(
+    match.value.G.messages.some((entry) => entry.text.includes('Player 1 revealed Diving Block')),
+    'the log says the bot revealed, not "took the Wound (declined Diving Block)"',
+  );
+  assert.equal(persistCalls.length, 0);
 });
 
 test('a bot seat the engine offers no resolve move faults loudly instead of spinning', async () => {

@@ -315,3 +315,106 @@ describe('OperatorBoardPanel (WP-804)', () => {
     assert.deepEqual(JSON.parse(await blobs[1]!.text()), JSON.parse(JSON.stringify(fixtureSnapshot)));
   });
 });
+
+/**
+ * The board fixture with the fields the WP-807 setter pane reads: the active
+ * seat and the City's spaces, plus set-aside counts when asked.
+ *
+ * @param hasSetAside Whether the view carries `setAsideCounts`.
+ * @returns A full operator board response.
+ */
+function buildSetterBoardFixture(hasSetAside: boolean): OperatorBoardResponse {
+  const fixture = buildBoardFixture();
+  const board = {
+    ...fixture.operatorView.board,
+    game: { activePlayerId: '0' },
+    city: { spaces: [null, null, null, null, null], escapedPile: [] },
+  } as unknown as UIState;
+  const operatorView = { ...fixture.operatorView, board };
+  if (hasSetAside) {
+    return {
+      ...fixture,
+      operatorView: { ...operatorView, setAsideCounts: { wounds: 30, bystanders: 2, officers: 0, sidekicks: 1 } },
+    };
+  }
+  return { ...fixture, operatorView };
+}
+
+/**
+ * Stub fetch so every board request answers 200 with the setter fixture.
+ *
+ * @param hasSetAside Whether the view carries `setAsideCounts`.
+ * @returns A counter of board requests.
+ */
+function stubSetterBoard(hasSetAside: boolean = false): () => number {
+  let requestCount = 0;
+  globalThis.fetch = (async () => {
+    requestCount += 1;
+    return { ok: true, status: 200, json: async () => buildSetterBoardFixture(hasSetAside) } as unknown as Response;
+  }) as typeof globalThis.fetch;
+  return () => requestCount;
+}
+
+/**
+ * Mount the panel with the given optional props and let the lazy pane load.
+ *
+ * @param extraProps `submitMove` and / or `playerId`.
+ * @returns The mounted wrapper.
+ */
+async function mountSetterPanel(extraProps: Record<string, unknown>) {
+  const wrapper = mount(OperatorBoardPanel, {
+    props: { matchId: 'op-match-1', ...extraProps },
+    attachTo: document.body,
+  });
+  for (let i = 0; i < 5; i += 1) {
+    await flushPromises();
+  }
+  return wrapper;
+}
+
+describe('OperatorBoardPanel setter pane (WP-807)', () => {
+  const noopSubmitMove = () => {};
+
+  test('no setter pane without a submitMove', async () => {
+    stubSetterBoard();
+    const wrapper = await mountSetterPanel({ playerId: '0' });
+    assert.equal(wrapper.find('[data-testid="operator-seats"]').exists(), true, 'the board loaded');
+    assert.equal(wrapper.find('[data-testid="operator-setters"]').exists(), false);
+  });
+
+  test('no setter pane with a submitMove but an empty playerId', async () => {
+    stubSetterBoard();
+    const wrapper = await mountSetterPanel({ submitMove: noopSubmitMove, playerId: '' });
+    assert.equal(wrapper.find('[data-testid="operator-seats"]').exists(), true, 'the board loaded');
+    assert.equal(wrapper.find('[data-testid="operator-setters"]').exists(), false);
+  });
+
+  test('the setter pane appears with a submitMove and a playerId', async () => {
+    stubSetterBoard();
+    const wrapper = await mountSetterPanel({ submitMove: noopSubmitMove, playerId: '0' });
+    assert.equal(wrapper.find('[data-testid="operator-setters"]').exists(), true);
+  });
+
+  test('a submitted event fetches the board at once', async () => {
+    const requestCount = stubSetterBoard();
+    const wrapper = await mountSetterPanel({ submitMove: noopSubmitMove, playerId: '0' });
+    assert.equal(requestCount(), 1);
+    wrapper.findComponent({ name: 'OperatorSetterPane' }).vm.$emit('submitted');
+    await flushPromises();
+    assert.equal(requestCount(), 2);
+  });
+
+  test('the set-aside line renders only when setAsideCounts is present', async () => {
+    stubSetterBoard(false);
+    const withoutSetAside = await mountSetterPanel({ submitMove: noopSubmitMove, playerId: '0' });
+    assert.equal(withoutSetAside.find('[data-testid="operator-set-aside"]').exists(), false);
+    withoutSetAside.unmount();
+
+    stubSetterBoard(true);
+    const withSetAside = await mountSetterPanel({ submitMove: noopSubmitMove, playerId: '0' });
+    assert.equal(
+      withSetAside.find('[data-testid="operator-set-aside"]').text(),
+      'Set aside — Wounds 30, Bystanders 2, Officers 0, Sidekicks 1',
+    );
+  });
+});

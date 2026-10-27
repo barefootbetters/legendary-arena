@@ -42,7 +42,7 @@
           "attack": "2+",
           "recruit": null,
           "abilities": [
-            "You get +1[icon:attack] for each other [team:shield] Hero you played this turn that costs 1 or more."
+            "You get +1[icon:attack] for each other [team:shield] Hero you played this turn that costs 1 or more. [keyword:attack-per-count:shield-heroes-cost-one-plus-played-this-turn:1]"
           ]
         },
         {
@@ -73,8 +73,8 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "KO up to two [team:shield] Heroes from your hand and/or discard pile.",
-            "[keyword:Savior]: For each card KO'd this way, you get +1[icon:attack]."
+            "KO up to two [team:shield] Heroes from your hand and/or discard pile. [keyword:ko-up-to-shield-hand-discard:2]",
+            "[keyword:Savior]: For each card KO'd this way, you get +1[icon:attack]. [keyword:attack-per-ko-this-way:1]"
           ]
         }
       ],
@@ -167,7 +167,7 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "Once per turn, if a player would gain a Wound, you may reveal this card and rescue a Bystander instead."
+            "Once per turn, if a player would gain a Wound, you may reveal this card and rescue a Bystander instead. [keyword:flying-shield-block]"
           ]
         },
         {
@@ -183,7 +183,7 @@
           "recruit": "0+",
           "abilities": [
             "You get +2[icon:attack] for each Hero Class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:2]",
-            "[keyword:Savior]: You get +2[icon:recruit] for each Hero Class you have."
+            "[keyword:Savior]: You get +2[icon:recruit] for each Hero Class you have. [keyword:recruit-per-count:distinct-hero-classes-played-this-turn:2]"
           ]
         }
       ],
@@ -358,7 +358,7 @@
           "recruit": "0+",
           "abilities": [
             "You get +1[icon:recruit] for each Hero Class you have. [keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]",
-            "[keyword:Savior]: You get +1[icon:attack] for each Hero Class you have."
+            "[keyword:Savior]: You get +1[icon:attack] for each Hero Class you have. [keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
           ]
         },
         {
@@ -373,7 +373,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[team:shield][team:shield][team:shield]: You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander."
+            "[team:shield][team:shield][team:shield]: You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander. [keyword:optional-ko-shield-played-rescue:1]"
           ]
         },
         {
@@ -513,8 +513,8 @@
           "attack": "4",
           "recruit": null,
           "abilities": [
-            "A Hero in your hand gains [keyword:Man Out of Time] this turn.",
-            "[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn."
+            "A Hero in your hand gains [keyword:Man Out of Time] this turn. [keyword:grant-out-of-time]",
+            "[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn. [keyword:grant-out-of-time]"
           ]
         }
       ],
@@ -701,7 +701,7 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-zolas-creations-captain-zolandia.webp",
           "abilities": [
             "[keyword:Abomination]",
-            "Fight: You get +1[icon:recruit] for each Hero Class you have."
+            "Fight: You get +1[icon:recruit] for each Hero Class you have. [effect:gain-recruit-current-per-hero-class]"
           ],
           "copies": 2
         },
@@ -725,7 +725,7 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-zolas-creations-man-fish.webp",
           "abilities": [
             "[keyword:Abomination]",
-            "Fight: If you fought Man-Fish in the Sewers or Bridge, then each other player gains a Wound.",
+            "Fight: If you fought Man-Fish in the Sewers or Bridge, then each other player gains a Wound. [effect:gain-wound:each-other@sewers+bridge]",
             "Escape: Each player gains a Wound. [effect:gainWoundEachPlayer]"
           ],
           "copies": 2
@@ -737,8 +737,8 @@
           "vAttack": "3",
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-zolas-creations-primus.webp",
           "abilities": [
-            "To fight Primus, you must also discard a card that costs 2, 3, 5, or 7.",
-            "Escape: each player discards a Hero that costs 2, 3, 5, or 7."
+            "To fight Primus, you must also discard a card that costs 2, 3, 5, or 7. [discard-to-fight:cost:2+3+5+7]",
+            "Escape: each player discards a Hero that costs 2, 3, 5, or 7. [effect:discard-hero-each-player-by-cost:2+3+5+7]"
           ],
           "copies": 2
         }
@@ -760,7 +760,7 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-masters-of-evil-wwii-black-knight.webp",
           "abilities": [
             "Ambush: Black Knight captures a Bystander. [effect:captureBystander]",
-            "Fight: [keyword:Savior]: KO one of your Heroes."
+            "Fight: [keyword:Savior]: KO one of your Heroes. [effect:ko-hero:current!savior]"
           ],
           "copies": 2
         },
@@ -772,8 +772,8 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-masters-of-evil-wwii-executioner.webp",
           "abilities": [
             "Ambush: Executioner captures a Bystander. [effect:captureBystander]",
-            "Fight: [keyword:Savior]: Draw a card.",
-            "Escape: KO a Bystander from each player's Victory Pile."
+            "Fight: [keyword:Savior]: Draw a card. [effect:draw-cards-current:1!savior]",
+            "Escape: KO a Bystander from each player's Victory Pile. [effect:ko-bystander-each-victory-pile]"
           ],
           "copies": 2
         },
@@ -785,7 +785,7 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-masters-of-evil-wwii-melter-wwii.webp",
           "abilities": [
             "Ambush: Melter captures a Bystander. [effect:captureBystander]",
-            "Fight: [keyword:Savior]: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back."
+            "Fight: [keyword:Savior]: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back. [effect:ko-cullable-each-deck-top!savior]"
           ],
           "copies": 2
         },
@@ -797,8 +797,8 @@
           "imageUrl": "https://images.legendary-arena.com/ca75/ca75-vi-masters-of-evil-wwii-radioactive-man.webp",
           "abilities": [
             "Ambush: Radioactive Man captures a Bystander. [effect:captureBystander]",
-            "Fight: Each player who is not a [keyword:Savior] gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player who is not a [keyword:Savior] gains a Wound. [effect:gain-wound:each-non-savior]",
+            "Escape: Same effect. [effect:gain-wound:each-non-savior]"
           ],
           "copies": 2
         }

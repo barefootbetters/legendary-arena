@@ -16,8 +16,8 @@ related:
   - workspace-map.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\blog-post-authoring.md (this page — https://ewiki.legendary-arena.com/blog-post-authoring/)
-  - C:\www\legendary-arena-com\archetypes\posts.md
+  - C:\dev\legendary-arena\wiki\blog-post-authoring.md (this page — https://ewiki.legendary-arena.com/blog-post-authoring/)
+  - C:\www\legendary-arena-com\archetypes\blog.md
   - C:\www\legendary-arena-com\docs\04-CONTENT-CONVENTIONS.md
   - C:\www\legendary-arena-com\docs\05-SEO-CONVENTIONS.md
   - C:\www\legendary-arena-com\docs\06-CONTENT-LANE-WORKFLOW.md
@@ -28,13 +28,13 @@ source:
   - C:\www\legendary-arena-com\static\brand-tokens.css
   - C:\www\legendary-arena-com\layouts\_partials\footer.html
   - C:\www\legendary-arena-com\assets\css\extended\custom.css
-last-reviewed: 2026-09-09
+last-reviewed: 2026-10-15
 ---
 
 # Blog Post Authoring
 
 The blog posts themselves live in the marketing repo at
-`C:\www\legendary-arena-com\content\posts\`; this ewiki page is the
+`C:\www\legendary-arena-com\content\blog\`; this ewiki page is the
 authoring guide, not the content. To edit this page, use the collapsible
 **Editing this page** panel at the foot of it — and see **Sources** below
 for the authoritative content-convention and brand-voice docs.
@@ -57,12 +57,12 @@ Pyramid.
 Create a new post:
 
 ```
-hugo new content posts/<slug>.md
+hugo new content blog/<slug>.md
 ```
 
 This generates a file from the archetype at
-`C:\www\legendary-arena-com\archetypes\posts.md` with all required
-front-matter fields pre-populated. (The bare `hugo new posts/<slug>.md`
+`C:\www\legendary-arena-com\archetypes\blog.md` with all required
+front-matter fields pre-populated. (The bare `hugo new blog/<slug>.md`
 form still works on the pinned Hugo v0.161.1 but is deprecated; prefer
 `hugo new content`.)
 
@@ -71,7 +71,7 @@ Pass `--kind gauntlet-guide` and every gauntlet field below is
 pre-populated for you:
 
 ```
-hugo new content posts/<slug>.md --kind gauntlet-guide
+hugo new content blog/<slug>.md --kind gauntlet-guide
 ```
 
 (Superseded note, corrected 2026-07-18: this page previously said the
@@ -184,16 +184,16 @@ chronological and disambiguates posts that reuse a topic word. No
 spaces, capitals, or non-ASCII in slugs — ever.
 
 ```
-2026-05-07-launch-announcement.md  -> /posts/2026-05-07-launch-announcement/
-week-01-deck-checklist.md          -> /posts/week-01-deck-checklist/
+2026-05-07-launch-announcement.md  -> /blog/2026-05-07-launch-announcement/
+week-01-deck-checklist.md          -> /blog/week-01-deck-checklist/
 ```
 
-> **Practice diverges from the rule (observed 2026-07-18).** Of the 58
-> files in `content\posts\`, exactly **one** carries a date prefix
-> (`2026-05-07-launch-announcement.md`). The other 57 use bare
-> kebab-case — the 52 `week-NN-*` series files, which are already
-> self-ordering, plus `hello-arena.md` and the three `gauntlet-*`
-> guides.
+> **Practice diverges from the rule (observed 2026-07-18, rechecked
+> 2026-10-15).** Of the 67 posts in `content\blog\`, exactly **one**
+> carries a date prefix (`2026-05-07-launch-announcement.md`). The other
+> 66 use bare kebab-case — the `week-NN-*` series files, which are
+> already self-ordering, plus one-off titles such as `hello-arena.md`
+> and the `gauntlet-*` guides.
 >
 > So the date prefix is the documented rule but the rare exception in
 > practice. This page does not resolve the conflict:
@@ -341,12 +341,12 @@ surface that could be tokenized. Reference the token name instead.
 
 ### Images
 
-**Storage:** `C:\www\legendary-arena-com\static\images\posts\<slug>\`
+**Storage:** `C:\www\legendary-arena-com\static\images\blog\<slug>\`
 
 The image directory name MUST match the post slug exactly.
 
 ```
-static/images/posts/week-01-deck-checklist/
+static/images/blog/week-01-deck-checklist/
   hero.webp              # Primary image (target 80-120KB)
   curve-example.webp
   deck-flow-diagram.webp
@@ -355,7 +355,7 @@ static/images/posts/week-01-deck-checklist/
 **Referencing in markdown:**
 
 ```markdown
-![Deck curve example](/images/posts/week-01-deck-checklist/curve-example.webp)
+![Deck curve example](/images/blog/week-01-deck-checklist/curve-example.webp)
 ```
 
 **Format rules:**
@@ -523,7 +523,7 @@ horn half (and its black artboard) look right only on a dark surface and break
 on the light-theme footer. A single-colour gold mark reads on both. If a future
 footer graphic carries white or black detail, ship a **light/dark pair** and
 swap on `html[data-theme]` — don't assume one asset works everywhere. (Source
-art lives in pCloud, e.g. `C:\pcloud\LA\brand\`; only the optimized web export
+art lives in pCloud, e.g. `C:\pcloud\legendary-arena\brand\`; only the optimized web export
 is committed — the same source-vs-derivative rule as post images.) The
 approved marks, and the same dark-surface reasoning (the full lockup and the
 white villain half read only on dark), are catalogued on the
@@ -551,7 +551,7 @@ the same rule the ewiki follows.
 
 ```
 git switch -c post/<slug>
-git add content/posts/<slug>.md static/images/posts/<slug>/
+git add content/blog/<slug>.md static/images/blog/<slug>/
 git commit -m "POST: <post title>"
 git push -u origin HEAD
 gh pr create --fill
@@ -561,7 +561,7 @@ The Cloudflare GitHub app comments a **preview URL** on the PR — read
 the post as it will actually render before merging. Squash-merge when
 it looks right; Cloudflare Pages auto-deploys `main` within ~30 seconds
 and the post appears at
-`https://www.legendary-arena.com/posts/<slug>/`.
+`https://www.legendary-arena.com/blog/<slug>/`.
 
 The preview deploy is the reason the PR step earns its keep on content
 work: a post is prose and images, so the build almost never fails —
@@ -587,13 +587,13 @@ touches:
 
 ```
 C:\www\legendary-arena-com\
-├── content\posts\<slug>.md              # the post itself
-├── static\images\posts\<slug>\          # its images — directory name
+├── content\blog\<slug>.md               # the post itself
+├── static\images\blog\<slug>\           # its images — directory name
 │   ├── hero.webp                        #   MUST match the slug exactly
 │   ├── curve-example.webp
 │   └── deck-flow-diagram.webp
 ├── archetypes\
-│   ├── posts.md                         # default post archetype
+│   ├── blog.md                          # default post archetype
 │   └── gauntlet-guide.md                # Gauntlet Guides archetype
 ├── layouts\
 │   ├── single.html                      # single post layout
@@ -626,7 +626,7 @@ Cloudflare R2 and never committed; see
 |---|---|
 | Source images before export — PSD/AI/Figma exports, screenshots at full resolution | Multi-megabyte originals; only the optimized `.webp` ships |
 | Screen recordings and captures taken for a post | Binary, large, usually superseded by a still |
-| Draft prose written outside the repo before it becomes a `content\posts\` file | Scratch; the repo copy is the artifact once it exists |
+| Draft prose written outside the repo before it becomes a `content\blog\` file | Scratch; the repo copy is the artifact once it exists |
 | Research material — reference PDFs, competitor screenshots, licensing correspondence | Not content, and some carries counterparty detail |
 
 The rule that resolves the image case: **the optimized derivative is
@@ -740,7 +740,7 @@ deck's cost distribution matters more than its ceiling.
   post doesn't match the newsletter's "Read more" link, the
   cross-reference breaks silently. No automated check exists.
 - **Image directory mismatch.** The image directory name under
-  `static/images/posts/` must match the post slug exactly. A
+  `static/images/blog/` must match the post slug exactly. A
   mismatch means images won't resolve.
 - **Series ordering.** Posts in a series are ordered by date. If two
   posts share a date, the prev/next navigation may be wrong. Use
@@ -762,14 +762,16 @@ deck's cost distribution matters more than its ceiling.
   branch. A `git push origin main` succeeds and deploys — it just skips
   the preview that would have shown you the rendered post. The rule is a
   convention, not a gate.
-- **`content\posts\` and `static\images\posts\` are the only paths a
-  `POST:` or `FIX:` commit may touch.** The hook rejects the whole
+- **`content\` and `static\images\` are the only site paths a `POST:`
+  or `FIX:` commit may touch** (the content lane — the blog's
+  `content\blog\` and `static\images\blog\` sit inside it, as do the
+  other content sections and image folders). The hook rejects the whole
   commit otherwise, including a one-character typo fix that happens to
   also touch `layouts\`. Split it rather than escalating the prefix.
 
 ## References
 
-- `C:\www\legendary-arena-com\archetypes\posts.md` — post archetype
+- `C:\www\legendary-arena-com\archetypes\blog.md` — post archetype
   template
 - `C:\www\legendary-arena-com\docs\04-CONTENT-CONVENTIONS.md` —
   content authoring conventions
