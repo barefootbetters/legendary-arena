@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 
 import pg from 'pg';
 
-import { createBgioPgStore } from './bgioPgStore.js';
+import { createBgioPgStore, selectFetchColumns } from './bgioPgStore.js';
 
 const { Pool } = pg;
 
@@ -86,6 +86,51 @@ describe('bgioPgStore — pure (no database)', () => {
     await assert.rejects(
       () => store.listMatches(),
       /bgioPgStore\.listMatches failed to read match ids.*connection refused/s,
+    );
+  });
+});
+
+describe('bgioPgStore — fetch selects only the requested columns (no database)', () => {
+  /**
+   * A stub pool that records every SQL text and returns one full row, so the
+   * result shape shows which keys fetch copies out.
+   */
+  function recordingPool(sqlTexts: string[]) {
+    return {
+      async query(text: string) {
+        sqlTexts.push(text);
+        return {
+          rows: [{ match_id: 'm1', state: sampleState, initial_state: sampleState, metadata: sampleMetadata, log: [] }],
+        };
+      },
+    };
+  }
+
+  test('a state-only fetch reads match_id and state, never log or initial_state', async () => {
+    const sqlTexts: string[] = [];
+    const store = createBgioPgStore(recordingPool(sqlTexts) as never);
+    const result = await store.fetch('m1', { state: true });
+    assert.equal(sqlTexts.length, 1);
+    assert.match(sqlTexts[0]!, /SELECT match_id, state\s+FROM bgio\.matches/);
+    assert.doesNotMatch(sqlTexts[0]!, /\blog\b|initial_state|metadata/);
+    assert.deepEqual(result, { state: sampleState });
+  });
+
+  test('a full fetch reads all four columns and returns all four keys', async () => {
+    const sqlTexts: string[] = [];
+    const store = createBgioPgStore(recordingPool(sqlTexts) as never);
+    const result = await store.fetch('m1', { state: true, metadata: true, log: true, initialState: true });
+    assert.match(sqlTexts[0]!, /SELECT match_id, state, initial_state, metadata, log\s+FROM/);
+    assert.deepEqual(result, { state: sampleState, metadata: sampleMetadata, log: [], initialState: sampleState });
+  });
+
+  test('selectFetchColumns always keeps match_id and adds each requested column in a fixed order', () => {
+    assert.equal(selectFetchColumns({}), 'match_id');
+    assert.equal(selectFetchColumns({ metadata: true }), 'match_id, metadata');
+    assert.equal(selectFetchColumns({ log: true, state: true }), 'match_id, state, log');
+    assert.equal(
+      selectFetchColumns({ initialState: true, log: true, metadata: true, state: true }),
+      'match_id, state, initial_state, metadata, log',
     );
   });
 });
