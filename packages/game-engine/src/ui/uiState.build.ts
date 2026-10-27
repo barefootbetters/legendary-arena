@@ -1628,6 +1628,9 @@ export function buildUIState(
         choiceType: frontChoice.choiceType,
         playerID: frontChoice.playerID,
         maxCount: frontChoice.maxCount,
+        // why: D-24783 — the filter rides along so the prompt can name grey Heroes; omitted
+        // (never an `undefined` literal) on an unfiltered entry.
+        ...(frontChoice.greyFilter !== undefined ? { greyFilter: frontChoice.greyFilter } : {}),
         discard,
       };
     }

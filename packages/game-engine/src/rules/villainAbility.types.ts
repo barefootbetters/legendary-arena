@@ -162,6 +162,12 @@ export interface VillainEffectResult {
    * so every other line is byte-identical.
    */
   woundOutcomes?: VillainWoundOutcomes;
+  /**
+   * For a grey-filtered each-player KO only (D-24783, Destroyer's `'non-grey'`): the filter,
+   * so the log says "had no non-grey Hero to KO" rather than "no hero". Omitted otherwise,
+   * so every unfiltered line is byte-identical.
+   */
+  greyFilter?: GreyHeroFilter;
 }
 
 /**

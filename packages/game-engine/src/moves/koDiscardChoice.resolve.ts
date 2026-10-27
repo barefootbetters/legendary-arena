@@ -30,6 +30,7 @@ import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
 import { pushLog } from '../log/logPush.js';
+import { formatCardRef } from '../log/logDisplay.js';
 import type { GreyHeroFilter } from '../rules/villainAbility.types.js';
 import { matchesGreyHeroFilter } from '../hero/splitCard.logic.js';
 
@@ -179,9 +180,16 @@ export function resolveKoDiscardChoice(
   if (front.sourceCardId !== undefined) {
     sourceName = resolveSourceCardName(G, front.sourceCardId);
   }
+  // why: D-24783 — name each KO'd card like the other KO lines (`{Name} ({ext-id})`), so a
+  // grey KO (Frost Giant Warrior / Ymir) says WHICH starters went; zero reads "no cards".
+  const koCardRefs: string[] = [];
+  for (const cardId of chosenCards) {
+    koCardRefs.push(formatCardRef(G.cardDisplayData, cardId));
+  }
+  const koSummary = koCardRefs.length === 0 ? 'no cards' : koCardRefs.join(', ');
   pushLog(
     G,
-    `Player ${playerID} KO'd ${String(chosenCards.length)} card(s) from their discard pile (${sourceName}).`,
+    `Player ${playerID} KO'd ${koSummary} from their discard pile (${sourceName}).`,
     'applied',
   );
 

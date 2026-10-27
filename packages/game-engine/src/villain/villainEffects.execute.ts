@@ -269,6 +269,10 @@ export function executeVillainAbilities(
           if (application.woundOutcomes !== undefined) {
             result.woundOutcomes = application.woundOutcomes;
           }
+          // why: D-24783 — present only on a grey-filtered each-player KO (Destroyer).
+          if (application.greyFilter !== undefined) {
+            result.greyFilter = application.greyFilter;
+          }
           results.push(result);
         }
       } else {
@@ -362,6 +366,9 @@ export function resolveEffectResultNames(
     }
     if (result.woundOutcomes !== undefined) {
       resolvedResult.woundOutcomes = result.woundOutcomes;
+    }
+    if (result.greyFilter !== undefined) {
+      resolvedResult.greyFilter = result.greyFilter;
     }
     resolved.push(resolvedResult);
   }
@@ -956,6 +963,8 @@ interface VillainEffectApplication {
   // why: D-24673 — a gain-wound handler reports who is waiting on a Diving Block reveal,
   // only when someone is; every other handler omits it.
   woundOutcomes?: VillainWoundOutcomes;
+  // why: D-24783 — a grey-filtered each-player KO reports its filter so the log names it.
+  greyFilter?: GreyHeroFilter;
 }
 
 /**
@@ -1381,9 +1390,15 @@ function villainEffectKoHero(
   }
   // why: D-24644 — `targets` still names the other players' auto-KOs; pending marks
   // the current player's parked pick (named at resolve time by resolveKoHeroChoice).
-  return parked
+  const application: VillainEffectApplication = parked
     ? { targets, pending: true, targetsByPlayer, targetZones }
     : { targets, targetsByPlayer, targetZones };
+  // why: D-24783 — a grey-filtered KO (Destroyer's 'non-grey') says so in the log
+  // ("had no non-grey Hero to KO"); absent, the application is byte-identical.
+  if (descriptor.greyFilter !== undefined) {
+    application.greyFilter = descriptor.greyFilter;
+  }
+  return application;
 }
 
 /**
