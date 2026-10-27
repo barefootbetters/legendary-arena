@@ -40,7 +40,7 @@
   - Extract `resolveVillainCityEntry(G, context, implementationMap, cardId, entryPhrase)`; the reveal passes `'revealed and entered the city'`.
   - After the event, in order: The Leader's play, `chargeVillainForward`, `enterCityFromVictoryPile(…, entrant)`. The clauses `` `charged ${N} ${unit} forward` `` and `` `brought ${entrantName} back into the city` `` are computed before the event and passed as `composeAmbushNarrative`'s 4th argument (`= []`).
 - **Charge**: an escaped pushed card resolves inside its step. When the charger goes off the City, `resolveVillainEscape(cardId)` runs, then `break` (not `return`), so `discard-each` still evaluates. A push leads to `enqueueAnyCardEffectDiscard(G, cardId, 'Ambush')`.
-- **Ymir**: `selectVictoryPileCityEntrant` derives `setAbbr` from the `-villain-` infix, matches the anchored prefix `${setAbbr}-villain-${group}-${card}-` plus `^[0-9]{2}$`, walks sorted seats from `currentPlayer` (index 0 when absent), wrapping, and takes the first match in pile order. The Warrior is removed via `moveCardFromZone(victory, [], id)`. If `found` is false, log the WP's `is no longer in Player ${seat}'s Victory Pile` line (`'blocked'`) and return. Otherwise it enters through `resolveVillainCityEntry`.
+- **Ymir**: `selectVictoryPileCityEntrant` derives `setAbbr` from the `-villain-` infix, matches the anchored prefix `${setAbbr}-villain-${group}-${card}-` plus `^[0-9]{2}$`, walks `seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)` (WP-846 / D-24780; sorted seats from `currentPlayer`, wrapping, sorted when absent), and takes the first match in pile order. The Warrior is removed via `moveCardFromZone(victory, [], id)`. If `found` is false, log the WP's `is no longer in Player ${seat}'s Victory Pile` line (`'blocked'`) and return. Otherwise it enters through `resolveVillainCityEntry`.
 - **Boomerang**: `swapFoughtVillainWithVillainDeckTop` runs after the Endless Armies block, with a `RevealContext` built exactly as that block builds it (own scope; no hoist).
   - Checks, in order: not in the fighter's Victory Pile; empty deck; top not `villain` / `henchman`.
   - Otherwise: remove him from victory, `deck = [top, foughtCardId, ...rest]`, then `performVillainReveal`.
@@ -64,7 +64,8 @@
 - The Goblin swap: D-24664 swap; no Bridge → no move (rules L1478-1484); henchmen are Villains (D-24607).
 - The charge: Charge (L1117-1122); only charge pushes count; the charger escapes off the last space; `break`.
 - `resolveVillainCityEntry`: a mechanical extraction; re-entry follows normal entry (L1458-1463, L1824-1830, L2831-2837).
-- `selectVictoryPileCityEntrant`: the deterministic stand-in for "Choose" (F1); anchored prefix (D-24299 Path B).
+- `selectVictoryPileCityEntrant`: the deterministic stand-in for "Choose" (F1); anchored prefix (D-24299 Path B); seats from the shared `seatsInTurnOrderFrom` (D-24780).
+- `buildVillainEffectAnyCardDiscardChoice` / `applyVillainEffectAnyCardDiscard` seat loops: stay `.sort()` under D-24780 §13 — a simultaneous prompt builder and apply (D-24780 §6 / D-24501).
 - The Boomerang deck write; the back-of-FIFO enqueue (rule order; the D-24750 class); the narrative clauses (D-24703).
 
 ## Files to Produce
