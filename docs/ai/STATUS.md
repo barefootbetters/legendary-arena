@@ -10,6 +10,15 @@
 
 ## Current State
 
+### WP-847 follow-ups closed — the engine ewiki serves its 404 page and has its own dark palette (2026-10-26, INFRA)
+
+All four follow-ups in the WP-847 entry below are closed:
+- **(1) The theme repo's Consumers table and "Queued next" line:** `bb-studio-ewiki-theme` #19 (`ba385385`) lists the engine ewiki on `v1.3.0` and records the order change (D-24781); the personal wiki is the one left.
+- **(2) Dark palette:** `apps/wiki-viewer/assets/css/ewiki-brand.css` now uses the light palette's own blue-gray family instead of the theme default's herb green (ground `#111827`, surface `#1f2937`, border `#374151`, text `#e5e7eb`, muted `#9ca3af`, links `#60a5fa`, tags indigo `#1e1b4b` / `#c7d2fe`; status colors kept). Every text color clears WCAG AA on the ground and the surface (computed: 14.3, 7.0, 7.0; 11.9, 5.8; tags 10.7). Light mode is unchanged.
+- **(3) 404 page:** `apps/wiki-viewer/wrangler.jsonc` sets `not_found_handling: "404-page"`, so a missed path gets the theme's "Page not found" page with a 404 status instead of an empty body. The page stays out of search (no `data-pagefind-body`).
+- **(4) Stale path in Herbs:** herbs-vs-ailments #429 notes, in its authoring guide's dated source line, where the engine footer lives now.
+
+Checks: the `wiki-viewer.yml` gates locally (99 / 99, Pagefind 99 pages + 3 filters, JS-free 100 / 100, `check-links` 0); the dark and light pages and the 404 page looked at in a local build.
 ### WP-846 / EC-884 — Each-player effects start with the current player and go clockwise (D-24780) (2026-10-26)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Rules v23 L2247: an effect that makes "each player" do something starts with the current player and goes clockwise. The engine walked those effects in ascending seat id, which was right only on seat 0's turn. Now, on seat 2's turn, an "each player gains a Wound" with one Wound left wounds seat 2 (not seat 0), and the per-seat log lines name players starting with seat 2. Flying Shield Block and return-on-discard prompts raised by one each-player effect come in the same current-player-first order. On seat 0's turn, and in every solo game, nothing changes.

@@ -15,11 +15,15 @@
   "assets": {
     // why: Hugo writes pretty URLs (/page/index.html). The default
     // html_handling (auto-trailing-slash) serves /page/ from that file and
-    // redirects /page to /page/, matching Hugo's own link style. No
-    // not_found_handling: the shared theme (D-24782) now builds
-    // public/404.html, but without not_found_handling a miss is still a plain
-    // 404. Serving that page needs not_found_handling: "404-page", a follow-up.
-    "directory": "./public"
+    // redirects /page to /page/, matching Hugo's own link style.
+    "directory": "./public",
+    // why: the shared theme (D-24782) builds public/404.html. "404-page"
+    // serves the nearest 404.html, with a 404 status, for any path that
+    // matches no file, so a mistyped or retired link lands on the wiki's own
+    // "Page not found" page (header, search, sidebar) instead of an empty
+    // response. Its <main> carries no data-pagefind-body, so it never shows
+    // up in search.
+    "not_found_handling": "404-page"
   },
   // why: these two lines are the point of D-24690. workers_dev: false removes
   // the *.workers.dev hostname; preview_urls: false removes per-version
