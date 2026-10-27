@@ -1481,7 +1481,7 @@ section below) and the allocation protocol in
 - D-24767 — core-first-gauntlet-fill (WP-834; the D-24199 Core fallback pool orders Core before Core 2E, superseding its combined sort for out-of-set fill. reserved 2026-10-25, claude/reserve-wp834-core-first-fill)
 - D-24768 — co2e-villains-mark-covered-lines (WP-835; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity; LANDED 2026-10-25)
 - D-24769 — co2e-grey-hero-and-trait-count-effects (WP-836; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity; LANDED 2026-10-26)
-- D-24770 — co2e-each-player-discard-and-reveal-gated-ambushes (WP-837; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
+- D-24770 — co2e-each-player-discard-and-reveal-gated-ambushes (WP-837; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity; LANDED 2026-10-27)
 - D-24771 — co2e-capture-family (WP-838; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - D-24772 — co2e-city-movement-effects (WP-839; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
 - D-24773 — co2e-the-blob-guards-the-mastermind (WP-840; the curation/primitive decision for that WP. reserved 2026-10-25, claude/reserve-wp835-co2e-villain-fidelity)
