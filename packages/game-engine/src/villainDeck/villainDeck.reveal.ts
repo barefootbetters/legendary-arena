@@ -387,7 +387,8 @@ export function performVillainReveal(
       // effect" while the Ambush plays a card. The narrated log line mirrors the Fight
       // site's, so the played card's reveal is attributed to this villain. The play
       // itself still fires AFTER the event (ordering unchanged).
-      const ambushPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onAmbush');
+      // why: WP-837 / D-24770 — the current player decides a reveal-gated play (The Leader).
+      const ambushPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onAmbush', ctx.currentPlayer);
       if (ambushPlayCount > 0) {
         pushLog(G,
           `Ambush effect: ${formatCardRef(G.cardDisplayData, cardId)} ${composeVillainDeckPlayClause(ambushPlayCount)}.`,

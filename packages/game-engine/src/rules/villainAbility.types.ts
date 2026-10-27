@@ -373,7 +373,11 @@ export type VillainEffectPrimitive =
   | 'discard-hero-each-player-by-cost'
   | 'gain-recruit-current-count-by-trait'
   | 'draw-cards-current-count-by-trait'
-  | 'reveal-top-ko-grey-or-draw-by-class';
+  | 'reveal-top-ko-grey-or-draw-by-class'
+  | 'discard-hero-each-player-by-trait'
+  | 'discard-hero-or-wound-each-player-by-trait'
+  | 'discard-hand-matching-hq-card-names-each-player'
+  | 'hq-heroes-to-hero-deck-bottom';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -501,6 +505,18 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'gain-recruit-current-count-by-trait',
   'draw-cards-current-count-by-trait',
   'reveal-top-ko-grey-or-draw-by-class',
+  // why: WP-837 / D-24770 — appended at positions 35, 36, 37 and 38. Mystique's Ambush
+  // (`discard-hero-each-player-by-trait:<kind>:<value>`: each player discards a Hero with
+  // the trait), Frost Giant Warrior's Ambush (`discard-hero-or-wound-each-player-by-trait:
+  // <kind>:<value>`: the same, or gain a Wound instead), and Juggernaut's Ambush as two
+  // no-param halves run left to right (`discard-hand-matching-hq-card-names-each-player`,
+  // then `hq-heroes-to-hero-deck-bottom`). All four keyword-less, so all four self-narrate.
+  // The marker script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`)
+  // appends them at the same positions.
+  'discard-hero-each-player-by-trait',
+  'discard-hero-or-wound-each-player-by-trait',
+  'discard-hand-matching-hq-card-names-each-player',
+  'hq-heroes-to-hero-deck-bottom',
 ] as const;
 
 /**
@@ -518,7 +534,11 @@ export type GreyHeroFilter = 'grey' | 'non-grey';
 // data (ssw2 Pink Sphinx Spectrum, wtif Wolf Demon Soulbind), so they reuse this one
 // suffix grammar instead of inventing a second.
 /** A villain-effect condition gate value (the marker `!<condition>` suffix). */
-export type VillainEffectCondition = 'savior';
+// why: WP-837 / D-24770 — `'another-group-villain-in-city'` appended (Scorpion's Ambush:
+// "If there is another Spider-Foes Villain in the city"). True when the City holds another
+// Villain of the triggering Villain's OWN group, found as the longest selected-group prefix
+// of its id (D-24299 own-set precedent); no resolvable group fails closed.
+export type VillainEffectCondition = 'savior' | 'another-group-villain-in-city';
 
 // why: drift-detection array — must match VillainEffectCondition exactly
 // (villainAbility.types.test.ts asserts it at runtime, D-24372). Append-only per
@@ -529,6 +549,7 @@ export type VillainEffectCondition = 'savior';
 /** All villain effect conditions in canonical order. Single source of truth. */
 export const VILLAIN_EFFECT_CONDITIONS: readonly VillainEffectCondition[] = [
   'savior',
+  'another-group-villain-in-city',
 ] as const;
 
 /**
@@ -574,10 +595,22 @@ export const VILLAIN_EFFECT_CONDITIONS: readonly VillainEffectCondition[] = [
  *   - `reveal-top-ko-grey-or-draw-by-class` (D-24769): `drawHeroClasses` lists the
  *     classes that draw the revealed card; a grey card is KO'd, anything else stays
  *     on top (co2e Savage Land Mutates' Fight).
+ *   - `discard-hero-each-player-by-trait` and
+ *     `discard-hero-or-wound-each-player-by-trait` (D-24770): `requireKind` +
+ *     `requireValue`; each player discards a Hero with the trait (co2e Mystique:
+ *     `team:x-men`), or, for the `-or-wound` form, may gain a Wound instead (co2e Frost
+ *     Giant Warrior: `hc:ranged`). Resolved after the move as a multi-seat choice.
+ *   - `discard-hand-matching-hq-card-names-each-player` and
+ *     `hq-heroes-to-hero-deck-bottom` (D-24770): no params — co2e Juggernaut's Ambush,
+ *     run left to right (the name scan reads the HQ before it moves).
+ *   - `play-villain-deck-cards` (D-24770): optional `requireKind` + `requireValue` — a
+ *     reveal gate: nothing is played when the current player has a matching Hero
+ *     (co2e The Leader: `play-villain-deck-cards:1:hc:strength`).
  *   - Any effect: optional `requireCondition` (D-24749) is a condition gate — the
- *     effect fires only when the CURRENT player meets the condition (`'savior'`:
- *     at least 3 Bystanders in their Victory Pile). Lifted from the marker's
- *     `!<condition>` suffix.
+ *     effect fires only when the condition holds (`'savior'`: the CURRENT player has
+ *     at least 3 Bystanders in their Victory Pile; `'another-group-villain-in-city'`
+ *     (D-24770): the City holds another Villain of the triggering Villain's own group).
+ *     Lifted from the marker's `!<condition>` suffix.
  *   - `capture-bystander`: optional `magnitude` (D-24295) is a rescue COUNT
  *     (default 1) — the counted variant (Abomination: 3) self-narrates because its
  *     magnitude-bearing descriptor has no legacy reverse-map entry.

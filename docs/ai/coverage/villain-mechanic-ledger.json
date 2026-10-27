@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 735,
+    "totalRows": 740,
     "byStatus": {
-      "executable": 175,
+      "executable": 181,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 557,
+      "unmarked": 556,
       "subsystem": 2
     },
-    "distinctMechanics": 42
+    "distinctMechanics": 46
   },
   "rows": [
     {
@@ -1481,6 +1481,17 @@
       "cardName": "Frost Giant Warrior",
       "set": "co2e",
       "cardType": "villain",
+      "mechanic": "discard-hero-or-wound-each-player-by-trait",
+      "status": "executable",
+      "wp": "WP-837",
+      "decision": "D-24770",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-or-wound-each-player-by-trait"
+    },
+    {
+      "extId": "co2e-villain-enemies-of-asgard-frost-giant-warrior",
+      "cardName": "Frost Giant Warrior",
+      "set": "co2e",
+      "cardType": "villain",
       "mechanic": "ko-up-to-from-discard-current",
       "status": "executable",
       "wp": "WP-760",
@@ -1547,6 +1558,28 @@
       "cardName": "Juggernaut",
       "set": "co2e",
       "cardType": "villain",
+      "mechanic": "discard-hand-matching-hq-card-names-each-player",
+      "status": "executable",
+      "wp": "WP-837",
+      "decision": "D-24770",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hand-matching-hq-card-names-each-player"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
+      "cardName": "Juggernaut",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "hq-heroes-to-hero-deck-bottom",
+      "status": "executable",
+      "wp": "WP-837",
+      "decision": "D-24770",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-to-hero-deck-bottom"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
+      "cardName": "Juggernaut",
+      "set": "co2e",
+      "cardType": "villain",
       "mechanic": "ko-hero",
       "status": "executable",
       "wp": "WP-252",
@@ -1587,6 +1620,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist"
     },
     {
+      "extId": "co2e-villain-brotherhood-of-mutants-mystique",
+      "cardName": "Mystique",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "discard-hero-each-player-by-trait",
+      "status": "executable",
+      "wp": "WP-837",
+      "decision": "D-24770",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-each-player-by-trait"
+    },
+    {
       "extId": "co2e-villain-skulls-paibok-the-power-skrull",
       "cardName": "Paibok the Power Skrull",
       "set": "co2e",
@@ -1618,6 +1662,17 @@
       "wp": "WP-836",
       "decision": "D-24769",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-ko-grey-or-draw-by-class"
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-scorpion",
+      "cardName": "Scorpion",
+      "set": "co2e",
+      "cardType": "villain",
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "wp": "WP-252",
+      "decision": "D-24023",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-scorpion",
@@ -1723,11 +1778,11 @@
       "cardName": "The Leader",
       "set": "co2e",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "wp": "WP-542",
+      "decision": "D-24351",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-the-lizard",

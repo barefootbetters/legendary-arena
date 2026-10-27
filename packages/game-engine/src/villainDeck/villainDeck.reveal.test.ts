@@ -2461,3 +2461,53 @@ describe('resolveVillainEscape + Haunt Ambush (WP-757 / D-24587)', () => {
     );
   });
 });
+
+describe('WP-837 The Leader reveal gate at the onAmbush fire site (D-24770)', () => {
+  /**
+   * Reveals a co2e The Leader with `villain-x` under it; the current player's hand is given.
+   */
+  function revealGatedLeader(hand: CardExtId[]): LegendaryGameState {
+    const theLeader = 'co2e-villain-radiation-the-leader-01' as CardExtId;
+    const nextVillain = 'villain-x' as CardExtId;
+    const gameState = createMockGameState({
+      deck: [theLeader, nextVillain],
+      discard: [],
+      cardTypes: { [theLeader]: 'villain', [nextVillain]: 'villain' },
+      cardKeywords: { [theLeader]: ['ambush'] },
+      villainAbilityHooks: [
+        {
+          cardId: theLeader,
+          timing: 'onAmbush',
+          keywords: [],
+          effects: [{ primitive: 'play-villain-deck-cards', magnitude: 1, requireKind: 'hero-class', requireValue: 'strength' }],
+        },
+      ],
+    });
+    gameState.playerZones['0'] = { ...makePlayerZones(), deck: [], hand, discard: [], inPlay: [], victory: [] };
+    gameState.cardTraits = {
+      'strength-hero': { heroClass: 'strength', team: null },
+      'covert-hero': { heroClass: 'covert', team: null },
+    } as unknown as LegendaryGameState['cardTraits'];
+    revealVillainCard(createMockMoveContext(gameState));
+    return gameState;
+  }
+
+  it('T16: a Strength Hero stops the play; without one the top card is played', () => {
+    const revealed = revealGatedLeader(['strength-hero' as CardExtId]);
+    assert.deepStrictEqual(revealed.villainDeck.deck, ['villain-x'], 'villain-x stays on the Villain Deck');
+    const revealedTexts = revealed.messages.map((message) => message.text);
+    assert.ok(
+      revealedTexts.includes('Ambush effect: Player 0 revealed a Strength Hero, so no card is played from the Villain Deck.'),
+      `the reveal line is logged, got: ${JSON.stringify(revealedTexts)}`,
+    );
+    assert.equal(revealedTexts.some((text) => text.includes('plays the top card of the Villain Deck')), false);
+
+    const played = revealGatedLeader(['covert-hero' as CardExtId]);
+    assert.deepStrictEqual(played.villainDeck.deck, [], 'villain-x left the Villain Deck');
+    assert.ok(played.city.includes('villain-x' as CardExtId), 'villain-x entered the City');
+    const playedTexts = played.messages.map((message) => message.text);
+    const playIndex = playedTexts.findIndex((text) => text.includes('plays the top card of the Villain Deck'));
+    assert.ok(playIndex >= 0, `the play line is logged, got: ${JSON.stringify(playedTexts)}`);
+    assert.equal(playedTexts.some((text) => text.includes('revealed a Strength Hero')), false);
+  });
+});

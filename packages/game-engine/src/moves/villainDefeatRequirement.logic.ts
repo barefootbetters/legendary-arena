@@ -193,6 +193,39 @@ export function listEligibleHandCardsByCost(
 }
 
 /**
+ * Lists a player's hand cards that match a Hero-trait requirement, in hand order
+ * (WP-837 / D-24770 — the each-player trait discards of co2e Mystique and Frost
+ * Giant Warrior).
+ *
+ * A card matches through the same predicate the defeat gate uses, over the
+ * off-play trait view: a split card counts as its Hero's team and both faces'
+ * Hero Classes (rules v23 L2773-2778). A Wound or any card with no trait entry
+ * never matches.
+ *
+ * @param state - The runtime game state.
+ * @param playerId - The seat whose hand is read.
+ * @param requirement - The team or Hero Class to match.
+ * @returns The matching hand card ids in hand order, or `[]` when the seat has no zones.
+ */
+export function listEligibleHandCardsByTrait(
+  state: LegendaryGameState,
+  playerId: string,
+  requirement: VillainDefeatRequirement,
+): CardExtId[] {
+  const zones = state.playerZones[playerId];
+  if (zones === undefined) {
+    return [];
+  }
+  const eligibleCardIds: CardExtId[] = [];
+  for (const handCardId of zones.hand) {
+    if (traitMeetsDefeatRequirement(offPlayCardTraits(state, handCardId), requirement)) {
+      eligibleCardIds.push(handCardId);
+    }
+  }
+  return eligibleCardIds;
+}
+
+/**
  * Picks the default card to discard for a cost-filtered discard: the lowest-cost
  * eligible hand card, keeping the earliest in hand order on a tie.
  *

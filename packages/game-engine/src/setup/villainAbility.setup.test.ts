@@ -2183,3 +2183,160 @@ describe('buildVillainAbilityHooks — WP-836 grey-Hero and Hero-count grammars 
     }
   });
 });
+
+describe('buildVillainAbilityHooks — WP-837 each-player discard and reveal-gated grammars (D-24770)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'mystique', token: 'discard-hero-each-player-by-trait:team:x-men' },
+    { slug: 'frost-giant', token: 'discard-hero-or-wound-each-player-by-trait:hc:ranged' },
+    { slug: 'juggernaut-names', token: 'discard-hand-matching-hq-card-names-each-player' },
+    { slug: 'juggernaut-bottom', token: 'hq-heroes-to-hero-deck-bottom' },
+    { slug: 'leader', token: 'play-villain-deck-cards:1:hc:strength' },
+    { slug: 'scorpion', token: 'gain-wound:each!another-group-villain-in-city' },
+    { slug: 'play-two', token: 'play-villain-deck-cards:2' },
+    { slug: 'reject-trait-bare', token: 'discard-hero-each-player-by-trait' },
+    { slug: 'reject-trait-kind-only', token: 'discard-hero-each-player-by-trait:team' },
+    { slug: 'reject-trait-bad-kind', token: 'discard-hero-each-player-by-trait:xx:x-men' },
+    { slug: 'reject-trait-empty', token: 'discard-hero-each-player-by-trait:team:' },
+    { slug: 'reject-names-param', token: 'discard-hand-matching-hq-card-names-each-player:1' },
+    { slug: 'reject-bottom-param', token: 'hq-heroes-to-hero-deck-bottom:x' },
+    { slug: 'reject-play-three', token: 'play-villain-deck-cards:1:hc' },
+    { slug: 'reject-play-zero', token: 'play-villain-deck-cards:0:hc:strength' },
+    { slug: 'reject-play-bad-kind', token: 'play-villain-deck-cards:1:xx:strength' },
+    { slug: 'reject-play-five', token: 'play-villain-deck-cards:1:hc:strength:x' },
+    { slug: 'reject-condition-case', token: 'gain-wound:each!another-group-villain-in-City' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp837',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Ambush: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp837'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp837-${slug}-00`)!;
+
+  it('T3: parses every Locked-Values marker; the 2-part play form stays byte-identical', () => {
+    assert.deepStrictEqual(hookFor('mystique').effects, [
+      { primitive: 'discard-hero-each-player-by-trait', requireKind: 'team', requireValue: 'x-men' },
+    ]);
+    assert.deepStrictEqual(hookFor('frost-giant').effects, [
+      { primitive: 'discard-hero-or-wound-each-player-by-trait', requireKind: 'hero-class', requireValue: 'ranged' },
+    ]);
+    assert.deepStrictEqual(hookFor('juggernaut-names').effects, [
+      { primitive: 'discard-hand-matching-hq-card-names-each-player' },
+    ]);
+    assert.deepStrictEqual(hookFor('juggernaut-bottom').effects, [{ primitive: 'hq-heroes-to-hero-deck-bottom' }]);
+    assert.deepStrictEqual(hookFor('leader').effects, [
+      { primitive: 'play-villain-deck-cards', magnitude: 1, requireKind: 'hero-class', requireValue: 'strength' },
+    ]);
+    assert.deepStrictEqual(hookFor('scorpion').effects, [
+      { primitive: 'gain-wound', target: 'each', requireCondition: 'another-group-villain-in-city' },
+    ]);
+    assert.deepStrictEqual(hookFor('play-two').effects, [{ primitive: 'play-villain-deck-cards', magnitude: 2 }]);
+  });
+
+  it('T4: every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T5: the regenerated co2e Ambush lines build the expected onAmbush hooks', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/co2e.json.
+    const co2eRegistry = makeRegistry(
+      'co2e',
+      [
+        {
+          slug: 'brotherhood-of-mutants',
+          cards: [
+            {
+              slug: 'juggernaut',
+              abilities: [
+                'Ambush: Each player reveals their hand and discards all cards that have the same card names as any Heroes in the HQ. Then put all Heroes from the HQ on the bottom of the Hero Deck. [effect:discard-hand-matching-hq-card-names-each-player] [effect:hq-heroes-to-hero-deck-bottom]',
+              ],
+            },
+            {
+              slug: 'mystique',
+              abilities: ['Ambush: Each player discards an [team:x-men] Hero. [effect:discard-hero-each-player-by-trait:team:x-men]'],
+            },
+          ],
+        },
+        {
+          slug: 'enemies-of-asgard',
+          cards: [
+            {
+              slug: 'frost-giant-warrior',
+              abilities: [
+                'Ambush: Each player discards a [hc:ranged] Hero or gains a Wound. [effect:discard-hero-or-wound-each-player-by-trait:hc:ranged]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'radiation',
+          cards: [
+            {
+              slug: 'the-leader',
+              abilities: [
+                'Ambush: Reveal a [hc:strength] Hero or play a card from the Villain Deck. [effect:play-villain-deck-cards:1:hc:strength]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'sinister-spider-foes',
+          cards: [
+            {
+              slug: 'scorpion',
+              abilities: [
+                'Ambush: If there is another Spider-Foes Villain in the city, each player gains a Wound. [effect:gain-wound:each!another-group-villain-in-city]',
+              ],
+            },
+          ],
+        },
+      ],
+      [],
+    );
+    const co2eHooks = buildVillainAbilityHooks(
+      co2eRegistry,
+      makeConfig(
+        ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/radiation', 'co2e/sinister-spider-foes'],
+        [],
+      ),
+    );
+    const ambushEffectsFor = (cardId: string) =>
+      co2eHooks.find((h) => h.cardId === cardId && h.timing === 'onAmbush')?.effects;
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-brotherhood-of-mutants-juggernaut-00'), [
+      { primitive: 'discard-hand-matching-hq-card-names-each-player' },
+      { primitive: 'hq-heroes-to-hero-deck-bottom' },
+    ]);
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-brotherhood-of-mutants-mystique-00'), [
+      { primitive: 'discard-hero-each-player-by-trait', requireKind: 'team', requireValue: 'x-men' },
+    ]);
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-enemies-of-asgard-frost-giant-warrior-00'), [
+      { primitive: 'discard-hero-or-wound-each-player-by-trait', requireKind: 'hero-class', requireValue: 'ranged' },
+    ]);
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-radiation-the-leader-00'), [
+      { primitive: 'play-villain-deck-cards', magnitude: 1, requireKind: 'hero-class', requireValue: 'strength' },
+    ]);
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-sinister-spider-foes-scorpion-00'), [
+      { primitive: 'gain-wound', target: 'each', requireCondition: 'another-group-villain-in-city' },
+    ]);
+    for (const hook of co2eHooks) {
+      assert.deepStrictEqual(hook.unresolvedMarkers ?? [], [], `${hook.cardId} must have no unresolved markers`);
+    }
+  });
+});

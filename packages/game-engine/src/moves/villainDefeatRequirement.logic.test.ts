@@ -16,6 +16,7 @@ import {
   getFightDiscardCost,
   isHandCardCostOneOf,
   listEligibleHandCardsByCost,
+  listEligibleHandCardsByTrait,
   selectDefaultCostDiscardCard,
   formatEligibleCostList,
 } from './villainDefeatRequirement.logic.js';
@@ -289,5 +290,41 @@ describe('WP-817 fight discard cost helpers (D-24750)', () => {
     assert.equal(formatEligibleCostList([2]), '2');
     assert.equal(formatEligibleCostList([2, 3]), '2 or 3');
     assert.equal(formatEligibleCostList([2, 3, 5, 7]), '2, 3, 5, or 7');
+  });
+});
+
+describe('WP-837 listEligibleHandCardsByTrait (D-24770)', () => {
+  it('T6: lists matching hand cards in hand order through the off-play trait view', () => {
+    const xmenCard = 'core/cyclops/optic-blast#0' as CardExtId;
+    const woundCard = 'pile-wound-00' as CardExtId;
+    const avengersCard = 'antm/black-knight/flying-steed#0' as CardExtId;
+    const splitFaceA = 'test/duo/team-half#0' as CardExtId;
+    const splitFaceB = 'test/duo/ranged-half#0' as CardExtId;
+    const dualClassCard = 'test/dual/strength-ranged#0' as CardExtId;
+    const hand = [xmenCard, woundCard, avengersCard, splitFaceA, dualClassCard];
+    const state = makeState({
+      hand: [...hand],
+      traits: {
+        [xmenCard]: { heroClass: 'ranged', team: 'x-men' },
+        [avengersCard]: { heroClass: 'covert', team: 'avengers' },
+        [splitFaceA]: { heroClass: 'tech', team: 'x-men' },
+        [splitFaceB]: { heroClass: 'ranged', team: 'x-men' },
+        [dualClassCard]: { heroClass: 'strength', team: 'avengers' },
+      },
+    });
+    (state.cardTraits as Record<string, { heroClass2?: string }>)[dualClassCard]!.heroClass2 = 'ranged';
+    state.splitFaces = { 'test/duo/team-half': 'test/duo/ranged-half' } as LegendaryGameState['splitFaces'];
+
+    assert.deepStrictEqual(
+      listEligibleHandCardsByTrait(state, '0', { kind: 'team', value: 'x-men' }),
+      [xmenCard, splitFaceA],
+    );
+    // why: the split card's face b is Ranged; off play it counts as both faces' classes.
+    assert.deepStrictEqual(
+      listEligibleHandCardsByTrait(state, '0', { kind: 'hero-class', value: 'ranged' }),
+      [xmenCard, splitFaceA, dualClassCard],
+    );
+    assert.deepStrictEqual(listEligibleHandCardsByTrait(state, '9', { kind: 'team', value: 'x-men' }), []);
+    assert.deepStrictEqual(state.playerZones['0']!.hand, hand, 'the hand is not mutated');
   });
 });
