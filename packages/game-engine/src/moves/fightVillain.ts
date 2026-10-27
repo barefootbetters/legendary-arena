@@ -701,7 +701,8 @@ export function defeatCityVillainCore(
   // context performVillainReveal reads from the fought ctx + shuffle source and import the
   // STATIC DEFAULT_IMPLEMENTATION_MAP. Each played card resolves as a normal reveal,
   // recursing through the rule pipeline; the both-empty guard terminates the loop.
-  const fightPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onFight');
+  // why: WP-837 / D-24770 — the current player decides a reveal-gated play.
+  const fightPlayCount = villainCardPlaysVillainDeckCards(G, cardId, 'onFight', currentPlayer);
   if (fightPlayCount > 0) {
     // why: narrate the fight-triggered plays BEFORE the reveals so the log
     // attributes them to this villain. Without it the played cards' consequences

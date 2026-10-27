@@ -124,6 +124,10 @@ export default defineComponent({
         // discards a Hero that costs 2, 3, 5, or 7); the options are already filtered.
         case 'escape-effect-cost-discard':
           return 'A Villain escaped — choose a Hero to discard';
+        // why: WP-837 / D-24770 — an owed every-player Hero-trait discard (co2e Mystique /
+        // Frost Giant Warrior Ambush); the options are already filtered.
+        case 'villain-effect-trait-discard':
+          return 'A Villain\'s effect — choose a Hero to discard';
         // why: WP-830 / D-24763 — The Unbreakable Enigma Code's paid peek after a Villain fight.
         case 'enigma-peek':
           return 'Enigma Code — pay 1 Recruit to look at a face-down card?';

@@ -6801,3 +6801,346 @@ describe('WP-836 co2e grey-Hero and Hero-count effects (D-24769)', () => {
     assert.equal(emptyG.messages![0]!.outcome, 'blocked');
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-837 / D-24770 — co2e each-player discard and reveal-gated Ambushes
+// ---------------------------------------------------------------------------
+
+describe('WP-837 co2e each-player discard and reveal-gated Ambushes (D-24770)', () => {
+  const MYSTIQUE = 'mystique-01' as CardExtId;
+  const FROST_GIANT = 'frost-giant-warrior-01' as CardExtId;
+  const JUGGERNAUT = 'juggernaut-01' as CardExtId;
+  const LEADER = 'co2e-villain-radiation-the-leader-01' as CardExtId;
+  const SCORPION = 'co2e-villain-sinister-spider-foes-scorpion-01' as CardExtId;
+
+  /**
+   * Builds a one-descriptor hook for a WP-837 test.
+   */
+  function descriptorHook(
+    cardId: CardExtId,
+    timing: 'onAmbush' | 'onFight' | 'onEscape',
+    descriptor: VillainEffectDescriptor,
+  ): VillainAbilityHook {
+    return { cardId, timing, keywords: [], effects: [descriptor] };
+  }
+
+  /**
+   * The text of every logged message, in order.
+   */
+  function messageTexts(G: LegendaryGameState): string[] {
+    return (G.messages ?? []).map((message) => message.text);
+  }
+
+  it('T7: Mystique records an owed X-Men discard on the FIFO and touches no hand', () => {
+    const G = makeG({
+      hooks: [descriptorHook(MYSTIQUE, 'onAmbush', {
+        primitive: 'discard-hero-each-player-by-trait',
+        requireKind: 'team',
+        requireValue: 'x-men',
+      })],
+      playerZones: {
+        '0': { deck: [], hand: ['xmen-a'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+        '1': { deck: [], hand: ['other-b'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+      },
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, MYSTIQUE, 'onAmbush');
+    assert.deepStrictEqual(G.pendingEscapeEffectDiscards, [
+      {
+        escapedCardId: MYSTIQUE,
+        eligibleCosts: [],
+        traitFilter: {
+          requireKind: 'team',
+          requireValue: 'x-men',
+          requirementLabel: 'X-Men',
+          effectLabel: 'Ambush',
+          hasWoundAlternative: false,
+        },
+      },
+    ]);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Ambush effect: each player must discard an X-Men Hero.');
+    assert.equal(lastMessage.outcome, 'applied');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['xmen-a']);
+    assert.deepStrictEqual(G.playerZones['1']!.hand, ['other-b']);
+  });
+
+  it('T8: the -or-wound primitive carries the Wound alternative; a trait-less descriptor is blocked', () => {
+    const G = makeG({
+      hooks: [descriptorHook(FROST_GIANT, 'onAmbush', {
+        primitive: 'discard-hero-or-wound-each-player-by-trait',
+        requireKind: 'hero-class',
+        requireValue: 'ranged',
+      })],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, FROST_GIANT, 'onAmbush');
+    assert.equal(G.pendingEscapeEffectDiscards![0]!.traitFilter!.hasWoundAlternative, true);
+    assert.equal(G.pendingEscapeEffectDiscards![0]!.traitFilter!.requirementLabel, 'Ranged');
+    assert.equal(
+      G.messages![G.messages!.length - 1]!.text,
+      'Ambush effect: each player must discard a Ranged Hero or gain a Wound.',
+    );
+
+    const bare = makeG({
+      hooks: [descriptorHook(FROST_GIANT, 'onAmbush', { primitive: 'discard-hero-or-wound-each-player-by-trait' })],
+      messages: [],
+    });
+    executeVillainAbilities(bare, CTX, FROST_GIANT, 'onAmbush');
+    assert.equal(bare.pendingEscapeEffectDiscards, undefined);
+    const lastMessage = bare.messages![bare.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Ambush effect: no Hero trait was given; no effect.');
+    assert.equal(lastMessage.outcome, 'blocked');
+  });
+
+  const SPLIT_HQ = 'test/duo/left-half#0' as CardExtId;
+  const OPTIC_CORE = 'core/cyclops/optic-blast#3' as CardExtId;
+  const OPTIC_CO2E = 'co2e/cyclops/optic-blast#1' as CardExtId;
+  const RIGHT_HALF_MATCH = 'xmen/other/right-half#2' as CardExtId;
+
+  /**
+   * T9's Juggernaut board: an Optic Blast and a split card (faces left-half / right-half) in
+   * the HQ; P0 holds two Optic Blast reprints, P1 nothing named alike, P2 a right-half match.
+   * The P0 core Optic Blast and the P2 match carry return-on-discard.
+   */
+  function makeJuggernautBoard(): LegendaryGameState {
+    const G = makeG({
+      hooks: [
+        descriptorHook(JUGGERNAUT, 'onAmbush', { primitive: 'discard-hand-matching-hq-card-names-each-player' }),
+      ],
+      playerZones: {
+        '0': {
+          deck: [],
+          hand: [OPTIC_CORE, OPTIC_CO2E, 'starting-shield-agent', 'pile-wound'] as CardExtId[],
+          discard: [],
+          inPlay: [],
+          victory: [],
+        },
+        '1': { deck: [], hand: ['co2e/storm/x#0'] as CardExtId[], discard: [], inPlay: [], victory: [] },
+        '2': { deck: [], hand: [RIGHT_HALF_MATCH] as CardExtId[], discard: [], inPlay: [], victory: [] },
+      },
+      hq: ['core/cyclops/optic-blast#0', SPLIT_HQ, null, null, null] as CardExtId[],
+      messages: [],
+    });
+    G.splitFaces = { 'test/duo/left-half': 'test/duo/right-half' } as LegendaryGameState['splitFaces'];
+    G.heroAbilityHooks = [
+      { cardId: OPTIC_CORE, timing: 'onDiscard', keywords: ['return-on-discard'], effects: [] },
+      { cardId: RIGHT_HALF_MATCH, timing: 'onDiscard', keywords: ['return-on-discard'], effects: [] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    return G;
+  }
+
+  it('T9: Juggernaut discards every hand card sharing a card slug with an HQ Hero (reprints, split faces)', () => {
+    const G = makeJuggernautBoard();
+    executeVillainAbilities(G, CTX, JUGGERNAUT, 'onAmbush');
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['starting-shield-agent', 'pile-wound']);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [OPTIC_CORE, OPTIC_CO2E]);
+    assert.deepStrictEqual(G.playerZones['1']!.hand, ['co2e/storm/x#0'], 'P1 has no matching name');
+    assert.deepStrictEqual(G.playerZones['2']!.discard, [RIGHT_HALF_MATCH], 'the split HQ card counts as its face b');
+    assert.deepStrictEqual(messageTexts(G), [
+      `Ambush effect: Player 0 discarded ${OPTIC_CORE}, ${OPTIC_CO2E} (same card name as a Hero in the HQ).`,
+      `Ambush effect: Player 2 discarded ${RIGHT_HALF_MATCH} (same card name as a Hero in the HQ).`,
+    ]);
+    assert.deepStrictEqual(G.pendingReturnOnDiscard, [
+      { playerID: '0', cardId: OPTIC_CORE },
+      { playerID: '2', cardId: RIGHT_HALF_MATCH },
+    ]);
+  });
+
+  it('T10: no match, and an empty HQ, discard nothing and log a blocked line', () => {
+    const noMatch = makeJuggernautBoard();
+    noMatch.hq = ['core/storm/lightning-bolt#0', null, null, null, null] as LegendaryGameState['hq'];
+    const handsBefore = JSON.stringify(noMatch.playerZones);
+    executeVillainAbilities(noMatch, CTX, JUGGERNAUT, 'onAmbush');
+    assert.equal(JSON.stringify(noMatch.playerZones), handsBefore);
+    const noMatchLast = noMatch.messages![noMatch.messages!.length - 1]!;
+    assert.equal(noMatchLast.text, 'Ambush effect: no player had a card with the same card name as a Hero in the HQ.');
+    assert.equal(noMatchLast.outcome, 'blocked');
+
+    const emptyHq = makeJuggernautBoard();
+    emptyHq.hq = [null, null, null, null, null] as LegendaryGameState['hq'];
+    executeVillainAbilities(emptyHq, CTX, JUGGERNAUT, 'onAmbush');
+    assert.equal(JSON.stringify(emptyHq.playerZones), handsBefore);
+    const emptyLast = emptyHq.messages![emptyHq.messages!.length - 1]!;
+    assert.equal(emptyLast.text, 'Ambush effect: the HQ is empty, so no player discards.');
+    assert.equal(emptyLast.outcome, 'blocked');
+  });
+
+  it('T11: HQ Heroes go to the Hero Deck bottom in slot order, then the HQ refills; haunters stay', () => {
+    const G = makeG({
+      hooks: [descriptorHook(JUGGERNAUT, 'onAmbush', { primitive: 'hq-heroes-to-hero-deck-bottom' })],
+      hq: ['a', 'b', null, 'c', 'd'] as CardExtId[],
+      heroDeck: ['x', 'y'] as CardExtId[],
+      messages: [],
+    });
+    G.hqHaunters = ['h', null, null, null, null] as LegendaryGameState['hqHaunters'];
+    executeVillainAbilities(G, CTX, JUGGERNAUT, 'onAmbush');
+    assert.deepStrictEqual(G.hq, ['x', 'y', 'a', 'b', 'c']);
+    assert.deepStrictEqual(G.heroDeck, ['d']);
+    assert.deepStrictEqual(G.hqHaunters, ['h', null, null, null, null]);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(
+      lastMessage.text,
+      'Ambush effect: put 4 Hero(es) from the HQ on the bottom of the Hero Deck (a, b, c, d); the HQ refilled.',
+    );
+    assert.equal(lastMessage.outcome, 'applied');
+  });
+
+  it('T12: an empty HQ and an empty Hero Deck change nothing', () => {
+    const G = makeG({
+      hooks: [descriptorHook(JUGGERNAUT, 'onAmbush', { primitive: 'hq-heroes-to-hero-deck-bottom' })],
+      messages: [],
+    });
+    executeVillainAbilities(G, CTX, JUGGERNAUT, 'onAmbush');
+    assert.deepStrictEqual(G.hq, [null, null, null, null, null]);
+    assert.deepStrictEqual(G.heroDeck, []);
+    const lastMessage = G.messages![G.messages!.length - 1]!;
+    assert.equal(lastMessage.text, 'Ambush effect: the HQ is empty; no Hero was put on the bottom of the Hero Deck.');
+    assert.equal(lastMessage.outcome, 'blocked');
+  });
+
+  const LEADER_GATED: VillainEffectDescriptor = {
+    primitive: 'play-villain-deck-cards',
+    magnitude: 1,
+    requireKind: 'hero-class',
+    requireValue: 'strength',
+  };
+  const STRENGTH_TRAITS = {
+    'strength-hero': { heroClass: 'strength', team: null },
+    'covert-hero': { heroClass: 'covert', team: null },
+  };
+
+  /**
+   * A one-seat Leader board with the given hand and play area.
+   */
+  function makeLeaderBoard(hand: string[], inPlay: string[]): LegendaryGameState {
+    return makeG({
+      hooks: [descriptorHook(LEADER, 'onAmbush', LEADER_GATED)],
+      playerZones: {
+        '0': { deck: [], hand: hand as CardExtId[], discard: [], inPlay: inPlay as CardExtId[], victory: [] },
+      },
+      cardTraits: STRENGTH_TRAITS,
+      messages: [],
+    });
+  }
+
+  it('T13: The Leader plays nothing when the current player has a Strength Hero, and fails closed with no player', () => {
+    const revealLine = 'Ambush effect: Player 0 revealed a Strength Hero, so no card is played from the Villain Deck.';
+    const inHand = makeLeaderBoard(['strength-hero'], []);
+    assert.equal(villainCardPlaysVillainDeckCards(inHand, LEADER, 'onAmbush', '0'), 0);
+    executeVillainAbilities(inHand, CTX, LEADER, 'onAmbush');
+    assert.deepStrictEqual(messageTexts(inHand), [revealLine]);
+    assert.equal(inHand.messages![0]!.outcome, 'blocked');
+
+    const inPlay = makeLeaderBoard([], ['strength-hero']);
+    assert.equal(villainCardPlaysVillainDeckCards(inPlay, LEADER, 'onAmbush', '0'), 0);
+    executeVillainAbilities(inPlay, CTX, LEADER, 'onAmbush');
+    assert.deepStrictEqual(messageTexts(inPlay), [revealLine]);
+
+    const none = makeLeaderBoard(['covert-hero'], []);
+    assert.equal(villainCardPlaysVillainDeckCards(none, LEADER, 'onAmbush', '0'), 1);
+    executeVillainAbilities(none, CTX, LEADER, 'onAmbush');
+    assert.deepStrictEqual(messageTexts(none), [], 'no reveal line when the player cannot reveal');
+
+    assert.equal(villainCardPlaysVillainDeckCards(inHand, LEADER, 'onAmbush', undefined), 0, 'gated + no player fails closed');
+
+    const ungated = makeG({
+      hooks: [descriptorHook(LEADER, 'onAmbush', { primitive: 'play-villain-deck-cards', magnitude: 2 })],
+    });
+    assert.equal(villainCardPlaysVillainDeckCards(ungated, LEADER, 'onAmbush', undefined), 2, 'ungated ignores the player');
+  });
+
+  const SCORPION_GATED: VillainEffectDescriptor = {
+    primitive: 'gain-wound',
+    target: 'each',
+    requireCondition: 'another-group-villain-in-city',
+  };
+
+  /**
+   * A two-seat Scorpion board with the given City and selected Villain Groups.
+   */
+  function makeScorpionBoard(city: (string | null)[], villainGroupIds: string[]): LegendaryGameState {
+    const G = makeG({
+      hooks: [descriptorHook(SCORPION, 'onAmbush', SCORPION_GATED)],
+      wounds: ['w0', 'w1', 'w2'] as CardExtId[],
+      messages: [],
+    });
+    G.city = city as LegendaryGameState['city'];
+    G.selection = { villainGroupIds } as unknown as LegendaryGameState['selection'];
+    return G;
+  }
+
+  it('T14: Scorpion wounds everyone only with another Villain of its own group in the City', () => {
+    const groups = ['co2e/sinister-spider-foes', 'co2e/sinister-syndicate'];
+    const withGoblin = makeScorpionBoard(
+      [SCORPION, 'co2e-villain-sinister-spider-foes-green-goblin-01', null, null, null],
+      groups,
+    );
+    const goblinResults = executeVillainAbilities(withGoblin, CTX, SCORPION, 'onAmbush');
+    assert.equal(withGoblin.playerZones['0']!.discard.length, 1);
+    assert.equal(withGoblin.playerZones['1']!.discard.length, 1);
+    assert.deepStrictEqual(goblinResults.map((result) => result.keyword), ['gainWoundEachPlayer']);
+
+    const secondCopy = makeScorpionBoard(
+      [SCORPION, 'co2e-villain-sinister-spider-foes-scorpion-02', null, null, null],
+      groups,
+    );
+    executeVillainAbilities(secondCopy, CTX, SCORPION, 'onAmbush');
+    assert.equal(secondCopy.playerZones['0']!.discard.length, 1, 'a second Scorpion copy is another group Villain');
+
+    const otherGroups = makeScorpionBoard(
+      [SCORPION, 'co2e-villain-sinister-syndicate-beetle-01', 'core-villain-spider-foes-venom-01', null, null],
+      groups,
+    );
+    const blockedResults = executeVillainAbilities(otherGroups, CTX, SCORPION, 'onAmbush');
+    assert.deepStrictEqual(blockedResults, []);
+    assert.equal(otherGroups.playerZones['0']!.discard.length, 0);
+    assert.equal(otherGroups.playerZones['1']!.discard.length, 0);
+    assert.deepStrictEqual(messageTexts(otherGroups), [
+      'Ambush effect: no other sinister-spider-foes Villain is in the City; no effect.',
+    ]);
+
+    const unselected = makeScorpionBoard(
+      [SCORPION, 'co2e-villain-sinister-spider-foes-green-goblin-01', null, null, null],
+      ['co2e/sinister-syndicate'],
+    );
+    executeVillainAbilities(unselected, CTX, SCORPION, 'onAmbush');
+    assert.equal(unselected.playerZones['0']!.discard.length, 0, 'fails closed');
+    assert.deepStrictEqual(messageTexts(unselected), [
+      "Ambush effect: the Villain's group is not among this match's Villain Groups; no effect.",
+    ]);
+  });
+
+  it('T15: the group is the LONGEST selected prefix of the card id', () => {
+    const eliteCard = 'test-villain-foes-elite-x-01' as CardExtId;
+    const G = makeG({
+      hooks: [descriptorHook(eliteCard, 'onAmbush', SCORPION_GATED)],
+      wounds: ['w0', 'w1'] as CardExtId[],
+      messages: [],
+    });
+    G.city = [eliteCard, 'test-villain-foes-y-01', null, null, null] as LegendaryGameState['city'];
+    G.selection = { villainGroupIds: ['test/foes', 'test/foes-elite'] } as unknown as LegendaryGameState['selection'];
+    executeVillainAbilities(G, CTX, eliteCard, 'onAmbush');
+    assert.equal(G.playerZones['0']!.discard.length, 0, 'a foes Villain is not another foes-elite Villain');
+    assert.deepStrictEqual(messageTexts(G), ['Ambush effect: no other foes-elite Villain is in the City; no effect.']);
+  });
+
+  it('T25: Juggernaut discards seat by seat from the current player, then clockwise (D-24780)', () => {
+    const cases: Array<{ ctx: unknown; expectedSeats: string[] }> = [
+      { ctx: { currentPlayer: '2' }, expectedSeats: ['2', '0'] },
+      { ctx: { currentPlayer: '1' }, expectedSeats: ['2', '0'] },
+      { ctx: {}, expectedSeats: ['0', '2'] },
+    ];
+    for (const testCase of cases) {
+      const G = makeJuggernautBoard();
+      executeVillainAbilities(G, testCase.ctx, JUGGERNAUT, 'onAmbush');
+      const loggedSeats = messageTexts(G).map((text) => text.split('Player ')[1]!.split(' ')[0]!);
+      assert.deepStrictEqual(loggedSeats, testCase.expectedSeats, `log order for ${JSON.stringify(testCase.ctx)}`);
+      assert.deepStrictEqual(
+        G.pendingReturnOnDiscard!.map((entry) => entry.playerID),
+        testCase.expectedSeats,
+        `reaction queue order for ${JSON.stringify(testCase.ctx)}`,
+      );
+    }
+  });
+});

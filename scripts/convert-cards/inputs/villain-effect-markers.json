@@ -90,13 +90,13 @@
     },
     "co2e": {
       "brotherhood-of-mutants": {
-        "juggernaut": { "fight": ["ko-hero:current:2"] },
-        "mystique": { "escape": ["become-scheme-twist"] },
+        "juggernaut": { "ambush": ["discard-hand-matching-hq-card-names-each-player", "hq-heroes-to-hero-deck-bottom"], "fight": ["ko-hero:current:2"] },
+        "mystique": { "ambush": ["discard-hero-each-player-by-trait:team:x-men"], "escape": ["become-scheme-twist"] },
         "sabretooth": { "ambush": ["reveal-or-wound:hc:instinct"], "escape": ["reveal-or-wound:hc:instinct"] }
       },
       "enemies-of-asgard": {
         "destroyer": { "ambush": ["ko-hero:each:1:discard:non-grey"], "fight": ["ko-up-to-from-discard-current:2:grey"], "escape": ["ko-hero:each:1:discard:non-grey"] },
-        "frost-giant-warrior": { "fight": ["ko-up-to-from-discard-current:1:grey"] },
+        "frost-giant-warrior": { "ambush": ["discard-hero-or-wound-each-player-by-trait:hc:ranged"], "fight": ["ko-up-to-from-discard-current:1:grey"] },
         "ymir-frost-giant-king": { "fight": ["ko-up-to-from-discard-current:1:grey"] }
       },
       "hydra": {
@@ -112,10 +112,11 @@
       "radiation": {
         "abomination": { "fight": ["gain-recruit-current-count-by-trait:hc:strength"] },
         "maestro-wasteland-hulk": { "fight": ["ko-heroes-current-count-by-trait:hc:strength"] },
+        "the-leader": { "ambush": ["play-villain-deck-cards:1:hc:strength"] },
         "zzzax": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
       },
       "sinister-spider-foes": {
-        "scorpion": { "fight": ["koHeroCurrentPlayer"] },
+        "scorpion": { "ambush": ["gain-wound:each!another-group-villain-in-city"], "fight": ["koHeroCurrentPlayer"] },
         "the-lizard": { "fight": ["ko-hero:current@sewers", "gain-wound:each-other@sewers"] }
       },
       "sinister-syndicate": {

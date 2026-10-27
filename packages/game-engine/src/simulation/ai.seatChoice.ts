@@ -52,6 +52,7 @@ import {
 import {
   ESCAPE_BYSTANDER_DISCARD_KIND,
   ESCAPE_EFFECT_COST_DISCARD_KIND,
+  VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
 } from '../villainDeck/villainEscapeProcedure.js';
 import { hasSeatSubmitted, isSeatAddressed } from '../moves/seatChoice.resolve.js';
 import { TIMESTREAM_PURGE_SEAT_CHOICE_KIND } from '../rules/timestreamPurge.logic.js';
@@ -139,6 +140,9 @@ function chooseByKind(
   // bot-ally discards its cheapest one (autoplay / sim / PAR take defaultOptionIndex 0).
   // WP-818 / D-24752: Fallen Idols is the same any-hand-card discard as Monarch's.
   // WP-821 / D-24754: so is Computer-Uploaded Genius.
+  // why: WP-837 / D-24770 — the trait discard lists eligible Heroes (and Frost Giant
+  // Warrior's Wound option, which has no cardId and is skipped), so the bot discards its
+  // cheapest listed Hero.
   // why: WP-829 / D-24762 — the bot Purges the least valuable HQ Hero (its whole Hero Name leaves
   // the HQ for the match), the same pick it makes for a discard.
   if (
@@ -146,6 +150,7 @@ function chooseByKind(
     choice.kind === MONARCHS_DISCARD_KIND ||
     choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND ||
     choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND ||
+    choice.kind === VILLAIN_EFFECT_TRAIT_DISCARD_KIND ||
     choice.kind === FALLEN_IDOLS_DISCARD_KIND ||
     choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND
   ) {

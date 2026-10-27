@@ -1644,12 +1644,39 @@ export interface PendingEnigmaPeekOffer {
  * escape procedure, one entry at a time, as an `escape-effect-cost-discard` seat
  * choice. Runtime-only, never persisted; lazily initialized at the park site and
  * deleted when it drains.
+ *
+ * WP-837 / D-24770 — Ambush-timed every-player trait discards (co2e Mystique, Frost
+ * Giant Warrior) ride the same FIFO with a `traitFilter` and `eligibleCosts: []`.
  */
 export interface PendingEscapeEffectDiscard {
-  /** The escaped Villain whose Escape effect owes the discard. */
+  /** The Villain whose Escape or Ambush effect owes the discard. */
   escapedCardId: CardExtId;
   /** The costs an eligible Hero may have (strictly ascending). */
   eligibleCosts: number[];
+  // why: D-24770 extends D-24750 point 9 to Ambush — one FIFO keeps rule order (an escape
+  // in the same reveal records first), and an entry without this field (Primus, or an
+  // in-flight state from before WP-837) routes to the cost builder exactly as before.
+  /** The Hero-trait filter of an every-player trait discard; absent on a cost discard. */
+  traitFilter?: PendingEffectDiscardTraitFilter;
+}
+
+/**
+ * The Hero-trait filter of an owed every-player discard (WP-837 / D-24770).
+ *
+ * `requireValue` is normalized (the `cardTraits` slug space). The two labels are log text
+ * set by the handler: the trait's display name and the timing label (`Ambush`).
+ */
+export interface PendingEffectDiscardTraitFilter {
+  /** The trait kind a discarded Hero must have. */
+  requireKind: 'team' | 'hero-class';
+  /** The normalized team or Hero Class slug. */
+  requireValue: string;
+  /** The trait's display label, e.g. `X-Men` or `Ranged`. */
+  requirementLabel: string;
+  /** The timing label of the effect that owes the discard, e.g. `Ambush`. */
+  effectLabel: string;
+  /** Whether a player may gain a Wound instead of discarding (Frost Giant Warrior). */
+  hasWoundAlternative: boolean;
 }
 
 /**

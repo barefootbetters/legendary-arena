@@ -320,3 +320,35 @@ describe('WP-821 choosePlayingSeatChoiceOption — Arnim Zola kinds (D-24754)', 
     assert.equal(choosePlayingSeatChoiceOption(dominate, '0'), 0, 'you gain the highest-cost Hero');
   });
 });
+
+import { VILLAIN_EFFECT_TRAIT_DISCARD_KIND } from '../villainDeck/villainEscapeProcedure.js';
+
+describe('WP-837 bot-ally pick for the every-player trait discard (D-24770)', () => {
+  it('T23: discards the cheapest listed Hero, never the Wound option', () => {
+    const G = makeState(
+      { '0': ['hero-cost5', 'hero-cost3'] },
+      {
+        cardStats: {
+          'hero-cost5': makeCardStatEntry({ cost: 5 }),
+          'hero-cost3': makeCardStatEntry({ cost: 3 }),
+        },
+      },
+    );
+    withChoice(G, {
+      kind: VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
+      addressedSeats: ['0'],
+      seatPrompts: {
+        '0': {
+          options: [
+            { label: 'hero-cost5', cardId: 'hero-cost5' },
+            { label: 'hero-cost3', cardId: 'hero-cost3' },
+            { label: 'Gain a Wound instead' },
+          ],
+        },
+      },
+      submissions: {},
+      defaultOptionIndex: 0,
+    } as PendingSeatChoice);
+    assert.equal(choosePlayingSeatChoiceOption(G, '0'), 1);
+  });
+});
