@@ -49708,7 +49708,7 @@ Protect this file.
 
 ### D-24780 — Order-sensitive each-player loops start with the current player and go clockwise (rules v23 L2247) (Active 2026-10-26 — WP-846 / EC-884)
 
-**Status:** Active 2026-10-26. Live-verify (D-24026) operator-pending: a `play.legendary-arena.com` multiplayer match created after the deploy where a per-seat-logging in-scope effect fires on a non-seat-0 turn (STATUS.md WP-846 entry).
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-27: operator match `N1hraIl46Jp` on server `22226287` (STATUS.md WP-846 entry): on Player 1's turn the core Loki Master Strike and the reveal-or-wound lines (Sabretooth Escape, Ymir Ambush) named Player 1 first; on Player 0's turns Player 0 stayed first.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). On seat 2's turn, an "each player gains a Wound" with one Wound left now wounds seat 2, not seat 0, and the per-seat log lines name players starting with seat 2. Flying Shield Block and return-on-discard prompts raised by one each-player effect come in the same current-player-first order. On seat 0's turn, and in every solo game, nothing changes.
 
