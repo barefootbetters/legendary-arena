@@ -43,10 +43,10 @@ jobs:
             ];
             if ([1, 4, 7, 10].includes(month)) {
               lines.push(
-                '- [ ] **Quarterly — full-service rebuild drill.** Follow',
-                '  `docs/ops/SERVER_REBUILD_RUNBOOK.md` end-to-end on the Ubuntu lab; the §6',
-                '  capability checklist (login → match → leaderboard → friendships → images →',
-                '  email → test-mode payments) to a binary PASS.',
+                '- [ ] **Quarterly — full-service rebuild drill.** Rebuild a throwaway droplet',
+                '  with `docs/ops/DISASTER_RECOVERY.md` §5 DR-02 "droplet lost", following §7',
+                '  "Running the quarterly rebuild drill" (production untouched, then torn down).',
+                '  Tick this box and **Drill passed** when it passes: the dashboard reads both.',
               );
             }
             if ([1, 7].includes(month)) {

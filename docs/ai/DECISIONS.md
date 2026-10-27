@@ -3399,6 +3399,8 @@ WP-026 and requires its own WP with architectural review.
 **Affected WPs:** WP-026, future City resize WP
 **Immutability:** Interim — future WP may convert CityZone to dynamic and enable
 `modifyCitySize` behavior.
+**Premise superseded:** D-24764 (WP-831, 2026-10-24) converted `CityZone` to a 1-6 space
+array. `modifyCitySize` stays an unwired no-op because no scheme sets a setup-time City size.
 
 ### D-2603 — Scheme Setup Builder Location (src/setup/)
 **Decision:** `buildSchemeSetupInstructions.ts` lives in
@@ -44028,6 +44030,8 @@ audience-filter redaction matrix), D-24372 (the built-projection keyset-pin requ
 
 ### D-24562 — Play to the Crowd: standalone `perEach` + a digest-scoped doubled-condition count (Active 2026-09-22 — WP-740 / EC-777)
 
+**Amended by D-24563 (2026-10-23, WP-741):** lock 1 and lock 4's evaluator-untouched clause are superseded by D-24563; lock 5 is narrowed to mixed distinct-icon lines. Lock 4's "never persisted" is corrected: match blobs persist setup-time hooks (D-24095).
+
 Un-defers the D-24555 §5 hollow on `vnom/venompool/play-to-the-crowd`. Live Dr. Doom / Legacy Virus 2p,
 turn 30: the card granted a flat +1 (its Digest line's `+1[icon:attack]` parsed unfused) and logged a
 parse-unrecognized Indigestion. The faithful result was **+2**: Victory Pile 10 cards / 4 Bystanders,
@@ -44818,6 +44822,8 @@ Server suite after `pnpm -r build`: 1619 tests / 1414 pass / 0 fail / 205 skippe
 ---
 
 ### D-24598 — Sunlight / Moonlight: the day-night rule, gated hero lines, the `day-night-both` fusion, and hero Blood Frenzy on a shared helper (Active 2026-09-25 — WP-765 / EC-802)
+
+**Amended by D-24563 (2026-10-23, WP-741):** Nanite's descriptor count of 4 is superseded by `bothCondition.requiredMatches` 4.
 
 **Status:** Active — landed 2026-09-25 (WP-765 / EC-802). The client badge is WP-766 / EC-803.
 
@@ -45748,6 +45754,8 @@ A sentence that only *mentions* a recruit keyword ("All Heroes you recruit this 
 **Reserved by:** NUMBER-LEDGER D-24626. Related: D-24034 (WP-257 records), WP-258 / EC-289 (panel), D-24618, D-24623, D-24624.
 
 ### D-24628 — A `[team:X]` in the body after an explicit gate prefix is descriptive, not a play gate; two unmodeled conditional grants become honest hollows (Active 2026-09-27 — direct fix, no WP; extends the D-24470 / D-24498 / D-24530 descriptive-token suppression)
+
+**Amended by D-24563 (2026-10-23, WP-741):** Reassign to Civilian Duty keeps one count-3 gate after the D-24563 collapse; its body token stays dropped.
 
 **Status:** Active — landed 2026-09-27 (direct fix; parser Step 1b plus a conditional-grant suppression in `packages/game-engine/src/setup/heroAbility.setup.ts`).
 
@@ -46971,6 +46979,14 @@ Against the old source, 4 cases fail.
 
 **Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` all green (game-engine 5019, server 1462, arena-client 2297, dashboard 571, registry-viewer 326, registry 281, legends-board 135, lagn-spec 107, preplan 52, engine-runner 20, vue-sfc-loader 11, replay-producer 4; 0 fail). `sim:coverage --check` OK; `sim:runtime-observed:check` current; `ledger:heroes:check` and `effect-index:check` current.
 
+**Amendment (2026-10-19): every wound source.** §2 left "other wound sources" on "gained". Match `P9oVujYd2B9` (core Loki) logged "[Loki Master Strike] Player 0 has no Strength Hero in hand and gained a Wound." at 1.2.16; Diving Block prevented it at 1.2.19 and Player 0 ended with 0 Wounds. Every log line for a Wound that parks a Diving Block interception now says "would gain … Diving Block can prevent it", and keeps "gained" when nothing can be revealed:
+- new `gainWoundWithOutcome` (`board/wounds.logic.ts`) wraps the chokepoint and returns `'no-wound' | 'gained' | 'diving-block-pending'`;
+- the Loki, Magneto (co2e) and Doctor Doom (co2e) Master Strikes, the conditional Scheme Twist wound, Crushing Shockwave, the hero `gain-wound-self` / `gain-wound-each` line, and the villain reveal-or-wound (Sabretooth, Frost Giant, Ymir, Ultron, Zzzax), each-other and victory-group lines use it;
+- multi-player lines name each side through `composeWoundOutcomeClause` ("Player 0 gained a Wound; Player 1 would gain a Wound — Diving Block can prevent it");
+- the keyword-labelled `gainWoundEachPlayer` / `gainWoundCurrentPlayer` clause gets an optional `woundOutcomes` split, set only when a reveal is pending.
+
+Lines with no Diving Block reveal pending are byte-identical. `G.messages` is hash-excluded (D-24081); the `notableEvents` narrative changes only when a keyword gain-wound parks a reveal, which no recorded fixture does, so nothing re-pins.
+
 **Reserved by:** NUMBER-LEDGER D-24673. Amends D-24499 §1 (the one-copy-per-Wound cap) and D-24651 §3 (which deferred it). Related: D-24529 (the hand + play reading of "Heroes you have"), WP-684 (seat-choice waves), D-24026 (the live session that surfaced it).
 
 ---
@@ -47127,6 +47143,8 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5030 → 5031, server 1678, arena-client 2298); `sim:runtime-observed:check` current; no generated-artifact churn.
 
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `SdnvQA0P4Zj` (server build `85771ab6`), 2p with a bot ally, Loki / Portals to the Dark Dimension, Final Blow on. Player 0 emptied the City (9.2.3–9.2.12) with 12 S.H.I.E.L.D. Heroes in the KO pile against Loki's 11. Pure Fury then defeated Loki on its own, with no prompt (9.2.14), taking Vanishing Illusions (9.2.15). The bot ally KO'd HYDRA Kidnappers from its Victory Pile (9.2.16–9.2.17), and the game went on to turn 10 with no bot stall. Silent Sniper shares the same one-target path; its own multi-seat case wasn't exercised.
+
 **Reserved by:** NUMBER-LEDGER D-24681. Related: D-24511 / WP-694 (multi-seat tactics), D-24593 (bot-ally seat choice), D-24501 / WP-684 (seat choice), D-24291 / WP-486 (Silent Sniper), D-24499 / WP-682 (Pure Fury), D-24026 (the live session that surfaced it).
 
 ---
@@ -47234,6 +47252,8 @@ A new `describeRevealRequirement` title-cases the slug, with a small map for tea
 **Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5038 → 5041).
 
 **Live-verify (D-24026):** pending. A game where a reveal-or-Wound villain fires after the Wound supply runs out. Cosmic Cube can empty it (`sDBnFxiigDL`, `ZVUtr7aaCom`) but often doesn't: three later Cosmic Cube games (including `mAmjZ9Cm9L9` and `xGw-94HDhBj`) never ran it out, and `Cq_czI1TQH0` ended with 20 Wounds left.
+
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye), with the Wound supply set to 0 by the operator setter (2.2.1). Frost Giant's Fight logged "the Wound supply is empty, so no Wound was gained (Player 1 had no Ranged Hero)" (8.2.10) and, with neither player holding a Ranged Hero, "(Player 0, Player 1 had no Ranged Hero)" (9.2.12); again at 20.2.14. Loki's Master Strike logged "has no Strength Hero in hand and the Wound supply is empty — no effect" for both seats (5.1.1–5.1.2).
 
 **Reserved by:** NUMBER-LEDGER D-24686. Related: D-24281 / WP-469 (reveal-or-wound), D-24299 / WP-494 (the Victory-Pile variant), D-24679 (naming the trait checked), D-24683 (player attribution), D-24026.
 
@@ -47570,6 +47590,8 @@ Answers the six open questions on `wiki/why-play-needs-a-debug-panel.md` and con
 ---
 
 ### D-24692 — Man / Woman Out of Time: set the card aside, replay it on the next start → main advance, then discard it (WP-803 / EC-840) (Active 2026-10-12)
+
+**Lock 10 amended by D-24563 (2026-10-23, WP-741):** Sniper Squad and Reshape Reality now need 4 / 2 other cards.
 
 **Context.** Legendary's **Man (and Woman) Out of Time** (rules v23 L1667-1694, rulebook p.29): "After you use this card's abilities, set it aside. At the beginning of your next turn, play this card a second time and then discard it." The returning card is played "after the 'Play a Villain Card' part of your turn and before you start playing out your hand" (L1678), counts as played on both turns (L1682), can never go Out of Time a third time (L1674), and a copy can't use it (L1689). Before this decision the token matched no parser arm, so all 16 printed hero lines (14 self-keyword lines plus Winter Soldier's two "2>4" grant lines) recorded `parse-unrecognized` hollows on every play (`runtime-observed-hollows.json`: `man-out-of-time` 77, `woman-out-of-time` 66, `man/woman-out-of-time` 28), and the hero ledger's six `out-of-time` rows read `unsupported`.
 
@@ -47980,6 +48002,1804 @@ and the hero-deck / HQ question).
 
 **Reserved by:** NUMBER-LEDGER D-24713 (#2765). Related: D-24689, D-24026, D-24119, D-24160, D-10008, D-24697, D-24372.
 
+### D-24719 — A reaped finished match is served from its replay artifact; capture stores the verdict; a harvester sweep fills older artifacts (Active 2026-10-14 — WP-811 / EC-848)
+
+**Bug.** `readMatchConfigurationForLagn` and `readMatchGameover` read only the live `bgio.matches` row. The WP-327 reaper
+(D-24113) deletes a finished match's row once it is 1 hour past its last write and captured. So `GET
+/api/match/:matchId/lagn`, `/result-lagn` and `/seat-identities` returned `404` for every match that ended more than about an
+hour ago: the WP-407 Hall of Legends match view, the WP-408 download, shared `?lagn=` links and a late-opened report card's
+seat names all died. Prod evidence (2026-10-14, gitSha `44724482`): guest autoplay match `MAYLMfB1PM9` returned `200` with
+`result.outcome: "victory"` at 11:09–11:19 UTC and was confirmed reaped at 12:14 UTC.
+
+1. **Reader fallback, live row first.** Only when the live row is absent, the readers query `bgio.replay_artifacts`
+   `WHERE match_id = $1 LIMIT 1` (one artifact per finished match). Configuration comes from the artifact's `initial_state`,
+   byte-identical to the live row's, through the one `projectConfigurationForLagn`, so the two objects are identical and any
+   gate keyed on them (#2779 / #2780 `isDebugMatch`) holds after the reap. A live row with a null `initial_state` stays
+   `null`, and a live in-progress match stays `match_not_finished`; neither falls back. A match in neither store is still the
+   fail-closed `404`. The fallback never reads the artifact `log`.
+2. **Capture-time verdict.** Migration 046 adds `bgio.replay_artifacts.gameover` (jsonb, nullable) plus a `match_id` index
+   and a partial index on `gameover IS NULL`. The capture INSERT copies the live row's `metadata.gameover`
+   (`serializeStoredGameover`). An artifact whose `gameover` is SQL `NULL` reads as `VERDICT_NOT_RECORDED` (`{}`): finished,
+   outcome unknown. It is never `null`, because the routes map `null` to `match_not_finished` and an artifact exists only for
+   a finished match; `toLagnResult` omits the `result` block for it.
+3. **Harvester sweep.** Each capture-harvester scan, after its capture loop, runs `fillMissingArtifactGameovers` on at most
+   `ARTIFACT_GAMEOVER_SWEEP_BATCH_SIZE = 5` rows with `gameover IS NULL`. Each is re-executed through the D-24119 reducer; the
+   stored verdict is `evaluateEndgame` of the final `G` (the value the live top-level `endIf` returned) **only** when the
+   reproduced `stateHash` equals the row's `replay_hash`. A hash mismatch (today's engine no longer reproduces the capture)
+   or a throwing reduction (pure, so it would repeat every scan) stores `{}` with a full-sentence error. The UPDATE is
+   guarded (`WHERE replay_hash = $1 AND gameover IS NULL`), so a stored verdict is never overwritten, and filled rows are
+   counted by `rowCount`. A failed sweep is logged and swallowed; the rows stay `NULL` and the next scan retries. The
+   mismatch count is recorded after the backlog drains (live-verify, below).
+4. **Carve-out amendments, no new carve-out.** ARCHITECTURE §Persistence Boundary and `.claude/rules/architecture.md`
+   amend three clauses in place: D-24153 reads the same fields from the artifact once the live row is reaped; D-24169 names
+   the `metadata.gameover` read (or its artifact copy) as the finished-match gate and outcome of the WP-406 result LAGN and
+   `/seat-identities`; D-24119 adds deriving a captured artifact's verdict into `bgio.replay_artifacts.gameover`. The
+   carve-out count is unchanged, so WP-810's D-24716 count is unaffected. The `gameover` column is a **D-24122 artifact-store
+   write**, like `replay_hash` and `scenario_key`; the D-24119 "never written back" wording is narrowed to `bgio.matches`.
+   Nothing writes `bgio.matches` or `legendary.*`, and nothing scored, purchased or ranked reads the column.
+5. **D-24122 wording widened.** D-24122 describes the artifact store as read by the server replay pipeline. Guest routes now
+   read it too, for a finished match's setup and verdict only.
+6. **`/seat-identities` is the third affected route.** It calls the same two readers, so a reaped, captured match now
+   returns its roster. It is the same privacy surface as `/result-lagn` (D-24214 claimed handles only), so there is no new
+   exposure; a finished match's public record now lasts as long as its artifact, which is the intended Hall of Legends
+   behavior.
+7. **Display gap and operator decision.** legends-board `formatOutcome` labels any document without `result` as "Draw", so an
+   unknown outcome (an unswept legacy row, or a stored `{}`) shows "Draw" on the Hall of Legends. Jeff kept the WP's default:
+   ship the server fix, serve the outcome-less result, and fix the label in a follow-up. The follow-up is WP-812 / EC-849 /
+   D-24720 (reserved #2787), which makes the envelope say why `result` is absent so the board shows "Outcome not recorded".
+   The alternative, `404` for an unknown verdict, was rejected: legacy matches would lose their view and the route mapping
+   would change. **Follow-up done 2026-10-14 (WP-812 / D-24720):** the board says "Outcome not recorded" for an unknown
+   outcome, "Ended early" for an early end, and "Draw" only for a tie.
+8. **Rejected alternatives.** Re-executing the artifact on every `/result-lagn` GET (a full reduction on a guest path
+   blocks the event loop for live sockets); re-executing on read for legacy rows only (the same cost on the same path); a
+   one-time operator backfill script (a manual prod write; the sweep needs no operator step and is idempotent); a longer
+   reaper grace (delays the `404`, grows `bgio.matches`); `match_not_finished` for a legacy artifact (false); trusting any
+   re-derived verdict (could publish Victory for a lost match).
+9. **Exclusions.** Matches never captured (finished before WP-335, or abandoned without gameover) have no artifact and stay
+   `404`. Two matches with byte-identical final `G` share one artifact row (`ON CONFLICT DO NOTHING`), so the second has no
+   artifact; distinct seeds make this practically impossible and it is not addressed.
+10. **Legacy backlog.** Every artifact captured before 046 starts with `gameover IS NULL`. Prod (droplet database `la`,
+    read-only, run by the operator 2026-10-14): **537** artifacts were captured before the 046 deploy (14:03 UTC), all
+    `NULL` at deploy. The drain is (537 ÷ 5) scans at 5 minutes each, about 9 hours, so it clears around 23:00 UTC.
+
+**Live-verify (D-24026): CONFIRMED for serving. The legacy drain was cut short by the cleanup below.** Deploy `4f970023` went live at
+~14:03 UTC on 2026-10-14 and migration 046 applied; the build later moved to `84c3ac69` (WP-812), with no engine change in
+between.
+- **Reaped legacy match `MAYLMfB1PM9`** (captured at `44724482`, reaped 12:14 UTC). At 14:00 UTC, before the deploy,
+  `/lagn`, `/result-lagn` and `/seat-identities` each returned `404`, and the Hall of Legends showed "No result to show —
+  this match is unknown or still in progress". After the deploy all three returned `200`: a valid LAGN 1.6.0 document
+  (Midtown Bank Robbery, 1 player) without `result`, and a one-seat roster. The Hall of Legends then showed **DRAW** with
+  the roster and download (the §7 gap), and **OUTCOME NOT RECORDED** once WP-812 shipped (`resultOmittedReason:
+  "unknown"`). At 18:30 UTC its row was still unswept. It was captured last, so it is swept last; its `result.outcome` is
+  recorded when the drain completes.
+- **Fresh match `9W06xYZc3MM`** (guest autoplay, game over ~14:04:48 UTC, captured 14:10:26 with its verdict copied). At
+  16:18 UTC, 133 minutes after game over and past the reap window, all three endpoints returned `200`, and `/result-lagn`
+  carried `result.outcome: "victory"`. The Hall of Legends showed **VICTORY** with the roster. "Download this match as
+  LAGN" built `match-9W06xYZc3MM.lagn.json` (1011 bytes, LAGN 1.6.0, `outcome: victory`), captured in the page rather
+  than saved to disk.
+- **Sweep behavior** (operator read, ~18:30 UTC). 195 rows swept, **all 195 stored `{}`**, captured 2026-07-24 to
+  2026-09-09. `la-server` logged 195 "no longer reproduces" lines, 0 "Could not re-derive" and 0 failed sweeps, plus
+  39 "Recorded the endgame verdict on 5" lines (39 scans × 5). So every mismatch so far is engine drift on old captures,
+  which the §3 hash check refuses by design, not a sweep fault. 342 rows were still unswept (captured 2026-08-21 to
+  2026-10-14), and 1 row held a capture-time verdict (`9W06xYZc3MM`). Most of the pre-046 history is therefore expected
+  to stay "Outcome not recorded"; rows captured on the current engine (since `44724482`) should reproduce. The final
+  `'{}'` count and `MAYLMfB1PM9`'s outcome were never recorded: the cleanup below removed the backlog first.
+
+**One-time test-data cleanup (operator, 2026-10-15 ~01:10 UTC).** Jeff confirmed that every pre-046 capture was test
+data. In one transaction (read-only dry run first, abort unless exactly 537 rows matched), the operator deleted every
+artifact captured before the 046 deploy (`captured_at < 2026-10-14 14:03 UTC`), together with each row pointing at one:
+
+| Rows deleted | Count |
+|---|---|
+| `bgio.replay_artifacts` | 537 of 541 |
+| `legendary.competitive_scores` (by `replay_hash`) | 239 |
+| `legendary.player_badges` (`source_kind = 'competitive_score'`, sourced from those scores) | 413 |
+| `legendary.replay_ownership` | 541 |
+| `legendary.coach_reports` | 16 |
+| `legendary.replay_blobs` | 0 |
+
+- **Afterwards:** 4 artifacts remain, all captured after the deploy (among them `9W06xYZc3MM`, still `200`); none
+  predates 046. `MAYLMfB1PM9` is back to `404` on all three routes because it has no artifact, the fail-closed
+  never-captured case of §9.
+- **Left in place:** history and veteran badges (`source_kind = 'competitive_history'`, no single source score);
+  `legendary.match_seat_accounts` and `battle_plan` rows, which are keyed by match id and unread without an artifact; and
+  the published legends leaderboards until the publisher's next run.
+- **What it supersedes:** this is a deliberate operator deletion. It supersedes, for these rows only, D-24122's "kept
+  forever" and the data docs' "never deleted"; no code path deletes artifacts.
+- **The sweep after the cleanup:** it has no legacy rows left to sweep. Every artifact now carries its verdict from
+  capture, so the §3 sweep is a no-op until an old row reappears.
+
+**Reserved by:** NUMBER-LEDGER D-24719 (#2785). Related: D-24095, D-24113, D-24119, D-24122, D-24124, D-24153, D-24169,
+D-24187, D-24214, D-24216, D-24223, D-24716, D-24717, D-24718, D-24720, D-11804, D-24026.
+
 ---
 
+### D-24720 — The `/result-lagn` envelope names why `result` is omitted; the Hall of Legends says "Draw" only for a tie (Active 2026-10-14 — WP-812 / EC-849)
+
+**Problem.** LAGN has no tie outcome, so `toLagnResult` omits the optional `result` block for every non-decisive verdict,
+and legends-board `formatOutcome` (written for the D-24159 deck-exhaustion tie) labelled every outcome-less match "Draw".
+That was already wrong for a match the players ended early: `evaluateEndgame` stores it as `{ outcome: 'tie', endedEarly:
+true }` (D-24306), and the arena-client calls it "Match ended early". WP-811 (D-24719 §7) added a third case, a finished
+match whose verdict is unknown (`VERDICT_NOT_RECORDED` for an unswept legacy artifact, or a stored `{}` for a hash
+mismatch), which would also read "Draw" and may be false.
+
+1. **Envelope field.** The `/result-lagn` 200 body gains the optional `resultOmittedReason: 'tie' | 'ended-early' |
+   'unknown'` beside `lagn`, never inside it. It is present exactly when `lagn.result` is omitted, so a decisive match's
+   body stays `{ lagn }`. Errors, auth (`guest`), `Cache-Control` and `lagn_version` are unchanged.
+2. **Server mapping.** `toResultOmittedReason(gameover)` calls `toLagnResult` (decisive → `undefined`), then
+   `endedEarly === true` → `'ended-early'`, then `outcome === 'tie'` → `'tie'`, else `'unknown'`. `endedEarly` wins over the
+   `'tie'` string; a decisive verdict wins over the flag. It maps the stored verdict the route already holds: no new
+   query, no carve-out, no engine import in production code. `StoredGameover` gains `endedEarly?`.
+3. **Client rule.** `formatOutcome(result, resultOmittedReason)` (second parameter required): Victory / Defeat from a
+   decisive `result`; "Draw" only for `'tie'`; "Ended early" only for `'ended-early'`; "Outcome not recorded" for
+   `'unknown'`, a missing reason, or any reason the client does not recognize. The default is the honest one, so either
+   deploy order is safe: an old client ignores the field; a new client against an old server shows "Outcome not recorded"
+   for a tie or an early end (less specific, never false).
+4. **D-24217 widened.** The Hall of Legends match view now reads one non-identity field beside `lagn`. The identity
+   boundary D-24217 protects is unchanged: the view still reads only the public handles WP-406 emits.
+5. **The download is unchanged.** WP-408 saves `body.lagn` only, so a downloaded document without `result` stays
+   ambiguous between a tie, an early end and an unknown outcome, as before. That is an omission, not a false claim.
+6. **Rejected alternatives.** A LAGN `draw` outcome or `result_status` field (a 1.8.0 bump, since WP-808 / WP-810 claim
+   1.7.0, plus a version gate, a `lagn-v1.json` regen, a writer flip shared with the loadout emitter and the public
+   snapshot — revisit when a LAGN consumer outside the Hall of Legends needs the distinction); a client-only "Outcome not
+   recorded" for every outcome-less match (a real tie loses "Draw"); keeping "Draw" (can be false); `404` for an unknown
+   verdict (rejected in D-24719); folding an early end into `'unknown'` (the outcome is known); an always-present status
+   field (duplicates `result.outcome` and changes every decisive body).
+7. **Evidence.** server 1790 → 1797 / 0 fail / 207 skipped (logic +5, route +2, two route tests strengthened, including
+   WP-811's no-seam legacy-artifact test, which now asserts `'unknown'` through the real `VERDICT_NOT_RECORDED` path);
+   legends-board 135 → 138 / 0 fail; legends-board typecheck 0. The tie and ended-early logic tests build their verdicts
+   with the engine's own `evaluateEndgame`. Twelve mutants, each killed (fail counts 3 / 4 / 3 / 4 / 1 / 2 / 1 / 1 / 2 /
+   1 / 1 / 1, in WP-812 AC 7 order).
+
+**Live-verify (D-24026): pending.** After both deploys (server `GET /version` gitSha = the merge commit, and the
+legends-board Pages build): a decisive match's body keys are exactly `["lagn"]`; an unknown-outcome artifact returns
+`"unknown"` and the board shows "Outcome not recorded"; a non-early tie, if one exists, returns `"tie"` and shows "Draw";
+a fresh guest match ended with "End Game" returns `"ended-early"` and shows "Ended early". Prod SQL goes to Jeff.
+
+**Reserved by:** NUMBER-LEDGER D-24720 (#2787). Related: D-24159, D-24306, D-24216, D-24217, D-24218, D-24719, D-11804,
+D-24026.
+
+---
+
+### D-24717 — The result LAGN refuses an operator match; the setup LAGN stays open (direct fix, no WP) (Active 2026-10-14)
+
+**Context.** An operator match (WP-802 / D-24689) is an admin test board: the operator can set counts, move cards and end the match at will, and D-24689 §3 keeps it off every score surface. But `GET /api/match/:matchId/result-lagn` (WP-406, guest-readable) had no `isDebugMatch` check, so once an operator match finished, its result LAGN was served like any real game's. The public Legends board (`apps/legends-board`) reads that endpoint. `GET /api/match/:matchId/lagn` had no check either.
+
+**Decision.**
+1. `result-lagn` refuses an operator match with `404 { error: 'not_found' }`, the same response as an unknown or unprojectable match, so the endpoint is no oracle for which matches are operator matches. The check runs right after the projectability gate and before the finished-match gate and every roster, plan and score read.
+2. The flag is read as `matchConfiguration.isDebugMatch === true` from `initial_state`. `Game.setup()` stores the whole payload as `G.matchConfiguration`, and only the admin operator create route can set the key (D-24689), so it is present exactly when `G.isDebugMatch` is. The read stays inside the **D-24153** carve-out (`initialState.G.matchConfiguration`), the D-24658 `finalBlow` precedent; it does not use the D-24689 live-`state` carve-out. `MatchLagnComposition` gains the optional `isDebugMatch` field for this read only. It is never projected into LAGN.
+3. **The setup route stays open.** `GET /api/match/:matchId/lagn` still serves an operator match. The in-match Battle Brief (D-24658) and the View loadout button read it, and a 404 would leave the operator with "lineup unavailable" and a failing button. The setup LAGN carries no player identity and no result, so serving it exposes nothing that the operator match's own board does not.
+4. The `api-endpoints.md` row for `result-lagn` is replaced whole (D-11804).
+
+**Gates.** `pnpm -r build` 0. Server suite 1770 tests, 0 fail (207 skipped: the DB-backed cases, no `TEST_DATABASE_URL`). `matchLagn.routes.test.ts` 17 / 0 (+3: a finished operator match gets the unknown-match 404 with no gameover or roster read; a match whose `isDebugMatch` is not a strict `true` is still served; the setup route still serves an operator match and the document carries no flag). The first case was revert-proofed: it fails with the gate removed. No engine change, no UIState field, no re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24717. Related: WP-802 / D-24689 (operator match), WP-406 / D-24216 (result-LAGN producer), WP-361 / D-24153 (match LAGN projection and blob-read carve-out), D-24446 (public read), D-24658 (Battle Brief reads the setup LAGN), D-11804 (catalog row semantics).
+
+---
+
+### D-24718 — Seat identities refuse an operator match too (direct fix, no WP) (Active 2026-10-14)
+
+**Context.** D-24717 closed `GET /api/match/:matchId/result-lagn` to operator matches (WP-802 / D-24689). Its guest-readable sibling `GET /api/match/:matchId/seat-identities` (the endgame seat-name roster) still served a finished operator match's per-seat handles and bot flags.
+
+**Decision.**
+1. `seat-identities` refuses an operator match with `404 { error: 'match_not_found' }`, the same response as an unknown or unprojectable match, so it is no oracle for which matches are operator matches. The check runs right after the projectability gate, before the finished-match gate and the roster read.
+2. The flag is read as `matchConfiguration.isDebugMatch === true` inside the **D-24153** carve-out, exactly as D-24717 reads it.
+3. **Accepted cost.** The operator's own endgame co-op recap labels seats as plain "Player N" (the composable's existing fallback for a failed read). Nothing else consumes the roster in an operator match: the score submit returns `operator-match` before the D-24630 expired-session check that reads it.
+4. The `api-endpoints.md` row for `seat-identities` is replaced whole (D-11804).
+
+**Gates.** Server suite 1772 tests, 0 fail (207 skipped: the DB-backed cases, no `TEST_DATABASE_URL`). `seatIdentities.routes.test.ts` 8 / 0 (+2: a finished operator match gets the unknown-match 404 with no gameover or roster read, revert-proofed to fail without the gate; a match whose `isDebugMatch` is not a strict `true` is still served). No engine change, no UIState field, no re-pin.
+
+**Reserved by:** NUMBER-LEDGER D-24718. Related: D-24717 (result-lagn refusal, extended here), WP-802 / D-24689 (operator match), D-24402 (the `seatIdentities` projection), D-24630 (expired-session check), D-24153 (blob-read carve-out), D-24169 (finished-match gate), D-11804 (catalog row semantics).
+
+---
+
+### D-24715 — Match seeds are minted from crypto on the server and never sent to clients (Active 2026-10-14 — WP-809 / EC-846)
+
+**Problem.** Two leaks let anyone foresee a live match's cards: villain deck, hero deck and HQ refills, every
+draw pile.
+
+1. **The seed was guessable.** `LegendaryGame` defines no `seed`, so boardgame.io 0.50.2 seeded every match with
+   `Date.now().toString(36)`. The lobby API returns match metadata to anyone (`createClientMatchData` strips only
+   credentials), and its `createdAt` is stamped by `Date.now()` a fraction of a millisecond before the seed.
+   - Draft PoC on the real `createMatch`: 296/300 seeds equalled `base36(createdAt)` and 4/300 were +1 ms.
+   - The repo and the card data are public, so the first guess reproduced each match's full initial `G` in about
+     7 ms.
+   - Even without `createdAt`, a ±60 s guess is about 120k candidates, roughly 15 single-core minutes.
+2. **The seed was sent to clients.** boardgame.io's socket `sync` answer is
+   `{ state, log, filteredMetadata, initialState }`. Its player-view filter redacts `state` and `log` but passes
+   `initialState` (the seed and the unfiltered initial `G`) through raw, to any socket, spectators with no
+   credentials included.
+
+The harm lands on the scored boards (PAR, Gauntlet, competition). Replay verification proves every move was
+legal; it cannot detect foreknowledge.
+
+**Decision.**
+
+1. **The seed seam.** `apps/server/src/game/matchSeed.mjs` builds `serverLegendaryGame`, the processed
+   `LegendaryGame`, and gives it a `seed` getter that returns `randomBytes(16).toString('hex')` (128 bits,
+   `/^[0-9a-f]{32}$/`) on every read.
+   - boardgame.io 0.50 has no per-match seed hook, but its random plugin reads `game.seed` exactly once per
+     `InitializeGame`.
+   - The getter must sit on the processed object. Game processing copies an unprocessed game, which would read
+     the getter once and freeze one value; `Server()` and `Master` pass an already-processed game through
+     unchanged.
+2. **The redaction.** `apps/server/src/game/syncRedaction.mjs` is a namespace middleware (the D-24701 shape)
+   that wraps each socket's `emit` and deletes `initialState` from every outgoing `sync` frame.
+   - `sync` is only ever sent through the requesting socket's `emit`. `patch` and `update` are built from
+     filtered state, and `matchData` is credential-stripped.
+   - It deletes one key from a framework frame and never reads or interprets the match blob, so it needs no
+     D-24095 carve-out.
+   - The client only stores the field for `getInitialState()`. The arena-client never reads it, and
+     boardgame.io's dev-only Debug panel log rewind loses its baseline on multiplayer matches (expected, not a
+     regression).
+3. **One object everywhere.** `server.mjs` hands `serverLegendaryGame` to `Server({ games })`, the D-24701 guard
+   and the redaction. Bot-ally (two sites) and autoplay use it for their `Master` move submission. No other game
+   processing of `LegendaryGame` remains in non-test `apps/server/src` (grep-gated).
+4. **The bare-copy hazard.** A copy of `serverLegendaryGame` that does not set its own `seed` freezes one random
+   value. A caller that needs a specific seed (replay, a future seed challenge) sets `seed` in the copy, and a
+   pinned seed reproduces a board exactly.
+5. **Determinism and replay unchanged.** The seed is still persisted at
+   `initialState.plugins.random.data.seed`. Replay, capture, the competitive verifier and the coach re-run the
+   persisted `initialState + log` (D-24119). The engine, the PRNG and every hash oracle are untouched.
+6. **Rejected alternatives.**
+   - A static `seed` on `LegendaryGame`: every match would share it.
+   - A getter on `LegendaryGame` itself: frozen by processing.
+   - Koa middleware that sets `game.seed` per request: `koaBody()` awaits before `createMatch`, so concurrent
+     creates race.
+   - `pnpm patch` of `Random.seed()`: vendored dist edits that survive upgrades badly.
+   - Hiding or coarsening `createdAt`: the blind search still works, and the lobby and D-24169 read it.
+   - A custom random plugin: plugin `setup` never sees `setupData`.
+   - Splitting the two fixes into two packets: neither alone closes foreseeability.
+7. **Seed challenges.** DESIGN-SEED-CHALLENGES §7(a) is corrected.
+   - A challenge create path calls `createMatch` over a copy of `serverLegendaryGame` with the challenge seed set,
+     then stores the result itself.
+   - A seed must never ride on `setupData`, because `createMetadata` copies `setupData` into public metadata.
+8. **Matches live at deploy** keep their clock seeds until they end. After the deploy, the redaction stops sending
+   those seeds, so only the `createdAt` guess remains for them.
+9. **WP-808 / WP-810.** Their drafted text says today's seed is `Date.now()`-derived. This decision supersedes
+   that premise, and their executors reconcile it. D-24714's completed-matches-only seed export becomes the real
+   protection for live matches, not defense in depth.
+10. **API catalog.** The `POST /games/legendary-arena/create` row's seed sentence also covers `playAgain`, which
+    creates through the same game object; both rows were replaced whole (D-11804).
+
+**Evidence.**
+- Server tests: 1814 → 1828, 0 fail, 207 DB-gated skips (+6 seed, +6 redaction, +2 wiring). The only existing
+  assertion changed is the D-24701 pinned string.
+- Revert proofs: 4/4, and the copilot's drop-`log` redaction mutant fails 3 tests.
+- Both grep gates exact.
+- Draft-time gates: pre-flight READY (round 2; round 1 found the `sync` leak), copilot PASS / CONFIRM (round 3),
+  lint PASS 21/21 (round 3). Delta pre-flight at `a5db28d0`: still READY.
+
+**Live-verify (D-24026): CONFIRMED 2026-10-15** on deploy `2cb9dff7`.
+1. **Spectator `sync`** (`UYVSIucbDVQ`, a "Watch Bot Play" match, no seat): the frame's keys are exactly
+   `filteredMetadata` / `log` / `state`. It has no `initialState` and no seed anywhere.
+2. **Seated `sync`** (`OdlQCwboMW5`, guest solo, seat 0): the same three keys, and the state is delivered.
+3. **Seated moves:** `setPlayerReady` then `startMatchIfReady` committed (stateID 0 → 1 → 2, lobby → play). Neither
+   update frame carried `initialState`.
+4. **Method:** the frames were read with a socket client against production. That is the same `sync` frame a
+   browser receives; no DevTools capture was taken.
+5. **Seeds:** Jeff's read-only query on the droplet found `939aba92e00a2ac1a9682d386f3830b7` and
+   `0f2a2b593bc8e94b74f356e0a229151c`. Both are 32 hex characters and they differ. Neither resembles the clock seed
+   its `createdAt` would have produced (`mv8xqz54`, `mv8xqzj1`).
+
+**Reserved by:** NUMBER-LEDGER D-24715 (#2777). Related: D-24119, D-24094, D-24689 §2, D-24701, D-24095, D-24714,
+D-24169, D-11804, D-24026.
+
+---
+
+### D-24722 — "Play this loadout" launches a saved loadout directly through the launch primitive; the lobby readers carry the opaque `lagn` (Active 2026-10-14 — WP-303 / EC-851)
+
+"Play this loadout" on a profile Saved Loadouts row launches a match directly through `launchMatchFromComposition`
+(D-24268), with no lobby hand-off. The row's opaque `lagn` reaches the launch through the lobby's existing hand-rolled
+reader pair (`convertLagnUpload` → `parseLoadoutJson`). This narrowly refines D-24087 for the launch path only:
+- arena-client still imports no LAGN validator and sends `lagn` verbatim on writes;
+- the server stays the LAGN validation authority, and `Game.setup()` the ext_id authority;
+- no new server read is added.
+
+The seat name is the owner view's `displayName`, falling back to `handleCanonical` (the D-24269 precedent). This
+refinement licenses no client-side LAGN interpretation beyond launch: grouping by mastermind, the won/lost join, and the
+showcase stay server-side reads (the ewiki grind-loop posture). Launching writes nothing to the loadout (§19a
+decorative lock unchanged).
+
+**Implementation (EC-851).** `apps/arena-client/src/lib/savedLoadoutLaunch.ts` (`planSavedLoadoutLaunch`, 12 tests) and
+`MyProfilePage.vue` (`playSavedLoadout`: in-flight guard → clear error → auth guard → empty-seat-name guard → plan →
+one launch call; in-flight cleared only on failure, reset by a `pageshow` back/forward-cache listener). arena-client
+2351 → 2363 pass, 0 fail; build 0; typecheck 0.
+
+**Live-verify (D-24026): pending.** After the deploy, signed in as `jefferyjjensen` on `play.legendary-arena.com/?route=me`:
+Play this loadout on a saved 1-seat loadout lands on `?match=<id>&player=0…` with that mastermind and scheme; a fast
+double-click creates exactly one match; Back to `?route=me` leaves Play this loadout enabled.
+
+**Reserved by:** NUMBER-LEDGER D-24722 (#2811). Related: D-24087, D-24268, D-24269, D-24658, D-24086, D-24018, D-24026.
+
+---
+
+### D-24723 — The operator dashboard leaves this repo for `barefootbetters/dashboard`; `apps/dashboard` is frozen until the cutover (Active 2026-10-15 — no WP)
+
+Jeff's call, 2026-10-15: the operator dashboard becomes its own repo, `barefootbetters/dashboard`, a project-agnostic
+reader that renders any project from a `dashboard.json` the project keeps in its own repo. It was seeded from this
+repo's `apps/dashboard` with its history (`git subtree split` of `main` at `a8cc4bc4`). Herbs vs. Ailments goes live on
+it first; Legendary Arena moves over only after the new build matches this one page by page.
+
+**Until that cutover, `apps/dashboard` is frozen:**
+- no feature work here; new dashboard work goes to `barefootbetters/dashboard` as a work packet there;
+- a bug fix here lands in both repos (note the other PR in each);
+- `dashboard-deploy.yml` keeps deploying `dashboard.legendary-arena.com` from this repo's `main` until the cutover
+  disables it, so two repos never deploy the same Worker.
+
+**Why:** the dashboard is tooling that serves several projects, so it shouldn't live inside one. The freeze stops
+the two copies drifting while the new one is built. D-24690 (one door per private site) carries over unchanged:
+every instance there keeps `workers_dev` and `preview_urls` off.
+
+**Cutover (a later WP here):** disable `dashboard-deploy.yml`; remove `apps/dashboard`, the Dashboard Gates job
+(`ci.yml` §3c) and its `!@legendary-arena/dashboard` test filter, `dash:*` and the dashboard `--dist` in
+`check:spa-assets`, and `roadmap-schedule-nightly.yml` (moves with the roadmap); move the WORK_INDEX row-format check
+out of the dashboard suite into this repo's CI; update `domains.json`, `DOMAINS.md`, and the ewiki pages that
+describe the dashboard. The domain, its Access app, and the API's CORS allowlist don't change.
+
+Plan and decisions: `barefootbetters/dashboard` `docs/PLAN-independent-dashboard.md` and `docs/ai/decision-log/`.
+
+**Reserved by:** NUMBER-LEDGER D-24723. Related: D-24690, D-19701, D-20601, D-24003, D-24004.
+
+---
+
+### D-24724 — Villain-side in-play hero-class reads count a class granted on play (Copy Powers, Size-Changing) (direct fix, no WP) (Active 2026-10-15)
+
+**Context.** In 2p match `kIZGg6MXhua` (build `9e62c96`, Dr. Doom / Negative Zone Prison Breakout), Player 1 twice played Perfect Teamwork (Strength) and Rogue's Copy Powers copying it ("This card is both Covert and the color you copy"), then fought Maestro ("Fight: For each of your [Strength] Heroes, KO one of your Heroes"). Both times (11.2.x, 23.2.x) the log read "KO 1 of your Heroes (one per your strength Hero)". It should have owed 2. `applyCopyPowers` and Size-Changing write the granted class into `G.cardSizeChangingClasses`, and `cardHasClassWhenPlayed` (`hero/sizeChanging.logic.ts`) is the single effective-class source (D-24074). The hero-side reads already go through it. The villain-side reads tested in-play cards against the raw printed `G.cardTraits` instead.
+
+**Decision.**
+1. **`villainEffects.execute.ts`.** A new `playedCardTraitMatches(G, playedCardId, kind, value)` routes the `hero-class` branch through `cardHasClassWhenPlayed` (printed hc / hc2 OR granted) and leaves the `team` branch on `cardTraitMatches`. The in-play loops of `playerHasHeroMatchingTrait` (reveal-or-wound: Sabretooth, Frost Giant, Ymir, Ultron, Zzzax) and `countPlayerHeroesMatchingTrait` (Maestro, Baron Zemo) use it. So does the in-play loop of `ko-heroes-current-by-trait`: `koHeroMatchesTraitOrBasicShield` now takes the zone's precomputed match and adds only the D-24296 basic-S.H.I.E.L.D. widening.
+2. **`villainDefeatRequirement.logic.ts`.** `playerMeetsDefeatRequirement` gets the same in-play hero-class read. It is the same raw read behind a different gate.
+3. **Unchanged.** The hand reads stay on `offPlayCardTraits`, because a played-card grant applies only in play. Team predicates stay on printed team. The Copy Powers team grant (`cardCopiedTeams`, D-24391) is not read villain-side; that is a separate question, not settled here. The mastermind, tactic, and scheme-twist trait reads scan the hand or HQ only, so they are off play and unaffected. No G field, no re-pin.
+
+**Tests (new, all fail on the pre-fix source).**
+- `villainEffects.execute.test.ts`: Maestro owes 2 with Perfect Teamwork plus Copy Powers-as-Strength in play. A Strength reveal-or-wound (Zzzax) is satisfied by a Copy Powers copy of a Strength Hero, and a Ranged grant still wounds. A hero-class `ko-heroes-current-by-trait` KOs Copy Powers through its granted class.
+- `villainDefeatRequirement.logic.test.ts`: an in-play card meets a hero-class requirement through its granted class, and the same card in hand does not.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5254 → 5259); no generated-artifact churn.
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Match `TGGnM-TEVRe` (server build `34d28b7`, 2p Dr. Doom / Negative Zone Prison Breakout): Player 0 played Crazed Rampage (Strength) and Copy Powers copying it (18.2.1–18.2.4), then fought Maestro, which owed "KO 2 of your Heroes (one per your strength Hero)" (18.2.9). Player 0's only other Strength card had been discarded after that turn-16 reshuffle, so the 2 is one printed Strength Hero plus Copy Powers. The Maestro row in `live-verify.json` is now "verified".
+
+**Reserved by:** NUMBER-LEDGER D-24724. Related: D-24074 (Size-Changing effective class), D-24345 / D-24391 (Copy Powers), D-24353 / WP-544 (Maestro), D-24281 (reveal-or-wound), D-24290 / D-24296 (KO-by-trait), D-24076 (defeat requirement), D-24687 (the re-verify pass that surfaced it).
+
+---
+
+### D-24725 — Every ewiki moves onto one shared Hugo wiki platform; the theme stays open pending a Hextra pilot (Active 2026-10-16)
+
+**Context.** Four Hugo wikis each carry their own copy of a hand-rolled theme: the engine ewiki (`apps/wiki-viewer/`), the Herbs vs. Ailments ewiki (`herbs-vs-ailments` `apps/ewiki/`), the corporate-memory viewer (`jefferyjjensen-corporate-memory` `viewer/`), and the personal wiki (`jefferyjjensen-wiki`). The copies have drifted: on 2026-10-16 the engine and Herbs vs. Ailments copies differed in 20 layout files. Every navigation, CSS, search, accessibility, or Hugo-upgrade fix has to land in each copy, and each new customer ewiki (the Studio product) would add another. The analysis, two outside reviews, and the options are on the ewiki page [Hugo Platform Strategy](../../wiki/hugo-platform-strategy.md).
+
+**Decision.**
+1. **One platform.** Every ewiki (the four above, plus future customer ewikis) moves onto one shared Hugo wiki platform: a single source of truth for the theme, layouts, shortcodes, search, and branding. Each ewiki then supplies only its content, a small config, and its logo. No new independently maintained theme copy is started; a new ewiki starts from the platform, or from the pilot below.
+2. **The theme is not chosen yet.** The candidates are (a) Hextra or (b) the current hand-rolled theme pulled out into one shared copy. A Hextra pilot on a low-risk wiki, with real content and a real deployment, decides it. The Herbs vs. Ailments ewiki is the preferred pilot; the next new ewiki is the alternative. A follow-on D-entry records the result. Where the platform lives (its own repo, or a Hugo module) is chosen with the theme.
+3. **The engine ewiki is not committed to Hextra.** The WP-139 theme lock (Open Decision B) and the JS-free gate (D-24293) stay in force for the engine ewiki until a follow-on entry supersedes them. The engine ewiki moves last, because its governance gates, determinism check, and Access posture make it the most expensive test bed.
+4. **Out of scope.** The marketing sites (`legendary-arena-com`, `barefootbetters-www`) stay on PaperMod; the platform is for the wikis.
+
+**Why.** The maintenance cost comes from the forked copies, not from the choice of theme, so converging pays off whichever theme wins. Making it a decision now stops a fifth copy from being forked while the pilot runs.
+
+**Consequences.** No code changes in this entry. The ewiki page Hugo Platform Strategy records Decision 1 as made and the pilot as the next step.
+
+**Reserved by:** NUMBER-LEDGER D-24725. Related: WP-139 (theme lock), D-24293 (JS-free gate and Pagefind), D-24690 (Worker hosting, one door per private site), D-24712 (the ship's viewer), D-24723 (the same extract-to-one-source pattern for the dashboard).
+
+---
+
+### D-24726 — Villain-side in-play team reads count the team Copy Powers copies; the team half of D-24724 (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** In 2p match `xW_Kmg0UF8s` (build `21b630d`, Dr. Doom / Negative Zone Prison Breakout), Player 0 played Endless Invention, Perfect Teamwork and Growing Anger (all Avengers), then Copy Powers copying Growing Anger (27.2.10). Player 0 had played all 7 cards, so the hand was empty. Player 0 then fought Baron Zemo ("rescue a Bystander for each of your [Avengers] Heroes"), and the engine rescued 3 (27.2.16). D-24391 rules that Copy Powers is a full duplicate and also counts as the copied Hero's team: `applyCopyPowers` writes it to `G.cardCopiedTeams`, and `cardHasTeamWhenPlayed` (`hero/effectiveTeams.logic.ts`) reads it. The rescue should have been 4. D-24391 left full team/class parity across the non-hero read sites as a deferred follow-up. D-24724 did the class half for the villain-side reads; this is the team half.
+
+**Decision.**
+1. **`villainEffects.execute.ts`.** `playedCardTraitMatches` routes the `team` branch through `cardHasTeamWhenPlayed` (printed team OR copied team). The same four in-play reads that D-24724 changed pick this up: reveal-or-wound (`playerHasHeroMatchingTrait`), the Baron Zemo / Maestro count (`countPlayerHeroesMatchingTrait`), and the in-play loop of `ko-heroes-current-by-trait`.
+2. **`villainDefeatRequirement.logic.ts`.** `playerMeetsDefeatRequirement` gets the same in-play team read.
+3. **Not `cardCountsAsTeamMember`.** That helper also counts the teamless basic S.H.I.E.L.D. tokens as `shield`. Under D-24296 that widening stays local to the Destroyer KO, so the shared villain-side reads use the plain printed-or-copied team.
+4. **Unchanged.** The hand reads stay on `offPlayCardTraits`, because a copy grant applies only in play. The mastermind, tactic and scheme-twist reads scan the hand or HQ only. No G field, no re-pin.
+
+**Tests (new, all fail on the pre-fix source).**
+- `villainEffects.execute.test.ts`: Baron Zemo rescues 4 in the live 27.2.16 board. An Avengers reveal-or-wound is satisfied by Copy Powers that copied an Avenger, and a copied X-Men team still wounds. A `team:shield` KO-by-trait KOs Copy Powers that copied a S.H.I.E.L.D. Hero.
+- `villainDefeatRequirement.logic.test.ts`: an in-play card meets a team requirement through its copied team.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5259 → 5263); no generated-artifact churn.
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Match `SoDnMI9IjqU` (server build `20dcd923`, 2p operator match, Dr. Doom / Negative Zone Prison Breakout). On turn 27 Player 0 played A Day Unlike Any Other (the only printed Avenger played) and Copy Powers copying it (27.2.1–27.2.4), then fought Baron Zemo. Zemo rescued 2, "one per your avengers Hero" (27.2.9), which is one printed Avenger plus Copy Powers. The log does not list the two hand cards Player 0 left unplayed that turn, and Zemo also counts the hand. They are read as Wounds: Player 0 played every Hero card drawn on every other turn, and was carrying five Crazed Rampage / Zzzax Wounds at the time. A baseline fight earlier in the same match (turn 6: Diving Block + Dangerous Rescue, empty hand) rescued 2. Baron Zemo's row in `live-verify.json` cites both.
+
+**Reserved by:** NUMBER-LEDGER D-24726. Related: D-24724 (the class half), D-24391 (Copy Powers team grant; this closes its deferred parity follow-up for the villain-side reads), D-24290 (Baron Zemo), D-24281 (reveal-or-wound), D-24296 (basic-S.H.I.E.L.D. widening, kept local), D-24076 (defeat requirement), D-24026.
+
+---
+
+### D-24727 — The shared wiki platform's theme is the current hand-rolled theme, extracted into one shared copy; Hextra is not adopted (Active 2026-10-16)
+
+**Context.** D-24725 put every ewiki on one shared Hugo wiki platform and left the theme open until a Hextra pilot reported. The pilot moved the Herbs vs. Ailments design wiki (409 pages) onto Hextra v0.13.0 on a branch: [barefootbetters/herbs-vs-ailments#247](https://github.com/barefootbetters/herbs-vs-ailments/pull/247), closed unmerged, with the full evaluation in `apps/ewiki/HEXTRA-PILOT.md` at commit `9143d153`. Findings:
+- **The drift isn't where Hextra helps.** The four copies drifted in the wiki-specific layouts (link and image hooks, include-section, footer, nav). Under Hextra all of that stays our code. On top of it come two overrides of Hextra's own files (`sidebar.html`, `docs/single.html`) that have to be re-checked against every Hextra release; there were seven releases in 2026 so far. Hextra replaced only the generic chrome (about 540 lines), which wasn't drifting.
+- **The engine ewiki can't use it as-is.** With search off and Pagefind swapped in, the best case is 3 scripts per page against D-24293's allowance of 1. Dropping Hextra's two scripts breaks dark mode (a JS-set `.dark` class) and mobile navigation (a JS-opened drawer). Fixing either means recompiling Hextra's Tailwind or overriding its navbar, which amounts to a fork.
+- **The weight goes the wrong way.** HTML pages grew from 13 KB to 20 KB gzipped, even after trimming the sidebar from 288 KB to 92 KB raw. Diagram pages load a 1.6 MB gzipped Mermaid, Hugo runs about 2.7 times slower, and the build fetches Mermaid and FlexSearch over the network on a cold cache.
+- **What Hextra did well:** an "On this page" TOC, a light/dark toggle, a mobile drawer, better search, an accessibility baseline, and deterministic output (five byte-identical builds).
+
+**Decision.**
+1. **The platform theme is the current hand-rolled theme, extracted** into one shared copy that every ewiki consumes. Hextra is not adopted for the platform. The WP-139 theme lock and the D-24293 JS-free gate stand unchanged, because the extracted theme is the theme they already govern.
+2. **The extraction absorbs Hextra's reader wins that need no JavaScript:** an "On this page" table of contents (Hugo's `.TableOfContents`), heading permalink anchors, a skip-to-content link, and breadcrumbs. A light/dark toggle is in scope only if it passes the JS-free gate; otherwise the theme keeps following `prefers-color-scheme`.
+3. **Where the platform lives** (its own repo, consumed as a vendored copy or as a Hugo module) is chosen by the extraction work. Evidence from the pilot: a Hugo module works on GitHub's runners, but only because Go happens to be preinstalled on the image, so it would need `actions/setup-go` pinned and `go.sum` committed. It also requires Go on every author's machine for local builds. Vendoring needs neither.
+4. **Hextra stays out unless a new D-entry brings it back.** D-24725 keeps every ewiki, customer ewikis included, on the one platform.
+
+**Why.** D-24725's goal is to stop the copies drifting. Extraction fixes that directly; Hextra would add a fifth thing to keep in step and still leave the drifting code ours. The engine ewiki, the flagship, could not use Hextra without amending a decided gate, and a platform the flagship can't use is not one platform.
+
+**Consequences.** No code changes in this entry. The extraction is follow-on work. The ewiki page Hugo Platform Strategy records the pilot results and this decision.
+
+**Reserved by:** NUMBER-LEDGER D-24727. Related: D-24725 (one shared wiki platform), WP-139 (theme lock), D-24293 (JS-free gate and Pagefind).
+
+---
+
+### D-24728 — The shared wiki theme lives in `barefootbetters/ewiki-theme` and is vendored into each wiki (Active 2026-10-16 — WP-814 / EC-852)
+
+**Context.** D-24727 chose the platform theme (the current hand-rolled theme, extracted) and left §3 open: where the one shared copy lives and how each ewiki consumes it, a separate repo consumed as a vendored copy or as a Hugo module. WP-814 built the extraction: it reconciled the engine, herbs, corporate-memory and personal copies into one core, and proved it with a scratch shadow build of the engine ewiki that passed all five engine gates and kept every link and image target.
+
+**Decision.**
+1. **One source.** The theme's single source is the private repo `barefootbetters/ewiki-theme`, released as annotated `vX.Y.Z` tags. Each tag's GitHub release notes record its manifest digest (the SHA-256 of the LF-normalized manifest).
+2. **Vendored, not a Hugo module.** Each wiki vendors a tag into `<site>/themes/ewiki/` with `tools/Sync-EwikiTheme.ps1`. The sync uses `git archive` with autocrlf off and a fixed pathspec, and writes `THEME-VERSION` plus a manifest of LF-normalized SHA-256s. A Hugo module was rejected for three reasons:
+   - it needs Go locally and in CI;
+   - it needs private-repo credentials in CI;
+   - it would add a network fetch to the engine's determinism rebuild.
+
+   Vendored, the engine theme stays "inside this app", so the WP-139 lock holds literally.
+3. **Vendored files are read-only.** Each wiki's CI pins the manifest digest outside the vendored tree. It checks the manifest and the checker script's hash with plain shell, then runs `tools/Test-EwikiTheme.ps1`, which fails on:
+   - any manifest or digest mismatch;
+   - any consumer file that shadows a core theme file, through any of Hugo's equivalent layout paths or through a module mount.
+
+   A change goes to the theme repo, then a re-sync.
+4. **Closed extension points.** Wiki-specific behavior enters only through the closed extension-point list (WP-814 §Contract). Changing that list, or the brand → core → site CSS order, is a MAJOR release.
+5. **One script.** Core emits no script except the Pagefind loader, which stays D-24293's only sanctioned script.
+
+The migration order is corporate memory, herbs, personal, then the engine ewiki last (D-24725 §3).
+
+**Why.** The pilot's evidence (D-24727 §3) and the shadow build agree: vendoring needs no Go, no CI credentials for a private repo and no network during a build, so every wiki's determinism gate keeps rebuilding offline. The cost, a copy that could drift again, is what the manifest, the externally pinned digest and the shadow check close.
+
+**Consequences.**
+- `barefootbetters/ewiki-theme` `v1.0.0` is tagged on `52f6c1b5`, with manifest digest `d3e03f528052d23b404160bbd2d5bf9911017002839b2c4fc18ac0867b687b80` in its release notes.
+- No wiki has migrated yet; each keeps its own copy until its migration packet, in the order above.
+- Engine migration (step 4) vendors the theme, moves E's wiki-specific files behind the extension points, makes `project-wiki.mjs` and `architecture-inventory.mjs` emit `canonical-source` and `links_from: repo-root`, and adds the digest and shadow checks to `wiki-viewer.yml`. D-24293 and the WP-139 lock are unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24728 (#2836). Related: D-24725 (one shared wiki platform), D-24727 (the theme, extracted), D-24293 (the JS-free gate and Pagefind), WP-139 / D-13808 (the engine ewiki's theme lock).
+
+---
+
+### D-24729 — Villain trait-count log lines name each counted Hero and where it was counted from (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** The D-24726 live-verify (match `SoDnMI9IjqU`) passed, but its record had to infer that the two cards Player 0 left in hand were Wounds. Baron Zemo's line said only "rescued 2 Bystander(s) (one per your avengers Hero)", and the game log never lists the cards a player leaves unplayed in hand. Both Zemo and Maestro count the hand (off-play traits) plus the cards in play (effective class / team, including what Copy Powers copies, D-24391 / D-24724 / D-24726). From the log alone, a count from a Copy Powers copy and a count from an Avenger left in hand look the same.
+
+**Decision.**
+1. **`villainEffects.execute.ts`.** `countPlayerHeroesMatchingTrait` becomes `listPlayerHeroesMatchingTrait`. It runs the same scan and returns the counted cards, each tagged `hand` or `played`. Both callers use its length as the count, so the counting does not change.
+2. **Log text.** The Zemo rescue line and both Maestro lines (the parked "choose which" line and the auto-KO line) add the counted Heroes after "one per your X Hero:". The Zemo line reads, for example, `rescued 3 Bystander(s) (one per your avengers Hero: Avengers Assemble! (hand), A Day Unlike Any Other (played), Copy Powers (played, copied avengers)).` Names come from `G.cardDisplayData` through the existing `resolveCardDisplayName`.
+3. **Source labels.** A hand card is `(hand)`. A played card whose printed `G.cardTraits` row matches is `(played)`. A played card that matches only through a grant is `(played, copied <team>)` for a team, since Copy Powers is the only team grant, or `(played, granted <class>)` for a class, since Copy Powers or Size-Changing can grant one.
+4. **The copied card itself is not named.** G does not record which Hero Copy Powers copied, and adding a G field to improve a log line isn't worth it. The Copy Powers play line in the same log ("Player 0's Copy Powers copied X.") already names the copied card.
+5. **Supply run-out.** When the Bystander supply runs out before every counted Hero is paid, the Zemo line adds `; the Bystander supply ran out after N`. Otherwise the list would be longer than the rescue and look like a miscount.
+
+**Hashes.** `G.messages` is hashed by `computeStateHash`, but no pinned replay (`sentinel-core-doom-2p`, the `PRE_WP080_HASH` fixtures, PAR / seed pins) fights Baron Zemo or Maestro. No re-pin; the full test run confirms it.
+
+**Tests.** `villainEffects.execute.test.ts` asserts these lines exactly: Zemo with a hand Avenger, a printed played Avenger and Copy Powers counted through its copied team; Maestro's parked line with Copy Powers counted through its granted Strength; and the Maestro auto-KO line with a hand and a played Strength Hero. The existing Zemo / Maestro message assertions are updated to the new text, and the supply-bounded Zemo case asserts the run-out clause.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5263 → 5265); no generated-artifact churn.
+
+**Reserved by:** NUMBER-LEDGER D-24729. Related: D-24726 (the live-verify this closes the gap for), D-24724, D-24391, D-24290 (Baron Zemo), D-24353 (Maestro), D-24693 (KO lines name their zone).
+
+---
+
+### D-24730 — Copy Powers' copied class and team last for one play of the card (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** Operator match `L3yPdfS179l` (server build `7ae1baa2`). On turn 6, Copy Powers #0 copied Crazed Rampage (Strength). On turn 16 the same card copied Silent Sniper (Covert, Avengers), yet at 16.2.8 Borrowed Brawn's "Strength: +3 attack" fired with that Copy Powers as the only other Strength Hero, and at 16.2.10 Maestro counted "Copy Powers (played, granted strength)". The D-24729 named-card log line is what exposed it. `applyCopyPowers` wrote the copied class into `G.cardSizeChangingClasses[sourceCardId]` and the copied team into `G.cardCopiedTeams[sourceCardId]`, keyed by card instance, and nothing removed either entry. So Copy Powers kept every class and team it had ever copied for the rest of the game. `cardSizeChangingClasses` also holds the setup-time Size-Changing grants, which are printed and must stay, so that map could not simply be cleared.
+
+**Decision.**
+1. **New G field `cardCopiedClasses?: Record<CardExtId, string[]>`.** `applyCopyPowers` writes the copied class here instead of `cardSizeChangingClasses`. It is lazy and omit-when-empty, like `cardCopiedTeams`. `cardSizeChangingClasses` is now built at setup only and never written at runtime.
+2. **Turn-scoped.** `applyEndOfTurnCleanup` gains Step 7, `clearCopyPowersGrants`, which deletes `cardCopiedClasses` and `cardCopiedTeams` outright. Only the active player plays cards, so the whole map belongs to the turn that is ending. Deleting the keys (not emptying them) returns the state to the omit-when-empty shape. `applyEndOfTurnCleanup` is the single turn-end site for both live paths and all three bgio-bypassing harnesses, so nothing else needs the clear. The grant lasts until turn end, not until the card leaves play: a played card that moved elsewhere still counts as "played this turn" (D-24692), so the copy keeps counting for the rest of that turn.
+3. **Single sources kept.** `cardHasClassWhenPlayed` stays the one effective-class source (D-24074): printed class, Size-Changing grant (`getGrantedClasses`), or this play's copy (new `getCopiedClasses`). `cardHasTeamWhenPlayed` stays the one effective-team source (D-24391) and is unchanged. The two class-set readers that walked `getGrantedClasses` directly (`countDistinctHeroClassesYouHave` and its diagnostics mirror in `heroCountSource.resolve.ts`) also add `getCopiedClasses`, so Copy Powers still contributes its copied color there.
+4. **Side fix: a copy is not Size-Changing.** `cheapOrSizeChangingAtLeast` and its failure count treat "has any `getGrantedClasses` entry" as Size-Changing. Their own comment said that map was distinct from Copy Powers' maps, but it wasn't, so a 5-cost Copy Powers that copied a classed Hero counted as cheap-or-Size-Changing. Moving the copy to its own map makes the comment true.
+5. **Log text unchanged.** The D-24729 label `(played, granted <class>)` still covers both Copy Powers and Size-Changing.
+
+**Hashes.** `cardCopiedClasses` is lazily created only when Copy Powers copies a classed Hero, and both copy maps are deleted at turn end, so games without Copy Powers have the same G shape as before. No pinned replay (`sentinel-core-doom-2p`, the `PRE_WP080_HASH` fixtures, PAR / seed pins) plays Copy Powers. No re-pin; the full test run confirms it.
+
+**Tests.** New `hero/copyPowersPerPlay.test.ts` runs the real chain (`applyCopyPowers`, `applyEndOfTurnCleanup`, then the readers) across two turns: cleanup deletes both copy maps and keeps the Size-Changing grant; a Strength copy then a later Covert copy counts as Covert only; Borrowed Brawn's Strength gate does not fire off the stale copy but does off a same-turn one; Maestro's line names only Borrowed Brawn; Baron Zemo does not count a stale Avengers copy; a Copy Powers copy is not Size-Changing (with a positive control); a Size-Changing card's setup grant applies on every play. With the Step 7 clear commented out, five of the eight fail. The Copy Powers fixtures in `copyPowersChoice.resolve.test.ts`, `villainEffects.execute.test.ts` and `villainDefeatRequirement.logic.test.ts` now seed and assert `cardCopiedClasses`, since that is where the copy is written.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5265 → 5273); no generated-artifact churn.
+
+**Live re-check.** In an operator match, have one Copy Powers copy a Strength Hero, then on a later turn copy a non-Strength Hero and fight Maestro: his named-card line must not list Copy Powers.
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Operator match `8Mw9mLkcgQ4` (server build `7e2b45bd`, the #2843 merge), 2p Dr. Doom / Negative Zone Prison Breakout. On turn 9, Copy Powers #0 copied Borrowed Brawn (Strength), and Maestro listed "Copy Powers (played, granted strength)" (9.2.11). On turn 13, the same card copied Energy Drain (Covert). Borrowed Brawn was blocked for lack of another Strength Hero (13.2.12), and Maestro's line was "KO 1 of your Heroes (one per your strength Hero: Borrowed Brawn (played))" (13.2.22). Borrowed Brawn stayed blocked on turns 15 and 17, when Copy Powers #0 copied Diving Block (Tech). On turn 17, Baron Zemo counted Copy Powers as an Avenger from that turn's own copy (17.2.13).
+
+**Reserved by:** NUMBER-LEDGER D-24730. Related: D-24345 (Copy Powers), D-24391 (copied team), D-24074 (Size-Changing), D-24724 / D-24726 (villain reads count the copy), D-24729 (the log line that exposed this), D-24520 (end-of-turn cleanup).
+
+---
+
+### D-24731 — Psychic Link can reveal an X-Men Hero played this turn, not only one in hand (amends D-24470; direct fix, no WP) (Active 2026-10-16)
+
+**Context.** The 2026-10-16 Core audit (§1.2) found that Emma Frost's Psychic Link ("Each player may reveal another [team:x-men] Hero. Each player who does draws a card.") only scanned each player's hand. `heroEffectRevealFromHand` (WP-659 / D-24470) checked `playerZones.hand` for every player. Rules v23 "Revealing a Card" (L3186-3190) says: "You can reveal a card from your hand or you can reveal a card in front of you that you have already played this turn." So a player who played Wolverine's Keen Senses and then Psychic Link, with no other X-Men Hero in hand, drew nothing and got the D-24668 "No player had a matching Hero" line. A throwaway test on the WP-659 fixture reproduced it: `inPlay: [x-men card, psychic-link]` plus a non-X-Men hand gave no draw. D-24651 fixed the same reading for Diving Block.
+
+**Decision.**
+1. **The playing player can also reveal a played card.** A new helper, `playerCanRevealMatch`, scans the hand for every player, as before. For the player resolving the card, it also scans `playedCardIdsStillInPlay(G, inPlay)`.
+2. **"Another" excludes the resolving card.** Psychic Link is itself an X-Men Hero and is in play when its effect resolves, so its own instance id is skipped. Another copy of Psychic Link played earlier this turn has a different instance id and counts.
+3. **Only cards still in front of the player count.** `playedCardIdsStillInPlay` reads the play area (with the D-24619 both-sides expansion), not the Out of Time ledger. A card played this turn and then moved elsewhere cannot be revealed (D-24692).
+4. **Effective team and class.** A played card matches through `cardHasTeamWhenPlayed` for a team criterion (D-24391 / D-24726) and `cardHasClassWhenPlayed` for a class criterion (D-24074 / D-24730), so a Copy Powers copy of an X-Men Hero counts. Hand cards keep the printed-trait match (`investigateCardMatchesCriteria`), the same split as `countXMenHeroesYouHave`.
+5. **Other players stay hand-only.** Only the active player plays cards, so the other players have nothing "already played this turn".
+6. **D-24668 unchanged.** The "No player had a matching Hero to reveal" line still fires exactly when no player revealed. It now also fires when the only X-Men Hero in play is Psychic Link itself.
+7. **Corpus scope.** `core/emma-frost/psychic-link` is the only card that carries `[keyword:reveal-from-hand]`. The same text appears unmarked in `co2e.json`, which the handler does not reach; when it is marked, the same reading applies. The keyword name stays as it is (renaming touches the setup parser, `HeroKeyword`, and the handler-completeness list for no behavior change); this entry records that "from hand" now means "hand or played this turn" for the playing player.
+8. **Ride-along: Electromagnetic Bubble.** `collectXMenHeroesYouHave` (Magneto's tactic, "one of your [team:x-men] Heroes") read a played card's team from raw `G.cardTraits`. It now uses `cardHasTeamWhenPlayed`, matching its sibling `countXMenHeroesYouHave` (Xavier's Nemesis), so a Copy Powers copy of an X-Men Hero is eligible. The undefined-map guard keeps the WP-695 legacy-state posture. The play area already holds only cards still in play, so there was no Out of Time gap.
+
+**Hashes.** No G field is added or written. Psychic Link now draws in states where it used to draw nothing, so a pinned replay that plays it after another X-Men Hero would change. The full test run passes with no re-pin, so no pinned replay reaches that state.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5280); `pnpm sim:runtime-observed:check` OK; no generated-artifact churn. `live-verify.json`'s Psychic Link row moves from `verified` to `partial` until the played-card path is seen live.
+
+**Tests.** `psychicLink.revealFromHand.test.ts` gains six cases: a played X-Men Hero with a non-X-Men hand draws (and the reveal moves nothing); Psychic Link alone in play does not reveal itself and the D-24668 line fires; another player with an X-Men Hero in hand still draws; another player's play area does not count; a played card that went Out of Time does not count; a played Copy Powers copy of an X-Men team counts. `electromagneticBubbleChoice.resolve.test.ts` gains a Copy Powers eligibility case. Against the old handler, the three positive cases fail and the three guard cases pass.
+
+**Live re-check.** In an operator match (lobby → Play with a bot ally → Operator match, 2 players, heroes include Emma Frost and Wolverine): use the setters to get Keen Senses and Psychic Link into your hand with no other X-Men Hero (Place in HQ, recruit, then Move a card discard → hand). Play Keen Senses, then Psychic Link: you draw a card. Optionally, first Move an X-Men Hero to the bot's hand: the bot draws too.
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Operator match `nQAUnp0T4uY` (server build `6f5a8d1c`, the #2846 merge), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Emma Frost, Wolverine, Rogue, Captain America, Hulk), won with the Final Blow at 19.3.1. Player 0's only X-Men cards were the two Psychic Links (#0, #2), both recruited on turn 1 (1.2.5, 1.2.8); no operator move put a card in a hand.
+- **Played card revealed (the fix).** On turn 7 Player 0 played Crazed Rampage, then Psychic Link #2, which drew from the hand-held #0 (7.2.4). Then Psychic Link #0 drew too (7.2.6): the only other X-Men Hero Player 0 had was #2, already in play. Under D-24470's hand-only scan, 7.2.6 draws nothing.
+- **"Another" holds.** Psychic Link played with no other X-Men Hero in hand or play gave Player 0 no draw three times (9.2.5, 13.2.1, 15.2.13), although the resolving card is itself an X-Men Hero in play.
+- **Other players stay hand-only.** The bot drew from an X-Men Hero in hand on each of those plays (9.2.6, 13.2.2, 15.2.14), and both players drew on both turn-19 plays (19.2.2-19.2.3, 19.2.7-19.2.8).
+- **Not exercised live:** a Copy Powers copy (Copy Powers is printed X-Men in Core, so it cannot tell the difference) and a played card that left play (no Core card moves one mid-turn). The unit tests cover both.
+
+**Reserved by:** NUMBER-LEDGER D-24731. Related: WP-659 / D-24470 (reveal-from-hand), D-24651 (Diving Block reveal from play), D-24668 (no-reveal line), D-24692 (Out of Time), D-24391 / D-24726 (copied team), D-24645 (Electromagnetic Bubble "your Heroes").
+
+---
+
+### D-24735 — Clash of the Monsters Unleashed builds its printed 10 Scheme Twists (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** `chmp/clash-of-the-monsters-unleashed` prints "Setup: 10 Twists. 6 Wounds per player in the Wound Stack. …", but `data/cards/chmp.json` had no `villainDeckTwistCount`, so `buildVillainDeck` built the default 8. The D-24734 sweep surfaced it. The cause is not a parser: twist counts reach the card data only through the hand-curated `scripts/convert-cards/inputs/scheme-deck-counts.json` (WP-169 / D-16803), which both converters apply. WP-169's manual census missed this scheme. It is neither encoded nor in the D-16804 carve-out list. The likely trigger is the "per player" in the Wound clause, which reads like a per-player twist count, but the census left no trace that confirms it.
+
+**Decision.**
+1. **Curate the count at the source.** Add `chmp.clash-of-the-monsters-unleashed: { villainDeckTwistCount: 10 }` to `scheme-deck-counts.json` and regenerate. The only data change is that one field in `chmp.json`. `pnpm cards:check` is clean.
+2. **Census test.** `packages/registry/src/schema.schemeDeckCounts.test.ts` now checks every scheme whose Setup line holds a sentence that is exactly "N Twist(s)." and asserts it builds N (`villainDeckTwistCount ?? 8`). 161 schemes match. Per-player clauses ("11 Twists, minus 1 Twist per player", "Twists equal to the number of players plus 4") don't match, so they stay with D-24734's engine table. The test fails on the old `chmp.json` with exactly this scheme, so the next census miss fails CI instead of slipping through.
+3. **Sweep result.** No other scheme that prints a fixed count builds a different one. The four remaining mismatches from a looser sweep are all per-player: bkwd Sniper Rifle Assassins, co2e Enshrouded Identity, mdns Ritual Sacrifice to Summon Chthon, and nmut Trapped in the Insane Asylum. All four are rows in D-24734's `SCHEME_TWIST_COUNT_BY_PLAYERS`.
+
+**Gameplay effect.** Clash has no twist config. It stays in D-24595's Excluded list (the Monster Pit is a non-standard pile), so it loses on the last Scheme Twist in its Villain Deck. That loss now comes at the printed 10th twist instead of the 8th.
+
+**Still not implemented (named follow-ups, not fixed here).**
+- **Wound Stack sizing.** "6 Wounds per player in the Wound Stack" is not applied. `resolveEffectiveWoundsCount` (D-24321) has only the Legacy Virus branch, so Clash builds the requested Wound count (default 30) instead of 6 × players.
+- **Twist effect.** "Twist 3-10" (each player picks a Gladiator, a Monster Pit card enters the city, and players whose Gladiator has a lower printed Attack gain a Wound) has no resolver. The Monster Pit deck is not built.
+- **Evil Wins.** "When the Wound Stack or Monster Pit Deck runs out" is not modelled. The last-twist interim rule (D-24595) stands in for it.
+
+**Hashes.** No pinned replay, state hash or PAR seed runs Clash. The full suite passes with no re-pin.
+
+**Live re-check (after deploy).** In an operator match on Clash of the Monsters Unleashed, the operator panel's Villain-deck list shows 10 Scheme Twists and the HUD reads "Twists: 0/10". Clash is not a Core card, so there is no `live-verify.json` row.
+
+**Reserved by:** NUMBER-LEDGER D-24735. Related: D-16803 / D-16804 (WP-169 curation and carve-outs), D-24734 (per-player twist table; it flagged this gap), D-24595 (last-twist fallback; Excluded list), D-24321 (scheme Wound sizing), D-1411 (8-twist default).
+
+---
+Protect this file.
+
+### D-24732 — Berserker Rage grants +1 attack per extra card drawn this turn, not a flat +1, and every effect draw by the current player now counts (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** Wolverine's **Berserker Rage** (core) prints "Draw three cards." / "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn." The second line carried no marker, so the hero parser's icon extractor (`heroAbility.setup.ts` `ICON_MAGNITUDE_PATTERN`) read "+1[icon:attack]" as a **flat +1**. With the Instinct gate met the card owes at least +3 (its own three draws), often 4–6 with Keen Senses, Frenzied Slashing or Healing Factor. Found by the Core audit of 2026-10-16 (§1.1). The `core/wolverine|draw` live-verify row covered only the draw half, so `/coverage` never showed the gap. Two other cards print the same clause: antm Ant-Man **Giant Ego** and chmp Totally Awesome Hulk **7th Smartest Man in the World** ("…for each extra card you drew this turn.", ungated). Both parsed as the same flat +1.
+
+The counter the count needs, `TurnEconomy.cardsDrawn` (WP-665 / D-24476), was incremented only by the `draw:N` handler, Do Over, reveal-three-assign and Smash. Many other effect draws were invisible to it, Core ones included: reveal-rule draws (Spider-Man's cost-2-or-less reveals, Card Shark), Psychic Link, Diving Block's draw-instead, Enchantress's Fight draw and Red Skull's HYDRA Conspiracy.
+
+**Decision.**
+1. **New `HeroCountSource` `extra-cards-drawn-this-turn`.** It resolves to `G.turnEconomy.cardsDrawn` (`?? 0` for narrow mocks). It is self-inclusive: Berserker Rage's own line-1 draws have landed when its line-2 count resolves, and the `[hc:instinct]` gate stays an on-play check. It is a counter, not a card list, so `explainCountSourceInputs` returns `[]` for it (like the victory-pile sources). Label: "extra card drawn this turn". `HERO_COUNT_SOURCES` 15 → 16, with the union and canonical array moved together (runtime drift pin).
+2. **Curated markers** (`hero-ability-markers.json`): ability index 1 of core `wolverine/berserker-rage`, antm `ant-man/giant-ego` and chmp `totally-awesome-hulk/7th-smartest-man-in-the-world` gets `[keyword:attack-per-count:extra-cards-drawn-this-turn:1]`. The D-24016 suppression drops the flat icon, so there is no phantom +1. Regenerated through the pipeline (3 lines).
+3. **"Extra card" = every card the current player draws this turn other than the hand drawn at end of turn.** `cardsDrawn` now also increments at these sites, for the current player only: put-hand-on-deck-top (Stack the Deck), the reveal-rule `draw` action, Psychic Link (`heroEffectRevealFromHand`, the playing player's own draw only), Investigate, Dodge, Diving Block's draw-instead (both the wound-chokepoint seat choice, via a new optional `currentPlayer` threaded from `resolveSeatChoice` to `applyDivingBlockResolvedSeatChoice`, and the Random Acts wound step), HYDRA Conspiracy, Enchantress `draw-cards-current`, and the villain `reveal-top-draw-if-cost-lte` draw. Not counted: the end-of-turn hand fill and its next-hand overrides (Treasures of Latveria, Savage Land Mutates, Doc Ock), the setup deal, the guarded `drawCards` move, Phasing's swap (rules v23 says it isn't drawing), and other seats' draws (Monarch's Decree, Covering Fire, another player's Psychic Link or Diving Block draw), because `turnEconomy` belongs to the active player.
+4. **D-24476 amended, not changed in meaning.** `cardsDrawnThisTurnAtLeast` (Gamma-Draining Nanites, "if you drew two cards this turn") still excludes the hand fill, as D-24476 says. It now also sees the effect draws listed above that it used to miss, which is the printed reading.
+5. **The Amazing Spider-Man's cards count (Jeff ruling, 2026-10-16).** The card prints "Put any that cost 2 or less into your hand". The engine models it with the same reveal `draw` action, so each card it puts into your hand counts toward `cardsDrawn`. Jeff ruled that this is correct: the player gets both benefits, the cards in hand and the extra cards drawn for Berserker Rage. Pinned by a test in `hero/coreBerserkerRage.test.ts`. A future change that gives this card its own action kind must keep it counting.
+
+**Tests.** New `hero/coreBerserkerRage.test.ts` runs the real parser over the generated core lines: +3 after one other Instinct play; +4 after Keen Senses drew 1; the gate blocks the grant without another Instinct Hero (the draw still lands); an Astonishing Strength reveal-draw counts and a reveal that leaves the card on top does not; the end-of-turn hand fill with a next-hand override adds nothing; Psychic Link counts only the playing player's draw. Parse tests for all three lines (count source, no flat attack, gate kept only on Berserker Rage, draw before count). Resolver and drift-pin tests (16 sources). Diving Block counts for the active seat and not for another seat. One existing pin changed with the behavior: WP-789's reveal-overlay test asserted that a Card Shark reveal-draw left `cardsDrawn` at 0; it now asserts 1.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5288). Hero ledger +3 rows (`attack-per-count` on core Wolverine, antm Ant-Man, chmp Totally Awesome Hulk); `card-mechanics.json` and the effect index regenerated; `cards:check` reproducible; villain ledger and `ledger:numbers:check` OK; `sim:coverage --check` and `sim:runtime-observed:check` OK with no baseline change. No replay or PAR hash moved, so nothing was re-pinned.
+
+**Live-verify (D-24026): pending.** `live-verify.json` gains `core/wolverine|attack-per-count` (Berserker Rage) as `pending`. Recipe: an operator match with Wolverine; Place in HQ, recruit, then Move discard → hand Healing Factor, Keen Senses and Berserker Rage; play them in that order. Keen Senses draws 1, Berserker Rage draws 3 and grants +4 (was +1).
+
+**Live-verify (D-24026), 2026-10-16: PASS.** Operator match `Bi6gSbwebWx` (server build `e4c2c0a0`, which includes the #2848 merge; client `d7b2717`), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout (HYDRA + Spider-Foes; Wolverine, Gambit, Emma Frost, Spider-Man, Captain America), won with the Final Blow at 22.3.1. Healing Factor ×2, Keen Senses and Berserker Rage were placed and recruited on turn 2 (2.2.5–2.2.10).
+- **Counts every effect draw this turn.** Turn 6: Mental Discipline drew 1 (6.2.2), Frenzied Slashing was blocked without another Instinct Hero (6.2.4), Keen Senses drew 1 (6.2.6), and Berserker Rage drew 3 (6.2.8) and logged `Count-scaled attack: +5 (1 per extra card drawn this turn; count 5).` (6.2.9). That is 1 + 1 + 3, so a non-Wolverine draw (Mental Discipline) counts too. Before the fix this was a flat +1.
+- **Its own three draws count.** Turn 14: Healing Factor (no Wound, no draw) then Berserker Rage drew 3 and logged `+3 … count 3` (14.2.5), the minimum with the gate met.
+- **The Instinct gate holds.** Turn 10: Berserker Rage after two Mental Disciplines and no Instinct Hero drew 3 but its count line was blocked (10.2.11).
+- **Only cards actually drawn count, and Healing Factor's reward draw counts.** Once the deck and discard ran dry, the count followed the real draws, not the printed ones. Turn 18: Mental Discipline 1, Healing Factor 1 (KO-a-Wound reward), Keen Senses 1, Frenzied Slashing 1 of 2, Berserker Rage 0 of 3 → count 4 (18.2.12). Turn 20: 1 + 1 + 2 of 3 → count 4 (20.2.9). Turn 22: 1 + 2 of 3 → count 3 (22.2.7). Turn 16: Mental Discipline 1 + Frenzied Slashing 2 + Berserker Rage 3 → count 6 (16.2.9).
+- **Not exercised live:** the other newly counted sites (reveal-draws, Psychic Link, Diving Block, Dodge, Investigate, Stack the Deck, HYDRA Conspiracy, Enchantress) and the antm / chmp twins. The unit tests cover the reveal-draw, Psychic Link and Diving Block cases.
+
+**Reserved by:** NUMBER-LEDGER D-24732. Related: D-24476 (the `cardsDrawn` counter and Gamma-Draining Nanites), D-24016 (attack-per-count and the flat-icon suppression), D-24655 (the X-Men United per-count precedent), D-24731 (Psychic Link reveals played cards; same handler), D-24499 / D-24651 / D-24673 (Diving Block), D-24051 (Dodge).
+
+---
+
+### D-24736 — Clash of the Monsters Unleashed plays as printed: 6 Wounds per player, the Monster Pit, Gladiators, and its Evil Wins (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** D-24735 gave `chmp/clash-of-the-monsters-unleashed` its printed 10 Scheme Twists and named the rest as follow-ups. The card prints: "Setup: 10 Twists. 6 Wounds per player in the Wound Stack. Shuffle 8 Monsters Unleashed Villains into a face-down 'Monster Pit' deck." / "Twist 3-10: Each player chooses a Villain from their Victory Pile as their 'Gladiator.' Then the top card of the Monster Pit enters the city. Each player whose Gladiator has a lower printed Attack than that Monster gains a Wound." / "Evil Wins: When the Wound Stack or Monster Pit Deck runs out." Before this, the Wound Stack was the requested 30, there was no Pit, Twists did nothing, and the scheme was in D-24595's Excluded list, losing on its last twist.
+
+**Decision.**
+1. **Wound Stack.** `resolveEffectiveWoundsCount` (D-24321) gains a Clash branch: 6 × players, below the 30 config floor exactly as Legacy Virus.
+2. **Monster Pit (setup).** `rules/clashMonsterPit.logic.ts`:
+   - `resolveEffectiveVillainGroupIds` adds `chmp/monsters-unleashed` to the villain groups setup builds, once. Every per-card villain builder (villain deck, cardStats, keywords, traits, defeat requirements, Blood Frenzy, VP, display data, ability hooks) therefore registers the 8 Monsters.
+   - `splitMonsterPitFromVillainDeck` then lifts them out of the shuffled deck into the new omit-when-absent `G.monsterPit` (top = index 0). Their relative deck order is the Pit's shuffle, so setup takes no extra random draw.
+   - `G.selection` and `matchConfiguration` keep the loadout's own groups. A loadout that already picked Monsters Unleashed is not doubled; its 8 cards all go to the Pit.
+   - `checkNoCardInMultipleZones` scans the Pit.
+3. **Twist 3-10 (`clash-monster-pit` resolver, event key `clashMonsterPit`).** Twists 1-2 log that the Pit stays shut. From Twist 3:
+   - **Gladiators first.** Each player's Gladiator is the Villain (Henchmen count, D-24608; a Killbot does not) in their Victory Pile with the highest printed Attack. The Monster is face down when Gladiators are picked, so the highest is never a worse choice. The engine picks it rather than asking, because pending choices are active-player-only (D-24284, the Magneto auto-pick precedent).
+   - **The Monster enters the city.** The Pit's top card is placed on top of the Villain Deck and played through `performVillainReveal`, so it is a full Villain entry: Ambush fires, a full city pushes a Villain out to escape, and the rule hooks see a revealed Villain. It leaves the deck at once, so the deck's size and run-out latch are unchanged.
+   - **Wounds.** Each player whose Gladiator's printed Attack is below the Monster's gains a Wound through `gainWoundForPlayer` (Diving Block reachable on any seat). An equal Gladiator holds. An empty Wound Stack logs instead.
+   - Printed Attack is `fightCost`, or `fightCostBase` for an "N+" Villain; modifiers such as Dark Portals don't count.
+4. **Evil Wins.** Config `resourceLossCondition: { kind: 'pile-depleted', piles: ['wounds', 'monsterPit'] }`, with no twist proxy. `SchemeLossPile` gains `'monsterPit'` (`G.monsterPit`, setup size the printed 8). `SchemeLossKind` gains `'monster-pit'`, and the client labels it "Monster Pit". The log line reads "the Monster Pit has run out". The 8-card Pit empties on Twist 10, the scheme's last twist. Clash leaves the Excluded list.
+
+**Operator ruling (Jeff, 2026-10-16): no Gladiator gains a Wound.** A player with no Villain in their Victory Pile has no Gladiator, and is treated as weaker than any Monster, so they gain a Wound. The card text doesn't say and no published ruling was found, so this is a house ruling, not a verified one. It lives in one branch of `woundPlayerIfGladiatorIsWeaker`.
+
+**Hashes.** `G.monsterPit` exists only in Clash games, and the villain build config differs from the loadout only for Clash, so every other game is byte-identical. No pinned replay, state hash or PAR seed runs Clash. The full suite passes with no re-pin.
+
+**Tests.** `rules/clashMonsterPit.test.ts` (19) runs on the shipped `chmp.json`. It covers:
+- the Wound Stack at 1/2/4/5 players;
+- the 8-card Pit out of the Villain Deck, every Monster with stats and display data;
+- the loadout's groups kept, and no doubling;
+- a non-Clash scheme with no Pit key;
+- Twists 1-2 shut;
+- Twist 3 sending Goom into the city, with its Ambush capturing a Bystander (proof of the reveal-pipeline entry), a stronger Gladiator holding and no Gladiator wounded;
+- weaker Gladiators wounded;
+- the highest-Attack pick;
+- an empty Wound Stack;
+- both loss halves, with the Pit emptying on Twist 10;
+- the meter kind.
+
+Drift pins move with the unions, as product changes: `SCHEME_TWIST_RESOLVER_KEYS`, `SCHEME_LOSS_KINDS`, `SCHEME_LOSS_PILES`, the config count (8 + 67 + 1) and the Excluded-list pin. A revert proof that swaps the reveal-pipeline entry for a plain city push fails the Ambush assertion.
+
+**Live re-check (after deploy).** Run an operator match on Clash of the Monsters Unleashed at 2 players:
+- The Wound Stack holds 12.
+- Using the setter pane, reveal Scheme Twists. Twists 1-2 log "the Monster Pit stays shut". Twist 3 logs "[Monster Pit] … climbs out of the Monster Pit", the Monster enters the city (with any Ambush), and each player's Gladiator line follows.
+- The danger meter can show "Monster Pit".
+
+Clash is not a Core card, so there is no `live-verify.json` row.
+
+**Reserved by:** NUMBER-LEDGER D-24736. Related: D-24735 (10-twist count), D-24595 (Excluded list; last-twist fallback), D-24321 (scheme Wound sizing), D-24284 (active-player-only choices), D-24608 (Henchmen are Villains), D-24499 (wound chokepoint), D-24673 (Diving Block "would gain").
+
+---
+Protect this file.
+
+### D-24733 — Super Hero Civil War builds 8 Scheme Twists at 1-3 players and 5 at 4-5 (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** The Core audit (2026-10-16, §1.3) found that Super Hero Civil War built 8 Scheme Twists at every player count. The card prints "For 2-3 players, use 8 Twists. For 4-5 players, use 5 Twists." `data/cards/core.json` carries no `villainDeckTwistCount` for this scheme, so `buildVillainDeck` used its flat `SCHEME_TWIST_COUNT = 8`. The real `buildVillainDeck` with the local registry gave 8 at 2, 3, 4 and 5 players. Each extra twist is a "KO all the Heroes in the HQ", which drains the Hero Deck faster. Running out of Heroes is Civil War's Evil Wins (D-24318), so 4-5 player games were harder than printed. The engine already held the printed split as `lossThresholdByPlayerCount { 1:8, 2:8, 3:8, 4:5, 5:5 }` in `schemeTwistConfigs.ts`. That map is inert for loss, but it still feeds the HUD twist readout's denominator (`progress.schemeTwistThreshold`). So at 4-5 players the HUD could show "Twists: 6/5".
+
+**Decision.**
+1. **New `resolveEffectiveTwistCount(schemeId, numPlayers, defaultTwistCount)`** in `setup/schemeSetupSizing.ts`. It sits beside the D-24321 Wound sizing and the D-24328 Hero Deck sizing. For Civil War it returns 5 at 4-5 players and 8 at 1-3. One player mirrors two, matching the loss map's `'1': 8` (D-24371 §6). Every other scheme gets `defaultTwistCount` back unchanged.
+2. **Both twist builders call it.** `buildVillainDeck` sizes the deck with it. `buildCardDisplayData` sizes the twist display keys with it, so `G.cardDisplayData` holds exactly one entry per built twist copy.
+3. **Scope: core and msp1.** The msp1 reprint prints the same clause word for word, so it is covered. Its loss config has no per-player map, so its twist readout falls through to the twist count in the built deck (D-24595) and agrees automatically. The other reprints print different splits and are **not** changed here: co2e Civil War (1-3p 6 / 4-5p 5), cvwr Epic Super Hero Civil War (9 / 6), and dead Deadpool Kills the Marvel Universe (6 / 5). Each still builds 8. They are a separate follow-up.
+4. **Hero Deck sizing unchanged.** The 2-player 4-Hero rule (D-24328 / D-24385) is untouched. The new test also confirms that a 4-player Civil War match still builds the full 5-group Hero Deck.
+
+**Surfaces that read the count.** Each was checked against the built deck at 4-5 players:
+- `progress.schemeTwistThreshold` (the SchemeTile / TopHudBar "Twists: n/T" readout) now equals the built count at every player count. The test asserts this.
+- The loss meter and the danger meter key on the Hero Deck (`pile-depleted`, D-24318), not on twists, so they are unchanged.
+- `scheme.twistCount` counts revealed twists (`twistPile.length`). PAR's `schemeTwistNegativeCount` reads `G.counters.schemeTwistCount`. Both count what is revealed, so neither needs a change.
+- The operator panel's Villain-deck list reads the built deck.
+- No loadout surface shows a twist count. The registry-viewer shows twist patterns only, and LAGN is composition only.
+
+**Hashes.** Only Civil War at 4-5 players changes. No pinned replay or state hash runs Civil War at 4 or more players: the full suite passes with no re-pin, and the PAR seed scenarios do not build a deck. Four committed PAR profiles are 5-player Civil War sims (`super-hero-civil-war--*` with four villain groups) and were simulated with the old 8-twist deck. They are diagnostic-only (`authoritative: false`), not gated, and refresh at the next `generate-par-profiles.mjs` sweep. They are not re-pinned here.
+
+**Tests.** `schemeSetupSizing.test.ts`: the resolver at 1-5 players for core and msp1, plus passthrough for other schemes, co2e and cvwr. `buildInitialGameState.civilWarSizing.test.ts`: a full G build at 2/3/4/5 players gives 8/8/5/5 twists in `G.villainDeck.deck` and in `villainDeckCardTypes`, the same number of twist display keys, and a matching `resolveTwistLossThreshold`. It also checks that a 5-player non-Civil-War match keeps 8 and a 4-player Civil War match keeps 5 Hero groups. `villainDeck.setup.test.ts`: a non-Civil-War scheme keeps 8 at 4 and 5 players. With the builder wiring bypassed, the 4-player and 5-player cases fail.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5273 → 5284); `sim:runtime-observed:check`, `sim:coverage --check`, `par:seed:test`, dashboard `prebuild:par` and `ledger:numbers:check` all pass. No generated-artifact churn. On the real registry, core and msp1 Civil War now build 8/8/8/5/5 twists at 1-5 players; co2e and Midtown stay at 8.
+
+**Live-verify (D-24026), 2026-10-17: PASS.** 4p operator match `Y1w7rCsC8Ek` (server build `85771ab6`), Loki / Super Hero Civil War, 3 bot allies. The engine reported a twist threshold of 5. After Twist 1 (18.1.1–18.1.7), the Villain Deck still held the other four Scheme Twists (`-00`, `-02`, `-03`, `-04`), so 5 in all. A bot-ally fault stopped the match at turn 23, unrelated to the twist count.
+
+**Reserved by:** NUMBER-LEDGER D-24733. Related: D-24318 (Hero Deck loss), D-24328 / D-24385 (2-player 4-Hero sizing), D-24321 (scheme setup sizing), D-24349 (KO-all twist), D-24371 (twist readout), D-24595 (last-twist fallback).
+
+---
+Protect this file.
+
+### D-24734 — Every scheme whose printed twist count depends on the player count builds that count (direct fix, no WP) (Active 2026-10-16)
+
+**Context.** D-24733 sized core and msp1 Super Hero Civil War's twist stack by player count. A sweep of every scheme's Setup line in `data/cards/*.json` found 19 more schemes whose printed twist count depends on the player count. The card data can only carry a scalar `villainDeckTwistCount`, and none of these schemes has one, so each built the flat default of 8 at every player count. They fall into two groups:
+- **An explicit split by player count:** co2e Civil War, cvwr Epic Super Hero Civil War, dead Deadpool Kills the Marvel Universe, dstr Duels of Science and Magic, rvlt Secret HYDRA Corruption, ssw2 The Fountain of Eternal Life, and wpnx Go After Heroes' Loved Ones.
+- **A formula:** "Twists equal to the number of players plus N", "N Twists, minus 1 Twist per player", and "1 Twist, plus 2 Twists per player". These are antm Transform Commuters into Giant Ants, bkpt Poison Lakes with Nanite Microbots, bkwd Train Black Widows in the Red Room, bkwd Sniper Rifle Assassins, co2e Negative Zone Prison Outbreak, co2e Enshrouded Identity, gotg Unite the Shards, mdns Ritual Sacrifice to Summon Chthon, msis Sacrifice for the Soul Stone, nmut Trapped in the Insane Asylum, rlmk Devolve with Xerogen Crystals, and wpnx Wipe Heroes' Memories.
+
+The miss was not small. Train Black Widows built 8 twists where it prints 3 to 7. Trapped in the Insane Asylum prints 3 to 11. Five of these schemes lose when the Villain Deck runs out, so for them the twist count is the game's length.
+
+**Decision.**
+1. **One keyed table.** `resolveEffectiveTwistCount` in `setup/schemeSetupSizing.ts` now reads `SCHEME_TWIST_COUNT_BY_PLAYERS`. Each row is a scheme's printed twist count at 1, 2, 3, 4 and 5 players, written out as five numbers rather than a formula, with the printed clause quoted above it. The Civil War branch from D-24733 becomes two rows of that table, and its counts are unchanged. Any scheme not in the table keeps its resolved count.
+2. **Solo.** Where a card prints nothing for 1 player, 1 player mirrors 2 (D-24371 §6). That applies only to core and msp1 Civil War. Every other row's card prints a 1-player count or a formula that covers it.
+3. **Lilith.** Ritual Sacrifice to Summon Chthon prints "If using Lilith: Use 1 Twist total". That is the one twist count keyed on the Mastermind, so the resolver gains a `mastermindId` parameter and one explicit branch for it. `buildVillainDeck` and `buildCardDisplayData` pass `config.mastermindId`.
+4. **Pinned to the card text.** `schemeSetupSizing.test.ts` reads each row's set file from `data/cards`. It asserts the scheme's Setup line still contains the quoted clause, and that the resolver returns the row at 1 to 5 players. If a card's text changes, that test fails rather than the row silently drifting.
+5. **Out of scope.** Two schemes split the Villain Deck itself, which is a structural feature the engine does not model. ssw1 Fragmented Realities gives each player a Villain Deck with 2 Twists. wtif Breach the Nexus of All Realities adds 2 Twists to each "Reality" stack. Neither is touched here. One fixed-count data gap also turned up: chmp Clash of the Monsters Unleashed prints "10 Twists" but had no `villainDeckTwistCount`, so it built 8. That was a card-data miss, not a per-player rule; D-24735 (#2850) curated it at the source, so it is not in this table.
+
+**Twist readout and loss.** None of the 21 table schemes has a scalar `lossThreshold`. Only core Civil War has a per-player map, and it matches its row. So `progress.schemeTwistThreshold` falls through to the twist count in the built deck (D-24595) and agrees with the deck by construction. Ten table schemes have no twist config at all; under the D-24595 fallback they lose on the last twist in the Villain Deck. For those ten, the loss now comes at the printed count instead of the 8th twist: dstr Duels, rvlt Secret HYDRA, ssw2 Fountain, antm Giant Ants, bkwd Sniper Rifle, gotg Unite the Shards, mdns Chthon, msis Soul Stone, nmut Insane Asylum, and wpnx Wipe Memories. The others declare a resource loss: Hero Deck, Villain Deck, or Wound stack running out. Those losses are unchanged, but the Villain-Deck ones now run on the printed deck size.
+
+**Hashes.** The change touches only matches on these 21 schemes. The full suite passes with no re-pin. No pinned replay, state hash or PAR seed runs any of them except core Civil War, which D-24733 already covered.
+
+**Tests.** `schemeSetupSizing.test.ts`:
+- 21 card-text pins;
+- the Civil War variants;
+- the formula rows at 1 to 5 players;
+- Chthon with and without Lilith;
+- passthrough for every scheme outside the table;
+- a player count outside 1 to 5.
+
+`villainDeck.setup.test.ts` adds a `buildVillainDeck` wiring test: at 3 players, Chthon builds 9 twists with Zarathos and 1 with Lilith, which proves the mastermind id reaches the resolver.
+
+**Live re-check (after deploy).** Run an operator match on Train Black Widows in the Red Room at 2 players: the operator panel's Villain-deck list shows 6 Scheme Twists and the HUD reads "Twists: 0/6". Optionally, run co2e Super Hero Civil War at 4 players: 5 twists. These are not Core cards, so there is no `live-verify.json` row.
+
+**Reserved by:** NUMBER-LEDGER D-24734. Related: D-24733 (Civil War twist split), D-24595 (last-twist fallback), D-24371 (twist readout; solo mirrors 2), D-24318 (Hero Deck loss).
+
+---
+Protect this file.
+
+### D-24737 — A free defeat ignores "can't defeat unless" restrictions (operator ruling, no code change) (Active 2026-10-17)
+
+**Context.** In operator match `mzasQjZ3DU2` (server `3c9f632d`, Loki / Negative Zone Prison Breakout), Player 0 defeated Loki's Cruel Ruler tactic and chose Venom for its free defeat (26.2.11–26.2.14). Venom prints "You can't defeat Venom unless you have a [hc:covert] Hero." Player 0 had no Covert Hero in hand or in play; their only Heroes were Hulk, Thor, Iron Man and Hawkeye cards. Venom was defeated anyway. The 2026-10-16 Core audit flagged this as an open question. Rules v23 doesn't settle it directly. The closest ruling is Total Fury (L2563–2566): a card that tells you to defeat an Adversary ignores restrictions like Iron Fist's. Iron Fist's restriction is worded as a fight requirement ("To fight Iron Fist, you must also reveal…"), while Venom's and Blob's say "can't defeat".
+
+**Decision (operator ruling, 2026-10-17).**
+1. An effect that defeats a Villain for free ignores the target's "You can't defeat X unless you have …" restriction. This covers Loki's Cruel Ruler ("Defeat a Villain in the City for free"), Nick Fury's Pure Fury and Black Widow's Silent Sniper, and any later free-defeat effect. The restriction gates only a normal fight. This is the same reading as the Total Fury / Iron Fist ruling.
+2. Core cards with the restriction are Blob ("unless you have an [team:x-men] Hero") and Venom ("unless you have a [hc:covert] Hero"). The same holds for every other `require-to-defeat` card (D-24076), e.g. Zombie Venom.
+
+**Engine (no change).** The engine already behaves this way:
+- `playerMeetsDefeatRequirement` (D-24076) is checked only in the `fightVillain` move (`packages/game-engine/src/moves/fightVillain.ts`, the defeat-requirement precondition before the stage gate);
+- `ai.legalMoves` mirrors that check for the bot's normal fights;
+- the free-defeat paths reach `defeatCityVillainCore` without that gate.
+
+This entry records the ruling so a later change doesn't "fix" the free-defeat paths into checking the requirement.
+
+**Live evidence.** `mzasQjZ3DU2` 26.2.11–26.2.14: Cruel Ruler defeated Venom with no Covert Hero, and its captured Bystander was rescued.
+
+**Still open (separate).** Venom's own refusal of a normal fight without a Covert Hero has no live evidence yet; a refused fight is silent and isn't logged. Blob's equivalent is verified (`live-verify.json`).
+
+**Reserved by:** NUMBER-LEDGER D-24737. Related: D-24076 (defeat requirements, hand + play), D-24724 / D-24726 (granted class / team count toward the requirement), D-24510 (Cruel Ruler), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24662 / D-24681 (one-target free defeats).
+
+---
+Protect this file.
+
+### D-24738 — Secret Invasion counts Heroes a captor carried into the Escape pile toward its six (operator ruling; direct fix, no WP; amends D-24326 and D-24657 §3) (Active 2026-10-17)
+
+**Context.** Secret Invasion of the Skrull Shapeshifters prints "Evil Wins: If 6 Heroes get into the Escaped Villains pile." D-24326 counted only the Skrull-converted Heroes (`escaped-converted-count`, origin `'skrull'`). D-24657 then made a Villain that escapes with captured Heroes carry them into the Escape pile (rules v23 "Villains Escaping with Captured Heroes": they "just stay in the Escape Pile"), and its §3 left the escaped-pile loss counts unchanged. On Secret Invasion the Skrull Villain Group is required, and Skrull Queen Veranke and the Skrull Shapeshifters capture HQ Heroes, so most games put captured Heroes into that pile. In operator match `PF9JUILsmcT` (server `3c9f632d`), Energy Drain went in with Skrull Shapeshifters (3.2.19) and Spinning Cyclone with Veranke (13.1.2). The engine still waited for six Skrull Heroes and logged the loss at 31.1.3.
+
+**Decision (operator ruling, 2026-10-17).**
+1. Heroes captured by a Villain and carried into the Escape pile count toward Secret Invasion's six, together with the escaped Skrull Heroes. In `PF9JUILsmcT` the sixth Hero reached the pile at 17.1.2.
+2. **Engine.** The `escaped-converted-count` condition gains an optional `includeCapturedHeroes?: true` (`rules/schemeTwistConfig.types.ts`), set only on core Secret Invasion (`rules/schemeTwistConfigs.ts`). `countEscapedConvertedLoss` (`rules/schemeResourceLoss.ts`) returns the converted-origin count plus, when the flag is set, `countEscapedCapturedHeroes`.
+3. **A captured Hero** is an Escape-pile entry with a `G.cardTraits` entry (every registry Hero instance has one) and no converted-villain origin. A converted Skrull Hero is counted once, by origin. Villains, Henchmen and Bystanders have no trait entry.
+4. **One count.** `applyEscapedPileResourceLoss` and the loss meter (`schemeLossProgress.ts`) both read `countEscapedConvertedLoss`, so the HUD's N/6 matches the loss.
+5. **Timing.** Every escape goes through `resolveVillainEscape`, which appends the captor, then its captured Heroes (`moveAttachedHeroesToEscapedPile`), then runs the loss check. A captor escaping with two Heroes can take the count from 4 to 6 on that one escape.
+6. **Display.** When captured Heroes are part of the count, the loss line reads "Scheme loss triggered — 6 Heroes escaped (4 Skrulls, 2 captured) (threshold 6)." With none, it is unchanged ("6 Skrulls escaped"). The arena-client meter label for `escaped-skrull` changes from "Skrulls" to the printed "Heroes".
+7. **Unchanged.** Killbots (`origin: 'killbot'`, no flag) and the `escaped-pile-count` schemes (Negative Zone, Midtown) count exactly as before. Only core Secret Invasion carries this config; no reprint has its own twist config.
+
+**Tests.** `schemeResourceLoss.test.ts` adds six cases:
+- a captured Hero is counted once, and a converted Skrull Hero is never counted as captured;
+- 4 Skrull Heroes + 2 captured Heroes loses, with the new line;
+- 5 Skrull Heroes plus 4 escaped Villains does not lose;
+- a captor's escape takes the count from 4 to 6 (escape order mirrored);
+- 6 Skrull Heroes with no captured Hero keeps the old line;
+- Killbots ignores captured Heroes.
+
+`schemeLossProgress.test.ts` adds the meter case. `menaceDisplay.test.ts`'s Secret Invasion label pin changes to "Heroes"; this is the authorized label change in point 6. Revert proof: removing the config flag fails exactly the two loss cases.
+
+**Hashes.** `G` shape unchanged. No pinned replay, PAR or seed fixture runs Secret Invasion (D-24326), so nothing re-pins.
+
+**Live-verify (D-24026):** pending. In an operator match on Secret Invasion, let Veranke or the Skrull Shapeshifters capture an HQ Hero, then push the captor and Skrull Heroes out with "Reveal a Scheme Twist now" and "Escape the Villain at the City's edge". Expect the loss once Skrull Heroes plus captured Heroes in the pile reach 6, with the new line, and the meter to read "Heroes N/6".
+
+**Live-verify (D-24026), 2026-10-17: PASS.** 2p operator match cLZ0_pzMFmd (server 6dbeb6d7, the #2867 merge), Red Skull / Secret Invasion of the Skrull Shapeshifters: five Skrull Heroes escaped (Avengers Assemble! 4.2.6, Web-Shooters 4.2.11, Gathering Stormclouds 7.1.2, Energy Drain 8.1.2, Perfect Teamwork 9.1.2) and Skrull Queen Veranke carried her captured A Day Unlike Any Other (4.1.2) into the pile when she escaped (4.2.21); the scheme won at 9.1.3 with "Scheme loss triggered — 6 Heroes escaped (5 Skrulls, 1 captured) (threshold 6)." Escaped Super-Skrull and Veranke did not count; the old count would still have read 5. The meter projected schemeLossProgress 6 / 6 on escaped-skrull ("Heroes").
+
+**Reserved by:** NUMBER-LEDGER D-24738. Related: D-24326 (Secret Invasion conversion + loss), D-24657 (captured Heroes into the Escape pile), D-24325 (escaped-converted-count), D-24434 (meter names the converted enemy), D-24680 (loss lines name what escaped), D-24026.
+
+---
+Protect this file.
+
+### D-24740 — Under Final Blow, a free defeat (Pure Fury, Silent Sniper) can strike the final blow (operator ruling; direct fix, no WP; amends D-24504) (Active 2026-10-17)
+
+**Context.** The optional Final Blow rule (rules v23 L2840–2847; D-24503 / D-24504) requires a 5th, final fight of the Mastermind card after its four Tactics. D-24504 put that award only in `fightMastermind`. The free-defeat target builders, `buildPureFuryTargets` (`hero/heroEffects.execute.ts`) and `buildDefeatWithBystanderTargets` (`moves/defeatChoice.resolve.ts`), offered the Mastermind only while `tacticsDeck.length > 0`. In operator match `Er6Uj0zeyDW` (server `6dbeb6d7`, Loki / Portals to the Dark Dimension, Final Blow on), Pure Fury defeated Loki's four Tactics (11.2.3, 13.2.3, 15.2.3, 17.2.3). Once "Loki requires a final blow" (17.2.4), every later Pure Fury prompt left Loki out (19.2.2, 21.2.2, 23.2.2, 25.2.5), and only a paid fight could finish him (25.2.17).
+
+**Decision (operator ruling, 2026-10-17).**
+1. Under Final Blow, once the Mastermind's Tactics are gone, a free defeat that may target the Mastermind can strike the final blow: Pure Fury ("Defeat any Villain or Mastermind whose [icon:attack] is less than …") and Silent Sniper ("Defeat a Villain or Mastermind that has a Bystander"). This is the same reading as D-24737: a free defeat counts as the defeat.
+2. **Eligibility.** New `isMastermindFreeDefeatTarget` (`moves/defeatChoice.resolve.ts`) is true when the Mastermind is not haunting and either a Tactic remains or `isFinalBlowAvailable` holds. Both builders use it. Pure Fury still requires printed attack < the S.H.I.E.L.D. count, and Silent Sniper still requires a Bystander on the Mastermind.
+3. **Award.** `dispatchDefeatWithBystanderTarget` routes a Mastermind target to `awardMastermindOnFinalBlow` (now exported from `moves/fightMastermind.ts`, the single award site) when `isFinalBlowAvailable`, and to `defeatMastermindTacticCore` otherwise. The free defeat spends no attack and sets no acted flag. The award puts the Mastermind card in the Victory Pile, rescues any Bystanders it holds, clears `finalBlowPending`, and latches `MASTERMIND_DEFEATED_PENDING` (the WP-732 turn-end win), exactly as the paid 5th fight does.
+4. **Unchanged.** With Final Blow off, or once the final blow is struck, a Tactic-less Mastermind is still not a target. Cruel Ruler targets only City Villains.
+
+**Tests.** `hero/pureFury.logic.test.ts` adds seven cases:
+- Pure Fury targets the Mastermind while the final blow is pending;
+- not after the final blow is struck;
+- not with Final Blow off;
+- a chosen final blow awards the card for free and latches the win;
+- a one-target Pure Fury play strikes it with no prompt;
+- Silent Sniper strikes it and rescues the held Bystander;
+- the predicate's three cases.
+
+Revert proof: without the engine change, the five behavior cases fail and the two "unchanged" guards pass.
+
+**Hashes.** `G` shape unchanged. Final Blow is off in every pinned replay, PAR and seed fixture, so nothing re-pins.
+
+**Live-verify recipe.** In an operator match with Final Blow on, defeat the Mastermind's four Tactics, then play Pure Fury (enough S.H.I.E.L.D. Heroes in the KO pile) or Silent Sniper (the Mastermind holding a Bystander). Expect the Mastermind among the targets, and choosing it to log "struck the final blow and defeated …" and win at turn end.
+
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `tXTkG2Pardt` (server build `d72fbbb1`, the #2873 merge), 2p with a bot ally, Loki / Portals to the Dark Dimension (HYDRA + Enemies of Asgard; Captain America, Hulk, Nick Fury, Thor, Iron Man), Final Blow on. Pure Fury took all four Tactics through the choose prompt (6.2.13, 8.2.3, 10.2.3, 12.2.3; "All tactics defeated — Loki requires a final blow" at 12.2.4). On turn 16 Pure Fury offered Loki again and "Player 0 struck the final blow and defeated Loki!" (16.2.3), with the win at turn end (16.3.1). Silent Sniper's final blow was not exercised; it shares the same isMastermindFreeDefeatTarget predicate. This match ran on Pure Fury's printed-Attack comparison: Loki was 10 + 1 Dark Portal = 11 against 11 S.H.I.E.L.D. Heroes, so under D-24741 (current Attack, merged after) he would not have been a target. What D-24740 changed, the Mastermind staying a free-defeat target while the final blow is pending, is unaffected.
+
+**Reserved by:** NUMBER-LEDGER D-24740. Related: D-24503 / D-24504 (Final Blow), D-24737 (free defeats ignore "can't defeat unless"), D-24499 (Pure Fury), D-24291 (Silent Sniper), D-24553 (turn-end win), D-24026.
+
+---
+Protect this file.
+
+### D-24741 — Pure Fury compares a target's current Attack, not its printed Attack (Jeff ruling, direct fix, amends D-24499) (Active 2026-10-17)
+
+**Context.** Nick Fury's **Pure Fury** prints "Defeat any Villain or Mastermind whose Attack is less than the number of S.H.I.E.L.D. Heroes in the KO pile." WP-682 / D-24499 implemented the comparison against the target's **printed** Attack (`getPrintedAttackForDefeatTarget`: `fightCost`, or `fightCostBase` for a dynamic Villain). That was an implementation choice, not a ruling, and rules v23 does not settle it. In operator match `tXTkG2Pardt` (server `d72fbbb1`, Loki / Portals to the Dark Dimension) the KO pile held 11 S.H.I.E.L.D. Heroes and the twist-1 Dark Portal gave Loki +1 (4.1.1), so his current Attack was 11. Pure Fury still took all four Tactics and the final blow (6.2.13 … 16.2.3), because printed 10 < 11.
+
+**Ruling (Jeff, 2026-10-17).** Pure Fury compares the target's **current** Attack, including modifiers such as Dark Portals.
+
+**Decision.**
+1. `buildPureFuryTargets(G, fightingPlayerId?)` reads a City Villain's Attack from `resolveFightCost(G, cardId, fightingPlayerId)` and the Mastermind's from `resolveMastermindFightCost(G)`, the single fight-cost authorities that the fight moves, the bot and the City / Mastermind `fightCost` projections already use. So Dark Portals (Mastermind and City spaces), the Bank Robbery family's +1 per Bystander, a dynamic Villain's captured Heroes, Blood Frenzy (for the player resolving Pure Fury) and "-N attack" reductions this turn all count. The comparison stays STRICTLY less than. `getPrintedAttackForDefeatTarget` is removed.
+2. Patrol is not part of a Villain's Attack (the fight move adds it after `resolveFightCost`), so it does not affect Pure Fury.
+3. A fully-dynamic `*` Villain is no longer always eligible: its current Attack (base plus captured Heroes) is compared like any other.
+
+**Tests.** `hero/pureFury.logic.test.ts` gains five cases, all failing against the D-24499 code: the `tXTkG2Pardt` numbers (printed 10 + Dark Portal = 11 is not below 11; 12 S.H.I.E.L.D. Heroes bring it back), a Villain in a Dark Portal City space, a dynamic Villain with a captured Hero, a "-N attack" reduction bringing the Mastermind into range, and a Pure Fury play with only a portal-boosted Mastermind logging "found no Villain or Mastermind weak enough". Existing Pure Fury tests use unmodified static stats and are unchanged.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5366 → 5371); `sim:coverage --check`, `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check` and `ledger:numbers:check` all OK. No replay, PAR or hash pin moved, so nothing was re-pinned.
+
+**Live-verify (D-24026), 2026-10-17: PASS.** Operator match `WsQDr4yybrp` (server build `85771ab6`, the #2879 merge), 2p with a bot ally, Loki / Portals to the Dark Dimension (Enemies of Asgard + HYDRA), Final Blow on. Twist 1 opened the Mastermind Dark Portal (2.1.1), putting Loki at 10 + 1 = 11. With exactly 11 S.H.I.E.L.D. Heroes in the KO pile and the City empty, Pure Fury "found no Villain or Mastermind weak enough" (8.2.2). Under D-24499's printed 10, Loki would have been a target. With 13, Pure Fury took Loki on its own (14.2.2, Cruel Ruler). With 16, it struck the final blow (24.2.13–24.2.14).
+
+**Reserved by:** NUMBER-LEDGER D-24741. Related: WP-682 / D-24499 (Pure Fury), D-24740 (free Final Blow), WP-539 / D-24348 and WP-728 / D-24549 (Dark Portals), WP-748 / D-24572 (Bank Robbery Bystanders), WP-760 / D-24589 (Blood Frenzy), WP-794 / D-24663 (fight-cost reductions).
+
+---
+Protect this file.
+
+### D-24739 — Workstation layout: one repo-named folder per product in three roots, each with one backup method (operator decision, no WP; supersedes D-24208 in part) (Active 2026-10-17)
+
+**Status:** Active (governance) 2026-10-17. **Supersedes D-24208 in part:** its point 1 (the `C:\pcloud\LA\` rename is declined), the "Nothing existing is renamed to comply" sentence of its point 3, and the `C:\www\legendary-arena` move target stated in its rationale. Its withdrawal of D-24207's `C:\pcloud\BB\DEV\<repo-name>\` clause stands.
+
+**User-Visible Surface:** none — operator workstation convention.
+
+**Context.** The engine checkout lives on the pCloud sync drive at `C:\pcloud\BB\DEV\legendary-arena`. That placement is behind every serious sync incident recorded on [Workspace Map](../../wiki/workspace-map.md): conflict-suffixed files, edits silently reverting, `HEAD` moving mid-session, and a commit reaching an unrelated PR. D-24208 deferred the off-pCloud move, named `C:\www\legendary-arena` as its target, and declined renaming `C:\pcloud\LA\`. It also set a revisit condition: "If the off-pCloud migration proceeds, the pCloud tree may be tidied in the same pass." This decision proceeds with the migration, so that condition now applies. Since D-24208, Herbs vs. Ailments has joined as a second product, and its checkout is also under `C:\www\`.
+
+**Decision (operator, 2026-10-17).**
+1. **Three roots, one backup method each.**
+   - `C:\dev\<repo>`: code — product monorepos and shared code tools. Backed up by GitHub (push) only; the laptop copy has no other backup.
+   - `C:\www\<repo>`: repos whose main output is published content — marketing sites, the second-brain notes. Backed up by GitHub (push) only.
+   - `C:\pcloud\<repo>`: business operations, brand, media, and work in progress — everything not in git. Backed up by pCloud sync.
+
+   A git checkout never lives on pCloud.
+2. **Folder names match the GitHub repository name** in all three roots: `legendary-arena`, `herbs-vs-ailments`. No per-product abbreviations (`LA`, `HvA`). **Marketing sites take the suffix `-www`:** `legendary-arena-www`, `herbs-vs-ailments-www`, `barefootbetters-www`. The suffix names the role, not a domain, so it holds even where a product's main domain isn't its hyphenated name (Herbs vs. Ailments' is `herbsvsailments.com`).
+3. **Move targets.**
+   - The engine → `C:\dev\legendary-arena`, replacing D-24208's `C:\www\legendary-arena`.
+   - Herbs vs. Ailments → `C:\dev\herbs-vs-ailments`.
+   - `C:\pcloud\LA\` → `C:\pcloud\legendary-arena\`, and a new `C:\pcloud\herbs-vs-ailments\`.
+   - The shared tools (`ewiki-theme`, `bb-studio-dashboard`, `legendary-arena-lab`) → `C:\dev\`, deferred until the engine has run from `C:\dev` for 1–2 weeks. The studio ewiki is the `ewiki/` folder inside `bb-studio-dashboard` and gets no folder of its own.
+   - Two marketing repos don't match the rule yet and are renamed in that same deferred cleanup: GitHub `legendary-arena/legendary-arena-website` → `legendary-arena-www`, with the local `C:\www\legendary-arena-com` → `C:\www\legendary-arena-www`; and GitHub `barefootbetters/www` → `barefootbetters-www` (its local folder already matches). **Precondition:** confirm that each site's Cloudflare Pages project keeps its Git connection through a GitHub repo rename before renaming. Herbs vs. Ailments' marketing repo, when created, is `herbs-vs-ailments-www`.
+4. **Wikis and dashboards get no folders of their own.** Each ewiki stays in the repo it documents (the engine's `wiki/`, Herbs vs. Ailments' `docs/`), so a page changes in the same PR as its code. Dashboards are instances of the shared `bb-studio-dashboard` repo, and each project keeps only a `dashboard.json`.
+5. **How the moves happen.** Re-clone; never move a checkout. Herbs vs. Ailments goes first, as the rehearsal. The engine is pre-staged, then cut over in a quiet window. Each old checkout is kept as `<repo>.RETIRED-<date>` for 14 days as the rollback. The phases, checks, and progress live on [Workstation Layout Migration](../../wiki/workstation-layout-migration.md); the step-by-step commands are in the operator's execution plan on pCloud.
+6. **Path references.** Live documents are updated to the new paths. Historical records keep the paths that were true when written: Work Packets, execution checklists, post-mortems, invocations, and `DECISIONS.md` entries, including D-24207 and D-24208.
+
+**Why the rename is now accepted.** D-24208 declined it as a 38-reference, two-repo sweep for a marginal gain. The sweep has grown since (97 references in 16 files of this repo, 19 in 3 files of the marketing repo). But two things changed. The sweep now rides on a migration that touches paths anyway, which is exactly D-24208's revisit condition. And with two products, the gain is no longer marginal: one name in three places is itself the lookup, while a per-product abbreviation is one more mapping to keep.
+
+**Why `C:\dev`, not `C:\www`.** `C:\www` holds content sites; the engine is code. And `C:\www\legendary-arena` already holds a stale clone of the engine, far behind `main`, so D-24208's target would have collided with it.
+
+**Not changed.** Layer boundaries, CI, and deploys: none of them read a local path. The second brain reads every repo from GitHub `main`, never a local checkout, so the moves don't affect it. Claude Code worktrees stay in `C:\claude-worktrees\`. The `C:\pcloud\LA\ops\` and `LA\brand\` taxonomy (D-24220) is unchanged and moves with its folder.
+
+**Reserved by:** NUMBER-LEDGER D-24739. Related: D-24207 and D-24208 (superseded in part), D-24220 (`LA\ops` / `LA\brand` taxonomy), D-24643 (worktree hooks-path guard).
+
+---
+Protect this file.
+
+### D-24742 — Vanishing Illusions: a Henchman in another player's Victory Pile is "a Villain" they must KO (direct fix, no WP; corrects the D-24511 henchman exclusion) (Active 2026-10-17)
+
+**Context.** Loki's Tactic **Vanishing Illusions** prints "Each other player KOs a Villain from their Victory Pile." WP-694 / D-24511 built the per-seat option list in `buildVanishingIllusionsChoice` (`packages/game-engine/src/moves/seatChoiceTactics.ts`) with a private `isVictoryPileVillain` id-grammar test: the ext_id contains `-villain-` and does not start with `bystander-`. Its comment said Henchman ext_ids "are excluded naturally". Henchman ext_ids are `henchman-{group}-NN`, so every Henchman was dropped. Rules v23 §"Henchmen Are Villains/Adversaries" says "Henchman Villain cards are indeed Villains", and D-24603 / D-24608 already made the same correction for the defeat trigger and the Ebony Blade Victory-Pile pick. It was seen in two 4p operator matches on server `85771ab6` (Loki / Super Hero Civil War, Sentinel and Hand Ninjas Henchmen). In `Y1w7rCsC8Ek`, Player 0's Pure Fury took Vanishing Illusions at 22.2.3 and only Player 3 KO'd a Villain (22.2.5). Player 1's Victory Pile held only Henchmen (Sentinel 03 and 09, Hand Ninjas 04) and was never addressed. In `6jTAMKHlgq_`, Player 0 defeated Vanishing Illusions at 11.2.22 and the log said "no other player had a Villain in their Victory Pile to KO" (11.2.24). But Player 3 held Sentinels 03 and 04, fought at 6.2.7 and 10.2.9.
+
+**Decision.**
+1. `buildVanishingIllusionsChoice` takes its per-seat options from `getEligibleVictoryVillains(G, seat)` (`moves/resolveVictoryPileCardPick.ts`), the shared "Villain in your Victory Pile" test from D-24608. It accepts the `'villain'` and `'henchman'` entries of the setup-time `G.villainDeckCardTypes` map, in Victory Pile order. `isVictoryPileVillain` is removed.
+2. Still excluded: rescued Bystanders (typed `'bystander'`, or the supply `bystander` id, which is not in the map); a defeated Killbot (`convertedVillainOrigins` `'killbot'`, which counts as a Bystander per rules v23); and Mastermind Tactics and the Mastermind, which never enter the map. A seat with none of the eligible cards is still not addressed.
+3. The bot / disconnect default (`defaultOptionIndex` 0, the first eligible card in Victory Pile order) and the ascending-seat atomic apply are unchanged.
+4. **Audit of the other Victory-Pile Villain tests:** the Ebony Blade pick (`getEligibleVictoryVillains`) and the Gladiator scheme twist (`chooseGladiator`) already count Henchmen (D-24608). Viper's "another HYDRA Villain" (`victoryPileHasOtherGroupVillain`), Red Skull's HYDRA Conspiracy (`countVictoryPileGroupVillains`) and Supreme HYDRA's VP are scoped to a Villain *group* by ext_id prefix, so they are left alone. The remaining Victory-Pile scans count Bystanders or S.H.I.E.L.D. cards, not Villains. Vanishing Illusions was the only site with the henchman exclusion.
+
+**Tests.** `moves/seatChoiceTactics.test.ts`: a Henchmen-only Victory Pile is addressed and KOs one; rescued Bystanders, the supply Bystander, a converted Killbot, a defeated Tactic and the Mastermind id still yield no choice; a mixed pile offers only its Henchman and Villain. The old case that asserted a Henchman is "not a villain" asserted the defect and is replaced. `rules/tacticHandlers.test.ts`: a 3-seat dispatch where seat 1 holds only Henchmen (plus a rescued Bystander) and seat 2 holds a Villain. Both seats are addressed, both resolve through `resolveSeatChoice`, and the two KOs land in G.ko in ascending-seat order. Both test files' minimal states now carry `villainDeckCardTypes`, which the builder reads.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5374, net +3 tests). `sim:coverage --check`, `sim:runtime-observed:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check` and `ledger:numbers:check` all OK. The seed-locked `simulation/seatChoiceDispatch.test.ts` Vanishing Illusions replay still passes. No replay, PAR or hash pin moved, so nothing was re-pinned.
+
+**Live re-check (D-24026).** Run an operator match with 3+ seats (Loki as Mastermind, with a bot ally). Use the setter pane so that a non-defeating seat's Victory Pile holds only Henchmen, then defeat Vanishing Illusions. That seat must be addressed and must KO one Henchman, and the log must not say "no other player had a Villain".
+
+**Reserved by:** NUMBER-LEDGER D-24742. Related: WP-694 / D-24511 (Vanishing Illusions), D-24603 (Henchmen are Villains for defeat triggers), D-24608 (Victory-Pile pick includes Henchmen), D-24681 (one-target Pure Fury on Vanishing Illusions).
+
+---
+
+### D-24743 — A mixed seat-choice ride admits the active seat too: a Diving Block wave addressed to the active seat and another seat left the active seat unable to answer (bot-ally fault, direct fix, amends D-24648) (Active 2026-10-17)
+
+**Context.** Operator match `Y1w7rCsC8Ek` (server build `85771ab6`), 4p with three bot allies, Loki / Super Hero Civil War. At 10.2.3 Paibok's Fight gave bot seats 1 and 3 each a Diving Block. On turn 23, seat 1's own turn, the start-stage reveal was a Loki Master Strike: seat 1 (23.1.2) and seat 3 (23.1.4) each gained a Wound. Nothing was logged after that, and `/bot-ally-status` reported `faulted`. The last snapshot showed turn 23, active seat 1, `currentStage: 'start'`, `villainRevealedThisTurn: true`.
+
+**Root cause.** Both Wounds parked at the `gainWoundForPlayer` chokepoint, and the play-phase `turn.onMove` opened one WP-682 wave addressed to `['1', '3']`, as designed. The engine and `getLegalMoves` were consistent: each seat was offered exactly one `resolveSeatChoice` at the default (decline). The fault was in the stage ride. D-24648 made `buildSeatChoiceActivePlayersValue` skip the active seat whenever it was given, so this wave rode only seat 3. `setActivePlayers` **replaces** the `activePlayers` map, so it became `{ '3': 'resolvingSeatChoice' }` and seat 1, the current player, was no longer active. boardgame.io refuses a move from an inactive player (`InactivePlayer`, no state change). The bot driver answers the first bot-owed seat in `addressedSeats` order, which was seat 1, so its submission never landed across the retry budget and the driver faulted ("resolveSeatChoice did not land"). Answering seat 3 first would have worked, since its spent `moveLimit` reverts the map, so the fault depends on order. D-24656 point 3 had already found this for the escape Bystander discard and worked around it at that one call site; the Diving Block opener still passed `ctx.currentPlayer` into a mixed wave. A human in the same spot (the active seat plus a non-active holder) could not answer either until the other seat had.
+
+**Decision.** `buildSeatChoiceActivePlayersValue` skips the active seat only when it is the **only** addressed seat (the D-24648 case, where no stage ride runs at all). In a mixed ride the active seat goes into `resolvingSeatChoice` with `moveLimit: 1`, like every other addressed seat, and `revert: true` restores `{ currentPlayer: 'playTurn' }` once the last seat answers. The fix is in the shared helper rather than the Diving Block opener, so any later caller that passes the active seat into a multi-seat choice is covered too. Today the Diving Block opener is the only one that can: the escape HQ KO and a non-active return-on-discard are one-seat choices, and the escape Bystander discard's call-site guard (D-24656 point 3) stays and is now redundant. No `getLegalMoves` or bot-driver change: their answer was already right and only boardgame.io's admission was wrong. `setActivePlayers` is a framework event, not `G`, so no hash, replay or PAR pin moves; the sim, PAR and fixture loops dispatch seat choices directly and never read `activePlayers`.
+
+**Tests.** `moves/divingBlock.multiSeatWave.test.ts` (new) drives a real 4-seat match through `InitializeGame` + `CreateGameReducer`: core Loki's Master Strike is revealed at the start of seat 1's turn while seats 1 and 3 hold Diving Block, and each seat's move is picked with the real `getLegalMoves`, the driver's call. Before the fix, two cases failed: the wave left seat 1 out of `activePlayers` (`{"3":"resolvingSeatChoice"}`), and seat 1's `resolveSeatChoice` did not land. Both orders now land, both Wounds drain, `activePlayers` reverts to `{ '1': 'playTurn' }`, and `advanceStage` reaches `main`. A one-seat active wave still opens with no stage ride (D-24648 pinned). In `moves/seatChoice.resolve.test.ts`, two cases that asserted the mixed-ride skip now assert the active seat is admitted. That is an intended behavior change, not a weakened check. A new case pins that an active seat who is not addressed is never added.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5376, apps/server 1624 pass + 207 DB-backed skips, arena-client 2394); `ledger:numbers:check` OK. `getLegalMoves` and the bot driver are unchanged, so the `sim:coverage` / `sim:runtime-observed` baselines cannot move. No replay, PAR or hash pin moved.
+
+**Live re-check (D-24026):** PENDING deploy. In an operator match with bot allies, use the setter pane to put a Diving Block in two bot seats' hands (Hero Deck → HQ, recruit, Move a card → "Player N · hand"), and Move Loki's Master Strike to the villain-deck top before one of those bots' turns. The bot's own reveal should wound both holders, both should log "took the Wound (declined Diving Block)", and the bot's turn should continue, with no `faulted` status.
+
+**Reserved by:** NUMBER-LEDGER D-24743. Related: WP-682 / D-24499 (Diving Block), WP-684 / D-24501 (seat choices), D-24648 (amended: the active-seat skip is one-seat only), D-24656 point 3 (the same defect, worked around for the escape discard), D-24593 (bot-ally seat-choice answering).
+
+---
+Protect this file.
+
+### D-24744 — The bot ally answers a seat choice like a playing seat, not with the absent-seat default (Active 2026-10-19 — direct fix, no WP)
+
+**Status:** Active — landed 2026-10-19 (direct engine-policy + `apps/server` bot-ally fix, no WP, the D-24593 precedent). Amends D-24593 §2.
+
+**Context.** Operator match P9oVujYd2B9 (2p bot ally, Loki / Negative Zone Prison Breakout). At 1.2.20 a Loki Master Strike hit the bot while it held Diving Block, and the log read "Player 1 took the Wound (declined Diving Block)". The bot declines Diving Block every time. D-24593 §2 had the driver submit the single `resolveSeatChoice` that `getLegalMoves` offers, which carries `defaultOptionIndex`. That index is the answer for a seat that is NOT there: a disconnected or timed-out seat (WP-684 / D-24501). For Diving Block it is DECLINE on purpose (WP-682 / D-24499), so an absent seat never gets a free draw. A bot ally is a seat that is playing, so for it that default is a lost Wound and a lost card every time.
+
+**Decision.**
+1. The engine owns the playing-seat answer. New pure policy `choosePlayingSeatChoiceOption(G, seat)` in `packages/game-engine/src/simulation/ai.seatChoice.ts`, exported from the `.` barrel next to `createCompetentHeuristicPolicy`. It returns the option index a present player picks, or null when the seat owes nothing. No RNG, no `G` mutation, never throws. It sits in the engine and not in the server because picking an option means knowing what each kind's options do; the server only wires (`.claude/rules/architecture.md` Server Layer).
+2. `decideBotSeatChoiceMove` still enumerates `getLegalMoves` as the bot seat, and that stays the gate: a seat it offers no `resolveSeatChoice` still faults (D-24593 §5). It then submits `choosePlayingSeatChoiceOption`'s index instead of the default. This replaces D-24593 §2's "the engine's own default, never a policy call".
+3. Unchanged: every `defaultOptionIndex`, the timeout path (`applySeatChoiceTimeoutDefault`), and `getLegalMoves`. D-24499 stands. Autoplay (D-24590), the simulation runner and PAR (D-24573) still submit the default, so no PAR, hash or replay pin moves. `DIVING_BLOCK_REVEAL_OPTION_INDEX` and `RANDOM_ACTS_DIVING_BLOCK_OPTION_INDEX` are exported (were module-private) so the policy reads the contract constants, not literals.
+
+**Audit: every kind `parkSeatChoice` opens (2026-10-19).**
+
+| Kind | Absent-seat default | Playing-seat answer |
+|---|---|---|
+| `diving-block` | 1, take the Wound | **0, reveal**: prevents the Wound and draws; Diving Block stays in hand |
+| `random-acts-wound` | 1, decline | **2, reveal Diving Block (draw instead)** when that option is offered; else decline |
+| `monarchs-discard` | 0, first hand card | **a Wound, else the cheapest card** (`cardStats.cost`, earliest on ties) |
+| `escape-bystander-discard` | 0, first hand card | **same as Monarch's discard** |
+| `vanishing-illusions-ko` | 0, first Victory-Pile Villain | **the lowest-VP card** (`victoryPointValueForCard`, scoring's own value) |
+| `monarchs-decree-mode` | 0, each other player draws | default is right: in co-op the other players are teammates |
+| `escape-hq-ko` | 0, cheapest eligible Hero | default is right |
+| `return-on-discard` | 0, return to hand | default is right |
+| `here-hold-this` | 0, first City Villain | default kept (follow-up: pick the Villain the bot will fight) |
+| `random-acts-pass-left` | 0, first hand card | default kept (follow-up: the card stays on the team in co-op, so it is not a clear loss) |
+
+**Follow-ups (not done here).** (a) `here-hold-this` and `random-acts-pass-left` answers. (b) Whether all-bot autoplay should use the same policy; it would move PAR and replay pins, so it needs its own decision.
+
+**Gates.** `packages/game-engine/src/simulation/ai.seatChoice.test.ts` (7 tests) builds each choice with the engine's own builder and checks the playing-seat answer against the absent default. `apps/server/src/bot-ally/botAllySeatChoice.test.ts` adds a real-engine regression: bot seat 1 holds Diving Block when a Master Strike Wound lands on the human's turn, the driver submits `optionIndex: 0`, the real `resolveSeatChoice` returns the Wound to the supply and draws, and the log reads "Player 1 revealed Diving Block". With the driver reverted to the default, that test fails and the other 6 pass.
+
+**Live-verify.** A 2p operator match (Loki scheme) where Player 1 (the bot) holds Diving Block when a Loki Master Strike is revealed with `operatorRevealNow`. Expected: "Player 1 revealed Diving Block: prevented the Wound and drew a card", the bot's discard gains no Wound, and the match keeps running. This changes the D-24743 live-verify's expectation: bot holders now reveal instead of logging "took the Wound (declined Diving Block)".
+
+**Reserved by:** NUMBER-LEDGER D-24744. Related: D-24593 (amended §2), D-24499 (Diving Block absent default, unchanged), D-24501 (seat-choice model), D-24678 (Random Acts Diving Block option), D-24511 (Monarch's Decree / Vanishing Illusions), D-24656 (escape procedure), D-24590 / D-24573 (autoplay and sim keep the default), D-24743 (live-verify expectation changed).
+
+---
+Protect this file.
+
+### D-24745 — The bot ally answers Here, Hold This and Random Acts' pass-left like a playing seat; autoplay, sim and PAR stay on the default (Active 2026-10-19 — direct fix, no WP)
+
+**Status:** Active — landed 2026-10-19 (direct engine-policy fix, no WP, the D-24744 precedent). Closes D-24744's follow-ups (a) and (b).
+
+**Context.** D-24744 gave the bot ally a playing-seat answer for each seat choice but left two kinds on `defaultOptionIndex`, the absent-seat answer, because their best answer is a strategy call: `here-hold-this` (Deadpool's "A Villain of your choice captures a Bystander"; default = the first occupied City space) and `random-acts-pass-left` (Random Acts of Unkindness, "each player passes a card from their hand to the player on their left"; default = the first hand card). It also left open whether all-bot autoplay should use the policy.
+
+**Decision.**
+1. **Here, Hold This: the Villain the seat will fight.** Rescuing the Bystander back is +1 VP (rules v23 "rescue"), and rules v23 "A Villain Might Escape" step 2 makes **every player discard a card** when a Villain escapes with a Bystander. So `choosePlayingSeatChoiceOption` picks, in order:
+   - a Villain the seat can fight **now** (the `fightVillain` set `getLegalMoves` returns for the seat with the open choice set aside, so Guard, defeat requirements, resolved and Patrol cost and restricted attack all come from the single mirror of the move guard): the **escape-edge** Villain first, because the competent policy (`ai.competent.ts`) fights it first (+800), so the Bystander rides a fight the bot was making anyway; otherwise the **cheapest** to fight, which leaves the most attack for other fights;
+   - with nothing affordable, the **cheapest** Villain that does **not** escape on the next reveal (the edge Villain of a full City), so a teammate is likeliest to fight it first. Ties keep the lowest City index, the farthest from escape.
+   The brief's "otherwise the one closest to escaping" was rejected: with nothing affordable that Villain is the one most likely to escape with the Bystander and cost the whole table a discard.
+2. **Random Acts pass-left: a Wound, else the cheapest card** (the same `indexOfLeastValuableCard` Monarch's Decree uses). The Wound is the card's point: its step 1 gains one to the hand so it can be passed. A Wound is dead in any hand, so passing it costs the team nothing, and scoring has no per-player Wound term (`docs/12-SCORING-REFERENCE.md`). The default passes the first hand card, which may be the seat's best.
+3. **Autoplay, the simulation runner and PAR stay on `defaultOptionIndex` (recorded no).** Today all three resolve every seat choice the same way (D-24590 is "same policy as WP-749" / D-24573), which keeps an all-bot autoplay match comparable to its PAR baseline. Switching autoplay alone breaks that parity. Switching the sim moves every PAR profile whose content opens a seat choice (Loki, Dr. Doom, Black Widow's Diving Block, Deadpool) and the published seed PARs and challenges scored against them, plus sentinel replay hashes. That is a worthwhile change, but it belongs to one deliberate PAR re-pin with its own decision, not to a bot-ally fix. Revisit at the next planned PAR re-pin.
+4. Unchanged: every `defaultOptionIndex`, the timeout path, `getLegalMoves`, the D-24744 answers for the other kinds.
+
+**Gates.** `packages/game-engine/src/simulation/ai.seatChoice.test.ts` 7 → 11 tests: pass-left (Wound, cheapest, ties keep the earliest); Here, Hold This cheapest fightable, and a Guard-blocked cheaper Villain skipped; the fightable escape-edge Villain over a cheaper one; nothing affordable with a full City skips the cheaper edge Villain, and with an open space does not. Mutation-checked: neutering the Here, Hold This branch fails 3, the edge preference, the next-reveal-escape test and the pass-left branch fail 1 each. `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5396 pass; server 1625 pass, the rest DB-gated skips); no generated artifact rewritten. No `G`, move, `getLegalMoves` or default change, so no PAR, hash or replay pin moves.
+
+**Live-verify.** A 2p bot-ally match with Deadpool in the bot's Hero deck. When the bot plays "Here, Hold This for a Second" with two or more City Villains, the log's "<Villain> captured a Bystander" names the Villain the bot then fights that turn (or, with too little attack, not the edge Villain of a full City). When anyone plays Random Acts of Unkindness, the bot's "Player 1 passed …" line names a Wound when it holds one.
+
+**Reserved by:** NUMBER-LEDGER D-24745 (#2902). Related: D-24744 (the policy, follow-ups closed), D-24500 (Deadpool seat choices), D-24501 (seat-choice model), D-24590 / D-24573 (autoplay and sim keep the default), WP-049 (competent heuristic policy).
+
+---
+Protect this file.
+
+### D-24746 — "If you played at least N other cards this turn" gates its +2 attack on N other cards played (Active 2026-10-19 — direct fix, no WP)
+
+**Status:** Active — landed 2026-10-19 (direct parser-fidelity fix, no WP, the D-24622 / D-24670 precedent).
+
+**Context.** Three Hero lines print "If you played at least N other cards this turn[,] you get +2[icon:attack]": ca75 Winter Soldier / KGB Training (N = 7), co2e Iron Man / Repulsor Rays (N = 8) and xmen Cannonball / Human Cannon (N = 6). None carries a marker, so `buildHeroAbilityHooks` read only the icon and built an ungated `attack:2`: every play of these cards got +2 attack, an over-grant on each play. Found in the 2026-10-19 ca75 card-text audit and confirmed by parsing each line on its own.
+
+**Decision.**
+1. **A text gate, not a data marker.** `PLAYED_OTHER_CARDS_THRESHOLD_PATTERN` (`heroAbility.setup.ts`) recognizes the printed phrase and pushes the existing `playedThisTurn` HeroCondition onto the line's hook, so its +2 fires only when the gate holds. The line already says exactly what it needs, and a text arm covers all three sets without a card-data regen. The "unless you played at least 8 cards" Doctor Octopus lines are Villain / Mastermind text, and asrd's "three other non-grey Heroes" uses a word number and "Heroes", so neither matches.
+2. **The threshold is N + 1.** `applyCardPlay` appends the played card to `inPlay` before `executeHeroEffects` reads its gate, and `playedThisTurn` counts every card played this turn (`playedCardIdsThisTurn`), the played card included. "N other cards" is therefore N + 1 cards played.
+3. **A snapshot gate, read on play.** `playedThisTurn` is not a wait-and-see condition, so cards played after this one do not retro-fire the +2. That matches the printed "If you played", which is read as the card resolves.
+4. Unchanged: the `playedThisTurn` evaluator and its failure message, every other parser arm, card data.
+
+**Gates.** `packages/game-engine/src/hero/playedOtherCardsThreshold.test.ts` (15 tests) parses the shipped line of each card from `data/cards/*.json` (`playedThisTurn` N + 1, `attack:2`, `conditional`), then plays it through `applyCardPlay` after N - 1, N and N + 1 other cards and as the first card of the turn: +0, +2, +2, +0. Revert proof: without the arm, 9 of 15 fail (the 3 parse tests, the 3 N - 1 cases and the 3 first-card cases); with threshold N instead of N + 1, the 3 parse tests and the 3 N - 1 cases fail. `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail in all 12 packages (game-engine 5396 → 5411). `sim:coverage --check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check` and `sim:runtime-observed:check` pass, and regenerating the coverage baseline, coverage ledger and effect index rewrites no file: these lines were "executable attack" before and still are. No pinned replay reaches these Heroes (the sentinel fixture is core Black Widow + Captain America), so no hash or PAR pin moves.
+
+**Live-verify.** A match with Iron Man (co2e), Winter Soldier (ca75) or Cannonball (xmen): played early in a turn, Repulsor Rays / KGB Training / Human Cannon give only their printed base attack, and the log names the unmet gate; played after 8 / 7 / 6 other cards, they add +2. **PASS 2026-10-20 (Repulsor Rays)**, operator match `WUCdmP_9JBS` (server `23dcb003`): blocked as the 3rd, 3rd and 6th card played (9.2.4, 15.2.7, 21.2.12), +2 after exactly 8 other cards at 11.2.15, 13.2.15 and 17.2.17. KGB Training and Human Cannon were not played; they run through the same arm.
+
+**Reserved by:** NUMBER-LEDGER D-24746 (#2911). Related: D-24622 (ungated Lightshow lines, the phantom-grant precedent), WP-023 (`playedThisTurn`), WP-780 / D-24619 and WP-803 / D-24692 (what `playedCardIdsThisTurn` counts).
+
+---
+
+### D-24747 — Abomination fight cost: Villains and Masterminds add the printed Attack of HQ Heroes (Active 2026-10-20 — WP-815 / EC-853)
+
+**Status:** Active — landed 2026-10-20 with WP-815 / EC-853.
+
+**Context.** Abomination (Villain): "+Attack equal to the printed Attack of the Hero in the HQ space under this Villain's city space"; Double Abomination doubles it; Ultimate Abomination (Mastermind): "+Attack equal to the total printed Attack of all the Heroes in the HQ"; Double Highest Abomination (Mastermind): twice the highest printed Attack in the HQ (`docs/legendary-universal-rules-v23.md` L880-926, glossary L2039-2041). The engine fought every printer of these keywords at its printed base: Arnim Zola at 6 when the HQ usually adds 8 to 12. Found in the 2026-10-19 ca75 card-text audit. The printers are ca75 Captain Zolandia, Doughboy, Man-Fish and Arnim Zola; rlmk Lineage, Omega, Lash, The Unspoken and Maximus the Mad; and co2e Abomination, which prints the rule as a sentence.
+
+**Decision.**
+1. **Board binding, by ordinal.** The HQ space under City index `i` is `hq[4 - i]` (`hqSlotIndexUnderCitySpace`, `board/citySpaceNames.ts`): Sewers ↔ the 5th (rightmost) HQ slot, Bridge ↔ the 1st. It comes from the physical board, D-24295's Sewers(0) … Bridge(4), the DESIGN-BOARD-LAYOUT §7.1 City column order (Bridge … Sewers left to right) and the HQ index order (0 … 4 left to right). It does not depend on on-screen pixel alignment; the arena-client does not column-align the HQ row under the City row today, which is a client presentation follow-up, not a rules question.
+2. **Printed Attack** = `offPlayCardStats(G, heroId)?.attack ?? 0`: a trailing `+` dropped, no icon = 0, a Divided card's two halves totalled (rules v23 Divided Cards). Granted or temporary Attack never counts.
+3. **Four kinds, scoped by family.** `AbominationKind` = `abomination` | `double-abomination` | `ultimate-abomination` | `double-highest-abomination` (`economy/abomination.logic.ts`, drift-pinned by `ABOMINATION_KINDS`). `villainAbominationBonus` acts only on the two villain kinds (the HQ slot under the Villain's current City space, doubled for Double); `mastermindAbominationBonus` acts only on the two mastermind kinds (the HQ sum, or twice the highest; empty slots skipped). Any other kind or no entry → 0.
+4. **One authority each.** The villain term is added inside `resolveFightCost` and the mastermind term inside `resolveMastermindFightCost`, both before the existing reduction and 0 floor. The fight gate, the bot's legal moves, Pure Fury targeting and both UIState `fightCost` projections move together with no caller change. Both terms read `G` at fight time; nothing is cached.
+5. **`G.cardAbomination`** is an omit-when-empty setup map (`setup/buildCardAbomination.ts`), keyed by villain copy ids (`villainCardInstanceExtIds`) and by `G.mastermind.baseCardId`. The mastermind face is matched by equality with the `baseCardId` `buildMastermindState` chose (D-24193), so Maximus's Epic face, which prints the same keyword, never produces a key. It is not a `BoardKeyword` (the Blood Frenzy precedent, D-24589).
+6. **The co2e sentence** "Abomination gets +[icon:attack] equal to the printed [icon:attack] of the Hero in the HQ space under his current city space." is matched by an anchored pattern (`^[^:]*`, so no timing line matches) in place of a missing keyword token. No card-data edit, so the card renders no duplicate keyword chip.
+7. **Out of scope.** rlmk *Devolve with Xerogen Crystals* grants Abomination to Xerogen Experiments; that belongs to that scheme's own WP, which can add its cards to `cardAbomination` at setup. Hero-side Gorgon Abomination, Lineage's Fight and the other open lines on these cards are later WPs.
+8. **No feed change.** No `[effect:X]` token and no `subsystem-coverage.json` entry: every affected Villain keeps another still-unimplemented line, and a subsystem entry would hide it.
+9. **Replay-compat.** A stored replay of a pre-WP-815 match that fought an affected card does not re-execute identically. Core matches carry no `cardAbomination` key, so `finalStateHash` and `PRE_WP080_HASH` are unchanged.
+
+**Gates.** T1-T21 (WP-815 §Test Contract) in `citySpaceNames.test.ts`, `abomination.logic.test.ts`, `economy.resolve.test.ts`, `buildCardAbomination.test.ts` (ability lines copied verbatim from `data/cards/{ca75,rlmk,co2e,core}.json`, with the negatives), `fightVillain.test.ts` and `uiState.build.test.ts`. Revert proofs: without the villain term 9 cases fail, without the mastermind term 3, without the `4 -` 11. Engine 5411 → 5441, 0 fail; `pnpm -r --no-bail test` 0 fail; the feed checks rewrite no file.
+
+**Live-verify (D-24026): PASS 2026-10-20** in guest autoplay match `eyPOi5L-fAU` (server `f39573ad`). The Mastermind cost followed the HQ total (16, 18, 14). Doughboy read 4 in the Sewers, 7 in the Bank and 5 on the Rooftops, and went back to 4 when the Hero under him changed. Fight stayed disabled at 4 Attack against Fight 5 and was enabled once Attack reached his cost. Streets and Bridge were not reached. Details are in STATUS.md.
+
+**Reserved by:** NUMBER-LEDGER D-24747 (#2915). Related: D-24295 (named City spaces), D-24348 / D-24589 (additive fight-cost terms, omit-when-empty setup map), D-24574 (client Fight gating reads the projected cost), D-24545 (`offPlayCardStats`), D-24193 (mastermind base face), D-24372 (runtime drift pins).
+
+---
+Protect this file.
+
+### D-24748 — A profile favourite is a complete saved loadout; no heroes-only LAGN shape (operator decision, no WP) (Active 2026-10-20)
+
+**Status:** Active (governance) 2026-10-20. Decides storage only. The favourites surface itself is unscheduled design direction on [Profile Login](../../wiki/profile-login.md#saved-loadouts-as-a-working-surface--the-mastermind-grind-loop-design-direction-2026-10-14).
+
+**User-Visible Surface:** none yet. No favourites UI exists.
+
+**Context.** A 2026-10-14 operator design conversation produced briefs for a profile "fav five": a favourite hero team picked slot by slot, then opened in the Registry Viewer's loadout builder through `?lagn=` (D-24154) to add a scheme and mastermind. The briefs stored a favourite as a LAGN loadout with no scheme or mastermind. That shape can't be saved: `POST /api/me/loadouts` validates every write with `@legendary-arena/lagn` (D-24086), and `packages/lagn-spec/schemas/lagn-v1.json` lists `mastermind`, `scheme`, `villain_groups`, `henchmen_groups`, `heroes` and the four supply counts in `setup.required`. The `?lagn=` import can't carry it either, because it runs the same published validator (`parseLagnLoadout`, D-24154). Three options were weighed: (A) relax `setup.required` for favourites, with a LAGN version bump; (B) a separate heroes-plus-counts favourites record outside LAGN; (C) favourites are complete saved loadouts only.
+
+**Decision (Jeff, 2026-10-20): option C.**
+1. A favourite is a complete, valid LAGN loadout, stored in `legendary.player_loadouts` through the existing `/api/me/loadouts*` endpoints. Like any saved loadout, it names a mastermind, scheme, villain groups, henchmen groups, heroes and the four supply counts.
+2. `lagn-v1.json` `setup.required` is unchanged. No partial or heroes-only LAGN shape, and no separate favourites table or record.
+3. The supply counts and `support_pools` (D-24194 / D-24195) are remembered because a favourite is a full loadout. Nothing extra stores them.
+4. How a loadout is marked as a favourite (a flag or pin column, a slot list, a derived ordering) is the call of the WP that builds the surface. A new column on `player_loadouts` gets that WP's own D-entry. The marker stays decorative per D-24087 and is never a competitive input.
+
+**Consequences.** The "team fixed, fight open" framing becomes a builder flow, not a storage shape: the player picks heroes in the builder's local draft and saves once the fight is filled in, and "open in builder" opens a complete favourite so the player can swap its fight. Favourites count toward the 50-loadout cap (D-24086). A favourite's hero count follows its scheme (D-24672), so it stays valid for the fight it was saved with; moving the team to a different scheme or player count can change the required count, and the builder warns (D-24165).
+
+**Rejected alternatives.** (A) Relaxing `setup.required` changes a published spec that every LAGN reader relies on (the `?lagn=` import, Play this loadout's lobby readers per D-24722, the public lagn-spec repo) for a profile convenience. (B) A second favourites shape means a new table, endpoints and validator for data that a saved loadout already holds.
+
+**Reserved by:** NUMBER-LEDGER D-24748 (#2925). Related: D-24086 (server LAGN validation, 50 cap), D-24087 (decorative, opaque `lagn` in arena-client), D-24154 (`?lagn=` import), D-24165 (player-count table), D-24672 (scheme hero counts).
+
+---
+Protect this file.
+
+### D-24749 — Villain-side Savior: a `!<condition>` marker gate, the `each-non-savior` Wound target and KO-a-Bystander-from-each-Victory-Pile (Active 2026-10-20 — WP-816 / EC-854)
+
+**Status:** Active 2026-10-20. Live-verify (D-24026) PASS 2026-10-21 (server `df738303`; guest autoplay matches `XOmBWTgjECd`, `_oznsTR_PiL`, `T15-tWl-VpW`, `Z0Zxk2rc0CX`, `nzDdZSD9ZZK`, `QqSXlXIT-sl`, `3mVTZUGrIU7`).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Black Knight, Executioner and Melter (WWII) (ca75 Masters of Evil (WWII)) give their printed reward on a Fight only to a Savior, and log why when the fighter is not one. Radioactive Man wounds every non-Savior on Fight and on Escape. An escaping Executioner KOs one Bystander from each Victory Pile. Man-Fish wounds every other player when fought on the Sewers or the Bridge.
+
+**Context.** Every Fight and Escape line on these cards did nothing: the villain parser reads only `[effect:…]` markers, and none of these lines carried one. Rules v23 L1844-1853: Savior "means 'Use this ability if you have at least 3 Bystanders in your Victory Pile,'" and Bystanders rescued from the defeated Villain go to the Victory Pile before any Savior ability on it is checked.
+
+**Decision.**
+1. **Contract-file change (authorized here).** `rules/villainAbility.types.ts` gains `VillainEffectCondition = 'savior'` and `VILLAIN_EFFECT_CONDITIONS = ['savior']` (runtime drift pin), the optional `VillainEffectDescriptor.requireCondition`, the `gain-wound` target `'each-non-savior'` (appended to `'current' | 'each' | 'each-other'`), and primitive #29 `ko-bystander-each-victory-pile`.
+2. **`VILLAIN_EFFECT_CONDITIONS` is append-only.** A new condition updates the union, the array, the marker script's hand-synced copy and the executor gate's `switch` arm together, with a DECISIONS entry. An unrecognized value fails closed at runtime.
+3. **Savior is data on the marker.** Grammar `<primitive>[:<param>…][@<space>[+<space>…]][!<condition>]`: the `!` suffix is split first, is last, appears at most once, and must be a member of the closed set (case-sensitive; empty rejected). It lifts to `requireCondition`, which is kept out of `descriptorKey`, so a gated `ko-hero:current` still reverse-maps to `koHeroCurrentPlayer`. Legacy keywords take no suffix (`koHeroCurrentPlayer!savior` is unresolved). No villain parser reads `[keyword:Savior]` or English. The marker script mirrors the grammar.
+4. **One gate seam.** `executeVillainAbilities` checks `requireCondition` after the location gate and before dispatch, for the current player at every timing, with an exhaustive `switch` whose `never` default fails closed. A block self-narrates (`'blocked'`) and records no hollow record and no EffectTrace (the D-24295 precedent). No handler reads `requireCondition`.
+5. **One Savior predicate.** `board/bystanders.logic.ts` exports `SAVIOR_BYSTANDER_THRESHOLD = 3`, `countVictoryPileBystanders` and `findFirstVictoryPileBystander`, using the hero gate's two-arm id test (`pile-bystander` or `bystander-villain-deck-*`). `hero/heroConditions.evaluate.ts` is unchanged; a parity test pins the two. Killbots are excluded on both sides and from Executioner's KO until a joint follow-up.
+6. **Melter (WWII)** reuses the D-24413 KO / keep prompt unchanged behind the gate (builds on D-24413, which superseded D-24332).
+7. **`each-non-savior`** is a per-player exemption, so it is a `gain-wound` target (the `each-other` precedent), not the current-player gate: sorted iteration, a Savior skipped, `gainWoundWithOutcome` (Diving Block), `woundsDrawn` bumped for the current player whatever the outcome, self-narrated.
+8. **`ko-bystander-each-victory-pile`**: each player, sorted, KOs the first Bystander in Victory-Pile order to `G.ko`, with no choice (the Whispers and Lies precedent); self-narrated.
+9. **Rules ordering** already holds: `fightVillain` awards the attached Bystanders before `onFight` effects run, so they count toward Savior.
+10. **Limit.** Code that reads descriptors outside the executor loop (`villainCardEscapeTriggersSchemeTwist`, the `play-villain-deck-cards` count reader) does not see `requireCondition`; a future gated marker on those primitives needs its own gate check.
+11. **Ledger normalizer.** `scripts/villain-mechanic-ledger.mjs` names a marker by `split('!')[0].split('@')[0].split(':')[0]`, so gated markers are named by their primitive.
+12. **Replay-compat.** A stored match replays from its bgio `initialState`, which already holds its setup-time `G.villainAbilityHooks`, so pre-WP-816 matches replay identically. Only a path that re-runs setup from config + seed sees the new markers.
+
+**Data.** `scripts/convert-cards/inputs/villain-effect-markers.json` marks the seven lines (`ko-hero:current!savior`; `draw-cards-current:1!savior` + `ko-bystander-each-victory-pile`; `ko-cullable-each-deck-top!savior`; `gain-wound:each-non-savior` ×2; Man-Fish `gain-wound:each-other@sewers+bridge`); Black Knight's `_unassigned` row is deleted. `apply-effect-markers.mjs` changed `data/cards/ca75.json` only (7 lines).
+
+**Gates.** WP-816 §Test Contract T1-T23 plus T3b, T13b, T15b and T19b. The existing primitive-count pin moves 28 → 29 (an intended product change). Revert proofs: without the gate 5 cases fail, wounding Saviors 3, taking the last Bystander 1. The marker script loud-fails on each of the eight T7 tokens. Engine 5444 → 5471, 0 fail; `pnpm -r --no-bail test` 0 fail; villain ledger 722 → 728 rows; `finalStateHash` / `PRE_WP080_HASH` unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24749 (#2928). Related: D-24295 (`@<space>` location gate), D-24464 (hero Savior), D-24413 (Melter KO / keep), D-24290 (`draw-cards-current`), D-24023 / D-24034 (descriptor grammar, unresolved markers), D-24499 / D-24673 (Diving Block wound routing), D-24081 (`G.messages` hash-excluded), D-24372 (runtime drift pins).
+
+---
+Protect this file.
+
+### D-24751 — Legendary Arena's roadmap and infra-cost actuals live in its root `dashboard.json`; the studio dashboard reads it (operator decision, no WP) (Active 2026-10-20)
+
+**Status:** Active (governance) 2026-10-20. Adds a data file and two doc lines. Nothing in this repo reads the file.
+
+**User-Visible Surface:** none yet. `dashboard.legendary-arena.com` keeps deploying from `apps/dashboard` until the cutover (bb-studio-dashboard WP-011).
+
+**Context.** D-24723 moved the operator dashboard to its own repo, now `barefootbetters/bb-studio-dashboard` (D-24723 names it by its earlier name, `barefootbetters/dashboard`). It renders each project from a `dashboard.json` the project keeps in its own repo (D-24739 §4). The dashboard's Phase 3 (its WP-009 to WP-011, its decision 2026-10-20-03) moves Legendary Arena over: WP-009 builds LA from this repo's file, WP-010 checks that build against the live site page by page, and WP-011 cuts over. Until now LA's roadmap lived in `apps/dashboard/src/data/buildRoadmap.ts` and its infra-cost actuals in `apps/dashboard/src/config/infraCostActuals.ts`.
+
+**Decision (Jeff, 2026-10-20).**
+1. **`dashboard.json` at the repo root is LA's project file** for bb-studio-dashboard (schema v1). It holds the brand, sidebar `pages`, vision, checklist and surfaces; the roadmap as `workstreams` and 18 `milestones`; the `ledger` (per-vendor monthly budgets, plus `actuals`: September's Render, Postgres, Cloudflare and Hanko figures as of 2026-09-30); and `sources` pointing at `WORK_INDEX.md` (`la-checklist`), `DECISIONS.md` (`single-file`), `STATUS.md` and git. It is bb-studio-dashboard's `fixtures/legendary-arena/dashboard.json` (barefootbetters/bb-studio-dashboard#34) copied without its `$schema` line, which resolves only inside that repo. No value was changed, because WP-010's parity check compares against the live site.
+2. **Edit the roadmap and cost actuals here.** When a roadmap milestone or a cost changes, update `dashboard.json` in the same PR (the `STATUS.md` header carries this rule). Validate with `pnpm --dir <bb-studio-dashboard checkout> validate:project <path>/dashboard.json`; it must print `valid (schema v1)`. Until bb-studio-dashboard#34 merges, `milestones[].owner` and `ledger.actuals` validate only against that PR's schema.
+3. **Two copies until the cutover.** The frozen `buildRoadmap.ts` still feeds `roadmap-schedule-nightly.yml` (the slippage watch), and the frozen `infraCostActuals.ts` still feeds the live Monetization page. Treat both as stale; `dashboard.json` is the copy to edit. Dashboard WP-011 moves the schedule watch and deletes `apps/dashboard`.
+4. **The D-24723 freeze stands** (bb-studio-dashboard decision 2026-10-15-03 records the same freeze). `apps/dashboard` takes no feature work, and a bug fix lands in both repos with the other PR noted in each. Six commits on 2026-10-19 added features there anyway: #2904, #2905, #2907, #2908, #2909 and #2910 (the GitHub Actions cost panel and its $20 budget, the Coverage page's per-set scoping, legend and filter fallback, and the Core playtest table's default). They are ported to bb-studio-dashboard in #34. Any further `apps/dashboard` edit before the cutover has to be ported there too.
+
+**Not changed.** `apps/dashboard`, `dashboard-deploy.yml`, CI, and the live deploy of `dashboard.legendary-arena.com`. No schema is vendored here and no CI job in this repo validates the file; bb-studio-dashboard's build validates it when it reads it.
+
+**Reserved by:** NUMBER-LEDGER D-24751 (#2933). Related: D-24723 (extraction and freeze), D-24739 §4 (each project keeps only a `dashboard.json`), D-24690 (one door per private site).
+
+---
+Protect this file.
+
+### D-24750 — Captain Zolandia and Primus: a per-Hero-Class Recruit Fight, a villain fight discard cost named by a move argument, and an owed every-player Escape discard (Active 2026-10-21 — WP-817 / EC-855)
+
+**Status:** Active 2026-10-21. Live-verify (D-24026) PASS 2026-10-21 (server and client `5a6dee60`; guest autoplay matches `mBQYQoMmPsc`, `pV10PHyDji4`, `c3kt4rlQMmN`, `zFd68HEShS6`, `QU8C5kTYsZD`, `XZ1ha-xR3O0`; evidence in STATUS.md).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Fighting Captain Zolandia gives +1 Recruit for each Hero Class among the cards in the fighter's hand and play area. Primus's Fight is disabled, with a reason, unless the viewer holds a card that costs 2, 3, 5 or 7; clicking it opens a short list of those cards, and the pick is discarded as Primus is fought. When Primus escapes, every player holding such a Hero picks one to discard; a player with none is logged.
+
+**Context.** The last two unmarked Zola's Creations villains (ca75, Cap 75th arc item 6) did nothing: their lines carried no marker, and Primus's "To fight Primus, you must also discard …" line has no timing prefix, so the `[effect:]` pipeline never sees it. Rules v23 L3436-3446: "Heroes you have" are the cards in hand plus the cards played this turn; L1274-1281: grey cards have no Hero Class; L2910-2911: S.H.I.E.L.D. Officers count as Heroes; L556-570: an escape runs (1) the HQ KO, (2) the every-player Bystander discard, (3) the Escape effect.
+
+**Decision.**
+1. **Contract-file changes (authorized here).** `rules/villainAbility.types.ts` appends primitives #30 `gain-recruit-current-per-hero-class` and #31 `discard-hero-each-player-by-cost`, adds `VillainEffectDescriptor.eligibleCosts?: readonly number[]` (kept out of `descriptorKey`) and `VillainFightDiscardCost { eligibleCosts: number[] }`. `ui/uiState.types.ts` adds `UICityCard.fightDiscardCosts?: number[]` and `UIPlayerState.handCosts?: (number | null)[]`.
+2. **Zolandia's count is `countDistinctHeroClassesYouHave`** (hand + play, D-24529 / D-24694), the one counter the hero side uses, so Avengers Assemble! and Zolandia never disagree. A count of 0 logs a `blocked` line and adds nothing.
+3. **A villain fight discard cost is a setup-built per-instance table**, `G.villainFightDiscardCosts` (omit-when-empty, fresh object per copy), built by `buildVillainFightDiscardCosts` from the `[discard-to-fight:cost:<c>[+<c>…]]` marker. It is a sibling of D-24076's defeat-requirement table, produced by the same overlay script (`apply-defeat-requirement-markers.mjs`, new optional `fightDiscardCosts` list; the line is located as the single one whose trimmed, lower-cased text starts with `to fight `). Cost-list grammar, identical in the engine parsers and both scripts: at least one `+`-joined token matching `^(0|[1-9][0-9]*)$`, strictly ascending; anything else is inert (setup) or unresolved (effect marker) or a loud script failure.
+4. **The cost is paid through a `fightVillain` argument.** `FightVillainArgs.discardCardId?: CardExtId`, validated in step 1 after the defeat-requirement check and before any `G` write: when the fought villain has a cost, the move returns silently unless the id is a non-empty string in the current player's hand whose cost is eligible. Step 3 discards it through `discardFromHand` before `defeatCityVillainCore` and logs `Player N discarded … to fight ….`. A villain without a cost ignores the argument. This extends D-24185 from a played card to a fought villain; ARCHITECTURE.md and `.claude/rules/architecture.md` §The Move Validation Contract say so in one sentence each. A post-commit pending discard (the discard-to-play shape) was rejected because a later effect (Excessive Violence, another queued choice) could take the last eligible card and strand the resolve move.
+5. **`getLegalMoves` mirrors the gate in the same packet (D-24364)**: a discard-cost villain is offered only as `{ cityIndex, discardCardId }` with the cheapest eligible card (`selectDefaultCostDiscardCard`, earliest on a tie) and skipped when there is none; every other villain keeps `{ cityIndex }` byte-identical.
+6. **Only `fightVillain` pays the cost.** Card-effect defeats through `defeatCityVillainCore` (defeat choices, Silent Sniper) do not; "To fight Primus" is a cost of fighting.
+7. **One eligibility predicate**, `isHandCardCostOneOf` (the `offPlayCardStats` cost; no cost entry → not eligible), serves "a card" (the fight) and "a Hero" (the Escape): the only costless hand card is a Wound, and Officers / Sidekicks are Heroes. The gate, the bot pick and the Escape builder all call it.
+8. **Primus's Escape records an owed every-player discard.** The executor has no `events`, so the handler pushes `{ escapedCardId, eligibleCosts }` onto the lazy `G.pendingEscapeEffectDiscards`. The escape opener drains it after the escape-procedure queue (its empty-queue branch now `break`s into `openEscapeEffectDiscardIfNeeded`), with the same open-choice and endgame waits, as an `escape-effect-cost-discard` seat choice (WP-793's step-2 shape with a cost filter; options in hand order labelled `<name> (cost N)`; a seat with none is logged `blocked`; the step-2 stage-ride rule; applied in ascending seats through `discardFromHand`). The bot-ally picks its cheapest; autoplay, sim and PAR take `defaultOptionIndex` 0. The queue joins the end-of-game drop set and the operator board-busy guard.
+9. **Amends D-24656 point 4 for this one effect.** Escape effects that need a multi-seat choice (only `discard-hero-each-player-by-cost`) resolve after the move, so after the new Villain's Ambush — a known deviation from rules v23 L573-575. Every other Escape effect stays inline.
+10. **The client learns the cost from `UICityCard.fightDiscardCosts`** (public printed text) and tests eligibility against the owner-only `UIPlayerState.handCosts` (the engine's `offPlayCardStats` cost; the printed display cost is null for Officers and Sidekicks). `CityRow` gates stage → heal → cost → discard (`Needs a card that costs … to discard`), opens an inline chooser from Fight or Fight-EV, and the slash gesture skips a discard-cost villain. The engine stays the authority.
+11. **Replay-compat.** A stored match replays from its bgio `initialState`, which already holds its setup-time hooks and tables, so pre-WP-817 matches (including a Primus fought with `{ cityIndex }`) replay identically. Only a re-setup from config + seed sees the new markers.
+
+**Data.** `villain-effect-markers.json` marks Captain Zolandia `fight` (`gain-recruit-current-per-hero-class`) and Primus `escape` (`discard-hero-each-player-by-cost:2+3+5+7`); `villain-defeat-requirements.json` gains `fightDiscardCosts` for Primus (`[2, 3, 5, 7]`). `data/cards/ca75.json` changes 3 lines, each gaining one trailing marker; both overlays re-run at 0.
+
+**Gates.** WP-817 §Test Contract T1-T33. Both primitive-count pins move 29 → 31 (an intended product change). Five revert proofs fail T12, T16 / T17, T25, T19 and T28. The marker script loud-fails on each of the eight T4 tokens and the overlay on `costs` `[3, 2]` and `[]`. Engine 5475 → 5515, arena-client 2398 → 2406, 0 fail; the villain ledger flips Captain Zolandia and Primus to `executable` and changes no other row; `finalStateHash` / `PRE_WP080_HASH` unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24750 (#2934). Related: D-24076 (defeat-requirement table), D-24184 / D-24185 (discard-to-play, pre-commit precondition), D-24363 / D-24364 (getLegalMoves mirrors), D-24656 (escape procedure; point 4 amended here), D-24501 (multi-seat seat choices), D-24529 / D-24694 (Hero Class count), D-24574 (client gates on projected data), D-24350 (`gain-recruit-current`), D-24081 (`G.messages` hash-excluded), D-24749 (the prior ca75 villain batch).
+
+---
+Protect this file.
+
+### D-24753 — Baron Zemo's "you may use 2 Recruit to rescue a Bystander" is a `fightVillain` opt-in paid before the Fight effects, with an active-player cue (Active 2026-10-21 — WP-819 / EC-857; covers WP-820's control)
+
+**Status:** Active 2026-10-21 (engine and cue, WP-819). Cue live-verify (D-24026) PASS 2026-10-21 (server and client `4a31641c`; guest autoplay matches `ftW83QgpRnZ` (Zemo) and `TklT1A7JGWC` (Magneto smoke); evidence in STATUS.md). WP-820 carries the client control; its operator-seated fire-path live-verify PASS 2026-10-22 (client `52e8fde`, server `4a31641c`; operator match `3lB2fvE-Zu-`; evidence in STATUS.md).
+
+**User-Visible Surface:** `play.legendary-arena.com`, through WP-820's "Fight + Rescue" button. WP-819 alone adds the move argument and the cue; no client sends the argument until WP-820.
+
+**Context.** Baron Heinrich Zemo's base face (`data/cards/ca75.json`) prints "Whenever you fight a Villain, you may use 2[icon:recruit] to rescue a Bystander." WP-818 deferred the line because it is an opt-in payment at fight time. Rules v23 L772-792: when you fight a Villain you rescue its Bystanders and do its Fight effect, "in any order"; L1849-1851: Bystanders reach the Victory Pile before a Savior ability is checked.
+
+**Decision.**
+1. **Contract-file change (authorized here).** `UITurnEconomyState.rescueOnFightAvailable?: boolean`: active-player-only, omit-when-absent, true iff Baron Zemo is the Mastermind, the Bystander supply is not empty and the player has 2+ unspent Recruit. It follows the 5-step Board-Visible Field contract (built-projection keyset pin, D-24372). `REDACTED_ECONOMY` never carries it.
+2. **The fight move only.** `fightVillain` takes `payToRescueBystander?: boolean`. Villains and Henchmen qualify (D-24603); the Mastermind fight and the free defeats (Silent Sniper, Cruel Ruler) never do. `defeatCityVillainCore` gains an optional `options.payRescueOnFight`, which only `fightVillain` passes.
+3. **The rescue resolves before the fought Villain's Fight effects**, after the attached-Bystander and captured-Hero awards. That is the player-optimal order, because the Masters of Evil (WWII) Savior-gated Fight lines (D-24749) then count the rescued Bystander. Two trades are accepted: a Recruit-granting Fight effect (Hand Ninjas D-24350, Captain Zolandia WP-817) cannot fund the same fight's rescue, and a Fight effect that rescues from the supply runs after the paid rescue, so on a near-empty supply the paid rescue may take the last Bystander.
+4. **Never overdraw.** The move decides after every validation and gate, before the core: the rescue is paid only when 2 Recruit remain after a simulated `spendFightCostForTarget` debit of the fight cost plus an open Excessive Violence +1. So the rescue never makes the fight or a requested EV unaffordable, and the real debits (2 Recruit in the core, then the fight debit in the move) spend the same totals.
+5. **Declines and isolation.** A requested rescue that cannot be paid fights normally and logs why (`'blocked'`: the supply is empty, or 2 Recruit do not remain after the fight cost). With no Zemo, or no argument, the move, the core and the projection are byte-identical (no log line, no economy change, no cue key).
+6. **The rescued Bystander is the supply top** (`G.piles.bystanders[0]`, D-21501), moved with `moveCardFromZone`. The `fightResolved` event's `bystandersRescued` keeps meaning the fought Villain's own attached Bystanders.
+7. **One Zemo id.** `BARON_ZEMO_MASTERMIND_ID = 'ca75/baron-heinrich-zemo'` lives in `economy/rescueOnFight.logic.ts`; WP-818's fight-cost term and Master Strike import it.
+8. **Bots never opt in.** `getLegalMoves` keeps emitting `{ cityIndex }` (the Excessive Violence precedent), so PAR is unchanged.
+9. **WP-820's control:** a separate per-villain "Fight + Rescue" button, shown from the cue plus a client affordability mirror, submitting the intent; the engine stays the authority.
+
+**Gates.** WP-819 §Test Contract T1-T17 (T10 as T10a / T10b; T17 on six declining states). Engine 5475 → 5502, 0 fail; `pnpm -r --no-bail test` 0 fail; arena-client typecheck 0; `finalStateHash` / `PRE_WP080_HASH` unchanged. Revert proofs 5/5: the rescue after the Fight effects fails T5; raw Recruit instead of the simulated debit fails T9 and T10b; the filter pass-through dropped fails T15; the EV +1 dropped fails T10b; the decision above the stage gate fails four T17 cases. Rebased onto WP-817 (D-24750): the Primus discard and its line come first, then this decision, then the core (WP-819 Mode 23). T18a / T18b pin that order; the decision moved above the discard fails T18b. Engine 5544, 0 fail after the merge.
+
+**Reserved by:** NUMBER-LEDGER D-24753 (#2942). Related: D-24556 / D-24557 (Excessive Violence opt-in and pre-spend gate), D-24560 (EV cue), D-24291 (shared defeat core), D-24389 / D-24652 (recruit-as-attack, target-aware fight debit), D-24603 (Henchmen are Villains), D-24749 (villain-side Savior), D-24350 (Hand Ninjas Recruit), D-24372 (runtime drift pins), D-24752 (WP-818, Baron Zemo).
+
+---
+Protect this file.
+
+### D-24752 — Baron Heinrich Zemo: "+9 unless you are a Savior" is a mastermind-id-keyed fight-cost term read for the fighter, plus his Master Strike and four Tactics (Active 2026-10-21 — WP-818 / EC-856)
+
+**Status:** Active 2026-10-21. Live-verify (D-24026) PASS 2026-10-22 (server `d990b787`, client `cc67442`; guest autoplay matches, 2-player and solo; evidence in STATUS.md).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Baron Zemo's tile shows a `Fight 18` badge until the active player has 3 Bystanders in their Victory Pile; then the badge goes away (the projected cost equals the printed 9) and Fight enables at 9 Attack. His Master Strike KOs a Victory-Pile Bystander from each player, or wounds a player with none. Each of his four Tactics does what it prints when defeated, and the log says why when it does nothing.
+
+**Context.** The 2026-10-19 ca75 audit (Cap 75th arc item 3) found Zemo fought at 9 for everyone, his Master Strike inert and his four Tactics unhandled. Rules v23 L1844-1853: a Savior has at least 3 Bystanders in their Victory Pile; L772-792: a Tactic's Fight effect and its rescues resolve "in any order"; L2337-2341: a defeated Killbot counts as a Bystander in the Victory Pile.
+
+**Decision.**
+1. **One cost authority.** `resolveMastermindFightCost(G, fightingPlayerId?)` adds `BARON_ZEMO_NON_SAVIOR_BONUS = 9` when `G.selection.mastermindId` is `ca75/baron-heinrich-zemo` and the fighter is not a Savior, before the Mastermind reduction and the 0 floor. It is keyed on the Mastermind id like the Master Strike dispatch (D-24300), because Zemo is the only Mastermind that prints "+N unless you are a Savior"; no `G` field is added. The id is the one `BARON_ZEMO_MASTERMIND_ID` in `economy/rescueOnFight.logic.ts` (D-24753 point 7).
+2. **The fighter is an optional parameter** (the WP-760 `resolveFightCost` precedent). The four callers pass it: `fightMastermind` and the `uiState.build` projection `ctx.currentPlayer`, `getLegalMoves` `activePlayer`, Pure Fury `fightingPlayerId`. **Fail-expensive default:** an omitted fighter, or one with no zones, is not a Savior and pays the +9.
+3. **The Savior read is the shared WP-816 helper** (`countVictoryPileBystanders` ≥ `SAVIOR_BYSTANDER_THRESHOLD`), so defeated Killbots count and the cost agrees with every Savior gate. It counts only the fighter's Victory Pile: the Bystanders Zemo holds are rescued after the fight, so they never lower the cost that must be known to fight at all.
+4. **The projection reads the active player.** `UIMastermindState.fightCost` is the active player's cost, so an off-turn viewer sees the active player's 18 or 9 (the WP-760 villain precedent).
+5. **Master Strike.** Every player, in sorted seat order, KOs the first Bystander in their Victory Pile (pile order; every Victory-Pile Bystander is worth the same, the D-24749 Executioner precedent) to `G.ko`; a player with none gains a Wound through the Diving Block chokepoint (D-24499 / D-24673), or logs a no-op when the supply is empty.
+6. **Fallen Idols** parks a `fallen-idols-discard` multi-seat seat choice (the D-24511 Monarch's discard shape) addressed to every other non-Savior seat with a card in hand, with "Discard <card>" option labels so the client's generic prompt heading needs no change. Saviors and empty hands are narrated, not addressed. The bot-ally discards its least valuable card, like Monarch's discard.
+7. **Finding Zemo** reveals the top 5 Villain-Deck cards (fewer when the deck is short). Only cards typed `bystander` in `villainDeckCardTypes` count, so Killbots in the deck stay villains (D-24324). The revealed Bystanders go to `G.ko` in revealed order; when any were KO'd, each other player gains one Wound however many there were. The other revealed cards go back on top, reshuffled with the move's `random.Shuffle`, called only when 2 or more go back.
+8. **Hatred for the Avengers** rescues one supply Bystander per Avengers Hero in hand or still in play, the Xavier's Nemesis rule (D-24645 / D-24692). The count is generalized to `countTeamHeroesYouHave(G, inPlay, hand, team)`; Xavier's Nemesis passes `x-men` and is unchanged.
+9. **Prisoners of War is auto-resolved.** Each other player reveals an Avengers Hero from their hand when they hold one (a free reveal beats giving up a Bystander, D-24312); otherwise their first Victory-Pile Bystander moves to the fighter's Victory Pile. The reveal is hand-only.
+10. **Intended follow-on effects.** Finding Zemo can empty the Villain Deck, which feeds the end-of-move final-turn and pile-depletion checks; Bystanders KO'd by the strike or Finding Zemo count toward Chthon's KO-pile transform. Neither is suppressed.
+11. **The passive "may use 2 Recruit to rescue a Bystander" is not here.** It is an opt-in payment at fight time; it shipped as its own arc (WP-819 engine + WP-820 control, D-24753).
+12. **Replay-compat.** A stored pre-WP-818 match that fought Zemo, hit his strike or defeated a Tactic replays differently. No hashed fixture plays Zemo, so `finalStateHash` and `PRE_WP080_HASH` are unchanged. The weekly full-mastermind sweep (`.github/workflows/sweep-weekly.yml`, not a hash gate) shifts for Zemo, and he is a gauntlet Mastermind whose legs get harder; no committed PAR artifact references him.
+
+**Gates.** WP-818 §Test Contract T1-T24 with T3b and T8b. Engine 5544 → 5578, 0 fail; `pnpm -r --no-bail test` 0 fail. `pnpm effect-index` flips only the four Zemo Tactic rows to `executable` (plus `summary.byStatus`); the other feed checks exit 0 with no regeneration. Revert proofs 5/5: dropping the term fails T1 / T3 / T3b / T5; `>` for `>=` fails T2 / T5; skipping the strike's Wound fallback fails T9 / T10; addressing Saviors in Fallen Idols fails T12 / T13; skipping Finding Zemo's reshuffle fails T16 / T17.
+
+**Reserved by:** NUMBER-LEDGER D-24752 (#2939). Related: D-24300 (id-keyed strike and tactic dispatch), D-24312 (auto-resolved reveals), D-24324 (Killbots are villains in the deck), D-24499 / D-24673 (Wound chokepoint, Diving Block wording), D-24501 / D-24511 (multi-seat seat choices, Monarch's discard), D-24508 / D-24645 / D-24692 (Xavier's Nemesis, "Heroes you have"), D-24589 (optional fighter on the fight cost), D-24747 (the WP-815 mastermind cost term), D-24749 (villain-side Savior helpers), D-24753 (the Zemo rescue passive), D-24081 (`G.messages` hash-excluded).
+
+---
+Protect this file.
+
+### D-24754 — Arnim Zola: "less than 2 printed Attack" is one shared off-play read; his Master Strike auto-discards inline, and three Tactics ride seat choices (Active 2026-10-22 — WP-821 / EC-859)
+
+**Status:** Active 2026-10-22. Live-verify (D-24026) PASS 2026-10-23, after a PARTIAL PASS 2026-10-22 (server `66cb9566`, client `66cb956`; solo guest autoplay `NB11wNr0PQU` fired the strike and all four Tactics, 2-player `29R4y8wlZwf` the strike's per-player discards and Pet Projects' reveal; evidence in STATUS.md). Seated 2-player `OSth9-iV03C` (2026-10-23) added Genius' discard prompt and Dominate's multi-player prompt; `qrOX7mNm9Wa` added Crush's second KO (bot ally); `0o2GjMHk5AD` added Pet Projects' Wound; `XHzzZZk0LgV` added a Dominate gain into the other player's discard, the last multi-seat path. Nothing is operator-pending.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). An Arnim Zola Master Strike moves each HQ Hero with less than 2 printed Attack to the bottom of the Hero Deck, refills its slot, and makes each player discard a card of that Hero's cost. Each of his four Tactics does what it prints when defeated; Dominate the Weak, Computer-Uploaded Genius and Crush Pacifist Resistance open the existing seat-choice prompt with self-describing option labels. The log says why when anything does nothing.
+
+**Context.** The 2026-10-19 ca75 audit (Cap 75th arc item 4) found every Zola line inert except his Ultimate Abomination fight cost (WP-815 / D-24747). Rules v23 L2301-2311: a card without a value counts as 0 for it; L926-930: a Divided card's off-play printed value adds both halves; L1170: "gain" puts the card in your discard pile; L3439: "your Heroes" are your hand and the cards you played this turn.
+
+**Decision.**
+1. **One predicate.** `mastermind/arnimZola.logic.ts` holds `ARNIM_ZOLA_MASTERMIND_ID`, `ZOLA_PRINTED_ATTACK_LIMIT = 2` and the three reads. Off play (the HQ, a hand), "less than 2 printed Attack" is `printedHeroAttack < 2` (exported from `economy/abomination.logic.ts`, no body change), so no Attack icon and no stats entry both read 0 and qualify. A played card reads the played face's own `cardStats.attack`.
+2. **Master Strike.** The weak HQ slots are snapshotted, then per slot in ascending order: the Hero is pushed to the Hero Deck bottom, `refillHqSlot` refills the slot, and every player (sorted) discards the earliest hand card of that Hero's off-play cost through the `discardFromHand` chokepoint, or logs that they have none. The discard is auto-picked inline because a strike has no `events` and every candidate shares one cost; the pick is WP-817's default (`selectDefaultCostDiscardCard`). The Magneto current-player-parks split (D-24284) is declined on purpose: one strike can owe up to five discards per player, so the current player would face up to five parked picks while the others are auto-picked. An interactive pick through the WP-817 owed queue is out of scope. A refilled Hero is never re-checked, the push-then-pop never changes the Hero Deck's length, and with an empty deck the same Hero returns to its slot.
+3. **Dominate the Weak** is one active-seat seat choice (kind `dominate-the-weak-gain`) whose options pair a recipient with a Hero, "Player N gains <Hero>", on the new optional `SeatChoiceOption.recipientSeat`. You come first, then the other seats ascending; within a seat the Heroes run cost-descending (ties in slot order), so `defaultOptionIndex: 0` is "you gain the highest-cost eligible Hero" (D-24343). A single option resolves at once. The gain is the free HQ gain to the recipient's discard (`gainHqHeroToDiscard`), which reaches a Haunted Hero (only the free-recruit path skips one, D-24587) and leaves the haunter on the slot.
+4. **Computer-Uploaded Genius.** Each other player with a Tech Hero in hand (`heroClass` or `heroClass2`, D-24523) reveals it; a free reveal beats a discard (D-24312). The rest get the Fallen Idols discard shape (kind `computer-uploaded-genius-discard`), whose builder and applier bodies are extracted as the shared `buildHandDiscardChoice` / `applyHandDiscard`; Fallen Idols delegates unchanged.
+5. **Pet Projects.** Each other player with any `ca75-villain-zolas-creations-` card in their Victory Pile reveals it (the anchored prefix, D-24299); every other one gains a Wound through the Diving Block chokepoint (D-24499 / D-24673).
+6. **Crush Pacifist Resistance** is a two-step active-seat chain over the hand and the cards played this turn, one option per `(zone, cardId)` on the new optional `SeatChoiceOption.sourceZone` (starter ids repeat across zones), with "KO nothing" last and the default. `resolveSeatChoice` chains the second pick (kind `crush-pacifist-resistance-last-ko`) only after a first-pick KO, beside the Monarch's Decree chain (D-24511); the last pick never chains, and the timeout path never chains (D-24501), so a timeout KOs nothing.
+7. **Bot.** The playing-seat bot discards its least valuable card for Genius, KOs a 0-cost Hero (a S.H.I.E.L.D. starter) for either Crush pick or declines, and keeps Dominate's default. Autoplay, the sim and PAR take `defaultOptionIndex`.
+8. **`gainHqHeroFree` moved verbatim** from `rules/tacticHandlers.ts` to `moves/seatChoiceTactics.ts` as the exported `gainHqHeroToDiscard`; Dark Technology and Bitter Captor call it unchanged.
+9. **Intended follow-on effects.** The strike and Dominate the Weak change the HQ, so Zola's Ultimate Abomination cost moves with them. Dominate the Weak's refill can empty the Hero Deck and latch the final turn (D-24159) or a Hero-Deck scheme loss (D-24319). Neither is suppressed.
+10. **Replay-compat.** A stored pre-WP-821 match that hit Zola's strike or defeated one of his Tactics replays differently. No hashed fixture plays Zola, so `finalStateHash` and `PRE_WP080_HASH` are unchanged. The weekly full-mastermind sweep (not a hash gate) shifts for Zola, and his gauntlet legs change difficulty; no committed PAR artifact references him.
+
+**Gates.** WP-821 §Test Contract Z1-Z3, S1-S6, T1-T18 and T3b. Engine 5578 → 5605 (+27), 0 fail; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0. `pnpm effect-index` flips only the four Zola Tactic rows to `executable` (plus `summary.byStatus`); `effect-index`, `ledger:villains`, `ledger:heroes`, `mechanics:metadata`, `cards`, `sim:runtime-observed` and `sim:coverage` checks exit 0. `finalStateHash` / `PRE_WP080_HASH` unchanged. Revert proofs 7/7: `<=` for `<` fails Z1-Z3 / S1 / S2 / T1-T3b / T8 / T9 / T14 / T15; the live HQ instead of the snapshot fails S1; no Crush chain fails T14 / T15; Genius addressing a Tech holder fails T4 / T5; Pet Projects hitting the current player fails T6 / T7; Dominate recipients plain ascending fails T1 / T3b / T11 / T17; a raw push instead of `discardCardFromHand` fails S6.
+
+**Reserved by:** NUMBER-LEDGER D-24754 (#2954). Related: D-24299 (anchored villain-group prefix), D-24300 (id-keyed strike and tactic dispatch), D-24312 (free reveals), D-24343 (highest-cost auto-gain), D-24499 / D-24673 (Wound chokepoint), D-24501 / D-24648 (seat choices, active-seat-only park), D-24509 (free HQ gain), D-24511 (multi-seat tactic choices, the resolve-time chain), D-24523 (dual class), D-24587 (Haunted HQ), D-24687 / D-24693 ("your Heroes" KO zones), D-24747 (Ultimate Abomination), D-24750 (cost-filtered discard pick), D-24752 (Fallen Idols), D-24081 (`G.messages` hash-excluded).
+
+---
+
+### D-24756 — Brainwash the Military: 12 S.H.I.E.L.D. Officers are converted Villains (3 + the Traitor Battalion), gained as a Hero on defeat; Twists are numbered from the stack; Evil Wins at 5 escaped Officers (Active 2026-10-23 — WP-823 / EC-861)
+
+**Status:** Active 2026-10-23. Live-verify (D-24026) PASS 2026-10-24: seated 2-player operator match `1oDjFITY7nP` (Jeff + a Competent bot ally; server `37c57162`, client `37c5716`; Red Skull, HYDRA + Masters of Evil (WWII), Sentinel); every rule observed live, evidence in STATUS.md. An earlier attempt, `kDC_g7_GRO-`, ran on the pre-merge server `4beb7ce5` and is the pre-fix baseline (no Officers, the twist-7 proxy loss).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). A Brainwash the Military match puts 12 S.H.I.E.L.D. Officers into the Villain Deck. A revealed Officer fights you as a Villain with Attack 3 plus the Twists stacked next to the Scheme; defeating one puts a S.H.I.E.L.D. Officer in your discard. Twists 1-6 grow the Traitor Battalion and play another card; Twist 7 makes every Officer in the City escape; five escaped Officers lose the game. The danger meter reads "Officers N/5".
+
+**Context.** The Cap 75th re-audit (2026-10-23) found `ca75/brainwash-the-military` unconfigured: its Twists did nothing, no Officer was in the Villain Deck, and it lost at the D-24595 last-twist fallback (the WP-763 table's FALSE-LOSS row, L44912). The card prints Setup "7 Twists. Add 12 S.H.I.E.L.D. Officers to the Villain Deck."; Special Rules "S.H.I.E.L.D. Officers in the Villain Deck are Villains. Their Attack is 3 plus the number of Twists stacked next to this Scheme. When you defeat a S.H.I.E.L.D. Officer, gain it as a Hero."; "Twist 1-6: Stack this Twist next to the Scheme as a 'Traitor Battalion.' Play another card from the Villain Deck."; "Twist 7: All S.H.I.E.L.D. Officers in the city escape."; "Evil Wins: When 5 S.H.I.E.L.D. Officers escape." Rules v23 L1170: "Gain" means put it into your discard pile; L558-570: the escape procedure; the 12 Officers come from the 30-card S.H.I.E.L.D. Officer Stack.
+
+**Decision.**
+1. **Officers are converted Villains** (the Killbots overlay, D-24324). `buildVillainDeck` adds `shield-officer-villain-deck-00` … `-11`, typed `'villain'` and tagged with the new `ConvertedVillainOrigin` `'shield-officer'`, before its lexical sort and single shuffle, so no new random draw. The count is `min(12, officersCount)`, and `buildInitialGameState` drops the same number of `pile-shield-officer` tokens from the Officer Stack (30 → 18; identical tokens, after the Stack's shuffle). Each Officer displays as a S.H.I.E.L.D. Officer (`applyBrainwashedOfficerDisplay`). Every other scheme's setup is byte-identical.
+2. **Attack** = 3 + `G.counters.traitorBattalionTwists` (`TRAITOR_BATTALION_TWISTS`, never seeded), read overlay-first in `resolveBaseFightCost`, so every scheme and keyword term still stacks on it and the fight move, the bot and the City projection agree.
+3. **"Gain it as a Hero."** `defeatCityVillainCore` removes the instance and pushes the fungible `SHIELD_OFFICER_EXT_ID` token to the defeater's discard: the same card, so nothing is drawn from the Stack, and the token already carries the Officer's stats, team, display and invariant exemption. The fight narrative reuses the "gained the Hero" clause (D-24331). A defeated Officer never enters the Victory Pile, so it scores as no Villain or Bystander and Savior never counts it. While in the City it is typed `'villain'`, so every City Villain read sees it.
+4. **Twists are numbered from the Traitor Battalion, not `schemeTwistCount`.** "Play another card" can reveal another Twist, which re-enters the resolver before the dispatcher increments `schemeTwistCount`. The stack is raised before the extra card is played, so a nested Twist reads the right number: fewer than 6 stacked → stack and play the top card (`playTopVillainDeckCards`); 6 stacked → Twist 7. A Twist after the seventh (a Mystique Escape) also runs Twist 7.
+5. **Twist 7** scans the City from the Bridge (4) to the Sewers (0) and escapes every Officer through the full `resolveVillainEscape` (D-24656), clearing each space first; other Villains stay.
+6. **Evil Wins** is `escaped-converted-count` on `'shield-officer'`, threshold 5, which suppresses the twist proxy (`lossThreshold: 7` inert, D-24178). New meter kind `'escaped-officer'` (client noun "Officers"); the loss line reads "N S.H.I.E.L.D. Officers escaped". New resolver id `'brainwash-the-military'` and notable-event key `'brainwashTheMilitary'`. WP-763's FALSE-LOSS row for this scheme is superseded.
+7. **Known gaps.** The dispatcher's generic "Scheme Twist #N revealed" line is built after the resolver returns, so when a Twist plays another Twist the two generic lines print after both Twists' Brainwash lines (the count still ends right; `schemeHandlers.ts` untouched). HYDRA Level (escaped S.H.I.E.L.D. cards) is not modeled anywhere. The competent bot values fights by Victory Points, so it may undervalue an Officer (a Hero, not VP). No Traitor Battalion board readout; the stack shows through every Officer's City cost and the Twist log line.
+8. **Contract-file edits** (`.claude/rules/code-style.md` §Contract Files): `ConvertedVillainOrigin` + `TRAITOR_BATTALION_TWISTS` (`types.ts`); `SchemeTwistResolverId` (`rules/schemeTwistConfig.types.ts`); `SchemeTwistResolverKey` / `SCHEME_TWIST_RESOLVER_KEYS` (`events/notableEvents.types.ts`); the `officers` JSDoc in `state/zones.types.ts` (comment only). The drafting ruling that the 12 Officers come from the Officer Stack rests on ca75 shipping no Officers and the core box's 30 (rules v23 L4545 / L4767); no rules line says it directly.
+9. **Replay-compat.** A stored pre-WP-823 Brainwash match replays differently (its Villain Deck gains 12 cards). No hashed fixture, gauntlet loadout or PAR artifact plays the scheme; the weekly scheme sweep shifts for it.
+
+**Gates.** WP-823 §Test Contract B1-B3, B1b, A1-A2, D1-D2, T1-T6, L1-L4, P1-P4. game-engine 5605 → 5623 (+18), 0 fail; arena-client 2435 / 0 fail and `typecheck` 0; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail (server 1836 / 1629 pass, 207 skipped as on the baseline). `effect-index`, `ledger:villains`, `ledger:heroes`, `mechanics:metadata`, `cards`, `cards:count-markers`, `sim:runtime-observed` and `sim:coverage` checks exit 0 with nothing regenerated. `finalStateHash` / `PRE_WP080_HASH` unchanged. Revert proofs 8/8 (stack numbering → T2-T6; instance id to discard, Officer to `victory` → D1; no Stack draw-down → B1; no attack branch → A1 / T2; Twist 7 escapes every City card → T4; `'villain'`-typed escape count → L1-L3; bypassing `resolveVillainEscape` → T4 / L1).
+
+**Reserved by:** NUMBER-LEDGER D-24756 (#2973). Related: D-24324 / D-24325 (Killbots overlay and loss), D-24326 / D-24327 / D-24331 (Secret Invasion conversion and gain clause), D-24351 (`playTopVillainDeckCards`), D-24434 (origin-named meter kinds), D-24595 (last-twist fallback), D-24656 (full effect-caused escape), D-24668 / D-24680 (converted display, escaped-loss lines), D-24178 / D-24315 (resource losses suppress the twist proxy), D-24081 (`G.messages` hash-excluded).
+
+---
+Protect this file.
+
+### D-24563 — A repeated icon in a Superpower's leading prefix needs that many OTHER matching cards; the count rides `HeroCondition.requiredMatches` (Active 2026-10-23 — WP-741 / EC-778)
+
+**Status:** Active 2026-10-23. Live-verify (D-24026) pending deploy: Dark City Bishop's Concussive Blast after one other Ranged Hero grants no +3 and logs "it needs 2 other ranged Heroes played this turn"; after two, it grants +3. Use a match created after the deploy (in-flight matches keep their setup-time hooks).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). 35 printed lines across 34 hero decks gate on their printed count: Bishop's Concussive Blast, Janet van Dyne's Subatomic Size, Captain Marvel's Cosmic Energies, Crystal of Kadavus's repeat, Agent X-13's Sniper Squad (4 other S.H.I.E.L.D. cards) and Psi-Lord's Reshape Reality among them. No Core card is affected. A failed doubled gate names its count.
+
+**Context.** Rules v23 L683-696 ("Critical Hit" Superpowers): a Superpower with two icons needs cards with both icons played earlier this turn; the card does not satisfy itself and another copy does. The parser emitted one condition per prefix token and `evaluateCondition` returned true on the first match, so a repeated icon was satisfied by ONE other card everywhere except the two fused cards WP-740 / WP-765 handled with a descriptor count.
+
+**Decision.**
+1. **Rule.** A Superpower whose leading icon prefix repeats an icon m times needs m distinct OTHER played-this-turn cards bearing that icon. The card itself never counts; another copy (a different `#N`) does. The rulebook states the two-icon rule as "cards with both of those icons"; that two IDENTICAL icons need two cards is an inference from that wording (the extracted text strips the glyphs), recorded here as the ruling this engine follows.
+2. **Source of multiplicity.** Only the leading icon run of a line: the D-24628 `LEADING_GATE_PREFIX_PATTERN` match, reused, not duplicated. Tokens anywhere else never add multiplicity. That protects the 42 lines that repeat a condition token mid-sentence (core and msp1 Arc Reactor, Absorb Energies, Radiation Focus Array, the Cyber-Mod lines and others), which keep two plain identical conditions.
+3. **Representation.** `HeroCondition.requiredMatches?: number`, emitted only when ≥ 2, produced by `collapseLeadingRepeatedIconConditions` right after the class-then-team concat and before the Empowered splices. The first emitted matching condition gains the count, the next m − 1 identical ones are dropped, extra mid-sentence ones stay, and a condition is never synthesized. Only `heroClassMatch` / `requiresTeam` honor it, through `countOtherInPlayMatchingCondition` (`triggeringCardId` is now optional). Absent, 1, 0 or non-integer ≡ 1.
+4. **Counting.** Counts read `playedCardIdsThisTurn`: cards you played, wherever they went, so a card set aside Out of Time counts (L3443-3446), never `playedCardIdsStillInPlay`. A card matching several distinct icons (multiclass, dual-class, Size-Changing, copied team, the teamless basic S.H.I.E.L.D. tokens for `shield`) counts toward each (rulebook Multiclass L3110-3116). Mixed distinct pairs are unchanged. A Penumbra both-sides split card counts as its two face ids (D-24619 §4), so one such card whose faces both bear the icon satisfies a ×2 gate (rules reading confirmed by Jeff 2026-10-23).
+5. **The WP-740 descriptor count is retired from both fusions.** The doubled "both" line now arrives as one `bothCondition` carrying `requiredMatches`, and `isDigestBothConditionMet` is plain `evaluateAllConditions`. This supersedes D-24562 lock 1, the evaluator-untouched clause of D-24562 lock 4, and D-24598's Nanite count derivation; D-24562 lock 5 is narrowed to mixed distinct-icon lines. No schema migration: pre-deploy match blobs keep their setup-time hooks and play at count 1 as they did. Accepted window: Play to the Crowd and Nanite Shapeshifter matches created between their deploy and this one lose their count gate in flight or on replay. Stored `competitive_scores` stay frozen (D-24616 §5).
+6. **Scope limit.** Cyber-Mod and Size-Changing repeated tokens are out of scope; neither is a leading icon run.
+
+**Gates.** Engine 5623 → 5649 (+26), 0 fail (rebased onto WP-823); `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail. A before/after build of all 1975 hero lines alone changed exactly the 35 repeated-prefix lines. `runtime-observed-hollows.json` regenerated, 7834 → 7794 observations. `finalStateHash` / `PRE_WP080_HASH` unchanged (no hashed fixture plays an affected hero).
+
+**Reserved by:** NUMBER-LEDGER D-24563 (2026-09-22). Related: D-24562 (WP-740), D-24598 (WP-765), D-24628 (leading gate prefixes), D-24692 lock 10 (Out of Time repeated gates), D-24391 (S.H.I.E.L.D. tokens), D-24523 (dual class), D-24074 (Size-Changing), D-24619 (Penumbra), D-24095 / D-24119 (persisted hooks, replay), D-24026.
+
+---
+
+### D-24757 — Cap 75th count-scaled hero lines: a Savior line composes with a per-count marker; new count source `shield-heroes-cost-one-plus-played-this-turn` (Active 2026-10-23 — WP-824 / EC-862)
+
+**Status:** Active 2026-10-23. Live-verify (D-24026) PASS 2026-10-24: operator match `dSuOp6VyrDx` created after the deploy (server `f0cfc6fe`, client `f0cfc6f`; Jeff + a Competent bot ally; Red Skull, Midtown Bank Robbery, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. With 3 Bystanders: Paramilitary Ops after an Agent and a Trooper logged "Count-scaled attack: +0 (…; count 0)" (Attack 3 = Trooper 1 + its printed 2); Star-Spangled Hero's Savior line "Count-scaled recruit: +6 (…; count 3)" and International Strike Force's "Count-scaled attack: +3 (…; count 3)". With 2 Bystanders: both Savior lines logged "did not activate … it needs 3 Bystanders in your Victory Pile — you have 2" while each line 1 still scaled; Paramilitary Ops after an Agent, an Officer and International Strike Force logged "+2 (…; count 2)".
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). International Strike Force line 2 gives a Savior +1 Attack per Hero Class they have (was a flat +1); Star-Spangled Hero line 2 gives a Savior +2 Recruit per Hero Class (was a flat +2); Paramilitary Ops gives +1 Attack per other S.H.I.E.L.D. Hero played this turn that costs 1 or more (was a flat +1 that one cost-0 starter unlocked). The count-scaled log line names the new source "other S.H.I.E.L.D. Hero costing 1 or more played this turn".
+
+**Context.** #2449 marked the plain "for each Hero Class you have" lines and deferred the two ca75 Savior lines "until the marker is composed with that gate and verified". Live match 1oDjFITY7nP (server 37c57162) showed both flat (27.2.3, 26.2.10). Paramilitary Ops parsed as `requiresTeam: shield` + a flat +1; no count source filtered a team count by cost, and `shield-heroes-played-this-turn` counts the cost-0 starters.
+
+**Decision.**
+1. **Savior composes with a per-count marker.** The `savior` keyword arm pushes only its `bystandersInVictoryAtLeast: 3` condition, and Steps 2d / 2d′ emit the per-count effect with no Savior special case, so a `[keyword:Savior]:` line plus `[keyword:attack-per-count:…]` / `[keyword:recruit-per-count:…]` builds one hook: the condition gates the per-count grant, and the D-24016 / D-24489 icon suppression drops the flat grant. No parser change. Both lines use `distinct-hero-classes-played-this-turn` (hand + play, self-inclusive, D-24529). The two `check-hero-count-markers.mjs` deferrals are removed.
+2. **New `HeroCountSource` `shield-heroes-cost-one-plus-played-this-turn`**, appended last (17 sources): OTHER cards played this turn (`playedCardIdsThisTurn`, self-exclusive) that count as S.H.I.E.L.D. Heroes (`cardCountsAsTeamMember`, so the Officer / Agent / Trooper tokens are members) with `G.cardStats` cost ≥ 1 (`?? 0` for a card with no row). The Officer (cost 3) counts; the Agent and Trooper (cost-0 rows, their printed cost) never do. It is a sibling of `shield-heroes-played-this-turn`, which keeps its Legendary Commander semantics. The slug spells "one" because a count-source slug can't contain a digit.
+3. **Paramilitary Ops keeps its `requiresTeam: shield` gate.** It is outcome-neutral: the gate's predicate (any other S.H.I.E.L.D. card) is a superset of the count's, so when it fails the count is 0 too. Same as Legendary Commander / A Day Unlike Any Other on main; corpus-wide suppression of descriptive team gates on count lines is out of scope.
+4. **Replay-compat.** A stored match replays from its bgio `initialState`, which already holds its setup-time `G.heroAbilityHooks`, so pre-WP-824 matches (in flight or replayed through the D-24119 reducer) keep the flat grants and replay identically; the new count source is only read by the new hooks. Only matches created after the deploy carry the per-count grants. No hashed fixture plays a ca75 hero (`finalStateHash` / `PRE_WP080_HASH` unchanged). The fixed-seed runtime-observed sweep shifts by one gate-only observation (7794 → 7793); the dashboard `useInPlayCoverage` totalObs pin follows it (8715 → 8714; resolvedObs 1091 and 12.5% unchanged).
+5. **Follow-up recorded, not fixed:** co2e Nick Fury Stealth Assault Squad ("+2 if you played another [team:shield] Hero that costs 1 or more this turn") has the same starter-unlocks-it defect as a flat gate; it needs a cost-filtered team gate, not a count.
+
+**Gates.** game-engine 5649 → 5662 (+13 / +4 suites), 0 fail; the new real-data tests fail 7 / 10 on the baseline `ca75.json`; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; dashboard 584 / 0 and typecheck 0. `apply-hero-ability-markers.mjs` updated exactly 3 lines; hero ledger, effect index, card-mechanics (Attack Per Count 33 → 35, Recruit Per Count 9 → 10) and the runtime-observed feed regenerated; every card / coverage `:check` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24757 (#2977). Related: D-24016 (attack-per-count + icon suppression), D-24489 (recruit-per-count), D-24497 / D-24529 (distinct Hero Classes you have), D-24464 (Savior), D-24498 / D-24391 (S.H.I.E.L.D. tokens, team membership), D-24655 (the previous count-source addition), D-24026.
+
+---
+
+### D-24758 — A printed cost floor on the "another [team:X] Hero" gate: `HeroCondition.minimumCost`; co2e Stealth Assault Squad needs a S.H.I.E.L.D. Hero that costs 1 or more (Active 2026-10-24 — WP-825 / EC-863)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-24: operator match `8OUaWVCDcGp` created after the deploy (server `f0cfc6fe`, client `f0cfc6f`; Jeff + a Competent bot ally; co2e Nick Fury + four ca75 heroes). Stealth Assault Squad after an Agent and a Trooper gave only its printed +1 and logged "ability did not activate — it needs another shield Hero that costs 1 or more played this turn"; a second copy after an Officer (and the first copy) gave +1 and "+2 attack from Stealth Assault Squad" (Attack 2 → 5).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Nick Fury's Stealth Assault Squad (co2e) prints "You get +2[icon:attack] if you played another [team:shield] Hero that costs 1 or more this turn." One cost-0 Agent or Trooper used to unlock it; now only the Officer (cost 3) or another costed S.H.I.E.L.D. Hero does.
+
+**Context.** Step 1b turns the inline `[team:shield]` into a plain `requiresTeam: shield` gate, and `cardCountsAsTeamMember` counts the cost-0 basic tokens as S.H.I.E.L.D. Heroes (D-24391 / D-24498), so the printed cost floor was dropped. Recorded as a follow-up in D-24757 §5 (WP-824).
+
+**Decision.**
+1. **Contract field.** `HeroCondition.minimumCost?: number` (`rules/heroAbility.types.ts`, after `requiredMatches`). Absent, 0, negative or non-integer ≡ no floor (`effectiveMinimumCost`), so every other hook is unchanged. Only `heroClassMatch` / `requiresTeam` honor it, inside `countOtherInPlayMatchingCondition` (the one counting primitive, D-24563): a matching OTHER played card counts only when `G.cardStats?.[id]?.cost ?? 0` is at least the floor. The Agent / Trooper carry cost-0 rows, the Officer cost 3.
+2. **Parser.** A text arm (the D-24746 precedent, no marker, no card-data change): `ANOTHER_TEAM_HERO_COST_FLOOR_PATTERN` matches "if you played another [team:X] Hero that costs N or more this turn" (exactly one corpus line) and `applyAnotherTeamHeroCostFloor` sets `minimumCost: N` on the line's first matching `requiresTeam` condition. It mutates only the array `collapseLeadingRepeatedIconConditions` just returned in the same `parseAbilityText` call, before the array is attached to a hook.
+3. **Wording.** `describeFailedCondition` names the floor: "it needs another shield Hero that costs 1 or more played this turn" (plural: "…Heroes that cost N or more…").
+4. **Sequence teacher.** `heroConditionHoldsForInPlay` returns `'unsupported'` for a floored gate: its card-data slice has no `cardStats`, so it would report a false whiff. Same scope-out as size-changing / copy-powers; `apps/server` is unchanged.
+5. **Replay-compat.** A stored match replays from its bgio `initialState`, which holds its setup-time hooks, so pre-deploy matches keep the unfloored gate and replay identically. Only matches created after the deploy carry the floor. Stored `competitive_scores` stay frozen (D-24616 §5). No hashed fixture, PAR file or coverage sweep includes co2e Nick Fury (`finalStateHash` / `PRE_WP080_HASH` unchanged).
+
+**Gates.** game-engine 5662 → 5672 (+10, rebased onto WP-824 / +2 suites), 0 fail; four revert proofs (parser arm, counter floor, teacher scope-out, wording) each fail their locked tests; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; all eight card / coverage `:check`s unchanged. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-825-stealth-assault-squad-costed-shield-gate.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24758 (#2980). Related: D-24563 (`requiredMatches`, the field precedent), D-24746 (parser text arm), D-24628 (body team tokens), D-24391 / D-24498 (S.H.I.E.L.D. tokens), D-24533 (sequence teacher), D-24757 (WP-824), D-24616, D-24026.
+
+---
+
+### D-24766 — "Add an extra Villain Group" is a strict base + 1 Villain Group requirement on every surface (WP-833 / EC-871) (Active 2026-10-24)
+
+**Context.** Change the Outcome of WWII (ca75) prints "Setup: 7 Twists. Add an extra Villain Group." A corpus scan of `data/cards` finds 14 schemes that print that plain sentence. The per-player-count table allows exactly 1 Villain Group at 1 player (2/3/3/4 at 2–5), and the loadout builder, the lobby and `Game.setup` rejected one more, so none of them could be set up as printed. Rules v23 (:2928–2932): an extra Villain Group is a standard 8-card Villain Group, not a Henchman group.
+
+**Decision.**
+
+1. **A requirement override, strict.** The 14 schemes that print the plain sentence "Add an extra Villain Group." require exactly base + 1 Villain Groups at every player count (2/3/4/4/5 at 1–5p). The base count is rejected, and so is base + 2. The closed list, `SCHEMES_WITH_EXTRA_VILLAIN_GROUP`: `ca75/change-the-outcome-of-wwii`, `co2e/bank-robbery-hostage-crisis`, `co2e/negative-zone-prison-outbreak`, `cvwr/predict-future-crime`, `dkcy/steal-the-weaponized-plutonium`, `dstr/war-for-the-dream-dimension`, `dstr/cursed-pages-of-the-darkhold-tome`, `mgtg/inescapable-kyln-space-prison`, `mgtg/provoke-the-sovereign-war-fleet`, `nmut/superhuman-baseball-game`, `rvlt/earthquake-drains-the-ocean`, `ssw1/fragmented-realities`, `ssw1/smash-two-dimensions-together`, `ssw2/deadlands-hordes-charge-the-wall`. A test pins it to the corpus scan both ways. This is the D-24666 shape, for Villain Groups.
+2. **One definition.** `SCHEMES_WITH_EXTRA_VILLAIN_GROUP` and `resolveEffectiveVillainGroupCount` live only in `packages/registry/src/playerCountSetup.ts`, consumed by `checkPlayerCountComposition` and carried as a required `CardRegistry` member.
+   - The engine reaches the resolver structurally through an optional `CardRegistryReader` member and falls back to the base count without it (`?.` / `??`).
+   - The server setup-requirements projection and the loadout builder (required row and preview) read the same resolver from the `@legendary-arena/registry/playerCountSetup` subpath.
+   - The gauntlet menu generator keeps a duplicated list (it runs before any build), pinned through its output: the overrides whose villains grow must equal the registry list.
+3. **Gauntlet compositions follow the rule.** Menu-fallback legs use generator `schemeOverrides`: the base composition with the villain slot refilled by the D-24199 rule for one more group (a superset), the same henchmen; a single approved composition per leg and count (D-24278). 47 new overrides across 34 menus (56 in total with the 9 Henchman ones), for every mastermind of ca75, co2e, cvwr, dkcy, dstr, mgtg, nmut, rvlt, ssw1 and ssw2; the WWII leg fields both ca75 groups at 1p. The approved villain segment of these legs changes. No PAR is published for any non-Core scenario, so no replay on these legs qualifies before or after; this sets the approved composition a future PAR must key on. The authored slice in `getGauntletConfig` and the `villainPool` length check in `validateGauntletConfigs` are scheme-aware too (no authored leg uses a listed scheme today); seed PAR's `enumerateScenarios` is not, and must become scheme-aware before any authored leg uses a listed scheme.
+4. **Not covered** (named follow-ups): the named-group (mdns Lilin), two-extra (noir Five Families), solo-only (ssw1 Crush Them with My Bare Hands), exact-count (wtif Breach the Nexus: 3 at 1–2 players), drained-mastermind (vnom Symbiotic Absorption) and Twist-time (msmc Open Rifts) shapes; the mastermind extras (anni Epic Annihilus; mgtg Ego / Epic Ego and amwp Kang, already WP-797 follow-ups); the three themes that carry a base count for a listed scheme; the legends-board requirement list and `gauntlet-post-block.mjs`, which show the base count; a scheme-aware seed-PAR `enumerateScenarios`.
+5. **No migration.** Matches in progress keep their setup; nothing is re-validated mid-match, and a completed match replays from its stored `initialState`, so its verification is unaffected. Saved and exported base-count loadouts for these schemes become invalid and are flagged by the builder and the lobby when loaded, not rewritten. Play Again from a pre-deploy base-count match of these schemes returns the setup 400 ("A 1-player match requires 2 villain groups …"); the player rebuilds the loadout.
+
+**Determinism.** No `G` field and no `MatchSetupConfig` field changes; the engine villain deck already adds every configured group. The sentinel replay fixture plays `core/legacy-virus-the`, so `finalStateHash` / `PRE_WP080_HASH` are byte-unchanged — no re-pin.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 failures (registry 295 → 310, game-engine 5672 → 5676, server 1836 → 1838, registry-viewer 329 → 335, every other package unchanged); registry-viewer typecheck 0; `gauntlet:configs:check` and `gauntlet:loadouts:check` OK (menu diff +397 / −0, the WWII ids as locked); replay fixtures byte-identical; revert proofs 6/6. Four pre-existing gauntlet pin tests were edited as mandated (they assumed only the Henchman list emits overrides).
+
+**Reserved by:** NUMBER-LEDGER D-24766 (#3002). Related: D-24666 (the Henchman precedent), D-24165 (table SSOT), D-24337 / D-24338 (requirement overrides), D-24199 / D-24278 / D-24283 (gauntlet menu, single variant, per-scheme overlay), D-24372 (runtime drift pins), D-11804 (API catalog), D-24026 (live-verify).
+
+**Live-verify (D-24026): PASS 2026-10-25** (server, play and cards all on `972f8643`). `GET /api/match/setup-requirements?schemeId=ca75/change-the-outcome-of-wwii` returns `villainGroupCount` 2/3/4/4/5 (Midtown and no-scheme unchanged at 1/2/3/3/4). Cards builder: a 1p WWII loadout with 1 group shows "2 villain groups", flags "needs 2 villain groups — this loadout has 1" and disables both exports; with both ca75 groups the mismatch clears and export is enabled. Match create: a 1-group 1p WWII `setupData` returns 400 "A 1-player match requires 2 villain groups, but the loadout provides 1."; with both ca75 groups match `JjmmvBwpRqw` (1p Arnim Zola) plays and its Villain Deck revealed Captain Zolandia (Zola's Creations) and Radioactive Man (Masters of Evil (WWII)). Gauntlet: the published legends index (regenerated by the new server) gives both ca75 WWII legs base + 1 villains (1p the two ca75 groups; 2p + `co2e/brotherhood-of-mutants`; 5p + `co2e/enemies-of-asgard`, `co2e/hydra`), Core Magneto / Midtown unchanged; those leg compositions create matches `0Wt_wX4fGAf` (1p) and `Blc-8ZyKZQH` (2p). The "Play this leg" button itself was not clicked (it starts a run on Jeff's account); the launch reads this same overlay (`legLaunch`). Lobby (Workshop, pasted loadout): 1 group shows "A 1-player match needs 2 villain groups — this loadout has 1." and disables Create; 2 groups clear it. WP-832 ordering confirmed live: a 2p WWII config with only the two ca75 groups returns 400 "requires 3 villain groups".
+
+---
+
+### D-24759 — The Cap 75th optional-KO S.H.I.E.L.D. family on the shared optional-KO queue: "KO up to N", a later line's per-KO reward, and the played-this-turn KO-then-rescue (Active 2026-10-24 — WP-826 / EC-864)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `3woVv0ZfCLV` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Loki, The Unbreakable Enigma Code, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. Mobilize for War with 0 Bystanders logged the Savior line "did not activate … you have 0" and opened two prompts listing only S.H.I.E.L.D. cards, no reward. With 5 Bystanders both prompts read "KO a card for a reward (+1 Attack)", Flying Shield Block in hand was left out, and KO one + decline the other gave Attack 4 → 5. Reassign to Civilian Duty after Mobilize and International Strike Force logged "it needs 3 other shield Heroes played this turn" with no prompt; a second Reassign after those three opened one "Rescue a Bystander" prompt over the cards played this turn, and KO-ing the first Reassign rescued (Victory Pile 3 → 4).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Agent X-13's Mobilize for War offers up to two optional KOs of S.H.I.E.L.D. Heroes from hand or discard and, as a Savior, +1 Attack per card actually KO'd. Steve Rogers' Reassign to Civilian Duty, after three other S.H.I.E.L.D. cards, offers one optional KO of a S.H.I.E.L.D. Hero played this turn that rescues a Bystander.
+
+**Context.** Both lines parsed to a gate with no effect (`gate-only`), and Mobilize's Savior line to a flat +1 for any Savior. Every "you may KO … if you do, <reward>" on main parks a `PendingOptionalKoReward` (D-24019) with optional `koZones` (D-24480) and `koTeamFilter` (D-24498); the resolve move, block-all guards, projection, prompt, bot and sim dispatch already exist.
+
+**Decision.**
+1. **Three keywords**, each carrying a magnitude (none in `NO_MAGNITUDE_KEYWORDS`), parked on the shared queue with existing fields only (no new move, queue, `G` or UIState field):
+   - `ko-up-to-shield-hand-discard:N` parks `min(N, eligible)` no-reward entries (`koZones ['hand','discard']`, `koTeamFilter 'shield'`). "Up to" = independent optional choices; a KO never adds a S.H.I.E.L.D. Hero to hand or discard, so a surplus entry could only be declined.
+   - `attack-per-ko-this-way:N` (a later line of the same card) upgrades this play's still-pending `rewardType 'none'` entries (same `playerID` and `sourceCardId`) to `attack:N`, so the reward fires per actual KO inside `resolveOptionalKoReward`. It relies on hooks running in ability-line order in one `executeHeroEffects` call, on the block-all guard (the queue is empty when a card is played), and on its gate being evaluated at play (Savior is not wait-and-see). Making its gate wait-and-see requires revisiting the upgrade.
+   - `optional-ko-shield-played-rescue:N` parks one entry `koZones ['inPlay']`, `koTeamFilter 'shield'`, `rescue:N`. "A Hero that you played this turn" includes the card itself; a KO'd played card keeps the Attack it produced (D-24442).
+2. **Parser.** Mobilize's inline `[team:shield]` names the KO target, so a line flag suppresses its Step 1b `requiresTeam` (the `optional-ko-shield-officer` precedent); Reassign's body token was already descriptive (D-24628). The per-KO reward owns the printed `+1[icon:attack]`, so the plain attack is suppressed (the D-24398 precedent).
+3. **Projection and bot.** Reassign's entry is the first that omits hand and the first shield-only entry that permits inPlay: the projection lists hand cards only when `koZones` permits hand and applies the shield filter to inPlay; `selectDefaultOptionalKoTarget` gains `allowHand` (default `true`). Every pre-existing entry is unchanged (each `koZones` includes hand; each shield-only entry omits inPlay).
+4. **Replay-compat.** A stored match replays from its bgio `initialState`, which holds its setup-time hooks, so pre-deploy matches keep the old hooks and replay identically. No hashed fixture, PAR file or gauntlet config holds a ca75 hero (`finalStateHash` / `PRE_WP080_HASH` unchanged). The fixed-seed runtime-observed sweep moved 7793 → 7777 and the dashboard `useInPlayCoverage` totalObs pin 8714 → 8698 (resolvedObs 1091, 12.5% unchanged).
+5. **Known limitations.** A multi-play move (Steal Abilities, `replayOutOfTimeCards`) can park more S.H.I.E.L.D.-only entries than eligible cards, since each parker counts eligibility alone (the pre-existing D-24498 class; Mobilize alone cannot trigger it). The bot never declines (D-24019), so it may KO Reassign itself when that is the cheapest played S.H.I.E.L.D. Hero. `heroClauseValue` has no case for `attack-per-ko-this-way`, so Mobilize's Savior clause value reads 0 instead of the old flat 1 (Realized Value metric only).
+6. **Follow-up.** dkcy "KO any number of cards from your hand. You get +1[icon:attack] for each card KO'd this way." and dead's Excessive Violence "KO up to two [team:hydra] and/or [team:shield] Heroes from your discard pile. Draw a card for each Hero KO'd this way." can reuse this pattern.
+
+**Gates.** game-engine 5672 → 5687 (+15 / +2 suites), 0 fail; four revert proofs (baseline `ca75.json`; projection hand gate; inPlay shield filter; bot `allowHand`) each fail their locked tests; `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; every card / coverage `:check` 0; dashboard `test:coverage` / `typecheck` / `format:check` 0. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-826-ca75-optional-ko-shield.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24759 (#2984). Related: D-24019 (optional-KO queue), D-24442 (in-play KO source), D-24480 (`koZones`), D-24498 (`koTeamFilter`, S.H.I.E.L.D. tokens), D-24600 (`allowDiscard`), D-24563 (triple gate), D-24628 (body team tokens), D-24398 (icon suppression), D-24464 (Savior), D-24026.
+
+---
+
+### D-24760 — Flying Shield Block: a reactive Wound interception any seat may reveal, once per turn per copy, after the recipient's Diving Block (Active 2026-10-24 — WP-827 / EC-865)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters, and step 4 in operator match `3woVv0ZfCLV` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Loki, The Unbreakable Enigma Code, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. Crazed Rampage (each player gains a Wound) asked "prevent your Wound" first; after the decline it asked "prevent Player 1's Wound", and the reveal logged "prevented Player 1's Wound and rescued a Bystander" (Victory Pile 0 → 1; Player 1 held no Wound). A second Crazed Rampage that turn gave both seats a Wound with no prompt. On the next turn my own Wound offered "prevent your Wound" again and the decline kept it. On the bot's turn, Loki's Master Strike asked me (non-active) about my Wound first, then (after a decline) about the bot's; the reveal resolved and the bot's turn went on with no reload.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Captain America (Falcon)'s Flying Shield Block ("Once per turn, if a player would gain a Wound, you may reveal this card and rescue a Bystander instead.") lets any seat holding it stop any player's Wound and rescue a Bystander for itself.
+
+**Context.** The line built an empty hook. Diving Block (D-24499) is the only reactive Wound interception, and it serves only the recipient.
+
+**Decision.**
+1. **Sibling module.** `moves/flyingShieldBlock.logic.ts` mirrors `divingBlock.logic.ts` with its own runtime-only queue `G.pendingFlyingShieldBlockWounds` (`PendingFlyingShieldBlockWound { recipientID, woundCardId, candidateSeats, addressedSeat? }`) and seat-choice kind `'flying-shield-block'` (no new move). The keyword `flying-shield-block` is wound-time executed (`WOUND_TIME_EXECUTED_KEYWORDS`), with no play-time handler.
+2. **Who is asked.** Every seat with a copy it can still reveal (hand, or played this turn, D-24651): the recipient first, then the other seats in ascending order. Whoever reveals rescues the Bystander, so the order is a rule. Each wave asks a seat about one Wound; an entry waits when its next candidate is already asked this wave. The shown Wound is stamped (`addressedSeat`): the opener clears every stamp before stamping and the apply clears it on every resolve. A decline passes the Wound to its next candidate; the recipient keeps it when none is left. The disconnect default is decline; the bot always reveals.
+3. **Reveal.** The landed Wound returns to the supply and the revealer rescues the top Bystander; an empty supply still prevents the Wound, and a Wound already gone from the discard still lets the reveal rescue (both logged).
+4. **Once per turn per copy.** A revealed copy is recorded in `G.flyingShieldBlockUsedThisTurn`, deleted at turn start in `game.ts` onBegin and `applyOnBeginParity`. Not on `G.turnEconomy` (its rebuild helpers drop unknown fields, and a non-active seat's reveal is not the active player's economy).
+5. **Order with Diving Block.** `checkDivingBlock` returns `boolean`; the chokepoint offers Flying Shield Block only when Diving Block was not offered, and a declined Diving Block hands the Wound on. The Flying Shield Block wave waits while any Diving Block Wound is pending. So one Wound never has two open interceptions.
+6. **Replay-compat.** Stored matches replay from their bgio `initialState`, which holds the setup-time hooks, so pre-deploy matches carry no `flying-shield-block` hook. Both `G` fields are lazily created, so `finalStateHash` / `PRE_WP080_HASH` are unchanged. Sims, PAR and the fixture runner leave both openers unmirrored, by the existing rule.
+7. **Known gaps.** The wound-source log line (`gainWoundWithOutcome`, 12 call sites) still reports a Flying-Shield-pending Wound as gained; the reveal line that follows says it was prevented. Wounds gained to hand outside the chokepoint (Random Acts, D-24678) get no offer. The co-printed "reveal this card and Investigate instead" sibling is a follow-up.
+
+**Gates.** game-engine 5672 → 5689 (+17 / +4 suites), arena-client 2435 → 2436, 0 fail; eight revert proofs each fail their locked tests (including the live onMove opener and onBegin reset, and the stamp lookup); `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; every card / coverage `:check` 0 after regenerating the hero ledger, the effect index (+1 executable) and card-mechanics (+1). The draft had said the last two stayed current: its scaffold ran those checks before rebuilding. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-827-flying-shield-block.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24760 (#2987). Related: D-24499 (Diving Block), D-24501 (seat choice), D-24648 (no stage ride for the active seat), D-24651 (reveal from play), D-24673 (one interception per Wound), D-24678 (Random Acts), D-24518 (end-of-game drop), D-24026.
+
+---
+
+### D-24761 — Granting Man Out of Time to a Hero in hand for the turn: owed grants opened after the play, set aside at the end of applyCardPlay (Active 2026-10-24 — WP-828 / EC-866)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters. 2>4 with no Tech played logged the Tech line as not activated and prompted over the hand Heroes; Storm the Beachhead was picked ("gains Man Out of Time this turn"), set aside Out of Time after its abilities, "returns from Out of Time and is played a second time" on the next start → main, and went to the discard pile ("not set aside again"). After Web-Shooters (Tech), 2>4 granted twice: the first prompt offered Agent and Trooper; the second grant left the first pick out and, with one eligible card left (every starting Agent shares one card id), auto-granted the Trooper.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Winter Soldier's 2>4 ("A Hero in your hand gains [keyword:Man Out of Time] this turn." / "[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn.") now grants Man Out of Time: the chosen Hero, played this turn, is set aside and plays again at the start of the next turn.
+
+**Context.** Both lines left an unresolved `man-out-of-time` marker (D-24692 recorded 2>4 as a runtime hollow). The two lines run in one `executeHeroEffects` call, and the second must exclude the first's pick.
+
+**Decision.**
+1. **Keyword and queue.** `grant-out-of-time` (no magnitude) has a play-time handler that only appends `{ playerID, sourceCardId }` to the runtime-only `G.pendingOutOfTimeGrants`.
+2. **Opening a grant.** The play-phase onMove opener (`openOutOfTimeGrantSeatChoiceIfNeeded`) resolves the queue front to back, waiting while `G.pendingSeatChoice`, `hasAnyPendingChoice(G)` or `G.pendingHeroChoice` is open or the match is decided (the escape-opener precedent). Eligible = hand Heroes in hand order (not a Wound or a Bystander), minus Heroes already granted this turn ("Another Hero"), deduplicated. None → a logged no-op; one → granted with no prompt; two or more → the active player's seat choice (kind `out-of-time-grant`, options carrying `cardId`, the Monarch's Decree pattern). The grant is mandatory, so the timeout default is the first listed Hero; the bot picks the highest cost (first on a tie).
+3. **The grant.** A granted card is listed in `G.outOfTimeGrantedThisTurn`. At the end of `applyCardPlay` (after its abilities, where a printed keyword's hook runs) a granted card is set aside through the WP-803 `out-of-time` handler and its guards; it is skipped silently when it already went Out of Time (its own keyword, the replay, a copy sharing its id) or is no longer the last card in play.
+4. **Turn boundary.** Both fields are deleted at turn start in `game.ts` onBegin and `applyOnBeginParity`; a grant on a card not played this turn lapses.
+5. **Replay-compat.** Stored matches replay from their bgio `initialState` (setup-time hooks), so pre-deploy matches have no `grant-out-of-time` hook. Both fields are lazily created, so `finalStateHash` / `PRE_WP080_HASH` are unchanged. The runtime-observed sweep loses the 13 `man-out-of-time` hollow observations (7793 → 7780, 79 → 78 mechanics); the dashboard `totalObs` pin moves 8714 → 8701 (resolvedObs 1091, 12.5% unchanged). The hero ledger folds `grant-out-of-time` into its existing `out-of-time` row.
+6. **Supersedes** D-24692's "2>4 stays a runtime hollow" clause.
+7. **Known gaps.** A split card chosen for a grant lapses (the split-face path does not run `applyCardPlay`). Sims and PAR leave the opener unmirrored, so grants lapse there. Each S.H.I.E.L.D. starter shares one id, so a second copy can never be "Another Hero". A granted card whose ability opens a choice is set aside before that choice resolves.
+
+**Gates.** game-engine 5672 → 5693 (+21), arena-client 2435 → 2436, 0 fail; twelve revert proofs each fail their locked tests (including the live onMove opener and onBegin reset, the setter guard, both waits, the dispatch route and the bot case); `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; every card / coverage `:check` 0; dashboard `test:coverage` / `typecheck` / `format:check` 0. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-828-winter-soldier-out-of-time-grant.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24761 (#2990). Related: D-24692 (Out of Time), D-24501 (seat choice), D-24511 (card-pick options), D-24563 (the [hc:tech] gate), D-24760 (WP-827's sibling opener), D-24518 (end-of-game drop), D-24026.
+
+---
+
+### D-24762 — Go Back in Time to Slay Heroes' Ancestors: each Twist Purges an HQ Hero from the Timestream, and HQ Heroes sharing a Purged Hero Name are KO'd (Active 2026-10-24 — WP-829 / EC-867)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters. The first Villain-Deck card was a Twist: the active seat got "Go Back in Time — choose a Hero in the HQ to Purge from the Timestream" over the five HQ Heroes with costs. Purging Spy Network (Agent X-13) KO'd Paramilitary Ops (Agent X-13) from the HQ and both slots refilled; an Agent X-13 card placed in the HQ later was KO'd right after that move.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). The scheme's Twist ("Put a Hero from the HQ next to the Scheme, 'Purged from the Timestream.'") and its special rule ("Whenever a Hero is in the HQ whose Hero Name has been Purged from the Timestream, KO that Hero.") now work: you pick the HQ Hero to Purge, and every card of a Purged Hero that reaches the HQ is KO'd.
+
+**Context.** The scheme was `counter-only` (D-24595 §Configuration recorded it as a D-pure pile-runout scheme): Twists only counted. Its 8-Hero setup and its loss (the Hero Deck runs out) were already right.
+
+**Decision.**
+1. **Resolver.** `SchemeTwistResolverId` gains `'go-back-in-time'` (a contract change); the scheme's config switches to it, `params` and the `pile-depleted` heroDeck loss unchanged. This amends D-24595 §Configuration for this scheme. The resolver queues one owed Purge for the active player on the runtime-only `G.pendingTimestreamPurges`, logs it, and pushes a `schemeTwistResolved` notable event under the new `goBackInTime` key (the WP-823 lockstep).
+2. **Opening a Purge.** A Twist resolves inside a Villain Deck reveal, where no seat choice can be answered, so the play-phase onMove opener makes it after the move (the D-24656 escape pattern), waiting while `G.pendingSeatChoice`, `hasAnyPendingChoice(G)` or `G.pendingHeroChoice` is open or the match is decided. Two or more HQ Heroes → the active player's seat choice (kind `timestream-purge`, options in slot order carrying `cardId`); one → Purged with no prompt; none → a logged no-op. The chooser is always the active player (an inference: the card does not say), and the queue drains within the move's turn. The Purge is mandatory: the timeout default is the leftmost Hero; the bot picks the least valuable (cheapest).
+3. **Purged is not KO'd.** The Purged card leaves the HQ for the permanent `G.purgedFromTimestream` list; its slot refills from the Hero Deck.
+4. **Hero Name** is the Hero deck, the first two segments of the card id (`{set}/{hero}`) — an inference, exact for every loadout that does not field two Hero decks with one printed name.
+5. **The "whenever" rule** is a repeat-until-clean sweep: every HQ card sharing a Purged Hero Name is KO'd and its slot refilled, until a pass KOs nothing. It runs inside each Purge, at the top of every onMove (before any opener lists the HQ), inside the Purge opener after its waits (before listing), and once more after the openers only while no seat choice is parked, so no HQ pick ever lists a Hero the rule is about to KO. A parked seat choice blocks every move, so the next onMove's first sweep catches what it left. If a picked Hero has nonetheless left the HQ, nothing is Purged, a "still owed" line is logged, and the Purge re-opens on the next onMove. When one move owes both an escape procedure and a Purge, the escape's steps resolve first (deliberate: they are owed in rule order by the move that caused them).
+6. **Loss.** Each Purge and each opener sweep re-checks `applyPileDepletionResourceLoss`, so a refill that empties the Hero Deck decides the match on that move.
+7. **Replay-compat.** The resolver id is read from the static config table at runtime, not stored in `initialState`: a stored pre-deploy Go Back in Time match replays its Twists through the new resolver, so its D-24119 replay verification no longer reproduces the final state (the WP-823 precedent). A match in flight across the deploy picks up the resolver mid-match; both fields are lazily created, so that is benign. `finalStateHash` / `PRE_WP080_HASH` are unchanged.
+8. **Known gaps.** No board readout of the Purged Heroes (the log names each; a UIState field is a later five-step contract). The sim runner, PAR aggregator, fixture runner and autoplay leave the opener and sweep unmirrored: the resolver still runs, so the queue grows and never drains there (nothing reads it; the operator setters stay closed on such a state), and no Hero is Purged or KO'd. Two Hero decks sharing one printed name would not share a Purge.
+
+**Gates.** game-engine 5672 → 5694 (+22 tests / +4 suites), arena-client 2435 → 2436, 0 fail; thirteen revert proofs each fail their locked tests (the config, the live onMove opener and sweeps, the sweep and loss inside the Purge, the waits, the repeat, the dispatch route, the bot case, the setter guard, the sweep-before-listing order, the still-owed path, the notable key); `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; every card / coverage `:check` 0; dashboard `test:coverage` / `typecheck` / `format:check` 0. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-829-go-back-in-time-purge.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24762 (#2993). Related: D-24595 (amended), D-24656 (the escape opener), D-24349 (`ko-from-hq` auto-pick), D-24501 (seat choice), D-24318 (pile-depletion loss), D-24756 (the WP-823 config-change precedent), D-24119, D-24026.
+
+---
+
+### D-24763 — The Unbreakable Enigma Code: a face-down code built by Twists 1-5, a paid private peek after a Villain fight, and a color guess that gates the Mastermind fight (Active 2026-10-24 — WP-830 / EC-868)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25 for the rules: operator match `3woVv0ZfCLV` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Loki, The Unbreakable Enigma Code, Skrulls + HYDRA, Sentinel; the five ca75 heroes), board staged with the operator setters. Two Twists built a 2-card code whose view carried only `peekedBy: []`. Fighting a Sentinel opened the pay-1-Recruit peek only after the Sentinel's own KO resolved; paying (Recruit 3 → 2) showed card 1 (Winged Salvation, Ranged) to seat 0 only, card 2 stayed hidden, and the public log named no card. A wrong guess (Strength, Strength) revealed the code in the log, ended the turn and re-mixed it (peeks cleared). After a fresh peek, the right guess (Strength, Ranged) let the fight go ahead (Loki's Maniacal Tyrant tactic defeated). The other seat's redaction was not checked live (no spectator view; the audience-filter tests cover it). Follow-up: the guess picker renders inside the Mastermind tile, about 90px wide, so its text clips and it scrolls both ways.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). The scheme's Twists ("Twists 1-5: Put a card from the Hero Deck face down next to the scheme as part of the 'Enigma Code.' Mix up those cards face-down.") and its special rules ("Whenever you fight a Villain, you may pay 1 [recruit] to look at one of the face-down Enigma Cards. When you fight the Mastermind, first guess the color of each Enigma card, and then reveal them. If you guessed them right, fight the Mastermind as normal. If not, your turn ends, and mix up the Enigma cards face-down.") now work, with a code readout on the scheme tile and a guess picker over the Mastermind tile.
+
+**Context.** The scheme was `counter-only` (D-24595 §Configuration recorded it as a printed-N scheme): Twists only counted toward its Twist-6 loss (already right), and the Mastermind was fought freely.
+
+**Decision.**
+1. **Contract.** `SchemeTwistResolverId` gains `'enigma-code'`; the config switches to it (`lossThreshold: 6` unchanged), amending D-24595 §Configuration for this scheme. `fightMastermind` gains an optional `enigmaGuess` argument. A `schemeTwistResolved` notable event under the new `enigmaCode` key.
+2. **The code.** Twists 1-5 (Twist number = `schemeTwistCount + 1`) move the Hero Deck top card into the runtime-only `G.enigmaCode` and mix it with `ctx.random`; an empty Hero Deck adds nothing but still mixes ("Mix up those cards" is its own instruction — an inference). Every mix forgets every peek (`G.enigmaPeeks`) and the reveal (`G.isEnigmaCodeRevealed`).
+3. **The peek.** Each successful `fightVillain` (henchmen included; free defeats are not fights) owes the fighter an offer on `G.pendingEnigmaPeekOffers` when they have an unseen card. The LAST onMove opener (after Diving Block, so every reaction the fight caused comes first) opens it as the fighter's seat choice `enigma-peek` with the escape-opener waits (D-24656): one option per unseen position (no card id — a prompt reaches the client) plus "Don't look", the default on timeout. An offer that is not the current player's, or with less than 1 Recruit left, is dropped. Looking spends 1 Recruit and records the position for that seat only; who looked is public (the log, the readout).
+4. **The guess.** Settled in `fightMastermind` after every other gate (only the fight move; a free Mastermind defeat needs none). A missing or malformed guess is a silent invalid request. Colors are the Hero Classes plus grey for a card with no class (rules v23 "Class vs. Colors"); a dual-class or Divided card matches either of its colors (an inference from "a multicolored card"). Right → the code is revealed to everyone until the next mix and the fight goes ahead. Wrong → nothing is spent, the code is mixed, and the turn ends exactly as the `endTurn` move ends it (`applyEndOfTurnCleanup`, then `consumeExtraTurn` → `events.endTurn({ next })`, else `events.endTurn()`), so `turn.onEnd` runs.
+5. **Projection.** `UIState.scheme.enigmaCode` (`isRevealed`, cards with `peekedBy`, and `display` / `colors`) is per-audience: the filter keeps a card's `display` / `colors` only for a seat in its `peekedBy`, or for everyone once revealed; an unseen card carries `peekedBy` only. No other path carries an Enigma card id to a client.
+6. **The bot.** It looks at the first unseen card when offered, and offers the Mastermind fight only once it has seen the whole code (never gambling: a wrong guess would end its turn and mix away its partners' paid peeks). The sim runner, PAR aggregator, replay executor and fixture runner pass `fightMastermind`'s args through.
+7. **Replay-compat.** The resolver id is read from the static config table at runtime: a stored pre-deploy Enigma Code match replays its Twists through the new resolver and its recorded fights carry no guess, so its D-24119 replay verification no longer reproduces its final state (the WP-823 precedent). All four `G` fields are lazily created; `finalStateHash` / `PRE_WP080_HASH` are unchanged. A cached pre-deploy client sends `fightMastermind {}`, which a match with a code rejects: engine and client ship together.
+8. **Known gaps.** The sim runner, PAR aggregator and fixture runner leave the peek opener unmirrored, so sim bots never peek, never know the code, and never fight the Mastermind once it holds a card (sims under this scheme run to the Twist-6 loss). Seats share peeks by talking, not through the engine.
+
+**Gates.** game-engine 5672 → 5697, arena-client 2435 → 2446, 0 fail; twenty-seven revert proofs each fail their locked tests (the config, the Twist stop, the mix and its forgetting, the colors, the fight offer, the live onMove opener and its position, the Recruit checks and spend, the dispatch route, the guess checks, the wrong-guess cleanup and extra turn, the bot never gambling, the bot peek, the per-audience filter and its keyset, the setter guard, the notable key, the empty-deck mix, the picker key and its closing watch); `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; every card / coverage `:check` 0, nothing regenerated; dashboard `test:coverage` / `typecheck` / `format:check` 0. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-830-enigma-code.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24763 (#2996). Related: D-24595 (amended), D-24656 (owed choices after the move), D-24501 (seat choice), D-24753 (a paid fight option), D-24520 / D-24513 (cleanup, extra turns), D-24549 (a scheme-only UIState field), D-24756 (the config-change precedent), D-12803 (the audience filter), D-24372 (runtime keyset pins), D-24502 (the 1280x720 fit), D-24119, D-24026.
+
+---
+
+### D-24767 — The gauntlet Core fallback pool is ordered Core Set, then Core 2E (WP-834 / EC-872) (Active 2026-10-25)
+
+**Context.** D-24199 fills a mastermind's out-of-set villain and henchmen slots from "the Core Set / Core 2E pool" without fixing an order. The generator's comment said the pool was "the two Core sets, in this order" (`['core', 'co2e']`), but it then sorted the combined list, and `co2e/…` sorts before `core/…`, so every out-of-set slot took the Core 2E group first. Six of the eight co2e villain groups carry no `[effect:]` marker (Skulls has 1 of 6), and co2e Hand Ninjas and Savage Land Mutates are unmarked, while their Core versions are fully marked. Ranked loadouts therefore fielded villains whose printed effects did nothing; Jeff's 2-player WWII match `cfWSKCGr0ZL` (2026-10-25) logged 13 unhandled-effect lines from co2e Brotherhood of Mutants.
+
+**Decision.**
+
+1. **Order.** The D-24199 Core fallback pool is ordered Core Set, then Core 2E, each set's groups sorted by id. It applies to villain and henchmen slots, base variants and `schemeOverrides` alike. Because Core has 7 Villain Groups and 4 Henchman groups, more than the largest out-of-set demand (5 villain, 3 henchmen at 5 players with an extra-group override), no menu outside Core 2E fields a Core 2E group; an output-derived pin in `gauntletLoadouts.test.ts` locks that consequence. If a future set legitimately needs Core 2E spill, amend this decision rather than loosen the pin.
+2. **Why set order, not marker status.** A fixed order keeps approved ranked loadouts stable as effects land; Core is the set every player is assumed to own; it matches the pool's original intent.
+3. **No score impact, no migration.** Submission rejects a scenario without published PAR before any insert, only the Core seed PAR is published (no sim index is committed or deployed), and on 2026-10-25 `competitive_scores` held no publicly visible scenario key (`/api/leaderboards/scenarios` empty; all 110 gauntlet boards at 0). Runs store hero picks only; leg clears and leg launch are derived at read time; Gauntlet Packs carry no composition. Core and Core 2E menus are unchanged. 51 non-Core masterminds are re-keyed (48 base variants, 13 `schemeOverrides`); compositions with a hollow co2e fallback group go from 592 to 0.
+4. **Not covered** (named follow-ups): marking the co2e villain and henchmen effects (in progress as its own task); the other unmarked in-set groups; the stale `server.mjs` :700–703 and `gauntlet.logic.test.ts` fixture comments; the co2e group slugged `Skulls` whose cards are Skrulls.
+
+**Determinism.** The generator is a pure function of card data; no engine, `G`, replay or seed-PAR artifact changes.
+
+**Gates.** `pnpm -r build` 0; `pnpm -r --no-bail test` 0 failures (registry 310 → 311, every other package unchanged); both gauntlet `:check` OK (`313 313`, 51 menus); `par:seed:test` 2 / 0; revert proof (restoring the combined sort fails the new pin and the WWII-ids test). One pre-existing assertion edited as mandated (the WP-833 WWII-ids test).
+
+**Reserved by:** NUMBER-LEDGER D-24767 (#3008). Related: D-24199 (fill rule), D-24278 (single variant), D-24283 (per-scheme overlay), D-24666 / D-24766 (scheme overrides), D-24372 (runtime drift pins), D-24026 (live-verify).
+
+**Live-verify (D-24026): PASS 2026-10-25** (server `6b43007f`). The legends index the new server published one second after boot (`legends/v1/gauntlet-index.json`, generatedAt 22:54:50Z) carries no Core 2E group in any non-co2e gauntlet across all 110 gauntlets / 3,195 leg compositions, and both ca75 Change the Outcome of WWII legs field `core/brotherhood` at 2p, `core/brotherhood`, `core/enemies-of-asgard`, `core/hydra` at 5p, and `core/doombot-legion` henchmen (+ `core/hand-ninjas` at 4–5p). A 2p match from that leg loadout (`dL3D0rvK5Nj`, also `1cdT4NwAVHs`) played 17 turns with no unhandled-effect line (the co2e Brotherhood game `cfWSKCGr0ZL` logged 13); core Juggernaut's Ambush KO'd two Heroes from each player's discard pile.
+
+---
+
+### D-24764 — A City of 1 to 6 spaces: `CityZone` becomes an array, names stay on engine indices, the HQ stays five (Active 2026-10-24 — WP-831 / EC-869)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `PmWtYjNpymL` created after the deploy (server `4566fcb0`; Jeff + a Competent bot ally; Red Skull, Go Back in Time to Slay Heroes' Ancestors, Skrulls + HYDRA, Sentinel; the five ca75 heroes + Core Spider-Man, Hulk, Wolverine), board staged with the operator setters shows the unchanged 5-space City (Bridge, Streets, Rooftops, Bank, Sewers). The resized views pass with WP-832 (match `5NxWV2uuwtQ`): 4, 3, 6, 3, 5, 2 and 1 spaces, the 6-space City fits the playmat with the unnamed space on the escape side.
+
+**User-Visible Surface:** `play.legendary-arena.com` — none at 5 spaces. It is the foundation for Change the Outcome of WWII (WP-832, "The number of city spaces changes": 1 to 6).
+
+**Context.** D-2602 deferred City resizing "until `CityZone` is converted from a fixed tuple to a dynamic array", in its own WP with architectural review. The rulebook (v23, the WWII / Ego / Galactus notes) fixes the model: start in the normal City; the far edge moves ("mark the new edge of the city"); the HQ is unaffected; a removed space "no longer exists" and its name no longer applies.
+
+**Decision.**
+1. **Contract.** `CityZone` is `CitySpace[]` of `CITY_MIN_SIZE..CITY_MAX_SIZE` (1-6) spaces, `CITY_DEFAULT_SIZE` (5) by default; `validateCityShape` and the structural invariant check that range. This supersedes D-2602's fixed-tuple premise. `HqZone` stays a 5-tuple.
+2. **Shape of the City.** The entry is index 0 (the Sewers) and the escape edge is the LAST index, so `pushVillainIntoCity` escapes `city[length - 1]`. A smaller City has lost its far spaces (they simply do not exist; nothing can be in them); a larger one has unnamed spaces beyond the Bridge. Names stay bound to engine indices 0-4; `hqSlotIndexUnderCitySpace` gives no HQ slot past index 4.
+3. **Rules on a resized City.** A fight or move names only a space that exists (`fightVillain`, `resolveMoveVillainChoice`, `operatorEscapeVillain` read `G.city.length`); a Guard blocks up to the current edge; an unnamed space's fight target is `UNNAMED_CITY_SPACE_TARGET` (a new `AttackTargetName` member no restricted grant names, so plain Attack only), and Spinning Cyclone labels it "an unnamed City space". The bot mirrors the moves (D-24364): it enumerates a sixth-space fight and declines a move-a-Villain choice in a 1-space City.
+4. **Board.** The client names cells by engine index; a smaller City keeps five columns with its removed spaces as hatched "gone" columns; a larger one adds a leftmost column, the desktop HQ a matching blank cell (Hero 1 stays under the Bridge), and the authored stage widens by one space column per extra space so the scale-to-fit board shrinks instead of the rows overflowing apart.
+5. **Not done here.** Nothing resizes the City yet. The `modifyCitySize` setup instruction stays an unwired no-op (no scheme sets a setup-time size).
+6. **Obligations and limits for later packets.** A resize helper (WP-832) must escape each removed space's Villain through `resolveVillainEscape`, far edge only. The model removes far spaces only: Galactus's destruction of a specific named space needs its own model. A mastermind-driven resize (Ego, Galactus) would reopen the scheme-only index assumptions (Dark Portals, Midtown Bank Robbery's Bank, Brainwash the Military's name loop).
+7. **Replay-compat.** At 5 spaces every function returns what it did and the City serializes as the same five-element array; no `G` or UIState field was added; `finalStateHash` / `PRE_WP080_HASH` are unchanged.
+
+**Gates.** game-engine 5672 → 5682, arena-client 2435 → 2444, 0 fail; twenty revert proofs each fail their locked tests; a 1280x720 board check at 5 / 6 / 3 spaces (stage 1500 → 1668px, no overflow, Hero 1 under the Bridge, hatched gone columns); every card / coverage `:check` 0, nothing regenerated. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-831-variable-city-size.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24764 (#2999). Related: D-2602 (premise superseded), D-24652 (fight targets by space), D-24747 / D-24295 (the HQ under the City), D-24505 (scale-to-fit), D-24364 (bot mirrors the move guard), D-24765 (WP-832), D-24026.
+
+---
+
+### D-24765 — Change the Outcome of WWII: country Twists resize the City, an escape per country conquers a capital, Evil wins at 3 (Active 2026-10-24 — WP-832 / EC-870)
+
+**Status:** Active 2026-10-24. Live-verify (D-24026) PASS 2026-10-25: operator match `5NxWV2uuwtQ` created after the deploy (server `4566fcb0`, client `b61b9ec`; Jeff + a Competent bot ally; Red Skull, Change the Outcome of WWII, Skrulls + HYDRA + Brotherhood, Sentinel; the five ca75 heroes), Twists and escapes staged with the operator setters. Twist 1 logged "invades Poland. 1 card from the City goes to the bottom of the Villain Deck; the City now has 4 spaces. 2 cards are played" and played the 2. Twist 3 (USSR) showed 6 spaces on the board without overflow. In Australia (2 spaces) an escape logged "its capital is conquered (1 of 3)" and the meter read "Capitals 1/3". Twist 7 (Switzerland, 1 space) played 2 cards, the push-out escaped ("2 of 3"), the Twist count reached 7 and the game went on.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). The scheme's Twist ("The Axis invades a new country. Put all Villains and Bystanders from the city on the bottom of the Villain Deck. The number of city spaces changes. Play 2 cards from the Villain Deck. If any Villains escape this country, stack a Twist next to the scheme as a 'conquered capital.'"; Poland 4, France 3, USSR 6, England 3, USA 5, Australia 2, Switzerland 1) and its loss ("When 3 capitals are conquered") now work; the danger meter reads "Capitals N/3".
+
+**Context.** The scheme had no config: its Twists only counted and it lost at the seventh Twist (the D-24595 fallback; WP-763's FALSE-LOSS row). WP-831 / D-24764 made the City resizable.
+
+**Decision.**
+1. **Contract.** `SchemeTwistResolverId` gains `'change-the-outcome-of-wwii'`; `SchemeResourceLossCondition` gains the generic `'scheme-counter'` kind (`counter`, `threshold`, `meterKind`, `lossDescription`); `SchemeLossKind` gains `'conquered-capitals'` (client label "Capitals"). Declaring the condition suppresses the twist proxy (D-24315); `lossThreshold: 7` stays inert (D-24178). A `changeTheOutcomeOfWwii` notable-event key.
+2. **The invasion.** Each Twist settles the current country, raises its own country counter (BEFORE the plays, so a Twist among them invades the next country), returns each City Villain then its Bystanders to the bottom of the Villain Deck in City order (typing a pile Bystander `'bystander'` so its later reveal resolves; a Villain's captured Heroes travel with it), resizes the City to the country's spaces (`initializeCity`), plays 2 cards, and settles again. No eighth country is printed: a later Twist changes nothing.
+3. **"This country".** A capital is conquered once per country, at the first escaped Villain (Henchmen included, D-24609) since the invasion. The settle runs at the end of `resolveVillainEscape` — the one path every escape takes — so the live game, the sim / PAR / fixture loops and replay agree, and a third capital latches before the escape-procedure opener. The normal City before Twist 1 is not a country (rules v23).
+4. **The loss.** `applySchemeCounterResourceLoss` latches SCHEME_LOSS once at 3 capitals; the meter reads the same counter.
+5. **State.** The tallies are lazily created `G.counters` keys (countries invaded, capitals, the escape baseline, the current country conquered); constants live in a leaf module so the static config table imports them without a load-time cycle. A match without the scheme is byte-identical. D-24764 §6 (a resize escapes a removed space's Villain) is met by emptying the City before the resize.
+6. **Replay-compat.** The resolver is read from the config at runtime, so a completed pre-deploy WWII match no longer reproduces its recorded state under D-24119 (the WP-823 precedent), and a match in flight across the deploy starts at Poland on its next Twist.
+7. **Known gaps.** The extra Villain Group setup requirement is WP-833 / D-24766. A Villain whose Escape "becomes a Scheme Twist" (core Mystique), pushed out by an entering Ambush Villain, fires this Twist mid-reveal: the entering Villain returns to the Villain Deck and its Ambush still resolves.
+
+**Gates.** game-engine → 5692 on the WP-831 base, arena-client 2444, 0 fail; fifteen revert proofs each fail their locked tests; every card / coverage `:check` 0, nothing regenerated. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-832-change-the-outcome-of-wwii.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24765 (#2999). Related: D-24764 (the City), D-24595 (the fallback replaced), D-24756 (the WP-823 precedent), D-24315 / D-24178 (suppression), D-24609 (Henchmen are Villains), D-24766 (WP-833), D-24119, D-24026.
+
+---
+
+### D-24774 — co2e variable-Attack passives: Baron Strucker, Paibok, Super-Skrull and Hydro-Man fight for their printed Attack (Active 2026-10-25 — WP-841 / EC-879)
+
+**Status:** Active 2026-10-25. Live-verify (D-24026) operator-pending: a match created after the deploy with `co2e/hydra`, `co2e/skulls` and `co2e/sinister-syndicate`.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Four co2e villains printed a variable-Attack passive that the engine ignored, so they fought at their flat base (6, 5, 2 and 4). They now cost what they print, and the City tile's `Fight N` badge (WP-750) shows it: Strucker +1 per other HYDRA Villain in the City and Escape Pile, Paibok and Super-Skrull +1 per Hero Class among the HQ Heroes, Hydro-Man +2 in the Sewers or on the Bridge.
+
+**Context.** The cards' `vAttack` reads `N+` (`fightCostMode: 'dynamic'`), which the engine resolved as base + captured-Hero costs. The same wording appears on other cards with different numbers or scope (Mastermind passives co2e Epic Red Skull, shld Hydra High Council Viper, cvwr Ragnarok; the "wolf form" / "giant-size" villains), so a sentence scan would widen silently.
+
+**Decision.**
+1. **The table.** `G.villainVariableAttack?: Record<CardExtId, VillainVariableAttack>` (`{ source, attackPerUnit, requireCitySpaces? }`), built once at setup by `buildVillainVariableAttack` (`setup/villainDefeatRequirement.setup.ts`) from the curated `[variable-attack:<source>:<N>[@<space>[+<space>…]]]` marker, one fresh entry per copy id, spread onto `G` only when non-empty. An ungated entry omits `requireCitySpaces`. Read only by `resolveFightCost`. The source union, its array and the entry type live in `economy/villainVariableAttack.logic.ts` (the WP-815 precedent); no `.types.ts` contract file changes.
+2. **The marker.** At most one `@`; the left side is exactly `<source>:<N>` with `N` a positive integer; spaces are `CITY_SPACE_NAMES` members, non-empty, no repeats; `flat` requires a gate. Anything else is inert. `apply-defeat-requirement-markers.mjs` appends it from the optional `variableAttack` list of `villain-defeat-requirements.json` onto the single line containing " gets +" and "[icon:attack]" (loud-fail on 0 or more than one). Markers over a sentence scan, so look-alike passives stay unflagged until curated (Operator fork F3: the four co2e cards only).
+3. **The sources.** `per-other-hydra-villain`: Villains and Henchmen typed in `villainDeckCardTypes`, with no `convertedVillainOrigins` entry, whose id contains "hydra" (card name or Villain Group name, F1; the D-24493 S.H.I.E.L.D. / HYDRA Level reading), counted over the City then the Escape Pile, excluding only the fought copy, each id once. `per-hq-hero-class`: the distinct `HERO_CLASSES` members among `heroClass` / `heroClass2` of `offPlayCardTraits` over the HQ (dual-class and Divided cards count both; grey counts none). `flat`: `N`.
+4. **The term.** `villainVariableAttackBonus` is added last in `costBeforeReduction`, before the City reduction and the 0 floor. A gate reads `citySpaceNameForIndex(G.city.indexOf(id))` and fails closed outside the City and on an unnamed sixth space (D-24764).
+5. **Captured Heroes (F2).** An entry returns `fightCostBase` from the dynamic branch: the `+` marks the printed passive, so a captured Hero adds nothing on these four.
+6. **Feeds.** No `[effect:]` marker, so the villain ledger, effect index and mechanics feed do not change; no `subsystem-coverage.json` entry while Strucker, Super-Skrull and Hydro-Man keep open `Fight:` lines (WP-835 / WP-838).
+7. **Replay-compat.** The term and the early return are inert without the table, and a pre-deploy match's `initialState` has none, so every stored match replays and plays as before. Only matches created after the deploy get the new cost; live-verify uses one.
+8. **Sibling table.** WP-838's drafted `G.villainAttackPerCaptured { kind; attackPerCard }` stays separate. This table says `attackPerUnit` because the unit is not always a card (a Hero Class, or `flat`). The fold path is `per-captured-hero` / `per-captured-bystander` as sources of this table, in a later packet.
+9. **Third registry walk.** `buildVillainVariableAttack` is a deliberate third copy of the setup registry walk (beside `buildVillainDefeatRequirements` and `buildVillainFightDiscardCosts`), against the abstract-at-third rule: a shared walk would put the two shipped tables at risk for no behavior gain. Folding the walks is a STATUS follow-up.
+
+**Gates.** game-engine 5796 → 5819 / 0 fail (+23); `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; hash oracles unchanged; the overlay applies 4 markers and re-runs at 0, with six hand-checked loud-fails; every card / coverage `:check` 0, nothing regenerated; seven revert proofs each fail their locked tests. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-841-co2e-variable-attack-passives.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24774 (#3014). Related: D-24076 / D-24750 (the sibling setup tables and overlay), D-24747 (the fight-cost term precedent), D-24589, D-24295 (the City gate grammar), D-24493 (HYDRA by name), D-24355, D-24764 (the sixth space), D-24372 (runtime drift pins), D-24771 (WP-838, drafted), D-24026.
+
+---
+
+### D-24775 — a Scheme Twist is counted before its resolver runs, so nested Twists are numbered in reveal order (Active 2026-10-25 — direct fix, no WP; amends D-18201)
+
+**Status:** Active 2026-10-25. Live-verify (D-24026) operator-pending: a Change the Outcome of WWII match created after the deploy where one Twist's 2 plays reveal another Twist.
+
+**User-Visible Surface:** `play.legendary-arena.com` game log (after deploy). In playtest match `mMFRcae60Sz` Twists 2→3→4 fired in one reveal, and the log printed "Scheme Twist #2 / #3 / #4 revealed" after all three Twists' results, numbered innermost-first. Now each "#N" line sits right before its own Twist's effects, numbered in the order the Twists were revealed.
+
+**Context.** D-18201 had the dispatcher (`rules/schemeHandlers.ts`) call the resolver first and return the `schemeTwistCount` +1 and its log line as effects, applied after. A resolver that plays Villain Deck cards can reveal another Twist, which re-enters the dispatcher before the outer one returns, so the nested Twist read the outer Twist's number (`schemeTwistCount + 1`) and the log lines came out in the order the Twists finished. Change the Outcome of WWII and Brainwash the Military worked around this with their own counters.
+
+**Decision.**
+1. **Count first.** `schemeTwistHandler` raises `G.counters.schemeTwistCount` and logs "Scheme Twist #N revealed — the Scheme advances; twist count incremented[ (N of T to Evil Wins)]." (`threat`) **before** it calls the resolver (`countAndAnnounceTwist`). The twist-threshold loss is still a returned effect, gated on this Twist's number (`buildTwistLossEffects`). The threshold and suppression are fixed for the match, so they are read before the resolver.
+2. **Resolvers read the count.** `wound-all` (the Cosmic Cube escalation), `clash-monster-pit` and the Enigma Code's `addHeroDeckCardToEnigmaCode` read `schemeTwistCount` as this Twist's number (no `+ 1`). A Twist set off inside another Twist (a Monster pushing a Mystique out on Clash) now reads its own number. Change the Outcome of WWII and Brainwash the Military keep their own counters (they count countries and stacked Twists, which differ from the Twist count after the printed ones run out).
+3. **The rule pipeline exception.** D-18201 already lets the twist dispatcher's resolvers mutate `G` inside `executeRuleHooks`; this extends that exception to the dispatcher's own counter and log line. Every other hook still returns effects only. ARCHITECTURE.md §The Rule Execution Pipeline does not yet name the D-18201 exception (pre-existing drift, noted as a follow-up; not edited here).
+4. **Determinism and replay.** The final `schemeTwistCount` is unchanged, and a Twist that reveals no other Twist behaves exactly as before; only the log line moves ahead of the resolver's own lines. A stored match replays to the same state except where a Twist was revealed inside another Twist on Cosmic Cube, Clash of the Monsters Unleashed or The Unbreakable Enigma Code, and those now get the rulebook-correct number. The hash oracles are unchanged (no pinned fixture reveals a Twist).
+5. **PAR anchors.** The literal "twist count incremented" stays, so `scripts/extract-par-anchors.mjs` counts the same Twists.
+
+**Gates.** game-engine 5819 → 5820 / 0 fail (X11 added; existing tests that set the count to N−1 for Twist N, or asserted the returned counter effect, now pin the new contract); `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; hash oracles unchanged; four revert proofs each fail their tests (counting after the resolver fails X11; `+ 1` in wound-all, clash and enigma fails their schedule tests). `wiki/scheme-twist.md` updated.
+
+**Reserved by:** NUMBER-LEDGER D-24775 (this change, claude/twist-count-before-resolver). Related: D-18201 (amended), D-24349 / D-24685 (Cosmic Cube escalation), D-24736 (Clash), D-24763 (Enigma Code), D-24765 (WWII), D-24756 (Brainwash the Military), D-24287 (Mystique becomes a Twist), D-24026.
+
+---
+
+### D-24768 — co2e Villains and Henchmen: the 20 timing lines existing primitives express get their markers (Active 2026-10-25 — WP-835 / EC-873)
+
+**Status:** Active 2026-10-25. Live-verify (D-24026) PASS 2026-10-26: match `qj12dWK_y3v` on server `68ea7cea` (STATUS.md WP-835 entry).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Twenty printed Ambush / Fight / Escape lines on co2e Villains and Hand Ninjas did nothing and logged the D-24266 `unmarked-ability` breadcrumb (match `cfWSKCGr0ZL`). They now resolve what the card prints and log it.
+
+**Context.** Six of the seven in-scope co2e Villain groups had no marked timing line, and Skulls had one. 44 lines were hollow; 20 reduce exactly to a villain-effect primitive that already ships. The other 24 need new engine behavior (WP-836..840).
+
+**Decision.**
+1. **The 23 markers on 20 lines.** `villain-effect-markers.json` `villains.co2e` gains `brotherhood-of-mutants` (Juggernaut fight `ko-hero:current:2`; Mystique escape `become-scheme-twist`; Sabretooth ambush + escape `reveal-or-wound:hc:instinct`), `hydra` (Endless Armies of HYDRA fight `koHeroEachPlayer`, `play-villain-deck-cards:2`; Viper fight + escape `gain-wound-unless-victory-villain-group:hydra`), `radiation` (Maestro, Wasteland Hulk fight `ko-heroes-current-count-by-trait:hc:strength`; Zzzax fight + escape `reveal-or-wound:hc:strength`), `sinister-spider-foes` (Scorpion fight `koHeroCurrentPlayer`; The Lizard fight `ko-hero:current@sewers`, `gain-wound:each-other@sewers`), `sinister-syndicate` (Beetle escape `reveal-or-wound:hc:covert`; Hydro-Man fight `ko-hero:current@sewers+bridge`), and `skulls` adds Skrull Queen Veranke (ambush `captureHqHeroHighestCost`, fight `gain-attached-hero`), Skrull Shapeshifter (ambush `captureHqHeroRightmost`, fight `gain-attached-hero`) and Super-Skrull (fight `koHeroCurrentPlayer`). `henchmen.co2e.hand-ninjas` fight: `ko-hero:current@sewers+rooftops`, `gain-recruit-current:1@bank+streets+bridge`. Each line inherits its primitive's owning WP / D; no provenance row.
+2. **Magnitude 1 is the bare form.** "KO one of your Heroes" is `koHeroCurrentPlayer` / `ko-hero:current`, never `ko-hero:current:1` (D-24298).
+3. **KO-or-gift collapses to the gift.** Veranke and Shapeshifter's "Either KO that Hero or choose a player to gain it" resolve as the fighting player gains it, via the generic `awardAttachedHeroes` (the D-24335 co2e Ultron collapse). `gain-attached-hero` classifies the line as handled (D-24270). Their dynamic fight cost (`2+` / `1+`) is the existing base + captured-Hero cost; they have no D-24774 table entry.
+4. **Hand Ninjas "Otherwise".** The complement of Sewers + Rooftops is Bank + Streets + Bridge, via the existing `@` gate. Residual: on an unnamed sixth City space (a WP-831 / WP-832 resized City) neither half fires.
+5. **Endless Armies ordering.** The each-player KO runs in the executor; the two Villain Deck plays fire afterwards from the `fightVillain.ts` site (D-24351). A current-player KO with a real choice parks (D-24669) and resolves after the plays. Accepted.
+6. **Viper is set-scoped** (D-24299 Path B): co2e Viper counts only co2e HYDRA Villains in a Victory Pile. Residual in a mixed Core + co2e HYDRA match; accepted.
+7. **Determinism and replay.** Setup-only: the markers change `villainAbilityHooks` built at setup for matches with these groups. Stored matches replay from their `initialState`, which holds the old hooks, so nothing changes for them; only matches created after the deploy get the effects. No hashed oracle uses an in-scope group.
+
+**Gates.** `apply-effect-markers.mjs` → `co2e.json — 23 new marker(s)`, every other set 0, re-run 0; a throwaway `buildVillainAbilityHooks` probe gives the WP-835 §Contract descriptors on 102 hooks with no `unresolvedMarkers`. Villain ledger: 15 `(unmarked)` rows removed, 20 `executable` added (18 villain + 2 Hand Ninjas). `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail, counts unchanged (game-engine 5825); every card / coverage `:check` 0 (only `ledger:villains` and `effect-index` regenerated).
+
+**Reserved by:** NUMBER-LEDGER D-24768 (#3010). Related: D-24266 (the breadcrumb removed), D-24023 / D-24298 / D-24669 / D-24687 (`ko-hero`), D-24295 (`@` gate, `each-other`), D-24281, D-24287, D-24351, D-24299, D-24353, D-21401, D-24270, D-24350, D-24335, D-24774 (WP-841 passives), D-24769..D-24773 (WP-836..840), D-24026.
+
+---
+
+### D-24776 — recruitable Sidekick Stack: recruit one Sidekick per turn for 2; a played Sidekick returns to the bottom of the Stack and draws two (Active 2026-10-26 — WP-842 / EC-880)
+
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-26: match `gffDRiqAnOf` on server `7cf56406`, plus `ewiki.legendary-arena.com/sidekicks/` 200 (STATUS.md WP-842 entry).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Matches built a 12-card Sidekick Stack (`G.piles.sidekicks`, `pile-sidekick` tokens) that no move could take from. The Sidekicks cell is now a recruit button; a played Sidekick returns to the Stack and draws two.
+
+**Context.** Rules v23 L727-729: recruit "Sidekicks (no more than once per turn, using Recruit points) from the Sidekick stack". L3212-3233: "When you play any Sidekick, return it to the bottom of the Sidekick Stack"; "You still 'played' that Sidekick"; gained Sidekicks don't count against the limit. The printed Secret Wars Vol. 1 Sidekick (cost 2): "You may return this card to the Sidekick Stack. If you do, draw two cards." That text exists nowhere in card data.
+
+**Decision.**
+1. **The move.** `recruitSidekick` is a non-core, internally gated move mirroring `recruitOfficer` (D-24460): the block-all guard list copied verbatim, cost `G.cardStats['pile-sidekick'].cost ?? SIDEKICK_RECRUIT_COST` (2), registered `client: false` (D-10008), dispatchable in replay, NOT in `CORE_MOVE_NAMES` or `SIMULATION_MOVE_NAMES` (every determinism oracle stays byte-identical).
+2. **Once per turn.** `TurnEconomy.hasRecruitedSidekickThisTurn?: true`, lazily materialized, carried by `carryConversionFlag`, dropped by `resetTurnEconomy`. Set ONLY by `recruitSidekick`; a future card-effect gain must not set it (rules v23 L3216-3218).
+3. **Automatic return and draw.** The printed "may" is collapsed (Jeff, 2026-10-25: "Use auto-return + draw 2 on play for v1"): a plain Sidekick has no Attack, Recruit or class, so declining is dominated. `returnPlayedSidekick` is the last statement of `applyCardPlay`, after `applyGrantedOutOfTime`; it fires only while `pile-sidekick` is the last `inPlay` entry (so a granted Out of Time set-aside wins), appends the token to the END (bottom) of the Stack, draws `SIDEKICK_RETURN_DRAW_COUNT` (2) unless `drawsLocked` (D-24552; logged `blocked`, the return still happens), and adds the realized draw to `cardsDrawn` (D-24476 / D-24732). The interactive accept/decline (the Do-Over pattern, D-24498) is a follow-up only if a later card makes declining useful.
+4. **Still played.** `TurnEconomy.sidekicksReturnedThisTurn?: number` counts returns; `playedCardIdsThisTurn` appends `pile-sidekick` that many times (a count because every token shares one id), right after `playedCardIdsStillInPlay` and BEFORE the Out of Time loop, so a Sidekick replayed from Out of Time and then returned counts once. Accepted residual: two Sidekicks in one turn, one set aside by a granted Out of Time, count as one (T11c pins it).
+5. **Out of Time replay.** On the turn-2 replay the return-and-draw runs inside the replayed play, so the Sidekick goes to the bottom of the Stack instead of the keyword's discard (T10b).
+6. **Scope.** The hook and the count cover the fungible `pile-sidekick` only. A Special Sidekick WP must extend the hook to its ids and record them in an id ledger, not this count.
+7. **UIState.** `economy.hasRecruitedSidekickThisTurn?: true` (active player only, omit-when-absent, absent from `REDACTED_ECONOMY`) and `piles.sidekickDisplay?: UICardDisplay` (always built via `resolveDisplay`, public, fresh-copied in the filter). `UiMoveName` gains `'recruitSidekick'`. These are the contract-file changes to `economy.types.ts`, `uiState.types.ts` and `uiMoveName.types.ts`.
+8. **Replay-compat.** A stored match that never played a Sidekick replays identically. A match created before the deploy in which an operator-setter Sidekick was played replays differently; operator matches are not scored or verified, so this is accepted. Live-verify uses a match created after the deploy.
+
+**Gates.** game-engine 5825 → 5851 / 0 fail (+26); arena-client 2458 → 2462 / 0 fail, typecheck 0; `pnpm -r --no-bail test` 0 fail; `pnpm -r build` 0; hash oracles unchanged; `sim:runtime-observed:check` and `sim:coverage --check` 0, nothing regenerated; ten revert proofs each fail their locked tests; a local match's Play Diagnostics `uiStateSnapshot` carries both new fields. 01.6 post-mortem: `docs/ai/post-mortems/01.6-WP-842-recruitable-sidekick-stack.md` (WP COMPLETE).
+
+**Reserved by:** NUMBER-LEDGER D-24776 (#3021). Related: D-24460 (`recruitOfficer`), D-3103 (fungible pile tokens), D-10008, D-24180 (heal lock), D-24552 (draw lock), D-24476 / D-24732 (`cardsDrawn`), D-24692 (played-this-turn ledger), D-24761 (granted Out of Time), D-24618 (hollow "gain a Sidekick" lines), D-24498 (Do-Over), D-24372 (runtime drift pins), D-12803 (UIState pass-through), D-24026.
+
+---
+
+### D-24777 — co2e Crazed Rampage's "Each player reveals another [hc:strength] Hero or gains a Wound" is a new hero keyword `reveal-or-gain-wound-each` (Active 2026-10-26 — WP-843 / EC-881)
+
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-26: matches `ewS5AON36Zi` and `9IluuRbdoFD` on server `07b25f42` (STATUS.md WP-843 entry), covering the playing player wounded, the other seat wounded, both wounded, and every player revealing.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Playing co2e Crazed Rampage now wounds each player, the player who played it included, who has no other Strength Hero to reveal. The log names each wounded player, or says every player revealed. Core / 3dtc / msp1 Crazed Rampage ("Each player gains a Wound.", `gain-wound-each`) are unchanged.
+
+**Context.** Live matches `27l38-Qb17h` and `qj12dWK_y3v`: co2e Crazed Rampage logged `[blocked] … it needs another Strength Hero played this turn` and, when another Strength Hero had been played first, `declared a "gate-only" mechanic … (parse-unrecognized)`. The setup parser read the mid-sentence `[hc:strength]` as a `heroClassMatch` play-gate, and the line carried no effect marker. It is the only hero line in `data/cards/*.json` that prints the reveal-or-gain-a-Wound shape.
+
+**Decision.**
+1. **New keyword.** `reveal-or-gain-wound-each` joins `HeroKeyword` / `HERO_KEYWORDS`, `HANDLED_KEYWORDS`, `NO_MAGNITUDE_KEYWORDS` and `HERO_EFFECT_HANDLERS`. The marker is `[keyword:reveal-or-gain-wound-each]` (single segment, no magnitude), applied to `co2e/hulk/crazed-rampage` ability 0 by `apply-hero-ability-markers.mjs`. This fulfils D-24156's "the un-defer is a NEW keyword" clause for this one hero reveal-or-gain form.
+2. **The gate goes by reuse.** `tryResolveRevealFromHandCriterion` also accepts this marker, so the line's first `[hc:X]` / `[team:X]` is the reveal criterion and the existing D-24470 Step 1a / 1b suppression drops the spurious gate. No new suppression flag (the D-24530 family). Step 2 records the keyword only when the criterion resolves; a marker with no token is an unresolved marker (Honest-Partial). The `reveal-from-hand` Step 2 and builder branches still key on their own keyword, so this line never also draws. Effect: `{ type: 'reveal-or-gain-wound-each', revealCriterion }`.
+3. **The reveal check is `playerCanRevealMatch`.** Every player can reveal from hand; the playing player can also reveal a card played this turn that is still in play; the resolving card never counts for itself (D-24731, D-24692). A second Crazed Rampage copy counts as another Strength Hero.
+4. **The Wound goes through `gainWoundWithOutcome`**, so Diving Block / Flying Shield Block still intercept it (WP-682 / WP-827 parity with `heroEffectGainWound`). An empty supply is a logged `blocked` no-op for that player. Only the playing player's `turnEconomy.woundsDrawn` moves. The "Every player revealed another … Hero" `blocked` line prints only when no player lacked a match, so an empty-supply miss never claims everyone revealed (the D-24686 class).
+5. **Auto-reveal (documented simplification).** A player who can reveal always does. Rules v23 "Revealing a Card" (L3196-3200) lets a player decline and take the Wound, and co2e Hulk's Don't Make Me Angry makes declining worth something. A per-seat choice needs the multi-seat `pendingSeatChoice` wave and is deferred with D-24281's interactive choice.
+6. **Seat order** is `Object.keys(G.playerZones).sort()`, the engine's each-player convention (D-24156, D-24281), not rules v23 L2247's current-player-first. They differ only in who misses the last Wound when the supply runs short and in log order; aligning every each-player loop is a follow-up.
+7. **No `G` field, no RNG, no contract-file change.** The `rules/heroAbility.types.ts` `revealCriterion` comment ("Other keywords ignore it") is now stale and is fixed on the next WP that touches that file. No `G.notableEvents` push. No migration: hero hooks live in a match's `initialState`, so only matches created after the deploy get the effect.
+
+**Gates.** game-engine 5851 → 5864 / 0 fail (+13, the new `crazedRampage.revealOrGainWound.test.ts`); five lockstep pins moved (`HERO_KEYWORDS.length` 83 → 84 at three sites + the ordered array; handler count 65 → 66 at two sites). Control run: with the keyword removed from `NO_MAGNITUDE_KEYWORDS` only, AC-3 and seven other handler tests fail; restored. `apply-hero-ability-markers.mjs` 1 new co2e marker, re-run 0. `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; `cards:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `cards:count-markers:check`, `sim:runtime-observed:check`, `sim:coverage --check` 0. Coverage baseline: co2e `noEffect` 53 → 50 (one hook per Crazed Rampage copy); the regenerated file also takes in drift already on `main` (ca75 `noEffect` 11 → 0, `executable` 52 → 50, `man-out-of-time` no longer unmodeled). Hash oracles unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24777 (#3024). Related: D-24156 (`gain-wound-each`), D-24281 (villain `reveal-or-wound`, auto-reveal precedent), D-24470 (reveal-from-hand + suppression), D-24530 (descriptive-token suppression family), D-24731 / D-24692 (reveal scope), D-24499 / D-24760 (Diving Block / Flying Shield Block), D-24673 (Diving Block log wording), D-24686 (empty-supply line), D-24372 (runtime drift pins), D-24026.
+
+---
+
+### D-24778 — "Gain a [rule:Sidekick]" hero lines gain Sidekicks from the Sidekick Stack through a new magnitude-bearing hero keyword `gain-sidekick` (Active 2026-10-26 — WP-844 / EC-882)
+
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-26: operator match `CGZCvfU3Jmd` on server `72231815` (STATUS.md WP-844 entry): Inspire a Nation took the Stack 12 → 11 into the discard with the `applied` line, and the once-per-turn recruit still succeeded afterwards; the ewiki `/sidekicks/` page returned 200 with the new section.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy) and `ewiki.legendary-arena.com/sidekicks/`. Playing one of the ten lines below puts the printed number of Sidekicks from the Sidekicks cell into your discard pile, with an `applied` / `partial` / `blocked` log line; the Sidekicks recruit button is unaffected.
+
+**Context.** WP-842 / D-24776 made the Sidekick Stack recruitable and named the card-effect gain as its follow-up (1). Ten hero lines print "Gain a [rule:Sidekick]" and did nothing: cvwr Captain America, Secret Avenger *Inspire a Nation*, Falcon *Talk with Birds* (`[hc:ranged]:`), Peter Parker *Spider-Man Unmasked*, Tigra *Friendship* (`[hc:covert]:`); ssw1 Black Panther *King of Wakanda* (three), Magik *Rally the New Mutants* (abilities 0 and 1, the second `[hc:covert]:`), Namor *Lead the Armies of Atlantis* (`[hc:instinct]:`), Ultimate Spider-Man *Marvel Team-Up*; co2e Spider-Man *Witty Banter* (`[hc:instinct]:`). They showed as `rule:sidekick` / `gate-only` hollows (D-24618 / D-24623).
+
+**Decision.**
+1. **New keyword.** `gain-sidekick` joins `HeroKeyword` / `HERO_KEYWORDS`, `HANDLED_KEYWORDS` and `HERO_EFFECT_HANDLERS`, and is deliberately NOT in `NO_MAGNITUDE_KEYWORDS`: it always carries a magnitude. The marker is `[keyword:gain-sidekick:N]` (N >= 1; `VALID_TOKEN_PATTERN` branch `^\[keyword:gain-sidekick:[1-9]\d*\]$`), applied to the ten lines by `apply-hero-ability-markers.mjs`. It rides the generic Step 2 + effect-builder path, so `setup/heroAbility.setup.ts` is unchanged and a leading `[hc:X]:` / `[team:X]:` stays a faithful play-gate. Effect: `{ type: 'gain-sidekick', magnitude: N }`.
+2. **Destination and order.** The handler takes up to N tokens from the top of `G.piles.sidekicks` (`pile[0]`) into the playing player's discard pile (rules v23 L1170, "Gain" means "put it into your discard pile"). An empty Stack stops the gain: none gained logs `blocked`, fewer than printed logs `partial` (the D-24017 precedent); never a throw. A defensive magnitude below 1 is a silent no-op.
+3. **Outside the once-per-turn recruit** (rules v23 L3216-3218, the clause D-24776 reserved). The gain never reads or writes `hasRecruitedSidekickThisTurn`, spends no Recruit and never sets `hasActedThisTurn`: that flag means "recruited or fought this turn" and bars Healing (D-24179 / D-24180), and a gain is neither, so the player keeps the heal option.
+4. **Helper module.** `gainSidekickToDiscard(G, playerID): boolean` lives in its own `boardgame.io`-free, type-import-only module `moves/gainSidekick.logic.ts` (it mutates the `G` draft, the `gainOfficerToDiscard` / D-24696 shape). Putting it in `moves/recruitSidekick.ts` would pull that file's ~30 pending-choice guard modules, seven of which import `hero/heroEffects.execute.ts` back, into the executor's graph; the new module adds no cycle. The gain-side follow-ups below reuse it.
+5. **Out of scope, each a follow-up:** the "put that / them on top of your deck" riders (cvwr Peter Parker *Spider-Man Unmasked* ability 1, ssw1 Black Panther *King of Wakanda* ability 1; their gain line works); choose-a-number, reveal-count, defeat-trigger and investigate gains (cvwr Daredevil *Roundhouse Side Kick*, cvwr Storm & Black Panther *King & Queen of Wakanda*, ssw1 Maximus *Enslave the Will*, msmc Stepford Cuckoos *Find Mutants with Cerebro*, mdns Werewolf by Night *Track the Captives*); villain / tactic / bystander / scheme lines (co2e Magneto *Bitter Captor*, the cvwr rescue-a-Bystander line, msmc Stryker and Kidnapped Mutants, co2e HYDRA Kidnappers / Venom, the ssw1 Sidekicks-as-Villains scheme, cvwr *Fortify the Sidekick Stack*); Special Sidekicks (D-24776); bot / PAR Sidekick behaviour; the registry-viewer loadout builder's `DEFAULT_SIDEKICKS_COUNT = 0`, which gives a viewer-built loadout an empty Stack so these lines log `blocked`; and the stale `moves/operatorSetters.ts` L245-246 comment ("Sidekicks have no gain helper").
+6. **Feed movement.** Runtime-observed `rule:sidekick` 42 -> 41 (total 7766 -> 7765; 78 mechanics, 312 games, 0 dropped); coverage baseline `noEffect` 2566 -> 2520 and `executable` 3713 -> 3759 (+46 / -46, the ten lines weighted by copy count); dashboard `useInPlayCoverage` `totalObs` 8687 -> 8686 (`resolvedObs` 1091, 12.6%). Hash oracles (sentinel `finalStateHash`, `PRE_WP080_HASH`) unchanged: no RNG, no new `G` or `TurnEconomy` field.
+7. **Replay-compat.** Hero hooks are captured in a match's `initialState` at setup, so a match created before the deploy keeps the old hollow hook and replays identically; only matches created after the deploy gain Sidekicks. No migration.
+
+**Execution note (2026-10-26).** #3033 (`a1010a22`), merged after the WP was drafted, made `scripts/hero-effect-coverage.mjs` `EXECUTED_KEYWORDS` the engine's `MVP_KEYWORDS`, so the WP's informational label edit is obsolete: `gain-sidekick` reaches the set through `HANDLED_KEYWORDS`, and that script is not touched. The same change moved the coverage `executable` baseline from the WP's 2583 to 3713; the +46 / -46 deltas hold exactly.
+
+**Gates.** game-engine 5864 -> 5876 / 0 fail (+12, the new `hero/gainSidekick.test.ts` T1-T12); five lockstep pins (`HERO_KEYWORDS.length` 84 -> 85 at three sites + the ordered array; handler count 66 -> 67 at two sites). Control run: with the keyword out of `HANDLED_KEYWORDS`, T4-T10 fail; revert proof: with the loop capped at 1, T5 and T6 fail; both restored. Marker pass 10 lines, re-run 0. `pnpm -r build` 0; `pnpm -r --no-bail test` 0 fail; every `:check` gate 0; dashboard `typecheck` / `lint` / `format:check` / `test:coverage` 0; `wiki-viewer:project` + `check-links` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24778 (#3030). Related: D-24776 (the Stack and `recruitSidekick`), D-24156 (`gain-wound-self`, the keyword shape), D-24696 (`gainOfficerToDiscard`), D-24618 / D-24623 (hollow reporting), D-24017 (empty-supply logging), D-24179 / D-24180 (heal lock), D-24021 (coverage gate keys on `noEffect`), D-24372 (runtime drift pins), D-24026.
+
+---
+
+### D-24781 — The engine ewiki moves onto the shared theme next, ahead of the personal wiki; amends D-24728's migration order (Active 2026-10-26 — Jeff's call; WP-847 / EC-885 executes it)
+
+**Status:** Active 2026-10-26.
+
+**Context.** D-24725 §3 put the engine ewiki last onto the shared wiki platform, because its gates, determinism check and Access posture make it the costliest test bed, and D-24728 fixed the order as corporate memory, herbs, personal, then the engine. By 2026-10-26 every other wiki had moved: the corporate-memory viewer, Herbs vs. Ailments, the studio ewiki, Organized Walls and the Scooby engine wiki run the theme, now `barefootbetters/bb-studio-ewiki-theme` (named `ewiki-theme` until 2026-10-18), at `v1.1.1` to `v1.3.0`. The personal wiki has not moved. On 2026-10-26 the theme's `v1.3.0` collapsible sidebar and search filters had to be written into the engine ewiki's own layouts by hand (#3029), because it is the one wiki still on its own copy, and that copy keeps drifting.
+
+**Decision.**
+1. **The engine ewiki moves next,** ahead of the personal wiki: WP-847 / EC-885 migrates `apps/wiki-viewer` onto `bb-studio-ewiki-theme` `v1.3.0`.
+2. **The personal wiki moves after it.** It has no pending feature, so nothing is lost by waiting.
+3. **Nothing else in D-24725 or D-24728 changes:** vendored, read-only, the digest pinned outside the vendored tree, the closed extension points, one script (D-24293), and the WP-139 lock, which vendoring keeps literal. The migration's own calls are WP-847's D-24782.
+
+**Why.** The engine's costs (its gates, the determinism check, Access) are what the theme's CI, `Test-EwikiTheme.ps1` and `Compare-WikiBuild.ps1` were built to carry, and WP-814's trial build already passed every engine gate on the theme. Waiting costs a hand-port into the engine's copy for every theme feature.
+
+**Consequences.**
+- D-24728's sentence "The migration order is corporate memory, herbs, personal, then the engine ewiki last" now reads: corporate memory, herbs, the engine ewiki, then personal.
+- `wiki/hugo-platform-strategy.md` records the order when WP-847 executes (its Scope In 7). The theme repo's own Consumers table and "Queued next" line follow in that repo after WP-847 merges.
+
+**Reserved by:** NUMBER-LEDGER D-24781 (#3036). Related: D-24725 (one shared wiki platform), D-24727 (the theme), D-24728 (vendoring and the order this amends), D-24293 (one script), WP-139 / D-13808 (the engine ewiki's theme lock), WP-814 (the extraction and the trial build), #3029 (the hand-port).
+
+---
+
+### D-24779 — A player who can reveal for "reveal … or gain a Wound" chooses, through a multi-seat seat choice, for both the hero keyword and the villain primitive (Active 2026-10-26 — WP-845 / EC-883)
+
+**Status:** Active 2026-10-26. Live-verify (D-24026) operator-pending: a `play.legendary-arena.com` 2-player match created after the deploy where a reveal-or-wound fires with a revealer (STATUS.md WP-845 entry).
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). When Sabretooth is fought, a Frost Giant ambushes, Ultron escapes, co2e Crazed Rampage is played (any of the 14 `reveal-or-wound` lines or the one `reveal-or-gain-wound-each` line), every player holding a qualifying Hero sees "Reveal a Hero or gain a Wound?" with **Reveal a matching {X} Hero** / **Reveal another {X} Hero** and **Gain a Wound instead**, on their own seat, at the same time. Players with no qualifying Hero gain the Wound at once, as before.
+
+**Context.** Rules v23 "Revealing a Card" (L3196-3200): a player who has the card can still choose not to reveal it and gain the Wound instead, and the game has cards that reward Wounds (co2e Hulk's Don't Make Me Angry, Healing, Wounded Fury). Both forms auto-revealed: the villain primitive under D-24281 Semantics ("the rare Wound-synergy decline is a documented auto-resolve simplification, deferred with the interactive choice") and the hero keyword under D-24777 §5. This entry **amends D-24281 (Semantics) and D-24777 §5**.
+
+**Decision.**
+1. **Scope: hero AND villain.** One rule governs both, and the villain primitive is where the choice comes up (14 lines in core / co2e; the hero form is one line). Both sites now share one kind, one applier, one prompt and one bot answer. The core Legacy Virus Scheme Twist (`reveal-or-punish`) and the ~45 printed "reveals a … Hero or gains a Wound" lines that carry no marker stay auto-reveal (follow-up).
+2. **Effect time.** Seats are split by the existing predicate (hero `playerCanRevealMatch`, the D-24731 "another" scope; villain `playerHasHeroMatchingTrait`, hand + still in play). A seat that **cannot** reveal gains its Wound inline, exactly as before (same helper, same line, same `woundsDrawn` rule, same Diving Block handoff); a run where nobody can reveal leaves `G` deep-equal to the old code (AC-5, checked against literals captured on the unmodified baseline). Seats that **can** reveal are recorded on one entry of the lazy `G.pendingRevealOrWoundChoices` (`{ sourceCardId, currentPlayerID, revealOptionLabel, revealingSeats, strikeBlockThreatKind? }`, the threat kind present for a villain source only), sorted numeric ascending by `enqueueRevealOrWoundChoice` itself. The predicate is fixed at effect time. Log order: the existing cannot-reveal summary (if any), then one `neutral` enqueue line naming the revealers. The hero "Every player revealed …" line and the villain "every player revealed …" branch are now reachable only with no seats at all.
+3. **After the move** (the D-24750 queue / D-24656 point 4 deviation: the villain executor has no `events`). `openRevealOrWoundSeatChoiceIfNeeded` serves the queue FIFO: it waits while `hasAnyPendingChoice(G)` or `G.pendingHeroChoice` is set and stops once `evaluateEndgame` is non-null; an entry with no seats or naming a seat with no zones is dropped with a `blocked` line. **Empty Wound supply → no prompt**: gaining a Wound is not something a player can choose then (L3199-3200), so the entry resolves as all revealing (a `blocked` line, one `strikeBlocked` per seat for a villain source) and is shifted off. Otherwise it parks one simultaneous `PendingSeatChoice`, kind `reveal-or-wound`, a prompt per recorded seat, options `[{revealOptionLabel}, Gain a Wound instead]`, `defaultOptionIndex` 0. Stage ride: the D-24750 rule (skip only when the active seat is the sole addressed seat; a mixed ride admits the active seat, D-24743). The queue never joins `hasAnyPendingChoice` (it would block its own opener).
+4. **Removed at apply** (the Timestream Purge shape). The entry stays at the front while its choice is open; `applyRevealOrWoundSeatChoice` (dispatched from `applySeatChoiceByKind`) reads it for the card, current player and threat kind (`PendingSeatChoice` carries no payload and the timeout path passes no current player). Seat equality is element-wise; a choice that does not answer the front entry, or a missing entry, logs `blocked` and applies nothing, and a mismatched entry stays owed and is re-parked on the next `onMove`. Seats apply in ascending order (D-24501): Reveal → no mutation (a villain source pushes its `strikeBlocked`); Gain a Wound → `gainWoundWithOutcome`, so Diving Block / Flying Shield Block still intercept, the empty-supply no-op named, `turnEconomy.woundsDrawn` bumped only for the entry's current player. One line: `Reveal or gain a Wound ({card}): {revealed} revealed; {declined} chose to gain a Wound.`, with D-24673 wording when a Diving Block reveal is pending and the D-24686 tail for decliners the supply ran out before; `applied` if anyone declined, else `blocked`.
+5. **`strikeBlocked` moves to apply time.** A revealer's WP-646 / WP-651 `strikeBlocked` is pushed when the Reveal lands, so the shield-block VFX plays then, not at the fight; a decliner gets none.
+6. **Default and bot answer Reveal.** `choosePlayingSeatChoiceOption` returns `defaultOptionIndex` for a kind it does not list (D-24744); this records the `reveal-or-wound` row of the D-24744 audit table here (D-24744's Active body is not edited). Autoplay, the sim runner and PAR submit the default (D-24745), so every simulated Wound outcome equals the old auto-reveal. Every trigger with a human revealer now waits for that player's answer (accepted for fidelity); a bot that declines when it holds a Wound payoff is a follow-up.
+7. **Opener position** (01.5 runtime wiring). Live `turn.onMove`: after the escape and Purge openers and the latch / `applyPileDepletionResourceLoss` re-check, immediately before `openDivingBlockSeatChoiceIfNeeded`, so an Escape-timing entry resolves after that escape's steps 1-2 (the D-24750 order) and `evaluateEndgame` already sees a scheme loss. A Diving Block wave from an inline cannot-reveal Wound therefore waits until the revealers answer; a decliner's Wound is gained inside the `resolveSeatChoice` move, so its Diving Block wave opens in that move's `onMove`. Mirrors: `simulation.runner.ts` ×2 and `par.aggregator.ts` ×2 after the `applyPileDepletionResourceLoss` following each escape-opener call; `test/fixtures/runFixture.ts` directly after its escape-opener call.
+8. **Residuals.** (a) Cross-queue order with WP-817's owed discards: in one move that records both, the owed discard opens first even when the reveal-or-wound was printed first. A separate queue keeps the discard FIFO a discard queue (no entry union). (b) Seat order with WP-846 (D-24780, drafted, not executed): once WP-846 rotates the effect loops, the inline cannot-reveal Wounds follow turn order while decliners apply ascending at apply time (D-24501), a mixed order under a short supply. (c) The shared `Gain a Wound instead` label: WP-837 had not landed, so `moves/revealOrWoundChoice.logic.ts` exports `VILLAIN_EFFECT_WOUND_OPTION_LABEL` and WP-837 imports it; WP-837 wounds its no-match seats when its choice opens, this entry at effect time (keeping the no-revealer path byte-identical). (d) The predicate is not re-tested at open: a seat whose qualifying card left its hand meanwhile is still offered the reveal. The common case is an Escape with carried Bystanders, whose step 2 discard opens first, so a seat can discard its only qualifying Hero and then be offered a reveal it can no longer make (by rules L556-570 it should take the Wound). Re-testing at open is a scope change left to Jeff. (e) The three `reveal-or-wound` effect rulings stay valid as effect-time assertions (no-match → one Wound; match in hand / in play → empty discard); there is no decline ruling, because the rulings runner fires only the executor.
+9. **Replay compatibility.** This changes runtime handler code that existing hooks reach, so it is not setup-only. A match in progress at deploy gets the prompt on its next reveal-or-wound with a revealer. Re-executing a pre-deploy log that contains such a resolution stalls (the log never answers the new choice), the D-24656 class: competitive verification (`replay_verification_failed`) and coach `reduceReplayByHash`. Accepted; no migration, no setup-time flag (two permanent code paths for one rule).
+10. **Oracles, measured.** Sentinel `finalStateHash` and `PRE_WP080_HASH` unchanged (predicted: the sentinel's Brotherhood Sabretooth needs an X-Men Hero and its Black Widow / Captain America decks hold none; the empty replay has no hooks). `sim:runtime-observed:check`, `sim:coverage --check`, `effect-index:check`, `ledger:villains:check`, `ledger:heroes:check` 0 with no artifact regenerated; dashboard `totalObs` unchanged. PAR profiles measured, not re-pinned: a sweep of all 128 gauntlet scenarios on this change and on `origin/main` `9ef66944` gave byte-identical profiles and fidelity report, so this entry moves no PAR profile. The multi-seat PAR re-pin stays owed to one follow-up `INFRA:` run (`node scripts/generate-par-profiles.mjs --version v1`) shared with WP-846, for WP-846's rotation and the staleness already on `main` (#2698).
+
+**Gates.** See the STATUS.md WP-845 entry (test deltas, the five revert proofs, every `:check` gate).
+
+**Reserved by:** NUMBER-LEDGER D-24779 (#3034). Related: D-24281 and D-24777 §5 (amended), D-24501 (simultaneous ascending apply), D-24656 (point 4, the escape opener and replay-stall position), D-24750 (owed queue + opener), D-24762 (remove-at-apply), D-24743 (mixed ride), D-24744 / D-24745 (bot answers), D-24458 / D-24463 (`strikeBlocked`), D-24673 / D-24686 (wound log wording), D-24731 (reveal scope), D-24780 (WP-846 seat order), D-24026.
+
+---
+Protect this file.
+
+### D-24782 — The engine ewiki consumes the shared ewiki theme `bb-studio-ewiki-theme` v1.3.0, vendored; its own behavior sits behind the extension points, and the changelog and inventory link rules move into front matter (Active 2026-10-26 — WP-847 / EC-885)
+
+**Status:** Active 2026-10-26. Live-verify (D-24026): PASS 2026-10-26 — deploy job for merge `adab7e50` (run 40417717753: build + deploy success); curl with the `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` service-token headers against `ewiki.legendary-arena.com`: `/master-strike/` 200 with `nav.crumbs`, 9 `sidebar-group` groups, only "Mechanic" open, filter spans `Type:Mechanic`, `Status:Canonical` + its six tags, one script (`data-wiki-search`), `noindex`, skip link; `/changelog/` 200 (footer names `INFRA:`, no `wiki/changelog.md` link, Sources section); `/architecture-inventory/` 200 (no `/wiki/docs/` or `/wiki/packages/` href); stylesheet `/css/ewiki.bundle.min.0b81e629….css` 200, light `:root` then the dark block; a missing path (`/wp847-no-such-page/`) 404 with an empty body, i.e. not the theme's page, as expected until the Worker sets `not_found_handling: "404-page"` (follow-up 3).
+
+**User-Visible Surface:** `ewiki.legendary-arena.com` (behind Cloudflare Access). The same 99 pages at the same URLs with the same link and image targets, except folder links (GitHub `blob/` → `tree/`), the footer's "Write it once" link and the doc references that named a deleted engine layout file (now the vendored copy). New on every page: breadcrumbs, an "On this page" box, heading anchors, a skip link, the page title above the metadata panel (no duplicate H1), `noindex`, lazy images and the theme default's dark mode.
+
+**Context.** WP-814 / D-24728 extracted the shared theme and vendored it into each wiki; D-24725 §3 put the engine ewiki last, and D-24781 moved it ahead of the personal wiki because its own copy was the one drifting (the collapsible sidebar and search filters were hand-ported into it in #3029). This entry records the engine's migration calls.
+
+**Decision.**
+1. **Vendored and pinned.** The engine ewiki consumes `bb-studio-ewiki-theme` `v1.3.0` (`2c735f5a`), vendored by `tools/Sync-EwikiTheme.ps1` at `apps/wiki-viewer/themes/ewiki/` (39 files + `THEME-VERSION` + `.theme-manifest.txt`), never edited there. `wiki-viewer.yml` pins the manifest digest `6e266245…6624` in a job-level `EWIKI_THEME_DIGEST` and checks it, and the checker script's hash against its manifest line, in plain shell, then runs `Test-EwikiTheme.ps1` in a `shell: pwsh` step (D-24728 §3). Upgrades follow the theme's re-sync procedure: Sync the new tag, update the pin, rerun the gates and `Compare-WikiBuild`.
+2. **What stays the engine's, and where.** `layouts/partials/ewiki/sidebar.html` (the type-grouped collapsible sidebar on the theme's core `.sidebar-group` CSS); `metadata.html` (the six-field panel, WP-139 / D-13808, rendered only when `type` is set, and the hidden Type / Status / Tag filter spans outside that gate, on every page); `after-content.html` (Related, Sources); `editing-extra.html` (the commit prefixes by case, the mirror page's `wiki/<name>.md` edit link, github.dev and the authoring links, "The build is strict", "Write it once", the deploy target and the "Where this page goes" table); `assets/css/ewiki-brand.css` (the default's 21 tokens, the engine's light values, the theme default's dark palette until a branded one is drawn) and `assets/css/ewiki-site.css` (the engine-only rules, no custom property). Its own partials and shortcodes stay: `related`, `source-citations`, `service-dependencies-data`, `motif-table`, `service-impact`. The 13 engine copies of core files are deleted.
+3. **The theme's `searchFilters` stays off.** The engine has no sections, so its Kind filter would be empty, and the engine's own spans already give search Type, Status and Tag; turning it on would repeat two of them.
+4. **Link rules move into front matter.** The changelog's by-file-name footer case becomes `canonical-source: docs/09-CHANGELOG.md` plus its `source:` entry (`wiki/SCHEMA.md` §Mirror pages, which `check-links.mjs` enforces), written by `project-wiki.mjs`; every changelog branch in `editing-extra.html` keys on that value. The inventory's by-file-name link case becomes `links_from: repo-root` (theme render-link branch 4a), written by `scripts/architecture-inventory.mjs` and added in place to `wiki/architecture-inventory.md`.
+5. **Doc references.** A doc reference to a deleted engine layout file names its vendored copy under `apps/wiki-viewer/themes/ewiki/` (a path in this repo); a reference to a re-expressed file names its extension partial (`editing-this-page.html` → the core footer plus `editing-extra.html`; `style.css` → the core `ewiki.css` plus `ewiki-brand.css` / `ewiki-site.css`; `metadata-panel.html` → `ewiki/metadata.html`).
+6. **Front-matter surface.** It amends the wiki front-matter surface (D-13810, as D-24304 did) by one optional, unrendered field, `links_from` (`wiki/SCHEMA.md` §Field reference).
+7. **The theme's files are public here.** The 39 vendored files become visible in this public repo, as they already are in the public `scooby-engine` repo. Jeff's OK, 2026-10-26, recorded in WP-847 Assumes 10: "Yes: the theme's files may be published in the public legendary-arena repo, as scooby-engine already does."
+8. **Unchanged.** The WP-139 lock (D-13808) and D-24293: the theme is vendored inside this app (D-24728 §2), the build stays offline, and the theme's Pagefind loader is still the one script. The five existing `wiki-viewer.yml` gates are unchanged; the two theme checks sit beside them, before the build.
+9. **404.** The theme builds `public/404.html` (not indexed, not counted by the Assert gate). The Worker still sets no `not_found_handling`, so a miss is a plain 404 until a follow-up sets `not_found_handling: "404-page"`.
+
+**Gates.** Baseline (`762cc118`): 99 / 99, deterministic, Pagefind 99 pages and 3 filters, JS-free 99 / 99. Candidate-1 and Candidate-2: 99 / 99, deterministic, Pagefind 99 and 3, JS-free 100 / 100 (the 404 page's loader), no new `hugo` warning. `Compare-WikiBuild` on Candidate-1 against the baseline (its one footer URL rewritten, 97 files): PASS, 6884 links, 979 footer targets and 267 images paired, 23 blob → tree, all 407 text hunks mapped. T3b: the 11 expected doc-retarget rows only. Sidebar, filter spans and metadata panels equal the baseline's on all 99 pages. Tables in WP-847 §Execution Notes.
+
+**Follow-ups.** The theme repo's Consumers table and "Queued next" line; a branded dark palette for the engine; `not_found_handling: "404-page"` on the Worker; herbs-vs-ailments `docs/guides/ewiki-authoring.md` L12, which names the deleted engine footer path.
+
+**Reserved by:** NUMBER-LEDGER D-24782 (#3036). Related: D-24728 (vendoring, the CI checks, the extension points), D-24725 (one shared wiki platform), D-24727 (the theme), D-24781 (the order), D-24293 (one script), WP-139 / D-13808 (the theme lock and the six-field panel), D-13810 / D-24304 / D-24310 (the front-matter surface, `canonical-source`, `canonical-source-repo`), D-24164 (the changelog projection), D-14502 / D-14503 (the inventory generator and its old link case), D-24444 (Guard A, the separate `INFRA:` commit), D-24690 (the Worker).
+
+---
+Protect this file.
+
+### D-24780 — Order-sensitive each-player loops start with the current player and go clockwise (rules v23 L2247) (Active 2026-10-26 — WP-846 / EC-884)
+
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-27: operator match `N1hraIl46Jp` on server `22226287` (STATUS.md WP-846 entry): on Player 1's turn the core Loki Master Strike and the reveal-or-wound lines (Sabretooth Escape, Ymir Ambush) named Player 1 first; on Player 0's turns Player 0 stayed first.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). On seat 2's turn, an "each player gains a Wound" with one Wound left now wounds seat 2, not seat 0, and the per-seat log lines name players starting with seat 2. Flying Shield Block and return-on-discard prompts raised by one each-player effect come in the same current-player-first order. On seat 0's turn, and in every solo game, nothing changes.
+
+**Context.** Rules v23 L2247-2248: "If an effect causes 'each player' to gain a Wound (or do anything else), start with the current player then go clockwise." The engine walked every each-player effect in ascending seat id (`Object.keys(G.playerZones).sort()`, D-18902 / D-24156), which matches the rule only on seat 0's turn. Order matters where the Wound stack runs short (who misses the last Wound), where Flying Shield Block is asked (each copy works once per turn, D-24760), and where return-on-discard / teleport reactions queue.
+
+**Decision.**
+1. **One helper.** `seatsInTurnOrderFrom(seatIds, currentPlayer)` in the new pure module `turn/seatOrder.logic.ts`: `[...seatIds].sort()` (the default lexical compare, D-18902's choice, kept; it equals seat order for the reachable ids `'0'..'4'`), rotated to start at `currentPlayer`. A null / undefined / unknown current player returns the sorted copy (stub contexts and unit tests keep today's order). Clockwise is ascending seat id, wrapping: turn order is `(playOrderPos + 1) % playOrder.length` and nothing customises `ctx.playOrder`, so G's seat ids plus the current player are enough. Never mutates its input; no boardgame.io import, no RNG.
+2. **Scope rule.** A loop changes only where its order changes a rules outcome or a prompt order: (a) the **Wound stack** (the player who misses the last Wound; every Wound passes `gainWoundForPlayer`, so Flying Shield Block's serial waves are asked in loop order), and (b) **discard reactions** (every effect discard passes `discardFromHand`, so the return-on-discard / teleport queues fill in loop order). Flying Shield Block's asking order is the reaction outcome; the Diving Block queue order follows too, but a Diving Block wave addresses every seat at once, so that part is cosmetic.
+3. **The 22 sites.** H1 `heroEffectGainWound` (gain-wound-each), H7 `heroEffectRevealOrGainWoundEach`; R1 `resolveMagnetoStrike`, R4 `resolveDoctorDoomStrike`, R5 `resolveCoreLokiStrike`, R6 `resolveBaronZemoStrike`, R7 `discardCardOfCostForEachPlayer` (Arnim Zola), R8 `resolveLokiStrike`, R9 `resolveCo2eMagnetoStrike`, R10 `resolveDoctorOctopusStrike`; T1 `resolveCrushingShockwave`, T6 `dealFindingZemoWounds`, T9 `resolvePetProjects`; S1 `revealOrPunish`, S2 `woundAll`, S4 the Clash of the Monsters Gladiator / Wound loop; V1 / V2 `villainEffectGainWound` each-other / each, V3 `applyGainWoundEachNonSavior`, V6 `villainEffectRevealOrWound`, V10 `villainEffectGainWoundUnlessVictoryVillainGroup`; M1 `resolveCoveringFireChoice`. Only the iteration source changed; loop bodies, log templates and helper calls are byte-identical.
+4. **Current-player sources.** Hero handlers: `playerID`. Villain effects and tactics: `currentPlayer`. Strikes R4-R10 gain a file-private `currentPlayer: string | null` parameter supplied by `mastermindStrikeHandler` from `resolveCurrentPlayer(context)` (R7 through `resolveArnimZolaStrike`; R10 beside its shuffle function); R1 already took it. Scheme resolvers S1 / S2 / S4 read `ctx.currentPlayer` off their reveal context through a local `readTwistCurrentPlayer` (duplicate-first of `resolveCurrentPlayer`); S4 swaps the shared `playerIds` that feeds both the Gladiator pass (order-free: each pick reads only its own Victory Pile) and the Wound loop. M1: `playerID`. No exported signature changed.
+5. **Each-other loops rotate first, then filter.** T6 / T9 built a pre-filtered `otherSeats` list; passing that to the helper would hit the not-a-seat fallback and stay sorted, so they call `seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer).filter((seat) => seat !== currentPlayer)`. T1 / V1 / M1 keep their in-body skip.
+6. **Excluded, unchanged, and why.** RNG-only loops (Gambit's Hypnotic Charm others, Psychic Link draws, Monarch's Decree draw, Melter): order only changes which seat's reshuffle uses which random value; a physical table has no shared random stream. Rogue Steal Abilities re-fire: the playing player picks that order at the table. Paibok the Power Skrull: operator-ruled order, D-24343. Log-only and append-order-only loops (core Dr. Doom and Red Skull strikes' per-seat lines and `notableEvents`, Whispers and Lies and other `G.ko` appends, Prisoners of War, Executioner, `ko-hero` each, Fallen Idols, Computer-Uploaded Genius, the escape cost-discard builder): no outcome changes, and reordering would move hashed arrays and the competition hash for nothing (core Magneto R1 is the exception: it is in scope for its discard reactions). Simultaneous seat-choice applies (Diving Block, Flying Shield Block, Monarch's discard, Vanishing Illusions, Random Acts, the escape discards, WP-845's): D-24501. Flying Shield Block's asking order (recipient first, then ascending, D-24760): "any player may reveal", not an each-player effect. Builders of simultaneous prompts: cosmetic. **Not effects:** invariant checks, scoring, snapshot, the UI / operator projections, `zones.validate`, `ai.seatChoice`, the Ymir tie-break `selectPlayerWithMostWounds` (already current player first) and `buildDominateTheWeakChoice` (one chooser's option order). R8's `hypnoThralls` order is display-only; R8 is in scope for its discards.
+7. **Amends** D-18902, D-24156, D-24281 and D-24777 §6 for the 22 in-scope loops only; every other loop keeps D-18902's sorted order.
+8. **WP-845 residual (D-24779 §8b).** H7 and V6 hold WP-845's enqueue split. The loops now rotate; `enqueueRevealOrWoundChoice` still sorts `revealingSeats` ascending itself, so WP-845's apply stays ascending (D-24501). Under a short supply, cannot-reveal seats are served in turn order at effect time and decliners in ascending order at apply: a mixed order, accepted. The "can reveal and will choose" log line names the revealers in turn order.
+9. **RNG stream.** M1's draw branch and R10's reveal branch reshuffle in the rotated order, so they consume randomness in a different seat order on non-seat-0 turns (deterministic; no RNG added).
+10. **Oracles, measured.** Sentinel `finalStateHash` (`3a74c4a8…`; its only strike is core Dr. Doom, out of scope, on seat 0's turn) and `PRE_WP080_HASH` (`dae75521`, an empty replay) unchanged, as predicted. `sim:runtime-observed:check` (`PLAYER_COUNT = 1`) and `sim:coverage --check` 0 with nothing regenerated. No existing engine test moved (the two likeliest outside-allowlist movers, `simulation/seatChoiceDispatch.test.ts` and `moves/divingBlock.multiSeatWave.test.ts`, run right after the swap: 7 / 7 pass). **Multi-seat PAR profiles** (`data/par/profile/v1`, which sweep 2-5 players over Legacy Virus, core Loki and reveal-or-wound villains) are expected to move and are not re-pinned here: one follow-up `INFRA:` run (`node scripts/generate-par-profiles.mjs --version v1`), shared with D-24779 / EC-883, after open PR #2698. Seed PAR is rating-based and does not move; stored `competitive_scores` stay frozen (D-24616).
+11. **Replay compatibility.** Runtime handler code that existing hooks reach changed, so this is not setup-only. A multi-seat match captured before the deploy and re-executed after (competition verification, coach `reduceReplayByHash`) diverges if an in-scope loop ran on a non-seat-0 turn and either logged per seat (`G.messages` is in `computeStateHash`) or met a short supply / reaction; M1's draw and R10's reveal branches diverge in state, not only in log lines. Accepted, no migration: the D-24656 position. Solo matches are unaffected (rotation is the identity).
+12. **Comment-only edits** outside the six files: `rules/heroKeywords.ts` (the `covering-fire` union member's comment) and `types.ts` (`PendingCoveringFireChoice` JSDoc) described M1's sorted order; types are byte-identical. The `heroKeywords.ts` line carries the comment on a code line, so the `Object.keys(...playerZones)` inventory there drops 4 → 3; the six source files' counts are unchanged (AC-9 (b)).
+13. **Forward rule.** A new each-player loop whose order changes a Wound-stack, Flying Shield Block or discard-reaction outcome MUST iterate `seatsInTurnOrderFrom`; one that does not stays on `.sort()` with a `// why:` saying why. Stated in the helper's JSDoc too.
+14. **Follow-up (out of scope).** Diving Block lands the Wound and then undoes it (D-24499), so with one Wound left a Diving Block holder takes and returns it while later seats get nothing; at the table the Wound would pass on. Pre-existing.
+
+**Gates.** See the STATUS.md WP-846 entry (test deltas, AC-5 literal baselines, both revert proofs, the AC-9 counts, every `:check` gate).
+
+**Reserved by:** NUMBER-LEDGER D-24780 (#3035). Related: D-18902 (lexical seat order, kept), D-24156, D-24281, D-24777 §6 (amended for the in-scope loops), D-24343 (Paibok), D-24499 (Diving Block land-then-undo), D-24501 (simultaneous ascending apply), D-24656 (replay divergence position), D-24760 (Flying Shield Block asking order), D-24779 (WP-845 residual, shared PAR re-pin), D-24616, D-24026.
+
+---
+### D-24769 — co2e grey-Hero and Hero-count effects: one grey predicate, two filtered KOs, three count / reveal primitives (Active 2026-10-26 — WP-836 / EC-874)
+
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-27: operator match `fYMag9FU7eP` on server `10479074` (STATUS.md WP-836 entry): Destroyer KO'd only classed Heroes from each discard, Ymir and Frost Giant Warrior KO'd only grey Heroes, Abomination and Beetle counted hand + play, and Savage Land Mutates KO'd grey tops and left the rest.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Eight printed co2e lines did nothing: Destroyer's Ambush / Fight / Escape, the Frost Giant Warrior and Ymir Fights, and the Abomination, Beetle and Savage Land Mutates Fights. They now do what they print and log it.
+
+**Context.** Rules v23 L1487-1492: "grey Heroes" are the grey cards with no Hero Class (S.H.I.E.L.D. Agents, Troopers, Officers, Sidekicks). L2906-2911 / L3200-3207: Hero Class and color are the same thing, plus grey for the classless. L3380-3387: a classed special Officer is not grey. L3404-3407: Wounds have no color, "not even grey". L3436-3447: "your Heroes" = hand + played this turn and still in play. L3201-3207: a revealed card with no destination stays on top. No grey helper was reachable from the villain path (the two `mastermindHandlers.ts` copies are private).
+
+**Decision.**
+1. **One grey predicate.** `isGreyHero(G, cardId)` and `matchesGreyHeroFilter(G, cardId, greyFilter)` in `hero/splitCard.logic.ts`: a Wound or a Bystander is never grey and never non-grey; any other card is grey when its off-play traits (`offPlayCardTraits`) carry no non-empty `heroClass` or `heroClass2` (no trait entry → grey, so the synthetic S.H.I.E.L.D. and Sidekick cards are grey). A split card off play is its faces' classes, so never grey. Every grey test in the executor, both resolve moves, the bot and the projection calls it.
+2. **Contract change (authorized).** `rules/villainAbility.types.ts`: `GreyHeroFilter = 'grey' | 'non-grey'`; primitives 32-34 `gain-recruit-current-count-by-trait`, `draw-cards-current-count-by-trait`, `reveal-top-ko-grey-or-draw-by-class`; descriptor fields `greyFilter?` and `drawHeroClasses?: readonly HeroClass[]`, both outside `descriptorKey` (a filtered each-player KO still reverse-maps to `koHeroEachPlayer` and narrates through the generic line, as `zone` does, D-24280). `types.ts`: `PendingKoHeroChoice.greyFilter?` and `PendingKoDiscardChoice.greyFilter?`, omit-when-absent.
+3. **Grammar.** `ko-hero:each:<N>:discard:non-grey` (exactly 5 parts) and `ko-up-to-from-discard-current:<N>:grey` (exactly 3) extend two primitives; `gain-recruit-current-count-by-trait:<kind>:<value>` and `draw-cards-current-count-by-trait:<kind>:<value>` reuse the shared trait-predicate parser; `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]` lists Hero Classes (each `normalizeTraitSlug`-ed, a member of `HERO_CLASSES`, no repeats). Anything else is an unresolved marker. The marker script mirrors all five with a hand-synced `HERO_CLASSES` and the same trim + lowercase.
+4. **Destroyer's each-player KO** ("Each player KOs a non-grey Hero from their discard pile", Ambush and Escape): the current player parks the existing KO-a-Hero choice (`zones: ['discard']`, `greyFilter: 'non-grey'`) only with a real choice (D-24644); every other seat, and the bot, takes the lowest-cost non-grey Hero (`offPlayCardStats` cost, ties → lexically smallest id) through `selectKoHeroTargetByGreyFilter`. D-24644's starter-first pick cannot apply because starters are grey. The loop keeps ascending seat order: D-24780 §6 leaves `ko-hero` each out of scope (no shared resource, so order changes no outcome).
+5. **Grey KO-up-to** (Destroyer "KO up to two grey Heroes", Frost Giant Warrior / Ymir "You may KO a grey Hero"): parks the existing KO-from-discard choice with `greyFilter: 'grey'` whenever a discard card passes; with none it logs a `blocked` line and parks nothing. The bot KOs Agents / Troopers first and never offers a Wound; Officers and Sidekicks stay. The resolve rejects any id failing the filter; the projection lists only passing cards. The prompt heading still reads "cards" (no client change).
+6. **Abomination and Beetle** count "your Heroes" (hand + still in play) through the Maestro / Baron Zemo counter (`listPlayerHeroesMatchingTrait`, D-24529 / D-24692 / D-24724), so granted classes count the same way. Abomination adds the count to `G.turnEconomy.recruit`. Beetle counts before it draws, then draws through `drawCardsIntoHand` (`cardsDrawn += drawn`); with no shuffle source it no-ops silently.
+7. **Savage Land Mutates (co2e)**: reveal the deck top (an empty deck reshuffles the discard first). Grey → KO; a listed class (Strength, then Instinct) → a real draw, deck → hand, `cardsDrawn += 1`, no draw lock (the Patriarch / WP-731 precedent); anything else, a Wound included, stays on top. The three outcomes are disjoint. Henchman hooks are keyed by slug from the selected set, so Core Savage Land Mutates keeps `add-next-hand-size:1`.
+8. **Byte-identity.** Every new parameter and field is optional; absent, every path, string and bot pick is today's (Juggernaut, Salomé, Maniacal Tyrant, Red Skull, Maestro). No new `G` key, move, pending queue or UIState field.
+9. **Determinism and replay.** Narration goes to hash-excluded `G.messages` (D-24081); `finalStateHash` and `PRE_WP080_HASH` unchanged. Stored matches replay from their `initialState`, which holds the setup-time hooks, so pre-deploy matches keep their hookless lines; live-verify needs a match created after the deploy.
+10. **Left as-is (follow-up).** The two `mastermindHandlers.ts` grey copies (Loki's `isNonGreyHero`, which reads raw `G.cardTraits`, and Doctor Octopus's `'non-grey'` kind) and WP-830's `enigmaColorsOf` read grey the same way; folding them onto `isGreyHero` is a separate consolidation (the raw-traits copy would change split-card behavior in a strike).
+
+**Reserved by:** NUMBER-LEDGER D-24769 (#3010). Related: D-24023 / D-24280 / D-24644 / D-24687 (`ko-hero` each), D-24589 (`ko-up-to-from-discard-current`, Patriarch), D-24510 / D-24682 / D-24688 (KO-from-discard choice and bot default), D-24009 / D-24364 (bot parity, legalMoves ↔ guard), D-24284 (current-player choices), D-24290 / D-24353 (trait predicate, count-sized primitives), D-24529 / D-24692 / D-24724 / D-24729 (the counter and its names), D-24285 (reshuffle on reveal), D-24732 (`cardsDrawn`), D-24081, D-24780, D-24768 (WP-835), D-24026.
+
+---
+
+### D-24783 — Grey-Hero follow-ups to D-24769: every grey read goes through the shared predicate, and the grey prompt and KO log lines say what they mean (Active 2026-10-27 — direct fix, no WP)
+
+**Status:** Active 2026-10-27. Live-verify (D-24026) PASS 2026-10-27: operator match `s2F01Xdt6Al` on server `297fea7` (STATUS.md entry of 2026-10-27): the grey prompt said "grey Hero(es)" at both caps, the KO-from-discard line named each card (and "no cards" for an empty pick), and Destroyer's Ambush said "Player 0 had no non-grey Hero to KO" for a starters-only discard.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). The KO-from-discard prompt says "KO up to 1 grey Hero from your discard pile" for Frost Giant Warrior / Ymir (Destroyer's Fight: "up to 2 grey Heroes"); the KO-from-discard log line names each card KO'd; Destroyer's each-player line says "Player 1 had no non-grey Hero to KO" when that player held only grey Heroes. Loki's and Doctor Octopus's Master Strikes read split cards the way the rest of the engine does.
+
+**Context.** D-24769 §10 and the WP-836 live-verify (match `fYMag9FU7eP`) left four follow-ups: three private grey reads (Doctor Octopus's `isNonGreyHero` on raw `G.cardTraits` — D-24769 §10 named it Loki's; Loki's Hypno-Thrall `'non-grey'` kind of `selectLowestCostHero`; WP-830's `enigmaColorsOf`), a prompt heading that said "cards" over a grey-only list, a KO log that gave a count but no names (23.2.15 "KO'd 1 card(s) … (Ymir, Frost Giant King)"), and "Player 1 had no hero to KO" (6.1.2) when Player 1 held only starters, which Destroyer's non-grey KO skips.
+
+**Decision.**
+1. **One grey read.** Doctor Octopus's reveal-eight discard and Loki's Hypno-Thrall pick call `matchesGreyHeroFilter(G, cardId, 'non-grey')`; `enigmaColorsOf` returns `['grey']` when `isGreyHero` says so and keeps its class collection only for the colors. No inline class scan decides grey anywhere in the engine. Fidelity change, stated plainly: Doctor Octopus read the card's own raw trait entry and Loki read only the off-play `heroClass` slot, so a split card whose own face carried no class while its other face did read grey; both now read the off-play view (rules v23 p.49), so it is non-grey. Every split face in the current card data carries a class, so no current card changes outcome; the case is pinned by a synthetic fixture. A Wound or Bystander stays "not a Hero" (returned by Doctor Octopus, never stacked by Loki), and an empty-string class now reads grey in both.
+2. **Board-visible field (contract change, `ui/uiState.types.ts`).** `UIPendingKoDiscardChoice.greyFilter?: GreyHeroFilter`, built from the front entry, passed through `filterUIStateForAudience` to the chooser only, omitted (no key) on an unfiltered entry. The prompt header is "KO up to N grey Hero(es)" / "non-grey Hero(es)" with a filter and today's "KO up to N card(s)" without one.
+3. **KO-from-discard log.** `resolveKoDiscardChoice` names each card KO'd as `{Name} ({ext-id})`, comma-joined, or "no cards" for an empty pick, for every entry (Loki's Maniacal Tyrant and Salomé too, not only grey): "Player 0 KO'd S.H.I.E.L.D. Trooper (…) from their discard pile (Ymir, Frost Giant King)." The old count-only text is retired; its two test pins change on purpose.
+4. **Each-player KO narration (contract change, `rules/villainAbility.types.ts`).** `VillainEffectResult.greyFilter?` carries a grey-filtered `ko-hero` each (Destroyer) to the composer: "Player N had no non-grey Hero to KO", "the active player must KO a non-grey Hero", "no player had a non-grey Hero to KO". Absent (every unfiltered KO), the result object and every string are byte-identical.
+5. **Determinism.** Nothing here reads randomness or adds `G` state; all text goes to hash-excluded `G.messages` (D-24081) and the result field never reaches `G.notableEvents`. Hash oracles unchanged. No current card's outcome changes (§1), so a stored match replays to the same state; live-verify uses a match created after the deploy.
+
+**Reserved by:** NUMBER-LEDGER D-24783 (this PR). Related: D-24769 (the grey predicate, its §10 follow-up), D-24510 / D-24589 (KO-from-discard choice and its source naming), D-24683 / D-24646 (each-player KO clauses), D-24604 / D-24545 (off-play split traits), D-24201 / D-24200 (Loki Thralls, Doctor Octopus reveal), D-24763 (Enigma Code), D-24081, D-24026.
+
+---
+Protect this file.
+
+### D-24770 — co2e each-player discard and reveal-gated Ambushes: trait discards ride WP-817's owed-discard queue, Juggernaut purges by card name, Scorpion gains a group condition, The Leader a reveal gate (Active 2026-10-27 — WP-837 / EC-875)
+
+**Status:** Active 2026-10-27. Live-verify (D-24026) PASS 2026-10-27 on server `26bf1e10` (STATUS.md WP-837 entry): Mystique made only X-Men holders discard; Frost Giant Warrior wounded non-holders at open in turn order and its holder prompt resolved both the discard and **Gain a Wound instead**; Juggernaut discarded same-named hand cards before sending the HQ to the Hero Deck bottom; Scorpion wounded only with another Sinister Spider-Foes Villain in the City; The Leader played a card only when the current player had no Strength Hero.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). Five Core 2nd-edition Ambush lines did nothing: Mystique, Frost Giant Warrior, Juggernaut, Scorpion and The Leader. They now do what they print and log it.
+
+**Context.** Rules v23 L556-575: an escape's three steps resolve before the new Villain's Ambush. L566 / L2143: a discard is from the hand. L3186-3201: "Reveal a card" is from hand or played this turn; for "do A or do B" a player may choose only an option they can actually do. L2773-2778: a Divided (split) card off play counts as all its Hero Classes, Teams and card names. L749-753: an empty HQ space refills at once from the Hero Deck. L1539-1541: a Haunting Villain stays on its HQ space when the Hero leaves. L2247: an each-player effect starts with the current player, then goes clockwise (D-24780).
+
+**Decision.**
+1. **Contract change (authorized).** `rules/villainAbility.types.ts`: primitives 35-38 `discard-hero-each-player-by-trait`, `discard-hero-or-wound-each-player-by-trait`, `discard-hand-matching-hq-card-names-each-player`, `hq-heroes-to-hero-deck-bottom`; condition `another-group-villain-in-city` (`VILLAIN_EFFECT_CONDITIONS` = `['savior', 'another-group-villain-in-city']`). `types.ts`: `PendingEffectDiscardTraitFilter { requireKind; requireValue; requirementLabel; effectLabel; hasWoundAlternative }` and `PendingEscapeEffectDiscard.traitFilter?` (a trait entry carries `eligibleCosts: []`). `descriptorKey` is unchanged, so Scorpion's gated `gain-wound:each` still reverse-maps to `gainWoundEachPlayer`.
+2. **Grammar.** The two trait discards reuse the shared trait-predicate parser (`<primitive>:<kind>:<value>`); Juggernaut's two halves take no params; `play-villain-deck-cards:<N>` is byte-identical and gains `play-villain-deck-cards:<N>:<kind>:<value>`; any other part count is an unresolved marker. `!another-group-villain-in-city` is case-sensitive like `!savior`. The marker script mirrors all of it.
+3. **One owed-discard FIFO (extends D-24750 point 9 to Ambush).** Mystique and Frost Giant Warrior record a trait entry on `G.pendingEscapeEffectDiscards`; the `turn.onMove` opener parks it after the move as a `villain-effect-trait-discard` seat choice, behind any escape step and any earlier entry. An entry without `traitFilter` (Primus, or an in-flight state from before WP-837) routes to WP-817's cost builder exactly as before. No new `G` key, no rename, no drop-set or busy-guard change. The deviation is observable only when the same move continues past the Ambush (a chained reveal).
+4. **Eligibility.** `listEligibleHandCardsByTrait` (hand only, hand order) reuses `traitMeetsDefeatRequirement` over `offPlayCardTraits`: a split card is its Hero's team and both faces' Hero Classes. Discards go through `discardFromHand`; Wounds through `gainWoundWithOutcome`; the current player's villain Wound adds 1 to `G.turnEconomy.woundsDrawn`.
+5. **Frost Giant Warrior (rules L3199-3201).** Prepare runs two passes. Pass 1 walks `seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)` (D-24780: who misses the last Wound, and the Flying Shield Block asking order) and wounds every seat with no Ranged Hero, or logs an empty supply. Pass 2 walks the seats ascending (a simultaneous prompt, D-24780 §6 / D-24501) and builds the holders' options: their Ranged Heroes, then **Gain a Wound instead** only while the supply still has a Wound. The apply is ascending. The bot discards its cheapest listed Hero; autoplay / sim / PAR take index 0 (a discard). **Accepted residual (RS-1):** if the supply runs out before a later seat's chosen Wound is applied, that seat gets neither (logged `chose to gain a Wound, but the Wound supply is empty.`); it needs a supply no larger than the seats choosing the Wound.
+6. **Juggernaut.** Two auto-resolving primitives run left to right, so the name scan reads the HQ before it moves. A card's name key is its card slug (third `/` segment; reprints across sets match); a split card counts as both faces' slugs. Every matching hand card is discarded through `discardFromHand`, seats in turn order from the current player (its reactions queue in loop order, D-24780). Then every HQ Hero goes to the Hero Deck bottom in slot order 0 → last as a snapshot, and every empty slot refills through `refillHqSlot`; `G.hqHaunters` is untouched. **RS-2:** with an escape in the same reveal, D-24656 point 4 runs its HQ KO and Bystander discard after the move, so they see the post-Juggernaut HQ and hands (the reverse of rules L573-575); no code change.
+7. **Scorpion.** "Another Spider-Foes Villain" is a Villain of the triggering card's own group: the longest `${set}-villain-${slug}-` prefix from `G.selection.villainGroupIds` (two-part ids) that the card id starts with (the D-24299 own-set precedent). Another non-null City occupant with that prefix (a second copy counts) passes the gate; no resolvable group fails closed. A core `spider-foes` Villain does not count.
+8. **The Leader.** The optional gate makes the play conditional on the current player not having a matching Hero in hand or still in play (`playerHasHeroMatchingTrait`). The reveal is automatic (D-24281). One predicate decides the fire-site count and the handler's reveal line; a gated read with no current player plays nothing. Both fire sites (`villainDeck.reveal.ts`, `fightVillain.ts`) pass the current player. The primitive stays a deliberate no-op (it writes only the hash-excluded log).
+9. **Determinism and replay.** Narration goes to hash-excluded `G.messages` (D-24081); `finalStateHash` and `PRE_WP080_HASH` are unchanged. Stored matches replay from their bgio `initialState`, which holds the setup-time hooks, so pre-WP-837 matches replay and play identically (these Ambushes stay no-ops there); live-verify needs a match created after the deploy.
+10. **Left as-is.** The keyword-less Ambush overlay still reads "entered the city with no Ambush effect" (descriptor-keyed narration is WP-253); no `strikeBlocked` event for The Leader's reveal; scheme-added Villain Groups are outside the Scorpion lookup; the same shapes in other sets (`xmen` / `nmut`, `mgtg`, `wwhk` / co2e Loki) are unmarked.
+
+**Reserved by:** NUMBER-LEDGER D-24770 (#3010). Related: D-24750 (WP-817 owed-discard queue), D-24656 (escape procedure), D-24749 (`!<condition>`), D-24299 (own-group prefix), D-24281 (auto-reveal), D-24351 / D-24703 (`play-villain-deck-cards` fire sites), D-24780 (seat order), D-24501 (seat choices), D-24499 / D-24673 (Wound chokepoint, Diving Block), D-24301 / D-24526 (discard reactions), D-24081, D-24768 / D-24769 (WP-835 / 836), D-24026.
+
+---
 Protect this file.

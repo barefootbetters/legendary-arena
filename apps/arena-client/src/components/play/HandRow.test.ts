@@ -386,3 +386,44 @@ describe('HandRow (WP-783) — Phase button on phasable hand cards', () => {
     assert.deepStrictEqual(calls, [{ name: 'phaseCard', args: { cardId: 'phasing-card' } }]);
   });
 });
+
+describe('HandRow (WP-817 / D-24750) — Discard tag on fight-discard-eligible cards', () => {
+  test('tags only the cards listed in discardEligibleCardIds, every copy of a listed id', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: {
+        handCards: ['cost-4', 'cost-5', 'cost-5'],
+        currentStage: 'main',
+        submitMove,
+        discardEligibleCardIds: ['cost-5'],
+      },
+    });
+    const tags = wrapper.findAll('[data-testid="play-hand-discard-eligible"]');
+    assert.deepStrictEqual(tags.map((tag) => tag.attributes('data-card-id')), ['cost-5', 'cost-5']);
+    assert.equal(tags[0]!.text(), 'Discard');
+  });
+
+  test('renders no tag when discardEligibleCardIds is absent (default [])', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: { handCards: ['cost-5'], currentStage: 'main', submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="play-hand-discard-eligible"]').exists(), false);
+  });
+
+  test('the tag sits outside the play button and the card still plays on click', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(HandRow, {
+      props: {
+        handCards: ['cost-5'],
+        currentStage: 'main',
+        submitMove,
+        discardEligibleCardIds: ['cost-5'],
+      },
+    });
+    const playButton = wrapper.find('[data-testid="play-hand-card"]');
+    assert.equal(playButton.find('[data-testid="play-hand-discard-eligible"]').exists(), false);
+    await playButton.trigger('click');
+    assert.deepStrictEqual(calls, [{ name: 'playCard', args: { cardId: 'cost-5' } }]);
+  });
+});

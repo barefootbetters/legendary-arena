@@ -12,7 +12,7 @@ related:
   - hugo-web-system.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\after-effects-stop-motion-hero-loop.md (this page — https://ewiki.legendary-arena.com/after-effects-stop-motion-hero-loop/)
+  - C:\dev\legendary-arena\wiki\after-effects-stop-motion-hero-loop.md (this page — https://ewiki.legendary-arena.com/after-effects-stop-motion-hero-loop/)
 last-reviewed: 2026-05-17
 ---
 
@@ -50,12 +50,12 @@ Re-renders overwrite. Version control is in git, not in filenames.
 ### Working folder structure
 
 Working media files (capture, frames, comps, renders) live under
-`C:\pcloud\LA\media\`, separate from the marketing repo. Only the
+`C:\pcloud\legendary-arena\media\`, separate from the marketing repo. Only the
 final three artifacts are copied into the marketing repo at
 publish time (Phase 4).
 
 ```
-C:\pcloud\LA\media\
+C:\pcloud\legendary-arena\media\
 ├── capture\           # raw source recordings (gameplay or screen capture)
 ├── frames\            # full PNG sequence exported from After Effects
 ├── selects\           # curated subset of frames after manual edit
@@ -124,7 +124,7 @@ The loop returns cleanly to frame 0 (see Step 6).
 #### Capture method (pick one)
 
 Three paths, in roughly increasing complexity. All three feed the
-same `C:\pcloud\LA\media\capture\` folder downstream.
+same `C:\pcloud\legendary-arena\media\capture\` folder downstream.
 
 | Method | When to use | Tooling |
 |---|---|---|
@@ -225,11 +225,11 @@ Pocket lint on the lens reads as a soft blur on every frame.
 
 #### Save location
 
-Save raw captures to `C:\pcloud\LA\media\capture\` with a numeric
+Save raw captures to `C:\pcloud\legendary-arena\media\capture\` with a numeric
 suffix:
 
 ```
-C:\pcloud\LA\media\capture\gameplay_raw_001.mp4
+C:\pcloud\legendary-arena\media\capture\gameplay_raw_001.mp4
 ```
 
 Numeric suffixes (`_001`, `_002`) are fine for raw captures —
@@ -260,26 +260,26 @@ clips; Method B is the one-effect fallback for first-pass mockups.
 ##### Step 1 — Import and convert to a frame sequence
 
 1. `File → Import → File…` and select the capture file from
-   `C:\pcloud\LA\media\capture\`.
+   `C:\pcloud\legendary-arena\media\capture\`.
 2. Drag the imported clip into a new composition.
 3. `Composition → Add to Render Queue`.
 4. In the Render Queue panel, click `Output Module` (default:
    Lossless).
 5. Set `Format` to `PNG Sequence`.
-6. Set `Output To` to `C:\pcloud\LA\media\frames\`. Naming pattern:
+6. Set `Output To` to `C:\pcloud\legendary-arena\media\frames\`. Naming pattern:
    `frame_[#####].png`.
 7. Click `Render`.
 
 ##### Step 2 — Curate frames (the step that matters)
 
-Open `C:\pcloud\LA\media\frames\` and manually pick the frames that
+Open `C:\pcloud\legendary-arena\media\frames\` and manually pick the frames that
 carry the narrative beats:
 
 - Delete redundant frames that do not advance the visual story.
 - Keep state-change frames (card moves, UI value flips, highlight on).
 - Duplicate key frames to hold on a beat for emphasis.
 
-Copy the selected frames into `C:\pcloud\LA\media\selects\`,
+Copy the selected frames into `C:\pcloud\legendary-arena\media\selects\`,
 renumbered sequentially (`frame_00001.png`, `frame_00002.png`, …).
 Do not edit in place — `frames\` is the full output, `selects\` is
 the editorial cut, and the separation makes iteration cheap.
@@ -292,7 +292,7 @@ low-frame-rate video, not stop-motion.
 ##### Step 3 — Re-import the curated sequence
 
 1. `File → Import → File…`
-2. Select the **first** PNG in `C:\pcloud\LA\media\selects\`.
+2. Select the **first** PNG in `C:\pcloud\legendary-arena\media\selects\`.
 3. Check the `PNG Sequence` box in the import dialog.
 4. Click `Import`.
 
@@ -354,7 +354,7 @@ hoping it will "fade back" — duplicating frames inserts a hold,
 not a transition. The result is a noticeable pause at the loop
 point.
 
-Save the AE project to `C:\pcloud\LA\media\comps\hero-loop.aep`.
+Save the AE project to `C:\pcloud\legendary-arena\media\comps\hero-loop.aep`.
 
 ##### Step 7 — Export H.264 (MP4)
 
@@ -372,7 +372,7 @@ Render Queue):
 | Resolution | 1280×720 (or 1920×1080 if the source warrants it) | Hero slots rarely need 4K |
 | Bitrate encoding | VBR, two-pass | Avoids banding on flat posterized color |
 | Target bitrate | 2-4 Mbps | Keeps file size under 5 MB at 5-7 seconds |
-| Output path | `C:\pcloud\LA\media\renders\mp4\hero-loop.mp4` | Fixed filename, no version suffix |
+| Output path | `C:\pcloud\legendary-arena\media\renders\mp4\hero-loop.mp4` | Fixed filename, no version suffix |
 
 3. Verify in the encoded output: scrub to the loop boundary in a
    browser preview and confirm there is no visible jump.
@@ -388,8 +388,8 @@ Either install a third-party WebM plugin for Media Encoder or
 post-process the MP4 with FFmpeg (two-pass VBR):
 
 ```
-ffmpeg -i C:\pcloud\LA\media\renders\mp4\hero-loop.mp4 -c:v libvpx-vp9 -b:v 1M -pass 1 -an -f null NUL
-ffmpeg -i C:\pcloud\LA\media\renders\mp4\hero-loop.mp4 -c:v libvpx-vp9 -b:v 1M -pass 2 C:\pcloud\LA\media\renders\webm\hero-loop.webm
+ffmpeg -i C:\pcloud\legendary-arena\media\renders\mp4\hero-loop.mp4 -c:v libvpx-vp9 -b:v 1M -pass 1 -an -f null NUL
+ffmpeg -i C:\pcloud\legendary-arena\media\renders\mp4\hero-loop.mp4 -c:v libvpx-vp9 -b:v 1M -pass 2 C:\pcloud\legendary-arena\media\renders\webm\hero-loop.webm
 ```
 
 The first pass writes log files to the current directory; the
@@ -404,7 +404,7 @@ Export the first frame of the comp as a JPG poster:
 2. `Composition → Save Frame As → File…`
 3. Add to Render Queue, set the `Output Module` format to
    `JPEG Sequence`.
-4. Output to `C:\pcloud\LA\media\thumbnails\hero-fallback.jpg`.
+4. Output to `C:\pcloud\legendary-arena\media\thumbnails\hero-fallback.jpg`.
 
 The poster image displays while the video buffers and as a
 fallback for users who block autoplay.
@@ -434,11 +434,11 @@ The mapping is fixed — do not commit working files to either repo.
 
 | Artifact | Lives at | Git? |
 |---|---|---|
-| Raw captures | `C:\pcloud\LA\media\capture\` | No — pCloud backup only |
-| Full PNG sequence | `C:\pcloud\LA\media\frames\` | No — pCloud backup only |
-| Curated PNG sequence | `C:\pcloud\LA\media\selects\` | No — pCloud backup only |
-| AE project (`.aep`) | `C:\pcloud\LA\media\comps\` | No — pCloud backup only |
-| Intermediate renders | `C:\pcloud\LA\media\renders\{mp4,webm}\` | No — pCloud backup only |
+| Raw captures | `C:\pcloud\legendary-arena\media\capture\` | No — pCloud backup only |
+| Full PNG sequence | `C:\pcloud\legendary-arena\media\frames\` | No — pCloud backup only |
+| Curated PNG sequence | `C:\pcloud\legendary-arena\media\selects\` | No — pCloud backup only |
+| AE project (`.aep`) | `C:\pcloud\legendary-arena\media\comps\` | No — pCloud backup only |
+| Intermediate renders | `C:\pcloud\legendary-arena\media\renders\{mp4,webm}\` | No — pCloud backup only |
 | `hero-loop.webm` (final) | `C:\www\legendary-arena-com\static\images\hero\` | Yes — marketing repo |
 | `hero-loop.mp4` (final) | `C:\www\legendary-arena-com\static\images\hero\` | Yes — marketing repo |
 | `hero-fallback.jpg` (final) | `C:\www\legendary-arena-com\static\images\hero\` | Yes — marketing repo |
@@ -629,7 +629,7 @@ see the Commit-lane decision earlier in Phase 4 for the
   Either re-curate from scratch or commit the AE project file
   before re-shooting so the prior cut can be re-established.
 - **pCloud sync conflicts on shared folders.** The working folders
-  under `C:\pcloud\LA\media\` sync via pCloud. Render queues
+  under `C:\pcloud\legendary-arena\media\` sync via pCloud. Render queues
   writing PNG sequences while pCloud is mid-sync can produce
   `[conflicted N]` duplicates. Pause sync during long renders.
 - **Auto-exposure flicker on phone capture.** Phone camera apps

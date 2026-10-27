@@ -11,16 +11,21 @@
  */
 
 import type { LegendaryGameState } from '../types.js';
+import { chooseBotEnigmaGuess } from '../rules/enigmaCode.logic.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegalMove } from './ai.types.js';
 import { getAvailableRecruit, getSpendableAttackForTarget } from '../economy/economy.logic.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
+import type { AttackTargetName } from '../economy/economy.types.js';
+import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
 import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
 import {
   getDefeatRequirement,
   playerMeetsDefeatRequirement,
+  getFightDiscardCost,
+  selectDefaultCostDiscardCard,
 } from '../moves/villainDefeatRequirement.logic.js';
 import { hasPendingKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from '../moves/scryKoChoice.resolve.js';
@@ -37,9 +42,11 @@ import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mast
 import {
   selectDefaultKoTarget,
   selectKoHeroTarget,
+  selectKoHeroTargetByGreyFilter,
   selectScryKoTarget,
   isCullableDeckTopCard,
 } from '../villain/villainEffects.execute.js';
+import { matchesGreyHeroFilter } from '../hero/splitCard.logic.js';
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -280,7 +287,14 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
   if (front === undefined) {
     return [];
   }
-  const discard = gameState.playerZones[front.playerID]?.discard ?? [];
+  const fullDiscard = gameState.playerZones[front.playerID]?.discard ?? [];
+  // why: D-24769 — a filtered entry (grey Heroes only) mirrors the resolve's filter, or the
+  // block-all guard never lifts: a Wound is never offered, and Officers stay kept.
+  const greyFilter = front.greyFilter;
+  const discard =
+    greyFilter === undefined
+      ? fullDiscard
+      : fullDiscard.filter((cardId) => matchesGreyHeroFilter(gameState, cardId, greyFilter));
   const chosen: CardExtId[] = [];
   // why: D-24688 — Wounds first (a dead card is the best KO), then the starting
   // S.H.I.E.L.D. cards; two passes keep the order deterministic and capped.
@@ -314,6 +328,10 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
  * @returns The move payload: a move between two City indices, or a decline.
  */
 function selectDefaultMoveVillainArgs(gameState: LegendaryGameState): ResolveMoveVillainChoiceArgs {
+  // why: WP-831 / D-24764 — a 1-space City has no other space to move a Villain to.
+  if (gameState.city.length < 2) {
+    return { decline: true };
+  }
   for (let fromCityIndex = 0; fromCityIndex < gameState.city.length; fromCityIndex++) {
     const villainId = gameState.city[fromCityIndex];
     if (villainId === null || villainId === undefined) {
@@ -676,8 +694,10 @@ export function getLegalMoves(
     // why: WP-767 / D-24600 — mirrors allowInPlay: a koZones that omits discard (Snarling
     // Fangs' hand + played-this-turn entry) must not yield a discard target the resolve rejects.
     const allowDiscard = front.koZones === undefined || front.koZones.includes('discard');
+    // why: WP-826 / D-24759 — Reassign to Civilian Duty's played-this-turn entry omits hand.
+    const allowHand = front.koZones === undefined || front.koZones.includes('hand');
     const defaultTarget = selectDefaultOptionalKoTarget(
-      zones, gameState.cardStats, isEligible, allowInPlay, allowDiscard,
+      zones, gameState.cardStats, isEligible, allowInPlay, allowDiscard, allowHand,
     );
     if (defaultTarget !== null) {
       return [{ name: 'resolveOptionalKoReward', args: defaultTarget }];
@@ -726,7 +746,13 @@ export function getLegalMoves(
       // reads the discard pile (D-24687), so it would return null here, the bot
       // would have no legal move, and the block-all guard would never lift
       // (scaffold: 225 of 312 sweep games stalled). A hand card would be rejected.
-      const discardTarget = selectKoHeroTarget(zones.discard);
+      // why: D-24769 — a filtered entry (Destroyer, 'non-grey') must offer a card the
+      // resolve's filter accepts, or the block-all guard never lifts; the filtered pick is
+      // the same lowest-cost card the other seats auto-KO (D-24009 parity).
+      const discardTarget =
+        front.greyFilter === undefined
+          ? selectKoHeroTarget(zones.discard)
+          : selectKoHeroTargetByGreyFilter(gameState, zones.discard, front.greyFilter);
       defaultTarget = discardTarget === null ? null : { zone: 'discard', cardId: discardTarget };
     } else {
       defaultTarget = selectDefaultKoTarget(zones);
@@ -1087,6 +1113,19 @@ export function getLegalMoves(
       ) {
         continue;
       }
+      // why: WP-817 / D-24750 — mirror the fightVillain move's fight-discard-cost gate with
+      // the same helpers (D-24364: every move precondition ships with its enumeration
+      // mirror). A discard-cost villain (Primus) is offered only with a named card the move
+      // will accept — the cheapest eligible card in hand — and skipped when there is none,
+      // so the bot never submits a fight the reducer silently refuses.
+      const fightDiscardCost = getFightDiscardCost(gameState, cityCard);
+      let discardCardId: CardExtId | null = null;
+      if (fightDiscardCost !== null) {
+        discardCardId = selectDefaultCostDiscardCard(gameState, activePlayer, fightDiscardCost.eligibleCosts);
+        if (discardCardId === null) {
+          continue;
+        }
+      }
       // why: WP-760 / D-24589 — the same fighter the fightVillain move passes, so a
       // Blood Frenzy cost can't diverge between enumeration and the move guard.
       const baseFightCost = resolveFightCost(gameState, cityCard, activePlayer);
@@ -1095,12 +1134,16 @@ export function getLegalMoves(
       // why: WP-580 / D-24389 + WP-790 / D-24652 — the per-target spendable figure (unspent
       // recruit under the recruit-as-attack conversion, plus restricted attack whose grant
       // names this City space), exactly mirroring the fightVillain move guard so the bot never
-      // enumerates a fight the reducer would refuse (or skips one it allows). An index with no
-      // named space is refused by the move, so it is skipped here too.
-      const fightTarget = citySpaceNameForIndex(cityIndex);
-      if (fightTarget === undefined) continue;
+      // enumerates a fight the reducer would refuse (or skips one it allows). WP-831 / D-24764 —
+      // a space beyond the normal five has no name; the move fights it with plain Attack only
+      // (UNNAMED_CITY_SPACE_TARGET), so the bot enumerates it the same way.
+      const fightTarget: AttackTargetName = citySpaceNameForIndex(cityIndex) ?? UNNAMED_CITY_SPACE_TARGET;
       if (getSpendableAttackForTarget(gameState.turnEconomy, fightTarget) >= requiredFightCost) {
-        legalMoves.push({ name: 'fightVillain', args: { cityIndex } });
+        if (discardCardId !== null) {
+          legalMoves.push({ name: 'fightVillain', args: { cityIndex, discardCardId } });
+        } else {
+          legalMoves.push({ name: 'fightVillain', args: { cityIndex } });
+        }
       }
     }
   }
@@ -1113,10 +1156,20 @@ export function getLegalMoves(
     gameState.mastermind.tacticsDeck.length > 0 &&
     !isMastermindHaunting(gameState)
   ) {
-    const mastermindFightCost = resolveMastermindFightCost(gameState);
+    const mastermindFightCost = resolveMastermindFightCost(gameState, activePlayer);
     // why: WP-790 / D-24652 — the same per-target figure the fightMastermind move gates on.
     if (getSpendableAttackForTarget(gameState.turnEconomy, 'mastermind') >= mastermindFightCost) {
-      legalMoves.push({ name: 'fightMastermind', args: {} });
+      // why: WP-830 / D-24763 — under The Unbreakable Enigma Code the fight needs a guess. The bot
+      // offers the fight only once it has seen the whole code, so it never throws its turn on a
+      // wrong guess (which would also mix away its partners' peeks).
+      if ((gameState.enigmaCode?.length ?? 0) === 0) {
+        legalMoves.push({ name: 'fightMastermind', args: {} });
+      } else {
+        const enigmaGuess = chooseBotEnigmaGuess(gameState, activePlayer);
+        if (enigmaGuess !== null) {
+          legalMoves.push({ name: 'fightMastermind', args: { enigmaGuess } });
+        }
+      }
     }
   }
 

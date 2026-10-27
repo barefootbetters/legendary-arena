@@ -22,7 +22,7 @@ related:
   - vision.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\gameplay-strategy.md (this page — https://ewiki.legendary-arena.com/gameplay-strategy/)
+  - C:\dev\legendary-arena\wiki\gameplay-strategy.md (this page — https://ewiki.legendary-arena.com/gameplay-strategy/)
   - ../docs/legendary-universal-rules-v23.md
   - ../docs/01-VISION.md
   - ../docs/12-SCORING-REFERENCE.md

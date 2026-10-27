@@ -964,6 +964,56 @@ describe('buildHeroAbilityHooks — X-Men United other-X-Men count (D-24655)', (
 });
 
 // ---------------------------------------------------------------------------
+// Berserker Rage + twins — extra-cards-drawn-this-turn count (D-24732)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — extra-cards-drawn-this-turn count (D-24732)', () => {
+  // why: the exact generated lines (printed text + the markers the markers pass appends).
+  // Before D-24732 the count line had no marker, so the icon extractor read
+  // "+1[icon:attack]" as a flat +1 whatever the draws (core audit 2026-10-16 §1.1).
+  const BERSERKER_RAGE_DRAW = 'Draw three cards. [keyword:draw:3]';
+  const BERSERKER_RAGE_COUNT =
+    "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn. [keyword:attack-per-count:extra-cards-drawn-this-turn:1]";
+  const DREW_THIS_TURN_COUNT =
+    'You get +1[icon:attack] for each extra card you drew this turn. [keyword:attack-per-count:extra-cards-drawn-this-turn:1]';
+
+  const cases = [
+    { name: 'core Berserker Rage', setAbbr: 'core', heroSlug: 'wolverine', cardSlug: 'berserker-rage', abilities: [BERSERKER_RAGE_DRAW, BERSERKER_RAGE_COUNT], isInstinctGated: true },
+    { name: 'antm Giant Ego', setAbbr: 'antm', heroSlug: 'ant-man', cardSlug: 'giant-ego', abilities: ['[keyword:Size-Changing] [hc:tech]', DREW_THIS_TURN_COUNT], isInstinctGated: false },
+    { name: 'chmp 7th Smartest Man in the World', setAbbr: 'chmp', heroSlug: 'totally-awesome-hulk', cardSlug: '7th-smartest-man-in-the-world', abilities: ['[keyword:Size-Changing]: [hc:tech], [hc:strength]', DREW_THIS_TURN_COUNT], isInstinctGated: false },
+  ];
+
+  for (const testCase of cases) {
+    it(`${testCase.name}: attack-per-count on extra-cards-drawn-this-turn, flat icon suppressed`, () => {
+      const registry = makeRegistry(testCase.setAbbr, testCase.heroSlug, [{ slug: testCase.cardSlug, abilities: testCase.abilities }]);
+      const hooks = buildHeroAbilityHooks(registry, makeConfig(`${testCase.setAbbr}/${testCase.heroSlug}`));
+      const countHook = hooks.find((hook) => (hook.effects ?? []).some((entry) => entry.type === 'attack-per-count'));
+      assert.ok(countHook !== undefined, 'an attack-per-count effect is emitted');
+      const effect = countHook!.effects!.find((entry) => entry.type === 'attack-per-count')!;
+      assert.equal(effect.countSource, 'extra-cards-drawn-this-turn', 'the count source is extra-cards-drawn-this-turn');
+      assert.equal(effect.magnitude, 1, 'the per-unit rate is the printed +1');
+      for (const hook of hooks) {
+        assert.ok(!hook.keywords.includes('attack'), 'no flat attack keyword alongside the count-scaled effect');
+        assert.ok((hook.effects ?? []).every((entry) => entry.type !== 'attack'), 'no phantom flat +1 attack effect');
+      }
+      const conditions = countHook!.conditions ?? [];
+      assert.equal(
+        conditions.some((condition) => condition.type === 'heroClassMatch' && condition.value === 'instinct'),
+        testCase.isInstinctGated,
+        'only Berserker Rage keeps its [hc:instinct]: gate on the count line',
+      );
+    });
+  }
+
+  it('core Berserker Rage keeps its draw:3 line ahead of the count line', () => {
+    const registry = makeRegistry('core', 'wolverine', [{ slug: 'berserker-rage', abilities: [BERSERKER_RAGE_DRAW, BERSERKER_RAGE_COUNT] }]);
+    const hooks = buildHeroAbilityHooks(registry, makeConfig('core/wolverine'));
+    const effectTypes = hooks.flatMap((hook) => (hook.effects ?? []).map((entry) => entry.type));
+    assert.deepStrictEqual(effectTypes, ['draw', 'attack-per-count'], 'draw resolves before the count is read');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // cost-four-plus count-scaled attack/recruit siblings (WP-674 / EC-711 / D-24489)
 // ---------------------------------------------------------------------------
 
@@ -1512,7 +1562,7 @@ describe('buildHeroAbilityHooks — X-Gene (WP-723 / D-24544)', () => {
   it('X-Gene adds NO HeroKeyword — HERO_KEYWORDS drift count stays at the current total', () => {
     // why: WP-723 / D-24544 — X-Gene is a condition + parser directive, NOT a keyword;
     // it must not appear in the canonical keyword array nor bump its count.
-    assert.equal(HERO_KEYWORDS.length, 78, 'HERO_KEYWORDS stays 78 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-794 fight-cost-reduction + WP-795 spinning-cyclone + WP-803 out-of-time added)');
+    assert.equal(HERO_KEYWORDS.length, 85, 'HERO_KEYWORDS stays 85 (X-Gene is not a keyword; WP-736 excessive-violence + D-24558 reveal-top-dispose-ko + WP-753 reveal-three-assign / reveal-three-assign-again + WP-754 optional-discard-draw / reveal-top-may-ko + WP-765 blood-frenzy / blood-frenzy-recruit / day-night-both + WP-767 optional-ko-your-hero + WP-780 play-both-sides + WP-783 phasing + WP-794 fight-cost-reduction + WP-795 spinning-cyclone + WP-803 out-of-time + WP-826 ko-up-to-shield-hand-discard / attack-per-ko-this-way / optional-ko-shield-played-rescue + WP-827 flying-shield-block + WP-828 grant-out-of-time + WP-843 reveal-or-gain-wound-each + WP-844 gain-sidekick (D-24778) added)');
     assert.ok(!HERO_KEYWORDS.includes('x-gene' as never), 'x-gene is not a HeroKeyword');
   });
 });
@@ -1720,7 +1770,7 @@ describe('buildHeroAbilityHooks — Sunlight / Moonlight (WP-765 / D-24598)', ()
     }]);
   });
 
-  it('Nanite Shapeshifter fuses with bothConditionCount 4 from its four [team:x-men] tokens', () => {
+  it('Nanite Shapeshifter fuses with bothCondition.requiredMatches 4 from its four [team:x-men] tokens (D-24563)', () => {
     const hooks = buildDayNightCardHooks('nmut', 'warlock', 'nanite-shapeshifter', DAY_NIGHT_LINES.naniteShapeshifter);
     assert.equal(hooks.length, 1);
     const effect = hooks[0]!.effects![0]!;
@@ -1729,8 +1779,7 @@ describe('buildHeroAbilityHooks — Sunlight / Moonlight (WP-765 / D-24598)', ()
     assert.equal(effect.moonlightEffects!.length, 2);
     assert.ok(effect.moonlightEffects!.some((branch) => branch.type === 'recruit' && branch.magnitude === 3));
     assert.ok(effect.moonlightEffects!.some((branch) => branch.type === 'attack' && branch.magnitude === 3));
-    assert.deepStrictEqual(effect.bothCondition, { type: 'requiresTeam', value: 'x-men' });
-    assert.equal(effect.bothConditionCount, 4);
+    assert.deepStrictEqual(effect.bothCondition, { type: 'requiresTeam', value: 'x-men', requiredMatches: 4 });
   });
 
   it('a non-allowlisted card with the same text shape is NOT fused (the allowlist gates the fusion)', () => {
@@ -2263,5 +2312,81 @@ describe('buildHeroAbilityHooks — Man / Woman Out of Time (WP-803 / D-24692)',
     const gatedGrantLine = parseOneOutOfTimeLine('[hc:tech]: Another Hero in your hand gains [keyword:Man Out of Time] this turn.');
     assert.equal(gatedGrantLine.keywords.includes('out-of-time'), false);
     assert.deepEqual(gatedGrantLine.unresolvedMarkers, ['man-out-of-time']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Repeated leading-prefix icons collapse to one counted condition (WP-741 / D-24563)
+// ---------------------------------------------------------------------------
+
+/** Builds the single hook of a one-line test card and returns its conditions. */
+function parseOneLineConditions(line: string) {
+  const hooks = buildHeroAbilityHooks(
+    makeRegistry('test', 'doubled-icon-hero', [{ slug: 'doubled-icon-card', abilities: [line] }]),
+    makeConfig('test/doubled-icon-hero'),
+  );
+  assert.equal(hooks.length, 1, `one hook for: ${line}`);
+  return hooks[0]!.conditions;
+}
+
+describe('buildHeroAbilityHooks — repeated leading-prefix icons (WP-741 / D-24563)', () => {
+  // why: each row is a full printed line from data/cards (dkcy Bishop, core Iron Man, shld
+  // Victoria Hand, ssw1 Captain Marvel, msis Bruce Banner, 2099 Ghost Rider 2099, vnom Venompool,
+  // nmut Warlock), the WP-741 §Contract parse-examples table.
+  it('[hc:ranged][hc:ranged] → one ranged condition needing 2 (Concussive Blast)', () => {
+    assert.deepEqual(parseOneLineConditions('[hc:ranged][hc:ranged]: You get +3[icon:attack].'), [
+      { type: 'heroClassMatch', value: 'ranged', requiredMatches: 2 },
+    ]);
+  });
+
+  it('a mid-sentence repeat stays two plain conditions (Arc Reactor)', () => {
+    assert.deepEqual(
+      parseOneLineConditions(
+        '[hc:tech]: You get +1[icon:attack] for each other[hc:tech] Hero you played this turn. [keyword:attack-per-count:tech-heroes-played-this-turn:1]',
+      ),
+      [{ type: 'heroClassMatch', value: 'tech' }, { type: 'heroClassMatch', value: 'tech' }],
+    );
+  });
+
+  it('three [team:shield] prefix tokens → one shield condition needing 3; the body token stays dropped (Victoria Hand)', () => {
+    assert.deepEqual(
+      parseOneLineConditions(
+        '[team:shield][team:shield][team:shield]: You may send this Hero or a [team:shield] Hero from your hand [keyword:Undercover].',
+      ),
+      [{ type: 'requiresTeam', value: 'shield', requiredMatches: 3 }],
+    );
+  });
+
+  it('a doubled mixed prefix counts each icon independently (Cosmic Energies)', () => {
+    assert.deepEqual(parseOneLineConditions('[hc:strength][hc:strength][hc:ranged][hc:ranged]: You get +6[icon:attack].'), [
+      { type: 'heroClassMatch', value: 'strength', requiredMatches: 2 },
+      { type: 'heroClassMatch', value: 'ranged', requiredMatches: 2 },
+    ]);
+  });
+
+  it('a distinct mixed pair is unchanged (Brains and Brawn)', () => {
+    assert.deepEqual(parseOneLineConditions('[hc:tech][hc:strength]: You get +2[icon:attack].'), [
+      { type: 'heroClassMatch', value: 'tech' },
+      { type: 'heroClassMatch', value: 'strength' },
+    ]);
+  });
+
+  it('a keyword-led repeat is not a leading prefix and stays two plain conditions (Cyber-Mod)', () => {
+    assert.deepEqual(parseOneLineConditions('[keyword:Cyber-Mod][hc:tech][hc:tech]: Draw a card.'), [
+      { type: 'heroClassMatch', value: 'tech' },
+      { type: 'heroClassMatch', value: 'tech' },
+    ]);
+  });
+
+  it('a doubled Venomverse "both" line → one condition needing 2 (Play to the Crowd)', () => {
+    assert.deepEqual(parseOneLineConditions('[team:venomverse][team:venomverse]: Instead, do both (in order).'), [
+      { type: 'requiresTeam', value: 'venomverse', requiredMatches: 2 },
+    ]);
+  });
+
+  it('four [team:x-men] tokens → one condition needing 4 (Nanite Shapeshifter)', () => {
+    assert.deepEqual(parseOneLineConditions('[team:x-men][team:x-men][team:x-men][team:x-men]: Instead, you get both.'), [
+      { type: 'requiresTeam', value: 'x-men', requiredMatches: 4 },
+    ]);
   });
 });

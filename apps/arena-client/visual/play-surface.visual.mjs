@@ -179,6 +179,68 @@ function measureInvariants() {
 }
 
 /**
+ * Stage a fight discard cost (Primus, WP-817 / D-24750) on the rightmost occupied
+ * City space, give the viewer a hand card that pays it, open the discard chooser,
+ * and report whether every chooser button is the topmost element at its own
+ * centre. Runs in the browser context.
+ *
+ * why: the chooser once rendered beside the villain tile and under the next City
+ * cell (the Villain Deck), so a player saw no discard option and could not click
+ * one. jsdom has no layout, so only this full-resolution check can see it. The
+ * mid-turn fixture has no Primus, so the guard stages one through the dev uiState
+ * store (dev server only) rather than editing the shared fixture.
+ */
+async function measureDiscardChooser() {
+  const pinia = document.querySelector('#app')?.__vue_app__?.config.globalProperties.$pinia;
+  const uiStateStore = pinia?._s.get('uiState');
+  if (uiStateStore === undefined || uiStateStore.snapshot === null) {
+    return { staged: false, reason: 'uiState store or snapshot not found' };
+  }
+  const snapshot = JSON.parse(JSON.stringify(uiStateStore.snapshot));
+  const cityIndex = snapshot.city.spaces.findIndex((space) => space !== null);
+  const viewer = snapshot.players.find((player) => Array.isArray(player.handCards) && player.handCards.length > 0);
+  if (cityIndex === -1 || viewer === undefined) {
+    return { staged: false, reason: 'fixture has no City villain or no viewer hand' };
+  }
+  const space = snapshot.city.spaces[cityIndex];
+  snapshot.city.spaces[cityIndex] = {
+    ...space,
+    display: { ...space.display, cost: 0 },
+    fightCost: 0,
+    fightDiscardCosts: [2, 3, 5, 7],
+  };
+  viewer.handCosts = viewer.handCards.map(() => 3);
+  uiStateStore.snapshot = snapshot;
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  const villainButton = document.querySelector(
+    `[data-testid="play-city-villain"][data-city-index="${cityIndex}"]`,
+  );
+  if (villainButton === null || villainButton.disabled) {
+    return { staged: false, reason: 'staged villain missing or its Fight is disabled' };
+  }
+  villainButton.click();
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  const chooser = document.querySelector('[data-testid="play-city-discard-chooser"]');
+  if (chooser === null) {
+    return { staged: true, chooserOpened: false, coveredButtons: [] };
+  }
+  const coveredButtons = [];
+  for (const button of chooser.querySelectorAll('button')) {
+    button.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const box = button.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    if (hit === null || !button.contains(hit)) {
+      coveredButtons.push({
+        text: button.textContent.trim(),
+        coveredBy: hit === null ? null : hit.getAttribute('data-testid') ?? hit.className ?? hit.tagName,
+      });
+    }
+  }
+  return { staged: true, chooserOpened: true, buttonCount: chooser.querySelectorAll('button').length, coveredButtons };
+}
+
+/**
  * Load the fixture route in a page and wait for the board to mount. Uses a
  * generous timeout because a COLD `vite` dev server compiles the app's modules
  * on the first browser request (hundreds of modules — can take far longer than a
@@ -242,6 +304,19 @@ async function run() {
       if (result.pageScrollsX) failures.push(`${label}: page scrolls horizontally`);
       if (result.turnBarOverlapsCockpit) failures.push(`${label}: TurnActionBar overlaps the cockpit (the WP-688 regression)`);
       if (!result.boardFitsContainer) failures.push(`${label}: board stage does not fit its container`);
+
+      // why: last, because it re-stages the board; the fit invariants above are
+      // measured on the untouched fixture.
+      const chooser = await page.evaluate(measureDiscardChooser);
+      console.log(`  ${label} discard chooser:`, JSON.stringify(chooser));
+      await page.screenshot({ path: join(SCREENSHOT_DIR, `play-desktop-${label}-discard-chooser.png`) });
+      if (!chooser.staged) {
+        failures.push(`${label}: could not stage the discard chooser (${chooser.reason})`);
+      } else if (!chooser.chooserOpened) {
+        failures.push(`${label}: clicking a discard-cost villain did not open the discard chooser`);
+      } else if (chooser.coveredButtons.length > 0) {
+        failures.push(`${label}: discard chooser buttons are covered and cannot be clicked: ${JSON.stringify(chooser.coveredButtons)}`);
+      }
 
       await page.close();
     }

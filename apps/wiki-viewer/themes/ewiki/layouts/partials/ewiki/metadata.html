@@ -1,0 +1,50 @@
+{{- /*
+  Extension point: the metadata panel. Override with the site's own
+  layouts/partials/ewiki/metadata.html. It receives the page and renders
+  between the title and the body.
+
+  why: every wiki's front matter is its own schema (E's six-field lock, H's
+  branches and sources, C's domain and sensitivity), so the fields are an
+  extension point. The container, dl.metadata-panel, and its CSS are core.
+  This default shows the dates and the tags, the fields every copy shares.
+
+  why: tags link to their term pages when the site enables taxonomy kinds
+  (H), and otherwise to the one-page tags index (E's layout), found as the
+  /tags page.
+*/ -}}
+{{- $tagsPage := site.GetPage "/tags" -}}
+{{- $useTerms := and $tagsPage (eq $tagsPage.Kind "taxonomy") -}}
+{{- if or .Params.updated .Params.created .Params.tags }}
+    <dl class="metadata-panel">
+      {{- with .Params.updated }}
+      <dt>Updated</dt><dd>{{ . | time.Format "2006-01-02" }}{{ with $.Params.created }} <span class="muted">(created {{ . | time.Format "2006-01-02" }})</span>{{ end }}</dd>
+      {{- else }}{{ with .Params.created }}
+      <dt>Created</dt><dd>{{ . | time.Format "2006-01-02" }}</dd>
+      {{- end }}{{ end }}
+      {{- if $useTerms }}
+      {{- with .GetTerms "tags" }}
+      <dt>Tags</dt>
+      <dd>
+        <ul class="tag-list">
+          {{- range . }}
+          <li class="tag"><a href="{{ .RelPermalink }}">{{ .LinkTitle }}</a></li>
+          {{- end }}
+        </ul>
+      </dd>
+      {{- end }}
+      {{- else }}
+      {{- with .Params.tags }}
+      {{- $index := "/tags/" }}
+      {{- with $tagsPage }}{{ $index = .RelPermalink }}{{ end }}
+      <dt>Tags</dt>
+      <dd>
+        <ul class="tag-list">
+          {{- range . }}
+          <li class="tag"><a href="{{ $index }}#{{ . }}">{{ . }}</a></li>
+          {{- end }}
+        </ul>
+      </dd>
+      {{- end }}
+      {{- end }}
+    </dl>
+{{- end -}}

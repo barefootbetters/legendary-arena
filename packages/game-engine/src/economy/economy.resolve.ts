@@ -7,7 +7,9 @@
  * costs. Scheme bonuses stack on top: the Portals Dark-Portal space bonus
  * (WP-539) and the Midtown Bank Robbery family's +1 per attached Bystander
  * (WP-748). A Blood Frenzy villain adds the fighting player's distinct Victory
- * Point value count (WP-760). The UI must never recompute dynamic values — it consumes the
+ * Point value count (WP-760). An Abomination villain or mastermind adds the printed Attack of
+ * HQ Heroes (WP-815). A variable-Attack villain adds its printed passive, counted at
+ * fight time (WP-841). The UI must never recompute dynamic values — it consumes the
  * engine-resolved projection from UIState.
  *
  * No boardgame.io import. No ctx dependency. No randomness. No .reduce().
@@ -19,6 +21,10 @@ import type { LegendaryGameState } from '../types.js';
 // why: WP-513 / D-24325 — value import for the Killbots per-scheme twist counter key.
 // why: WP-539 / D-24348 — DARK_PORTAL_COUNT drives the Portals Dark-Portal buffs.
 import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
+// why: WP-823 / D-24756 — the Traitor Battalion counter and the Officer base Attack
+// drive a Brainwash the Military Officer's fight cost.
+import { TRAITOR_BATTALION_TWISTS } from '../types.js';
+import { BRAINWASHED_OFFICER_BASE_ATTACK } from '../rules/brainwashTheMilitary.logic.js';
 // why: WP-728 / D-24549 — the fixed City space count bounds the Dark-Portal
 // location scan; CITY_SPACE_NAMES is the single source of the 5-space board.
 import { CITY_SPACE_NAMES, citySpaceNameForIndex } from '../board/citySpaceNames.js';
@@ -28,9 +34,27 @@ import { countDistinctVictoryPointValues } from './bloodFrenzy.logic.js';
 // why: WP-794 / D-24663 — the only read site of TurnEconomy.fightCostReductions is the
 // shared summing helper, called from the two resolvers below.
 import { getFightCostReduction } from './economy.logic.js';
+// why: WP-815 / D-24747 — the Abomination terms read the HQ at fight time; one
+// helper per resolver, so each family is added in exactly one authority.
+import { villainAbominationBonus, mastermindAbominationBonus } from './abomination.logic.js';
+// why: WP-841 / D-24774 — the variable-Attack passives read the City, the Escape Pile
+// and the HQ at fight time; the villain resolver is their only reader.
+import { villainVariableAttackBonus } from './villainVariableAttack.logic.js';
+// why: WP-818 / D-24752 — Baron Zemo's "+9 unless you are a Savior" reads the fighter's
+// Savior status through the shared WP-816 helpers, so the cost and every Savior gate count
+// the same Bystanders (defeated Killbots included).
+import { SAVIOR_BYSTANDER_THRESHOLD, countVictoryPileBystanders } from '../board/bystanders.logic.js';
+// why: WP-818 / D-24752 — the Zemo mastermind id has one home (WP-819 / D-24753); it is
+// id-keyed like the Master Strike dispatch (D-24300), because Zemo is the only Mastermind
+// that prints "+N unless you are a Savior".
+import { BARON_ZEMO_MASTERMIND_ID } from './rescueOnFight.logic.js';
 
 // why: WP-539 / D-24348 — the Portals scheme ext_id, gating the Dark-Portal buffs.
 const PORTALS_SCHEME_ID = 'core/portals-to-the-dark-dimension';
+
+// why: WP-818 / D-24752 — Baron Zemo's printed "+9[icon:attack] unless you are a Savior".
+/** The Attack Baron Zemo gains against a fighter who is not a Savior. */
+export const BARON_ZEMO_NON_SAVIOR_BONUS = 9;
 
 // why: WP-728 / D-24549 — the +N attack a single Dark Portal grants (the
 // Mastermind, or Villains in a portal'd city space). A named constant so the
@@ -58,7 +82,8 @@ const VILLAIN_ATTACK_PER_BYSTANDER_SCHEME_IDS: ReadonlySet<string> = new Set([
  * added: the Portals Dark-Portal space bonus (darkPortalVillainBonus) and the
  * Midtown Bank Robbery family's per-Bystander bonus (bystanderVillainAttackBonus).
  * A Blood Frenzy villain then adds the fighting player's distinct Victory Point
- * value count (villainBloodFrenzyBonus).
+ * value count (villainBloodFrenzyBonus), and an Abomination villain the printed
+ * Attack of the HQ Hero under its City space (villainAbominationBonus).
  *
  * Tolerates: missing cardStats entry (returns 0), no attached heroes
  * (returns fightCostBase), missing cardStats for a captured hero (treats
@@ -82,11 +107,19 @@ export function resolveFightCost(
   // single site, so the fight move, the bot's legal moves and the City fightCost
   // projection can never disagree. Blood Frenzy (WP-760 / D-24589) is a villain
   // keyword, not a scheme bonus, but it lives here for the same reason.
+  // why: WP-815 / D-24747 — Abomination / Double Abomination (rules v23 L880-926) adds
+  // the printed Attack of the HQ Hero under the Villain's City space, read at fight
+  // time because the cost moves with the City and the HQ. Added before the reduction.
+  // why: WP-841 / D-24774 — a printed "<Villain> gets +N Attack …" passive (Baron
+  // Strucker, Paibok, Super-Skrull, Hydro-Man) is read at fight time from the City,
+  // the Escape Pile and the HQ, and added before the reduction and the 0 floor.
   const costBeforeReduction =
     resolveBaseFightCost(G, villainCardId) +
     darkPortalVillainBonus(G, villainCardId) +
     bystanderVillainAttackBonus(G, villainCardId) +
-    villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId);
+    villainBloodFrenzyBonus(G, villainCardId, fightingPlayerId) +
+    villainAbominationBonus(G, villainCardId) +
+    villainVariableAttackBonus(G, villainCardId);
   // why: WP-794 / D-24663 — the Storm / Forge "Any Villain you fight on the <space> this turn
   // gets -N attack" reduction is applied HERE, in the single authority, so the fight move, the
   // bot's legal moves and the City fightCost projection all agree by construction.
@@ -279,6 +312,14 @@ function resolveBaseFightCost(
     return (G.cardStats[villainCardId]?.cost ?? 0) + 2;
   }
 
+  // why: WP-823 / D-24756 — a Brainwash the Military Officer's Attack "is 3 plus the
+  // number of Twists stacked next to this Scheme" (the Traitor Battalion). Checked
+  // OVERLAY-FIRST, beside the Killbot / Skrull branches, because a converted Officer
+  // carries no cardStats row (the guard below would return 0).
+  if (G.convertedVillainOrigins?.[villainCardId] === 'shield-officer') {
+    return BRAINWASHED_OFFICER_BASE_ATTACK + (G.counters[TRAITOR_BATTALION_TWISTS] ?? 0);
+  }
+
   const villainStats = G.cardStats[villainCardId];
   if (villainStats === undefined) {
     return 0;
@@ -292,6 +333,13 @@ function resolveBaseFightCost(
 
   // Dynamic mode: base + sum of captured hero recruit costs
   const base = villainStats.fightCostBase;
+
+  // why: WP-841 / D-24774 (Operator fork F2) — on a variable-Attack villain the `+`
+  // marks the printed passive, not a captured-Hero cost, so the passive term in
+  // resolveFightCost is the whole variable part and a captured Hero adds nothing.
+  if (G.villainVariableAttack?.[villainCardId] !== undefined) {
+    return base;
+  }
 
   // why: reads CardStatEntry.cost (hero recruit cost), NOT fightCost
   // (which is the villain's own fight requirement, always 0 for heroes).
@@ -316,10 +364,15 @@ function resolveBaseFightCost(
  * uiState.build, and ai.legalMoves previously read inline, so combat, the UI, and
  * the bot never disagree on affordability.
  *
+ * Baron Zemo adds BARON_ZEMO_NON_SAVIOR_BONUS for a fighter who is not a Savior
+ * (WP-818 / D-24752).
+ *
  * @param G - Game state (read-only).
+ * @param fightingPlayerId - The player fighting the Mastermind. Optional; when
+ *   omitted, a fighter-dependent term assumes the costlier case.
  * @returns The mastermind fight requirement as a non-negative integer.
  */
-export function resolveMastermindFightCost(G: LegendaryGameState): number {
+export function resolveMastermindFightCost(G: LegendaryGameState, fightingPlayerId?: string): number {
   const baseFightCost = G.cardStats[G.mastermind.baseCardId]?.fightCost ?? 0;
   // why: the twist-1 Dark Portal above the Mastermind adds DARK_PORTAL_ATTACK_BONUS;
   // darkPortalLocations is the single source (scheme gate + counter read), so this
@@ -330,6 +383,45 @@ export function resolveMastermindFightCost(G: LegendaryGameState): number {
   // and the Mastermind fightCost projection agree. A partial G with no turnEconomy gets 0.
   const mastermindReduction =
     G.turnEconomy === undefined ? 0 : getFightCostReduction(G.turnEconomy, 'mastermind');
+  // why: WP-815 / D-24747 — Ultimate / Double Highest Abomination adds the printed Attack
+  // of the HQ Heroes, read at fight time (the HQ refills); added before the reduction.
+  const abominationBonus = mastermindAbominationBonus(G);
+  // why: WP-818 / D-24752 — Baron Zemo's +9 unless the fighter is a Savior; added
+  // before the reduction, like the Abomination term.
+  const nonSaviorBonus = mastermindNonSaviorBonus(G, fightingPlayerId);
   // why: the 0 floor keeps this function's ">= 0" promise.
-  return Math.max(0, baseFightCost + portalBonus - mastermindReduction);
+  return Math.max(
+    0,
+    baseFightCost + portalBonus + abominationBonus + nonSaviorBonus - mastermindReduction,
+  );
+}
+
+/**
+ * Baron Zemo's "+9 unless you are a Savior" term (WP-818 / D-24752).
+ *
+ * @param G - Game state (read-only; `selection` may be absent on partial test states).
+ * @param fightingPlayerId - The player fighting the Mastermind, when known.
+ * @returns BARON_ZEMO_NON_SAVIOR_BONUS when Baron Zemo is the Mastermind and the
+ *   fighter is not a Savior, otherwise 0.
+ */
+function mastermindNonSaviorBonus(G: LegendaryGameState, fightingPlayerId?: string): number {
+  if (G.selection?.mastermindId !== BARON_ZEMO_MASTERMIND_ID) {
+    return 0;
+  }
+  // why: rules v23 L1844-1853 — "unless you are a Savior" is about the fighter. An omitted
+  // or unknown fighter pays the +9 (D-24752), so a caller can never get the cheaper cost
+  // by forgetting the argument.
+  if (fightingPlayerId === undefined) {
+    return BARON_ZEMO_NON_SAVIOR_BONUS;
+  }
+  const zones = G.playerZones?.[fightingPlayerId];
+  if (zones === undefined) {
+    return BARON_ZEMO_NON_SAVIOR_BONUS;
+  }
+  // why: only the fighter's Victory Pile counts. The Bystanders Zemo holds are rescued
+  // after the fight, so they never lower the cost that must be known to fight at all.
+  if (countVictoryPileBystanders(zones.victory) >= SAVIOR_BYSTANDER_THRESHOLD) {
+    return 0;
+  }
+  return BARON_ZEMO_NON_SAVIOR_BONUS;
 }

@@ -1,0 +1,30 @@
+{{- /*
+  Extension point: the sidebar navigation body. Override with the site's own
+  layouts/partials/ewiki/sidebar.html. It receives the page being rendered and
+  renders inside the core's <aside class="sidebar"><nav>.
+
+  why: the sidebar is each wiki's own map (E groups by Params.type, H by hub
+  branch, C by section, J from a DokuWiki sidebar page), so it is an
+  extension point. This default is C's shape plus H's aria-current: a Home
+  heading, the root pages, then each top-level section with its pages, all by
+  title. The page named by params.ewiki.homeSource is left out, since Home
+  already is that page. Titles strip params.ewiki.titlePrefix. The section
+  list is the core partial ewiki/sidebar-sections.html, which an override
+  can call too; params.ewiki.sidebarCollapsible (v1.3.0) makes each
+  section a collapsible group.
+*/ -}}
+{{- $current := . -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $homeSource := index $ewiki "homesource" | default "" -}}
+<h2 class="sidebar-heading"><a href="{{ "/" | relURL }}"{{ if $current.IsHome }} aria-current="page"{{ end }}>Home</a></h2>
+        {{- $rootPages := where site.RegularPages "Section" "" }}
+        {{- with $rootPages }}
+        <ul class="sidebar-list">
+          {{- range .ByTitle }}
+          {{- if not (and $homeSource .File (eq (replace .File.Path "\\" "/") $homeSource)) }}
+          <li><a href="{{ .RelPermalink }}"{{ if eq .RelPermalink $current.RelPermalink }} aria-current="page"{{ end }}>{{ partial "ewiki/short-title.html" . }}</a></li>
+          {{- end }}
+          {{- end }}
+        </ul>
+        {{- end }}
+        {{- partial "ewiki/sidebar-sections.html" . }}

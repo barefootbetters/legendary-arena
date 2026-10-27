@@ -344,9 +344,9 @@ describe('wound-all resolver', () => {
   });
 
   // why: WP-540 / D-24349 — Unleash the Cosmic Cube's printed escalation. The
-  // resolver runs BEFORE the schemeTwistCount +1 effect, so currentTwist =
-  // schemeTwistCount + 1: prior count 0-3 → twists 1-4 (0 wounds), 4-5 → twists
-  // 5-6 (1 wound), 6 → twist 7 (3 wounds, the MAX matching step).
+  // dispatcher raises schemeTwistCount BEFORE the resolver runs (D-24775), so
+  // currentTwist = schemeTwistCount: twists 1-4 (0 wounds), 5-6 (1 wound), 7 (3
+  // wounds, the MAX matching step), 8 (0, "Evil Wins!").
   const COSMIC_ESCALATION = [
     { atOrAfterTwist: 5, throughTwist: 6, woundCount: 1 },
     { atOrAfterTwist: 7, throughTwist: 7, woundCount: 3 },
@@ -354,12 +354,12 @@ describe('wound-all resolver', () => {
 
   it('escalation deals the printed Cosmic Cube schedule (0 on twists 1-4, 1 on 5-6, 3 on 7, 0 on 8)', () => {
     const scenarios = [
-      { priorTwistCount: 0, currentTwist: 1, expectedWounds: 0 },
-      { priorTwistCount: 3, currentTwist: 4, expectedWounds: 0 },
-      { priorTwistCount: 4, currentTwist: 5, expectedWounds: 1 },
-      { priorTwistCount: 5, currentTwist: 6, expectedWounds: 1 },
-      { priorTwistCount: 6, currentTwist: 7, expectedWounds: 3 },
-      { priorTwistCount: 7, currentTwist: 8, expectedWounds: 0 },
+      { currentTwist: 1, expectedWounds: 0 },
+      { currentTwist: 4, expectedWounds: 0 },
+      { currentTwist: 5, expectedWounds: 1 },
+      { currentTwist: 6, expectedWounds: 1 },
+      { currentTwist: 7, expectedWounds: 3 },
+      { currentTwist: 8, expectedWounds: 0 },
     ];
 
     for (const scenario of scenarios) {
@@ -367,7 +367,7 @@ describe('wound-all resolver', () => {
         playerCount: 1,
         wounds: ['w1', 'w2', 'w3', 'w4', 'w5'],
       });
-      gameState.counters.schemeTwistCount = scenario.priorTwistCount;
+      gameState.counters.schemeTwistCount = scenario.currentTwist;
 
       resolver(gameState, makeRevealContext(), emptyImplementationMap, {
         escalation: COSMIC_ESCALATION,
@@ -383,7 +383,7 @@ describe('wound-all resolver', () => {
 
   it('escalation at twist 7 takes the MAX matching step (3 wounds), not the first (1)', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
-    gameState.counters.schemeTwistCount = 6; // currentTwist 7 — matches both open-ended steps
+    gameState.counters.schemeTwistCount = 7; // currentTwist 7 — matches both open-ended steps
 
     // why: D-24685 closed the Cosmic Cube steps, so open-ended steps keep the
     // overlapping case this test pins.
@@ -402,7 +402,7 @@ describe('wound-all resolver', () => {
   it('D-24673: with Diving Block revealable, the line says "would gain", not "gained"', () => {
     const divingBlockId = 'core/captain-america/diving-block#0';
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
-    gameState.counters.schemeTwistCount = 6;
+    gameState.counters.schemeTwistCount = 7;
     gameState.playerZones['0']!.hand = [divingBlockId];
     gameState.heroAbilityHooks = [
       { cardId: divingBlockId, timing: 'onPlay', keywords: ['diving-block'] },
@@ -423,7 +423,7 @@ describe('wound-all resolver', () => {
 
   it('D-24673: without Diving Block the line still says "gained"', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
-    gameState.counters.schemeTwistCount = 6;
+    gameState.counters.schemeTwistCount = 7;
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       escalation: COSMIC_ESCALATION,
@@ -438,7 +438,7 @@ describe('wound-all resolver', () => {
       playerCount: 2,
       wounds: ['w1', 'w2', 'w3', 'w4', 'w5', 'w6'],
     });
-    gameState.counters.schemeTwistCount = 6; // currentTwist 7 → 3 wounds each
+    gameState.counters.schemeTwistCount = 7; // currentTwist 7 → 3 wounds each
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       escalation: COSMIC_ESCALATION,
@@ -450,7 +450,7 @@ describe('wound-all resolver', () => {
 
   it('D-24685: twist 8 ("Evil Wins!") deals no Wounds and logs it, with Wounds still in the supply', () => {
     const gameState = makeResolverState({ playerCount: 2, wounds: ['w1', 'w2', 'w3', 'w4', 'w5', 'w6'] });
-    gameState.counters.schemeTwistCount = 7; // currentTwist 8 — past the 3-Wound step
+    gameState.counters.schemeTwistCount = 8; // currentTwist 8 — past the 3-Wound step
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       escalation: COSMIC_ESCALATION,
@@ -468,7 +468,7 @@ describe('wound-all resolver', () => {
 
   it('a step without throughTwist stays open on later twists', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3', 'w4'] });
-    gameState.counters.schemeTwistCount = 7; // currentTwist 8
+    gameState.counters.schemeTwistCount = 8; // currentTwist 8
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, {
       escalation: [{ atOrAfterTwist: 7, woundCount: 2 }],
@@ -479,7 +479,7 @@ describe('wound-all resolver', () => {
 
   it('escalation below the threshold is a logged no-op (no wounds, no throw)', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1'] });
-    gameState.counters.schemeTwistCount = 0; // currentTwist 1 — below the first step
+    gameState.counters.schemeTwistCount = 1; // currentTwist 1 — below the first step
 
     assert.doesNotThrow(() => {
       resolver(gameState, makeRevealContext(), emptyImplementationMap, {
@@ -497,7 +497,7 @@ describe('wound-all resolver', () => {
 
   it('flat woundCount path is unchanged when escalation is absent (ignores schemeTwistCount)', () => {
     const gameState = makeResolverState({ playerCount: 1, wounds: ['w1', 'w2', 'w3'] });
-    gameState.counters.schemeTwistCount = 6; // would be twist 7 under escalation — must be ignored
+    gameState.counters.schemeTwistCount = 7; // would be twist 7 under escalation — must be ignored
 
     resolver(gameState, makeRevealContext(), emptyImplementationMap, { woundCount: 2 });
 
@@ -1081,5 +1081,135 @@ describe('counter-only resolver (WP-763 / D-24595)', () => {
     assert.equal(JSON.stringify(gameState), before);
     assert.equal(gameState.messages.length, 0);
     assert.equal(gameState.notableEvents.length, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — each-player Scheme Twists start with the current player, then clockwise
+// ---------------------------------------------------------------------------
+
+/**
+ * The parts of G an each-player Scheme Twist writes, for literal comparison.
+ *
+ * @param gameState - The game state after the twist.
+ * @returns The Wound supply, each seat's hand and discard pile, and the log text.
+ */
+function twistOutcome(gameState: LegendaryGameState): unknown {
+  const seats: Record<string, { hand: string[]; discard: string[] }> = {};
+  for (const seat of Object.keys(gameState.playerZones).sort()) {
+    seats[seat] = {
+      hand: [...gameState.playerZones[seat]!.hand],
+      discard: [...gameState.playerZones[seat]!.discard],
+    };
+  }
+  return {
+    wounds: [...gameState.piles.wounds],
+    seats,
+    messages: gameState.messages.map((line) => line.text),
+  };
+}
+
+describe('WP-846 / D-24780 — Scheme Twist each-player order (AC-5 seat-0 / solo identity)', () => {
+  it('AC-5 scheme: a 3-player seat-0 wound-all with a short supply matches the pre-WP-846 baseline', () => {
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a', 'w-b'] });
+    SCHEME_TWIST_RESOLVERS['wound-all'](gameState, makeRevealContext('0'), emptyImplementationMap, { woundCount: 1 });
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(twistOutcome(gameState), { wounds: [], seats: { '0': { hand: [], discard: ['w-a'] }, '1': { hand: [], discard: ['w-b'] }, '2': { hand: [], discard: [] } }, messages: ['[Scheme Twist] Player 0 gained 1 wound(s).', '[Scheme Twist] Player 1 gained 1 wound(s).', '[Scheme Twist] Wound supply exhausted — player 2 gained 0 of 1 wounds.'] });
+  });
+
+  it('AC-5 scheme: a solo wound-all matches the pre-WP-846 baseline', () => {
+    const gameState = makeResolverState({ playerCount: 1, wounds: ['w-a', 'w-b'] });
+    SCHEME_TWIST_RESOLVERS['wound-all'](gameState, makeRevealContext('0'), emptyImplementationMap, { woundCount: 1 });
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(twistOutcome(gameState), { wounds: ['w-b'], seats: { '0': { hand: [], discard: ['w-a'] } }, messages: ['[Scheme Twist] Player 0 gained 1 wound(s).'] });
+  });
+});
+
+/**
+ * The seats named by a twist's per-player log lines, in log order.
+ *
+ * @param gameState - The game state after the twist.
+ * @param prefix - The twist's log prefix, e.g. `[Scheme Twist]`.
+ * @returns The seat ids, in the order the twist logged them.
+ */
+function twistSeatOrder(gameState: LegendaryGameState, prefix: string): string[] {
+  const seats: string[] = [];
+  for (const line of gameState.messages) {
+    if (!line.text.startsWith(prefix)) {
+      continue;
+    }
+    const match = / [Pp]layer (\d+)/.exec(line.text);
+    if (match !== null) {
+      seats.push(match[1]!);
+    }
+  }
+  return seats;
+}
+
+describe('WP-846 / D-24780 — Scheme Twist each-player order (AC-8 rotation, AC-2, AC-4)', () => {
+  it('AC-8 S1: reveal-or-punish (gain a Wound) on seat 1\'s turn resolves seats 1, 2, 0', () => {
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a', 'w-b', 'w-c'] });
+    SCHEME_TWIST_RESOLVERS['reveal-or-punish'](gameState, makeRevealContext('1'), emptyImplementationMap, {
+      condition: { field: 'heroClass', value: 'tech' },
+      penalty: 'gainWound',
+    });
+    assert.deepEqual(twistSeatOrder(gameState, '[Scheme Twist]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-4 S1: the discard-hand penalty on seat 1\'s turn queues return-on-discard reactions 1, 2, 0', () => {
+    const gameState = makeResolverState({ playerCount: 3 });
+    gameState.heroAbilityHooks = [
+      { cardId: 'cyclops-0', timing: 'onPlay', keywords: ['return-on-discard'] },
+      { cardId: 'cyclops-1', timing: 'onPlay', keywords: ['return-on-discard'] },
+      { cardId: 'cyclops-2', timing: 'onPlay', keywords: ['return-on-discard'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    for (const seat of ['0', '1', '2']) {
+      gameState.playerZones[seat]!.hand = [`cyclops-${seat}`];
+    }
+    SCHEME_TWIST_RESOLVERS['reveal-or-punish'](gameState, makeRevealContext('1'), emptyImplementationMap, {
+      condition: { field: 'heroClass', value: 'tech' },
+      penalty: 'discardHand',
+    });
+    assert.deepEqual(
+      (gameState.pendingReturnOnDiscard ?? []).map((entry) => entry.playerID),
+      ['1', '2', '0'],
+    );
+  });
+
+  it('AC-8 S2: wound-all on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a', 'w-b', 'w-c'] });
+    SCHEME_TWIST_RESOLVERS['wound-all'](gameState, makeRevealContext('1'), emptyImplementationMap, { woundCount: 1 });
+    assert.deepEqual(twistSeatOrder(gameState, '[Scheme Twist]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['w-b']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['w-c']);
+  });
+
+  it('AC-2 S2: with one Wound left on seat 2\'s turn, seat 2 gains it and seats 0 and 1 gain none', () => {
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a'] });
+    SCHEME_TWIST_RESOLVERS['wound-all'](gameState, makeRevealContext('2'), emptyImplementationMap, { woundCount: 1 });
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+    assert.deepEqual(gameState.playerZones['1']!.discard, []);
+    assert.deepEqual(gameState.messages.map((line) => line.text).slice(0, 3), [
+      '[Scheme Twist] Player 2 gained 1 wound(s).',
+      '[Scheme Twist] Wound supply exhausted — player 0 gained 0 of 1 wounds.',
+      '[Scheme Twist] Wound supply exhausted — player 1 gained 0 of 1 wounds.',
+    ]);
+  });
+
+  it('AC-8 S4: Clash of the Monsters on seat 1\'s turn wounds the weaker Gladiators 1, 2, 0', () => {
+    const monsterId = 'chmp-villain-monsters-unleashed-goom-00';
+    const gameState = makeResolverState({ playerCount: 3, wounds: ['w-a', 'w-b', 'w-c'] });
+    gameState.counters.schemeTwistCount = 3;
+    gameState.monsterPit = [monsterId];
+    gameState.villainDeckCardTypes = { [monsterId]: 'villain' };
+    gameState.cardStats = {
+      [monsterId]: { attack: 0, recruit: 0, cost: 0, fightCost: 6, fightCostMode: 'static', fightCostBase: 6 },
+    } as unknown as LegendaryGameState['cardStats'];
+    SCHEME_TWIST_RESOLVERS['clash-monster-pit'](gameState, makeRevealContext('1'), emptyImplementationMap, {});
+    assert.deepEqual(twistSeatOrder(gameState, '[Monster Pit] Player'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
   });
 });

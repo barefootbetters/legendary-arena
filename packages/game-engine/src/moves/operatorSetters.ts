@@ -52,9 +52,6 @@ import type { OperatorZoneRef } from './operatorSetters.types.js';
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
 
-// why: City space 4 is the escape edge — pushVillainIntoCity ejects it when the City is full.
-const OPERATOR_ESCAPE_CITY_INDEX = 4;
-
 /** The outcome of an `operatorMoveCard` route. */
 interface OperatorRouteResult {
   /** Whether the card moved. */
@@ -437,15 +434,18 @@ export function operatorEscapeVillain({ G, ctx, playerID, ...context }: MoveCont
   if (!canRunOperatorSetter(G, ctx.currentPlayer, playerID)) return;
 
   // Step 3: Preconditions — the escape-edge space holds a Villain.
-  const cardId = G.city[OPERATOR_ESCAPE_CITY_INDEX];
+  // why: the escape edge is the City's last space (pushVillainIntoCity ejects it when the City is
+  // full); WP-831 / D-24764 — a scheme can resize the City, so it is read from the current size.
+  const escapeEdgeIndex = G.city.length - 1;
+  const cardId = G.city[escapeEdgeIndex];
   if (cardId === null || cardId === undefined) return;
 
   // Step 4: Log, clear the space, then escape through the normal path.
   pushLog(G, `Operator: ${formatCardRef(G.cardDisplayData, cardId)} escapes.`);
   // why: D-24713 §2 — resolveVillainEscape does not touch G.city (its callers clear the
-  // space first), so the setter clears space 4 before calling it.
+  // space first), so the setter clears the escape-edge space before calling it.
   const city: CityZone = [...G.city];
-  city[OPERATOR_ESCAPE_CITY_INDEX] = null;
+  city[escapeEdgeIndex] = null;
   G.city = city;
   // why: D-24713 §3 — the move's random goes to the normal escape path, which uses it
   // exactly as in play; the setter itself chooses nothing by chance.

@@ -38,6 +38,7 @@ import YourDeckDiscardZone from '../components/play/YourDeckDiscardZone.vue';
 import YourVictoryPile from '../components/play/YourVictoryPile.vue';
 import TurnActionBar from '../components/play/TurnActionBar.vue';
 import { handHasWound } from '../components/play/woundIdentity';
+import { fightDiscardEligibleCardIds } from '../components/play/fightDiscardEligibility';
 import LobbyControls from '../components/play/LobbyControls.vue';
 import NotableEventOverlay from '../components/play/NotableEventOverlay.vue';
 import GameLogPanel from '../components/log/GameLogPanel.vue';
@@ -62,6 +63,7 @@ import DoOverPrompt from '../components/play/DoOverPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CoveringFireChoicePrompt from '../components/play/CoveringFireChoicePrompt.vue';
 import MoveVillainChoicePrompt from '../components/play/MoveVillainChoicePrompt.vue';
+import { extraCityColumns } from '../composables/useCityRow';
 import { useBuildProvenanceStore } from '../stores/buildProvenance';
 import { formatProvenanceHeaderLines } from '../diagnostics/buildProvenance';
 import SplitFaceChoicePrompt from '../components/play/SplitFaceChoicePrompt.vue';
@@ -259,6 +261,10 @@ export default defineComponent({
     // scoped CSS owns the `transform: scale()` string + `transform-origin`.
     const fitStageStyle = computed<Record<string, string>>(() => ({
       '--play-fit-scale': String(fitScale.value),
+      // why: WP-831 / D-24764 — a City larger than five spaces widens the authored stage by one
+      // space column each, so the stage ResizeObserver refits and the board scales down instead of
+      // the City and HQ rows overflowing (and scrolling apart, which would break their alignment).
+      '--play-extra-city-columns': String(extraCityColumns(snapshot.value?.city.spaces.length ?? 0)),
     }));
     // why: Jeff feedback (D-24505 carve-out) — reserve the FULL scaled board height
     // as the fit container's min-height, so a response prompt that grows the board
@@ -703,7 +709,19 @@ export default defineComponent({
     // this). handHasWound tolerates a redacted / absent hand (spectator) as false.
     const hasWoundInHand = computed<boolean>(() => handHasWound(viewer.value?.handCards));
 
+    // why: WP-817 / D-24750 — the hand cards that would pay a City villain's fight
+    // discard cost (Primus), tagged in HandRow so the player holds one back.
+    const discardEligibleCardIds = computed<string[]>(() =>
+      fightDiscardEligibleCardIds(
+        snapshot.value?.city,
+        viewer.value?.handCards,
+        viewer.value?.handCosts,
+        isViewerTurn.value,
+      ),
+    );
+
     return {
+      extraCityColumns,
       snapshot,
       viewer,
       opponents,
@@ -763,6 +781,7 @@ export default defineComponent({
       hasPendingGiveHqHeroChoice,
       hasPendingCopyPowersChoice,
       hasWoundInHand,
+      discardEligibleCardIds,
     };
   },
 });
@@ -875,6 +894,7 @@ export default defineComponent({
                   :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
                   :economy="snapshot.economy"
                   :dark-portal-bonus="snapshot.scheme.darkPortals?.mastermindAttackBonus ?? 0"
+                  :enigma-code="snapshot.scheme.enigmaCode"
                   :is-game-over="isGameOver"
                   :submit-move="submitMove"
                   @read="onCardRead"
@@ -914,6 +934,10 @@ export default defineComponent({
               :dark-portal-indices="snapshot.scheme.darkPortals?.citySpaceIndices ?? []"
               :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
               :submit-move="submitMove"
+              :is-column-aligned="true"
+              :viewer-hand-cards="viewer?.handCards ?? []"
+              :viewer-hand-display="viewer?.handDisplay ?? []"
+              :viewer-hand-costs="viewer?.handCosts ?? []"
             />
             <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits to the
                  RIGHT of the HQ (it holds the second-forms some HQ heroes transform
@@ -923,12 +947,14 @@ export default defineComponent({
             <div class="play-desktop__hq-zone">
               <HQRow
                 :hq="snapshot.hq"
+                :extra-city-spaces="extraCityColumns(snapshot.city.spaces.length)"
                 :decks="snapshot.decks"
                 :current-stage="snapshot.game.currentStage"
                 :is-viewer-turn="isViewerTurn"
                 :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
                 :economy="snapshot.economy"
                 :submit-move="submitMove"
+                :is-column-aligned="true"
               />
               <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
             </div>
@@ -959,6 +985,7 @@ export default defineComponent({
                     :is-viewer-turn="isViewerTurn"
                     :submit-move="submitMove"
                     :phasing-card-ids="snapshot.economy.phasingOptions ?? []"
+                    :discard-eligible-card-ids="discardEligibleCardIds"
                   />
                 </div>
                 <div class="play-desktop__cockpit-side">
@@ -1474,7 +1501,8 @@ export default defineComponent({
   position: absolute;
   top: 0;
   left: 50%;
-  width: var(--play-authoring-width);
+  /* why: WP-831 / D-24764 — one space column (plus the row gap) per City space beyond five. */
+  width: calc(var(--play-authoring-width) + var(--play-extra-city-columns, 0) * (var(--board-space-column-width) + 0.25rem));
   transform: translateX(-50%) scale(var(--play-fit-scale, 1));
   transform-origin: top center;
   display: flex;
@@ -1485,6 +1513,12 @@ export default defineComponent({
   --card-width-md: 80px;
   --card-width-lg: 108px;
   --play-gutter: 10px;
+  /* why: D-24747 — the shared City / HQ column widths (CityRow and HQRow
+     isColumnAligned). A space fits the side label (~21px), the Villain button
+     (~96px) and its captured column (~40px) with their gaps; narrower edge
+     columns (Escaped Pile / Villain Deck) leave room for the Transform deck. */
+  --board-edge-column-width: 128px;
+  --board-space-column-width: 164px;
 }
 
 /* why: WP-689 / D-24506 — the TurnActionBar is `position: sticky; bottom: 0`
@@ -1570,6 +1604,11 @@ export default defineComponent({
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
+  /* why: D-24747 — the frosted-panel left padding + border that
+     styles/playmat-slots.css puts on this zone on the stage (0.4rem + 1px) and
+     the City row does not have; HQRow's leading cell subtracts it so the HQ
+     columns stay under the City columns. Keep in step with that file. */
+  --board-hq-row-inset: calc(0.4rem + 1px);
 }
 
 .play-desktop__hq-zone > .transform-deck {

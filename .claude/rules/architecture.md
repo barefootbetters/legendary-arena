@@ -103,7 +103,9 @@ helpers; (4) return `void`. Moves **never throw**; only `Game.setup()` may throw
 A move MAY reject a play with a **card-specific pre-commit precondition**
 (D-24185) in step 1 — reading the played card and returning `void` before any
 `G` mutation when its cost is unpayable (`discard-to-play`, WP-383, is the first
-case). This is a validation-phase return, distinct from the pending-choice
+case), or the specific villain being fought, whose cost is named by a validated
+move argument (`fightVillain.discardCardId`, WP-817 / D-24750). This is a
+validation-phase return, distinct from the pending-choice
 pattern, which fires after commit.
 
 Source: ARCHITECTURE.md, The Move Validation Contract
@@ -230,12 +232,17 @@ chain importing Shared Tooling; Shared Tooling in any app's runtime `dependencie
 > storage adapter MAY persist its opaque match state to the dedicated `bgio`
 > schema. Application code never reads or interprets that blob, and it is never
 > a save-game or a source of derived features, **except** five server-layer,
-> read-only, never-written-back carve-outs: **D-24119** (replay and score
-> verification from `initialState + log` of a completed match),
+> read-only, never-written-back (to `bgio.matches`) carve-outs: **D-24119**
+> (replay and score verification from `initialState + log` of a completed match;
+> also derives a captured artifact's endgame verdict into the D-24122
+> `bgio.replay_artifacts.gameover` column (D-24719), never `bgio.matches`),
 > **D-24153** (Tier-1 LAGN loadout projection from
-> `initialState.G.matchConfiguration` + `ctx.numPlayers`), **D-24169** (match
+> `initialState.G.matchConfiguration` + `ctx.numPlayers`, from the live row or,
+> once reaped, its `bgio.replay_artifacts` copy — D-24719), **D-24169** (match
 > summary for `/api/dash/matches` from `matchConfiguration`, `numPlayers`, and
-> `metadata.{createdAt,updatedAt,gameover}`), **D-24187** (deriving or
+> `metadata.{createdAt,updatedAt,gameover}`, and the finished-match gate / outcome
+> of the result LAGN and seat identities, from the live row or the artifact's
+> `gameover` copy (D-24719)), **D-24187** (deriving or
 > backfilling `legendary.competitive_scores.team_key` from `heroDeckIds`, read
 > from `bgio.replay_artifacts` or the `bgio.matches` blob), and **D-24689** (an
 > `admin-session-required` route reading a match's live `state` solely to test

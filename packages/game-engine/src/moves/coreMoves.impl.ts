@@ -19,6 +19,7 @@ import { applyEndOfTurnCleanup } from './endOfTurnCleanup.logic.js';
 import { HAND_SIZE, drawCardsIntoHand } from './drawCards.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { executeHeroEffects } from '../hero/heroEffects.execute.js';
+import { applyGrantedOutOfTime } from './outOfTimeGrant.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
@@ -51,7 +52,8 @@ import { hasPendingCopyPowersChoice } from './copyPowersChoice.resolve.js';
 import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { formatBaseEconomyClause, formatPlayedCardLabel } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { SIDEKICK_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { returnPlayedSidekick } from './recruitSidekick.js';
 import { consumeExtraTurn } from '../turn/turnLoop.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
@@ -329,6 +331,17 @@ export function applyCardPlay(
   // cue; excluded from the finalStateHash oracle (observability-only), and not seeded at
   // setup, so no sentinel or PRE_WP080 hash re-pin is required.
   G.lastPlayEffectsFired = executeHeroEffects(G, context, playerID, cardId);
+  // why: WP-828 / D-24761 — a hand Hero granted Man Out of Time this turn (Winter Soldier's 2>4)
+  // is set aside Out of Time after its abilities, exactly where its own printed keyword would
+  // (the last effect of the play). Shared core (hand play and the turn-2 replay); the replay is
+  // never re-granted (the grant list is cleared at turn start, and guard 1 blocks a second set-aside).
+  applyGrantedOutOfTime(G, context, playerID, cardId);
+  // why: WP-842 / D-24776 — a played Sidekick returns to the bottom of the Sidekick Stack
+  // and draws two. Last, after Out of Time, so a granted Out of Time set-aside wins (the
+  // return only fires while the Sidekick is still the last inPlay entry).
+  if (cardId === SIDEKICK_EXT_ID) {
+    returnPlayedSidekick(G, context, playerID);
+  }
 }
 
 /**

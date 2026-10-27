@@ -23,6 +23,7 @@ import { initializeCity, initializeHq } from '../board/city.logic.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
 import type { MockMoveContext } from '../test/mockMoveContext.js';
 import { makeCardStatEntry, makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
+import { formatCardRef } from '../log/logDisplay.js';
 
 // ---------------------------------------------------------------------------
 // Mock G factory
@@ -1238,5 +1239,603 @@ describe('fightVillain — fight-cost reduction (WP-794 / D-24663)', () => {
     assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
     assert.equal(moveContext.G.turnEconomy.spentAttack, 4, 'reduced cost 3 + the EV extra 1');
     assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Abomination — the fight gate charges the HQ Hero's printed Attack (WP-815 / D-24747)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — Abomination (WP-815)', () => {
+  /**
+   * An Abomination villain (dynamic base 6) at City index 0 (Sewers); the Hero in the
+   * HQ space under it is hq[4], printed Attack 3, so the cost is 9.
+   *
+   * @param attack - Attack available to player 0.
+   */
+  function createAbominationState(attack: number): LegendaryGameState {
+    const gameState = createMockGameState({ city: ['villain-a', null, null, null, null] });
+    gameState.cardStats['villain-a' as CardExtId] = makeCardStatEntry({
+      fightCost: 6, fightCostMode: 'dynamic', fightCostBase: 6,
+    });
+    gameState.cardStats['hero-under' as CardExtId] = makeCardStatEntry({ attack: 3, hasAttackIcon: true });
+    gameState.hq = [null, null, null, null, 'hero-under' as CardExtId];
+    gameState.cardAbomination = { ['villain-a' as CardExtId]: 'abomination' };
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  it('refuses the fight at 6 available attack, leaving G unchanged (6 < 6 + 3)', () => {
+    const gameState = createAbominationState(6);
+    const before = JSON.stringify(gameState);
+    const moveContext = createMockMoveContext(gameState);
+    assert.doesNotThrow(() => fightVillain(moveContext, { cityIndex: 0 }));
+    assert.equal(JSON.stringify(moveContext.G), before, 'a refused fight makes no G change');
+  });
+
+  it('defeats it at 9 available attack, spending exactly 9', () => {
+    const moveContext = createMockMoveContext(createAbominationState(9));
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 9);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Villain-side Savior — rescued Bystanders count before the Savior check (WP-816 / D-24749)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — villain Savior counts the Bystanders rescued from it (WP-816 / D-24749)', () => {
+  const SAVIOR_VILLAIN = 'villain-savior' as CardExtId;
+  const DECK_CARD = 'core/x/deck-card#0' as CardExtId;
+
+  /**
+   * A 3-cost Savior-gated "draw a card" villain at City index 0 holding one
+   * Savior-counted Bystander, with the given rescued Bystanders already in the
+   * current player's Victory Pile.
+   */
+  function createSaviorFightState(victory: CardExtId[]): LegendaryGameState {
+    const gameState = createMockGameState({
+      city: [SAVIOR_VILLAIN, null, null, null, null],
+      villainAbilityHooks: [
+        {
+          cardId: SAVIOR_VILLAIN,
+          timing: 'onFight',
+          keywords: [],
+          effects: [{ primitive: 'draw-cards-current', drawCount: 1, requireCondition: 'savior' }],
+        },
+      ],
+    });
+    gameState.attachedBystanders = { [SAVIOR_VILLAIN]: ['bystander-villain-deck-01' as CardExtId] };
+    gameState.cardStats[SAVIOR_VILLAIN] = {
+      attack: 0, recruit: 0, cost: 0, fightCost: 3, fightCostMode: 'static', fightCostBase: 0,
+    };
+    gameState.playerZones['0']!.victory = [...victory];
+    gameState.playerZones['0']!.deck = [DECK_CARD];
+    gameState.turnEconomy = makeTurnEconomy({ attack: 3 });
+    return gameState;
+  }
+
+  it('T22: the attached Bystander is awarded first, so 2 + 1 makes a Savior and the draw fires', () => {
+    const moveContext = createMockMoveContext(
+      createSaviorFightState(['pile-bystander', 'bystander-villain-deck-02'] as CardExtId[]),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const playerZones = moveContext.G.playerZones['0']!;
+    assert.ok(playerZones.victory.includes(SAVIOR_VILLAIN), 'the villain is defeated');
+    assert.ok(playerZones.victory.includes('bystander-villain-deck-01'), 'the attached Bystander is awarded');
+    assert.deepStrictEqual(playerZones.hand, [DECK_CARD], 'Savior passes (3) and the player draws a card');
+  });
+
+  it('T23: with 1 + 1 Bystanders the Savior line blocks and nothing is drawn', () => {
+    const moveContext = createMockMoveContext(createSaviorFightState(['pile-bystander'] as CardExtId[]));
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const playerZones = moveContext.G.playerZones['0']!;
+    assert.ok(playerZones.victory.includes(SAVIOR_VILLAIN), 'the villain is defeated');
+    assert.deepStrictEqual(playerZones.hand, [], 'hand unchanged');
+    assert.ok(
+      moveContext.G.messages.some(
+        (message) =>
+          message.text === 'Fight effect: Player 0 is not a Savior (2 of 3 Bystanders in their Victory Pile); no effect.',
+      ),
+      'the Savior-blocked line is logged',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Baron Zemo — "you may use 2 Recruit to rescue a Bystander" on a fight (WP-819 / D-24753)
+// ---------------------------------------------------------------------------
+
+describe('WP-819 fightVillain — Baron Zemo rescue on a fight (D-24753)', () => {
+  const ZEMO = 'ca75/baron-heinrich-zemo';
+  const SUPPLY_BYSTANDER = 'pile-bystander' as CardExtId;
+  const SAVIOR_VILLAIN = 'villain-savior' as CardExtId;
+  const DECK_CARD = 'core/x/deck-card#0' as CardExtId;
+  const COULD_NOT_PAY_LINE =
+    'Player 0 could not pay 2 Recruit to rescue a Bystander after the fight cost (Baron Zemo).';
+  const SUPPLY_EMPTY_LINE =
+    'Player 0 could not rescue a Bystander — the Bystander supply is empty (Baron Zemo).';
+
+  /**
+   * A fight state: `villainId` (cost `fightCost`) at City index 0, the given
+   * Mastermind, the Bystander supply, and player 0's attack / recruit.
+   */
+  function createRescueState(options: {
+    attack: number;
+    recruit: number;
+    fightCost?: number;
+    mastermindId?: string;
+    supply?: CardExtId[];
+    isConversionOn?: boolean;
+    villainId?: CardExtId;
+    villainAbilityHooks?: VillainAbilityHook[];
+  }): LegendaryGameState {
+    const villainId = options.villainId ?? ('villain-a' as CardExtId);
+    const base = createMockGameState({
+      city: [villainId, null, null, null, null],
+      ...(options.villainAbilityHooks ? { villainAbilityHooks: options.villainAbilityHooks } : {}),
+    });
+    // why: selection is readonly; the Mastermind is set by spreading it (the WP-748 precedent).
+    const gameState: LegendaryGameState = {
+      ...base,
+      selection: { ...base.selection, mastermindId: options.mastermindId ?? ZEMO },
+    };
+    gameState.cardStats[villainId] = makeCardStatEntry({ fightCost: options.fightCost ?? 3 });
+    gameState.piles.bystanders = [...(options.supply ?? [SUPPLY_BYSTANDER])];
+    gameState.turnEconomy = makeTurnEconomy({
+      attack: options.attack,
+      recruit: options.recruit,
+      ...(options.isConversionOn ? { recruitSpendableAsAttack: true } : {}),
+    });
+    return gameState;
+  }
+
+  /**
+   * Returns the index of the first log line equal to `text`, or -1.
+   */
+  function lineIndex(gameState: LegendaryGameState, text: string): number {
+    return gameState.messages.findIndex((message) => message.text === text);
+  }
+
+  /**
+   * Returns the index of the first log line that starts with `prefix`, or -1.
+   */
+  function lineIndexStartingWith(gameState: LegendaryGameState, prefix: string): number {
+    return gameState.messages.findIndex((message) => message.text.startsWith(prefix));
+  }
+
+  /**
+   * Returns whether any log line names Baron Zemo.
+   */
+  function hasZemoLine(gameState: LegendaryGameState): boolean {
+    return gameState.messages.some((message) => message.text.includes('(Baron Zemo)'));
+  }
+
+  it('T4: a paid rescue spends 2 Recruit and moves the supply Bystander to the Victory Pile', () => {
+    const moveContext = createMockMoveContext(createRescueState({ attack: 3, recruit: 2 }));
+    fightVillain(moveContext, { cityIndex: 0, payToRescueBystander: true });
+
+    const G = moveContext.G;
+    assert.deepStrictEqual(G.playerZones['0']!.victory, ['villain-a', SUPPLY_BYSTANDER], 'the Bystander lands after the Villain');
+    assert.deepStrictEqual(G.piles.bystanders, [], 'the supply Bystander left the supply');
+    assert.equal(G.turnEconomy.spentRecruit, 2, 'the rescue spent 2 Recruit');
+    assert.equal(G.turnEconomy.spentAttack, 3, 'the fight spent its cost in attack');
+    assert.ok(
+      lineIndex(G, `Player 0 paid 2 Recruit to rescue a Bystander on fighting ${formatCardRef(G.cardDisplayData, 'villain-a')} (Baron Zemo).`) >= 0,
+      'the paid line is logged',
+    );
+    const fightResolved = G.notableEvents.find((event) => event.type === 'fightResolved');
+    assert.ok(fightResolved !== undefined && fightResolved.type === 'fightResolved');
+    assert.equal(fightResolved.bystandersRescued, 0, 'the paid rescue is not an attached-Bystander award');
+  });
+
+  /**
+   * The WP-816 Savior "draw a card" fixture, with NO attached Bystander and two
+   * Bystanders already in the fighter's Victory Pile.
+   */
+  function createSaviorRescueState(): LegendaryGameState {
+    const gameState = createRescueState({
+      attack: 3,
+      recruit: 2,
+      villainId: SAVIOR_VILLAIN,
+      villainAbilityHooks: [
+        {
+          cardId: SAVIOR_VILLAIN,
+          timing: 'onFight',
+          keywords: [],
+          effects: [{ primitive: 'draw-cards-current', drawCount: 1, requireCondition: 'savior' }],
+        },
+      ],
+    });
+    gameState.attachedBystanders = {};
+    gameState.playerZones['0']!.victory = ['pile-bystander', 'bystander-villain-deck-02'] as CardExtId[];
+    gameState.playerZones['0']!.deck = [DECK_CARD];
+    return gameState;
+  }
+
+  it('T5: the rescue resolves before the Fight effects, so it alone makes the fighter a Savior', () => {
+    const moveContext = createMockMoveContext(createSaviorRescueState());
+    fightVillain(moveContext, { cityIndex: 0, payToRescueBystander: true });
+
+    const G = moveContext.G;
+    assert.deepStrictEqual(G.playerZones['0']!.hand, [DECK_CARD], 'Savior passes (3) and the player draws');
+    const paidIndex = lineIndexStartingWith(G, 'Player 0 paid 2 Recruit to rescue a Bystander');
+    const drawIndex = lineIndex(G, 'Fight effect: drew 1 card(s).');
+    assert.ok(paidIndex >= 0, 'the paid line is logged');
+    assert.ok(drawIndex > paidIndex, 'the paid line precedes the Fight draw line');
+
+    // control: the same state without the argument stays at 2 Bystanders
+    const controlContext = createMockMoveContext(createSaviorRescueState());
+    fightVillain(controlContext, { cityIndex: 0 });
+    assert.deepStrictEqual(controlContext.G.playerZones['0']!.hand, [], 'control: hand unchanged');
+    assert.ok(
+      lineIndex(controlContext.G, 'Fight effect: Player 0 is not a Savior (2 of 3 Bystanders in their Victory Pile); no effect.') >= 0,
+      'control: the Savior-blocked line is logged',
+    );
+  });
+
+  it('T6: with 1 Recruit the fight resolves normally and logs that the rescue could not be paid', () => {
+    const moveContext = createMockMoveContext(createRescueState({ attack: 3, recruit: 1 }));
+    fightVillain(moveContext, { cityIndex: 0, payToRescueBystander: true });
+
+    const G = moveContext.G;
+    assert.deepStrictEqual(G.playerZones['0']!.victory, ['villain-a'], 'fought, nothing rescued');
+    assert.deepStrictEqual(G.piles.bystanders, [SUPPLY_BYSTANDER], 'the supply is untouched');
+    assert.equal(G.turnEconomy.spentRecruit, 0, 'no Recruit spent');
+    assert.ok(lineIndex(G, COULD_NOT_PAY_LINE) >= 0, 'the could-not-pay line is logged');
+  });
+
+  it('T7: with an empty supply the fight resolves normally and logs that the supply is empty', () => {
+    const moveContext = createMockMoveContext(createRescueState({ attack: 3, recruit: 2, supply: [] }));
+    fightVillain(moveContext, { cityIndex: 0, payToRescueBystander: true });
+
+    const G = moveContext.G;
+    assert.deepStrictEqual(G.playerZones['0']!.victory, ['villain-a'], 'fought, nothing rescued');
+    assert.equal(G.turnEconomy.spentRecruit, 0, 'no Recruit spent');
+    assert.ok(lineIndex(G, SUPPLY_EMPTY_LINE) >= 0, 'the supply-empty line is logged');
+  });
+
+  it('T8: under the recruit-as-attack conversion the rescue pays from the Recruit the fight leaves', () => {
+    const moveContext = createMockMoveContext(
+      createRescueState({ attack: 3, recruit: 4, fightCost: 5, isConversionOn: true }),
+    );
+    fightVillain(moveContext, { cityIndex: 0, payToRescueBystander: true });
+
+    const G = moveContext.G;
+    assert.ok(G.playerZones['0']!.victory.includes('villain-a'), 'the Villain is defeated');
+    assert.ok(G.playerZones['0']!.victory.includes(SUPPLY_BYSTANDER), 'the rescue was paid');
+    assert.equal(G.turnEconomy.spentAttack, 3, 'all attack spent on the fight');
+    assert.equal(G.turnEconomy.spentRecruit, 4, '2 Recruit for the fight + 2 for the rescue');
+  });
+
+  it('T9: under the conversion, a rescue that would overdraw the fight is declined before the fought line', () => {
+    const moveContext = createMockMoveContext(
+      createRescueState({ attack: 3, recruit: 3, fightCost: 5, isConversionOn: true }),
+    );
+    fightVillain(moveContext, { cityIndex: 0, payToRescueBystander: true });
+
+    const G = moveContext.G;
+    assert.ok(G.playerZones['0']!.victory.includes('villain-a'), 'the Villain is defeated');
+    assert.ok(!G.playerZones['0']!.victory.includes(SUPPLY_BYSTANDER), 'no rescue');
+    assert.equal(G.turnEconomy.spentRecruit, 2, 'the fight took 2 Recruit, the rescue none');
+    const declinedIndex = lineIndex(G, COULD_NOT_PAY_LINE);
+    const foughtIndex = lineIndexStartingWith(G, 'Player 0 fought ');
+    assert.ok(declinedIndex >= 0, 'the could-not-pay line is logged');
+    assert.ok(declinedIndex < foughtIndex, 'the declined line precedes the fought line');
+  });
+
+  /**
+   * A rescue state with one Excessive Violence card (draw 1) enrolled this turn.
+   */
+  function withExcessiveViolence(gameState: LegendaryGameState): LegendaryGameState {
+    gameState.playerZones['0']!.deck = ['d-1'] as CardExtId[];
+    gameState.heroAbilityHooks = [{
+      cardId: 'rc' as CardExtId,
+      timing: 'onFight',
+      keywords: ['excessive-violence'],
+      effects: [{ type: 'excessive-violence', excessiveViolenceEffects: [{ type: 'draw', magnitude: 1 }] as never }],
+    }];
+    gameState.turnEconomy = { ...gameState.turnEconomy, excessiveViolencePlayedCards: ['rc' as CardExtId] };
+    return gameState;
+  }
+
+  it('T10a: with Excessive Violence open and enough of both, EV fires and the rescue is paid', () => {
+    const moveContext = createMockMoveContext(withExcessiveViolence(createRescueState({ attack: 4, recruit: 2 })));
+    fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true, payToRescueBystander: true });
+
+    const G = moveContext.G;
+    assert.strictEqual(G.turnEconomy.excessiveViolenceUsedThisTurn, true, 'EV fired');
+    assert.equal(G.playerZones['0']!.hand.length, 1, 'the EV draw resolved');
+    assert.equal(G.turnEconomy.spentAttack, 4, 'cost 3 + the EV extra 1');
+    assert.equal(G.turnEconomy.spentRecruit, 2, 'the rescue was paid');
+    assert.ok(G.playerZones['0']!.victory.includes(SUPPLY_BYSTANDER), 'the Bystander was rescued');
+  });
+
+  it('T10b: under the conversion, the open EV +1 is counted, so EV fires and the rescue is declined', () => {
+    const moveContext = createMockMoveContext(
+      withExcessiveViolence(createRescueState({ attack: 3, recruit: 2, isConversionOn: true })),
+    );
+    fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true, payToRescueBystander: true });
+
+    const G = moveContext.G;
+    assert.strictEqual(G.turnEconomy.excessiveViolenceUsedThisTurn, true, 'EV fired');
+    assert.equal(G.turnEconomy.spentAttack, 3, 'all attack spent');
+    assert.equal(G.turnEconomy.spentRecruit, 1, 'the EV extra 1 came from Recruit');
+    assert.ok(!G.playerZones['0']!.victory.includes(SUPPLY_BYSTANDER), 'no rescue');
+    assert.ok(lineIndex(G, COULD_NOT_PAY_LINE) >= 0, 'the could-not-pay line is logged');
+  });
+
+  it('T11: without Zemo the argument is ignored and G is byte-identical to a plain fight', () => {
+    const withArgument = createMockMoveContext(
+      createRescueState({ attack: 3, recruit: 2, mastermindId: 'core/red-skull' }),
+    );
+    fightVillain(withArgument, { cityIndex: 0, payToRescueBystander: true });
+    const withoutArgument = createMockMoveContext(
+      createRescueState({ attack: 3, recruit: 2, mastermindId: 'core/red-skull' }),
+    );
+    fightVillain(withoutArgument, { cityIndex: 0 });
+
+    assert.deepStrictEqual(withArgument.G, withoutArgument.G);
+    assert.ok(!hasZemoLine(withArgument.G), 'no Zemo line');
+  });
+
+  it('T12: with Zemo but no argument nothing is rescued and no Zemo line is logged', () => {
+    const moveContext = createMockMoveContext(createRescueState({ attack: 3, recruit: 2 }));
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const G = moveContext.G;
+    assert.deepStrictEqual(G.playerZones['0']!.victory, ['villain-a'], 'fought, nothing rescued');
+    assert.deepStrictEqual(G.piles.bystanders, [SUPPLY_BYSTANDER]);
+    assert.equal(G.turnEconomy.spentRecruit, 0);
+    assert.ok(!hasZemoLine(G), 'no Zemo line');
+  });
+
+  it('T13: the four-argument core call (the free-defeat shape) never pays the rescue', () => {
+    const gameState = createRescueState({ attack: 3, recruit: 2 });
+    const shuffleContext = { random: makeMockCtx({ numPlayers: 1 }).random };
+    defeatCityVillainCore(gameState, { currentPlayer: '0' }, 0, shuffleContext);
+
+    assert.deepStrictEqual(gameState.playerZones['0']!.victory, ['villain-a'], 'defeated, nothing rescued');
+    assert.deepStrictEqual(gameState.piles.bystanders, [SUPPLY_BYSTANDER]);
+    assert.equal(gameState.turnEconomy.spentRecruit, 0);
+    assert.ok(!hasZemoLine(gameState), 'no Zemo line');
+  });
+
+  // why: the declined lines must only fire on a fight that happens. A payable state would log
+  // nothing even with a misplaced decision, so T17 runs on the two DECLINING states.
+  const DECLINING_STATES: { name: string; build: () => LegendaryGameState }[] = [
+    { name: 'recruit 1', build: () => createRescueState({ attack: 3, recruit: 1 }) },
+    { name: 'empty supply', build: () => createRescueState({ attack: 3, recruit: 2, supply: [] }) },
+  ];
+  const BLOCKERS: { name: string; apply: (gameState: LegendaryGameState) => void }[] = [
+    { name: 'start stage', apply: (gameState) => { gameState.currentStage = 'start'; } },
+    { name: 'healed this turn', apply: (gameState) => { gameState.hasHealedThisTurn = true; } },
+    { name: 'attack below the cost', apply: (gameState) => { gameState.turnEconomy = { ...gameState.turnEconomy, attack: 2 }; } },
+  ];
+  for (const decliningState of DECLINING_STATES) {
+    for (const blocker of BLOCKERS) {
+      it(`T17: ${decliningState.name} + ${blocker.name} — no fight, G unchanged, no declined line`, () => {
+        const gameState = decliningState.build();
+        blocker.apply(gameState);
+        const before = JSON.stringify(gameState);
+        const moveContext = createMockMoveContext(gameState);
+        fightVillain(moveContext, { cityIndex: 0, payToRescueBystander: true });
+
+        assert.equal(JSON.stringify(moveContext.G), before, 'a blocked fight makes no G change');
+        assert.ok(!hasZemoLine(moveContext.G), 'no could-not line');
+      });
+    }
+  }
+});
+
+describe('WP-817 fightVillain — Primus fight discard cost (D-24750)', () => {
+  const PRIMUS = 'primus-01';
+  const DISCARD_LINE = `Player 0 discarded hero-cost5 (hero-cost5) to fight ${PRIMUS} (${PRIMUS}).`;
+
+  /** Primus at City 0 (fight cost 3, discard cost 2/3/5/7), attack 3, hand [cost 4, cost 5]. */
+  function primusState(options?: { attack?: number; hand?: string[] }): LegendaryGameState {
+    const gameState = createMockGameState({
+      city: [PRIMUS, null, null, null, null],
+      hand: options?.hand ?? ['hero-cost4', 'hero-cost5'],
+    });
+    gameState.cardStats[PRIMUS as CardExtId] = makeCardStatEntry({ fightCost: 3 });
+    gameState.cardStats['hero-cost4' as CardExtId] = makeCardStatEntry({ cost: 4 });
+    gameState.cardStats['hero-cost5' as CardExtId] = makeCardStatEntry({ cost: 5 });
+    gameState.cardStats['not-in-hand' as CardExtId] = makeCardStatEntry({ cost: 5 });
+    gameState.villainFightDiscardCosts = { [PRIMUS]: { eligibleCosts: [2, 3, 5, 7] } };
+    gameState.turnEconomy = makeTurnEconomy({ attack: options?.attack ?? 3 });
+    return gameState;
+  }
+
+  it('T11: discards the named card, then defeats Primus and spends the fight cost', () => {
+    const moveContext = createMockMoveContext(primusState());
+    fightVillain(moveContext, { cityIndex: 0, discardCardId: 'hero-cost5' as CardExtId });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PRIMUS), 'Primus is defeated');
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.discard, ['hero-cost5']);
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.hand, ['hero-cost4']);
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 3, 'the fight cost is spent');
+    assert.equal(moveContext.G.messages[0]!.text, DISCARD_LINE, 'the discard is logged first, before the defeat');
+    assert.equal(moveContext.G.messages[0]!.outcome, 'applied');
+  });
+
+  it('T12: every invalid or missing discard choice is a silent no-op', () => {
+    const invalidArgs: Array<{ cityIndex: number; discardCardId?: CardExtId }> = [
+      { cityIndex: 0 },
+      { cityIndex: 0, discardCardId: 'hero-cost4' as CardExtId },
+      { cityIndex: 0, discardCardId: 'not-in-hand' as CardExtId },
+      { cityIndex: 0, discardCardId: '' as CardExtId },
+    ];
+    for (const args of invalidArgs) {
+      const gameState = primusState();
+      const before = JSON.parse(JSON.stringify(gameState)) as unknown;
+      const moveContext = createMockMoveContext(gameState);
+      fightVillain(moveContext, args);
+      assert.deepStrictEqual(JSON.parse(JSON.stringify(moveContext.G)), before, `${JSON.stringify(args)} must not mutate G`);
+    }
+  });
+
+  it('T13: a villain without a discard cost ignores discardCardId', () => {
+    const gameState = primusState();
+    delete gameState.villainFightDiscardCosts;
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, discardCardId: 'hero-cost5' as CardExtId });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PRIMUS), 'fought normally');
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.hand, ['hero-cost4', 'hero-cost5'], 'hand unchanged');
+    assert.equal(
+      moveContext.G.messages.some((message) => message.text.includes('to fight')),
+      false,
+      'no discard log line',
+    );
+  });
+
+  it('T14: an Excessive Violence fight pays one discard, debits 4 and fires EV once', () => {
+    const gameState = primusState({ attack: 4 });
+    gameState.playerZones['0']!.deck = ['d-1'] as LegendaryGameState['playerZones']['0']['deck'];
+    gameState.heroAbilityHooks = [{
+      cardId: 'rc' as CardExtId,
+      timing: 'onFight',
+      keywords: ['excessive-violence'],
+      effects: [{ type: 'excessive-violence', excessiveViolenceEffects: [{ type: 'draw', magnitude: 1 }] as never }],
+    }];
+    gameState.turnEconomy = makeTurnEconomy({ attack: 4, excessiveViolencePlayedCards: ['rc' as CardExtId] });
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, useExcessiveViolence: true, discardCardId: 'hero-cost5' as CardExtId });
+
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PRIMUS));
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.discard, ['hero-cost5'], 'exactly one discard');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 4, 'debits the fight cost + 1');
+    assert.strictEqual(moveContext.G.turnEconomy.excessiveViolenceUsedThisTurn, true);
+    assert.deepStrictEqual(moveContext.G.playerZones['0']!.hand, ['hero-cost4', 'd-1'], 'the EV draw fired once');
+  });
+
+  it('T15: the discard goes through the chokepoint, so return-on-discard parks and the fight resolves', () => {
+    const gameState = primusState();
+    gameState.heroAbilityHooks = [
+      { cardId: 'hero-cost5' as CardExtId, timing: 'onDiscard', keywords: ['return-on-discard'] },
+    ] as LegendaryGameState['heroAbilityHooks'];
+    const moveContext = createMockMoveContext(gameState);
+    fightVillain(moveContext, { cityIndex: 0, discardCardId: 'hero-cost5' as CardExtId });
+
+    assert.deepStrictEqual(moveContext.G.pendingReturnOnDiscard, [{ playerID: '0', cardId: 'hero-cost5' }]);
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(PRIMUS), 'the fight still resolves');
+  });
+});
+
+describe('WP-819 × WP-817 fightVillain — the Primus discard, then the Zemo rescue, then the core (D-24753)', () => {
+  const ZEMO = 'ca75/baron-heinrich-zemo';
+  const PRIMUS = 'primus-01';
+  const DISCARD_LINE = `Player 0 discarded hero-cost5 (hero-cost5) to fight ${PRIMUS} (${PRIMUS}).`;
+  const COULD_NOT_PAY_LINE =
+    'Player 0 could not pay 2 Recruit to rescue a Bystander after the fight cost (Baron Zemo).';
+
+  /**
+   * Primus (fight cost 3, discard cost 2/3/5/7) at City 0 in a Baron Zemo match,
+   * one supply Bystander, attack 3 and the given Recruit, hand [cost 4, cost 5].
+   */
+  function zemoPrimusState(recruit: number): LegendaryGameState {
+    const base = createMockGameState({
+      city: [PRIMUS, null, null, null, null],
+      hand: ['hero-cost4', 'hero-cost5'],
+    });
+    // why: selection is readonly; the Mastermind is set by spreading it (the WP-748 precedent).
+    const gameState: LegendaryGameState = {
+      ...base,
+      selection: { ...base.selection, mastermindId: ZEMO },
+    };
+    gameState.cardStats[PRIMUS as CardExtId] = makeCardStatEntry({ fightCost: 3 });
+    gameState.cardStats['hero-cost4' as CardExtId] = makeCardStatEntry({ cost: 4 });
+    gameState.cardStats['hero-cost5' as CardExtId] = makeCardStatEntry({ cost: 5 });
+    gameState.villainFightDiscardCosts = { [PRIMUS]: { eligibleCosts: [2, 3, 5, 7] } };
+    gameState.piles.bystanders = ['pile-bystander' as CardExtId];
+    gameState.turnEconomy = makeTurnEconomy({ attack: 3, recruit });
+    return gameState;
+  }
+
+  /**
+   * Returns the index of the first log line that starts with `prefix`, or -1.
+   */
+  function lineIndexStartingWith(gameState: LegendaryGameState, prefix: string): number {
+    return gameState.messages.findIndex((message) => message.text.startsWith(prefix));
+  }
+
+  it('T18a: a paid rescue on Primus logs the discard, then the rescue, then the fight', () => {
+    const moveContext = createMockMoveContext(zemoPrimusState(2));
+    fightVillain(moveContext, {
+      cityIndex: 0,
+      discardCardId: 'hero-cost5' as CardExtId,
+      payToRescueBystander: true,
+    });
+
+    const { G } = moveContext;
+    assert.deepStrictEqual(G.playerZones['0']!.discard, ['hero-cost5'], 'the discard cost is paid');
+    assert.ok(G.playerZones['0']!.victory.includes('pile-bystander' as CardExtId), 'the Bystander is rescued');
+    assert.ok(G.playerZones['0']!.victory.includes(PRIMUS as CardExtId), 'Primus is defeated');
+    const discardIndex = G.messages.findIndex((message) => message.text === DISCARD_LINE);
+    const paidIndex = lineIndexStartingWith(G, 'Player 0 paid 2 Recruit to rescue a Bystander');
+    const foughtIndex = lineIndexStartingWith(G, 'Player 0 fought ');
+    assert.equal(discardIndex, 0, 'the discard line is first');
+    assert.ok(paidIndex > discardIndex, 'the rescue line follows the discard line');
+    assert.ok(foughtIndex > paidIndex, 'the fight line follows the rescue line');
+  });
+
+  it('T18b: a declined rescue on Primus logs the discard before the could-not-pay line', () => {
+    const moveContext = createMockMoveContext(zemoPrimusState(1));
+    fightVillain(moveContext, {
+      cityIndex: 0,
+      discardCardId: 'hero-cost5' as CardExtId,
+      payToRescueBystander: true,
+    });
+
+    const { G } = moveContext;
+    assert.ok(G.playerZones['0']!.victory.includes(PRIMUS as CardExtId), 'the fight still resolves');
+    assert.ok(!G.playerZones['0']!.victory.includes('pile-bystander' as CardExtId), 'no rescue');
+    assert.equal(G.messages[0]!.text, DISCARD_LINE, 'the discard line is first');
+    assert.equal(G.messages[1]!.text, COULD_NOT_PAY_LINE, 'the declined line follows it');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Variable-Attack passive — the fight gate charges the printed bonus (WP-841 / D-24774)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — variable-Attack passive (WP-841)', () => {
+  const HYDRO_MAN = 'co2e-villain-sinister-syndicate-hydro-man-00' as CardExtId;
+
+  /**
+   * Hydro-Man (dynamic base 4, +2 in the Sewers and Bridge) at City index 0 (Sewers),
+   * so the cost is 6.
+   *
+   * @param attack - Attack available to player 0.
+   */
+  function createHydroManState(attack: number): LegendaryGameState {
+    const gameState = createMockGameState({ city: [HYDRO_MAN, null, null, null, null] });
+    gameState.cardStats[HYDRO_MAN] = makeCardStatEntry({
+      fightCost: 4, fightCostMode: 'dynamic', fightCostBase: 4,
+    });
+    gameState.villainVariableAttack = {
+      [HYDRO_MAN]: { source: 'flat', attackPerUnit: 2, requireCitySpaces: ['sewers', 'bridge'] },
+    };
+    gameState.turnEconomy = makeTurnEconomy({ attack });
+    return gameState;
+  }
+
+  it('T16: refuses the fight at 5 available attack, leaving G unchanged (5 < 4 + 2)', () => {
+    const gameState = createHydroManState(5);
+    const before = JSON.stringify(gameState);
+    const moveContext = createMockMoveContext(gameState);
+    assert.doesNotThrow(() => fightVillain(moveContext, { cityIndex: 0 }));
+    assert.equal(JSON.stringify(moveContext.G), before, 'a refused fight makes no G change');
+  });
+
+  it('T16: defeats Hydro-Man at 6 available attack, spending exactly 6', () => {
+    const moveContext = createMockMoveContext(createHydroManState(6));
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes(HYDRO_MAN), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 6);
   });
 });

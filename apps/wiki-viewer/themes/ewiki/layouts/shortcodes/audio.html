@@ -1,0 +1,30 @@
+{{- /*
+  Audio player shortcode, promoted from E.
+
+  Usage:
+    {{< audio src="https://example.com/clip.mp3" caption="Main theme" >}}
+
+  why: the ewikis are JS-free apart from the search loader, and a native
+  <audio controls> element uses the browser's own controls, with no script
+  element at all, so it keeps that invariant while letting readers audition a
+  clip. A site's `unsafe = false` strips raw HTML written in markdown, but not
+  shortcode output, so a shortcode is the sanctioned way to emit a player.
+  Output is static, so two builds match.
+
+  Params:
+    src     (required): the URL of the audio file.
+    caption (optional): a short label under the player.
+*/ -}}
+{{- $src := .Get "src" -}}
+{{- if not $src -}}
+  {{- errorf "audio shortcode at %s is missing its src parameter. Add src=\"<audio file URL>\"." .Position -}}
+{{- end -}}
+<figure class="wiki-audio">
+  <audio controls preload="none">
+    <source src="{{ $src }}" type="audio/mpeg">
+    Your browser does not support the audio element. <a href="{{ $src }}">Download the clip</a>.
+  </audio>
+  {{- with .Get "caption" }}
+  <figcaption>{{ . }}</figcaption>
+  {{- end }}
+</figure>

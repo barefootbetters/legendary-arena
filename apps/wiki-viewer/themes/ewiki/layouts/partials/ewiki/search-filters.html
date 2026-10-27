@@ -1,0 +1,25 @@
+{{- /*
+  Core: search filter values for a regular page, rendered by single.html
+  only when params.ewiki.searchFilters is true (v1.3.0, off by default).
+
+  why: Pagefind reads data-pagefind-filter anywhere on the page, even inside
+  data-pagefind-ignore, so these hidden spans give search Kind, Status, and
+  Tag facets beside its keyword results, with no script of the theme's own
+  (D-24293). Kind is the page's top-level section, by title; a root page has
+  none. Status is the page's status: field, humanized ("partly-decided"
+  reads "Partly decided"). Tag is each of its tags, as written.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- if index $ewiki "searchfilters" -}}
+<div hidden data-pagefind-ignore class="search-filters">
+  {{- with .FirstSection }}{{ if not .IsHome }}
+  <span data-pagefind-filter="Kind:{{ partial "ewiki/short-title.html" . }}"></span>
+  {{- end }}{{ end }}
+  {{- with .Params.status }}
+  <span data-pagefind-filter="Status:{{ replace . "-" " " | humanize }}"></span>
+  {{- end }}
+  {{- range .Params.tags }}
+  <span data-pagefind-filter="Tag:{{ . }}"></span>
+  {{- end }}
+</div>
+{{- end -}}

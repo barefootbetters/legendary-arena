@@ -2,7 +2,7 @@
  * Tests for Nick Fury's Pure Fury — conditional free defeat (WP-682 / EC-719 / D-24499).
  *
  * Covers: countShieldHeroesInKo (S.H.I.E.L.D.-team Heroes in the GLOBAL KO pile, HYDRA
- * excluded); buildPureFuryTargets (printed attack STRICTLY less than the count; City
+ * excluded); buildPureFuryTargets (current Attack STRICTLY less than the count, D-24741; City
  * Villains + the Mastermind; a tactic-less Mastermind excluded; 0/1/≥2 cardinality); and
  * resolveDefeatChoice accepting the 'pure-fury' discriminant to defeat the chosen target
  * for FREE (no attack spent) through the shared defeat path. node:test + node:assert only.
@@ -10,9 +10,17 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { countShieldHeroesInKo, buildPureFuryTargets } from './heroEffects.execute.js';
-import { resolveDefeatChoice, hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
+import { countShieldHeroesInKo, buildPureFuryTargets, executeSingleEffect } from './heroEffects.execute.js';
+import {
+  resolveDefeatChoice,
+  hasPendingDefeatChoice,
+  buildDefeatWithBystanderTargets,
+  dispatchDefeatWithBystanderTarget,
+  isMastermindFreeDefeatTarget,
+} from '../moves/defeatChoice.resolve.js';
+import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import type { LegendaryGameState } from '../types.js';
+import { DARK_PORTAL_COUNT } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
@@ -219,5 +227,262 @@ describe('resolveDefeatChoice — pure-fury discriminant (WP-682 / D-24499)', ()
     assert.equal(G.turnEconomy.attack, 0, 'no attack was spent (free defeat)');
     assert.equal(G.turnEconomy.spentAttack, 0, 'no attack was spent (free defeat)');
     assert.equal(hasPendingDefeatChoice(G), false, 'the pending choice is front-popped');
+  });
+});
+
+describe('free defeats strike the Final Blow (D-24739)', () => {
+  const SHIELD_KO: CardExtId[] = ['sh-1', 'sh-2', 'sh-3'] as CardExtId[];
+  const SHIELD_TRAITS = {
+    'sh-1': { heroClass: 'tech', team: 'shield' },
+    'sh-2': { heroClass: 'covert', team: 'shield' },
+    'sh-3': { heroClass: 'ranged', team: 'shield' },
+  };
+
+  /**
+   * A Final Blow state with every Tactic defeated: the Mastermind's printed attack is 2,
+   * the KO pile holds 3 S.H.I.E.L.D. Heroes, and the City is empty unless `city` is given.
+   */
+  function finalBlowG(options: {
+    finalBlow?: boolean;
+    finalBlowPending?: boolean;
+    city?: (CardExtId | null)[];
+    mastermindBystanders?: CardExtId[];
+    pendingDefeatChoices?: LegendaryGameState['pendingDefeatChoices'];
+  }): LegendaryGameState {
+    const G = makeG({
+      ko: SHIELD_KO,
+      cardTraits: SHIELD_TRAITS,
+      city: options.city ?? [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(2), 'villain-a': staticFightStats(0) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: [],
+      ...(options.pendingDefeatChoices ? { pendingDefeatChoices: options.pendingDefeatChoices } : {}),
+    });
+    if (options.finalBlow !== undefined) {
+      (G as unknown as { finalBlow: boolean }).finalBlow = options.finalBlow;
+    }
+    G.mastermind = {
+      ...G.mastermind,
+      tacticsDefeated: ['t1', 't2', 't3', 't4'] as CardExtId[],
+      attachedBystanders: options.mastermindBystanders ?? [],
+      ...(options.finalBlowPending !== undefined ? { finalBlowPending: options.finalBlowPending } : {}),
+    };
+    return G;
+  }
+
+  it('Pure Fury targets the Mastermind while the final blow is pending', () => {
+    const G = finalBlowG({ finalBlow: true, finalBlowPending: true });
+    assert.deepStrictEqual(buildPureFuryTargets(G), [{ kind: 'mastermind', cardId: 'mm-base' }]);
+  });
+
+  it('a vanquished Mastermind (final blow already struck) is not a target', () => {
+    const G = finalBlowG({ finalBlow: true, finalBlowPending: false });
+    assert.deepStrictEqual(buildPureFuryTargets(G), []);
+  });
+
+  it('with Final Blow off, a tactic-less Mastermind stays excluded (unchanged)', () => {
+    const G = finalBlowG({});
+    assert.deepStrictEqual(buildPureFuryTargets(G), []);
+  });
+
+  it('a chosen Pure Fury final blow awards the Mastermind card for free and latches the win', () => {
+    const G = finalBlowG({
+      finalBlow: true,
+      finalBlowPending: true,
+      city: ['villain-a', null, null, null, null],
+      pendingDefeatChoices: [
+        {
+          choiceType: 'pure-fury',
+          playerID: '0',
+          targets: [
+            { kind: 'villain', cityIndex: 0, cardId: 'villain-a' as CardExtId },
+            { kind: 'mastermind', cardId: 'mm-base' as CardExtId },
+          ],
+        },
+      ],
+    });
+    resolveDefeatChoice(makeMoveContext(G) as never, { targetKind: 'mastermind' });
+
+    assert.ok(G.playerZones['0']!.victory.includes('mm-base' as CardExtId), 'the Mastermind card is in the Victory Pile');
+    assert.equal(G.mastermind.finalBlowPending, false, 'the final blow is no longer pending');
+    assert.equal(G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], 1, 'the win is latched for turn end');
+    assert.equal(G.turnEconomy.spentAttack, 0, 'no attack was spent (free defeat)');
+    assert.equal(G.city[0], 'villain-a', 'the un-chosen Villain is untouched');
+    assert.ok(G.messages.some((entry) => /struck the final blow and defeated/.test(entry.text)));
+  });
+
+  it('a one-target Pure Fury play strikes the final blow with no prompt', () => {
+    const G = finalBlowG({ finalBlow: true, finalBlowPending: true });
+    const context = makeMoveContext(G);
+    executeSingleEffect(G, context, '0', 'core/nick-fury/pure-fury#0' as CardExtId, { type: 'pure-fury' });
+
+    assert.equal(hasPendingDefeatChoice(G), false, 'no prompt for a single target');
+    assert.ok(G.playerZones['0']!.victory.includes('mm-base' as CardExtId));
+    assert.equal(G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING], 1);
+  });
+
+  it('Silent Sniper can strike the final blow on a Mastermind holding a Bystander, rescuing it', () => {
+    const G = finalBlowG({ finalBlow: true, finalBlowPending: true, mastermindBystanders: ['pile-bystander' as CardExtId] });
+    assert.deepStrictEqual(buildDefeatWithBystanderTargets(G), [{ kind: 'mastermind', cardId: 'mm-base' }]);
+    dispatchDefeatWithBystanderTarget(G, { currentPlayer: '0', turn: 1 }, { kind: 'mastermind', cardId: 'mm-base' as CardExtId }, { random: makeMockCtx().random });
+
+    const victory = G.playerZones['0']!.victory;
+    assert.ok(victory.includes('mm-base' as CardExtId));
+    assert.ok(victory.includes('pile-bystander' as CardExtId), 'the held Bystander is rescued');
+    assert.deepStrictEqual(G.mastermind.attachedBystanders, []);
+  });
+
+  it('isMastermindFreeDefeatTarget: tactic left, final blow pending, or neither', () => {
+    assert.equal(isMastermindFreeDefeatTarget(finalBlowG({ finalBlow: true, finalBlowPending: true })), true);
+    assert.equal(isMastermindFreeDefeatTarget(finalBlowG({ finalBlow: true, finalBlowPending: false })), false);
+    assert.equal(isMastermindFreeDefeatTarget(finalBlowG({})), false);
+    const withTactic = finalBlowG({});
+    withTactic.mastermind = { ...withTactic.mastermind, tacticsDeck: ['t5'] as CardExtId[] };
+    assert.equal(isMastermindFreeDefeatTarget(withTactic), true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24741 — Pure Fury compares the target's CURRENT Attack (Jeff ruling)
+// ---------------------------------------------------------------------------
+
+describe('buildPureFuryTargets reads the current Attack (D-24741)', () => {
+  /**
+   * N S.H.I.E.L.D. Heroes for the KO pile, with their traits.
+   *
+   * @param count How many S.H.I.E.L.D. Heroes.
+   * @returns The KO ids and the cardTraits rows.
+   */
+  function shieldKo(count: number): { ko: CardExtId[]; cardTraits: Record<string, { heroClass: string | null; team: string | null }> } {
+    const ko: CardExtId[] = [];
+    const cardTraits: Record<string, { heroClass: string | null; team: string | null }> = {};
+    for (let index = 0; index < count; index++) {
+      const cardId = `sh-${String(index)}` as CardExtId;
+      ko.push(cardId);
+      cardTraits[cardId] = { heroClass: 'tech', team: 'shield' };
+    }
+    return { ko, cardTraits };
+  }
+
+  /**
+   * Turns a test state into a Portals game with `portalCount` Dark Portals open.
+   *
+   * @param G The state to change.
+   * @param portalCount Dark Portals opened so far (1 = above the Mastermind).
+   */
+  function openDarkPortals(G: LegendaryGameState, portalCount: number): void {
+    G.selection = { ...G.selection, schemeId: 'core/portals-to-the-dark-dimension' };
+    G.counters = { ...G.counters, [DARK_PORTAL_COUNT]: portalCount };
+  }
+
+  it('tXTkG2Pardt: Loki printed 10 with the Mastermind Dark Portal is 11, not below 11 S.H.I.E.L.D. Heroes', () => {
+    const G = makeG({
+      ...shieldKo(11),
+      city: [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(10) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: ['t1'],
+    });
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [{ kind: 'mastermind', cardId: 'mm-base' }], 'printed 10 < 11 without a portal');
+    openDarkPortals(G, 1);
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [], '10 + 1 Dark Portal = 11 is not less than 11');
+    G.ko = shieldKo(12).ko;
+    G.cardTraits = shieldKo(12).cardTraits;
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [{ kind: 'mastermind', cardId: 'mm-base' }], '11 < 12');
+  });
+
+  it('a Villain standing in a Dark Portal space counts its +1', () => {
+    const G = makeG({
+      ...shieldKo(3),
+      city: ['villain-a', null, null, null, 'villain-b'],
+      cardStats: { 'villain-a': staticFightStats(2), 'villain-b': staticFightStats(2) },
+    });
+    // why: two Dark Portals → the Mastermind and City space 4 (the Bridge) are portal'd.
+    openDarkPortals(G, 2);
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [
+      { kind: 'villain', cityIndex: 0, cardId: 'villain-a' },
+    ], 'villain-b is 2 + 1 = 3, not below 3');
+  });
+
+  it('a dynamic Villain counts its captured Heroes, not just its printed base', () => {
+    const G = makeG({
+      ...shieldKo(3),
+      city: ['villain-dyn', null, null, null, null],
+      cardStats: {
+        'villain-dyn': { attack: 0, recruit: 0, cost: 0, fightCost: 0, fightCostMode: 'dynamic', fightCostBase: 1 },
+        'captured-hero': { attack: 0, recruit: 0, cost: 2, fightCost: 0, fightCostMode: 'static', fightCostBase: 0 },
+      },
+    });
+    G.villainAttachedHeroes = { 'villain-dyn': ['captured-hero' as CardExtId] };
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [], 'base 1 + captured cost 2 = 3, not below 3');
+  });
+
+  it('a "-N attack" reduction this turn lowers the Mastermind into range', () => {
+    const G = makeG({
+      ...shieldKo(3),
+      city: [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(4) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: ['t1'],
+    });
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [], 'printed 4 is not below 3');
+    G.turnEconomy = { ...G.turnEconomy, fightCostReductions: [{ target: 'mastermind', amount: 2, sourceCardId: 'storm-card' as CardExtId }] };
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [{ kind: 'mastermind', cardId: 'mm-base' }], '4 - 2 = 2 < 3');
+  });
+
+  it('playing Pure Fury with only a portal-boosted Mastermind logs that nothing is weak enough', () => {
+    const G = makeG({
+      ...shieldKo(11),
+      city: [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(10) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: ['t1'],
+    });
+    openDarkPortals(G, 1);
+    executeSingleEffect(G, makeMoveContext(G), '0', 'core/nick-fury/pure-fury#0' as CardExtId, { type: 'pure-fury' });
+    assert.deepStrictEqual(G.mastermind.tacticsDefeated, [], 'no Tactic was defeated');
+    assert.ok(
+      G.messages.some((entry) => entry.text.includes('found no Villain or Mastermind weak enough for Pure Fury')),
+      'the blocked line explains why',
+    );
+  });
+});
+
+describe('WP-818 buildPureFuryTargets — Baron Zemo reads the resolving player (D-24752)', () => {
+  /**
+   * A Zemo state (printed 9, a tactic left) with 10 S.H.I.E.L.D. Heroes in the KO pile.
+   *
+   * @param victory Player 0's Victory Pile.
+   * @returns The state.
+   */
+  function makeZemoPureFuryG(victory: CardExtId[]): LegendaryGameState {
+    const ko: CardExtId[] = [];
+    const cardTraits: Record<string, { heroClass: string | null; team: string | null }> = {};
+    for (let index = 0; index < 10; index++) {
+      const cardId = `sh-${String(index)}` as CardExtId;
+      ko.push(cardId);
+      cardTraits[cardId] = { heroClass: 'tech', team: 'shield' };
+    }
+    const G = makeG({
+      ko,
+      cardTraits,
+      city: [null, null, null, null, null],
+      cardStats: { 'mm-base': staticFightStats(9) },
+      mastermindBaseCardId: 'mm-base',
+      mastermindTacticsDeck: ['t1'],
+    });
+    G.selection = { ...G.selection, mastermindId: 'ca75/baron-heinrich-zemo' };
+    G.playerZones['0']!.victory = victory;
+    return G;
+  }
+
+  it('T8b: a Savior sees the Mastermind as a target (9 < 10)', () => {
+    const G = makeZemoPureFuryG(['pile-bystander', 'pile-bystander', 'pile-bystander']);
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), [{ kind: 'mastermind', cardId: 'mm-base' }]);
+  });
+
+  it('T8b: a non-Savior does not (9 + 9 = 18 is not below 10)', () => {
+    const G = makeZemoPureFuryG(['pile-bystander']);
+    assert.deepStrictEqual(buildPureFuryTargets(G, '0'), []);
   });
 });

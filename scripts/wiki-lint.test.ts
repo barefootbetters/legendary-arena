@@ -35,7 +35,7 @@ function buildPage(options: { frontMatterLines?: string[]; body?: string } = {})
     '  - other-page.md',
     'status: canonical',
     'source:',
-    '  - C:\\pcloud\\BB\\DEV\\legendary-arena\\wiki\\example-page.md (this page — https://ewiki.legendary-arena.com/example-page/)',
+    '  - C:\\dev\\legendary-arena\\wiki\\example-page.md (this page — https://ewiki.legendary-arena.com/example-page/)',
     '  - ../docs/ai/ARCHITECTURE.md#section-2',
     'last-reviewed: 2026-09-25',
   ];

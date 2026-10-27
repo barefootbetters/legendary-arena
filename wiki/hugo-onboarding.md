@@ -14,7 +14,7 @@ related:
   - workspace-map.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-onboarding.md (this page — https://ewiki.legendary-arena.com/hugo-onboarding/)
+  - C:\dev\legendary-arena\wiki\hugo-onboarding.md (this page — https://ewiki.legendary-arena.com/hugo-onboarding/)
   - C:\www\legendary-arena-com\hugo.toml
   - C:\www\legendary-arena-com\package.json
   - C:\www\legendary-arena-com\.dev.vars.example
@@ -27,7 +27,7 @@ last-reviewed: 2026-06-20
 
 | Repo | Base URL (local) | Site |
 |---|---|---|
-| Engine | `C:\pcloud\BB\DEV\legendary-arena\` | `ewiki.legendary-arena.com` |
+| Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
 
 This page is about the **Marketing** repo. All file paths point at
@@ -213,7 +213,7 @@ C:\www\legendary-arena-com\
 ├── hugo.toml              # site config: params, menus, markup, Snipcart key, Schema
 ├── content\               # the pages (Markdown + front matter)
 │   ├── _index.md          # home (rendered by layouts/index.html)
-│   ├── about\, brand\, posts\, shop\, tournaments\, leaderboard\, diorama\
+│   ├── about\, brand\, blog\, shop\, tournaments\, leaderboard\, diorama\
 ├── layouts\               # template overrides (shadow the PaperMod theme)
 │   ├── baseof.html        # page skeleton
 │   ├── index.html         # home override (hero, tournaments, featured gear)
@@ -266,25 +266,23 @@ the source it was exported from is not.** `static\` is served verbatim,
 so anything parked there ships to production and counts against page
 weight even if nothing links to it.
 
-**The two repos do not live in the same place, and the marketing repo
-has the safer of the two locations.**
+**Both repos live off the pCloud sync drive.**
 
 | Repo | Path | On the pCloud sync drive? |
 |---|---|---|
 | Marketing (`legendary-arena-website`) | `C:\www\legendary-arena-com\` | **No — this is the correct state** |
-| Engine (`legendary-arena`) | `C:\pcloud\BB\DEV\legendary-arena\` | Yes — a known hazard |
+| Engine (`legendary-arena`) | `C:\dev\legendary-arena\` | **No** — moved off pCloud 2026-10-17 |
 
 **A git checkout does not belong on a synced drive.** pCloud syncs the
 `.git` directory itself, so refs can shift underneath a running session:
 observed symptoms include phantom uncommitted changes that resolve
 themselves, `HEAD` moving between branches mid-session, untracked draft
 files disappearing outright, and — worst — a commit landing on another
-session's branch and reaching an unrelated PR. The engine repo is
-scheduled to move off pCloud for exactly this reason; the marketing repo
-already sits where that move is headed.
+session's branch and reaching an unrelated PR. The engine repo moved
+off pCloud on 2026-10-17 for exactly this reason; the marketing repo
+was already off it.
 
-So do **not** relocate the marketing checkout into `C:\pcloud\` to
-"match" the engine repo. Its durability comes from pushing to GitHub,
+So do **not** relocate either checkout into `C:\pcloud\`. Its durability comes from pushing to GitHub,
 not from file sync — push early rather than leaving work in the working
 directory.
 
@@ -384,8 +382,8 @@ below). The commit **prefix** matters — it's hook-enforced.
 
 **Publish a blog post**
 1. `pwsh scripts/git/new-post.ps1 -Slug "<kebab-case-slug>"` scaffolds
-   `content\posts\YYYY-MM-DD-<slug>.md` from the archetype.
-2. Write the post; drop images under `static\images\posts\<slug>\`.
+   `content\blog\YYYY-MM-DD-<slug>.md` from the archetype.
+2. Write the post; drop images under `static\images\blog\<slug>\`.
 3. Commit prefix: `POST: <YYYY-MM-DD — summary>` (content lane only).
 
 **Edit the newsletter form**

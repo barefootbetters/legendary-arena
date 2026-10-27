@@ -194,20 +194,31 @@ const OPERATOR_OPS_TOOLCHAIN = [
 
 // why: some vendor accounts appear in no manifest — render.yaml and
 // domains.json can't see them — so the Infrastructure-services table would
-// silently omit them. List them here. Never put ping URLs, IPs, or resource IDs
-// in this block: the generated page is public, and a ping URL is a credential.
+// silently omit them. List them here. Never put ping URLs, IPs, hostnames, or
+// resource IDs in this block: the generated page is public, and a ping URL is a
+// credential.
 const CURATED_INFRASTRUCTURE_SERVICES = [
+  {
+    name: 'Production API droplet (game server + PostgreSQL)',
+    provider: 'DigitalOcean',
+    kind: 'Self-hosted droplet, `s-2vcpu-4gb` + 2 GB swap (~$24/mo), `sfo3`, Ubuntu 24.04',
+    url:
+      'Serves `api.legendary-arena.com` through Cloudflare since the 2026-10-12 cutover ' +
+      '(D-24707). Provisioned by the lab repo\'s numbered `infra/scripts/NN-*.ps1`. ' +
+      'Posture and sizing: "Production host & sizing" below.',
+  },
   {
     name: 'Healthchecks.io (dead-man\'s switch)',
     provider: 'Healthchecks.io',
     kind: 'Uptime + scheduled-job monitoring (free Hobbyist plan, $0)',
     url:
-      'Two checks for the self-hosted API droplet (Render → DigitalOcean migration): ' +
+      'Three checks for the self-hosted API droplet (D-24707 §6): ' +
       '`la-droplet-monitor` (5-min period, 10-min grace; pinged by the lab repo\'s ' +
-      '`60-monitor.ps1` on-box health / disk / backup-age check) and `la-droplet-backup` ' +
-      '(cron `17 9 * * *` UTC, 2-h grace; pinged by `50-backup.ps1`). Alerts on a ' +
-      '`/fail` ping or a missing ping. Ping URLs live only in the droplet\'s root-only ' +
-      '`/etc/la/*.env`.',
+      '`60-monitor.ps1` on-box health / disk / backup-age check), `la-droplet-backup` ' +
+      '(cron `17 9 * * *` UTC, 2-h grace; pinged by `50-backup.ps1`), and ' +
+      '`la-droplet-pcloud` (same schedule; the pCloud mirror only, so a mirror failure ' +
+      'never reads as a failed backup). Alerts on a `/fail` ping or a missing ping. ' +
+      'Ping URLs live only in the droplet\'s root-only `/etc/la/*.env`.',
   },
   {
     name: 'UptimeRobot (external uptime check)',
@@ -221,45 +232,45 @@ const CURATED_INFRASTRUCTURE_SERVICES = [
   },
 ];
 
-// why: the Infrastructure-services table derives the managed-Postgres row from
-// render.yaml (it shows the `plan` string), but it can't capture WHY the DB is
-// sized/configured the way it is, or the operational history a future operator
-// needs. This curated block records that knowledge — the same "facts a future
-// operator needs that no manifest declares" role OPERATOR_OPS_TOOLCHAIN plays
-// for machine-local tools. Update it when the managed DB's sizing, network
-// posture, or storage policy materially changes. Sourced from the 2026-07-22
-// DB-stability arc (PRs #920/#930/#931/#932/#933/#935).
-const MANAGED_DATABASE_OPS_NOTES = {
-  instance: 'Pro-4gb (4 GB RAM / 1 CPU) — Render managed PostgreSQL 18, Oregon (US West). Bumped from Basic-1gb on 2026-07-23 (#958).',
+// why: no manifest describes the production database's posture — where it
+// listens, how it is backed up, what a loss costs, and the operational history
+// a future operator needs. This curated block records that knowledge — the same
+// "facts a future operator needs that no manifest declares" role
+// OPERATOR_OPS_TOOLCHAIN plays for machine-local tools. Update it when the
+// database's host, network posture, backup, or storage policy materially
+// changes. Sourced from D-24707 (droplet cutover), D-24711 (`/health/db`,
+// backup integrity), and docs/ops/DISASTER_RECOVERY.md §0.
+const DATABASE_OPS_NOTES = {
+  instance: 'PostgreSQL 18 on the production droplet, co-located with the server and listening on `localhost` only (lab `30-postgres.ps1`, D-24707 §1). Until 2026-10-12 it was Render managed Postgres `pro-4gb`.',
   notes: [
-    'Upgraded 2026-07-22 from Basic-256mb (256 MB / 0.1 CPU): the smaller instance repeatedly OOM-crashed into recovery mode ("the database system is in recovery mode" / "not yet accepting connections") under the real workload (bgio match blobs plus leaderboard / dashboard / competitive queries), killing in-flight autoplay + bot-ally matches. Storage stayed ~56% of 1 GB throughout, so the constraint was RAM/CPU, NOT disk.',
-    'BLUEPRINT-MANAGED: `plan`, `ipAllowList`, and `storageAutoscalingEnabled` all live in render.yaml `databases:`. A dashboard-only change to any of them is REVERTED on the next blueprint sync — every managed-DB setting must be set in render.yaml to be durable.',
-    '`ipAllowList: ["0.0.0.0/0"]` = public inbound, credential-gated: a connection attempt is accepted from anywhere but still needs the DB password. #933 briefly made it internal-only (`ipAllowList: []`), but that locked the operator out of the External Database URL during an incident, exactly when DB access was needed, so #941 re-allowed public inbound (the rationale comment lives on the render.yaml `ipAllowList` line). The server still connects via the internal hostname; operator tooling (a local `psql`, the db-backup workflow `pg_dump`) uses the External Database URL. To narrow it, replace `0.0.0.0/0` with the operator address as a `/32`, which needs updating whenever a residential IP changes.',
-    '`storageAutoscalingEnabled: true` grows the disk +50% at 90% full. ROW retention IS handled (this note was stale): the match-reaper (WP-327, `apps/server/src/db/matchReaper.js`) deletes finished matches 1h after gameover — once the WP-335 capture-harvester has preserved the durable replay/competitive artifact per the D-24119 carve-out — and abandoned matches after 24h. What NEITHER the reaper NOR autoscaling does is shrink the table FILE: Postgres keeps deleted-row space as reusable dead tuples (mostly in TOAST, where the jsonb match blobs live), so `pg_total_relation_size(\'bgio.matches\')` can be hundreds of MB with only a few live rows. Reclaim that bloat to disk with a one-shot `VACUUM FULL` — see the operator runbook `docs/ops/RUNBOOK-db-storage-reclaim.md` (worked example 2026-07-24: 346MB → 41MB, ~305MB of TOAST bloat reclaimed). NOT a scheduled chore on `pro-4gb` + autoscaling; reclaim only when you want the space back.',
-    "Render's Connection Pool (PgBouncer) is ENABLED on the instance, but the app stays on the DIRECT Internal Database URL — with 4 GB RAM there is no connection-memory pressure to justify PgBouncer transaction-pooling (which can break prepared statements / session state). Route the app through the pool URL only if real connection pressure ever appears.",
-    'Fix arc (all 2026-07-22): #920 added `pool.on("error")` (a band-aid that stopped the process crash but the DB kept killing idle clients); #930 gave the autoplay loop a bounded transient-read retry (`resilientFetch`, reads-only); #931 de-noised the pool error log (it was dumping a ~40-line pg Connection object per idle-client kill); #932 bumped the plan to basic-1gb (root cause); #933 restricted inbound to internal-only (later reverted by #941 — see the ipAllowList note); #935 enabled storage autoscaling.',
-    'DIAGNOSTIC LESSON: the autoplay guest-safe `abortReason` ("The bot loop stopped after an unexpected server error", D-24037) HIDES the raw exception — it is logged only server-side as `[autoplay] match <id> bot loop failed: <msg>`. To diagnose an autoplay/bot abort, pull that Render log line; the engine-runner harness cannot reproduce it (it bypasses boardgame.io).',
+    'NO MANAGED BACKUP LAYER, NO POINT-IN-TIME RECOVERY: Render\'s snapshots and PITR ended with Render. Every night at 09:17 UTC the `la-backup` timer runs the lab `50-backup.ps1`: `pg_dump -Fc`, proven readable (`pg_restore --list`) and hashed before upload (D-24711), into the private R2 bucket `legendary-arena-db-backups` (the D-24236 key layout and GFS retention), then mirrored permanently to pCloud. Worst-case data loss is everything since the last nightly dump (up to ~24 h). Losing the droplet loses the live database, so a lost droplet is DR-01 on a fresh droplet, not just DR-02 (`docs/ops/DISASTER_RECOVERY.md` §0, §5).',
+    'NETWORK: no public inbound to the database. Postgres listens on `localhost` only and UFW admits public 443 only from Cloudflare, so operator access is `psql` over SSH on the box. There is no External Database URL, IP allow-list, or blueprint to keep in sync; Render\'s `ipAllowList` and PgBouncer settings retired with it. The app connects directly, with no connection pooler.',
+    'ROW retention: the match-reaper (WP-327, `apps/server/src/db/matchReaper.js`) deletes finished matches 1h after gameover — once the WP-335 capture-harvester has preserved the durable replay/competitive artifact per the D-24119 carve-out — and abandoned matches after 24h. Nothing shrinks the table FILE: Postgres keeps deleted-row space as reusable dead tuples (mostly in TOAST, where the jsonb match blobs live), so `pg_total_relation_size(\'bgio.matches\')` can be hundreds of MB with only a few live rows. Reclaim it with a one-shot `VACUUM FULL` — the lab `52-vacuum-reclaim.ps1` (run with `la-server` stopped) and the runbook `docs/ops/RUNBOOK-db-storage-reclaim.md` (worked example 2026-07-24: 346MB → 41MB). Disk use is watched by `60-monitor.ps1`; reclaim only when you want the space back.',
+    'LIVENESS: `GET /health/db` runs `SELECT 1` through the shared pool, bounded at 3 s (D-24711). UptimeRobot and `60-monitor.ps1` both watch it, so a dead database alerts even though the process-only `/health` stays 200.',
+    'History (until 2026-10-12, on Render): the 2026-07-22 DB-stability arc left code that still guards the pool — #920 `pool.on("error")`, #930 a bounded transient-read retry in the autoplay loop (`resilientFetch`, reads-only), #931 a de-noised pool error log. Its plan bumps (#932, #958) and network/storage settings (#933, #935, #941) ended with Render.',
+    'DIAGNOSTIC LESSON: the autoplay guest-safe `abortReason` ("The bot loop stopped after an unexpected server error", D-24037) HIDES the raw exception — it is logged only server-side as `[autoplay] match <id> bot loop failed: <msg>`. To diagnose an autoplay/bot abort, pull that line from `journalctl -u la-server` on the droplet; the engine-runner harness cannot reproduce it (it bypasses boardgame.io).',
   ],
 };
 
-// why: the Infrastructure-services table lists Render services but cannot express
-// the ACCOUNT/BILLING model or WHY each line item is sized the way it is — the
-// knowledge a future operator needs to reason about cost and scaling. This
-// curated block records it, mirroring MANAGED_DATABASE_OPS_NOTES' role. Update it
-// when a Render plan/instance-type or the workspace tier materially changes.
-// Sourced from the 2026-07-23 server-sizing arc (#948), the 2026-07-23/25 plan
-// bumps (#958 DB, #1014 web), and the Aug/Sep 2026 Render invoices, which
-// bill `pro` $85.00 + `pro-4gb` $55.30.
-const RENDER_ACCOUNT_AND_SIZING_NOTES = {
+// why: the Infrastructure-services table lists vendor accounts but cannot
+// express WHAT production runs on, how it is reached and deployed, what it
+// costs, or when to resize — the knowledge a future operator needs to reason
+// about cost and scaling. This curated block records it, mirroring
+// DATABASE_OPS_NOTES' role. Update it when the droplet's size, edge posture, or
+// deploy path materially changes. Sourced from D-24707 (cutover), D-24708
+// (deploy gate), lab D-002 (sizing), engine #2804 / lab #36 (loopback bind),
+// lab #37 (Cloudflare UFW refresh), and docs/ops/DISASTER_RECOVERY.md.
+// Public page: no IPs, droplet hostnames, ping URLs, or resource IDs here.
+const PRODUCTION_HOST_AND_SIZING_NOTES = {
   summary:
-    'Render bills on TWO INDEPENDENT axes: (1) a flat, team-level **Workspace plan**, and (2) per-service **instance types** (compute), billed per service on ANY workspace. They are separate — running a larger instance type does NOT require a paid workspace. The project pays for three Render line items: the Workspace, the game server (a web service), and the managed database.',
-  webServiceInstanceTypes:
-    'Web-service instance types (the render.yaml `plan:` value → CPU / RAM / ~monthly compute): `starter` 0.5 / 512 MB / $7 · `standard` 1 / 2 GB / ~$25 · `pro` 2 / 4 GB / ~$85 · `pro plus` 4 / 8 GB / ~$175. (Postgres uses a SEPARATE instance-type scale: `basic-1gb` = 0.5 CPU / 1 GB / $19 · `pro-4gb` = 1 CPU / 4 GB / $55.30 as billed.)',
+    'Production — `api.legendary-arena.com` (`apps/server`) and its PostgreSQL — runs on ONE self-hosted DigitalOcean droplet behind Cloudflare since the 2026-10-12 cutover (D-24707), provisioned by the numbered `infra/scripts/NN-*.ps1` in the `legendary-arena-lab` repo. Until 2026-10-12 it ran on Render (web service `pro` + managed Postgres `pro-4gb`, ~$146/mo); Render was deleted on 2026-10-22, after the D-24707 §8 rollback window.',
+  sizing:
+    'Droplet: `s-2vcpu-4gb` (2 vCPU / 4 GB / 80 GB disk, ~$24/mo) plus a 2 GB swapfile (`vm.swappiness=10`), `sfo3`, Ubuntu 24.04 (lab D-002). Measured before cutover: ~200 MB RAM and under 1% of 2 CPUs for the server, ~1 GB for the database. Resize trigger: memory holding above ~70%, CPU above ~50% under real traffic, or swap in use outside deploys → resize CPU and RAM only to 4 vCPU / 8 GB (~$48/mo), keeping the disk so a later downsize stays possible (lab D-002).',
   notes: [
-    'WORKSPACE — **Hobby ($0/mo flat)**. The free personal tier; kept deliberately. Instance-type compute is billed per-service regardless of workspace, and the Hobby→Pro ($25/mo flat) difference is features we do not need yet (horizontal autoscaling, preview environments, audit logs, SOC2) — NOT access to larger instances. Caveat: Hobby includes 500 pipeline (build) minutes/mo; a burst of PR merges (each runs `pnpm install && pnpm -r build && migrate`) can exceed it and bill the overage. Observed: the builds line billed a flat $5.00 in both Aug 2026 (41 min) and Sep 2026 (6 h 42 m).',
-    'SERVER — web service `legendary-arena-server`, **`pro` (2 CPU / 4 GB, $85.00/mo as billed Aug + Sep 2026)**. Bumped `standard` → `pro` on 2026-07-25 (#1014): the dashboard was already on Pro while render.yaml still said `standard`, a live downgrade risk on the next blueprint sync, so render.yaml was brought into agreement. Before that it was upgraded 2026-07-23 (#948) to `standard` (1 CPU / 2 GB, ~$25) from the implicit default `starter` (0.5 CPU / 512 MB, $7): the service had NO `plan:` field, so Render silently ran it on `starter`. That half-CPU could not carry a real-time authoritative WebSocket server that ALSO runs the bot-ally drivers (250 ms polling per live match), the "Watch Bot Play" autoplay loops, and four cron loops (legends publisher / match reaper / capture harvester) — the instance pegged at load ~7, causing health-check restarts (a live match hit the D-24230 revival cap of 3 in <1 h with NO deploys), a crawling bot (~1 turn / 10 min), and the recurring client-desync freezes. `plan:` is BLUEPRINT-MANAGED: it MUST live in render.yaml (a dashboard change reverts on sync), and a plan change must ALSO be set in the dashboard (it does not auto-apply from a blueprint push) — keep the two in agreement. Next lever if `pro` saturates under real concurrency: `pro plus` (4 CPU / 8 GB, ~$175).',
-    'DATABASE — managed Postgres `legendary-arena-db`, **`pro-4gb` (1 CPU / 4 GB, $55.30/mo as billed Aug + Sep 2026, storage included)**. Bumped `basic-1gb` → `pro-4gb` on 2026-07-23 (#958) after the DB crashed hard under load (`ECONNREFUSED :5432` plus read-only recovery windows) and took the game server down with it; `basic-1gb` (0.5 CPU / 1 GB) was itself the 2026-07-22 OOM fix from `basic-256mb` (#932), detailed in the "Managed database" block below. render.yaml names `basic-4gb` (2 CPU / 4 GB, ~$75) as the next step if it destabilises under real concurrency.',
-    'ROOT-CAUSE vs SYMPTOM: the client-side resync fixes (reconnect-resync D-24232/#944, spectator-staleness + tab-focus D-24234/#947) and the server revival-cap reset (D-24233/#945) RECOVER from the desync freezes; the server sizing (#948) removes the CPU starvation that GENERATED them. Verify the fix in the Render **Events tab** (restart frequency → ~0 between real deploys) and the **CPU metric** (load well under 1×/core).',
+    'EDGE — Cloudflare proxies `api.` (an A record). Nginx on the droplet terminates TLS with a Cloudflare Origin Certificate; SSL Full (strict) applies to the api hostnames through a Configuration Rule while the rest of the zone stays on Full. UFW admits 443 only from Cloudflare\'s published ranges, refreshed weekly by the lab `22-cloudflare-ufw-refresh.ps1` timer (a failed refresh alerts through `60-monitor.ps1`). Port 80 only answers a 301 to HTTPS. Node listens on `127.0.0.1:3000` (`LISTEN_HOST`, engine #2804 / lab #36), so the app port is unreachable off the box, and `60-monitor.ps1` fails if it ever listens beyond loopback.',
+    'SERVICE — the server is the systemd unit `la-server`. Production secrets live in the droplet\'s root-only `/etc/la/.env` (mode 600), verified by key name only; `render.yaml` stays in the repo only as the inventory of `sync: false` key names and no longer governs production (D-24707 §3). `LEGENDS_PUBLISHER_ENABLED=true` is set only on the box holding the live database, because the publisher writes production R2 from its own database (D-24707 §7).',
+    'DEPLOYS — after CI passes on a push to `main`, `.github/workflows/deploy-server.yml` ships the exact tested commit through the restricted `la-deploy` gate on the droplet (D-24708). The CI key can only run `la-deploy status` or `deploy <40-hex>`, and the gate refuses a commit not on `origin/main` or older than the live one, so a leaked key can only redeploy code already on `main`. It deploys only when a server-relevant file changed (the ignore list is render.yaml\'s old `buildFilter` plus `.github/` and `.claude/`). Each deploy builds into its own release directory (`/opt/la-app/releases/<sha>`) and restarts `la-server` behind `la-server-standby` on :3001, which Nginx falls back to, so a deploy fails no request (lab #39/#40, 2026-10-15). Rollback: the lab `40-app-deploy.ps1 -Rollback` switches back to the previous release with no rebuild; an older commit is a hand deploy with `DEPLOY_REF=<sha>`.',
+    'WHERE THE SERVER CHECKS LIVE — external smoke: `scripts/Test-ApiDeployment.ps1` (the API surface through `api.`, Cloudflare refusing a client-supplied `cf-connecting-ip`, and with `-OriginIp` the origin lock: 443 and 3000 unreachable directly, port 80 only redirects). On-box: the lab `infra/scripts/60-monitor.ps1`, run every 5 min by the `la-health` timer (`/health`, `/health/db`, disk, backup age, loopback bind), pinging `la-droplet-monitor`. Recovery validation: `docs/ops/DISASTER_RECOVERY.md` §6, a binary checklist by business capability. Capacity: `free -m` and `uptime` on the box against the resize trigger above.',
   ],
 };
 
@@ -2076,6 +2087,12 @@ async function renderReport({
   lines.push(`title: Architecture & Library Adoption Inventory`);
   lines.push(`type: Generated`);
   lines.push(`status: evergreen`);
+  // why: this page's body links are written from the repo root (docs/...,
+  // packages/...), not from wiki/. links_from: repo-root tells the shared ewiki
+  // theme's link hook to send each one to GitHub as written, never to look it
+  // up as a page. The key replaces the by-file-name case for this page in the
+  // engine's old link hook (D-24728 Consequences, D-24782).
+  lines.push(`links_from: repo-root`);
   lines.push(`tags:`);
   lines.push(`  - generated`);
   lines.push(`  - architecture`);
@@ -2111,7 +2128,8 @@ async function renderReport({
   lines.push(`- Hugo apps (\`apps/*/hugo.toml\` present, no \`package.json\`):`);
   lines.push(`  pinned binary version from \`apps/<name>/.hugo-version\`,`);
   lines.push(`  source page count from the projection input directory, and`);
-  lines.push(`  deploy target verified against \`render.yaml\`.`);
+  lines.push(`  deploy target verified against \`apps/wiki-viewer/wrangler.jsonc\``);
+  lines.push(`  (an assets-only Cloudflare Worker, D-24690).`);
   lines.push('');
   lines.push(await renderApplicationStacksSection(manifests, lockfilePackages));
   lines.push('');
@@ -2126,8 +2144,9 @@ async function renderReport({
 
   // why: infrastructure services is the "where does it run" companion to
   // deployment topology's "what domain points where." Derived from
-  // render.yaml (Render services + databases) and docs/ops/domains.json
-  // (Cloudflare services). Answers the question a new engineer asks:
+  // docs/ops/domains.json (Cloudflare services), render.yaml (the retired
+  // Render blueprint), and curated vendor rows (the production droplet,
+  // monitors). Answers the question a new engineer asks:
   // "what vendor accounts and managed services does this project depend on?"
   lines.push(`## Infrastructure services`);
   lines.push('');
@@ -2602,8 +2621,9 @@ async function renderReport({
 /**
  * Reads the exact Node version the repo pins for builds.
  *
- * why: separate from `engines.node`. The pin governs CI, Render, and Cloudflare
- * Pages; the engines range only states a minimum. Reported as a distinct row so
+ * why: separate from `engines.node`. The pin governs CI and Cloudflare Pages
+ * (the droplet's lab `10-node.ps1` pins the same version itself); the engines
+ * range only states a minimum. Reported as a distinct row so
  * the two are never conflated.
  *
  * @returns {string} The pinned version, or a marker when the file is absent.
@@ -2652,7 +2672,8 @@ function renderRuntimeSection(manifests, aggregate) {
   lines.push('');
   // why (WP-400 / D-24205): `engines.node` is a FLOOR describing what the code
   // requires; `.node-version` is the exact version every environment BUILDS
-  // with — CI, Render, and all four Cloudflare Pages projects read it. An
+  // with — CI and the Cloudflare Pages projects read it (the droplet's lab
+  // `10-node.ps1` pins the same version separately). An
   // inventory that reports only the floor answers "what will run this" but not
   // "what built this deploy", which is the question that mattered when two
   // Pages projects silently resolved 22.22.0 and 22.16.0 from the same commit.
@@ -2921,8 +2942,10 @@ async function renderDeploymentTopologySection() {
 
 /**
  * Render the "Infrastructure services" section: managed services the
- * project depends on, derived from `render.yaml` (Render web services
- * + databases) and `docs/ops/domains.json` (Cloudflare services).
+ * project depends on, derived from `docs/ops/domains.json` (Cloudflare
+ * services), `render.yaml` (the retired Render blueprint: what is still
+ * on Render through the rollback window), and the curated
+ * `CURATED_INFRASTRUCTURE_SERVICES` (the production droplet and monitors).
  *
  * This is the "where does it run" companion to Deployment topology's
  * "what domain points where." The two tables share source data but cut
@@ -2937,6 +2960,11 @@ async function renderInfrastructureServicesSection() {
   const services = [];
 
   // ── Render services (from render.yaml) ──────────────────────────────
+  // why: render.yaml no longer governs production (D-24707 §3) but stays in
+  // the repo, and its services still exist on Render through the rollback
+  // window. Keep listing them, labelled as retired, so the table never
+  // presents Render as the production host; drop this when Render is deleted.
+  const renderRetiredLabel = 'retired from production 2026-10-12 (D-24707), kept for rollback until ~2026-10-20';
   const renderYamlPath = join(REPO_ROOT, 'render.yaml');
   if (existsSync(renderYamlPath)) {
     const renderRaw = await readFile(renderYamlPath, 'utf8');
@@ -2979,8 +3007,8 @@ async function renderInfrastructureServicesSection() {
       // accurately. Node web services, static sites, and worker
       // services have different operational profiles.
       const runtimeLabel = serviceType === 'static'
-        ? 'Render Static Site'
-        : `Render Web Service`;
+        ? `Render Static Site — ${renderRetiredLabel}`
+        : `Render Web Service — ${renderRetiredLabel}`;
 
       services.push({
         name: serviceName,
@@ -3006,7 +3034,7 @@ async function renderInfrastructureServicesSection() {
         services.push({
           name: dbName,
           provider: 'Render',
-          kind: `Managed PostgreSQL (${dbPlan})`,
+          kind: `Managed PostgreSQL (${dbPlan}) — ${renderRetiredLabel}`,
           url: '_internal (connection string via env)_',
         });
       }
@@ -3091,8 +3119,10 @@ async function renderInfrastructureServicesSection() {
 
   // ── Render table ────────────────────────────────────────────────────
   lines.push(`Managed services the project depends on, derived from`);
-  lines.push(`\`render.yaml\` and \`docs/ops/domains.json\`, plus vendor accounts`);
-  lines.push(`no manifest declares (curated in \`CURATED_INFRASTRUCTURE_SERVICES\`). Answers "what`);
+  lines.push(`\`docs/ops/domains.json\` and \`render.yaml\` (the retired Render blueprint,`);
+  lines.push(`listed until Render is deleted), plus vendor accounts no manifest`);
+  lines.push(`declares (curated in \`CURATED_INFRASTRUCTURE_SERVICES\`), including the`);
+  lines.push(`DigitalOcean droplet that runs production. Answers "what`);
   lines.push(`vendor accounts and managed services does this project`);
   lines.push(`depend on?" — distinct from Deployment topology, which`);
   lines.push(`answers "what URL maps to what app."`);
@@ -3132,39 +3162,38 @@ async function renderInfrastructureServicesSection() {
     lines.push('');
   }
 
-  // why: append the curated Render account/billing model + per-service sizing
-  // rationale — the derived table lists services but cannot express the two-axis
-  // billing model, the plans/prices, or WHY each line item is sized the way it is.
-  // Sourced from RENDER_ACCOUNT_AND_SIZING_NOTES.
-  lines.push(`### Render account model & sizing (what we pay for, and why)`);
+  // why: append the curated production-host notes — the table lists vendor
+  // accounts but cannot express what production runs on, how it is reached and
+  // deployed, what it costs, or when to resize. Sourced from
+  // PRODUCTION_HOST_AND_SIZING_NOTES.
+  lines.push(`### Production host & sizing (what we pay for, and why)`);
   lines.push('');
-  lines.push(RENDER_ACCOUNT_AND_SIZING_NOTES.summary);
+  lines.push(PRODUCTION_HOST_AND_SIZING_NOTES.summary);
   lines.push('');
-  lines.push(RENDER_ACCOUNT_AND_SIZING_NOTES.webServiceInstanceTypes);
+  lines.push(PRODUCTION_HOST_AND_SIZING_NOTES.sizing);
   lines.push('');
   lines.push(
-    `Curated in \`RENDER_ACCOUNT_AND_SIZING_NOTES\` in ` +
+    `Curated in \`PRODUCTION_HOST_AND_SIZING_NOTES\` in ` +
       `\`scripts/architecture-inventory.mjs\`.`,
   );
   lines.push('');
-  for (const note of RENDER_ACCOUNT_AND_SIZING_NOTES.notes) {
+  for (const note of PRODUCTION_HOST_AND_SIZING_NOTES.notes) {
     lines.push(`- ${note}`);
   }
   lines.push('');
 
-  // why: append the curated managed-database operational notes — the sizing
-  // history and network / storage posture the derived Render table (which shows
-  // only the `plan` string) cannot express. Sourced from MANAGED_DATABASE_OPS_NOTES.
-  lines.push(`### Managed database — sizing history & operational notes`);
+  // why: append the curated database notes — the backup posture, network
+  // exposure, storage, and diagnostic history no manifest declares. Sourced
+  // from DATABASE_OPS_NOTES.
+  lines.push(`### Database — posture, backups & operational notes`);
   lines.push('');
-  lines.push(`Instance: ${MANAGED_DATABASE_OPS_NOTES.instance}`);
+  lines.push(`Instance: ${DATABASE_OPS_NOTES.instance}`);
   lines.push('');
   lines.push(
-    `Curated in \`MANAGED_DATABASE_OPS_NOTES\` in \`scripts/architecture-inventory.mjs\` ` +
-      `(the derived Render table above shows only the plan string).`,
+    `Curated in \`DATABASE_OPS_NOTES\` in \`scripts/architecture-inventory.mjs\`.`,
   );
   lines.push('');
-  for (const note of MANAGED_DATABASE_OPS_NOTES.notes) {
+  for (const note of DATABASE_OPS_NOTES.notes) {
     lines.push(`- ${note}`);
   }
   lines.push('');
@@ -3192,7 +3221,7 @@ async function renderInfrastructureServicesSection() {
  * - Hugo apps (apps with no `package.json` but with `hugo.toml`) are
  *   appended via `synthesizeWikiViewerEntry` — Hugo binary version is
  *   read from `.hugo-version`, page count from the projection source,
- *   deploy target verified against `render.yaml`.
+ *   deploy target verified against `apps/wiki-viewer/wrangler.jsonc`.
  *
  * @param {Array<Awaited<ReturnType<typeof readManifest>>>} manifests
  * @param {Map<string, Set<string>>} lockfilePackages
@@ -3300,8 +3329,8 @@ async function renderApplicationStacksSection(manifests, lockfilePackages) {
  * in `renderApplicationStacksSection` doesn't see it. The entry is
  * built from the app's own evidence: `.hugo-version` pin, the
  * presence of `hugo.toml`, the count of `wiki/*.md` source pages it
- * projects, and the Render service block in `render.yaml` that
- * deploys it.
+ * projects, and the `apps/wiki-viewer/wrangler.jsonc` Worker config that
+ * deploys it (D-24690).
  *
  * Returns null if `apps/wiki-viewer/` is not present, so removing the
  * wiki-viewer in the future degrades gracefully (the section just
@@ -3331,8 +3360,8 @@ async function synthesizeWikiViewerEntry() {
 
   // why: Hugo version is pinned in `.hugo-version` per WP-139 / Open
   // Decision C. Reading it directly keeps this report in sync with
-  // the binary CI installs and the value referenced in render.yaml's
-  // buildCommand.
+  // the binary the `wiki-viewer.yml` workflow installs to build and deploy
+  // the Worker.
   const hugoVersionPath = join(appDirectory, '.hugo-version');
   if (existsSync(hugoVersionPath)) {
     const pinnedHugoVersion = (await readFile(hugoVersionPath, 'utf8')).trim();

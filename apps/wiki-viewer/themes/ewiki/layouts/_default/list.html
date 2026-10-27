@@ -1,0 +1,75 @@
+{{ define "main" }}
+  {{- /*
+    why: one list layout for the home page, sections and, when a site enables
+    taxonomy kinds, the tags list and each tag's page. Reconciled from E (title
+    and content), H (subsections, sortByFile, sortByWeight, taxonomy terms), C
+    (a folder's README as its landing text) and J (sections, then pages). The
+    order is the title (only when the landing text has no H1, the single.html
+    rule), the landing text, a subsection list, then a page list sorted by
+    title.
+
+    why: sortByWeight lists a section by each page's weight (H's project map)
+    and sortByFile by file name (H's date-named decision log), as generic
+    front-matter flags on the list page.
+
+    why: the home page gets no flat page list. On a wiki without sections (E)
+    every page belongs to the home, so a list there would repeat the whole
+    sidebar in the content; E's home shows its title and content only, and the
+    theme keeps that. Sections still list on the home page. A wiki that wants
+    more ships its own home.html or index.html (H, C and J do today).
+
+    why: params.ewiki.sectionReadme (opt-in, v1.1.0; off by default) restores
+    C's landing: a section whose _index.md has no body text, or that has no
+    _index.md at all, shows the folder's README.md as its landing text, the
+    way GitHub shows a folder, and that README leaves the page list so the
+    section doesn't list itself. The README still renders as its own page, so
+    page counts don't change.
+  */ -}}
+  {{- $ewiki := site.Params.ewiki | default dict -}}
+  {{- $sectionReadme := false -}}
+  {{- if isset $ewiki "sectionreadme" -}}{{- $sectionReadme = index $ewiki "sectionreadme" -}}{{- end -}}
+  {{- $readme := false -}}
+  {{- if and $sectionReadme (eq .Kind "section") (not .Content) -}}
+    {{- with site.GetPage (printf "%s/README.md" .Path) -}}{{- $readme = . -}}{{- end -}}
+  {{- end -}}
+  {{- $landing := .Content -}}
+  {{- with $readme -}}{{- $landing = .Content -}}{{- end }}
+      <section class="section-landing">
+        {{- if not (findRE "<h1[ >]" $landing 1) }}
+        <h1>{{ partial "ewiki/title.html" . }}</h1>
+        {{- end }}
+        {{- with $landing }}
+        <div class="body">
+          {{ . }}
+        </div>
+        {{- end }}
+        {{- if eq .Kind "taxonomy" }}
+        <ul class="tag-list tags-index">
+          {{- range .Data.Terms.Alphabetical }}
+          <li class="tag"><a href="{{ .Page.RelPermalink }}">{{ .Page.LinkTitle }}</a> <small class="tag-count">{{ .Count }}</small></li>
+          {{- end }}
+        </ul>
+        {{- else }}
+        {{- with .Sections }}
+        <ul class="page-list section-list">
+          {{- range .ByWeight }}
+          <li><a href="{{ .RelPermalink }}">{{ partial "ewiki/short-title.html" . }}</a> <small class="muted">{{ len .RegularPagesRecursive }} pages</small></li>
+          {{- end }}
+        </ul>
+        {{- end }}
+        {{- if not .IsHome }}
+        {{- $pages := .RegularPages.ByTitle }}
+        {{- if .Params.sortByFile }}{{ $pages = sort .RegularPages "File.LogicalName" }}{{ end }}
+        {{- if .Params.sortByWeight }}{{ $pages = .RegularPages.ByWeight }}{{ end }}
+        {{- with $readme }}{{ $pages = where $pages "RelPermalink" "ne" .RelPermalink }}{{ end }}
+        {{- with $pages }}
+        <ul class="page-list">
+          {{- range . }}
+          <li><a href="{{ .RelPermalink }}">{{ partial "ewiki/short-title.html" . }}</a></li>
+          {{- end }}
+        </ul>
+        {{- end }}
+        {{- end }}
+        {{- end }}
+      </section>
+{{ end }}

@@ -6,7 +6,7 @@
  * parked a PendingCoveringFireChoice on G.pendingCoveringFireChoices (FIFO). This realizes the
  * printed "[hc:tech]: Choose one: each other player draws a card or each other player discards
  * a card." The active player picks 'draw' or 'discard'; BOTH branches act on EACH OTHER seat
- * (Object.keys(G.playerZones).sort(), skipping the chooser).
+ * (clockwise from the chooser, skipping them — rules v23 L2247, D-24780).
  *
  * The two branches are heterogeneous (a table-wide draw vs. a table-wide discard) and neither
  * is strictly dominant in the cooperative ruleset — teammates gaining cards vs. cycling a
@@ -29,6 +29,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { drawCardsIntoHand } from './drawCards.logic.js';
 import { discardFromHand } from './discardFromHand.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { selectDefaultSmashDiscardTarget } from '../hero/heroEffects.execute.js';
 import { pushLog } from '../log/logPush.js';
 import { formatCardRef } from '../log/logDisplay.js';
@@ -116,10 +117,11 @@ export function resolveCoveringFireChoice(
     return;
   }
 
-  // Step 3: Apply the chosen branch to each OTHER seat in sorted seat order.
-  // why: D-18902 sorted seat order (Object.keys(G.playerZones).sort()) so the table-wide
-  // distribution replays identically; skip the chooser — "each OTHER player".
-  for (const otherPlayerID of Object.keys(G.playerZones).sort()) {
+  // Step 3: Apply the chosen branch to each OTHER seat, clockwise from the chooser.
+  // why: rules v23 L2247 — start after the current player and go clockwise (D-24780, amends
+  // D-18902's sorted order), so return-on-discard reactions queue in turn order; skip the
+  // chooser — "each OTHER player".
+  for (const otherPlayerID of seatsInTurnOrderFrom(Object.keys(G.playerZones), playerID)) {
     if (otherPlayerID === playerID) {
       continue;
     }

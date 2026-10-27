@@ -16,7 +16,7 @@ related:
   - private-site-hosting.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\operational-health-checks.md (this page — https://ewiki.legendary-arena.com/operational-health-checks/)
+  - C:\dev\legendary-arena\wiki\operational-health-checks.md (this page — https://ewiki.legendary-arena.com/operational-health-checks/)
   - ../scripts/check-connections.mjs
   - ../scripts/check-subdomains.mjs
   - ../scripts/check-wiki-freshness.mjs
@@ -413,7 +413,7 @@ of the repo's Pages SPAs (2026-08-23):
 ### Latest run snapshot — 2026-05-19
 
 Both scripts were run from
-[`C:\pcloud\BB\DEV\legendary-arena\`](../) (the only checkout with a
+[`C:\pcloud\BB\DEV\legendary-arena\`](../) (the engine's location at the time, and the only checkout with a
 populated `.env`) against the worktree's copy of each script
 (`claude/nostalgic-bouman-bab6e8`), which now contains the
 2026-05-19 enhancements:
@@ -569,7 +569,7 @@ fails the same way, ruling out half-provisioned states.
 - **`pnpm check` requires `.env`.** Both scripts must be run from a
   checkout that has a populated `.env`. Worktrees created by the
   Claude Code worktree workflow start without `.env` (and without
-  `node_modules`). To run today, `cd C:\pcloud\BB\DEV\legendary-arena`
+  `node_modules`). To run today, `cd C:\dev\legendary-arena`
   first; or pass `--env-file=<absolute path to .env>` and an
   absolute script path to `node`.
 - **`EXPECTED_DB_NAME` is optional.** If set, it must match the

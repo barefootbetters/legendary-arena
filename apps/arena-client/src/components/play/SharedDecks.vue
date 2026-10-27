@@ -2,6 +2,7 @@
 import { defineComponent, type PropType } from 'vue';
 import {
   OFFICER_RECRUIT_COST,
+  SIDEKICK_RECRUIT_COST,
   type UICardDisplay,
   type UISharedPilesState,
   type UITurnEconomyState,
@@ -25,7 +26,12 @@ import type { SubmitMove } from './uiMoveName.types';
  * times during your Main step (Marvel Legendary Universal Rules v23 §"HQ").
  * It renders as a `<button>` that dispatches `recruitOfficer` (empty
  * payload); the gate mirrors HQRow (turn → stage → resource) with an added
- * empty-supply structural check. The other four cells stay static counts.
+ * empty-supply structural check.
+ *
+ * WP-842 / D-24776: the Sidekicks cell is the second recruitable supply pile —
+ * you may recruit one Sidekick per turn for 2 Recruit (rules v23 L727-729). It
+ * renders as a `<button>` that dispatches `recruitSidekick` (empty payload) with
+ * the Officers cell's markup. The other three cells stay static counts.
  *
  * Per the EC-132 §2 SFC authoring whitelist: this is a tested non-leaf
  * composer that USES a composable, so it MUST use
@@ -33,6 +39,7 @@ import type { SubmitMove } from './uiMoveName.types';
  *
  * @see WP-129 §Acceptance Criteria — Shared Decks 5-cell row
  * @see WP-648 / D-24460 — recruitable Officer supply
+ * @see WP-842 / D-24776 — recruitable Sidekick Stack
  * @see DESIGN-BOARD-LAYOUT.md §7.1 Shared Decks
  * @see DECISIONS.md D-12905 card-back representation
  */
@@ -124,7 +131,69 @@ export default defineComponent({
       );
     }
 
-    return { officerCost, officerGate, onRecruitOfficer, officerDisplay };
+    // why: WP-842 — expose the Sidekick buy cost to the template, sourced from the
+    // engine constant (single source of truth with the recruitSidekick move, D-24776).
+    const sidekickCost = SIDEKICK_RECRUIT_COST;
+
+    function sidekickGate(): GatingResult {
+      // why: disabled-state tooltip precedence — turn → stage → heal lock →
+      // once-per-turn → empty Stack → resource. The turn + stage + heal-lock gate
+      // comes from useTurnActions; the rest are Sidekick-specific. The Sidekick
+      // token's UICardDisplay.cost is null, so useCardCostGating.canRecruit cannot
+      // be reused here (the officerGate precedent).
+      const stage = useTurnActions(props.currentStage, props.isViewerTurn).canRecruitSidekick();
+      if (!stage.allowed) {
+        return stage;
+      }
+      const healLock = healLockGate(props.hasHealedThisTurn);
+      if (!healLock.allowed) {
+        return healLock;
+      }
+      if (props.economy.hasRecruitedSidekickThisTurn === true) {
+        return { allowed: false, reason: 'You already recruited a Sidekick this turn.' };
+      }
+      if (props.piles.sidekicksCount <= 0) {
+        return { allowed: false, reason: 'No Sidekicks remain in the Sidekick Stack.' };
+      }
+      if (props.economy.availableRecruit < SIDEKICK_RECRUIT_COST) {
+        return {
+          allowed: false,
+          reason: `Needs ${sidekickCost} recruit, you have ${props.economy.availableRecruit}.`,
+        };
+      }
+      return { allowed: true, reason: null };
+    }
+
+    function onRecruitSidekick(): void {
+      // why: recruitSidekick takes no arguments — all Sidekicks are identical
+      // fungible tokens, so there is no slot or index to choose.
+      props.submitMove('recruitSidekick', {});
+    }
+
+    function sidekickDisplay(): UICardDisplay {
+      // why: piles.sidekickDisplay is the engine-projected Sidekick card face.
+      // Older/hand-written snapshots may omit the optional field; fall back to a
+      // text-only display so the tile still names the card.
+      return (
+        props.piles.sidekickDisplay ?? {
+          extId: 'pile-sidekick',
+          name: 'Sidekick',
+          imageUrl: '',
+          cost: null,
+        }
+      );
+    }
+
+    return {
+      officerCost,
+      officerGate,
+      onRecruitOfficer,
+      officerDisplay,
+      sidekickCost,
+      sidekickGate,
+      onRecruitSidekick,
+      sidekickDisplay,
+    };
   },
 });
 </script>
@@ -180,8 +249,30 @@ export default defineComponent({
         </button>
       </li>
       <li class="shared-decks__cell" data-testid="play-shared-deck-sidekicks">
-        <span class="shared-decks__name">Sidekicks</span>
-        <span class="shared-decks__count">[{{ piles.sidekicksCount }}]</span>
+        <!-- why: WP-842 / D-24776 — the Sidekicks cell is the second recruitable
+             supply pile (once per turn). Same markup as the Officers button; the
+             gate (turn → stage → heal lock → once-per-turn → empty Stack →
+             resource) drives :disabled / :title. -->
+        <button
+          type="button"
+          class="shared-decks__recruit"
+          data-testid="play-recruit-sidekick"
+          :disabled="!sidekickGate().allowed"
+          :aria-disabled="!sidekickGate().allowed ? 'true' : undefined"
+          :title="sidekickGate().reason ?? `Recruit a Sidekick for ${sidekickCost} recruit (once per turn)`"
+          @click="onRecruitSidekick()"
+        >
+          <CardTile
+            :display="sidekickDisplay()"
+            size="sm"
+            :show-cost="false"
+            :interactive="sidekickGate().allowed"
+            :tooltip="sidekickGate().reason"
+          />
+          <span class="shared-decks__name">Sidekicks</span>
+          <span class="shared-decks__count">[{{ piles.sidekicksCount }}]</span>
+          <span class="shared-decks__cost">Recruit: {{ sidekickCost }}</span>
+        </button>
       </li>
     </ol>
   </section>
@@ -205,7 +296,7 @@ export default defineComponent({
   min-width: 5rem;
 }
 
-/* why: WP-648 — the Officers cell hosts a recruit button; it must fill the cell
+/* why: WP-648 / WP-842 — the Officers and Sidekicks cells host a recruit button; it must fill the cell
    and carry the same column layout as the static cells so the row reads evenly. */
 .shared-decks__cell:has(.shared-decks__recruit) {
   padding: 0;

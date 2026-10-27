@@ -68,14 +68,16 @@
     },
     "ca75": {
       "masters-of-evil-wwii": {
-        "black-knight": { "ambush": ["captureBystander"] },
-        "executioner": { "ambush": ["captureBystander"] },
-        "melter-wwii": { "ambush": ["captureBystander"] },
-        "radioactive-man": { "ambush": ["captureBystander"] }
+        "black-knight": { "ambush": ["captureBystander"], "fight": ["ko-hero:current!savior"] },
+        "executioner": { "ambush": ["captureBystander"], "fight": ["draw-cards-current:1!savior"], "escape": ["ko-bystander-each-victory-pile"] },
+        "melter-wwii": { "ambush": ["captureBystander"], "fight": ["ko-cullable-each-deck-top!savior"] },
+        "radioactive-man": { "ambush": ["captureBystander"], "fight": ["gain-wound:each-non-savior"], "escape": ["gain-wound:each-non-savior"] }
       },
       "zolas-creations": {
+        "captain-zolandia": { "fight": ["gain-recruit-current-per-hero-class"] },
         "doughboy": { "fight": ["koHeroCurrentPlayer"] },
-        "man-fish": { "escape": ["gainWoundEachPlayer"] }
+        "man-fish": { "fight": ["gain-wound:each-other@sewers+bridge"], "escape": ["gainWoundEachPlayer"] },
+        "primus": { "escape": ["discard-hero-each-player-by-cost:2+3+5+7"] }
       }
     },
     "chmp": {
@@ -87,14 +89,45 @@
       }
     },
     "co2e": {
+      "brotherhood-of-mutants": {
+        "juggernaut": { "ambush": ["discard-hand-matching-hq-card-names-each-player", "hq-heroes-to-hero-deck-bottom"], "fight": ["ko-hero:current:2"] },
+        "mystique": { "ambush": ["discard-hero-each-player-by-trait:team:x-men"], "escape": ["become-scheme-twist"] },
+        "sabretooth": { "ambush": ["reveal-or-wound:hc:instinct"], "escape": ["reveal-or-wound:hc:instinct"] }
+      },
+      "enemies-of-asgard": {
+        "destroyer": { "ambush": ["ko-hero:each:1:discard:non-grey"], "fight": ["ko-up-to-from-discard-current:2:grey"], "escape": ["ko-hero:each:1:discard:non-grey"] },
+        "frost-giant-warrior": { "ambush": ["discard-hero-or-wound-each-player-by-trait:hc:ranged"], "fight": ["ko-up-to-from-discard-current:1:grey"] },
+        "ymir-frost-giant-king": { "fight": ["ko-up-to-from-discard-current:1:grey"] }
+      },
+      "hydra": {
+        "endless-armies-of-hydra": { "fight": ["koHeroEachPlayer", "play-villain-deck-cards:2"] },
+        "viper": { "fight": ["gain-wound-unless-victory-villain-group:hydra"], "escape": ["gain-wound-unless-victory-villain-group:hydra"] }
+      },
       "masters-of-evil": {
         "baron-zemo": { "ambush": ["capture-bystanders-plus-per-hq-hero-by-trait:team:avengers"] },
         "melter": { "fight": ["ko-cullable-each-deck-top"] },
         "ultron": { "fight": ["give-hq-hero-by-trait-to-current:hc:tech"], "escape": ["reveal-or-wound:hc:tech"] },
         "whirlwind": { "fight": ["ko-hero:current@rooftops+bridge"], "ambush": ["swap-two-city-villains"] }
       },
+      "radiation": {
+        "abomination": { "fight": ["gain-recruit-current-count-by-trait:hc:strength"] },
+        "maestro-wasteland-hulk": { "fight": ["ko-heroes-current-count-by-trait:hc:strength"] },
+        "the-leader": { "ambush": ["play-villain-deck-cards:1:hc:strength"] },
+        "zzzax": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
+      },
+      "sinister-spider-foes": {
+        "scorpion": { "ambush": ["gain-wound:each!another-group-villain-in-city"], "fight": ["koHeroCurrentPlayer"] },
+        "the-lizard": { "fight": ["ko-hero:current@sewers", "gain-wound:each-other@sewers"] }
+      },
+      "sinister-syndicate": {
+        "beetle": { "fight": ["draw-cards-current-count-by-trait:hc:covert"], "escape": ["reveal-or-wound:hc:covert"] },
+        "hydro-man": { "fight": ["ko-hero:current@sewers+bridge"] }
+      },
       "skulls": {
-        "paibok-the-power-skrull": { "fight": ["give-hq-hero-each-player"] }
+        "paibok-the-power-skrull": { "fight": ["give-hq-hero-each-player"] },
+        "skrull-queen-veranke": { "ambush": ["captureHqHeroHighestCost"], "fight": ["gain-attached-hero"] },
+        "skrull-shapeshifter": { "ambush": ["captureHqHeroRightmost"], "fight": ["gain-attached-hero"] },
+        "super-skrull": { "fight": ["koHeroCurrentPlayer"] }
       }
     },
     "core": {
@@ -340,7 +373,9 @@
       "quantumnauts": { "fight": ["koHeroCurrentPlayer"] }
     },
     "co2e": {
-      "doombot-legion": { "fight": ["scry-ko-own-deck"] }
+      "doombot-legion": { "fight": ["scry-ko-own-deck"] },
+      "hand-ninjas": { "fight": ["ko-hero:current@sewers+rooftops", "gain-recruit-current:1@bank+streets+bridge"] },
+      "savage-land-mutates": { "fight": ["reveal-top-ko-grey-or-draw-by-class:strength+instinct"] }
     },
     "core": {
       "doombot-legion": { "fight": ["scry-ko-own-deck"] },
@@ -408,7 +443,6 @@
     { "set": "dstr", "group": "fear-lords", "card": "dspayre", "timing": "ambush", "text": "Ambush: D'Spayre enters the [keyword:Astral Plane] and captures a Bystander.", "reason": "other" },
 
     { "set": "2099", "group": "alchemax-enforcers", "card": "cyber-nostra", "timing": "fight", "text": "Fight: [keyword:Cyber-Mod][hc:tech]: KO one of your Heroes.", "reason": "conditional" },
-    { "set": "ca75", "group": "masters-of-evil-wwii", "card": "black-knight", "timing": "fight", "text": "Fight: [keyword:Savior]: KO one of your Heroes.", "reason": "conditional" },
     { "set": "ssw2", "group": "deadpools-secret-secret-wars", "card": "pink-sphinx", "timing": "fight", "text": "Fight: [keyword:Spectrum]: KO one of your Heroes.", "reason": "conditional" },
     { "set": "wtif", "group": "stranges-demons", "card": "wolf-demon", "timing": "fight", "text": "Fight: [keyword:Soulbind another Villain]: KO one of your Heroes.", "reason": "conditional" },
     { "set": "anni", "group": "timelines-of-kang", "card": "scarlet-centurion", "timing": "fight", "text": "Fight: If you played a [hc:covert] Hero this turn, KO one of your Heroes.", "reason": "conditional" },

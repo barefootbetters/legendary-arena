@@ -16,7 +16,7 @@ related:
   - development-workflow.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
+  - C:\dev\legendary-arena\wiki\ai-second-brain.md (this page — https://ewiki.legendary-arena.com/ai-second-brain/)
   - ../docs/ai/DECISIONS.md#d-24341
   - ../docs/ai/DECISIONS.md#d-24712
   - ../docs/ai/DECISIONS.md#d-24403
@@ -25,7 +25,7 @@ source:
   - C:\www\jefferyjjensen-corporate-memory\docs\second-brain\design.md (the design record — private repo barefootbetters/jefferyjjensen-corporate-memory)
   - C:\www\jefferyjjensen-corporate-memory\mcp\README.md (the brain's Claude connector — same private repo)
   - C:\www\jefferyjjensen-corporate-memory\scripts\brain-sources.psd1 (which other repos the connector serves — same private repo)
-last-reviewed: 2026-10-14
+last-reviewed: 2026-10-19
 ---
 
 # AI Second Brain
@@ -64,6 +64,7 @@ can be swapped by configuration.
 | Build runbook (was `docs/ops/AI_SECOND_BRAIN_RUNBOOK.md`) | [`docs/second-brain/runbook.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/runbook.md) |
 | Voice addendum (was `docs/ops/AI_SECOND_BRAIN_VOICE_MOBILE.md`) | [`docs/second-brain/voice-mobile.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/voice-mobile.md) |
 | Knowledge-inventory template (was `docs/ops/KNOWLEDGE_INVENTORY.template.md`) | [`docs/second-brain/knowledge-inventory.template.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/knowledge-inventory.template.md) |
+| Working habits for the brain's agents (a section here 2026-10-17 to 2026-10-19) | [`design.md` § Asking the brain's agents for work](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/design.md#asking-the-brains-agents-for-work) |
 | Decisions about the brain | The ship's [`decisions/log.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/decisions/log.md); D-24341 here is history |
 
 The ship repo is private, so these links work while signed in to GitHub. The
@@ -102,6 +103,33 @@ operator's desk with the connector's `send_to_desk` tool, in a folder such as
 `inbox/<folder>/`. It becomes a Work Packet here only after it's checked
 against this repo's rules (`DECISIONS.md`, `WORK_INDEX.md`, this wiki) and the
 operator approves it. A phone brief is a draft, never a decision.
+
+### Asking the brain's agents for work
+
+**Moved to the design record on 2026-10-19.** The habits that make an agent's
+output checkable (write down what you care about where the agent reads it,
+show examples rather than a description, tag claims Seen / Inferred / Unknown,
+and the six-step brief for an outside idea sent with `send_to_desk`) apply to
+every domain the brain serves, so they live in the ship:
+[Asking the brain's agents for work](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/docs/second-brain/design.md#asking-the-brains-agents-for-work).
+
+What they mean for this repo:
+
+- **Where the agent reads what you care about:** `.claude/CLAUDE.md` and
+  `.claude/rules/` for standing rules, an Execution Checklist's locked values
+  for one Work Packet, `DECISIONS.md` for the reasons, and
+  [`docs/10-GLOSSARY.md`](../docs/10-GLOSSARY.md) for shared terms. When an
+  agent drifts the same way twice, fix the document it read.
+- **Examples to point an agent at:** three to five shipped Work Packets and
+  their Execution Checklists, `DECISIONS.md` entries, or finished ewiki pages.
+  The coach's `coach:eval` fixtures work the same way (see
+  [Gateway routing for the endgame coach](#gateway-routing-for-the-endgame-coach-decision-sketch)).
+- **A `legendary-arena` brief from the phone** is checked on the desk by the
+  Work Packet drafting preflight
+  ([`01.0a`](../docs/ai/REFERENCE/01.0a-wp-drafting-phase.md)) and the lint
+  gate ([`00.3`](../docs/ai/REFERENCE/00.3-prompt-lint-checklist.md)) before
+  it becomes a Work Packet candidate. Phone answers come from a snapshot (see
+  [Edge Cases](#edge-cases)).
 
 ### Hosting
 
@@ -307,6 +335,16 @@ feature reaching across the network.
   inbox as its only write. The decisions are in the ship's `decisions/log.md`.
 - **2026-10-14** — The connector started serving this wiki (93 pages, folder
   `ewiki`), read from GitHub `main` at each brain deploy.
+- **2026-10-17** — Added [Asking the brain's agents for work](#asking-the-brains-agents-for-work):
+  write down what you care about where the agent reads it, example-driven
+  requests, Seen / Inferred / Unknown tags, and a six-step brief (with an
+  interview step) for outside ideas sent from the phone. Taken from two
+  outside reviews of this page; the parts that would change hosting, the
+  connector, or the coach were left out.
+- **2026-10-19** — The full text of that section moved to the ship's design
+  record, because the habits apply to every domain the brain serves, not only
+  Legendary Arena. This page keeps a pointer and what the habits mean for this
+  repo.
 
 ## References
 

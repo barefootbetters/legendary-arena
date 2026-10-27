@@ -188,4 +188,107 @@ describe('GET /api/match/:matchId/seat-identities (INFRA: endgame seat names)', 
     assert.deepEqual(context.body, { error: 'internal_error' });
     assert.equal(context.headers['Cache-Control'], 'no-store');
   });
+
+  test('D-24718: a finished operator match returns the unknown-match 404, before any further read', async () => {
+    const readsAfterGate: string[] = [];
+    const seam = logicSeam({
+      configuration: {
+        matchConfiguration: { ...VALID_COMPOSITION, isDebugMatch: true },
+        numPlayers: 2,
+      },
+    });
+    const router = routerFor({
+      ...seam,
+      readMatchGameover: async (...args) => {
+        readsAfterGate.push('readMatchGameover');
+        return seam.readMatchGameover(...args);
+      },
+      readSeatIdentities: async (...args) => {
+        readsAfterGate.push('readSeatIdentities');
+        return seam.readSeatIdentities(...args);
+      },
+    });
+    const context = makeContext('operator-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'match_not_found' });
+    assert.equal(context.headers['Cache-Control'], 'no-store');
+    assert.deepEqual(readsAfterGate, []);
+  });
+
+  test('D-24718: a finished match whose isDebugMatch is not a strict true is still served', async () => {
+    const router = routerFor(
+      logicSeam({
+        configuration: {
+          matchConfiguration: { ...VALID_COMPOSITION, isDebugMatch: false },
+          numPlayers: 2,
+        },
+      }),
+    );
+    const context = makeContext('normal-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+  });
+});
+
+describe('WP-811: a reaped finished match keeps its seat roster (production logic)', () => {
+  test('the live row is gone; the artifact answers the seat count and the finished gate', async () => {
+    const database = {
+      query: async (text: string) => {
+        if (/SELECT initial_state FROM bgio\.replay_artifacts/.test(text)) {
+          return {
+            rows: [{ initial_state: { G: { matchConfiguration: VALID_COMPOSITION }, ctx: { numPlayers: 2 } } }],
+          };
+        }
+        if (/SELECT gameover FROM bgio\.replay_artifacts/.test(text)) {
+          return { rows: [{ gameover: { outcome: 'heroes-win' } }] };
+        }
+        return { rows: [] };
+      },
+    } as unknown as DatabaseClient;
+    const router = new FakeRouter();
+    registerSeatIdentitiesRoute(router, database);
+    const context = makeContext('reaped-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { seatIdentities: { playerId: string }[] };
+    assert.deepEqual(
+      body.seatIdentities.map((seat) => seat.playerId),
+      ['0', '1'],
+    );
+  });
+});
+
+describe('D-24718: a reaped operator match, through the production logic', () => {
+  test('is still refused once only the replay artifact remains (D-24719)', async () => {
+    // why: the live row is gone, so readMatchConfigurationForLagn falls back to
+    // the artifact's initial_state; the refusal must hold on that path too.
+    const reapedDatabase = {
+      query: async (text: string) => {
+        if (/SELECT initial_state FROM bgio\.replay_artifacts/.test(text)) {
+          return {
+            rows: [
+              {
+                initial_state: {
+                  G: { matchConfiguration: { ...VALID_COMPOSITION, isDebugMatch: true } },
+                  ctx: { numPlayers: 2 },
+                },
+              },
+            ],
+          };
+        }
+        return { rows: [] };
+      },
+    } as unknown as DatabaseClient;
+    const router = new FakeRouter();
+    registerSeatIdentitiesRoute(router, reapedDatabase);
+    const context = makeContext('reaped-operator-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'match_not_found' });
+  });
 });

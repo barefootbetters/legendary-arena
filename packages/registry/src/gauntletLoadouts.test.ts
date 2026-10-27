@@ -17,7 +17,9 @@ import type { GauntletLoadoutComposition } from "./gauntletLoadouts.js";
 import {
   PLAYER_COUNT_SETUP,
   SCHEMES_WITH_EXTRA_HENCHMAN_GROUP,
+  SCHEMES_WITH_EXTRA_VILLAIN_GROUP,
   resolveEffectiveHenchmenCount,
+  resolveEffectiveVillainGroupCount,
 } from "./playerCountSetup.js";
 import type { SupportedPlayerCount } from "./playerCountSetup.js";
 
@@ -135,20 +137,42 @@ test("buildVillainSegment strips only the core qualifier and sorts; buildHenchma
   );
 });
 
+/**
+ * Returns the sorted scheme ext_ids whose emitted override grows one slot past
+ * variant 0 at 1 player — henchmen or villains.
+ *
+ * @param slot which composition slot to compare against the base variant.
+ * @returns the sorted `setAbbr/schemeSlug` ids whose override grows that slot.
+ */
+function emittedSchemeIdsGrowing(slot: "villainGroupIds" | "henchmanGroupIds"): string[] {
+  const emittedSchemeIds = new Set<string>();
+  for (const menu of GAUNTLET_LOADOUT_MENUS) {
+    const baseComposition = menu.variants[0]?.compositionsByPlayerCount[1];
+    for (const [schemeSlug, compositionsByPlayerCount] of Object.entries(menu.schemeOverrides ?? {})) {
+      if (compositionsByPlayerCount[1][slot].length > (baseComposition?.[slot].length ?? 0)) {
+        emittedSchemeIds.add(`${menu.setAbbr}/${schemeSlug}`);
+      }
+    }
+  }
+  return [...emittedSchemeIds].sort();
+}
+
 // why: D-24666 — the generator keeps its own copy of the extra-Henchman scheme
 // list (it runs before any build). It also runs main() on import, so no test can
 // import it; like REQUIRED_GROUP_COUNTS, the copy is pinned through its OUTPUT.
+// D-24766 — overrides now also carry the extra-Villain-Group schemes, so the pin
+// counts only the overrides whose henchmen grow.
 test("the emitted schemeOverrides keys equal SCHEMES_WITH_EXTRA_HENCHMAN_GROUP (drift pin)", () => {
-  const emittedSchemeIds = new Set<string>();
-  for (const menu of GAUNTLET_LOADOUT_MENUS) {
-    for (const schemeSlug of Object.keys(menu.schemeOverrides ?? {})) {
-      emittedSchemeIds.add(`${menu.setAbbr}/${schemeSlug}`);
-    }
-  }
-  assert.deepEqual([...emittedSchemeIds].sort(), [...SCHEMES_WITH_EXTRA_HENCHMAN_GROUP].sort());
+  assert.deepEqual(emittedSchemeIdsGrowing("henchmanGroupIds"), [...SCHEMES_WITH_EXTRA_HENCHMAN_GROUP].sort());
 });
 
-test("every scheme override is the base composition plus one distinct-slug henchmen group", () => {
+// why: D-24766 — the generator's duplicated extra-Villain-Group list is pinned the
+// same way, through the overrides whose villains grow.
+test("the emitted villain-growing schemeOverrides keys equal SCHEMES_WITH_EXTRA_VILLAIN_GROUP (drift pin)", () => {
+  assert.deepEqual(emittedSchemeIdsGrowing("villainGroupIds"), [...SCHEMES_WITH_EXTRA_VILLAIN_GROUP].sort());
+});
+
+test("every scheme override is the base composition plus one distinct-slug group on each extended slot", () => {
   let checkedCompositions = 0;
   for (const menu of GAUNTLET_LOADOUT_MENUS) {
     const baseVariant = menu.variants[0];
@@ -167,10 +191,23 @@ test("every scheme override is the base composition plus one distinct-slug hench
           ),
           `${label} must supply the scheme-effective henchmen count`,
         );
+        // why: D-24766 — an extra-Villain-Group scheme's override carries base + 1
+        // villain groups; every other override keeps the base villains.
+        assert.equal(
+          override.villainGroupIds.length,
+          resolveEffectiveVillainGroupCount(
+            `${menu.setAbbr}/${schemeSlug}`,
+            playerCount,
+            PLAYER_COUNT_SETUP[playerCount].villainGroupCount,
+          ),
+          `${label} must supply the scheme-effective villain count`,
+        );
         for (const baseHenchmanId of base.henchmanGroupIds) {
           assert.ok(override.henchmanGroupIds.includes(baseHenchmanId), `${label} must keep ${baseHenchmanId}`);
         }
-        assert.deepEqual(override.villainGroupIds, base.villainGroupIds, `${label} must keep the base villains`);
+        for (const baseVillainId of base.villainGroupIds) {
+          assert.ok(override.villainGroupIds.includes(baseVillainId), `${label} must keep ${baseVillainId}`);
+        }
         // why: Henchman card ids are built from the bare slug, so no two groups in
         // one composition may share a slug across sets.
         const slugs: string[] = [];
@@ -185,9 +222,11 @@ test("every scheme override is the base composition plus one distinct-slug hench
   assert.ok(checkedCompositions > 0, "the generated menus must carry scheme overrides");
 });
 
-test("menus for masterminds without an extra-Henchman scheme carry no schemeOverrides key", () => {
+test("menus for masterminds without an extra-Henchman or extra-Villain-Group scheme carry no schemeOverrides key", () => {
   const setsWithListedScheme = new Set<string>();
-  for (const schemeId of SCHEMES_WITH_EXTRA_HENCHMAN_GROUP) {
+  // why: D-24766 — a set with an extra-Villain-Group scheme now emits overrides
+  // too, so presence is keyed on either list.
+  for (const schemeId of [...SCHEMES_WITH_EXTRA_HENCHMAN_GROUP, ...SCHEMES_WITH_EXTRA_VILLAIN_GROUP]) {
     setsWithListedScheme.add(schemeId.slice(0, schemeId.indexOf("/")));
   }
   for (const menu of GAUNTLET_LOADOUT_MENUS) {
@@ -197,6 +236,45 @@ test("menus for masterminds without an extra-Henchman scheme carry no schemeOver
       `${menu.setAbbr}/${menu.mastermindSlug} schemeOverrides presence is wrong`,
     );
   }
+});
+
+// why: D-24767 — out-of-set slots fill from the Core Set before Core 2E. Core's 7
+// Villain Groups and 4 Henchman groups cover the largest out-of-set demand, so no
+// menu outside Core 2E ever reaches a Core 2E group. The generator runs main() on
+// import, so this pins the order through its OUTPUT (the D-24666 precedent).
+test("out-of-set slots fill from Core before Core 2E", () => {
+  let checkedMenus = 0;
+  let coreIdsSeen = 0;
+  for (const menu of GAUNTLET_LOADOUT_MENUS) {
+    if (menu.setAbbr === "co2e") {
+      continue;
+    }
+    checkedMenus += 1;
+    const compositions: GauntletLoadoutComposition[] = [];
+    for (const variant of menu.variants) {
+      for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+        compositions.push(variant.compositionsByPlayerCount[playerCount]);
+      }
+    }
+    for (const compositionsByPlayerCount of Object.values(menu.schemeOverrides ?? {})) {
+      for (const playerCount of SUPPORTED_PLAYER_COUNTS) {
+        compositions.push(compositionsByPlayerCount[playerCount]);
+      }
+    }
+    for (const composition of compositions) {
+      for (const groupId of [...composition.villainGroupIds, ...composition.henchmanGroupIds]) {
+        assert.ok(
+          !groupId.startsWith("co2e/"),
+          `${menu.setAbbr}/${menu.mastermindSlug} fields the Core 2E group ${groupId}; Core must fill first.`,
+        );
+        if (groupId.startsWith("core/")) {
+          coreIdsSeen += 1;
+        }
+      }
+    }
+  }
+  assert.ok(checkedMenus > 0, "Expected at least one menu outside Core 2E to check.");
+  assert.ok(coreIdsSeen > 0, "Expected at least one Core fallback group outside Core 2E menus.");
 });
 
 // why: pnpm --filter sets CWD to packages/registry/; the card data lives at the

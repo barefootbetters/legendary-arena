@@ -16,7 +16,7 @@ related:
   - scoring.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\shield-officer.md (this page — https://ewiki.legendary-arena.com/shield-officer/)
+  - C:\dev\legendary-arena\wiki\shield-officer.md (this page — https://ewiki.legendary-arena.com/shield-officer/)
   - ../packages/game-engine/src/moves/recruitOfficer.ts
   - ../packages/game-engine/src/moves/recruitHero.ts
   - ../packages/game-engine/src/setup/pilesInit.ts

@@ -104,3 +104,21 @@ test('a disconnected frame before any connect does NOT latch hasEverConnected', 
   assert.equal(store.isConnected, false);
   assert.equal(store.hasEverConnected, false);
 });
+
+test('transportReconnectCount counts each reconnect after a drop, but not the first connect', () => {
+  setActivePinia(createPinia());
+  const store = useConnectionStore();
+  assert.equal(store.transportReconnectCount, 0);
+  store.setConnected(false, null, 1);
+  store.setConnected(true, 1, 2);
+  assert.equal(store.transportReconnectCount, 0, 'the first connect is not a reconnect');
+  store.setConnected(true, 2, 3);
+  assert.equal(store.transportReconnectCount, 0, 'a repeated connected frame is not a reconnect');
+  store.setConnected(false, 2, 4);
+  store.setConnected(true, 3, 5);
+  assert.equal(store.transportReconnectCount, 1, 'connected after a drop counts once');
+  store.setConnected(false, 3, 6);
+  store.setConnected(true, 4, 7);
+  assert.equal(store.transportReconnectCount, 2, 'every reconnect counts; there is no cooldown');
+  assert.equal(store.reconnectResyncCount, 0, 'the gated resync counter is left to bgioClient');
+});

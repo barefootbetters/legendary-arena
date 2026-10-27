@@ -32,6 +32,7 @@ import {
   filterUIStateForAudience,
   createRandomPolicy,
   createCompetentHeuristicPolicy,
+  choosePlayingSeatChoiceOption,
 } from '@legendary-arena/game-engine';
 import { findPendingChoiceMove } from '../autoplay/botLoopProgress.mjs';
 
@@ -153,6 +154,37 @@ function delay(ms) {
  * clock-free.
  */
 export const BOT_MAX_IDLE_POLLS = 4800;
+
+/**
+ * How long (milliseconds) one poll tick may run before the driver logs it as slow
+ * or stuck, naming the phase it was in.
+ *
+ * // why: 2026-10-27, match `CIwhBoEVHZ0` — a bot seat owed a seat choice on the
+ * human's turn and did not answer for about two minutes, with nothing in the
+ * server log: the driver logs only faults, and the paths that can stall a tick
+ * silently (an await that does not return, a lease deferral, a state that hides
+ * the choice) leave no trace. A healthy tick takes well under a second (a few
+ * pooled queries plus one move), so 5 s is far outside normal and still early
+ * enough to bracket a stall. Diagnostic only: the clock read here never gates a
+ * move, an idle count or a teardown, so the driver's decisions stay clock-free.
+ */
+export const BOT_SLOW_TICK_WARN_MS = 5000;
+
+/**
+ * The minimum gap (milliseconds) between two "deferring to another instance"
+ * log lines for one match, so a long lease deferral is visible without logging
+ * every 250 ms tick.
+ */
+export const BOT_LEASE_DEFERRAL_LOG_INTERVAL_MS = 60000;
+
+/**
+ * The boardgame.io stage every addressed seat rides while a seat choice is open.
+ *
+ * // why: a local mirror of the engine's `SEAT_CHOICE_STAGE` (moves/seatChoice.resolve.ts),
+ * which the engine package does not export. Read only by the blind-driver
+ * diagnostic below; a rename there would silence that one log line, never a move.
+ */
+const SEAT_CHOICE_STAGE_NAME = 'resolvingSeatChoice';
 
 /**
  * How many CONSECUTIVE empty `fetchState` results the driver tolerates before it
@@ -402,13 +434,20 @@ export function findBotOwedSeatChoiceSeat(state, botSeats) {
 
 /**
  * Decides a bot seat's seat-choice submission: enumerates getLegalMoves AS that
- * seat and returns its single `resolveSeatChoice` (the engine's
- * `defaultOptionIndex`), or null when the engine offers that seat no such move.
+ * seat to confirm it owes a `resolveSeatChoice`, then submits the option a
+ * playing seat would pick (`choosePlayingSeatChoiceOption`). Returns null when
+ * the engine offers that seat no such move.
  *
  * // why: D-24593 — getLegalMoves answers for the enumerated seat only, so the
  * bot seat is enumerated even when it is not `ctx.currentPlayer` (the autoplay
- * `decidePendingChoiceDispatch` policy, D-24590). The move is the engine's own
- * default — never a synthesized option, never a policy call.
+ * `decidePendingChoiceDispatch` policy, D-24590). It stays the gate: a seat it
+ * offers nothing is a fault, never a synthesized move.
+ *
+ * // why: D-24744 — the option index getLegalMoves carries is
+ * `defaultOptionIndex`, the ABSENT-seat answer. A bot ally is a seat that is
+ * playing, so the engine's playing-seat policy picks the option instead: it
+ * reveals Diving Block, which the absent-seat default (D-24499) declines. The
+ * engine owns that answer; the driver only submits it.
  *
  * @param {object} state - The fetched match state.
  * @param {string} botSeat - The bot seat that owes a submission.
@@ -419,7 +458,11 @@ export function decideBotSeatChoiceMove(state, botSeat) {
   if (seatLegalMoves.length !== 1 || seatLegalMoves[0].name !== 'resolveSeatChoice') {
     return null;
   }
-  return { name: seatLegalMoves[0].name, args: seatLegalMoves[0].args };
+  const optionIndex = choosePlayingSeatChoiceOption(state.G, botSeat);
+  if (optionIndex === null) {
+    return { name: seatLegalMoves[0].name, args: seatLegalMoves[0].args };
+  }
+  return { name: seatLegalMoves[0].name, args: { optionIndex } };
 }
 
 /**
@@ -487,6 +530,15 @@ export function createBotAllyDriver({ matchId, botSeats, deps, initialReviveCoun
     // driver lifetime (no per-turn write).
     initialReviveCount: initialReviveCount ?? 0,
     revivalReset: false,
+    // why: 2026-10-27 stall diagnostics (BOT_SLOW_TICK_WARN_MS) — when the running
+    // tick started, the phase it is in, whether its stuck warning was logged, and
+    // when the last lease-deferral line was logged. Log-only bookkeeping.
+    now: deps.now ?? Date.now,
+    tickStartedAtMs: null,
+    tickPhase: 'idle',
+    hasWarnedStuckTick: false,
+    lastLeaseDeferralLogAtMs: null,
+    lastBlindSeatChoiceStateId: null,
     getTurnCount() {
       return driver.turnCount;
     },
@@ -508,7 +560,16 @@ export function createBotAllyDriver({ matchId, botSeats, deps, initialReviveCoun
       botAllyDrivers.delete(matchId);
     },
     async tick() {
-      await runTick(driver, deps, { maxTurns, maxIdlePolls, maxMoveStepsPerTurn, maxEmptyFetchPolls });
+      driver.tickStartedAtMs = driver.now();
+      driver.tickPhase = 'start';
+      driver.hasWarnedStuckTick = false;
+      try {
+        await runTick(driver, deps, { maxTurns, maxIdlePolls, maxMoveStepsPerTurn, maxEmptyFetchPolls });
+      } finally {
+        logSlowTick(driver, driver.now());
+        driver.tickStartedAtMs = null;
+        driver.tickPhase = 'idle';
+      }
     },
   };
 
@@ -548,9 +609,137 @@ function scheduleNextTick(driver, pollIntervalMs) {
       } finally {
         driver.tickInProgress = false;
       }
+    } else {
+      // why: the previous tick is still awaiting. Log it once it has run past
+      // BOT_SLOW_TICK_WARN_MS, so a tick that hangs is visible WHILE it hangs.
+      const stuckMessage = describeStuckTick(driver, driver.now(), BOT_SLOW_TICK_WARN_MS);
+      if (stuckMessage !== null) {
+        driver.hasWarnedStuckTick = true;
+        console.warn(stuckMessage);
+      }
     }
     scheduleNextTick(driver, pollIntervalMs);
   }, pollIntervalMs);
+}
+
+/**
+ * Describes a tick that is still running past the warning threshold, or returns
+ * null when there is nothing to report (no tick running, under the threshold, or
+ * already reported for this tick).
+ *
+ * @param {object} driver - The driver object.
+ * @param {number} nowMs - The current time in milliseconds.
+ * @param {number} warnMs - The threshold in milliseconds.
+ * @returns {string | null} The log line, or null.
+ */
+export function describeStuckTick(driver, nowMs, warnMs) {
+  if (driver.tickStartedAtMs === null || driver.hasWarnedStuckTick) {
+    return null;
+  }
+  const elapsedMs = nowMs - driver.tickStartedAtMs;
+  if (elapsedMs < warnMs) {
+    return null;
+  }
+  return (
+    `[bot-ally] match ${driver.matchId} poll tick still running after ${formatSeconds(elapsedMs)} ` +
+    `(phase: ${driver.tickPhase}); the bot answers nothing until it returns.`
+  );
+}
+
+/**
+ * Logs a finished tick that ran past BOT_SLOW_TICK_WARN_MS, with its total time
+ * and the last phase it reached.
+ *
+ * @param {object} driver - The driver object.
+ * @param {number} nowMs - The time the tick finished.
+ */
+function logSlowTick(driver, nowMs) {
+  if (driver.tickStartedAtMs === null) {
+    return;
+  }
+  const elapsedMs = nowMs - driver.tickStartedAtMs;
+  if (elapsedMs < BOT_SLOW_TICK_WARN_MS) {
+    return;
+  }
+  console.warn(
+    `[bot-ally] match ${driver.matchId} slow poll tick: ${formatSeconds(elapsedMs)} (last phase: ${driver.tickPhase}).`,
+  );
+}
+
+/**
+ * Formats a millisecond duration as seconds with one decimal ("6.0s").
+ *
+ * @param {number} durationMs - The duration in milliseconds.
+ * @returns {string} The formatted duration.
+ */
+function formatSeconds(durationMs) {
+  return `${(durationMs / 1000).toFixed(1)}s`;
+}
+
+/**
+ * Logs that this instance is deferring a match to a peer that holds its lease, at
+ * most once per BOT_LEASE_DEFERRAL_LOG_INTERVAL_MS.
+ *
+ * @param {object} driver - The driver object.
+ */
+function logLeaseDeferral(driver) {
+  const nowMs = driver.now();
+  if (
+    driver.lastLeaseDeferralLogAtMs !== null &&
+    nowMs - driver.lastLeaseDeferralLogAtMs < BOT_LEASE_DEFERRAL_LOG_INTERVAL_MS
+  ) {
+    return;
+  }
+  driver.lastLeaseDeferralLogAtMs = nowMs;
+  console.warn(
+    `[bot-ally] match ${driver.matchId} is deferring: another server instance holds its bot-ally lease, so this instance submits nothing.`,
+  );
+}
+
+/**
+ * Lists the bot seats the framework holds in the seat-choice stage
+ * (`ctx.activePlayers`), in ascending order.
+ *
+ * @param {object} state - The fetched match state.
+ * @param {ReadonlyArray<string>} botSeats - The bot seat ids.
+ * @returns {string[]} The bot seats riding the seat-choice stage.
+ */
+export function botSeatsInSeatChoiceStage(state, botSeats) {
+  const activePlayers = state?.ctx?.activePlayers;
+  if (activePlayers === null || activePlayers === undefined) {
+    return [];
+  }
+  const seats = [];
+  for (const seat of botSeats) {
+    if (activePlayers[seat] === SEAT_CHOICE_STAGE_NAME) {
+      seats.push(seat);
+    }
+  }
+  return seats.sort();
+}
+
+/**
+ * Logs, once per state id, a state in which the framework holds a bot seat in the
+ * seat-choice stage while the driver finds no seat choice owed by a bot.
+ *
+ * // why: 2026-10-27 stall — the only silent way for a live driver to leave a
+ * bot-owed choice unanswered is to read a state that does not show it owed. The
+ * stage and the choice are written together by `parkSeatChoice`, so seeing one
+ * without the other names that case directly.
+ *
+ * @param {object} driver - The driver object.
+ * @param {object} state - The fetched match state.
+ */
+function logBlindSeatChoiceStage(driver, state) {
+  const seatsInStage = botSeatsInSeatChoiceStage(state, driver.botSeats);
+  if (seatsInStage.length === 0 || driver.lastBlindSeatChoiceStateId === state._stateID) {
+    return;
+  }
+  driver.lastBlindSeatChoiceStateId = state._stateID;
+  console.warn(
+    `[bot-ally] match ${driver.matchId} bot seat(s) ${seatsInStage.join(', ')} ride the seat-choice stage at stateID ${String(state._stateID)}, ` +
+      `but no seat choice is owed by a bot seat (pendingSeatChoice ${state?.G?.pendingSeatChoice === undefined ? 'absent' : 'present'}).`,
+  );
 }
 
 /**
@@ -616,6 +805,7 @@ async function runTick(driver, deps, limits) {
   // SIGTERM) or its heartbeat expires (crash TTL). Yield without tracking idle or
   // tearing down — the match is not abandoned, another instance is driving it.
   if (typeof deps.renewOrAcquireLease === 'function') {
+    driver.tickPhase = 'lease';
     let ownsLease;
     try {
       ownsLease = await deps.renewOrAcquireLease();
@@ -628,10 +818,12 @@ async function runTick(driver, deps, limits) {
       return;
     }
     if (ownsLease !== true) {
+      logLeaseDeferral(driver);
       return;
     }
   }
 
+  driver.tickPhase = 'fetch';
   let state;
   try {
     state = await deps.fetchState(driver.matchId);
@@ -667,9 +859,11 @@ async function runTick(driver, deps, limits) {
   // Illusions), and while any seat owes one the block-all guard freezes the
   // active player's turn, so a bot on turn has nothing to play either.
   if (hasOutstandingSeatChoice(state)) {
+    driver.tickPhase = 'seat-choice';
     await handleSeatChoiceTick(driver, deps, state, limits);
     return;
   }
+  logBlindSeatChoiceStage(driver, state);
 
   // why: driver turn-gate — the driver acts ONLY on a bot seat's turn. On the
   // human's turn (seat "0"), or during the lobby phase, it waits and tracks
@@ -686,6 +880,7 @@ async function runTick(driver, deps, limits) {
   driver.idlePolls = 0;
   driver.lastStateId = state._stateID;
 
+  driver.tickPhase = 'bot-turn';
   const result = await driveBotTurn(driver, deps, state.ctx.currentPlayer, limits.maxMoveStepsPerTurn);
   // why: WP-424 — the driver may have been stopped mid-turn by a SIGTERM
   // graceful shutdown while driveBotTurn was awaiting. If so, do not advance the
@@ -766,7 +961,7 @@ async function handleSeatChoiceTick(driver, deps, state, limits) {
 }
 
 /**
- * Submits a bot seat's default `resolveSeatChoice` AS that seat, re-submitting
+ * Submits a bot seat's `resolveSeatChoice` AS that seat, re-submitting
  * with back-off when it does not land, and reports the outcome.
  *
  * // why: D-24593 — the submission is seat-bound (the bot seat's own

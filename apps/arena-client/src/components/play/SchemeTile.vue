@@ -2,6 +2,7 @@
 import { defineComponent, type PropType } from 'vue';
 import type { UISchemeState, UICardDisplay } from '@legendary-arena/game-engine';
 import CardTile from './CardTile.vue';
+import EnigmaCodePanel from './EnigmaCodePanel.vue';
 
 /**
  * Scheme tile leaf — renders the scheme id + twist progress bar.
@@ -16,7 +17,7 @@ import CardTile from './CardTile.vue';
  */
 export default defineComponent({
   name: 'SchemeTile',
-  components: { CardTile },
+  components: { CardTile, EnigmaCodePanel },
   emits: ['read'],
   props: {
     scheme: {
@@ -103,6 +104,9 @@ export default defineComponent({
     <p class="scheme-tile__progress" data-testid="play-scheme-twist-progress">
       {{ twistProgressLabel() }}
     </p>
+    <!-- why: WP-830 / D-24763 — The Unbreakable Enigma Code's face-down cards, already redacted
+         per viewer by the engine (a card shows only to a viewer who has looked at it). -->
+    <EnigmaCodePanel v-if="scheme.enigmaCode !== undefined" :enigma-code="scheme.enigmaCode" />
     <!-- why: the scheme's twist + win-condition rules open in the shared
          CardReaderModal instead of rendering inline, keeping the tile short. -->
     <button

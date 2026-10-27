@@ -30,6 +30,16 @@ import {
   applyDivingBlockResolvedSeatChoice,
   DIVING_BLOCK_SEAT_CHOICE_KIND,
 } from './divingBlock.logic.js';
+// why: WP-827 / D-24760 — Flying Shield Block's kind-specific apply (same runtime-safe cycle).
+import {
+  applyFlyingShieldBlockResolvedSeatChoice,
+  FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND,
+} from './flyingShieldBlock.logic.js';
+// why: WP-828 / D-24761 — the Man Out of Time grant's apply (same runtime-safe cycle).
+import {
+  applyOutOfTimeGrantResolvedSeatChoice,
+  OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND,
+} from './outOfTimeGrant.logic.js';
 // why: WP-683 / D-24500 — the two Deadpool consumers' kind-specific applies + the
 // Random-Acts wound→pass chain builder.
 import {
@@ -44,11 +54,24 @@ import {
   applyMonarchsDecreeMode,
   applyMonarchsDiscard,
   applyVanishingIllusionsKo,
+  applyFallenIdolsDiscard,
   buildMonarchsDiscardChoice,
   readMonarchsDecreeSelectedMode,
   MONARCHS_DECREE_MODE_KIND,
   MONARCHS_DISCARD_KIND,
   VANISHING_ILLUSIONS_KO_KIND,
+  FALLEN_IDOLS_DISCARD_KIND,
+  // why: WP-821 / D-24754 — Arnim Zola's three seat-choice tactics: the kinds, their
+  // appliers, and the Crush Pacifist Resistance chain's builder + KO reader.
+  applyComputerUploadedGeniusDiscard,
+  applyDominateTheWeakGain,
+  applyCrushPacifistResistanceKo,
+  buildCrushPacifistResistanceChoice,
+  didCrushChooseKo,
+  COMPUTER_UPLOADED_GENIUS_DISCARD_KIND,
+  DOMINATE_THE_WEAK_GAIN_KIND,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
 } from './seatChoiceTactics.js';
 // why: WP-793 / D-24656 — the rulebook escape procedure's two kind-specific applies (HQ KO,
 // Bystander discard). villainEscapeProcedure imports parkSeatChoice from this module, so the
@@ -56,9 +79,13 @@ import {
 // bodies, never at module top level), so ESM resolves both bindings by call time.
 import {
   applyEscapeBystanderDiscard,
+  applyEscapeEffectCostDiscard,
   applyEscapeHqKo,
+  applyVillainEffectTraitDiscard,
   ESCAPE_BYSTANDER_DISCARD_KIND,
+  ESCAPE_EFFECT_COST_DISCARD_KIND,
   ESCAPE_HQ_KO_KIND,
+  VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
 } from '../villainDeck/villainEscapeProcedure.js';
 // why: WP-793 / D-24656 — a non-active seat's return-on-discard apply. resolveReturnOnDiscard
 // imports parkSeatChoice from this module: the same runtime-safe cycle (function bodies only).
@@ -67,6 +94,22 @@ import {
   RETURN_ON_DISCARD_SEAT_CHOICE_KIND,
 } from './resolveReturnOnDiscard.js';
 import { pushLog } from '../log/logPush.js';
+// why: WP-829 / D-24762 — the Purge apply (a runtime-safe cycle: function-body references only).
+import {
+  applyTimestreamPurgeResolvedSeatChoice,
+  TIMESTREAM_PURGE_SEAT_CHOICE_KIND,
+} from '../rules/timestreamPurge.logic.js';
+// why: WP-830 / D-24763 — the Enigma peek apply (a runtime-safe cycle: function-body references only).
+import {
+  applyEnigmaPeekResolvedSeatChoice,
+  ENIGMA_PEEK_SEAT_CHOICE_KIND,
+} from '../rules/enigmaCode.logic.js';
+// why: WP-845 / D-24779 — the reveal-or-gain-a-Wound apply. revealOrWoundChoice imports
+// parkSeatChoice from this module: the same runtime-safe cycle (function-body references only).
+import {
+  applyRevealOrWoundSeatChoice,
+  REVEAL_OR_WOUND_SEAT_CHOICE_KIND,
+} from './revealOrWoundChoice.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -162,15 +205,25 @@ export function allSeatsSubmitted(choice: PendingSeatChoice): boolean {
  *
  * @param choice - The open pending seat choice.
  * @param activePlayerToSkip - The active player id (ctx.currentPlayer), omitted from
- *   the map so the already-active player is never redundantly stage-ridden (D-24648).
- * @returns A per-seat { stage, moveLimit } map (may be empty when every addressed seat
- *   is the active player).
+ *   the map when it is the ONLY addressed seat, so a one-seat active choice is never
+ *   redundantly stage-ridden (D-24648). In a mixed ride it is admitted like any seat.
+ * @returns A per-seat { stage, moveLimit } map (empty when the active player is the
+ *   only addressed seat).
  */
 export function buildSeatChoiceActivePlayersValue(
   choice: PendingSeatChoice,
   activePlayerToSkip?: string,
 ): Record<string, { stage: string; moveLimit: number }> {
   const value: Record<string, { stage: string; moveLimit: number }> = {};
+  // why: D-24743 — setActivePlayers REPLACES the activePlayers map, so a ride that admits
+  // only the non-active seats drops the active player out of it, and boardgame.io refuses
+  // the active seat's own resolveSeatChoice (InactivePlayer) until every other seat has
+  // answered. A bot answering its own active seat first never lands, and the bot-ally
+  // driver faults (4p match Y1w7rCsC8Ek: a Loki Master Strike wounded Diving Block holders
+  // 1 and 3 on seat 1's turn). So the D-24648 skip applies only to a one-seat choice
+  // addressed to the active player; a mixed ride admits the active seat too.
+  const isActiveSeatOnly =
+    choice.addressedSeats.length === 1 && choice.addressedSeats[0] === activePlayerToSkip;
   for (const seat of choice.addressedSeats) {
     // why: D-24648 — never stage-ride the ACTIVE player. They are already the
     // ctx.currentPlayer of the { currentPlayer: 'playTurn' } turn, and the stages are
@@ -181,7 +234,7 @@ export function buildSeatChoiceActivePlayersValue(
     // until the player reloaded (spectator-stale resync). Skipping the active seat removes
     // the unnecessary transition. Non-active seats (Random Acts / Monarch's Decree /
     // Diving Block on someone else's wound) still ride.
-    if (seat === activePlayerToSkip) {
+    if (isActiveSeatOnly) {
       continue;
     }
     value[seat] = { stage: SEAT_CHOICE_STAGE, moveLimit: 1 };
@@ -363,9 +416,16 @@ export function resolveSeatChoice(
       appliedKind === MONARCHS_DECREE_MODE_KIND
         ? readMonarchsDecreeSelectedMode(choice)
         : undefined;
+    // why: WP-821 / D-24754 — capture Crush Pacifist Resistance's active seat and whether its
+    // FIRST pick KO'd a Hero before the apply clears the choice, beside the Monarch's capture.
+    const crushActiveSeat =
+      appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND ? choice.addressedSeats[0] : undefined;
+    const crushChoseKo =
+      appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND && didCrushChooseKo(choice);
     // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
     // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
-    applySeatChoiceByKind(G, choice, { random });
+    // why: D-24732 — ctx?. because narrow test contexts omit ctx; moves never throw.
+    applySeatChoiceByKind(G, choice, { random }, ctx?.currentPlayer);
     delete G.pendingSeatChoice;
     // why: WP-683 / D-24500 — Random Acts is two steps: the active-scoped optional wound
     // gain (step 1) CHAINS the simultaneous multi-seat pass-left (step 2). The chain parks
@@ -383,6 +443,12 @@ export function resolveSeatChoice(
     // nothing.
     if (monarchsMode === 'discard' && monarchsActiveSeat !== undefined) {
       chainMonarchsDiscard(G, monarchsActiveSeat, events);
+    }
+    // why: WP-821 / D-24754 — "KO up to two" is two picks; the second chains here only after
+    // the first KO'd a Hero, exactly where Monarch's Decree chains its discard (D-24511). The
+    // last-ko kind never chains, so at most two KOs.
+    if (crushChoseKo && crushActiveSeat !== undefined) {
+      chainCrushPacifistResistanceLastKo(G, crushActiveSeat, events);
     }
   }
 }
@@ -403,14 +469,29 @@ export function resolveSeatChoice(
  * @param G - The game state to mutate.
  * @param choice - The fully-submitted pending seat choice.
  * @param shuffleContext - Deterministic reshuffle source, or undefined (timeout path).
+ * @param currentPlayer - The turn's active player (ctx.currentPlayer), or undefined on the
+ *   timeout path; a Diving Block draw counts toward cardsDrawn only for this seat (D-24732).
  */
 function applySeatChoiceByKind(
   G: LegendaryGameState,
   choice: PendingSeatChoice,
   shuffleContext: { random: { Shuffle: <T>(deck: T[]) => T[] } } | undefined,
+  currentPlayer?: string,
 ): void {
   if (choice.kind === DIVING_BLOCK_SEAT_CHOICE_KIND) {
-    applyDivingBlockResolvedSeatChoice(G, choice, shuffleContext);
+    applyDivingBlockResolvedSeatChoice(G, choice, shuffleContext, currentPlayer);
+    return;
+  }
+  // why: WP-827 / D-24760 — Flying Shield Block: a reveal returns the Wound and rescues a
+  // Bystander for the revealing seat; a decline passes the Wound to the next seat that could
+  // reveal. No draw, so no shuffle context.
+  if (choice.kind === FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND) {
+    applyFlyingShieldBlockResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-828 / D-24761 — the chosen hand Hero gains Man Out of Time this turn.
+  if (choice.kind === OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND) {
+    applyOutOfTimeGrantResolvedSeatChoice(G, choice);
     return;
   }
   // why: WP-694 / D-24511 — Monarch's Decree mode apply: the "draw" branch draws for each
@@ -430,6 +511,30 @@ function applySeatChoiceByKind(
     applyVanishingIllusionsKo(G, choice);
     return;
   }
+  // why: WP-818 / D-24752 — Baron Zemo's Fallen Idols discard, the Monarch's discard
+  // apply for the other non-Savior seats (atomic, ascending seats, no draw).
+  if (choice.kind === FALLEN_IDOLS_DISCARD_KIND) {
+    applyFallenIdolsDiscard(G, choice);
+    return;
+  }
+  // why: WP-821 / D-24754 — Arnim Zola's tactics: Computer-Uploaded Genius' discard (the
+  // Fallen Idols body), Dominate the Weak's gain, and both Crush Pacifist Resistance picks
+  // (one applier). None draws, so none needs the shuffle context.
+  if (choice.kind === COMPUTER_UPLOADED_GENIUS_DISCARD_KIND) {
+    applyComputerUploadedGeniusDiscard(G, choice);
+    return;
+  }
+  if (choice.kind === DOMINATE_THE_WEAK_GAIN_KIND) {
+    applyDominateTheWeakGain(G, choice);
+    return;
+  }
+  if (
+    choice.kind === CRUSH_PACIFIST_RESISTANCE_KO_KIND ||
+    choice.kind === CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND
+  ) {
+    applyCrushPacifistResistanceKo(G, choice);
+    return;
+  }
   // why: WP-793 / D-24656 — the escape procedure's HQ KO (the current player's pick) and
   // every-player Bystander discard (atomic, ascending seats, through discardFromHand), and a
   // non-active seat's return-on-discard answer. None draws, so none needs the shuffle context.
@@ -437,12 +542,43 @@ function applySeatChoiceByKind(
     applyEscapeHqKo(G, choice);
     return;
   }
+  // why: WP-829 / D-24762 — Go Back in Time: the chosen HQ Hero is Purged from the Timestream.
+  if (choice.kind === TIMESTREAM_PURGE_SEAT_CHOICE_KIND) {
+    applyTimestreamPurgeResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code: pay 1 Recruit and look, or decline.
+  if (choice.kind === ENIGMA_PEEK_SEAT_CHOICE_KIND) {
+    applyEnigmaPeekResolvedSeatChoice(G, choice);
+    return;
+  }
   if (choice.kind === ESCAPE_BYSTANDER_DISCARD_KIND) {
     applyEscapeBystanderDiscard(G, choice);
     return;
   }
+  // why: WP-817 / D-24750 — the owed Escape-effect discard (Primus), the cost-filtered
+  // sibling of the Bystander discard; applied atomically through discardFromHand.
+  if (choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND) {
+    applyEscapeEffectCostDiscard(G, choice);
+    return;
+  }
+  // why: WP-837 / D-24770 — the owed every-player Hero-trait discard (co2e Mystique / Frost
+  // Giant Warrior); a card goes through discardFromHand, the Wound option through the Wound
+  // chokepoint, and the current player's Wound moves woundsDrawn.
+  if (choice.kind === VILLAIN_EFFECT_TRAIT_DISCARD_KIND) {
+    applyVillainEffectTraitDiscard(G, choice, currentPlayer);
+    return;
+  }
   if (choice.kind === RETURN_ON_DISCARD_SEAT_CHOICE_KIND) {
     applyReturnOnDiscardSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-845 / D-24779 — reveal or gain a Wound (rules v23 L3196-3200). The applier reads the
+  // front G.pendingRevealOrWoundChoices entry for its card, current player and threat kind (the
+  // timeout path passes no current player), applies the seats in ascending order, and bumps
+  // woundsDrawn only for the entry's current player. No draw, so no shuffle context.
+  if (choice.kind === REVEAL_OR_WOUND_SEAT_CHOICE_KIND) {
+    applyRevealOrWoundSeatChoice(G, choice);
     return;
   }
   // why: D-24678 — the shuffle context reaches Random Acts' Diving Block draw.
@@ -519,6 +655,43 @@ function chainMonarchsDiscard(
   }
   parkSeatChoice(G, events, discardChoice);
   pushLog(G, `Each other player must choose a card to discard (Monarch's Decree).`, 'neutral');
+}
+
+/**
+ * Chains Crush Pacifist Resistance's second KO pick after the first pick KO'd a Hero:
+ * builds the last-ko choice from the active seat's remaining eligible Heroes and parks
+ * it for that seat alone.
+ *
+ * // why: WP-821 / D-24754 — parked from the live move context, like chainMonarchsDiscard
+ * (D-24511). The timeout path never reaches this (applySeatChoiceTimeoutDefault does not
+ * chain, D-24501), and a defaulted first pick is "KO nothing" anyway.
+ *
+ * @param G - Game state (mutated: may set G.pendingSeatChoice for the second pick).
+ * @param activeSeat - The defeating player who made the first pick.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ */
+function chainCrushPacifistResistanceLastKo(
+  G: LegendaryGameState,
+  activeSeat: string,
+  events: SeatChoiceEvents | undefined,
+): void {
+  const lastChoice = buildCrushPacifistResistanceChoice(
+    G,
+    activeSeat,
+    CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
+  );
+  if (lastChoice === undefined) {
+    pushLog(G,
+      `Fight effect: Player ${activeSeat} has no other Hero with less than 2 printed Attack to KO (Crush Pacifist Resistance).`,
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, lastChoice, activeSeat);
+  pushLog(G,
+    `Fight effect: Player ${activeSeat} may KO one more Hero with less than 2 printed Attack (Crush Pacifist Resistance).`,
+    'neutral',
+  );
 }
 
 /**

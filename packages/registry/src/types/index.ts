@@ -250,6 +250,19 @@ export interface CardRegistry {
    * so every registry the engine receives can apply the override.
    */
   resolveEffectiveHenchmenCount(schemeId: string, numPlayers: number, baseHenchmenCount: number): number;
+
+  /**
+   * Scheme-aware effective Villain Group count (D-24766). Returns the standard
+   * `playerCountSetup[numPlayers].villainGroupCount` for most schemes, but base + 1
+   * for the schemes that print "Add an extra Villain Group" (Change the Outcome of
+   * WWII and the other `SCHEMES_WITH_EXTRA_VILLAIN_GROUP` schemes).
+   *
+   * why: carried on the registry object (like `resolveEffectiveHenchmenCount`) so
+   * the game engine reaches the ONE definition at setup time via structural typing,
+   * without importing this package. Required — both registry impls must expose it
+   * so every registry the engine receives can apply the override.
+   */
+  resolveEffectiveVillainGroupCount(schemeId: string, numPlayers: number, baseVillainGroupCount: number): number;
 }
 
 // ── Factory options ──────────────────────────────────────────────────────────

@@ -79,13 +79,16 @@ export function createTokenBucketRateLimiter({ capacity, windowMs, now }) {
  *   and where it came from (safe to log; the key itself is not).
  */
 export function resolveRateLimitKey(koaContext) {
-  // why: the key order. Koa `app.proxy` is off, so `request.ip` is the address of
-  // the last proxy hop (Cloudflare → Render), shared by every caller, not the
-  // client. Cloudflare sets `cf-connecting-ip` to the real client address, but
-  // whether it reaches Node, and whether a caller can forge it, is unverified
-  // until the WP-787 live check (the direct onrender.com origin also answers
-  // `Server: cloudflare`). So prefer the header, fall back to `request.ip`, and
-  // rely on the caller's process-wide cap as the hard bound either way.
+  // why: the key order. Since the D-24707 cutover a request runs Cloudflare edge →
+  // Nginx on the droplet → Node at 127.0.0.1:3000. Koa `app.proxy` is off, so
+  // `request.ip` is Nginx's loopback hop, shared by every caller, not the client.
+  // Cloudflare sets `cf-connecting-ip` to the real client address and answers 403
+  // to a request that brings its own (D-24647). Nginx passes the header through
+  // unchecked, so trusting it rests on the origin being reachable only through
+  // Cloudflare: UFW admits 443 only from Cloudflare's ranges, port 80 only
+  // redirects, and 3000 is closed (verified 2026-10-14, D-24635 §3). So prefer the
+  // header, fall back to `request.ip`, and keep the caller's process-wide cap as
+  // the hard bound in case that origin lock ever lapses.
   const headers = koaContext.req?.headers ?? {};
   const connectingIp = headers['cf-connecting-ip'];
   if (typeof connectingIp === 'string' && connectingIp !== '') {

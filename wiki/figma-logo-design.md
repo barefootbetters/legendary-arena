@@ -12,7 +12,7 @@ related:
   - wiki-viewer.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\figma-logo-design.md (this page — https://ewiki.legendary-arena.com/figma-logo-design/)
+  - C:\dev\legendary-arena\wiki\figma-logo-design.md (this page — https://ewiki.legendary-arena.com/figma-logo-design/)
 last-reviewed: 2026-05-13
 ---
 
@@ -20,9 +20,9 @@ last-reviewed: 2026-05-13
 
 | Repo | Base URL (local) | Site |
 |---|---|---|
-| Engine | `C:\pcloud\BB\DEV\legendary-arena\` | `ewiki.legendary-arena.com` |
+| Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
-| Research / Notes | `C:\pcloud\LA\ewiki\` | (not published) |
+| Research / Notes | `C:\pcloud\legendary-arena\ewiki\` | (not published) |
 
 ## Summary
 

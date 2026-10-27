@@ -877,13 +877,17 @@ function makeSeatEvents(): { setActivePlayers: (arg: unknown) => void; admitted:
   return { admitted, setActivePlayers: (arg: unknown) => admitted.push(arg) };
 }
 
-/** Minimal multi-seat G carrying only the fields the two tactics touch. */
+/**
+ * Minimal multi-seat G carrying only the fields the two tactics touch.
+ * `villainDeckCardTypes` is the setup-time type map Vanishing Illusions reads to
+ * tell a Villain or Henchman from a Bystander or Tactic (D-24742).
+ */
 function makeSeatState(zonesBySeat: Record<string, {
   deck?: string[];
   hand?: string[];
   discard?: string[];
   victory?: string[];
-}>): LegendaryGameState {
+}>, villainDeckCardTypes: Record<string, string> = {}): LegendaryGameState {
   const playerZones: Record<string, unknown> = {};
   for (const seat of Object.keys(zonesBySeat)) {
     const z = zonesBySeat[seat]!;
@@ -895,8 +899,31 @@ function makeSeatState(zonesBySeat: Record<string, {
       victory: [...(z.victory ?? [])],
     };
   }
-  return { playerZones, ko: [], cardDisplayData: {}, messages: [] } as unknown as LegendaryGameState;
+  return {
+    playerZones,
+    ko: [],
+    cardDisplayData: {},
+    messages: [],
+    villainDeckCardTypes: { ...villainDeckCardTypes },
+  } as unknown as LegendaryGameState;
 }
+
+/** Types each id the way setup's villainDeckCardTypes map would (all one type). */
+function typeAll(cardType: string, ids: string[]): Record<string, string> {
+  const types: Record<string, string> = {};
+  for (const id of ids) {
+    types[id] = cardType;
+  }
+  return types;
+}
+
+/** The Villain ids the Vanishing Illusions dispatch tests below place in Victory Piles. */
+const SEAT_TEST_VILLAIN_TYPES = typeAll('villain', [
+  'core-villain-hydra-own#0',
+  'core-villain-hydra-a#0',
+  'core-villain-hydra-b#0',
+  'core-villain-brotherhood-c#0',
+]);
 
 /** A resolveSeatChoice move context for a submitting seat. */
 function makeSeatResolveCtx(
@@ -987,7 +1014,7 @@ describe('dispatchTacticOnFight — Vanishing Illusions (WP-694 / D-24511)', () 
       '1': { victory: ['core-villain-hydra-a#0', 'core-villain-hydra-b#0'] },
       '2': { victory: [] }, // no villain → not addressed
       '3': { victory: ['core-villain-brotherhood-c#0'] },
-    });
+    }, SEAT_TEST_VILLAIN_TYPES);
     const events = makeSeatEvents();
     dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, events);
     const choice = G.pendingSeatChoice;
@@ -1006,15 +1033,54 @@ describe('dispatchTacticOnFight — Vanishing Illusions (WP-694 / D-24511)', () 
   });
 
   it('a seat with no Victory-Pile Villain no-ops; no other seat qualifying parks nothing', () => {
-    const G = makeSeatState({ '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: [] }, '2': { victory: [] } });
+    const G = makeSeatState(
+      { '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: [] }, '2': { victory: [] } },
+      SEAT_TEST_VILLAIN_TYPES,
+    );
     dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
     assert.equal(G.pendingSeatChoice, undefined, 'no other seat qualifies → nothing parked');
+  });
+
+  it('D-24742: a Henchmen-only seat and a Villain seat are both addressed and both KO one', () => {
+    // why: live match Y1w7rCsC8Ek — a seat whose Victory Pile held only Sentinels was
+    // never addressed, because the id-grammar test treated Henchmen as non-Villains.
+    // Rules v23 "Henchmen Are Villains"; D-24603 / D-24608.
+    const G = makeSeatState({
+      '0': { victory: ['core-villain-hydra-own#0'] }, // defeating player — skipped
+      '1': { victory: ['henchman-sentinel-03', 'bystander-villain-deck-04', 'henchman-hand-ninjas-04'] },
+      '2': { victory: ['core-villain-brotherhood-c#0'] },
+    }, {
+      ...SEAT_TEST_VILLAIN_TYPES,
+      ...typeAll('henchman', ['henchman-sentinel-03', 'henchman-hand-ninjas-04']),
+      'bystander-villain-deck-04': 'bystander',
+    });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, events);
+    const choice = G.pendingSeatChoice;
+    assert.ok(choice !== undefined, 'a KO choice was parked');
+    assert.deepEqual(choice!.addressedSeats, ['1', '2'], 'the Henchmen-only seat is addressed alongside the Villain seat');
+    assert.deepEqual(
+      choice!.seatPrompts['1']!.options.map((option) => option.cardId),
+      ['henchman-sentinel-03', 'henchman-hand-ninjas-04'],
+      'seat 1 is offered its two Henchmen, not its rescued Bystander',
+    );
+    resolveSeatChoice(makeSeatResolveCtx(G, '2'), { optionIndex: 0 }); // KO brotherhood-c
+    assert.ok(G.pendingSeatChoice !== undefined, 'still waiting on seat 1');
+    resolveSeatChoice(makeSeatResolveCtx(G, '1'), { optionIndex: 1 }); // KO hand-ninjas-04
+    assert.equal(G.pendingSeatChoice, undefined, 'applied + cleared once both seats submitted');
+    assert.deepEqual(G.playerZones['1']!.victory, ['henchman-sentinel-03', 'bystander-villain-deck-04']);
+    assert.deepEqual(G.playerZones['2']!.victory, []);
+    assert.deepEqual(G.ko, ['henchman-hand-ninjas-04', 'core-villain-brotherhood-c#0'], 'ascending-seat apply order');
+    assert.deepEqual(G.playerZones['0']!.victory, ['core-villain-hydra-own#0'], 'the defeating player is untouched');
   });
 });
 
 describe('multi-seat tactic disconnect/timeout default (WP-694 / D-24511)', () => {
   it('AC-6 resolves an absent seat to defaultOptionIndex (0) and applies atomically', () => {
-    const G = makeSeatState({ '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: ['core-villain-hydra-a#0'] } });
+    const G = makeSeatState(
+      { '0': { victory: ['core-villain-hydra-own#0'] }, '1': { victory: ['core-villain-hydra-a#0'] } },
+      SEAT_TEST_VILLAIN_TYPES,
+    );
     dispatchTacticOnFight(G, { currentPlayer: '0' }, VANISHING_ILLUSIONS_TACTIC_ID as CardExtId, SHUFFLE, makeSeatEvents());
     assert.ok(G.pendingSeatChoice !== undefined);
     // Governing-policy default resolves the absent seat to its default (index 0).
@@ -1102,5 +1168,690 @@ describe("Xavier's Nemesis count vs Electromagnetic Bubble targets for a both-si
     resolveElectromagneticBubble(G, '0');
     assert.equal(G.pendingElectromagneticBubbleChoices, undefined, 'one eligible Hero — no pick parked');
     assert.deepEqual(G.deferredHandInjections, { '0': [LEGION_FACE_A] }, 'the physical face-a entry, once');
+  });
+});
+
+import { FINDING_ZEMO_REVEAL_COUNT } from './tacticHandlers.js';
+import { FALLEN_IDOLS_DISCARD_KIND } from '../moves/seatChoiceTactics.js';
+import { makeMockCtx } from '../test/mockCtx.js';
+
+const ZEMO_FALLEN_IDOLS_ID = 'ca75-mastermind-baron-heinrich-zemo-fallen-idols' as CardExtId;
+const ZEMO_FINDING_ZEMO_ID = 'ca75-mastermind-baron-heinrich-zemo-finding-zemo' as CardExtId;
+const ZEMO_HATRED_ID = 'ca75-mastermind-baron-heinrich-zemo-hatred-for-the-avengers' as CardExtId;
+const ZEMO_PRISONERS_ID = 'ca75-mastermind-baron-heinrich-zemo-prisoners-of-war' as CardExtId;
+const ZEMO_AVENGERS_HERO: CardExtId = 'ca75-hero-captain-america-shield-throw';
+const ZEMO_AVENGERS_HERO_2: CardExtId = 'ca75-hero-bucky-barnes-sniper';
+const ZEMO_X_MEN_HERO: CardExtId = 'core-hero-cyclops-optic-blast';
+const THREE_BYSTANDERS: CardExtId[] = ['pile-bystander', 'pile-bystander', 'pile-bystander'];
+
+/**
+ * Builds a Zemo-tactic state: per-seat zones, a Bystander and Wound supply, the
+ * Villain Deck with its type map, and team traits for the test Heroes.
+ *
+ * @param zonesBySeat - Each seat's hand / discard / inPlay / victory.
+ * @param options - Supply sizes and the Villain Deck.
+ * @returns A LegendaryGameState carrying only the fields the resolvers read.
+ */
+function makeZemoTacticState(
+  zonesBySeat: Record<string, { hand?: CardExtId[]; discard?: CardExtId[]; inPlay?: CardExtId[]; victory?: CardExtId[] }>,
+  options: { bystanders?: number; wounds?: number; deck?: CardExtId[]; deckTypes?: Record<string, string> } = {},
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const zones = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [],
+      hand: [...(zones.hand ?? [])],
+      discard: [...(zones.discard ?? [])],
+      inPlay: [...(zones.inPlay ?? [])],
+      victory: [...(zones.victory ?? [])],
+    };
+  }
+  const bystanders: CardExtId[] = [];
+  for (let index = 0; index < (options.bystanders ?? 0); index++) {
+    bystanders.push('pile-bystander');
+  }
+  const wounds: CardExtId[] = [];
+  for (let index = 0; index < (options.wounds ?? 0); index++) {
+    wounds.push(WOUND);
+  }
+  return {
+    messages: [],
+    playerZones,
+    piles: { bystanders, wounds },
+    ko: [],
+    villainDeck: { deck: [...(options.deck ?? [])], discard: [] },
+    villainDeckCardTypes: { ...(options.deckTypes ?? {}) },
+    cardDisplayData: {
+      'card-a': { name: 'Alpha' },
+      'card-b': { name: 'Bravo' },
+      'card-c': { name: 'Charlie' },
+    },
+    cardTraits: {
+      [ZEMO_AVENGERS_HERO]: { heroClass: null, team: 'avengers' },
+      [ZEMO_AVENGERS_HERO_2]: { heroClass: null, team: 'avengers' },
+      [ZEMO_X_MEN_HERO]: { heroClass: null, team: 'x-men' },
+    },
+  } as unknown as LegendaryGameState;
+}
+
+/** The text and outcome of every log line, in order. */
+function zemoLogLines(G: LegendaryGameState): Array<{ text: string; outcome: string | undefined }> {
+  return G.messages.map((entry) => ({ text: entry.text, outcome: entry.outcome }));
+}
+
+describe('WP-818 dispatchTacticOnFight — Baron Zemo tactics (D-24752)', () => {
+  it('T12: Fallen Idols addresses only the other non-Saviors holding a card, narrating the rest', () => {
+    const G = makeZemoTacticState({
+      '0': { hand: ['card-c'] },
+      '1': { hand: ['card-a', 'card-b'] },
+      '2': { hand: ['card-c'], victory: THREE_BYSTANDERS },
+      '3': { hand: [] },
+    });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FALLEN_IDOLS_ID, SHUFFLE, events);
+    assert.deepEqual(G.pendingSeatChoice, {
+      kind: FALLEN_IDOLS_DISCARD_KIND,
+      addressedSeats: ['1'],
+      seatPrompts: {
+        '1': { options: [{ label: 'Discard Alpha', cardId: 'card-a' }, { label: 'Discard Bravo', cardId: 'card-b' }] },
+      },
+      submissions: {},
+      defaultOptionIndex: 0,
+    });
+    assert.equal(events.admitted.length, 1, 'the addressed seat is admitted');
+    assert.deepEqual(zemoLogLines(G), [
+      { text: 'Fight effect: Player 2 is a Savior and discards nothing (Fallen Idols).', outcome: 'neutral' },
+      { text: 'Fight effect: Player 3 has no card to discard (Fallen Idols).', outcome: 'neutral' },
+      { text: 'Fight effect: each other player who is not a Savior must discard a card (Fallen Idols).', outcome: 'neutral' },
+    ]);
+    resolveSeatChoice(makeSeatResolveCtx(G, '1'), { optionIndex: 1 });
+    assert.equal(G.pendingSeatChoice, undefined, 'applied + cleared');
+    assert.deepEqual(G.playerZones['1']!.hand, ['card-a']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['card-b']);
+  });
+
+  it('T13: Fallen Idols solo, and with every other seat a Savior, parks nothing', () => {
+    const solo = makeZemoTacticState({ '0': { hand: ['card-a'] } });
+    dispatchTacticOnFight(solo, { currentPlayer: '0' }, ZEMO_FALLEN_IDOLS_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(solo.pendingSeatChoice, undefined);
+    assert.deepEqual(zemoLogLines(solo), [
+      { text: 'Fight effect: there is no other player to discard a card (Fallen Idols).', outcome: 'neutral' },
+    ]);
+
+    const allSaviors = makeZemoTacticState({
+      '0': { hand: ['card-a'] },
+      '1': { hand: ['card-b'], victory: THREE_BYSTANDERS },
+      '2': { hand: ['card-c'], victory: ['pile-bystander', 'pile-bystander', 'bystander-villain-deck-01'] },
+    });
+    dispatchTacticOnFight(allSaviors, { currentPlayer: '0' }, ZEMO_FALLEN_IDOLS_ID, SHUFFLE, makeSeatEvents());
+    assert.equal(allSaviors.pendingSeatChoice, undefined);
+    assert.deepEqual(zemoLogLines(allSaviors).map((line) => line.text), [
+      'Fight effect: Player 1 is a Savior and discards nothing (Fallen Idols).',
+      'Fight effect: Player 2 is a Savior and discards nothing (Fallen Idols).',
+      'Fight effect: no other player who is not a Savior has a card to discard (Fallen Idols).',
+    ]);
+  });
+
+  it('T16: Finding Zemo KOs the revealed Bystanders, wounds each other player once, and reshuffles the rest on top', () => {
+    const G = makeZemoTacticState(
+      { '0': {}, '1': {}, '2': {} },
+      {
+        wounds: 5,
+        deck: ['v1', 'b1', 'v2', 'b2', 's1', 'v3'],
+        deckTypes: { v1: 'villain', v2: 'villain', v3: 'villain', b1: 'bystander', b2: 'bystander', s1: 'scheme-twist' },
+      },
+    );
+    assert.equal(FINDING_ZEMO_REVEAL_COUNT, 5);
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(G.ko, ['b1', 'b2']);
+    assert.deepEqual(G.villainDeck.deck, ['s1', 'v2', 'v1', 'v3'], 'the rest reversed by the mock Shuffle, on top');
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.playerZones['1']!.discard, [WOUND]);
+    assert.deepEqual(G.playerZones['2']!.discard, [WOUND]);
+    assert.deepEqual(zemoLogLines(G), [
+      { text: "Fight effect: revealed the top 5 card(s) of the Villain Deck and KO'd 2 Bystander(s) (Finding Zemo).", outcome: 'applied' },
+      { text: 'Fight effect: Player 1 gained a Wound (Finding Zemo).', outcome: 'applied' },
+      { text: 'Fight effect: Player 2 gained a Wound (Finding Zemo).', outcome: 'applied' },
+    ]);
+  });
+
+  it('T17: Finding Zemo with no Bystander revealed still reshuffles the top 5 and deals no Wound', () => {
+    const deck: CardExtId[] = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'];
+    const G = makeZemoTacticState({ '0': {}, '1': {} }, { wounds: 5, deck, deckTypes: typeAll('villain', deck) });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(G.ko, []);
+    assert.deepEqual(G.villainDeck.deck, ['v5', 'v4', 'v3', 'v2', 'v1', 'v6', 'v7']);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+    assert.deepEqual(zemoLogLines(G), [
+      { text: 'Fight effect: revealed the top 5 card(s) of the Villain Deck — no Bystanders (Finding Zemo).', outcome: 'blocked' },
+    ]);
+  });
+
+  it('T18: Finding Zemo on a 1-card deck and on an empty deck never calls Shuffle', () => {
+    let shuffleCalls = 0;
+    const countingShuffle = {
+      random: {
+        Shuffle: <T,>(items: T[]): T[] => {
+          shuffleCalls += 1;
+          return [...items].reverse();
+        },
+      },
+    };
+    const oneCard = makeZemoTacticState({ '0': {}, '1': {} }, { wounds: 5, deck: ['b1'], deckTypes: { b1: 'bystander' } });
+    dispatchTacticOnFight(oneCard, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, countingShuffle);
+    assert.deepEqual(oneCard.ko, ['b1']);
+    assert.deepEqual(oneCard.villainDeck.deck, []);
+    assert.deepEqual(oneCard.playerZones['1']!.discard, [WOUND]);
+
+    const empty = makeZemoTacticState({ '0': {}, '1': {} }, { wounds: 5 });
+    dispatchTacticOnFight(empty, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, countingShuffle);
+    assert.deepEqual(zemoLogLines(empty), [
+      { text: 'Fight effect: the Villain Deck is empty, so nothing is revealed (Finding Zemo).', outcome: 'blocked' },
+    ]);
+    assert.equal(shuffleCalls, 0);
+  });
+
+  it('T18: Finding Zemo solo logs that there is no other player to gain a Wound', () => {
+    const G = makeZemoTacticState({ '0': {} }, { wounds: 5, deck: ['b1'], deckTypes: { b1: 'bystander' } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(zemoLogLines(G)[1], {
+      text: 'Fight effect: there is no other player to gain a Wound (Finding Zemo).',
+      outcome: 'neutral',
+    });
+  });
+
+  it('T18: Finding Zemo with an empty Wound supply logs the blocked Wound line', () => {
+    const G = makeZemoTacticState({ '0': {}, '1': {} }, { wounds: 0, deck: ['b1'], deckTypes: { b1: 'bystander' } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(zemoLogLines(G)[1], {
+      text: 'Fight effect: Player 1 gained no Wound — the Wound supply is empty (Finding Zemo).',
+      outcome: 'blocked',
+    });
+  });
+
+  it('T19: on a Killbots deck a villain-deck Bystander typed villain is not KOed', () => {
+    const G = makeZemoTacticState(
+      { '0': {}, '1': {} },
+      { wounds: 5, deck: ['bystander-villain-deck-01', 'v1'], deckTypes: { 'bystander-villain-deck-01': 'villain', v1: 'villain' } },
+    );
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(G.ko, []);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+  });
+
+  it('T20: Hatred for the Avengers rescues one Bystander per Avengers Hero in hand or play', () => {
+    const G = makeZemoTacticState(
+      { '0': { hand: [ZEMO_AVENGERS_HERO], inPlay: [ZEMO_AVENGERS_HERO_2, ZEMO_X_MEN_HERO] }, '1': {} },
+      { bystanders: 5 },
+    );
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_HATRED_ID, SHUFFLE);
+    assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander', 'pile-bystander']);
+    assert.equal(G.piles.bystanders.length, 3);
+    assert.deepEqual(zemoLogLines(G), [
+      {
+        text: 'Fight effect: Player 0 rescued 2 Bystander(s) — one per Avengers Hero in hand or play (Hatred for the Avengers).',
+        outcome: 'applied',
+      },
+    ]);
+  });
+
+  it('T21: Hatred for the Avengers with no Avengers Hero, or an empty supply, rescues nothing', () => {
+    const noAvengers = makeZemoTacticState({ '0': { hand: [ZEMO_X_MEN_HERO] } }, { bystanders: 5 });
+    dispatchTacticOnFight(noAvengers, { currentPlayer: '0' }, ZEMO_HATRED_ID, SHUFFLE);
+    assert.deepEqual(noAvengers.playerZones['0']!.victory, []);
+    assert.deepEqual(zemoLogLines(noAvengers), [
+      {
+        text: 'Fight effect: Player 0 has no Avengers Hero in hand or play, so no Bystander is rescued (Hatred for the Avengers).',
+        outcome: 'blocked',
+      },
+    ]);
+
+    const emptySupply = makeZemoTacticState({ '0': { hand: [ZEMO_AVENGERS_HERO] } }, { bystanders: 0 });
+    dispatchTacticOnFight(emptySupply, { currentPlayer: '0' }, ZEMO_HATRED_ID, SHUFFLE);
+    assert.deepEqual(emptySupply.playerZones['0']!.victory, []);
+    assert.deepEqual(zemoLogLines(emptySupply), [
+      {
+        text: 'Fight effect: Player 0 has Avengers Heroes but the Bystander supply is empty, so no Bystander is rescued (Hatred for the Avengers).',
+        outcome: 'blocked',
+      },
+    ]);
+  });
+
+  it('T23: Prisoners of War — a hand reveal keeps the Bystander; otherwise the first one moves to the fighter', () => {
+    const G = makeZemoTacticState({
+      '0': { victory: ['v0'] },
+      '1': { hand: [ZEMO_AVENGERS_HERO], victory: ['pile-bystander'] },
+      '2': { hand: [ZEMO_X_MEN_HERO], victory: ['v', 'bystander-villain-deck-04', 'pile-bystander'] },
+      '3': { hand: [], victory: ['v3'] },
+    });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_PRISONERS_ID, SHUFFLE);
+    assert.deepEqual(G.playerZones['1']!.victory, ['pile-bystander'], 'the revealing seat keeps its Bystander');
+    assert.deepEqual(G.playerZones['2']!.victory, ['v', 'pile-bystander']);
+    assert.deepEqual(G.playerZones['0']!.victory, ['v0', 'bystander-villain-deck-04']);
+    assert.deepEqual(G.playerZones['3']!.victory, ['v3']);
+    assert.deepEqual(zemoLogLines(G), [
+      {
+        text: `Fight effect: Player 1 revealed ${ZEMO_AVENGERS_HERO} (${ZEMO_AVENGERS_HERO}) — no Bystander (Prisoners of War).`,
+        outcome: 'neutral',
+      },
+      {
+        text: 'Fight effect: Player 2 had no Avengers Hero, so Player 0 rescued a Bystander from their Victory Pile (Prisoners of War).',
+        outcome: 'applied',
+      },
+      {
+        text: 'Fight effect: Player 3 had no Avengers Hero and no Bystander in their Victory Pile (Prisoners of War).',
+        outcome: 'blocked',
+      },
+    ]);
+  });
+
+  it('T24: Prisoners of War reveals from the hand only, and logs the solo no-op', () => {
+    const G = makeZemoTacticState({
+      '0': {},
+      '2': { discard: [ZEMO_AVENGERS_HERO], victory: ['pile-bystander'] },
+    });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZEMO_PRISONERS_ID, SHUFFLE);
+    assert.deepEqual(G.playerZones['2']!.victory, []);
+    assert.deepEqual(G.playerZones['0']!.victory, ['pile-bystander']);
+
+    const solo = makeZemoTacticState({ '0': {} });
+    dispatchTacticOnFight(solo, { currentPlayer: '0' }, ZEMO_PRISONERS_ID, SHUFFLE);
+    assert.deepEqual(zemoLogLines(solo), [
+      {
+        text: 'Fight effect: there is no other player to reveal an Avengers Hero or give up a Bystander (Prisoners of War).',
+        outcome: 'neutral',
+      },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-821 / D-24754 — Arnim Zola's four tactics
+// ---------------------------------------------------------------------------
+
+import {
+  applyDominateTheWeakGain,
+  COMPUTER_UPLOADED_GENIUS_DISCARD_KIND,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  DOMINATE_THE_WEAK_GAIN_KIND,
+} from '../moves/seatChoiceTactics.js';
+import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
+
+const ZOLA_DOMINATE_ID = 'ca75-mastermind-arnim-zola-dominate-the-weak' as CardExtId;
+const ZOLA_GENIUS_ID = 'ca75-mastermind-arnim-zola-computer-uploaded-genius' as CardExtId;
+const ZOLA_PET_PROJECTS_ID = 'ca75-mastermind-arnim-zola-pet-projects' as CardExtId;
+const ZOLA_CRUSH_ID = 'ca75-mastermind-arnim-zola-crush-pacifist-resistance' as CardExtId;
+const ZOLA_SHIELD_AGENT: CardExtId = 'starting-shield-agent';
+const ZOLA_SHIELD_TROOPER: CardExtId = 'starting-shield-trooper';
+
+/**
+ * Builds a Zola-tactic state: per-seat zones, an HQ and Hero Deck, a Wound supply,
+ * and the stats / traits / names of the test cards (S.H.I.E.L.D. starters seeded with
+ * their real setup stats).
+ *
+ * @param zonesBySeat - Each seat's hand / inPlay / victory.
+ * @param options - The HQ, the Hero Deck and the Wound supply size.
+ * @returns A LegendaryGameState carrying only the fields the resolvers read.
+ */
+function makeZolaTacticState(
+  zonesBySeat: Record<string, { hand?: CardExtId[]; inPlay?: CardExtId[]; victory?: CardExtId[] }>,
+  options: { hq?: (CardExtId | null)[]; heroDeck?: CardExtId[]; wounds?: number } = {},
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const zones = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [],
+      hand: [...(zones.hand ?? [])],
+      discard: [],
+      inPlay: [...(zones.inPlay ?? [])],
+      victory: [...(zones.victory ?? [])],
+    };
+  }
+  const wounds: CardExtId[] = [];
+  for (let index = 0; index < (options.wounds ?? 0); index++) {
+    wounds.push(WOUND);
+  }
+  return {
+    messages: [],
+    playerZones,
+    hq: [...(options.hq ?? [null, null, null, null, null])],
+    heroDeck: [...(options.heroDeck ?? [])],
+    piles: { bystanders: [], wounds },
+    ko: [],
+    turnEconomy: { attack: 0, recruit: 4, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+    cardStats: {
+      hA: { attack: 1, cost: 3 },
+      hB: { attack: 0, cost: 5 },
+      hC: { attack: 2, cost: 4 },
+      hD: { attack: 3, cost: 6 },
+      d1: { attack: 2, cost: 4 },
+      atk1Hero: { attack: 1, cost: 3 },
+      atk2Hero: { attack: 2, cost: 4 },
+      atk3Hero: { attack: 3, cost: 5 },
+      [ZOLA_SHIELD_AGENT]: { attack: 0, cost: 0 },
+      [ZOLA_SHIELD_TROOPER]: { attack: 1, cost: 0 },
+    },
+    cardTraits: {
+      techHero: { heroClass: 'tech', team: null },
+      dualClassTech: { heroClass: 'strength', heroClass2: 'tech', team: null },
+      other: { heroClass: 'covert', team: null },
+      'card-a': { heroClass: 'instinct', team: null },
+      'card-b': { heroClass: 'ranged', team: null },
+    },
+    cardDisplayData: {
+      hA: { name: 'Hero Alpha' },
+      hB: { name: 'Hero Bravo' },
+      techHero: { name: 'Tech Hero' },
+      dualClassTech: { name: 'Dual Class Tech' },
+      'card-a': { name: 'Alpha' },
+      'card-b': { name: 'Bravo' },
+      atk1Hero: { name: 'Weak Hero' },
+    },
+  } as unknown as LegendaryGameState;
+}
+
+/** A Dominate the Weak option label, built the way the builder builds it. */
+function dominateLabel(G: LegendaryGameState, seat: string, heroId: CardExtId): string {
+  return `Player ${seat} gains ${resolveCardName(G.cardDisplayData, heroId)}`;
+}
+
+/** T1's board: seats 0-2, HQ [hA (atk 1, cost 3), hB (atk 0, cost 5), hC, null, hD]. */
+function makeDominateBoard(heroDeck: CardExtId[] = []): LegendaryGameState {
+  return makeZolaTacticState(
+    { '0': {}, '1': {}, '2': {} },
+    { hq: ['hA', 'hB', 'hC', null, 'hD'], heroDeck },
+  );
+}
+
+/** T1's expected option list, current seat 1 first, cost-descending within a seat. */
+function expectedDominateOptions(G: LegendaryGameState): unknown[] {
+  const options: unknown[] = [];
+  for (const seat of ['1', '0', '2']) {
+    for (const heroId of ['hB', 'hA'] as CardExtId[]) {
+      options.push({ label: dominateLabel(G, seat, heroId), cardId: heroId, recipientSeat: seat });
+    }
+  }
+  return options;
+}
+
+describe('WP-821 dispatchTacticOnFight — Arnim Zola tactics (D-24754)', () => {
+  it('T1: Dominate the Weak parks one active-seat choice, current seat first, cost-descending', () => {
+    const G = makeDominateBoard();
+    dispatchTacticOnFight(G, { currentPlayer: '1' }, ZOLA_DOMINATE_ID, makeMockCtx(), makeSeatEvents());
+    assert.deepEqual(G.pendingSeatChoice, {
+      kind: DOMINATE_THE_WEAK_GAIN_KIND,
+      addressedSeats: ['1'],
+      seatPrompts: { '1': { options: expectedDominateOptions(G) } },
+      submissions: {},
+      defaultOptionIndex: 0,
+    });
+    assert.deepEqual(zemoLogLines(G), [
+      { text: 'Fight effect: Player 1 chooses a player to gain a Hero with less than 2 printed Attack from the HQ (Dominate the Weak).', outcome: 'neutral' },
+    ]);
+  });
+
+  it('T2: Dominate the Weak solo with one weak Hero gains it at once, refilling the slot', () => {
+    const G = makeZolaTacticState({ '0': {} }, { hq: ['hA', 'hC', null, 'hD', null], heroDeck: ['d1'] });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZOLA_DOMINATE_ID, makeMockCtx(), makeSeatEvents());
+    assert.equal(G.pendingSeatChoice, undefined, 'a forced pick is not parked');
+    assert.deepEqual(G.playerZones['0']!.discard, ['hA']);
+    assert.equal(G.hq[0], 'd1');
+    assert.deepEqual(zemoLogLines(G), [
+      { text: `Player 0 gained ${resolveCardName(G.cardDisplayData, 'hA')} from the HQ (Dominate the Weak).`, outcome: 'applied' },
+    ]);
+  });
+
+  it('T3: Dominate the Weak with no weak Hero is blocked; solo with two weak Heroes parks two options', () => {
+    const none = makeZolaTacticState({ '0': {}, '1': {} }, { hq: ['hC', 'hD', null, null, null] });
+    dispatchTacticOnFight(none, { currentPlayer: '0' }, ZOLA_DOMINATE_ID, makeMockCtx(), makeSeatEvents());
+    assert.equal(none.pendingSeatChoice, undefined);
+    assert.deepEqual(zemoLogLines(none), [
+      { text: 'Fight effect: no Hero in the HQ has less than 2 printed Attack, so no one gains a Hero (Dominate the Weak).', outcome: 'blocked' },
+    ]);
+
+    const solo = makeZolaTacticState({ '0': {} }, { hq: ['hA', 'hB', null, null, null] });
+    dispatchTacticOnFight(solo, { currentPlayer: '0' }, ZOLA_DOMINATE_ID, makeMockCtx(), makeSeatEvents());
+    const labels = solo.pendingSeatChoice!.seatPrompts['0']!.options.map((option) => option.label);
+    assert.deepEqual(labels, [dominateLabel(solo, '0', 'hB'), dominateLabel(solo, '0', 'hA')]);
+  });
+
+  it('T3b: Dominate the Weak reaches a Haunted HQ Hero; the haunter stays on the refilled slot', () => {
+    const G = makeDominateBoard(['d1']);
+    G.hqHaunters = [{ kind: 'villain', cardId: 'villain-ghost#0' as CardExtId }, null, null, null, null];
+    dispatchTacticOnFight(G, { currentPlayer: '1' }, ZOLA_DOMINATE_ID, makeMockCtx(), makeSeatEvents());
+    const choice = G.pendingSeatChoice!;
+    assert.deepEqual(choice.seatPrompts['1']!.options, expectedDominateOptions(G));
+    choice.submissions['1'] = { optionIndex: 3 };
+    applyDominateTheWeakGain(G, choice);
+    assert.deepEqual(G.playerZones['0']!.discard, ['hA'], 'Player 0 gains the haunted Hero');
+    assert.equal(G.hq[0], 'd1', 'the slot refilled');
+    assert.deepEqual(G.hqHaunters![0], { kind: 'villain', cardId: 'villain-ghost#0' }, 'the haunter stays on the slot');
+  });
+
+  it('T4: Computer-Uploaded Genius reveals hand Tech (either class slot) and parks the rest a discard', () => {
+    const G = makeZolaTacticState({
+      '0': {},
+      '1': { hand: ['techHero', 'other'] },
+      '2': { hand: ['card-a', 'card-b'] },
+      '3': { hand: [] },
+      '4': { hand: ['dualClassTech'] },
+    });
+    const events = makeSeatEvents();
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZOLA_GENIUS_ID, makeMockCtx(), events);
+    assert.deepEqual(G.pendingSeatChoice, {
+      kind: COMPUTER_UPLOADED_GENIUS_DISCARD_KIND,
+      addressedSeats: ['2'],
+      seatPrompts: {
+        '2': {
+          options: [
+            { label: `Discard ${resolveCardName(G.cardDisplayData, 'card-a')}`, cardId: 'card-a' },
+            { label: `Discard ${resolveCardName(G.cardDisplayData, 'card-b')}`, cardId: 'card-b' },
+          ],
+        },
+      },
+      submissions: {},
+      defaultOptionIndex: 0,
+    });
+    assert.equal(events.admitted.length, 1, 'the addressed seat is admitted');
+    assert.deepEqual(zemoLogLines(G), [
+      { text: `Fight effect: Player 1 revealed ${formatCardRef(G.cardDisplayData, 'techHero')} — no discard (Computer-Uploaded Genius).`, outcome: 'neutral' },
+      { text: 'Fight effect: Player 3 has no card to discard (Computer-Uploaded Genius).', outcome: 'neutral' },
+      { text: `Fight effect: Player 4 revealed ${formatCardRef(G.cardDisplayData, 'dualClassTech')} — no discard (Computer-Uploaded Genius).`, outcome: 'neutral' },
+      { text: 'Fight effect: each other player without a Tech Hero must discard a card (Computer-Uploaded Genius).', outcome: 'neutral' },
+    ]);
+  });
+
+  it('T5: Computer-Uploaded Genius solo, and with every other seat holding Tech, parks nothing', () => {
+    const solo = makeZolaTacticState({ '0': { hand: ['card-a'] } });
+    dispatchTacticOnFight(solo, { currentPlayer: '0' }, ZOLA_GENIUS_ID, makeMockCtx(), makeSeatEvents());
+    assert.equal(solo.pendingSeatChoice, undefined);
+    assert.deepEqual(zemoLogLines(solo), [
+      { text: 'Fight effect: there is no other player to reveal a Tech Hero or discard a card (Computer-Uploaded Genius).', outcome: 'neutral' },
+    ]);
+
+    const allTech = makeZolaTacticState({
+      '0': {},
+      '1': { hand: ['techHero'] },
+      '2': { hand: ['card-a', 'dualClassTech'] },
+    });
+    dispatchTacticOnFight(allTech, { currentPlayer: '0' }, ZOLA_GENIUS_ID, makeMockCtx(), makeSeatEvents());
+    assert.equal(allTech.pendingSeatChoice, undefined);
+    assert.deepEqual(zemoLogLines(allTech).map((line) => line.text), [
+      `Fight effect: Player 1 revealed ${formatCardRef(allTech.cardDisplayData, 'techHero')} — no discard (Computer-Uploaded Genius).`,
+      `Fight effect: Player 2 revealed ${formatCardRef(allTech.cardDisplayData, 'dualClassTech')} — no discard (Computer-Uploaded Genius).`,
+      'Fight effect: no other player must discard a card (Computer-Uploaded Genius).',
+    ]);
+  });
+
+  it('T6: Pet Projects — a Zola\'s Creations reveal keeps the Wound away; each other player without one gains a Wound', () => {
+    const G = makeZolaTacticState(
+      {
+        '0': {},
+        '1': { victory: ['ca75-villain-zolas-creations-doughboy-01'] },
+        '2': { victory: ['ca75-villain-masters-of-evil-wwii-black-knight-01', 'bystander-villain-deck-01'] },
+        '3': { victory: [] },
+      },
+      { wounds: 5 },
+    );
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZOLA_PET_PROJECTS_ID, makeMockCtx(), makeSeatEvents());
+    assert.deepEqual(G.playerZones['0']!.discard, [], 'the defeating player gains no Wound');
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+    assert.deepEqual(G.playerZones['2']!.discard, [WOUND]);
+    assert.deepEqual(G.playerZones['3']!.discard, [WOUND]);
+    assert.deepEqual(zemoLogLines(G), [
+      { text: 'Fight effect: Player 1 revealed a Zola\'s Creations Villain from their Victory Pile — no Wound (Pet Projects).', outcome: 'neutral' },
+      { text: 'Fight effect: Player 2 gained a Wound (Pet Projects).', outcome: 'applied' },
+      { text: 'Fight effect: Player 3 gained a Wound (Pet Projects).', outcome: 'applied' },
+    ]);
+  });
+
+  it('T7: Pet Projects with an empty Wound supply is blocked, and solo logs the no-op', () => {
+    const G = makeZolaTacticState(
+      { '0': {}, '1': { victory: ['ca75-villain-zolas-creations-primus-01'] }, '2': {}, '3': {} },
+      { wounds: 0 },
+    );
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZOLA_PET_PROJECTS_ID, makeMockCtx(), makeSeatEvents());
+    assert.deepEqual(zemoLogLines(G).slice(1), [
+      { text: 'Fight effect: Player 2 gained no Wound — the Wound supply is empty (Pet Projects).', outcome: 'blocked' },
+      { text: 'Fight effect: Player 3 gained no Wound — the Wound supply is empty (Pet Projects).', outcome: 'blocked' },
+    ]);
+
+    const solo = makeZolaTacticState({ '0': {} }, { wounds: 5 });
+    dispatchTacticOnFight(solo, { currentPlayer: '0' }, ZOLA_PET_PROJECTS_ID, makeMockCtx(), makeSeatEvents());
+    assert.deepEqual(zemoLogLines(solo), [
+      { text: 'Fight effect: there is no other player to reveal a Zola\'s Creations Villain or gain a Wound (Pet Projects).', outcome: 'neutral' },
+    ]);
+    assert.deepEqual(solo.playerZones['0']!.discard, []);
+  });
+
+  it('T8: Crush Pacifist Resistance parks hand then played Heroes with "KO nothing" last and default', () => {
+    const G = makeZolaTacticState({
+      '0': { hand: [ZOLA_SHIELD_AGENT, 'atk2Hero', 'atk1Hero'], inPlay: [ZOLA_SHIELD_TROOPER, 'atk3Hero'] },
+      '1': {},
+    });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZOLA_CRUSH_ID, makeMockCtx(), makeSeatEvents());
+    assert.deepEqual(G.pendingSeatChoice, {
+      kind: CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+      addressedSeats: ['0'],
+      seatPrompts: {
+        '0': {
+          options: [
+            { label: `KO ${resolveCardName(G.cardDisplayData, ZOLA_SHIELD_AGENT)} from their hand`, cardId: ZOLA_SHIELD_AGENT, sourceZone: 'hand' },
+            { label: `KO ${resolveCardName(G.cardDisplayData, 'atk1Hero')} from their hand`, cardId: 'atk1Hero', sourceZone: 'hand' },
+            { label: `KO ${resolveCardName(G.cardDisplayData, ZOLA_SHIELD_TROOPER)} from the cards they played this turn`, cardId: ZOLA_SHIELD_TROOPER, sourceZone: 'inPlay' },
+            { label: 'KO nothing' },
+          ],
+        },
+      },
+      submissions: {},
+      defaultOptionIndex: 3,
+    });
+    assert.deepEqual(zemoLogLines(G), [
+      { text: 'Fight effect: Player 0 may KO up to two Heroes with less than 2 printed Attack (Crush Pacifist Resistance).', outcome: 'neutral' },
+    ]);
+  });
+
+  it('T9: Crush Pacifist Resistance with no eligible Hero is blocked and parks nothing', () => {
+    const G = makeZolaTacticState({ '0': { hand: ['atk2Hero', 'pile-wound'] } });
+    dispatchTacticOnFight(G, { currentPlayer: '0' }, ZOLA_CRUSH_ID, makeMockCtx(), makeSeatEvents());
+    assert.equal(G.pendingSeatChoice, undefined);
+    assert.deepEqual(zemoLogLines(G), [
+      { text: 'Fight effect: Player 0 has no Hero with less than 2 printed Attack to KO (Crush Pacifist Resistance).', outcome: 'blocked' },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — each-other tactics start after the current player, then clockwise
+// ---------------------------------------------------------------------------
+
+/**
+ * The parts of G an each-other tactic writes, for literal comparison.
+ *
+ * @param G - The game state after the tactic.
+ * @returns The Wound supply, each seat's discard pile, and the log text.
+ */
+function tacticOutcome(G: LegendaryGameState): unknown {
+  const discards: Record<string, string[]> = {};
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    discards[seat] = [...G.playerZones[seat]!.discard];
+  }
+  return {
+    wounds: [...G.piles.wounds],
+    discards,
+    messages: G.messages.map((entry) => entry.text),
+  };
+}
+
+describe('WP-846 / D-24780 — tactic each-other order (AC-5 seat-0 / solo identity)', () => {
+  it('AC-5 tactic: a 3-player seat-0 Crushing Shockwave with a short supply matches the pre-WP-846 baseline', () => {
+    const G = makeShockwaveState({ '0': [], '1': [NON_X_MEN_CARD], '2': [NON_X_MEN_CARD] }, 3);
+    resolveCrushingShockwave(G, '0');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(tacticOutcome(G), { wounds: [], discards: { '0': [], '1': ['wound', 'wound'], '2': ['wound'] }, messages: ['Fight effect: Player 1 held no X-Men Hero and gained 2 Wound(s) (Crushing Shockwave).', 'Fight effect: Player 2 held no X-Men Hero and gained 1 Wound(s) (Crushing Shockwave).'] });
+  });
+
+  it('AC-5 tactic: a solo Crushing Shockwave matches the pre-WP-846 baseline', () => {
+    const G = makeShockwaveState({ '0': [NON_X_MEN_CARD] }, 3);
+    resolveCrushingShockwave(G, '0');
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(tacticOutcome(G), { wounds: ['wound', 'wound', 'wound'], discards: { '0': [] }, messages: ['Fight effect: there is no other player to reveal an X-Men Hero or gain Wounds (Crushing Shockwave).'] });
+  });
+});
+
+import { resolvePetProjects } from './tacticHandlers.js';
+
+/**
+ * The seats named by a tactic's per-player log lines, in log order.
+ *
+ * @param G - The game state after the tactic.
+ * @returns The seat ids, in the order the tactic logged them.
+ */
+function tacticSeatOrder(G: LegendaryGameState): string[] {
+  const seats: string[] = [];
+  for (const entry of G.messages) {
+    const match = /^Fight effect: Player (\d+) /.exec(entry.text);
+    if (match !== null) {
+      seats.push(match[1]!);
+    }
+  }
+  return seats;
+}
+
+describe('WP-846 / D-24780 — tactic each-other order (AC-8 rotation, AC-2, AC-2b)', () => {
+  it('AC-8 T1: Crushing Shockwave on seat 1\'s turn wounds seats 2, 0', () => {
+    const G = makeShockwaveState({ '0': [NON_X_MEN_CARD], '1': [NON_X_MEN_CARD], '2': [NON_X_MEN_CARD] }, 6);
+    resolveCrushingShockwave(G, '1');
+    assert.deepEqual(tacticSeatOrder(G), ['2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, [], 'the defeating player is skipped');
+  });
+
+  it('AC-2 T1: with one Wound left on seat 1\'s turn, seat 2 gains it and seat 0 gains none', () => {
+    const G = makeShockwaveState({ '0': [NON_X_MEN_CARD], '1': [NON_X_MEN_CARD], '2': [NON_X_MEN_CARD] }, 1);
+    resolveCrushingShockwave(G, '1');
+    assert.deepEqual(G.playerZones['2']!.discard, [WOUND]);
+    assert.deepEqual(G.playerZones['0']!.discard, []);
+    assert.deepEqual(G.playerZones['1']!.discard, []);
+  });
+
+  it('AC-8 / AC-2b T6: Finding Zemo on seat 1\'s turn wounds seats 2, 0 (rotate first, then filter)', () => {
+    const G = makeZemoTacticState(
+      { '0': {}, '1': {}, '2': {} },
+      { wounds: 5, deck: ['b1', 'v1'], deckTypes: { b1: 'bystander', v1: 'villain' } },
+    );
+    dispatchTacticOnFight(G, { currentPlayer: '1' }, ZEMO_FINDING_ZEMO_ID, makeMockCtx());
+    assert.deepEqual(zemoLogLines(G).slice(1), [
+      { text: 'Fight effect: Player 2 gained a Wound (Finding Zemo).', outcome: 'applied' },
+      { text: 'Fight effect: Player 0 gained a Wound (Finding Zemo).', outcome: 'applied' },
+    ]);
+  });
+
+  it('AC-8 / AC-2b T9: Pet Projects on seat 1\'s turn wounds seats 2, 0 (rotate first, then filter)', () => {
+    const G = makeZolaTacticState({ '0': {}, '1': {}, '2': {} }, { wounds: 5 });
+    resolvePetProjects(G, '1');
+    assert.deepEqual(tacticSeatOrder(G), ['2', '0']);
+    assert.deepEqual(G.playerZones['1']!.discard, [], 'the defeating player is skipped');
   });
 });

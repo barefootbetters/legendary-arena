@@ -44,6 +44,37 @@ test('mockDrReadiness rolls the next-due date over a year boundary (UTC)', () =>
   assert.deepEqual(data.lastDrill, { date: '2026-12-01', result: 'pass' });
 });
 
+test('mockDrReadiness carries a healthy quarterly rebuild due at the next quarter start', () => {
+  assert.deepEqual(mockDrReadiness(NOW_MS).data.rebuildDrill, {
+    lastRebuild: { date: '2026-08-01', result: 'pass' },
+    nextDue: '2026-10-01',
+    overdue: false,
+  });
+  // December rolls into the next year's January quarter.
+  assert.equal(
+    mockDrReadiness(Date.UTC(2026, 11, 15, 0, 0, 0)).data.rebuildDrill?.nextDue,
+    '2027-01-01',
+  );
+});
+
+test('an overdue quarterly rebuild turns the tile Overdue and the row shows the due date', async () => {
+  const source = await readFile(widgetPath, 'utf8');
+  assert.match(
+    source,
+    /const isOverdue = computed\(\s*\(\) => data\.value\?\.overdue === true \|\| rebuildDrill\.value\?\.overdue === true,\s*\);/,
+  );
+  assert.match(source, /if \(isOverdue\.value\) \{\s*return 'Overdue';/);
+  assert.match(source, /if \(isOverdue\.value\) \{\s*return 'saturated';/);
+  assert.match(source, /<dt>Full rebuild \(quarterly\)<\/dt>/);
+  assert.match(source, /`Overdue — due since \$\{rebuildDrill\.nextDue\}`/);
+  // An older server payload without the field hides the row instead of crashing.
+  assert.match(
+    source,
+    /const rebuildDrill = computed\(\(\) => data\.value\?\.rebuildDrill \?\? null\);/,
+  );
+  assert.match(source, /<div v-if="rebuildDrill" class="metric">/);
+});
+
 test('wrapLiveDrReadiness badges a real GitHub-backed payload LIVE and keeps it unchanged', () => {
   const payload: DrReadiness = {
     lastDrill: { date: '2026-09-01', result: 'pass' },

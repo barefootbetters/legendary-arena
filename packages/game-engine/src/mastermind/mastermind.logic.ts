@@ -74,7 +74,10 @@ export function areAllTacticsDefeated(
  * engine's "can the final blow happen" decision and the tile's "fight the
  * Mastermind again" affordance can never disagree (the `resolveMastermindFightCost`
  * centralization precedent, D-24348). The client tile consumes the PROJECTED
- * `finalBlowPending` field, never this helper (layer boundary).
+ * `finalBlowPending` field, never this helper (layer boundary). D-24739 adds the
+ * free-defeat path: `isMastermindFreeDefeatTarget` (eligibility) and
+ * `dispatchDefeatWithBystanderTarget` (award) read it too, so Pure Fury / Silent
+ * Sniper can strike the final blow on exactly the same condition.
  *
  * @param mastermindState - Current mastermind state.
  * @param finalBlow - Whether the match is playing the Final Blow rule (`G.finalBlow`).

@@ -376,7 +376,7 @@ describe('executeHeroEffects — conditional execution (WP-023)', () => {
 
     const line = gameState.messages[gameState.messages.length - 1]!;
     assert.match(line.text, /did not activate/);
-    assert.match(line.text, /another tech Hero/);
+    assert.match(line.text, /another Tech Hero/);
     assert.equal(/is waiting/.test(line.text), false);
     assert.equal(line.outcome, "blocked");
     assert.equal(gameState.deferredConditionalGrants, undefined,

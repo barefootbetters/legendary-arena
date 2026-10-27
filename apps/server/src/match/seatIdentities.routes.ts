@@ -32,7 +32,8 @@
  * returns `404 { error: 'match_not_found' }`, so the response never leaks match
  * existence.
  *
- * Blob reads: `readMatchConfigurationForLagn` reads `initial_state` for the seat
+ * Blob reads (from the live row or, once reaped, the durable replay artifact —
+ * D-24719): `readMatchConfigurationForLagn` reads `initial_state` for the seat
  * count (`numPlayers`, the D-24153 carve-out read) and `readMatchGameover` reads
  * `metadata.gameover` (the D-24169 carve-out read). `readSeatIdentities` then reads
  * the `legendary.*` DOMAIN tables (seat→account map, bot-ally tags, display
@@ -136,7 +137,8 @@ export function registerSeatIdentitiesRoute(
     }
 
     try {
-      // Gate 1 — the match is projectable (row present + non-null initial_state).
+      // Gate 1 — the match is projectable: its live row (non-null initial_state)
+      // or, once reaped, its durable replay artifact (D-24719).
       // We need its `numPlayers` (the seat count) to build a full 0..N-1 roster,
       // and an absent row OR null initial_state both return the SAME 404 so the
       // response never leaks whether the match exists.
@@ -146,6 +148,19 @@ export function registerSeatIdentitiesRoute(
           database,
         );
       if (configuration === null) {
+        koaContext.status = 404;
+        koaContext.body = { error: 'match_not_found' };
+        return;
+      }
+
+      // why: D-24718 — an operator match (WP-802 / D-24689) is an admin test
+      // board, so its roster is not published either (the D-24717 result-lagn
+      // posture). Refused with the SAME 404 as an unknown match, so the response
+      // is no oracle for which matches are operator matches. The flag is read
+      // from `matchConfiguration` inside the D-24153 carve-out. The operator's own
+      // endgame recap then labels seats as plain "Player N"; its score submit is
+      // already skipped for an operator match, so no D-24630 check needs the roster.
+      if (configuration.matchConfiguration.isDebugMatch === true) {
         koaContext.status = 404;
         koaContext.body = { error: 'match_not_found' };
         return;

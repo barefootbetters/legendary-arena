@@ -43,7 +43,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Gain a [rule:Sidekick]."
+            "Gain a [rule:Sidekick]. [keyword:gain-sidekick:1]"
           ]
         },
         {
@@ -451,7 +451,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[hc:ranged]: Gain a [rule:Sidekick]."
+            "[hc:ranged]: Gain a [rule:Sidekick]. [keyword:gain-sidekick:1]"
           ]
         },
         {
@@ -1205,7 +1205,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "Gain a [rule:Sidekick].",
+            "Gain a [rule:Sidekick]. [keyword:gain-sidekick:1]",
             "[hc:instinct]: Put that [rule:Sidekick] on top of your deck."
           ]
         },
@@ -1731,7 +1731,7 @@
           "attack": null,
           "recruit": "1",
           "abilities": [
-            "[hc:covert]: Gain a [rule:Sidekick]."
+            "[hc:covert]: Gain a [rule:Sidekick]. [keyword:gain-sidekick:1]"
           ]
         },
         {

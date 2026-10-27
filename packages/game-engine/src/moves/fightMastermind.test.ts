@@ -1169,3 +1169,94 @@ describe('fightMastermind — fight-cost reduction (WP-794 / D-24663)', () => {
     assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 6);
   });
 });
+
+describe('WP-818 fightMastermind — Baron Zemo +9 unless you are a Savior (D-24752)', () => {
+  const zemoBaseCard = 'ca75-mastermind-baron-heinrich-zemo-baron-heinrich-zemo' as CardExtId;
+
+  /**
+   * Builds a Zemo match whose tactics deck holds one dummy tactic id, so no Zemo Fight
+   * effect fires and only the cost gate is under test.
+   */
+  function makeZemoFightState(attack: number, victory: CardExtId[]): LegendaryGameState {
+    const gameState = createMockGameState({
+      turnEconomy: makeTurnEconomy({ attack }),
+      cardStats: {
+        [zemoBaseCard]: { ...makeCardStatEntry(), attack: 0, recruit: 0, cost: 0, fightCost: 9 },
+      },
+      mastermind: { ...makeMastermindState(),
+        id: 'ca75-mastermind-baron-heinrich-zemo' as CardExtId,
+        baseCardId: zemoBaseCard,
+        tacticsDeck: ['test-tactic-00'] as CardExtId[],
+        tacticsDefeated: [] as CardExtId[],
+      },
+    });
+    gameState.selection.mastermindId = 'ca75/baron-heinrich-zemo';
+    gameState.playerZones['0']!.victory = victory;
+    return gameState;
+  }
+
+  it('T6: a non-Savior with 17 attack is refused (no G change)', () => {
+    const gameState = makeZemoFightState(17, ['pile-bystander', 'pile-bystander']);
+    const economyBefore = { ...gameState.turnEconomy };
+    const moveContext = createMockMoveContext(gameState);
+    assert.doesNotThrow(() => fightMastermind(moveContext));
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDeck, ['test-tactic-00']);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, []);
+    assert.deepStrictEqual(moveContext.G.turnEconomy, economyBefore);
+  });
+
+  it('T6: a non-Savior with 18 attack defeats the tactic', () => {
+    const gameState = makeZemoFightState(18, ['pile-bystander', 'pile-bystander']);
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, ['test-tactic-00']);
+    assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 18);
+  });
+
+  it('T6: a Savior with 9 attack defeats the tactic', () => {
+    const gameState = makeZemoFightState(9, ['pile-bystander', 'pile-bystander', 'bystander-villain-deck-01']);
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, ['test-tactic-00']);
+    assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 9);
+  });
+});
+
+describe('fightMastermind — the all-tactics line follows the last tactic\'s Fight effect', () => {
+  const FINDING_ZEMO_TACTIC_ID = 'ca75-mastermind-baron-heinrich-zemo-finding-zemo' as CardExtId;
+
+  /**
+   * Fights the last tactic (Finding Zemo, whose Fight logs a line) and returns the log text.
+   *
+   * @param isFinalBlow - Whether the optional Final Blow rule is on.
+   * @returns The G.messages texts after the fight.
+   */
+  function fightLastTacticLog(isFinalBlow: boolean): string[] {
+    const gameState = {
+      ...createMockGameState({
+        turnEconomy: { ...makeTurnEconomy(), attack: 10, recruit: 0, spentAttack: 0, spentRecruit: 0 },
+        mastermind: { ...lastTacticMastermind(), tacticsDeck: [FINDING_ZEMO_TACTIC_ID] },
+      }),
+      ...(isFinalBlow ? { finalBlow: true } : {}),
+    };
+    const moveContext = createMockMoveContext(gameState);
+    fightMastermind(moveContext);
+    return moveContext.G.messages.map((message) => message.text);
+  }
+
+  it('Final Blow on: "requires a final blow" is logged after the tactic\'s Fight line', () => {
+    const texts = fightLastTacticLog(true);
+    const tacticEffectIndex = texts.findIndex((text) => text.includes('(Finding Zemo)'));
+    const finalBlowIndex = texts.findIndex((text) => text.includes('requires a final blow'));
+    assert.ok(tacticEffectIndex >= 0, 'the Finding Zemo Fight line is logged');
+    assert.ok(finalBlowIndex > tacticEffectIndex, texts.join('\n'));
+  });
+
+  it('Final Blow off: "is vanquished!" is logged after the tactic\'s Fight line', () => {
+    const texts = fightLastTacticLog(false);
+    const tacticEffectIndex = texts.findIndex((text) => text.includes('(Finding Zemo)'));
+    const vanquishedIndex = texts.findIndex((text) => text.includes('is vanquished!'));
+    assert.ok(tacticEffectIndex >= 0, 'the Finding Zemo Fight line is logged');
+    assert.ok(vanquishedIndex > tacticEffectIndex, texts.join('\n'));
+  });
+});

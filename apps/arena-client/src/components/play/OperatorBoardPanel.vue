@@ -1,11 +1,16 @@
 <script lang="ts">
-import { computed, defineComponent, ref } from 'vue';
+import { computed, defineAsyncComponent, defineComponent, ref, type PropType } from 'vue';
 import type { UIState } from '@legendary-arena/game-engine';
 
 import { useOperatorBoard, buildOperatorFileName } from '../../composables/useOperatorBoard';
 import type { OperatorBotDecisionWire } from '../../lib/api/operatorMatchApi';
 import { useUiStateStore } from '../../stores/uiState';
 import { downloadTextFile } from '../../lib/downloadTextFile';
+import type { SubmitMove } from './uiMoveName.types';
+
+// why: the setter pane is its own lazy chunk, so Tweakpane stays out of both the
+// entry chunk and this panel's chunk (D-24689 §6).
+const OperatorSetterPane = defineAsyncComponent(() => import('./OperatorSetterPane.vue'));
 
 /** One effect trace from the unfiltered board UIState. */
 type EffectTraceEntry = NonNullable<UIState['effectTraces']>[number];
@@ -19,7 +24,8 @@ const RECENT_EFFECT_TRACE_COUNT = 10;
  * The reveal-all read of an operator match for an admin: every seat's zones,
  * the decks top-first, the piles and supplies, the engine counters, the last
  * effect traces and the bot's decisions, refreshed from the admin board route
- * while the panel is open, plus two JSON downloads.
+ * while the panel is open, plus two JSON downloads. Given a `submitMove` and the
+ * viewer's seat, it also hosts the WP-807 setter pane, which submits intent only.
  *
  * It renders the server projection only — it runs no rule and edits no state —
  * and labels cards by NAME (`operatorView.cardDisplay`, raw id as fallback),
@@ -30,10 +36,23 @@ const RECENT_EFFECT_TRACE_COUNT = 10;
  */
 export default defineComponent({
   name: 'OperatorBoardPanel',
+  components: { OperatorSetterPane },
   props: {
     matchId: {
       type: String,
       required: true,
+    },
+    // why: WP-807 — the setter pane renders only with a move dispatcher and the
+    // viewer's seat. Both are optional, so a read-only mount still works.
+    // `[Function, null]`: a bare `Function as PropType<SubmitMove | null>` is a
+    // vue-tsc TS2352 error; listing `null` also lets Vue accept the default.
+    submitMove: {
+      type: [Function, null] as PropType<SubmitMove | null>,
+      default: null,
+    },
+    playerId: {
+      type: String,
+      default: '',
     },
   },
   setup(props) {
@@ -214,6 +233,11 @@ export default defineComponent({
             <dt>KO</dt><dd>{{ formatZone(operatorView.koPile) }}</dd>
             <dt>Escaped</dt><dd>{{ formatZone(operatorView.escapedPile) }}</dd>
           </dl>
+          <p v-if="operatorView.setAsideCounts" data-testid="operator-set-aside">
+            Set aside — Wounds {{ operatorView.setAsideCounts.wounds }}, Bystanders
+            {{ operatorView.setAsideCounts.bystanders }}, Officers {{ operatorView.setAsideCounts.officers }},
+            Sidekicks {{ operatorView.setAsideCounts.sidekicks }}
+          </p>
         </section>
 
         <section data-testid="operator-engine" class="operator-board-section">
@@ -231,6 +255,16 @@ export default defineComponent({
             </li>
           </ol>
         </section>
+
+        <!-- why: @submitted refreshes at once instead of waiting for the 3-second poll;
+             best effort, since the socket does not wait for the server to apply the move. -->
+        <OperatorSetterPane
+          v-if="operatorView !== null && submitMove !== null && playerId !== ''"
+          :operator-view="operatorView"
+          :player-id="playerId"
+          :submit-move="submitMove"
+          @submitted="refreshNow"
+        />
 
         <section data-testid="operator-bot-decisions" class="operator-board-section">
           <h3>Bot decisions (newest first)</h3>

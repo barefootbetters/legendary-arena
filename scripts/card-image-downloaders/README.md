@@ -7,7 +7,7 @@ These are **backup copies for version control only**. The canonical,
 runnable copies live alongside the image output directories in the
 staging repo:
 
-    C:\pcloud\BB\DEV\barefootbetters-legendary-setup\card-images-staging\original-jpeg\
+    C:\pcloud\legendary-arena\barefootbetters-legendary-setup\card-images-staging\original-jpeg\
 
 Each script scrapes every `<img>` and inline/background image URL from
 its `$PageUrl`, dedupes, and downloads any `.jpg/.jpeg/.png/.webp` into
@@ -20,7 +20,7 @@ Run from the staging `original-jpeg` folder so the relative `$OutputDir`
 resolves next to the other sets:
 
 ```powershell
-cd "C:\pcloud\BB\DEV\barefootbetters-legendary-setup\card-images-staging\original-jpeg"
+cd "C:\pcloud\legendary-arena\barefootbetters-legendary-setup\card-images-staging\original-jpeg"
 .\download-legendarycardgame-co2e.ps1
 ```
 

@@ -17,6 +17,13 @@
  * round-tripped into gameplay state. The reader SELECTs `initial_state` only
  * (not `log`) because the Tier-1 projection needs no move log.
  *
+ * Reaped matches (D-24719): the WP-327 reaper deletes a finished match's live
+ * row about an hour after gameover, once the capture harvester has copied it to
+ * `bgio.replay_artifacts`. Both readers here read the live row first and, only
+ * when it is absent, the same fields from that durable artifact copy
+ * (`initial_state`, plus the capture-time `gameover` column). The live row
+ * always wins.
+ *
  * Validation ownership: `buildMatchLagn` is **construction-only** — it never
  * calls `validate()`. The route (`matchLagn.routes.ts`) validates the built
  * document exactly once before returning it. The name resolver never
@@ -31,7 +38,8 @@
  * supplied `DatabaseClient`.
  *
  * Authority: WP-361 / EC-391; D-24153 (endpoint + carve-out extension);
- * D-24095 / D-24119 (the blob-read carve-out this extends); D-24018 (composition
+ * D-24095 / D-24119 (the blob-read carve-out this extends); D-24719 (the
+ * reaped-match artifact fallback, WP-811 / EC-848); D-24018 (composition
  * ext_ids are set-qualified `setAbbr/slug`); D-5201 (AccountId).
  */
 
@@ -63,6 +71,13 @@ export interface MatchLagnComposition {
    * persisted `matchConfiguration` envelope as the composition. Absent = off.
    */
   readonly finalBlow?: boolean;
+  /**
+   * The operator-match flag (WP-802 / D-24689), on the same persisted
+   * `matchConfiguration` (only a strict `true` marks an operator match). Never
+   * projected into LAGN; the result-LAGN and seat-identities routes read it to
+   * refuse an operator match (D-24717, D-24718).
+   */
+  readonly isDebugMatch?: boolean;
 }
 
 /** The composition + seat count read from a single match's blob. */
@@ -81,9 +96,11 @@ export type ResolveName = (extId: string) => string;
 /**
  * Read a match's setup composition + seat count from the WP-309 `bgio.matches`
  * blob (the D-24153 carve-out authorizes this server-layer read). SELECTs
- * `initial_state` only — the Tier-1 projection needs no `log`. Returns `null`
- * when the row is absent OR its `initial_state` is null (a setState-upsert row is
- * not projectable — fail closed, exactly like `readMatchForReplay`).
+ * `initial_state` only — the Tier-1 projection needs no `log`. When the live row
+ * is absent it falls back to the durable `bgio.replay_artifacts` copy (D-24719).
+ * Returns `null` when neither row exists OR the live row's `initial_state` is
+ * null (a setState-upsert row is not projectable — fail closed, exactly like
+ * `readMatchForReplay`).
  *
  * @param matchId The match id.
  * @param database The caller-injected `pg` pool.
@@ -101,9 +118,55 @@ export async function readMatchConfigurationForLagn(
     [matchId],
   );
   if (result.rows.length === 0) {
+    // why: D-24719 — the WP-327 reaper deletes a finished match's live row about
+    // an hour after gameover, once the harvester has captured it. Without this
+    // fallback every finished match's LAGN 404s after that hour.
+    return readArtifactConfigurationForLagn(matchId, database);
+  }
+  return projectConfigurationForLagn(result.rows[0].initial_state);
+}
+
+/**
+ * Read a reaped match's setup composition + seat count from its durable
+ * `bgio.replay_artifacts` copy (D-24719, widening D-24153 to the artifact
+ * store). SELECTs `initial_state` only. Returns `null` when the match was never
+ * captured.
+ *
+ * @param matchId The match id.
+ * @param database The caller-injected `pg` pool.
+ * @returns The composition + seat count, or `null` when no artifact exists.
+ */
+async function readArtifactConfigurationForLagn(
+  matchId: string,
+  database: DatabaseClient,
+): Promise<MatchConfigurationForLagn | null> {
+  // why: LIMIT 1 — the capture step writes one artifact per finished match
+  // (readReplayHashByMatchId's same one-row expectation).
+  const result = await database.query(
+    'SELECT initial_state FROM bgio.replay_artifacts WHERE match_id = $1 LIMIT 1',
+    [matchId],
+  );
+  if (result.rows.length === 0) {
     return null;
   }
-  const initialState = result.rows[0].initial_state;
+  return projectConfigurationForLagn(result.rows[0].initial_state);
+}
+
+/**
+ * Project a persisted initial state (live row or artifact copy — the two are
+ * byte-identical) to the composition + seat count. Returns `null` when the
+ * initial state or its `matchConfiguration` is missing.
+ *
+ * @param initialState The persisted `initial_state` jsonb (already parsed).
+ * @returns The composition + seat count, or `null` when not projectable.
+ */
+function projectConfigurationForLagn(
+  initialState: unknown,
+): MatchConfigurationForLagn | null {
+  // why: one projection serves both the live row and the artifact copy, so a
+  // reaped match yields the identical object it did while live. Any gate keyed
+  // on this object (the #2779 / #2780 `isDebugMatch` refusals) then holds after
+  // the reap too, with no second parse to drift.
   if (initialState === null || initialState === undefined) {
     return null;
   }
@@ -328,14 +391,18 @@ export const DEFAULT_SCORING_PROFILE = 'classic';
 export interface StoredGameover {
   readonly outcome?: string;
   readonly reason?: string;
+  /** True when the players ended the match early (WP-502 / D-24306). */
+  readonly endedEarly?: boolean;
 }
 
 /**
  * Read a match's endgame verdict from `bgio.matches.metadata.gameover` — the
  * value boardgame.io persisted from the engine's `endIf` return (an
- * `EndgameResult`). Returns `null` when the match row is absent OR the match has
- * not reached gameover (no `gameover` key) — the caller treats a `null` on an
- * otherwise-projectable match as "still in progress".
+ * `EndgameResult`). Returns `null` when the live match has not reached gameover
+ * (no `gameover` key) — the caller treats a `null` on an otherwise-projectable
+ * match as "still in progress". When the live row is absent (reaped), it reads
+ * the artifact's capture-time `gameover` copy instead (D-24719); `null` then
+ * means the match was never captured.
  *
  * why: reads `metadata->'gameover'` only — the same METADATA surface
  * `isMatchFinished` reads, authorized by the D-24169 carve-out. It never reads
@@ -355,11 +422,54 @@ export async function readMatchGameover(
     [matchId],
   );
   if (result.rows.length === 0) {
-    return null;
+    // why: D-24719 — once the reaper deletes the live row, the verdict lives on
+    // the durable artifact (copied at capture).
+    return readArtifactGameover(matchId, database);
   }
   const gameover = result.rows[0].gameover;
   if (gameover === null || gameover === undefined) {
     return null;
+  }
+  return gameover as StoredGameover;
+}
+
+/**
+ * The verdict returned for a captured match whose artifact has no recorded
+ * `gameover` yet (captured before migration 046, awaiting the harvester's
+ * verdict sweep). It carries no `outcome`, so `toLagnResult` omits the LAGN
+ * `result` block.
+ */
+// why: an artifact exists only for a finished match, so `null` (which the routes
+// map to `match_not_finished`) would be false. An unknown outcome is the honest
+// partial (D-24719 §2).
+export const VERDICT_NOT_RECORDED: StoredGameover = Object.freeze({});
+
+/**
+ * Read a reaped match's endgame verdict from its durable
+ * `bgio.replay_artifacts.gameover` copy (D-24719). Returns `null` only when the
+ * match was never captured; a captured match always reads as finished.
+ *
+ * @param matchId The match id.
+ * @param database The caller-injected `pg` pool.
+ * @returns The stored verdict, `VERDICT_NOT_RECORDED` when the column is still
+ *   empty, or `null` when no artifact exists.
+ */
+async function readArtifactGameover(
+  matchId: string,
+  database: DatabaseClient,
+): Promise<StoredGameover | null> {
+  // why: LIMIT 1 — the capture step writes one artifact per finished match
+  // (readReplayHashByMatchId's same one-row expectation).
+  const result = await database.query(
+    'SELECT gameover FROM bgio.replay_artifacts WHERE match_id = $1 LIMIT 1',
+    [matchId],
+  );
+  if (result.rows.length === 0) {
+    return null;
+  }
+  const gameover = result.rows[0].gameover;
+  if (gameover === null || gameover === undefined) {
+    return VERDICT_NOT_RECORDED;
   }
   return gameover as StoredGameover;
 }
@@ -388,6 +498,42 @@ export function toLagnResult(
     return { outcome: 'defeat' };
   }
   return undefined;
+}
+
+/** Why a finished match's result LAGN omits its `result` block (WP-812 / D-24720). */
+export type ResultOmittedReason = 'tie' | 'ended-early' | 'unknown';
+
+/**
+ * Name why `toLagnResult` omits the `result` block for a finished match, or
+ * `undefined` when the block is present.
+ *
+ * why: LAGN has no tie outcome, so a document without `result` is ambiguous: a
+ * deck-exhaustion tie (D-24159), a match the players ended early (the engine
+ * stores it as `'tie'` flagged `endedEarly`, D-24306), and a finished match whose
+ * verdict is not known (WP-811's `VERDICT_NOT_RECORDED`, a stored `{}`, or an
+ * unrecognized value) all look the same. The Hall of Legends labelled every one
+ * "Draw". This reason rides on the `/result-lagn` envelope, beside `lagn`, so the
+ * view can tell them apart without a LAGN contract change. It calls
+ * `toLagnResult` so the reason is present exactly when `result` is absent.
+ *
+ * @param gameover The stored endgame verdict of a finished match.
+ * @returns `'tie'`, `'ended-early'`, `'unknown'`, or `undefined` when `result` is emitted.
+ */
+export function toResultOmittedReason(
+  gameover: StoredGameover,
+): ResultOmittedReason | undefined {
+  if (toLagnResult(gameover) !== undefined) {
+    return undefined;
+  }
+  // why: the engine reports an abandoned match as a `'tie'` with `endedEarly`
+  // (D-24306), so the flag is checked before the tie: an early end is not a draw.
+  if (gameover.endedEarly === true) {
+    return 'ended-early';
+  }
+  if (gameover.outcome === 'tie') {
+    return 'tie';
+  }
+  return 'unknown';
 }
 
 /** The claimed public alias + mutable label for one account. */
@@ -583,8 +729,9 @@ export function toBattlePlanBlock(
  *
  * **Construction-only**: like `buildMatchLagn`, this never calls `validate()` —
  * the route validates the built document exactly once before returning it. It
- * stamps `LAGN_VERSION` (1.5.0 as of the WP-641 writer flip), so `players[]`,
- * `battle_plan`, and `result.score` all clear the WP-405 / WP-640 version gates.
+ * stamps `LAGN_VERSION` (1.6.0 since WP-698 / D-24517; WP-641 first raised it
+ * to 1.5.0 for these blocks), so `players[]`, `battle_plan`, and `result.score`
+ * all clear the WP-405 / WP-640 version gates, which are ordinal.
  *
  * why: `result.score` rides ONLY when `result` rides — the schema nests it under
  * `result`, whose `outcome` is required, and the endpoint only runs for finished

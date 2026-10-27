@@ -34,7 +34,8 @@
  */
 
 import { createRequire } from 'node:module';
-import { LegendaryGame, buildUIState } from '@legendary-arena/game-engine';
+import { buildUIState } from '@legendary-arena/game-engine';
+import { serverLegendaryGame } from '../game/matchSeed.mjs';
 import { INTERNAL_DELEGATION_HEADER } from '../match/nativeLobbyGuard.js';
 import {
   createBotAllyDriver,
@@ -60,7 +61,6 @@ import koaBody from 'koa-body';
 // autoplay.mjs).
 const require = createRequire(import.meta.url);
 const { Master } = require('boardgame.io/master');
-const { ProcessGameConfig } = require('boardgame.io/internal');
 
 const MAKE_MOVE = 'MAKE_MOVE';
 
@@ -885,7 +885,7 @@ export function registerBotAllyRoutes(router, context) {
     accountResolver,
   } = context;
 
-  const processedGame = ProcessGameConfig(LegendaryGame);
+  const processedGame = serverLegendaryGame;
   const createSubmit = resolveCreateSubmit(context, processedGame);
 
   router.post('/api/match/create-with-bot', async (koaContext) => {
@@ -1023,7 +1023,7 @@ export async function rehydrateBotAllyDrivers(context) {
     return;
   }
 
-  const processedGame = ProcessGameConfig(LegendaryGame);
+  const processedGame = serverLegendaryGame;
   const createSubmit = resolveCreateSubmit(context, processedGame);
   let reregistered = 0;
   for (const record of revivableMatches) {

@@ -63,7 +63,7 @@ machine.
 
 ## Assumes
 
-- pnpm monorepo exists at `C:\pcloud\BB\DEV\legendary-arena`
+- pnpm monorepo exists at `C:\dev\legendary-arena`
 - `pnpm install` has been run — `node_modules` exists
 - `data/legendary_library_schema.sql` exists (canonical schema — read it before
   writing any DDL)

@@ -11,13 +11,13 @@
 
 import { createRequire } from 'node:module';
 import {
-  LegendaryGame,
   getLegalMoves,
   createRandomPolicy,
   createCompetentHeuristicPolicy,
   buildUIState,
   filterUIStateForAudience,
 } from '@legendary-arena/game-engine';
+import { serverLegendaryGame } from '../game/matchSeed.mjs';
 import { getPlayerCountSetup } from '@legendary-arena/registry';
 import { createPlaybackController } from './playbackController.mjs';
 import {
@@ -47,7 +47,6 @@ export const autoplayControllers = new Map();
 // createRequire bridges ESM → CJS for these subpackage imports.
 const require = createRequire(import.meta.url);
 const { Master } = require('boardgame.io/master');
-const { ProcessGameConfig } = require('boardgame.io/internal');
 const koaBody = require('koa-body');
 
 const MAKE_MOVE = 'MAKE_MOVE';
@@ -324,7 +323,7 @@ export async function handleAutoplayStatusRequest(koaContext) {
 export function registerAutoplayRoutes(router, context) {
   const { db, transport, auth, serverUrl, internalDelegationSecret } = context;
 
-  const processedGame = ProcessGameConfig(LegendaryGame);
+  const processedGame = serverLegendaryGame;
 
   router.post('/api/match/autoplay', koaBody(), async (koaContext) => {
     const body = koaContext.request.body ?? {};

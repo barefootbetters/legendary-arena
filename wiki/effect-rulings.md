@@ -18,7 +18,7 @@ related:
   - play-diagnostics.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\effect-rulings.md (this page — https://ewiki.legendary-arena.com/effect-rulings/)
+  - C:\dev\legendary-arena\wiki\effect-rulings.md (this page — https://ewiki.legendary-arena.com/effect-rulings/)
   - ../docs/lagn-architecture-brief.md
   - ../docs/ai/work-packets/WP-704-effect-rulings-corpus.md
   - ../docs/ai/execution-checklists/EC-741-effect-rulings-corpus.checklist.md
@@ -67,7 +67,7 @@ the one real moat.
 All four files live in the **engine repo** (this repo), on `main`. The
 repo-relative path is the durable identifier; the absolute path is that path
 under whichever checkout you have on `main` (the canonical pCloud checkout is
-`C:\pcloud\BB\DEV\legendary-arena\`).
+`C:\dev\legendary-arena\`).
 
 | File | Repo-relative path (canonical) |
 |---|---|
@@ -77,7 +77,7 @@ under whichever checkout you have on `main` (the canonical pCloud checkout is
 | Executing harness (`node:test`) | `packages/game-engine/src/rules/effectRulings.test.ts` |
 
 For example, the corpus in the canonical pCloud checkout on `main` is
-`C:\pcloud\BB\DEV\legendary-arena\docs\ai\rulings\effect-rulings.json`. If a
+`C:\dev\legendary-arena\docs\ai\rulings\effect-rulings.json`. If a
 checkout does not show `docs/ai/rulings/`, it is not on `main` (or is behind) —
 `git checkout main && git pull` brings the folder in. The harness resolves the
 corpus path from its own location via `import.meta.url` (never `process.cwd()`),

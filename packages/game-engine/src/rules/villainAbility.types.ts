@@ -12,6 +12,7 @@
 
 import type { CardExtId } from '../state/zones.types.js';
 import type { CitySpaceName } from '../board/citySpaceNames.js';
+import type { HeroClass } from '../content/content.schemas.js';
 
 // ---------------------------------------------------------------------------
 // VillainAbilityTiming
@@ -154,6 +155,28 @@ export interface VillainEffectResult {
    * (D-24693), so the log can say "from their hand". Omitted for non-KO effects.
    */
   targetZones?: VillainKoZone[];
+  /**
+   * For a gain-wound effect only, and only when at least one of its Wounds is waiting
+   * on a Diving Block reveal (D-24673): who gained a Wound outright and who only would
+   * gain one, so the log does not call a preventable Wound gained. Omitted otherwise,
+   * so every other line is byte-identical.
+   */
+  woundOutcomes?: VillainWoundOutcomes;
+  /**
+   * For a grey-filtered each-player KO only (D-24783, Destroyer's `'non-grey'`): the filter,
+   * so the log says "had no non-grey Hero to KO" rather than "no hero". Omitted otherwise,
+   * so every unfiltered line is byte-identical.
+   */
+  greyFilter?: GreyHeroFilter;
+}
+
+/**
+ * Which players a gain-wound effect wounded outright and which are waiting on a Diving
+ * Block reveal (D-24673). Both lists are in the effect's iteration order.
+ */
+export interface VillainWoundOutcomes {
+  gainedPlayerIds: string[];
+  divingBlockPendingPlayerIds: string[];
 }
 
 /** A player zone a Hero can be KO'd from (D-24693). */
@@ -344,7 +367,17 @@ export type VillainEffectPrimitive =
   | 'ko-heroes-current-count-by-trait'
   | 'haunt-hq-hero'
   | 'reveal-top-draw-if-cost-lte'
-  | 'ko-up-to-from-discard-current';
+  | 'ko-up-to-from-discard-current'
+  | 'ko-bystander-each-victory-pile'
+  | 'gain-recruit-current-per-hero-class'
+  | 'discard-hero-each-player-by-cost'
+  | 'gain-recruit-current-count-by-trait'
+  | 'draw-cards-current-count-by-trait'
+  | 'reveal-top-ko-grey-or-draw-by-class'
+  | 'discard-hero-each-player-by-trait'
+  | 'discard-hero-or-wound-each-player-by-trait'
+  | 'discard-hand-matching-hq-card-names-each-player'
+  | 'hq-heroes-to-hero-deck-bottom';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -445,6 +478,78 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   // choice from your own discard). Both keyword-less, so both self-narrate.
   'reveal-top-draw-if-cost-lte',
   'ko-up-to-from-discard-current',
+  // why: WP-816 / D-24749 — appended at position 29. Executioner's Escape ("KO a
+  // Bystander from each player's Victory Pile"): every player KOs the first Bystander
+  // in their Victory Pile, in pile order, to `G.ko` (the Whispers and Lies precedent).
+  // No-param, keyword-less, self-narrates. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
+  'ko-bystander-each-victory-pile',
+  // why: WP-817 / D-24750 — appended at positions 30 and 31. Captain Zolandia's
+  // Fight (`gain-recruit-current-per-hero-class`: +1 Recruit for each Hero Class
+  // you have, no params) and Primus's Escape (`discard-hero-each-player-by-cost:
+  // <c>[+<c>…]`: each player discards a Hero that costs one of the listed costs,
+  // carried on `eligibleCosts`, which stays out of `descriptorKey`). Both
+  // keyword-less, so both self-narrate. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends them at the same
+  // positions.
+  'gain-recruit-current-per-hero-class',
+  'discard-hero-each-player-by-cost',
+  // why: WP-836 / D-24769 — appended at positions 32, 33 and 34. Abomination's Fight
+  // (`gain-recruit-current-count-by-trait:<kind>:<value>`: +1 Recruit per Hero you have
+  // that matches the trait), Beetle's Fight (`draw-cards-current-count-by-trait:<kind>:
+  // <value>`: count the matching Heroes you have, then draw that many) and co2e Savage
+  // Land Mutates' Fight (`reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`: reveal your
+  // deck top; KO it if grey, draw it if it has a listed Hero Class, else leave it). All
+  // three keyword-less, so all three self-narrate. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends them at the same positions.
+  'gain-recruit-current-count-by-trait',
+  'draw-cards-current-count-by-trait',
+  'reveal-top-ko-grey-or-draw-by-class',
+  // why: WP-837 / D-24770 — appended at positions 35, 36, 37 and 38. Mystique's Ambush
+  // (`discard-hero-each-player-by-trait:<kind>:<value>`: each player discards a Hero with
+  // the trait), Frost Giant Warrior's Ambush (`discard-hero-or-wound-each-player-by-trait:
+  // <kind>:<value>`: the same, or gain a Wound instead), and Juggernaut's Ambush as two
+  // no-param halves run left to right (`discard-hand-matching-hq-card-names-each-player`,
+  // then `hq-heroes-to-hero-deck-bottom`). All four keyword-less, so all four self-narrate.
+  // The marker script's hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`)
+  // appends them at the same positions.
+  'discard-hero-each-player-by-trait',
+  'discard-hero-or-wound-each-player-by-trait',
+  'discard-hand-matching-hq-card-names-each-player',
+  'hq-heroes-to-hero-deck-bottom',
+] as const;
+
+/**
+ * Which side of the grey line a KO accepts (WP-836 / D-24769). Rules v23 L1487-1492:
+ * "grey Heroes" are the grey-colored cards with no Hero Class (S.H.I.E.L.D. Agents,
+ * Troopers, Officers, Sidekicks). `'grey'` accepts only those; `'non-grey'` accepts only
+ * Heroes with a Hero Class. A Wound is neither (L3404-3407).
+ */
+export type GreyHeroFilter = 'grey' | 'non-grey';
+
+// why: WP-816 / D-24749 — the closed set of villain marker CONDITION gates, the
+// `!<condition>` suffix on an `[effect:…]` marker. `'savior'` gates a line on the
+// CURRENT player having at least 3 Bystanders in their Victory Pile (rules v23
+// L1844-1853). The append point for the next villain condition gates already in the
+// data (ssw2 Pink Sphinx Spectrum, wtif Wolf Demon Soulbind), so they reuse this one
+// suffix grammar instead of inventing a second.
+/** A villain-effect condition gate value (the marker `!<condition>` suffix). */
+// why: WP-837 / D-24770 — `'another-group-villain-in-city'` appended (Scorpion's Ambush:
+// "If there is another Spider-Foes Villain in the city"). True when the City holds another
+// Villain of the triggering Villain's OWN group, found as the longest selected-group prefix
+// of its id (D-24299 own-set precedent); no resolvable group fails closed.
+export type VillainEffectCondition = 'savior' | 'another-group-villain-in-city';
+
+// why: drift-detection array — must match VillainEffectCondition exactly
+// (villainAbility.types.test.ts asserts it at runtime, D-24372). Append-only per
+// D-24749: a new condition updates the union, this array, the marker script's
+// hand-synced copy (`scripts/convert-cards/apply-effect-markers.mjs`) and the
+// executor gate's `switch` arm together, with a DECISIONS entry. An unrecognized
+// value at runtime fails closed in the executor.
+/** All villain effect conditions in canonical order. Single source of truth. */
+export const VILLAIN_EFFECT_CONDITIONS: readonly VillainEffectCondition[] = [
+  'savior',
+  'another-group-villain-in-city',
 ] as const;
 
 /**
@@ -466,6 +571,46 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
  *     never the discard pile (D-24687).
  *   - `gain-wound` with `target: 'each-other'` (D-24295): every player EXCEPT the
  *     current player gains `magnitude` Wound(s) (default 1) — the Lizard.
+ *   - `gain-wound` with `target: 'each-non-savior'` (D-24749): every player who is
+ *     NOT a Savior (fewer than 3 Bystanders in their Victory Pile) gains one Wound —
+ *     Radioactive Man. No `magnitude`.
+ *   - `ko-bystander-each-victory-pile` (D-24749): no params; each player KOs the
+ *     first Bystander in their Victory Pile — Executioner's Escape.
+ *   - `gain-recruit-current-per-hero-class` (D-24750): no params; the current
+ *     player gains +1 Recruit per distinct Hero Class among the cards in their hand
+ *     and play area — Captain Zolandia's Fight.
+ *   - `discard-hero-each-player-by-cost` (D-24750): `eligibleCosts` lists the costs
+ *     (strictly ascending); each player discards a Hero whose cost is one of them —
+ *     Primus's Escape. Resolved after the move as a multi-seat choice.
+ *   - `ko-hero` with `target: 'each'` and `zone: 'discard'`: optional `greyFilter`
+ *     (D-24769) `'non-grey'` — each player KOs a Hero with a Hero Class from their
+ *     discard pile (co2e Destroyer's Ambush / Escape).
+ *   - `ko-up-to-from-discard-current`: optional `greyFilter` (D-24769) `'grey'` — only
+ *     grey Heroes may be KO'd (co2e Destroyer / Frost Giant Warrior / Ymir Fight).
+ *   - `gain-recruit-current-count-by-trait` (D-24769): `requireKind` + `requireValue`;
+ *     +1 Recruit per matching Hero in the current player's hand and play area
+ *     (co2e Abomination's Fight).
+ *   - `draw-cards-current-count-by-trait` (D-24769): `requireKind` + `requireValue`;
+ *     count the matching Heroes in hand and play area, then draw that many (Beetle).
+ *   - `reveal-top-ko-grey-or-draw-by-class` (D-24769): `drawHeroClasses` lists the
+ *     classes that draw the revealed card; a grey card is KO'd, anything else stays
+ *     on top (co2e Savage Land Mutates' Fight).
+ *   - `discard-hero-each-player-by-trait` and
+ *     `discard-hero-or-wound-each-player-by-trait` (D-24770): `requireKind` +
+ *     `requireValue`; each player discards a Hero with the trait (co2e Mystique:
+ *     `team:x-men`), or, for the `-or-wound` form, may gain a Wound instead (co2e Frost
+ *     Giant Warrior: `hc:ranged`). Resolved after the move as a multi-seat choice.
+ *   - `discard-hand-matching-hq-card-names-each-player` and
+ *     `hq-heroes-to-hero-deck-bottom` (D-24770): no params — co2e Juggernaut's Ambush,
+ *     run left to right (the name scan reads the HQ before it moves).
+ *   - `play-villain-deck-cards` (D-24770): optional `requireKind` + `requireValue` — a
+ *     reveal gate: nothing is played when the current player has a matching Hero
+ *     (co2e The Leader: `play-villain-deck-cards:1:hc:strength`).
+ *   - Any effect: optional `requireCondition` (D-24749) is a condition gate — the
+ *     effect fires only when the condition holds (`'savior'`: the CURRENT player has
+ *     at least 3 Bystanders in their Victory Pile; `'another-group-villain-in-city'`
+ *     (D-24770): the City holds another Villain of the triggering Villain's own group).
+ *     Lifted from the marker's `!<condition>` suffix.
  *   - `capture-bystander`: optional `magnitude` (D-24295) is a rescue COUNT
  *     (default 1) — the counted variant (Abomination: 3) self-narrates because its
  *     magnitude-bearing descriptor has no legacy reverse-map entry.
@@ -509,7 +654,10 @@ export interface VillainEffectDescriptor {
   // 'current' | 'each' (append-only per D-24034). Not part of `descriptorKey`
   // beyond the existing `target` slot, so a `gain-wound:each-other` descriptor is
   // keyword-less (no legacy reverse-map entry) and self-narrates.
-  target?: 'current' | 'each' | 'each-other';
+  // why: D-24749 — `'each-non-savior'` (Radioactive Man) wounds every player who is
+  // not a Savior. The exemption is per player, so it is a target value (the
+  // `'each-other'` precedent), not the current-player condition gate below.
+  target?: 'current' | 'each' | 'each-other' | 'each-non-savior';
   magnitude?: number;
   // why: WP-757 / D-24587 — widened append-only with `'leftmost' | 'cost-lte-3'` for
   // `haunt-hq-hero`. The capture-hq-hero parser still accepts only its original three
@@ -524,6 +672,13 @@ export interface VillainEffectDescriptor {
   // executor BEFORE handler dispatch and fails closed on an undefined cityIndex
   // (the Ambush/Escape fire sites, which have no fought space).
   requireCitySpaces?: readonly CitySpaceName[];
+  // why: D-24749 — the condition gate lifted from the marker's `!<condition>`
+  // suffix (Black Knight / Executioner / Melter (WWII) `!savior`). Kept OUT of
+  // `descriptorKey` below so a gated `ko-hero:current` still reverse-maps to
+  // `koHeroCurrentPlayer` and narrates its KO exactly as the ungated twin. The
+  // executor checks it after the location gate and before dispatch, reading the
+  // current player, and fails closed on an unrecognized value.
+  requireCondition?: VillainEffectCondition;
   // why: D-24290 — the number of cards the current player draws, present ONLY on
   // `{ primitive: 'draw-cards-current' }` descriptors (Enchantress: 3). A positive
   // integer set by the parser's `draw-cards-current:<N>` grammar. Deliberately NOT
@@ -560,6 +715,24 @@ export interface VillainEffectDescriptor {
   // LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR entry), so it reverse-maps to `undefined`
   // and self-narrates; adding it to the key would change nothing.
   victoryVillainGroup?: string;
+  // why: D-24750 — the costs a discarded Hero may have, present ONLY on
+  // `{ primitive: 'discard-hero-each-player-by-cost' }` descriptors (Primus's
+  // Escape: [2, 3, 5, 7]); strictly ascending non-negative integers set by the
+  // parser. Deliberately NOT part of `descriptorKey` below — the primitive is
+  // keyword-less, so it reverse-maps to `undefined` and self-narrates regardless.
+  eligibleCosts?: readonly number[];
+  // why: D-24769 — the grey-Hero restriction on two existing KO primitives: `'non-grey'`
+  // on the each-player discard `ko-hero` (Destroyer's Ambush / Escape) and `'grey'` on
+  // `ko-up-to-from-discard-current` (Destroyer / Frost Giant Warrior / Ymir Fight).
+  // Deliberately NOT part of `descriptorKey` below, so a filtered each-player KO still
+  // reverse-maps to `koHeroEachPlayer` and narrates through the generic line, exactly
+  // as the zone does (D-24280).
+  greyFilter?: GreyHeroFilter;
+  // why: D-24769 — the Hero Classes that draw the revealed card, present ONLY on
+  // `{ primitive: 'reveal-top-ko-grey-or-draw-by-class' }` descriptors (co2e Savage Land
+  // Mutates: ['strength', 'instinct']), in marker order. Deliberately NOT part of
+  // `descriptorKey` below — the primitive is keyword-less, so it self-narrates regardless.
+  drawHeroClasses?: readonly HeroClass[];
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The
@@ -675,6 +848,23 @@ export const VILLAIN_DEFEAT_REQUIREMENT_KINDS: readonly VillainDefeatRequirement
 export interface VillainDefeatRequirement {
   kind: VillainDefeatRequirementKind;
   value: string;
+}
+
+// why: D-24750 — a villain fight discard COST ("To fight Primus, you must also
+// discard a card that costs 2, 3, 5, or 7"), a sibling of the D-24076 defeat
+// requirement: a fight precondition the move checks before commit, built at
+// setup from its own marker rather than a third requirement kind, because a cost
+// paid is not a "have a Hero" test.
+
+/**
+ * The costs a card discarded to fight this villain may have.
+ *
+ * Built once at setup from the `[discard-to-fight:cost:<c>[+<c>…]]` marker and
+ * stored per villain-instance in G.villainFightDiscardCosts; immutable during
+ * gameplay. `eligibleCosts` is strictly ascending.
+ */
+export interface VillainFightDiscardCost {
+  eligibleCosts: number[];
 }
 
 // ---------------------------------------------------------------------------

@@ -10,25 +10,23 @@
 
 import type { LegendaryGameState } from '../types.js';
 import { assertInvariant } from './assertInvariant.js';
+import { CITY_MAX_SIZE, CITY_MIN_SIZE } from '../board/city.types.js';
 
 /**
- * Asserts that the City zone has exactly five spaces.
+ * Asserts that the City zone has a legal number of spaces.
  *
- * The CityZone type is a fixed 5-tuple at the type level, but a
- * runtime mutation that bypassed the type system (test pollution,
- * accidental array push, type cast) could break the invariant. This
- * check guards against that.
+ * A scheme can resize the City (WP-831 / D-24764), but only within
+ * CITY_MIN_SIZE..CITY_MAX_SIZE; a runtime mutation that bypassed the resize
+ * helper (test pollution, accidental array push, type cast) could break that.
  */
-// why: prevents board-layout corruption — a 4-space or 6-space City
-// would break pushVillainIntoCity, the escape-edge index, and every
-// City rendering downstream. Catches type-bypass and accidental-push
-// bugs at the structural layer before gameRules checks rely on the
-// fixed shape.
+// why: prevents board-layout corruption — an empty or 7-space City would break
+// pushVillainIntoCity, the escape-edge index, and every City rendering downstream.
+// Catches type-bypass and accidental-push bugs at the structural layer.
 export function checkCitySize(G: LegendaryGameState): void {
   assertInvariant(
-    G.city.length === 5,
+    G.city.length >= CITY_MIN_SIZE && G.city.length <= CITY_MAX_SIZE,
     'structural',
-    `The City zone must contain exactly 5 spaces (CityZone is a fixed 5-tuple). Found length: ${G.city.length}. Inspect buildInitialGameState and any code that mutates G.city for an out-of-bounds push, slice, or assignment.`,
+    `The City zone must contain between ${CITY_MIN_SIZE} and ${CITY_MAX_SIZE} spaces. Found length: ${G.city.length}. Inspect buildInitialGameState, the scheme that resizes the City, and any code that mutates G.city for an out-of-bounds push, slice, or assignment.`,
   );
 }
 

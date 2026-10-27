@@ -13,9 +13,10 @@ related:
   - turn-system.md
   - rule-execution-pipeline.md
   - cardextid.md
+  - why-play-needs-a-debug-panel.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\play-diagnostics.md (this page — https://ewiki.legendary-arena.com/play-diagnostics/)
+  - C:\dev\legendary-arena\wiki\play-diagnostics.md (this page — https://ewiki.legendary-arena.com/play-diagnostics/)
   - ../apps/arena-client/src/diagnostics/diagnostics.ts
   - ../apps/arena-client/src/diagnostics/effectProvenance.ts
   - ../apps/arena-client/src/diagnostics/matchSetupSession.ts
@@ -265,6 +266,18 @@ or the stored entry is corrupt.
   "what did this browser see when the match wedged" from the client
   side. Reach for the health checks first when a whole surface is down;
   reach for Play Diagnostics when one match froze.
+- **[Why Play Needs a Debug Panel](why-play-needs-a-debug-panel.md).**
+  The operator panel is the admin-only counterpart to this export. In an
+  operator match it shows the whole board, not one seat's filtered view:
+  every seat's zones with Wounds by zone, deck order, supply counts, effect
+  traces and the bot's scored decisions. Its "Download as fixture" saves the
+  current UIState in the dev-fixture shape. Play Diagnostics stays the tool
+  for ordinary matches.
+
+  ![Mockup of the operator panel beside the play mat in an operator match. The read-only column lists both seats' zones with Wounds by zone, the decks top first, the supply counts with a Set aside line, the engine stage, counters and effect traces, and the bot's decisions. A Tweakpane Setters pane holds the six setter folders. The game log shows the Operator: lines the setters write.](/why-play-needs-a-debug-panel/operator-panel-mockup.svg "width=96%")
+
+  *Illustrative mockup, not a screenshot. The full caption and the build
+  status are on [Why Play Needs a Debug Panel](why-play-needs-a-debug-panel.md#what-it-looks-like-mockup).*
 - **Engine boundary.** Every file in this tool is pure browser code —
   zero import from `packages/game-engine`, `packages/registry`,
   `packages/preplan`, `apps/server`, or `boardgame.io`. The opaque

@@ -127,6 +127,55 @@ describe("defaults and carve-outs are not over-encoded (WP-169 / D-16804)", () =
   });
 });
 
+// why: the engine's default twist count when a scheme carries no
+// villainDeckTwistCount (D-1411); mirrors SCHEME_TWIST_COUNT in villainDeck.setup.ts.
+const DEFAULT_TWIST_COUNT = 8;
+
+// why: a Setup sentence that is exactly "N Twist(s)." is a fixed count. A clause
+// such as "11 Twists, minus 1 Twist per player" or "Twists equal to the number of
+// players plus 4" does not match, so per-player counts (D-16804, sized in the
+// engine) stay out of this census.
+const FIXED_TWIST_SENTENCE = /(?:^Setup:\s*|\.\s+)(\d+) Twists?\.(?:\s|$)/;
+
+describe("every fixed printed twist count is curated (D-24735)", () => {
+  it("a scheme whose Setup line prints a fixed 'N Twists.' builds N twists", () => {
+    const mismatches: string[] = [];
+    let fixedCountSchemes = 0;
+    for (const file of readdirSync(cardsDir).filter((name) => name.endsWith(".json"))) {
+      const setData = JSON.parse(readFileSync(join(cardsDir, file), "utf8"));
+      for (const scheme of setData.schemes ?? []) {
+        const abilityLines: string[] = [];
+        for (const card of scheme.cards ?? []) {
+          abilityLines.push(...(card.abilities ?? []));
+        }
+        const setupLine = abilityLines.find((line) => line.startsWith("Setup:"));
+        const fixedMatch = setupLine?.match(FIXED_TWIST_SENTENCE);
+        if (!fixedMatch) {
+          continue;
+        }
+        fixedCountSchemes += 1;
+        const printedCount = Number(fixedMatch[1]);
+        const builtCount = scheme.villainDeckTwistCount ?? DEFAULT_TWIST_COUNT;
+        if (builtCount !== printedCount) {
+          mismatches.push(`${file} ${scheme.slug}: prints ${printedCount}, builds ${builtCount}`);
+        }
+      }
+    }
+    assert.ok(fixedCountSchemes > 100, "the census must find the fixed-count schemes (Setup text shape changed?)");
+    assert.deepEqual(
+      mismatches,
+      [],
+      "Each scheme printing a fixed twist count needs a matching villainDeckTwistCount in " +
+        "scripts/convert-cards/inputs/scheme-deck-counts.json (then regenerate data/cards)",
+    );
+  });
+
+  it("Clash of the Monsters Unleashed carries its printed 10 twists", () => {
+    const clash = findScheme("chmp", "clash-of-the-monsters-unleashed");
+    assert.equal(clash.villainDeckTwistCount, 10, "Clash prints 'Setup: 10 Twists.' → twist count 10");
+  });
+});
+
 describe("all regenerated data/cards/*.json validate against SetDataSchema", () => {
   const setFiles = readdirSync(cardsDir).filter((file) => file.endsWith(".json"));
 

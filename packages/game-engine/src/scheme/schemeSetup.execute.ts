@@ -65,8 +65,9 @@ export function executeSchemeSetup(
   for (const instruction of instructions) {
     switch (instruction.type) {
       case 'modifyCitySize': {
-        // why: CityZone is a fixed 5-tuple (D-2602). Functional city resizing
-        // deferred until CityZone is converted to a dynamic array.
+        // why: D-2602 deferred this while CityZone was a fixed 5-tuple. WP-831 / D-24764 made the
+        // City resizable, but no scheme prints a SETUP-time City size (Change the Outcome of WWII
+        // resizes it from its Twist), so this setup instruction stays unwired: logged and skipped.
         result = {
           ...result,
           messages: [
@@ -74,7 +75,7 @@ export function executeSchemeSetup(
             // why: WP-434 — executeSchemeSetup is a pure immutable update (no pushLog
             // mutation), so setup narration is appended as a neutral LogEntry literal.
             {
-              text: `Scheme setup instruction "modifyCitySize" is not yet supported (CityZone is a fixed tuple) — skipped`,
+              text: `Scheme setup instruction "modifyCitySize" is not yet supported (no scheme sets the City size at setup) — skipped`,
               outcome: 'neutral',
             },
           ],

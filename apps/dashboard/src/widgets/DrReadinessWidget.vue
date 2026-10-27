@@ -41,11 +41,19 @@ const isPlaceholder = computed(() => data.value?.source === 'mock');
 // restorable dump, so it is a watch, not a red.
 const hasMirrorAlert = computed(() => data.value?.backupMirrorAlert != null);
 
+// why: the quarterly full-service rebuild (DISASTER_RECOVERY.md §7) is the drill
+// that proves a lost droplet can be rebuilt; a monthly restore alone does not.
+// Either cadence slipping makes the tile Overdue.
+const rebuildDrill = computed(() => data.value?.rebuildDrill ?? null);
+const isOverdue = computed(
+  () => data.value?.overdue === true || rebuildDrill.value?.overdue === true,
+);
+
 const statusLabel = computed(() => {
   if (isPlaceholder.value) {
     return 'Not connected';
   }
-  if (data.value?.overdue) {
+  if (isOverdue.value) {
     return 'Overdue';
   }
   if (hasMirrorAlert.value) {
@@ -58,7 +66,7 @@ const statusTone = computed(() => {
   if (isPlaceholder.value) {
     return 'watch';
   }
-  if (data.value?.overdue) {
+  if (isOverdue.value) {
     return 'saturated';
   }
   if (hasMirrorAlert.value) {
@@ -147,6 +155,21 @@ function resultTone(result: DrillResult): string {
         <div class="metric">
           <dt>Next due</dt>
           <dd>{{ data.nextDue }}</dd>
+        </div>
+        <div v-if="rebuildDrill" class="metric">
+          <dt>Full rebuild (quarterly)</dt>
+          <dd v-if="rebuildDrill.lastRebuild">
+            {{ rebuildDrill.lastRebuild.date }}
+            <span :class="'result-chip result-' + resultTone(rebuildDrill.lastRebuild.result)">{{
+              resultLabel(rebuildDrill.lastRebuild.result)
+            }}</span>
+          </dd>
+          <dd v-else>None recorded</dd>
+          <span :class="['sub', { 'rebuild-overdue': rebuildDrill.overdue }]">{{
+            rebuildDrill.overdue
+              ? `Overdue — due since ${rebuildDrill.nextDue}`
+              : `Next due ${rebuildDrill.nextDue}`
+          }}</span>
         </div>
         <div class="metric">
           <dt>pCloud backup mirror</dt>
@@ -314,5 +337,9 @@ function resultTone(result: DrillResult): string {
   display: block;
   font-size: 0.7rem;
   color: var(--p-text-muted-color);
+}
+.metric .rebuild-overdue {
+  font-weight: 700;
+  color: color-mix(in srgb, var(--p-red-500) 70%, var(--p-text-color));
 }
 </style>

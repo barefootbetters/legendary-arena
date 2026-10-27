@@ -34,7 +34,7 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // why: WP-711 / D-24534 — the per-hero-class-played count sources match a played card's
 // class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
 // the class analogue of cardCountsAsTeamMember used by the team sources.
-import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
 import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
@@ -53,6 +53,11 @@ const WORTHY_HERO_COST_THRESHOLD = 5;
 // cards played this turn whose printed cost is >= 4. Local constant per the
 // duplicate-first rule (one use, distinct from the Worthy threshold above).
 const COST_4_PLUS_THRESHOLD = 4;
+
+// why: WP-824 / D-24757 — Paramilitary Ops counts the OTHER S.H.I.E.L.D. Heroes played
+// this turn "that cost 1 or more", so the cost-0 S.H.I.E.L.D. Agent / Trooper starters
+// never count while the cost-3 Officer does. Local constant per the duplicate-first rule.
+const SHIELD_HERO_MINIMUM_COST = 1;
 
 /**
  * Returns true when an ext_id names a bystander in either ext_id form.
@@ -283,6 +288,48 @@ function countTeamCardsPlayedThisTurn(
 }
 
 /**
+ * Counts the OTHER S.H.I.E.L.D. Heroes a player has played this turn that cost 1 or more.
+ *
+ * The cost-filtered sibling of countTeamCardsPlayedThisTurn(…, 'shield') (WP-824 /
+ * D-24757). "Other" excludes the triggering card — Paramilitary Ops' text is "+1 attack
+ * for each OTHER [team:shield] Hero you played this turn that costs 1 or more".
+ * Membership uses cardCountsAsTeamMember, so a basic S.H.I.E.L.D. Officer (cost 3 in
+ * G.cardStats) counts, while the S.H.I.E.L.D. Agent / Trooper starters (cardStats rows with
+ * cost 0, their printed cost) never do. A card with no cardStats row reads cost 0 (`?? 0`).
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose in-play zone to count.
+ * @param triggeringCardId - The card whose effect is resolving, excluded from the count.
+ * @returns The number of other S.H.I.E.L.D. Heroes costing 1 or more played this turn.
+ */
+function countShieldHeroesCostOnePlusPlayedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  triggeringCardId: CardExtId | undefined,
+): number {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return 0;
+  }
+
+  let shieldHeroCount = 0;
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    if (!cardCountsAsTeamMember(G, playedCardId as CardExtId, 'shield')) {
+      continue;
+    }
+    const cost = G.cardStats?.[playedCardId as CardExtId]?.cost ?? 0;
+    if (cost >= SHIELD_HERO_MINIMUM_COST) {
+      shieldHeroCount++;
+    }
+  }
+  return shieldHeroCount;
+}
+
+/**
  * Counts the OTHER cards a player has played this turn whose hero class matches.
  *
  * The class analogue of countTeamCardsPlayedThisTurn (WP-711 / D-24534). "Other"
@@ -419,6 +466,11 @@ export function resolveCountSource(
     case 'shield-heroes-played-this-turn': {
       return countTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'shield');
     }
+    case 'shield-heroes-cost-one-plus-played-this-turn': {
+      // why: WP-824 / D-24757 — Paramilitary Ops' "each other S.H.I.E.L.D. Hero you
+      // played this turn that costs 1 or more" (starters cost 0 and never count).
+      return countShieldHeroesCostOnePlusPlayedThisTurn(G, playerID, triggeringCardId);
+    }
     case 'x-men-played-this-turn': {
       // why: D-24655 — X-Men United's "each other X-Men Hero you played this turn".
       return countTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'x-men');
@@ -439,6 +491,16 @@ export function resolveCountSource(
     }
     case 'covert-heroes-played-this-turn': {
       return countHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'covert');
+    }
+    case 'extra-cards-drawn-this-turn': {
+      // why: D-24732 — "for each extra card you've drawn this turn" counts every card the
+      // current player drew this turn other than the hand drawn at end of turn. Every
+      // effect-draw site for the current player increments turnEconomy.cardsDrawn and the
+      // start-of-turn fill never does, so the counter IS the count. Self-inclusive: a
+      // card's own earlier draw line has already landed when its count line resolves.
+      // playerID / triggeringCardId are unused because turnEconomy is the current
+      // player's alone; the ?? 0 guards narrow test mocks that omit the field.
+      return G.turnEconomy?.cardsDrawn ?? 0;
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must
@@ -563,6 +625,46 @@ function collectTeamCardsPlayedThisTurn(
       continue;
     }
     if (cardCountsAsTeamMember(G, playedCardId as CardExtId, team)) {
+      matchedCardIds.push(playedCardId as CardExtId);
+    }
+  }
+  return matchedCardIds;
+}
+
+/**
+ * Collects the OTHER played-this-turn S.H.I.E.L.D. Heroes that cost 1 or more.
+ *
+ * Mirrors countShieldHeroesCostOnePlusPlayedThisTurn in ext-id-collecting form
+ * (WP-824 / D-24757): self-EXCLUSIVE, so the returned list length equals the counter's
+ * integer.
+ *
+ * @param G - Game state (read-only).
+ * @param playerID - The player whose in-play zone to scan.
+ * @param triggeringCardId - The resolving card, excluded from the list.
+ * @returns The ext_ids of the other S.H.I.E.L.D. Heroes costing 1 or more played this turn.
+ */
+function collectShieldHeroesCostOnePlusPlayedThisTurn(
+  G: LegendaryGameState,
+  playerID: string,
+  triggeringCardId: CardExtId | undefined,
+): CardExtId[] {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return [];
+  }
+
+  const matchedCardIds: CardExtId[] = [];
+  // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
+  for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
+      continue;
+    }
+    if (!cardCountsAsTeamMember(G, playedCardId as CardExtId, 'shield')) {
+      continue;
+    }
+    // why: mirrors the counter's cost read exactly (a starter's cardStats cost is 0; `?? 0` for no row).
+    const cost = G.cardStats?.[playedCardId as CardExtId]?.cost ?? 0;
+    if (cost >= SHIELD_HERO_MINIMUM_COST) {
       matchedCardIds.push(playedCardId as CardExtId);
     }
   }
@@ -700,7 +802,10 @@ function collectDistinctHeroClassCards(
     const hasSecondClass =
       traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0;
     // why: D-24074 — a Size-Changing card contributes each granted class too.
-    const hasGrantedClass = getGrantedClasses(G, playedCardId as CardExtId).length > 0;
+    // why: D-24730 — and Copy Powers contributes the class it copied this play.
+    const hasGrantedClass =
+      getGrantedClasses(G, playedCardId as CardExtId).length > 0 ||
+      getCopiedClasses(G, playedCardId as CardExtId).length > 0;
     if (hasPrintedClass || hasSecondClass || hasGrantedClass) {
       matchedCardIds.push(playedCardId as CardExtId);
     }
@@ -770,6 +875,9 @@ export function explainCountSourceInputs(
     case 'shield-heroes-played-this-turn': {
       return collectTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'shield');
     }
+    case 'shield-heroes-cost-one-plus-played-this-turn': {
+      return collectShieldHeroesCostOnePlusPlayedThisTurn(G, playerID, triggeringCardId);
+    }
     case 'x-men-played-this-turn': {
       return collectTeamCardsPlayedThisTurn(G, playerID, triggeringCardId, 'x-men');
     }
@@ -789,6 +897,12 @@ export function explainCountSourceInputs(
     }
     case 'covert-heroes-played-this-turn': {
       return collectHeroClassCardsPlayedThisTurn(G, playerID, triggeringCardId, 'covert');
+    }
+    case 'extra-cards-drawn-this-turn': {
+      // why: D-24732 — a counter source, not a card list: turnEconomy.cardsDrawn records
+      // how many cards were drawn, not which, so there are no inputs to name (like the
+      // victory-pile sources, countedInputs is omitted for it).
+      return [];
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source explains to no

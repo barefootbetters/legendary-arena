@@ -259,6 +259,48 @@ describe('matchGate.routes (WP-307)', () => {
     assert.deepEqual(henchmenCounts, [1, 1, 1, 2, 2]);
   });
 
+  test('GET /api/match/setup-requirements?schemeId=<Change the Outcome of WWII> projects villainGroupCount base + 1 (WP-833 / D-24766)', async () => {
+    // why: the scheme prints "Add an extra Villain Group", so the lobby must ask
+    // for 2/3/4/4/5 Villain Groups — agreeing with the engine and the loadout
+    // builder. The Henchman and hero counts stay the base table's.
+    const handlers = collectRoutes(unauthenticatedDeps);
+    const koaContext = makeContext(undefined, { schemeId: 'ca75/change-the-outcome-of-wwii' });
+
+    await handlers.get('/api/match/setup-requirements')!(koaContext);
+
+    assert.equal(koaContext.status, 200);
+    const body = koaContext.body as {
+      requirements: Record<string, { villainGroupCount: number; henchmenGroupCount: number; heroCount: number }>;
+    };
+    const villainCounts: number[] = [];
+    const henchmenCounts: number[] = [];
+    const heroCounts: number[] = [];
+    for (const playerCount of ['1', '2', '3', '4', '5']) {
+      villainCounts.push(body.requirements[playerCount]!.villainGroupCount);
+      henchmenCounts.push(body.requirements[playerCount]!.henchmenGroupCount);
+      heroCounts.push(body.requirements[playerCount]!.heroCount);
+    }
+    assert.deepEqual(villainCounts, [2, 3, 4, 4, 5]);
+    assert.deepEqual(henchmenCounts, [1, 1, 1, 2, 2]);
+    assert.deepEqual(heroCounts, [3, 5, 5, 5, 6]);
+  });
+
+  test('GET /api/match/setup-requirements without a schemeId (or for Midtown) keeps the base villainGroupCount', async () => {
+    const handlers = collectRoutes(unauthenticatedDeps);
+    for (const query of [undefined, { schemeId: 'core/midtown-bank-robbery' }]) {
+      const koaContext = makeContext(undefined, query);
+
+      await handlers.get('/api/match/setup-requirements')!(koaContext);
+
+      const body = koaContext.body as { requirements: Record<string, { villainGroupCount: number }> };
+      const villainCounts: number[] = [];
+      for (const playerCount of ['1', '2', '3', '4', '5']) {
+        villainCounts.push(body.requirements[playerCount]!.villainGroupCount);
+      }
+      assert.deepEqual(villainCounts, [1, 2, 3, 3, 4]);
+    }
+  });
+
   test('GET /api/match/setup-requirements without a schemeId (or for Midtown) keeps the base henchmenGroupCount', async () => {
     const handlers = collectRoutes(unauthenticatedDeps);
     for (const query of [undefined, { schemeId: 'core/midtown-bank-robbery' }]) {

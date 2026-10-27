@@ -67,6 +67,8 @@ export type {
   MoveResult,
 } from "./moves/coreMoves.types.js";
 export { CORE_MOVE_NAMES } from "./moves/coreMoves.types.js";
+// why: WP-830 / D-24763 — the six Enigma Code colors, so the client labels exactly the guesses the engine accepts.
+export { ENIGMA_COLORS } from "./rules/enigmaCode.logic.js";
 export {
   MOVE_ALLOWED_STAGES,
   isMoveAllowedInStage,
@@ -160,6 +162,7 @@ export { revealVillainCard } from "./villainDeck/villainDeck.reveal.js";
 export { fightVillain } from "./moves/fightVillain.js";
 export { recruitHero } from "./moves/recruitHero.js";
 export { recruitOfficer, OFFICER_RECRUIT_COST } from "./moves/recruitOfficer.js";
+export { recruitSidekick, returnPlayedSidekick, SIDEKICK_RECRUIT_COST, SIDEKICK_RETURN_DRAW_COUNT } from "./moves/recruitSidekick.js";
 // why: WP-757 / D-24587 — the Haunt contract WP-758 (Zarathos) and WP-759 (client)
 // consume verbatim: the exorcise move + args and the three haunt helpers.
 export { exorciseHauntedHero } from "./moves/exorciseHauntedHero.js";
@@ -391,6 +394,8 @@ export type {
   UIHQState,
   UIMastermindState,
   UISchemeState,
+  UIEnigmaCodeState,
+  UIEnigmaCard,
   UITurnEconomyState,
   UIGameOverState,
   UIProgressCounters,
@@ -633,6 +638,9 @@ export type { CoopOutcomeCategory } from "./simulation/coopOutcome.js";
 
 // PAR simulation engine (WP-049 / D-4901+)
 export { createCompetentHeuristicPolicy } from "./simulation/ai.competent.js";
+// Playing-seat answers for an open seat choice (D-24744) — the bot ally answers
+// like a present player instead of with the absent-seat defaultOptionIndex.
+export { choosePlayingSeatChoiceOption } from "./simulation/ai.seatChoice.js";
 export {
   aggregateParFromSimulation,
   generateScenarioPar,

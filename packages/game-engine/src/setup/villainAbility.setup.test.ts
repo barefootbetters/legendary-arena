@@ -1723,3 +1723,620 @@ describe('buildVillainAbilityHooks — haunt-hq-hero marker (WP-757 / D-24587)',
     });
   }
 });
+
+describe('buildVillainAbilityHooks — WP-816 !<condition> suffix + Savior grammars (D-24749)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'savior-ko', token: 'ko-hero:current!savior' },
+    { slug: 'savior-draw', token: 'draw-cards-current:1!savior' },
+    { slug: 'savior-melter', token: 'ko-cullable-each-deck-top!savior' },
+    { slug: 'non-savior', token: 'gain-wound:each-non-savior' },
+    { slug: 'ko-bystander', token: 'ko-bystander-each-victory-pile' },
+    { slug: 'man-fish-shape', token: 'gain-wound:each-other@sewers+bridge' },
+    { slug: 'both-gates', token: 'ko-hero:current@sewers!savior' },
+    { slug: 'reject-empty', token: 'ko-hero:current!' },
+    { slug: 'reject-unknown', token: 'ko-hero:current!spectrum' },
+    { slug: 'reject-case', token: 'ko-hero:current!Savior' },
+    { slug: 'reject-double', token: 'ko-hero:current!savior!savior' },
+    { slug: 'reject-order', token: 'ko-hero:current!savior@sewers' },
+    { slug: 'reject-legacy', token: 'koHeroCurrentPlayer!savior' },
+    { slug: 'reject-magnitude', token: 'gain-wound:each-non-savior:2' },
+    { slug: 'reject-param', token: 'ko-bystander-each-victory-pile:1' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp816',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Fight: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp816'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp816-${slug}-00`)!;
+
+  it('T4: lifts !savior onto ko-hero:current, draw-cards-current:1 and ko-cullable-each-deck-top', () => {
+    assert.deepStrictEqual(hookFor('savior-ko').effects, [
+      { primitive: 'ko-hero', target: 'current', requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(hookFor('savior-draw').effects, [
+      { primitive: 'draw-cards-current', drawCount: 1, requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(hookFor('savior-melter').effects, [
+      { primitive: 'ko-cullable-each-deck-top', requireCondition: 'savior' },
+    ]);
+  });
+
+  it('T5: parses each-non-savior, ko-bystander-each-victory-pile and the Man-Fish shape', () => {
+    assert.deepStrictEqual(hookFor('non-savior').effects, [
+      { primitive: 'gain-wound', target: 'each-non-savior' },
+    ]);
+    assert.deepStrictEqual(hookFor('ko-bystander').effects, [
+      { primitive: 'ko-bystander-each-victory-pile' },
+    ]);
+    assert.deepStrictEqual(hookFor('man-fish-shape').effects, [
+      { primitive: 'gain-wound', target: 'each-other', magnitude: 1, requireCitySpaces: ['sewers', 'bridge'] },
+    ]);
+  });
+
+  it('T6: carries both the location gate and the condition gate', () => {
+    assert.deepStrictEqual(hookFor('both-gates').effects, [
+      { primitive: 'ko-hero', target: 'current', requireCitySpaces: ['sewers'], requireCondition: 'savior' },
+    ]);
+  });
+
+  it('T7: every malformed suffix or param resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T8: the regenerated ca75 lines build the expected hooks', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/ca75.json.
+    const ca75Registry = makeRegistry(
+      'ca75',
+      [
+        {
+          slug: 'masters-of-evil-wwii',
+          cards: [
+            {
+              slug: 'black-knight',
+              abilities: [
+                'Ambush: Black Knight captures a Bystander. [effect:captureBystander]',
+                'Fight: [keyword:Savior]: KO one of your Heroes. [effect:ko-hero:current!savior]',
+              ],
+            },
+            {
+              slug: 'executioner',
+              abilities: [
+                'Ambush: Executioner captures a Bystander. [effect:captureBystander]',
+                'Fight: [keyword:Savior]: Draw a card. [effect:draw-cards-current:1!savior]',
+                "Escape: KO a Bystander from each player's Victory Pile. [effect:ko-bystander-each-victory-pile]",
+              ],
+            },
+            {
+              slug: 'melter-wwii',
+              abilities: [
+                'Ambush: Melter captures a Bystander. [effect:captureBystander]',
+                'Fight: [keyword:Savior]: Each player reveals the top card of their deck. For each card, you choose to KO it or put it back. [effect:ko-cullable-each-deck-top!savior]',
+              ],
+            },
+            {
+              slug: 'radioactive-man',
+              abilities: [
+                'Ambush: Radioactive Man captures a Bystander. [effect:captureBystander]',
+                'Fight: Each player who is not a [keyword:Savior] gains a Wound. [effect:gain-wound:each-non-savior]',
+                'Escape: Same effect. [effect:gain-wound:each-non-savior]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'zolas-creations',
+          cards: [
+            {
+              slug: 'man-fish',
+              abilities: [
+                '[keyword:Abomination]',
+                'Fight: If you fought Man-Fish in the Sewers or Bridge, then each other player gains a Wound. [effect:gain-wound:each-other@sewers+bridge]',
+                'Escape: Each player gains a Wound. [effect:gainWoundEachPlayer]',
+              ],
+            },
+          ],
+        },
+      ],
+      [],
+    );
+    const ca75Hooks = buildVillainAbilityHooks(
+      ca75Registry,
+      makeConfig(['ca75/masters-of-evil-wwii', 'ca75/zolas-creations'], []),
+    );
+    const effectsAt = (group: string, slug: string, timing: string) =>
+      ca75Hooks.find((h) => h.cardId === `ca75-villain-${group}-${slug}-00` && h.timing === timing)!.effects;
+    const moe = 'masters-of-evil-wwii';
+    assert.deepStrictEqual(effectsAt(moe, 'black-knight', 'onFight'), [
+      { primitive: 'ko-hero', target: 'current', requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'executioner', 'onFight'), [
+      { primitive: 'draw-cards-current', drawCount: 1, requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'executioner', 'onEscape'), [
+      { primitive: 'ko-bystander-each-victory-pile' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'melter-wwii', 'onFight'), [
+      { primitive: 'ko-cullable-each-deck-top', requireCondition: 'savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'radioactive-man', 'onFight'), [
+      { primitive: 'gain-wound', target: 'each-non-savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt(moe, 'radioactive-man', 'onEscape'), [
+      { primitive: 'gain-wound', target: 'each-non-savior' },
+    ]);
+    assert.deepStrictEqual(effectsAt('zolas-creations', 'man-fish', 'onFight'), [
+      { primitive: 'gain-wound', target: 'each-other', magnitude: 1, requireCitySpaces: ['sewers', 'bridge'] },
+    ]);
+    for (const slug of ['black-knight', 'executioner', 'melter-wwii', 'radioactive-man']) {
+      assert.deepStrictEqual(effectsAt(moe, slug, 'onAmbush'), [{ primitive: 'capture-bystander' }], `${slug} Ambush unchanged`);
+    }
+    for (const builtHook of ca75Hooks) {
+      assert.deepStrictEqual(builtHook.unresolvedMarkers ?? [], [], `${builtHook.cardId} ${builtHook.timing} has no unresolved marker`);
+    }
+  });
+});
+
+describe('buildVillainAbilityHooks — WP-817 Captain Zolandia + Primus grammars (D-24750)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'zolandia', token: 'gain-recruit-current-per-hero-class' },
+    { slug: 'primus', token: 'discard-hero-each-player-by-cost:2+3+5+7' },
+    { slug: 'cost-zero', token: 'discard-hero-each-player-by-cost:0' },
+    { slug: 'cost-three', token: 'discard-hero-each-player-by-cost:3' },
+    { slug: 'reject-param', token: 'gain-recruit-current-per-hero-class:1' },
+    { slug: 'reject-bare', token: 'discard-hero-each-player-by-cost' },
+    { slug: 'reject-empty', token: 'discard-hero-each-player-by-cost:' },
+    { slug: 'reject-duplicate', token: 'discard-hero-each-player-by-cost:2+2' },
+    { slug: 'reject-descent', token: 'discard-hero-each-player-by-cost:3+2' },
+    { slug: 'reject-letter', token: 'discard-hero-each-player-by-cost:2+x' },
+    { slug: 'reject-leading-zero', token: 'discard-hero-each-player-by-cost:02' },
+    { slug: 'reject-extra-part', token: 'discard-hero-each-player-by-cost:2+3:5' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp817',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Escape: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp817'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp817-${slug}-00`)!;
+
+  it('T3: parses the no-param Zolandia token and every valid cost list', () => {
+    assert.deepStrictEqual(hookFor('zolandia').effects, [
+      { primitive: 'gain-recruit-current-per-hero-class' },
+    ]);
+    assert.deepStrictEqual(hookFor('primus').effects, [
+      { primitive: 'discard-hero-each-player-by-cost', eligibleCosts: [2, 3, 5, 7] },
+    ]);
+    assert.deepStrictEqual(hookFor('cost-zero').effects, [
+      { primitive: 'discard-hero-each-player-by-cost', eligibleCosts: [0] },
+    ]);
+    assert.deepStrictEqual(hookFor('cost-three').effects, [
+      { primitive: 'discard-hero-each-player-by-cost', eligibleCosts: [3] },
+    ]);
+  });
+
+  it('T4: every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T5: the regenerated ca75 Zolandia and Primus lines build the expected hooks', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/ca75.json.
+    const ca75Registry = makeRegistry(
+      'ca75',
+      [
+        {
+          slug: 'zolas-creations',
+          cards: [
+            {
+              slug: 'captain-zolandia',
+              abilities: [
+                '[keyword:Abomination]',
+                'Fight: You get +1[icon:recruit] for each Hero Class you have. [effect:gain-recruit-current-per-hero-class]',
+              ],
+            },
+            {
+              slug: 'primus',
+              abilities: [
+                'To fight Primus, you must also discard a card that costs 2, 3, 5, or 7. [discard-to-fight:cost:2+3+5+7]',
+                'Escape: each player discards a Hero that costs 2, 3, 5, or 7. [effect:discard-hero-each-player-by-cost:2+3+5+7]',
+              ],
+            },
+          ],
+        },
+      ],
+      [],
+    );
+    const ca75Hooks = buildVillainAbilityHooks(ca75Registry, makeConfig(['ca75/zolas-creations'], []));
+    const hooksFor = (slug: string) =>
+      ca75Hooks.filter((h) => h.cardId === `ca75-villain-zolas-creations-${slug}-00`);
+    const zolandiaHooks = hooksFor('captain-zolandia');
+    assert.equal(zolandiaHooks.length, 1);
+    assert.equal(zolandiaHooks[0]!.timing, 'onFight');
+    assert.deepStrictEqual(zolandiaHooks[0]!.effects, [{ primitive: 'gain-recruit-current-per-hero-class' }]);
+    const primusHooks = hooksFor('primus');
+    assert.equal(primusHooks.length, 1, 'the "To fight" line builds no hook');
+    assert.equal(primusHooks[0]!.timing, 'onEscape');
+    assert.deepStrictEqual(primusHooks[0]!.effects, [
+      { primitive: 'discard-hero-each-player-by-cost', eligibleCosts: [2, 3, 5, 7] },
+    ]);
+    for (const builtHook of ca75Hooks) {
+      assert.deepStrictEqual(builtHook.unresolvedMarkers ?? [], [], `${builtHook.cardId} ${builtHook.timing} has no unresolved marker`);
+    }
+  });
+});
+
+describe('buildVillainAbilityHooks — WP-836 grey-Hero and Hero-count grammars (D-24769)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'destroyer-ko', token: 'ko-hero:each:1:discard:non-grey' },
+    { slug: 'grey-two', token: 'ko-up-to-from-discard-current:2:grey' },
+    { slug: 'grey-one', token: 'ko-up-to-from-discard-current:1:grey' },
+    { slug: 'abomination', token: 'gain-recruit-current-count-by-trait:hc:strength' },
+    { slug: 'beetle', token: 'draw-cards-current-count-by-trait:hc:covert' },
+    { slug: 'savage-land', token: 'reveal-top-ko-grey-or-draw-by-class:strength+instinct' },
+    { slug: 'savage-land-case', token: 'reveal-top-ko-grey-or-draw-by-class:Strength' },
+    { slug: 'reject-ko-grey', token: 'ko-hero:each:1:discard:grey' },
+    { slug: 'reject-ko-hand', token: 'ko-hero:each:1:hand:non-grey' },
+    { slug: 'reject-ko-nongrey', token: 'ko-hero:each:1:discard:nongrey' },
+    { slug: 'reject-ko-extra', token: 'ko-hero:each:1:discard:non-grey:x' },
+    { slug: 'reject-upto-nongrey', token: 'ko-up-to-from-discard-current:2:non-grey' },
+    { slug: 'reject-upto-empty', token: 'ko-up-to-from-discard-current:2:' },
+    { slug: 'reject-upto-no-count', token: 'ko-up-to-from-discard-current:grey' },
+    { slug: 'reject-reveal-draw-grey', token: 'reveal-top-draw-if-cost-lte:3:grey' },
+    { slug: 'reject-recruit-bare', token: 'gain-recruit-current-count-by-trait' },
+    { slug: 'reject-recruit-kind-only', token: 'gain-recruit-current-count-by-trait:hc' },
+    { slug: 'reject-recruit-bad-kind', token: 'gain-recruit-current-count-by-trait:xx:strength' },
+    { slug: 'reject-draw-empty', token: 'draw-cards-current-count-by-trait:hc:' },
+    { slug: 'reject-class-bare', token: 'reveal-top-ko-grey-or-draw-by-class' },
+    { slug: 'reject-class-empty', token: 'reveal-top-ko-grey-or-draw-by-class:' },
+    { slug: 'reject-class-trailing', token: 'reveal-top-ko-grey-or-draw-by-class:strength+' },
+    { slug: 'reject-class-duplicate', token: 'reveal-top-ko-grey-or-draw-by-class:strength+strength' },
+    { slug: 'reject-class-unknown', token: 'reveal-top-ko-grey-or-draw-by-class:strength+psychic' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp836',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Fight: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp836'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp836-${slug}-00`)!;
+
+  it('T3: parses the seven accepted tokens to the locked descriptors', () => {
+    assert.deepStrictEqual(hookFor('destroyer-ko').effects, [
+      { primitive: 'ko-hero', target: 'each', magnitude: 1, zone: 'discard', greyFilter: 'non-grey' },
+    ]);
+    assert.deepStrictEqual(hookFor('grey-two').effects, [
+      { primitive: 'ko-up-to-from-discard-current', magnitude: 2, greyFilter: 'grey' },
+    ]);
+    assert.deepStrictEqual(hookFor('grey-one').effects, [
+      { primitive: 'ko-up-to-from-discard-current', magnitude: 1, greyFilter: 'grey' },
+    ]);
+    assert.deepStrictEqual(hookFor('abomination').effects, [
+      { primitive: 'gain-recruit-current-count-by-trait', requireKind: 'hero-class', requireValue: 'strength' },
+    ]);
+    assert.deepStrictEqual(hookFor('beetle').effects, [
+      { primitive: 'draw-cards-current-count-by-trait', requireKind: 'hero-class', requireValue: 'covert' },
+    ]);
+    assert.deepStrictEqual(hookFor('savage-land').effects, [
+      { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses: ['strength', 'instinct'] },
+    ]);
+    assert.deepStrictEqual(hookFor('savage-land-case').effects, [
+      { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses: ['strength'] },
+    ]);
+  });
+
+  it('T4: every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T5: the regenerated co2e lines build the expected hooks', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/co2e.json.
+    const co2eRegistry = makeRegistry(
+      'co2e',
+      [
+        {
+          slug: 'enemies-of-asgard',
+          cards: [
+            {
+              slug: 'destroyer',
+              abilities: [
+                'Ambush: Each player KOs a non-grey Hero from their discard pile. [effect:ko-hero:each:1:discard:non-grey]',
+                'Fight: KO up to two grey Heroes from your discard pile. [effect:ko-up-to-from-discard-current:2:grey]',
+                'Escape: Repeat the Ambush effect. [effect:ko-hero:each:1:discard:non-grey]',
+              ],
+            },
+            {
+              slug: 'frost-giant-warrior',
+              abilities: [
+                'Ambush: Each player discards a [hc:ranged] Hero or gains a Wound.',
+                'Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]',
+              ],
+            },
+            {
+              slug: 'ymir-frost-giant-king',
+              abilities: [
+                "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city.",
+                'Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'radiation',
+          cards: [
+            {
+              slug: 'abomination',
+              abilities: [
+                'Abomination gets +[icon:attack] equal to the printed [icon:attack] of the Hero in the HQ space under his current city space.',
+                'Fight: You get +1[icon:recruit] for each of your [hc:strength] Heroes. [effect:gain-recruit-current-count-by-trait:hc:strength]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'sinister-syndicate',
+          cards: [
+            {
+              slug: 'beetle',
+              abilities: [
+                'Fight: Count your [hc:covert] Heroes, then draw that many cards. [effect:draw-cards-current-count-by-trait:hc:covert]',
+                'Escape: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]',
+              ],
+            },
+          ],
+        },
+      ],
+      [
+        {
+          slug: 'savage-land-mutates',
+          abilities: [
+            "Fight: Reveal the top card of your deck. If it's grey, KO it. If it's [hc:strength] or [hc:instinct], draw it. [effect:reveal-top-ko-grey-or-draw-by-class:strength+instinct]",
+          ],
+        },
+      ],
+    );
+    const co2eHooks = buildVillainAbilityHooks(
+      co2eRegistry,
+      makeConfig(
+        ['co2e/enemies-of-asgard', 'co2e/radiation', 'co2e/sinister-syndicate'],
+        ['co2e/savage-land-mutates'],
+      ),
+    );
+    const effectsFor = (cardId: string, timing: string) =>
+      co2eHooks.find((h) => h.cardId === cardId && h.timing === timing)?.effects;
+    const destroyerKo = { primitive: 'ko-hero', target: 'each', magnitude: 1, zone: 'discard', greyFilter: 'non-grey' };
+    const destroyerId = 'co2e-villain-enemies-of-asgard-destroyer-00';
+    assert.deepStrictEqual(effectsFor(destroyerId, 'onAmbush'), [destroyerKo]);
+    assert.deepStrictEqual(effectsFor(destroyerId, 'onEscape'), [destroyerKo]);
+    assert.deepStrictEqual(effectsFor(destroyerId, 'onFight'), [
+      { primitive: 'ko-up-to-from-discard-current', magnitude: 2, greyFilter: 'grey' },
+    ]);
+    for (const cardSlug of ['frost-giant-warrior', 'ymir-frost-giant-king']) {
+      assert.deepStrictEqual(effectsFor(`co2e-villain-enemies-of-asgard-${cardSlug}-00`, 'onFight'), [
+        { primitive: 'ko-up-to-from-discard-current', magnitude: 1, greyFilter: 'grey' },
+      ]);
+    }
+    assert.deepStrictEqual(effectsFor('co2e-villain-radiation-abomination-00', 'onFight'), [
+      { primitive: 'gain-recruit-current-count-by-trait', requireKind: 'hero-class', requireValue: 'strength' },
+    ]);
+    assert.deepStrictEqual(effectsFor('co2e-villain-sinister-syndicate-beetle-00', 'onFight'), [
+      { primitive: 'draw-cards-current-count-by-trait', requireKind: 'hero-class', requireValue: 'covert' },
+    ]);
+    for (let copyIndex = 0; copyIndex < 10; copyIndex++) {
+      const henchmanId = `henchman-savage-land-mutates-${String(copyIndex).padStart(2, '0')}`;
+      assert.deepStrictEqual(effectsFor(henchmanId, 'onFight'), [
+        { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses: ['strength', 'instinct'] },
+      ]);
+    }
+    for (const hook of co2eHooks) {
+      assert.deepStrictEqual(hook.unresolvedMarkers ?? [], [], `${hook.cardId} must have no unresolved markers`);
+    }
+  });
+});
+
+describe('buildVillainAbilityHooks — WP-837 each-player discard and reveal-gated grammars (D-24770)', () => {
+  const grammarTokens: Array<{ slug: string; token: string }> = [
+    { slug: 'mystique', token: 'discard-hero-each-player-by-trait:team:x-men' },
+    { slug: 'frost-giant', token: 'discard-hero-or-wound-each-player-by-trait:hc:ranged' },
+    { slug: 'juggernaut-names', token: 'discard-hand-matching-hq-card-names-each-player' },
+    { slug: 'juggernaut-bottom', token: 'hq-heroes-to-hero-deck-bottom' },
+    { slug: 'leader', token: 'play-villain-deck-cards:1:hc:strength' },
+    { slug: 'scorpion', token: 'gain-wound:each!another-group-villain-in-city' },
+    { slug: 'play-two', token: 'play-villain-deck-cards:2' },
+    { slug: 'reject-trait-bare', token: 'discard-hero-each-player-by-trait' },
+    { slug: 'reject-trait-kind-only', token: 'discard-hero-each-player-by-trait:team' },
+    { slug: 'reject-trait-bad-kind', token: 'discard-hero-each-player-by-trait:xx:x-men' },
+    { slug: 'reject-trait-empty', token: 'discard-hero-each-player-by-trait:team:' },
+    { slug: 'reject-names-param', token: 'discard-hand-matching-hq-card-names-each-player:1' },
+    { slug: 'reject-bottom-param', token: 'hq-heroes-to-hero-deck-bottom:x' },
+    { slug: 'reject-play-three', token: 'play-villain-deck-cards:1:hc' },
+    { slug: 'reject-play-zero', token: 'play-villain-deck-cards:0:hc:strength' },
+    { slug: 'reject-play-bad-kind', token: 'play-villain-deck-cards:1:xx:strength' },
+    { slug: 'reject-play-five', token: 'play-villain-deck-cards:1:hc:strength:x' },
+    { slug: 'reject-condition-case', token: 'gain-wound:each!another-group-villain-in-City' },
+  ];
+  const registry = makeRegistry(
+    'core',
+    [
+      {
+        slug: 'wp837',
+        cards: grammarTokens.map((entry) => ({
+          slug: entry.slug,
+          abilities: [`Ambush: test line. [effect:${entry.token}]`],
+        })),
+      },
+    ],
+    [],
+  );
+  const hooks = buildVillainAbilityHooks(registry, makeConfig(['core/wp837'], []));
+  const hookFor = (slug: string) =>
+    hooks.find((h) => h.cardId === `core-villain-wp837-${slug}-00`)!;
+
+  it('T3: parses every Locked-Values marker; the 2-part play form stays byte-identical', () => {
+    assert.deepStrictEqual(hookFor('mystique').effects, [
+      { primitive: 'discard-hero-each-player-by-trait', requireKind: 'team', requireValue: 'x-men' },
+    ]);
+    assert.deepStrictEqual(hookFor('frost-giant').effects, [
+      { primitive: 'discard-hero-or-wound-each-player-by-trait', requireKind: 'hero-class', requireValue: 'ranged' },
+    ]);
+    assert.deepStrictEqual(hookFor('juggernaut-names').effects, [
+      { primitive: 'discard-hand-matching-hq-card-names-each-player' },
+    ]);
+    assert.deepStrictEqual(hookFor('juggernaut-bottom').effects, [{ primitive: 'hq-heroes-to-hero-deck-bottom' }]);
+    assert.deepStrictEqual(hookFor('leader').effects, [
+      { primitive: 'play-villain-deck-cards', magnitude: 1, requireKind: 'hero-class', requireValue: 'strength' },
+    ]);
+    assert.deepStrictEqual(hookFor('scorpion').effects, [
+      { primitive: 'gain-wound', target: 'each', requireCondition: 'another-group-villain-in-city' },
+    ]);
+    assert.deepStrictEqual(hookFor('play-two').effects, [{ primitive: 'play-villain-deck-cards', magnitude: 2 }]);
+  });
+
+  it('T4: every malformed token resolves to unresolvedMarkers, never a silent accept', () => {
+    for (const entry of grammarTokens) {
+      if (!entry.slug.startsWith('reject-')) continue;
+      assert.deepStrictEqual(hookFor(entry.slug).effects, [], `${entry.token} must yield no descriptor`);
+      assert.deepStrictEqual(
+        hookFor(entry.slug).unresolvedMarkers,
+        [entry.token],
+        `${entry.token} must land in unresolvedMarkers`,
+      );
+    }
+  });
+
+  it('T5: the regenerated co2e Ambush lines build the expected onAmbush hooks', () => {
+    // why: these lines are copied verbatim from the regenerated data/cards/co2e.json.
+    const co2eRegistry = makeRegistry(
+      'co2e',
+      [
+        {
+          slug: 'brotherhood-of-mutants',
+          cards: [
+            {
+              slug: 'juggernaut',
+              abilities: [
+                'Ambush: Each player reveals their hand and discards all cards that have the same card names as any Heroes in the HQ. Then put all Heroes from the HQ on the bottom of the Hero Deck. [effect:discard-hand-matching-hq-card-names-each-player] [effect:hq-heroes-to-hero-deck-bottom]',
+              ],
+            },
+            {
+              slug: 'mystique',
+              abilities: ['Ambush: Each player discards an [team:x-men] Hero. [effect:discard-hero-each-player-by-trait:team:x-men]'],
+            },
+          ],
+        },
+        {
+          slug: 'enemies-of-asgard',
+          cards: [
+            {
+              slug: 'frost-giant-warrior',
+              abilities: [
+                'Ambush: Each player discards a [hc:ranged] Hero or gains a Wound. [effect:discard-hero-or-wound-each-player-by-trait:hc:ranged]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'radiation',
+          cards: [
+            {
+              slug: 'the-leader',
+              abilities: [
+                'Ambush: Reveal a [hc:strength] Hero or play a card from the Villain Deck. [effect:play-villain-deck-cards:1:hc:strength]',
+              ],
+            },
+          ],
+        },
+        {
+          slug: 'sinister-spider-foes',
+          cards: [
+            {
+              slug: 'scorpion',
+              abilities: [
+                'Ambush: If there is another Spider-Foes Villain in the city, each player gains a Wound. [effect:gain-wound:each!another-group-villain-in-city]',
+              ],
+            },
+          ],
+        },
+      ],
+      [],
+    );
+    const co2eHooks = buildVillainAbilityHooks(
+      co2eRegistry,
+      makeConfig(
+        ['co2e/brotherhood-of-mutants', 'co2e/enemies-of-asgard', 'co2e/radiation', 'co2e/sinister-spider-foes'],
+        [],
+      ),
+    );
+    const ambushEffectsFor = (cardId: string) =>
+      co2eHooks.find((h) => h.cardId === cardId && h.timing === 'onAmbush')?.effects;
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-brotherhood-of-mutants-juggernaut-00'), [
+      { primitive: 'discard-hand-matching-hq-card-names-each-player' },
+      { primitive: 'hq-heroes-to-hero-deck-bottom' },
+    ]);
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-brotherhood-of-mutants-mystique-00'), [
+      { primitive: 'discard-hero-each-player-by-trait', requireKind: 'team', requireValue: 'x-men' },
+    ]);
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-enemies-of-asgard-frost-giant-warrior-00'), [
+      { primitive: 'discard-hero-or-wound-each-player-by-trait', requireKind: 'hero-class', requireValue: 'ranged' },
+    ]);
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-radiation-the-leader-00'), [
+      { primitive: 'play-villain-deck-cards', magnitude: 1, requireKind: 'hero-class', requireValue: 'strength' },
+    ]);
+    assert.deepStrictEqual(ambushEffectsFor('co2e-villain-sinister-spider-foes-scorpion-00'), [
+      { primitive: 'gain-wound', target: 'each', requireCondition: 'another-group-villain-in-city' },
+    ]);
+    for (const hook of co2eHooks) {
+      assert.deepStrictEqual(hook.unresolvedMarkers ?? [], [], `${hook.cardId} must have no unresolved markers`);
+    }
+  });
+});

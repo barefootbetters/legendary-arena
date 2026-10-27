@@ -96,7 +96,10 @@ export function dropAllPendingPlayerChoices(gameState: LegendaryGameState): void
   gameState.pendingDoOverChoices = undefined;
   gameState.pendingDrawOrEmpowered = undefined;
   gameState.pendingElectromagneticBubbleChoices = undefined;
+  gameState.pendingEnigmaPeekOffers = undefined; // why: WP-830 / D-24763 — owed Enigma peek offers join the end-of-game drop set (D-24518); a decided match never opens them
+  gameState.pendingEscapeEffectDiscards = undefined; // why: WP-817 / D-24750 — the owed Escape-effect discard queue (Primus) joins the end-of-game drop set beside the escape-procedure queue; a decided match never opens it
   gameState.pendingEscapeProcedures = undefined; // why: WP-793 / D-24656 — the escape-procedure queue (owed HQ KO + Bystander discard) joins the end-of-game drop set (D-24518); a decided match never opens it
+  gameState.pendingFlyingShieldBlockWounds = undefined; // why: WP-827 / D-24760 — the Flying Shield Block wound queue joins the end-of-game drop set (D-24518); a decided match never opens it
   gameState.pendingGiveHqHeroChoices = undefined;
   gameState.pendingHeroChoice = undefined;
   gameState.pendingKoDiscardChoices = undefined;
@@ -104,6 +107,7 @@ export function dropAllPendingPlayerChoices(gameState: LegendaryGameState): void
   gameState.pendingMelterKoChoices = undefined;
   gameState.pendingOptionalKoRewards = undefined;
   gameState.pendingOptionalPutBottomHQ = undefined;
+  gameState.pendingOutOfTimeGrants = undefined; // why: WP-828 / D-24761 — owed Man Out of Time grants join the end-of-game drop set (D-24518); a decided match never opens them
   gameState.pendingPlayVillainTopChoices = undefined;
   gameState.pendingPutAnyNumberBottomHQ = undefined;
   gameState.pendingPutCardsOnDeckChoices = undefined;
@@ -111,12 +115,14 @@ export function dropAllPendingPlayerChoices(gameState: LegendaryGameState): void
   gameState.pendingReorderChoices = undefined;
   gameState.pendingReturnOnDiscard = undefined;
   gameState.pendingReturnZeroCostDiscard = undefined;
+  gameState.pendingRevealOrWoundChoices = undefined; // why: WP-845 / D-24779 — owed reveal-or-gain-a-Wound choices join the end-of-game drop set (D-24518); a decided match never opens them
   gameState.pendingRevealThreeAssign = undefined; // why: WP-753 / D-24580 — the reveal-three draw / discard / KO queue joins the end-of-game drop set (D-24518; cleared at the winning turn's end since WP-732, not at vanquish)
   gameState.pendingRevealTopDispose = undefined; // why: WP-702 / D-24521 — the reveal-top discard-or-keep queue joins the end-of-game drop set (D-24518)
   gameState.pendingRuthlessDictatorChoices = undefined;
   gameState.pendingScryKoChoices = undefined;
   gameState.pendingSeatChoice = undefined;
   gameState.pendingSmashDiscards = undefined;
+  gameState.pendingTimestreamPurges = undefined; // why: WP-829 / D-24762 — owed Purges join the end-of-game drop set (D-24518); a decided match never opens them
   gameState.pendingUndercoverChoice = undefined;
   gameState.pendingVictoryPileCardPick = undefined;
 }

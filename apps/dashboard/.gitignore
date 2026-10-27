@@ -6,3 +6,4 @@ src/data/par-fidelity.json
 src/data/wiki-lint.json
 src/data/coach-eval.json
 src/data/live-verify.json
+src/data/coverage-set-names.json

@@ -1,0 +1,17 @@
+{{- /*
+  why: one helper for a page's path in its repository: the content root
+  (params.ewiki.contentRoot, E "wiki", H "docs", C "") joined to the page's
+  content path. E and C built this inline; H had this partial. It is used only
+  for GitHub URLs and the "Editing this page" footer, never for a page lookup:
+  lookups stay content-relative (render-link.html), so the content root can
+  never leak into one.
+
+  Input: a page. Returns "" for a page with no file (a taxonomy list).
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $contentRoot := index $ewiki "contentroot" | default "" -}}
+{{- $repoPath := "" -}}
+{{- with .File -}}
+  {{- $repoPath = path.Join $contentRoot (replace .Path "\\" "/") -}}
+{{- end -}}
+{{- return $repoPath -}}

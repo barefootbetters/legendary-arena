@@ -15,21 +15,29 @@ import assert from 'node:assert/strict';
 
 import { validate, LAGN_VERSION } from '@legendary-arena/lagn';
 import type { CardRegistry } from '@legendary-arena/registry';
-import type { ScoreBreakdown } from '@legendary-arena/game-engine';
+import { evaluateEndgame, ENDGAME_CONDITIONS } from '@legendary-arena/game-engine';
+import type {
+  EndgameResult,
+  LegendaryGameState,
+  ScoreBreakdown,
+} from '@legendary-arena/game-engine';
 
 import {
   buildMatchLagn,
   buildNameResolver,
   readMatchConfigurationForLagn,
   readMatchGameover,
+  VERDICT_NOT_RECORDED,
   readAccountPublicIdentities,
   buildResultPlayers,
   buildResultMatchLagn,
   toLagnResult,
+  toResultOmittedReason,
   toResultScore,
   toBattlePlanBlock,
   DEFAULT_SCORING_PROFILE,
   type MatchLagnComposition,
+  type StoredGameover,
   type ResultPlayerIdentity,
 } from './matchLagn.logic.js';
 import type { CompetitiveScoreRecord } from '../competition/competition.types.js';
@@ -376,6 +384,74 @@ describe('toLagnResult — outcome mapping', () => {
   });
 });
 
+/**
+ * The verdict the engine itself returns when exactly one endgame counter is set.
+ * `endIf` stores this object as `metadata.gameover`.
+ *
+ * @param counterName The `ENDGAME_CONDITIONS` counter to set to 1.
+ * @returns The engine's `EndgameResult` for that state.
+ */
+function engineVerdictFor(counterName: string): EndgameResult {
+  // why: evaluateEndgame reads only `G.counters`, so a counters-only state is
+  // enough. Building the verdict from the engine, not by hand, means a renamed or
+  // reshaped engine flag fails this test instead of shipping a false "Draw".
+  const gameState = { counters: { [counterName]: 1 } } as unknown as LegendaryGameState;
+  const verdict = evaluateEndgame(gameState);
+  assert.ok(verdict !== null, `The engine returned no verdict for counter ${counterName}.`);
+  return verdict;
+}
+
+describe('toResultOmittedReason — why result is omitted (WP-812 / D-24720)', () => {
+  test('a decisive verdict omits nothing', () => {
+    assert.equal(toResultOmittedReason({ outcome: 'heroes-win' }), undefined);
+    assert.equal(toResultOmittedReason({ outcome: 'scheme-wins' }), undefined);
+  });
+
+  test('a deck-exhaustion tie is named a tie', () => {
+    const engineTie: StoredGameover = engineVerdictFor(ENDGAME_CONDITIONS.FINAL_TURN_TIE);
+    assert.equal(engineTie.outcome, 'tie');
+    assert.equal(toResultOmittedReason(engineTie), 'tie');
+    assert.equal(toResultOmittedReason({ outcome: 'tie' }), 'tie');
+  });
+
+  test('a match the players ended early is named ended-early, never a tie', () => {
+    // why: the engine stores an abandoned match as a 'tie' flagged endedEarly
+    // (D-24306); the flag, not the outcome string or the reason text, decides.
+    const engineEndedEarly: StoredGameover = engineVerdictFor(
+      ENDGAME_CONDITIONS.MATCH_ENDED_EARLY,
+    );
+    assert.equal(engineEndedEarly.outcome, 'tie');
+    assert.equal(toResultOmittedReason(engineEndedEarly), 'ended-early');
+    assert.equal(toResultOmittedReason({ outcome: 'tie', endedEarly: true }), 'ended-early');
+  });
+
+  test('an unrecorded, empty, or unrecognized verdict is unknown, never a tie', () => {
+    // why: `{}` is WP-811's VERDICT_NOT_RECORDED and its hash-mismatch value;
+    // calling either one a tie is the false "Draw" this packet removes.
+    assert.equal(toResultOmittedReason({}), 'unknown');
+    assert.equal(toResultOmittedReason({ outcome: 'something-else' }), 'unknown');
+    assert.equal(toResultOmittedReason({ reason: 'no outcome key' }), 'unknown');
+  });
+
+  test('the reason is present exactly when toLagnResult omits result', () => {
+    const verdicts = [
+      { outcome: 'heroes-win' },
+      { outcome: 'scheme-wins' },
+      { outcome: 'tie' },
+      { outcome: 'tie', endedEarly: true },
+      // why: a decisive outcome always wins over the flag (precedence pin).
+      { outcome: 'heroes-win', endedEarly: true },
+      { outcome: 'something-else' },
+      {},
+    ];
+    for (const verdict of verdicts) {
+      const isResultOmitted = toLagnResult(verdict) === undefined;
+      const hasReason = toResultOmittedReason(verdict) !== undefined;
+      assert.equal(hasReason, isResultOmitted, JSON.stringify(verdict));
+    }
+  });
+});
+
 describe('buildResultPlayers — roster projection (D-24214)', () => {
   const identities = new Map<AccountId, ResultPlayerIdentity>([
     ['account-ana' as AccountId, { displayHandle: 'ana-handle', displayName: 'Ana' }],
@@ -687,5 +763,103 @@ describe('readAccountPublicIdentities — domain-table read', () => {
       displayHandle: null,
       displayName: null,
     });
+  });
+});
+
+// ============================================================================
+// Reaped-match fallback (WP-811 / D-24719)
+// ============================================================================
+
+/**
+ * A fake `DatabaseClient` that answers by table: `liveRows` for a
+ * `bgio.matches` query, `artifactRows` for a `bgio.replay_artifacts` query.
+ * Records every query text so a test can assert which store was read.
+ */
+function fakeTwoStoreDatabase(liveRows: unknown[], artifactRows: unknown[]) {
+  const queries: string[] = [];
+  const database = {
+    query: async (text: string) => {
+      queries.push(text);
+      if (/FROM bgio\.replay_artifacts/.test(text)) {
+        return { rows: artifactRows };
+      }
+      return { rows: liveRows };
+    },
+  } as unknown as DatabaseClient;
+  return { database, queries };
+}
+
+const ARTIFACT_INITIAL_STATE = {
+  G: { matchConfiguration: VALID_COMPOSITION },
+  ctx: { numPlayers: 2 },
+};
+
+describe('readMatchConfigurationForLagn — reaped-match fallback (D-24719)', () => {
+  test('reads the durable artifact when the live row has been reaped', async () => {
+    const { database, queries } = fakeTwoStoreDatabase([], [
+      { initial_state: ARTIFACT_INITIAL_STATE },
+    ]);
+    const result = await readMatchConfigurationForLagn('reaped', database);
+    assert.notEqual(result, null);
+    assert.equal(result!.numPlayers, 2);
+    assert.equal(result!.matchConfiguration.mastermindId, 'core/loki-god-of-mischief');
+    assert.equal(queries.length, 2);
+    assert.match(queries[1]!, /SELECT initial_state FROM bgio\.replay_artifacts WHERE match_id = \$1 LIMIT 1/);
+  });
+
+  test('a live row wins: the artifact store is never read', async () => {
+    const { database, queries } = fakeTwoStoreDatabase(
+      [{ initial_state: ARTIFACT_INITIAL_STATE }],
+      [{ initial_state: null }],
+    );
+    const result = await readMatchConfigurationForLagn('live', database);
+    assert.equal(result!.numPlayers, 2);
+    assert.equal(queries.length, 1);
+  });
+
+  test('a live row with a null initial_state stays unprojectable (no fallback)', async () => {
+    const { database, queries } = fakeTwoStoreDatabase(
+      [{ initial_state: null }],
+      [{ initial_state: ARTIFACT_INITIAL_STATE }],
+    );
+    assert.equal(await readMatchConfigurationForLagn('upsert-row', database), null);
+    assert.equal(queries.length, 1);
+  });
+
+  test('returns null when neither store has the match', async () => {
+    const { database } = fakeTwoStoreDatabase([], []);
+    assert.equal(await readMatchConfigurationForLagn('unknown', database), null);
+  });
+});
+
+describe('readMatchGameover — reaped-match fallback (D-24719)', () => {
+  test('reads the verdict copied onto the artifact', async () => {
+    const { database, queries } = fakeTwoStoreDatabase([], [
+      { gameover: { outcome: 'scheme-wins', reason: 'The scheme completed.' } },
+    ]);
+    const gameover = await readMatchGameover('reaped', database);
+    assert.deepEqual(gameover, { outcome: 'scheme-wins', reason: 'The scheme completed.' });
+    assert.match(queries[1]!, /SELECT gameover FROM bgio\.replay_artifacts WHERE match_id = \$1 LIMIT 1/);
+    assert.deepEqual(toLagnResult(gameover), { outcome: 'defeat' });
+  });
+
+  test('an artifact with no recorded verdict reads as finished with an unknown outcome', async () => {
+    const { database } = fakeTwoStoreDatabase([], [{ gameover: null }]);
+    const gameover = await readMatchGameover('legacy', database);
+    assert.equal(gameover, VERDICT_NOT_RECORDED);
+    assert.equal(toLagnResult(gameover), undefined);
+  });
+
+  test('a live in-progress match never falls back (match_not_finished stays)', async () => {
+    const { database, queries } = fakeTwoStoreDatabase([{ gameover: null }], [
+      { gameover: { outcome: 'heroes-win' } },
+    ]);
+    assert.equal(await readMatchGameover('live', database), null);
+    assert.equal(queries.length, 1);
+  });
+
+  test('returns null when the match was never captured', async () => {
+    const { database } = fakeTwoStoreDatabase([], []);
+    assert.equal(await readMatchGameover('unknown', database), null);
   });
 });

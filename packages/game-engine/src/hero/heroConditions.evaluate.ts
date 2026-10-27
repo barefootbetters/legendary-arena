@@ -15,11 +15,12 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
-import { cardHasClassWhenPlayed, getGrantedClasses } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
 import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
+import { heroClassDisplayName, teamDisplayName } from '../log/logDisplay.js';
 
 // why: WP-777 / D-24616 — the one literal for "If you discarded any cards this turn"
 // (New Wings, Pumpkin Bombs). The setup marker arm, the evaluate + describe cases, the
@@ -107,47 +108,19 @@ export function evaluateCondition(
   }
 
   switch (condition.type) {
-    case 'heroClassMatch': {
-      // why: self is excluded from scan — a card's own class does not satisfy
-      // its own superpower. The physical card game rule requires *another*
-      // card of the same class to have been played this turn.
-      if (!G.cardTraits) {
-        return false;
-      }
-
-      // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-      for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
-        if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
-          continue;
-        }
-        // why: D-24074 — an in-play Size-Changing card counts as each of its effective classes (printed plus granted), via the shared cardHasClassWhenPlayed helper
-        if (cardHasClassWhenPlayed(G, playedCardId as CardExtId, condition.value)) {
-          return true;
-        }
-      }
-
-      return false;
-    }
-
+    case 'heroClassMatch':
     case 'requiresTeam': {
-      // why: self is excluded from scan — a card's own team does not satisfy
-      // its own superpower. Same self-exclusion logic as heroClassMatch.
-      if (!G.cardTraits) {
-        return false;
-      }
-
-      // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
-      for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
-        if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
-          continue;
-        }
-        // why: D-24391 — an in-play card counts as its printed team OR any team granted by Copy Powers (cardCopiedTeams). why (Jeff feedback): via cardCountsAsTeamMember, so a requiresTeam 'shield' gate also counts the teamless basic S.H.I.E.L.D. tokens (Officer/Agent/Trooper), matching the KO/Undercover carve-out. Mirrors heroClassMatch routing through cardHasClassWhenPlayed; the self-exclusion loop above is preserved.
-        if (cardCountsAsTeamMember(G, playedCardId as CardExtId, condition.value)) {
-          return true;
-        }
-      }
-
-      return false;
+      // why: self is excluded from the count — a card's own class or team does not satisfy its
+      // own superpower; the rule requires *another* matching card played this turn.
+      // why: D-24563 — counted through the shared countOtherInPlayMatchingCondition helper, so a
+      // repeated prefix icon ("[hc:ranged][hc:ranged]:", requiredMatches 2) needs that many OTHER
+      // matching cards. Distinct conditions are counted independently, so a multiclass card counts
+      // toward each one it matches. The helper reads playedCardIdsThisTurn, so a card set aside
+      // Out of Time earlier this turn still counts (rules v23 L3443-3446).
+      return (
+        countOtherInPlayMatchingCondition(G, playerID, condition, triggeringCardId) >=
+        effectiveRequiredMatches(condition)
+      );
     }
 
     case 'requiresKeyword': {
@@ -246,7 +219,8 @@ export function evaluateCondition(
 
     case 'cardsDrawnThisTurnAtLeast': {
       // why: WP-665 / D-24476 — reads G.turnEconomy.cardsDrawn, the per-turn count of
-      // cards drawn from EFFECTS this turn (the start-of-turn hand refill is excluded).
+      // cards drawn from EFFECTS this turn (the end-of-turn hand fill is excluded). D-24732
+      // widened the counter from the draw:N path to every effect draw by the current player.
       // Gamma-Draining Nanites' "if you drew two cards this turn" gate. A wait-and-see
       // condition (deferredConditionalGrants) so it re-checks each move this turn.
       const drawThreshold = parseInt(condition.value, 10);
@@ -325,7 +299,8 @@ export function evaluateCondition(
       // why: D-24464 — Savior gates on >= N Bystanders in the Victory Pile. The
       // two-arm predicate (a supply Bystander OR a rescued villain-deck Bystander)
       // is re-implemented INLINE here — the heroCountSource.resolve.ts classifier
-      // is non-exported. A CONDITION per D-24055.
+      // is non-exported. A CONDITION per D-24055. A defeated Killbot keeps its
+      // villain-deck Bystander id, so it counts here too (rules v23 L2337-2341).
       const threshold = parseInt(condition.value, 10);
       if (Number.isNaN(threshold)) {
         return false;
@@ -359,8 +334,9 @@ export function evaluateCondition(
           const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
           const isCheap = cost === 1 || cost === 2;
           // why: getGrantedClasses reads G.cardSizeChangingClasses (the
-          // Size-Changing grant map), distinct from Copy-Powers' class/team maps,
-          // so a non-empty list identifies Size-Changing specifically — not a copy.
+          // Size-Changing grant map), distinct from Copy-Powers' class/team maps
+          // (cardCopiedClasses / cardCopiedTeams, D-24730), so a non-empty list
+          // identifies Size-Changing specifically — not a copy.
           const isSizeChanging = getGrantedClasses(G, cardId as CardExtId).length > 0;
           if (isCheap || isSizeChanging) {
             matchCount += 1;
@@ -437,14 +413,49 @@ export function evaluateCondition(
 // ---------------------------------------------------------------------------
 
 /**
- * Counts the OTHER cards in the player's play area that satisfy one condition.
+ * Returns how many OTHER matching cards a condition requires (D-24563).
  *
- * WP-740 / D-24562 — the counting primitive behind a doubled "both" line such as
- * "[team:venomverse][team:venomverse]" (the rulebook's "Critical Hit" two-icon rule needs two
- * OTHER matching cards; evaluateCondition answers only "at least one"). Uses the same membership
- * helpers as evaluateCondition (cardCountsAsTeamMember / cardHasClassWhenPlayed), so Copy-Powers
- * teams and Size-Changing classes count identically. Only heroClassMatch and requiresTeam are
- * countable; any other type returns 0 (fails closed).
+ * `requiredMatches` when it is an integer above 1, else 1 — so an absent, 1, 0 or non-integer
+ * value behaves exactly like a plain single-icon gate.
+ *
+ * @param condition - The condition being evaluated or described.
+ * @returns The effective required count (always at least 1).
+ */
+function effectiveRequiredMatches(condition: HeroCondition): number {
+  const requiredMatches = condition.requiredMatches;
+  if (typeof requiredMatches === 'number' && Number.isInteger(requiredMatches) && requiredMatches > 1) {
+    return requiredMatches;
+  }
+  return 1;
+}
+
+/**
+ * Returns the printed cost floor a counted OTHER card must meet (WP-825 / D-24758).
+ *
+ * `minimumCost` when it is an integer of 1 or more, else 0 — so an absent, 0, negative or
+ * non-integer value behaves exactly like a gate with no cost floor.
+ *
+ * @param condition - The condition being evaluated or described.
+ * @returns The effective minimum printed cost (0 = no floor).
+ */
+function effectiveMinimumCost(condition: HeroCondition): number {
+  const minimumCost = condition.minimumCost;
+  if (typeof minimumCost === 'number' && Number.isInteger(minimumCost) && minimumCost >= 1) {
+    return minimumCost;
+  }
+  return 0;
+}
+
+/**
+ * Counts the OTHER cards the player played this turn that satisfy one condition.
+ *
+ * WP-740 / D-24562 introduced it for a doubled "both" line; since D-24563 it is the counting
+ * primitive behind every heroClassMatch / requiresTeam gate — evaluateCondition calls it and
+ * compares the count with the condition's requiredMatches (the rulebook's "Critical Hit" rule:
+ * a repeated icon needs that many OTHER matching cards). Uses the shared membership helpers
+ * (cardCountsAsTeamMember / cardHasClassWhenPlayed), so Copy-Powers teams, dual classes,
+ * Size-Changing classes and the teamless basic S.H.I.E.L.D. tokens count identically. Only
+ * heroClassMatch and requiresTeam are countable; any other type returns 0 (fails closed).
  *
  * why: this deliberately duplicates the module-private played-this-turn counters in
  * heroCountSource.resolve.ts (duplicate-first, 00.6 Rule 1) — those are count sources for
@@ -453,15 +464,16 @@ export function evaluateCondition(
  * @param G - Current game state (read-only).
  * @param playerID - Active player ID.
  * @param condition - The condition each counted card must satisfy.
- * @param triggeringCardId - The card being evaluated; skipped by exact instance id, so a
- *   second copy of the same card (a different #N) still counts.
- * @returns The number of other in-play cards that satisfy the condition.
+ * @param triggeringCardId - Optional: the card being evaluated, skipped by exact instance id,
+ *   so a second copy of the same card (a different #N) still counts. When undefined, nothing
+ *   is skipped.
+ * @returns The number of other played-this-turn cards that satisfy the condition.
  */
 export function countOtherInPlayMatchingCondition(
   G: LegendaryGameState,
   playerID: string,
   condition: HeroCondition,
-  triggeringCardId: CardExtId,
+  triggeringCardId?: CardExtId,
 ): number {
   const playerZones = G.playerZones[playerID];
   // why: cardHasClassWhenPlayed dereferences G.cardTraits[cardId] unguarded, so a missing
@@ -472,10 +484,11 @@ export function countOtherInPlayMatchingCondition(
   if (condition.type !== 'requiresTeam' && condition.type !== 'heroClassMatch') {
     return 0;
   }
+  const minimumCost = effectiveMinimumCost(condition);
   let matchCount = 0;
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   for (const playedCardId of playedCardIdsThisTurn(G, playerZones.inPlay)) {
-    if (playedCardId === triggeringCardId) {
+    if (triggeringCardId !== undefined && playedCardId === triggeringCardId) {
       continue;
     }
     const cardId = playedCardId as CardExtId;
@@ -484,6 +497,13 @@ export function countOtherInPlayMatchingCondition(
       isMatch = cardCountsAsTeamMember(G, cardId, condition.value);
     } else {
       isMatch = cardHasClassWhenPlayed(G, cardId, condition.value);
+    }
+    // why: WP-825 / D-24758 — a printed "that costs N or more" floor. The cost reads
+    // G.cardStats (the S.H.I.E.L.D. Agent / Trooper carry cost-0 rows, the Officer cost 3);
+    // `?? 0` covers a card with no row, which never meets a floor of 1 or more.
+    if (isMatch && minimumCost > 0) {
+      const cost = G.cardStats?.[cardId]?.cost ?? 0;
+      isMatch = cost >= minimumCost;
     }
     if (isMatch) {
       matchCount += 1;
@@ -630,6 +650,10 @@ export function countDistinctHeroClassesYouHave(
     }
     for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
       distinctClasses.add(grantedClass);
+    }
+    // why: D-24730 — Copy Powers' copied class lives in its own turn-scoped map.
+    for (const copiedClass of getCopiedClasses(G, playedCardId as CardExtId)) {
+      distinctClasses.add(copiedClass);
     }
   }
   return distinctClasses.size;
@@ -791,10 +815,25 @@ export function describeFailedCondition(
 ): string {
   switch (condition.type) {
     case 'heroClassMatch':
-      return `it needs another ${condition.value} Hero played this turn`;
-
-    case 'requiresTeam':
-      return `it needs another ${condition.value} Hero played this turn`;
+    case 'requiresTeam': {
+      // why: D-24563 — a repeated prefix icon names its count; the single-icon wording is unchanged.
+      const requiredMatches = effectiveRequiredMatches(condition);
+      // why: WP-825 / D-24758 — a cost floor names the printed cost, so the log says why a
+      // played cost-0 starter didn't count.
+      const minimumCost = effectiveMinimumCost(condition);
+      // why: name the class or team as printed ("Instinct", "S.H.I.E.L.D."), matching how the
+      // play line renders the same gate's [hc:] / [team:] token.
+      const gateName =
+        condition.type === 'requiresTeam'
+          ? teamDisplayName(condition.value)
+          : heroClassDisplayName(condition.value);
+      if (requiredMatches > 1) {
+        const pluralCostClause = minimumCost > 0 ? ` that cost ${minimumCost} or more` : '';
+        return `it needs ${requiredMatches} other ${gateName} Heroes${pluralCostClause} played this turn`;
+      }
+      const costClause = minimumCost > 0 ? ` that costs ${minimumCost} or more` : '';
+      return `it needs another ${gateName} Hero${costClause} played this turn`;
+    }
 
     case 'requiresKeyword':
       return `it needs another ${condition.value} card played this turn`;
@@ -986,6 +1025,11 @@ export function heroConditionHoldsForInPlay(
     if (isSizeChangingOrCopyPowers(cardData, candidateId)) {
       return 'unsupported';
     }
+  }
+  // why: WP-825 / D-24758 — fidelity scope-out: the card-data slice carries no cardStats, so a
+  // cost-floored gate would read every candidate as cost 0 and report a false whiff.
+  if (effectiveMinimumCost(condition) > 0) {
+    return 'unsupported';
   }
   // why: reconstruct the minimal G slice evaluateCondition's class/team/keyword gates
   // read (the four card-data maps + one seat's inPlay), then delegate to the real
