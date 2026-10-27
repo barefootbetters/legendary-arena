@@ -49216,7 +49216,7 @@ Protect this file.
 
 ### D-24563 — A repeated icon in a Superpower's leading prefix needs that many OTHER matching cards; the count rides `HeroCondition.requiredMatches` (Active 2026-10-23 — WP-741 / EC-778)
 
-**Status:** Active 2026-10-23. Live-verify (D-24026) pending deploy: Dark City Bishop's Concussive Blast after one other Ranged Hero grants no +3 and logs "it needs 2 other ranged Heroes played this turn"; after two, it grants +3. Use a match created after the deploy (in-flight matches keep their setup-time hooks).
+**Status:** Active 2026-10-23. Live-verify (D-24026) PASS 2026-10-27 on `play.legendary-arena.com` (STATUS.md WP-741 entry). Turn 2 of a 2-player operator match (core Red Skull / Midtown Bank Robbery; Bishop, Storm, Iron Man, Thor, Hulk), created after the deploy: Lightning Bolt then Concussive Blast `#0` logged `blocked` "it needs 2 other Ranged Heroes played this turn" with no +3 (2.2.14-2.2.15); Concussive Blast `#2` next, with Lightning Bolt and the other copy played, logged `applied` +3 (2.2.16-2.2.17), so another copy counts.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). 35 printed lines across 34 hero decks gate on their printed count: Bishop's Concussive Blast, Janet van Dyne's Subatomic Size, Captain Marvel's Cosmic Energies, Crystal of Kadavus's repeat, Agent X-13's Sniper Squad (4 other S.H.I.E.L.D. cards) and Psi-Lord's Reshape Reality among them. No Core card is affected. A failed doubled gate names its count.
 
