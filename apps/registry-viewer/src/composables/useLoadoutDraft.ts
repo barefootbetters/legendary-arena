@@ -333,6 +333,51 @@ function createBlankDraft(): MatchSetupDocument {
   };
 }
 
+/**
+ * Returns a shallow copy of a pasted MATCH-SETUP object with each required
+ * envelope field it leaves out copied from the current draft. Fields the
+ * paste does carry are kept as-is, so a malformed value still fails
+ * validation; the composition is never filled.
+ */
+// why: a hand-written loadout is usually just the composition plus a
+// playerCount. Its setupId / createdAt / createdBy / seed / expansions are
+// bookkeeping the builder already holds for the open draft, so rejecting the
+// paste for lacking them sent the operator off to invent five values the
+// builder could supply. The strict contract validator is untouched: the
+// filled document still passes through it.
+function fillMissingEnvelopeFields(
+  parsed: unknown,
+  currentDraft: MatchSetupDocument,
+): unknown {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return parsed;
+  }
+  const filled: Record<string, unknown> = { ...(parsed as Record<string, unknown>) };
+  if (filled.schemaVersion === undefined) {
+    filled.schemaVersion = currentDraft.schemaVersion;
+  }
+  if (filled.setupId === undefined) {
+    filled.setupId = currentDraft.setupId;
+  }
+  if (filled.createdAt === undefined) {
+    filled.createdAt = currentDraft.createdAt;
+  }
+  if (filled.createdBy === undefined) {
+    filled.createdBy = currentDraft.createdBy;
+  }
+  if (filled.seed === undefined) {
+    filled.seed = currentDraft.seed;
+  }
+  if (filled.playerCount === undefined) {
+    filled.playerCount = currentDraft.playerCount;
+  }
+  if (filled.expansions === undefined) {
+    // why: a fresh array, so the loaded draft never aliases the one it replaces.
+    filled.expansions = [...currentDraft.expansions];
+  }
+  return filled;
+}
+
 /** The public API returned by `useLoadoutDraft()`. */
 export interface UseLoadoutDraftApi {
   draft: Ref<MatchSetupDocument>;
@@ -821,7 +866,8 @@ export function useLoadoutDraft(registry: LoadoutRegistryReader): UseLoadoutDraf
         ],
       };
     }
-    const result = validateMatchSetupDocument(parsed, registry);
+    const document = fillMissingEnvelopeFields(parsed, draft.value);
+    const result = validateMatchSetupDocument(document, registry);
     if (!result.ok) {
       return { ok: false, errors: result.errors };
     }
