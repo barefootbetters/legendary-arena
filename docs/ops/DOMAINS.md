@@ -28,7 +28,7 @@ define new architectural boundaries.
 | `legendary-arena-wiki.onrender.com` | Retired Render origin of the eng wiki — must 404 (it was an Access bypass) | Render (service deleted 2026-10-11) | none — retired by D-24690 | live (404 since 2026-10-11; regression probe) |
 | `legends.legendary-arena.com` | Public scoreboard (attract board) | Cloudflare Pages | [apps/legends-board](../../apps/legends-board) (WP-143) | live (domain since 2026-07-08; SPA shipped 2026-05-15, WP-143) |
 | `api.legendary-arena.com` | Game server REST + Socket.IO | DigitalOcean droplet (proxied Cloudflare A record; Origin cert, Full strict) | [apps/server](../../apps/server) | live (on the droplet since 2026-10-12; Render 2026-05-09 to 2026-10-12) |
-| `legendary-arena-server.onrender.com` | Retired Render origin of the API — rollback only | Render (suspended 2026-10-12; deleted after the 7-day rollback window) | none — not a production hostname since 2026-10-12 | live probe, expects `503` (suspended) or `404` (deleted) |
+| `legendary-arena-server.onrender.com` | Retired Render origin of the API (deleted) | Render (suspended 2026-10-12; deleted 2026-10-22) | none — not a production hostname since 2026-10-12 | live probe, expects `404` (deleted) |
 | `dashboard.legendary-arena.com` | Internal admin dashboard | Cloudflare Worker + Access | [apps/dashboard](../../apps/dashboard); Worker `legendary-arena-dashboard` (D-24690) | live, gated |
 | `images.legendary-arena.com` | Card image CDN | Cloudflare R2 | external | live (canonical since 2026-07-16; legacy `images.barefootbetters.com` serves the same bucket, no redirect) |
 
@@ -328,11 +328,10 @@ retired and kept only as the rollback target during the 7-day window.
 
 **Healthy response:** `200` with a small JSON or text body from the health route.
 
-**Retired Render origin.** `legendary-arena-server.onrender.com/health` is
-expected to answer `503` while the Render service is suspended and `404` once
-it is deleted (~2026-10-20). A `200` means the Render service is running
-again — expected only during a rollback, which restores the DNS-only CNAME
-`api` → `legendary-arena-server.onrender.com` and resumes the service.
+**Retired Render origin.** `legendary-arena-server.onrender.com/health`
+answers `404` (`x-render-routing: no-server`) since Render was deleted on
+2026-10-22. A `200` means some Render service holds that name again, and it
+isn't ours: nothing of ours points there.
 
 Depends on (server-side runtime):
 - PostgreSQL 18 on the droplet (`localhost`)
@@ -486,9 +485,10 @@ accepted under Full (strict). The healthchecks.io check `la-droplet-monitor`
 and UptimeRobot alert on this too. See
 [`docs/ops/INCIDENT_RESPONSE.md`](./INCIDENT_RESPONSE.md).
 
-**`legendary-arena-server.onrender.com` returns `200` outside a rollback.**
-The suspended Render service was resumed. Suspend or delete it, and confirm
-`api` still points at the droplet.
+**`legendary-arena-server.onrender.com` returns `200`.** Our Render service
+was deleted on 2026-10-22, so another Render service holds the name. Confirm
+`api` still points at the droplet and that no DNS record or config names the
+`onrender.com` host.
 
 **`api` returns CORS error in browser but `/health` is 200 from curl.** The
 new client origin is not in the server's CORS allowlist. Update the server
@@ -514,8 +514,8 @@ works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
 1. **A clean `main`.** Work in a fresh worktree of `origin/main`, never a
    feature branch. A local deploy ships whatever is in the folder.
    ```powershell
-   git -C C:\pcloud\BB\DEV\legendary-arena fetch origin main
-   git -C C:\pcloud\BB\DEV\legendary-arena worktree add --detach C:\claude-worktrees\legendary-arena\manual-deploy origin/main
+   git -C C:\dev\legendary-arena fetch origin main
+   git -C C:\dev\legendary-arena worktree add --detach C:\claude-worktrees\legendary-arena\manual-deploy origin/main
    Set-Location C:\claude-worktrees\legendary-arena\manual-deploy
    ```
 2. **Sign in to Cloudflare** as yourself: `pnpm dlx wrangler@4.149.0 login`.
@@ -570,7 +570,7 @@ works, re-run the workflow instead (**Actions → wiki-viewer / dashboard-deploy
   `preview_urls: false`. A local deploy reads the same file, so it can't
   reopen a default hostname unless someone edited the config.
 - Remove the worktree:
-  `git -C C:\pcloud\BB\DEV\legendary-arena worktree remove C:\claude-worktrees\legendary-arena\manual-deploy`.
+  `git -C C:\dev\legendary-arena worktree remove C:\claude-worktrees\legendary-arena\manual-deploy`.
 - The next successful workflow run on `main` deploys over the manual
   version, so nothing needs reconciling afterwards.
 

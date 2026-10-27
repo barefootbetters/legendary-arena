@@ -7,7 +7,8 @@
     "Amendment (inline, EC-248 fold): AC #11 and EC §After Completing originally asserted grep count=1 for rescue:1 in core.json. Execution confirmed core/black-widow/mission-accomplished is an in-scope candidate (discovered by --propose). Count updated to 2 (web-shooters from WP-215 + mission-accomplished from WP-216). Corrected in WP-216 AC #11 and EC-248 §After Completing as part of Commit A.",
     "WP-225 / EC-257 (D-22501) — draw sweep: appends [keyword:draw:N] (N ∈ {1,2,3}) to 98 fixed-count hero draw lines across 30 sets (83 draw:1, 13 draw:2, 2 draw:3). Detector: the trimmed whole line equals 'Draw a|one|two|three card(s).', optionally one leading [hc:X]:/[team:X]: condition the executor already evaluates, excluding any line containing 'Reveal' or an existing [keyword:] token.",
     "WP-225 deferred draw patterns below carry one real exemplar per draw-specific class: cumulative another/more/extra, bottom-of-deck, game-state-conditional, draw-a-new-hand replacement trigger, timing-/keyword-gated, compound multi-effect, and multi-condition cost prefix. reveal-then-draw is already represented by the reveal-family deferred entries (the draw detector excludes 'Reveal'). Magnitudes ≥ 4 are not emitted and have no _deferred entry — the grammar permits N ≥ 1 but the corpus maximum is 3, so no real ≥ 4 line exists to mark or defer (D-22501).",
-    "D-24620 — discard-to-play sweep: WP-383 (D-24184) marked only the \"To play this card, you must discard a card from your hand.\" wording; the shorter \"To play this, you must discard a card.\" form on six more hero lines (amwp/cassie-lang/start-small, asrd/beta-ray-bill/hope-of-the-korbinites, cosm/adam-warlock/regenerative-cocoon, cvwr/hercules/manly-dullard, rvlt/photon/infrared-conversion, rvlt/photon/ultraviolet-radiation) now carries [keyword:discard-to-play:1]. rvlt Infrared Conversion prints \"Draw two cards.\" on the same line, so it also carries [keyword:draw:2]. The amwp Start Small Victory-Pile-gated draw stays deferred. Not marked: the bkwd Attune split face (WP-777 / D-24615), the asrd Thrown Artifact \"To throw this\" line (unmodeled Artifact mechanic), and wpnx Massive Blood Loss (a Wound card, not a hero)."
+    "D-24620 — discard-to-play sweep: WP-383 (D-24184) marked only the \"To play this card, you must discard a card from your hand.\" wording; the shorter \"To play this, you must discard a card.\" form on six more hero lines (amwp/cassie-lang/start-small, asrd/beta-ray-bill/hope-of-the-korbinites, cosm/adam-warlock/regenerative-cocoon, cvwr/hercules/manly-dullard, rvlt/photon/infrared-conversion, rvlt/photon/ultraviolet-radiation) now carries [keyword:discard-to-play:1]. rvlt Infrared Conversion prints \"Draw two cards.\" on the same line, so it also carries [keyword:draw:2]. The amwp Start Small Victory-Pile-gated draw stays deferred. Not marked: the bkwd Attune split face (WP-777 / D-24615), the asrd Thrown Artifact \"To throw this\" line (unmodeled Artifact mechanic), and wpnx Massive Blood Loss (a Wound card, not a hero).",
+    "return-on-discard sweep (WP-498 / D-24301 follow-up): core Unending Energy was the only marked copy of the \"you may return this card to your hand\" discard reaction. The same reaction on co2e cyclops/unending-energy (\"... discard this card from your hand, you may return it to your hand.\") and wwhk gladiator-hulk/hulk-is-king (the Transform face of Seize the Throne) now carries [keyword:return-on-discard]. Not marked (different reactions, not a hand return): nmut set-aside-then-extra-card, ssw2 Guerrilla Warfare (teleport-on-discard, WP-705), dkcy rescue-and-draw on discard."
   ],
   "2099": [
     {
@@ -121,6 +122,60 @@
       "cardSlug": "international-strike-force",
       "abilityIndex": 0,
       "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america-falcon",
+      "cardSlug": "star-spangled-hero",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:2]"
+    },
+    {
+      "heroSlug": "steve-rogers-director-of-shield",
+      "cardSlug": "international-strike-force",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "agent-x-13",
+      "cardSlug": "paramilitary-ops",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:shield-heroes-cost-one-plus-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "agent-x-13",
+      "cardSlug": "mobilize-for-war",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ko-up-to-shield-hand-discard:2]"
+    },
+    {
+      "heroSlug": "agent-x-13",
+      "cardSlug": "mobilize-for-war",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-ko-this-way:1]"
+    },
+    {
+      "heroSlug": "steve-rogers-director-of-shield",
+      "cardSlug": "reassign-to-civilian-duty",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:optional-ko-shield-played-rescue:1]"
+    },
+    {
+      "heroSlug": "captain-america-falcon",
+      "cardSlug": "flying-shield-block",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:flying-shield-block]"
+    },
+    {
+      "heroSlug": "winter-soldier",
+      "cardSlug": "2-4",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:grant-out-of-time]"
+    },
+    {
+      "heroSlug": "winter-soldier",
+      "cardSlug": "2-4",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:grant-out-of-time]"
     }
   ],
   "chmp": [
@@ -153,6 +208,12 @@
       "cardSlug": "incredible-mind-awesome-body",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "totally-awesome-hulk",
+      "cardSlug": "7th-smartest-man-in-the-world",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
     }
   ],
   "co2e": [
@@ -185,6 +246,12 @@
       "cardSlug": "optic-blast",
       "abilityIndex": 0,
       "markupToken": "[keyword:discard-to-play:1]"
+    },
+    {
+      "heroSlug": "cyclops",
+      "cardSlug": "unending-energy",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:return-on-discard]"
     },
     {
       "heroSlug": "cyclops",
@@ -227,6 +294,18 @@
       "cardSlug": "a-day-unlike-any-other",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "hulk",
+      "cardSlug": "crazed-rampage",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:reveal-or-gain-wound-each]"
+    },
+    {
+      "heroSlug": "spider-man",
+      "cardSlug": "witty-banter",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
     }
   ],
   "core": [
@@ -556,6 +635,12 @@
     },
     {
       "heroSlug": "wolverine",
+      "cardSlug": "berserker-rage",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
+    },
+    {
+      "heroSlug": "wolverine",
       "cardSlug": "frenzied-slashing",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:2]"
@@ -749,6 +834,30 @@
       "cardSlug": "bold-leadership",
       "abilityIndex": 0,
       "markupToken": "[keyword:recruit-per-count:distinct-hero-classes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "captain-america-secret-avenger",
+      "cardSlug": "inspire-a-nation",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "falcon",
+      "cardSlug": "talk-with-birds",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "peter-parker",
+      "cardSlug": "spider-man-unmasked",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "tigra",
+      "cardSlug": "friendship",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
     }
   ],
   "dkcy": [
@@ -1175,6 +1284,36 @@
       "cardSlug": "optimized-technology",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "black-panther",
+      "cardSlug": "king-of-wakanda",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:3]"
+    },
+    {
+      "heroSlug": "magik",
+      "cardSlug": "rally-the-new-mutants",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "magik",
+      "cardSlug": "rally-the-new-mutants",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "namor-the-sub-mariner",
+      "cardSlug": "lead-the-armies-of-atlantis",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
+    },
+    {
+      "heroSlug": "ultimate-spider-man",
+      "cardSlug": "marvel-team-up",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:gain-sidekick:1]"
     }
   ],
   "gotg": [
@@ -1347,6 +1486,12 @@
       "cardSlug": "seize-the-throne",
       "abilityIndex": 0,
       "markupToken": "[keyword:smash:3]"
+    },
+    {
+      "heroSlug": "gladiator-hulk",
+      "cardSlug": "hulk-is-king",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:return-on-discard]"
     },
     {
       "heroSlug": "gladiator-hulk",
@@ -1527,6 +1672,12 @@
       "cardSlug": "risky-science",
       "abilityIndex": 1,
       "markupToken": "[keyword:optional-discard-draw:1]"
+    },
+    {
+      "heroSlug": "ant-man",
+      "cardSlug": "giant-ego",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
     }
   ],
   "asrd": [

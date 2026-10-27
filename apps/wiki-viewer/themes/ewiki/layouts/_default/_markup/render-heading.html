@@ -1,0 +1,17 @@
+{{- /*
+  why: heading anchors, new in the shared theme (D-24727 section 2). The id
+  stays on the heading (GitHub-style, from autoHeadingIDType), so existing
+  `page.md#anchor` links, include-section and Pagefind sub-results keep
+  working. Each heading gains an empty
+  <a class="heading-anchor" href="#id" aria-label="Link to this section">;
+  the visible glyph is CSS ::after content, so the anchor adds no text to the
+  page or to the search index. params.ewiki.headingAnchors = false drops it.
+  Any other markdown attributes on the heading pass through.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $anchors := true -}}
+{{- if isset $ewiki "headinganchors" -}}{{- $anchors = index $ewiki "headinganchors" -}}{{- end -}}
+<h{{ .Level }} id="{{ .Anchor }}"
+  {{- range $name, $value := .Attributes }}{{ if ne $name "id" }} {{ $name }}="{{ $value }}"{{ end }}{{ end -}}
+>{{ .Text }}{{ if $anchors }}<a class="heading-anchor" href="#{{ .Anchor }}" aria-label="Link to this section"></a>{{ end }}</h{{ .Level }}>
+{{- /* keep: no trailing newline in output */ -}}

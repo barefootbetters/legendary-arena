@@ -21,7 +21,7 @@
   by the framework per move but is not consumed by this repo, so it
   cannot be treated as the authoritative record here.
 - Last verified by code inspection: commit `1d709e5323c09a3a4da1b9c8d53057faa3218c3c`
-- Repo root: `C:\pcloud\BB\DEV\legendary-arena`
+- Repo root: `C:\dev\legendary-arena`
 
 ## Non-goals
 Scoping guard-rails for this document and any downstream Work Packet:
@@ -325,7 +325,7 @@ cursor.
 
 ### Query log (zero-hit queries are evidence)
 **Search method:** Claude Code `Grep` tool (ripgrep under the hood),
-executed from the repo root `C:\pcloud\BB\DEV\legendary-arena`.
+executed from the repo root `C:\dev\legendary-arena`.
 Exclusions applied per query via the `glob` parameter — most queries
 excluded `node_modules/**`; queries targeting repo code excluded
 `docs/ai/invocations/**` and `docs/ai/session-context/**` where noted

@@ -31,7 +31,7 @@
  *   node scripts/convert-cards/generate-rename-scripts.mjs --dry-run
  *
  * Defaults: output-dir resolves to
- *   <repo-root>/../barefootbetters-legendary-setup/card-images-staging
+ *   C:\pcloud\legendary-arena\barefootbetters-legendary-setup\card-images-staging
  */
 
 import { readFile, writeFile, readdir } from 'node:fs/promises';
@@ -45,9 +45,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // REPO_ROOT is two levels up from this script (scripts/convert-cards/).
 const REPO_ROOT = resolve(__dirname, '..', '..');
 const DATA_CARDS_DIR = join(REPO_ROOT, 'data', 'cards');
-const DEFAULT_STAGING_DIR = resolve(
-  REPO_ROOT, '..', 'barefootbetters-legendary-setup', 'card-images-staging'
-);
+// why: the staging area is not a sibling of the checkout. It moved to the
+// pCloud working root on 2026-10-17 (workstation migration Phase 9) after the
+// checkout moved to C:\dev, so a REPO_ROOT-relative default no longer resolves.
+const DEFAULT_STAGING_DIR =
+  'C:\\pcloud\\legendary-arena\\barefootbetters-legendary-setup\\card-images-staging';
 
 /**
  * Parses CLI arguments.

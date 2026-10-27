@@ -16,7 +16,7 @@
  * No `boardgame.io` import. No `@legendary-arena/registry` import.
  */
 
-import type { VillainEffectKeyword } from '../rules/villainAbility.types.js';
+import type { GreyHeroFilter, VillainEffectKeyword, VillainWoundOutcomes } from '../rules/villainAbility.types.js';
 import type { SchemeTwistResolverKey, StrikeBlockThreatKind } from './notableEvents.types.js';
 
 // ---------------------------------------------------------------------------
@@ -75,6 +75,48 @@ export interface ResolvedEffectResult {
   pending?: boolean;
   /** An each-player KO's per-player split, names resolved (D-24683). */
   playerTargetNames?: ResolvedPlayerTargetNames[];
+  /** A gain-wound effect's outcomes when a Diving Block reveal is pending (D-24673). */
+  woundOutcomes?: VillainWoundOutcomes;
+  /** A grey-filtered each-player KO's filter (D-24783, Destroyer's `'non-grey'`). */
+  greyFilter?: GreyHeroFilter;
+}
+
+/**
+ * Names who gained a Wound and who only would gain one because a Diving Block reveal
+ * is pending (D-24673): "Player 0 gained a Wound; Player 1 would gain a Wound — Diving
+ * Block can prevent it". Either half is left out when its list is empty.
+ *
+ * // why: D-24673 — the Wound lands first and the reveal resolves afterwards, so a line
+ * written now must not call a preventable Wound gained (match P9oVujYd2B9). The
+ * reveal ("prevented the Wound") or decline ("took the Wound") line that follows
+ * gives the outcome.
+ *
+ * @param gainedPlayerIds - Players whose Wound nothing can undo.
+ * @param divingBlockPendingPlayerIds - Players with a Diving Block reveal pending.
+ * @returns The joined clause, with no leading label and no trailing period.
+ */
+export function composeWoundOutcomeClause(
+  gainedPlayerIds: readonly string[],
+  divingBlockPendingPlayerIds: readonly string[],
+): string {
+  const clauses: string[] = [];
+  if (gainedPlayerIds.length > 0) {
+    clauses.push(`${formatPlayerList(gainedPlayerIds)} gained a Wound`);
+  }
+  if (divingBlockPendingPlayerIds.length > 0) {
+    clauses.push(`${formatPlayerList(divingBlockPendingPlayerIds)} would gain a Wound — Diving Block can prevent it`);
+  }
+  return clauses.join('; ');
+}
+
+/**
+ * Formats player ids as "Player 0, Player 1".
+ *
+ * @param playerIds - The player ids, in order.
+ * @returns The comma-joined player names.
+ */
+function formatPlayerList(playerIds: readonly string[]): string {
+  return playerIds.map((playerId) => `Player ${playerId}`).join(', ');
 }
 
 /**
@@ -129,10 +171,18 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     if (result.keyword === 'koHeroEachPlayerMag2') {
       pendingClause = 'the active player must KO two heroes';
     }
+    // why: D-24783 — a grey-filtered KO (Destroyer: "KOs a non-grey Hero") names the filter.
+    if (result.greyFilter !== undefined) {
+      if (result.keyword === 'koHeroEachPlayerMag2') {
+        pendingClause = `the active player must KO two ${greyHeroNoun(result.greyFilter, 2)}`;
+      } else {
+        pendingClause = `the active player must KO a ${greyHeroNoun(result.greyFilter, 1)}`;
+      }
+    }
     // why: D-24683 — with the per-player split, name each other player's outcome
     // ("Player 1 KO’d …" / "Player 1 had no hero to KO") instead of a flat list.
     if (result.playerTargetNames !== undefined) {
-      const otherClauses = composePlayerKoClauses(result.playerTargetNames);
+      const otherClauses = composePlayerKoClauses(result.playerTargetNames, result.greyFilter);
       if (otherClauses.length > 0) {
         return `${pendingClause}; ${otherClauses.join('; ')}`;
       }
@@ -145,13 +195,23 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     }
     return pendingClause;
   }
+  // why: D-24673 — a gain-wound effect with a Diving Block reveal pending must not say
+  // "gained a wound" for that player; the reveal / decline line that follows gives the
+  // outcome. Present only when a reveal is pending, so every other clause is unchanged.
+  if (result.woundOutcomes !== undefined) {
+    if (result.keyword === 'gainWoundCurrentPlayer') {
+      return 'the active player would gain a wound — Diving Block can prevent it';
+    }
+    const outcomes = result.woundOutcomes;
+    return `every player gains a wound: ${composeWoundOutcomeClause(outcomes.gainedPlayerIds, outcomes.divingBlockPendingPlayerIds)}`;
+  }
   const label = labelForEffect(result.keyword);
   // why: D-24683 — "every player KO’d two heroes (S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent)"
   // read as if both players lost two when one had nothing to KO (matches GkZeatCQh5f,
   // O7iMuNBh9E5). With the per-player split, say who KO'd what. Nothing KO'd at all keeps
   // the D-24646 "no player had a hero to KO" wording below.
   if (result.playerTargetNames !== undefined && result.targetNames.length > 0) {
-    return composePlayerKoClauses(result.playerTargetNames).join('; ');
+    return composePlayerKoClauses(result.playerTargetNames, result.greyFilter).join('; ');
   }
   if (result.targetNames.length > 0) {
     return `${label} (${result.targetNames.join(', ')})`;
@@ -160,6 +220,11 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
   // that found no Hero to take (an empty discard pile, say) must not claim one happened.
   const noTargetLabel = NO_TARGET_KO_LABELS[result.keyword];
   if (noTargetLabel !== undefined) {
+    // why: D-24783 — a grey-filtered each-player KO that found nothing says which Heroes
+    // were missing ("no player had a non-grey Hero to KO").
+    if (result.greyFilter !== undefined && result.keyword !== 'koHeroCurrentPlayer') {
+      return `no player had a ${greyHeroNoun(result.greyFilter, 1)} to KO`;
+    }
     return noTargetLabel;
   }
   return label;
@@ -170,9 +235,19 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
  * whose pick is still pending (the caller names that one).
  *
  * @param playerTargetNames - Each player's share, in seat order.
+ * @param greyFilter - The KO's grey-Hero filter (D-24783), or undefined for an unfiltered KO.
  * @returns "Player N KO’d A, B" or "Player N had no hero to KO", one per non-pending player.
  */
-function composePlayerKoClauses(playerTargetNames: readonly ResolvedPlayerTargetNames[]): string[] {
+function composePlayerKoClauses(
+  playerTargetNames: readonly ResolvedPlayerTargetNames[],
+  greyFilter?: GreyHeroFilter,
+): string[] {
+  // why: D-24783 — Destroyer's 'non-grey' KO skips grey Heroes, so a player holding only
+  // S.H.I.E.L.D. starters had no NON-GREY Hero to KO; "no hero" would be false.
+  let noHeroClause = 'had no hero to KO';
+  if (greyFilter !== undefined) {
+    noHeroClause = `had no ${greyHeroNoun(greyFilter, 1)} to KO`;
+  }
   const clauses: string[] = [];
   for (const playerShare of playerTargetNames) {
     if (playerShare.pending === true) {
@@ -181,10 +256,22 @@ function composePlayerKoClauses(playerTargetNames: readonly ResolvedPlayerTarget
     if (playerShare.names.length > 0) {
       clauses.push(`Player ${playerShare.playerId} KO’d ${playerShare.names.join(', ')}`);
     } else {
-      clauses.push(`Player ${playerShare.playerId} had no hero to KO`);
+      clauses.push(`Player ${playerShare.playerId} ${noHeroClause}`);
     }
   }
   return clauses;
+}
+
+/**
+ * Names the Heroes a grey filter admits, for a KO log clause (D-24783).
+ *
+ * @param greyFilter - `'grey'` or `'non-grey'`.
+ * @param count - 1 for the singular, anything else for the plural.
+ * @returns "non-grey Hero", "grey Heroes", and so on.
+ */
+function greyHeroNoun(greyFilter: GreyHeroFilter, count: number): string {
+  const heroWord = count === 1 ? 'Hero' : 'Heroes';
+  return `${greyFilter} ${heroWord}`;
 }
 
 // why: D-24646 — the resolved-nothing wording for the three KO-a-Hero keywords, the only
@@ -211,7 +298,8 @@ const NO_TARGET_KO_LABELS: Readonly<Partial<Record<VillainEffectKeyword, string>
  *   ext_ids already resolved to display names (WP-319).
  * @param skrullGained - True when the defeated card was a Secret Invasion Skrull
  *   (a Hero acting as a Villain) gained into the defeating player's discard
- *   (WP-518 / D-24331). Defaults to false so every non-Skrull caller and the
+ *   (WP-518 / D-24331), or a Brainwash the Military Officer gained as a Hero
+ *   (WP-823 / D-24756). Defaults to false so every non-Skrull caller and the
  *   existing golden tests stay byte-identical.
  * @returns Single English sentence describing the resolved fight.
  */
@@ -327,6 +415,11 @@ const RESOLVER_KEY_PHRASES: Readonly<Record<SchemeTwistResolverKey, string>> = {
   killbots: 'a Twist was placed next to the Scheme, raising every Killbot’s attack',
   secretInvasion: 'the highest-cost HQ Hero moved into the Sewers as a Skrull Villain',
   portals: 'a Dark Portal opened, raising the attack of the Mastermind or the Villains beneath it',
+  clashMonsterPit: 'a Monster climbed out of the Monster Pit to face each player’s Gladiator',
+  brainwashTheMilitary: 'a Twist joined the Traitor Battalion, or every S.H.I.E.L.D. Officer in the City escaped',
+  goBackInTime: 'a Hero in the HQ must be Purged from the Timestream',
+  enigmaCode: 'a card from the Hero Deck joined the face-down Enigma Code',
+  changeTheOutcomeOfWwii: 'the Axis invaded a new country and the City changed size',
 };
 
 /**

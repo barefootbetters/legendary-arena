@@ -60,7 +60,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Size-Changing] [hc:tech]",
-            "You get +1[icon:attack] for each extra card you drew this turn."
+            "You get +1[icon:attack] for each extra card you drew this turn. [keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
           ]
         },
         {

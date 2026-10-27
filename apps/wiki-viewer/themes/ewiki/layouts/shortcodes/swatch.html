@@ -1,0 +1,19 @@
+{{- /*
+  Colour-swatch shortcode, promoted from E.
+
+  Usage:
+    The win colour is {{< swatch "#15803d" >}} green.
+
+  why: a site's `unsafe = false` strips raw HTML written in markdown, but not
+  shortcode output, so a shortcode is the sanctioned way to render an actual
+  colour box inline, rather than only spelling the colour out in words. No
+  script element; output is static, so two builds match.
+
+  Params:
+    0 (required): a CSS colour value, such as "#15803d".
+*/ -}}
+{{- $colour := .Get 0 -}}
+{{- if not $colour -}}
+  {{- errorf "swatch shortcode at %s is missing its colour. Pass a CSS colour as its first parameter, such as \"#15803d\"." .Position -}}
+{{- end -}}
+{{- printf `<span class="colour-swatch" style="display:inline-block;width:0.85em;height:0.85em;background:%s;border:1px solid rgba(128,128,128,0.6);border-radius:2px;vertical-align:-0.08em" title="%s" aria-hidden="true"></span>` $colour $colour | safeHTML -}}

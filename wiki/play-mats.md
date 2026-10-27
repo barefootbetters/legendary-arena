@@ -15,7 +15,7 @@ related:
   - design-system-overview.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\play-mats.md (this page — https://ewiki.legendary-arena.com/play-mats/)
+  - C:\dev\legendary-arena\wiki\play-mats.md (this page — https://ewiki.legendary-arena.com/play-mats/)
   - https://www.legendarycardgame.com/promo-cards
   - https://upperdeckstore.com/legendaryr-playmat-dark-phoenix-vs-the-x-men.html
   - https://upperdeckstore.com/marvel-thanos-playmat.html

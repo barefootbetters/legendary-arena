@@ -28,12 +28,22 @@ export interface BackupMirrorAlert {
   readonly openedAt: string | null;
 }
 
+/** The quarterly full-service rebuild drill (mirrors the server `RebuildDrill`). */
+export interface RebuildDrill {
+  readonly lastRebuild: LastDrill | null;
+  readonly nextDue: string;
+  readonly overdue: boolean;
+}
+
 /** The DR-readiness projection (mirrors the server `DrReadiness` wire shape). */
 export interface DrReadiness {
   readonly lastDrill: LastDrill | null;
   readonly nextDue: string;
   readonly overdue: boolean;
   readonly backupMirrorAlert: BackupMirrorAlert | null;
+  // why: optional on this side only — the Pages dashboard and the droplet server
+  // deploy separately, so for a few minutes a server without the field can answer.
+  readonly rebuildDrill?: RebuildDrill;
   readonly source: 'github' | 'mock';
 }
 
@@ -52,6 +62,16 @@ function computeNextDue(nowMs: number): string {
 }
 
 /**
+ * The 1st of the quarter after `nowMs` (quarters start Jan/Apr/Jul/Oct), as a UTC
+ * `YYYY-MM-DD` string. `Date.UTC` rolls a month past December into next year.
+ */
+function computeNextQuarterStart(nowMs: number): string {
+  const now = new Date(nowMs);
+  const nextQuarterFirstMonth = (Math.floor(now.getUTCMonth() / 3) + 1) * 3;
+  return toIsoDate(Date.UTC(now.getUTCFullYear(), nextQuarterFirstMonth, 1));
+}
+
+/**
  * Deterministic mock `DrReadiness` for the tile in mock mode. Presents a
  * healthy, plausible posture — a passing drill closed on the 1st of the current
  * month, not overdue, next due the 1st of next month — with `data.source:
@@ -67,6 +87,11 @@ export function mockDrReadiness(nowMs: number): ServiceResponse<DrReadiness> {
       nextDue: computeNextDue(nowMs),
       overdue: false,
       backupMirrorAlert: null,
+      rebuildDrill: {
+        lastRebuild: { date: currentMonthFirst, result: 'pass' },
+        nextDue: computeNextQuarterStart(nowMs),
+        overdue: false,
+      },
       source: 'mock',
     },
     updatedAt: nowMs,

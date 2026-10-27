@@ -9,7 +9,7 @@ These are **backup copies for version control only**. The canonical,
 runnable copies live in the staging repo alongside the image
 directories:
 
-    C:\pcloud\BB\DEV\barefootbetters-legendary-setup\card-images-staging\
+    C:\pcloud\legendary-arena\barefootbetters-legendary-setup\card-images-staging\
 
 Each script reads `original\<set>\` (converted WebP) and copies each
 file into `renamed\<set>\` under its R2-convention name, restamping the

@@ -54,6 +54,10 @@ export type UiMoveName =
   // recruit into the viewer's discard. Dispatched with an empty payload; the
   // engine move takes no arguments (all Officers are identical tokens).
   | 'recruitOfficer'
+  // why: WP-842 / D-24776 — buys the top Sidekick Stack token for 2 recruit into the
+  // viewer's discard, once per turn. Dispatched with an empty payload; the engine
+  // move takes no arguments (all Sidekicks are identical tokens).
+  | 'recruitSidekick'
   | 'fightMastermind'
   | 'resolveHeroChoice'
   | 'resolveKoHeroChoice'
@@ -147,7 +151,16 @@ export type UiMoveName =
   // why: WP-502 / D-24306 — surfaces the "End Game" control (engine endMatchEarly).
   // Dispatched with an empty payload; the move takes no arguments. Latches the
   // MATCH_ENDED_EARLY endgame counter so the match ends for every seat.
-  | 'endMatchEarly';
+  | 'endMatchEarly'
+  // why: WP-806 / D-24713 — the six operator-match-only setters, dispatched only by
+  // the WP-807 operator setter pane. The engine refuses them outside an operator
+  // match, off the operator's own turn, outside `main` or with a choice open.
+  | 'operatorSetSupplyCount'
+  | 'operatorMoveToDeckTop'
+  | 'operatorRevealNow'
+  | 'operatorMoveCard'
+  | 'operatorAddEconomy'
+  | 'operatorEscapeVillain';
 
 /**
  * Function signature shared by every prop-drilled `submitMove` in the

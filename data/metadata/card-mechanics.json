@@ -99,13 +99,17 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 30,
+      "cardCount": 35,
       "cardIds": [
+        "antm/ant-man",
         "asrd/thor",
         "bkwd/falcon-winter-soldier",
         "bkwd/red-guardian",
+        "ca75/agent-x-13",
         "ca75/captain-america-1941",
         "ca75/captain-america-falcon",
+        "ca75/steve-rogers-director-of-shield",
+        "chmp/totally-awesome-hulk",
         "co2e/black-widow",
         "co2e/captain-america",
         "co2e/cyclops",
@@ -116,6 +120,7 @@
         "core/deadpool",
         "core/iron-man",
         "core/nick-fury",
+        "core/wolverine",
         "cvwr/goliath",
         "dkcy/iceman",
         "ff04/thing",
@@ -131,6 +136,17 @@
         "vill/ultron",
         "vnom/venom",
         "vnom/venompool"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "attack-per-ko-this-way",
+      "label": "Attack Per Ko This Way",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "ca75/agent-x-13"
       ],
       "hidden": true
     },
@@ -771,6 +787,17 @@
       "hidden": true
     },
     {
+      "slug": "flying-shield-block",
+      "label": "Flying Shield Block",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "ca75/captain-america-falcon"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "focus",
       "label": "Focus",
       "scope": "hero",
@@ -808,6 +835,25 @@
       "cardCount": 1,
       "cardIds": [
         "ca75/agent-x-13"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "gain-sidekick",
+      "label": "Gain Sidekick",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 9,
+      "cardIds": [
+        "co2e/spider-man",
+        "cvwr/captain-america-secret-avenger",
+        "cvwr/falcon",
+        "cvwr/peter-parker",
+        "cvwr/tigra",
+        "ssw1/black-panther",
+        "ssw1/magik",
+        "ssw1/namor-the-sub-mariner",
+        "ssw1/ultimate-spider-man"
       ],
       "hidden": true
     },
@@ -945,6 +991,17 @@
       "cardCount": 1,
       "cardIds": [
         "vill/ultron"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "ko-up-to-shield-hand-discard",
+      "label": "Ko Up To Shield Hand Discard",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "ca75/agent-x-13"
       ],
       "hidden": true
     },
@@ -1142,6 +1199,17 @@
       "cardCount": 1,
       "cardIds": [
         "core/nick-fury"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "optional-ko-shield-played-rescue",
+      "label": "Optional Ko Shield Played Rescue",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "ca75/steve-rogers-director-of-shield"
       ],
       "hidden": true
     },
@@ -1360,8 +1428,9 @@
       "label": "Recruit Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 9,
+      "cardCount": 10,
       "cardIds": [
+        "ca75/captain-america-falcon",
         "ca75/steve-rogers-director-of-shield",
         "co2e/captain-america",
         "core/captain-america",
@@ -1421,9 +1490,11 @@
       "label": "Return On Discard",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 3,
       "cardIds": [
-        "core/cyclops"
+        "co2e/cyclops",
+        "core/cyclops",
+        "wwhk/gladiator-hulk"
       ],
       "hidden": true
     },
@@ -1587,6 +1658,17 @@
         "msis/wanda-vision"
       ],
       "hidden": false
+    },
+    {
+      "slug": "reveal-or-gain-wound-each",
+      "label": "Reveal Or Gain Wound Each",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "co2e/hulk"
+      ],
+      "hidden": true
     },
     {
       "slug": "reveal-reorder",
@@ -2172,7 +2254,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 28,
+      "cardCount": 27,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
@@ -2183,7 +2265,6 @@
         "co2e/storm",
         "cosm/nebula",
         "cvwr/daredevil",
-        "cvwr/falcon",
         "cvwr/patriot",
         "dkcy/angel",
         "dkcy/blade",
@@ -2566,6 +2647,7 @@
     },
     "antm/ant-man": {
       "mechanics": [
+        "attack-per-count",
         "draw",
         "microscopic-size-changing",
         "optional-discard-draw",
@@ -2717,7 +2799,10 @@
     "ca75/agent-x-13": {
       "mechanics": [
         "attack",
+        "attack-per-count",
+        "attack-per-ko-this-way",
         "gain-officer",
+        "ko-up-to-shield-hand-discard",
         "out-of-time",
         "savior"
       ]
@@ -2734,12 +2819,16 @@
     "ca75/captain-america-falcon": {
       "mechanics": [
         "attack-per-count",
+        "flying-shield-block",
+        "recruit-per-count",
         "rescue",
         "savior"
       ]
     },
     "ca75/steve-rogers-director-of-shield": {
       "mechanics": [
+        "attack-per-count",
+        "optional-ko-shield-played-rescue",
         "out-of-time",
         "recruit-per-count",
         "rescue",
@@ -2780,6 +2869,7 @@
     },
     "chmp/totally-awesome-hulk": {
       "mechanics": [
+        "attack-per-count",
         "cheering-crowds",
         "draw",
         "size-changing"
@@ -2809,7 +2899,8 @@
     "co2e/cyclops": {
       "mechanics": [
         "attack-per-count",
-        "discard-to-play"
+        "discard-to-play",
+        "return-on-discard"
       ]
     },
     "co2e/emma-frost": {
@@ -2834,7 +2925,8 @@
     },
     "co2e/hulk": {
       "mechanics": [
-        "ko-wound-reward"
+        "ko-wound-reward",
+        "reveal-or-gain-wound-each"
       ]
     },
     "co2e/iron-man": {
@@ -2855,6 +2947,7 @@
     },
     "co2e/spider-man": {
       "mechanics": [
+        "gain-sidekick",
         "reveal",
         "reveal-count"
       ]
@@ -2986,6 +3079,7 @@
     },
     "core/wolverine": {
       "mechanics": [
+        "attack-per-count",
         "draw",
         "ko-wound-reward"
       ]
@@ -3042,6 +3136,7 @@
     },
     "cvwr/captain-america-secret-avenger": {
       "mechanics": [
+        "gain-sidekick",
         "recruit-per-count"
       ]
     },
@@ -3060,7 +3155,7 @@
     },
     "cvwr/falcon": {
       "mechanics": [
-        "unmarked"
+        "gain-sidekick"
       ]
     },
     "cvwr/goliath": {
@@ -3097,6 +3192,7 @@
     },
     "cvwr/peter-parker": {
       "mechanics": [
+        "gain-sidekick",
         "ko-wound",
         "rescue",
         "reveal"
@@ -3121,6 +3217,7 @@
     "cvwr/tigra": {
       "mechanics": [
         "draw",
+        "gain-sidekick",
         "reveal-top-dispose"
       ]
     },
@@ -3916,7 +4013,8 @@
     },
     "ssw1/black-panther": {
       "mechanics": [
-        "draw"
+        "draw",
+        "gain-sidekick"
       ]
     },
     "ssw1/captain-marvel": {
@@ -3939,6 +4037,7 @@
     },
     "ssw1/magik": {
       "mechanics": [
+        "gain-sidekick",
         "teleport"
       ]
     },
@@ -3949,6 +4048,7 @@
     },
     "ssw1/namor-the-sub-mariner": {
       "mechanics": [
+        "gain-sidekick",
         "optional-ko-reward"
       ]
     },
@@ -3974,6 +4074,7 @@
     },
     "ssw1/ultimate-spider-man": {
       "mechanics": [
+        "gain-sidekick",
         "reveal"
       ]
     },
@@ -4314,6 +4415,7 @@
       "mechanics": [
         "cross-dimensional-rampage",
         "draw",
+        "return-on-discard",
         "smash",
         "transform",
         "wounded-fury"

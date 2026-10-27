@@ -1,6 +1,6 @@
 # Disaster Recovery — Legendary Arena
 
-> **Last updated:** 2026-10-12
+> **Last updated:** 2026-10-20
 >
 > Operator-focused recovery procedures for restoring **service** (players
 > able to log in and play), not just files, after infrastructure loss,
@@ -33,8 +33,8 @@ GFS: 35 daily · 12 weekly · 12 monthly) → a **permanent pCloud mirror** (the
 second vendor). Each offsite copy reports to its own healthchecks.io check. The
 first production backup landed in R2 and pCloud on 2026-10-12, byte-identical.
 The WP-416 GitHub Actions nightly (`.github/workflows/db-backup.yml`, D-24236),
-which backed up Render from 2026-08-09, was **disabled at cutover** and is deleted
-after the rollback window. The key layout and retention are unchanged, so the R2
+which backed up Render from 2026-08-09, was **disabled at cutover** and deleted on
+2026-10-22 with Render. The key layout and retention are unchanged, so the R2
 and pCloud history is continuous.
 
 Consequence, stated plainly so it is not discovered during a crisis:
@@ -49,13 +49,11 @@ Consequence, stated plainly so it is not discovered during a crisis:
   from R2 (2026-08-09, and onto the droplet 2026-10-12) and from pCloud
   (2026-08-10) — §7.
 
-**Rollback window (to ~2026-10-20).** The Render web service is suspended, not
-deleted, and Render's database snapshots exist until that database is deleted.
-Rolling back is the D-24707 §8 procedure: restore the DNS-only CNAME `api.` →
-`legendary-arena-server.onrender.com`, resume the service, swap
-`LEGENDS_PUBLISHER_ENABLED`, and **re-add `api.` as a Render custom domain**
-(Render's Cloudflare-for-SaaS hostname overrides the zone record). After the
-window, Render is deleted and this paragraph goes.
+**Render is deleted (2026-10-22).** The D-24707 §8 rollback window ended
+~2026-10-20, and the Render web service, its database, and the `render.yaml`
+Blueprint were deleted on 2026-10-22. There is no Render rollback target and no
+Render database snapshot: the droplet's nightly dumps in R2 and pCloud are the
+only copies.
 
 ---
 
@@ -86,7 +84,7 @@ Postgres (`legendary.*` and `bgio.*`).
 | Dump production + restore it onto the droplet | 13 s dump (14.6 MB) + restore | 2026-10-12 cutover |
 | End-to-end move of production to a pre-provisioned droplet (freeze, dump, restore, DNS switch) | **10 m 10 s** of downtime (UptimeRobot) | 2026-10-12 cutover |
 | App deploy (`40-app-deploy.ps1`: install, build, migrations, restart, health gate) | 71 s | 2026-10-11 rehearsal |
-| Full rebuild on a **new** droplet (provision, harden, Postgres, TLS, restore, deploy, DNS) | **Not yet timed** — the next full-rebuild drill measures it | — |
+| Full rebuild on a **new** droplet (provision, harden, Postgres, TLS, restore, deploy; DNS not moved) | **13 m 31 s** of hands-on steps (provisioning ~6.5 min of it) | 2026-10-22 rebuild drill |
 
 The database is small (~66 MB live, ~15 MB dump), so the restore itself is
 seconds. RTO is bounded by provisioning a host and repointing DNS, not by the
@@ -140,6 +138,7 @@ secrets.** The server is replaceable; those three are not.
 | Database (local) | Droplet Postgres | `pg_dump -Fc`, lab `50-backup.ps1`, nightly 09:17 UTC (`la-backup` timer) | Droplet `/var/backups/la` | Last 7 dumps; lost with the droplet | `la-droplet-monitor` alerts if the newest is over 26 h old |
 | Database (external) | the same dump | Uploaded by the same run | Cloudflare R2, private bucket `legendary-arena-db-backups`, `db-backups/YYYY/MM/DD/` | GFS: 35 daily · 12 weekly · 12 monthly | **Drilled 2026-08-09; restored onto the droplet 2026-10-12 (§7)** |
 | Database (2nd offsite) | the same dump | `rclone` mirror in the same run | pCloud (US region), `db-backups/` — independent of Cloudflare | Same GFS policy, pruned separately | **Drilled 2026-08-10 (§7)**; first droplet mirror byte-identical to R2, 2026-10-12 |
+| Droplet disk image | the whole `la-rehearsal-01` disk | DigitalOcean usage-based Droplet backup, plan `custom_daily`, enabled 2026-10-20 (API action 3485061489; the control panel shows it under the **Usage-Based** tab at $0.03/GiB); a crash-consistent image, not a database backup ([Provider-native options](#provider-native-options-digitalocean)) | DigitalOcean, same account as the droplet | 7 days | Daily, 08:00–12:00 UTC window; first image due 2026-10-21. Image restore not yet drilled |
 | Card images | R2 upload pipeline | manual/scripted | Cloudflare R2; source bytes in pCloud `card-images-staging/original/` | indefinite | image loads |
 | Source code | GitHub | git | GitHub + local clones | full history | every clone |
 | Secrets | operator | manual | droplet `/etc/la/*.env` + operator secret store | operator-managed | §4 completeness |
@@ -156,7 +155,7 @@ failure never reads as a failed backup:
 |---|---|---|
 | healthchecks.io `la-droplet-backup` down or late (email) | The dump or the R2 upload failed — no good offsite backup that night | **Urgent**, same day; the RPO clock is running. Read `journalctl -u la-backup`. |
 | healthchecks.io `la-droplet-pcloud` down (email, reason in the ping body) | R2 is safe; the pCloud mirror failed, or `BACKUP_PCLOUD_TOKEN` is missing | Fix within days. A revoked pCloud token (`pcloud error: Revoked 'access_token' … (2095)`) is the usual cause: re-mint with `rclone authorize "pcloud"`, write it into the operator's `backup.env`, and reinstall it on the droplet. |
-| `la-droplet-monitor` down | On-box health, disk, or backup age failed | Read the ping body, then the matching journal. |
+| `la-droplet-monitor` down | On-box health, disk, backup age, or a stuck deploy failed | Read the ping body, then follow the triage steps in [lab Monitoring](https://lab.legendary-arena.com/ops/monitoring/#when-la-droplet-monitor-goes-down). A deploy restart no longer trips it (lab #43). |
 
 Nights missed during a pCloud outage exist only on R2; back-copy them with
 `rclone copy r2:<bucket>/db-backups/<yyyy>/<mm> pcloud:db-backups/<yyyy>/<mm>`.
@@ -230,6 +229,63 @@ somewhere else, or not at all:
 | Source, issues, Actions history | GitHub | Every clone holds the full source history; issues and Actions history are GitHub-only. |
 | Live matches in progress | Runtime only | Not recoverable by design (§9). |
 
+### Provider-native options (DigitalOcean)
+
+An outside review (Grok, 2026-10-20) compared this plan with what DigitalOcean
+offers. Its conclusion matches this doc's. The R2 + pCloud logical dumps are the
+recovery path, because they survive losing DigitalOcean. DigitalOcean's own tools
+add speed, not independence. Each claim below was checked against DigitalOcean's
+docs on 2026-10-20. Where the review was wrong, the table says so.
+
+| Option | What it gives | What it does not give | Verdict |
+|---|---|---|---|
+| **Usage-based Droplet backups** (generally available since 2025-11-26; **enabled 2026-10-20**) | A full disk image every 4 h, 6 h, 12 h, day, or week, taken while the droplet runs. A lost or broken droplet comes back as a new droplet from the image: OS, hardening, Nginx, TLS, `/etc/la/*.env`, and the app, with no provisioner run. | **Not a database backup.** DigitalOcean calls the images crash-consistent (disk only, never memory) and recommends an application-level tool for busy databases, so the image's Postgres is a power-loss copy. **No help for DR-05.** The images live in the same DigitalOcean account, so losing the account loses them. Volumes are not included. | **Enabled 2026-10-20** (§3 inventory). It replaces the full rebuild in DR-02 "droplet lost" (13 m 31 s hands-on, 2026-10-22 drill) with an image restore, while DigitalOcean itself is healthy. Steps: [below](#enabling-droplet-backups). |
+| **Postgres data directory on a Volume** | Moves and resizes the data disk on its own. | Droplet backups skip volumes, and DigitalOcean does not schedule volume snapshots, so this adds a second thing to back up. The database is ~66 MB, so moving it buys nothing. | **Not now.** |
+| **Managed PostgreSQL** | Daily backups plus WAL, restoring to any point in the last 7 days. The review said PITR comes only on higher tiers, but DigitalOcean's feature page doesn't gate it by plan. Optional standby node for failover. | Reverses D-24707. Its backups stay in the DigitalOcean account, so the R2 + pCloud dumps would still be needed for DR-05. | **Not now.** Revisit only if a confirmed RPO under 24 h or the ops load makes it worth the cost. |
+| **WAL archiving to R2 / pCloud** | The self-hosted way to get an RPO under 24 h, and PITR for DR-03. | More moving parts and storage. | **Only if the §1 RPO is confirmed tighter than 24 h.** |
+| **Reserved IP** | The `api.` A record survives a rebuild unchanged. | `api.` is proxied by Cloudflare, so repointing it is one quick edit anyway. | **Low.** Worth doing on the next rebuild, not before. |
+| **Second copy of avatars and audio** (Spaces, or pCloud) | Closes the "no second copy" rows in [Not in any backup](#not-in-any-backup). | — | **Agreed, already a known gap.** What matters is a copy off Cloudflare; which vendor holds it is secondary. |
+| **Client-side encryption of dumps** | — | No DigitalOcean feature covers it. | **Still deferred** (§3 Known gaps, 2). |
+
+The review also flagged §1 RPO / RTO as still unconfirmed. That number decides
+the WAL and Managed rows above.
+
+#### Enabling Droplet backups
+
+Operator-only: it changes the DigitalOcean account and adds a monthly charge.
+
+1. **Settings.** Usage-Based plan, Daily, retention 7 days (the panel allows
+   7–30 for daily). The image is the
+   speed layer and R2 / pCloud keep the history, so a long retention buys
+   nothing. Window: 08:00–12:00 UTC (01:00–05:00 Pacific), the quietest hours.
+   The 13-second nightly dump at 09:17 falls inside it, which is harmless.
+2. **Cost.** The usage-based daily rate is $0.03 per GiB of restorable size per
+   month, measured on used disk, not the 80 GB allocation. The basic daily plan,
+   for comparison, is 30 % of the droplet ($7.20/mo on the $24 droplet). Read
+   the estimate the panel shows before you enable.
+3. **Enable.** Control panel → Droplets → `la-rehearsal-01` → **Backups** →
+   **Setup Automated Backups** → **Usage-Based** tab → set frequency, retention,
+   and window → **Enable Backups**. Without the panel, the API is the path.
+   doctl's `--backup-policy-plan daily` is the **basic** (30 %) plan. The
+   usage-based plans are `custom_daily`, `custom_weekly`, and `intra_daily_*`
+   (`doctl compute droplet backup-policies list-supported`), and they need a
+   `retention_period_days` that doctl has no flag for. A `custom_daily` request
+   without one is refused with a 422. Send it with the token from the doctl config:
+   `curl -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"type":"enable_backups","backup_policy":{"plan":"custom_daily","hour":8,"retention_period_days":7}}' https://api.digitalocean.com/v2/droplets/<droplet-id>/actions`.
+   (This is how it was enabled on 2026-10-20.)
+4. **Confirm.** `doctl compute droplet backup-policies get <droplet-id>` shows
+   `backup_enabled: true`, the plan, the hour, the retention, and the next
+   window. The droplet's `Features` column did not list `backups` right after
+   enabling, so don't rely on it. The first image then shows on the
+   droplet's Backups page. Record the settings and the date in the §3
+   "Droplet disk image" row.
+5. **Drill once.** Create a throwaway droplet from the newest image and confirm
+   it boots, `la-server` starts, and Postgres comes up clean. Keep it off the
+   production database and off DNS. Set `LEGENDS_PUBLISHER_ENABLED=false` on it
+   before starting `la-server`, because the image carries production's `true`,
+   and that would let two publishers write production R2. Record it in §7, then
+   destroy the droplet.
+
 ### Backup integrity gates
 
 A backup that *exists* is not a backup that *works*. Each database backup must
@@ -260,6 +316,16 @@ On any rebuild, these values must be restored from the operator's secret store
 (they are **not** in the repo). Production reads them from the droplet's
 root-only `/etc/la/.env`; the backup job reads `/etc/la/backup.env`.
 
+**The store copy is `la-prod.env`** in the operator's private ops folder, beside
+`backup.env`, `monitor.env` and `origin.{crt,key}`. It is a verbatim copy of
+production's `/etc/la/.env` (34 keys, verified identical by key name and value hash
+on 2026-10-22), so it is the one file a rebuild reads. Refresh it after any
+production secret change:
+`ssh operator@<droplet ip> "sudo -n cat /etc/la/.env" > la-prod.env`.
+It replaced two Render-era exports (`render-secrets*.env`, renamed
+`*.RETIRED-20261022`) that disagreed with each other and with production on up to
+20 keys, including `JWT_SECRET` and the Stripe keys.
+
 **`/etc/la/.env` — application secrets** (the `sync: false` set in the retired
 [`render.yaml`](../../render.yaml)):
 `JWT_SECRET`, `HANKO_TENANT_BASE_URL`, `HANKO_EXPECTED_AUDIENCE`,
@@ -276,10 +342,14 @@ that uses `render.yaml` as its checklist misses them:
 `BREVO_FRIEND_REQUEST_TEMPLATE_ID`, `BREVO_FRIEND_ACCEPTED_TEMPLATE_ID`,
 `BREVO_MATCH_INVITE_TEMPLATE_ID`.
 
-**`/etc/la/.env` — droplet-owned** (written by the provisioners, not copied from
-anywhere): `DATABASE_URL` (the local role), `NODE_ENV`, `NODE_VERSION`, `PORT`,
-and `LEGENDS_PUBLISHER_ENABLED` (`true` only on the box holding the live database,
-because the publisher writes production R2 from its own database).
+**`/etc/la/.env` — droplet-owned** (written by hand on each box; no provisioner
+writes them, and `la-prod.env` carries the old box's values, so overwrite them):
+`DATABASE_URL=postgres://la:<password>@localhost:5432/la` (the password
+given to `30-postgres.ps1` as `LA_DB_PASSWORD`), `NODE_ENV=production`,
+`PORT=3000`, `LISTEN_HOST=127.0.0.1` (the origin lock; `60-monitor` alerts without
+it), `WEB_CONCURRENCY=1`, and `LEGENDS_PUBLISHER_ENABLED` (`true` only on the box
+holding the live database, because the publisher writes production R2 from its own
+database; `false` on any drill box).
 
 **`/etc/la/backup.env`:** the R2 credentials and bucket for the backup, the pCloud
 token (`BACKUP_PCLOUD_TOKEN`), and the healthchecks.io ping URLs
@@ -346,18 +416,48 @@ downstream — so each step has what the next one needs:
   Postgres). If only the app is broken, this is the lowest-risk scenario. **If
   the droplet itself is lost, the database went with it** — that is DR-01 on a
   fresh droplet.
-- **Procedure (droplet intact):** redeploy with the lab's `40-app-deploy.ps1`
-  (checkout, frozen install, build, migrations, restart, health gate). A known-
-  good commit is a hand deploy with `DEPLOY_REF=<sha>`.
-- **Procedure (droplet lost):** create a droplet (Ubuntu 24.04) with the lab's
-  cloud-init → run the provisioners in order (`05` SSH, `06` UFW, `07`, `08`
-  swap, `10` Node/pnpm, `20` Nginx, `21` Cloudflare origin TLS with the Origin Certificate, `30`
-  PostgreSQL) →
-  install `/etc/la/.env` and `/etc/la/backup.env` (§4) → DR-01 restore from R2
-  → `40-app-deploy.ps1` → `50`/`60 -Install` (backup and monitor timers) →
-  point the proxied `api.` A record at the new IP → §6 validation. The
-  provisioners are vendor-neutral (CI smoke runs them on plain Ubuntu 24.04), so
-  another provider works if DigitalOcean is the problem.
+- **Procedure (droplet intact):** if the last deploy broke it, run
+  `40-app-deploy.ps1 -Rollback` (under `flock /run/la-deploy.lock`). It
+  switches `/opt/la-app/current` back to the previous release with no
+  rebuild. Otherwise redeploy with the lab's `40-app-deploy.ps1`: a release
+  directory build (frozen install, build, migrations), then a restart behind
+  `la-server-standby` and a health gate. A known-good commit is a hand deploy
+  with `DEPLOY_REF=<sha>`.
+- **Procedure (droplet lost):** timed at 13 m 31 s of hands-on steps
+  (2026-10-22 drill, §7). Run every provisioner as
+  `sudo pwsh -NoProfile -NonInteractive -File <script>` from
+  `/opt/la-lab/infra/scripts`.
+  1. Create an Ubuntu 24.04 droplet (`s-2vcpu-4gb`; if the region refuses the
+     size, use a neighbor such as sfo2 or the `-intel` size) with the lab's
+     `infra/cloud-init.yaml`, its `REPLACE_WITH_OPERATOR_PUBLIC_KEY` replaced
+     with the operator's public key. Wait for `cloud-init status` → `done`.
+  2. Copy the lab tree: `git archive --format=tar origin/main infra | ssh
+     operator@<ip> "sudo mkdir -p /opt/la-lab && sudo chown operator:operator
+     /opt/la-lab && tar -x -C /opt/la-lab"`.
+  3. `05` SSH, `06` UFW, `07` fail2ban/upgrades, `08` swap, `10` Node/pnpm,
+     `20` Nginx, `30` PostgreSQL (with a new `LA_DB_PASSWORD`).
+  4. Install `/etc/la/.env`, `/etc/la/backup.env` and `/etc/la/monitor.env`
+     (§4; write the droplet-owned keys by hand), and the origin cert and key at
+     `/etc/ssl/cloudflare/origin.{crt,key}` → `21` Cloudflare origin TLS.
+  5. `50 -Install` **before** the restore: it installs rclone, which `51` needs.
+  6. DR-01 restore from R2 (`RESTORE_FROM_R2=latest`, `RESTORE_TARGET_DB=la`,
+     `RESTORE_ALLOW_LIVE_TARGET=true`).
+  7. `40-app-deploy.ps1` with `DEPLOY_REF=<last live sha>`.
+  8. `50` once (the first local backup; until it exists `la-health` fails with
+     "no backup found"), then `60 -Install`, `22 -Install`, and `41` with
+     `DEPLOY_PUBLIC_KEY_FILE` (the public half of `DEPLOY_SSH_KEY`) so automatic
+     deploys work; update the `DEPLOY_HOST` / `DEPLOY_KNOWN_HOSTS` secrets.
+  9. Point the proxied `api.` A record at the new IP → §6 validation.
+
+  The provisioners are vendor-neutral (CI smoke runs them on plain Ubuntu
+  24.04), so another provider works if DigitalOcean is the problem.
+- **Procedure (droplet lost, from a Droplet backup image — daily since 2026-10-20, §3):**
+  create a droplet from the newest backup image → let Postgres finish crash
+  recovery → if the newest R2 dump that passes the §3 gates is newer than the
+  image, restore it (DR-01) → point the proxied `api.` A record at the new IP →
+  §6 validation. This skips provisioning, but it needs DigitalOcean healthy.
+  **Never use an image after a host compromise:** the image may carry the
+  compromise, so rebuild from the provisioners.
 
 ### DR-03 — Accidental data deletion
 
@@ -416,6 +516,7 @@ infrastructure component.
 - [ ] `systemctl is-active la-server` → `active`; no errors in `journalctl -u la-server`
 - [ ] Nginx healthy; TLS valid at the Cloudflare edge and at the origin (SSL Full (strict) on `api.`)
 - [ ] `curl https://api.legendary-arena.com/health` → HTTP 200 (through Cloudflare)
+- [ ] `pwsh scripts/Test-ApiDeployment.ps1 -OriginIp <new droplet IP>` → `SUMMARY: … 0 failure(s)`. Beyond the API surface, it proves the origin lock: Cloudflare refuses a client-supplied `cf-connecting-ip` (403), the droplet IP's 443 and 3000 are unreachable directly, and port 80 only redirects. The guest rate limiters trust that header, so a rebuild that skips `21` (UFW to Cloudflare) or `LISTEN_HOST=127.0.0.1` fails here.
 - [ ] healthchecks.io `la-droplet-monitor` green; UptimeRobot `api./health/db` up
 
 **Phase 2 — Database & data integrity**
@@ -489,6 +590,36 @@ greppable. A drill with no record is treated as **not performed**.
 **Cadence:** database restore drill **monthly**; full server rebuild
 **quarterly**; complete platform recovery **semiannually**; re-run **all**
 after any major infrastructure change.
+
+### Running the quarterly rebuild drill
+
+The drill is §5 DR-02 "droplet lost", run in order on a **throwaway** droplet
+(tag `la-drill`), never on production. First run: 2026-10-22 (record below).
+
+- **Secrets come from the store** (`la-prod.env`, §4), so the drill also proves
+  the store is complete. Three overrides keep the box from touching production:
+  `LEGENDS_PUBLISHER_ENABLED=false` (only one box may publish), a `backup.env`
+  with `BACKUP_LOCAL_ONLY=true` and no healthchecks or pCloud keys, and a
+  `monitor.env` with an empty `MONITOR_HEALTHCHECK_URL` (a drill box must never
+  ping the production checks).
+- **Never touch `api.`.** To check the Cloudflare edge, run `21` with
+  `DOMAIN=api-next.legendary-arena.com`, point the proxied `api-next` A record at
+  the drill box, run `pwsh scripts/Test-ApiDeployment.ps1 -BaseUrl
+  https://api-next.legendary-arena.com -OriginIp <drill ip>`, then point
+  `api-next` back. Without the flip, check at the origin: `/health`, `/health/db`
+  and a WebSocket upgrade (`--http1.1`) over `curl --resolve
+  api-next.legendary-arena.com:443:127.0.0.1` on the box, and from outside, 443
+  and 3000 time out while 80 redirects.
+- **§6 Phases 3–10** need a client pointed at the rebuilt box, which the
+  front-ends do not support on a side hostname; they are proven at a real cutover.
+  Record them as not exercised.
+- **Time it:** log each step's UTC finish and report hands-on time apart from any
+  wait for the operator.
+- **Tear down:** destroy the droplet (it holds production secrets and a data copy),
+  drop its host key from `known_hosts`, and put `api-next` back if it moved.
+- **Record it:** add the §7 entry, and on that quarter's `DR drill due` issue tick
+  `**Quarterly — full-service rebuild drill.**` and `Drill passed` before closing
+  it. The dashboard DR Readiness tile reads those two boxes for the last rebuild.
 
 ### Drill history
 
@@ -636,6 +767,72 @@ Corrective action:   recorded in D-24707 §8 and §0 above.
 data, login, a match, WebSocket). It did not run Phases 6–10 as a checklist; the
 next full-rebuild drill covers those.
 
+**2026-10-22 — DR-02 "droplet lost" full rebuild on a new droplet (no image).**
+
+```
+Date:                2026-10-22 (05:57–06:06 and 12:58–13:04 UTC)
+Scenario:            DR-02 droplet lost — a throwaway droplet (la-drill-01, sfo2,
+                     s-2vcpu-4gb, tag la-drill) built only from lab cloud-init +
+                     provisioners (lab a46e9fd) and the operator secret store, then
+                     destroyed. Production untouched.
+Backup object key:   db-backups/2026/10/22/legendary-arena-20261022T091717Z.dump
+                     (1,940,060 bytes; RESTORE_FROM_R2=latest — inferred as the
+                     newest nightly at restore time; 51's download line was not
+                     captured)
+Commit SHA restored: 4a31641c (production's live commit); schema_migrations 46,
+                     0 migrations pending
+Observed RPO:        ~3 h 45 m (dump age at restore)
+Observed RTO:        13 m 31 s of hands-on steps; 7 h 6 m wall clock, almost all of
+                     it waiting for the operator to run the restore
+Duration:            see the metrics table below
+Result:              PASS for §6 Phase 1 at the origin and Phase 2. la-health "All
+                     checks passed"; /health, /health/db, /version 200 over origin
+                     TLS (Cloudflare Origin CA cert); WebSocket upgrade 101;
+                     :3000 on loopback; from outside, 443 and 3000 time out and 80
+                     redirects. Row counts identical to production (players 9,
+                     player_profiles 1, friendships 3, competitive_scores 0,
+                     bgio.matches 0); the box's first local dump was byte-size
+                     identical to the source (1,940,060).
+Issues found:        1. s-2vcpu-4gb was not creatable in sfo3 (422 "Size is not
+                        available in this region"); sfo3 offered only the -intel
+                        size ($28). Used sfo2.
+                     2. DR-02 never said how lab infra/ gets onto the box.
+                     3. 51-restore needs rclone, which only `50-backup.ps1 -Install`
+                        installs, and DR-02 ran that after the restore: the restore
+                        failed until 50 -Install ran.
+                     4. §4 said the provisioners write the droplet-owned .env keys;
+                        none does. LISTEN_HOST and WEB_CONCURRENCY were not listed;
+                        NODE_VERSION was listed but production does not set it.
+                     5. The secret store (render-secrets*.env) lacks DASH_GITHUB_REPO,
+                        and its DATABASE_URL is the deleted Render database.
+                     6. DR-02 omitted 22 (Cloudflare-range UFW refresh) and 41
+                        (deploy user for automatic deploys).
+                     7. A fresh box fails la-health with "no backup found" until its
+                        first 50-backup run.
+Corrective action:   DR-02 procedure and §4 rewritten in this commit (1–4, 6, 7).
+                     Item 5 done the same day: the store is now la-prod.env, a
+                     verbatim copy of production's .env (§4); the two Render
+                     exports also disagreed with each other and were retired.
+```
+
+| Metric | Result |
+|---|---|
+| Time to provision host (create through `30`, incl. cloud-init ~3 min) | 6 m 28 s |
+| Time to restore secrets (+ origin cert, then `21`) | 36 s + 6 s |
+| Time to restore database (`50 -Install` for rclone, then `51`) | 7 s + 6 s |
+| Time to deploy app (`40`) | 69 s |
+| Timers, first backup, deploy user (`60`/`22 -Install`, `50`, `41`) | 12 s |
+| Time to first successful login | not exercised |
+| Time to first successful match | not exercised |
+| **Total recovery time (hands-on)** | **13 m 31 s** |
+
+**Scope.** The `api.` record was not moved and the `api-next` flip was not made,
+so the drill did not cover the Cloudflare edge path (proven at the 2026-10-12
+cutover) or §6 Phases 3–10, which need a client pointed at the rebuilt box.
+Add about a minute for the proxied A-record edit. Destroying the box removed the
+production secrets and data copy it held. Next full rebuild is due by
+2027-01-22 (quarterly).
+
 ---
 
 ## 8. Acceptance criteria & success statement
@@ -684,12 +881,10 @@ Kept close to **one** document (duplicate-first: split only when a section grows
 unwieldy). Current split:
 
 - `DISASTER_RECOVERY.md` — this overview + scenarios + acceptance (stays).
-- [`SERVER_REBUILD_RUNBOOK.md`](SERVER_REBUILD_RUNBOOK.md) — **split out
-  2026-08-09**: the step-by-step **quarterly full-service rebuild drill** (bare
-  host → running service → §6 capability validation). **It predates the
-  2026-10-12 droplet cutover** (it still describes PM2 and Render). Until it is
-  updated, the executable rebuild is the `legendary-arena-lab` provisioners in
-  the order given in §5 DR-02.
+- `SERVER_REBUILD_RUNBOOK.md` — **retired 2026-10-22.** Split out 2026-08-09 for
+  the quarterly rebuild drill, it described the Render / PM2 / certbot host and
+  went stale at the 2026-10-12 cutover. The rebuild is now §5 DR-02 (drilled
+  2026-10-22) and the drill wrapper is §7 "Running the quarterly rebuild drill".
 - `POSTGRES_RESTORE_RUNBOOK.md` — not yet split. On the droplet, restores are the
   lab's `51-restore.ps1` (§5 DR-01, DR-03).
 

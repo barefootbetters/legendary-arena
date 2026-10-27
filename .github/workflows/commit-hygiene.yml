@@ -7,6 +7,12 @@ on:
   pull_request:
     branches: [main]
 
+# why: a newer push to the same PR makes the older run worthless; cancel it
+# instead of billing it to the end (the ci.yml concurrency rationale).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   commit-messages:
     name: Validate commit messages

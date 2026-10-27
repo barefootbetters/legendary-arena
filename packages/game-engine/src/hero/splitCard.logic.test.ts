@@ -22,7 +22,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { resolveSplitFacePair, offPlayCardTraits, offPlayCardStats, playedCardIdsThisTurn, playedCardIdsStillInPlay } from './splitCard.logic.js';
+import { resolveSplitFacePair, offPlayCardTraits, offPlayCardStats, playedCardIdsThisTurn, playedCardIdsStillInPlay, isGreyHero, matchesGreyHeroFilter } from './splitCard.logic.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
@@ -320,5 +320,93 @@ describe('playedCardIdsThisTurn / playedCardIdsStillInPlay — Out of Time ledge
     assert.deepEqual(played, [PLAIN_CARD]);
     assert.notEqual(played, inPlay);
     assert.deepEqual(inPlay, [PLAIN_CARD]);
+  });
+});
+
+describe('playedCardIdsThisTurn — returned Sidekicks (WP-842 / D-24776)', () => {
+  const SIDEKICK = 'pile-sidekick' as CardExtId;
+  const AGENT = 'starting-shield-agent' as CardExtId;
+
+  /** Builds a state whose turn economy carries the given Sidekick count and Out of Time ledger. */
+  function makeSidekickState(sidekicksReturnedThisTurn: number | undefined, outOfTimePlayedCardIds: CardExtId[] | undefined): LegendaryGameState {
+    const state = makeState({});
+    const turnEconomy: Record<string, unknown> = { attack: 0, recruit: 0 };
+    if (sidekicksReturnedThisTurn !== undefined) {
+      turnEconomy.sidekicksReturnedThisTurn = sidekicksReturnedThisTurn;
+    }
+    if (outOfTimePlayedCardIds !== undefined) {
+      turnEconomy.outOfTimePlayedCardIds = outOfTimePlayedCardIds;
+    }
+    state.turnEconomy = turnEconomy as unknown as LegendaryGameState['turnEconomy'];
+    return state;
+  }
+
+  it('T11: two returned Sidekicks count twice beside the cards still in play (no de-duplication)', () => {
+    const state = makeSidekickState(2, undefined);
+    assert.deepEqual(playedCardIdsThisTurn(state, [AGENT]), [AGENT, SIDEKICK, SIDEKICK]);
+    assert.deepEqual(playedCardIdsStillInPlay(state, [AGENT]), [AGENT], 'the still-in-play view never sees them');
+  });
+
+  it('T11b: a Sidekick replayed from Out of Time and then returned counts once', () => {
+    const state = makeSidekickState(1, [SIDEKICK]);
+    assert.deepEqual(playedCardIdsThisTurn(state, []), [SIDEKICK]);
+  });
+
+  it('T11c: the accepted residual — a set-aside Sidekick plus a second returned one collapse to one (D-24776)', () => {
+    const state = makeSidekickState(1, [SIDEKICK]);
+    assert.deepEqual(playedCardIdsThisTurn(state, []), [SIDEKICK]);
+  });
+
+  it('T12: with no Sidekick count and no Out of Time ledger the output is unchanged', () => {
+    assert.deepEqual(playedCardIdsThisTurn(makeSidekickState(undefined, undefined), [AGENT, PLAIN_CARD]), [AGENT, PLAIN_CARD]);
+    assert.deepEqual(playedCardIdsThisTurn(makeState({}), [AGENT]), [AGENT], 'no turnEconomy at all (the minimal-G slice)');
+  });
+});
+
+describe('isGreyHero / matchesGreyHeroFilter (WP-836 / D-24769)', () => {
+  const GREY_TRAITS: Record<string, CardTraitEntry> = {
+    'tech-a': { heroClass: 'tech', team: 'avengers' },
+    'classless-f': { heroClass: null, team: null },
+    'dual-ti': { heroClass: 'tech', heroClass2: 'instinct', team: null },
+    'split-a#0': { heroClass: 'tech', team: null },
+    'split-b#0': { heroClass: 'covert', team: null },
+  };
+  const greyState = makeState({
+    cardTraits: GREY_TRAITS,
+    cardStats: {},
+    splitFaces: { 'split-a': 'split-b' } as Record<CardExtId, CardExtId>,
+  });
+  const greyCards = ['starting-shield-agent', 'starting-shield-trooper', 'pile-shield-officer', 'pile-sidekick', 'classless-f'];
+  const nonGreyCards = ['tech-a', 'split-a#0', 'split-b#0', 'dual-ti'];
+  const notHeroes = ['pile-wound', 'pile-bystander'];
+
+  it('T6: S.H.I.E.L.D. cards, Sidekicks and classless Heroes are grey', () => {
+    for (const cardId of greyCards) {
+      assert.equal(isGreyHero(greyState, cardId), true, `${cardId} must be grey`);
+      assert.equal(matchesGreyHeroFilter(greyState, cardId, 'grey'), true, `${cardId} must pass 'grey'`);
+      assert.equal(matchesGreyHeroFilter(greyState, cardId, 'non-grey'), false, `${cardId} must fail 'non-grey'`);
+    }
+  });
+
+  it('T6: classed, split and dual-class Heroes are not grey', () => {
+    for (const cardId of nonGreyCards) {
+      assert.equal(isGreyHero(greyState, cardId), false, `${cardId} must not be grey`);
+      assert.equal(matchesGreyHeroFilter(greyState, cardId, 'grey'), false, `${cardId} must fail 'grey'`);
+      assert.equal(matchesGreyHeroFilter(greyState, cardId, 'non-grey'), true, `${cardId} must pass 'non-grey'`);
+    }
+  });
+
+  it('T6: a Wound and a Bystander fail both filters', () => {
+    for (const cardId of notHeroes) {
+      assert.equal(isGreyHero(greyState, cardId), false, `${cardId} is not a Hero, so not grey`);
+      assert.equal(matchesGreyHeroFilter(greyState, cardId, 'grey'), false);
+      assert.equal(matchesGreyHeroFilter(greyState, cardId, 'non-grey'), false);
+    }
+  });
+
+  it('T6: with no cardTraits map an Agent is grey and a Wound is not', () => {
+    const bareState = makeState({});
+    assert.equal(isGreyHero(bareState, 'starting-shield-agent'), true);
+    assert.equal(isGreyHero(bareState, 'pile-wound'), false);
   });
 });

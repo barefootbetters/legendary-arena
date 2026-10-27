@@ -28,6 +28,8 @@ import {
   spendAttack,
   spendRecruit,
   markExcessiveViolenceUsed,
+  markSidekickRecruited,
+  recordSidekickReturned,
 } from './economy.logic.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -857,5 +859,37 @@ describe('recordOutOfTimePlayed (WP-803 / D-24692)', () => {
     assert.strictEqual(economy.isPlayBothSidesActive, true);
     assert.deepStrictEqual(economy.bothSidesPlayedCardIds, ['cvwr/cloak-dagger/above#0']);
     assert.strictEqual(resetTurnEconomy().outOfTimePlayedCardIds, undefined);
+  });
+});
+
+describe('markSidekickRecruited / recordSidekickReturned (WP-842 / D-24776)', () => {
+  it('T13: both fields survive addResources / spendAttack / spendRecruit and coexist with other lazy fields', () => {
+    let economy = enableDrawLock(resetTurnEconomy());
+    economy = markSidekickRecruited(economy);
+    economy = recordSidekickReturned(economy);
+    economy = addResources(economy, 3, 2);
+    economy = spendAttack(economy, 1);
+    economy = spendRecruit(economy, 1);
+    assert.strictEqual(economy.hasRecruitedSidekickThisTurn, true);
+    assert.strictEqual(economy.sidekicksReturnedThisTurn, 1);
+    assert.strictEqual(economy.drawsLocked, true, 'the earlier lazy field is not dropped');
+    assert.strictEqual(recordSidekickReturned(economy).sidekicksReturnedThisTurn, 2, 'a second return counts 2');
+  });
+
+  it('the setters never mutate their input', () => {
+    const base = resetTurnEconomy();
+    markSidekickRecruited(base);
+    recordSidekickReturned(base);
+    assert.strictEqual('hasRecruitedSidekickThisTurn' in base, false);
+    assert.strictEqual('sidekicksReturnedThisTurn' in base, false);
+  });
+
+  it('T14: resetTurnEconomy and a base economy round-tripped through JSON carry neither key', () => {
+    const reset = resetTurnEconomy();
+    assert.strictEqual('hasRecruitedSidekickThisTurn' in reset, false);
+    assert.strictEqual('sidekicksReturnedThisTurn' in reset, false);
+    const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(reset, 1, 1), 1))) as Record<string, unknown>;
+    assert.strictEqual(Object.keys(roundTripped).includes('hasRecruitedSidekickThisTurn'), false);
+    assert.strictEqual(Object.keys(roundTripped).includes('sidekicksReturnedThisTurn'), false);
   });
 });

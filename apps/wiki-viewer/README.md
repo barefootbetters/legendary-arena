@@ -90,7 +90,9 @@ a DECISIONS entry.
 
 ## Theme
 
-Hand-rolled minimal theme inside this app (Open Decision B, locked). No
+The studio's own shared ewiki theme, `bb-studio-ewiki-theme` `v1.3.0`,
+vendored into `themes/ewiki/` so it stays inside this app (Open Decision B,
+locked; D-24728 §2, D-24782). The build stays offline and needs no
 third-party theme dependency. A future WP that wants Docsy / Hextra / etc.
 must add a DECISIONS entry that supersedes the lock.
 
@@ -116,14 +118,28 @@ the GitHub UI but does not block the wiki deploy.
 
 ## Files
 
-- `hugo.toml` — site config + determinism knobs.
-- `layouts/_default/baseof.html` + `single.html` + `list.html` — page chrome,
-  entity rendering, section landing.
-- `layouts/_default/_markup/render-link.html` — markdown render hook
-  (internal `.md` resolution + GitHub-blob rewrite per D-13809).
-- `layouts/partials/{metadata-panel,related,source-citations}.html` — the
-  three content partials.
-- `assets/css/style.css` — minimal hand-rolled theme styling.
+- `hugo.toml` — site config + determinism knobs, `theme = "ewiki"` and the
+  theme's `[params.ewiki]` settings (D-24782).
+- `themes/ewiki/` — the shared ewiki theme, `bb-studio-ewiki-theme` `v1.3.0`,
+  vendored read-only by its `tools/Sync-EwikiTheme.ps1` and pinned by digest
+  in `.github/workflows/wiki-viewer.yml` (D-24728). Never edit it: a change
+  lands in the theme repo, ships in a tag, and is re-synced. It supplies the
+  page chrome (`layouts/_default/baseof.html`, `single.html`, `list.html`,
+  `tags.html`), the markdown render hooks
+  (`layouts/_default/_markup/render-link.html`: internal `.md` resolution +
+  GitHub-blob rewrite per D-13809), the "Editing this page" footer, the
+  `audio`, `audio-inline`, `include-section` and `swatch` shortcodes, and the
+  core stylesheet (`assets/css/ewiki.css`).
+- `layouts/partials/ewiki/{sidebar,metadata,after-content,editing-extra}.html`
+  — the engine's own behavior behind the theme's extension points: the
+  type-grouped sidebar, the six-field metadata panel and search-filter spans,
+  the Related / Sources sections, and the engine's footer paragraphs.
+- `layouts/partials/{related,source-citations,service-dependencies-data}.html`
+  and `layouts/shortcodes/{motif-table,service-impact}.html` — the engine's
+  own partials and shortcodes.
+- `assets/css/ewiki-brand.css` (the brand tokens, light and dark) and
+  `assets/css/ewiki-site.css` (the engine-only rules) — the theme's two CSS
+  extension points.
 - `scripts/project-wiki.mjs` — build-time content projection (read-only on
   `wiki/`; copy + rename-only-on-the-copy per D-13810).
 - `scripts/check-links.mjs` — case-sensitive link-integrity check.

@@ -51,12 +51,38 @@ export interface LastDrill {
 }
 
 /**
- * An open `Backup mirror failing — pCloud` issue, which `db-backup.yml` opens when
- * the pCloud second-offsite copy fails and closes when it next succeeds.
+ * An open `Backup mirror failing — pCloud` issue. The retired `db-backup.yml`
+ * workflow opened it when the pCloud copy failed and closed it on the next
+ * success; since that workflow was deleted (2026-10-22) nothing opens it, and
+ * the droplet's mirror alerts through healthchecks.io `la-droplet-pcloud`.
  */
 export interface BackupMirrorAlert {
   /** UTC `YYYY-MM-DD` the tracking issue was opened (the first failing night), or `null` if the payload lacked it. */
   readonly openedAt: string | null;
+}
+
+/**
+ * The quarterly full-service rebuild drill (`docs/ops/DISASTER_RECOVERY.md` §7
+ * cadence). Only the January / April / July / October drill issues carry the
+ * `**Quarterly — full-service rebuild drill.**` checkbox, so this cadence is
+ * tracked apart from the monthly restore drill.
+ */
+export interface RebuildDrill {
+  /**
+   * Newest CLOSED quarterly issue whose rebuild checkbox is checked: its close
+   * date plus its `Drill passed` result. `null` when no rebuild has been recorded.
+   */
+  readonly lastRebuild: LastDrill | null;
+  /**
+   * UTC `YYYY-MM-DD`: the 1st of the current quarter while this quarter's rebuild
+   * is still outstanding, else the 1st of the next quarter.
+   */
+  readonly nextDue: string;
+  /**
+   * `true` once the quarter's issue month (Jan/Apr/Jul/Oct) has passed with no
+   * rebuild recorded since the quarter began.
+   */
+  readonly overdue: boolean;
 }
 
 /** The DR-readiness projection returned in the `{ data }` envelope. */
@@ -72,6 +98,8 @@ export interface DrReadiness {
    * means "no alert", not "mirror verified healthy": a skipped mirror opens nothing.
    */
   readonly backupMirrorAlert: BackupMirrorAlert | null;
+  /** The quarterly full-service rebuild drill's own last / next-due / overdue. */
+  readonly rebuildDrill: RebuildDrill;
   /**
    * `github` when derived from live drill issues; `mock` when the feed served
    * the mock-first fallback (no/invalid `DASH_GITHUB_TOKEN`, or a GitHub fetch

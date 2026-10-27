@@ -95,6 +95,19 @@ export interface HeroAbilityHook {
 export interface HeroCondition {
   type: string;
   value: string;
+  // why: D-24563 — a printed repeated icon means that many OTHER matching cards (rulebook
+  // L683-696, "Critical Hit" Superpowers): "[hc:ranged][hc:ranged]:" needs two other Ranged
+  // cards played this turn, not one. The parser sets it only from a line's leading icon prefix,
+  // and only when the count is 2 or more (absent ≡ 1, so every other hook is unchanged). Only
+  // heroClassMatch and requiresTeam honor it; other condition types ignore it.
+  requiredMatches?: number;
+  // why: WP-825 / D-24758 — a printed cost floor on the OTHER card a heroClassMatch /
+  // requiresTeam gate needs ("if you played another [team:shield] Hero that costs 1 or more this
+  // turn", co2e Stealth Assault Squad): only another matching card whose G.cardStats cost is at
+  // least minimumCost counts, so the cost-0 S.H.I.E.L.D. Agent / Trooper starters never satisfy
+  // it. The parser sets it only from that printed clause, and only when it is 1 or more (absent ≡
+  // no floor, so every other hook is unchanged). Only heroClassMatch and requiresTeam honor it.
+  minimumCost?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,8 +186,9 @@ export interface HeroEffectDescriptor {
   // static criterion (the printed "another X-Men Hero" is one criterion — distinct from
   // investigate's OR-combined `investigateCriteria[]`) that the handler tests each player's
   // hand against; a player holding a match draws 1. Captured from the co-located [team:X]/
-  // [hc:X] token the reveal-from-hand marker suppresses from the play-gate conditions. Other
-  // keywords ignore it.
+  // [hc:X] token the reveal-from-hand marker suppresses from the play-gate conditions.
+  // WP-843 / D-24777 — a 'reveal-or-gain-wound-each' effect carries the same criterion,
+  // captured the same way; a player with no match gains a Wound. Other keywords ignore it.
   revealCriterion?: InvestigateCriterion;
   // why: WP-735 / D-24555 — for a 'digest-indigestion' effect, digestThreshold is the printed
   // "Digest N" Victory-Pile-size threshold (keywords-full id 54): the Digest branch runs only
@@ -197,14 +211,11 @@ export interface HeroEffectDescriptor {
   // present and evaluateAllConditions holds, the handler runs BOTH branches regardless of count
   // (the printed "Instead … both" overrides the Digest threshold gate). Absent when the card has
   // no upgrade line. Other keywords ignore it.
+  // why: D-24563 — a doubled "both" line ("[team:venomverse][team:venomverse]: Instead, do
+  // both") arrives from the parser as ONE condition carrying requiredMatches, so the count rides
+  // bothCondition itself and the general evaluator enforces it. The old WP-740 descriptor count
+  // field is retired.
   bothCondition?: HeroCondition;
-  // why: WP-740 / D-24562 — for a 'digest-indigestion' effect, bothConditionCount is how many OTHER
-  // in-play cards must satisfy bothCondition. The fusion sets it only when the printed "both" line
-  // repeats one identical condition (e.g. "[team:venomverse][team:venomverse]") — the rulebook's
-  // "Critical Hit" two-icon rule needs two other matching cards, not one. Absent ≡ 1 (the Core-4's
-  // single-condition behavior, unchanged). Read ONLY by heroEffectDigestIndigestion; the general
-  // condition evaluator is untouched. Other keywords ignore it.
-  bothConditionCount?: number;
   // why: WP-736 / D-24556 — for an 'excessive-violence' effect, excessiveViolenceEffects is the
   // enrolled EV ability's already-parsed inner effects (the draw / +recruit / rescue / optional-ko
   // on the printed [keyword:Excessive Violence] line). It is FIRED at fight time (fireExcessiveViolencePlays),
@@ -218,8 +229,9 @@ export interface HeroEffectDescriptor {
   // the already-parsed inline effects of the card's printed "[keyword:Sunlight]:" and
   // "[keyword:Moonlight]:" lines (fused like the digest-indigestion branches; the same plain-data,
   // acyclic nesting). heroEffectDayNightBoth runs both (Sunlight first) when the shared
-  // bothCondition / bothConditionCount upgrade holds, else the branch computeDayNight selects,
-  // else nothing. The handler treats an absent array as an empty branch. Other keywords ignore them.
+  // bothCondition upgrade holds (its requiredMatches carries a repeated token's count, D-24563),
+  // else the branch computeDayNight selects, else nothing. The handler treats an absent array as
+  // an empty branch. Other keywords ignore them.
   sunlightEffects?: HeroEffectDescriptor[];
   moonlightEffects?: HeroEffectDescriptor[];
   // why: WP-790 / D-24652 — for an 'attack' effect, attackRestriction records a printed

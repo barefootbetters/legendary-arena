@@ -1,0 +1,31 @@
+{{- /*
+  why: the site header, common to E, H and C: the site title on the left and the
+  Pagefind search stub on the right. J's header has no search; it gains one at
+  its migration. An optional logo (params.ewiki.logo, an asset path) sits
+  before the title; it is decorative, so its alt text is empty and the title
+  link keeps its name.
+
+  why: the stub <input> is real, server-rendered HTML, so the search box shows
+  on first paint, and in `hugo server`, where /pagefind/ isn't built. The
+  loader in ewiki/search.html swaps Pagefind's UI into #wiki-search on first
+  use. The placeholder and aria-label come from params (E said "the
+  engineering wiki", C "the brain"). data-pagefind-ignore keeps the chrome out
+  of the index. The stub renders only when search = true.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $search := true -}}
+{{- if isset $ewiki "search" -}}{{- $search = index $ewiki "search" -}}{{- end -}}
+{{- $placeholder := index $ewiki "searchplaceholder" | default "Search the wiki" -}}
+{{- $label := index $ewiki "searchlabel" | default "Search the wiki" -}}
+<header class="site-header">
+    <a class="site-title" href="{{ "/" | relURL }}">
+      {{- with index $ewiki "logo" }}{{ with resources.Get . }}<img class="site-logo" src="{{ .RelPermalink }}" alt="">{{ else }}{{ errorf "ewiki theme: params.ewiki.logo is %q, which is not a file under the site's assets/. Put the logo there, or remove the logo param." . }}{{ end }}{{ end -}}
+      {{ site.Title }}</a>
+    {{- if $search }}
+    <div id="wiki-search" class="header-search" role="search">
+      <input id="wiki-search-stub" type="search" placeholder="{{ $placeholder }}"
+             aria-label="{{ $label }}" autocomplete="off"
+             data-pagefind-ignore>
+    </div>
+    {{- end }}
+  </header>

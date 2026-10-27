@@ -14,7 +14,7 @@
 .EXAMPLE
     Workflow for a scenario theme (e.g. age-of-apocalypse):
 
-      1. cd C:\pcloud\LA\audio\age-of-apocalypse\   (working audio on pCloud; see Workspace Map)
+      1. cd C:\pcloud\legendary-arena\audio\age-of-apocalypse\   (working audio on pCloud; see Workspace Map)
       2. Listen to age-of-apocalypse_MASTER.wav and note the 8 crop
          ranges (one per asset).
       3. Edit the $crops array in this script with those timestamps
@@ -64,7 +64,7 @@ $crops = @(
 )
 
 if (-not (Test-Path -LiteralPath $master)) {
-    Write-Error "master WAV not found at $PWD\$master. Run this script from a theme's pCloud audio folder (e.g. C:\pcloud\LA\audio\age-of-apocalypse\)."
+    Write-Error "master WAV not found at $PWD\$master. Run this script from a theme's pCloud audio folder (e.g. C:\pcloud\legendary-arena\audio\age-of-apocalypse\)."
     exit 1
 }
 

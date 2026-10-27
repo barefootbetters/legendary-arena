@@ -1033,3 +1033,433 @@ describe('CityRow — restricted "usable only against" attack (WP-790 / D-24652)
     assert.deepEqual(evButtons.map((button) => button.attributes('data-city-index')), ['2']);
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-817 / D-24750 — Primus's fight discard cost: the gate, the chooser and the
+// slash-gesture skip.
+// ---------------------------------------------------------------------------
+
+describe('CityRow — WP-817 fight discard cost (D-24750)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetSlashGestureSettingForTests();
+    __resetSlashGestureSignalsForTests();
+  });
+
+  /** A City with Primus (cost 3, discard cost 2/3/5/7) at index 0 and Electro at index 2. */
+  function primusCity(): UICityState {
+    return {
+      spaces: [
+        { ...villain('primus', 3), fightDiscardCosts: [2, 3, 5, 7] },
+        null,
+        villain('electro', 5),
+        null,
+        null,
+      ],
+      escapedPile: [],
+    };
+  }
+
+  /** Mounts the row with Primus affordable and the given viewer hand. */
+  function mountPrimus(
+    submitMove: SubmitMove,
+    hand: { cardIds: string[]; displayCosts: (number | null)[]; handCosts: (number | null)[] },
+  ) {
+    return mount(CityRow, {
+      props: {
+        city: primusCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        viewerHandCards: hand.cardIds,
+        viewerHandDisplay: hand.cardIds.map((cardId, handIndex) => ({
+          extId: cardId,
+          name: `${cardId} name`,
+          imageUrl: `https://images.legendary-arena.com/${cardId}.png`,
+          cost: hand.displayCosts[handIndex] ?? null,
+        })),
+        viewerHandCosts: hand.handCosts,
+      },
+    });
+  }
+
+  function primusButton(wrapper: ReturnType<typeof mount>) {
+    return wrapper.find('[data-testid="play-city-villain"][data-card-id="primus"]');
+  }
+
+  test('T29: no eligible card disables Fight with the reason', () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountPrimus(submitMove, { cardIds: ['hero-cost4'], displayCosts: [4], handCosts: [4] });
+    const button = primusButton(wrapper);
+    assert.equal(button.attributes('disabled'), '');
+    assert.equal(button.attributes('title'), 'Needs a card that costs 2, 3, 5, or 7 to discard');
+    assert.deepEqual(calls, []);
+  });
+
+  test('T29: an eligible card enables Fight; the chooser lists it and the pick submits the discard', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountPrimus(submitMove, {
+      cardIds: ['hero-cost4', 'hero-cost5'],
+      displayCosts: [4, 5],
+      handCosts: [4, 5],
+    });
+    const button = primusButton(wrapper);
+    assert.equal(button.attributes('disabled'), undefined);
+    await button.trigger('click');
+    assert.deepEqual(calls, [], 'clicking Fight only opens the chooser');
+    const options = wrapper.findAll('[data-testid="play-city-discard-option"]');
+    assert.deepEqual(options.map((option) => option.attributes('data-card-id')), ['hero-cost5']);
+    assert.equal(options[0]!.text(), 'hero-cost5 name');
+    await options[0]!.trigger('click');
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 0, discardCardId: 'hero-cost5' } }]);
+    assert.equal(wrapper.find('[data-testid="play-city-discard-chooser"]').exists(), false, 'the chooser closes');
+  });
+
+  test('T29: Cancel closes the chooser and submits nothing', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountPrimus(submitMove, { cardIds: ['hero-cost5'], displayCosts: [5], handCosts: [5] });
+    await primusButton(wrapper).trigger('click');
+    await wrapper.find('[data-testid="play-city-discard-cancel"]').trigger('click');
+    assert.deepEqual(calls, []);
+    assert.equal(wrapper.find('[data-testid="play-city-discard-chooser"]').exists(), false);
+  });
+
+  test('T29: an Officer-only hand (printed cost null, engine cost 3) is eligible', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountPrimus(submitMove, {
+      cardIds: ['pile-shield-officer'],
+      displayCosts: [null],
+      handCosts: [3],
+    });
+    const button = primusButton(wrapper);
+    assert.equal(button.attributes('disabled'), undefined, 'eligibility reads handCosts, not display.cost');
+    await button.trigger('click');
+    const options = wrapper.findAll('[data-testid="play-city-discard-option"]');
+    assert.deepEqual(options.map((option) => option.attributes('data-card-id')), ['pile-shield-officer']);
+    await options[0]!.trigger('click');
+    assert.deepEqual(calls, [
+      { name: 'fightVillain', args: { cityIndex: 0, discardCardId: 'pile-shield-officer' } },
+    ]);
+  });
+
+  test('a placeholder or missing display name falls back to the humanized card id', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: primusCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        viewerHandCards: ['pile-shield-officer', 'sm-amazing-friend'],
+        viewerHandDisplay: [{ extId: 'pile-shield-officer', name: '<unknown>', imageUrl: '', cost: null }],
+        viewerHandCosts: [3, 2],
+      },
+    });
+    await primusButton(wrapper).trigger('click');
+    const options = wrapper.findAll('[data-testid="play-city-discard-option"]');
+    assert.deepEqual(options.map((option) => option.text()), ['pile shield officer', 'sm amazing friend']);
+  });
+
+  test('T29: the Excessive Violence button also opens the chooser and sends the EV intent', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: primusCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9, excessiveViolenceAvailable: true }),
+        submitMove,
+        viewerHandCards: ['hero-cost5'],
+        viewerHandDisplay: [],
+        viewerHandCosts: [5],
+      },
+    });
+    await wrapper.find('[data-testid="play-city-villain-ev"][data-city-index="0"]').trigger('click');
+    assert.deepEqual(calls, []);
+    await wrapper.find('[data-testid="play-city-discard-option"]').trigger('click');
+    assert.deepEqual(calls, [
+      { name: 'fightVillain', args: { cityIndex: 0, discardCardId: 'hero-cost5', useExcessiveViolence: true } },
+    ]);
+  });
+
+  describe('the always-visible discard cost cue', () => {
+    const UNPAYABLE = 'city-space__discard-cost--unpayable';
+
+    /** Mounts Primus (and Electro) with the given hand and turn state. */
+    function mountCue(options: {
+      handCosts: (number | null)[];
+      currentStage?: string;
+      isViewerTurn?: boolean;
+      hasHealedThisTurn?: boolean;
+      city?: UICityState;
+    }) {
+      const cardIds = options.handCosts.map((_cost, handIndex) => `hand-card-${handIndex}`);
+      return mount(CityRow, {
+        props: {
+          city: options.city ?? primusCity(),
+          decks: DECKS,
+          currentStage: options.currentStage ?? 'main',
+          isViewerTurn: options.isViewerTurn ?? true,
+          hasHealedThisTurn: options.hasHealedThisTurn ?? false,
+          economy: economy({ attack: 9, availableAttack: 9 }),
+          submitMove: recorder().submitMove,
+          viewerHandCards: cardIds,
+          viewerHandDisplay: [],
+          viewerHandCosts: options.handCosts,
+        },
+      });
+    }
+
+    function primusCue(wrapper: ReturnType<typeof mount>) {
+      return primusButton(wrapper).find('[data-testid="play-city-discard-cost"]');
+    }
+
+    test('shows "Discard 2/3/5/7" on Primus only, never on a villain without fightDiscardCosts', () => {
+      const wrapper = mountCue({ handCosts: [5] });
+      assert.equal(primusCue(wrapper).text(), 'Discard 2/3/5/7');
+      const electro = wrapper.find('[data-testid="play-city-villain"][data-card-id="electro"]');
+      assert.equal(electro.find('[data-testid="play-city-discard-cost"]').exists(), false);
+      assert.equal(wrapper.findAll('[data-testid="play-city-discard-cost"]').length, 1);
+    });
+
+    test('is loud in the viewer\'s Main stage when no hand card can pay', () => {
+      const wrapper = mountCue({ handCosts: [4, 6] });
+      assert.equal(primusCue(wrapper).classes().includes(UNPAYABLE), true);
+    });
+
+    test('is loud with an empty hand (the whole hand was played)', () => {
+      const wrapper = mountCue({ handCosts: [] });
+      assert.equal(primusCue(wrapper).classes().includes(UNPAYABLE), true);
+    });
+
+    test('stays quiet when a hand card can pay', () => {
+      const wrapper = mountCue({ handCosts: [4, 7] });
+      assert.equal(primusCue(wrapper).classes().includes(UNPAYABLE), false);
+    });
+
+    test('stays quiet outside the Main stage and on another player\'s turn', () => {
+      const startStage = mountCue({ handCosts: [4], currentStage: 'start' });
+      assert.equal(primusCue(startStage).exists(), true, 'the cue still shows');
+      assert.equal(primusCue(startStage).classes().includes(UNPAYABLE), false);
+      const otherTurn = mountCue({ handCosts: [4], isViewerTurn: false });
+      assert.equal(primusCue(otherTurn).classes().includes(UNPAYABLE), false);
+    });
+
+    test('stays quiet under the heal lock (the heal lock, not the discard cost, disables Fight)', () => {
+      const wrapper = mountCue({ handCosts: [4], hasHealedThisTurn: true });
+      assert.equal(primusCue(wrapper).classes().includes(UNPAYABLE), false);
+    });
+
+    test('stacks above the Fight N badge when both show', () => {
+      const quiet = mountCue({ handCosts: [5] });
+      assert.equal(primusCue(quiet).classes().includes('city-space__discard-cost--stacked'), false);
+      const city = primusCity();
+      city.spaces[0] = { ...city.spaces[0]!, fightCost: 5 };
+      const withBadge = mountCue({ handCosts: [5], city });
+      assert.equal(primusButton(withBadge).find('[data-testid="play-city-fight-cost"]').text(), 'Fight 5');
+      assert.equal(primusCue(withBadge).classes().includes('city-space__discard-cost--stacked'), true);
+    });
+  });
+
+  test('T30: a villain without fightDiscardCosts submits { cityIndex } exactly', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountPrimus(submitMove, { cardIds: ['hero-cost5'], displayCosts: [5], handCosts: [5] });
+    await wrapper.find('[data-testid="play-city-villain"][data-card-id="electro"]').trigger('click');
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 2 } }]);
+  });
+
+  test('T30: a slash stroke across Primus and Electro fights only Electro', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountPrimus(submitMove, { cardIds: ['hero-cost5'], displayCosts: [5], handCosts: [5] });
+    await nextTick();
+    stubVillainRects(wrapper.element);
+    const row = wrapper.find('ol.city-spaces').element;
+    row.dispatchEvent(pointerEvent('pointerdown', 60, 150));
+    row.dispatchEvent(pointerEvent('pointermove', 390, 150));
+    row.dispatchEvent(pointerEvent('pointerup', 390, 150));
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 2 } }]);
+    wrapper.unmount();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-820 / D-24753 — Baron Zemo's "Fight + Rescue" control: the cue + Fight gate,
+// the payToRescueBystander intent, and the WP-817 Primus exclusion.
+// ---------------------------------------------------------------------------
+
+describe('WP-820 CityRow — Fight + Rescue (Baron Zemo, D-24753)', () => {
+  /** A City with one cost-3 villain (doom-bot) at engine index 0. */
+  function singleVillainCity(): UICityState {
+    return { spaces: [villain('doom-bot', 3), null, null, null, null], escapedPile: [] };
+  }
+
+  /** The cue on, with the given attack and Recruit. */
+  function rescueEconomy(
+    attack: number,
+    recruit: number,
+    over: Partial<UITurnEconomyState> = {},
+  ): UITurnEconomyState {
+    return economy({
+      attack,
+      availableAttack: attack,
+      recruit,
+      availableRecruit: recruit,
+      rescueOnFightAvailable: true,
+      ...over,
+    });
+  }
+
+  /** Mounts the row with the single-villain city. */
+  function mountRescue(
+    submitMove: SubmitMove,
+    economyState: UITurnEconomyState,
+    over: { isViewerTurn?: boolean; hasHealedThisTurn?: boolean } = {},
+  ) {
+    return mount(CityRow, {
+      props: {
+        city: singleVillainCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        isViewerTurn: over.isViewerTurn ?? true,
+        hasHealedThisTurn: over.hasHealedThisTurn ?? false,
+        economy: economyState,
+        submitMove,
+      },
+    });
+  }
+
+  test('T4: the button renders with its label and cost and submits payToRescueBystander once', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mountRescue(submitMove, rescueEconomy(3, 2));
+    const rescueButton = wrapper.find('[data-testid="play-city-villain-rescue"]');
+    assert.equal(rescueButton.exists(), true);
+    assert.equal(rescueButton.attributes('data-city-index'), '0');
+    assert.equal(rescueButton.attributes('type'), 'button');
+    assert.equal(
+      rescueButton.attributes('title'),
+      'Fight this Villain and pay 2 Recruit to rescue a Bystander (Baron Zemo).',
+    );
+    assert.equal(rescueButton.find('.city-space__rescue-fight-label').text(), 'Fight + Rescue');
+    assert.equal(rescueButton.find('.city-space__rescue-fight-cost').text(), '2 Recruit');
+    await rescueButton.trigger('click');
+    assert.deepEqual(calls, [{ name: 'fightVillain', args: { cityIndex: 0, payToRescueBystander: true } }]);
+    wrapper.unmount();
+  });
+
+  test('T5: no button without the cue, with 1 Recruit, off the viewer turn, or after a heal', () => {
+    const { submitMove } = recorder();
+    const rescueSelector = '[data-testid="play-city-villain-rescue"]';
+    const cueAbsent = mountRescue(submitMove, economy({ attack: 3, availableAttack: 3, recruit: 2, availableRecruit: 2 }));
+    assert.equal(cueAbsent.find(rescueSelector).exists(), false, 'cue absent');
+    const oneRecruit = mountRescue(submitMove, rescueEconomy(3, 1));
+    assert.equal(oneRecruit.find(rescueSelector).exists(), false, 'recruit 1');
+    const notViewerTurn = mountRescue(submitMove, rescueEconomy(3, 2), { isViewerTurn: false });
+    assert.equal(notViewerTurn.find(rescueSelector).exists(), false, 'not the viewer turn');
+    const healed = mountRescue(submitMove, rescueEconomy(3, 2), { hasHealedThisTurn: true });
+    assert.equal(healed.find(rescueSelector).exists(), false, 'healed this turn');
+    for (const wrapper of [cueAbsent, oneRecruit, notViewerTurn, healed]) {
+      wrapper.unmount();
+    }
+  });
+
+  test('T6: Fight, Excessive Violence and Fight + Rescue each submit their own intent only', async () => {
+    const { calls, submitMove } = recorder();
+    // why: attack 4 clears cost 3 + 1 for the EV button; recruit 2 pays the rescue.
+    const wrapper = mountRescue(submitMove, rescueEconomy(4, 2, { excessiveViolenceAvailable: true }));
+    const fightButton = wrapper.find('[data-testid="play-city-villain"]');
+    const evButton = wrapper.find('[data-testid="play-city-villain-ev"]');
+    const rescueButton = wrapper.find('[data-testid="play-city-villain-rescue"]');
+    assert.equal(evButton.exists(), true, 'the EV button renders');
+    assert.equal(rescueButton.exists(), true, 'the rescue button renders');
+    await fightButton.trigger('click');
+    await evButton.trigger('click');
+    await rescueButton.trigger('click');
+    assert.deepEqual(calls, [
+      { name: 'fightVillain', args: { cityIndex: 0 } },
+      { name: 'fightVillain', args: { cityIndex: 0, useExcessiveViolence: true } },
+      { name: 'fightVillain', args: { cityIndex: 0, payToRescueBystander: true } },
+    ]);
+    wrapper.unmount();
+  });
+
+  test('T6b: Rooftops-restricted attack shows the button on the Rooftops villain only', () => {
+    // why: a local copy of the WP-790 restricted-attack fixture (that describe's helpers
+    // are scoped to it): both villains cost 2, only the Rooftops grant pays, so the
+    // City space must reach canFightAndRescue for the button to show there and not on
+    // the Sewers villain.
+    const { submitMove } = recorder();
+    const city: UICityState = {
+      spaces: [villain('sewers-villain', 2), null, villain('rooftops-villain', 2), null, null],
+      escapedPile: [],
+    };
+    const wrapper = mount(CityRow, {
+      props: {
+        city,
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({
+          attack: 2,
+          availableAttack: 0,
+          recruit: 2,
+          availableRecruit: 2,
+          restrictedAttack: [{ remaining: 2, targets: ['rooftops'], label: 'Rooftops' }],
+          rescueOnFightAvailable: true,
+        }),
+        submitMove,
+      },
+    });
+    const rescueButtons = wrapper.findAll('[data-testid="play-city-villain-rescue"]');
+    assert.deepEqual(rescueButtons.map((button) => button.attributes('data-city-index')), ['2']);
+    wrapper.unmount();
+  });
+
+  test('T7: a Primus cell (fightDiscardCosts) never shows the button; Electro beside it does', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: {
+          spaces: [
+            { ...villain('primus', 3), fightDiscardCosts: [2, 3, 5, 7] },
+            null,
+            villain('electro', 5),
+            null,
+            null,
+          ],
+          escapedPile: [],
+        },
+        decks: DECKS,
+        currentStage: 'main',
+        economy: rescueEconomy(9, 2),
+        submitMove,
+        viewerHandCards: ['hero-cost5'],
+        viewerHandDisplay: [],
+        viewerHandCosts: [5],
+      },
+    });
+    const primusFight = wrapper.find('[data-testid="play-city-villain"][data-card-id="primus"]');
+    assert.equal(primusFight.attributes('disabled'), undefined, 'the Primus fight itself is allowed');
+    const rescueButtons = wrapper.findAll('[data-testid="play-city-villain-rescue"]');
+    assert.deepEqual(rescueButtons.map((button) => button.attributes('data-city-index')), ['2']);
+    wrapper.unmount();
+  });
+});
+
+describe('CityRow — a resized City (WP-831 / D-24764)', () => {
+  test('a 3-space City renders its two removed far spaces as gone columns, holding nothing', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: { spaces: [villain('villain-a', 3), null, null], escapedPile: [] },
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+      },
+    });
+    const gone = wrapper.findAll('[data-testid="play-city-gone"]');
+    assert.deepEqual(gone.map((cell) => cell.attributes('data-city-index')), ['4', '3']);
+    assert.equal(wrapper.findAll('[data-testid="play-city-villain"]').length + wrapper.findAll('[data-testid="play-city-empty"]').length, 3);
+  });
+});

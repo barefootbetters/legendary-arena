@@ -1,0 +1,233 @@
+{{- /*
+  why: the engine's own paragraphs in the "Editing this page" footer (D-24782).
+  The theme's core footer (themes/ewiki/layouts/partials/ewiki/editing-this-page.html)
+  already writes where the editable source lives, its GitHub view link, the
+  no-clone edit link and the include-section note. Everything after that is
+  the engine's: the commit prefix by case, the mirror page's own
+  wiki/<name>.md edit link, github.dev and the authoring links, "The build is
+  strict", "Write it once", the deploy target and the "Where this page goes"
+  table. Collapsed inside the core's <details>, so it needs no script (the
+  one-script rule, D-24293, is the Pagefind loader only). It receives the page
+  and renders inside div.editing-this-page-body.
+
+  why: commit prefixes, verified against git history: INFRA: for ewiki page
+  edits (wiki/*.md) and for the changelog; SPEC: only for a mirror page's
+  canonical doc, which is a design or spec artifact. The deploy target is the
+  assets-only Cloudflare Worker legendary-arena-wiki (D-24690), deployed by the
+  wiki-viewer workflow's deploy job with wrangler, not Render and not
+  Cloudflare Pages.
+
+  why: the changelog is the one page projected from docs/ rather than wiki/
+  (docs/09-CHANGELOG.md, D-24164). It used to be a by-name case here; it is
+  now front matter like any mirror (canonical-source: docs/09-CHANGELOG.md,
+  written by apps/wiki-viewer/scripts/project-wiki.mjs), and every changelog
+  branch below keys on that value and is tested before the mirror branch, so
+  the changelog never gets a wiki/changelog.md edit link or the SPEC: rule.
+  Keep it in sync with the docs-projected set in project-wiki.mjs should
+  another docs-projected page ever be added.
+*/ -}}
+{{- $page := . -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $repoRoot := index $ewiki "localroot" -}}
+{{- $name := $page.File.BaseFileName -}}
+{{- $blobBase := "https://github.com/barefootbetters/legendary-arena/blob/main" -}}
+{{- $editBase := "https://github.com/barefootbetters/legendary-arena/edit/main" -}}
+{{- $canonical := index $page.Params "canonical-source" -}}
+{{- $canonicalRepo := index $page.Params "canonical-source-repo" -}}
+{{- $isChangelog := and (eq $canonical "docs/09-CHANGELOG.md") (not $canonicalRepo) -}}
+    {{- if $isChangelog }}
+    <p>
+      This page is <strong>auto-generated</strong> from that file on every
+      build: editing the wiki copy is discarded on the next build. Commit with
+      the <code>INFRA:</code> prefix on a new branch, open a PR, and merge when
+      CI is green.
+    </p>
+    {{- else if $canonical }}
+    {{- /*
+      why: a mirror page synthesizes one upstream doc that owns its canonical
+      prose (canonical-source, D-24304; canonical-source-repo for another
+      repo, D-24310). The core footer sends the editor to that doc; this adds
+      its commit prefix and the second edit this page needs: wiki/<name>.md
+      itself, updated to match with a bumped last-reviewed.
+    */}}
+    <p>
+      The other <strong>Sources</strong> entries are references it draws on,
+      not edit targets. Commit the canonical doc
+      {{ if $canonicalRepo }}following that repo's commit convention{{ else }}with <code>SPEC:</code>{{ end }},
+      then update this page to match: its source is
+      <code>{{ $repoRoot }}\wiki\{{ $name }}.md</code>
+      (<a href="{{ $editBase }}/wiki/{{ $name }}.md">edit on GitHub</a>, commit
+      <code>INFRA:</code>), and bump <code>last-reviewed</code>. Branch → PR,
+      merge when green.
+    </p>
+    {{- else }}
+    <p>
+      The <strong>Sources</strong> section lists the repo files this page is
+      built from: references it documents, not this page's editable copy.
+      Commit with the <code>INFRA:</code> prefix on a new branch, open a PR,
+      and merge when CI is green. (<code>main</code> is unprotected, but
+      branch → PR is the convention.)
+    </p>
+    {{- end }}
+    <p>
+      Bigger or multi-file change? Press <kbd>.</kbd> on the repo for
+      <a href="https://github.dev/barefootbetters/legendary-arena">github.dev</a>
+      (VS Code in the browser), or clone and run <code>pnpm wiki-viewer:dev</code>
+      (serves <code>localhost:1313</code> with live-reload) to preview before
+      publishing. Full contract:
+      <a href="/ewiki-authoring/">ewiki authoring</a> ·
+      <a href="/wiki-viewer/">Wiki Viewer</a> ·
+      <a href="/hugo-onboarding/">Hugo onboarding</a>.
+    </p>
+    <p>
+      <strong>The build is strict</strong>: no raw HTML, only the ewiki's own
+      shortcodes (listed in <a href="/ewiki-authoring/">ewiki authoring</a>), and
+      internal links are case-sensitive (<code>scoring.md</code>, never
+      <code>Scoring.md</code>). A bad edit fails the build and never deploys; the
+      same gates run on your PR.
+    </p>
+    {{- /*
+      why: include-section is a shared theme shortcode now (D-24782), so the
+      file to read is the vendored copy under themes/ewiki/, in this repo.
+    */}}
+    <p>
+      <strong>Write it once.</strong> To show a section of another page here,
+      include it rather than copying it, so the two can never drift apart:
+      <code>{{ "{{" }}&lt; include-section page="disaster-recovery" section="the-backup-layers" &gt;{{ "}}" }}</code>.
+      The shortcode
+      (<code>{{ $repoRoot }}\apps\wiki-viewer\themes\ewiki\layouts\shortcodes\include-section.html</code>,
+      <a href="{{ $blobBase }}/apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html">view on GitHub</a>)
+      looks up the page, cuts the Markdown from that heading to the next heading
+      of the same level, and renders it in place. A renamed or missing heading
+      fails the build. Details:
+      <a href="/ewiki-authoring/#including-a-section-from-another-page">ewiki authoring → Including a section</a>.
+    </p>
+    {{- /*
+      why: an editor asking "if I change this, where does it end up?" otherwise
+      has to piece the answer together from DOMAINS.md, wrangler.jsonc and the
+      workflow. This table names every place the page's files live or pass
+      through, and the services that are NOT involved, so nobody goes looking
+      for the wiki on Render or DigitalOcean. Each row was checked against
+      docs/ops/domains.json, docs/ops/DOMAINS.md#ewiki, wrangler.jsonc and
+      .github/workflows/wiki-viewer.yml (the AI Second Brain row against
+      wiki/ai-second-brain.md); when hosting changes, update this table with
+      them. The row set is the same on every page (only the paths and the
+      changelog's brain row vary by variant), so the output stays static and
+      deterministic.
+    */}}
+    <p>
+      <strong>Where this page goes.</strong> After merge, the
+      <code>wiki-viewer</code> workflow runs the gates, then its deploy job
+      uploads that exact build to the Cloudflare Worker; the change is live once
+      the run is green.
+    </p>
+    <table class="editing-this-page-where">
+      <thead>
+        <tr><th>Where</th><th>What's there</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Your clone</td>
+          <td>
+            {{- if $isChangelog -}}
+              <code>{{ $repoRoot }}\docs\09-CHANGELOG.md</code>: where you edit it locally
+            {{- else if and $canonical (not $canonicalRepo) -}}
+              <code>{{ printf `%s\%s` $repoRoot (replace $canonical "/" `\`) }}</code> (the canonical doc) and
+              <code>{{ $repoRoot }}\wiki\{{ $name }}.md</code> (this page): where you edit them locally;
+              images and diagrams go in <code>{{ $repoRoot }}\ewiki\{{ $name }}\</code>
+            {{- else if $canonical -}}
+              <code>{{ $repoRoot }}\wiki\{{ $name }}.md</code>: where you edit this page locally (the
+              canonical doc is in your clone of <code>{{ $canonicalRepo }}</code>);
+              images and diagrams go in <code>{{ $repoRoot }}\ewiki\{{ $name }}\</code>
+            {{- else -}}
+              <code>{{ $repoRoot }}\wiki\{{ $name }}.md</code>: where you edit it locally;
+              images and diagrams go in <code>{{ $repoRoot }}\ewiki\{{ $name }}\</code>
+            {{- end -}}
+          </td>
+        </tr>
+        <tr>
+          <td>GitHub</td>
+          <td>
+            {{- if $isChangelog -}}
+              <code>docs/09-CHANGELOG.md</code> on <code>main</code> in
+              <code>barefootbetters/legendary-arena</code>: the one copy (the wiki
+              page is regenerated from it on every build)
+            {{- else if $canonical -}}
+              <code>{{ $canonical }}</code> on <code>main</code> in
+              <code>{{ with $canonicalRepo }}{{ . }}{{ else }}barefootbetters/legendary-arena{{ end }}</code>
+              (the canonical prose) and <code>wiki/{{ $name }}.md</code> on
+              <code>main</code> in <code>barefootbetters/legendary-arena</code>
+              (this page): the one copy of each
+            {{- else -}}
+              <code>wiki/{{ $name }}.md</code> on <code>main</code> in
+              <code>barefootbetters/legendary-arena</code>: the one copy
+            {{- end -}}
+          </td>
+        </tr>
+        <tr>
+          <td>GitHub Actions</td>
+          <td>the <code>wiki-viewer</code> workflow builds the site with Hugo +
+            Pagefind and runs its gates (links, page count, two-build determinism,
+            JS-free), on every PR and on <code>main</code></td>
+        </tr>
+        <tr>
+          <td>Cloudflare Workers</td>
+          <td>the assets-only Worker <code>legendary-arena-wiki</code> (D-24690)
+            serves the pages, search index, and <code>ewiki/&lt;slug&gt;/</code>
+            images and diagrams; uploaded with wrangler, from <code>main</code> only</td>
+        </tr>
+        <tr>
+          <td>Cloudflare Access</td>
+          <td>the Access app gates <code>ewiki.legendary-arena.com</code>, the only
+            address (workers.dev and preview URLs off)</td>
+        </tr>
+        <tr>
+          <td>Cloudflare R2</td>
+          <td>card art and audio clips that pages link (the <code>audio</code>,
+            <code>audio-inline</code> and <code>motif-table</code> shortcodes), in
+            the <code>legendary-images</code> bucket, served from
+            <code>images.legendary-arena.com</code>; uploaded separately, never by
+            this workflow</td>
+        </tr>
+        {{- /*
+          why: since 2026-10-14 the AI Second Brain's Claude connector serves
+          wiki/*.md from GitHub main, snapshotted at each brain deploy — a
+          separate deploy from this site's. Without this row an editor would
+          assume a merged edit is visible from Claude on the phone once the
+          site rebuilds. The changelog comes from docs/, which the connector
+          does not read, so it gets the "not served" wording. Facts per
+          wiki/ai-second-brain.md "Reading this wiki from Claude"; the
+          connector's host stays unnamed here, as on that page.
+        */ -}}
+        <tr>
+          <td>AI Second Brain</td>
+          <td>
+            {{- if $isChangelog -}}
+              not served: the brain's Claude connector reads only
+              <code>wiki/*.md</code>, and this page comes from <code>docs/</code>
+            {{- else -}}
+              the brain's read-only Claude connector serves this page in its
+              <code>ewiki</code> folder, as a snapshot of <code>wiki/</code> on
+              <code>main</code> taken at each brain deploy (not when this site
+              rebuilds); answers name the engine commit and link here.
+              <a href="/ai-second-brain/#reading-this-wiki-from-claude-the-brains-connector">How it works</a>
+            {{- end -}}
+          </td>
+        </tr>
+        <tr>
+          <td>Other sites</td>
+          <td>a few pages link images straight from
+            <code>www.barefootbetters.com</code> (team icons, including the motif
+            tables) and <code>www.legendary-arena.com</code> (brand assets);
+            nothing uploaded</td>
+        </tr>
+        <tr>
+          <td>Not used</td>
+          <td>DigitalOcean (it hosts the game API, <code>api.legendary-arena.com</code>,
+            not the wiki), Render (the old host, retired by D-24690;
+            <code>legendary-arena-wiki.onrender.com</code> must 404), Cloudflare
+            Pages, and any script CDN such as jsDelivr (diagrams are committed
+            static SVGs)</td>
+        </tr>
+      </tbody>
+    </table>

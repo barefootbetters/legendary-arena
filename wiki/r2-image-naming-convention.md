@@ -15,7 +15,7 @@ related:
   - data-file-locations.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\r2-image-naming-convention.md (this page — https://ewiki.legendary-arena.com/r2-image-naming-convention/)
+  - C:\dev\legendary-arena\wiki\r2-image-naming-convention.md (this page — https://ewiki.legendary-arena.com/r2-image-naming-convention/)
   - ../packages/registry/src/heroImageUrl.ts
   - ../scripts/convert-cards/convert-cards-v15.mjs
   - ../scripts/convert-cards/apply-card-counts.mjs

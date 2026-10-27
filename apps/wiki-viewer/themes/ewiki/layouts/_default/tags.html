@@ -1,0 +1,32 @@
+{{ define "main" }}
+  {{- /*
+    why: the one-page tags index (E's layout), for a wiki that keeps taxonomy
+    kinds disabled so its page count stays fixed. A content page selects it
+    with `layout: tags`. Every regular page's tags are gathered here, each tag
+    under an h2 whose id is the tag itself, so a tag link is
+    /tags/#<tag>. A site that enables taxonomy kinds gets Hugo's term pages
+    through list.html instead.
+
+    why: tags and pages are both sorted, so the output is the same on every
+    build.
+  */ -}}
+      <section class="tags-index">
+        <h1>{{ partial "ewiki/title.html" . }}</h1>
+        {{- $byTag := newScratch -}}
+        {{- range site.RegularPages -}}
+          {{- $page := . -}}
+          {{- range .Params.tags -}}
+            {{- $byTag.Add (string .) (slice $page) -}}
+          {{- end -}}
+        {{- end -}}
+        {{- /* A map ranges in sorted key order, so the tags come out sorted. */ -}}
+        {{- range $tag, $pages := $byTag.Values }}
+        <h2 id="{{ $tag }}" class="tag-heading"><span class="tag">{{ $tag }}</span> <small class="tag-count">({{ len $pages }})</small></h2>
+        <ul class="tag-page-list">
+          {{- range sort $pages "Title" }}
+          <li><a href="{{ .RelPermalink }}">{{ partial "ewiki/title.html" . }}</a></li>
+          {{- end }}
+        </ul>
+        {{- end }}
+      </section>
+{{ end }}

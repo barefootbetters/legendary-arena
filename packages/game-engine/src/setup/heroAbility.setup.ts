@@ -136,7 +136,8 @@ const LEADING_GATE_PREFIX_PATTERN = /^\s*(?:\[(?:hc|team):[^\]]+\]\s*)+:/;
 // is hc / team only (D-24628) and must not be widened (D-24628 and the fight-cost clause read it);
 // the Savior condition itself is still built by the Step 2 `savior` arm. A line where the token sits
 // inside other text (Winter Soldier's "A Hero in your hand gains [keyword:Man Out of Time] this turn")
-// is a different capability (granting the keyword) and deliberately does not match.
+// is a different capability (granting the keyword) and deliberately does not match; those lines
+// resolve `grant-out-of-time` from their `[keyword:grant-out-of-time]` marker (WP-828 / D-24761).
 /** Regex for a whole line that is the Man / Woman Out of Time token behind an optional gate. */
 const OUT_OF_TIME_LINE_PATTERN = /^\s*(?:(?:(?:\[(?:hc|team):[^\]]+\]|\[keyword:Savior\])\s*)+:\s*)?\[keyword:(?:Man|Woman|Man\/Woman) Out of Time\]\s*$/;
 
@@ -432,8 +433,9 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   'gain-officer',
   // why: WP-803 / D-24692 — the three Out of Time spellings (normalized like the coverage probe:
   // "Man Out of Time" → man-out-of-time). OUT_OF_TIME_LINE_PATTERN resolves a whole-line token to
-  // the `out-of-time` keyword; a line it does not match (Winter Soldier's 2>4 grant lines) keeps
-  // the slug in unresolvedMarkers, so the probe still flags that hero.
+  // the `out-of-time` keyword; an unmarked line it does not match keeps the slug in
+  // unresolvedMarkers, so the probe flags it. (Winter Soldier's 2>4 grant lines resolve
+  // `grant-out-of-time` from their marker since WP-828 / D-24761.)
   'man-out-of-time',
   'woman-out-of-time',
   'man/woman-out-of-time',
@@ -527,6 +529,20 @@ const FIGHT_COST_REDUCTION_MASTERMIND_PATTERN = /^The Mastermind gets -(\d+)\[ic
 // ("you get +3[icon:attack]") is never preceded by these words, so it is never suppressed.
 const CONDITION_ICON_PATTERN =
   /(?:at least|for every)\s*\d+\s*\[icon:(?:attack|recruit)\]|\d+\s+or more\s+\[icon:(?:attack|recruit)\]/gi;
+
+// why: D-24746 — "If you played at least N other cards this turn, you get +2[icon:attack]"
+// (ca75 KGB Training N=7, co2e Repulsor Rays N=8, xmen Human Cannon N=6) carries no marker, so
+// the line parsed to an UNGATED attack:2 granted on every play. This text gate pushes a
+// playedThisTurn condition instead. Captures N; non-global so `.exec` is stateless.
+const PLAYED_OTHER_CARDS_THRESHOLD_PATTERN = /\bIf you played at least (\d+) other cards this turn\b/i;
+
+// why: WP-825 / D-24758 — "if you played another [team:X] Hero that costs N or more this turn"
+// (co2e Nick Fury's Stealth Assault Squad, N=1). Step 1b already pushes the requiresTeam gate for
+// the inline [team:X]; this text arm sets its printed cost floor, so the cost-0 S.H.I.E.L.D.
+// Agent / Trooper starters no longer satisfy it. Captures the team slug and N; non-global so
+// `.exec` is stateless.
+const ANOTHER_TEAM_HERO_COST_FLOOR_PATTERN =
+  /\bif you played another\s*\[team:([^\]]+)\]\s*Hero that costs (\d+) or more this turn\b/i;
 
 // why: D-24486 — a NEGATIVE-magnitude attack/recruit icon ("gets -2[icon:attack]",
 // "cost -1[icon:recruit]") is a debuff applied to an Adversary or a cost reduction — NEVER a
@@ -709,7 +725,8 @@ const X_GENE_CARDS: ReadonlySet<string> = new Set<string>([
 // Indigestion line (the Cauldron of the Cosmos single-branch shape).
 // why: WP-740 / D-24562 — play-to-the-crowd un-deferred: its Digest branch is attack-per-count
 // over victory-bystanders with perEach 2 (the widened COUNT_SCALED_PATTERN), its Indigestion
-// branch is rescue 2, and its doubled [team:venomverse] "both" line carries bothConditionCount 2.
+// branch is rescue 2, and its doubled [team:venomverse] "both" line parses to one condition
+// carrying requiredMatches 2 (D-24563).
 const DIGEST_INDIGESTION_CARDS: ReadonlySet<string> = new Set<string>([
   'vnom/venompool/digest-that-chimichanga',
   'vnom/carnage/carnivore',
@@ -783,7 +800,7 @@ const SELF_COMPUTED_ATTACK_KEYWORDS: ReadonlySet<string> = new Set<string>([
 // lines as separate hooks would double-fire a branch when the upgrade holds AND that branch's
 // day/night state is also in effect. Keyed by the canonical `{setAbbr}/{heroSlug}/{cardSlug}`
 // (the DIGEST_INDIGESTION_CARDS allowlist posture). Nanite's upgrade line is four [team:x-men]
-// tokens, which countRepeatedBothCondition turns into bothConditionCount 4.
+// tokens, which the parser collapses into one condition carrying requiredMatches 4 (D-24563).
 const DAY_NIGHT_BOTH_CARDS: ReadonlySet<string> = new Set<string>([
   'mdns/werewolf-by-night/release-the-beast',
   'nmut/warlock/analyze-planetary-rotation',
@@ -865,6 +882,14 @@ const COPY_POWERS_MARKER_PATTERN = /\[keyword:copy-powers\]/i;
 // gate — Step 1a/1b suppress it exactly as they do for size-changing / copy-powers / resolved
 // investigate. Non-global, stateless `.test`; case-insensitive to match the [keyword:X] casing.
 const REVEAL_FROM_HAND_MARKER_PATTERN = /\[keyword:reveal-from-hand\]/i;
+
+// why: WP-843 / D-24777 — detects a reveal-or-gain-wound line (co2e Crazed Rampage: "Each
+// player reveals another [hc:strength] Hero or gains a Wound."). The reveal-from-hand resolver
+// also reads this marker's criterion, so the co-located [hc:X] / [team:X] is a reveal
+// CRITERION, not a heroClassMatch / requiresTeam play-gate — the existing Step 1a / 1b
+// suppression drops it with no new flag (the D-24470 / D-24530 family). Non-global, stateless
+// `.test`; case-insensitive to match the [keyword:X] casing.
+const REVEAL_OR_GAIN_WOUND_EACH_MARKER_PATTERN = /\[keyword:reveal-or-gain-wound-each\]/i;
 
 // why: WP-659 / D-24470 — the first [hc:X] / [team:X] token on a reveal-from-hand line is the
 // reveal criterion. Two dedicated stateless patterns (mirroring the investigate clause
@@ -1152,6 +1177,10 @@ function parseAbilityText(
   // the reveal-from-hand / investigate criterion suppression). The engine's koTeamFilter enforces
   // the S.H.I.E.L.D.-only KO target at resolve time; the setup gate must not also block the play.
   const lineHasOptionalKoShieldOfficer = abilityText.includes('[keyword:optional-ko-shield-officer]');
+  // why: WP-826 / D-24759 — likewise on a Mobilize for War line ([keyword:ko-up-to-shield-hand-discard])
+  // the `[team:shield]` names the KO TARGET ("KO up to two [team:shield] Heroes"), not a play-gate; the
+  // entry's koTeamFilter enforces it at resolve time, so Step 1b emits no requiresTeam gate for it.
+  const lineHasKoUpToShield = abilityText.includes('[keyword:ko-up-to-shield-hand-discard:');
   // why: D-24530 — on a Pure Fury line ([keyword:pure-fury]) the co-located `[team:shield]`
   // describes WHICH Heroes to count in the KO pile ("less than the number of [team:shield]
   // Heroes in the KO pile"), NOT a requiresTeam play-gate. Suppress it from Step 1b so the
@@ -1243,7 +1272,7 @@ function parseAbilityText(
       // why: WP-535 fix-forward — on a copy-powers line the [hc:X] is the DESCRIPTIVE class
       // ("This card is both [hc:covert] and the color you copy"), NOT a play gate. Covert is
       // already the card's printed heroClass (cardTraits), and the copied class is granted at
-      // runtime by heroEffectCopyPowers → cardSizeChangingClasses; emit NO heroClassMatch
+      // runtime by heroEffectCopyPowers → cardCopiedClasses; emit NO heroClassMatch
       // condition so the copy always fires (mirrors the size-changing exclusion above). Not
       // pushed to the grant list either — covert is already printed, so a grant is redundant.
     } else if (lineHasResolvedInvestigate) {
@@ -1306,7 +1335,7 @@ function parseAbilityText(
     // why: D-24628 — likewise a [team:X] in the body after an explicit leading gate prefix is
     // descriptive (see leadingGatePrefixLength), so emit NO requiresTeam gate for it.
     const isBodyTokenAfterGatePrefix = leadingGatePrefixLength > 0 && teamMatch.index >= leadingGatePrefixLength;
-    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasPureFury && !lineHasRevealTraitCriterion && !isBodyTokenAfterGatePrefix) {
+    if (!lineHasResolvedInvestigate && !lineHasRevealFromHand && !lineHasOptionalKoShieldOfficer && !lineHasKoUpToShield && !lineHasPureFury && !lineHasRevealTraitCriterion && !isBodyTokenAfterGatePrefix) {
       teamConditions.push({
         type: 'requiresTeam',
         value: normalizeTraitSlug(teamMatch[1]!),
@@ -1317,7 +1346,14 @@ function parseAbilityText(
 
   // Condition emission order: all heroClassMatch first, then requiresTeam
   // (deterministic, independent of markup position in text).
-  const conditions: HeroCondition[] = [...heroClassConditions, ...teamConditions];
+  // why: D-24563 — a repeated icon in the leading gate prefix ("[hc:ranged][hc:ranged]:") becomes
+  // ONE condition carrying requiredMatches. The collapse runs here, before the Empowered param
+  // splices below, so a splice can never remove a collapsed prefix gate.
+  const conditions: HeroCondition[] = collapseLeadingRepeatedIconConditions(
+    leadingGatePrefixMatch?.[0] ?? '',
+    [...heroClassConditions, ...teamConditions],
+  );
+  applyAnotherTeamHeroCostFloor(abilityText, conditions);
 
   // Pre-pass: resolve the choose-one Empowered form before the KEYWORD_PATTERN loop.
   // why: D-24063 — the choose-one line must produce ONE composition for the whole line;
@@ -1448,6 +1484,18 @@ function parseAbilityText(
         keywords.push('reveal-from-hand');
       } else {
         unresolvedMarkers.push('reveal-from-hand');
+      }
+    } else if (normalizedKeyword === 'reveal-or-gain-wound-each') {
+      // why: WP-843 / D-24777 — reveal-or-gain-wound-each IS a HeroKeyword, but its keyword +
+      // effect are recorded ONLY when the co-located [hc:X]/[team:X] criterion resolves (the
+      // shared reveal-from-hand resolver). A marker with no class/team token records the
+      // keyword as an unresolved marker so the line stays an honest hollow — the Honest-Partial
+      // Invariant (mirrors the reveal-from-hand branch above). Checked BEFORE isValidHeroKeyword
+      // so the generic push does not fire for it.
+      if (revealFromHandCriterion !== undefined) {
+        keywords.push('reveal-or-gain-wound-each');
+      } else {
+        unresolvedMarkers.push('reveal-or-gain-wound-each');
       }
     } else if (normalizedKeyword === 'transform') {
       // why: WP-658 / D-24469 — transform IS a HeroKeyword, but its keyword +
@@ -1787,6 +1835,15 @@ function parseAbilityText(
   // skips the D-24623 unmatched-slug fallback, so no unresolved slug is recorded.
   if (OUT_OF_TIME_LINE_PATTERN.test(abilityText) && !keywords.includes('out-of-time')) {
     keywords.push('out-of-time');
+  }
+  // why: D-24746 — "If you played at least N other cards this turn" gates the line's grant on a
+  // playedThisTurn snapshot condition read as the card resolves. The threshold is N + 1: the
+  // played card is already in inPlay when executeHeroEffects evaluates its gate, and
+  // playedThisTurn counts every played card (itself included), so N OTHER cards is N + 1 played.
+  const playedOtherCardsMatch = PLAYED_OTHER_CARDS_THRESHOLD_PATTERN.exec(abilityText);
+  if (playedOtherCardsMatch !== null) {
+    const otherCardsRequired = parseInt(playedOtherCardsMatch[1]!, 10);
+    conditions.push({ type: 'playedThisTurn', value: String(otherCardsRequired + 1) });
   }
 
   // Step 2b: Extract icon-adjacent magnitudes for attack/recruit keywords.
@@ -2236,6 +2293,30 @@ function parseAbilityText(
     magnitudes.delete(optionalKoRewardType);
   }
 
+  // Icon-suppression (sibling): an attack-per-ko-this-way effect subsumes the printed attack
+  // icon on the same line. Mobilize for War's "[keyword:Savior]: For each card KO'd this way, you
+  // get +1[icon:attack]." would otherwise also emit a plain 'attack' effect (Steps 2b/3) granted
+  // once the Savior gate passes, with or without a KO. Drop it so only the per-KO reward remains.
+  // why: WP-826 / D-24759 — the per-KO reward subsumes the printed attack icon (mirrors the
+  // D-24398 optional-ko-reward suppression above).
+  let lineHasAttackPerKoThisWay = false;
+  for (const keyword of uniqueKeywords) {
+    if (keyword === 'attack-per-ko-this-way') {
+      lineHasAttackPerKoThisWay = true;
+      break;
+    }
+  }
+  if (lineHasAttackPerKoThisWay) {
+    const keywordsWithoutAttackIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack') {
+        keywordsWithoutAttackIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutAttackIcon;
+    magnitudes.delete('attack');
+  }
+
   // Icon-suppression (sibling): a ko-wound-reward effect whose reward is an icon
   // resource (attack/recruit) subsumes the printed reward icon on the same line.
   // Without this, Unstoppable Hulk's "You may KO a Wound ... If you do, you get
@@ -2534,6 +2615,13 @@ function parseAbilityText(
         // resolved (Step 2 Honest-Partial), so the guard is defensive.
         if (revealFromHandCriterion !== undefined) {
           effects.push({ type: 'reveal-from-hand', revealCriterion: revealFromHandCriterion });
+        }
+      } else if (keyword === 'reveal-or-gain-wound-each') {
+        // why: WP-843 / D-24777 — the reveal-or-gain-wound descriptor carries the same single
+        // reveal criterion (the reveal AVOIDS a Wound instead of earning a draw). The keyword is
+        // only present when the criterion resolved (Step 2 Honest-Partial), so the guard is defensive.
+        if (revealFromHandCriterion !== undefined) {
+          effects.push({ type: 'reveal-or-gain-wound-each', revealCriterion: revealFromHandCriterion });
         }
       } else if (magnitude !== undefined) {
         effects.push({ type: keyword, magnitude });
@@ -3117,6 +3205,73 @@ function tryResolveEmpoweredConditionalPrefix(
 }
 
 /**
+ * Counts how many times each [hc:X] / [team:X] token appears in a line's leading gate prefix
+ * (D-24563), keyed by the condition it emits ("heroClassMatch|ranged", "requiresTeam|shield").
+ *
+ * @param gatePrefix - The leading gate prefix text, or '' when the line has none.
+ * @returns The count of each prefix token, keyed by condition type and normalized value.
+ */
+function countLeadingPrefixIcons(gatePrefix: string): Map<string, number> {
+  const prefixCounts = new Map<string, number>();
+  // why: fresh RegExp instances, as Step 1a / 1b use — the shared /g pattern constants carry
+  // lastIndex between calls, so reusing them could skip a token.
+  for (const match of gatePrefix.matchAll(new RegExp(HERO_CLASS_PATTERN.source, 'g'))) {
+    const key = `heroClassMatch|${normalizeTraitSlug(match[1]!)}`;
+    prefixCounts.set(key, (prefixCounts.get(key) ?? 0) + 1);
+  }
+  for (const match of gatePrefix.matchAll(new RegExp(TEAM_PATTERN.source, 'g'))) {
+    const key = `requiresTeam|${normalizeTraitSlug(match[1]!)}`;
+    prefixCounts.set(key, (prefixCounts.get(key) ?? 0) + 1);
+  }
+  return prefixCounts;
+}
+
+/**
+ * Collapses a line's repeated leading-prefix icon conditions into one counted condition (D-24563).
+ *
+ * For each (type, value) the leading gate prefix repeats m ≥ 2 times, the first emitted matching
+ * condition gains `requiredMatches: m` and the next m − 1 emitted identical conditions are dropped.
+ * Further identical conditions (mid-sentence tokens D-24628 did not suppress) stay as plain
+ * conditions. When fewer than m were emitted (a suppression flag skipped them), they are left
+ * untouched; a condition is never synthesized. Survivors keep their relative order, and a line
+ * with no repeated prefix token comes back unchanged.
+ *
+ * // why: D-24563 — the prefix is the only source of multiplicity (the D-24628
+ * LEADING_GATE_PREFIX_PATTERN match, reused, not re-implemented). Mid-sentence repeats are prose,
+ * not gates: Arc Reactor's "[hc:tech]: … for each other[hc:tech] Hero" must keep needing one.
+ *
+ * @param gatePrefix - The line's leading gate prefix match, or '' when the line has none.
+ * @param conditions - The line's emitted conditions, in hook order.
+ * @returns The conditions with each repeated prefix icon collapsed to one counted condition.
+ */
+function collapseLeadingRepeatedIconConditions(gatePrefix: string, conditions: HeroCondition[]): HeroCondition[] {
+  const prefixCounts = countLeadingPrefixIcons(gatePrefix);
+  const emittedCounts = new Map<string, number>();
+  for (const condition of conditions) {
+    const key = `${condition.type}|${condition.value}`;
+    emittedCounts.set(key, (emittedCounts.get(key) ?? 0) + 1);
+  }
+  const collapsed: HeroCondition[] = [];
+  const seenCounts = new Map<string, number>();
+  for (const condition of conditions) {
+    const key = `${condition.type}|${condition.value}`;
+    const multiplicity = prefixCounts.get(key) ?? 0;
+    if (multiplicity < 2 || (emittedCounts.get(key) ?? 0) < multiplicity) {
+      collapsed.push(condition);
+      continue;
+    }
+    const seen = seenCounts.get(key) ?? 0;
+    seenCounts.set(key, seen + 1);
+    if (seen === 0) {
+      collapsed.push({ ...condition, requiredMatches: multiplicity });
+    } else if (seen >= multiplicity) {
+      collapsed.push(condition);
+    }
+  }
+  return collapsed;
+}
+
+/**
  * Finds the index of the first `heroClassMatch` condition whose value equals the given
  * NORMALIZED slug, or -1 when none matches. Used both to confirm the consumed Empowered
  * count param exists (detection) and to suppress exactly one occurrence of it (the caller),
@@ -3474,8 +3629,9 @@ function tryResolveEmpoweredDynamic(textAfterMarker: string): EffectNode | undef
 
 /**
  * Resolves the reveal-from-hand criterion from a full ability line, or undefined when the
- * line has no `[keyword:reveal-from-hand]` marker or carries no `[hc:X]` / `[team:X]` token
- * to read as the criterion (WP-659 / D-24470).
+ * line has no `[keyword:reveal-from-hand]` or `[keyword:reveal-or-gain-wound-each]` marker or
+ * carries no `[hc:X]` / `[team:X]` token to read as the criterion (WP-659 / D-24470;
+ * WP-843 / D-24777).
  *
  * The printed form is "Each player may reveal another [team:X]/[hc:X] Hero. …" — a SINGLE
  * criterion (not the OR-combined investigate list), so the resolver reads the first such
@@ -3488,7 +3644,13 @@ function tryResolveEmpoweredDynamic(textAfterMarker: string): EffectNode | undef
  * @returns The single reveal criterion, or undefined for a non-reveal-from-hand line.
  */
 function tryResolveRevealFromHandCriterion(abilityText: string): InvestigateCriterion | undefined {
-  if (!REVEAL_FROM_HAND_MARKER_PATTERN.test(abilityText)) {
+  // why: WP-843 / D-24777 — Crazed Rampage's "reveals another [hc:strength] Hero or gains a
+  // Wound" reads its criterion exactly as Psychic Link does, so accepting the marker here makes
+  // lineHasRevealFromHand true and the Step 1a / 1b suppression drop the spurious gate.
+  const hasRevealMarker =
+    REVEAL_FROM_HAND_MARKER_PATTERN.test(abilityText) ||
+    REVEAL_OR_GAIN_WOUND_EACH_MARKER_PATTERN.test(abilityText);
+  if (!hasRevealMarker) {
     return undefined;
   }
   const teamMatch = REVEAL_FROM_HAND_TEAM_PATTERN.exec(abilityText);
@@ -3783,6 +3945,35 @@ function deduplicateKeywords(keywords: HeroKeyword[]): HeroKeyword[] {
   return result;
 }
 
+/**
+ * Sets the printed cost floor on a line's "another [team:X] Hero that costs N or more" gate
+ * (WP-825 / D-24758).
+ *
+ * Finds the first requiresTeam condition naming the clause's team and sets its minimumCost to N
+ * when N is 1 or more. A line without the clause, or with N = 0, is left untouched. Mutates the
+ * freshly built conditions array in place (setup-time, before the hook is stored).
+ *
+ * @param abilityText - The ability line.
+ * @param conditions - The line's conditions, as built by Step 1 / 1b.
+ */
+function applyAnotherTeamHeroCostFloor(abilityText: string, conditions: HeroCondition[]): void {
+  const costFloorMatch = ANOTHER_TEAM_HERO_COST_FLOOR_PATTERN.exec(abilityText);
+  if (costFloorMatch === null) {
+    return;
+  }
+  const teamSlug = normalizeTraitSlug(costFloorMatch[1]!);
+  const minimumCost = parseInt(costFloorMatch[2]!, 10);
+  if (!Number.isInteger(minimumCost) || minimumCost < 1) {
+    return;
+  }
+  for (const condition of conditions) {
+    if (condition.type === 'requiresTeam' && condition.value === teamSlug) {
+      condition.minimumCost = minimumCost;
+      return;
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Hero slug extraction (same pattern as economy.logic.ts)
 // ---------------------------------------------------------------------------
@@ -3865,31 +4056,6 @@ export function isHeroAbilityRegistryReader(
 // at runtime.
 
 /**
- * Returns how many OTHER matching cards a Digest "Instead … both" line requires (WP-740 / D-24562).
- *
- * A doubled line such as "[team:venomverse][team:venomverse]" parses to repeated identical
- * conditions. The count is returned ONLY when there are more than one AND every condition equals
- * the first (same type + value). A single condition (the Core-4) or a mixed line such as
- * "[hc:X][hc:Y]" returns undefined, so the fused hook carries no bothConditionCount and keeps
- * today's any-one-other evaluation (D-24562 lock 5: mixed lines are out of scope).
- *
- * @param conditions - The "both" line's parsed conditions, in hook order.
- * @returns The repeat count (>= 2), or undefined when the line is single or mixed.
- */
-function countRepeatedBothCondition(conditions: HeroCondition[]): number | undefined {
-  const firstCondition = conditions[0];
-  if (firstCondition === undefined || conditions.length < 2) {
-    return undefined;
-  }
-  for (const condition of conditions) {
-    if (condition.type !== firstCondition.type || condition.value !== firstCondition.value) {
-      return undefined;
-    }
-  }
-  return conditions.length;
-}
-
-/**
  * Fuses an allowlisted Venomverse card's "Digest N / Indigestion" lines into one
  * digest-indigestion hook (WP-735 / D-24555).
  *
@@ -3938,24 +4104,17 @@ function buildDigestIndigestionFusion(
 
   // why: WP-735 / D-24555 — the "Instead … both" upgrade line, if present. Its single [hc:X]
   // condition (Core-4 uses [hc:strength] / [hc:instinct]) is the bothCondition.
-  // why: WP-740 / D-24562 — a DOUBLED "[team:X][team:X]" / "[hc:X][hc:X]" line (Play to the Crowd)
-  // parses to repeated identical conditions; per the rulebook's "Critical Hit" two-icon rule it
-  // needs that many OTHER matching cards, carried as bothConditionCount (see
-  // countRepeatedBothCondition). This replaces the earlier note that the double form belonged only
-  // to deferred cards.
+  // why: D-24563 — a DOUBLED "[team:X][team:X]" / "[hc:X][hc:X]" line (Play to the Crowd) now
+  // arrives from the parser as ONE condition carrying requiredMatches (the rulebook's "Critical
+  // Hit" rule: that many OTHER matching cards), so bothCondition = conditions[0] carries the count
+  // and the old WP-740 descriptor count field is retired.
   const bothIndex = abilityLines.findIndex(
     (line) => typeof line === 'string' && DIGEST_BOTH_LINE_PATTERN.test(line),
   );
   let bothCondition: HeroCondition | undefined;
-  let bothConditionCount: number | undefined;
   if (bothIndex !== -1) {
     consumedIndices.add(bothIndex);
-    const bothConditions = parseAbilityText(abilityLines[bothIndex]!).conditions;
-    const firstCondition = bothConditions[0];
-    if (firstCondition !== undefined) {
-      bothCondition = firstCondition;
-      bothConditionCount = countRepeatedBothCondition(bothConditions);
-    }
+    bothCondition = parseAbilityText(abilityLines[bothIndex]!).conditions[0];
   }
 
   const effect: HeroEffectDescriptor = { type: 'digest-indigestion', digestThreshold, digestEffects };
@@ -3964,9 +4123,6 @@ function buildDigestIndigestionFusion(
   }
   if (bothCondition !== undefined) {
     effect.bothCondition = bothCondition;
-  }
-  if (bothConditionCount !== undefined) {
-    effect.bothConditionCount = bothConditionCount;
   }
   const hook: HeroAbilityHook = {
     cardId,
@@ -4031,8 +4187,8 @@ function buildExcessiveViolenceFusion(
  *
  * Parses each branch line's inline effects via the shared parseAbilityText (the branch's own
  * day/night condition is discarded — the handler selects the branch), reads the upgrade line's
- * condition into bothCondition (+ bothConditionCount for a repeated token, e.g. Nanite's four
- * [team:x-men]), and returns the single fused hook plus the consumed line indices so the caller
+ * condition into bothCondition (a repeated token arrives as one condition carrying requiredMatches,
+ * e.g. Nanite's four [team:x-men] → 4, D-24563), and returns the single fused hook plus the consumed line indices so the caller
  * skips them. Returns undefined when the card lacks a Sunlight or Moonlight line (defensive —
  * every allowlisted card has both).
  *
@@ -4058,29 +4214,22 @@ function buildDayNightBothFusion(
   const consumedIndices = new Set<number>([sunlightIndex, moonlightIndex]);
 
   // why: WP-765 / D-24598 — the "Instead, you get both." upgrade line (the same detector the
-  // digest fusion uses). Its class/team tokens are the bothCondition; a repeated identical token
-  // needs that many OTHER matching cards (WP-740 / D-24562 countRepeatedBothCondition).
+  // digest fusion uses). Its class/team tokens are the bothCondition.
+  // why: D-24563 — a repeated identical token (Nanite's four [team:x-men]) arrives from the parser
+  // as ONE condition carrying requiredMatches, so bothCondition = conditions[0] carries the count;
+  // the old WP-740 descriptor count field is retired.
   const bothIndex = abilityLines.findIndex(
     (line) => typeof line === 'string' && DIGEST_BOTH_LINE_PATTERN.test(line),
   );
   let bothCondition: HeroCondition | undefined;
-  let bothConditionCount: number | undefined;
   if (bothIndex !== -1) {
     consumedIndices.add(bothIndex);
-    const bothConditions = parseAbilityText(abilityLines[bothIndex]!).conditions;
-    const firstCondition = bothConditions[0];
-    if (firstCondition !== undefined) {
-      bothCondition = firstCondition;
-      bothConditionCount = countRepeatedBothCondition(bothConditions);
-    }
+    bothCondition = parseAbilityText(abilityLines[bothIndex]!).conditions[0];
   }
 
   const effect: HeroEffectDescriptor = { type: 'day-night-both', sunlightEffects, moonlightEffects };
   if (bothCondition !== undefined) {
     effect.bothCondition = bothCondition;
-  }
-  if (bothConditionCount !== undefined) {
-    effect.bothConditionCount = bothConditionCount;
   }
   const hook: HeroAbilityHook = {
     cardId,

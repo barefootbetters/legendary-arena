@@ -15,7 +15,7 @@ related:
   - sound-effects.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\visual-effects-design-ancestry.md (this page — https://ewiki.legendary-arena.com/visual-effects-design-ancestry/)
+  - C:\dev\legendary-arena\wiki\visual-effects-design-ancestry.md (this page — https://ewiki.legendary-arena.com/visual-effects-design-ancestry/)
   - ../apps/arena-client/src/vfx/comboVfxManifest.ts
   - ../apps/arena-client/src/components/play/VfxOverlay.vue
   - ../apps/arena-client/src/composables/useVillainSlashVfx.ts

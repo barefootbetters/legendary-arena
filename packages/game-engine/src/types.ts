@@ -64,15 +64,24 @@ export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 // why: WP-513 / D-24324 — a converted card's "counts-as" villain identity, kept
 // as a scheme-runtime overlay (G.convertedVillainOrigins), distinct from the
 // card's RevealedCardType. 'killbot' (Killbots, WP-513); 'skrull' (Secret Invasion,
-// WP-514 / D-24326 — 12 Heroes shuffled into the Villain Deck count as Skrull villains).
+// WP-514 / D-24326 — 12 Heroes shuffled into the Villain Deck count as Skrull villains);
+// 'shield-officer' (Brainwash the Military, WP-823 / D-24756 — 12 S.H.I.E.L.D. Officers
+// in the Villain Deck are Villains, gained as a Hero on defeat).
 /** Converted-card villain origin — the named villain group a card "counts as". */
-export type ConvertedVillainOrigin = 'killbot' | 'skrull';
+export type ConvertedVillainOrigin = 'killbot' | 'skrull' | 'shield-officer';
 
 // why: WP-513 / D-24325 — Killbots' "number of Twists next to this Scheme" counter
 // key (G.counters). Seeded 3 at setup, +1 per Killbots twist; a Killbot's attack
 // equals this value. A plain counter key (not an endgame condition).
 /** G.counters key for Killbots' "twists next to this Scheme" (drives Killbot attack). */
 export const KILLBOT_TWISTS_NEXT_TO_SCHEME = 'killbotTwistsNextToScheme';
+
+// why: WP-823 / D-24756 — Brainwash the Military's "Traitor Battalion", the Twists
+// stacked next to the Scheme. Never seeded (reads `?? 0`), +1 per Twist 1-6; an
+// Officer's Attack is 3 plus this value, and the twist resolver numbers each Twist
+// from it (the stack position, which schemeTwistCount does not track). A plain counter.
+/** G.counters key for Brainwash the Military's Traitor Battalion (Twists stacked next to the Scheme). */
+export const TRAITOR_BATTALION_TWISTS = 'traitorBattalionTwists';
 
 // why: WP-539 / D-24348 — Portals-specific counter, one per Dark Portal placed
 // (mirrors KILLBOT_TWISTS_NEXT_TO_SCHEME). Twist 1 places the Mastermind portal;
@@ -199,6 +208,7 @@ export type {
   VillainEffectKeyword,
   VillainDefeatRequirement,
   VillainDefeatRequirementKind,
+  VillainFightDiscardCost,
 } from './rules/villainAbility.types.js';
 export {
   VILLAIN_ABILITY_TIMINGS,
@@ -412,10 +422,18 @@ import type { HeroAbilityHook } from './rules/heroAbility.types.js';
 // HeroKeyword union (the reward dispatched on KO).
 import type { HeroKeyword } from './rules/heroKeywords.js';
 import type {
+  GreyHeroFilter,
   VillainAbilityHook,
   VillainDefeatRequirement,
+  VillainFightDiscardCost,
 } from './rules/villainAbility.types.js';
-import type { NotableGameEvent } from './events/notableEvents.types.js';
+import type { NotableGameEvent, StrikeBlockThreatKind } from './events/notableEvents.types.js';
+// why: WP-815 / D-24747 — G.cardAbomination values are the closed AbominationKind
+// union, which lives beside its consumers (the heroKeywords.js precedent).
+import type { AbominationKind } from './economy/abomination.logic.js';
+// why: WP-841 / D-24774 — the variable-Attack entry type lives beside its only
+// reader, the fight-cost term (the AbominationKind precedent).
+import type { VillainVariableAttack } from './economy/villainVariableAttack.logic.js';
 // why: WP-257 / D-24034 — GameDiagnostics is the runtime-only hollow-effect
 // channel shape (plain JSON; never persisted, never gameplay input).
 import type { GameDiagnostics } from './diagnostics/hollowEffect.types.js';
@@ -519,6 +537,11 @@ export interface PendingKoHeroChoice {
   // prompt, the resolve move, and the bot default follow the printed zone.
   // Additive + append-only (D-24034); a bare entry omits it.
   zones?: readonly ('hand' | 'discard' | 'inPlay')[];
+  // why: WP-836 / D-24769 — an OPTIONAL grey-Hero filter on the KO (co2e Destroyer's
+  // "KOs a non-grey Hero from their discard pile" parks `'non-grey'`). ABSENT means no
+  // filter, so every other entry is byte-identical. The resolve move, the projection
+  // and the bot default all test it with `matchesGreyHeroFilter`.
+  greyFilter?: GreyHeroFilter;
 }
 
 /**
@@ -963,6 +986,13 @@ export interface PendingKoDiscardChoice {
    * names the card from G.cardDisplayData.
    */
   sourceCardId?: CardExtId;
+  /**
+   * An optional grey-Hero filter (WP-836 / D-24769): `'grey'` limits the KO to grey
+   * Heroes (co2e Destroyer / Frost Giant Warrior / Ymir "KO … grey Heroes from your
+   * discard pile"). Omit-when-absent, so Maniacal Tyrant's and Salomé's entries are
+   * byte-identical; the resolve, the projection and the bot default all test it.
+   */
+  greyFilter?: GreyHeroFilter;
 }
 
 /**
@@ -1201,8 +1231,8 @@ export interface PendingDrawOrEmpowered {
  * block-all guards).
  *
  * // why: D-24541 — the CHOICE is made by the active player (freeze-safe D-24284 scoping);
- * both resolved branches iterate EACH OTHER seat (Object.keys(G.playerZones).sort(), skipping
- * the active player). The pending entry records only the choosing player and the source card
+ * both resolved branches iterate EACH OTHER seat (clockwise from the active player, D-24780,
+ * skipping the active player). The pending entry records only the choosing player and the source card
  * (for log attribution) — non-active seats never choose (the discard branch auto-picks their
  * card deterministically, D-24284), so no per-seat data is stored.
  */
@@ -1344,6 +1374,16 @@ export interface SeatChoiceOption {
   // unique, so the atomic apply moves this exact card. Absent for every other kind. NOT
   // projected to the client.
   cardId?: CardExtId;
+  // why: WP-821 / D-24754 — for a 'dominate-the-weak-gain' option, recipientSeat names
+  // the player who gains the option's HQ Hero (cardId), so one option pairs the
+  // recipient with the Hero. Consumer-added, like cityIndex / cardId. Absent for every
+  // other kind. NOT projected to the client.
+  recipientSeat?: string;
+  // why: WP-821 / D-24754 — for a Crush Pacifist Resistance KO option, sourceZone names
+  // the zone the cardId is KO'd from, because S.H.I.E.L.D. starter ids repeat across the
+  // hand and the cards played this turn. Consumer-added. Absent for every other kind.
+  // NOT projected to the client.
+  sourceZone?: 'hand' | 'inPlay';
 }
 
 /**
@@ -1478,6 +1518,21 @@ export interface PendingTeleportReturn {
 }
 
 /**
+ * One owed "Purged from the Timestream" pick (WP-829 / D-24762).
+ *
+ * Appended by the `go-back-in-time` Scheme Twist resolver (Go Back in Time to Slay Heroes'
+ * Ancestors) and resolved by the play-phase onMove opener: Purged with no prompt when the HQ
+ * holds one Hero, else chosen through G.pendingSeatChoice (kind 'timestream-purge').
+ * Runtime-only; lazily created.
+ */
+export interface PendingTimestreamPurge {
+  /** The active player, who picks the HQ Hero to Purge. */
+  chooserPlayerID: string;
+  /** The Scheme Twist that owes the Purge. */
+  twistCardId: CardExtId;
+}
+
+/**
  * Pending reactive Diving-Block wound-interception entry (WP-682 / D-24499).
  *
  * Created at the `gainWoundForPlayer` chokepoint (checkDivingBlock) when a player
@@ -1499,11 +1554,47 @@ export interface PendingTeleportReturn {
  * initialized at the park site, never in Game.setup (so an untriggered match
  * leaves it undefined and the empty-replay hash oracles do not re-pin).
  */
+/**
+ * One owed "a Hero in your hand gains Man Out of Time this turn" grant (WP-828 / D-24761).
+ *
+ * Appended by the `grant-out-of-time` handler (Winter Soldier's 2>4, one entry per line that
+ * fires) and resolved front to back by the play-phase onMove opener: auto-granted when exactly
+ * one hand Hero is eligible, else chosen through G.pendingSeatChoice (kind 'out-of-time-grant').
+ * Runtime-only; lazily created and deleted at turn start.
+ */
+export interface PendingOutOfTimeGrant {
+  /** The player whose hand Hero gains Man Out of Time (the active player). */
+  playerID: string;
+  /** The card whose ability owes the grant. */
+  sourceCardId: CardExtId;
+}
+
 export interface PendingDivingBlockWound {
   /** The player who gained the Wound and holds Diving Block (may be non-active). */
   playerID: string;
   /** The just-gained Wound card (now in the player's discard pile) a reveal will undo. */
   woundCardId: CardExtId;
+}
+
+/**
+ * Pending reactive Flying-Shield-Block wound-interception entry (WP-827 / D-24760).
+ *
+ * Parked at the `gainWoundForPlayer` chokepoint (or by a declined Diving Block) when any seat
+ * holds a Flying Shield Block copy it can still reveal this turn ("Once per turn, if a player
+ * would gain a Wound, you may reveal this card and rescue a Bystander instead."). The Wound
+ * has ALREADY landed in the recipient's discard; a reveal returns it to the supply and the
+ * revealing seat rescues a Bystander. Drained one wave at a time through G.pendingSeatChoice
+ * (kind 'flying-shield-block'). Runtime-only; lazily initialized at the park site.
+ */
+export interface PendingFlyingShieldBlockWound {
+  /** The player who gained the Wound (may be non-active). */
+  recipientID: string;
+  /** The just-gained Wound card (now in the recipient's discard pile) a reveal will undo. */
+  woundCardId: CardExtId;
+  /** Seats that may still be asked to reveal, ascending; a decline removes that seat. */
+  candidateSeats: string[];
+  /** The seat the open wave asked about this Wound; set by the wave-opener, cleared on apply. */
+  addressedSeat?: string;
 }
 
 /**
@@ -1526,6 +1617,90 @@ export interface PendingEscapeProcedure {
   hasCarriedBystanders: boolean;
   /** Whether step 1 (the HQ KO) has been resolved or opened for this escape. */
   isHqKoResolved: boolean;
+}
+
+/**
+ * One owed Enigma Code peek offer (WP-830 / D-24763).
+ *
+ * The Unbreakable Enigma Code: "Whenever you fight a Villain, you may pay 1 [recruit] to look at
+ * one of the face-down Enigma Cards." Appended by fightVillain after a successful fight and opened
+ * by the play-phase onMove opener as the fighter's seat choice (kind 'enigma-peek'). `positions`
+ * is filled when the offer opens: option i looks at position `positions[i]` (the options carry no
+ * card id). Runtime-only; lazily created.
+ */
+export interface PendingEnigmaPeekOffer {
+  /** The fighter, who may pay to look. */
+  playerID: string;
+  /** The unseen positions the open offer lists, in option order. */
+  positions: number[];
+}
+
+/**
+ * An Escape-effect discard every player still owes (WP-817 / D-24750).
+ *
+ * Primus's Escape ("each player discards a Hero that costs 2, 3, 5, or 7") is a
+ * multi-seat choice, which the onEscape executor cannot park (it has no `events`).
+ * The handler records it here; the escape opener drains this FIFO after every owed
+ * escape procedure, one entry at a time, as an `escape-effect-cost-discard` seat
+ * choice. Runtime-only, never persisted; lazily initialized at the park site and
+ * deleted when it drains.
+ *
+ * WP-837 / D-24770 — Ambush-timed every-player trait discards (co2e Mystique, Frost
+ * Giant Warrior) ride the same FIFO with a `traitFilter` and `eligibleCosts: []`.
+ */
+export interface PendingEscapeEffectDiscard {
+  /** The Villain whose Escape or Ambush effect owes the discard. */
+  escapedCardId: CardExtId;
+  /** The costs an eligible Hero may have (strictly ascending). */
+  eligibleCosts: number[];
+  // why: D-24770 extends D-24750 point 9 to Ambush — one FIFO keeps rule order (an escape
+  // in the same reveal records first), and an entry without this field (Primus, or an
+  // in-flight state from before WP-837) routes to the cost builder exactly as before.
+  /** The Hero-trait filter of an every-player trait discard; absent on a cost discard. */
+  traitFilter?: PendingEffectDiscardTraitFilter;
+}
+
+/**
+ * The Hero-trait filter of an owed every-player discard (WP-837 / D-24770).
+ *
+ * `requireValue` is normalized (the `cardTraits` slug space). The two labels are log text
+ * set by the handler: the trait's display name and the timing label (`Ambush`).
+ */
+export interface PendingEffectDiscardTraitFilter {
+  /** The trait kind a discarded Hero must have. */
+  requireKind: 'team' | 'hero-class';
+  /** The normalized team or Hero Class slug. */
+  requireValue: string;
+  /** The trait's display label, e.g. `X-Men` or `Ranged`. */
+  requirementLabel: string;
+  /** The timing label of the effect that owes the discard, e.g. `Ambush`. */
+  effectLabel: string;
+  /** Whether a player may gain a Wound instead of discarding (Frost Giant Warrior). */
+  hasWoundAlternative: boolean;
+}
+
+/**
+ * One owed "reveal … or gain a Wound" choice for the players who could reveal (WP-845 /
+ * D-24779).
+ *
+ * Recorded by the villain primitive `reveal-or-wound` or the hero keyword
+ * `reveal-or-gain-wound-each` when at least one player holds a qualifying Hero; the players
+ * who cannot reveal gain their Wound inline. The play-phase opener parks the front entry as a
+ * `reveal-or-wound` seat choice and leaves it queued until the apply reads it and shifts it
+ * off. Runtime-only, never persisted; lazily initialized at the enqueue site and deleted when
+ * it drains.
+ */
+export interface PendingRevealOrWoundChoice {
+  /** The card whose effect owes the choice (the Villain or the played Hero). */
+  sourceCardId: CardExtId;
+  /** The turn's current player; only their Wound moves `turnEconomy.woundsDrawn`. */
+  currentPlayerID: string;
+  /** The label of option 0 (e.g. `Reveal a matching X-Men Hero`). */
+  revealOptionLabel: string;
+  /** The players who could reveal when the effect resolved, ascending. */
+  revealingSeats: string[];
+  /** The villain timing's shield-block class; absent for a hero source. */
+  strikeBlockThreatKind?: StrikeBlockThreatKind;
 }
 
 /**
@@ -2268,6 +2443,38 @@ export interface LegendaryGameState {
   // oracles from re-pinning. Absent (undefined) or empty [] both mean "no pending Wound".
   /** FIFO queue of pending reactive Diving-Block wound interceptions awaiting resolution (WP-682). */
   pendingDivingBlockWounds?: PendingDivingBlockWound[] | undefined;
+  // why: WP-827 / D-24760 — a Wound any seat may intercept with Captain America (Falcon)'s
+  // Flying Shield Block parks one entry here (checkFlyingShieldBlock), drained one wave at a
+  // time via G.pendingSeatChoice (kind 'flying-shield-block') after the Diving Block queue.
+  // Lazily initialized at the park site, never in Game.setup, so the hash oracles hold.
+  /** FIFO queue of pending reactive Flying-Shield-Block wound interceptions (WP-827). */
+  pendingFlyingShieldBlockWounds?: PendingFlyingShieldBlockWound[] | undefined;
+  // why: WP-827 / D-24760 — "Once per turn" per copy: a Flying Shield Block copy revealed this
+  // turn is recorded here and cannot be revealed again until the next turn. Lazily set on the
+  // first reveal and deleted at turn start (game.ts onBegin + applyOnBeginParity), so a match
+  // that never reveals one carries no field.
+  /** Flying Shield Block copies revealed this turn (WP-827). */
+  flyingShieldBlockUsedThisTurn?: CardExtId[] | undefined;
+  // why: WP-828 / D-24761 — each fired "a Hero in your hand gains Man Out of Time this turn"
+  // line owes one grant here, resolved by the play-phase onMove opener (auto or via
+  // G.pendingSeatChoice, kind 'out-of-time-grant'). Lazily created, deleted at turn start.
+  /** FIFO queue of owed Man Out of Time grants (WP-828). */
+  pendingOutOfTimeGrants?: PendingOutOfTimeGrant[] | undefined;
+  // why: WP-828 / D-24761 — hand Heroes granted Man Out of Time this turn; applyCardPlay sets
+  // one aside Out of Time after its abilities when it is played. Lazily created on the first
+  // grant and deleted at turn start (game.ts onBegin + applyOnBeginParity).
+  /** Card ids granted Man Out of Time this turn (WP-828). */
+  outOfTimeGrantedThisTurn?: CardExtId[] | undefined;
+  // why: WP-829 / D-24762 — each Go Back in Time Twist owes one Purge, resolved by the
+  // play-phase onMove opener (auto with one HQ Hero, else the active player's seat choice).
+  // Lazily created.
+  /** FIFO queue of owed "Purged from the Timestream" picks (WP-829). */
+  pendingTimestreamPurges?: PendingTimestreamPurge[] | undefined;
+  // why: WP-829 / D-24762 — the Heroes set next to the Scheme, "Purged from the Timestream".
+  // An HQ Hero sharing one's Hero Name is KO'd after each Purge and each move. Lazily created
+  // on the first Purge; never cleared during the match (the Purge is permanent).
+  /** Hero cards Purged from the Timestream, in Purge order (WP-829). */
+  purgedFromTimestream?: CardExtId[] | undefined;
   // why: WP-793 / D-24656 — every Villain escape records the rulebook HQ KO + Bystander
   // discard it owes; the play-phase turn.onMove escape opener drains the FIFO one entry at
   // a time through the WP-684 seat-choice capability (the Diving Block precedent). Optional
@@ -2277,6 +2484,37 @@ export interface LegendaryGameState {
   // not re-pin. Engine-internal: not projected to UIState.
   /** FIFO queue of escape procedures (HQ KO, Bystander discard) owed by escaped Villains (WP-793). */
   pendingEscapeProcedures?: PendingEscapeProcedure[] | undefined;
+  // why: WP-817 / D-24750 — Escape effects that need a multi-seat choice (Primus's
+  // cost-filtered every-player discard) are recorded here by the onEscape handler and
+  // opened by the same escape opener AFTER pendingEscapeProcedures drains. Optional,
+  // **lazily initialized at the park site, never in Game.setup**, and deleted when
+  // drained, so a match without Primus never creates it and the hash oracles do not
+  // re-pin. Engine-internal: not projected to UIState.
+  /** FIFO queue of Escape-effect discards every player still owes (WP-817). */
+  pendingEscapeEffectDiscards?: PendingEscapeEffectDiscard[] | undefined;
+  // why: WP-845 / D-24779 — the D-24750 lazy-queue shape: the villain executor has no
+  // `events`, so a "reveal … or gain a Wound" whose revealers may decline (rules v23
+  // L3196-3200) records them here, and the play-phase opener parks the seat choice after the
+  // move. **Lazily initialized at the enqueue site, never in Game.setup**, and deleted when
+  // drained, so a match where nobody could reveal never creates it. Engine-internal: not
+  // projected to UIState.
+  /** FIFO queue of owed reveal-or-gain-a-Wound choices (WP-845). */
+  pendingRevealOrWoundChoices?: PendingRevealOrWoundChoice[] | undefined;
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code. `enigmaCode` holds the face-down Enigma
+  // cards (Hero Deck cards put there by Twists 1-5) in their current order; `enigmaPeeks` the
+  // positions each player has looked at since the last mix; `isEnigmaCodeRevealed` is set by a right
+  // guess (every card shown to everyone until the next mix); `pendingEnigmaPeekOffers` the owed
+  // pay-1-Recruit peeks from Villain fights. All optional, **lazily initialized, never in
+  // Game.setup**, so a match without the scheme serializes byte-identically (hash oracles unmoved).
+  // The card ids reach a client only through the audience-filtered scheme.enigmaCode projection.
+  /** The face-down Enigma Code, in its current order (WP-830). */
+  enigmaCode?: CardExtId[] | undefined;
+  /** Per player: the Enigma positions they have looked at since the last mix (WP-830). */
+  enigmaPeeks?: Record<string, number[]> | undefined;
+  /** True after a right guess, until the next mix: every Enigma card is shown to everyone (WP-830). */
+  isEnigmaCodeRevealed?: boolean | undefined;
+  /** FIFO of owed Enigma peek offers from Villain fights (WP-830). */
+  pendingEnigmaPeekOffers?: PendingEnigmaPeekOffer[] | undefined;
   // why: WP-532 / D-24343 — the current (fighting) player's pending give-HQ-Hero pick
   // (Paibok Fight). Optional so existing test-state literals need no update; **lazily
   // initialized at the park site, never in Game.setup** — an undefined field is omitted
@@ -2288,8 +2526,8 @@ export interface LegendaryGameState {
   // Powers). Optional so existing test-state literals need no update; **lazily initialized
   // at the park site, never in Game.setup** — an undefined field is omitted from canonical
   // JSON, keeping the empty-replay PRE_WP080_HASH / hashGameState oracles from re-pinning.
-  // Absent (undefined) or empty [] both mean "no pending choice". The copied class reuses
-  // the EXISTING lazy cardSizeChangingClasses map (D-24074), so no second new G field.
+  // Absent (undefined) or empty [] both mean "no pending choice". The copied class lives
+  // in the lazy, turn-scoped cardCopiedClasses map (D-24730).
   /** FIFO queue of pending Copy Powers choices awaiting player resolution (WP-535). */
   pendingCopyPowersChoices?: PendingCopyPowersChoice[] | undefined;
 
@@ -2505,6 +2743,15 @@ export interface LegendaryGameState {
   /** Villain Deck setup size; absent unless the scheme loses on the Villain Deck. */
   schemeLossVillainDeckSetupSize?: number;
 
+  // why: D-24736 — Clash of the Monsters Unleashed's face-down "Monster Pit": the 8
+  // Monsters Unleashed Villains, split out of the shuffled villain deck at setup
+  // (top = index 0). Each Twist 3-10 sends the top card into the city; the Pit
+  // running out is half of the scheme's Evil Wins. Materialized LAZILY — only for
+  // Clash — so every other game's state hash is unchanged. Its cards keep their
+  // 'villain' entry in villainDeckCardTypes and every per-card setup snapshot.
+  /** The Monster Pit deck (CardExtIds); absent unless the scheme is Clash. */
+  monsterPit?: CardExtId[];
+
   // why: WP-568 / D-24377 — hero abilities whose NUMERIC-THRESHOLD gate failed at
   // play time and are waiting for the threshold to be reached later in the SAME
   // turn (Surge of Power's "if you made 8 or more recruit this turn"). Materialized
@@ -2575,13 +2822,25 @@ export interface LegendaryGameState {
   // play this card, it has the [Class] class"). A SECOND, static class source sibling
   // to cardTraits.heroClass — NOT a mutation of it. A card in inPlay is treated as
   // having class C iff C is its printed cardTraits[id].heroClass OR C ∈
-  // cardSizeChangingClasses[id]; the grant expires naturally when inPlay clears (no
-  // cleanup). Built from the parsed Size-Changing hooks AND written at runtime by
-  // Rogue's Copy Powers (D-24345 — the copy counts as the copied Hero's class); read
-  // via the sizeChanging.logic.ts helper, never mutated in place elsewhere. Additive
-  // optional / lazy: absent means no card grants a class.
-  /** Per-card Size-Changing / Copy-Powers granted Hero Classes. Setup + runtime-written; read via sizeChanging.logic.ts. */
+  // cardSizeChangingClasses[id]. A printed property, so the grant applies on every play
+  // and the map is never cleared. Built ONLY from the parsed Size-Changing hooks at
+  // setup (D-24730 moved the Copy Powers runtime grant to cardCopiedClasses, below);
+  // read via the sizeChanging.logic.ts helper. Additive optional: absent means no card
+  // grants a class.
+  /** Per-card Size-Changing granted Hero Classes. Setup-only; read via sizeChanging.logic.ts. */
   cardSizeChangingClasses?: Record<CardExtId, string[]>;
+
+  // why: D-24730 — per-card Copy-Powers copied Hero Classes ("This card is both Covert
+  // and the color you copy", D-24345). Unlike Size-Changing, the copied class belongs to
+  // ONE play of the card: written by applyCopyPowers, and the whole map is deleted at
+  // end-of-turn cleanup (applyEndOfTurnCleanup) along with cardCopiedTeams, so the next
+  // play of the same card instance starts clean. Kept apart from cardSizeChangingClasses
+  // because that map's setup grants must survive cleanup. Read through
+  // cardHasClassWhenPlayed, still the single effective-class source (D-24074).
+  // Lazy-materialized and omit-when-empty, so games without Copy Powers keep
+  // byte-identical finalStateHash / PRE_WP080_HASH.
+  /** Per-card Copy-Powers copied Hero Classes for this turn. Runtime-written by applyCopyPowers; cleared at turn cleanup. */
+  cardCopiedClasses?: Record<CardExtId, string[]>;
 
   // why: D-24391 / WP-582 — per-card Copy-Powers granted teams. Rogue's Copy Powers
   // is a full duplicate of the copied Hero, so the Copy Powers card counts as the
@@ -2590,10 +2849,11 @@ export interface LegendaryGameState {
   // having team T iff T is its printed cardTraits[id].team OR T ∈ cardCopiedTeams[id];
   // read via the effectiveTeams.logic.ts helper. Lazy-materialized (undefined by
   // default, created at the grant site in applyCopyPowers, never in Game.setup) and
-  // omit-when-empty — mirroring cardSizeChangingClasses — so non-Copy-Powers games
+  // omit-when-empty — mirroring cardCopiedClasses — so non-Copy-Powers games
   // keep byte-identical finalStateHash / PRE_WP080_HASH. Additive optional: absent
-  // means no card grants a team.
-  /** Per-card Copy-Powers granted teams. Runtime-written by applyCopyPowers; read via effectiveTeams.logic.ts. */
+  // means no card grants a team. D-24730: deleted at end-of-turn cleanup, so a copied
+  // team lasts for that one play of the card only.
+  /** Per-card Copy-Powers granted teams for this turn. Runtime-written by applyCopyPowers; cleared at turn cleanup. */
   cardCopiedTeams?: Record<CardExtId, string[]>;
 
   // why: D-24157 / WP-365 — printed victory points for VP-bearing cards (villains,
@@ -2662,6 +2922,26 @@ export interface LegendaryGameState {
   /** Per-villain defeat requirements. Built at setup, read-only; absent when none. */
   villainDefeatRequirements?: Record<CardExtId, VillainDefeatRequirement>;
 
+  // why: WP-817 / D-24750 — per-villain-instance fight discard cost ("To fight
+  // Primus, you must also discard a card that costs 2, 3, 5, or 7"). A sibling of
+  // villainDefeatRequirements: a fight precondition read by the fightVillain gate,
+  // getLegalMoves and the UIState City projection. Built once at setup from the
+  // [discard-to-fight:cost:<c>[+<c>…]] marker, keyed by copy-suffixed instance
+  // ext_id, never written by a move. OMITTED ENTIRELY when no marked villain is in
+  // the match, so every other match keeps a byte-identical G shape (determinism).
+  /** Per-villain fight discard costs. Built at setup, read-only; absent when none. */
+  villainFightDiscardCosts?: Record<CardExtId, VillainFightDiscardCost>;
+
+  // why: WP-841 / D-24774 — per-villain-instance variable-Attack passive (Baron
+  // Strucker, Paibok, Super-Skrull, Hydro-Man: "<Villain> gets +N Attack …"). Read by
+  // resolveFightCost only, which counts the City / Escape Pile / HQ at fight time.
+  // Built once at setup from the [variable-attack:<source>:<N>[@<spaces>]] marker,
+  // keyed by copy-suffixed instance ext_id, never written by a move. OMITTED ENTIRELY
+  // when no marked villain is in the match, so every other match keeps a
+  // byte-identical G (hash oracles).
+  /** Per-villain variable-Attack passives. Built at setup, read-only; absent when none. */
+  villainVariableAttack?: Record<CardExtId, VillainVariableAttack>;
+
   // why: WP-760 / D-24589 — per-villain-instance Blood Frenzy flag ("+1 Attack for
   // each different Victory Point value among the cards in your Victory Pile"; The
   // Fallen's Metarchus and Salomé). Read by resolveFightCost only. Built once at setup
@@ -2671,6 +2951,17 @@ export interface LegendaryGameState {
   // a cost modifier, not City-structural (patrol / ambush / guard).
   /** Blood Frenzy villain instances. Built at setup, read-only; absent when none. */
   villainBloodFrenzy?: Record<CardExtId, true>;
+
+  // why: WP-815 / D-24747 — per-card Abomination kind. Villain copies (Abomination /
+  // Double Abomination) are keyed by copy-suffixed instance ext_id; the Mastermind
+  // (Ultimate / Double Highest Abomination) by G.mastermind.baseCardId. Read only by
+  // resolveFightCost and resolveMastermindFightCost, which add the printed Attack of
+  // HQ Heroes at fight time. Built once at setup; OMITTED ENTIRELY when no selected
+  // card prints Abomination, so every other match keeps a byte-identical G (hash
+  // oracles). Not a BoardKeyword: Abomination is a cost modifier (the Blood Frenzy
+  // precedent).
+  /** Abomination kinds by card. Built at setup, read-only; absent when none. */
+  cardAbomination?: Record<CardExtId, AbominationKind>;
 
   // why: WP-200 — append-only structured event log emitted at four fire
   // sites (fightVillain.ts, villainDeck.reveal.ts ambush branch,

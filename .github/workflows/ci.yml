@@ -12,10 +12,84 @@ on:
   pull_request:
     branches: [main]
 
+# why: a push to a PR branch (a rebase, an amend, a fixup) makes the run still in
+# flight for the older head worthless, but it ran to the end and billed every job.
+# PR runs share one group per PR and the newer push cancels the older run. Pushes
+# to main and tag pushes group by commit SHA, which is unique, so they never queue
+# behind or cancel each other: every main commit still gets its own full run, and
+# deploy-server still sees each one complete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  # ── 0. Docs-only classifier ──────────────────────────────────────────────────
+  # why: most PRs touch only docs/ or wiki/ (62 of the 100 merged before
+  # 2026-10-19), yet each ran every job twice (the PR, then the main push), about
+  # 20 billed minutes a time. This job answers one question: did the change touch
+  # ONLY files under docs/ or wiki/? The jobs marked "skipped on docs-only" read
+  # neither tree; every job that does read them (Coverage & Ledger Gates, Dashboard
+  # Gates, Workspace Unit Tests, whose `pnpm -r build` runs the dashboard's docs
+  # and wiki-lint prebuilds) runs on every change. It is fail-closed: any API
+  # error, a truncated file list, a tag push or a new branch answers "false", and
+  # the skipped jobs gate on `!cancelled()` so they still run if this job fails.
+  # A job skipped by `if:` reports as passing to branch protection, which is what
+  # lets a required check (Server DB Tests, Typecheck Arena Client) skip on a
+  # docs-only change without leaving the PR waiting.
+  changes:
+    name: Detect docs-only change
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      docs_only: ${{ steps.classify.outputs.docs_only }}
+    steps:
+      - name: Classify changed paths
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          docs_only=false
+          files=""
+          listed=0
+          limit=0
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            # why: the PR files endpoint lists at most 3000 files; a list that long may be truncated.
+            files=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files" --jq '.[].filename') && listed=1
+            limit=3000
+          elif [ "$REF" = "refs/heads/main" ] && ! [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            # why: the compare endpoint lists at most 300 files; a list that long may be truncated.
+            files=$(gh api "repos/$REPO/compare/$BEFORE_SHA...$HEAD_SHA" --jq '.files[].filename') && listed=1
+            limit=300
+          fi
+          count=$(grep -c . <<< "$files" || true)
+          if [ "$listed" = 1 ] && [ "$count" -gt 0 ] && [ "$count" -lt "$limit" ]; then
+            # why: captured, not piped into `grep -q` — under pipefail an early-exiting
+            # grep -q can SIGPIPE the producer, and a negated failing pipeline would
+            # wrongly answer "docs-only".
+            non_docs_files=$(grep -v -E '^(docs|wiki)/' <<< "$files" || true)
+            if [ -z "$non_docs_files" ]; then
+              docs_only=true
+            fi
+          fi
+          echo "Changed files listed: $count. Docs-only: $docs_only."
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+
   # ── 1. Validate card data ───────────────────────────────────────────────────
   validate:
     name: Validate Registry
+    needs: changes
+    # why: skipped on a docs-only change (see the changes job); runs if the classifier failed.
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -112,6 +186,9 @@ jobs:
   # built first, and build-viewer only provides the registry dist.
   typecheck-arena-client:
     name: Typecheck Arena Client
+    needs: changes
+    # why: skipped on a docs-only change (see the changes job); runs if the classifier failed.
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -373,6 +450,9 @@ jobs:
   # the registry chain.
   lagn-schema-drift:
     name: LAGN Schema Drift Guard
+    needs: changes
+    # why: skipped on a docs-only change (see the changes job); runs if the classifier failed.
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -433,6 +513,9 @@ jobs:
   # and cannot be probed unauthenticated; dashboard's coverage is build-time only.
   spa-assets:
     name: SPA Asset Masking
+    needs: changes
+    # why: skipped on a docs-only change (see the changes job); runs if the classifier failed.
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -544,6 +627,9 @@ jobs:
   # branch-protection required-status-checks list, so a red DB suite now blocks merge.
   server-db-tests:
     name: Server DB Tests
+    needs: changes
+    # why: skipped on a docs-only change (see the changes job); runs if the classifier failed.
+    if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' }}
     runs-on: ubuntu-latest
     # why: the server suite runs ~5 min against a DB; cap it so a leaked handle turns
     # into a quick red X instead of inheriting GitHub's 6-hour default (the unit-tests

@@ -18,6 +18,8 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CardTraitEntry } from '../state/cardTraits.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
+import type { GreyHeroFilter } from '../rules/villainAbility.types.js';
+import { BYSTANDER_EXT_ID, SIDEKICK_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /**
  * Splits an instance ext_id into its copy-agnostic base key and its `#copyIndex` suffix.
@@ -155,6 +157,57 @@ export function offPlayCardStats(G: LegendaryGameState, cardId: string): CardSta
 }
 
 /**
+ * Returns true when a card in a player zone is a grey Hero (WP-836 / D-24769).
+ *
+ * A grey Hero is a Hero with no Hero Class: the synthetic S.H.I.E.L.D. Agent / Trooper /
+ * Officer and Sidekick cards (no G.cardTraits entry) and any registry Hero printed without a
+ * class. A Wound and a Bystander are not Heroes, so they are never grey.
+ *
+ * @param G - The game state (reads G.cardTraits and the split-face map).
+ * @param cardId - The card instance ext_id, in a zone other than inPlay.
+ * @returns True when the card is a grey Hero.
+ */
+export function isGreyHero(G: LegendaryGameState, cardId: string): boolean {
+  if (cardId === WOUND_EXT_ID || cardId === BYSTANDER_EXT_ID) {
+    return false;
+  }
+  // why: rules v23 L1487-1492 — "grey Heroes" are the cards with no Hero Class (S.H.I.E.L.D.
+  // Agents, Troopers, Officers, Sidekicks); L3404-3407 — Wounds have no color, "not even grey".
+  // The off-play view is read so a split card counts as its faces' classes (never grey).
+  const traits = offPlayCardTraits(G, cardId);
+  if (traits === undefined) {
+    return true;
+  }
+  const hasHeroClass = typeof traits.heroClass === 'string' && traits.heroClass !== '';
+  const hasHeroClass2 = typeof traits.heroClass2 === 'string' && traits.heroClass2 !== '';
+  return !hasHeroClass && !hasHeroClass2;
+}
+
+/**
+ * Returns true when a card in a player zone passes a grey-Hero filter (WP-836 / D-24769).
+ *
+ * A Wound and a Bystander fail both filters: they are not Heroes.
+ *
+ * @param G - The game state (reads G.cardTraits and the split-face map).
+ * @param cardId - The card instance ext_id, in a zone other than inPlay.
+ * @param greyFilter - `'grey'` accepts grey Heroes; `'non-grey'` accepts Heroes with a class.
+ * @returns True when the card passes the filter.
+ */
+export function matchesGreyHeroFilter(
+  G: LegendaryGameState,
+  cardId: string,
+  greyFilter: GreyHeroFilter,
+): boolean {
+  if (cardId === WOUND_EXT_ID || cardId === BYSTANDER_EXT_ID) {
+    return false;
+  }
+  if (greyFilter === 'grey') {
+    return isGreyHero(G, cardId);
+  }
+  return !isGreyHero(G, cardId);
+}
+
+/**
  * Returns the "cards played this turn" view of an inPlay zone (WP-780 / D-24619), extended
  * with the cards that went Out of Time or returned from it this turn (WP-803 / D-24692).
  *
@@ -173,6 +226,17 @@ export function offPlayCardStats(G: LegendaryGameState, cardId: string): CardSta
  */
 export function playedCardIdsThisTurn(G: LegendaryGameState, inPlay: readonly CardExtId[]): CardExtId[] {
   const played = playedCardIdsStillInPlay(G, inPlay);
+  // why: WP-842 / D-24776 — rules v23 "You still 'played' that Sidekick": a played Sidekick
+  // returned to the Sidekick Stack left inPlay, so the turn count supplies it. A COUNT (not an
+  // id ledger) because every Sidekick token shares one id, so these appends are never
+  // de-duplicated among themselves. Placed BEFORE the Out of Time loop so a Sidekick replayed
+  // from Out of Time and then returned (in both histories) is absorbed by that loop's
+  // `includes` and counts once. Accepted residual (D-24776): two Sidekicks in one turn, one set
+  // aside by a granted Out of Time, also collapse to one.
+  const sidekicksReturned = G.turnEconomy?.sidekicksReturnedThisTurn ?? 0;
+  for (let i = 0; i < sidekicksReturned; i++) {
+    played.push(SIDEKICK_EXT_ID);
+  }
   // why: WP-803 / D-24692 — rules v23 L1682 ("You 'played' a Man Out of Time card on both the
   // first turn you played it and the second turn when you replayed it") + L3441-3453 (a card
   // you played that moved elsewhere still counts as "cards you played this turn"). The card

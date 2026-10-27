@@ -14,7 +14,7 @@ related:
   - villain-deck.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\seed-challenges.md (this page — https://ewiki.legendary-arena.com/seed-challenges/)
+  - C:\dev\legendary-arena\wiki\seed-challenges.md (this page — https://ewiki.legendary-arena.com/seed-challenges/)
   - ../docs/ai/DESIGN-SEED-CHALLENGES.md
   - ../docs/ai/DESIGN-RANKING.md
   - ../docs/ai/DECISIONS.md
@@ -161,10 +161,10 @@ few refills) as a *curation* criterion, with no rules change — see
   client-supplied score or board state (D-5301). This is the same trust root
   the PAR-scored boards use; see the competitive-integrity discussion in
   [`DESIGN-SEED-CHALLENGES.md`](../docs/ai/DESIGN-SEED-CHALLENGES.md) §2.
-- **Not yet built.** No caller-specified seed exists at match creation today
-  (boardgame.io mints a `Date.now()` seed and exposes no create-time seed
-  API), `competitive_scores` has no seed column, and there is no curated-seed
-  source. See [Open Questions](#open-questions) and the design doc's
+- **Not yet built.** No caller-specified seed exists at match creation today:
+  the server mints each match's seed from `crypto.randomBytes` and hides it,
+  and nothing yet lets a caller choose one. `competitive_scores` has no seed
+  column, and there is no curated-seed source. See [Open Questions](#open-questions) and the design doc's
   built-vs-missing section.
 
 ## Open Questions
@@ -188,7 +188,7 @@ Each item is unresolved until the design is drafted for execution; see
   historical boards when either changes.
 - **Seed rotation** — how far ahead to vet, rotation cadence, and whether the
   daily seed is announced or a surprise.
-- **Plumbing** — the custom random plugin, the create-proxy seed injection
+- **Plumbing** — a create path that pins the seed over the server's game object, the create-proxy seed injection
   ([`matchGate.routes.ts`](../apps/server/src/match/matchGate.routes.ts)), the
   additive `seed_key` column, and the curated-seed source, none of which exist
   yet.

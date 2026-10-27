@@ -49,6 +49,10 @@ export function describeCountSource(countSource: string): string {
       return 'other Covert Hero played this turn';
     case 'x-men-played-this-turn':
       return 'other X-Men Hero played this turn';
+    case 'extra-cards-drawn-this-turn':
+      return 'extra card drawn this turn';
+    case 'shield-heroes-cost-one-plus-played-this-turn':
+      return 'other S.H.I.E.L.D. Hero costing 1 or more played this turn';
     default:
       return countSource.replace(/-/g, ' ');
   }

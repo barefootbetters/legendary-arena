@@ -69,6 +69,17 @@ export default defineComponent({
       required: false,
       default: () => [],
     },
+    /**
+     * WP-817 / D-24750 — the hand cards that would pay a City villain's fight
+     * discard cost (Primus), from `fightDiscardEligibleCardIds`. Each listed card
+     * gets a "Discard" tag so the player knows to hold it back. Display only;
+     * the fight itself is chosen from the City row.
+     */
+    discardEligibleCardIds: {
+      type: Array as PropType<readonly CardExtId[]>,
+      required: false,
+      default: () => [],
+    },
   },
   setup(props) {
     // why: a Wound (WOUND_EXT_ID) carries no play value and CANNOT be played
@@ -96,6 +107,10 @@ export default defineComponent({
 
     function onPhase(cardId: string): void {
       props.submitMove('phaseCard', { cardId });
+    }
+
+    function isDiscardEligible(cardId: string): boolean {
+      return props.discardEligibleCardIds.includes(cardId);
     }
 
     function buttonReason(cardId: string): string | null {
@@ -200,6 +215,7 @@ export default defineComponent({
       onPlay,
       isPhasable,
       onPhase,
+      isDiscardEligible,
       buttonReason,
       buttonDisabled,
       displayName,
@@ -276,6 +292,15 @@ export default defineComponent({
         >
           Phase
         </button>
+        <!-- why: WP-817 / D-24750 — marks a card that would pay a City villain's
+             fight discard cost (Primus). Outside the play button so it never
+             changes the play click; pointer-events: none lets clicks through. -->
+        <span
+          v-if="isDiscardEligible(cardId)"
+          class="hand-card__discard-eligible"
+          data-testid="play-hand-discard-eligible"
+          :data-card-id="cardId"
+        >Discard</span>
       </li>
     </ul>
   </section>
@@ -372,6 +397,28 @@ export default defineComponent({
 .hand-card .hand-card__phase:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 1px;
+}
+
+/* why: WP-817 / D-24750 — the "Discard" tag on a card that would pay a City
+   villain's fight discard cost. Top-LEFT, for the same reason as the Phase
+   button (a tightened fan covers only the right part of a card), and clear of
+   CardTile's top-right cost badge. Dark pill with the cost gold, so it reads as
+   tied to the card's cost. */
+.hand-card__discard-eligible {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 1;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid #ffd700;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffd700;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* why: WP-783 — mirror the hover lift for keyboard focus, so a focused Phase

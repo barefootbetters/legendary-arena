@@ -15,7 +15,7 @@ related:
   - newsletter-authoring.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\brevo-email-pipeline.md (this page — https://ewiki.legendary-arena.com/brevo-email-pipeline/)
+  - C:\dev\legendary-arena\wiki\brevo-email-pipeline.md (this page — https://ewiki.legendary-arena.com/brevo-email-pipeline/)
   - C:\www\legendary-arena-com\docs\brevo\email-automation.md
   - C:\www\legendary-arena-com\docs\brevo\newsletter-template.md
   - C:\www\legendary-arena-com\docs\brand\strategy.md
@@ -27,9 +27,9 @@ last-reviewed: 2026-06-17
 
 | Repo | Base URL (local) | Site |
 |---|---|---|
-| Engine | `C:\pcloud\BB\DEV\legendary-arena\` | `ewiki.legendary-arena.com` |
+| Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
-| Research / Notes | `C:\pcloud\LA\ewiki\` | (not published) |
+| Research / Notes | `C:\pcloud\legendary-arena\ewiki\` | (not published) |
 
 ### Where files are drafted and where they get published
 
@@ -49,8 +49,8 @@ committing:
 | Brand tokens CSS | Marketing | `C:\www\legendary-arena-com\static\brand-tokens.css` |
 | Newsletter drafts | Marketing | `C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\` |
 | QA log | Marketing | `C:\www\legendary-arena-com\docs\brevo\newsletter-drafts\qa-log.md` |
-| This wiki page | Engine | `C:\pcloud\BB\DEV\legendary-arena\wiki\brevo-email-pipeline.md` |
-| Screenshots for this page | Engine | `C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\` |
+| This wiki page | Engine | `C:\dev\legendary-arena\wiki\brevo-email-pipeline.md` |
+| Screenshots for this page | Engine | `C:\dev\legendary-arena\ewiki\brevo-email-pipeline\` |
 
 **Published locations** — where files end up after `git push` and
 deploy:
@@ -70,14 +70,14 @@ The two sites have separate image directories:
 
 | Site | Save images to | Hugo serves them at |
 |---|---|---|
-| `ewiki.legendary-arena.com` | `C:\pcloud\BB\DEV\legendary-arena\ewiki\` | `/<page-slug>/` |
+| `ewiki.legendary-arena.com` | `C:\dev\legendary-arena\ewiki\` | `/<page-slug>/` |
 | `www.legendary-arena.com` | `C:\www\legendary-arena-com\static\images\` | `/images/` |
 
 **How it works:** Each wiki page gets its own asset subdirectory
-under `C:\pcloud\BB\DEV\legendary-arena\ewiki\`, named by the page's
+under `C:\dev\legendary-arena\ewiki\`, named by the page's
 slug. At build time the projection script copies each slug directory
 `ewiki/<slug>/` to
-`C:\pcloud\BB\DEV\legendary-arena\apps\wiki-viewer\static\<slug>\` —
+`C:\dev\legendary-arena\apps\wiki-viewer\static\<slug>\` —
 **not** into a nested `static\ewiki\`. Hugo then copies `static/` into
 the build output directory (`public/`) as-is, which is why the served
 path is `/<slug>/<file>` and not `/ewiki/<slug>/<file>`. Slug
@@ -85,7 +85,7 @@ directories are removed and re-copied on each run; other contents of
 `static/` are left alone.
 
 Example: a file saved at
-`C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\brevo-welcome-workflow.png`
+`C:\dev\legendary-arena\ewiki\brevo-email-pipeline\brevo-welcome-workflow.png`
 becomes
 `https://ewiki.legendary-arena.com/brevo-email-pipeline/brevo-welcome-workflow.png`
 after deploy.
@@ -93,7 +93,7 @@ after deploy.
 Directory layout:
 
 ```
-C:\pcloud\BB\DEV\legendary-arena\ewiki\
+C:\dev\legendary-arena\ewiki\
   brevo-email-pipeline\
     brevo-welcome-workflow.png
     brevo-campaign-setup.png
@@ -109,7 +109,7 @@ projection script. Anything placed there directly
 is silently deleted on the next build.
 
 **For Brevo screenshots:** save them to
-`C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\`. Use
+`C:\dev\legendary-arena\ewiki\brevo-email-pipeline\`. Use
 lowercase kebab-case filenames (e.g., `brevo-welcome-workflow.png`,
 `brevo-campaign-setup.png`). Then reference them in markdown:
 
@@ -118,7 +118,7 @@ lowercase kebab-case filenames (e.g., `brevo-welcome-workflow.png`,
 ```
 
 **For research files and working drafts** that should not be published:
-save to `C:\pcloud\LA\ewiki\`.
+save to `C:\pcloud\legendary-arena\ewiki\`.
 
 **Everything else this pipeline touches follows the general storage
 rule** on [Workspace Map](workspace-map.md) — git for reviewable text,
@@ -135,12 +135,11 @@ consequences specific to Brevo:
   parking it in synced storage. See
   [Newsletter Authoring](newsletter-authoring.md).
 
-> **A note on the drafting paths above.** The engine repo currently sits
-> on the pCloud sync drive, which is a known hazard for a git checkout
-> and is scheduled to move — see the sync-drive edge case on
-> [Workspace Map](workspace-map.md). The `C:\pcloud\BB\DEV\…` paths on
-> this page describe where the checkout is today, not where it belongs.
-> `C:\pcloud\LA\ewiki\` is unaffected: it holds research files, not a
+> **A note on the drafting paths above.** The engine repo moved off the
+> pCloud sync drive to `C:\dev\legendary-arena` on 2026-10-17 — see the
+> sync-drive edge case on [Workspace Map](workspace-map.md). Older copies
+> of this page used `C:\pcloud\BB\DEV\…` paths; those are retired.
+> `C:\pcloud\legendary-arena\ewiki\` is unaffected: it holds research files, not a
 > repository, and sync is the right tool for that.
 
 ## Summary
@@ -289,7 +288,7 @@ is authoritative at
 | 2 | Hook | 1-2 sentence teaser summarizing the issue |
 | 3 | Tip / Strategy | Main value block: 2-3 paragraphs of actionable content (deck-building, meta analysis, scenario strategy) |
 | 4 | Challenge | A specific in-game challenge for the week, tied to the tip content |
-| 5 | Read more | Link to companion blog post at `/posts/<slug>/` (slug must match `newsletter_slug`) |
+| 5 | Read more | Link to companion blog post at `/blog/<slug>/` (slug must match `newsletter_slug`) |
 | 6 | CTA | Primary action button: Play, Newsletter, or Tournament (one per email, from `cta` front-matter) |
 | 8 | Featured from the Shop | Single product spotlight with UTM-tagged link to `/shop/` — text link, not button, below the primary CTA |
 | 9 | Share / Forward | One-line prompt to forward the email or share the companion blog post canonical URL |
@@ -327,7 +326,7 @@ The content pipeline produces a matched pair for each edition: one blog
 post and one newsletter. Each step feeds the next.
 
 ```
-1. Write blog post -> content/posts/<slug>.md
+1. Write blog post -> content/blog/<slug>.md
    - Includes: hero image, CTA block, shop link, internal cross-links
    - Front-matter: series, cta, newsletter_week, newsletter_slug
 
@@ -364,11 +363,11 @@ attribution tracking silently.
 Newsletter images reuse production URLs from the marketing site:
 
 ```
-https://www.legendary-arena.com/images/posts/<slug>/hero.webp
+https://www.legendary-arena.com/images/blog/<slug>/hero.webp
 ```
 
 Images must exist in the marketing repo at
-`C:\www\legendary-arena-com\static\images\posts\<slug>\` and be
+`C:\www\legendary-arena-com\static\images\blog\<slug>\` and be
 deployed before the newsletter send.
 
 - Alt text required on all images.
@@ -450,10 +449,10 @@ Outlook (Insert → Picture in the signature editor):
 
 | Link | Points to | Format |
 |---|---|---|
-| Read more | `/posts/<slug>/` (canonical blog URL) | Text link |
+| Read more | `/blog/<slug>/` (canonical blog URL) | Text link |
 | Primary CTA | `play.legendary-arena.com` or tournament URL | Button (`#7a1d1f` bg, white text) |
 | Shop | `/shop/?utm_source=newsletter&utm_medium=email&utm_campaign=<slug>&utm_content=featured-product` | Text link |
-| Share | `/posts/<slug>/` (canonical blog URL) | Text link |
+| Share | `/blog/<slug>/` (canonical blog URL) | Text link |
 
 All links must point to production URLs, never preview or localhost.
 
@@ -624,7 +623,7 @@ pull it in only when relevant.
 
 **Reusable session prompt**
 
-Saved at `C:\pcloud\LA\ewiki\brevo-session-prompt.md`. Paste this at
+Saved at `C:\pcloud\legendary-arena\ewiki\brevo-session-prompt.md`. Paste this at
 the start of a Claude Code session when doing Brevo-related work. It
 gives Claude all the key file locations, account config, pipeline
 architecture, and conventions without warmup.
@@ -651,8 +650,8 @@ Marketing repo (authoritative for Brevo config):
   POST: (blog posts), INFRA: / SPEC: / ROADMAP: (non-site)
 
 Engine repo (ewiki companion page):
-- Wiki page: C:\pcloud\BB\DEV\legendary-arena\wiki\brevo-email-pipeline.md
-- Screenshots: C:\pcloud\BB\DEV\legendary-arena\ewiki\brevo-email-pipeline\
+- Wiki page: C:\dev\legendary-arena\wiki\brevo-email-pipeline.md
+- Screenshots: C:\dev\legendary-arena\ewiki\brevo-email-pipeline\
 - Published at: https://ewiki.legendary-arena.com/brevo-email-pipeline/
 - Commit prefix for wiki edits: INFRA:
 

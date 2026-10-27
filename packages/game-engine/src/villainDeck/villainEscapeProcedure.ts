@@ -22,6 +22,8 @@
 
 import type {
   LegendaryGameState,
+  PendingEffectDiscardTraitFilter,
+  PendingEscapeEffectDiscard,
   PendingEscapeProcedure,
   PendingSeatChoice,
   SeatChoiceOption,
@@ -45,12 +47,35 @@ import { koCard } from '../board/ko.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+// why: WP-817 / D-24750 — the Escape-effect discard reuses the fight-discard cost
+// predicate and formatter (one cost predicate), and labels each option with the same
+// off-play cost that predicate reads.
+import {
+  listEligibleHandCardsByCost,
+  listEligibleHandCardsByTrait,
+  formatEligibleCostList,
+} from '../moves/villainDefeatRequirement.logic.js';
+import { offPlayCardStats } from '../hero/splitCard.logic.js';
+// why: WP-837 / D-24770 — Frost Giant Warrior's Wounds go through the Wound chokepoint.
+// This closes a fourth function-body-only cycle (wounds.logic → divingBlock.logic →
+// seatChoice.resolve → this module), runtime-safe for the same reason as the three above.
+import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+// why: WP-837 / D-24770 — the one Wound option label (WP-845's reveal-or-wound prompt).
+// Read only inside function bodies, so the cycle through seatChoice.resolve is safe.
+import { VILLAIN_EFFECT_WOUND_OPTION_LABEL } from '../moves/revealOrWoundChoice.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 
 /** The seat-choice kind for an escape's HQ-KO pick (step 1). */
 export const ESCAPE_HQ_KO_KIND = 'escape-hq-ko';
 
 /** The seat-choice kind for an escape's every-player Bystander discard (step 2). */
 export const ESCAPE_BYSTANDER_DISCARD_KIND = 'escape-bystander-discard';
+
+/** The seat-choice kind for an owed Escape-effect cost-filtered discard (WP-817 / D-24750). */
+export const ESCAPE_EFFECT_COST_DISCARD_KIND = 'escape-effect-cost-discard';
+
+/** The seat-choice kind for an owed every-player Hero-trait discard (WP-837 / D-24770). */
+export const VILLAIN_EFFECT_TRAIT_DISCARD_KIND = 'villain-effect-trait-discard';
 
 // why: rules v23 L561 — "the escaping Villain KOs a Hero that costs 6 or less from the HQ".
 // A Hero costing 7 or more is never offered or KO'd.
@@ -266,7 +291,7 @@ export function openEscapeProcedureSeatChoiceIfNeeded(
     const queue = G.pendingEscapeProcedures;
     if (queue.length === 0) {
       delete G.pendingEscapeProcedures;
-      return;
+      break;
     }
     if (hasAnyPendingChoice(G) || G.pendingHeroChoice !== undefined) {
       return;
@@ -291,6 +316,227 @@ export function openEscapeProcedureSeatChoiceIfNeeded(
     if (entry.hasCarriedBystanders && openEscapeBystanderDiscardStep(G, events, currentPlayer)) {
       return;
     }
+  }
+  // why: WP-817 / D-24750 — rule order: steps 1-2 of every escape first, then the owed
+  // Escape-effect discards. Reached only once the escape-procedure queue is absent (every
+  // early return above leaves it owed), so the effect discard never opens while a step is
+  // owed or a choice is open. D-24750 amends D-24656 point 4 for this effect only: it
+  // resolves after the move (and after the new Villain's Ambush), a known deviation from
+  // rules v23 L573-575; every other Escape effect stays inline.
+  openEscapeEffectDiscardIfNeeded(G, events, currentPlayer);
+}
+
+/**
+ * Opens the next owed Escape-effect discard (Primus), draining
+ * `G.pendingEscapeEffectDiscards` in escape order until a seat choice is parked, the
+ * queue is empty, or the match is decided. Called only from the tail of
+ * openEscapeProcedureSeatChoiceIfNeeded, after the escape-procedure queue drains.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move context's boardgame.io events, or undefined.
+ * @param currentPlayer - The active player id, or undefined.
+ */
+export function openEscapeEffectDiscardIfNeeded(
+  G: LegendaryGameState,
+  events: SeatChoiceEvents | undefined,
+  currentPlayer?: string,
+): void {
+  while (G.pendingEscapeEffectDiscards !== undefined) {
+    const queue = G.pendingEscapeEffectDiscards;
+    if (queue.length === 0) {
+      delete G.pendingEscapeEffectDiscards;
+      return;
+    }
+    if (hasAnyPendingChoice(G) || G.pendingHeroChoice !== undefined) {
+      return;
+    }
+    if (evaluateEndgame(G) !== null) {
+      return;
+    }
+    const entry = queue.shift()!;
+    if (queue.length === 0) {
+      delete G.pendingEscapeEffectDiscards;
+    }
+    // why: WP-837 / D-24770 — a trait entry (co2e Mystique / Frost Giant Warrior) builds the
+    // trait discard; every other entry routes to WP-817's cost builder exactly as before.
+    let choice: PendingSeatChoice | undefined;
+    if (entry.traitFilter !== undefined) {
+      choice = prepareVillainEffectTraitDiscardChoice(G, entry.traitFilter, currentPlayer);
+    } else {
+      choice = buildEscapeEffectCostDiscardChoice(G, entry);
+    }
+    if (choice === undefined) {
+      continue;
+    }
+    // why: D-24656 point 3 — the step-2 ride rule verbatim: skip the stage ride only when
+    // the active seat is the sole addressed seat; a mixed ride admits the active seat too.
+    const isActiveSeatOnly =
+      choice.addressedSeats.length === 1 && choice.addressedSeats[0] === currentPlayer;
+    if (isActiveSeatOnly) {
+      parkSeatChoice(G, events, choice, currentPlayer);
+    } else {
+      parkSeatChoice(G, events, choice);
+    }
+    return;
+  }
+}
+
+/**
+ * Builds the every-player cost-filtered discard choice for one owed Escape effect, or
+ * undefined when no seat holds an eligible Hero. Every seat (ascending) with at least one
+ * eligible hand card is addressed, one option per eligible card in hand order; a seat with
+ * none is logged and left out.
+ *
+ * @param G - The game state (read for hands, costs and card names; the log is appended).
+ * @param entry - The owed Escape-effect discard.
+ * @returns The pending discard choice, or undefined when no seat is addressed.
+ */
+export function buildEscapeEffectCostDiscardChoice(
+  G: LegendaryGameState,
+  entry: PendingEscapeEffectDiscard,
+): PendingSeatChoice | undefined {
+  const costList = formatEligibleCostList(entry.eligibleCosts);
+  const addressedSeats: string[] = [];
+  const seatPrompts: PendingSeatChoice['seatPrompts'] = {};
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    const eligibleCardIds = listEligibleHandCardsByCost(G, seat, entry.eligibleCosts);
+    if (eligibleCardIds.length === 0) {
+      pushLog(G, `Escape effect: Player ${seat} has no Hero that costs ${costList} to discard.`, 'blocked');
+      continue;
+    }
+    const options: SeatChoiceOption[] = [];
+    for (const cardId of eligibleCardIds) {
+      // why: every listed card has a cost (the eligibility predicate rejected the rest).
+      const cost = offPlayCardStats(G, cardId)!.cost;
+      options.push({ label: `${resolveCardName(G.cardDisplayData, cardId)} (cost ${String(cost)})`, cardId });
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length === 0) {
+    return undefined;
+  }
+  return {
+    kind: ESCAPE_EFFECT_COST_DISCARD_KIND,
+    addressedSeats,
+    seatPrompts,
+    submissions: {},
+    // why: the sim / autoplay + disconnect default discards each seat's first eligible
+    // card (index 0) — deterministic and always in range.
+    defaultOptionIndex: 0,
+  };
+}
+
+/**
+ * Prepares the every-player Hero-trait discard choice for one owed entry (WP-837 /
+ * D-24770), or undefined when no seat holds an eligible Hero.
+ *
+ * Two passes. Pass 1 resolves every seat with no eligible Hero (logged, or — with the
+ * Wound alternative — wounded now). Pass 2 builds the holders' options, so the Wound
+ * supply check sees every Wound pass 1 gained.
+ *
+ * @param G - The game state (Wounds gained in pass 1; the log is appended).
+ * @param filter - The entry's trait filter.
+ * @param currentPlayer - The active player id, or undefined.
+ * @returns The pending discard choice, or undefined when no seat is addressed.
+ */
+export function prepareVillainEffectTraitDiscardChoice(
+  G: LegendaryGameState,
+  filter: PendingEffectDiscardTraitFilter,
+  currentPlayer?: string,
+): PendingSeatChoice | undefined {
+  const requirement = { kind: filter.requireKind, value: filter.requireValue };
+  // why: D-24780 — pass 1 starts with the current player, then clockwise (rules v23 L2247):
+  // its Wounds decide who misses the last one and the order Flying Shield Block is asked in.
+  for (const seat of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
+    if (listEligibleHandCardsByTrait(G, seat, requirement).length > 0) {
+      continue;
+    }
+    resolveSeatWithNoEligibleTraitHero(G, filter, seat, currentPlayer);
+  }
+  const addressedSeats: string[] = [];
+  const seatPrompts: PendingSeatChoice['seatPrompts'] = {};
+  // why: D-24780 §6 / D-24501 — pass 2 builds one simultaneous prompt, so it stays ascending.
+  for (const seat of Object.keys(G.playerZones).sort()) {
+    const eligibleCardIds = listEligibleHandCardsByTrait(G, seat, requirement);
+    if (eligibleCardIds.length === 0) {
+      continue;
+    }
+    const options: SeatChoiceOption[] = [];
+    for (const cardId of eligibleCardIds) {
+      options.push({ label: resolveCardName(G.cardDisplayData, cardId), cardId });
+    }
+    // why: rules v23 L3199-3201 — a player chooses only an option they can actually do, so
+    // the Wound is offered only while the supply still has one (after pass 1's Wounds).
+    if (filter.hasWoundAlternative && G.piles.wounds.length > 0) {
+      options.push({ label: VILLAIN_EFFECT_WOUND_OPTION_LABEL });
+    }
+    addressedSeats.push(seat);
+    seatPrompts[seat] = { options };
+  }
+  if (addressedSeats.length === 0) {
+    return undefined;
+  }
+  return {
+    kind: VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
+    addressedSeats,
+    seatPrompts,
+    submissions: {},
+    // why: the sim / autoplay + disconnect default discards each seat's first eligible
+    // card (index 0) — deterministic and always in range.
+    defaultOptionIndex: 0,
+  };
+}
+
+/**
+ * Resolves one seat that holds no eligible Hero for a trait discard: logs it, or — with
+ * the Wound alternative — gains it a Wound through the chokepoint (D-24770).
+ *
+ * @param G - The game state, mutated in place.
+ * @param filter - The entry's trait filter.
+ * @param seat - The seat with no eligible Hero.
+ * @param currentPlayer - The active player id, or undefined.
+ */
+function resolveSeatWithNoEligibleTraitHero(
+  G: LegendaryGameState,
+  filter: PendingEffectDiscardTraitFilter,
+  seat: string,
+  currentPlayer: string | undefined,
+): void {
+  const prefix = `${filter.effectLabel} effect: Player ${seat} has no ${filter.requirementLabel} Hero to discard`;
+  if (!filter.hasWoundAlternative) {
+    pushLog(G, `${prefix}.`, 'blocked');
+    return;
+  }
+  // why: rules v23 L3199-3201 — a player who cannot discard must take the other option.
+  const outcome = gainWoundWithOutcome(G, seat);
+  if (outcome === 'no-wound') {
+    pushLog(G, `${prefix}; the Wound supply is empty.`, 'blocked');
+    return;
+  }
+  if (outcome === 'diving-block-pending') {
+    pushLog(G, `${prefix} and would gain a Wound — Diving Block can prevent it.`, 'applied');
+  } else {
+    pushLog(G, `${prefix} and gained a Wound.`, 'applied');
+  }
+  countCurrentPlayerVillainWound(G, seat, currentPlayer);
+}
+
+/**
+ * Adds a villain Wound to the current player's `woundsDrawn` (the UI economy counts only
+ * the current player's villain Wounds, as gain-wound:each and reveal-or-wound do).
+ *
+ * @param G - The game state, mutated in place.
+ * @param seat - The seat that gained (or may gain) the Wound.
+ * @param currentPlayer - The active player id, or undefined.
+ */
+function countCurrentPlayerVillainWound(
+  G: LegendaryGameState,
+  seat: string,
+  currentPlayer: string | undefined,
+): void {
+  if (seat === currentPlayer) {
+    G.turnEconomy.woundsDrawn += 1;
   }
 }
 
@@ -419,4 +665,86 @@ export function applyEscapeBystanderDiscard(G: LegendaryGameState, choice: Pendi
       );
     }
   }
+}
+
+/**
+ * Applies a fully-submitted Escape-effect cost discard ATOMICALLY: every addressed seat,
+ * in ascending id order, discards its chosen hand card through the `discardFromHand`
+ * chokepoint (WP-817 / D-24750).
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted choice (kind 'escape-effect-cost-discard').
+ */
+export function applyEscapeEffectCostDiscard(G: LegendaryGameState, choice: PendingSeatChoice): void {
+  const seatsInApplyOrder = [...choice.addressedSeats].sort();
+  for (const seat of seatsInApplyOrder) {
+    const submission = choice.submissions[seat];
+    if (submission === undefined) {
+      continue;
+    }
+    const cardId = choice.seatPrompts[seat]?.options[submission.optionIndex]?.cardId;
+    if (cardId === undefined) {
+      continue;
+    }
+    if (discardFromHand(G, seat, cardId)) {
+      pushLog(G, `Player ${seat} discarded ${formatCardRef(G.cardDisplayData, cardId)} (Escape effect).`, 'applied');
+    }
+  }
+}
+
+/**
+ * Applies a fully-submitted every-player Hero-trait discard ATOMICALLY (WP-837 /
+ * D-24770): an option with a card discards it through `discardFromHand`; the Wound option
+ * gains a Wound through `gainWoundWithOutcome`.
+ *
+ * @param G - The game state, mutated in place.
+ * @param choice - The fully-submitted choice (kind 'villain-effect-trait-discard').
+ * @param currentPlayer - The active player id, or undefined.
+ */
+export function applyVillainEffectTraitDiscard(
+  G: LegendaryGameState,
+  choice: PendingSeatChoice,
+  currentPlayer?: string,
+): void {
+  // why: D-24780 §6 / D-24501 — a simultaneous seat-choice apply stays ascending, as
+  // applyEscapeEffectCostDiscard does.
+  const seatsInApplyOrder = [...choice.addressedSeats].sort();
+  for (const seat of seatsInApplyOrder) {
+    const submission = choice.submissions[seat];
+    if (submission === undefined) {
+      continue;
+    }
+    const option = choice.seatPrompts[seat]?.options[submission.optionIndex];
+    if (option === undefined) {
+      continue;
+    }
+    if (option.cardId !== undefined) {
+      if (discardFromHand(G, seat, option.cardId)) {
+        pushLog(G, `Player ${seat} discarded ${formatCardRef(G.cardDisplayData, option.cardId)} (Villain effect).`, 'applied');
+      }
+      continue;
+    }
+    applyChosenTraitDiscardWound(G, seat, currentPlayer);
+  }
+}
+
+/**
+ * Gains the Wound a seat chose instead of discarding, and narrates it (D-24770).
+ *
+ * @param G - The game state, mutated in place.
+ * @param seat - The seat that chose the Wound.
+ * @param currentPlayer - The active player id, or undefined.
+ */
+function applyChosenTraitDiscardWound(G: LegendaryGameState, seat: string, currentPlayer: string | undefined): void {
+  const outcome = gainWoundWithOutcome(G, seat);
+  if (outcome === 'no-wound') {
+    pushLog(G, `Player ${seat} chose to gain a Wound, but the Wound supply is empty.`, 'blocked');
+    return;
+  }
+  if (outcome === 'diving-block-pending') {
+    pushLog(G, `Player ${seat} would gain a Wound instead of discarding — Diving Block can prevent it.`, 'applied');
+  } else {
+    pushLog(G, `Player ${seat} gained a Wound instead of discarding (Villain effect).`, 'applied');
+  }
+  countCurrentPlayerVillainWound(G, seat, currentPlayer);
 }

@@ -20,9 +20,9 @@
       "ability": "Silent Sniper",
       "wp": "WP-486",
       "state": "verified",
-      "date": "2026-10-06",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): the bot's Silent Sniper defeated the Skrull Oddball holding a Bystander for free, attributed live (29.2.7, D-24662). Earlier one-target auto defeat: match s1jtBcEAOfw 38.2.10.",
-      "note": "≥2-target prompt unexercised."
+      "date": "2026-10-17",
+      "evidence": "2p bot-ally Red Skull / Secret Invasion, match B59aMEnwd5M (build bb8b8d5): the bot's Silent Sniper defeated the Skrull Oddball holding a Bystander for free, attributed live (29.2.7, D-24662). Earlier one-target auto defeat: match s1jtBcEAOfw 38.2.10. Two-target prompt: Operator match PF9JUILsmcT (server build 3c9f632d), 2p with a bot ally, Red Skull / Secret Invasion of the Skrull Shapeshifters (HYDRA + Skrulls; Black Widow, Deadpool, Rogue, Captain America, Spider-Man, Storm) — with the Skrull Heroes Dangerous Rescue and Copy Powers each holding a Bystander, Silent Sniper prompted \"choose which Villain or Mastermind to defeat\" (23.2.2) and defeated the chosen Dangerous Rescue, rescuing its Bystander (23.2.3–23.2.5). No-target line: 7.2.2, 13.2.2.",
+      "note": "One-target auto defeat, two-target prompt and no-target line all seen live."
     },
     {
       "key": "core/black-widow|draw",
@@ -78,6 +78,17 @@
       "date": "2026-10-10",
       "evidence": "solo Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil), match EMXM2s3Ucsh (build afa55d3): twist 6 (1 Wound, 20.1.3) and twist 7 (3 Wounds, 24.1.3) each offered the reveal; revealing returned the Wound and drew a card. The Wound pile went 30 → 27 and the player ended with 3 Wounds = twist 5's 1 + twist 7's 2, so both reveals took. solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf): no Diving Block was in hand at twists 5–8, so the D-24673 multi-reveal is still unexercised. D-24673 multi-reveal seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — twist 7 logged \"would gain 3 wound(s) — Diving Block can prevent each one\" (24.1.1) and one Diving Block was revealed three times, each preventing a Wound and drawing a card (24.1.3–24.1.5); twist 6 likewise (\"can prevent it\", 20.1.3). Also solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match BvcATHgYM5k (build 0182346) — a Final Blow win: blocked Ymir's Ambush Wound (6.1.3) and a Loki strike Wound (8.1.3), and one copy blocked all three twist-7 Wounds again (25.1.3–25.1.5). Random Acts' Wound replaced by a draw (D-24678, 24.2.6) and twist 6 prevented again (24.1.3): solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win.",
       "note": ""
+    },
+    {
+      "key": "core/captain-america|diving-block-mixed-seat",
+      "kind": "hero",
+      "card": "Captain America",
+      "ability": "Diving Block, Wound wave on the active seat and another seat (D-24743)",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-19",
+      "evidence": "2p bot-ally operator match P9oVujYd2B9 (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on): one Diving Block staged in each hand (1.2.13-14), then a Loki Master Strike revealed on Player 0's turn (1.2.15) addressed both seats (1.2.16-17). The active seat's reveal landed, preventing the Wound and drawing a card (1.2.19); the bot seat answered (1.2.20) and the game went on with no fault. Final state: Player 0 0 Wounds, Player 1 1, Wound pile 29.",
+      "note": "D-24743 (#2884): the active seat is admitted to a mixed Diving Block wave. In P9oVujYd2B9 the bot ally declined its own reveal (it submitted the absent-seat default); D-24744 (#2900) made the bot reveal, confirmed live in match 2ijakQ1yGsV."
     },
     {
       "key": "core/captain-america|recruit-per-count",
@@ -207,9 +218,9 @@
       "ability": "Psychic Link",
       "wp": "WP-659",
       "state": "verified",
-      "date": "2026-09-07",
-      "evidence": "Emma Frost arc — two Magneto / Midtown Bank Robbery matches (STATUS 2026-09-07)",
-      "note": ""
+      "date": "2026-10-16",
+      "evidence": "Emma Frost arc — two Magneto / Midtown Bank Robbery matches (STATUS 2026-09-07); D-24731 played-card reveal: Operator match nQAUnp0T4uY (server build 6f5a8d1c, the #2846 merge), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Emma Frost, Wolverine, Rogue, Captain America, Hulk), won with the Final Blow at 19.3.1. Player 0's only X-Men cards were the two Psychic Links (#0, #2), both recruited on turn 1 (1.2.5, 1.2.8); no operator move put a card in a hand. Psychic Link #0 drew off the already-played #2 at 7.2.6; no self-reveal at 9.2.5 / 13.2.1 / 15.2.13.",
+      "note": "Hand reveal (WP-659) and played-card reveal (D-24731) both verified."
     },
     {
       "key": "core/gambit|put-hand-on-deck-top",
@@ -394,9 +405,9 @@
       "ability": "Pure Fury",
       "wp": "WP-682",
       "state": "verified",
-      "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b)",
-      "note": "Defeated three Dr. Doom Tactics, each with Doom's attack below the S.H.I.E.L.D. count in the KO pile. (Its trace also logs a phantom attack no-handler hollow.)"
+      "date": "2026-10-17",
+      "evidence": "Solo Dr. Doom / Portals to the Dark Dimension, match f4JyVOX_Tq3 (build 26f544b) 2p bot-ally operator matches on server 6dbeb6d7, Loki / Portals to the Dark Dimension: one-target auto defeats (Z4uVw-dsjqz 16.2.2 Frost Giant, 20.2.5 HYDRA Kidnappers; the target's Fight effect still ran, 16.2.3); the 2+ target prompt (5oVhoJoFjpE 5.2.14, 11.2.11); and free defeats of Loki's Tactics through the prompt (Er6Uj0zeyDW 11.2.3 Cruel Ruler, 13.2.3 Vanishing Illusions — the bot KO'd Frost Giant from its Victory Pile and the game continued, 13.2.5). D-24740 free Final Blow: operator match tXTkG2Pardt (server d72fbbb1), Loki / Portals, Final Blow on — Pure Fury took all four Tactics, then struck the final blow on Loki (16.2.3); heroes won at 16.3.1. D-24741 current Attack: operator match WsQDr4yybrp (server 85771ab6), Loki / Portals — 11 S.H.I.E.L.D. Heroes vs Loki 10 + Dark Portal = 11 found no target (8.2.2); 13 took Loki one-target (14.2.2); 16 struck the final blow one-target (24.2.13). D-24681 one-target on a multi-seat Tactic: operator match SdnvQA0P4Zj (server 85771ab6) — City empty, Pure Fury defeated Loki on its own (9.2.14) taking Vanishing Illusions; the bot KO'd HYDRA Kidnappers (9.2.17) and the game continued.",
+      "note": "Every Pure Fury path seen live: one-target and prompt, Tactics, the free Final Blow, the current-Attack threshold (D-24741), and a one-target defeat landing on a multi-seat Tactic (D-24681)."
     },
     {
       "key": "core/rogue|copy-powers",
@@ -406,8 +417,8 @@
       "wp": "WP-582",
       "state": "verified",
       "date": "2026-08-22",
-      "evidence": "WP-582 live-verify, 2p Red Skull / Midtown (#1561)",
-      "note": ""
+      "evidence": "WP-582 live-verify, 2p Red Skull / Midtown (#1561). Per-play copy (D-24730): 2p operator match 8Mw9mLkcgQ4 (server build 7e2b45bd) — Copy Powers #0 copied Borrowed Brawn (Strength) on turn 9, then Energy Drain (Covert) on turn 13: Borrowed Brawn was blocked (13.2.12) and Maestro counted only \"Borrowed Brawn (played)\" (13.2.22).",
+      "note": "D-24730: a copy's class and team last only for that play; before the fix the turn-9 Strength copy carried over (L3yPdfS179l, 16.2.8 / 16.2.10)."
     },
     {
       "key": "core/rogue|optional-ko-reward",
@@ -531,6 +542,17 @@
       "note": "Surge of Power waited and fired retroactively."
     },
     {
+      "key": "core/wolverine|attack-per-count",
+      "kind": "hero",
+      "card": "Wolverine",
+      "ability": "Berserker Rage",
+      "wp": "D-24732",
+      "state": "verified",
+      "date": "2026-10-16",
+      "evidence": "Operator match Bi6gSbwebWx (server build e4c2c0a0, incl. #2848), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout: Mental Discipline 1 + Keen Senses 1 + Berserker Rage 3 → Count-scaled attack +5 (count 5, 6.2.9); own three draws only → +3 (14.2.5); blocked without another Instinct Hero (10.2.11).",
+      "note": "D-24732: +1 attack per extra card drawn this turn (was a flat +1)."
+    },
+    {
       "key": "core/wolverine|draw",
       "kind": "hero",
       "card": "Wolverine",
@@ -571,8 +593,8 @@
       "wp": "WP-485",
       "state": "verified",
       "date": "2026-10-05",
-      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b)",
-      "note": "0 rescued with no Avengers Hero, 1 rescued with one (Covert Operation)."
+      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b). Copy Powers (D-24726): 2p operator match SoDnMI9IjqU (build 20dcd923), turn 27. Confirmed by the D-24729 named-card log lines in operator match L3yPdfS179l (server build 7ae1baa2): \"rescued 2 Bystander(s) (one per your avengers Hero: Crazed Rampage (played), Copy Powers (played, copied avengers))\" (6.2.7) and \"rescued 3 … Silent Sniper (played), Copy Powers (played, copied avengers), Unstoppable Hulk (played)\" (14.2.23).",
+      "note": "0 rescued with no Avengers Hero, 1 rescued with one (Covert Operation). D-24726: A Day Unlike Any Other plus Copy Powers copying it rescued 2 (27.2.9); the two unplayed hand cards are read as Wounds. Turn 6 of the same match, two printed Avengers with an empty hand, rescued 2."
     },
     {
       "key": "core-villain-brotherhood-blob|setup:require-to-defeat",
@@ -602,10 +624,10 @@
       "card": "Destroyer",
       "ability": "koHeroEachPlayerMag2",
       "wp": "WP-202",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Destroyer escaped (13.1.2); its Escape KO'd two of Player 0's Heroes (13.1.3), auto-picked with no prompt, then the rulebook HQ KO ran (13.1.4). D-24669 choice seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win — Destroyer escaped (13.1.2), \"the active player must KO two heroes\" (13.1.3), and both KOs resolved through the KO-choice move (13.1.4–13.1.5), then the rulebook HQ KO (13.1.6).",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "verified",
+      "date": "2026-10-15",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match nNR91fCRKsX (build 17ccd6b) — a Final Blow win — Destroyer escaped at the start of Player 1's turn (19.1.2); the off-turn Player 0 KO'd two S.H.I.E.L.D. Agents from their hand (19.1.3), and the active Player 1 picked two Heroes from their hand through the KO-choice move (19.1.4–19.1.5); nothing came from either discard pile; then the rulebook HQ KO (19.1.6). Earlier: solo Loki / The Legacy Virus, match L7pW0ZAyP_c (build b2f6473): Destroyer escaped (13.1.2); its Escape KO'd two of Player 0's Heroes (13.1.3), auto-picked with no prompt, then the rulebook HQ KO ran (13.1.4). D-24669 choice seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match Fsciok6X6YF (build fcfb0ec) — a Final Blow win — Destroyer escaped (13.1.2), \"the active player must KO two heroes\" (13.1.3), and both KOs resolved through the KO-choice move (13.1.4–13.1.5), then the rulebook HQ KO (13.1.6).",
+      "note": "Each-player escape with both players KOing from hand confirmed. The play side is unexercised (the escape fires before anything is played)."
     },
     {
       "key": "core-villain-spider-foes-doctor-octopus|override-next-hand-size",
@@ -702,8 +724,8 @@
       "ability": "ko-hero",
       "wp": "WP-252",
       "state": "verified",
-      "date": "2026-10-01",
-      "evidence": "D-24644 live-verify — Escape (hand) + Ambush (discard) branches",
+      "date": "2026-10-10",
+      "evidence": "D-24644 live-verify — Escape (hand) + Ambush (discard) branches. D-24683 (each-player KO line names who lost what) PASS: 2p bot-ally Loki / Midtown Bank Robbery, match r8_2EFHd3Ah (build 031aaf0) — Ambush \"the active player must KO two heroes; Player 1 had no hero to KO\" (4.1.2); Escape \"…; Player 1 KO’d S.H.I.E.L.D. Agent, S.H.I.E.L.D. Agent\" (18.1.3).",
       "note": ""
     },
     {
@@ -712,10 +734,10 @@
       "card": "Maestro",
       "ability": "ko-heroes-current-count-by-trait",
       "wp": "WP-544",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "WP-544 live-verify, matches NPyIIWIjd1Q + iFdZ8t9xFsP (#1421)",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "verified",
+      "date": "2026-10-16",
+      "evidence": "Copy Powers as Strength seen live on the D-24724 build: 2p Dr. Doom / Negative Zone Prison Breakout, match TGGnM-TEVRe (server build 34d28b7) — Player 0 played Crazed Rampage (Strength) and Copy Powers copying it (18.2.1–18.2.4), then fought Maestro: \"KO 2 of your Heroes (one per your strength Hero)\" (18.2.9) and KO'd 2 played cards. Player 0's only other Strength card, Growing Anger #2, was played on turn 16 after that turn's reshuffle (16.2.11), so it sat in the discard; the one printed Strength Hero plus Copy Powers make 2. Zero-count branch seen live under D-24687: 2p bot-ally Loki / Negative Zone Prison Breakout, match nNR91fCRKsX (build 17ccd6b) — Player 0 fought Maestro holding only Wolverine (Instinct) and S.H.I.E.L.D. cards: \"no strength Heroes — nothing to KO\" (10.2.13–10.2.14). Count ≥ 1 branch seen live: 2p bot-ally Dr. Doom / Negative Zone Prison Breakout, match kIZGg6MXhua (build 9e62c96) — Player 1 fought Maestro twice (11.2.12, 23.2.14), each time owing \"KO 1 of your Heroes (one per your strength Hero)\" and picking from played cards. Both times Player 1 had played Perfect Teamwork (Strength) AND Copy Powers copying it (11.2.7, 23.2.7), which is \"both Covert and the color you copy\", so the count should have been at least 2. Count ≥ 2 from play seen live on the D-24724 build: 2p Dr. Doom / Negative Zone Prison Breakout, match QzMlzluraiL (build 34d28b7) — Player 0 fought Maestro twice (24.2.17, 26.2.19) with three Strength Heroes in play and an empty hand; both times it owed \"KO 3 of your Heroes (one per your strength Hero)\" and Player 0 KO'd 3 played cards. Earlier: WP-544 live-verify, matches NPyIIWIjd1Q + iFdZ8t9xFsP (#1421).",
+      "note": "Counts 0, 2 and 3 seen live from hand + play. The kIZGg6MXhua undercount (Copy Powers' granted class ignored) is fixed by D-24724 (#2824) and confirmed in TGGnM-TEVRe."
     },
     {
       "key": "core-villain-masters-of-evil-melter|ko-cullable-each-deck-top",
@@ -778,10 +800,10 @@
       "card": "Sentinel",
       "ability": "koHeroCurrentPlayer",
       "wp": "WP-185",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff)",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "verified",
+      "date": "2026-10-19",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Loki / Negative Zone Prison Breakout (Enemies of Asgard + Radiation; Sentinel + Hand Ninjas), match 7iXjqwi3OQ4 (build 3aaf7b3) — five Sentinel fights (2.2.7, 5.2.7, 13.2.10, 24.2.6, 26.2.15), each KO resolved from \"the cards they played this turn\", none from the discard pile; Player 0's two KOs (5.2.9, 13.2.13) were picked through the KO-choice move. Repeated in match nNR91fCRKsX (build 17ccd6b): eight more Sentinel fights, all from played cards. Earlier: solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). Hand side: 2p bot-ally operator match 4-YFzCBfK9L (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on) — Player 0 fought Sentinel after playing two cards with the rest of the hand still held (17.2.6) and KO'd Covering Fire from their hand (17.2.8).",
+      "note": "Both sides seen: KO from the cards played this turn and KO from hand."
     },
     {
       "key": "core-villain-skrulls-skrull-queen-veranke|captureHqHeroHighestCost",
@@ -833,10 +855,10 @@
       "card": "Super-Skrull",
       "ability": "koHeroEachPlayer",
       "wp": "WP-189",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): every player KO'd a Hero on both fights (11.2.10, 32.2.27). D-24669 current-player choice seen live: solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf) — all three Super-Skrull fights (8.2.12, 9.2.11, 30.2.16) resolved through the KO choice move (\"Player 0 KO'd S.H.I.E.L.D. Trooper (starting-shield-trooper).\", the koHeroChoice.resolve line).",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "verified",
+      "date": "2026-10-15",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Dr. Doom / Unleash the Power of the Cosmic Cube (Masters of Evil + Skrulls; Doombot Legion; Iron Man, Black Widow, Captain America, Hulk, Spider-Man), match j05XBbvv5qt (build 1ef3ad1) — a Final Blow win — three Super-Skrull fights (17.2.9, 18.2.12, 32.2.9). Each time the off-turn player KO'd one Hero from their hand and the active player picked one from the cards they played this turn through the KO-choice move (17.2.10–17.2.11, 18.2.13–18.2.14, 32.2.10–32.2.11); nothing came from a discard pile. Earlier: 2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): every player KO'd a Hero on both fights (11.2.10, 32.2.27). D-24669 current-player choice seen live: solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf) — all three Super-Skrull fights (8.2.12, 9.2.11, 30.2.16) resolved through the KO choice move (\"Player 0 KO'd S.H.I.E.L.D. Trooper (starting-shield-trooper).\", the koHeroChoice.resolve line).",
+      "note": "Both zones exercised: hand (off-turn player) and play (active player)."
     },
     {
       "key": "core-villain-hydra-supreme-hydra|scoring:dynamic-vp",
@@ -883,6 +905,17 @@
       "note": ""
     },
     {
+      "key": "core-villain-spider-foes-venom|setup:require-to-defeat",
+      "kind": "villain",
+      "card": "Venom",
+      "ability": "setup:require-to-defeat",
+      "wp": "WP-292",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Refusal branch: operator-observed live on 2026-10-17 (Jeff) — with no Covert Hero in hand or in play, the game would not let him fight Venom. A refused fight is a silent return (fightVillain.ts defeat-requirement precondition, D-24076), so there is no log line to cite. Allowed branch: 2p bot-ally Dr. Doom / Killbots, match zE7zTyM-ziJ (build 28bc08a) — Venom fought with a Covert Hero in play (28.2.11).",
+      "note": "Same requirement path as Blob (hand + play, D-24076). A free defeat (Cruel Ruler, Pure Fury, Silent Sniper) ignores the restriction by ruling D-24737 (Cruel Ruler defeated Venom with no Covert Hero, mzasQjZ3DU2 26.2.13)."
+    },
+    {
       "key": "core-villain-spider-foes-venom|gainWoundEachPlayer",
       "kind": "villain",
       "card": "Venom",
@@ -910,10 +943,10 @@
       "card": "Whirlwind",
       "ability": "ko-hero",
       "wp": "WP-252",
-      "state": "pending",
-      "date": "2026-10-11",
-      "evidence": "Solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b)",
-      "note": "re-verify after D-24687 (WP-801): prior evidence predates the hand + play default"
+      "state": "verified",
+      "date": "2026-10-15",
+      "evidence": "D-24687 hand + play default seen live: 2p bot-ally Dr. Doom / Negative Zone Prison Breakout (Masters of Evil + Radiation; Doombot Legion + Hand Ninjas), match kIZGg6MXhua (build 9e62c96) — a Final Blow win. Player 0 fought Whirlwind on the Bridge (city space 4, 12.2.10): \"KO 2 of your Heroes — choose which\", both KOs from the cards played this turn (12.2.11–12.2.12). The off-location branch also ran: the second Whirlwind fought at city space 1 — \"not fought on the Rooftops or Bridge; no effect\" (29.2.21–29.2.22). Earlier: solo Dr. Doom matches kjkmEBIn3o0 + f4JyVOX_Tq3 (builds 4e64cdd, 26f544b).",
+      "note": "Both location branches confirmed. Hand side unexercised."
     },
     {
       "key": "core-villain-enemies-of-asgard-ymir-frost-giant-king|ko-wounds-current-hand-and-discard",
@@ -1092,6 +1125,17 @@
       "note": "Multi-seat branch confirmed. The one-target free-defeat path (Silent Sniper / Pure Fury, D-24681) has its own live-verify line in STATUS."
     },
     {
+      "key": "mastermind:core/loki|vanishing-illusions-henchmen",
+      "kind": "mastermind",
+      "card": "Loki",
+      "ability": "Tactic: Vanishing Illusions, Henchmen count as Villains (D-24742)",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-19",
+      "evidence": "2p bot-ally operator match P9oVujYd2B9 (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on): the bot's Victory Pile held only Sentinel (defeated 2.2.8) when Player 0 took Vanishing Illusions (7.2.15); the bot was addressed and KO'd Sentinel (7.2.18). No operator staging was needed. Final state: the bot's Victory Pile is Baron Zemo + a Bystander, with Sentinel gone. Mixed pile: 2p bot-ally operator match 4-YFzCBfK9L (server 58169eef, client 70754d9), Loki / Negative Zone Prison Breakout (Enemies of Asgard + Masters of Evil; Sentinel + Hand Ninjas; Captain America, Black Widow, Hawkeye, Iron Man, Wolverine; Final Blow on) — with Hand Ninjas x2 and Melter in its Victory Pile, the bot was addressed and KO'd a Hand Ninjas (15.2.39).",
+      "note": "D-24742 (#2883): a Henchmen-only Victory Pile is addressed. Before the fix that seat was skipped."
+    },
+    {
       "key": "mastermind:core/loki|whispers-and-lies",
       "kind": "mastermind",
       "card": "Loki",
@@ -1133,7 +1177,7 @@
       "state": "verified",
       "date": "2026-10-10",
       "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): 2 players; the defeater chose draw and the other seat drew 1 (16.2.9–10). 2p bot-ally Dr. Doom / Replace Earth’s Leaders with Killbots (HYDRA + Masters of Evil; Nick Fury, Thor, Hulk, Hawkeye, Black Widow; Final Blow on), match 38KtA2vWDg9 (build c26dc19): the discard branch: Monarch’s Decree defeated via Pure Fury (39.2.21); the other player chose and discarded a Wound (39.2.22–24).",
-      "note": "Both branches."
+      "note": "Both branches. The discard branch was reached through Pure Fury before D-24681 (build c26dc19); the D-24681 one-target free defeat of a multi-seat Tactic is tracked on core/nick-fury|pure-fury."
     },
     {
       "key": "mastermind:core/dr-doom|secrets-of-time-travel",
@@ -1191,6 +1235,17 @@
       "note": ""
     },
     {
+      "key": "scheme:core/negative-zone-prison-breakout|twist",
+      "kind": "scheme",
+      "card": "Negative Zone Prison Breakout",
+      "ability": "Twist: play the top 2 cards of the Villain Deck",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-16",
+      "evidence": "Operator match Bi6gSbwebWx (server build e4c2c0a0), 2p with a bot ally, Red Skull / Negative Zone Prison Breakout (HYDRA + Spider-Foes; Hand Ninjas + Sentinel): Twist #1 played HYDRA Kidnappers and Hand Ninjas (12.1.1–12.1.3). Turn 15 chained three Twists: #2 revealed Venom and Twist #3, #3 revealed Hand Ninjas and Twist #4, #4 revealed Endless Armies of HYDRA and Hand Ninjas, and the overflow escape ran (15.1.1–15.1.12). Endless Armies of HYDRA's Fight revealed Twists #5 and #6 mid-turn, and each played 2 more cards (16.2.25–16.2.36).",
+      "note": "A Twist revealed by a Twist resolves too."
+    },
+    {
       "key": "scheme:core/super-hero-civil-war|twist",
       "kind": "scheme",
       "card": "Super Hero Civil War",
@@ -1211,6 +1266,17 @@
       "date": "2026-10-10",
       "evidence": "Solo Magneto / Super Hero Civil War, match PyK5YS2L8Bo (build afd76ff). 2p bot-ally Loki / Super Hero Civil War (Enemies of Asgard + Brotherhood; Thor, Hulk, Black Widow, Wolverine), match 5oJXzZqbdys (build 39c8244): the 2-player setup used exactly 4 Heroes (56-card Hero Deck); Twist #6 KO’d the HQ and the refill ran the Hero Deck out, so Evil Wins (21.1.8).",
       "note": "Both: the Hero-Deck loss, and 4 Heroes at 2 players."
+    },
+    {
+      "key": "scheme:core/super-hero-civil-war|twist-count",
+      "kind": "scheme",
+      "card": "Super Hero Civil War",
+      "ability": "8 Twists at 2-3 players, 5 Twists at 4-5 players",
+      "wp": "D-24733",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "4p operator match Y1w7rCsC8Ek (server 85771ab6), Loki / Super Hero Civil War, 3 bot allies: the engine reported schemeTwistThreshold 5; after Twist 1 (18.1.1–18.1.7, KO'd all 5 HQ Heroes) the Villain Deck still held scheme-twist-super-hero-civil-war-00, -02, -03 and -04 — 5 in all.",
+      "note": "Live: 5 Twists at 4 players (Y1w7rCsC8Ek). Unit: buildInitialGameState.civilWarSizing.test.ts pins 8/8/5/5 at 2-5 players."
     },
     {
       "key": "scheme:core/legacy-virus-the|wound-loss",
@@ -1254,7 +1320,18 @@
       "state": "verified",
       "date": "2026-10-06",
       "evidence": "2p bot-ally Red Skull / Secret Invasion, match s1jtBcEAOfw (build bd7cfb7): 6 Hero decks in setup; Skrull Heroes entered from the Villain Deck and were gained on defeat; twists moved the highest-cost HQ Hero to the Sewers (7 twists).",
-      "note": "Evil Wins (6 Heroes escaped) not reached."
+      "note": "Evil Wins (6 Heroes in the Escaped Villains pile) is verified on the escape-loss row (2026-10-17)."
+    },
+    {
+      "key": "scheme:core/secret-invasion-of-the-skrull-shapeshifters|escape-loss",
+      "kind": "scheme",
+      "card": "Secret Invasion of the Skrull Shapeshifters",
+      "ability": "Evil Wins: 6 Heroes in the Escaped Villains pile",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match PF9JUILsmcT (server build 3c9f632d), 2p with a bot ally, Red Skull / Secret Invasion of the Skrull Shapeshifters (HYDRA + Skrulls; Black Widow, Deadpool, Rogue, Captain America, Spider-Man, Storm): six Skrull Heroes escaped — Oddball (6.1.2), Oddball (7.1.2), Random Acts of Unkindness (10.1.2), A Day Unlike Any Other (17.1.2), Copy Powers (25.1.2), Oddball (31.1.2) — and the scheme won at 31.1.3 (\"Scheme loss triggered — 6 Skrulls escaped (threshold 6)\"). Escaped non-Hero Villains (HYDRA Kidnappers, Endless Armies of HYDRA, Skrull Shapeshifters, Skrull Queen Veranke) did not count. D-24738 re-check: 2p operator match cLZ0_pzMFmd (server 6dbeb6d7, the #2867 merge), Red Skull / Secret Invasion (HYDRA + Skrulls): five Skrull Heroes escaped (Avengers Assemble! 4.2.6, Web-Shooters 4.2.11, Gathering Stormclouds 7.1.2, Energy Drain 8.1.2, Perfect Teamwork 9.1.2) and Skrull Queen Veranke carried her captured A Day Unlike Any Other (4.1.2) into the pile when she escaped (4.2.21); the scheme won at 9.1.3 with \"Scheme loss triggered — 6 Heroes escaped (5 Skrulls, 1 captured) (threshold 6).\" Escaped Super-Skrull and Veranke did not count; the old count would still have read 5. The meter projected schemeLossProgress 6 / 6 on escaped-skrull (\"Heroes\").",
+      "note": "D-24738 (ruled 2026-10-17): Heroes a captor carries into the Escape pile count toward the six. Verified live in cLZ0_pzMFmd. The match was created a few minutes before the server restart onto 6dbeb6d7; D-24738 changes no setup and the loss line is new-build text, so the loss ran on the fix."
     },
     {
       "key": "scheme:core/portals-to-the-dark-dimension|dark-portals",
@@ -1263,9 +1340,9 @@
       "ability": "Twists place Dark Portals (+attack)",
       "wp": "WP-539",
       "state": "verified",
-      "date": "2026-09-21",
-      "evidence": "WP-727 live-verify — overlay shows the served buff (#2224)",
-      "note": ""
+      "date": "2026-10-17",
+      "evidence": "WP-727 live-verify — overlay shows the served buff (#2224) Full twist schedule: Operator match Z4uVw-dsjqz (server 6dbeb6d7), 2p with a bot ally, Loki / Portals to the Dark Dimension (Enemies of Asgard + HYDRA; Hulk, Nick Fury, Thor, Iron Man, Captain America) — Twist 1 opened a Dark Portal above the Mastermind (2.1.1; Loki then cost 11, paid with 12 at 8.2.9); Twists 2–6 opened portals leftmost-first: Bridge (5.1.1), Streets (9.1.1), Rooftops (12.1.1), Bank (14.1.1), Sewers (24.1.1); Twist 7 ended the game, \"The seventh Dark Portal tears open\" / \"Scheme loss triggered — twist threshold reached\" (29.1.1–29.1.3).",
+      "note": "Mastermind +1, the five city portals in order, and Twist 7 Evil Wins all seen live."
     },
     {
       "key": "scheme:core/unleash-the-power-of-the-cosmic-cube|twist",
@@ -1274,8 +1351,8 @@
       "ability": "Escalating twist Wounds",
       "wp": "WP-540",
       "state": "verified",
-      "date": "2026-10-09",
-      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): twists 1–4 dealt no Wounds; twist 5 and 6 one Wound to each player; twist 7 three Wounds to each player (22.1, 29.1, 32.1). Earlier: solo match aK-n8zNOteC twists 1–5. Twist 8 Evil Wins seen live: solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf) — twists 5–8 dealt 1, 1, 3 and 3 Wounds (26.1.1, 28.1.1, 30.1.1, 32.1.1), and twist 8 ended the game as scheme-wins (32.1.3). D-24673 twist line seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — \"would gain N wound(s) — Diving Block can prevent…\" when Diving Block was revealable (20.1.1, 24.1.1) and plain \"gained N wound(s)\" when it was not (19.1.1, 26.1.1).",
+      "date": "2026-10-11",
+      "evidence": "2p bot-ally Dr. Doom / Cosmic Cube (Masters of Evil + Radiation), match JuCc0Pa0f0p (build c69feb3): twists 1–4 dealt no Wounds; twist 5 and 6 one Wound to each player; twist 7 three Wounds to each player (22.1, 29.1, 32.1). Earlier: solo match aK-n8zNOteC twists 1–5. Twist 8 Evil Wins seen live: solo Dr. Doom / Cosmic Cube (Skrulls + Doombot Legion; Captain America, Deadpool, Spider-Man), match C2LVapHVpCt (build bb43daf) — twist 8 ended the game as scheme-wins (32.1.3); its twist-8 Wounds (32.1.1) predate D-24685. D-24685 (twist 8 deals no Wounds) PASS: 2p bot-ally Dr. Doom / Cosmic Cube, match Cq_czI1TQH0 (build 4d103a9) — \"No wounds this twist — twist 8 deals no Wounds.\" (40.1.1), then the loss (40.1.3), with 20 Wounds still in the supply. D-24673 twist line seen live: solo Loki / Cosmic Cube (Enemies of Asgard + Sentinel; Captain America, Deadpool, Storm), match ebVGi3xTcrX (build 375290c) — \"would gain N wound(s) — Diving Block can prevent…\" when Diving Block was revealable (20.1.1, 24.1.1) and plain \"gained N wound(s)\" when it was not (19.1.1, 26.1.1).",
       "note": ""
     },
     {
@@ -1288,6 +1365,116 @@
       "date": "2026-10-08",
       "evidence": "2p bot-ally Dr. Doom / Killbots (Masters of Evil + Spider-Foes), match zE7zTyM-ziJ (build 28bc08a): X-Men United counted other X-Men Heroes played earlier this turn, 2 / 2 / 3 / 5 (16.2.7, 22.2.10, 28.2.10, 35.2.21), each matching the cards played (D-24655 fix live).",
       "note": ""
+    },
+    {
+      "key": "core/hawkeye|attack",
+      "kind": "hero",
+      "card": "Hawkeye",
+      "ability": "Team Player",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): +1 after another Avengers Hero (Hulk Smash! and Growing Anger, 10.2.6; the bot's after Endless Invention, 5.2.8); blocked when played first (the bot, 21.2.2).",
+      "note": "Unmarked \"[team:avengers]: +1\" superpower; no ledger mechanic."
+    },
+    {
+      "key": "core/hulk|attack",
+      "kind": "hero",
+      "card": "Hulk",
+      "ability": "Growing Anger, Hulk Smash!",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): Growing Anger +1 after another Strength Hero (Odinson 8.2.4; Hulk Smash! 10.2.4, 18.2.4) and blocked when played first (16.2.2). Hulk Smash! was blocked every time it was played first (10.2.2, 14.2.2, 18.2.2, 20.2.2, 22.2.2, 26.2.2, 30.2.2). Hulk Smash! firing half: Operator match Z4uVw-dsjqz (server 6dbeb6d7), 2p with a bot ally, Loki / Portals to the Dark Dimension (Enemies of Asgard + HYDRA; Hulk, Nick Fury, Thor, Iron Man, Captain America) — after Growing Anger (Strength) it gained +5 (8.2.4, 14.2.4, 16.2.9, 28.2.4; turn 8 totalled 2 + 5 + 5 = 12 attack); blocked when played first (18.2.5, 22.2.2, 24.2.2).",
+      "note": "Growing Anger and Hulk Smash! both seen fire and block. Unmarked \"[hc:strength]\" superpowers; no ledger mechanic."
+    },
+    {
+      "key": "core/iron-man|attack",
+      "kind": "hero",
+      "card": "Iron Man",
+      "ability": "Repulsor Rays",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): +1 after another Ranged Hero (Call Lightning 12.2.6; the bot's second Repulsor Rays 23.2.9); blocked when played first (6.2.2, 14.2.6).",
+      "note": "Unmarked \"[hc:ranged]: +1\" superpower; no ledger mechanic."
+    },
+    {
+      "key": "core/thor|attack",
+      "kind": "hero",
+      "card": "Thor",
+      "ability": "Call Lightning",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): +3 after another Ranged Hero (Repulsor Rays 14.2.8, 18.2.10); blocked with no other Ranged Hero (8.2.6, 12.2.4).",
+      "note": "Unmarked \"[hc:ranged]: +3\" superpower; no ledger mechanic."
+    },
+    {
+      "key": "core/thor|recruit",
+      "kind": "hero",
+      "card": "Thor",
+      "ability": "Odinson",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match mzasQjZ3DU2 (server build 3c9f632d), 2p with a bot ally, Loki / Negative Zone Prison Breakout (Enemies of Asgard + Spider-Foes; Iron Man, Hulk, Thor, Nick Fury, Hawkeye): +2 Recruit after another Strength Hero (Hulk Smash! 14.2.4; Growing Anger 18.2.6); blocked when played first (8.2.2, 12.2.2).",
+      "note": "Unmarked \"[hc:strength]: +2 Recruit\" superpower; no ledger mechanic."
+    },
+    {
+      "key": "core/rogue|attack",
+      "kind": "hero",
+      "card": "Rogue",
+      "ability": "Borrowed Brawn",
+      "wp": "",
+      "state": "verified",
+      "date": "2026-10-17",
+      "evidence": "Operator match G0nCu29pk28 (server build 3c9f632d), 2p with a bot ally, Red Skull / Secret Invasion of the Skrull Shapeshifters (HYDRA + Skrulls; Black Widow, Deadpool, Rogue, Captain America, Spider-Man, Storm): +3 after Perfect Teamwork (Strength) at 14.2.4, 20.2.4 and 26.2.21; the bot's +3 after Astonishing Strength (15.2.12) and after a first Borrowed Brawn that was itself blocked (23.2.5 → 23.2.9); blocked when played first (8.2.2; the bot's 9.2.5 / 19.2.5). A Steal Abilities copy of Borrowed Brawn also fired its +3 (30.2.13–30.2.14). Earlier blocked half: 8Mw9mLkcgQ4 13.2.12.",
+      "note": "Unmarked \"[hc:strength]: +3\" superpower; no ledger mechanic. The L3yPdfS179l 16.2.8 firing was the D-24730 carry-over bug, not this evidence."
+    },
+    {
+      "key": "wound:core/wound|healing",
+      "kind": "wound",
+      "card": "Wound",
+      "ability": "Healing: KO all Wounds from your hand if you did not recruit or fight this turn",
+      "wp": "WP-380",
+      "state": "verified",
+      "date": "2026-07-15",
+      "evidence": "Red Skull game, match 8Qh6W1WAI7j (gitSha 80ba584): Player 0 healed on turns 16, 24 and 32, KO'ing 1-2 Wounds each, with no fight or recruit those turns (WP-380 D-24026, STATUS).",
+      "note": "Row added 2026-10-19; the confirmation predates this record. Heal and the no-fight / no-recruit lock (D-24180) both seen."
+    },
+    {
+      "key": "cvwr/captain-america-secret-avenger|gain-sidekick",
+      "kind": "hero",
+      "card": "Captain America, Secret Avenger",
+      "ability": "Inspire a Nation",
+      "wp": "WP-844",
+      "state": "verified",
+      "date": "2026-10-26",
+      "evidence": "2-player operator match `CGZCvfU3Jmd` (core Magneto / Midtown Bank Robbery; Captain America, Secret Avenger, Spider-Man, Hulk, Wolverine, Black Widow; `sidekicksCount` 12), created after the deploy (server `72231815`, client `7223181`, then `c0589b5`, a docs-only SPEC on top of the merge): playing Inspire a Nation took the Sidekick Stack 12 -> 11 and put pile-sidekick in the discard, logging the applied line (1.2.7); the once-per-turn Sidekick recruit then succeeded (11 -> 10, 1.2.9).",
+      "note": "Gain a Sidekick: Stack -1, discard +1, applied log line, recruit button still enabled after the gain. D-24778."
+    },
+    {
+      "key": "core-villain-brotherhood-sabretooth|reveal-or-wound",
+      "kind": "villain",
+      "card": "Sabretooth",
+      "ability": "Fight: Each player reveals an X-Men Hero or gains a Wound",
+      "wp": "WP-845",
+      "state": "pending",
+      "date": "2026-10-26",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com 2-player match created after the WP-845 deploy where a reveal-or-wound fires with a revealer, per the WP-845 DoD.",
+      "note": "The revealer sees 'Reveal a Hero or gain a Wound?' on their own seat; Reveal avoids the Wound, Gain a Wound instead takes it; cannot-reveal seats are wounded at once. D-24779."
+    },
+    {
+      "key": "mastermind:core/loki|master-strike-turn-order",
+      "kind": "mastermind",
+      "card": "Loki",
+      "ability": "Master Strike: each player reveals a Strength Hero or gains a Wound, starting with the current player",
+      "wp": "WP-846",
+      "state": "verified",
+      "date": "2026-10-27",
+      "evidence": "2-player operator match `N1hraIl46Jp` (core Loki / Midtown Bank Robbery; Enemies of Asgard + Brotherhood, Hand Ninjas; Black Widow, Hawkeye, Iron Man, Storm, Gambit), created 2026-10-27T00:49 after the deploy (server `22226287`, client `973b421`): on Player 1's turn the core Loki Master Strike logged Player 1 then Player 0 (2.1.1-2.1.2); on Player 0's turns Player 0 first (1.1.x, 1.2.8-1.2.9). Reveal-or-wound followed suit: Ymir Ambush (Player 0, Player 1) on Player 0's turn (13.1.5); Sabretooth Escape and Ymir Ambush (Player 1, Player 0) on Player 1's turn (14.1.4-14.1.5).",
+      "note": "The per-seat log lines name the current player first, then clockwise. D-24780."
     }
   ]
 }

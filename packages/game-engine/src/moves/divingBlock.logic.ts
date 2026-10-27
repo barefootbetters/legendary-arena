@@ -33,6 +33,9 @@ import { drawCardsIntoHand } from './drawCards.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { parkSeatChoice } from './seatChoice.resolve.js';
 import { pushLog } from '../log/logPush.js';
+// why: WP-827 / D-24760 — a declined Diving Block hands the Wound to Flying Shield Block.
+// flyingShieldBlock.logic and this module reference each other only inside function bodies.
+import { checkFlyingShieldBlock } from './flyingShieldBlock.logic.js';
 
 /** The seat-choice kind discriminant for a Diving-Block reveal/decline wave. */
 export const DIVING_BLOCK_SEAT_CHOICE_KIND = 'diving-block';
@@ -42,7 +45,7 @@ export const DIVING_BLOCK_SEAT_CHOICE_KIND = 'diving-block';
 // is optional pure-upside, but an absent seat resolves to keeping the Wound, never
 // a phantom free draw). These indices are the contract between the wave builder,
 // the client prompt, and the apply.
-const DIVING_BLOCK_REVEAL_OPTION_INDEX = 0;
+export const DIVING_BLOCK_REVEAL_OPTION_INDEX = 0;
 const DIVING_BLOCK_DECLINE_OPTION_INDEX = 1;
 
 /**
@@ -177,23 +180,26 @@ export function hasPendingDivingBlockWounds(G: LegendaryGameState): boolean {
  * @param G - The game state, mutated in place (pending FIFO appended).
  * @param playerID - The player who just gained the Wound.
  * @param woundCardId - The Wound card now in the player's discard pile.
+ * @returns true when an interception was parked (WP-827 / D-24760: the chokepoint then skips
+ *   Flying Shield Block for this Wound).
  */
 export function checkDivingBlock(
   G: LegendaryGameState,
   playerID: string,
   woundCardId: CardExtId,
-): void {
+): boolean {
   // why: D-24673 — rules v23 "Revealing a Card": "You can reveal the same card
   // multiple times in a turn if necessary." Revealing never uses Diving Block up, so
   // ONE revealable copy can stop every Wound; each Wound parks its own interception.
   // (D-24499 had capped the reveals at one per copy.)
   if (countRevealableDivingBlockCopies(G, playerID) === 0) {
-    return;
+    return false;
   }
   if (G.pendingDivingBlockWounds === undefined) {
     G.pendingDivingBlockWounds = [];
   }
   G.pendingDivingBlockWounds.push({ playerID, woundCardId });
+  return true;
 }
 
 /**
@@ -298,11 +304,14 @@ export function openDivingBlockSeatChoiceIfNeeded(
  * @param G - The game state, mutated in place.
  * @param choice - The fully-submitted Diving-Block seat choice.
  * @param shuffleContext - Deterministic reshuffle source for the reveal draw.
+ * @param currentPlayer - The turn's active player, if known; only that seat's reveal draw
+ *   counts toward turnEconomy.cardsDrawn (D-24732).
  */
 export function applyDivingBlockResolvedSeatChoice(
   G: LegendaryGameState,
   choice: PendingSeatChoice,
   shuffleContext: ShuffleProvider | undefined,
+  currentPlayer?: string,
 ): void {
   const seatsInApplyOrder = [...choice.addressedSeats].sort();
   for (const seat of seatsInApplyOrder) {
@@ -320,11 +329,14 @@ export function applyDivingBlockResolvedSeatChoice(
     }
     const woundEntry = queue[woundIndex]!;
     if (submission.optionIndex === DIVING_BLOCK_REVEAL_OPTION_INDEX) {
-      applyDivingBlockReveal(G, seat, woundEntry.woundCardId, shuffleContext);
+      applyDivingBlockReveal(G, seat, woundEntry.woundCardId, shuffleContext, seat === currentPlayer);
     } else {
       pushLog(G,
         `Player ${seat} took the Wound (declined Diving Block).`,
       );
+      // why: WP-827 / D-24760 — the Wound is kept, so a seat holding Flying Shield Block may
+      // still prevent it; its wave opens after the Diving Block queue drains.
+      checkFlyingShieldBlock(G, seat, woundEntry.woundCardId);
     }
     // Drain this seat's resolved Wound from the FIFO (front-pop per seat).
     queue.splice(woundIndex, 1);
@@ -343,12 +355,14 @@ export function applyDivingBlockResolvedSeatChoice(
  * @param seat - The revealing seat.
  * @param woundCardId - The Wound card to return to the supply.
  * @param shuffleContext - Deterministic reshuffle source for the draw.
+ * @param isCurrentPlayer - Whether the revealing seat is the turn's active player.
  */
 function applyDivingBlockReveal(
   G: LegendaryGameState,
   seat: string,
   woundCardId: CardExtId,
   shuffleContext: ShuffleProvider | undefined,
+  isCurrentPlayer: boolean,
 ): void {
   const playerZones = G.playerZones[seat];
   if (!playerZones) {
@@ -362,7 +376,7 @@ function applyDivingBlockReveal(
   if (!moveResult.found) {
     // why: the Wound is no longer in discard (should not happen while the board is
     // frozen) — skip the return but still draw, so the reveal is never a dead no-op.
-    drawCardsIntoHandGuarded(G, seat, shuffleContext);
+    drawCardsIntoHandGuarded(G, seat, shuffleContext, isCurrentPlayer);
     pushLog(G,
       `Player ${seat} revealed Diving Block and drew a card.`,
     );
@@ -370,7 +384,7 @@ function applyDivingBlockReveal(
   }
   playerZones.discard = moveResult.from;
   G.piles.wounds = moveResult.to;
-  drawCardsIntoHandGuarded(G, seat, shuffleContext);
+  drawCardsIntoHandGuarded(G, seat, shuffleContext, isCurrentPlayer);
   pushLog(G,
     `Player ${seat} revealed Diving Block: prevented the Wound and drew a card.`,
   );
@@ -387,15 +401,24 @@ function applyDivingBlockReveal(
  * @param G - The game state, mutated in place.
  * @param seat - The seat drawing a card.
  * @param shuffleContext - Deterministic reshuffle source, or undefined.
+ * @param isCurrentPlayer - Whether the seat is the turn's active player.
  */
 function drawCardsIntoHandGuarded(
   G: LegendaryGameState,
   seat: string,
   shuffleContext: ShuffleProvider | undefined,
+  isCurrentPlayer: boolean,
 ): void {
   const playerZones = G.playerZones[seat];
   if (!playerZones || shuffleContext === undefined) {
     return;
   }
+  const handSizeBefore = playerZones.hand.length;
   drawCardsIntoHand(playerZones, 1, shuffleContext);
+  // why: D-24732 — the active player's draw-instead is an extra card drawn this turn.
+  // Another seat's reveal (a Master Strike wounds every player) is not, because
+  // turnEconomy belongs to the active player alone.
+  if (isCurrentPlayer) {
+    G.turnEconomy.cardsDrawn += playerZones.hand.length - handSizeBefore;
+  }
 }

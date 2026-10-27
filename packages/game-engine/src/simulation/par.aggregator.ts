@@ -62,6 +62,7 @@ import { resolveDeferredHeroGrants } from '../hero/heroEffects.execute.js';
 // top-level cross-reference.
 import { openNonActiveReturnOnDiscardSeatChoiceIfNeeded } from '../moves/resolveReturnOnDiscard.js';
 import { openEscapeProcedureSeatChoiceIfNeeded } from '../villainDeck/villainEscapeProcedure.js';
+import { openRevealOrWoundSeatChoiceIfNeeded } from '../moves/revealOrWoundChoice.logic.js';
 import { computeFinalScores, isBystanderCard, isVictoryPileBystander } from '../scoring/scoring.logic.js';
 import { computeRawScore, computeParScore } from '../scoring/parScoring.logic.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
@@ -498,7 +499,8 @@ const MOVE_MAP: Record<string, MoveFn> = {
   // why: WP-757 / D-24587 — getLegalMoves emits exorciseHauntedHero per affordable Haunted
   // HQ slot; a missing dispatch entry would spin the per-turn loop (pinned by the drift guard).
   exorciseHauntedHero: (context, args) => exorciseHauntedHero(context as never, args as never),
-  fightMastermind: (context) => fightMastermind(context as never),
+  // why: WP-830 / D-24763 — pass the args through: the Enigma Code guess rides on them.
+  fightMastermind: (context, args) => fightMastermind(context as never, args as never),
   // why: WP-286 — must be dispatchable (One-Hit Wonder parks a draw-or-empowered choice
   // unconditionally; the block-all guard freezes every other move until it resolves).
   resolveDrawOrEmpowered: (context, args) => resolveDrawOrEmpowered(context as never, args as never),
@@ -777,6 +779,10 @@ function simulateOneGame(
         openNonActiveReturnOnDiscardSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         applyPileDepletionResourceLoss(gameState);
+        // why: WP-845 / D-24779 — mirror the live reveal-or-gain-a-Wound opener at its live
+        // position (after the escape opener and the depletion re-check, before the unmirrored
+        // Diving Block opener), so a queued revealer is asked in the PAR loop too.
+        openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
         continue;
       }
     }
@@ -860,6 +866,10 @@ function simulateOneGame(
     openNonActiveReturnOnDiscardSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
     openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
     applyPileDepletionResourceLoss(gameState);
+    // why: WP-845 / D-24779 — mirror the live reveal-or-gain-a-Wound opener at its live position
+    // (after the escape opener and the depletion re-check, before the unmirrored Diving Block
+    // opener). The WP-749 non-active dispatch then answers it at its default (Reveal).
+    openRevealOrWoundSeatChoiceIfNeeded(gameState, undefined, currentPlayer);
 
     // why: zero-legal-moves fallback. If the policy returned endTurn
     // outside cleanup, the move is a silent no-op and the loop would

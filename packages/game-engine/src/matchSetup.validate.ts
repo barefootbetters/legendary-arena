@@ -83,6 +83,18 @@ export interface CardRegistryReader {
    * impl carries it as a required member of `CardRegistry`.
    */
   resolveEffectiveHenchmenCount?(schemeId: string, numPlayers: number, baseHenchmenCount: number): number;
+  /**
+   * Scheme-aware effective Villain Group count (D-24766 — the printed "Add an
+   * extra Villain Group" schemes require base + 1).
+   *
+   * why: read structurally off the registry object, like
+   * `resolveEffectiveHenchmenCount`, so the engine reaches the ONE registry-side
+   * definition without importing the registry package. Optional so a hand-rolled
+   * test mock that omits it falls back to the base `villainGroupCount` (the
+   * `?.`/`??` below); every production registry impl carries it as a required
+   * member of `CardRegistry`.
+   */
+  resolveEffectiveVillainGroupCount?(schemeId: string, numPlayers: number, baseVillainGroupCount: number): number;
 }
 
 /**
@@ -514,7 +526,15 @@ function validatePlayerCountComposition(
     return;
   }
   const schemeId = typeof input.schemeId === 'string' ? input.schemeId : '';
-  checkCompositionCount('villainGroupIds', 'villain groups', row.villainGroupCount, numPlayers, input, errors);
+  // why: D-24766 — the Villain Group requirement is scheme-aware ("Add an extra
+  // Villain Group" requires base + 1). The `?.`/`?? row.villainGroupCount`
+  // fallback keeps a table-only test mock (no resolver method) on the base count;
+  // every production registry carries the resolver (required on CardRegistry), so
+  // it never reverts in a real Game.setup.
+  const requiredVillainGroupCount =
+    registry.resolveEffectiveVillainGroupCount?.(schemeId, numPlayers, row.villainGroupCount) ??
+    row.villainGroupCount;
+  checkCompositionCount('villainGroupIds', 'villain groups', requiredVillainGroupCount, numPlayers, input, errors);
   // why: D-24666 — the Henchman-group requirement is scheme-aware ("Add an extra
   // Henchman group" requires base + 1). The `?.`/`?? row.henchmenGroupCount`
   // fallback keeps a table-only test mock (no resolver method) on the base count;

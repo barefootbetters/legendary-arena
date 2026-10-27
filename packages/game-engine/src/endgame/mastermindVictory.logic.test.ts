@@ -120,13 +120,13 @@ describe('promoteMastermindVictoryIfPending (WP-732 / D-24553)', () => {
 const ALL_PENDING_FIELDS = [
   'pendingCopyPowersChoices', 'pendingCountScaledChoice', 'pendingDefeatChoices',
   'pendingDiscardChoices', 'pendingDiscardToPlay', 'pendingDivingBlockWounds',
-  'pendingDoOverChoices', 'pendingDrawOrEmpowered', 'pendingElectromagneticBubbleChoices', 'pendingEscapeProcedures',
+  'pendingDoOverChoices', 'pendingDrawOrEmpowered', 'pendingElectromagneticBubbleChoices', 'pendingEnigmaPeekOffers', 'pendingEscapeEffectDiscards', 'pendingEscapeProcedures', 'pendingFlyingShieldBlockWounds',
   'pendingGiveHqHeroChoices', 'pendingHeroChoice', 'pendingKoDiscardChoices',
   'pendingKoHeroChoices', 'pendingMelterKoChoices', 'pendingOptionalKoRewards',
-  'pendingOptionalPutBottomHQ', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
+  'pendingOptionalPutBottomHQ', 'pendingOutOfTimeGrants', 'pendingPlayVillainTopChoices', 'pendingPutAnyNumberBottomHQ',
   'pendingPutCardsOnDeckChoices', 'pendingPutHandOnDeckTop', 'pendingReorderChoices', 'pendingReturnOnDiscard',
-  'pendingReturnZeroCostDiscard', 'pendingRevealThreeAssign', 'pendingRevealTopDispose', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
-  'pendingSeatChoice', 'pendingSmashDiscards', 'pendingUndercoverChoice',
+  'pendingReturnZeroCostDiscard', 'pendingRevealOrWoundChoices', 'pendingRevealThreeAssign', 'pendingRevealTopDispose', 'pendingRuthlessDictatorChoices', 'pendingScryKoChoices',
+  'pendingSeatChoice', 'pendingSmashDiscards', 'pendingTimestreamPurges', 'pendingUndercoverChoice',
   'pendingVictoryPileCardPick',
 ] as const;
 const SINGLE_VALUE_PENDING_FIELDS = new Set(['pendingHeroChoice', 'pendingSeatChoice']);

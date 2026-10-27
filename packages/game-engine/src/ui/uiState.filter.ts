@@ -22,6 +22,8 @@
 
 import type {
   UIState,
+  UIEnigmaCard,
+  UIEnigmaCodeState,
   UIPlayerState,
   UITurnEconomyState,
   UICityCard,
@@ -114,6 +116,12 @@ function deepCopyCitySpaces(
         attachedHeroDisplay: space.attachedHeroDisplay.map((entry) => ({ ...entry })),
         attachedBystanderCount: space.attachedBystanderCount,
         fightCost: space.fightCost,
+        // why: WP-817 / D-24750 — the public fight discard cost MUST pass through here
+        // or the whitelist drops it (the EC-206 / PR #1165 failure mode). Conditional
+        // spread (never a literal undefined) with a fresh array copy.
+        ...(space.fightDiscardCosts !== undefined
+          ? { fightDiscardCosts: [...space.fightDiscardCosts] }
+          : {}),
       });
     }
   }
@@ -326,6 +334,13 @@ function preserveHandCards(player: UIPlayerState): UIPlayerState {
     base.handDisplay = copiedHandDisplay;
   }
 
+  // why: WP-817 / D-24750 — handCosts is owner-only exactly like handCards /
+  // handDisplay: copied here for the owning audience, never assigned by
+  // redactHandCards. Conditional assignment, fresh copy.
+  if (player.handCosts !== undefined) {
+    base.handCosts = [...player.handCosts];
+  }
+
   // why: WP-128 / D-12803 — active player sees own inPlayCards /
   // inPlayDisplay; same conditional-assignment pattern as handCards.
   // Spread copy prevents aliasing with input UIState.
@@ -487,6 +502,20 @@ export function filterUIStateForAudience(
       ...(uiState.economy.excessiveViolenceAvailable === true
         ? { excessiveViolenceAvailable: true as const }
         : {}),
+      // why: WP-819 / D-24753 — pass Baron Zemo's rescue-on-fight cue through for the
+      // ACTIVE player only, omit-when-absent, exactly like the Excessive Violence cue. The
+      // filter is a whitelist: a field it does not name is silently dropped (EC-206), and
+      // the WP-820 control would never appear. REDACTED_ECONOMY never carries it.
+      ...(uiState.economy.rescueOnFightAvailable === true
+        ? { rescueOnFightAvailable: true as const }
+        : {}),
+      // why: WP-842 / D-24776 — pass the once-per-turn Sidekick recruit cue through for the
+      // ACTIVE player only, omit-when-absent. The filter is a whitelist: a field it does not
+      // name is silently dropped (EC-206), and the Sidekicks cell would never disable after a
+      // recruit. REDACTED_ECONOMY never carries it.
+      ...(uiState.economy.hasRecruitedSidekickThisTurn === true
+        ? { hasRecruitedSidekickThisTurn: true as const }
+        : {}),
       // why: WP-783 / D-24629 — the Phasing options name cards in the owner's hand, so
       // they pass through for the ACTIVE player only, as a copied array, omit-when-absent.
       // REDACTED_ECONOMY (non-active players + spectators) never carries them. A field that
@@ -634,6 +663,12 @@ export function filterUIStateForAudience(
             },
           }
         : {}),
+      // why: WP-830 / D-24763 — the Enigma Code is PER-AUDIENCE: a card's display / colors survive
+      // only for a viewer who has looked at it, or for everyone once a right guess revealed the
+      // code. Every viewer keeps the card count and who has peeked (the peek log is public).
+      ...(uiState.scheme.enigmaCode !== undefined
+        ? { enigmaCode: filterEnigmaCodeForAudience(uiState.scheme.enigmaCode, audience) }
+        : {}),
     },
     economy,
     log: [...uiState.log],
@@ -672,6 +707,11 @@ export function filterUIStateForAudience(
       ...uiState.piles,
       ...(uiState.piles.officerDisplay !== undefined
         ? { officerDisplay: { ...uiState.piles.officerDisplay } }
+        : {}),
+      // why: WP-842 / D-24776 — the Sidekick card face is public too and fresh-copied the
+      // same way, so the filtered UIState never aliases the full one's object.
+      ...(uiState.piles.sidekickDisplay !== undefined
+        ? { sidekickDisplay: { ...uiState.piles.sidekickDisplay } }
         : {}),
     },
     koPile: deepCopyKoPile(uiState.koPile),
@@ -1065,6 +1105,11 @@ export function filterUIStateForAudience(
       choiceType: uiState.pendingKoDiscardChoice.choiceType,
       playerID: uiState.pendingKoDiscardChoice.playerID,
       maxCount: uiState.pendingKoDiscardChoice.maxCount,
+      // why: D-24783 — pass the grey filter through to the chooser (the whitelist drops any
+      // field it does not name); omitted on an unfiltered entry.
+      ...(uiState.pendingKoDiscardChoice.greyFilter !== undefined
+        ? { greyFilter: uiState.pendingKoDiscardChoice.greyFilter }
+        : {}),
       discard: discardCopy,
     };
   }
@@ -1647,4 +1692,26 @@ export function filterUIStateForAudience(
   }
 
   return result;
+}
+
+/**
+ * Redacts the Enigma Code for one audience (WP-830 / D-24763).
+ *
+ * @param enigmaCode - The full projection from buildUIState.
+ * @param audience - The viewer.
+ * @returns A fresh projection: unseen cards carry only `peekedBy`.
+ */
+function filterEnigmaCodeForAudience(enigmaCode: UIEnigmaCodeState, audience: UIAudience): UIEnigmaCodeState {
+  const cards: UIEnigmaCard[] = [];
+  for (const card of enigmaCode.cards) {
+    const isViewerAllowed =
+      enigmaCode.isRevealed ||
+      (audience.kind === 'player' && card.peekedBy.includes(audience.playerId));
+    if (isViewerAllowed && card.display !== undefined) {
+      cards.push({ peekedBy: [...card.peekedBy], display: { ...card.display }, colors: [...(card.colors ?? [])] });
+    } else {
+      cards.push({ peekedBy: [...card.peekedBy] });
+    }
+  }
+  return { isRevealed: enigmaCode.isRevealed, cards };
 }

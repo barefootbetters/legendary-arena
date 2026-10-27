@@ -18,7 +18,7 @@ related:
   - seed-challenges.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\leaderboard.md (this page — https://ewiki.legendary-arena.com/leaderboard/)
+  - C:\dev\legendary-arena\wiki\leaderboard.md (this page — https://ewiki.legendary-arena.com/leaderboard/)
   - ../apps/legends-board/package.json
   - ../apps/legends-board/src/App.vue
   - ../apps/legends-board/src/snapshots/snapshotClient.ts
@@ -486,7 +486,7 @@ pool claims the first Fixed-Pool Championship, with their pool on the board.
 > any commitment to the full 110.
 
 **The idea.** One article per gauntlet on
-`www.legendary-arena.com/posts/`, showing the gauntlet's composition and
+`www.legendary-arena.com/blog/`, showing the gauntlet's composition and
 offering hero commentary. The motivating problem is real: every board is
 currently unclaimed, so each gauntlet page is a dead end with nothing to
 read and nothing for a search engine to index. Editorial gives all 110 a
@@ -526,7 +526,7 @@ defensible content — replay-verified win rates are something only the
 operator of the verification pipeline can write.
 
 **IP naming — decided (D-24191).** All **55** pre-existing posts under
-`content/posts/` name **zero** Marvel characters and never use the word
+`content/blog/` name **zero** Marvel characters and never use the word
 "Marvel"; that house style is deliberate. Per-gauntlet posts are the
 opposite by construction — their value is naming a specific mastermind and
 its schemes — so the operator ratified a **scoped carve-out**:

@@ -31,11 +31,34 @@
  *                       showing the matched line + the marker that would be
  *                       appended, and writes nothing.
  *
+ * WP-817 / D-24750 adds a second, optional list, `fightDiscardCosts`: a fight
+ * discard COST ("To fight Primus, you must also discard a card that costs 2, 3,
+ * 5, or 7"). Each entry appends `[discard-to-fight:cost:<c>[+<c>…]]` to the
+ * single ability line that begins with "To fight " (the line has no inline
+ * trait token to anchor on). The engine reads it into G.villainFightDiscardCosts.
+ *
+ * WP-841 / D-24774 adds a third, optional list, `variableAttack`: a printed
+ * passive that raises a villain's Attack at fight time ("Hydro-Man gets +2 Attack
+ * in the Sewers and Bridge"). Each entry `{ set, group, card, source,
+ * attackPerUnit, spaces? }` appends
+ * `[variable-attack:<source>:<attackPerUnit>[@<space>[+<space>…]]]` (the gate
+ * sits inside the brackets) to the single ability line whose lower-cased text
+ * contains both " gets +" and "[icon:attack]". `source` is one of `flat`,
+ * `per-other-hydra-villain`, `per-hq-hero-class`; `spaces` is required for
+ * `flat` and optional otherwise. The engine reads it into G.villainVariableAttack.
+ *
  * Loud-fail (non-zero exit, full-sentence message) on:
  *   - a `kind` outside the two locked tokens (`team`, `hc`);
  *   - a named set / villain-group / villain-card that does not exist;
  *   - a card whose abilities carry zero, or more than one, line with the
- *     inline `[<kind>:<value>]` token (cannot disambiguate which line owns it).
+ *     inline `[<kind>:<value>]` token (cannot disambiguate which line owns it);
+ *   - a `fightDiscardCosts` entry whose `costs` is not a non-empty, strictly
+ *     ascending list of non-negative integers, or whose card carries zero, or
+ *     more than one, line beginning with "To fight ";
+ *   - a `variableAttack` entry with an unknown `source`, an `attackPerUnit` that
+ *     is not a positive integer, a `spaces` list that is empty, repeats a space or
+ *     names an unknown one, a `flat` entry with no `spaces`, or a card whose
+ *     abilities carry zero, or more than one, " gets +" + "[icon:attack]" line.
  *
  * Usage:
  *   node scripts/convert-cards/apply-defeat-requirement-markers.mjs
@@ -61,6 +84,27 @@ const REQUIREMENT_MAP_PATH = join(INPUTS_DIR, 'villain-defeat-requirements.json'
 // engine, never imported from packages/ (the .mjs ops-script discipline);
 // drift here loud-fails on an unknown `kind` until manually updated.
 const LOCKED_REQUIREMENT_KINDS = ['team', 'hc'];
+
+// why: WP-817 / D-24750 — the fight-discard-cost line is located by its printed
+// opening ("To fight Primus, …"), compared on the trimmed, lower-cased line. It
+// carries no timing prefix and no inline trait token, so this is the only stable
+// anchor; a card with zero or several such lines loud-fails.
+const FIGHT_DISCARD_LINE_PREFIX = 'to fight ';
+
+// why: WP-841 / D-24774 — the three locked variable-Attack sources and the five
+// City space names. Kept hand-synced with the engine (VILLAIN_VARIABLE_ATTACK_SOURCES
+// in economy/villainVariableAttack.logic.ts and CITY_SPACE_NAMES in
+// board/citySpaceNames.ts), never imported from packages/ (the .mjs ops-script
+// discipline); drift here loud-fails on an unknown source or space.
+const LOCKED_VARIABLE_ATTACK_SOURCES = ['flat', 'per-other-hydra-villain', 'per-hq-hero-class'];
+const LOCKED_CITY_SPACE_NAMES = ['sewers', 'bank', 'rooftops', 'streets', 'bridge'];
+
+// why: WP-841 / D-24774 — the passive line is located by its printed shape
+// ("<Villain> gets +N[icon:attack] …"), compared on the lower-cased line. Both
+// substrings are required so a line that merely mentions Attack never matches;
+// a card with zero or several such lines loud-fails.
+const VARIABLE_ATTACK_LINE_GETS = ' gets +';
+const VARIABLE_ATTACK_LINE_ICON = '[icon:attack]';
 
 /**
  * Builds the absolute path to a set's card-data JSON file.
@@ -115,6 +159,117 @@ function validateEntry(entry) {
         `"${entry.set}/${entry.group}/${entry.card}", but the locked kinds are ` +
         `[${LOCKED_REQUIREMENT_KINDS.map((value) => `"${value}"`).join(', ')}]. Fix the kind in the map.`,
     );
+  }
+}
+
+/**
+ * Validates one `fightDiscardCosts` entry, loud-failing on anything wrong.
+ *
+ * @param {object} entry - One fight-discard-cost map entry.
+ * @throws If set / group / card is missing or blank, or `costs` is not a
+ *   non-empty, strictly ascending list of non-negative integers.
+ */
+function validateFightDiscardCostEntry(entry) {
+  for (const field of ['set', 'group', 'card']) {
+    if (typeof entry[field] !== 'string' || entry[field].length === 0) {
+      throw new Error(
+        `villain-defeat-requirements.json has a fightDiscardCosts entry missing the required ` +
+          `string field "${field}" (entry: ${JSON.stringify(entry)}). Every entry needs set, ` +
+          `group, card, and costs.`,
+      );
+    }
+  }
+  const costs = entry.costs;
+  const label = `"${entry.set}/${entry.group}/${entry.card}"`;
+  if (!Array.isArray(costs) || costs.length === 0) {
+    throw new Error(
+      `villain-defeat-requirements.json gives fightDiscardCosts entry ${label} a "costs" value ` +
+        `of ${JSON.stringify(costs)}, but it must be a non-empty array of costs such as [2, 3, 5, 7].`,
+    );
+  }
+  let previousCost = -1;
+  for (const cost of costs) {
+    if (!Number.isInteger(cost) || cost < 0) {
+      throw new Error(
+        `villain-defeat-requirements.json gives fightDiscardCosts entry ${label} the cost ` +
+          `${JSON.stringify(cost)}, but every cost must be a non-negative integer. Fix the costs list.`,
+      );
+    }
+    if (cost <= previousCost) {
+      throw new Error(
+        `villain-defeat-requirements.json gives fightDiscardCosts entry ${label} the costs ` +
+          `${JSON.stringify(costs)}, but the list must be strictly ascending with no duplicates. ` +
+          `Sort the costs and remove repeats.`,
+      );
+    }
+    previousCost = cost;
+  }
+}
+
+/**
+ * Validates one `variableAttack` entry, loud-failing on anything wrong.
+ *
+ * @param {object} entry - One variable-Attack map entry.
+ * @throws If set / group / card is missing or blank, `source` is not locked,
+ *   `attackPerUnit` is not a positive integer, or `spaces` is malformed or
+ *   missing on a `flat` entry.
+ */
+function validateVariableAttackEntry(entry) {
+  for (const field of ['set', 'group', 'card', 'source']) {
+    if (typeof entry[field] !== 'string' || entry[field].length === 0) {
+      throw new Error(
+        `villain-defeat-requirements.json has a variableAttack entry missing the required ` +
+          `string field "${field}" (entry: ${JSON.stringify(entry)}). Every entry needs set, ` +
+          `group, card, source, and attackPerUnit.`,
+      );
+    }
+  }
+  const label = `"${entry.set}/${entry.group}/${entry.card}"`;
+  if (!LOCKED_VARIABLE_ATTACK_SOURCES.includes(entry.source)) {
+    throw new Error(
+      `villain-defeat-requirements.json gives variableAttack entry ${label} the source ` +
+        `"${entry.source}", but the locked sources are ` +
+        `[${LOCKED_VARIABLE_ATTACK_SOURCES.map((value) => `"${value}"`).join(', ')}]. Fix the source in the map.`,
+    );
+  }
+  if (!Number.isInteger(entry.attackPerUnit) || entry.attackPerUnit < 1) {
+    throw new Error(
+      `villain-defeat-requirements.json gives variableAttack entry ${label} an "attackPerUnit" of ` +
+        `${JSON.stringify(entry.attackPerUnit)}, but it must be a positive integer such as 1 or 2.`,
+    );
+  }
+  if (entry.spaces === undefined) {
+    if (entry.source === 'flat') {
+      throw new Error(
+        `villain-defeat-requirements.json gives variableAttack entry ${label} the source "flat" ` +
+          `with no "spaces" list, but a flat bonus must name the City spaces it applies on ` +
+          `(for example ["sewers", "bridge"]). Add the spaces to the map.`,
+      );
+    }
+    return;
+  }
+  if (!Array.isArray(entry.spaces) || entry.spaces.length === 0) {
+    throw new Error(
+      `villain-defeat-requirements.json gives variableAttack entry ${label} a "spaces" value of ` +
+        `${JSON.stringify(entry.spaces)}, but it must be a non-empty array of City space names.`,
+    );
+  }
+  const seenSpaces = [];
+  for (const space of entry.spaces) {
+    if (!LOCKED_CITY_SPACE_NAMES.includes(space)) {
+      throw new Error(
+        `villain-defeat-requirements.json gives variableAttack entry ${label} the space ` +
+          `${JSON.stringify(space)}, but the City spaces are ` +
+          `[${LOCKED_CITY_SPACE_NAMES.map((value) => `"${value}"`).join(', ')}]. Fix the space in the map.`,
+      );
+    }
+    if (seenSpaces.includes(space)) {
+      throw new Error(
+        `villain-defeat-requirements.json gives variableAttack entry ${label} the spaces ` +
+          `${JSON.stringify(entry.spaces)}, which repeat "${space}". List each space once.`,
+      );
+    }
+    seenSpaces.push(space);
   }
 }
 
@@ -184,6 +339,101 @@ function findSingleLocatorLineIndex(abilities, locatorToken, entityLabel) {
 }
 
 /**
+ * Finds the single ability-line index that begins with "To fight " (compared on
+ * the trimmed, lower-cased line). Loud-fails on zero or more than one match.
+ *
+ * @param {string[]} abilities - The card's ability lines.
+ * @param {string} entityLabel - A human label for the failing card.
+ * @returns {number} The index of the single matching ability line.
+ * @throws If zero or more than one ability line begins with "To fight ".
+ */
+function findSingleFightDiscardLineIndex(abilities, entityLabel) {
+  const matchingIndexes = [];
+  for (let index = 0; index < abilities.length; index++) {
+    const line = abilities[index];
+    if (typeof line === 'string' && line.trimStart().toLowerCase().startsWith(FIGHT_DISCARD_LINE_PREFIX)) {
+      matchingIndexes.push(index);
+    }
+  }
+  if (matchingIndexes.length === 0) {
+    throw new Error(
+      `villain-defeat-requirements.json maps a fight discard cost onto ${entityLabel}, but that card ` +
+        `has no ability line beginning with "To fight ". Fix the card in the map, or correct the ` +
+        `source ability text.`,
+    );
+  }
+  if (matchingIndexes.length > 1) {
+    throw new Error(
+      `villain-defeat-requirements.json maps a fight discard cost onto ${entityLabel}, but ` +
+        `${matchingIndexes.length} ability lines begin with "To fight " — the overlay cannot say which ` +
+        `line owns the cost. Disambiguate the source text before marking this card.`,
+    );
+  }
+  return matchingIndexes[0];
+}
+
+/**
+ * Finds the single ability-line index whose lower-cased text contains both
+ * " gets +" and "[icon:attack]". Loud-fails on zero or more than one match.
+ *
+ * @param {string[]} abilities - The card's ability lines.
+ * @param {string} entityLabel - A human label for the failing card.
+ * @returns {number} The index of the single matching ability line.
+ * @throws If zero or more than one ability line matches.
+ */
+function findSingleVariableAttackLineIndex(abilities, entityLabel) {
+  const matchingIndexes = [];
+  for (let index = 0; index < abilities.length; index++) {
+    const line = abilities[index];
+    if (typeof line !== 'string') {
+      continue;
+    }
+    const lowerLine = line.toLowerCase();
+    if (lowerLine.includes(VARIABLE_ATTACK_LINE_GETS) && lowerLine.includes(VARIABLE_ATTACK_LINE_ICON)) {
+      matchingIndexes.push(index);
+    }
+  }
+  if (matchingIndexes.length === 0) {
+    throw new Error(
+      `villain-defeat-requirements.json maps a variable Attack onto ${entityLabel}, but that card ` +
+        `has no ability line containing both " gets +" and "[icon:attack]". Fix the card in the ` +
+        `map, or correct the source ability text.`,
+    );
+  }
+  if (matchingIndexes.length > 1) {
+    throw new Error(
+      `villain-defeat-requirements.json maps a variable Attack onto ${entityLabel}, but ` +
+        `${matchingIndexes.length} ability lines contain both " gets +" and "[icon:attack]" — the ` +
+        `overlay cannot say which line owns the passive. Disambiguate the source text before ` +
+        `marking this card.`,
+    );
+  }
+  return matchingIndexes[0];
+}
+
+/**
+ * Builds the `[variable-attack:<source>:<N>[@<space>[+<space>…]]]` marker for a
+ * validated entry. The gate, when present, sits inside the brackets.
+ *
+ * @param {object} entry - One validated variable-Attack entry.
+ * @returns {string} The marker token.
+ */
+function variableAttackMarker(entry) {
+  const gate = entry.spaces ? '@' + entry.spaces.join('+') : '';
+  return `[variable-attack:${entry.source}:${entry.attackPerUnit}${gate}]`;
+}
+
+/**
+ * Builds the `[discard-to-fight:cost:<c>[+<c>…]]` marker for a validated entry.
+ *
+ * @param {object} entry - One validated fight-discard-cost entry.
+ * @returns {string} The marker token.
+ */
+function fightDiscardCostMarker(entry) {
+  return `[discard-to-fight:cost:${entry.costs.join('+')}]`;
+}
+
+/**
  * Appends the `[require-to-defeat:<kind>:<value>]` marker at the END of an
  * ability line, idempotent: a re-run over already-marked data appends nothing.
  *
@@ -217,6 +467,50 @@ function collectEdit(setData, entry) {
   const lineIndex = findSingleLocatorLineIndex(abilities, locatorToken, entityLabel);
   const oldLine = abilities[lineIndex];
   const newLine = appendRequirementMarker(oldLine, marker);
+  if (newLine === oldLine) {
+    return null;
+  }
+  return { groupSlug: entry.group, cardSlug: entry.card, oldLine, newLine };
+}
+
+/**
+ * Collects the surgical edit descriptor for one fight-discard-cost entry
+ * (read-only over the set data). Returns null when the marker is already
+ * present (idempotent).
+ *
+ * @param {object} setData - The parsed set object (read-only).
+ * @param {object} entry - One validated fight-discard-cost entry.
+ * @returns {{ groupSlug: string, cardSlug: string, oldLine: string, newLine: string } | null}
+ */
+function collectFightDiscardEdit(setData, entry) {
+  const card = findVillainCard(setData, entry);
+  const abilities = Array.isArray(card.abilities) ? card.abilities : [];
+  const entityLabel = `villain card "${entry.set}/${entry.group}/${entry.card}"`;
+  const lineIndex = findSingleFightDiscardLineIndex(abilities, entityLabel);
+  const oldLine = abilities[lineIndex];
+  const newLine = appendRequirementMarker(oldLine, fightDiscardCostMarker(entry));
+  if (newLine === oldLine) {
+    return null;
+  }
+  return { groupSlug: entry.group, cardSlug: entry.card, oldLine, newLine };
+}
+
+/**
+ * Collects the surgical edit descriptor for one variable-Attack entry
+ * (read-only over the set data). Returns null when the marker is already
+ * present (idempotent).
+ *
+ * @param {object} setData - The parsed set object (read-only).
+ * @param {object} entry - One validated variable-Attack entry.
+ * @returns {{ groupSlug: string, cardSlug: string, oldLine: string, newLine: string } | null}
+ */
+function collectVariableAttackEdit(setData, entry) {
+  const card = findVillainCard(setData, entry);
+  const abilities = Array.isArray(card.abilities) ? card.abilities : [];
+  const entityLabel = `villain card "${entry.set}/${entry.group}/${entry.card}"`;
+  const lineIndex = findSingleVariableAttackLineIndex(abilities, entityLabel);
+  const oldLine = abilities[lineIndex];
+  const newLine = appendRequirementMarker(oldLine, variableAttackMarker(entry));
   if (newLine === oldLine) {
     return null;
   }
@@ -273,7 +567,9 @@ function applyEditToText(text, edit) {
 /**
  * Reads and validates the curated requirement map.
  *
- * @returns {object[]} The validated entries.
+ * @returns {{ requirements: object[], fightDiscardCosts: object[], variableAttack: object[] }}
+ *   The validated defeat-requirement, fight-discard-cost and variable-Attack entries
+ *   (an absent optional list = empty).
  * @throws If the map is missing, malformed, or any entry is invalid.
  */
 function readRequirementMap() {
@@ -293,7 +589,30 @@ function readRequirementMap() {
   for (const entry of parsed.requirements) {
     validateEntry(entry);
   }
-  return parsed.requirements;
+  // why: WP-817 / D-24750 — `fightDiscardCosts` is optional; an absent list is
+  // empty, so a map without it behaves exactly as before.
+  const fightDiscardCosts = parsed.fightDiscardCosts ?? [];
+  if (!Array.isArray(fightDiscardCosts)) {
+    throw new Error(
+      `villain-defeat-requirements.json has a "fightDiscardCosts" value that is not an array. ` +
+        `Make it an array of { set, group, card, costs } entries, or remove it.`,
+    );
+  }
+  for (const entry of fightDiscardCosts) {
+    validateFightDiscardCostEntry(entry);
+  }
+  // why: WP-841 / D-24774 — `variableAttack` is optional too; absent = empty.
+  const variableAttack = parsed.variableAttack ?? [];
+  if (!Array.isArray(variableAttack)) {
+    throw new Error(
+      `villain-defeat-requirements.json has a "variableAttack" value that is not an array. ` +
+        `Make it an array of { set, group, card, source, attackPerUnit, spaces? } entries, or remove it.`,
+    );
+  }
+  for (const entry of variableAttack) {
+    validateVariableAttackEntry(entry);
+  }
+  return { requirements: parsed.requirements, fightDiscardCosts, variableAttack };
 }
 
 /**
@@ -319,20 +638,46 @@ function groupEntriesBySet(entries) {
  * replacement and writes the file back. One read + one write per set.
  */
 function runApply() {
-  const entries = readRequirementMap();
-  const entriesBySet = groupEntriesBySet(entries);
-  const sortedSetAbbrs = [...entriesBySet.keys()].sort();
+  const map = readRequirementMap();
+  const requirementsBySet = groupEntriesBySet(map.requirements);
+  const fightDiscardCostsBySet = groupEntriesBySet(map.fightDiscardCosts);
+  const variableAttackBySet = groupEntriesBySet(map.variableAttack);
+  const sortedSetAbbrs = [
+    ...new Set([
+      ...requirementsBySet.keys(),
+      ...fightDiscardCostsBySet.keys(),
+      ...variableAttackBySet.keys(),
+    ]),
+  ].sort();
 
-  console.log('🏷  Overlaying [require-to-defeat:] markers onto curated villain restriction lines...\n');
+  console.log('🏷  Overlaying [require-to-defeat:], [discard-to-fight:] and [variable-attack:] markers onto curated villain restriction lines...\n');
 
-  let totalMarkers = 0;
+  let totalRequirementMarkers = 0;
+  let totalFightDiscardMarkers = 0;
+  let totalVariableAttackMarkers = 0;
   for (const setAbbr of sortedSetAbbrs) {
     const setData = readSetData(setAbbr);
     const edits = [];
-    for (const entry of entriesBySet.get(setAbbr)) {
+    let fightDiscardEditCount = 0;
+    let variableAttackEditCount = 0;
+    for (const entry of requirementsBySet.get(setAbbr) ?? []) {
       const edit = collectEdit(setData, entry);
       if (edit !== null) {
         edits.push(edit);
+      }
+    }
+    for (const entry of fightDiscardCostsBySet.get(setAbbr) ?? []) {
+      const edit = collectFightDiscardEdit(setData, entry);
+      if (edit !== null) {
+        edits.push(edit);
+        fightDiscardEditCount += 1;
+      }
+    }
+    for (const entry of variableAttackBySet.get(setAbbr) ?? []) {
+      const edit = collectVariableAttackEdit(setData, entry);
+      if (edit !== null) {
+        edits.push(edit);
+        variableAttackEditCount += 1;
       }
     }
 
@@ -341,12 +686,14 @@ function runApply() {
       text = applyEditToText(text, edit);
     }
     writeFileSync(setFilePath(setAbbr), text, 'utf8');
-    totalMarkers += edits.length;
+    totalRequirementMarkers += edits.length - fightDiscardEditCount - variableAttackEditCount;
+    totalFightDiscardMarkers += fightDiscardEditCount;
+    totalVariableAttackMarkers += variableAttackEditCount;
     console.log(`  ✅ ${setAbbr}.json — ${edits.length} new marker(s) this run`);
   }
 
   console.log(
-    `\nDone. ${sortedSetAbbrs.length} set(s) processed, ${totalMarkers} new [require-to-defeat:] marker(s) appended.`,
+    `\nDone. ${sortedSetAbbrs.length} set(s) processed, ${totalRequirementMarkers} new [require-to-defeat:] marker(s), ${totalFightDiscardMarkers} new [discard-to-fight:] marker(s) and ${totalVariableAttackMarkers} new [variable-attack:] marker(s) appended.`,
   );
 }
 
@@ -356,7 +703,8 @@ function runApply() {
  * apply does, so a bad entry still loud-fails.
  */
 function runPropose() {
-  const entries = readRequirementMap();
+  const map = readRequirementMap();
+  const entries = map.requirements;
   console.log('set | group | card | marker | matchedLine');
   for (const entry of entries) {
     const setData = readSetData(entry.set);
@@ -370,7 +718,28 @@ function runPropose() {
       `${entry.set} | ${entry.group} | ${entry.card} | ${marker} | ${abilities[lineIndex]}`,
     );
   }
-  console.error(`\n(${entries.length} entry(ies); --propose is read-only and wrote nothing.)`);
+  for (const entry of map.fightDiscardCosts) {
+    const setData = readSetData(entry.set);
+    const card = findVillainCard(setData, entry);
+    const abilities = Array.isArray(card.abilities) ? card.abilities : [];
+    const entityLabel = `villain card "${entry.set}/${entry.group}/${entry.card}"`;
+    const lineIndex = findSingleFightDiscardLineIndex(abilities, entityLabel);
+    console.log(
+      `${entry.set} | ${entry.group} | ${entry.card} | ${fightDiscardCostMarker(entry)} | ${abilities[lineIndex]}`,
+    );
+  }
+  for (const entry of map.variableAttack) {
+    const setData = readSetData(entry.set);
+    const card = findVillainCard(setData, entry);
+    const abilities = Array.isArray(card.abilities) ? card.abilities : [];
+    const entityLabel = `villain card "${entry.set}/${entry.group}/${entry.card}"`;
+    const lineIndex = findSingleVariableAttackLineIndex(abilities, entityLabel);
+    console.log(
+      `${entry.set} | ${entry.group} | ${entry.card} | ${variableAttackMarker(entry)} | ${abilities[lineIndex]}`,
+    );
+  }
+  const entryCount = entries.length + map.fightDiscardCosts.length + map.variableAttack.length;
+  console.error(`\n(${entryCount} entry(ies); --propose is read-only and wrote nothing.)`);
 }
 
 /**

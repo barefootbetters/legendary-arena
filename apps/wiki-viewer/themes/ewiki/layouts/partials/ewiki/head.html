@@ -1,0 +1,40 @@
+{{- /*
+  why: the <head>, reconciled from E, H, C and J. The title is "Page — Site"
+  (E and C; H used " · "), with the page title from ewiki/title.html, so a
+  page without front matter still gets a name. The home page shows the site
+  title alone.
+
+  why: noindex, nofollow is emitted when params.ewiki.private is true, the
+  default. H and C emit it today; E is behind Cloudflare Access but has no
+  robots meta. A public wiki (J) sets private = false.
+
+  why: the CSS cascade order is locked (D-24728 section 4): the brand file,
+  then core, then the site file, joined by resources.Concat into
+  css/ewiki.bundle.css (named apart from the core source asset), then minified
+  and fingerprinted (H's pipeline). Only the brand file declares custom
+  properties, light then dark, so a later file can't override the dark block
+  and a branded wiki can't silently lose dark mode. Concat keeps slice order,
+  and minify and fingerprint are deterministic, so two builds match.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- if not (index $ewiki "repo") -}}
+  {{- errorf "ewiki theme: params.ewiki.repo is not set. Add repo = \"owner/name\" under [params.ewiki] in the site's hugo.toml; the GitHub links in the footer and the link hook need it." -}}
+{{- end -}}
+{{- $private := true -}}
+{{- if isset $ewiki "private" -}}{{- $private = index $ewiki "private" -}}{{- end -}}
+<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {{- if $private }}
+  <meta name="robots" content="noindex, nofollow">
+  {{- end }}
+  <title>{{ if .IsHome }}{{ site.Title }}{{ else }}{{ with partial "ewiki/title.html" . }}{{ . }} — {{ end }}{{ site.Title }}{{ end }}</title>
+  {{- $brand := resources.Get "css/ewiki-brand.css" -}}
+  {{- $core := resources.Get "css/ewiki.css" -}}
+  {{- $site := resources.Get "css/ewiki-site.css" -}}
+  {{- if not (and $brand $core $site) -}}
+    {{- errorf "ewiki theme: one of assets/css/ewiki-brand.css, ewiki.css or ewiki-site.css is missing. Re-sync the theme with tools/Sync-EwikiTheme.ps1; a site overrides only the brand and site files, never removes them." -}}
+  {{- end -}}
+  {{- with slice $brand $core $site | resources.Concat "css/ewiki.bundle.css" | minify | fingerprint }}
+  <link rel="stylesheet" href="{{ .RelPermalink }}">
+  {{- end }}
+  {{- partial "ewiki/head-end.html" . }}

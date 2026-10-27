@@ -78,6 +78,23 @@ export default defineComponent({
       return props.pendingKoDiscardChoice.maxCount;
     });
 
+    // why: D-24783 — a grey-filtered entry (Frost Giant Warrior / Ymir: "KO up to N grey
+    // Heroes") lists only those cards, so the header names them; an unfiltered entry keeps
+    // the source-neutral "card(s)" wording (WP-760 / D-24589).
+    const headingText = computed<string>(() => {
+      const count = maxCount.value;
+      const greyFilter = props.pendingKoDiscardChoice?.greyFilter;
+      let noun: string;
+      if (greyFilter === "grey") {
+        noun = count === 1 ? "grey Hero" : "grey Heroes";
+      } else if (greyFilter === "non-grey") {
+        noun = count === 1 ? "non-grey Hero" : "non-grey Heroes";
+      } else {
+        noun = count === 1 ? "card" : "cards";
+      }
+      return `KO up to ${count} ${noun} from your discard pile`;
+    });
+
     function isSelected(discardIndex: number): boolean {
       return selectedIndices.value.includes(discardIndex);
     }
@@ -109,6 +126,7 @@ export default defineComponent({
       selectedIndices,
       shouldRender,
       maxCount,
+      headingText,
       isSelected,
       toggleCard,
       canSubmit,
@@ -129,7 +147,7 @@ export default defineComponent({
     <!-- why: WP-760 / D-24589 — two cards now park this choice (Loki's Maniacal Tyrant,
          Salomé's Fight), so the header is source-neutral; the game log names the source. -->
     <h3 class="pending-ko-discard-choice-prompt__heading">
-      KO up to {{ maxCount }} card{{ maxCount === 1 ? '' : 's' }} from your discard pile
+      {{ headingText }}
     </h3>
     <div class="pending-ko-discard-choice-prompt__cards">
       <button

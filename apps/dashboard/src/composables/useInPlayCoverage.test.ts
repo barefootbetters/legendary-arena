@@ -569,9 +569,43 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // `out-of-time`, so nothing moves into resolvedObs: the gauge moves only through the smaller
   // denominator. totalObs 8900 -> 8755; resolvedObs stays 1235, so percentResolved rises
   // 13.9 -> 14.1 (1235 / 8755). No alias folding; a sweep-trajectory + denominator re-pin.
+  // 2026-10-20 (dashboard mixed-status fix, re-pin — an intentional METRIC change, not a feed
+  // change): a mechanic's by-mechanic status was its FIRST ledger row's, so `transform`
+  // (2 Executable / 13 Unsupported cards) and `empowered` (6 / 1) read Executable and their
+  // in-play hollows counted as resolved. The dictionary now headlines the LEAST-done status, so
+  // a mechanic resolves only when every card using it does. transform (142) + empowered (2)
+  // leave resolvedObs: 1235 -> 1091; totalObs unchanged at 8755; percentResolved 14.1 -> 12.5.
+  // Nothing became unimplemented — the gauge stopped crediting the 13 transform cards that are not.
+  // 2026-10-23 (WP-741 / D-24563, re-pin): a repeated leading-prefix icon now needs that many
+  // OTHER matching cards, so doubled-gate lines fire less often in the sweep (feed regenerated:
+  // 7834 -> 7794 raw observations, 79 mechanics, 0 dropped). totalObs 8755 -> 8715 (-40, equal to
+  // the raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.5 (1091 / 8715). A
+  // sweep-trajectory + denominator re-pin; no mechanic changed status.
+  // 2026-10-23 (WP-824 / D-24757, re-pin): three ca75 hero lines now grant per count (two Savior
+  // lines per Hero Class you have, Paramilitary Ops per other S.H.I.E.L.D. Hero costing 1 or more),
+  // which shifts the fixed-seed sweep trajectory by one gate-only observation (feed regenerated:
+  // 7794 -> 7793 raw observations, 79 mechanics, 0 dropped). totalObs 8715 -> 8714 (-1, equal to the
+  // raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.5 (1091 / 8714). A
+  // sweep-trajectory + denominator re-pin; no mechanic changed status.
+  // 2026-10-24 (WP-826 / D-24759, re-pin): Mobilize for War and Reassign to Civilian Duty now park
+  // their optional S.H.I.E.L.D. KOs instead of firing a bare gate, so their gate-only hollow
+  // observations leave the sweep (feed regenerated: 7793 -> 7777 raw observations, 79 mechanics,
+  // 0 dropped). totalObs 8714 -> 8698 (-16, equal to the raw feed fall); resolvedObs stays 1091, so
+  // percentResolved stays 12.5 (1091 / 8698). A denominator re-pin; no mechanic changed status.
+  // 2026-10-24 (WP-828 / D-24761, re-pin): Winter Soldier's 2>4 now grants Man Out of Time, so its
+  // 11 `man-out-of-time` hollow observations leave the sweep (feed regenerated: 7777 -> 7766 raw
+  // observations, 79 -> 78 mechanics, 0 dropped). totalObs 8698 -> 8687 (-11, equal to the raw feed
+  // fall); resolvedObs stays 1091, so percentResolved rounds up 12.5 -> 12.6 (1091 / 8687). A denominator
+  // re-pin: the one mechanic that left was a hollow, not a resolved one.
+  // 2026-10-26 (WP-844 / D-24778, re-pin): ten "Gain a [rule:Sidekick]" hero lines now gain
+  // Sidekicks from the Sidekick Stack, so one `rule:sidekick` hollow observation leaves the sweep
+  // (feed regenerated: 7766 -> 7765 raw observations, 78 mechanics, 0 dropped; rule:sidekick
+  // 42 -> 41). totalObs 8687 -> 8686 (-1, equal to the raw feed fall); resolvedObs stays 1091, so
+  // percentResolved stays 12.6 (1091 / 8686). A denominator re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8755);
-  assert.equal(view.percentResolved.value, 14.1);
+  assert.equal(view.totalObs.value, 8686);
+  assert.equal(view.resolvedObs.value, 1091);
+  assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);
 });
 

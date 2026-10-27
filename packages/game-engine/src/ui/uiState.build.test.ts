@@ -23,8 +23,8 @@ import type { HollowEffectRecord } from '../diagnostics/hollowEffect.types.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { DARK_PORTAL_COUNT } from '../types.js';
 import { makeCardStatEntry } from '../test/fixtureBuilders.js';
-import { resolveMastermindFightCost } from '../economy/economy.resolve.js';
-import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
+import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
+import { SHIELD_OFFICER_EXT_ID, SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
 import { resolveOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { getLegalMoves } from '../simulation/ai.legalMoves.js';
 import { makeMockMoveContext } from '../test/mockMoveContext.js';
@@ -1654,6 +1654,35 @@ describe('buildUIState — pendingOptionalKoReward projection (WP-249 / D-24020)
     assert.ok(rejectedCount >= 4, 'the hand Wound, the in-play Wound and the discard cards were all exercised');
   });
 
+  it('WP-826: a koZones inPlay + koTeamFilter shield entry lists only played S.H.I.E.L.D. Heroes', () => {
+    // why: WP-826 / D-24759 — Reassign to Civilian Duty's entry ("a [team:shield] Hero that you
+    // played this turn") is the first entry that omits hand and the first shield-only entry that
+    // permits inPlay. The hand and discard hold S.H.I.E.L.D. tokens to prove they are not offered.
+    const gameState = withOptionalReward('rescue', 1);
+    gameState.playerZones['0']!.hand = ['starting-shield-agent' as CardExtId, 'hero-h1' as CardExtId];
+    gameState.playerZones['0']!.discard = ['starting-shield-trooper' as CardExtId];
+    gameState.playerZones['0']!.inPlay = ['hero-p1' as CardExtId, 'starting-shield-trooper' as CardExtId, 'pile-shield-officer' as CardExtId];
+    gameState.pendingOptionalKoRewards = [
+      {
+        playerID: '0',
+        rewardType: 'rescue',
+        rewardMagnitude: 1,
+        sourceCardId: 'ca75/steve-rogers-director-of-shield/reassign-to-civilian-duty#0' as CardExtId,
+        koZones: ['inPlay'],
+        koTeamFilter: 'shield',
+      },
+    ];
+    const projection = buildUIState(gameState, mockCtx).pendingOptionalKoReward!;
+    assert.deepStrictEqual(projection.eligibleHand, [], 'the hand is not offered (koZones omits hand)');
+    assert.deepStrictEqual(projection.eligibleDiscard, [], 'the discard pile is not offered (koZones omits discard)');
+    assert.deepStrictEqual(
+      projection.eligibleInPlay.map((entry) => entry.cardId),
+      ['starting-shield-trooper', 'pile-shield-officer'],
+      'played S.H.I.E.L.D. Heroes only, in play order; the non-S.H.I.E.L.D. played card is omitted',
+    );
+    assert.equal(projection.rewardLabel, 'Rescue a Bystander');
+  });
+
   it('eligible order follows array index, not Object.keys (reversed-array pin)', () => {
     const gameState = withOptionalReward('draw', 1);
     gameState.playerZones['0']!.discard = [...gameState.playerZones['0']!.discard].reverse();
@@ -2489,6 +2518,49 @@ describe('buildUIState — City fightCost includes villain Blood Frenzy for the 
   });
 });
 
+describe('buildUIState — City and Mastermind fightCost include Abomination (WP-815 / D-24747)', () => {
+  it('projects an Abomination villain at Sewers as base 6 + the printed Attack of hq[4] (3) = 9', () => {
+    const gameState = createTestGameState();
+    const villainId = 'abom-villain' as CardExtId;
+    const heroId = 'hero-under' as CardExtId;
+    gameState.city = [villainId, null, null, null, null];
+    gameState.hq = [null, null, null, null, heroId];
+    gameState.cardStats[villainId] = makeCardStatEntry({ fightCost: 6, fightCostMode: 'dynamic', fightCostBase: 6 });
+    gameState.cardStats[heroId] = makeCardStatEntry({ attack: 3, hasAttackIcon: true });
+
+    assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 6, 'no kind: base only');
+
+    gameState.cardAbomination = { [villainId]: 'abomination' };
+    const projectedFightCost = buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost;
+    assert.equal(projectedFightCost, 9);
+    assert.equal(projectedFightCost, resolveFightCost(gameState, villainId, mockCtx.currentPlayer));
+  });
+
+  it('projects an Ultimate Abomination Mastermind (base 6) with HQ printed [2, 0, null, 3, 1] as 12', () => {
+    const gameState = createTestGameState();
+    const baseCardId = gameState.mastermind.baseCardId;
+    gameState.cardStats[baseCardId] = makeCardStatEntry({ fightCost: 6 });
+    const hqAttack = [2, 0, null, 3, 1];
+    const hq: (CardExtId | null)[] = [];
+    for (let slotIndex = 0; slotIndex < hqAttack.length; slotIndex++) {
+      const attack = hqAttack[slotIndex];
+      if (attack === null || attack === undefined) {
+        hq.push(null);
+        continue;
+      }
+      const heroId = `hq-hero-${slotIndex}` as CardExtId;
+      gameState.cardStats[heroId] = makeCardStatEntry({ attack });
+      hq.push(heroId);
+    }
+    gameState.hq = hq as LegendaryGameState['hq'];
+    gameState.cardAbomination = { [baseCardId]: 'ultimate-abomination' };
+
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.fightCost, 12);
+    assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState));
+  });
+});
+
 // why: WP-777 / D-24615 — D-24372 runtime keyset pin. The two per-face fields are OPTIONAL in the
 // type, so no `satisfies` pin could catch the builder dropping them; assert them on a BUILT
 // projection instead.
@@ -2607,5 +2679,167 @@ describe('buildUIState — projected fightCost shows the fight-cost reduction (W
     const result = buildUIState(gameState, mockCtx);
     assert.equal(result.mastermind.fightCost, 6);
     assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState));
+  });
+});
+
+describe('WP-819 buildUIState — economy.rescueOnFightAvailable cue (D-24753)', () => {
+  /**
+   * A built game state with the given Mastermind, Bystander supply size and unspent Recruit.
+   */
+  function createRescueCueState(mastermindId: string, supplyCount: number, recruit: number): LegendaryGameState {
+    const base = createTestGameState();
+    // why: selection is readonly; the Mastermind is set by spreading it.
+    const gameState: LegendaryGameState = {
+      ...base,
+      selection: { ...base.selection, mastermindId },
+    };
+    const supply: CardExtId[] = [];
+    for (let i = 0; i < supplyCount; i++) {
+      supply.push('pile-bystander' as CardExtId);
+    }
+    gameState.piles.bystanders = supply;
+    gameState.turnEconomy = { ...gameState.turnEconomy, recruit, spentRecruit: 0 };
+    return gameState;
+  }
+
+  it('T14: projects true for Zemo with 2 Recruit and a Bystander in the supply', () => {
+    const uiState = buildUIState(createRescueCueState('ca75/baron-heinrich-zemo', 1, 2), mockCtx);
+    assert.equal(uiState.economy.rescueOnFightAvailable, true);
+  });
+
+  it('T14: omits the key with 1 Recruit, an empty supply, or a different Mastermind', () => {
+    const shortRecruit = buildUIState(createRescueCueState('ca75/baron-heinrich-zemo', 1, 1), mockCtx);
+    const emptySupply = buildUIState(createRescueCueState('ca75/baron-heinrich-zemo', 0, 2), mockCtx);
+    const notZemo = buildUIState(createRescueCueState('core/red-skull', 1, 2), mockCtx);
+    for (const uiState of [shortRecruit, emptySupply, notZemo]) {
+      assert.ok(!('rescueOnFightAvailable' in uiState.economy), 'omit-when-absent, never false');
+    }
+  });
+});
+
+describe('WP-818 buildUIState — Baron Zemo mastermind.fightCost reads the active player (D-24752)', () => {
+  /** A test G with Baron Zemo (printed 9) and the active player's Victory Pile. */
+  function zemoState(victory: CardExtId[]): LegendaryGameState {
+    const gameState = createTestGameState();
+    gameState.selection.mastermindId = 'ca75/baron-heinrich-zemo';
+    gameState.cardStats[gameState.mastermind.baseCardId] = makeCardStatEntry({ fightCost: 9 });
+    gameState.playerZones['0']!.victory = victory;
+    return gameState;
+  }
+
+  it('T7: projects 18 for a non-Savior active player (2 Bystanders)', () => {
+    const gameState = zemoState(['pile-bystander', 'pile-bystander']);
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.fightCost, 18);
+    assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState, '0'));
+  });
+
+  it('T7: projects the printed 9 once the active player is a Savior (3 Bystanders)', () => {
+    const gameState = zemoState(['pile-bystander', 'pile-bystander', 'pile-bystander']);
+    const result = buildUIState(gameState, mockCtx);
+    assert.equal(result.mastermind.fightCost, 9);
+    assert.equal(result.mastermind.fightCost, resolveMastermindFightCost(gameState, '0'));
+  });
+});
+
+describe('buildUIState — City fightCost includes a variable-Attack passive (WP-841 / D-24774)', () => {
+  it('T17: projects Paibok (base 5) at city[1] with 2 distinct HQ Hero Classes as 7', () => {
+    const gameState = createTestGameState();
+    const paibokId = 'co2e-villain-skulls-paibok-the-power-skrull-00' as CardExtId;
+    gameState.city = [null, paibokId, null, null, null];
+    gameState.hq = ['hq-covert-a' as CardExtId, 'hq-covert-b' as CardExtId, 'hq-tech' as CardExtId, null, null];
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      ['hq-covert-a' as CardExtId]: { heroClass: 'covert', team: null },
+      ['hq-covert-b' as CardExtId]: { heroClass: 'covert', team: null },
+      ['hq-tech' as CardExtId]: { heroClass: 'tech', team: null },
+    };
+    gameState.cardStats[paibokId] = makeCardStatEntry({ fightCost: 5, fightCostMode: 'dynamic', fightCostBase: 5 });
+
+    assert.equal(buildUIState(gameState, mockCtx).city.spaces[1]!.fightCost, 5, 'no entry: base only');
+
+    gameState.villainVariableAttack = { [paibokId]: { source: 'per-hq-hero-class', attackPerUnit: 1 } };
+    const projectedFightCost = buildUIState(gameState, mockCtx).city.spaces[1]!.fightCost;
+    assert.equal(projectedFightCost, 7);
+    assert.equal(projectedFightCost, resolveFightCost(gameState, paibokId, mockCtx.currentPlayer));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-842 / D-24776 — economy.hasRecruitedSidekickThisTurn cue + piles.sidekickDisplay
+// ---------------------------------------------------------------------------
+
+describe('WP-842 buildUIState — Sidekick recruit cue and card face (D-24776)', () => {
+  it('T16: projects hasRecruitedSidekickThisTurn after a recruit and omits the key before one', () => {
+    const before = buildUIState(createTestGameState(), mockCtx);
+    assert.ok(!Object.keys(before.economy).includes('hasRecruitedSidekickThisTurn'), 'omit-when-absent, never false');
+
+    const gameState = createTestGameState();
+    gameState.turnEconomy = { ...gameState.turnEconomy, hasRecruitedSidekickThisTurn: true };
+    const after = buildUIState(gameState, mockCtx);
+    assert.equal(after.economy.hasRecruitedSidekickThisTurn, true);
+    assert.ok(Object.keys(after.economy).includes('hasRecruitedSidekickThisTurn'), 'the key is on the built projection');
+  });
+
+  it('T17: always projects sidekickDisplay as the resolveDisplay shape, a fresh copy', () => {
+    const gameState = createTestGameState();
+    const sidekickFace: UICardDisplay = {
+      extId: SIDEKICK_EXT_ID,
+      name: 'Sidekick',
+      imageUrl: 'https://images.legendary-arena.com/ssw1/ssw1-sk-sidekick.webp',
+      cost: null,
+    };
+    gameState.cardDisplayData[SIDEKICK_EXT_ID] = sidekickFace;
+
+    const ui = buildUIState(gameState, mockCtx);
+
+    assert.deepStrictEqual(ui.piles.sidekickDisplay, { ...sidekickFace, heroClass: null, team: null });
+    assert.notStrictEqual(ui.piles.sidekickDisplay, sidekickFace, 'never a reference into G.cardDisplayData');
+  });
+});
+
+describe('buildUIState — WP-836 grey-filtered KO projections (D-24769)', () => {
+  const AGENT = 'starting-shield-agent' as CardExtId;
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+
+  /** A state whose player 0 discard is `discard`, with tech-a / tech-b classed. */
+  function withGreyDiscard(discard: CardExtId[]): LegendaryGameState {
+    const gameState = makeGameStateWithDisplayData();
+    gameState.playerZones['0']!.discard = discard;
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      'tech-a': { heroClass: 'tech', team: null },
+      'tech-b': { heroClass: 'tech', team: null },
+    } as LegendaryGameState['cardTraits'];
+    return gameState;
+  }
+
+  it('T20: a non-grey KO-a-Hero entry lists only the classed discard Heroes', () => {
+    const gameState = withGreyDiscard([AGENT, 'tech-a' as CardExtId, 'tech-b' as CardExtId]);
+    gameState.pendingKoHeroChoices = [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'], greyFilter: 'non-grey' }];
+    assert.deepStrictEqual(
+      buildUIState(gameState, mockCtx).pendingKoHeroChoice!.eligible.map((e) => e.cardId),
+      ['tech-a', 'tech-b'],
+    );
+  });
+
+  it('T20: a grey KO-from-discard entry lists only grey Heroes, in order; an unfiltered one lists the whole discard', () => {
+    const discard = [WOUND, 'tech-a' as CardExtId, AGENT, AGENT, OFFICER];
+    const greyState = withGreyDiscard(discard);
+    greyState.pendingKoDiscardChoices = [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, greyFilter: 'grey' }];
+    assert.deepStrictEqual(
+      buildUIState(greyState, mockCtx).pendingKoDiscardChoice!.discard.map((entry) => entry.cardId),
+      [AGENT, AGENT, OFFICER],
+    );
+    // why: D-24783 — the filter rides on the projection (the prompt names grey Heroes); an
+    // unfiltered entry carries no greyFilter key at all.
+    assert.equal(buildUIState(greyState, mockCtx).pendingKoDiscardChoice!.greyFilter, 'grey');
+    const plainState = withGreyDiscard(discard);
+    plainState.pendingKoDiscardChoices = [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2 }];
+    assert.deepStrictEqual(
+      buildUIState(plainState, mockCtx).pendingKoDiscardChoice!.discard.map((entry) => entry.cardId),
+      discard,
+    );
+    assert.equal(Object.keys(buildUIState(plainState, mockCtx).pendingKoDiscardChoice!).includes('greyFilter'), false);
   });
 });

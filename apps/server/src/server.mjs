@@ -57,6 +57,7 @@ import { createAnthropicCoachClient } from './coach/coachClient.js';
 import { registerFeedbackRoutes } from './feedback/feedback.routes.js';
 import { registerBattlePlanRoutes } from './match/battlePlan.routes.js';
 import { installClientActionGuard } from './game/clientActionGuard.mjs';
+import { installSyncRedaction } from './game/syncRedaction.mjs';
 import { resolveCoachModelConfig } from './coach/coachModelConfig.js';
 import {
   createNativeLobbyGuard,
@@ -85,6 +86,7 @@ import { registerOperatorMatchRoutes } from './operator/operatorMatch.routes.js'
 import { registerAddGuestRoutes } from './match/addGuestRoutes.mjs';
 import { registerGuestAccessRoutes } from './match/guestAccessRoutes.mjs';
 import { registerGuestSoloRoutes } from './match/guestSoloRoutes.mjs';
+import { resolveListenHost, buildLoopbackOrigin, bindListenToHost } from './listenHost.mjs';
 import { requireAuthenticatedSession } from './auth/sessionToken.logic.js';
 import { requireUnsuspendedAccount } from './auth/requireUnsuspendedAccount.js';
 import { createHankoSessionVerifier } from './auth/hanko/hankoVerifier.logic.js';
@@ -94,7 +96,8 @@ import {
   enqueuePlayerToMarketingList,
 } from './marketing/brevoEnqueue.logic.js';
 import { createBrevoTransactionalSender } from './marketing/brevoTransactional.logic.js';
-import { LegendaryGame, setRegistryForSetup } from '@legendary-arena/game-engine';
+import { setRegistryForSetup } from '@legendary-arena/game-engine';
+import { serverLegendaryGame } from './game/matchSeed.mjs';
 import { getVersionInfo } from './version.mjs';
 
 // why: boardgame.io v0.50 only ships a CJS server bundle (dist/cjs/server.js)
@@ -553,9 +556,10 @@ export function tryConstructHankoVerifier() {
  * from PostgreSQL. Both startup tasks must succeed before the server accepts
  * requests. On failure, logs a full-sentence error and exits.
  *
- * @returns {Promise<{ appServer: import('http').Server, gauntletCatalog: import('./legends/gauntlet.logic.js').GauntletDefinition[], setDetailsCatalog: import('./legends/legends.types.js').SetDetails[], leaderboardDeps: import('./leaderboards/leaderboard.types.js').LeaderboardDependencies, pool: import('pg').Pool }>}
+ * @returns {Promise<{ appServer: import('http').Server, gauntletCatalog: import('./legends/gauntlet.logic.js').GauntletDefinition[], setDetailsCatalog: import('./legends/legends.types.js').SetDetails[], leaderboardDeps: import('./leaderboards/leaderboard.types.js').LeaderboardDependencies, pool: import('pg').Pool, socketServer: { engine: { close: () => void } } | undefined }>}
  *   The running HTTP server instance, the leaderboard deps bundle (for
- *   the legends publisher), and the long-lived `pg.Pool`. The caller
+ *   the legends publisher), the long-lived `pg.Pool`, and the socket.io
+ *   server whose connections the SIGTERM path closes. The caller
  *   (`apps/server/src/index.mjs`) closes the pool from the SIGTERM
  *   path after the HTTP server's graceful-shutdown step resolves.
  */
@@ -788,7 +792,7 @@ export async function startServer() {
   // game state sync) traffic on a single port. Render's load balancer
   // upgrades WebSocket connections automatically -- no separate WS port needed.
   const server = Server({
-    games: [LegendaryGame],
+    games: [serverLegendaryGame],
     // why: CORS origins are written as a literal array per code style Rule 7.
     // Authorized cross-origin consumers of the boardgame.io lobby + match API:
     //   - https://play.legendary-arena.com — the production arena-client SPA
@@ -866,7 +870,11 @@ export async function startServer() {
   // endTurn, ...), whole-state UPDATE / SYNC / RESET / PATCH, and UNDO / REDO
   // for an active seat, skipping move validation. Admit player moves
   // (MAKE_MOVE) only. Installed before run() so every socket gets the filter.
-  installClientActionGuard(server, [LegendaryGame]);
+  installClientActionGuard(server, [serverLegendaryGame]);
+  // why: D-24715 — boardgame.io's sync answer carries the raw initialState
+  // (the match seed and every initial deck order) past its player-view
+  // filter, to any socket including spectators. Drop it before it leaves.
+  installSyncRedaction(server, [serverLegendaryGame]);
 
   registerHealthRoute(server.router);
   // why: D-24711 — /health never touches PostgreSQL, so a dead database left
@@ -907,7 +915,12 @@ export async function startServer() {
   // why: "Watch Bot Play" feature — server-side autoplay loop using
   // engine AI policies. No game logic here; the autoplay module dispatches
   // moves through boardgame.io's Master class using existing policies.
-  const autoplayServerUrl = `http://localhost:${process.env.PORT ?? '8000'}`;
+  // why: with LISTEN_HOST set (the droplet binds 127.0.0.1), the loopback
+  // calls target that address; `localhost` may resolve to ::1 and be refused.
+  const autoplayServerUrl = buildLoopbackOrigin(
+    resolveListenHost(process.env),
+    process.env.PORT ?? '8000',
+  );
   registerAutoplayRoutes(server.router, {
     db: server.db,
     transport: server.transport,
@@ -1741,10 +1754,16 @@ export async function startServer() {
   // Render will override it anyway and double-setting causes confusion.
   const port = process.env.PORT ?? '8000';
 
+  // why: LISTEN_HOST=127.0.0.1 on the droplet keeps :3000 loopback-only, so
+  // a disabled UFW cannot expose a listener that trusts cf-connecting-ip.
+  // Unset (Render, local dev) listens on every interface, as before.
+  const listenHost = resolveListenHost(process.env);
+  bindListenToHost(server.app, listenHost);
+
   const { appServer } = await server.run({ port: Number(port) });
 
   console.log(
-    `[server] listening on port ${port} ` +
+    `[server] listening on ${listenHost ?? 'all interfaces'} port ${port} ` +
     `(${rulesCount} rules loaded, NODE_ENV=${process.env.NODE_ENV ?? 'development'})`
   );
 
@@ -1762,5 +1781,9 @@ export async function startServer() {
       getScenarioKeysForTheme,
     },
     pool,
+    // why: index.mjs closes these connections on SIGTERM; an open player
+    // websocket otherwise keeps appServer.close() from ever finishing (see
+    // realtimeDrain.mjs). boardgame.io itself reads socket.io from app._io.
+    socketServer: server.app._io,
   };
 }

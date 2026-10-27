@@ -35,6 +35,8 @@ import {
   countKoableHeroes,
   YOUR_HEROES_KO_ZONES,
 } from '../villain/villainEffects.execute.js';
+import type { KoHeroGreyFilterRead } from '../villain/villainEffects.execute.js';
+import { matchesGreyHeroFilter } from '../hero/splitCard.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -102,6 +104,9 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   // unqualified "KO one of your Heroes", so it allows hand + inPlay and rejects
   // 'discard' (YOUR_HEROES_KO_ZONES, D-24687).
   if (!(front.zones ?? YOUR_HEROES_KO_ZONES).includes(args.zone)) { return; }
+  // why: WP-836 / D-24769 — a filtered entry (Destroyer's non-grey discard KO) accepts only
+  // a card passing the filter; anything else is a silent no-op, queue intact.
+  if (front.greyFilter !== undefined && !matchesGreyHeroFilter(G, args.cardId, front.greyFilter)) { return; }
 
   // Step 3: Resolve against CURRENT G — the chosen cardId must be present in
   // the named zone right now (no eligible snapshot is stored; eligibility is
@@ -148,16 +153,19 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   // genuine choice remains (≥ 2 options), keep the decremented entry so the player
   // picks again. A KO never grows the option count, so this terminates.
   let owed = owedAfterPick;
+  // why: D-24769 — the forced remainder honours the entry's grey filter too.
+  const greyFilterRead: KoHeroGreyFilterRead | undefined =
+    front.greyFilter === undefined ? undefined : { gameState: G, greyFilter: front.greyFilter };
   while (owed > 0) {
     // why: WP-577 — honour the entry's zone allowlist (a hand-scoped Red Skull entry
     // stays hand-only through the forced remainder too). Absent ⇒ the helpers'
     // "your Heroes" default, hand + inPlay (D-24687).
-    const eligible = buildKoEligibleTargets(playerZones, front.zones);
+    const eligible = buildKoEligibleTargets(playerZones, front.zones, greyFilterRead);
     if (eligible.length === 0) break; // why: nothing left to KO (fewer heroes than owed).
     // why: a genuine choice still remains only when the player has MORE KO-able
     // heroes than the count owed AND ≥ 2 distinct options — mirror the parker. Once
     // the KO is forced (physical ≤ owed, or all copies identical) auto-resolve it.
-    if (countKoableHeroes(playerZones, front.zones) > owed && eligible.length >= 2) break;
+    if (countKoableHeroes(playerZones, front.zones, greyFilterRead) > owed && eligible.length >= 2) break;
     const forced = eligible[0]!;
     const forcedMove = moveCardFromZone(playerZones[forced.zone], [], forced.cardId);
     if (!forcedMove.found) break; // why: defensive — an unexpected move miss stops progress.

@@ -24,6 +24,7 @@ import type { FinalScoreSummary } from "../scoring/scoring.types.js";
 import type { NotableGameEvent } from "../events/notableEvents.types.js";
 import type { LogEntry } from "../log/logOutcome.types.js";
 import type { CardExtId } from "../state/zones.types.js";
+import type { GreyHeroFilter } from "../rules/villainAbility.types.js";
 import type { AttackTargetName } from "../economy/economy.types.js";
 import type { MenaceTier, SchemeLossKind } from "../rules/schemeLossProgress.js";
 // why: WP-258 — reuse the engine's canonical HollowEffectRecord rather than
@@ -478,6 +479,18 @@ export interface UIPlayerState {
    */
   handDisplay?: UICardDisplay[];
   /**
+   * Per-hand-card engine cost, parallel-aligned with handCards by index: the
+   * off-play `G.cardStats` cost the engine's fight-discard gate reads, or null
+   * for a card with no cost entry (a Wound). Redacted (omitted) alongside
+   * handCards by filterUIStateForAudience (WP-817 / D-24750).
+   *
+   * // why: the printed `UICardDisplay.cost` is null for S.H.I.E.L.D. Officers
+   * and Sidekicks, whose engine costs are 3 and 2, so a client gating Primus's
+   * Fight on display.cost would hide eligible cards (D-24574: the client gates
+   * on engine-projected data).
+   */
+  handCosts?: (number | null)[];
+  /**
    * In-play card ext_ids for this player's currently-played cards.
    *
    * // why: WP-128 / D-12803 — redacted by `filterUIStateForAudience` for
@@ -627,6 +640,12 @@ export interface UICityCard {
   attachedBystanderCount: number;
   /** Engine-resolved fight cost for this villain (WP-214). Static or dynamic. */
   fightCost: number;
+  /**
+   * The costs a card discarded to fight this villain may have (WP-817 / D-24750;
+   * Primus: [2, 3, 5, 7]). Public printed card text. Absent for every villain
+   * without a fight discard cost.
+   */
+  fightDiscardCosts?: number[];
 }
 
 /**
@@ -761,6 +780,32 @@ export interface UISchemeState {
   // audience filter is silently dropped (the EC-206 failure mode) — see
   // uiState.filter.ts.
   darkPortals?: UIDarkPortalState;
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code. Present only while the scheme's code holds
+  // a card (omitted otherwise). PER-AUDIENCE: the filter keeps a card's display / colors only for a
+  // viewer who has looked at it, or for everyone once a right guess revealed the code.
+  enigmaCode?: UIEnigmaCodeState;
+}
+
+/**
+ * The face-down Enigma Code of The Unbreakable Enigma Code scheme (WP-830 / D-24763).
+ */
+export interface UIEnigmaCodeState {
+  /** True after a right guess, until the next mix: every card is shown to every viewer. */
+  isRevealed: boolean;
+  /** The Enigma cards in their current face-down order. */
+  cards: UIEnigmaCard[];
+}
+
+/**
+ * One Enigma card. `display` and `colors` are present only for a viewer allowed to see it.
+ */
+export interface UIEnigmaCard {
+  /** The seats that have looked at this card since the last mix (public, like the peek log). */
+  peekedBy: string[];
+  /** The card, for a viewer who has seen it (or once the code is revealed). */
+  display?: UICardDisplay;
+  /** Its colors (`strength` / `instinct` / `covert` / `tech` / `ranged` / `grey`), with `display`. */
+  colors?: string[];
 }
 
 /**
@@ -819,6 +864,25 @@ export interface UITurnEconomyState {
    * card identities.
    */
   excessiveViolenceAvailable?: boolean;
+  /**
+   * WP-819 / D-24753 — true iff the active player could pay Baron Zemo's
+   * "Whenever you fight a Villain, you may use 2 Recruit to rescue a Bystander"
+   * this turn: Baron Zemo is the Mastermind, the Bystander supply is not empty,
+   * and the player has at least 2 unspent Recruit. A read-only availability cue
+   * for the WP-820 client control ("Fight + Rescue"); omit-when-absent (present
+   * only when the condition holds) and active-player-only (absent from
+   * `REDACTED_ECONOMY`). Surfaces WHETHER the option exists, nothing else; the
+   * per-villain affordability is the client's mirror and the move's own check.
+   */
+  rescueOnFightAvailable?: boolean;
+  /**
+   * WP-842 / D-24776 — true iff the active player already used this turn's one
+   * Sidekick recruit (`G.turnEconomy.hasRecruitedSidekickThisTurn`). Drives the
+   * client's "You already recruited a Sidekick this turn." gate on the Sidekicks
+   * cell. Omit-when-absent (present only when set) and active-player-only (absent
+   * from `REDACTED_ECONOMY`).
+   */
+  hasRecruitedSidekickThisTurn?: true;
   /**
    * WP-783 / D-24629 — the hand cards the active player may phase right now
    * (swap with the top card of their deck), exactly `phasingOptions(G,
@@ -889,6 +953,13 @@ export interface UISharedPilesState {
   // pre-existing hand-written UISharedPilesState fixtures need no backfill
   // (the WP-179 pattern); `uiState.build.ts` ALWAYS populates it.
   officerDisplay?: UICardDisplay;
+  // why: WP-842 / D-24776 — the Sidekicks cell is now a recruitable supply pile too
+  // (2 Recruit, once per turn); the Sidekick card face (resolved from
+  // G.cardDisplayData[SIDEKICK_EXT_ID]) lets the client paint the card like the
+  // Officers cell. PUBLIC for the same reason as officerDisplay. Optional in the
+  // type ONLY so hand-written fixtures need no backfill; `uiState.build.ts` ALWAYS
+  // populates it.
+  sidekickDisplay?: UICardDisplay;
 }
 
 /**
@@ -1435,14 +1506,19 @@ export interface UIPendingDefeatChoice {
  * "KO nothing" choice. Each entry's instance `cardId` (NOT `display.extId`) is what the
  * engine resolve matches against the live discard (the round-trip rule).
  *
+ * // why: D-24783 — `greyFilter` is present only on a grey-filtered entry (Frost Giant Warrior /
+ * Ymir: `'grey'`), so the prompt can say "grey Heroes"; `discard` is already filtered to match.
+ * Absent on an unfiltered entry (Loki's Maniacal Tyrant, Salomé).
+ *
  * @see WP-693 §Scope (In)
  * @see EC-730 Locked Values
- * @see DECISIONS.md D-24510
+ * @see DECISIONS.md D-24510, D-24769, D-24783
  */
 export interface UIPendingKoDiscardChoice {
   choiceType: "ko-from-discard";
   playerID: string;
   maxCount: number;
+  greyFilter?: GreyHeroFilter;
   discard: UIDiscardChoiceHandCard[];
 }
 
@@ -1626,7 +1702,7 @@ export interface UIPendingMoveVillainChoice {
   // why: D-24664 — the redaction key; the chooser-only filter compares
   // audience.playerId against this, mirroring UIPendingCoveringFireChoice.playerID.
   playerID: string;
-  /** The ascending engine indices (0..4) of the City spaces holding a Villain, from the live City. */
+  /** The ascending engine indices (0..length-1, WP-831) of the City spaces holding a Villain, from the live City. */
   villainCityIndices: number[];
 }
 

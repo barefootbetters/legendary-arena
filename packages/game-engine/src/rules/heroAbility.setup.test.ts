@@ -677,12 +677,19 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'fight-cost-reduction', // why: WP-794 / D-24663 — "Any Villain you fight on the <space> this turn gets -N" / "The Mastermind gets -N this turn" — appends to the lazy G.turnEconomy.fightCostReductions list the two fight-cost resolvers subtract
     'spinning-cyclone', // why: WP-795 / D-24664 — core Storm Spinning Cyclone ("You may move a Villain to a new city space. Rescue any Bystanders captured by that Villain."; swap if occupied) — parks a move-a-Villain choice for the active player
     'out-of-time', // why: WP-803 / D-24692 — Man / Woman Out of Time (rules v23 L1667): set the just-played card aside, replay it on the next start → main advance, then discard it
+    'ko-up-to-shield-hand-discard', // why: WP-826 / D-24759 — Mobilize for War's "KO up to two [team:shield] Heroes from your hand and/or discard pile" — parks up to N shield-only optional-KO entries
+    'attack-per-ko-this-way', // why: WP-826 / D-24759 — Mobilize for War's Savior line "For each card KO'd this way, +1 Attack" — upgrades this card's parked KO entries to an attack reward
+    'optional-ko-shield-played-rescue', // why: WP-826 / D-24759 — Reassign to Civilian Duty's "You may KO a [team:shield] Hero that you played this turn. If you do, rescue a Bystander."
+    'flying-shield-block', // why: WP-827 / D-24760 — Captain America (Falcon) "Flying Shield Block": any seat holding a copy may reveal it once per turn when a player would gain a Wound, preventing it and rescuing a Bystander
+    'grant-out-of-time', // why: WP-828 / D-24761 — Winter Soldier 2>4 "A Hero in your hand gains Man Out of Time this turn": queues one owed grant; the granted card goes Out of Time when played this turn
+    'reveal-or-gain-wound-each', // why: WP-843 / D-24777 — co2e Crazed Rampage "Each player reveals another [hc:strength] Hero or gains a Wound": each player who cannot reveal another matching Hero gains a Wound
+    'gain-sidekick', // why: WP-844 / D-24778 — "Gain a [rule:Sidekick]" / "Gain three [rule:Sidekicks]": up to N Sidekicks from the top of the Sidekick Stack into the playing player's discard, outside the once-per-turn recruit
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      78,
-      'HERO_KEYWORDS must have exactly 78 entries',
+      85,
+      'HERO_KEYWORDS must have exactly 85 entries (gain-sidekick, WP-844 / D-24778, appended last)',
     );
 
     assert.deepStrictEqual(
@@ -2539,12 +2546,11 @@ describe('buildHeroAbilityHooks — play-to-the-crowd fusion + standalone perEac
       digestThreshold: 7,
       digestEffects: [{ type: 'attack-per-count', magnitude: 1, countSource: 'victory-bystanders', perEach: 2 }],
       indigestionEffects: [{ type: 'rescue', magnitude: 2 }],
-      bothCondition: { type: 'requiresTeam', value: 'venomverse' },
-      bothConditionCount: 2,
+      bothCondition: { type: 'requiresTeam', value: 'venomverse', requiredMatches: 2 },
     }]);
   });
 
-  it('leaves bothConditionCount unset for a mixed "both" line (D-24562 lock 5)', () => {
+  it('carries no requiredMatches for a mixed "both" line (D-24562 lock 5 / D-24563)', () => {
     const registry = makeHeroRegistry('vnom', 'venompool', [
       { slug: 'play-to-the-crowd', rarityLabel: 'Rare', abilities: [
         '[keyword:Digest 7]: You get +1[icon:attack] for each two Bystanders in your Victory Pile. [keyword:attack-per-count:victory-bystanders:1:2]',
@@ -2553,7 +2559,7 @@ describe('buildHeroAbilityHooks — play-to-the-crowd fusion + standalone perEac
       ]},
     ]);
     const effect = buildHeroAbilityHooks(registry, venompoolConfig())[0]!.effects![0]!;
-    assert.equal(effect.bothConditionCount, undefined, 'a mixed line is never counted');
+    assert.equal(effect.bothCondition?.requiredMatches, undefined, 'a mixed line is never counted');
     assert.deepEqual(effect.bothCondition, { type: 'heroClassMatch', value: 'strength' });
   });
 
