@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2002,
+    "totalEntries": 2004,
     "byScope": {
       "hero": 813,
-      "villain": 733,
+      "villain": 735,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 621,
+      "executable": 628,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
-      "unmarked": 1020,
+      "unmarked": 1015,
       "subsystem": 5
     }
   },
@@ -5901,11 +5901,22 @@
       "name": "Destroyer",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-252",
+      "decision": "D-24023"
+    },
+    {
+      "extId": "co2e-villain-enemies-of-asgard-destroyer",
+      "name": "Destroyer",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-enchantress",
@@ -5923,22 +5934,22 @@
       "name": "Frost Giant Warrior",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-ymir-frost-giant-king",
       "name": "Ymir, Frost Giant King",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
     },
     {
       "extId": "co2e-villain-hydra-baron-strucker-supreme-hydra",
@@ -6066,11 +6077,11 @@
       "name": "Abomination",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "gain-recruit-current-count-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current-count-by-trait",
+      "wp": "WP-836",
+      "decision": "D-24769"
     },
     {
       "extId": "co2e-villain-radiation-maestro-wasteland-hulk",
@@ -6159,6 +6170,17 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "co2e-villain-sinister-syndicate-beetle",
+      "name": "Beetle",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "draw-cards-current-count-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current-count-by-trait",
+      "wp": "WP-836",
+      "decision": "D-24769"
     },
     {
       "extId": "co2e-villain-sinister-syndicate-beetle",
@@ -13213,17 +13235,6 @@
     {
       "extId": "henchman-savage-land-mutates",
       "name": "Savage Land Mutates",
-      "set": "co2e",
-      "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
-    },
-    {
-      "extId": "henchman-savage-land-mutates",
-      "name": "Savage Land Mutates",
       "set": "core",
       "scope": "villain",
       "mechanic": "add-next-hand-size",
@@ -13231,6 +13242,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size",
       "wp": "WP-543",
       "decision": "D-24352"
+    },
+    {
+      "extId": "henchman-savage-land-mutates",
+      "name": "Savage Land Mutates",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "reveal-top-ko-grey-or-draw-by-class",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-top-ko-grey-or-draw-by-class",
+      "wp": "WP-836",
+      "decision": "D-24769"
     },
     {
       "extId": "henchman-sentinel",
@@ -30484,7 +30506,8 @@
     "co2e-villain-enemies-of-asgard-destroyer": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-hero",
+        "ko-up-to-from-discard-current"
       ]
     },
     "co2e-villain-enemies-of-asgard-enchantress": {
@@ -30496,13 +30519,13 @@
     "co2e-villain-enemies-of-asgard-frost-giant-warrior": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-up-to-from-discard-current"
       ]
     },
     "co2e-villain-enemies-of-asgard-ymir-frost-giant-king": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "ko-up-to-from-discard-current"
       ]
     },
     "co2e-villain-hydra-baron-strucker-supreme-hydra": {
@@ -30559,7 +30582,7 @@
     "co2e-villain-radiation-abomination": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "gain-recruit-current-count-by-trait"
       ]
     },
     "co2e-villain-radiation-maestro-wasteland-hulk": {
@@ -30608,6 +30631,7 @@
     "co2e-villain-sinister-syndicate-beetle": {
       "scope": "villain",
       "mechanics": [
+        "draw-cards-current-count-by-trait",
         "reveal-or-wound"
       ]
     },
@@ -33064,8 +33088,8 @@
     "henchman-savage-land-mutates": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)",
-        "add-next-hand-size"
+        "add-next-hand-size",
+        "reveal-top-ko-grey-or-draw-by-class"
       ]
     },
     "henchman-sentinel": {

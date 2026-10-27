@@ -199,3 +199,45 @@ describe('resolveKoDiscardChoice — source naming (WP-760 / D-24589)', () => {
     assert.deepStrictEqual(G.ko, []);
   });
 });
+
+describe('resolveKoDiscardChoice — WP-836 grey-Hero filter (D-24769)', () => {
+  const AGENT = 'starting-shield-agent' as CardExtId;
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+  const WOUND = 'pile-wound' as CardExtId;
+
+  /** A grey-filtered choice (cap 2) over a discard holding a Wound, a classed Hero and grey Heroes. */
+  function greyG(): LegendaryGameState {
+    const G = makeG({
+      discard: [WOUND, 'tech-a' as CardExtId, AGENT, AGENT, OFFICER],
+      pending: [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, greyFilter: 'grey' }],
+    });
+    G.cardTraits = { 'tech-a': { heroClass: 'tech', team: null } } as LegendaryGameState['cardTraits'];
+    return G;
+  }
+
+  it('T17: a Wound or a classed Hero is refused with the queue intact', () => {
+    for (const cardIds of [[WOUND], ['tech-a' as CardExtId]]) {
+      const G = greyG();
+      const before = structuredClone(G);
+      resolveKoDiscardChoice(makeContext(G), { cardIds });
+      assert.deepStrictEqual(G, before, `${cardIds.join(',')} must be refused`);
+    }
+  });
+
+  it('T17: two grey Agents are KOd and the entry pops; an empty pick pops too', () => {
+    const G = greyG();
+    resolveKoDiscardChoice(makeContext(G), { cardIds: [AGENT, AGENT] });
+    assert.deepStrictEqual(G.ko, [AGENT, AGENT]);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [WOUND, 'tech-a', OFFICER]);
+    assert.equal(hasPendingKoDiscardChoice(G), false);
+    const emptyG = greyG();
+    resolveKoDiscardChoice(makeContext(emptyG), { cardIds: [] });
+    assert.equal(hasPendingKoDiscardChoice(emptyG), false);
+  });
+
+  it('T17: the filtered eligible list keeps discard order and duplicates; unfiltered stays whole', () => {
+    const G = greyG();
+    assert.deepStrictEqual(getEligibleKoDiscardCards(G, '0', 'grey'), [AGENT, AGENT, OFFICER]);
+    assert.deepStrictEqual(getEligibleKoDiscardCards(G, '0'), [WOUND, 'tech-a', AGENT, AGENT, OFFICER]);
+  });
+});

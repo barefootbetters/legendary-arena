@@ -20,6 +20,7 @@ import {
   YOUR_HEROES_KO_ZONES,
   villainCardPlaysVillainDeckCards,
   resolveEffectResultNames,
+  selectKoHeroTargetByGreyFilter,
 } from './villainEffects.execute.js';
 import { resolveKoHeroChoice } from '../moves/koHeroChoice.resolve.js';
 import { composeEffectResultLogLine, composeWoundOutcomeClause } from '../events/notableEvents.compose.js';
@@ -6505,5 +6506,298 @@ describe('WP-846 / D-24780 — villain each-player order (AC-8 rotation, AC-2, A
     assert.deepStrictEqual(G.playerZones['0']!.discard, ['h1'], 'seat 0 (lowest non-current) gains first');
     assert.deepStrictEqual(G.playerZones['2']!.discard, ['r0']);
     assert.deepStrictEqual(G.pendingGiveHqHeroChoices, [{ choiceType: 'give-hq-hero', playerID: '1' }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-836 / D-24769 — co2e grey-Hero and Hero-count effects
+// ---------------------------------------------------------------------------
+
+describe('WP-836 co2e grey-Hero and Hero-count effects (D-24769)', () => {
+  const AGENT = 'starting-shield-agent' as CardExtId;
+  const TROOPER = 'starting-shield-trooper' as CardExtId;
+  const OFFICER = 'pile-shield-officer' as CardExtId;
+  const DESTROYER = 'co2e-villain-enemies-of-asgard-destroyer-00' as CardExtId;
+  const ABOMINATION = 'co2e-villain-radiation-abomination-00' as CardExtId;
+  const BEETLE = 'co2e-villain-sinister-syndicate-beetle-00' as CardExtId;
+  const SAVAGE_LAND = 'henchman-savage-land-mutates-00' as CardExtId;
+  const reverseShuffle: ShuffleProvider = {
+    random: { Shuffle: <T>(deck: T[]): T[] => [...deck].reverse() },
+  };
+  const FIXTURE_TRAITS = {
+    'tech-a': { heroClass: 'tech', team: null },
+    'tech-b': { heroClass: 'tech', team: null },
+    'covert-c': { heroClass: 'covert', team: null },
+    'strength-d': { heroClass: 'strength', team: null },
+    'instinct-e': { heroClass: 'instinct', team: null },
+    'classless-f': { heroClass: null, team: null },
+    'strength-g': { heroClass: 'strength', team: null },
+    'covert-h': { heroClass: 'covert', team: null },
+    'dual-ti': { heroClass: 'tech', heroClass2: 'instinct', team: null },
+  } as Record<string, { heroClass: string | null; team: string | null }>;
+  const FIXTURE_STATS: Record<string, { cost: number }> = {
+    'tech-a': { cost: 3 },
+    'tech-b': { cost: 5 },
+    'covert-c': { cost: 2 },
+    'strength-d': { cost: 4 },
+    'instinct-e': { cost: 3 },
+    'classless-f': { cost: 2 },
+    'strength-g': { cost: 6 },
+    'covert-h': { cost: 4 },
+    'dual-ti': { cost: 4 },
+    [OFFICER]: { cost: 3 },
+    'pile-sidekick': { cost: 2 },
+  };
+  const FIXTURE_NAMES: Record<string, { name: string }> = {
+    [DESTROYER]: { name: 'Destroyer' },
+    'tech-a': { name: 'Tech A' },
+    'strength-d': { name: 'Strength D' },
+    'strength-g': { name: 'Strength G' },
+    'covert-c': { name: 'Covert C' },
+    'covert-h': { name: 'Covert H' },
+    'classless-f': { name: 'Classless F' },
+    'dual-ti': { name: 'Dual TI' },
+    [AGENT]: { name: 'S.H.I.E.L.D. Agent' },
+    [WOUND]: { name: 'Wound' },
+  };
+
+  /** One-descriptor hook for a WP-836 test. */
+  function wp836Hook(cardId: CardExtId, timing: 'onAmbush' | 'onFight' | 'onEscape', descriptor: VillainEffectDescriptor): VillainAbilityHook {
+    return { cardId, timing, keywords: [], effects: [descriptor] };
+  }
+
+  /** A seat with the given zones; unspecified zones are empty. */
+  function seat(zones: Partial<PlayerZones>): PlayerZones {
+    return { deck: [], hand: [], discard: [], inPlay: [], victory: [], ...zones } as PlayerZones;
+  }
+
+  /** The fixture state: Hero traits, costs and names, an empty log, and cardsDrawn 0. */
+  function wp836G(hooks: VillainAbilityHook[], playerZones: Record<string, PlayerZones>): LegendaryGameState {
+    const G = makeG({
+      hooks,
+      playerZones,
+      cardTraits: FIXTURE_TRAITS,
+      cardStats: FIXTURE_STATS,
+      cardDisplayData: FIXTURE_NAMES,
+      messages: [],
+    });
+    (G.turnEconomy as unknown as { cardsDrawn: number }).cardsDrawn = 0;
+    return G;
+  }
+
+  const destroyerAmbush: VillainEffectDescriptor = {
+    primitive: 'ko-hero', target: 'each', magnitude: 1, zone: 'discard', greyFilter: 'non-grey',
+  };
+
+  it('T7: the current player parks a non-grey choice; others lose their cheapest non-grey Hero', () => {
+    const G = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {
+      '0': seat({ discard: [AGENT, 'tech-a' as CardExtId, 'tech-b' as CardExtId] }),
+      '1': seat({ discard: [AGENT, 'tech-b' as CardExtId, 'covert-c' as CardExtId] }),
+      '2': seat({ discard: [AGENT, OFFICER] }),
+    });
+    executeVillainAbilities(G, CTX, DESTROYER, 'onAmbush');
+    assert.deepStrictEqual(G.pendingKoHeroChoices, [
+      { choiceType: 'ko-hero', playerID: '0', zones: ['discard'], greyFilter: 'non-grey' },
+    ]);
+    assert.deepStrictEqual(G.playerZones['1']!.discard, [AGENT, 'tech-b'], 'player 1 loses covert-c (cost 2)');
+    assert.deepStrictEqual(G.playerZones['2']!.discard, [AGENT, OFFICER], 'player 2 has no non-grey Hero');
+    assert.deepStrictEqual(G.ko, ['covert-c']);
+  });
+
+  it('T8: a single non-grey option is auto-KOd with no park', () => {
+    const G = wp836G([wp836Hook(DESTROYER, 'onAmbush', destroyerAmbush)], {
+      '0': seat({ discard: [AGENT, 'tech-a' as CardExtId] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(G, CTX, DESTROYER, 'onAmbush');
+    assert.equal(G.pendingKoHeroChoices, undefined);
+    assert.deepStrictEqual(G.playerZones['0']!.discard, [AGENT]);
+    assert.deepStrictEqual(G.ko, ['tech-a']);
+  });
+
+  it('T9: the eligibility helpers skip filtered cards only when the filter is passed', () => {
+    const G = wp836G([], { '0': seat({}) });
+    const zones = seat({
+      discard: [AGENT, 'tech-a' as CardExtId, 'tech-a' as CardExtId, WOUND, OFFICER],
+    });
+    const greyFilterRead = { gameState: G, greyFilter: 'non-grey' as const };
+    assert.deepStrictEqual(buildKoEligibleTargets(zones, ['discard'], greyFilterRead), [
+      { zone: 'discard', cardId: 'tech-a' },
+    ]);
+    assert.equal(countKoableHeroes(zones, ['discard'], greyFilterRead), 2);
+    assert.deepStrictEqual(buildKoEligibleTargets(zones, ['discard']), [
+      { zone: 'discard', cardId: AGENT },
+      { zone: 'discard', cardId: 'tech-a' },
+      { zone: 'discard', cardId: OFFICER },
+    ]);
+    assert.equal(countKoableHeroes(zones, ['discard']), 4);
+  });
+
+  it('T10: selectKoHeroTargetByGreyFilter picks the cheapest non-grey, or starter-first grey', () => {
+    const G = wp836G([], { '0': seat({}) });
+    assert.equal(
+      selectKoHeroTargetByGreyFilter(G, ['tech-b', 'covert-c', 'tech-a'] as CardExtId[], 'non-grey'),
+      'covert-c',
+    );
+    assert.equal(selectKoHeroTargetByGreyFilter(G, [AGENT, WOUND], 'non-grey'), null);
+    assert.equal(selectKoHeroTargetByGreyFilter(G, [OFFICER, TROOPER], 'grey'), TROOPER);
+  });
+
+  it('T11: the grey KO-up-to parks with the filter, or logs a blocked no-op', () => {
+    const fightHook = wp836Hook(DESTROYER, 'onFight', {
+      primitive: 'ko-up-to-from-discard-current', magnitude: 2, greyFilter: 'grey',
+    });
+    const G = wp836G([fightHook], {
+      '0': seat({ discard: [WOUND, 'tech-a' as CardExtId, AGENT, OFFICER] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(G, CTX, DESTROYER, 'onFight');
+    assert.deepStrictEqual(G.pendingKoDiscardChoices, [
+      { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, sourceCardId: DESTROYER, greyFilter: 'grey' },
+    ]);
+    assert.equal(G.messages![0]!.text, 'Fight effect: KO up to 2 grey Hero(es) from your discard pile (Destroyer).');
+    assert.equal(G.messages![0]!.outcome, 'neutral');
+
+    const noGreyG = wp836G([fightHook], {
+      '0': seat({ discard: [WOUND, 'tech-a' as CardExtId] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(noGreyG, CTX, DESTROYER, 'onFight');
+    assert.equal(noGreyG.pendingKoDiscardChoices, undefined);
+    assert.equal(
+      noGreyG.messages![0]!.text,
+      'Fight effect: no grey Heroes in your discard pile (Destroyer); nothing to KO.',
+    );
+    assert.equal(noGreyG.messages![0]!.outcome, 'blocked');
+  });
+
+  it('T12: an unfiltered KO-up-to (Salomé) parks no greyFilter key and keeps its strings', () => {
+    const salomeHook = wp836Hook(DESTROYER, 'onFight', { primitive: 'ko-up-to-from-discard-current', magnitude: 2 });
+    const G = wp836G([salomeHook], { '0': seat({ discard: [WOUND] }), '1': seat({}) });
+    executeVillainAbilities(G, CTX, DESTROYER, 'onFight');
+    assert.deepStrictEqual(G.pendingKoDiscardChoices, [
+      { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, sourceCardId: DESTROYER },
+    ]);
+    assert.equal(G.messages![0]!.text, 'Fight effect: KO up to 2 cards from your discard pile (Destroyer).');
+    const emptyG = wp836G([salomeHook], { '0': seat({}), '1': seat({}) });
+    executeVillainAbilities(emptyG, CTX, DESTROYER, 'onFight');
+    assert.equal(emptyG.messages![0]!.text, 'Fight effect: your discard pile is empty (Destroyer); nothing to KO.');
+  });
+
+  it('T13: Abomination gains +1 recruit per Strength Hero in hand and play', () => {
+    const abominationHook = wp836Hook(ABOMINATION, 'onFight', {
+      primitive: 'gain-recruit-current-count-by-trait', requireKind: 'hero-class', requireValue: 'strength',
+    });
+    const G = wp836G([abominationHook], {
+      '0': seat({ hand: ['strength-d', 'tech-a'] as CardExtId[], inPlay: ['strength-g' as CardExtId] }),
+      '1': seat({}),
+    });
+    G.turnEconomy.recruit = 1;
+    executeVillainAbilities(G, CTX, ABOMINATION, 'onFight');
+    assert.equal(G.turnEconomy.recruit, 3);
+    assert.equal(
+      G.messages![0]!.text,
+      'Fight effect: gained +2 recruit for your 2 strength Hero(es): Strength D (hand), Strength G (played).',
+    );
+    assert.equal(G.messages![0]!.outcome, 'applied');
+
+    const noneG = wp836G([abominationHook], { '0': seat({ hand: ['tech-a' as CardExtId] }), '1': seat({}) });
+    executeVillainAbilities(noneG, CTX, ABOMINATION, 'onFight');
+    assert.equal(noneG.turnEconomy.recruit, 0);
+    assert.equal(noneG.messages![0]!.text, 'Fight effect: you have no strength Heroes, so no recruit was gained.');
+    assert.equal(noneG.messages![0]!.outcome, 'blocked');
+  });
+
+  it('T14: Beetle counts Covert Heroes first, then draws that many', () => {
+    const beetleHook = wp836Hook(BEETLE, 'onFight', {
+      primitive: 'draw-cards-current-count-by-trait', requireKind: 'hero-class', requireValue: 'covert',
+    });
+    const G = wp836G([beetleHook], {
+      '0': seat({
+        hand: ['covert-c' as CardExtId],
+        inPlay: ['covert-h', 'tech-a'] as CardExtId[],
+        deck: ['covert-h', 'deck-2', 'deck-3'] as CardExtId[],
+      }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(G, CTX, BEETLE, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(G.playerZones['0']!.hand, ['covert-c', 'covert-h', 'deck-2']);
+    assert.equal(G.turnEconomy.cardsDrawn, 2, 'the drawn Covert Hero did not count itself');
+    assert.equal(
+      G.messages![0]!.text,
+      'Fight effect: drew 2 card(s) for your 2 covert Hero(es): Covert C (hand), Covert H (played).',
+    );
+    assert.equal(G.messages![0]!.outcome, 'applied');
+
+    const reshuffleG = wp836G([beetleHook], {
+      '0': seat({
+        hand: ['covert-c' as CardExtId],
+        inPlay: ['covert-h' as CardExtId],
+        deck: ['deck-1' as CardExtId],
+        discard: ['disc-1', 'disc-2', 'disc-3'] as CardExtId[],
+      }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(reshuffleG, CTX, BEETLE, 'onFight', reverseShuffle);
+    assert.equal(reshuffleG.playerZones['0']!.hand.length, 3, 'covert-c + 2 drawn across the reshuffle');
+    assert.equal(reshuffleG.turnEconomy.cardsDrawn, 2);
+
+    const noneG = wp836G([beetleHook], {
+      '0': seat({ hand: ['tech-a' as CardExtId], deck: ['deck-1' as CardExtId] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(noneG, CTX, BEETLE, 'onFight', reverseShuffle);
+    assert.deepStrictEqual(noneG.playerZones['0']!.hand, ['tech-a']);
+    assert.equal(noneG.messages![0]!.text, 'Fight effect: you have no covert Heroes, so no cards were drawn.');
+    assert.equal(noneG.messages![0]!.outcome, 'blocked');
+
+    const noShuffleG = wp836G([beetleHook], {
+      '0': seat({ hand: ['covert-c' as CardExtId], deck: ['deck-1' as CardExtId] }),
+      '1': seat({}),
+    });
+    executeVillainAbilities(noShuffleG, CTX, BEETLE, 'onFight');
+    assert.deepStrictEqual(noShuffleG.playerZones['0']!.hand, ['covert-c']);
+    assert.deepStrictEqual(noShuffleG.messages, [], 'no shuffle source: a silent no-op');
+  });
+
+  it('T15: Savage Land KOs a grey top, draws a Strength or Instinct top, else leaves it', () => {
+    const savageHook = wp836Hook(SAVAGE_LAND, 'onFight', {
+      primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses: ['strength', 'instinct'],
+    });
+    /** Fights Savage Land with `deck` / `discard` and returns the state. */
+    function fight(deck: CardExtId[], discard: CardExtId[] = []): LegendaryGameState {
+      const G = wp836G([savageHook], { '0': seat({ deck: [...deck, 'under' as CardExtId], discard }), '1': seat({}) });
+      if (deck.length === 0) {
+        G.playerZones['0']!.deck = [];
+      }
+      executeVillainAbilities(G, CTX, SAVAGE_LAND, 'onFight', reverseShuffle);
+      return G;
+    }
+    for (const greyTop of [AGENT, 'classless-f' as CardExtId]) {
+      const G = fight([greyTop]);
+      assert.deepStrictEqual(G.ko, [greyTop], `${greyTop} is grey, so it is KO'd`);
+      assert.deepStrictEqual(G.playerZones['0']!.deck, ['under']);
+      assert.equal(G.messages![0]!.outcome, 'applied');
+    }
+    const strengthG = fight(['strength-d' as CardExtId]);
+    assert.deepStrictEqual(strengthG.playerZones['0']!.hand, ['strength-d']);
+    assert.equal(strengthG.turnEconomy.cardsDrawn, 1);
+    assert.equal(strengthG.messages![0]!.text, 'Fight effect: revealed "Strength D" (strength) — drew it.');
+    const dualG = fight(['dual-ti' as CardExtId]);
+    assert.deepStrictEqual(dualG.playerZones['0']!.hand, ['dual-ti']);
+    assert.equal(dualG.messages![0]!.text, 'Fight effect: revealed "Dual TI" (instinct) — drew it.');
+    for (const keptTop of [WOUND, 'covert-c' as CardExtId]) {
+      const G = fight([keptTop]);
+      assert.deepStrictEqual(G.ko, [], `${keptTop} is not KO'd`);
+      assert.deepStrictEqual(G.playerZones['0']!.hand, [], `${keptTop} is not drawn`);
+      assert.equal(G.playerZones['0']!.deck[0], keptTop, `${keptTop} stays on top`);
+      assert.equal(G.messages![0]!.outcome, 'blocked');
+    }
+    assert.match(fight([WOUND]).messages![0]!.text, /revealed "Wound" — left on top of your deck\./);
+    const reshuffleG = fight([], ['strength-d' as CardExtId]);
+    assert.deepStrictEqual(reshuffleG.playerZones['0']!.hand, ['strength-d'], 'reshuffled, then drawn');
+    const emptyG = fight([]);
+    assert.equal(emptyG.messages![0]!.text, 'Fight effect: no card to reveal — your deck and discard pile are empty.');
+    assert.equal(emptyG.messages![0]!.outcome, 'blocked');
   });
 });

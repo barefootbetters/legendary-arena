@@ -149,6 +149,7 @@ import { isMastermindHaunting } from '../board/haunt.logic.js';
 import { SHIELD_OFFICER_EXT_ID, SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
 import { ENDGAME_CONDITIONS } from '../endgame/endgame.types.js';
 import { buildKoEligibleTargets } from '../villain/villainEffects.execute.js';
+import { getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
 // why: WP-817 / D-24750 — handCosts projects the same off-play cost the fight-discard
 // gate reads (isHandCardCostOneOf), so the client and the engine agree on eligibility.
 import { offPlayCardStats } from '../hero/splitCard.logic.js';
@@ -1277,7 +1278,11 @@ export function buildUIState(
       // why: WP-577 — a hand-scoped entry (Red Skull) projects hand Heroes only, so
       // the prompt offers exactly the printed "from their hand" targets. Absent
       // `zones` ⇒ "your Heroes", hand + inPlay with no discard card (D-24687).
-      const eligibleTargets = buildKoEligibleTargets(chooserZones, frontChoice.zones);
+      // why: WP-836 / D-24769 — a filtered entry (Destroyer, 'non-grey') projects only the
+      // cards its resolve accepts.
+      const greyFilterRead =
+        frontChoice.greyFilter === undefined ? undefined : { gameState, greyFilter: frontChoice.greyFilter };
+      const eligibleTargets = buildKoEligibleTargets(chooserZones, frontChoice.zones, greyFilterRead);
       const eligible: UIEligibleKoHeroCard[] = [];
       for (const target of eligibleTargets) {
         eligible.push({
@@ -1610,7 +1615,10 @@ export function buildUIState(
     const chooserZones = gameState.playerZones[frontChoice.playerID];
     if (chooserZones !== undefined) {
       const discard: UIDiscardChoiceHandCard[] = [];
-      for (const cardId of chooserZones.discard) {
+      // why: WP-836 / D-24769 — the eligibility helper the resolve shares, so a grey-only
+      // entry (Destroyer / Frost Giant Warrior / Ymir) lists only the grey Heroes; an
+      // unfiltered entry still lists the whole discard.
+      for (const cardId of getEligibleKoDiscardCards(gameState, frontChoice.playerID, frontChoice.greyFilter)) {
         discard.push({
           cardId,
           display: { ...resolveDisplay(cardId, gameState) },

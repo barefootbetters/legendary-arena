@@ -1686,3 +1686,51 @@ describe('WP-818 getLegalMoves — Baron Zemo fightMastermind mirrors the move g
     );
   });
 });
+
+describe('getLegalMoves — WP-836 grey-filtered KO defaults (D-24769)', () => {
+  const TRAITS = {
+    'tech-a': { heroClass: 'tech', team: null },
+    'tech-b': { heroClass: 'tech', team: null },
+  } as unknown as LegendaryGameState['cardTraits'];
+
+  test('T18: a non-grey discard entry offers the cheapest classed Hero, never the Agent', () => {
+    const gameState = makeG({
+      discard: [SHIELD_AGENT_EXT_ID, 'tech-a' as CardExtId, 'tech-b' as CardExtId],
+      currentStage: 'start',
+      pendingKoHeroChoices: [{ choiceType: 'ko-hero', playerID: '0', zones: ['discard'], greyFilter: 'non-grey' }],
+    });
+    gameState.cardTraits = TRAITS;
+    gameState.cardStats = {
+      'tech-a': makeCardStatEntry({ cost: 3 }),
+      'tech-b': makeCardStatEntry({ cost: 5 }),
+    } as unknown as LegendaryGameState['cardStats'];
+    assert.deepStrictEqual(getLegalMoves(gameState, CONTEXT), [
+      { name: 'resolveKoHeroChoice', args: { zone: 'discard', cardId: 'tech-a' } },
+    ]);
+  });
+
+  /** A G whose current player has the given discard and a parked KO-up-to-2 choice. */
+  function makeGreyKoDiscardG(discard: CardExtId[], isFiltered: boolean): LegendaryGameState {
+    const gameState = makeG({ currentStage: 'main', discard });
+    gameState.cardTraits = TRAITS;
+    gameState.pendingKoDiscardChoices = [
+      isFiltered
+        ? { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, greyFilter: 'grey' }
+        : { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2 },
+    ];
+    return gameState;
+  }
+
+  test('T19: a grey entry never offers a Wound; Agents and Troopers go first; Officers stay', () => {
+    const discard = [WOUND_EXT_ID, SHIELD_AGENT_EXT_ID, 'tech-a' as CardExtId, SHIELD_TROOPER_EXT_ID];
+    assert.deepStrictEqual(getLegalMoves(makeGreyKoDiscardG(discard, true), CONTEXT), [
+      { name: 'resolveKoDiscardChoice', args: { cardIds: [SHIELD_AGENT_EXT_ID, SHIELD_TROOPER_EXT_ID] } },
+    ]);
+    assert.deepStrictEqual(getLegalMoves(makeGreyKoDiscardG([SHIELD_OFFICER_EXT_ID], true), CONTEXT), [
+      { name: 'resolveKoDiscardChoice', args: { cardIds: [] } },
+    ]);
+    assert.deepStrictEqual(getLegalMoves(makeGreyKoDiscardG(discard, false), CONTEXT), [
+      { name: 'resolveKoDiscardChoice', args: { cardIds: [WOUND_EXT_ID, SHIELD_AGENT_EXT_ID] } },
+    ]);
+  });
+});

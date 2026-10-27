@@ -94,6 +94,11 @@
         "mystique": { "escape": ["become-scheme-twist"] },
         "sabretooth": { "ambush": ["reveal-or-wound:hc:instinct"], "escape": ["reveal-or-wound:hc:instinct"] }
       },
+      "enemies-of-asgard": {
+        "destroyer": { "ambush": ["ko-hero:each:1:discard:non-grey"], "fight": ["ko-up-to-from-discard-current:2:grey"], "escape": ["ko-hero:each:1:discard:non-grey"] },
+        "frost-giant-warrior": { "fight": ["ko-up-to-from-discard-current:1:grey"] },
+        "ymir-frost-giant-king": { "fight": ["ko-up-to-from-discard-current:1:grey"] }
+      },
       "hydra": {
         "endless-armies-of-hydra": { "fight": ["koHeroEachPlayer", "play-villain-deck-cards:2"] },
         "viper": { "fight": ["gain-wound-unless-victory-villain-group:hydra"], "escape": ["gain-wound-unless-victory-villain-group:hydra"] }
@@ -105,6 +110,7 @@
         "whirlwind": { "fight": ["ko-hero:current@rooftops+bridge"], "ambush": ["swap-two-city-villains"] }
       },
       "radiation": {
+        "abomination": { "fight": ["gain-recruit-current-count-by-trait:hc:strength"] },
         "maestro-wasteland-hulk": { "fight": ["ko-heroes-current-count-by-trait:hc:strength"] },
         "zzzax": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
       },
@@ -113,7 +119,7 @@
         "the-lizard": { "fight": ["ko-hero:current@sewers", "gain-wound:each-other@sewers"] }
       },
       "sinister-syndicate": {
-        "beetle": { "escape": ["reveal-or-wound:hc:covert"] },
+        "beetle": { "fight": ["draw-cards-current-count-by-trait:hc:covert"], "escape": ["reveal-or-wound:hc:covert"] },
         "hydro-man": { "fight": ["ko-hero:current@sewers+bridge"] }
       },
       "skulls": {
@@ -367,7 +373,8 @@
     },
     "co2e": {
       "doombot-legion": { "fight": ["scry-ko-own-deck"] },
-      "hand-ninjas": { "fight": ["ko-hero:current@sewers+rooftops", "gain-recruit-current:1@bank+streets+bridge"] }
+      "hand-ninjas": { "fight": ["ko-hero:current@sewers+rooftops", "gain-recruit-current:1@bank+streets+bridge"] },
+      "savage-land-mutates": { "fight": ["reveal-top-ko-grey-or-draw-by-class:strength+instinct"] }
     },
     "core": {
       "doombot-legion": { "fight": ["scry-ko-own-deck"] },

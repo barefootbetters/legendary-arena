@@ -2114,9 +2114,9 @@
           "vAttack": "8",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-destroyer.webp",
           "abilities": [
-            "Ambush: Each player KOs a non-grey Hero from their discard pile.",
-            "Fight: KO up to two grey Heroes from your discard pile.",
-            "Escape: Repeat the Ambush effect."
+            "Ambush: Each player KOs a non-grey Hero from their discard pile. [effect:ko-hero:each:1:discard:non-grey]",
+            "Fight: KO up to two grey Heroes from your discard pile. [effect:ko-up-to-from-discard-current:2:grey]",
+            "Escape: Repeat the Ambush effect. [effect:ko-hero:each:1:discard:non-grey]"
           ],
           "copies": 2
         },
@@ -2140,7 +2140,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-frost-giant-warrior.webp",
           "abilities": [
             "Ambush: Each player discards a [hc:ranged] Hero or gains a Wound.",
-            "Fight: You may KO a grey Hero from your discard pile."
+            "Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]"
           ],
           "copies": 2
         },
@@ -2152,7 +2152,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-ymir-frost-giant-king.webp",
           "abilities": [
             "Ambush: Choose a Frost Giant Warrior from any player's Victory Pile to enter the city.",
-            "Fight: You may KO a grey Hero from your discard pile."
+            "Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]"
           ],
           "copies": 2
         }
@@ -2285,7 +2285,7 @@
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-abomination.webp",
           "abilities": [
             "Abomination gets +[icon:attack] equal to the printed [icon:attack] of the Hero in the HQ space under his current city space.",
-            "Fight: You get +1[icon:recruit] for each of your [hc:strength] Heroes."
+            "Fight: You get +1[icon:recruit] for each of your [hc:strength] Heroes. [effect:gain-recruit-current-count-by-trait:hc:strength]"
           ],
           "copies": 2
         },
@@ -2395,7 +2395,7 @@
           "vAttack": "6",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-syndicate-beetle.webp",
           "abilities": [
-            "Fight: Count your [hc:covert] Heroes, then draw that many cards.",
+            "Fight: Count your [hc:covert] Heroes, then draw that many cards. [effect:draw-cards-current-count-by-trait:hc:covert]",
             "Escape: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]"
           ],
           "copies": 2
@@ -2527,7 +2527,7 @@
       "ledBy": [],
       "imageUrl": "https://images.legendary-arena.com/co2e/co2e-hm-savage-land-mutates.webp",
       "abilities": [
-        "Fight: Reveal the top card of your deck. If it's grey, KO it. If it's [hc:strength] or [hc:instinct], draw it."
+        "Fight: Reveal the top card of your deck. If it's grey, KO it. If it's [hc:strength] or [hc:instinct], draw it. [effect:reveal-top-ko-grey-or-draw-by-class:strength+instinct]"
       ],
       "vAttack": "3",
       "vp": "1"
