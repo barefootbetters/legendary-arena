@@ -49761,7 +49761,7 @@ Protect this file.
 
 ### D-24783 — Grey-Hero follow-ups to D-24769: every grey read goes through the shared predicate, and the grey prompt and KO log lines say what they mean (Active 2026-10-27 — direct fix, no WP)
 
-**Status:** Active 2026-10-27. Live-verify (D-24026) pending: STATUS.md entry of 2026-10-27 holds the recipe (a match created after the deploy).
+**Status:** Active 2026-10-27. Live-verify (D-24026) PASS 2026-10-27: operator match `s2F01Xdt6Al` on server `297fea7` (STATUS.md entry of 2026-10-27): the grey prompt said "grey Hero(es)" at both caps, the KO-from-discard line named each card (and "no cards" for an empty pick), and Destroyer's Ambush said "Player 0 had no non-grey Hero to KO" for a starters-only discard.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). The KO-from-discard prompt says "KO up to 1 grey Hero from your discard pile" for Frost Giant Warrior / Ymir (Destroyer's Fight: "up to 2 grey Heroes"); the KO-from-discard log line names each card KO'd; Destroyer's each-player line says "Player 1 had no non-grey Hero to KO" when that player held only grey Heroes. Loki's and Doctor Octopus's Master Strikes read split cards the way the rest of the engine does.
 
