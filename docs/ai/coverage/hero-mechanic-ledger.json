@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 813,
+    "totalRows": 815,
     "byStatus": {
-      "executable": 428,
+      "executable": 430,
       "deferred": 16,
       "condition": 49,
       "unsupported": 290,
@@ -3347,6 +3347,22 @@
         {
           "slug": "x-men-united",
           "name": "X-Men United"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/cyclops",
+      "heroName": "Cyclops",
+      "set": "co2e",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "designs": [
+        {
+          "slug": "unending-energy",
+          "name": "Unending Energy"
         }
       ]
     },
@@ -13184,6 +13200,22 @@
         {
           "slug": "dont-make-me-angry",
           "name": "Don't Make Me Angry"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/gladiator-hulk",
+      "heroName": "Gladiator Hulk",
+      "set": "wwhk",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "designs": [
+        {
+          "slug": "hulk-is-king",
+          "name": "Hulk Is King"
         }
       ]
     },

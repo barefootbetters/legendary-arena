@@ -1490,9 +1490,11 @@
       "label": "Return On Discard",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 1,
+      "cardCount": 3,
       "cardIds": [
-        "core/cyclops"
+        "co2e/cyclops",
+        "core/cyclops",
+        "wwhk/gladiator-hulk"
       ],
       "hidden": true
     },
@@ -2897,7 +2899,8 @@
     "co2e/cyclops": {
       "mechanics": [
         "attack-per-count",
-        "discard-to-play"
+        "discard-to-play",
+        "return-on-discard"
       ]
     },
     "co2e/emma-frost": {
@@ -4412,6 +4415,7 @@
       "mechanics": [
         "cross-dimensional-rampage",
         "draw",
+        "return-on-discard",
         "smash",
         "transform",
         "wounded-fury"
