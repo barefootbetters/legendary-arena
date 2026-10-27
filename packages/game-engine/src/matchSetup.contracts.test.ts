@@ -563,6 +563,84 @@ describe('validateMatchSetup — scheme-aware Henchman-count gate (WP-796 / D-24
   });
 });
 
+/**
+ * A registry mock whose resolveEffectiveVillainGroupCount adds one Villain Group
+ * for the test scheme — mimicking the registry's "Add an extra Villain Group"
+ * resolver (Change the Outcome of WWII, D-24766). Keyed to the existing test
+ * scheme so the config passes existence and the gate runs.
+ */
+function createMockRegistryWithExtraVillainGroupOverride() {
+  return {
+    ...createMockRegistryWithTable(),
+    resolveEffectiveVillainGroupCount(schemeId: string, _numPlayers: number, baseVillainGroupCount: number): number {
+      return schemeId === 'test/test-scheme-001' ? baseVillainGroupCount + 1 : baseVillainGroupCount;
+    },
+  };
+}
+
+/** A 1-player config (1 Henchman group, 3 heroes) with the given Villain Groups. */
+function createSoloInputWithVillainGroups(villainGroupIds: string[]): Record<string, unknown> {
+  return {
+    ...createValidInput(),
+    villainGroupIds,
+  };
+}
+
+describe('validateMatchSetup — scheme-aware Villain Group gate (WP-833 / D-24766)', () => {
+  it('rejects a 1-group 1p loadout for a scheme that requires an extra Villain Group', () => {
+    const registry = createMockRegistryWithExtraVillainGroupOverride();
+    // why: base@1p is 1 Villain Group (would pass), but the override scheme
+    // requires 2 — proving the engine forwards schemeId and enforces base + 1.
+    const input = createSoloInputWithVillainGroups(['test/test-villain-group-001']);
+    const result = validateMatchSetup(input, registry, 1);
+
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      const error = result.errors.find((each) => each.field === 'villainGroupIds');
+      assert.ok(error, 'Expected a villainGroupIds error for the raised Villain Group count.');
+      assert.equal(
+        error.message,
+        'A 1-player match requires 2 villain groups, but the loadout provides 1. Adjust the loadout composition to match the player count.',
+      );
+      assert.equal(result.errors.length, 1, 'Only the Villain Group count should be wrong.');
+    }
+  });
+
+  it('accepts a 2-group 1p loadout for the same scheme', () => {
+    const registry = createMockRegistryWithExtraVillainGroupOverride();
+    const input = createSoloInputWithVillainGroups(['test/test-villain-group-001', 'test/test-villain-group-002']);
+    const result = validateMatchSetup(input, registry, 1);
+
+    assert.equal(result.ok, true, 'A 2-group loadout must pass the raised requirement.');
+  });
+
+  it('keeps the base 1-group requirement for a scheme without an override', () => {
+    const registry = createMockRegistryWithExtraVillainGroupOverride();
+    const input = {
+      ...createSoloInputWithVillainGroups(['test/test-villain-group-001']),
+      schemeId: 'core/core-scheme-only',
+    };
+    const result = validateMatchSetup(input, registry, 1);
+
+    assert.equal(result.ok, true, 'A non-override scheme keeps the base Villain Group requirement.');
+  });
+
+  it('falls back to the base Villain Group count when the registry omits the resolver', () => {
+    // why: a table-only mock (no resolveEffectiveVillainGroupCount) reverts to the
+    // base count via the `?? row.villainGroupCount` fallback, so 1 group @1p passes
+    // and 2 groups fail, even for the would-be-override scheme.
+    const registry = createMockRegistryWithTable();
+    const oneGroup = validateMatchSetup(createSoloInputWithVillainGroups(['test/test-villain-group-001']), registry, 1);
+    assert.equal(oneGroup.ok, true, 'A resolver-less mock must use the base Villain Group count.');
+    const twoGroups = validateMatchSetup(
+      createSoloInputWithVillainGroups(['test/test-villain-group-001', 'test/test-villain-group-002']),
+      registry,
+      1,
+    );
+    assert.equal(twoGroups.ok, false, 'A resolver-less mock must reject base + 1 groups.');
+  });
+});
+
 describe('validateMatchSetup — no-throw contract', () => {
   it('never throws, even with null input', () => {
     const registry = createMockRegistry();

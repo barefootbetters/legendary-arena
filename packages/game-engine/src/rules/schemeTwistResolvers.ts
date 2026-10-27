@@ -18,11 +18,25 @@ import { KILLBOT_TWISTS_NEXT_TO_SCHEME, DARK_PORTAL_COUNT } from '../types.js';
 import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { RevealContext } from '../villainDeck/villainDeck.reveal.js';
+import { queueTimestreamPurge } from './timestreamPurge.logic.js';
 import type { ImplementationMap } from './ruleRuntime.execute.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { gainWoundForPlayer, gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { countPendingDivingBlockWounds } from '../moves/divingBlock.logic.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
-import { performVillainReveal, resolveVillainEscape } from '../villainDeck/villainDeck.reveal.js';
+import {
+  performVillainReveal,
+  playTopVillainDeckCards,
+  resolveVillainEscape,
+} from '../villainDeck/villainDeck.reveal.js';
+// why: WP-823 / D-24756 — the Traitor Battalion counter key and the Brainwash the
+// Military constants / City scan.
+import { TRAITOR_BATTALION_TWISTS } from '../types.js';
+import {
+  BRAINWASHED_OFFICER_BASE_ATTACK,
+  TRAITOR_BATTALION_STACK_LIMIT,
+  listCityBrainwashedOfficers,
+} from './brainwashTheMilitary.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { refillHqSlot, pushVillainIntoCity } from '../board/city.logic.js';
 import { attachBystanderToVillain } from '../board/bystanders.logic.js';
@@ -31,7 +45,14 @@ import {
   composeStrikeBlockedNarrative,
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
+import { addHeroDeckCardToEnigmaCode } from './enigmaCode.logic.js';
+import { invadeNextCountry } from './changeTheOutcomeOfWwii.logic.js';
 import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import {
+  FIRST_MONSTER_PIT_TWIST,
+  chooseGladiator,
+  readPrintedVillainAttack,
+} from './clashMonsterPit.logic.js';
 
 // ---------------------------------------------------------------------------
 // Internal — narrative name lookup
@@ -53,6 +74,22 @@ function resolveCardName(
     return display.name;
   }
   return cardId;
+}
+
+/**
+ * Reads the active player off a twist's reveal context (WP-846 / D-24780).
+ *
+ * @param context - The reveal context the twist dispatcher passed.
+ * @returns The current player id, or null when the context carries none.
+ */
+function readTwistCurrentPlayer(context: RevealContext): string | null {
+  // why: hand-built test contexts may omit `ctx`; a missing current player keeps the sorted
+  // order in seatsInTurnOrderFrom (duplicate-first of mastermindHandlers' resolveCurrentPlayer).
+  const currentPlayer = (context as { ctx?: { currentPlayer?: unknown } } | undefined)?.ctx?.currentPlayer;
+  if (typeof currentPlayer !== 'string' || currentPlayer.length === 0) {
+    return null;
+  }
+  return currentPlayer;
 }
 
 // why: WP-200 — sentinel ext_id used when a legacy test calls a resolver
@@ -85,18 +122,19 @@ const MIDTOWN_BYSTANDERS_PER_TWIST = 2;
 /**
  * "Each player reveals a [heroClass/team] hero or [suffers penalty]."
  *
- * Iterates players in canonical order. For each player, checks if any
+ * Iterates players starting with the current player, then clockwise (rules v23
+ * L2247, D-24780). For each player, checks if any
  * card in hand matches the condition. If matched, pushes a message.
  * If not matched, applies the penalty (gainWound or discardHand).
  *
  * @param gameState - Game state to mutate.
- * @param _context - RevealContext (unused by this resolver).
+ * @param context - RevealContext; its current player starts the each-player loop (D-24780).
  * @param _implementationMap - Handler map (unused by this resolver).
  * @param params - Expected: condition { field, value }, penalty.
  */
 function revealOrPunish(
   gameState: LegendaryGameState,
-  _context: RevealContext,
+  context: RevealContext,
   _implementationMap: ImplementationMap,
   params: Record<string, unknown>,
   twistCardId?: CardExtId,
@@ -119,7 +157,8 @@ function revealOrPunish(
       '[Scheme Twist] reveal-or-punish resolver received invalid params — expected condition { field, value } and penalty string.',
     );
   } else {
-    const playerIds = Object.keys(gameState.playerZones);
+    // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+    const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), readTwistCurrentPlayer(context));
 
     for (const playerId of playerIds) {
       const playerHand = gameState.playerZones[playerId]!.hand;
@@ -166,11 +205,15 @@ function revealOrPunish(
           } else {
             // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a Scheme-Twist
             // Wound to a Diving-Block holder (a NON-active seat) gets the reveal window (WP-684).
-            gainWoundForPlayer(gameState, playerId);
+            const woundOutcome = gainWoundWithOutcome(gameState, playerId);
+            // why: D-24673 — while a Diving Block reveal is pending, say "would gain".
+            const woundClause = woundOutcome === 'diving-block-pending'
+              ? 'would gain a wound; Diving Block can prevent it'
+              : 'gained a wound';
             // why: WP-643-follow-up — the player had no matching Hero and took the
             // Wound penalty; a bad outcome for the player → `blocked` (red).
             pushLog(gameState,
-              `[Scheme Twist] Player ${playerId} has no matching ${condition.field} "${condition.value}" hero — gained a wound.`,
+              `[Scheme Twist] Player ${playerId} has no matching ${condition.field} "${condition.value}" hero — ${woundClause}.`,
               'blocked',
             );
           }
@@ -291,17 +334,18 @@ function chainedReveals(
 /**
  * "Each player gains N Wound(s)."
  *
- * Iterates players in canonical order. Each player gains woundCount
+ * Iterates players starting with the current player, then clockwise (rules v23
+ * L2247, D-24780). Each player gains woundCount
  * wounds via gainWound. Stops early per-player if wound supply runs out.
  *
  * @param gameState - Game state to mutate.
- * @param _context - RevealContext (unused by this resolver).
+ * @param context - RevealContext; its current player starts the each-player loop (D-24780).
  * @param _implementationMap - Handler map (unused by this resolver).
  * @param params - Expected: woundCount (integer >= 1) OR escalation ({ atOrAfterTwist, woundCount }[]).
  */
 function woundAll(
   gameState: LegendaryGameState,
-  _context: RevealContext,
+  context: RevealContext,
   _implementationMap: ImplementationMap,
   params: Record<string, unknown>,
   twistCardId?: CardExtId,
@@ -325,11 +369,10 @@ function woundAll(
   } else {
     let effectiveWoundCount: number;
     if (escalation !== undefined) {
-      // why: the resolver runs BEFORE schemeHandlers applies the schemeTwistCount
-      // +1 modifyCounter effect (schemeHandlers.ts calls the resolver, then
-      // returns the increment for applyRuleEffects), so the pre-increment count
-      // + 1 is THIS twist's number.
-      const currentTwist = (gameState.counters.schemeTwistCount ?? 0) + 1;
+      // why: D-24775 — the dispatcher (schemeHandlers.ts) raises schemeTwistCount
+      // BEFORE it calls the resolver, so the count is THIS twist's number, also
+      // for a Twist revealed while another Twist is still resolving.
+      const currentTwist = gameState.counters.schemeTwistCount ?? 0;
 
       // why: a twist can match more than one escalation step (twist 7 matches
       // both the 5→1 and 7→3 steps), so take the MAX matching step's woundCount
@@ -360,7 +403,8 @@ function woundAll(
       effectiveWoundCount = woundCount as number;
     }
 
-    const playerIds = Object.keys(gameState.playerZones);
+    // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+    const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), readTwistCurrentPlayer(context));
 
     for (const playerId of playerIds) {
       const divingBlockPendingBefore = countPendingDivingBlockWounds(gameState, playerId);
@@ -834,6 +878,252 @@ function portals(
   });
 }
 
+// -------------------------------------------------------------------------
+// clash-monster-pit
+// -------------------------------------------------------------------------
+
+/**
+ * Clash of the Monsters Unleashed (D-24736). "Twist 3-10: Each player chooses a
+ * Villain from their Victory Pile as their 'Gladiator.' Then the top card of the
+ * Monster Pit enters the city. Each player whose Gladiator has a lower printed
+ * Attack than that Monster gains a Wound."
+ *
+ * Twists 1-2 do nothing. From twist 3, every player's Gladiator is chosen first
+ * (chooseGladiator: the highest printed Attack), then the Pit's top Monster
+ * enters the city, then each player whose Gladiator is weaker gains a Wound. A
+ * player with no Villain in their Victory Pile has no Gladiator to match the
+ * Monster, so they gain a Wound too (operator ruling, D-24736).
+ *
+ * @param gameState - Game state to mutate (Pit + city + wounds + log + event).
+ * @param context - Reveal context threaded into the Monster's city entry.
+ * @param implementationMap - Handler map threaded into the Monster's city entry.
+ * @param _params - Unused (no resolver params).
+ * @param twistCardId - The scheme-twist card instance that triggered.
+ */
+function clashMonsterPit(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  // why: D-24775 — the dispatcher raises schemeTwistCount before the resolver runs,
+  // so the count is THIS twist's number (the woundAll escalation read). A Twist set off
+  // inside this one (a Monster pushing a Mystique out) reads its own, later number.
+  const currentTwist = gameState.counters.schemeTwistCount ?? 0;
+  const monsterPit = gameState.monsterPit ?? [];
+
+  if (currentTwist < FIRST_MONSTER_PIT_TWIST) {
+    pushLog(
+      gameState,
+      `[Monster Pit] Twist ${currentTwist}: the Monster Pit stays shut (Monsters climb out on Twists 3-10).`,
+    );
+  } else if (monsterPit.length === 0) {
+    pushLog(gameState, `[Monster Pit] Twist ${currentTwist}: the Monster Pit is empty.`);
+  } else {
+    releaseMonsterAgainstGladiators(gameState, context, implementationMap, currentTwist);
+  }
+
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'clashMonsterPit',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'clashMonsterPit',
+    ),
+  });
+}
+
+/**
+ * Chooses every player's Gladiator, sends the Pit's top Monster into the city,
+ * then wounds each player whose Gladiator has a lower printed Attack.
+ *
+ * @param gameState - Game state to mutate.
+ * @param context - Reveal context for the Monster's city entry.
+ * @param implementationMap - Handler map for the Monster's city entry.
+ * @param currentTwist - This twist's number (3-10), for the log.
+ */
+function releaseMonsterAgainstGladiators(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  currentTwist: number,
+): void {
+  // why: the card orders it — Gladiators are chosen BEFORE the Monster is revealed.
+  // why: rules v23 L2247 — the Wound loop below starts with the current player, then
+  // clockwise (D-24780); the Gladiator pass shares the order (each pick reads only its
+  // own Victory Pile, so it is order-free).
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), readTwistCurrentPlayer(context));
+  const gladiators = new Map<string, { cardId: CardExtId; printedAttack: number } | null>();
+  for (const playerId of playerIds) {
+    gladiators.set(playerId, chooseGladiator(gameState, playerId));
+  }
+
+  const monsterId = (gameState.monsterPit ?? [])[0]!;
+  gameState.monsterPit = (gameState.monsterPit ?? []).slice(1);
+  const monsterAttack = readPrintedVillainAttack(gameState, monsterId);
+  pushLog(
+    gameState,
+    `[Monster Pit] Twist ${currentTwist}: ${resolveCardName(gameState, monsterId)} (printed ${monsterAttack} Attack) climbs out of the Monster Pit. ${gameState.monsterPit.length} Monster(s) remain.`,
+    'threat',
+  );
+
+  // why: "enters the city" is a full Villain entry — Ambush fires, a full city
+  // pushes a Villain out to escape, and the rule hooks see a revealed Villain. The
+  // Monster is placed on top of the Villain Deck and played through the one reveal
+  // pipeline rather than a second copy of it. It leaves the deck at once, so the
+  // deck's size, and its run-out latch, are unchanged.
+  gameState.villainDeck.deck = [monsterId, ...gameState.villainDeck.deck];
+  performVillainReveal(gameState, context, implementationMap);
+
+  for (const playerId of playerIds) {
+    woundPlayerIfGladiatorIsWeaker(gameState, playerId, gladiators.get(playerId) ?? null, monsterAttack);
+  }
+}
+
+/**
+ * Wounds one player when their Gladiator's printed Attack is below the Monster's.
+ *
+ * @param gameState - Game state to mutate.
+ * @param playerId - The player compared.
+ * @param gladiator - The player's Gladiator, or null when they have none.
+ * @param monsterAttack - The Monster's printed Attack.
+ */
+function woundPlayerIfGladiatorIsWeaker(
+  gameState: LegendaryGameState,
+  playerId: string,
+  gladiator: { cardId: CardExtId; printedAttack: number } | null,
+  monsterAttack: number,
+): void {
+  if (gladiator !== null && gladiator.printedAttack >= monsterAttack) {
+    pushLog(
+      gameState,
+      `[Monster Pit] Player ${playerId}'s Gladiator ${resolveCardName(gameState, gladiator.cardId)} (${gladiator.printedAttack}) holds against the Monster.`,
+    );
+    return;
+  }
+  const reason = gladiator === null
+    ? 'has no Villain in their Victory Pile to be a Gladiator'
+    : `has Gladiator ${resolveCardName(gameState, gladiator.cardId)} (${gladiator.printedAttack}), weaker than the Monster`;
+  if (gameState.piles.wounds.length === 0) {
+    pushLog(gameState, `[Monster Pit] Player ${playerId} ${reason}, but the Wound Stack is empty.`);
+    return;
+  }
+  const divingBlockPendingBefore = countPendingDivingBlockWounds(gameState, playerId);
+  // why: WP-682 / D-24499 — the gainWoundForPlayer chokepoint, so a non-active
+  // seat's Diving Block can still prevent the Wound.
+  gainWoundForPlayer(gameState, playerId);
+  // why: D-24673 — while a Diving Block reveal is pending, say "would gain".
+  const isParkedByDivingBlock = countPendingDivingBlockWounds(gameState, playerId) > divingBlockPendingBefore;
+  const outcome = isParkedByDivingBlock ? 'would gain a Wound — Diving Block can prevent it' : 'gains a Wound';
+  pushLog(gameState, `[Monster Pit] Player ${playerId} ${reason}, and ${outcome}.`);
+}
+
+// -------------------------------------------------------------------------
+// brainwash-the-military
+// -------------------------------------------------------------------------
+
+/**
+ * Brainwash the Military (WP-823 / D-24756). "Twist 1-6: Stack this Twist next to
+ * the Scheme as a 'Traitor Battalion.' Play another card from the Villain Deck.
+ * Twist 7: All S.H.I.E.L.D. Officers in the city escape."
+ *
+ * Twists 1-6 raise the Traitor Battalion counter (`TRAITOR_BATTALION_TWISTS`), which
+ * gives every Officer +1 Attack (`resolveFightCost`), then play the top card of the
+ * Villain Deck through the normal reveal. Once six are stacked, the Twist is Twist 7:
+ * every Officer in the City escapes. Emits one `schemeTwistResolved` event.
+ *
+ * @param gameState - Game state to mutate (counter + City + escapes + log + event).
+ * @param context - Reveal context threaded into the extra play and the escapes.
+ * @param implementationMap - Handler map threaded into the extra play and the escapes.
+ * @param _params - Unused (no resolver params).
+ * @param twistCardId - The scheme-twist card instance that triggered.
+ */
+function brainwashTheMilitary(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  // why: the Twist is numbered from the stack, NOT from schemeTwistCount: the stack
+  // counts only the Twists stacked next to the Scheme, and it is raised BEFORE the
+  // extra card is played, so a nested Twist reads the right stack position. (Since
+  // D-24775 schemeTwistCount is also raised before the resolver, but it counts every
+  // Twist, including ones that changed nothing.) A Twist after six are stacked (a
+  // Mystique Escape) runs Twist 7 too; the card defines no Twist 8.
+  const stackedCount = gameState.counters[TRAITOR_BATTALION_TWISTS] ?? 0;
+  if (stackedCount < TRAITOR_BATTALION_STACK_LIMIT) {
+    const nextCount = stackedCount + 1;
+    gameState.counters[TRAITOR_BATTALION_TWISTS] = nextCount;
+    pushLog(
+      gameState,
+      `[Brainwash the Military] Twist ${nextCount} joins the Traitor Battalion next to the Scheme — S.H.I.E.L.D. Officers now have ${BRAINWASHED_OFFICER_BASE_ATTACK + nextCount} Attack. Another card is played from the Villain Deck.`,
+      'threat',
+    );
+    playTopVillainDeckCards(gameState, context, implementationMap, 1);
+  } else {
+    escapeEveryCityOfficer(gameState, context, implementationMap);
+  }
+
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'brainwashTheMilitary',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'brainwashTheMilitary',
+    ),
+  });
+}
+
+/**
+ * Twist 7 of Brainwash the Military: every S.H.I.E.L.D. Officer in the City escapes.
+ *
+ * @param gameState - Game state to mutate (City + escapes + log).
+ * @param context - Reveal context threaded into each escape.
+ * @param implementationMap - Handler map threaded into each escape.
+ */
+function escapeEveryCityOfficer(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+): void {
+  const officerIndices = listCityBrainwashedOfficers(gameState);
+  if (officerIndices.length === 0) {
+    pushLog(gameState, '[Brainwash the Military] Twist 7: no S.H.I.E.L.D. Officer is in the City, so none escapes.');
+    return;
+  }
+  pushLog(
+    gameState,
+    `[Brainwash the Military] Twist 7: all ${officerIndices.length} S.H.I.E.L.D. Officer(s) in the City escape.`,
+    'threat',
+  );
+  // why: Bridge first (listCityBrainwashedOfficers), the order Villains leave the
+  // City in. Each is a full escape (D-24656: an escape caused by a card effect
+  // "causes all the same effects"), so each owes its own HQ KO, its carried
+  // Bystanders' discard, and the loss check, whose latch is idempotent. The space is
+  // re-read before each escape, since an earlier escape's effects may have moved it.
+  for (const cityIndex of officerIndices) {
+    const cardId = gameState.city[cityIndex];
+    if (cardId === null || cardId === undefined) {
+      continue;
+    }
+    if (gameState.convertedVillainOrigins?.[cardId] !== 'shield-officer') {
+      continue;
+    }
+    // why: resolveVillainEscape does not touch G.city (its callers clear the space
+    // first), as in operatorEscapeVillain.
+    const city = [...gameState.city] as typeof gameState.city;
+    city[cityIndex] = null;
+    gameState.city = city;
+    resolveVillainEscape(gameState, context, implementationMap, cardId);
+  }
+}
+
 /**
  * Counter-only resolver (WP-763 / D-24595). Deliberately does nothing.
  *
@@ -848,6 +1138,109 @@ function counterOnly(): void {
   return;
 }
 
+/**
+ * Go Back in Time to Slay Heroes' Ancestors (WP-829 / D-24762): "Twist: Put a Hero from the HQ
+ * next to the Scheme, 'Purged from the Timestream.'" Queues one owed Purge for the active
+ * player; the play-phase onMove opener resolves it after the move (see timestreamPurge.logic.ts).
+ *
+ * @param gameState - The game state, mutated in place (queue appended).
+ * @param context - The reveal context (the active player picks the Hero).
+ * @param _implementationMap - Unused.
+ * @param _params - Unused.
+ * @param twistCardId - The Twist card that triggered.
+ */
+function goBackInTime(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  _implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  // why: WP-829 / D-24762 — the Twist resolves inside a Villain Deck reveal, where no seat
+  // choice can be answered, so it owes the Purge and the onMove opener makes it after the move.
+  queueTimestreamPurge(gameState, context.ctx.currentPlayer, resolvedTwistCardId);
+  pushLog(gameState,
+    `[Go Back in Time] Player ${context.ctx.currentPlayer} must Purge a Hero in the HQ from the Timestream.`,
+    'threat',
+    resolvedTwistCardId,
+  );
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'goBackInTime',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'goBackInTime',
+    ),
+  });
+}
+
+/**
+ * The Unbreakable Enigma Code (WP-830 / D-24763): "Twists 1-5: Put a card from the Hero Deck face
+ * down next to the scheme as part of the 'Enigma Code.' Mix up those cards face-down." Twist 6 is
+ * the scheme's loss (its lossThreshold), so this resolver adds nothing then.
+ *
+ * @param gameState - The game state, mutated in place (Hero Deck, code, log, notable event).
+ * @param context - The reveal context (its random mixes the code).
+ * @param _implementationMap - Unused.
+ * @param _params - Unused.
+ * @param twistCardId - The Twist card that triggered.
+ */
+function unbreakableEnigmaCode(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  _implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  // why: WP-830 / D-24763 — the mix uses the reveal context's deterministic random (ctx.random).
+  addHeroDeckCardToEnigmaCode(gameState, context.random);
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'enigmaCode',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'enigmaCode',
+    ),
+  });
+}
+
+/**
+ * Change the Outcome of WWII (WP-832 / D-24765): "Twist: The Axis invades a new country. Put all
+ * Villains and Bystanders from the city on the bottom of the Villain Deck. The number of city
+ * spaces changes. Play 2 cards from the Villain Deck. If any Villains escape this country, stack a
+ * Twist next to the scheme as a 'conquered capital.'"
+ *
+ * @param gameState - The game state, mutated in place.
+ * @param context - The reveal context (the 2 plays use it).
+ * @param implementationMap - The rule handler map (the 2 plays use it).
+ * @param _params - Unused.
+ * @param twistCardId - The Twist card that triggered.
+ */
+function changeTheOutcomeOfWwii(
+  gameState: LegendaryGameState,
+  context: RevealContext,
+  implementationMap: ImplementationMap,
+  _params: Record<string, unknown>,
+  twistCardId?: CardExtId,
+): void {
+  // why: WP-832 / D-24765 — the invasion (return, resize, play 2, settle) lives in its module.
+  invadeNextCountry(gameState, context, implementationMap);
+  const resolvedTwistCardId = twistCardId ?? UNKNOWN_TWIST_CARD_ID;
+  gameState.notableEvents.push({
+    type: 'schemeTwistResolved',
+    twistCardId: resolvedTwistCardId,
+    resolverKey: 'changeTheOutcomeOfWwii',
+    narrative: composeSchemeTwistNarrative(
+      resolveCardName(gameState, resolvedTwistCardId),
+      'changeTheOutcomeOfWwii',
+    ),
+  });
+}
+
 export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistResolver> = {
   'reveal-or-punish': revealOrPunish,
   'chained-reveals': chainedReveals,
@@ -857,5 +1250,10 @@ export const SCHEME_TWIST_RESOLVERS: Record<SchemeTwistResolverId, SchemeTwistRe
   'killbots': killbots,
   'secret-invasion': secretInvasion,
   'portals': portals,
+  'clash-monster-pit': clashMonsterPit,
+  'brainwash-the-military': brainwashTheMilitary,
+  'go-back-in-time': goBackInTime,
+  'enigma-code': unbreakableEnigmaCode,
+  'change-the-outcome-of-wwii': changeTheOutcomeOfWwii,
   'counter-only': counterOnly,
 };

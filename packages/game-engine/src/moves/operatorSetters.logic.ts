@@ -75,7 +75,21 @@ export function isOperatorChoiceOpen(G: LegendaryGameState): boolean {
   if (hasAnyPendingChoice(G)) return true;
   if (G.pendingHeroChoice !== undefined) return true;
   if ((G.pendingDivingBlockWounds?.length ?? 0) > 0) return true;
+  // why: WP-827 / D-24760 — the Flying Shield Block queue is opened the same way.
+  if ((G.pendingFlyingShieldBlockWounds?.length ?? 0) > 0) return true;
+  // why: WP-828 / D-24761 — owed Man Out of Time grants are opened the same way.
+  if ((G.pendingOutOfTimeGrants?.length ?? 0) > 0) return true;
+  // why: WP-829 / D-24762 — owed Go Back in Time Purges are opened the same way.
+  if ((G.pendingTimestreamPurges?.length ?? 0) > 0) return true;
   if ((G.pendingEscapeProcedures?.length ?? 0) > 0) return true;
+  // why: WP-830 / D-24763 — owed Enigma peek offers are opened into a seat choice after the move.
+  if ((G.pendingEnigmaPeekOffers?.length ?? 0) > 0) return true;
+  // why: WP-817 / D-24750 — an owed Escape-effect discard (Primus) is opened into a seat
+  // choice after the move, exactly like the escape-procedure queue above.
+  if ((G.pendingEscapeEffectDiscards?.length ?? 0) > 0) return true;
+  // why: WP-845 / D-24779 — an owed reveal-or-gain-a-Wound choice is opened into a seat choice
+  // after the move, like the queues above.
+  if ((G.pendingRevealOrWoundChoices?.length ?? 0) > 0) return true;
   return false;
 }
 

@@ -6,11 +6,81 @@
  * - awardAttachedBystanders: award bystanders to player on villain defeat
  * - carryEscapedBystandersToPile: carry bystanders into the escaped pile on villain escape
  *
- * All functions return new objects and never mutate inputs.
+ * Plus the villain-side Savior helpers (WP-816 / D-24749):
+ * - SAVIOR_BYSTANDER_THRESHOLD: the Savior threshold (3 Bystanders)
+ * - countVictoryPileBystanders: count the Bystanders in a Victory Pile
+ * - findFirstVictoryPileBystander: the first Bystander in Victory Pile order
+ *
+ * All functions return new objects (or plain values) and never mutate inputs.
+ * Imports only the CardExtId type and the BYSTANDER_EXT_ID constant.
  * No boardgame.io import. No side effects.
  */
 
 import type { CardExtId } from '../state/zones.types.js';
+import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
+
+// why: rules v23 L1844-1853 — Savior "means 'Use this ability if you have at least 3
+// Bystanders in your Victory Pile.'" The same threshold the hero gate builds from
+// `[keyword:Savior]` (`bystandersInVictoryAtLeast:3`, D-24464).
+/** The number of Victory-Pile Bystanders that makes a player a Savior. */
+export const SAVIOR_BYSTANDER_THRESHOLD = 3;
+
+/**
+ * Whether a Victory-Pile card id is a Bystander for Savior purposes.
+ *
+ * @param cardId - A card ext_id from a player's Victory Pile.
+ * @returns True for a supply Bystander, a rescued villain-deck Bystander, or a
+ *   defeated Killbot (a converted villain-deck Bystander keeps its id).
+ */
+function isSaviorBystanderId(cardId: CardExtId): boolean {
+  return cardId === BYSTANDER_EXT_ID || cardId.startsWith('bystander-villain-deck-');
+}
+
+/**
+ * Counts the Bystanders in a Victory Pile.
+ *
+ * Savior / Bystander id predicate. It agrees with the scoring predicate
+ * (`scoring/scoring.logic.ts` `isVictoryPileBystander`) on every Victory-Pile card,
+ * defeated Killbots included.
+ *
+ * @param victory - A player's Victory Pile (not mutated).
+ * @returns How many of its cards are Bystanders.
+ */
+// why: the hero gate's predicate verbatim (`hero/heroConditions.evaluate.ts`
+// `bystandersInVictoryAtLeast`) so hero and villain Savior never disagree in one
+// match; the T11 parity test pins the two together. A defeated Killbot counts as a
+// Bystander (rules v23 L2337-2341) because it keeps its `bystander-villain-deck-NN`
+// id; the T12 test pins that for both gates, Executioner's KO and scoring.
+export function countVictoryPileBystanders(victory: readonly CardExtId[]): number {
+  let count = 0;
+  for (const cardId of victory) {
+    if (isSaviorBystanderId(cardId)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Finds the first Bystander in a Victory Pile, in array order.
+ *
+ * Savior / Bystander id predicate. It agrees with the scoring predicate
+ * (`scoring/scoring.logic.ts` `isVictoryPileBystander`) on every Victory-Pile card,
+ * defeated Killbots included.
+ *
+ * @param victory - A player's Victory Pile (not mutated).
+ * @returns The first Bystander's ext_id, or undefined when there is none.
+ */
+export function findFirstVictoryPileBystander(
+  victory: readonly CardExtId[],
+): CardExtId | undefined {
+  for (const cardId of victory) {
+    if (isSaviorBystanderId(cardId)) {
+      return cardId;
+    }
+  }
+  return undefined;
+}
 
 /** Result of an attachBystanderToVillain operation. */
 export interface AttachBystanderResult {

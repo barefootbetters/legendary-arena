@@ -164,6 +164,25 @@ function isLockedEffectKeyword(keyword) {
 // `reveal-top-draw-if-cost-lte` and `ko-up-to-from-discard-current` (`:<N>`) appended by
 // WP-760 (D-24589 — The Fallen's Patriarch and Salomé Fights; the count validates via
 // their own `:<N>` branch below).
+// `ko-bystander-each-victory-pile` (no-param) appended at position 29 by WP-816 (D-24749 —
+// Executioner's Escape "KO a Bystander from each player's Victory Pile"; validates via the
+// terminal no-param `parts.length === 1` branch).
+// `gain-recruit-current-per-hero-class` (no-param) and `discard-hero-each-player-by-cost`
+// (`:<c>[+<c>…]`) appended at positions 30 and 31 by WP-817 (D-24750 — Captain Zolandia's
+// Fight "+1 Recruit for each Hero Class you have" and Primus's Escape "each player discards a
+// Hero that costs 2, 3, 5, or 7"; the first validates via the terminal no-param branch, the
+// second via its own strictly-ascending cost-list branch below).
+// `gain-recruit-current-count-by-trait`, `draw-cards-current-count-by-trait` (both
+// `:<kind>:<value>`) and `reveal-top-ko-grey-or-draw-by-class` (`:<c>[+<c>…]`) appended at
+// positions 32, 33 and 34 by WP-836 (D-24769 — co2e Abomination, Beetle and Savage Land
+// Mutates Fights; the first two validate via the shared trait-predicate branch, the third via
+// its own Hero Class list branch below).
+// `discard-hero-each-player-by-trait`, `discard-hero-or-wound-each-player-by-trait` (both
+// `:<kind>:<value>`), `discard-hand-matching-hq-card-names-each-player` and
+// `hq-heroes-to-hero-deck-bottom` (both no-param) appended at positions 35-38 by WP-837
+// (D-24770 — co2e Mystique, Frost Giant Warrior and Juggernaut Ambushes; the first two
+// validate via the shared trait-predicate branch, the last two via the terminal no-param
+// branch).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -193,7 +212,32 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'haunt-hq-hero',
   'reveal-top-draw-if-cost-lte',
   'ko-up-to-from-discard-current',
+  'ko-bystander-each-victory-pile',
+  'gain-recruit-current-per-hero-class',
+  'discard-hero-each-player-by-cost',
+  'gain-recruit-current-count-by-trait',
+  'draw-cards-current-count-by-trait',
+  'reveal-top-ko-grey-or-draw-by-class',
+  'discard-hero-each-player-by-trait',
+  'discard-hero-or-wound-each-player-by-trait',
+  'discard-hand-matching-hq-card-names-each-player',
+  'hq-heroes-to-hero-deck-bottom',
 ];
+
+// why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
+// (packages/game-engine/src/content/content.schemas.ts). Same no-import-from-packages
+// discipline as CITY_SPACE_NAMES below: the reveal-top-ko-grey-or-draw-by-class class list
+// validates against it, so a mistyped class in the marker map is rejected.
+const HERO_CLASSES = ['tech', 'covert', 'strength', 'ranged', 'instinct'];
+
+// why: WP-816 / D-24749 — hand-synced local copy of the engine's VILLAIN_EFFECT_CONDITIONS
+// (packages/game-engine/src/rules/villainAbility.types.ts). Same no-import-from-packages
+// discipline + loud-fail-on-drift posture as the vocabularies above: the `!<condition>`
+// marker suffix validates against this list (case-sensitive), so a mistyped condition in
+// the marker map is rejected, and a new engine condition breaks this script until it is
+// appended here too. `another-group-villain-in-city` appended by WP-837 (D-24770 — co2e
+// Scorpion's Ambush "If there is another Spider-Foes Villain in the city").
+const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city'];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
 // (packages/game-engine/src/board/citySpaceNames.ts). Same no-import-from-packages
@@ -220,8 +264,46 @@ function isValidCityGateSuffix(spacesToken) {
 }
 
 /**
+ * Returns true when a `+`-joined cost list (`2+3+5+7`) is well-formed: at least one
+ * token, each `0` or a positive integer with no leading zero, strictly ascending
+ * (D-24750). Mirrors the engine parser's parseEligibleCostList.
+ *
+ * @param {string} costListToken - the text after the primitive's `:`.
+ * @returns {boolean} true when the list is well-formed.
+ */
+function isValidEligibleCostList(costListToken) {
+  let previousCost = -1;
+  for (const costToken of costListToken.split('+')) {
+    if (!/^(0|[1-9][0-9]*)$/.test(costToken)) return false;
+    const cost = Number(costToken);
+    if (cost <= previousCost) return false;
+    previousCost = cost;
+  }
+  return true;
+}
+
+/**
+ * Returns true when a `+`-joined Hero Class list (`strength+instinct`) is well-formed: every
+ * token, after trim + lowercase, a member of HERO_CLASSES, with no repeats (D-24769). Mirrors
+ * the engine parser's parseHeroClassList.
+ *
+ * @param {string} classListToken - the text after the primitive's `:`.
+ * @returns {boolean} true when the list is well-formed.
+ */
+function isValidHeroClassList(classListToken) {
+  const seenClasses = [];
+  for (const rawClass of classListToken.split('+')) {
+    const heroClass = rawClass.trim().toLowerCase();
+    if (!HERO_CLASSES.includes(heroClass)) return false;
+    if (seenClasses.includes(heroClass)) return false;
+    seenClasses.push(heroClass);
+  }
+  return true;
+}
+
+/**
  * Returns true when a token is a well-formed parameterized effect token
- * `<primitive>[:<param>...]`, mirroring the engine parser's grammar
+ * `<primitive>[:<param>...][@<space>[+<space>...]][!<condition>]`, mirroring the engine parser's grammar
  * (parseParameterizedEffect in setup/villainAbility.setup.ts). Forward-compatible:
  * no curated map entry uses this grammar yet, so the emitter output is unchanged,
  * but a future magnitude (e.g. ko-hero:each:3) validates without a vocabulary
@@ -231,11 +313,17 @@ function isValidCityGateSuffix(spacesToken) {
  * @returns {boolean} True when the token is a valid parameterized effect.
  */
 function isValidParameterizedEffectToken(token) {
-  // why: D-24295 — strip the universal `@<space>[+<space>…]` location-gate suffix
-  // FIRST (mirrors the engine parser's parseParameterizedEffect). Reject more than
-  // one `@`; validate the suffix against CITY_SPACE_NAMES. The remaining left side
-  // parses by the primitive grammar below.
-  const gateSplit = token.split('@');
+  // why: D-24749 — split the `!<condition>` suffix FIRST so it is always last (mirrors
+  // the engine parser's parseParameterizedEffect). Reject more than one `!` and any
+  // condition outside VILLAIN_EFFECT_CONDITIONS (case-sensitive, empty included).
+  const conditionSplit = token.split('!');
+  if (conditionSplit.length > 2) return false;
+  if (conditionSplit.length === 2 && !VILLAIN_EFFECT_CONDITIONS.includes(conditionSplit[1])) return false;
+  // why: D-24295 — then strip the universal `@<space>[+<space>…]` location-gate suffix
+  // (mirrors the engine parser's parseLocationGatedEffect). Reject more than one `@`;
+  // validate the suffix against CITY_SPACE_NAMES. The remaining left side parses by the
+  // primitive grammar below.
+  const gateSplit = conditionSplit[0].split('@');
   if (gateSplit.length > 2) return false;
   if (gateSplit.length === 2 && !isValidCityGateSuffix(gateSplit[1])) return false;
   const parts = gateSplit[0].split(':');
@@ -258,6 +346,17 @@ function isValidParameterizedEffectToken(token) {
     ) {
       return true;
     }
+    // why: D-24769 — the 5-token ko-hero:each:N:discard:non-grey form (co2e Destroyer).
+    // Mirrors the engine parser's ko-hero:each 5-token branch.
+    if (
+      parts.length === 5 &&
+      parts[1] === 'each' &&
+      /^[1-9][0-9]*$/.test(parts[2]) &&
+      parts[3] === 'discard' &&
+      parts[4] === 'non-grey'
+    ) {
+      return true;
+    }
     return false;
   }
   if (primitive === 'gain-wound') {
@@ -266,6 +365,9 @@ function isValidParameterizedEffectToken(token) {
     // integer magnitude. Mirrors the engine parser's each-other branch.
     if (parts.length === 2 && parts[1] === 'each-other') return true;
     if (parts.length === 3 && parts[1] === 'each-other' && /^[1-9][0-9]*$/.test(parts[2])) return true;
+    // why: D-24749 — gain-wound:each-non-savior (Radioactive Man), exactly 2 tokens, no
+    // magnitude. Mirrors the engine parser's each-non-savior branch.
+    if (parts.length === 2 && parts[1] === 'each-non-savior') return true;
     return false;
   }
   if (primitive === 'capture-bystander') {
@@ -318,13 +420,31 @@ function isValidParameterizedEffectToken(token) {
     // why: D-24589 — grammar <primitive>:<N> (exactly 2 tokens); N is a positive integer
     // (Patriarch's cost ceiling 3, Salomé's KO cap 2). Mirrors the engine parser's
     // parsePositiveInteger branch so producer + consumer agree on the grammar.
+    // why: D-24769 — ko-up-to-from-discard-current:<N>:grey (co2e Destroyer / Frost Giant
+    // Warrior / Ymir) limits the KO to grey Heroes; the reveal-draw sibling stays 2 tokens.
+    if (primitive === 'ko-up-to-from-discard-current' && parts.length === 3) {
+      return /^[1-9][0-9]*$/.test(parts[1]) && parts[2] === 'grey';
+    }
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'reveal-top-ko-grey-or-draw-by-class') {
+    // why: D-24769 — grammar reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…] (exactly 2
+    // tokens; co2e Savage Land Mutates: :strength+instinct). Mirrors the engine parser's
+    // parseHeroClassList so producer + consumer accept the same tokens.
+    return parts.length === 2 && isValidHeroClassList(parts[1]);
   }
   if (primitive === 'play-villain-deck-cards') {
     // why: D-24351 — grammar play-villain-deck-cards:<N> (exactly 2 tokens); N is the
     // count of top Villain Deck cards to play (Endless Armies of HYDRA: 2; The Leader: 1).
     // Same strict positive-integer grammar as draw-cards-current; mirrors the engine
     // parser so producer + consumer agree on the grammar.
+    // why: D-24770 — the 4-token reveal-gated form play-villain-deck-cards:<N>:<kind>:<value>
+    // (co2e The Leader: :1:hc:strength). Mirrors the engine parser's 4-part branch.
+    if (parts.length === 4) {
+      return (
+        /^[1-9][0-9]*$/.test(parts[1]) && (parts[2] === 'team' || parts[2] === 'hc') && parts[3].length > 0
+      );
+    }
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
   if (
@@ -332,8 +452,14 @@ function isValidParameterizedEffectToken(token) {
     primitive === 'ko-heroes-current-count-by-trait' ||
     primitive === 'rescue-bystanders-current-by-trait-count' ||
     primitive === 'capture-bystanders-plus-per-hq-hero-by-trait' ||
-    primitive === 'give-hq-hero-by-trait-to-current'
+    primitive === 'give-hq-hero-by-trait-to-current' ||
+    primitive === 'gain-recruit-current-count-by-trait' ||
+    primitive === 'draw-cards-current-count-by-trait' ||
+    primitive === 'discard-hero-each-player-by-trait' ||
+    primitive === 'discard-hero-or-wound-each-player-by-trait'
   ) {
+    // why: D-24770 — co2e Mystique `discard-hero-each-player-by-trait:team:x-men` and Frost
+    // Giant Warrior `discard-hero-or-wound-each-player-by-trait:hc:ranged` join this arm.
     // why: D-24290 / D-24334 / D-24335 / D-24353 — all use the shared trait-predicate
     // grammar <kind>:<value> (exactly 3 tokens; kind team | hc; non-empty value), mirroring
     // the engine parser's parseTraitPredicateTokens so producer + consumer agree. co2e Baron
@@ -353,6 +479,12 @@ function isValidParameterizedEffectToken(token) {
     // capture-bystander-style branch so producer + consumer agree on the grammar.
     if (parts.length === 1) return true;
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
+  }
+  if (primitive === 'discard-hero-each-player-by-cost') {
+    // why: D-24750 — grammar discard-hero-each-player-by-cost:<c>[+<c>…] (exactly 2 tokens;
+    // Primus: :2+3+5+7). Mirrors the engine parser's parseEligibleCostList so producer +
+    // consumer agree on the grammar.
+    return parts.length === 2 && isValidEligibleCostList(parts[1]);
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params.

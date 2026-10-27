@@ -111,8 +111,9 @@ seed-challenge WP that weakened this would break the surface's whole premise.
 ## 3. Terminology (binding within this document)
 
 - **Seed** — the PRNG seed that determines every shuffle and draw in a match.
-  Today it is `plugins.random.data.seed`, minted by boardgame.io as a
-  `Date.now()` string at match creation (§7).
+  Today it is `plugins.random.data.seed`. The server mints it with
+  `crypto.randomBytes` per match and never sends it to clients
+  (WP-809 / D-24715; §7).
 - **Challenge** — a **published, fully-pinned board** *plus* a fixed seed. A
   seed alone is not a challenge (see §4): the same seed produces a different
   puzzle under a different loadout, so the loadout must be pinned too.
@@ -329,15 +330,23 @@ code seams.
 ### Missing (the actual build)
 
 a. **Caller-specified seed at match creation.** boardgame.io 0.50.2 has *no*
-   create-time seed API — the seed comes only from the static `game.seed`
-   property or the `Date.now()` default. The clean approach is a **custom
-   random plugin** replacing boardgame.io's `RandomPlugin`, whose `setup`
-   reads the seed from the match's `setupData` (which *is* threaded into
-   `InitializeGame`) instead of `game.seed`. The seed rides on the
-   match-setup **envelope** *alongside* the locked 9-field composition (the
-   9-field composition lock is not touched), and is injected at the create
-   proxy (`apps/server/src/match/matchGate.routes.ts`). The seed is also
-   currently stripped from `playerView` and must be surfaced for verification.
+   create-time seed API. The seed comes only from `game.seed`, which the
+   server's `serverLegendaryGame` (`apps/server/src/game/matchSeed.mjs`,
+   WP-809 / D-24715) answers with a fresh `crypto.randomBytes` value per
+   match.
+   - **Why a custom random plugin cannot do this.** A plugin's `setup`
+     receives only `{ G, ctx, game }`, never `setupData`.
+   - **Why the seed must not ride on `setupData`.** `createMetadata` copies
+     `setupData` verbatim into the public lobby metadata, so it would be
+     visible to anyone.
+   - **The clean seam.** A server create path that calls boardgame.io's
+     `createMatch` over a copy of `serverLegendaryGame` with `seed` set to the
+     challenge seed, then stores the result itself. An explicit seed
+     reproduces the board exactly.
+   - **Verification.** The seed is persisted in `initialState` but never sent
+     to clients (the `sync` redaction, D-24715). Surfacing it for
+     verification is a deliberate, completed-match-only export (WP-808 /
+     D-24714).
 
 b. **A persisted seed identity.** `competitive_scores` has no seed column.
    Add a `seed_key` (additive, nullable, derived server-side at submission
@@ -371,8 +380,9 @@ f. **A vetting harness entry.** To play *one* seed N times you hold the setup
 Not Work Packets — a sketch of buildable order for the future drafting
 session. Numbers, decisions, and dependencies are allocated then.
 
-1. **Seed-injection plumbing** — custom random plugin + create-proxy wiring +
-   surface the seed for verification.
+1. **Seed-injection plumbing** — a server create path over a copy of
+   `serverLegendaryGame` with the challenge seed set (WP-809 / D-24715), plus
+   surfacing the seed for verification.
 2. **Seed persistence** — `seed_key` additive column + derive at submission.
 3. **Vetting harness + curated pool** — fixed-setup-seed/varying-decision-seed
    runner, band filter, a stored vetted-seed pool.

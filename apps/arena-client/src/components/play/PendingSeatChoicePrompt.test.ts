@@ -125,6 +125,61 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
     assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Reveal Diving Block: prevent the Wound and draw a card');
   });
 
+  // why: WP-827 / D-24760 — Flying Shield Block may be about another player's Wound, so the
+  // heading names no owner and the option labels say whose Wound it is.
+  test('renders the Flying Shield Block heading for the flying-shield-block kind (WP-827)', () => {
+    const { submitMove } = recorder();
+    const flyingShieldBlockChoice: UIPendingSeatChoice = {
+      kind: 'flying-shield-block',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: {
+        'player-1': { options: [{ label: "Reveal Flying Shield Block: prevent Player 0's Wound and rescue a Bystander" }, { label: 'Let Player 0 take the Wound' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: flyingShieldBlockChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'A player would gain a Wound — Flying Shield Block?');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), "Reveal Flying Shield Block: prevent Player 0's Wound and rescue a Bystander");
+  });
+
+  // why: WP-828 / D-24761 — Winter Soldier's 2>4: the options are the hand Heroes by name.
+  test('renders the Man Out of Time grant heading for the out-of-time-grant kind (WP-828)', () => {
+    const { submitMove } = recorder();
+    const grantChoice: UIPendingSeatChoice = {
+      kind: 'out-of-time-grant',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: {
+        'player-1': { options: [{ label: 'Hero A' }, { label: 'Hero B' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: grantChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Choose a Hero in your hand to gain Man Out of Time this turn');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'Hero B');
+  });
+
+  // why: WP-829 / D-24762 — Go Back in Time: the options are the HQ Heroes by name and cost.
+  test('renders the Purge heading for the timestream-purge kind (WP-829)', () => {
+    const { submitMove } = recorder();
+    const purgeChoice: UIPendingSeatChoice = {
+      kind: 'timestream-purge',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: {
+        'player-1': { options: [{ label: 'Hero A (cost 3)' }, { label: 'Hero B (cost 5)' }] },
+      },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: purgeChoice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Go Back in Time — choose a Hero in the HQ to Purge from the Timestream');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'Hero B (cost 5)');
+  });
+
   test('keeps the generic "Your choice" heading for a non-diving-block kind', () => {
     const { submitMove } = recorder();
     const wrapper = mount(PendingSeatChoicePrompt, {
@@ -187,5 +242,84 @@ describe('PendingSeatChoicePrompt (WP-684 / EC-721)', () => {
         `heading for kind ${kind}`,
       );
     }
+  });
+});
+
+describe('PendingSeatChoicePrompt — WP-830 Enigma Code peek (D-24763)', () => {
+  test('the enigma-peek kind has its own heading', () => {
+    const { submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'enigma-peek',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: { 'player-1': { options: [{ label: 'Pay 1 Recruit: look at Enigma card 1' }, { label: "Don't look" }] } },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(
+      wrapper.find('.pending-seat-choice-prompt__heading').text(),
+      'Enigma Code — pay 1 Recruit to look at a face-down card?',
+    );
+  });
+});
+
+describe('PendingSeatChoicePrompt — WP-817 Primus Escape discard (D-24750)', () => {
+  test('T31: the escape-effect-cost-discard kind has its own heading', () => {
+    const { submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'escape-effect-cost-discard',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: { 'player-1': { options: [{ label: 'Hero (cost 3)' }] } },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(
+      wrapper.find('.pending-seat-choice-prompt__heading').text(),
+      'A Villain escaped — choose a Hero to discard',
+    );
+  });
+});
+
+describe('PendingSeatChoicePrompt — WP-837 every-player Hero-trait discard (D-24770)', () => {
+  test('T24: the villain-effect-trait-discard kind has its own heading', () => {
+    const { submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'villain-effect-trait-discard',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: { 'player-1': { options: [{ label: 'Cyclops' }, { label: 'Gain a Wound instead' }] } },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(
+      wrapper.find('.pending-seat-choice-prompt__heading').text(),
+      "A Villain's effect — choose a Hero to discard",
+    );
+  });
+});
+
+describe('PendingSeatChoicePrompt — WP-845 reveal or gain a Wound (D-24779)', () => {
+  test('AC-10: the reveal-or-wound kind shows its heading and both options, and option 1 submits optionIndex 1', async () => {
+    const { calls, submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'reveal-or-wound',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: { 'player-1': { options: [{ label: 'Reveal a matching X-Men Hero' }, { label: 'Gain a Wound instead' }] } },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(wrapper.find('.pending-seat-choice-prompt__heading').text(), 'Reveal a Hero or gain a Wound?');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-0"]').text(), 'Reveal a matching X-Men Hero');
+    assert.equal(wrapper.find('[data-testid="pending-seat-choice-option-1"]').text(), 'Gain a Wound instead');
+    await wrapper.find('[data-testid="pending-seat-choice-option-1"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'resolveSeatChoice');
+    assert.deepEqual(calls[0]!.args, { optionIndex: 1 });
   });
 });

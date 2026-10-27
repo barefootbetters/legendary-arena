@@ -47,6 +47,9 @@ importers:
       pinia:
         specifier: ^2.1.7
         version: 2.3.1(typescript@5.9.3)(vue@3.5.30(typescript@5.9.3))
+      tweakpane:
+        specifier: ^4.0.5
+        version: 4.0.5
       vue:
         specifier: ^3.4.27
         version: 3.5.30(typescript@5.9.3)
@@ -60,6 +63,9 @@ importers:
       '@legendary-arena/vue-sfc-loader':
         specifier: workspace:*
         version: link:../../packages/vue-sfc-loader
+      '@tweakpane/core':
+        specifier: 2.0.5
+        version: 2.0.5
       '@types/canvas-confetti':
         specifier: ^1.9.0
         version: 1.9.0
@@ -1586,6 +1592,9 @@ packages:
     resolution: {integrity: sha512-3djCQr25IxQIgpidxD8J0fTQ7/hMuoa5Nmv7delQc6sX4kXgv9e/pE01cywpmGZLi69H1KUH4dmZ4cPPJQrsQQ==}
     peerDependencies:
       preact: 10.x
+
+  '@tweakpane/core@2.0.5':
+    resolution: {integrity: sha512-punBgD5rKCF5vcNo6BsSOXiDR/NSs9VM7SG65QSLJIxfRaGgj54ree9zQW6bO3pNFf3AogiGgaNODUVQRk9YqQ==}
 
   '@types/accepts@1.3.7':
     resolution: {integrity: sha512-Pay9fq2lM2wXPWbteBsRAGiWH2hig4ZE2asK+mm7kUzlxRTfL961rj89I6zV/E3PcIkDqyuBEcMxFT7rccugeQ==}
@@ -3182,6 +3191,9 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
+  tweakpane@4.0.5:
+    resolution: {integrity: sha512-rxEXdSI+ArlG1RyO6FghC4ZUX8JkEfz8F3v1JuteXSV0pEtHJzyo07fcDG+NsJfN5L39kSbCYbB9cBGHyuI/tQ==}
+
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -4727,6 +4739,8 @@ snapshots:
   '@teamhanko/preact-custom-element@4.2.2(preact@10.29.2)':
     dependencies:
       preact: 10.29.2
+
+  '@tweakpane/core@2.0.5': {}
 
   '@types/accepts@1.3.7':
     dependencies:
@@ -6604,6 +6618,8 @@ snapshots:
       get-tsconfig: 4.13.7
     optionalDependencies:
       fsevents: 2.3.3
+
+  tweakpane@4.0.5: {}
 
   type-check@0.4.0:
     dependencies:

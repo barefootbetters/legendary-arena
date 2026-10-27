@@ -14,7 +14,13 @@ import type { CitySpaceName } from '../board/citySpaceNames.js';
  * A fight target restricted attack may be spent on (WP-790 / D-24652): one of
  * the five named City spaces, or the Mastermind.
  */
-export type AttackTargetName = CitySpaceName | 'mastermind';
+export type AttackTargetName = CitySpaceName | 'mastermind' | typeof UNNAMED_CITY_SPACE_TARGET;
+
+// why: WP-831 / D-24764 — a City larger than five spaces (Change the Outcome of WWII's USSR) has a
+// sixth space with no name. Fighting there targets this value, which no restricted-attack grant
+// ever names (grants are parsed from printed space names), so only plain Attack can pay for it.
+/** The fight target of an unnamed City space (a space beyond the normal five). */
+export const UNNAMED_CITY_SPACE_TARGET = 'unnamed-city-space';
 
 /**
  * One "usable only against …" attack grant (WP-790 / D-24652).
@@ -65,11 +71,15 @@ export interface TurnEconomy {
   /** Number of wound cards drawn by the current player this turn. */
   woundsDrawn: number;
   /**
-   * WP-665 / D-24476 — total cards the current player drew from EFFECTS this
-   * turn (the `draw:N` handler path). Used by the `cardsDrawnThisTurnAtLeast`
-   * condition ("if you drew two cards this turn", Gamma-Draining Nanites). The
-   * start-of-turn hand refill is NOT counted (it uses `drawCardsIntoHand`, not
-   * the effect-draw path), so the count reflects only effect-driven draws.
+   * WP-665 / D-24476, widened by D-24732 — total cards the current player drew
+   * from EFFECTS this turn: every "extra card" drawn, i.e. every card drawn other
+   * than the hand drawn at end of turn. Each effect-draw site for the current
+   * player increments it (`draw:N`, put-hand-on-deck-top, reveal-rule draws,
+   * Psychic Link, Investigate, Dodge, Diving Block, Do Over, Smash, reveal-three,
+   * HYDRA Conspiracy, Enchantress, villain reveal-draws). The end-of-turn hand
+   * fill, next-hand bonuses, setup deal and other seats' draws are NOT counted.
+   * Read by the `cardsDrawnThisTurnAtLeast` condition (Gamma-Draining Nanites)
+   * and the `extra-cards-drawn-this-turn` count source (Berserker Rage).
    * Reset to 0 by `resetTurnEconomy`; carried by every rebuild helper.
    */
   cardsDrawn: number;
@@ -103,6 +113,32 @@ export interface TurnEconomy {
    * and neither state-hash oracle moves.
    */
   drawsLocked?: boolean;
+  /**
+   * WP-842 / D-24776 — whether the current player already used this turn's one
+   * Sidekick recruit (rules v23 L727-729: "Sidekicks (no more than once per turn,
+   * using Recruit points)"). Set ONLY by the `recruitSidekick` move (via
+   * `markSidekickRecruited`); a card effect that gains a Sidekick never sets it
+   * (rules v23 L3216-3218: such gains don't count against the limit).
+   *
+   * LAZILY MATERIALIZED, exactly like `drawsLocked`: absent until the first
+   * Sidekick recruit, dropped by `resetTurnEconomy` at turn start, carried across
+   * every rebuild by `carryConversionFlag`. Absent ≡ not yet; omitted by
+   * `JSON.stringify`, so a turn with no Sidekick recruit serializes
+   * byte-identically and neither state-hash oracle moves.
+   */
+  hasRecruitedSidekickThisTurn?: true;
+  /**
+   * WP-842 / D-24776 — how many Sidekicks the current player played this turn and
+   * returned to the bottom of the Sidekick Stack. Rules v23 says "You still 'played'
+   * that Sidekick", so `playedCardIdsThisTurn` appends `pile-sidekick` this many
+   * times. A COUNT, not an id ledger, because every Sidekick token shares one id.
+   *
+   * ACTIVE-PLAYER-SCOPED, like `outOfTimePlayedCardIds`. LAZILY MATERIALIZED: absent
+   * until the first return (`recordSidekickReturned`), dropped by `resetTurnEconomy`
+   * at turn start, carried by `carryConversionFlag`. Absent ≡ 0; omitted by
+   * `JSON.stringify`, so a turn with no Sidekick play serializes byte-identically.
+   */
+  sidekicksReturnedThisTurn?: number;
   /**
    * WP-736 / D-24556 — the ordered ledger of "Excessive Violence" cards the current
    * player has played this turn (Venomverse's Excessive Violence, keywords-full id 30).

@@ -26,7 +26,8 @@ import type { CardExtId, LegendaryGameState } from '../types.js';
 import type { UIState } from './uiState.types.js';
 import type { UIAudience } from './uiAudience.types.js';
 import type { HollowEffectRecord, EffectTrace } from '../diagnostics/hollowEffect.types.js';
-import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
+import { makeCardRegistryReader, makeCardStatEntry } from '../test/fixtureBuilders.js';
+import { SHIELD_OFFICER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 
 /** Audience constants for test readability. */
 const PLAYER_0: UIAudience = { kind: 'player', playerId: '0' };
@@ -1133,6 +1134,22 @@ describe('filterUIStateForAudience — pendingKoDiscardChoice redaction (D-24510
     const uiState = createKoDiscardChoiceUIState();
     filterUIStateForAudience(uiState, PLAYER_1);
     assert.ok(uiState.pendingKoDiscardChoice !== undefined, 'source UIState unchanged');
+  });
+
+  it('D-24783: a grey-filtered entry keeps greyFilter for the chooser only; an unfiltered entry has none', () => {
+    const config = createTestConfig();
+    const gameState = buildInitialGameState(config, createMockRegistry(), makeMockCtx());
+    gameState.playerZones['0']!.discard = ['kodiscard-grey-a' as CardExtId];
+    gameState.pendingKoDiscardChoices = [
+      { choiceType: 'ko-from-discard', playerID: '0', maxCount: 2, greyFilter: 'grey' },
+    ];
+    const greyUIState = buildUIState(gameState, mockCtx);
+    assert.equal(filterUIStateForAudience(greyUIState, PLAYER_0).pendingKoDiscardChoice!.greyFilter, 'grey');
+    assert.equal(filterUIStateForAudience(greyUIState, PLAYER_1).pendingKoDiscardChoice, undefined);
+    assert.equal(filterUIStateForAudience(greyUIState, SPECTATOR).pendingKoDiscardChoice, undefined);
+
+    const plainChoice = filterUIStateForAudience(createKoDiscardChoiceUIState(), PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(Object.keys(plainChoice).includes('greyFilter'), false, 'no greyFilter key on an unfiltered entry');
   });
 });
 
@@ -2727,6 +2744,37 @@ describe('filterUIStateForAudience — Excessive Violence availability cue (WP-7
   });
 });
 
+describe('WP-819 filterUIStateForAudience — Baron Zemo rescue-on-fight cue (D-24753)', () => {
+  // why: the cue rides the active-player-only economy block like the EV cue. It must
+  // survive the whitelist (and the Play Diagnostics uiStateSnapshot JSON round-trip)
+  // for the active player, be omitted when unset, and never reach another audience.
+  it('T15: passes rescueOnFightAvailable through for the active player, surviving the JSON round-trip', () => {
+    const uiState = createTestUIState();
+    uiState.economy.rescueOnFightAvailable = true;
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.rescueOnFightAvailable, true);
+    const serialized = JSON.parse(JSON.stringify(result)) as UIState;
+    assert.equal(serialized.economy.rescueOnFightAvailable, true, 'the uiStateSnapshot carries the cue');
+  });
+
+  it('T15: omits rescueOnFightAvailable for the active player when unset (omit-when-absent)', () => {
+    const result = filterUIStateForAudience(createTestUIState(), PLAYER_0);
+    assert.ok(!('rescueOnFightAvailable' in result.economy));
+  });
+
+  it('T15: never exposes rescueOnFightAvailable to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.rescueOnFightAvailable = true;
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(
+        !('rescueOnFightAvailable' in result.economy),
+        'non-active audiences see REDACTED_ECONOMY without the rescue cue',
+      );
+    }
+  });
+});
+
 describe('filterUIStateForAudience — Phasing options (WP-783 / D-24629)', () => {
   // why: the Phasing options name cards in the active player's hand, so they ride the
   // active-player-only economy block: they must survive the whitelist for the active
@@ -3623,6 +3671,92 @@ describe('filterUIStateForAudience — outOfTimeCards public pass-through (WP-80
       assert.notStrictEqual(player0.outOfTimeCards, full.players[0]!.outOfTimeCards);
       const player1 = result.players.find((player) => player.playerId === '1')!;
       assert.equal(Object.keys(player1).includes('outOfTimeCards'), false, 'nothing set aside ⇒ omitted');
+    }
+  });
+});
+
+describe('WP-817 fightDiscardCosts + handCosts projection (D-24750)', () => {
+  /**
+   * Builds a UIState with Primus at City 0 (discard cost 2/3/5/7), a plain villain at
+   * City 1, and player 0 holding an Officer, a Wound and a cost-5 Hero.
+   */
+  function createPrimusUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.city = ['primus-01', 'plain-villain-01', null, null, null] as LegendaryGameState['city'];
+    gameState.villainDeckCardTypes['primus-01' as CardExtId] = 'villain';
+    gameState.villainDeckCardTypes['plain-villain-01' as CardExtId] = 'villain';
+    gameState.villainFightDiscardCosts = { ['primus-01' as CardExtId]: { eligibleCosts: [2, 3, 5, 7] } };
+    gameState.cardStats['hero-cost5' as CardExtId] = makeCardStatEntry({ cost: 5 });
+    gameState.playerZones['0']!.hand = [SHIELD_OFFICER_EXT_ID, WOUND_EXT_ID, 'hero-cost5'] as CardExtId[];
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('T28 (build): the Primus City card carries fightDiscardCosts; handCosts reads the engine cost', () => {
+    const uiState = createPrimusUIState();
+    assert.deepStrictEqual(uiState.city.spaces[0]!.fightDiscardCosts, [2, 3, 5, 7]);
+    assert.equal('fightDiscardCosts' in uiState.city.spaces[1]!, false, 'a plain villain has no such key');
+    const player0 = uiState.players.find((player) => player.playerId === '0')!;
+    assert.deepStrictEqual(player0.handCosts, [3, null, 5], 'Officer → 3, Wound → null, Hero → 5');
+  });
+
+  it('T28 (filter): fightDiscardCosts survives every audience unaliased; handCosts is owner-only', () => {
+    const uiState = createPrimusUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      const primusCard = result.city.spaces[0]!;
+      assert.deepStrictEqual(primusCard.fightDiscardCosts, [2, 3, 5, 7], `${JSON.stringify(audience)} sees the cost`);
+      assert.notEqual(primusCard.fightDiscardCosts, uiState.city.spaces[0]!.fightDiscardCosts, 'not aliased');
+      assert.equal('fightDiscardCosts' in result.city.spaces[1]!, false, 'no key on a plain villain');
+    }
+    const ownView = filterUIStateForAudience(uiState, PLAYER_0);
+    const ownPlayer = ownView.players.find((player) => player.playerId === '0')!;
+    assert.deepStrictEqual(ownPlayer.handCosts, [3, null, 5]);
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      const redactedPlayer = result.players.find((player) => player.playerId === '0')!;
+      assert.equal(redactedPlayer.handCosts, undefined, `${JSON.stringify(audience)} must not see player 0 handCosts`);
+    }
+  });
+});
+
+describe('WP-842 filterUIStateForAudience — Sidekick recruit cue and card face (D-24776)', () => {
+  // why: the cue rides the active-player-only economy block; the card face rides the
+  // public piles block. Both are optional, so a filter that forgot either would drop it
+  // silently (EC-206) — these pins catch that.
+  const sidekickFace = {
+    extId: 'pile-sidekick',
+    name: 'Sidekick',
+    imageUrl: 'https://images.legendary-arena.com/ssw1/ssw1-sk-sidekick.webp',
+    cost: null,
+  };
+
+  it('T18: the active player sees hasRecruitedSidekickThisTurn, surviving the JSON round-trip', () => {
+    const uiState = createTestUIState();
+    uiState.economy.hasRecruitedSidekickThisTurn = true;
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.equal(result.economy.hasRecruitedSidekickThisTurn, true);
+    const serialized = JSON.parse(JSON.stringify(result)) as UIState;
+    assert.equal(serialized.economy.hasRecruitedSidekickThisTurn, true, 'the uiStateSnapshot carries the cue');
+  });
+
+  it('T18: another player and a spectator never see the cue', () => {
+    const uiState = createTestUIState();
+    uiState.economy.hasRecruitedSidekickThisTurn = true;
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(!('hasRecruitedSidekickThisTurn' in result.economy), 'REDACTED_ECONOMY has no Sidekick cue');
+    }
+  });
+
+  it('T18: every audience sees sidekickDisplay as an independent, value-identical copy', () => {
+    const uiState = createTestUIState();
+    uiState.piles.sidekickDisplay = { ...sidekickFace };
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const filtered = filterUIStateForAudience(uiState, audience);
+      assert.deepStrictEqual(filtered.piles.sidekickDisplay, sidekickFace);
+      assert.notStrictEqual(filtered.piles.sidekickDisplay, uiState.piles.sidekickDisplay, 'not aliased to the full UIState');
+      const serialized = JSON.parse(JSON.stringify(filtered)) as UIState;
+      assert.deepStrictEqual(serialized.piles.sidekickDisplay, sidekickFace, 'survives the JSON round-trip');
     }
   });
 });

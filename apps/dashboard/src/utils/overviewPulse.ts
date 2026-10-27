@@ -362,8 +362,11 @@ export function describeDrDrillCard(input: FetchedCardInput<DrReadiness>): Healt
   if (readiness.lastDrill === null) {
     return { valueLabel: 'None recorded', status: null };
   }
+  // why: an overdue quarterly rebuild is off-track even when the monthly restore
+  // drill is current; the DR Readiness tile ranks it the same way.
+  const isOverdue = readiness.overdue || readiness.rebuildDrill?.overdue === true;
   return {
     valueLabel: `${readiness.lastDrill.date} · ${describeDrillResult(readiness.lastDrill.result)}`,
-    status: readiness.overdue ? 'off-track' : 'on-track',
+    status: isOverdue ? 'off-track' : 'on-track',
   };
 }

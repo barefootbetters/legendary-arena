@@ -1,0 +1,100 @@
+{{- /*
+  why: the "Editing this page" footer, reconciled from E (312 lines), H (107)
+  and C (88). The three share one skeleton: where the editable source lives
+  (the full local path to cd into, and a GitHub view link), a no-clone edit
+  link, and a note when the page shows other pages' sections. That skeleton is
+  core and comes from params (repo, branch, contentRoot, localRoot). Each
+  wiki's own paragraphs (commit prefixes, deploy target, special pages, the
+  "where this page goes" table) go in the ewiki/editing-extra.html extension
+  point, which receives the page.
+
+  why: a mirror page names the document that owns its text in front matter
+  (canonical-source, D-24304), optionally in another repo
+  (canonical-source-repo, D-24310), and the footer sends the editor there.
+  E's by-name changelog case is ordinary front matter now: the changelog page
+  carries canonical-source like any mirror.
+
+  why: collapsed by default with the native <details> element, so it never
+  gates the content and needs no script. single.html renders it only when
+  params.ewiki.editingFooter is true, the default.
+
+  Input: a page.
+*/ -}}
+{{- $page := . -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $repo := index $ewiki "repo" -}}
+{{- $branch := index $ewiki "branch" | default "main" -}}
+{{- $localRoot := index $ewiki "localroot" | default "" -}}
+{{- $separator := cond (strings.Contains $localRoot `\`) `\` "/" -}}
+{{- $repoPath := partial "ewiki/repo-path.html" $page -}}
+{{- $blobBase := printf "https://github.com/%s/blob/%s" $repo $branch -}}
+{{- $editBase := printf "https://github.com/%s/edit/%s" $repo $branch -}}
+{{- $canonical := index $page.Params "canonical-source" -}}
+{{- $canonicalRepo := index $page.Params "canonical-source-repo" -}}
+{{- /*
+  why: a full local path is shown only when it is knowable: the page's own
+  file, or a canonical doc in this same repo. A cross-repo canonical doc lives
+  in a checkout whose path the theme can't know, so it gets the GitHub-only
+  form. An empty localRoot drops the local path everywhere.
+*/ -}}
+{{- $localPath := "" -}}
+{{- $sourcePath := $repoPath -}}
+{{- if $canonical -}}{{- $sourcePath = $canonical -}}{{- end -}}
+{{- if and $localRoot (not $canonicalRepo) -}}
+  {{- $localPath = printf "%s%s%s" $localRoot $separator (replace $sourcePath "/" $separator) -}}
+{{- end -}}
+<details class="editing-this-page">
+  <summary>Editing this page</summary>
+  <div class="editing-this-page-body">
+    {{- if $canonicalRepo }}
+    {{- $canonicalBlob := printf "https://github.com/%s/blob/main/%s" $canonicalRepo $canonical }}
+    {{- $canonicalEdit := printf "https://github.com/%s/edit/main/%s" $canonicalRepo $canonical }}
+    <p>
+      This page is built from
+      <a href="{{ $canonicalBlob }}"><code>{{ $canonical }}</code></a> in the
+      <code>{{ $canonicalRepo }}</code> repo, which owns its text.
+    </p>
+    <p>
+      <strong>Fast path:</strong>
+      <a href="{{ $canonicalEdit }}">✏️ Edit the canonical doc on GitHub</a>.
+    </p>
+    {{- else if $canonical }}
+    <p>
+      This page is built from
+      {{ with $localPath }}<code>{{ . }}</code> ({{ end }}<a href="{{ $blobBase }}/{{ $canonical }}">view on GitHub</a>{{ with $localPath }}){{ end }},
+      which owns its text.
+    </p>
+    <p>
+      <strong>Fast path:</strong>
+      <a href="{{ $editBase }}/{{ $canonical }}">✏️ Edit the canonical doc on GitHub</a>.
+    </p>
+    {{- else }}
+    <p>
+      The editable source for this page is
+      {{ with $localPath }}<code>{{ . }}</code> ({{ end }}<a href="{{ $blobBase }}/{{ $repoPath }}">view on GitHub</a>{{ with $localPath }}){{ end }}.
+      That is the file to edit in a local clone.
+    </p>
+    <p>
+      <strong>Fast path:</strong> fix this page in your browser, no clone:
+      <a href="{{ $editBase }}/{{ $repoPath }}">✏️ Edit <code>{{ $repoPath }}</code> on GitHub</a>.
+    </p>
+    {{- end }}
+    {{- /*
+      why: a page that shows other pages' sections (include-section, D-24709)
+      holds only the shortcode lines; the text is edited on the owner page.
+      Detected from an unescaped call in the raw source, so a page that only
+      documents the shortcode (escaped with the slash-star form inside the
+      delimiters) doesn't get this note.
+    */}}
+    {{- if findRE `\{\{[<%][ \t]*include-section` $page.RawContent 1 }}
+    <p>
+      <strong>Parts of this page live on other pages.</strong> Each block with
+      a <strong>Linked section</strong> caption is rendered at build time from
+      the owner page it names (<code>include-section</code>). Edit the text
+      there; the caption links to it. This page's own file holds only the
+      <code>include-section</code> lines that choose which sections appear.
+    </p>
+    {{- end }}
+    {{- partial "ewiki/editing-extra.html" $page }}
+  </div>
+</details>

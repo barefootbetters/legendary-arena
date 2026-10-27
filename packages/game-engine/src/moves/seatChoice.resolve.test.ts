@@ -244,13 +244,29 @@ describe('boardgame.io stage-ride admission', () => {
     assert.ok(captured !== undefined, 'seats admitted via the framework ride');
   });
 
-  // why: D-24648 — the active player is already ctx.currentPlayer in an empty-stage turn,
-  // so stage-riding them is unnecessary AND the extra open/revert framework frame froze a
-  // Diving-Block-on-your-own-turn start-stage escape wound until reload.
-  it('buildSeatChoiceActivePlayersValue skips the active player', () => {
+  // why: D-24743 — setActivePlayers replaces the activePlayers map, so a MIXED ride that
+  // skipped the active seat left it unable to submit its own answer (InactivePlayer) until
+  // every other seat answered; the bot-ally driver faulted on it (match Y1w7rCsC8Ek). A
+  // mixed ride admits the active seat too. (This case asserted the skip before D-24743.)
+  it('buildSeatChoiceActivePlayersValue admits the active player in a mixed ride', () => {
     const value = buildSeatChoiceActivePlayersValue(multiSeatChoice(['1', '2']), '1');
-    assert.deepEqual(value, { '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 } });
+    assert.deepEqual(value, {
+      '1': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+      '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+    });
   });
+
+  it('buildSeatChoiceActivePlayersValue never adds an active player who is not addressed', () => {
+    const value = buildSeatChoiceActivePlayersValue(multiSeatChoice(['1', '2']), '0');
+    assert.deepEqual(value, {
+      '1': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+      '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+    });
+  });
+
+  // why: D-24648 — the active player is already ctx.currentPlayer in an empty-stage turn,
+  // so stage-riding them ALONE is unnecessary AND the extra open/revert framework frame froze
+  // a Diving-Block-on-your-own-turn start-stage escape wound until reload.
 
   it('buildSeatChoiceActivePlayersValue returns empty when the only addressed seat is the active player', () => {
     const value = buildSeatChoiceActivePlayersValue(singleSeatChoice('1'), '1');
@@ -264,12 +280,17 @@ describe('boardgame.io stage-ride admission', () => {
     assert.equal(called, false, 'no stage transition for the active player alone — no frame to drop');
   });
 
-  it('admitSeatsForPendingSeatChoice still rides a NON-active seat while skipping the active one', () => {
+  // why: D-24743 — a mixed ride admits the active seat as well (before D-24743 this case
+  // asserted the active seat was skipped, which left it unable to submit).
+  it('admitSeatsForPendingSeatChoice rides a NON-active seat AND the active one in a mixed ride', () => {
     let captured: unknown;
     const events = { setActivePlayers: (arg: unknown) => { captured = arg; } };
     admitSeatsForPendingSeatChoice(events, multiSeatChoice(['1', '2']), '1');
     assert.deepEqual(captured, {
-      value: { '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 } },
+      value: {
+        '1': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+        '2': { stage: SEAT_CHOICE_STAGE, moveLimit: 1 },
+      },
       revert: true,
     });
   });
@@ -320,5 +341,157 @@ describe('strict-superset regression pin', () => {
     const before = JSON.stringify(gameState);
     resolveSeatChoice(makeContext(gameState, '0'), { optionIndex: 0 });
     assert.equal(JSON.stringify(gameState), before, 'resolveSeatChoice is a no-op when no seat choice is open');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-821 / D-24754 — Arnim Zola's seat-choice dispatch and the Crush chain
+// ---------------------------------------------------------------------------
+
+import {
+  buildComputerUploadedGeniusDiscardChoice,
+  buildCrushPacifistResistanceChoice,
+  buildDominateTheWeakChoice,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND,
+} from './seatChoiceTactics.js';
+import { resolveCardName } from '../log/logDisplay.js';
+
+const ZOLA_AGENT = 'starting-shield-agent';
+const ZOLA_TROOPER = 'starting-shield-trooper';
+
+/**
+ * Builds a Zola resolve state: per-seat hands and played cards, an HQ and Hero Deck,
+ * and the stats of the test cards (S.H.I.E.L.D. starters with their real setup stats).
+ *
+ * @param zonesBySeat - Each seat's hand and played cards.
+ * @param board - The HQ and Hero Deck.
+ * @returns A LegendaryGameState carrying only the fields the resolve paths read.
+ */
+function makeZolaResolveState(
+  zonesBySeat: Record<string, { hand?: string[]; inPlay?: string[] }>,
+  board: { hq?: (string | null)[]; heroDeck?: string[] } = {},
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const zones = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [],
+      hand: [...(zones.hand ?? [])],
+      discard: [],
+      inPlay: [...(zones.inPlay ?? [])],
+      victory: [],
+    };
+  }
+  return {
+    playerZones,
+    hq: [...(board.hq ?? [null, null, null, null, null])],
+    heroDeck: [...(board.heroDeck ?? [])],
+    ko: [],
+    cardStats: {
+      hA: { attack: 1, cost: 3 },
+      hB: { attack: 0, cost: 5 },
+      atk1Hero: { attack: 1, cost: 3 },
+      atk2Hero: { attack: 2, cost: 4 },
+      atk3Hero: { attack: 3, cost: 5 },
+      [ZOLA_AGENT]: { attack: 0, cost: 0 },
+      [ZOLA_TROOPER]: { attack: 1, cost: 0 },
+    },
+    cardDisplayData: { hA: { name: 'Hero Alpha' }, hB: { name: 'Hero Bravo' }, atk1Hero: { name: 'Weak Hero' } },
+    messages: [],
+  } as unknown as LegendaryGameState;
+}
+
+/** T8's board, with T8's first Crush pick parked for seat 0. */
+function makeCrushBoard(): LegendaryGameState {
+  const G = makeZolaResolveState({
+    '0': { hand: [ZOLA_AGENT, 'atk2Hero', 'atk1Hero'], inPlay: [ZOLA_TROOPER, 'atk3Hero'] },
+    '1': {},
+  });
+  G.pendingSeatChoice = buildCrushPacifistResistanceChoice(G, '0', CRUSH_PACIFIST_RESISTANCE_KO_KIND);
+  return G;
+}
+
+/** A KO option label, built the way the builder builds it. */
+function koLabel(G: LegendaryGameState, cardId: string, zoneName: string): string {
+  return `KO ${resolveCardName(G.cardDisplayData, cardId)} from ${zoneName}`;
+}
+
+describe('WP-821 resolveSeatChoice — Arnim Zola kinds and the Crush chain (D-24754)', () => {
+  it('T14: a first-pick KO chains the last-ko pick over the remaining eligible Heroes', () => {
+    const G = makeCrushBoard();
+
+    resolveSeatChoice(makeContext(G, '0'), { optionIndex: 0 });
+
+    assert.deepEqual(G.playerZones['0']!.hand, ['atk2Hero', 'atk1Hero'], 'the Agent left the hand');
+    assert.deepEqual(G.ko, [ZOLA_AGENT]);
+    const lastChoice = G.pendingSeatChoice!;
+    assert.equal(lastChoice.kind, CRUSH_PACIFIST_RESISTANCE_LAST_KO_KIND);
+    assert.deepEqual(lastChoice.addressedSeats, ['0']);
+    assert.deepEqual(lastChoice.seatPrompts['0']!.options.map((option) => option.label), [
+      koLabel(G, 'atk1Hero', 'their hand'),
+      koLabel(G, ZOLA_TROOPER, 'the cards they played this turn'),
+      'KO nothing',
+    ]);
+    assert.equal(lastChoice.defaultOptionIndex, 2);
+    assert.deepEqual(G.messages.at(-1), {
+      text: 'Fight effect: Player 0 may KO one more Hero with less than 2 printed Attack (Crush Pacifist Resistance).',
+      outcome: 'neutral',
+    });
+  });
+
+  it('T15: at most two KOs; a decline never chains; nothing left to KO logs the no-other line', () => {
+    const G = makeCrushBoard();
+    resolveSeatChoice(makeContext(G, '0'), { optionIndex: 0 });
+    resolveSeatChoice(makeContext(G, '0'), { optionIndex: 0 });
+    assert.deepEqual(G.ko, [ZOLA_AGENT, 'atk1Hero'], 'a second KO');
+    assert.equal(G.pendingSeatChoice, undefined, 'no third pick');
+
+    const declined = makeCrushBoard();
+    resolveSeatChoice(makeContext(declined, '0'), { optionIndex: 3 });
+    assert.equal(declined.pendingSeatChoice, undefined, 'a decline never chains');
+    assert.deepEqual(declined.ko, []);
+    assert.deepEqual(declined.messages.map((entry) => entry.text), [
+      'Player 0 chose not to KO a Hero (Crush Pacifist Resistance).',
+    ]);
+
+    const single = makeZolaResolveState({ '0': { hand: ['atk1Hero'] } });
+    single.pendingSeatChoice = buildCrushPacifistResistanceChoice(single, '0', CRUSH_PACIFIST_RESISTANCE_KO_KIND);
+    resolveSeatChoice(makeContext(single, '0'), { optionIndex: 0 });
+    assert.equal(single.pendingSeatChoice, undefined, 'nothing left, so no chain');
+    assert.deepEqual(single.messages.at(-1), {
+      text: 'Fight effect: Player 0 has no other Hero with less than 2 printed Attack to KO (Crush Pacifist Resistance).',
+      outcome: 'neutral',
+    });
+  });
+
+  it('T16: the timeout default declines, never chains, and clears the choice', () => {
+    const G = makeCrushBoard();
+
+    applySeatChoiceTimeoutDefault(G, ['0']);
+
+    assert.equal(G.pendingSeatChoice, undefined);
+    assert.deepEqual(G.ko, []);
+    assert.deepEqual(G.messages.map((entry) => entry.text), [
+      'Player 0 chose not to KO a Hero (Crush Pacifist Resistance).',
+    ]);
+  });
+
+  it('T17: Dominate the Weak and Computer-Uploaded Genius dispatch to their appliers', () => {
+    const dominate = makeZolaResolveState(
+      { '0': {}, '1': {}, '2': {} },
+      { hq: ['hA', 'hB', 'hC', null, 'hD'], heroDeck: ['d1'] },
+    );
+    dominate.pendingSeatChoice = buildDominateTheWeakChoice(dominate, '1', [0, 1]);
+    resolveSeatChoice(makeContext(dominate, '1'), { optionIndex: 2 });
+    assert.equal(dominate.pendingSeatChoice, undefined);
+    assert.deepEqual(dominate.playerZones['0']!.discard, ['hB'], 'Player 0 gains hB');
+    assert.equal(dominate.hq[1], 'd1');
+
+    const genius = makeZolaResolveState({ '0': {}, '2': { hand: ['card-a', 'card-b'] } });
+    genius.pendingSeatChoice = buildComputerUploadedGeniusDiscardChoice(genius, ['2']);
+    resolveSeatChoice(makeContext(genius, '2'), { optionIndex: 1 });
+    assert.equal(genius.pendingSeatChoice, undefined);
+    assert.deepEqual(genius.playerZones['2']!.discard, ['card-b'], 'seat 2 discards its pick');
   });
 });

@@ -48,9 +48,36 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # why: D-24728 §3 / D-24782 — the shared ewiki theme is vendored read-only
+    # at apps/wiki-viewer/themes/ewiki/. Its manifest digest is pinned here,
+    # outside the vendored tree, because a pin inside the tree could be edited
+    # along with the files it pins. Both theme steps below read it.
+    env:
+      EWIKI_THEME_DIGEST: 6e266245462e9be91f5f40770b52af69ff22891b276f977bab57cb2b1eee6624 # bb-studio-ewiki-theme v1.3.0 (2c735f5a)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      # why: D-24728 §3 — plain shell first, because the checker can't certify
+      # itself: the manifest must hash to the pinned digest, and the vendored
+      # Test-EwikiTheme.ps1 must hash to its own manifest line, before that
+      # script is trusted to check the rest of the tree.
+      - name: Verify the vendored ewiki theme digest and checker hash
+        run: |
+          set -e
+          manifest=apps/wiki-viewer/themes/ewiki/.theme-manifest.txt
+          digest=$(tr -d '\r' < "$manifest" | sha256sum | cut -d' ' -f1)
+          [ "$digest" = "$EWIKI_THEME_DIGEST" ] || { echo "::error::apps/wiki-viewer/themes/ewiki doesn't match the pinned theme digest ($digest, pinned $EWIKI_THEME_DIGEST). Re-sync the release, or update the pin when upgrading on purpose."; exit 1; }
+          checker_hash=$(tr -d '\r' < apps/wiki-viewer/themes/ewiki/tools/Test-EwikiTheme.ps1 | sha256sum | cut -d' ' -f1)
+          tr -d '\r' < "$manifest" | grep -qx "$checker_hash  tools/Test-EwikiTheme.ps1" || { echo "::error::The vendored Test-EwikiTheme.ps1 doesn't match its manifest line."; exit 1; }
+
+      # why: D-24728 §3 — the now-trusted checker verifies every vendored file
+      # against the manifest and fails any site file that shadows a core theme
+      # file. It is PowerShell, so the step names shell: pwsh (a run: step
+      # defaults to bash, which would mangle $env:EWIKI_THEME_DIGEST).
+      - name: Check the vendored ewiki theme (no edits, no shadowed core files)
+        shell: pwsh
+        run: pwsh -File apps/wiki-viewer/themes/ewiki/tools/Test-EwikiTheme.ps1 -Site apps/wiki-viewer -ExpectedManifestSha256 $env:EWIKI_THEME_DIGEST
 
       - name: Read pinned Hugo version
         id: hugo
@@ -142,7 +169,8 @@ jobs:
       # D-13808 / D-13811 blanket JS-free invariant). The ewiki stays free of
       # arbitrary and content-authored JavaScript; the ONE permitted script is
       # the chrome-level Pagefind search loader, tagged `data-wiki-search` in
-      # apps/wiki-viewer/layouts/_default/baseof.html. Pagefind is a build-time
+      # the shared theme's apps/wiki-viewer/themes/ewiki/layouts/partials/ewiki/search.html
+      # (D-24782). Pagefind is a build-time
       # static index (no runtime backend — D-13808 constraint #1 preserved) and
       # the loader is layout chrome, never content-side scripting (D-13808
       # constraint #2 preserved). The scan covers only rendered *.html pages —

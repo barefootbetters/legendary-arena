@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 794,
+    "totalRows": 815,
     "byStatus": {
-      "executable": 408,
+      "executable": 430,
       "deferred": 16,
       "condition": 49,
       "unsupported": 290,
-      "unmarked": 28,
+      "unmarked": 27,
       "subsystem": 3
     },
-    "distinctMechanics": 161
+    "distinctMechanics": 167
   },
   "rows": [
     {
@@ -1023,6 +1023,22 @@
         {
           "slug": "put-to-the-torch",
           "name": "Put to the Torch"
+        }
+      ]
+    },
+    {
+      "extId": "antm/ant-man",
+      "heroName": "Ant-Man",
+      "set": "antm",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "giant-ego",
+          "name": "Giant Ego"
         }
       ]
     },
@@ -2390,6 +2406,38 @@
       "extId": "ca75/agent-x-13",
       "heroName": "Agent X-13",
       "set": "ca75",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "paramilitary-ops",
+          "name": "Paramilitary Ops"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "heroName": "Agent X-13",
+      "set": "ca75",
+      "mechanic": "attack-per-ko-this-way",
+      "status": "executable",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-ko-this-way",
+      "designs": [
+        {
+          "slug": "mobilize-for-war",
+          "name": "Mobilize for War"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "heroName": "Agent X-13",
+      "set": "ca75",
       "mechanic": "gain-officer",
       "status": "subsystem",
       "wp": "",
@@ -2399,6 +2447,22 @@
         {
           "slug": "spy-network",
           "name": "Spy Network"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/agent-x-13",
+      "heroName": "Agent X-13",
+      "set": "ca75",
+      "mechanic": "ko-up-to-shield-hand-discard",
+      "status": "executable",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-up-to-shield-hand-discard",
+      "designs": [
+        {
+          "slug": "mobilize-for-war",
+          "name": "Mobilize for War"
         }
       ]
     },
@@ -2447,6 +2511,38 @@
       "wp": "WP-247",
       "decision": "D-24016",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "star-spangled-hero",
+          "name": "Star-Spangled Hero"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-falcon",
+      "heroName": "Captain America (Falcon)",
+      "set": "ca75",
+      "mechanic": "flying-shield-block",
+      "status": "executable",
+      "wp": "WP-827",
+      "decision": "D-24760",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#flying-shield-block",
+      "designs": [
+        {
+          "slug": "flying-shield-block",
+          "name": "Flying Shield Block"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/captain-america-falcon",
+      "heroName": "Captain America (Falcon)",
+      "set": "ca75",
+      "mechanic": "recruit-per-count",
+      "status": "executable",
+      "wp": "WP-674",
+      "decision": "D-24489",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count",
       "designs": [
         {
           "slug": "star-spangled-hero",
@@ -2583,6 +2679,38 @@
         {
           "slug": "punch-evil-in-the-face",
           "name": "Punch Evil in the Face"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/steve-rogers-director-of-shield",
+      "heroName": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "set": "ca75",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "international-strike-force",
+          "name": "International Strike Force"
+        }
+      ]
+    },
+    {
+      "extId": "ca75/steve-rogers-director-of-shield",
+      "heroName": "Steve Rogers, Director of S.H.I.E.L.D.",
+      "set": "ca75",
+      "mechanic": "optional-ko-shield-played-rescue",
+      "status": "executable",
+      "wp": "WP-826",
+      "decision": "D-24759",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-shield-played-rescue",
+      "designs": [
+        {
+          "slug": "reassign-to-civilian-duty",
+          "name": "Reassign to Civilian Duty"
         }
       ]
     },
@@ -2954,6 +3082,22 @@
       "extId": "chmp/totally-awesome-hulk",
       "heroName": "Totally Awesome Hulk",
       "set": "chmp",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "7th-smartest-man-in-the-world",
+          "name": "7th Smartest Man in the World"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/totally-awesome-hulk",
+      "heroName": "Totally Awesome Hulk",
+      "set": "chmp",
       "mechanic": "cheering-crowds",
       "status": "unsupported",
       "wp": "",
@@ -3207,6 +3351,22 @@
       ]
     },
     {
+      "extId": "co2e/cyclops",
+      "heroName": "Cyclops",
+      "set": "co2e",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "designs": [
+        {
+          "slug": "unending-energy",
+          "name": "Unending Energy"
+        }
+      ]
+    },
+    {
       "extId": "co2e/emma-frost",
       "heroName": "Emma Frost",
       "set": "co2e",
@@ -3351,6 +3511,22 @@
       ]
     },
     {
+      "extId": "co2e/hulk",
+      "heroName": "Hulk",
+      "set": "co2e",
+      "mechanic": "reveal-or-gain-wound-each",
+      "status": "executable",
+      "wp": "WP-843",
+      "decision": "D-24777",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal-or-gain-wound-each",
+      "designs": [
+        {
+          "slug": "crazed-rampage",
+          "name": "Crazed Rampage"
+        }
+      ]
+    },
+    {
       "extId": "co2e/iron-man",
       "heroName": "Iron Man",
       "set": "co2e",
@@ -3410,6 +3586,22 @@
         {
           "slug": "energy-drain",
           "name": "Energy Drain"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/spider-man",
+      "heroName": "Spider-Man",
+      "set": "co2e",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "designs": [
+        {
+          "slug": "witty-banter",
+          "name": "Witty Banter"
         }
       ]
     },
@@ -4331,6 +4523,22 @@
       "extId": "core/wolverine",
       "heroName": "Wolverine",
       "set": "core",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "designs": [
+        {
+          "slug": "berserker-rage",
+          "name": "Berserker Rage"
+        }
+      ]
+    },
+    {
+      "extId": "core/wolverine",
+      "heroName": "Wolverine",
+      "set": "core",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -4630,6 +4838,22 @@
       "extId": "cvwr/captain-america-secret-avenger",
       "heroName": "Captain America, Secret Avenger",
       "set": "cvwr",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "designs": [
+        {
+          "slug": "inspire-a-nation",
+          "name": "Inspire a Nation"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/captain-america-secret-avenger",
+      "heroName": "Captain America, Secret Avenger",
+      "set": "cvwr",
       "mechanic": "recruit-per-count",
       "status": "executable",
       "wp": "WP-674",
@@ -4725,12 +4949,17 @@
       "extId": "cvwr/falcon",
       "heroName": "Falcon",
       "set": "cvwr",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "designs": [
+        {
+          "slug": "talk-with-birds",
+          "name": "Talk with Birds"
+        }
+      ]
     },
     {
       "extId": "cvwr/goliath",
@@ -4955,6 +5184,22 @@
       "extId": "cvwr/peter-parker",
       "heroName": "Peter Parker",
       "set": "cvwr",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "designs": [
+        {
+          "slug": "spider-man-unmasked",
+          "name": "Spider-Man Unmasked"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/peter-parker",
+      "heroName": "Peter Parker",
+      "set": "cvwr",
       "mechanic": "ko-wound",
       "status": "executable",
       "wp": "",
@@ -5100,6 +5345,22 @@
         {
           "slug": "ferocity",
           "name": "Ferocity"
+        }
+      ]
+    },
+    {
+      "extId": "cvwr/tigra",
+      "heroName": "Tigra",
+      "set": "cvwr",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "designs": [
+        {
+          "slug": "friendship",
+          "name": "Friendship"
         }
       ]
     },
@@ -10306,6 +10567,22 @@
       ]
     },
     {
+      "extId": "ssw1/black-panther",
+      "heroName": "Black Panther",
+      "set": "ssw1",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "designs": [
+        {
+          "slug": "king-of-wakanda",
+          "name": "King of Wakanda"
+        }
+      ]
+    },
+    {
       "extId": "ssw1/captain-marvel",
       "heroName": "Captain Marvel",
       "set": "ssw1",
@@ -10417,6 +10694,22 @@
       "extId": "ssw1/magik",
       "heroName": "Magik",
       "set": "ssw1",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "designs": [
+        {
+          "slug": "rally-the-new-mutants",
+          "name": "Rally the New Mutants"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/magik",
+      "heroName": "Magik",
+      "set": "ssw1",
       "mechanic": "teleport",
       "status": "unsupported",
       "wp": "",
@@ -10447,6 +10740,22 @@
       "decision": "",
       "handler": "",
       "designs": []
+    },
+    {
+      "extId": "ssw1/namor-the-sub-mariner",
+      "heroName": "Namor, the Sub-Mariner",
+      "set": "ssw1",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "designs": [
+        {
+          "slug": "lead-the-armies-of-atlantis",
+          "name": "Lead the Armies of Atlantis"
+        }
+      ]
     },
     {
       "extId": "ssw1/namor-the-sub-mariner",
@@ -10520,6 +10829,22 @@
         {
           "slug": "transdimensional-overlord",
           "name": "Transdimensional Overlord"
+        }
+      ]
+    },
+    {
+      "extId": "ssw1/ultimate-spider-man",
+      "heroName": "Ultimate Spider-Man",
+      "set": "ssw1",
+      "mechanic": "gain-sidekick",
+      "status": "executable",
+      "wp": "WP-844",
+      "decision": "D-24778",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick",
+      "designs": [
+        {
+          "slug": "marvel-team-up",
+          "name": "Marvel Team-Up"
         }
       ]
     },
@@ -12875,6 +13200,22 @@
         {
           "slug": "dont-make-me-angry",
           "name": "Don't Make Me Angry"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/gladiator-hulk",
+      "heroName": "Gladiator Hulk",
+      "set": "wwhk",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "designs": [
+        {
+          "slug": "hulk-is-king",
+          "name": "Hulk Is King"
         }
       ]
     },

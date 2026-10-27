@@ -17,7 +17,7 @@ related:
   - dashboard.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\testing.md (this page — https://ewiki.legendary-arena.com/testing/)
+  - C:\dev\legendary-arena\wiki\testing.md (this page — https://ewiki.legendary-arena.com/testing/)
   - ../docs/06-TESTING.md
   - ../.claude/CLAUDE.md
   - ../.claude/rules/code-style.md

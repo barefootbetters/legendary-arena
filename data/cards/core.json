@@ -1592,7 +1592,7 @@
           "recruit": null,
           "abilities": [
             "Draw three cards. [keyword:draw:3]",
-            "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn."
+            "[hc:instinct]: You get +1[icon:attack] for each extra card you've drawn this turn. [keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
           ]
         }
       ],

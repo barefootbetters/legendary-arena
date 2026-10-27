@@ -291,7 +291,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Gain three [rule:Sidekicks].",
+            "Gain three [rule:Sidekicks]. [keyword:gain-sidekick:3]",
             "[team:illuminati]: Put them on top of your deck."
           ],
           "hc2": "tech"
@@ -683,8 +683,8 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Gain a [rule:Sidekick].",
-            "[hc:covert]: Gain another [rule:Sidekick]."
+            "Gain a [rule:Sidekick]. [keyword:gain-sidekick:1]",
+            "[hc:covert]: Gain another [rule:Sidekick]. [keyword:gain-sidekick:1]"
           ]
         },
         {
@@ -906,7 +906,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "[hc:instinct]: Gain a [rule:Sidekick]."
+            "[hc:instinct]: Gain a [rule:Sidekick]. [keyword:gain-sidekick:1]"
           ]
         },
         {
@@ -1467,7 +1467,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "Gain a [rule:Sidekick].",
+            "Gain a [rule:Sidekick]. [keyword:gain-sidekick:1]",
             "Reveal the top card of your deck. If it costs 2 or less, draw it. [keyword:reveal:2]"
           ],
           "hc2": "instinct"

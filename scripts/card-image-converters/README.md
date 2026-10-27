@@ -8,7 +8,7 @@ These are **backup copies for version control only**. The canonical,
 runnable copies live in the staging repo alongside the image
 directories:
 
-    C:\pcloud\BB\DEV\barefootbetters-legendary-setup\card-images-staging\
+    C:\pcloud\legendary-arena\barefootbetters-legendary-setup\card-images-staging\
 
 Each script reads `original-jpeg\<set>\` and writes `.webp` files to
 `original\<set>\`, preserving subfolder structure and skipping files
@@ -32,7 +32,7 @@ From the staging-root folder (or anywhere — the script resolves its
 own location):
 
 ```powershell
-cd "C:\pcloud\BB\DEV\barefootbetters-legendary-setup\card-images-staging"
+cd "C:\pcloud\legendary-arena\barefootbetters-legendary-setup\card-images-staging"
 .\Convert-Co2e-JpgToWebp.ps1
 ```
 

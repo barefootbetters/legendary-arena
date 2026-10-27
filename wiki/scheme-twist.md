@@ -23,7 +23,7 @@ related:
   - visual-effects.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\scheme-twist.md (this page — https://ewiki.legendary-arena.com/scheme-twist/)
+  - C:\dev\legendary-arena\wiki\scheme-twist.md (this page — https://ewiki.legendary-arena.com/scheme-twist/)
   - ../.claude/skills/legendary-game-engine/SKILL.md
   - ../packages/game-engine/src/rules/schemeHandlers.ts
   - ../packages/game-engine/src/rules/schemeTwistConfigs.ts
@@ -94,15 +94,25 @@ per-scheme "twists next to this Scheme" counter that drives Killbot attack
 Sewers as a Skrull Villain (WP-514). An unconfigured scheme runs no
 card-specific text (counter-only).
 
-After the resolver (or fallback) runs, the dispatcher appends two
-generic effects unconditionally, for every scheme:
+**Before** the resolver (or fallback) runs, the dispatcher counts the Twist
+and logs its line, for every scheme (D-24775):
 
 ```ts
-{ type: 'modifyCounter', counter: 'schemeTwistCount', delta: 1 }
-{ type: 'queueMessage',
-  message: 'Scheme Twist #N revealed — the Scheme advances; twist count incremented (N of T to Evil Wins).',
-  outcome: 'threat' }
+gameState.counters.schemeTwistCount = twistNumber; // previous count + 1
+pushLog(gameState,
+  'Scheme Twist #N revealed — the Scheme advances; twist count incremented (N of T to Evil Wins).',
+  'threat');
 ```
+
+Counting first matters when a resolver plays cards from the Villain Deck
+and one of them is another Twist: the nested Twist re-enters the dispatcher
+before the outer one returns. Counted first, every Twist is numbered in the
+order it was revealed, its "#N" line sits right before its own effects, and a
+resolver reads its own Twist number as `G.counters.schemeTwistCount` (Cosmic
+Cube's escalation, Clash of the Monsters' Monster Pit, the Enigma Code).
+Before D-24775 the count was a returned effect applied after the resolver,
+so a nested Twist read the outer Twist's number and the "#N" lines came out
+in the order the Twists finished.
 
 The message names the twist number and (unless the scheme's twist-loss is
 suppressed by a real `resourceLossCondition`, D-24315) the doom-clock progress
@@ -117,9 +127,8 @@ The reveal-or-punish twist's per-player lines are coloured by player impact:
 **red** (`blocked`) when a player takes the Wound / discard-hand penalty,
 **green** (`applied`) when a player reveals the required Hero and dodges it.
 
-Then, if the predicted post-increment twist count reaches the scheme's
-**loss threshold**, it appends two more effects to the same returned
-array:
+Then, after the resolver, if this Twist's number reaches the scheme's
+**loss threshold**, the dispatcher returns two effects:
 
 ```ts
 { type: 'modifyCounter', counter: ENDGAME_CONDITIONS.SCHEME_LOSS, delta: 1 }
@@ -137,25 +146,22 @@ Each configured threshold equals the scheme's printed twist-stack size,
 so a scheme never resolves a twist early. Crucially, for most schemes
 this write is a *proxy*, not the real loss — see the next section.
 
-### The predict-post-effect pattern
+### Count first, lose after
 
-The handler cannot read `G` after applying its own effects — handlers
-run before `applyRuleEffects` mutates state (see
-[Rule Execution Pipeline](rule-execution-pipeline.md) for the
-two-phase contract). To check the threshold against the
-*post-increment* count, it predicts the post-effect value locally:
+The scheme-twist dispatcher is the documented exception to the
+two-phase contract of the [Rule Execution Pipeline](rule-execution-pipeline.md):
+its resolvers mutate `G` directly (D-18201), and since D-24775 the
+dispatcher itself raises `schemeTwistCount` and logs the Twist line before
+calling the resolver (`countAndAnnounceTwist`). Only the loss stays a
+returned effect (`buildTwistLossEffects`), gated on this Twist's number:
 
 ```ts
-const predictedTwistCount = (gameState.counters.schemeTwistCount ?? 0) + 1;
-if (predictedTwistCount >= effectiveThreshold) { /* append loss effects */ }
+const twistNumber = countAndAnnounceTwist(gameState, threshold, suppressTwistLoss);
+// … the resolver runs …
+if (!suppressTwistLoss && twistNumber >= threshold) { /* return loss effects */ }
 ```
 
-The generic-effects builder (`buildGenericTwistEffects`) stays purely
-functional — it returns effects and never mutates `G` — while still
-gating the conditional loss effect on the post-increment count. (The
-scheme's *resolver*, dispatched earlier in the same handler, does mutate
-`G` directly; the two roles are separate.) All generic effects land
-atomically in a single `applyRuleEffects` call.
+The final count is the same as before; only the moment it rises moved.
 
 ### Counter inventory
 

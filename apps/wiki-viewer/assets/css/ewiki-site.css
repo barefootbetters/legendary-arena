@@ -1,0 +1,60 @@
+/* The engine ewiki's own selectors (D-24782), the theme's site extension
+   point (bb-studio-ewiki-theme v1.3.0, themes/ewiki/assets/css/ewiki-site.css).
+
+   why: it carries only the rules for markup the theme's core doesn't produce:
+   the Related and Sources sections (layouts/partials/related.html and
+   source-citations.html, called from ewiki/after-content.html), the footer's
+   "Where this page goes" table (ewiki/editing-extra.html) and the
+   service-impact tables (layouts/shortcodes/service-impact.html). It loads
+   last, after core, and reads the brand tokens through var() only: it
+   declares no custom property, so it can never override the brand file's dark
+   block. The sidebar groups, the source list, the code, tag, table and
+   blockquote rules are core's. */
+
+.related, .sources {
+  margin-top: 2rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+}
+
+.related h2, .sources h2 {
+  font-size: 1rem;
+  margin-top: 0;
+}
+
+.related-list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.4rem 0;
+}
+
+/* why: core styles every table in the footer through .editing-this-page-body
+   table; these two rules keep the engine's where-table full width with its
+   "Where" column on one line, so long local paths wrap in the second column
+   rather than pushing the page into a horizontal scroll on a phone. */
+.editing-this-page-where { width: 100%; }
+
+.editing-this-page-where td:first-child { white-space: nowrap; }
+
+/* why: D-24710 service-impact tables. The impact tags are coloured by
+   severity so a reader scanning "what breaks" sees the outages first. Each
+   tag sets its own background and text color as a pair, so it stays legible
+   on the dark palette too. */
+.service-impact { font-size: 0.9rem; }
+.service-impact td { vertical-align: top; }
+.service-impact-muted { color: var(--color-muted); font-size: 0.8rem; }
+.service-impact-group { margin: 0 0 0.4rem; }
+.service-impact-group:last-child { margin-bottom: 0; }
+.service-impact-checks { margin: 0; padding-left: 1.2rem; }
+.service-impact-tag {
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.05rem 0.35rem;
+  white-space: nowrap;
+}
+.service-impact-down { background: #fee2e2; color: #991b1b; }
+.service-impact-degraded { background: #ffedd5; color: #9a3412; }
+.service-impact-stale { background: #fef9c3; color: #854d0e; }
+.service-impact-deploys { background: #e0e7ff; color: #3730a3; }
+.service-impact-unmonitored { background: #f3f4f6; color: #374151; }

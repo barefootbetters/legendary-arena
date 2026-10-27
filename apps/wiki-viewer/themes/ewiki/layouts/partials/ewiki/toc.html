@@ -1,0 +1,31 @@
+{{- /*
+  why: the "On this page" table of contents, new in the shared theme
+  (D-24727 section 2). It is Hugo's own .TableOfContents, so it needs no
+  script and its links are the headings' GitHub-style ids. Its levels follow
+  the site's [markup.tableOfContents], which every consumer sets to h2-h4.
+
+  why: it renders only on pages long enough to need it: when the page has at
+  least params.ewiki.tocMinHeadings (default 3) headings at levels 2-4, counted
+  from .Fragments.HeadingsMap. params.ewiki.toc = false turns it off.
+
+  why: data-pagefind-ignore keeps the heading list out of the search index;
+  the headings themselves are indexed once, where they are.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $show := true -}}
+{{- if isset $ewiki "toc" -}}{{- $show = index $ewiki "toc" -}}{{- end -}}
+{{- $minimum := int (index $ewiki "tocminheadings" | default 3) -}}
+{{- if $show -}}
+  {{- $count := 0 -}}
+  {{- range .Fragments.HeadingsMap -}}
+    {{- if and (ge .Level 2) (le .Level 4) -}}
+      {{- $count = add $count 1 -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if ge $count $minimum }}
+    <nav class="toc" aria-label="On this page" data-pagefind-ignore>
+      <p class="toc-heading">On this page</p>
+      {{ .TableOfContents }}
+    </nav>
+  {{- end -}}
+{{- end -}}

@@ -209,6 +209,39 @@ async function runResilientRead(operation, buildErrorMessage, description, empty
 }
 
 /**
+ * Builds the column list for a `fetch`: `match_id` plus only the columns the
+ * caller requested.
+ *
+ * // why: `fetch` used to select all four jsonb columns on every call. The
+ * bot-ally driver polls `{ state: true }` four times a second per match, and
+ * boardgame.io's Master fetches on every action, so each read pulled and parsed
+ * the whole action log and the initial state for nothing. `match_id` is always
+ * selected so a present row with nothing requested still reads as present (the
+ * missing-row `{}` shape is unchanged). Every column name is a fixed literal, so
+ * the interpolated list carries no caller input.
+ *
+ * @param {{ state?: boolean, log?: boolean, metadata?: boolean, initialState?: boolean }} opts
+ *   Which fields the caller asked for.
+ * @returns {string} A comma-separated column list for the SELECT.
+ */
+export function selectFetchColumns(opts) {
+  const columns = ['match_id'];
+  if (opts.state === true) {
+    columns.push('state');
+  }
+  if (opts.initialState === true) {
+    columns.push('initial_state');
+  }
+  if (opts.metadata === true) {
+    columns.push('metadata');
+  }
+  if (opts.log === true) {
+    columns.push('log');
+  }
+  return columns.join(', ');
+}
+
+/**
  * Builds the boardgame.io `StorageAPI.Async` adapter over an injected
  * `pg.Pool`. The returned object implements the boardgame.io ^0.50 async
  * storage contract: `type`, `connect`, `createMatch`, `setState`,
@@ -372,10 +405,11 @@ export function createBgioPgStore(pool) {
       // instead of throwing into boardgame.io's UNGUARDED Master.onSync handler
       // and crashing the whole server (observed 2026-07-24). A NON-transient
       // error (e.g. missing schema) still throws the wrapped message below.
+      const selectedColumns = selectFetchColumns(opts);
       return runResilientRead(
         async () => {
           const queryResult = await pool.query(
-            `SELECT state, initial_state, metadata, log
+            `SELECT ${selectedColumns}
                FROM bgio.matches
               WHERE match_id = $1`,
             [matchID],

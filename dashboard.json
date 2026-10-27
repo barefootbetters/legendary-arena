@@ -1,0 +1,361 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "id": "legendary-arena",
+    "name": "Legendary Arena",
+    "repository": "https://github.com/BarefootBetters/legendary-arena",
+    "links": [{ "label": "Eng Wiki", "url": "https://ewiki.legendary-arena.com", "abbreviation": "Wi" }]
+  },
+  "workstreams": [
+    { "id": "command-center", "label": "Operator Command Center" },
+    { "id": "product-content", "label": "Product & Content" },
+    { "id": "revenue-engine", "label": "Revenue Engine" },
+    { "id": "audience", "label": "Audience" }
+  ],
+  "milestones": [
+    {
+      "id": "cc-trust-repair",
+      "workstream": "command-center",
+      "title": "Trust repair: retire 404-ing KPI/DAU/Revenue widgets + refresh governance snapshot",
+      "status": "next",
+      "owner": "Builder",
+      "doneWhen": "Live Overview shows zero 404s; governance KPIs reflect real WORK_INDEX state",
+      "target": "2026-06-23"
+    },
+    {
+      "id": "cc-vision-page",
+      "workstream": "command-center",
+      "title": "Vision & Roadmap page (this surface)",
+      "status": "active",
+      "owner": "Builder",
+      "doneWhen": "This roadmap renders in the dashboard with live per-task status + an on-schedule banner",
+      "target": "2026-06-20"
+    },
+    {
+      "id": "cc-briefing",
+      "workstream": "command-center",
+      "title": "AI briefing endpoint + panel (Jarvis lead element)",
+      "status": "later",
+      "owner": "Architect→Builder",
+      "doneWhen": "GET /api/briefing/latest summarizes overnight state; a panel renders it atop the landing",
+      "target": "2026-06-30"
+    },
+    {
+      "id": "cc-schedule-agent",
+      "workstream": "command-center",
+      "title": "Schedule-watch agent (nightly cron notifying on slippage)",
+      "status": "later",
+      "owner": "Builder",
+      "doneWhen": "A nightly cron flags overdue/due-soon tasks and notifies Jeff",
+      "target": "2026-07-07"
+    },
+    {
+      "id": "cc-priority-action",
+      "workstream": "command-center",
+      "title": "Priority Action widget (dashboard-operating-system.md §Phase 0)",
+      "status": "later",
+      "owner": "Builder",
+      "doneWhen": "One card surfaces the single highest-leverage issue, deep-linked",
+      "target": "2026-07-14"
+    },
+    {
+      "id": "cc-os-widgets",
+      "workstream": "command-center",
+      "title": "The 10 operating-system widgets (Sales Funnel, Conversion Health, …)",
+      "status": "later",
+      "owner": "Builder",
+      "doneWhen": "Each ships per its spec in dashboard-operating-system.md §Build Sequence",
+      "target": null
+    },
+    {
+      "id": "pc-hero-effects-60",
+      "workstream": "product-content",
+      "title": "Hero-effect authoring: raise executable coverage 44% → 60%",
+      "status": "active",
+      "owner": "Builder",
+      "doneWhen": "pnpm sim:coverage baseline shows ≥ 60% executable, no regressions",
+      "target": "2026-07-31"
+    },
+    {
+      "id": "pc-villain-effects",
+      "workstream": "product-content",
+      "title": "Villain-effect authoring against the new primitives (Levers done)",
+      "status": "next",
+      "owner": "Builder",
+      "doneWhen": "Villain ability coverage rises against the WP-252 primitives",
+      "target": "2026-08-15"
+    },
+    {
+      "id": "pc-live-bugs",
+      "workstream": "product-content",
+      "title": "Close known live gameplay bugs (e.g., villain KO-a-hero choice, WP-242/243)",
+      "status": "next",
+      "owner": "Architect→Builder",
+      "doneWhen": "Drafted WPs executed + live-verified on play.legendary-arena.com",
+      "target": "2026-07-15"
+    },
+    {
+      "id": "pc-theme-expansion",
+      "workstream": "product-content",
+      "title": "Gameplay theme content expansion",
+      "status": "active",
+      "owner": "Creator",
+      "doneWhen": "New comic-accurate themes added as data (no engine change)",
+      "target": null
+    },
+    {
+      "id": "re-payment-decision",
+      "workstream": "revenue-engine",
+      "title": "Payment model + processor decision (subscription-first per §Financial Sustainability)",
+      "status": "later",
+      "owner": "Strategist→Architect",
+      "doneWhen": "A DECISIONS.md entry fixes the model, processor, and royalty-accounting approach",
+      "target": "2026-07-15"
+    },
+    {
+      "id": "re-account-capture",
+      "workstream": "revenue-engine",
+      "title": "Email/account capture path (precondition for any sale)",
+      "status": "later",
+      "owner": "Builder",
+      "doneWhen": "A visitor can create an account and be billable",
+      "target": "2026-07-22"
+    },
+    {
+      "id": "re-first-subscription",
+      "workstream": "revenue-engine",
+      "title": "First Legendary Supporter subscription tier live (cosmetic/convenience only, NG-1 safe)",
+      "status": "blocked",
+      "owner": "Builder",
+      "doneWhen": "A real customer can subscribe and pay; royalty share is tracked",
+      "target": "2026-09-30"
+    },
+    {
+      "id": "re-royalty-accounting",
+      "workstream": "revenue-engine",
+      "title": "Royalty accounting (Upper Deck / Marvel share off every dollar)",
+      "status": "later",
+      "owner": "Auditor",
+      "doneWhen": "Every revenue dollar computes + records its royalty portion",
+      "target": "2026-09-30"
+    },
+    {
+      "id": "au-analytics-platform",
+      "workstream": "audience",
+      "title": "Wire a real analytics platform (Plausible / CF Web Analytics) — the threshold-widget gate",
+      "status": "later",
+      "owner": "Analyst",
+      "doneWhen": "Dashboard threshold widgets exit no-data mode; real traffic visible",
+      "target": "2026-06-30"
+    },
+    {
+      "id": "au-email-capture",
+      "workstream": "audience",
+      "title": "Email capture + welcome sequence (Brevo)",
+      "status": "later",
+      "owner": "Creator",
+      "doneWhen": "New visitors enter an email list and receive a 5-email welcome series",
+      "target": "2026-07-15"
+    },
+    {
+      "id": "au-daily-cadence",
+      "workstream": "audience",
+      "title": "Sustain the Daily Execution cadence (YouTube/social/Discord) for 2 weeks",
+      "status": "later",
+      "owner": "Creator",
+      "doneWhen": "Daily Execution panel holds ≥ 7/9 for 14 consecutive days",
+      "target": "2026-07-01"
+    },
+    {
+      "id": "au-seo-engine",
+      "workstream": "audience",
+      "title": "SEO / content engine",
+      "status": "active",
+      "owner": "Creator",
+      "doneWhen": "www Pagefind shipped; blog/YouTube cadence producing indexed content",
+      "target": null
+    }
+  ],
+  "ledger": {
+    "currency": "USD",
+    "projectCosts": [
+      {
+        "item": "Claude Max 20x (Claude Code)",
+        "vendor": "Anthropic",
+        "monthly": 200,
+        "note": "Paid 2026-10-21 for Oct 21 to Nov 21, 2026; renews on the 21st. The AI coach's API usage is not on this bill."
+      }
+    ],
+    "budget": {
+      "tolerance": 0.2,
+      "byVendor": [
+        { "vendor": "Render", "monthly": 100 },
+        { "vendor": "Cloudflare", "monthly": 50 },
+        { "vendor": "Postgres", "monthly": 30 },
+        { "vendor": "Hanko", "monthly": 25 }
+      ],
+      "placeholder": true
+    },
+    "actuals": {
+      "asOf": "2026-09-30",
+      "byVendor": [
+        { "vendor": "Render", "monthToDate": 91.05 },
+        { "vendor": "Cloudflare", "monthToDate": 0 },
+        { "vendor": "Postgres", "monthToDate": 55.3 },
+        { "vendor": "Hanko", "monthToDate": 0 }
+      ]
+    }
+  },
+  "sources": {
+    "workIndex": { "path": "docs/ai/work-packets/WORK_INDEX.md", "format": "la-checklist" },
+    "decisionLog": { "kind": "single-file", "path": "docs/ai/DECISIONS.md" },
+    "status": "docs/ai/STATUS.md",
+    "gitActivity": { "branch": "main", "commits": 50 }
+  },
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "abbreviation": "Ov",
+      "panels": [
+        "since-last-looked",
+        "business-pulse",
+        "kpi-strip",
+        "engagement-strip",
+        "ops-at-a-glance",
+        "daily-execution"
+      ]
+    },
+    { "id": "vision", "title": "Vision", "abbreviation": "Vi", "view": "vision" },
+    { "id": "coverage", "title": "Coverage", "abbreviation": "Co", "view": "coverage" },
+    {
+      "id": "players",
+      "title": "Player Analytics",
+      "abbreviation": "Pl",
+      "panels": [
+        "dau-chart",
+        "acquisition-funnel-strip",
+        "traffic-sources",
+        "activation-funnel",
+        "retention-cohorts",
+        "player-records"
+      ]
+    },
+    { "id": "monetization", "title": "Monetization", "abbreviation": "Mo", "view": "monetization" },
+    { "id": "feedback", "title": "Feedback", "abbreviation": "Fb", "view": "feedback" },
+    { "id": "gameplay", "title": "Gameplay", "abbreviation": "Ga", "view": "gameplay" },
+    {
+      "id": "system",
+      "title": "System Health",
+      "abbreviation": "Sy",
+      "panels": [
+        "runtime-health",
+        "public-surface-health",
+        "error-rate-monitor",
+        "infra-cost-watchdog",
+        "sweep-health",
+        "dr-readiness"
+      ]
+    },
+    { "id": "debug", "title": "Debug", "abbreviation": "De", "view": "debug" },
+    {
+      "id": "debug-effects",
+      "title": "Debug Effects",
+      "abbreviation": "Ef",
+      "view": "debug-effects"
+    },
+    { "id": "pipeline", "title": "Pipeline", "abbreviation": "Pi", "panels": ["agent-pipeline"] }
+  ],
+  "vision": {
+    "tagline": "The 20% of work that drives 80% of income — and the quality standards that make it worth paying for.",
+    "sections": [
+      {
+        "heading": "Revenue Drivers — Daily Focus",
+        "ordered": true,
+        "items": [
+          {
+            "lead": "Sell.",
+            "text": "Get players to pay. Marketing, conversion, pricing, packaging. Every dollar funds payroll, royalties to Marvel and Upper Deck, cloud bills, and the next round of content. No sales = no business."
+          },
+          {
+            "lead": "Ship playable content.",
+            "text": "New sets, schemes, heroes. Content is the product. Content drives purchases and retention."
+          },
+          {
+            "lead": "Keep paying players playing.",
+            "text": "Reliability, matchmaking, reconnection. Churn kills recurring revenue."
+          }
+        ]
+      },
+      {
+        "heading": "Quality Standards",
+        "tagline": "How we do the above well — guardrails, not goals.",
+        "ordered": true,
+        "items": [
+          {
+            "lead": "Rules Authenticity.",
+            "text": "Exact rules of Marvel Legendary; no simplifications, no digital-only shortcuts."
+          },
+          {
+            "lead": "Content Authenticity.",
+            "text": "Same card images, names, text, and semantics as the physical cards."
+          },
+          {
+            "lead": "Player Trust & Fairness.",
+            "text": "No hidden modifiers; verifiably fair randomness; no decisions made on behalf of players."
+          },
+          {
+            "lead": "Faithful Multiplayer.",
+            "text": "Tabletop cooperative experience; reliable sync, reconnection, late-joining."
+          },
+          {
+            "lead": "Longevity & Expandability.",
+            "text": "Built for decades of expansions; core systems scale without rewrites."
+          }
+        ]
+      },
+      {
+        "heading": "Financial Sustainability",
+        "tagline": "*“No margin, no mission.”*",
+        "items": [
+          { "text": "The game must be **financially self-sustaining** from launch onward." },
+          {
+            "text": "Revenue models protect gameplay fairness — no pay-to-win — and pricing, packaging, and distribution are open commercial decisions."
+          },
+          {
+            "text": "A non-negotiable royalty portion flows directly to Upper Deck and Marvel on every revenue stream."
+          },
+          {
+            "text": "If revenue falls short, non-essential features scale back **before** any compromise to rules, fairness, accessibility, or royalties."
+          }
+        ]
+      }
+    ]
+  },
+  "checklist": {
+    "items": [
+      { "id": "youtube-video", "label": "YouTube video published", "category": "content", "cadence": "daily" },
+      { "id": "youtube-short", "label": "YouTube Short posted", "category": "content", "cadence": "daily" },
+      { "id": "facebook-post", "label": "Facebook post published", "category": "content", "cadence": "daily" },
+      { "id": "newsletter", "label": "Newsletter drafted / scheduled", "category": "content", "cadence": "weekly" },
+      { "id": "discord-response-sla", "label": "Discord response time < 4h", "category": "community", "cadence": "daily" },
+      { "id": "discord-unanswered", "label": "Unanswered Discord threads < 5", "category": "community", "cadence": "daily" },
+      { "id": "player-acknowledgment", "label": "Top active players acknowledged", "category": "community", "cadence": "daily" },
+      { "id": "tournament-promotion", "label": "Tournament announced / promoted", "category": "growth", "cadence": "as-scheduled" },
+      { "id": "strategy-content", "label": "Strategy/deck content posted", "category": "growth", "cadence": "as-scheduled" }
+    ]
+  },
+  "surfaces": [
+    { "key": "marketing", "label": "Marketing", "url": "https://www.legendary-arena.com" },
+    { "key": "play", "label": "Play", "url": "https://play.legendary-arena.com" },
+    { "key": "cards", "label": "Cards", "url": "https://cards.legendary-arena.com" },
+    { "key": "api", "label": "API", "url": "https://api.legendary-arena.com" }
+  ],
+  "revenueModel": {
+    "royaltyRate": 0.2,
+    "paymentFeeRate": 0.029,
+    "paymentFeeFixed": 0.3,
+    "cogsRate": 0.05,
+    "placeholder": true
+  }
+}

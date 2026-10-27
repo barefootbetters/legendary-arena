@@ -19,7 +19,7 @@ related:
   - leaderboard.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\profile-login.md (this page — https://ewiki.legendary-arena.com/profile-login/)
+  - C:\dev\legendary-arena\wiki\profile-login.md (this page — https://ewiki.legendary-arena.com/profile-login/)
   - ../docs/ai/work-packets/WP-102-public-profile-page.md
   - ../docs/ai/work-packets/WP-104-owner-profile-data-model-and-me-edit.md
   - ../docs/ai/work-packets/WP-160-hanko-client-ui.md
@@ -53,8 +53,16 @@ source:
   - ../docs/ai/work-packets/WP-499-join-by-match-id.md
   - ../docs/ai/work-packets/WP-500-auto-assign-handles.md
   - ../scripts/backfill-handles.mjs
+  - ../docs/ai/work-packets/WP-301-profile-loadout-library-server.md
+  - ../docs/ai/work-packets/WP-302-profile-loadout-library-client.md
+  - ../docs/ai/work-packets/WP-404-loadout-hero-alternates-bench.md
+  - ../docs/ai/work-packets/WP-448-composition-to-match-launch-primitive.md
+  - ../data/migrations/022_create_player_loadouts.sql
+  - ../data/migrations/034_add_team_key_to_competitive_scores.sql
   - ../docs/ai/work-packets/WORK_INDEX.md
-last-reviewed: 2026-08-05
+  - ../packages/lagn-spec/schemas/lagn-v1.json
+  - ../docs/ai/DECISIONS.md
+last-reviewed: 2026-10-20
 ---
 
 # Profile Login
@@ -205,7 +213,7 @@ Like the login screen, none of it lives in the marketing repo:
 | Public profile (read-only) | WP-102 (route wired by WP-152) | by player handle | `PublicProfileView` (closed field shape); returns **404** on no-match. |
 | Public-profile link preview (unfurl) | **[WP-300](../docs/ai/work-packets/WP-300-public-profile-link-preview-meta.md)** (Done 2026-06-30) | edge `functions/_middleware.ts` on `play` | Makes shared public-profile links **unfurl** with a rich preview. arena-client's first Cloudflare Pages Function intercepts the SPA-shell HTML for `?profile=<handle>`, fetches the guest `GET /api/players/:handle/profile`, and injects per-player Open Graph + Twitter Card `<meta>` into `<head>` via `HTMLRewriter` (title = display name; description = §23-compliant badge/team/replay counts — **no** win/rank/opponent framing; image = a static 1200×630 brand card). **Fail-soft:** paramless loads, non-HTML responses, bad handles, or any API failure serve the **unmodified** shell (1500 ms bounded fetch). No server/contract/`index.html` change; reserves **D-24085** (edge subsurface + HTMLRewriter inject-for-all + static brand-image v1; per-player/avatar OG image deferred). |
 | Owner profile + edit | WP-104 (edit-page polish by **[WP-299](../docs/ai/work-packets/WP-299-owner-profile-edit-ux-polish.md)**) | `?route=me` → `MyProfilePage.vue` | The signed-in player's own editable profile. Migration `009_create_player_profiles_and_links.sql` creates `legendary.player_profiles` + `legendary.player_links`; `PATCH /api/me/profile` is the edit path. **WP-299 (Done 2026-06-30, PR #504)** polished this page — a live avatar **preview** thumbnail (hides on a broken URL, never mutates the typed value), an accurate upload **hint** (**PNG/JPEG/WebP · up to 5 MB**, sourced from the server `ALLOWED_MIME_TYPES` + `MAX_FILE_SIZE_BYTES`, correcting stale copy that wrongly listed **GIF**), a live **About-me character counter** against the 500-char cap, and scoped **card treatment** with a `@media (max-width: 40rem)` one-column link row. Presentation-only: no API/contract/store change, no new D-entry. |
-| Saved loadouts (library + public share) | **[WP-301](../docs/ai/work-packets/WP-301-profile-loadout-library-server.md)** (server) + **[WP-302](../docs/ai/work-packets/WP-302-profile-loadout-library-client.md)** (client) — both Done 2026-07-01 | `?route=me` "Saved Loadouts" section + `?loadout=<shareSlug>` public page | Vision **§19b** loadout library: a signed-in player saves LAGN loadouts to their account (create by pasting LAGN JSON, list / rename / public-private toggle / delete / copy-share-link) and shares a public one via an opaque slug. **Server (WP-301):** migration `022_create_player_loadouts.sql` (`legendary.player_loadouts`), `POST/GET /api/me/loadouts` + `PATCH/DELETE /api/me/loadouts/:id` (authenticated-session) + guest `GET /api/loadouts/:shareSlug` (**public-only** — 404 on private/missing, never leaks `accountId`); server-side LAGN `validate` on every write; per-account cap **50** (**D-24086**). **Client (WP-302):** the owner section plus a net-new **unguarded** `SharedLoadoutPage.vue` at `?loadout=<shareSlug>` (name + `displayHandle` + composition summary), treating LAGN as opaque JSON (no validator import). **Decorative-not-merit (§19b / §19a)** — never a competitive-submission path (**D-24087**). Lobby "Save this loadout" / "Load into lobby" integration deferred to **WP-303**. |
+| Saved loadouts (library + public share) | **[WP-301](../docs/ai/work-packets/WP-301-profile-loadout-library-server.md)** (server) + **[WP-302](../docs/ai/work-packets/WP-302-profile-loadout-library-client.md)** (client) — both Done 2026-07-01 | `?route=me` "Saved Loadouts" section + `?loadout=<shareSlug>` public page | Vision **§19b** loadout library: a signed-in player saves LAGN loadouts to their account (create by pasting LAGN JSON, list / rename / public-private toggle / delete / copy-share-link) and shares a public one via an opaque slug. **Server (WP-301):** migration `022_create_player_loadouts.sql` (`legendary.player_loadouts`), `POST/GET /api/me/loadouts` + `PATCH/DELETE /api/me/loadouts/:id` (authenticated-session) + guest `GET /api/loadouts/:shareSlug` (**public-only** — 404 on private/missing, never leaks `accountId`); server-side LAGN `validate` on every write; per-account cap **50** (**D-24086**). **Client (WP-302):** the owner section plus a net-new **unguarded** `SharedLoadoutPage.vue` at `?loadout=<shareSlug>` (name + `displayHandle` + composition summary), treating LAGN as opaque JSON (no validator import). **Decorative-not-merit (§19b / §19a)** — never a competitive-submission path (**D-24087**). **Play this loadout (WP-303 / EC-851, Done 2026-10-14):** each row's button launches a match straight from its stored LAGN through WP-448's `launchMatchFromComposition` (D-24268), reading the opaque `lagn` with the lobby's `convertLagnUpload` → `parseLoadoutJson` (no validator import, no new server read, nothing written to the loadout; **D-24722**). Lobby "Save this loadout" and a "Load into lobby" preview hand-off stay out. Proposed evolution into a per-mastermind attempt surface: [the mastermind grind loop](#saved-loadouts-as-a-working-surface--the-mastermind-grind-loop-design-direction-2026-10-14). |
 | Team affiliation | WP-109 | both profile views | Profile-level cooperative cohorts; extends `PublicProfileView` (4→5 keys) and `OwnerProfileView` (7→8 keys). |
 | Badges | WP-105 | both profile views | Tier-1 gameplay badges (migration 013); fire-and-forget issuance in the competition pipeline. |
 | Competitive scores ("My Scores") + on-gameover submission | **[WP-338](../docs/ai/work-packets/WP-338-submit-by-matchid-server.md)** (server) + **[WP-339](../docs/ai/work-packets/WP-339-arena-submit-my-scores.md)** (client) — both Done 2026-07-08, deployed 2026-07-09 | `?route=me` "Competitive Scores" section + a fire-once submit watcher at `PlayViewport` | The player-facing end of the **D-24119 faithful-replay arc**. On gameover, an *authenticated* player's arena-client submits the match's competitive score **by `matchId`** (the client never computes a `replayHash`; the server resolves + captures on-demand + verifies + auto-publishes + scores — see [Leaderboard → the write path](leaderboard.md#from-a-finished-match-to-a-ranked-row-the-write-path)). A **guest is never submitted** — the on-gameover status line instead prompts a sign-in. The owner profile then reads **`GET /api/me/scores`** (`authenticated-session-required`) to list the player's own submitted scores. **Auth-gated end to end:** submission requires the WP-112 session → WP-107 unsuspended → non-guest `PlayerAccount` chain (a guest hits `guest_not_eligible`); the `MyProfilePage` list attaches the bearer token like every other `/api/me/*` call. Reserves **D-24126** (submit-by-matchId + auto-publish) + **D-24127** (client fire-once, authed-only). |
@@ -297,6 +305,186 @@ public-profile ambitions into their own sequenced Work Packets. External
 enterprise-search artifacts (Copilot / SharePoint) are intentionally
 **not** linked here — the founded facts they surfaced are the WP rows
 above.
+
+### Saved loadouts as a working surface — the mastermind grind loop (design direction, 2026-10-14)
+
+> **Status: design direction — not scheduled, no WP yet.** Captured from a
+> 2026-10-14 operator design conversation. Nothing below is built; the
+> "today" facts are cited to what shipped.
+
+**The insight.** "Favourites" and "now playing" on the profile are a
+**working surface for iteration**, not a display shelf. A brutal
+mastermind + scheme + villain combination is a puzzle. A player tries a hero
+lineup, loses, swaps one or two heroes, and tries again — five, ten times —
+tuning the team until it cracks and a score locks in. So:
+
+- **Now playing** is the lineup the player is actively testing against a
+  fight they keep coming back to.
+- **Saved loadouts** want to be *"my working variations against this
+  mastermind"* — versioned attempts at one fight — more than *"my five
+  all-time favourites."*
+
+**The inversion.** The two framings fix opposite halves of a loadout, and
+both are valid — they are different moments in the same loop:
+
+| Framing | Held fixed | Varies | Moment |
+|---|---|---|---|
+| Favourites | the hero team | mastermind / scheme are the blanks | "my team — what should it face?" |
+| Grind | mastermind + scheme (the fight) | the heroes | "this fight — which team beats it?" |
+
+**What exists today.** The library is a **flat** list: paste LAGN JSON,
+then list / rename / public-private / delete / share, capped at 50 per
+account ([WP-301](../docs/ai/work-packets/WP-301-profile-loadout-library-server.md) /
+[WP-302](../docs/ai/work-packets/WP-302-profile-loadout-library-client.md)).
+There is no grouping yet. Each row has a **Play this loadout** button that
+launches its lineup in one click ([WP-303](../docs/ai/work-packets/WP-303-play-saved-loadout.md),
+shipped 2026-10-14, D-24722); a "Load into lobby" preview hand-off is not
+built. The pieces a grind loop needs are mostly shipped:
+
+| Need | Already shipped | Gap |
+|---|---|---|
+| Cluster attempts by fight | Every saved loadout is a server-validated LAGN document whose `setup` names the mastermind and scheme | The library never reads them. Grouping can be **derived on read** from the stored LAGN — no schema change for a first cut. The grouping read belongs on the **server** (which already validates LAGN on write): arena-client treats `lagn` as opaque by decision (D-24087), so a client-side parse would need its own D-entry. |
+| Reload last try in one click | [WP-448](../docs/ai/work-packets/WP-448-composition-to-match-launch-primitive.md)'s `launchMatchFromComposition` (create → persist setup → join → navigate) | **Shipped (WP-303 / D-24722, 2026-10-14).** Play this loadout on each profile row calls `launchMatchFromComposition` with the stored lineup: a call site, not a new chain (D-24268). |
+| Swap a hero or two | [WP-404](../docs/ai/work-packets/WP-404-loadout-hero-alternates-bench.md) hero **alternates bench** (`setup.hero_alternates`, two reserve slots) | Swapping still happens in the cards-site builder, not on the attempt itself. |
+| Know which attempt won | `competitive_scores` carries `scenario_key` (`scheme::mastermind::villains`), `outcome` (migration 026), and `team_key` (the sorted hero-team identity, migration 034 / D-24187) | Nothing joins a saved lineup to its result. |
+
+**The core fast path:** open the fight → see prior attempts (most recent
+first, marked won/lost) → load the last one → swap one or two heroes → play.
+Every step saved on this path is another attempt per session, and the
+attempt count *is* the engagement.
+
+**Load-bearing constraint — loadouts stay decorative.** Migration 022 states
+`player_loadouts` has **no relationship** to `competitive_scores` or any
+leaderboard surface (D-24087, Vision §19b / §19a). "Beaten with this lineup"
+must therefore be **derived on read**: match the attempt's
+`(scenario_key, team_key)` to the player's own verified scores. It is never
+a flag the player sets and never a column written onto the loadout. This is
+the same derived-progression pattern the gauntlet run tracker already uses
+(D-24262 — progress recomputed from hero picks + scores on every read; see
+[Leaderboard → Gauntlet runs](leaderboard.md#gauntlet-runs--download--import--build--track-wp-440446-448-449)).
+A saved loadout can never itself become a competitive submission.
+
+**It closes the open showcase question.** The design evaluation above left an
+"achievements showcase" as an unsequenced ambition. The grind clusters feed
+it directly: **masterminds you have taken on, and the ones you beat — with the
+winning lineup**, a "toughest taken on" showcase. One source feeds both the
+private working surface and the public brag.
+
+- The **public** half is the business-relevant piece (shareable, unfurls via
+  WP-300) and the one that earns its keep. It must ride the closed
+  `PublicProfileView` shape, so it needs its own read projection, not the
+  owner list rendered read-only.
+- Rank showcase entries by **difficulty beaten** (the scenario's PAR or
+  menace standing), not by how many attempts it took. Attempt counts are fine
+  as private, personal history; as a public ordering they become the
+  cumulative-volume input §25(a) forbids.
+- "Winning lineup" means a verified `heroes-win` score — never a
+  self-declared win.
+
+**Open design calls (for the WP, not settled here):**
+
+- **Cluster key.** Mastermind alone (the chat's framing) or the full
+  `scenario_key`? Recommended: group by **mastermind**, sub-group by
+  **scheme**, and treat villain groups as part of the attempt. Same
+  mastermind with a different scheme is a different fight, but players
+  think in masterminds.
+- **Attempt vs saved loadout.** Should every launched lineup auto-record as
+  an attempt, or only lineups the player saves? Auto-record makes the loop
+  frictionless but turns the library into a log, which collides with the
+  50-cap. A likely split: a lightweight *attempt history* derived from
+  scores/`team_key` (no storage), plus explicit saves for lineups worth
+  keeping.
+- **Relation to gauntlet runs.** A gauntlet leg is already "this mastermind,
+  my hero picks, my scores." The grind cluster is the open-ended version,
+  with no leg structure or championship. Reuse the gauntlet's derived-
+  progress read rather than building a parallel one.
+
+**Likely decomposition** (each its own WP): (1) one-click reload from the
+profile — **shipped as [WP-303](../docs/ai/work-packets/WP-303-play-saved-loadout.md)
+(D-24722, 2026-10-14)**, a direct launch through `launchMatchFromComposition`
+(D-24268) rather than a lobby hand-off; (2) group the library by mastermind/scheme, derived from the
+stored LAGN; (3) the attempt ↔ verified-score join (`scenario_key` +
+`team_key`) with won/lost markers; (4) the public "toughest taken on"
+showcase projection.
+
+#### Addendum — favourites, "now playing", and builder hand-offs (2026-10-14 briefs)
+
+> **Status: design direction — not scheduled, no WP yet.** The one exception
+> is storage, which Jeff decided on 2026-10-20 (**D-24748**, below). This
+> addendum comes from three desk briefs written in the same 2026-10-14
+> conversation and checked against `main` on 2026-10-20. What those briefs
+> share with shipped work isn't repeated here: saved loadouts (WP-301 / 302),
+> the `?lagn=` import (WP-362, D-24154), the bench (WP-404), player counts
+> (WP-372, D-24165), Play this loadout (WP-303), support pools (WP-391),
+> gauntlet runs (WP-449), and the match-LAGN read (WP-361, D-24153).
+
+**What's new.**
+
+1. **Favourite heroes ("fav five").** The player fills a favourite team on
+   the profile slot by slot, with the Registry Viewer as the picker. One
+   button opens a favourite in the Registry Viewer's loadout builder through
+   `?lagn=`, where the player sets or changes the fight. A favourite also
+   keeps its four supply counts and its `support_pools` composition.
+2. **"Now playing" on the profile.** Shows the setup of the player's live
+   match, linked into the Registry Viewer. The setup itself is already served
+   by `GET /api/match/:matchId/lagn` (WP-361 / D-24153, public per D-24446).
+3. **Next / Now / Favourites as one profile panel.** *Next* is derived at
+   read time, the way gauntlet progress is (D-24262), and is never stored.
+   *Now* is "now playing", and *Favourites* are the fav five.
+4. **"Open in cards builder" on each saved loadout row**, next to Play this
+   loadout. The row builds the `?lagn=` link from its stored LAGN and opens
+   the Registry Viewer's Loadout tab. My reading: base64url-encoding the
+   stored text doesn't parse it, so this fits arena-client's opaque-`lagn`
+   rule (D-24087).
+5. **Auto-filled supply counts.** The builder fills the four supply counts
+   (bystanders, wounds, S.H.I.E.L.D. officers, sidekicks) from a
+   per-player-count table. **No such table exists.** D-24165's
+   `PLAYER_COUNT_SETUP` covers villain groups, henchmen groups, villain-deck
+   bystanders and heroes. The D-24032 floor (bystanders, wounds and officers
+   ≥ 30) is an engine minimum, not a per-count default. A WP would add the
+   table and record where its numbers come from.
+
+**Storage: a favourite is a complete saved loadout (D-24748).** The briefs
+stored a favourite as a LAGN loadout with no scheme or mastermind. That
+can't be saved. `POST /api/me/loadouts` validates every write with
+`@legendary-arena/lagn` (D-24086), and
+[`lagn-v1.json`](../packages/lagn-spec/schemas/lagn-v1.json) lists
+`mastermind`, `scheme`, `villain_groups`, `henchmen_groups`, `heroes` and the
+four supply counts in `setup.required`. The `?lagn=` import runs the same
+published validator, so it can't carry a heroes-only loadout either. Of the
+three options (relax `setup.required` with a LAGN version bump, add a
+separate favourites shape, or keep favourites as full loadouts), Jeff chose
+the third:
+
+- A favourite is an ordinary `player_loadouts` row: fight, heroes, supply
+  counts and support pools. The counts and pools come along with the row, so
+  nothing extra stores them.
+- The Favourites row of the inversion table above (team fixed, fight open) is
+  a **builder flow, not a storage shape**. The player picks heroes in the
+  builder's local draft and saves once the fight is filled in. "Open in
+  builder" opens a complete favourite so the player can swap its fight.
+- The WP decides how a loadout is marked as a favourite (a pin column, a slot
+  list, a derived ordering). A new column gets its own D-entry and stays
+  decorative (D-24087). Favourites count toward the 50-loadout cap.
+
+**Constraints for the WP.**
+
+- **"Five" isn't fixed.** The hero slot count follows the scheme (D-24672).
+  On the standard table, solo is 3 heroes and 2–4 players is 5 (D-24165). That
+  table is standard only: the "What If…?" modified setup is deferred. The
+  profile shows the slots the favourite's scheme and player count call for.
+- **Card images in the picker are open, not forbidden.** D-24087 deferred
+  rendering a loadout as cards in favour of a name-level summary. It didn't
+  rule images out.
+- **"Now playing" reveals that a player is in a live match.** Showing it on
+  the public profile changes the closed `PublicProfileView` projection
+  (WP-102), so it needs its own D-entry. An owner-only first cut avoids the
+  public exposure.
+- **More showcase slots are a paid feature.** The marketing repo's
+  `docs/product/profile-features-free-vs-paid.md` lists "more showcase slots"
+  and pinning runs into showcase slots in the paid column. The number of
+  favourite slots on the free tier is a business call for the WP, not a fixed
+  five.
 
 ### Owner-page identity fields — `accountId`, `displayName`, `handleCanonical`
 

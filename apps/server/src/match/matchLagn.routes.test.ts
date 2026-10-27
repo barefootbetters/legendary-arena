@@ -387,9 +387,63 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     await resultHandlerOf(router)(context);
 
     assert.equal(context.status, 200);
-    const body = context.body as { lagn: Record<string, unknown> };
+    const body = context.body as { lagn: Record<string, unknown>; resultOmittedReason?: string };
     assert.equal(validate(body.lagn).valid, true);
     assert.equal('result' in body.lagn, false);
+    // WP-812 / D-24720: the envelope names the tie beside `lagn`, never inside it.
+    assert.deepEqual(Object.keys(body), ['lagn', 'resultOmittedReason']);
+    assert.equal(body.resultOmittedReason, 'tie');
+  });
+
+  test('WP-812: a match the players ended early is reported ended-early, not tie', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 1 },
+        seats: [{ playerId: '0', accountId: CALLER }],
+        // why: the engine's stored verdict for "End Game" (D-24306) — a 'tie'
+        // that the route must pass to the mapping with its endedEarly flag.
+        gameover: { outcome: 'tie', reason: 'The players ended the match early.', endedEarly: true },
+        identities: identitiesOf({ 'account-caller': ['caller-handle', 'Caller'] }),
+      }),
+    );
+    const context = makeContext('ended-early-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { lagn: Record<string, unknown>; resultOmittedReason?: string };
+    assert.equal(validate(body.lagn).valid, true);
+    assert.equal('result' in body.lagn, false);
+    assert.equal(body.resultOmittedReason, 'ended-early');
+  });
+
+  test('WP-812: an unknown verdict omits result and the envelope says unknown, not tie', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: { matchConfiguration: VALID_COMPOSITION, numPlayers: 1 },
+        seats: [{ playerId: '0', accountId: CALLER }],
+        // why: `{}` is what WP-811 serves for an unswept legacy artifact and
+        // stores for a hash mismatch: finished, outcome unknown.
+        gameover: {},
+        identities: identitiesOf({ 'account-caller': ['caller-handle', 'Caller'] }),
+      }),
+    );
+    const context = makeContext('unknown-verdict-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { lagn: Record<string, unknown>; resultOmittedReason?: string };
+    assert.equal(validate(body.lagn).valid, true);
+    assert.equal('result' in body.lagn, false);
+    assert.equal('resultOmittedReason' in body.lagn, false);
+    assert.equal(body.resultOmittedReason, 'unknown');
   });
 
   test('WP-641: a scored match with a plan wires battle_plan + result.score into the document', async () => {
@@ -506,5 +560,198 @@ describe('registerMatchLagnRoutes — result-lagn producer', () => {
     assert.equal(context.status, 500);
     assert.deepEqual(context.body, { error: 'lagn_projection_failed' });
     assert.equal(context.headers['Cache-Control'], 'no-store');
+  });
+});
+
+// ============================================================================
+// Reaped-match fallback through the PRODUCTION logic (WP-811 / D-24719)
+// ============================================================================
+
+/**
+ * A fake pool for the production logic module: the live `bgio.matches` row is
+ * gone (reaped), the `bgio.replay_artifacts` copy answers the composition and
+ * verdict reads, and every domain read (seats, identities, battle plan, replay
+ * hash) is empty. No seam is injected, so this exercises the real readers.
+ */
+function reapedMatchDatabase(artifact: { initialState: unknown; gameover: unknown } | null) {
+  return {
+    query: async (text: string) => {
+      if (artifact !== null && /SELECT initial_state FROM bgio\.replay_artifacts/.test(text)) {
+        return { rows: [{ initial_state: artifact.initialState }] };
+      }
+      if (artifact !== null && /SELECT gameover FROM bgio\.replay_artifacts/.test(text)) {
+        return { rows: [{ gameover: artifact.gameover }] };
+      }
+      return { rows: [] };
+    },
+  } as unknown as DatabaseClient;
+}
+
+const REAPED_ARTIFACT = {
+  initialState: { G: { matchConfiguration: VALID_COMPOSITION }, ctx: { numPlayers: 1 } },
+  gameover: { outcome: 'heroes-win', reason: 'The Mastermind was defeated.' },
+};
+
+describe('WP-811: a reaped match stays readable through the production logic', () => {
+  test('GET /lagn serves the setup from the durable artifact', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(router, reapedMatchDatabase(REAPED_ARTIFACT), deps());
+    const context = makeContext('reaped-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const lagn = (context.body as { lagn: Record<string, unknown> }).lagn;
+    assert.equal(validate(lagn).valid, true);
+    assert.equal(lagn.game_id, 'reaped-match');
+    assert.equal(lagn.player_count, 1);
+  });
+
+  test('GET /result-lagn serves the result, outcome included, from the artifact', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(router, reapedMatchDatabase(REAPED_ARTIFACT), deps());
+    const handler = router.handlers.get('GET /api/match/:matchId/result-lagn');
+    assert.ok(handler);
+    const context = makeContext('reaped-match');
+    await handler(context);
+
+    assert.equal(context.status, 200);
+    const lagn = (context.body as { lagn: Record<string, unknown> }).lagn;
+    assert.equal(validate(lagn).valid, true);
+    assert.deepEqual(lagn.result, { outcome: 'victory' });
+  });
+
+  test('GET /result-lagn on a pre-046 artifact omits the result block but still serves', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      reapedMatchDatabase({ initialState: REAPED_ARTIFACT.initialState, gameover: null }),
+      deps(),
+    );
+    const handler = router.handlers.get('GET /api/match/:matchId/result-lagn')!;
+    const context = makeContext('legacy-match');
+    await handler(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { lagn: Record<string, unknown>; resultOmittedReason?: string };
+    const lagn = body.lagn;
+    assert.equal(validate(lagn).valid, true);
+    assert.equal(lagn.result, undefined);
+    // WP-812 / D-24720: the real VERDICT_NOT_RECORDED path reads as unknown,
+    // never as a tie, so the Hall of Legends says "Outcome not recorded".
+    assert.equal(body.resultOmittedReason, 'unknown');
+  });
+
+  test('a match in neither store is still the fail-closed 404 on both routes', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(router, reapedMatchDatabase(null), deps());
+    const setupContext = makeContext('unknown-match');
+    await handlerOf(router)(setupContext);
+    assert.equal(setupContext.status, 404);
+    assert.deepEqual(setupContext.body, { error: 'match_not_found' });
+
+    const resultContext = makeContext('unknown-match');
+    await router.handlers.get('GET /api/match/:matchId/result-lagn')!(resultContext);
+    assert.equal(resultContext.status, 404);
+    assert.deepEqual(resultContext.body, { error: 'not_found' });
+  });
+});
+
+// ============================================================================
+// Operator matches (D-24717)
+// ============================================================================
+
+const OPERATOR_COMPOSITION: MatchLagnComposition = {
+  ...VALID_COMPOSITION,
+  isDebugMatch: true,
+};
+
+describe('registerMatchLagnRoutes — operator matches (D-24717)', () => {
+  test('result-lagn refuses a finished operator match with the unknown-match 404, before any further read', async () => {
+    const router = new FakeRouter();
+    const readsAfterGate: string[] = [];
+    const seam = logicSeam({
+      configuration: { matchConfiguration: OPERATOR_COMPOSITION, numPlayers: 1 },
+      seats: [{ playerId: '0', accountId: CALLER }],
+      gameover: { outcome: 'heroes-win' },
+      identities: identitiesOf({ 'account-caller': ['caller-handle', null] }),
+    });
+    registerMatchLagnRoutes(router, FAKE_DB, deps(), {
+      ...seam,
+      readMatchGameover: async (...args) => {
+        readsAfterGate.push('readMatchGameover');
+        return seam.readMatchGameover(...args);
+      },
+      readSeatAccounts: async (...args) => {
+        readsAfterGate.push('readSeatAccounts');
+        return seam.readSeatAccounts(...args);
+      },
+    });
+    const context = makeContext('operator-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'not_found' });
+    assert.equal(context.headers['Cache-Control'], 'no-store');
+    assert.deepEqual(readsAfterGate, []);
+  });
+
+  test('result-lagn still serves a finished match whose isDebugMatch is not a strict true', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: {
+          matchConfiguration: { ...VALID_COMPOSITION, isDebugMatch: false },
+          numPlayers: 1,
+        },
+        seats: [],
+        gameover: { outcome: 'heroes-win' },
+      }),
+    );
+    const context = makeContext('normal-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { lagn: Record<string, unknown> };
+    assert.equal(validate(body.lagn).valid, true);
+  });
+
+  test('the setup route still serves an operator match, without the flag in the document', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      FAKE_DB,
+      deps(),
+      logicSeam({
+        configuration: { matchConfiguration: OPERATOR_COMPOSITION, numPlayers: 1 },
+        seats: [],
+      }),
+    );
+    const context = makeContext('operator-match');
+    await handlerOf(router)(context);
+
+    assert.equal(context.status, 200);
+    const body = context.body as { lagn: Record<string, unknown> };
+    assert.equal(validate(body.lagn).valid, true);
+    assert.equal(JSON.stringify(body.lagn).includes('isDebugMatch'), false);
+  });
+
+  test('a REAPED operator match is still refused by result-lagn, through the production artifact read (D-24719)', async () => {
+    const router = new FakeRouter();
+    registerMatchLagnRoutes(
+      router,
+      reapedMatchDatabase({
+        initialState: { G: { matchConfiguration: OPERATOR_COMPOSITION }, ctx: { numPlayers: 1 } },
+        gameover: { outcome: 'heroes-win' },
+      }),
+      deps(),
+    );
+    const context = makeContext('reaped-operator-match');
+    await resultHandlerOf(router)(context);
+
+    assert.equal(context.status, 404);
+    assert.deepEqual(context.body, { error: 'not_found' });
   });
 });

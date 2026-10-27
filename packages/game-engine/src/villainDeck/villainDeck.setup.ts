@@ -28,6 +28,11 @@ import type { MatchSetupConfig } from '../matchSetup.types.js';
 const KILLBOTS_SCHEME_ID = 'core/replace-earths-leaders-with-killbots';
 import type { SetupContext } from '../types.js';
 import { shuffleDeck } from '../setup/shuffle.js';
+import { resolveEffectiveTwistCount } from '../setup/schemeSetupSizing.js';
+import {
+  brainwashedOfficerExtId,
+  resolveBrainwashedOfficerCount,
+} from '../rules/brainwashTheMilitary.logic.js';
 
 // ---------------------------------------------------------------------------
 // VillainDeckRegistryReader — local structural interface
@@ -264,8 +269,17 @@ export function buildVillainDeck(
   if (scheme !== null) {
     // why: the twist count comes from the scheme's villainDeckTwistCount; the
     // SCHEME_TWIST_COUNT default applies only when the scheme omits the field.
+    // D-24733 / D-24734 — a scheme whose printed stack varies by player count
+    // (Super Hero Civil War: 8 at 2-3 players, 5 at 4-5; "players plus 6"; ...) is
+    // then sized by the seat count.
     const twistFromScheme = readSchemeTwistCount(scheme);
-    const twistCount = twistFromScheme === null ? SCHEME_TWIST_COUNT : twistFromScheme;
+    const baseTwistCount = twistFromScheme === null ? SCHEME_TWIST_COUNT : twistFromScheme;
+    const twistCount = resolveEffectiveTwistCount(
+      config.schemeId,
+      config.mastermindId,
+      context.ctx.numPlayers,
+      baseTwistCount,
+    );
 
     for (let twistIndex = 0; twistIndex < twistCount; twistIndex++) {
       const paddedIndex = String(twistIndex).padStart(2, '0');
@@ -311,6 +325,21 @@ export function buildVillainDeck(
     } else {
       cardTypes[extId] = 'bystander';
     }
+  }
+
+  // --- 4b. Brainwash the Military's S.H.I.E.L.D. Officers (WP-823 / D-24756) ---
+  // why: "Add 12 S.H.I.E.L.D. Officers to the Villain Deck. S.H.I.E.L.D. Officers in
+  // the Villain Deck are Villains." Converted at this one co-located site, as Killbots
+  // are (D-24324): typed 'villain' so the reveal, fight and escape paths route them
+  // natively, and tagged 'shield-officer' so the attack, the gain-as-a-Hero defeat and
+  // the escaped-Officer loss read the overlay. They join the deck BEFORE the sort and
+  // the single shuffle below, so no new random draw. 0 for every other scheme.
+  const officerCount = resolveBrainwashedOfficerCount(config.schemeId, config.officersCount);
+  for (let officerIndex = 0; officerIndex < officerCount; officerIndex++) {
+    const extId = brainwashedOfficerExtId(officerIndex);
+    deck.push(extId);
+    cardTypes[extId] = 'villain';
+    convertedOrigins[extId] = 'shield-officer';
   }
 
   // --- 5. Master Strikes (generic virtual instanced cards) ---

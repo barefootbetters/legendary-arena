@@ -57,6 +57,12 @@ interface ConnectionStoreState {
    */
   spectatorStaleResyncCount: number;
   /**
+   * How many times the transport came back after a drop: a connected frame
+   * following a disconnected one, once the client had connected before. Counted
+   * on every reconnect, with no cooldown, unlike `reconnectResyncCount`.
+   */
+  transportReconnectCount: number;
+  /**
    * How many times the tab-focus resync (`bgioClient.ts` `onVisibilityChange`
    * via `forceCooldownGatedResync`) has fired. WP-429 / D-24250.
    */
@@ -75,6 +81,7 @@ export const useConnectionStore = defineStore('connection', {
     hasEverConnected: false,
     lastFrameAtMs: null,
     reconnectResyncCount: 0,
+    transportReconnectCount: 0,
     moveAckResyncCount: 0,
     spectatorStaleResyncCount: 0,
     tabFocusResyncCount: 0,
@@ -97,6 +104,13 @@ export const useConnectionStore = defineStore('connection', {
       // two-argument call site in bgioClient.ts source-compatible.
       atMs: number = Date.now(),
     ): void {
+      // why: a server deploy drops every socket and the clients reconnect to the new
+      // build, so a reconnect is when the build provenance can go stale. Read the
+      // previous frame's status before overwriting it; the first connect is not a
+      // reconnect (hasEverConnected is still false then).
+      if (isConnected === true && this.isConnected === false && this.hasEverConnected === true) {
+        this.transportReconnectCount += 1;
+      }
       this.isConnected = isConnected;
       this.lastStateId = stateId;
       this.lastFrameAtMs = atMs;

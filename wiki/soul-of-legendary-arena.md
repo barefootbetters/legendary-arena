@@ -22,7 +22,7 @@ related:
   - awards-and-badges.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
+  - C:\dev\legendary-arena\wiki\soul-of-legendary-arena.md (this page — https://ewiki.legendary-arena.com/soul-of-legendary-arena/)
   - ../docs/01-VISION.md
   - ../docs/ai/DECISIONS.md
 last-reviewed: 2026-10-09

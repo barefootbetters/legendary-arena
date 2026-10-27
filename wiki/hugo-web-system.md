@@ -21,7 +21,7 @@ related:
   - brevo-email-pipeline.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-web-system.md (this page — https://ewiki.legendary-arena.com/hugo-web-system/)
+  - C:\dev\legendary-arena\wiki\hugo-web-system.md (this page — https://ewiki.legendary-arena.com/hugo-web-system/)
   - C:\www\legendary-arena-com\hugo.toml
   - C:\www\legendary-arena-com\layouts\baseof.html
   - C:\www\legendary-arena-com\layouts\index.html
@@ -51,9 +51,9 @@ last-reviewed: 2026-09-01
 
 | Repo | Base URL (local) | Site |
 |---|---|---|
-| Engine | `C:\pcloud\BB\DEV\legendary-arena\` | `ewiki.legendary-arena.com` |
+| Engine | `C:\dev\legendary-arena\` | `ewiki.legendary-arena.com` |
 | Marketing | `C:\www\legendary-arena-com\` | `www.legendary-arena.com` |
-| Research / Notes | `C:\pcloud\LA\ewiki\` | (not published) |
+| Research / Notes | `C:\pcloud\legendary-arena\ewiki\` | (not published) |
 
 ### Where files are drafted and where they get published
 
@@ -80,8 +80,8 @@ committing:
 | Edge redirects | Marketing | `C:\www\legendary-arena-com\static\_redirects` (does not exist yet — see [Edge configuration](#edge-configuration-_headers--_redirects)) |
 | Content pages | Marketing | `C:\www\legendary-arena-com\content\` |
 | Static images | Marketing | `C:\www\legendary-arena-com\static\images\` |
-| This wiki page | Engine | `C:\pcloud\BB\DEV\legendary-arena\wiki\hugo-web-system.md` |
-| Screenshots for this page | Engine | `C:\pcloud\BB\DEV\legendary-arena\ewiki\hugo-web-system\` |
+| This wiki page | Engine | `C:\dev\legendary-arena\wiki\hugo-web-system.md` |
+| Screenshots for this page | Engine | `C:\dev\legendary-arena\ewiki\hugo-web-system\` |
 
 **Published locations** — where files end up after `git push` and
 deploy:
@@ -949,7 +949,7 @@ header and footer partials:
 | Item | URL | Weight |
 |---|---|---|
 | About | `/about/` | 10 |
-| Blog | `/posts/` | 20 |
+| Blog | `/blog/` | 20 |
 | Tags | `/tags/` | 22 |
 | Shop | `/shop/` | 25 |
 | Brand | `/brand/` | 30 |
@@ -979,7 +979,7 @@ session) but never auth-*owning* (no login form / broker / session mutation).
 | Item | URL | Weight |
 |---|---|---|
 | About | `/about/` | 10 |
-| Blog | `/posts/` | 20 |
+| Blog | `/blog/` | 20 |
 | Shop | `/shop/` | 22 |
 | Brand | `/brand/` | 25 |
 | Play | `https://play.legendary-arena.com/` | 30 |
@@ -1008,7 +1008,7 @@ apply them.
 **Current reality:** content images (hero art, product shots, brand
 graphics) are hand-authored and dropped into
 `C:\www\legendary-arena-com\static\images\` — frequently already
-converted to `.webp` (e.g. `static/images/posts/week-01-deck-checklist/
+converted to `.webp` (e.g. `static/images/blog/week-01-deck-checklist/
 hero.webp`) or authored as `.svg`. Files in `static/` are served
 **byte-for-byte with no processing**.
 
@@ -1331,7 +1331,7 @@ regenerate the render with `mmdc`.*
 C:\www\legendary-arena-com\content\
   _index.md            -> home page (/)        (rendered by layouts/index.html)
   about\_index.md      -> /about/
-  posts\*.md           -> /posts/<slug>/       (blog)
+  blog\*.md            -> /blog/<slug>/        (blog)
   shop\                -> /shop/               (Snipcart products)
   brand\_index.md      -> /brand/              (raw-HTML brand guide, WP-014)
   tournaments\         -> /tournaments/        (events; featured 3 on home)

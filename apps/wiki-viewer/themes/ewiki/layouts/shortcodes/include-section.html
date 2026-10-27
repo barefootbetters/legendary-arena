@@ -1,0 +1,125 @@
+{{- /*
+  Include-section shortcode (D-24709): write a section once, show it on other
+  pages.
+
+  Usage:
+    {{< include-section page="disaster-recovery" section="the-backup-layers" >}}
+
+  why: a fact lives on exactly one owner page; a page that wants it renders
+  the owner's section at build time instead of copying the prose, so the two
+  can't drift apart. `section` is the owner heading's anchor as the page
+  publishes it (GitHub-style, the id a `page.md#anchor` link uses, or an
+  explicit {#custom-id}). The section runs from that heading to the next
+  heading of the same or higher level; the heading itself is left out, so the
+  including page writes its own.
+
+  why: `page=` resolves in a fixed order, so every existing call site keeps
+  working: first relative to the including page's folder (E's same-folder
+  slug, H's `../hubs/x.md` path), then from the content root (C's repo-root
+  path). `.md` is optional. A candidate that leaves the content root (`..`) is
+  skipped. The algorithm is otherwise the same in E, H and C.
+
+  why: every failure is a build error (errorf), never an empty block, so a
+  renamed or removed owner heading fails the PR that made it. Headings inside
+  code fences don't count: a `# comment` in a bash fence is not a heading.
+
+  why: the text renders in the owner page's context, so its relative links
+  and images resolve from the owner's folder, and its in-page `(#anchor)`
+  links are pointed at the owner file first. The block carries
+  data-pagefind-ignore, so search indexes the text once, on the owner, where
+  it is edited. Output is static, so two builds match.
+*/ -}}
+{{- $ewiki := site.Params.ewiki | default dict -}}
+{{- $pageArg := .Get "page" -}}
+{{- $sectionId := .Get "section" -}}
+{{- $hubPath := .Page.File.Path -}}
+{{- if or (not $pageArg) (not $sectionId) -}}
+  {{- errorf "include-section on %s needs both page= and section=, for example page=\"disaster-recovery\" section=\"the-backup-layers\"." $hubPath -}}
+{{- end -}}
+{{- $dir := strings.TrimPrefix "/" (replace .Page.File.Dir "\\" "/") -}}
+{{- $sourcePage := false -}}
+{{- range $candidate := slice (path.Join $dir $pageArg) (path.Clean (strings.TrimPrefix "/" $pageArg)) -}}
+  {{- if and (not $sourcePage) (not (or (eq $candidate "..") (hasPrefix $candidate "../"))) -}}
+    {{- with site.GetPage (printf "/%s" $candidate) -}}{{- $sourcePage = . -}}{{- end -}}
+    {{- if and (not $sourcePage) (not (strings.HasSuffix $candidate ".md")) -}}
+      {{- with site.GetPage (printf "/%s.md" $candidate) -}}{{- $sourcePage = . -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if not $sourcePage -}}
+  {{- errorf "include-section on %s names page=%q, which matches no page relative to this page or from the content root. Write page= as the owner's path, the way a link to it is written (.md is optional)." $hubPath $pageArg -}}
+{{- else -}}
+{{- $headingPattern := `^(#{1,6})[ \t]+(.+?)[ \t#]*$` -}}
+{{- $customIdPattern := `[ \t]*\{#([^}]+)\}$` -}}
+{{- $isInFence := false -}}
+{{- $state := "searching" -}}
+{{- $targetLevel := 0 -}}
+{{- $headingText := "" -}}
+{{- $matchCount := 0 -}}
+{{- $captured := "" -}}
+{{- range $rawLine := split $sourcePage.RawContent "\n" -}}
+  {{- $line := strings.TrimRight "\r" $rawLine -}}
+  {{- $isFenceLine := gt (len (findRE "^ {0,3}(```|~~~)" $line 1)) 0 -}}
+  {{- $isHeading := false -}}
+  {{- $level := 0 -}}
+  {{- $text := "" -}}
+  {{- $id := "" -}}
+  {{- if and (not $isInFence) (not $isFenceLine) -}}
+    {{- with findRESubmatch $headingPattern $line 1 -}}
+      {{- $isHeading = true -}}
+      {{- $level = len (index (index . 0) 1) -}}
+      {{- $text = index (index . 0) 2 -}}
+      {{- with findRESubmatch $customIdPattern $text 1 -}}
+        {{- $id = index (index . 0) 1 -}}
+        {{- $text = replaceRE $customIdPattern "" $text -}}
+      {{- else -}}
+        {{- $id = anchorize $text -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if and $isHeading (eq $id $sectionId) -}}
+    {{- $matchCount = add $matchCount 1 -}}
+  {{- end -}}
+  {{- if eq $state "capturing" -}}
+    {{- if and $isHeading (le $level $targetLevel) -}}
+      {{- $state = "done" -}}
+    {{- else -}}
+      {{- $captured = printf "%s%s\n" $captured $line -}}
+    {{- end -}}
+  {{- else if and (eq $state "searching") $isHeading (eq $id $sectionId) -}}
+    {{- $state = "capturing" -}}
+    {{- $targetLevel = $level -}}
+    {{- $headingText = $text -}}
+  {{- end -}}
+  {{- if $isFenceLine -}}
+    {{- $isInFence = not $isInFence -}}
+  {{- end -}}
+{{- end -}}
+{{- $ownerPath := $sourcePage.File.Path -}}
+{{- if eq $matchCount 0 -}}
+  {{- errorf "include-section on %s: %s has no heading with anchor %q. The owner heading was probably renamed or removed; point section= at its current anchor." $hubPath $ownerPath $sectionId -}}
+{{- else if gt $matchCount 1 -}}
+  {{- errorf "include-section on %s: %s has %d headings with anchor %q, so the section is ambiguous. Give the intended heading a unique {#custom-id} and point section= at it." $hubPath $ownerPath $matchCount $sectionId -}}
+{{- else -}}
+{{- $body := trim $captured "\n" -}}
+{{- if not $body -}}
+  {{- errorf "include-section on %s: section %q of %s is empty (the next heading follows it directly). Point section= at a heading with text under it." $hubPath $sectionId $ownerPath -}}
+{{- else if findRE `\{\{[<%][ \t]*include-section` $body 1 -}}
+  {{- errorf "include-section on %s: section %q of %s has an include-section of its own, and includes don't nest. Include that inner section directly from this page instead." $hubPath $sectionId $ownerPath -}}
+{{- else -}}
+{{- $body = replaceRE `\]\(#` (printf "](%s#" (path.Base (replace $ownerPath "\\" "/"))) $body -}}
+{{- $repoPath := partial "ewiki/repo-path.html" $sourcePage -}}
+{{- $github := printf "https://github.com/%s/blob/%s" (index $ewiki "repo") (index $ewiki "branch" | default "main") -}}
+{{- /*
+  why: one standard caption on every included block, so a reader always
+  knows the text is linked in, where it comes from, and where to edit it: a
+  "Linked section" label, the owner page › section link, and the owner's
+  source file on GitHub.
+*/ -}}
+<div class="included-section" data-pagefind-ignore>
+  <p class="included-from"><span class="included-label">Linked section</span> This section is linked from another document: <a href="{{ printf "%s#%s" $sourcePage.RelPermalink $sectionId | safeURL }}">{{ partial "ewiki/short-title.html" $sourcePage }} › {{ $sourcePage.RenderString $headingText }}</a> (<a href="{{ printf "%s/%s" $github $repoPath | safeURL }}"><code>{{ $repoPath }}</code></a>). Edit it there; this page picks up the change on the next build.</p>
+  {{ $sourcePage.RenderString (dict "display" "block") $body }}
+</div>
+{{- end -}}
+{{- end -}}
+{{- end -}}

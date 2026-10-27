@@ -221,7 +221,7 @@ Audio spans **two surfaces** (see the wiki [Workspace Map] and
   templates, this guide, per-hero research `.md`, `HERO-INDEX.json`, and
   each hero's committed `crop.ps1` provenance copy are version-controlled
   text. **No audio lives here.**
-- **Working audio — pCloud (`C:\pcloud\LA\audio\`).** The WAV masters,
+- **Working audio — pCloud (`C:\pcloud\legendary-arena\audio\`).** The WAV masters,
   their local MP3 derivatives, and cover images live here, in per-theme /
   per-hero subfolders that mirror the tooling layout by name. These are
   working binaries: never committed, never in the repo tree. Only the
@@ -241,7 +241,7 @@ content/media/  (git — tooling + research, no audio)
         ├── black-widow.md
         └── crop.ps1                          ← committed provenance (the actual crop points)
 
-C:\pcloud\LA\audio\  (pCloud — working binaries, gitignored/never in repo)
+C:\pcloud\legendary-arena\audio\  (pCloud — working binaries, gitignored/never in repo)
 ├── age-of-apocalypse/
 │   ├── age-of-apocalypse_MASTER.wav          ← Suno master (never uploaded)
 │   ├── age-of-apocalypse_MT01_preview-intro.{wav,mp3}   … (8 derivatives)
@@ -255,8 +255,8 @@ All three crop scripts ship as matched **bash (`.sh`) and PowerShell (`.ps1`) pa
 
 **Crop scripts:**
 
-- `crop-theme` — scenario 8-asset batch template. Run against a theme's pCloud folder `C:\pcloud\LA\audio\<scenario>\` (or copy the script in as `crop.ps1` first to record provenance), edit the crops array with listened timestamps, run.
-- `crop-hero` — hero 4-asset batch template (MT01–MT04 only; event stings `ES01`–`ES04` are match-level, not character-level). Copy into `C:\pcloud\LA\audio\heroes\<hero-slug>\` as `crop.sh` / `crop.ps1`, edit timestamps, run; commit the filled-in copy back to `content/media/heroes/<hero-slug>/` as provenance.
+- `crop-theme` — scenario 8-asset batch template. Run against a theme's pCloud folder `C:\pcloud\legendary-arena\audio\<scenario>\` (or copy the script in as `crop.ps1` first to record provenance), edit the crops array with listened timestamps, run.
+- `crop-hero` — hero 4-asset batch template (MT01–MT04 only; event stings `ES01`–`ES04` are match-level, not character-level). Copy into `C:\pcloud\legendary-arena\audio\heroes\<hero-slug>\` as `crop.sh` / `crop.ps1`, edit timestamps, run; commit the filled-in copy back to `content/media/heroes/<hero-slug>/` as provenance.
 - `crop-one` — hero single-crop interactive sibling. Useful for timestamp discovery and MT03 ambient-loop experiments via the loop flag. Invoked from a hero folder with `<asset> <start> <end>` and an optional loop count.
 
 **Invocation (`cd` into the pCloud audio folder first, then):**

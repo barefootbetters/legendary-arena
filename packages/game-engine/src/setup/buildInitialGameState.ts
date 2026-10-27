@@ -37,6 +37,14 @@ import {
   SIDEKICK_EXT_ID,
 } from './pilesInit.js';
 import { resolveEffectiveWoundsCount, resolveEffectiveHeroDeckIds } from './schemeSetupSizing.js';
+import {
+  resolveEffectiveVillainGroupIds,
+  splitMonsterPitFromVillainDeck,
+} from '../rules/clashMonsterPit.logic.js';
+import {
+  applyBrainwashedOfficerDisplay,
+  countBrainwashedOfficers,
+} from '../rules/brainwashTheMilitary.logic.js';
 import { buildDefaultHookDefinitions } from '../rules/ruleRuntime.impl.js';
 import {
   resolveSchemeLossPileSetupSize,
@@ -59,8 +67,13 @@ import {
   isHeroAbilityRegistryReader,
 } from './heroAbility.setup.js';
 import { buildVillainAbilityHooks } from './villainAbility.setup.js';
-import { buildVillainDefeatRequirements } from './villainDefeatRequirement.setup.js';
+import {
+  buildVillainDefeatRequirements,
+  buildVillainFightDiscardCosts,
+  buildVillainVariableAttack,
+} from './villainDefeatRequirement.setup.js';
 import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
+import { buildCardAbomination } from './buildCardAbomination.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
 import { buildCardTraits } from './buildCardTraits.js';
 import { buildCardVictoryPoints } from './buildCardVictoryPoints.js';
@@ -356,7 +369,27 @@ export function buildInitialGameState(
   // that only implement CardRegistryReader (listCards with {key} only) will
   // lack listSets/getSet — buildVillainDeck handles this gracefully by
   // producing an empty deck, which the reveal pipeline already supports.
-  const villainDeckResult = buildVillainDeck(config, registry, context);
+  // why: D-24736 — Clash of the Monsters Unleashed shuffles the 8 Monsters Unleashed
+  // Villains into a face-down Monster Pit. villainBuildConfig adds that group so every
+  // per-card villain builder below (deck, cardStats, keywords, traits, defeat
+  // requirements, Blood Frenzy, VP, display data, ability hooks) registers the Monsters;
+  // splitMonsterPitFromVillainDeck then lifts them out of the shuffled deck. For every
+  // other scheme villainBuildConfig carries the same ids, so their setup is unchanged.
+  // G.selection / matchConfiguration keep the loadout's own ids.
+  const villainBuildConfig: MatchConfiguration = {
+    ...config,
+    villainGroupIds: resolveEffectiveVillainGroupIds(config.schemeId, config.villainGroupIds),
+  };
+  const villainDeckResult = buildVillainDeck(villainBuildConfig, registry, context);
+
+  // why: WP-823 / D-24756 — Brainwash the Military's 12 Officers come from the
+  // S.H.I.E.L.D. Officer Stack, so the Stack starts that many cards smaller. The
+  // tokens are identical and the Stack's shuffle already ran, so this slice draws
+  // nothing at random. 0 (no write) for every other scheme.
+  const brainwashedOfficerCount = countBrainwashedOfficers(villainDeckResult.convertedOrigins);
+  if (brainwashedOfficerCount > 0) {
+    piles.officers = piles.officers.slice(brainwashedOfficerCount);
+  }
 
   // why: WP-513 — the Killbots "twists next to this Scheme" counter (D-24325) is
   // seeded at 3 (the card's "3 additional Twists next to this Scheme" placed at
@@ -375,16 +408,16 @@ export function buildInitialGameState(
   // why: cardStats extracted to local variable so buildMastermindState
   // can add the mastermind base card entry to it. buildMastermindState
   // MUST execute after buildCardStats (ordering invariant — EC-019).
-  const cardStats = buildCardStats(registry as unknown, config);
+  const cardStats = buildCardStats(registry as unknown, villainBuildConfig);
 
   // why: card keywords resolved at setup from registry so moves never query
   // registry at runtime — same pattern as G.cardStats (WP-018) and
   // G.villainDeckCardTypes (WP-014B).
-  const cardKeywords = buildCardKeywords(registry as unknown, config);
+  const cardKeywords = buildCardKeywords(registry as unknown, villainBuildConfig);
 
   // why: WP-179 — categorical traits (heroClass, team) resolved at setup from
   // registry. Same sibling-snapshot pattern as cardStats/cardKeywords/cardDisplayData.
-  const cardTraits = buildCardTraits(registry as unknown, config);
+  const cardTraits = buildCardTraits(registry as unknown, villainBuildConfig);
 
   // why: D-24074 / WP-290 — hero ability hooks are hoisted to a local so the
   // Size-Changing granted-class snapshot can be derived from them (the parser parked the
@@ -402,13 +435,29 @@ export function buildInitialGameState(
   // test mocks → empty record (conditional-spread below keeps the G shape stable).
   const villainDefeatRequirements = buildVillainDefeatRequirements(
     registry as unknown,
-    config,
+    villainBuildConfig,
+  );
+
+  // why: WP-817 / D-24750 — per-villain fight discard costs (Primus), the sibling
+  // table of villainDefeatRequirements, built from the same registry read. Narrow
+  // test mocks → empty record (omitted below).
+  const villainFightDiscardCosts = buildVillainFightDiscardCosts(
+    registry as unknown,
+    villainBuildConfig,
+  );
+
+  // why: WP-841 / D-24774 — per-villain variable-Attack passives (Baron Strucker,
+  // Paibok, Super-Skrull, Hydro-Man), built from the same registry read and read only
+  // by resolveFightCost. Narrow test mocks → empty record (omitted below).
+  const villainVariableAttack = buildVillainVariableAttack(
+    registry as unknown,
+    villainBuildConfig,
   );
 
   // why: WP-760 / D-24589 — Blood Frenzy villain instances (Metarchus, Salomé),
   // scanned once at setup from the selected villain groups and read only by
   // resolveFightCost. Narrow test mocks → empty record (omitted below).
-  const villainBloodFrenzy = buildVillainBloodFrenzy(registry as unknown, config);
+  const villainBloodFrenzy = buildVillainBloodFrenzy(registry as unknown, villainBuildConfig);
 
   // why: scheme setup runs after base construction, before first turn.
   // Instructions configure the board (counters, keywords, city state).
@@ -428,6 +477,18 @@ export function buildInitialGameState(
     cardStats,
   );
 
+  // why: WP-815 / D-24747 — Abomination kinds for the selected villain copies and the
+  // mastermind base face, read only by the two fight-cost resolvers. Placed after
+  // buildMastermindState because it keys the mastermind by the baseCardId that call
+  // just computed; villainBuildConfig carries the scheme-effective villain groups (the
+  // Blood Frenzy precedent). Narrow test mocks → empty record (omitted below).
+  const cardAbomination = buildCardAbomination(
+    registry as unknown,
+    villainBuildConfig,
+    config.mastermindId,
+    mastermindState.baseCardId,
+  );
+
   // why: D-24157 — printed victory points for VP-bearing cards (villains,
   // henchmen, the mastermind) resolved at setup so computeFinalScores awards
   // printed VP without runtime registry access — sibling snapshot to cardStats.
@@ -435,7 +496,7 @@ export function buildInitialGameState(
   // baseCardId that call just computed.
   const cardVictoryPoints = buildCardVictoryPoints(
     registry as unknown,
-    config,
+    villainBuildConfig,
     mastermindState.baseCardId,
   );
 
@@ -452,11 +513,14 @@ export function buildInitialGameState(
   // substitute `config.bystandersCount` (that sizes the rescue-pile
   // supply in `G.sharedPiles.bystanders`, a different domain — see the
   // `numPlayers` @param JSDoc in `buildCardDisplayData.ts`).
-  const cardDisplayData = buildCardDisplayData(registry as unknown, config, numPlayers);
+  const cardDisplayData = buildCardDisplayData(registry as unknown, villainBuildConfig, numPlayers);
   // why: D-24668 — Killbot-converted villain-deck Bystanders display as "Killbot", so the
   // log, City card and Victory Pile name them as the Villains they are. A no-op for every
   // scheme without Killbots.
   applyKillbotDisplayNames(cardDisplayData, villainDeckResult.convertedOrigins);
+  // why: WP-823 / D-24756 — each Brainwash the Military Officer displays as a
+  // S.H.I.E.L.D. Officer (name and art). A no-op for every scheme without Officers.
+  applyBrainwashedOfficerDisplay(cardDisplayData, villainDeckResult.convertedOrigins);
 
   // why: WP-111 / EC-118 / PS-8 — setup-time diagnostic surface for missing
   // display entries. Preserves WP-028 D-2801 projection-purity contract:
@@ -597,6 +661,13 @@ export function buildInitialGameState(
     context,
   );
   const convertedVillainOrigins = skrullConversion.convertedOrigins;
+  // why: D-24736 — lift the Monster Pit out of the shuffled villain deck (Clash only;
+  // a passthrough with monsterPit undefined for every other scheme). Keeping the
+  // Monsters' relative deck order gives a shuffled Pit with no extra random draw.
+  const monsterPitSplit = splitMonsterPitFromVillainDeck(
+    config.schemeId,
+    skrullConversion.villainDeckState,
+  );
   const hasConvertedVillains = Object.keys(convertedVillainOrigins).length > 0;
   const filledHqResult = fillHqFromDeck(skrullConversion.heroReservoir, HQ_SLOT_COUNT);
 
@@ -626,7 +697,7 @@ export function buildInitialGameState(
   // from the villainDeckCardTypes key count, which a Secret Invasion twist mutates.
   const schemeLossVillainDeckSetupSize = resolveSchemeLossVillainDeckSetupSize(
     config.schemeId,
-    skrullConversion.villainDeckState.deck.length,
+    monsterPitSplit.villainDeckState.deck.length,
   );
 
   // why: build the base state first, then apply scheme setup instructions.
@@ -688,8 +759,11 @@ export function buildInitialGameState(
     // Secret Invasion the deck + card-type map are the skrull-augmented versions
     // (12 Heroes injected as 'villain'-typed Skrulls); passthrough for every other
     // scheme (byte-identical to villainDeckResult.state / .cardTypes).
-    villainDeck: skrullConversion.villainDeckState,
+    villainDeck: monsterPitSplit.villainDeckState,
     villainDeckCardTypes: skrullConversion.villainDeckCardTypes,
+    // why: D-24736 — omit-when-absent: only a Clash game carries a Monster Pit, so
+    // every other game's state hash is unchanged (the convertedVillainOrigins pattern).
+    ...(monsterPitSplit.monsterPit !== undefined ? { monsterPit: monsterPitSplit.monsterPit } : {}),
     // why: WP-513 / D-24324 + WP-514 / D-24326 — lazy: include the converted-villain
     // overlay ONLY when a scheme converted cards (Killbots or Secret Invasion), so
     // non-converting games omit the key entirely and their state hash is unchanged (RS-1).
@@ -776,7 +850,7 @@ export function buildInitialGameState(
     // why: villain/henchman ability hooks built from registry at setup — same
     // pattern as heroAbilityHooks. Immutable during gameplay; executed at the
     // Fight/Ambush fire sites (WP-185). Narrow test mocks → empty table.
-    villainAbilityHooks: buildVillainAbilityHooks(registry, config),
+    villainAbilityHooks: buildVillainAbilityHooks(registry, villainBuildConfig),
     // why: WP-200 — append-only structured event log initialised empty.
     // Populated at runtime by the four fire-site emissions
     // (fightVillain.ts / villainDeck.reveal.ts ambush branch /
@@ -834,10 +908,22 @@ export function buildInitialGameState(
     // gate treats a missing entry as "no requirement"), so matches without Blob /
     // Venom / Zombie Venom keep a byte-identical finalStateHash.
     ...(Object.keys(villainDefeatRequirements).length > 0 ? { villainDefeatRequirements } : {}),
+    // why: WP-817 / D-24750 — same hash-stability discipline: villainFightDiscardCosts is
+    // on G ONLY when a selected villain carries a [discard-to-fight:...] marker, so every
+    // match without Primus keeps a byte-identical finalStateHash.
+    ...(Object.keys(villainFightDiscardCosts).length > 0 ? { villainFightDiscardCosts } : {}),
+    // why: WP-841 / D-24774 — same hash-stability discipline: villainVariableAttack is
+    // on G ONLY when a selected villain carries a [variable-attack:...] marker, so every
+    // match without those four co2e villains keeps a byte-identical finalStateHash.
+    ...(Object.keys(villainVariableAttack).length > 0 ? { villainVariableAttack } : {}),
     // why: WP-760 / D-24589 — same hash-stability discipline: villainBloodFrenzy is on G
     // ONLY when a selected villain group prints Blood Frenzy, so every other match keeps
     // a byte-identical finalStateHash.
     ...(Object.keys(villainBloodFrenzy).length > 0 ? { villainBloodFrenzy } : {}),
+    // why: WP-815 / D-24747 — same hash-stability discipline (the villainBloodFrenzy
+    // precedent): cardAbomination is on G ONLY when a selected villain or the mastermind
+    // prints Abomination, so every other match keeps a byte-identical finalStateHash.
+    ...(Object.keys(cardAbomination).length > 0 ? { cardAbomination } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);

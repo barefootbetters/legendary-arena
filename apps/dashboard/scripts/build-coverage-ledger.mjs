@@ -9,6 +9,8 @@
  *   - docs/ai/coverage/hero-mechanic-ledger.json     → src/data/coverage-ledger.json
  *   - docs/ai/coverage/runtime-observed-hollows.json → src/data/runtime-observed-hollows.json  (WP-259)
  *   - docs/ai/coverage/live-verify.json              → src/data/live-verify.json  (hand-curated D-24026 record)
+ * plus a slim `{ abbr, name }` projection of data/metadata/sets.json →
+ * src/data/coverage-set-names.json, so the Set selector reads "Core Set", not `core`.
  *
  * On any read/parse failure for an artifact this writes that artifact's empty
  * stub (with an `error` field) and continues — aborting the build is strictly
@@ -31,6 +33,8 @@ const RUNTIME_SOURCE_PATH = join(REPO_ROOT, 'docs/ai/coverage/runtime-observed-h
 const RUNTIME_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/runtime-observed-hollows.json');
 const LIVE_VERIFY_SOURCE_PATH = join(REPO_ROOT, 'docs/ai/coverage/live-verify.json');
 const LIVE_VERIFY_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/live-verify.json');
+const SETS_SOURCE_PATH = join(REPO_ROOT, 'data/metadata/sets.json');
+const SETS_OUTPUT_PATH = join(DASHBOARD_DIR, 'src/data/coverage-set-names.json');
 
 const EMPTY_LEDGER_STUB = {
   schemaVersion: 1,
@@ -97,6 +101,31 @@ async function copyArtifact(sourcePath, outputPath, emptyStub) {
   }
 }
 
+/**
+ * Writes the slim set-name table the Coverage page's Set selector reads — one
+ * `{ abbr, name }` per registered set, in `sets.json` (release) order. On any
+ * failure writes an empty table so the selector falls back to raw abbrs.
+ */
+async function writeSetNames() {
+  let sets = [];
+  try {
+    const parsed = JSON.parse(await readFile(SETS_SOURCE_PATH, 'utf-8'));
+    for (const set of parsed) {
+      sets.push({ abbr: set.abbr, name: set.name });
+    }
+  } catch (caught) {
+    const detail = caught instanceof Error ? caught.message : 'unknown read failure';
+    process.stderr.write(
+      `coverage set-name warning: could not read/parse ${SETS_SOURCE_PATH} (detail: ${detail}); ` +
+        'the Set selector will show set abbreviations instead of names.\n',
+    );
+    sets = [];
+  }
+  await mkdir(dirname(SETS_OUTPUT_PATH), { recursive: true });
+  await writeFile(SETS_OUTPUT_PATH, `${JSON.stringify({ sets }, null, 2)}\n`, 'utf-8');
+}
+
 await copyArtifact(LEDGER_SOURCE_PATH, LEDGER_OUTPUT_PATH, EMPTY_LEDGER_STUB);
+await writeSetNames();
 await copyArtifact(RUNTIME_SOURCE_PATH, RUNTIME_OUTPUT_PATH, EMPTY_RUNTIME_STUB);
 await copyArtifact(LIVE_VERIFY_SOURCE_PATH, LIVE_VERIFY_OUTPUT_PATH, EMPTY_LIVE_VERIFY_STUB);

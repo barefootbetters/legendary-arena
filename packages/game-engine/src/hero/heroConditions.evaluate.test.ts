@@ -1117,10 +1117,10 @@ describe('describeFailedCondition (WP-566 / D-24375)', () => {
   it('AC-3: the two the old message got RIGHT stay right', () => {
     const G = makeTestState();
     const classText = describeFailedCondition(G, '0', { type: 'heroClassMatch', value: 'instinct' });
-    assert.match(classText, /another instinct Hero/);
+    assert.match(classText, /another Instinct Hero/);
 
     const teamText = describeFailedCondition(G, '0', { type: 'requiresTeam', value: 'x-men' });
-    assert.match(teamText, /another x-men Hero/);
+    assert.match(teamText, /another X-Men Hero/);
   });
 
   it('WP-729 Part B: heroClassInDiscardPile message is article-aware (an instinct / a strength)', () => {
@@ -1955,5 +1955,75 @@ describe('cardsDiscardedThisTurnAtLeast (WP-777 / D-24616)', () => {
     const noHooks = makeTestState();
     delete (noHooks as { heroAbilityHooks?: unknown }).heroAbilityHooks;
     assert.equal(matchReadsConditionType(noHooks, CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE), false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// requiredMatches on heroClassMatch / requiresTeam (WP-741 / D-24563)
+// ---------------------------------------------------------------------------
+
+describe('requiredMatches — repeated prefix icons need that many OTHER cards (WP-741 / D-24563)', () => {
+  type CardExtId = import('../state/zones.types.js').CardExtId;
+  const self = 'gated#0' as unknown as CardExtId;
+  const traits = {
+    'gated#0': { heroClass: 'ranged', team: 'x-men' },
+    'ranged-a#0': { heroClass: 'ranged', team: 'avengers' },
+    'ranged-b#0': { heroClass: 'ranged', team: 'avengers' },
+    'shield-hero#0': { heroClass: 'tech', team: 'shield' },
+  };
+
+  it('heroClassMatch with requiredMatches 2 needs two other matching cards', () => {
+    const condition = { type: 'heroClassMatch', value: 'ranged', requiredMatches: 2 };
+    const one = makeTestState({ inPlay: ['ranged-a#0', 'gated#0'], cardTraits: traits });
+    assert.equal(evaluateCondition(one, '0', condition, self), false);
+    const two = makeTestState({ inPlay: ['ranged-a#0', 'ranged-b#0', 'gated#0'], cardTraits: traits });
+    assert.equal(evaluateCondition(two, '0', condition, self), true);
+  });
+
+  it('requiresTeam with requiredMatches 3 counts the teamless basic S.H.I.E.L.D. tokens (D-24391)', () => {
+    const condition = { type: 'requiresTeam', value: 'shield', requiredMatches: 3 };
+    const two = makeTestState({ inPlay: ['starting-shield-agent', 'shield-hero#0', 'gated#0'], cardTraits: traits });
+    assert.equal(evaluateCondition(two, '0', condition, self), false);
+    const three = makeTestState({
+      inPlay: ['starting-shield-agent', 'starting-shield-trooper', 'shield-hero#0', 'gated#0'],
+      cardTraits: traits,
+    });
+    assert.equal(evaluateCondition(three, '0', condition, self), true);
+  });
+
+  it('absent, 1, 0 and non-integer requiredMatches all behave like one', () => {
+    const gameState = makeTestState({ inPlay: ['ranged-a#0', 'gated#0'], cardTraits: traits });
+    for (const requiredMatches of [undefined, 1, 0, 2.5]) {
+      const condition = requiredMatches === undefined
+        ? { type: 'heroClassMatch', value: 'ranged' }
+        : { type: 'heroClassMatch', value: 'ranged', requiredMatches };
+      assert.equal(evaluateCondition(gameState, '0', condition, self), true, `requiredMatches ${String(requiredMatches)}`);
+    }
+  });
+
+  it('requiredMatches on an unrelated condition type is ignored', () => {
+    const gameState = makeTestState({ turnEconomyRecruit: 8 });
+    const condition = { type: 'recruitMadeThisTurnAtLeast', value: '8', requiredMatches: 5 };
+    assert.equal(evaluateCondition(gameState, '0', condition), true);
+  });
+
+  it('describeFailedCondition names the count above one and keeps the single-icon wording', () => {
+    const gameState = makeTestState();
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: 'heroClassMatch', value: 'ranged', requiredMatches: 2 }),
+      'it needs 2 other Ranged Heroes played this turn',
+    );
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: 'requiresTeam', value: 'shield', requiredMatches: 4 }),
+      'it needs 4 other S.H.I.E.L.D. Heroes played this turn',
+    );
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: 'heroClassMatch', value: 'ranged' }),
+      'it needs another Ranged Hero played this turn',
+    );
+    assert.equal(
+      describeFailedCondition(gameState, '0', { type: 'requiresTeam', value: 'shield', requiredMatches: 1 }),
+      'it needs another S.H.I.E.L.D. Hero played this turn',
+    );
   });
 });

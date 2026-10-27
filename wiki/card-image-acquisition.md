@@ -12,7 +12,7 @@ related:
   - card-type-taxonomy.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\card-image-acquisition.md (this page — https://ewiki.legendary-arena.com/card-image-acquisition/)
+  - C:\dev\legendary-arena\wiki\card-image-acquisition.md (this page — https://ewiki.legendary-arena.com/card-image-acquisition/)
   - ../scripts/card-image-downloaders/download-legendarycardgame-co2e.ps1
   - ../scripts/card-image-downloaders/README.md
   - ../scripts/card-image-converters/Convert-Co2e-JpgToWebp.ps1
@@ -45,9 +45,10 @@ original-jpeg\<set>\   --convert-->   original\<set>\   --rename-->   renamed\<s
 ```
 
 > **Where the runnable scripts live.** The canonical, runnable copies
-> live in the sibling **staging repo**, not this repo:
-> `barefootbetters-legendary-setup\card-images-staging\`, alongside their
-> per-set image directories. This repo keeps **version-controlled
+> live in the **staging folder** on pCloud (not a git repo), not this repo:
+> `C:\pcloud\legendary-arena\barefootbetters-legendary-setup\card-images-staging\`,
+> alongside their per-set image directories. (It sat under
+> `C:\pcloud\BB\DEV\` until 2026-10-17.) This repo keeps **version-controlled
 > backups** under
 > [`scripts/card-image-downloaders/`](../scripts/card-image-downloaders/),
 > [`scripts/card-image-converters/`](../scripts/card-image-converters/),
@@ -102,12 +103,12 @@ acquisition step, not in the scraper.
 
 ### Where the output lands
 
-Scraped JPEGs stage under the sibling setup repo, and the WebP
+Scraped JPEGs stage under the staging folder, and the WebP
 conversion writes a parallel `original\<set>\` tree beside the raw
 `original-jpeg\<set>\` inputs:
 
 ```
-barefootbetters-legendary-setup\
+C:\pcloud\legendary-arena\barefootbetters-legendary-setup\
 └── card-images-staging\
     ├── Convert-<Set>-JpgToWebp.ps1                 (one per set)
     ├── rename-<set>-images.ps1                     (one per set)
@@ -329,13 +330,13 @@ slugs before upload. See Edge Cases.
 ## Data Files
 
 - `barefootbetters-legendary-setup\card-images-staging\original-jpeg\`
-  (sibling staging repo) — the scrapers and their per-set directories of
+  (pCloud staging folder, under `C:\pcloud\legendary-arena\`) — the scrapers and their per-set directories of
   raw source JPEGs. Not part of this repo.
 - `barefootbetters-legendary-setup\card-images-staging\original\`
-  (sibling staging repo) — the converters' per-set directories of
+  (pCloud staging folder, under `C:\pcloud\legendary-arena\`) — the converters' per-set directories of
   WebP output. Not part of this repo.
 - `barefootbetters-legendary-setup\card-images-staging\renamed\`
-  (sibling staging repo) — the renamers' per-set directories of
+  (pCloud staging folder, under `C:\pcloud\legendary-arena\`) — the renamers' per-set directories of
   R2-named, upload-ready WebP. Not part of this repo.
 
 ## Open Questions

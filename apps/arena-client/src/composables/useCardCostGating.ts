@@ -147,10 +147,49 @@ export function canFightWithExcessiveViolence(
   return attackForTarget(economy, target) >= cost + 1;
 }
 
+// why: mirrors the engine constant of the same name (WP-819,
+// `economy/rescueOnFight.logic.ts`); the client doesn't import engine internals.
+export const RESCUE_ON_FIGHT_RECRUIT_COST = 2;
+
+/**
+ * Decide whether the active player can fight a villain **and pay 2 Recruit to
+ * rescue a Bystander** (Baron Zemo, WP-819 / D-24753): the engine's cue is set
+ * (`economy.rescueOnFightAvailable`) AND both the fight and the 2 Recruit are
+ * payable. Takes the same projected fight cost `canFight` takes (WP-750 /
+ * D-24574). Returns a plain boolean (an enable check for a secondary
+ * affordance, like `canFightWithExcessiveViolence`).
+ *
+ * // why: WP-820 — the omit-when-absent cue is treated as false, and a
+ * non-fightable (`cost === null`) target is never rescue-fightable.
+ */
+export function canFightAndRescue(
+  cost: number | null,
+  economy: UITurnEconomyState,
+  target?: AttackTargetName,
+): boolean {
+  if (economy.rescueOnFightAvailable !== true) {
+    return false;
+  }
+  if (cost === null) {
+    return false;
+  }
+  if (economy.recruitSpendableAsAttack === true) {
+    // why: D-24753 — under recruit-as-attack the fight itself can spend Recruit,
+    // so the fight plus the rescue needs `cost + 2` from the combined figure; the
+    // engine stays the authority and declines (fighting normally) if it can't pay.
+    return attackForTarget(economy, target) >= cost + RESCUE_ON_FIGHT_RECRUIT_COST;
+  }
+  return (
+    attackForTarget(economy, target) >= cost &&
+    economy.availableRecruit >= RESCUE_ON_FIGHT_RECRUIT_COST
+  );
+}
+
 /**
  * Composable wrapper exposing `canRecruit` / `canFight` /
- * `canFightWithExcessiveViolence` over the supplied economy. Returned as a
- * plain object so SFC templates can bind directly without further unwrapping.
+ * `canFightWithExcessiveViolence` / `canFightAndRescue` over the supplied
+ * economy. Returned as a plain object so SFC templates can bind directly
+ * without further unwrapping.
  */
 export function useCardCostGating(
   economy: UITurnEconomyState,
@@ -158,11 +197,13 @@ export function useCardCostGating(
   canRecruit: (hero: UICardDisplay) => GatingResult;
   canFight: (cost: number | null, target?: AttackTargetName) => GatingResult;
   canFightWithExcessiveViolence: (cost: number | null, target?: AttackTargetName) => boolean;
+  canFightAndRescue: (cost: number | null, target?: AttackTargetName) => boolean;
 } {
   return {
     canRecruit: (hero) => canRecruit(hero, economy),
     canFight: (cost, target) => canFight(cost, economy, target),
     canFightWithExcessiveViolence: (cost, target) =>
       canFightWithExcessiveViolence(cost, economy, target),
+    canFightAndRescue: (cost, target) => canFightAndRescue(cost, economy, target),
   };
 }

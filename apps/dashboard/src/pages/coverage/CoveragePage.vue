@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useCoverageLedger, statusLabel } from '../../composables/useCoverageLedger.js';
+import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import {
+  useCoverageLedger,
+  statusLabel,
+  buildMechanicDictionary,
+  filterRowsBySet,
+  summarizeRows,
+  summaryExecutablePercent,
+} from '../../composables/useCoverageLedger.js';
 import { useInPlayCoverage } from '../../composables/useInPlayCoverage.js';
 import { useParFidelity } from '../../composables/useParFidelity.js';
 import { useLiveVerify, liveVerifyLabel, entryMechanic } from '../../composables/useLiveVerify.js';
@@ -15,14 +23,66 @@ import type {
 import type { ParFidelityRow } from '../../types/parFidelity.js';
 
 const {
-  summary,
   rows,
-  mechanics,
-  percentExecutable,
   error,
   runtimeObservedByMechanic,
   runtimeObservedSummary,
+  setBreakdown,
+  setDisplayName,
 } = useCoverageLedger();
+
+// Set scope: one of the registered card sets (e.g. `core`), or every set. Kept in
+// the `?set=` query so a set-scoped view is linkable (/coverage?set=core). The
+// headline, status chips, by-card and by-mechanic tables all read the scoped rows.
+const route = useRoute();
+const router = useRouter();
+
+const selectedSet = computed<string>({
+  get() {
+    const querySet = route.query.set;
+    if (typeof querySet !== 'string') {
+      return 'all';
+    }
+    const isKnownSet = setBreakdown.value.some((entry) => entry.abbr === querySet);
+    return isKnownSet ? querySet : 'all';
+  },
+  set(newSet: string) {
+    const query = { ...route.query };
+    if (newSet === 'all') {
+      delete query.set;
+    } else {
+      query.set = newSet;
+    }
+    router.replace({ query });
+  },
+});
+
+const isSetScoped = computed(() => selectedSet.value !== 'all');
+const scopedRows = computed(() => filterRowsBySet(rows.value, selectedSet.value));
+const summary = computed(() => summarizeRows(scopedRows.value));
+const percentExecutable = computed(() => summaryExecutablePercent(summary.value));
+const mechanics = computed(() => buildMechanicDictionary(scopedRows.value));
+// Executable + Subsystem: rows that work in a game, for the legend's Executable % note.
+const doneRows = computed(
+  () => summary.value.byStatus.executable + (summary.value.byStatus.subsystem ?? 0),
+);
+
+/**
+ * Row count behind a by-card status filter button, for the current set scope.
+ * why: the table opens on Unsupported, which is empty for a finished set (Core);
+ * the counts make "0 rows" read as "nothing left", not as a broken table.
+ */
+function statusFilterCount(filter: LedgerStatus | 'all'): number {
+  if (filter === 'all') {
+    return summary.value.totalRows;
+  }
+  return summary.value.byStatus[filter] ?? 0;
+}
+
+/** Clicking a By-set row scopes the page to it; clicking the scoped set clears it. */
+function toggleSet(abbr: string): void {
+  selectedSet.value = selectedSet.value === abbr ? 'all' : abbr;
+}
 
 // The second headline (WP-274 / D-24050): obs-weighted, ledger-gated in-play
 // hollow resolution — answers "how much of what actually breaks games in play
@@ -75,10 +135,23 @@ function dominantReason(entry: RuntimeObservedEntry): string {
 const statusFilter = ref<LedgerStatus | 'all'>('unsupported');
 const search = ref('');
 
+// why: the index opens on Unsupported, which is empty for a finished set (Core).
+// When the scoped set has no rows under the current filter, fall back to All
+// rather than greet the operator with "Showing 0 of 0".
+watch(
+  selectedSet,
+  () => {
+    if (statusFilterCount(statusFilter.value) === 0) {
+      statusFilter.value = 'all';
+    }
+  },
+  { immediate: true },
+);
+
 const filteredRows = computed(() => {
   const needle = search.value.trim().toLowerCase();
   const result = [];
-  for (const row of rows.value) {
+  for (const row of scopedRows.value) {
     if (statusFilter.value !== 'all' && row.status !== statusFilter.value) {
       continue;
     }
@@ -123,7 +196,20 @@ const LIVE_VERIFY_FILTERS: readonly (LiveVerifyState | 'all')[] = [
   'verified',
   'all',
 ];
-const liveVerifyFilter = ref<LiveVerifyState | 'all'>('pending');
+/** Entry count behind a live-verify filter button. */
+function liveVerifyFilterCount(filter: LiveVerifyState | 'all'): number {
+  if (filter === 'all') {
+    return liveVerifyEntries.value.length;
+  }
+  return liveVerifySummary.value[filter];
+}
+
+// why: the record opens on Not yet (the to-do view), which is empty once every
+// Core entry is verified; open on All then, rather than on a blank table. The
+// record is bundled at build time, so deciding once at setup is enough.
+const liveVerifyFilter = ref<LiveVerifyState | 'all'>(
+  liveVerifyFilterCount('pending') > 0 ? 'pending' : 'all',
+);
 
 const filteredLiveVerifyEntries = computed(() => {
   const result = [];
@@ -205,10 +291,27 @@ function winRateClass(row: ParFidelityRow): string {
 
     <p v-if="error" class="cov-error">Coverage ledger failed to load: {{ error }}</p>
 
+    <div class="set-bar">
+      <label class="filter-label" for="coverage-set">Set</label>
+      <select id="coverage-set" v-model="selectedSet" class="set-select">
+        <option value="all">All sets ({{ setBreakdown.length }})</option>
+        <option v-for="entry in setBreakdown" :key="entry.abbr" :value="entry.abbr">
+          {{ entry.name }} ({{ entry.abbr }})
+        </option>
+      </select>
+      <button v-if="isSetScoped" type="button" class="clear-set" @click="selectedSet = 'all'">
+        Show all sets
+      </button>
+    </div>
+
     <section class="summary">
       <div class="headline">
         <span class="headline-num">{{ percentExecutable }}%</span>
-        <span class="headline-label">hero mechanics executable</span>
+        <span class="headline-label"
+          >hero mechanics executable<template v-if="isSetScoped">
+            — {{ setDisplayName(selectedSet) }}</template
+          ></span
+        >
         <!-- why (WP-561 / D-24370): the two headlines are NOT comparable percentages of
              the same thing. This one is ROW-weighted (share of card x mechanic rows);
              its neighbour is OBSERVATION-weighted (share of in-play hollow observations).
@@ -225,6 +328,9 @@ function winRateClass(row: ParFidelityRow): string {
           >weighted by how often it bites in play — {{ resolvedObs }} /
           {{ totalObs }} observations</span
         >
+        <!-- why: the in-play sweep is keyed by mechanic, not by set, so this headline
+             cannot be scoped; say so rather than let it read as the set's number. -->
+        <span v-if="isSetScoped" class="headline-sub">all sets (not set-scoped)</span>
       </div>
       <div class="summary-chips">
         <div class="count-chip cov-executable">
@@ -254,8 +360,135 @@ function winRateClass(row: ParFidelityRow): string {
       </div>
     </section>
 
+    <details class="block legend" open>
+      <summary><h2>Legend — what the numbers and columns mean</h2></summary>
+
+      <h3>Executable %</h3>
+      <p class="legend-lead">
+        <strong>Executable rows ÷ all rows</strong>, for the selected set (or all sets). A
+        <em>row</em> is one hero card × one mechanic it prints: a hero whose cards draw and rescue
+        is two rows. Right now ({{ isSetScoped ? setDisplayName(selectedSet) : 'all sets' }}):
+        {{ summary.byStatus.executable }} Executable of {{ summary.totalRows }} rows =
+        {{ percentExecutable }}%.
+      </p>
+      <ul class="legend-notes">
+        <li>
+          Every status is in the denominator. Only <strong>Executable</strong> is in the numerator,
+          so <strong>Subsystem</strong> rows (implemented, just not by the hero-effect pipeline)
+          keep a finished set under 100%. Counting them, {{ doneRows }} of {{ summary.totalRows }}
+          rows here are done.
+        </li>
+        <li>
+          It counts rows, not how often a mechanic comes up in play. That is what
+          <strong>in-play hollows resolved</strong> measures: the share of times the simulation hit
+          a mechanic the engine couldn't run (a <em>hollow</em>), counting a mechanic as fixed only
+          when every card that uses it is Executable or Condition. It is not set-scoped.
+        </li>
+      </ul>
+
+      <h3>Statuses</h3>
+      <dl class="legend-grid">
+        <dt><span class="badge cov-executable">Executable</span></dt>
+        <dd>The engine runs this mechanic on this card today.</dd>
+        <dt><span class="badge cov-subsystem">Subsystem</span></dt>
+        <dd>
+          Implemented by a different engine system (a setup modifier, a choose-one), not the
+          hero-effect pipeline. Done.
+        </dd>
+        <dt><span class="badge cov-deferred">Deferred</span></dt>
+        <dd>The keyword is recognized, but its handler does not act yet.</dd>
+        <dt><span class="badge cov-condition">Condition</span></dt>
+        <dd>
+          A gate on when the card's other effects fire (Spectrum, Outwit…), not an effect itself.
+        </dd>
+        <dt><span class="badge cov-unsupported">Unsupported</span></dt>
+        <dd>No handler for this mechanic on this card. A code to-do.</dd>
+        <dt><span class="badge cov-unmarked">Unmarked</span></dt>
+        <dd>
+          The card has ability text but no mechanic tag in the card data. A data to-do; it has no
+          mechanic, so it never appears in the by-mechanic table.
+        </dd>
+      </dl>
+
+      <h3>Columns</h3>
+      <dl class="legend-grid">
+        <dt>Rows</dt>
+        <dd>Card × mechanic rows in the set; the status columns beside it add up to it.</dd>
+        <dt>Design</dt>
+        <dd>The printed card design(s) that carry the mechanic.</dd>
+        <dt>Verified</dt>
+        <dd>
+          Confirmed in a real match on play.legendary-arena.com (the Core playtest record below).
+          "—" means not tracked yet (only Core is seeded), not failed.
+        </dd>
+        <dt>WP · Decision</dt>
+        <dd>The work packet that shipped the mechanic, and its DECISIONS.md entry.</dd>
+        <dt>Handler</dt>
+        <dd>Where the code lives (file#key); the jump from a bug to the code.</dd>
+        <dt>Observed in play</dt>
+        <dd>
+          ⚡ = times this mechanic hit a hollow path in a fixed-seed simulation sweep, plus the most
+          common reason. All sets, regardless of the Set selector.
+        </dd>
+        <dt>Cards</dt>
+        <dd>Rows using the mechanic within the selected scope.</dd>
+      </dl>
+    </details>
+
     <section class="block">
-      <h2>By card — debugging index</h2>
+      <h2>By set</h2>
+      <p class="block-note">
+        Every card set with hero ledger rows, in release order. Click a set to scope the page to it;
+        click it again (or Show all sets) to clear.
+      </p>
+      <table class="cov-table set-table">
+        <thead>
+          <tr>
+            <th>Set</th>
+            <th class="num">Executable %</th>
+            <th class="num">Rows</th>
+            <th class="num">Executable</th>
+            <th class="num">Subsystem</th>
+            <th class="num">Deferred</th>
+            <th class="num">Condition</th>
+            <th class="num">Unsupported</th>
+            <th class="num">Unmarked</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="entry in setBreakdown"
+            :key="entry.abbr"
+            class="set-row"
+            :class="{ selected: selectedSet === entry.abbr }"
+            @click="toggleSet(entry.abbr)"
+          >
+            <td>
+              {{ entry.name }} <span class="mono dim">{{ entry.abbr }}</span>
+            </td>
+            <td class="num">
+              <span class="pct-bar" :style="{ '--pct': `${entry.percentExecutable}%` }"
+                >{{ entry.percentExecutable }}%</span
+              >
+            </td>
+            <td class="num">{{ entry.summary.totalRows }}</td>
+            <td class="num cov-executable">{{ entry.summary.byStatus.executable }}</td>
+            <td class="num cov-subsystem">{{ entry.summary.byStatus.subsystem ?? 0 }}</td>
+            <td class="num cov-deferred">{{ entry.summary.byStatus.deferred }}</td>
+            <td class="num cov-condition">{{ entry.summary.byStatus.condition }}</td>
+            <td class="num cov-unsupported">{{ entry.summary.byStatus.unsupported }}</td>
+            <td class="num cov-unmarked">{{ entry.summary.byStatus.unmarked }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="block">
+      <h2>
+        By card — debugging index<template v-if="isSetScoped">
+          · {{ setDisplayName(selectedSet) }}</template
+        >
+      </h2>
       <div class="controls">
         <div class="filter-buttons">
           <button
@@ -266,6 +499,7 @@ function winRateClass(row: ParFidelityRow): string {
             @click="statusFilter = filter"
           >
             {{ filter === 'all' ? 'All' : statusLabel(filter) }}
+            <span class="filter-count">{{ statusFilterCount(filter) }}</span>
           </button>
         </div>
         <input
@@ -366,6 +600,7 @@ function winRateClass(row: ParFidelityRow): string {
           @click="liveVerifyFilter = filter"
         >
           {{ filter === 'all' ? 'All' : liveVerifyLabel(filter) }}
+          <span class="filter-count">{{ liveVerifyFilterCount(filter) }}</span>
         </button>
       </div>
       <table class="cov-table">
@@ -409,9 +644,18 @@ function winRateClass(row: ParFidelityRow): string {
     </section>
 
     <section class="block">
-      <h2>By mechanic — the implementation worklist</h2>
+      <h2>
+        By mechanic — the implementation worklist<template v-if="isSetScoped">
+          · {{ setDisplayName(selectedSet) }}</template
+        >
+      </h2>
       <p class="block-note">
-        One row per mechanic (implementing one clears every card using it). Unsupported first.
+        One row per mechanic (implementing one clears every card using it). Done first, then the
+        to-do buckets. A mechanic whose cards differ in status shows each status with its card count
+        and sorts by the least-done one.
+        <template v-if="isSetScoped"
+          >The Cards column counts this set only; Observed in play is still all sets.</template
+        >
         <span class="runtime-note">
           The <strong>Observed in play</strong> column overlays <em>runtime-observed</em> hollows —
           mechanics actually hit during a fixed-seed deterministic sim sweep ({{
@@ -437,9 +681,23 @@ function winRateClass(row: ParFidelityRow): string {
           <tr v-for="entry in mechanics" :key="entry.mechanic">
             <td class="mono">{{ entry.mechanic }}</td>
             <td>
-              <span class="badge" :class="statusClass(entry.status)">{{
-                statusLabel(entry.status)
-              }}</span>
+              <span
+                v-if="entry.statusCounts.length <= 1"
+                class="badge"
+                :class="statusClass(entry.status)"
+                >{{ statusLabel(entry.status) }}</span
+              >
+              <!-- why: this mechanic's cards disagree (status is per card); show each
+                   status with its card count instead of letting one card speak for all. -->
+              <span v-else class="mixed-status" title="Cards using this mechanic differ in status">
+                <span
+                  v-for="statusCount in entry.statusCounts"
+                  :key="statusCount.status"
+                  class="badge"
+                  :class="statusClass(statusCount.status)"
+                  >{{ statusLabel(statusCount.status) }} {{ statusCount.count }}</span
+                >
+              </span>
             </td>
             <td>
               <span
@@ -816,6 +1074,129 @@ function winRateClass(row: ParFidelityRow): string {
   display: block;
   font-size: 0.72rem;
   font-style: italic;
+}
+
+/* Legend */
+.legend summary {
+  cursor: pointer;
+  list-style-position: outside;
+}
+
+.legend summary h2 {
+  display: inline;
+}
+
+.legend h3 {
+  margin: 0.9rem 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--p-text-color);
+}
+
+.legend-lead,
+.legend-notes,
+.legend-grid {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+}
+
+.legend-lead strong,
+.legend-notes strong {
+  color: var(--p-text-color);
+}
+
+.legend-notes {
+  margin-top: 0.35rem;
+  padding-left: 1.1rem;
+}
+
+.legend-notes li + li {
+  margin-top: 0.25rem;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 0.75rem;
+  align-items: baseline;
+}
+
+.legend-grid dt {
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.legend-grid dd {
+  margin: 0;
+}
+
+.mixed-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* Set scope bar + By-set table */
+.set-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--p-text-muted-color);
+}
+
+.set-select,
+.clear-set {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 4px;
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.filter-count {
+  margin-left: 0.25rem;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
+.clear-set {
+  background: transparent;
+  color: var(--p-text-muted-color);
+}
+
+.set-row {
+  cursor: pointer;
+}
+
+.set-row:hover {
+  background: color-mix(in srgb, var(--p-primary-color) 6%, transparent);
+}
+
+.set-row.selected {
+  background: color-mix(in srgb, var(--p-primary-color) 14%, transparent);
+}
+
+/* why: a background fill sized to the percentage gives the 41-row table a scannable
+   bar without a chart; the green matches the Executable status colour. */
+.pct-bar {
+  display: inline-block;
+  min-width: 4.5rem;
+  padding: 0 0.3rem;
+  text-align: right;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--p-green-500, #22c55e) 30%, transparent) var(--pct),
+    transparent var(--pct)
+  );
 }
 
 /* PAR Fidelity panel (WP-598) */

@@ -408,6 +408,35 @@ describe('lobbyApi (WP-090)', () => {
       },
     );
   });
+
+  // why: a deploy restart drops the join POST with no HTTP response, and the
+  // browser's bare "Failed to fetch" told a guest nothing (2026-10-15 report).
+  test('joinMatch and joinAsGuest turn a transport failure into a retry-guidance Error', async () => {
+    installFetchStub(() => {
+      throw new TypeError('Failed to fetch');
+    });
+
+    await assert.rejects(
+      () => joinMatch('match-abc', '1', 'Guest', 'test-token'),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /Could not reach the game server/);
+        assert.match(error.message, /\/api\/match\/join \(Failed to fetch\)/);
+        assert.match(error.message, /try again/);
+        return true;
+      },
+    );
+
+    await assert.rejects(
+      () => joinAsGuest('match-abc', 'pw'),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /Could not reach the game server/);
+        assert.match(error.message, /\/api\/match\/join-as-guest/);
+        return true;
+      },
+    );
+  });
 });
 
 // why: WP-092 scope-guard regression. Verifies the end-to-end shape mapping

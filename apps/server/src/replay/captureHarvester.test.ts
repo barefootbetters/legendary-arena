@@ -31,6 +31,15 @@ function makeRecordingPool(rows: { match_id: string }[]) {
   return pool;
 }
 
+/**
+ * Counts the work-list scans a recording pool has seen. Each scan also runs the
+ * D-24719 verdict sweep (a `bgio.replay_artifacts` query), so the scheduler
+ * assertions count scans by their `bgio.matches` query, not every pool call.
+ */
+function countScans(pool: { calls: { text: string }[] }): number {
+  return pool.calls.filter((call) => /FROM bgio\.matches/.test(call.text)).length;
+}
+
 /** Drains the fire-and-forget scan promise chain after a mocked timer tick. */
 function flushAsync(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));
@@ -71,18 +80,76 @@ describe('captureHarvester — startCaptureHarvester scheduler (mock timers)', (
       });
       await flushAsync();
       // why: one immediate scan at startup.
-      assert.equal(pool.calls.length, 1);
+      assert.equal(countScans(pool), 1);
 
       mock.timers.tick(CAPTURE_HARVESTER_INTERVAL_MS);
       await flushAsync();
       // why: a second scan after one interval.
-      assert.equal(pool.calls.length, 2);
+      assert.equal(countScans(pool), 2);
 
       handle.stop();
       mock.timers.tick(CAPTURE_HARVESTER_INTERVAL_MS * 3);
       await flushAsync();
       // why: no further scans after stop() clears the interval.
-      assert.equal(pool.calls.length, 2);
+      assert.equal(countScans(pool), 2);
+    } finally {
+      mock.timers.reset();
+    }
+  });
+});
+
+describe('captureHarvester — verdict sweep (D-24719)', () => {
+  test('each scan runs the artifact verdict sweep after the capture loop', async () => {
+    mock.timers.enable({ apis: ['setInterval'] });
+    try {
+      // why: a one-id work-list. The recording pool answers the capture's own
+      // read with a row that has no `initial_state`, so captureMatch skips it as
+      // not replayable after one query; the sweep must come after that read.
+      const pool = makeRecordingPool([{ match_id: 'm1' }]);
+      const handle = startCaptureHarvester({
+        database: pool as never,
+        intervalMs: CAPTURE_HARVESTER_INTERVAL_MS,
+      });
+      await flushAsync();
+      await flushAsync();
+      handle.stop();
+      const texts = pool.calls.map((call) => call.text);
+      const captureReadIndex = texts.findIndex((text) =>
+        /SELECT initial_state, log, metadata FROM bgio\.matches/.test(text),
+      );
+      const sweepIndex = texts.findIndex((text) => /FROM bgio\.replay_artifacts/.test(text));
+      assert.ok(captureReadIndex > 0, 'the capture loop read the work-list match');
+      assert.ok(sweepIndex > captureReadIndex, 'the sweep runs after the capture loop');
+      const sweep = pool.calls[sweepIndex]!;
+      assert.match(sweep.text, /gameover IS NULL/);
+      assert.deepEqual(sweep.params, [5]);
+    } finally {
+      mock.timers.reset();
+    }
+  });
+
+  test('a failing sweep is swallowed and the next scan still runs', async () => {
+    mock.timers.enable({ apis: ['setInterval'] });
+    try {
+      const calls: string[] = [];
+      const pool = {
+        async query(text: string) {
+          calls.push(text);
+          if (/replay_artifacts/.test(text)) {
+            throw new Error('simulated sweep failure');
+          }
+          return { rows: [] };
+        },
+      };
+      const handle = startCaptureHarvester({
+        database: pool as never,
+        intervalMs: CAPTURE_HARVESTER_INTERVAL_MS,
+      });
+      await flushAsync();
+      mock.timers.tick(CAPTURE_HARVESTER_INTERVAL_MS);
+      await flushAsync();
+      handle.stop();
+      assert.equal(calls.filter((text) => /FROM bgio\.matches/.test(text)).length, 2);
     } finally {
       mock.timers.reset();
     }

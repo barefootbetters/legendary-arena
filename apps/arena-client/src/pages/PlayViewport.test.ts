@@ -14,6 +14,8 @@ import type { SubmitMove } from '../components/play/uiMoveName.types';
 import type { SubmissionStatus } from '../composables/useCompetitiveSubmitOnGameover';
 import { flushPromises } from '@vue/test-utils';
 import { useAuthStore } from '../stores/auth';
+import { useBuildProvenanceStore } from '../stores/buildProvenance';
+import { useConnectionStore } from '../stores/connection';
 import { after } from 'node:test';
 import { STATUS_RETRY_DELAY_MS } from '../services/autoplayPlayback';
 
@@ -245,6 +247,23 @@ describe('PlayViewport operator match (WP-804)', () => {
     wrapper.unmount();
   });
 
+  test('the panel receives the viewer seat and submitMove (WP-807)', async () => {
+    setActivePinia(createPinia());
+    installMatchMedia(false);
+    useAuthStore().setSession('admin-token', null);
+    stubOperatorFetch(200);
+    setSnapshot(true);
+    const wrapper = mount(PlayViewport, {
+      props: { submitMove: noopSubmitMove, matchId: 'op-1', playerId: '0' },
+    });
+    await settle();
+    const panel = wrapper.findComponent({ name: 'OperatorBoardPanel' });
+    assert.equal(panel.exists(), true);
+    assert.equal(panel.props('playerId'), '0');
+    assert.equal(typeof panel.props('submitMove'), 'function');
+    wrapper.unmount();
+  });
+
   test('the panel is absent in a normal match, even for an admin', async () => {
     setActivePinia(createPinia());
     installMatchMedia(false);
@@ -293,6 +312,57 @@ describe('PlayViewport operator match (WP-804)', () => {
     const wrapper = mount(PlayViewport, { props: { submitMove: noopSubmitMove, matchId: 'm-1' } });
     await settle();
     assert.equal(countEligibilityRequests(urls), 0);
+    wrapper.unmount();
+  });
+});
+
+describe('PlayViewport build provenance after a reconnect', () => {
+  const originalFetch = globalThis.fetch;
+
+  // why: PlayDesktop's autoplay-status probe retries a 404 once after
+  // STATUS_RETRY_DELAY_MS, past a test's end (the WP-804 block's posture), so the
+  // stub is restored only after that window.
+  after(async () => {
+    await new Promise((resolve) => setTimeout(resolve, STATUS_RETRY_DELAY_MS + 200));
+    globalThis.fetch = originalFetch;
+  });
+
+  test('a transport reconnect re-reads the server build, so a mid-match deploy is reported', async () => {
+    setActivePinia(createPinia());
+    installMatchMedia(false);
+    let server = { gitSha: 'old0001', buildTimestamp: '2026-10-26T21:20:26.516Z' };
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/api/version')) {
+        const answer = { ...server };
+        return { ok: true, status: 200, json: async () => answer } as unknown as Response;
+      }
+      if (url.includes('/games/legendary-arena/')) {
+        return { ok: true, status: 200, json: async () => ({ createdAt: Date.parse('2026-10-26T22:48:26.856Z') }) } as unknown as Response;
+      }
+      return { ok: false, status: 404, json: async () => ({}) } as unknown as Response;
+    }) as typeof globalThis.fetch;
+    useUiStateStore().setSnapshot(structuredClone(loadUiStateFixture('mid-turn')));
+    const wrapper = mount(PlayViewport, { props: { submitMove: noopSubmitMove, matchId: 'm-1' } });
+    for (let i = 0; i < 5; i += 1) {
+      await flushPromises();
+    }
+    const provenanceStore = useBuildProvenanceStore();
+    assert.equal(provenanceStore.provenance?.serverGitSha, 'old0001');
+    assert.equal(provenanceStore.provenance?.isMatchOlderThanServer, false);
+
+    // The server restarts on a new build; the socket drops and comes back.
+    server = { gitSha: 'new0002', buildTimestamp: '2026-10-26T22:49:54.279Z' };
+    const connectionStore = useConnectionStore();
+    connectionStore.setConnected(true, 1, 1);
+    connectionStore.setConnected(false, 1, 2);
+    connectionStore.setConnected(true, 2, 3);
+    await nextTick();
+    for (let i = 0; i < 5; i += 1) {
+      await flushPromises();
+    }
+    assert.equal(provenanceStore.provenance?.serverGitSha, 'new0002');
+    assert.equal(provenanceStore.provenance?.isMatchOlderThanServer, true, 'the match now predates the running server');
     wrapper.unmount();
   });
 });

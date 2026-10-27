@@ -135,6 +135,20 @@ If any item is false, this packet is **BLOCKED**; reconcile the WP and D-24719 f
     - D-24169 clause: after "for the operator dashboard's `/api/dash/matches` analytics;" insert " the same `metadata.gameover` read — or, once reaped, its capture-time copy in `bgio.replay_artifacts.gameover` (D-24719) — is the finished-match gate and outcome of the WP-406 result LAGN and `/seat-identities`;".
   - **`.claude/rules/architecture.md`:** the D-24119 parenthetical gains "; also derives a captured artifact's endgame verdict into the D-24122 `bgio.replay_artifacts.gameover` column (D-24719), never `bgio.matches`", and the list's "never-written-back" wording gains "(to `bgio.matches`)"; the D-24153 parenthetical becomes "(Tier-1 LAGN loadout projection from `initialState.G.matchConfiguration` + `ctx.numPlayers`, from the live row or, once reaped, its `bgio.replay_artifacts` copy — D-24719)"; the D-24169 parenthetical gains "and the finished-match gate / outcome of the result LAGN and seat identities, from the live row or the artifact's `gameover` copy (D-24719)". The carve-out count is unchanged.
   - **`api-endpoints.md`:** the `GET /api/match/:matchId/lagn`, `GET /api/match/:matchId/result-lagn` and `GET /api/match/:matchId/seat-identities` rows replaced **whole** (D-11804). Each row's Notes gain: "A finished match whose live row has been reaped is served from its `bgio.replay_artifacts` copy (WP-811 / D-24719)." The `result-lagn` row adds: "A pre-046 artifact without a recorded verdict omits `result`." Each row's Authorizing WP column gains `WP-811 / D-24719`. Status `Wired`, Auth `guest`, request and response unchanged. Footer `*Last updated: WP-811 …*` line.
+  - **`bgio.replay_artifacts` data docs (promote `gameover` from pending to live).** #2788 documented the table with WP-811 marked "pending, not on `main`". Promote it in both docs. Leave the WP-810 / D-24716 pending clause unless WP-810 has executed.
+    - **`docs/03.1-DATA-SOURCES.md` "Durable Replay Artifacts":**
+      - **Created by:** append "; migration `046_add_replay_artifact_gameover.sql` (WP-811 / D-24719) adds the nullable `gameover` column plus the `replay_artifacts_match_id_idx` and `replay_artifacts_gameover_missing_idx` indexes".
+      - **Columns:** add `gameover` (jsonb, nullable).
+      - **Writers:** append "`captureMatch` also writes `gameover`. `fillMissingArtifactGameovers` (the per-scan harvester sweep, D-24719) fills a NULL `gameover` once and never overwrites it".
+      - **Consumers:** add "the WP-811 / D-24719 reaped-match fallback in `matchLagn.logic.ts` (`/lagn`, `/result-lagn`, `/seat-identities`; reads `initial_state` + `gameover` by `match_id`, only when the live row is gone)".
+      - **Pending consumers:** drop the WP-811 sentence and the "`gameover` is not on `main` yet" clause.
+    - **`docs/ai/REFERENCE/00.2-data-requirements.md` §4.1 `bgio.replay_artifacts` row:**
+      - In the column list, after `log jsonb NOT NULL (…)`, add "`gameover jsonb NULL` (the capture-time copy of `metadata.gameover`, or the sweep's `evaluateEndgame` verdict; written once, never overwritten; `{}` = finished, outcome unknown; NULL = pre-046 row not yet swept; WP-811 / D-24719)".
+      - Change `match_id`'s "unindexed" to "indexed by `replay_artifacts_match_id_idx` (migration 046)".
+      - The writer sentence gains "and the `fillMissingArtifactGameovers` sweep (`gameover` only)".
+      - The readers list gains "the WP-811 / D-24719 reaped-match fallback (`/lagn`, `/result-lagn`, `/seat-identities`)".
+      - Delete the WP-811 clause from "Pending, not on `main`".
+      - "Authored by" gains "; `gameover` + both indexes by WP-811 / EC-848 / D-24719 (migration 046)".
 
 ---
 
@@ -153,7 +167,7 @@ If any item is false, this packet is **BLOCKED**; reconcile the WP and D-24719 f
   - `matchCapture.logic.test.ts` (+8 new, 1 strengthened): `serializeStoredGameover` (2); sweep locked batch size; SELECT shape + params; a **decisive** artifact (the manufactured lobby artifact with `G.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1`, with a precondition that its verdict is `scheme-wins`) stores that verdict, and the UPDATE text is asserted (`WHERE replay_hash = $1 AND gameover IS NULL`); a hash that no longer matches stores `'{}'`; a `rowCount` of 0 counts 0; a malformed log stores `'{}'`. The DB-gated capture test additionally asserts the artifact's `gameover` deep-equals the seeded `metadata.gameover`.
   - `seatIdentities.routes.test.ts` (+1): **no seam injected**, live row reaped, artifact present → `200` with the two-seat roster (`playerId` `'0'`, `'1'`).
   - `captureHarvester.test.ts` (+2, 1 modified): the scheduler test counts **scans** (queries `FROM bgio.matches`) instead of every pool call, because each scan now also runs the sweep; its three assertions are otherwise unchanged. New: with a one-id work-list (the capture skips it as not replayable), the sweep query comes **after** the capture's own read, with params `[5]`; a throwing sweep is swallowed and the next scan still runs.
-- **E) Docs:** ARCHITECTURE.md, `.claude/rules/architecture.md`, `api-endpoints.md` (three rows) per Locked Values.
+- **E) Docs:** ARCHITECTURE.md, `.claude/rules/architecture.md`, `api-endpoints.md` (three rows), and the `gameover` promotion in `docs/03.1-DATA-SOURCES.md` + `00.2-data-requirements.md` §4.1, per Locked Values.
 
 ## Out of Scope
 
@@ -164,7 +178,7 @@ If any item is false, this packet is **BLOCKED**; reconcile the WP and D-24719 f
 - **`replay_hash` collisions.** Two matches with byte-identical final `G` share one artifact row (`ON CONFLICT DO NOTHING`), so the second match id has no artifact. Distinct seeds make this practically impossible; not addressed.
 - **Other live-row-only reads** (`isMatchFinished`, `readMatchSeatCount`, the coach, battle-plan seat checks). Their callers act on live or just-finished matches.
 - **`/api/dash/matches`.** It lists live rows by design.
-- **`docs/03.1-DATA-SOURCES.md` and `00.2-data-requirements.md` do not list `bgio.replay_artifacts`.** A pre-existing gap (00.2 §4.1 inventories only `legendary.*` tables), flagged as a separate small docs fix.
+- **Documenting `bgio.replay_artifacts` from scratch.** The pre-existing gap in 03.1 and 00.2 §4.1 was closed separately by #2788. This WP only promotes its own `gameover` column from pending to live (Scope E).
 
 ## Files Expected to Change
 
@@ -180,9 +194,10 @@ If any item is false, this packet is **BLOCKED**; reconcile the WP and D-24719 f
 - `apps/server/src/replay/captureHarvester.js` — modified
 - `apps/server/src/replay/captureHarvester.test.ts` — modified (+2 tests, 1 counting change)
 - `docs/ai/ARCHITECTURE.md`, `.claude/rules/architecture.md`, `docs/ai/REFERENCE/api-endpoints.md` — modified
+- `docs/03.1-DATA-SOURCES.md`, `docs/ai/REFERENCE/00.2-data-requirements.md` — modified (`gameover` promotion)
 - Governance: `docs/ai/DECISIONS.md` (D-24719), `docs/ai/STATUS.md`, `WORK_INDEX.md`, `EC_INDEX.md`, `docs/05-ROADMAP-MINDMAP.md`
 
-That is 14 code, test and doc files (two of them comment-only) plus 5 governance files, in one layer (`apps/server`) plus a migration and docs. Above the ~8-file bound because each code file has its test, and the carve-out docs move in lockstep.
+That is 16 code, test and doc files (two of them comment-only) plus 5 governance files, in one layer (`apps/server`) plus a migration and docs. Above the ~8-file bound because each code file has its test, and the carve-out docs move in lockstep.
 
 ## Contract
 

@@ -45,12 +45,24 @@ const GENERATED_DATA_FILES = [
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:coverage",
   },
   {
+    relativePath: join("src", "data", "coverage-set-names.json"),
+    remedy: "pnpm --filter @legendary-arena/dashboard prebuild:coverage",
+  },
+  {
     relativePath: join("src", "data", "effect-implementation-index.json"),
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:effect-index",
   },
   {
     relativePath: join("src", "data", "par-fidelity.json"),
     remedy: "pnpm --filter @legendary-arena/dashboard prebuild:par",
+  },
+  {
+    relativePath: join("src", "data", "wiki-lint.json"),
+    remedy: "pnpm --filter @legendary-arena/dashboard prebuild:wiki-lint",
+  },
+  {
+    relativePath: join("src", "data", "coach-eval.json"),
+    remedy: "pnpm --filter @legendary-arena/dashboard prebuild:coach-eval",
   },
 ];
 

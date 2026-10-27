@@ -24,7 +24,7 @@ related:
   - play-diagnostics.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\visual-effects.md (this page — https://ewiki.legendary-arena.com/visual-effects/)
+  - C:\dev\legendary-arena\wiki\visual-effects.md (this page — https://ewiki.legendary-arena.com/visual-effects/)
   - ../packages/game-engine/src/events/notableEvents.types.ts
   - ../packages/game-engine/src/events/notableEvents.compose.ts
   - ../packages/game-engine/src/ui/uiState.types.ts

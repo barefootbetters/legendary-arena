@@ -22,6 +22,15 @@ enableGitInfo = false
 disableKinds = ["RSS", "sitemap", "taxonomy", "term"]
 disableHugoGeneratorInject = true
 
+# why: D-24782 — the page shell, the core partials, the render hooks and the
+# shared shortcodes come from the shared ewiki theme, bb-studio-ewiki-theme
+# v1.3.0, vendored read-only at themes/ewiki/ and pinned by digest in
+# .github/workflows/wiki-viewer.yml (D-24728). The engine's own behavior
+# (type-grouped sidebar, six-field metadata panel, Related / Sources, its
+# footer paragraphs) lives in layouts/partials/ewiki/ and assets/css/. This key
+# sits above [markup]: after a table header it would become outputs.theme.
+theme = "ewiki"
+
 [markup]
   # why: disable syntax highlighting on fenced code blocks — Chroma's inline
   # CSS output is non-deterministic across consecutive builds (the
@@ -47,3 +56,26 @@ disableHugoGeneratorInject = true
   home = ["HTML"]
   section = ["HTML"]
   page = ["HTML"]
+
+# why: the theme reads its site settings from [params.ewiki] (D-24782). repo,
+# branch, contentRoot and localRoot build the "Editing this page" links and the
+# local path to cd into (wiki/<page>.md under C:\dev\legendary-arena, a
+# single-quoted literal so the backslashes stay literal). homeSource names
+# INDEX.md, which the projection copies to _index.md as the home page, so the
+# theme's link hook sends a link to INDEX.md to "/" as the engine's hook did.
+# private = true keeps noindex on every page: the site sits
+# behind Cloudflare Access. search = true keeps the one Pagefind loader
+# (D-24293), with the engine's own placeholder and label. searchFilters stays
+# off: it would add a Kind filter, empty here because the engine has no
+# sections, and repeat Status and Tag, which the engine's own spans in
+# layouts/partials/ewiki/metadata.html already give search.
+[params.ewiki]
+  repo = "barefootbetters/legendary-arena"
+  branch = "main"
+  contentRoot = "wiki"
+  localRoot = 'C:\dev\legendary-arena'
+  homeSource = "INDEX.md"
+  private = true
+  search = true
+  searchPlaceholder = "Search the wiki"
+  searchLabel = "Search the engineering wiki"

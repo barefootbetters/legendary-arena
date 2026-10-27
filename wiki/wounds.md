@@ -21,7 +21,7 @@ related:
   - visual-effects.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\wounds.md (this page — https://ewiki.legendary-arena.com/wounds/)
+  - C:\dev\legendary-arena\wiki\wounds.md (this page — https://ewiki.legendary-arena.com/wounds/)
   - ../packages/game-engine/src/moves/healWounds.ts
   - ../packages/game-engine/src/moves/coreMoves.impl.ts
   - ../packages/game-engine/src/simulation/ai.legalMoves.ts

@@ -17,7 +17,7 @@ related:
   - design-system-overview.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\awards-and-badges.md (this page — https://ewiki.legendary-arena.com/awards-and-badges/)
+  - C:\dev\legendary-arena\wiki\awards-and-badges.md (this page — https://ewiki.legendary-arena.com/awards-and-badges/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-08-25
 ---

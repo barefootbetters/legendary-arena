@@ -20,6 +20,7 @@ import {
   PLAYER_COUNT_SETUP,
   resolveEffectiveHeroCount,
   resolveEffectiveHenchmenCount,
+  resolveEffectiveVillainGroupCount,
 } from "../playerCountSetup.js";
 import { hashCanonicalJson, deriveRegistryVersion } from "../canonicalJson.js";
 import type {
@@ -187,6 +188,11 @@ export async function createRegistryFromHttp(
     // registry object (like resolveEffectiveHeroCount) so the engine reaches the
     // single definition structurally without importing this package.
     resolveEffectiveHenchmenCount,
+
+    // why: D-24766 — the scheme-aware Villain Group override rides on the
+    // registry object (like resolveEffectiveHenchmenCount) so the engine reaches
+    // the single definition structurally without importing this package.
+    resolveEffectiveVillainGroupCount,
 
     /** @returns High-level counts for the registry. */
     info(): RegistryInfo {

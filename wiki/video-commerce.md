@@ -17,7 +17,7 @@ related:
   - homepage-spec.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\video-commerce.md (this page — https://ewiki.legendary-arena.com/video-commerce/)
+  - C:\dev\legendary-arena\wiki\video-commerce.md (this page — https://ewiki.legendary-arena.com/video-commerce/)
   - ../docs/01-VISION.md
 last-reviewed: 2026-09-02
 canonical-source: docs/marketing/video-commerce-plan.md

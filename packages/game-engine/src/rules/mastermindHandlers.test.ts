@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { mastermindStrikeHandler, selectDiscardToLimitCards } from './mastermindHandlers.js';
 import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
-import { WOUND_EXT_ID } from '../setup/pilesInit.js';
+import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { makeGlobalPiles, makeMastermindState, makePlayerZones, makeTurnEconomy } from '../test/fixtureBuilders.js';
 
 // ---------------------------------------------------------------------------
@@ -1196,6 +1196,52 @@ describe('mastermindStrikeHandler — core Loki Master Strike (WP-537 / D-24346)
     assert.deepEqual(gameState.playerZones['1']!.discard, ['wound-1']);
     assert.equal(gameState.piles.wounds.length, 1);
   });
+
+  // why: D-24673 — match P9oVujYd2B9 logged "has no Strength Hero in hand and gained a
+  // Wound" at 1.2.16, then "revealed Diving Block: prevented the Wound" at 1.2.19; the
+  // player ended with 0 Wounds. While the reveal is pending the line says "would gain".
+  it('D-24673: with Diving Block revealable, the line says "would gain", not "gained"', () => {
+    const divingBlockId = 'core/captain-america/diving-block#0';
+    const gameState = makeCo2eState(
+      'core/loki',
+      { '0': ['te-a', divingBlockId] },
+      { 'te-a': co2eStat(1) },
+      { 'te-a': TECH },
+    );
+    gameState.heroAbilityHooks = [
+      { cardId: divingBlockId, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    gameState.piles.wounds = ['wound-1', 'wound-2'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    const texts = gameState.messages.map((message) => message.text);
+    assert.ok(
+      texts.includes('[Loki Master Strike] Player 0 has no Strength Hero in hand and would gain a Wound — Diving Block can prevent it.'),
+      `expected the "would gain" line, got: ${JSON.stringify(texts)}`,
+    );
+    assert.ok(!texts.some((text) => text.includes('gained a Wound')), 'no premature "gained" line');
+    assert.equal(gameState.pendingDivingBlockWounds?.length, 1, 'the Wound awaits its reveal');
+  });
+
+  it('D-24673: without Diving Block the Loki line still says "gained a Wound"', () => {
+    const gameState = makeCo2eState(
+      'core/loki',
+      { '0': ['te-a'] },
+      { 'te-a': co2eStat(1) },
+      { 'te-a': TECH },
+    );
+    gameState.piles.wounds = ['wound-1', 'wound-2'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    const texts = gameState.messages.map((message) => message.text);
+    assert.ok(
+      texts.includes('[Loki Master Strike] Player 0 has no Strength Hero in hand and gained a Wound.'),
+      `got: ${JSON.stringify(texts)}`,
+    );
+    assert.equal(gameState.pendingDivingBlockWounds, undefined, 'nothing to reveal, nothing parked');
+  });
 });
 
 describe('mastermindStrikeHandler — core Dr. Doom Master Strike (WP-538 / D-24347)', () => {
@@ -1824,6 +1870,54 @@ describe('mastermindStrikeHandler — Doctor Octopus reveal-eight (WP-397)', () 
 });
 
 // ---------------------------------------------------------------------------
+// D-24783 — Loki's and Doctor Octopus's non-grey reads use the shared grey predicate
+// ---------------------------------------------------------------------------
+
+/**
+ * Gives a state one split card whose face a has no class of its own and whose face b is Tech.
+ * Off play the card counts as both faces' classes (rules v23 p.49), so it is non-grey; its own
+ * raw `G.cardTraits` entry alone says grey. Real split faces all carry a class, so this is the
+ * smallest fixture where reading the off-play view and reading the raw entry disagree.
+ */
+function addClasslessFaceSplitCard(gameState: LegendaryGameState): void {
+  gameState.splitFaces = { 'split-a': 'split-b' } as LegendaryGameState['splitFaces'];
+  gameState.cardTraits['split-a#0'] = { heroClass: null, team: null } as never;
+  gameState.cardTraits['split-b#0'] = TECH as never;
+  gameState.cardStats['split-a#0'] = co2eStat(2);
+}
+
+describe('D-24783 — non-grey strike reads go through matchesGreyHeroFilter', () => {
+  it('co2e Loki stacks a split card whose other face has a class as a Hypno-Thrall', () => {
+    const gameState = makeCo2eState('co2e/loki', { '0': ['split-a#0'] }, {}, {});
+    addClasslessFaceSplitCard(gameState);
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.mastermind.hypnoThralls, ['split-a#0']);
+    assert.deepEqual(gameState.playerZones['0']!.hand, []);
+  });
+
+  it('Doctor Octopus discards a revealed split card whose other face has a class', () => {
+    const gameState = makeOctopusRevealState(['split-a#0', 'grey-x'], {});
+    addClasslessFaceSplitCard(gameState);
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['split-a#0']);
+    assert.deepEqual(gameState.playerZones['0']!.deck, ['grey-x']);
+  });
+
+  it('Doctor Octopus still returns a revealed Bystander and Wound to the deck', () => {
+    const gameState = makeOctopusRevealState([BYSTANDER_EXT_ID, WOUND_EXT_ID], {});
+
+    mastermindStrikeHandler(gameState, reversingShuffleContext(), { cardId: 's' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+    assert.deepEqual(sortedCopy(gameState.playerZones['0']!.deck), sortedCopy([BYSTANDER_EXT_ID, WOUND_EXT_ID]));
+  });
+});
+
+// ---------------------------------------------------------------------------
 // General Ross Master Strike — the transform flip (WP-669 / D-24483)
 // ---------------------------------------------------------------------------
 
@@ -1919,5 +2013,416 @@ describe('mastermindStrikeHandler — log lines use plain words, not card markup
     ));
     assert.ok(messages.some((text) => text.includes('revealed a Tech Hero')), 'the Dr. Doom line is present');
     assert.ok(!messages.some((text) => RAW_MARKUP.test(text)), 'no raw [hc:…] markup reaches the log');
+  });
+});
+
+describe('WP-818 mastermindStrikeHandler — Baron Zemo Master Strike (D-24752)', () => {
+  /** A three-player strike state with the given Mastermind and T9's Victory Piles. */
+  function makeZemoStrikeState(mastermindId: string, wounds: string[]): LegendaryGameState {
+    const gameState = makeCo2eState(mastermindId, { '0': [], '1': [], '2': [] });
+    gameState.playerZones['0']!.victory = ['v', 'bystander-villain-deck-02', 'pile-bystander'];
+    gameState.playerZones['1']!.victory = ['pile-bystander'];
+    gameState.playerZones['2']!.victory = ['v2'];
+    gameState.piles.wounds = wounds;
+    return gameState;
+  }
+
+  /** The strike's own log lines, in order. */
+  function zemoStrikeLines(gameState: LegendaryGameState): string[] {
+    return gameState.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.startsWith('[Baron Zemo Master Strike]'));
+  }
+
+  it('T9: each player KOs their first Victory-Pile Bystander; a player with none gains a Wound', () => {
+    const gameState = makeZemoStrikeState('ca75/baron-heinrich-zemo', [WOUND_EXT_ID, WOUND_EXT_ID, WOUND_EXT_ID]);
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.victory, ['v', 'pile-bystander']);
+    assert.deepEqual(gameState.playerZones['1']!.victory, []);
+    assert.deepEqual(gameState.playerZones['2']!.victory, ['v2']);
+    assert.deepEqual(gameState.ko, ['bystander-villain-deck-02', 'pile-bystander']);
+    assert.deepEqual(gameState.playerZones['2']!.discard, [WOUND_EXT_ID]);
+    assert.equal(gameState.piles.wounds.length, 2);
+    assert.deepEqual(zemoStrikeLines(gameState), [
+      "[Baron Zemo Master Strike] Player 0 KO'd a Bystander from their Victory Pile.",
+      "[Baron Zemo Master Strike] Player 1 KO'd a Bystander from their Victory Pile.",
+      '[Baron Zemo Master Strike] Player 2 had no Bystander in their Victory Pile and gained a Wound.',
+    ]);
+  });
+
+  it('T10: with an empty Wound supply the Bystander-less player gains nothing, and the strike never throws', () => {
+    const gameState = makeZemoStrikeState('ca75/baron-heinrich-zemo', []);
+
+    assert.doesNotThrow(() => mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {}));
+
+    assert.deepEqual(gameState.playerZones['2']!.discard, []);
+    assert.equal(
+      zemoStrikeLines(gameState)[2],
+      '[Baron Zemo Master Strike] Player 2 had no Bystander in their Victory Pile and the Wound supply is empty — no effect.',
+    );
+  });
+
+  it('T11: another Mastermind moves no Bystander and logs no Baron Zemo line', () => {
+    const gameState = makeZemoStrikeState('core/loki', [WOUND_EXT_ID, WOUND_EXT_ID, WOUND_EXT_ID]);
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.victory, ['v', 'bystander-villain-deck-02', 'pile-bystander']);
+    assert.deepEqual(gameState.playerZones['1']!.victory, ['pile-bystander']);
+    assert.deepEqual(gameState.ko, []);
+    assert.deepEqual(zemoStrikeLines(gameState), []);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-821 / D-24754 — Arnim Zola's Master Strike
+// ---------------------------------------------------------------------------
+
+import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
+
+describe('WP-821 mastermindStrikeHandler — Arnim Zola Master Strike (D-24754)', () => {
+  /** A Hero stat entry with the given printed Attack and cost. */
+  function zolaStat(attack: number, cost: number) {
+    return { ...co2eStat(cost), attack };
+  }
+
+  /** S1's card stats: HQ Heroes, Hero Deck cards and the players' hand cards. */
+  const S1_STATS = {
+    h3a: zolaStat(1, 3), h4: zolaStat(2, 4), h5: zolaStat(0, 5), h6: zolaStat(3, 6), h3b: zolaStat(0, 3),
+    d1: zolaStat(0, 2), d2: zolaStat(3, 7), d3: zolaStat(3, 7), d4: zolaStat(3, 7),
+    x: zolaStat(2, 3), y: zolaStat(2, 5), z: zolaStat(2, 3), q: zolaStat(2, 4),
+  };
+
+  /** A Zola strike state with the given Mastermind, hands, HQ and Hero Deck. */
+  function makeZolaStrikeState(
+    mastermindId: string,
+    hands: Record<string, string[]>,
+    hq: (string | null)[],
+    heroDeck: string[],
+    cardStats: Record<string, ReturnType<typeof zolaStat>> = S1_STATS,
+  ): LegendaryGameState {
+    const gameState = makeCo2eState(mastermindId, hands, cardStats);
+    gameState.hq = [...hq] as LegendaryGameState['hq'];
+    gameState.heroDeck = [...heroDeck] as CardExtId[];
+    return gameState;
+  }
+
+  /** The strike's own log lines, in order. */
+  function zolaStrikeLines(gameState: LegendaryGameState): string[] {
+    return gameState.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.startsWith('[Arnim Zola Master Strike]'));
+  }
+
+  /** The "went to the bottom" line for a Hero. */
+  function movedLine(gameState: LegendaryGameState, heroId: string): string {
+    return `[Arnim Zola Master Strike] ${formatCardRef(gameState.cardDisplayData, heroId)} has less than 2 printed Attack and went to the bottom of the Hero Deck.`;
+  }
+
+  /** The "discarded" line for a player and card. */
+  function discardedLine(gameState: LegendaryGameState, playerId: string, cardId: string, cost: number): string {
+    return `[Arnim Zola Master Strike] Player ${playerId} discarded ${resolveCardName(gameState.cardDisplayData, cardId)} (cost ${cost}).`;
+  }
+
+  it('S1: snapshots the weak HQ Heroes, bottoms each in slot order, refills, and each player discards that cost', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': ['x', 'y', 'z'], '1': ['q'] },
+      ['h3a', 'h4', 'h5', 'h6', 'h3b'],
+      ['d1', 'd2', 'd3', 'd4'],
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.hq, ['d1', 'h4', 'd2', 'h6', 'd3'], 'the refilled weak d1 is never moved');
+    assert.deepEqual(gameState.heroDeck, ['d4', 'h3a', 'h5', 'h3b']);
+    assert.equal(gameState.heroDeck.length, 4, 'the Hero Deck length is unchanged');
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['x', 'y', 'z']);
+    assert.deepEqual(gameState.playerZones['0']!.hand, []);
+    assert.deepEqual(gameState.playerZones['1']!.hand, ['q']);
+    assert.deepEqual(zolaStrikeLines(gameState), [
+      movedLine(gameState, 'h3a'),
+      discardedLine(gameState, '0', 'x', 3),
+      '[Arnim Zola Master Strike] Player 1 has no card that costs 3 to discard.',
+      movedLine(gameState, 'h5'),
+      discardedLine(gameState, '0', 'y', 5),
+      '[Arnim Zola Master Strike] Player 1 has no card that costs 5 to discard.',
+      movedLine(gameState, 'h3b'),
+      discardedLine(gameState, '0', 'z', 3),
+      '[Arnim Zola Master Strike] Player 1 has no card that costs 3 to discard.',
+    ]);
+  });
+
+  it('S2: with no weak HQ Hero the strike logs one no-effect line and changes nothing', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': ['x'], '1': ['q'] },
+      ['h4', 'h6', null, 'h4', 'h6'],
+      ['d1'],
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.hq, ['h4', 'h6', null, 'h4', 'h6']);
+    assert.deepEqual(gameState.heroDeck, ['d1']);
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['x']);
+    assert.deepEqual(gameState.playerZones['1']!.hand, ['q']);
+    assert.deepEqual(zolaStrikeLines(gameState), [
+      '[Arnim Zola Master Strike] No Hero in the HQ has less than 2 printed Attack — no effect.',
+    ]);
+  });
+
+  it('S3: with an empty Hero Deck the same Hero returns to its slot and the discard still happens', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': ['c4'] },
+      ['w4', 'h6', 'h6', 'h6', 'h6'],
+      [],
+      { w4: zolaStat(1, 4), h6: zolaStat(3, 6), c4: zolaStat(2, 4) },
+    );
+
+    assert.doesNotThrow(() => mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {}));
+
+    assert.equal(gameState.hq[0], 'w4');
+    assert.deepEqual(gameState.heroDeck, []);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['c4']);
+  });
+
+  it('S4: another Mastermind moves no HQ Hero and logs no Arnim Zola line', () => {
+    const gameState = makeZolaStrikeState(
+      'core/loki',
+      { '0': ['x', 'y', 'z'], '1': ['q'] },
+      ['h3a', 'h4', 'h5', 'h6', 'h3b'],
+      ['d1', 'd2', 'd3', 'd4'],
+    );
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.hq, ['h3a', 'h4', 'h5', 'h6', 'h3b']);
+    assert.deepEqual(gameState.heroDeck, ['d1', 'd2', 'd3', 'd4']);
+    assert.deepEqual(zolaStrikeLines(gameState), []);
+  });
+
+  it('S5: a Haunted slot keeps its haunter when its weak Hero is bottomed and the slot refills', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': [] },
+      ['h6', 'h6', 'h5', 'h6', 'h6'],
+      ['d2'],
+    );
+    gameState.hqHaunters = [null, null, { kind: 'villain', cardId: 'villain-ghost#0' as CardExtId }, null, null];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.equal(gameState.hq[2], 'd2', 'the slot refilled');
+    assert.deepEqual(gameState.heroDeck, ['h5'], 'the weak Hero went to the bottom');
+    assert.deepEqual(gameState.hqHaunters![2], { kind: 'villain', cardId: 'villain-ghost#0' });
+  });
+
+  it('S6: the discard goes through discardFromHand, so a return-on-discard card offers its return', () => {
+    const gameState = makeZolaStrikeState(
+      'ca75/arnim-zola',
+      { '0': ['x'] },
+      ['h3a', 'h6', 'h6', 'h6', 'h6'],
+      ['d2'],
+    );
+    gameState.heroAbilityHooks = [
+      { cardId: 'x', timing: 'onDiscard', keywords: ['return-on-discard'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['x']);
+    assert.deepEqual(gameState.pendingReturnOnDiscard, [{ playerID: '0', cardId: 'x' }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-846 / D-24780 — each-player strikes start with the current player, then clockwise
+// ---------------------------------------------------------------------------
+
+/**
+ * A strike context carrying the active player, the shape the villain-reveal pipeline passes.
+ *
+ * @param currentPlayer - The active player id.
+ * @returns The context.
+ */
+function strikeContextFor(currentPlayer: string): unknown {
+  return { random: { Shuffle: <T,>(items: T[]): T[] => [...items] }, ctx: { currentPlayer, turn: 1 } };
+}
+
+/**
+ * The parts of G an each-player strike writes, for literal comparison.
+ *
+ * @param gameState - The game state after the strike.
+ * @returns The Wound supply, each seat's hand and discard pile, and the log text.
+ */
+function strikeOutcome(gameState: LegendaryGameState): unknown {
+  const seats: Record<string, { hand: string[]; discard: string[] }> = {};
+  for (const seat of Object.keys(gameState.playerZones).sort()) {
+    seats[seat] = {
+      hand: [...gameState.playerZones[seat]!.hand],
+      discard: [...gameState.playerZones[seat]!.discard],
+    };
+  }
+  return {
+    wounds: [...gameState.piles.wounds],
+    seats,
+    messages: gameState.messages.map((line) => line.text),
+  };
+}
+
+describe('WP-846 / D-24780 — Master Strike each-player order (AC-5 seat-0 / solo identity)', () => {
+  it('AC-5 strike: a 3-player seat-0 core Loki strike with a short supply matches the pre-WP-846 baseline', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = ['w-a', 'w-b'];
+    mastermindStrikeHandler(gameState, strikeContextFor('0'), { cardId: 'strike' }, {});
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(strikeOutcome(gameState), { wounds: [], seats: { '0': { hand: [], discard: ['w-a'] }, '1': { hand: [], discard: ['w-b'] }, '2': { hand: [], discard: [] } }, messages: ['[Loki Master Strike] Player 0 has no Strength Hero in hand and gained a Wound.', '[Loki Master Strike] Player 1 has no Strength Hero in hand and gained a Wound.', '[Loki Master Strike] Player 2 has no Strength Hero in hand and the Wound supply is empty — no effect.'] });
+  });
+
+  it('AC-5 strike: a solo core Loki strike matches the pre-WP-846 baseline', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [] });
+    gameState.piles.wounds = ['w-a', 'w-b'];
+    mastermindStrikeHandler(gameState, strikeContextFor('0'), { cardId: 'strike' }, {});
+    // why: literal values captured on the unmodified pre-WP-846 baseline (AC-5).
+    assert.deepStrictEqual(strikeOutcome(gameState), { wounds: ['w-b'], seats: { '0': { hand: [], discard: ['w-a'] } }, messages: ['[Loki Master Strike] Player 0 has no Strength Hero in hand and gained a Wound.'] });
+  });
+});
+
+/**
+ * The seats named by a strike's per-player log lines, in log order.
+ *
+ * @param gameState - The game state after the strike.
+ * @param prefix - The strike's log prefix, e.g. `[Loki Master Strike]`.
+ * @returns The seat ids, in the order the strike logged them.
+ */
+function strikeSeatOrder(gameState: LegendaryGameState, prefix: string): string[] {
+  const seats: string[] = [];
+  for (const line of gameState.messages) {
+    if (!line.text.startsWith(prefix)) {
+      continue;
+    }
+    const match = / Player (\d+) /.exec(line.text);
+    if (match !== null) {
+      seats.push(match[1]!);
+    }
+  }
+  return seats;
+}
+
+describe('WP-846 / D-24780 — Master Strike each-player order (AC-8 rotation, AC-2, AC-4)', () => {
+  const THREE_WOUNDS = ['w-a', 'w-b', 'w-c'];
+
+  it('AC-8 R1: core Magneto on seat 1\'s turn resolves seats 1, 2, 0 (seat 1 still parks its discard)', () => {
+    const fiveCards = (seat: string) => ['a', 'b', 'c', 'd', 'e'].map((card) => `${card}-${seat}`);
+    const gameState = makeCo2eState('core/magneto', { '0': fiveCards('0'), '1': fiveCards('1'), '2': fiveCards('2') });
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Magneto Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.pendingDiscardChoices, [{ choiceType: 'discard-to-limit', playerID: '1', limit: 4 }]);
+  });
+
+  it('AC-8 R4: co2e Doctor Doom on seat 1\'s turn resolves seats 1, 2, 0', () => {
+    const gameState = makeCo2eState('co2e/doctor-doom', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = [...THREE_WOUNDS];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Doctor Doom Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-8 R5: core Loki on seat 1\'s turn wounds seats 1, 2, 0', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = [...THREE_WOUNDS];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Loki Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['w-b']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['w-c']);
+  });
+
+  it('AC-8 R6: Baron Zemo on seat 1\'s turn resolves seats 1, 2, 0', () => {
+    const gameState = makeCo2eState('ca75/baron-heinrich-zemo', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = [...THREE_WOUNDS];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Baron Zemo Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(gameState.playerZones['1']!.discard, ['w-a']);
+  });
+
+  it('AC-8 R7: Arnim Zola on seat 1\'s turn discards for seats 1, 2, 0', () => {
+    const weakHeroStat = { ...co2eStat(3), attack: 1 };
+    const gameState = makeCo2eState(
+      'ca75/arnim-zola',
+      { '0': ['c3-0'], '1': ['c3-1'], '2': ['c3-2'] },
+      { weak: weakHeroStat, 'c3-0': co2eStat(3), 'c3-1': co2eStat(3), 'c3-2': co2eStat(3) },
+    );
+    gameState.hq = ['weak', null, null, null, null] as LegendaryGameState['hq'];
+    gameState.heroDeck = [];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Arnim Zola Master Strike]'), ['1', '2', '0']);
+  });
+
+  it('AC-8 R8: co2e Loki on seat 1\'s turn discards for seats 1, 2, 0', () => {
+    const gameState = makeCo2eState(
+      'co2e/loki',
+      { '0': ['st-0'], '1': ['st-1'], '2': ['st-2'] },
+      {},
+      { 'st-0': STRENGTH, 'st-1': STRENGTH, 'st-2': STRENGTH },
+    );
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Loki Master Strike]'), ['1', '2', '0']);
+  });
+
+  it('AC-8 R9 + AC-4: co2e Magneto on seat 1\'s turn discards for seats 1, 2, 0 and queues return-on-discard 1, 2, 0', () => {
+    const gameState = makeCo2eState(
+      'co2e/magneto',
+      { '0': ['xm-0'], '1': ['xm-1'], '2': ['xm-2'] },
+      {},
+      { 'xm-0': XMEN, 'xm-1': XMEN, 'xm-2': XMEN },
+    );
+    gameState.heroAbilityHooks = [
+      { cardId: 'xm-0', timing: 'onPlay', keywords: ['return-on-discard'] },
+      { cardId: 'xm-1', timing: 'onPlay', keywords: ['return-on-discard'] },
+      { cardId: 'xm-2', timing: 'onPlay', keywords: ['return-on-discard'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Magneto Master Strike]'), ['1', '2', '0']);
+    assert.deepEqual(
+      (gameState.pendingReturnOnDiscard ?? []).map((entry) => entry.playerID),
+      ['1', '2', '0'],
+    );
+  });
+
+  it('AC-8 R10: co2e Doctor Octopus on seat 1\'s turn discards for seats 1, 2, 0', () => {
+    const gameState = makeCo2eState(
+      'co2e/doctor-octopus',
+      { '0': ['sf-0'], '1': ['sf-1'], '2': ['sf-2'] },
+      {},
+      { 'sf-0': SPIDER, 'sf-1': SPIDER, 'sf-2': SPIDER },
+    );
+    mastermindStrikeHandler(gameState, strikeContextFor('1'), { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Doctor Octopus Master Strike]'), ['1', '2', '0']);
+  });
+
+  it('AC-2 R5: with one Wound left on seat 2\'s turn, seat 2 gains it and seats 0 and 1 gain none', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = ['w-a'];
+    mastermindStrikeHandler(gameState, strikeContextFor('2'), { cardId: 'strike' }, {});
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['w-a']);
+    assert.deepEqual(gameState.playerZones['0']!.discard, []);
+    assert.deepEqual(gameState.playerZones['1']!.discard, []);
+    assert.deepEqual(gameState.messages.map((line) => line.text), [
+      '[Loki Master Strike] Player 2 has no Strength Hero in hand and gained a Wound.',
+      '[Loki Master Strike] Player 0 has no Strength Hero in hand and the Wound supply is empty — no effect.',
+      '[Loki Master Strike] Player 1 has no Strength Hero in hand and the Wound supply is empty — no effect.',
+    ]);
+  });
+
+  it('a stub context with no current player keeps the sorted order', () => {
+    const gameState = makeCo2eState('core/loki', { '0': [], '1': [], '2': [] });
+    gameState.piles.wounds = [...THREE_WOUNDS];
+    mastermindStrikeHandler(gameState, {}, { cardId: 'strike' }, {});
+    assert.deepEqual(strikeSeatOrder(gameState, '[Loki Master Strike]'), ['0', '1', '2']);
   });
 });

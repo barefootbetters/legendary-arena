@@ -27,7 +27,9 @@ import { moveCardFromZone } from '../moves/zoneOps.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
+import type { WoundGainOutcome } from '../board/wounds.logic.js';
 import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 // why: WP-669 / D-24483 — the Mastermind Transform flip primitive; resolveGeneralRossStrike
 // swaps the boss face on a Master Strike.
@@ -36,7 +38,19 @@ import { transformMastermind } from '../mastermind/mastermind.logic.js';
 // ko-hero choice for the current player, reusing the same eligibility helpers the
 // villain ko-hero effect + the UIState projection use (one source, D-24007).
 import { buildKoEligibleTargets, countKoableHeroes } from '../villain/villainEffects.execute.js';
-import { offPlayCardTraits } from '../hero/splitCard.logic.js';
+import { matchesGreyHeroFilter, offPlayCardStats, offPlayCardTraits } from '../hero/splitCard.logic.js';
+// why: WP-818 / D-24752 — Baron Zemo's strike KOs the first Victory-Pile Bystander through
+// the shared WP-816 helper (defeated Killbots included), and reads the Zemo id from its one
+// home (WP-819 / D-24753).
+import { findFirstVictoryPileBystander } from '../board/bystanders.logic.js';
+import { BARON_ZEMO_MASTERMIND_ID } from '../economy/rescueOnFight.logic.js';
+// why: WP-821 / D-24754 — Arnim Zola's strike reads the one "less than 2 printed Attack" HQ
+// predicate, puts each such Hero on the Hero Deck bottom and refills its slot (the
+// resolveOptionalPutBottomHQ idiom), and auto-picks each player's discard through the
+// WP-817 cost-filtered default pick.
+import { ARNIM_ZOLA_MASTERMIND_ID, listZolaWeakHqSlots } from '../mastermind/arnimZola.logic.js';
+import { refillHqSlot } from '../board/city.logic.js';
+import { selectDefaultCostDiscardCard } from '../moves/villainDefeatRequirement.logic.js';
 
 // why: mastermind ext_id constants — matching against
 // G.selection.mastermindId for per-mastermind dispatch. Strings come from
@@ -117,27 +131,6 @@ const DOOM_PUT_ON_DECK_COUNT = 2;
 // why: WP-397 — Doctor Octopus's printed strike reveals the top 8 cards of the
 // deck for any player who does not discard a Spider-Friends Hero.
 const DOCTOR_OCTOPUS_REVEAL_COUNT = 8;
-
-/**
- * Whether a card is a "non-grey Hero" in the tabletop sense.
- *
- * @param gameState - The game state (read-only; supplies cardTraits).
- * @param cardExtId - The card to classify.
- * @returns True when the card carries a Hero Class.
- */
-function isNonGreyHero(
-  gameState: LegendaryGameState,
-  cardExtId: CardExtId,
-): boolean {
-  // why: the rulebook defines "grey Heroes" as grey-coloured cards with NO
-  // Hero Class (S.H.I.E.L.D. Agents, Troopers, Officers, Sidekicks), so
-  // non-grey is exactly "has a Hero Class". Loose `!=` so both null and
-  // undefined read as grey. Wounds carry no Hero Class and are therefore grey
-  // — they are never discarded by this branch, which is correct: a Wound is
-  // not a Hero. Defensive `?.` on the map itself for legacy states predating
-  // WP-179.
-  return gameState.cardTraits?.[cardExtId]?.heroClass != null;
-}
 
 /**
  * Narrows the rule-pipeline context to its deterministic shuffle function.
@@ -294,7 +287,7 @@ export function selectDiscardToLimitCards(
  * Resolves Magneto's Master Strike: "Each player reveals an [team:x-men] Hero
  * or discards down to four cards." (WP-476 / D-24284.)
  *
- * Each player (in sorted id order): a player holding an X-Men Hero in hand
+ * Each player (current player first, then clockwise; D-24780): a player holding an X-Men Hero in hand
  * reveals it and discards nothing; otherwise a player over the limit discards
  * down to four. The CURRENT player discards INTERACTIVELY — a PendingDiscardChoice
  * is parked and they pick which cards (the printed player choice restored).
@@ -314,7 +307,9 @@ function resolveMagnetoStrike(
   gameState: LegendaryGameState,
   currentPlayer: string | null,
 ): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -573,20 +568,18 @@ function selectLowestCostHero(
       // precedent in this file — legacy test states predate G.cardTraits
       // (WP-179) and leave it undefined. Production setup always builds it.
       // A missing map means nothing matches rather than a throw (AC-9).
-      // why: WP-772 / D-24604 — every caller passes a HAND (off play), so a split card counts
-      // as both halves' classes (rules v23 p.49), resolved through the split-face map.
-      const traitEntry = offPlayCardTraits(gameState, cardExtId);
       if (traitKind === 'non-grey') {
-        // why: WP-398 — the rulebook "Grey Heroes" are grey cards with NO Hero
-        // Class, so non-grey ⟺ heroClass != null. This is an EXISTENCE gate,
-        // not a slug match — traitSlug is ignored — used by co2e Loki's
-        // Hypno-Thrall branch to stack the lowest-cost non-grey Hero. Loose
-        // `!=` so both null and undefined read as grey; Wounds are already
-        // skipped above, so they are never stacked.
-        if (traitEntry?.heroClass == null) {
+        // why: WP-398 — an EXISTENCE gate, not a slug match (traitSlug is ignored), used by
+        // co2e Loki's Hypno-Thrall branch to stack the lowest-cost non-grey Hero. D-24783 —
+        // the shared grey predicate decides it: a card with a class on EITHER off-play slot
+        // (a dual-class card, or a split card through the split-face map) is non-grey.
+        if (!matchesGreyHeroFilter(gameState, cardExtId, 'non-grey')) {
           continue;
         }
       } else {
+        // why: WP-772 / D-24604 — every caller passes a HAND (off play), so a split card counts
+        // as both halves' classes (rules v23 p.49), resolved through the split-face map.
+        const traitEntry = offPlayCardTraits(gameState, cardExtId);
         // why: 'team' / 'heroClass' match the corresponding G.cardTraits field
         // against the requested slug.
         // why: WP-703 / D-24523 — on a heroClass kind a dual-class card matches on EITHER printed class.
@@ -641,15 +634,33 @@ function discardCardFromHand(
  * to a Diving-Block holder (which is frequently a NON-active seat, since Master
  * Strikes wound every player) gets the reveal window via the WP-684 seat-choice wave.
  *
+ * // why: D-24673 — returns the outcome, not a boolean, so the strike's log line can
+ * say "would gain a Wound — Diving Block can prevent it" while a reveal is pending
+ * (match P9oVujYd2B9: Loki's strike logged "gained a Wound" for a prevented Wound).
+ *
  * @param gameState - The game state to mutate.
  * @param playerId - The player who gains the Wound (may be a non-active seat).
- * @returns True when a Wound was actually taken; false when the supply is empty.
+ * @returns 'no-wound' when the supply is empty, else 'gained' or 'diving-block-pending'.
  */
 function gainWoundToDiscard(
   gameState: LegendaryGameState,
   playerId: string,
-): boolean {
-  return gainWoundForPlayer(gameState, playerId) !== undefined;
+): WoundGainOutcome {
+  return gainWoundWithOutcome(gameState, playerId);
+}
+
+/**
+ * The "gained a Wound" tail of a Master Strike line, honest about a pending Diving
+ * Block reveal (D-24673).
+ *
+ * @param outcome - The outcome of the Wound just dealt ('gained' or 'diving-block-pending').
+ * @returns "gained a Wound" or "would gain a Wound — Diving Block can prevent it".
+ */
+function describeStrikeWound(outcome: WoundGainOutcome): string {
+  if (outcome === 'diving-block-pending') {
+    return 'would gain a Wound — Diving Block can prevent it';
+  }
+  return 'gained a Wound';
 }
 
 /**
@@ -733,12 +744,17 @@ function resolveRedSkullStrike(
  * Doctor Doom as 'Omen of Doom.' Then each player discards cards equal to
  * the number of Omens or gains a Wound."
  *
- * Each player (in sorted id order) whose hand can cover the Omen count
+ * Each player (current player first, then clockwise; D-24780) whose hand can cover the Omen count
  * discards that many cards, lowest-cost first; everyone else gains a Wound.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
+function resolveDoctorDoomStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
   // why: D-24192 — the Omen count is DERIVED, not stored. Every Doom strike
   // stacks exactly one Omen, so the Omen total is the strike count. The
   // generic `modifyCounter` effect is applied by the pipeline AFTER this
@@ -746,7 +762,9 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
   // the strike being resolved is `+ 1`. `?? 0` because G.counters is not
   // seeded at setup. No Omen zone is created.
   const omenCount = (gameState.counters.masterStrikeCount ?? 0) + 1;
-  const playerIds = Object.keys(gameState.playerZones).sort();
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -755,10 +773,10 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
     // cannot cover N takes the Wound — the same branch a tabletop player is
     // forced into. Deterministic auto-pick per D-24192; no prompt.
     if (playerZones.hand.length < omenCount) {
-      const tookWound = gainWoundToDiscard(gameState, playerId);
+      const woundOutcome = gainWoundToDiscard(gameState, playerId);
       pushLog(gameState,
-        tookWound
-          ? `[Doctor Doom Master Strike] Player ${playerId} could not discard ${omenCount} card(s) (${omenCount} Omen(s)) and gained a Wound.`
+        woundOutcome !== 'no-wound'
+          ? `[Doctor Doom Master Strike] Player ${playerId} could not discard ${omenCount} card(s) (${omenCount} Omen(s)) and ${describeStrikeWound(woundOutcome)}.`
           : `[Doctor Doom Master Strike] Player ${playerId} could not discard ${omenCount} card(s) and the Wound supply is empty — no effect.`,
       );
       continue;
@@ -794,7 +812,7 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
  * Resolves core Loki's Master Strike: "Each player reveals a [hc:strength]
  * Hero or gains a Wound."
  *
- * Each player (in sorted id order) who holds a Strength Hero reveals it and
+ * Each player (current player first, then clockwise; D-24780) who holds a Strength Hero reveals it and
  * KEEPS it — reveal is the printed escape, not a cost. A player holding none
  * gains a Wound (or takes a logged no-op when the Wound supply is empty).
  *
@@ -806,9 +824,16 @@ function resolveDoctorDoomStrike(gameState: LegendaryGameState): void {
  * per player.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+function resolveCoreLokiStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -840,11 +865,147 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
       continue;
     }
 
-    const tookWound = gainWoundToDiscard(gameState, playerId);
+    const woundOutcome = gainWoundToDiscard(gameState, playerId);
     pushLog(gameState,
-      tookWound
-        ? `[Loki Master Strike] Player ${playerId} has no Strength Hero in hand and gained a Wound.`
+      woundOutcome !== 'no-wound'
+        ? `[Loki Master Strike] Player ${playerId} has no Strength Hero in hand and ${describeStrikeWound(woundOutcome)}.`
         : `[Loki Master Strike] Player ${playerId} has no Strength Hero in hand and the Wound supply is empty — no effect.`,
+    );
+  }
+}
+
+/**
+ * Resolves Baron Heinrich Zemo's Master Strike (WP-818 / D-24752): "Each player
+ * KOs a Bystander from their Victory Pile. Any player who cannot do so gains a
+ * Wound."
+ *
+ * Each player (current player first, then clockwise; D-24780) KOs the first Bystander in their Victory
+ * Pile to the KO pile; a player with none gains a Wound (or takes a logged
+ * no-op when the Wound supply is empty). One durable log line per player.
+ *
+ * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
+ */
+function resolveBaronZemoStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
+
+  for (const playerId of playerIds) {
+    const playerZones = gameState.playerZones[playerId]!;
+    // why: every Victory-Pile Bystander is worth the same 1 VP with its rescue ability
+    // spent, so the first in pile order loses nothing (the D-24749 Executioner precedent).
+    const bystander = findFirstVictoryPileBystander(playerZones.victory);
+
+    if (bystander !== undefined) {
+      const moved = moveCardFromZone(playerZones.victory, gameState.ko, bystander);
+      playerZones.victory = moved.from;
+      gameState.ko = moved.to;
+      pushLog(gameState,
+        `[Baron Zemo Master Strike] Player ${playerId} KO'd a Bystander from their Victory Pile.`,
+      );
+      continue;
+    }
+
+    const woundOutcome = gainWoundToDiscard(gameState, playerId);
+    if (woundOutcome !== 'no-wound') {
+      pushLog(gameState,
+        `[Baron Zemo Master Strike] Player ${playerId} had no Bystander in their Victory Pile and ${describeStrikeWound(woundOutcome)}.`,
+      );
+    } else {
+      pushLog(gameState,
+        `[Baron Zemo Master Strike] Player ${playerId} had no Bystander in their Victory Pile and the Wound supply is empty — no effect.`,
+      );
+    }
+  }
+}
+
+/**
+ * Resolves Arnim Zola's Master Strike (WP-821 / D-24754): "For each Hero in the HQ that
+ * has less than 2 printed [icon:attack], put that Hero on the bottom of the Hero Deck, and
+ * each player discards a card of that Hero's cost."
+ *
+ * In HQ slot order, each qualifying Hero goes to the bottom of the Hero Deck, its slot
+ * refills from the top, and each player discards a hand card of that Hero's cost. Never
+ * throws.
+ *
+ * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
+ */
+function resolveArnimZolaStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: "for each Hero in the HQ" names the Heroes there when the strike resolves, so the
+  // slots are snapshotted first. A Hero that refills a vacated slot is never re-checked,
+  // even when weak; iterating the live HQ would chain refills through the Hero Deck.
+  const weakSlots = listZolaWeakHqSlots(gameState);
+  if (weakSlots.length === 0) {
+    pushLog(gameState,
+      `[Arnim Zola Master Strike] No Hero in the HQ has less than 2 printed Attack — no effect.`,
+    );
+    return;
+  }
+
+  for (const slot of weakSlots) {
+    const heroId = gameState.hq[slot];
+    if (heroId === null || heroId === undefined) {
+      continue;
+    }
+    // why: the discard cost is the moved Hero's own off-play cost, read before the refill.
+    const cost = offPlayCardStats(gameState, heroId)?.cost ?? 0;
+    // why: the bottom of the Hero Deck is the array end (heroDeck[0] is the top); push then
+    // refill, so the strike never changes the Hero Deck's length, and with an empty deck the
+    // same Hero returns to its slot (the resolveOptionalPutBottomHQ behavior).
+    gameState.heroDeck.push(heroId);
+    const refillResult = refillHqSlot(gameState.hq, slot, gameState.heroDeck);
+    gameState.hq = refillResult.hq;
+    gameState.heroDeck = refillResult.heroDeck;
+    pushLog(gameState,
+      `[Arnim Zola Master Strike] ${formatCardRef(gameState.cardDisplayData, heroId)} has less than 2 printed Attack and went to the bottom of the Hero Deck.`,
+    );
+    discardCardOfCostForEachPlayer(gameState, cost, currentPlayer);
+  }
+}
+
+/**
+ * Makes each player discard one hand card of the given cost, if they hold one, for
+ * Arnim Zola's Master Strike.
+ *
+ * // why: WP-821 / D-24754 — a Master Strike has no `events`, so it cannot park a
+ * multi-seat choice inline, and every candidate shares the same cost. The engine
+ * auto-picks inline at strike timing: the earliest such card in hand order, the card the
+ * WP-817 seat-choice default picks. An interactive pick is out of scope.
+ *
+ * @param gameState - The game state to mutate.
+ * @param cost - The removed Hero's cost.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
+ */
+function discardCardOfCostForEachPlayer(
+  gameState: LegendaryGameState,
+  cost: number,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
+  for (const playerId of playerIds) {
+    const cardId = selectDefaultCostDiscardCard(gameState, playerId, [cost]);
+    if (cardId === null) {
+      pushLog(gameState,
+        `[Arnim Zola Master Strike] Player ${playerId} has no card that costs ${cost} to discard.`,
+      );
+      continue;
+    }
+    discardCardFromHand(gameState, playerId, cardId);
+    pushLog(gameState,
+      `[Arnim Zola Master Strike] Player ${playerId} discarded ${resolveCardName(gameState.cardDisplayData, cardId)} (cost ${cost}).`,
     );
   }
 }
@@ -854,7 +1015,7 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
  * [hc:strength] Hero or stacks a non-grey Hero from their hand next to Loki
  * as a Hypno-Thrall."
  *
- * Each player (in sorted id order): a player holding a Strength Hero discards
+ * Each player (current player first, then clockwise; D-24780): a player holding a Strength Hero discards
  * their lowest-cost one (the printed first cost). A player with no Strength
  * Hero but at least one non-grey Hero has their lowest-cost non-grey Hero
  * stacked next to Loki as a Hypno-Thrall (WP-398, closing the WP-388 gap). A
@@ -862,9 +1023,16 @@ function resolveCoreLokiStrike(gameState: LegendaryGameState): void {
  * nothing is stacked.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveLokiStrike(gameState: LegendaryGameState): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+function resolveLokiStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -935,13 +1103,20 @@ function resolveLokiStrike(gameState: LegendaryGameState): void {
  * Resolves co2e Magneto's Master Strike: "Each player discards an
  * [team:x-men] Hero or gains a Wound."
  *
- * Each player (in sorted id order) discards their lowest-cost X-Men Hero, or
+ * Each player (current player first, then clockwise; D-24780) discards their lowest-cost X-Men Hero, or
  * gains a Wound when they hold none.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
-function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+function resolveCo2eMagnetoStrike(
+  gameState: LegendaryGameState,
+  currentPlayer: string | null,
+): void {
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -955,10 +1130,10 @@ function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
     // why: this branch is fully faithful — a player holding no X-Men Hero
     // must take the Wound at the table too, so no fidelity is lost.
     if (targetExtId === null) {
-      const tookWound = gainWoundToDiscard(gameState, playerId);
+      const woundOutcome = gainWoundToDiscard(gameState, playerId);
       pushLog(gameState,
-        tookWound
-          ? `[Magneto Master Strike] Player ${playerId} has no X-Men Hero in hand and gained a Wound.`
+        woundOutcome !== 'no-wound'
+          ? `[Magneto Master Strike] Player ${playerId} has no X-Men Hero in hand and ${describeStrikeWound(woundOutcome)}.`
           : `[Magneto Master Strike] Player ${playerId} has no X-Men Hero in hand and the Wound supply is empty — no effect.`,
       );
       continue;
@@ -977,16 +1152,22 @@ function resolveCo2eMagnetoStrike(gameState: LegendaryGameState): void {
  * cards of their deck, discard all non-grey Heroes revealed, and put the rest
  * back in random order."
  *
- * Each player (in sorted id order) discards their lowest-cost Spider-Friends
+ * Each player (current player first, then clockwise; D-24780) discards their lowest-cost Spider-Friends
  * Hero.
  *
  * @param gameState - The game state to mutate.
+ * @param currentPlayer - The active player (null in stub contexts → sorted order); the
+ *   each-player loop starts with them (D-24780).
  */
 function resolveDoctorOctopusStrike(
   gameState: LegendaryGameState,
   shuffleFunction: (<T>(items: T[]) => T[]) | null,
+  currentPlayer: string | null,
 ): void {
-  const playerIds = Object.keys(gameState.playerZones).sort();
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780); a null
+  // currentPlayer (stub contexts) keeps the sorted order. The reveal branch reshuffles in
+  // this order too, so the RNG stream follows it.
+  const playerIds = seatsInTurnOrderFrom(Object.keys(gameState.playerZones), currentPlayer);
 
   for (const playerId of playerIds) {
     const playerZones = gameState.playerZones[playerId]!;
@@ -1070,7 +1251,9 @@ function resolveDoctorOctopusReveal(
   const discardedCards: CardExtId[] = [];
   const returnedCards: CardExtId[] = [];
   for (const cardExtId of revealed) {
-    if (isNonGreyHero(gameState, cardExtId)) {
+    // why: D-24783 — the revealed cards are off play (the deck), so the shared grey predicate
+    // reads a split card as both faces' classes; a Wound or Bystander is not a Hero and stays.
+    if (matchesGreyHeroFilter(gameState, cardExtId, 'non-grey')) {
       discardedCards.push(cardExtId);
     } else {
       returnedCards.push(cardExtId);
@@ -1181,6 +1364,9 @@ export function mastermindStrikeHandler(
   // matching none of them takes no branch and the strike is generic
   // bookkeeping only (its printed text is not yet implemented).
   const mastermindId = gameState.selection.mastermindId;
+  // why: WP-846 / D-24780 — each each-player strike receives the active player
+  // (resolveCurrentPlayer; null in stub contexts → sorted order) so its loop starts with the
+  // current player and goes clockwise (rules v23 L2247).
   if (mastermindId === MASTERMIND_MAGNETO) {
     // why: WP-476 / D-24284 — pass the active player so the strike can park an
     // interactive discard choice for the current player (narrowed from the
@@ -1192,24 +1378,37 @@ export function mastermindStrikeHandler(
     // resolveMagnetoStrike current-parks / allies-auto pattern, D-24284).
     resolveRedSkullStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CORE_LOKI) {
-    resolveCoreLokiStrike(gameState);
+    resolveCoreLokiStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CORE_DR_DOOM) {
     // why: WP-538 / D-24347 — pass the active player so the strike can park an
     // interactive put-cards-on-deck choice for the current player (mirroring
     // the resolveMagnetoStrike interactive branch).
     resolveCoreDoomStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_DOOM) {
-    resolveDoctorDoomStrike(gameState);
+    resolveDoctorDoomStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CO2E_LOKI) {
-    resolveLokiStrike(gameState);
+    resolveLokiStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CO2E_MAGNETO) {
-    resolveCo2eMagnetoStrike(gameState);
+    resolveCo2eMagnetoStrike(gameState, resolveCurrentPlayer(strikeContext));
   } else if (mastermindId === MASTERMIND_CO2E_DOCTOR_OCTOPUS) {
-    resolveDoctorOctopusStrike(gameState, resolveShuffleFunction(strikeContext));
+    resolveDoctorOctopusStrike(
+      gameState,
+      resolveShuffleFunction(strikeContext),
+      resolveCurrentPlayer(strikeContext),
+    );
   } else if (mastermindId === MASTERMIND_GENERAL_ROSS) {
     // why: WP-669 / D-24483 — General Ross's Master Strike flips the Mastermind
     // to its other boss face (General Ross ⇄ Red Hulk).
     resolveGeneralRossStrike(gameState);
+  } else if (mastermindId === BARON_ZEMO_MASTERMIND_ID) {
+    // why: WP-818 / D-24752 — "Each player KOs a Bystander from their Victory Pile. Any
+    // player who cannot do so gains a Wound."
+    resolveBaronZemoStrike(gameState, resolveCurrentPlayer(strikeContext));
+  } else if (mastermindId === ARNIM_ZOLA_MASTERMIND_ID) {
+    // why: WP-821 / D-24754 — "For each Hero in the HQ that has less than 2 printed
+    // [icon:attack], put that Hero on the bottom of the Hero Deck, and each player discards
+    // a card of that Hero's cost."
+    resolveArnimZolaStrike(gameState, resolveCurrentPlayer(strikeContext));
   }
 
   // why: WP-200 — terminal emission AFTER the per-mastermind text effect

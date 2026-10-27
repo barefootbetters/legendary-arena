@@ -69,6 +69,7 @@ import { hasPendingSeatChoice } from './seatChoice.resolve.js';
 import { hasHealedThisTurn } from './healWounds.js';
 import { resolveCardName } from '../log/logDisplay.js';
 import { pushLog } from '../log/logPush.js';
+import { isEnigmaGuessWellFormed, settleEnigmaGuess } from '../rules/enigmaCode.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -83,6 +84,12 @@ interface FightMastermindArgs {
    * (validation-phase silent decline; moves never throw).
    */
   useExcessiveViolence?: boolean;
+  /**
+   * WP-830 / D-24763 — The Unbreakable Enigma Code: the guessed color of each Enigma card, in code
+   * order (`strength` / `instinct` / `covert` / `tech` / `ranged` / `grey`). Required while the code
+   * holds a card; ignored otherwise. A missing or malformed guess rejects the fight silently.
+   */
+  enigmaGuess?: readonly string[];
 }
 
 /**
@@ -116,7 +123,7 @@ interface TacticSeatChoiceEvents {
 // execution; tactic Fight was scoped out of WP-316/386/388 and had no owner).
 export function fightMastermind(
   { G, ...context }: MoveContext,
-  { useExcessiveViolence }: FightMastermindArgs = {},
+  { useExcessiveViolence, enigmaGuess }: FightMastermindArgs = {},
 ): void {
   // why: WP-754 / D-24581 — take the spread move context (the playCard shape) so the Excessive
   // Violence fire below hands hero handlers the context they expect, with `random` on it. Passing
@@ -152,7 +159,7 @@ export function fightMastermind(
   // why: baseCardId is the canonical stats key; fightCost is the fight
   // requirement field per WP-018 D-1805; never use G.mastermind.id or
   // any tactic card ID for stat lookup
-  const requiredFightCost = resolveMastermindFightCost(G);
+  const requiredFightCost = resolveMastermindFightCost(G, ctx.currentPlayer);
   // why: WP-580 / D-24389 — the spendable figure folds in unspent recruit when the
   // recruit-as-attack conversion is active this turn; equal to getAvailableAttack
   // otherwise, so the gate is unchanged on every non-conversion turn.
@@ -229,6 +236,15 @@ export function fightMastermind(
   // why: D-24180 — a player who used the Wound Healing ability this turn may not
   // fight or recruit for the rest of the turn (the reverse lock).
   if (hasHealedThisTurn(G)) return;
+
+  // why: WP-830 / D-24763 — The Unbreakable Enigma Code: "When you fight the Mastermind, first guess
+  // the color of each Enigma card, and then reveal them. If you guessed them right, fight the
+  // Mastermind as normal. If not, your turn ends." Settled after every other gate, so a guess is
+  // only spent on a fight that would happen; a malformed guess is an invalid request (silent).
+  if ((G.enigmaCode?.length ?? 0) > 0) {
+    if (!isEnigmaGuessWellFormed(G, enigmaGuess)) return;
+    if (!settleEnigmaGuess(G, ctx.currentPlayer, enigmaGuess, random, events)) return;
+  }
 
   // Step 3: Mutate G.
   // why: WP-687 / D-24504 — the Final Blow 5th, final fight is a DISTINCT branch
@@ -397,6 +413,10 @@ export function defeatMastermindTacticCore(
     );
   }
 
+  // why: the all-tactics announcement is logged AFTER the defeated tactic's own Fight
+  // ability below, so the log reads in play order (the tactic's effect, then "requires a
+  // final blow" / "vanquished"). Only the log line moves; the state changes stay here.
+  let allTacticsDefeatedMessage: string | null = null;
   if (areAllTacticsDefeated(G.mastermind)) {
     if (G.finalBlow === true) {
       // why: WP-687 / D-24504 — the optional Final Blow rule (Universal Rules v23
@@ -410,9 +430,8 @@ export function defeatMastermindTacticCore(
       // Final Blow also defers — rulebook-correct.
       G.mastermind = setFinalBlowPending(G.mastermind, true);
       // why: WP-323 — reuse the mastermind display name resolved above.
-      pushLog(G,
-        `All tactics defeated — ${mastermindDisplayName} requires a final blow: fight the Mastermind once more to win.`,
-      );
+      allTacticsDefeatedMessage =
+        `All tactics defeated — ${mastermindDisplayName} requires a final blow: fight the Mastermind once more to win.`;
     } else {
       // why: WP-732 / D-24553 — DEFER the win. Per Universal Rules v23 §"Players
       // Win", defeating the final Tactic assures victory but the current player
@@ -425,9 +444,8 @@ export function defeatMastermindTacticCore(
       // but the game does not end at the vanquish.
       G.counters[ENDGAME_CONDITIONS.MASTERMIND_DEFEATED_PENDING] = 1;
       // why: WP-323 — reuse the mastermind display name resolved above.
-      pushLog(G,
-        `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished! Victory is assured; finish your turn.`,
-      );
+      allTacticsDefeatedMessage =
+        `All tactics defeated — mastermind ${mastermindDisplayName} is vanquished! Victory is assured; finish your turn.`;
 
       // why: D-20008 parity with fightVillain's fightResolved event — surface
       // a player-visible "mastermind defeated + bystanders rescued" notable
@@ -470,6 +488,10 @@ export function defeatMastermindTacticCore(
   // park a WP-684 multi-seat seat choice (setActivePlayers admits the non-active seats).
   dispatchTacticOnFight(G, ctx, defeatedTacticId, shuffleContext, events);
 
+  if (allTacticsDefeatedMessage !== null) {
+    pushLog(G, allTacticsDefeatedMessage);
+  }
+
   // why: WP-732 / D-24553 — the D-24518 pending-choice drop is RELOCATED from this
   // vanquish site to the turn-end promotion (promoteMastermindVictoryIfPending in
   // endgame/mastermindVictory.logic.ts). The game no longer ends at the vanquish —
@@ -496,10 +518,14 @@ export function defeatMastermindTacticCore(
  * branch (in `defeatMastermindTacticCore`) never awards it — it only latches
  * final-blow-pending — so this is the sole award site.
  *
+ * why: D-24739 — exported so a free defeat of the Mastermind (Pure Fury, Silent Sniper)
+ * can strike the final blow through this same award (dispatchDefeatWithBystanderTarget),
+ * never a second copy. The free-defeat caller spends no attack and sets no acted flag.
+ *
  * @param G - Game state (mutated under Immer draft).
  * @param ctx - The bare boardgame.io ctx (currentPlayer), typed unknown to avoid a framework import.
  */
-function awardMastermindOnFinalBlow(G: LegendaryGameState, ctx: unknown): void {
+export function awardMastermindOnFinalBlow(G: LegendaryGameState, ctx: unknown): void {
   // why: narrow the unknown ctx to the one field this reads (the fighting player),
   // mirroring defeatMastermindTacticCore — no framework import.
   const currentPlayer = (ctx as { currentPlayer: string }).currentPlayer;

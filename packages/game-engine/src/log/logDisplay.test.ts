@@ -7,6 +7,8 @@ import {
   formatBaseEconomyClause,
   formatCardRef,
   formatPlayedCardLabel,
+  teamDisplayName,
+  heroClassDisplayName,
 } from './logDisplay';
 import type { UICardDisplay } from '../ui/uiState.types';
 
@@ -51,6 +53,41 @@ test('abilityTextToPlainText title-cases hero-class tokens and spaces hyphens', 
     abilityTextToPlainText('[hc:strength]: Draw a card.'),
     'Strength: Draw a card.',
   );
+});
+
+test('abilityTextToPlainText renders team tokens as the printed team name', () => {
+  assert.equal(
+    abilityTextToPlainText('[team:avengers]: You get +3[icon:attack] for each other [team:avengers] Hero you played this turn.'),
+    'Avengers: You get +3 attack for each other Avengers Hero you played this turn.',
+  );
+  assert.equal(
+    abilityTextToPlainText('[team:shield]: KO a [team:x-men] Hero.'),
+    'S.H.I.E.L.D.: KO a X-Men Hero.',
+  );
+});
+
+test('teamDisplayName covers the exceptions and title-cases the rest', () => {
+  const expectedNames: Record<string, string> = {
+    shield: 'S.H.I.E.L.D.',
+    hydra: 'HYDRA',
+    'x-men': 'X-Men',
+    'x-force': 'X-Force',
+    'x-factor-investigations': 'X-Factor Investigations',
+    avengers: 'Avengers',
+    'spider-friends': 'Spider Friends',
+    'guardians-of-the-galaxy': 'Guardians of the Galaxy',
+    'mercs-for-money': 'Mercs for Money',
+    'heroes-of-asgard': 'Heroes of Asgard',
+    venomverse: 'Venomverse',
+  };
+  for (const [teamSlug, expectedName] of Object.entries(expectedNames)) {
+    assert.equal(teamDisplayName(teamSlug), expectedName, teamSlug);
+  }
+});
+
+test('heroClassDisplayName title-cases the class slug', () => {
+  assert.equal(heroClassDisplayName('instinct'), 'Instinct');
+  assert.equal(heroClassDisplayName('tech'), 'Tech');
 });
 
 // why: WP-417 / D-24237 — the pipeline's apply-effect-markers pass appends a

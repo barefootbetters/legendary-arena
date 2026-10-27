@@ -18,8 +18,9 @@
  *
  * Pure handlers: they mutate `G` directly and never throw. No boardgame.io
  * import (`ctx` is narrowed via `unknown`, mirroring `defeatMastermindTacticCore`).
- * No registry import. No `.reduce()`. No `ctx.random.*` (nothing here reveals or
- * shuffles).
+ * No registry import. No `.reduce()`. No direct `ctx.random.*`: the only shuffle is
+ * Baron Zemo's Finding Zemo, through the move's `shuffleContext.random.Shuffle`
+ * (WP-818 / D-24752).
  */
 
 import type {
@@ -41,13 +42,14 @@ import {
   dispatchDefeatWithBystanderTarget,
 } from '../moves/defeatChoice.resolve.js';
 import { formatCardRef } from '../log/logDisplay.js';
-import { gainWoundForPlayer } from '../board/wounds.logic.js';
+import { gainWoundWithOutcome } from '../board/wounds.logic.js';
+import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
 import { addResources } from '../economy/economy.logic.js';
 import { drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
-import { refillHqSlot } from '../board/city.logic.js';
+import { koCard } from '../board/ko.logic.js';
 import { isHqSlotHaunted } from '../board/haunt.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 // why: WP-694 / D-24511 — the two multi-seat tactics PARK a WP-684 pending seat choice.
@@ -59,7 +61,25 @@ import { offPlayCardTraits, playedCardIdsStillInPlay } from '../hero/splitCard.l
 import {
   buildMonarchsDecreeModeChoice,
   buildVanishingIllusionsChoice,
+  buildFallenIdolsDiscardChoice,
+  // why: WP-821 / D-24754 — the free HQ gain moved to the pure seatChoiceTactics module
+  // (Dominate the Weak's apply shares it), plus Arnim Zola's tactic builders.
+  gainHqHeroToDiscard,
+  buildComputerUploadedGeniusDiscardChoice,
+  buildDominateTheWeakChoice,
+  gainDominateTheWeakHero,
+  buildCrushPacifistResistanceChoice,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
 } from '../moves/seatChoiceTactics.js';
+// why: WP-821 / D-24754 — the one "less than 2 printed Attack" HQ read.
+import { listZolaWeakHqSlots } from '../mastermind/arnimZola.logic.js';
+// why: WP-818 / D-24752 — Baron Zemo's tactics read Savior status and the first
+// Victory-Pile Bystander through the shared WP-816 helpers (defeated Killbots included).
+import {
+  SAVIOR_BYSTANDER_THRESHOLD,
+  countVictoryPileBystanders,
+  findFirstVictoryPileBystander,
+} from '../board/bystanders.logic.js';
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
 // of Valence Electrons" tactic (co2e, corrected 9→8 in #1214) — distinct from
@@ -152,6 +172,60 @@ export const TREASURES_EXTRA_CARDS = 3;
 // Bystanders from their Victory Pile; a player with fewer than two KOs all they
 // have (clamped by the count present). The max per other player.
 export const WHISPERS_BYSTANDER_KO = 2;
+
+// why: WP-818 / D-24752 — ca75 Baron Heinrich Zemo's four tactic ext_ids, same
+// `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}` grammar as the constants above.
+// Printed Fight text (data/cards/ca75.json):
+//   Fallen Idols            "Each other player that is not a Savior discards a card."
+//   Finding Zemo            "Reveal the top five cards of the Villain Deck. If you revealed
+//                            any Bystanders, KO them and each other player gains a Wound.
+//                            Put the rest back in random order."
+//   Hatred for the Avengers "For each of your [team:avengers] Heroes, rescue a Bystander."
+//   Prisoners of War        "Each other player reveals an [team:avengers] Hero or chooses a
+//                            Bystander from their Victory Pile, and you rescue that Bystander."
+const ZEMO_FALLEN_IDOLS_TACTIC_ID: CardExtId =
+  'ca75-mastermind-baron-heinrich-zemo-fallen-idols';
+const ZEMO_FINDING_ZEMO_TACTIC_ID: CardExtId =
+  'ca75-mastermind-baron-heinrich-zemo-finding-zemo';
+const ZEMO_HATRED_FOR_THE_AVENGERS_TACTIC_ID: CardExtId =
+  'ca75-mastermind-baron-heinrich-zemo-hatred-for-the-avengers';
+const ZEMO_PRISONERS_OF_WAR_TACTIC_ID: CardExtId =
+  'ca75-mastermind-baron-heinrich-zemo-prisoners-of-war';
+
+// why: WP-818 / D-24752 — Finding Zemo's printed "top five cards". Fewer are revealed
+// when the Villain Deck is shorter.
+export const FINDING_ZEMO_REVEAL_COUNT = 5;
+
+// why: the normalized team slug for Hatred for the Avengers and Prisoners of War, the
+// same lowercase form as TEAM_X_MEN.
+const TEAM_AVENGERS = 'avengers';
+
+// why: WP-821 / D-24754 — ca75 Arnim Zola's four tactic ext_ids, same
+// `${setAbbr}-mastermind-${mastermindSlug}-${tacticSlug}` grammar as the constants above.
+// Printed Fight text (data/cards/ca75.json):
+//   Dominate the Weak          "The player of your choice gains a Hero from the HQ that has
+//                               less than 2 printed [icon:attack]."
+//   Computer-Uploaded Genius   "Each other player reveals a [hc:tech] Hero or discards a card."
+//   Pet Projects               "Each other player reveals a Zola's Creations Villain from their
+//                               Victory Pile or gains a Wound."
+//   Crush Pacifist Resistance  "KO up to two of your Heroes that have less than 2 printed
+//                               [icon:attack]."
+const ZOLA_DOMINATE_THE_WEAK_TACTIC_ID: CardExtId =
+  'ca75-mastermind-arnim-zola-dominate-the-weak';
+const ZOLA_COMPUTER_UPLOADED_GENIUS_TACTIC_ID: CardExtId =
+  'ca75-mastermind-arnim-zola-computer-uploaded-genius';
+const ZOLA_PET_PROJECTS_TACTIC_ID: CardExtId =
+  'ca75-mastermind-arnim-zola-pet-projects';
+const ZOLA_CRUSH_PACIFIST_RESISTANCE_TACTIC_ID: CardExtId =
+  'ca75-mastermind-arnim-zola-crush-pacifist-resistance';
+
+// why: the normalized hero-class slug for Computer-Uploaded Genius, matching
+// G.cardTraits[extId].heroClass / heroClass2 (D-24523).
+const HERO_CLASS_TECH = 'tech';
+
+// why: WP-821 / D-24754 — the anchored Zola's Creations villain-group prefix
+// (`${setAbbr}-villain-${group}-`, D-24299) for Pet Projects' Victory-Pile reveal.
+const ZOLAS_CREATIONS_VILLAIN_PREFIX = 'ca75-villain-zolas-creations-';
 
 // why: WP-696 / D-24513 — core Dr. Doom's "Secrets of Time Travel" tactic ext_id,
 // same `${setAbbr}-mastermind-${slug}-${tacticSlug}` grammar as the constants above
@@ -325,7 +399,7 @@ function handHasXMenHero(
  * Resolves core Magneto's "Crushing Shockwave" tactic Fight effect:
  * "Each other player reveals an [team:x-men] Hero or gains two Wounds."
  *
- * For every player EXCEPT the defeating player (sorted id order): a player who
+ * For every player EXCEPT the defeating player (clockwise from them, D-24780): a player who
  * holds an X-Men Hero in hand reveals it and loses nothing (a pure log event);
  * a player who cannot reveal gains up to two Wounds from the supply. Mutates
  * `G.piles.wounds` and the penalized players' discard zones directly; never
@@ -339,7 +413,8 @@ export function resolveCrushingShockwave(
   G: LegendaryGameState,
   currentPlayer: string,
 ): void {
-  const playerIds = Object.keys(G.playerZones).sort();
+  // why: rules v23 L2247 — start with the current player, then clockwise (D-24780).
+  const playerIds = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer);
 
   // why: D-24665 — with no other seat (a solo match) the effect has no one to
   // reveal or take Wounds; log the no-op so the tactic does not resolve silently
@@ -381,23 +456,35 @@ export function resolveCrushingShockwave(
     // pile would net only one Wound. Detect a per-call no-op by the returned
     // woundsPile length not dropping (mirrors gainWoundToDiscard).
     let woundsTaken = 0;
+    let woundsPendingDivingBlock = 0;
     for (let woundIndex = 0; woundIndex < SHOCKWAVE_WOUND_COUNT; woundIndex++) {
       // why: WP-682 / D-24499 — gainWoundForPlayer chokepoint so a tactic-Fight Wound
       // reaches a Diving-Block holder (possibly a NON-active seat) via the WP-684 wave.
-      // undefined return = supply empty this iteration → stop early (moves never throw).
-      const gainedWoundId = gainWoundForPlayer(G, playerId);
-      if (gainedWoundId === undefined) {
+      // 'no-wound' = supply empty this iteration → stop early (moves never throw).
+      const woundOutcome = gainWoundWithOutcome(G, playerId);
+      if (woundOutcome === 'no-wound') {
         break;
       }
       woundsTaken += 1;
+      if (woundOutcome === 'diving-block-pending') {
+        woundsPendingDivingBlock += 1;
+      }
     }
 
     // why: supply-shortfall path — fewer Wounds available than the printed two is
     // a logged no-op-shortfall; report the count actually taken so the
     // play-by-play reflects the real supply outcome.
-    pushLog(G,
-      `Fight effect: Player ${playerId} held no X-Men Hero and gained ${String(woundsTaken)} Wound(s) (Crushing Shockwave).`,
-    );
+    // why: D-24673 — while Diving Block reveals are pending, say "would gain"; the
+    // reveal / decline lines that follow give the outcome.
+    if (woundsPendingDivingBlock > 0) {
+      pushLog(G,
+        `Fight effect: Player ${playerId} held no X-Men Hero and would gain ${String(woundsTaken)} Wound(s) — Diving Block can prevent ${woundsPendingDivingBlock === 1 ? 'it' : 'each one'} (Crushing Shockwave).`,
+      );
+    } else {
+      pushLog(G,
+        `Fight effect: Player ${playerId} held no X-Men Hero and gained ${String(woundsTaken)} Wound(s) (Crushing Shockwave).`,
+      );
+    }
   }
 }
 
@@ -531,6 +618,9 @@ export function resolveHydraConspiracy(
   // line claiming an undelivered draw is the misattribution class this arc exists
   // to remove.
   const drawn = playerZones.hand.length - handBefore;
+  // why: D-24732 — HYDRA Conspiracy's draws are the defeating (current) player's extra
+  // cards drawn this turn, unlike the next-hand bonuses that only grow the end-of-turn draw.
+  G.turnEconomy.cardsDrawn += drawn;
   pushLog(G,
     `Fight effect: Player ${currentPlayer} drew ${drawn} card(s) - ${HYDRA_CONSPIRACY_BASE_DRAW} plus ${hydraVillains} HYDRA Villain(s) in their Victory Pile (HYDRA Conspiracy).`,
     'applied',
@@ -608,30 +698,35 @@ export function resolveSecretsOfTimeTravel(
 }
 
 /**
- * Counts the acting player's X-Men Heroes — Xavier's Nemesis's "for each of your
- * [team:x-men] Heroes" scan, over the hand AND the cards played this turn.
+ * Counts the acting player's Heroes of one team — the "for each of your [team:X]
+ * Heroes" scan (Xavier's Nemesis, Hatred for the Avengers), over the hand AND the
+ * cards played this turn.
  *
  * In play, reads effective team membership via `cardHasTeamWhenPlayed` (printed
  * `G.cardTraits.team` OR a Copy-Powers granted team), so a Rogue Copy Powers card
- * that copied an X-Men Hero counts. In hand, reads the printed team through
+ * that copied a Hero of the team counts. In hand, reads the printed team through
  * `offPlayCardTraits` (a Copy-Powers grant applies only in play; a Divided Card off
  * play carries its faces' team).
  *
  * @param G - The game state (read-only here).
  * @param inPlay - The acting player's played-this-turn cards, in order.
  * @param hand - The acting player's hand, in order.
- * @returns How many cards in hand or play count as team `x-men`.
+ * @param team - The normalized team slug to count (e.g. `x-men`, `avengers`).
+ * @returns How many cards in hand or play count as that team.
  */
-function countXMenHeroesYouHave(
+// why: WP-818 / D-24752 — generalized from the X-Men-only count for its second team use
+// (Hatred for the Avengers), so both tactics read "your Heroes" by the same D-24645 rule.
+function countTeamHeroesYouHave(
   G: LegendaryGameState,
   inPlay: readonly CardExtId[],
   hand: readonly CardExtId[],
+  team: string,
 ): number {
   // why: explicit loops, not .reduce() — effect application counts as rule work
   // (.claude/rules/code-style.md Patterns to Avoid).
   let total = 0;
   for (const cardExtId of inPlay) {
-    if (cardHasTeamWhenPlayed(G, cardExtId, TEAM_X_MEN)) {
+    if (cardHasTeamWhenPlayed(G, cardExtId, team)) {
       total = total + 1;
     }
   }
@@ -639,7 +734,7 @@ function countXMenHeroesYouHave(
   // phrases include the cards in your hand as well as the cards played this turn
   // (the D-24529 Perfect Teamwork precedent). D-24508 counted play only.
   for (const cardExtId of hand) {
-    if (offPlayCardTraits(G, cardExtId)?.team === TEAM_X_MEN) {
+    if (offPlayCardTraits(G, cardExtId)?.team === team) {
       total = total + 1;
     }
   }
@@ -671,10 +766,11 @@ export function resolveXaviersNemesis(
 
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
-  const xMenCount = countXMenHeroesYouHave(
+  const xMenCount = countTeamHeroesYouHave(
     G,
     playedCardIdsStillInPlay(G, playerZones.inPlay),
     playerZones.hand,
+    TEAM_X_MEN,
   );
   // why: nothing to rescue is a no-effect outcome, logged `blocked` with its reason —
   // the Electromagnetic Bubble "has no X-Men Hero" precedent — never an `applied`
@@ -878,39 +974,6 @@ function collectEligibleHqIndices(
 }
 
 /**
- * Gains the HQ Hero at `hqIndex` to `playerId`'s discard for FREE — the forced
- * single-eligible free-recruit path (WP-692 / D-24509).
- *
- * @param G - Game state (mutated: `G.hq`, `G.heroDeck`, the recipient's discard).
- * @param playerId - The recipient whose discard the Hero enters.
- * @param hqIndex - The HQ slot to take (expected to hold a non-null Hero).
- * @returns The gained Hero ext_id, or null when the slot was empty.
- */
-function gainHqHeroFree(
-  G: LegendaryGameState,
-  playerId: string,
-  hqIndex: number,
-): CardExtId | null {
-  const heroId = G.hq[hqIndex];
-  if (heroId === null || heroId === undefined) {
-    return null;
-  }
-  // why: WP-692 / D-24509 — FREE recruit: vacate the slot + refill from G.heroDeck via
-  // refillHqSlot, but NEVER read or spend `turnEconomy.recruit` (the whole point of the
-  // "for free" tactics vs the normal cost-paying recruit path). D-24327 — the gain routes
-  // to the recipient's DISCARD, never the victory pile.
-  G.hq[hqIndex] = null;
-  const refillResult = refillHqSlot(G.hq, hqIndex, G.heroDeck);
-  G.hq = refillResult.hq;
-  G.heroDeck = refillResult.heroDeck;
-  const zones = G.playerZones[playerId];
-  if (zones) {
-    zones.discard.push(heroId);
-  }
-  return heroId;
-}
-
-/**
  * Shared filtered-free-recruit-from-HQ mechanic for the two core mastermind tactics
  * (WP-692 / D-24509): the defeating player recruits an eligible HQ Hero for free.
  *
@@ -947,7 +1010,7 @@ function freeRecruitFromHqByFilter(
     // why: EC-729 — a mandatory tactic (Bitter Captor) with exactly one eligible Hero is a
     // FORCED gain, so auto-resolve it now (no prompt); the parked path would offer a
     // one-option pick with no decline, which is just ceremony.
-    const gainedId = gainHqHeroFree(G, currentPlayer, eligibleIndices[0]!);
+    const gainedId = gainHqHeroToDiscard(G, currentPlayer, eligibleIndices[0]!);
     if (gainedId !== null) {
       pushLog(G,
         `Fight effect: Player ${currentPlayer} recruited ${formatCardRef(G.cardDisplayData, gainedId)} from the HQ for free (${tacticName}).`,
@@ -1266,11 +1329,12 @@ export function resolveRuthlessDictator(
  * Bubble eligibility scan ("one of your [team:x-men] Heroes"; D-24645: rules v23 "Your
  * Heroes" = hand + cards played this turn).
  *
- * TEAM-ONLY match against the setup-time `G.cardTraits` snapshot (the WP-506 precedent:
- * only Heroes carry a team, so Wounds / Bystanders / the teamless basic S.H.I.E.L.D.
- * cards never false-match). Map-level defensive `?.` — a legacy state predating WP-179
- * leaves the map undefined and matches nothing rather than throwing. Do NOT add a
- * heroClass guard and do NOT drop the map-level `?.` (WP-695 non-negotiable).
+ * TEAM-ONLY match against the setup-time `G.cardTraits` snapshot plus, for a played card,
+ * its Copy Powers copied team (the WP-506 precedent: only Heroes carry a team, so Wounds /
+ * Bystanders / the teamless basic S.H.I.E.L.D. cards never false-match). Map-level
+ * defensive guard — a legacy state predating WP-179 leaves the map undefined and matches
+ * nothing rather than throwing. Do NOT add a heroClass guard and do NOT drop the map-level
+ * guard (WP-695 non-negotiable).
  *
  * @param G - The game state (read-only here; supplies `cardTraits`).
  * @param inPlay - The acting player's in-play zone, in order.
@@ -1284,7 +1348,10 @@ function collectXMenHeroesYouHave(
 ): CardExtId[] {
   const eligible: CardExtId[] = [];
   for (const cardExtId of inPlay) {
-    if (G.cardTraits?.[cardExtId]?.team === TEAM_X_MEN) {
+    // why: D-24731 — the effective when-played team (D-24391), so a Copy Powers copy of an
+    // X-Men Hero is eligible, matching countTeamHeroesYouHave. The undefined-map guard keeps
+    // the WP-695 legacy-state posture (cardHasTeamWhenPlayed reads the map directly).
+    if (G.cardTraits !== undefined && cardHasTeamWhenPlayed(G, cardExtId, TEAM_X_MEN)) {
       eligible.push(cardExtId);
     }
   }
@@ -1503,4 +1570,558 @@ export function dispatchTacticOnFight(
     resolveElectromagneticBubble(G, currentPlayer);
     return;
   }
+  // why: WP-818 / D-24752 — Baron Zemo's Fallen Idols parks a multi-seat discard for the
+  // other non-Savior seats (the Monarch's discard shape; threads events for the stage ride).
+  if (defeatedTacticId === ZEMO_FALLEN_IDOLS_TACTIC_ID) {
+    resolveFallenIdols(G, events, currentPlayer);
+    return;
+  }
+  // why: WP-818 / D-24752 — Baron Zemo's Finding Zemo reveals the top 5 Villain-Deck cards;
+  // the shuffle context reorders the rest it puts back.
+  if (defeatedTacticId === ZEMO_FINDING_ZEMO_TACTIC_ID) {
+    resolveFindingZemo(G, currentPlayer, shuffleContext);
+    return;
+  }
+  // why: WP-818 / D-24752 — Hatred for the Avengers, the Xavier's Nemesis rule with Avengers.
+  if (defeatedTacticId === ZEMO_HATRED_FOR_THE_AVENGERS_TACTIC_ID) {
+    resolveHatredForTheAvengers(G, currentPlayer);
+    return;
+  }
+  // why: WP-818 / D-24752 — Prisoners of War: each other player reveals an Avengers Hero
+  // or gives the defeating player a Victory-Pile Bystander (auto-resolved).
+  if (defeatedTacticId === ZEMO_PRISONERS_OF_WAR_TACTIC_ID) {
+    resolvePrisonersOfWar(G, currentPlayer);
+    return;
+  }
+  // why: WP-821 / D-24754 — Arnim Zola's Dominate the Weak: one active-seat "Player N gains
+  // <Hero>" choice (a single option resolves at once).
+  if (defeatedTacticId === ZOLA_DOMINATE_THE_WEAK_TACTIC_ID) {
+    resolveDominateTheWeak(G, events, currentPlayer);
+    return;
+  }
+  // why: WP-821 / D-24754 — Computer-Uploaded Genius: hand Tech reveals, then a multi-seat
+  // discard for the rest (threads events for the stage ride).
+  if (defeatedTacticId === ZOLA_COMPUTER_UPLOADED_GENIUS_TACTIC_ID) {
+    resolveComputerUploadedGenius(G, events, currentPlayer);
+    return;
+  }
+  // why: WP-821 / D-24754 — Pet Projects: Victory-Pile reveal or a Wound (auto-resolved).
+  if (defeatedTacticId === ZOLA_PET_PROJECTS_TACTIC_ID) {
+    resolvePetProjects(G, currentPlayer);
+    return;
+  }
+  // why: WP-821 / D-24754 — Crush Pacifist Resistance: the first of up to two active-seat
+  // KO picks (seatChoice.resolve.ts chains the second).
+  if (defeatedTacticId === ZOLA_CRUSH_PACIFIST_RESISTANCE_TACTIC_ID) {
+    resolveCrushPacifistResistance(G, events, currentPlayer);
+    return;
+  }
+}
+
+/**
+ * Resolves Baron Zemo's "Fallen Idols" tactic Fight effect (WP-818 / D-24752): "Each
+ * other player that is not a Savior discards a card."
+ *
+ * Narrates each other Savior seat and each other non-Savior seat with an empty hand,
+ * then parks a simultaneous multi-seat discard for the rest. Nothing is parked when no
+ * seat qualifies. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission); optional
+ *   so a unit/replay context parks on G and resolves directly.
+ * @param currentPlayer - The player who defeated the tactic. Skipped ("each other player").
+ */
+export function resolveFallenIdols(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to discard a card (Fallen Idols).`,
+      'neutral',
+    );
+    return;
+  }
+
+  const nonSaviorSeats: string[] = [];
+  for (const seat of otherSeats) {
+    const zones = G.playerZones[seat]!;
+    if (countVictoryPileBystanders(zones.victory) >= SAVIOR_BYSTANDER_THRESHOLD) {
+      pushLog(G,
+        `Fight effect: Player ${seat} is a Savior and discards nothing (Fallen Idols).`,
+        'neutral',
+      );
+      continue;
+    }
+    if (zones.hand.length === 0) {
+      pushLog(G,
+        `Fight effect: Player ${seat} has no card to discard (Fallen Idols).`,
+        'neutral',
+      );
+      continue;
+    }
+    nonSaviorSeats.push(seat);
+  }
+
+  const discardChoice = buildFallenIdolsDiscardChoice(G, nonSaviorSeats);
+  if (discardChoice === undefined) {
+    pushLog(G,
+      `Fight effect: no other player who is not a Savior has a card to discard (Fallen Idols).`,
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, discardChoice);
+  pushLog(G,
+    `Fight effect: each other player who is not a Savior must discard a card (Fallen Idols).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves Baron Zemo's "Finding Zemo" tactic Fight effect (WP-818 / D-24752): "Reveal
+ * the top five cards of the Villain Deck. If you revealed any Bystanders, KO them and
+ * each other player gains a Wound. Put the rest back in random order."
+ *
+ * The revealed Bystanders go to the KO pile in revealed order; the other revealed cards
+ * go back on top of the Villain Deck, reshuffled. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (takes no Wound).
+ * @param shuffleContext - The move's deterministic shuffle for the cards put back.
+ */
+export function resolveFindingZemo(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  shuffleContext: ShuffleProvider,
+): void {
+  const deck = G.villainDeck.deck;
+  const revealCount = Math.min(FINDING_ZEMO_REVEAL_COUNT, deck.length);
+  if (revealCount === 0) {
+    pushLog(G,
+      `Fight effect: the Villain Deck is empty, so nothing is revealed (Finding Zemo).`,
+      'blocked',
+    );
+    return;
+  }
+
+  // why: only cards typed 'bystander' count. On the Killbots scheme the villain-deck
+  // Bystanders are typed 'villain' (D-24324): they are Killbots while in the deck.
+  let koedCount = 0;
+  let rest: CardExtId[] = [];
+  for (const cardExtId of deck.slice(0, revealCount)) {
+    if (G.villainDeckCardTypes[cardExtId] === 'bystander') {
+      G.ko = koCard(G.ko, cardExtId);
+      koedCount += 1;
+    } else {
+      rest.push(cardExtId);
+    }
+  }
+  // why: "in random order" — the move's seeded Shuffle, called only when 2+ cards go back
+  // (one card or none has a single order, so the call would only spend randomness).
+  if (rest.length >= 2) {
+    rest = shuffleContext.random.Shuffle([...rest]);
+  }
+  G.villainDeck.deck = [...rest, ...deck.slice(revealCount)];
+
+  if (koedCount === 0) {
+    pushLog(G,
+      `Fight effect: revealed the top ${String(revealCount)} card(s) of the Villain Deck — no Bystanders (Finding Zemo).`,
+      'blocked',
+    );
+    return;
+  }
+  pushLog(G,
+    `Fight effect: revealed the top ${String(revealCount)} card(s) of the Villain Deck and KO'd ${String(koedCount)} Bystander(s) (Finding Zemo).`,
+    'applied',
+  );
+  dealFindingZemoWounds(G, currentPlayer);
+}
+
+/**
+ * Deals Finding Zemo's Wounds: each other player gains one Wound, however many
+ * Bystanders were revealed (WP-818 / D-24752).
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ */
+function dealFindingZemoWounds(G: LegendaryGameState, currentPlayer: string): void {
+  // why: rules v23 L2247 — clockwise from the current player (D-24780). Rotate first, then
+  // drop the current player: a list without them would fall back to sorted order.
+  const otherSeats = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)
+    .filter((seat) => seat !== currentPlayer);
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to gain a Wound (Finding Zemo).`,
+      'neutral',
+    );
+    return;
+  }
+  for (const seat of otherSeats) {
+    // why: WP-682 / D-24499 — the Wound chokepoint, so a Diving-Block holder (often a
+    // non-active seat) gets the reveal window; D-24673 wording while it is pending.
+    const woundOutcome = gainWoundWithOutcome(G, seat);
+    if (woundOutcome === 'gained') {
+      pushLog(G, `Fight effect: Player ${seat} gained a Wound (Finding Zemo).`, 'applied');
+    } else if (woundOutcome === 'diving-block-pending') {
+      pushLog(G,
+        `Fight effect: Player ${seat} would gain a Wound — Diving Block can prevent it (Finding Zemo).`,
+        'neutral',
+      );
+    } else {
+      pushLog(G,
+        `Fight effect: Player ${seat} gained no Wound — the Wound supply is empty (Finding Zemo).`,
+        'blocked',
+      );
+    }
+  }
+}
+
+/**
+ * Resolves Baron Zemo's "Hatred for the Avengers" tactic Fight effect (WP-818 /
+ * D-24752): "For each of your [team:avengers] Heroes, rescue a Bystander."
+ *
+ * Rescues one supply Bystander into the defeating player's Victory Pile per Avengers
+ * Hero in their hand or still in play (the Xavier's Nemesis rule, D-24645 / D-24692).
+ * Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the beneficiary).
+ */
+export function resolveHatredForTheAvengers(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  const playerZones = G.playerZones[currentPlayer];
+  if (!playerZones) {
+    return;
+  }
+
+  const avengersCount = countTeamHeroesYouHave(
+    G,
+    playedCardIdsStillInPlay(G, playerZones.inPlay),
+    playerZones.hand,
+    TEAM_AVENGERS,
+  );
+  if (avengersCount === 0) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has no Avengers Hero in hand or play, so no Bystander is rescued (Hatred for the Avengers).`,
+      'blocked',
+    );
+    return;
+  }
+  let rescuedCount = 0;
+  for (let rescueIndex = 0; rescueIndex < avengersCount; rescueIndex++) {
+    // why: top-of-pile convention — bystanders[0] is the next supply Bystander (D-21501).
+    const topBystander = G.piles.bystanders[0];
+    if (topBystander === undefined) {
+      break;
+    }
+    const moveResult = moveCardFromZone(G.piles.bystanders, playerZones.victory, topBystander);
+    G.piles.bystanders = moveResult.from;
+    playerZones.victory = moveResult.to;
+    rescuedCount += 1;
+  }
+
+  if (rescuedCount === 0) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has Avengers Heroes but the Bystander supply is empty, so no Bystander is rescued (Hatred for the Avengers).`,
+      'blocked',
+    );
+    return;
+  }
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} rescued ${String(rescuedCount)} Bystander(s) — one per Avengers Hero in hand or play (Hatred for the Avengers).`,
+    'applied',
+  );
+}
+
+/**
+ * Resolves Baron Zemo's "Prisoners of War" tactic Fight effect (WP-818 / D-24752):
+ * "Each other player reveals an [team:avengers] Hero or chooses a Bystander from their
+ * Victory Pile, and you rescue that Bystander."
+ *
+ * Each other player (sorted) reveals an Avengers Hero from their hand when they hold
+ * one; otherwise their first Victory-Pile Bystander moves to the defeating player's
+ * Victory Pile. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the beneficiary).
+ */
+export function resolvePrisonersOfWar(
+  G: LegendaryGameState,
+  currentPlayer: string,
+): void {
+  const currentZones = G.playerZones[currentPlayer];
+  if (!currentZones) {
+    return;
+  }
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to reveal an Avengers Hero or give up a Bystander (Prisoners of War).`,
+      'neutral',
+    );
+    return;
+  }
+
+  for (const seat of otherSeats) {
+    const seatZones = G.playerZones[seat]!;
+    // why: a free reveal always beats giving up a Bystander (D-24312), and every
+    // Victory-Pile Bystander is worth the same, so the auto-pick is player-optimal.
+    const revealedHero = seatZones.hand.find(
+      (cardExtId) => offPlayCardTraits(G, cardExtId)?.team === TEAM_AVENGERS,
+    );
+    if (revealedHero !== undefined) {
+      pushLog(G,
+        `Fight effect: Player ${seat} revealed ${formatCardRef(G.cardDisplayData, revealedHero)} — no Bystander (Prisoners of War).`,
+        'neutral',
+      );
+      continue;
+    }
+    const bystander = findFirstVictoryPileBystander(seatZones.victory);
+    if (bystander === undefined) {
+      pushLog(G,
+        `Fight effect: Player ${seat} had no Avengers Hero and no Bystander in their Victory Pile (Prisoners of War).`,
+        'blocked',
+      );
+      continue;
+    }
+    const moveResult = moveCardFromZone(seatZones.victory, currentZones.victory, bystander);
+    seatZones.victory = moveResult.from;
+    currentZones.victory = moveResult.to;
+    pushLog(G,
+      `Fight effect: Player ${seat} had no Avengers Hero, so Player ${currentPlayer} rescued a Bystander from their Victory Pile (Prisoners of War).`,
+      'applied',
+    );
+  }
+}
+
+/**
+ * Resolves Arnim Zola's "Dominate the Weak" tactic Fight effect (WP-821 / D-24754): "The
+ * player of your choice gains a Hero from the HQ that has less than 2 printed
+ * [icon:attack]."
+ *
+ * Parks one active-seat choice whose options pair a recipient with an eligible HQ Hero.
+ * A single possible option (solo, one eligible Hero) resolves at once. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ * @param currentPlayer - The player who defeated the tactic (the chooser).
+ */
+export function resolveDominateTheWeak(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  const slots = listZolaWeakHqSlots(G);
+  if (slots.length === 0) {
+    pushLog(G,
+      `Fight effect: no Hero in the HQ has less than 2 printed Attack, so no one gains a Hero (Dominate the Weak).`,
+      'blocked',
+    );
+    return;
+  }
+
+  const choice = buildDominateTheWeakChoice(G, currentPlayer, slots);
+  if (choice.seatPrompts[currentPlayer]!.options.length === 1) {
+    // why: one recipient and one Hero is a forced pick, so it resolves now (the Bitter
+    // Captor single-eligible rule, EC-729). Both fields are always set by construction;
+    // the guard keeps exactOptionalPropertyTypes honest without a cast.
+    const onlyOption = choice.seatPrompts[currentPlayer]!.options[0]!;
+    if (onlyOption.cardId !== undefined && onlyOption.recipientSeat !== undefined) {
+      gainDominateTheWeakHero(G, onlyOption.cardId, onlyOption.recipientSeat);
+    }
+    return;
+  }
+  // why: D-24648 — the defeating player is the only addressed seat, so no stage ride runs.
+  parkSeatChoice(G, events, choice, currentPlayer);
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} chooses a player to gain a Hero with less than 2 printed Attack from the HQ (Dominate the Weak).`,
+    'neutral',
+  );
+}
+
+/**
+ * Resolves Arnim Zola's "Computer-Uploaded Genius" tactic Fight effect (WP-821 /
+ * D-24754): "Each other player reveals a [hc:tech] Hero or discards a card."
+ *
+ * Each other player with a Tech Hero in hand reveals it; each other player with an empty
+ * hand is narrated; the rest get one simultaneous multi-seat discard. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (for the stage-ride admission); optional
+ *   so a unit/replay context parks on G and resolves directly.
+ * @param currentPlayer - The player who defeated the tactic. Skipped ("each other player").
+ */
+export function resolveComputerUploadedGenius(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  const otherSeats = Object.keys(G.playerZones)
+    .filter((seat) => seat !== currentPlayer)
+    .sort();
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to reveal a Tech Hero or discard a card (Computer-Uploaded Genius).`,
+      'neutral',
+    );
+    return;
+  }
+
+  const discardSeats = collectGeniusDiscardSeats(G, otherSeats);
+  const discardChoice = buildComputerUploadedGeniusDiscardChoice(G, discardSeats);
+  if (discardChoice === undefined) {
+    pushLog(G,
+      `Fight effect: no other player must discard a card (Computer-Uploaded Genius).`,
+      'neutral',
+    );
+    return;
+  }
+  parkSeatChoice(G, events, discardChoice);
+  pushLog(G,
+    `Fight effect: each other player without a Tech Hero must discard a card (Computer-Uploaded Genius).`,
+    'neutral',
+  );
+}
+
+/**
+ * Narrates each other seat's Tech reveal or empty hand for Computer-Uploaded Genius and
+ * returns the seats that must discard.
+ *
+ * @param G - The game state (read for hands + traits; G.messages appended).
+ * @param otherSeats - Every seat except the defeating player (ascending).
+ * @returns The seats with no Tech Hero and at least one hand card (ascending).
+ */
+function collectGeniusDiscardSeats(G: LegendaryGameState, otherSeats: readonly string[]): string[] {
+  const discardSeats: string[] = [];
+  for (const seat of otherSeats) {
+    const zones = G.playerZones[seat];
+    if (!zones) {
+      continue;
+    }
+    // why: during your turn another player's Heroes are in their hand, so the reveal reads
+    // the hand only (the Crushing Shockwave / Prisoners of War precedent), either class slot
+    // (D-24523). A free reveal always beats a discard (D-24312), so a Tech holder is never asked.
+    const techHero = zones.hand.find((cardExtId) => {
+      const traits = offPlayCardTraits(G, cardExtId);
+      return traits?.heroClass === HERO_CLASS_TECH || traits?.heroClass2 === HERO_CLASS_TECH;
+    });
+    if (techHero !== undefined) {
+      pushLog(G,
+        `Fight effect: Player ${seat} revealed ${formatCardRef(G.cardDisplayData, techHero)} — no discard (Computer-Uploaded Genius).`,
+        'neutral',
+      );
+      continue;
+    }
+    if (zones.hand.length === 0) {
+      pushLog(G,
+        `Fight effect: Player ${seat} has no card to discard (Computer-Uploaded Genius).`,
+        'neutral',
+      );
+      continue;
+    }
+    discardSeats.push(seat);
+  }
+  return discardSeats;
+}
+
+/**
+ * Resolves Arnim Zola's "Pet Projects" tactic Fight effect (WP-821 / D-24754): "Each
+ * other player reveals a Zola's Creations Villain from their Victory Pile or gains a
+ * Wound."
+ *
+ * Each other player (clockwise from the defeating player, D-24780) with any Zola's Creations Villain in their Victory Pile
+ * reveals it; every other one gains a Wound through the Diving Block chokepoint. Never
+ * throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (skipped).
+ */
+export function resolvePetProjects(G: LegendaryGameState, currentPlayer: string): void {
+  // why: rules v23 L2247 — clockwise from the current player (D-24780). Rotate first, then
+  // drop the current player: a list without them would fall back to sorted order.
+  const otherSeats = seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)
+    .filter((seat) => seat !== currentPlayer);
+  if (otherSeats.length === 0) {
+    pushLog(G,
+      `Fight effect: there is no other player to reveal a Zola's Creations Villain or gain a Wound (Pet Projects).`,
+      'neutral',
+    );
+    return;
+  }
+
+  for (const seat of otherSeats) {
+    const zones = G.playerZones[seat];
+    if (!zones) {
+      continue;
+    }
+    if (countVictoryPileGroupVillains(zones.victory, ZOLAS_CREATIONS_VILLAIN_PREFIX) > 0) {
+      pushLog(G,
+        `Fight effect: Player ${seat} revealed a Zola's Creations Villain from their Victory Pile — no Wound (Pet Projects).`,
+        'neutral',
+      );
+      continue;
+    }
+    // why: WP-682 / D-24499 — the Wound chokepoint, so a Diving-Block holder (a non-active
+    // seat here) gets the reveal window; D-24673 wording while it is pending.
+    const woundOutcome = gainWoundWithOutcome(G, seat);
+    if (woundOutcome === 'gained') {
+      pushLog(G, `Fight effect: Player ${seat} gained a Wound (Pet Projects).`, 'applied');
+    } else if (woundOutcome === 'diving-block-pending') {
+      pushLog(G,
+        `Fight effect: Player ${seat} would gain a Wound — Diving Block can prevent it (Pet Projects).`,
+        'neutral',
+      );
+    } else {
+      pushLog(G,
+        `Fight effect: Player ${seat} gained no Wound — the Wound supply is empty (Pet Projects).`,
+        'blocked',
+      );
+    }
+  }
+}
+
+/**
+ * Resolves Arnim Zola's "Crush Pacifist Resistance" tactic Fight effect (WP-821 /
+ * D-24754): "KO up to two of your Heroes that have less than 2 printed [icon:attack]."
+ *
+ * Parks the first of up to two active-seat KO picks over the defeating player's hand and
+ * played cards, with "KO nothing" last and the default. seatChoice.resolve.ts chains the
+ * second pick after a KO. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param events - The move's boardgame.io events (unused for an active-seat-only park).
+ * @param currentPlayer - The player who defeated the tactic (the one who KOs).
+ */
+export function resolveCrushPacifistResistance(
+  G: LegendaryGameState,
+  events: TacticSeatChoiceEvents | undefined,
+  currentPlayer: string,
+): void {
+  const choice = buildCrushPacifistResistanceChoice(
+    G,
+    currentPlayer,
+    CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+  );
+  if (choice === undefined) {
+    pushLog(G,
+      `Fight effect: Player ${currentPlayer} has no Hero with less than 2 printed Attack to KO (Crush Pacifist Resistance).`,
+      'blocked',
+    );
+    return;
+  }
+  // why: D-24648 — the defeating player is the only addressed seat, so no stage ride runs.
+  parkSeatChoice(G, events, choice, currentPlayer);
+  pushLog(G,
+    `Fight effect: Player ${currentPlayer} may KO up to two Heroes with less than 2 printed Attack (Crush Pacifist Resistance).`,
+    'neutral',
+  );
 }

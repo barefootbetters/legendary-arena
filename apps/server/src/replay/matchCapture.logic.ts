@@ -26,7 +26,7 @@
  * segments for non-core ids).
  */
 
-import { buildScenarioKeyFromExtIds } from '@legendary-arena/game-engine';
+import { buildScenarioKeyFromExtIds, evaluateEndgame } from '@legendary-arena/game-engine';
 import type {
   LegendaryGameState,
   MatchSelection,
@@ -115,11 +115,13 @@ export async function captureMatch(
   // why: durable copy of the artifact keyed by replayHash — survives the reaper
   // deleting the live bgio.matches row. ON CONFLICT DO NOTHING makes a re-capture
   // (crash between insert and the captured_at stamp) harmless. Stored as jsonb;
-  // node-pg serializes the objects.
+  // node-pg serializes the objects. The `gameover` column is the live row's
+  // `metadata.gameover`, copied so /result-lagn can still report the outcome
+  // once the reaper deletes the row (D-24719).
   await database.query(
     'INSERT INTO bgio.replay_artifacts ' +
-      '(replay_hash, match_id, scenario_key, initial_state, log) ' +
-      'VALUES ($1, $2, $3, $4, $5) ' +
+      '(replay_hash, match_id, scenario_key, initial_state, log, gameover) ' +
+      'VALUES ($1, $2, $3, $4, $5, $6) ' +
       'ON CONFLICT (replay_hash) DO NOTHING',
     [
       stateHash,
@@ -127,6 +129,7 @@ export async function captureMatch(
       scenarioKey,
       JSON.stringify(artifact.initialState),
       JSON.stringify(artifact.log),
+      serializeStoredGameover(artifact.metadata),
     ],
   );
 
@@ -175,4 +178,109 @@ export async function captureMatch(
   );
 
   return { matchId, replayHash: stateHash, scenarioKey, seatsOwned, skipped: null };
+}
+
+/**
+ * Serialize a live row's `metadata.gameover` for the artifact's `gameover`
+ * column: the verdict as JSON, or `null` when the metadata carries none.
+ *
+ * @param metadata The live row's `metadata` jsonb (already parsed).
+ * @returns The JSON text to store, or `null`.
+ */
+export function serializeStoredGameover(metadata: unknown): string | null {
+  if (typeof metadata !== 'object' || metadata === null) {
+    return null;
+  }
+  const gameover = (metadata as { gameover?: unknown }).gameover;
+  if (gameover === null || gameover === undefined) {
+    return null;
+  }
+  return JSON.stringify(gameover);
+}
+
+// why: a small batch per harvester scan — each row is a full reducer
+// re-execution on the server's event loop, the same cost as one capture. Five
+// per 5-minute scan clears hundreds of legacy artifacts within a day without a
+// visible latency spike for live sockets (D-24719 §3).
+export const ARTIFACT_GAMEOVER_SWEEP_BATCH_SIZE = 5;
+
+/**
+ * Fill `bgio.replay_artifacts.gameover` for artifacts captured before
+ * migration 046 (D-24719 §3). Each row is re-executed through the D-24119
+ * reducer and the verdict is the engine's own `evaluateEndgame` on the
+ * reproduced final `G` — the exact value the live top-level `endIf` returned.
+ *
+ * @param database The injected `pg.Pool`.
+ * @param batchSize The most rows to fill in this call.
+ * @returns The number of rows filled.
+ */
+export async function fillMissingArtifactGameovers(
+  database: DatabaseClient,
+  batchSize: number,
+): Promise<number> {
+  const result = await database.query(
+    'SELECT replay_hash, initial_state, log FROM bgio.replay_artifacts ' +
+      'WHERE gameover IS NULL LIMIT $1',
+    [batchSize],
+  );
+  let filledCount = 0;
+  for (const row of result.rows) {
+    const verdict = deriveArtifactGameover(row.replay_hash, row.initial_state, row.log);
+    // why: `AND gameover IS NULL` — a concurrent capture or a second process
+    // never has its value overwritten.
+    const update = await database.query(
+      'UPDATE bgio.replay_artifacts SET gameover = $2 ' +
+        'WHERE replay_hash = $1 AND gameover IS NULL',
+      [row.replay_hash, JSON.stringify(verdict)],
+    );
+    filledCount += update.rowCount ?? 0;
+  }
+  return filledCount;
+}
+
+/**
+ * Re-derive one artifact's endgame verdict. Returns `{}` (outcome unknown) when
+ * the reduction throws, yields no verdict, or no longer reproduces the stored
+ * `replay_hash`, so the row is never re-selected.
+ *
+ * @param replayHash The artifact's key (for the log line).
+ * @param initialState The artifact's `initial_state` jsonb.
+ * @param log The artifact's `log` jsonb.
+ * @returns The verdict object to store.
+ */
+function deriveArtifactGameover(
+  replayHash: string,
+  initialState: unknown,
+  log: unknown,
+): object {
+  try {
+    const { finalState, stateHash } = reduceMatchToFinalState({
+      initialState,
+      log: Array.isArray(log) ? log : [],
+    });
+    if (stateHash !== replayHash) {
+      // why: the sweep runs on today's engine. If a later fidelity change makes
+      // the re-execution diverge from the captured final `G` (the competition
+      // verifier's own hash check), its verdict is not the live one, so storing
+      // it could publish the wrong outcome. Unknown is the honest value.
+      console.error(
+        `[capture] Replay artifact ${replayHash} no longer reproduces its stored ` +
+          `hash on this build (got ${stateHash}); storing an unknown outcome instead ` +
+          `of a verdict that may differ from the live match.`,
+      );
+      return {};
+    }
+    return evaluateEndgame(finalState) ?? {};
+  } catch (error) {
+    // why: the reduction is pure, so a throw repeats on every scan; storing `{}`
+    // (outcome unknown — the LAGN `result` block is omitted) stops the retry
+    // loop instead of losing the error silently.
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(
+      `[capture] Could not re-derive the endgame verdict for replay artifact ` +
+        `${replayHash}; storing an unknown outcome so its result LAGN omits the ` +
+        `result block. Error: ${errorMessage}`,
+    );
+    return {};
+  }
 }

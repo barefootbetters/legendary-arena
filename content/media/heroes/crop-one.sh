@@ -8,7 +8,7 @@
 # -c copy (lossless PCM; no re-encoding, sample-accurate).
 #
 # Usage — run from a hero's pCloud audio folder (e.g.
-# C:/pcloud/LA/audio/heroes/black-widow/, see Workspace Map), pointing at
+# C:/pcloud/legendary-arena/audio/heroes/black-widow/, see Workspace Map), pointing at
 # this repo-tracked script:
 #   bash "$REPO/content/media/heroes/crop-one.sh" <asset> <start> <end> [--loop N]
 #   ( $REPO = your legendary-arena checkout )
@@ -104,7 +104,7 @@ output="hero-${slug}_${asset}_${name}.wav"
 
 if [[ ! -f "$master" ]]; then
   echo "Error: master WAV not found at $PWD/$master" >&2
-  echo "Run this script from a hero's pCloud audio folder (e.g. C:/pcloud/LA/audio/heroes/black-widow/)." >&2
+  echo "Run this script from a hero's pCloud audio folder (e.g. C:/pcloud/legendary-arena/audio/heroes/black-widow/)." >&2
   exit 1
 fi
 

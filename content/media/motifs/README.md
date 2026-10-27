@@ -38,7 +38,7 @@ re-rendered at higher fidelity without touching the notes.
 
 ## The grammar it encodes
 
-Read from `C:\pcloud\LA\audio\audio-motif-map.json` (the authoritative map):
+Read from `C:\pcloud\legendary-arena\audio\audio-motif-map.json` (the authoritative map):
 
 - **team → key.** The phrase is written on the team's root note.
 - **class → instrument + register.** Each class maps to a General MIDI patch
@@ -80,7 +80,7 @@ falls back to synth). Node only, no npm deps.
   `content/media/motifs/`). They are complete provenance. The `.mjs` is
   force-added because `content/media/**` is otherwise gitignored.
 - **All `.mid` / `.wav` / `.mp3` outputs** are working audio — they live on
-  pCloud (`C:\pcloud\LA\audio\motifs\`), never committed, never in the repo
+  pCloud (`C:\pcloud\legendary-arena\audio\motifs\`), never committed, never in the repo
   tree.
 - **Delivery:** the published MP3s (or, more likely, a packed **SFX sprite**
   assembled from them) go to R2 under an `audio/motifs/` prefix on the

@@ -104,17 +104,17 @@
       "expectedStatus": 200,
       "state": "live",
       "anchor": "api",
-      "notes": "Proxied Cloudflare A record api.legendary-arena.com -> the self-hosted DigitalOcean droplet (Ubuntu 24.04, sfo3) since the 2026-10-12 cutover. Nginx on the droplet terminates TLS with a Cloudflare Origin Certificate; the api hosts run SSL Full (strict) through a Configuration Rule while the rest of the zone stays on Full. The server is the systemd unit la-server; provisioning and deploys live in the legendary-arena-lab repo. Live since 2026-05-09; from then until 2026-10-12 this was a DNS-only CNAME to legendary-arena-server.onrender.com (Render). Rollback during the 7-day window restores that CNAME exactly and resumes the Render service. PUBLIC_BASE_URL is unrelated to this hostname — it is the CLIENT URL Stripe Checkout redirects users to after success/cancel (see apps/server/src/billing/billing.routes.ts)."
+      "notes": "Proxied Cloudflare A record api.legendary-arena.com -> the self-hosted DigitalOcean droplet (Ubuntu 24.04, sfo3) since the 2026-10-12 cutover. Nginx on the droplet terminates TLS with a Cloudflare Origin Certificate; the api hosts run SSL Full (strict) through a Configuration Rule while the rest of the zone stays on Full. The server is the systemd unit la-server; provisioning and deploys live in the legendary-arena-lab repo. Live since 2026-05-09; from then until 2026-10-12 this was a DNS-only CNAME to legendary-arena-server.onrender.com (Render). Render was deleted on 2026-10-22, so there is no Render rollback. PUBLIC_BASE_URL is unrelated to this hostname — it is the CLIENT URL Stripe Checkout redirects users to after success/cancel (see apps/server/src/billing/billing.routes.ts)."
     },
     {
-      "name": "API (retired Render origin, rollback only)",
+      "name": "API (retired Render origin, deleted)",
       "url": "https://legendary-arena-server.onrender.com/health",
-      "host": "Render (suspended)",
-      "source": "none — Render web service legendary-arena-server, suspended at the 2026-10-12 cutover",
-      "expectedStatus": [404, 503],
+      "host": "Render (deleted 2026-10-22)",
+      "source": "none — Render web service legendary-arena-server, suspended at the 2026-10-12 cutover and deleted 2026-10-22",
+      "expectedStatus": 404,
       "state": "live",
       "anchor": "api",
-      "notes": "Not a production hostname since the 2026-10-12 cutover. The Render web service is suspended for the 7-day rollback window (then Render is deleted, ~2026-10-20), so this host no longer serves the game: a suspended service is expected to answer 503 and a deleted one 404 (as legendary-arena-wiki.onrender.com does). Kept as a probe, like the retired ewiki origin above: a 200 here means the Render service is running again. That is expected only during a rollback, when api.legendary-arena.com points back here; otherwise suspend or delete it."
+      "notes": "Not a production hostname since the 2026-10-12 cutover. Render was deleted on 2026-10-22 (the web service, its database, and the Blueprint), so this host answers 404 (x-render-routing: no-server), as legendary-arena-wiki.onrender.com does. Kept as a probe, like the retired ewiki origin above: a 200 here means some Render service holds this name again, and it isn't ours, so confirm api.legendary-arena.com still points at the droplet."
     },
     {
       "name": "Card images CDN",

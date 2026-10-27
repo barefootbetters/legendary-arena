@@ -24,7 +24,11 @@
  * (capture pipeline); D-24113 (the sibling reaper scheduler pattern).
  */
 
-import { captureMatch } from './matchCapture.logic.js';
+import {
+  captureMatch,
+  fillMissingArtifactGameovers,
+  ARTIFACT_GAMEOVER_SWEEP_BATCH_SIZE,
+} from './matchCapture.logic.js';
 
 // why: capture cadence — scan every 5 minutes. Well under the reaper's 1-hour
 // gameover grace (GAMEOVER_GRACE_MS), so a finished match is captured long before
@@ -105,6 +109,28 @@ export function startCaptureHarvester(options) {
             `next interval): ${errorMessage}`,
         );
       }
+    }
+    try {
+      // why: D-24719 §3 — fill the endgame verdict on artifacts captured before
+      // migration 046, a small batch per scan, so a reaped match's result LAGN
+      // reports its outcome. A no-op once every artifact carries a verdict.
+      const filledCount = await fillMissingArtifactGameovers(
+        database,
+        ARTIFACT_GAMEOVER_SWEEP_BATCH_SIZE,
+      );
+      if (filledCount > 0) {
+        console.log(
+          `[capture-harvester] Recorded the endgame verdict on ${filledCount} ` +
+            `earlier replay artifact(s).`,
+        );
+      }
+    } catch (error) {
+      // why: a failed sweep is logged and swallowed; the rows stay NULL and the
+      // next scan retries.
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(
+        `[capture-harvester] Verdict sweep failed (will retry next interval): ${errorMessage}`,
+      );
     }
   }
 

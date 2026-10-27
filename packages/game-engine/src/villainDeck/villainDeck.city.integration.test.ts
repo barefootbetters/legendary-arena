@@ -298,8 +298,10 @@ describe('revealVillainCard — City integration', () => {
       cardTypes: { 'villain-card-001': 'villain' },
     });
 
-    // Deliberately corrupt city to a non-5-element array
-    (gameState as unknown as Record<string, unknown>).city = [null, null, null];
+    // Deliberately corrupt city to an out-of-range array.
+    // why: WP-831 / D-24764 — a 1-6 space City is legal now (a scheme can resize it), so the
+    // malformed example is a 7-space City, past CITY_MAX_SIZE.
+    (gameState as unknown as Record<string, unknown>).city = [null, null, null, null, null, null, null];
 
     const moveContext = createMockMoveContext(gameState);
     const counterBefore = moveContext.G.counters[ENDGAME_CONDITIONS.ESCAPED_VILLAINS] ?? 0;

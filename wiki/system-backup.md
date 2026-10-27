@@ -18,7 +18,7 @@ related:
   - service-dependency-map.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\system-backup.md (this page — https://ewiki.legendary-arena.com/system-backup/)
+  - C:\dev\legendary-arena\wiki\system-backup.md (this page — https://ewiki.legendary-arena.com/system-backup/)
   - ../docs/ops/DISASTER_RECOVERY.md
   - ../docs/ai/DECISIONS.md
 last-reviewed: 2026-10-12
@@ -128,5 +128,5 @@ failed service takes down, and what to check, in order, when a product is down.
   convention.
 - [SCHEMA.md §Section includes](SCHEMA.md#section-includes-write-once-show-in-many-places)
   — how to use it.
-- [`include-section.html`](../apps/wiki-viewer/layouts/shortcodes/include-section.html)
+- [`include-section.html`](../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html)
   — the shortcode.

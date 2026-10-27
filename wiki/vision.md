@@ -18,7 +18,7 @@ related:
   - trust-controls-playbook.md
 status: canonical
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\vision.md (this page — https://ewiki.legendary-arena.com/vision/)
+  - C:\dev\legendary-arena\wiki\vision.md (this page — https://ewiki.legendary-arena.com/vision/)
   - ../docs/01-VISION.md
   - ../docs/12-SCORING-REFERENCE.md
   - ../docs/ai/ARCHITECTURE.md

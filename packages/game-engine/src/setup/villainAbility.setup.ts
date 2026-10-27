@@ -19,11 +19,13 @@ import type {
   VillainEffectKeyword,
   VillainEffectDescriptor,
   VillainEffectPrimitive,
+  VillainEffectCondition,
 } from '../rules/villainAbility.types.js';
 import {
   VILLAIN_ABILITY_TIMINGS,
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
+  VILLAIN_EFFECT_CONDITIONS,
   LEGACY_VILLAIN_KEYWORD_TO_DESCRIPTOR,
 } from '../rules/villainAbility.types.js';
 // why: D-24295 — the universal `@<space>` location-gate suffix validates each space
@@ -37,6 +39,8 @@ import { CITY_SPACE_NAMES } from '../board/citySpaceNames.js';
 // requirement setup use — reusing it here keeps marker values and trait slugs
 // in one space; a second normalizer would be a drift source.
 import { normalizeTraitSlug } from '../state/traits.normalize.js';
+import { HERO_CLASSES } from '../content/content.schemas.js';
+import type { HeroClass } from '../content/content.schemas.js';
 // why: D-18704 / D-18706 — villain hooks must key by the copy-indexed
 // instance ext_id (matching the Fight/Ambush fire sites that pass a zone id),
 // fanning out exactly like the henchman path already does. The shared emitter
@@ -228,6 +232,38 @@ function parsePositiveInteger(token: string): number | null {
 }
 
 /**
+ * Parses a `+`-joined cost list (`2+3+5+7`) into strictly ascending non-negative
+ * integers, or null when malformed.
+ *
+ * Each token must be `0` or a positive decimal integer with no sign or leading
+ * zero; the list must hold at least one token and be strictly ascending (a
+ * duplicate or a descent is rejected).
+ *
+ * @param token - The raw cost-list token (the text after the primitive's `:`).
+ * @returns The parsed costs, or null.
+ */
+// why: D-24750 — the same cost-list grammar as the `[discard-to-fight:cost:…]`
+// marker parser in villainDefeatRequirement.setup.ts (a second copy, kept local per
+// the duplicate-first rule). Strict and canonical so two spellings of one cost set
+// can never produce two descriptors.
+function parseEligibleCostList(token: string): number[] | null {
+  const costTokens = token.split('+');
+  const costs: number[] = [];
+  for (const costToken of costTokens) {
+    if (!/^(0|[1-9][0-9]*)$/.test(costToken)) {
+      return null;
+    }
+    const cost = Number.parseInt(costToken, 10);
+    const previousCost = costs[costs.length - 1];
+    if (previousCost !== undefined && cost <= previousCost) {
+      return null;
+    }
+    costs.push(cost);
+  }
+  return costs;
+}
+
+/**
  * Parses the shared `<kind>:<value>` hero-trait predicate tail used by
  * `reveal-or-wound`, `ko-heroes-current-by-trait`, and
  * `rescue-bystanders-current-by-trait-count` (D-24281 / D-24290), or null when
@@ -277,6 +313,32 @@ function parseTraitPredicateTokens(
 }
 
 /**
+ * Parses a `+`-joined Hero Class list (`strength+instinct`) into normalized class slugs,
+ * in token order, or null when malformed (WP-836 / D-24769).
+ *
+ * Each token is normalized (trim + lowercase) and must be one of `HERO_CLASSES`; an
+ * empty token, an unknown class or a repeated class returns null.
+ *
+ * @param token - The raw class-list token (the text after the primitive's `:`).
+ * @returns The parsed classes, or null.
+ */
+function parseHeroClassList(token: string): HeroClass[] | null {
+  const heroClasses: HeroClass[] = [];
+  for (const rawClass of token.split('+')) {
+    const normalizedClass = normalizeTraitSlug(rawClass);
+    const heroClass = HERO_CLASSES.find((candidate) => candidate === normalizedClass);
+    if (heroClass === undefined) {
+      return null;
+    }
+    if (heroClasses.includes(heroClass)) {
+      return null;
+    }
+    heroClasses.push(heroClass);
+  }
+  return heroClasses;
+}
+
+/**
  * Validates a `@<space>[+<space>…]` gate suffix and lifts it to a
  * `requireCitySpaces` list, or null when it is empty or names an unknown space
  * (D-24295).
@@ -320,20 +382,79 @@ function isCitySpaceName(value: string): value is CitySpaceName {
 }
 
 /**
- * Parses a full effect marker value into a descriptor, splitting off the
- * universal `@<space>[+<space>…]` location-gate suffix FIRST (D-24295) and then
- * parsing the remaining primitive grammar.
+ * Checks whether a string is one of the canonical villain effect conditions.
+ *
+ * @param value - The candidate condition token (the text after `!`).
+ * @returns True when value is a member of VILLAIN_EFFECT_CONDITIONS.
+ */
+function isVillainEffectCondition(value: string): value is VillainEffectCondition {
+  // why: case-sensitive membership against the closed set; `Savior` and the empty
+  // string are not members, so a mistyped suffix resolves to unresolvedMarkers.
+  for (const condition of VILLAIN_EFFECT_CONDITIONS) {
+    if (condition === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Parses a full effect marker value into a descriptor. Grammar:
+ * `<primitive>[:<param>…][@<space>[+<space>…]][!<condition>]`.
+ *
+ * The `!<condition>` suffix (D-24749) is split off FIRST, then the universal
+ * `@<space>[+<space>…]` location-gate suffix (D-24295), then the remaining
+ * primitive grammar. More than one `!`, a condition outside
+ * `VILLAIN_EFFECT_CONDITIONS` (case-sensitive, empty included), an unknown /
+ * empty space, or more than one `@` returns null (→ `unresolvedMarkers`, never a
+ * silent accept). A present condition is attached as `requireCondition`; a
+ * present location gate as `requireCitySpaces`.
+ *
+ * @param value - The raw marker value (the text inside `[effect:…]`).
+ * @returns The parsed descriptor (with any condition / location gate), or null.
+ */
+function parseParameterizedEffect(
+  value: string,
+): VillainEffectDescriptor | null {
+  // why: D-24749 — Savior is data on the marker, the `@` gate's sibling. Split `!`
+  // first so the condition suffix is always last: `ko-hero:current!savior@sewers`
+  // leaves `savior@sewers` as the condition, which is not a member → null.
+  const conditionSplit = value.split('!');
+  if (conditionSplit.length > 2) {
+    return null;
+  }
+  let requireCondition: VillainEffectCondition | null = null;
+  if (conditionSplit.length === 2) {
+    const conditionToken = conditionSplit[1]!;
+    if (!isVillainEffectCondition(conditionToken)) {
+      return null;
+    }
+    requireCondition = conditionToken;
+  }
+  const descriptor = parseLocationGatedEffect(conditionSplit[0]!);
+  if (descriptor === null) {
+    return null;
+  }
+  if (requireCondition !== null) {
+    descriptor.requireCondition = requireCondition;
+  }
+  return descriptor;
+}
+
+/**
+ * Parses a marker value with any `!<condition>` suffix already removed,
+ * splitting off the universal `@<space>[+<space>…]` location-gate suffix FIRST
+ * (D-24295) and then parsing the remaining primitive grammar.
  *
  * The gate suffix is split before the primitive `:`-grammar so a location gate
  * can decorate ANY effect token. An unknown / empty space, or more than one `@`,
- * returns null (→ `unresolvedMarkers`, never a silent accept). The remaining
- * left side parses by `parseUngatedEffect`; a present gate is attached as
- * `requireCitySpaces`.
+ * returns null. The remaining left side parses by `parseUngatedEffect`; a present
+ * gate is attached as `requireCitySpaces`.
  *
- * @param value - The raw marker value (the text inside `[effect:…]`).
+ * @param value - The marker value minus any `!<condition>` suffix.
  * @returns The parsed descriptor (with any location gate), or null.
  */
-function parseParameterizedEffect(
+function parseLocationGatedEffect(
   value: string,
 ): VillainEffectDescriptor | null {
   const gateSplit = value.split('@');
@@ -360,14 +481,16 @@ function parseParameterizedEffect(
 
 /**
  * Parses a parameterized effect token `<primitive>[:<param>…]` (WITHOUT any
- * `@<space>` gate suffix — the wrapper strips that first) into a descriptor, or
+ * `!<condition>` or `@<space>` gate suffix — the wrappers strip those first) into a descriptor, or
  * null when the token is not a valid parameterized effect.
  *
  * Forward-compatible grammar (WP-252 / D-24023): accepting it makes a future
  * magnitude (e.g. `ko-hero:each:3`) or selector data-only — no new keyword, no
  * code change. Colon-delimited and positional per primitive:
- *   - `ko-hero:current` | `ko-hero:each:<N>`
+ *   - `ko-hero:current` | `ko-hero:each:<N>` | `ko-hero:each:<N>:<zone>` (D-24280)
+ *     | `ko-hero:each:<N>:discard:non-grey` (D-24769)
  *   - `gain-wound:current` | `gain-wound:each` | `gain-wound:each-other[:<N>]` (D-24295)
+ *     | `gain-wound:each-non-savior` (D-24749)
  *   - `capture-hq-hero:rightmost` | `:highest-cost` | `:lowest-cost`
  *   - `haunt-hq-hero:rightmost` | `:leftmost` | `:cost-lte-3`  (D-24587)
  *   - `reveal-or-wound:<kind>:<value>`  (kind `team` | `hc`; D-24281)
@@ -375,8 +498,17 @@ function parseParameterizedEffect(
  *   - `override-next-hand-size:<N>`  (N the absolute next-hand target; D-24307)
  *   - `add-next-hand-size:<N>`  (N extra cards added to the next-hand target; D-24352)
  *   - `play-villain-deck-cards:<N>`  (N top villain-deck cards to play; D-24351)
+ *     | `play-villain-deck-cards:<N>:<kind>:<value>`  (unless the current player reveals
+ *     a matching Hero; D-24770)
  *   - `reveal-top-draw-if-cost-lte:<N>`  (draw the deck top if it costs ≤ N; D-24589)
  *   - `ko-up-to-from-discard-current:<N>`  (KO up to N cards from your discard; D-24589)
+ *     | `ko-up-to-from-discard-current:<N>:grey`  (only grey Heroes; D-24769)
+ *   - `gain-recruit-current-count-by-trait:<kind>:<value>` and
+ *     `draw-cards-current-count-by-trait:<kind>:<value>`  (count-sized; D-24769)
+ *   - `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`  (Hero Classes that draw; D-24769)
+ *   - `discard-hero-each-player-by-trait:<kind>:<value>` and
+ *     `discard-hero-or-wound-each-player-by-trait:<kind>:<value>`  (each player discards a
+ *     matching Hero, or may gain a Wound instead; D-24770)
  *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
  *   - `ko-heroes-current-count-by-trait:<kind>:<value>`  (the trait sizes the COUNT, not
  *     the KO filter; kind `team` | `hc`; D-24353)
@@ -384,7 +516,12 @@ function parseParameterizedEffect(
  *   - `give-hq-hero-by-trait-to-current:<kind>:<value>`  (kind `team` | `hc`; D-24335)
  *   - `capture-bystander` | `capture-bystander:<N>`  (N a rescue count; D-24295)
  *   - `gain-recruit-current` | `gain-recruit-current:<N>`  (N a recruit count, default 1; D-24350)
- *   - `hero-deck-top-to-escape` | `gain-officer-current`  (no params)
+ *   - `discard-hero-each-player-by-cost:<c>[+<c>…]`  (strictly ascending costs; D-24750)
+ *   - `hero-deck-top-to-escape` | `gain-officer-current` |
+ *     `ko-bystander-each-victory-pile` (D-24749) |
+ *     `gain-recruit-current-per-hero-class` (D-24750) |
+ *     `discard-hand-matching-hq-card-names-each-player` |
+ *     `hq-heroes-to-hero-deck-bottom` (D-24770)  (no params)
  *
  * @param value - The ungated marker value (the text inside `[effect:…]` minus
  *   any `@<space>` suffix).
@@ -437,6 +574,16 @@ function parseUngatedEffect(
       }
       return { primitive: 'ko-hero', target: 'each', magnitude, zone };
     }
+    // why: WP-836 / D-24769 — the 5-token `ko-hero:each:<N>:discard:non-grey` form (co2e
+    // Destroyer's "Each player KOs a non-grey Hero from their discard pile"). Only the
+    // discard zone and only `non-grey` are printed, so any other 5-token form is null.
+    if (target === 'each' && parts.length === 5) {
+      const magnitude = parsePositiveInteger(parts[2]!);
+      if (magnitude === null || parts[3] !== 'discard' || parts[4] !== 'non-grey') {
+        return null;
+      }
+      return { primitive: 'ko-hero', target: 'each', magnitude, zone: 'discard', greyFilter: 'non-grey' };
+    }
     return null;
   }
   if (primitiveToken === 'gain-wound') {
@@ -460,6 +607,12 @@ function parseUngatedEffect(
         return { primitive: 'gain-wound', target: 'each-other', magnitude };
       }
       return null;
+    }
+    // why: D-24749 — `gain-wound:each-non-savior` (Radioactive Man) wounds every player
+    // who is not a Savior. Exactly 2 tokens and no magnitude: the printed line is one
+    // Wound each, and a 3-token form is rejected rather than silently widened.
+    if (target === 'each-non-savior' && parts.length === 2) {
+      return { primitive: 'gain-wound', target: 'each-non-savior' };
     }
     return null;
   }
@@ -574,6 +727,16 @@ function parseUngatedEffect(
     // `magnitude`: the cost ceiling for Patriarch's reveal-draw (3), the KO cap for
     // Salomé's discard KO (2). A missing or non-positive count falls through to null
     // (→ unresolvedMarkers) — neither effect has a meaningful default.
+    // why: WP-836 / D-24769 — `ko-up-to-from-discard-current:<N>:grey` (co2e Destroyer /
+    // Frost Giant Warrior / Ymir "KO … grey Heroes from your discard pile") limits the KO
+    // to grey Heroes. Only `grey` is printed; the reveal-draw sibling stays 2 tokens.
+    if (primitiveToken === 'ko-up-to-from-discard-current' && parts.length === 3) {
+      const magnitude = parsePositiveInteger(parts[1]!);
+      if (magnitude === null || parts[2] !== 'grey') {
+        return null;
+      }
+      return { primitive: 'ko-up-to-from-discard-current', magnitude, greyFilter: 'grey' };
+    }
     if (parts.length !== 2) {
       return null;
     }
@@ -583,6 +746,55 @@ function parseUngatedEffect(
     }
     return { primitive: primitiveToken, magnitude };
   }
+  if (
+    primitiveToken === 'gain-recruit-current-count-by-trait' ||
+    primitiveToken === 'draw-cards-current-count-by-trait'
+  ) {
+    // why: WP-836 / D-24769 — grammar `<primitive>:<kind>:<value>` (co2e Abomination:
+    // `gain-recruit-current-count-by-trait:hc:strength`; Beetle:
+    // `draw-cards-current-count-by-trait:hc:covert`). The shared trait-predicate parser
+    // sizes the count; a malformed tail returns null.
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
+      return null;
+    }
+    return {
+      primitive: primitiveToken,
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
+  }
+  if (
+    primitiveToken === 'discard-hero-each-player-by-trait' ||
+    primitiveToken === 'discard-hero-or-wound-each-player-by-trait'
+  ) {
+    // why: WP-837 / D-24770 — grammar `<primitive>:<kind>:<value>` (co2e Mystique:
+    // `discard-hero-each-player-by-trait:team:x-men`; Frost Giant Warrior:
+    // `discard-hero-or-wound-each-player-by-trait:hc:ranged`). The shared trait-predicate
+    // parser names the Hero each player must discard; a malformed tail returns null.
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
+      return null;
+    }
+    return {
+      primitive: primitiveToken,
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
+  }
+  if (primitiveToken === 'reveal-top-ko-grey-or-draw-by-class') {
+    // why: WP-836 / D-24769 — grammar `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`
+    // (co2e Savage Land Mutates: `:strength+instinct`). Exactly 2 colon-parts; the class
+    // list is required, each a Hero Class, no repeats. Anything else returns null.
+    if (parts.length !== 2) {
+      return null;
+    }
+    const drawHeroClasses = parseHeroClassList(parts[1]!);
+    if (drawHeroClasses === null) {
+      return null;
+    }
+    return { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses };
+  }
   if (primitiveToken === 'play-villain-deck-cards') {
     // why: D-24351 — grammar `play-villain-deck-cards:<N>` (exactly 2 tokens); N is the
     // COUNT of top villain-deck cards to play (Endless Armies of HYDRA: 2; The Leader: 1),
@@ -590,14 +802,34 @@ function parseUngatedEffect(
     // `draw-cards-current:<N>`). A missing or non-positive-integer count falls through to
     // null (→ unresolvedMarkers) — a play with no count is malformed, never a no-param
     // descriptor. The detector reads `magnitude` at the onAmbush / onFight fire sites.
-    if (parts.length !== 2) {
-      return null;
+    // why: WP-837 / D-24770 — an optional reveal gate `play-villain-deck-cards:<N>:<kind>:
+    // <value>` (co2e The Leader: `:1:hc:strength`, "Reveal a Strength Hero or play a card
+    // from the Villain Deck"). The 2-part form stays byte-identical; the tail reuses the
+    // shared trait-predicate parser. Any other part count returns null.
+    if (parts.length === 2) {
+      const magnitude = parsePositiveInteger(parts[1]!);
+      if (magnitude === null) {
+        return null;
+      }
+      return { primitive: 'play-villain-deck-cards', magnitude };
     }
-    const magnitude = parsePositiveInteger(parts[1]!);
-    if (magnitude === null) {
-      return null;
+    if (parts.length === 4) {
+      const magnitude = parsePositiveInteger(parts[1]!);
+      if (magnitude === null) {
+        return null;
+      }
+      const predicate = parseTraitPredicateTokens([parts[0]!, parts[2]!, parts[3]!]);
+      if (predicate === null) {
+        return null;
+      }
+      return {
+        primitive: 'play-villain-deck-cards',
+        magnitude,
+        requireKind: predicate.requireKind,
+        requireValue: predicate.requireValue,
+      };
     }
-    return { primitive: 'play-villain-deck-cards', magnitude };
+    return null;
   }
   if (primitiveToken === 'ko-heroes-current-by-trait') {
     // why: D-24290 — grammar `ko-heroes-current-by-trait:<kind>:<value>` (the
@@ -712,6 +944,20 @@ function parseUngatedEffect(
       return { primitive: 'gain-recruit-current', magnitude };
     }
     return null;
+  }
+  if (primitiveToken === 'discard-hero-each-player-by-cost') {
+    // why: D-24750 — grammar `discard-hero-each-player-by-cost:<c>[+<c>…]` (Primus:
+    // `:2+3+5+7`). Exactly 2 colon-parts; the cost list is required (no meaningful
+    // default) and must be strictly ascending. Anything else returns null
+    // (→ unresolvedMarkers).
+    if (parts.length !== 2) {
+      return null;
+    }
+    const eligibleCosts = parseEligibleCostList(parts[1]!);
+    if (eligibleCosts === null) {
+      return null;
+    }
+    return { primitive: 'discard-hero-each-player-by-cost', eligibleCosts };
   }
   // why: hero-deck-top-to-escape, gain-officer-current, and the other no-param
   // primitives take no params; reject any trailing colon-separated tokens so a

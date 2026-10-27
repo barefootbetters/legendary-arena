@@ -19,10 +19,18 @@ import * as boardgameInternal from 'boardgame.io/dist/cjs/internal.js';
 import {
   buildScenarioKey,
   computeStateHash,
+  ENDGAME_CONDITIONS,
+  evaluateEndgame,
   LegendaryGame,
 } from '@legendary-arena/game-engine';
 
-import { captureMatch, deriveCaptureScenarioKey } from './matchCapture.logic.js';
+import {
+  captureMatch,
+  deriveCaptureScenarioKey,
+  fillMissingArtifactGameovers,
+  serializeStoredGameover,
+  ARTIFACT_GAMEOVER_SWEEP_BATCH_SIZE,
+} from './matchCapture.logic.js';
 // @ts-ignore — importing .mjs from .ts; tsx resolves this at runtime.
 import { checkParPublished } from '../par/parGate.mjs';
 // @ts-ignore — loadParIndex lives behind the Setup-Tooling Surface (WP-144 / D-14401).
@@ -234,6 +242,13 @@ describe('captureMatch (WP-335)', () => {
       assert.equal(artifactRow.rows[0]!.match_id, MATCH_ID);
       assert.equal(artifactRow.rows[0]!.scenario_key, expectedScenarioKey);
 
+      // D-24719: the live row's metadata.gameover is copied onto the artifact.
+      const verdictRow = await pool!.query(
+        'SELECT gameover FROM bgio.replay_artifacts WHERE replay_hash = $1',
+        [expectedHash],
+      );
+      assert.deepEqual(verdictRow.rows[0]!.gameover, { winner: '0' });
+
       // Ownership per authenticated seat.
       const ownership = await pool!.query(
         'SELECT cs.replay_hash FROM legendary.replay_ownership cs ' +
@@ -277,4 +292,112 @@ describe('captureMatch (WP-335)', () => {
       await pool!.query("DELETE FROM bgio.matches WHERE match_id = 'wp335-null-init'");
     },
   );
+});
+
+describe('serializeStoredGameover — the capture-time verdict copy (D-24719)', () => {
+  test('serializes metadata.gameover as JSON', () => {
+    assert.equal(
+      serializeStoredGameover({ gameover: { outcome: 'heroes-win', reason: 'Mastermind defeated.' } }),
+      '{"outcome":"heroes-win","reason":"Mastermind defeated."}',
+    );
+  });
+
+  test('returns null when the metadata carries no verdict', () => {
+    assert.equal(serializeStoredGameover({ players: {} }), null);
+    assert.equal(serializeStoredGameover({ gameover: null }), null);
+    assert.equal(serializeStoredGameover(null), null);
+  });
+});
+
+describe('fillMissingArtifactGameovers — the legacy verdict sweep (D-24719)', () => {
+  /** A stub pool: the sweep SELECT returns `rows`; every UPDATE is recorded. */
+  function makeSweepPool(rows: unknown[], updateRowCount = 1) {
+    const updates: unknown[][] = [];
+    const updateTexts: string[] = [];
+    const selects: { text: string; params: unknown[] }[] = [];
+    const pool = {
+      async query(text: string, params: unknown[]) {
+        if (text.startsWith('SELECT')) {
+          selects.push({ text, params });
+          return { rows };
+        }
+        updateTexts.push(text);
+        updates.push(params);
+        return { rows: [], rowCount: updateRowCount };
+      },
+    };
+    return { pool: pool as unknown as DatabaseClient, updates, updateTexts, selects };
+  }
+
+  /**
+   * A manufactured artifact whose reduction ends DECISIVELY: the initial state's
+   * scheme-loss counter is latched, so the top-level `endIf` (and
+   * `evaluateEndgame` of the final `G`) is a scheme win, never `null`.
+   */
+  function decisiveArtifact() {
+    const artifact = manufactureArtifact();
+    const initialState = structuredClone(artifact.initialState) as {
+      G: { counters: Record<string, number> };
+    };
+    initialState.G.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
+    const reduced = reduceMatchToFinalState({ initialState, log: artifact.log });
+    return { initialState, log: artifact.log, reduced };
+  }
+
+  test('locked batch size', () => {
+    assert.equal(ARTIFACT_GAMEOVER_SWEEP_BATCH_SIZE, 5);
+  });
+
+  test('selects only verdict-less artifacts, batch-limited', async () => {
+    const sweep = makeSweepPool([]);
+    assert.equal(await fillMissingArtifactGameovers(sweep.pool, 5), 0);
+    assert.match(sweep.selects[0]!.text, /FROM bgio\.replay_artifacts/);
+    assert.match(sweep.selects[0]!.text, /WHERE gameover IS NULL LIMIT \$1/);
+    assert.deepEqual(sweep.selects[0]!.params, [5]);
+    assert.equal(sweep.updates.length, 0);
+  });
+
+  test('stores the engine verdict of the reduced final state', async () => {
+    const { initialState, log, reduced } = decisiveArtifact();
+    const expected = evaluateEndgame(reduced.finalState);
+    // why: precondition — a null verdict would make this test pass for a
+    // mutant that always stores {}.
+    assert.equal(expected?.outcome, 'scheme-wins');
+    const sweep = makeSweepPool([
+      { replay_hash: reduced.stateHash, initial_state: initialState, log },
+    ]);
+    assert.equal(await fillMissingArtifactGameovers(sweep.pool, 5), 1);
+    assert.deepEqual(sweep.updates, [[reduced.stateHash, JSON.stringify(expected)]]);
+    assert.match(
+      sweep.updateTexts[0]!,
+      /SET gameover = \$2 WHERE replay_hash = \$1 AND gameover IS NULL/,
+    );
+  });
+
+  test('a re-execution that no longer reproduces the stored hash stores an unknown outcome', async () => {
+    const { initialState, log } = decisiveArtifact();
+    const sweep = makeSweepPool([
+      { replay_hash: 'hash-from-an-older-engine', initial_state: initialState, log },
+    ]);
+    assert.equal(await fillMissingArtifactGameovers(sweep.pool, 5), 1);
+    assert.deepEqual(sweep.updates, [['hash-from-an-older-engine', '{}']]);
+  });
+
+  test('counts only the rows the UPDATE actually filled', async () => {
+    const { initialState, log, reduced } = decisiveArtifact();
+    const sweep = makeSweepPool(
+      [{ replay_hash: reduced.stateHash, initial_state: initialState, log }],
+      0,
+    );
+    assert.equal(await fillMissingArtifactGameovers(sweep.pool, 5), 0);
+  });
+
+  test('an unreplayable artifact is stored as an unknown outcome, not retried', async () => {
+    const artifact = manufactureArtifact();
+    const sweep = makeSweepPool([
+      { replay_hash: 'hash-bad', initial_state: artifact.initialState, log: [{ notAnAction: true }] },
+    ]);
+    assert.equal(await fillMissingArtifactGameovers(sweep.pool, 5), 1);
+    assert.deepEqual(sweep.updates, [['hash-bad', '{}']]);
+  });
 });

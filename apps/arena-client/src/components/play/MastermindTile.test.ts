@@ -698,3 +698,84 @@ describe('MastermindTile — restricted "usable only against" attack (WP-790 / D
     );
   });
 });
+
+describe('MastermindTile — WP-830 Enigma Code guess (D-24763)', () => {
+  const enigmaCode = {
+    isRevealed: false,
+    cards: [
+      { peekedBy: ['0'], display: { extId: 'ca75/winter-soldier/x#1', name: 'Seen Card', imageUrl: '', cost: 3 }, colors: ['tech'] },
+      { peekedBy: [] },
+    ],
+  };
+
+  test('with a code, Fight opens the guess picker instead of fighting', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.equal(calls.length, 0, 'no fight yet');
+    assert.ok(wrapper.find('[data-testid="play-enigma-guess"]').exists());
+  });
+
+  test('the guess is submitted with the fight, a seen card starting on its color', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.equal(wrapper.find('[data-testid="play-enigma-guess-submit"]').attributes('disabled'), '', 'card 2 has no guess yet');
+    await wrapper.find('[data-testid="play-enigma-guess-1-grey"]').trigger('click');
+    await wrapper.find('[data-testid="play-enigma-guess-submit"]').trigger('click');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.name, 'fightMastermind');
+    assert.deepEqual(calls[0]!.args, { enigmaGuess: ['tech', 'grey'] });
+    assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists(), 'the picker closes');
+  });
+
+  test('the picker starts over when the code changes under it (a mid-turn mix)', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    await wrapper.find('[data-testid="play-enigma-guess-1-grey"]').trigger('click');
+    await wrapper.setProps({ enigmaCode: { isRevealed: false, cards: [enigmaCode.cards[1]!, enigmaCode.cards[0]!] } });
+    assert.equal(wrapper.find('[data-testid="play-enigma-guess-submit"]').attributes('disabled'), '', 'the old pick is gone');
+    await wrapper.find('[data-testid="play-enigma-guess-0-grey"]').trigger('click');
+    await wrapper.find('[data-testid="play-enigma-guess-submit"]').trigger('click');
+    assert.deepEqual(calls[0]!.args, { enigmaGuess: ['grey', 'tech'] }, 'the seen card keeps its color at its new position');
+  });
+
+  test('the picker closes when the fight is no longer possible (game over)', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.ok(wrapper.find('[data-testid="play-enigma-guess"]').exists());
+    await wrapper.setProps({ isGameOver: true });
+    assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists());
+  });
+
+  test('the picker closes when the turn passes (End Turn pressed with it open)', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    await wrapper.setProps({ isViewerTurn: false });
+    assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists());
+  });
+
+  test('cancel closes the picker without fighting', async () => {
+    const { calls, submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode },
+    });
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    await wrapper.find('[data-testid="play-enigma-guess-cancel"]').trigger('click');
+    assert.equal(calls.length, 0);
+    assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists());
+  });
+});

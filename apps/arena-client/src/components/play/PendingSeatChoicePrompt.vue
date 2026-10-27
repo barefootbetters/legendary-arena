@@ -89,6 +89,12 @@ export default defineComponent({
       switch (props.pendingSeatChoice?.kind) {
         case 'diving-block':
           return 'You would gain a Wound — Diving Block?';
+        // why: WP-827 / D-24760 — the Wound may be another player's; the option labels name whose.
+        case 'flying-shield-block':
+          return 'A player would gain a Wound — Flying Shield Block?';
+        // why: WP-828 / D-24761 — Winter Soldier's 2>4: pick the hand Hero that goes Out of Time.
+        case 'out-of-time-grant':
+          return 'Choose a Hero in your hand to gain Man Out of Time this turn';
         case 'here-hold-this':
           return 'Choose a Villain to capture a Bystander';
         case 'random-acts-wound':
@@ -107,12 +113,30 @@ export default defineComponent({
         // why: WP-793 / D-24656 — the rulebook escape procedure (the current player's HQ
         // KO pick, then every player's Bystander discard) and a non-active seat's own
         // return-on-discard answer.
+        // why: WP-829 / D-24762 — Go Back in Time: every HQ Hero sharing the pick's name is KO'd.
+        case 'timestream-purge':
+          return 'Go Back in Time — choose a Hero in the HQ to Purge from the Timestream';
         case 'escape-hq-ko':
           return 'A Villain escaped — choose a Hero in the HQ to KO';
         case 'escape-bystander-discard':
           return 'Bystanders were carried away — choose a card to discard';
+        // why: WP-817 / D-24750 — an owed Escape-effect discard (Primus: each player
+        // discards a Hero that costs 2, 3, 5, or 7); the options are already filtered.
+        case 'escape-effect-cost-discard':
+          return 'A Villain escaped — choose a Hero to discard';
+        // why: WP-837 / D-24770 — an owed every-player Hero-trait discard (co2e Mystique /
+        // Frost Giant Warrior Ambush); the options are already filtered.
+        case 'villain-effect-trait-discard':
+          return 'A Villain\'s effect — choose a Hero to discard';
+        // why: WP-830 / D-24763 — The Unbreakable Enigma Code's paid peek after a Villain fight.
+        case 'enigma-peek':
+          return 'Enigma Code — pay 1 Recruit to look at a face-down card?';
         case 'return-on-discard':
           return 'Return the discarded card to your hand?';
+        // why: WP-845 / D-24779 — a player who can reveal for "reveal … or gain a Wound" may
+        // decline and take the Wound (rules v23 L3196-3200); the options name the Hero needed.
+        case 'reveal-or-wound':
+          return 'Reveal a Hero or gain a Wound?';
         default:
           return 'Your choice';
       }

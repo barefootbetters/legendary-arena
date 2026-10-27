@@ -15,7 +15,7 @@ related:
   - development-workflow.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\responsive-viewport-targets.md (this page — https://ewiki.legendary-arena.com/responsive-viewport-targets/)
+  - C:\dev\legendary-arena\wiki\responsive-viewport-targets.md (this page — https://ewiki.legendary-arena.com/responsive-viewport-targets/)
   - ../apps/arena-client/src/composables/useViewport.ts
   - ../apps/arena-client/src/pages/PlayViewport.vue
   - ../apps/arena-client/src/pages/PlayDesktop.vue
@@ -198,6 +198,30 @@ the shipped board:
   the whole **page scrolls** to reach the prompt. Live-verified at 1280×720: no
   prompt → no page scroll; a tall prompt → scale held + page scrolls to it; prompt
   resolved → no-scroll restored.
+
+The feedback captures behind these refinements, taken on production play on
+2026-09-11 in a wide desktop window with the Dark Phoenix skin on. They're
+cropped below the browser's address bar.
+
+![The shipped board on production play, 2026-09-11, before the one-row adversary band. Red Skull Mastermind, Midtown Bank Robbery Scheme, Turn 16, Dark Phoenix skin. The Mastermind and Scheme tiles sit on the first row with a lot of empty space to their right, and the shared supply decks (Wounds 30, Horrors 0, Bystanders 24, S.H.I.E.L.D. Officers 24, Sidekicks 0) and the KO pile wrap onto a second row of tall, mostly empty cards below them. The City battle-line, the H.Q., the played and hand wells, the economy, victory, deck and discard panels, and the three-step turn bar follow below, with the game log in a small box at the top right.](/responsive-viewport-targets/play-mat-2026-09-11-band-wrapped.jpg "width=100%")
+
+*Before the one-row band (#2027): the supply decks and KO pile wrap to a second
+row under the Mastermind and Scheme, leaving the first row half empty and making
+the board taller than it needs to be.*
+
+![The same board later on 2026-09-11, after the one-row adversary band, in a different match at Turn 16. The supply decks (Wounds 30, Horrors 0, Bystanders 24, S.H.I.E.L.D. Officers 28, Sidekicks 0) and the KO pile now sit on one row to the right of the Red Skull Mastermind and Midtown Bank Robbery Scheme tiles, with the game log beside them. The City, the H.Q., six cards played this turn, an empty hand, the Attack 8/11 · Recruit 4/4 economy, the victory, deck and discard panels, and the turn bar sit below it on a noticeably shorter board.](/responsive-viewport-targets/play-mat-2026-09-11-band-one-row.jpg "width=100%")
+
+*After #2027: the band is one row, so the board is shorter and `useScaleToFit`
+can draw it a little larger.*
+
+![The match-over view on 2026-09-11 for the same match, before the endgame fixes. The page is about three screens tall. An outcome panel reading heroes-win with a competitive score of −120 and grade B fills the top: penalties and earned subtotals, the raw-score, PAR and final-score working, a grade scale, a scoring key, a Luck of the Draw card and an AI Coach button. The full board renders below it. Under the board a Ruthless Dictator prompt still offers KO, Discard and Keep on top for three cards, and a Match over toast with Play Again and Back to Lobby buttons and the line Score submitted to the leaderboard sits on top of the turn bar.](/responsive-viewport-targets/play-mat-2026-09-11-match-over.jpg "width=72%")
+
+*Game over before the endgame fixes. The outcome panel and the board stacked
+into one tall page, the turn bar and a stale Ruthless Dictator prompt stayed
+live under the result, and the Match over toast covered the turn bar. Since
+fixed: the outcome panel is the primary view with the board collapsed behind a
+toggle (#2032), the match-over board is read-only with no turn bar (#2033), and
+the score-submission status sits inside the Match over panel (#2319).*
 
 ![The SHIPPED `<PlayDesktop>` board captured at 1280×720 (the mid-turn fixture) — the real build, not a mock. The whole board sits within the viewport with no page scroll: a top HUD bar (Mastermind Doctor Octopus, Scheme Midtown Bank Robbery, Turn 3, Twists 2/8, Tactics 1/4, Skin: Classic); an adversary band (the Doctor Octopus Mastermind tile with Master Strikes 0, the Midtown Bank Robbery Scheme with Twists 2/8 and Resolved Twists 0, and the shared supply — Wounds 24, Horrors 0, Bystanders 8, S.H.I.E.L.D. Officers 22, Sidekicks 13, KO Pile 0); the City battle-line in the locked left-to-right order Escaped, Bridge, Streets (Vulture), Rooftops, Bank (Electro), Sewers (Shocker), Villain Deck 28, with occupied spaces keeping their place-names; the H.Q. shop (Dp Weapon X, Sm Hero For Hire, an empty slot, Dp Chimichangas, Sm Web Slinger, Hero Deck 42); the cockpit — Played This Turn (Web Slinger, Chimichangas), the Attack 4/4 · Recruit 3/3 economy, Your Victory Pile, and Your Deck 12 / Discard 3 — with Your Hand of five unplayed cards below; a slim right rail holding the opponent panel and the game log; and the turn-action bar (Step 1 / Step 2 Play-Recruit-Fight with Pass priority + Heal Wounds / Step 3) sitting cleanly at the BOTTOM of the cockpit, no longer overlapping the played/economy/victory zones — the WP-689 fix.](/responsive-viewport-targets/play-mat-1280x820.jpg "width=100%")
 

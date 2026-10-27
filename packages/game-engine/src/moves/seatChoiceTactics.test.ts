@@ -32,13 +32,19 @@ import {
 // reshuffle ran when a draw exhausts the deck and pulls the discard back in.
 const SHUFFLE = { random: { Shuffle: <T,>(items: T[]): T[] => [...items].reverse() } };
 
-/** Minimal G carrying only the fields these tactic builders/appliers touch. */
+/**
+ * Minimal G carrying only the fields these tactic builders/appliers touch.
+ * `villainDeckCardTypes` is the setup-time type map Vanishing Illusions reads to tell a
+ * Villain or Henchman from a Bystander or Tactic (D-24742); `convertedVillainOrigins`
+ * marks a converted Killbot.
+ */
 function makeState(zonesBySeat: Record<string, {
   deck?: string[];
   hand?: string[];
   discard?: string[];
   victory?: string[];
-}>): LegendaryGameState {
+}>, villainDeckCardTypes: Record<string, string> = {},
+convertedVillainOrigins?: Record<string, string>): LegendaryGameState {
   const playerZones: Record<string, unknown> = {};
   for (const seat of Object.keys(zonesBySeat)) {
     const z = zonesBySeat[seat]!;
@@ -55,8 +61,28 @@ function makeState(zonesBySeat: Record<string, {
     ko: [],
     cardDisplayData: {},
     messages: [],
+    villainDeckCardTypes: { ...villainDeckCardTypes },
+    convertedVillainOrigins,
   } as unknown as LegendaryGameState;
 }
+
+/** Types each id the way setup's villainDeckCardTypes map would (all one type). */
+function typeAll(cardType: string, ids: string[]): Record<string, string> {
+  const types: Record<string, string> = {};
+  for (const id of ids) {
+    types[id] = cardType;
+  }
+  return types;
+}
+
+/** The Villain ids the Vanishing Illusions tests below place in Victory Piles. */
+const VILLAIN_TYPES = typeAll('villain', [
+  'core-villain-hydra-elite-a#0',
+  'core-villain-hydra-elite-b#0',
+  'core-villain-hydra-a#0',
+  'core-villain-hydra-b#0',
+  'core-villain-brotherhood-c#0',
+]);
 
 /** Records a submission onto a choice (the seat's chosen option index). */
 function submit(choice: PendingSeatChoice, seat: string, optionIndex: number): void {
@@ -195,7 +221,7 @@ describe('buildVanishingIllusionsChoice (WP-694 / D-24511)', () => {
       '1': { victory: ['core-villain-hydra-elite-a#0', 'core-villain-hydra-elite-b#0'] },
       '2': { victory: [] }, // no villain → not addressed
       '3': { victory: ['core-villain-brotherhood-c#0'] },
-    });
+    }, VILLAIN_TYPES);
     const choice = buildVanishingIllusionsChoice(G, ['1', '2', '3']);
     assert.ok(choice !== undefined);
     assert.equal(choice!.kind, VANISHING_ILLUSIONS_KO_KIND);
@@ -205,18 +231,60 @@ describe('buildVanishingIllusionsChoice (WP-694 / D-24511)', () => {
     assert.equal(choice!.defaultOptionIndex, 0);
   });
 
-  it('excludes rescued Bystanders (bystander-villain-deck-NN) and non-villain victory cards', () => {
+  it('D-24742: a seat whose Victory Pile holds only Henchmen is addressed and KOs one', () => {
+    // why: Henchmen are Villains (rules v23 "Henchmen Are Villains"; D-24603 / D-24608).
+    // Live match Y1w7rCsC8Ek skipped a seat holding only Sentinels and Hand Ninjas.
+    const G = makeState({
+      '1': { victory: ['henchman-sentinel-03', 'henchman-hand-ninjas-04', 'henchman-sentinel-09'] },
+    }, typeAll('henchman', ['henchman-sentinel-03', 'henchman-hand-ninjas-04', 'henchman-sentinel-09']));
+    const choice = buildVanishingIllusionsChoice(G, ['1']);
+    assert.ok(choice !== undefined, 'the Henchmen-only seat qualifies');
+    assert.deepEqual(choice!.addressedSeats, ['1']);
+    assert.deepEqual(
+      choice!.seatPrompts['1']!.options.map((option) => option.cardId),
+      ['henchman-sentinel-03', 'henchman-hand-ninjas-04', 'henchman-sentinel-09'],
+    );
+    submit(choice!, '1', 1); // KO hand-ninjas-04
+    applyVanishingIllusionsKo(G, choice!);
+    assert.deepEqual(G.playerZones['1']!.victory, ['henchman-sentinel-03', 'henchman-sentinel-09']);
+    assert.deepEqual(G.ko, ['henchman-hand-ninjas-04'], 'the Henchman KOs to G.ko');
+  });
+
+  it('still excludes rescued Bystanders, a converted Killbot, and Mastermind Tactics', () => {
     const G = makeState({
       '1': {
         victory: [
           'bystander-villain-deck-05', // contains "-villain-" but is a Bystander
-          'core-henchman-doombot-a#0', // henchman, not a villain
-          'core-mastermind-dr-doom-monarchs-decree', // a defeated tactic
+          'bystander', // a supply Bystander (never in the villain-deck map)
+          'bystander-villain-deck-07', // a defeated Killbot: typed 'villain', counts as a Bystander
+          'core-mastermind-dr-doom-monarchs-decree', // a defeated tactic (never in the map)
+          'core-mastermind-loki', // the mastermind itself (never in the map)
         ],
       },
-    });
-    // No real Villain present → no seat qualifies → nothing to park.
+    }, {
+      'bystander-villain-deck-05': 'bystander',
+      'bystander-villain-deck-07': 'villain',
+    }, { 'bystander-villain-deck-07': 'killbot' });
+    // No Villain or Henchman present → no seat qualifies → nothing to park.
     assert.equal(buildVanishingIllusionsChoice(G, ['1']), undefined);
+  });
+
+  it('offers only the Villains and Henchmen from a mixed Victory Pile', () => {
+    const G = makeState({
+      '1': {
+        victory: [
+          'bystander-villain-deck-05',
+          'henchman-sentinel-03',
+          'core-mastermind-loki-cruel-ruler',
+          'core-villain-hydra-a#0',
+        ],
+      },
+    }, { ...VILLAIN_TYPES, 'henchman-sentinel-03': 'henchman', 'bystander-villain-deck-05': 'bystander' });
+    const choice = buildVanishingIllusionsChoice(G, ['1']);
+    assert.deepEqual(
+      choice!.seatPrompts['1']!.options.map((option) => option.cardId),
+      ['henchman-sentinel-03', 'core-villain-hydra-a#0'],
+    );
   });
 
   it('returns undefined when no other seat has a Victory-Pile Villain', () => {
@@ -230,7 +298,7 @@ describe('applyVanishingIllusionsKo — atomic multi-seat (WP-694 / D-24511)', (
     const G = makeState({
       '1': { victory: ['core-villain-hydra-a#0', 'core-villain-hydra-b#0'] },
       '2': { victory: ['core-villain-brotherhood-c#0'] },
-    });
+    }, VILLAIN_TYPES);
     const choice = buildVanishingIllusionsChoice(G, ['1', '2'])!;
     submit(choice, '1', 1); // KO hydra-b
     submit(choice, '2', 0); // KO brotherhood-c
@@ -245,7 +313,7 @@ describe('applyVanishingIllusionsKo — atomic multi-seat (WP-694 / D-24511)', (
       const G = makeState({
         '1': { victory: ['core-villain-hydra-a#0'] },
         '2': { victory: ['core-villain-brotherhood-c#0'] },
-      });
+      }, VILLAIN_TYPES);
       const choice = buildVanishingIllusionsChoice(G, ['1', '2'])!;
       return { G, choice };
     };
@@ -261,5 +329,167 @@ describe('applyVanishingIllusionsKo — atomic multi-seat (WP-694 / D-24511)', (
 
     assert.deepEqual(forward.G.ko, reverse.G.ko, 'KO order is ascending-seat, not submission order');
     assert.deepEqual(forward.G.playerZones, reverse.G.playerZones);
+  });
+});
+
+import { applyFallenIdolsDiscard, buildFallenIdolsDiscardChoice } from './seatChoiceTactics.js';
+
+describe('WP-818 applyFallenIdolsDiscard — atomic multi-seat (D-24752)', () => {
+  it('T14: seats 1 and 3 each discard their chosen card in ascending seat order', () => {
+    const G = makeState({
+      '1': { hand: ['h1a', 'h1b'] },
+      '3': { hand: ['h3a'] },
+    });
+    const choice = buildFallenIdolsDiscardChoice(G, ['1', '3'])!;
+    assert.equal(choice.seatPrompts['1']!.options[1]!.label, 'Discard h1b');
+    submit(choice, '3', 0);
+    submit(choice, '1', 1);
+    applyFallenIdolsDiscard(G, choice);
+    assert.deepEqual(G.playerZones['1']!.hand, ['h1a']);
+    assert.deepEqual(G.playerZones['1']!.discard, ['h1b']);
+    assert.deepEqual(G.playerZones['3']!.hand, []);
+    assert.deepEqual(G.playerZones['3']!.discard, ['h3a']);
+    assert.deepEqual(
+      G.messages.map((entry) => ({ text: entry.text, outcome: entry.outcome })),
+      [
+        { text: 'Player 1 discarded h1b (Fallen Idols).', outcome: 'applied' },
+        { text: 'Player 3 discarded h3a (Fallen Idols).', outcome: 'applied' },
+      ],
+    );
+  });
+
+  it('T14: builds nothing when no given seat holds a card', () => {
+    const G = makeState({ '1': { hand: [] } });
+    assert.equal(buildFallenIdolsDiscardChoice(G, ['1']), undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-821 / D-24754 — Arnim Zola's seat-choice appliers
+// ---------------------------------------------------------------------------
+
+import {
+  applyComputerUploadedGeniusDiscard,
+  applyCrushPacifistResistanceKo,
+  applyDominateTheWeakGain,
+  buildComputerUploadedGeniusDiscardChoice,
+  buildCrushPacifistResistanceChoice,
+  buildDominateTheWeakChoice,
+  CRUSH_PACIFIST_RESISTANCE_KO_KIND,
+} from './seatChoiceTactics.js';
+import { resolveCardName } from '../log/logDisplay.js';
+
+/**
+ * Builds a Zola apply state: per-seat hands and played cards, an HQ and Hero Deck,
+ * 4 Recruit, and the stats / names of the test cards.
+ *
+ * @param zonesBySeat - Each seat's hand and played cards.
+ * @param board - The HQ and Hero Deck.
+ * @returns A LegendaryGameState carrying only the fields the appliers read.
+ */
+function makeZolaApplyState(
+  zonesBySeat: Record<string, { hand?: string[]; inPlay?: string[] }>,
+  board: { hq?: (string | null)[]; heroDeck?: string[] } = {},
+): LegendaryGameState {
+  const playerZones: Record<string, unknown> = {};
+  for (const seat of Object.keys(zonesBySeat)) {
+    const zones = zonesBySeat[seat]!;
+    playerZones[seat] = {
+      deck: [],
+      hand: [...(zones.hand ?? [])],
+      discard: [],
+      inPlay: [...(zones.inPlay ?? [])],
+      victory: [],
+    };
+  }
+  return {
+    playerZones,
+    hq: [...(board.hq ?? [null, null, null, null, null])],
+    heroDeck: [...(board.heroDeck ?? [])],
+    ko: [],
+    turnEconomy: { attack: 0, recruit: 4, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+    cardStats: {
+      hA: { attack: 1, cost: 3 },
+      hB: { attack: 0, cost: 5 },
+      'starting-shield-trooper': { attack: 1, cost: 0 },
+    },
+    cardDisplayData: { hA: { name: 'Hero Alpha' }, hB: { name: 'Hero Bravo' }, 'card-a': { name: 'Alpha' } },
+    messages: [],
+  } as unknown as LegendaryGameState;
+}
+
+describe('WP-821 Arnim Zola seat-choice appliers (D-24754)', () => {
+  it('T11: the chosen recipient gains the HQ Hero to their discard, the slot refills, and no Recruit is spent', () => {
+    const G = makeZolaApplyState(
+      { '0': {}, '1': {}, '2': {} },
+      { hq: ['hA', 'hB', 'hC', null, 'hD'], heroDeck: ['d1'] },
+    );
+    const choice = buildDominateTheWeakChoice(G, '1', [0, 1]);
+    assert.equal(choice.seatPrompts['1']!.options[1]!.label, `Player 1 gains ${resolveCardName(G.cardDisplayData, 'hA')}`);
+    choice.submissions['1'] = { optionIndex: 1 };
+
+    applyDominateTheWeakGain(G, choice);
+
+    assert.equal(G.hq[0], 'd1', 'hA left slot 0 and the slot refilled');
+    assert.deepEqual(G.heroDeck, []);
+    assert.deepEqual(G.playerZones['1']!.discard, ['hA']);
+    assert.equal(G.turnEconomy.recruit, 4, 'no Recruit is spent');
+    assert.deepEqual(G.messages, [
+      { text: `Player 1 gained ${resolveCardName(G.cardDisplayData, 'hA')} from the HQ (Dominate the Weak).`, outcome: 'applied' },
+    ]);
+  });
+
+  it('T12: each addressed seat discards its pick through discardFromHand, in ascending seat order', () => {
+    const G = makeZolaApplyState({
+      '0': {},
+      '2': { hand: ['card-a', 'card-b'] },
+      '4': { hand: ['card-c'] },
+    });
+    const choice = buildComputerUploadedGeniusDiscardChoice(G, ['2', '4'])!;
+    choice.submissions['4'] = { optionIndex: 0 };
+    choice.submissions['2'] = { optionIndex: 1 };
+
+    applyComputerUploadedGeniusDiscard(G, choice);
+
+    assert.deepEqual(G.playerZones['2']!.hand, ['card-a']);
+    assert.deepEqual(G.playerZones['2']!.discard, ['card-b']);
+    assert.deepEqual(G.playerZones['4']!.hand, []);
+    assert.deepEqual(G.playerZones['4']!.discard, ['card-c']);
+    assert.deepEqual(G.messages.map((entry) => entry.text), [
+      `Player 2 discarded ${resolveCardName(G.cardDisplayData, 'card-b')} (Computer-Uploaded Genius).`,
+      `Player 4 discarded ${resolveCardName(G.cardDisplayData, 'card-c')} (Computer-Uploaded Genius).`,
+    ]);
+  });
+
+  it('T13: a KO reads the option\'s zone exactly, and "KO nothing" moves nothing', () => {
+    const G = makeZolaApplyState({
+      '0': { hand: ['starting-shield-trooper'], inPlay: ['starting-shield-trooper'] },
+    });
+    const choice = buildCrushPacifistResistanceChoice(G, '0', CRUSH_PACIFIST_RESISTANCE_KO_KIND)!;
+    const inPlayIndex = choice.seatPrompts['0']!.options.findIndex((option) => option.sourceZone === 'inPlay');
+    choice.submissions['0'] = { optionIndex: inPlayIndex };
+
+    applyCrushPacifistResistanceKo(G, choice);
+
+    assert.deepEqual(G.playerZones['0']!.inPlay, [], 'the played copy is KOd');
+    assert.deepEqual(G.playerZones['0']!.hand, ['starting-shield-trooper'], 'the hand copy is kept');
+    assert.deepEqual(G.ko, ['starting-shield-trooper']);
+    assert.deepEqual(G.messages, [
+      {
+        text: `Player 0 KO'd ${resolveCardName(G.cardDisplayData, 'starting-shield-trooper')} from the cards they played this turn (Crush Pacifist Resistance).`,
+        outcome: 'applied',
+      },
+    ]);
+
+    const declined = buildCrushPacifistResistanceChoice(G, '0', CRUSH_PACIFIST_RESISTANCE_KO_KIND)!;
+    declined.submissions['0'] = { optionIndex: declined.seatPrompts['0']!.options.length - 1 };
+    applyCrushPacifistResistanceKo(G, declined);
+
+    assert.deepEqual(G.playerZones['0']!.hand, ['starting-shield-trooper'], 'nothing moves on a decline');
+    assert.deepEqual(G.ko, ['starting-shield-trooper']);
+    assert.deepEqual(G.messages[1], {
+      text: 'Player 0 chose not to KO a Hero (Crush Pacifist Resistance).',
+      outcome: 'neutral',
+    });
   });
 });

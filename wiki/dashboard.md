@@ -23,7 +23,7 @@ related:
   - private-site-hosting.md
 status: draft
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\dashboard.md (this page — https://ewiki.legendary-arena.com/dashboard/)
+  - C:\dev\legendary-arena\wiki\dashboard.md (this page — https://ewiki.legendary-arena.com/dashboard/)
   - ../apps/dashboard/package.json
   - ../apps/dashboard/docs/dashboard-operating-system.md
   - ../apps/dashboard/docs/code-checks-and-balances.md
@@ -57,6 +57,17 @@ Control) so the operator can answer one question — *"what single thing do I
 fix first today?"* It is **mock-mode-first**: every metric feed renders
 synthetic data by default and flips to a live API source only when the deploy
 environment enables it.
+
+> **Frozen, moving out (D-24723, 2026-10-15).** The dashboard is becoming its
+> own repo, `barefootbetters/bb-studio-dashboard`, a reader that renders any project from
+> a `dashboard.json`. It was seeded from `apps/dashboard` with its history.
+> Until Legendary Arena's cutover to it, `apps/dashboard` takes no feature
+> work; a bug fix lands in both repos. This page describes the copy here and
+> still applies until then.
+>
+> Legendary Arena's own project file is the root [`dashboard.json`](../dashboard.json)
+> (D-24751). Edit the roadmap and infra-cost actuals there; the `apps/dashboard`
+> copies (`buildRoadmap.ts`, `infraCostActuals.ts`) are stale until the cutover.
 
 > **Before trusting any number on the live dashboard:** no site-analytics
 > platform is wired yet (Cloudflare Web Analytics / Plausible for traffic,

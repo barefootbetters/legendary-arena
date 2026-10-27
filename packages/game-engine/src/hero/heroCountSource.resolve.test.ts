@@ -52,7 +52,7 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 15 canonical count-source values', () => {
+  it('contains exactly the 17 canonical count-source values', () => {
     const expectedSources = [
       'victory-bystanders',
       'worthy-cards-played-this-turn',
@@ -71,12 +71,16 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
       'covert-heroes-played-this-turn',
       // why: D-24655 — X-Men United's other-X-Men team count.
       'x-men-played-this-turn',
+      // why: D-24732 — Berserker Rage's extra-cards-drawn counter source.
+      'extra-cards-drawn-this-turn',
+      // why: WP-824 / D-24757 — Paramilitary Ops' cost-filtered other-S.H.I.E.L.D. count.
+      'shield-heroes-cost-one-plus-played-this-turn',
     ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      15,
-      'HERO_COUNT_SOURCES must have exactly 15 entries',
+      17,
+      'HERO_COUNT_SOURCES must have exactly 17 entries',
     );
 
     assert.deepStrictEqual(
@@ -704,6 +708,80 @@ describe('resolveCountSource team-played sources (WP-680)', () => {
   });
 });
 
+describe('resolveCountSource shield-heroes-cost-one-plus-played-this-turn (WP-824 / D-24757)', () => {
+  it('counts OTHER S.H.I.E.L.D. Heroes costing 1 or more; starters, self and other teams excluded', () => {
+    // why: Paramilitary Ops "for each other [team:shield] Hero you played this turn that costs
+    // 1 or more". The Officer token (cost 3, no cardTraits row) and the other S.H.I.E.L.D. Hero
+    // count; the Agent / Trooper starters (cost-0 cardStats rows, the real setup shape), the
+    // cost-5 Avenger and
+    // the triggering card do not.
+    const gameState = makeStatePlayed(
+      ['paramilitary-ops', SHIELD_OFFICER_EXT_ID, SHIELD_AGENT_EXT_ID, SHIELD_TROOPER_EXT_ID, 'nick-fury', 'iron-man'],
+      {
+        'paramilitary-ops': { heroClass: 'tech', team: 'shield' },
+        'nick-fury': { heroClass: 'strength', team: 'shield' },
+        'iron-man': { heroClass: 'tech', team: 'avengers' },
+      },
+      {
+        'paramilitary-ops': { cost: 4 },
+        [SHIELD_OFFICER_EXT_ID]: { cost: 3 },
+        [SHIELD_AGENT_EXT_ID]: { cost: 0 },
+        [SHIELD_TROOPER_EXT_ID]: { cost: 0 },
+        'nick-fury': { cost: 2 },
+        'iron-man': { cost: 5 },
+      },
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'shield-heroes-cost-one-plus-played-this-turn', 'paramilitary-ops'),
+      2,
+      'the Officer and Nick Fury count; the starters, Iron Man and the triggering card do not',
+    );
+    assert.equal(
+      resolveCountSource(gameState, '0', 'shield-heroes-played-this-turn', 'paramilitary-ops'),
+      4,
+      'the unfiltered sibling still counts the starters (contrast)',
+    );
+  });
+
+  it('returns 0 with only cost-0 S.H.I.E.L.D. starters played', () => {
+    const gameState = makeStatePlayed(
+      ['paramilitary-ops', SHIELD_AGENT_EXT_ID, SHIELD_TROOPER_EXT_ID],
+      { 'paramilitary-ops': { heroClass: 'tech', team: 'shield' } },
+      { 'paramilitary-ops': { cost: 4 }, [SHIELD_AGENT_EXT_ID]: { cost: 0 }, [SHIELD_TROOPER_EXT_ID]: { cost: 0 } },
+    );
+
+    assert.equal(
+      resolveCountSource(gameState, '0', 'shield-heroes-cost-one-plus-played-this-turn', 'paramilitary-ops'),
+      0,
+    );
+  });
+
+  it('explainCountSourceInputs lists the same cards, count === length', () => {
+    const gameState = makeExplainState(
+      ['paramilitary-ops#0', SHIELD_OFFICER_EXT_ID, SHIELD_AGENT_EXT_ID, 'nick-fury#0'],
+      {
+        'paramilitary-ops#0': { heroClass: 'tech', team: 'shield' },
+        'nick-fury#0': { heroClass: 'strength', team: 'shield' },
+      },
+      {
+        'paramilitary-ops#0': { cost: 4 },
+        [SHIELD_OFFICER_EXT_ID]: { cost: 3 },
+        [SHIELD_AGENT_EXT_ID]: { cost: 0 },
+        'nick-fury#0': { cost: 2 },
+      },
+    );
+
+    const inputs = explainCountSourceInputs(gameState, '0', 'shield-heroes-cost-one-plus-played-this-turn', 'paramilitary-ops#0');
+    assert.deepStrictEqual(inputs, [SHIELD_OFFICER_EXT_ID, 'nick-fury#0'], 'the Officer and Nick Fury, self-excluded, starter skipped');
+    assert.equal(
+      resolveCountSource(gameState, '0', 'shield-heroes-cost-one-plus-played-this-turn', 'paramilitary-ops#0'),
+      inputs.length,
+      'count === countedInputs.length',
+    );
+  });
+});
+
 describe('resolveCountSource odd-cost-heroes-played-this-turn (WP-680)', () => {
   it('counts OTHER odd-cost cards; self-excluded; even and cost-0 ignored', () => {
     const gameState = makeStatePlayed(
@@ -1073,5 +1151,29 @@ describe('explainCountSourceInputs — distinct hero classes you have exclude a 
 
     assert.deepStrictEqual(explainCountSourceInputs(state, '0', 'distinct-hero-classes-played-this-turn'), [inPlayCard]);
     assert.equal(resolveCountSource(state, '0', 'distinct-hero-classes-played-this-turn'), 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// D-24732 — extra-cards-drawn-this-turn (Berserker Rage)
+// ---------------------------------------------------------------------------
+
+describe('resolveCountSource extra-cards-drawn-this-turn (D-24732)', () => {
+  it('reads G.turnEconomy.cardsDrawn, ignoring the cards in play', () => {
+    const gameState = {
+      ...makeStateWithVictory([]),
+      turnEconomy: { cardsDrawn: 4 },
+    } as unknown as LegendaryGameState;
+    assert.equal(
+      resolveCountSource(gameState, '0', 'extra-cards-drawn-this-turn', 'berserker-rage#0'),
+      4,
+      'the count is the per-turn effect-draw counter',
+    );
+  });
+
+  it('is 0 when no turnEconomy is present (narrow mock), and explains to no inputs', () => {
+    const gameState = makeStateWithVictory([]);
+    assert.equal(resolveCountSource(gameState, '0', 'extra-cards-drawn-this-turn'), 0);
+    assert.deepStrictEqual(explainCountSourceInputs(gameState, '0', 'extra-cards-drawn-this-turn'), []);
   });
 });

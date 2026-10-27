@@ -1,0 +1,29 @@
+{{- /*
+  why: a div.table-scroll wrapper around every markdown table, promoted from
+  J, so a wide table scrolls inside the content column instead of pushing the
+  whole page sideways on a phone. Cells keep their markdown alignment, and
+  any markdown attributes on the table pass through.
+*/ -}}
+<div class="table-scroll"><table
+  {{- range $name, $value := .Attributes }} {{ $name }}="{{ $value }}"{{ end -}}
+>
+<thead>
+{{- range .THead }}
+<tr>
+{{- range . }}
+<th{{ with .Alignment }} style="text-align:{{ . | safeCSS }}"{{ end }}>{{ .Text }}</th>
+{{- end }}
+</tr>
+{{- end }}
+</thead>
+<tbody>
+{{- range .TBody }}
+<tr>
+{{- range . }}
+<td{{ with .Alignment }} style="text-align:{{ . | safeCSS }}"{{ end }}>{{ .Text }}</td>
+{{- end }}
+</tr>
+{{- end }}
+</tbody>
+</table></div>
+{{- /* keep: no trailing newline in output */ -}}

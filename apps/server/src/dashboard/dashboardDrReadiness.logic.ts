@@ -17,6 +17,8 @@ import type {
   DrReadiness,
   DrillIssue,
   DrillResult,
+  LastDrill,
+  RebuildDrill,
 } from './dashboardDrReadiness.types.js';
 
 /**
@@ -27,9 +29,11 @@ import type {
 const DR_DRILL_TITLE_PREFIX = 'DR drill due — ';
 
 /**
- * Exact title of the tracking issue `.github/workflows/db-backup.yml` opens when
- * the pCloud mirror fails (EM DASH, U+2014). The workflow and this constant must
- * match byte-for-byte; the routes test pins them together.
+ * Exact title of the tracking issue the retired `db-backup.yml` workflow opened
+ * when the pCloud mirror failed (EM DASH, U+2014). why: that workflow was deleted
+ * on 2026-10-22 with Render, and nothing opens this issue now. The droplet's
+ * mirror reports to the healthchecks.io check `la-droplet-pcloud` instead, so
+ * `backupMirrorAlert` reads `null` unless an old issue is still open.
  */
 export const BACKUP_MIRROR_ALERT_TITLE = 'Backup mirror failing — pCloud';
 
@@ -52,6 +56,16 @@ const MONTH_NAMES: readonly string[] = [
   'November',
   'December',
 ];
+
+/**
+ * Exact label of the quarterly checkbox `dr-drill-reminder.yml` writes into the
+ * January / April / July / October issues (EM DASH, U+2014). The workflow and this
+ * constant must match byte-for-byte; the routes test pins them together.
+ */
+export const REBUILD_DRILL_CHECKBOX_LABEL = '**Quarterly — full-service rebuild drill.**';
+
+/** Months per quarter; quarters start in January, April, July and October. */
+const MONTHS_PER_QUARTER = 3;
 
 /** A 0-based year+month pair, comparable as `year * 12 + month`. */
 interface YearMonth {
@@ -130,6 +144,92 @@ export function computeNextDue(referenceDate: Date): string {
 }
 
 /**
+ * `true` when the issue body has the quarterly rebuild checkbox ticked
+ * (`- [x] **Quarterly — full-service rebuild drill.**`). An unticked or absent
+ * box means the rebuild was not run under that issue.
+ */
+function isRebuildChecked(body: string | null): boolean {
+  if (body === null) {
+    return false;
+  }
+  for (const line of body.split('\n')) {
+    const match = /^\s*-\s*\[\s*([ xX])\s*\]\s*(.*)$/.exec(line);
+    if (match === null || !match[2].startsWith(REBUILD_DRILL_CHECKBOX_LABEL)) {
+      continue;
+    }
+    return match[1] === 'x' || match[1] === 'X';
+  }
+  return false;
+}
+
+/**
+ * The newest CLOSED drill issue with the rebuild checkbox ticked, as its close
+ * date plus `Drill passed` result, or `null` when no rebuild has been recorded.
+ */
+function findLastRebuild(drillIssues: readonly DrillIssue[]): LastDrill | null {
+  let newestRebuild: DrillIssue | null = null;
+  for (const issue of drillIssues) {
+    if (issue.state !== 'closed' || issue.closedAt === null || !isRebuildChecked(issue.body)) {
+      continue;
+    }
+    if (newestRebuild === null || issue.closedAt > (newestRebuild.closedAt ?? '')) {
+      newestRebuild = issue;
+    }
+  }
+  if (newestRebuild === null || newestRebuild.closedAt === null) {
+    return null;
+  }
+  return {
+    date: newestRebuild.closedAt.slice(0, 10),
+    result: readDrillResult(newestRebuild.body),
+  };
+}
+
+/** The 1st of the quarter containing `referenceDate`, as a UTC `Date`. */
+function quarterStart(referenceDate: Date): Date {
+  const quarterFirstMonth =
+    Math.floor(referenceDate.getUTCMonth() / MONTHS_PER_QUARTER) * MONTHS_PER_QUARTER;
+  return new Date(Date.UTC(referenceDate.getUTCFullYear(), quarterFirstMonth, 1));
+}
+
+/**
+ * Derive the quarterly rebuild cadence from the drill issues (already filtered to
+ * real drill titles).
+ *
+ * - `lastRebuild` = the newest CLOSED issue whose rebuild checkbox is ticked.
+ * - `overdue` = the quarter's first month (the month its issue opens) has passed
+ *   and no rebuild has been recorded since the quarter began.
+ * - `nextDue` = the current quarter's start while its rebuild is outstanding,
+ *   else the next quarter's start (`Date.UTC` rolls past December).
+ */
+export function deriveRebuildDrill(
+  drillIssues: readonly DrillIssue[],
+  referenceDate: Date,
+): RebuildDrill {
+  const lastRebuild = findLastRebuild(drillIssues);
+  const currentQuarterStart = quarterStart(referenceDate);
+  const currentQuarterStartIso = toUtcIsoDate(currentQuarterStart);
+  // why: ISO `YYYY-MM-DD` strings compare correctly as plain strings.
+  const isDoneThisQuarter = lastRebuild !== null && lastRebuild.date >= currentQuarterStartIso;
+  const isPastIssueMonth = referenceDate.getUTCMonth() !== currentQuarterStart.getUTCMonth();
+
+  let nextDue = currentQuarterStartIso;
+  if (isDoneThisQuarter) {
+    nextDue = toUtcIsoDate(
+      new Date(
+        Date.UTC(
+          currentQuarterStart.getUTCFullYear(),
+          currentQuarterStart.getUTCMonth() + MONTHS_PER_QUARTER,
+          1,
+        ),
+      ),
+    );
+  }
+
+  return { lastRebuild, nextDue, overdue: isPastIssueMonth && !isDoneThisQuarter };
+}
+
+/**
  * Find the open `Backup mirror failing — pCloud` issue, if any. The workflow keeps
  * at most one open (it comments on an existing one), so the first match wins.
  */
@@ -160,6 +260,7 @@ export function findBackupMirrorAlert(issues: readonly DrillIssue[]): BackupMirr
  *   none has closed.
  * - `nextDue` = the 1st of the month after the reference date (UTC).
  * - `backupMirrorAlert` = the open pCloud-mirror failure issue, or `null`.
+ * - `rebuildDrill` = the quarterly rebuild cadence (`deriveRebuildDrill`).
  */
 export function deriveDrReadiness(issues: readonly DrillIssue[], referenceDate: Date): DrReadiness {
   // why: GitHub's issues endpoint returns pull requests alongside issues, and
@@ -209,6 +310,7 @@ export function deriveDrReadiness(issues: readonly DrillIssue[], referenceDate: 
     nextDue: computeNextDue(referenceDate),
     overdue,
     backupMirrorAlert: findBackupMirrorAlert(issues),
+    rebuildDrill: deriveRebuildDrill(drillIssues, referenceDate),
     source: 'github',
   };
 }
@@ -225,6 +327,8 @@ export function buildMockDrReadiness(referenceDate: Date): DrReadiness {
     nextDue: computeNextDue(referenceDate),
     overdue: false,
     backupMirrorAlert: null,
+    // why: the placeholder never claims an overdue rebuild — it has no history.
+    rebuildDrill: { ...deriveRebuildDrill([], referenceDate), overdue: false },
     source: 'mock',
   };
 }

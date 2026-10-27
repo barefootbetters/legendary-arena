@@ -49,7 +49,7 @@ export const RANDOM_ACTS_PASS_LEFT_KIND = 'random-acts-pass-left';
 // 0 / 1 (the default stays decline); the Diving Block option is appended as 2 so it
 // never shifts the existing indices (D-24678).
 const RANDOM_ACTS_GAIN_OPTION_INDEX = 0;
-const RANDOM_ACTS_DIVING_BLOCK_OPTION_INDEX = 2;
+export const RANDOM_ACTS_DIVING_BLOCK_OPTION_INDEX = 2;
 
 /** One eligible Here, Hold This target: the City space and its occupant. */
 export interface HereHoldThisTarget {
@@ -276,7 +276,11 @@ export function applyRandomActsWoundGain(
     // why: D-24678 — Diving Block replaces the gain: the Wound stays in the supply and
     // the player draws a card instead; Diving Block itself is only revealed, never moved.
     if (shuffleContext !== undefined) {
+      const handSizeBefore = zones.hand.length;
       drawCardsIntoHand(zones, 1, shuffleContext);
+      // why: D-24732 — the Random Acts wound step is addressed to the active seat only, so
+      // this draw-instead is the current player's extra card drawn this turn.
+      G.turnEconomy.cardsDrawn += zones.hand.length - handSizeBefore;
     }
     pushLog(G, `Player ${seat} revealed Diving Block: drew a card instead of gaining the Wound (Random Acts of Unkindness).`, 'applied');
     return;

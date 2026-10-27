@@ -11,6 +11,8 @@
  * entry it lost at twist 7 only by coincidence (the MVP fallback equals 7).
  * Killbots (WP-513 / D-24325) and Secret Invasion (WP-514 / D-24327) are the two
  * conversion schemes, configured with their escaped-converted-count losses.
+ * Beyond core, Brainwash the Military (WP-823 / D-24756) is a third conversion
+ * scheme: 12 S.H.I.E.L.D. Officers in the Villain Deck, lost at 5 escaped Officers.
  *
  * why (D-24178): each config's lossThreshold is the scheme's PRINTED twist-stack
  * size, so no scheme resolves a twist early. Only twist-loss schemes (printed
@@ -31,6 +33,7 @@
  */
 
 import type { SchemeTwistConfig } from './schemeTwistConfig.types.js';
+import { WWII_CAPITALS_TO_WIN, WWII_CONQUERED_CAPITALS } from './changeTheOutcomeOfWwii.constants.js';
 
 /**
  * Scheme twist config entries keyed by scheme ext_id.
@@ -110,7 +113,7 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       resolverId: 'wound-all',
       // why: WP-540 / D-24349 — the printed escalation: nothing on twists 1-4,
       // each player gains 1 Wound on twists 5-6, and 3 Wounds on twist 7 (twist 8
-      // = Evil Wins, below). Keyed on currentTwist = schemeTwistCount + 1; the
+      // = Evil Wins, below). Keyed on currentTwist = schemeTwistCount (raised before the resolver, D-24775); the
       // resolver takes the MAX matching step, replacing the flat 1-per-twist that both over-punished early and
       // under-punished the twist-7 spike. D-24685 — each step closes at its printed
       // last twist (`throughTwist`): the printed twist 8 is only "Evil Wins!", so it
@@ -139,7 +142,8 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       // Deck runs out", modeled as the 'pile-depleted' kind on G.heroDeck.
       // Declaring resourceLossCondition SUPPRESSES the twist-count doom-clock
       // proxy for this scheme; lossThresholdByPlayerCount (the printed 8/5-twist
-      // stack) is retained but now INERT for loss (D-24178 / D-24318). The
+      // stack) is retained but now INERT for loss (D-24178 / D-24318). The deck
+      // is sized to that same 8/5 split by resolveEffectiveTwistCount (D-24733). The
       // per-player hero-deck SIZING ("4 Heroes at 2 players") is deferred to
       // WP-511; until then 2p full-deck may under-loss (reachable at 3-5p).
       // why: WP-562 / D-24371 §6 — the '1' key. Solo mirrors 2-player in
@@ -191,11 +195,15 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       // doom-clock proxy; lossThreshold (the printed 8-twist stack) is retained but
       // now INERT for loss (D-24178 / D-24327). The 'secret-invasion' twist drags the
       // highest-cost HQ Hero into the Sewers as a Skrull (cost + 2 attack, D-24327).
+      // why: D-24738 — Heroes a Skrull Queen Veranke / Skrull Shapeshifters carried
+      // into the pile with them (D-24657) are Heroes in the Escaped Villains pile too,
+      // so they count toward the six alongside the escaped Skrull Heroes.
       lossThreshold: 8,
       resourceLossCondition: {
         kind: 'escaped-converted-count',
         origin: 'skrull',
         threshold: 6,
+        includeCapturedHeroes: true,
       },
     },
   ],
@@ -212,6 +220,51 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       // The `portals` resolver bumps DARK_PORTAL_COUNT, which drives the Dark-Portal
       // attack buffs (mastermind +1 once >= 1; a Villain +1 in a portal'd city space).
       lossThreshold: 7,
+    },
+  ],
+  [
+    'ca75/change-the-outcome-of-wwii',
+    {
+      schemeId: 'ca75/change-the-outcome-of-wwii',
+      // why: WP-832 / D-24765 — each Twist invades the next country (the City returns to the
+      // Villain Deck, resizes, and 2 cards are played); an escape in a country conquers its
+      // capital. Real Evil-Wins is "When 3 capitals are conquered": declaring the scheme-counter
+      // resourceLossCondition SUPPRESSES the twist-count proxy, so lossThreshold (the printed 7
+      // Twists) is retained but INERT for loss (D-24178). Before this entry the scheme lost at the
+      // D-24595 last-twist fallback (WP-763's FALSE-LOSS row).
+      resolverId: 'change-the-outcome-of-wwii',
+      params: {},
+      lossThreshold: 7,
+      resourceLossCondition: {
+        kind: 'scheme-counter',
+        counter: WWII_CONQUERED_CAPITALS,
+        threshold: WWII_CAPITALS_TO_WIN,
+        meterKind: 'conquered-capitals',
+        lossDescription: 'capitals conquered',
+      },
+    },
+  ],
+  [
+    'ca75/brainwash-the-military',
+    {
+      schemeId: 'ca75/brainwash-the-military',
+      resolverId: 'brainwash-the-military',
+      params: {},
+      // why: WP-823 / D-24756 — real Evil-Wins is "When 5 S.H.I.E.L.D. Officers
+      // escape", counted as 'shield-officer'-origin entries in G.escapedPile (the 12
+      // Officers added to the Villain Deck are converted Villains, the Killbots
+      // pattern). Declaring resourceLossCondition SUPPRESSES the twist-count proxy;
+      // lossThreshold (the printed 7-twist stack) is retained but INERT for loss
+      // (D-24178). Before this entry the scheme lost at the D-24595 last-twist
+      // fallback (WP-763's FALSE-LOSS row). The resolver stacks Twists 1-6 as the
+      // Traitor Battalion (Officer Attack 3 + stack) and plays another card; Twist 7
+      // makes every Officer in the City escape.
+      lossThreshold: 7,
+      resourceLossCondition: {
+        kind: 'escaped-converted-count',
+        origin: 'shield-officer',
+        threshold: 5,
+      },
     },
   ],
   // -------------------------------------------------------------------------
@@ -235,7 +288,9 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
     'ca75/unbreakable-enigma-code-the',
     {
       schemeId: 'ca75/unbreakable-enigma-code-the',
-      resolverId: 'counter-only',
+      // why: WP-830 / D-24763 — Twists 1-5 build the face-down Enigma Code; Twist 6 is still the
+      // loss (lossThreshold below).
+      resolverId: 'enigma-code',
       params: {},
       lossThreshold: 6,
     },
@@ -478,7 +533,10 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
     'ca75/go-back-in-time-to-slay-heroes-ancestors',
     {
       schemeId: 'ca75/go-back-in-time-to-slay-heroes-ancestors',
-      resolverId: 'counter-only',
+      // why: WP-829 / D-24762 — each Twist Purges an HQ Hero from the Timestream (the active
+      // player's pick), and any HQ Hero sharing a Purged Hero Name is KO'd. The loss is still the
+      // Hero Deck running out (the resource condition below).
+      resolverId: 'go-back-in-time',
       params: {},
       resourceLossCondition: { kind: 'pile-depleted', pile: 'heroDeck' },
     },
@@ -865,6 +923,19 @@ export const SCHEME_TWIST_CONFIGS: Map<string, SchemeTwistConfig> = new Map([
       params: {},
       resourceLossCondition: { kind: 'pile-depleted', pile: 'wounds' },
       twistFallbackWithResourceLoss: true,
+    },
+  ],
+  [
+    'chmp/clash-of-the-monsters-unleashed',
+    {
+      schemeId: 'chmp/clash-of-the-monsters-unleashed',
+      resolverId: 'clash-monster-pit',
+      params: {},
+      // why: D-24736 — the printed Evil Wins, "When the Wound Stack or Monster Pit Deck
+      // runs out". Both piles are modelled: the Wound Stack is 6 per player (setup
+      // sizing) and the Monster Pit is G.monsterPit, so no twist proxy is kept. The
+      // 8-card Pit empties on Twist 10, the scheme's last twist.
+      resourceLossCondition: { kind: 'pile-depleted', piles: ['wounds', 'monsterPit'] },
     },
   ],
 ]);

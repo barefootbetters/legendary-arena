@@ -86,6 +86,9 @@
     }
   },
   "chmp": {
+    "clash-of-the-monsters-unleashed": {
+      "villainDeckTwistCount": 10
+    },
     "hypnotize-every-human": {
       "villainDeckBystanderCount": 0
     }

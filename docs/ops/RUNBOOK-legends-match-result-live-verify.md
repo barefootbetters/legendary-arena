@@ -122,7 +122,7 @@ all-anonymous roster — not a failure, but not proof the handle path works.
 
 **WP-407 (AC-6):**
 1. Open `https://legends.legendary-arena.com/#/match/<matchId>`.
-2. Confirm the panel shows the **outcome** (Victory / Defeat / Draw) and a
+2. Confirm the panel shows the **outcome** (Victory / Defeat / Draw / Ended early / Outcome not recorded) and a
    **roster** with the claimed handle (and `@handle` sub-label if a display name is
    set). An omitted seat shows `Anonymous`.
 3. Devtools console: **no CORS error**, no red fetch failure.

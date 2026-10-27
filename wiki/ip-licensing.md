@@ -11,7 +11,7 @@ related:
   - vision.md
   - legendary-forge.md
 source:
-  - C:\pcloud\BB\DEV\legendary-arena\wiki\ip-licensing.md (this page — https://ewiki.legendary-arena.com/ip-licensing/)
+  - C:\dev\legendary-arena\wiki\ip-licensing.md (this page — https://ewiki.legendary-arena.com/ip-licensing/)
   - ../docs/01-VISION.md
   - C:\www\legendary-arena-com\docs\corporate-memory\04-ip-licensing-acquisition-plan.md
   - Bageltop Games The Podcast Ep. 4 — Devin Low on Legendary Marvel Second Edition & DC (2026-09-16, external/secondary)

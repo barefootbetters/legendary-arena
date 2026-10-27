@@ -22,6 +22,7 @@ import { makeMockCtx } from '../test/mockCtx.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 import type { CardRegistryReader } from '../matchSetup.validate.js';
 import { makeCardRegistryReader } from '../test/fixtureBuilders.js';
+import { buildVillainVariableAttack } from './villainDefeatRequirement.setup.js';
 
 /**
  * Creates a valid mock MatchSetupConfig for shape tests.
@@ -469,7 +470,17 @@ describe('buildInitialGameState — shape', () => {
       villains: [
         {
           slug: 'brotherhood',
-          cards: [{ slug: 'magneto', vAttack: '6' }],
+          cards: [
+            { slug: 'magneto', vAttack: '6' },
+            // why: WP-841 T15b — a marked variable-Attack villain proves the
+            // buildVillainVariableAttack call and its spread are wired.
+            {
+              slug: 'hydro-man',
+              vAttack: '4+',
+              copies: 2,
+              abilities: ['Hydro-Man gets +2[icon:attack] in the Sewers and Bridge. [variable-attack:flat:2@sewers+bridge]'],
+            },
+          ],
         },
       ],
       heroes: [
@@ -568,6 +579,29 @@ describe('buildInitialGameState — shape', () => {
       gameState.matchConfiguration.heroDeckIds,
       'selection.heroDeckIds must not be the same reference as matchConfiguration.heroDeckIds',
     );
+  });
+
+  it('T15 (WP-841): G has no villainVariableAttack key without a marked villain; a reader-less registry builds {}', () => {
+    const gameState = buildInitialGameState(
+      createTestConfig(),
+      createMockRegistry(),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+    assert.equal(Object.prototype.hasOwnProperty.call(gameState, 'villainVariableAttack'), false);
+    assert.deepStrictEqual(buildVillainVariableAttack(createMockRegistry(), createTestConfig()), {});
+  });
+
+  it('T15b (WP-841): a marked villain lands in G.villainVariableAttack, one entry per copy', () => {
+    const gameState = buildInitialGameState(
+      buildShapeFixtureConfig(),
+      buildShapeFixtureRegistry(),
+      makeMockCtx({ numPlayers: 2 }),
+    );
+    const hydroMan = { source: 'flat', attackPerUnit: 2, requireCitySpaces: ['sewers', 'bridge'] };
+    assert.deepStrictEqual(gameState.villainVariableAttack, {
+      'core-villain-brotherhood-hydro-man-00': hydroMan,
+      'core-villain-brotherhood-hydro-man-01': hydroMan,
+    });
   });
 });
 

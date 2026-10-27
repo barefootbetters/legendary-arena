@@ -28,6 +28,7 @@ import YourDeckDiscardZone from '../components/play/YourDeckDiscardZone.vue';
 import YourVictoryPile from '../components/play/YourVictoryPile.vue';
 import TurnActionBar from '../components/play/TurnActionBar.vue';
 import { handHasWound } from '../components/play/woundIdentity';
+import { fightDiscardEligibleCardIds } from '../components/play/fightDiscardEligibility';
 import LobbyControls from '../components/play/LobbyControls.vue';
 import PileBrowseModal from '../components/play/PileBrowseModal.vue';
 import CardReaderModal from '../components/play/CardReaderModal.vue';
@@ -50,6 +51,7 @@ import DoOverPrompt from '../components/play/DoOverPrompt.vue';
 import DrawOrEmpoweredPrompt from '../components/play/DrawOrEmpoweredPrompt.vue';
 import CoveringFireChoicePrompt from '../components/play/CoveringFireChoicePrompt.vue';
 import MoveVillainChoicePrompt from '../components/play/MoveVillainChoicePrompt.vue';
+import { extraCityColumns } from '../composables/useCityRow';
 import { useBuildProvenanceStore } from '../stores/buildProvenance';
 import { formatProvenanceHeaderLines } from '../diagnostics/buildProvenance';
 import SplitFaceChoicePrompt from '../components/play/SplitFaceChoicePrompt.vue';
@@ -481,7 +483,19 @@ export default defineComponent({
     // this). handHasWound tolerates a redacted / absent hand (spectator) as false.
     const hasWoundInHand = computed<boolean>(() => handHasWound(viewer.value?.handCards));
 
+    // why: WP-817 / D-24750 — the hand cards that would pay a City villain's fight
+    // discard cost (Primus), tagged in HandRow so the player holds one back.
+    const discardEligibleCardIds = computed<string[]>(() =>
+      fightDiscardEligibleCardIds(
+        snapshot.value?.city,
+        viewer.value?.handCards,
+        viewer.value?.handCosts,
+        isViewerTurn.value,
+      ),
+    );
+
     return {
+      extraCityColumns,
       snapshot,
       viewer,
       opponents,
@@ -528,6 +542,7 @@ export default defineComponent({
       hasPendingGiveHqHeroChoice,
       hasPendingCopyPowersChoice,
       hasWoundInHand,
+      discardEligibleCardIds,
     };
   },
 });
@@ -576,6 +591,7 @@ export default defineComponent({
             :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
             :economy="snapshot.economy"
             :dark-portal-bonus="snapshot.scheme.darkPortals?.mastermindAttackBonus ?? 0"
+            :enigma-code="snapshot.scheme.enigmaCode"
             :is-game-over="isGameOver"
             :submit-move="submitMove"
             @read="onCardRead"
@@ -606,11 +622,15 @@ export default defineComponent({
             :dark-portal-indices="snapshot.scheme.darkPortals?.citySpaceIndices ?? []"
             :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
             :submit-move="submitMove"
+            :viewer-hand-cards="viewer?.handCards ?? []"
+            :viewer-hand-display="viewer?.handDisplay ?? []"
+            :viewer-hand-costs="viewer?.handCosts ?? []"
           />
         </section>
         <section class="play-mobile__band play-mobile__band--scroll-x">
           <HQRow
             :hq="snapshot.hq"
+            :extra-city-spaces="extraCityColumns(snapshot.city.spaces.length)"
             :decks="snapshot.decks"
             :current-stage="snapshot.game.currentStage"
             :is-viewer-turn="isViewerTurn"
@@ -681,6 +701,7 @@ export default defineComponent({
             :is-viewer-turn="isViewerTurn"
             :submit-move="submitMove"
             :phasing-card-ids="snapshot.economy.phasingOptions ?? []"
+            :discard-eligible-card-ids="discardEligibleCardIds"
           />
         </section>
         <!-- why: WP-318 — the persistent game log (G.messages -> UIState.log)
