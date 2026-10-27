@@ -49781,7 +49781,7 @@ Protect this file.
 
 ### D-24770 — co2e each-player discard and reveal-gated Ambushes: trait discards ride WP-817's owed-discard queue, Juggernaut purges by card name, Scorpion gains a group condition, The Leader a reveal gate (Active 2026-10-27 — WP-837 / EC-875)
 
-**Status:** Active 2026-10-27. Live-verify (D-24026) operator-pending, on a match created after the deploy.
+**Status:** Active 2026-10-27. Live-verify (D-24026) PASS 2026-10-27 on server `26bf1e10` (STATUS.md WP-837 entry): Mystique made only X-Men holders discard; Frost Giant Warrior wounded non-holders at open in turn order and its holder prompt resolved both the discard and **Gain a Wound instead**; Juggernaut discarded same-named hand cards before sending the HQ to the Hero Deck bottom; Scorpion wounded only with another Sinister Spider-Foes Villain in the City; The Leader played a card only when the current player had no Strength Hero.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Five Core 2nd-edition Ambush lines did nothing: Mystique, Frost Giant Warrior, Juggernaut, Scorpion and The Leader. They now do what they print and log it.
 
