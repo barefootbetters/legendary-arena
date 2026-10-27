@@ -946,3 +946,93 @@ describe("useLoadoutDraft — Final Blow toggle (WP-686 / D-24503)", () => {
     assert.equal(api.draft.value.finalBlow, undefined);
   });
 });
+
+describe("useLoadoutDraft loadFromJson — missing envelope fields come from the draft", () => {
+  /** A paste with only the composition, playerCount, and the schema version. */
+  function makeCompositionOnlyPaste(overrides: Record<string, unknown> = {}): string {
+    return JSON.stringify({
+      schemaVersion: "1.0",
+      playerCount: 2,
+      heroSelectionMode: "GROUP_STANDARD",
+      composition: {
+        schemeId: "core/midtown-bank-robbery",
+        mastermindId: "core/loki",
+        villainGroupIds: ["core/brotherhood", "core/hydra"],
+        henchmanGroupIds: ["core/sentinel"],
+        heroDeckIds: ["core/spider-man", "core/wolverine", "core/storm"],
+        bystandersCount: 30,
+        woundsCount: 30,
+        officersCount: 30,
+        sidekicksCount: 12,
+      },
+      ...overrides,
+    });
+  }
+
+  it("loads a composition-only paste and takes setupId, createdAt, createdBy, seed, expansions from the open draft", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    const before = JSON.parse(JSON.stringify(api.draft.value));
+    const result = api.loadFromJson(makeCompositionOnlyPaste());
+    assert.deepEqual(result, { ok: true });
+    const loaded = api.draft.value;
+    assert.equal(loaded.setupId, before.setupId);
+    assert.equal(loaded.createdAt, before.createdAt);
+    assert.equal(loaded.createdBy, before.createdBy);
+    assert.equal(loaded.seed, before.seed);
+    assert.deepEqual(loaded.expansions, before.expansions);
+    // the pasted fields win over the draft's
+    assert.equal(loaded.playerCount, 2);
+    assert.equal(loaded.composition.mastermindId, "core/loki");
+    assert.deepEqual(loaded.composition.villainGroupIds, ["core/brotherhood", "core/hydra"]);
+  });
+
+  it("fills schemaVersion and playerCount too when the paste omits them", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    api.setPlayerCount(3);
+    const pasted = JSON.parse(makeCompositionOnlyPaste());
+    delete pasted.schemaVersion;
+    delete pasted.playerCount;
+    const result = api.loadFromJson(JSON.stringify(pasted));
+    assert.deepEqual(result, { ok: true });
+    assert.equal(api.draft.value.schemaVersion, "1.0");
+    assert.equal(api.draft.value.playerCount, 3);
+  });
+
+  it("keeps envelope values the paste does carry instead of overwriting them from the draft", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    const result = api.loadFromJson(
+      makeCompositionOnlyPaste({ seed: "pasted-seed", expansions: ["core", "xmen"] }),
+    );
+    assert.deepEqual(result, { ok: true });
+    assert.equal(api.draft.value.seed, "pasted-seed");
+    assert.deepEqual(api.draft.value.expansions, ["core", "xmen"]);
+  });
+
+  it("still rejects a malformed envelope value the paste carries", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    const before = JSON.parse(JSON.stringify(api.draft.value));
+    const result = api.loadFromJson(makeCompositionOnlyPaste({ createdBy: "robot" }));
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.ok(result.errors.some((entry) => entry.field === "createdBy"));
+    }
+    // a rejected paste leaves the draft untouched
+    assert.deepEqual(api.draft.value, before);
+  });
+
+  it("never fills the composition: a paste without one is still rejected", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    const result = api.loadFromJson(JSON.stringify({ schemaVersion: "1.0", playerCount: 2 }));
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.ok(result.errors.some((entry) => entry.field === "composition"));
+    }
+  });
+
+  it("does not alias the replaced draft's expansions array", () => {
+    const api = useLoadoutDraft(FULL_REGISTRY);
+    const previousExpansions = api.draft.value.expansions;
+    api.loadFromJson(makeCompositionOnlyPaste());
+    assert.notEqual(api.draft.value.expansions, previousExpansions);
+  });
+});
