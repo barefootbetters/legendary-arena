@@ -585,6 +585,33 @@ describe('useTurnActions — hasPendingPlayVillainTop gating (WP-663 / EC-700 / 
   });
 });
 
+describe('useTurnActions — hasPendingKoDiscardChoice gating (WP-693 / D-24510, D-24769)', () => {
+  const KO_DISCARD_REASON = 'KO cards from your discard pile, or KO None, before taking another action.';
+  // why: hasPendingKoDiscardChoice is position 27: stage, isViewerTurn, then 24 pending/heal
+  // falses (positions 3–26), then true.
+  const withKoDiscardChoice = (stage: string) =>
+    useTurnActions(
+      stage, true,
+      false, false, false, false, false, false, false, false, false, false,
+      false, false, false, false, false, false, false, false, false, false,
+      false, false, false, false,
+      true,
+    );
+
+  // why: the cap is not always four (Salomé and Destroyer two, Frost Giant Warrior and Ymir
+  // one grey Hero), so the reason names no count; the prompt shows it.
+  test('canEndTurn and canPassPriority are blocked at every stage with a count-free reason', () => {
+    for (const stage of ['start', 'main', 'cleanup'] as const) {
+      const endTurn = withKoDiscardChoice(stage).canEndTurn();
+      assert.equal(endTurn.allowed, false, `endTurn blocked at ${stage}`);
+      assert.equal(endTurn.reason, KO_DISCARD_REASON);
+      const passPriority = withKoDiscardChoice(stage).canPassPriority();
+      assert.equal(passPriority.allowed, false, `passPriority blocked at ${stage}`);
+      assert.equal(passPriority.reason, KO_DISCARD_REASON);
+    }
+  });
+});
+
 // why: D-24614 — the D-24180 heal lock. The engine refuses recruitHero,
 // recruitOfficer, fightVillain and fightMastermind for the rest of a turn in which
 // the player healed, so the four board gates must refuse them too. Positional args

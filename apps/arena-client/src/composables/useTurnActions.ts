@@ -74,6 +74,13 @@ export function healLockGate(hasHealedThisTurn: boolean): GatingResult {
   return ALLOWED;
 }
 
+// why: D-24589 / D-24769 — four cards park this choice with different caps and filters (Loki's
+// Maniacal Tyrant: up to four; Salomé and Destroyer: up to two, Destroyer grey only; Frost
+// Giant Warrior and Ymir: one grey Hero). This gate sees only that a choice is pending, so
+// the reason names no count; the prompt beside it says how many and which cards.
+const KO_DISCARD_CHOICE_REASON =
+  'KO cards from your discard pile, or KO None, before taking another action.';
+
 function stageGateReason(currentStage: string, allowedStage: TurnStage): string {
   const allowedDisplay = STAGE_DISPLAY_NAMES[allowedStage];
   return `Only available during the ${allowedDisplay} step (current: ${currentStage}).`;
@@ -675,11 +682,11 @@ export function useTurnActions(
       }
       if (hasPendingKoDiscardChoice) {
         // why: WP-693 / D-24510 — End Turn / Pass Priority blocked at any stage while a
-        // Loki Maniacal Tyrant KO-from-discard choice is pending (the engine's full
-        // block-all guard set freezes the board). OPTIONAL — "KO None" is the decline path.
+        // KO-from-discard choice is pending (the engine's full block-all guard set freezes
+        // the board). OPTIONAL — "KO None" is the decline path.
         return {
           allowed: false,
-          reason: 'KO up to four cards from your discard pile, or KO None, before taking another action.',
+          reason: KO_DISCARD_CHOICE_REASON,
         };
       }
       if (currentStage === 'cleanup' && hasPendingChoice) {
@@ -946,11 +953,11 @@ export function useTurnActions(
       }
       if (hasPendingKoDiscardChoice) {
         // why: WP-693 / D-24510 — the engine's block-all guards block endTurn while
-        // pendingKoDiscardChoices is non-empty (Loki's Maniacal Tyrant); this client-side
-        // gate surfaces the reason so the player sees a tooltip instead of a silent rejection.
+        // pendingKoDiscardChoices is non-empty; this client-side gate surfaces the reason
+        // so the player sees a tooltip instead of a silent rejection.
         return {
           allowed: false,
-          reason: 'KO up to four cards from your discard pile, or KO None, before taking another action.',
+          reason: KO_DISCARD_CHOICE_REASON,
         };
       }
       if (hasPendingChoice) {
