@@ -177,6 +177,7 @@ co2e/captain-america,Captain America,co2e,attack-per-count,executable,WP-247,D-2
 co2e/captain-america,Captain America,co2e,recruit-per-count,executable,WP-674,D-24489,packages/game-engine/src/hero/heroEffects.execute.ts#recruit-per-count,avengers-assemble
 co2e/cyclops,Cyclops,co2e,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,x-men-united
 co2e/cyclops,Cyclops,co2e,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,determination|optic-blast|x-men-united
+co2e/cyclops,Cyclops,co2e,return-on-discard,executable,WP-498,D-24301,packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard,unending-energy
 co2e/emma-frost,Emma Frost,co2e,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mental-discipline
 co2e/gambit,Gambit,co2e,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,stack-the-deck
 co2e/gambit,Gambit,co2e,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,kinetic-card
@@ -723,6 +724,7 @@ wwhk/caiera,Caiera,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src
 wwhk/caiera,Caiera,wwhk,transform,unsupported,,,,dutiful-protector
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,cross-dimensional-rampage,unsupported,,,,the-green-scar
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,dont-make-me-angry
+wwhk/gladiator-hulk,Gladiator Hulk,wwhk,return-on-discard,executable,WP-498,D-24301,packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard,hulk-is-king
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,dont-make-me-angry|double-fisted-smashing|seize-the-throne
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,transform,unsupported,,,,seize-the-throne
 wwhk/gladiator-hulk,Gladiator Hulk,wwhk,wounded-fury,unsupported,,,,the-green-scar

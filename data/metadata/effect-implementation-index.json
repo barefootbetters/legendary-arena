@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2009,
+    "totalEntries": 2011,
     "byScope": {
-      "hero": 813,
+      "hero": 815,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 634,
+      "executable": 636,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
@@ -6496,6 +6496,23 @@
         {
           "slug": "x-men-united",
           "name": "X-Men United"
+        }
+      ]
+    },
+    {
+      "extId": "co2e/cyclops",
+      "name": "Cyclops",
+      "set": "co2e",
+      "scope": "hero",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "designs": [
+        {
+          "slug": "unending-energy",
+          "name": "Unending Energy"
         }
       ]
     },
@@ -26390,6 +26407,23 @@
       "name": "Gladiator Hulk",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "return-on-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#return-on-discard",
+      "wp": "WP-498",
+      "decision": "D-24301",
+      "designs": [
+        {
+          "slug": "hulk-is-king",
+          "name": "Hulk Is King"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/gladiator-hulk",
+      "name": "Gladiator Hulk",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "smash",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#smash",
@@ -30759,7 +30793,8 @@
       "scope": "hero",
       "mechanics": [
         "attack-per-count",
-        "discard-to-play"
+        "discard-to-play",
+        "return-on-discard"
       ]
     },
     "co2e/emma-frost": {
@@ -37632,6 +37667,7 @@
       "mechanics": [
         "cross-dimensional-rampage",
         "draw",
+        "return-on-discard",
         "smash",
         "transform",
         "wounded-fury"
