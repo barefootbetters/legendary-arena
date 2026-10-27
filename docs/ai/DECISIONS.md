@@ -49737,7 +49737,7 @@ Protect this file.
 ---
 ### D-24769 — co2e grey-Hero and Hero-count effects: one grey predicate, two filtered KOs, three count / reveal primitives (Active 2026-10-26 — WP-836 / EC-874)
 
-**Status:** Active 2026-10-26. Live-verify (D-24026) operator-pending: a `play.legendary-arena.com` match created after the deploy with the co2e Enemies of Asgard, Radiation or Sinister Syndicate Villains and the co2e Savage Land Mutates (STATUS.md WP-836 entry).
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-10-27: operator match `fYMag9FU7eP` on server `10479074` (STATUS.md WP-836 entry): Destroyer KO'd only classed Heroes from each discard, Ymir and Frost Giant Warrior KO'd only grey Heroes, Abomination and Beetle counted hand + play, and Savage Land Mutates KO'd grey tops and left the rest.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). Eight printed co2e lines did nothing: Destroyer's Ambush / Fight / Escape, the Frost Giant Warrior and Ymir Fights, and the Abomination, Beetle and Savage Land Mutates Fights. They now do what they print and log it.
 
