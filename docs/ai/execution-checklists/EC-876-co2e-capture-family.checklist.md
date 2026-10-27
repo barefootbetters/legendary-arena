@@ -39,6 +39,7 @@
 ## Required `// why:` Comments
 - `capturePiles` on the descriptor: kept out of `descriptorKey`; the append note in the types array AND the script copy.
 - Enchantress handler: first Bystander in pile order (D-24749), rules give the player the pick but every Bystander is identical in the engine.
+- Enchantress seat loop: stays `.sort()` under D-24780 §13 — no Wound, discard or reaction runs; the order only sets the `G.attachedBystanders` append order and the log names (D-24780 §6 append-order class).
 - Pile capture: "do A or do B" picks a doable option (rules v23 L3199-3201); Officer first (D-24771).
 - HQ capture snapshot: rules v23 L749-755 refill each slot at once; the printed "each Hero" is the HQ when the effect starts.
 - Venom no-op handler + fight-site branch: the generic award runs before the executor, so the split happens at the fight site (D-24270 / D-24351 pattern), and its entry in `DELIBERATE_NO_OP_VILLAIN_PRIMITIVES` (or its trace mislabels as `fired`).
