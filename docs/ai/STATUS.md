@@ -10,6 +10,10 @@
 
 ## Current State
 
+### KO-from-discard block reason no longer says "four" (2026-10-27, INFRA)
+
+**User-visible on `play.legendary-arena.com` after deploy.** While a KO-from-discard choice is open, the disabled End turn / Pass priority tooltip said "KO up to four cards from your discard pile" for every source, though Salomé and Destroyer cap at two and Frost Giant Warrior and Ymir at one grey Hero. `apps/arena-client/src/composables/useTurnActions.ts` now says "KO cards from your discard pile, or KO None, before taking another action." (the gate sees only that a choice is pending; the prompt beside it shows the count and filter). New gate test (fails on the old text); `pnpm -r build`, arena-client `typecheck` and `pnpm -r --no-bail test` 0 fail (arena-client 2472 -> 2473). Live-verify: open any KO-from-discard prompt (fight a Frost Giant Warrior with a grey Hero in your discard) and hover End turn.
+
 ### WP-836 follow-ups — grey-Hero reads share one predicate; the grey KO prompt, the KO-from-discard log and Destroyer's "no Hero" line say what they mean (D-24783) (2026-10-27, INFRA)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Closes the four WP-836 follow-ups (D-24769 §10 and the `fYMag9FU7eP` live-verify papercuts).
