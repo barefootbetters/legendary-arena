@@ -32,6 +32,7 @@ import {
   ESCAPE_EFFECT_COST_DISCARD_KIND,
   ESCAPE_HQ_KO_KIND,
   ESCAPE_HQ_KO_MAX_COST,
+  VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
   enqueueEscapeProcedure,
   openEscapeProcedureSeatChoiceIfNeeded,
 } from './villainEscapeProcedure.js';
@@ -633,5 +634,251 @@ describe('WP-817 the owed Primus Escape discard (D-24750)', () => {
     assert.equal(gameState.pendingSeatChoice, undefined);
     assert.equal(hasLog(gameState, 'has no Hero that costs'), false);
     assert.equal(gameState.pendingEscapeEffectDiscards?.length, 1);
+  });
+});
+
+describe('WP-837 the owed every-player Hero-trait discard (D-24770)', () => {
+  const MYSTIQUE = 'mystique-01' as CardExtId;
+  const FROST_GIANT = 'frost-giant-warrior-01' as CardExtId;
+  const WOUND_OPTION = { label: 'Gain a Wound instead' };
+  const MYSTIQUE_ENTRY = {
+    escapedCardId: MYSTIQUE,
+    eligibleCosts: [],
+    traitFilter: {
+      requireKind: 'team' as const,
+      requireValue: 'x-men',
+      requirementLabel: 'X-Men',
+      effectLabel: 'Ambush',
+      hasWoundAlternative: false,
+    },
+  };
+  const FROST_GIANT_ENTRY = {
+    escapedCardId: FROST_GIANT,
+    eligibleCosts: [],
+    traitFilter: {
+      requireKind: 'hero-class' as const,
+      requireValue: 'ranged',
+      requirementLabel: 'Ranged',
+      effectLabel: 'Ambush',
+      hasWoundAlternative: true,
+    },
+  };
+
+  /**
+   * Builds a state with the given hands, the trait corpus and the given owed entries.
+   *
+   * @param hands - Each seat's hand, keyed by seat id.
+   * @param entries - The owed discards, in queue order.
+   * @returns The game state.
+   */
+  function buildTraitState(
+    hands: Record<string, CardExtId[]>,
+    entries: LegendaryGameState['pendingEscapeEffectDiscards'],
+  ): LegendaryGameState {
+    const gameState = buildState(hands);
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      'xmen-A': { heroClass: 'tech', team: 'x-men' },
+      'xmen-B': { heroClass: 'covert', team: 'x-men' },
+      'xmen-C': { heroClass: 'strength', team: 'x-men' },
+      other: { heroClass: 'tech', team: 'avengers' },
+      'ranged-R': { heroClass: 'ranged', team: 'avengers' },
+    } as LegendaryGameState['cardTraits'];
+    gameState.pendingEscapeEffectDiscards = entries;
+    return gameState;
+  }
+
+  it('T17: opens one trait-filtered seat choice and logs the seat with no X-Men Hero', () => {
+    const gameState = buildTraitState(
+      { '0': ['xmen-A', 'other'] as CardExtId[], '1': ['other'] as CardExtId[], '2': ['xmen-B', 'xmen-C'] as CardExtId[] },
+      [structuredClone(MYSTIQUE_ENTRY)],
+    );
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+
+    const choice = openChoice(gameState);
+    assert.equal(choice.kind, VILLAIN_EFFECT_TRAIT_DISCARD_KIND);
+    assert.deepEqual(choice.addressedSeats, ['0', '2']);
+    assert.deepEqual(choice.seatPrompts['0']!.options, [{ label: 'xmen-A', cardId: 'xmen-A' }]);
+    assert.deepEqual(choice.seatPrompts['2']!.options, [
+      { label: 'xmen-B', cardId: 'xmen-B' },
+      { label: 'xmen-C', cardId: 'xmen-C' },
+    ]);
+    assert.equal(choice.defaultOptionIndex, 0);
+    assert.ok(hasLog(gameState, 'Ambush effect: Player 1 has no X-Men Hero to discard.'));
+    assert.equal('pendingEscapeEffectDiscards' in gameState, false, 'the drained queue is deleted');
+  });
+
+  it('T18: the resolve dispatch discards each pick in ascending seat order', () => {
+    const gameState = buildTraitState(
+      { '0': ['xmen-A', 'other'] as CardExtId[], '1': ['other'] as CardExtId[], '2': ['xmen-B', 'xmen-C'] as CardExtId[] },
+      [structuredClone(MYSTIQUE_ENTRY)],
+    );
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    submit(gameState, '2', 1);
+    submit(gameState, '0', 0);
+
+    assert.equal(gameState.pendingSeatChoice, undefined);
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['xmen-A']);
+    assert.deepEqual(gameState.playerZones['2']!.hand, ['xmen-B']);
+    assert.deepEqual(gameState.playerZones['2']!.discard, ['xmen-C']);
+    const discardLines = gameState.messages
+      .map((entry) => entry.text)
+      .filter((text) => text.endsWith('(Villain effect).'));
+    assert.deepEqual(discardLines, [
+      'Player 0 discarded xmen-A (xmen-A) (Villain effect).',
+      'Player 2 discarded xmen-C (xmen-C) (Villain effect).',
+    ]);
+  });
+
+  it('T19: Frost Giant Warrior wounds the seat with no Ranged Hero first, then offers the Wound only while one is left', () => {
+    const plenty = buildTraitState(
+      { '0': ['ranged-R'] as CardExtId[], '1': ['other'] as CardExtId[] },
+      [structuredClone(FROST_GIANT_ENTRY)],
+    );
+    plenty.piles.wounds = ['w0', 'w1', 'w2'] as CardExtId[];
+    openEscapeProcedureSeatChoiceIfNeeded(plenty, undefined, '0');
+    assert.deepEqual(plenty.playerZones['1']!.discard, ['w0']);
+    assert.ok(hasLog(plenty, 'Ambush effect: Player 1 has no Ranged Hero to discard and gained a Wound.'));
+    assert.deepEqual(openChoice(plenty).addressedSeats, ['0']);
+    assert.deepEqual(openChoice(plenty).seatPrompts['0']!.options, [{ label: 'ranged-R', cardId: 'ranged-R' }, WOUND_OPTION]);
+
+    const lastWound = buildTraitState(
+      { '0': ['ranged-R'] as CardExtId[], '1': ['other'] as CardExtId[] },
+      [structuredClone(FROST_GIANT_ENTRY)],
+    );
+    lastWound.piles.wounds = ['w0'] as CardExtId[];
+    openEscapeProcedureSeatChoiceIfNeeded(lastWound, undefined, '0');
+    assert.deepEqual(lastWound.playerZones['1']!.discard, ['w0'], 'seat 1 takes the last Wound');
+    assert.deepEqual(
+      openChoice(lastWound).seatPrompts['0']!.options,
+      [{ label: 'ranged-R', cardId: 'ranged-R' }],
+      'two-pass: no Wound option once the supply is empty',
+    );
+
+    const empty = buildTraitState(
+      { '0': ['ranged-R'] as CardExtId[], '1': ['other'] as CardExtId[] },
+      [structuredClone(FROST_GIANT_ENTRY)],
+    );
+    empty.piles.wounds = [];
+    openEscapeProcedureSeatChoiceIfNeeded(empty, undefined, '0');
+    assert.ok(hasLog(empty, 'Ambush effect: Player 1 has no Ranged Hero to discard; the Wound supply is empty.'));
+    assert.deepEqual(openChoice(empty).seatPrompts['0']!.options, [{ label: 'ranged-R', cardId: 'ranged-R' }]);
+  });
+
+  it('T20: choosing the Wound gains it through the chokepoint; Diving Block can intercept it', () => {
+    const gameState = buildTraitState(
+      { '0': ['ranged-R'] as CardExtId[], '1': ['ranged-R'] as CardExtId[] },
+      [structuredClone(FROST_GIANT_ENTRY)],
+    );
+    gameState.piles.wounds = ['w0', 'w1'] as CardExtId[];
+    gameState.playerZones['1']!.hand = [];
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    gameState.turnEconomy.woundsDrawn = 0;
+    submit(gameState, '0', 1);
+    assert.deepEqual(gameState.playerZones['0']!.hand, ['ranged-R'], 'the hand is unchanged');
+    assert.deepEqual(gameState.playerZones['0']!.discard, ['w1']);
+    assert.equal(gameState.turnEconomy.woundsDrawn, 1, 'the current player\'s villain Wound is counted');
+    assert.ok(hasLog(gameState, 'Player 0 gained a Wound instead of discarding (Villain effect).'));
+
+    const DIVING_BLOCK = 'core/captain-america/diving-block#0' as CardExtId;
+    const blocked = buildTraitState(
+      { '0': ['ranged-R', DIVING_BLOCK] as CardExtId[] },
+      [structuredClone(FROST_GIANT_ENTRY)],
+    );
+    blocked.heroAbilityHooks = [
+      { cardId: DIVING_BLOCK, timing: 'onPlay', keywords: ['diving-block'] },
+    ] as unknown as LegendaryGameState['heroAbilityHooks'];
+    openEscapeProcedureSeatChoiceIfNeeded(blocked, undefined, '0');
+    submit(blocked, '0', 1);
+    assert.ok(hasLog(blocked, 'Player 0 would gain a Wound instead of discarding — Diving Block can prevent it.'));
+    assert.deepEqual(
+      blocked.pendingDivingBlockWounds?.map((entry) => entry.playerID),
+      ['0'],
+      'a pending Diving Block entry is parked',
+    );
+  });
+
+  it('T21: one FIFO — the owed escape step, then the cost discard, then the trait discard', () => {
+    const gameState = buildTraitState(
+      // why: the step-2 Bystander discard takes each seat's first card (the filler), the cost
+      // discard the costed Hero, which leaves the X-Men Hero for the trait discard.
+      {
+        '0': ['filler', 'hero-cost5', 'xmen-A'] as CardExtId[],
+        '1': ['filler', 'hero-cost7', 'xmen-B'] as CardExtId[],
+      },
+      [
+        { escapedCardId: 'primus-01' as CardExtId, eligibleCosts: [2, 3, 5, 7] },
+        structuredClone(MYSTIQUE_ENTRY),
+      ],
+    );
+    gameState.cardStats['hero-cost5' as CardExtId] = makeCardStatEntry({ cost: 5 });
+    gameState.cardStats['hero-cost7' as CardExtId] = makeCardStatEntry({ cost: 7 });
+    gameState.pendingEscapeProcedures = [
+      { escapedCardId: ESCAPER, chooserPlayerID: '0', hasCarriedBystanders: true, isHqKoResolved: true },
+    ];
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    assert.equal(openChoice(gameState).kind, ESCAPE_BYSTANDER_DISCARD_KIND, 'the escape step opens first');
+    assert.equal(gameState.pendingEscapeEffectDiscards?.length, 2);
+    submit(gameState, '0', 0);
+    submit(gameState, '1', 0);
+
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    assert.equal(openChoice(gameState).kind, ESCAPE_EFFECT_COST_DISCARD_KIND, 'the cost entry opens next');
+    assert.equal(gameState.pendingEscapeEffectDiscards?.length, 1);
+    for (const seat of openChoice(gameState).addressedSeats) {
+      submit(gameState, seat, 0);
+    }
+
+    openEscapeProcedureSeatChoiceIfNeeded(gameState, undefined, '0');
+    assert.equal(openChoice(gameState).kind, VILLAIN_EFFECT_TRAIT_DISCARD_KIND, 'the trait entry opens last');
+    assert.equal('pendingEscapeEffectDiscards' in gameState, false);
+  });
+
+  it('T22: with no eligible Hero anywhere the queue drains; a decided match opens nothing', () => {
+    const drained = buildTraitState(
+      { '0': ['other'] as CardExtId[], '1': [] },
+      [structuredClone(MYSTIQUE_ENTRY)],
+    );
+    openEscapeProcedureSeatChoiceIfNeeded(drained, undefined, '0');
+    assert.equal(drained.pendingSeatChoice, undefined);
+    assert.equal('pendingEscapeEffectDiscards' in drained, false);
+    assert.ok(hasLog(drained, 'Ambush effect: Player 0 has no X-Men Hero to discard.'));
+    assert.ok(hasLog(drained, 'Ambush effect: Player 1 has no X-Men Hero to discard.'));
+
+    const decided = buildTraitState(
+      { '0': ['xmen-A'] as CardExtId[], '1': ['xmen-B'] as CardExtId[] },
+      [structuredClone(MYSTIQUE_ENTRY)],
+    );
+    decided.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
+    openEscapeProcedureSeatChoiceIfNeeded(decided, undefined, '0');
+    assert.equal(decided.pendingSeatChoice, undefined);
+    assert.equal(decided.pendingEscapeEffectDiscards?.length, 1);
+  });
+
+  it('T26: open-time Wounds go in turn order from the current player; the prompt seats stay ascending', () => {
+    const buildShortSupply = (): LegendaryGameState => {
+      const gameState = buildTraitState(
+        { '0': ['other'] as CardExtId[], '1': ['ranged-R'] as CardExtId[], '2': ['other'] as CardExtId[] },
+        [structuredClone(FROST_GIANT_ENTRY)],
+      );
+      gameState.piles.wounds = ['w0'] as CardExtId[];
+      gameState.turnEconomy.woundsDrawn = 0;
+      return gameState;
+    };
+
+    const seatTwoTurn = buildShortSupply();
+    openEscapeProcedureSeatChoiceIfNeeded(seatTwoTurn, undefined, '2');
+    assert.deepEqual(seatTwoTurn.playerZones['2']!.discard, ['w0'], 'the current player takes the last Wound');
+    assert.deepEqual(seatTwoTurn.playerZones['0']!.discard, []);
+    assert.equal(seatTwoTurn.turnEconomy.woundsDrawn, 1);
+    assert.ok(hasLog(seatTwoTurn, 'Ambush effect: Player 0 has no Ranged Hero to discard; the Wound supply is empty.'));
+    assert.deepEqual(openChoice(seatTwoTurn).addressedSeats, ['1']);
+    assert.deepEqual(openChoice(seatTwoTurn).seatPrompts['1']!.options, [{ label: 'ranged-R', cardId: 'ranged-R' }]);
+
+    const noCurrentPlayer = buildShortSupply();
+    openEscapeProcedureSeatChoiceIfNeeded(noCurrentPlayer, undefined, undefined);
+    assert.deepEqual(noCurrentPlayer.playerZones['0']!.discard, ['w0'], 'sorted without a current player');
+    assert.ok(hasLog(noCurrentPlayer, 'Ambush effect: Player 2 has no Ranged Hero to discard; the Wound supply is empty.'));
+    assert.equal(noCurrentPlayer.turnEconomy.woundsDrawn, 0);
   });
 });

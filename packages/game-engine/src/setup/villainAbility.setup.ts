@@ -498,12 +498,17 @@ function parseLocationGatedEffect(
  *   - `override-next-hand-size:<N>`  (N the absolute next-hand target; D-24307)
  *   - `add-next-hand-size:<N>`  (N extra cards added to the next-hand target; D-24352)
  *   - `play-villain-deck-cards:<N>`  (N top villain-deck cards to play; D-24351)
+ *     | `play-villain-deck-cards:<N>:<kind>:<value>`  (unless the current player reveals
+ *     a matching Hero; D-24770)
  *   - `reveal-top-draw-if-cost-lte:<N>`  (draw the deck top if it costs ≤ N; D-24589)
  *   - `ko-up-to-from-discard-current:<N>`  (KO up to N cards from your discard; D-24589)
  *     | `ko-up-to-from-discard-current:<N>:grey`  (only grey Heroes; D-24769)
  *   - `gain-recruit-current-count-by-trait:<kind>:<value>` and
  *     `draw-cards-current-count-by-trait:<kind>:<value>`  (count-sized; D-24769)
  *   - `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`  (Hero Classes that draw; D-24769)
+ *   - `discard-hero-each-player-by-trait:<kind>:<value>` and
+ *     `discard-hero-or-wound-each-player-by-trait:<kind>:<value>`  (each player discards a
+ *     matching Hero, or may gain a Wound instead; D-24770)
  *   - `ko-heroes-current-by-trait:<kind>:<value>`  (kind `team` | `hc`; D-24290)
  *   - `ko-heroes-current-count-by-trait:<kind>:<value>`  (the trait sizes the COUNT, not
  *     the KO filter; kind `team` | `hc`; D-24353)
@@ -514,7 +519,9 @@ function parseLocationGatedEffect(
  *   - `discard-hero-each-player-by-cost:<c>[+<c>…]`  (strictly ascending costs; D-24750)
  *   - `hero-deck-top-to-escape` | `gain-officer-current` |
  *     `ko-bystander-each-victory-pile` (D-24749) |
- *     `gain-recruit-current-per-hero-class` (D-24750)  (no params)
+ *     `gain-recruit-current-per-hero-class` (D-24750) |
+ *     `discard-hand-matching-hq-card-names-each-player` |
+ *     `hq-heroes-to-hero-deck-bottom` (D-24770)  (no params)
  *
  * @param value - The ungated marker value (the text inside `[effect:…]` minus
  *   any `@<space>` suffix).
@@ -757,6 +764,24 @@ function parseUngatedEffect(
       requireValue: predicate.requireValue,
     };
   }
+  if (
+    primitiveToken === 'discard-hero-each-player-by-trait' ||
+    primitiveToken === 'discard-hero-or-wound-each-player-by-trait'
+  ) {
+    // why: WP-837 / D-24770 — grammar `<primitive>:<kind>:<value>` (co2e Mystique:
+    // `discard-hero-each-player-by-trait:team:x-men`; Frost Giant Warrior:
+    // `discard-hero-or-wound-each-player-by-trait:hc:ranged`). The shared trait-predicate
+    // parser names the Hero each player must discard; a malformed tail returns null.
+    const predicate = parseTraitPredicateTokens(parts);
+    if (predicate === null) {
+      return null;
+    }
+    return {
+      primitive: primitiveToken,
+      requireKind: predicate.requireKind,
+      requireValue: predicate.requireValue,
+    };
+  }
   if (primitiveToken === 'reveal-top-ko-grey-or-draw-by-class') {
     // why: WP-836 / D-24769 — grammar `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`
     // (co2e Savage Land Mutates: `:strength+instinct`). Exactly 2 colon-parts; the class
@@ -777,14 +802,34 @@ function parseUngatedEffect(
     // `draw-cards-current:<N>`). A missing or non-positive-integer count falls through to
     // null (→ unresolvedMarkers) — a play with no count is malformed, never a no-param
     // descriptor. The detector reads `magnitude` at the onAmbush / onFight fire sites.
-    if (parts.length !== 2) {
-      return null;
+    // why: WP-837 / D-24770 — an optional reveal gate `play-villain-deck-cards:<N>:<kind>:
+    // <value>` (co2e The Leader: `:1:hc:strength`, "Reveal a Strength Hero or play a card
+    // from the Villain Deck"). The 2-part form stays byte-identical; the tail reuses the
+    // shared trait-predicate parser. Any other part count returns null.
+    if (parts.length === 2) {
+      const magnitude = parsePositiveInteger(parts[1]!);
+      if (magnitude === null) {
+        return null;
+      }
+      return { primitive: 'play-villain-deck-cards', magnitude };
     }
-    const magnitude = parsePositiveInteger(parts[1]!);
-    if (magnitude === null) {
-      return null;
+    if (parts.length === 4) {
+      const magnitude = parsePositiveInteger(parts[1]!);
+      if (magnitude === null) {
+        return null;
+      }
+      const predicate = parseTraitPredicateTokens([parts[0]!, parts[2]!, parts[3]!]);
+      if (predicate === null) {
+        return null;
+      }
+      return {
+        primitive: 'play-villain-deck-cards',
+        magnitude,
+        requireKind: predicate.requireKind,
+        requireValue: predicate.requireValue,
+      };
     }
-    return { primitive: 'play-villain-deck-cards', magnitude };
+    return null;
   }
   if (primitiveToken === 'ko-heroes-current-by-trait') {
     // why: D-24290 — grammar `ko-heroes-current-by-trait:<kind>:<value>` (the

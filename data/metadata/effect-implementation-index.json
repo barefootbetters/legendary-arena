@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2004,
+    "totalEntries": 2009,
     "byScope": {
       "hero": 813,
-      "villain": 735,
+      "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 628,
+      "executable": 634,
       "deferred": 16,
       "condition": 49,
       "unsupported": 291,
-      "unmarked": 1015,
+      "unmarked": 1014,
       "subsystem": 5
     }
   },
@@ -5857,6 +5857,28 @@
       "name": "Juggernaut",
       "set": "co2e",
       "scope": "villain",
+      "mechanic": "discard-hand-matching-hq-card-names-each-player",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hand-matching-hq-card-names-each-player",
+      "wp": "WP-837",
+      "decision": "D-24770"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
+      "name": "Juggernaut",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "hq-heroes-to-hero-deck-bottom",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-heroes-to-hero-deck-bottom",
+      "wp": "WP-837",
+      "decision": "D-24770"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-juggernaut",
+      "name": "Juggernaut",
+      "set": "co2e",
+      "scope": "villain",
       "mechanic": "ko-hero",
       "status": "executable",
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
@@ -5873,6 +5895,17 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#become-scheme-twist",
       "wp": "WP-481",
       "decision": "D-24287"
+    },
+    {
+      "extId": "co2e-villain-brotherhood-of-mutants-mystique",
+      "name": "Mystique",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "discard-hero-each-player-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-each-player-by-trait",
+      "wp": "WP-837",
+      "decision": "D-24770"
     },
     {
       "extId": "co2e-villain-brotherhood-of-mutants-sabretooth",
@@ -5928,6 +5961,17 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "co2e-villain-enemies-of-asgard-frost-giant-warrior",
+      "name": "Frost Giant Warrior",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "discard-hero-or-wound-each-player-by-trait",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#discard-hero-or-wound-each-player-by-trait",
+      "wp": "WP-837",
+      "decision": "D-24770"
     },
     {
       "extId": "co2e-villain-enemies-of-asgard-frost-giant-warrior",
@@ -6099,11 +6143,11 @@
       "name": "The Leader",
       "set": "co2e",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "play-villain-deck-cards",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#play-villain-deck-cards",
+      "wp": "WP-542",
+      "decision": "D-24351"
     },
     {
       "extId": "co2e-villain-radiation-zzzax",
@@ -6126,6 +6170,17 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "co2e-villain-sinister-spider-foes-scorpion",
+      "name": "Scorpion",
+      "set": "co2e",
+      "scope": "villain",
+      "mechanic": "gain-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound",
+      "wp": "WP-252",
+      "decision": "D-24023"
     },
     {
       "extId": "co2e-villain-sinister-spider-foes-scorpion",
@@ -30482,13 +30537,16 @@
     "co2e-villain-brotherhood-of-mutants-juggernaut": {
       "scope": "villain",
       "mechanics": [
+        "discard-hand-matching-hq-card-names-each-player",
+        "hq-heroes-to-hero-deck-bottom",
         "ko-hero"
       ]
     },
     "co2e-villain-brotherhood-of-mutants-mystique": {
       "scope": "villain",
       "mechanics": [
-        "become-scheme-twist"
+        "become-scheme-twist",
+        "discard-hero-each-player-by-trait"
       ]
     },
     "co2e-villain-brotherhood-of-mutants-sabretooth": {
@@ -30519,6 +30577,7 @@
     "co2e-villain-enemies-of-asgard-frost-giant-warrior": {
       "scope": "villain",
       "mechanics": [
+        "discard-hero-or-wound-each-player-by-trait",
         "ko-up-to-from-discard-current"
       ]
     },
@@ -30594,7 +30653,7 @@
     "co2e-villain-radiation-the-leader": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "play-villain-deck-cards"
       ]
     },
     "co2e-villain-radiation-zzzax": {
@@ -30612,6 +30671,7 @@
     "co2e-villain-sinister-spider-foes-scorpion": {
       "scope": "villain",
       "mechanics": [
+        "gain-wound",
         "koHeroCurrentPlayer"
       ]
     },

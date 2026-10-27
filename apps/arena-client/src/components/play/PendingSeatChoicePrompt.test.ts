@@ -283,6 +283,25 @@ describe('PendingSeatChoicePrompt — WP-817 Primus Escape discard (D-24750)', (
   });
 });
 
+describe('PendingSeatChoicePrompt — WP-837 every-player Hero-trait discard (D-24770)', () => {
+  test('T24: the villain-effect-trait-discard kind has its own heading', () => {
+    const { submitMove } = recorder();
+    const choice: UIPendingSeatChoice = {
+      kind: 'villain-effect-trait-discard',
+      addressedSeats: ['player-1'],
+      outstandingSeats: ['player-1'],
+      seatPrompts: { 'player-1': { options: [{ label: 'Cyclops' }, { label: 'Gain a Wound instead' }] } },
+    };
+    const wrapper = mount(PendingSeatChoicePrompt, {
+      props: { pendingSeatChoice: choice, viewerPlayerId: 'player-1', submitMove },
+    });
+    assert.equal(
+      wrapper.find('.pending-seat-choice-prompt__heading').text(),
+      "A Villain's effect — choose a Hero to discard",
+    );
+  });
+});
+
 describe('PendingSeatChoicePrompt — WP-845 reveal or gain a Wound (D-24779)', () => {
   test('AC-10: the reveal-or-wound kind shows its heading and both options, and option 1 submits optionIndex 1', async () => {
     const { calls, submitMove } = recorder();

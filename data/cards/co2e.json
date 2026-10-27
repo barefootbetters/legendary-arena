@@ -2057,7 +2057,7 @@
           "vAttack": "7",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-juggernaut.webp",
           "abilities": [
-            "Ambush: Each player reveals their hand and discards all cards that have the same card names as any Heroes in the HQ. Then put all Heroes from the HQ on the bottom of the Hero Deck.",
+            "Ambush: Each player reveals their hand and discards all cards that have the same card names as any Heroes in the HQ. Then put all Heroes from the HQ on the bottom of the Hero Deck. [effect:discard-hand-matching-hq-card-names-each-player] [effect:hq-heroes-to-hero-deck-bottom]",
             "Fight: KO two of your Heroes. [effect:ko-hero:current:2]"
           ],
           "copies": 2
@@ -2069,7 +2069,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-brotherhood-of-mutants-mystique.webp",
           "abilities": [
-            "Ambush: Each player discards an [team:x-men] Hero.",
+            "Ambush: Each player discards an [team:x-men] Hero. [effect:discard-hero-each-player-by-trait:team:x-men]",
             "Escape: Mystique becomes a Scheme Twist that takes effect immediately. [effect:become-scheme-twist]"
           ],
           "copies": 2
@@ -2139,7 +2139,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-enemies-of-asgard-frost-giant-warrior.webp",
           "abilities": [
-            "Ambush: Each player discards a [hc:ranged] Hero or gains a Wound.",
+            "Ambush: Each player discards a [hc:ranged] Hero or gains a Wound. [effect:discard-hero-or-wound-each-player-by-trait:hc:ranged]",
             "Fight: You may KO a grey Hero from your discard pile. [effect:ko-up-to-from-discard-current:1:grey]"
           ],
           "copies": 2
@@ -2307,7 +2307,7 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-radiation-the-leader.webp",
           "abilities": [
-            "Ambush: Reveal a [hc:strength] Hero or play a card from the Villain Deck."
+            "Ambush: Reveal a [hc:strength] Hero or play a card from the Villain Deck. [effect:play-villain-deck-cards:1:hc:strength]"
           ],
           "copies": 2
         },
@@ -2351,7 +2351,7 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/co2e/co2e-vi-sinister-spider-foes-scorpion.webp",
           "abilities": [
-            "Ambush: If there is another Spider-Foes Villain in the city, each player gains a Wound.",
+            "Ambush: If there is another Spider-Foes Villain in the city, each player gains a Wound. [effect:gain-wound:each!another-group-villain-in-city]",
             "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ],
           "copies": 2

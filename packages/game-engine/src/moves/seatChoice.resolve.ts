@@ -81,9 +81,11 @@ import {
   applyEscapeBystanderDiscard,
   applyEscapeEffectCostDiscard,
   applyEscapeHqKo,
+  applyVillainEffectTraitDiscard,
   ESCAPE_BYSTANDER_DISCARD_KIND,
   ESCAPE_EFFECT_COST_DISCARD_KIND,
   ESCAPE_HQ_KO_KIND,
+  VILLAIN_EFFECT_TRAIT_DISCARD_KIND,
 } from '../villainDeck/villainEscapeProcedure.js';
 // why: WP-793 / D-24656 — a non-active seat's return-on-discard apply. resolveReturnOnDiscard
 // imports parkSeatChoice from this module: the same runtime-safe cycle (function bodies only).
@@ -558,6 +560,13 @@ function applySeatChoiceByKind(
   // sibling of the Bystander discard; applied atomically through discardFromHand.
   if (choice.kind === ESCAPE_EFFECT_COST_DISCARD_KIND) {
     applyEscapeEffectCostDiscard(G, choice);
+    return;
+  }
+  // why: WP-837 / D-24770 — the owed every-player Hero-trait discard (co2e Mystique / Frost
+  // Giant Warrior); a card goes through discardFromHand, the Wound option through the Wound
+  // chokepoint, and the current player's Wound moves woundsDrawn.
+  if (choice.kind === VILLAIN_EFFECT_TRAIT_DISCARD_KIND) {
+    applyVillainEffectTraitDiscard(G, choice, currentPlayer);
     return;
   }
   if (choice.kind === RETURN_ON_DISCARD_SEAT_CHOICE_KIND) {

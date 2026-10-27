@@ -177,6 +177,12 @@ function isLockedEffectKeyword(keyword) {
 // positions 32, 33 and 34 by WP-836 (D-24769 — co2e Abomination, Beetle and Savage Land
 // Mutates Fights; the first two validate via the shared trait-predicate branch, the third via
 // its own Hero Class list branch below).
+// `discard-hero-each-player-by-trait`, `discard-hero-or-wound-each-player-by-trait` (both
+// `:<kind>:<value>`), `discard-hand-matching-hq-card-names-each-player` and
+// `hq-heroes-to-hero-deck-bottom` (both no-param) appended at positions 35-38 by WP-837
+// (D-24770 — co2e Mystique, Frost Giant Warrior and Juggernaut Ambushes; the first two
+// validate via the shared trait-predicate branch, the last two via the terminal no-param
+// branch).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -212,6 +218,10 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'gain-recruit-current-count-by-trait',
   'draw-cards-current-count-by-trait',
   'reveal-top-ko-grey-or-draw-by-class',
+  'discard-hero-each-player-by-trait',
+  'discard-hero-or-wound-each-player-by-trait',
+  'discard-hand-matching-hq-card-names-each-player',
+  'hq-heroes-to-hero-deck-bottom',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -225,8 +235,9 @@ const HERO_CLASSES = ['tech', 'covert', 'strength', 'ranged', 'instinct'];
 // discipline + loud-fail-on-drift posture as the vocabularies above: the `!<condition>`
 // marker suffix validates against this list (case-sensitive), so a mistyped condition in
 // the marker map is rejected, and a new engine condition breaks this script until it is
-// appended here too.
-const VILLAIN_EFFECT_CONDITIONS = ['savior'];
+// appended here too. `another-group-villain-in-city` appended by WP-837 (D-24770 — co2e
+// Scorpion's Ambush "If there is another Spider-Foes Villain in the city").
+const VILLAIN_EFFECT_CONDITIONS = ['savior', 'another-group-villain-in-city'];
 
 // why: WP-489 / D-24295 — hand-synced local copy of the engine's CITY_SPACE_NAMES
 // (packages/game-engine/src/board/citySpaceNames.ts). Same no-import-from-packages
@@ -427,6 +438,13 @@ function isValidParameterizedEffectToken(token) {
     // count of top Villain Deck cards to play (Endless Armies of HYDRA: 2; The Leader: 1).
     // Same strict positive-integer grammar as draw-cards-current; mirrors the engine
     // parser so producer + consumer agree on the grammar.
+    // why: D-24770 — the 4-token reveal-gated form play-villain-deck-cards:<N>:<kind>:<value>
+    // (co2e The Leader: :1:hc:strength). Mirrors the engine parser's 4-part branch.
+    if (parts.length === 4) {
+      return (
+        /^[1-9][0-9]*$/.test(parts[1]) && (parts[2] === 'team' || parts[2] === 'hc') && parts[3].length > 0
+      );
+    }
     return parts.length === 2 && /^[1-9][0-9]*$/.test(parts[1]);
   }
   if (
@@ -436,8 +454,12 @@ function isValidParameterizedEffectToken(token) {
     primitive === 'capture-bystanders-plus-per-hq-hero-by-trait' ||
     primitive === 'give-hq-hero-by-trait-to-current' ||
     primitive === 'gain-recruit-current-count-by-trait' ||
-    primitive === 'draw-cards-current-count-by-trait'
+    primitive === 'draw-cards-current-count-by-trait' ||
+    primitive === 'discard-hero-each-player-by-trait' ||
+    primitive === 'discard-hero-or-wound-each-player-by-trait'
   ) {
+    // why: D-24770 — co2e Mystique `discard-hero-each-player-by-trait:team:x-men` and Frost
+    // Giant Warrior `discard-hero-or-wound-each-player-by-trait:hc:ranged` join this arm.
     // why: D-24290 / D-24334 / D-24335 / D-24353 — all use the shared trait-predicate
     // grammar <kind>:<value> (exactly 3 tokens; kind team | hc; non-empty value), mirroring
     // the engine parser's parseTraitPredicateTokens so producer + consumer agree. co2e Baron

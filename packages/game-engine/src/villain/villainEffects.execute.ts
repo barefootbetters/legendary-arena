@@ -25,6 +25,7 @@ import {
   offPlayCardStats,
   offPlayCardTraits,
   playedCardIdsStillInPlay,
+  resolveSplitFacePair,
 } from '../hero/splitCard.logic.js';
 import { cardHasClassWhenPlayed } from '../hero/sizeChanging.logic.js';
 import { cardHasTeamWhenPlayed } from '../hero/effectiveTeams.logic.js';
@@ -79,6 +80,9 @@ import type { CaptureHeroResult } from '../board/heroCapture.logic.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { hauntHqSlot, selectUnhauntedHqIndex } from '../board/haunt.logic.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
+// why: WP-837 / D-24770 — Juggernaut's same-name discards go through the single
+// hand→discard chokepoint so return-on-discard / teleport reactions fire.
+import { discardFromHand } from '../moves/discardFromHand.js';
 import { reshuffleDiscardIntoDeck, drawCardsIntoHand, HAND_SIZE } from '../moves/drawCards.logic.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { pushLog } from '../log/logPush.js';
@@ -229,7 +233,7 @@ export function executeVillainAbilities(
       // D-24295 precedent): the descriptor was never dispatched.
       if (
         descriptor.requireCondition !== undefined &&
-        !isConditionGateSatisfied(G, currentPlayer, timing, descriptor)
+        !isConditionGateSatisfied(G, currentPlayer, cardId, timing, descriptor)
       ) {
         continue;
       }
@@ -650,17 +654,20 @@ function narrateCityGateBlocked(
 }
 
 /**
- * Evaluates a descriptor's `requireCondition` gate for the current player, and
- * self-narrates the "no effect" line when it blocks (WP-816 / D-24749).
+ * Evaluates a descriptor's `requireCondition` gate, and self-narrates the "no
+ * effect" line when it blocks (WP-816 / D-24749).
  *
  * Exhaustive over `VillainEffectCondition`: `'savior'` passes when the current
  * player has at least `SAVIOR_BYSTANDER_THRESHOLD` Bystanders in their Victory
- * Pile (0 when their zones are missing). The `never` default (a future union
- * member before its arm exists, or a hand-built hook) fails CLOSED. `G.messages`
- * is hash-excluded (D-24081); outcome `blocked` per the WP-434 contract.
+ * Pile (0 when their zones are missing); `'another-group-villain-in-city'`
+ * (D-24770) passes when the City holds another Villain of the triggering card's
+ * own group. The `never` default (a future union member before its arm exists, or
+ * a hand-built hook) fails CLOSED. `G.messages` is hash-excluded (D-24081);
+ * outcome `blocked` per the WP-434 contract.
  *
  * @param G - Game state (mutated only via the hash-excluded message log).
  * @param currentPlayer - The active player id the condition is read for.
+ * @param cardId - The triggering Villain's ext_id (the group condition reads it).
  * @param timing - The timing that fired (for the "<Fight|Ambush|Escape> effect:" label).
  * @param descriptor - The gated descriptor (its `requireCondition` is defined).
  * @returns True when the condition holds and the descriptor may dispatch.
@@ -668,6 +675,7 @@ function narrateCityGateBlocked(
 function isConditionGateSatisfied(
   G: LegendaryGameState,
   currentPlayer: string,
+  cardId: CardExtId,
   timing: VillainAbilityTiming,
   descriptor: VillainEffectDescriptor,
 ): boolean {
@@ -689,6 +697,26 @@ function isConditionGateSatisfied(
       );
       return false;
     }
+    case 'another-group-villain-in-city': {
+      // why: WP-837 / D-24770 — "another Spider-Foes Villain" is a Villain of the
+      // triggering card's OWN group (the D-24299 own-set precedent). The marker has no slot
+      // for a group, so the group is the longest selected-group prefix of the card id; no
+      // match fails closed (a scheme-added group, or a hand-built hook).
+      const group = resolveVillainGroupPrefix(G, cardId);
+      if (group === null) {
+        pushLog(
+          G,
+          `${label} effect: the Villain's group is not among this match's Villain Groups; no effect.`,
+          'blocked',
+        );
+        return false;
+      }
+      if (cityHoldsOtherGroupVillain(G, group.groupPrefix, cardId)) {
+        return true;
+      }
+      pushLog(G, `${label} effect: no other ${group.groupSlug} Villain is in the City; no effect.`, 'blocked');
+      return false;
+    }
     default: {
       // why: fail closed — an unrecognized condition must never fire its effect.
       const unrecognized: never = condition;
@@ -700,6 +728,58 @@ function isConditionGateSatisfied(
       return false;
     }
   }
+}
+
+/**
+ * Finds the triggering Villain's own group among the match's selected Villain Groups
+ * (WP-837 / D-24770).
+ *
+ * Each two-part `set/slug` id in `G.selection.villainGroupIds` gives the anchored prefix
+ * `${set}-villain-${slug}-`; the longest prefix the card id starts with wins, so a group
+ * whose slug extends another's (`foes` vs `foes-elite`) resolves to the more specific one.
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The Villain instance ext_id.
+ * @returns The group slug and its anchored prefix, or null when no selected group matches.
+ */
+function resolveVillainGroupPrefix(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+): { groupSlug: string; groupPrefix: string } | null {
+  let bestMatch: { groupSlug: string; groupPrefix: string } | null = null;
+  for (const groupId of G.selection?.villainGroupIds ?? []) {
+    const segments = groupId.split('/');
+    if (segments.length !== 2) {
+      continue;
+    }
+    const groupPrefix = `${segments[0]}-villain-${segments[1]}-`;
+    if (!cardId.startsWith(groupPrefix)) {
+      continue;
+    }
+    if (bestMatch === null || groupPrefix.length > bestMatch.groupPrefix.length) {
+      bestMatch = { groupSlug: segments[1]!, groupPrefix };
+    }
+  }
+  return bestMatch;
+}
+
+/**
+ * Whether the City holds a Villain of the group other than the triggering card
+ * (WP-837 / D-24770 — "another" excludes the card itself; a second copy counts).
+ *
+ * @param G - Game state (read-only).
+ * @param groupPrefix - The anchored `${set}-villain-${slug}-` prefix.
+ * @param cardId - The triggering Villain (excluded from the scan).
+ * @returns True when another occupied City space starts with the prefix.
+ */
+function cityHoldsOtherGroupVillain(G: LegendaryGameState, groupPrefix: string, cardId: CardExtId): boolean {
+  for (let cityIndex = 0; cityIndex < G.city.length; cityIndex++) {
+    const occupant = G.city[cityIndex];
+    if (occupant !== null && occupant !== undefined && occupant !== cardId && occupant.startsWith(groupPrefix)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -1782,15 +1862,71 @@ export function villainCardHasEscapeAbility(
  * `villainDeck.reveal.ts` (The Leader's onAmbush) via `villainCardPlaysVillainDeckCards`
  * + `playTopVillainDeckCards`, and `fightVillain.ts` (Endless Armies' onFight) the
  * same way. Reachable no-op, never hollow.
+ *
+ * WP-837 / D-24770 — a gated descriptor (The Leader: "Reveal a Strength Hero or play a
+ * card") logs the current player's automatic reveal; it still mutates only the
+ * hash-excluded log, so the primitive stays a deliberate no-op.
  */
 function villainEffectPlayVillainDeckCards(
-  _G: LegendaryGameState,
-  _currentPlayer: string,
+  G: LegendaryGameState,
+  currentPlayer: string,
   _cardId: CardExtId,
-  _timing: VillainAbilityTiming,
-  _descriptor: VillainEffectDescriptor,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
 ): VillainEffectApplication {
+  // why: D-24281 — the reveal costs nothing and the play only hurts, so the current player
+  // reveals automatically when able; the same predicate decides the fire site's play count.
+  if (currentPlayerRevealsForVillainDeckPlay(G, descriptor, currentPlayer)) {
+    const requirement = describeRevealRequirement(descriptor.requireKind!, descriptor.requireValue!);
+    pushLog(
+      G,
+      `${villainEffectTimingLabel(timing)} effect: Player ${currentPlayer} revealed ${articleFor(requirement)} ${requirement} Hero, so no card is played from the Villain Deck.`,
+      'blocked',
+    );
+  }
   return { targets: [] };
+}
+
+/**
+ * Whether the current player reveals past a gated `play-villain-deck-cards` (WP-837 /
+ * D-24770): the descriptor carries a trait gate and the player has a matching Hero in
+ * hand or still in play.
+ *
+ * @param G - Game state (read-only).
+ * @param descriptor - The `play-villain-deck-cards` descriptor.
+ * @param currentPlayer - The player whose turn it is, or undefined.
+ * @returns True when the gate is present and the player meets it.
+ */
+function currentPlayerRevealsForVillainDeckPlay(
+  G: LegendaryGameState,
+  descriptor: VillainEffectDescriptor,
+  currentPlayer: string | undefined,
+): boolean {
+  if (descriptor.requireKind === undefined || descriptor.requireValue === undefined) {
+    return false;
+  }
+  if (currentPlayer === undefined) {
+    return false;
+  }
+  const zones = G.playerZones[currentPlayer];
+  if (zones === undefined) {
+    return false;
+  }
+  return playerHasHeroMatchingTrait(G, zones, descriptor.requireKind, descriptor.requireValue);
+}
+
+/**
+ * Picks the indefinite article for a trait label (`an X-Men`, `a Ranged`).
+ *
+ * @param label - The display label from `describeRevealRequirement`.
+ * @returns `an` when the label starts with A, E, I, O, U or X; otherwise `a`.
+ */
+function articleFor(label: string): string {
+  // why: "X-Men" is read "ex-men", so X takes `an` like a vowel.
+  if (/^[AEIOUX]/.test(label)) {
+    return 'an';
+  }
+  return 'a';
 }
 
 /**
@@ -1806,15 +1942,21 @@ function villainEffectPlayVillainDeckCards(
  * returns the marked count (from the descriptor's `magnitude`) instead of a
  * boolean. Pure lookup over G.villainAbilityHooks; no mutation.
  *
+ * WP-837 / D-24770 — a gated descriptor (`requireKind` + `requireValue`, The Leader)
+ * plays nothing when the current player reveals a matching Hero, and nothing when no
+ * current player is given (fail closed). An ungated descriptor ignores `currentPlayer`.
+ *
  * @param G - Game state (read-only).
  * @param cardId - The triggering card's zone-instance ext_id.
  * @param timing - The timing to inspect ('onAmbush' | 'onFight' | 'onEscape').
+ * @param currentPlayer - The player whose turn it is (needed only for a gated play).
  * @returns The play count N (default 1 when a descriptor omits `magnitude`), or 0.
  */
 export function villainCardPlaysVillainDeckCards(
   G: LegendaryGameState,
   cardId: CardExtId,
   timing: VillainAbilityTiming,
+  currentPlayer?: string,
 ): number {
   // why: guard against G states / test mocks lacking villainAbilityHooks (mirrors
   // the executeVillainAbilities + villainCardEscapeTriggersSchemeTwist guard) —
@@ -1826,6 +1968,15 @@ export function villainCardPlaysVillainDeckCards(
   for (const hook of hooks) {
     for (const descriptor of hook.effects ?? []) {
       if (descriptor.primitive === 'play-villain-deck-cards') {
+        // why: WP-837 / D-24770 — one predicate with the handler's log line (D-24281
+        // auto-reveal); a gated read with no current player fails closed.
+        const isGated = descriptor.requireKind !== undefined && descriptor.requireValue !== undefined;
+        if (isGated && currentPlayer === undefined) {
+          return 0;
+        }
+        if (isGated && currentPlayerRevealsForVillainDeckPlay(G, descriptor, currentPlayer)) {
+          return 0;
+        }
         // why: the parser always sets `magnitude` (the `:N` count); a malformed
         // hand-built test hook lacking it falls back to 1 rather than returning 0
         // (a marked line always plays at least one card).
@@ -2905,6 +3056,236 @@ function villainEffectDiscardHeroEachPlayerByCost(
   pushLog(
     G,
     `${label} effect: each player must discard a Hero that costs ${formatEligibleCostList(eligibleCosts)}.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
+ * discard-hero-each-player-by-trait primitive — records that every player owes a
+ * discard of a Hero with the descriptor's trait (co2e Mystique "Ambush: Each player
+ * discards an X-Men Hero.", D-24770 / WP-837).
+ *
+ * Mutates only the lazy `G.pendingEscapeEffectDiscards` queue; the escape opener opens
+ * the every-player seat choice after the move. Keyword-less, self-narrates.
+ */
+function villainEffectDiscardHeroEachPlayerByTrait(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  return recordOwedTraitDiscard(G, cardId, timing, descriptor, false);
+}
+
+/**
+ * discard-hero-or-wound-each-player-by-trait primitive — the same owed discard, where
+ * each player may gain a Wound instead (co2e Frost Giant Warrior "Ambush: Each player
+ * discards a Ranged Hero or gains a Wound.", D-24770 / WP-837).
+ */
+function villainEffectDiscardHeroOrWoundEachPlayerByTrait(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  return recordOwedTraitDiscard(G, cardId, timing, descriptor, true);
+}
+
+/**
+ * Records an owed every-player trait discard on WP-817's queue and narrates it (shared by
+ * the two trait-discard primitives, D-24770).
+ *
+ * @param G - Game state (mutated: the lazy queue and the hash-excluded log).
+ * @param cardId - The Villain whose effect owes the discard.
+ * @param timing - The timing that fired.
+ * @param descriptor - The descriptor carrying `requireKind` + `requireValue`.
+ * @param hasWoundAlternative - Whether a player may gain a Wound instead.
+ * @returns `{ targets: [] }`.
+ */
+function recordOwedTraitDiscard(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+  hasWoundAlternative: boolean,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const requireKind = descriptor.requireKind;
+  const requireValue = descriptor.requireValue;
+  if (requireKind === undefined || requireValue === undefined) {
+    pushLog(G, `${label} effect: no Hero trait was given; no effect.`, 'blocked');
+    return { targets: [] };
+  }
+  const requirementLabel = describeRevealRequirement(requireKind, requireValue);
+  // why: D-24770 — the executor has no `events`, so like Primus's Escape (D-24750) the
+  // handler records the owed discard and the turn.onMove opener parks it after the move.
+  // One FIFO keeps rule order (an escape in the same reveal records first).
+  if (G.pendingEscapeEffectDiscards === undefined) {
+    G.pendingEscapeEffectDiscards = [];
+  }
+  G.pendingEscapeEffectDiscards.push({
+    escapedCardId: cardId,
+    eligibleCosts: [],
+    traitFilter: { requireKind, requireValue, requirementLabel, effectLabel: label, hasWoundAlternative },
+  });
+  let woundClause = '';
+  if (hasWoundAlternative) {
+    woundClause = ' or gain a Wound';
+  }
+  pushLog(
+    G,
+    `${label} effect: each player must discard ${articleFor(requirementLabel)} ${requirementLabel} Hero${woundClause}.`,
+    'applied',
+  );
+  return { targets: [] };
+}
+
+/**
+ * The card-name keys of a card (WP-837 / D-24770): the card slug of its base id, and of
+ * both faces' base ids for a split card.
+ *
+ * @param G - Game state (read-only; the split-face map).
+ * @param cardId - A Hero card instance id (`{set}/{hero}/{card}#{n}`).
+ * @returns The card slugs; empty for an id without three `/` segments.
+ */
+// why: a card's name key is its card slug (the third `/` segment), so reprints of one
+// printed name under different sets match (core vs co2e Cyclops); a split card counts as
+// both faces' names off play (rules v23 L2773-2778).
+function cardNameKeysOf(G: LegendaryGameState, cardId: CardExtId): string[] {
+  const baseIds: string[] = [];
+  const pair = resolveSplitFacePair(G, cardId);
+  if (pair === null) {
+    baseIds.push(cardId.split('#')[0]!);
+  } else {
+    baseIds.push(pair.faceA.split('#')[0]!);
+    baseIds.push(pair.faceB.split('#')[0]!);
+  }
+  const keys: string[] = [];
+  for (const baseId of baseIds) {
+    const segments = baseId.split('/');
+    if (segments.length === 3) {
+      keys.push(segments[2]!);
+    }
+  }
+  return keys;
+}
+
+/**
+ * Whether any of a card's name keys is in the HQ key set (D-24770).
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The hand card to test.
+ * @param hqKeys - The union of the HQ Heroes' card-name keys.
+ * @returns True when the card shares a card name with an HQ Hero.
+ */
+function cardSharesNameWithHq(G: LegendaryGameState, cardId: CardExtId, hqKeys: ReadonlySet<string>): boolean {
+  for (const key of cardNameKeysOf(G, cardId)) {
+    if (hqKeys.has(key)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * discard-hand-matching-hq-card-names-each-player primitive — every player discards each
+ * hand card that shares a card name with a Hero in the HQ (co2e Juggernaut's Ambush, first
+ * half, D-24770 / WP-837). Auto-resolves; keyword-less, self-narrates.
+ */
+function villainEffectDiscardHandMatchingHqCardNamesEachPlayer(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const hqKeys = new Set<string>();
+  for (const hqCardId of G.hq) {
+    if (hqCardId === null || hqCardId === undefined) {
+      continue;
+    }
+    for (const key of cardNameKeysOf(G, hqCardId)) {
+      hqKeys.add(key);
+    }
+  }
+  if (hqKeys.size === 0) {
+    pushLog(G, `${label} effect: the HQ is empty, so no player discards.`, 'blocked');
+    return { targets: [] };
+  }
+  let hasAnyDiscard = false;
+  // why: D-24780 — start with the current player, then clockwise (rules v23 L2247): the
+  // discards fire return-on-discard / teleport reactions, whose queues fill in loop order.
+  for (const seat of seatsInTurnOrderFrom(Object.keys(G.playerZones), currentPlayer)) {
+    const zones = G.playerZones[seat];
+    if (zones === undefined) {
+      continue;
+    }
+    const discardedNames: string[] = [];
+    for (const handCardId of [...zones.hand]) {
+      if (cardSharesNameWithHq(G, handCardId, hqKeys) && discardFromHand(G, seat, handCardId)) {
+        discardedNames.push(resolveCardDisplayName(G, handCardId));
+      }
+    }
+    if (discardedNames.length > 0) {
+      hasAnyDiscard = true;
+      pushLog(
+        G,
+        `${label} effect: Player ${seat} discarded ${discardedNames.join(', ')} (same card name as a Hero in the HQ).`,
+        'applied',
+      );
+    }
+  }
+  if (!hasAnyDiscard) {
+    pushLog(G, `${label} effect: no player had a card with the same card name as a Hero in the HQ.`, 'blocked');
+  }
+  return { targets: [] };
+}
+
+/**
+ * hq-heroes-to-hero-deck-bottom primitive — every HQ Hero goes to the bottom of the Hero
+ * Deck in slot order, then the HQ refills (co2e Juggernaut's Ambush, second half,
+ * D-24770 / WP-837). Auto-resolves; keyword-less, self-narrates.
+ */
+function villainEffectHqHeroesToHeroDeckBottom(
+  G: LegendaryGameState,
+  _currentPlayer: string,
+  _cardId: CardExtId,
+  timing: VillainAbilityTiming,
+  _descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const label = villainEffectTimingLabel(timing);
+  const movedNames: string[] = [];
+  // why: rules v23 L749-753 — move every Hero first (a snapshot), then refill; refilling
+  // as each slot empties would draw a Hero just sent to the bottom when the deck is short.
+  // `G.hqHaunters` is never touched: a haunter stays on its space (rules v23 L1539-1541).
+  for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
+    const hqCardId = G.hq[hqIndex];
+    if (hqCardId === null || hqCardId === undefined) {
+      continue;
+    }
+    G.heroDeck.push(hqCardId);
+    G.hq[hqIndex] = null;
+    movedNames.push(resolveCardDisplayName(G, hqCardId));
+  }
+  if (movedNames.length === 0) {
+    pushLog(G, `${label} effect: the HQ is empty; no Hero was put on the bottom of the Hero Deck.`, 'blocked');
+    return { targets: [] };
+  }
+  for (let hqIndex = 0; hqIndex < G.hq.length; hqIndex++) {
+    if (G.hq[hqIndex] !== null && G.hq[hqIndex] !== undefined) {
+      continue;
+    }
+    const result = refillHqSlot(G.hq, hqIndex, G.heroDeck);
+    G.hq = result.hq;
+    G.heroDeck = result.heroDeck;
+  }
+  pushLog(
+    G,
+    `${label} effect: put ${String(movedNames.length)} Hero(es) from the HQ on the bottom of the Hero Deck (${movedNames.join(', ')}); the HQ refilled.`,
     'applied',
   );
   return { targets: [] };
@@ -4274,6 +4655,12 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'gain-recruit-current-count-by-trait': villainEffectGainRecruitCurrentCountByTrait,
   'draw-cards-current-count-by-trait': villainEffectDrawCardsCurrentCountByTrait,
   'reveal-top-ko-grey-or-draw-by-class': villainEffectRevealTopKoGreyOrDrawByClass,
+  // why: WP-837 / D-24770 — co2e Mystique, Frost Giant Warrior and Juggernaut Ambushes;
+  // all keyword-less, self-narrating. The two trait discards only record the owed discard.
+  'discard-hero-each-player-by-trait': villainEffectDiscardHeroEachPlayerByTrait,
+  'discard-hero-or-wound-each-player-by-trait': villainEffectDiscardHeroOrWoundEachPlayerByTrait,
+  'discard-hand-matching-hq-card-names-each-player': villainEffectDiscardHandMatchingHqCardNamesEachPlayer,
+  'hq-heroes-to-hero-deck-bottom': villainEffectHqHeroesToHeroDeckBottom,
 };
 
 /**
