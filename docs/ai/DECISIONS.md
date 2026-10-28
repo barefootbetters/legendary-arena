@@ -49805,7 +49805,7 @@ Protect this file.
 
 ### D-24784 — In-play "Effects triggered" line: `UIPlayerState.conditionalClauses` projects the live WP-708 tally, public to every audience (Active 2026-10-27 — WP-848 / EC-886)
 
-**Status:** Active 2026-10-27. Live-verify (D-24026) operator-pending: after both the server and arena-client deploys, a real match on play.legendary-arena.com where a class- or team-gated hero is played with and without its partner; the line moves and the exported Play Diagnostics `uiStateSnapshot.players[n].conditionalClauses` matches the panel.
+**Status:** Active 2026-10-27. Live-verify (D-24026) PASS 2026-10-28: operator match `Ps0Hg_m5B-H` (server `a068ec70`, client `9996878`); the exported `uiStateSnapshot` carried `conditionalClauses` 18 played / 11 assembled (seat 0) and 24 / 8 (seat 1), both equal to a hand count of the game log's class-gated clause outcomes.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). The player's Your Victory Pile panel (desktop and mobile) gains one line under its header: `Effects triggered: 3 / 5 (60%)`, starting at `Effects triggered: 0 / 0`.
 

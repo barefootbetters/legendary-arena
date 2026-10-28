@@ -17,7 +17,7 @@
 - **Client.** `YourVictoryPile.vue` props `conditionalClausesPlayed` / `conditionalClausesAssembled`, bound in `PlayDesktop.vue` and `PlayMobile.vue`; the client only formats the two integers.
 - **Tests.** game-engine 6027 → 6031 / 0 fail (+4); arena-client 2473 → 2479 / 0 fail (+6); `pnpm -r build` 0, nothing regenerated; arena-client typecheck 0; revert proofs 4/4. Browser preview on `?fixture=mid-turn&play=1`: the line read `0 / 0` → `0 / 1 (0%)` → `1 / 2 (50%)` as the store tally changed.
 - **Deploy window.** A new client against a pre-WP-848 server shows `0 / 0` until the server deploys.
-- **Live-verify (D-24026): operator-pending.** After both the server and arena-client deploys: a real match where a class- or team-gated hero is played with and without its partner; the line moves, and the exported Play Diagnostics `uiStateSnapshot.players[n].conditionalClauses` matches the panel.
+- **Live-verify (D-24026): PASS 2026-10-28.** Operator match `Ps0Hg_m5B-H` (Red Skull / Midtown Bank Robbery, 2p, Bishop), server `a068ec70`, client `9996878` (includes #3069): the exported Play Diagnostics `uiStateSnapshot` carried `conditionalClauses` `{ played: 18, assembled: 11 }` for seat 0 (panel `Effects triggered: 11 / 18 (61%)`) and `{ played: 24, assembled: 8 }` for seat 1, and both equal a hand count of the game log's class-gated `[applied]` / `[blocked]` lines (Whatever the Cost's unsupported Covert clause and Surge of Power's wait-and-see threshold uncounted, as specified).
 
 ### KO-from-discard block reason no longer says "four" (2026-10-27, INFRA)
 
