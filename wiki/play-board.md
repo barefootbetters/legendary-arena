@@ -29,7 +29,7 @@ source:
   - ../packages/game-engine/src/game.ts
   - ../docs/ai/DESIGN-BOARD-LAYOUT.md
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-19
+last-reviewed: 2026-10-28
 ---
 
 # Play Board
@@ -113,9 +113,10 @@ scaling / scroll spec lives on the
 [Responsive Viewport Targets](responsive-viewport-targets.md) page; the
 authoritative wireframe is
 [`DESIGN-BOARD-LAYOUT.md`](../docs/ai/DESIGN-BOARD-LAYOUT.md). The `≤767px` mobile
-surface (`<PlayMobile>`, D-12909) is a separate composer and is unchanged. A
-proposed gentle **table tilt** for this desktop board (the shared board leans
-back, the hand stays flat) is on the Visual Effects page under
+surface (`<PlayMobile>`, D-12909) is a separate composer and is unchanged. This
+desktop board has a **table tilt** (WP-852 / D-24788): the shared board leans
+back 14° and a hovered City or HQ card stands up toward the player, while the
+hand stays flat. See the Visual Effects page under
 [Table perspective](visual-effects.md#table-perspective).
 
 ### Board zones and their `UIState` source

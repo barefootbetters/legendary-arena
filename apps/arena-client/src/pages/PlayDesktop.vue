@@ -9,6 +9,7 @@ import type {
 import { useUiStateStore } from '../stores/uiState';
 import { useNotableEventStream } from '../composables/useNotableEventStream';
 import { useScaleToFit } from '../composables/useScaleToFit';
+import { useBoardTilt } from '../composables/useBoardTilt';
 import type { NotableEventCardLookup } from '../components/play/NotableEventOverlay.vue';
 import {
   getStatus,
@@ -271,6 +272,9 @@ export default defineComponent({
     // grows the PAGE and the whole page scrolls to reach the prompt (not an inner
     // container scroll). In normal play the scaled board is ≤ the play area, so the
     // reservation ≤ the flex height and the page does not scroll.
+    // why: WP-852 / D-24788 — the table perspective. The scene binds the three
+    // tilt custom properties; the City and HQ rows take the hover-lift flag.
+    const { isBoardLiftEnabled, boardTiltStyle } = useBoardTilt();
     const fitContainerStyle = computed<Record<string, string>>(() =>
       fitScaledHeight.value > 0
         ? { 'min-height': `${fitScaledHeight.value}px` }
@@ -730,6 +734,8 @@ export default defineComponent({
       fitPromptsRef,
       fitStageStyle,
       fitContainerStyle,
+      isBoardLiftEnabled,
+      boardTiltStyle,
       isLobbyPhase,
       isPlayPhase,
       boardVisible,
@@ -877,86 +883,102 @@ export default defineComponent({
              tokens (WP-430); zones never rewrap into a different arrangement. -->
         <div class="play-desktop__grid">
           <div class="play-desktop__main">
-            <!-- why: WP-685 / D-24502 — the adversary band groups the Mastermind,
-                 the Scheme, the shared supply decks, and the shared KO pile into one
-                 fixed top strip (the physical Legendary mat's adversary row); the
-                 shared decks + KO used to drift into the opponent / scheme columns. -->
-            <section class="play-desktop__adversary-band">
-              <div class="play-desktop__mastermind-zone">
-                <!-- why: D-12901 — Mastermind sits top-left of the board. -->
+            <!-- why: WP-852 / D-24788 — the table perspective. The scene and plane wrap
+                 exactly the shared board (adversary band, City, HQ zone) so it leans
+                 back like a table seen from the player's chair; the cockpit, prompts
+                 and turn bar stay siblings after the scene, flat, because the player
+                 reads and acts on them up close. The plane hinges on its bottom edge:
+                 a rotateX about that edge only pulls the far edge down, so nothing
+                 grows past the authored fit frame (D-24502) or into the cockpit. -->
+            <div class="play-desktop__board-scene" :style="boardTiltStyle">
+              <div
+                class="play-desktop__board-plane"
+                :class="{ 'play-desktop__board-plane--lift': isBoardLiftEnabled }"
+              >
+                <!-- why: WP-685 / D-24502 — the adversary band groups the Mastermind,
+                     the Scheme, the shared supply decks, and the shared KO pile into one
+                     fixed top strip (the physical Legendary mat's adversary row); the
+                     shared decks + KO used to drift into the opponent / scheme columns. -->
+                <section class="play-desktop__adversary-band">
+                  <div class="play-desktop__mastermind-zone">
+                    <!-- why: D-12901 — Mastermind sits top-left of the board. -->
+                    <!-- why: WP-727 / D-24548 — scheme.darkPortals is undefined for a
+                         non-Portals scheme, so the optional chain yields 0 and the
+                         tile's marker (shown only when > 0) stays hidden. -->
+                    <MastermindTile
+                      :mastermind="snapshot.mastermind"
+                      :current-stage="snapshot.game.currentStage"
+                      :is-viewer-turn="isViewerTurn"
+                      :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
+                      :economy="snapshot.economy"
+                      :dark-portal-bonus="snapshot.scheme.darkPortals?.mastermindAttackBonus ?? 0"
+                      :enigma-code="snapshot.scheme.enigmaCode"
+                      :is-game-over="isGameOver"
+                      :submit-move="submitMove"
+                      @read="onCardRead"
+                    />
+                    <MasterStrikePile
+                      :pile="snapshot.mastermind.strikePile"
+                      @open="onPileOpen"
+                    />
+                  </div>
+                  <div class="play-desktop__scheme-zone">
+                    <SchemeTile :scheme="snapshot.scheme" :twist-threshold="snapshot.progress.schemeTwistThreshold" @read="onCardRead" />
+                    <SchemeTwistPile
+                      :pile="snapshot.scheme.twistPile"
+                      @open="onPileOpen"
+                    />
+                  </div>
+                  <SharedDecks
+                    :piles="snapshot.piles"
+                    :current-stage="snapshot.game.currentStage"
+                    :is-viewer-turn="isViewerTurn"
+                    :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
+                    :economy="snapshot.economy"
+                    :submit-move="submitMove"
+                  />
+                  <KOPile :ko-pile="snapshot.koPile" @open="onPileOpen" />
+                </section>
                 <!-- why: WP-727 / D-24548 — scheme.darkPortals is undefined for a
-                     non-Portals scheme, so the optional chain yields 0 and the
-                     tile's marker (shown only when > 0) stays hidden. -->
-                <MastermindTile
-                  :mastermind="snapshot.mastermind"
+                     non-Portals scheme, so the optional chains yield [] / 0 and no
+                     city marker renders. -->
+                <CityRow
+                  :city="snapshot.city"
+                  :decks="snapshot.decks"
                   :current-stage="snapshot.game.currentStage"
                   :is-viewer-turn="isViewerTurn"
                   :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
                   :economy="snapshot.economy"
-                  :dark-portal-bonus="snapshot.scheme.darkPortals?.mastermindAttackBonus ?? 0"
-                  :enigma-code="snapshot.scheme.enigmaCode"
-                  :is-game-over="isGameOver"
+                  :dark-portal-indices="snapshot.scheme.darkPortals?.citySpaceIndices ?? []"
+                  :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
                   :submit-move="submitMove"
-                  @read="onCardRead"
+                  :is-column-aligned="true"
+                  :viewer-hand-cards="viewer?.handCards ?? []"
+                  :viewer-hand-display="viewer?.handDisplay ?? []"
+                  :viewer-hand-costs="viewer?.handCosts ?? []"
+                  :is-tilt-lift-enabled="isBoardLiftEnabled"
                 />
-                <MasterStrikePile
-                  :pile="snapshot.mastermind.strikePile"
-                  @open="onPileOpen"
-                />
+                <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits to the
+                     RIGHT of the HQ (it holds the second-forms some HQ heroes transform
+                     into). The deck bounds its own width and scrolls horizontally, so a
+                     large side deck never pushes the layout. It hides itself when empty,
+                     so this row reads as a plain HQ for non-transform games. -->
+                <div class="play-desktop__hq-zone">
+                  <HQRow
+                    :hq="snapshot.hq"
+                    :extra-city-spaces="extraCityColumns(snapshot.city.spaces.length)"
+                    :decks="snapshot.decks"
+                    :current-stage="snapshot.game.currentStage"
+                    :is-viewer-turn="isViewerTurn"
+                    :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
+                    :economy="snapshot.economy"
+                    :submit-move="submitMove"
+                    :is-column-aligned="true"
+                    :is-tilt-lift-enabled="isBoardLiftEnabled"
+                  />
+                  <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
+                </div>
               </div>
-              <div class="play-desktop__scheme-zone">
-                <SchemeTile :scheme="snapshot.scheme" :twist-threshold="snapshot.progress.schemeTwistThreshold" @read="onCardRead" />
-                <SchemeTwistPile
-                  :pile="snapshot.scheme.twistPile"
-                  @open="onPileOpen"
-                />
-              </div>
-              <SharedDecks
-                :piles="snapshot.piles"
-                :current-stage="snapshot.game.currentStage"
-                :is-viewer-turn="isViewerTurn"
-                :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
-                :economy="snapshot.economy"
-                :submit-move="submitMove"
-              />
-              <KOPile :ko-pile="snapshot.koPile" @open="onPileOpen" />
-            </section>
-            <!-- why: WP-727 / D-24548 — scheme.darkPortals is undefined for a
-                 non-Portals scheme, so the optional chains yield [] / 0 and no
-                 city marker renders. -->
-            <CityRow
-              :city="snapshot.city"
-              :decks="snapshot.decks"
-              :current-stage="snapshot.game.currentStage"
-              :is-viewer-turn="isViewerTurn"
-              :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
-              :economy="snapshot.economy"
-              :dark-portal-indices="snapshot.scheme.darkPortals?.citySpaceIndices ?? []"
-              :dark-portal-bonus="snapshot.scheme.darkPortals?.citySpaceAttackBonus ?? 0"
-              :submit-move="submitMove"
-              :is-column-aligned="true"
-              :viewer-hand-cards="viewer?.handCards ?? []"
-              :viewer-hand-display="viewer?.handDisplay ?? []"
-              :viewer-hand-costs="viewer?.handCosts ?? []"
-            />
-            <!-- why: WP-664 / D-24475 — the face-up Transform side deck sits to the
-                 RIGHT of the HQ (it holds the second-forms some HQ heroes transform
-                 into). The deck bounds its own width and scrolls horizontally, so a
-                 large side deck never pushes the layout. It hides itself when empty,
-                 so this row reads as a plain HQ for non-transform games. -->
-            <div class="play-desktop__hq-zone">
-              <HQRow
-                :hq="snapshot.hq"
-                :extra-city-spaces="extraCityColumns(snapshot.city.spaces.length)"
-                :decks="snapshot.decks"
-                :current-stage="snapshot.game.currentStage"
-                :is-viewer-turn="isViewerTurn"
-                :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
-                :economy="snapshot.economy"
-                :submit-move="submitMove"
-                :is-column-aligned="true"
-              />
-              <TransformDeck :transform-deck="snapshot.transformDeck ?? []" />
             </div>
             <!-- why: the personal zone (own hand / economy / deck / victory) and the
                  turn-action bar require an identified viewer. They are hidden for a
@@ -1554,6 +1576,49 @@ export default defineComponent({
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
+}
+
+/* why: WP-852 / D-24788 — the table perspective. The vanishing point sits at the
+   bottom centre, where the player sits, so the far (top) edge narrows evenly. */
+.play-desktop__board-scene {
+  perspective: var(--board-tilt-perspective);
+  perspective-origin: 50% 100%;
+}
+
+/* why: the plane keeps .play-desktop__main's flex column so the three zones it
+   wraps stack exactly as before. It hinges on its bottom edge: the tilt only
+   pulls the far edge down, so nothing grows past the fit frame or into the
+   cockpit below (--board-lift is the tuning knob, locked at 0px). */
+.play-desktop__board-plane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  transform-origin: 50% 100%;
+  transform: translateY(var(--board-lift)) rotateX(var(--board-tilt-angle));
+}
+
+/* why: a hovered City / HQ card can only stand up out of the tilted plane if
+   every element from the plane down to its button preserves 3D; the rows add
+   their own links under their --tilt-lift class. The links switch on only while
+   a liftable card is hovered: at rest, coplanar preserve-3d layers z-fight in
+   Chrome's hit test, and the plane or a container took up to 60% of a resting
+   card's clicks (WP-852 EC amendment A). A flat board hit-tests exactly. */
+.play-desktop__board-plane--lift:has(.city-row--tilt-lift .city-space:not(.city-space--choosing):hover > .city-space__villain),
+.play-desktop__board-plane--lift:has(.hq-row--tilt-lift .hq-slot:hover > .hq-slot__hero),
+.play-desktop__board-plane--lift:has(.hq-row--tilt-lift .hq-slot:hover > .hq-slot__hero) .play-desktop__hq-zone {
+  transform-style: preserve-3d;
+}
+
+/* why: while a card is lifted the plane is a 3D layer coplanar with every resting
+   card, and in the first frames after the pointer slides onto a neighbour (the
+   chain is 3D, the card has not risen yet) the plane can win the hit test and
+   swallow the click. The plane itself is never a click target, so it steps out
+   of hit testing while 3D; its zones keep theirs (EC amendment A). */
+.play-desktop__board-plane--lift:has(.city-row--tilt-lift .city-space:not(.city-space--choosing):hover > .city-space__villain, .hq-row--tilt-lift .hq-slot:hover > .hq-slot__hero) {
+  pointer-events: none;
+}
+.play-desktop__board-plane--lift:has(.city-row--tilt-lift .city-space:not(.city-space--choosing):hover > .city-space__villain, .hq-row--tilt-lift .hq-slot:hover > .hq-slot__hero) > * {
+  pointer-events: auto;
 }
 
 /* why: the rail scrolls its OWN overflow (a long opponent list or log) in-zone

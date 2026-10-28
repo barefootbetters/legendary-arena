@@ -107,3 +107,38 @@
 - Primus discard options hidden behind the villain → the `:not(.city-space--choosing)` exclusion is missing.
 - Lifted card bigger than 1.06 → the inner `.card-tile--interactive:hover` scale still compounds.
 - vue-tsc can't see engine types → stale `dist`; run `pnpm -r build` first.
+
+## Amendments (execution)
+
+**Amendment A (2026-10-28, execution: the `EC-890:` commit).** The locked `preserve-3d` chain,
+on at rest, eats clicks; the 3D links now switch on only while a liftable card is hovered.
+
+1. **Defect.** With the §Locked Values chain active whenever the lift gate and row fit hold, the
+   coplanar 3D layers (plane, HQ zone, row, list, space, button) z-fight in Chrome's hit test. On
+   the untouched `mid-turn` fixture a 5×5 hit grid on each resting card missed 15–16 of 25 points
+   on every HQ hero at 1280×720 (10 at 1366×768, 5 at 1920×1080) and 5 of 25 on every City
+   villain at 1280×720 and 1920×1080. The miss went to `.play-desktop__board-plane` (once an
+   `li.hq-slot`), so a Fight or Recruit click there did nothing. The guard caught it indirectly
+   (`page.hover()` hit the plane, so `isHoverLifted` failed at 1280 HQ and 1920; the at-rest
+   discard-chooser check failed at 1920, `coveredBy` the plane). With the chain flat, misses fall
+   to the untilted baseline (1/25 on one HQ card corner).
+2. **Change (CSS only; values unchanged).** Every `transform-style: preserve-3d` rule in §Locked
+   Values is additionally gated on a liftable card being hovered: `PlayDesktop.vue`
+   `.play-desktop__board-plane--lift:has(.city-row--tilt-lift .city-space:not(.city-space--choosing):hover > .city-space__villain)`
+   and `…:has(.hq-row--tilt-lift .hq-slot:hover > .hq-slot__hero)` (the HQ one also on its
+   `.play-desktop__hq-zone`); `CityRow.vue` / `HQRow.vue` `.<row>--tilt-lift:has(<space>:hover > <button>)`
+   on the root, list, space and button. While that `:has` matches, the plane also takes
+   `pointer-events: none` and its direct children `pointer-events: auto`: without that, sliding
+   from a lifted card onto a neighbour and clicking at once missed 2 of 15 slides at 1366×768
+   (the chain is 3D before the new card rises, and the plane wins). `overflow: visible`, origin,
+   transition, the hover transform, the `--choosing` exclusion and the inner `transform: none`
+   are as locked. The Guardrail line "plane + HQ-zone `preserve-3d` is gated only by
+   `play-desktop__board-plane--lift`" now reads: gated by `--lift` AND the hovered-card `:has`.
+3. **Guard.** `play-surface.visual.mjs` gains `measureRestingHits()` → `isRestingCardHitIntact`
+   (a 3×3 interior grid on every City villain and HQ hero hits its own button; failure
+   `"<label>: a resting City or HQ card does not take its own clicks under the tilt"`), measured
+   after `measureTilt`. Its header comment lists the WP-852 invariants and the arena-client
+   install line.
+4. **Verified after the change.** Resting misses at baseline on all three widths; hover lifts
+   and holds at all three; 15/15 slide-and-click on neighbours across two runs; full
+   `test:visual` PASSED. No locked value, file or test count changes (+19 stands).

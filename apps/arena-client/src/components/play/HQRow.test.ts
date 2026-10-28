@@ -3,6 +3,7 @@ import '../../testing/jsdom-setup';
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
 import HQRow from './HQRow.vue';
 import type {
   UIDecksState,
@@ -252,5 +253,58 @@ describe('HQRow — a City larger than five spaces (WP-831 / D-24764)', () => {
       props: { hq: fullHq(), decks: DECKS, currentStage: 'main', economy: economy(), submitMove, isColumnAligned: true },
     });
     assert.equal(normal.findAll('[data-testid="play-hq-extra-spacer"]').length, 0);
+  });
+});
+
+describe('HQRow — table-perspective hover lift (WP-852 / D-24788)', () => {
+  /** Mounts the HQ with the given lift flag (omitted when undefined). */
+  function mountLift(isTiltLiftEnabled: boolean | undefined) {
+    const { submitMove } = recorder();
+    const liftProp = isTiltLiftEnabled === undefined ? {} : { isTiltLiftEnabled };
+    return mount(HQRow, {
+      props: {
+        hq: fullHq(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ availableRecruit: 9 }),
+        submitMove,
+        ...liftProp,
+      },
+    });
+  }
+
+  /** Stubs the slot list's scroll metrics and re-measures the fit via a window resize. */
+  async function setSlotsFit(slots: Element, isFitting: boolean): Promise<void> {
+    const scrollWidth = isFitting ? 300 : 900;
+    Object.defineProperty(slots, 'scrollWidth', { value: scrollWidth, configurable: true });
+    Object.defineProperty(slots, 'clientWidth', { value: 300, configurable: true });
+    window.dispatchEvent(new window.Event('resize'));
+    await nextTick();
+  }
+
+  test('without isTiltLiftEnabled there is no lift class, and every hero button carries hq-slot__hero', async () => {
+    const wrapper = mountLift(undefined);
+    await setSlotsFit(wrapper.find('ol.hq-slots').element, true);
+    assert.equal(wrapper.find('[data-testid="play-hq-row"]').classes().includes('hq-row--tilt-lift'), false);
+    const heroButtons = wrapper.findAll('[data-testid="play-hq-hero"]');
+    assert.ok(heroButtons.length > 0, 'the HQ renders hero buttons');
+    for (const heroButton of heroButtons) {
+      assert.equal(heroButton.classes().includes('hq-slot__hero'), true);
+    }
+    wrapper.unmount();
+  });
+
+  test('with isTiltLiftEnabled and slots that fit, the root gains hq-row--tilt-lift', async () => {
+    const wrapper = mountLift(true);
+    await setSlotsFit(wrapper.find('ol.hq-slots').element, true);
+    assert.equal(wrapper.find('[data-testid="play-hq-row"]').classes().includes('hq-row--tilt-lift'), true);
+    wrapper.unmount();
+  });
+
+  test('with isTiltLiftEnabled and slots that scroll sideways, the lift class is absent', async () => {
+    const wrapper = mountLift(true);
+    await setSlotsFit(wrapper.find('ol.hq-slots').element, false);
+    assert.equal(wrapper.find('[data-testid="play-hq-row"]').classes().includes('hq-row--tilt-lift'), false);
+    wrapper.unmount();
   });
 });

@@ -25,7 +25,7 @@ source:
   - ../docs/ai/execution-checklists/EC-598-engine-test-typecheck-gate.checklist.md
   - ../apps/dashboard/docs/jarvis-command-center.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-10
+last-reviewed: 2026-10-28
 ---
 
 # Testing
@@ -251,20 +251,32 @@ slip through again.
   flake on cross-platform font rendering) at 1280×720 / 1366×768 / 1920×1080 on the
   `?fixture=mid-turn&play=1` route: no page scroll in either axis (the board fits
   the floor); the `TurnActionBar` does **not** vertically overlap the cockpit zones
-  (played row / economy / victory pile); the authoring stage fits its container. It
-  also writes a full-resolution PNG per width to `visual/__screenshots__/` (gitignored
+  (played row / economy / victory pile); the authoring stage fits its container; a
+  WP-817 discard chooser opens with every button clickable. Since WP-852 / D-24788
+  (the [table perspective](visual-effects.md#table-perspective)) it also asserts the
+  board plane is tilted (`isBoardTilted`), neighbouring City boxes keep a gap
+  (`hasCityBoxGaps`, which protects the slash full-crossing rule), the tilted plane
+  clears the top status bar and the cockpit (`isPlaneClearOfHud`,
+  `isPlaneClearOfCockpit`), every resting City villain and HQ hero takes its own
+  clicks (`isRestingCardHitIntact`), and a hovered City villain and HQ hero lift,
+  stay visible and on top, keep the 3D chain intact and still take a click at
+  their bottom edge (`isHoverLifted`, `isHoverVisible`, `isHoverChainIntact`,
+  `isHoverBottomCovered`, the HQ ones as `isHqHover…`; City also
+  `hasCityBoxGapsWhileHovered`). It re-checks the discard chooser with the pointer
+  over its own space, and loads one fresh page at Effect Intensity `off` to
+  confirm the board is flat. It also writes a full-resolution PNG per width to `visual/__screenshots__/` (gitignored
   artifacts, never committed).
 - **Run it:**
 
 ```bash
-npx playwright install chromium                              # one-time browser fetch
+pnpm --filter @legendary-arena/arena-client exec playwright install chromium   # one-time browser fetch
 pnpm --filter @legendary-arena/arena-client test:visual      # spawns the dev server + checks
 # or, against an already-running server:
 PLAY_URL="http://localhost:5173/?fixture=mid-turn&play=1" \
   pnpm --filter @legendary-arena/arena-client test:visual:run
 ```
 
-  Pass output prints `{pageScrollsY:false,pageScrollsX:false,turnBarOverlapsCockpit:false,boardFitsContainer:true}` per width and exits 0; any violated invariant exits non-zero and names the width + invariant.
+  Pass output prints `{pageScrollsY:false,pageScrollsX:false,turnBarOverlapsCockpit:false,boardFitsContainer:true}` per width, then the `tilt`, `resting hits`, `City hover`, `HQ hover`, `discard chooser` and `discard chooser (space hovered)` lines, then `1280x720 off: {"planeM22":1}`, and ends `play-surface visual guard PASSED`; any violated invariant exits non-zero and names the width + invariant. Install the browser through arena-client (above): a root `npx playwright` can fetch a Playwright build that does not match arena-client's.
 - **Not CI-gated yet.** This is a **local / on-demand** guard and a required step of
   the D-24026 live-verification for any play-surface layout change. Wiring it into
   `ci.yml` as its own job — `npx playwright install --with-deps chromium` (the runners
