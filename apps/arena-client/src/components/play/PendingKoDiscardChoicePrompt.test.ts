@@ -139,3 +139,29 @@ describe('PendingKoDiscardChoicePrompt — grey-filtered header (D-24783)', () =
     assert.equal(wrapper.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO up to 2 non-grey Heroes from your discard pile');
   });
 });
+
+describe('PendingKoDiscardChoicePrompt — cards just discarded (WP-850 / D-24786)', () => {
+  /** A Firepower from the Future entry: limited to the cards that play discarded. */
+  function makeLimitedChoice(cardIds: string[], maxCount: number): UIPendingKoDiscardChoice {
+    return { ...makeChoice(cardIds, maxCount), isLimitedToDiscardedThisWay: true } as UIPendingKoDiscardChoice;
+  }
+
+  test('says "any number of the N cards you just discarded", N = the cards listed', () => {
+    // why: maxCount is the park-time count (4); only 3 are still listed, so the heading says 3.
+    const plural = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeLimitedChoice(['a', 'b', 'c'], 4), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    assert.equal(plural.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO any number of the 3 cards you just discarded');
+    const single = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeLimitedChoice(['a'], 1), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    assert.equal(single.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO any number of the 1 card you just discarded');
+  });
+
+  test('an entry without the flag keeps the "KO up to N" heading', () => {
+    const wrapper = mount(PendingKoDiscardChoicePrompt, {
+      props: { pendingKoDiscardChoice: makeChoice(['a', 'b'], 2), viewerPlayerId: 'player-0', submitMove: () => {} },
+    });
+    assert.equal(wrapper.find('.pending-ko-discard-choice-prompt__heading').text(), 'KO up to 2 cards from your discard pile');
+  });
+});

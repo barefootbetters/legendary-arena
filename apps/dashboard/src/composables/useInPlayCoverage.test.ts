@@ -602,8 +602,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // (feed regenerated: 7766 -> 7765 raw observations, 78 mechanics, 0 dropped; rule:sidekick
   // 42 -> 41). totalObs 8687 -> 8686 (-1, equal to the raw feed fall); resolvedObs stays 1091, so
   // percentResolved stays 12.6 (1091 / 8686). A denominator re-pin; no mechanic changed status.
+  // 2026-10-28 (WP-850 / D-24786, re-pin): Bishop's Firepower from the Future now grants its
+  // discarded cards' printed Attack, so its 4 `attack-no-magnitude` hollow observations leave the
+  // sweep (feed regenerated: 7765 -> 7761 raw observations, 78 mechanics, 0 dropped;
+  // attack-no-magnitude 413 -> 409). totalObs 8686 -> 8682 (-4, equal to the raw feed fall);
+  // resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8682). A denominator re-pin; no
+  // mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8686);
+  assert.equal(view.totalObs.value, 8682);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);

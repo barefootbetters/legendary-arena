@@ -792,6 +792,10 @@ const SELF_COMPUTED_ATTACK_KEYWORDS: ReadonlySet<string> = new Set<string>([
   'reveal-cost-attack',
   'reveal-attack-choose',
   'victory-villain-attack',
+  // why: WP-850 / D-24786 — "You get +[icon:attack] equal to those cards' printed [icon:attack]"
+  // (Firepower from the Future): the handler sums the discarded cards' printed Attack, so both
+  // icons on the line are that grant, never a separate magnitude-less flat attack.
+  'discard-top-printed-attack',
 ]);
 
 // why: WP-765 / D-24598 — the cards whose "[keyword:Sunlight]: … / [keyword:Moonlight]: … /

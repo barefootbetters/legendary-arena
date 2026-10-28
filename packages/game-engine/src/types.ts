@@ -993,6 +993,31 @@ export interface PendingKoDiscardChoice {
    * byte-identical; the resolve, the projection and the bot default all test it.
    */
   greyFilter?: GreyHeroFilter;
+  /**
+   * An optional card-instance filter (WP-850 / D-24786): the KO is limited to these cards,
+   * each id at most as many times as it appears here (Bishop's Firepower from the Future,
+   * "KO any number of those cards" — the cards that play discarded from the deck top).
+   * Omit-when-absent, so every other entry is byte-identical; the resolve, the projection
+   * and the bot default all apply it.
+   */
+  eligibleCardIds?: CardExtId[] | undefined;
+}
+
+/**
+ * The cards one `discard-top-printed-attack` play discarded from the player's deck top,
+ * handed to the same card's `ko-discarded-this-way` line (WP-850 / D-24786).
+ *
+ * // why: the two printed lines are separate ability hooks with no return channel between
+ * them, so the first writes this record and the second reads and deletes it within the same
+ * executeHeroEffects pass.
+ */
+export interface DeckTopDiscardRecord {
+  /** The player who played the card and whose deck top was discarded. */
+  playerID: string;
+  /** The played card instance whose first line wrote this record. */
+  sourceCardId: CardExtId;
+  /** Every card discarded, in discard order (an id repeats if a reshuffle brought it back). */
+  cardIds: CardExtId[];
 }
 
 /**
@@ -2213,6 +2238,15 @@ export interface LegendaryGameState {
   // "no pending choice" (guards test `.length`).
   /** FIFO queue of pending KO-from-discard choices awaiting player resolution (WP-693). */
   pendingKoDiscardChoices?: PendingKoDiscardChoice[] | undefined;
+
+  // why: WP-850 / D-24786 — the one-play hand-off from a `discard-top-printed-attack` line to
+  // the same card's `ko-discarded-this-way` line (Bishop's Firepower from the Future). Written
+  // on every play of the first line, deleted by the second. When the second line's team gate
+  // fails it never runs, so the record stays until the next first-line play overwrites it;
+  // nothing else reads it. Never set in Game.setup, so a game that never plays the card omits
+  // it and the hash oracles stay byte-stable.
+  /** The cards the most recent `discard-top-printed-attack` play discarded (WP-850). */
+  lastDeckTopDiscard?: DeckTopDiscardRecord | undefined;
 
   // why: WP-248 / D-24019 — FIFO queue of pending optional-KO-then-reward
   // choices (one per played optional-ko-reward hero ability with ≥1 eligible

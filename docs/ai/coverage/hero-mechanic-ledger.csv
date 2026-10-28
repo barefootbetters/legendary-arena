@@ -316,7 +316,9 @@ dims/ms-america,Ms. America,dims,teleport,unsupported,,,,kick-a-hole-in-reality|
 dims/squirrel-girl,Squirrel Girl,dims,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,find-tiny-friends
 dims/squirrel-girl,Squirrel Girl,dims,switcheroo,unsupported,,,,find-tiny-friends|nut-punch|squirrelgility|unbeatable-squirrel-girl
 dkcy/angel,Angel,dkcy,(unmarked),unmarked,,,,
+dkcy/bishop,Bishop,dkcy,discard-top-printed-attack,executable,WP-850,D-24786,packages/game-engine/src/hero/heroEffects.execute.ts#discard-top-printed-attack,firepower-from-the-future
 dkcy/bishop,Bishop,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,whatever-the-cost
+dkcy/bishop,Bishop,dkcy,ko-discarded-this-way,executable,WP-850,D-24786,packages/game-engine/src/hero/heroEffects.execute.ts#ko-discarded-this-way,firepower-from-the-future
 dkcy/blade,Blade,dkcy,(unmarked),unmarked,,,,
 dkcy/cable,Cable,dkcy,teleport,unsupported,,,,rapid-response-force
 dkcy/colossus,Colossus,dkcy,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,draw-their-fire

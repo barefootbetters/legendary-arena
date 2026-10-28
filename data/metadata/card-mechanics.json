@@ -488,6 +488,17 @@
       "hidden": true
     },
     {
+      "slug": "discard-top-printed-attack",
+      "label": "Discard Top Printed Attack",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dkcy/bishop"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "diving-block",
       "label": "Diving Block",
       "scope": "hero",
@@ -991,6 +1002,17 @@
       "cardCount": 1,
       "cardIds": [
         "vill/ultron"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "ko-discarded-this-way",
+      "label": "Ko Discarded This Way",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dkcy/bishop"
       ],
       "hidden": true
     },
@@ -3295,7 +3317,9 @@
     },
     "dkcy/bishop": {
       "mechanics": [
-        "draw"
+        "discard-top-printed-attack",
+        "draw",
+        "ko-discarded-this-way"
       ]
     },
     "dkcy/blade": {

@@ -70,30 +70,82 @@ export function hasPendingKoDiscardChoice(G: LegendaryGameState): boolean {
  * With a grey-Hero filter (WP-836 / D-24769) only the discard cards passing it are
  * returned, still in discard order with duplicates kept.
  *
+ * With a card-instance filter (WP-850 / D-24786) a discard card is kept only while the
+ * filter still allows another copy of its id, so the result is the multiset intersection
+ * of the filter and the live discard, in discard order. The grey filter then applies on top.
+ *
  * @param G - The game state to inspect (not mutated).
  * @param playerID - The chooser whose discard is the KO source.
  * @param greyFilter - An optional grey-Hero filter on the KO.
+ * @param eligibleCardIds - An optional card-instance filter (a multiset of ids).
  * @returns The chooser's eligible discard cards in order, or an empty array when the player is unknown.
  */
 export function getEligibleKoDiscardCards(
   G: LegendaryGameState,
   playerID: string,
   greyFilter?: GreyHeroFilter,
+  eligibleCardIds?: CardExtId[],
 ): CardExtId[] {
   const playerZones = G.playerZones[playerID];
   if (!playerZones) {
     return [];
   }
-  if (greyFilter === undefined) {
+  if (greyFilter === undefined && eligibleCardIds === undefined) {
     return [...playerZones.discard];
   }
+  // why: WP-850 / D-24786 — the filter is a multiset: Wounds and basic S.H.I.E.L.D. cards share
+  // one ext_id per kind (D-24682), so "those cards" may hold an id twice, and the live discard
+  // may hold more copies than this play discarded. Each kept card spends one allowance.
+  const remainingAllowance = eligibleCardIds === undefined ? undefined : countCardIds(eligibleCardIds);
   const eligibleCards: CardExtId[] = [];
   for (const cardId of playerZones.discard) {
-    if (matchesGreyHeroFilter(G, cardId, greyFilter)) {
-      eligibleCards.push(cardId);
+    if (remainingAllowance !== undefined) {
+      const allowance = remainingAllowance.get(cardId) ?? 0;
+      if (allowance === 0) {
+        continue;
+      }
+      remainingAllowance.set(cardId, allowance - 1);
     }
+    if (greyFilter !== undefined && !matchesGreyHeroFilter(G, cardId, greyFilter)) {
+      continue;
+    }
+    eligibleCards.push(cardId);
   }
   return eligibleCards;
+}
+
+/**
+ * Counts how many times each card id appears in a list.
+ *
+ * @param cardIds - The ids to count (not mutated).
+ * @returns A map from each id to its number of occurrences.
+ */
+function countCardIds(cardIds: CardExtId[]): Map<CardExtId, number> {
+  const counts = new Map<CardExtId, number>();
+  for (const cardId of cardIds) {
+    counts.set(cardId, (counts.get(cardId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
+ * Whether every id in a selection is allowed by a multiset filter — each id may appear at
+ * most as many times as it appears in the filter (WP-850 / D-24786).
+ *
+ * @param selection - The ids the player chose (not mutated).
+ * @param allowedCardIds - The multiset filter (not mutated).
+ * @returns true when the selection is a sub-multiset of the filter.
+ */
+function isSubMultiset(selection: CardExtId[], allowedCardIds: CardExtId[]): boolean {
+  const remainingAllowance = countCardIds(allowedCardIds);
+  for (const cardId of selection) {
+    const allowance = remainingAllowance.get(cardId) ?? 0;
+    if (allowance === 0) {
+      return false;
+    }
+    remainingAllowance.set(cardId, allowance - 1);
+  }
+  return true;
 }
 
 /**
@@ -145,6 +197,12 @@ export function resolveKoDiscardChoice(
     for (const cardId of args.cardIds) {
       if (!matchesGreyHeroFilter(G, cardId, front.greyFilter)) { return; }
     }
+  }
+  // why: WP-850 / D-24786 — a card-instance filter (Firepower from the Future: "KO any number
+  // of those cards") rejects the whole selection when it names a card outside the filter, or
+  // more copies of an id than the filter allows, queue intact.
+  if (front.eligibleCardIds !== undefined && !isSubMultiset(args.cardIds, front.eligibleCardIds)) {
+    return;
   }
 
   // Step 3: Resolve against CURRENT G — each chosen id must be present in the chooser's

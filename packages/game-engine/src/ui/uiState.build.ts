@@ -1629,7 +1629,14 @@ export function buildUIState(
       // why: WP-836 / D-24769 — the eligibility helper the resolve shares, so a grey-only
       // entry (Destroyer / Frost Giant Warrior / Ymir) lists only the grey Heroes; an
       // unfiltered entry still lists the whole discard.
-      for (const cardId of getEligibleKoDiscardCards(gameState, frontChoice.playerID, frontChoice.greyFilter)) {
+      // why: WP-850 / D-24786 — an entry limited to the cards one play just discarded (Firepower
+      // from the Future) lists only those still in the discard, via the same helper.
+      for (const cardId of getEligibleKoDiscardCards(
+        gameState,
+        frontChoice.playerID,
+        frontChoice.greyFilter,
+        frontChoice.eligibleCardIds,
+      )) {
         discard.push({
           cardId,
           display: { ...resolveDisplay(cardId, gameState) },
@@ -1642,6 +1649,9 @@ export function buildUIState(
         // why: D-24783 — the filter rides along so the prompt can name grey Heroes; omitted
         // (never an `undefined` literal) on an unfiltered entry.
         ...(frontChoice.greyFilter !== undefined ? { greyFilter: frontChoice.greyFilter } : {}),
+        // why: WP-850 / D-24786 — tells the prompt the list is "the cards you just discarded";
+        // omitted (never an `undefined` or `false` literal) on every other entry.
+        ...(frontChoice.eligibleCardIds !== undefined ? { isLimitedToDiscardedThisWay: true } : {}),
         discard,
       };
     }

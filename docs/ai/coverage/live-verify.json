@@ -1475,6 +1475,28 @@
       "date": "2026-10-27",
       "evidence": "2-player operator match `N1hraIl46Jp` (core Loki / Midtown Bank Robbery; Enemies of Asgard + Brotherhood, Hand Ninjas; Black Widow, Hawkeye, Iron Man, Storm, Gambit), created 2026-10-27T00:49 after the deploy (server `22226287`, client `973b421`): on Player 1's turn the core Loki Master Strike logged Player 1 then Player 0 (2.1.1-2.1.2); on Player 0's turns Player 0 first (1.1.x, 1.2.8-1.2.9). Reveal-or-wound followed suit: Ymir Ambush (Player 0, Player 1) on Player 0's turn (13.1.5); Sabretooth Escape and Ymir Ambush (Player 1, Player 0) on Player 1's turn (14.1.4-14.1.5).",
       "note": "The per-seat log lines name the current player first, then clockwise. D-24780."
+    },
+    {
+      "key": "dkcy/bishop|discard-top-printed-attack",
+      "kind": "hero",
+      "card": "Bishop",
+      "ability": "Firepower from the Future: discard the top four cards; +Attack equal to their printed Attack",
+      "wp": "WP-850",
+      "state": "pending",
+      "date": "2026-10-28",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-850 deploy that plays Firepower from the Future without and then with another X-Men Hero, per the WP-850 DoD.",
+      "note": "Attack rises by the four discarded cards' printed Attack on top of the base 4; the log names the four cards. D-24786."
+    },
+    {
+      "key": "dkcy/bishop|ko-discarded-this-way",
+      "kind": "hero",
+      "card": "Bishop",
+      "ability": "Firepower from the Future: [team:x-men] KO any number of those cards",
+      "wp": "WP-850",
+      "state": "pending",
+      "date": "2026-10-28",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-850 deploy that plays Firepower from the Future without and then with another X-Men Hero, per the WP-850 DoD.",
+      "note": "With another X-Men Hero played, the prompt reads \"KO any number of the N cards you just discarded\" and lists only those cards; the diagnostics export shows isLimitedToDiscardedThisWay: true. D-24786."
     }
   ]
 }

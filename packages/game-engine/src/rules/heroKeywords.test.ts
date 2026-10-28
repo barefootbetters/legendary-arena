@@ -62,13 +62,15 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 85 entries after WP-844 gain-sidekick', () => {
+  it('HERO_KEYWORDS array has exactly 87 entries after WP-850 discard-top-printed-attack + ko-discarded-this-way', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      85,
-      'HERO_KEYWORDS must have exactly 85 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619) + phasing (WP-783 / D-24629) + fight-cost-reduction (WP-794 / D-24663) + spinning-cyclone (WP-795 / D-24664) + out-of-time (WP-803 / D-24692) + ko-up-to-shield-hand-discard + attack-per-ko-this-way + optional-ko-shield-played-rescue (WP-826 / D-24759) + flying-shield-block (WP-827 / D-24760) + grant-out-of-time (WP-828 / D-24761) + reveal-or-gain-wound-each (WP-843 / D-24777) + gain-sidekick (WP-844 / D-24778))',
+      87,
+      'HERO_KEYWORDS must have exactly 87 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619) + phasing (WP-783 / D-24629) + fight-cost-reduction (WP-794 / D-24663) + spinning-cyclone (WP-795 / D-24664) + out-of-time (WP-803 / D-24692) + ko-up-to-shield-hand-discard + attack-per-ko-this-way + optional-ko-shield-played-rescue (WP-826 / D-24759) + flying-shield-block (WP-827 / D-24760) + grant-out-of-time (WP-828 / D-24761) + reveal-or-gain-wound-each (WP-843 / D-24777) + gain-sidekick (WP-844 / D-24778) + discard-top-printed-attack + ko-discarded-this-way (WP-850 / D-24786))',
     );
     assert.ok(HERO_KEYWORDS.includes('gain-sidekick'), 'gain-sidekick must be in HERO_KEYWORDS array');
+    assert.ok(HERO_KEYWORDS.includes('discard-top-printed-attack'), 'discard-top-printed-attack must be in HERO_KEYWORDS array');
+    assert.ok(HERO_KEYWORDS.includes('ko-discarded-this-way'), 'ko-discarded-this-way must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('reveal-or-gain-wound-each'), 'reveal-or-gain-wound-each must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('ko-up-to-shield-hand-discard'), 'ko-up-to-shield-hand-discard must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('attack-per-ko-this-way'), 'attack-per-ko-this-way must be in HERO_KEYWORDS array');

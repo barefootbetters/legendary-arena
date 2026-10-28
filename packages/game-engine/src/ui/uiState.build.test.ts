@@ -2842,6 +2842,27 @@ describe('buildUIState — WP-836 grey-filtered KO projections (D-24769)', () =>
     );
     assert.equal(Object.keys(buildUIState(plainState, mockCtx).pendingKoDiscardChoice!).includes('greyFilter'), false);
   });
+
+  it('T21 (WP-850 / D-24786): an eligibleCardIds entry lists only those cards, multiset-capped, and is flagged', () => {
+    // why: the discard holds two Wounds but the play discarded one; the filter keeps one Wound
+    // (the first in discard order) plus tech-a, and drops the Agent it never named.
+    const discard = [WOUND, 'tech-a' as CardExtId, AGENT, WOUND];
+    const limitedState = withGreyDiscard(discard);
+    limitedState.pendingKoDiscardChoices = [{
+      choiceType: 'ko-from-discard', playerID: '0', maxCount: 2,
+      sourceCardId: 'dkcy/bishop/firepower-from-the-future#0' as CardExtId,
+      eligibleCardIds: ['tech-a' as CardExtId, WOUND],
+    }];
+    const limitedChoice = buildUIState(limitedState, mockCtx).pendingKoDiscardChoice!;
+    assert.deepStrictEqual(limitedChoice.discard.map((entry) => entry.cardId), [WOUND, 'tech-a']);
+    assert.equal(limitedChoice.isLimitedToDiscardedThisWay, true);
+    assert.equal(limitedChoice.maxCount, 2, 'maxCount is projected unchanged');
+
+    const plainState = withGreyDiscard(discard);
+    plainState.pendingKoDiscardChoices = [{ choiceType: 'ko-from-discard', playerID: '0', maxCount: 2 }];
+    assert.equal(Object.hasOwn(buildUIState(plainState, mockCtx).pendingKoDiscardChoice!, 'isLimitedToDiscardedThisWay'), false,
+      'a Loki / Salomé entry carries no isLimitedToDiscardedThisWay key at all');
+  });
 });
 describe('buildUIState — live conditionalClauses tally (WP-848 / D-24784)', () => {
   it('projects { played, assembled } per seat, omits a seat with no entry, and never aliases G.diagnostics', () => {

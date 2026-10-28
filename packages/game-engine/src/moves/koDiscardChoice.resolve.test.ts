@@ -265,4 +265,15 @@ describe('resolveKoDiscardChoice — WP-836 grey-Hero filter (D-24769)', () => {
     assert.deepStrictEqual(getEligibleKoDiscardCards(G, '0', 'grey'), [AGENT, AGENT, OFFICER]);
     assert.deepStrictEqual(getEligibleKoDiscardCards(G, '0'), [WOUND, 'tech-a', AGENT, AGENT, OFFICER]);
   });
+
+  it('T18 (WP-850 / D-24786): a card-instance filter is a multiset over the live discard', () => {
+    const G = greyG();
+    // why: one Agent named, two in the discard → one kept; an id absent from the discard
+    // (missing) is never invented; the grey filter still applies on top (tech-a is not grey).
+    const filter = [AGENT, 'tech-a' as CardExtId, 'missing' as CardExtId];
+    assert.deepStrictEqual(getEligibleKoDiscardCards(G, '0', undefined, filter), ['tech-a', AGENT]);
+    assert.deepStrictEqual(getEligibleKoDiscardCards(G, '0', 'grey', filter), [AGENT]);
+    assert.deepStrictEqual(getEligibleKoDiscardCards(G, '0', undefined, [AGENT, AGENT, AGENT]), [AGENT, AGENT],
+      'never more copies than the discard holds');
+  });
 });

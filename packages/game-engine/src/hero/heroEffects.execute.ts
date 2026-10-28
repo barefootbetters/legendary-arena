@@ -14,7 +14,7 @@
  * addResources, koCard.
  */
 
-import type { LegendaryGameState, PendingHeroChoice, PendingUndercoverChoice, DefeatWithBystanderTarget, RevealedTopEntry, PendingRevealTopDispose, PendingRevealThreeAssign } from '../types.js';
+import type { LegendaryGameState, PendingKoDiscardChoice, PendingHeroChoice, PendingUndercoverChoice, DefeatWithBystanderTarget, RevealedTopEntry, PendingRevealTopDispose, PendingRevealThreeAssign } from '../types.js';
 import { cardHasTeamWhenPlayed, cardCountsAsShieldHero } from './effectiveTeams.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
@@ -63,6 +63,7 @@ import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { offPlayCardStats, offPlayCardTraits, playedCardIdsStillInPlay } from './splitCard.logic.js';
 import { cardHasClassWhenPlayed } from './sizeChanging.logic.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
+import { getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
 import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostDiscard.js';
 import { getEligibleDiscardToPlayCards } from '../moves/resolveDiscardToPlay.js';
 import {
@@ -349,6 +350,12 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // HERO_EFFECT_HANDLERS entry (heroEffectGainSidekick), so it belongs here. Carries a magnitude
   // (the Sidekicks gained) → NOT in NO_MAGNITUDE_KEYWORDS.
   'gain-sidekick',
+  // why: WP-850 / D-24786 — Bishop's Firepower from the Future. 'discard-top-printed-attack' has a
+  // HERO_EFFECT_HANDLERS entry (heroEffectDiscardTopPrintedAttack) and carries a magnitude (the cards
+  // discarded) → NOT in NO_MAGNITUDE_KEYWORDS; 'ko-discarded-this-way' has one
+  // (heroEffectKoDiscardedThisWay) and carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'discard-top-printed-attack',
+  'ko-discarded-this-way',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -617,6 +624,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // cannot reveal gains exactly one Wound), so the magnitude pre-gate must not drop it, or
   // heroEffectRevealOrGainWoundEach never runs and no Wound lands.
   'reveal-or-gain-wound-each',
+  // why: WP-850 / D-24786 — ko-discarded-this-way carries NO magnitude ("any number of those
+  // cards" is read from the record the line before it wrote), so the magnitude pre-gate must not
+  // drop it, or heroEffectKoDiscardedThisWay never parks the KO choice.
+  'ko-discarded-this-way',
   // why: WP-735 / D-24555 — digest-indigestion carries NO top-level magnitude (the branch
   // magnitudes ride the nested inline effects: +attack / +recruit / draw:N / rescue:N). The
   // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
@@ -1945,6 +1956,150 @@ function heroEffectGainSidekick(
   } else {
     pushLog(G, `Player ${playerID} could not gain a Sidekick — the Sidekick Stack is empty (${card}).`, 'blocked', cardId);
   }
+}
+
+/**
+ * Hero handler for the `discard-top-printed-attack` keyword (WP-850 / D-24786).
+ *
+ * Bishop's Firepower from the Future: "Discard the top four cards of your deck. You get
+ * +[icon:attack] equal to those cards' printed [icon:attack]." Discards `magnitude` cards one
+ * at a time from the playing player's deck top to their discard pile, sums each card's
+ * printed Attack (`offPlayCardStats`: the trailing `+` dropped, Divided halves added — a Wound
+ * or Bystander adds 0), grants the total, and writes `G.lastDeckTopDiscard` so the same
+ * card's `ko-discarded-this-way` line knows which cards "those cards" are.
+ *
+ * // why (ctx): executeHeroEffects passes the move-context wrapper, so the empty-deck
+ * reshuffle reads ctx.random through it exactly as heroEffectStealAbilities does.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param ctx - Move context (threaded into the reshuffle).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card instance.
+ * @param effect - The `{ type: 'discard-top-printed-attack', magnitude: N }` descriptor.
+ */
+function heroEffectDiscardTopPrintedAttack(
+  G: LegendaryGameState,
+  ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  effect: HeroEffectDescriptor,
+): void {
+  // why: D-24786 — the marker pattern never emits a count below 1; a request below 1 is a
+  // defensive silent no-op.
+  const requestedCount = effect.magnitude ?? 0;
+  if (requestedCount < 1) {
+    return;
+  }
+  const zones = G.playerZones[playerID];
+  if (!zones) {
+    return;
+  }
+
+  const discardedCardIds: CardExtId[] = [];
+  let totalAttack = 0;
+  for (let i = 0; i < requestedCount; i++) {
+    if (zones.deck.length === 0) {
+      // why: D-24285 — rules v23: when a card effect needs the top of an empty deck, shuffle
+      // the discard pile into a new deck first, mid-effect. That pile includes cards this play
+      // already discarded, so one of them can come back and be discarded (and counted) again.
+      reshuffleDiscardIntoDeck(zones, ctx as ShuffleProvider);
+    }
+    const topCardId = zones.deck[0];
+    if (topCardId === undefined) {
+      // why: D-24786 — deck and discard are both empty. `break`, never `return`: the grant,
+      // the log line and the record below must run on every path, so line 2 never reads a
+      // record an earlier play of this same card instance left behind.
+      break;
+    }
+    const moveResult = moveCardFromZone(zones.deck, zones.discard, topCardId);
+    zones.deck = moveResult.from;
+    zones.discard = moveResult.to;
+    discardedCardIds.push(topCardId);
+    totalAttack += offPlayCardStats(G, topCardId)?.attack ?? 0;
+  }
+
+  if (G.turnEconomy && totalAttack > 0) {
+    G.turnEconomy = addResources(G.turnEconomy, totalAttack, 0);
+  }
+
+  // why: D-24017 — a short or empty deck is a legitimate partial / no-op, but a silent
+  // shortfall reads as "the card did nothing"; each outcome gets its own line.
+  const card = formatCardRef(G.cardDisplayData, cardId);
+  const discardedRefs: string[] = [];
+  for (const discardedCardId of discardedCardIds) {
+    discardedRefs.push(formatCardRef(G.cardDisplayData, discardedCardId));
+  }
+  if (discardedCardIds.length === requestedCount) {
+    pushLog(G, `Player ${playerID} discarded ${discardedRefs.join(', ')} from the top of their deck and gained +${String(totalAttack)} attack (${card}).`, 'applied', cardId);
+  } else if (discardedCardIds.length > 0) {
+    pushLog(G, `Player ${playerID} discarded only ${String(discardedCardIds.length)} of ${String(requestedCount)} cards (${discardedRefs.join(', ')}) — their deck and discard pile ran out — and gained +${String(totalAttack)} attack (${card}).`, 'partial', cardId);
+  } else {
+    pushLog(G, `Player ${playerID} had no cards in their deck or discard pile to discard (${card}).`, 'blocked', cardId);
+  }
+
+  // why: D-24786 — the second printed line is a separate hook with no return channel from this
+  // one, so this record hands it "those cards". Written on every path (an empty list when
+  // nothing was discarded) so it always describes THIS play.
+  G.lastDeckTopDiscard = { playerID, sourceCardId: cardId, cardIds: discardedCardIds };
+}
+
+/**
+ * Hero handler for the `ko-discarded-this-way` keyword (WP-850 / D-24786).
+ *
+ * Firepower from the Future's "[team:x-men]: KO any number of those cards." The card's first
+ * line has already discarded "those cards" and recorded them in `G.lastDeckTopDiscard`
+ * (executeHeroEffects runs a card's abilities in order, D-24521 §6). This handler parks the
+ * WP-693 KO-from-discard choice limited by `eligibleCardIds` to the recorded cards still in
+ * the discard pile; the player picks any number of them, zero included. The X-Men gate rides
+ * this line's own `requiresTeam` condition, so an unmet gate never reaches here.
+ *
+ * @param G - Game state (mutated under Immer draft).
+ * @param _ctx - Move context (unused; nothing is shuffled here).
+ * @param playerID - The player who played the card.
+ * @param cardId - The played card instance.
+ * @param _effect - The `{ type: 'ko-discarded-this-way' }` descriptor (no magnitude).
+ */
+function heroEffectKoDiscardedThisWay(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: D-24786 — the record is consumed here on every branch, so it never outlives the play
+  // that wrote it once this line has run. `delete`, not `= undefined`: the engine compiles with
+  // exactOptionalPropertyTypes.
+  const record = G.lastDeckTopDiscard;
+  delete G.lastDeckTopDiscard;
+  const card = formatCardRef(G.cardDisplayData, cardId);
+  if (record === undefined || record.playerID !== playerID || record.sourceCardId !== cardId) {
+    pushLog(G, `Player ${playerID} had no discarded cards to KO (${card}).`, 'blocked', cardId);
+    return;
+  }
+
+  // why: D-24786 — "those cards" are recomputed against the live discard: a mid-effect
+  // reshuffle may have put some of them back into the deck, and only cards still in the
+  // discard pile can be KO'd from it.
+  const eligibleCardIds = getEligibleKoDiscardCards(G, playerID, undefined, record.cardIds);
+  if (eligibleCardIds.length === 0) {
+    pushLog(G, `Player ${playerID} has none of the discarded cards left in their discard pile to KO (${card}).`, 'neutral', cardId);
+    return;
+  }
+
+  // why: the queue is created lazily at the park site, so a match that never parks one leaves
+  // the field undefined and the hash oracles stay byte-stable.
+  if (!G.pendingKoDiscardChoices) {
+    G.pendingKoDiscardChoices = [];
+  }
+  const entry: PendingKoDiscardChoice = {
+    choiceType: 'ko-from-discard',
+    playerID,
+    maxCount: eligibleCardIds.length,
+    sourceCardId: cardId,
+    eligibleCardIds,
+  };
+  G.pendingKoDiscardChoices.push(entry);
+  pushLog(G, `Player ${playerID} may KO any number of the ${String(eligibleCardIds.length)} discarded cards (${card}).`, 'neutral', cardId);
 }
 
 // ---------------------------------------------------------------------------
@@ -6939,6 +7094,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // Sidekick Stack into the playing player's discard, outside the once-per-turn recruit. Carries
   // a magnitude → NOT in NO_MAGNITUDE_KEYWORDS.
   'gain-sidekick': heroEffectGainSidekick,
+  // why: WP-850 / D-24786 — Bishop's Firepower from the Future: discard the top N, gain their printed
+  // Attack, record them; then (X-Men gate) KO any number of those cards via the KO-from-discard choice.
+  'discard-top-printed-attack': heroEffectDiscardTopPrintedAttack,
+  'ko-discarded-this-way': heroEffectKoDiscardedThisWay,
 };
 
 // ---------------------------------------------------------------------------

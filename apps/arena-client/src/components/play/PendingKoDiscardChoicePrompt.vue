@@ -82,6 +82,15 @@ export default defineComponent({
     // Heroes") lists only those cards, so the header names them; an unfiltered entry keeps
     // the source-neutral "card(s)" wording (WP-760 / D-24589).
     const headingText = computed<string>(() => {
+      // why: WP-850 / D-24786 — an entry limited to the cards one play just discarded (Bishop's
+      // Firepower from the Future, "KO any number of those cards") says so. N is the number of
+      // cards LISTED, not the park-time maxCount: a later discard change in the same move can
+      // only shrink the list.
+      if (props.pendingKoDiscardChoice?.isLimitedToDiscardedThisWay === true) {
+        const listedCount = props.pendingKoDiscardChoice.discard.length;
+        const listedNoun = listedCount === 1 ? "card" : "cards";
+        return `KO any number of the ${listedCount} ${listedNoun} you just discarded`;
+      }
       const count = maxCount.value;
       const greyFilter = props.pendingKoDiscardChoice?.greyFilter;
       let noun: string;

@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3759,
+    "executable": 3768,
     "heroes": 324,
     "hooks": 6383,
-    "noEffect": 2520,
+    "noEffect": 2511,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -58,9 +58,9 @@
       "noEffect": 76
     },
     "co2e": {
-      "executable": 196,
+      "executable": 199,
       "hooks": 241,
-      "noEffect": 45
+      "noEffect": 42
     },
     "core": {
       "executable": 229,
@@ -88,9 +88,9 @@
       "noEffect": 63
     },
     "dkcy": {
-      "executable": 177,
+      "executable": 178,
       "hooks": 298,
-      "noEffect": 121
+      "noEffect": 120
     },
     "dstr": {
       "executable": 53,
@@ -203,9 +203,9 @@
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 215,
+      "executable": 220,
       "hooks": 337,
-      "noEffect": 122
+      "noEffect": 117
     },
     "xmen": {
       "executable": 148,

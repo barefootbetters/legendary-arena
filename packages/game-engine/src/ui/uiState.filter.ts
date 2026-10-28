@@ -1128,6 +1128,11 @@ export function filterUIStateForAudience(
       ...(uiState.pendingKoDiscardChoice.greyFilter !== undefined
         ? { greyFilter: uiState.pendingKoDiscardChoice.greyFilter }
         : {}),
+      // why: WP-850 / D-24786 — pass the "limited to the cards just discarded" flag through to the
+      // chooser (the whitelist drops any field it does not name); omitted on every other entry.
+      ...(uiState.pendingKoDiscardChoice.isLimitedToDiscardedThisWay === true
+        ? { isLimitedToDiscardedThisWay: true }
+        : {}),
       discard: discardCopy,
     };
   }

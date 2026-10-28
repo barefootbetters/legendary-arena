@@ -35,7 +35,7 @@ import { hasPendingRevealThreeAssign, selectDefaultRevealThreeAssignment } from 
 import { hasPendingElectromagneticBubbleChoice } from '../moves/electromagneticBubbleChoice.resolve.js';
 import { hasPendingDiscardChoice } from '../moves/discardChoice.resolve.js';
 import { hasPendingPutCardsOnDeckChoice } from '../moves/putCardsOnDeckChoice.resolve.js';
-import { hasPendingKoDiscardChoice } from '../moves/koDiscardChoice.resolve.js';
+import { hasPendingKoDiscardChoice, getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
 import { hasPendingReorderChoice } from '../moves/reorderChoice.resolve.js';
 import { hasPendingDefeatChoice } from '../moves/defeatChoice.resolve.js';
 import { selectDiscardToLimitCards, selectRedSkullKoTarget } from '../rules/mastermindHandlers.js';
@@ -46,7 +46,6 @@ import {
   selectScryKoTarget,
   isCullableDeckTopCard,
 } from '../villain/villainEffects.execute.js';
-import { matchesGreyHeroFilter } from '../hero/splitCard.logic.js';
 import type { KoHeroTarget } from '../villain/villainEffects.execute.js';
 import { hasPendingOptionalKoReward } from '../moves/optionalKoReward.resolve.js';
 import { hasPendingSmashDiscard } from '../moves/smashDiscard.resolve.js';
@@ -287,14 +286,16 @@ export function selectDefaultKoDiscardCardIds(gameState: LegendaryGameState): Ca
   if (front === undefined) {
     return [];
   }
-  const fullDiscard = gameState.playerZones[front.playerID]?.discard ?? [];
-  // why: D-24769 — a filtered entry (grey Heroes only) mirrors the resolve's filter, or the
-  // block-all guard never lifts: a Wound is never offered, and Officers stay kept.
-  const greyFilter = front.greyFilter;
-  const discard =
-    greyFilter === undefined
-      ? fullDiscard
-      : fullDiscard.filter((cardId) => matchesGreyHeroFilter(gameState, cardId, greyFilter));
+  // why: D-24769 / WP-850 D-24786 — a filtered entry (grey Heroes only, or only the cards
+  // Firepower from the Future just discarded) picks from the SAME eligibility helper the
+  // projection uses, or the bot submits a card the resolve rejects and the block-all guard
+  // never lifts. An unfiltered entry gets the whole discard, exactly as before.
+  const discard = getEligibleKoDiscardCards(
+    gameState,
+    front.playerID,
+    front.greyFilter,
+    front.eligibleCardIds,
+  );
   const chosen: CardExtId[] = [];
   // why: D-24688 — Wounds first (a dead card is the best KO), then the starting
   // S.H.I.E.L.D. cards; two passes keep the order deterministic and capped.
