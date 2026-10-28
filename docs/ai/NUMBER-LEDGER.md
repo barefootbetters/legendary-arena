@@ -487,6 +487,7 @@ high-water: 422
 - WP-847 — engine-ewiki-onto-shared-theme (the engine ewiki, apps/wiki-viewer, moves onto bb-studio-ewiki-theme v1.3.0, D-24728 step 4. reserved 2026-10-26, claude/wp847-reserve; LANDED 2026-10-26)
 - WP-845 — reveal-or-wound-seat-choice (a player who can reveal may decline and take the Wound instead, rules v23 L3196-3200; multi-seat pendingSeatChoice wave. reserved 2026-10-26, claude/wp845-reserve; LANDED 2026-10-26)
 - WP-848 — inplay-effects-triggered-counter (an in-play "Effects triggered N / M (P%)" line in Your Victory Pile, read live from the WP-708 conditional-clause tally. reserved 2026-10-27, claude/inplay-effects-triggered-counter; LANDED 2026-10-27)
+- WP-849 — card-transfer-vfx (a gained Wound flies from the Wounds supply to the receiving player's discard or hand; client-only flight beat built to take Bystander / Officer / Sidekick later. reserved 2026-10-28, claude/card-transfer-vfx)
 
 ## EC
 
@@ -936,6 +937,7 @@ high-water: 457
 - EC-885 — engine-ewiki-onto-shared-theme (WP-847. reserved 2026-10-26, claude/wp847-reserve; LANDED 2026-10-26)
 - EC-883 — reveal-or-wound-seat-choice (WP-845. reserved 2026-10-26, claude/wp845-reserve; LANDED 2026-10-26)
 - EC-886 — inplay-effects-triggered-counter (WP-848. reserved 2026-10-27, claude/inplay-effects-triggered-counter; LANDED 2026-10-27)
+- EC-887 — card-transfer-vfx (WP-849. reserved 2026-10-28, claude/card-transfer-vfx)
 
 ## D
 
@@ -1498,3 +1500,4 @@ section below) and the allocation protocol in
 - D-24779 — reveal-or-wound-seat-choice (WP-845; a player who can reveal chooses to reveal or take the Wound, through a multi-seat pendingSeatChoice, for the hero reveal-or-gain-wound-each and the villain reveal-or-wound primitive. reserved 2026-10-26, claude/wp845-reserve; LANDED 2026-10-26)
 - D-24783 — grey-hero-followups (direct fix, no WP — D-24769 §10 follow-ups: Loki / Doctor Octopus / enigmaColorsOf read grey through matchesGreyHeroFilter / isGreyHero; UIPendingKoDiscardChoice.greyFilter and the grey prompt heading; KO-from-discard log names the cards; Destroyer's 'no non-grey Hero to KO'. reserved 2026-10-27, claude/grey-hero-followups-fb48e3)
 - D-24784 — inplay-effects-triggered-counter (WP-848; UIPlayerState.conditionalClauses projects the per-seat {played, assembled} tally during play, public to every audience, display-only, no re-pin. reserved 2026-10-27, claude/inplay-effects-triggered-counter; LANDED 2026-10-27)
+- D-24785 — card-transfer-vfx (WP-849; the card-transfer flight is a client-only count-pair consumer on its own DOM layer, gated particles/shake. reserved 2026-10-28, claude/card-transfer-vfx)
