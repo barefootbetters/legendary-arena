@@ -1156,6 +1156,21 @@ the screen. It is the camera half of the Hearthstone ancestry
 ([cards are objects, and the table is readable](visual-effects-design-ancestry.md#hearthstone)).
 It is not the "foil tilt" that page declines, which is a per-card shader.
 
+**Reference games.** Most digital card games stay flat or nearly flat
+because flat is easier to read (*Magic: The Gathering Arena*, *Marvel Snap*).
+The ones that tilt split into two groups:
+
+| Reference | What to take | What to leave |
+|---|---|---|
+| *Hearthstone*, *Legends of Runeterra* | a gentle tilt toward the far side on a busy, clickable board; cards lift and straighten toward you on hover | fully 3D boards with props: a different cost class from one CSS tilt |
+| *Inscryption* (Act 1), *Hand of Fate* | the mood of sitting at a physical table across from the opponent | first-person camera angles. They are far steeper than a board this busy can afford, and their lighting is a separate idea |
+
+**Prototype the angle on the real board, not in a 3D tool.** Load a busy
+board through the [`?fixture=…&play=1` dev route](play-board.md#preview-fixture)
+and try `perspective` / `rotateX` values on the board wrapper in browser dev
+tools. That tests the real cards, text and scale-to-fit frame. A free-camera
+tabletop simulator would only test a mock of them.
+
 - **Keep the tilt gentle.** The board is busy: Mastermind, Scheme, supply
   decks, five City spaces and the HQ all carry text and cost badges. Start
   around **6–10°** with a far vanishing point (a large `perspective`). 3D
