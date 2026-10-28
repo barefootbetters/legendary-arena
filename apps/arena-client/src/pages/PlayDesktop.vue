@@ -994,6 +994,8 @@ export default defineComponent({
                     <YourVictoryPile
                       :victory-cards="viewer.victoryCards ?? []"
                       :victory-vp="viewer.victoryVP ?? 0"
+                      :conditional-clauses-played="viewer.conditionalClauses?.played ?? 0"
+                      :conditional-clauses-assembled="viewer.conditionalClauses?.assembled ?? 0"
                       @open="onPileOpen"
                     />
                     <YourDeckDiscardZone

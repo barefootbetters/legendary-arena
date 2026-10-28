@@ -10,6 +10,15 @@
 
 ## Current State
 
+### WP-848 / EC-886 — In-play "Effects triggered" line in Your Victory Pile (D-24784) (2026-10-27)
+
+**User-visible on `play.legendary-arena.com` after deploy.** The player's Your Victory Pile panel (desktop and mobile) gains one line under its header: `Effects triggered: 3 / 5 (60%)` — conditional hero clauses assembled vs played this match, the same tally as the endgame Synergy Rate. It starts at `Effects triggered: 0 / 0` (no percentage until something is played). A this-turn threshold gate unmet at play (WP-708 wait-and-see) and an unsupported ability do not move it.
+- **Engine.** New public, omit-when-absent `UIPlayerState.conditionalClauses?: { played, assembled }`, a fresh copy of the WP-708 `G.diagnostics.conditionalClauses[playerId]` counters set in `buildUIState`'s per-player loop and passed through both `redactHandCards` and `preserveHandCards` (every outcome is already in the public game log). Reads only the hash-excluded diagnostics channel; no `G` write; hash oracles unchanged.
+- **Client.** `YourVictoryPile.vue` props `conditionalClausesPlayed` / `conditionalClausesAssembled`, bound in `PlayDesktop.vue` and `PlayMobile.vue`; the client only formats the two integers.
+- **Tests.** game-engine 6027 → 6031 / 0 fail (+4); arena-client 2473 → 2479 / 0 fail (+6); `pnpm -r build` 0, nothing regenerated; arena-client typecheck 0; revert proofs 4/4. Browser preview on `?fixture=mid-turn&play=1`: the line read `0 / 0` → `0 / 1 (0%)` → `1 / 2 (50%)` as the store tally changed.
+- **Deploy window.** A new client against a pre-WP-848 server shows `0 / 0` until the server deploys.
+- **Live-verify (D-24026): operator-pending.** After both the server and arena-client deploys: a real match where a class- or team-gated hero is played with and without its partner; the line moves, and the exported Play Diagnostics `uiStateSnapshot.players[n].conditionalClauses` matches the panel.
+
 ### KO-from-discard block reason no longer says "four" (2026-10-27, INFRA)
 
 **User-visible on `play.legendary-arena.com` after deploy.** While a KO-from-discard choice is open, the disabled End turn / Pass priority tooltip said "KO up to four cards from your discard pile" for every source, though Salomé and Destroyer cap at two and Frost Giant Warrior and Ymir at one grey Hero. `apps/arena-client/src/composables/useTurnActions.ts` now says "KO cards from your discard pile, or KO None, before taking another action." (the gate sees only that a choice is pending; the prompt beside it shows the count and filter). New gate test (fails on the old text); `pnpm -r build`, arena-client `typecheck` and `pnpm -r --no-bail test` 0 fail (arena-client 2472 -> 2473). Live-verify (D-24026): PASS 2026-10-27. Operator match `oq66bDB36Hz` on client `b42e323` (includes #3059): with Frost Giant Warrior's "KO up to 1 grey Hero from your discard pile" prompt open (4.2.2), the disabled End turn button's tooltip (`title`) read "KO cards from your discard pile, or KO None, before taking another action."

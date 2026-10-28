@@ -2843,3 +2843,42 @@ describe('buildUIState — WP-836 grey-filtered KO projections (D-24769)', () =>
     assert.equal(Object.keys(buildUIState(plainState, mockCtx).pendingKoDiscardChoice!).includes('greyFilter'), false);
   });
 });
+describe('buildUIState — live conditionalClauses tally (WP-848 / D-24784)', () => {
+  it('projects { played, assembled } per seat, omits a seat with no entry, and never aliases G.diagnostics', () => {
+    const gameState = createTestGameState();
+    // why: WP-848 — the hash-excluded WP-708 tally, read live in the per-player loop. Only
+    // played / assembled are projected; potentialValue / realizedValue stay endgame-only.
+    gameState.diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      conditionalClauses: {
+        '0': { played: 5, assembled: 3, potentialValue: 7, realizedValue: 4 },
+      },
+    };
+
+    const ui = buildUIState(gameState, mockCtx);
+    const player0 = ui.players.find((player) => player.playerId === '0')!;
+    const player1 = ui.players.find((player) => player.playerId === '1')!;
+
+    assert.deepStrictEqual(player0.conditionalClauses, { played: 5, assembled: 3 });
+    assert.equal(Object.keys(player1).includes('conditionalClauses'), false, 'no tally entry ⇒ the key is absent');
+
+    // why: aliasing defense — mutating the projection must leave G.diagnostics untouched.
+    player0.conditionalClauses!.played = 99;
+    player0.conditionalClauses!.assembled = 99;
+    assert.deepStrictEqual(gameState.diagnostics.conditionalClauses!['0'], {
+      played: 5,
+      assembled: 3,
+      potentialValue: 7,
+      realizedValue: 4,
+    });
+
+    // why: WP-712 — a count-scaled-only seat has an entry with played 0; it is still projected.
+    gameState.diagnostics.conditionalClauses!['1'] = { played: 0, assembled: 0, potentialValue: 2, realizedValue: 2 };
+    const rebuilt = buildUIState(gameState, mockCtx);
+    assert.deepStrictEqual(
+      rebuilt.players.find((player) => player.playerId === '1')!.conditionalClauses,
+      { played: 0, assembled: 0 },
+    );
+  });
+});
