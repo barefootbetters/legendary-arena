@@ -138,7 +138,10 @@ on at rest, eats clicks; the 3D links now switch on only while a liftable card i
    (a 3×3 interior grid on every City villain and HQ hero hits its own button; failure
    `"<label>: a resting City or HQ card does not take its own clicks under the tilt"`), measured
    after `measureTilt`. Its header comment lists the WP-852 invariants and the arena-client
-   install line.
+   install line. After Inspector review (P2), it also gains `slideAndClick()` →
+   `isSlideClickIntact` / `isHqSlideClickIntact`: slide from each lifted card onto its neighbour
+   (every pair, both ways) and click at once; the click must land on the neighbour. With the
+   plane's `pointer-events` rules removed it failed in both of two runs (1366×768 City).
 4. **Verified after the change.** Resting misses at baseline on all three widths; hover lifts
    and holds at all three; 15/15 slide-and-click on neighbours across two runs; full
    `test:visual` PASSED. No locked value, file or test count changes (+19 stands).

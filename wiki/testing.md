@@ -262,7 +262,9 @@ slip through again.
   stay visible and on top, keep the 3D chain intact and still take a click at
   their bottom edge (`isHoverLifted`, `isHoverVisible`, `isHoverChainIntact`,
   `isHoverBottomCovered`, the HQ ones as `isHqHover…`; City also
-  `hasCityBoxGapsWhileHovered`). It re-checks the discard chooser with the pointer
+  `hasCityBoxGapsWhileHovered`), and that a click made right after sliding from one
+  lifted card onto its neighbour lands on the neighbour (`isSlideClickIntact`,
+  `isHqSlideClickIntact`, every pair both ways). It re-checks the discard chooser with the pointer
   over its own space, and loads one fresh page at Effect Intensity `off` to
   confirm the board is flat. It also writes a full-resolution PNG per width to `visual/__screenshots__/` (gitignored
   artifacts, never committed).
@@ -276,7 +278,7 @@ PLAY_URL="http://localhost:5173/?fixture=mid-turn&play=1" \
   pnpm --filter @legendary-arena/arena-client test:visual:run
 ```
 
-  Pass output prints `{pageScrollsY:false,pageScrollsX:false,turnBarOverlapsCockpit:false,boardFitsContainer:true}` per width, then the `tilt`, `resting hits`, `City hover`, `HQ hover`, `discard chooser` and `discard chooser (space hovered)` lines, then `1280x720 off: {"planeM22":1}`, and ends `play-surface visual guard PASSED`; any violated invariant exits non-zero and names the width + invariant. Install the browser through arena-client (above): a root `npx playwright` can fetch a Playwright build that does not match arena-client's.
+  Pass output prints `{pageScrollsY:false,pageScrollsX:false,turnBarOverlapsCockpit:false,boardFitsContainer:true}` per width, then the `tilt`, `resting hits`, `City hover`, `HQ hover`, `City slide-and-click`, `HQ slide-and-click`, `discard chooser` and `discard chooser (space hovered)` lines, then `1280x720 off: {"planeM22":1}`, and ends `play-surface visual guard PASSED`; any violated invariant exits non-zero and names the width + invariant. Install the browser through arena-client (above): a root `npx playwright` can fetch a Playwright build that does not match arena-client's.
 - **Not CI-gated yet.** This is a **local / on-demand** guard and a required step of
   the D-24026 live-verification for any play-surface layout change. Wiring it into
   `ci.yml` as its own job — `npx playwright install --with-deps chromium` (the runners

@@ -417,6 +417,71 @@ function collectHoverFailures(failures, label, rowName, hover, isCityGapCheck) {
   }
 }
 
+/** Read every element matching `selector` as an id + click point (browser context). */
+function readSlideTargets(selector) {
+  return [...document.querySelectorAll(selector)].map((element) => {
+    const box = element.getBoundingClientRect();
+    return { cardId: element.getAttribute('data-card-id'), x: box.left + box.width / 2, y: box.top + box.height * 0.75 };
+  });
+}
+
+/**
+ * Record which board button each click lands on, and swallow it in the capture
+ * phase so the guard never submits a fight or recruit (browser context).
+ */
+function installClickRecorder() {
+  window.__wp852SlideClicks = [];
+  window.__wp852SlideRecorder = (event) => {
+    const button = event.target.closest('button');
+    window.__wp852SlideClicks.push(button === null ? null : button.getAttribute('data-card-id'));
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  document.addEventListener('click', window.__wp852SlideRecorder, true);
+}
+
+/** Remove the click recorder and return what it saw (browser context). */
+function removeClickRecorder() {
+  document.removeEventListener('click', window.__wp852SlideRecorder, true);
+  return window.__wp852SlideClicks;
+}
+
+/**
+ * Slide from each lifted card onto its neighbour (both directions) and click at
+ * once, with no settle time; every click must land on the neighbour's button.
+ *
+ * why (WP-852 EC amendment A): the moment the pointer reaches a neighbour, the
+ * 3D chain is on but the new card has not risen yet, so it is coplanar with the
+ * board plane, and the plane could win the hit test and swallow the click. The
+ * plane's `pointer-events: none` while 3D fixes that; this step pins it. The
+ * race is timing-dependent, so it runs every neighbour pair in both directions.
+ */
+async function slideAndClick(page, selector) {
+  const targets = await page.evaluate(readSlideTargets, selector);
+  const slides = [];
+  for (let i = 0; i + 1 < targets.length; i += 1) {
+    slides.push([targets[i], targets[i + 1]], [targets[i + 1], targets[i]]);
+  }
+  await page.evaluate(installClickRecorder);
+  for (const [from, to] of slides) {
+    await page.mouse.move(from.x, from.y);
+    await page.waitForTimeout(250);
+    await page.mouse.move(to.x, to.y, { steps: 6 });
+    await page.mouse.down();
+    await page.mouse.up();
+  }
+  const clicks = await page.evaluate(removeClickRecorder);
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(300);
+  const missedSlides = [];
+  for (let i = 0; i < slides.length; i += 1) {
+    if (clicks[i] !== slides[i][1].cardId) {
+      missedSlides.push({ from: slides[i][0].cardId, to: slides[i][1].cardId, clicked: clicks[i] ?? null });
+    }
+  }
+  return { slideCount: slides.length, isSlideClickIntact: slides.length > 0 && missedSlides.length === 0, missedSlides };
+}
+
 /** Read the open discard chooser's City space rect (browser context). */
 function readChooserSpaceRect() {
   const chooser = document.querySelector('[data-testid="play-city-discard-chooser"]');
@@ -552,6 +617,21 @@ async function run() {
         brokenLinks: hqHover.brokenLinks,
       }));
       collectHoverFailures(failures, label, 'HQ', hqHover, false);
+
+      const citySlide = await slideAndClick(page, '[data-testid="play-city-villain"]');
+      console.log(`  ${label} City slide-and-click:`, JSON.stringify(citySlide));
+      if (!citySlide.isSlideClickIntact) {
+        failures.push(`${label}: a click right after sliding onto a City card missed it: ${JSON.stringify(citySlide.missedSlides)}`);
+      }
+      const hqSlide = await slideAndClick(page, '[data-testid="play-hq-hero"]');
+      console.log(`  ${label} HQ slide-and-click:`, JSON.stringify({
+        slideCount: hqSlide.slideCount,
+        isHqSlideClickIntact: hqSlide.isSlideClickIntact,
+        missedSlides: hqSlide.missedSlides,
+      }));
+      if (!hqSlide.isSlideClickIntact) {
+        failures.push(`${label}: a click right after sliding onto an HQ card missed it: ${JSON.stringify(hqSlide.missedSlides)}`);
+      }
 
       // why: last, because it re-stages the board; the fit invariants above are
       // measured on the untouched fixture.

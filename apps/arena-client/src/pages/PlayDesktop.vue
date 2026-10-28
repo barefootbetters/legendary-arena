@@ -267,14 +267,14 @@ export default defineComponent({
       // the City and HQ rows overflowing (and scrolling apart, which would break their alignment).
       '--play-extra-city-columns': String(extraCityColumns(snapshot.value?.city.spaces.length ?? 0)),
     }));
+    // why: WP-852 / D-24788 — the table perspective. The scene binds the three
+    // tilt custom properties; the City and HQ rows take the hover-lift flag.
+    const { isBoardLiftEnabled, boardTiltStyle } = useBoardTilt();
     // why: Jeff feedback (D-24505 carve-out) — reserve the FULL scaled board height
     // as the fit container's min-height, so a response prompt that grows the board
     // grows the PAGE and the whole page scrolls to reach the prompt (not an inner
     // container scroll). In normal play the scaled board is ≤ the play area, so the
     // reservation ≤ the flex height and the page does not scroll.
-    // why: WP-852 / D-24788 — the table perspective. The scene binds the three
-    // tilt custom properties; the City and HQ rows take the hover-lift flag.
-    const { isBoardLiftEnabled, boardTiltStyle } = useBoardTilt();
     const fitContainerStyle = computed<Record<string, string>>(() =>
       fitScaledHeight.value > 0
         ? { 'min-height': `${fitScaledHeight.value}px` }
