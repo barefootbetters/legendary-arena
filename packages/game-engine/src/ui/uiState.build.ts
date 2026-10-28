@@ -848,6 +848,17 @@ export function buildUIState(
     if (outOfTimeCardIds.length > 0) {
       playerState.outOfTimeCards = buildDisplayEntries(outOfTimeCardIds, gameState);
     }
+    // why: WP-848 / D-24784 — the live WP-708 conditional-clause tally. Reads the
+    // hash-excluded G.diagnostics channel (D-24271), so no hash re-pins. A fresh
+    // { played, assembled } copy so the projection never aliases G.diagnostics; omitted
+    // when the seat has no entry (an entry with played 0 is still projected).
+    const conditionalClauseEntry = gameState.diagnostics?.conditionalClauses?.[playerId];
+    if (conditionalClauseEntry !== undefined) {
+      playerState.conditionalClauses = {
+        played: conditionalClauseEntry.played,
+        assembled: conditionalClauseEntry.assembled,
+      };
+    }
     players.push(playerState);
   }
 

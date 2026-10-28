@@ -671,3 +671,17 @@ describe('PlayDesktop — Out of Time group (WP-803 / D-24692)', () => {
     assert.equal(wrapper.findAll('[data-testid="play-out-of-time"]').length, 0);
   });
 });
+
+describe('PlayDesktop — Effects triggered line (WP-848 / D-24784)', () => {
+  test('a viewer with conditionalClauses renders the bound Effects triggered line', () => {
+    // why: a mis-bound prop silently falls back to 0 / 0 (the `victoryVp` precedent), so the
+    // page-level mount is what proves the binding.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    frame.players[0]!.conditionalClauses = { played: 5, assembled: 3 };
+    store.setSnapshot(frame);
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.find('[data-testid="play-your-victory-effects"]').text(), 'Effects triggered: 3 / 5 (60%)');
+  });
+});

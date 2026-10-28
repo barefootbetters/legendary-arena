@@ -294,6 +294,15 @@ function redactHandCards(player: UIPlayerState): UIPlayerState {
     base.outOfTimeCards = deepCopyDisplayEntries(player.outOfTimeCards);
   }
 
+  // why: WP-848 / D-24784 — conditionalClauses is PUBLIC: every outcome it counts is
+  // already in the public game log. Fresh object so no audience aliases the built state.
+  if (player.conditionalClauses !== undefined) {
+    base.conditionalClauses = {
+      played: player.conditionalClauses.played,
+      assembled: player.conditionalClauses.assembled,
+    };
+  }
+
   return base;
 }
 
@@ -425,6 +434,15 @@ function preserveHandCards(player: UIPlayerState): UIPlayerState {
   // shallow copy mirrors the projection-time aliasing-defense.
   if (player.outOfTimeCards !== undefined) {
     base.outOfTimeCards = deepCopyDisplayEntries(player.outOfTimeCards);
+  }
+
+  // why: WP-848 / D-24784 — conditionalClauses is PUBLIC (same disposition as in
+  // redactHandCards); fresh object so the owner view never aliases the built state.
+  if (player.conditionalClauses !== undefined) {
+    base.conditionalClauses = {
+      played: player.conditionalClauses.played,
+      assembled: player.conditionalClauses.assembled,
+    };
   }
 
   return base;

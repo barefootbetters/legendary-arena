@@ -49,6 +49,20 @@ export default defineComponent({
       required: false,
       default: 0,
     },
+    // why: WP-848 / D-24784 — the viewer's live conditional-clause tally, the same
+    // WP-708 tally the endgame Synergy Rate reads (unit = conditional clause). The
+    // engine projects both integers; the client only formats them. Neither name has
+    // consecutive capitals, so the kebab bindings camelize cleanly (see `victoryVp`).
+    conditionalClausesPlayed: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    conditionalClausesAssembled: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
   },
   setup(props, { emit }) {
     function buildComposition(): ReturnType<typeof useVictoryPileComposition> {
@@ -70,7 +84,23 @@ export default defineComponent({
       });
     }
 
-    return { buildComposition, onBrowse };
+    /**
+     * Formats the "Effects triggered" line from the projected tally.
+     *
+     * @returns `Effects triggered: {assembled} / {played} ({percent}%)`, or
+     *   `Effects triggered: 0 / 0` when nothing has been played yet.
+     */
+    function buildEffectsTriggeredText(): string {
+      // why: no percentage at played 0 — there is nothing to divide by, and the
+      // line would otherwise read `NaN%`.
+      if (props.conditionalClausesPlayed === 0) {
+        return 'Effects triggered: 0 / 0';
+      }
+      const percent = Math.round((100 * props.conditionalClausesAssembled) / props.conditionalClausesPlayed);
+      return `Effects triggered: ${props.conditionalClausesAssembled} / ${props.conditionalClausesPlayed} (${percent}%)`;
+    }
+
+    return { buildComposition, buildEffectsTriggeredText, onBrowse };
   },
 });
 </script>
@@ -86,6 +116,11 @@ export default defineComponent({
       <span data-testid="play-your-victory-count">{{ victoryCards.length }} cards</span> /
       <span data-testid="play-your-victory-vp">{{ victoryVp }} VP</span>
     </header>
+    <!-- why: WP-848 / D-24784 — the live in-play view of the endgame Synergy Rate:
+         conditional hero clauses assembled vs played this match. -->
+    <p class="your-victory-pile__effects" data-testid="play-your-victory-effects">
+      {{ buildEffectsTriggeredText() }}
+    </p>
     <!-- why: the full list is collapsed behind a browse affordance so the
          pile does not grow the mat vertically as victory cards accumulate
          (avoids a late-game page scroll). Clicking emits `open`; the page
@@ -137,6 +172,12 @@ export default defineComponent({
   gap: 0.25rem;
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--color-foreground, #999);
+}
+
+.your-victory-pile__effects {
+  margin: 0;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .your-victory-pile__browse {

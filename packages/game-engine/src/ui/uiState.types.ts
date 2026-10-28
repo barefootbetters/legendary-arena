@@ -606,6 +606,19 @@ export interface UIPlayerState {
    * (WP-111 D-11105 aliasing-defense).
    */
   outOfTimeCards?: UIDisplayEntry[];
+  /**
+   * This player's running conditional-clause tally: how many conditional Hero
+   * clauses they have played this match, and how many assembled (condition met).
+   *
+   * // why: WP-848 / D-24784 — the WP-708 / D-24531 Synergy Rate tally, projected
+   * live from the hash-excluded `G.diagnostics.conditionalClauses` so the in-play
+   * "Effects triggered" line matches the endgame Synergy Rate. Unit = conditional
+   * clause, not card. Omitted when the seat has no tally entry yet. PUBLIC to every
+   * audience: every outcome is already in the public game log (an assembled clause
+   * shows its effect; an unassembled one pushes the `blocked` "ability did not
+   * activate" line). Display-only; `potentialValue` / `realizedValue` stay endgame-only.
+   */
+  conditionalClauses?: { played: number; assembled: number };
 }
 
 /**

@@ -3760,3 +3760,53 @@ describe('WP-842 filterUIStateForAudience — Sidekick recruit cue and card face
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-848 / D-24784 — conditionalClauses public pass-through (five-step rule step 4)
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — conditionalClauses public pass-through (WP-848 / D-24784)', () => {
+  /**
+   * Builds a UIState where seat 0 has a live conditional-clause tally and seat 1 has none.
+   */
+  function createConditionalClausesUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.diagnostics = {
+      hollowEffects: [],
+      hollowEffectsDropped: 0,
+      conditionalClauses: { '0': { played: 5, assembled: 3, potentialValue: 7, realizedValue: 4 } },
+    };
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('the tally is visible to its owner, the other player and a spectator', () => {
+    // why: every outcome the tally counts is already in the public game log, so every audience
+    // sees it — through BOTH filter helpers (redactHandCards for the other player / spectator,
+    // preserveHandCards for the owner).
+    const full = createConditionalClausesUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const player0 = filterUIStateForAudience(full, audience).players.find((player) => player.playerId === '0')!;
+      assert.deepStrictEqual(
+        player0.conditionalClauses,
+        { played: 5, assembled: 3 },
+        `conditionalClauses must be present for player 0 in ${audience.kind} view`,
+      );
+    }
+  });
+
+  it('each filtered tally is a fresh object, never the built reference', () => {
+    const full = createConditionalClausesUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const player0 = filterUIStateForAudience(full, audience).players.find((player) => player.playerId === '0')!;
+      assert.notStrictEqual(player0.conditionalClauses, full.players[0]!.conditionalClauses);
+    }
+  });
+
+  it('a seat with no tally entry has no conditionalClauses key in any audience', () => {
+    const full = createConditionalClausesUIState();
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const player1 = filterUIStateForAudience(full, audience).players.find((player) => player.playerId === '1')!;
+      assert.equal(Object.keys(player1).includes('conditionalClauses'), false, `omitted in ${audience.kind} view`);
+    }
+  });
+});
