@@ -1165,6 +1165,35 @@ The ones that tilt split into two groups:
 | *Hearthstone*, *Legends of Runeterra* | a gentle tilt toward the far side on a busy, clickable board; cards lift and straighten toward you on hover | fully 3D boards with props: a different cost class from one CSS tilt |
 | *Inscryption* (Act 1), *Hand of Fate* | the mood of sitting at a physical table across from the opponent | first-person camera angles. They are far steeper than a board this busy can afford, and their lighting is a separate idea |
 
+![Hearthstone board on an iPad: the two hero portraits face each other across an ornate purple arena, three frozen enemy minions and two of the player's minions in rows between them, the opponent's card backs top-left, and the player's hand fanned in the bottom-right corner.](/visual-effects/hearthstone-board.jpg "width=64%")
+
+*Hearthstone (Blizzard Entertainment). The tilt this proposal is after, and how
+subtle it is: the arena reads as a table seen from slightly above rather than a
+flat sheet, yet every minion, stat and portrait stays upright and readable, and
+the hand fans flat along the bottom edge. Source: the
+[Hearthstone App Store listing](https://apps.apple.com/app/id625257520), iPad
+screenshot. © Blizzard Entertainment; internal design reference only.*
+
+![Legends of Runeterra board: a grass-and-stone arena seen from slightly above, the opponent's row at the top, the player's three cards along the bottom edge, mana gems on the left and the turn button on the right.](/visual-effects/legends-of-runeterra-board.jpg "width=64%")
+
+*Legends of Runeterra (Riot Games). A gentler tilt still: almost top-down, with
+just enough depth that the far row reads as "across the table". The closest
+match to the 6–10° this page proposes for our busy board. Source: Riot promo
+screenshot, via the
+[League of Legends Wiki board page](https://wiki.leagueoflegends.com/en-us/LoR:Board).
+© Riot Games; internal design reference only.*
+
+![Inscryption Act 1: a first-person view down a dim, candlelit table, a grid of card slots receding toward the opponent's face in the dark, a brass scale on the left, and the player's hand of cards held upright to the camera in the foreground.](/visual-effects/inscryption-table.jpg "width=64%")
+
+*Inscryption, Act 1 (Daniel Mullins Games / Devolver Digital). The mood
+reference, and the angle we do **not** copy: a first-person view down the table
+is far steeper than a board with five City spaces, the HQ and the Mastermind
+can stay readable at. What it does show well is the hand: the held cards stand
+square to the camera while the board recedes behind them, the "cards straighten
+toward the player" rule in its most literal form. Source: the
+[Inscryption Steam store page](https://store.steampowered.com/app/1092790/Inscryption/).
+© Daniel Mullins Games / Devolver Digital; internal design reference only.*
+
 **Prototype the angle on the real board, not in a 3D tool.** Load a busy
 board through the [`?fixture=…&play=1` dev route](play-board.md#preview-fixture)
 and try `perspective` / `rotateX` values on the board wrapper in browser dev
