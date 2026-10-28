@@ -111,16 +111,21 @@ export default defineComponent({
     data-testid="play-your-victory-pile"
     aria-label="Your Victory Pile"
   >
-    <header class="your-victory-pile__header">
-      Your Victory Pile —
-      <span data-testid="play-your-victory-count">{{ victoryCards.length }} cards</span> /
-      <span data-testid="play-your-victory-vp">{{ victoryVp }} VP</span>
-    </header>
-    <!-- why: WP-848 / D-24784 — the live in-play view of the endgame Synergy Rate:
-         conditional hero clauses assembled vs played this match. -->
-    <p class="your-victory-pile__effects" data-testid="play-your-victory-effects">
-      {{ buildEffectsTriggeredText() }}
-    </p>
+    <!-- why: WP-848 / D-24784 — the Effects triggered pill sits in the header row.
+         It wraps under the header only when the header already fills the row
+         (phone width), rather than squeezing the header onto three lines. -->
+    <div class="your-victory-pile__title-row">
+      <header class="your-victory-pile__header">
+        Your Victory Pile —
+        <span data-testid="play-your-victory-count">{{ victoryCards.length }} cards</span> /
+        <span data-testid="play-your-victory-vp">{{ victoryVp }} VP</span>
+      </header>
+      <!-- why: WP-848 / D-24784 — the live in-play view of the endgame Synergy Rate:
+           conditional hero clauses assembled vs played this match. -->
+      <span class="your-victory-pile__effects" data-testid="play-your-victory-effects">
+        {{ buildEffectsTriggeredText() }}
+      </span>
+    </div>
     <!-- why: the full list is collapsed behind a browse affordance so the
          pile does not grow the mat vertically as victory cards accumulate
          (avoids a late-game page scroll). Clicking emits `open`; the page
@@ -174,9 +179,23 @@ export default defineComponent({
   border: 1px solid var(--color-foreground, #999);
 }
 
+.your-victory-pile__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+}
+
 .your-victory-pile__effects {
-  margin: 0;
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--la-color-border-strong, rgba(212, 175, 55, 0.3));
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
