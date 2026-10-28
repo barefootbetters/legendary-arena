@@ -10,6 +10,14 @@
 
 ## Current State
 
+### WP-852 / EC-890 — Table perspective: the desktop board leans back, board cards straighten on hover (D-24788) (2026-10-28)
+
+**User-visible on `play.legendary-arena.com` after deploy (desktop).** The adversary band, City and HQ lean back like a table seen from the player's chair (14° under a 900 px perspective, hinged on the bottom edge); the hand, cockpit, prompts, HUD and rail stay flat, and `PlayMobile` is unchanged. Hovering a City villain or HQ hero stands it up square to the player (scale 1.06, bottom edge fixed) while its row fits without sideways scroll, never on a space with an open Primus discard chooser. Effect Intensity Off flattens the board; reduced motion keeps the tilt and drops the lift.
+- **Client.** New `useBoardTilt` (locked values, intensity gate) and `useRowFit` (row fits without scroll); `measureRowFits` exported from `useSlashGesture`; scene / plane wrapper in `PlayDesktop.vue`; `isTiltLiftEnabled` prop and lift CSS in `CityRow.vue` / `HQRow.vue`.
+- **EC Amendment A.** The locked `preserve-3d` chain, on at rest, z-fought in Chrome's hit test and the board plane took up to 60% of a resting HQ card's clicks. The 3D links now switch on only while a liftable card is hovered (`:has(…:hover)`), and the plane leaves hit testing while 3D.
+- **Tests.** arena-client 2479 → 2498 / 0 fail (+19); `pnpm -r build` 0, nothing regenerated; arena-client typecheck 0; revert proofs 5/5. `test:visual` PASSED at 1280×720 / 1366×768 / 1920×1080 with the new tilt, gap, clearance, resting-hit and hover invariants, both discard-chooser checks and the `off` page. Browser preview at 1440×900: tilt, City + HQ straighten, Off flattens.
+- **Live-verify (D-24026): operator-pending.** After the arena-client deploy: tilt; City + HQ straighten; click still fights and recruits (including near a lifted card's bottom edge and right after sliding onto a neighbour); a slash across the City and one starting on a lifted card; Effect Intensity Off flattens. ewiki §Table perspective live check after `wiki-viewer.yml`.
+
 ### WP-848 / EC-886 — In-play "Effects triggered" line in Your Victory Pile (D-24784) (2026-10-27)
 
 **User-visible on `play.legendary-arena.com` after deploy.** The player's Your Victory Pile panel (desktop and mobile) gains one line under its header: `Effects triggered: 3 / 5 (60%)` — conditional hero clauses assembled vs played this match, the same tally as the endgame Synergy Rate. It starts at `Effects triggered: 0 / 0` (no percentage until something is played). A this-turn threshold gate unmet at play (WP-708 wait-and-see) and an unsupported ability do not move it.
