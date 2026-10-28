@@ -62,7 +62,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-26
+last-reviewed: 2026-10-28
 ---
 
 # Visual Effects Framework
@@ -360,7 +360,7 @@ row by row:
 | `UIState.game.lastPlayEffectsFired` (combo count) | Engine (projected) | ✅ — [Surface 2](#combo-signal) |
 | `UIState` outcome / progress (`EndgameOutcome`, `progress.escapedVillains`, `scheme.twistCount`, `players[].woundCount`) | Engine (projected) | ✅ — [Surface 4](#endgame) |
 | `UIState` captured-card display (`city.spaces[].attachedHeroDisplay` / `attachedBystanderCount`, `mastermind.attachedBystanders`) | Engine (projected, WP-505 / D-24311) | ✅ — a persistent **board anchor** for the capture / rescue sub-effects ([Surface 1b](#surface-1b)); board state, not VFX |
-| Local move dispatch (`playCard` / `recruitHero` / `fightVillain` / `drawCards` / `dodgeCard` / `endTurn`) | Client | ✅ — [Surface 3](#surface-3) |
+| Local move dispatch (`playCard` / `recruitHero` / `recruitOfficer` / `recruitSidekick` / `fightVillain` / `drawCards` / `dodgeCard` / `endTurn`) | Client | ✅ for **intent only** (a press or hover acknowledgement) — [Surface 3](#surface-3). A cue that shows a move's **result** fires on the confirmed `UIState` change, never on dispatch: a refused move returns silently |
 | `G` | Engine-internal | ❌ never |
 | `ctx` | Engine-internal | ❌ never |
 | `G.messages` (raw engine log array) | Engine-internal — not itself a `UIState` field (the log's content IS projected separately, as `UIState.log`) | ❌ — VFX reads the typed `notableEvents`, never the log (flat narration, not a trigger vocabulary) |
@@ -587,10 +587,10 @@ limit below).
 
 | Game moment | Client signal | Suggested visual (proposal) |
 |---|---|---|
-| **Wound gained** | a delta on `UIState.players[id].woundCount` (the universal wound signal — every source increments it) | **Shipped (WP-650 / D-24462):** a full-bleed dull-red **damage vignette** flashing in from the screen edges when the **local** player's `woundCount` increases (`useWoundVfx` → `VfxOverlay`, gated `shouldRender('shake')`; the audio thud rides `useWoundCue`). The thematic inverse of the [shield block](#surface-block). Fires on an increase only (a heal does not flash). v1 is full-screen for the local seat; a per-panel / per-afflicted-player variant is a future WP |
+| **Wound gained** | a delta on `UIState.players[id].woundCount` (the universal wound signal — every source increments it). Not every Wound lands in the discard: Random Acts of Unkindness gains it to the **hand**, and its pass-left step can move that Wound to another seat without touching the supply, so the count rises with no `piles.woundsCount` drop | **Shipped (WP-650 / D-24462):** a full-bleed dull-red **damage vignette** flashing in from the screen edges when the **local** player's `woundCount` increases (`useWoundVfx` → `VfxOverlay`, gated `shouldRender('shake')`; the audio thud rides `useWoundCue`). The thematic inverse of the [shield block](#surface-block). Fires on an increase only (a heal does not flash). v1 is full-screen for the local seat; a per-panel / per-afflicted-player variant is a future WP |
 | **Hero KO'd** | `appliedEffects` contains `koHeroCurrentPlayer` / `koHeroEachPlayer` / `koHeroEachPlayerMag2`; the KO'd heroes are named in `narrative` | A sharp **shatter / dissolve** on the KO'd card as it slides to the KO pile |
 | **Bystander captured** | `appliedEffects` contains `captureBystander` | An ominous **pull-away** — the bystander token yanked toward the villain, **landing on the villain's persistent "N captured" badge** (WP-505) |
-| **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | A bright **rescue sparkle** / coin arc into the victory pile, **pulling off the villain / mastermind's captured stack** (WP-505) |
+| **Bystander rescued** | `FightResolvedEvent.bystandersRescued > 0` (and `MastermindDefeatedEvent.bystandersRescued`) | A bright **rescue sparkle** / coin arc into the victory pile, **pulling off the villain / mastermind's captured stack** (WP-505). This is the same motion as a card-transfer flight (a card leaving one place and landing on a pile), so it should ship as that beat's Bystander kind rather than as a separate effect — see [Surface 3](#surface-3) |
 
 *Animated mocks of the four Tier-3 sub-effects are in
 [Appendix A.2](#appendix-surface-1b).*
@@ -769,13 +769,23 @@ won, so the *flash* starts at `small` but the *word* starts at `medium`.
 
 #### Surface 3 — Player action moves (tactile local feedback) {#surface-3}
 
-The client dispatches these moves, so it can fire a small effect on the
-local action for immediate tactile feedback, independent of the
-authoritative result.
+The client dispatches these moves, so it knows the player's intent the
+moment they act. It does **not** know the result: under the [Move Validation
+Contract](../docs/ai/ARCHITECTURE.md) a move the engine refuses (can't
+afford it, wrong step, a pending choice) returns silently with no error. So
+a cue that shows the move **succeeding** — a card leaving the HQ, a villain
+falling — fires on the **confirmed `UIState` change** in the next frame, not
+on dispatch; otherwise it plays for a move that never happened. [Slash to
+fight](#slash-to-fight) learned this the same way: the engine confirms every
+fight before the next one goes out. Dispatch is still fine for an
+**intent-only** acknowledgement (a button press, a lift on the card you
+grabbed).
 
 | Action (move) | Priority | Fires when | Suggested visual (proposal) |
 |---|---|---|---|
-| `recruitHero` | T2 | A hero is recruited from HQ | An HQ-slot **glow** that pulls toward the hand/discard |
+| `recruitHero` | T2 | A hero is recruited from HQ — confirmed when that HQ slot's card changes and the player's `discardCount` rises (`deckCount`, for a Wall-Crawl deck-top placement) | An HQ-slot **glow**, then the card flies to the player's **discard pile** (to the top of the deck instead when a Wall-Crawl hero is placed there, D-24049). Same beat as the card-transfer flight below |
+| `recruitOfficer` | T2 | A S.H.I.E.L.D. Officer is recruited — confirmed by `piles.officersCount` dropping and the player's `discardCount` rising | The Officer card flies from the S.H.I.E.L.D. Officers supply to the player's **discard pile** (a card effect that gains an Officer for free can put it in the **hand** instead) |
+| `recruitSidekick` | T2 | A Sidekick is recruited — confirmed by `piles.sidekicksCount` dropping and the player's `discardCount` rising | The Sidekick flies from the Sidekick stack to the player's **discard pile** |
 | `drawCards` | T2 | Start-of-turn draw / any draw | A quick **deal / fan** motion into the hand |
 | `playCard` | T2 | A card is played from hand | A card **trail** + a soft place-ripple where it lands |
 | `fightVillain` | T2 | A player attacks a City villain | A directional **slash / impact streak** toward the target |
@@ -785,11 +795,23 @@ authoritative result.
 *Animated mocks of the action-move cues (abstract card shapes — the cue is
 the motion, not the art) are in [Appendix A.4](#appendix-surface-3).*
 
-> **Recruit has no result event.** `recruitHero` emits no notable event;
-> the only signals are the local move dispatch and the resulting
-> `UIState.hq` slot / `discardCount` deltas. The move-dispatch hook is the
-> simplest place to fire a recruit effect (see
-> [Decisions Pending](#decisions-pending) for the optional result event).
+> **Recruit has no result event, and doesn't need one.** `recruitHero`,
+> `recruitOfficer` and `recruitSidekick` emit no notable event. The confirmed
+> signal is already projected: the `UIState.hq` slot change (or the
+> `piles.officersCount` / `piles.sidekicksCount` drop) paired with the
+> player's `discardCount` rise (`deckCount` for a Wall-Crawl deck-top
+> placement) in the same frame. That pairing names both ends
+> of the motion — where the card came from and which pile it went to — so a
+> recruit cue rides it with no engine work.
+>
+> **One beat for every "a card lands on your pile" moment.** Gaining a Wound
+> (Wounds supply → discard), rescuing a Bystander (→ Victory Pile) and the
+> three recruits above are the same motion: a card lifts off where it was,
+> arcs across the board and settles on the destination pile. WP-849
+> (drafted 2026-10-28, D-24785 reserved) builds that **card-transfer flight**
+> with the Wound as its first kind, on the count-pair trigger above; the
+> Bystander, Officer, Sidekick and recruited-Hero kinds are named follow-ups
+> that reuse it.
 
 #### Surface 4 — Outcome / endgame {#endgame}
 
@@ -1563,8 +1585,12 @@ right owner.
   D-24459** (extended per producer through WP-651). No *unclaimed* reveal-avoidance
   remains — the discard-to-avoid strikes and forced KOs are a different mechanic,
   out of scope by design.
-- **`heroRecruited` result event** — would replace client-side
-  delta-watching for the recruit effect.
+- **`heroRecruited` result event — likely not needed.** It was proposed to
+  replace client-side delta-watching for the recruit effect. The confirmed
+  delta (HQ slot change + `discardCount` rise in one frame) already names the
+  source and the destination, which is what the card-transfer flight needs
+  (see [Surface 3](#surface-3)). Revisit only if a recruit case turns up that
+  the pairing cannot tell apart.
 
 #### Card-interaction feel — open questions {#card-interaction-decisions}
 
@@ -1783,9 +1809,9 @@ Proposal mocks of the [Surface 3](#surface-3) local tactile cues, drawn with
 **abstract card shapes** since the cue is the *motion* (pull, deal, slash,
 flick), not the art. (`playCard` and `endTurn` aren't mocked.)
 
-![Animated mock of recruitHero: a hero card in an HQ slot glows gold, then is pulled down into the hand, and the cycle repeats. Loops.](/visual-effects/surface3-recruit.svg "width=44%")
+![Animated mock of recruitHero: a hero card in an HQ slot glows gold, then flies down onto the discard pile, and the cycle repeats. Loops.](/visual-effects/surface3-recruit.svg "width=44%")
 
-*`recruitHero` (T2) — an HQ-slot **glow** that pulls the card down into the hand.*
+*`recruitHero` (T2) — an HQ-slot **glow**, then the card flies onto your **discard pile** (where a recruited Hero goes).*
 
 ![Animated mock of drawCards: cards deal one after another off a deck and fan out into a hand at the bottom, then reset. Loops.](/visual-effects/surface3-draw.svg "width=44%")
 
