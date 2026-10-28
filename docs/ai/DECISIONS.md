@@ -49802,4 +49802,25 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24770 (#3010). Related: D-24750 (WP-817 owed-discard queue), D-24656 (escape procedure), D-24749 (`!<condition>`), D-24299 (own-group prefix), D-24281 (auto-reveal), D-24351 / D-24703 (`play-villain-deck-cards` fire sites), D-24780 (seat order), D-24501 (seat choices), D-24499 / D-24673 (Wound chokepoint, Diving Block), D-24301 / D-24526 (discard reactions), D-24081, D-24768 / D-24769 (WP-835 / 836), D-24026.
 
 ---
+
+### D-24784 — In-play "Effects triggered" line: `UIPlayerState.conditionalClauses` projects the live WP-708 tally, public to every audience (Active 2026-10-27 — WP-848 / EC-886)
+
+**Status:** Active 2026-10-27. Live-verify (D-24026) operator-pending: after both the server and arena-client deploys, a real match on play.legendary-arena.com where a class- or team-gated hero is played with and without its partner; the line moves and the exported Play Diagnostics `uiStateSnapshot.players[n].conditionalClauses` matches the panel.
+
+**User-Visible Surface:** `play.legendary-arena.com` (after deploy). The player's Your Victory Pile panel (desktop and mobile) gains one line under its header: `Effects triggered: 3 / 5 (60%)`, starting at `Effects triggered: 0 / 0`.
+
+**Context.** Jeff asked for an in-play counter of triggered card effects, with a percentage against cards played with triggerable effects, in the Your Victory Pile panel. The engine already keeps that tally: WP-708 / D-24531 `G.diagnostics.conditionalClauses[playerId] = { played, assembled, potentialValue, realizedValue }`, written at play time by `recordConditionalClause` at the `evaluateAllConditions` chokepoint, boolean-gated clauses only (WP-712 / D-24535). It was projected only at game over (`gameOver.synergyContributions`, WP-715 / D-24538).
+
+**Decision.**
+1. **Field.** `UIPlayerState.conditionalClauses?: { played: number; assembled: number }`, set in `buildUIState`'s per-player loop as a fresh copy of the two counters when the seat has a tally entry; omitted otherwise. An entry with `played === 0` (a count-scaled-only seat) is projected. `potentialValue` / `realizedValue` stay endgame-only.
+2. **Unit = conditional clause, not card.** A card with two conditional clauses adds two. Unconditional abilities always fire, so counting them would pin the rate near 100%. Reusing the clause tally makes the in-play number equal the endgame Synergy Rate for the seat.
+3. **Public to every audience.** Passed through both `redactHandCards` and `preserveHandCards` as a fresh object. Every outcome it counts is already in the public game log: an assembled clause shows its effect, and an unassembled one pushes the public `blocked` "ability did not activate" line. The tally includes hand-reading conditions, so "face-up plays" is not the reason.
+4. **Client.** `YourVictoryPile.vue` props `conditionalClausesPlayed` / `conditionalClausesAssembled` (Number, default 0), bound in `PlayDesktop.vue` and `PlayMobile.vue`. Copy: `Effects triggered: {assembled} / {played} ({percent}%)`, `percent = Math.round((100 * assembled) / played)`; at `played === 0`, `Effects triggered: 0 / 0` with no percentage. The client only formats the two integers (D-20105). Player copy never says whiff / failed / missed / wasted / error.
+5. **What does not move it.** A this-turn threshold gate unmet at play (the WP-708 wait-and-see branch records nothing) and an ability whose effect is unsupported. Expected, not a bug.
+6. **Determinism.** The build reads only the hash-excluded `G.diagnostics` channel (D-24271) and writes nothing to `G`; `finalStateHash` and `PRE_WP080_HASH` are unchanged. Display only: never an input to score, PAR, grade or leaderboards (NG-1).
+7. **Deploy window.** A new client against a pre-WP-848 server shows `0 / 0`; a pre-WP-848 client ignores the field. Live-verify only after both deploys.
+
+**Reserved by:** NUMBER-LEDGER D-24784 (#3065). Related: D-24531 (WP-708 tally), D-24535 (`countsTowardRate`), D-24538 (WP-715 endgame projection), D-24649 (magnitude-less icon lines uncounted), D-24692 (WP-803 public per-player pass-through pattern), D-12803 (Board-Visible rule), D-20105, D-24271, D-24026.
+
+---
 Protect this file.
