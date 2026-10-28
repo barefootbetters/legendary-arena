@@ -1463,3 +1463,83 @@ describe('CityRow — a resized City (WP-831 / D-24764)', () => {
     assert.equal(wrapper.findAll('[data-testid="play-city-villain"]').length + wrapper.findAll('[data-testid="play-city-empty"]').length, 3);
   });
 });
+
+describe('CityRow — table-perspective hover lift (WP-852 / D-24788)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    __resetSlashGestureSettingForTests();
+    __resetSlashGestureSignalsForTests();
+  });
+
+  /** Mounts the five-space City with the given lift flag (omitted when undefined). */
+  function mountLift(isTiltLiftEnabled: boolean | undefined) {
+    const { submitMove } = recorder();
+    const liftProp = isTiltLiftEnabled === undefined ? {} : { isTiltLiftEnabled };
+    return mount(CityRow, {
+      props: {
+        city: fullCity(),
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        ...liftProp,
+      },
+    });
+  }
+
+  test('without isTiltLiftEnabled the row never carries the lift class', async () => {
+    const wrapper = mountLift(undefined);
+    await setRowFits(wrapper.find('ol.city-spaces').element, true);
+    assert.equal(wrapper.find('[data-testid="play-city-row"]').classes().includes('city-row--tilt-lift'), false);
+    wrapper.unmount();
+  });
+
+  test('with isTiltLiftEnabled and a row that fits, the root gains city-row--tilt-lift', async () => {
+    const wrapper = mountLift(true);
+    await setRowFits(wrapper.find('ol.city-spaces').element, true);
+    assert.equal(wrapper.find('[data-testid="play-city-row"]').classes().includes('city-row--tilt-lift'), true);
+    wrapper.unmount();
+  });
+
+  test('with isTiltLiftEnabled and a row that scrolls sideways, the lift class is absent', async () => {
+    const wrapper = mountLift(true);
+    await setRowFits(wrapper.find('ol.city-spaces').element, false);
+    assert.equal(wrapper.find('[data-testid="play-city-row"]').classes().includes('city-row--tilt-lift'), false);
+    wrapper.unmount();
+  });
+
+  test('an open discard chooser marks only its own space city-space--choosing', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(CityRow, {
+      props: {
+        city: {
+          spaces: [
+            { ...villain('primus', 3), fightDiscardCosts: [2, 3, 5, 7] },
+            null,
+            villain('electro', 5),
+            null,
+            null,
+          ],
+          escapedPile: [],
+        },
+        decks: DECKS,
+        currentStage: 'main',
+        economy: economy({ attack: 9, availableAttack: 9 }),
+        submitMove,
+        isTiltLiftEnabled: true,
+        viewerHandCards: ['hero-cost5'],
+        viewerHandDisplay: [
+          { extId: 'hero-cost5', name: 'hero-cost5 name', imageUrl: 'https://images.legendary-arena.com/hero-cost5.png', cost: 5 },
+        ],
+        viewerHandCosts: [5],
+      },
+    });
+    assert.equal(wrapper.findAll('li.city-space--choosing').length, 0, 'no space is choosing before the click');
+    await wrapper.find('[data-testid="play-city-villain"][data-card-id="primus"]').trigger('click');
+    assert.equal(wrapper.find('[data-testid="play-city-discard-chooser"]').exists(), true, 'the chooser opened');
+    const choosing = wrapper.findAll('li.city-space--choosing');
+    assert.equal(choosing.length, 1, 'exactly one space is choosing');
+    assert.equal(choosing[0]!.find('[data-card-id="primus"]').exists(), true, 'it is the Primus space');
+    wrapper.unmount();
+  });
+});

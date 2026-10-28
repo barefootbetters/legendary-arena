@@ -1114,7 +1114,7 @@ should not be adopted without a `DECISIONS.md` entry.
 | Feel item | Client signal | Suggested character (proposal) | Priority |
 |---|---|---|---|
 | **Hover lift** | pointer enter / leave on a hand card (`@media (hover: hover)` only) | the card rises 12 px and scales to 1.06 with a shadow and a `z-index` bump; pointer devices only, off at intensity `off` and under reduced motion, and a disabled tile never lifts ([`CardTile.vue`](../apps/arena-client/src/components/play/CardTile.vue)) | **Shipped (WP-699)** |
-| **Table tilt (camera)** | none — a static presentation of the desktop board | the shared board leans back like a table seen from your chair, with the hand and the right rail left flat; held and hovered cards straighten toward you. See [Table perspective](#table-perspective) | proposal |
+| **Table tilt (camera)** | none — a static presentation of the desktop board | the shared board leans back like a table seen from your chair, with the hand and the right rail left flat; a hovered City or HQ card stands up toward you. See [Table perspective](#table-perspective) | shipped (WP-852 / D-24788) |
 | **Grey-out unplayable** | ~~affordability~~ — see the [caveat](#card-interaction-decisions) | The plan's affordability grey-out (dim what you can't afford) **does not apply here**: playing a card from hand is **resource-free** in this game (cost gating is only for recruiting HQ heroes and fighting villains, [`useTurnActions.canPlayCard`](../apps/arena-client/src/composables/useTurnActions.ts) checks turn + stage only). The only in-hand "unplayable" states — not-your-turn / not-main-step / Wound — are already gated (and the Wound is already a disabled tile). The information-bearing hand cue is the superpower-ready rim below. | **dropped** (not applicable) |
 | **Hand arc / fan** | hand size + card index (layout only) | the hand fans along a shallow arc ([`handArc.ts`](../apps/arena-client/src/components/play/handArc.ts): 24° total spread, 0.55 px dip per degree); past six cards the cards overlap (down to -40 px) instead of scrolling; the hovered card straightens to 0° and nudges each neighbour 12 px outward ([`HandRow.vue`](../apps/arena-client/src/components/play/HandRow.vue)) | **Shipped (WP-699)** |
 | **Card-draw motion** | a `UIState` hand-contents delta (a card appeared) | the drawn card sweeps from the deck position into its arc slot (~350 ms spring), existing cards reflow (FLIP-style) rather than snap; stagger multi-card draws ~80 ms. **Blocker found 2026-09-26:** `HandRow.vue` keys each card `${cardId}-${index}`, so playing one card re-keys every card after it and Vue remounts them — there is nothing to animate. Keys by occurrence (`cardId#n`) stay stable when other cards leave, and `<TransitionGroup>` then gives FLIP reflow with no new dependency | recommend (the [Surface-3 `drawCards` mock](#appendix-surface-3) is the audio-paired sibling) |
@@ -1147,12 +1147,13 @@ cards at once.
 > sound* would be the only piece that touches
 > [Sound Effects](sound-effects.md).)
 
-#### Proposal — Table perspective (camera and tilt) {#table-perspective}
+#### Shipped — Table perspective (camera and tilt) {#table-perspective}
 
-Today the desktop board is a flat, top-down sheet. The proposal is a **slightly
-tilted table with a vanishing point**: the shared board leans away from the
-player, the way a table looks from your chair. The cards you hold stay square to
-the screen. It is the camera half of the Hearthstone ancestry
+The desktop board is a **tilted table with a vanishing point** (WP-852 /
+D-24788): the shared board leans away from the player, the way a table looks
+from your chair, while the hand, the cockpit and the right rail stay square to
+the screen, and a City villain or HQ hero stands up to face you when you point
+at it. It is the camera half of the Hearthstone ancestry
 ([cards are objects, and the table is readable](visual-effects-design-ancestry.md#hearthstone)).
 It is not the "foil tilt" that page declines, which is a per-card shader.
 
@@ -1178,7 +1179,7 @@ screenshot. © Blizzard Entertainment; internal design reference only.*
 
 *Legends of Runeterra (Riot Games). A gentler tilt still: almost top-down, with
 just enough depth that the far row reads as "across the table". The closest
-match to the 6–10° this page proposes for our busy board. Source: Riot promo
+match in feel to the shipped tilt on our busy board. Source: Riot promo
 screenshot, via the
 [League of Legends Wiki board page](https://wiki.leagueoflegends.com/en-us/LoR:Board).
 © Riot Games; internal design reference only.*
@@ -1194,61 +1195,79 @@ toward the player" rule in its most literal form. Source: the
 [Inscryption Steam store page](https://store.steampowered.com/app/1092790/Inscryption/).
 © Daniel Mullins Games / Devolver Digital; internal design reference only.*
 
-**Prototype the angle on the real board, not in a 3D tool.** Load a busy
-board through the [`?fixture=…&play=1` dev route](play-board.md#preview-fixture)
-and try `perspective` / `rotateX` values on the board wrapper in browser dev
-tools. That tests the real cards, text and scale-to-fit frame. A free-camera
-tabletop simulator would only test a mock of them.
+**How the angle was picked: on the real board, not in a 3D tool.** The three
+board zones were wrapped in a perspective scene on the busy `mid-turn` board
+through the [`?fixture=…&play=1` dev route](play-board.md#preview-fixture) at
+1440×900 (scale 0.81) and measured. The earlier guess here, "6–10°", turned out
+meaningless on its own: an angle needs its perspective distance, and 6–10° at a
+far vanishing point is almost invisible on this board.
 
-- **Keep the tilt gentle.** The board is busy: Mastermind, Scheme, supply
-  decks, five City spaces and the HQ all carry text and cost badges. Start
-  around **6–10°** with a far vanishing point (a large `perspective`). 3D
-  transforms render text a little softer, so a steep tilt costs readability on
-  exactly the zones the board layout puts at the
-  [visual centre](../docs/ai/DESIGN-BOARD-LAYOUT.md).
-- **Tilt the shared board only.** The plane is the adversary band, the City and
-  the HQ. The cockpit (the hand and in-play wells) and the right rail (opponent
-  panels and the game log) stay flat. A flat hand is what makes the third rule
-  read: **cards straighten and lift toward the player** on hover or pickup. The
-  shipped [hover lift and hand arc](#card-interaction-feel) (WP-699) already
-  straighten the hovered card to 0° and raise it 12 px. On the tilted plane the
-  same idea is a City or HQ card un-tilting (to `rotateX(0)`) as it lifts. Play
-  is click-to-play, so "pickup" means the selected or pending-choice state, not
-  a drag.
-- **Hinge on the near edge.** Use `transform-origin: 50% 100%`, so the bottom
-  of the plane stays at full scale and everything above it only shrinks into the
-  distance. The tilted board then never grows past the frame that
-  [`useScaleToFit`](../apps/arena-client/src/composables/useScaleToFit.ts) fits
-  to the viewport. That composable measures the untransformed authored size,
-  which a `rotateX` does not change, so the scale math still holds.
-- **Check everything that reads a rectangle.** On a tilted plane,
-  `getBoundingClientRect()` returns the flat box around a trapezoid, not the
-  card's visible shape. Two shipped surfaces depend on it:
-  - **Slash to fight**
-    ([`useSlashGesture.ts`](../apps/arena-client/src/composables/useSlashGesture.ts),
-    [`slashGestureGeometry.ts`](../apps/arena-client/src/lib/slashGestureGeometry.ts)):
-    the [full-crossing rule](#slash-to-fight) tests the stroke against each
-    villain tile's rectangle.
-  - **The VFX overlay**
-    ([`VfxOverlay.vue`](../apps/arena-client/src/components/play/VfxOverlay.vue)):
-    the villain slice anchors to City rectangles on the fixed, untilted
-    overlay, and the drafted card-transfer flights (WP-849) will anchor to
-    pile rectangles the same way.
+| Setting | Far edge narrower | Worst far-corner box slop (City) | Smallest gap between neighbouring City boxes |
+|---|---|---|---|
+| flat | 0% | 0 px | 22.3 px |
+| 8° / 1600 px | ~2% (barely visible) | 2.5 px | 19.3 px |
+| **14° / 900 px (shipped)** | ~6% (reads as a table) | 6.6 px | 13.6 px |
+| 20° / 900 px | ~9% (band text strains) | 9 px | 10.5 px |
 
-  At a gentle tilt the error is a few pixels at the far corners. The WP must
-  test the slash crossing and the overlay anchors on the tilted board, not
-  assume they are fine.
+"Box slop" is how far `getBoundingClientRect()` (an axis-aligned box) reaches
+past a tilted card's visible trapezoid at its far corners.
+
+- **What tilts.** One scene and plane in
+  [`PlayDesktop.vue`](../apps/arena-client/src/pages/PlayDesktop.vue) wrap the
+  adversary band (Mastermind, Scheme, supply decks, KO pile), the City and the HQ:
+  `rotateX(14deg)` under `perspective: 900px`, set through three CSS variables
+  from [`useBoardTilt`](../apps/arena-client/src/composables/useBoardTilt.ts)
+  (`--board-tilt-angle`, `--board-tilt-perspective`, `--board-lift`). The
+  cockpit (hand, played cards, economy, piles), the turn bar, any pending-choice
+  prompt, the top status bar and the right rail stay flat.
+- **Hinged on the near edge.** `transform-origin: 50% 100%` and a bottom-centre
+  vanishing point, so the bottom of the plane stays at full scale and everything
+  above only shrinks into the distance. The tilted board never grows past the
+  frame [`useScaleToFit`](../apps/arena-client/src/composables/useScaleToFit.ts)
+  fits to the viewport (it measures the untransformed authored size, which a
+  `rotateX` does not change). Leaning back leaves a strip of empty table above
+  the band (about 49 screen px at 1440×900). Translating the plane up only moves
+  that strip down to the cockpit edge, so `--board-lift` stays a knob locked at
+  `0px`.
+- **Board cards straighten on hover.** Hovering an occupied City space or HQ
+  slot stands its card (with its Fight / discard-cost badges) up square to the
+  player: `rotateX(-14deg) scale(1.06)` around its **bottom edge**, over 150 ms.
+  No `translateY` (unlike the hand lift): the bottom edge stays put, so every
+  point of the resting card stays covered and a click anywhere on it still lands
+  on the button. The hover target is the whole space; the tile's own 1.05 hover
+  is off inside a lifting row, so the lifted card is exactly 1.06. While lifted,
+  a card may hide its Dark Portal marker and overlap the neighbouring label by a
+  few pixels. A space whose WP-817 Primus discard chooser is open never lifts:
+  inside a 3D context depth order beats `z-index`, and the raised card would
+  cover the chooser.
+- **Only while the row fits.** The City and HQ lists scroll sideways when a
+  scheme adds columns, and a scroll container forces its subtree flat and clips
+  it. So the straighten is on only while the row fits without scrolling
+  ([`useRowFit`](../apps/arena-client/src/composables/useRowFit.ts), the slash
+  gesture's own fit measurement); a scrolling row keeps its scroll and its plain
+  hover.
+- **3D only while a card is lifted.** The straighten needs
+  `transform-style: preserve-3d` on every element from the plane down to the
+  button. With that chain on at rest, the coplanar layers z-fought in Chrome's
+  hit test and the plane took up to 60% of a resting card's clicks, so the chain
+  switches on (through `:has(…:hover)`) only while a liftable card is hovered,
+  and the plane steps out of hit testing while it is 3D. A flat board
+  hit-tests exactly.
+- **Rectangles still work.** The slash gesture's
+  [full-crossing rule](#slash-to-fight) and the VFX overlay anchors read
+  `getBoundingClientRect()`. Neighbouring City boxes never touch at the shipped
+  angle, at rest or with a card lifted, so both work unchanged; the
+  [play-surface guard](testing.md) pins that gap, the tilt itself, the hover
+  lift and the resting clicks.
 - **Desktop only.** The `≤767px` mobile composer (`<PlayMobile>`, D-12909) is a
   separate layout and stays flat.
 - **Accessibility and intensity.** A static tilt is not motion, so
-  `prefers-reduced-motion` does not have to flatten it. The lift and straighten
-  animations follow the usual [gate](#accessibility-requirements-mandatory) and
-  jump to their end state. Whether Effect Intensity `off` also flattens the
-  table is an open call for the WP.
-- **Cost.** One CSS `perspective` and one `rotateX` on the board wrapper in
-  [`PlayDesktop.vue`](../apps/arena-client/src/pages/PlayDesktop.vue). No new
-  dependency ([library posture](#library-posture)), no engine signal, and
-  nothing in the determinism hash.
+  `prefers-reduced-motion` keeps it and only drops the hover lift (the same gate
+  as the WP-699 hand lift). Effect Intensity `off` flattens the table and turns
+  the lift off; `low` and `full` keep both.
+- **Cost.** CSS `perspective`, `rotateX` and a hover transform. No new
+  dependency ([library posture](#library-posture)), no engine signal, nothing in
+  the determinism hash.
 
 #### Shipped — Slash to fight (the Fruit Ninja input) {#slash-to-fight}
 

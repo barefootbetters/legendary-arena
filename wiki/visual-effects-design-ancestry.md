@@ -30,7 +30,7 @@ source:
   - ../packages/game-engine/src/ui/uiState.filter.ts
   - ../packages/game-engine/src/hero/heroConditions.evaluate.ts
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-09-26
+last-reviewed: 2026-10-28
 ---
 
 # Visual Effects Design Ancestry
@@ -201,7 +201,7 @@ hand contents and local affordances, with no new engine event.
 | Hearthstone pattern | Arena adoption | Status |
 |---|---|---|
 | Hover lift on a hand card | The card rises 12 px and scales to 1.06 with a shadow and a `z-index` bump; pointer devices only, off at intensity `off` and under reduced motion; a disabled tile never lifts ([`CardTile.vue`](../apps/arena-client/src/components/play/CardTile.vue)) | Shipped (WP-699) |
-| The board is a table seen from your chair | A gentle tilt (about 6–10°) on the shared board only — Mastermind, City, HQ — with the hand and the game log flat, so held cards straighten toward the player ([Table perspective](visual-effects.md#table-perspective)) | Proposal |
+| The board is a table seen from your chair | A 14° tilt under a 900 px perspective on the shared board only — Mastermind, City, HQ — with the hand and the game log flat; a hovered City or HQ card stands up toward the player ([Table perspective](visual-effects.md#table-perspective)) | Shipped (WP-852 / D-24788) |
 | The hand fan / arc | A 24° shallow arc ([`handArc.ts`](../apps/arena-client/src/components/play/handArc.ts)); cards overlap past six instead of scrolling; the hovered card straightens and nudges its neighbours 12 px | Shipped (WP-699) |
 | A draw flies in and the neighbours reflow | Proposal. One blocker: [`HandRow.vue`](../apps/arena-client/src/components/play/HandRow.vue) keys each card `${cardId}-${index}`, so a play re-keys every later card and Vue remounts them. Keys by occurrence (`cardId#n`) plus `<TransitionGroup>` give FLIP reflow with no new dependency | Proposal |
 | The playable / mana-dim glow | Does not apply to the hand: playing a card costs nothing here, so a "playable" glow would light every non-Wound card and say nothing. The hand grey-out is dropped | Dropped (hand) |
@@ -222,7 +222,7 @@ this ancestry. They fire from the local move dispatch, not from notable events.
 **Not copying:**
 
 - Golden-card looping shaders, foil tilt, or animated portraits. They are out of
-  the library posture (D-24365) and the brand-token scope. (The proposed
+  the library posture (D-24365) and the brand-token scope. (The shipped
   board-wide [table perspective](visual-effects.md#table-perspective) is a
   different thing: one CSS tilt on the board, not a per-card shader.)
 - A targeting arrow that implies a cost on `playCard`. Playing from hand costs
@@ -240,7 +240,7 @@ How the three ancestries land on the four VFX surfaces and the card-feel pass:
 |---|---|---|---|---|---|
 | *Candy Crush* | — | Call-out ladder + scaled burst + shared tier map (shipped); card-anchored burst and `economy`-delta float (proposal) | — | Heroes-win storm (shipped); the tally-and-grade count-up and the scheme-wins / tie finales (proposal) | — |
 | *Fruit Ninja* | Villain slash on `fightResolved`; the Excessive Violence slash (shipped) | Takedown words on a 4 s same-player window (shipped) | Slash to fight + the long-press arm (shipped) | — | The blade trail is juice, not rules (shipped) |
-| *Hearthstone* | Wound vignette (shipped); per-panel shake, KO, capture and rescue (proposal) | — | Recruit / draw / play / dodge cues (proposal) | VICTORY! frame takeover (shipped) | Hover lift + arc (shipped); turn handoff, affordability, superpower rim, bot pacing (drafted); table tilt (proposal); ally reveal (blocked on D-12803) |
+| *Hearthstone* | Wound vignette (shipped); per-panel shake, KO, capture and rescue (proposal) | — | Recruit / draw / play / dodge cues (proposal) | VICTORY! frame takeover (shipped) | Hover lift + arc (shipped); table tilt (shipped); turn handoff, affordability, superpower rim, bot pacing (drafted); ally reveal (blocked on D-12803) |
 
 ### Shared rules these games taught {#shared-rules}
 

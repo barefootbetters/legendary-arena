@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, ref, type PropType } from 'vue';
 import type {
   UICardDisplay,
   UIDecksState,
@@ -9,6 +9,7 @@ import type {
 import { useHqRow, type HqCell } from '../../composables/useHqRow';
 import { useCardCostGating, type GatingResult } from '../../composables/useCardCostGating';
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
+import { useRowFit } from '../../composables/useRowFit';
 import CardTile from './CardTile.vue';
 import type { SubmitMove } from './uiMoveName.types';
 
@@ -89,6 +90,14 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    // why: WP-852 / D-24788 — the desktop board's straighten-on-hover. Only
+    // PlayDesktop sets it (from useBoardTilt's lift gate); every other use,
+    // PlayMobile included, keeps it false and renders the row exactly as before.
+    isTiltLiftEnabled: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props) {
     function buildCells(): HqCell[] {
@@ -134,7 +143,14 @@ export default defineComponent({
       };
     }
 
-    return { buildCells, gateForCell, onRecruit, displayForCell };
+    // why: WP-852 — the hover lift needs `overflow: visible` on the list, and a
+    // scroll container forces its subtree flat and clips it, so the lift is on
+    // only while the row fits without sideways scroll. The extra spacer columns
+    // a bigger City adds change the row's width, so they re-measure too.
+    const hqSlotsElement = ref<HTMLElement | null>(null);
+    const isRowFitting = useRowFit(hqSlotsElement, () => [props.hq, props.extraCitySpaces]);
+
+    return { buildCells, gateForCell, onRecruit, displayForCell, hqSlotsElement, isRowFitting };
   },
 });
 </script>
@@ -142,11 +158,14 @@ export default defineComponent({
 <template>
   <section
     class="hq-row"
-    :class="{ 'hq-row--column-aligned': isColumnAligned }"
+    :class="{
+      'hq-row--column-aligned': isColumnAligned,
+      'hq-row--tilt-lift': isTiltLiftEnabled && isRowFitting,
+    }"
     data-testid="play-hq-row"
     aria-label="HQ"
   >
-    <ol class="hq-slots">
+    <ol ref="hqSlotsElement" class="hq-slots">
       <!-- why: D-24747 — the blank cell under the City's Escaped Pile, as on the
            physical board, so Hero 1 lands under the Bridge. Decorative only. -->
       <li
@@ -175,6 +194,7 @@ export default defineComponent({
           <button
             v-if="cell.cardId !== null"
             type="button"
+            class="hq-slot__hero"
             data-testid="play-hq-hero"
             :data-hq-index="cell.hqIndex"
             :data-card-id="cell.cardId"
@@ -277,5 +297,44 @@ export default defineComponent({
 .hq-slot__name {
   display: block;
   font-weight: 600;
+}
+
+/* why: WP-852 / D-24788 — the board-card straighten-on-hover. Pointer devices
+   only, and only under --tilt-lift (the lift gate AND a row that fits: a scroll
+   container forces its subtree flat and clips, so the list's overflow turns
+   visible here and nowhere else). Every link from the tilted plane down to the
+   button preserves 3D, or the card would rise but stay tilted. The links are on
+   only while a liftable card is hovered: at rest, coplanar preserve-3d layers
+   z-fight in Chrome's hit test and steal clicks from resting cards (WP-852 EC
+   amendment A). */
+@media (hover: hover) {
+  .hq-row--tilt-lift:has(.hq-slot:hover > .hq-slot__hero),
+  .hq-row--tilt-lift:has(.hq-slot:hover > .hq-slot__hero) .hq-slots,
+  .hq-row--tilt-lift:has(.hq-slot:hover > .hq-slot__hero) .hq-slot,
+  .hq-row--tilt-lift:has(.hq-slot:hover > .hq-slot__hero) .hq-slot__hero {
+    transform-style: preserve-3d;
+  }
+  .hq-row--tilt-lift .hq-slots {
+    overflow: visible;
+  }
+  /* why: the bottom-edge origin makes the card rise off the table rather than
+     into it, and keeps that edge put, so every point of the resting card stays
+     under the lifted one (no dead click strip; hence no translateY). */
+  .hq-row--tilt-lift .hq-slot__hero {
+    transform-origin: 50% 100%;
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  }
+  /* why: the hover sits on the li, which keeps its box, while the transform
+     moves the button; hovering the button itself would flicker as it moves out
+     from under the pointer. */
+  .hq-row--tilt-lift .hq-slot:hover > .hq-slot__hero {
+    transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+  /* why: the tile's own 1.05 hover scale would compound with the lift; inside a
+     lifting row the lifted card is exactly 1.06. */
+  .hq-row--tilt-lift .card-tile--interactive:hover {
+    transform: none;
+  }
 }
 </style>
