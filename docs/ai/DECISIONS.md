@@ -49824,3 +49824,21 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24786 — "Discard the top N cards … +Attack equal to those cards' printed Attack" is the hero keyword `discard-top-printed-attack`; "[team:X]: KO any number of those cards" is `ko-discarded-this-way`, a filtered KO-from-discard choice (Active 2026-10-28 — WP-850 / EC-888)
+
+**Context.** Bishop's **Firepower from the Future** (dkcy) prints "Discard the top four cards of your deck. You get +[icon:attack] equal to those cards' printed [icon:attack]." and "[team:x-men]: KO any number of those cards." Both lines were hollow: operator match `Ps0Hg_m5B-H` (2026-10-28, Red Skull / Midtown Bank Robbery, 2p) logged `attack-no-magnitude` and `gate-only` (parse-unrecognized) on every play, and the card granted only its base 4. A corpus survey found the discard-top-N printed-Attack wording on this one card only.
+
+**Decision.**
+1. **`discard-top-printed-attack` (magnitude N = cards to discard).** One card at a time from the playing player's deck top to their discard. When the deck is empty mid-effect the discard reshuffles into it (D-24285, rules v23 "Sometimes a card effect tells you to … do something else with the top card of your deck"), and that pile includes cards this play already discarded, so a card can be discarded and counted twice. Each discard adds the card's printed Attack (`offPlayCardStats`: trailing `+` dropped, Divided halves added; a Wound or Bystander adds 0). Deck and discard both empty → stop. The grant, one log line, and the hand-off record run on every path. Joins `SELF_COMPUTED_ATTACK_KEYWORDS` so the line's `[icon:attack]` icons are its own grant. Not in `NO_MAGNITUDE_KEYWORDS`.
+2. **`ko-discarded-this-way` (no magnitude).** Rides the line's own `[team:x-men]:` `requiresTeam` gate. Parks the WP-693 `PendingKoDiscardChoice` with `maxCount` = the eligible count, `sourceCardId` = the card, and a new omit-when-absent `eligibleCardIds` filter = the recorded cards still in the discard (a multiset: each id at most as often as recorded AND present). None left → `neutral` log, no park. In `NO_MAGNITUDE_KEYWORDS`.
+3. **Reuse, not a new queue.** The KO-from-discard choice already ships its block-all guards, resolve move, projection, prompt, bot default, sim dispatch and vanquish drop. The filter follows the WP-836 `greyFilter` shape: `getEligibleKoDiscardCards(G, playerID, greyFilter?, eligibleCardIds?)` is the one eligibility helper for the UIState build and the bot; `resolveKoDiscardChoice` rejects a selection that is not a sub-multiset of the filter (queue intact). Unfiltered and grey entries project and resolve exactly as before.
+4. **The one-play hand-off.** The two printed lines are separate hooks with no return channel, so line 1 writes `G.lastDeckTopDiscard = { playerID, sourceCardId, cardIds }` and line 2 reads it (matching player and card instance) and removes it with `delete` (the engine compiles with `exactOptionalPropertyTypes`). When line 2's gate fails it never runs, so the record stays, unread, until the next line-1 play overwrites it. Because line 1 always writes, line 2 never reads an earlier play's record.
+5. **Projection.** `UIPendingKoDiscardChoice.isLimitedToDiscardedThisWay?: boolean` — `true` when the entry carries `eligibleCardIds`, omitted otherwise; passed through the chooser-only filter rebuild (Board-Visible five-step rule). The prompt heading reads "KO any number of the N cards you just discarded", N = the cards listed.
+6. **Return-on-discard.** A deck-top discard here does not offer Cyclops's return-on-discard (it fires at the `discardFromHand` chokepoint only), matching Rogue's Steal Abilities (WP-592). Extending it is a separate ruling.
+7. **Determinism.** The only randomness is the D-24285 reshuffle through the threaded `ctx`. Both new `G` fields are optional and absent in any game that never plays the card, so `finalStateHash` and the sentinel oracles are unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24786 (#3074). Related: D-24510 (KO-from-discard), D-24769 / D-24783 (grey filter + heading), D-24682 (multiset payload), D-24285 (reshuffle), D-24604 (printed stats off play), D-24670 (self-computed attack icons), D-24521 §6 / D-24558 (a later line acts on an earlier one), D-24372 (RUNTIME drift pins), D-12803 (Board-Visible rule), D-24026.
+
+---
+Protect this file.
