@@ -2077,6 +2077,13 @@ function heroEffectKoDiscardedThisWay(
     return;
   }
 
+  // why: D-24786 — line 1 could discard nothing (deck and discard both empty) and has already
+  // logged that; saying none of "the discarded cards" are left would imply some were discarded.
+  if (record.cardIds.length === 0) {
+    pushLog(G, `Player ${playerID} discarded no cards, so there is nothing to KO (${card}).`, 'neutral', cardId);
+    return;
+  }
+
   // why: D-24786 — "those cards" are recomputed against the live discard: a mid-effect
   // reshuffle may have put some of them back into the deck, and only cards still in the
   // discard pile can be KO'd from it.
