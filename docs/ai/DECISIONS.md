@@ -49873,7 +49873,7 @@ Protect this file.
 
 **Consequences.** 11 lines in 9 sets execute. `finalStateHash` and the sentinels are unchanged. The fixed-seed sweep and the dashboard in-play denominator re-pin by the removed gate-only hollows. The rewarded variants (Dangerous Rescue reprints, Shards, New Recruit, Spark of the Divine) are separate.
 
-**Live-verify (D-24026):** operator-pending.
+**Live-verify (D-24026):** PASS 2026-10-28 — Operator match `g0OSXmiDT3o` (Red Skull / Midtown Bank Robbery, 2p; Thor, Storm, Iron Man, Hulk, Bishop), created 2026-10-29T03:00:22Z after the deploy (server `51d7514b` booted 02:49:17Z, client `51d7514`, the #3088 merge; diagnostics `isMatchOlderThanServer: false`, and Whatever the Cost's ability text carries `[keyword:optional-ko-hand-discard]`). Gate unmet (no Covert Hero played earlier that turn): it drew and logged only "it needs another Covert Hero played this turn", with no "not supported yet" (8.2.4–8.2.6; seat 1 at 15.2.6–15.2.8 and 19.2.2–19.2.4). Gate met (Absorb Energies, Covert, played first): it drew, then KO'd a hand card (Lightning Bolt, 14.2.1–14.2.5), and a discard-pile card (S.H.I.E.L.D. Agent, 22.2.4–22.2.8); seat 1 KO'd from hand twice (17.2.16–17.2.18, 21.2.21–21.2.26).
 
 **Reserved by:** NUMBER-LEDGER D-24787 (#3075). Related: D-24480 (the keyword), D-24464 (Antics / Outwit), D-24476 + D-24377 (draw-threshold, wait-and-see), D-24606 (no Focus handler), D-24019 (the rewarded optional-ko-reward), D-24026.
 
