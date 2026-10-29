@@ -491,7 +491,7 @@ high-water: 422
 - WP-850 — discard-top-printed-attack (Bishop Firepower from the Future: discard the top four cards of your deck for +Attack equal to their printed Attack; the X-Men clause KOs any number of those cards via a pending choice. reserved 2026-10-28, claude/xenodochial-borg-9e262a; LANDED 2026-10-28)
 - WP-851 — optional-ko-hand-discard-sweep (marker-only: the bare no-reward "You may KO a card from your hand or discard pile." hero clause gets [keyword:optional-ko-hand-discard] on every line whose gate already executes; Bishop Whatever the Cost + 10 more. reserved 2026-10-28, claude/wp851-reserve; LANDED 2026-10-28)
 - WP-852 — board-table-perspective (desktop play board leans back like a table: tilt wrapper around the adversary band, City and HQ; board cards straighten and lift toward the player on hover; hand and right rail stay flat. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
-- WP-853 — owned-card-ko-trigger (Bishop Absorb Energies: "Whenever a card you own is KO'd this turn, you get +2 Recruit" grants per owned-card KO after play instead of a flat +2 on play. reserved 2026-10-28, claude/wp853-reserve)
+- WP-853 — owned-card-ko-trigger (Bishop Absorb Energies: "Whenever a card you own is KO'd this turn, you get +2 Recruit" grants per owned-card KO after play instead of a flat +2 on play. reserved 2026-10-28, claude/wp853-reserve; LANDED 2026-10-29)
 
 ## EC
 
@@ -945,7 +945,7 @@ high-water: 457
 - EC-888 — discard-top-printed-attack (WP-850. reserved 2026-10-28, claude/xenodochial-borg-9e262a; LANDED 2026-10-28)
 - EC-889 — optional-ko-hand-discard-sweep (WP-851. reserved 2026-10-28, claude/wp851-reserve; LANDED 2026-10-28)
 - EC-890 — board-table-perspective (WP-852. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
-- EC-891 — owned-card-ko-trigger (WP-853. reserved 2026-10-28, claude/wp853-reserve)
+- EC-891 — owned-card-ko-trigger (WP-853. reserved 2026-10-28, claude/wp853-reserve; LANDED 2026-10-29)
 
 ## D
 
@@ -1512,4 +1512,4 @@ section below) and the allocation protocol in
 - D-24786 — discard-top-printed-attack (WP-850; discard-top-N grants printed Attack of the discarded cards, and a team-gated KO-any-of-those pending choice scoped to this play's discards. reserved 2026-10-28, claude/xenodochial-borg-9e262a; LANDED 2026-10-28)
 - D-24787 — optional-ko-hand-discard-sweep (WP-851; the curation rule: mark a bare optional-KO line only when its gate resolves to an executable condition, never when the gate token would be dropped and the KO fire ungated. reserved 2026-10-28, claude/wp851-reserve; LANDED 2026-10-28)
 - D-24788 — board-table-perspective (WP-852; the desktop board tilt is presentation-only CSS on one wrapper with angle, perspective and lift as variables; board-card hover counter-rotates only while the City row fits; Effect Intensity off flattens. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
-- D-24789 — owned-card-ko-trigger (WP-853; a per-turn whenever-a-card-you-own-is-KOd grant: owner-aware KO counter at the KO sites, per-KO firing through the D-24467 wait-and-see re-arm, which zones count as cards you own. reserved 2026-10-28, claude/wp853-reserve)
+- D-24789 — owned-card-ko-trigger (WP-853; a per-turn whenever-a-card-you-own-is-KOd grant: owner-aware KO counter at the KO sites, per-KO firing through the D-24467 wait-and-see re-arm, which zones count as cards you own. reserved 2026-10-28, claude/wp853-reserve; LANDED 2026-10-29)

@@ -78,6 +78,8 @@ describe('wait-and-see scope (WP-568 / D-24377 section 1; WP-656 / D-24467)', ()
       // why: WP-743 / D-24566 — Grief / Spring the Trap sticky per-turn event gates.
       'masterStrikePlayedThisTurn',
       'masterStrikeOrAmbushPlayedThisTurn',
+      // why: WP-853 / D-24789 — Absorb Energies' "whenever a card you own is KO'd" trigger.
+      'ownedCardKoedThisTurn',
     ]);
     // why: the edge-triggered member is exported as a named const so the array, the
     // evaluator case, the re-arm check, and the setup marker branch share one literal.
@@ -124,6 +126,8 @@ describe('AC-6: WAIT_AND_SEE ↔ evaluateCondition lockstep (runtime drift pin)'
     // why: WP-743 / D-24566 — the sticky per-turn Master Strike / Ambush Villain flags.
     masterStrikePlayedThisTurn: { value: '1', mutate: (G) => { G.masterStrikePlayedThisTurn = true; } },
     masterStrikeOrAmbushPlayedThisTurn: { value: '1', mutate: (G) => { G.ambushVillainPlayedThisTurn = true; } },
+    // why: WP-853 / D-24789 — player '0' (the evaluated player) had one owned card KO'd.
+    ownedCardKoedThisTurn: { value: '1', mutate: (G) => { G.ownedCardsKoedSinceResolve = { '0': 1 }; } },
   };
 
   it('every listed type has an evaluateCondition case that can return true', () => {

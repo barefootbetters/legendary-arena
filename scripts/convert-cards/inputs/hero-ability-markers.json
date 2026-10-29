@@ -960,6 +960,12 @@
     },
     {
       "heroSlug": "bishop",
+      "cardSlug": "absorb-energies",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:owned-card-koed]"
+    },
+    {
+      "heroSlug": "bishop",
       "cardSlug": "firepower-from-the-future",
       "abilityIndex": 0,
       "markupToken": "[keyword:discard-top-printed-attack:4]"

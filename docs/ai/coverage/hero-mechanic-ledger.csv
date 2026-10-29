@@ -325,6 +325,7 @@ dkcy/bishop,Bishop,dkcy,discard-top-printed-attack,executable,WP-850,D-24786,pac
 dkcy/bishop,Bishop,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,whatever-the-cost
 dkcy/bishop,Bishop,dkcy,ko-discarded-this-way,executable,WP-850,D-24786,packages/game-engine/src/hero/heroEffects.execute.ts#ko-discarded-this-way,firepower-from-the-future
 dkcy/bishop,Bishop,dkcy,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,whatever-the-cost
+dkcy/bishop,Bishop,dkcy,owned-card-koed,condition,WP-853,D-24789,,absorb-energies
 dkcy/blade,Blade,dkcy,(unmarked),unmarked,,,,
 dkcy/cable,Cable,dkcy,teleport,unsupported,,,,rapid-response-force
 dkcy/colossus,Colossus,dkcy,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,draw-their-fire

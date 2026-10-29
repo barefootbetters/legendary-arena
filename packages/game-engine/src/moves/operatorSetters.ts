@@ -25,6 +25,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { CityZone, HqZone } from '../board/city.types.js';
 import { moveCardFromZone } from './zoneOps.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { discardFromHand } from './discardFromHand.js';
 import { gainOfficerToDiscard } from './recruitOfficer.js';
 import { gainWoundForPlayer } from '../board/wounds.logic.js';
@@ -270,6 +271,11 @@ function koFromPlayerZone(G: LegendaryGameState, from: OperatorPlayerZoneRef, ca
   if (!moveResult.found) return false;
   zones[from.zone] = moveResult.from;
   G.ko = moveResult.to;
+  // why: WP-853 / D-24789 — a KO from the seat's hand, deck, discard or play is a card
+  // they own; a Victory Pile KO is not (RS-1).
+  if (from.zone !== 'victory') {
+    recordOwnedCardKoed(G, from.playerId);
+  }
   return true;
 }
 

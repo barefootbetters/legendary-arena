@@ -26,6 +26,7 @@ import { pushLog } from '../log/logPush.js';
 import { moveCardFromZone } from '../moves/zoneOps.js';
 import { discardFromHand } from '../moves/discardFromHand.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { gainWoundWithOutcome } from '../board/wounds.logic.js';
 import { seatsInTurnOrderFrom } from '../turn/seatOrder.logic.js';
@@ -732,6 +733,8 @@ function resolveRedSkullStrike(
     const moveResult = moveCardFromZone(playerZones.hand, [], targetExtId);
     playerZones.hand = moveResult.from;
     gameState.ko = koCard(gameState.ko, targetExtId);
+    // why: WP-853 / D-24789 — each player loses a card they own; credit that player.
+    recordOwnedCardKoed(gameState, playerId);
 
     pushLog(gameState,
       `[Red Skull Master Strike] Player ${playerId} KO'd ${formatCardRef(gameState.cardDisplayData, targetExtId)} from their hand.`,

@@ -1508,6 +1508,17 @@
       "date": "2026-10-28",
       "evidence": "Operator match `g0OSXmiDT3o` (Red Skull / Midtown Bank Robbery, 2p; Thor, Storm, Iron Man, Hulk, Bishop), created 2026-10-29T03:00:22Z after the deploy (server `51d7514b` booted 02:49:17Z, client `51d7514`, the #3088 merge; diagnostics `isMatchOlderThanServer: false`, and Whatever the Cost's ability text carries `[keyword:optional-ko-hand-discard]`). Gate unmet (no Covert Hero played earlier that turn): it drew and logged only \"it needs another Covert Hero played this turn\", with no \"not supported yet\" (8.2.4–8.2.6; seat 1 at 15.2.6–15.2.8 and 19.2.2–19.2.4). Gate met (Absorb Energies, Covert, played first): it drew, then KO'd a hand card (Lightning Bolt, 14.2.1–14.2.5), and a discard-pile card (S.H.I.E.L.D. Agent, 22.2.4–22.2.8); seat 1 KO'd from hand twice (17.2.16–17.2.18, 21.2.21–21.2.26).",
       "note": "Marker-only sweep (D-24787): the same keyword now runs on 10 more bare hand-or-discard KO lines; this match covers the Bishop line, both gate outcomes, both zones and both seats."
+    },
+    {
+      "key": "dkcy/bishop|owned-card-koed",
+      "kind": "hero",
+      "card": "Bishop",
+      "ability": "Absorb Energies: Whenever a card you own is KO'd this turn, you get +2 Recruit",
+      "wp": "WP-853",
+      "state": "pending",
+      "date": "2026-10-29",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-853 deploy with Bishop in the hero decks, per the WP-853 DoD: play Absorb Energies, then KO one card (Whatever the Cost) and, in a later turn, several in one move.",
+      "note": "Playing it logs the waiting line and adds no Recruit; each card you own KO'd later that turn adds +2 Recruit, once per card. D-24789."
     }
   ]
 }

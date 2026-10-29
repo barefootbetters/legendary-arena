@@ -3,16 +3,16 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2024,
+    "totalEntries": 2025,
     "byScope": {
-      "hero": 828,
+      "hero": 829,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
       "executable": 649,
       "deferred": 16,
-      "condition": 50,
+      "condition": 51,
       "unsupported": 291,
       "unmarked": 1013,
       "subsystem": 5
@@ -11300,6 +11300,23 @@
         {
           "slug": "whatever-the-cost",
           "name": "Whatever the Cost"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/bishop",
+      "name": "Bishop",
+      "set": "dkcy",
+      "scope": "hero",
+      "mechanic": "owned-card-koed",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-853",
+      "decision": "D-24789",
+      "designs": [
+        {
+          "slug": "absorb-energies",
+          "name": "Absorb Energies"
         }
       ]
     },
@@ -32608,7 +32625,8 @@
         "discard-top-printed-attack",
         "draw",
         "ko-discarded-this-way",
-        "optional-ko-hand-discard"
+        "optional-ko-hand-discard",
+        "owned-card-koed"
       ]
     },
     "dkcy/blade": {

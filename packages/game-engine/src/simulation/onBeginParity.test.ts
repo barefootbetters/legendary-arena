@@ -197,6 +197,26 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.equal('cardsDiscardedThisTurn' in gameState, false);
   });
 
+  it('deletes the owned-KO count at the turn boundary (WP-853 / D-24789)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.ownedCardsKoedSinceResolve = { '0': 2 };
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: mirrors game.ts onBegin — a count surviving the turn boundary would let Absorb
+    // Energies fire next turn with no KO. ABSENT, not merely zero.
+    assert.equal('ownedCardsKoedSinceResolve' in gameState, false);
+  });
+
+  it('never creates the owned-KO count on a G that never had it (oracle safety, WP-853 / D-24789)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    assert.equal('ownedCardsKoedSinceResolve' in gameState, false);
+
+    applyOnBeginParity(gameState, '0');
+
+    assert.equal('ownedCardsKoedSinceResolve' in gameState, false);
+  });
+
   it('never creates the discard count on a G that never had it (oracle safety, WP-777 / D-24616)', () => {
     const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
     assert.equal('cardsDiscardedThisTurn' in gameState, false);

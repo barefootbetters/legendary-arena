@@ -2819,6 +2819,15 @@ export interface LegendaryGameState {
   /** Edge signal: a Villain/Mastermind was defeated this move, awaiting credit; absent otherwise. */
   villainOrMastermindDefeatedSinceResolve?: boolean;
 
+  // why: WP-853 / D-24789 — the per-owner COUNT form of the D-24467 edge, for "Whenever a
+  // card you own is KO'd this turn" (Absorb Energies). Keyed by the player whose hand,
+  // deck, discard pile or cards in play the KO'd card left; one move can KO several cards,
+  // so a count, not a boolean. Written GATED by recordOwnedCardKoed (only while an
+  // owned-KO grant waits), deleted after every resolve and at turn.onBegin, never set in
+  // Game.setup — so a game with no waiting Absorb grant never carries the key.
+  /** Owned-card KOs per owner since the last deferred-grant resolve; absent when none. */
+  ownedCardsKoedSinceResolve?: Record<string, number>;
+
   // why: WP-743 / D-24566 — a Master Strike card was played (revealed from the Villain
   // Deck and routed to the strike pile) this turn. Read by the Grief and Spring the Trap
   // wait-and-see conditions. Written GATED in performVillainReveal — only when some hero

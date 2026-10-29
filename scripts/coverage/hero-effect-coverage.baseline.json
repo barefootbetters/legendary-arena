@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3768,
+    "executable": 3805,
     "heroes": 324,
-    "hooks": 6383,
-    "noEffect": 2511,
+    "hooks": 6388,
+    "noEffect": 2479,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -18,9 +18,9 @@
       "noEffect": 34
     },
     "amwp": {
-      "executable": 96,
+      "executable": 98,
       "hooks": 190,
-      "noEffect": 94
+      "noEffect": 92
     },
     "anni": {
       "executable": 45,
@@ -33,9 +33,9 @@
       "noEffect": 15
     },
     "asrd": {
-      "executable": 52,
+      "executable": 57,
       "hooks": 102,
-      "noEffect": 50
+      "noEffect": 45
     },
     "bkpt": {
       "executable": 58,
@@ -53,9 +53,9 @@
       "noEffect": 0
     },
     "chmp": {
-      "executable": 67,
+      "executable": 70,
       "hooks": 143,
-      "noEffect": 76
+      "noEffect": 73
     },
     "co2e": {
       "executable": 199,
@@ -73,14 +73,14 @@
       "noEffect": 163
     },
     "cvwr": {
-      "executable": 313,
+      "executable": 316,
       "hooks": 400,
-      "noEffect": 87
+      "noEffect": 84
     },
     "dead": {
-      "executable": 46,
+      "executable": 47,
       "hooks": 82,
-      "noEffect": 36
+      "noEffect": 35
     },
     "dims": {
       "executable": 42,
@@ -88,9 +88,9 @@
       "noEffect": 63
     },
     "dkcy": {
-      "executable": 178,
+      "executable": 191,
       "hooks": 298,
-      "noEffect": 120
+      "noEffect": 107
     },
     "dstr": {
       "executable": 53,
@@ -118,9 +118,9 @@
       "noEffect": 42
     },
     "mgtg": {
-      "executable": 53,
+      "executable": 55,
       "hooks": 99,
-      "noEffect": 46
+      "noEffect": 44
     },
     "msis": {
       "executable": 76,
@@ -203,13 +203,13 @@
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 220,
+      "executable": 223,
       "hooks": 337,
-      "noEffect": 117
+      "noEffect": 114
     },
     "xmen": {
-      "executable": 148,
-      "hooks": 367,
+      "executable": 153,
+      "hooks": 372,
       "noEffect": 219
     }
   },

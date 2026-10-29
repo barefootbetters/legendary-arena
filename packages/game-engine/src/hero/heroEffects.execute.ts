@@ -20,7 +20,7 @@ import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type { CardStatEntry } from '../economy/economy.types.js';
 import type { HeroKeyword } from '../rules/heroKeywords.js';
 import { HERO_KEYWORDS } from '../rules/heroKeywords.js';
-import type { HeroAbilityHook, HeroEffectDescriptor, InvestigateCriterion, InvestigateCandidate } from '../rules/heroAbility.types.js';
+import type { HeroAbilityHook, HeroCondition, HeroEffectDescriptor, InvestigateCriterion, InvestigateCandidate } from '../rules/heroAbility.types.js';
 import { getHooksForCard, investigateCandidateMatches } from '../rules/heroAbility.types.js';
 import type { EffectExecutionReason, EffectTrace, EffectTraceStatus, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
 import { isHollowReason, DEFERRED_BY_DESIGN_MECHANICS } from '../diagnostics/hollowEffect.types.js';
@@ -34,12 +34,14 @@ import {
   evaluateAllConditions,
   findFailedCondition,
   describeFailedCondition,
+  OWNED_CARD_KOED_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 import {
   isWaitAndSeeCondition,
   recordDeferredConditionalGrant,
   resolveDeferredConditionalGrants,
   REPEATABLE_DEFEAT_CONDITION_TYPE,
+  recordOwnedCardKoed,
 } from './deferredConditionalGrants.js';
 import type { HeroEffectResult } from './heroEffects.types.js';
 import type { HeroEffectResolvedEvent } from '../events/notableEvents.types.js';
@@ -911,6 +913,34 @@ export function executeHeroEffects(
     const isCountableConditionalClause =
       countSynergyConditions(hook) > 0 && hookHasDispatchableEffect(hook);
 
+    // why: WP-853 / D-24789 — an owned-KO trigger ("Whenever a card you own is KO'd this
+    // turn") starts when the card is played, so it ALWAYS waits once its other conditions
+    // hold — even if the owned-KO count is already above 0 from an earlier KO in this
+    // same move. Without this, that count would pass the gate now, fire once, record
+    // nothing and miss every later KO this turn. Only the owned-KO type: the defeat family
+    // keeps today's path (its flag is never set at play, and Snarling Fangs under Sunlight
+    // must keep its "did not activate" line, D-24598).
+    const ownedKoCondition = findConditionOfType(hook, OWNED_CARD_KOED_CONDITION_TYPE);
+    if (
+      ownedKoCondition !== undefined &&
+      evaluateAllConditions(G, playerID, conditionsWithout(hook, ownedKoCondition), cardId)
+    ) {
+      recordDeferredConditionalGrant(G, playerID, cardId, G.heroAbilityHooks.indexOf(hook));
+      const ownedKoReason = describeFailedCondition(G, playerID, ownedKoCondition);
+      const ownedKoHollowNote = hookHasHollowBody(hook) ? ' Its effect is not supported yet.' : '';
+      const ownedKoWaitingOutcome = ownedKoHollowNote !== ''
+        ? ownedKoHollowNote
+        : ' It will apply if you reach it this turn.';
+      pushLog(G,
+        `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ability is waiting — ${ownedKoReason}.${ownedKoWaitingOutcome}`,
+        'neutral',
+        cardId,
+      );
+      // why: same tally posture as the wait-and-see branch below — a waiting trigger is
+      // neither assembled nor a miss (WP-708).
+      continue;
+    }
+
     // why: cardId is threaded through to condition evaluation so heroClassMatch
     // and requiresTeam can exclude the triggering card from their inPlay scan
     // (self-exclusion rule — a card's own class/team does not satisfy its own
@@ -1775,6 +1805,7 @@ function heroEffectKo(
     if (moveResult.found) {
       playerZones.inPlay = moveResult.from;
       G.ko = koCard(G.ko, cardId);
+      recordOwnedCardKoed(G, playerID);
       // why: WP-417 / D-24237 — a self-KO removes the card the player just played
       // from the board; a silent removal reads as the card vanishing. Name it.
       // why: WP-434 — a self-KO ability that removed the played card is `applied`.
@@ -2549,7 +2580,7 @@ function applyRevealAction(
     return isDrawn;
   }
   if (action.kind === 'ko') {
-    return applyRevealKo(G, playerZones, topCardId);
+    return applyRevealKo(G, playerZones, topCardId, playerID);
   }
   if (action.kind === 'discard') {
     return applyRevealDiscard(playerZones, topCardId);
@@ -2630,15 +2661,24 @@ function applyRevealDraw(playerZones: PlayerZones, topCardId: CardExtId): boolea
  * @param G - Game state (mutated under Immer draft).
  * @param playerZones - The active player's zones.
  * @param topCardId - The peeked deck-top card's CardExtId.
+ * @param ownerPlayerID - The player whose deck it is.
  * @returns Whether the card was found and KO'd (false leaves zones unchanged).
  */
-function applyRevealKo(G: LegendaryGameState, playerZones: PlayerZones, topCardId: CardExtId): boolean {
+function applyRevealKo(
+  G: LegendaryGameState,
+  playerZones: PlayerZones,
+  topCardId: CardExtId,
+  // why: WP-853 / D-24789 — PlayerZones carries no owner id, so the caller threads it
+  // in for the owned-KO count (Absorb Energies).
+  ownerPlayerID: string,
+): boolean {
   const moveResult = moveCardFromZone(playerZones.deck, [], topCardId);
   if (!moveResult.found) {
     return false;
   }
   playerZones.deck = moveResult.from;
   G.ko = koCard(G.ko, topCardId);
+  recordOwnedCardKoed(G, ownerPlayerID);
   return true;
 }
 
@@ -4513,6 +4553,7 @@ function heroEffectKoWoundReward(
   if (!moveResult.found) { return; }
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, WOUND_EXT_ID);
+  recordOwnedCardKoed(G, playerID);
   pushLog(G,
     `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
   );
@@ -4582,6 +4623,7 @@ function heroEffectKoWound(
   if (!moveResult.found) { return; }
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, WOUND_EXT_ID);
+  recordOwnedCardKoed(G, playerID);
   pushLog(G,
     `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
   );
@@ -7429,7 +7471,17 @@ export function resolveDeferredHeroGrants(
       // per grant; a multi-copy Diamond Form turn logged a wall of them). The grant line is
       // self-sufficient — the on-play "… is waiting …" line already told the player the
       // ability was deferred — so the confirmation is dropped.
-      runHookEffects(G, ctx, entry.playerId, entry.cardId, hook, turn);
+      // why: WP-853 / D-24789 — an owned-KO grant fires once PER counted KO: one move can
+      // KO several of the player's cards (heal three Wounds, a Villain KOing every Hero
+      // with a trait), and each is its own "whenever". Every other hook fires once.
+      // Explicit for loop, no .reduce() (.claude/rules/code-style.md).
+      let repeatCount = 1;
+      if (hookHasConditionType(hook, OWNED_CARD_KOED_CONDITION_TYPE)) {
+        repeatCount = Math.max(1, G.ownedCardsKoedSinceResolve?.[entry.playerId] ?? 0);
+      }
+      for (let i = 0; i < repeatCount; i++) {
+        runHookEffects(G, ctx, entry.playerId, entry.cardId, hook, turn);
+      }
       // why: WP-656 / D-24467 — a defeat-gated grant (Diamond Form) is EDGE-TRIGGERED
       // per defeat, not one-shot. resolveDeferredConditionalGrants removed this entry
       // as it fired (the numeric-threshold one-shot contract, unchanged); RE-ARM it by
@@ -7438,7 +7490,12 @@ export function resolveDeferredHeroGrants(
       // to the surviving list" support. Over-fire on non-defeat moves is prevented not
       // by removal but by the edge flag being consumed below — a re-armed grant reads a
       // cleared flag and stays put. The turn boundary drops it (clearDeferredConditionalGrants).
-      if (hookHasRepeatableDefeatCondition(hook)) {
+      // why: WP-853 / D-24789 — an owned-KO grant re-arms the same way, so it survives to
+      // credit the next KO; its count is consumed below like the defeat flag.
+      if (
+        hookHasConditionType(hook, REPEATABLE_DEFEAT_CONDITION_TYPE) ||
+        hookHasConditionType(hook, OWNED_CARD_KOED_CONDITION_TYPE)
+      ) {
         recordDeferredConditionalGrant(G, entry.playerId, entry.cardId, entry.hookIndex);
       }
     },
@@ -7454,6 +7511,14 @@ export function resolveDeferredHeroGrants(
     delete G.villainOrMastermindDefeatedSinceResolve;
   }
 
+  // why: WP-853 / D-24789 — consume the per-owner owned-KO count the same way (the
+  // D-24467 edge, now a count). The grants above already fired once per counted KO, so
+  // deleting it makes each KO credit exactly once and a later non-KO move see nothing.
+  // Guarded, so a game that never counted a KO is byte-unchanged.
+  if (G.ownedCardsKoedSinceResolve !== undefined) {
+    delete G.ownedCardsKoedSinceResolve;
+  }
+
   // why: WP-754 / D-24581 — a wait-and-see grant fired above (e.g. crossed by an Excessive
   // Violence recruit or draw) can draw the card a pending KO-or-keep reveal snapshotted. Re-reveal
   // a stale KO-or-keep front. A no-op when no stale KO-or-keep entry is queued, so a game that
@@ -7462,20 +7527,51 @@ export function resolveDeferredHeroGrants(
 }
 
 /**
- * Reports whether a hook carries the edge-triggered defeat condition (Diamond Form),
- * so its fired grant is re-armed rather than left one-shot (WP-656 / D-24467).
+ * Reports whether a hook carries a condition of the given type — used to re-arm the
+ * repeatable per-event grants (Diamond Form's defeat, WP-656 / D-24467; Absorb Energies'
+ * owned KO, WP-853 / D-24789) and to repeat the owned-KO grant per counted KO.
  *
  * @param hook - The deferred grant's hook.
- * @returns True when a condition of type REPEATABLE_DEFEAT_CONDITION_TYPE is present.
+ * @param conditionType - The condition type to look for.
+ * @returns True when a condition of that type is present.
  */
-function hookHasRepeatableDefeatCondition(hook: HeroAbilityHook): boolean {
+function hookHasConditionType(hook: HeroAbilityHook, conditionType: string): boolean {
+  return findConditionOfType(hook, conditionType) !== undefined;
+}
+
+/**
+ * Returns the hook's first condition of the given type, or undefined when it has none.
+ *
+ * @param hook - The hero ability hook.
+ * @param conditionType - The condition type to look for.
+ * @returns The matching condition, or undefined.
+ */
+function findConditionOfType(hook: HeroAbilityHook, conditionType: string): HeroCondition | undefined {
   if (hook.conditions === undefined) {
-    return false;
+    return undefined;
   }
   for (const condition of hook.conditions) {
-    if (condition.type === REPEATABLE_DEFEAT_CONDITION_TYPE) {
-      return true;
+    if (condition.type === conditionType) {
+      return condition;
     }
   }
-  return false;
+  return undefined;
+}
+
+/**
+ * Returns the hook's conditions minus one, so the owned-KO always-defer branch can
+ * check the hook's OTHER gates (WP-853 / D-24789).
+ *
+ * @param hook - The hero ability hook.
+ * @param excluded - The condition to leave out.
+ * @returns A new array of the remaining conditions.
+ */
+function conditionsWithout(hook: HeroAbilityHook, excluded: HeroCondition): HeroCondition[] {
+  const remaining: HeroCondition[] = [];
+  for (const condition of hook.conditions ?? []) {
+    if (condition !== excluded) {
+      remaining.push(condition);
+    }
+  }
+  return remaining;
 }

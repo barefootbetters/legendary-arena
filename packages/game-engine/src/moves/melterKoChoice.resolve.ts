@@ -25,6 +25,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
 
@@ -126,6 +127,9 @@ export function resolveMelterKoChoice(
     if (!moveResult.found) { return; }
     ownerZones.deck = moveResult.from;
     G.ko = koCard(G.ko, args.cardId);
+    // why: WP-853 / D-24789 — the KO'd card left the OWNER's deck, who may not be the
+    // player resolving the choice.
+    recordOwnedCardKoed(G, args.ownerPlayerID);
     // why: narrate the resolved KO so the player sees which card left which deck.
     // `G.messages` is hash-excluded (D-24081), so this adds no determinism impact.
     const koName = resolveCardName(G.cardDisplayData, args.cardId);

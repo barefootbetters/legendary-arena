@@ -37,6 +37,7 @@ import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
 import { isCullableDeckTopCard } from '../villain/villainEffects.execute.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -186,6 +187,9 @@ export function resolveRevealTopDispose(
     if (moveResult.found) {
       ownerZones.deck = moveResult.from;
       G.ko = koCard(G.ko, args.cardId);
+      // why: WP-853 / D-24789 — the KO'd card left the OWNER's deck, who may not be
+      // the player resolving the choice.
+      recordOwnedCardKoed(G, args.ownerPlayerID);
       pushLog(
         G,
         `Player ${playerID} KO'd ${cardName} (${args.cardId}) from the top of their deck (reveal-top).`,

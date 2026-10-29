@@ -49878,4 +49878,24 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24787 (#3075). Related: D-24480 (the keyword), D-24464 (Antics / Outwit), D-24476 + D-24377 (draw-threshold, wait-and-see), D-24606 (no Focus handler), D-24019 (the rewarded optional-ko-reward), D-24026.
 
 ---
+
+### D-24789 — "Whenever a card you own is KO'd this turn" is a per-owner KO count on the D-24467 wait-and-see edge (Active 2026-10-29 — WP-853 / EC-891)
+
+**Context.** Bishop's Absorb Energies (dkcy) prints "Whenever a card you own is KO'd this turn, you get +2 Recruit." The setup parser read only the `+2[icon:recruit]` token, so the card gave +2 Recruit on every play and nothing on a KO (operator match `g0OSXmiDT3o`, turns 14 / 16 / 18 / 20). The engine has no KO chokepoint: `koCard` only appends, and 34 KO sites each remove the card from its source zone themselves. One move can KO several cards at once (heal three Wounds, a Villain KOing every Hero with a trait).
+
+**Decision.**
+1. **Condition.** The marker `[keyword:owned-card-koed]` becomes the `ownedCardKoedThisTurn` wait-and-see condition (`OWNED_CARD_KOED_CONDITION_TYPE`, exported from `hero/heroConditions.evaluate.ts` to avoid a load-order cycle) on the line's own reward effect. It joins `WAIT_AND_SEE_CONDITION_TYPES`.
+2. **Signal.** `LegendaryGameState.ownedCardsKoedSinceResolve?: Record<string, number>` counts KOs of each player's own cards since the last resolve. Only `recordOwnedCardKoed(G, ownerPlayerID)` writes it, and only while a waiting grant's hook reads the condition. It is never set in `Game.setup`.
+3. **"A card you own"** is a card leaving the player's hand, deck, discard pile or cards in play. KOs from the HQ, City, Villain Deck, Escape Pile and Victory Pile never count (RS-1, Jeff 2026-10-29: Victory Pile not counted). 25 of the 34 KO sites record the owner, the player whose zone the card left, once per card.
+4. **Firing.** `resolveDeferredHeroGrants` fires an owned-KO grant once per counted KO for its player, re-arms it (the D-24467 shape, a count instead of a boolean), then deletes the count. `game.ts` `turn.onBegin` and `applyOnBeginParity` delete it too.
+5. **Always defer at play.** A hook carrying the owned-KO condition waits at play once its other conditions pass, even if the count is already above 0, so the trigger starts when the card is played. The defeat family keeps its existing path.
+6. **Closed site set.** A per-function KO-site pin (`hero/ownedCardKoTrigger.test.ts`) scans every engine source file and fails on any KO site added, removed or moved until it is classified.
+
+**Consequences.** Playing Absorb Energies adds no Recruit and logs "… is waiting — it needs a card you own to be KO'd this turn"; each owned KO after it adds +2, per copy. A game with no waiting owned-KO grant never gains the field, so `finalStateHash` and the sentinels are unchanged. `replay.execute.ts` (D-24322) runs no resolve and no clear, so the count accumulates there by design, the same posture as the defeat flag. Replays of pre-WP-853 matches that played Absorb Energies diverge on re-execution; stored `competitive_scores` rows stay frozen (D-24616 §5). Follow-ups from the corpus scan: Doctor Voodoo's Possessed by Brother's Spirit (dstr, a phantom +4 Recruit and +4 Attack on every play; needs a Hero-only filter, first-time one-shot and a choose-one reward) and Miek's Endless Appetite (wwhk, does nothing today; needs a deck-source KO count).
+
+**Live-verify (D-24026):** operator-pending — a play.legendary-arena.com match created after the deploy with Bishop in the hero decks: play Absorb Energies (no Recruit, the waiting line), KO one card with Whatever the Cost (+2), and in a later turn KO several in one move (+2 each).
+
+**Reserved by:** NUMBER-LEDGER D-24789 (#3090). Related: D-24377 (wait-and-see), D-24467 (edge + re-arm), D-24616 (per-player lazy counter), D-24567 (harness mirrors), D-24598 (Snarling Fangs Sunlight pin), D-24322 (replay posture), D-24372 (RUNTIME drift pins), D-24026.
+
+---
 Protect this file.

@@ -1317,6 +1317,17 @@
       "hidden": true
     },
     {
+      "slug": "owned-card-koed",
+      "label": "Owned Card Koed",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "dkcy/bishop"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "patrol",
       "label": "Patrol",
       "scope": "hero",
@@ -3336,7 +3347,8 @@
         "discard-top-printed-attack",
         "draw",
         "ko-discarded-this-way",
-        "optional-ko-hand-discard"
+        "optional-ko-hand-discard",
+        "owned-card-koed"
       ]
     },
     "dkcy/blade": {

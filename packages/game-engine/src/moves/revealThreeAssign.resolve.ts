@@ -35,6 +35,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { reshuffleDiscardIntoDeck } from './drawCards.logic.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
 import { isCullableDeckTopCard } from '../villain/villainEffects.execute.js';
@@ -238,6 +239,7 @@ function applyRevealThreeDisposition(
   if (!moveResult.found) { return; }
   zones.deck = moveResult.from;
   G.ko = koCard(G.ko, cardId);
+  recordOwnedCardKoed(G, playerID);
   pushLog(G,
     `Player ${playerID} KO'd ${cardName} (${cardId}) from the top of their deck (reveal three).`,
     'applied',

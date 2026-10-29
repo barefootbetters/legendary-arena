@@ -26,6 +26,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { executeSingleEffect } from '../hero/heroEffects.execute.js';
 import { cardCountsAsShieldHero } from '../hero/effectiveTeams.logic.js';
 import { gainOfficerToHand } from './recruitOfficer.js';
@@ -176,6 +177,7 @@ export function resolveOptionalKoReward(
   // Step 5: Mutate — shorten the source zone and KO the chosen card.
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, targetCardId);
+  recordOwnedCardKoed(G, playerID);
 
   // why: D-24399 — the KO is the paid cost of the optional-KO-reward; log it here
   // (before the Step-6 reward line) so the spent card is observable in the game

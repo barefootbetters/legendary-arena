@@ -51,6 +51,7 @@ import type { HeroCondition } from '../rules/heroAbility.types.js';
 import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
+  OWNED_CARD_KOED_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 
 // why: WP-656 / D-24467 — the single EDGE-TRIGGERED wait-and-see condition type.
@@ -90,6 +91,10 @@ export const WAIT_AND_SEE_CONDITION_TYPES: readonly string[] = [
   // Both have evaluateCondition cases (the lockstep the drift pin enforces).
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
+  // why: WP-853 / D-24789 — "Whenever a card you own is KO'd this turn" (Absorb
+  // Energies) is shape #2 with a per-owner COUNT: the grant fires once per counted KO and
+  // re-arms. Has an evaluateCondition case (the lockstep the drift pin enforces).
+  OWNED_CARD_KOED_CONDITION_TYPE,
 ];
 
 /**
@@ -128,6 +133,55 @@ export function recordDeferredConditionalGrant(
     G.deferredConditionalGrants = [];
   }
   G.deferredConditionalGrants.push({ playerId, cardId, hookIndex });
+}
+
+/**
+ * Counts one KO of a card the given player owns, for a waiting owned-KO grant.
+ *
+ * why: WP-853 / D-24789 — called by every KO site that takes a card from a player's
+ * hand, deck, discard pile or cards in play, once per KO'd card. GATED: it returns at
+ * once unless some waiting grant's hook reads OWNED_CARD_KOED_CONDITION_TYPE, so a game
+ * with no waiting Absorb Energies never gains the key, and the resolve deletes it after
+ * every move, so it never reaches a hash. Keyed PER OWNER because a Villain or
+ * Mastermind can KO another player's cards, and only the owner's grant may fire.
+ *
+ * @param G - The game state, mutated in place.
+ * @param ownerPlayerID - The player whose zone the KO'd card left.
+ */
+export function recordOwnedCardKoed(G: LegendaryGameState, ownerPlayerID: string): void {
+  if (!hasWaitingOwnedKoGrant(G)) {
+    return;
+  }
+  if (G.ownedCardsKoedSinceResolve === undefined) {
+    G.ownedCardsKoedSinceResolve = {};
+  }
+  const previousCount = G.ownedCardsKoedSinceResolve[ownerPlayerID] ?? 0;
+  G.ownedCardsKoedSinceResolve[ownerPlayerID] = previousCount + 1;
+}
+
+/**
+ * Reports whether any waiting deferred grant's hook reads the owned-KO condition.
+ *
+ * @param G - The game state (read-only).
+ * @returns True when an owned-KO grant is waiting.
+ */
+function hasWaitingOwnedKoGrant(G: LegendaryGameState): boolean {
+  const entries = G.deferredConditionalGrants;
+  if (entries === undefined || !G.heroAbilityHooks) {
+    return false;
+  }
+  for (const entry of entries) {
+    const hook = G.heroAbilityHooks[entry.hookIndex];
+    if (hook === undefined || hook.conditions === undefined) {
+      continue;
+    }
+    for (const condition of hook.conditions) {
+      if (condition.type === OWNED_CARD_KOED_CONDITION_TYPE) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
