@@ -1482,9 +1482,9 @@
       "card": "Bishop",
       "ability": "Firepower from the Future: discard the top four cards; +Attack equal to their printed Attack",
       "wp": "WP-850",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-10-28",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-850 deploy that plays Firepower from the Future without and then with another X-Men Hero, per the WP-850 DoD.",
+      "evidence": "Operator match `lvYv7o56JLr` (Red Skull / Midtown Bank Robbery, 2p; Thor, Storm, Iron Man, Hulk, Bishop), created 2026-10-29T01:33Z after the deploy (server and client `a70ad290`, the #3081 merge). Gate unmet (Firepower played before another X-Men Hero): +5 (Whatever the Cost 0, S.H.I.E.L.D. Agent 0, Concussive Blast 3, Absorb Energies 2; 5.2.2) and +8 (Call Lightning 3, Concussive Blast 3, Wound 0, Absorb Energies 2; 17.2.4), each the printed sum, with the X-Men line logged as not activated and no Firepower hollow. Gate met (a Bishop Hero played first): +5 and \"may KO any number of the 4 discarded cards\" (7.2.9-7.2.10), the player KO'd the two S.H.I.E.L.D. Agents among them (7.2.11); three KO-none picks resolved and the turn went on (13.2.13, 15.2.11, 19.2.17); +10 at 19.2.15. A short deck reshuffled and re-discarded the same two cards (9.2.2, D-24786 §1); an empty deck and discard logged the blocked line (11.2.5). Heroes won, no freeze. The match's one remaining hollow is Whatever the Cost (`gate-only` ×6), which is WP-851's scope. Not in the artifacts: the end-of-game diagnostics export holds no open KO choice, so it cannot show `isLimitedToDiscardedThisWay`; the list-limiting rests on the filter / UIState / bot unit tests and the logged picks.",
       "note": "Attack rises by the four discarded cards' printed Attack on top of the base 4; the log names the four cards. D-24786."
     },
     {
@@ -1493,9 +1493,9 @@
       "card": "Bishop",
       "ability": "Firepower from the Future: [team:x-men] KO any number of those cards",
       "wp": "WP-850",
-      "state": "pending",
+      "state": "verified",
       "date": "2026-10-28",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-850 deploy that plays Firepower from the Future without and then with another X-Men Hero, per the WP-850 DoD.",
+      "evidence": "Operator match `lvYv7o56JLr` (Red Skull / Midtown Bank Robbery, 2p; Thor, Storm, Iron Man, Hulk, Bishop), created 2026-10-29T01:33Z after the deploy (server and client `a70ad290`, the #3081 merge). Gate unmet (Firepower played before another X-Men Hero): +5 (Whatever the Cost 0, S.H.I.E.L.D. Agent 0, Concussive Blast 3, Absorb Energies 2; 5.2.2) and +8 (Call Lightning 3, Concussive Blast 3, Wound 0, Absorb Energies 2; 17.2.4), each the printed sum, with the X-Men line logged as not activated and no Firepower hollow. Gate met (a Bishop Hero played first): +5 and \"may KO any number of the 4 discarded cards\" (7.2.9-7.2.10), the player KO'd the two S.H.I.E.L.D. Agents among them (7.2.11); three KO-none picks resolved and the turn went on (13.2.13, 15.2.11, 19.2.17); +10 at 19.2.15. A short deck reshuffled and re-discarded the same two cards (9.2.2, D-24786 §1); an empty deck and discard logged the blocked line (11.2.5). Heroes won, no freeze. The match's one remaining hollow is Whatever the Cost (`gate-only` ×6), which is WP-851's scope. Not in the artifacts: the end-of-game diagnostics export holds no open KO choice, so it cannot show `isLimitedToDiscardedThisWay`; the list-limiting rests on the filter / UIState / bot unit tests and the logged picks.",
       "note": "With another X-Men Hero played, the prompt reads \"KO any number of the N cards you just discarded\" and lists only those cards; the diagnostics export shows isLimitedToDiscardedThisWay: true. D-24786."
     }
   ]
