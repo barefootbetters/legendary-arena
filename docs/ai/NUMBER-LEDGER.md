@@ -492,6 +492,7 @@ high-water: 422
 - WP-851 — optional-ko-hand-discard-sweep (marker-only: the bare no-reward "You may KO a card from your hand or discard pile." hero clause gets [keyword:optional-ko-hand-discard] on every line whose gate already executes; Bishop Whatever the Cost + 10 more. reserved 2026-10-28, claude/wp851-reserve; LANDED 2026-10-28)
 - WP-852 — board-table-perspective (desktop play board leans back like a table: tilt wrapper around the adversary band, City and HQ; board cards straighten and lift toward the player on hover; hand and right rail stay flat. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
 - WP-853 — owned-card-ko-trigger (Bishop Absorb Energies: "Whenever a card you own is KO'd this turn, you get +2 Recruit" grants per owned-card KO after play instead of a flat +2 on play. reserved 2026-10-28, claude/wp853-reserve; LANDED 2026-10-29)
+- WP-854 — board-band-standup (the WP-852 hover stand-up extends to the adversary band: the Mastermind fight button and the S.H.I.E.L.D. Officers and Sidekicks recruit buttons straighten toward the player on hover. reserved 2026-10-29, claude/wp854-band-standup)
 
 ## EC
 
@@ -946,6 +947,7 @@ high-water: 457
 - EC-889 — optional-ko-hand-discard-sweep (WP-851. reserved 2026-10-28, claude/wp851-reserve; LANDED 2026-10-28)
 - EC-890 — board-table-perspective (WP-852. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
 - EC-891 — owned-card-ko-trigger (WP-853. reserved 2026-10-28, claude/wp853-reserve; LANDED 2026-10-29)
+- EC-892 — board-band-standup (WP-854. reserved 2026-10-29, claude/wp854-band-standup)
 
 ## D
 
@@ -1513,3 +1515,4 @@ section below) and the allocation protocol in
 - D-24787 — optional-ko-hand-discard-sweep (WP-851; the curation rule: mark a bare optional-KO line only when its gate resolves to an executable condition, never when the gate token would be dropped and the KO fire ungated. reserved 2026-10-28, claude/wp851-reserve; LANDED 2026-10-28)
 - D-24788 — board-table-perspective (WP-852; the desktop board tilt is presentation-only CSS on one wrapper with angle, perspective and lift as variables; board-card hover counter-rotates only while the City row fits; Effect Intensity off flattens. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
 - D-24789 — owned-card-ko-trigger (WP-853; a per-turn whenever-a-card-you-own-is-KOd grant: owner-aware KO counter at the KO sites, per-KO firing through the D-24467 wait-and-see re-arm, which zones count as cards you own. reserved 2026-10-28, claude/wp853-reserve; LANDED 2026-10-29)
+- D-24790 — board-band-standup (WP-854; which adversary-band cards stand up on hover, the Enigma-guess exclusion, and the band's 3D chain switched on only while one is hovered. reserved 2026-10-29, claude/wp854-band-standup)
