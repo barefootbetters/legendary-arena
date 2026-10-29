@@ -25,7 +25,7 @@ source:
   - C:\www\jefferyjjensen-corporate-memory\docs\second-brain\design.md (the design record — private repo barefootbetters/jefferyjjensen-corporate-memory)
   - C:\www\jefferyjjensen-corporate-memory\mcp\README.md (the brain's Claude connector — same private repo)
   - C:\www\jefferyjjensen-corporate-memory\scripts\brain-sources.psd1 (which other repos the connector serves — same private repo)
-last-reviewed: 2026-10-19
+last-reviewed: 2026-10-28
 ---
 
 # AI Second Brain
@@ -69,8 +69,8 @@ can be swapped by configuration.
 
 The ship repo is private, so these links work while signed in to GitHub. The
 same pages render at [brain.barefootbetters.com](https://brain.barefootbetters.com/)
-behind the ewiki's Cloudflare Access sign-in. The operator publishes them
-from the ship's `main`, so the site can trail the repo by a merge or two.
+behind the ewiki's Cloudflare Access sign-in. A merge to the ship's `main`
+republishes the site within a minute or two.
 
 ### What Legendary Arena contributes
 
@@ -91,10 +91,10 @@ beside the ship's own notes.
 
 | What | How it works |
 |---|---|
-| Source | `wiki/*.md` on GitHub `main`, read with a shallow clone when the operator deploys the brain. It never reads a local checkout. |
+| Source | `wiki/*.md` on GitHub `main`, read with a shallow clone each time the brain publishes its notes. It never reads a local checkout. |
 | Citations | Every answer names the engine commit it read and links the page on `ewiki.legendary-arena.com`. |
-| Freshness | It's a snapshot. An edit here reaches the phone only after the next brain deploy, not when this site rebuilds. |
-| What ships | All pages, because this repo is public and so already readable by anyone, including any hosted model. Each deploy checks the repo is still public; if it ever goes private, the deploy leaves the wiki out of the connector. |
+| Freshness | It's a snapshot. The brain publishes daily at 06:17 Boise time, and on every merge in the ship (since 2026-10-28), so an edit here reaches the phone by the next morning, not when this site rebuilds. The operator can publish sooner by hand. |
+| What ships | All pages, because this repo is public and so already readable by anyone, including any hosted model. Each publish checks the repo is still public; if it ever goes private, the publish leaves the wiki out of the connector. |
 | Writes | None to this repo. The connector's one write is a phone-to-desk idea inbox in the ship (below). |
 
 **Ideas from the phone.** In a phone chat, an idea can be sent to the
@@ -301,10 +301,10 @@ feature reaching across the network.
   isolation — process/user isolation, separate credentials, independent backups,
   resource limits — never a casual co-tenant. A dedicated host remains the
   end-state; co-location is the temporary, deliberately-fenced start.
-- **The phone reads a snapshot, not the live wiki.** The brain's connector bundles
-  `wiki/` when the operator deploys the brain, so a merged edit here (even one
-  this site already shows) is invisible to Claude on the phone until the next
-  brain deploy. When the phone and the site disagree, the site is newer. Each
+- **The phone reads a snapshot, not the live wiki.** The brain copies `wiki/`
+  each time it publishes (daily at 06:17 Boise time), so a merged edit here
+  (even one this site already shows) is invisible to Claude on the phone until
+  the next publish. When the phone and the site disagree, the site is newer. Each
   connector answer names the engine commit it read, so you can check how old
   it is.
 - **This repo is public.** The ewiki is behind Cloudflare Access, but its
@@ -345,6 +345,11 @@ feature reaching across the network.
   record, because the habits apply to every domain the brain serves, not only
   Legendary Arena. This page keeps a pointer and what the habits mean for this
   repo.
+- **2026-10-28** — The brain started publishing its notes on a schedule: daily
+  at 06:17 Boise time and on every merge in the ship, instead of only when the
+  operator deployed it by hand. An edit here now reaches the phone by the next
+  morning. How it's built is in the ship's design record; nothing changed in
+  this repo.
 
 ## References
 
@@ -362,4 +367,4 @@ feature reaching across the network.
   in the private ship repo — the full design record.
 - [`mcp/README.md`](https://github.com/barefootbetters/jefferyjjensen-corporate-memory/blob/main/mcp/README.md)
   in the private ship repo — the brain's Claude connector: what it serves,
-  sign-in, the idea inbox, and how to redeploy it.
+  sign-in, the idea inbox, and how it publishes.

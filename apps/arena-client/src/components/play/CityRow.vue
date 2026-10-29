@@ -12,6 +12,7 @@ import { useCardCostGating, type GatingResult } from '../../composables/useCardC
 import { useTurnActions, healLockGate } from '../../composables/useTurnActions';
 import { useSlashGesture } from '../../composables/useSlashGesture';
 import { useSlashGestureSetting } from '../../composables/useSlashGestureSetting';
+import { useRowFit } from '../../composables/useRowFit';
 import CardTile from './CardTile.vue';
 import EscapedPile from './EscapedPile.vue';
 import DarkPortalMarker from './DarkPortalMarker.vue';
@@ -132,6 +133,14 @@ export default defineComponent({
       type: Array as PropType<(number | null)[]>,
       required: false,
       default: () => [],
+    },
+    // why: WP-852 / D-24788 — the desktop board's straighten-on-hover. Only
+    // PlayDesktop sets it (from useBoardTilt's lift gate); every other use,
+    // PlayMobile included, keeps it false and renders the row exactly as before.
+    isTiltLiftEnabled: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   setup(props) {
@@ -460,6 +469,12 @@ export default defineComponent({
       isEnabled: isSlashGestureSettingOn,
     });
 
+    // why: WP-852 — the hover lift needs `overflow: visible` on the list, and a
+    // scroll container forces its subtree flat and clips it, so the lift is on
+    // only while the row fits without sideways scroll. A row that scrolls keeps
+    // its scrolling (the long-press slash depends on it) and its plain hover.
+    const isRowFitting = useRowFit(cityRowEl, () => props.city);
+
     return {
       buildCells,
       gateForCell,
@@ -482,6 +497,7 @@ export default defineComponent({
       isTouchGestureEnabled,
       isLongPressArmed,
       isLongPressHoldEnabled,
+      isRowFitting,
     };
   },
 });
@@ -490,7 +506,10 @@ export default defineComponent({
 <template>
   <section
     class="city-row"
-    :class="{ 'city-row--column-aligned': isColumnAligned }"
+    :class="{
+      'city-row--column-aligned': isColumnAligned,
+      'city-row--tilt-lift': isTiltLiftEnabled && isRowFitting,
+    }"
     data-testid="play-city-row"
     aria-label="City"
   >
@@ -516,7 +535,10 @@ export default defineComponent({
         v-for="(cell, position) in buildCells()"
         :key="position"
         class="city-space"
-        :class="cell.kind === 'slot' || cell.kind === 'gone' ? 'city-space--space-column' : 'city-space--edge-column'"
+        :class="[
+          cell.kind === 'slot' || cell.kind === 'gone' ? 'city-space--space-column' : 'city-space--edge-column',
+          { 'city-space--choosing': cell.kind === 'slot' && isDiscardChooserOpen(cell.cityIndex) },
+        ]"
       >
         <template v-if="cell.kind === 'escaped'">
           <EscapedPile :pile="cell.entries" />
@@ -1171,5 +1193,46 @@ export default defineComponent({
 
 .city-space__discard-option {
   font-weight: 700;
+}
+
+/* why: WP-852 / D-24788 — the board-card straighten-on-hover. Pointer devices
+   only, and only under --tilt-lift (the lift gate AND a row that fits: a scroll
+   container forces its subtree flat and clips, so the list's overflow turns
+   visible here and nowhere else). Every link from the tilted plane down to the
+   button preserves 3D, or the card would rise but stay tilted. The links are on
+   only while a liftable card is hovered: at rest, coplanar preserve-3d layers
+   z-fight in Chrome's hit test and steal clicks from resting cards (WP-852 EC
+   amendment A). */
+@media (hover: hover) {
+  .city-row--tilt-lift:has(.city-space:not(.city-space--choosing):hover > .city-space__villain),
+  .city-row--tilt-lift:has(.city-space:not(.city-space--choosing):hover > .city-space__villain) .city-spaces,
+  .city-row--tilt-lift:has(.city-space:not(.city-space--choosing):hover > .city-space__villain) .city-space,
+  .city-row--tilt-lift:has(.city-space:not(.city-space--choosing):hover > .city-space__villain) .city-space__villain {
+    transform-style: preserve-3d;
+  }
+  .city-row--tilt-lift .city-spaces {
+    overflow: visible;
+  }
+  /* why: the bottom-edge origin makes the card rise off the table rather than
+     into it, and keeps that edge put, so every point of the resting card stays
+     under the lifted one (no dead click strip; hence no translateY). */
+  .city-row--tilt-lift .city-space__villain {
+    transform-origin: 50% 100%;
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  }
+  /* why: the hover sits on the li, which keeps its box, while the transform
+     moves the button; hovering the button itself would flicker as it moves out
+     from under the pointer. :not(.city-space--choosing) — inside a preserve-3d
+     context depth order beats z-index, so a raised card would paint over the
+     open WP-817 discard chooser that shares its li. */
+  .city-row--tilt-lift .city-space:not(.city-space--choosing):hover > .city-space__villain {
+    transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+  /* why: the tile's own 1.05 hover scale would compound with the lift; inside a
+     lifting row the lifted card is exactly 1.06. */
+  .city-row--tilt-lift .card-tile--interactive:hover {
+    transform: none;
+  }
 }
 </style>

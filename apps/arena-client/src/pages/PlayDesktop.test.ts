@@ -10,6 +10,7 @@ import PlayDesktop from './PlayDesktop.vue';
 import { useUiStateStore } from '../stores/uiState';
 import type { SubmitMove } from '../components/play/uiMoveName.types';
 import type { NotableGameEvent } from '../composables/useNotableEventStream';
+import { useEffectIntensity } from '../vfx/effectIntensity';
 
 const noopSubmitMove: SubmitMove = () => undefined;
 
@@ -683,5 +684,57 @@ describe('PlayDesktop — Effects triggered line (WP-848 / D-24784)', () => {
     store.setSnapshot(frame);
     const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
     assert.equal(wrapper.find('[data-testid="play-your-victory-effects"]').text(), 'Effects triggered: 3 / 5 (60%)');
+  });
+});
+
+describe('PlayDesktop — table perspective (WP-852 / D-24788)', () => {
+  /** Mounts the board on the shared play-phase snapshot. */
+  function mountBoard() {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    return mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+  }
+
+  test('the tilted plane holds the adversary band, the City and the HQ zone, never the cockpit', () => {
+    const wrapper = mountBoard();
+    const plane = wrapper.find('.play-desktop__board-plane');
+    assert.equal(plane.exists(), true, 'the board plane renders');
+    assert.equal(plane.find('.play-desktop__adversary-band').exists(), true);
+    assert.equal(plane.find('[data-testid="play-city-row"]').exists(), true);
+    assert.equal(plane.find('.play-desktop__hq-zone').exists(), true);
+    assert.equal(wrapper.find('.play-desktop__player-zone').exists(), true, 'the cockpit renders');
+    assert.equal(plane.find('.play-desktop__player-zone').exists(), false, 'the cockpit stays flat');
+  });
+
+  test('at full intensity the scene binds a 14deg tilt and the plane carries the lift class', () => {
+    try {
+      useEffectIntensity().setIntensity('full');
+      const wrapper = mountBoard();
+      const scene = wrapper.find('.play-desktop__board-scene').element as HTMLElement;
+      assert.equal(scene.style.getPropertyValue('--board-tilt-angle'), '14deg');
+      assert.equal(scene.style.getPropertyValue('--board-tilt-perspective'), '900px');
+      assert.equal(
+        wrapper.find('.play-desktop__board-plane').classes().includes('play-desktop__board-plane--lift'),
+        true,
+      );
+    } finally {
+      useEffectIntensity().setIntensity('full');
+    }
+  });
+
+  test('at Effect Intensity off the scene binds 0deg and the plane drops the lift class', () => {
+    try {
+      useEffectIntensity().setIntensity('off');
+      const wrapper = mountBoard();
+      const scene = wrapper.find('.play-desktop__board-scene').element as HTMLElement;
+      assert.equal(scene.style.getPropertyValue('--board-tilt-angle'), '0deg');
+      assert.equal(
+        wrapper.find('.play-desktop__board-plane').classes().includes('play-desktop__board-plane--lift'),
+        false,
+      );
+    } finally {
+      useEffectIntensity().setIntensity('full');
+    }
   });
 });
