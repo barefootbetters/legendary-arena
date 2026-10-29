@@ -1165,6 +1165,8 @@ The ones that tilt split into two groups:
 |---|---|---|
 | *Hearthstone*, *Legends of Runeterra* | a gentle tilt toward the far side on a busy, clickable board; cards lift and straighten toward you on hover | fully 3D boards with props: a different cost class from one CSS tilt |
 | *Inscryption* (Act 1), *Hand of Fate* | the mood of sitting at a physical table across from the opponent | first-person camera angles. They are far steeper than a board this busy can afford, and their lighting is a separate idea |
+| *Balatro* (Game Developers Choice Awards 2025 Game of the Year) | every hover answers: a card under the pointer wobbles and tilts toward it, the small, constant feedback players call "juicy" | the CRT filter over the whole screen (a post-processing pass, outside the [library posture](#library-posture)) and screen shake on every score (shake is budgeted, see [Performance budget](#performance-budget)) |
+| *Plants vs. Zombies Heroes* | Hearthstone's board language in a lighter, playful tone | little for this board; noted mainly for Herbs vs. Ailments |
 
 ![Hearthstone board on an iPad: the two hero portraits face each other across an ornate purple arena, three frozen enemy minions and two of the player's minions in rows between them, the opponent's card backs top-left, and the player's hand fanned in the bottom-right corner.](/visual-effects/hearthstone-board.jpg "width=64%")
 
@@ -1268,6 +1270,29 @@ past a tilted card's visible trapezoid at its far corners.
 - **Cost.** CSS `perspective`, `rotateX` and a hover transform. No new
   dependency ([library posture](#library-posture)), no engine signal, nothing in
   the determinism hash.
+
+**Beyond the camera: the tactile-table brainstorm (2026-10-28).** The tilt came
+out of a wider brainstorm on making the board feel like a physical table
+(drawers of cards, shuffling, a glowing deck box, candlelight), started by
+Fractal Design Dabbler's wooden desk of art-supply drawers. Its three camera
+bullets are what shipped above. The rest belongs elsewhere; none of it is built:
+
+| Idea | Where it belongs | Note |
+|---|---|---|
+| Dealing: cards flick off the top, slide, land with a soft thud; the opening hand lands face down and flips in a ripple; a messy discard pile; stacks that thicken | [Surface 3 action-move cues](#surface-3), [card-draw motion](#card-interaction-feel), and the drafted card-transfer flight (WP-849) | fire on the confirmed frame, never on dispatch |
+| Riffle and overhand shuffles; a player taps to cut | the `deckReshuffled` beat ([A.1 mock](#appendix-surface-1)) | cosmetic only: the engine has already shuffled with `ctx.random` before the client sees the deck. A player-driven cut would be a new move the rules do not have, so it stays out |
+| Villain-deck reveals in a colour per type: Master Strike purple and black, Scheme Twist sickly orange, Villain blood red, Henchman dull brown | [Surface 1 notable events](#surface-1) | Master Strike and Scheme Twist already have Surface 1 beats ([A.1 mocks](#appendix-surface-1)); a colour for a Villain or Henchman entering the City is new |
+| Hero-class light (Strength green, Instinct yellow, Covert red, Tech grey, Ranged blue, each moving differently), blended in the deck box's glow | no surface yet | the card game calls the class "Ranged", not "Range" |
+| A deck box as the game's bookends: the lid opens and cards rise from the light; at the end they sink back; a win keeps the candle lit, a loss snuffs it | [Surface 4 endgame](#endgame) for the end, beside the shipped heroes-win finale; the start has no surface yet | a once-a-game showpiece |
+| Card drawers to pick Heroes, Villains, Masterminds and Schemes at setup | match setup ([Play Lobby UX](play-lobby-ux-direction.md)), not the play board | |
+| Candlelight, a flickering warm light, a colour-snapping shader, foil shimmer | not adoptable as written | a PixiJS or three.js post-processing pass is a new dependency and a second canvas, both outside the [library posture](#library-posture) (D-24365) without a new `DECISIONS.md` entry; per-card foil is declined on the [ancestry page](visual-effects-design-ancestry.md#hearthstone). A CSS-only warm vignette is within the posture |
+| A Mastermind entrance march: heavy brass, slow minor key, timpani, swelling as the card rises | the [motif matrix](music-authoring.md#motif-matrix) | must be an **original** composition. An arrangement of the Imperial March, in any key or orchestration, is still a derivative of a copyrighted work and needs a licence; writing in the style of a film march is fine |
+| Cards that follow the cursor with drag and weight | out | play is click-to-play (WP-100); the [slash](#slash-to-fight) is the one drag gesture |
+
+The brainstorm's build order matches this page's: the table first (shipped
+here), then dealing and villain reveals because they happen constantly, then the
+once-a-game showpieces (the deck box, the Mastermind entrance). Its game index
+of award winners is mostly about Herbs vs. Ailments and is not tracked here.
 
 #### Shipped — Slash to fight (the Fruit Ninja input) {#slash-to-fight}
 
