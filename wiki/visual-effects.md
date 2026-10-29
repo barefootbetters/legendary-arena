@@ -1285,7 +1285,7 @@ bullets are what shipped above. The rest belongs elsewhere; none of it is built:
 | Hero-class light (Strength green, Instinct yellow, Covert red, Tech grey, Ranged blue, each moving differently), blended in the deck box's glow | no surface yet | the card game calls the class "Ranged", not "Range" |
 | A deck box as the game's bookends: the lid opens and cards rise from the light; at the end they sink back; a win keeps the candle lit, a loss snuffs it | [Surface 4 endgame](#endgame) for the end, beside the shipped heroes-win finale; the start has no surface yet | a once-a-game showpiece |
 | Card drawers to pick Heroes, Villains, Masterminds and Schemes at setup | match setup ([Play Lobby UX](play-lobby-ux-direction.md)), not the play board | |
-| Candlelight, a flickering warm light, a colour-snapping shader, foil shimmer | not adoptable as written | a PixiJS or three.js post-processing pass is a new dependency and a second canvas, both outside the [library posture](#library-posture) (D-24365) without a new `DECISIONS.md` entry; per-card foil is declined on the [ancestry page](visual-effects-design-ancestry.md#hearthstone). A CSS-only warm vignette is within the posture |
+| Candlelight, a flickering warm light, a colour-snapping shader, foil shimmer | not adoptable as written | a PixiJS or three.js post-processing pass is a new dependency and a second canvas, both outside the [library posture](#library-posture) (D-24365) without a new `DECISIONS.md` entry; per-card foil is declined on the [ancestry page](visual-effects-design-ancestry.md#hearthstone). A CSS-only version is within the posture; see the [candle prototype](#candle-prototype) below |
 | A Mastermind entrance march: heavy brass, slow minor key, timpani, swelling as the card rises | the [motif matrix](music-authoring.md#motif-matrix) | must be an **original** composition. An arrangement of the Imperial March, in any key or orchestration, is still a derivative of a copyrighted work and needs a licence; writing in the style of a film march is fine |
 | Cards that follow the cursor with drag and weight | out | play is click-to-play (WP-100); the [slash](#slash-to-fight) is the one drag gesture |
 
@@ -1293,6 +1293,36 @@ The brainstorm's build order matches this page's: the table first (shipped
 here), then dealing and villain reveals because they happen constantly, then the
 once-a-game showpieces (the deck box, the Mastermind entrance). Its game index
 of award winners is mostly about Herbs vs. Ailments and is not tracked here.
+
+##### Candle prototype (2026-10-28, not built) {#candle-prototype}
+
+A CSS-only candle was tried on the real `mid-turn` board through the
+[`?fixture=…&play=1` dev route](play-board.md#preview-fixture) at 1440×900, with
+the shipped tilt:
+
+- **The candle** is a small SVG candle in a brass holder, in the strip of empty
+  table the tilt leaves above the adversary band (about 52 screen px tall). It
+  fits there without moving any zone; a first try that was taller covered the
+  Wounds label.
+- **The light** is two layers that start below the top status bar (a light that
+  covered the bar tinted it orange): a warm radial glow from the candle
+  (`mix-blend-mode: soft-light`) and a gentle darkening toward the edges
+  (`multiply`). An irregular 3.2 s `opacity` flicker on the glow and a sway on
+  the flame stop under `prefers-reduced-motion`. No library, no canvas.
+- **Night theme: it works.** On the dark panels the warm pool reads as
+  candlelight and the City and HQ card names stay clear.
+- **Day theme: it reads as a tint.** The light frosted panels turn orange instead
+  of looking lit, and the small grey labels nearest the candle (Wounds, Horrors,
+  Bystanders and their counts) lose contrast, which breaks the brainstorm's own
+  rule that the cards stay readable. A day version would keep the candle and the
+  edge darkening and drop or greatly weaken the glow.
+- **Not yet tried:** the flicker in motion (the review was by still frames),
+  real card art under the light, and the story beats (the candle gutters on a
+  Master Strike and flares when the Mastermind is defeated, which would hang off
+  [Surface 1](#surface-1)).
+
+So if the candle is built, it starts as a night-theme feature, with the day
+theme getting the candle alone.
 
 #### Shipped — Slash to fight (the Fruit Ninja input) {#slash-to-fight}
 
