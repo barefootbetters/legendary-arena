@@ -1316,10 +1316,27 @@ the shipped tilt:
   Bystanders and their counts) lose contrast, which breaks the brainstorm's own
   rule that the cards stay readable. A day version would keep the candle and the
   edge darkening and drop or greatly weaken the glow.
-- **Not yet tried:** the flicker in motion (the review was by still frames),
-  real card art under the light, and the story beats (the candle gutters on a
-  Master Strike and flares when the Mastermind is defeated, which would hang off
-  [Surface 1](#surface-1)).
+- **Not yet tried:** watching the flicker live (clips were recorded, but the
+  review below is by frames), real card art under the light, and the story beats (the
+  candle gutters on a Master Strike and flares when the Mastermind is defeated,
+  which would hang off [Surface 1](#surface-1)).
+
+**Flame comparison (same day).** Three CSS flames were recorded on the same
+board, night theme, zoomed 3× on the candle:
+
+![Three rows of six frames each, 110 ms apart, of a candle on the warm-lit board strip above the Wounds and Horrors labels. Row A: a small single teardrop flame on a short candle in a brass dish, nearly identical across frames. Row B: a tall thin candle with a narrow flame whose white core is barely visible. Row C: a short candle in a brass holder with a larger orange-edged flame, a yellow body and a white core, leaning a little differently in each frame.](/visual-effects/candle-flame-comparison.png "width=90%")
+
+*Rows A–C top to bottom; each row is six frames 110 ms apart.*
+
+| Flame | What it is | Verdict |
+|---|---|---|
+| A | the first prototype's SVG teardrop with a gentle sway | reads as a candle, but barely changes frame to frame |
+| B | Grok's three-layer flame as written, scaled from its 160 px to the strip | built for 160 px: shrunk to fit, the white core is about 3 px and mostly disappears, and the tall candle dominates. Each layer swings between two states on a fixed 0.22–0.35 s cycle, which reads as a shimmer rather than a flame, and it has no reduced-motion fallback |
+| C | Grok's outer / body / core layers kept, retimed: slower irregular multi-step cycles (2.3 s, 1.7 s, 1.3 s) swaying from the flame's base, a short candle in the brass holder, still under `prefers-reduced-motion` | **the pick**: orange edge, yellow body, white core, leaning and recovering |
+
+At real board size the candle is about 40 px tall and the flame 8–10 px, so the
+warm light carries the candlelight mood; the flame model is polish on top of it,
+not a replacement for it.
 
 So if the candle is built, it starts as a night-theme feature, with the day
 theme getting the candle alone.
