@@ -49857,6 +49857,8 @@ Protect this file.
 6. **Return-on-discard.** A deck-top discard here does not offer Cyclops's return-on-discard (it fires at the `discardFromHand` chokepoint only), matching Rogue's Steal Abilities (WP-592). Extending it is a separate ruling.
 7. **Determinism.** The only randomness is the D-24285 reshuffle through the threaded `ctx`. Both new `G` fields are optional and absent in any game that never plays the card, so `finalStateHash` and the sentinel oracles are unchanged.
 
+**Live-verify (D-24026):** PASS 2026-10-28 — Operator match `lvYv7o56JLr` (Red Skull / Midtown Bank Robbery, 2p; Thor, Storm, Iron Man, Hulk, Bishop), created 2026-10-29T01:33Z after the deploy (server and client `a70ad290`, the #3081 merge): the printed-sum grants matched the log by hand (+5, +8, +10), the gate-unmet line logged without a hollow, and the gate-met KO choice resolved both a two-card KO and KO none.
+
 **Reserved by:** NUMBER-LEDGER D-24786 (#3074). Related: D-24510 (KO-from-discard), D-24769 / D-24783 (grey filter + heading), D-24682 (multiset payload), D-24285 (reshuffle), D-24604 (printed stats off play), D-24670 (self-computed attack icons), D-24521 §6 / D-24558 (a later line acts on an earlier one), D-24372 (RUNTIME drift pins), D-12803 (Board-Visible rule), D-24026.
 
 ---
