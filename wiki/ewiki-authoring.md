@@ -25,13 +25,14 @@ source:
   - ../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/swatch.html
   - ../apps/wiki-viewer/themes/ewiki/layouts/shortcodes/include-section.html
   - ../apps/wiki-viewer/layouts/shortcodes/service-impact.html
+  - ../apps/wiki-viewer/layouts/shortcodes/video.html
   - ../apps/wiki-viewer/themes/ewiki/layouts/partials/ewiki/editing-this-page.html
   - ../apps/wiki-viewer/layouts/partials/ewiki/editing-extra.html
   - ../apps/wiki-viewer/themes/ewiki/layouts/_default/_markup/render-link.html
   - ../apps/wiki-viewer/scripts/check-links.mjs
   - ../docs/ai/DECISIONS.md
   - ../.github/workflows/wiki-viewer.yml
-last-reviewed: 2026-10-19
+last-reviewed: 2026-10-29
 ---
 
 # Ewiki Authoring
@@ -236,8 +237,9 @@ The wiki viewer intentionally restricts certain features:
   You cannot embed `<div>`, `<span>`, `<style>`, or any HTML tags.
 - **No syntax highlighting.** Fenced code blocks render as plain
   monospace. Language hints (` ```js `) are accepted but ignored.
-- **Custom shortcodes: six.** The viewer defines six custom
+- **Custom shortcodes: seven.** The viewer defines seven custom
   shortcodes — `audio` and `audio-inline` (see *Embedding audio*),
+  `video` (see *Embedding video*),
   `swatch` and `motif-table` (see *Colour swatches and motif tables*),
   `include-section` (see *Including a section from another page*), and
   `service-impact` (see *Tables rendered from ops data*).
@@ -296,6 +298,25 @@ so it drops cleanly into a cell:
 
 - `src` (required) — absolute URL to an MP3, same as `audio`. (There is
   no `caption` — a table cell supplies its own label.)
+
+### Embedding video
+
+The `video` shortcode embeds a short silent clip, such as a prototype recording.
+It emits a native `<video controls>` element (looped, muted, not autoplayed), so
+the JS-free invariant holds the same way it does for `audio`:
+
+```
+{{</* video src="/visual-effects/candle-flame-comparison.mp4" caption="A, B and C side by side" */>}}
+```
+
+- `src` (required): URL of an **MP4 (H.264)** file, which plays in every
+  browser. A clip under about 1 MB can sit beside the page's images in
+  `ewiki/<slug>/` and be referenced as `/<slug>/<file>.mp4`.
+- `caption` (optional): a short label under the player.
+
+It is a site shortcode (`apps/wiki-viewer/layouts/shortcodes/video.html`), not
+the shared theme's, and is styled by the `.wiki-video` rules in
+`apps/wiki-viewer/assets/css/ewiki-site.css`.
 
 ### Colour swatches and motif tables
 
