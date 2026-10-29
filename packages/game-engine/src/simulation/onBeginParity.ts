@@ -7,7 +7,8 @@
  * `hasActedThisTurn` / `hasHealedThisTurn`), drops every wait-and-see
  * deferred conditional grant (`deferredConditionalGrants`, WP-568 / D-24377)
  * and clears the WP-656 defeat edge flag
- * (`villainOrMastermindDefeatedSinceResolve`, D-24467), deletes the WP-743 per-turn
+ * (`villainOrMastermindDefeatedSinceResolve`, D-24467) and the WP-853 owned-KO count
+ * (`ownedCardsKoedSinceResolve`, D-24789), deletes the WP-743 per-turn
  * Master Strike / Ambush Villain flags (`masterStrikePlayedThisTurn`,
  * `ambushVillainPlayedThisTurn`, D-24566), and stamps the per-turn
  * log numbering (`logMeta`, WP-328) and `lastPlayEffectsFired` (WP-409). None of the engine's
@@ -51,7 +52,8 @@ import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrant
  *
  * @param gameState - the live per-game state; the allowance flags are
  *   mutated in place, and `deferredConditionalGrants`,
- *   `villainOrMastermindDefeatedSinceResolve`, `masterStrikePlayedThisTurn` and
+ *   `villainOrMastermindDefeatedSinceResolve`, `ownedCardsKoedSinceResolve`,
+ *   `masterStrikePlayedThisTurn` and
  *   `ambushVillainPlayedThisTurn` are deleted when present.
  * @param playerId - the seat whose turn is beginning (unused now beyond symmetry;
  *   the flags are global-per-turn, not per-seat, but kept for call-site clarity).
@@ -88,6 +90,11 @@ export function applyOnBeginParity(
   // keeps the sentinel finalStateHash and PRE_WP080_HASH oracles stable.
   if (gameState.villainOrMastermindDefeatedSinceResolve !== undefined) {
     delete gameState.villainOrMastermindDefeatedSinceResolve;
+  }
+  // why: WP-853 / D-24789 — mirrors game.ts onBegin's owned-KO count clear, in the same
+  // order. Guarded so a never-set G stays byte-unchanged.
+  if (gameState.ownedCardsKoedSinceResolve !== undefined) {
+    delete gameState.ownedCardsKoedSinceResolve;
   }
   // why: WP-777 / D-24616 — mirrors game.ts onBegin's per-turn discard-count delete for the
   // rebuilt loops, so a harness turn never inherits the previous turn's discards. Guarded so

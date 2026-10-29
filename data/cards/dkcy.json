@@ -151,7 +151,7 @@
           "attack": "2",
           "recruit": "0+",
           "abilities": [
-            "Whenever a card you own is KO'd this turn, you get +2[icon:recruit]."
+            "Whenever a card you own is KO'd this turn, you get +2[icon:recruit]. [keyword:owned-card-koed]"
           ]
         },
         {

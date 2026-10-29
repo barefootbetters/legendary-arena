@@ -676,6 +676,107 @@ describe('LegendaryGame', () => {
     );
   });
 
+  it('play-phase onMove fires a waiting owned-KO grant once per counted KO and consumes the count (WP-853 / D-24789)', () => {
+    // why: pins the WIRE. Absorb Energies only works if game.ts turn.onMove runs the
+    // resolve that fires per counted KO, re-arms the grant and deletes the count; a mocked
+    // resolve would leave every helper test green with the trigger dead in a real match.
+    const onMove = (
+      LegendaryGame.phases as Record<string, { turn?: { onMove?: (context: unknown) => void } }>
+    ).play?.turn?.onMove;
+    assert.notEqual(onMove, undefined, 'play phase must define a turn.onMove hook');
+
+    const gameState = {
+      messages: [],
+      turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+      playerZones: { '0': { deck: [], hand: [], discard: [], inPlay: ['hero-absorb'], victory: [] } },
+      cardTraits: {},
+      cardDisplayData: {},
+      villainDeck: { deck: ['v-1'], discard: [] },
+      heroDeck: ['h-1'],
+      counters: {},
+      selection: {
+        schemeId: 'core/portals-to-the-dark-dimension',
+        mastermindId: 'test-mastermind',
+        villainGroupIds: [],
+        henchmanGroupIds: [],
+        heroDeckIds: [],
+      },
+      heroAbilityHooks: [
+        {
+          cardId: 'hero-absorb',
+          timing: 'onPlay',
+          keywords: ['recruit'],
+          conditions: [{ type: 'ownedCardKoedThisTurn', value: '1' }],
+          effects: [{ type: 'recruit', magnitude: 2 }],
+        },
+      ],
+      deferredConditionalGrants: [{ playerId: '0', cardId: 'hero-absorb', hookIndex: 0 }],
+      // why: two of player 0's cards were KO'd this move, one of player 1's.
+      ownedCardsKoedSinceResolve: { '0': 2, '1': 1 },
+    } as unknown as LegendaryGameState;
+    const context = { G: gameState, ctx: { turn: 1, currentPlayer: '0' }, random: { Shuffle: (items: unknown[]) => items } };
+
+    onMove!(context);
+
+    assert.equal(gameState.turnEconomy.recruit, 4, 'two counted KOs must grant +2 twice');
+    assert.equal('ownedCardsKoedSinceResolve' in gameState, false, 'the count is consumed by the resolve');
+    assert.deepEqual(
+      gameState.deferredConditionalGrants,
+      [{ playerId: '0', cardId: 'hero-absorb', hookIndex: 0 }],
+      'the fired grant re-arms for the next KO',
+    );
+
+    onMove!(context);
+    assert.equal(gameState.turnEconomy.recruit, 4, 'a move with no KO grants nothing');
+  });
+
+  it('play-phase onBegin deletes the owned-KO count, and never creates it (WP-853 / D-24789)', () => {
+    const onBegin = (
+      LegendaryGame.phases as Record<string, { turn?: { onBegin?: (context: unknown) => void } }>
+    ).play?.turn?.onBegin;
+    assert.notEqual(onBegin, undefined, 'play phase must define a turn.onBegin hook');
+
+    /** A minimal play-phase G, with or without an owned-KO count. */
+    function makeTurnStartState(withCount: boolean): LegendaryGameState {
+      const state = {
+        messages: [],
+        turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+        playerZones: { '0': { deck: ['a', 'b', 'c', 'd', 'e', 'f'], hand: [], discard: [], inPlay: [], victory: [] } },
+        villainDeck: { deck: ['v-1'], discard: [] },
+        heroDeck: ['h-1'],
+        counters: {},
+        hq: [null, null, null, null, null],
+        city: [null, null, null, null, null],
+        scheme: { twistPile: [] },
+        mastermind: { id: 'm', baseCardId: 'm-base', tacticsDeck: [], tacticsDefeated: [], strikePile: [], attachedBystanders: [] },
+        hookRegistry: [],
+        heroAbilityHooks: [],
+        villainDeckCardTypes: {},
+        attachedBystanders: {},
+        escapedPile: [],
+        cardStats: {},
+      } as unknown as LegendaryGameState;
+      if (withCount) {
+        state.ownedCardsKoedSinceResolve = { '0': 1 };
+      }
+      return state;
+    }
+    const context = (G: LegendaryGameState) => ({
+      G,
+      ctx: { turn: 2, currentPlayer: '0', numPlayers: 1 },
+      random: { Shuffle: (items: unknown[]) => items },
+      events: { setPhase: () => {}, endTurn: () => {} },
+    });
+
+    const counted = makeTurnStartState(true);
+    onBegin!(context(counted));
+    assert.equal('ownedCardsKoedSinceResolve' in counted, false, 'the count is deleted at the turn boundary');
+
+    const neverCounted = makeTurnStartState(false);
+    onBegin!(context(neverCounted));
+    assert.equal('ownedCardsKoedSinceResolve' in neverCounted, false, 'no key is created on a G that never had one');
+  });
+
   it('play-phase onBegin deletes the per-turn discard count, and never creates it (WP-777 / D-24616)', () => {
     // why: pins a WIRE plus oracle safety. A count surviving into the next turn would let New
     // Wings / Pumpkin Bombs fire with no discard (the over-credit WP-777 removes), and a key

@@ -28,6 +28,14 @@ import { heroClassDisplayName, teamDisplayName } from '../log/logDisplay.js';
 // named constant keeps them from drifting apart.
 export const CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE = 'cardsDiscardedThisTurnAtLeast';
 
+// why: WP-853 / D-24789 — the one literal for "Whenever a card you own is KO'd this turn"
+// (Bishop's Absorb Energies). The setup marker arm, the evaluate + describe cases, the
+// wait-and-see list, the always-defer branch and the per-KO firing all key on it. It lives
+// here, not in deferredConditionalGrants.ts, because that module imports this one: defining
+// it there would make this file import it back, a load-order cycle that leaves the
+// MASTER_STRIKE_* bindings below uninitialized when the wait-and-see list reads them.
+export const OWNED_CARD_KOED_CONDITION_TYPE = 'ownedCardKoedThisTurn';
+
 // ---------------------------------------------------------------------------
 // matchReadsConditionType — does any hook in this match read a condition?
 // ---------------------------------------------------------------------------
@@ -355,6 +363,15 @@ export function evaluateCondition(
       // after a qualifying defeat — never sticky. Ignores condition.value (a boolean
       // gate, no threshold). Safe-skip parity: an absent flag reads false, never throws.
       return G.villainOrMastermindDefeatedSinceResolve === true;
+    }
+
+    case OWNED_CARD_KOED_CONDITION_TYPE: {
+      // why: WP-853 / D-24789 — Absorb Energies' "Whenever a card you own is KO'd this
+      // turn". The D-24467 edge with a per-owner COUNT: the owned KO sites add to
+      // G.ownedCardsKoedSinceResolve (gated on a waiting grant), the resolve fires once per
+      // counted KO and deletes it, so the gate is true only right after a KO of this
+      // player's own card. Ignores condition.value. An absent map reads false.
+      return (G.ownedCardsKoedSinceResolve?.[playerID] ?? 0) > 0;
     }
 
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE: {
@@ -900,6 +917,11 @@ export function describeFailedCondition(
       // to quote. The line is the wait-and-see "not yet" phrasing (the ability applies
       // the moment a qualifying defeat lands this turn), matching the recorded log text.
       return 'it needs you to defeat a Villain or Mastermind this turn';
+
+    case OWNED_CARD_KOED_CONDITION_TYPE:
+      // why: WP-853 / D-24789 — a per-KO trigger with no running total to quote; the
+      // wait-and-see "not yet" phrasing, like the defeat gate above.
+      return 'it needs a card you own to be KO\'d this turn';
 
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE:
       // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.

@@ -43,6 +43,7 @@ import { heroCardInstanceExtIds } from './buildHeroDeck.js';
 import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
+  OWNED_CARD_KOED_CONDITION_TYPE,
 } from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
@@ -421,6 +422,9 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   'savior',
   'antics',
   'defeated-villain-or-mastermind',
+  // why: WP-853 / D-24789 — Absorb Energies' owned-card KO trigger marker; its
+  // parseAbilityText arm pushes the ownedCardKoedThisTurn wait-and-see condition.
+  'owned-card-koed',
   'first-hero-condition',
   // why: WP-743 / D-24566 — Grief / Spring the Trap condition markers; each has a
   // parseAbilityText arm that pushes its whole-turn wait-and-see condition.
@@ -1762,6 +1766,14 @@ function parseAbilityText(
       // on play). A boolean gate — `value` is unused by the evaluator; '1' is a stable
       // placeholder. Placed before the unresolved-marker fallback so it never flags hollow.
       conditions.push({ type: 'defeatedVillainOrMastermindThisTurn', value: '1' });
+    } else if (normalizedKeyword === 'owned-card-koed') {
+      // why: WP-853 / D-24789 — Absorb Energies' "Whenever a card you own is KO'd this
+      // turn, you get +2 Recruit." The Diamond Form marker→condition precedent (D-24467):
+      // push the wait-and-see gate onto the same hook as the line's printed +2[icon:recruit],
+      // so the recruit fires once per KO of the player's own card (not on play). A per-KO
+      // gate — `value` is unused; '1' is a stable placeholder. Placed before the
+      // unresolved-marker fallback so it never flags hollow.
+      conditions.push({ type: OWNED_CARD_KOED_CONDITION_TYPE, value: '1' });
     } else if (normalizedKeyword === 'master-strike-this-turn') {
       // why: WP-743 / D-24566 — Grief's "If a Master Strike was completed this turn, you
       // get +2 Recruit." The marker→condition precedent (D-24467): push the whole-turn

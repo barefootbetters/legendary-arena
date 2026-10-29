@@ -20,6 +20,7 @@ import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
 import { hasPendingMelterKoChoice } from './melterKoChoice.resolve.js';
@@ -170,6 +171,8 @@ export function healWounds({ G, ctx }: MoveContext): void {
   // one copy per counted Wound.
   for (let woundIndex = 0; woundIndex < woundsToKo; woundIndex += 1) {
     G.ko = koCard(G.ko, WOUND_EXT_ID);
+    // why: WP-853 / D-24789 — one owned KO per healed Wound (Absorb Energies).
+    recordOwnedCardKoed(G, ctx.currentPlayer);
   }
   playerZones.hand = survivingHand;
   // why: D-24180 — once the player heals they may not fight or recruit for the rest

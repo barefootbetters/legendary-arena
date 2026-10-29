@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 828,
+    "totalRows": 829,
     "byStatus": {
       "executable": 443,
       "deferred": 16,
-      "condition": 50,
+      "condition": 51,
       "unsupported": 290,
       "unmarked": 26,
       "subsystem": 3
     },
-    "distinctMechanics": 169
+    "distinctMechanics": 170
   },
   "rows": [
     {
@@ -5920,6 +5920,22 @@
         {
           "slug": "whatever-the-cost",
           "name": "Whatever the Cost"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/bishop",
+      "heroName": "Bishop",
+      "set": "dkcy",
+      "mechanic": "owned-card-koed",
+      "status": "condition",
+      "wp": "WP-853",
+      "decision": "D-24789",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "absorb-energies",
+          "name": "Absorb Energies"
         }
       ]
     },

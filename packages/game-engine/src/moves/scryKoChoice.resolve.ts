@@ -22,6 +22,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
 
@@ -114,6 +115,7 @@ export function resolveScryKoChoice({ G, playerID }: MoveContext, args: ResolveS
   // Step 5: Mutate — shorten the deck and KO the chosen card
   zones.deck = moveResult.from;
   G.ko = koCard(G.ko, args.cardId);
+  recordOwnedCardKoed(G, playerID);
 
   // Step 6: Narrate the resolved KO so the player sees WHICH card they KO'd. The
   // park-time line only said "look at the top two … choose one to KO". `G.messages`

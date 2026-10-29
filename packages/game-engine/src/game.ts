@@ -982,6 +982,13 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             delete G.villainOrMastermindDefeatedSinceResolve;
           }
 
+          // why: WP-853 / D-24789 — the same defensive turn-boundary clear for the
+          // owned-KO count (Absorb Energies). The resolve consumes it every move; this
+          // makes the reset explicit. Guarded, so a game that never set it is unchanged.
+          if (G.ownedCardsKoedSinceResolve !== undefined) {
+            delete G.ownedCardsKoedSinceResolve;
+          }
+
           // why: WP-777 / D-24616 — "If you discarded any cards this turn" reads a per-turn
           // count, so it must not carry into the next turn (a stale count would let New
           // Wings / Pumpkin Bombs fire with no discard — the exact over-credit this fixes).

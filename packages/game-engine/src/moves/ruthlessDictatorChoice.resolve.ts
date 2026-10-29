@@ -26,6 +26,7 @@ import type { LegendaryGameState, RuthlessDictatorDisposition } from '../types.j
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { pushLog } from '../log/logPush.js';
 import { resolveCardName } from '../log/logDisplay.js';
 
@@ -150,6 +151,7 @@ export function resolveRuthlessDictatorChoice(
     if (!moveResult.found) { return; }
     zones.deck = moveResult.from;
     G.ko = koCard(G.ko, args.cardId);
+    recordOwnedCardKoed(G, playerID);
     // why: narrate the resolved KO. `G.messages` is hash-excluded (D-24081), so this
     // adds no determinism impact.
     pushLog(G,

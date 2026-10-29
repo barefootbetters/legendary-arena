@@ -29,6 +29,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { koCard } from '../board/ko.logic.js';
+import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
 import { pushLog } from '../log/logPush.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import type { GreyHeroFilter } from '../rules/villainAbility.types.js';
@@ -227,6 +228,7 @@ export function resolveKoDiscardChoice(
   playerZones.discard = workingDiscard;
   for (const cardId of chosenCards) {
     G.ko = koCard(G.ko, cardId);
+    recordOwnedCardKoed(G, playerID);
   }
 
   // Step 5: Narrate the resolved KO. `G.messages` is hash-excluded (D-24081), so this
