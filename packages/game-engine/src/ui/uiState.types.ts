@@ -1523,15 +1523,20 @@ export interface UIPendingDefeatChoice {
  * Ymir: `'grey'`), so the prompt can say "grey Heroes"; `discard` is already filtered to match.
  * Absent on an unfiltered entry (Loki's Maniacal Tyrant, Salomé).
  *
+ * // why: WP-850 / D-24786 — `isLimitedToDiscardedThisWay` is `true` only on an entry limited to
+ * the cards one play just discarded (Bishop's Firepower from the Future, "KO any number of those
+ * cards"), so the prompt can say so; `discard` already lists only those cards. Omitted otherwise.
+ *
  * @see WP-693 §Scope (In)
  * @see EC-730 Locked Values
- * @see DECISIONS.md D-24510, D-24769, D-24783
+ * @see DECISIONS.md D-24510, D-24769, D-24783, D-24786
  */
 export interface UIPendingKoDiscardChoice {
   choiceType: "ko-from-discard";
   playerID: string;
   maxCount: number;
   greyFilter?: GreyHeroFilter;
+  isLimitedToDiscardedThisWay?: boolean;
   discard: UIDiscardChoiceHandCard[];
 }
 

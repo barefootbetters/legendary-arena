@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 815,
+    "totalRows": 817,
     "byStatus": {
-      "executable": 430,
+      "executable": 432,
       "deferred": 16,
       "condition": 49,
       "unsupported": 290,
       "unmarked": 27,
       "subsystem": 3
     },
-    "distinctMechanics": 167
+    "distinctMechanics": 169
   },
   "rows": [
     {
@@ -5783,6 +5783,22 @@
       "extId": "dkcy/bishop",
       "heroName": "Bishop",
       "set": "dkcy",
+      "mechanic": "discard-top-printed-attack",
+      "status": "executable",
+      "wp": "WP-850",
+      "decision": "D-24786",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-top-printed-attack",
+      "designs": [
+        {
+          "slug": "firepower-from-the-future",
+          "name": "Firepower from the Future"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/bishop",
+      "heroName": "Bishop",
+      "set": "dkcy",
       "mechanic": "draw",
       "status": "executable",
       "wp": "WP-022",
@@ -5792,6 +5808,22 @@
         {
           "slug": "whatever-the-cost",
           "name": "Whatever the Cost"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/bishop",
+      "heroName": "Bishop",
+      "set": "dkcy",
+      "mechanic": "ko-discarded-this-way",
+      "status": "executable",
+      "wp": "WP-850",
+      "decision": "D-24786",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#ko-discarded-this-way",
+      "designs": [
+        {
+          "slug": "firepower-from-the-future",
+          "name": "Firepower from the Future"
         }
       ]
     },

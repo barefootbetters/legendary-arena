@@ -944,6 +944,18 @@
       "cardSlug": "ice-slide",
       "abilityIndex": 0,
       "markupToken": "[keyword:attack-per-count:ranged-heroes-played-this-turn:1]"
+    },
+    {
+      "heroSlug": "bishop",
+      "cardSlug": "firepower-from-the-future",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-top-printed-attack:4]"
+    },
+    {
+      "heroSlug": "bishop",
+      "cardSlug": "firepower-from-the-future",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:ko-discarded-this-way]"
     }
   ],
   "msis": [

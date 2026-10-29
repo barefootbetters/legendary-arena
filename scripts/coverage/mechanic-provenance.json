@@ -94,6 +94,8 @@
     "gain-wound-each": { "wp": "WP-364", "decision": "D-24156" },
     "reveal-or-gain-wound-each": { "wp": "WP-843", "decision": "D-24777" },
     "gain-sidekick": { "wp": "WP-844", "decision": "D-24778" },
+    "discard-top-printed-attack": { "wp": "WP-850", "decision": "D-24786" },
+    "ko-discarded-this-way": { "wp": "WP-850", "decision": "D-24786" },
     "ko-wound-reward": { "wp": "WP-382", "decision": "D-24183" },
     "discard-to-play": { "wp": "WP-383", "decision": "D-24184" },
     "return-on-discard": { "wp": "WP-498", "decision": "D-24301" },

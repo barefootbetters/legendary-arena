@@ -181,8 +181,8 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Discard the top four cards of your deck. You get +[icon:attack] equal to those cards' printed [icon:attack].",
-            "[team:x-men]: KO any number of those cards."
+            "Discard the top four cards of your deck. You get +[icon:attack] equal to those cards' printed [icon:attack]. [keyword:discard-top-printed-attack:4]",
+            "[team:x-men]: KO any number of those cards. [keyword:ko-discarded-this-way]"
           ]
         }
       ],

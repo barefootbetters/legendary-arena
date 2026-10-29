@@ -1151,6 +1151,28 @@ describe('filterUIStateForAudience — pendingKoDiscardChoice redaction (D-24510
     const plainChoice = filterUIStateForAudience(createKoDiscardChoiceUIState(), PLAYER_0).pendingKoDiscardChoice!;
     assert.equal(Object.keys(plainChoice).includes('greyFilter'), false, 'no greyFilter key on an unfiltered entry');
   });
+
+  it('WP-850 / D-24786: isLimitedToDiscardedThisWay survives for the chooser only; absent on other entries', () => {
+    const config = createTestConfig();
+    const gameState = buildInitialGameState(config, createMockRegistry(), makeMockCtx());
+    gameState.playerZones['0']!.discard = ['firepower-discard-a' as CardExtId, 'unrelated-b' as CardExtId];
+    gameState.pendingKoDiscardChoices = [{
+      choiceType: 'ko-from-discard', playerID: '0', maxCount: 1,
+      sourceCardId: 'dkcy/bishop/firepower-from-the-future#0' as CardExtId,
+      eligibleCardIds: ['firepower-discard-a' as CardExtId],
+    }];
+    const limitedUIState = buildUIState(gameState, mockCtx);
+    const chooserChoice = filterUIStateForAudience(limitedUIState, PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(chooserChoice.isLimitedToDiscardedThisWay, true);
+    assert.deepStrictEqual(chooserChoice.discard.map((entry) => entry.cardId), ['firepower-discard-a'],
+      'the chooser sees only the eligible card');
+    assert.equal(Object.hasOwn(filterUIStateForAudience(limitedUIState, PLAYER_1), 'pendingKoDiscardChoice'), false);
+    assert.equal(Object.hasOwn(filterUIStateForAudience(limitedUIState, SPECTATOR), 'pendingKoDiscardChoice'), false);
+
+    const plainChoice = filterUIStateForAudience(createKoDiscardChoiceUIState(), PLAYER_0).pendingKoDiscardChoice!;
+    assert.equal(Object.hasOwn(plainChoice, 'isLimitedToDiscardedThisWay'), false,
+      'no isLimitedToDiscardedThisWay key on a Loki / Salomé / grey entry');
+  });
 });
 
 // ---------------------------------------------------------------------------

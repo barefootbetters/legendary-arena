@@ -684,12 +684,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'grant-out-of-time', // why: WP-828 / D-24761 — Winter Soldier 2>4 "A Hero in your hand gains Man Out of Time this turn": queues one owed grant; the granted card goes Out of Time when played this turn
     'reveal-or-gain-wound-each', // why: WP-843 / D-24777 — co2e Crazed Rampage "Each player reveals another [hc:strength] Hero or gains a Wound": each player who cannot reveal another matching Hero gains a Wound
     'gain-sidekick', // why: WP-844 / D-24778 — "Gain a [rule:Sidekick]" / "Gain three [rule:Sidekicks]": up to N Sidekicks from the top of the Sidekick Stack into the playing player's discard, outside the once-per-turn recruit
+    'discard-top-printed-attack', // why: WP-850 / D-24786 — Bishop's Firepower from the Future "Discard the top four cards of your deck. You get +Attack equal to those cards' printed Attack": one card at a time, D-24285 reshuffle, summed printed Attack, hands the ids to ko-discarded-this-way
+    'ko-discarded-this-way', // why: WP-850 / D-24786 — Firepower from the Future "[team:x-men]: KO any number of those cards": the KO-from-discard choice limited to the cards the same play discarded
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      85,
-      'HERO_KEYWORDS must have exactly 85 entries (gain-sidekick, WP-844 / D-24778, appended last)',
+      87,
+      'HERO_KEYWORDS must have exactly 87 entries (discard-top-printed-attack + ko-discarded-this-way, WP-850 / D-24786, appended last)',
     );
 
     assert.deepStrictEqual(
