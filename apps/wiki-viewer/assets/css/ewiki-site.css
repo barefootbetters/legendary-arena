@@ -58,3 +58,18 @@
 .service-impact-stale { background: #fef9c3; color: #854d0e; }
 .service-impact-deploys { background: #e0e7ff; color: #3730a3; }
 .service-impact-unmonitored { background: #f3f4f6; color: #374151; }
+
+/* why: the video shortcode (layouts/shortcodes/video.html) is site-only, so its
+   player sizing lives here rather than in the theme core. */
+.wiki-video { margin: 1rem 0; }
+
+.wiki-video video {
+  width: 100%;
+  height: auto;
+}
+
+.wiki-video figcaption {
+  color: var(--color-muted);
+  font-size: 0.85em;
+  margin-top: 0.25rem;
+}

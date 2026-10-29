@@ -62,7 +62,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-29
 ---
 
 # Visual Effects Framework
@@ -1316,7 +1316,7 @@ the shipped tilt:
   Bystanders and their counts) lose contrast, which breaks the brainstorm's own
   rule that the cards stay readable. A day version would keep the candle and the
   edge darkening and drop or greatly weaken the glow.
-- **Not yet tried:** watching the flicker live (clips were recorded, but the
+- **Not yet tried:** watching the flicker live (the clips were recorded, but the
   review below is by frames), real card art under the light, and the story beats (the
   candle gutters on a Master Strike and flares when the Mastermind is defeated,
   which would hang off [Surface 1](#surface-1)).
@@ -1327,6 +1327,11 @@ board, night theme, zoomed 3× on the candle:
 ![Three rows of six frames each, 110 ms apart, of a candle on the warm-lit board strip above the Wounds and Horrors labels. Row A: a small single teardrop flame on a short candle in a brass dish, nearly identical across frames. Row B: a tall thin candle with a narrow flame whose white core is barely visible. Row C: a short candle in a brass holder with a larger orange-edged flame, a yellow body and a white core, leaning a little differently in each frame.](/visual-effects/candle-flame-comparison.png "width=90%")
 
 *Rows A–C top to bottom; each row is six frames 110 ms apart.*
+
+The recording itself, the three flames side by side for five seconds (silent,
+loops; press play):
+
+{{< video src="/visual-effects/candle-flame-comparison.mp4" caption="A first SVG flame, B Grok's flame as written, C Grok's layers retimed (the pick). Night theme, zoomed 3x on the candle." >}}
 
 | Flame | What it is | Verdict |
 |---|---|---|

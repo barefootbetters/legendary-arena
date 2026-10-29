@@ -1,0 +1,34 @@
+{{- /*
+  Video player shortcode for the engineering wiki.
+
+  Usage:
+    {{< video src="/visual-effects/candle-flame-comparison.mp4" caption="A, B and C side by side" >}}
+
+  why: the wiki is JS-free (hugo.toml `unsafe = false` + the CI zero-<script>
+  gate). A native <video controls> element uses the browser's own controls,
+  with no script element at all, so it keeps that invariant while letting a
+  reader play a prototype clip. Shortcode output is exempt from the
+  `unsafe = false` raw-HTML strip, the same rule the theme's `audio` shortcode
+  relies on. Output is static, so two builds match.
+
+  why: muted + loop because these are short silent comparison clips meant to be
+  watched a few times over; no autoplay, so nothing moves until the reader
+  presses play.
+
+  Params:
+    src     (required): the URL of an MP4 (H.264) file.
+    caption (optional): a short label under the player.
+*/ -}}
+{{- $src := .Get "src" -}}
+{{- if not $src -}}
+  {{- errorf "video shortcode at %s is missing its src parameter. Add src=\"<MP4 file URL>\"." .Position -}}
+{{- end -}}
+<figure class="wiki-video">
+  <video controls loop muted playsinline preload="metadata">
+    <source src="{{ $src }}" type="video/mp4">
+    Your browser does not support the video element. <a href="{{ $src }}">Download the clip</a>.
+  </video>
+  {{- with .Get "caption" }}
+  <figcaption>{{ . }}</figcaption>
+  {{- end }}
+</figure>
