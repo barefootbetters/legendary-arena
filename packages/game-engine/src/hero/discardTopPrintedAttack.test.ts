@@ -216,7 +216,20 @@ describe('discard-top-printed-attack edge cases (WP-850)', () => {
     executeSingleEffect(gameState, makeMockCtx(), '0', FIREPOWER, KO_THOSE);
     assert.equal(gameState.pendingKoDiscardChoices, undefined,
       'line 2 never offers a card an earlier play discarded');
-    assert.ok(gameState.messages.some((entry) => entry.outcome === 'neutral' && entry.text.includes('none of the discarded cards')));
+    // why: nothing was discarded, so the line says so (live match lvYv7o56JLr 11.2.6 read "none of
+    // the discarded cards left", which implied some had been discarded).
+    const koLine = gameState.messages.find((entry) => entry.outcome === 'neutral' && entry.text.includes('nothing to KO'));
+    assert.ok(koLine !== undefined, 'an empty discard says there is nothing to KO');
+    assert.ok(koLine.text.includes('discarded no cards'));
+    assert.ok(!gameState.messages.some((entry) => entry.text.includes('none of the discarded cards')));
+  });
+
+  it('cards discarded but all reshuffled back: says none of them are left to KO', () => {
+    const gameState = makeState([], [HERO_FOUR], true);
+    gameState.lastDeckTopDiscard = { playerID: '0', sourceCardId: FIREPOWER, cardIds: [HERO_TWO, HERO_THREE] };
+    executeSingleEffect(gameState, makeMockCtx(), '0', FIREPOWER, KO_THOSE);
+    assert.equal(gameState.pendingKoDiscardChoices, undefined);
+    assert.ok(gameState.messages.some((entry) => entry.outcome === 'neutral' && entry.text.includes('none of the discarded cards left')));
   });
 
   it('a one-card deck re-discards that card after each reshuffle', () => {
