@@ -680,8 +680,9 @@
       "label": "Draw Threshold",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 1,
+      "cardCount": 2,
       "cardIds": [
+        "mgtg/gamora",
         "wwhk/amadeus-cho"
       ],
       "hidden": true
@@ -1186,10 +1187,21 @@
       "label": "Optional Ko Hand Discard",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 3,
+      "cardCount": 14,
       "cardIds": [
+        "amwp/ant-man",
+        "asrd/warriors-three-the",
+        "chmp/ms-marvel",
+        "cvwr/storm-black-panther",
+        "dead/stingray",
+        "dkcy/bishop",
+        "dkcy/professor-x",
+        "dkcy/wolverine",
+        "mgtg/gamora",
         "vnom/venom-rocket",
+        "wwhk/caiera",
         "wwhk/she-hulk",
+        "xmen/phoenix",
         "xmen/x-23"
       ],
       "hidden": true
@@ -2276,7 +2288,7 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 27,
+      "cardCount": 26,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
@@ -2291,7 +2303,6 @@
         "dkcy/angel",
         "dkcy/blade",
         "dkcy/daredevil",
-        "dkcy/professor-x",
         "gotg/groot",
         "nmut/karma",
         "rvlt/hellcat",
@@ -2598,6 +2609,7 @@
         "antics",
         "heist",
         "microscopic-size-changing",
+        "optional-ko-hand-discard",
         "size-changing"
       ]
     },
@@ -2740,7 +2752,8 @@
       "mechanics": [
         "bridge",
         "conqueror",
-        "draw"
+        "draw",
+        "optional-ko-hand-discard"
       ]
     },
     "bkpt/general-okoye": {
@@ -2876,6 +2889,7 @@
       "mechanics": [
         "cheering-crowds",
         "draw",
+        "optional-ko-hand-discard",
         "rescue",
         "size-changing",
         "versatile"
@@ -3233,7 +3247,8 @@
     },
     "cvwr/storm-black-panther": {
       "mechanics": [
-        "draw"
+        "draw",
+        "optional-ko-hand-discard"
       ]
     },
     "cvwr/tigra": {
@@ -3279,7 +3294,8 @@
     "dead/stingray": {
       "mechanics": [
         "draw",
-        "excessive-violence"
+        "excessive-violence",
+        "optional-ko-hand-discard"
       ]
     },
     "dims/howard-the-duck": {
@@ -3319,7 +3335,8 @@
       "mechanics": [
         "discard-top-printed-attack",
         "draw",
-        "ko-discarded-this-way"
+        "ko-discarded-this-way",
+        "optional-ko-hand-discard"
       ]
     },
     "dkcy/blade": {
@@ -3388,7 +3405,7 @@
     },
     "dkcy/professor-x": {
       "mechanics": [
-        "unmarked"
+        "optional-ko-hand-discard"
       ]
     },
     "dkcy/punisher": {
@@ -3399,7 +3416,8 @@
     },
     "dkcy/wolverine": {
       "mechanics": [
-        "draw"
+        "draw",
+        "optional-ko-hand-discard"
       ]
     },
     "dstr/ancient-one-the": {
@@ -3578,6 +3596,8 @@
       "mechanics": [
         "artifact",
         "draw",
+        "draw-threshold",
+        "optional-ko-hand-discard",
         "triggered-artifact"
       ]
     },
@@ -4430,6 +4450,7 @@
     "wwhk/caiera": {
       "mechanics": [
         "draw",
+        "optional-ko-hand-discard",
         "outwit",
         "smash",
         "transform"
@@ -4607,6 +4628,7 @@
       "mechanics": [
         "berserk",
         "draw",
+        "optional-ko-hand-discard",
         "piercing-energy",
         "soaring-flight"
       ]

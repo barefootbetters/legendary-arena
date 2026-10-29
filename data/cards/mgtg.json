@@ -279,7 +279,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "If you drew at least two cards this turn, you may KO a card from your hand or discard pile."
+            "If you drew at least two cards this turn, you may KO a card from your hand or discard pile. [keyword:draw-threshold:2] [keyword:optional-ko-hand-discard]"
           ]
         },
         {

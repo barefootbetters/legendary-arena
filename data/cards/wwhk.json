@@ -331,7 +331,7 @@
           "attack": "2",
           "recruit": null,
           "abilities": [
-            "[keyword:Outwit]: You may KO a card from your hand or discard pile."
+            "[keyword:Outwit]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {

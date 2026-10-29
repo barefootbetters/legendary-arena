@@ -229,7 +229,7 @@
           "recruit": "2",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength]",
-            "[keyword:Antics]: You may KO a card from your hand or discard pile."
+            "[keyword:Antics]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {

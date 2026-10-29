@@ -136,7 +136,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "[hc:covert]: You may KO a card from your hand or discard pile."
+            "[hc:covert]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
@@ -1568,7 +1568,7 @@
           "recruit": "2",
           "abilities": [
             "You may put a Hero from the HQ on the bottom of the Hero Deck.",
-            "[hc:instinct]: You may KO a card from your hand or discard pile."
+            "[hc:instinct]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
@@ -1803,7 +1803,7 @@
           "recruit": null,
           "abilities": [
             "Draw a card. [keyword:draw:1]",
-            "You may KO a card from your hand or discard pile."
+            "You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {

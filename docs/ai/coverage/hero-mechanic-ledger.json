@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 817,
+    "totalRows": 828,
     "byStatus": {
-      "executable": 432,
+      "executable": 443,
       "deferred": 16,
-      "condition": 49,
+      "condition": 50,
       "unsupported": 290,
-      "unmarked": 27,
+      "unmarked": 26,
       "subsystem": 3
     },
     "distinctMechanics": 169
@@ -565,6 +565,22 @@
         {
           "slug": "tiny-little-risk",
           "name": "Tiny little Risk"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "heroName": "Ant-Man",
+      "set": "amwp",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "bug-swarm",
+          "name": "Bug Swarm"
         }
       ]
     },
@@ -1675,6 +1691,22 @@
         {
           "slug": "fandral-the-dashing",
           "name": "Fandral the Dashing"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/warriors-three-the",
+      "heroName": "Warriors Three, The",
+      "set": "asrd",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "hogun-the-grim",
+          "name": "Hogun the Grim"
         }
       ]
     },
@@ -2939,6 +2971,22 @@
         {
           "slug": "long-arm-of-the-law",
           "name": "Long Arm of the Law"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/ms-marvel",
+      "heroName": "Ms. Marvel",
+      "set": "chmp",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "need-to-stretch-my-legs",
+          "name": "Need to Stretch My Legs"
         }
       ]
     },
@@ -5333,6 +5381,22 @@
       ]
     },
     {
+      "extId": "cvwr/storm-black-panther",
+      "heroName": "Storm & Black Panther",
+      "set": "cvwr",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "tsunami-of-justice",
+          "name": "Tsunami of Justice"
+        }
+      ]
+    },
+    {
       "extId": "cvwr/tigra",
       "heroName": "Tigra",
       "set": "cvwr",
@@ -5601,6 +5665,22 @@
       ]
     },
     {
+      "extId": "dead/stingray",
+      "heroName": "Stingray",
+      "set": "dead",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "phd-in-oceanography",
+          "name": "PhD in Oceanography"
+        }
+      ]
+    },
+    {
       "extId": "dims/howard-the-duck",
       "heroName": "Howard the Duck",
       "set": "dims",
@@ -5824,6 +5904,22 @@
         {
           "slug": "firepower-from-the-future",
           "name": "Firepower from the Future"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/bishop",
+      "heroName": "Bishop",
+      "set": "dkcy",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "whatever-the-cost",
+          "name": "Whatever the Cost"
         }
       ]
     },
@@ -6093,12 +6189,17 @@
       "extId": "dkcy/professor-x",
       "heroName": "Professor X",
       "set": "dkcy",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": "",
-      "designs": []
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "class-dismissed",
+          "name": "Class Dismissed"
+        }
+      ]
     },
     {
       "extId": "dkcy/punisher",
@@ -6146,6 +6247,22 @@
           "slug": "animal-instincts",
           "name": "Animal Instincts"
         },
+        {
+          "slug": "no-mercy",
+          "name": "No Mercy"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/wolverine",
+      "heroName": "Wolverine",
+      "set": "dkcy",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
         {
           "slug": "no-mercy",
           "name": "No Mercy"
@@ -7336,6 +7453,38 @@
         {
           "slug": "resourceful-fugitive",
           "name": "Resourceful Fugitive"
+        }
+      ]
+    },
+    {
+      "extId": "mgtg/gamora",
+      "heroName": "Gamora",
+      "set": "mgtg",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "stolen-necroblaster",
+          "name": "Stolen Necroblaster"
+        }
+      ]
+    },
+    {
+      "extId": "mgtg/gamora",
+      "heroName": "Gamora",
+      "set": "mgtg",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "stolen-necroblaster",
+          "name": "Stolen Necroblaster"
         }
       ]
     },
@@ -12149,8 +12298,8 @@
       "set": "vnom",
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-667",
+      "decision": "D-24480",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
       "designs": [
         {
@@ -13155,6 +13304,22 @@
       "extId": "wwhk/caiera",
       "heroName": "Caiera",
       "set": "wwhk",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "focus-the-old-power",
+          "name": "Focus The Old Power"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/caiera",
+      "heroName": "Caiera",
+      "set": "wwhk",
       "mechanic": "outwit",
       "status": "condition",
       "wp": "",
@@ -13841,8 +14006,8 @@
       "set": "wwhk",
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-667",
+      "decision": "D-24480",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
       "designs": [
         {
@@ -14647,6 +14812,22 @@
       "extId": "xmen/phoenix",
       "heroName": "Phoenix",
       "set": "xmen",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "designs": [
+        {
+          "slug": "life-death-incarnate",
+          "name": "Life & Death Incarnate"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/phoenix",
+      "heroName": "Phoenix",
+      "set": "xmen",
       "mechanic": "piercing-energy",
       "status": "unsupported",
       "wp": "",
@@ -14865,8 +15046,8 @@
       "set": "xmen",
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-667",
+      "decision": "D-24480",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
       "designs": [
         {

@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2013,
+    "totalEntries": 2024,
     "byScope": {
-      "hero": 817,
+      "hero": 828,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 638,
+      "executable": 649,
       "deferred": 16,
-      "condition": 49,
+      "condition": 50,
       "unsupported": 291,
-      "unmarked": 1014,
+      "unmarked": 1013,
       "subsystem": 5
     }
   },
@@ -1357,6 +1357,23 @@
         {
           "slug": "tiny-little-risk",
           "name": "Tiny little Risk"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "name": "Ant-Man",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "bug-swarm",
+          "name": "Bug Swarm"
         }
       ]
     },
@@ -3184,6 +3201,23 @@
         {
           "slug": "fandral-the-dashing",
           "name": "Fandral the Dashing"
+        }
+      ]
+    },
+    {
+      "extId": "asrd/warriors-three-the",
+      "name": "Warriors Three, The",
+      "set": "asrd",
+      "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "hogun-the-grim",
+          "name": "Hogun the Grim"
         }
       ]
     },
@@ -5351,6 +5385,23 @@
         {
           "slug": "long-arm-of-the-law",
           "name": "Long Arm of the Law"
+        }
+      ]
+    },
+    {
+      "extId": "chmp/ms-marvel",
+      "name": "Ms. Marvel",
+      "set": "chmp",
+      "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "need-to-stretch-my-legs",
+          "name": "Need to Stretch My Legs"
         }
       ]
     },
@@ -9978,6 +10029,23 @@
       ]
     },
     {
+      "extId": "cvwr/storm-black-panther",
+      "name": "Storm & Black Panther",
+      "set": "cvwr",
+      "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "tsunami-of-justice",
+          "name": "Tsunami of Justice"
+        }
+      ]
+    },
+    {
       "extId": "cvwr/tigra",
       "name": "Tigra",
       "set": "cvwr",
@@ -10432,6 +10500,23 @@
         {
           "slug": "sting-of-the-stingrays-sting",
           "name": "Sting of the Stingray's Sting"
+        }
+      ]
+    },
+    {
+      "extId": "dead/stingray",
+      "name": "Stingray",
+      "set": "dead",
+      "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "phd-in-oceanography",
+          "name": "PhD in Oceanography"
         }
       ]
     },
@@ -11202,6 +11287,23 @@
       ]
     },
     {
+      "extId": "dkcy/bishop",
+      "name": "Bishop",
+      "set": "dkcy",
+      "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "whatever-the-cost",
+          "name": "Whatever the Cost"
+        }
+      ]
+    },
+    {
       "extId": "dkcy/blade",
       "name": "Blade",
       "set": "dkcy",
@@ -11482,11 +11584,17 @@
       "name": "Professor X",
       "set": "dkcy",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "class-dismissed",
+          "name": "Class Dismissed"
+        }
+      ]
     },
     {
       "extId": "dkcy/punisher",
@@ -11537,6 +11645,23 @@
           "slug": "animal-instincts",
           "name": "Animal Instincts"
         },
+        {
+          "slug": "no-mercy",
+          "name": "No Mercy"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/wolverine",
+      "name": "Wolverine",
+      "set": "dkcy",
+      "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
         {
           "slug": "no-mercy",
           "name": "No Mercy"
@@ -14530,6 +14655,40 @@
         {
           "slug": "resourceful-fugitive",
           "name": "Resourceful Fugitive"
+        }
+      ]
+    },
+    {
+      "extId": "mgtg/gamora",
+      "name": "Gamora",
+      "set": "mgtg",
+      "scope": "hero",
+      "mechanic": "draw-threshold",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "stolen-necroblaster",
+          "name": "Stolen Necroblaster"
+        }
+      ]
+    },
+    {
+      "extId": "mgtg/gamora",
+      "name": "Gamora",
+      "set": "mgtg",
+      "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "stolen-necroblaster",
+          "name": "Stolen Necroblaster"
         }
       ]
     },
@@ -23841,8 +24000,8 @@
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-667",
+      "decision": "D-24480",
       "designs": [
         {
           "slug": "serious-overkill",
@@ -26352,6 +26511,23 @@
       "name": "Caiera",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "focus-the-old-power",
+          "name": "Focus The Old Power"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/caiera",
+      "name": "Caiera",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "outwit",
       "status": "condition",
       "handler": "",
@@ -27077,8 +27253,8 @@
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-667",
+      "decision": "D-24480",
       "designs": [
         {
           "slug": "radioactive-riot",
@@ -28585,6 +28761,23 @@
       "name": "Phoenix",
       "set": "xmen",
       "scope": "hero",
+      "mechanic": "optional-ko-hand-discard",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
+      "wp": "WP-667",
+      "decision": "D-24480",
+      "designs": [
+        {
+          "slug": "life-death-incarnate",
+          "name": "Life & Death Incarnate"
+        }
+      ]
+    },
+    {
+      "extId": "xmen/phoenix",
+      "name": "Phoenix",
+      "set": "xmen",
+      "scope": "hero",
       "mechanic": "piercing-energy",
       "status": "unsupported",
       "handler": "",
@@ -28816,8 +29009,8 @@
       "mechanic": "optional-ko-hand-discard",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-667",
+      "decision": "D-24480",
       "designs": [
         {
           "slug": "bioengineered-assassin",
@@ -29354,6 +29547,7 @@
         "antics",
         "heist",
         "microscopic-size-changing",
+        "optional-ko-hand-discard",
         "size-changing"
       ]
     },
@@ -29877,7 +30071,8 @@
       "mechanics": [
         "bridge",
         "conqueror",
-        "draw"
+        "draw",
+        "optional-ko-hand-discard"
       ]
     },
     "bkpt-mastermind-killmonger-a-scar-for-every-kill": {
@@ -30451,6 +30646,7 @@
       "mechanics": [
         "cheering-crowds",
         "draw",
+        "optional-ko-hand-discard",
         "rescue",
         "size-changing",
         "versatile"
@@ -31924,7 +32120,8 @@
     "cvwr/storm-black-panther": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "optional-ko-hand-discard"
       ]
     },
     "cvwr/tigra": {
@@ -32074,7 +32271,8 @@
       "scope": "hero",
       "mechanics": [
         "draw",
-        "excessive-violence"
+        "excessive-violence",
+        "optional-ko-hand-discard"
       ]
     },
     "dims-mastermind-j-jonah-jameson-incite-violent-riots": {
@@ -32409,7 +32607,8 @@
       "mechanics": [
         "discard-top-printed-attack",
         "draw",
-        "ko-discarded-this-way"
+        "ko-discarded-this-way",
+        "optional-ko-hand-discard"
       ]
     },
     "dkcy/blade": {
@@ -32491,7 +32690,7 @@
     "dkcy/professor-x": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "optional-ko-hand-discard"
       ]
     },
     "dkcy/punisher": {
@@ -32504,7 +32703,8 @@
     "dkcy/wolverine": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "optional-ko-hand-discard"
       ]
     },
     "dstr-mastermind-dormammu-barter-for-souls": {
@@ -33604,6 +33804,8 @@
       "mechanics": [
         "artifact",
         "draw",
+        "draw-threshold",
+        "optional-ko-hand-discard",
         "triggered-artifact"
       ]
     },
@@ -37693,6 +37895,7 @@
       "scope": "hero",
       "mechanics": [
         "draw",
+        "optional-ko-hand-discard",
         "outwit",
         "smash",
         "transform"
@@ -38254,6 +38457,7 @@
       "mechanics": [
         "berserk",
         "draw",
+        "optional-ko-hand-discard",
         "piercing-energy",
         "soaring-flight"
       ]

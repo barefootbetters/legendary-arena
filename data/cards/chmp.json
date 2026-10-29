@@ -172,7 +172,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Size-Changing]: [hc:covert]",
-            "[team:champions]: You may KO a card from your hand or discard pile.",
+            "[team:champions]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]",
             "[keyword:Cheering Crowds]"
           ]
         },

@@ -482,7 +482,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "[hc:strength]: You may KO a card from your hand or discard pile."
+            "[hc:strength]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
