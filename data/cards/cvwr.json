@@ -1649,7 +1649,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "[hc:covert]: You may KO a card from your hand or discard pile."
+            "[hc:covert]: You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {

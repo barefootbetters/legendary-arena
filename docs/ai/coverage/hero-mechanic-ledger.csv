@@ -29,6 +29,7 @@ amwp/ant-army,Ant Army,amwp,size-changing,executable,WP-290,D-24074,packages/gam
 amwp/ant-man,Ant-Man,amwp,antics,condition,,,,bug-swarm|hitch-a-ride
 amwp/ant-man,Ant-Man,amwp,heist,unsupported,,,,tiny-little-risk
 amwp/ant-man,Ant-Man,amwp,microscopic-size-changing,unsupported,,,,bug-swarm|giant-man|tiny-little-risk
+amwp/ant-man,Ant-Man,amwp,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,bug-swarm
 amwp/ant-man,Ant-Man,amwp,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,hitch-a-ride|look-out-for-the-little-guy|shrink-away
 amwp/cassie-lang,Cassie Lang,amwp,discard-to-play,executable,WP-383,D-24184,packages/game-engine/src/hero/heroEffects.execute.ts#discard-to-play,start-small
 amwp/cassie-lang,Cassie Lang,amwp,microscopic-size-changing,unsupported,,,,inspire-revolution|learn-from-the-past|quantum-beacon
@@ -88,6 +89,7 @@ asrd/valkyrie,Valkyrie,asrd,thrown-artifact,unsupported,,,,dragonfang
 asrd/warriors-three-the,"Warriors Three, The",asrd,bridge,unsupported,,,,volstagg-the-valiant
 asrd/warriors-three-the,"Warriors Three, The",asrd,conqueror,unsupported,,,,three-stand-as-one|volstagg-the-valiant
 asrd/warriors-three-the,"Warriors Three, The",asrd,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,fandral-the-dashing
+asrd/warriors-three-the,"Warriors Three, The",asrd,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,hogun-the-grim
 bkpt/general-okoye,General Okoye,bkpt,ambush,unsupported,,,,to-my-last-breath
 bkpt/general-okoye,General Okoye,bkpt,wound-a-villain,unsupported,,,,sovereign-bodyguard
 bkpt/king-black-panther,King Black Panther,bkpt,ambush,unsupported,,,,heart-shaped-herb|unite-the-tribes-of-wakanda|unseen-protector|vibranium-claws
@@ -155,6 +157,7 @@ chmp/gwenpool,Gwenpool,chmp,size-changing,executable,WP-290,D-24074,packages/gam
 chmp/gwenpool,Gwenpool,chmp,versatile,unsupported,,,,come-on-nobody-reads-card-names
 chmp/ms-marvel,Ms. Marvel,chmp,cheering-crowds,unsupported,,,,need-to-stretch-my-legs|rising-hope
 chmp/ms-marvel,Ms. Marvel,chmp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,long-arm-of-the-law
+chmp/ms-marvel,Ms. Marvel,chmp,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,need-to-stretch-my-legs
 chmp/ms-marvel,Ms. Marvel,chmp,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,long-arm-of-the-law
 chmp/ms-marvel,Ms. Marvel,chmp,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,big-impact|long-arm-of-the-law|need-to-stretch-my-legs|rising-hope
 chmp/ms-marvel,Ms. Marvel,chmp,versatile,unsupported,,,,big-impact|rising-hope
@@ -293,6 +296,7 @@ cvwr/speedball,Speedball,cvwr,draw,executable,WP-022,D-2201,packages/game-engine
 cvwr/stature,Stature,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,crush-file-sizes|shrink-to-nothing
 cvwr/stature,Stature,cvwr,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,crush-ants|crush-file-sizes|growing-confidence|shrink-to-nothing|trample-the-tiny
 cvwr/storm-black-panther,Storm & Black Panther,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,gathering-clues|gathering-rain-clouds
+cvwr/storm-black-panther,Storm & Black Panther,cvwr,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,tsunami-of-justice
 cvwr/tigra,Tigra,cvwr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,ferocity
 cvwr/tigra,Tigra,cvwr,gain-sidekick,executable,WP-844,D-24778,packages/game-engine/src/hero/heroEffects.execute.ts#gain-sidekick,friendship
 cvwr/tigra,Tigra,cvwr,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,supernatural-senses
@@ -307,6 +311,7 @@ dead/slapstick,Slapstick,dead,excessive-violence,unsupported,,,,electroplasmic-i
 dead/solo,Solo,dead,excessive-violence,unsupported,,,,mercs-gotta-get-paid
 dead/stingray,Stingray,dead,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,deck-chairs-on-the-titanic|superpowered-swimsuit
 dead/stingray,Stingray,dead,excessive-violence,unsupported,,,,sting-of-the-stingrays-sting
+dead/stingray,Stingray,dead,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,phd-in-oceanography
 dims/howard-the-duck,Howard the Duck,dims,reveal-three-assign,executable,WP-753,D-24580,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-three-assign,interplanetary-visitor
 dims/jessica-jones,Jessica Jones,dims,investigate,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#investigate,alias-investigations|crack-the-case|uncover-hidden-evil
 dims/jessica-jones,Jessica Jones,dims,switcheroo,unsupported,,,,alias-investigations|alter-ego|crack-the-case
@@ -319,6 +324,7 @@ dkcy/angel,Angel,dkcy,(unmarked),unmarked,,,,
 dkcy/bishop,Bishop,dkcy,discard-top-printed-attack,executable,WP-850,D-24786,packages/game-engine/src/hero/heroEffects.execute.ts#discard-top-printed-attack,firepower-from-the-future
 dkcy/bishop,Bishop,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,whatever-the-cost
 dkcy/bishop,Bishop,dkcy,ko-discarded-this-way,executable,WP-850,D-24786,packages/game-engine/src/hero/heroEffects.execute.ts#ko-discarded-this-way,firepower-from-the-future
+dkcy/bishop,Bishop,dkcy,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,whatever-the-cost
 dkcy/blade,Blade,dkcy,(unmarked),unmarked,,,,
 dkcy/cable,Cable,dkcy,teleport,unsupported,,,,rapid-response-force
 dkcy/colossus,Colossus,dkcy,gain-wound-self,executable,WP-364,D-24156,packages/game-engine/src/hero/heroEffects.execute.ts#gain-wound-self,draw-their-fire
@@ -335,10 +341,11 @@ dkcy/iron-fist,Iron Fist,dkcy,draw,executable,WP-022,D-2201,packages/game-engine
 dkcy/iron-fist,Iron Fist,dkcy,versatile,unsupported,,,,ancient-legacy
 dkcy/jean-grey,Jean Grey,dkcy,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,psychic-search
 dkcy/nightcrawler,Nightcrawler,dkcy,teleport,unsupported,,,,along-for-the-ride|bamf|blend-into-shadows
-dkcy/professor-x,Professor X,dkcy,(unmarked),unmarked,,,,
+dkcy/professor-x,Professor X,dkcy,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,class-dismissed
 dkcy/punisher,Punisher,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,boom-goes-the-dynamite
 dkcy/punisher,Punisher,dkcy,reveal-ko,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-ko,boom-goes-the-dynamite
 dkcy/wolverine,Wolverine,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,animal-instincts|no-mercy
+dkcy/wolverine,Wolverine,dkcy,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,no-mercy
 dstr/ancient-one-the,"Ancient One, The",dstr,astral-plane,unsupported,,,,astral-confrontation
 dstr/ancient-one-the,"Ancient One, The",dstr,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,teachings-of-kamar-taj
 dstr/ancient-one-the,"Ancient One, The",dstr,ritual-artifact,unsupported,,,,the-orb-of-agamotto
@@ -405,6 +412,8 @@ mgtg/drax,Drax,mgtg,reveal-top-may-ko,executable,WP-754,D-24581,packages/game-en
 mgtg/drax,Drax,mgtg,triggered-artifact,unsupported,,,,dual-knives
 mgtg/gamora,Gamora,mgtg,artifact,unsupported,,,,sharpen-blades
 mgtg/gamora,Gamora,mgtg,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,forgive|resourceful-fugitive
+mgtg/gamora,Gamora,mgtg,draw-threshold,condition,,,,stolen-necroblaster
+mgtg/gamora,Gamora,mgtg,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,stolen-necroblaster
 mgtg/gamora,Gamora,mgtg,triggered-artifact,unsupported,,,,retractable-sword
 mgtg/mantis,Mantis,mgtg,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,selfish|selfless
 mgtg/mantis,Mantis,mgtg,excessive-kindness,unsupported,,,,discover-the-dead|emotional-wave|empathic-bond|inspire-courage|sleep
@@ -667,7 +676,7 @@ vnom/venom-rocket,Venom Rocket,vnom,digest,unsupported,,,,hungry-for-action
 vnom/venom-rocket,Venom Rocket,vnom,excessive-violence,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#excessive-violence,serious-overkill
 vnom/venom-rocket,Venom Rocket,vnom,master-strike-or-ambush-this-turn,condition,,,,spring-the-trap
 vnom/venom-rocket,Venom Rocket,vnom,optional-discard-draw,executable,WP-754,D-24581,packages/game-engine/src/hero/heroEffects.execute.ts#optional-discard-draw,hungry-for-action
-vnom/venom-rocket,Venom Rocket,vnom,optional-ko-hand-discard,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,serious-overkill
+vnom/venom-rocket,Venom Rocket,vnom,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,serious-overkill
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,digest,unsupported,,,,cauldron-of-the-cosmos
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,cauldron-of-the-cosmos
 vnom/venomized-dr-strange,Venomized Dr. Strange,vnom,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,see-future-timelines
@@ -721,6 +730,7 @@ wwhk/bruce-banner,Bruce Banner,wwhk,reveal-ko,executable,WP-253,D-24024,packages
 wwhk/bruce-banner,Bruce Banner,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,savage-hulk-unleashed
 wwhk/bruce-banner,Bruce Banner,wwhk,transform,unsupported,,,,gamma-bomb-disaster
 wwhk/caiera,Caiera,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,shadow-queen
+wwhk/caiera,Caiera,wwhk,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,focus-the-old-power
 wwhk/caiera,Caiera,wwhk,outwit,condition,,,,focus-the-old-power|shadow-queen
 wwhk/caiera,Caiera,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,shadowforged-blade
 wwhk/caiera,Caiera,wwhk,transform,unsupported,,,,dutiful-protector
@@ -759,7 +769,7 @@ wwhk/sentry,Sentry,wwhk,feast,unsupported,,,,the-void-unchained
 wwhk/sentry,Sentry,wwhk,transform,unsupported,,,,agoraphobia|golden-guardian-of-good|mournful-sentinel|the-void-unchained|vast-unstable-power
 wwhk/sentry,Sentry,wwhk,transformed,unsupported,,,,rival-personalities
 wwhk/she-hulk,She-Hulk,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,window-of-opportunity
-wwhk/she-hulk,She-Hulk,wwhk,optional-ko-hand-discard,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,radioactive-riot
+wwhk/she-hulk,She-Hulk,wwhk,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,radioactive-riot
 wwhk/she-hulk,She-Hulk,wwhk,outwit,condition,,,,window-of-opportunity
 wwhk/she-hulk,She-Hulk,wwhk,recruit-threshold,condition,,,,hurl-legal-objections|radioactive-riot
 wwhk/she-hulk,She-Hulk,wwhk,reveal-herodeck-attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-herodeck-attack,jade-giantess
@@ -802,6 +812,7 @@ xmen/longshot,Longshot,xmen,berserk,executable,WP-256,D-24031,packages/game-engi
 xmen/longshot,Longshot,xmen,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,make-my-own-luck
 xmen/phoenix,Phoenix,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,driven-mad-by-power
 xmen/phoenix,Phoenix,xmen,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,reincarnating-phoenix
+xmen/phoenix,Phoenix,xmen,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,life-death-incarnate
 xmen/phoenix,Phoenix,xmen,piercing-energy,unsupported,,,,obliterating-fire
 xmen/phoenix,Phoenix,xmen,soaring-flight,unsupported,,,,obliterating-fire
 xmen/polaris,Polaris,xmen,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,electromagnetic-pulse
@@ -814,5 +825,5 @@ xmen/psylocke,Psylocke,xmen,x-gene,unsupported,,,,butterfly-effect
 xmen/x-23,X-23,xmen,berserk,executable,WP-256,D-24031,packages/game-engine/src/hero/effectPrimitive.interpret.ts,bioengineered-assassin|healing-factor-genome|heir-to-wolverine
 xmen/x-23,X-23,xmen,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,adamantium-foot-claws
 xmen/x-23,X-23,xmen,ko-wound,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound,healing-factor-genome
-xmen/x-23,X-23,xmen,optional-ko-hand-discard,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,bioengineered-assassin
+xmen/x-23,X-23,xmen,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,bioengineered-assassin
 xmen/x-23,X-23,xmen,x-gene,unsupported,,,,adamantium-foot-claws|bioengineered-assassin|heir-to-wolverine

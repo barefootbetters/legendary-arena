@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 78,
-    "totalObservations": 7761,
+    "totalObservations": 7739,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7240
+      "parse-unrecognized": 7218
     }
   },
   "byMechanic": {
@@ -140,12 +140,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 175,
+      "hitCount": 173,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 175
+        "parse-unrecognized": 173
       },
       "examples": [
         {
@@ -263,12 +263,12 @@
       ]
     },
     "attack-no-magnitude": {
-      "hitCount": 409,
+      "hitCount": 410,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 409
+        "parse-unrecognized": 410
       },
       "examples": [
         {
@@ -304,12 +304,12 @@
       ]
     },
     "bridge": {
-      "hitCount": 11,
+      "hitCount": 13,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 11
+        "parse-unrecognized": 13
       },
       "examples": [
         {
@@ -468,12 +468,12 @@
       ]
     },
     "cheering-crowds": {
-      "hitCount": 51,
+      "hitCount": 52,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 51
+        "parse-unrecognized": 52
       },
       "examples": [
         {
@@ -550,12 +550,12 @@
       ]
     },
     "conqueror": {
-      "hitCount": 43,
+      "hitCount": 45,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 43
+        "parse-unrecognized": 45
       },
       "examples": [
         {
@@ -1017,12 +1017,12 @@
       ]
     },
     "excessive-kindness": {
-      "hitCount": 92,
+      "hitCount": 91,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 92
+        "parse-unrecognized": 91
       },
       "examples": [
         {
@@ -1181,12 +1181,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 439,
+      "hitCount": 411,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 439
+        "parse-unrecognized": 411
       },
       "examples": [
         {
@@ -2304,12 +2304,12 @@
       ]
     },
     "streets": {
-      "hitCount": 64,
+      "hitCount": 65,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 64
+        "parse-unrecognized": 65
       },
       "examples": [
         {
@@ -2532,12 +2532,12 @@
       ]
     },
     "teleport": {
-      "hitCount": 206,
+      "hitCount": 207,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 206
+        "parse-unrecognized": 207
       },
       "examples": [
         {
@@ -2795,12 +2795,12 @@
       ]
     },
     "versatile": {
-      "hitCount": 165,
+      "hitCount": 166,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 165
+        "parse-unrecognized": 166
       },
       "examples": [
         {

@@ -608,8 +608,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // attack-no-magnitude 413 -> 409). totalObs 8686 -> 8682 (-4, equal to the raw feed fall);
   // resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8682). A denominator re-pin; no
   // mechanic changed status.
+  // 2026-10-28 (WP-851 / D-24787, re-pin): 11 bare "You may KO a card from your hand or discard
+  // pile." hero lines now carry optional-ko-hand-discard, so their gate-only hollow observations
+  // leave the sweep (feed regenerated: 7761 -> 7739 raw observations, 78 mechanics, 0 dropped;
+  // gate-only 439 -> 411, with +/-1-2 trajectory ripples elsewhere). totalObs 8682 -> 8658 (-24,
+  // not the raw -22: totalObs sums each mechanic's max(baseline, live) peak, so a mechanic that
+  // rose by 1-2 in the sweep but sits under its baseline peak adds nothing back). resolvedObs stays
+  // 1091, so percentResolved stays 12.6 (1091 / 8658). A denominator re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8682);
+  assert.equal(view.totalObs.value, 8658);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);

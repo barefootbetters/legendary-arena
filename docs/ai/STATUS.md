@@ -10,6 +10,23 @@
 
 ## Current State
 
+### WP-851 / EC-889 — Bare "You may KO a card from your hand or discard pile." opens the KO choice on 11 more hero lines (D-24787) (2026-10-28)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Bishop's Whatever the Cost played after another Covert Hero now opens the optional KO prompt (a card from hand or discard pile, or KO none). Played without one, it draws its card and logs that the KO needs another Covert Hero, without the "Its effect is not supported yet" tail (operator match `Ps0Hg_m5B-H`). The same clause now works on ten more lines, each under its printed gate:
+- Antics: amwp Ant-Man Bug Swarm.
+- Class: asrd Hogun the Grim (Strength), cvwr Tsunami of Justice (Covert), dkcy Professor X Class Dismissed (Instinct).
+- Team: chmp Ms. Marvel Need to Stretch My Legs (Champions).
+- Draws: mgtg Gamora Stolen Necroblaster (two cards drawn this turn; it waits for the second draw).
+- Outwit: wwhk Caiera Focus the Old Power.
+- Ungated: dead Stingray PhD in Oceanography, dkcy Wolverine No Mercy, xmen Phoenix Life/Death Incarnate.
+- **Data, marker-only.** The curated hero marker map gives the 11 lines the existing `[keyword:optional-ko-hand-discard]` (WP-667 / D-24480); Gamora's line also gets `[keyword:draw-threshold:2]`. `apply-hero-ability-markers.mjs` wrote them, and `cards:check` / `--validate` / `cards:count-markers:check` are clean. No engine source changed.
+- **Not marked (D-24787).** The 13 lines whose gate is not implemented stay unmarked, because marking them would fire the KO on every play: Focus (anni Super-Skrull, both Invisible Women), What If...? (wtif Star-Lord & T'Challa, Uatu), Sacrifice (three msis lines), Tactical Formation (msmc Multiple Man), Patrol the Streets (ssw2 Feeding Grounds), Villain-has-Wounds (bkpt White Wolf), Thrown Artifact (asrd Lady Sif), Danger Sense (smhc Happy Hogan). The map's `_notes` line names each.
+- **Feeds.** `mechanic-provenance.json` gains the missing `optional-ko-hand-discard` row, so all 14 of its ledger rows now name WP-667 / D-24480. Regenerated: the hero ledger, effect index, card-mechanics, and the runtime-observed sweep (7761 -> 7739 observations, gate-only 439 -> 411, 78 mechanics, 0 dropped).
+- **Tests.** game-engine 6047 -> 6054 / 0 fail (+7: new `optionalKoHandDiscardSweep.test.ts` on the real parsed lines; it fails with the unmarked dkcy data). dashboard 584 / 0, with the in-play pin re-pinned 8682 -> 8658 (−24 vs the raw −22, because it sums per-mechanic max(baseline, live) peaks; resolvedObs 1091 and 12.6% held). No sentinel or `finalStateHash` moved.
+- **Not covered by a browser preview:** the KO prompt is the shipped WP-667 component, and no client code changed.
+- **Out of scope (named follow-ups if wanted):** the 13 gate mechanics above; the 3dtc / msp1 Dangerous Rescue reprints (rescue reward, hand-or-discard only, which needs a zone-scope decision against core's wider marker).
+- **Live-verify (D-24026): operator-pending.** In a match created after the deploy, Whatever the Cost played after a Covert Hero opens the KO prompt.
+
 ### WP-850 / EC-888 — Bishop's Firepower from the Future discards four for printed Attack; X-Men KOs any of them (D-24786) (2026-10-28)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Playing Firepower from the Future (dkcy) discards the top four cards of your deck and adds their printed Attack to the base 4; the log names the four cards. With another X-Men Hero played this turn, a prompt then offers "KO any number of the N cards you just discarded", listing only those cards (zero is a valid pick). The two `Unhandled effect observed … (parse-unrecognized)` lines (`attack-no-magnitude`, `gate-only`) seen in operator match `Ps0Hg_m5B-H` stop.

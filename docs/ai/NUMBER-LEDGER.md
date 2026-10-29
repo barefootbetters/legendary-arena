@@ -489,7 +489,7 @@ high-water: 422
 - WP-848 — inplay-effects-triggered-counter (an in-play "Effects triggered N / M (P%)" line in Your Victory Pile, read live from the WP-708 conditional-clause tally. reserved 2026-10-27, claude/inplay-effects-triggered-counter; LANDED 2026-10-27)
 - WP-849 — card-transfer-vfx (a gained Wound flies from the Wounds supply to the receiving player's discard or hand; client-only flight beat built to take Bystander / Officer / Sidekick later. reserved 2026-10-28, claude/card-transfer-vfx)
 - WP-850 — discard-top-printed-attack (Bishop Firepower from the Future: discard the top four cards of your deck for +Attack equal to their printed Attack; the X-Men clause KOs any number of those cards via a pending choice. reserved 2026-10-28, claude/xenodochial-borg-9e262a; LANDED 2026-10-28)
-- WP-851 — optional-ko-hand-discard-sweep (marker-only: the bare no-reward "You may KO a card from your hand or discard pile." hero clause gets [keyword:optional-ko-hand-discard] on every line whose gate already executes; Bishop Whatever the Cost + 10 more. reserved 2026-10-28, claude/wp851-reserve)
+- WP-851 — optional-ko-hand-discard-sweep (marker-only: the bare no-reward "You may KO a card from your hand or discard pile." hero clause gets [keyword:optional-ko-hand-discard] on every line whose gate already executes; Bishop Whatever the Cost + 10 more. reserved 2026-10-28, claude/wp851-reserve; LANDED 2026-10-28)
 - WP-852 — board-table-perspective (desktop play board leans back like a table: tilt wrapper around the adversary band, City and HQ; board cards straighten and lift toward the player on hover; hand and right rail stay flat. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
 
 ## EC
@@ -942,7 +942,7 @@ high-water: 457
 - EC-886 — inplay-effects-triggered-counter (WP-848. reserved 2026-10-27, claude/inplay-effects-triggered-counter; LANDED 2026-10-27)
 - EC-887 — card-transfer-vfx (WP-849. reserved 2026-10-28, claude/card-transfer-vfx)
 - EC-888 — discard-top-printed-attack (WP-850. reserved 2026-10-28, claude/xenodochial-borg-9e262a; LANDED 2026-10-28)
-- EC-889 — optional-ko-hand-discard-sweep (WP-851. reserved 2026-10-28, claude/wp851-reserve)
+- EC-889 — optional-ko-hand-discard-sweep (WP-851. reserved 2026-10-28, claude/wp851-reserve; LANDED 2026-10-28)
 - EC-890 — board-table-perspective (WP-852. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
 
 ## D
@@ -1508,5 +1508,5 @@ section below) and the allocation protocol in
 - D-24784 — inplay-effects-triggered-counter (WP-848; UIPlayerState.conditionalClauses projects the per-seat {played, assembled} tally during play, public to every audience, display-only, no re-pin. reserved 2026-10-27, claude/inplay-effects-triggered-counter; LANDED 2026-10-27)
 - D-24785 — card-transfer-vfx (WP-849; the card-transfer flight is a client-only count-pair consumer on its own DOM layer, gated particles/shake. reserved 2026-10-28, claude/card-transfer-vfx)
 - D-24786 — discard-top-printed-attack (WP-850; discard-top-N grants printed Attack of the discarded cards, and a team-gated KO-any-of-those pending choice scoped to this play's discards. reserved 2026-10-28, claude/xenodochial-borg-9e262a; LANDED 2026-10-28)
-- D-24787 — optional-ko-hand-discard-sweep (WP-851; the curation rule: mark a bare optional-KO line only when its gate resolves to an executable condition, never when the gate token would be dropped and the KO fire ungated. reserved 2026-10-28, claude/wp851-reserve)
+- D-24787 — optional-ko-hand-discard-sweep (WP-851; the curation rule: mark a bare optional-KO line only when its gate resolves to an executable condition, never when the gate token would be dropped and the KO fire ungated. reserved 2026-10-28, claude/wp851-reserve; LANDED 2026-10-28)
 - D-24788 — board-table-perspective (WP-852; the desktop board tilt is presentation-only CSS on one wrapper with angle, perspective and lift as variables; board-card hover counter-rotates only while the City row fits; Effect Intensity off flattens. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)

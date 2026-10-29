@@ -1326,7 +1326,7 @@
           "recruit": "3",
           "abilities": [
             "KO this card.",
-            "You may KO a card from your hand or discard pile."
+            "You may KO a card from your hand or discard pile. [keyword:optional-ko-hand-discard]"
           ]
         },
         {
