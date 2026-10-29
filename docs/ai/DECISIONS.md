@@ -49861,5 +49861,21 @@ Protect this file.
 
 **Reserved by:** NUMBER-LEDGER D-24786 (#3074). Related: D-24510 (KO-from-discard), D-24769 / D-24783 (grey filter + heading), D-24682 (multiset payload), D-24285 (reshuffle), D-24604 (printed stats off play), D-24670 (self-computed attack icons), D-24521 §6 / D-24558 (a later line acts on an earlier one), D-24372 (RUNTIME drift pins), D-12803 (Board-Visible rule), D-24026.
 
+### D-24787 — A bare optional-KO hero line is marked only when its gate resolves to an executable condition (Active 2026-10-28 — WP-851 / EC-889)
+
+**Context.** "You may KO a card from your hand or discard pile." (no reward) has had a keyword since WP-667 (`optional-ko-hand-discard`, D-24480), but only three cards carried it. A corpus scan found the clause unmarked on 24 more hero lines. Each line's gate was probed through the real `buildHeroAbilityHooks` with the marker appended. On 11 lines the gate parses to a condition the engine evaluates. On the other 13 the gate token is a mechanic with no handler. There the parser either drops it silently (What If...?, Tactical Formation, Patrol the Streets, Villain-has-Wounds) or records it as unresolved, while the effect still runs (Focus, Sacrifice, Thrown Artifact, Danger Sense).
+
+**Decision.**
+1. Mark a bare optional-KO line with `[keyword:optional-ko-hand-discard]` only when every printed gate on it resolves to an executable condition: `[hc:X]`, `[team:X]`, Antics, Outwit, or a marker→condition such as `draw-threshold`.
+2. A line whose gate is dropped or unresolved stays unmarked, even though the KO itself is supported. An ungated KO on every play is a phantom grant, worse than the honest "not supported yet" hollow. The line is marked when its gate mechanic ships.
+3. "If you drew at least two cards this turn" is the existing `[keyword:draw-threshold:2]` (WP-665 / D-24476), a whole-turn wait-and-see gate (D-24377), so Gamora's KO parks once the second draw lands.
+4. The sweep is marker-only. It needs no new handler, keyword or condition, and the 13 unmarked lines are listed in the marker map's `_notes`.
+
+**Consequences.** 11 lines in 9 sets execute. `finalStateHash` and the sentinels are unchanged. The fixed-seed sweep and the dashboard in-play denominator re-pin by the removed gate-only hollows. The rewarded variants (Dangerous Rescue reprints, Shards, New Recruit, Spark of the Divine) are separate.
+
+**Live-verify (D-24026):** operator-pending.
+
+**Reserved by:** NUMBER-LEDGER D-24787 (#3075). Related: D-24480 (the keyword), D-24464 (Antics / Outwit), D-24476 + D-24377 (draw-threshold, wait-and-see), D-24606 (no Focus handler), D-24019 (the rewarded optional-ko-reward), D-24026.
+
 ---
 Protect this file.
