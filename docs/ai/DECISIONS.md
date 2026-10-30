@@ -49899,3 +49899,29 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24790 — Band stand-up: the Mastermind, S.H.I.E.L.D. Officers and Sidekicks straighten toward the player on hover, like the City and HQ (Active 2026-10-29 — WP-854 / EC-892)
+
+**Status:** Active 2026-10-29. Amends D-24788 §3's City-and-HQ-only scope. Live-verify (D-24026) operator-pending: after the arena-client deploy, on play.legendary-arena.com (desktop) in a real match, confirm the three cards stand up on hover; that clicks still fight the Mastermind and recruit an Officer and a Sidekick, including near a lifted card's bottom edge; that an unaffordable one still stands up and stays disabled; that an affordable Mastermind with a `Fight N` badge stands up with the badge at exactly 1.06; in an Enigma Code match, that the open guess is never covered; and in a Portals match with a Dark Portal over the Mastermind, how the lifted card sits against the marker.
+
+**User-Visible Surface:** `play.legendary-arena.com`, the desktop play board (viewport ≥ 768 px). `PlayMobile` is unchanged.
+
+**Context.** WP-852 / D-24788 left the adversary band flat, yet it sits at the far edge of the tilted plane, where the 14° / 900 px tilt shrinks cards most, and the Mastermind is fought and the Officers and Sidekicks recruited from there. The ewiki `visual-effects/#band-standup` proposal (PR #3094) asked for the three to answer the pointer like the City and HQ. A 2026-10-29 prototype on the real `mid-turn` board measured a ×1.22 stand-up (a City card: ×1.17), 24–57 px of clearance below the top status bar, and clean resting hits and Officers ↔ Sidekicks slide-and-clicks at all three guard widths. Its first version nested `:not(:has(.mastermind-tile__enigma-guess))` inside the plane's `:has()`; `:has()` cannot nest, so the browser dropped the whole selector list and every band card rose but stayed tilted (×1.03).
+
+**Decision.**
+1. **Which cards.** The WP-852 board-card stand-up extends to the three actionable cards of the adversary band: the Mastermind (its card frame, inside the fight button) and the S.H.I.E.L.D. Officers and Sidekicks recruit buttons, with the same transform, origin, timing, gates and pointer-only media query as the City and HQ (D-24788): `rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06)` around the bottom edge, 150 ms, no `translateY`, under `@media (hover: hover)`, off at Effect Intensity `off` and under reduced motion. The Scheme, the counter piles and the other band controls stay flat.
+2. **Hover the holder.** The hover target is the element that holds the lifted one (the fight button; the pile's cell), so the target never moves. The Mastermind lifts its card frame, not its button, so the "Tactics remaining" and Final Blow lines stay on the table.
+3. **Unaffordable cards still stand up**, like a City villain you cannot afford; their dimmed look, disabled state and tooltip are unchanged.
+4. **No row-fit gate.** The band and the shared-decks row are not scroll containers, so nothing forces them flat; `useRowFit` is not needed.
+5. **3D only while hovered (EC-890 Amendment A).** The `preserve-3d` chain through the band switches on only while one of the three is hovered, and the plane steps out of hit testing meanwhile (`pointer-events: none`, its direct children `auto`).
+6. **Enigma exclusion.** The Mastermind never stands up while the WP-830 Enigma guess is open, tested through a static `mastermind-tile--guessing` class (the picker's own `v-if` condition) because `:has()` cannot nest. Inside a `preserve-3d` context depth order beats `z-index`, so a raised card would paint over the open picker.
+7. **Opt-in props.** `MastermindTile` and `SharedDecks` take `isTiltLiftEnabled` (default `false`); only `PlayDesktop` passes `isBoardLiftEnabled`. Root classes: `mastermind-tile--tilt-lift`, `mastermind-tile--guessing` (rendered on every surface, styled only under the lift class), `shared-decks--tilt-lift`.
+8. **What guards it.** The WP-689 guard pins the band's resting hits, hover lift, status-bar clearance, the Officers ↔ Sidekicks slide-and-click and the Enigma exclusion (`isBandRestingHitIntact`, the per-card `isHover…` fields, `isBandLiftClearOfHud`, `isBandSlideClickIntact`, `isBandGuessingFlat`). Unit tests pin only the prop and class wiring, so the chain, lift and hit testing are guarded only by `test:visual`, which runs locally.
+9. **Accepted overlap.** While lifted, the Mastermind card may paint over the Dark Portal marker or the "victory is assured" banner just above it (depth beats `z-index` in 3D), as D-24788 accepts for the City's marker.
+
+**Consequences.** Presentation only: no engine, `UIState`, move, store or click-handler change, so `finalStateHash`, the sentinels and replays are untouched. arena-client 2514 → 2521 tests (+7); `test:visual` PASSED at 1280×720 / 1366×768 / 1920×1080 (Mastermind rise 12 / 13 / 20 px, Officers and Sidekicks 18 / 20 / 30 px).
+
+**Reserved by:** NUMBER-LEDGER D-24790 (#3095). Related: D-24788 (table perspective, EC-890 Amendment A), D-24763 (Enigma guess overlay), D-24506 (the Playwright guard), D-24460 / D-24776 (Officers / Sidekicks recruit), D-24548 (Dark Portal marker), D-24026 (live verify).
+
+---
+Protect this file.

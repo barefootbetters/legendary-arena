@@ -25,7 +25,7 @@ source:
   - ../docs/ai/execution-checklists/EC-598-engine-test-typecheck-gate.checklist.md
   - ../apps/dashboard/docs/jarvis-command-center.md
   - ../docs/ai/DECISIONS.md
-last-reviewed: 2026-10-28
+last-reviewed: 2026-10-29
 ---
 
 # Testing
@@ -264,7 +264,18 @@ slip through again.
   `isHoverBottomCovered`, the HQ ones as `isHqHover…`; City also
   `hasCityBoxGapsWhileHovered`), and that a click made right after sliding from one
   lifted card onto its neighbour lands on the neighbour (`isSlideClickIntact`,
-  `isHqSlideClickIntact`, every pair both ways). It re-checks the discard chooser with the pointer
+  `isHqSlideClickIntact`, every pair both ways). Since WP-854 / D-24790 (the
+  [band stand-up](visual-effects.md#band-standup)) it also asserts that the resting
+  Mastermind, Officers and Sidekicks buttons take their own clicks
+  (`isBandRestingHitIntact`); that each of the three lifts, stays visible, keeps the
+  3D chain and takes a bottom-edge click (the same `isHover…` fields, logged per
+  card); that no lifted band card reaches the top status bar
+  (`isBandLiftClearOfHud`); that a click right after sliding between the Officers
+  and Sidekicks lands (`isBandSlideClickIntact`); and, with the
+  `mastermind-tile--guessing` class injected (the fixture has no Enigma scheme),
+  that the Mastermind does not stand up while the Enigma guess is open
+  (`isBandGuessingFlat`). The recruit-pile hover checks rely on the fixture's
+  recruit buttons being enabled. It re-checks the discard chooser with the pointer
   over its own space, and loads one fresh page at Effect Intensity `off` to
   confirm the board is flat. It also writes a full-resolution PNG per width to `visual/__screenshots__/` (gitignored
   artifacts, never committed).
@@ -278,7 +289,7 @@ PLAY_URL="http://localhost:5173/?fixture=mid-turn&play=1" \
   pnpm --filter @legendary-arena/arena-client test:visual:run
 ```
 
-  Pass output prints `{pageScrollsY:false,pageScrollsX:false,turnBarOverlapsCockpit:false,boardFitsContainer:true}` per width, then the `tilt`, `resting hits`, `City hover`, `HQ hover`, `City slide-and-click`, `HQ slide-and-click`, `discard chooser` and `discard chooser (space hovered)` lines, then `1280x720 off: {"planeM22":1}`, and ends `play-surface visual guard PASSED`; any violated invariant exits non-zero and names the width + invariant. Install the browser through arena-client (above): a root `npx playwright` can fetch a Playwright build that does not match arena-client's.
+  Pass output prints `{pageScrollsY:false,pageScrollsX:false,turnBarOverlapsCockpit:false,boardFitsContainer:true}` per width, then the `tilt`, `resting hits`, `City hover`, `HQ hover`, `City slide-and-click`, `HQ slide-and-click`, `band resting hits`, `Mastermind hover`, `Officers hover`, `Sidekicks hover`, `band HUD clearance`, `band slide-and-click`, `band guessing`, `discard chooser` and `discard chooser (space hovered)` lines, then `1280x720 off: {"planeM22":1}`, and ends `play-surface visual guard PASSED`; any violated invariant exits non-zero and names the width + invariant. Install the browser through arena-client (above): a root `npx playwright` can fetch a Playwright build that does not match arena-client's.
 - **Not CI-gated yet.** This is a **local / on-demand** guard and a required step of
   the D-24026 live-verification for any play-surface layout change. Wiring it into
   `ci.yml` as its own job — `npx playwright install --with-deps chromium` (the runners

@@ -16,7 +16,10 @@
  *   4. (WP-852 / D-24788) the table perspective: the board plane is tilted, City
  *      boxes keep a gap, the plane clears the HUD and cockpit, resting cards take
  *      their own clicks, and a hovered City / HQ card lifts and squares up; a
- *      fresh page at Effect Intensity `off` is flat.
+ *      fresh page at Effect Intensity `off` is flat; and (WP-854 / D-24790) the
+ *      band's Mastermind, Officers and Sidekicks take their resting clicks, lift
+ *      clear of the HUD, survive an Officers / Sidekicks slide-and-click, and the
+ *      Mastermind stays down while the Enigma guess is open.
  *
  * Run it via `pnpm --filter @legendary-arena/arena-client test:visual` (which
  * lets this script spawn the `vite` DEV server), or point it at an
@@ -294,9 +297,9 @@ function measureTilt() {
  * to 60% of a resting HQ card's clicks, while every geometry check still passed.
  * The interior grid stays off the rounded corners, which a flat board misses too.
  */
-function measureRestingHits() {
+function measureRestingHits(selector) {
   const missedCards = [];
-  const buttons = document.querySelectorAll('[data-testid="play-city-villain"], [data-testid="play-hq-hero"]');
+  const buttons = document.querySelectorAll(selector);
   for (const button of buttons) {
     const box = button.getBoundingClientRect();
     let missCount = 0;
@@ -306,7 +309,11 @@ function measureRestingHits() {
         if (hit === null || !button.contains(hit)) missCount += 1;
       }
     }
-    if (missCount > 0) missedCards.push({ cardId: button.getAttribute('data-card-id'), missCount });
+    // why: WP-854 — the band buttons (Mastermind, Officers, Sidekicks) carry no
+    // data-card-id, so they are named by their data-testid instead.
+    if (missCount > 0) {
+      missedCards.push({ cardId: button.getAttribute('data-card-id') ?? button.getAttribute('data-testid'), missCount });
+    }
   }
   return { isRestingCardHitIntact: buttons.length > 0 && missedCards.length === 0, cardCount: buttons.length, missedCards };
 }
@@ -398,7 +405,7 @@ async function hoverAndMeasure(page, selector, isCityGapCheck) {
   return result;
 }
 
-/** Push the City or HQ hover-check failures for one viewport. */
+/** Push the City, HQ or band hover-check failures for one viewport. */
 function collectHoverFailures(failures, label, rowName, hover, isCityGapCheck) {
   if (!hover.found) {
     failures.push(`${label}: no ${rowName} card to hover`);
@@ -417,11 +424,19 @@ function collectHoverFailures(failures, label, rowName, hover, isCityGapCheck) {
   }
 }
 
-/** Read every element matching `selector` as an id + click point (browser context). */
+/**
+ * Read every element matching `selector` as an id + click point (browser context).
+ * why: WP-854 — the band recruit buttons carry no data-card-id, so they are named
+ * by their data-testid; City and HQ buttons always carry data-card-id.
+ */
 function readSlideTargets(selector) {
   return [...document.querySelectorAll(selector)].map((element) => {
     const box = element.getBoundingClientRect();
-    return { cardId: element.getAttribute('data-card-id'), x: box.left + box.width / 2, y: box.top + box.height * 0.75 };
+    return {
+      cardId: element.getAttribute('data-card-id') ?? element.getAttribute('data-testid'),
+      x: box.left + box.width / 2,
+      y: box.top + box.height * 0.75,
+    };
   });
 }
 
@@ -433,7 +448,11 @@ function installClickRecorder() {
   window.__wp852SlideClicks = [];
   window.__wp852SlideRecorder = (event) => {
     const button = event.target.closest('button');
-    window.__wp852SlideClicks.push(button === null ? null : button.getAttribute('data-card-id'));
+    // why: WP-854 — the data-testid fallback names the band recruit buttons, which
+    // carry no data-card-id (it matches readSlideTargets).
+    window.__wp852SlideClicks.push(
+      button === null ? null : button.getAttribute('data-card-id') ?? button.getAttribute('data-testid'),
+    );
     event.preventDefault();
     event.stopPropagation();
   };
@@ -480,6 +499,97 @@ async function slideAndClick(page, selector) {
     }
   }
   return { slideCount: slides.length, isSlideClickIntact: slides.length > 0 && missedSlides.length === 0, missedSlides };
+}
+
+/** Read the top status bar's bottom edge, or `null` when it is missing (browser context). */
+function readHudBottom() {
+  const hud = document.querySelector('.top-hud-bar');
+  return hud === null ? null : hud.getBoundingClientRect().bottom;
+}
+
+/** Add the Enigma-guess class to the Mastermind tile (browser context). */
+function addGuessingClass() {
+  document.querySelector('.mastermind-tile')?.classList.add('mastermind-tile--guessing');
+}
+
+/** Remove the Enigma-guess class from the Mastermind tile (browser context). */
+function removeGuessingClass() {
+  document.querySelector('.mastermind-tile')?.classList.remove('mastermind-tile--guessing');
+}
+
+/**
+ * WP-854 / D-24790 — the band stand-up: resting band cards take their own clicks,
+ * the Mastermind, Officers and Sidekicks each lift and square up on hover, and no
+ * lifted card reaches the top status bar. Then the slide and Enigma checks.
+ */
+async function checkBandStandUp(page, label, failures) {
+  const restingHits = await page.evaluate(
+    measureRestingHits,
+    '[data-testid="play-mastermind-button"], [data-testid="play-recruit-officer"], [data-testid="play-recruit-sidekick"]',
+  );
+  console.log(`  ${label} band resting hits:`, JSON.stringify({
+    isBandRestingHitIntact: restingHits.isRestingCardHitIntact,
+    cardCount: restingHits.cardCount,
+    missedCards: restingHits.missedCards,
+  }));
+  if (!restingHits.isRestingCardHitIntact) {
+    failures.push(`${label}: a resting Mastermind, Officers or Sidekicks card does not take its own clicks under the tilt`);
+  }
+  const hudBottom = await page.evaluate(readHudBottom);
+  const unclearNames = [];
+  // why: measureHover requires opacity 1 from the lifted element up, so the
+  // recruit checks rely on the fixture's recruit buttons being enabled; a disabled
+  // one (opacity 0.55) lifts correctly but would fail the walk, and stays on the
+  // D-24026 live check.
+  for (const { name, selector } of [
+    { name: 'Mastermind', selector: '.mastermind__card-frame' },
+    { name: 'Officers', selector: '[data-testid="play-recruit-officer"]' },
+    { name: 'Sidekicks', selector: '[data-testid="play-recruit-sidekick"]' },
+  ]) {
+    const hover = await hoverAndMeasure(page, selector, false);
+    console.log(`  ${label} ${name} hover:`, JSON.stringify(hover));
+    collectHoverFailures(failures, label, name, hover, false);
+    if (hover.found && (hudBottom === null || hover.liftedTop < hudBottom - 1)) unclearNames.push(name);
+  }
+  console.log(`  ${label} band HUD clearance:`, JSON.stringify({ isBandLiftClearOfHud: unclearNames.length === 0 }));
+  for (const name of unclearNames) failures.push(`${label}: a lifted ${name} card reaches the top status bar`);
+  await checkBandSlideAndGuessing(page, label, failures);
+}
+
+/**
+ * WP-854 / D-24790 — a click right after sliding between the Officers and
+ * Sidekicks lands on the target, and the Mastermind stays down while the Enigma
+ * guess is open.
+ *
+ * why isBandGuessingFlat: the unit test can only see the --guessing class toggle,
+ * not that the :not(.mastermind-tile--guessing) selectors hold the card down; this
+ * pins the selectors. The fixture has no Enigma scheme, so the class is injected,
+ * and removed in a finally so it cannot leak into the discard-chooser check.
+ */
+async function checkBandSlideAndGuessing(page, label, failures) {
+  const bandSlide = await slideAndClick(page, '[data-testid="play-recruit-officer"], [data-testid="play-recruit-sidekick"]');
+  console.log(`  ${label} band slide-and-click:`, JSON.stringify({
+    slideCount: bandSlide.slideCount,
+    isBandSlideClickIntact: bandSlide.isSlideClickIntact,
+    missedSlides: bandSlide.missedSlides,
+  }));
+  if (!bandSlide.isSlideClickIntact) {
+    failures.push(`${label}: a click right after sliding between the Officers and Sidekicks missed it: ${JSON.stringify(bandSlide.missedSlides)}`);
+  }
+  let guessingHover;
+  try {
+    await page.evaluate(addGuessingClass);
+    guessingHover = await hoverAndMeasure(page, '.mastermind__card-frame', false);
+  } finally {
+    await page.evaluate(removeGuessingClass);
+  }
+  const isBandGuessingFlat = guessingHover.found === true && guessingHover.isHoverLifted === false;
+  console.log(`  ${label} band guessing:`, JSON.stringify({
+    isBandGuessingFlat,
+    found: guessingHover.found,
+    isHoverLifted: guessingHover.isHoverLifted,
+  }));
+  if (!isBandGuessingFlat) failures.push(`${label}: the Mastermind still stands up while the Enigma guess is open`);
 }
 
 /** Read the open discard chooser's City space rect (browser context). */
@@ -596,7 +706,10 @@ async function run() {
       if (!tilt.hasCityBoxGaps) failures.push(`${label}: neighbouring City boxes touch or overlap under the tilt`);
       if (!tilt.isPlaneClearOfHud) failures.push(`${label}: tilted board overlaps the top status bar`);
       if (!tilt.isPlaneClearOfCockpit) failures.push(`${label}: tilted board overlaps the cockpit`);
-      const restingHits = await page.evaluate(measureRestingHits);
+      const restingHits = await page.evaluate(
+        measureRestingHits,
+        '[data-testid="play-city-villain"], [data-testid="play-hq-hero"]',
+      );
       console.log(`  ${label} resting hits:`, JSON.stringify(restingHits));
       if (!restingHits.isRestingCardHitIntact) {
         failures.push(`${label}: a resting City or HQ card does not take its own clicks under the tilt`);
@@ -632,6 +745,8 @@ async function run() {
       if (!hqSlide.isSlideClickIntact) {
         failures.push(`${label}: a click right after sliding onto an HQ card missed it: ${JSON.stringify(hqSlide.missedSlides)}`);
       }
+      // WP-854 / D-24790 — the band stand-up (Mastermind, Officers, Sidekicks).
+      await checkBandStandUp(page, label, failures);
 
       // why: last, because it re-stages the board; the fit invariants above are
       // measured on the untouched fixture.

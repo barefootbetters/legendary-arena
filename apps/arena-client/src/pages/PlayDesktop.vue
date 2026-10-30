@@ -915,6 +915,7 @@ export default defineComponent({
                       :enigma-code="snapshot.scheme.enigmaCode"
                       :is-game-over="isGameOver"
                       :submit-move="submitMove"
+                      :is-tilt-lift-enabled="isBoardLiftEnabled"
                       @read="onCardRead"
                     />
                     <MasterStrikePile
@@ -936,6 +937,7 @@ export default defineComponent({
                     :has-healed-this-turn="snapshot.game.hasHealedThisTurn"
                     :economy="snapshot.economy"
                     :submit-move="submitMove"
+                    :is-tilt-lift-enabled="isBoardLiftEnabled"
                   />
                   <KOPile :ko-pile="snapshot.koPile" @open="onPileOpen" />
                 </section>
@@ -1618,6 +1620,24 @@ export default defineComponent({
   pointer-events: none;
 }
 .play-desktop__board-plane--lift:has(.city-row--tilt-lift .city-space:not(.city-space--choosing):hover > .city-space__villain, .hq-row--tilt-lift .hq-slot:hover > .hq-slot__hero) > * {
+  pointer-events: auto;
+}
+
+/* why: WP-854 / D-24790 — the band stand-up (Mastermind, Officers, Sidekicks)
+   needs the same two rules. The chain from the plane through the band (and the
+   mastermind zone) preserves 3D only while one of the three is hovered, and the
+   plane steps out of hit testing meanwhile, for the same z-fight and slide reasons
+   as the City and HQ (EC-890 Amendment A). The Enigma exclusion is the static
+   --guessing class because :has() cannot nest. */
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit),
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit) .play-desktop__adversary-band,
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit) .play-desktop__mastermind-zone {
+  transform-style: preserve-3d;
+}
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit) {
+  pointer-events: none;
+}
+.play-desktop__board-plane--lift:has(.mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover, .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit) > * {
   pointer-events: auto;
 }
 
