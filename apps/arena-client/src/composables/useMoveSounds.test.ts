@@ -148,3 +148,15 @@ describe('useMoveSounds (WP-421) — integration with the real WP-412 engine', (
     assert.equal(created.get(moveSfxManifest.playCard ?? '')?.plays ?? 0, 0);
   });
 });
+
+describe('useMoveSounds — the Officers and Sidekicks recruits play the recruit chime', () => {
+  test('recruiting a S.H.I.E.L.D. Officer or a Sidekick fires the same clip as an HQ recruit', () => {
+    const { engine, played } = makeRecordingEngine();
+    const playMoveSound = useMoveSounds(engine);
+
+    playMoveSound('recruitOfficer');
+    playMoveSound('recruitSidekick');
+
+    assert.deepEqual(played, [moveSfxManifest.recruitHero, moveSfxManifest.recruitHero]);
+  });
+});
