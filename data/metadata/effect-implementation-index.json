@@ -3,16 +3,16 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2025,
+    "totalEntries": 2028,
     "byScope": {
-      "hero": 829,
+      "hero": 832,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 649,
+      "executable": 651,
       "deferred": 16,
-      "condition": 51,
+      "condition": 52,
       "unsupported": 291,
       "unmarked": 1013,
       "subsystem": 5
@@ -12038,6 +12038,57 @@
         {
           "slug": "commune-with-the-spirit-world",
           "name": "Commune with the Spirit World"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "name": "Doctor Voodoo",
+      "set": "dstr",
+      "scope": "hero",
+      "mechanic": "attack",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "posessed-by-brothers-spirit",
+          "name": "Posessed by Brother's Spirit"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "name": "Doctor Voodoo",
+      "set": "dstr",
+      "scope": "hero",
+      "mechanic": "owned-hero-koed",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-856",
+      "decision": "D-24792",
+      "designs": [
+        {
+          "slug": "posessed-by-brothers-spirit",
+          "name": "Posessed by Brother's Spirit"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "name": "Doctor Voodoo",
+      "set": "dstr",
+      "scope": "hero",
+      "mechanic": "recruit",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "posessed-by-brothers-spirit",
+          "name": "Posessed by Brother's Spirit"
         }
       ]
     },
@@ -32854,6 +32905,9 @@
       "scope": "hero",
       "mechanics": [
         "artifact",
+        "attack",
+        "owned-hero-koed",
+        "recruit",
         "ritual-artifact"
       ]
     },

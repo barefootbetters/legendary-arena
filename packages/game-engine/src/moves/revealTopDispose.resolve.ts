@@ -189,7 +189,7 @@ export function resolveRevealTopDispose(
       G.ko = koCard(G.ko, args.cardId);
       // why: WP-853 / D-24789 — the KO'd card left the OWNER's deck, who may not be
       // the player resolving the choice.
-      recordOwnedCardKoed(G, args.ownerPlayerID);
+      recordOwnedCardKoed(G, args.ownerPlayerID, args.cardId);
       pushLog(
         G,
         `Player ${playerID} KO'd ${cardName} (${args.cardId}) from the top of their deck (reveal-top).`,

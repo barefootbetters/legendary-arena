@@ -239,7 +239,7 @@ function applyRevealThreeDisposition(
   if (!moveResult.found) { return; }
   zones.deck = moveResult.from;
   G.ko = koCard(G.ko, cardId);
-  recordOwnedCardKoed(G, playerID);
+  recordOwnedCardKoed(G, playerID, cardId);
   pushLog(G,
     `Player ${playerID} KO'd ${cardName} (${cardId}) from the top of their deck (reveal three).`,
     'applied',

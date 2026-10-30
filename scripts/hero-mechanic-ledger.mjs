@@ -184,6 +184,7 @@ const KNOWN_CONDITIONS = {
   'recruit-threshold': 'recruitMadeThisTurnAtLeast',              // Thor "Surge of Power" (WP-545 / D-24354): ≥N Recruit this turn
   'defeated-villain-or-mastermind': 'defeatedVillainOrMastermindThisTurn', // Emma Frost "Diamond Form" (WP-656 / D-24467): a Villain/Mastermind defeated this turn
   'owned-card-koed': 'ownedCardKoedThisTurn', // Bishop "Absorb Energies" (WP-853 / D-24789): a card you own KO'd this turn
+  'owned-hero-koed': 'ownedHeroKoedThisTurn', // Doctor Voodoo "Possessed by Brother's Spirit" (WP-856 / D-24792): the first time one of your Heroes is KO'd this turn
   // why: WP-665 / D-24476 — Amadeus Cho "Gamma-Draining Nanites": the transform gates on
   // ≥N cards drawn this turn (a shipped wait-and-see condition), so the row reads `condition`.
   'draw-threshold': 'cardsDrawnThisTurnAtLeast',                  // ≥N cards drawn this turn

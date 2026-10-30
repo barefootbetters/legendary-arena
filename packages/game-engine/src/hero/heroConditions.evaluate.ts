@@ -36,6 +36,12 @@ export const CARDS_DISCARDED_THIS_TURN_CONDITION_TYPE = 'cardsDiscardedThisTurnA
 // MASTER_STRIKE_* bindings below uninitialized when the wait-and-see list reads them.
 export const OWNED_CARD_KOED_CONDITION_TYPE = 'ownedCardKoedThisTurn';
 
+// why: WP-856 / D-24792 — the one literal for "The first time that one of your Heroes or a
+// Hero from your deck or discard pile is KO'd this turn" (Doctor Voodoo's Possessed by
+// Brother's Spirit). Lives here beside OWNED_CARD_KOED_CONDITION_TYPE for the same
+// load-order reason.
+export const OWNED_HERO_KOED_CONDITION_TYPE = 'ownedHeroKoedThisTurn';
+
 // ---------------------------------------------------------------------------
 // matchReadsConditionType — does any hook in this match read a condition?
 // ---------------------------------------------------------------------------
@@ -372,6 +378,15 @@ export function evaluateCondition(
       // counted KO and deletes it, so the gate is true only right after a KO of this
       // player's own card. Ignores condition.value. An absent map reads false.
       return (G.ownedCardsKoedSinceResolve?.[playerID] ?? 0) > 0;
+    }
+
+    case OWNED_HERO_KOED_CONDITION_TYPE: {
+      // why: WP-856 / D-24792 — Possessed by Brother's Spirit's "The first time that one of
+      // your Heroes … is KO'd this turn". Reads the per-owner Hero-KO count the owned KO sites
+      // add to (gated on a waiting grant; Wounds and Bystanders skipped) and the resolve
+      // deletes. The grant is not re-armed, so it fires on the first counted KO only.
+      // Ignores condition.value. An absent map reads false.
+      return (G.ownedHeroesKoedSinceResolve?.[playerID] ?? 0) > 0;
     }
 
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE: {
@@ -922,6 +937,11 @@ export function describeFailedCondition(
       // why: WP-853 / D-24789 — a per-KO trigger with no running total to quote; the
       // wait-and-see "not yet" phrasing, like the defeat gate above.
       return 'it needs a card you own to be KO\'d this turn';
+
+    case OWNED_HERO_KOED_CONDITION_TYPE:
+      // why: WP-856 / D-24792 — a one-shot trigger with no running total to quote; the
+      // wait-and-see "not yet" phrasing, like the owned-KO gate above.
+      return 'it needs a Hero of yours to be KO\'d this turn';
 
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE:
       // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.

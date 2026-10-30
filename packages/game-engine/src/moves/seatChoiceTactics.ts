@@ -761,7 +761,7 @@ export function applyCrushPacifistResistanceKo(
   zones[sourceZone] = removal.from;
   G.ko = koCard(G.ko, cardId);
   // why: WP-853 / D-24789 — the chosen seat owns the KO'd card, not the active player.
-  recordOwnedCardKoed(G, seat);
+  recordOwnedCardKoed(G, seat, cardId);
   pushLog(
     G,
     `Player ${seat} KO'd ${resolveCardName(G.cardDisplayData, cardId)} from ${describeKoSourceZone(sourceZone)} (Crush Pacifist Resistance).`,

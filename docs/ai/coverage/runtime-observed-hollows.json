@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 78,
-    "totalObservations": 7735,
+    "totalObservations": 7734,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7214
+      "parse-unrecognized": 7213
     }
   },
   "byMechanic": {
@@ -140,12 +140,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 173,
+      "hitCount": 172,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 173
+        "parse-unrecognized": 172
       },
       "examples": [
         {
@@ -222,12 +222,12 @@
       ]
     },
     "astral-plane": {
-      "hitCount": 46,
+      "hitCount": 47,
       "lastSeenTurn": 28,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 46
+        "parse-unrecognized": 47
       },
       "examples": [
         {
@@ -867,7 +867,7 @@
     },
     "demonic-bargain": {
       "hitCount": 16,
-      "lastSeenTurn": 27,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
@@ -899,7 +899,7 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "dstr/vishanti-the/agamotto#1",
+          "cardId": "dstr/vishanti-the/agamotto#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1854,12 +1854,12 @@
       ]
     },
     "recruit-no-magnitude": {
-      "hitCount": 415,
+      "hitCount": 414,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 415
+        "parse-unrecognized": 414
       },
       "examples": [
         {

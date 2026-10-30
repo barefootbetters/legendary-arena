@@ -621,8 +621,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // mechanics, 0 dropped; attack-no-magnitude 410 -> 408, teleport 207 -> 205). totalObs 8658 -> 8654
   // (-4, equal to the raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.6
   // (1091 / 8654). A trajectory re-pin; no mechanic changed status.
+  // 2026-10-29 (WP-856 / D-24792, re-pin): Doctor Voodoo's Possessed by Brother's Spirit no longer
+  // grants +4 Recruit and +4 Attack on play, so the dstr sweep board plays out differently (feed
+  // regenerated: 7735 -> 7734 raw observations, 78 mechanics, 0 dropped; artifact 173 -> 172,
+  // recruit-no-magnitude 415 -> 414, astral-plane 46 -> 47). totalObs 8654 -> 8653 (-1: the
+  // astral-plane rise sits under its baseline peak, so it adds nothing back); resolvedObs stays 1091,
+  // so percentResolved stays 12.6 (1091 / 8653). A trajectory re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8654);
+  assert.equal(view.totalObs.value, 8653);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);

@@ -734,7 +734,7 @@ function resolveRedSkullStrike(
     playerZones.hand = moveResult.from;
     gameState.ko = koCard(gameState.ko, targetExtId);
     // why: WP-853 / D-24789 — each player loses a card they own; credit that player.
-    recordOwnedCardKoed(gameState, playerId);
+    recordOwnedCardKoed(gameState, playerId, targetExtId);
 
     pushLog(gameState,
       `[Red Skull Master Strike] Player ${playerId} KO'd ${formatCardRef(gameState.cardDisplayData, targetExtId)} from their hand.`,

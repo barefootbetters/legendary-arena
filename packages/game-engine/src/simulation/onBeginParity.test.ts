@@ -208,6 +208,23 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.equal('ownedCardsKoedSinceResolve' in gameState, false);
   });
 
+  it('deletes the Hero-KO count at the turn boundary (WP-856 / D-24792)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.ownedHeroesKoedSinceResolve = { '0': 1 };
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: mirrors game.ts onBegin — a count surviving the turn boundary would let Possessed by
+    // Brother's Spirit fire next turn with no KO. ABSENT, not merely zero.
+    assert.equal('ownedHeroesKoedSinceResolve' in gameState, false);
+  });
+
+  it('never creates the Hero-KO count on a G that never had it (oracle safety, WP-856 / D-24792)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    applyOnBeginParity(gameState, '0');
+    assert.equal('ownedHeroesKoedSinceResolve' in gameState, false);
+  });
+
   it('never creates the owned-KO count on a G that never had it (oracle safety, WP-853 / D-24789)', () => {
     const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
     assert.equal('ownedCardsKoedSinceResolve' in gameState, false);

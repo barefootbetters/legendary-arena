@@ -98,6 +98,7 @@
     "discard-top-printed-attack": { "wp": "WP-850", "decision": "D-24786" },
     "ko-discarded-this-way": { "wp": "WP-850", "decision": "D-24786" },
     "owned-card-koed": { "wp": "WP-853", "decision": "D-24789" },
+    "owned-hero-koed": { "wp": "WP-856", "decision": "D-24792" },
     "ko-wound-reward": { "wp": "WP-382", "decision": "D-24183" },
     "discard-to-play": { "wp": "WP-383", "decision": "D-24184" },
     "return-on-discard": { "wp": "WP-498", "decision": "D-24301" },

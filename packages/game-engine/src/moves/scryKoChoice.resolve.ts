@@ -115,7 +115,7 @@ export function resolveScryKoChoice({ G, playerID }: MoveContext, args: ResolveS
   // Step 5: Mutate — shorten the deck and KO the chosen card
   zones.deck = moveResult.from;
   G.ko = koCard(G.ko, args.cardId);
-  recordOwnedCardKoed(G, playerID);
+  recordOwnedCardKoed(G, playerID, args.cardId);
 
   // Step 6: Narrate the resolved KO so the player sees WHICH card they KO'd. The
   // park-time line only said "look at the top two … choose one to KO". `G.messages`

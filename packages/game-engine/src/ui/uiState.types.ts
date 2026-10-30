@@ -1800,14 +1800,16 @@ export interface UIPendingCountScaledChoiceOption {
   // why: D-24696 — ca75 Spy Network adds a S.H.I.E.L.D. Officer gain ('gain-officer', label
   // only) and a flat attack grant ('flat-attack', resource 'attack' + total = the flat amount).
   /** Discriminant — a count-scaled resource grant, an Undercover send, an Officer gain, or a flat attack. */
-  kind: 'count-scaled' | 'undercover' | 'gain-officer' | 'flat-attack';
-  /** count-scaled / flat-attack: which resource this option grants. */
+  // why: WP-856 / D-24792 — 'flat-recruit' is the flat-attack sibling (Possessed by Brother's
+  // Spirit's "+4 Recruit or +4 Attack"): resource 'recruit' + total = the flat amount.
+  kind: 'count-scaled' | 'undercover' | 'gain-officer' | 'flat-attack' | 'flat-recruit';
+  /** count-scaled / flat-attack / flat-recruit: which resource this option grants. */
   resource?: 'attack' | 'recruit';
   /** count-scaled: the per-unit rate (attack/recruit per counted card). */
   perUnit?: number;
   /** count-scaled: the resolved count (of qualifying cards / S.H.I.E.L.D. Level). */
   count?: number;
-  /** count-scaled: the grant this option would apply now (perUnit × floor(count / perEach)); flat-attack: the flat amount. */
+  /** count-scaled: the grant this option would apply now (perUnit × floor(count / perEach)); flat-attack / flat-recruit: the flat amount. */
   total?: number;
   /** A display label for the button (always present; e.g. "+3 attack" or "Send a S.H.I.E.L.D. Hero Undercover"). */
   label: string;

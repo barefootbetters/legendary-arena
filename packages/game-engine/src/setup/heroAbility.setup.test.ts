@@ -1245,6 +1245,44 @@ describe('buildHeroAbilityHooks — Spy Network single-line choose-one (D-24696)
 });
 
 // ---------------------------------------------------------------------------
+// Printed "+N or +N" choose-one — dstr Possessed by Brother's Spirit (WP-856 / D-24792)
+// ---------------------------------------------------------------------------
+
+describe('buildHeroAbilityHooks — printed "+N or +N" choose-one (WP-856 / D-24792)', () => {
+  /** Builds the hooks for one Doctor Voodoo card line. */
+  function buildVoodooHooks(abilities: string[]) {
+    const registry = makeRegistry('dstr', 'doctor-voodoo', [
+      { slug: 'posessed-by-brothers-spirit', abilities },
+    ]);
+    return buildHeroAbilityHooks(registry, makeConfig('dstr/doctor-voodoo'));
+  }
+
+  const PRINTED = "The first time that one of your Heroes or a Hero from your deck or discard pile is KO'd this turn, you get +4[icon:recruit] or +4[icon:attack].";
+
+  it('the marked line is one gated choose-one: flat-recruit 4, then flat-attack 4 (printed order)', () => {
+    const hooks = buildVoodooHooks([`${PRINTED} [keyword:owned-hero-koed] [keyword:recruit:4] [keyword:attack:4]`]);
+    assert.equal(hooks.length, 1);
+    assert.deepEqual(hooks[0]!.conditions, [{ type: 'ownedHeroKoedThisTurn', value: '1' }]);
+    assert.deepEqual(hooks[0]!.effects, [{
+      type: 'count-scaled-choose',
+      countScaledChoiceOptions: [{ kind: 'flat-recruit', magnitude: 4 }, { kind: 'flat-attack', magnitude: 4 }],
+    }]);
+  });
+
+  it('an unmarked "+N or +N" line parses as before (both flat grants, no choice)', () => {
+    const hooks = buildVoodooHooks(['[hc:tech]: You get +1[icon:recruit] or +1[icon:attack].']);
+    assert.ok(hooks.every((hook) => !hook.keywords.includes('count-scaled-choose')), 'no choice without markers');
+    const effectTypes = hooks.flatMap((hook) => (hook.effects ?? []).map((effect) => effect.type)).sort();
+    assert.deepEqual(effectTypes, ['attack', 'recruit']);
+  });
+
+  it('a single option marker on a "+N or +N" line does not make a choose-one', () => {
+    const hooks = buildVoodooHooks([`${PRINTED} [keyword:recruit:4]`]);
+    assert.ok(hooks.every((hook) => !hook.keywords.includes('count-scaled-choose')), 'one marker is not a choice');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Investigate keyword — static-criterion parsing (WP-564 / EC-599 / D-24373)
 // ---------------------------------------------------------------------------
 

@@ -49925,3 +49925,24 @@ Protect this file.
 
 ---
 Protect this file.
+
+### D-24792 — "The first time one of your Heroes is KO'd this turn" is a one-shot Hero-only owned-KO trigger, and a printed "+N or +N" reward is the count-scaled choose-one (Active 2026-10-29 — WP-856 / EC-894)
+
+**Context.** Doctor Voodoo's Possessed by Brother's Spirit (dstr) prints "The first time that one of your Heroes or a Hero from your deck or discard pile is KO'd this turn, you get +4 Recruit or +4 Attack." The setup parser read both icons and emitted a flat on-play +4 Recruit AND +4 Attack, a phantom +8 on every play. WP-853 / D-24789 had just shipped the owned-KO recorder at the 25 OWNED KO sites for Bishop's Absorb Energies; this card differs in three ways: Heroes only, the first time only, and a choice of reward.
+
+**Decision.**
+1. **Condition.** The marker `[keyword:owned-hero-koed]` becomes the `ownedHeroKoedThisTurn` wait-and-see condition (`OWNED_HERO_KOED_CONDITION_TYPE`, exported from `hero/heroConditions.evaluate.ts` beside `OWNED_CARD_KOED_CONDITION_TYPE`). It joins `WAIT_AND_SEE_CONDITION_TYPES` and is NOT re-armed in `resolveDeferredHeroGrants`, so it fires once, on the first counted Hero KO: that is "the first time".
+2. **Signal.** `recordOwnedCardKoed(G, ownerPlayerID, cardId)` (amends D-24789's two-parameter signature) keeps the owned-card count as a gated block and adds a second gated block: `LegendaryGameState.ownedHeroesKoedSinceResolve?: Record<string, number>`, written only while a waiting grant's hook reads the Hero-KO condition and only when the KO'd card is a Hero. Never set in `Game.setup`.
+3. **"One of your Heroes or a Hero from your deck or discard pile"** = hand + cards played this turn (the rules glossary "Your Heroes", D-24529) + deck + discard: exactly WP-853's owned zones. A Hero is any card but a Wound or a Bystander (the WP-828 `isHeroCard` rule). The 25 OWNED KO sites pass the id they KO'd; no site was added and the KO-site pin is unchanged.
+4. **Armed at play (RS-1, locked at draft).** A Hero KO before the card is played does not use up "the first time"; the WP-853 always-defer branch now covers both owned-KO types. The strict reading would need an always-written turn flag (moving sentinels) and lands, if wanted, as a SPEC amendment.
+5. **Choose one.** A reward printed `+N[icon:X] or +N[icon:Y]` (X, Y in recruit / attack) is the count-scaled choose-one (D-24490 / D-24495 / D-24696), entered by that printed form as well as the `Choose one:` prefix; the ≥2-option-marker rule still applies, so an unmarked line parses as before. `ChooseOneOption` and `UIPendingCountScaledChoiceOption.kind` gain `flat-recruit` (marker `[keyword:recruit:N]`), the `flat-attack` sibling; the client prompt renders `label` and is unchanged.
+6. **Consumed.** The Hero count is deleted after every resolve, at `turn.onBegin` and in `applyOnBeginParity`.
+
+**Consequences.** Playing the card adds nothing and logs "… is waiting — it needs a Hero of yours to be KO'd this turn"; the first Hero KO after it parks one +4 Recruit / +4 Attack choice; later KOs, Wound KOs and other players' KOs park nothing. A game with no waiting Possessed grant never gains the field or the choice, so `finalStateHash` and the sentinels are unchanged. `replay.execute.ts` (D-24322) accumulates the count by design. Replays of pre-WP-856 matches that played the card diverge; stored `competitive_scores` rows stay frozen (D-24616 §5). WP-855 (Miek) extends the same recorder with a `fromZone` fourth parameter (agreed shared signature). Follow-ups noticed: the cosm "[hc:tech]: +1 Recruit or +1 Attack" line (needs its gate kept through the choose-one pre-pass) and the unmodeled Ritual Artifact cards.
+
+**Live-verify (D-24026):** operator-pending — a play.legendary-arena.com match created after the deploy (`isMatchOlderThanServer: false`) with Doctor Voodoo; `live-verify.json` row `dstr/doctor-voodoo|owned-hero-koed`.
+
+**Reserved by:** NUMBER-LEDGER D-24792 (#3103). Related: D-24789 (owned-KO recorder), D-24377 (wait-and-see), D-24467 (edge + re-arm), D-24490 / D-24495 / D-24696 (count-scaled choose-one, flat-attack), D-24529 (your Heroes), D-24600 (deferred grant parking a choice), D-24567 (harness mirrors), D-24322 (replay posture), D-24372 (RUNTIME pins), D-24026.
+
+---
+Protect this file.

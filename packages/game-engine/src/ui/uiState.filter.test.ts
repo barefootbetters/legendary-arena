@@ -1340,6 +1340,36 @@ describe('filterUIStateForAudience — Spy Network gain-officer / flat-attack op
   });
 });
 
+describe("filterUIStateForAudience — Possessed by Brother's Spirit flat-recruit option (WP-856 / D-24792)", () => {
+  /** Builds a UIState where player '0' owes Possessed by Brother's Spirit's choose-one. */
+  function createPossessedChoiceUIState(): UIState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.pendingCountScaledChoice = [{
+      playerID: '0',
+      cardId: 'dstr/doctor-voodoo/posessed-by-brothers-spirit#0',
+      options: [{ kind: 'flat-recruit', magnitude: 4 }, { kind: 'flat-attack', magnitude: 4 }],
+    }];
+    return buildUIState(gameState, mockCtx);
+  }
+
+  it('the chooser sees the flat-recruit option with its resource, total and label', () => {
+    const result = filterUIStateForAudience(createPossessedChoiceUIState(), PLAYER_0);
+    assert.deepEqual(result.pendingCountScaledChoice, {
+      playerID: '0',
+      options: [
+        { kind: 'flat-recruit', label: '+4 Recruit', resource: 'recruit', total: 4 },
+        { kind: 'flat-attack', label: '+4 Attack', resource: 'attack', total: 4 },
+      ],
+    });
+  });
+
+  it('an opponent and a spectator do NOT see the choice', () => {
+    const uiState = createPossessedChoiceUIState();
+    assert.equal(filterUIStateForAudience(uiState, PLAYER_1).pendingCountScaledChoice, undefined);
+    assert.equal(filterUIStateForAudience(uiState, SPECTATOR).pendingCountScaledChoice, undefined);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // WP-678 / D-24494 — pendingUndercoverChoice redaction (chooser-only)
 // ---------------------------------------------------------------------------

@@ -356,6 +356,9 @@ dstr/clea,Clea,dstr,ritual-artifact,unsupported,,,,the-purple-gem
 dstr/doctor-strange,Doctor Strange,dstr,artifact,unsupported,,,,keeper-of-the-sanctum|the-eye-of-agamotto
 dstr/doctor-strange,Doctor Strange,dstr,ritual-artifact,unsupported,,,,book-of-cagliostro|the-eye-of-agamotto|wand-of-watoomb
 dstr/doctor-voodoo,Doctor Voodoo,dstr,artifact,unsupported,,,,commune-with-the-spirit-world
+dstr/doctor-voodoo,Doctor Voodoo,dstr,attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#attack,posessed-by-brothers-spirit
+dstr/doctor-voodoo,Doctor Voodoo,dstr,owned-hero-koed,condition,WP-856,D-24792,,posessed-by-brothers-spirit
+dstr/doctor-voodoo,Doctor Voodoo,dstr,recruit,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#recruit,posessed-by-brothers-spirit
 dstr/doctor-voodoo,Doctor Voodoo,dstr,ritual-artifact,unsupported,,,,medallion-of-many-loas|staff-of-legba
 dstr/vishanti-the,"Vishanti, The",dstr,demonic-bargain,unsupported,,,,agamotto|hoggoth
 dstr/vishanti-the,"Vishanti, The",dstr,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,oshtur
