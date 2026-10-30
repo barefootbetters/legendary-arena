@@ -666,7 +666,7 @@ export default defineComponent({
       // play. It reads the UIState snapshot only for the D-24450 lifecycle gating
       // (which phase is editable) — never writes G/ctx/UIState, never submitMove.
     -->
-    <BattlePlanPanel />
+    <BattlePlanPanel class="play-battle-plan" />
     <!--
       // why: WP-786 / D-24634 — mounted ONCE at the shared viewport root so the
       // battle brief covers BOTH <PlayMobile> and <PlayDesktop> (PlayMobile has no
@@ -684,10 +684,9 @@ export default defineComponent({
     -->
     <HollowEffectsPanel />
     <!--
-      // why: WP-804 / D-24689 §3 — the public operator-match badge, for every
-      // seat, so nobody mistakes an unscored operator match for a ranked one.
+      // why: WP-804 / D-24689 §3 — the public operator-match badge lives in
+      // <TopHudBar>'s flow (both play surfaces), not as a fixed chip here.
     -->
-    <p v-if="isOperatorMatch" class="operator-match-badge" data-testid="operator-match-badge">Operator match — not scored</p>
     <!--
       // why: WP-804 / D-24689 §6 — the lazy operator board panel, mounted ONCE
       // here at the shared viewport root so it covers both play surfaces. Shown
@@ -851,30 +850,35 @@ export default defineComponent({
   }
 }
 
+/* why: desktop — the Battle Plan toggle sits in the brand header's empty band,
+   just right of the wordmark (24px padding + a ~137px wordmark at the fixed 22px
+   h4 size, so 11.5rem leaves a ~24px gap), vertically centered in the ~68px
+   header. Its old top-right corner covered the header nav ("Sign out"), and
+   below the header the board's status strip and the operator panel fill the
+   width. Phones keep the component's own top-right placement. The extra
+   .play-viewport ancestor outranks the component's own scoped .battle-plan rule. */
+@media (min-width: 768px) {
+  .play-viewport .play-battle-plan {
+    top: 1.2rem;
+    right: auto;
+    left: 11.5rem;
+  }
+
+  /* why: the update and outdated-match banners are fixed bars over the header
+     (z 50 / 49) that cover the nav links while shown; the toggle drops beneath
+     them like the nav does instead of painting over the banner's text. Its
+     normal 9999 stays otherwise, so an open plan sits above the Battle Brief. */
+  .play-viewport:has(.update-banner, .outdated-match-notice) .play-battle-plan {
+    z-index: 48;
+  }
+}
+
 /* why: WP-654 — position the shared final-turn banner as a fixed top-center
    overlay over the play surface (the banner-overlay precedent set by the other
    viewport-root banners, which own their own fixed positioning). Vue applies
    this component's scope id to the child <FinalTurnBanner>'s root element, so
    this class styles that root without editing the pure component. z-index sits
    above the mat but below the fixed audio/diagnostics controls. */
-/* why: WP-804 — the operator-match badge sits top-left, below the app header,
-   clear of the centered final-turn banner and the right-side operator panel. */
-.operator-match-badge {
-  position: fixed;
-  top: 4.5rem;
-  left: 8px;
-  z-index: 46;
-  margin: 0;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--la-color-gold);
-  background: var(--la-color-surface);
-  border: 1px solid var(--la-color-border-strong);
-  border-radius: 0.4rem;
-  pointer-events: none;
-}
-
 .final-turn-banner-overlay {
   position: fixed;
   top: 0.75rem;

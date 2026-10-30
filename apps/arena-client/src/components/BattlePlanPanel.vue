@@ -337,7 +337,8 @@ export default defineComponent({
 <style scoped>
 /* why: a fixed-position panel in the TOP-RIGHT lane, deliberately clear of the
    WaitingForPlayersPanel (bottom-right) and the bottom-left ViewLoadoutButton /
-   DiagnosticExportButton stack, so the overlays never overlap. */
+   DiagnosticExportButton stack, so the overlays never overlap. On desktop
+   PlayViewport re-anchors it into the brand header band (clear of the nav). */
 .battle-plan {
   position: fixed;
   top: 8px;
