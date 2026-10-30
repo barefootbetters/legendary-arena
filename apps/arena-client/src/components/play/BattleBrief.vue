@@ -342,7 +342,7 @@ export default defineComponent({
 
 <style scoped>
 /* why: z-index 100 keeps the brief below the 9999 corner overlays (the Battle
-   Plan top-right, the invite panel bottom-right, the loadout and diagnostics
+   Plan in the header band, the invite panel bottom-right, the loadout and diagnostics
    bottom-left), and the width cap leaves those corner lanes clear. */
 .battle-brief {
   position: fixed;
