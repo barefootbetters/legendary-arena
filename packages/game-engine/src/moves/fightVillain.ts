@@ -600,8 +600,8 @@ export function defeatCityVillainCore(
     applyRescueOnFight(G, currentPlayer, cardId);
   }
 
-  // why: Fight: effects fire after the bystander award (Step 3b) and before
-  // the message push, so they observe post-award pile state. A Fight:
+  // why: Fight: effects fire after the bystander award (Step 3b) and after
+  // the "fought" line, so they observe post-award pile state. A Fight:
   // captureBystander awards the newly attached bystander immediately (the card
   // is already in the victory pile), avoiding a stranded bystander (WP-185).
   // WP-316: capture the executor's per-effect results (keywords + targets) for
@@ -612,16 +612,18 @@ export function defeatCityVillainCore(
   // why: WP-489 / D-24295 — pass the fought `cityIndex` (a plain number captured
   // before the slot was nulled) so a location-gated Fight ability (Abomination /
   // the Lizard) can check which named City space the villain was fought on.
+  // why: the "fought" line goes in BEFORE the Fight effects fire, because some
+  // handlers log their own line (Viper's "gained a Wound", match SiJuKfJ0zGf 9.2.11),
+  // which otherwise appeared before the fight that caused it.
+  pushLog(G,
+    `Player ${currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} at city space ${cityIndex}.`,
+  );
   const appliedFightResults = executeVillainAbilities(G, ctx, cardId, 'onFight', shuffleContext, cityIndex);
   // why: WP-316 — map results→keywords so the fightResolved `appliedEffects`
   // field and the composeFightNarrative string stay byte-identical to main; the
   // hashed notableEvents surface (and the arena-client) never observe the
   // per-target widening, so finalStateHash is unchanged.
   const appliedFightEffects = appliedFightResults.map((result) => result.keyword);
-
-  pushLog(G,
-    `Player ${currentPlayer} fought ${formatCardRef(G.cardDisplayData, cardId)} at city space ${cityIndex}.`,
-  );
   const bystandersRescued = awardResult.playerVictory.length - victoryBefore;
   if (awardResult.playerVictory.length > victoryBefore) {
     pushLog(G,
