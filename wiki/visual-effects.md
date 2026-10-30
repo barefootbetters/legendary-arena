@@ -1287,9 +1287,13 @@ answer the pointer the same way the City and HQ cards do.
     (the card and its Fight badge). The "Tactics remaining" and Final Blow lines,
     the Excessive Violence and Read card buttons, captured Bystanders,
     Hypno-Thralls and the Master Strike pile beside it stay down.
-  - **Officers and Sidekicks:** the whole recruit button in
-    [`SharedDecks.vue`](../apps/arena-client/src/components/play/SharedDecks.vue)
-    (card face, name, count and `Recruit: N`), so the cost rises with the card.
+  - **Officers and Sidekicks:** the recruit button in
+    [`SharedDecks.vue`](../apps/arena-client/src/components/play/SharedDecks.vue).
+    On the desktop board the button is just the card, filling its panel (the
+    `lg` card size); the name, count and `Recruit: N` are the card's hover text
+    (with the disabled reason on a second line) and stay in the DOM as
+    screen-reader text (Jeff feedback after WP-854). The mobile layout has no
+    hover, so it keeps the visible label.
   - **Everything else in the band stays flat:** the Scheme, Wounds, Horrors,
     Bystanders, the KO pile, and the Master Strike and Scheme Twist piles. You
     read them; you do not buy or fight them.

@@ -938,6 +938,7 @@ export default defineComponent({
                     :economy="snapshot.economy"
                     :submit-move="submitMove"
                     :is-tilt-lift-enabled="isBoardLiftEnabled"
+                    is-card-face-only
                   />
                   <KOPile :ko-pile="snapshot.koPile" @open="onPileOpen" />
                 </section>
