@@ -145,7 +145,7 @@ draws nothing. Live-on-surface is operator-pending (D-24026).
   your deck" (`keywords-full.json`). The hero Feast keyword is `unsupported` in the ledger for Miek
   (Devouring Frenzy, Metamorphosis, Hive King Miek), No-Name and Sentry, so in a game whose only
   deck-KO source is Feast, Endless Appetite has nothing to react to until Feast ships. Feast is a new
-  hero keyword with its own handler: a follow-up WP. Its KO site will pass `'deck'` to the recorder
+  hero keyword with its own handler: a follow-up WP (drafted as WP-857 / D-24793). Its KO site will pass `'deck'` to the recorder
   like every other deck site.
 - **Neighbours (design consistency only).** Metamorphosis ("if a card with an [icon:attack] icon was
   KO'd from your deck this turn"), Bursting with Life and World-Spanning Hunger ("for each non-grey
@@ -343,9 +343,10 @@ unresolved marker, or the waiting line reads the generic fallback, or the engine
 - **Determinism preservation:** no new randomness source; the count is consumed inside the move (or
   held only across moves that keep a choice parked) in live play and the sim / PAR / fixture mirrors;
   absent for every game with no waiting Endless Appetite grant, so the sentinels are byte-identical.
-  Replays of pre-WP-855 matches that played Endless Appetite and KO'd a deck card diverge on
-  re-execution (a draw appears); stored `competitive_scores` rows are frozen, not re-verified
-  (D-24616 §5).
+  **Setup-only:** a replay starts from the stored `initialState`, which already holds
+  `G.heroAbilityHooks`; no pre-deploy hook carries the deck-KO condition (Endless Appetite's was empty),
+  so pre-deploy matches replay identically and only matches created after the deploy get the draw
+  (corrected 2026-10-29 at the WP-857 copilot check, which found the same claim backwards there).
 
 ## Funding Surface Gate
 
@@ -437,8 +438,8 @@ today). Contract: `LegendaryGameState.deckCardsKoedSinceResolve?: Record<string,
 gated, deleted after each unheld resolve and at `turn.onBegin` / `applyOnBeginParity`, never set in
 `Game.setup`; `replay.execute.ts` accumulates by design (D-24322). Coordinated with WP-856 / D-24792:
 final recorder signature `(G, ownerPlayerID, cardId, fromZone)`. Hero Feast and the turn-total
-"KO'd from your deck this turn" readers stay out (follow-up). Replays of pre-WP-855 Endless Appetite
-matches diverge; stored competitive rows stay frozen (D-24616 §5).
+"KO'd from your deck this turn" readers stay out (follow-up). Setup-only: pre-deploy matches keep
+their hooks and replay identically; only matches created after the deploy get the draw.
 
 ## Pre-flight (01.4) and Copilot (01.7)
 
