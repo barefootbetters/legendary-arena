@@ -1271,6 +1271,61 @@ past a tilted card's visible trapezoid at its far corners.
   dependency ([library posture](#library-posture)), no engine signal, nothing in
   the determinism hash.
 
+##### Next: the Mastermind, Officers and Sidekicks stand up too (proposed, not built) {#band-standup}
+
+Today only City villains and HQ heroes stand up on hover. The Mastermind, the
+S.H.I.E.L.D. Officers pile and the Sidekicks pile are also cards you act on
+(fight, recruit, recruit), and they sit in the adversary band at the **far** edge
+of the plane, where the tilt shrinks them most. They should answer the pointer
+the same way.
+
+- **What stands up.** The same lift as the City and HQ, unchanged:
+  `rotateX(-14deg) scale(1.06)` around the card's bottom edge, over 150 ms, no
+  `translateY`.
+  - **Mastermind:** the fight button in
+    [`MastermindTile.vue`](../apps/arena-client/src/components/play/MastermindTile.vue)
+    (the card and its Fight badge). The tactics count, the Final Blow and
+    Excessive Violence controls, and the Master Strike pile beside it stay down.
+  - **Officers and Sidekicks:** the whole recruit button in
+    [`SharedDecks.vue`](../apps/arena-client/src/components/play/SharedDecks.vue)
+    (card face, name, count and `Recruit: N`), so the cost rises with the card.
+  - **Everything else in the band stays flat:** the Scheme, Wounds, Horrors,
+    Bystanders, the KO pile, and the Master Strike and Scheme Twist piles. You
+    read them; you do not buy or fight them.
+- **Hover the holder, lift the button.** As in the City, the hover target holds
+  the button, and the transform goes on the button: the pile's cell (the `li`)
+  for Officers and Sidekicks, and a wrapper around the fight button for the
+  Mastermind (the tile itself also holds the controls that stay down). A pile or
+  Mastermind you cannot afford still stands up, like a City villain you cannot
+  afford, so you can read it; its dimmed look and its tooltip do not change.
+- **No lift while the Enigma guess is open.** The WP-830 Enigma guess opens on
+  top of the Mastermind tile (`.mastermind-tile__enigma-guess`). Inside a 3D
+  context depth order beats `z-index`, so a raised Mastermind would cover the
+  picker. It is the same exclusion as the City's Primus discard chooser.
+- **3D only while one of them is hovered.** The plane's `:has(…:hover)` switch
+  (above) gains these three targets, and the `preserve-3d` chain runs from the
+  plane through `.play-desktop__adversary-band` to each button: through the
+  Mastermind zone and tile, or through `.shared-decks`, its row and the cell. At
+  rest the board stays flat for hit testing, as today. No element on either chain
+  may carry `overflow` other than `visible`, `opacity` below 1, or a `filter`:
+  each one forces its subtree flat.
+- **No row-fit gate needed.** The band does not wrap and has no scroll
+  container, unlike the City and HQ rows, so it never needs
+  [`useRowFit`](../apps/arena-client/src/composables/useRowFit.ts). The build
+  should still confirm this at the widest scheme.
+- **Headroom at the far edge.** Standing up around the bottom edge makes a band
+  card taller on screen, and the top edge rises into the empty strip the tilt
+  leaves above the band (about 49 screen px at 1440×900; the
+  [candle prototype](#candle-prototype) sits there too). The
+  [play-surface guard](testing.md) should assert that a lifted Mastermind stays
+  below the top status bar, and that clicks still land on all three lifted
+  buttons, near their bottom edges included.
+- **Same gates as the City and HQ.** Pointer devices only
+  (`@media (hover: hover)`); `prefers-reduced-motion` and Effect Intensity
+  `off` drop the lift. Desktop only.
+- **Status:** design only. It extends WP-852 and needs its own WP before it is
+  built.
+
 **Beyond the camera: the tactile-table brainstorm (2026-10-28).** The tilt came
 out of a wider brainstorm on making the board feel like a physical table
 (drawers of cards, shuffling, a glowing deck box, candlelight), started by
