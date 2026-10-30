@@ -330,3 +330,62 @@ describe('SharedDecks — band stand-up (WP-854 / D-24790)', () => {
     assert.equal(wrapper.find('[data-testid="play-shared-decks"]').classes('shared-decks--tilt-lift'), true);
   });
 });
+
+describe('SharedDecks — card-face-only recruit piles (desktop)', () => {
+  /** Mounts the decks with isCardFaceOnly set and the given economy. */
+  function mountCardFace(economyOver: Partial<UITurnEconomyState>) {
+    const { submitMove } = recorder();
+    return mount(SharedDecks, {
+      props: {
+        piles: piles({ officersCount: 28, sidekicksCount: 12 }),
+        currentStage: 'main',
+        economy: economy(economyOver),
+        submitMove,
+        isCardFaceOnly: true,
+      },
+    });
+  }
+
+  test('without isCardFaceOnly the label stays visible and the card is small', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: { piles: piles(), currentStage: 'main', economy: economy({ recruit: 5, availableRecruit: 5 }), submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="play-shared-decks"]').classes('shared-decks--card-face'), false);
+    const officer = wrapper.find('[data-testid="play-recruit-officer"]');
+    assert.equal(officer.find('.shared-decks__name').classes('sr-only'), false);
+    assert.equal(officer.find('[data-testid="card-tile"]').classes('card-tile--sm'), true);
+  });
+
+  test('card-face-only shows a large card and keeps the label only as screen-reader text', () => {
+    const wrapper = mountCardFace({ recruit: 5, availableRecruit: 5 });
+    assert.equal(wrapper.find('[data-testid="play-shared-decks"]').classes('shared-decks--card-face'), true);
+    for (const testId of ['play-recruit-officer', 'play-recruit-sidekick']) {
+      const button = wrapper.find(`[data-testid="${testId}"]`);
+      assert.equal(button.find('[data-testid="card-tile"]').classes('card-tile--lg'), true, `${testId}: large card`);
+      for (const selector of ['.shared-decks__name', '.shared-decks__count', '.shared-decks__cost']) {
+        assert.equal(button.find(selector).classes('sr-only'), true, `${testId} ${selector}: screen-reader only`);
+      }
+    }
+  });
+
+  test('card-face-only puts the name, count and Recruit cost in the card hover text', () => {
+    const wrapper = mountCardFace({ recruit: 5, availableRecruit: 5 });
+    assert.equal(
+      wrapper.find('[data-testid="play-recruit-officer"] [data-testid="card-tile"]').attributes('title'),
+      'S.H.I.E.L.D. Officers [28] — Recruit: 3',
+    );
+    assert.equal(
+      wrapper.find('[data-testid="play-recruit-sidekick"] [data-testid="card-tile"]').attributes('title'),
+      'Sidekicks [12] — Recruit: 2',
+    );
+  });
+
+  test('card-face-only adds the disabled reason on its own line of the hover text', () => {
+    const wrapper = mountCardFace({ recruit: 1, availableRecruit: 1 });
+    assert.equal(
+      wrapper.find('[data-testid="play-recruit-officer"] [data-testid="card-tile"]').attributes('title'),
+      'S.H.I.E.L.D. Officers [28] — Recruit: 3\nNeeds 3 recruit, you have 1.',
+    );
+  });
+});

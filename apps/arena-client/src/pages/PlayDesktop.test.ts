@@ -770,3 +770,13 @@ describe('PlayDesktop — band stand-up (WP-854 / D-24790)', () => {
     }
   });
 });
+
+describe('PlayDesktop — card-face-only recruit piles', () => {
+  test('the desktop board renders the Officers and Sidekicks as card-face-only piles', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.find('.shared-decks').classes('shared-decks--card-face'), true);
+  });
+});

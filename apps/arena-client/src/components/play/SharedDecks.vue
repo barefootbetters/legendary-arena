@@ -84,6 +84,16 @@ export default defineComponent({
       required: false,
       default: false,
     },
+    // why: Jeff feedback after WP-854 — on the desktop board the Officers and
+    // Sidekicks buttons show only the card, filling the panel, and the name,
+    // count and Recruit cost move to the hover text, so the stand-up lifts the
+    // card alone. Only PlayDesktop sets it; touch layouts (PlayMobile) have no
+    // hover, so they keep the visible label.
+    isCardFaceOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props) {
     // why: WP-648 — expose the buy cost to the template so the tooltip/label
@@ -192,7 +202,36 @@ export default defineComponent({
       );
     }
 
+    /**
+     * The card's hover text. With the visible label (the default) it is the
+     * gate's disabled reason, or null for the card name (D-24614). Card-face-only,
+     * it carries the hidden label, then the disabled reason on its own line.
+     */
+    function recruitHoverText(label: string, reason: string | null): string | null {
+      if (!props.isCardFaceOnly) {
+        return reason;
+      }
+      if (reason === null) {
+        return label;
+      }
+      return `${label}\n${reason}`;
+    }
+
+    /** Hover text for the Officers card. */
+    function officerHoverText(): string | null {
+      const label = `S.H.I.E.L.D. Officers [${props.piles.officersCount}] — Recruit: ${officerCost}`;
+      return recruitHoverText(label, officerGate().reason);
+    }
+
+    /** Hover text for the Sidekicks card. */
+    function sidekickHoverText(): string | null {
+      const label = `Sidekicks [${props.piles.sidekicksCount}] — Recruit: ${sidekickCost}`;
+      return recruitHoverText(label, sidekickGate().reason);
+    }
+
     return {
+      officerHoverText,
+      sidekickHoverText,
       officerCost,
       officerGate,
       onRecruitOfficer,
@@ -209,7 +248,10 @@ export default defineComponent({
 <template>
   <section
     class="shared-decks"
-    :class="{ 'shared-decks--tilt-lift': isTiltLiftEnabled }"
+    :class="{
+      'shared-decks--tilt-lift': isTiltLiftEnabled,
+      'shared-decks--card-face': isCardFaceOnly,
+    }"
     data-testid="play-shared-decks"
     aria-label="Shared Decks"
   >
@@ -245,16 +287,19 @@ export default defineComponent({
                other four. size="sm" keeps the row height even; show-cost is off
                because the printed cost is null and the buy cost (Recruit: N) is
                shown below as its own line. -->
+          <!-- why: card-face-only (desktop), the card fills the panel at the lg
+               size and the label spans stay in the DOM as sr-only text, so
+               screen readers still read the name, count and cost. -->
           <CardTile
             :display="officerDisplay()"
-            size="sm"
+            :size="isCardFaceOnly ? 'lg' : 'sm'"
             :show-cost="false"
             :interactive="officerGate().allowed"
-            :tooltip="officerGate().reason"
+            :tooltip="officerHoverText()"
           />
-          <span class="shared-decks__name">S.H.I.E.L.D. Officers</span>
-          <span class="shared-decks__count">[{{ piles.officersCount }}]</span>
-          <span class="shared-decks__cost">Recruit: {{ officerCost }}</span>
+          <span class="shared-decks__name" :class="{ 'sr-only': isCardFaceOnly }">S.H.I.E.L.D. Officers</span>
+          <span class="shared-decks__count" :class="{ 'sr-only': isCardFaceOnly }">[{{ piles.officersCount }}]</span>
+          <span class="shared-decks__cost" :class="{ 'sr-only': isCardFaceOnly }">Recruit: {{ officerCost }}</span>
         </button>
       </li>
       <li class="shared-decks__cell" data-testid="play-shared-deck-sidekicks">
@@ -273,14 +318,14 @@ export default defineComponent({
         >
           <CardTile
             :display="sidekickDisplay()"
-            size="sm"
+            :size="isCardFaceOnly ? 'lg' : 'sm'"
             :show-cost="false"
             :interactive="sidekickGate().allowed"
-            :tooltip="sidekickGate().reason"
+            :tooltip="sidekickHoverText()"
           />
-          <span class="shared-decks__name">Sidekicks</span>
-          <span class="shared-decks__count">[{{ piles.sidekicksCount }}]</span>
-          <span class="shared-decks__cost">Recruit: {{ sidekickCost }}</span>
+          <span class="shared-decks__name" :class="{ 'sr-only': isCardFaceOnly }">Sidekicks</span>
+          <span class="shared-decks__count" :class="{ 'sr-only': isCardFaceOnly }">[{{ piles.sidekicksCount }}]</span>
+          <span class="shared-decks__cost" :class="{ 'sr-only': isCardFaceOnly }">Recruit: {{ sidekickCost }}</span>
         </button>
       </li>
     </ol>
@@ -342,6 +387,16 @@ export default defineComponent({
 .shared-decks__cost {
   font-size: 0.7rem;
   opacity: 0.8;
+}
+
+/* why: card-face-only (desktop) — the button is just the card, so it hugs the
+   lg card with a thin inset (the playmat slot's own padding is zeroed for these
+   cells); the band stays no taller than before, so the board's scale-to-fit
+   does not change. */
+.shared-decks--card-face .shared-decks__recruit {
+  align-items: center;
+  gap: 0;
+  padding: 3px;
 }
 
 /* why: WP-854 / D-24790 — the Officers and Sidekicks stand up on hover, as the

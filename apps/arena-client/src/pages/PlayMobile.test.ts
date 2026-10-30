@@ -261,3 +261,13 @@ describe('PlayMobile — Effects triggered line (WP-848 / D-24784)', () => {
     assert.equal(wrapper.find('[data-testid="play-your-victory-effects"]').text(), 'Effects triggered: 3 / 5 (60%)');
   });
 });
+
+describe('PlayMobile — recruit piles keep their visible label', () => {
+  test('the mobile board does not render the card-face-only piles (no hover on touch)', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayMobile, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.find('.shared-decks').classes('shared-decks--card-face'), false);
+  });
+});
