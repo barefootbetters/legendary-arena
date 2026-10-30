@@ -37,7 +37,7 @@ source:
   - ../ewiki/sound-effects/strike-blocked.py
   - ../scripts/upload-move-sfx-to-r2.mjs
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-09-15
+last-reviewed: 2026-10-29
 ---
 
 # Sound Effects
@@ -214,6 +214,8 @@ wired (see the callout below).
 |---|---|---|---|---|---|---|
 | `playCard` | ✅ WP-421 | A card is played from hand | Card whoosh / place | OpenGameArt Card Game Sounds ("Play card") | `audio/sound-effects/play-card.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/play-card.mp3" >}} |
 | `recruitHero` | ✅ WP-421 | A hero is recruited from HQ | Positive "purchase" chime | Kenney Interface Sounds; OpenGameArt Card Game Sounds | `audio/sound-effects/recruit-hero.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" >}} |
+| `recruitOfficer` | ✅ 2026-10-29 | A S.H.I.E.L.D. Officer is recruited (WP-648) | Same "purchase" chime as `recruitHero` | (reuses the recruit clip) | `audio/sound-effects/recruit-hero.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" >}} |
+| `recruitSidekick` | ✅ 2026-10-29 | A Sidekick is recruited (WP-842) | Same "purchase" chime as `recruitHero` | (reuses the recruit clip) | `audio/sound-effects/recruit-hero.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/recruit-hero.mp3" >}} |
 | `fightVillain` | ✅ WP-421 | A player attacks a City villain | Sword/impact swing | Kenney Impact Sounds; OpenGameArt 80 CC0 RPG SFX (blade) | `audio/sound-effects/attack-villain.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/attack-villain.mp3" >}} |
 | `drawCards` | ✅ WP-421 | Start-of-turn draw / any draw | Card draw / short shuffle | OpenGameArt Card Game Sounds ("Draw card" / "Shuffle") | `audio/sound-effects/draw-cards.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/draw-cards.mp3" >}} |
 | `dodgeCard` | ❌ engine-only | Dodge — discard a card to draw a replacement | Quick card flick | OpenGameArt Card Game Sounds ("Tap" / "Untap") | `audio/sound-effects/dodge.mp3` | {{< audio-inline src="https://images.legendary-arena.com/audio/sound-effects/dodge.mp3" >}} |
