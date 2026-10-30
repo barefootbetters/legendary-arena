@@ -495,6 +495,7 @@ high-water: 422
 - WP-854 — board-band-standup (the WP-852 hover stand-up extends to the adversary band: the Mastermind fight button and the S.H.I.E.L.D. Officers and Sidekicks recruit buttons straighten toward the player on hover. reserved 2026-10-29, claude/wp854-band-standup; LANDED 2026-10-29)
 - WP-855 — deck-ko-draw (Miek's Endless Appetite: whenever a card is KO'd from your deck this turn, you may draw a card, a deck-source variant of the WP-853 owned-KO trigger. reserved 2026-10-29, claude/wp855-reserve)
 - WP-856 — owned-hero-ko-first-time (Doctor Voodoo's Possessed by Brother's Spirit: the first time one of your Heroes is KO'd this turn, choose +4 Recruit or +4 Attack; a Hero-only, one-shot, choose-one variant of the WP-853 owned-KO trigger. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130)
+- WP-857 — wwhk-feast (World War Hulk hero Feast, KO the top card of your deck, plus a turn-scoped record of cards KO'd from each player's deck and the Transform gates that read it. reserved 2026-10-29, claude/wp857-reserve)
 
 ## EC
 
@@ -952,6 +953,7 @@ high-water: 457
 - EC-892 — board-band-standup (WP-854. reserved 2026-10-29, claude/wp854-band-standup; LANDED 2026-10-29)
 - EC-893 — deck-ko-draw (WP-855. reserved 2026-10-29, claude/wp855-reserve)
 - EC-894 — owned-hero-ko-first-time (WP-856. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130)
+- EC-895 — wwhk-feast (WP-857. reserved 2026-10-29, claude/wp857-reserve)
 
 ## D
 
@@ -1522,3 +1524,4 @@ section below) and the allocation protocol in
 - D-24790 — board-band-standup (WP-854; which adversary-band cards stand up on hover, the Enigma-guess exclusion, and the band's 3D chain switched on only while one is hovered. reserved 2026-10-29, claude/wp854-band-standup; LANDED 2026-10-29)
 - D-24791 — deck-ko-draw (WP-855; a deck-source KO count for "whenever a card is KO'd from your deck this turn", and how the optional per-KO draw resolves. reserved 2026-10-29, claude/wp855-reserve)
 - D-24792 — owned-hero-ko-first-time (WP-856; a Hero-only owned-KO signal at the KO sites, a one-shot first-time grant on the D-24377 wait-and-see edge, and a flat-recruit option for the count-scaled choose-one so the reward is +4 Recruit OR +4 Attack. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130)
+- D-24793 — wwhk-feast (WP-857; hero Feast as an optional KO of the deck top, the turn-scoped KO'd-from-deck record and which readers it serves. reserved 2026-10-29, claude/wp857-reserve)
