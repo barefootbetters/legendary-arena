@@ -35,6 +35,7 @@ import {
   findFailedCondition,
   describeFailedCondition,
   OWNED_CARD_KOED_CONDITION_TYPE,
+  OWNED_HERO_KOED_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 import {
   isWaitAndSeeCondition,
@@ -920,7 +921,12 @@ export function executeHeroEffects(
     // nothing and miss every later KO this turn. Only the owned-KO type: the defeat family
     // keeps today's path (its flag is never set at play, and Snarling Fangs under Sunlight
     // must keep its "did not activate" line, D-24598).
-    const ownedKoCondition = findConditionOfType(hook, OWNED_CARD_KOED_CONDITION_TYPE);
+    // why: WP-856 / D-24792 — the Hero-KO trigger ("The first time that one of your Heroes
+    // is KO'd this turn") starts at play the same way, so it takes this branch too (RS-1:
+    // a Hero KO earlier in the same move does not fire it at play).
+    const ownedKoCondition =
+      findConditionOfType(hook, OWNED_CARD_KOED_CONDITION_TYPE) ??
+      findConditionOfType(hook, OWNED_HERO_KOED_CONDITION_TYPE);
     if (
       ownedKoCondition !== undefined &&
       evaluateAllConditions(G, playerID, conditionsWithout(hook, ownedKoCondition), cardId)
@@ -1805,7 +1811,7 @@ function heroEffectKo(
     if (moveResult.found) {
       playerZones.inPlay = moveResult.from;
       G.ko = koCard(G.ko, cardId);
-      recordOwnedCardKoed(G, playerID);
+      recordOwnedCardKoed(G, playerID, cardId);
       // why: WP-417 / D-24237 — a self-KO removes the card the player just played
       // from the board; a silent removal reads as the card vanishing. Name it.
       // why: WP-434 — a self-KO ability that removed the played card is `applied`.
@@ -2678,7 +2684,7 @@ function applyRevealKo(
   }
   playerZones.deck = moveResult.from;
   G.ko = koCard(G.ko, topCardId);
-  recordOwnedCardKoed(G, ownerPlayerID);
+  recordOwnedCardKoed(G, ownerPlayerID, topCardId);
   return true;
 }
 
@@ -4553,7 +4559,7 @@ function heroEffectKoWoundReward(
   if (!moveResult.found) { return; }
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, WOUND_EXT_ID);
-  recordOwnedCardKoed(G, playerID);
+  recordOwnedCardKoed(G, playerID, WOUND_EXT_ID);
   pushLog(G,
     `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
   );
@@ -4623,7 +4629,7 @@ function heroEffectKoWound(
   if (!moveResult.found) { return; }
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, WOUND_EXT_ID);
-  recordOwnedCardKoed(G, playerID);
+  recordOwnedCardKoed(G, playerID, WOUND_EXT_ID);
   pushLog(G,
     `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
   );
@@ -7492,6 +7498,9 @@ export function resolveDeferredHeroGrants(
       // cleared flag and stays put. The turn boundary drops it (clearDeferredConditionalGrants).
       // why: WP-853 / D-24789 — an owned-KO grant re-arms the same way, so it survives to
       // credit the next KO; its count is consumed below like the defeat flag.
+      // why: WP-856 / D-24792 — a Hero-KO grant (OWNED_HERO_KOED_CONDITION_TYPE) is left
+      // out on purpose: "the first time … this turn" fires once (repeatCount 1 above), so
+      // it is not re-recorded and the first counted Hero KO is the only one it credits.
       if (
         hookHasConditionType(hook, REPEATABLE_DEFEAT_CONDITION_TYPE) ||
         hookHasConditionType(hook, OWNED_CARD_KOED_CONDITION_TYPE)
@@ -7517,6 +7526,14 @@ export function resolveDeferredHeroGrants(
   // Guarded, so a game that never counted a KO is byte-unchanged.
   if (G.ownedCardsKoedSinceResolve !== undefined) {
     delete G.ownedCardsKoedSinceResolve;
+  }
+
+  // why: WP-856 / D-24792 — consume the per-owner Hero-KO count too. A Hero-KO grant is not
+  // re-armed above, so it fired once (the first time) and is gone; deleting the count keeps
+  // a later move from reading a stale KO. Guarded, so a game that never counted one is
+  // byte-unchanged.
+  if (G.ownedHeroesKoedSinceResolve !== undefined) {
+    delete G.ownedHeroesKoedSinceResolve;
   }
 
   // why: WP-754 / D-24581 — a wait-and-see grant fired above (e.g. crossed by an Excessive

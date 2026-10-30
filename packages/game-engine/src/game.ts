@@ -989,6 +989,13 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             delete G.ownedCardsKoedSinceResolve;
           }
 
+          // why: WP-856 / D-24792 — the same defensive turn-boundary clear for the
+          // per-owner Hero-KO count (Possessed by Brother's Spirit). Guarded, so a game
+          // that never set it is unchanged.
+          if (G.ownedHeroesKoedSinceResolve !== undefined) {
+            delete G.ownedHeroesKoedSinceResolve;
+          }
+
           // why: WP-777 / D-24616 — "If you discarded any cards this turn" reads a per-turn
           // count, so it must not carry into the next turn (a stale count would let New
           // Wings / Pumpkin Bombs fire with no discard — the exact over-credit this fixes).

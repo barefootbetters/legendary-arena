@@ -177,7 +177,7 @@ export function resolveOptionalKoReward(
   // Step 5: Mutate — shorten the source zone and KO the chosen card.
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, targetCardId);
-  recordOwnedCardKoed(G, playerID);
+  recordOwnedCardKoed(G, playerID, targetCardId);
 
   // why: D-24399 — the KO is the paid cost of the optional-KO-reward; log it here
   // (before the Step-6 reward line) so the spent card is observable in the game

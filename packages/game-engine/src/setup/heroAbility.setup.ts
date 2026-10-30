@@ -44,6 +44,7 @@ import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
   OWNED_CARD_KOED_CONDITION_TYPE,
+  OWNED_HERO_KOED_CONDITION_TYPE,
 } from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
@@ -425,6 +426,9 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   // why: WP-853 / D-24789 — Absorb Energies' owned-card KO trigger marker; its
   // parseAbilityText arm pushes the ownedCardKoedThisTurn wait-and-see condition.
   'owned-card-koed',
+  // why: WP-856 / D-24792 — Possessed by Brother's Spirit's Hero-KO trigger marker; its
+  // parseAbilityText arm pushes the one-shot ownedHeroKoedThisTurn wait-and-see condition.
+  'owned-hero-koed',
   'first-hero-condition',
   // why: WP-743 / D-24566 — Grief / Spring the Trap condition markers; each has a
   // parseAbilityText arm that pushes its whole-turn wait-and-see condition.
@@ -1774,6 +1778,14 @@ function parseAbilityText(
       // gate — `value` is unused; '1' is a stable placeholder. Placed before the
       // unresolved-marker fallback so it never flags hollow.
       conditions.push({ type: OWNED_CARD_KOED_CONDITION_TYPE, value: '1' });
+    } else if (normalizedKeyword === 'owned-hero-koed') {
+      // why: WP-856 / D-24792 — Possessed by Brother's Spirit's "The first time that one of
+      // your Heroes or a Hero from your deck or discard pile is KO'd this turn, you get …".
+      // Push the one-shot wait-and-see gate onto the same hook as the line's choose-one
+      // reward. This arm runs in the per-token loop, AFTER the count-scaled choose-one
+      // pre-pass (whose conditions.splice would otherwise drop it). `value` is unused; '1'
+      // is a stable placeholder. Placed before the unresolved-marker fallback.
+      conditions.push({ type: OWNED_HERO_KOED_CONDITION_TYPE, value: '1' });
     } else if (normalizedKeyword === 'master-strike-this-turn') {
       // why: WP-743 / D-24566 — Grief's "If a Master Strike was completed this turn, you
       // get +2 Recruit." The marker→condition precedent (D-24467): push the whole-turn
@@ -3388,6 +3400,18 @@ const UNDERCOVER_OFFICER_MARKER_PATTERN = /\[keyword:undercover-officer-stack\]/
 const GAIN_OFFICER_OPTION_MARKER_PATTERN = /\[keyword:gain-officer\]/;
 const FLAT_ATTACK_OPTION_MARKER_PATTERN = /\[keyword:attack:([1-9]\d*)\]/;
 
+// why: WP-856 / D-24792 — the flat-recruit sibling of the flat attack option (Possessed by
+// Brother's Spirit's "+4[icon:recruit] or +4[icon:attack]"), read only inside
+// tryResolveCountScaledChooseOneLine. `recruit-per-count` never matches (its segment after
+// "recruit" is "-per-count"). No line carried [keyword:recruit:N] before this WP.
+const FLAT_RECRUIT_OPTION_MARKER_PATTERN = /\[keyword:recruit:([1-9]\d*)\]/;
+
+// why: WP-856 / D-24792 — the second entry form of the choose-one: a printed "+N[icon:X] or
+// +N[icon:Y]" reward (no "Choose one:" prefix). Only two hero lines print it (this card and
+// an unmarked cosm line), and the ≥2-option-marker rule still applies, so an unmarked line
+// parses exactly as before.
+const FLAT_RESOURCE_OR_PATTERN = /\+[1-9]\d*\[icon:(?:recruit|attack)\] or \+[1-9]\d*\[icon:(?:recruit|attack)\]/;
+
 // why: WP-675 / D-24490 — a standalone "Choose one:" header entry (the multi-line choose-one form).
 const STANDALONE_CHOOSE_ONE_HEADER_PATTERN = /^\s*Choose one\s*:\s*$/i;
 // why: WP-675 / D-24490 — an option bullet line under a standalone "Choose one:" header.
@@ -3462,8 +3486,12 @@ function coalesceCountScaledChooseOne(abilities: string[]): string[] {
 function tryResolveCountScaledChooseOneLine(
   abilityText: string,
 ): { options: ChooseOneOption[] } | undefined {
-  // why: gate #1 — the "Choose one:" prefix (reuses the choose-one prefix const).
-  if (!EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN.test(abilityText)) {
+  // why: gate #1 — the "Choose one:" prefix (reuses the choose-one prefix const), or the
+  // printed "+N[icon:X] or +N[icon:Y]" form (WP-856 / D-24792).
+  if (
+    !EMPOWERED_CHOOSE_ONE_PREFIX_PATTERN.test(abilityText) &&
+    !FLAT_RESOURCE_OR_PATTERN.test(abilityText)
+  ) {
     return undefined;
   }
   const candidates: Array<{ index: number; option: ChooseOneOption }> = [];
@@ -3507,6 +3535,14 @@ function tryResolveCountScaledChooseOneLine(
     candidates.push({
       index: flatAttackMatch.index,
       option: { kind: 'flat-attack', magnitude: parseInt(flatAttackMatch[1]!, 10) },
+    });
+  }
+  // why: WP-856 / D-24792 — the flat recruit option ("+4[icon:recruit] or …").
+  const flatRecruitMatch = FLAT_RECRUIT_OPTION_MARKER_PATTERN.exec(abilityText);
+  if (flatRecruitMatch !== null) {
+    candidates.push({
+      index: flatRecruitMatch.index,
+      option: { kind: 'flat-recruit', magnitude: parseInt(flatRecruitMatch[1]!, 10) },
     });
   }
   // why: require ≥2 options — a single recognized marker is a plain effect line, not a choose-one.

@@ -151,7 +151,7 @@ export function resolveRuthlessDictatorChoice(
     if (!moveResult.found) { return; }
     zones.deck = moveResult.from;
     G.ko = koCard(G.ko, args.cardId);
-    recordOwnedCardKoed(G, playerID);
+    recordOwnedCardKoed(G, playerID, args.cardId);
     // why: narrate the resolved KO. `G.messages` is hash-excluded (D-24081), so this
     // adds no determinism impact.
     pushLog(G,

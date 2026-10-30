@@ -274,7 +274,7 @@ function koFromPlayerZone(G: LegendaryGameState, from: OperatorPlayerZoneRef, ca
   // why: WP-853 / D-24789 — a KO from the seat's hand, deck, discard or play is a card
   // they own; a Victory Pile KO is not (RS-1).
   if (from.zone !== 'victory') {
-    recordOwnedCardKoed(G, from.playerId);
+    recordOwnedCardKoed(G, from.playerId, cardId);
   }
   return true;
 }

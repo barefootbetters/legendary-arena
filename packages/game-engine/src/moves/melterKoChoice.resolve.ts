@@ -129,7 +129,7 @@ export function resolveMelterKoChoice(
     G.ko = koCard(G.ko, args.cardId);
     // why: WP-853 / D-24789 — the KO'd card left the OWNER's deck, who may not be the
     // player resolving the choice.
-    recordOwnedCardKoed(G, args.ownerPlayerID);
+    recordOwnedCardKoed(G, args.ownerPlayerID, args.cardId);
     // why: narrate the resolved KO so the player sees which card left which deck.
     // `G.messages` is hash-excluded (D-24081), so this adds no determinism impact.
     const koName = resolveCardName(G.cardDisplayData, args.cardId);

@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 829,
+    "totalRows": 832,
     "byStatus": {
-      "executable": 443,
+      "executable": 445,
       "deferred": 16,
-      "condition": 51,
+      "condition": 52,
       "unsupported": 290,
       "unmarked": 26,
       "subsystem": 3
     },
-    "distinctMechanics": 170
+    "distinctMechanics": 172
   },
   "rows": [
     {
@@ -6442,6 +6442,54 @@
         {
           "slug": "commune-with-the-spirit-world",
           "name": "Commune with the Spirit World"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "attack",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack",
+      "designs": [
+        {
+          "slug": "posessed-by-brothers-spirit",
+          "name": "Posessed by Brother's Spirit"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "owned-hero-koed",
+      "status": "condition",
+      "wp": "WP-856",
+      "decision": "D-24792",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "posessed-by-brothers-spirit",
+          "name": "Posessed by Brother's Spirit"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "recruit",
+      "status": "executable",
+      "wp": "",
+      "decision": "",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#recruit",
+      "designs": [
+        {
+          "slug": "posessed-by-brothers-spirit",
+          "name": "Posessed by Brother's Spirit"
         }
       ]
     },

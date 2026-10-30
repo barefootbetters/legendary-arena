@@ -2828,6 +2828,14 @@ export interface LegendaryGameState {
   /** Owned-card KOs per owner since the last deferred-grant resolve; absent when none. */
   ownedCardsKoedSinceResolve?: Record<string, number>;
 
+  // why: WP-856 / D-24792 — per-owner count of the player's HEROES (not Wounds or
+  // Bystanders) KO'd since the last resolve, for "The first time that one of your Heroes
+  // is KO'd this turn" (Possessed by Brother's Spirit). Written GATED by recordOwnedCardKoed
+  // (only while a grant reading `ownedHeroKoedThisTurn` waits), deleted after every resolve
+  // and at turn.onBegin, never set in Game.setup.
+  /** Owned-Hero KOs per owner since the last deferred-grant resolve; absent when none. */
+  ownedHeroesKoedSinceResolve?: Record<string, number>;
+
   // why: WP-743 / D-24566 — a Master Strike card was played (revealed from the Villain
   // Deck and routed to the strike pile) this turn. Read by the Grief and Spring the Trap
   // wait-and-see conditions. Written GATED in performVillainReveal — only when some hero

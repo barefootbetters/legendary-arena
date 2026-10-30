@@ -1920,6 +1920,16 @@ export function buildUIState(
             label: `+${option.magnitude} Attack`,
           };
         }
+        // why: WP-856 / D-24792 — the flat recruit option carries its fixed grant as `total`,
+        // the flat-attack mirror.
+        if (option.kind === 'flat-recruit') {
+          return {
+            kind: 'flat-recruit' as const,
+            resource: 'recruit' as const,
+            total: option.magnitude,
+            label: `+${option.magnitude} Recruit`,
+          };
+        }
         const count = resolveCountSource(
           gameState,
           frontChoice.playerID,

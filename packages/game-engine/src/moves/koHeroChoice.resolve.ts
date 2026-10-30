@@ -125,7 +125,7 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   // Step 4: Mutate — shorten the source zone and KO the chosen card
   playerZones[args.zone] = moveResult.from;
   G.ko = koCard(G.ko, args.cardId);
-  recordOwnedCardKoed(G, playerID);
+  recordOwnedCardKoed(G, playerID, args.cardId);
 
   // Step 5: Narrate the resolved KO in the game log so the player sees WHICH
   // hero they KO'd. The fight-time line only says "the active player must KO a
@@ -173,7 +173,7 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
     if (!forcedMove.found) break; // why: defensive — an unexpected move miss stops progress.
     playerZones[forced.zone] = forcedMove.from;
     G.ko = koCard(G.ko, forced.cardId);
-    recordOwnedCardKoed(G, playerID);
+    recordOwnedCardKoed(G, playerID, forced.cardId);
     const forcedName = resolveCardName(G.cardDisplayData, forced.cardId);
     pushLog(G, `Player ${playerID} KO'd ${forcedName} (${forced.cardId}) from ${describeKoSourceZone(forced.zone)}.`);
     owed -= 1;

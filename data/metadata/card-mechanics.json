@@ -87,10 +87,11 @@
       "label": "Attack",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 2,
+      "cardCount": 3,
       "cardIds": [
         "ca75/agent-x-13",
-        "core/nick-fury"
+        "core/nick-fury",
+        "dstr/doctor-voodoo"
       ],
       "hidden": true
     },
@@ -1328,6 +1329,17 @@
       "hidden": true
     },
     {
+      "slug": "owned-hero-koed",
+      "label": "Owned Hero Koed",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "dstr/doctor-voodoo"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "patrol",
       "label": "Patrol",
       "scope": "hero",
@@ -1454,6 +1466,17 @@
       "cardCount": 1,
       "cardIds": [
         "core/deadpool"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "recruit",
+      "label": "Recruit",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dstr/doctor-voodoo"
       ],
       "hidden": true
     },
@@ -3455,6 +3478,9 @@
     "dstr/doctor-voodoo": {
       "mechanics": [
         "artifact",
+        "attack",
+        "owned-hero-koed",
+        "recruit",
         "ritual-artifact"
       ]
     },

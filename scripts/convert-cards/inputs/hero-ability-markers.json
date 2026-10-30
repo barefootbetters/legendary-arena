@@ -8,7 +8,8 @@
     "WP-225 / EC-257 (D-22501) — draw sweep: appends [keyword:draw:N] (N ∈ {1,2,3}) to 98 fixed-count hero draw lines across 30 sets (83 draw:1, 13 draw:2, 2 draw:3). Detector: the trimmed whole line equals 'Draw a|one|two|three card(s).', optionally one leading [hc:X]:/[team:X]: condition the executor already evaluates, excluding any line containing 'Reveal' or an existing [keyword:] token.",
     "WP-225 deferred draw patterns below carry one real exemplar per draw-specific class: cumulative another/more/extra, bottom-of-deck, game-state-conditional, draw-a-new-hand replacement trigger, timing-/keyword-gated, compound multi-effect, and multi-condition cost prefix. reveal-then-draw is already represented by the reveal-family deferred entries (the draw detector excludes 'Reveal'). Magnitudes ≥ 4 are not emitted and have no _deferred entry — the grammar permits N ≥ 1 but the corpus maximum is 3, so no real ≥ 4 line exists to mark or defer (D-22501).",
     "D-24620 — discard-to-play sweep: WP-383 (D-24184) marked only the \"To play this card, you must discard a card from your hand.\" wording; the shorter \"To play this, you must discard a card.\" form on six more hero lines (amwp/cassie-lang/start-small, asrd/beta-ray-bill/hope-of-the-korbinites, cosm/adam-warlock/regenerative-cocoon, cvwr/hercules/manly-dullard, rvlt/photon/infrared-conversion, rvlt/photon/ultraviolet-radiation) now carries [keyword:discard-to-play:1]. rvlt Infrared Conversion prints \"Draw two cards.\" on the same line, so it also carries [keyword:draw:2]. The amwp Start Small Victory-Pile-gated draw stays deferred. Not marked: the bkwd Attune split face (WP-777 / D-24615), the asrd Thrown Artifact \"To throw this\" line (unmodeled Artifact mechanic), and wpnx Massive Blood Loss (a Wound card, not a hero).",
-    "return-on-discard sweep (WP-498 / D-24301 follow-up): core Unending Energy was the only marked copy of the \"you may return this card to your hand\" discard reaction. The same reaction on co2e cyclops/unending-energy (\"... discard this card from your hand, you may return it to your hand.\") and wwhk gladiator-hulk/hulk-is-king (the Transform face of Seize the Throne) now carries [keyword:return-on-discard]. Not marked (different reactions, not a hand return): nmut set-aside-then-extra-card, ssw2 Guerrilla Warfare (teleport-on-discard, WP-705), dkcy rescue-and-draw on discard.",
+    "return-on-discard sweep (WP-498 / D-24301 follow-up): core Unending Energy was the only marked copy of the \"you may return this card to your hand\" discard reaction. The same reaction on co2e cyclops/unending-energy (\"... discard this card from your hand, you may return it to your hand.\") and wwhk gladiator-hulk/hulk-is-king (the Transform face of Seize the Throne) now carries [keyword:return-on-discard]. Not marked (different reactions, not a hand return): nmut set-aside-then-extra-card, ssw2 Guerrilla Warfare (teleport-on-discard, WP-705), dkcy rescue-and-draw on discard."
+,
     "WP-851 / D-24787 — optional-ko-hand-discard sweep: the bare no-reward \"You may KO a card from your hand or discard pile.\" clause now carries [keyword:optional-ko-hand-discard] (WP-667 / D-24480) on the 11 lines whose gate already executes: amwp/ant-man/bug-swarm (Antics), asrd/warriors-three-the/hogun-the-grim ([hc:strength]), chmp/ms-marvel/need-to-stretch-my-legs ([team:champions]), cvwr/storm-black-panther/tsunami-of-justice ([hc:covert]), dead/stingray/phd-in-oceanography, dkcy/bishop/whatever-the-cost ([hc:covert]), dkcy/professor-x/class-dismissed ([hc:instinct]), dkcy/wolverine/no-mercy, mgtg/gamora/stolen-necroblaster (+ [keyword:draw-threshold:2] for \"If you drew at least two cards this turn\"), wwhk/caiera/focus-the-old-power (Outwit), xmen/phoenix/life-death-incarnate. NOT marked — the gate mechanic is unimplemented, so the parser would drop the gate and the KO would fire on every play (D-24787): anni super-skrull/transparent-motives + ff04 invisible-woman/disappearing-act (Focus), anni fantastic-four-united/invisible-woman (Focus, _deferred), wtif star-lord-tchalla/unexpected-exit + uatu-the-watcher/another-dimension-crumbles (What If...?), msis bruce-banner/burst-of-rage + wanda-vision/we-have-to-destroy-it + wanda-vision/let-go (Sacrifice), msmc multiple-man/reabsorb-duplicates (Tactical Formation), ssw2 captain-and-the-devil-the/feeding-grounds (Patrol the Streets), bkpt white-wolf/command-the-hatut-zeraze (Villain or Mastermind has any Wounds), asrd lady-sif/golden-apples-of-idunn (Thrown Artifact), smhc happy-hogan/watchful-eye (Danger Sense)."
   ],
   "2099": [
@@ -215,7 +216,8 @@
       "cardSlug": "7th-smartest-man-in-the-world",
       "abilityIndex": 1,
       "markupToken": "[keyword:attack-per-count:extra-cards-drawn-this-turn:1]"
-    },
+    }
+,
     {
       "heroSlug": "ms-marvel",
       "cardSlug": "need-to-stretch-my-legs",
@@ -865,7 +867,8 @@
       "cardSlug": "friendship",
       "abilityIndex": 0,
       "markupToken": "[keyword:gain-sidekick:1]"
-    },
+    }
+,
     {
       "heroSlug": "storm-black-panther",
       "cardSlug": "tsunami-of-justice",
@@ -975,7 +978,8 @@
       "cardSlug": "firepower-from-the-future",
       "abilityIndex": 1,
       "markupToken": "[keyword:ko-discarded-this-way]"
-    },
+    }
+,
     {
       "heroSlug": "bishop",
       "cardSlug": "whatever-the-cost",
@@ -1619,7 +1623,8 @@
       "cardSlug": "anger-management",
       "abilityIndex": 0,
       "markupToken": "[keyword:smash:3]"
-    },
+    }
+,
     {
       "heroSlug": "caiera",
       "cardSlug": "focus-the-old-power",
@@ -1651,7 +1656,8 @@
       "cardSlug": "start-small",
       "abilityIndex": 1,
       "markupToken": "[keyword:discard-to-play:1]"
-    },
+    }
+,
     {
       "heroSlug": "ant-man",
       "cardSlug": "bug-swarm",
@@ -1771,7 +1777,8 @@
       "cardSlug": "hope-of-the-korbinites",
       "abilityIndex": 0,
       "markupToken": "[keyword:discard-to-play:1]"
-    },
+    }
+,
     {
       "heroSlug": "warriors-three-the",
       "cardSlug": "hogun-the-grim",
@@ -1855,7 +1862,8 @@
       "cardSlug": "superpowered-swimsuit",
       "abilityIndex": 0,
       "markupToken": "[keyword:draw:1]"
-    },
+    }
+,
     {
       "heroSlug": "stingray",
       "cardSlug": "phd-in-oceanography",
@@ -1864,6 +1872,24 @@
     }
   ],
   "dstr": [
+    {
+      "heroSlug": "doctor-voodoo",
+      "cardSlug": "posessed-by-brothers-spirit",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:owned-hero-koed]"
+    },
+    {
+      "heroSlug": "doctor-voodoo",
+      "cardSlug": "posessed-by-brothers-spirit",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:recruit:4]"
+    },
+    {
+      "heroSlug": "doctor-voodoo",
+      "cardSlug": "posessed-by-brothers-spirit",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack:4]"
+    },
     {
       "heroSlug": "vishanti-the",
       "cardSlug": "agamotto",
@@ -1945,7 +1971,8 @@
       "cardSlug": "remove-his-spine",
       "abilityIndex": 0,
       "markupToken": "[keyword:reveal-top-may-ko]"
-    },
+    }
+,
     {
       "heroSlug": "gamora",
       "cardSlug": "stolen-necroblaster",
@@ -2561,7 +2588,8 @@
       "cardSlug": "bioengineered-assassin",
       "abilityIndex": 1,
       "markupToken": "[keyword:optional-ko-hand-discard]"
-    },
+    }
+,
     {
       "heroSlug": "phoenix",
       "cardSlug": "life-death-incarnate",

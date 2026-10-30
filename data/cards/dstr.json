@@ -180,7 +180,7 @@
           "attack": "4+",
           "recruit": "0+",
           "abilities": [
-            "The first time that one of your Heroes or a Hero from your deck or discard pile is KO'd this turn, you get +4[icon:recruit] or +4[icon:attack]."
+            "The first time that one of your Heroes or a Hero from your deck or discard pile is KO'd this turn, you get +4[icon:recruit] or +4[icon:attack]. [keyword:owned-hero-koed] [keyword:recruit:4] [keyword:attack:4]"
           ]
         }
       ],

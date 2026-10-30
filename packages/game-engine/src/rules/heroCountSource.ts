@@ -159,7 +159,23 @@ export interface FlatAttackChoiceOption {
 }
 
 /**
- * One option of a "Choose one:" hero ability (WP-679 / D-24495; extended D-24696).
+ * A flat "+N recruit" option of a choose-one (WP-856 / D-24792).
+ *
+ * The recruit half of Possessed by Brother's Spirit ("…you get +4[icon:recruit] or
+ * +4[icon:attack]."). Resolved through the shipped `recruit` hero-effect executor with
+ * `magnitude`.
+ */
+export interface FlatRecruitChoiceOption {
+  // why: WP-856 / D-24792 — the D-24696 `flat-attack` sibling for a printed "+N Recruit or
+  // +N Attack" reward.
+  /** Discriminant — this option grants a flat recruit amount (D-24792). */
+  kind: 'flat-recruit';
+  /** The recruit granted when this option is chosen. */
+  magnitude: number;
+}
+
+/**
+ * One option of a "Choose one:" hero ability (WP-679 / D-24495; extended D-24696, D-24792).
  *
  * A tagged union so a single choose-one can mix a count-scaled resource grant with an
  * Undercover send (the two shld cards) — not only the two-count-scaled shape (vnom) —
@@ -170,4 +186,5 @@ export type ChooseOneOption =
   | CountScaledChoiceOption
   | UndercoverChoiceOption
   | GainOfficerChoiceOption
-  | FlatAttackChoiceOption;
+  | FlatAttackChoiceOption
+  | FlatRecruitChoiceOption;

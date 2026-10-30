@@ -48,10 +48,13 @@
 
 import type { LegendaryGameState, DeferredConditionalGrant } from '../types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
+import type { CardExtId } from '../state/zones.types.js';
+import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import {
   MASTER_STRIKE_THIS_TURN_CONDITION_TYPE,
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
   OWNED_CARD_KOED_CONDITION_TYPE,
+  OWNED_HERO_KOED_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 
 // why: WP-656 / D-24467 — the single EDGE-TRIGGERED wait-and-see condition type.
@@ -95,6 +98,11 @@ export const WAIT_AND_SEE_CONDITION_TYPES: readonly string[] = [
   // Energies) is shape #2 with a per-owner COUNT: the grant fires once per counted KO and
   // re-arms. Has an evaluateCondition case (the lockstep the drift pin enforces).
   OWNED_CARD_KOED_CONDITION_TYPE,
+  // why: WP-856 / D-24792 — "The first time that one of your Heroes [or a Hero from your
+  // deck or discard pile] is KO'd this turn" (Possessed by Brother's Spirit) reads the
+  // per-owner Hero-KO count but is shape #1: it fires once and is NOT re-armed, which is
+  // what "the first time" means. Has an evaluateCondition case (the lockstep pin).
+  OWNED_HERO_KOED_CONDITION_TYPE,
 ];
 
 /**
@@ -136,36 +144,52 @@ export function recordDeferredConditionalGrant(
 }
 
 /**
- * Counts one KO of a card the given player owns, for a waiting owned-KO grant.
+ * Counts one KO of a card the given player owns, for a waiting owned-KO or Hero-KO grant.
  *
  * why: WP-853 / D-24789 — called by every KO site that takes a card from a player's
- * hand, deck, discard pile or cards in play, once per KO'd card. GATED: it returns at
- * once unless some waiting grant's hook reads OWNED_CARD_KOED_CONDITION_TYPE, so a game
- * with no waiting Absorb Energies never gains the key, and the resolve deletes it after
- * every move, so it never reaches a hash. Keyed PER OWNER because a Villain or
- * Mastermind can KO another player's cards, and only the owner's grant may fire.
+ * hand, deck, discard pile or cards in play, once per KO'd card. GATED: each count is
+ * written only while a waiting grant's hook reads its condition type, so a game with no
+ * waiting Absorb Energies / Possessed by Brother's Spirit never gains either key, and the
+ * resolve deletes both after every move, so they never reach a hash. Keyed PER OWNER
+ * because a Villain or Mastermind can KO another player's cards, and only the owner's
+ * grant may fire.
+ * why: WP-856 / D-24792 — the KO'd card's id lets the Hero count skip Wounds and
+ * Bystanders (the WP-828 isHeroCard rule: anything else in a player's zones is a Hero).
  *
  * @param G - The game state, mutated in place.
  * @param ownerPlayerID - The player whose zone the KO'd card left.
+ * @param cardId - The card that was KO'd.
  */
-export function recordOwnedCardKoed(G: LegendaryGameState, ownerPlayerID: string): void {
-  if (!hasWaitingOwnedKoGrant(G)) {
-    return;
+export function recordOwnedCardKoed(
+  G: LegendaryGameState,
+  ownerPlayerID: string,
+  cardId: CardExtId,
+): void {
+  if (hasWaitingGrantWithCondition(G, OWNED_CARD_KOED_CONDITION_TYPE)) {
+    if (G.ownedCardsKoedSinceResolve === undefined) {
+      G.ownedCardsKoedSinceResolve = {};
+    }
+    const previousCount = G.ownedCardsKoedSinceResolve[ownerPlayerID] ?? 0;
+    G.ownedCardsKoedSinceResolve[ownerPlayerID] = previousCount + 1;
   }
-  if (G.ownedCardsKoedSinceResolve === undefined) {
-    G.ownedCardsKoedSinceResolve = {};
+  const isHero = cardId !== WOUND_EXT_ID && cardId !== BYSTANDER_EXT_ID;
+  if (isHero && hasWaitingGrantWithCondition(G, OWNED_HERO_KOED_CONDITION_TYPE)) {
+    if (G.ownedHeroesKoedSinceResolve === undefined) {
+      G.ownedHeroesKoedSinceResolve = {};
+    }
+    const previousHeroCount = G.ownedHeroesKoedSinceResolve[ownerPlayerID] ?? 0;
+    G.ownedHeroesKoedSinceResolve[ownerPlayerID] = previousHeroCount + 1;
   }
-  const previousCount = G.ownedCardsKoedSinceResolve[ownerPlayerID] ?? 0;
-  G.ownedCardsKoedSinceResolve[ownerPlayerID] = previousCount + 1;
 }
 
 /**
- * Reports whether any waiting deferred grant's hook reads the owned-KO condition.
+ * Reports whether any waiting deferred grant's hook reads the given condition type.
  *
  * @param G - The game state (read-only).
- * @returns True when an owned-KO grant is waiting.
+ * @param conditionType - The condition type to look for.
+ * @returns True when a grant reading that condition is waiting.
  */
-function hasWaitingOwnedKoGrant(G: LegendaryGameState): boolean {
+function hasWaitingGrantWithCondition(G: LegendaryGameState, conditionType: string): boolean {
   const entries = G.deferredConditionalGrants;
   if (entries === undefined || !G.heroAbilityHooks) {
     return false;
@@ -176,7 +200,7 @@ function hasWaitingOwnedKoGrant(G: LegendaryGameState): boolean {
       continue;
     }
     for (const condition of hook.conditions) {
-      if (condition.type === OWNED_CARD_KOED_CONDITION_TYPE) {
+      if (condition.type === conditionType) {
         return true;
       }
     }
