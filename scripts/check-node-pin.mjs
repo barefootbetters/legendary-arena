@@ -2,19 +2,18 @@
 /**
  * check-node-pin.mjs — asserts the Node toolchain pin is consistent (WP-400 / D-24205).
  *
- * why: the Node version is restated in 23 places — 21 `node-version` entries
- * across 9 GitHub workflow files, plus two `NODE_VERSION` envVars in
- * render.yaml. A partial bump is invisible: someone updates ci.yml, misses
- * sweep-weekly.yml, and nothing complains until a version-sensitive failure
- * reproduces in one environment and not another. Two Cloudflare Pages builds
- * three days apart reported 22.22.0 and 22.16.0 from this same repository,
- * which is the drift this check exists to prevent recurring.
+ * why: the Node version used to be restated across 21 `node-version` entries
+ * in 9 GitHub workflow files. A partial bump is invisible: someone updates
+ * ci.yml, misses sweep-weekly.yml, and nothing complains until a
+ * version-sensitive failure reproduces in one environment and not another. Two
+ * Cloudflare Pages builds three days apart reported 22.22.0 and 22.16.0 from
+ * this same repository, which is the drift this check exists to prevent.
  *
- * why: Render's documented precedence is
- * `NODE_VERSION` > `.node-version` > `.nvmrc` > `engines`, so render.yaml's
- * envVar OUTRANKS the pin file. Leaving it stale does not merely duplicate the
- * value — it silently overrides it on the host that runs the game server.
- * That is why rule 2 below compares rather than assumes.
+ * Not checked here: the production droplet's Node, which the
+ * `legendary-arena-lab` repo's `10-node.ps1` installs. This check used to
+ * compare render.yaml's `NODE_VERSION` envVars, back when Render built the game
+ * server. That rule was removed when Render was deleted in Phase 7
+ * (2026-10-22); render.yaml is historical and no longer feeds any host.
  *
  * Exit 0 when every rule holds; exit 1 with a full-sentence message naming the
  * file and the mismatch otherwise.
@@ -24,7 +23,6 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const PIN_FILE = ".node-version";
-const RENDER_FILE = "render.yaml";
 const WORKFLOW_DIRECTORY = join(".github", "workflows");
 const EXACT_VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
 
@@ -63,46 +61,6 @@ function readPinnedVersion() {
     );
   }
   return version;
-}
-
-/**
- * Asserts both render.yaml NODE_VERSION envVars equal the pinned version.
- *
- * @param {string} pinnedVersion - The version from `.node-version`.
- */
-function checkRenderEnvironmentVariables(pinnedVersion) {
-  const renderYaml = readFileSync(RENDER_FILE, "utf8");
-  const lines = renderYaml.split("\n");
-
-  const foundValues = [];
-  for (let index = 0; index < lines.length; index += 1) {
-    if (!lines[index].includes("key: NODE_VERSION")) {
-      continue;
-    }
-    const valueLine = lines[index + 1] ?? "";
-    const match = valueLine.match(/value:\s*"?([^"\s]+)"?/);
-    foundValues.push({ lineNumber: index + 2, value: match ? match[1] : "(none)" });
-  }
-
-  if (foundValues.length === 0) {
-    throw new Error(
-      `${RENDER_FILE} declares no NODE_VERSION envVar. Render's precedence puts ` +
-        `NODE_VERSION above ${PIN_FILE}, so removing it silently changes which ` +
-        `version the server host builds with.`
-    );
-  }
-
-  for (const found of foundValues) {
-    if (found.value !== pinnedVersion) {
-      throw new Error(
-        `${RENDER_FILE}:${found.lineNumber} sets NODE_VERSION to "${found.value}" ` +
-          `but ${PIN_FILE} pins "${pinnedVersion}". Render's NODE_VERSION ` +
-          `OUTRANKS ${PIN_FILE}, so this mismatch does not merely duplicate the ` +
-          `value — it overrides the pin on the server host. Update ` +
-          `${RENDER_FILE} to "${pinnedVersion}".`
-      );
-    }
-  }
 }
 
 /**
@@ -169,7 +127,6 @@ function checkEnginesStayFloors() {
   }
 }
 
-const pinnedVersion = readPinnedVersion();
-checkRenderEnvironmentVariables(pinnedVersion);
+readPinnedVersion();
 checkWorkflowsUseTheFile();
 checkEnginesStayFloors();
