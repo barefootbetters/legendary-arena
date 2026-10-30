@@ -493,7 +493,6 @@ high-water: 422
 - WP-852 — board-table-perspective (desktop play board leans back like a table: tilt wrapper around the adversary band, City and HQ; board cards straighten and lift toward the player on hover; hand and right rail stay flat. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
 - WP-853 — owned-card-ko-trigger (Bishop Absorb Energies: "Whenever a card you own is KO'd this turn, you get +2 Recruit" grants per owned-card KO after play instead of a flat +2 on play. reserved 2026-10-28, claude/wp853-reserve; LANDED 2026-10-29)
 - WP-854 — board-band-standup (the WP-852 hover stand-up extends to the adversary band: the Mastermind fight button and the S.H.I.E.L.D. Officers and Sidekicks recruit buttons straighten toward the player on hover. reserved 2026-10-29, claude/wp854-band-standup; LANDED 2026-10-29)
-- WP-854 — board-band-standup (the WP-852 hover stand-up extends to the adversary band: the Mastermind fight button and the S.H.I.E.L.D. Officers and Sidekicks recruit buttons straighten toward the player on hover. reserved 2026-10-29, claude/wp854-band-standup)
 - WP-855 — deck-ko-draw (Miek's Endless Appetite: whenever a card is KO'd from your deck this turn, you may draw a card, a deck-source variant of the WP-853 owned-KO trigger. reserved 2026-10-29, claude/wp855-reserve)
 - WP-856 — owned-hero-ko-first-time (Doctor Voodoo's Possessed by Brother's Spirit: the first time one of your Heroes is KO'd this turn, choose +4 Recruit or +4 Attack; a Hero-only, one-shot, choose-one variant of the WP-853 owned-KO trigger. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130)
 
@@ -951,7 +950,6 @@ high-water: 457
 - EC-890 — board-table-perspective (WP-852. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
 - EC-891 — owned-card-ko-trigger (WP-853. reserved 2026-10-28, claude/wp853-reserve; LANDED 2026-10-29)
 - EC-892 — board-band-standup (WP-854. reserved 2026-10-29, claude/wp854-band-standup; LANDED 2026-10-29)
-- EC-892 — board-band-standup (WP-854. reserved 2026-10-29, claude/wp854-band-standup)
 - EC-893 — deck-ko-draw (WP-855. reserved 2026-10-29, claude/wp855-reserve)
 - EC-894 — owned-hero-ko-first-time (WP-856. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130)
 
@@ -1522,6 +1520,5 @@ section below) and the allocation protocol in
 - D-24788 — board-table-perspective (WP-852; the desktop board tilt is presentation-only CSS on one wrapper with angle, perspective and lift as variables; board-card hover counter-rotates only while the City row fits; Effect Intensity off flattens. reserved 2026-10-28, claude/wp-table-perspective-reserve; LANDED 2026-10-28)
 - D-24789 — owned-card-ko-trigger (WP-853; a per-turn whenever-a-card-you-own-is-KOd grant: owner-aware KO counter at the KO sites, per-KO firing through the D-24467 wait-and-see re-arm, which zones count as cards you own. reserved 2026-10-28, claude/wp853-reserve; LANDED 2026-10-29)
 - D-24790 — board-band-standup (WP-854; which adversary-band cards stand up on hover, the Enigma-guess exclusion, and the band's 3D chain switched on only while one is hovered. reserved 2026-10-29, claude/wp854-band-standup; LANDED 2026-10-29)
-- D-24790 — board-band-standup (WP-854; which adversary-band cards stand up on hover, the Enigma-guess exclusion, and the band's 3D chain switched on only while one is hovered. reserved 2026-10-29, claude/wp854-band-standup)
 - D-24791 — deck-ko-draw (WP-855; a deck-source KO count for "whenever a card is KO'd from your deck this turn", and how the optional per-KO draw resolves. reserved 2026-10-29, claude/wp855-reserve)
 - D-24792 — owned-hero-ko-first-time (WP-856; a Hero-only owned-KO signal at the KO sites, a one-shot first-time grant on the D-24377 wait-and-see edge, and a flat-recruit option for the count-scaled choose-one so the reward is +4 Recruit OR +4 Attack. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130)
