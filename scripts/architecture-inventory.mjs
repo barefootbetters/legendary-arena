@@ -81,9 +81,15 @@ const SKIP_DIRECTORIES = new Set([
 // Vite apps' apps/*/public/ hold _headers, robots.txt, brand tokens, og images.
 // So they are skipped by exact repo-relative path suffix: only the ewiki build
 // output is excluded, and every tracked apps/*/public/ asset still counts.
+// why: apps/wiki-viewer/data/ops/ is the gitignored projection of
+// docs/ops/*.json written by `pnpm wiki-viewer:project` (D-24710). Same leak as
+// content/: a local regen after a wiki build listed its service-dependencies.json
+// copy as a brevo file (2026-10-27). Skipped by path, not by the bare name
+// `data`, because the repo-root data/cards/ is tracked source.
 const SKIP_DIRECTORY_PATH_SUFFIXES = [
   'apps/wiki-viewer/public',
   'apps/wiki-viewer/resources',
+  'apps/wiki-viewer/data/ops',
 ];
 
 /**
@@ -1204,6 +1210,27 @@ async function collectSourceFiles(directory, accumulator) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Decide whether a file lies inside one of the labelled (external) scan
+ * targets' roots, so the home-repo SaaS walk does not count it a second time.
+ *
+ * @param {string} filePath - The file's path as walked.
+ * @param {Array<{ root: string, label: string | null }>} scanTargets
+ * @returns {boolean} true when the file belongs to an external target.
+ */
+function isInsideExternalRoot(filePath, scanTargets) {
+  const resolvedFilePath = resolve(filePath);
+  for (const { root, label } of scanTargets) {
+    if (label === null) {
+      continue;
+    }
+    if (resolvedFilePath.startsWith(resolve(root) + sep)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Scan one or more directory trees for SaaS tool usage defined by
  * `SAAS_DETECTORS`. Returns a Map<toolName, { files: string[] }>
  * where each `files` entry is the repo-relative (or label-prefixed)
@@ -1230,8 +1257,20 @@ async function scanForSaas(scanTargets) {
     if (!existsSync(root)) {
       continue;
     }
-    const allFiles = [];
-    await collectAllFiles(root, allFiles);
+    const collectedFiles = [];
+    await collectAllFiles(root, collectedFiles);
+
+    // why: the architecture-inventory workflow clones the website repo INSIDE
+    // the workspace (actions/checkout cannot check out above it) and passes it
+    // as `--external`. The home-repo walk from REPO_ROOT then reaches the same
+    // clone, so every website file was listed twice — once as
+    // `[legendary-arena-website] x`, once as `legendary-arena-website/x`
+    // (cron PR #2584, 2026-10-26: brevo 22 files for 14 + 4). An external root
+    // belongs to its labelled target only, so the unlabelled home walk drops
+    // anything inside one.
+    const allFiles = label === null
+      ? collectedFiles.filter((filePath) => !isInsideExternalRoot(filePath, scanTargets))
+      : collectedFiles;
 
     // why: filter to text-readable extensions up front rather than
     // attempting to read binary blobs (images, fonts, compiled assets).
