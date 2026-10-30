@@ -312,3 +312,21 @@ describe('SharedDecks — recruitable Sidekick Stack (WP-842 / D-24776)', () => 
     assert.match(button.text(), /Sidekick/);
   });
 });
+
+describe('SharedDecks — band stand-up (WP-854 / D-24790)', () => {
+  test('without isTiltLiftEnabled the root has no shared-decks--tilt-lift class', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: { piles: piles(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="play-shared-decks"]').classes('shared-decks--tilt-lift'), false);
+  });
+
+  test('with isTiltLiftEnabled the root has the shared-decks--tilt-lift class', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(SharedDecks, {
+      props: { piles: piles(), currentStage: 'main', economy: economy(), submitMove, isTiltLiftEnabled: true },
+    });
+    assert.equal(wrapper.find('[data-testid="play-shared-decks"]').classes('shared-decks--tilt-lift'), true);
+  });
+});

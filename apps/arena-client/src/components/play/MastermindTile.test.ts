@@ -779,3 +779,41 @@ describe('MastermindTile — WP-830 Enigma Code guess (D-24763)', () => {
     assert.ok(!wrapper.find('[data-testid="play-enigma-guess"]').exists());
   });
 });
+
+describe('MastermindTile — band stand-up (WP-854 / D-24790)', () => {
+  const enigmaCode = {
+    isRevealed: false,
+    cards: [
+      { peekedBy: ['0'], display: { extId: 'ca75/winter-soldier/x#1', name: 'Seen Card', imageUrl: '', cost: 3 }, colors: ['tech'] },
+      { peekedBy: [] },
+    ],
+  };
+
+  test('without isTiltLiftEnabled the root has no mastermind-tile--tilt-lift class', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy(), submitMove },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-tile"]').classes('mastermind-tile--tilt-lift'), false);
+  });
+
+  test('with isTiltLiftEnabled the root has the mastermind-tile--tilt-lift class', () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy(), submitMove, isTiltLiftEnabled: true },
+    });
+    assert.equal(wrapper.find('[data-testid="play-mastermind-tile"]').classes('mastermind-tile--tilt-lift'), true);
+  });
+
+  test('the root gains mastermind-tile--guessing exactly when the Enigma guess picker opens', async () => {
+    const { submitMove } = recorder();
+    const wrapper = mount(MastermindTile, {
+      props: { mastermind: mastermindLive(), currentStage: 'main', economy: economy({ attack: 6, availableAttack: 6 }), submitMove, enigmaCode, isTiltLiftEnabled: true },
+    });
+    const root = wrapper.find('[data-testid="play-mastermind-tile"]');
+    assert.equal(root.classes('mastermind-tile--guessing'), false, 'no guess before the Fight click');
+    await wrapper.find('[data-testid="play-mastermind-button"]').trigger('click');
+    assert.equal(root.classes('mastermind-tile--guessing'), true, 'the guess is open after the Fight click');
+    assert.ok(wrapper.find('.mastermind-tile__enigma-guess').exists(), 'the picker is present');
+  });
+});

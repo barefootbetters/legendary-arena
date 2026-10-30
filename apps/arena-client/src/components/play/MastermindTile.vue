@@ -104,6 +104,14 @@ export default defineComponent({
       required: false,
       default: undefined,
     },
+    // why: WP-854 / D-24790 — the band stand-up of the Mastermind card. Only
+    // PlayDesktop sets it (from useBoardTilt's lift gate); every other use,
+    // PlayMobile included, keeps it false and renders the tile as before.
+    isTiltLiftEnabled: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props, { emit }) {
     // why: WP-830 / D-24763 — null while no guess is being made; otherwise whether the fight the
@@ -316,9 +324,18 @@ export default defineComponent({
 <template>
   <section
     class="mastermind-tile"
+    :class="{
+      'mastermind-tile--tilt-lift': isTiltLiftEnabled,
+      'mastermind-tile--guessing': enigmaGuessFight !== null && enigmaCode !== undefined,
+    }"
     data-testid="play-mastermind-tile"
     aria-label="Mastermind"
   >
+    <!-- why: WP-854 / D-24790 — mastermind-tile--guessing mirrors the Enigma
+         picker's own v-if, verbatim. Inside a preserve-3d context depth order
+         beats z-index, so a raised card would paint over the open picker; and the
+         plane's rule already sits inside :has(), which cannot nest, so it tests
+         this static class instead of :has(.mastermind-tile__enigma-guess). -->
     <!-- why: WP-727 / D-24548 — the Portals Dark Portal above the Mastermind
          (twist 1). Shown only when darkPortalBonus > 0 (0 = no portal / a
          non-Portals scheme); the +N is prop-driven, never hardcoded. -->
@@ -706,5 +723,39 @@ export default defineComponent({
 
 .mastermind-thralls-item {
   display: flex;
+}
+
+/* why: WP-854 / D-24790 — the Mastermind card stands up on hover, as the City
+   and HQ cards do (D-24788). Pointer devices only, and only under --tilt-lift.
+   Every link from the tile down to the card frame preserves 3D, or the card
+   would rise but stay tilted; the links are on only while the fight button is
+   hovered, because at rest coplanar preserve-3d layers z-fight in Chrome's hit
+   test and steal clicks (EC-890 Amendment A). Never while the Enigma guess is
+   open (--guessing). */
+@media (hover: hover) {
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):has(.mastermind__fight-button:hover),
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):has(.mastermind__fight-button:hover) .mastermind__fight-button,
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing):has(.mastermind__fight-button:hover) .mastermind__card-frame {
+    transform-style: preserve-3d;
+  }
+  /* why: the bottom-edge origin makes the card rise off the table rather than
+     into it, and keeps that edge put (no dead click strip; hence no translateY). */
+  .mastermind-tile--tilt-lift .mastermind__card-frame {
+    transform-origin: 50% 100%;
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  }
+  /* why: lift the card frame, not the button. The button also holds the
+     "Tactics remaining" and Final Blow lines, which stay on the table, and it is
+     the hover target that never moves, so the lifted card cannot flicker out from
+     under the pointer. */
+  .mastermind-tile--tilt-lift:not(.mastermind-tile--guessing) .mastermind__fight-button:hover .mastermind__card-frame {
+    transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+  /* why: the tile's own 1.05 hover scale would compound with the lift; inside a
+     lifting frame the lifted card is exactly 1.06. */
+  .mastermind-tile--tilt-lift .mastermind__card-frame .card-tile--interactive:hover {
+    transform: none;
+  }
 }
 </style>

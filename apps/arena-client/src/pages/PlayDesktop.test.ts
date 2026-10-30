@@ -738,3 +738,35 @@ describe('PlayDesktop — table perspective (WP-852 / D-24788)', () => {
     }
   });
 });
+
+describe('PlayDesktop — band stand-up (WP-854 / D-24790)', () => {
+  /** Mounts the board on the shared play-phase snapshot. */
+  function mountBand() {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    return mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+  }
+
+  test('at full intensity the Mastermind tile and the shared decks carry their tilt-lift classes', () => {
+    try {
+      useEffectIntensity().setIntensity('full');
+      const wrapper = mountBand();
+      assert.equal(wrapper.find('.mastermind-tile').classes('mastermind-tile--tilt-lift'), true);
+      assert.equal(wrapper.find('.shared-decks').classes('shared-decks--tilt-lift'), true);
+    } finally {
+      useEffectIntensity().setIntensity('full');
+    }
+  });
+
+  test('at Effect Intensity off neither the Mastermind tile nor the shared decks carries a tilt-lift class', () => {
+    try {
+      useEffectIntensity().setIntensity('off');
+      const wrapper = mountBand();
+      assert.equal(wrapper.find('.mastermind-tile').classes('mastermind-tile--tilt-lift'), false);
+      assert.equal(wrapper.find('.shared-decks').classes('shared-decks--tilt-lift'), false);
+    } finally {
+      useEffectIntensity().setIntensity('full');
+    }
+  });
+});

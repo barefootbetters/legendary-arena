@@ -76,6 +76,14 @@ export default defineComponent({
       type: Function as PropType<SubmitMove>,
       required: true,
     },
+    // why: WP-854 / D-24790 — the band stand-up of the Officers and Sidekicks
+    // piles. Only PlayDesktop sets it (from useBoardTilt's lift gate); every
+    // other use, PlayMobile included, keeps it false and renders as before.
+    isTiltLiftEnabled: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   setup(props) {
     // why: WP-648 — expose the buy cost to the template so the tooltip/label
@@ -201,6 +209,7 @@ export default defineComponent({
 <template>
   <section
     class="shared-decks"
+    :class="{ 'shared-decks--tilt-lift': isTiltLiftEnabled }"
     data-testid="play-shared-decks"
     aria-label="Shared Decks"
   >
@@ -333,5 +342,39 @@ export default defineComponent({
 .shared-decks__cost {
   font-size: 0.7rem;
   opacity: 0.8;
+}
+
+/* why: WP-854 / D-24790 — the Officers and Sidekicks stand up on hover, as the
+   City and HQ cards do (D-24788). Pointer devices only, and only under
+   --tilt-lift. Every link from the root down to the recruit button preserves
+   3D, or the card would rise but stay tilted; the links are on only while a
+   recruit cell is hovered, because at rest coplanar preserve-3d layers z-fight
+   in Chrome's hit test and steal clicks (EC-890 Amendment A). */
+@media (hover: hover) {
+  .shared-decks--tilt-lift:has(.shared-decks__cell:hover > .shared-decks__recruit),
+  .shared-decks--tilt-lift:has(.shared-decks__cell:hover > .shared-decks__recruit) .shared-decks__row,
+  .shared-decks--tilt-lift:has(.shared-decks__cell:hover > .shared-decks__recruit) .shared-decks__cell,
+  .shared-decks--tilt-lift:has(.shared-decks__cell:hover > .shared-decks__recruit) .shared-decks__recruit {
+    transform-style: preserve-3d;
+  }
+  /* why: the bottom-edge origin makes the card rise off the table rather than
+     into it, and keeps that edge put, so every point of the resting button stays
+     under the lifted one (no dead click strip; hence no translateY). */
+  .shared-decks--tilt-lift .shared-decks__recruit {
+    transform-origin: 50% 100%;
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  }
+  /* why: the hover sits on the cell, which keeps its box, while the transform
+     moves the button; hovering the button itself would flicker as it moves out
+     from under the pointer. */
+  .shared-decks--tilt-lift .shared-decks__cell:hover > .shared-decks__recruit {
+    transform: rotateX(calc(-1 * var(--board-tilt-angle))) scale(1.06);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+  /* why: the tile's own 1.05 hover scale would compound with the lift; inside a
+     lifting pile the lifted card is exactly 1.06. */
+  .shared-decks--tilt-lift .shared-decks__recruit .card-tile--interactive:hover {
+    transform: none;
+  }
 }
 </style>
