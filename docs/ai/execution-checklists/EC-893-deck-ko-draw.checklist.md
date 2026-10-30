@@ -5,7 +5,7 @@
 
 ## Before Starting
 - [ ] Scope lock: the target file set is `## Files to Produce` — any edit outside it is a FAIL; surface it.
-- [ ] Baseline `origin/main` at or after `67d5f4e1`; WP-853 / D-24789 Active.
+- [ ] Baseline `origin/main` at or after `08b54c23`; WP-853 / D-24789 Active.
 - [ ] `pnpm -r build` then `pnpm --filter @legendary-arena/game-engine test` exit 0 (record the count).
 - [ ] Read the models: `recordOwnedCardKoed` + `hasWaitingOwnedKoGrant`, the owned-KO always-defer
       branch in `executeHeroEffects`, `resolveDeferredHeroGrants`, the `owned-card-koed` parser arm,

@@ -27,7 +27,7 @@ draws nothing. Live-on-surface is operator-pending (D-24026).
 
 ## Assumes
 
-- Baseline `origin/main` = `67d5f4e1` (the WP-856 reserve merge, #3103; WP-855 reserve `df149a8d`, #3101).
+- Baseline `origin/main` = `08b54c23` (WP-854 closed; the WP-856 reserve `67d5f4e1`, #3103; WP-855 reserve `df149a8d`, #3101).
 - WP-853 shipped (`bf7150b8`, #3093) and is live-verified (D-24789, match `SMOSJHT1Hc8`):
   - `hero/heroConditions.evaluate.ts` exports `OWNED_CARD_KOED_CONDITION_TYPE =
     'ownedCardKoedThisTurn'` with `evaluateCondition` and `describeFailedCondition` cases.
@@ -470,6 +470,9 @@ matches diverge; stored competitive rows stay frozen (D-24616 §5).
   freeze, no double-pay, no hash leak beyond the stated case, the sim / PAR / fixture mirrors inherit the
   hold, D-24470 §4 quote, +21, all 25 sites. Also folded at the same time (lint §16.1): the single-use
   `findPerKoTriggerCondition` helper became an inline `??` of two `findConditionOfType` calls.
+- **Copilot round 2:** **PASS → CONFIRM** — all five fixes verified in WP, EC and the D-24791 text; EC at
+  99 content lines (cap 100); the inline `??` lookup is scope-neutral (no hook carries both per-KO types);
+  +21 and the 9 deck / 8 literal-deck counts consistent. Pre-flight READY stands.
 
 ## Lint Gate Self-Review (00.3)
 
