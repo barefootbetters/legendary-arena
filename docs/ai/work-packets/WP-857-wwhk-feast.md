@@ -28,7 +28,7 @@ operator-pending (D-24026).
 
 ## Assumes
 
-- Baseline `origin/main` = `5dc5fae8` (the WP-857 reserve merge, #3107).
+- Baseline `origin/main` = `5dc5fae8` (the WP-857 reserve merge, #3107); rebased onto `f88c326b` (WP-856 executed) with the anchors and pins (87 / 69) unchanged.
 - `hero/heroEffects.execute.ts` (paths under `packages/game-engine/src/`) has
   `heroEffectRevealTopMayKo(G, ctx, playerID, _cardId, _effect)` (WP-754 / D-24581): it reveals the
   deck top (reshuffle-on-empty), parks one `PendingRevealTopDispose` whose entry carries
