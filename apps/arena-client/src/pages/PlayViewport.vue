@@ -18,6 +18,7 @@ import VfxOverlay from '../components/play/VfxOverlay.vue';
 import PlaymatBackground from '../components/play/PlaymatBackground.vue';
 import BotAllyStallBanner from '../components/BotAllyStallBanner.vue';
 import UpdateAvailableBanner from '../components/UpdateAvailableBanner.vue';
+import OutdatedMatchNotice from '../components/OutdatedMatchNotice.vue';
 import EndgameActions from '../components/play/EndgameActions.vue';
 import FinalTurnBanner from '../components/hud/FinalTurnBanner.vue';
 import { useViewport } from '../composables/useViewport';
@@ -154,7 +155,7 @@ export function computeCasualCoachMatchId(
  */
 export default defineComponent({
   name: 'PlayViewport',
-  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, GameLogCopyButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, BattleBrief, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, EndgameActions, FinalTurnBanner, OperatorBoardPanel },
+  components: { PlayDesktop, PlayMobile, DiagnosticExportButton, GameLogDownloadButton, GameLogCopyButton, ViewLoadoutButton, WaitingForPlayersPanel, BattlePlanPanel, BattleBrief, HollowEffectsPanel, DeckProbabilityPanel, AudioControls, VfxOverlay, PlaymatBackground, BotAllyStallBanner, UpdateAvailableBanner, OutdatedMatchNotice, EndgameActions, FinalTurnBanner, OperatorBoardPanel },
   props: {
     submitMove: {
       type: Function as PropType<SubmitMove>,
@@ -437,6 +438,22 @@ export default defineComponent({
     const isEndedEarly = computed<boolean>(
       () => endgameSnapshot.value?.gameOver?.endedEarly === true,
     );
+
+    // why: a match created before the running server booted keeps the card rules
+    // of its setup build (hero hooks are built once at Game.setup), so a player
+    // verifying a just-shipped rule in it sees the old behaviour. This reads the
+    // SAME build-provenance flag the game-log header and diagnostics export carry
+    // (loaded above, refreshed after each reconnect, so a mid-match server deploy
+    // raises it too). Hidden at game over, where Play Again already starts fresh.
+    const isOutdatedMatchNoticeShown = computed<boolean>(
+      () => buildProvenanceStore.provenance?.isMatchOlderThanServer === true && !isGameOver.value,
+    );
+    const outdatedMatchCreatedAtIso = computed<string | null>(
+      () => buildProvenanceStore.provenance?.matchCreatedAtIso ?? null,
+    );
+    const outdatedServerBootedAtIso = computed<string | null>(
+      () => buildProvenanceStore.provenance?.serverBootedAtIso ?? null,
+    );
     // why: the loadout this match launched with, stashed client-side at create
     // (matchSetupSession). Null when the viewer joined a match they did not create
     // or the tab's session cleared — Play Again then hides (only Back to Lobby).
@@ -527,6 +544,9 @@ export default defineComponent({
       returnToLobby,
       isUpdateAvailable,
       reloadForUpdate,
+      isOutdatedMatchNoticeShown,
+      outdatedMatchCreatedAtIso,
+      outdatedServerBootedAtIso,
       isGameOver,
       isEndedEarly,
       canPlayAgain,
@@ -553,6 +573,19 @@ export default defineComponent({
       // disturbs the display:contents root or intercepts a click.
     -->
     <PlaymatBackground />
+    <!--
+      // why: the older-rules notice, mounted once here so it covers BOTH play
+      // surfaces. Self-hides unless the match predates the running server. On
+      // phones it is the column's first row; on desktop it is a fixed bar over the
+      // brand header (its own CSS), dropped below the update banner when both show.
+    -->
+    <OutdatedMatchNotice
+      :class="{ 'outdated-match-notice--below-update-banner': isUpdateAvailable }"
+      :is-match-older-than-server="isOutdatedMatchNoticeShown"
+      :match-created-at-iso="outdatedMatchCreatedAtIso"
+      :server-booted-at-iso="outdatedServerBootedAtIso"
+      :start-new-match="returnToLobby"
+    />
     <PlayMobile
       v-if="isMobile"
       :submit-move="submitMove"
@@ -851,5 +884,18 @@ export default defineComponent({
   width: max-content;
   max-width: min(92vw, 40rem);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+</style>
+
+<style>
+/* why: phones — the fixed audio controls and utility dock cover the bottom ~5rem
+   of the viewport, so the brand footer (copyright + build stamp) at the end of
+   the scrolling PlayMobile column always sat underneath them. Extra bottom
+   padding on the footer, only while a play viewport is mounted, lets it scroll
+   clear. Unscoped because the footer belongs to AppShell, not this component. */
+@media (max-width: 767px) {
+  .app-shell:has(.play-viewport) .brand-footer {
+    padding-bottom: 6rem;
+  }
 }
 </style>
