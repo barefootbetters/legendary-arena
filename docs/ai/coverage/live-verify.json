@@ -1515,9 +1515,9 @@
       "card": "Bishop",
       "ability": "Absorb Energies: Whenever a card you own is KO'd this turn, you get +2 Recruit",
       "wp": "WP-853",
-      "state": "pending",
-      "date": "2026-10-29",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-853 deploy with Bishop in the hero decks, per the WP-853 DoD: play Absorb Energies, then KO one card (Whatever the Cost) and, in a later turn, several in one move.",
+      "state": "verified",
+      "date": "2026-10-30",
+      "evidence": "Operator match `SMOSJHT1Hc8` (Red Skull / Midtown Bank Robbery, 2p; Thor, Storm, Iron Man, Hulk, Bishop), created 2026-10-30T02:09:24Z after the deploy (server `bf7150b8`, the #3093 merge, booted 2026-10-29T13:57:10Z; diagnostics `isMatchOlderThanServer: false`). Every play of Absorb Energies logged the waiting line and added no Recruit (3.2.7, 3.2.9, 5.2.18, 7.2.2 and on). A turn with two copies and no KO gave nothing (turn 3). One KO after the play gave +2 (Whatever the Cost KOs at 7.2.5-7.2.6, 9.2.5-9.2.6, 15.2.5-15.2.6); a second KO the same turn gave +2 more (7.2.9-7.2.10, 11.2.12-11.2.13). Two copies in play and one KO gave +2 from each (Super-Skrull 5.2.30-5.2.32 and 9.2.26-9.2.28; Ruthless Dictator's deck-top KO 17.2.45-17.2.47). Owner routing: Super-Skrull's KO of Player 1's hand card in the same move added nothing extra to Player 0 (5.2.29, 9.2.25). A KO before the play gave nothing (Red Skull strike 7.1.4 on the previous turn; the Wound KO at 13.2.11, just before Absorb Energies at 13.2.12, which then paid only for the later KO at 13.2.22-13.2.23). KO sources exercised: Whatever the Cost (hand and discard, incl. Wounds), a Villain fight KO, a Mastermind tactic's deck-top KO. Not exercised live: several of the player's own cards KO'd in one move (e.g. healing three Wounds); that case rests on the unit test (+6 for three).",
       "note": "Playing it logs the waiting line and adds no Recruit; each card you own KO'd later that turn adds +2 Recruit, once per card. D-24789."
     }
   ]
