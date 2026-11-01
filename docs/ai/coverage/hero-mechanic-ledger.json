@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 834,
+    "totalRows": 835,
     "byStatus": {
-      "executable": 447,
+      "executable": 448,
       "deferred": 16,
       "condition": 52,
       "unsupported": 290,
       "unmarked": 26,
       "subsystem": 3
     },
-    "distinctMechanics": 174
+    "distinctMechanics": 175
   },
   "rows": [
     {
@@ -6458,6 +6458,22 @@
         {
           "slug": "posessed-by-brothers-spirit",
           "name": "Posessed by Brother's Spirit"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "discard-artifact-or-three-then-ko",
+      "status": "executable",
+      "wp": "WP-860",
+      "decision": "D-24796",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-artifact-or-three-then-ko",
+      "designs": [
+        {
+          "slug": "commune-with-the-spirit-world",
+          "name": "Commune with the Spirit World"
         }
       ]
     },

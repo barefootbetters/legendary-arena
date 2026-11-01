@@ -380,6 +380,8 @@ const LOCKED_TABLE: Record<string, KoSiteCounts> = {
   'moves/koDiscardChoice.resolve.ts#resolveKoDiscardChoice': { koSites: 1, ownedRecords: 1 },
   'moves/koHeroChoice.resolve.ts#resolveKoHeroChoice': { koSites: 2, ownedRecords: 2 },
   'moves/melterKoChoice.resolve.ts#resolveMelterKoChoice': { koSites: 1, ownedRecords: 1 },
+  // why: WP-860 / D-24796 — Commune with the Spirit World's KO pick (hand or discard pile, owned).
+  'moves/communeSpiritWorld.logic.ts#applyCommuneKoResolvedSeatChoice': { koSites: 1, ownedRecords: 1 },
   'moves/optionalKoReward.resolve.ts#resolveOptionalKoReward': { koSites: 1, ownedRecords: 1 },
   'moves/revealThreeAssign.resolve.ts#applyRevealThreeDisposition': { koSites: 1, ownedRecords: 1 },
   'moves/revealTopDispose.resolve.ts#resolveRevealTopDispose': { koSites: 1, ownedRecords: 1 },

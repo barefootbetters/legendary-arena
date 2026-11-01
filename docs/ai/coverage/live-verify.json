@@ -1552,6 +1552,17 @@
       "date": "2026-10-31",
       "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-858 deploy (isMatchOlderThanServer: false) with Doctor Voodoo, per the WP-858 DoD.",
       "note": "Playing it adds no Attack (no phantom +1); at end of turn it stays under Artifacts; with three or more Hero Classes (hand, play, Artifacts you control, itself included) its Use button discards it for +1 Attack per class. D-24794."
+    },
+    {
+      "key": "dstr/doctor-voodoo|discard-artifact-or-three-then-ko",
+      "kind": "hero",
+      "card": "Doctor Voodoo",
+      "ability": "Commune with the Spirit World: you may discard an Artifact you control or three cards from your hand; if you do, KO a card from your hand or discard pile",
+      "wp": "WP-860",
+      "state": "pending",
+      "date": "2026-10-31",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-860 deploy (isMatchOlderThanServer: false) with Doctor Voodoo, per the WP-860 DoD.",
+      "note": "Playing it logs no hollow; the cost choice lists each Artifact you control, three cards (with 3+ in hand) and Don't discard; three cards opens three single picks; after paying, a mandatory KO pick lists hand then discard pile. D-24796."
     }
   ]
 }

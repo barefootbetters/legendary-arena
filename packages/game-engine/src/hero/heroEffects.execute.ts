@@ -104,6 +104,7 @@ import {
 } from './revealLog.js';
 import { formatCountScaledRate } from './countSourceLabel.js';
 import { pushLog } from '../log/logPush.js';
+import { parkCommuneCostChoice } from '../moves/communeSpiritWorld.logic.js';
 import type { LogOutcome } from '../log/logOutcome.types.js';
 import {
   composeTransformNarrative,
@@ -359,6 +360,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // (heroEffectKoDiscardedThisWay) and carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'discard-top-printed-attack',
   'ko-discarded-this-way',
+  // why: WP-860 / D-24796 — Commune with the Spirit World; has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectDiscardArtifactOrThreeThenKo) that parks the cost seat choice, so it belongs here.
+  // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'discard-artifact-or-three-then-ko',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -647,6 +652,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // cards" is read from the record the line before it wrote), so the magnitude pre-gate must not
   // drop it, or heroEffectKoDiscardedThisWay never parks the KO choice.
   'ko-discarded-this-way',
+  // why: WP-860 / D-24796 — discard-artifact-or-three-then-ko carries NO magnitude (the cost and
+  // the KO are chosen through seat choices), so the magnitude pre-gate must not drop it, or
+  // heroEffectDiscardArtifactOrThreeThenKo never parks the Commune cost choice.
+  'discard-artifact-or-three-then-ko',
   // why: WP-735 / D-24555 — digest-indigestion carries NO top-level magnitude (the branch
   // magnitudes ride the nested inline effects: +attack / +recruit / draw:N / rescue:N). The
   // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
@@ -1960,6 +1969,32 @@ function heroEffectGainWound(
         : `Player ${playerID} gained a Wound (${formatCardRef(G.cardDisplayData, cardId)}).`,
     );
   }
+}
+
+/**
+ * Hero handler for the `discard-artifact-or-three-then-ko` keyword (WP-860 / D-24796).
+ *
+ * Commune with the Spirit World: "You may discard an [keyword:Artifact] you control or three cards
+ * from your hand. If you do, KO a card from your hand or discard pile." Parks the 'commune-cost'
+ * seat choice for the playing player (or logs why nothing opens); the rest chains from
+ * resolveSeatChoice. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card.
+ * @param cardId - The Commune card played.
+ * @param _effect - The `{ type: 'discard-artifact-or-three-then-ko' }` descriptor (no magnitude).
+ */
+function heroEffectDiscardArtifactOrThreeThenKo(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: WP-860 / D-24796 — a hero handler parks a seat choice at play (the Here, Hold This / Random
+  // Acts precedent); the cost / discard / KO logic lives in moves/communeSpiritWorld.logic.ts.
+  parkCommuneCostChoice(G, playerID, cardId);
 }
 
 /**
@@ -7169,6 +7204,9 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // Attack, record them; then (X-Men gate) KO any number of those cards via the KO-from-discard choice.
   'discard-top-printed-attack': heroEffectDiscardTopPrintedAttack,
   'ko-discarded-this-way': heroEffectKoDiscardedThisWay,
+  // why: WP-860 / D-24796 — Commune with the Spirit World: parks the cost seat choice; the discard
+  // picks and the KO pick chain from resolveSeatChoice.
+  'discard-artifact-or-three-then-ko': heroEffectDiscardArtifactOrThreeThenKo,
 };
 
 // ---------------------------------------------------------------------------

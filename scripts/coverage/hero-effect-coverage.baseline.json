@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3805,
+    "executable": 3810,
     "heroes": 324,
     "hooks": 6388,
-    "noEffect": 2479,
+    "noEffect": 2474,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -93,9 +93,9 @@
       "noEffect": 107
     },
     "dstr": {
-      "executable": 53,
+      "executable": 58,
       "hooks": 76,
-      "noEffect": 23
+      "noEffect": 18
     },
     "fear": {
       "executable": 43,

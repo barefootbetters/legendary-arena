@@ -688,12 +688,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'ko-discarded-this-way', // why: WP-850 / D-24786 — Firepower from the Future "[team:x-men]: KO any number of those cards": the KO-from-discard choice limited to the cards the same play discarded
     'ritual-recruited-hero', // why: WP-858 / D-24794 — Staff of Legba's Ritual Artifact: discarded through useRitualArtifact for +Attack equal to the highest Hero cost recruited this turn (move-executed)
     'ritual-hero-classes', // why: WP-858 / D-24794 — Medallion of Many Loas's Ritual Artifact: discarded through useRitualArtifact for +1 Attack per Hero Class you have, at a class threshold (move-executed)
+    'discard-artifact-or-three-then-ko', // why: WP-860 / D-24796 — Commune with the Spirit World: discard an Artifact you control or three cards from your hand, then KO a card from your hand or discard pile (chained seat choices; handler-bearing)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      89,
-      'HERO_KEYWORDS must have exactly 89 entries (ritual-recruited-hero + ritual-hero-classes, WP-858 / D-24794, appended last)',
+      90,
+      'HERO_KEYWORDS must have exactly 90 entries (discard-artifact-or-three-then-ko, WP-860 / D-24796, appended last)',
     );
 
     assert.deepStrictEqual(

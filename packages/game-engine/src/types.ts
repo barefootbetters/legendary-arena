@@ -1408,7 +1408,10 @@ export interface SeatChoiceOption {
   // the zone the cardId is KO'd from, because S.H.I.E.L.D. starter ids repeat across the
   // hand and the cards played this turn. Consumer-added. Absent for every other kind.
   // NOT projected to the client.
-  sourceZone?: 'hand' | 'inPlay';
+  // why: WP-860 / D-24796 — widened with 'discard' for Commune with the Spirit World's KO pick
+  // ("KO a card from your hand or discard pile"); the same starter / Wound ids repeat across hand
+  // and discard pile.
+  sourceZone?: 'hand' | 'inPlay' | 'discard';
 }
 
 /**
@@ -1473,6 +1476,14 @@ export interface PendingSeatChoice {
   // Absent for every other kind. A left neighbour need not be an addressed seat (a seat with
   // no cards to pass still RECEIVES).
   leftNeighborBySeat?: Record<string, string>;
+  // why: WP-860 / D-24796 — present only on the three Commune with the Spirit World kinds
+  // ('commune-cost' / 'commune-discard' / 'commune-ko'): the Commune card that started the chain,
+  // and on a discard pick how many hand discards remain including it. Read by the chain in
+  // resolveSeatChoice. Absent for every other kind. NOT projected to the client.
+  communeSpiritWorld?: {
+    sourceCardId: CardExtId;
+    discardsRemaining?: number;
+  };
 }
 
 /**

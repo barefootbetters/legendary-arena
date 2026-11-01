@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2030,
+    "totalEntries": 2031,
     "byScope": {
-      "hero": 834,
+      "hero": 835,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 653,
+      "executable": 654,
       "deferred": 16,
       "condition": 52,
       "unsupported": 291,
@@ -12055,6 +12055,23 @@
         {
           "slug": "posessed-by-brothers-spirit",
           "name": "Posessed by Brother's Spirit"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "name": "Doctor Voodoo",
+      "set": "dstr",
+      "scope": "hero",
+      "mechanic": "discard-artifact-or-three-then-ko",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#discard-artifact-or-three-then-ko",
+      "wp": "WP-860",
+      "decision": "D-24796",
+      "designs": [
+        {
+          "slug": "commune-with-the-spirit-world",
+          "name": "Commune with the Spirit World"
         }
       ]
     },
@@ -32940,6 +32957,7 @@
       "mechanics": [
         "artifact",
         "attack",
+        "discard-artifact-or-three-then-ko",
         "owned-hero-koed",
         "recruit",
         "ritual-artifact",
