@@ -63,11 +63,14 @@ targets **webOS TV 24 and later**.
 | Remote | Magic Remote has a **pointer mode** (standard mouse events, `:hover` works, the wheel scrolls) and a **5-way mode** (arrows + OK, cursor hidden). Pressing an arrow key switches to 5-way; shaking the remote switches back. `cursorStateChange` reports which mode is active |
 | 5-way rule | "Apps must support 5-way mode." LG tells developers to avoid features that don't work with 5-way input |
 | Key codes | Arrows 37–40, OK 13, **Back 461**, color keys 403–406, media keys 415/19/417/412/413 |
-| Back key | By default the platform drives Back through `history`. Setting `disableBackHistoryAPI: true` in `appinfo.json` hands Back (461) to the app. At the first screen, webOS 6.0+ shows an exit prompt. `webOS.platformBack()` (webOSTV.js) triggers that platform behavior |
+| Back key | By default the platform drives Back through `history`. Setting `disableBackHistoryAPI: true` in `appinfo.json` hands Back (461) to the app. At the first screen, webOS 6.0+ shows an exit prompt and 5.0 and earlier go to the Home launcher. `webOS.platformBack()` (webOSTV.js) triggers that platform behavior |
+| Gamepads | `appinfo.json` `cloudgame_active: true` makes the app handle gamepad input directly, not as platform-mapped keys. LG lists it for webOS TV 23 and 24 on current firmware. The community webOSbrew wiki adds that on webOS 25+ it also turns off the right-click BACK/HOME menu. Optional for us: the remote is the required input |
+| Content rule | The self-checklist says an app must not include gambling games, buying or cashing out game money, moving game money between users, or "acquiring of compensation". A missing or thin checklist can be rejected before QA. Our client has no game money. Paid-entry or prize events should stay off the TV build |
+| Launch art | `splashBackground` is a 1920×1080 PNG shown while the app loads. `icon` is 80×80 and `largeIcon` 130×130 (for testing). The store icon is a separate 400×400 upload |
 | Overlays | While the launcher or settings overlay is open, the app gets no pointer events. Use `window` `blur`/`focus` to detect it |
 | Store | LG Seller Lounge. QA runs a **pretest**, a **function test**, and a **content test**. A submission needs the `.ipk`, images, a **UX scenario** document, and a **self-checklist** filled in with real test results ("mandatory"). Every post-approval change goes through approval again. Sellers register as **Individual** or **Corporate**. LG Apps reaches 36 countries |
 | Paid content | "To provide paid products or content in your VOD or game app, In-App Purchase is required." LG's own billing service is retired, and LG recommends Paymentwall. Another third-party biller may need a separate contract with LG |
-| Dev loop | The Developer Mode app (signed in with an LG developer account) opens a time-limited session. The CLI connects over SSH as `prisoner` on port 9922 after a key-server passphrase. A PC **Simulator** matches the TV's Chromium version but differs in audio/video and lacks some platform APIs. The emulator is deprecated |
+| Dev loop | The Developer Mode app (signed in with an LG developer account) opens a time-limited session. The CLI connects over SSH as `prisoner` on port 9922 after a key-server passphrase. A PC **Simulator** matches the TV's Chromium version but differs in audio/video and lacks some platform APIs. The emulator is deprecated. The CLI is the npm package `@webos-tools/cli`, and LG recommends Node 14.15–16.20 for it, far behind the repo's Node 22, so install it outside the monorepo toolchain. **webOS Studio** is LG's separate IDE tool; the older VS Code extension is listed as deprecated |
 
 ### Engine versions vs what our client ships
 
@@ -214,6 +217,24 @@ would be its own WP with an API-catalog update.
   not in hand. A TV listing raises that exposure, and LG's content test may ask
   about rights *(unverified)*.
 
+### Second-source check
+
+A separate research pass (Grok, 2026-10-31) reached the same overall shape:
+web app, 1920×1080, Magic Remote **and** D-pad both required, visible focus
+states, Developer Mode sideloading, and Seller Lounge QA with a self-checklist
+and UX scenario. Where it differs:
+
+- **"Keep assets local, package everything."** That is generic advice for
+  offline games. LA can't play without the game server, and a packaged app
+  loses cookies (and so the Hanko session). Hosted stays the recommendation.
+  Card art and audio already come from `images.legendary-arena.com`.
+- **"Prefer Canvas or WebGL."** Doesn't apply. The client is a Vue DOM app
+  with a 2D-canvas VFX overlay. TV performance risk sits in the CSS 3D tilt,
+  shadows, and filters, not in a render engine.
+- **Back at the entry screen "returns to Home (webOS 23+)."** LG's Back Button
+  guide says the opposite split: 6.0+ shows an exit prompt and 5.0 and earlier
+  go to Home. Either way, `webOS.platformBack()` hands it to the platform.
+
 ### Work breakdown (sizing, not a plan)
 
 | Piece | Size | Notes |
@@ -295,6 +316,8 @@ would be its own WP with an API-catalog update.
 - LG: [appinfo.json](https://webostv.developer.lge.com/develop/references/appinfo-json)
 - LG: [System UI Visibility](https://webostv.developer.lge.com/develop/guides/system-ui-visibility) (`cursorStateChange`)
 - LG: [In-App Purchase](https://webostv.developer.lge.com/develop/guides/in-app-purchase)
+- LG: [App Self Checklist](https://webostv.developer.lge.com/distribute/app-self-checklist) (content rule) and [CLI Installation](https://webostv.developer.lge.com/develop/tools/cli-installation)
+- Community: [webOSbrew appinfo.json notes](https://www.webosbrew.org/develop/guides/appinfo) (`cloudgame_active` on webOS 25; not LG-official)
 - LG: [App Approval Process](https://webostv.developer.lge.com/distribute/app-approval-process) and [App Ecosystem](https://webostv.developer.lge.com/distribute/app-ecosystem)
 - LG: [CLI Introduction](https://webostv.developer.lge.com/develop/tools/cli-introduction), [Developer Mode App](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app), [Simulator](https://webostv.developer.lge.com/develop/tools/simulator-introduction)
 - [Enact Spotlight on npm](https://www.npmjs.com/package/@enact/spotlight): LG's React focus library, for comparison
