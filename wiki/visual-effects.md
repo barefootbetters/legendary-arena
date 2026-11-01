@@ -62,7 +62,7 @@ source:
   - ../apps/arena-client/src/components/log/gameLogExport.ts
   - ../apps/arena-client/src/components/log/GameLogPanel.vue
   - ../docs/ai/ARCHITECTURE.md
-last-reviewed: 2026-10-29
+last-reviewed: 2026-10-31
 ---
 
 # Visual Effects Framework
@@ -1303,13 +1303,16 @@ answer the pointer the same way the City and HQ cards do.
   frame. A pile or Mastermind you cannot afford still stands up, like a City
   villain you cannot afford, so you can read it; its dimmed look, disabled state
   and tooltip do not change.
-- **No lift while the Enigma guess is open.** The WP-830 Enigma guess opens on
-  top of the Mastermind tile (`.mastermind-tile__enigma-guess`). Inside a 3D
-  context depth order beats `z-index`, so a raised Mastermind would cover the
-  picker. The tile carries a static `mastermind-tile--guessing` class while the
-  picker is open, because the plane's switch already sits inside `:has()`, which
-  cannot nest: a prototype that nested it voided the whole selector list, and
-  every band card rose but stayed tilted (×1.03 instead of ×1.22).
+- **No lift while the Enigma guess is open.** The WP-830 Enigma guess first
+  opened on top of the Mastermind tile, where a raised Mastermind would have
+  covered it (inside a 3D context depth order beats `z-index`). Since
+  2026-10-31 it is a dialog teleported to the page body, because in the tile it
+  was too small to click reliably, so nothing can cover it. The Mastermind
+  still stays flat while the guess is open. The tile carries a static
+  `mastermind-tile--guessing` class while the picker is open, because the
+  plane's switch already sits inside `:has()`, which cannot nest: a prototype
+  that nested it voided the whole selector list, and every band card rose but
+  stayed tilted (×1.03 instead of ×1.22).
 - **3D only while one of them is hovered.** The plane's `:has(…:hover)` switch
   (above) gains these three targets, and the `preserve-3d` chain runs from the
   plane through `.play-desktop__adversary-band` to the lifted element: through

@@ -332,10 +332,9 @@ export default defineComponent({
     aria-label="Mastermind"
   >
     <!-- why: WP-854 / D-24790 — mastermind-tile--guessing mirrors the Enigma
-         picker's own v-if, verbatim. Inside a preserve-3d context depth order
-         beats z-index, so a raised card would paint over the open picker; and the
-         plane's rule already sits inside :has(), which cannot nest, so it tests
-         this static class instead of :has(.mastermind-tile__enigma-guess). -->
+         picker's own v-if, verbatim, so the card stays flat while the guess is
+         open. The plane's rule already sits inside :has(), which cannot nest, so
+         it tests this static class. -->
     <!-- why: WP-727 / D-24548 — the Portals Dark Portal above the Mastermind
          (twist 1). Shown only when darkPortalBonus > 0 (0 = no portal / a
          non-Portals scheme); the +N is prop-driven, never hardcoded. -->
@@ -426,15 +425,20 @@ export default defineComponent({
       <span class="mastermind-ev-fight-label">Excessive Violence</span>
       <span class="mastermind-ev-fight-cost">+1</span>
     </button>
-    <!-- why: WP-830 / D-24763 — the Enigma Code guess a Mastermind fight starts with. -->
-    <EnigmaGuessPicker
-      v-if="enigmaGuessFight !== null && enigmaCode !== undefined"
-      :key="enigmaPickerKey()"
-      class="mastermind-tile__enigma-guess"
-      :enigma-code="enigmaCode"
-      @submit="onEnigmaGuess"
-      @cancel="enigmaGuessFight = null"
-    />
+    <!-- why: WP-830 / D-24763 — the Enigma Code guess a Mastermind fight starts with.
+         Jeff feedback (Loki / Enigma Code 2p, 2026-10-31): drawn inside the tile it
+         was ~125×112 px on the scaled, tilted board, each card's colors wrapped two
+         to a line and the sticky actions hid the "Card 2" label, so a click read as
+         one card's landed on the next. It is a body-level dialog now; the Teleport
+         also keeps it out of the board's scale-to-fit, so the board never rescales. -->
+    <Teleport v-if="enigmaGuessFight !== null && enigmaCode !== undefined" to="body">
+      <EnigmaGuessPicker
+        :key="enigmaPickerKey()"
+        :enigma-code="enigmaCode"
+        @submit="onEnigmaGuess"
+        @cancel="enigmaGuessFight = null"
+      />
+    </Teleport>
     <!-- why: the full card + Master-Strike / special rules open in the shared
          CardReaderModal instead of rendering inline, so the tile stays short
          (Jeff: the top row wasted vertical space without being readable). -->
@@ -488,18 +492,7 @@ export default defineComponent({
 </template>
 
 <style scoped>
-/* why: WP-830 / D-24763 — the Enigma guess opens ON TOP of the tile (the #2970 Primus chooser
-   precedent), never inline: an inline picker would grow the nowrap adversary band and make
-   useScaleToFit shrink the whole 1280x720 board mid-guess. */
-.mastermind-tile__enigma-guess {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  overflow-y: auto;
-}
-
 .mastermind-tile {
-  /* why: WP-830 / D-24763 — the positioning context of the Enigma guess overlay. */
   position: relative;
   display: flex;
   flex-direction: column;
