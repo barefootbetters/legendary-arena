@@ -228,7 +228,7 @@ export function resolveKoDiscardChoice(
   playerZones.discard = workingDiscard;
   for (const cardId of chosenCards) {
     G.ko = koCard(G.ko, cardId);
-    recordOwnedCardKoed(G, playerID, cardId);
+    recordOwnedCardKoed(G, playerID, cardId, 'discard');
   }
 
   // Step 5: Narrate the resolved KO. `G.messages` is hash-excluded (D-24081), so this

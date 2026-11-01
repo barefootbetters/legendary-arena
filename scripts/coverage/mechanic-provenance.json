@@ -99,6 +99,7 @@
     "ko-discarded-this-way": { "wp": "WP-850", "decision": "D-24786" },
     "owned-card-koed": { "wp": "WP-853", "decision": "D-24789" },
     "owned-hero-koed": { "wp": "WP-856", "decision": "D-24792" },
+    "deck-card-koed": { "wp": "WP-855", "decision": "D-24791" },
     "ritual-recruited-hero": { "wp": "WP-858", "decision": "D-24794" },
     "ritual-hero-classes": { "wp": "WP-858", "decision": "D-24794" },
     "discard-artifact-or-three-then-ko": { "wp": "WP-860", "decision": "D-24796" },

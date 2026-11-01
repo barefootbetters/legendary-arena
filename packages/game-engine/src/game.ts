@@ -1003,6 +1003,14 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             delete G.ownedHeroesKoedSinceResolve;
           }
 
+          // why: WP-855 / D-24791 — the same turn-boundary clear for the per-owner deck-KO
+          // count (Endless Appetite). The resolve keeps it while a choice is parked, so this is
+          // the clear that drops a count held to the end of the turn. Guarded, so a game that
+          // never set it is unchanged.
+          if (G.deckCardsKoedSinceResolve !== undefined) {
+            delete G.deckCardsKoedSinceResolve;
+          }
+
           // why: WP-777 / D-24616 — "If you discarded any cards this turn" reads a per-turn
           // count, so it must not carry into the next turn (a stale count would let New
           // Wings / Pumpkin Bombs fire with no discard — the exact over-credit this fixes).

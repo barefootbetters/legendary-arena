@@ -102,6 +102,9 @@ draws nothing. Live-on-surface is operator-pending (D-24026).
   `villainEffectKoWoundsCurrentHandAndDiscard` a new index-aligned `koedWoundZones` list built in its
   two existing scan loops. None of those 16 types admits `'deck'`. Firepower from the Future (WP-850)
   discards the top four and KOs from the **discard pile**, so it is not a deck KO.
+  *Execution (EC-893 Amendment A):* WP-860 added a 26th owned site after drafting,
+  `moves/communeSpiritWorld.logic.ts` `applyCommuneKoResolvedSeatChoice`, which passes its option's
+  `sourceZone` (narrowed to `'hand' | 'discard'`); it is never a deck KO. Totals at execution: 35 / 26.
 - **"You may draw" is auto-applied.** Drawing is pure upside here: a draw costs nothing, a draw lock
   already blocks it, and an empty deck and discard is a logged no-op. The engine auto-resolves a
   pure-upside "may" rather than parking a choice with no real decision (D-24470 §4: "a parked choice

@@ -355,7 +355,7 @@ export function applyCommuneKoResolvedSeatChoice(G: LegendaryGameState, choice: 
   G.ko = koCard(G.ko, cardId);
   // why: WP-853 / D-24789 — a KO from the player's own hand or discard pile is an owned KO, so a
   // waiting Absorb Energies / Possessed by Brother's Spirit grant reacts at the next onMove resolve.
-  recordOwnedCardKoed(G, seat, cardId);
+  recordOwnedCardKoed(G, seat, cardId, sourceZone);
   pushLog(
     G,
     `Player ${seat} KO'd ${resolveCardName(G.cardDisplayData, cardId)} from ${describeKoSourceZone(sourceZone)} (Commune with the Spirit World).`,

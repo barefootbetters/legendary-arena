@@ -389,6 +389,17 @@
       "hidden": true
     },
     {
+      "slug": "deck-card-koed",
+      "label": "Deck Card Koed",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "wwhk/miek-the-unhived"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "defeat-with-bystander",
       "label": "Defeat With Bystander",
       "scope": "hero",
@@ -581,7 +592,7 @@
       "label": "Draw",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 101,
+      "cardCount": 102,
       "cardIds": [
         "3dtc/black-widow",
         "amwp/ant-army",
@@ -674,6 +685,7 @@
         "wwhk/hiroim",
         "wwhk/hulkbuster-iron-man",
         "wwhk/korg",
+        "wwhk/miek-the-unhived",
         "wwhk/namora",
         "wwhk/no-name-brood-queen",
         "wwhk/she-hulk",
@@ -4570,6 +4582,8 @@
     },
     "wwhk/miek-the-unhived": {
       "mechanics": [
+        "deck-card-koed",
+        "draw",
         "feast",
         "smash",
         "transform"

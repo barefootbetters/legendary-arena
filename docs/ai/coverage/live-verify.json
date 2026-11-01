@@ -1532,6 +1532,17 @@
       "note": "Playing it logs the waiting line and adds only the card's printed 4 Attack (no +4 Recruit / +4 Attack bonus); the first Hero of yours KO'd later that turn opens a +4 Recruit / +4 Attack choice, once; Wound KOs do not trigger it. D-24792."
     },
     {
+      "key": "wwhk/miek-the-unhived|deck-card-koed",
+      "kind": "hero",
+      "card": "Miek the Unhived",
+      "ability": "Endless Appetite: Whenever a card is KO'd from your deck this turn, you may draw a card",
+      "wp": "WP-855",
+      "state": "pending",
+      "date": "2026-11-01",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-855 deploy (isMatchOlderThanServer: false) with Miek and a deck-KO source (Carnage's Gruesome Feast, or the operator ko-from-player setter from the deck), per the WP-855 DoD.",
+      "note": "Playing it logs the waiting line and draws nothing; each card KO'd from your deck later that turn draws one card, once per card per copy; KOs from hand, discard pile or play draw nothing. The draw waits while a reveal choice is open. D-24791."
+    },
+    {
       "key": "dstr/doctor-voodoo|ritual-recruited-hero",
       "kind": "hero",
       "card": "Doctor Voodoo",

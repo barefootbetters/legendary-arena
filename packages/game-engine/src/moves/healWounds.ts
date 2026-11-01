@@ -172,7 +172,7 @@ export function healWounds({ G, ctx }: MoveContext): void {
   for (let woundIndex = 0; woundIndex < woundsToKo; woundIndex += 1) {
     G.ko = koCard(G.ko, WOUND_EXT_ID);
     // why: WP-853 / D-24789 — one owned KO per healed Wound (Absorb Energies).
-    recordOwnedCardKoed(G, ctx.currentPlayer, WOUND_EXT_ID);
+    recordOwnedCardKoed(G, ctx.currentPlayer, WOUND_EXT_ID, 'hand');
   }
   playerZones.hand = survivingHand;
   // why: D-24180 — once the player heals they may not fight or recruit for the rest

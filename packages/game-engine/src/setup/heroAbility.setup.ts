@@ -45,6 +45,7 @@ import {
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
   OWNED_CARD_KOED_CONDITION_TYPE,
   OWNED_HERO_KOED_CONDITION_TYPE,
+  DECK_CARD_KOED_CONDITION_TYPE,
 } from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
@@ -429,6 +430,9 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   // why: WP-856 / D-24792 — Possessed by Brother's Spirit's Hero-KO trigger marker; its
   // parseAbilityText arm pushes the one-shot ownedHeroKoedThisTurn wait-and-see condition.
   'owned-hero-koed',
+  // why: WP-855 / D-24791 — Endless Appetite's deck-KO trigger marker; its parseAbilityText
+  // arm pushes the per-KO deckCardKoedThisTurn wait-and-see condition.
+  'deck-card-koed',
   'first-hero-condition',
   // why: WP-743 / D-24566 — Grief / Spring the Trap condition markers; each has a
   // parseAbilityText arm that pushes its whole-turn wait-and-see condition.
@@ -1791,6 +1795,14 @@ function parseAbilityText(
       // pre-pass (whose conditions.splice would otherwise drop it). `value` is unused; '1'
       // is a stable placeholder. Placed before the unresolved-marker fallback.
       conditions.push({ type: OWNED_HERO_KOED_CONDITION_TYPE, value: '1' });
+    } else if (normalizedKeyword === 'deck-card-koed') {
+      // why: WP-855 / D-24791 — Endless Appetite's "Whenever a card is KO'd from your deck this
+      // turn, you may draw a card." The owned-card-koed precedent (D-24789): push the per-KO
+      // wait-and-see gate onto the same hook as the line's [keyword:draw:1], so the draw fires
+      // once per KO from the player's deck (not on play; "you may" is auto-applied, pure
+      // upside). `value` is unused; '1' is a stable placeholder. Placed before the
+      // unresolved-marker fallback so it never flags hollow.
+      conditions.push({ type: DECK_CARD_KOED_CONDITION_TYPE, value: '1' });
     } else if (normalizedKeyword === 'master-strike-this-turn') {
       // why: WP-743 / D-24566 — Grief's "If a Master Strike was completed this turn, you
       // get +2 Recruit." The marker→condition precedent (D-24467): push the whole-turn

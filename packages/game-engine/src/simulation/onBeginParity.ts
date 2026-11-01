@@ -9,7 +9,8 @@
  * and clears the WP-656 defeat edge flag
  * (`villainOrMastermindDefeatedSinceResolve`, D-24467) and the WP-853 owned-KO count
  * (`ownedCardsKoedSinceResolve`, D-24789) and the WP-856 Hero-KO count
- * (`ownedHeroesKoedSinceResolve`, D-24792), deletes the WP-743 per-turn
+ * (`ownedHeroesKoedSinceResolve`, D-24792) and the WP-855 deck-KO count
+ * (`deckCardsKoedSinceResolve`, D-24791), deletes the WP-743 per-turn
  * Master Strike / Ambush Villain flags (`masterStrikePlayedThisTurn`,
  * `ambushVillainPlayedThisTurn`, D-24566), and stamps the per-turn
  * log numbering (`logMeta`, WP-328) and `lastPlayEffectsFired` (WP-409). None of the engine's
@@ -54,7 +55,7 @@ import { clearDeferredConditionalGrants } from '../hero/deferredConditionalGrant
  * @param gameState - the live per-game state; the allowance flags are
  *   mutated in place, and `deferredConditionalGrants`,
  *   `villainOrMastermindDefeatedSinceResolve`, `ownedCardsKoedSinceResolve`,
- *   `ownedHeroesKoedSinceResolve`,
+ *   `ownedHeroesKoedSinceResolve`, `deckCardsKoedSinceResolve`,
  *   `masterStrikePlayedThisTurn` and
  *   `ambushVillainPlayedThisTurn` are deleted when present.
  * @param playerId - the seat whose turn is beginning (unused now beyond symmetry;
@@ -102,6 +103,11 @@ export function applyOnBeginParity(
   // order. Guarded so a never-set G stays byte-unchanged.
   if (gameState.ownedHeroesKoedSinceResolve !== undefined) {
     delete gameState.ownedHeroesKoedSinceResolve;
+  }
+  // why: WP-855 / D-24791 — mirrors game.ts onBegin's deck-KO count clear, in the same
+  // order. Guarded so a never-set G stays byte-unchanged.
+  if (gameState.deckCardsKoedSinceResolve !== undefined) {
+    delete gameState.deckCardsKoedSinceResolve;
   }
   // why: WP-777 / D-24616 — mirrors game.ts onBegin's per-turn discard-count delete for the
   // rebuilt loops, so a harness turn never inherits the previous turn's discards. Guarded so

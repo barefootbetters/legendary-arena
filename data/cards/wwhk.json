@@ -1152,7 +1152,7 @@
           "attack": "3",
           "recruit": null,
           "abilities": [
-            "Whenever a card is KO'd from your deck this turn, you may draw a card."
+            "Whenever a card is KO'd from your deck this turn, you may draw a card. [keyword:deck-card-koed] [keyword:draw:1]"
           ]
         },
         {

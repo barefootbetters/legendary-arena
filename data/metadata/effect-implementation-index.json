@@ -3,16 +3,16 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2031,
+    "totalEntries": 2033,
     "byScope": {
-      "hero": 835,
+      "hero": 837,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 654,
+      "executable": 655,
       "deferred": 16,
-      "condition": 52,
+      "condition": 53,
       "unsupported": 291,
       "unmarked": 1013,
       "subsystem": 5
@@ -27036,6 +27036,40 @@
       "name": "Miek, The Unhived",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "deck-card-koed",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-855",
+      "decision": "D-24791",
+      "designs": [
+        {
+          "slug": "endless-appetite",
+          "name": "Endless Appetite"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/miek-the-unhived",
+      "name": "Miek, The Unhived",
+      "set": "wwhk",
+      "scope": "hero",
+      "mechanic": "draw",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "designs": [
+        {
+          "slug": "endless-appetite",
+          "name": "Endless Appetite"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/miek-the-unhived",
+      "name": "Miek, The Unhived",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "feast",
       "status": "unsupported",
       "handler": "",
@@ -38073,6 +38107,8 @@
     "wwhk/miek-the-unhived": {
       "scope": "hero",
       "mechanics": [
+        "deck-card-koed",
+        "draw",
         "feast",
         "smash",
         "transform"
