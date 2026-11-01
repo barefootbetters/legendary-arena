@@ -413,12 +413,13 @@ Cross-cutting governance, methodology, and readiness assessments.
   (1280×800–1920×1080 / 375×667–414×896), the reference desktop
   resolutions to test against, and the still-open question of fluid
   desktop scaling and an ultra-wide max-width cap.
-- [webOS TV Port](webos-tv-port.md) — *(draft, research)* what shipping
-  the arena-client as an LG webOS TV app takes: a hosted web app (cookies,
-  CORS, and deploys unchanged) targeting webOS 24+ (the `es2022` build plus
-  CSS `:has()`); the 5-way D-pad navigation LG requires and the board lacks;
-  10-foot readability; device-code sign-in; LG's IAP rule for paid content;
-  and a work-breakdown sizing.
+- [webOS TV Port](webos-tv-port.md) — *(draft, feasibility research)* what
+  shipping the arena-client as an LG webOS TV app takes, with no engine change:
+  a hosted app as the leading candidate on webOS TV 24+, gated on two Seller
+  Lounge policy questions and a device spike; the 5-way D-pad navigation LG
+  requires and the board lacks; text against LG's 20 px recommendation;
+  device-code sign-in; LG's in-app purchase rule; and non-authoritative
+  sizing.
 - [Visual Effects Framework](visual-effects.md) — *(draft, research)* the
   in-game "juice" layer: the shipped combo flash + synergy call-out off
   `UIState.game.lastPlayEffectsFired` (WP-556), the notable-event beats
