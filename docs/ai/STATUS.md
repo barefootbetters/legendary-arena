@@ -10,6 +10,14 @@
 
 ## Current State
 
+### Electromagnetic Bubble keeps its seventh card through a deck reshuffle (D-24797, direct fix) (2026-11-01)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Defeating Magneto's Electromagnetic Bubble on a turn when your deck is nearly empty used to lose the seventh card: the chosen Hero got shuffled into the deck, sometimes drawn as one of the six, and the log said it "could not be found". Now the Hero is set aside before the new hand is drawn and always comes back as the seventh card.
+
+- **Engine.** End-of-turn cleanup gains Step 1b (`setAsideDeferredHandInjections`) before the fill; Step 5 adds the set-aside card after it. Every cleanup without a Bubble pick is byte-identical; only a Bubble pick on a reshuffle turn changes.
+- **Tests.** game-engine 6173 -> 6178 / 0 (+5). The reshuffle regression test fails against the old cleanup with the live six-card symptom.
+- **Live-verify (D-24026): operator-pending.** Magneto match created after the deploy: defeat Electromagnetic Bubble with fewer than six cards in your deck; the next hand has seven cards.
+
 ### WP-857 / EC-895 — Hero Feast: "You may [keyword:Feast]" KOs the top card of your deck on five Miek and No-Name lines (D-24793) (2026-11-01)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Playing Metamorphosis or Bursting with Life, or Devouring Frenzy after another Instinct Hero, or Appetite for Destruction after another Covert Hero, opens the existing reveal-top prompt ("Reveal the top card — KO it or keep it") on the top card of the player's deck with **KO** and **Keep**; KO sends it to the KO pile, Keep leaves it on top. With an empty deck and discard pile the log says there was no card. Before this, those Feast lines did nothing. World-Spanning Hunger and The Void Unchained are unchanged (honest unresolved markers).
