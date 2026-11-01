@@ -311,6 +311,126 @@ action. Paymentwall is the fallback if LG says no (gate 1).
   in hand. A TV listing raises that exposure, and LG's content test may ask
   about rights *(unverified)*.
 
+#### Registering the seller account
+
+The account is registered under `jeff@barefootbetters.com`. LG's
+[Seller Registration guide](https://seller.lgappstv.com/seller/guide/sellerRegistration.lge)
+lists the steps below. It does not list the documents a Corporate seller
+needs, how long review takes, or any fee, so those rows wait for the
+form itself.
+
+1. **Create the LG account** with `jeff@barefootbetters.com`, from Sign Up on
+   [webostv.developer.lge.com](https://webostv.developer.lge.com). The same LG
+   account signs in to Seller Lounge and to the Developer Mode app on a TV.
+   Choose the country carefully: a developer-forum report says an LG account's
+   country can't be changed later, short of deleting the account and starting
+   again.
+2. **Open [Seller Lounge](https://seller.lgappstv.com/),** sign in with that
+   account, and click **Sign Up** for seller membership.
+3. **Select the seller type: Corporate Seller.** A corporate seller signs up
+   "under a licensed business title," and the store shows the company name.
+   Use the business's name exactly as it is registered.
+4. **Agree to the Terms and Conditions.**
+5. **Complete the General Information form and submit it.**
+6. **Verify the email address** from the message sent to
+   `jeff@barefootbetters.com`.
+7. **Registration is complete.** The Seller Lounge menu then has **1:1 Q&A**,
+   where the [two questions](#seller-lounge-questions-and-lgs-answers) are
+   posted.
+
+Herbs vs. Ailments is not registered under this account: it is an
+independent project built to be sold separately, and its entity isn't
+formed yet.
+
+What the registration actually asked, filled in as it happens:
+
+| Item | Answer |
+|---|---|
+| Date registered | *(not yet)* |
+| Account country chosen | *(not yet)* |
+| Company name as registered | *(not yet)* |
+| Documents the Corporate form asked for | *(not yet)* |
+| Review or approval time | *(not yet)* |
+| Fee | *(not yet)* |
+| Seller ID or account notes | *(not yet)* |
+
+#### Seller Lounge questions and LG's answers
+
+Posted through Seller Lounge 1:1 Q&A. Each question is written generically,
+so one answer covers both Legendary Arena and Herbs vs. Ailments. The text
+below is what gets pasted.
+
+**Question 1: purchases made outside the TV app** (gate 1)
+
+```
+Title: In-App Purchase policy for content bought on our website
+
+We are preparing a game app for webOS TV. Players sign in with their
+account on our service. Some players have already paid for a subscription
+or license on our own website (outside the TV). The paid content is then
+available to them on every device where they sign in, including the TV.
+
+Inside the TV app:
+- There is no purchase screen, no price, and no payment of any kind.
+- There is no button or link that sends the user to a purchase page.
+- The app only checks the signed-in account and unlocks what the user has
+  already bought.
+
+Your In-App Purchase guide says "To provide paid products or content in
+your VOD or game app, In-App Purchase is required."
+
+1. Is this model allowed without In-App Purchase?
+2. May the app show a neutral message such as "This feature is part of
+   [subscription name]. Manage your account at [our website]"? Or must the
+   app show nothing about it?
+3. If In-App Purchase is required, does it have to be Paymentwall, or may we
+   use another payment provider under a separate contract with LG?
+```
+
+| | LG's answer |
+|---|---|
+| Date asked | *(not yet asked)* |
+| Ticket or reference | *(not yet asked)* |
+| Date answered | *(not yet answered)* |
+| 1. Allowed without in-app purchase? | *(not yet answered)* |
+| 2. Neutral "manage your account" message allowed? | *(not yet answered)* |
+| 3. Paymentwall only, or another provider? | *(not yet answered)* |
+| What it changes on this page | *(not yet answered)* |
+
+**Question 2: hosted web app updates after approval** (gate 2)
+
+```
+Title: Re-approval for content changes in a hosted web app
+
+We plan to publish a hosted web app. The .ipk contains only appinfo.json,
+icons, and an index.html that redirects to our web server. The game itself
+is served from our server and is updated there.
+
+Your Web App Types guide says a hosted app can update content "without
+pushing updates to devices." Your App Approval Process page says "If there
+is any change to the app after being approved, the change has to go through
+a separate approval process."
+
+1. Does a change on our server (with no new .ipk) need a new approval?
+2. If some changes do need approval, which ones? For example: bug fixes,
+   new game content, or UI and navigation changes.
+3. If we change the UI after approval, must we resubmit the UX scenario
+   document?
+```
+
+| | LG's answer |
+|---|---|
+| Date asked | *(not yet asked)* |
+| Ticket or reference | *(not yet asked)* |
+| Date answered | *(not yet answered)* |
+| 1. Server-side change needs approval? | *(not yet answered)* |
+| 2. Which changes need approval? | *(not yet answered)* |
+| 3. UX scenario resubmitted after a UI change? | *(not yet answered)* |
+| What it changes on this page | *(not yet answered)* |
+
+When an answer arrives, quote LG's words in its rows, add the date, and update
+the Recommendation and Open Questions to match.
+
 ### Device spike
 
 A sideloaded hosted shell on a webOS TV 24+ set, through Developer Mode. The
@@ -406,6 +526,9 @@ change.
    not, a TV build needs Paymentwall or another contracted biller.
 2. **Seller Lounge, hosted changes:** does content changed behind a hosted URL
    need re-approval, and how big a change counts?
+
+   Both are drafted, with slots for LG's answers, under
+   [Seller Lounge questions and LG's answers](#seller-lounge-questions-and-lgs-answers).
 3. **Rights:** does a TV store listing need anything from Upper Deck or Marvel
    beyond what web distribution needs?
 
@@ -434,6 +557,7 @@ LG documentation, read 2026-10-31:
 - [appinfo.json](https://webostv.developer.lge.com/develop/references/appinfo-json): `resolution`, `disableBackHistoryAPI`, `cloudgame_active`, icons, splash
 - [In-App Purchase](https://webostv.developer.lge.com/develop/guides/in-app-purchase)
 - [App Approval Process](https://webostv.developer.lge.com/distribute/app-approval-process) and [App Ecosystem](https://webostv.developer.lge.com/distribute/app-ecosystem)
+- [Seller Registration guide](https://seller.lgappstv.com/seller/guide/sellerRegistration.lge) (on Seller Lounge): seller types and the five registration steps
 - [CLI Introduction](https://webostv.developer.lge.com/develop/tools/cli-introduction), [CLI Installation](https://webostv.developer.lge.com/develop/tools/cli-installation), [Developer Mode App](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app), [Simulator](https://webostv.developer.lge.com/develop/tools/simulator-introduction)
 
 Other sources:
