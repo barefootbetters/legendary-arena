@@ -55,19 +55,26 @@ because either policy answer can change the approach.
 ### Recommendation
 
 - **Candidate architecture:** a hosted webOS app whose shell redirects to
-  `https://play.legendary-arena.com`, with a TV mode in the arena-client for
-  input, readability, and the browser APIs a TV lacks. Hosted is the leading
-  candidate, not a settled choice; see
+  `https://play.legendary-arena.com`, plus a TV mode in the arena-client
+  (5-way focus, 10-foot readability, browser-API adaptations). The shell is
+  only an `appinfo.json`, a redirecting `index.html`, and icons; no game
+  assets live in the `.ipk`. Hosted is the leading candidate only while the
+  two Seller Lounge questions are open; see
   [Hosted vs packaged](#hosted-vs-packaged-hosted-is-the-leading-candidate).
-- **Candidate minimum:** webOS TV 24+ (2024 models and newer). Static analysis
-  finds no JavaScript or CSS rewrite needed there; see
-  [Client compatibility](#client-compatibility).
-- **Gates before implementation, cheapest first:**
-  1. Seller Lounge: is a Legendary Pass bought on the web, and only recognized
-     on the TV, acceptable without LG in-app purchase?
-  2. Seller Lounge: does content changed behind a hosted URL need
-     re-approval, and how large a change counts?
-  3. A device spike on a webOS TV 24+ set (see [Device spike](#device-spike)).
+- **Candidate minimum:** webOS TV 24+ (2024 models and newer, Chromium 108).
+  Static analysis finds no JavaScript or CSS rewrite needed there; only a
+  device spike confirms it. See [Client compatibility](#client-compatibility).
+- **Gates before port work is committed, cheapest first:**
+  1. Seller Lounge, money: is a Legendary Pass bought only on the web, with
+     no purchase surface on the TV, acceptable without LG in-app purchase?
+  2. Seller Lounge, hosted changes: does content changed behind a hosted URL
+     need re-approval, and how large a change counts?
+  3. A device spike on a webOS TV 24+ set, answering the checklist,
+     performance, cookie, and API questions under [Device spike](#device-spike).
+
+  Either of the first two answers can invalidate the hosted approach, which is
+  why they sit ahead of the platform shim and 5-way work in the
+  [candidate scope](#candidate-implementation-scope).
 
 ### Platform constraints
 
@@ -77,17 +84,29 @@ because either policy answer can change the approach.
 | Two app types | **Basic (packaged):** every file ships in the `.ipk`, so any change is a new package. **Hosted:** a small local app redirects to a remote URL, and its content can change "without pushing updates to devices" ([Web App Types](https://webostv.developer.lge.com/develop/getting-started/web-app-types)) |
 | Cookies | Only hosted (http/https) apps get cookies. Packaged apps run from `file://` and have none ([Web API and Web Engine](https://webostv.developer.lge.com/develop/specifications/web-api-and-web-engine)) |
 | Resolution | `appinfo.json` `resolution` is `1920x1080` (default) or `1280x720`. UHD is not supported for web apps ([appinfo.json](https://webostv.developer.lge.com/develop/references/appinfo-json)) |
-| Remote | The Magic Remote has a **pointer mode** (standard mouse events, `:hover`, wheel scroll) and a **5-way mode** (arrows and OK, cursor hidden). An arrow press switches to 5-way; a shake switches back. `cursorStateChange` reports which mode is active. "Apps must support 5-way mode." Keys: arrows 37–40, OK 13, Back 461, color keys 403–406 ([Magic Remote](https://webostv.developer.lge.com/develop/guides/magic-remote), [System UI Visibility](https://webostv.developer.lge.com/develop/guides/system-ui-visibility)) |
-| QA checklist: navigation (mandatory) | "Selectable UIs must be controlled by 4-way navigation keys (Up, Down, Left, Right), OK, and Back buttons." "All of the objects in your app MUST ALWAYS provide some sort of selection effect with NO EXCEPTION." ([App Self Checklist](https://webostv.developer.lge.com/distribute/app-self-checklist)) |
-| QA checklist: Back (mandatory) | Back on the entry page "must display the Home screen (webOS23 - webOS25 only)." The [Back Button](https://webostv.developer.lge.com/develop/guides/back-button) guide describes the platform's default instead: an exit prompt on 6.0+, Home on 5.0 and earlier, triggered by `webOS.platformBack()`. Setting `disableBackHistoryAPI: true` hands Back (461) to the app ([App Self Checklist](https://webostv.developer.lge.com/distribute/app-self-checklist)) |
-| QA checklist: sizes (recommended) | Text at least **20 px at 1920×1080** (14 px at 1280×720). Button images at least **75×75 px at 1920×1080** (50×50 at 1280×720) ([App Self Checklist](https://webostv.developer.lge.com/distribute/app-self-checklist)) |
-| QA checklist: content | No gambling games, no buying or cashing out game money, no moving game money between users, and no "acquiring of compensation". A missing or thin checklist can be rejected before QA ([App Self Checklist](https://webostv.developer.lge.com/distribute/app-self-checklist)) |
+| Remote | The Magic Remote has a **pointer mode** (standard mouse events, `:hover`, wheel scroll) and a **5-way mode** (arrows and OK, cursor hidden). An arrow press switches to 5-way; a shake switches back. `cursorStateChange` reports which mode is active. "Apps must support 5-way mode." Keys: arrows 37–40, OK 13, Back 461, and the color keys 403–406, which stay free for TV shortcuts later (pass, menu) ([Magic Remote](https://webostv.developer.lge.com/develop/guides/magic-remote), [System UI Visibility](https://webostv.developer.lge.com/develop/guides/system-ui-visibility)) |
+| Back default | The platform drives Back through `history`; setting `disableBackHistoryAPI: true` in `appinfo.json` hands Back (461) to the app. At the first screen the platform's default is an exit prompt on 6.0+ and Home on 5.0 and earlier, which `webOS.platformBack()` triggers ([Back Button](https://webostv.developer.lge.com/develop/guides/back-button)). The QA checklist asks for something else; see the next subsection |
 | Overlays | While the launcher or settings is open, the app gets no pointer events; `window` `blur`/`focus` say when ([Magic Remote](https://webostv.developer.lge.com/develop/guides/magic-remote)) |
 | Gamepads | `cloudgame_active: true` lets the app read a gamepad directly, not as remapped keys; LG lists webOS TV 23 and 24 on current firmware ([appinfo.json](https://webostv.developer.lge.com/develop/references/appinfo-json)). The community webOSbrew wiki (not LG-official) adds that on 25+ it also turns off the right-click BACK/HOME menu. Optional here: the remote is the required input |
 | Store and approval | Seller Lounge; QA runs a pretest, a function test, and a content test. A submission needs the `.ipk`, images, a UX scenario, and a self-checklist with real test results. "If there is any change to the app after being approved, the change has to go through a separate approval process." Sellers register as Individual or Corporate ([App Approval Process](https://webostv.developer.lge.com/distribute/app-approval-process), [App Ecosystem](https://webostv.developer.lge.com/distribute/app-ecosystem)) |
 | Paid content | "To provide paid products or content in your VOD or game app, In-App Purchase is required." LG's own billing service is no longer provided; LG recommends Paymentwall and "may ask you for a separate contract" for another third-party biller ([In-App Purchase](https://webostv.developer.lge.com/develop/guides/in-app-purchase)) |
-| Launch art | `splashBackground` 1920×1080 PNG; `icon` 80×80 and `largeIcon` 130×130 for testing; the store icon is a separate 400×400 upload ([appinfo.json](https://webostv.developer.lge.com/develop/references/appinfo-json)) |
+| Launch art | `splashBackground` 1920×1080 PNG, shown while the app loads (optional in `appinfo.json`, but a hosted app's load is a network round trip, so it is what players see first); `icon` 80×80 and `largeIcon` 130×130 for testing; the store icon is a separate 400×400 upload ([appinfo.json](https://webostv.developer.lge.com/develop/references/appinfo-json)) |
 | Dev loop | The Developer Mode app opens a timed session; the CLI connects over SSH as `prisoner` on port 9922 after a key-server passphrase ([Developer Mode App](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app)). A PC Simulator matches the TV's Chromium but differs in audio/video and lacks some platform APIs ([Simulator](https://webostv.developer.lge.com/develop/tools/simulator-introduction)). The CLI is `@webos-tools/cli`: LG's [CLI Installation](https://webostv.developer.lge.com/develop/tools/cli-installation) page still says Node 14.15–16.20, but the current package (3.2.6) declares `node >=20`, so the repo's Node 22 should run it |
+
+#### LG QA checklist items that bear on the port
+
+From the [App Self Checklist](https://webostv.developer.lge.com/distribute/app-self-checklist),
+the list QA tests against:
+
+| Item | Level | What it says |
+|---|---|---|
+| 4-way navigation | Mandatory | "Selectable UIs must be controlled by 4-way navigation keys (Up, Down, Left, Right), OK, and Back buttons." |
+| Selection effect | Mandatory | "All of the objects in your app MUST ALWAYS provide some sort of selection effect with NO EXCEPTION." |
+| Back on the entry page | Mandatory | Back "must display the Home screen (webOS23 - webOS25 only)." |
+| Text size | Recommended | At least 20 px at 1920×1080 (14 px at 1280×720) |
+| Button images | Recommended | At least 75×75 px at 1920×1080 (50×50 at 1280×720) |
+| Content | Mandatory | No gambling games, no buying or cashing out game money, no moving game money between users, and no "acquiring of compensation" |
+| The checklist itself | Mandatory | Uploaded with real test results; a missing or thin one can be rejected before QA |
 
 ### Client compatibility
 
@@ -104,8 +123,9 @@ Source: [Web API and Web Engine](https://webostv.developer.lge.com/develop/speci
 What sets the floor, from the client code:
 
 - **JS:** `vite.config.ts` sets `build.target: 'es2022'` with no legacy plugin
-  or browserslist, so ES2022 syntax ships as is. By the ES2022 feature table
-  that needs about Chromium 94 (webOS TV 23).
+  or browserslist, so ES2022 syntax ships as is. ES2022's features landed
+  across Chrome releases up to 94 (class static blocks were last), so
+  Chromium 94 (webOS TV 23) is the safe floor for the syntax.
 - **CSS `:has()`** (Chromium 105+) appears in 8 play-surface files. It drives
   the table-tilt stand-up and the hand-fan neighbor shift
   ([Play Board](play-board.md)). This puts the floor at **webOS TV 24+**. On 23
@@ -118,9 +138,8 @@ What sets the floor, from the client code:
   `backdrop-filter`. VFX are a 2D canvas (`canvas-confetti`, the blade trail)
   plus CSS 3D transforms. Card art is `.webp`, audio `.mp3` through Howler.
 
-Static compatibility analysis therefore identifies **webOS TV 24+ (2024 models
-and newer)** as the candidate minimum needing no known JavaScript or CSS
-rewrite. Running the production bundle on a device is still unverified. Going
+Static analysis identifies **webOS TV 24+ (2024 models and newer)** as the
+candidate minimum that needs no known JavaScript or CSS rewrite. Running the production bundle on a device is still unverified. Going
 lower costs: webOS TV 23 means replacing the `:has()` rules with class toggles;
 webOS TV 22 also means retargeting to `es2020`.
 
@@ -165,18 +184,29 @@ tried):
 The board is tilted 14° in 3D with cards that lift and fan, so their on-screen
 rectangles don't match the logical layout, and "nearest" becomes unpredictable.
 The board is authored at a fixed 1280×720, so its zones and their order are
-already known. That makes an explicit zone graph the likelier fit for the
-board. A geometry library may still suit flat screens (lobby, menus, modals).
-This is an inference from the layout, not a tested result.
+already known. That makes an explicit zone graph the safer starting point for the
+board. Geometry-based libraries stay reasonable candidates for the flat
+screens (lobby, menus, modals), so the expected shape is a hybrid: a zone graph
+on the board, geometry elsewhere. This is an inference from the layout, not a
+tested result.
 
 #### Back key
 
 Routing is query-parameter based with full reloads (`?route=…`,
-`window.location.assign`). With `disableBackHistoryAPI: true`, Back would close
-the top overlay or modal, then leave the current route. At the lobby root (the
-entry page), the checklist requires the Home screen on webOS TV 23–25. Whether
-`webOS.platformBack()` produces Home there or the exit prompt the Back Button
-guide describes is a [device spike](#device-spike) question.
+`window.location.assign`). With `disableBackHistoryAPI: true` the app owns
+Back: it closes the top overlay or modal, then leaves the current route.
+
+On the lobby root (the entry page) LG's two sources diverge:
+
+- **App Self Checklist (webOS TV 23–25):** Back "must display the Home
+  screen." Mandatory.
+- **Back Button guide:** the platform's default is an exit prompt on 6.0+ and
+  Home on 5.0 and earlier, and `webOS.platformBack()` triggers that default.
+
+Which one a current webOS TV 24+ set actually does when the app calls
+`webOS.platformBack()` from the lobby root is a [device spike](#device-spike)
+question. Until it is answered, the checklist wording is the compliance
+target, since it is what QA tests.
 
 #### TV readability
 
@@ -193,7 +223,10 @@ The TV viewport is a fixed 1920×1080, above the 767 px breakpoint, so
 | Smallest `px` text anywhere | `10px` (3 uses), `11px` (11 uses) | 20 px |
 
 The gap is measurable: even at the scale cap, the smallest board text is
-below LG's recommendation. A TV mode would need a larger minimum type size,
+below LG's recommendation. The 20 px and 75×75 px figures are recommended
+checklist items, not mandatory ones, so they are not a stated rejection
+criterion; they are the natural design target for a TV mode, and text of about
+9–15 px is hard to read from a couch either way. A TV mode would need a larger minimum type size,
 targets of 75×75 px or more, and probably the card reader (zoomed card) as the
 default way to read card text, not hover.
 [Responsive Viewport Targets](responsive-viewport-targets.md) owns the current
@@ -289,7 +322,9 @@ questions it answers, each tied to the requirement it tests:
 | Does every focusable control show a visible selection effect in 5-way mode? | Mandatory checklist item |
 | Does the production bundle load and render on Chromium 108 with no console errors? | Confirms the static compatibility analysis |
 | Frame rate of the 3D-tilted board with box shadows and VFX on a TV SoC; does `effectIntensity` help? | Performance on TV hardware |
+| Does the hosted shell's redirect complete cleanly, leaving the app on the live origin with its cookies intact? | The core hosted assumption |
 | Does the Hanko cookie survive an app relaunch? | The main reason for hosted |
+| Does `cursorStateChange` fire reliably on each pointer ↔ 5-way switch, so hover state can be cleared or handed to focus? | Stale card lifts (see Edge Cases) |
 | Does the Socket.IO connection resync after a TV suspend? | Live-match stability |
 | Does a remote OK press unlock audio under the TV's autoplay policy? | First-run sound |
 | What do WebAuthn, `window.open`, and the clipboard do? | Sign-in and API adaptations |
@@ -307,7 +342,7 @@ questions it answers, each tied to the requirement it tests:
 | 5-way navigation | Largest | Zone graph over the board, focus over lobby and modals, focus ring, focus = hover parity, focus restore |
 | TV readability | Medium | 20 px minimum text, 75×75 px targets, card reader by default |
 | Device-code pairing | Medium (server + client + a web page) | New endpoints, so `api-endpoints.md` changes with them |
-| Store submission | Operator time | Corporate registration, UX scenario, self-checklist, store art, screenshots, QA rounds. Public pages give only the 400×400 store icon; other image sizes are in the checklist download and Seller Lounge, behind sign-in |
+| Store submission | Operator time | Corporate registration, UX scenario, self-checklist, store art (400×400 icon, 1920×1080 splash), screenshots, QA rounds. Public pages give only the 400×400 store icon; other image sizes are in the checklist download and Seller Lounge, behind sign-in |
 
 **Not needed:** no WebGL or Canvas rewrite, no native port, no packaged
 offline build (live matches need the server), and no engine or registry
@@ -378,8 +413,9 @@ change.
 
 - **Minimum version:** is webOS TV 24+ enough of the installed base, or are
   webOS TV 22/23 sets worth replacing `:has()` and retargeting the build?
-- **Paymentwall:** worth integrating if TV revenue justifies it, independent of
-  the answer to question 1?
+- **Paymentwall:** if Seller Lounge requires in-app purchase, is Paymentwall
+  (or another contracted biller) worth the integration for the expected TV
+  audience?
 
 Device behavior (WebAuthn, clipboard, `window.open`, audio, performance, Back
 on the entry page) is answered by the [device spike](#device-spike), not by
@@ -406,6 +442,6 @@ Other sources:
 - [webOSbrew appinfo.json notes](https://www.webosbrew.org/develop/guides/appinfo): community, not LG-official (`cloudgame_active` on webOS TV 25)
 - Repo: [Play Board](play-board.md), [Responsive Viewport Targets](responsive-viewport-targets.md), [Profile Login](profile-login.md), [Guest Accounts](guest-accounts.md), [Monetization Model](monetization-model.md), [IP Licensing](ip-licensing.md)
 
-Provenance: two independent research passes (Grok and Copilot, 2026-10-31)
-challenged the first draft. Every disputed claim was checked against LG's
+Provenance: independent research and review passes (Grok twice and Copilot
+once, all 2026-10-31) challenged the drafts. Every disputed claim was checked against LG's
 documentation or the npm registry before it changed this page.
