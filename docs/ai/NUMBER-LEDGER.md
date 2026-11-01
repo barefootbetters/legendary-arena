@@ -496,6 +496,7 @@ high-water: 422
 - WP-855 — deck-ko-draw (Miek's Endless Appetite: whenever a card is KO'd from your deck this turn, you may draw a card, a deck-source variant of the WP-853 owned-KO trigger. reserved 2026-10-29, claude/wp855-reserve)
 - WP-857 — wwhk-feast (World War Hulk hero Feast, KO the top card of your deck, on five allowlisted Miek / No-Name lines via the reveal-top KO-or-keep prompt; the KO'd-from-deck record and Transform gates split to a follow-up. reserved 2026-10-29, claude/wp857-reserve)
 - WP-856 — owned-hero-ko-first-time (Doctor Voodoo's Possessed by Brother's Spirit: the first time one of your Heroes is KO'd this turn, choose +4 Recruit or +4 Attack; a Hero-only, one-shot, choose-one variant of the WP-853 owned-KO trigger. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130; LANDED 2026-10-29)
+- WP-859 — wwhk-feast-readers (World War Hulk cards that read "KO'd from your deck this turn": a per-turn record of which cards left each deck to the KO pile, the Metamorphosis / Bursting with Life Transform gates, and World-Spanning Hunger's Feast up to three times with +2 per non-grey Hero, fixing its phantom +2. reserved 2026-10-31, claude/wp859-reserve)
 
 ## EC
 
@@ -954,6 +955,7 @@ high-water: 457
 - EC-893 — deck-ko-draw (WP-855. reserved 2026-10-29, claude/wp855-reserve)
 - EC-895 — wwhk-feast (WP-857. reserved 2026-10-29, claude/wp857-reserve)
 - EC-894 — owned-hero-ko-first-time (WP-856. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130; LANDED 2026-10-29)
+- EC-897 — wwhk-feast-readers (WP-859. reserved 2026-10-31, claude/wp859-reserve)
 
 ## D
 
@@ -1525,3 +1527,4 @@ section below) and the allocation protocol in
 - D-24791 — deck-ko-draw (WP-855; a deck-source KO count for "whenever a card is KO'd from your deck this turn", and how the optional per-KO draw resolves. reserved 2026-10-29, claude/wp855-reserve)
 - D-24793 — wwhk-feast (WP-857; hero Feast as an optional KO of the deck top reusing the reveal-top KO-or-keep handler, its per-card allowlist and by-hook ledger posture. reserved 2026-10-29, claude/wp857-reserve)
 - D-24792 — owned-hero-ko-first-time (WP-856; a Hero-only owned-KO signal at the KO sites, a one-shot first-time grant on the D-24377 wait-and-see edge, and a flat-recruit option for the count-scaled choose-one so the reward is +4 Recruit OR +4 Attack. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130; LANDED 2026-10-29)
+- D-24795 — wwhk-feast-readers (WP-859; the turn-scoped KO'd-from-deck record and its gate, the two Transform conditions and the one-line parse split, and the per-Feast reward for World-Spanning Hunger. reserved 2026-10-31, claude/wp859-reserve)
