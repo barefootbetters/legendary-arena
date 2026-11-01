@@ -1574,6 +1574,28 @@
       "date": "2026-10-31",
       "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-860 deploy (isMatchOlderThanServer: false) with Doctor Voodoo, per the WP-860 DoD.",
       "note": "Playing it logs no hollow; the cost choice lists each Artifact you control, three cards (with 3+ in hand) and Don't discard; three cards opens three single picks; after paying, a mandatory KO pick lists hand then discard pile. D-24796."
+    },
+    {
+      "key": "wwhk/miek-the-unhived|feast",
+      "kind": "hero",
+      "card": "Miek, The Unhived",
+      "ability": "Metamorphosis / Devouring Frenzy ([hc:instinct]): You may Feast (KO the top card of your deck)",
+      "wp": "WP-857",
+      "state": "pending",
+      "date": "2026-11-01",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-857 deploy (isMatchOlderThanServer: false) with Miek and No-Name in the hero decks, per the WP-857 DoD.",
+      "note": "Playing Metamorphosis (or Devouring Frenzy after another Instinct Hero) opens the reveal-top prompt on the deck top with KO / Keep; KO sends it to the KO pile, Keep leaves it on top. Hive King Miek is a Transform face, not reachable in play yet. D-24793."
+    },
+    {
+      "key": "wwhk/no-name-brood-queen|feast",
+      "kind": "hero",
+      "card": "No-Name, Brood Queen",
+      "ability": "Bursting with Life / Appetite for Destruction ([hc:covert]): You may Feast (KO the top card of your deck)",
+      "wp": "WP-857",
+      "state": "pending",
+      "date": "2026-11-01",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-857 deploy (isMatchOlderThanServer: false) with Miek and No-Name in the hero decks, per the WP-857 DoD.",
+      "note": "Playing Bursting with Life (or Appetite for Destruction after another Covert Hero) opens the reveal-top prompt on the deck top with KO / Keep. World-Spanning Hunger stays an honest unresolved marker (its Feast up to three times and +2 per non-grey Hero are not modeled). D-24793."
     }
   ]
 }

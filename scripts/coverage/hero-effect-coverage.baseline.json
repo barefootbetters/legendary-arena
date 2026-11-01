@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3813,
+    "executable": 3827,
     "heroes": 324,
     "hooks": 6388,
-    "noEffect": 2471,
+    "noEffect": 2457,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -203,9 +203,9 @@
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 226,
+      "executable": 240,
       "hooks": 337,
-      "noEffect": 111
+      "noEffect": 97
     },
     "xmen": {
       "executable": 153,
@@ -253,7 +253,6 @@
     "excessive-kindness": 7,
     "explore": 2,
     "fated-future": 6,
-    "feast": 7,
     "focus": 25,
     "fortify": 1,
     "heist": 3,

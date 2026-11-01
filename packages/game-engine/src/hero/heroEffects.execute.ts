@@ -369,6 +369,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // (heroEffectDiscardArtifactOrThreeThenKo) that parks the cost seat choice, so it belongs here.
   // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'discard-artifact-or-three-then-ko',
+  // why: WP-857 / D-24793 — hero Feast; its HERO_EFFECT_HANDLERS entry is the shipped
+  // heroEffectRevealTopMayKo (parks a KO-or-keep reveal of the deck top), so it belongs here.
+  // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
+  'feast',
 ]);
 
 // why: the 7 frozen legacy reveal keywords (REVEAL_KEYWORDS minus 'reveal') keep NO
@@ -682,6 +686,10 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // (or Excessive Violence fire) time, so the magnitude pre-gate must not drop it, or the reveal
   // never parks its choice. (optional-discard-draw is NOT here — it carries the draw count.)
   'reveal-top-may-ko',
+  // why: WP-857 / D-24793 — feast shares reveal-top-may-ko's handler and likewise carries NO
+  // magnitude (one KO-or-keep disposition of the deck top). The magnitude pre-gate must not drop
+  // it, or the handler is registered but never reached and the Feast never parks its prompt.
+  'feast',
   // why: WP-765 / D-24598 — blood-frenzy / blood-frenzy-recruit carry NO magnitude (the grant is
   // the distinct-VP count, read at resolve time) and day-night-both carries NO top-level magnitude
   // (the branch magnitudes ride the nested sunlightEffects / moonlightEffects). The magnitude
@@ -7216,6 +7224,10 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-860 / D-24796 — Commune with the Spirit World: parks the cost seat choice; the discard
   // picks and the KO pick chain from resolveSeatChoice.
   'discard-artifact-or-three-then-ko': heroEffectDiscardArtifactOrThreeThenKo,
+  // why: WP-857 / D-24793 — hero Feast = "KO the top card of your deck". It reuses the shipped
+  // KO-or-keep reveal unchanged: the deck top is shown in the owner-only prompt, then the player
+  // KOs or keeps it (RS-1 reveal-before-choose), resolved by resolveRevealTopDispose.
+  feast: heroEffectRevealTopMayKo,
 };
 
 // ---------------------------------------------------------------------------

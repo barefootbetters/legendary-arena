@@ -50003,5 +50003,22 @@ Protect this file.
 
 **Reserved by:** NUMBER-LEDGER D-24791 (#3101). Related: D-24789 (owned-KO recorder), D-24792 (recorder `cardId`, shared signature), D-24467 (edge + re-arm), D-24377 (wait-and-see), D-24567 (harness mirrors), D-24470 (pure-upside "may"), D-24552 (draw lock), D-24581 (stale KO-or-keep refresh), D-24629 (put-bottom-HQ `endTurn` gap), D-24796 (Commune KO site), D-24322 (replay posture), D-24372 (RUNTIME pins), D-24026.
 
+### D-24793 — Hero Feast: "You may [keyword:Feast]" is the `feast` HeroKeyword, the shipped KO-or-keep reveal of the deck top, on five allowlisted Miek / No-Name lines (Active 2026-11-01 — WP-857 / EC-895)
+
+**Status:** Active 2026-11-01. Live-verify (D-24026) operator-pending: on a play.legendary-arena.com match created after the deploy (`isMatchOlderThanServer: false`) with Miek and No-Name in the hero decks, play Metamorphosis or Bursting with Life, see the reveal prompt with KO / Keep, KO the top card (to the KO pile), and keep it on another play. Pending rows `wwhk/miek-the-unhived|feast` and `wwhk/no-name-brood-queen|feast` in `live-verify.json`.
+
+**Context.** World War Hulk's hero Feast means "KO the top card of your deck" (rules v23), and five Miek / No-Name lines print "You may [keyword:Feast]". The parser did not know the token, so every printed Feast landed in `unresolvedMarkers` and those lines did nothing. The shipped `heroEffectRevealTopMayKo` (D-24581: Gruesome Feast, Remove His Spine, Electroshock Therapy) is exactly "you may KO the top card of your deck".
+
+**Decision.**
+1. **Keyword.** The World War Hulk hero keyword Feast is the `feast` HeroKeyword (no magnitude, in `NO_MAGNITUDE_KEYWORDS` and `HANDLED_KEYWORDS`), whose `HERO_EFFECT_HANDLERS` entry is the shipped `heroEffectRevealTopMayKo`, unchanged: the deck top is shown in the owner-only KO-or-keep prompt and the player KOs or keeps it.
+2. **Reveal before the choice (RS-1).** Showing the card before the choice is accepted. It matches the printed look on three of the five lines and costs one card of information on Metamorphosis and Bursting with Life, and on Appetite for Destruction after a line-0 discard. The player sees the shared reveal-top text (prompt "Reveal the top card — KO it or keep it"; park log "Player N revealed <card> from the top of their deck — KO it or keep it (reveal-top)."; keep log "Player N kept <card> (<id>) on top of Player N's deck (reveal-top)."), so the card name is public in the reveal and keep log lines.
+3. **Allowlist.** The token resolves only on `FEAST_CARDS` (`setup/heroAbility.setup.ts`): Devouring Frenzy, Metamorphosis, Hive King Miek, Appetite for Destruction, Bursting with Life. Hive King Miek is a Transform face, reachable once Metamorphosis's Transform is modeled; its look-and-reorder half is accepted as dropped. World-Spanning Hunger and The Void Unchained keep an honest unresolved marker until their other text is modeled (Honest-Partial Invariant). `parseAbilityText` takes `feastSupported` from the call site; the `feast` arm sits beside `transform`, before `isValidHeroKeyword`.
+4. **Ledger.** `feast` is a by-hook ledger keyword (`BY_HOOK_KEYWORDS`). Rows are per hero, so the Miek and No-Name rows read executable and Sentry's stays unsupported; the gap rides on the hooks' unresolved markers.
+5. **Setup-only.** No new `G` field. Pre-deploy matches keep their hooks (stored in `initialState`) and replay identically; only matches created after the deploy get Feast.
+
+**Consequences.** No new handler body, queue, move, UIState field, client change or card data. A Feast KO goes through the reveal-top resolve, an owned deck KO site, so Absorb Energies (D-24789) reacts. Villain / Mastermind Feast is a separate surface (the villain ability path), untouched. The Metamorphosis and Bursting with Life Transform halves stay unresolved markers and fire nothing. Pins bumped from the values at HEAD: `HERO_KEYWORDS` 90 -> 91, `HERO_EFFECT_HANDLERS` 70 -> 71 (the EC drafted 87 -> 88 / 69 -> 70 before WP-858 and WP-860 landed). Follow-up (WP-859 / D-24795): the per-turn KO'd-from-deck record, the two Transform gates and World-Spanning Hunger.
+
+**Reserved by:** NUMBER-LEDGER D-24793 (#3107). Related: D-24581 (reveal-top-may-ko), D-24558 (per-entry `isKoAllowed`), D-24521 (reveal-top dispose queue), D-24469 (transform allowlist), D-24045 (Honest-Partial / by-hook ledger), D-24789 (owned-KO recorder), D-24372 (RUNTIME pins), D-24026.
+
 ---
 Protect this file.

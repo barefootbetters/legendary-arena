@@ -802,7 +802,7 @@
       "slug": "feast",
       "label": "Feast",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 3,
       "cardIds": [
         "wwhk/miek-the-unhived",

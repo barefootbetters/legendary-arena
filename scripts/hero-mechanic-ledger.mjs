@@ -166,7 +166,12 @@ const PARAMETERIZED_COMPOSITION_MARKERS = new Set(PARAMETERIZED_COMPOSITION_MARK
 // Man / Woman Out of Time token (behind an optional gate). A by-name check would over-claim any card
 // that merely prints the token. Winter Soldier's "2>4" grant lines resolve `grant-out-of-time`
 // (WP-828 / D-24761), which MECHANIC_FAMILY_RULES folds into this same `out-of-time` row.
-const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence', 'blood-frenzy', 'day-night-both', 'out-of-time']);
+// why: WP-857 / D-24793 — feast is by-hook too. Every World War Hulk hero line that prints
+// `[keyword:Feast]` normalizes to `feast`, but only the five FEAST_CARDS lines resolve it (Devouring
+// Frenzy, Metamorphosis, Hive King Miek, Appetite for Destruction, Bursting with Life); World-Spanning
+// Hunger and The Void Unchained keep an unresolved `feast` marker, so a by-name check would over-claim
+// Sentry's row executable.
+const BY_HOOK_KEYWORDS = new Set(['transform', 'excessive-violence', 'blood-frenzy', 'day-night-both', 'out-of-time', 'feast']);
 // why: D-24055 — condition-gate mechanics (spectrum) are recognized by the parser
 // as conditions, not keywords. They gate effects but are themselves distinct
 // mechanics that should be tracked in the ledger. Mapping from normalized keyword
