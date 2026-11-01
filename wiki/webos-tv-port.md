@@ -389,8 +389,8 @@ your VOD or game app, In-App Purchase is required."
 
 | | LG's answer |
 |---|---|
-| Date asked | *(not yet asked)* |
-| Ticket or reference | *(not yet asked)* |
+| Date asked | 2026-10-31 |
+| Ticket or reference | Posted on the public [webOS TV developer forum](https://forum.webostv.developer.lge.com/), awaiting moderator approval as of 2026-10-31 (thread link *(when approved)*). Not yet in Seller Lounge 1:1 Q&A, where LG sends policy questions; post it there too once the seller account exists. The posted text names `barefootbetters.com` as the account site |
 | Date answered | *(not yet answered)* |
 | 1. Allowed without in-app purchase? | *(not yet answered)* |
 | 2. Neutral "manage your account" message allowed? | *(not yet answered)* |
