@@ -63,14 +63,15 @@ targets **webOS TV 24 and later**.
 | Remote | Magic Remote has a **pointer mode** (standard mouse events, `:hover` works, the wheel scrolls) and a **5-way mode** (arrows + OK, cursor hidden). Pressing an arrow key switches to 5-way; shaking the remote switches back. `cursorStateChange` reports which mode is active |
 | 5-way rule | "Apps must support 5-way mode." LG tells developers to avoid features that don't work with 5-way input |
 | Key codes | Arrows 37–40, OK 13, **Back 461**, color keys 403–406, media keys 415/19/417/412/413 |
-| Back key | By default the platform drives Back through `history`. Setting `disableBackHistoryAPI: true` in `appinfo.json` hands Back (461) to the app. At the first screen, webOS 6.0+ shows an exit prompt and 5.0 and earlier go to the Home launcher. `webOS.platformBack()` (webOSTV.js) triggers that platform behavior |
-| Gamepads | `appinfo.json` `cloudgame_active: true` makes the app handle gamepad input directly, not as platform-mapped keys. LG lists it for webOS TV 23 and 24 on current firmware. The community webOSbrew wiki adds that on webOS 25+ it also turns off the right-click BACK/HOME menu. Optional for us: the remote is the required input |
+| Back key | By default the platform drives Back through `history`. Setting `disableBackHistoryAPI: true` in `appinfo.json` hands Back (461) to the app. **The App Self Checklist, which QA tests against, is mandatory here: Back on the entry page "must display the Home screen (webOS23 - webOS25 only)."** The Back Button guide says something different: at the first screen 6.0+ shows an exit prompt and 5.0 and earlier go to Home, and `webOS.platformBack()` (webOSTV.js) triggers that platform behavior. Build to the checklist, and confirm what `platformBack()` does on 23–25 in the device spike |
+| 5-way checklist | Mandatory self-checklist items: "Selectable UIs must be controlled by 4-way navigation keys (Up, Down, Left, Right), OK, and Back buttons," and "All of the objects in your app MUST ALWAYS provide some sort of selection effect with NO EXCEPTION." Recommended button images are 75×75 px at 1920×1080. Wheel scrolling should move lists the same way a mouse wheel does |
+| Gamepads | `appinfo.json` `cloudgame_active: true` makes the app handle gamepad input directly, not as platform-mapped keys. LG lists it for webOS TV 23 and 24 on current firmware. The community webOSbrew wiki (not LG-official) adds that on webOS 25+ it also turns off the right-click BACK/HOME menu. Optional for us: the remote is the required input |
 | Content rule | The self-checklist says an app must not include gambling games, buying or cashing out game money, moving game money between users, or "acquiring of compensation". A missing or thin checklist can be rejected before QA. Our client has no game money. Paid-entry or prize events should stay off the TV build |
 | Launch art | `splashBackground` is a 1920×1080 PNG shown while the app loads. `icon` is 80×80 and `largeIcon` 130×130 (for testing). The store icon is a separate 400×400 upload |
 | Overlays | While the launcher or settings overlay is open, the app gets no pointer events. Use `window` `blur`/`focus` to detect it |
 | Store | LG Seller Lounge. QA runs a **pretest**, a **function test**, and a **content test**. A submission needs the `.ipk`, images, a **UX scenario** document, and a **self-checklist** filled in with real test results ("mandatory"). Every post-approval change goes through approval again. Sellers register as **Individual** or **Corporate**. LG Apps reaches 36 countries |
 | Paid content | "To provide paid products or content in your VOD or game app, In-App Purchase is required." LG's own billing service is retired, and LG recommends Paymentwall. Another third-party biller may need a separate contract with LG |
-| Dev loop | The Developer Mode app (signed in with an LG developer account) opens a time-limited session. The CLI connects over SSH as `prisoner` on port 9922 after a key-server passphrase. A PC **Simulator** matches the TV's Chromium version but differs in audio/video and lacks some platform APIs. The emulator is deprecated. The CLI is the npm package `@webos-tools/cli`, and LG recommends Node 14.15–16.20 for it, far behind the repo's Node 22, so install it outside the monorepo toolchain. **webOS Studio** is LG's separate IDE tool; the older VS Code extension is listed as deprecated |
+| Dev loop | The Developer Mode app (signed in with an LG developer account) opens a time-limited session. The CLI connects over SSH as `prisoner` on port 9922 after a key-server passphrase. A PC **Simulator** matches the TV's Chromium version but differs in audio/video and lacks some platform APIs. The emulator is deprecated. The CLI is the npm package `@webos-tools/cli`. LG's install page still recommends Node 14.15–16.20, but the current package (3.2.6) declares `node >=20`, so the repo's Node 22 should run it. **webOS Studio** is LG's separate IDE tool; the older VS Code extension is listed as deprecated |
 
 ### Engine versions vs what our client ships
 
@@ -101,9 +102,10 @@ What sets our floor:
   `backdrop-filter`. VFX are a 2D canvas (`canvas-confetti`, blade trail) plus
   CSS 3D transforms. Card art is `.webp`, audio is `.mp3` through Howler.
 
-So **webOS 24+ (2024 models on) runs the current bundle with no syntax work.**
-Reaching 22/23 would mean retargeting to `es2020` and rewriting the `:has()`
-rules, which is real cost for older sets.
+So **webOS 24+ (2024 models on) runs the current bundle with no syntax work,
+and is the recommended minimum.** Going lower costs this much: webOS 23 means
+rewriting the `:has()` rules (the stand-up and hand fan as class toggles), and
+webOS 22 also means retargeting to `es2020`.
 
 ### Hosted vs packaged: hosted wins
 
@@ -143,15 +145,25 @@ and the client has almost none:
 What 5-way needs: a spatial-focus layer over the board's zones (hand, HQ, City,
 Mastermind, shared decks, the action bar) and over the lobby and modals. It
 also needs a visible focus ring, focus restored when a modal closes, and
-`focus` doing what `hover` does (stand-up and info reveal). LG's own focus
-library is **Enact Spotlight**, which is built for React. For a Vue client, a
-framework-agnostic spatial-navigation library, or a small in-house zone graph,
-is the likely fit. That is my inference; nothing has been tried yet.
+`focus` doing what `hover` does (stand-up and info reveal). The checklist
+requires a selection effect on every object, so a missing focus ring fails QA,
+not just usability. Starting points (npm, checked 2026-10-31; none tried yet):
+
+| Option | What it is | Fit for a Vue client |
+|---|---|---|
+| In-house zone graph | Each board zone (hand, HQ, City, Mastermind, decks, action bar) is a list. Left/right moves within a zone, up/down moves between zones in a fixed order | Probably the best fit. The board's layout is fixed at 1280×720, so the graph is small, explicit, and testable. Overlays push a zone stack |
+| `js-spatial-navigation` 1.0.1 | Vanilla JS spatial navigation by Luke Chang. Enact Spotlight is a fork of it | Framework-agnostic. Geometry-based, so a 3D-tilted board can pick surprising neighbors |
+| `spatial-navigation-polyfill` 1.3.1 | The WICG polyfill for the proposed CSS spatial-navigation standard | Framework-agnostic and closest to a standard. Geometry-based too |
+| `@enact/spotlight` 5.6.0 | LG's own focus library | Built around Enact/React. A poor fit for Vue |
+| `@noriginmedia/norigin-spatial-navigation` 3.4.0 | "React hooks based" | React-only |
 
 **Back key:** routing is query-parameter based with full reloads
 (`?route=…`, `window.location.assign`). The cleanest model is
 `disableBackHistoryAPI: true`: Back closes the top overlay or modal, then
-leaves the current route, and calls `webOS.platformBack()` at the lobby root.
+leaves the current route. At the lobby root (the entry page) it must show
+the Home screen on webOS 23–25, per the checklist. Whether
+`webOS.platformBack()` does that there or shows the exit prompt is a device
+check.
 
 ### 10-foot readability
 
@@ -231,9 +243,15 @@ and UX scenario. Where it differs:
 - **"Prefer Canvas or WebGL."** Doesn't apply. The client is a Vue DOM app
   with a 2D-canvas VFX overlay. TV performance risk sits in the CSS 3D tilt,
   shadows, and filters, not in a render engine.
-- **Back at the entry screen "returns to Home (webOS 23+)."** LG's Back Button
-  guide says the opposite split: 6.0+ shows an exit prompt and 5.0 and earlier
-  go to Home. Either way, `webOS.platformBack()` hands it to the platform.
+- **Back at the entry screen returns to Home.** Grok was right, and the first
+  version of this page was wrong to dismiss it. The App Self Checklist requires
+  Home on webOS 23–25. The Back Button guide's exit-prompt text is the
+  platform's default behavior, not the QA criterion.
+
+Grok's review of this page (2026-10-31) agreed with the recommended path and
+asked for the changes now made: the Back-key correction, the current CLI
+`engines` range, a stated minimum version, named spatial-navigation options,
+an out-of-scope line, and the Seller Lounge questions first.
 
 ### Work breakdown (sizing, not a plan)
 
@@ -244,7 +262,11 @@ and UX scenario. Where it differs:
 | 5-way navigation | 1–2 WPs, the biggest piece | Spatial focus over board, lobby, and modals; focus ring; focus = hover parity; focus restore |
 | TV readability mode | ~1 WP | Minimum type size, larger targets, card reader as the default way to read |
 | Device-code sign-in | ~1 WP (server + client + a web page) | New endpoints, so update `api-endpoints.md` in the same commit |
-| Store submission | Operator time | Corporate seller registration, UX scenario, self-checklist, store art, screenshots, QA rounds |
+| Store submission | Operator time | Corporate seller registration, UX scenario, self-checklist, store art, screenshots, QA rounds. The public pages give only the 400×400 store icon. Screenshot and other image sizes are in the checklist download and Seller Lounge (behind sign-in), so the estimate firms up at registration |
+
+**Not needed:** no WebGL or Canvas rewrite, no native port, no packaged
+offline build (the game is multiplayer and needs the server), and no engine or
+registry change.
 
 ## Interactions
 
@@ -295,9 +317,18 @@ and UX scenario. Where it differs:
 
 ## Open Questions
 
-- **Seller Lounge:** does LG accept a game whose paid entitlement is bought only
-  on the web (no purchase on the TV)? Does content changed behind a hosted URL
-  need re-approval? Ask through Seller Lounge 1:1 Q&A.
+Ask the first two first. Either answer can change the whole approach, and they
+cost a Seller Lounge 1:1 Q&A message, not engineering.
+
+1. **Seller Lounge, money:** does LG accept a game whose paid entitlement
+   (the Legendary Pass) is bought only on the web, with no purchase surface
+   on the TV? If not, the TV build needs Paymentwall or another contracted
+   biller.
+2. **Seller Lounge, hosted changes:** does content changed behind a hosted URL
+   need re-approval, and how big a UX change counts? If every client deploy
+   counts, hosted loses its main advantage.
+3. **Back on the entry page:** does `webOS.platformBack()` show Home on webOS
+   23–25, as the checklist requires, or the exit prompt? Device spike.
 - **Device behavior:** WebAuthn, `window.open`, clipboard, and the audio
   autoplay policy in the webOS 24+ engine. Answered by the device spike.
 - **Performance:** frame rate of the 3D-tilted board with box shadows and VFX
