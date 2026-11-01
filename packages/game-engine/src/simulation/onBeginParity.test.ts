@@ -219,6 +219,21 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.equal('ownedHeroesKoedSinceResolve' in gameState, false);
   });
 
+  it('deletes the deck-KO count at the turn boundary, and never creates it (WP-855 / D-24791)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.deckCardsKoedSinceResolve = { '0': 1 };
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: mirrors game.ts onBegin — a count held to the end of the turn by a parked choice
+    // must not let Endless Appetite draw next turn. ABSENT, not merely zero.
+    assert.equal('deckCardsKoedSinceResolve' in gameState, false);
+
+    const neverCounted = makeStateWithDeck(['c1'], ['h1'], []).gameState;
+    applyOnBeginParity(neverCounted, '0');
+    assert.equal('deckCardsKoedSinceResolve' in neverCounted, false, 'no key is created (oracle safety)');
+  });
+
   it('never creates the Hero-KO count on a G that never had it (oracle safety, WP-856 / D-24792)', () => {
     const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
     applyOnBeginParity(gameState, '0');

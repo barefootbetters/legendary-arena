@@ -42,6 +42,11 @@ export const OWNED_CARD_KOED_CONDITION_TYPE = 'ownedCardKoedThisTurn';
 // load-order reason.
 export const OWNED_HERO_KOED_CONDITION_TYPE = 'ownedHeroKoedThisTurn';
 
+// why: WP-855 / D-24791 — the one literal for "Whenever a card is KO'd from your deck this
+// turn" (Miek's Endless Appetite), the deck-only sibling of the owned-KO trigger. Lives here
+// beside OWNED_CARD_KOED_CONDITION_TYPE for the same load-order reason.
+export const DECK_CARD_KOED_CONDITION_TYPE = 'deckCardKoedThisTurn';
+
 // ---------------------------------------------------------------------------
 // matchReadsConditionType — does any hook in this match read a condition?
 // ---------------------------------------------------------------------------
@@ -387,6 +392,15 @@ export function evaluateCondition(
       // deletes. The grant is not re-armed, so it fires on the first counted KO only.
       // Ignores condition.value. An absent map reads false.
       return (G.ownedHeroesKoedSinceResolve?.[playerID] ?? 0) > 0;
+    }
+
+    case DECK_CARD_KOED_CONDITION_TYPE: {
+      // why: WP-855 / D-24791 — Endless Appetite's "Whenever a card is KO'd from your deck this
+      // turn". The owned-KO count narrowed to the deck: the owned KO sites that take a card from
+      // this player's deck add to G.deckCardsKoedSinceResolve (gated on a waiting grant), and the
+      // resolve fires once per counted KO and deletes it. Ignores condition.value. An absent map
+      // reads false.
+      return (G.deckCardsKoedSinceResolve?.[playerID] ?? 0) > 0;
     }
 
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE: {
@@ -955,6 +969,11 @@ export function describeFailedCondition(
       // why: WP-856 / D-24792 — a one-shot trigger with no running total to quote; the
       // wait-and-see "not yet" phrasing, like the owned-KO gate above.
       return 'it needs a Hero of yours to be KO\'d this turn';
+
+    case DECK_CARD_KOED_CONDITION_TYPE:
+      // why: WP-855 / D-24791 — a per-KO trigger with no running total to quote; the
+      // wait-and-see "not yet" phrasing, like the owned-KO gate above.
+      return 'it needs a card to be KO\'d from your deck this turn';
 
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE:
       // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.

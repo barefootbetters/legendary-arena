@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 835,
+    "totalRows": 837,
     "byStatus": {
-      "executable": 448,
+      "executable": 449,
       "deferred": 16,
-      "condition": 52,
+      "condition": 53,
       "unsupported": 290,
       "unmarked": 26,
       "subsystem": 3
     },
-    "distinctMechanics": 175
+    "distinctMechanics": 176
   },
   "rows": [
     {
@@ -13793,6 +13793,38 @@
         {
           "slug": "forged-by-fire",
           "name": "Forged by Fire"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/miek-the-unhived",
+      "heroName": "Miek, The Unhived",
+      "set": "wwhk",
+      "mechanic": "deck-card-koed",
+      "status": "condition",
+      "wp": "WP-855",
+      "decision": "D-24791",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "endless-appetite",
+          "name": "Endless Appetite"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/miek-the-unhived",
+      "heroName": "Miek, The Unhived",
+      "set": "wwhk",
+      "mechanic": "draw",
+      "status": "executable",
+      "wp": "WP-022",
+      "decision": "D-2201",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
+      "designs": [
+        {
+          "slug": "endless-appetite",
+          "name": "Endless Appetite"
         }
       ]
     },

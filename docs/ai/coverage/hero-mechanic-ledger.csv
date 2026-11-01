@@ -759,6 +759,8 @@ wwhk/korg,Korg,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/
 wwhk/korg,Korg,wwhk,outwit,condition,,,,move-mountains
 wwhk/korg,Korg,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,lord-of-granite|nothing-beats-rock
 wwhk/korg,Korg,wwhk,transform,unsupported,,,,forged-by-fire
+wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,deck-card-koed,condition,WP-855,D-24791,,endless-appetite
+wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,endless-appetite
 wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,feast,unsupported,,,,devouring-frenzy|hive-king-miek|metamorphosis
 wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,this-bug-smashes-you
 wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,transform,unsupported,,,,metamorphosis

@@ -273,8 +273,11 @@ function koFromPlayerZone(G: LegendaryGameState, from: OperatorPlayerZoneRef, ca
   G.ko = moveResult.to;
   // why: WP-853 / D-24789 — a KO from the seat's hand, deck, discard or play is a card
   // they own; a Victory Pile KO is not (RS-1).
+  // why: WP-855 / D-24791 — inside this branch `from.zone` is narrowed past 'victory' to the
+  // seat's hand, deck, discard or play, the zone the card left; a deck KO counts for Endless
+  // Appetite like any other.
   if (from.zone !== 'victory') {
-    recordOwnedCardKoed(G, from.playerId, cardId);
+    recordOwnedCardKoed(G, from.playerId, cardId, from.zone);
   }
   return true;
 }

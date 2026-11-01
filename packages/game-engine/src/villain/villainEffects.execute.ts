@@ -66,6 +66,7 @@ import {
 } from '../moves/revealOrWoundChoice.logic.js';
 import { koCard } from '../board/ko.logic.js';
 import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
+import type { OwnedKoSourceZone } from '../hero/deferredConditionalGrants.js';
 import {
   attachBystanderToVillain,
   awardAttachedBystanders,
@@ -1664,7 +1665,7 @@ function villainEffectScryKoOwnDeck(
     if (!moveResult.found) return { targets: [] };
     zones.deck = moveResult.from;
     G.ko = koCard(G.ko, soleCard);
-    recordOwnedCardKoed(G, currentPlayer, soleCard);
+    recordOwnedCardKoed(G, currentPlayer, soleCard, 'deck');
     // why: scry-ko self-narrates — the keyword-less descriptor is dropped by the
     // result-recording path (descriptorToLegacyKeyword → undefined), so the
     // generic Fight-effect log line does not fire. `G.messages` is hash-excluded
@@ -2842,7 +2843,7 @@ function villainEffectRevealTopKoGreyOrDrawByClass(
   if (isGreyHero(G, topCardId)) {
     zones.deck = zones.deck.slice(1);
     G.ko = koCard(G.ko, topCardId);
-    recordOwnedCardKoed(G, currentPlayer, topCardId);
+    recordOwnedCardKoed(G, currentPlayer, topCardId, 'deck');
     pushLog(G, `${label} effect: revealed "${topName}" (grey) — KO'd it.`, 'applied', topCardId);
     return { targets: [topCardId] };
   }
@@ -3433,10 +3434,14 @@ function villainEffectKoWoundsCurrentHandAndDiscard(
   // scanned (distinct from ko-heroes-current-by-trait, whose Heroes can sit in-play).
   // Rebuild each zone with a kept-list for...of (no .reduce(), no splice-in-loop).
   const koedWounds: CardExtId[] = [];
+  // why: WP-855 / D-24791 — the zone each KO'd Wound left, index-aligned with koedWounds
+  // (pushed in the same two loops), for the owned-KO recorder's source zone.
+  const koedWoundZones: OwnedKoSourceZone[] = [];
   const remainingHand: CardExtId[] = [];
   for (const cardId of zones.hand) {
     if (cardId === WOUND_EXT_ID) {
       koedWounds.push(cardId);
+      koedWoundZones.push('hand');
     } else {
       remainingHand.push(cardId);
     }
@@ -3445,6 +3450,7 @@ function villainEffectKoWoundsCurrentHandAndDiscard(
   for (const cardId of zones.discard) {
     if (cardId === WOUND_EXT_ID) {
       koedWounds.push(cardId);
+      koedWoundZones.push('discard');
     } else {
       remainingDiscard.push(cardId);
     }
@@ -3454,10 +3460,14 @@ function villainEffectKoWoundsCurrentHandAndDiscard(
   // why: KO'd Wounds go to the general KO pile (`G.ko`), NOT back to the
   // `G.piles.wounds` supply — a KO removes them from play (koCard is a
   // destination-only append; the source removal is the zone rebuild above).
-  for (const woundId of koedWounds) {
+  for (let index = 0; index < koedWounds.length; index++) {
+    // why: WP-855 / D-24791 — koedWounds and koedWoundZones are pushed together in the scan
+    // loops above, so they have the same length and every index read here is defined.
+    const woundId = koedWounds[index]!;
+    const woundZone = koedWoundZones[index]!;
     G.ko = koCard(G.ko, woundId);
     // why: WP-853 / D-24789 — the chosen player owns these Wounds; one count each.
-    recordOwnedCardKoed(G, chosenPlayer, woundId);
+    recordOwnedCardKoed(G, chosenPlayer, woundId, woundZone);
   }
   // why: self-narrate (keyword-less; the D-24266 unmarked-ability breadcrumb is
   // removed by marking the card). `G.messages` is hash-excluded (D-24081). Honest
@@ -3702,9 +3712,13 @@ function villainEffectKoHeroesCurrentByTrait(
   }
   zones.hand = remainingHand;
   zones.inPlay = remainingInPlay;
-  for (const koedId of targets) {
+  for (let index = 0; index < targets.length; index++) {
+    // why: WP-855 / D-24791 — targets and targetZones are pushed together in the scan loops
+    // above, so they have the same length and every index read here is defined.
+    const koedId = targets[index]!;
+    const koedZone = targetZones[index]!;
     G.ko = koCard(G.ko, koedId);
-    recordOwnedCardKoed(G, currentPlayer, koedId);
+    recordOwnedCardKoed(G, currentPlayer, koedId, koedZone);
   }
   // why: D-24290 — Fight-timed self-narration (see draw-cards-current). Zero
   // matching Heroes is a reachable no-op (`blocked`), never a hollow record.
@@ -4790,7 +4804,7 @@ function koOneHeroForPlayer(
       zones.inPlay = moveResult.from;
       G.ko = koCard(G.ko, inPlayTarget);
       // why: WP-853 / D-24789 — playerId is the seat losing the Hero (each-player loops).
-      recordOwnedCardKoed(G, playerId, inPlayTarget);
+      recordOwnedCardKoed(G, playerId, inPlayTarget, 'inPlay');
       // why: WP-316 — return the KO'd ext_id (and its zone, D-24693) for the log target.
       return { zone: 'inPlay', cardId: inPlayTarget };
     }
@@ -4806,7 +4820,7 @@ function koOneHeroForPlayer(
     if (moveResult.found) {
       zones.hand = moveResult.from;
       G.ko = koCard(G.ko, handTarget);
-      recordOwnedCardKoed(G, playerId, handTarget);
+      recordOwnedCardKoed(G, playerId, handTarget, 'hand');
       // why: WP-316 — return the KO'd ext_id (and its zone, D-24693) for the log target.
       return { zone: 'hand', cardId: handTarget };
     }
@@ -4869,7 +4883,7 @@ function koHeroesFromZoneForPlayer(
     zones[zone] = moveResult.from;
     G.ko = koCard(G.ko, target);
     // why: WP-853 / D-24789 — playerId is the seat losing the card (each-player loops).
-    recordOwnedCardKoed(G, playerId, target);
+    recordOwnedCardKoed(G, playerId, target, zone);
     koedIds.push(target);
   }
   return koedIds;
@@ -5120,7 +5134,7 @@ function koSingleTarget(
   if (moveResult.found) {
     zones[target.zone] = moveResult.from;
     G.ko = koCard(G.ko, target.cardId);
-    recordOwnedCardKoed(G, ownerPlayerID, target.cardId);
+    recordOwnedCardKoed(G, ownerPlayerID, target.cardId, target.zone);
     return target.cardId;
   }
   return null;

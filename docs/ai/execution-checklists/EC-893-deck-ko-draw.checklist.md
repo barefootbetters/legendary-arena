@@ -115,3 +115,23 @@
   or is computed after the grants fire.
 - A draw on every move after one KO — count not deleted on an unheld resolve.
 - Ledger row `unsupported` — `KNOWN_CONDITIONS` lacks the marker. Sentinel moved — recorder ungated.
+
+## Amendments (execution)
+
+**Amendment A (2026-11-01, execution: the `EC-893:` commit).** The KO-site set grew after drafting;
+the new site is classified here before any source edit.
+
+1. **Drift.** At `origin/main` `d12408c8` the WP-853 pin is green at **35 KO sites / 26 owned**, not
+   34 / 25. WP-860 (Commune with the Spirit World, D-24796) added
+   `moves/communeSpiritWorld.logic.ts#applyCommuneKoResolvedSeatChoice` (1 / 1 in `LOCKED_TABLE`).
+   WP-856 also landed first, so the recorder is `(G, ownerPlayerID, cardId)` and
+   `hasWaitingGrantWithCondition` exists (the "WP-856 check" path above).
+2. **Classification.** The 26th owned call passes the option's `sourceZone`. The function returns
+   before the KO unless `sourceZone` is `'hand'` or `'discard'`, so TypeScript narrows it to
+   `'hand' | 'discard'` at the call: an owned KO, never a deck KO. No new `as` cast.
+3. **Scope.** `packages/game-engine/src/moves/communeSpiritWorld.logic.ts` joins `## Files to Produce`
+   (owned KO sites). The deck-zone pin is unchanged: the same 8 literal-`'deck'` functions. The 9 deck
+   KO sites, the `koFromPlayerZone` narrowing and the +21 test delta are unchanged.
+4. **Pending queues.** `hasAnyPendingChoice` re-checked at HEAD: WP-858 adds no pending queue
+   (`controlledArtifacts` is not a choice), and WP-860 parks its picks as `pendingSeatChoice`, which
+   the helper already covers. The hold needs no new queue.

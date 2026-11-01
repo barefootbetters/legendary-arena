@@ -2858,6 +2858,14 @@ export interface LegendaryGameState {
   /** Owned-Hero KOs per owner since the last deferred-grant resolve; absent when none. */
   ownedHeroesKoedSinceResolve?: Record<string, number>;
 
+  // why: WP-855 / D-24791 — per-owner count of cards KO'd from the player's DECK since the
+  // last resolve that fired, for "Whenever a card is KO'd from your deck this turn" (Miek's
+  // Endless Appetite). Written GATED by recordOwnedCardKoed (only while a grant reading
+  // `deckCardKoedThisTurn` waits), deleted after every resolve that is not held by a parked
+  // choice and at turn.onBegin, never set in Game.setup.
+  /** Deck-card KOs per owner since the last deferred-grant resolve that fired; absent when none. */
+  deckCardsKoedSinceResolve?: Record<string, number>;
+
   // why: WP-743 / D-24566 — a Master Strike card was played (revealed from the Villain
   // Deck and routed to the strike pile) this turn. Read by the Grief and Spring the Trap
   // wait-and-see conditions. Written GATED in performVillainReveal — only when some hero

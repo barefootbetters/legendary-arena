@@ -36,6 +36,7 @@ import {
   describeFailedCondition,
   OWNED_CARD_KOED_CONDITION_TYPE,
   OWNED_HERO_KOED_CONDITION_TYPE,
+  DECK_CARD_KOED_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 import {
   isWaitAndSeeCondition,
@@ -105,6 +106,10 @@ import {
 import { formatCountScaledRate } from './countSourceLabel.js';
 import { pushLog } from '../log/logPush.js';
 import { parkCommuneCostChoice } from '../moves/communeSpiritWorld.logic.js';
+// why: WP-855 / D-24791 — the deck-KO draw hold reads every parked choice queue. This file
+// already reaches phaseCard.js through outOfTimeGrant.logic.js and revealOrWoundChoice.logic.js,
+// so the direct import adds no new load-order edge.
+import { hasAnyPendingChoice } from '../moves/phaseCard.js';
 import type { LogOutcome } from '../log/logOutcome.types.js';
 import {
   composeTransformNarrative,
@@ -949,9 +954,13 @@ export function executeHeroEffects(
     // why: WP-856 / D-24792 — the Hero-KO trigger ("The first time that one of your Heroes
     // is KO'd this turn") starts at play the same way, so it takes this branch too (RS-1:
     // a Hero KO earlier in the same move does not fire it at play).
+    // why: WP-855 / D-24791 — the deck-KO trigger ("Whenever a card is KO'd from your deck
+    // this turn") is the other per-KO trigger, so it always waits at play too: a deck KO
+    // earlier in the same move must not fire it now and leave later KOs uncredited.
     const ownedKoCondition =
       findConditionOfType(hook, OWNED_CARD_KOED_CONDITION_TYPE) ??
-      findConditionOfType(hook, OWNED_HERO_KOED_CONDITION_TYPE);
+      findConditionOfType(hook, OWNED_HERO_KOED_CONDITION_TYPE) ??
+      findConditionOfType(hook, DECK_CARD_KOED_CONDITION_TYPE);
     if (
       ownedKoCondition !== undefined &&
       evaluateAllConditions(G, playerID, conditionsWithout(hook, ownedKoCondition), cardId)
@@ -1836,7 +1845,7 @@ function heroEffectKo(
     if (moveResult.found) {
       playerZones.inPlay = moveResult.from;
       G.ko = koCard(G.ko, cardId);
-      recordOwnedCardKoed(G, playerID, cardId);
+      recordOwnedCardKoed(G, playerID, cardId, 'inPlay');
       // why: WP-417 / D-24237 — a self-KO removes the card the player just played
       // from the board; a silent removal reads as the card vanishing. Name it.
       // why: WP-434 — a self-KO ability that removed the played card is `applied`.
@@ -2735,7 +2744,7 @@ function applyRevealKo(
   }
   playerZones.deck = moveResult.from;
   G.ko = koCard(G.ko, topCardId);
-  recordOwnedCardKoed(G, ownerPlayerID, topCardId);
+  recordOwnedCardKoed(G, ownerPlayerID, topCardId, 'deck');
   return true;
 }
 
@@ -4610,7 +4619,7 @@ function heroEffectKoWoundReward(
   if (!moveResult.found) { return; }
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, WOUND_EXT_ID);
-  recordOwnedCardKoed(G, playerID, WOUND_EXT_ID);
+  recordOwnedCardKoed(G, playerID, WOUND_EXT_ID, targetZone);
   pushLog(G,
     `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
   );
@@ -4680,7 +4689,7 @@ function heroEffectKoWound(
   if (!moveResult.found) { return; }
   playerZones[targetZone] = moveResult.from;
   G.ko = koCard(G.ko, WOUND_EXT_ID);
-  recordOwnedCardKoed(G, playerID, WOUND_EXT_ID);
+  recordOwnedCardKoed(G, playerID, WOUND_EXT_ID, targetZone);
   pushLog(G,
     `Player ${playerID} KO'd a Wound from their ${targetZone} via a hero ability.`,
   );
@@ -7508,11 +7517,26 @@ export function resolveDeferredHeroGrants(
     return;
   }
 
+  // why: WP-855 / D-24791 — the deck-KO draw HOLD. This resolve runs after every move,
+  // including one that leaves a reveal choice open, and several deck-KO sites resolve one card
+  // of a multi-card deck-top snapshot (Ruthless Dictator's top three, Crystal of Kadavus, a
+  // queued second scry). A draw now would take a card the open choice still holds; Ruthless
+  // Dictator and scry-KO keep their queue on a missing card, so the turn would freeze. So a
+  // deck-KO grant does not fire while any choice is parked, and its count is KEPT (not
+  // deleted below) so the draws land after the move that closes the last choice.
+  // `pendingHeroChoice` is added by hand: hasAnyPendingChoice does not cover the singular
+  // hero choice, and Gambit's Kinetic Card parks it on deck[0] without blocking play.
+  // Computed once, before any grant fires.
+  const isDeckKoDrawHeld = hasAnyPendingChoice(G) || G.pendingHeroChoice !== undefined;
+
   resolveDeferredConditionalGrants(
     G,
     (entry) => {
       const hook = G.heroAbilityHooks[entry.hookIndex];
       if (hook === undefined) {
+        return false;
+      }
+      if (isDeckKoDrawHeld && hookHasConditionType(hook, DECK_CARD_KOED_CONDITION_TYPE)) {
         return false;
       }
       // why: re-evaluate ALL of the hook's conditions, not just the deferred one —
@@ -7535,9 +7559,13 @@ export function resolveDeferredHeroGrants(
       // KO several of the player's cards (heal three Wounds, a Villain KOing every Hero
       // with a trait), and each is its own "whenever". Every other hook fires once.
       // Explicit for loop, no .reduce() (.claude/rules/code-style.md).
+      // why: WP-855 / D-24791 — a deck-KO grant fires once per card KO'd from the owner's deck
+      // the same way (a Villain or a reveal can KO several deck cards in one move).
       let repeatCount = 1;
       if (hookHasConditionType(hook, OWNED_CARD_KOED_CONDITION_TYPE)) {
         repeatCount = Math.max(1, G.ownedCardsKoedSinceResolve?.[entry.playerId] ?? 0);
+      } else if (hookHasConditionType(hook, DECK_CARD_KOED_CONDITION_TYPE)) {
+        repeatCount = Math.max(1, G.deckCardsKoedSinceResolve?.[entry.playerId] ?? 0);
       }
       for (let i = 0; i < repeatCount; i++) {
         runHookEffects(G, ctx, entry.playerId, entry.cardId, hook, turn);
@@ -7555,9 +7583,12 @@ export function resolveDeferredHeroGrants(
       // why: WP-856 / D-24792 — a Hero-KO grant (OWNED_HERO_KOED_CONDITION_TYPE) is left
       // out on purpose: "the first time … this turn" fires once (repeatCount 1 above), so
       // it is not re-recorded and the first counted Hero KO is the only one it credits.
+      // why: WP-855 / D-24791 — a deck-KO grant re-arms like the owned-KO grant ("whenever"),
+      // so it survives to credit the next deck KO this turn.
       if (
         hookHasConditionType(hook, REPEATABLE_DEFEAT_CONDITION_TYPE) ||
-        hookHasConditionType(hook, OWNED_CARD_KOED_CONDITION_TYPE)
+        hookHasConditionType(hook, OWNED_CARD_KOED_CONDITION_TYPE) ||
+        hookHasConditionType(hook, DECK_CARD_KOED_CONDITION_TYPE)
       ) {
         recordDeferredConditionalGrant(G, entry.playerId, entry.cardId, entry.hookIndex);
       }
@@ -7588,6 +7619,14 @@ export function resolveDeferredHeroGrants(
   // byte-unchanged.
   if (G.ownedHeroesKoedSinceResolve !== undefined) {
     delete G.ownedHeroesKoedSinceResolve;
+  }
+
+  // why: WP-855 / D-24791 — consume the per-owner deck-KO count like the owned count, but
+  // only when the draw was not held: a held grant did not fire, so its KOs are still owed and
+  // the count waits for the move that closes the last parked choice. Guarded, so a game that
+  // never counted a deck KO is byte-unchanged.
+  if (G.deckCardsKoedSinceResolve !== undefined && !isDeckKoDrawHeld) {
+    delete G.deckCardsKoedSinceResolve;
   }
 
   // why: WP-754 / D-24581 — a wait-and-see grant fired above (e.g. crossed by an Excessive

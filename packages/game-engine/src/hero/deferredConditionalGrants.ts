@@ -55,6 +55,7 @@ import {
   MASTER_STRIKE_OR_AMBUSH_THIS_TURN_CONDITION_TYPE,
   OWNED_CARD_KOED_CONDITION_TYPE,
   OWNED_HERO_KOED_CONDITION_TYPE,
+  DECK_CARD_KOED_CONDITION_TYPE,
 } from './heroConditions.evaluate.js';
 
 // why: WP-656 / D-24467 — the single EDGE-TRIGGERED wait-and-see condition type.
@@ -103,7 +104,19 @@ export const WAIT_AND_SEE_CONDITION_TYPES: readonly string[] = [
   // per-owner Hero-KO count but is shape #1: it fires once and is NOT re-armed, which is
   // what "the first time" means. Has an evaluateCondition case (the lockstep pin).
   OWNED_HERO_KOED_CONDITION_TYPE,
+  // why: WP-855 / D-24791 — "Whenever a card is KO'd from your deck this turn" (Endless
+  // Appetite) is shape #2 with a per-owner DECK count: fires once per counted KO and re-arms,
+  // like the owned-KO entry. Has an evaluateCondition case (the lockstep the drift pin enforces).
+  DECK_CARD_KOED_CONDITION_TYPE,
 ];
+
+/**
+ * The zone an owned KO'd card left: a player's hand, deck, discard pile or cards in play.
+ *
+ * why: WP-855 / D-24791 — every owned KO site states it, so the recorder can tell a KO from
+ * the deck ("KO'd from your deck") from the rest of "a card you own".
+ */
+export type OwnedKoSourceZone = 'hand' | 'deck' | 'discard' | 'inPlay';
 
 /**
  * Reports whether a failed condition earns the whole-turn wait-and-see window.
@@ -156,14 +169,20 @@ export function recordDeferredConditionalGrant(
  * why: WP-856 / D-24792 — the KO'd card's id lets the Hero count skip Wounds and
  * Bystanders (the WP-828 isHeroCard rule: anything else in a player's zones is a Hero).
  *
+ * why: WP-855 / D-24791 — `fromZone` is the zone the card left, required at every owned site
+ * so the compiler makes a new site state it; a KO from the deck also counts for a waiting
+ * "KO'd from your deck" grant.
+ *
  * @param G - The game state, mutated in place.
  * @param ownerPlayerID - The player whose zone the KO'd card left.
  * @param cardId - The card that was KO'd.
+ * @param fromZone - The owner's zone the card left.
  */
 export function recordOwnedCardKoed(
   G: LegendaryGameState,
   ownerPlayerID: string,
   cardId: CardExtId,
+  fromZone: OwnedKoSourceZone,
 ): void {
   if (hasWaitingGrantWithCondition(G, OWNED_CARD_KOED_CONDITION_TYPE)) {
     if (G.ownedCardsKoedSinceResolve === undefined) {
@@ -179,6 +198,17 @@ export function recordOwnedCardKoed(
     }
     const previousHeroCount = G.ownedHeroesKoedSinceResolve[ownerPlayerID] ?? 0;
     G.ownedHeroesKoedSinceResolve[ownerPlayerID] = previousHeroCount + 1;
+  }
+  // why: WP-855 / D-24791 — the deck count, its own gate: written only while a waiting grant
+  // reads `deckCardKoedThisTurn`, so a game with no waiting Endless Appetite never gains the
+  // key and no hash moves. Keyed per owner like the counts above (a Villain can KO from
+  // another player's deck, and only the owner's grant may fire).
+  if (fromZone === 'deck' && hasWaitingGrantWithCondition(G, DECK_CARD_KOED_CONDITION_TYPE)) {
+    if (G.deckCardsKoedSinceResolve === undefined) {
+      G.deckCardsKoedSinceResolve = {};
+    }
+    const previousDeckCount = G.deckCardsKoedSinceResolve[ownerPlayerID] ?? 0;
+    G.deckCardsKoedSinceResolve[ownerPlayerID] = previousDeckCount + 1;
   }
 }
 

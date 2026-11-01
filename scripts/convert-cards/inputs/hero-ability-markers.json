@@ -1589,6 +1589,18 @@
       "markupToken": "[keyword:smash:1]"
     },
     {
+      "heroSlug": "miek-the-unhived",
+      "cardSlug": "endless-appetite",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:deck-card-koed]"
+    },
+    {
+      "heroSlug": "miek-the-unhived",
+      "cardSlug": "endless-appetite",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
+    },
+    {
       "heroSlug": "namora",
       "cardSlug": "crushing-tsunami",
       "abilityIndex": 1,
