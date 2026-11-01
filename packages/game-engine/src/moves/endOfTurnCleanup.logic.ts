@@ -25,7 +25,7 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { moveAllCards } from './zoneOps.js';
 import { HAND_SIZE, drawCardsIntoHand } from './drawCards.logic.js';
-import { consumeDeferredHandInjections } from './deferredHandInjection.logic.js';
+import { consumeDeferredHandInjections, setAsideDeferredHandInjections } from './deferredHandInjection.logic.js';
 import { composeDeckReshuffledNarrative } from '../events/notableEvents.compose.js';
 import { isRitualArtifact } from './ritualArtifact.js';
 import { formatCardRef } from '../log/logDisplay.js';
@@ -72,14 +72,15 @@ function keepControlledArtifacts(G: LegendaryGameState, playerID: string): void 
  *
  * Exact order (locked, EC-738):
  *   1. Discard in-play -> discard, then hand -> discard.
+ *   1b. Set the Electromagnetic Bubble card aside from the discard (D-24797), so the
+ *      fill's reshuffle can neither shuffle it in nor draw it as one of the six.
  *   2. Fill hand to `handSizeOverrides?.[playerID] ?? HAND_SIZE` from the deck
  *      (reshuffling the discard on exhaustion via the ShuffleProvider).
  *   3. Push a `deckReshuffled` notable event iff a reshuffle actually occurred.
  *   4. Consume the one-shot `handSizeOverrides` entry (Doc Ock, D-24300).
  *   5. Consume the deferred hand injection (Electromagnetic Bubble, D-24512) —
- *      it runs AFTER the discard so the chosen X-Men Hero (played or held) has moved to
- *      discard where the injection helper can find it, and AFTER the fill so it
- *      lands as the extra (seventh) card on top of the fresh hand.
+ *      AFTER the fill, so the card set aside at 1b lands as the extra (seventh) card on
+ *      top of the fresh hand.
  *   6. Return teleport-on-discard cards set aside this turn (D-24526).
  *   7. Delete this turn's Copy Powers copied-class / copied-team grants (D-24730).
  *
@@ -114,6 +115,13 @@ export function applyEndOfTurnCleanup(
   playerZones.hand = handResult.from;
   playerZones.discard = handResult.to;
 
+  // Step 1b: set the Electromagnetic Bubble card aside before the fill.
+  // why: D-24797 — the card is added "as a seventh card", never drawn. Left in the discard, a
+  // short deck's reshuffle could shuffle it in and the fill draw it as one of the six, and the
+  // Step 5 consume then found nothing (live match bujIOIX4wLk). Without a recorded injection
+  // this lifts nothing, so every other cleanup is unchanged.
+  const bubbleSetAside = setAsideDeferredHandInjections(G, playerID, playerZones);
+
   // Step 2: draw the new hand. // why: WP-497 / D-24300 — a tactic Fight resolver
   // (Doc Ock's "Octet of Valence Electrons") may have recorded a one-shot next-hand
   // override; fill to it, else HAND_SIZE. After the discard the hand is empty, so
@@ -139,8 +147,8 @@ export function applyEndOfTurnCleanup(
   }
 
   // Step 5: consume the deferred hand injection (Electromagnetic Bubble) — after the
-  // discard + fill, adds each recorded card as an extra card and clears the key.
-  consumeDeferredHandInjections(G, playerID, playerZones);
+  // fill, adds each recorded card (set aside at Step 1b) as an extra card and clears the key.
+  consumeDeferredHandInjections(G, playerID, playerZones, bubbleSetAside);
 
   // why: WP-705 / D-24526 — Step 6: return every teleport-on-discard card set aside this
   // turn to its OWNER's hand (Guerrilla Warfare). All-owners (not just the ending player),

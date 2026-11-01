@@ -50021,4 +50021,22 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24793 (#3107). Related: D-24581 (reveal-top-may-ko), D-24558 (per-entry `isKoAllowed`), D-24521 (reveal-top dispose queue), D-24469 (transform allowlist), D-24045 (Honest-Partial / by-hook ledger), D-24789 (owned-KO recorder), D-24372 (RUNTIME pins), D-24026.
 
 ---
+
+### D-24797 — Electromagnetic Bubble sets its chosen Hero aside before the end-of-turn draw, so a reshuffle cannot swallow the seventh card (direct fix, no WP) (Active 2026-11-01)
+
+**Context.** Magneto's Electromagnetic Bubble: "Choose one of your [team:x-men] Heroes. When you draw a new hand of cards at the end of this turn, add that Hero to your hand as a seventh card." D-24512 recorded the pick in `G.deferredHandInjections` and consumed it at end-of-turn cleanup Step 5, after the Step 2 fill, pulling the card from discard / in-play / deck. Step 1 had already swept the card into the discard, so when the deck was too short for six cards, the fill's reshuffle shuffled the chosen Hero into the deck and could draw it as one of the six. Step 5 then found it nowhere it looks (it never checks the hand) and logged "could not be found to add to their hand; no effect". The player got six cards, the chosen Hero among them, instead of seven. Surfaced in Jeff's live match `bujIOIX4wLk` (build `64bcf4c8`, turn 7: Healing Factor picked, then not found, then played from a normal hand on turn 9). Earlier passes (D-24645's live-verify) had no reshuffle on the pick turn.
+
+**Decision.**
+1. New cleanup Step 1b, between the discard sweep and the fill: `setAsideDeferredHandInjections` lifts each recorded card out of the discard into a local set-aside list. The fill then draws six from the deck and the reshuffled discard without it.
+2. Step 5 `consumeDeferredHandInjections` takes the set-aside list and appends those cards to the hand after the fill, as the extra card. A recorded card the set-aside did not find (not in the discard, e.g. moved off by another effect) is still looked up in discard / in-play / deck as before; one found nowhere stays the logged no-op.
+3. Determinism: with no recorded injection, Step 1b lifts nothing, so every other cleanup is byte-identical. With an injection and no reshuffle, the hand, deck and discard end in the same order as before (the card was removed from an untouched discard either way). Only the reshuffle case changes: the reshuffle input no longer holds the chosen card. Replays of completed matches that hit the bug (an Electromagnetic Bubble pick on a turn whose cleanup reshuffled) verify differently under the new engine; no other replay is affected.
+4. Amends D-24512 (consume timing) and the EC-738 cleanup order (adds Step 1b). No new `G` field, move, or UIState field.
+
+**Gates.** game-engine 6173 → 6178 / 0 fail: +1 cleanup test (a short deck forces the reshuffle; the hand is the six drawn cards plus the Bubble card last, and the card is in neither deck nor discard), +1 consume test (a set-aside card is used without pulling a deck copy), +3 set-aside tests (lifted from discard, left where it is when not in discard, no-op without an injection). Against the old cleanup, the reshuffle test fails with the live symptom (a six-card hand). Feed checks unchanged: `sim:coverage --check`, `sim:runtime-observed:check`, `effect-index:check`, `mechanics:metadata:check`, `ledger:heroes:check`.
+
+**Live-verify (D-24026): operator-pending.** On a match created after the deploy with Magneto: defeat Electromagnetic Bubble on a turn when your deck holds fewer than six cards, pick an X-Men Hero, and the next hand shows seven cards with "was added to Player N's hand as an extra card (Electromagnetic Bubble)" in the log.
+
+**Reserved by:** NUMBER-LEDGER D-24797. Related: D-24512 (consume timing amended), D-24645 (Bubble eligibility, hand + play), D-24520 (end-of-turn cleanup), D-24285 (reshuffle on exhaustion).
+
+---
 Protect this file.

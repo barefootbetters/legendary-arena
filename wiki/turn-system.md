@@ -158,8 +158,9 @@ The new hand is drawn at the **END** of a turn, matching the tabletop rule
 - **At end of turn**, the ending seat discards its in-play cards and its
   remaining hand, then draws a fresh `HAND_SIZE` hand — a single shared
   [`applyEndOfTurnCleanup`](../packages/game-engine/src/moves/endOfTurnCleanup.logic.ts)
-  helper (discard → fill → reshuffle event → consume one-shot
-  `handSizeOverrides` / `deferredHandInjections`). It is invoked from **both**
+  helper (discard → set aside the Electromagnetic Bubble card (D-24797) → fill →
+  reshuffle event → consume one-shot `handSizeOverrides` / `deferredHandInjections`,
+  which adds the set-aside card as the seventh). It is invoked from **both**
   turn-end paths (the `endTurn` move and the `advanceStage` → `advanceTurnStage`
   cleanup branch), so the cleanup is identical however the turn ends, and the
   three bgio-bypassing harnesses (simulation runner, PAR aggregator, replay
