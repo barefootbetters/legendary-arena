@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 837,
     "byStatus": {
-      "executable": 449,
+      "executable": 451,
       "deferred": 16,
       "condition": 53,
-      "unsupported": 290,
+      "unsupported": 288,
       "unmarked": 26,
       "subsystem": 3
     },
@@ -13833,10 +13833,10 @@
       "heroName": "Miek, The Unhived",
       "set": "wwhk",
       "mechanic": "feast",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-857",
+      "decision": "D-24793",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#feast",
       "designs": [
         {
           "slug": "devouring-frenzy",
@@ -13957,10 +13957,10 @@
       "heroName": "No-Name, Brood Queen",
       "set": "wwhk",
       "mechanic": "feast",
-      "status": "unsupported",
-      "wp": "",
-      "decision": "",
-      "handler": "",
+      "status": "executable",
+      "wp": "WP-857",
+      "decision": "D-24793",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#feast",
       "designs": [
         {
           "slug": "appetite-for-destruction",
@@ -14070,8 +14070,8 @@
       "set": "wwhk",
       "mechanic": "feast",
       "status": "unsupported",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-857",
+      "decision": "D-24793",
       "handler": "",
       "designs": [
         {

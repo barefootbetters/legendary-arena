@@ -10,10 +10,10 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 655,
+      "executable": 657,
       "deferred": 16,
       "condition": 53,
-      "unsupported": 291,
+      "unsupported": 289,
       "unmarked": 1013,
       "subsystem": 5
     }
@@ -27071,10 +27071,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "feast",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#feast",
+      "wp": "WP-857",
+      "decision": "D-24793",
       "designs": [
         {
           "slug": "devouring-frenzy",
@@ -27202,10 +27202,10 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "feast",
-      "status": "unsupported",
-      "handler": "",
-      "wp": "",
-      "decision": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#feast",
+      "wp": "WP-857",
+      "decision": "D-24793",
       "designs": [
         {
           "slug": "appetite-for-destruction",
@@ -27322,8 +27322,8 @@
       "mechanic": "feast",
       "status": "unsupported",
       "handler": "",
-      "wp": "",
-      "decision": "",
+      "wp": "WP-857",
+      "decision": "D-24793",
       "designs": [
         {
           "slug": "the-void-unchained",

@@ -701,6 +701,22 @@ const SUPPORTED_TRANSFORM_BASES: ReadonlySet<string> = new Set<string>([
   'wwhk/amadeus-cho/gamma-draining-nanites',
 ]);
 
+// why: WP-857 / D-24793 — cards whose printed "You may [keyword:Feast]" (KO the top card of your
+// deck) resolves to the executable `feast` keyword. Keyed by canonical `{setAbbr}/{heroSlug}/
+// {cardSlug}`. Each listed line is fully covered by the shipped KO-or-keep reveal (RS-1: the card
+// is shown before the choice); Hive King Miek is Metamorphosis's Transform face, reachable once
+// that Transform is modeled. World-Spanning Hunger ("Feast up to three times", +2 per non-grey Hero)
+// and The Void Unchained (cost-0 check, Transform branch) are deliberately NOT here: their other
+// text is unmodeled, so resolving Feast on them would be unfaithful and silence their hollow signal.
+// Honest-Partial Invariant — the SUPPORTED_TRANSFORM_BASES / X_GENE_CARDS precedent.
+const FEAST_CARDS: ReadonlySet<string> = new Set<string>([
+  'wwhk/miek-the-unhived/devouring-frenzy',
+  'wwhk/miek-the-unhived/metamorphosis',
+  'wwhk/miek-the-unhived/hive-king-miek',
+  'wwhk/no-name-brood-queen/appetite-for-destruction',
+  'wwhk/no-name-brood-queen/bursting-with-life',
+]);
+
 // why: WP-705 / D-24526 — cards whose bare [keyword:Teleport] display token resolves to
 // the reactive `teleport-on-discard` keyword (the mandatory set-aside-and-return-at-end-
 // of-turn form). Keyed by canonical key `{setAbbr}/{heroSlug}/{cardSlug}`. Guerrilla
@@ -1119,6 +1135,7 @@ function parseAbilityText(
     xGeneSupported?: boolean;
     dayNightUnmodeled?: boolean;
     conditionalGrantUnmodeled?: boolean;
+    feastSupported?: boolean;
   } = {},
 ): {
   keywords: HeroKeyword[];
@@ -1147,6 +1164,10 @@ function parseAbilityText(
   // why: D-24628 — true only for a CONDITIONAL_GRANT_UNMODELED_LINES card, resolved by the caller
   // (see the suppression before the 'conditional' keyword below).
   const conditionalGrantUnmodeled = options.conditionalGrantUnmodeled === true;
+  // why: WP-857 / D-24793 — the caller resolves whether this card is in FEAST_CARDS and threads
+  // it in (parseAbilityText is text-only and never sees the card id). Defaults false so a
+  // [keyword:Feast] on any non-allowlisted card stays an honest unresolved marker.
+  const feastSupported = options.feastSupported === true;
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
@@ -1533,6 +1554,19 @@ function parseAbilityText(
         keywords.push('transform');
       } else {
         unresolvedMarkers.push('transform');
+      }
+    } else if (normalizedKeyword === 'feast') {
+      // why: WP-857 / D-24793 — feast IS a HeroKeyword, but its keyword + effect are recorded
+      // ONLY for a FEAST_CARDS card (the allowlist the caller resolved into feastSupported).
+      // World-Spanning Hunger ("Feast up to three times", +2 per non-grey Hero) and The Void
+      // Unchained (cost-0 check, Transform branch) carry other text the engine does not model,
+      // so their Feast stays an unresolved marker — the Honest-Partial Invariant (mirrors the
+      // transform arm above). Checked BEFORE isValidHeroKeyword so the generic push does not
+      // fire for a held-back card. Like transform, the keyword falls through to its plain effect.
+      if (feastSupported) {
+        keywords.push('feast');
+      } else {
+        unresolvedMarkers.push('feast');
       }
     } else if (
       (normalizedKeyword === 'undercover-hand-shield-hero' ||
@@ -4511,6 +4545,10 @@ export function buildHeroAbilityHooks(
           conditionalGrantUnmodeled:
             CONDITIONAL_GRANT_UNMODELED_LINES.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`) &&
             RESOURCE_ICON_PATTERN.test(abilityText),
+          // why: WP-857 / D-24793 — resolve whether this card's [keyword:Feast] is recognized
+          // (FEAST_CARDS), from the same canonical key, so parseAbilityText resolves the token only
+          // for allowlisted cards (all others keep an honest unresolved marker).
+          feastSupported: FEAST_CARDS.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`),
         });
 
         // why: freshly-constructed hook per instance — copies never alias a

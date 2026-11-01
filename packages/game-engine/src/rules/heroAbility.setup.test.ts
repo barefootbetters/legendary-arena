@@ -689,12 +689,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'ritual-recruited-hero', // why: WP-858 / D-24794 — Staff of Legba's Ritual Artifact: discarded through useRitualArtifact for +Attack equal to the highest Hero cost recruited this turn (move-executed)
     'ritual-hero-classes', // why: WP-858 / D-24794 — Medallion of Many Loas's Ritual Artifact: discarded through useRitualArtifact for +1 Attack per Hero Class you have, at a class threshold (move-executed)
     'discard-artifact-or-three-then-ko', // why: WP-860 / D-24796 — Commune with the Spirit World: discard an Artifact you control or three cards from your hand, then KO a card from your hand or discard pile (chained seat choices; handler-bearing)
+    'feast', // why: WP-857 / D-24793 — hero Feast "KO the top card of your deck": reuses the KO-or-keep reveal of the deck top (heroEffectRevealTopMayKo), resolved only on FEAST_CARDS
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      90,
-      'HERO_KEYWORDS must have exactly 90 entries (discard-artifact-or-three-then-ko, WP-860 / D-24796, appended last)',
+      91,
+      'HERO_KEYWORDS must have exactly 91 entries (feast, WP-857 / D-24793, appended last after WP-860 / D-24796 discard-artifact-or-three-then-ko)',
     );
 
     assert.deepStrictEqual(
