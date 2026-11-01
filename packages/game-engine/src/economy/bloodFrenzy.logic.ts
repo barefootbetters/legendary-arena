@@ -66,11 +66,14 @@ export function victoryPointValueForCard(
   if (cardType === 'villain') {
     // why: WP-772 / D-24604 — split by zone exactly like computeFinalScores: the off-play cards
     // take the split-face map's both-halves view, the in-play cards only their chosen face.
+    // why: WP-858 / D-24794 — controlled Hero Artifacts are among "all your cards" (rules v23
+    // p.17); kept identical to computeFinalScores so live VP == final VP.
     const offPlayCardIds = [
       ...zones.deck,
       ...zones.hand,
       ...zones.discard,
       ...zones.victory,
+      ...(G.controlledArtifacts?.[playerId] ?? []),
     ];
     const dynamicVp = computeDynamicVillainVictoryPoints(
       cardId,

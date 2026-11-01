@@ -2466,6 +2466,17 @@ export interface LegendaryGameState {
   // PRE_WP080_HASH oracles do not re-pin (the D-24526 precedent).
   /** Per-player cards set aside Out of Time, awaiting their turn-2 replay (WP-803 / D-24692). */
   outOfTimeCards?: Record<string, CardExtId[]>;
+  // why: WP-858 / D-24794 — Hero Artifacts a player controls (rules v23 p.17: "At end of turn,
+  // when you discard all the cards you played that turn, the Artifacts you control stay in front
+  // of you"). applyEndOfTurnCleanup moves each modeled Ritual Artifact (a card whose hook carries
+  // a RITUAL_ARTIFACT_EXECUTED_KEYWORDS keyword) here instead of the discard pile;
+  // useRitualArtifact removes it to the discard pile. Keyed by playerID, CardExtId strings only,
+  // in no zone (like outOfTimeCards). Never cleared at a turn boundary.
+  // why: lazily created at cleanup, never in Game.setup; a player key is deleted when its list
+  // empties and the field is deleted when no key remains, so a match without a modeled Artifact
+  // never writes it and the sentinel finalStateHash oracles do not re-pin.
+  /** Per-player Ritual Artifacts kept in front of the player across turns (WP-858 / D-24794). */
+  controlledArtifacts?: Record<string, CardExtId[]>;
   // why: WP-682 / D-24499 — a player who holds Captain America's Diving Block gaining a
   // Wound parks one entry PER WOUND at the gainWoundForPlayer chokepoint (checkDivingBlock),
   // AFTER the Wound has landed in their discard. The FIFO is drained one WAVE at a time via

@@ -607,6 +607,15 @@ export interface UIPlayerState {
    */
   outOfTimeCards?: UIDisplayEntry[];
   /**
+   * The Ritual Artifacts this player controls, in keep order (WP-858 / D-24794).
+   *
+   * // why: rules v23 p.17 — a played Hero Artifact stays in front of its player at end of
+   * turn. The cards are on the table in the open, so this is PUBLIC (the `outOfTimeCards`
+   * disposition) and passes every audience filter. Omitted when the player controls none.
+   * Per-entry shallow copy via `resolveDisplay`.
+   */
+  controlledArtifacts?: UIDisplayEntry[];
+  /**
    * This player's running conditional-clause tally: how many conditional Hero
    * clauses they have played this match, and how many assembled (condition met).
    *
@@ -906,6 +915,14 @@ export interface UITurnEconomyState {
    * owner's hand, which no other seat may see.
    */
   phasingOptions?: CardExtId[];
+  /**
+   * WP-858 / D-24794 — the Ritual Artifacts (played this turn or controlled) the active player
+   * may use right now, exactly `ritualArtifactOptions(G, currentPlayer)` from
+   * `moves/ritualArtifact.ts` — the same predicate the `useRitualArtifact` move validates
+   * against. Drives the client **Use** button. Omit-when-absent (present only when non-empty)
+   * and active-player-only (absent from `REDACTED_ECONOMY`, the `phasingOptions` disposition).
+   */
+  ritualArtifactOptions?: CardExtId[];
   /**
    * WP-790 / D-24652 — the active player's unspent "usable only against …"
    * attack, one entry per grant with `remaining > 0`, in grant order: the

@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2028,
+    "totalEntries": 2030,
     "byScope": {
-      "hero": 832,
+      "hero": 834,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 651,
+      "executable": 653,
       "deferred": 16,
       "condition": 52,
       "unsupported": 291,
@@ -12107,6 +12107,40 @@
           "slug": "medallion-of-many-loas",
           "name": "Medallion of Many Loas"
         },
+        {
+          "slug": "staff-of-legba",
+          "name": "Staff of Legba"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "name": "Doctor Voodoo",
+      "set": "dstr",
+      "scope": "hero",
+      "mechanic": "ritual-hero-classes",
+      "status": "executable",
+      "handler": "packages/game-engine/src/moves/ritualArtifact.ts",
+      "wp": "WP-858",
+      "decision": "D-24794",
+      "designs": [
+        {
+          "slug": "medallion-of-many-loas",
+          "name": "Medallion of Many Loas"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "name": "Doctor Voodoo",
+      "set": "dstr",
+      "scope": "hero",
+      "mechanic": "ritual-recruited-hero",
+      "status": "executable",
+      "handler": "packages/game-engine/src/moves/ritualArtifact.ts",
+      "wp": "WP-858",
+      "decision": "D-24794",
+      "designs": [
         {
           "slug": "staff-of-legba",
           "name": "Staff of Legba"
@@ -32908,7 +32942,9 @@
         "attack",
         "owned-hero-koed",
         "recruit",
-        "ritual-artifact"
+        "ritual-artifact",
+        "ritual-hero-classes",
+        "ritual-recruited-hero"
       ]
     },
     "dstr/vishanti-the": {

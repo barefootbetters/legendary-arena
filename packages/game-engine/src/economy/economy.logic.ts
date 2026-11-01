@@ -492,6 +492,8 @@ type CarriedTurnFields = Partial<
     | 'outOfTimePlayedCardIds'
     | 'hasRecruitedSidekickThisTurn'
     | 'sidekicksReturnedThisTurn'
+    | 'highestRecruitedHeroCost'
+    | 'ritualUsedPlayedCardIds'
   >
 >;
 
@@ -578,6 +580,16 @@ function carryConversionFlag(economy: TurnEconomy): CarriedTurnFields {
   }
   if (economy.sidekicksReturnedThisTurn !== undefined) {
     carried.sidekicksReturnedThisTurn = economy.sidekicksReturnedThisTurn;
+  }
+  // why: WP-858 / D-24794 — carry the recruited-Hero cost record and the used-Ritual played
+  // ledger ONLY when present (omit-when-absent keeps both hash oracles byte-stable). Without
+  // the carry, the next addResources / spend rebuild would drop the record (Staff of Legba
+  // would stop being usable) or the ledger (a used Ritual would stop counting as played).
+  if (economy.highestRecruitedHeroCost !== undefined) {
+    carried.highestRecruitedHeroCost = economy.highestRecruitedHeroCost;
+  }
+  if (economy.ritualUsedPlayedCardIds !== undefined) {
+    carried.ritualUsedPlayedCardIds = economy.ritualUsedPlayedCardIds;
   }
   return carried;
 }
@@ -1061,6 +1073,70 @@ export function markBothSidesPlayed(economy: TurnEconomy, cardId: CardExtId): Tu
     // play never drops the Penumbra flag (or any other lazy field) set earlier this turn.
     ...carryConversionFlag(economy),
     bothSidesPlayedCardIds: nextBothSidesPlayed,
+  };
+}
+
+/**
+ * Records the printed cost of a Hero the current player just recruited (WP-858 / D-24794).
+ *
+ * Keeps the HIGHEST cost recruited this turn in `highestRecruitedHeroCost`, materializing it
+ * on the first call. Every other field is carried unchanged. `resetTurnEconomy` drops it at
+ * the next turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cost - The recruited Hero's printed cost (the recruit move's own `requiredCost`).
+ * @returns New TurnEconomy with the highest recorded cost.
+ */
+export function recordRecruitedHeroCost(economy: TurnEconomy, cost: number): TurnEconomy {
+  // why: WP-858 / D-24794 RS-1 — "that Hero's cost" when several Heroes were recruited is the
+  // highest; the player would always choose it (D-24470 pure-upside posture).
+  let highestCost = cost;
+  if (economy.highestRecruitedHeroCost !== undefined && economy.highestRecruitedHeroCost > cost) {
+    highestCost = economy.highestRecruitedHeroCost;
+  }
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-858 / D-24794 — spread the single carry chokepoint so recording a recruit never
+    // drops another lazy field set earlier this turn.
+    ...carryConversionFlag(economy),
+    highestRecruitedHeroCost: highestCost,
+  };
+}
+
+/**
+ * Records a Ritual Artifact the current player played this turn and then used, so it still
+ * counts as played this turn (WP-858 / D-24794).
+ *
+ * Appends `cardId` to `ritualUsedPlayedCardIds`, materializing the array on the first call.
+ * Every other field is carried unchanged. `resetTurnEconomy` drops the ledger at the next
+ * turn start.
+ *
+ * @param economy - Current turn economy state.
+ * @param cardId - The Ritual Artifact used from `inPlay`.
+ * @returns New TurnEconomy with `cardId` appended to `ritualUsedPlayedCardIds`.
+ */
+export function recordRitualUsedPlayed(economy: TurnEconomy, cardId: CardExtId): TurnEconomy {
+  // why: WP-858 / D-24794 — build a NEW array (mirrors recordOutOfTimePlayed) so the rebuild
+  // never aliases the prior economy's ledger.
+  const nextRitualUsedPlayed = [...(economy.ritualUsedPlayedCardIds ?? []), cardId];
+  return {
+    attack: economy.attack,
+    recruit: economy.recruit,
+    spentAttack: economy.spentAttack,
+    spentRecruit: economy.spentRecruit,
+    piercing: economy.piercing,
+    woundsDrawn: economy.woundsDrawn,
+    cardsDrawn: economy.cardsDrawn,
+    // why: WP-858 / D-24794 — spread the single carry chokepoint so recording a used Ritual
+    // never drops another lazy field set earlier this turn.
+    ...carryConversionFlag(economy),
+    ritualUsedPlayedCardIds: nextRitualUsedPlayed,
   };
 }
 

@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 78,
-    "totalObservations": 7734,
+    "totalObservations": 7720,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7213
+      "parse-unrecognized": 7199
     }
   },
   "byMechanic": {
@@ -140,12 +140,12 @@
       ]
     },
     "artifact": {
-      "hitCount": 172,
+      "hitCount": 173,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 172
+        "parse-unrecognized": 173
       },
       "examples": [
         {
@@ -222,12 +222,12 @@
       ]
     },
     "astral-plane": {
-      "hitCount": 47,
-      "lastSeenTurn": 28,
+      "hitCount": 51,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 47
+        "parse-unrecognized": 51
       },
       "examples": [
         {
@@ -263,12 +263,12 @@
       ]
     },
     "attack-no-magnitude": {
-      "hitCount": 408,
+      "hitCount": 375,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 408
+        "parse-unrecognized": 375
       },
       "examples": [
         {
@@ -866,14 +866,20 @@
       ]
     },
     "demonic-bargain": {
-      "hitCount": 16,
+      "hitCount": 20,
       "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 16
+        "parse-unrecognized": 20
       },
       "examples": [
+        {
+          "cardId": "dstr/clea/bind-the-dark-dimension#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
         {
           "cardId": "dstr/clea/bind-the-dark-dimension#0",
           "cardType": "hero",
@@ -887,19 +893,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "dstr/clea/bind-the-dark-dimension#2",
+          "cardId": "dstr/clea/bind-the-dark-dimension#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "dstr/vishanti-the/agamotto#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "dstr/vishanti-the/agamotto#0",
+          "cardId": "dstr/clea/bind-the-dark-dimension#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1854,12 +1854,12 @@
       ]
     },
     "recruit-no-magnitude": {
-      "hitCount": 414,
+      "hitCount": 422,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 414
+        "parse-unrecognized": 422
       },
       "examples": [
         {
@@ -1895,12 +1895,12 @@
       ]
     },
     "ritual-artifact": {
-      "hitCount": 4,
-      "lastSeenTurn": 26,
+      "hitCount": 6,
+      "lastSeenTurn": 29,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 4
+        "parse-unrecognized": 6
       },
       "examples": [
         {
@@ -1911,6 +1911,12 @@
         },
         {
           "cardId": "dstr/ancient-one-the/the-orb-of-agamotto#0",
+          "cardType": "hero",
+          "timing": "onPlay",
+          "reason": "parse-unrecognized"
+        },
+        {
+          "cardId": "dstr/vishanti-the/the-book-of-the-vishanti#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

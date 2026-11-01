@@ -150,7 +150,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "[keyword:Ritual Artifact] — If you have at least three Hero Classes, you may discard Medallion of Many Loas to get +1[icon:attack] for each Hero Class you have, including this one."
+            "[keyword:Ritual Artifact] — If you have at least three Hero Classes, you may discard Medallion of Many Loas to get +1[icon:attack] for each Hero Class you have, including this one. [keyword:ritual-hero-classes:3]"
           ]
         },
         {
@@ -165,7 +165,7 @@
           "attack": null,
           "recruit": null,
           "abilities": [
-            "[keyword:Ritual Artifact] — If you recruited a Hero, you may discard Staff of Legba to get +[icon:attack] equal to that Hero's cost."
+            "[keyword:Ritual Artifact] — If you recruited a Hero, you may discard Staff of Legba to get +[icon:attack] equal to that Hero's cost. [keyword:ritual-recruited-hero]"
           ]
         },
         {

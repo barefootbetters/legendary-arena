@@ -673,6 +673,40 @@ describe('PlayDesktop — Out of Time group (WP-803 / D-24692)', () => {
   });
 });
 
+describe('PlayDesktop — controlled Artifacts and the Ritual Use button (WP-858 / D-24794)', () => {
+  test('the viewer controlledArtifacts render one Artifacts group and a listed card gets a Use button', async () => {
+    // why: a mis-bound prop silently falls back to [] (no group, no button), so the page-level
+    // mount is what proves the two bindings and the submitMove pass-through.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    const staff = 'dstr/doctor-voodoo/staff-of-legba#0';
+    frame.players[0]!.controlledArtifacts = [
+      { extId: staff, display: { extId: staff, name: 'Staff of Legba', imageUrl: '', cost: 5 } },
+    ];
+    frame.economy.ritualArtifactOptions = [staff];
+    store.setSnapshot(frame);
+    const calls: Array<{ name: string; args: unknown }> = [];
+    const wrapper = mount(PlayDesktop, {
+      props: { submitMove: (name: string, args?: unknown) => { calls.push({ name, args }); } },
+    });
+    assert.equal(wrapper.findAll('[data-testid="play-controlled-artifacts"]').length, 1);
+    const useButtons = wrapper.findAll('[data-testid="use-ritual-artifact"]');
+    assert.equal(useButtons.length, 1);
+    await useButtons[0]!.trigger('click');
+    assert.deepEqual(calls, [{ name: 'useRitualArtifact', args: { cardId: staff } }]);
+  });
+
+  test('a snapshot without controlledArtifacts renders no Artifacts group and no Use button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.findAll('[data-testid="play-controlled-artifacts"]').length, 0);
+    assert.equal(wrapper.findAll('[data-testid="use-ritual-artifact"]').length, 0);
+  });
+});
+
 describe('PlayDesktop — Effects triggered line (WP-848 / D-24784)', () => {
   test('a viewer with conditionalClauses renders the bound Effects triggered line', () => {
     // why: a mis-bound prop silently falls back to 0 / 0 (the `victoryVp` precedent), so the

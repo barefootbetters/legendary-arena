@@ -1002,6 +1002,9 @@ export default defineComponent({
                     :current-stage="snapshot.game.currentStage"
                     :is-viewer-turn="isViewerTurn"
                     :out-of-time-cards="viewer.outOfTimeCards ?? []"
+                    :controlled-artifacts="viewer.controlledArtifacts ?? []"
+                    :ritual-card-ids="snapshot.economy.ritualArtifactOptions ?? []"
+                    :submit-move="submitMove"
                   />
                   <HandRow
                     :hand-cards="viewer.handCards ?? []"

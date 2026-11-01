@@ -627,8 +627,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // recruit-no-magnitude 415 -> 414, astral-plane 46 -> 47). totalObs 8654 -> 8653 (-1: the
   // astral-plane rise sits under its baseline peak, so it adds nothing back); resolvedObs stays 1091,
   // so percentResolved stays 12.6 (1091 / 8653). A trajectory re-pin; no mechanic changed status.
+  // 2026-10-31 (WP-858 / D-24794, re-pin): Staff of Legba and Medallion of Many Loas become Ritual
+  // Artifacts (no grant at play; kept in front of the player), so the dstr sweep board plays out
+  // differently (feed regenerated: 7734 -> 7720 raw observations; attack-no-magnitude 408 -> 375 as
+  // the Staff hollow leaves, recruit-no-magnitude 414 -> 422, astral-plane 47 -> 51, demonic-bargain
+  // 16 -> 20, artifact 172 -> 173, ritual-artifact 4 -> 6). totalObs 8653 -> 8639 (-14, equal to the
+  // raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8639). A
+  // trajectory re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8653);
+  assert.equal(view.totalObs.value, 8639);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);

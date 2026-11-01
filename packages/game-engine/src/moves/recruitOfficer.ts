@@ -21,7 +21,8 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
-import { getAvailableRecruit, spendRecruit } from '../economy/economy.logic.js';
+import { getAvailableRecruit, recordRecruitedHeroCost, spendRecruit } from '../economy/economy.logic.js';
+import { matchHasRecruitedHeroRitual } from './ritualArtifact.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
 import { hasPendingScryKoChoice } from './scryKoChoice.resolve.js';
@@ -226,6 +227,12 @@ export function recruitOfficer({ G, ctx }: MoveContext): void {
   G.piles.officers = G.piles.officers.slice(1);
   zones.discard = [...zones.discard, officerId];
   G.turnEconomy = spendRecruit(G.turnEconomy, requiredCost);
+  // why: WP-858 / D-24794 — record the recruited Hero's printed cost for Staff of Legba's Ritual
+  // ("If you recruited a Hero … +Attack equal to that Hero's cost"), only in a match whose hooks
+  // carry ritual-recruited-hero, so no other match's turnEconomy gains the field (no hash surface).
+  if (matchHasRecruitedHeroRitual(G)) {
+    G.turnEconomy = recordRecruitedHeroCost(G.turnEconomy, requiredCost);
+  }
   G.hasActedThisTurn = true;
 
   // why: replay-visible log line; the format is locked at this site (never add

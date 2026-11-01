@@ -73,6 +73,7 @@ import { healWounds } from './moves/healWounds.js';
 import { endMatchEarly } from './moves/endMatchEarly.js';
 import { dodgeCard } from './moves/dodgeCard.js';
 import { phaseCard } from './moves/phaseCard.js';
+import { useRitualArtifact } from './moves/ritualArtifact.js';
 import {
   operatorSetSupplyCount,
   operatorMoveToDeckTop,
@@ -594,6 +595,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // per D-10008 — it mutates real G (playerZones), absent on UIState. Not emitted by
     // getLegalMoves, so bots never phase.
     phaseCard: { move: phaseCard, client: false },
+    // why: WP-858 / D-24794 — useRitualArtifact is a non-core, internally-stage-gated move (the
+    // phaseCard pattern): the player discards a Ritual Artifact they played this turn or control
+    // for its reward once its condition held. Server-only (client: false) per D-10008 — it mutates
+    // real G (playerZones, controlledArtifacts, turnEconomy). Not emitted by getLegalMoves, so
+    // bots never use a Ritual.
+    useRitualArtifact: { move: useRitualArtifact, client: false },
     // why: WP-502 / D-24306 — endMatchEarly is the player-initiated "End Game"
     // control: it latches the MATCH_ENDED_EARLY endgame counter so the match ends
     // (endedEarly tie) for every seat via the top-level endIf. Server-only

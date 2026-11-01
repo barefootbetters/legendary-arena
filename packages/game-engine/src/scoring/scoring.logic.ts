@@ -136,11 +136,15 @@ export function computeFinalScores(
     // why: WP-772 / D-24604 — split by zone: the off-play cards take the split-face map's
     // both-halves view (rules v23 p.49), the in-play cards only their chosen face. Must stay
     // identical to victoryPointValueForCard (bloodFrenzy.logic.ts) so live VP == final VP.
+    // why: WP-858 / D-24794 — the Hero Artifacts a player controls are among "all your cards"
+    // (rules v23 p.17), so a Medallion of Many Loas (Tech) still in front of the player counts for
+    // Ultron. Kept identical to victoryPointValueForCard's list.
     const offPlayCardIds = [
       ...zones.deck,
       ...zones.hand,
       ...zones.discard,
       ...zones.victory,
+      ...(gameState.controlledArtifacts?.[playerId] ?? []),
     ];
 
     for (const cardId of zones.victory) {

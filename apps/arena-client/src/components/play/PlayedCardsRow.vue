@@ -2,6 +2,7 @@
 import { defineComponent, type PropType } from 'vue';
 import type { UICardDisplay, UIDisplayEntry } from '@legendary-arena/game-engine';
 import { useTurnActions } from '../../composables/useTurnActions';
+import type { SubmitMove } from './uiMoveName.types';
 import CardTile from './CardTile.vue';
 
 /**
@@ -19,6 +20,12 @@ import CardTile from './CardTile.vue';
  * of Time) left play but return at the start of the viewer's next turn; they
  * render as a labelled "Out of Time" group inside the same well, before the
  * played cards. Render-only: the engine decides when a card goes and returns.
+ *
+ * WP-858 / D-24794 — the Ritual Artifacts the viewer controls (kept in front of
+ * them at end of turn, rules v23 p.17) render as a labelled "Artifacts" group
+ * after the played cards. A Use button appears on any played or controlled card
+ * the engine lists in `economy.ritualArtifactOptions`; it dispatches
+ * `useRitualArtifact`, and the engine re-validates.
  *
  * Per the EC-132 §2 SFC authoring whitelist: tested composer, so it uses
  * `defineComponent({ setup() { return {...} } })` per P6-30 / P6-46 /
@@ -69,6 +76,35 @@ export default defineComponent({
       required: false,
       default: () => [],
     },
+    /**
+     * The viewer's controlled Ritual Artifacts (WP-858 / D-24794), from
+     * `players[ownIndex].controlledArtifacts` (public; omitted by the engine when
+     * empty). They are not counted in "Played This Turn — N".
+     */
+    controlledArtifacts: {
+      type: Array as PropType<readonly UIDisplayEntry[]>,
+      required: false,
+      default: () => [],
+    },
+    /**
+     * The card ids the viewer may use as a Ritual right now, from
+     * `economy.ritualArtifactOptions` (active player only; the engine's single
+     * legality predicate). Each listed played or controlled card gets a Use button.
+     */
+    ritualCardIds: {
+      type: Array as PropType<readonly string[]>,
+      required: false,
+      default: () => [],
+    },
+    /**
+     * Move submitter for the Use button. Optional: without it no Use button renders
+     * (the row stays read-only, as before WP-858).
+     */
+    submitMove: {
+      type: Function as PropType<SubmitMove>,
+      required: false,
+      default: undefined,
+    },
   },
   setup(props) {
     // why: WP-685 / D-24502 — the empty in-play well shows a dashed "play here"
@@ -118,7 +154,20 @@ export default defineComponent({
       };
     }
 
-    return { resolveDisplay, resolveOutOfTimeDisplay, canLandPlay };
+    function isUsableRitual(cardId: string): boolean {
+      // why: WP-858 / D-24794 — the engine's ritualArtifactOptions is the only legality source;
+      // the client never re-derives a Ritual condition, it only shows Use for listed cards.
+      return props.submitMove !== undefined && props.ritualCardIds.includes(cardId);
+    }
+
+    function onUseRitual(cardId: string): void {
+      if (props.submitMove === undefined) {
+        return;
+      }
+      props.submitMove('useRitualArtifact', { cardId });
+    }
+
+    return { resolveDisplay, resolveOutOfTimeDisplay, canLandPlay, isUsableRitual, onUseRitual };
   },
 });
 </script>
@@ -136,7 +185,7 @@ export default defineComponent({
          here" landing target, disabled off-turn / off-main; it signals where a
          played hand card lands. No move is submitted from this zone. -->
     <div
-      v-if="inPlayCards.length === 0 && outOfTimeCards.length === 0"
+      v-if="inPlayCards.length === 0 && outOfTimeCards.length === 0 && controlledArtifacts.length === 0"
       class="played-row__target"
       data-testid="play-played-empty"
       :data-can-play="canLandPlay() ? 'true' : 'false'"
@@ -183,6 +232,53 @@ export default defineComponent({
           size="md"
           :show-label="true"
         />
+        <button
+          v-if="isUsableRitual(cardId)"
+          type="button"
+          class="played-row__use"
+          data-testid="use-ritual-artifact"
+          :data-card-id="cardId"
+          :aria-label="`Use ${resolveDisplay(cardId, index).name}'s Ritual`"
+          @click="onUseRitual(cardId)"
+        >
+          Use
+        </button>
+      </li>
+      <!-- why: WP-858 / D-24794 — the viewer's controlled Ritual Artifacts sit in the SAME
+           well, after the played cards (no new layout slot), as the Out of Time group does. -->
+      <li
+        v-if="controlledArtifacts.length > 0"
+        class="played-row__artifacts"
+        data-testid="play-controlled-artifacts"
+        aria-label="Artifacts you control"
+      >
+        <span class="played-row__artifacts-heading">Artifacts — {{ controlledArtifacts.length }}</span>
+        <ul class="played-row__artifacts-cards">
+          <li
+            v-for="(entry, index) in controlledArtifacts"
+            :key="`${entry.extId}-${index}`"
+            class="played-row__card"
+            data-testid="play-controlled-artifact"
+            :data-card-id="entry.extId"
+          >
+            <CardTile
+              :display="resolveOutOfTimeDisplay(entry)"
+              size="sm"
+              :show-label="true"
+            />
+            <button
+              v-if="isUsableRitual(entry.extId)"
+              type="button"
+              class="played-row__use"
+              data-testid="use-ritual-artifact"
+              :data-card-id="entry.extId"
+              :aria-label="`Use ${resolveOutOfTimeDisplay(entry).name}'s Ritual`"
+              @click="onUseRitual(entry.extId)"
+            >
+              Use
+            </button>
+          </li>
+        </ul>
       </li>
     </ul>
   </section>
@@ -216,8 +312,13 @@ export default defineComponent({
   overflow-x: auto;
 }
 
+/* why: WP-858 / D-24794 — a column so a Ritual Use button can sit under its tile. */
 .played-row__card {
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
 }
 
 /* why: WP-803 / D-24692 — the Out of Time group: a small caption over smaller tiles,
@@ -247,6 +348,55 @@ export default defineComponent({
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+/* why: WP-858 / D-24794 — the controlled Artifacts group: the Out of Time group's caption
+   and small tiles, set off from the played cards by a dashed divider on its left. */
+.played-row__artifacts {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-left: 0.5rem;
+  border-left: 2px dashed var(--color-foreground, #666);
+}
+
+.played-row__artifacts-heading {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.played-row__artifacts-cards {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* why: WP-858 / D-24794 — the Ritual Use button, under its tile (the Phase button's colours). */
+.played-row__use {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 0.3rem;
+  background: rgba(40, 24, 88, 0.92);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.played-row__use:hover,
+.played-row__use:focus-visible {
+  background: rgba(88, 56, 176, 0.95);
 }
 
 /* why: WP-685 / D-24502 lock 5 — the empty-well landing target: a dashed frame

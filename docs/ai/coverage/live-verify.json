@@ -1529,7 +1529,29 @@
       "state": "pending",
       "date": "2026-10-29",
       "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-856 deploy (isMatchOlderThanServer: false) with Doctor Voodoo, per the WP-856 DoD.",
-      "note": "Playing it logs the waiting line and adds no Recruit or Attack; the first Hero of yours KO'd later that turn opens a +4 Recruit / +4 Attack choice, once; Wound KOs do not trigger it. D-24792."
+      "note": "Playing it logs the waiting line and adds only the card's printed 4 Attack (no +4 Recruit / +4 Attack bonus); the first Hero of yours KO'd later that turn opens a +4 Recruit / +4 Attack choice, once; Wound KOs do not trigger it. D-24792."
+    },
+    {
+      "key": "dstr/doctor-voodoo|ritual-recruited-hero",
+      "kind": "hero",
+      "card": "Doctor Voodoo",
+      "ability": "Staff of Legba (Ritual Artifact): kept in front of you; discard it for +Attack equal to the cost of a Hero you recruited this turn",
+      "wp": "WP-858",
+      "state": "pending",
+      "date": "2026-10-31",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-858 deploy (isMatchOlderThanServer: false) with Doctor Voodoo, per the WP-858 DoD.",
+      "note": "Playing it adds no Attack and logs no hollow; at end of turn it stays under Artifacts; after a recruit its Use button discards it for +Attack equal to the highest recruited cost. D-24794."
+    },
+    {
+      "key": "dstr/doctor-voodoo|ritual-hero-classes",
+      "kind": "hero",
+      "card": "Doctor Voodoo",
+      "ability": "Medallion of Many Loas (Ritual Artifact): kept in front of you; with 3+ Hero Classes, discard it for +1 Attack per Hero Class you have",
+      "wp": "WP-858",
+      "state": "pending",
+      "date": "2026-10-31",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-858 deploy (isMatchOlderThanServer: false) with Doctor Voodoo, per the WP-858 DoD.",
+      "note": "Playing it adds no Attack (no phantom +1); at end of turn it stays under Artifacts; with three or more Hero Classes (hand, play, Artifacts you control, itself included) its Use button discards it for +1 Attack per class. D-24794."
     }
   ]
 }

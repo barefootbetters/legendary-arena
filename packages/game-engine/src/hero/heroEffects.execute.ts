@@ -465,6 +465,20 @@ export const DISCARD_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
 // (checkFlyingShieldBlock), so it joins this set for the same two reasons.
 export const WOUND_TIME_EXECUTED_KEYWORDS: readonly HeroKeyword[] = ['diving-block', 'flying-shield-block'];
 
+// why: WP-858 / D-24794 — the Ritual Artifact keywords execute from the useRitualArtifact MOVE
+// (moves/ritualArtifact.ts: the player discards a controlled or just-played Ritual Artifact for its
+// reward once its condition held this turn), so — like phasing / dodge — they have NO
+// HERO_EFFECT_HANDLERS entry and are NOT in HANDLED_KEYWORDS. They join MVP_KEYWORDS via this
+// category for the same two load-bearing reasons: (a) the hero mechanic ledger classifies an
+// MVP_KEYWORDS member `executable`; (b) classifyHeroEffectReason returns `applied` for the onPlay
+// hook that executeHeroEffects visits at PLAY time, so playing the card grants nothing and records
+// no hollow. Kept a SEPARATE set from HAND_ACTION_EXECUTED_KEYWORDS (duplicate-first per §16.1 —
+// they execute from different moves on different zones).
+export const RITUAL_ARTIFACT_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
+  'ritual-recruited-hero',
+  'ritual-hero-classes',
+];
+
 // why (WP-251 / D-24024; D-24049; D-24051; D-24060): MVP_KEYWORDS = HANDLED_KEYWORDS ∪ the
 // frozen-translated reveal keywords ∪ the recruit-time-executed keywords ∪ the
 // hand-action-executed keywords ∪ the face-down-action-executed keywords — the set of
@@ -483,6 +497,8 @@ export const MVP_KEYWORDS = new Set<string>([
   ...DISCARD_TIME_EXECUTED_KEYWORDS,
   // why: WP-682 / D-24499 — the reactive wound-time keyword (diving-block); see the set above.
   ...WOUND_TIME_EXECUTED_KEYWORDS,
+  // why: WP-858 / D-24794 — the move-executed Ritual Artifact keywords; see the set above.
+  ...RITUAL_ARTIFACT_EXECUTED_KEYWORDS,
 ]);
 
 // why: D-24019 — the reward of an optional-ko-reward effect is dispatched to an

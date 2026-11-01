@@ -953,8 +953,26 @@ describe('distinctHeroClassesAtLeast counts hand + play (Spectrum, D-24694)', ()
     });
 
     const text = describeFailedCondition(gameState, '0', SPECTRUM_CONDITION);
-    assert.match(text, /3 different Hero classes in hand or play/);
+    // why: WP-858 / D-24794 — the count (and so the message) now includes controlled Artifacts.
+    assert.match(text, /3 different Hero classes in hand, play, or Artifacts you control/);
     assert.match(text, /you have 2$/);
+  });
+
+  it('counts the printed class of a controlled Artifact (WP-858 / D-24794)', () => {
+    // why: rules v23 L930-932 — "Heroes you have" include Hero Artifacts you control.
+    const gameState = makeTestState({
+      inPlay: ['spectrum-instinct#0'],
+      hand: ['hero-strength#0'],
+      cardTraits: {
+        'spectrum-instinct#0': { heroClass: 'instinct', team: null },
+        'hero-strength#0': { heroClass: 'strength', team: null },
+        'artifact-tech#0': { heroClass: 'tech', team: null },
+      },
+    });
+    assert.equal(countDistinctHeroClassesYouHave(gameState, '0'), 2, 'unchanged with no controlled Artifact');
+    gameState.controlledArtifacts = { '0': ['artifact-tech#0'] };
+    assert.equal(countDistinctHeroClassesYouHave(gameState, '0'), 3, 'the controlled Tech Artifact adds a class');
+    assert.equal(evaluateCondition(gameState, '0', SPECTRUM_CONDITION, 'spectrum-instinct#0'), true);
   });
 });
 
