@@ -456,6 +456,17 @@
       "hidden": true
     },
     {
+      "slug": "discard-artifact-or-three-then-ko",
+      "label": "Discard Artifact Or Three Then Ko",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dstr/doctor-voodoo"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "discard-threshold",
       "label": "Discard Threshold",
       "scope": "hero",
@@ -3501,6 +3512,7 @@
       "mechanics": [
         "artifact",
         "attack",
+        "discard-artifact-or-three-then-ko",
         "owned-hero-koed",
         "recruit",
         "ritual-artifact",

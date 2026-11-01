@@ -145,7 +145,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // WP-844 / D-24778 added the gain-sidekick handler ("Gain a [rule:Sidekick]") (66 → 67).
     // WP-850 / D-24786 added the discard-top-printed-attack and ko-discarded-this-way handlers
     // (Bishop's Firepower from the Future) (67 → 69).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 69);
+    // WP-860 / D-24796 added the discard-artifact-or-three-then-ko handler (Commune with the
+    // Spirit World) (69 → 70).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 70);
     // why: the generic 'wound' keyword stays deferred — the un-defer is two NEW narrow
     // keywords (gain-wound-*), never a handler for the generic form.
     assert.equal(HERO_EFFECT_HANDLERS['wound'], undefined);
@@ -7901,8 +7903,9 @@ describe('executeHeroEffects X-Gene discard-pile gate (WP-723 / D-24544)', () =>
     // WP-803's out-of-time handler, D-24692, and WP-826's three optional-KO S.H.I.E.L.D. handlers,
     // D-24759, and WP-828's grant-out-of-time handler, D-24761, and WP-843's
     // reveal-or-gain-wound-each handler, D-24777 — 66).
-    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 69,
-      'HERO_EFFECT_HANDLERS stays 69 (X-Gene is not an effect handler; WP-844 / D-24778 gain-sidekick and WP-850 / D-24786 discard-top-printed-attack + ko-discarded-this-way added)');
+    // why: WP-860 / D-24796 — discard-artifact-or-three-then-ko added (69 → 70).
+    assert.equal(Object.keys(HERO_EFFECT_HANDLERS).length, 70,
+      'HERO_EFFECT_HANDLERS stays 70 (X-Gene is not an effect handler; WP-844 / D-24778 gain-sidekick, WP-850 / D-24786 discard-top-printed-attack + ko-discarded-this-way and WP-860 / D-24796 discard-artifact-or-three-then-ko added)');
   });
 });
 

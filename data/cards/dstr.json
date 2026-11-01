@@ -135,7 +135,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "You may discard an [keyword:Artifact] you control or three cards from your hand. If you do, KO a card from your hand or discard pile."
+            "You may discard an [keyword:Artifact] you control or three cards from your hand. If you do, KO a card from your hand or discard pile. [keyword:discard-artifact-or-three-then-ko]"
           ]
         },
         {

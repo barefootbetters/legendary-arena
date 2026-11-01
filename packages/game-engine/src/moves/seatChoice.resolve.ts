@@ -30,6 +30,20 @@ import {
   applyDivingBlockResolvedSeatChoice,
   DIVING_BLOCK_SEAT_CHOICE_KIND,
 } from './divingBlock.logic.js';
+// why: WP-860 / D-24796 — Commune with the Spirit World's three kinds: applies, pre-apply readers and
+// chain builders (same runtime-safe cycle; bindings are read only inside function bodies).
+import {
+  applyCommuneCostResolvedSeatChoice,
+  applyCommuneDiscardResolvedSeatChoice,
+  applyCommuneKoResolvedSeatChoice,
+  chainCommuneAfterCost,
+  chainCommuneAfterDiscard,
+  readCommuneCostBranch,
+  readCommuneDiscardsLeft,
+  COMMUNE_COST_SEAT_CHOICE_KIND,
+  COMMUNE_DISCARD_SEAT_CHOICE_KIND,
+  COMMUNE_KO_SEAT_CHOICE_KIND,
+} from './communeSpiritWorld.logic.js';
 // why: WP-827 / D-24760 — Flying Shield Block's kind-specific apply (same runtime-safe cycle).
 import {
   applyFlyingShieldBlockResolvedSeatChoice,
@@ -422,6 +436,15 @@ export function resolveSeatChoice(
       appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND ? choice.addressedSeats[0] : undefined;
     const crushChoseKo =
       appliedKind === CRUSH_PACIFIST_RESISTANCE_KO_KIND && didCrushChooseKo(choice);
+    // why: WP-860 / D-24796 — capture Commune with the Spirit World's seat, source card, chosen cost
+    // branch and discards left BEFORE the apply clears the choice (the Crush capture above); the
+    // readers re-check the card, so a stale option chains nothing (no KO without payment).
+    const isCommuneCost = appliedKind === COMMUNE_COST_SEAT_CHOICE_KIND;
+    const isCommuneDiscard = appliedKind === COMMUNE_DISCARD_SEAT_CHOICE_KIND;
+    const communeSeat = isCommuneCost || isCommuneDiscard ? choice.addressedSeats[0] : undefined;
+    const communeSourceCardId = choice.communeSpiritWorld?.sourceCardId;
+    const communeCostBranch = isCommuneCost ? readCommuneCostBranch(G, choice) : undefined;
+    const communeDiscardsLeft = isCommuneDiscard ? readCommuneDiscardsLeft(G, choice) : undefined;
     // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
     // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
     // why: D-24732 — ctx?. because narrow test contexts omit ctx; moves never throw.
@@ -449,6 +472,15 @@ export function resolveSeatChoice(
     // last-ko kind never chains, so at most two KOs.
     if (crushChoseKo && crushActiveSeat !== undefined) {
       chainCrushPacifistResistanceLastKo(G, crushActiveSeat, events);
+    }
+    // why: WP-860 / D-24796 — Commune chains its next step (discard picks, then the KO pick) here in
+    // the live move context, exactly where Crush chains its second KO (D-24754).
+    if (communeSeat !== undefined && communeSourceCardId !== undefined) {
+      if (communeCostBranch !== undefined) {
+        chainCommuneAfterCost(G, communeSeat, communeCostBranch, communeSourceCardId, events);
+      } else if (communeDiscardsLeft !== undefined) {
+        chainCommuneAfterDiscard(G, communeSeat, communeDiscardsLeft, communeSourceCardId, events);
+      }
     }
   }
 }
@@ -487,6 +519,20 @@ function applySeatChoiceByKind(
   // reveal. No draw, so no shuffle context.
   if (choice.kind === FLYING_SHIELD_BLOCK_SEAT_CHOICE_KIND) {
     applyFlyingShieldBlockResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-860 / D-24796 — Commune with the Spirit World: the cost, a hand-discard pick, the KO
+  // pick. None draws, so none needs the shuffle context; the chain runs from resolveSeatChoice.
+  if (choice.kind === COMMUNE_COST_SEAT_CHOICE_KIND) {
+    applyCommuneCostResolvedSeatChoice(G, choice);
+    return;
+  }
+  if (choice.kind === COMMUNE_DISCARD_SEAT_CHOICE_KIND) {
+    applyCommuneDiscardResolvedSeatChoice(G, choice);
+    return;
+  }
+  if (choice.kind === COMMUNE_KO_SEAT_CHOICE_KIND) {
+    applyCommuneKoResolvedSeatChoice(G, choice);
     return;
   }
   // why: WP-828 / D-24761 — the chosen hand Hero gains Man Out of Time this turn.

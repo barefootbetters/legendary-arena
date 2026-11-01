@@ -1903,6 +1903,12 @@
       "markupToken": "[keyword:ritual-hero-classes:3]"
     },
     {
+      "heroSlug": "doctor-voodoo",
+      "cardSlug": "commune-with-the-spirit-world",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:discard-artifact-or-three-then-ko]"
+    },
+    {
       "heroSlug": "vishanti-the",
       "cardSlug": "agamotto",
       "abilityIndex": 0,

@@ -101,6 +101,7 @@
     "owned-hero-koed": { "wp": "WP-856", "decision": "D-24792" },
     "ritual-recruited-hero": { "wp": "WP-858", "decision": "D-24794" },
     "ritual-hero-classes": { "wp": "WP-858", "decision": "D-24794" },
+    "discard-artifact-or-three-then-ko": { "wp": "WP-860", "decision": "D-24796" },
     "ko-wound-reward": { "wp": "WP-382", "decision": "D-24183" },
     "discard-to-play": { "wp": "WP-383", "decision": "D-24184" },
     "return-on-discard": { "wp": "WP-498", "decision": "D-24301" },

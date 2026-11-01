@@ -634,8 +634,14 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // 16 -> 20, artifact 172 -> 173, ritual-artifact 4 -> 6). totalObs 8653 -> 8639 (-14, equal to the
   // raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8639). A
   // trajectory re-pin; no mechanic changed status.
+  // 2026-10-31 (WP-860 / D-24796, re-pin): Commune with the Spirit World now parses to the
+  // discard-artifact-or-three-then-ko keyword, so its "artifact" hollow leaves the sweep (feed
+  // regenerated: 7720 -> 7672 raw observations; artifact 173 -> 125). totalObs 8639 -> 8635 (-4, not
+  // the raw -48: totalObs sums each mechanic's max(baseline, live) peak, and artifact's baseline peak
+  // still holds most of it); resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8635). A
+  // denominator re-pin; no mechanic changed status (artifact is still unsupported on other cards).
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8639);
+  assert.equal(view.totalObs.value, 8635);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);

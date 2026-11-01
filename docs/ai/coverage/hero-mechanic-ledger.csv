@@ -357,6 +357,7 @@ dstr/doctor-strange,Doctor Strange,dstr,artifact,unsupported,,,,keeper-of-the-sa
 dstr/doctor-strange,Doctor Strange,dstr,ritual-artifact,unsupported,,,,book-of-cagliostro|the-eye-of-agamotto|wand-of-watoomb
 dstr/doctor-voodoo,Doctor Voodoo,dstr,artifact,unsupported,,,,commune-with-the-spirit-world
 dstr/doctor-voodoo,Doctor Voodoo,dstr,attack,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#attack,posessed-by-brothers-spirit
+dstr/doctor-voodoo,Doctor Voodoo,dstr,discard-artifact-or-three-then-ko,executable,WP-860,D-24796,packages/game-engine/src/hero/heroEffects.execute.ts#discard-artifact-or-three-then-ko,commune-with-the-spirit-world
 dstr/doctor-voodoo,Doctor Voodoo,dstr,owned-hero-koed,condition,WP-856,D-24792,,posessed-by-brothers-spirit
 dstr/doctor-voodoo,Doctor Voodoo,dstr,recruit,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#recruit,posessed-by-brothers-spirit
 dstr/doctor-voodoo,Doctor Voodoo,dstr,ritual-artifact,unsupported,,,,medallion-of-many-loas|staff-of-legba
