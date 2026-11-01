@@ -186,3 +186,18 @@ describe('Ultron VP with a split card (WP-772 / D-24604)', () => {
     assert.equal(computeFinalScores(G).players[0]!.villainVP, liveVp, 'final score == live Ultron VP');
   });
 });
+
+describe('victoryPointValueForCard — Ultron counts controlled Artifacts (WP-858 / D-24794)', () => {
+  it('live VP equals final VP when a Tech Ritual Artifact is controlled', () => {
+    // why: WP-858 / D-24794 — both "all your cards" lists include G.controlledArtifacts, so the
+    // live Victory Pile value and the final score agree.
+    const ultron = 'core-villain-masters-of-evil-ultron-01';
+    const medallion = 'dstr/doctor-voodoo/medallion-of-many-loas#0';
+    const G = makeVictoryState({ victory: [ultron], villainDeckCardTypes: { [ultron]: 'villain' } });
+    G.cardTraits = { [medallion]: { heroClass: 'tech' } } as unknown as LegendaryGameState['cardTraits'];
+    G.controlledArtifacts = { '0': [medallion] };
+
+    assert.equal(victoryPointValueForCard(G, '0', ultron), 3);
+    assert.equal(computeFinalScores(G).players[0]!.villainVP, 3);
+  });
+});

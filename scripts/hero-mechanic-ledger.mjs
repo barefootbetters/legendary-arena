@@ -102,6 +102,9 @@ const MOVE_EXECUTED_HANDLER_MODULES = {
   'dodge': 'packages/game-engine/src/moves/dodgeCard.ts',
   // why: WP-783 / D-24629 — phasing executes via the phaseCard hand-swap move.
   'phasing': 'packages/game-engine/src/moves/phaseCard.ts',
+  // why: WP-858 / D-24794 — the two Ritual Artifact keywords execute via the useRitualArtifact move.
+  'ritual-recruited-hero': 'packages/game-engine/src/moves/ritualArtifact.ts',
+  'ritual-hero-classes': 'packages/game-engine/src/moves/ritualArtifact.ts',
 };
 const UNMARKED_MECHANIC = '(unmarked)';
 

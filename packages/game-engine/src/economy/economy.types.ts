@@ -242,6 +242,31 @@ export interface TurnEconomy {
    * Strings only (CardExtId), never card objects.
    */
   outOfTimePlayedCardIds?: CardExtId[];
+  /**
+   * WP-858 / D-24794 — the highest printed cost among the Heroes (incl. S.H.I.E.L.D.
+   * Officers and Sidekicks) the current player recruited this turn. Staff of Legba's Ritual
+   * ("If you recruited a Hero, you may discard Staff of Legba to get +Attack equal to that
+   * Hero's cost") is usable once this is set and grants this amount (the highest — the
+   * player would always pick it, D-24470).
+   *
+   * Written by `recordRecruitedHeroCost` from the three recruit moves ONLY in a match whose
+   * hooks carry the `ritual-recruited-hero` keyword. LAZILY MATERIALIZED: absent otherwise,
+   * dropped by `resetTurnEconomy` at turn start, carried by `carryConversionFlag`, so every
+   * other match serializes byte-identically and neither state-hash oracle moves.
+   */
+  highestRecruitedHeroCost?: number;
+  /**
+   * WP-858 / D-24794 — Ritual Artifacts the current player played and then used (discarded)
+   * this turn. The card left `inPlay`, but rules v23 L3441-3453 say it still counts as
+   * "played this turn", so `playedCardIdsThisTurn` appends every entry here (the
+   * `outOfTimePlayedCardIds` precedent). A Ritual used from the controlled Artifacts was not
+   * played this turn and is never recorded.
+   *
+   * ACTIVE-PLAYER-SCOPED. LAZILY MATERIALIZED: absent until the first record
+   * (`recordRitualUsedPlayed`), dropped by `resetTurnEconomy`, carried by
+   * `carryConversionFlag`. Strings only (CardExtId).
+   */
+  ritualUsedPlayedCardIds?: CardExtId[];
 }
 
 // why: stats resolved at setup time from registry so moves never query

@@ -1916,3 +1916,48 @@ describe('UIState type drift (WP-803 / D-24692) — outOfTimeCards', () => {
     assert.deepStrictEqual(Object.keys(player.outOfTimeCards![0]!).sort(), ['display', 'extId']);
   });
 });
+
+describe('UIState type drift (WP-858 / D-24794) — controlledArtifacts + ritualArtifactOptions', () => {
+  it('both optional fields are pinned on a BUILT projection and omitted when empty', () => {
+    // why: WP-858 / D-24794 — both fields are OPTIONAL and omit-when-empty, so only a keyset
+    // assertion on a REAL built projection catches buildUIState / the filter dropping them
+    // (WP-563 / D-24372; the outOfTimeCards / phasingOptions pins).
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const registry: CardRegistryReader = { ...makeCardRegistryReader(), listCards: () => [] };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx({ numPlayers: 1 }));
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    assert.ok(!('controlledArtifacts' in gameState), 'setup never creates the lazy record');
+    const absent = buildUIState(gameState, uiCtx);
+    assert.equal(Object.keys(absent.players[0]!).includes('controlledArtifacts'), false, 'none controlled ⇒ key absent');
+    assert.equal('ritualArtifactOptions' in absent.economy, false, 'none usable ⇒ key absent');
+
+    const medallion = 'dstr/doctor-voodoo/medallion-of-many-loas#0';
+    gameState.currentStage = 'main';
+    gameState.controlledArtifacts = { '0': [medallion] };
+    gameState.heroAbilityHooks = [
+      { cardId: medallion, timing: 'onPlay', keywords: ['ritual-hero-classes'], effects: [{ type: 'ritual-hero-classes', magnitude: 1 }] },
+    ];
+    gameState.cardTraits = { ...gameState.cardTraits, [medallion]: { heroClass: 'tech', team: null } };
+    const present = buildUIState(gameState, uiCtx);
+    const player = present.players.find((candidate) => candidate.playerId === '0')!;
+    assert.ok(Object.keys(player).includes('controlledArtifacts'), 'built player projection includes controlledArtifacts');
+    assert.deepStrictEqual(player.controlledArtifacts!.map((entry) => entry.extId), [medallion]);
+    assert.deepStrictEqual(Object.keys(player.controlledArtifacts![0]!).sort(), ['display', 'extId']);
+    assert.deepStrictEqual(present.economy.ritualArtifactOptions, [medallion]);
+
+    const owner = filterUIStateForAudience(present, { kind: 'player', playerId: '0' });
+    assert.deepStrictEqual(owner.economy.ritualArtifactOptions, [medallion], 'the active owner keeps the options');
+    assert.deepStrictEqual(owner.players[0]!.controlledArtifacts!.map((entry) => entry.extId), [medallion]);
+  });
+});

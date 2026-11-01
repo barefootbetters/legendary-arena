@@ -155,3 +155,74 @@ describe('PlayedCardsRow — Out of Time group (WP-803 / D-24692)', () => {
     assert.equal(empty.find('[data-testid="play-played-empty"]').exists(), true);
   });
 });
+
+describe('PlayedCardsRow — controlled Artifacts and the Ritual Use button (WP-858 / D-24794)', () => {
+  const STAFF = 'dstr/doctor-voodoo/staff-of-legba#0';
+  const MEDALLION = 'dstr/doctor-voodoo/medallion-of-many-loas#0';
+
+  test('renders an "Artifacts — N" group after the played cards; it does not change the played count', () => {
+    const wrapper = mount(PlayedCardsRow, {
+      props: {
+        inPlayCards: ['cap-rogers'],
+        controlledArtifacts: [{ extId: STAFF, display: display(STAFF, 'Staff of Legba', 5) }],
+      },
+    });
+    const group = wrapper.find('[data-testid="play-controlled-artifacts"]');
+    assert.equal(group.exists(), true);
+    assert.match(group.text(), /Artifacts — 1/);
+    assert.equal(wrapper.findAll('[data-testid="play-controlled-artifact"]')[0]!.attributes('data-card-id'), STAFF);
+    assert.match(wrapper.find('[data-testid="play-played-heading"]').text(), /Played This Turn — 1/);
+    const wellItems = wrapper.find('.played-row__cards').element.children;
+    assert.equal(wellItems[0]!.getAttribute('data-testid'), 'play-played-card');
+    assert.equal(wellItems[1]!.getAttribute('data-testid'), 'play-controlled-artifacts');
+  });
+
+  test('shows Use only on listed cards and dispatches useRitualArtifact with { cardId }', async () => {
+    const calls: Array<{ name: string; args: unknown }> = [];
+    const wrapper = mount(PlayedCardsRow, {
+      props: {
+        inPlayCards: [MEDALLION, 'cap-rogers'],
+        controlledArtifacts: [{ extId: STAFF, display: display(STAFF, 'Staff of Legba', 5) }],
+        ritualCardIds: [STAFF, MEDALLION],
+        submitMove: (name: string, args?: unknown) => {
+          calls.push({ name, args });
+        },
+      },
+    });
+    const buttons = wrapper.findAll('[data-testid="use-ritual-artifact"]');
+    assert.deepEqual(buttons.map((button) => button.attributes('data-card-id')), [MEDALLION, STAFF]);
+    await buttons[1]!.trigger('click');
+    await buttons[0]!.trigger('click');
+    assert.deepEqual(calls, [
+      { name: 'useRitualArtifact', args: { cardId: STAFF } },
+      { name: 'useRitualArtifact', args: { cardId: MEDALLION } },
+    ]);
+  });
+
+  test('renders no Use button when nothing is listed or no submitMove is given', () => {
+    const unlisted = mount(PlayedCardsRow, {
+      props: {
+        inPlayCards: [MEDALLION],
+        submitMove: () => {},
+      },
+    });
+    assert.equal(unlisted.find('[data-testid="use-ritual-artifact"]').exists(), false);
+    const readOnly = mount(PlayedCardsRow, {
+      props: { inPlayCards: [MEDALLION], ritualCardIds: [MEDALLION] },
+    });
+    assert.equal(readOnly.find('[data-testid="use-ritual-artifact"]').exists(), false);
+  });
+
+  test('the "play here" target hides only when played, Out of Time and Artifacts are all empty', () => {
+    const onlyArtifacts = mount(PlayedCardsRow, {
+      props: {
+        inPlayCards: [],
+        controlledArtifacts: [{ extId: STAFF, display: display(STAFF, 'Staff of Legba', 5) }],
+      },
+    });
+    assert.equal(onlyArtifacts.find('[data-testid="play-played-empty"]').exists(), false);
+    assert.equal(onlyArtifacts.find('[data-testid="play-controlled-artifacts"]').exists(), true);
+    const empty = mount(PlayedCardsRow, { props: { inPlayCards: [], controlledArtifacts: [] } });
+    assert.equal(empty.find('[data-testid="play-played-empty"]').exists(), true);
+  });
+});

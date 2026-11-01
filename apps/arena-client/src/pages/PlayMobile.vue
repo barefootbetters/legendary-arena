@@ -693,6 +693,9 @@ export default defineComponent({
             :in-play-cards="viewer.inPlayCards ?? []"
             :in-play-display="viewer.inPlayDisplay"
             :out-of-time-cards="viewer.outOfTimeCards ?? []"
+            :controlled-artifacts="viewer.controlledArtifacts ?? []"
+            :ritual-card-ids="snapshot.economy.ritualArtifactOptions ?? []"
+            :submit-move="submitMove"
           />
         </section>
         <section class="play-mobile__band play-mobile__band--scroll-x">

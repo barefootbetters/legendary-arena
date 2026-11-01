@@ -294,6 +294,12 @@ function redactHandCards(player: UIPlayerState): UIPlayerState {
     base.outOfTimeCards = deepCopyDisplayEntries(player.outOfTimeCards);
   }
 
+  // why: WP-858 / D-24794 — controlledArtifacts is PUBLIC (the outOfTimeCards disposition): the
+  // Ritual Artifacts sit in front of the player in the open. Per-entry shallow copy.
+  if (player.controlledArtifacts !== undefined) {
+    base.controlledArtifacts = deepCopyDisplayEntries(player.controlledArtifacts);
+  }
+
   // why: WP-848 / D-24784 — conditionalClauses is PUBLIC: every outcome it counts is
   // already in the public game log. Fresh object so no audience aliases the built state.
   if (player.conditionalClauses !== undefined) {
@@ -436,6 +442,12 @@ function preserveHandCards(player: UIPlayerState): UIPlayerState {
     base.outOfTimeCards = deepCopyDisplayEntries(player.outOfTimeCards);
   }
 
+  // why: WP-858 / D-24794 — controlledArtifacts is PUBLIC (the outOfTimeCards disposition): the
+  // Ritual Artifacts sit in front of the player in the open. Per-entry shallow copy.
+  if (player.controlledArtifacts !== undefined) {
+    base.controlledArtifacts = deepCopyDisplayEntries(player.controlledArtifacts);
+  }
+
   // why: WP-848 / D-24784 — conditionalClauses is PUBLIC (same disposition as in
   // redactHandCards); fresh object so the owner view never aliases the built state.
   if (player.conditionalClauses !== undefined) {
@@ -540,6 +552,12 @@ export function filterUIStateForAudience(
       // reaches buildUIState but not this whitelist is silently dropped (the EC-206 failure).
       ...(uiState.economy.phasingOptions !== undefined && uiState.economy.phasingOptions.length > 0
         ? { phasingOptions: [...uiState.economy.phasingOptions] }
+        : {}),
+      // why: WP-858 / D-24794 — the usable Ritual Artifacts pass through for the ACTIVE player only
+      // (the phasingOptions disposition), as a copied array, omit-when-absent. REDACTED_ECONOMY
+      // (non-active players + spectators) never carries them.
+      ...(uiState.economy.ritualArtifactOptions !== undefined && uiState.economy.ritualArtifactOptions.length > 0
+        ? { ritualArtifactOptions: [...uiState.economy.ritualArtifactOptions] }
         : {}),
       // why: WP-790 / D-24652 — pass the restricted-attack grants through for the ACTIVE player
       // only (Board-Visible Field Rule step 3), beside the recruit-as-attack cue, omit-when-absent,

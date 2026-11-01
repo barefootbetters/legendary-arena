@@ -127,6 +127,7 @@ import { getEligibleCopyPowersCards } from '../moves/copyPowersChoice.resolve.js
 // why: WP-783 / D-24629 — the phasable-hand-card list is the SAME predicate the phaseCard
 // move validates against (one legality authority), so the button never offers a no-op.
 import { phasingOptions } from '../moves/phaseCard.js';
+import { ritualArtifactOptions } from '../moves/ritualArtifact.js';
 // why: WP-258 — the projected hollow-effect record type is the engine's
 // canonical HollowEffectRecord (WP-257), reused directly, not a parallel UI type.
 import type { HollowEffectRecord, EffectTrace, EffectTraceResolution } from '../diagnostics/hollowEffect.types.js';
@@ -848,6 +849,13 @@ export function buildUIState(
     if (outOfTimeCardIds.length > 0) {
       playerState.outOfTimeCards = buildDisplayEntries(outOfTimeCardIds, gameState);
     }
+    // why: WP-858 / D-24794 — the Ritual Artifacts this player controls (public; the
+    // `outOfTimeCards` disposition). Omitted when empty so a match without one projects exactly
+    // as before.
+    const controlledArtifactIds = gameState.controlledArtifacts?.[playerId] ?? [];
+    if (controlledArtifactIds.length > 0) {
+      playerState.controlledArtifacts = buildDisplayEntries(controlledArtifactIds, gameState);
+    }
     // why: WP-848 / D-24784 — the live WP-708 conditional-clause tally. Reads the
     // hash-excluded G.diagnostics channel (D-24271), so no hash re-pins. A fresh
     // { played, assembled } copy so the projection never aliases G.diagnostics; omitted
@@ -1087,6 +1095,7 @@ export function buildUIState(
   const piercing = gameState.turnEconomy.piercing;
   const woundsDrawn = gameState.turnEconomy.woundsDrawn;
   const currentPhasingOptions = phasingOptions(gameState, ctx.currentPlayer);
+  const currentRitualArtifactOptions = ritualArtifactOptions(gameState, ctx.currentPlayer);
   // why: WP-790 / D-24652 — project the restricted-attack grants that still have attack left
   // (Board-Visible Field Rule step 2), with copied `targets` so the projection never aliases G,
   // and the display label the economy bar shows. availableAttack (getSpendableAttack) excludes
@@ -1143,6 +1152,9 @@ export function buildUIState(
     // when at least one hand card is phasable), so a turn without Phasing keeps the
     // economy block byte-identical and the client renders Phase buttons only when legal.
     ...(currentPhasingOptions.length > 0 ? { phasingOptions: currentPhasingOptions } : {}),
+    // why: WP-858 / D-24794 — project the usable Ritual Artifacts omit-when-absent (the
+    // phasingOptions posture), so the client shows Use only when the move would be accepted.
+    ...(currentRitualArtifactOptions.length > 0 ? { ritualArtifactOptions: currentRitualArtifactOptions } : {}),
     // why: WP-790 / D-24652 — omit-when-absent, so a turn with no restricted grant keeps the
     // economy block byte-identical.
     ...(restrictedAttack.length > 0 ? { restrictedAttack } : {}),

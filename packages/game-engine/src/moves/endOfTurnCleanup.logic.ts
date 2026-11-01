@@ -22,10 +22,48 @@
 
 import type { LegendaryGameState } from '../types.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
+import type { CardExtId } from '../state/zones.types.js';
 import { moveAllCards } from './zoneOps.js';
 import { HAND_SIZE, drawCardsIntoHand } from './drawCards.logic.js';
 import { consumeDeferredHandInjections } from './deferredHandInjection.logic.js';
 import { composeDeckReshuffledNarrative } from '../events/notableEvents.compose.js';
+import { isRitualArtifact } from './ritualArtifact.js';
+import { formatCardRef } from '../log/logDisplay.js';
+import { pushLog } from '../log/logPush.js';
+
+/**
+ * Moves the player's in-play Ritual Artifacts into their controlled Artifacts (WP-858 / D-24794).
+ *
+ * Every other in-play card is left for the discard sweep. Writes nothing when no in-play card
+ * is a modeled Ritual Artifact, so a match without one never gains `G.controlledArtifacts`.
+ *
+ * @param G - Game state, mutated in place.
+ * @param playerID - The player whose turn is ending.
+ */
+function keepControlledArtifacts(G: LegendaryGameState, playerID: string): void {
+  const playerZones = G.playerZones[playerID];
+  if (!playerZones) {
+    return;
+  }
+  // why: WP-858 / D-24794 — rules v23 p.17: "At end of turn, when you discard all the cards you
+  // played that turn, the Artifacts you control stay in front of you." Only marked Ritual
+  // Artifacts are kept (isRitualArtifact keys on the hook keyword); an unmarked Artifact card
+  // still discards, because its ability is unmodeled and keeping it would only remove it from
+  // the deck.
+  const stillInPlay: CardExtId[] = [];
+  for (const cardId of playerZones.inPlay) {
+    if (!isRitualArtifact(G, cardId)) {
+      stillInPlay.push(cardId);
+      continue;
+    }
+    if (G.controlledArtifacts === undefined) {
+      G.controlledArtifacts = {};
+    }
+    G.controlledArtifacts[playerID] = [...(G.controlledArtifacts[playerID] ?? []), cardId];
+    pushLog(G, `Player ${playerID} keeps ${formatCardRef(G.cardDisplayData, cardId)} in front of them as an Artifact.`);
+  }
+  playerZones.inPlay = stillInPlay;
+}
 
 /**
  * Runs the end-of-turn cleanup for one player: discard in-play + hand, then
@@ -64,6 +102,9 @@ export function applyEndOfTurnCleanup(
   if (!playerZones) {
     return;
   }
+  // Step 0: keep the modeled Ritual Artifacts in front of the player.
+  keepControlledArtifacts(G, playerID);
+
   // Step 1: discard in-play, then the remaining hand.
   const inPlayResult = moveAllCards(playerZones.inPlay, playerZones.discard);
   playerZones.inPlay = inPlayResult.from;

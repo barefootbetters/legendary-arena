@@ -3862,3 +3862,46 @@ describe('filterUIStateForAudience — conditionalClauses public pass-through (W
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// WP-858 / D-24794 — controlledArtifacts (public) + ritualArtifactOptions (active only)
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — controlledArtifacts public pass-through (WP-858 / D-24794)', () => {
+  it('the controlled Artifacts survive for the owner, another player and a spectator', () => {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    gameState.controlledArtifacts = { '0': ['artifact-0-001'] };
+    const full = buildUIState(gameState, mockCtx);
+    for (const audience of [PLAYER_0, PLAYER_1, SPECTATOR]) {
+      const filtered = filterUIStateForAudience(full, audience);
+      const player0 = filtered.players.find((player) => player.playerId === '0')!;
+      const player1 = filtered.players.find((player) => player.playerId === '1')!;
+      assert.deepStrictEqual(
+        player0.controlledArtifacts?.map((entry) => entry.extId),
+        ['artifact-0-001'],
+        `controlledArtifacts must be present for player 0 in ${audience.kind} view`,
+      );
+      assert.notStrictEqual(player0.controlledArtifacts, full.players[0]!.controlledArtifacts);
+      assert.equal(Object.keys(player1).includes('controlledArtifacts'), false, 'none controlled ⇒ omitted');
+    }
+  });
+});
+
+describe('filterUIStateForAudience — Ritual Artifact options (WP-858 / D-24794)', () => {
+  it('passes ritualArtifactOptions through for the active player as a copied array', () => {
+    const uiState = createTestUIState();
+    uiState.economy.ritualArtifactOptions = ['ritual-a'];
+    const result = filterUIStateForAudience(uiState, PLAYER_0);
+    assert.deepStrictEqual(result.economy.ritualArtifactOptions, ['ritual-a']);
+    assert.notEqual(result.economy.ritualArtifactOptions, uiState.economy.ritualArtifactOptions);
+  });
+
+  it('never exposes ritualArtifactOptions to a non-active player or a spectator', () => {
+    const uiState = createTestUIState();
+    uiState.economy.ritualArtifactOptions = ['ritual-a'];
+    for (const audience of [PLAYER_1, SPECTATOR]) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.ok(!('ritualArtifactOptions' in result.economy), 'REDACTED_ECONOMY carries no Ritual options');
+    }
+  });
+});

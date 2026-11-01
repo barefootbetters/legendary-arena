@@ -25,7 +25,8 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
-import { getAvailableRecruit, markSidekickRecruited, recordSidekickReturned, spendRecruit } from '../economy/economy.logic.js';
+import { getAvailableRecruit, markSidekickRecruited, recordRecruitedHeroCost, recordSidekickReturned, spendRecruit } from '../economy/economy.logic.js';
+import { matchHasRecruitedHeroRitual } from './ritualArtifact.js';
 import { SIDEKICK_EXT_ID } from '../setup/pilesInit.js';
 import type { ShuffleProvider } from '../setup/shuffle.js';
 import { drawCardsIntoHand } from './drawCards.logic.js';
@@ -182,6 +183,12 @@ export function recruitSidekick({ G, ctx }: MoveContext): void {
   G.piles.sidekicks = G.piles.sidekicks.slice(1);
   zones.discard = [...zones.discard, sidekickId];
   G.turnEconomy = markSidekickRecruited(spendRecruit(G.turnEconomy, requiredCost));
+  // why: WP-858 / D-24794 — record the recruited Hero's printed cost for Staff of Legba's Ritual
+  // ("If you recruited a Hero … +Attack equal to that Hero's cost"), only in a match whose hooks
+  // carry ritual-recruited-hero, so no other match's turnEconomy gains the field (no hash surface).
+  if (matchHasRecruitedHeroRitual(G)) {
+    G.turnEconomy = recordRecruitedHeroCost(G.turnEconomy, requiredCost);
+  }
   G.hasActedThisTurn = true;
 
   // why: replay-visible log line; the format is locked at this site (D-24776; never

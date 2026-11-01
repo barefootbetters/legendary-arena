@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 832,
+    "totalRows": 834,
     "byStatus": {
-      "executable": 445,
+      "executable": 447,
       "deferred": 16,
       "condition": 52,
       "unsupported": 290,
       "unmarked": 26,
       "subsystem": 3
     },
-    "distinctMechanics": 172
+    "distinctMechanics": 174
   },
   "rows": [
     {
@@ -6507,6 +6507,38 @@
           "slug": "medallion-of-many-loas",
           "name": "Medallion of Many Loas"
         },
+        {
+          "slug": "staff-of-legba",
+          "name": "Staff of Legba"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "ritual-hero-classes",
+      "status": "executable",
+      "wp": "WP-858",
+      "decision": "D-24794",
+      "handler": "packages/game-engine/src/moves/ritualArtifact.ts",
+      "designs": [
+        {
+          "slug": "medallion-of-many-loas",
+          "name": "Medallion of Many Loas"
+        }
+      ]
+    },
+    {
+      "extId": "dstr/doctor-voodoo",
+      "heroName": "Doctor Voodoo",
+      "set": "dstr",
+      "mechanic": "ritual-recruited-hero",
+      "status": "executable",
+      "wp": "WP-858",
+      "decision": "D-24794",
+      "handler": "packages/game-engine/src/moves/ritualArtifact.ts",
+      "designs": [
         {
           "slug": "staff-of-legba",
           "name": "Staff of Legba"

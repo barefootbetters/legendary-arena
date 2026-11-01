@@ -810,6 +810,18 @@ function collectDistinctHeroClassCards(
       matchedCardIds.push(playedCardId as CardExtId);
     }
   }
+  // why: WP-858 / D-24794 — CONTROLLED-ARTIFACT half, mirroring countDistinctHeroClassesYouHave
+  // (printed classes only), so the counted inputs stay consistent with the count.
+  for (const artifactCardId of G.controlledArtifacts?.[playerID] ?? []) {
+    const traitEntry = G.cardTraits[artifactCardId];
+    const hasPrintedClass =
+      traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0;
+    const hasSecondClass =
+      traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0;
+    if (hasPrintedClass || hasSecondClass) {
+      matchedCardIds.push(artifactCardId);
+    }
+  }
   return matchedCardIds;
 }
 

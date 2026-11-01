@@ -804,6 +804,11 @@ const SELF_COMPUTED_ATTACK_KEYWORDS: ReadonlySet<string> = new Set<string>([
   // (Firepower from the Future): the handler sums the discarded cards' printed Attack, so both
   // icons on the line are that grant, never a separate magnitude-less flat attack.
   'discard-top-printed-attack',
+  // why: WP-858 / D-24794 — the two Ritual Artifact lines (Staff of Legba "+[icon:attack] equal to
+  // that Hero's cost", Medallion of Many Loas "+1[icon:attack] for each Hero Class") print the
+  // reward the useRitualArtifact move computes; neither icon is a flat grant at play.
+  'ritual-recruited-hero',
+  'ritual-hero-classes',
 ]);
 
 // why: WP-765 / D-24598 — the cards whose "[keyword:Sunlight]: … / [keyword:Moonlight]: … /

@@ -1891,6 +1891,18 @@
       "markupToken": "[keyword:attack:4]"
     },
     {
+      "heroSlug": "doctor-voodoo",
+      "cardSlug": "staff-of-legba",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ritual-recruited-hero]"
+    },
+    {
+      "heroSlug": "doctor-voodoo",
+      "cardSlug": "medallion-of-many-loas",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:ritual-hero-classes:3]"
+    },
+    {
       "heroSlug": "vishanti-the",
       "cardSlug": "agamotto",
       "abilityIndex": 0,

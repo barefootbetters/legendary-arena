@@ -686,12 +686,14 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'gain-sidekick', // why: WP-844 / D-24778 — "Gain a [rule:Sidekick]" / "Gain three [rule:Sidekicks]": up to N Sidekicks from the top of the Sidekick Stack into the playing player's discard, outside the once-per-turn recruit
     'discard-top-printed-attack', // why: WP-850 / D-24786 — Bishop's Firepower from the Future "Discard the top four cards of your deck. You get +Attack equal to those cards' printed Attack": one card at a time, D-24285 reshuffle, summed printed Attack, hands the ids to ko-discarded-this-way
     'ko-discarded-this-way', // why: WP-850 / D-24786 — Firepower from the Future "[team:x-men]: KO any number of those cards": the KO-from-discard choice limited to the cards the same play discarded
+    'ritual-recruited-hero', // why: WP-858 / D-24794 — Staff of Legba's Ritual Artifact: discarded through useRitualArtifact for +Attack equal to the highest Hero cost recruited this turn (move-executed)
+    'ritual-hero-classes', // why: WP-858 / D-24794 — Medallion of Many Loas's Ritual Artifact: discarded through useRitualArtifact for +1 Attack per Hero Class you have, at a class threshold (move-executed)
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      87,
-      'HERO_KEYWORDS must have exactly 87 entries (discard-top-printed-attack + ko-discarded-this-way, WP-850 / D-24786, appended last)',
+      89,
+      'HERO_KEYWORDS must have exactly 89 entries (ritual-recruited-hero + ritual-hero-classes, WP-858 / D-24794, appended last)',
     );
 
     assert.deepStrictEqual(

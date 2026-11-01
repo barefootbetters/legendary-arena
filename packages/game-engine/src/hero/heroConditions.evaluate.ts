@@ -688,6 +688,18 @@ export function countDistinctHeroClassesYouHave(
       distinctClasses.add(copiedClass);
     }
   }
+  // why: WP-858 / D-24794 — CONTROLLED-ARTIFACT half. Rules v23 L930-932: "your Heroes" / "Heroes
+  // you have" include Hero Artifacts you control. Printed class(es) only — a controlled Artifact was
+  // not played this turn, so no Size-Changing grant or copied class applies.
+  for (const artifactCardId of G.controlledArtifacts?.[playerID] ?? []) {
+    const traitEntry = G.cardTraits[artifactCardId];
+    if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
+      distinctClasses.add(traitEntry.heroClass);
+    }
+    if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
+      distinctClasses.add(traitEntry.heroClass2);
+    }
+  }
   return distinctClasses.size;
 }
 
@@ -885,7 +897,8 @@ export function describeFailedCondition(
     case 'distinctHeroClassesAtLeast': {
       // why: D-24694 — quotes the same hand + play count the gate compared.
       const distinct = countDistinctHeroClassesYouHave(G, playerID);
-      return `it needs ${condition.value} different Hero classes in hand or play — you have ${distinct}`;
+      // why: WP-858 / D-24794 — the count now includes the Artifacts the player controls.
+      return `it needs ${condition.value} different Hero classes in hand, play, or Artifacts you control — you have ${distinct}`;
     }
 
     case 'recruitMadeThisTurnAtLeast':

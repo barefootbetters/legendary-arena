@@ -1848,6 +1848,28 @@
       "hidden": true
     },
     {
+      "slug": "ritual-hero-classes",
+      "label": "Ritual Hero Classes",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dstr/doctor-voodoo"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "ritual-recruited-hero",
+      "label": "Ritual Recruited Hero",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "dstr/doctor-voodoo"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "rooftops",
       "label": "Rooftops",
       "scope": "hero",
@@ -3481,7 +3503,9 @@
         "attack",
         "owned-hero-koed",
         "recruit",
-        "ritual-artifact"
+        "ritual-artifact",
+        "ritual-hero-classes",
+        "ritual-recruited-hero"
       ]
     },
     "dstr/vishanti-the": {

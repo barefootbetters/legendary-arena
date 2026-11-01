@@ -30,6 +30,8 @@ import {
   markExcessiveViolenceUsed,
   markSidekickRecruited,
   recordSidekickReturned,
+  recordRecruitedHeroCost,
+  recordRitualUsedPlayed,
 } from './economy.logic.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -891,5 +893,43 @@ describe('markSidekickRecruited / recordSidekickReturned (WP-842 / D-24776)', ()
     const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(reset, 1, 1), 1))) as Record<string, unknown>;
     assert.strictEqual(Object.keys(roundTripped).includes('hasRecruitedSidekickThisTurn'), false);
     assert.strictEqual(Object.keys(roundTripped).includes('sidekicksReturnedThisTurn'), false);
+  });
+});
+
+describe('recordRecruitedHeroCost / recordRitualUsedPlayed (WP-858 / D-24794)', () => {
+  it('keeps the highest recruited cost and appends used Rituals', () => {
+    let economy = recordRecruitedHeroCost(resetTurnEconomy(), 5);
+    economy = recordRecruitedHeroCost(economy, 3);
+    assert.strictEqual(economy.highestRecruitedHeroCost, 5, 'a cheaper later recruit keeps the highest');
+    assert.strictEqual(recordRecruitedHeroCost(economy, 7).highestRecruitedHeroCost, 7, 'a dearer one raises it');
+    economy = recordRitualUsedPlayed(economy, 'dstr/doctor-voodoo/staff-of-legba#0');
+    economy = recordRitualUsedPlayed(economy, 'dstr/doctor-voodoo/medallion-of-many-loas#1');
+    assert.deepStrictEqual(economy.ritualUsedPlayedCardIds, [
+      'dstr/doctor-voodoo/staff-of-legba#0',
+      'dstr/doctor-voodoo/medallion-of-many-loas#1',
+    ]);
+  });
+
+  it('both fields survive addResources / spendAttack / spendRecruit and coexist with other lazy fields', () => {
+    let economy = enableDrawLock(resetTurnEconomy());
+    economy = recordRecruitedHeroCost(economy, 4);
+    economy = recordRitualUsedPlayed(economy, 'dstr/doctor-voodoo/staff-of-legba#0');
+    economy = addResources(economy, 3, 2);
+    economy = spendAttack(economy, 1);
+    economy = spendRecruit(economy, 1);
+    assert.strictEqual(economy.highestRecruitedHeroCost, 4);
+    assert.deepStrictEqual(economy.ritualUsedPlayedCardIds, ['dstr/doctor-voodoo/staff-of-legba#0']);
+    assert.strictEqual(economy.drawsLocked, true, 'the earlier lazy field is not dropped');
+  });
+
+  it('the setters never mutate their input, and a reset or round-tripped base carries neither key', () => {
+    const base = resetTurnEconomy();
+    recordRecruitedHeroCost(base, 2);
+    recordRitualUsedPlayed(base, 'x#0');
+    assert.strictEqual('highestRecruitedHeroCost' in base, false);
+    assert.strictEqual('ritualUsedPlayedCardIds' in base, false);
+    const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(base, 1, 1), 1))) as Record<string, unknown>;
+    assert.strictEqual(Object.keys(roundTripped).includes('highestRecruitedHeroCost'), false);
+    assert.strictEqual(Object.keys(roundTripped).includes('ritualUsedPlayedCardIds'), false);
   });
 });

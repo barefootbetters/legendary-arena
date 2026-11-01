@@ -14,7 +14,8 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
-import { getAvailableRecruit, spendRecruit } from '../economy/economy.logic.js';
+import { getAvailableRecruit, recordRecruitedHeroCost, spendRecruit } from '../economy/economy.logic.js';
+import { matchHasRecruitedHeroRitual } from './ritualArtifact.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { isHqSlotHaunted } from '../board/haunt.logic.js';
 import { hasPendingKoHeroChoice } from './koHeroChoice.resolve.js';
@@ -203,6 +204,12 @@ export function recruitHero(
     G.playerZones[ctx.currentPlayer]!.discard.push(cardId);
   }
   G.turnEconomy = spendRecruit(G.turnEconomy, requiredCost);
+  // why: WP-858 / D-24794 — record the recruited Hero's printed cost for Staff of Legba's Ritual
+  // ("If you recruited a Hero … +Attack equal to that Hero's cost"), only in a match whose hooks
+  // carry ritual-recruited-hero, so no other match's turnEconomy gains the field (no hash surface).
+  if (matchHasRecruitedHeroRitual(G)) {
+    G.turnEconomy = recordRecruitedHeroCost(G.turnEconomy, requiredCost);
+  }
 
   // why: D-24180 — this successful recruit marks the player as having acted this
   // turn, which bars the Wound Healing ability for the rest of the turn.

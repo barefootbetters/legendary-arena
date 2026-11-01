@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { discardFromHand } from '../moves/discardFromHand.js';
-import { executeHeroEffects, fireExcessiveViolencePlays, resolveDeferredHeroGrants, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, fireExcessiveViolencePlays, resolveDeferredHeroGrants, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS, RITUAL_ARTIFACT_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
@@ -181,6 +181,9 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // return-on-discard — it has no handler / reveal translation / move executor /
     // class-grant; its own reachability category.
     const woundTimeExecuted = new Set<string>(WOUND_TIME_EXECUTED_KEYWORDS);
+    // why: WP-858 / D-24794 — the Ritual Artifact keywords execute from the useRitualArtifact
+    // move (moves/ritualArtifact.ts), so they have no handler — their own reachability category.
+    const ritualExecuted = new Set<string>(RITUAL_ARTIFACT_EXECUTED_KEYWORDS);
     for (const keyword of MVP_KEYWORDS) {
       const hasHandler = HERO_EFFECT_HANDLERS[keyword as HeroKeyword] !== undefined;
       const translates = revealRulesForLegacyKeyword(keyword as HeroKeyword, 1).length > 0;
@@ -189,9 +192,10 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
       const executesAsClassGrant = classGrantExecuted.has(keyword);
       const executesAtDiscardTime = discardTimeExecuted.has(keyword);
       const executesAtWoundTime = woundTimeExecuted.has(keyword);
+      const executesAsRitual = ritualExecuted.has(keyword);
       assert.ok(
-        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAsClassGrant || executesAtDiscardTime || executesAtWoundTime,
-        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, as a class-grant, at discard time, or at wound time`,
+        hasHandler || translates || executesAtRecruit || executesAtHandAction || executesAsClassGrant || executesAtDiscardTime || executesAtWoundTime || executesAsRitual,
+        `MVP keyword "${keyword}" must be handled directly, via reveal translation, at recruit time, via a hand-action move, as a class-grant, at discard time, at wound time, or as a Ritual Artifact`,
       );
     }
   });
@@ -5820,6 +5824,20 @@ describe('executeHeroEffects — Phasing keyword at play time (WP-783 / D-24629)
     assert.equal(HANDLED_KEYWORDS.has('phasing' as HeroKeyword), false, 'phasing ∉ HANDLED_KEYWORDS');
     assert.equal(HERO_EFFECT_HANDLERS['phasing' as HeroKeyword], undefined, 'phasing ∉ HERO_EFFECT_HANDLERS');
     assert.equal(revealRulesForLegacyKeyword('phasing' as HeroKeyword, 1).length, 0, 'not reveal-translated');
+  });
+});
+
+describe('Ritual Artifact keywords are move-executed MVP keywords (WP-858 / D-24794)', () => {
+  it('ritual-recruited-hero and ritual-hero-classes have no play-time handler / reveal translation', () => {
+    // why: WP-858 / D-24794 — membership marks them ledger-executable and keeps the play-time
+    // hook not-hollow; the useRitualArtifact move is the executor, so they must not gain a handler.
+    for (const keyword of ['ritual-recruited-hero', 'ritual-hero-classes'] as const) {
+      assert.ok(RITUAL_ARTIFACT_EXECUTED_KEYWORDS.includes(keyword), `${keyword} ∈ RITUAL_ARTIFACT_EXECUTED_KEYWORDS`);
+      assert.ok(MVP_KEYWORDS.has(keyword), `${keyword} ∈ MVP_KEYWORDS`);
+      assert.equal(HANDLED_KEYWORDS.has(keyword), false, `${keyword} ∉ HANDLED_KEYWORDS`);
+      assert.equal(HERO_EFFECT_HANDLERS[keyword], undefined, `${keyword} ∉ HERO_EFFECT_HANDLERS`);
+      assert.equal(revealRulesForLegacyKeyword(keyword, 1).length, 0, `${keyword} is not reveal-translated`);
+    }
   });
 });
 
