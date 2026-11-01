@@ -113,3 +113,7 @@ ledgers, class count) + Arena Client (Artifacts group, Use button) + card data
 - Every Artifact card kept — the keep read the printed keyword; no Use on a later turn — the predicate read only `inPlay`.
 - A ledger vanishes mid-turn — missing carry; a used Medallion not "played" — the union sits behind the Out of Time early return.
 - Medallion short by one — reward read after the move. Sentinel moved — a field written ungated.
+
+## Amendment A (execution, 2026-10-31)
+- Allowlist omission folded inline (01.0b category: file-allowlist omission): `packages/game-engine/src/moves/recruitSidekick.test.ts`
+  T15 also pins "LegendaryGame defines 54 moves"; it moves to 55 with the `game.test.ts` pin.
