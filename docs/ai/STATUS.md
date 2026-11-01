@@ -10,6 +10,15 @@
 
 ## Current State
 
+### WP-857 / EC-895 — Hero Feast: "You may [keyword:Feast]" KOs the top card of your deck on five Miek and No-Name lines (D-24793) (2026-11-01)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Playing Metamorphosis or Bursting with Life, or Devouring Frenzy after another Instinct Hero, or Appetite for Destruction after another Covert Hero, opens the existing reveal-top prompt ("Reveal the top card — KO it or keep it") on the top card of the player's deck with **KO** and **Keep**; KO sends it to the KO pile, Keep leaves it on top. With an empty deck and discard pile the log says there was no card. Before this, those Feast lines did nothing. World-Spanning Hunger and The Void Unchained are unchanged (honest unresolved markers).
+
+- **Engine.** Handler-bearing keyword `feast` reusing `heroEffectRevealTopMayKo` unchanged (lockstep: union + array, `HANDLED_KEYWORDS`, `NO_MAGNITUDE_KEYWORDS`, handler entry); `FEAST_CARDS` allowlist + `feastSupported` + a parser arm beside `transform`. No new `G` field, queue, move or client change.
+- **Feeds.** `BY_HOOK_KEYWORDS` gains `feast`: ledger rows `wwhk/miek-the-unhived|feast` and `wwhk/no-name-brood-queen|feast` executable, `wwhk/sentry|feast` unsupported. Provenance + two pending live-verify rows; regenerated hero ledger, effect index, card-mechanics and coverage baseline (wwhk executable hooks 223 -> 237; `feast: 7` leaves the unsupported list). Runtime-observed sweep and dashboard in-play pin unchanged.
+- **Tests.** game-engine 6165 -> 6173 / 0 (+8, on top of WP-855: new `hero/feast.test.ts` on real parsed wwhk hooks through the real `resolveRevealTopDispose`); pins `HERO_KEYWORDS` 90 -> 91 (three sites), handlers 70 -> 71 (two sites), bumped from HEAD (the EC drafted 87 / 69). dashboard 584 / 0. No `finalStateHash` sentinel moved.
+- **Live-verify (D-24026): operator-pending.** A match created after the deploy with Miek and No-Name: play Metamorphosis or Bursting with Life, KO the top card through the prompt, keep it on another play. Pending rows in `live-verify.json`.
+
 ### WP-855 / EC-893 — Miek's Endless Appetite draws a card for each card KO'd from your deck this turn (D-24791) (2026-11-01)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Playing Endless Appetite (wwhk) draws nothing and logs "… ability is waiting — it needs a card to be KO'd from your deck this turn. It will apply if you reach it this turn." Each card KO'd from that player's deck later that turn (Carnage's Gruesome Feast, a Doombot scry-KO, Crystal of Kadavus, a Melter fight, Red Skull's Ruthless Dictator, the operator `ko-from-player` setter) draws one card, once per KO, for each Endless Appetite in play. KOs from hand, discard pile or cards in play draw nothing; a KO from another player's deck pays only that player. While a reveal choice is still open, the draw waits and lands after the last choice closes. A match created before the deploy keeps the old (empty) hook.
