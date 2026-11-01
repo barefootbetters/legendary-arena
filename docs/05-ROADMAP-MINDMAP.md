@@ -413,7 +413,7 @@ mindmap
         ["WP-852 ✅ Table perspective the desktop board leans back like a table, band City and HQ tilt 14 degrees under a 900px perspective hinged on the bottom edge, hand cockpit HUD and rail stay flat, City and HQ cards straighten toward the player on hover while the row fits, Effect Intensity off flattens. arena-client EC-890 D-24788 reserved DRAFTED 2026-10-28"]
         ["WP-853 ✅ Absorb Energies whenever a card you own is KOd this turn you get plus 2 Recruit, per-owner KO count recorded at each owned KO site and consumed each resolve, grant fires once per KO and re-arms, per-function KO-site drift pin. game engine plus card data EC-891 D-24789 DONE 2026-10-29"]
         ["WP-854 ✅ Band stand-up the Mastermind card and the SHIELD Officers and Sidekicks recruit piles straighten toward the player on hover like City and HQ cards, hover-gated 3D chain, never while the Enigma guess is open. arena-client EC-892 D-24790 DONE 2026-10-29"]
-        ["WP-855 📝 Endless Appetite whenever a card is KOd from your deck this turn you may draw a card, deck-only sibling of the WP-853 owned-KO count, the owned recorder takes the source zone and counts the 9 deck sites, draws once per KO and re-arms, auto-draw, held while any choice is parked so a reveal snapshot is never drawn. game engine plus card data EC-893 D-24791 reserved DRAFTED 2026-10-29"]
+        ["WP-855 ✅ Endless Appetite whenever a card is KOd from your deck this turn you may draw a card, deck-only sibling of the WP-853 owned-KO count, the owned recorder takes the source zone and counts the 9 deck sites, draws once per KO and re-arms, auto-draw, held while any choice is parked so a reveal snapshot is never drawn. game engine plus card data EC-893 D-24791 DONE 2026-11-01"]
         ["WP-856 ✅ Possessed by Brothers Spirit the first time one of your Heroes is KOd this turn choose plus 4 Recruit or plus 4 Attack, Hero-only one-shot owned-KO trigger on the WP-853 recorder, flat-recruit option on the count-scaled choose-one. game engine plus card data EC-894 D-24792 DONE 2026-10-29"]
         ["WP-857 📝 Hero Feast You may Feast KOs the top card of your deck, a feast hero keyword reusing the KO-or-keep reveal prompt on five allowlisted Miek and No-Name lines, World-Spanning Hunger and The Void Unchained stay unresolved. game engine EC-895 D-24793 reserved DRAFTED 2026-10-29"]
         ["WP-858 ✅ Hero Ritual Artifacts Staff of Legba and Medallion of Many Loas stay in front of you as Artifacts you control and are discarded for plus Attack once their Ritual condition held this turn, a Use button and a useRitualArtifact move. game engine plus arena client EC-896 D-24794 DONE 2026-10-31"]
@@ -1029,7 +1029,7 @@ mindmap
 | Legends Public Scoreboard | 2/2 | — |
 | Villain Deck Pipeline | 5/5 | — |
 | Villain & Henchman Effects | 21/21 | — |
-| Hero Ability Coverage & Markup Pipeline | 214/233 | 19 open |
+| Hero Ability Coverage & Markup Pipeline | 215/233 | 18 open |
 | Notable Events & Overlays | 6/6 | — |
 | Simulation Sweep & Analytics Pipeline | 8/8 | — |
 | Dashboard & Operator Analytics | 55/55 | — |
@@ -1050,9 +1050,9 @@ mindmap
 | Next Horizons | 0/2 | 2 📦 queued |
 | Phase 10 — Debugging, Testing & Troubleshooting | 4/4 | — |
 | Governance Drafts | 2/3 | 1 ⏸ |
-| **Total** | **829/857 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 27 open |
+| **Total** | **830/857 WP ✅** (+ 4/4 Foundation Prompts) | 1 ⏸, 26 open |
 
-**Open / blocked WPs (derived from WORK_INDEX, 28):** WP-859 open; WP-857 open; WP-855 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
+**Open / blocked WPs (derived from WORK_INDEX, 27):** WP-859 open; WP-857 open; WP-849 open; WP-840 open; WP-839 open; WP-838 open; WP-822 open; WP-813 open; WP-810 open; WP-808 open; WP-784 open; WP-782 open; WP-781 open; WP-776 open; WP-775 open; WP-774 open; WP-773 open; WP-771 open; WP-770 open; WP-769 open; WP-768 open; WP-764 open; WP-759 open; WP-758 open; WP-745 open; WP-716 open; WP-042.1 ⏸ blocked.
 <!-- ROADMAP-COUNTS:END -->
 
 > Counts only. Description, deps, baselines, hashes — all in the mindmap line above or in `WORK_INDEX.md`. The table inside the markers above is **generated** by `scripts/roadmap-counts.mjs` (sole writer; D-24001), derived from `WORK_INDEX.md` status × mindmap cluster membership — it is no longer hand-maintained, so it no longer drifts. Status is authoritative from `WORK_INDEX.md`; cluster membership is authoritative from the mindmap nodes above. The generator **fails loudly** on a WORK_INDEX WP with no mindmap node (D-24002), so no work packet can be silently uncounted.
