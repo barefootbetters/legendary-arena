@@ -1603,9 +1603,9 @@
       "card": "Miek, The Unhived",
       "ability": "Metamorphosis: You may Feast. Then, if a card with an Attack icon was KO'd from your deck this turn, Transform this into Hive King Miek",
       "wp": "WP-859",
-      "state": "pending",
-      "date": "2026-11-01",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-859 deploy (isMatchOlderThanServer: false) with Miek and No-Name in the hero decks, per the WP-859 DoD.",
+      "state": "verified",
+      "date": "2026-11-02",
+      "evidence": "2p Operator match J5MxrX7bDDf (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Hulk; server build 6281562a, created 2026-11-02T20:24:07Z after boot, isMatchOlderThanServer false): Metamorphosis opened its Feast prompt and logged the waiting Transform (8.2.1-8.2.3); the Feast KO'd a S.H.I.E.L.D. Trooper (Attack icon) from the deck top and Metamorphosis Transformed into Hive King Miek with +6 Attack (8.2.4-8.2.5). Hive King Miek came back from the deck two turns later and played as itself, its look-three-then-Feast KOing the deck top (10.2.3-10.2.5). Not exercised: a keep, or a KO of a card with no Attack icon (the Transform stays waiting).",
       "note": "Playing Metamorphosis opens the Feast prompt and logs the waiting Transform; KOing a card with an Attack icon from your deck this turn (the Feast or any other deck KO) swaps it for Hive King Miek in play with +6 Attack. A keep, or a KO of a card with no Attack icon, leaves it in play. D-24795."
     },
     {
@@ -1627,7 +1627,7 @@
       "wp": "WP-861",
       "state": "partial",
       "date": "2026-11-02",
-      "evidence": "2p Operator match gs--GHdVvyG (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Wasp; server build 9c178a24, created 2026-11-02T15:09:49Z after boot, isMatchOlderThanServer false): Surprise Attack played after other cards logged blocked, needing to be the first Hero played (5.2.18). Not yet seen: Surprise Attack played as the first card, drawing a card.",
+      "evidence": "2p Operator match gs--GHdVvyG (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Wasp; server build 9c178a24, created 2026-11-02T15:09:49Z after boot, isMatchOlderThanServer false): Surprise Attack played after other cards logged blocked, needing to be the first Hero played (5.2.18). Not yet seen: Surprise Attack played as the first card, drawing a card. Second match 2p Operator match J5MxrX7bDDf (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Hulk; server build 6281562a, created 2026-11-02T20:24:07Z after boot, isMatchOlderThanServer false): Surprise Attack played third, after two Endless Appetites, logged the same block and drew nothing (14.2.5-14.2.6). Still not seen: played as the first card.",
       "note": "Surprise Attack played first draws a card; played after another card it logs [blocked] (needs to be the first Hero you played this turn) and draws nothing. D-24798."
     },
     {
