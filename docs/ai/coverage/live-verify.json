@@ -1548,9 +1548,9 @@
       "card": "Doctor Voodoo",
       "ability": "Staff of Legba (Ritual Artifact): kept in front of you; discard it for +Attack equal to the cost of a Hero you recruited this turn",
       "wp": "WP-858",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-11-02",
-      "evidence": "2p Operator match gs--GHdVvyG (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Wasp; server build 9c178a24, created 2026-11-02T15:09:49Z after boot, isMatchOlderThanServer false): Staff of Legba played with no Attack and no hollow (13.2.1) and stayed in front of you as an Artifact at end of turn (13.3.1). Not yet seen: recruiting a Hero and using the Staff for +Attack equal to its cost.",
+      "evidence": "2p Operator match gs--GHdVvyG (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Wasp; server build 9c178a24, created 2026-11-02T15:09:49Z after boot, isMatchOlderThanServer false): Staff of Legba played with no Attack and no hollow (13.2.1) and stayed in front of you as an Artifact at end of turn (13.3.1). 2p Operator match eLhCrXXpftp (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Hulk; server build 6281562a, created 2026-11-02T22:08:37Z after boot, isMatchOlderThanServer false): after recruiting Posessed by Brother's Spirit (7), Medallion (4) and Crazed Rampage (5) the Staff's Ritual discarded it for +7, the highest recruited cost (6.2.7-6.2.15); a Staff kept in front from an earlier turn (10.3.3) gave +5 after a Crazed Rampage recruit (12.2.10-12.2.12); +4 after an Unstoppable Hulk recruit (16.2.9-16.2.11); three Staffs each gave +5 off one Crazed Rampage recruit (18.2.10-18.2.20).",
       "note": "Playing it adds no Attack and logs no hollow; at end of turn it stays under Artifacts; after a recruit its Use button discards it for +Attack equal to the highest recruited cost. D-24794."
     },
     {
