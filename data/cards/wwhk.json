@@ -1167,7 +1167,7 @@
           "attack": null,
           "recruit": "5",
           "abilities": [
-            "You may [keyword:Feast]. Then, if a card with an[icon:attack] icon was KO'd from your deck this turn, [keyword:Transform] this into Hive King Miek."
+            "You may [keyword:Feast]. Then, if a card with an[icon:attack] icon was KO'd from your deck this turn, [keyword:Transform] this into Hive King Miek. [keyword:deck-koed-attack-icon]"
           ],
           "transform": "hive-king-miek"
         },
@@ -1425,7 +1425,7 @@
           "attack": null,
           "recruit": "2",
           "abilities": [
-            "You may [keyword:Feast]. Then, if a non-grey Hero was KO'd from your deck this turn, [keyword:Transform] this into Torrent of Broodlings."
+            "You may [keyword:Feast]. Then, if a non-grey Hero was KO'd from your deck this turn, [keyword:Transform] this into Torrent of Broodlings. [keyword:deck-koed-non-grey-hero]"
           ],
           "transform": "torrent-of-broodlings"
         },
@@ -1458,7 +1458,7 @@
           "attack": "4+",
           "recruit": null,
           "abilities": [
-            "Look at the top card of your deck. Then [keyword:Feast] up to three times. You get +2[icon:attack] for each non-grey Hero that was KO'd from your deck this turn."
+            "Look at the top card of your deck. Then [keyword:Feast] up to three times. You get +2[icon:attack] for each non-grey Hero that was KO'd from your deck this turn. [keyword:attack-per-count:non-grey-heroes-koed-from-deck-this-turn:2]"
           ]
         }
       ],

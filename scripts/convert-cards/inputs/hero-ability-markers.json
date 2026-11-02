@@ -1607,6 +1607,24 @@
       "markupToken": "[keyword:draw:1]"
     },
     {
+      "heroSlug": "miek-the-unhived",
+      "cardSlug": "metamorphosis",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:deck-koed-attack-icon]"
+    },
+    {
+      "heroSlug": "no-name-brood-queen",
+      "cardSlug": "bursting-with-life",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:deck-koed-non-grey-hero]"
+    },
+    {
+      "heroSlug": "no-name-brood-queen",
+      "cardSlug": "world-spanning-hunger",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:attack-per-count:non-grey-heroes-koed-from-deck-this-turn:2]"
+    },
+    {
       "heroSlug": "namora",
       "cardSlug": "crushing-tsunami",
       "abilityIndex": 1,

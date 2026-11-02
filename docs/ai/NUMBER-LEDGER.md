@@ -498,7 +498,7 @@ high-water: 422
 - WP-858 — hero-ritual-artifacts (Hero Artifacts you control stay in front of you across turns, and a Ritual Artifact is used by discarding it once its condition was met this turn; first slice Doctor Voodoo's Staff of Legba and Medallion of Many Loas. reserved 2026-10-31, claude/wp858-reserve; LANDED 2026-10-31)
 - WP-860 — commune-spirit-world (Doctor Voodoo's Commune with the Spirit World: discard an Artifact you control or three cards from your hand, then KO a card from your hand or discard pile; builds on the WP-858 controlled-Artifact record. reserved 2026-10-31, claude/wp860-reserve; LANDED 2026-10-31)
 - WP-856 — owned-hero-ko-first-time (Doctor Voodoo's Possessed by Brother's Spirit: the first time one of your Heroes is KO'd this turn, choose +4 Recruit or +4 Attack; a Hero-only, one-shot, choose-one variant of the WP-853 owned-KO trigger. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130; LANDED 2026-10-29)
-- WP-859 — wwhk-feast-readers (World War Hulk cards that read "KO'd from your deck this turn": a per-turn record of which cards left each deck to the KO pile, the Metamorphosis / Bursting with Life Transform gates, and World-Spanning Hunger's Feast up to three times with +2 per non-grey Hero, fixing its phantom +2. reserved 2026-10-31, claude/wp859-reserve)
+- WP-859 — wwhk-feast-readers (World War Hulk cards that read "KO'd from your deck this turn": a per-turn record of which cards left each deck to the KO pile, the Metamorphosis / Bursting with Life Transform gates, and World-Spanning Hunger's Feast up to three times with +2 per non-grey Hero, fixing its phantom +2. reserved 2026-10-31, claude/wp859-reserve; LANDED 2026-11-01)
 - WP-861 — first-card-played (the "If this is the first card you played this turn" hero lines — No-Name's Surprise Attack draws, Elektra's First Strike and Wasp's Follow My Lead gate their +1 Attack — through the shipped first-Hero-played condition via curated markers. reserved 2026-11-01, claude/wp861-reserve; LANDED 2026-11-01)
 
 ## EC
@@ -960,7 +960,7 @@ high-water: 457
 - EC-896 — hero-ritual-artifacts (WP-858. reserved 2026-10-31, claude/wp858-reserve; LANDED 2026-10-31)
 - EC-898 — commune-spirit-world (WP-860. reserved 2026-10-31, claude/wp860-reserve; LANDED 2026-10-31)
 - EC-894 — owned-hero-ko-first-time (WP-856. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130; LANDED 2026-10-29)
-- EC-897 — wwhk-feast-readers (WP-859. reserved 2026-10-31, claude/wp859-reserve)
+- EC-897 — wwhk-feast-readers (WP-859. reserved 2026-10-31, claude/wp859-reserve; LANDED 2026-11-01)
 - EC-899 — first-card-played (WP-861. reserved 2026-11-01, claude/wp861-reserve; LANDED 2026-11-01)
 
 ## D
@@ -1535,6 +1535,6 @@ section below) and the allocation protocol in
 - D-24794 — hero-ritual-artifacts (WP-858; the controlled-Artifact record, the Ritual Artifact use move and its marker-selected cards. reserved 2026-10-31, claude/wp858-reserve; LANDED 2026-10-31)
 - D-24796 — commune-spirit-world (WP-860; the two-way discard cost (a controlled Artifact or three hand cards) gating a KO from hand or discard. reserved 2026-10-31, claude/wp860-reserve; LANDED 2026-10-31)
 - D-24792 — owned-hero-ko-first-time (WP-856; a Hero-only owned-KO signal at the KO sites, a one-shot first-time grant on the D-24377 wait-and-see edge, and a flat-recruit option for the count-scaled choose-one so the reward is +4 Recruit OR +4 Attack. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130; LANDED 2026-10-29)
-- D-24795 — wwhk-feast-readers (WP-859; the turn-scoped KO'd-from-deck record and its gate, the two Transform conditions and the one-line parse split, and the per-Feast reward for World-Spanning Hunger. reserved 2026-10-31, claude/wp859-reserve)
+- D-24795 — wwhk-feast-readers (WP-859; the turn-scoped KO'd-from-deck record and its gate, the two Transform conditions and the one-line parse split, and the per-Feast reward for World-Spanning Hunger. reserved 2026-10-31, claude/wp859-reserve; LANDED 2026-11-01)
 - D-24797 — bubble-set-aside-before-draw (direct fix, no WP — Electromagnetic Bubble sets its chosen Hero aside before the end-of-turn fill so a short-deck reshuffle cannot draw or shuffle it in; amends D-24512 consume timing and the EC-738 cleanup order. reserved 2026-11-01, claude/bubble-reshuffle-fix; LANDED 2026-11-01)
 - D-24798 — first-card-played (WP-861; "first card you played this turn" reads the shipped firstHeroPlayedThisTurn gate, which already counts every played card, and gates the line's draw or printed +Attack. reserved 2026-11-01, claude/wp861-reserve; LANDED 2026-11-01)

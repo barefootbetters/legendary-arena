@@ -34,10 +34,12 @@ import type { ShuffleProvider } from '../setup/shuffle.js';
 import { refreshStaleKoOrKeepFront } from '../hero/heroEffects.execute.js';
 import { moveCardFromZone } from './zoneOps.js';
 import { pushLog } from '../log/logPush.js';
-import { resolveCardName } from '../log/logDisplay.js';
+import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
 import { isCullableDeckTopCard } from '../villain/villainEffects.execute.js';
 import { koCard } from '../board/ko.logic.js';
 import { recordOwnedCardKoed } from '../hero/deferredConditionalGrants.js';
+import { matchesGreyHeroFilter } from '../hero/splitCard.logic.js';
+import { addResources } from '../economy/economy.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -196,6 +198,20 @@ export function resolveRevealTopDispose(
         'applied',
         args.cardId,
       );
+      // why: WP-859 / D-24795 — World-Spanning Hunger's Feast entry carries the +2 its own KO
+      // earns ("+2 for each non-grey Hero that was KO'd from your deck this turn", RS-2 counted
+      // at resolution). Paid only when this KO'd card is a non-grey Hero; a keep or a grey KO pays
+      // nothing. Every other entry omits the field, so nothing else changes here.
+      const nonGreyHeroKoAttack = front.revealedTops[targetIndex]!.nonGreyHeroKoAttack;
+      if (nonGreyHeroKoAttack !== undefined && matchesGreyHeroFilter(G, args.cardId, 'non-grey')) {
+        G.turnEconomy = addResources(G.turnEconomy, nonGreyHeroKoAttack, 0);
+        pushLog(
+          G,
+          `Player ${playerID} gets +${nonGreyHeroKoAttack} Attack — ${formatCardRef(G.cardDisplayData, args.cardId)} was a non-grey Hero KO'd from their deck (reveal-top).`,
+          'applied',
+          args.cardId,
+        );
+      }
     }
   } else if (args.disposition === 'discard') {
     const moveResult = moveCardFromZone(ownerZones.deck, ownerZones.discard, args.cardId);

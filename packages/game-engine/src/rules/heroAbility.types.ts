@@ -250,6 +250,12 @@ export interface HeroEffectDescriptor {
   // effect's `magnitude` is N. Set only by the Step 4c clause parser. A plain string, so the hook
   // stays JSON-serializable. Other keywords ignore it.
   fightCostReductionTarget?: AttackTargetName;
+  // why: WP-859 / D-24795 — for a 'feast' effect, nonGreyHeroKoAttack is the Attack paid when that
+  // Feast KOs a non-grey Hero (World-Spanning Hunger's "+2 for each non-grey Hero that was KO'd
+  // from your deck this turn", counted at resolution). Stamped by the parser from the same hook's
+  // `attack-per-count` magnitude; copied onto the parked RevealedTopEntry. Omitted on every other
+  // effect. Other keywords ignore it.
+  nonGreyHeroKoAttack?: number;
 }
 
 // ---------------------------------------------------------------------------

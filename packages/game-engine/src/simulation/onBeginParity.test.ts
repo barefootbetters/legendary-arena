@@ -234,6 +234,21 @@ describe('applyOnBeginParity (WP-266 / WP-701)', () => {
     assert.equal('deckCardsKoedSinceResolve' in neverCounted, false, 'no key is created (oracle safety)');
   });
 
+  it('deletes the deck-KO turn record at the turn boundary, and never creates it (WP-859 / D-24795)', () => {
+    const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
+    gameState.cardsKoedFromDeckThisTurn = { '0': ['c0'] };
+
+    applyOnBeginParity(gameState, '0');
+
+    // why: mirrors game.ts onBegin — "KO'd from your deck this turn" must not carry into the next
+    // turn, or Metamorphosis would Transform at play next turn. ABSENT, not merely empty.
+    assert.equal('cardsKoedFromDeckThisTurn' in gameState, false);
+
+    const neverRecorded = makeStateWithDeck(['c1'], ['h1'], []).gameState;
+    applyOnBeginParity(neverRecorded, '0');
+    assert.equal('cardsKoedFromDeckThisTurn' in neverRecorded, false, 'no key is created (oracle safety)');
+  });
+
   it('never creates the Hero-KO count on a G that never had it (oracle safety, WP-856 / D-24792)', () => {
     const { gameState } = makeStateWithDeck(['c1'], ['h1'], []);
     applyOnBeginParity(gameState, '0');

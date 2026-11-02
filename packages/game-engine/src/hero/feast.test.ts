@@ -165,8 +165,10 @@ describe('wwhk hero Feast — "You may [keyword:Feast]" KOs or keeps the top car
     }
   });
 
-  it('T2 World-Spanning Hunger and The Void Unchained keep an unresolved feast and no feast keyword', () => {
-    for (const cardSlug of ['world-spanning-hunger', 'the-void-unchained']) {
+  it('T2 The Void Unchained keeps an unresolved feast and no feast keyword', () => {
+    // why: WP-859 / D-24795 — World-Spanning Hunger left this case when its Feast became modeled
+    // (FEAST_CARDS 5 → 6); its parse is pinned in feastReaders.test.ts.
+    for (const cardSlug of ['the-void-unchained']) {
       const hook = feastLineHook(firstCopyHooks(hooks, cardSlug).cardHooks);
       assert.ok(!hook.keywords.includes('feast'), `${cardSlug} carries no feast keyword`);
       assert.ok(!(hook.effects ?? []).some((effect) => effect.type === 'feast'), `${cardSlug} carries no feast effect`);

@@ -1598,6 +1598,28 @@
       "note": "Playing Bursting with Life (or Appetite for Destruction after another Covert Hero) opens the reveal-top prompt on the deck top with KO / Keep. World-Spanning Hunger stays an honest unresolved marker (its Feast up to three times and +2 per non-grey Hero are not modeled). D-24793."
     },
     {
+      "key": "wwhk/miek-the-unhived|transform",
+      "kind": "hero",
+      "card": "Miek, The Unhived",
+      "ability": "Metamorphosis: You may Feast. Then, if a card with an Attack icon was KO'd from your deck this turn, Transform this into Hive King Miek",
+      "wp": "WP-859",
+      "state": "pending",
+      "date": "2026-11-01",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-859 deploy (isMatchOlderThanServer: false) with Miek and No-Name in the hero decks, per the WP-859 DoD.",
+      "note": "Playing Metamorphosis opens the Feast prompt and logs the waiting Transform; KOing a card with an Attack icon from your deck this turn (the Feast or any other deck KO) swaps it for Hive King Miek in play with +6 Attack. A keep, or a KO of a card with no Attack icon, leaves it in play. D-24795."
+    },
+    {
+      "key": "wwhk/no-name-brood-queen|transform",
+      "kind": "hero",
+      "card": "No-Name, Brood Queen",
+      "ability": "Bursting with Life: You may Feast. Then, if a non-grey Hero was KO'd from your deck this turn, Transform this into Torrent of Broodlings. World-Spanning Hunger: Feast up to three times; +2 Attack for each non-grey Hero KO'd from your deck this turn",
+      "wp": "WP-859",
+      "state": "pending",
+      "date": "2026-11-01",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-859 deploy (isMatchOlderThanServer: false) with Miek and No-Name in the hero decks, per the WP-859 DoD.",
+      "note": "Bursting with Life Transforms into Torrent of Broodlings (+2 Attack) once a non-grey Hero is KO'd from your deck this turn (not a grey Hero, Wound or Bystander). World-Spanning Hunger opens three KO / Keep prompts, pays +2 for each non-grey Hero it KOs plus +2 per non-grey Hero already KO'd from the deck this turn, and no flat +2. D-24795."
+    },
+    {
       "key": "wwhk/no-name-brood-queen|first-hero-condition",
       "kind": "hero",
       "card": "No-Name, Brood Queen",
