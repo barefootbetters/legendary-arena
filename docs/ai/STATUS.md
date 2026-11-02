@@ -10,6 +10,16 @@
 
 ## Current State
 
+### WP-861 / EC-899 — "If this is the first card you played this turn": Surprise Attack draws, First Strike and Follow My Lead gate their +1 Attack (D-24798) (2026-11-01)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Leading a turn with No-Name's Surprise Attack now draws a card (before, it never drew). Elektra's First Strike and Wasp's Follow My Lead give 2 Attack only when played first; played after another card they give 1 and the log shows a `[blocked]` line saying the card needs to be the first Hero you played this turn (before, both gave 2 on every play). Bots now lead with these three, through the existing D-24705 / D-24706 marker read.
+
+- **Card data.** Four curated `hero-ability-markers.json` entries (`[keyword:first-hero-condition]` on all three lines, `[keyword:draw:1]` on Surprise Attack) applied by `apply-hero-ability-markers.mjs` to one line each in `dkcy`, `wwhk` and `amwp`. No engine source change; Follow My Lead's Size-Changing line byte-identical.
+- **Feeds.** Regenerated hero ledger (three `first-hero-condition` condition rows; Surprise Attack joins the No-Name `draw` row), effect index, card-mechanics (`first-hero-condition` 1 card -> 4) and coverage baseline (executable +5 / noEffect -5). Runtime-observed sweep and dashboard in-play pin unchanged.
+- **Tests.** game-engine 6178 -> 6188 / 0 (+10, new `hero/firstCardPlayed.test.ts` on hooks parsed from the committed data through `applyCardPlay`). dashboard 584 / 0. No `finalStateHash` sentinel, PAR or simulation pin moved.
+- **Live-verify (D-24026): operator-pending.** A match created after the deploy: Surprise Attack led draws, First Strike or Follow My Lead led gives 2 Attack, each played second logs `[blocked]`. Pending rows in `live-verify.json`.
+- **Follow-up.** `3dtc` Deadpool "Hey, Can I Get a Do-Over?" prints the same first-Hero line, unmarked (its own change; it moves the runtime-observed hollows and the dashboard in-play pin).
+
 ### Electromagnetic Bubble keeps its seventh card through a deck reshuffle (D-24797, direct fix) (2026-11-01)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Defeating Magneto's Electromagnetic Bubble on a turn when your deck is nearly empty used to lose the seventh card: the chosen Hero got shuffled into the deck, sometimes drawn as one of the six, and the log said it "could not be found". Now the Hero is set aside before the new hand is drawn and always comes back as the seventh card.

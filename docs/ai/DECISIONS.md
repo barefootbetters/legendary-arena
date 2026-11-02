@@ -50039,4 +50039,27 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24797. Related: D-24512 (consume timing amended), D-24645 (Bubble eligibility, hand + play), D-24520 (end-of-turn cleanup), D-24285 (reshuffle on exhaustion).
 
 ---
+
+### D-24798 — "If this is the first card you played this turn" reads the shipped first-Hero gate: Surprise Attack draws, First Strike and Follow My Lead gate their +1 Attack (Active 2026-11-01 — WP-861 / EC-899)
+
+**Status:** Active 2026-11-01. Live-verify (D-24026) operator-pending: on a play.legendary-arena.com match created after the deploy (`isMatchOlderThanServer: false`), Surprise Attack played first draws a card, First Strike or Follow My Lead played first gives 2 Attack, and each played second logs `[blocked]`. Pending rows `wwhk/no-name-brood-queen|first-hero-condition`, `dkcy/elektra|first-hero-condition` and `amwp/wasp|first-hero-condition` in `live-verify.json`.
+
+**Context.** Three hero lines print "If this is the first card you played this turn, …". No-Name's Surprise Attack (wwhk) parsed to an empty hook and never drew. Elektra's First Strike (dkcy) and Wasp's Follow My Lead line 1 (amwp) parsed the printed `+1[icon:attack]` with no gate, so every play got +1 Attack (observed parse at `548923dd`; live match `dV9q_Y-Ypla`, where a led Surprise Attack drew nothing).
+
+**Decision.**
+1. Surprise Attack, First Strike and Follow My Lead gate their line on `firstHeroPlayedThisTurn` (WP-681 / D-24498) through `[keyword:first-hero-condition]`. The evaluator already counts every played card, and every card a player plays is a Hero card, so "first card" and "first Hero" select the same plays.
+2. The mechanism is curated markers (`hero-ability-markers.json` → `apply-hero-ability-markers.mjs`), not a text arm (contrast D-24746): the condition already has a marker, and Surprise Attack's draw needs `[keyword:draw:1]` regardless.
+3. The gate is read on play, never fired later.
+4. Unchanged: the evaluator and its wording ("it needs to be the first Hero you played this turn"), the parser, and Wasp's Size-Changing line (byte-identical). Two existing behaviours now also cover these cards:
+   - Bots lead with them, through the D-24705 / D-24706 marker read of `cardDisplayData`, which is stored in `initialState`, so pre-deploy matches are unaffected.
+   - Their hooks enter the conditional-clause synergy tally (`countSynergyConditions`), so a First Strike played second records played-but-not-assembled, as Deadpool does.
+5. Accepted residual: a card that left play mid-turn (the generic self-`ko` hero effect, or a villain effect that removes in-play cards) does not count toward "first", as for Deadpool.
+
+**Consequences.** Card data plus one test file; no engine source, type, union, canonical array or `G` field change. Hooks are built at setup and stored in `initialState`, so matches created before the deploy keep their hooks and replay identically. Feeds: the three heroes gain a `first-hero-condition` `condition` ledger row and Surprise Attack joins the No-Name `draw` row; the coverage baseline moves executable +5 / noEffect −5. No `finalStateHash` sentinel, PAR or simulation pin moved. Follow-up: `3dtc` Deadpool "Hey, Can I Get a Do-Over?" prints the same first-Hero line, unmarked, and is its own change (it moves `runtime-observed-hollows.json` and the dashboard in-play pin).
+
+**Gates.** game-engine 6178 → 6188 / 0 (+10, new `hero/firstCardPlayed.test.ts`: three parses from the committed data, Follow My Lead line 0 unchanged, three first-card plays and three blocked second-card plays through `applyCardPlay`). `cards:check`, `cards:count-markers:check`, `ledger:heroes:check`, `effect-index:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check` all 0.
+
+**Reserved by:** NUMBER-LEDGER D-24798 (#3132). Related: D-24498 (first-Hero condition), D-24746 (text-gate contrast, test pattern), D-24705 / D-24706 (bot marker read), D-24566 (icon on a gated line), D-24026.
+
+---
 Protect this file.
