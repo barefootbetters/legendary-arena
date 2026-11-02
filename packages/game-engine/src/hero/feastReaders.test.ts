@@ -470,3 +470,69 @@ describe('WP-859 deck-KO turn record — gated on a reader hook, routed to the o
     }
   });
 });
+
+describe('World-Spanning Hunger log — each Feast names its card when it is shown, and the count reads "so far"', () => {
+  const hooks = buildHooks(WWHK_DECKS);
+  const worldSpanningHunger = cardIdOf(hooks, 'wwhk/no-name-brood-queen/world-spanning-hunger', 0);
+
+  /**
+   * Returns the text of every log line containing a substring.
+   *
+   * @param G - The game state.
+   * @param fragment - The substring to match.
+   * @returns The matching lines' text, in log order.
+   */
+  function linesWith(G: LegendaryGameState, fragment: string): string[] {
+    return G.messages.filter((line) => line.text.includes(fragment)).map((line) => line.text);
+  }
+
+  it('the play names the deck top once and logs the other two Feasts as queued', () => {
+    const G = makeState(WWHK_DECKS, [SHIELD_AGENT_EXT_ID, SHIELD_AGENT_EXT_ID, FILLER]);
+    playCard(G, worldSpanningHunger);
+    assert.equal(G.pendingRevealTopDispose?.length, 3, 'three Feast prompts still park');
+    assert.equal(linesWith(G, 'from the top of their deck — KO it or keep it').length, 1, 'one reveal line at play');
+    assert.equal(linesWith(G, 'queues another reveal of the top card of their deck').length, 2);
+  });
+
+  it('the count-scaled line says the count is so far, before any Feast resolves', () => {
+    const G = makeState(WWHK_DECKS, [ATTACK_HERO, FILLER]);
+    playCard(G, worldSpanningHunger);
+    assert.deepEqual(linesWith(G, 'Count-scaled attack'), [
+      'Count-scaled attack: +0 (2 per non-grey Hero KO\'d from your deck so far this turn; count 0).',
+    ]);
+  });
+
+  it('a queued Feast whose snapshot still matches the top (two Agents) logs its reveal when it moves up', () => {
+    const G = makeState(WWHK_DECKS, [SHIELD_AGENT_EXT_ID, SHIELD_AGENT_EXT_ID, FILLER]);
+    playCard(G, worldSpanningHunger);
+    resolveFeast(G, SHIELD_AGENT_EXT_ID, 'ko');
+    const revealLines = linesWith(G, 'reveals the top card of their deck');
+    assert.equal(revealLines.length, 1, 'the second Feast names the second Agent');
+    assert.match(revealLines[0]!, /KO it or keep it \(reveal-top\)\.$/);
+  });
+
+  it('a queued Feast whose snapshot went stale logs the new top once, with no second reveal line', () => {
+    const G = makeState(WWHK_DECKS, [ATTACK_HERO, SECOND_ATTACK_HERO, FILLER]);
+    playCard(G, worldSpanningHunger);
+    resolveFeast(G, ATTACK_HERO, 'ko');
+    assert.equal(linesWith(G, 'reveals the new top card of their deck').length, 1);
+    assert.equal(linesWith(G, 'reveals the top card of their deck').length, 0);
+  });
+
+  it('a keep re-shows the same card for the next Feast', () => {
+    const G = makeState(WWHK_DECKS, [ATTACK_HERO, FILLER]);
+    playCard(G, worldSpanningHunger);
+    resolveFeast(G, ATTACK_HERO, 'top');
+    resolveFeast(G, ATTACK_HERO, 'top');
+    assert.equal(linesWith(G, 'reveals the top card of their deck').length, 2, 'Feasts two and three each name the kept card');
+    assert.deepEqual(G.pendingRevealTopDispose!.map((choice) => choice.revealedTops[0]!.cardId), [ATTACK_HERO]);
+  });
+
+  it('a single Feast with nothing queued ahead still logs one reveal line and no queued line', () => {
+    const metamorphosis = cardIdOf(buildHooks(WWHK_DECKS), 'wwhk/miek-the-unhived/metamorphosis', 0);
+    const G = makeState(WWHK_DECKS, [ATTACK_HERO, FILLER]);
+    playCard(G, metamorphosis);
+    assert.equal(linesWith(G, 'from the top of their deck — KO it or keep it').length, 1);
+    assert.equal(linesWith(G, 'queues another reveal').length, 0);
+  });
+});

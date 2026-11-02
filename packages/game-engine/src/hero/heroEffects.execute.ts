@@ -3616,20 +3616,28 @@ function revealDeckTopForDispose(
  * shipped reveal-top-dispose entries keep their no-drift snapshot. Terminates: every pass either
  * stops or shifts one queue entry.
  *
+ * A front that just moved up (`isFrontNew`, or any front after a shift here) was parked behind
+ * another choice, so its park logged only that it was queued; a still-current entry there logs
+ * its reveal now, so every KO-or-keep choice names the card it shows.
+ *
  * @param G - Game state (mutated: entry cardIds, the queue, and a possible reshuffle).
  * @param shuffleProvider - ShuffleProvider (ctx.random) for a reshuffle-on-empty.
+ * @param isFrontNew - True when the caller just shifted the queue, so the front moved up.
  */
 export function refreshStaleKoOrKeepFront(
   G: LegendaryGameState,
   shuffleProvider: ShuffleProvider,
+  isFrontNew = false,
 ): void {
   const queue = G.pendingRevealTopDispose;
   if (queue === undefined) { return; }
+  let isCurrentFrontNew = isFrontNew;
   while (queue.length > 0) {
     const front = queue[0]!;
-    refreshStaleKoOrKeepEntries(G, front, shuffleProvider);
+    refreshStaleKoOrKeepEntries(G, front, shuffleProvider, isCurrentFrontNew);
     if (front.revealedTops.length > 0) { return; }
     queue.shift();
+    isCurrentFrontNew = true;
   }
 }
 
@@ -3640,18 +3648,31 @@ export function refreshStaleKoOrKeepFront(
  * @param G - Game state (mutated).
  * @param choice - The pending reveal-top choice whose entries are checked.
  * @param shuffleProvider - ShuffleProvider for a reshuffle-on-empty.
+ * @param isFrontNew - True when this choice just moved up to the front of the queue.
  */
 function refreshStaleKoOrKeepEntries(
   G: LegendaryGameState,
   choice: PendingRevealTopDispose,
   shuffleProvider: ShuffleProvider,
+  isFrontNew: boolean,
 ): void {
   // why: iterate from the end so splicing a dropped entry never skips the next one.
   for (let index = choice.revealedTops.length - 1; index >= 0; index--) {
     const entry = choice.revealedTops[index]!;
     if (entry.isDiscardAllowed !== false) { continue; }
     const ownerDeck = G.playerZones[entry.ownerPlayerID]?.deck ?? [];
-    if (ownerDeck.length > 0 && ownerDeck[0] === entry.cardId) { continue; }
+    if (ownerDeck.length > 0 && ownerDeck[0] === entry.cardId) {
+      // why: a queued entry whose snapshot still matches the top (two copies share one ext id,
+      // e.g. S.H.I.E.L.D. Agents) logged no reveal at park; name the card now it is shown.
+      if (isFrontNew) {
+        pushLog(G,
+          `Player ${entry.ownerPlayerID} reveals the top card of their deck — ${formatCardRef(G.cardDisplayData, entry.cardId)} — KO it or keep it (reveal-top).`,
+          'neutral',
+          entry.cardId,
+        );
+      }
+      continue;
+    }
     const revealed = revealDeckTopForDispose(G, entry.ownerPlayerID, shuffleProvider);
     if (revealed === null) {
       choice.revealedTops.splice(index, 1);
@@ -3894,11 +3915,22 @@ function heroEffectRevealTopMayKo(
     revealedEntry.nonGreyHeroKoAttack = effect.nonGreyHeroKoAttack;
   }
   if (!G.pendingRevealTopDispose) { G.pendingRevealTopDispose = []; }
+  const isQueuedBehindAnotherChoice = G.pendingRevealTopDispose.length > 0;
   G.pendingRevealTopDispose.push({
     choiceType: 'reveal-top-dispose',
     playerID,
     revealedTops: [revealedEntry],
   } satisfies PendingRevealTopDispose);
+  if (isQueuedBehindAnotherChoice) {
+    // why: the snapshot is provisional while a choice ahead can still change the top (World-
+    // Spanning Hunger's three Feasts all snapshot one card); naming it here logged the same card
+    // three times. refreshStaleKoOrKeepFront logs the real reveal when this choice moves up.
+    pushLog(G,
+      `Player ${playerID} queues another reveal of the top card of their deck — it is shown once the choice before it resolves (reveal-top).`,
+      'neutral',
+    );
+    return;
+  }
   pushLog(G,
     `Player ${playerID} revealed ${formatCardRef(G.cardDisplayData, revealed.cardId)} from the top of their deck — KO it or keep it (reveal-top).`,
     'neutral',

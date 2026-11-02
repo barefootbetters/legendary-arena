@@ -245,8 +245,9 @@ export function resolveRevealTopDispose(
     // why: WP-754 / D-24521 §6 sequential reveals — two KO-or-keep reveals in one fight (two
     // Gruesome Feasts) snapshot the SAME deck top; once the first is KO'd, the next front's
     // snapshot is stale. Re-reveal a stale KO-or-keep front so the second choice shows the new
-    // top instead of clearing as moot. Never touches a shipped (discard-allowed) entry.
-    refreshStaleKoOrKeepFront(G, context as unknown as ShuffleProvider);
+    // top instead of clearing as moot. Never touches a shipped (discard-allowed) entry. The
+    // queue just shifted, so the front is new: a queued reveal logs its card now.
+    refreshStaleKoOrKeepFront(G, context as unknown as ShuffleProvider, true);
   }
 }
 
