@@ -54,7 +54,9 @@ export function describeCountSource(countSource: string): string {
     case 'shield-heroes-cost-one-plus-played-this-turn':
       return 'other S.H.I.E.L.D. Hero costing 1 or more played this turn';
     case 'non-grey-heroes-koed-from-deck-this-turn':
-      return 'non-grey Hero KO\'d from your deck this turn';
+      // why: World-Spanning Hunger counts at play, before its own Feasts resolve; each Feast's
+      // reward is logged later, so "so far" keeps a +0 line from reading as the card's total.
+      return 'non-grey Hero KO\'d from your deck so far this turn';
     default:
       return countSource.replace(/-/g, ' ');
   }
