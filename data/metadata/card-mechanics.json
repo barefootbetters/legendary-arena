@@ -100,7 +100,7 @@
       "label": "Attack Per Count",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 35,
+      "cardCount": 36,
       "cardIds": [
         "antm/ant-man",
         "asrd/thor",
@@ -136,7 +136,8 @@
         "vill/juggernaut",
         "vill/ultron",
         "vnom/venom",
-        "vnom/venompool"
+        "vnom/venompool",
+        "wwhk/no-name-brood-queen"
       ],
       "hidden": true
     },
@@ -396,6 +397,28 @@
       "cardCount": 1,
       "cardIds": [
         "wwhk/miek-the-unhived"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "deck-koed-attack-icon",
+      "label": "Deck Koed Attack Icon",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "wwhk/miek-the-unhived"
+      ],
+      "hidden": true
+    },
+    {
+      "slug": "deck-koed-non-grey-hero",
+      "label": "Deck Koed Non Grey Hero",
+      "scope": "hero",
+      "source": "free-text",
+      "cardCount": 1,
+      "cardIds": [
+        "wwhk/no-name-brood-queen"
       ],
       "hidden": true
     },
@@ -4583,6 +4606,7 @@
     "wwhk/miek-the-unhived": {
       "mechanics": [
         "deck-card-koed",
+        "deck-koed-attack-icon",
         "draw",
         "feast",
         "smash",
@@ -4598,6 +4622,8 @@
     },
     "wwhk/no-name-brood-queen": {
       "mechanics": [
+        "attack-per-count",
+        "deck-koed-non-grey-hero",
         "draw",
         "feast",
         "reveal-top-dispose",

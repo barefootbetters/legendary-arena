@@ -100,6 +100,8 @@
     "owned-card-koed": { "wp": "WP-853", "decision": "D-24789" },
     "owned-hero-koed": { "wp": "WP-856", "decision": "D-24792" },
     "deck-card-koed": { "wp": "WP-855", "decision": "D-24791" },
+    "deck-koed-attack-icon": { "wp": "WP-859", "decision": "D-24795" },
+    "deck-koed-non-grey-hero": { "wp": "WP-859", "decision": "D-24795" },
     "ritual-recruited-hero": { "wp": "WP-858", "decision": "D-24794" },
     "ritual-hero-classes": { "wp": "WP-858", "decision": "D-24794" },
     "discard-artifact-or-three-then-ko": { "wp": "WP-860", "decision": "D-24796" },

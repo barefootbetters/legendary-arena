@@ -610,6 +610,13 @@ UIState field.
   §16.1 reasoning holds. Pre-flight's content-READY stands. Execution waits on WP-855 and WP-857, then
   the EC's at-the-go re-confirmation (HEAD count + 18, the wait-and-see order, the WP-855 / WP-857 test
   files under WP-859).
+- **Pre-flight dependency re-check (01.4 §Dependency & Sequencing, 2026-11-01, `origin/main` `cfeda921`):
+  READY TO EXECUTE.** WP-855 `0bf912ae` (#3129) and WP-857 `64bcf4c8` (#3128) are executed (WORK_INDEX
+  `[x]`); `recordOwnedCardKoed(G, ownerPlayerID, cardId, fromZone: OwnedKoSourceZone)` is at
+  `hero/deferredConditionalGrants.ts:181`; `'feast'` is in `HERO_KEYWORDS`; `FEAST_CARDS` has 5 keys;
+  `hero/feast.test.ts` and `hero/deckCardKoTrigger.test.ts` pass at HEAD. Engine baseline 6178 / 1404
+  suites, so the target is 6196 / 1409. RS-1 and RS-2 stay at their locked defaults (Jeff's go,
+  2026-11-01). Not a new pre-flight round.
 
 ## Lint Gate Self-Review (00.3)
 

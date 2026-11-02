@@ -48,6 +48,7 @@
 
 import type { LegendaryGameState, DeferredConditionalGrant } from '../types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
+import type { HeroCountSource } from '../rules/heroCountSource.js';
 import type { CardExtId } from '../state/zones.types.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import {
@@ -56,6 +57,9 @@ import {
   OWNED_CARD_KOED_CONDITION_TYPE,
   OWNED_HERO_KOED_CONDITION_TYPE,
   DECK_CARD_KOED_CONDITION_TYPE,
+  ATTACK_ICON_DECK_KO_CONDITION_TYPE,
+  NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
+  matchReadsConditionType,
 } from './heroConditions.evaluate.js';
 
 // why: WP-656 / D-24467 — the single EDGE-TRIGGERED wait-and-see condition type.
@@ -108,7 +112,18 @@ export const WAIT_AND_SEE_CONDITION_TYPES: readonly string[] = [
   // Appetite) is shape #2 with a per-owner DECK count: fires once per counted KO and re-arms,
   // like the owned-KO entry. Has an evaluateCondition case (the lockstep the drift pin enforces).
   DECK_CARD_KOED_CONDITION_TYPE,
+  // why: WP-859 / D-24795 — "Then, if a card with an [icon:attack] icon / a non-grey Hero was
+  // KO'd from your deck this turn, Transform" (Metamorphosis, Bursting with Life) reads the
+  // sticky turn record, so it is shape #1: fire once, not re-armed. RS-1 — the whole-turn
+  // window (D-24476 parity with Gamma-Draining Nanites): the Transform fires the first time the
+  // condition holds this turn. Both have evaluateCondition cases (the lockstep the pin enforces).
+  ATTACK_ICON_DECK_KO_CONDITION_TYPE,
+  NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
 ];
+
+// why: WP-859 / D-24795 — the one count source that reads the deck-KO turn record (World-Spanning
+// Hunger). Typed against the HeroCountSource union, so a renamed source fails to compile.
+const NON_GREY_HEROES_KOED_FROM_DECK_COUNT_SOURCE: HeroCountSource = 'non-grey-heroes-koed-from-deck-this-turn';
 
 /**
  * The zone an owned KO'd card left: a player's hand, deck, discard pile or cards in play.
@@ -210,6 +225,53 @@ export function recordOwnedCardKoed(
     const previousDeckCount = G.deckCardsKoedSinceResolve[ownerPlayerID] ?? 0;
     G.deckCardsKoedSinceResolve[ownerPlayerID] = previousDeckCount + 1;
   }
+  // why: WP-859 / D-24795 — the deck-KO turn record ("KO'd from your deck this turn"). TURN-scoped
+  // because a KO before the reader is played counts, so it cannot wait for a deferred grant like
+  // the counts above; it is gated instead on a reader hook, so a game without Metamorphosis,
+  // Bursting with Life or World-Spanning Hunger never gains the key and no hash moves. The zone
+  // test runs first, so the hook scan runs only at deck sites. Keyed per owner, in KO order.
+  if (fromZone === 'deck' && hasDeckKoRecordReader(G)) {
+    if (G.cardsKoedFromDeckThisTurn === undefined) {
+      G.cardsKoedFromDeckThisTurn = {};
+    }
+    const ownerRecord = G.cardsKoedFromDeckThisTurn[ownerPlayerID];
+    if (ownerRecord === undefined) {
+      G.cardsKoedFromDeckThisTurn[ownerPlayerID] = [cardId];
+    } else {
+      ownerRecord.push(cardId);
+    }
+  }
+}
+
+/**
+ * Reports whether any hook in this match reads the deck-KO turn record.
+ *
+ * why: WP-859 / D-24795 — not the waiting-grant gate the counts use: a KO made before the reader
+ * card is played must be in the record, and at that moment nothing waits. Hooks are built once at
+ * setup, so the answer is constant for the match (the D-24616 posture). The condition half reuses
+ * matchReadsConditionType; the count half scans the effects for World-Spanning Hunger's source.
+ *
+ * @param G - The game state (read-only).
+ * @returns True when a hook carries either deck-KO condition or the deck-KO count source.
+ */
+function hasDeckKoRecordReader(G: LegendaryGameState): boolean {
+  if (matchReadsConditionType(G, ATTACK_ICON_DECK_KO_CONDITION_TYPE)) {
+    return true;
+  }
+  if (matchReadsConditionType(G, NON_GREY_HERO_DECK_KO_CONDITION_TYPE)) {
+    return true;
+  }
+  if (!Array.isArray(G.heroAbilityHooks)) {
+    return false;
+  }
+  for (const hook of G.heroAbilityHooks) {
+    for (const effect of hook.effects ?? []) {
+      if (effect.countSource === NON_GREY_HEROES_KOED_FROM_DECK_COUNT_SOURCE) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**

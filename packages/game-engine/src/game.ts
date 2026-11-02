@@ -1011,6 +1011,13 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
             delete G.deckCardsKoedSinceResolve;
           }
 
+          // why: WP-859 / D-24795 — the turn record of cards KO'd from each deck ("KO'd from
+          // your deck this turn") lives for the whole turn and is cleared only here, never per
+          // resolve. Guarded, so a game that never wrote it (no reader hook) is unchanged.
+          if (G.cardsKoedFromDeckThisTurn !== undefined) {
+            delete G.cardsKoedFromDeckThisTurn;
+          }
+
           // why: WP-777 / D-24616 — "If you discarded any cards this turn" reads a per-turn
           // count, so it must not carry into the next turn (a stale count would let New
           // Wings / Pumpkin Bombs fire with no discard — the exact over-credit this fixes).

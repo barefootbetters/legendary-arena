@@ -702,6 +702,14 @@ export interface RevealedTopEntry {
    * that never plays a KO-or-keep card serializes byte-identically.
    */
   isDiscardAllowed?: boolean;
+  /**
+   * WP-859 / D-24795 — the Attack World-Spanning Hunger's Feast pays when the chooser KOs this
+   * card and it is a non-grey Hero ("+2 for each non-grey Hero that was KO'd from your deck this
+   * turn", counted at resolution). Copied from the `feast` descriptor by the `reveal-top-may-ko`
+   * handler only when the descriptor carries it; omitted otherwise, so every other KO-or-keep
+   * entry serializes byte-identically.
+   */
+  nonGreyHeroKoAttack?: number;
 }
 
 /**
@@ -2865,6 +2873,15 @@ export interface LegendaryGameState {
   // choice and at turn.onBegin, never set in Game.setup.
   /** Deck-card KOs per owner since the last deferred-grant resolve that fired; absent when none. */
   deckCardsKoedSinceResolve?: Record<string, number>;
+
+  // why: WP-859 / D-24795 — per-owner ids KO'd from the player's DECK this turn, in KO order,
+  // for "if a card with an [icon:attack] icon / a non-grey Hero was KO'd from your deck this
+  // turn" (Metamorphosis, Bursting with Life) and "+2 for each non-grey Hero that was KO'd from
+  // your deck this turn" (World-Spanning Hunger). TURN-scoped, not per resolve: a KO before the
+  // play counts. Written by recordOwnedCardKoed only in a match whose hooks read it, deleted at
+  // turn.onBegin, never set in Game.setup — so a game without a reader never carries the key.
+  /** Card ids KO'd from each player's deck this turn; absent when the match has no reader. */
+  cardsKoedFromDeckThisTurn?: Record<string, CardExtId[]>;
 
   // why: WP-743 / D-24566 — a Master Strike card was played (revealed from the Villain
   // Deck and routed to the strike pile) this turn. Read by the Grief and Spring the Trap

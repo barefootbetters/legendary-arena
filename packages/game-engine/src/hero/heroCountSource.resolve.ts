@@ -35,7 +35,12 @@ import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
 // the class analogue of cardCountsAsTeamMember used by the team sources.
 import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
-import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
+import {
+  matchesGreyHeroFilter,
+  offPlayCardTraits,
+  playedCardIdsStillInPlay,
+  playedCardIdsThisTurn,
+} from './splitCard.logic.js';
 
 // why: villain-deck bystanders carry the `bystander-villain-deck-NN` ext_id
 // form (villainDeck.setup.ts), distinct from the global-pile `pile-bystander`
@@ -502,6 +507,19 @@ export function resolveCountSource(
       // player's alone; the ?? 0 guards narrow test mocks that omit the field.
       return G.turnEconomy?.cardsDrawn ?? 0;
     }
+    case 'non-grey-heroes-koed-from-deck-this-turn': {
+      // why: WP-859 / D-24795 — World-Spanning Hunger's "+2 for each non-grey Hero that was KO'd
+      // from your deck this turn": the non-grey Heroes in this player's deck-KO turn record.
+      // Wounds, Bystanders and grey Heroes fail the filter. triggeringCardId is unused (the record
+      // holds KO'd cards, never the resolving card). An absent record counts 0.
+      let nonGreyHeroCount = 0;
+      for (const koedCardId of G.cardsKoedFromDeckThisTurn?.[playerID] ?? []) {
+        if (matchesGreyHeroFilter(G, koedCardId, 'non-grey')) {
+          nonGreyHeroCount += 1;
+        }
+      }
+      return nonGreyHeroCount;
+    }
     default: {
       // why: defensive — the union is closed, but an unrecognized source must
       // resolve to 0 (a skipped no-op grant) rather than throw.
@@ -915,6 +933,16 @@ export function explainCountSourceInputs(
       // how many cards were drawn, not which, so there are no inputs to name (like the
       // victory-pile sources, countedInputs is omitted for it).
       return [];
+    }
+    case 'non-grey-heroes-koed-from-deck-this-turn': {
+      // why: WP-859 / D-24795 — the ids resolveCountSource counts, in KO order (count === length).
+      const nonGreyHeroIds: CardExtId[] = [];
+      for (const koedCardId of G.cardsKoedFromDeckThisTurn?.[playerID] ?? []) {
+        if (matchesGreyHeroFilter(G, koedCardId, 'non-grey')) {
+          nonGreyHeroIds.push(koedCardId);
+        }
+      }
+      return nonGreyHeroIds;
     }
     default: {
       // why: defensive — the union is closed, but an unrecognized source explains to no
