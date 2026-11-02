@@ -1614,9 +1614,9 @@
       "card": "No-Name, Brood Queen",
       "ability": "Bursting with Life: You may Feast. Then, if a non-grey Hero was KO'd from your deck this turn, Transform this into Torrent of Broodlings. World-Spanning Hunger: Feast up to three times; +2 Attack for each non-grey Hero KO'd from your deck this turn",
       "wp": "WP-859",
-      "state": "pending",
-      "date": "2026-11-01",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-859 deploy (isMatchOlderThanServer: false) with Miek and No-Name in the hero decks, per the WP-859 DoD.",
+      "state": "verified",
+      "date": "2026-11-02",
+      "evidence": "2p Operator match lGUaRh-4IPl (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Hulk; server build 6281562a, created 2026-11-02T21:41:44Z after boot, isMatchOlderThanServer false): Bursting with Life whose Feast KO'd a grey S.H.I.E.L.D. Agent stayed waiting and did not Transform (4.2.1-4.2.8, twice); KOing Metamorphosis Transformed it into Torrent of Broodlings, +2 Attack (8.2.2-8.2.6), and again on a KO'd Torrent (10.2.3-10.2.7); a second Bursting that turn Transformed off the earlier KO even though its own Feast took a grey Trooper (10.2.8-10.2.11). Torrent of Broodlings later played as itself, +2 and a draw (12.2.4-12.2.7). World-Spanning Hunger (printed 4+) opened three Feast prompts and paid +2 for the non-grey Hero already KO'd that turn (8.2.11, count 1) plus +2 for each non-grey Hero it KO'd (8.2.13, 8.2.18), nothing for the grey Agent between them (8.2.15); with only grey cards available it paid +0 (12.2.16-12.2.24) and with an empty deck its prompts logged blocked (14.2.14-14.2.18). No flat +2 on any play.",
       "note": "Bursting with Life Transforms into Torrent of Broodlings (+2 Attack) once a non-grey Hero is KO'd from your deck this turn (not a grey Hero, Wound or Bystander). World-Spanning Hunger opens three KO / Keep prompts, pays +2 for each non-grey Hero it KOs plus +2 per non-grey Hero already KO'd from the deck this turn, and no flat +2. D-24795."
     },
     {
@@ -1625,9 +1625,9 @@
       "card": "No-Name, Brood Queen",
       "ability": "Surprise Attack: If this is the first card you played this turn, draw a card",
       "wp": "WP-861",
-      "state": "partial",
+      "state": "verified",
       "date": "2026-11-02",
-      "evidence": "2p Operator match gs--GHdVvyG (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Wasp; server build 9c178a24, created 2026-11-02T15:09:49Z after boot, isMatchOlderThanServer false): Surprise Attack played after other cards logged blocked, needing to be the first Hero played (5.2.18). Not yet seen: Surprise Attack played as the first card, drawing a card. Second match 2p Operator match J5MxrX7bDDf (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Hulk; server build 6281562a, created 2026-11-02T20:24:07Z after boot, isMatchOlderThanServer false): Surprise Attack played third, after two Endless Appetites, logged the same block and drew nothing (14.2.5-14.2.6). Still not seen: played as the first card.",
+      "evidence": "2p Operator match gs--GHdVvyG (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Wasp; server build 9c178a24, created 2026-11-02T15:09:49Z after boot, isMatchOlderThanServer false): Surprise Attack played after other cards logged blocked, needing to be the first Hero played (5.2.18). Not yet seen: Surprise Attack played as the first card, drawing a card. Second match 2p Operator match J5MxrX7bDDf (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Hulk; server build 6281562a, created 2026-11-02T20:24:07Z after boot, isMatchOlderThanServer false): Surprise Attack played third, after two Endless Appetites, logged the same block and drew nothing (14.2.5-14.2.6). Still not seen: played as the first card. Led-draw PASS on 2p Operator match lGUaRh-4IPl (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Hulk; server build 6281562a, created 2026-11-02T21:41:44Z after boot, isMatchOlderThanServer false): Surprise Attack played as the first card drew a card on four turns (6.2.1-6.2.2, 10.2.1-10.2.2, 12.2.1-12.2.2, 14.2.1-14.2.2).",
       "note": "Surprise Attack played first draws a card; played after another card it logs [blocked] (needs to be the first Hero you played this turn) and draws nothing. D-24798."
     },
     {
