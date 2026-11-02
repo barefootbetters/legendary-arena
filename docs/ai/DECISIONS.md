@@ -49653,7 +49653,7 @@ Protect this file.
 
 ### D-24779 — A player who can reveal for "reveal … or gain a Wound" chooses, through a multi-seat seat choice, for both the hero keyword and the villain primitive (Active 2026-10-26 — WP-845 / EC-883)
 
-**Status:** Active 2026-10-26. Live-verify (D-24026) operator-pending: a `play.legendary-arena.com` 2-player match created after the deploy where a reveal-or-wound fires with a revealer (STATUS.md WP-845 entry).
+**Status:** Active 2026-10-26. Live-verify (D-24026) PASS 2026-11-02 — Operator match `9sArOoptLJ0` (Magneto / Midtown Bank Robbery, 2p; server `548923dd`, created after boot): fighting Sabretooth wounded the seat with no X-Men Hero at once (21.2.23) and offered the seat holding Wolverine the reveal-or-Wound choice (21.2.24), which revealed and took no Wound (21.2.27). Row `core-villain-brotherhood-sabretooth|reveal-or-wound` (WP-845) verified.
 
 **User-Visible Surface:** `play.legendary-arena.com` (after deploy). When Sabretooth is fought, a Frost Giant ambushes, Ultron escapes, co2e Crazed Rampage is played (any of the 14 `reveal-or-wound` lines or the one `reveal-or-gain-wound-each` line), every player holding a qualifying Hero sees "Reveal a Hero or gain a Wound?" with **Reveal a matching {X} Hero** / **Reveal another {X} Hero** and **Gain a Wound instead**, on their own seat, at the same time. Players with no qualifying Hero gain the Wound at once, as before.
 
@@ -50005,7 +50005,7 @@ Protect this file.
 
 ### D-24793 — Hero Feast: "You may [keyword:Feast]" is the `feast` HeroKeyword, the shipped KO-or-keep reveal of the deck top, on five allowlisted Miek / No-Name lines (Active 2026-11-01 — WP-857 / EC-895)
 
-**Status:** Active 2026-11-01. Live-verify (D-24026) operator-pending: on a play.legendary-arena.com match created after the deploy (`isMatchOlderThanServer: false`) with Miek and No-Name in the hero decks, play Metamorphosis or Bursting with Life, see the reveal prompt with KO / Keep, KO the top card (to the KO pile), and keep it on another play. Pending rows `wwhk/miek-the-unhived|feast` and `wwhk/no-name-brood-queen|feast` in `live-verify.json`.
+**Status:** Active 2026-11-01. Live-verify (D-24026) Miek PASS 2026-11-02, No-Name partial — Operator match `9sArOoptLJ0` (Magneto / Midtown Bank Robbery, 2p), created 2026-11-02T03:41:41Z after the deploy (server `548923dd`, which contains the #3128 merge; diagnostics `isMatchOlderThanServer: false`). Metamorphosis and Devouring Frenzy (after another Instinct Hero) opened the KO / Keep prompt on the deck top, KO'd it (5.2.5, 5.2.9, 11.2.7, 11.2.14, 15.2.17, 19.2.12) or kept it on top (13.2.4, 15.2.9, 21.2.17); Devouring Frenzy logged blocked with no Instinct Hero before it (9.2.5, 19.2.2). Row `wwhk/miek-the-unhived|feast` verified. Appetite for Destruction's Covert gate blocked correctly (15.2.5, 21.2.20), but no No-Name Feast fired, so `wwhk/no-name-brood-queen|feast` is partial until Bursting with Life (or Appetite for Destruction after a Covert Hero) is played on a later match.
 
 **Context.** World War Hulk's hero Feast means "KO the top card of your deck" (rules v23), and five Miek / No-Name lines print "You may [keyword:Feast]". The parser did not know the token, so every printed Feast landed in `unresolvedMarkers` and those lines did nothing. The shipped `heroEffectRevealTopMayKo` (D-24581: Gruesome Feast, Remove His Spine, Electroshock Therapy) is exactly "you may KO the top card of your deck".
 
