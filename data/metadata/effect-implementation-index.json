@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2036,
+    "totalEntries": 2038,
     "byScope": {
-      "hero": 840,
+      "hero": 842,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
       "executable": 660,
       "deferred": 16,
-      "condition": 55,
+      "condition": 58,
       "unsupported": 287,
-      "unmarked": 1013,
+      "unmarked": 1012,
       "subsystem": 5
     }
   },
@@ -1565,11 +1565,17 @@
       "name": "Wasp",
       "set": "amwp",
       "scope": "hero",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
       "handler": "",
       "wp": "",
-      "decision": ""
+      "decision": "",
+      "designs": [
+        {
+          "slug": "follow-my-lead",
+          "name": "Follow my Lead"
+        }
+      ]
     },
     {
       "extId": "anni-mastermind-annihilus-deploy-the-planet-killer",
@@ -11432,6 +11438,23 @@
         {
           "slug": "ninjitsu",
           "name": "Ninjitsu"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/elektra",
+      "name": "Elektra",
+      "set": "dkcy",
+      "scope": "hero",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "first-strike",
+          "name": "First Strike"
         }
       ]
     },
@@ -27242,6 +27265,10 @@
       "decision": "D-2201",
       "designs": [
         {
+          "slug": "surprise-attack",
+          "name": "Surprise Attack"
+        },
+        {
           "slug": "torrent-of-broodlings",
           "name": "Torrent of Broodlings"
         }
@@ -27269,6 +27296,23 @@
         {
           "slug": "world-spanning-hunger",
           "name": "World-Spanning Hunger"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/no-name-brood-queen",
+      "name": "No-Name, Brood Queen",
+      "set": "wwhk",
+      "scope": "hero",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "surprise-attack",
+          "name": "Surprise Attack"
         }
       ]
     },
@@ -29791,7 +29835,7 @@
     "amwp/wasp": {
       "scope": "hero",
       "mechanics": [
-        "(unmarked)"
+        "first-hero-condition"
       ]
     },
     "anni-mastermind-annihilus-deploy-the-planet-killer": {
@@ -32850,7 +32894,8 @@
     "dkcy/elektra": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "first-hero-condition"
       ]
     },
     "dkcy/forge": {
@@ -38181,6 +38226,7 @@
         "deck-koed-non-grey-hero",
         "draw",
         "feast",
+        "first-hero-condition",
         "reveal-top-dispose",
         "transform"
       ]

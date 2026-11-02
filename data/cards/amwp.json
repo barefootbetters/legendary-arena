@@ -342,7 +342,7 @@
           "recruit": null,
           "abilities": [
             "Size-Changing [hc:ranged]",
-            "If this is the first card you played this turn, you get +1[icon:attack]."
+            "If this is the first card you played this turn, you get +1[icon:attack]. [keyword:first-hero-condition]"
           ]
         },
         {

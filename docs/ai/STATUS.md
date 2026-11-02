@@ -10,6 +10,16 @@
 
 ## Current State
 
+### WP-861 / EC-899 — "If this is the first card you played this turn": Surprise Attack draws, First Strike and Follow My Lead gate their +1 Attack (D-24798) (2026-11-01)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Leading a turn with No-Name's Surprise Attack now draws a card (before, it never drew). Elektra's First Strike and Wasp's Follow My Lead give 2 Attack only when played first; played after another card they give 1 and the log shows a `[blocked]` line saying the card needs to be the first Hero you played this turn (before, both gave 2 on every play). Bots now lead with these three, through the existing D-24705 / D-24706 marker read.
+
+- **Card data.** Four curated `hero-ability-markers.json` entries (`[keyword:first-hero-condition]` on all three lines, `[keyword:draw:1]` on Surprise Attack) applied by `apply-hero-ability-markers.mjs` to one line each in `dkcy`, `wwhk` and `amwp`. No engine source change; Follow My Lead's Size-Changing line byte-identical.
+- **Feeds.** Regenerated hero ledger (three `first-hero-condition` condition rows; Surprise Attack joins the No-Name `draw` row), effect index, card-mechanics (`first-hero-condition` 1 card -> 4) and coverage baseline (executable +5 / noEffect -5). Runtime-observed sweep and dashboard in-play pin unchanged.
+- **Tests.** game-engine 6196 -> 6206 / 0 (+10, on top of WP-859, new `hero/firstCardPlayed.test.ts` on hooks parsed from the committed data through `applyCardPlay`). dashboard 584 / 0. No `finalStateHash` sentinel, PAR or simulation pin moved.
+- **Live-verify (D-24026): operator-pending.** A match created after the deploy: Surprise Attack led draws, First Strike or Follow My Lead led gives 2 Attack, each played second logs `[blocked]`. Pending rows in `live-verify.json`.
+- **Follow-up.** `3dtc` Deadpool "Hey, Can I Get a Do-Over?" prints the same first-Hero line, unmarked (its own change; it moves the runtime-observed hollows and the dashboard in-play pin).
+
 ### WP-859 / EC-897 — "KO'd from your deck this turn": Metamorphosis and Bursting with Life Transform, World-Spanning Hunger Feasts three times (D-24795) (2026-11-01)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Metamorphosis (Miek) opens its Feast prompt as before and now logs "… is waiting — it needs a card with an Attack icon to be KO'd from your deck this turn"; KOing such a card from your deck that turn (the Feast or any other deck KO) swaps it for Hive King Miek in play with +6 Attack. Bursting with Life (No-Name) does the same on a non-grey Hero and becomes Torrent of Broodlings (+2 Attack). World-Spanning Hunger opens three KO / Keep prompts, pays +2 for each non-grey Hero it KOs plus +2 per non-grey Hero already KO'd from your deck this turn, and no longer gives a flat +2 every play. A waiting Transform whose card has left play no longer fires, which also closes a free-card gap in She-Hulk's Hurl Legal Objections and Gamma-Draining Nanites. A match created before the deploy keeps its old hooks (the Transform guard applies to it).
@@ -21,6 +31,7 @@
 - **Implementation note.** The criterion-icon drop applies only to the magnitude-less `attack` the descriptive "an [icon:attack] icon" produces, so the generated per-marker case for `deck-koed-attack-icon` (whose probe line also prints `+2[icon:attack]`) keeps its real grant; Metamorphosis' parse is as locked.
 - **Live-verify (D-24026): operator-pending.** On a match created after the deploy (`isMatchOlderThanServer: false`) with Miek and No-Name: KO an Attack-icon card from your deck, then play Metamorphosis (Transforms, +6); KO a non-grey Hero, then play Bursting with Life (Transforms, +2); play World-Spanning Hunger (three prompts, +2 per non-grey Hero KO'd, no flat +2). Pending rows `wwhk/miek-the-unhived|transform` and `wwhk/no-name-brood-queen|transform` in `live-verify.json`. The same match can close WP-857's two pending Feast rows.
 - **Follow-up (not here).** Setup puts 5 Torrent of Broodlings in the transform side deck for 3 Bursting with Life copies; harmless, check against the printed card list.
+
 ### Electromagnetic Bubble keeps its seventh card through a deck reshuffle (D-24797, direct fix) (2026-11-01)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Defeating Magneto's Electromagnetic Bubble on a turn when your deck is nearly empty used to lose the seventh card: the chosen Hero got shuffled into the deck, sometimes drawn as one of the six, and the log said it "could not be found". Now the Hero is set aside before the new hand is drawn and always comes back as the seventh card.

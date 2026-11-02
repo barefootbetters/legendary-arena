@@ -839,9 +839,12 @@
       "label": "First Hero Condition",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 1,
+      "cardCount": 4,
       "cardIds": [
-        "core/deadpool"
+        "amwp/wasp",
+        "core/deadpool",
+        "dkcy/elektra",
+        "wwhk/no-name-brood-queen"
       ],
       "hidden": true
     },
@@ -2390,12 +2393,11 @@
       "label": "Unmarked",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 26,
+      "cardCount": 25,
       "cardIds": [
         "3dtc/deadpool",
         "3dtc/man-thing",
         "amwp/scott-lang-cat-burglar",
-        "amwp/wasp",
         "co2e/nick-fury",
         "co2e/spider-man-miles-morales",
         "co2e/storm",
@@ -2745,7 +2747,7 @@
     },
     "amwp/wasp": {
       "mechanics": [
-        "unmarked"
+        "first-hero-condition"
       ]
     },
     "anni/brainstorm": {
@@ -3470,7 +3472,8 @@
     },
     "dkcy/elektra": {
       "mechanics": [
-        "draw"
+        "draw",
+        "first-hero-condition"
       ]
     },
     "dkcy/forge": {
@@ -4626,6 +4629,7 @@
         "deck-koed-non-grey-hero",
         "draw",
         "feast",
+        "first-hero-condition",
         "reveal-top-dispose",
         "transform"
       ]

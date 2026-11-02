@@ -1394,7 +1394,7 @@
           "attack": "1",
           "recruit": null,
           "abilities": [
-            "If this is the first card you played this turn, draw a card."
+            "If this is the first card you played this turn, draw a card. [keyword:first-hero-condition] [keyword:draw:1]"
           ]
         },
         {
