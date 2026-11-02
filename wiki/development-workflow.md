@@ -926,7 +926,10 @@ Each platform manages its own configuration and secrets independently.
   previous release with no rebuild and doesn't reverse migrations. Anything
   older is a hand deploy with `DEPLOY_REF=<sha>`, since the gate refuses to
   go backwards.
-- **Cost:** ~$24/mo.
+- **Cost:** ~$24/mo for the droplet plus daily backups. October 2026, a
+  partial month from the 2026-10-12 cutover, came to $17.65 before a one-time
+  $5.00 trial credit: `la-rehearsal-01` $17.12, backups $0.28, and the
+  `la-drill-01` restore-drill droplet $0.25.
 
 **Render** — server + database until 2026-10-12 (history):
 
@@ -940,7 +943,9 @@ Each platform manages its own configuration and secrets independently.
   deleted on 2026-10-22. The Render workspace is empty, on the free Hobby plan.
 - **Cost:** $146.35 for September 2026 (server $85.00, Postgres $55.30,
   builds $5.00, bandwidth $1.05); August was $146.50, so ~$146/mo was the
-  steady rate. The comparison is in
+  steady rate. October 2026 was the final bill, **$71.12** (server $32.36 for
+  283 h, Postgres $38.76 for 521 h, ewiki $0), covering service until each was
+  deleted. The workspace bills $0 from November on. The comparison is in
   [Render Migration Analysis](render-migration-analysis.md#cost-case-september-2026).
 
 **Cloudflare Pages** — public front-ends:
