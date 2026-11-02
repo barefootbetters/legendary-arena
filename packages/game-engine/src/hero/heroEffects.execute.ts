@@ -3862,14 +3862,15 @@ function heroEffectRevealTopDisposeKo(
  * @param ctx - Move context, narrowed to ShuffleProvider for the reshuffle-on-empty.
  * @param playerID - The active player who played the card.
  * @param _cardId - The played card (unused; the choice carries only the revealed top).
- * @param _effect - The `{ type: 'reveal-top-may-ko' }` descriptor (no magnitude).
+ * @param effect - The `{ type: 'reveal-top-may-ko' }` / `{ type: 'feast' }` descriptor (no magnitude;
+ *   World-Spanning Hunger's Feasts carry `nonGreyHeroKoAttack`, WP-859).
  */
 function heroEffectRevealTopMayKo(
   G: LegendaryGameState,
   ctx: unknown,
   playerID: string,
   _cardId: CardExtId,
-  _effect: HeroEffectDescriptor,
+  effect: HeroEffectDescriptor,
 ): void {
   const revealed = revealDeckTopForDispose(G, playerID, ctx as ShuffleProvider);
   if (revealed === null) {
@@ -3878,16 +3879,25 @@ function heroEffectRevealTopMayKo(
     pushLog(G, `Player ${playerID} had no card to reveal on top of their deck (reveal-top).`, 'blocked');
     return;
   }
+  const revealedEntry: RevealedTopEntry = {
+    ownerPlayerID: revealed.ownerPlayerID,
+    cardId: revealed.cardId,
+    isKoAllowed: true,
+    isDiscardAllowed: false,
+  };
+  // why: WP-859 / D-24795 — World-Spanning Hunger's "+2 for each non-grey Hero that was KO'd
+  // from your deck this turn" counts its own Feasts' KOs, which land in later moves, so each
+  // Feast entry carries the reward resolveRevealTopDispose pays on a non-grey Hero KO (RS-2,
+  // counted at resolution). Copied only when the descriptor has it, so every other KO-or-keep
+  // entry keeps today's shape.
+  if (effect.nonGreyHeroKoAttack !== undefined) {
+    revealedEntry.nonGreyHeroKoAttack = effect.nonGreyHeroKoAttack;
+  }
   if (!G.pendingRevealTopDispose) { G.pendingRevealTopDispose = []; }
   G.pendingRevealTopDispose.push({
     choiceType: 'reveal-top-dispose',
     playerID,
-    revealedTops: [{
-      ownerPlayerID: revealed.ownerPlayerID,
-      cardId: revealed.cardId,
-      isKoAllowed: true,
-      isDiscardAllowed: false,
-    }],
+    revealedTops: [revealedEntry],
   } satisfies PendingRevealTopDispose);
   pushLog(G,
     `Player ${playerID} revealed ${formatCardRef(G.cardDisplayData, revealed.cardId)} from the top of their deck — KO it or keep it (reveal-top).`,
@@ -6562,6 +6572,19 @@ function heroEffectTransform(
   // Route the base card back to the side deck (set aside): a permanent deck upgrade —
   // the player's deck loses the base as it gains the second-form, no net card change.
   const baseMove = moveCardFromZone(playerZones.inPlay, G.transformDeck, cardId);
+  if (!baseMove.found) {
+    // why: WP-859 / D-24795 — a deferred (wait-and-see) Transform can fire after its base card
+    // left play (KO'd from play, say). Swapping then would put the second form into play while
+    // the base stays wherever it went: a free card. Refuse before any zone is assigned, so the
+    // side deck and inPlay are untouched. Covers Hurl Legal Objections and Gamma-Draining
+    // Nanites too, which have had this window since WP-658 / WP-665.
+    pushLog(G,
+      `Player ${playerID} could not Transform ${formatCardRef(G.cardDisplayData, cardId)} — it is no longer in play.`,
+      'blocked',
+      cardId,
+    );
+    return;
+  }
   playerZones.inPlay = baseMove.from;
   G.transformDeck = baseMove.to;
 

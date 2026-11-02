@@ -3,17 +3,17 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2033,
+    "totalEntries": 2036,
     "byScope": {
-      "hero": 837,
+      "hero": 840,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 657,
+      "executable": 660,
       "deferred": 16,
-      "condition": 53,
-      "unsupported": 289,
+      "condition": 55,
+      "unsupported": 287,
       "unmarked": 1013,
       "subsystem": 5
     }
@@ -27053,6 +27053,23 @@
       "name": "Miek, The Unhived",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "deck-koed-attack-icon",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-859",
+      "decision": "D-24795",
+      "designs": [
+        {
+          "slug": "metamorphosis",
+          "name": "Metamorphosis"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/miek-the-unhived",
+      "name": "Miek, The Unhived",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -27113,8 +27130,8 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "transform",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "wp": "",
       "decision": "",
       "designs": [
@@ -27184,6 +27201,40 @@
       "name": "No-Name, Brood Queen",
       "set": "wwhk",
       "scope": "hero",
+      "mechanic": "attack-per-count",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count",
+      "wp": "WP-247",
+      "decision": "D-24016",
+      "designs": [
+        {
+          "slug": "world-spanning-hunger",
+          "name": "World-Spanning Hunger"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/no-name-brood-queen",
+      "name": "No-Name, Brood Queen",
+      "set": "wwhk",
+      "scope": "hero",
+      "mechanic": "deck-koed-non-grey-hero",
+      "status": "condition",
+      "handler": "",
+      "wp": "WP-859",
+      "decision": "D-24795",
+      "designs": [
+        {
+          "slug": "bursting-with-life",
+          "name": "Bursting with Life"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/no-name-brood-queen",
+      "name": "No-Name, Brood Queen",
+      "set": "wwhk",
+      "scope": "hero",
       "mechanic": "draw",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
@@ -27244,8 +27295,8 @@
       "set": "wwhk",
       "scope": "hero",
       "mechanic": "transform",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#transform",
       "wp": "",
       "decision": "",
       "designs": [
@@ -38108,6 +38159,7 @@
       "scope": "hero",
       "mechanics": [
         "deck-card-koed",
+        "deck-koed-attack-icon",
         "draw",
         "feast",
         "smash",
@@ -38125,6 +38177,8 @@
     "wwhk/no-name-brood-queen": {
       "scope": "hero",
       "mechanics": [
+        "attack-per-count",
+        "deck-koed-non-grey-hero",
         "draw",
         "feast",
         "reveal-top-dispose",

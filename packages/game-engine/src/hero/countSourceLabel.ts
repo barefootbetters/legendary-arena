@@ -53,6 +53,8 @@ export function describeCountSource(countSource: string): string {
       return 'extra card drawn this turn';
     case 'shield-heroes-cost-one-plus-played-this-turn':
       return 'other S.H.I.E.L.D. Hero costing 1 or more played this turn';
+    case 'non-grey-heroes-koed-from-deck-this-turn':
+      return 'non-grey Hero KO\'d from your deck this turn';
     default:
       return countSource.replace(/-/g, ' ');
   }

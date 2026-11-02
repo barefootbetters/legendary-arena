@@ -1,8 +1,8 @@
 {
   "corpus": {
-    "executable": 3827,
+    "executable": 3831,
     "heroes": 324,
-    "hooks": 6388,
+    "hooks": 6392,
     "noEffect": 2457,
     "parsedNotExecuted": 104
   },
@@ -203,8 +203,8 @@
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 240,
-      "hooks": 337,
+      "executable": 244,
+      "hooks": 341,
       "noEffect": 97
     },
     "xmen": {

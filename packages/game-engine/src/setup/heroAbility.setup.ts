@@ -46,6 +46,8 @@ import {
   OWNED_CARD_KOED_CONDITION_TYPE,
   OWNED_HERO_KOED_CONDITION_TYPE,
   DECK_CARD_KOED_CONDITION_TYPE,
+  ATTACK_ICON_DECK_KO_CONDITION_TYPE,
+  NON_GREY_HERO_DECK_KO_CONDITION_TYPE,
 } from '../hero/heroConditions.evaluate.js';
 
 // ---------------------------------------------------------------------------
@@ -433,6 +435,11 @@ export const HERO_PARSER_RECOGNIZED_MARKER_NAMES: readonly string[] = [
   // why: WP-855 / D-24791 — Endless Appetite's deck-KO trigger marker; its parseAbilityText
   // arm pushes the per-KO deckCardKoedThisTurn wait-and-see condition.
   'deck-card-koed',
+  // why: WP-859 / D-24795 — Metamorphosis / Bursting with Life's deck-KO turn-record markers; their
+  // parseAbilityText arms push the one-shot attackIconCardKoedFromDeckThisTurn /
+  // nonGreyHeroKoedFromDeckThisTurn wait-and-see conditions.
+  'deck-koed-attack-icon',
+  'deck-koed-non-grey-hero',
   'first-hero-condition',
   // why: WP-743 / D-24566 — Grief / Spring the Trap condition markers; each has a
   // parseAbilityText arm that pushes its whole-turn wait-and-see condition.
@@ -699,6 +706,15 @@ const SUPPORTED_TRANSFORM_BASES: ReadonlySet<string> = new Set<string>([
   // condition (a [keyword:draw-threshold:2] marker on its transform ability line). The
   // card's ability is two hooks (draw / transform), so the draw stays unconditional.
   'wwhk/amadeus-cho/gamma-draining-nanites',
+  // why: WP-859 / D-24795 — Miek's Metamorphosis. Its transform gates on "a card with an
+  // [icon:attack] icon was KO'd from your deck this turn", modeled by the
+  // attackIconCardKoedFromDeckThisTurn wait-and-see condition ([keyword:deck-koed-attack-icon]).
+  // FEAST_THEN_TRANSFORM_CARDS splits its one line so the Feast stays unconditional.
+  'wwhk/miek-the-unhived/metamorphosis',
+  // why: WP-859 / D-24795 — No-Name's Bursting with Life. Its transform gates on "a non-grey Hero
+  // was KO'd from your deck this turn", modeled by the nonGreyHeroKoedFromDeckThisTurn
+  // wait-and-see condition ([keyword:deck-koed-non-grey-hero]); split like Metamorphosis.
+  'wwhk/no-name-brood-queen/bursting-with-life',
 ]);
 
 // why: WP-857 / D-24793 — cards whose printed "You may [keyword:Feast]" (KO the top card of your
@@ -714,6 +730,31 @@ const FEAST_CARDS: ReadonlySet<string> = new Set<string>([
   'wwhk/miek-the-unhived/metamorphosis',
   'wwhk/miek-the-unhived/hive-king-miek',
   'wwhk/no-name-brood-queen/appetite-for-destruction',
+  'wwhk/no-name-brood-queen/bursting-with-life',
+  // why: WP-859 / D-24795 — World-Spanning Hunger's "Feast up to three times" (FEAST_REPEAT_COUNTS)
+  // and its "+2 for each non-grey Hero that was KO'd from your deck this turn" (the
+  // non-grey-heroes-koed-from-deck-this-turn count source plus the per-Feast reward) are now
+  // modeled, so its Feast resolves.
+  'wwhk/no-name-brood-queen/world-spanning-hunger',
+]);
+
+// why: WP-859 / D-24795 — "Feast up to three times" is three KO-or-keep prompts (keeping a card is
+// choosing not to Feast that time). The parser is text-only and de-duplicates keywords, so the
+// count cannot come from the text: the caller reads it here and threads it in as feastRepeatCount.
+// Every other FEAST_CARDS card Feasts once.
+const FEAST_REPEAT_COUNTS: ReadonlyMap<string, number> = new Map<string, number>([
+  ['wwhk/no-name-brood-queen/world-spanning-hunger', 3],
+]);
+
+// why: WP-859 / D-24795 — a condition gates its whole line's hook, and these two cards print
+// "You may [keyword:Feast]. Then, if …, [keyword:Transform] this …" on ONE line, so a condition
+// marker would also gate the Feast (the very KO that satisfies it). A parse-only pre-pass
+// (splitFeastThenTransformLine, the coalesceCountScaledChooseOne precedent; display text untouched)
+// splits the line at its " Then, " into a Feast hook and a Transform hook. The condition marker is
+// appended to the end of the printed line, so it lands on the Transform half. Allowlisted, so no
+// other card's hooks change (Gamma-Draining Nanites' data already prints two lines).
+const FEAST_THEN_TRANSFORM_CARDS: ReadonlySet<string> = new Set<string>([
+  'wwhk/miek-the-unhived/metamorphosis',
   'wwhk/no-name-brood-queen/bursting-with-life',
 ]);
 
@@ -1136,6 +1177,7 @@ function parseAbilityText(
     dayNightUnmodeled?: boolean;
     conditionalGrantUnmodeled?: boolean;
     feastSupported?: boolean;
+    feastRepeatCount?: number;
   } = {},
 ): {
   keywords: HeroKeyword[];
@@ -1168,6 +1210,12 @@ function parseAbilityText(
   // it in (parseAbilityText is text-only and never sees the card id). Defaults false so a
   // [keyword:Feast] on any non-allowlisted card stays an honest unresolved marker.
   const feastSupported = options.feastSupported === true;
+  // why: WP-859 / D-24795 — resolved by the caller from FEAST_REPEAT_COUNTS ("Feast up to three
+  // times"); 1 for every other card, so a one-Feast line builds one `feast` effect as before.
+  const feastRepeatCount = options.feastRepeatCount ?? 1;
+  // why: WP-859 / D-24795 — set by the deck-koed-attack-icon marker arm: on that line the printed
+  // [icon:attack] is the condition's criterion ("a card with an [icon:attack] icon"), not a grant.
+  let lineReadsAttackIconDeckKo = false;
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
@@ -1837,6 +1885,17 @@ function parseAbilityText(
       // upside). `value` is unused; '1' is a stable placeholder. Placed before the
       // unresolved-marker fallback so it never flags hollow.
       conditions.push({ type: DECK_CARD_KOED_CONDITION_TYPE, value: '1' });
+    } else if (normalizedKeyword === 'deck-koed-attack-icon') {
+      // why: WP-859 / D-24795 — Metamorphosis' "Then, if a card with an [icon:attack] icon was KO'd
+      // from your deck this turn, [keyword:Transform] …". Push the one-shot wait-and-see gate onto
+      // the Transform half (FEAST_THEN_TRANSFORM_CARDS split the line), and flag the line so its
+      // descriptive attack icon is dropped below. `value` is unused; '1' is a stable placeholder.
+      conditions.push({ type: ATTACK_ICON_DECK_KO_CONDITION_TYPE, value: '1' });
+      lineReadsAttackIconDeckKo = true;
+    } else if (normalizedKeyword === 'deck-koed-non-grey-hero') {
+      // why: WP-859 / D-24795 — Bursting with Life's "Then, if a non-grey Hero was KO'd from your
+      // deck this turn, [keyword:Transform] …". The same shape as the arm above; no icon to drop.
+      conditions.push({ type: NON_GREY_HERO_DECK_KO_CONDITION_TYPE, value: '1' });
     } else if (normalizedKeyword === 'master-strike-this-turn') {
       // why: WP-743 / D-24566 — Grief's "If a Master Strike was completed this turn, you
       // get +2 Recruit." The marker→condition precedent (D-24467): push the whole-turn
@@ -2227,6 +2286,22 @@ function parseAbilityText(
     }
     uniqueKeywords = keywordsWithoutAttackIcon;
     magnitudes.delete('attack');
+  }
+
+  // Icon-suppression (WP-859 / D-24795): on a deck-koed-attack-icon line the printed attack icon
+  // names the condition's criterion ("a card with an [icon:attack] icon was KO'd"), not a grant.
+  // why: drop the `attack` keyword the descriptive icon produced (the D-24016 descriptive-token
+  // shape), so the Transform hook carries no stray attack effect. The criterion icon prints no
+  // number, so it never set an attack magnitude; a numbered "+N[icon:attack]" on the same line
+  // is a real grant and is kept.
+  if (lineReadsAttackIconDeckKo && !magnitudes.has('attack')) {
+    const keywordsWithoutCriterionIcon: HeroKeyword[] = [];
+    for (const keyword of uniqueKeywords) {
+      if (keyword !== 'attack') {
+        keywordsWithoutCriterionIcon.push(keyword);
+      }
+    }
+    uniqueKeywords = keywordsWithoutCriterionIcon;
   }
 
   // Icon-suppression (sibling): a count-scaled RECRUIT effect subsumes the
@@ -2702,10 +2777,37 @@ function parseAbilityText(
         if (revealFromHandCriterion !== undefined) {
           effects.push({ type: 'reveal-or-gain-wound-each', revealCriterion: revealFromHandCriterion });
         }
+      } else if (keyword === 'feast') {
+        // why: WP-859 / D-24795 — "Feast up to three times" builds one `feast` effect per Feast
+        // (three sequential KO-or-keep prompts); keywords stay de-duplicated, so the count comes
+        // from FEAST_REPEAT_COUNTS via feastRepeatCount (1 for every other Feast card).
+        for (let feastIndex = 0; feastIndex < feastRepeatCount; feastIndex++) {
+          effects.push({ type: 'feast' });
+        }
       } else if (magnitude !== undefined) {
         effects.push({ type: keyword, magnitude });
       } else {
         effects.push({ type: keyword });
+      }
+    }
+  }
+
+  // Step 4d: WP-859 / D-24795 — the per-Feast reward stamp.
+  // why: World-Spanning Hunger's "+2 for each non-grey Hero that was KO'd from your deck this turn"
+  // counts its own Feasts' KOs, which land in later moves (RS-2, counted at resolution). The
+  // play-time attack-per-count covers KOs already made; each Feast carries the same per-unit
+  // magnitude to pay on its own non-grey Hero KO. Read from the card's one marker, never a second
+  // literal.
+  let nonGreyHeroKoCountMagnitude: number | undefined;
+  for (const effect of effects) {
+    if (effect.type === 'attack-per-count' && effect.countSource === 'non-grey-heroes-koed-from-deck-this-turn') {
+      nonGreyHeroKoCountMagnitude = effect.magnitude;
+    }
+  }
+  if (nonGreyHeroKoCountMagnitude !== undefined) {
+    for (const effect of effects) {
+      if (effect.type === 'feast') {
+        effect.nonGreyHeroKoAttack = nonGreyHeroKoCountMagnitude;
       }
     }
   }
@@ -3513,6 +3615,40 @@ function coalesceCountScaledChooseOne(abilities: string[]): string[] {
   }
   const joined = [abilities[headerIndex]!, ...optionLines].join(' ');
   return [...abilities.slice(0, headerIndex), joined, ...abilities.slice(nextIndex)];
+}
+
+// why: WP-859 / D-24795 — the separator FEAST_THEN_TRANSFORM_CARDS lines print between their Feast
+// and their conditional Transform ("You may [keyword:Feast]. Then, if …").
+const FEAST_THEN_TRANSFORM_SEPARATOR = ' Then, ';
+
+/**
+ * Splits a "Feast. Then, if …, Transform" line into a Feast line and a Transform line (WP-859 /
+ * D-24795).
+ *
+ * A condition gates its whole line's hook, so on one line the Transform's condition would also
+ * gate the Feast whose KO satisfies it. Each line holding both `[keyword:Feast]` and
+ * `[keyword:Transform]` is replaced by `"<text before>"` and `"Then, <text after>"`, split at
+ * the first " Then, "; the condition marker appended to the printed line lands on the Transform
+ * half. A line without the separator is kept whole. Parse-only (the coalesceCountScaledChooseOne
+ * precedent): the card's display text is untouched. Called only for FEAST_THEN_TRANSFORM_CARDS.
+ *
+ * @param abilityLines - The card's ability lines (with markers already applied).
+ * @returns The ability lines with each Feast-then-Transform line split in two.
+ */
+function splitFeastThenTransformLine(abilityLines: string[]): string[] {
+  const splitLines: string[] = [];
+  for (const abilityLine of abilityLines) {
+    const isFeastThenTransform =
+      abilityLine.includes('[keyword:Feast]') && abilityLine.includes('[keyword:Transform]');
+    const separatorIndex = abilityLine.indexOf(FEAST_THEN_TRANSFORM_SEPARATOR);
+    if (!isFeastThenTransform || separatorIndex === -1) {
+      splitLines.push(abilityLine);
+      continue;
+    }
+    splitLines.push(abilityLine.slice(0, separatorIndex));
+    splitLines.push(`Then, ${abilityLine.slice(separatorIndex + FEAST_THEN_TRANSFORM_SEPARATOR.length)}`);
+  }
+  return splitLines;
 }
 
 /**
@@ -4436,7 +4572,13 @@ export function buildHeroAbilityHooks(
       // synthetic line BEFORE the per-line parse, so the count-scaled-choose pre-pass folds the
       // two option markers into a single choice. Gated on count-scaled markers → non-count-scaled
       // multi-line choose-ones (S.H.I.E.L.D. undercover/levels) pass through unchanged.
-      const abilityLines = coalesceCountScaledChooseOne(cardEntry.abilities);
+      const coalescedLines = coalesceCountScaledChooseOne(cardEntry.abilities);
+      // why: WP-859 / D-24795 — split Metamorphosis' / Bursting with Life's one "Feast. Then, if …,
+      // Transform" line into a Feast line and a Transform line, so the Transform's condition does
+      // not gate the Feast (FEAST_THEN_TRANSFORM_CARDS). Every other card's lines pass through.
+      const abilityLines = FEAST_THEN_TRANSFORM_CARDS.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`)
+        ? splitFeastThenTransformLine(coalescedLines)
+        : coalescedLines;
       // why: WP-735 / D-24555 — for an allowlisted Venomverse "Digest N / Indigestion" card, fuse
       // its Digest / Indigestion / "Instead … both" lines into ONE digest-indigestion hook up
       // front, and record which line indices that consumed so the per-line loop below SKIPS them
@@ -4549,6 +4691,9 @@ export function buildHeroAbilityHooks(
           // (FEAST_CARDS), from the same canonical key, so parseAbilityText resolves the token only
           // for allowlisted cards (all others keep an honest unresolved marker).
           feastSupported: FEAST_CARDS.has(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`),
+          // why: WP-859 / D-24795 — how many Feasts this card's line prints ("Feast up to three
+          // times"), from FEAST_REPEAT_COUNTS by the same canonical key; 1 for every other card.
+          feastRepeatCount: FEAST_REPEAT_COUNTS.get(`${parsed.setAbbr}/${parsed.slug}/${instance.cardSlug}`) ?? 1,
         });
 
         // why: freshly-constructed hook per instance — copies never alias a

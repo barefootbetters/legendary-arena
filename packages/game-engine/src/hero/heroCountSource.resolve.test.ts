@@ -52,7 +52,7 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
   // why: WP-563 / D-24372 — a RUNTIME assertion, not a bare `satisfies`: engine
   // test files are transpiled by tsx (not typechecked in CI), so a compile-time
   // pin would be documentation only. This keyset check gates on every run.
-  it('contains exactly the 17 canonical count-source values', () => {
+  it('contains exactly the 18 canonical count-source values', () => {
     const expectedSources = [
       'victory-bystanders',
       'worthy-cards-played-this-turn',
@@ -75,12 +75,14 @@ describe('HERO_COUNT_SOURCES drift-detection', () => {
       'extra-cards-drawn-this-turn',
       // why: WP-824 / D-24757 — Paramilitary Ops' cost-filtered other-S.H.I.E.L.D. count.
       'shield-heroes-cost-one-plus-played-this-turn',
+      // why: WP-859 / D-24795 — World-Spanning Hunger's non-grey Heroes KO'd from your deck this turn.
+      'non-grey-heroes-koed-from-deck-this-turn',
     ];
 
     assert.equal(
       HERO_COUNT_SOURCES.length,
-      17,
-      'HERO_COUNT_SOURCES must have exactly 17 entries',
+      18,
+      'HERO_COUNT_SOURCES must have exactly 18 entries',
     );
 
     assert.deepStrictEqual(

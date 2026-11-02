@@ -19,7 +19,13 @@ import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './s
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
-import { offPlayCardTraits, playedCardIdsStillInPlay, playedCardIdsThisTurn } from './splitCard.logic.js';
+import {
+  matchesGreyHeroFilter,
+  offPlayCardStats,
+  offPlayCardTraits,
+  playedCardIdsStillInPlay,
+  playedCardIdsThisTurn,
+} from './splitCard.logic.js';
 import { heroClassDisplayName, teamDisplayName } from '../log/logDisplay.js';
 
 // why: WP-777 / D-24616 — the one literal for "If you discarded any cards this turn"
@@ -46,6 +52,13 @@ export const OWNED_HERO_KOED_CONDITION_TYPE = 'ownedHeroKoedThisTurn';
 // turn" (Miek's Endless Appetite), the deck-only sibling of the owned-KO trigger. Lives here
 // beside OWNED_CARD_KOED_CONDITION_TYPE for the same load-order reason.
 export const DECK_CARD_KOED_CONDITION_TYPE = 'deckCardKoedThisTurn';
+
+// why: WP-859 / D-24795 — the two literals for "Then, if a card with an [icon:attack] icon /
+// a non-grey Hero was KO'd from your deck this turn, Transform" (Miek's Metamorphosis, No-Name's
+// Bursting with Life). Both read the turn-scoped G.cardsKoedFromDeckThisTurn record. They live
+// here beside DECK_CARD_KOED_CONDITION_TYPE for the same load-order reason.
+export const ATTACK_ICON_DECK_KO_CONDITION_TYPE = 'attackIconCardKoedFromDeckThisTurn';
+export const NON_GREY_HERO_DECK_KO_CONDITION_TYPE = 'nonGreyHeroKoedFromDeckThisTurn';
 
 // ---------------------------------------------------------------------------
 // matchReadsConditionType — does any hook in this match read a condition?
@@ -401,6 +414,31 @@ export function evaluateCondition(
       // resolve fires once per counted KO and deletes it. Ignores condition.value. An absent map
       // reads false.
       return (G.deckCardsKoedSinceResolve?.[playerID] ?? 0) > 0;
+    }
+
+    case ATTACK_ICON_DECK_KO_CONDITION_TYPE: {
+      // why: WP-859 / D-24795 — Metamorphosis' "if a card with an [icon:attack] icon was KO'd
+      // from your deck this turn". Reads the turn record (KOs before the play count), so it is a
+      // sticky shape-#1 gate: once true it stays true for the turn. The off-play stat view makes
+      // a split card count when either face prints an Attack icon. Ignores condition.value.
+      for (const koedCardId of G.cardsKoedFromDeckThisTurn?.[playerID] ?? []) {
+        if (offPlayCardStats(G, koedCardId)?.hasAttackIcon === true) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    case NON_GREY_HERO_DECK_KO_CONDITION_TYPE: {
+      // why: WP-859 / D-24795 — Bursting with Life's "if a non-grey Hero was KO'd from your deck
+      // this turn". The same turn record; Wounds, Bystanders and grey Heroes fail the filter.
+      // Ignores condition.value.
+      for (const koedCardId of G.cardsKoedFromDeckThisTurn?.[playerID] ?? []) {
+        if (matchesGreyHeroFilter(G, koedCardId, 'non-grey')) {
+          return true;
+        }
+      }
+      return false;
     }
 
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE: {
@@ -974,6 +1012,14 @@ export function describeFailedCondition(
       // why: WP-855 / D-24791 — a per-KO trigger with no running total to quote; the
       // wait-and-see "not yet" phrasing, like the owned-KO gate above.
       return 'it needs a card to be KO\'d from your deck this turn';
+
+    case ATTACK_ICON_DECK_KO_CONDITION_TYPE:
+      // why: WP-859 / D-24795 — a boolean turn-record gate; no running count to quote.
+      return 'it needs a card with an Attack icon to be KO\'d from your deck this turn';
+
+    case NON_GREY_HERO_DECK_KO_CONDITION_TYPE:
+      // why: WP-859 / D-24795 — a boolean turn-record gate; no running count to quote.
+      return 'it needs a non-grey Hero to be KO\'d from your deck this turn';
 
     case MASTER_STRIKE_THIS_TURN_CONDITION_TYPE:
       // why: WP-743 / D-24566 — a boolean per-turn gate; no running count to quote.

@@ -84,6 +84,9 @@ describe('wait-and-see scope (WP-568 / D-24377 section 1; WP-656 / D-24467)', ()
       // your Heroes is KO'd" trigger.
       'ownedHeroKoedThisTurn',
       'deckCardKoedThisTurn',
+      // why: WP-859 / D-24795 — Metamorphosis / Bursting with Life's one-shot deck-KO Transform gates.
+      'attackIconCardKoedFromDeckThisTurn',
+      'nonGreyHeroKoedFromDeckThisTurn',
     ]);
     // why: the edge-triggered member is exported as a named const so the array, the
     // evaluator case, the re-arm check, and the setup marker branch share one literal.
@@ -134,6 +137,22 @@ describe('AC-6: WAIT_AND_SEE ↔ evaluateCondition lockstep (runtime drift pin)'
     ownedCardKoedThisTurn: { value: '1', mutate: (G) => { G.ownedCardsKoedSinceResolve = { '0': 1 }; } },
     ownedHeroKoedThisTurn: { value: '1', mutate: (G) => { G.ownedHeroesKoedSinceResolve = { '0': 1 }; } },
     deckCardKoedThisTurn: { value: '1', mutate: (G) => { G.deckCardsKoedSinceResolve = { '0': 1 }; } },
+    // why: WP-859 / D-24795 — player '0' had a card with an Attack icon / a non-grey Hero KO'd
+    // from their deck this turn (the turn record).
+    attackIconCardKoedFromDeckThisTurn: {
+      value: '1',
+      mutate: (G) => {
+        G.cardStats = { 'hero-x': { attack: 2, recruit: 0, cost: 3, fightCost: 0, hasAttackIcon: true, hasRecruitIcon: false } } as unknown as LegendaryGameState['cardStats'];
+        G.cardsKoedFromDeckThisTurn = { '0': ['hero-x'] };
+      },
+    },
+    nonGreyHeroKoedFromDeckThisTurn: {
+      value: '1',
+      mutate: (G) => {
+        G.cardTraits = { 'hero-x': { heroClass: 'tech' } } as unknown as LegendaryGameState['cardTraits'];
+        G.cardsKoedFromDeckThisTurn = { '0': ['hero-x'] };
+      },
+    },
   };
 
   it('every listed type has an evaluateCondition case that can return true', () => {

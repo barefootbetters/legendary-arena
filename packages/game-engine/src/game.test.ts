@@ -985,6 +985,57 @@ describe('LegendaryGame', () => {
     assert.equal('deckCardsKoedSinceResolve' in neverCounted, false, 'no key is created on a G that never had one');
   });
 
+  it('play-phase onBegin deletes the deck-KO turn record, and never creates it (WP-859 / D-24795)', () => {
+    // why: pins the real turn.onBegin wire plus oracle safety. A record surviving into the next
+    // turn would let Metamorphosis / Bursting with Life Transform at play with no KO that turn, and
+    // a key created on a G that never had one would move the sentinel hash oracles.
+    const onBegin = (
+      LegendaryGame.phases as Record<string, { turn?: { onBegin?: (context: unknown) => void } }>
+    ).play?.turn?.onBegin;
+    assert.notEqual(onBegin, undefined, 'play phase must define a turn.onBegin hook');
+
+    /** A minimal play-phase G, with or without a deck-KO turn record. */
+    function makeTurnStartState(withRecord: boolean): LegendaryGameState {
+      const state = {
+        messages: [],
+        turnEconomy: { attack: 0, recruit: 0, spentAttack: 0, spentRecruit: 0, piercing: 0, woundsDrawn: 0 },
+        playerZones: { '0': { deck: ['a', 'b', 'c', 'd', 'e', 'f'], hand: [], discard: [], inPlay: [], victory: [] } },
+        villainDeck: { deck: ['v-1'], discard: [] },
+        heroDeck: ['h-1'],
+        counters: {},
+        hq: [null, null, null, null, null],
+        city: [null, null, null, null, null],
+        scheme: { twistPile: [] },
+        mastermind: { id: 'm', baseCardId: 'm-base', tacticsDeck: [], tacticsDefeated: [], strikePile: [], attachedBystanders: [] },
+        hookRegistry: [],
+        heroAbilityHooks: [],
+        villainDeckCardTypes: {},
+        attachedBystanders: {},
+        escapedPile: [],
+        cardStats: {},
+      } as unknown as LegendaryGameState;
+      if (withRecord) {
+        // why: a card KO'd from Player 0's deck earlier in the ending turn.
+        state.cardsKoedFromDeckThisTurn = { '0': ['koed-card'] };
+      }
+      return state;
+    }
+    const context = (G: LegendaryGameState) => ({
+      G,
+      ctx: { turn: 2, currentPlayer: '0', numPlayers: 1 },
+      random: { Shuffle: (items: unknown[]) => items },
+      events: { setPhase: () => {}, endTurn: () => {} },
+    });
+
+    const recorded = makeTurnStartState(true);
+    onBegin!(context(recorded));
+    assert.equal('cardsKoedFromDeckThisTurn' in recorded, false, 'the record is deleted at the turn boundary');
+
+    const neverRecorded = makeTurnStartState(false);
+    onBegin!(context(neverRecorded));
+    assert.equal('cardsKoedFromDeckThisTurn' in neverRecorded, false, 'no key is created on a G that never had one');
+  });
+
   it('play-phase onBegin deletes the per-turn discard count, and never creates it (WP-777 / D-24616)', () => {
     // why: pins a WIRE plus oracle safety. A count surviving into the next turn would let New
     // Wings / Pumpkin Bombs fire with no discard (the over-credit WP-777 removes), and a key
