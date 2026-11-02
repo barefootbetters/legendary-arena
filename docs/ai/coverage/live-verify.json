@@ -1537,9 +1537,9 @@
       "card": "Miek the Unhived",
       "ability": "Endless Appetite: Whenever a card is KO'd from your deck this turn, you may draw a card",
       "wp": "WP-855",
-      "state": "pending",
-      "date": "2026-11-01",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-855 deploy (isMatchOlderThanServer: false) with Miek and a deck-KO source (Carnage's Gruesome Feast, or the operator ko-from-player setter from the deck), per the WP-855 DoD.",
+      "state": "verified",
+      "date": "2026-11-02",
+      "evidence": "2p Operator match 9sArOoptLJ0 (Magneto / Midtown Bank Robbery; server build 548923dd, created after boot, isMatchOlderThanServer false): waiting line at play with no draw (5.2.2, 11.2.4, 15.2.2, 21.2.12); one draw per Feast KO from the deck, twice in one turn (5.2.5-5.2.6, 5.2.9-5.2.10, 11.2.7-11.2.8, 11.2.14-11.2.15, 15.2.17-15.2.18); no draw for a discard-pile Wound KO (15.2.20), played-card KOs (15.2.32, 15.2.36), a deck-top discard (15.2.6), or a deck KO with no Endless Appetite in play (19.2.12).",
       "note": "Playing it logs the waiting line and draws nothing; each card KO'd from your deck later that turn draws one card, once per card per copy; KOs from hand, discard pile or play draw nothing. The draw waits while a reveal choice is open. D-24791."
     },
     {
