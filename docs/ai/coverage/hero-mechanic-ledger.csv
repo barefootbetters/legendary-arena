@@ -39,7 +39,7 @@ amwp/janet-van-dyne,Janet van Dyne,amwp,draw,executable,WP-022,D-2201,packages/g
 amwp/jentorra,Jentorra,amwp,conqueror,unsupported,,,,conquer-the-conqueror|take-the-high-ground|unite-the-oppressed
 amwp/jentorra,Jentorra,amwp,explore,unsupported,,,,find-your-courage|lead-powerful-allies
 amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,(unmarked),unmarked,,,,
-amwp/wasp,Wasp,amwp,(unmarked),unmarked,,,,
+amwp/wasp,Wasp,amwp,first-hero-condition,condition,,,,follow-my-lead
 anni/brainstorm,Brainstorm,anni,out-of-time,executable,WP-803,D-24692,packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time,borrow-from-the-future|time-loop-experiments
 anni/brainstorm,Brainstorm,anni,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,time-loop-experiments
 anni/fantastic-four-united,Fantastic Four United,anni,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mr-fantastic
@@ -333,6 +333,7 @@ dkcy/daredevil,Daredevil,dkcy,(unmarked),unmarked,,,,
 dkcy/domino,Domino,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,lucky-break
 dkcy/domino,Domino,dkcy,versatile,unsupported,,,,against-all-odds|lucky-break|ready-for-anything
 dkcy/elektra,Elektra,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,ninjitsu
+dkcy/elektra,Elektra,dkcy,first-hero-condition,condition,,,,first-strike
 dkcy/forge,Forge,dkcy,versatile,unsupported,,,,overdrive
 dkcy/ghost-rider,Ghost Rider,dkcy,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,infernal-chains
 dkcy/iceman,Iceman,dkcy,attack-per-count,executable,WP-247,D-24016,packages/game-engine/src/hero/heroEffects.execute.ts#attack-per-count,ice-slide
@@ -767,8 +768,9 @@ wwhk/miek-the-unhived,"Miek, The Unhived",wwhk,transform,unsupported,,,,metamorp
 wwhk/namora,Namora,wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,crushing-tsunami
 wwhk/namora,Namora,wwhk,smash,executable,WP-676,D-24492,packages/game-engine/src/hero/heroEffects.execute.ts#smash,crushing-tsunami|master-of-depths
 wwhk/namora,Namora,wwhk,transform,unsupported,,,,herculean-effort
-wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,torrent-of-broodlings
+wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,surprise-attack|torrent-of-broodlings
 wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,feast,executable,WP-857,D-24793,packages/game-engine/src/hero/heroEffects.execute.ts#feast,appetite-for-destruction|bursting-with-life|world-spanning-hunger
+wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,first-hero-condition,condition,,,,surprise-attack
 wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,reveal-top-dispose,executable,WP-702,D-24521,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-top-dispose,appetite-for-destruction
 wwhk/no-name-brood-queen,"No-Name, Brood Queen",wwhk,transform,unsupported,,,,bursting-with-life
 wwhk/rick-jones,Rick Jones,wwhk,reveal-min,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal-min,captain-marvel

@@ -1596,6 +1596,39 @@
       "date": "2026-11-01",
       "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-857 deploy (isMatchOlderThanServer: false) with Miek and No-Name in the hero decks, per the WP-857 DoD.",
       "note": "Playing Bursting with Life (or Appetite for Destruction after another Covert Hero) opens the reveal-top prompt on the deck top with KO / Keep. World-Spanning Hunger stays an honest unresolved marker (its Feast up to three times and +2 per non-grey Hero are not modeled). D-24793."
+    },
+    {
+      "key": "wwhk/no-name-brood-queen|first-hero-condition",
+      "kind": "hero",
+      "card": "No-Name, Brood Queen",
+      "ability": "Surprise Attack: If this is the first card you played this turn, draw a card",
+      "wp": "WP-861",
+      "state": "pending",
+      "date": "2026-11-01",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-861 deploy (isMatchOlderThanServer: false) with this hero in the hero decks, per the WP-861 DoD.",
+      "note": "Surprise Attack played first draws a card; played after another card it logs [blocked] (needs to be the first Hero you played this turn) and draws nothing. D-24798."
+    },
+    {
+      "key": "dkcy/elektra|first-hero-condition",
+      "kind": "hero",
+      "card": "Elektra",
+      "ability": "First Strike: If this is the first card you played this turn, you get +1 Attack",
+      "wp": "WP-861",
+      "state": "pending",
+      "date": "2026-11-01",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-861 deploy (isMatchOlderThanServer: false) with this hero in the hero decks, per the WP-861 DoD.",
+      "note": "First Strike played first gives 2 Attack (printed 1 + the gated 1); played after another card it gives 1 and logs [blocked]. D-24798."
+    },
+    {
+      "key": "amwp/wasp|first-hero-condition",
+      "kind": "hero",
+      "card": "Wasp",
+      "ability": "Follow My Lead (line 2): If this is the first card you played this turn, you get +1 Attack",
+      "wp": "WP-861",
+      "state": "pending",
+      "date": "2026-11-01",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-861 deploy (isMatchOlderThanServer: false) with this hero in the hero decks, per the WP-861 DoD.",
+      "note": "Follow My Lead played first gives 2 Attack; played after another card it gives 1 and logs [blocked]. Its Size-Changing line is unchanged and still logs its own Ranged gate. D-24798."
     }
   ]
 }

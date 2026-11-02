@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3827,
+    "executable": 3832,
     "heroes": 324,
     "hooks": 6388,
-    "noEffect": 2457,
+    "noEffect": 2452,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -203,9 +203,9 @@
       "noEffect": 53
     },
     "wwhk": {
-      "executable": 240,
+      "executable": 245,
       "hooks": 337,
-      "noEffect": 97
+      "noEffect": 92
     },
     "xmen": {
       "executable": 153,

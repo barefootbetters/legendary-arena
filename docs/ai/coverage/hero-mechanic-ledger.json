@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 837,
+    "totalRows": 839,
     "byStatus": {
       "executable": 451,
       "deferred": 16,
-      "condition": 53,
+      "condition": 56,
       "unsupported": 288,
-      "unmarked": 26,
+      "unmarked": 25,
       "subsystem": 3
     },
     "distinctMechanics": 176
@@ -763,12 +763,17 @@
       "extId": "amwp/wasp",
       "heroName": "Wasp",
       "set": "amwp",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
       "wp": "",
       "decision": "",
       "handler": "",
-      "designs": []
+      "designs": [
+        {
+          "slug": "follow-my-lead",
+          "name": "Follow my Lead"
+        }
+      ]
     },
     {
       "extId": "anni/brainstorm",
@@ -6046,6 +6051,22 @@
         {
           "slug": "ninjitsu",
           "name": "Ninjitsu"
+        }
+      ]
+    },
+    {
+      "extId": "dkcy/elektra",
+      "heroName": "Elektra",
+      "set": "dkcy",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "first-strike",
+          "name": "First Strike"
         }
       ]
     },
@@ -13947,6 +13968,10 @@
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#draw",
       "designs": [
         {
+          "slug": "surprise-attack",
+          "name": "Surprise Attack"
+        },
+        {
           "slug": "torrent-of-broodlings",
           "name": "Torrent of Broodlings"
         }
@@ -13973,6 +13998,22 @@
         {
           "slug": "world-spanning-hunger",
           "name": "World-Spanning Hunger"
+        }
+      ]
+    },
+    {
+      "extId": "wwhk/no-name-brood-queen",
+      "heroName": "No-Name, Brood Queen",
+      "set": "wwhk",
+      "mechanic": "first-hero-condition",
+      "status": "condition",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "surprise-attack",
+          "name": "Surprise Attack"
         }
       ]
     },

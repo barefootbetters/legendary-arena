@@ -997,6 +997,12 @@
       "cardSlug": "no-mercy",
       "abilityIndex": 1,
       "markupToken": "[keyword:optional-ko-hand-discard]"
+    },
+    {
+      "heroSlug": "elektra",
+      "cardSlug": "first-strike",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:first-hero-condition]"
     }
   ],
   "msis": [
@@ -1642,6 +1648,18 @@
       "cardSlug": "focus-the-old-power",
       "abilityIndex": 0,
       "markupToken": "[keyword:optional-ko-hand-discard]"
+    },
+    {
+      "heroSlug": "no-name-brood-queen",
+      "cardSlug": "surprise-attack",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:first-hero-condition]"
+    },
+    {
+      "heroSlug": "no-name-brood-queen",
+      "cardSlug": "surprise-attack",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
     }
   ],
   "amwp": [
@@ -1675,6 +1693,12 @@
       "cardSlug": "bug-swarm",
       "abilityIndex": 1,
       "markupToken": "[keyword:optional-ko-hand-discard]"
+    },
+    {
+      "heroSlug": "wasp",
+      "cardSlug": "follow-my-lead",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:first-hero-condition]"
     }
   ],
   "anni": [
