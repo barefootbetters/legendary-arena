@@ -409,6 +409,30 @@ describe('fightVillain — WP-316 Fight: effect log narration', () => {
       'no effect line when the villain applied no Fight: effect',
     );
   });
+
+  it('logs the fought line before a Fight effect that logs its own line (Viper, match SiJuKfJ0zGf)', () => {
+    const viper = 'core-villain-hydra-viper-00';
+    const gameState = createMockGameState({
+      city: [viper, null, null, null, null],
+      villainAbilityHooks: [{
+        cardId: viper as CardExtId,
+        timing: 'onFight',
+        keywords: [],
+        effects: [{ primitive: 'gain-wound-unless-victory-villain-group', victoryVillainGroup: 'hydra' }],
+      }],
+    });
+    gameState.piles.wounds = ['pile-wound'] as CardExtId[];
+    const moveContext = createMockMoveContext(gameState);
+
+    fightVillain(moveContext, { cityIndex: 0 });
+
+    const texts = moveContext.G.messages.map((entry) => entry.text);
+    const foughtIndex = texts.findIndex((text) => text.startsWith('Player 0 fought '));
+    const woundIndex = texts.findIndex((text) => text.includes('gained a Wound'));
+    assert.ok(foughtIndex >= 0, 'the fought line is logged');
+    assert.ok(woundIndex >= 0, 'Viper wounds the player who has no other HYDRA Villain');
+    assert.ok(foughtIndex < woundIndex, `the fought line comes first: ${JSON.stringify(texts)}`);
+  });
 });
 
 describe('fightVillain — defeat-requirement gate (WP-292 / D-24076)', () => {
