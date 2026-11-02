@@ -1460,9 +1460,9 @@
       "card": "Sabretooth",
       "ability": "Fight: Each player reveals an X-Men Hero or gains a Wound",
       "wp": "WP-845",
-      "state": "pending",
-      "date": "2026-10-26",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com 2-player match created after the WP-845 deploy where a reveal-or-wound fires with a revealer, per the WP-845 DoD.",
+      "state": "verified",
+      "date": "2026-11-02",
+      "evidence": "2p Operator match 9sArOoptLJ0 (Magneto / Midtown Bank Robbery; server build 548923dd, created after boot, isMatchOlderThanServer false): Player 0 fought Sabretooth (21.2.25); Player 1, with no X-Men Hero, was wounded at once (21.2.23); Player 0, holding Wolverine, was offered the reveal-or-Wound choice (21.2.24) and revealed, taking no Wound (21.2.27).",
       "note": "The revealer sees 'Reveal a Hero or gain a Wound?' on their own seat; Reveal avoids the Wound, Gain a Wound instead takes it; cannot-reveal seats are wounded at once. D-24779."
     },
     {
@@ -1581,9 +1581,9 @@
       "card": "Miek, The Unhived",
       "ability": "Metamorphosis / Devouring Frenzy ([hc:instinct]): You may Feast (KO the top card of your deck)",
       "wp": "WP-857",
-      "state": "pending",
-      "date": "2026-11-01",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-857 deploy (isMatchOlderThanServer: false) with Miek and No-Name in the hero decks, per the WP-857 DoD.",
+      "state": "verified",
+      "date": "2026-11-02",
+      "evidence": "2p Operator match 9sArOoptLJ0 (Magneto / Midtown Bank Robbery; server build 548923dd, which contains the #3128 merge, created after boot, isMatchOlderThanServer false): Metamorphosis opened the KO / Keep prompt on the deck top and KO'd it (5.2.4-5.2.5, 11.2.6-11.2.7, 15.2.16-15.2.17, 19.2.11-19.2.12) or kept it on top (13.2.3-13.2.4); Devouring Frenzy after another Instinct Hero did the same (KO 5.2.8-5.2.9, 11.2.13-11.2.14; keep 15.2.8-15.2.9, 21.2.16-21.2.17) and logged blocked with no Instinct Hero played before it (9.2.5, 19.2.2).",
       "note": "Playing Metamorphosis (or Devouring Frenzy after another Instinct Hero) opens the reveal-top prompt on the deck top with KO / Keep; KO sends it to the KO pile, Keep leaves it on top. Hive King Miek is a Transform face, not reachable in play yet. D-24793."
     },
     {
@@ -1592,9 +1592,9 @@
       "card": "No-Name, Brood Queen",
       "ability": "Bursting with Life / Appetite for Destruction ([hc:covert]): You may Feast (KO the top card of your deck)",
       "wp": "WP-857",
-      "state": "pending",
-      "date": "2026-11-01",
-      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-857 deploy (isMatchOlderThanServer: false) with Miek and No-Name in the hero decks, per the WP-857 DoD.",
+      "state": "partial",
+      "date": "2026-11-02",
+      "evidence": "2p Operator match 9sArOoptLJ0 (Magneto / Midtown Bank Robbery; server build 548923dd, which contains the #3128 merge, created after boot, isMatchOlderThanServer false): Appetite for Destruction's Covert Feast logged blocked with no Covert Hero played before it (15.2.5, 21.2.20). Not yet seen: a No-Name Feast firing (Bursting with Life was never played; Appetite for Destruction never followed a Covert Hero).",
       "note": "Playing Bursting with Life (or Appetite for Destruction after another Covert Hero) opens the reveal-top prompt on the deck top with KO / Keep. World-Spanning Hunger stays an honest unresolved marker (its Feast up to three times and +2 per non-grey Hero are not modeled). D-24793."
     },
     {
