@@ -1,6 +1,6 @@
 # WP-859 — "KO'd from your deck this turn": Metamorphosis, Bursting with Life and World-Spanning Hunger (Game Engine + card data)
 
-**Status:** Draft 2026-10-31 (EC-897; D-24795 reserved; pre-flight content READY, copilot PASS → CONFIRM, 00.3 PASS) — **BLOCKED on WP-855 and WP-857 executing**
+**Status:** Done 2026-11-01 (EC-897; D-24795 Active; dependency re-check READY at `cfeda921`; pre-flight content READY, copilot PASS → CONFIRM, 00.3 PASS)
 **Layer:** Game Engine (a turn-scoped record + two wait-and-see conditions + a one-line parse split + a count source + a per-Feast reward) + card data (markers)
 **User-Visible Surface:** play.legendary-arena.com
 **Hard-deps:** WP-857 / D-24793 (hero `feast` keyword, `FEAST_CARDS`) — **drafted, not executed**;
