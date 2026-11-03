@@ -168,13 +168,15 @@ export interface StatusEntry {
 }
 
 // why: D-19908 — every field is a required non-optional `number`; numeric `0`
-// is the meaningful zero-value (zero WPs done this week is a real, surface-
+// is the meaningful zero-value (zero WPs done in the last 7 days is a real, surface-
 // able operator state, not a missing-data state). The composable accessor
 // returns the whole object as `null` only for the whole-snapshot-error case;
 // when it returns a non-null value, every individual field is a concrete
 // number. UI branching collapses to one null-check at the call site instead
 // of per-field null-coalescing in every widget.
 export interface GovernanceKpis {
+  // why: D-24799 — counts Done flips in the rolling 7 days ending on the HEAD
+  // commit's day; the field keeps its D-19908 name so the snapshot shape holds.
   readonly wpsDoneThisWeek: number;
   readonly daysSinceLastDoneFlip: number;
   readonly openDrafts: number;

@@ -309,19 +309,19 @@ function deriveBuilderPriorities(inputs: PriorityInputs): PriorityRecommendation
   if (inputs.wpsDoneThisWeek === 0) {
     priorities.push({
       horizon: 'this-week',
-      label: 'Zero WPs shipped this week — close at least one to maintain velocity.',
+      label: 'Zero WPs shipped in the last 7 days — close at least one to maintain velocity.',
       urgency: 'critical',
     });
   } else if (inputs.wpsDoneThisWeek <= 2) {
     priorities.push({
       horizon: 'this-week',
-      label: `${inputs.wpsDoneThisWeek} WP(s) done — push for one more to stay on pace.`,
+      label: `${inputs.wpsDoneThisWeek} WP(s) done in the last 7 days — push for one more to stay on pace.`,
       urgency: 'high',
     });
   } else {
     priorities.push({
       horizon: 'this-week',
-      label: `${inputs.wpsDoneThisWeek} WPs shipped — strong week. Focus on quality over quantity.`,
+      label: `${inputs.wpsDoneThisWeek} WPs shipped in the last 7 days — strong pace. Focus on quality over quantity.`,
       urgency: 'strategic',
     });
   }
@@ -684,7 +684,7 @@ export function useAgentPipeline(
   if (kpis !== null) {
     builderActive.push({
       id: 'kpi-wps-done-this-week',
-      label: `${kpis.wpsDoneThisWeek} WP(s) done this week`,
+      label: `${kpis.wpsDoneThisWeek} WP(s) done in the last 7 days`,
       meta: 'KPI',
     });
   }
