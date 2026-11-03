@@ -2,13 +2,15 @@
 /**
  * Provider-independent PostgreSQL backup retention selection (WP-416 / D-24236).
  *
- * Pure selection logic for pruning old database backups from Cloudflare R2. The
- * backup workflow (.github/workflows/db-backup.yml) lists the existing backup
- * object keys and pipes them to this script's CLI; the CLI prints the keys that
- * fall outside the retention window, one per line, for the workflow to delete via
- * `aws s3 rm`.
+ * Pure selection logic for pruning old database backups from Cloudflare R2 and
+ * the pCloud mirror. The droplet's nightly backup (the `legendary-arena-lab`
+ * repo's `50-backup.ps1`, since the 2026-10-12 cutover; before that, the
+ * since-deleted `.github/workflows/db-backup.yml`) lists the existing object
+ * keys under `db-backups/` and pipes them to this script's CLI. The CLI prints
+ * the keys that fall outside the retention window, one per line, and the caller
+ * deletes them.
  *
- * All network I/O (listing, deletion) lives in the workflow. This module performs
+ * All network I/O (listing, deletion) lives in the caller. This module performs
  * none, so the selection can be unit-tested without R2 credentials or a network.
  */
 

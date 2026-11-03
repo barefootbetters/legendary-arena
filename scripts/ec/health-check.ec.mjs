@@ -89,11 +89,11 @@ const GITHUB_REPO_URL = `https://github.com/${GITHUB_REPO_SLUG}`;
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO_SLUG}`;
 
 // why: Must match the route registered in apps/server/src/server.mjs and
-// the healthCheckPath in render.yaml.
+// the `location = /health` block in the droplet Nginx config (lab infra/nginx/api.conf).
 const HEALTH_CHECK_PATH = '/health';
 
 // why: Appears in multiple remediation messages for server-related failures.
-const RENDER_DASHBOARD_URL = 'https://dashboard.render.com';
+const SERVER_LOGS_HINT = 'on the droplet: systemctl status la-server; journalctl -u la-server -n 100';
 
 // why: Enforced baseline — scripts, server, and CI all require Node 22+.
 const MIN_NODE_MAJOR_VERSION = 22;
@@ -107,7 +107,7 @@ const MIN_PNPM_MAJOR_VERSION = 8;
 
 const REQUIRED_VARS = {
   'Database': [
-    'DATABASE_URL',       // Render PostgreSQL connection string
+    'DATABASE_URL',       // PostgreSQL connection string (production: the droplet's local database)
     'EXPECTED_DB_NAME',   // e.g. legendary_arena — used for connection verification
   ],
   'Auth': [
@@ -116,7 +116,7 @@ const REQUIRED_VARS = {
   'Game Server': [
     'NODE_ENV',           // 'development' or 'production'
     'GAME_SERVER_URL',    // e.g. https://api.legendary-arena.com
-    'PORT',               // local dev only — Render sets this automatically
+    'PORT',               // production: PORT=3000 in /etc/la/.env on the droplet; local dev defaults to 8000
   ],
   'Cloudflare': [
     'R2_PUBLIC_URL',      // e.g. https://images.legendary-arena.com
@@ -728,7 +728,7 @@ async function checkBoardgameioServer() {
     if (!response.ok) {
       recordContractResult('EC-CONN-002', 'CONNECTIONS', 'boardgame.io server', false,
         `${HEALTH_CHECK_PATH} returned HTTP ${response.status} (expected 200).`,
-        `Is the Render service running? Check ${RENDER_DASHBOARD_URL}`);
+        `Is la-server running? Check ${SERVER_LOGS_HINT}`);
       return;
     }
 
@@ -737,7 +737,7 @@ async function checkBoardgameioServer() {
   } catch (fetchError) {
     recordContractResult('EC-CONN-002', 'CONNECTIONS', 'boardgame.io server', false,
       `Connection failed: ${fetchError.message}`,
-      `Is the Render service running? Check ${RENDER_DASHBOARD_URL}`);
+      `Is la-server running? Check ${SERVER_LOGS_HINT}`);
   }
 }
 

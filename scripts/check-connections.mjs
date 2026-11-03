@@ -34,11 +34,11 @@ const GITHUB_REPO_URL = `https://github.com/${GITHUB_REPO_SLUG}`;
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO_SLUG}`;
 
 // why: Must match the route registered in apps/server/src/server.mjs and
-// the healthCheckPath in render.yaml.
+// the `location = /health` block in the droplet Nginx config (lab infra/nginx/api.conf).
 const HEALTH_CHECK_PATH = '/health';
 
 // why: Appears in multiple remediation messages for server-related failures.
-const RENDER_DASHBOARD_URL = 'https://dashboard.render.com';
+const SERVER_LOGS_HINT = 'on the droplet: systemctl status la-server; journalctl -u la-server -n 100';
 
 // why: Enforced baseline — scripts, server, and CI all require Node 22+.
 const MIN_NODE_MAJOR_VERSION = 22;
@@ -58,7 +58,7 @@ const USER_AGENT = 'legendary-arena-health-check/1.0';
 
 const REQUIRED_VARS = {
   'Database': [
-    'DATABASE_URL',       // Render PostgreSQL connection string
+    'DATABASE_URL',       // PostgreSQL connection string (production: the droplet's local database)
     'EXPECTED_DB_NAME',   // e.g. legendary_arena — used for connection verification
   ],
   'Auth': [
@@ -69,7 +69,7 @@ const REQUIRED_VARS = {
   'Game Server': [
     'NODE_ENV',           // 'development' or 'production'
     'GAME_SERVER_URL',    // e.g. https://api.legendary-arena.com
-    'PORT',               // local dev only — Render sets this automatically
+    'PORT',               // production: PORT=3000 in /etc/la/.env on the droplet; local dev defaults to 8000
   ],
   'Cloudflare': [
     'R2_PUBLIC_URL',      // e.g. https://images.legendary-arena.com
@@ -689,7 +689,7 @@ async function checkBoardgameioServer() {
     if (!response.ok) {
       recordResult('CONNECTIONS', 'boardgame.io server', false,
         `${HEALTH_CHECK_PATH} returned HTTP ${response.status} (expected 200).`,
-        `Is the Render service running? Check ${RENDER_DASHBOARD_URL}`);
+        `Is la-server running? Check ${SERVER_LOGS_HINT}`);
       return;
     }
 
@@ -703,14 +703,14 @@ async function checkBoardgameioServer() {
     if (!contentType.startsWith('application/json')) {
       recordResult('CONNECTIONS', 'boardgame.io server', false,
         `${HEALTH_CHECK_PATH} returned HTTP ${response.status} but Content-Type was "${contentType}" (expected application/json). A CDN cache page or reverse-proxy default page may be intercepting the request.`,
-        `Verify GAME_SERVER_URL points at the Render service origin, not a CDN edge. Check ${RENDER_DASHBOARD_URL}`);
+        `Verify GAME_SERVER_URL is https://api.legendary-arena.com (Cloudflare, then Nginx, then la-server); a non-JSON page means Nginx or Cloudflare answered instead of the server. Check ${SERVER_LOGS_HINT}`);
       return;
     }
     const bodyText = await response.text();
     if (bodyText.length === 0) {
       recordResult('CONNECTIONS', 'boardgame.io server', false,
         `${HEALTH_CHECK_PATH} returned HTTP ${response.status} with Content-Type "${contentType}" but an empty body. The service may be half-booted or fronted by a misconfigured proxy.`,
-        `Check ${RENDER_DASHBOARD_URL} for the service's recent boot logs.`);
+        `Check the server's recent boot logs (${SERVER_LOGS_HINT}).`);
       return;
     }
 
@@ -719,7 +719,7 @@ async function checkBoardgameioServer() {
   } catch (fetchError) {
     recordResult('CONNECTIONS', 'boardgame.io server', false,
       `Connection failed: ${fetchError.message}`,
-      `Is the Render service running? Check ${RENDER_DASHBOARD_URL}`);
+      `Is la-server running? Check ${SERVER_LOGS_HINT}`);
   }
 }
 

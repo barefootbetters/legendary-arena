@@ -328,8 +328,8 @@ export interface RetentionCohort {
 // `PublicSurfaceKey` is a closed union of the four externally-reachable
 // operator-owned domains: `marketing` (www.legendary-arena.com, player
 // on-ramp), `play` (play.legendary-arena.com, the game itself), `cards`
-// (cards.legendary-arena.com, registry-viewer reference), `api` (api /
-// legendary-arena-server.onrender.com, game server). Other entries in
+// (cards.legendary-arena.com, registry-viewer reference), `api`
+// (api.legendary-arena.com, game server). Other entries in
 // `docs/ops/DOMAINS.md` (`ewiki`, `wiki`, `legends`, `dashboard`,
 // `images`) are operator-internal or vendor-hosted and remain out of
 // scope in v1. Adding a fifth surface WITHOUT updating both this union
