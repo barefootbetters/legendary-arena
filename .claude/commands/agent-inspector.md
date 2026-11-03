@@ -29,13 +29,13 @@ the code matches its spec and is correct, secure, and maintainable.
   - otherwise, the lite spec in the PR or commit body
   - no spec at all is itself a **P1** (the merge gate requires a spec ID)
 - **The build note.** Read it and list every declared deviation.
-- **The risk tier (D-24799).** Read it from the spec; never infer it when the
+- **The risk tier (D-24800).** Read it from the spec; never infer it when the
   spec states one:
   - for a WP, the WP header's `**Risk Tier:**` line (the EC copies it; if they
     differ, the WP wins and the mismatch is a **P1** routed to the Architect)
   - for a lite spec, the `**Risk Tier:**` line in the PR body (or the commit
     body when there is no PR)
-  - **No line:** a spec first committed before D-24799 merged to `main` has
+  - **No line:** a spec first committed before D-24800 merged to `main` has
     none. Classify it yourself per §3 and write "tier inferred: <TIER>" in the
     report, with no finding. A later spec with no line is a **P1** routed to
     the Architect; review at your own §3 classification meanwhile.

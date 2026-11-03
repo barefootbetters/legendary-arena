@@ -50086,7 +50086,7 @@ Protect this file.
 
 ---
 
-### D-24799 — A change's risk tier is a `**Risk Tier:**` header line in its spec (WP header, mirrored in the EC; first line of a lite spec), written by the Architect and read by the Inspector and tooling (Active 2026-11-03 — no WP)
+### D-24800 — A change's risk tier is a `**Risk Tier:**` header line in its spec (WP header, mirrored in the EC; first line of a lite spec), written by the Architect and read by the Inspector and tooling (Active 2026-11-03 — no WP)
 
 **Status:** Active 2026-11-03. Process governance only; no code.
 
@@ -50103,7 +50103,7 @@ Protect this file.
 
 **Consequences.** New WPs, ECs and lite specs carry a readable tier; the planned cross-model review script and any dashboard view can key off it without guessing. Templates, `00.3`, and the `agent-architect` / `agent-builder` / `agent-inspector` commands change; `code-checks-and-balances.md` is untouched (its §3 stays the definition; `apps/dashboard` is frozen per D-24723). No engine, contract or CI change. Two open items: the D-24723 cutover removes `apps/dashboard`, so §3 needs a new home in this repo first, and the template and `00.3` pointers move with it; and `agent-architect` Step 2's pre-existing line ("auth, payments, entitlements, customer data, or determinism is HIGH") is broader than §3, which puts most engine WPs at HIGH if the Architect follows it. Reconciling the two is Jeff's call and is not made here.
 
-**Reserved by:** NUMBER-LEDGER D-24799. Related: D-24026 (header-classification precedent), D-24723 (`apps/dashboard` freeze).
+**Reserved by:** NUMBER-LEDGER D-24800. Related: D-24026 (header-classification precedent), D-24723 (`apps/dashboard` freeze).
 
 ---
 Protect this file.

@@ -129,7 +129,7 @@ For each WP, extract:
   state "No user-observable change — infrastructure only" so the run is not read
   as visible progress. Engine refactors a player cannot perceive ARE
   `none — infrastructure`; classify honestly.
-- **The `Risk Tier:` header line is copied verbatim from the WP (D-24799).**
+- **The `Risk Tier:` header line is copied verbatim from the WP (D-24800).**
   The WP header is the tier's canonical home; the EC mirrors it so a Builder
   or Inspector reading the EC first sees the same value. If the two differ, the
   WP wins and the EC is invalid until corrected. Never re-classify in the EC.

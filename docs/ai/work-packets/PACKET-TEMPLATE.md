@@ -38,7 +38,7 @@
 > it verbatim, and the Inspector and tooling read it from here instead of
 > inferring it. A HIGH packet also adds a `## Threat Model & Rollback Plan`
 > section directly after `## Out of Scope`: one threat-model paragraph and the
-> rollback steps (§3 Control Matrix). LOW and MEDIUM packets omit it. (D-24799)
+> rollback steps (§3 Control Matrix). LOW and MEDIUM packets omit it. (D-24800)
 
 ---
 
@@ -289,7 +289,7 @@ Add `node:test` tests in `src/[path]/[file].test.ts`:
 
 > **HIGH-tier packets only** (`**Risk Tier:** HIGH`); delete this section for
 > LOW and MEDIUM. Required by the §3 Control Matrix and checked by 00.3 §15.2.
-> (D-24799)
+> (D-24800)
 
 [Threat model: one paragraph naming who could abuse or break this change
 (a player, a guest, a forged request, a replay, an operator mistake), what they

@@ -35,7 +35,7 @@ is HIGH.
 | **LOW** (copy, styling, docs, a narrow `INFRA:` fix) | **Lite spec:** bullets in the eventual PR/commit body. List the goal, the files, the acceptance checks, and the verification commands. No WP. |
 | **MEDIUM / HIGH** (logic, APIs, contracts, engine, anything with a layer or persistence surface) | **A Work Packet + Execution Checklist** via `docs/ai/REFERENCE/01.0a-wp-drafting-phase.md` |
 
-**Write the tier down; you own it (D-24799).** The Inspector and tooling read
+**Write the tier down; you own it (D-24800).** The Inspector and tooling read
 it from one place and never infer it:
 - **WP lane:** the WP header line `**Risk Tier:** MEDIUM` (or `HIGH`), per
   `PACKET-TEMPLATE.md`. Copy the same value into the EC header.
