@@ -50086,6 +50086,23 @@ Protect this file.
 
 ---
 
+### D-24799 — The dashboard's WPs-done KPI counts the rolling 7 days ending on HEAD's day, not the Monday-anchored ISO week (direct fix, no WP) (Active 2026-11-03)
+
+**Context.** `governanceKpis.wpsDoneThisWeek` counted WORK_INDEX Done rows dated inside the Monday-to-Sunday ISO week containing the HEAD commit's date (D-19905 c, locked by EC-226 §Locked Values). Every Monday the window held one day, so the KPI read 0 regardless of the weekend, and the Pipeline page's Builder lane showed "Zero WPs shipped this week" at `critical`. Observed live: the 2026-11-02 (Mon) snapshot read `wpsDoneThisWeek: 0` while WP-855, WP-857, WP-859 and WP-861 flipped Done on 2026-11-01.
+
+**Decision.**
+1. The KPI counts Done rows dated within the 7 UTC days ending on the HEAD commit's UTC day: that day and the six before it, inclusive (`computeRollingWindowRange` in `apps/dashboard/scripts/build-governance-snapshot.mjs`, `KPI_WINDOW_DAYS = 7`). This supersedes D-19905 c and the EC-226 "ISO week computation" locked value **for this KPI only**.
+2. Unchanged: the single `git log -1 --format=%cI HEAD` read (D-19904 hardening), lex-string date membership (D-19905 ii), no `Intl.DateTimeFormat` / `toLocaleString`, numeric zero (D-19908), and the throughput `byWeek` ISO-week buckets (`isoWeekKey`).
+3. The field keeps its name `wpsDoneThisWeek` so the snapshot schema (v2, 7-key set) and the `GovernanceKpis` field-set pin hold. The labels say what it counts: "WPs Done, Last 7 Days" on the KPI strip, "in the last 7 days" on the Builder lane priority and active item. The `this-week` priority horizon id is unchanged.
+
+**Consequences.** The KPI no longer resets on a calendar boundary; a Monday after a shipping weekend reads the weekend's flips. The Builder lane's critical / high / strategic thresholds (0 / 1-2 / 3+) are unchanged and now apply to a rolling window. The generator stays deterministic for a given HEAD. Ported to the studio dashboard (`barefootbetters/bb-studio-dashboard`), whose KPI is computed in `src/core/composables/useGovernanceSnapshot.ts`; `apps/dashboard` takes bug fixes only (D-24723).
+
+**Gates.** New `apps/dashboard/src/composables/governanceKpiWindow.test.ts` evaluates the generator's own `computeGovernanceKpis` (extracted from source, like `workIndexRowPattern.test.ts`): the Monday-after-a-weekend regression (4 Sunday flips read 4 on Monday; 0 under the old window), the inclusive 7-day edges, a year rollover, the UTC-day anchor, and the draft / undated-row exclusions. The Builder lane critical test now also pins the label.
+
+**Reserved by:** NUMBER-LEDGER D-24799. Related: D-19905 (c superseded for this KPI), D-19904, D-19908, D-24723, EC-226.
+
+---
+
 ### D-24800 — A change's risk tier is a `**Risk Tier:**` header line in its spec (WP header, mirrored in the EC; first line of a lite spec), written by the Architect and read by the Inspector and tooling (Active 2026-11-03 — no WP)
 
 **Status:** Active 2026-11-03. Process governance only; no code.
