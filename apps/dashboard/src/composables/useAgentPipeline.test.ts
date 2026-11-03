@@ -196,7 +196,7 @@ describe('useAgentPipeline', () => {
   });
 
   describe('inspector lane', () => {
-    it('should_place_blocked_wps_in_backlog_and_nextExecutable_in_active', () => {
+    it('should_place_blocked_wps_in_backlog_and_keep_unbuilt_wps_out_of_active', () => {
       const snapshot = makeSnapshot({
         throughput: {
           byWeek: [],
@@ -220,11 +220,13 @@ describe('useAgentPipeline', () => {
       assert.ok(backlogIds.includes('blocked-60'), 'blocked WP in inspector backlog');
 
       const activeIds = result.inspector.active.map((item) => item.id);
-      assert.ok(activeIds.includes('review-70'), 'nextExecutable WP in inspector active');
-      assert.equal(result.inspector.active[0]!.meta, 'Awaiting review');
+      assert.ok(
+        !activeIds.some((id) => id.startsWith('review-70')),
+        'an unbuilt next-executable WP has no code to review',
+      );
     });
 
-    it('should_place_status_entries_in_history', () => {
+    it('should_place_shipped_status_entries_in_active_not_history', () => {
       const snapshot = makeSnapshot({
         status: [
           {
@@ -239,8 +241,14 @@ describe('useAgentPipeline', () => {
       });
       const result = useAgentPipeline(snapshot);
 
-      const historyIds = result.inspector.history.map((item) => item.id);
-      assert.ok(historyIds.includes('inspection-100-100'), 'STATUS entry in inspector history');
+      const activeIds = result.inspector.active.map((item) => item.id);
+      assert.ok(activeIds.includes('review-100-100'), 'shipped WP in inspector active');
+      assert.equal(result.inspector.active[0]!.meta, 'Shipped — spot-check');
+      assert.equal(
+        result.inspector.history.length,
+        0,
+        'a STATUS entry is a ship record, not an inspection',
+      );
     });
   });
 
@@ -498,9 +506,9 @@ describe('useAgentPipeline', () => {
       }
     });
 
-    it('should_escalate_architect_urgency_when_many_drafts_are_open', () => {
+    it('should_escalate_architect_urgency_when_no_specced_wp_is_buildable', () => {
       const snapshot = makeSnapshot({
-        governanceKpis: { openDrafts: 5, wpsDoneThisWeek: 2, daysSinceLastDoneFlip: 1 },
+        governanceKpis: { openDrafts: 0, wpsDoneThisWeek: 2, daysSinceLastDoneFlip: 1 },
       });
       const result = useAgentPipeline(snapshot);
 
@@ -510,8 +518,37 @@ describe('useAgentPipeline', () => {
       assert.equal(
         todayPriority!.urgency,
         'critical',
-        'architect today is critical with 5 open drafts',
+        'architect today is critical with nothing buildable',
       );
+    });
+
+    it('should_not_flag_architect_when_many_specced_drafts_are_buildable', () => {
+      // why: regression for the live 2026-11-02 snapshot, where 24 already-specced
+      // Draft WPs read as "24 drafts without specs" and marked the Architect critical.
+      const buildable = [71, 72, 73, 74].map((number) => ({
+        number,
+        title: `Specced WP ${number}`,
+        status: 'Draft' as const,
+        dependencies: [],
+      }));
+      const snapshot = makeSnapshot({
+        governanceKpis: { openDrafts: 24, wpsDoneThisWeek: 2, daysSinceLastDoneFlip: 1 },
+        throughput: {
+          byWeek: [],
+          byMonth: [],
+          byQuarter: [],
+          inFlight: buildable,
+          blocked: [],
+          now: buildable,
+        },
+      });
+      const result = useAgentPipeline(snapshot);
+
+      const todayPriority = result.architect.priorities.find(
+        (priority: PriorityRecommendation) => priority.horizon === 'today',
+      );
+      assert.equal(todayPriority!.urgency, 'strategic', 'a deep specced queue is not an alarm');
+      assert.ok(!todayPriority!.label.includes('without specs'), 'drafts are not called unspecced');
     });
 
     it('should_flag_builder_critical_when_zero_wps_done_this_week', () => {
@@ -584,6 +621,19 @@ describe('useAgentPipeline', () => {
           { sha: 'aaa111', kind: 'SPEC', title: 'SPEC: draft WP-100' },
           { sha: 'bbb222', kind: 'WP', title: 'EC-100: implement feature' },
         ],
+        throughput: {
+          byWeek: [],
+          byMonth: [],
+          byQuarter: [],
+          inFlight: [],
+          blocked: [],
+          now: [81, 82, 83].map((number) => ({
+            number,
+            title: `Ready WP ${number}`,
+            status: 'Ready' as const,
+            dependencies: [],
+          })),
+        },
       });
       const result = useAgentPipeline(snapshot);
 
@@ -593,7 +643,7 @@ describe('useAgentPipeline', () => {
       assert.equal(
         architectToday!.urgency,
         'strategic',
-        'architect today is strategic when no drafts',
+        'architect today is strategic with three specced WPs buildable',
       );
 
       const builderWeek = result.builder.priorities.find(

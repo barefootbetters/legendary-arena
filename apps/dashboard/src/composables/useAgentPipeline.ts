@@ -178,7 +178,6 @@ const EVALUATOR_PLACEHOLDER =
  * Snapshot-derived inputs used by the priority recommendation engine.
  */
 interface PriorityInputs {
-  readonly openDrafts: number;
   readonly wpsDoneThisWeek: number;
   readonly daysSinceLastDoneFlip: number;
   readonly inFlightCount: number;
@@ -203,22 +202,26 @@ interface PriorityInputs {
 function deriveArchitectPriorities(inputs: PriorityInputs): PriorityRecommendation[] {
   const priorities: PriorityRecommendation[] = [];
 
-  if (inputs.openDrafts >= 3) {
+  // why: a Draft WP is already specced (its WP + EC landed in a SPEC: commit),
+  // so `openDrafts` counts work queued for the Builder, not missing specs. The
+  // Architect is behind only when too few specced WPs are buildable now.
+  if (inputs.nextExecutableCount === 0) {
     priorities.push({
       horizon: 'today',
-      label: `${inputs.openDrafts} drafts without specs — spec the highest-value WP now or the Builder stalls.`,
+      label:
+        'No specced WP is ready to build — spec the highest-value WP now or the Builder stalls.',
       urgency: 'critical',
     });
-  } else if (inputs.openDrafts >= 1) {
+  } else if (inputs.nextExecutableCount < 3) {
     priorities.push({
       horizon: 'today',
-      label: `${inputs.openDrafts} draft(s) need specs — keep the Builder fed.`,
+      label: `Only ${inputs.nextExecutableCount} specced WP(s) ready to build — keep the Builder fed.`,
       urgency: 'high',
     });
   } else {
     priorities.push({
       horizon: 'today',
-      label: 'All drafts are specced. Review the backlog for the next revenue-critical feature.',
+      label: `${inputs.nextExecutableCount} specced WPs ready to build. Review the backlog for the next revenue-critical feature.`,
       urgency: 'strategic',
     });
   }
@@ -384,7 +387,7 @@ function deriveInspectorPriorities(inputs: PriorityInputs): PriorityRecommendati
   if (inputs.hasRecentWpCommit && inputs.statusEntryCount === 0) {
     priorities.push({
       horizon: 'this-week',
-      label: 'WP commits landed without inspection reports — review gap is growing.',
+      label: 'WP commits landed without STATUS.md entries — ship records are lagging.',
       urgency: 'high',
     });
   } else {
@@ -514,7 +517,7 @@ export function useAgentPipeline(
     backlog: [],
     active: [],
     history: [],
-    emptyBacklog: 'No draft WPs needing specs.',
+    emptyBacklog: 'No drafted WPs queued.',
     emptyActive: 'No recent spec activity.',
     emptyHistory: 'No recent decisions.',
   };
@@ -535,7 +538,7 @@ export function useAgentPipeline(
     active: [],
     history: [],
     emptyBacklog: 'No blocked work packets.',
-    emptyActive: 'No WPs awaiting review.',
+    emptyActive: 'No recently shipped WPs to spot-check.',
     emptyHistory: 'No recent inspections.',
   };
   const emptyEvaluator: PipelineLane = {
@@ -596,12 +599,13 @@ export function useAgentPipeline(
     latestSweepRun !== null ? computeSweepHealthRate(latestSweepRun) : null;
 
   const priorityInputs: PriorityInputs = {
-    openDrafts: kpis?.openDrafts ?? 0,
     wpsDoneThisWeek: kpis?.wpsDoneThisWeek ?? 0,
     daysSinceLastDoneFlip: kpis?.daysSinceLastDoneFlip ?? 0,
     inFlightCount: snapshot.inFlight().length,
     blockedCount: snapshot.blocked().length,
-    nextExecutableCount: snapshot.nextExecutable(10).length,
+    // why: the Architect and Builder labels print this count, so it is the whole
+    // buildable queue, not the first page the lanes render.
+    nextExecutableCount: snapshot.nextExecutable(Number.POSITIVE_INFINITY).length,
     hasRecentSpecCommit: recentCommits.some((commit) => commit.kind === 'SPEC'),
     hasRecentWpCommit: recentCommits.some((commit) => commit.kind === 'WP'),
     statusEntryCount: recentStatusEntries.length,
@@ -623,7 +627,7 @@ export function useAgentPipeline(
   if (kpis !== null) {
     architectBacklog.push({
       id: 'kpi-open-drafts',
-      label: `${kpis.openDrafts} open draft(s) needing specs`,
+      label: `${kpis.openDrafts} drafted WP(s) awaiting build`,
       meta: 'KPI',
     });
   }
@@ -732,23 +736,21 @@ export function useAgentPipeline(
     });
   }
 
+  // why: the Inspector reviews shipped code, so its active column is the WPs
+  // that recently shipped (STATUS.md entries), not the unbuilt next-executable
+  // queue, which has no code to review yet.
   const inspectorActive: PipelineItem[] = [];
-  for (const wpRef of snapshot.nextExecutable(5)) {
+  for (const entry of recentStatusEntries) {
     inspectorActive.push({
-      id: `review-${wpRef.number}`,
-      label: `WP-${String(wpRef.number).padStart(3, '0')} — ${wpRef.title}`,
-      meta: 'Awaiting review',
+      id: `review-${entry.wpNumber}-${entry.ecNumber}`,
+      label: `WP-${String(entry.wpNumber).padStart(3, '0')} / EC-${entry.ecNumber} — ${entry.title}`,
+      meta: 'Shipped — spot-check',
     });
   }
 
+  // why: a STATUS.md entry records a ship, not an inspection, so the history
+  // column holds only real inspection results (the triage projection below).
   const inspectorHistory: PipelineItem[] = [];
-  for (const entry of recentStatusEntries) {
-    inspectorHistory.push({
-      id: `inspection-${entry.wpNumber}-${entry.ecNumber}`,
-      label: `WP-${String(entry.wpNumber).padStart(3, '0')} / EC-${entry.ecNumber} — ${entry.title}`,
-      meta: entry.date,
-    });
-  }
 
   // --- Architect gap projection: runtime-confirmed hollow gaps (WP-260) ---
   // why (D-23902 single-lane discipline): the gap backlog folds INTO the
@@ -838,7 +840,7 @@ export function useAgentPipeline(
       backlog: architectBacklog,
       active: architectActive,
       history: architectHistory,
-      emptyBacklog: 'No draft WPs needing specs.',
+      emptyBacklog: 'No drafted WPs queued.',
       emptyActive: 'No recent spec activity.',
       emptyHistory: 'No recent decisions.',
     },
@@ -859,7 +861,7 @@ export function useAgentPipeline(
       active: inspectorActive,
       history: inspectorHistory,
       emptyBacklog: 'No blocked work packets.',
-      emptyActive: 'No WPs awaiting review.',
+      emptyActive: 'No recently shipped WPs to spot-check.',
       emptyHistory: 'No recent inspections.',
     },
     evaluator: {
