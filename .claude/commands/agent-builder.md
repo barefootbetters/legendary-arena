@@ -34,7 +34,9 @@ pipeline (`apps/dashboard/docs/code-checks-and-balances.md` §5). You build
   not "Needs review", with every dependency complete.
 
 **For a lite spec:** the bullets are the contract. Treat the change as `INFRA:`
-unless it carries a WP.
+unless it carries a WP. Keep its `**Risk Tier:** LOW` line as the first line
+of the PR body (or the commit body when there is no PR); it is where the
+Inspector reads the tier (D-24799).
 
 ## Step 2 — Build
 

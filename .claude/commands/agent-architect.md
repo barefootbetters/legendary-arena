@@ -35,6 +35,17 @@ is HIGH.
 | **LOW** (copy, styling, docs, a narrow `INFRA:` fix) | **Lite spec:** bullets in the eventual PR/commit body. List the goal, the files, the acceptance checks, and the verification commands. No WP. |
 | **MEDIUM / HIGH** (logic, APIs, contracts, engine, anything with a layer or persistence surface) | **A Work Packet + Execution Checklist** via `docs/ai/REFERENCE/01.0a-wp-drafting-phase.md` |
 
+**Write the tier down; you own it (D-24799).** The Inspector and tooling read
+it from one place and never infer it:
+- **WP lane:** the WP header line `**Risk Tier:** MEDIUM` (or `HIGH`), per
+  `PACKET-TEMPLATE.md`. Copy the same value into the EC header.
+- **Lite lane:** the first line of the lite spec is `**Risk Tier:** LOW`. The
+  lite spec lives in the PR body (or the commit body when there is no PR), so
+  that line goes there.
+
+Use one bare capitalized word (`LOW` / `MEDIUM` / `HIGH`), optionally followed
+by ` — <reason>`. Never a range.
+
 For the WP lane, read **all** of `01.0a` before acting. Then execute every step to
 its artifact:
 - **Reserve first:** land the ledger reservation PR before writing the body.
@@ -62,7 +73,8 @@ These are the §4 items, expressed in the WP template's own sections:
 - **Test contract (MEDIUM/HIGH):** for each case, concrete inputs, the exact
   expected outputs, the invariants that always hold, and what the code must NOT
   do on bad input.
-- **HIGH only:** a threat model paragraph and a rollback plan.
+- **HIGH only:** a threat model paragraph and a rollback plan, in the WP's
+  `## Threat Model & Rollback Plan` section.
 
 ## Rules
 
@@ -76,6 +88,7 @@ These are the §4 items, expressed in the WP template's own sections:
 ## Deliverable and hand-off
 
 End with:
+- the risk tier, as written in the spec
 - the WP/EC paths (or the lite-spec text)
 - the gate verdicts
 - the PR link

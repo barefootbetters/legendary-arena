@@ -28,6 +28,18 @@
 > engine change a player cannot perceive is **`none — infrastructure`**; say so
 > plainly rather than implying visible progress. (D-24026)
 
+**Risk Tier:** [LOW | MEDIUM | HIGH]
+
+> Pick exactly one, using the definitions in
+> `apps/dashboard/docs/code-checks-and-balances.md` §3; when in doubt, classify
+> **up**. Write the bare word in capitals, optionally followed by ` — <reason>`
+> (e.g. `**Risk Tier:** HIGH — writes entitlement rows`). Never a range, never
+> "MEDIUM/HIGH". This line is the tier's one machine-readable home: the EC copies
+> it verbatim, and the Inspector and tooling read it from here instead of
+> inferring it. A HIGH packet also adds a `## Threat Model & Rollback Plan`
+> section directly after `## Out of Scope`: one threat-model paragraph and the
+> rollback steps (§3 Control Matrix). LOW and MEDIUM packets omit it. (D-24799)
+
 ---
 
 ## Session Context
@@ -270,6 +282,22 @@ Add `node:test` tests in `src/[path]/[file].test.ts`:
 - No server or UI changes
 - Refactors, cleanups, or "while I'm here" improvements are **out of scope**
   unless explicitly listed in Scope (In) above.
+
+---
+
+## Threat Model & Rollback Plan
+
+> **HIGH-tier packets only** (`**Risk Tier:** HIGH`); delete this section for
+> LOW and MEDIUM. Required by the §3 Control Matrix and checked by 00.3 §15.2.
+> (D-24799)
+
+[Threat model: one paragraph naming who could abuse or break this change
+(a player, a guest, a forged request, a replay, an operator mistake), what they
+would gain or damage, and which guard in this packet stops it.]
+
+[Rollback plan: the exact steps to undo this change in production — the revert,
+any data or migration to unwind, any deploy to re-run — and how to confirm the
+rollback took.]
 
 ---
 
