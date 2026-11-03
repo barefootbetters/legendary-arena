@@ -565,6 +565,11 @@ describe('useAgentPipeline', () => {
         'critical',
         'builder this-week is critical with 0 WPs done',
       );
+      assert.equal(
+        weekPriority!.label,
+        'Zero WPs shipped in the last 7 days — close at least one to maintain velocity.',
+        'the label names the rolling 7-day window (D-24799), not the calendar week',
+      );
     });
 
     it('should_flag_inspector_critical_when_multiple_wps_blocked', () => {
