@@ -211,7 +211,8 @@ dashboard** (see the DR-readiness note below); `/metrics/dau`, `/alerts`, and
 > mock-first** fallback, distinct from the dashboard's client-side
 > `VITE_USE_MOCKS`: with no `DASH_GITHUB_TOKEN` set the route returns `200`
 > `data.source:"mock"` (never `500`), so the tile renders a placeholder until the
-> token is set on Render — then it derives last-drill / next-due / overdue from
+> token is set in the API droplet's `/etc/la/.env` — then it derives last-drill /
+> next-due / overdue from
 > the `DR drill due` GitHub issues the `dr-drill-reminder` workflow opens (see
 > [Disaster Recovery](disaster-recovery.md)).
 
