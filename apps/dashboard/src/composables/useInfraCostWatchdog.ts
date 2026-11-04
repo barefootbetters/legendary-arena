@@ -77,6 +77,7 @@ export function useInfraCostWatchdog(
   const budgetByVendor = computed<Readonly<Record<InfraCostVendor, InfraCostBudget | undefined>>>(
     () => {
       const result: Record<InfraCostVendor, InfraCostBudget | undefined> = {
+        digitalocean: undefined,
         render: undefined,
         cloudflare: undefined,
         postgres: undefined,
@@ -151,6 +152,7 @@ export function useInfraCostWatchdog(
 
   const mtdByVendor = computed<Readonly<Record<InfraCostVendor, number>>>(() => {
     const result: Record<InfraCostVendor, number> = {
+      digitalocean: 0,
       render: 0,
       cloudflare: 0,
       postgres: 0,
@@ -171,6 +173,7 @@ export function useInfraCostWatchdog(
 
   const projectedEomByVendor = computed<Readonly<Record<InfraCostVendor, number>>>(() => {
     const result: Record<InfraCostVendor, number> = {
+      digitalocean: 0,
       render: 0,
       cloudflare: 0,
       postgres: 0,
@@ -203,6 +206,7 @@ export function useInfraCostWatchdog(
 
   const statusByVendor = computed<Readonly<Record<InfraCostVendor, KpiStatus>>>(() => {
     const result: Record<InfraCostVendor, KpiStatus> = {
+      digitalocean: 'on-track',
       render: 'on-track',
       cloudflare: 'on-track',
       postgres: 'on-track',
