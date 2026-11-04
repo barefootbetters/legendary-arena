@@ -1178,11 +1178,13 @@
       "label": "Microscopic Size Changing",
       "scope": "hero",
       "source": "free-text",
-      "cardCount": 5,
+      "cardCount": 7,
       "cardIds": [
         "amwp/ant-army",
         "amwp/ant-man",
         "amwp/cassie-lang",
+        "amwp/janet-van-dyne",
+        "amwp/wasp",
         "antm/ant-man",
         "antm/wasp"
       ],
@@ -2023,11 +2025,13 @@
       "label": "Size Changing",
       "scope": "hero",
       "source": "keyword",
-      "cardCount": 16,
+      "cardCount": 18,
       "cardIds": [
         "amwp/ant-army",
         "amwp/ant-man",
         "amwp/cassie-lang",
+        "amwp/janet-van-dyne",
+        "amwp/wasp",
         "antm/ant-man",
         "antm/jocasta",
         "antm/wasp",
@@ -2731,7 +2735,9 @@
     },
     "amwp/janet-van-dyne": {
       "mechanics": [
-        "draw"
+        "draw",
+        "microscopic-size-changing",
+        "size-changing"
       ]
     },
     "amwp/jentorra": {
@@ -2747,7 +2753,9 @@
     },
     "amwp/wasp": {
       "mechanics": [
-        "first-hero-condition"
+        "first-hero-condition",
+        "microscopic-size-changing",
+        "size-changing"
       ]
     },
     "anni/brainstorm": {

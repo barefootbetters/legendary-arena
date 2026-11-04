@@ -36,10 +36,14 @@ amwp/cassie-lang,Cassie Lang,amwp,microscopic-size-changing,unsupported,,,,inspi
 amwp/cassie-lang,Cassie Lang,amwp,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,colossal-stomp|giant-hug|start-small
 amwp/freedom-fighters,Freedom Fighters,amwp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,steel-warrior
 amwp/janet-van-dyne,Janet van Dyne,amwp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,subatomic-size
+amwp/janet-van-dyne,Janet van Dyne,amwp,microscopic-size-changing,unsupported,,,,subatomic-size
+amwp/janet-van-dyne,Janet van Dyne,amwp,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,wasp-of-another-generation
 amwp/jentorra,Jentorra,amwp,conqueror,unsupported,,,,conquer-the-conqueror|take-the-high-ground|unite-the-oppressed
 amwp/jentorra,Jentorra,amwp,explore,unsupported,,,,find-your-courage|lead-powerful-allies
 amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,(unmarked),unmarked,,,,
 amwp/wasp,Wasp,amwp,first-hero-condition,condition,,,,follow-my-lead
+amwp/wasp,Wasp,amwp,microscopic-size-changing,unsupported,,,,hope-returns|infiltrate
+amwp/wasp,Wasp,amwp,size-changing,executable,WP-290,D-24074,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,flitting-sting|follow-my-lead|master-physicist|positive-ions
 anni/brainstorm,Brainstorm,anni,out-of-time,executable,WP-803,D-24692,packages/game-engine/src/hero/heroEffects.execute.ts#out-of-time,borrow-from-the-future|time-loop-experiments
 anni/brainstorm,Brainstorm,anni,put-hand-on-deck-top,executable,WP-700,D-24519,packages/game-engine/src/hero/heroEffects.execute.ts#put-hand-on-deck-top,time-loop-experiments
 anni/fantastic-four-united,Fantastic Four United,anni,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,mr-fantastic

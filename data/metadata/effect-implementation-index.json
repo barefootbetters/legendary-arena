@@ -3,17 +3,17 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2038,
+    "totalEntries": 2042,
     "byScope": {
-      "hero": 842,
+      "hero": 846,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 660,
+      "executable": 662,
       "deferred": 16,
       "condition": 58,
-      "unsupported": 287,
+      "unsupported": 289,
       "unmarked": 1012,
       "subsystem": 5
     }
@@ -1504,6 +1504,40 @@
       ]
     },
     {
+      "extId": "amwp/janet-van-dyne",
+      "name": "Janet van Dyne",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "microscopic-size-changing",
+      "status": "unsupported",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "subatomic-size",
+          "name": "Subatomic Size"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/janet-van-dyne",
+      "name": "Janet van Dyne",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "size-changing",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
+      "wp": "WP-290",
+      "decision": "D-24074",
+      "designs": [
+        {
+          "slug": "wasp-of-another-generation",
+          "name": "Wasp of Another Generation"
+        }
+      ]
+    },
+    {
       "extId": "amwp/jentorra",
       "name": "Jentorra",
       "set": "amwp",
@@ -1574,6 +1608,56 @@
         {
           "slug": "follow-my-lead",
           "name": "Follow my Lead"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/wasp",
+      "name": "Wasp",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "microscopic-size-changing",
+      "status": "unsupported",
+      "handler": "",
+      "wp": "",
+      "decision": "",
+      "designs": [
+        {
+          "slug": "hope-returns",
+          "name": "Hope Returns"
+        },
+        {
+          "slug": "infiltrate",
+          "name": "Infiltrate"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/wasp",
+      "name": "Wasp",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "size-changing",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
+      "wp": "WP-290",
+      "decision": "D-24074",
+      "designs": [
+        {
+          "slug": "flitting-sting",
+          "name": "Flitting Sting"
+        },
+        {
+          "slug": "follow-my-lead",
+          "name": "Follow my Lead"
+        },
+        {
+          "slug": "master-physicist",
+          "name": "Master Physicist"
+        },
+        {
+          "slug": "positive-ions",
+          "name": "Positive Ions"
         }
       ]
     },
@@ -29816,7 +29900,9 @@
     "amwp/janet-van-dyne": {
       "scope": "hero",
       "mechanics": [
-        "draw"
+        "draw",
+        "microscopic-size-changing",
+        "size-changing"
       ]
     },
     "amwp/jentorra": {
@@ -29835,7 +29921,9 @@
     "amwp/wasp": {
       "scope": "hero",
       "mechanics": [
-        "first-hero-condition"
+        "first-hero-condition",
+        "microscopic-size-changing",
+        "size-changing"
       ]
     },
     "anni-mastermind-annihilus-deploy-the-planet-killer": {
