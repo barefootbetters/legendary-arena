@@ -50102,4 +50102,25 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24799. Related: D-19905 (c superseded for this KPI), D-19904, D-19908, D-24723, EC-226.
 
 ---
+
+### D-24800 — A change's risk tier is a `**Risk Tier:**` header line in its spec (WP header, mirrored in the EC; first line of a lite spec), written by the Architect and read by the Inspector and tooling (Active 2026-11-03 — no WP)
+
+**Status:** Active 2026-11-03. Process governance only; no code.
+
+**Context.** `apps/dashboard/docs/code-checks-and-balances.md` §3 classifies every change LOW / MEDIUM / HIGH, and the tier decides how much review it gets (lightweight vs full vs full + adversarial, cross-model review and Jeff's line-by-line read required at HIGH). The tier existed only as prose: the §3 matrix, the §10 checklist line "Risk tier classified", and `agent-architect` Step 2's classification table. Nothing said where the classification is written, so every Inspector run, and any tool that wants to act on HIGH changes (the planned cross-model review script, a dashboard "HIGH-tier merged without cross-model review" count), would have to re-derive it from the diff.
+
+**Decision.**
+1. **Home: the spec, as a header line.** A WP carries `**Risk Tier:** LOW|MEDIUM|HIGH` in its header, after `**User-Visible Surface:**` (`PACKET-TEMPLATE.md`). The EC copies the line verbatim under `**Layer:**` (`EC-TEMPLATE.md`); if they differ, the WP wins and the EC is invalid until corrected. A lite spec (the LOW `INFRA:` lane) starts with the same line, and since a lite spec lives in the PR body (or the commit body when there is no PR), so does the line. A HIGH WP also adds a conditional `## Threat Model & Rollback Plan` section directly after `## Out of Scope`.
+2. **Grammar.** One bare capitalized word, optionally followed by ` — <reason>`; never a range. A reader matches `^\*\*Risk Tier:\*\* (LOW|MEDIUM|HIGH)\b`. A tool resolving a PR reads the referenced WP's header at the PR head, else the PR body's line, else reports the PR as **unclassified**. It never infers a tier.
+3. **Who writes, who reads.** The Architect classifies and writes the line (`agent-architect` Step 2). The Inspector reads it (`agent-inspector` Step 1). It reviews LOW lightweight, MEDIUM full, and HIGH full plus adversarial, and requires a threat model and rollback plan in a HIGH spec. It ends a HIGH report with the merge requirements it cannot satisfy itself (cross-model review, Jeff's read), each marked evidenced or open. A diff that falls in a higher tier under §3's Risk Classification definitions than the spec declares is a P1 routed to the Architect, and the review runs at the higher tier; a tier above §3's is never a finding. This decision does not change what each tier covers: §3 stays the definition.
+4. **Lint.** `00.3 §15.2` and Final Gate row 39 FAIL a packet with no tier line, a value outside the three words, an EC line that differs from the WP's, or a HIGH packet without a threat model and rollback plan. Lint checks that a tier is declared, not whether it is the right one.
+5. **No back-fill.** Specs first committed before this decision merged to `main` keep their headers (completed packets are not modified, `.claude/rules/work-packets.md`); the Inspector classifies them itself and reports "tier inferred", with no finding. A later spec with no line is a P1.
+
+**Why a header line, not a PR label.** The tier is decided at spec time, often days before any PR exists. A label lives in GitHub state, not git: it is not versioned with the spec, can change after review with no diff, cannot be read by an Inspector reviewing a branch with no PR, and needs the API to read where a header needs only the file. The header follows the `**User-Visible Surface:**` precedent (D-24026): a classification the template forces at draft time and the lint gate checks. A label can still be added later as a mirror for GitHub filtering. The header stays the source.
+
+**Consequences.** New WPs, ECs and lite specs carry a readable tier; the planned cross-model review script and any dashboard view can key off it without guessing. Templates, `00.3`, and the `agent-architect` / `agent-builder` / `agent-inspector` commands change; `code-checks-and-balances.md` is untouched (its §3 stays the definition; `apps/dashboard` is frozen per D-24723). No engine, contract or CI change. Two open items: the D-24723 cutover removes `apps/dashboard`, so §3 needs a new home in this repo first, and the template and `00.3` pointers move with it; and `agent-architect` Step 2's pre-existing line ("auth, payments, entitlements, customer data, or determinism is HIGH") is broader than §3, which puts most engine WPs at HIGH if the Architect follows it. Reconciling the two is Jeff's call and is not made here.
+
+**Reserved by:** NUMBER-LEDGER D-24800. Related: D-24026 (header-classification precedent), D-24723 (`apps/dashboard` freeze).
+
+---
 Protect this file.

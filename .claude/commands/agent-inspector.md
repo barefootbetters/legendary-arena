@@ -29,6 +29,37 @@ the code matches its spec and is correct, secure, and maintainable.
   - otherwise, the lite spec in the PR or commit body
   - no spec at all is itself a **P1** (the merge gate requires a spec ID)
 - **The build note.** Read it and list every declared deviation.
+- **The risk tier (D-24800).** Read it from the spec; never infer it when the
+  spec states one:
+  - for a WP, the WP header's `**Risk Tier:**` line (the EC copies it; if they
+    differ, the WP wins and the mismatch is a **P1** routed to the Architect)
+  - for a lite spec, the `**Risk Tier:**` line in the PR body (or the commit
+    body when there is no PR)
+  - **No line:** a spec first committed before D-24800 merged to `main` has
+    none. Classify it yourself per §3 and write "tier inferred: <TIER>" in the
+    report, with no finding. A later spec with no line is a **P1** routed to
+    the Architect; review at your own §3 classification meanwhile.
+  - **Classified down:** if the diff falls in a higher tier under §3's Risk
+    Classification definitions, that is a **P1** routed to the Architect, and
+    you review at the higher tier. A tier above §3's is never a finding (§3:
+    "when in doubt, classify UP").
+
+## Step 1b — Scale the review to the tier
+
+The §3 Control Matrix sets the depth. Report format and verdict rule never
+change.
+
+| Tier | Review depth |
+|---|---|
+| **LOW** | Lightweight: spec compliance, scope (`git diff --name-only` vs the lite spec's files), security smells, tests earned green, CI green. The Step 2 axes beyond those are optional. |
+| **MEDIUM** | Full: every Step 2 axis. Coverage must not drop. |
+| **HIGH** | Full **plus adversarial**: actively try to break auth, entitlement, payment, data-integrity and determinism paths, and name each attack you tried. The spec must carry a threat model and a rollback plan (a WP's `## Threat Model & Rollback Plan` section); a missing one is a **P1** routed to the Architect. Coverage must not drop. |
+
+For a **HIGH** change, end the report with a **HIGH-tier merge requirements**
+block. It lists the §3 controls that are not yours to satisfy: a cross-model
+review and Jeff's line-by-line read. Mark each one *evidenced* (with a link or
+commit) or *open*. They do not change your verdict, but the merge waits on
+them.
 
 ## Step 2 — Review
 
@@ -73,6 +104,7 @@ defect).
 1. **Print the report in the conversation:**
    - the target
    - the spec reference
+   - the risk tier and where it was read (or "tier inferred: <TIER>")
    - the findings grouped by severity
    - the verdict
    - the routing
