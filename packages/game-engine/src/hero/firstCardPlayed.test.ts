@@ -195,13 +195,20 @@ describe('D-24798 parse: "first card you played this turn" gates on firstHeroPla
     });
   }
 
-  it('amwp/wasp/follow-my-lead line 0 (Size-Changing) is unchanged', () => {
+  // why: line 0 now carries [keyword:Size-Changing] (the amwp marker-parity fix), so it parses
+  // to a ranged class grant rather than the old bare heroClassMatch gate-only hollow.
+  it('amwp/wasp/follow-my-lead line 0 (Size-Changing) grants ranged and carries no first-card gate', () => {
     const hooks = buildCardHooks(FOLLOW_MY_LEAD);
     const gatedHook = findFirstCardHook(hooks, FOLLOW_MY_LEAD.cardPrefix);
     const lineZero = hooks.find((hook) => hook !== gatedHook);
     assert.ok(lineZero !== undefined, 'Follow My Lead keeps its line 0 hook');
-    assert.deepEqual(lineZero.conditions, [{ type: 'heroClassMatch', value: 'ranged' }]);
-    assert.deepEqual(lineZero.unresolvedMarkers, ['gate-only']);
+    assert.deepEqual(lineZero.sizeChangingClasses, ['ranged']);
+    assert.equal(
+      (lineZero.conditions ?? []).some((condition) => condition.type === 'heroClassMatch'),
+      false,
+      'the [hc:ranged] token is the granted class, not a play gate',
+    );
+    assert.equal(lineZero.unresolvedMarkers, undefined, 'no gate-only hollow');
     assert.ok(
       !(lineZero.conditions ?? []).some((condition) => condition.type === FIRST_CARD_CONDITION),
       'line 0 carries no first-card gate',

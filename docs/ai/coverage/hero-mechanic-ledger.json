@@ -2,12 +2,12 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 842,
+    "totalRows": 846,
     "byStatus": {
-      "executable": 454,
+      "executable": 456,
       "deferred": 16,
       "condition": 58,
-      "unsupported": 286,
+      "unsupported": 288,
       "unmarked": 25,
       "subsystem": 3
     },
@@ -705,6 +705,38 @@
       ]
     },
     {
+      "extId": "amwp/janet-van-dyne",
+      "heroName": "Janet van Dyne",
+      "set": "amwp",
+      "mechanic": "microscopic-size-changing",
+      "status": "unsupported",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "subatomic-size",
+          "name": "Subatomic Size"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/janet-van-dyne",
+      "heroName": "Janet van Dyne",
+      "set": "amwp",
+      "mechanic": "size-changing",
+      "status": "executable",
+      "wp": "WP-290",
+      "decision": "D-24074",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
+      "designs": [
+        {
+          "slug": "wasp-of-another-generation",
+          "name": "Wasp of Another Generation"
+        }
+      ]
+    },
+    {
       "extId": "amwp/jentorra",
       "heroName": "Jentorra",
       "set": "amwp",
@@ -772,6 +804,54 @@
         {
           "slug": "follow-my-lead",
           "name": "Follow my Lead"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/wasp",
+      "heroName": "Wasp",
+      "set": "amwp",
+      "mechanic": "microscopic-size-changing",
+      "status": "unsupported",
+      "wp": "",
+      "decision": "",
+      "handler": "",
+      "designs": [
+        {
+          "slug": "hope-returns",
+          "name": "Hope Returns"
+        },
+        {
+          "slug": "infiltrate",
+          "name": "Infiltrate"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/wasp",
+      "heroName": "Wasp",
+      "set": "amwp",
+      "mechanic": "size-changing",
+      "status": "executable",
+      "wp": "WP-290",
+      "decision": "D-24074",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
+      "designs": [
+        {
+          "slug": "flitting-sting",
+          "name": "Flitting Sting"
+        },
+        {
+          "slug": "follow-my-lead",
+          "name": "Follow my Lead"
+        },
+        {
+          "slug": "master-physicist",
+          "name": "Master Physicist"
+        },
+        {
+          "slug": "positive-ions",
+          "name": "Positive Ions"
         }
       ]
     },
