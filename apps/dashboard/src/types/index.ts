@@ -370,14 +370,17 @@ export type UptimeStatus = 'up' | 'degraded' | 'down';
 export const UPTIME_STATUSES: readonly UptimeStatus[] = ['up', 'degraded', 'down'];
 
 // why: WP-204 §Locked contract values — `InfraCostVendor` is a closed union
-// of the four currently-billed operator vendors (Render game server,
-// Cloudflare CDN/R2, Postgres database, Hanko identity). Future vendor
+// of the operator's billed vendors (DigitalOcean droplet, Render game server,
+// Cloudflare CDN/R2, Postgres database, Hanko identity). `digitalocean` was
+// added for the 2026-10-12 cutover off Render: the droplet now hosts the game
+// server and its Postgres, and `render` / `postgres` stay until a full month
+// bills them $0 (their last bills are October 2026). Future vendor
 // additions (e.g., R2 split out from `cloudflare`, separate
 // observability tooling) get added by extending both this union AND
 // `INFRA_COST_VENDORS` in the same edit; the drift test in
 // `utils/opsTaxonomy.test.ts` catches asymmetric updates loudly
 // (D-20401 forward-locked envelope).
-export type InfraCostVendor = 'render' | 'cloudflare' | 'postgres' | 'hanko';
+export type InfraCostVendor = 'digitalocean' | 'render' | 'cloudflare' | 'postgres' | 'hanko';
 
 // why: WP-204 §Determinism scope + WP-198 KPI_STATUSES drift precedent —
 // canonical readonly array drift-pinned to `InfraCostVendor`. Order is
@@ -388,6 +391,7 @@ export type InfraCostVendor = 'render' | 'cloudflare' | 'postgres' | 'hanko';
 // both this array AND the union fails the drift test in
 // `utils/opsTaxonomy.test.ts`.
 export const INFRA_COST_VENDORS: readonly InfraCostVendor[] = [
+  'digitalocean',
   'render',
   'cloudflare',
   'postgres',

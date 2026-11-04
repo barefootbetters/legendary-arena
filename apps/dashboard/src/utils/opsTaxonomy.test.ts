@@ -93,8 +93,14 @@ test('should_deep_equal_locked_value_when_INFRA_COST_VENDORS_is_inspected', () =
   // card order in `InfraCostWatchdogWidget`; composable iteration in
   // `useInfraCostWatchdog`; `INFRA_COST_BUDGETS` config array iteration).
   // Reordering would silently shuffle the operator's at-a-glance view.
-  assert.deepEqual(INFRA_COST_VENDORS, ['render', 'cloudflare', 'postgres', 'hanko']);
-  assert.equal(INFRA_COST_VENDORS.length, 4);
+  assert.deepEqual(INFRA_COST_VENDORS, [
+    'digitalocean',
+    'render',
+    'cloudflare',
+    'postgres',
+    'hanko',
+  ]);
+  assert.equal(INFRA_COST_VENDORS.length, 5);
 });
 
 test('should_assign_to_union_when_iterating_INFRA_COST_VENDORS_entries', () => {
@@ -111,6 +117,7 @@ test('should_include_every_documented_InfraCostVendor_when_checking_INFRA_COST_V
   // and `useInfraCostWatchdog`'s MTD aggregation would skip the new
   // vendor entirely.
   const documentedUnionMembers: readonly InfraCostVendor[] = [
+    'digitalocean',
     'render',
     'cloudflare',
     'postgres',

@@ -26,32 +26,37 @@ export interface InfraCostActual {
 // is the `date` stamped on every derived entry so `useInfraCostWatchdog` reads
 // the calendar month/day from it (the composable parses this string, never a
 // wall clock). Update it every time the figures below are refreshed.
-// why: 2026-09-30 is the last day of the September billing period, so the
-// composable's linear end-of-month projection equals the full-month actual.
-export const INFRA_COST_ACTUALS_AS_OF = '2026-09-30';
+// why: 2026-10-31 is the last day of the October billing period, so the
+// composable's linear end-of-month projection equals the full-month actual, and
+// Business Pulse can read the sum as a full month's infra cost.
+export const INFRA_COST_ACTUALS_AS_OF = '2026-10-31';
 
 // why: month-to-date spend per vendor as of INFRA_COST_ACTUALS_AS_OF, read from
-// the vendor bills. Sourcing, per vendor:
-//   render     — Render's September 2026 invoice (Sep 1–30, paid 2026-10-01),
-//                compute + pipeline + egress: legendary-arena-server on `pro`
-//                ($85.00) + builds, 6h42m ($5.00) + bandwidth, 6.5 GB ($1.05) +
-//                the ewiki static site ($0.00) = $91.05. The Postgres datastore
-//                is on the same invoice but tracked as its own vendor line below,
-//                matching the panel's separate Postgres budget.
-//   postgres   — the same invoice's legendary-arena-db line on `pro-4gb`
-//                ($55.30, instance + storage).
-//   cloudflare — $0: carried from the 2026-07-27 billing-dashboard check (Zero
-//                Trust Teams Free + R2 within free-tier limits). NOT re-checked
-//                for September — confirm on the next refresh.
-//   hanko      — $0: carried from the 2026-07-27 Hanko Cloud billing check
-//                (Starter plan). NOT re-checked for September.
-// Render + Postgres are exact-dollar from the September invoice (total
-// $146.35); Cloudflare + Hanko are the last confirmed free-tier figures.
+// the vendor bills in C:\pcloud\legendary-arena\ops\accounting\expenses2026.
+// October 2026 is the cutover month (2026-10-12), so both hosts billed.
+// Sourcing, per vendor:
+//   digitalocean — invoice 560663798 (Oct 12–31, issued and paid 2026-11-01):
+//                  Droplets $17.37 + Droplet Backups $0.28 = $17.65 usage. A
+//                  $5.00 account credit made the charge $12.65; usage is
+//                  recorded here so the figure is the month's real run cost.
+//   render       — Render invoice 0SPQWPNF-0007 (Oct 1–31, issued 2026-11-02),
+//                  Servers line: 283 h to the cutover, $32.36. Static sites
+//                  $0.00. The invoice total is $71.12 with the line below.
+//   postgres     — the same invoice's PostgresDB line: 521 h (kept running to
+//                  about 2026-10-22 after the cutover), $38.76.
+//   cloudflare   — $0: carried from the 2026-07-27 billing-dashboard check (Zero
+//                  Trust Teams Free + R2 within free-tier limits). NOT re-checked
+//                  for October — confirm on the next refresh.
+//   hanko        — $0: carried from the 2026-07-27 Hanko Cloud billing check
+//                  (Starter plan). NOT re-checked for October.
+// October total: $88.77. From November only DigitalOcean bills for hosting;
+// render and postgres read $0 and can leave the vendor union after that.
 // Order mirrors the canonical INFRA_COST_VENDORS array.
 export const INFRA_COST_ACTUALS: readonly InfraCostActual[] = [
-  { vendor: 'render', monthToDateCents: 9105 },
+  { vendor: 'digitalocean', monthToDateCents: 1765 },
+  { vendor: 'render', monthToDateCents: 3236 },
   { vendor: 'cloudflare', monthToDateCents: 0 },
-  { vendor: 'postgres', monthToDateCents: 5530 },
+  { vendor: 'postgres', monthToDateCents: 3876 },
   { vendor: 'hanko', monthToDateCents: 0 },
 ];
 

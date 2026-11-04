@@ -8,6 +8,7 @@ import RevenueChartWidget from '../../widgets/RevenueChartWidget.vue';
 import NetRevenueChartWidget from '../../widgets/NetRevenueChartWidget.vue';
 import PaidActionErrorsWidget from '../../widgets/PaidActionErrorsWidget.vue';
 import GitHubActionsCostWidget from '../../widgets/GitHubActionsCostWidget.vue';
+import DigitalOceanCostWidget from '../../widgets/DigitalOceanCostWidget.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 
@@ -38,6 +39,7 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
       <NetRevenueChartWidget />
       <PaidActionErrorsWidget />
       <GitHubActionsCostWidget />
+      <DigitalOceanCostWidget />
     </div>
 
     <div v-if="loading && !data" class="page-loading">
@@ -120,7 +122,8 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
             >Render Migration Analysis ↗</a
           >
           <span
-            >hosting costs: Render to the $24 droplet, and GitHub Actions ($0 for the game)</span
+            >hosting costs: Render to the $24 droplet, its actual DigitalOcean bills, and GitHub
+            Actions ($0 for the game)</span
           >
         </li>
       </ul>
