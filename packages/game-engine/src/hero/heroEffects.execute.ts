@@ -96,7 +96,7 @@ import {
   buildRandomActsWoundChoice,
   buildPassLeftChoice,
 } from '../moves/seatChoiceCards.js';
-import { formatCardRef, resolveCardName } from '../log/logDisplay.js';
+import { formatCardRef, heroClassDisplayName, resolveCardName, teamDisplayName } from '../log/logDisplay.js';
 import {
   describeRevealPredicate,
   describeRevealActions,
@@ -1074,6 +1074,25 @@ export function executeHeroEffects(
       // where the own-deck reveal clearly resolved yet this line sat between its two entries. Name it
       // as ONE of the card's abilities when the card carries multiple hooks; keep the singular wording
       // for a single-ability card (where the whole card's ability really was the gated one).
+      // why: WP-716 / D-24539 — a count-scaled line whose class/team gate IS its count source
+      // ("[hc:ranged]: +1 for each other [hc:ranged] Hero") did not fail: it scaled by 0. "Did not
+      // activate" read as broken in live play (Absorb Energies played first), so say +0 and name
+      // what to play first. Scoped to that family: a flat-gated line, a gate that differs from the
+      // count source, or a count that would grant more than 0 keeps the "did not activate" wording.
+      // Text only — outcome stays `blocked` and the line still carries the card, so the Play
+      // Diagnostics conditionNotMet read (WP-438) is unchanged.
+      const zeroScaledClause = hollowBodyNote === ''
+        ? describeZeroScaledCountClause(G, playerID, cardId, hook, failedCondition)
+        : undefined;
+      if (zeroScaledClause !== undefined) {
+        const zeroScaledVerb = hooks.length > 1 ? 'scaled one of its abilities to' : 'scaled to';
+        pushLog(G,
+          `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${zeroScaledVerb} ${zeroScaledClause}.`,
+          'blocked',
+          cardId,
+        );
+        continue;
+      }
       const abilityPhrase = hooks.length > 1 ? 'did not activate one of its abilities' : 'ability did not activate';
       pushLog(G,
         `Player ${playerID}'s ${formatCardRef(G.cardDisplayData, cardId)} ${abilityPhrase} — ${reason}.${hollowBodyNote}`,
@@ -1226,6 +1245,108 @@ function hookHasCountScaledValueEffect(hook: HeroAbilityHook): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Returns the played-this-turn count source that counts exactly the cards a class or
+ * team gate checks for, or undefined when no count source does (WP-716 / D-24539).
+ *
+ * why: the zero-scale log line may say "+0 — no other Ranged Hero played yet" only when
+ * the gate and the count are the same thing. A gate on a different axis (Instinct gate,
+ * extra-draws count) genuinely blocked the line, so it keeps "did not activate".
+ *
+ * @param condition - The class or team gate that failed.
+ * @returns The matching count source, or undefined.
+ */
+function countSourceMatchingGate(condition: HeroCondition): HeroCountSource | undefined {
+  if (condition.type === 'heroClassMatch') {
+    switch (condition.value) {
+      case 'strength':
+        return 'strength-heroes-played-this-turn';
+      case 'ranged':
+        return 'ranged-heroes-played-this-turn';
+      case 'tech':
+        return 'tech-heroes-played-this-turn';
+      case 'covert':
+        return 'covert-heroes-played-this-turn';
+      default:
+        return undefined;
+    }
+  }
+  if (condition.type === 'requiresTeam') {
+    switch (condition.value) {
+      case 'avengers':
+        return 'avengers-played-this-turn';
+      case 'shield':
+        return 'shield-heroes-played-this-turn';
+      case 'x-men':
+        return 'x-men-played-this-turn';
+      default:
+        return undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Returns the "+0" resource phrase for a count-scaled effect type, or undefined for any
+ * other effect type (WP-716 / D-24539).
+ *
+ * @param effectType - The effect descriptor's type.
+ * @returns e.g. `"+0 Attack"`, or undefined when the effect is not count-scaled.
+ */
+function zeroScaledResourcePhrase(effectType: string): string | undefined {
+  if (effectType === 'attack-per-count') {
+    return '+0 Attack';
+  }
+  if (effectType === 'recruit-per-count') {
+    return '+0 Recruit';
+  }
+  if (effectType === 'kidnap-per-count') {
+    return '0 Bystander captures';
+  }
+  return undefined;
+}
+
+/**
+ * Describes a gated count-scaled line that scaled to 0, or returns undefined when the
+ * failed gate is not that case (WP-716 / D-24539).
+ *
+ * The line qualifies only when the hook's sole effect is count-scaled (attack / recruit /
+ * kidnap-per-count), the failed gate is the class or team its count source counts, and
+ * the count would grant 0 now. Read-only: re-resolves the count from G, never mutates.
+ *
+ * @param G - Game state (read only).
+ * @param playerID - The acting player.
+ * @param cardId - The played card (self-excluded from the count).
+ * @param hook - The gated hook.
+ * @param failedCondition - The condition that stopped the hook, if known.
+ * @returns e.g. `"+0 Recruit — no other Ranged Hero played yet this turn"`, or undefined.
+ */
+function describeZeroScaledCountClause(
+  G: LegendaryGameState,
+  playerID: string,
+  cardId: CardExtId,
+  hook: HeroAbilityHook,
+  failedCondition: HeroCondition | undefined,
+): string | undefined {
+  if (failedCondition === undefined) { return undefined; }
+  if ((hook.primitiveEffects?.length ?? 0) > 0) { return undefined; }
+  const effects = hook.effects ?? [];
+  if (effects.length !== 1) { return undefined; }
+  const effect = effects[0]!;
+  const resourcePhrase = zeroScaledResourcePhrase(effect.type);
+  if (resourcePhrase === undefined || effect.countSource === undefined) { return undefined; }
+  if (effect.countSource !== countSourceMatchingGate(failedCondition)) { return undefined; }
+  // why: same grant arithmetic as the per-count handlers; "+0" is said only when it is true.
+  const count = resolveCountSource(G, playerID, effect.countSource, cardId);
+  const perEach = effect.perEach && effect.perEach > 0 ? effect.perEach : 1;
+  const magnitude = typeof effect.magnitude === 'number' ? effect.magnitude : 0;
+  if (magnitude * Math.floor(count / perEach) !== 0) { return undefined; }
+  const gateName = failedCondition.type === 'requiresTeam'
+    ? teamDisplayName(failedCondition.value)
+    : heroClassDisplayName(failedCondition.value);
+  return `${resourcePhrase} — no other ${gateName} Hero played yet this turn`;
 }
 
 /**
