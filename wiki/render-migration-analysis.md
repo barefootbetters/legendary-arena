@@ -18,10 +18,11 @@ status: draft
 source:
   - C:\dev\legendary-arena\wiki\render-migration-analysis.md (this page — https://ewiki.legendary-arena.com/render-migration-analysis/)
   - ../render.yaml
-  - C:\pcloud\legendary-arena\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026)
+  - C:\pcloud\legendary-arena\ops\accounting\expenses2026 (Render bills, Aug and Sep 2026; DigitalOcean October 2026 invoice and payment receipt)
+  - DigitalOcean billing page, November 2026 month-to-date summary (2026-11-04)
   - GitHub Actions usage alert for barefootbetters (2026-10-19) and the October run history of each repo
   - https://docs.github.com/en/billing/reference/actions-runner-pricing (runner rates, checked 2026-10-19)
-last-reviewed: 2026-10-19
+last-reviewed: 2026-11-04
 ---
 
 # Render Migration Analysis
@@ -75,6 +76,20 @@ Starting at the $24 droplet saves about **$1,470 a year**; the $48 size would
 save about $1,180. Both figures are before backup storage. Backups go to R2, which is inside its free tier today. Both
 Render plans were raised in July to cure CPU and memory starvation; the reasons
 are recorded in `render.yaml`.
+
+### DigitalOcean actuals (from October 2026)
+What the droplet has actually cost since the 2026-10-12 cutover. The
+dashboard's Monetization page shows the same figures in its DigitalOcean panel.
+
+| Month | Droplets | Backups | Usage | Credit | Charged |
+|---|---|---|---|---|---|
+| Oct 2026 (Oct 12–31, invoiced) | $17.37 | $0.28 | $17.65 | -$5.00 | $12.65 (paid 2026-11-01) |
+| Nov 2026 (Nov 1–4, month to date) | $2.57 | $0.13 | $2.70 | $0.00 | due 2026-12-01 |
+
+October's droplet line includes a 7-hour drill droplet on 2026-10-22 ($0.25).
+A full month of the 2 vCPU / 4 GB droplet bills at most $24.00 (DigitalOcean
+caps hourly billing at 672 hours), plus backups. Render's final bill, for
+October 1–12, was $71.12.
 
 **Cost-reduction order.** These steps are ranked by savings for the effort.
 1. **Finish the migration.** Done: cut over 2026-10-12. It restarted on 2026-10-04. The work that needs
