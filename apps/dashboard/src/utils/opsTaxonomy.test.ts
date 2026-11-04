@@ -93,7 +93,13 @@ test('should_deep_equal_locked_value_when_INFRA_COST_VENDORS_is_inspected', () =
   // card order in `InfraCostWatchdogWidget`; composable iteration in
   // `useInfraCostWatchdog`; `INFRA_COST_BUDGETS` config array iteration).
   // Reordering would silently shuffle the operator's at-a-glance view.
-  assert.deepEqual(INFRA_COST_VENDORS, ['digitalocean', 'render', 'cloudflare', 'postgres', 'hanko']);
+  assert.deepEqual(INFRA_COST_VENDORS, [
+    'digitalocean',
+    'render',
+    'cloudflare',
+    'postgres',
+    'hanko',
+  ]);
   assert.equal(INFRA_COST_VENDORS.length, 5);
 });
 

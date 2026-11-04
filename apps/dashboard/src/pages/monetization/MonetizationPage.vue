@@ -122,7 +122,8 @@ const { relativeTime, sourceLabel } = useDataFreshness(updatedAt, source);
             >Render Migration Analysis ↗</a
           >
           <span
-            >hosting costs: Render to the $24 droplet, its actual DigitalOcean bills, and GitHub Actions ($0 for the game)</span
+            >hosting costs: Render to the $24 droplet, its actual DigitalOcean bills, and GitHub
+            Actions ($0 for the game)</span
           >
         </li>
       </ul>
