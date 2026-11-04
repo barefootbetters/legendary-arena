@@ -640,8 +640,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // the raw -48: totalObs sums each mechanic's max(baseline, live) peak, and artifact's baseline peak
   // still holds most of it); resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8635). A
   // denominator re-pin; no mechanic changed status (artifact is still unsupported on other cards).
+  // 2026-11-04 (INFRA, amwp Size-Changing marker parity, re-pin): five Wasp / Janet van Dyne
+  // "Size-Changing [hc:X]" lines now carry [keyword:Size-Changing] and three Microscopic lines carry
+  // [keyword:Microscopic Size-Changing], so their bare [hc:X] no longer parses as a gate-only class
+  // gate (feed regenerated: 7672 -> 7668 raw observations; gate-only 411 -> 404,
+  // microscopic-size-changing 29 -> 31, recruit-no-magnitude 422 -> 423). totalObs 8635 -> 8631 (-4,
+  // equal to the raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.6
+  // (1091 / 8631). A trajectory re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8635);
+  assert.equal(view.totalObs.value, 8631);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);
