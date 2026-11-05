@@ -423,12 +423,14 @@ export const HAND_ACTION_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
 // undercover-officer-stack) are in HANDLED_KEYWORDS; the bare 'undercover' token is now an
 // honest hollow (no source zone → no handler), so it is intentionally NOT in MVP_KEYWORDS.
 
-// why: D-24074 — size-changing's effect is a class-grant realized at class-read time (no onPlay handler); membership keeps the play-time hook visit not-hollow (the wall-crawl pattern)
-// Size-Changing ("when you play this card, it has the [Class] class") has NO
-// HERO_EFFECT_HANDLERS entry and is NOT in HANDLED_KEYWORDS — like wall-crawl / dodge /
-// undercover. Its effect is realized by the class-condition reads (heroClassMatch /
-// distinctHeroClassesAtLeast) consulting cardSizeChangingClasses, not by an onPlay action.
-// It still joins MVP_KEYWORDS via this class-grant category for two load-bearing reasons:
+// why: D-24801 (supersedes D-24074's class grant) — the two Size-Changing keywords are recruit discounts applied at recruit time (no onPlay handler); membership keeps the play-time hook visit not-hollow (the wall-crawl pattern)
+// Size-Changing ("you can recruit this card for 2 less if you played any [Class] cards this
+// turn", rules v23 p.33) and Microscopic Size-Changing (2 less per matching card played, one
+// per icon, rules v23 p.30) have NO HERO_EFFECT_HANDLERS entry and are NOT in
+// HANDLED_KEYWORDS — like wall-crawl / dodge / undercover. Their effect is realized by the
+// recruit-cost reader (resolveRecruitCost in sizeChanging.logic.ts, read by recruitHero, the
+// legal-move list and the HQ cost projection), not by an onPlay action.
+// They still join MVP_KEYWORDS via this recruit-discount category for two load-bearing reasons:
 // (a) the hero mechanic ledger classifies an MVP_KEYWORDS member `executable`; (b)
 // classifyHeroEffectReason returns `applied` for it, so the onPlay hook that
 // executeHeroEffects visits at PLAY time classifies not-hollow instead of firing a
@@ -437,7 +439,7 @@ export const HAND_ACTION_EXECUTED_KEYWORDS: readonly HeroKeyword[] = [
 // set from the recruit-/hand-/face-down-action categories (duplicate-first per §16.1 — they
 // execute at different sites); NOT added to HANDLED_KEYWORDS (that demands a handler and
 // would break the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
-export const CLASS_GRANT_KEYWORDS: readonly HeroKeyword[] = ['size-changing'];
+export const SIZE_CHANGING_RECRUIT_KEYWORDS: readonly HeroKeyword[] = ['size-changing', 'microscopic-size-changing'];
 
 // why: WP-498 / D-24301 — return-on-discard executes REACTIVELY at the discardFromHand
 // chokepoint (checkReturnOnDiscard parks a pending choice when a card effect discards the
@@ -449,7 +451,7 @@ export const CLASS_GRANT_KEYWORDS: readonly HeroKeyword[] = ['size-changing'];
 // not filter by timing) classifies not-hollow instead of firing a `no-handler` hollow —
 // without this membership the now-recognized keyword would trade the old parse-unrecognized
 // hollow for a fresh no-handler one (a regression). Kept a SEPARATE set from the
-// recruit-/hand-/face-down-/class-grant categories (duplicate-first per §16.1 — they execute
+// recruit-/hand-/face-down-/size-changing categories (duplicate-first per §16.1 — they execute
 // at different sites); NOT added to HANDLED_KEYWORDS (that demands a handler and would break
 // the HERO_EFFECT_HANDLERS-keys ↔ HANDLED_KEYWORDS bidirectional test).
 // why: WP-705 / D-24526 — teleport-on-discard (Guerrilla Warfare) is a SECOND reactive
@@ -507,7 +509,7 @@ export const MVP_KEYWORDS = new Set<string>([
   ...FROZEN_REVEAL_TRANSLATED,
   ...RECRUIT_TIME_EXECUTED_KEYWORDS,
   ...HAND_ACTION_EXECUTED_KEYWORDS,
-  ...CLASS_GRANT_KEYWORDS,
+  ...SIZE_CHANGING_RECRUIT_KEYWORDS,
   ...DISCARD_TIME_EXECUTED_KEYWORDS,
   // why: WP-682 / D-24499 — the reactive wound-time keyword (diving-block); see the set above.
   ...WOUND_TIME_EXECUTED_KEYWORDS,
@@ -3071,7 +3073,7 @@ function heroEffectKidnapPerCount(
   if (effect.countSource === undefined) { return; }
   // why: WP-714 / D-24537 — thread the triggering card so tech-heroes-played-this-turn
   // counts each OTHER Tech card played this turn (self-EXCLUSIVE, honouring hc2 +
-  // Size-Changing granted classes via the shipped resolver — no fresh class loop).
+  // Copy Powers copied classes via the shipped resolver — no fresh class loop).
   const count = resolveCountSource(G, playerID, effect.countSource, cardId);
   // why: perEach is the "for each N" divisor (absent ≡ 1); see heroEffectAttackPerCount.
   const perEach = effect.perEach && effect.perEach > 0 ? effect.perEach : 1;
@@ -6339,7 +6341,7 @@ function playerCanRevealMatch(
 
 /**
  * Returns whether a played card matches a reveal criterion, reading its effective
- * when-played team and class so a Copy Powers copy or a Size-Changing grant counts.
+ * when-played team and class so a Copy Powers copy counts.
  *
  * @param G - Game state (read-only).
  * @param playedCardId - A card the playing player has in play.

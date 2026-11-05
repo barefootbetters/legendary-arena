@@ -610,6 +610,12 @@ export function filterUIStateForAudience(
       ...(uiState.hq.haunters !== undefined
         ? { haunters: deepCopyHqHaunters(uiState.hq.haunters) }
         : {}),
+      // why: D-24801 — the Size-Changing recruit prices are public shared-board information
+      // (derived from the HQ and the active player's face-up played cards) for every audience,
+      // and MUST survive this whitelist (the EC-206 drop). Omit-when-absent; fresh copy.
+      ...(uiState.hq.recruitCosts !== undefined
+        ? { recruitCosts: [...uiState.hq.recruitCosts] }
+        : {}),
     },
     mastermind: {
       id: uiState.mastermind.id,

@@ -3905,3 +3905,56 @@ describe('filterUIStateForAudience — Ritual Artifact options (WP-858 / D-24794
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// D-24801 — `hq.recruitCosts` (the Size-Changing recruit prices) is PUBLIC shared-board
+// information. It is optional, so a missed filter pass-through would silently drop it (the
+// EC-206 failure mode). Five-step Board-Visible Field contract: declared, built, passed
+// through for every audience, tested here, and carried by the diagnostics uiStateSnapshot.
+// ---------------------------------------------------------------------------
+
+describe('filterUIStateForAudience — Size-Changing hq.recruitCosts (D-24801)', () => {
+  const ALL_AUDIENCES: UIAudience[] = [PLAYER_0, PLAYER_1, SPECTATOR];
+  const RANGED_PLAYED = 'test/ranged-hero#0';
+
+  /** Builds a G whose HQ slot 0 holds a Size-Changing Ranged Hero, and player 0 played a Ranged card. */
+  function createSizeChangingGameState(hasSizeChangingCard: boolean): LegendaryGameState {
+    const gameState = buildInitialGameState(createTestConfig(), createMockRegistry(), makeMockCtx());
+    const sizeChangingHero = gameState.playerZones['0']!.deck[0]!;
+    gameState.hq = [sizeChangingHero, null, null, null, null] as LegendaryGameState['hq'];
+    gameState.cardStats = { ...gameState.cardStats, [sizeChangingHero]: makeCardStatEntry({ cost: 4 }) };
+    gameState.cardTraits = { ...gameState.cardTraits, [RANGED_PLAYED]: { heroClass: 'ranged', team: null } };
+    gameState.playerZones['0']!.inPlay = [RANGED_PLAYED];
+    if (hasSizeChangingCard) {
+      gameState.cardSizeChangingClasses = { [sizeChangingHero]: ['ranged'] };
+    } else {
+      delete gameState.cardSizeChangingClasses;
+      delete gameState.cardMicroscopicSizeChangingClasses;
+    }
+    return gameState;
+  }
+
+  it('hq.recruitCosts survives for every audience, index-aligned, with the discounted price', () => {
+    const uiState = buildUIState(createSizeChangingGameState(true), mockCtx);
+    assert.deepStrictEqual(uiState.hq.recruitCosts, [2, null, null, null, null], 'precondition: 4 less 2');
+    for (const audience of ALL_AUDIENCES) {
+      const result = filterUIStateForAudience(uiState, audience);
+      assert.deepStrictEqual(result.hq.recruitCosts, [2, null, null, null, null], `survives for ${JSON.stringify(audience)}`);
+      assert.notEqual(result.hq.recruitCosts, uiState.hq.recruitCosts, 'a fresh copy, not an alias');
+    }
+  });
+
+  it('omit-when-absent: a match with no Size-Changing card projects no recruitCosts key', () => {
+    const uiState = buildUIState(createSizeChangingGameState(false), mockCtx);
+    assert.equal('recruitCosts' in uiState.hq, false, 'buildUIState omits recruitCosts');
+    for (const audience of ALL_AUDIENCES) {
+      assert.equal('recruitCosts' in filterUIStateForAudience(uiState, audience).hq, false);
+    }
+  });
+
+  it('recruitCosts survives the diagnostics JSON round-trip (uiStateSnapshot)', () => {
+    const uiState = buildUIState(createSizeChangingGameState(true), mockCtx);
+    const snapshot = JSON.parse(JSON.stringify(filterUIStateForAudience(uiState, PLAYER_0))) as UIState;
+    assert.deepStrictEqual(snapshot.hq.recruitCosts, [2, null, null, null, null]);
+  });
+});

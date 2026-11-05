@@ -1,9 +1,9 @@
 {
   "corpus": {
-    "executable": 3836,
+    "executable": 3882,
     "heroes": 324,
     "hooks": 6392,
-    "noEffect": 2452,
+    "noEffect": 2406,
     "parsedNotExecuted": 104
   },
   "perSet": {
@@ -18,9 +18,9 @@
       "noEffect": 34
     },
     "amwp": {
-      "executable": 98,
+      "executable": 132,
       "hooks": 190,
-      "noEffect": 92
+      "noEffect": 58
     },
     "anni": {
       "executable": 45,
@@ -28,9 +28,9 @@
       "noEffect": 77
     },
     "antm": {
-      "executable": 94,
+      "executable": 106,
       "hooks": 109,
-      "noEffect": 15
+      "noEffect": 3
     },
     "asrd": {
       "executable": 57,
@@ -263,7 +263,6 @@
     "last-stand": 3,
     "liberate": 7,
     "lightshow": 16,
-    "microscopic-size-changing": 13,
     "moonlight": 10,
     "patrol-any-city-space": 3,
     "patrol-every-city-space": 1,

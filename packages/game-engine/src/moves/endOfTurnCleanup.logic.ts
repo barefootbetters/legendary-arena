@@ -172,7 +172,7 @@ export function applyEndOfTurnCleanup(
  * on turn 6 still counted as Strength when it copied a Covert Hero on turn 16). Only the
  * active player plays cards, so dropping every entry at that player's turn end clears
  * exactly this turn's copies. The keys are deleted, not emptied, so a game returns to
- * the omit-when-empty shape. The setup Size-Changing grants in cardSizeChangingClasses
+ * the omit-when-empty shape. The setup Size-Changing classes in cardSizeChangingClasses
  * are printed and stay.
  *
  * @param G - Game state, mutated in place.

@@ -647,8 +647,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // microscopic-size-changing 29 -> 31, recruit-no-magnitude 422 -> 423). totalObs 8635 -> 8631 (-4,
   // equal to the raw feed fall); resolvedObs stays 1091, so percentResolved stays 12.6
   // (1091 / 8631). A trajectory re-pin; no mechanic changed status.
+  // 2026-11-05 (INFRA, D-24801, re-pin): Size-Changing became a recruit discount and Microscopic
+  // Size-Changing a recognized keyword, so the bots recruit Size-Changing cards cheaper and the
+  // sweep plays out differently (feed regenerated: 7668 -> 7725 raw observations, 78 -> 77
+  // mechanics; microscopic-size-changing 31 -> gone, cheering-crowds 52 -> 90, gate-only 404 -> 418,
+  // with smaller ripples elsewhere). totalObs 8631 -> 8686 (+55; microscopic-size-changing is not in
+  // the frozen baseline seed, so its vanished obs leave the denominator rather than move into
+  // resolvedObs). resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8686).
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8631);
+  assert.equal(view.totalObs.value, 8686);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);

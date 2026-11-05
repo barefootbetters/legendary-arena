@@ -2916,17 +2916,24 @@ export interface LegendaryGameState {
   /** Card trait lookup keyed by CardExtId. Built at setup, read-only at runtime. */
   cardTraits: Record<CardExtId, CardTraitEntry>;
 
-  // why: D-24074 / WP-290 — per-card Size-Changing granted Hero Classes ("when you
-  // play this card, it has the [Class] class"). A SECOND, static class source sibling
-  // to cardTraits.heroClass — NOT a mutation of it. A card in inPlay is treated as
-  // having class C iff C is its printed cardTraits[id].heroClass OR C ∈
-  // cardSizeChangingClasses[id]. A printed property, so the grant applies on every play
-  // and the map is never cleared. Built ONLY from the parsed Size-Changing hooks at
-  // setup (D-24730 moved the Copy Powers runtime grant to cardCopiedClasses, below);
-  // read via the sizeChanging.logic.ts helper. Additive optional: absent means no card
-  // grants a class.
-  /** Per-card Size-Changing granted Hero Classes. Setup-only; read via sizeChanging.logic.ts. */
+  // why: D-24801 (supersedes D-24074's class grant) — per-card Size-Changing classes
+  // ("you can recruit this card for 2 less if you played any [Class] cards this turn",
+  // rules v23 p.33). Each listed class is an independent 2-less discount on the card's
+  // recruit cost, earned when a card of that class is in the recruiting player's inPlay.
+  // NOT a class the card gains: cardHasClassWhenPlayed never reads it. It also answers
+  // "does this card have Size-Changing?" (Antics and its siblings). A printed property,
+  // never cleared. Built ONLY from the parsed Size-Changing hooks at setup; read via the
+  // sizeChanging.logic.ts helpers. Additive optional: absent means no Size-Changing card.
+  /** Per-card Size-Changing discount classes. Setup-only; read via sizeChanging.logic.ts. */
   cardSizeChangingClasses?: Record<CardExtId, string[]>;
+
+  // why: D-24801 — per-card Microscopic Size-Changing icons, one entry per printed
+  // [hc:X] icon (repeats kept). Each matching-class card in the recruiting player's
+  // inPlay, up to one per icon, takes 2 off the recruit cost, which may go below 0
+  // (rules v23 p.30: a negative cost gives that much Recruit). Setup-only, never
+  // cleared; omit-when-empty so games without a Microscopic card keep their hash.
+  /** Per-card Microscopic Size-Changing icons. Setup-only; read via sizeChanging.logic.ts. */
+  cardMicroscopicSizeChangingClasses?: Record<CardExtId, string[]>;
 
   // why: D-24730 — per-card Copy-Powers copied Hero Classes ("This card is both Covert
   // and the color you copy", D-24345). Unlike Size-Changing, the copied class belongs to

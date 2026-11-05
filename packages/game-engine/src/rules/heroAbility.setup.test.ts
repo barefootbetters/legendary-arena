@@ -597,7 +597,7 @@ describe('teleport-on-discard resolver (WP-705 / D-24526)', () => {
 describe('HERO_KEYWORDS drift-detection', () => {
   // why: prevents union/array divergence — same pattern as
   // REVEALED_CARD_TYPES drift detection
-  it('contains exactly the 61 canonical keyword values', () => {
+  it('contains exactly the canonical keyword values', () => {
     const expectedKeywords = [
       'draw',
       'attack',
@@ -629,7 +629,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
       'victory-villain-attack', // why: D-24068 / WP-285 — victory-pile villain-pick mechanic
       'draw-or-empowered', // why: D-24069 / WP-286 — draw-or-empowered choose-one mechanic
       'count-scaled-choose', // why: WP-675 / D-24490 — count-scaled choose-one (vnom Symbiotic Adaptation)
-      'size-changing', // why: D-24074 / WP-290 — class-grant-on-play keyword
+      'size-changing', // why: D-24801 — recruit discount (supersedes D-24074 class grant)
+      'microscopic-size-changing', // why: D-24801 — per-icon recruit discount
       'optional-put-bottom-hq', // why: Ionic Energy — optional put-a-HQ-card-on-bottom-of-Hero-Deck mechanic
       'put-any-number-bottom-hq', // why: D-24132 — multi-select put-any-number-of-HQ-cards-on-bottom-of-Hero-Deck mechanic
       'put-bottom-hq-icon-reward', // why: D-24133 — mandatory single-card put-bottom + recruit/attack icon reward (Absorb Ambient Power)
@@ -694,8 +695,8 @@ describe('HERO_KEYWORDS drift-detection', () => {
 
     assert.equal(
       HERO_KEYWORDS.length,
-      91,
-      'HERO_KEYWORDS must have exactly 91 entries (feast, WP-857 / D-24793, appended last after WP-860 / D-24796 discard-artifact-or-three-then-ko)',
+      92,
+      'HERO_KEYWORDS must have exactly 92 entries (D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, appended last after WP-860 / D-24796 discard-artifact-or-three-then-ko)',
     );
 
     assert.deepStrictEqual(

@@ -62,11 +62,11 @@ describe('size-changing keyword (WP-290 / EC-322 / D-24074)', () => {
     );
   });
 
-  it('HERO_KEYWORDS array has exactly 91 entries after WP-857 feast', () => {
+  it('HERO_KEYWORDS array has exactly 92 entries after D-24801 microscopic-size-changing', () => {
     assert.equal(
       HERO_KEYWORDS.length,
-      91,
-      'HERO_KEYWORDS must have exactly 91 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619) + phasing (WP-783 / D-24629) + fight-cost-reduction (WP-794 / D-24663) + spinning-cyclone (WP-795 / D-24664) + out-of-time (WP-803 / D-24692) + ko-up-to-shield-hand-discard + attack-per-ko-this-way + optional-ko-shield-played-rescue (WP-826 / D-24759) + flying-shield-block (WP-827 / D-24760) + grant-out-of-time (WP-828 / D-24761) + reveal-or-gain-wound-each (WP-843 / D-24777) + gain-sidekick (WP-844 / D-24778) + discard-top-printed-attack + ko-discarded-this-way (WP-850 / D-24786) + ritual-recruited-hero + ritual-hero-classes (WP-858 / D-24794) + discard-artifact-or-three-then-ko (WP-860 / D-24796) + feast (WP-857 / D-24793))',
+      92,
+      'HERO_KEYWORDS must have exactly 92 entries (69 + blood-frenzy + blood-frenzy-recruit + day-night-both (WP-765 / D-24598) + optional-ko-your-hero (WP-767 / D-24600) + play-both-sides (WP-780 / D-24619) + phasing (WP-783 / D-24629) + fight-cost-reduction (WP-794 / D-24663) + spinning-cyclone (WP-795 / D-24664) + out-of-time (WP-803 / D-24692) + ko-up-to-shield-hand-discard + attack-per-ko-this-way + optional-ko-shield-played-rescue (WP-826 / D-24759) + flying-shield-block (WP-827 / D-24760) + grant-out-of-time (WP-828 / D-24761) + reveal-or-gain-wound-each (WP-843 / D-24777) + gain-sidekick (WP-844 / D-24778) + discard-top-printed-attack + ko-discarded-this-way (WP-850 / D-24786) + ritual-recruited-hero + ritual-hero-classes (WP-858 / D-24794) + discard-artifact-or-three-then-ko (WP-860 / D-24796) + feast (WP-857 / D-24793) + microscopic-size-changing (D-24801))',
     );
     assert.ok(HERO_KEYWORDS.includes('gain-sidekick'), 'gain-sidekick must be in HERO_KEYWORDS array');
     assert.ok(HERO_KEYWORDS.includes('discard-top-printed-attack'), 'discard-top-printed-attack must be in HERO_KEYWORDS array');

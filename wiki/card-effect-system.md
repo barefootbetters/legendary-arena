@@ -581,7 +581,7 @@ handler reads as *applied* while the real Scheme Twist fires elsewhere.
   Avengers Assemble! is played first. This is a *different* scan from the on-play
   class-synergy gates above (`[hc:X]:`, which read `inPlay` only at play time), and
   the engine uses a dedicated `countDistinctHeroClassesYouHave` (hand printed
-  `heroClass`/`heroClass2` + play those plus Size-Changing granted classes) rather
+  `heroClass`/`heroClass2` + play those plus a Copy Powers copied class) rather
   than the play-only `countDistinctHeroClassesInPlay`. **Grey cards contribute no
   color:** the grey S.H.I.E.L.D. Agent / Trooper / Officer, Sidekicks, New Recruits,
   and HYDRA Allies have *no Hero Class* (rulebook Grey Heroes: *"grey-colored cards

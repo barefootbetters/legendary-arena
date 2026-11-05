@@ -2,16 +2,17 @@
  * amwp Wasp + Janet van Dyne Size-Changing lines parse like the rest of the corpus.
  *
  * Every other Size-Changing line (the other amwp heroes, antm, chmp, cvwr) carries the
- * `[keyword:Size-Changing]` marker, which the parser (D-24074) turns into a granted-class list.
+ * `[keyword:Size-Changing]` marker, which the parser turns into the card's Size-Changing class
+ * list (its recruit-discount classes, D-24801).
  * Wasp's and Janet van Dyne's lines were plain text ("Size-Changing [hc:ranged]"), so the bare
  * `[hc:ranged]` parsed as a class gate with no effect: an `onPlay` `gate-only` hollow, logged in
  * Jeff's 2026-11-02 match on Follow my Lead and Flitting Sting. The committed amwp base now
  * carries the marker on those lines.
  *
- * "Microscopic Size-Changing" is a separate rulebook keyword whose per-icon recruit discount is
- * unimplemented (deferred in D-24074). Those lines now carry `[keyword:Microscopic Size-Changing]`
- * like the other amwp heroes, and so record the honest `microscopic-size-changing` marker
- * instead of a misleading `gate-only` class gate.
+ * "Microscopic Size-Changing" is a separate rulebook keyword with a per-icon recruit discount
+ * (rules v23 p.30, implemented by D-24801). Those lines carry
+ * `[keyword:Microscopic Size-Changing]`, which parses to the recognized keyword and one icon
+ * entry per printed `[hc:X]`, never a class gate.
  *
  * Builds the real hooks from the committed data/cards/amwp.json. No boardgame.io imports.
  * node:test + node:assert only.
@@ -63,10 +64,10 @@ const SIZE_CHANGING_LINES: { heroSlug: string; cardSlug: string; grantedClass: s
   { heroSlug: 'janet-van-dyne', cardSlug: 'wasp-of-another-generation', grantedClass: 'covert' },
 ];
 
-const MICROSCOPIC_LINES: { heroSlug: string; cardSlug: string }[] = [
-  { heroSlug: 'wasp', cardSlug: 'infiltrate' },
-  { heroSlug: 'wasp', cardSlug: 'hope-returns' },
-  { heroSlug: 'janet-van-dyne', cardSlug: 'subatomic-size' },
+const MICROSCOPIC_LINES: { heroSlug: string; cardSlug: string; icons: string[] }[] = [
+  { heroSlug: 'wasp', cardSlug: 'infiltrate', icons: ['tech', 'tech', 'tech'] },
+  { heroSlug: 'wasp', cardSlug: 'hope-returns', icons: ['ranged', 'ranged', 'ranged', 'ranged', 'ranged'] },
+  { heroSlug: 'janet-van-dyne', cardSlug: 'subatomic-size', icons: ['covert', 'covert'] },
 ];
 
 describe('amwp Wasp / Janet van Dyne Size-Changing lines (D-24074 marker parity)', () => {
@@ -85,10 +86,16 @@ describe('amwp Wasp / Janet van Dyne Size-Changing lines (D-24074 marker parity)
   }
 
   for (const line of MICROSCOPIC_LINES) {
-    it(`${line.heroSlug}/${line.cardSlug} line 0 records the honest microscopic-size-changing marker`, () => {
+    it(`${line.heroSlug}/${line.cardSlug} line 0 parses its Microscopic icons, with no class gate and no hollow (D-24801)`, () => {
       const hook = firstLineHook(buildAmwpHeroHooks(line.heroSlug), line.cardSlug);
-      assert.deepEqual(hook.unresolvedMarkers, ['microscopic-size-changing']);
-      assert.equal(hook.effects, undefined, 'no effect is fabricated for the unimplemented keyword');
+      assert.deepEqual(hook.microscopicSizeChangingClasses, line.icons, 'one entry per printed icon');
+      assert.ok(hook.keywords.includes('microscopic-size-changing'), 'the keyword is recognized');
+      assert.equal(
+        (hook.conditions ?? []).some((condition) => condition.type === 'heroClassMatch'),
+        false,
+        'the icons are not parsed as a play gate',
+      );
+      assert.equal(hook.unresolvedMarkers, undefined, 'no parse-unrecognized hollow');
     });
   }
 });

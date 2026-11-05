@@ -11,7 +11,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { discardFromHand } from '../moves/discardFromHand.js';
-import { executeHeroEffects, fireExcessiveViolencePlays, resolveDeferredHeroGrants, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, CLASS_GRANT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS, RITUAL_ARTIFACT_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
+import { executeHeroEffects, fireExcessiveViolencePlays, resolveDeferredHeroGrants, selectDefaultOptionalKoTarget, selectDefaultSmashDiscardTarget, selectDefaultPutHandOnDeckTopTarget, MVP_KEYWORDS, HANDLED_KEYWORDS, HERO_EFFECT_HANDLERS, RECRUIT_TIME_EXECUTED_KEYWORDS, HAND_ACTION_EXECUTED_KEYWORDS, SIZE_CHANGING_RECRUIT_KEYWORDS, DISCARD_TIME_EXECUTED_KEYWORDS, WOUND_TIME_EXECUTED_KEYWORDS, RITUAL_ARTIFACT_EXECUTED_KEYWORDS } from './heroEffects.execute.js';
 import { makeMockCtx } from '../test/mockCtx.js';
 import { formatCardRef } from '../log/logDisplay.js';
 import type { LegendaryGameState, PendingHeroChoice } from '../types.js';
@@ -174,7 +174,7 @@ describe('HERO_EFFECT_HANDLERS registry drift (WP-251 / D-24022; re-spec WP-253 
     // why: D-24074 — size-changing executes as a class-grant realized at class-read time
     // (the heroClassMatch / distinctHeroClassesAtLeast reads consult cardSizeChangingClasses),
     // so it has no handler / reveal translation / move executor — its own reachability category.
-    const classGrantExecuted = new Set<string>(CLASS_GRANT_KEYWORDS);
+    const classGrantExecuted = new Set<string>(SIZE_CHANGING_RECRUIT_KEYWORDS);
     // why: WP-498 / D-24301 — return-on-discard executes reactively at the discardFromHand
     // chokepoint (checkReturnOnDiscard parks a pending choice), so it has no handler / reveal
     // translation / move executor / class-grant — its own reachability category.
@@ -5821,7 +5821,7 @@ describe('executeHeroEffects — Wall-Crawl onRecruit keyword at play time (WP-2
 // time (the heroClassMatch / distinctHeroClassesAtLeast reads consult cardSizeChangingClasses),
 // not an onPlay action. The play-time hook visit must be a benign, not-hollow no-op: the
 // auto-emitted { type: 'size-changing' } effect no-ops on its missing magnitude, and
-// MVP_KEYWORDS membership (via CLASS_GRANT_KEYWORDS) classifies the hook `applied`
+// MVP_KEYWORDS membership (via SIZE_CHANGING_RECRUIT_KEYWORDS) classifies the hook `applied`
 // (preventing a no-handler hollow regression). The real effect is exercised in
 // heroConditions.evaluate.test.ts (the class reads honoring the grant).
 // ---------------------------------------------------------------------------
@@ -5865,7 +5865,7 @@ describe('executeHeroEffects — Size-Changing class-grant keyword at play time 
     const gameState = sizeChangingState();
     executeHeroEffects(gameState, mockCtx, '0', 'sc-hero' as string);
     // why: D-24074 — the recognized keyword leaves no unresolvedMarkers (so no
-    // parse-unrecognized) and MVP_KEYWORDS membership (CLASS_GRANT_KEYWORDS) classifies the
+    // parse-unrecognized) and MVP_KEYWORDS membership (SIZE_CHANGING_RECRUIT_KEYWORDS) classifies the
     // play-time-visited hook `applied` (so no no-handler) — clearing the live hollow that
     // motivated WP-290 without trading it for a fresh no-handler one.
     assert.equal(records(gameState).length, 0, 'no hollow recorded for the class-grant keyword');
