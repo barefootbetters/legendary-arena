@@ -501,6 +501,7 @@ high-water: 422
 - WP-859 — wwhk-feast-readers (World War Hulk cards that read "KO'd from your deck this turn": a per-turn record of which cards left each deck to the KO pile, the Metamorphosis / Bursting with Life Transform gates, and World-Spanning Hunger's Feast up to three times with +2 per non-grey Hero, fixing its phantom +2. reserved 2026-10-31, claude/wp859-reserve; LANDED 2026-11-01)
 - WP-861 — first-card-played (the "If this is the first card you played this turn" hero lines — No-Name's Surprise Attack draws, Elektra's First Strike and Wasp's Follow My Lead gate their +1 Attack — through the shipped first-Hero-played condition via curated markers. reserved 2026-11-01, claude/wp861-reserve; LANDED 2026-11-01)
 - WP-862 — size-changing-runtime-grants (card effects that grant or remove Size-Changing on an HQ Hero during play — Pym Particles, Ultron-Pym, Shrinksperiments, Sporr, Fin Fang Foom's Alien Dragon Technology, Darren Cross's Shrinking Research Budget — read by the recruit-price authority. reserved 2026-11-05, claude/wp862-reserve)
+- WP-863 — trap-heroes-in-the-microverse (antm scheme: an extra Hero's 14 cards shuffle into the Villain Deck as Micro-Sized Villains, Attack = printed cost, Size-Changing for their color via G.fightSizeChanging; fight one and a chosen player gains it as a Hero; Twist plays two Villain Deck cards; Evil Wins at 3 escaped per player or an empty Villain Deck. reserved 2026-11-05, claude/wp863-reserve)
 
 ## EC
 
@@ -964,6 +965,7 @@ high-water: 457
 - EC-897 — wwhk-feast-readers (WP-859. reserved 2026-10-31, claude/wp859-reserve; LANDED 2026-11-01)
 - EC-899 — first-card-played (WP-861. reserved 2026-11-01, claude/wp861-reserve; LANDED 2026-11-01)
 - EC-900 — size-changing-runtime-grants (WP-862. reserved 2026-11-05, claude/wp862-reserve)
+- EC-901 — trap-heroes-in-the-microverse (WP-863. reserved 2026-11-05, claude/wp863-reserve)
 
 ## D
 
@@ -1545,3 +1547,4 @@ section below) and the allocation protocol in
 - D-24801 — size-changing-recruit-discount (direct fix, no WP — Size-Changing and Microscopic Size-Changing are the rulebook recruit discounts (v23 p.33 / p.30), not a class grant on play; supersedes D-24074's class-grant model. reserved 2026-11-05, claude/size-changing-discount-reserve; LANDED 2026-11-05)
 - D-24802 — size-changing-villain-fight-discount (direct fix, no WP — a Villain or Mastermind with Size-Changing or Microscopic Size-Changing can be fought for 2 less per the rulebook (v23 p.33 / p.30), applied in the engine fight-cost authority; completes D-24801. reserved 2026-11-05, claude/size-changing-villain-reserve; LANDED 2026-11-05)
 - D-24804 — size-changing-runtime-grants (WP-862; an HQ-slot Size-Changing grant overlay read by resolveRecruitCost, cleared at end of turn or when the card leaves the HQ. reserved 2026-11-05, claude/wp862-reserve)
+- D-24805 — trap-heroes-in-the-microverse (WP-863; Micro-Sized Hero villains: Attack = printed cost, Size-Changing for the card color as a setup-time G.fightSizeChanging entry, dual-class color rule, fight -> chosen player gains the Hero, Twist plays two Villain Deck cards. reserved 2026-11-05, claude/wp863-reserve)
