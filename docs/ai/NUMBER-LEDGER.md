@@ -502,6 +502,7 @@ high-water: 422
 - WP-861 — first-card-played (the "If this is the first card you played this turn" hero lines — No-Name's Surprise Attack draws, Elektra's First Strike and Wasp's Follow My Lead gate their +1 Attack — through the shipped first-Hero-played condition via curated markers. reserved 2026-11-01, claude/wp861-reserve; LANDED 2026-11-01)
 - WP-862 — size-changing-runtime-grants (card effects that grant or remove Size-Changing on an HQ Hero during play — Pym Particles, Ultron-Pym, Shrinksperiments, Sporr, Fin Fang Foom's Alien Dragon Technology, Darren Cross's Shrinking Research Budget — read by the recruit-price authority. reserved 2026-11-05, claude/wp862-reserve)
 - WP-863 — trap-heroes-in-the-microverse (antm scheme: an extra Hero's 14 cards shuffle into the Villain Deck as Micro-Sized Villains, Attack = printed cost, Size-Changing for their color via G.fightSizeChanging; fight one and a chosen player gains it as a Hero; Twist plays two Villain Deck cards; Evil Wins at 3 escaped per player or an empty Villain Deck. reserved 2026-11-05, claude/wp863-reserve)
+- WP-862 — size-changing-runtime-grants (card effects that grant or remove Size-Changing on an HQ Hero during play — Pym Particles, Ultron-Pym, Shrinksperiments, Sporr, Fin Fang Foom's Alien Dragon Technology, Darren Cross's Shrinking Research Budget — read by the recruit-price authority. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 
 ## EC
 
@@ -966,6 +967,7 @@ high-water: 457
 - EC-899 — first-card-played (WP-861. reserved 2026-11-01, claude/wp861-reserve; LANDED 2026-11-01)
 - EC-900 — size-changing-runtime-grants (WP-862. reserved 2026-11-05, claude/wp862-reserve)
 - EC-901 — trap-heroes-in-the-microverse (WP-863. reserved 2026-11-05, claude/wp863-reserve)
+- EC-900 — size-changing-runtime-grants (WP-862. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 
 ## D
 
@@ -1549,3 +1551,4 @@ section below) and the allocation protocol in
 - D-24804 — size-changing-runtime-grants (WP-862; an HQ-slot Size-Changing grant overlay read by resolveRecruitCost, cleared at end of turn or when the card leaves the HQ. reserved 2026-11-05, claude/wp862-reserve)
 - D-24805 — trap-heroes-in-the-microverse (WP-863; Micro-Sized Hero villains: Attack = printed cost, Size-Changing for the card color as a setup-time G.fightSizeChanging entry, dual-class color rule, fight -> chosen player gains the Hero, Twist plays two Villain Deck cards. reserved 2026-11-05, claude/wp863-reserve)
 - D-24806 — size-changing-reveal-criterion (direct fix, no WP — Look Out for the Little Guy's "If it's [Strength] or has Size-Changing, draw it" reveal: a hero-class-or-size-changing reveal predicate, and the line's printed Size-Changing token stops parsing as the card's own Size-Changing. reserved 2026-11-05, claude/d24806-reserve)
+- D-24804 — size-changing-runtime-grants (WP-862; an HQ Size-Changing grant overlay keyed by the copy-unique Hero id, read by resolveRecruitCost while the card is in the HQ, cleared at end of turn or when the card leaves the HQ. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
