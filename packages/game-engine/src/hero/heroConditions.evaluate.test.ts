@@ -703,26 +703,24 @@ describe('evaluateCondition distinctHeroClassesAtLeast (WP-280)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// WP-290 / D-24074 — Size-Changing class-grant honored by the two class reads
+// D-24801 (supersedes D-24074's class grant) — Size-Changing is a recruit discount
 //
-// A card in inPlay counts as each of its EFFECTIVE classes (printed plus granted).
-// heroClassMatch (self-exclusive) and distinctHeroClassesAtLeast (self-inclusive) both
-// derive class membership from the sizeChanging.logic.ts helper; these tests pin the
-// grant behavior at both reads, including a null-printed (granted-only) card, a dual-class
-// card (printed ≠ granted), and the preserved self-exclusion / self-inclusion semantics.
+// Rules v23 p.33: "Size-Changing [class]" means "you can recruit this card for 2 less if you
+// played any [class] cards this turn". The listed class is NOT a class the played card gains,
+// so neither class read (heroClassMatch, distinctHeroClassesAtLeast) counts it. These tests
+// were the D-24074 grant pins; they now pin the absence of the grant at both reads.
 // ---------------------------------------------------------------------------
 
-describe('heroClassMatch honors the Size-Changing grant (WP-290 / D-24074)', () => {
-  it('a granted-only card (null printed class) satisfies another card\'s match for the granted class', () => {
-    // why: yellowjacket-style — null printed class, instinct granted only by Size-Changing.
+describe('heroClassMatch ignores the Size-Changing classes (D-24801)', () => {
+  it('a card whose only class is a Size-Changing class does not satisfy a match for it', () => {
     const gameState = makeTestState({
-      inPlay: ['sc-granter', 'trigger'],
+      inPlay: ['sc-card', 'trigger'],
       cardTraits: {
-        'sc-granter': { heroClass: null, team: null },
+        'sc-card': { heroClass: null, team: null },
         'trigger': { heroClass: null, team: null },
       },
       cardSizeChangingClasses: {
-        'sc-granter': ['instinct'],
+        'sc-card': ['instinct'],
       },
     });
 
@@ -733,11 +731,10 @@ describe('heroClassMatch honors the Size-Changing grant (WP-290 / D-24074)', () 
       'trigger',
     );
 
-    assert.equal(result, true,
-      'a granted-only instinct card should satisfy another card\'s instinct match');
+    assert.equal(result, false, 'a Size-Changing [instinct] card is not an instinct card');
   });
 
-  it('a dual-class card (printed strength + granted tech) satisfies a match for EITHER class', () => {
+  it('a printed-strength card with Size-Changing tech matches strength only', () => {
     const gameState = makeTestState({
       inPlay: ['giant-ego', 'trigger'],
       cardTraits: {
@@ -752,39 +749,17 @@ describe('heroClassMatch honors the Size-Changing grant (WP-290 / D-24074)', () 
     const matchesPrinted = evaluateCondition(
       gameState, '0', { type: 'heroClassMatch', value: 'strength' }, 'trigger',
     );
-    const matchesGranted = evaluateCondition(
+    const matchesSizeChanging = evaluateCondition(
       gameState, '0', { type: 'heroClassMatch', value: 'tech' }, 'trigger',
     );
 
-    assert.equal(matchesPrinted, true, 'dual-class card matches its printed class (strength)');
-    assert.equal(matchesGranted, true, 'dual-class card matches its granted class (tech)');
-  });
-
-  it('the triggering card\'s own granted class does not satisfy its own match (self-exclusion preserved)', () => {
-    const gameState = makeTestState({
-      inPlay: ['sc-self'],
-      cardTraits: {
-        'sc-self': { heroClass: null, team: null },
-      },
-      cardSizeChangingClasses: {
-        'sc-self': ['instinct'],
-      },
-    });
-
-    const result = evaluateCondition(
-      gameState,
-      '0',
-      { type: 'heroClassMatch', value: 'instinct' },
-      'sc-self',
-    );
-
-    assert.equal(result, false,
-      'the only in-play card is the triggering card — its own granted class is self-excluded');
+    assert.equal(matchesPrinted, true, 'the printed class (strength) still matches');
+    assert.equal(matchesSizeChanging, false, 'the Size-Changing class (tech) does not');
   });
 });
 
-describe('distinctHeroClassesAtLeast honors the Size-Changing grant (WP-290 / D-24074)', () => {
-  it('a single dual-class Size-Changing card contributes BOTH printed and granted classes', () => {
+describe('distinctHeroClassesAtLeast ignores the Size-Changing classes (D-24801)', () => {
+  it('a printed-strength card with Size-Changing tech contributes one class', () => {
     const gameState = makeTestState({
       inPlay: ['giant-ego'],
       cardTraits: {
@@ -795,37 +770,15 @@ describe('distinctHeroClassesAtLeast honors the Size-Changing grant (WP-290 / D-
       },
     });
 
+    const reachesOne = evaluateCondition(
+      gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '1' },
+    );
     const reachesTwo = evaluateCondition(
       gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '2' },
     );
-    const reachesThree = evaluateCondition(
-      gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '3' },
-    );
 
-    assert.equal(reachesTwo, true,
-      'one card contributes 2 distinct effective classes (strength + tech), self-inclusive');
-    assert.equal(reachesThree, false,
-      'one dual-class card cannot reach 3 distinct classes');
-  });
-
-  it('a granted-only card (null printed class) still contributes its granted class to the count', () => {
-    const gameState = makeTestState({
-      inPlay: ['sc-granter', 'plain'],
-      cardTraits: {
-        'sc-granter': { heroClass: null, team: null },
-        'plain': { heroClass: 'covert', team: null },
-      },
-      cardSizeChangingClasses: {
-        'sc-granter': ['instinct'],
-      },
-    });
-
-    const result = evaluateCondition(
-      gameState, '0', { type: 'distinctHeroClassesAtLeast', value: '2' },
-    );
-
-    assert.equal(result, true,
-      'covert (printed) + instinct (granted-only) = 2 distinct effective classes');
+    assert.equal(reachesOne, true, 'the printed class counts');
+    assert.equal(reachesTwo, false, 'the Size-Changing class adds no second class');
   });
 });
 

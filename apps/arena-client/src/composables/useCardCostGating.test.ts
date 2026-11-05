@@ -203,3 +203,22 @@ describe('WP-820 canFightAndRescue (Baron Zemo, D-24753)', () => {
     assert.equal(gating.canFightAndRescue(4), false);
   });
 });
+
+describe('canRecruit with the engine Size-Changing price (D-24801)', () => {
+  test('gates on the projected price instead of the printed cost', () => {
+    assert.equal(canRecruit(display(4), economy({ attack: 0, recruit: 2 }), 2).allowed, true, '4 printed, 2 after Size-Changing');
+    const short = canRecruit(display(4), economy({ attack: 0, recruit: 1 }), 2);
+    assert.equal(short.allowed, false);
+    assert.equal(short.reason, 'Needs 2 recruit, you have 1.', 'the reason cites the price paid');
+  });
+
+  test('a Microscopic price below 0 needs no recruit', () => {
+    assert.equal(canRecruit(display(2), economy({ attack: 0, recruit: 0 }), -2).allowed, true);
+  });
+
+  test('a null or absent price falls back to the printed cost', () => {
+    assert.equal(canRecruit(display(4), economy({ attack: 0, recruit: 2 }), null).allowed, false);
+    assert.equal(useCardCostGating(economy({ attack: 0, recruit: 2 })).canRecruit(display(4)).allowed, false);
+    assert.equal(useCardCostGating(economy({ attack: 0, recruit: 2 })).canRecruit(display(4), 2).allowed, true);
+  });
+});

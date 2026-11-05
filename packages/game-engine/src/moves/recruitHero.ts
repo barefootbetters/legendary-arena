@@ -14,7 +14,8 @@
 
 import type { FnContext, PlayerID } from 'boardgame.io';
 import type { LegendaryGameState } from '../types.js';
-import { getAvailableRecruit, recordRecruitedHeroCost, spendRecruit } from '../economy/economy.logic.js';
+import { addResources, getAvailableRecruit, recordRecruitedHeroCost, spendRecruit } from '../economy/economy.logic.js';
+import { resolveRecruitCost } from '../hero/sizeChanging.logic.js';
 import { matchHasRecruitedHeroRitual } from './ritualArtifact.js';
 import { refillHqSlot } from '../board/city.logic.js';
 import { isHqSlotHaunted } from '../board/haunt.logic.js';
@@ -104,8 +105,13 @@ export function recruitHero(
   }
 
   // why: silent failure preserves deterministic move contract — insufficient
-  // recruit points means the recruit cannot proceed
-  const requiredCost = G.cardStats[cardId]?.cost ?? 0;
+  // recruit points means the recruit cannot proceed.
+  // why: D-24801 — the cost paid is the Size-Changing-reduced cost (rules v23 p.33 / p.30),
+  // read from the recruiting player's cards played this turn. Microscopic Size-Changing can
+  // take it below 0: the player pays nothing and gains the difference as Recruit (p.30).
+  const printedCost = G.cardStats[cardId]?.cost ?? 0;
+  const recruitCost = resolveRecruitCost(G, ctx.currentPlayer, cardId);
+  const requiredCost = Math.max(0, recruitCost);
   const availableRecruit = getAvailableRecruit(G.turnEconomy);
   if (availableRecruit < requiredCost) {
     return;
@@ -204,11 +210,18 @@ export function recruitHero(
     G.playerZones[ctx.currentPlayer]!.discard.push(cardId);
   }
   G.turnEconomy = spendRecruit(G.turnEconomy, requiredCost);
+  // why: D-24801 — rules v23 p.30: "When you recruit a Microscopic Size-Changing Hero with a
+  // negative cost, you actually gain that many Recruit points!"
+  if (recruitCost < 0) {
+    G.turnEconomy = addResources(G.turnEconomy, 0, -recruitCost);
+  }
   // why: WP-858 / D-24794 — record the recruited Hero's printed cost for Staff of Legba's Ritual
   // ("If you recruited a Hero … +Attack equal to that Hero's cost"), only in a match whose hooks
   // carry ritual-recruited-hero, so no other match's turnEconomy gains the field (no hash surface).
+  // why: D-24801 — the printed cost, not the Size-Changing price: "The Size-Changing card's cost
+  // is only changed during the moment you are recruiting it, not other times" (rules v23 p.33).
   if (matchHasRecruitedHeroRitual(G)) {
-    G.turnEconomy = recordRecruitedHeroCost(G.turnEconomy, requiredCost);
+    G.turnEconomy = recordRecruitedHeroCost(G.turnEconomy, printedCost);
   }
 
   // why: D-24180 — this successful recruit marks the player as having acted this
@@ -234,7 +247,27 @@ export function recruitHero(
   // why: D-24049 — append a Wall-Crawl placement note ONLY on the deck-top branch;
   // the discard branch's line is byte-identical to the pre-WP-273 WP-135 format.
   const placementNote = placeOnDeckTop ? ' (Wall-Crawl: placed on top of deck)' : '';
-  pushLog(G, 
-    `Player ${ctx.currentPlayer} recruited ${formatCardRef(G.cardDisplayData, cardId)}; HQ slot ${String(hqIndex)} refilled from heroDeck ${refillSuffix}${placementNote}`,
+  // why: D-24801 — a Size-Changing note ONLY when the discount changed the price, so every
+  // full-price recruit's line stays byte-identical to the WP-135 format.
+  const sizeChangingNote = buildSizeChangingNote(printedCost, recruitCost);
+  pushLog(G,
+    `Player ${ctx.currentPlayer} recruited ${formatCardRef(G.cardDisplayData, cardId)}; HQ slot ${String(hqIndex)} refilled from heroDeck ${refillSuffix}${placementNote}${sizeChangingNote}`,
   );
+}
+
+/**
+ * Builds the recruit log note for a Size-Changing price, or '' when the price is the printed cost.
+ *
+ * @param printedCost - The Hero's printed cost.
+ * @param recruitCost - The Size-Changing-reduced cost; negative when Microscopic went below 0.
+ * @returns The note, starting with a space, or an empty string.
+ */
+function buildSizeChangingNote(printedCost: number, recruitCost: number): string {
+  if (recruitCost === printedCost) {
+    return '';
+  }
+  if (recruitCost < 0) {
+    return ` (Size-Changing: cost ${String(printedCost)}, paid 0 and gained ${String(-recruitCost)} recruit)`;
+  }
+  return ` (Size-Changing: cost ${String(printedCost)}, paid ${String(recruitCost)})`;
 }

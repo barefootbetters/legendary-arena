@@ -147,11 +147,11 @@ function buildStartingDeckCards(): CardExtId[] {
 }
 
 /**
- * Collapses per-hook Size-Changing grants into a card-keyed lookup for
+ * Collapses per-hook Size-Changing classes into a card-keyed lookup for
  * G.cardSizeChangingClasses.
  *
  * Only hooks carrying a non-empty sizeChangingClasses list contribute; a card with no
- * Size-Changing grant gets no entry (the helper treats an absent key as []). Classes are
+ * Size-Changing line gets no entry (the helper treats an absent key as []). Classes are
  * deduplicated per card via a Set — a card that printed and granted the same class, or two
  * Size-Changing lines naming the same class, collapses to one entry.
  *
@@ -176,6 +176,34 @@ function buildCardSizeChangingClasses(
     grantedByCard[hook.cardId] = [...classSet];
   }
   return grantedByCard;
+}
+
+/**
+ * Collapses per-hook Microscopic Size-Changing icons into a card-keyed lookup for
+ * G.cardMicroscopicSizeChangingClasses.
+ *
+ * Only hooks carrying a non-empty microscopicSizeChangingClasses list contribute. Icons
+ * are NOT deduplicated: three printed [hc:tech] icons are three 2-less steps.
+ *
+ * @param hooks - The hero ability hooks built at setup.
+ * @returns Per-card icon lookup keyed by CardExtId.
+ */
+// why: D-24801 — the Microscopic sibling of buildCardSizeChangingClasses. for...of, no .reduce().
+function buildCardMicroscopicSizeChangingClasses(
+  hooks: HeroAbilityHook[],
+): Record<CardExtId, string[]> {
+  const iconsByCard: Record<CardExtId, string[]> = {};
+  for (const hook of hooks) {
+    if (hook.microscopicSizeChangingClasses === undefined || hook.microscopicSizeChangingClasses.length === 0) {
+      continue;
+    }
+    const icons = [...(iconsByCard[hook.cardId] ?? [])];
+    for (const classSlug of hook.microscopicSizeChangingClasses) {
+      icons.push(classSlug);
+    }
+    iconsByCard[hook.cardId] = icons;
+  }
+  return iconsByCard;
 }
 
 /**
@@ -419,15 +447,16 @@ export function buildInitialGameState(
   // registry. Same sibling-snapshot pattern as cardStats/cardKeywords/cardDisplayData.
   const cardTraits = buildCardTraits(registry as unknown, villainBuildConfig);
 
-  // why: D-24074 / WP-290 — hero ability hooks are hoisted to a local so the
-  // Size-Changing granted-class snapshot can be derived from them (the parser parked the
-  // grant on hook.sizeChangingClasses). Built once at setup, immutable during gameplay.
+  // why: D-24801 — hero ability hooks are hoisted to a local so the Size-Changing
+  // snapshots can be derived from them (the parser parked the classes on
+  // hook.sizeChangingClasses / microscopicSizeChangingClasses). Built once at setup.
   const heroAbilityHooks = buildHeroAbilityHooks(registry, config);
 
-  // why: D-24074 / WP-290 — collapse the per-hook Size-Changing grants into a card-keyed
-  // snapshot (sibling to cardTraits). The grant is an additive second class source read by
-  // the sizeChanging.logic.ts helper at class-read time; cardTraits is never mutated.
+  // why: D-24801 — collapse the per-hook Size-Changing classes and Microscopic icons into
+  // card-keyed snapshots (siblings to cardTraits), read by the sizeChanging.logic.ts recruit-
+  // cost helper at recruit time; cardTraits is never mutated.
   const cardSizeChangingClasses = buildCardSizeChangingClasses(heroAbilityHooks);
+  const cardMicroscopicSizeChangingClasses = buildCardMicroscopicSizeChangingClasses(heroAbilityHooks);
 
   // why: WP-292 / D-24076 — per-villain defeat requirements built from registry at
   // setup, keyed by copy-indexed instance ext_id. A fight precondition read by the
@@ -888,12 +917,14 @@ export function buildInitialGameState(
     ...(scoringConfig !== undefined ? { activeScoringConfig: scoringConfig } : {}),
     // why: D-24074 / WP-290 — conditional spread, same hash-stability discipline as
     // G.diagnostics / activeScoringConfig above: include cardSizeChangingClasses ONLY when
-    // some selected card grants a class. hashGameState serializes the whole G, so an
+    // some selected card has Size-Changing. hashGameState serializes the whole G, so an
     // always-present empty `{}` would shift the finalStateHash of every game — including
     // fixtures with no Size-Changing hero, which AC-10 forbids (a shape-only shift is not a
-    // grant-attributable class-condition change). Absent ≡ empty (getGrantedClasses returns
+    // Size-Changing-attributable change). Absent ≡ empty (getSizeChangingClasses returns
     // [] either way), so games without a Size-Changing card stay byte-identical.
     ...(Object.keys(cardSizeChangingClasses).length > 0 ? { cardSizeChangingClasses } : {}),
+    // why: D-24801 — same omit-when-empty hash discipline for the Microscopic icons.
+    ...(Object.keys(cardMicroscopicSizeChangingClasses).length > 0 ? { cardMicroscopicSizeChangingClasses } : {}),
     // why: D-24157 / WP-365 — conditional spread, same hash-stability discipline as
     // cardSizeChangingClasses above: include cardVictoryPoints ONLY when some VP-bearing
     // card carries a printed vp. hashGameState serializes the whole G, so an always-present

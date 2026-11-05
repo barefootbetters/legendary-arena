@@ -15,6 +15,7 @@ import { chooseBotEnigmaGuess } from '../rules/enigmaCode.logic.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { LegalMove } from './ai.types.js';
 import { getAvailableRecruit, getSpendableAttackForTarget } from '../economy/economy.logic.js';
+import { resolveRecruitCost } from '../hero/sizeChanging.logic.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
@@ -1073,7 +1074,8 @@ export function getLegalMoves(
       // why: WP-757 / D-24587 — mirror recruitHero's Haunted-slot refusal (you can't
       // recruit a Haunted Hero); offering it would wedge the bot on a no-op recruit.
       if (isHqSlotHaunted(gameState, hqIndex)) continue;
-      const requiredCost = gameState.cardStats[slot]?.cost ?? 0;
+      // why: D-24801 — mirror recruitHero: the Size-Changing-reduced cost, never below 0.
+      const requiredCost = Math.max(0, resolveRecruitCost(gameState, activePlayer, slot));
       if (availableRecruit >= requiredCost) {
         legalMoves.push({ name: 'recruitHero', args: { hqIndex } });
       }

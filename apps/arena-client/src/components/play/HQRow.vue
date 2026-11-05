@@ -123,7 +123,28 @@ export default defineComponent({
       if (cell.display === null) {
         return stage;
       }
-      return useCardCostGating(props.economy).canRecruit(cell.display);
+      // why: D-24801 — the engine's Size-Changing price for this slot, when projected.
+      return useCardCostGating(props.economy).canRecruit(cell.display, props.hq.recruitCosts?.[cell.hqIndex]);
+    }
+
+    /**
+     * The Size-Changing price label for a slot, or null when the slot costs its printed cost.
+     *
+     * @param cell - The HQ cell.
+     * @returns A short label such as "Costs 0 now", or null.
+     */
+    function sizeChangingLabelForCell(cell: HqCell): string | null {
+      if (cell.kind !== 'hero' || cell.display === null || cell.display.cost === null) {
+        return null;
+      }
+      const recruitCost = props.hq.recruitCosts?.[cell.hqIndex];
+      if (typeof recruitCost !== 'number' || recruitCost === cell.display.cost) {
+        return null;
+      }
+      if (recruitCost < 0) {
+        return `Costs 0 now, +${String(-recruitCost)} recruit`;
+      }
+      return `Costs ${String(recruitCost)} now`;
     }
 
     function onRecruit(hqIndex: number): void {
@@ -150,7 +171,7 @@ export default defineComponent({
     const hqSlotsElement = ref<HTMLElement | null>(null);
     const isRowFitting = useRowFit(hqSlotsElement, () => [props.hq, props.extraCitySpaces]);
 
-    return { buildCells, gateForCell, onRecruit, displayForCell, hqSlotsElement, isRowFitting };
+    return { buildCells, gateForCell, onRecruit, displayForCell, sizeChangingLabelForCell, hqSlotsElement, isRowFitting };
   },
 });
 </script>
@@ -214,6 +235,12 @@ export default defineComponent({
               :tooltip="gateForCell(cell).reason"
               :show-label="true"
             />
+            <!-- why: D-24801 — the Size-Changing price when it differs from the printed cost. -->
+            <span
+              v-if="sizeChangingLabelForCell(cell) !== null"
+              class="hq-slot__size-changing"
+              data-testid="play-hq-size-changing-cost"
+            >{{ sizeChangingLabelForCell(cell) }}</span>
           </button>
           <div
             v-else
@@ -291,6 +318,14 @@ export default defineComponent({
 .hq-slot-deck p,
 .hq-slot__cost {
   margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.hq-slot__size-changing {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
   font-variant-numeric: tabular-nums;
 }
 

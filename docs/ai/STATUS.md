@@ -10,6 +10,22 @@
 
 ## Current State
 
+### Size-Changing makes a Hero cheaper to recruit, as the rulebook says (D-24801, direct fix) (2026-11-05)
+
+**User-visible on `play.legendary-arena.com` after deploy.** A Hero with Size-Changing [Class] now costs 2 less to recruit once you have played a card of that class this turn. The HQ tile shows "Costs N now", and the recruit button unlocks at that price. Before this, Size-Changing only gave the card the class it was already printed with, which did nothing on every Wasp card (match `PAwTxk88LRy`).
+
+Microscopic Size-Changing now works too: 2 less for each matching card you played, up to one per icon, and it can go below 0, which gives you Recruit for recruiting the card. A Size-Changing card no longer counts as its Size-Changing class when played. A Microscopic card now counts as Size-Changing for Antics.
+
+- **Engine.** `resolveRecruitCost` (`hero/sizeChanging.logic.ts`) is read by `recruitHero`, the bot legal moves, and the new `UIHQState.recruitCosts`. `cardHasClassWhenPlayed` drops the class grant. The new keyword `microscopic-size-changing` gets per-icon parsing. The recruit log notes the price when it differs from the printed cost.
+- **Client.** The HQ gates on, and labels, the engine's price.
+- **Feeds.** Regenerated the hero ledger, `card-mechanics.json`, the effect index, the runtime-observed hollows (7668 → 7725 observations) and the coverage baseline. The dashboard in-play `totalObs` pin goes from 8631 to 8686.
+- **Tests.** game-engine 6239 / 0, arena-client 2546 / 0, dashboard 594 / 0.
+- **Not covered.** Villain Size-Changing (fight for 2 less), and effects that grant Size-Changing to HQ Heroes. Both are follow-ups.
+- **Live-verify (D-24026): operator-pending.** In a match created after the deploy with Wasp in the hero decks:
+  1. Play a Ranged card, then recruit Follow my Lead from the HQ for 0, or Positive Ions for 3.
+  2. With two Tech cards played, Infiltrate costs 2.
+  3. With no matching card played, the price is printed.
+
 ### WP-716 / EC-753 — A count-scaled line at count 0 logs "+0", not "did not activate" (D-24539) (2026-11-04)
 
 **User-visible on `play.legendary-arena.com` after deploy (game log text).** Ice Slide, Absorb Energies, Arc Reactor, X-Men United and the other count-scaled lines gated on the class or team they count, played with no other matching Hero, now log "Player 0's Absorb Energies scaled to +0 Recruit — no other Ranged Hero played yet this turn." Before, the line said the ability "did not activate", which read as a bug.

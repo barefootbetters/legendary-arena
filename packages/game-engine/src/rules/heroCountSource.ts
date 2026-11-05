@@ -47,7 +47,7 @@ export type HeroCountSource =
   // why: WP-711 / D-24534 — the per-hero-CLASS-played family, the class analogue of the
   // avengers/shield-heroes-played-this-turn team sources above. Each counts the OTHER cards
   // played this turn whose hero class matches (cardHasClassWhenPlayed: printed hc OR hc2 OR a
-  // Size-Changing granted class), self-EXCLUSIVE, play-area "played this turn" (NOT the hand+play
+  // Copy Powers copied class), self-EXCLUSIVE, play-area "played this turn" (NOT the hand+play
   // "Heroes you have" reading of distinct-hero-classes-played-this-turn). Four classes only —
   // instinct has no card in this shape (taxonomy discipline). Backfills six flat-parsing lines:
   // Marvelous Strength/Absorb Energies (ssw1), the dkcy ranged pair, bkwd covert, co2e tech.

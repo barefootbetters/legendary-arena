@@ -940,12 +940,18 @@ const DAY_NIGHT_CONDITION_TYPES: ReadonlySet<string> = new Set<string>([
 // to match the [keyword:X] lowercasing.
 const X_GENE_MARKER_PATTERN = /\[keyword:x-gene\]/i;
 
-// why: D-24074 / WP-290 — detects whether an ability line carries the Size-Changing
-// keyword. On such a line the same-line `[hc:...]` tokens are the GRANTED classes (the
-// card gains them when played), not `heroClassMatch` play-conditions — so Step 1a routes
-// them to the granted-class list instead of conditions. Non-global, stateless `.test`
-// (no lastIndex concern); case-insensitive to match the `[keyword:X]` lowercasing.
+// why: D-24801 (supersedes D-24074's class grant) — detects whether an ability line carries
+// the Size-Changing keyword. On such a line the same-line `[hc:...]` tokens are the classes
+// that discount the card's recruit cost (rules v23 p.33: "recruit this card for 2 less if you
+// played any [class] cards this turn"), not `heroClassMatch` play-conditions — so Step 1a
+// routes them to the Size-Changing class list instead of conditions. Non-global, stateless
+// `.test` (no lastIndex concern); case-insensitive to match the `[keyword:X]` lowercasing.
 const SIZE_CHANGING_MARKER_PATTERN = /\[keyword:size-changing\]/i;
+
+// why: D-24801 — the Microscopic Size-Changing keyword (rules v23 p.30): each same-line
+// `[hc:X]` icon is one "2 less" step, earned by one matching-class card played this turn.
+// SIZE_CHANGING_MARKER_PATTERN never matches it (the token body starts "Microscopic").
+const MICROSCOPIC_SIZE_CHANGING_MARKER_PATTERN = /\[keyword:microscopic size-changing\]/i;
 
 // why: WP-535 fix-forward — Rogue's Copy Powers text carries a MID-SENTENCE [hc:covert]
 // ("This card is both [hc:covert] and the color you copy") that describes the class the
@@ -1187,6 +1193,7 @@ function parseAbilityText(
   unresolvedMarkers: string[];
   resolvedMarkers: string[];
   sizeChangingClasses: string[];
+  microscopicSizeChangingClasses: string[];
   timing: HeroAbilityTiming;
 } {
   const transformSupported = options.transformSupported === true;
@@ -1219,14 +1226,24 @@ function parseAbilityText(
   const keywords: HeroKeyword[] = [];
   const heroClassConditions: HeroCondition[] = [];
   const teamConditions: HeroCondition[] = [];
-  // why: D-24074 / WP-290 — the granted Hero Classes parsed from a Size-Changing line's
-  // same-line `[hc:...]` tokens (Step 1a). Empty on every non-Size-Changing line and on a
-  // Size-Changing line with no `[hc:X]` (recognized, no grant — graceful empty, no throw).
+  // why: D-24801 — the discount classes parsed from a Size-Changing line's same-line
+  // `[hc:...]` tokens (Step 1a). Empty on every non-Size-Changing line and on a
+  // Size-Changing line with no `[hc:X]` (recognized, no discount — graceful empty, no throw).
   const sizeChangingClasses: string[] = [];
-  // why: D-24074 / WP-290 — when the line carries [keyword:Size-Changing], its [hc:...]
-  // tokens are the GRANTED classes, not heroClassMatch conditions. Computed once up front
-  // so Step 1a routes every same-line [hc:...] to the grant list (guardrail #4: extract ALL).
+  // why: D-24801 — when the line carries [keyword:Size-Changing], its [hc:...] tokens are
+  // the discount classes, not heroClassMatch conditions. Computed once up front so Step 1a
+  // routes every same-line [hc:...] to the Size-Changing list (guardrail #4: extract ALL).
   const lineHasSizeChanging = SIZE_CHANGING_MARKER_PATTERN.test(abilityText);
+  // why: D-24801 — a Microscopic Size-Changing line's [hc:...] icons, one entry per icon
+  // (repeats kept: three [hc:tech] icons are three 2-less steps). Not play-conditions.
+  const microscopicSizeChangingClasses: string[] = [];
+  const lineHasMicroscopicSizeChanging = MICROSCOPIC_SIZE_CHANGING_MARKER_PATTERN.test(abilityText);
+  // why: D-24801 — the multi-word token never matches KEYWORD_PATTERN (Step 2), so the
+  // recognized keyword is recorded here; without it the line would park the unresolved
+  // 'microscopic-size-changing' marker and read as a parse-unrecognized hollow.
+  if (lineHasMicroscopicSizeChanging) {
+    keywords.push('microscopic-size-changing');
+  }
   // why: WP-535 fix-forward — a copy-powers line's [hc:X] is the DESCRIPTIVE class the card
   // gains, not a play gate; suppress its heroClassMatch condition (see Step 1a).
   const lineHasCopyPowers = COPY_POWERS_MARKER_PATTERN.test(abilityText);
@@ -1352,12 +1369,16 @@ function parseAbilityText(
   while (heroClassMatch !== null) {
     const normalizedClass = normalizeTraitSlug(heroClassMatch[1]!);
     if (lineHasSizeChanging) {
-      // why: D-24074 — on a Size-Changing line the [hc:...] tokens are the GRANTED classes
-      // (the card gains them on play), so route them to the grant list and emit NO
+      // why: D-24801 — on a Size-Changing line the [hc:...] tokens are the classes that
+      // discount the recruit cost, so route them to the Size-Changing list and emit NO
       // heroClassMatch condition for them (extract ALL on this line — guardrail #4). The
       // [keyword:Size-Changing] token itself is a recognized HeroKeyword (Step 2), so no
       // unresolved marker is recorded either.
       sizeChangingClasses.push(normalizedClass);
+    } else if (lineHasMicroscopicSizeChanging) {
+      // why: D-24801 — on a Microscopic Size-Changing line each [hc:...] icon is one 2-less
+      // step (repeats kept), never a play gate; the keyword is recorded up front.
+      microscopicSizeChangingClasses.push(normalizedClass);
     } else if (lineHasCopyPowers) {
       // why: WP-535 fix-forward — on a copy-powers line the [hc:X] is the DESCRIPTIVE class
       // ("This card is both [hc:covert] and the color you copy"), NOT a play gate. Covert is
@@ -2920,6 +2941,7 @@ function parseAbilityText(
     unresolvedMarkers,
     resolvedMarkers,
     sizeChangingClasses,
+    microscopicSizeChangingClasses,
     timing,
   };
 }
@@ -4736,12 +4758,16 @@ export function buildHeroAbilityHooks(
           hook.resolvedMarkers = parsedAbility.resolvedMarkers;
         }
 
-        // why: D-24074 / WP-290 — assign the granted-class list only when non-empty (same
+        // why: D-24801 — assign the Size-Changing class list only when non-empty (same
         // exactOptionalPropertyTypes conditional-construction pattern as the fields above).
-        // Absent means "no Size-Changing grant" — both non-Size-Changing lines and a
-        // Size-Changing line with no [hc:X] omit it; getGrantedClasses treats absent as [].
+        // Absent means "no Size-Changing discount" — both non-Size-Changing lines and a
+        // Size-Changing line with no [hc:X] omit it; getSizeChangingClasses treats absent as [].
         if (parsedAbility.sizeChangingClasses.length > 0) {
           hook.sizeChangingClasses = parsedAbility.sizeChangingClasses;
+        }
+        // why: D-24801 — the Microscopic icons, same omit-when-empty construction.
+        if (parsedAbility.microscopicSizeChangingClasses.length > 0) {
+          hook.microscopicSizeChangingClasses = parsedAbility.microscopicSizeChangingClasses;
         }
 
         // why: WP-790 / D-24652 — a Ranged "… against the Mastermind instead" line widens the

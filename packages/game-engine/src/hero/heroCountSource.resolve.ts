@@ -19,7 +19,7 @@ import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 // why: WP-680 / D-24497, corrected D-24529 — the distinct-class source counts the
 // colors of Heroes you HAVE (hand + play, self-inclusive, order-independent — the
 // rulebook "Heroes you have" term of art), reusing the D-24055 in-play counting for
-// the play-area half (incl. getGrantedClasses for Size-Changing) plus the hand.
+// the play-area half (incl. a Copy Powers copied class) plus the hand.
 import { countDistinctHeroClassesYouHave } from './heroConditions.evaluate.js';
 // why: WP-680 / D-24391 — the team sources count membership the same way the
 // requiresTeam gate does: printed team OR a Copy-Powers-granted team. why (Jeff
@@ -29,12 +29,12 @@ import { countDistinctHeroClassesYouHave } from './heroConditions.evaluate.js';
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 // why: WP-706 / D-24528 — the diagnostics-only explain for the distinct-class source
 // mirrors countDistinctHeroClassesYouHave's play-area Set (printed heroClass/heroClass2 plus
-// the Size-Changing granted classes), so it imports getGrantedClasses to gather the same
-// granted classes. It does NOT call cardHasClassWhenPlayed (the boolean class-match gate).
+// a Copy Powers copied class), so it imports getCopiedClasses to gather the same copied
+// classes. It does NOT call cardHasClassWhenPlayed (the boolean class-match gate).
 // why: WP-711 / D-24534 — the per-hero-class-played count sources match a played card's
-// class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Size-Changing granted class),
+// class via cardHasClassWhenPlayed (printed hc OR hc2 OR a Copy Powers copied class),
 // the class analogue of cardCountsAsTeamMember used by the team sources.
-import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, getCopiedClasses } from './sizeChanging.logic.js';
 import {
   matchesGreyHeroFilter,
   offPlayCardTraits,
@@ -341,8 +341,8 @@ function countShieldHeroesCostOnePlusPlayedThisTurn(
  * excludes the triggering card itself — each card's text is "+N for each OTHER
  * [class] Hero you played this turn" (Marvelous Strength, Absorb Energies, the
  * dkcy/bkwd/co2e lines). Membership uses cardHasClassWhenPlayed, so a card counts
- * by its printed heroClass, its heroClass2 (D-24523 dual-class), OR a Size-Changing
- * granted class (D-24074) — exactly as the heroClassMatch gate reads it. A card
+ * by its printed heroClass, its heroClass2 (D-24523 dual-class), OR a Copy Powers
+ * copied class (D-24730) — exactly as the heroClassMatch gate reads it. A card
  * with no matching class never counts.
  *
  * @param G - Game state (read-only).
@@ -728,7 +728,7 @@ function collectOddCostCardsPlayedThisTurn(
  * Collects the OTHER played-this-turn cards of a given hero class (WP-711 / D-24534).
  *
  * Mirrors countHeroClassCardsPlayedThisTurn in ext-id-collecting form, reusing the SAME
- * cardHasClassWhenPlayed predicate (printed hc OR hc2 OR a Size-Changing granted class).
+ * cardHasClassWhenPlayed predicate (printed hc OR hc2 OR a Copy Powers copied class).
  * Self-EXCLUSIVE (skips the triggering card), so count === length.
  *
  * @param G - Game state (read-only).
@@ -766,7 +766,7 @@ function collectHeroClassCardsPlayedThisTurn(
  *
  * Mirrors countDistinctHeroClassesYouHave's gathering in ext-id-collecting form: the HAND
  * half by printed `heroClass` / `heroClass2` only, and the PLAY half by those plus the
- * Size-Changing granted classes (an in-play-only grant). It is SELF-INCLUSIVE — the count
+ * Copy Powers copied classes (an in-play-only copy). It is SELF-INCLUSIVE — the count
  * source counts distinct COLOURS over all Heroes you have including the trigger, so this
  * takes no `triggeringCardId` and lists every card that carries any class. The resolved
  * count is a distinct-colour rollup, so it is NOT bounded by `collected.length` in either
@@ -792,7 +792,7 @@ function collectDistinctHeroClassCards(
   }
 
   const matchedCardIds: CardExtId[] = [];
-  // why: HAND half — printed colours only (no Size-Changing grant, an in-play effect).
+  // why: HAND half — printed colours only (no copied class, an in-play effect).
   for (const handCardId of playerZones.hand) {
     // why: WP-772 / D-24604 — consistency with countDistinctHeroClassesYouHave: a split card in
     // hand reads the off-play view (both halves' classes) through the split-face map. Face a
@@ -807,7 +807,7 @@ function collectDistinctHeroClassCards(
       matchedCardIds.push(handCardId as CardExtId);
     }
   }
-  // why: PLAY half — printed colours plus Size-Changing granted classes.
+  // why: PLAY half — printed colours plus Copy Powers copied classes.
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
   for (const playedCardId of playedCardIdsStillInPlay(G, playerZones.inPlay)) {
@@ -819,11 +819,9 @@ function collectDistinctHeroClassCards(
     // must still appear in the counted inputs).
     const hasSecondClass =
       traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0;
-    // why: D-24074 — a Size-Changing card contributes each granted class too.
-    // why: D-24730 — and Copy Powers contributes the class it copied this play.
-    const hasGrantedClass =
-      getGrantedClasses(G, playedCardId as CardExtId).length > 0 ||
-      getCopiedClasses(G, playedCardId as CardExtId).length > 0;
+    // why: D-24730 — Copy Powers contributes the class it copied this play. Size-Changing
+    // contributes none (D-24801: a recruit discount, not a class grant).
+    const hasGrantedClass = getCopiedClasses(G, playedCardId as CardExtId).length > 0;
     if (hasPrintedClass || hasSecondClass || hasGrantedClass) {
       matchedCardIds.push(playedCardId as CardExtId);
     }

@@ -589,3 +589,64 @@ describe('recruitHero — Haunt (WP-757 / D-24587)', () => {
     assert.equal(JSON.stringify(moveContext.G), snapshotBefore, 'the refill Hero is haunted, so recruit is refused');
   });
 });
+
+describe('recruitHero — Size-Changing recruit discount (D-24801)', () => {
+  /**
+   * Builds a recruit state with one Size-Changing card in HQ slot 0 and the given cards in play.
+   *
+   * @param inPlay - The cards player 0 played this turn.
+   * @param recruit - The recruit player 0 has.
+   * @returns A state ready for recruitHero({ hqIndex: 0 }).
+   */
+  function makeSizeChangingState(inPlay: string[], recruit: number): LegendaryGameState {
+    const gameState = createMockGameState({ hq: ['amwp/wasp/follow-my-lead#0', null, null, null, null] });
+    gameState.cardStats = {
+      'amwp/wasp/follow-my-lead#0': makeCardStatEntry({ cost: 2 }),
+      'amwp/wasp/infiltrate#0': makeCardStatEntry({ cost: 2 }),
+    };
+    gameState.cardTraits = {
+      'amwp/wasp/follow-my-lead#0': { heroClass: 'ranged', team: 'avengers' },
+      'core/storm/lightning-bolt#0': { heroClass: 'ranged', team: 'x-men' },
+      'core/iron-man/arc-reactor#0': { heroClass: 'tech', team: 'avengers' },
+      'core/iron-man/arc-reactor#1': { heroClass: 'tech', team: 'avengers' },
+    } as LegendaryGameState['cardTraits'];
+    gameState.cardSizeChangingClasses = { 'amwp/wasp/follow-my-lead#0': ['ranged'] };
+    gameState.playerZones['0']!.inPlay = inPlay;
+    gameState.turnEconomy = { ...gameState.turnEconomy, recruit };
+    return gameState;
+  }
+
+  it('recruits a Size-Changing Ranged Hero for 2 less after a Ranged card was played', () => {
+    const gameState = makeSizeChangingState(['core/storm/lightning-bolt#0'], 0);
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.deepEqual(moveContext.G.playerZones['0']!.discard, ['amwp/wasp/follow-my-lead#0'], 'recruited for 0');
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 0);
+    assert.match(moveContext.G.messages.at(-1)!.text, / \(Size-Changing: cost 2, paid 0\)$/);
+  });
+
+  it('charges the printed cost when no Ranged card was played', () => {
+    const blocked = makeSizeChangingState(['core/iron-man/arc-reactor#0'], 1);
+    const blockedContext = createMockMoveContext(blocked);
+    recruitHero(blockedContext, { hqIndex: 0 });
+    assert.equal(blockedContext.G.hq[0], 'amwp/wasp/follow-my-lead#0', '1 recruit cannot pay the printed 2');
+
+    const paid = makeSizeChangingState(['core/iron-man/arc-reactor#0'], 2);
+    const paidContext = createMockMoveContext(paid);
+    recruitHero(paidContext, { hqIndex: 0 });
+    assert.equal(paidContext.G.turnEconomy.spentRecruit, 2);
+    assert.doesNotMatch(paidContext.G.messages.at(-1)!.text, /Size-Changing/, 'a full-price recruit keeps the WP-135 line');
+  });
+
+  it('a Microscopic Hero whose price goes below 0 costs nothing and gives the difference as Recruit', () => {
+    const gameState = makeSizeChangingState(['core/iron-man/arc-reactor#0', 'core/iron-man/arc-reactor#1'], 0);
+    gameState.hq = ['amwp/wasp/infiltrate#0', null, null, null, null];
+    gameState.cardMicroscopicSizeChangingClasses = { 'amwp/wasp/infiltrate#0': ['tech', 'tech', 'tech'] };
+    const moveContext = createMockMoveContext(gameState);
+    recruitHero(moveContext, { hqIndex: 0 });
+    assert.deepEqual(moveContext.G.playerZones['0']!.discard, ['amwp/wasp/infiltrate#0']);
+    assert.equal(moveContext.G.turnEconomy.spentRecruit, 0, 'nothing paid');
+    assert.equal(moveContext.G.turnEconomy.recruit, 2, 'cost 2, two Tech cards: price -2, so +2 Recruit');
+    assert.match(moveContext.G.messages.at(-1)!.text, / \(Size-Changing: cost 2, paid 0 and gained 2 recruit\)$/);
+  });
+});

@@ -308,3 +308,30 @@ describe('HQRow — table-perspective hover lift (WP-852 / D-24788)', () => {
     wrapper.unmount();
   });
 });
+
+describe('HQRow — Size-Changing recruit prices (D-24801)', () => {
+  test('a slot whose engine price is lower than its printed cost is enabled and labelled', () => {
+    const { submitMove } = recorder();
+    const hq: UIHQState = { ...fullHq(), recruitCosts: [4, null, 4, 3, null] };
+    const wrapper = mount(HQRow, {
+      props: { hq, decks: DECKS, currentStage: 'main', economy: economy({ recruit: 4, availableRecruit: 4 }), submitMove },
+    });
+    const heroes = wrapper.findAll('[data-testid="play-hq-hero"]');
+    const ironMan = heroes.find((b) => b.attributes('data-card-id') === 'iron-man-stark');
+    assert.equal(ironMan!.attributes('disabled'), undefined, 'printed 6, price 4, 4 available');
+    assert.equal(ironMan!.find('[data-testid="play-hq-size-changing-cost"]').text(), 'Costs 4 now');
+    const cap = heroes.find((b) => b.attributes('data-card-id') === 'cap-rogers');
+    assert.equal(cap!.find('[data-testid="play-hq-size-changing-cost"]').exists(), false, 'no label at the printed price');
+  });
+
+  test('a Microscopic price below 0 says it gives Recruit', () => {
+    const { submitMove } = recorder();
+    const hq: UIHQState = { ...fullHq(), recruitCosts: [4, null, 6, -2, null] };
+    const wrapper = mount(HQRow, {
+      props: { hq, decks: DECKS, currentStage: 'main', economy: economy(), submitMove },
+    });
+    const spiderMan = wrapper.findAll('[data-testid="play-hq-hero"]').find((b) => b.attributes('data-card-id') === 'spider-man-parker');
+    assert.equal(spiderMan!.attributes('disabled'), undefined, 'a price below 0 needs no recruit');
+    assert.equal(spiderMan!.find('[data-testid="play-hq-size-changing-cost"]').text(), 'Costs 0 now, +2 recruit');
+  });
+});

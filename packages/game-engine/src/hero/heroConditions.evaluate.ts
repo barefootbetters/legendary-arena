@@ -15,7 +15,7 @@ import type { LegendaryGameState } from '../types.js';
 import type { CardExtId } from '../state/zones.types.js';
 import type { HeroCondition } from '../rules/heroAbility.types.js';
 import { getHooksForCard } from '../rules/heroAbility.types.js';
-import { cardHasClassWhenPlayed, getGrantedClasses, getCopiedClasses } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, hasSizeChanging, getCopiedClasses } from './sizeChanging.logic.js';
 import { cardCountsAsTeamMember } from './effectiveTeams.logic.js';
 import { BYSTANDER_EXT_ID, WOUND_EXT_ID } from '../setup/pilesInit.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
@@ -365,11 +365,11 @@ export function evaluateCondition(
         for (const cardId of zone) {
           const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
           const isCheap = cost === 1 || cost === 2;
-          // why: getGrantedClasses reads G.cardSizeChangingClasses (the
-          // Size-Changing grant map), distinct from Copy-Powers' class/team maps
-          // (cardCopiedClasses / cardCopiedTeams, D-24730), so a non-empty list
-          // identifies Size-Changing specifically — not a copy.
-          const isSizeChanging = getGrantedClasses(G, cardId as CardExtId).length > 0;
+          // why: hasSizeChanging reads the Size-Changing and Microscopic maps (D-24801;
+          // Microscopic "is a type of Size-Changing", rules v23 p.30), distinct from
+          // Copy-Powers' class/team maps (cardCopiedClasses / cardCopiedTeams, D-24730),
+          // so it identifies Size-Changing specifically — not a copy.
+          const isSizeChanging = hasSizeChanging(G, cardId as CardExtId);
           if (isCheap || isSizeChanging) {
             matchCount += 1;
           }
@@ -460,7 +460,7 @@ export function evaluateCondition(
       // why: D-24544 — X-Gene glossary ("X-Gene [class]: <effect>" means "If you have a
       // [class] card in your discard pile, <effect>."): true iff the acting player's
       // discard pile holds >=1 card whose PRINTED class equals condition.value. Printed
-      // class only — Size-Changing grants are an in-play-only effect and never apply to a
+      // class only — a Copy Powers copy is an in-play-only effect and never applies to a
       // discarded card, mirroring the hand-half of countDistinctHeroClassesYouHave.
       // condition.value is the class read from the co-located [hc:X] token at parse time,
       // never a hardcoded literal.
@@ -687,9 +687,10 @@ export function findFailedCondition(
  *
  * Gray S.H.I.E.L.D. basics / Officers / Sidekicks carry no `heroClass` (no color),
  * so they never add to the count — matching the printed "color of Hero" wording.
- * A dual-class card contributes BOTH printed classes (WP-703). getGrantedClasses
- * (Size-Changing) is applied only to in-play cards, because that grant is an
- * in-play effect; a card in hand contributes only its printed color(s).
+ * A dual-class card contributes BOTH printed classes (WP-703). A Copy Powers copied
+ * class (D-24730) is applied only to in-play cards, because the copy belongs to the
+ * play; a card in hand contributes only its printed color(s). Size-Changing adds no
+ * color (D-24801: it is a recruit discount, not a class grant).
  *
  * @param G - Current game state (read-only).
  * @param playerID - Active player ID.
@@ -705,7 +706,7 @@ export function countDistinctHeroClassesYouHave(
   }
   const distinctClasses = new Set<string>();
   // why: HAND half — a Hero still in hand counts as "a Hero you have"; use its
-  // printed color(s) only (no Size-Changing grant, which is an in-play effect).
+  // printed color(s) only (no copied class, which belongs to a play).
   for (const handCardId of playerZones.hand) {
     // why: WP-772 / D-24604 — only the HAND half reads the off-play view: a split card in hand
     // counts as both halves' classes (rules v23 p.49), resolved through the split-face map.
@@ -720,8 +721,7 @@ export function countDistinctHeroClassesYouHave(
     }
   }
   // why: PLAY-AREA half — the one played-card class read for both this count and the
-  // Spectrum gate, including heroClass2 and getGrantedClasses (an in-play
-  // Size-Changing Hero contributes each granted color).
+  // Spectrum gate, including heroClass2 and a Copy Powers copied class.
   // why: WP-780 / D-24619 — a rules-facing Hero trait / count read, so a card Penumbra played both-sides counts as both faces.
   // why: WP-803 / D-24692 — a "Heroes you have" read (hand + still in play), so a card that went Out of Time is excluded: rules v23 L3443-3447 (a played card that moved elsewhere doesn't count as "Your Heroes" or "Heroes you Have") + L3457-3470 ("Reveal a Hero" / "KO one of your Heroes" can't pick it).
   for (const playedCardId of playedCardIdsStillInPlay(G, playerZones.inPlay)) {
@@ -732,9 +732,6 @@ export function countDistinctHeroClassesYouHave(
     if (traitEntry !== undefined && typeof traitEntry.heroClass2 === 'string' && traitEntry.heroClass2.length > 0) {
       distinctClasses.add(traitEntry.heroClass2);
     }
-    for (const grantedClass of getGrantedClasses(G, playedCardId as CardExtId)) {
-      distinctClasses.add(grantedClass);
-    }
     // why: D-24730 — Copy Powers' copied class lives in its own turn-scoped map.
     for (const copiedClass of getCopiedClasses(G, playedCardId as CardExtId)) {
       distinctClasses.add(copiedClass);
@@ -742,7 +739,7 @@ export function countDistinctHeroClassesYouHave(
   }
   // why: WP-858 / D-24794 — CONTROLLED-ARTIFACT half. Rules v23 L930-932: "your Heroes" / "Heroes
   // you have" include Hero Artifacts you control. Printed class(es) only — a controlled Artifact was
-  // not played this turn, so no Size-Changing grant or copied class applies.
+  // not played this turn, so no copied class applies.
   for (const artifactCardId of G.controlledArtifacts?.[playerID] ?? []) {
     const traitEntry = G.cardTraits[artifactCardId];
     if (traitEntry !== undefined && typeof traitEntry.heroClass === 'string' && traitEntry.heroClass.length > 0) {
@@ -818,7 +815,7 @@ function countBystandersInVictory(G: LegendaryGameState, playerID: string): numb
  * (`heroClass` or `heroClass2`) equals the given class slug — the scan behind the
  * `heroClassInDiscardPile` condition (D-24544 / WP-723, X-23's X-Gene).
  *
- * why: reads PRINTED class only (`G.cardTraits`), never Size-Changing grants (an
+ * why: reads PRINTED class only (`G.cardTraits`), never a Copy Powers copy (an
  * in-play-only effect that cannot apply to a discarded card), mirroring the hand-half
  * of `countDistinctHeroClassesYouHave`. Explicit `for...of`, no `.reduce()`
  * (.claude/rules/code-style.md). A discarded token with no `cardTraits` row (a
@@ -873,7 +870,7 @@ function countCheapOrSizeChanging(G: LegendaryGameState, playerID: string): numb
     for (const cardId of zone) {
       const cost = G.cardStats[cardId as CardExtId]?.cost ?? 0;
       const isCheap = cost === 1 || cost === 2;
-      const isSizeChanging = getGrantedClasses(G, cardId as CardExtId).length > 0;
+      const isSizeChanging = hasSizeChanging(G, cardId as CardExtId);
       if (isCheap || isSizeChanging) {
         count += 1;
       }

@@ -26,6 +26,7 @@ import {
   resolveTwistLossThreshold,
 } from '../rules/schemeLossProgress.js';
 import { computeDayNight } from '../rules/dayNight.logic.js';
+import { resolveRecruitCost } from '../hero/sizeChanging.logic.js';
 import type { CardExtId, PlayerZones } from '../state/zones.types.js';
 import type {
   UIState,
@@ -655,12 +656,55 @@ function buildHqProjection(
   hqSlots: (string | null)[],
   hqSlotDisplay: (UIHQCard | null)[],
   gameState: LegendaryGameState,
+  activePlayerId: string,
 ): UIHQState {
   const hq: UIHQState = { slots: hqSlots, slotDisplay: hqSlotDisplay };
   if (matchHasDayNightHook(gameState)) {
     hq.dayNight = computeDayNight(gameState);
   }
+  if (matchHasSizeChangingCard(gameState)) {
+    hq.recruitCosts = buildHqRecruitCosts(hqSlots, gameState, activePlayerId);
+  }
   return hq;
+}
+
+/**
+ * Whether any card in the match prints Size-Changing or Microscopic Size-Changing (D-24801).
+ *
+ * // why: the presence rule for UIHQState.recruitCosts — only a Size-Changing card can make a
+ * slot's price differ from its printed cost.
+ *
+ * @param gameState - Current game state (read-only).
+ * @returns Whether either Size-Changing map has an entry.
+ */
+function matchHasSizeChangingCard(gameState: LegendaryGameState): boolean {
+  const sizeChangingCount = Object.keys(gameState.cardSizeChangingClasses ?? {}).length;
+  const microscopicCount = Object.keys(gameState.cardMicroscopicSizeChangingClasses ?? {}).length;
+  return sizeChangingCount > 0 || microscopicCount > 0;
+}
+
+/**
+ * Builds the slot-aligned recruit prices for the active player (D-24801).
+ *
+ * @param hqSlots - The HQ slot ext_ids (null for an empty slot).
+ * @param gameState - Current game state (read-only).
+ * @param activePlayerId - The player whose played cards earn the discounts.
+ * @returns One price per slot (null for an empty slot); negative only through Microscopic.
+ */
+function buildHqRecruitCosts(
+  hqSlots: (string | null)[],
+  gameState: LegendaryGameState,
+  activePlayerId: string,
+): (number | null)[] {
+  const recruitCosts: (number | null)[] = [];
+  for (const slotCardId of hqSlots) {
+    if (slotCardId === null) {
+      recruitCosts.push(null);
+    } else {
+      recruitCosts.push(resolveRecruitCost(gameState, activePlayerId, slotCardId as CardExtId));
+    }
+  }
+  return recruitCosts;
 }
 
 export function buildUIState(
@@ -2513,7 +2557,7 @@ export function buildUIState(
     // added as a parallel array. Length-equals-slots invariant is
     // maintained by the unified for-of loop above.
     hq: {
-      ...buildHqProjection(hqSlots, hqSlotDisplay, gameState),
+      ...buildHqProjection(hqSlots, hqSlotDisplay, gameState, ctx.currentPlayer),
       // why: WP-757 / D-24587 — projected only once G.hqHaunters exists (omit-when-absent).
       ...(hqHaunters !== undefined ? { haunters: hqHaunters } : {}),
     },

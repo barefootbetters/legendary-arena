@@ -10,10 +10,10 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 662,
+      "executable": 669,
       "deferred": 16,
       "condition": 58,
-      "unsupported": 289,
+      "unsupported": 282,
       "unmarked": 1012,
       "subsystem": 5
     }
@@ -1257,10 +1257,10 @@
       "set": "amwp",
       "scope": "hero",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "wp": "",
-      "decision": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "anti-tank-weapons",
@@ -1284,8 +1284,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "antagonize",
@@ -1341,10 +1341,10 @@
       "set": "amwp",
       "scope": "hero",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "wp": "",
-      "decision": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "bug-swarm",
@@ -1385,8 +1385,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "hitch-a-ride",
@@ -1425,10 +1425,10 @@
       "set": "amwp",
       "scope": "hero",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "wp": "",
-      "decision": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "inspire-revolution",
@@ -1452,8 +1452,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "colossal-stomp",
@@ -1509,10 +1509,10 @@
       "set": "amwp",
       "scope": "hero",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "wp": "",
-      "decision": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "subatomic-size",
@@ -1528,8 +1528,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "wasp-of-another-generation",
@@ -1617,10 +1617,10 @@
       "set": "amwp",
       "scope": "hero",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "wp": "",
-      "decision": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "hope-returns",
@@ -1640,8 +1640,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "flitting-sting",
@@ -2426,10 +2426,10 @@
       "set": "antm",
       "scope": "hero",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "wp": "",
-      "decision": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "pym-particles",
@@ -2466,8 +2466,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "giant-ego",
@@ -2597,8 +2597,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "holographic-image-inducer",
@@ -2629,10 +2629,10 @@
       "set": "antm",
       "scope": "hero",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "wp": "",
-      "decision": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "bio-electric-sting",
@@ -2652,8 +2652,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "swarm-tactics",
@@ -2749,8 +2749,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "8th-wonder-of-the-world",
@@ -5414,8 +5414,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "i-heard-keywords-are-powerful",
@@ -5520,8 +5520,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "big-impact",
@@ -5604,8 +5604,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "growing-nova-force",
@@ -5697,8 +5697,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "7th-smartest-man-in-the-world",
@@ -5743,8 +5743,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "alter-molecular-density",
@@ -9770,8 +9770,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "being-big-is-best",
@@ -9888,8 +9888,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "cellular-regeneration",
@@ -10072,8 +10072,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "crush-ants",
@@ -10227,8 +10227,8 @@
       "mechanic": "size-changing",
       "status": "executable",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "designs": [
         {
           "slug": "harder-than-diamond",

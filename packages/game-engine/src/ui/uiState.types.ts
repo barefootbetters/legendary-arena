@@ -721,6 +721,15 @@ export interface UIHQState {
   // Omit-when-absent: present only once G.hqHaunters exists (the first haunt). It is
   // optional, so a missed filter pass-through is silent — see uiState.filter.ts.
   haunters?: (UIHQHaunter | null)[];
+  // why: D-24801 — the price the ACTIVE player pays to recruit each slot now, index-aligned
+  // with `slots` (null for an empty slot): the printed cost after Size-Changing, the same
+  // resolveRecruitCost the recruitHero guard reads. Negative only through Microscopic
+  // Size-Changing (the recruiter pays 0 and gains the difference). The client gates and
+  // labels recruits on it instead of the printed display.cost. Present iff the match has a
+  // Size-Changing card; omitted otherwise, so every other match is unchanged. Public (the
+  // active player's played cards are face up). Passed through the audience filter explicitly
+  // (uiState.filter.ts) — a build-only field is silently dropped (the EC-206 failure mode).
+  recruitCosts?: (number | null)[];
 }
 
 /**

@@ -71,15 +71,19 @@ export interface HeroAbilityHook {
   // provenance only — never affects execution. Additive optional: absent or empty
   // means "no composition resolved here" (legacy keywords + deferred markers yield neither).
   resolvedMarkers?: string[];
-  // why: D-24074 / WP-290 — the normalized Hero Classes this card GAINS when played
-  // (its printed "Size-Changing: [Class]" grant), parsed from the same-line `[hc:...]`
-  // tokens on a `[keyword:Size-Changing]` line. NOT a play-condition — these are an
-  // additive class source consulted at class-read time (heroClassMatch /
-  // distinctHeroClassesAtLeast), never written into G.cardTraits. buildInitialGameState
-  // collapses these per-card into G.cardSizeChangingClasses. Additive optional: absent
-  // or empty means "no granted class" (a Size-Changing line with no [hc:X], or any
-  // non-Size-Changing line).
+  // why: D-24801 (supersedes D-24074's class grant) — the normalized Hero Classes of this
+  // card's printed "Size-Changing: [Class]" line, parsed from the same-line `[hc:...]`
+  // tokens on a `[keyword:Size-Changing]` line. Each class discounts the card's recruit
+  // cost by 2 when a card of that class was played this turn (rules v23 p.33). NOT a
+  // play-condition and NOT a class the card gains. buildInitialGameState collapses these
+  // per-card into G.cardSizeChangingClasses. Additive optional: absent or empty means "no
+  // Size-Changing" (a Size-Changing line with no [hc:X], or any non-Size-Changing line).
   sizeChangingClasses?: string[];
+  // why: D-24801 — the icons of this card's printed "Microscopic Size-Changing" line, one
+  // entry per `[hc:X]` icon (repeats kept). Each matching-class card played this turn, up
+  // to one per icon, discounts the recruit cost by 2 (rules v23 p.30). Collapsed per card
+  // into G.cardMicroscopicSizeChangingClasses. Additive optional, omit-when-empty.
+  microscopicSizeChangingClasses?: string[];
 }
 
 // ---------------------------------------------------------------------------

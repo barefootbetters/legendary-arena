@@ -26016,7 +26016,7 @@ This supersedes the per-filter pill-ribbon UI of WP-125/183/184 and folds in WP-
 
 ### D-24074 — Size-Changing Hero Class-Grant on Play (Per-Card Granted Classes + Effective-Class Rule)
 
-**Status:** **Active** (landed 2026-06-28 by WP-290 / EC-322, commit `396526f3`). Drafted 2026-06-25; **re-drafted 2026-06-28** against the canonical rule (the prior draft modelled a non-existent recruit discount — see Correction).
+**Status:** **Superseded 2026-11-05 by D-24801** (rules v23 p.33: Size-Changing is a recruit discount, not a class grant; this entry read the pre-#927 `keywords-full.json` description). Was **Active** (landed 2026-06-28 by WP-290 / EC-322, commit `396526f3`). Drafted 2026-06-25; **re-drafted 2026-06-28** against the canonical rule (the prior draft modelled a non-existent recruit discount — see Correction).
 
 **Correction.** The original D-24074 (drafted 2026-06-25) modelled Size-Changing as a *recruit-cost discount* (2 Recruit less per listed class played). That mechanic does not exist on the card. The canonical rulebook keyword (`data/metadata/keywords-full.json` key `sizechanging`, pdfPage 33) reads: *"This card's printed Attack is also its Victory Points. When you play this card, it has the [Class] class."* — a **class-grant on play** plus **Attack-as-VP**, never a discount. The discount reading was an invented mechanic (pattern-matched onto the patrol fight-cost modifier without reading the keyword text). This entry is rewritten to the printed rule; the recruit-cost design, `getSizeChangingRecruitDiscount`, `RECRUIT_COST_KEYWORDS`, and the effective-cost rule are withdrawn.
 
@@ -50141,6 +50141,47 @@ Protect this file.
 **Gates.** game-engine 6213 → 6222 / 0 (+9 in `hero/heroEffects.execute.test.ts`: Ice Slide, Absorb Energies and X-Men United parsed from their committed lines, kidnap, multi-hook, count ≥ 1 unchanged, and the flat-gated, other-axis and doubled-gate regressions). With the new branch disabled, the 5 new-wording tests fail and the 4 regression pins pass. `pnpm -r build` 0; every package 0 fail; `sim:coverage --check`, `sim:runtime-observed:check`, `effect-index:check`, `ledger:heroes:check`, `cards:count-markers:check` 0.
 
 **Reserved by:** NUMBER-LEDGER D-24539 (#2194). Related: D-24082 (failed-gate log line), D-24375 (name the failed condition), D-24016 / D-24534 / D-24537 (the count-scaled family), D-24673 (count-source labels), D-24623 (hollow-body note), D-24026.
+
+---
+
+### D-24801 — Size-Changing and Microscopic Size-Changing are recruit discounts, not a class grant on play (supersedes D-24074's class-grant model) (Active 2026-11-05 — direct fix, no WP)
+
+**Status:** Active 2026-11-05. Supersedes D-24074. Live-verify (D-24026) operator-pending.
+
+**Context.** D-24074 (2026-06-28) modelled "Size-Changing [Class]" as "when you play this card, it has the [Class] class", citing the `keywords-full.json` description. That description was one of the AI-paraphrased keyword texts corrected to the v23 rulebook by PR #927 on 2026-07-22, three weeks later. The rulebook says otherwise:
+- **Size-Changing** (v23 p.33, `docs/legendary-universal-rules-v23.md` ~L1893): "You can recruit this card for 2 less if you played any [class] cards this turn" (a Villain: fight for 2 less). "The Size-Changing card's cost is only changed during the moment you are recruiting it."
+- **Microscopic Size-Changing** (v23 p.30, ~L1696): 2 less for each card you played this turn, counting up to the number of icons. It "can reduce the cost you pay to zero or even a negative number", and recruiting at a negative cost gains that many Recruit. It "is a type of Size-Changing".
+
+Under the class grant, every Wasp Size-Changing card granted its own printed class, so the keyword did nothing. Operator match `PAwTxk88LRy` (2026-11-05, server `96855eb0`) showed it: no discount, and Microscopic was an unsupported hollow.
+
+**Decision.**
+1. **Size-Changing [C1, C2, …].** The recruit price is the printed cost minus 2 for each listed class with at least one matching card the recruiting player played this turn, floored at 0. Each listed class is its own 2-less step. That is my reading of the multi-class lines (chmp "[hc:strength], [hc:covert]"); the v23 text names a single class.
+2. **Microscopic Size-Changing [icons].** Minus 2 per played card that matches an icon's class, one card per icon, up to the icon count. The price can go below 0. A negative price spends nothing and adds the difference as Recruit.
+3. **The two reads.** "Played this turn" is `playedCardIdsThisTurn`, the shared rules-facing read. A played card's class is `cardHasClassWhenPlayed`: printed `hc` / `hc2`, or a Copy Powers copy.
+4. **Recruit time only.** `resolveRecruitCost` (`hero/sizeChanging.logic.ts`) is read by `recruitHero`, by the bot legal-move list, and by the HQ projection `UIHQState.recruitCosts` (index-aligned, omit-when-absent, passed through the audience filter). The client gates and labels recruits on it. Every other cost read keeps the printed cost: Staff of Legba's recorded cost, "costs N or less", and the Antics cheap check.
+5. **Class grant removed.** `cardHasClassWhenPlayed` no longer reads `cardSizeChangingClasses`, and the distinct-class counts drop it. The map stays as the discount data and as the "has Size-Changing" signal. `hasSizeChanging` also counts Microscopic (p.30), so Antics (`cheapOrSizeChangingAtLeast`) and the "has Size-Changing" count read a Microscopic card as Size-Changing.
+6. **Parser.** A `[keyword:Microscopic Size-Changing]` line records the keyword `microscopic-size-changing` (`HERO_KEYWORDS` 91 → 92) and `HeroAbilityHook.microscopicSizeChangingClasses`, one entry per icon. It emits no `heroClassMatch` gate. G gains `cardMicroscopicSizeChangingClasses` (setup-only, omit-when-empty). `CLASS_GRANT_KEYWORDS` is renamed `SIZE_CHANGING_RECRUIT_KEYWORDS` and holds both keywords.
+7. **Log.** The recruit line appends " (Size-Changing: cost N, paid M)", or "paid 0 and gained K recruit", only when the price differs from the printed cost. A full-price recruit's line is byte-identical.
+
+**Out of scope (follow-ups).**
+- The Villain and Mastermind Size-Changing fight discount (amwp, antm, chmp and cvwr villains).
+- Effects that grant Size-Changing to HQ Heroes or remove it (antm Pym Particles; villain Fight effects).
+
+D-24074's deferred "Attack is also Victory Points" clause is dropped rather than deferred. It came from the same paraphrased text and is not a rule.
+
+**Consequences.**
+- **What changes.** `G.cardSizeChangingClasses` is unchanged. `cardMicroscopicSizeChangingClasses` appears only in a match with a Microscopic card, so a match without Size-Changing hashes as before. A match with Size-Changing cards plays differently: cheaper recruits, no granted class, and Antics counting Microscopic cards.
+- **Feeds regenerated.**
+  - Hero ledger: `size-changing` attributed to D-24801; `microscopic-size-changing` moves from unsupported to executable.
+  - `card-mechanics.json`.
+  - Runtime-observed hollows: 7668 → 7725 observations, 78 → 77 mechanics, as the bots recruit Size-Changing cards cheaper.
+  - The coverage baseline.
+- **Pins moved.** The dashboard in-play `totalObs` pin goes from 8631 to 8686.
+- **Earlier live-verify rows.** The partial rows `amwp/wasp|size-changing` and `amwp/janet-van-dyne|size-changing` (#3153) need a new match on a build with this change.
+
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` 0 fail in every package: game-engine 6239 / 0 (+17: `hero/sizeChanging.logic.test.ts` rewritten for the discount and the absent grant; three `moves/recruitHero.test.ts` discount, full-price and below-0 cases; three `ui/uiState.filter.test.ts` recruitCosts audience, omit-when-absent and snapshot cases; the Wasp Microscopic parse; the D-24074 grant pins in `heroConditions.evaluate.test.ts`, `copyPowersPerPlay.test.ts` and `gateOnlyHollow.test.ts` rewritten to pin the absent grant; HERO_KEYWORDS 91 → 92), arena-client 2546 / 0 (+5: `canRecruit` on the projected price, the HQRow price label), dashboard 594 / 0 (the in-play totalObs re-pin). `arena-client typecheck` 0. `sim:coverage --check`, `ledger:heroes:check`, `mechanics:metadata:check`, `effect-index:check`, `sim:runtime-observed:check`, `ledger:numbers:check`, `workindex:rows:check`, `workindex:executed:check` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24801 (#3154). Related: D-24074 (superseded), D-24730 (Copy Powers copied class), D-24724 (villain class reads), D-24464 (Antics condition), D-24026.
 
 ---
 Protect this file.

@@ -4,10 +4,10 @@
   "summary": {
     "totalRows": 846,
     "byStatus": {
-      "executable": 456,
+      "executable": 463,
       "deferred": 16,
       "condition": 58,
-      "unsupported": 288,
+      "unsupported": 281,
       "unmarked": 25,
       "subsystem": 3
     },
@@ -469,10 +469,10 @@
       "heroName": "Ant Army",
       "set": "amwp",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "anti-tank-weapons",
@@ -494,8 +494,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -549,10 +549,10 @@
       "heroName": "Ant-Man",
       "set": "amwp",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "bug-swarm",
@@ -590,8 +590,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -629,10 +629,10 @@
       "heroName": "Cassie Lang",
       "set": "amwp",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "inspire-revolution",
@@ -654,8 +654,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -709,10 +709,10 @@
       "heroName": "Janet van Dyne",
       "set": "amwp",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "subatomic-size",
@@ -726,8 +726,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -812,10 +812,10 @@
       "heroName": "Wasp",
       "set": "amwp",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "hope-returns",
@@ -833,8 +833,8 @@
       "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1164,10 +1164,10 @@
       "heroName": "Ant-Man",
       "set": "antm",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "pym-particles",
@@ -1201,8 +1201,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1325,8 +1325,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1356,10 +1356,10 @@
       "heroName": "Wasp",
       "set": "antm",
       "mechanic": "microscopic-size-changing",
-      "status": "unsupported",
+      "status": "executable",
       "wp": "",
-      "decision": "",
-      "handler": "",
+      "decision": "D-24801",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing",
       "designs": [
         {
           "slug": "bio-electric-sting",
@@ -1377,8 +1377,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -1469,8 +1469,8 @@
       "set": "antm",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -2997,8 +2997,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3097,8 +3097,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3177,8 +3177,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3265,8 +3265,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -3309,8 +3309,8 @@
       "set": "chmp",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -5132,8 +5132,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -5244,8 +5244,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -5419,8 +5419,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {
@@ -5567,8 +5567,8 @@
       "set": "cvwr",
       "mechanic": "size-changing",
       "status": "executable",
-      "wp": "WP-290",
-      "decision": "D-24074",
+      "wp": "",
+      "decision": "D-24801",
       "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#size-changing",
       "designs": [
         {

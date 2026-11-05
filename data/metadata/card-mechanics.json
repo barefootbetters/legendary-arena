@@ -1177,7 +1177,7 @@
       "slug": "microscopic-size-changing",
       "label": "Microscopic Size Changing",
       "scope": "hero",
-      "source": "free-text",
+      "source": "keyword",
       "cardCount": 7,
       "cardIds": [
         "amwp/ant-army",
