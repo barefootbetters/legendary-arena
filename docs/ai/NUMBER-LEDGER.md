@@ -500,6 +500,7 @@ high-water: 422
 - WP-856 — owned-hero-ko-first-time (Doctor Voodoo's Possessed by Brother's Spirit: the first time one of your Heroes is KO'd this turn, choose +4 Recruit or +4 Attack; a Hero-only, one-shot, choose-one variant of the WP-853 owned-KO trigger. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130; LANDED 2026-10-29)
 - WP-859 — wwhk-feast-readers (World War Hulk cards that read "KO'd from your deck this turn": a per-turn record of which cards left each deck to the KO pile, the Metamorphosis / Bursting with Life Transform gates, and World-Spanning Hunger's Feast up to three times with +2 per non-grey Hero, fixing its phantom +2. reserved 2026-10-31, claude/wp859-reserve; LANDED 2026-11-01)
 - WP-861 — first-card-played (the "If this is the first card you played this turn" hero lines — No-Name's Surprise Attack draws, Elektra's First Strike and Wasp's Follow My Lead gate their +1 Attack — through the shipped first-Hero-played condition via curated markers. reserved 2026-11-01, claude/wp861-reserve; LANDED 2026-11-01)
+- WP-862 — size-changing-runtime-grants (card effects that grant or remove Size-Changing on an HQ Hero during play — Pym Particles, Ultron-Pym, Shrinksperiments, Sporr, Fin Fang Foom's Alien Dragon Technology, Darren Cross's Shrinking Research Budget — read by the recruit-price authority. reserved 2026-11-05, claude/wp862-reserve)
 
 ## EC
 
@@ -962,6 +963,7 @@ high-water: 457
 - EC-894 — owned-hero-ko-first-time (WP-856. reserved 2026-10-29, claude/voodoo-ko-trigger-d16130; LANDED 2026-10-29)
 - EC-897 — wwhk-feast-readers (WP-859. reserved 2026-10-31, claude/wp859-reserve; LANDED 2026-11-01)
 - EC-899 — first-card-played (WP-861. reserved 2026-11-01, claude/wp861-reserve; LANDED 2026-11-01)
+- EC-900 — size-changing-runtime-grants (WP-862. reserved 2026-11-05, claude/wp862-reserve)
 
 ## D
 
@@ -1542,3 +1544,4 @@ section below) and the allocation protocol in
 - D-24799 — dashboard-kpi-rolling-7-day (direct fix, no WP — the WPs-done KPI counts the rolling 7 days ending on HEAD's day instead of the Monday-anchored ISO week, so Mondays stop reading 0. reserved 2026-11-03, claude/dazzling-tereshkova-db55e8; LANDED 2026-11-03)
 - D-24801 — size-changing-recruit-discount (direct fix, no WP — Size-Changing and Microscopic Size-Changing are the rulebook recruit discounts (v23 p.33 / p.30), not a class grant on play; supersedes D-24074's class-grant model. reserved 2026-11-05, claude/size-changing-discount-reserve; LANDED 2026-11-05)
 - D-24802 — size-changing-villain-fight-discount (direct fix, no WP — a Villain or Mastermind with Size-Changing or Microscopic Size-Changing can be fought for 2 less per the rulebook (v23 p.33 / p.30), applied in the engine fight-cost authority; completes D-24801. reserved 2026-11-05, claude/size-changing-villain-reserve; LANDED 2026-11-05)
+- D-24804 — size-changing-runtime-grants (WP-862; an HQ-slot Size-Changing grant overlay read by resolveRecruitCost, cleared at end of turn or when the card leaves the HQ. reserved 2026-11-05, claude/wp862-reserve)
