@@ -953,6 +953,10 @@ const SIZE_CHANGING_MARKER_PATTERN = /\[keyword:size-changing\]/i;
 // SIZE_CHANGING_MARKER_PATTERN never matches it (the token body starts "Microscopic").
 const MICROSCOPIC_SIZE_CHANGING_MARKER_PATTERN = /\[keyword:microscopic size-changing\]/i;
 
+// why: WP-862 / D-24804 — the curated marker on Pym Particles' grant line; its presence makes that
+// line's printed [keyword:Size-Changing] / [hc:tech] descriptive (see lineHasSizeChangingGrant).
+const HQ_SIZE_CHANGING_GRANT_MARKER = '[keyword:hq-hero-gains-size-changing-tech]';
+
 // why: WP-535 fix-forward — Rogue's Copy Powers text carries a MID-SENTENCE [hc:covert]
 // ("This card is both [hc:covert] and the color you copy") that describes the class the
 // card BECOMES, NOT a play gate. Like size-changing, a copy-powers line's [hc:X] must be
@@ -1233,7 +1237,12 @@ function parseAbilityText(
   // why: D-24801 — when the line carries [keyword:Size-Changing], its [hc:...] tokens are
   // the discount classes, not heroClassMatch conditions. Computed once up front so Step 1a
   // routes every same-line [hc:...] to the Size-Changing list (guardrail #4: extract ALL).
-  const lineHasSizeChanging = SIZE_CHANGING_MARKER_PATTERN.test(abilityText);
+  // why: WP-862 / D-24804 — on a line carrying the HQ grant marker (Pym Particles: "A Hero in the
+  // HQ with no Size-Changing abilities gains [keyword:Size-Changing] [hc:tech] this turn.") the
+  // printed Size-Changing token and its [hc:tech] name what ANOTHER Hero gains: they are
+  // descriptive, not this card's own discount (D-24801 read them as Pym Particles' own Tech step).
+  const lineHasSizeChangingGrant = abilityText.includes(HQ_SIZE_CHANGING_GRANT_MARKER);
+  const lineHasSizeChanging = SIZE_CHANGING_MARKER_PATTERN.test(abilityText) && !lineHasSizeChangingGrant;
   // why: D-24801 — a Microscopic Size-Changing line's [hc:...] icons, one entry per icon
   // (repeats kept: three [hc:tech] icons are three 2-less steps). Not play-conditions.
   const microscopicSizeChangingClasses: string[] = [];
@@ -1368,7 +1377,10 @@ function parseAbilityText(
   heroClassMatch = heroClassRegex.exec(abilityText);
   while (heroClassMatch !== null) {
     const normalizedClass = normalizeTraitSlug(heroClassMatch[1]!);
-    if (lineHasSizeChanging) {
+    if (lineHasSizeChangingGrant) {
+      // why: WP-862 / D-24804 — the granted class is descriptive (the chosen HQ Hero gains it);
+      // it is neither this card's discount class nor a play gate, so it emits nothing.
+    } else if (lineHasSizeChanging) {
       // why: D-24801 — on a Size-Changing line the [hc:...] tokens are the classes that
       // discount the recruit cost, so route them to the Size-Changing list and emit NO
       // heroClassMatch condition for them (extract ALL on this line — guardrail #4). The
@@ -1572,7 +1584,11 @@ function parseAbilityText(
   let keywordMatch: RegExpExecArray | null = keywordRegex.exec(abilityText);
   while (keywordMatch !== null) {
     const normalizedKeyword = keywordMatch[1]!.toLowerCase();
-    if (normalizedKeyword === 'investigate') {
+    if (normalizedKeyword === 'size-changing' && lineHasSizeChangingGrant) {
+      // why: WP-862 / D-24804 — on the HQ grant line the printed [keyword:Size-Changing] names
+      // what another Hero gains, so this card records no `size-changing` keyword (Step 1a drops
+      // its [hc:tech] the same way).
+    } else if (normalizedKeyword === 'investigate') {
       // why: WP-564 / D-24373 — investigate IS a HeroKeyword, but its keyword + descriptor
       // are recorded ONLY when a static criterion resolves. A deferred form (choose-first,
       // other-zone, name-match, disposition, modifier, compose-with-Teleport) records

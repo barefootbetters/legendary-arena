@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2042,
+    "totalEntries": 2043,
     "byScope": {
-      "hero": 846,
+      "hero": 847,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 669,
+      "executable": 675,
       "deferred": 16,
       "condition": 58,
       "unsupported": 282,
-      "unmarked": 1012,
+      "unmarked": 1007,
       "subsystem": 5
     }
   },
@@ -761,10 +761,10 @@
       "set": "amwp",
       "scope": "mastermind",
       "mechanic": "shrinking-research-budget",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveShrinkingResearchBudget",
+      "wp": "WP-862",
+      "decision": "D-24804"
     },
     {
       "extId": "amwp-mastermind-darren-cross-steal-pym-particles",
@@ -980,11 +980,11 @@
       "name": "Shrinksperiments",
       "set": "amwp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "hq-hero-gains-size-changing",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing",
+      "wp": "WP-862",
+      "decision": "D-24804"
     },
     {
       "extId": "amwp-villain-cross-technologies-take-over-pym-technologies",
@@ -2369,11 +2369,11 @@
       "name": "Ultron-Pym",
       "set": "antm",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "hq-hero-gains-size-changing",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing",
+      "wp": "WP-862",
+      "decision": "D-24804"
     },
     {
       "extId": "antm-villain-ultrons-legacy-ultron-roboticks",
@@ -2417,6 +2417,23 @@
         {
           "slug": "ride-the-ants",
           "name": "Ride the Ants"
+        }
+      ]
+    },
+    {
+      "extId": "antm/ant-man",
+      "name": "Ant-Man",
+      "set": "antm",
+      "scope": "hero",
+      "mechanic": "hq-hero-gains-size-changing-tech",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hq-hero-gains-size-changing-tech",
+      "wp": "WP-862",
+      "decision": "D-24804",
+      "designs": [
+        {
+          "slug": "pym-particles",
+          "name": "Pym Particles"
         }
       ]
     },
@@ -5130,10 +5147,10 @@
       "set": "chmp",
       "scope": "mastermind",
       "mechanic": "alien-dragon-technology",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveAlienDragonTechnology",
+      "wp": "WP-862",
+      "decision": "D-24804"
     },
     {
       "extId": "chmp-mastermind-fin-fang-foom-flammable-acid-breath",
@@ -5272,11 +5289,11 @@
       "name": "Sporr",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "hq-hero-gains-size-changing",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing",
+      "wp": "WP-862",
+      "decision": "D-24804"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-tim-boo-ba",
@@ -29752,7 +29769,7 @@
     "amwp-villain-cross-technologies-shrinksperiments": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "hq-hero-gains-size-changing"
       ]
     },
     "amwp-villain-cross-technologies-take-over-pym-technologies": {
@@ -30195,7 +30212,7 @@
     "antm-villain-ultrons-legacy-ultron-pym": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "hq-hero-gains-size-changing"
       ]
     },
     "antm-villain-ultrons-legacy-ultron-roboticks": {
@@ -30209,6 +30226,7 @@
       "mechanics": [
         "attack-per-count",
         "draw",
+        "hq-hero-gains-size-changing-tech",
         "microscopic-size-changing",
         "optional-discard-draw",
         "size-changing"
@@ -30922,7 +30940,7 @@
     "chmp-villain-monsters-unleashed-sporr": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "hq-hero-gains-size-changing"
       ]
     },
     "chmp-villain-monsters-unleashed-tim-boo-ba": {

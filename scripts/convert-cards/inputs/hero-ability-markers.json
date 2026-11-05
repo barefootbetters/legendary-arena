@@ -1741,6 +1741,12 @@
       "markupToken": "[keyword:draw:1]"
     },
     {
+      "heroSlug": "ant-man",
+      "cardSlug": "pym-particles",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:hq-hero-gains-size-changing-tech]"
+    },
+    {
       "heroSlug": "jocasta",
       "cardSlug": "holographic-image-inducer",
       "abilityIndex": 1,

@@ -155,13 +155,78 @@ export function resolveRecruitCost(
   cardId: CardExtId,
 ): number {
   const printedCost = G.cardStats[cardId]?.cost ?? 0;
+  // why: WP-862 / D-24804 — priced through the HQ-card reader, so a Size-Changing granted
+  // during play (G.hqSizeChangingGrants) discounts the card while it sits in the HQ. With no
+  // grant the reader returns the printed lists, so every other price is unchanged.
+  const sizeChanging = getHqCardSizeChanging(G, cardId);
   return applySizeChangingDiscount(
     G,
     playerID,
     printedCost,
-    getSizeChangingClasses(G, cardId),
-    getMicroscopicSizeChangingClasses(G, cardId),
+    sizeChanging.classes,
+    sizeChanging.microscopicIcons,
   );
+}
+
+/**
+ * Returns a card's Size-Changing as it stands right now: its printed lists, then every
+ * Size-Changing grant made on it during play while it is in the HQ (WP-862 / D-24804).
+ *
+ * A grant that replaces the printed Size-Changing sets the classes to its own and drops the
+ * Microscopic icons; any other grant adds its classes, a class counting once.
+ *
+ * @param G - Current game state (read-only).
+ * @param cardId - The card to read (normally an HQ Hero).
+ * @returns The effective Size-Changing classes and Microscopic icons.
+ */
+export function getHqCardSizeChanging(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+): { classes: readonly string[]; microscopicIcons: readonly string[] } {
+  let classes: readonly string[] = getSizeChangingClasses(G, cardId);
+  let microscopicIcons: readonly string[] = getMicroscopicSizeChangingClasses(G, cardId);
+  const grants = G.hqSizeChangingGrants;
+  // why: D-24804 — a grant belongs to the card only while it is in the HQ; once the card is
+  // recruited or otherwise leaves, the grant is inert (and end-of-turn cleanup prunes it).
+  if (grants === undefined || !G.hq.includes(cardId)) {
+    return { classes, microscopicIcons };
+  }
+  for (const grant of grants) {
+    if (grant.cardId !== cardId) {
+      continue;
+    }
+    if (grant.replacesPrinted) {
+      classes = [...grant.classes];
+      microscopicIcons = NO_CLASSES;
+      continue;
+    }
+    // why: D-24804 — "gains Size-Changing [Tech]" on a Hero that already has it names an
+    // ability it already has, so a class counts once (one 2-less step per listed class).
+    const merged: string[] = [...classes];
+    for (const grantedClass of grant.classes) {
+      if (!merged.includes(grantedClass)) {
+        merged.push(grantedClass);
+      }
+    }
+    classes = merged;
+  }
+  return { classes, microscopicIcons };
+}
+
+/**
+ * Returns whether a card currently has any Size-Changing, counting grants made during play
+ * while it is in the HQ (WP-862 / D-24804).
+ *
+ * // why: the "with no Size-Changing abilities" eligibility test for the grant effects; kept
+ * apart from hasSizeChanging, which stays the printed test for played cards (Antics, reveals).
+ *
+ * @param G - Current game state (read-only).
+ * @param cardId - The HQ card to test.
+ * @returns Whether the card has a Size-Changing class or a Microscopic icon right now.
+ */
+export function hqCardHasSizeChanging(G: LegendaryGameState, cardId: CardExtId): boolean {
+  const sizeChanging = getHqCardSizeChanging(G, cardId);
+  return sizeChanging.classes.length > 0 || sizeChanging.microscopicIcons.length > 0;
 }
 
 /**

@@ -26,7 +26,8 @@
         "m-o-d-o-k": { "fight": ["koHeroEachPlayer"] }
       },
       "cross-technologies": {
-        "cross-security-detail": { "fight": ["koHeroCurrentPlayer"] }
+        "cross-security-detail": { "fight": ["koHeroCurrentPlayer"] },
+        "shrinksperiments": { "fight": ["hq-hero-gains-size-changing:replace:tech"] }
       },
       "quantum-realm": {
         "hungering-energy": { "fight": ["koHeroCurrentPlayer"] }
@@ -45,6 +46,7 @@
       "ultrons-legacy": {
         "crimson-cowl": { "ambush": ["captureBystander"] },
         "original-ultron-1": { "fight": ["koHeroCurrentPlayer"] },
+        "ultron-pym": { "fight": ["hq-hero-gains-size-changing:if-none:tech"] },
         "ultron-roboticks": { "fight": ["koHeroCurrentPlayer"] }
       }
     },
@@ -82,7 +84,8 @@
     },
     "chmp": {
       "monsters-unleashed": {
-        "goom": { "ambush": ["captureBystander"], "fight": ["koHeroCurrentPlayer"] }
+        "goom": { "ambush": ["captureBystander"], "fight": ["koHeroCurrentPlayer"] },
+        "sporr": { "fight": ["hq-hero-gains-size-changing:add:tech+ranged"] }
       },
       "wrecking-crew": {
         "piledriver": { "fight": ["koHeroCurrentPlayer"] }

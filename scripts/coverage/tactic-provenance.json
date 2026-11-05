@@ -151,6 +151,18 @@
       "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveCrushPacifistResistance",
       "wp": "WP-821",
       "decision": "D-24754"
+    },
+    "chmp-mastermind-fin-fang-foom-alien-dragon-technology": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveAlienDragonTechnology",
+      "wp": "WP-862",
+      "decision": "D-24804"
+    },
+    "amwp-mastermind-darren-cross-shrinking-research-budget": {
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveShrinkingResearchBudget",
+      "wp": "WP-862",
+      "decision": "D-24804"
     }
   }
 }

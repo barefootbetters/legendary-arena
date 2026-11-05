@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 846,
+    "totalRows": 847,
     "byStatus": {
-      "executable": 463,
+      "executable": 464,
       "deferred": 16,
       "condition": 58,
       "unsupported": 281,
       "unmarked": 25,
       "subsystem": 3
     },
-    "distinctMechanics": 178
+    "distinctMechanics": 179
   },
   "rows": [
     {
@@ -1156,6 +1156,22 @@
         {
           "slug": "ride-the-ants",
           "name": "Ride the Ants"
+        }
+      ]
+    },
+    {
+      "extId": "antm/ant-man",
+      "heroName": "Ant-Man",
+      "set": "antm",
+      "mechanic": "hq-hero-gains-size-changing-tech",
+      "status": "executable",
+      "wp": "WP-862",
+      "decision": "D-24804",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hq-hero-gains-size-changing-tech",
+      "designs": [
+        {
+          "slug": "pym-particles",
+          "name": "Pym Particles"
         }
       ]
     },

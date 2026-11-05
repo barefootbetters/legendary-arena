@@ -981,6 +981,17 @@
       "hidden": true
     },
     {
+      "slug": "hq-hero-gains-size-changing-tech",
+      "label": "Hq Hero Gains Size Changing Tech",
+      "scope": "hero",
+      "source": "keyword",
+      "cardCount": 1,
+      "cardIds": [
+        "antm/ant-man"
+      ],
+      "hidden": true
+    },
+    {
       "slug": "hunt-for-victims",
       "label": "Hunt For Victims",
       "scope": "hero",
@@ -2795,6 +2806,7 @@
       "mechanics": [
         "attack-per-count",
         "draw",
+        "hq-hero-gains-size-changing-tech",
         "microscopic-size-changing",
         "optional-discard-draw",
         "size-changing"

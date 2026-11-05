@@ -93,6 +93,8 @@ import { describeKoSourceZone } from '../log/logDisplay.js';
 // counter, and Primus's Escape narrates its costs with the shared cost-list formatter.
 import { countDistinctHeroClassesYouHave } from '../hero/heroConditions.evaluate.js';
 import { formatEligibleCostList } from '../moves/villainDefeatRequirement.logic.js';
+// why: WP-862 / D-24804 — the Size-Changing grant on a chosen HQ Hero (read inside the handler only).
+import { grantSizeChangingToHqHero } from '../hero/sizeChangingGrant.logic.js';
 import {
   WOUND_EXT_ID,
   SHIELD_AGENT_EXT_ID,
@@ -3265,6 +3267,29 @@ function villainEffectDiscardHandMatchingHqCardNamesEachPlayer(
 }
 
 /**
+ * hq-hero-gains-size-changing primitive — a chosen HQ Hero gains (or, in replace mode, swaps to)
+ * Size-Changing for the listed classes this turn (WP-862 / D-24804): antm Ultron-Pym
+ * (`if-none:tech`), amwp Shrinksperiments (`replace:tech`), chmp Sporr (`add:tech+ranged`).
+ *
+ * // why: keyword-less, so the executor records no result for it; the grant module narrates every
+ * outcome (granted at once, a pick parked, nothing eligible) with the "Fight effect: " prefix, and
+ * the handler returns no targets. A pick parks with no events: a single addressed active seat
+ * needs no stage ride (D-24648).
+ */
+function villainEffectHqHeroGainsSizeChanging(
+  G: LegendaryGameState,
+  currentPlayer: string,
+  cardId: CardExtId,
+  _timing: VillainAbilityTiming,
+  descriptor: VillainEffectDescriptor,
+): VillainEffectApplication {
+  const classes = descriptor.sizeChangingGrantClasses ?? [];
+  const mode = descriptor.sizeChangingGrantMode ?? 'add';
+  grantSizeChangingToHqHero(G, currentPlayer, classes, mode, cardId);
+  return { targets: [] };
+}
+
+/**
  * hq-heroes-to-hero-deck-bottom primitive — every HQ Hero goes to the bottom of the Hero
  * Deck in slot order, then the HQ refills (co2e Juggernaut's Ambush, second half,
  * D-24770 / WP-837). Auto-resolves; keyword-less, self-narrates.
@@ -4696,6 +4721,8 @@ const VILLAIN_EFFECT_HANDLERS: Record<VillainEffectPrimitive, VillainEffectHandl
   'discard-hero-or-wound-each-player-by-trait': villainEffectDiscardHeroOrWoundEachPlayerByTrait,
   'discard-hand-matching-hq-card-names-each-player': villainEffectDiscardHandMatchingHqCardNamesEachPlayer,
   'hq-heroes-to-hero-deck-bottom': villainEffectHqHeroesToHeroDeckBottom,
+  // why: WP-862 / D-24804 — position 39, the Size-Changing grant on a chosen HQ Hero.
+  'hq-hero-gains-size-changing': villainEffectHqHeroGainsSizeChanging,
 };
 
 /**

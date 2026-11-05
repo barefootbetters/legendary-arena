@@ -32,7 +32,7 @@ amwp-villain-quantum-realm-quantumania,Quantumania,amwp,villain,(unmarked),unmar
 amwp-villain-armada-of-kang-quantumnaut-elite,Quantumnaut Elite,amwp,villain,(unmarked),unmarked,,,
 henchman-quantumnauts,Quantumnauts,amwp,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 amwp-villain-quantum-realm-quantumoeba,Quantumoeba,amwp,villain,(unmarked),unmarked,,,
-amwp-villain-cross-technologies-shrinksperiments,Shrinksperiments,amwp,villain,(unmarked),unmarked,,,
+amwp-villain-cross-technologies-shrinksperiments,Shrinksperiments,amwp,villain,hq-hero-gains-size-changing,executable,WP-862,D-24804,packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing
 amwp-villain-quantum-realm-sky-manta,Sky Manta,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-ghost-chasers-sonny-burch,Sonny Burch,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-ghost-chasers-sonny-burchs-goons,Sonny Burch's Goons,amwp,villain,(unmarked),unmarked,,,
@@ -62,7 +62,7 @@ antm-villain-ultrons-legacy-original-ultron-1,Original Ultron-1,antm,villain,koH
 antm-villain-queens-vengeance-pixie,Pixie,antm,villain,(unmarked),unmarked,,,
 antm-villain-queens-vengeance-star-knight,Star-Knight,antm,villain,(unmarked),unmarked,,,
 antm-villain-ultrons-legacy-ultron-roboticks,Ultron Roboticks,antm,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-antm-villain-ultrons-legacy-ultron-pym,Ultron-Pym,antm,villain,(unmarked),unmarked,,,
+antm-villain-ultrons-legacy-ultron-pym,Ultron-Pym,antm,villain,hq-hero-gains-size-changing,executable,WP-862,D-24804,packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing
 antm-villain-queens-vengeance-yeoman-america,Yeoman America,antm,villain,(unmarked),unmarked,,,
 asrd-villain-dark-council-jarnbjorn-first-axe-of-thor,"Jarnbjorn, First Axe of Thor",asrd,villain,(unmarked),unmarked,,,
 asrd-villain-omens-of-ragnarok-jormungand-the-world-serpent,"Jormungand, The World-Serpent",asrd,villain,(unmarked),unmarked,,,
@@ -114,7 +114,7 @@ chmp-villain-monsters-unleashed-groot-from-planet-x,Groot from Planet X,chmp,vil
 chmp-villain-monsters-unleashed-monsteroso,Monsteroso,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-monsters-unleashed-orrgo,Orrgo,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-wrecking-crew-piledriver,Piledriver,chmp,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
-chmp-villain-monsters-unleashed-sporr,Sporr,chmp,villain,(unmarked),unmarked,,,
+chmp-villain-monsters-unleashed-sporr,Sporr,chmp,villain,hq-hero-gains-size-changing,executable,WP-862,D-24804,packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing
 chmp-villain-wrecking-crew-the-wrecker,The Wrecker,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-wrecking-crew-thunderball,Thunderball,chmp,villain,(unmarked),unmarked,,,
 chmp-villain-monsters-unleashed-tim-boo-ba,Tim Boo Ba,chmp,villain,(unmarked),unmarked,,,

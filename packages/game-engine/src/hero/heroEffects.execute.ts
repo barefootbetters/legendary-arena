@@ -106,6 +106,8 @@ import {
 import { formatCountScaledRate } from './countSourceLabel.js';
 import { pushLog } from '../log/logPush.js';
 import { parkCommuneCostChoice } from '../moves/communeSpiritWorld.logic.js';
+// why: WP-862 / D-24804 — Pym Particles' HQ Size-Changing grant (read inside the handler only).
+import { grantSizeChangingToHqHero } from './sizeChangingGrant.logic.js';
 // why: WP-855 / D-24791 — the deck-KO draw hold reads every parked choice queue. This file
 // already reaches phaseCard.js through outOfTimeGrant.logic.js and revealOrWoundChoice.logic.js,
 // so the direct import adds no new load-order edge.
@@ -369,6 +371,10 @@ export const HANDLED_KEYWORDS = new Set<HeroKeyword>([
   // (heroEffectDiscardArtifactOrThreeThenKo) that parks the cost seat choice, so it belongs here.
   // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
   'discard-artifact-or-three-then-ko',
+  // why: WP-862 / D-24804 — Pym Particles' grant; has a HERO_EFFECT_HANDLERS entry
+  // (heroEffectHqHeroGainsSizeChangingTech), so it belongs here. NO magnitude → also in
+  // NO_MAGNITUDE_KEYWORDS.
+  'hq-hero-gains-size-changing-tech',
   // why: WP-857 / D-24793 — hero Feast; its HERO_EFFECT_HANDLERS entry is the shipped
   // heroEffectRevealTopMayKo (parks a KO-or-keep reveal of the deck top), so it belongs here.
   // Carries NO magnitude → also in NO_MAGNITUDE_KEYWORDS.
@@ -667,6 +673,9 @@ const NO_MAGNITUDE_KEYWORDS = new Set<string>([
   // the KO are chosen through seat choices), so the magnitude pre-gate must not drop it, or
   // heroEffectDiscardArtifactOrThreeThenKo never parks the Commune cost choice.
   'discard-artifact-or-three-then-ko',
+  // why: WP-862 / D-24804 — hq-hero-gains-size-changing-tech carries NO magnitude (the class is
+  // fixed and the Hero is chosen), so the magnitude pre-gate must not drop it.
+  'hq-hero-gains-size-changing-tech',
   // why: WP-735 / D-24555 — digest-indigestion carries NO top-level magnitude (the branch
   // magnitudes ride the nested inline effects: +attack / +recruit / draw:N / rescue:N). The
   // magnitude pre-gate must not drop it, or heroEffectDigestIndigestion never fires and the
@@ -2135,6 +2144,30 @@ function heroEffectDiscardArtifactOrThreeThenKo(
   // why: WP-860 / D-24796 — a hero handler parks a seat choice at play (the Here, Hold This / Random
   // Acts precedent); the cost / discard / KO logic lives in moves/communeSpiritWorld.logic.ts.
   parkCommuneCostChoice(G, playerID, cardId);
+}
+
+/**
+ * Hero handler for the `hq-hero-gains-size-changing-tech` keyword (WP-862 / D-24804).
+ *
+ * Pym Particles (antm Ant-Man), second line: "A Hero in the HQ with no Size-Changing abilities
+ * gains Size-Changing [Tech] this turn." Grants through the shared HQ grant module: no eligible
+ * Hero → a logged no-op, one → granted at once, two or more → a seat-choice pick. Never throws.
+ *
+ * @param G - The game state, mutated in place.
+ * @param _ctx - Unused move context.
+ * @param playerID - The player who played the card.
+ * @param cardId - The Pym Particles card played (the grant's source, for the log).
+ * @param _effect - The `{ type: 'hq-hero-gains-size-changing-tech' }` descriptor (no magnitude).
+ */
+function heroEffectHqHeroGainsSizeChangingTech(
+  G: LegendaryGameState,
+  _ctx: unknown,
+  playerID: string,
+  cardId: CardExtId,
+  _effect: HeroEffectDescriptor,
+): void {
+  // why: D-24804 — the printed "with no Size-Changing abilities" is the 'if-none' mode.
+  grantSizeChangingToHqHero(G, playerID, ['tech'], 'if-none', cardId);
 }
 
 /**
@@ -7402,6 +7435,9 @@ export const HERO_EFFECT_HANDLERS: Partial<Record<HeroKeyword, HeroEffectHandler
   // why: WP-860 / D-24796 — Commune with the Spirit World: parks the cost seat choice; the discard
   // picks and the KO pick chain from resolveSeatChoice.
   'discard-artifact-or-three-then-ko': heroEffectDiscardArtifactOrThreeThenKo,
+  // why: WP-862 / D-24804 — Pym Particles: a chosen HQ Hero with no Size-Changing gains
+  // Size-Changing [Tech] this turn (sizeChangingGrant.logic.ts).
+  'hq-hero-gains-size-changing-tech': heroEffectHqHeroGainsSizeChangingTech,
   // why: WP-857 / D-24793 — hero Feast = "KO the top card of your deck". It reuses the shipped
   // KO-or-keep reveal unchanged: the deck top is shown in the owner-only prompt, then the player
   // KOs or keeps it (RS-1 reveal-before-choose), resolved by resolveRevealTopDispose.
