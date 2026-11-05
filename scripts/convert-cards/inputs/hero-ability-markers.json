@@ -1682,6 +1682,12 @@
   ],
   "amwp": [
     {
+      "heroSlug": "ant-man",
+      "cardSlug": "look-out-for-the-little-guy",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:reveal:hc-or-size-changing-strength:draw]"
+    },
+    {
       "heroSlug": "freedom-fighters",
       "cardSlug": "steel-warrior",
       "abilityIndex": 1,

@@ -76,6 +76,12 @@ export function describeRevealPredicate(predicate: RevealPredicate): string {
     const article = /^[aeiou]/i.test(traitValue) ? 'an' : 'a';
     return `${article} ${traitValue} card`;
   }
+  // why: D-24806 — "a strength card or a card with Size-Changing" (Look Out for the Little Guy).
+  if (predicate.kind === 'hero-class-or-size-changing') {
+    const traitValue = predicate.traitValue ?? 'matching';
+    const article = /^[aeiou]/i.test(traitValue) ? 'an' : 'a';
+    return `${article} ${traitValue} card or a card with Size-Changing`;
+  }
   return `an unrecognized predicate (${String(predicate.kind)})`;
 }
 

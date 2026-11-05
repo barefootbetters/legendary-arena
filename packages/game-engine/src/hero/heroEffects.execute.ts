@@ -65,7 +65,7 @@ import { resolveCountSource, explainCountSourceInputs } from './heroCountSource.
 import type { HeroCountSource } from '../rules/heroCountSource.js';
 import { interpretHeroPrimitiveEffect } from './effectPrimitive.interpret.js';
 import { offPlayCardStats, offPlayCardTraits, playedCardIdsStillInPlay } from './splitCard.logic.js';
-import { cardHasClassWhenPlayed } from './sizeChanging.logic.js';
+import { cardHasClassWhenPlayed, hasSizeChanging } from './sizeChanging.logic.js';
 import { getEligibleVictoryVillains } from '../moves/resolveVictoryPileCardPick.js';
 import { getEligibleKoDiscardCards } from '../moves/koDiscardChoice.resolve.js';
 import { getEligibleZeroCostDiscardCards } from '../moves/resolveReturnZeroCostDiscard.js';
@@ -2689,6 +2689,19 @@ function revealPredicateMatches(
     // branch above needs no change: team is hero-level, equal on both halves.)
     const traits = offPlayCardTraits(G, topCardId);
     return traits?.heroClass === predicate.traitValue || traits?.heroClass2 === predicate.traitValue;
+  }
+  if (predicate.kind === 'hero-class-or-size-changing') {
+    if (predicate.traitValue === undefined) {
+      pushLog(G, 'A reveal rule used a hero-class-or-size-changing predicate with no class value and was skipped. Check the reveal rule markup.');
+      return false;
+    }
+    // why: D-24806 — "If it's [hc:X] or has [keyword:Size-Changing]": the class half is the
+    // hero-class rule above (either printed class, either split half); the Size-Changing half is
+    // the card's PRINTED Size-Changing, Microscopic included (rules v23 p.30). A deck card is
+    // never in the HQ, so no runtime grant (D-24804) can apply to it.
+    const traits = offPlayCardTraits(G, topCardId);
+    const isClassMatch = traits?.heroClass === predicate.traitValue || traits?.heroClass2 === predicate.traitValue;
+    return isClassMatch || hasSizeChanging(G, topCardId);
   }
   if (predicate.kind === 'cost-lte') {
     // why: a threshold of 0 is legitimate (reveal M=0 → cost-lte 0), so test for

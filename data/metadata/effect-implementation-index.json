@@ -3,14 +3,14 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2043,
+    "totalEntries": 2044,
     "byScope": {
-      "hero": 847,
+      "hero": 848,
       "villain": 740,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 675,
+      "executable": 676,
       "deferred": 16,
       "condition": 58,
       "unsupported": 282,
@@ -1374,6 +1374,23 @@
         {
           "slug": "bug-swarm",
           "name": "Bug Swarm"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "name": "Ant-Man",
+      "set": "amwp",
+      "scope": "hero",
+      "mechanic": "reveal",
+      "status": "executable",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "designs": [
+        {
+          "slug": "look-out-for-the-little-guy",
+          "name": "Look Out for the Little Guy!"
         }
       ]
     },
@@ -29897,6 +29914,7 @@
         "heist",
         "microscopic-size-changing",
         "optional-ko-hand-discard",
+        "reveal",
         "size-changing"
       ]
     },
