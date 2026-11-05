@@ -390,8 +390,9 @@ your VOD or game app, In-App Purchase is required."
 | | LG's answer |
 |---|---|
 | Date asked | 2026-10-31 |
-| Ticket or reference | Posted on the public [webOS TV developer forum](https://forum.webostv.developer.lge.com/), awaiting moderator approval as of 2026-10-31 (thread link *(when approved)*). Not yet in Seller Lounge 1:1 Q&A, where LG sends policy questions; post it there too once the seller account exists. The posted text names `barefootbetters.com` as the account site |
-| Date answered | *(not yet answered)* |
+| Ticket or reference | Posted on the public webOS TV developer forum as [In-app purchase policy for content bought on our website](https://forum.webostv.developer.lge.com/t/in-app-purchase-policy-for-content-bought-on-our-website/28527). The posted text names `barefootbetters.com` as the account site. Not yet in Seller Lounge 1:1 Q&A; post it there once the seller account exists |
+| Forum reply | About 2026-11-02, from forum user `kpbhat`: LG Content Store app policy questions go to LG Seller Lounge > 1:1 Q&A. No answer to the three questions. The forum is not where LG answers policy |
+| Date answered | *(not yet answered; waits on Seller Lounge 1:1 Q&A)* |
 | 1. Allowed without in-app purchase? | *(not yet answered)* |
 | 2. Neutral "manage your account" message allowed? | *(not yet answered)* |
 | 3. Paymentwall only, or another provider? | *(not yet answered)* |
@@ -529,6 +530,9 @@ change.
 
    Both are drafted, with slots for LG's answers, under
    [Seller Lounge questions and LG's answers](#seller-lounge-questions-and-lgs-answers).
+   Question 1 was also posted on the public forum, and LG's reply there sent
+   it to Seller Lounge 1:1 Q&A, so both answers wait on the
+   [seller account](#registering-the-seller-account).
 3. **Rights:** does a TV store listing need anything from Upper Deck or Marvel
    beyond what web distribution needs?
 
