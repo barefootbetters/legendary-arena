@@ -45,7 +45,10 @@ import type { HeroClass } from '../content/content.schemas.js';
 // instance ext_id (matching the Fight/Ambush fire sites that pass a zone id),
 // fanning out exactly like the henchman path already does. The shared emitter
 // is imported, not re-implemented (D-13702 RS-4).
-import { villainCardInstanceExtIds } from '../villainDeck/villainDeck.setup.js';
+import {
+  henchmanCopyVariant,
+  villainCardInstanceExtIds,
+} from '../villainDeck/villainDeck.setup.js';
 
 // ---------------------------------------------------------------------------
 // VillainAbilityRegistryReader — local structural interface
@@ -79,7 +82,8 @@ interface VillainAbilityVillainGroup {
  * Minimal structural type for a henchman group entry in set data.
  *
  * Henchman ability text is stored at the group level (`abilities[]`), shared
- * by every virtual copy in the group — the registry has no per-copy entry.
+ * by every virtual copy, unless the group is printed as variant `cards[]`
+ * (D-24803), which henchmanCopyVariant maps onto the copies.
  */
 interface VillainAbilityHenchmanGroup {
   slug: string;
@@ -1094,16 +1098,16 @@ function findVillainGroupCards(
 }
 
 /**
- * Finds a henchman group's ability text within a set's henchmen[].
+ * Finds a henchman group entry within a set's henchmen[].
  *
  * @param setData - Raw set data from getSet().
  * @param groupSlug - The henchman group slug to match.
- * @returns The group's ability lines, or null when absent/malformed.
+ * @returns The raw group entry, or null when absent/malformed.
  */
-function findHenchmanGroupAbilities(
+function findHenchmanGroupEntry(
   setData: unknown,
   groupSlug: string,
-): string[] | null {
+): Partial<VillainAbilityHenchmanGroup> | null {
   if (!setData || typeof setData !== 'object') return null;
   const candidate = setData as { henchmen?: unknown };
   if (!Array.isArray(candidate.henchmen)) return null;
@@ -1112,10 +1116,31 @@ function findHenchmanGroupAbilities(
     if (!rawGroup || typeof rawGroup !== 'object') continue;
     const group = rawGroup as Partial<VillainAbilityHenchmanGroup>;
     if (group.slug !== groupSlug) continue;
-    if (!Array.isArray(group.abilities)) return null;
-    return group.abilities as string[];
+    return group;
   }
   return null;
+}
+
+/**
+ * Reads the ability lines one henchman copy prints.
+ *
+ * // why: D-24803 — a copy of a variant group (Tardigrade, Ultron Sentries,
+ * Mandarin's Rings) prints its own variant card's lines; every other copy
+ * prints the group-level lines, exactly as before.
+ *
+ * @param henchmanGroup - The raw henchman group entry.
+ * @param copyIndex - The copy index, 0 to 9.
+ * @returns The copy's ability lines, or null when none are present.
+ */
+function readHenchmanCopyAbilities(
+  henchmanGroup: Partial<VillainAbilityHenchmanGroup>,
+  copyIndex: number,
+): unknown[] | null {
+  const variantCard = henchmanCopyVariant(henchmanGroup, copyIndex);
+  if (variantCard !== null) {
+    return Array.isArray(variantCard.abilities) ? variantCard.abilities : null;
+  }
+  return Array.isArray(henchmanGroup.abilities) ? henchmanGroup.abilities : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -1189,8 +1214,9 @@ function collectVillainHookEntries(
 /**
  * Collects hook entries for the selected henchman groups.
  *
- * Henchman ability text is group-level, so one hook is fanned out per virtual
- * copy ext_id `henchman-{groupSlug}-{NN}` (00-09).
+ * One hook is fanned out per virtual copy ext_id `henchman-{groupSlug}-{NN}`
+ * (00-09). A group of identical copies shares its group-level text; a group
+ * printed as variant cards gives each copy its own variant's text (D-24803).
  *
  * @param registry - Setup-time registry reader.
  * @param matchConfig - Validated match config providing henchmanGroupIds.
@@ -1205,47 +1231,63 @@ function collectHenchmanHookEntries(
     const parsed = parseQualifiedId(henchmanGroupId);
     if (parsed === null) continue;
     const setData = registry.getSet(parsed.setAbbr);
-    const abilities = findHenchmanGroupAbilities(setData, parsed.slug);
-    if (abilities === null) continue;
+    const henchmanGroup = findHenchmanGroupEntry(setData, parsed.slug);
+    if (henchmanGroup === null) continue;
 
-    for (let lineIndex = 0; lineIndex < abilities.length; lineIndex++) {
-      const abilityLine = abilities[lineIndex];
-      if (typeof abilityLine !== 'string') continue;
-      const timing = detectTiming(abilityLine);
-      // why: henchman onAmbush hooks are intentionally NOT emitted in v1
-      // (D-18507). buildCardKeywords never tags henchmen with the `ambush`
-      // board keyword, so the reveal-site hasAmbush gate can never fire a
-      // henchman onAmbush hook — emitting one would be unreachable and would
-      // violate the gate-consistency invariant. Henchman Ambush effects are
-      // deferred to a future WP that adds henchman keyword detection. The
-      // same filter also defers henchman onEscape hooks (WP-186): no real
-      // henchman card in the v1 data carries an `Escape:` line with an
-      // `[effect:]` marker, so emitting henchman onEscape hooks would have
-      // no consumer; the escape fire site still calls executeVillainAbilities
-      // on a henchman escape, which safely no-ops via per-card hook lookup.
-      if (timing !== 'onFight') continue;
-
-      const extracted = extractEffects(abilityLine);
-      // why: fan out one freshly-constructed hook per virtual copy ext_id so
-      // copies never alias a shared keywords/effects array (D-13502).
-      for (
-        let copyIndex = 0;
-        copyIndex < HENCHMAN_COPIES_PER_GROUP;
-        copyIndex++
-      ) {
-        const paddedIndex = String(copyIndex).padStart(2, '0');
-        const cardId =
-          `henchman-${parsed.slug}-${paddedIndex}` as CardExtId;
-        entries.push({
-          cardId,
-          timing,
-          lineIndex,
-          keywords: [...extracted.keywords],
-          effects: [...extracted.effects],
-          unresolvedMarkers: [...extracted.unresolvedMarkers],
-        });
-      }
+    // why: one freshly-constructed hook per virtual copy ext_id so copies
+    // never alias a shared keywords/effects array (D-13502). Each copy reads
+    // its own lines (D-24803); the deterministic sort in
+    // buildVillainAbilityHooks restores the locked total order (cardId
+    // lexical, timing, lineIndex), so a group of identical copies emits
+    // exactly the entries it did before.
+    for (let copyIndex = 0; copyIndex < HENCHMAN_COPIES_PER_GROUP; copyIndex++) {
+      const abilities = readHenchmanCopyAbilities(henchmanGroup, copyIndex);
+      if (abilities === null) continue;
+      const paddedIndex = String(copyIndex).padStart(2, '0');
+      const cardId = `henchman-${parsed.slug}-${paddedIndex}` as CardExtId;
+      collectHenchmanCopyHooks(cardId, abilities, entries);
     }
+  }
+}
+
+/**
+ * Appends the onFight hook entries for one henchman copy's ability lines.
+ *
+ * @param cardId - The copy's instance ext_id `henchman-{groupSlug}-{NN}`.
+ * @param abilities - The copy's ability lines.
+ * @param entries - Accumulator appended in place.
+ */
+function collectHenchmanCopyHooks(
+  cardId: CardExtId,
+  abilities: unknown[],
+  entries: HookEntry[],
+): void {
+  for (let lineIndex = 0; lineIndex < abilities.length; lineIndex++) {
+    const abilityLine = abilities[lineIndex];
+    if (typeof abilityLine !== 'string') continue;
+    const timing = detectTiming(abilityLine);
+    // why: henchman onAmbush hooks are intentionally NOT emitted in v1
+    // (D-18507). buildCardKeywords never tags henchmen with the `ambush`
+    // board keyword, so the reveal-site hasAmbush gate can never fire a
+    // henchman onAmbush hook — emitting one would be unreachable and would
+    // violate the gate-consistency invariant. Henchman Ambush effects are
+    // deferred to a future WP that adds henchman keyword detection. The
+    // same filter also defers henchman onEscape hooks (WP-186): no real
+    // henchman card in the v1 data carries an `Escape:` line with an
+    // `[effect:]` marker, so emitting henchman onEscape hooks would have
+    // no consumer; the escape fire site still calls executeVillainAbilities
+    // on a henchman escape, which safely no-ops via per-card hook lookup.
+    if (timing !== 'onFight') continue;
+
+    const extracted = extractEffects(abilityLine);
+    entries.push({
+      cardId,
+      timing,
+      lineIndex,
+      keywords: [...extracted.keywords],
+      effects: [...extracted.effects],
+      unresolvedMarkers: [...extracted.unresolvedMarkers],
+    });
   }
 }
 

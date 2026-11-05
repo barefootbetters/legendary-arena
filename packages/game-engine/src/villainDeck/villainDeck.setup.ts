@@ -130,8 +130,8 @@ export interface VillainDeckRegistryReader {
 // why: standard Legendary base rule (MVP); see D-1412.
 // These are rule invariants, not tuning knobs.
 
-/** Number of identical copies per henchman group in the villain deck. */
-const HENCHMAN_COPIES_PER_GROUP = 10;
+/** Number of copies per henchman group in the villain deck. */
+export const HENCHMAN_COPIES_PER_GROUP = 10;
 
 /** Default scheme twist count when the scheme omits villainDeckTwistCount. */
 const SCHEME_TWIST_COUNT = 8;
@@ -516,6 +516,56 @@ export function villainCardInstanceExtIds(
     );
   }
   return instanceExtIds;
+}
+
+/**
+ * One printed variant card of a henchman group (D-24803), read structurally.
+ *
+ * Every field is `unknown` because SetData.henchmen is `z.array(z.unknown())`;
+ * each consumer narrows the field it reads.
+ */
+export interface HenchmanVariantCard {
+  slug?: unknown;
+  name?: unknown;
+  imageUrl?: unknown;
+  abilities?: unknown;
+}
+
+/**
+ * Returns the printed variant card that one henchman copy is, or null when the
+ * group is printed as 10 identical copies.
+ *
+ * A group whose entry carries a `cards[]` list (amwp Tardigrade and wtif Ultron
+ * Sentries: 5 class variants x 2; rvlt Mandarin's Rings: 10 unique rings) maps
+ * its 10 copies onto that list in contiguous blocks of `10 / cards.length`, in
+ * the list's printed order: copies 00-01 are the first variant, 02-03 the
+ * second, and so on. The copy ext_ids (`henchman-{groupSlug}-NN`) are unchanged,
+ * so the deck, its pre-shuffle sort and the shuffle are byte-identical; only the
+ * per-copy lookups (abilities, display, Size-Changing) read the variant.
+ *
+ * @param henchmanGroup - The raw henchman group entry from SetData.henchmen.
+ * @param copyIndex - The copy index, 0 to 9.
+ * @returns The variant card for this copy, or null when the group has no
+ *   usable variant list.
+ */
+// why: D-24803 — every per-copy lookup builder calls this one mapper so the
+// copy-to-variant assignment can never drift between the ability hooks, the
+// display data and the Size-Changing discount (the D-18706 shared-emitter
+// precedent). A variant list that does not divide the 10 copies evenly has no
+// faithful block mapping, so it falls back to the group-level fields.
+export function henchmanCopyVariant(
+  henchmanGroup: unknown,
+  copyIndex: number,
+): HenchmanVariantCard | null {
+  if (!henchmanGroup || typeof henchmanGroup !== 'object') return null;
+  const variantCards = (henchmanGroup as { cards?: unknown }).cards;
+  if (!Array.isArray(variantCards) || variantCards.length === 0) return null;
+  if (HENCHMAN_COPIES_PER_GROUP % variantCards.length !== 0) return null;
+  if (copyIndex < 0 || copyIndex >= HENCHMAN_COPIES_PER_GROUP) return null;
+  const copiesPerVariant = HENCHMAN_COPIES_PER_GROUP / variantCards.length;
+  const variantCard: unknown = variantCards[Math.floor(copyIndex / copiesPerVariant)];
+  if (!variantCard || typeof variantCard !== 'object') return null;
+  return variantCard as HenchmanVariantCard;
 }
 
 /**

@@ -50221,3 +50221,38 @@ D-24074's deferred "Attack is also Victory Points" clause is dropped rather than
 
 ---
 Protect this file.
+
+### D-24803 — A henchman group printed as variant cards maps its 10 copies onto the variants in contiguous blocks; each copy reads its own name, image, abilities and Size-Changing discount (Active 2026-11-05 — direct fix, no WP)
+
+**Status:** Active 2026-11-05. Closes the Tardigrade follow-up D-24802 listed. Live-verify (D-24026) operator-pending.
+
+**Context.** The engine built every henchman group as 10 identical virtual copies, `henchman-{group}-00..09`. Each copy read the group-level `abilities`, `name` and `imageUrl` (`villainDeck/villainDeck.setup.ts`, `setup/villainAbility.setup.ts`, `setup/buildCardDisplayData.ts`). Three groups are not printed as identical copies. Their entries carry a `cards[]` list of variants, and their group-level `abilities` are `[]`:
+- **amwp Tardigrade:** 5 variants, one per class. Each prints `[keyword:Microscopic Size-Changing] [hc:X][hc:X][hc:X]` plus "Fight: KO one of your Heroes."
+- **wtif Ultron Sentries:** 5 variants, one per class. Each prints "Empowered by [hc:X]" plus "Fight: KO one of your Heroes."
+- **rvlt Mandarin's Rings:** 10 unique rings, each with its own Fight line.
+
+All three appeared as their first variant's art, with no abilities on any copy. Tardigrade could not get its D-24802 fight discount, because no copy knew its class.
+
+**Physical counts.** Rules v23 lists all three as "Henchmen Groups (10 cards each)" (`docs/legendary-universal-rules-v23.md` ~L4453, ~L4874, ~L5023). Rules v23 p.53 (~L3090) says Mandarin's Rings "isn't 10 identical cards. Instead, it's 10 unique cards", so each ring is 1 copy. For Tardigrade and Ultron Sentries, 10 cards across 5 variants is 2 per class. BoardGameGeek's fan-compiled "Legendary Marvel Complete Card Text – Henchmen and Backup Adversaries" lists the Sentries as "(2 copies)" per variant. No source in this repo gives per-variant counts. If a printed count turns out to differ, the mapper below is the one place to change.
+
+**Decision.**
+1. **One mapper.** `henchmanCopyVariant(group, copyIndex)` (exported from `villainDeck/villainDeck.setup.ts`, next to the D-18706 `villainCardInstanceExtIds` emitter) returns the variant a copy is. Copies map onto `cards[]` in printed order, in contiguous blocks of `10 / cards.length`. Tardigrade 00-01 is Covert, 02-03 Instinct, 04-05 Ranged, 06-07 Strength and 08-09 Tech. Ring NN is `cards[NN]`. A group with no `cards[]`, or with a list that does not divide 10, returns null and keeps the group-level fields. A data test pins that every committed variant group divides evenly. `HENCHMAN_COPIES_PER_GROUP` is now exported for this use.
+2. **Ext_ids unchanged.** The deck still holds `henchman-{group}-NN`, so the deck, its pre-shuffle sort and the shuffle are byte-identical for every match, variant groups included. Only the per-copy lookups read the variant.
+3. **Readers.** The ability hooks (`collectHenchmanHookEntries`) read each copy's own lines. Display data gives each copy its variant's `name` and `imageUrl`, and keeps the group `vAttack` as cost (the variants print none). `buildFightSizeChanging` adds every copy whose lines print Size-Changing, keyed by the copy id, so a Tardigrade (Tech) costs 2 less per Tech card played, up to three, and can go below 0 (D-24802 §5). `fightVillain` and `resolveFightPrice` needed no change, because henchmen already fight through the villain path.
+4. **Not changed.** cardStats, VP and keywords stay group-level. The variants carry no Attack or VP of their own, and henchman keyword detection is still deferred (D-18507).
+
+**Out of scope (follow-ups).**
+- **The variants' Fight effects.** "Fight: KO one of your Heroes." (Tardigrade, Ultron Sentries) and the ten ring lines carry no `[effect:X]` marker. `apply-effect-markers.mjs` marks only group-level henchman text, so the marker pipeline needs a per-variant henchman entry first. Until then, each such fight records a D-24266 `no-handler` / `unmarked-ability` hollow, as Quantum Hound already does. Before this change it recorded nothing.
+- **Ultron Sentries' Empowered** villain attack ("2+").
+- **The villain ledger** reads group-level henchman text only, so the variant lines are not listed there yet.
+
+**Consequences.**
+- **Hash stability.** A match without one of the three groups is byte-identical: same deck, same hooks (the hook sort restores the old order, and identical copies emit the same entries), same display data, and no new `G.fightSizeChanging` entry. In a match with one of them, display data and hooks change. `G.fightSizeChanging` appears when Tardigrade is selected.
+- **Feeds regenerated.** No content change. `ledger:villains`, `mechanics:metadata`, `effect-index` and `sim:runtime-observed` (7725 observations, 77 mechanics) regenerate with line-ending churn only. No sweep loadout selects a variant group. The dashboard in-play `totalObs` pin stays at 8686.
+
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` exit 0, 0 fail in every package: game-engine 6279 / 0 (+10, `villainDeck/henchmanVariantCopies.test.ts` against the committed amwp / rvlt / wtif / core data: the mapper blocks, the even-split data pin, the Size-Changing keys, display data, hooks, and the Tardigrade fight price end to end), arena-client 2546 / 0, server 1847 / 0, dashboard 594 / 0, registry 311 / 0, registry-viewer 341 / 0. `ledger:villains:check`, `ledger:heroes:check`, `mechanics:metadata:check`, `effect-index:check`, `ledger:numbers:check`, `workindex:rows:check`, `sim:runtime-observed:check` and `sim:coverage --check` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24803 (#3162). Related: D-24802 (the fight discount), D-24801, D-18706 (the shared instance-id emitter precedent), D-13502 (no aliased hook arrays), D-24266 (unmarked-ability hollows), D-18507 (henchman keywords deferred), D-24026.
+
+---
+Protect this file.
