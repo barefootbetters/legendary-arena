@@ -336,7 +336,11 @@ form itself.
    `jeff@barefootbetters.com`.
 7. **Registration is complete.** The Seller Lounge menu then has **1:1 Q&A**,
    where the [two questions](#seller-lounge-questions-and-lgs-answers) are
-   posted.
+   posted. LG's 1:1 Q&A guide says only the poster can see a question, LG
+   replies by email, and a question moves through Inquiry Received, Checked,
+   and Completed (or Re-Opened). Its categories include Applications (App
+   Submission, App QA Process, CTS Test, webOS Cloud Test Lab) and Technical
+   Support. The guide gives no response time.
 
 Herbs vs. Ailments is not registered under this account: it is an
 independent project built to be sold separately, and its entity isn't
@@ -390,8 +394,9 @@ your VOD or game app, In-App Purchase is required."
 | | LG's answer |
 |---|---|
 | Date asked | 2026-10-31 |
-| Ticket or reference | Posted on the public [webOS TV developer forum](https://forum.webostv.developer.lge.com/), awaiting moderator approval as of 2026-10-31 (thread link *(when approved)*). Not yet in Seller Lounge 1:1 Q&A, where LG sends policy questions; post it there too once the seller account exists. The posted text names `barefootbetters.com` as the account site |
-| Date answered | *(not yet answered)* |
+| Ticket or reference | Posted on the public webOS TV developer forum as [In-app purchase policy for content bought on our website](https://forum.webostv.developer.lge.com/t/in-app-purchase-policy-for-content-bought-on-our-website/28527). The posted text names `barefootbetters.com` as the account site. Not yet in Seller Lounge 1:1 Q&A; post it there once the seller account exists |
+| Forum reply | About 2026-11-02, from forum user `kpbhat`: LG Content Store app policy questions go to LG Seller Lounge > 1:1 Q&A. No answer to the three questions. The forum is not where LG answers policy |
+| Date answered | *(not yet answered; waits on Seller Lounge 1:1 Q&A)* |
 | 1. Allowed without in-app purchase? | *(not yet answered)* |
 | 2. Neutral "manage your account" message allowed? | *(not yet answered)* |
 | 3. Paymentwall only, or another provider? | *(not yet answered)* |
@@ -448,6 +453,24 @@ questions it answers, each tied to the requirement it tests:
 | Does the Socket.IO connection resync after a TV suspend? | Live-match stability |
 | Does a remote OK press unlock audio under the TV's autoplay policy? | First-run sound |
 | What do WebAuthn, `window.open`, and the clipboard do? | Sign-in and API adaptations |
+
+**webOS Cloud Test Lab, a possible first pass without buying a TV.** Seller
+Lounge offers sellers a pre-test on real TVs in Korea that, per LG's guide,
+"use the same SW version as the production environment." The seller uploads
+an IPK (the hosted shell would do) with an English title and description,
+then reserves a device in one-hour slots, up to five a day. The screen comes
+back as a video stream, 1280×720 at 10 fps by default (size, quality, and
+fps adjustable), with Launch App, Reboot, and Release controls. Releasing the
+device deletes the app. The guide doesn't say which webOS versions or model
+years are available, whether remote input can be driven, or whether there is
+a fee. A region-restricted app may need LG's lab IP `1.222.94.84`
+allowlisted. What it could answer, if input can be driven: whether the
+bundle loads on the TV's Chromium, the hosted redirect, Back on the entry
+page, and the selection effect. A 10 fps stream can't measure frame rate,
+and the guide says nothing about audio or a suspend, so those still need a
+TV in hand. It needs the seller account first. LG's
+App Compatibility Test Suite (App CTS) is, per its guide, open only to
+sellers with "a separate commercial contract" for now.
 
 ### Candidate implementation scope
 
@@ -529,6 +552,9 @@ change.
 
    Both are drafted, with slots for LG's answers, under
    [Seller Lounge questions and LG's answers](#seller-lounge-questions-and-lgs-answers).
+   Question 1 was also posted on the public forum, and LG's reply there sent
+   it to Seller Lounge 1:1 Q&A, so both answers wait on the
+   [seller account](#registering-the-seller-account).
 3. **Rights:** does a TV store listing need anything from Upper Deck or Marvel
    beyond what web distribution needs?
 
@@ -558,6 +584,8 @@ LG documentation, read 2026-10-31:
 - [In-App Purchase](https://webostv.developer.lge.com/develop/guides/in-app-purchase)
 - [App Approval Process](https://webostv.developer.lge.com/distribute/app-approval-process) and [App Ecosystem](https://webostv.developer.lge.com/distribute/app-ecosystem)
 - [Seller Registration guide](https://seller.lgappstv.com/seller/guide/sellerRegistration.lge) (on Seller Lounge): seller types and the five registration steps
+- Seller Lounge user guides, read 2026-11-05: [webOS Cloud Test Lab](https://seller.lgappstv.com/seller/support/userGuide/RetrieveUserGuide.lge?pstgSeq=49), [1:1 Q&A](https://seller.lgappstv.com/seller/support/userGuide/RetrieveUserGuide.lge?pstgSeq=31), [App CTS](https://seller.lgappstv.com/seller/support/userGuide/RetrieveUserGuide.lge?pstgSeq=48)
+- [Forum thread for question 1](https://forum.webostv.developer.lge.com/t/in-app-purchase-policy-for-content-bought-on-our-website/28527): LG's reply points policy questions to Seller Lounge 1:1 Q&A
 - [CLI Introduction](https://webostv.developer.lge.com/develop/tools/cli-introduction), [CLI Installation](https://webostv.developer.lge.com/develop/tools/cli-installation), [Developer Mode App](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app), [Simulator](https://webostv.developer.lge.com/develop/tools/simulator-introduction)
 
 Other sources:
