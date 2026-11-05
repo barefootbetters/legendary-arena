@@ -34,8 +34,8 @@
  *
  * Loud-fail (non-zero exit, full-sentence message) on:
  *   - a keyword in the map outside the five locked strings
- *   - a named set / villain-group / villain-card / henchman-group that
- *     does not exist in the card data
+ *   - a named set / villain-group / villain-card / henchman-group /
+ *     henchman variant card (D-24803) that does not exist in the card data
  *   - a timing key whose card matches zero or more-than-one ability line
  *     (multi-line same-timing cards cannot be disambiguated — defer them
  *     to the map's `_unassigned` block with reason "multi-line")
@@ -739,11 +739,61 @@ function collectHenchmanEdits(setData, setAbbr, henchmanEntries) {
           `map, or update the source data.`,
       );
     }
+    // why: D-24803 — a group printed as variant cards (Tardigrade, Ultron Sentries,
+    // Mandarin's Rings) carries its text on cards[], not on the group, so its entry
+    // names each variant under `cards`; the remaining keys are group-level timings.
+    const { cards: variantEntries, ...groupTimings } = henchmanEntries[groupSlug];
     const abilities = Array.isArray(henchmanGroup.abilities) ? henchmanGroup.abilities : [];
     const entityLabel = `henchman group "${setAbbr}/${groupSlug}"`;
-    // why: cardSlug is null for henchmen — their ability text is group-level,
-    // so the anchored text replacement scopes by the henchman group slug only.
-    for (const edit of collectTimingEdits(abilities, henchmanEntries[groupSlug], entityLabel, 'henchmen', groupSlug, null)) {
+    // why: cardSlug is null for group-level henchman text, so the anchored text
+    // replacement scopes by the henchman group slug only.
+    for (const edit of collectTimingEdits(abilities, groupTimings, entityLabel, 'henchmen', groupSlug, null)) {
+      edits.push(edit);
+    }
+    if (variantEntries !== undefined) {
+      for (const edit of collectHenchmanVariantEdits(henchmanGroup, setAbbr, groupSlug, variantEntries)) {
+        edits.push(edit);
+      }
+    }
+  }
+  return edits;
+}
+
+/**
+ * Collects the marker edits for the variant cards of one henchman group
+ * (D-24803). Each variant's text lives on the group's `cards[]` entry, so the
+ * edit anchors on the variant slug after the group slug, exactly as a villain
+ * card does. Loud-fails on a variant slug the group does not print. Iterates
+ * variants in lexicographic order. Returns edit descriptors (does not mutate).
+ *
+ * @param {object} henchmanGroup - The parsed henchman group (read-only).
+ * @param {string} setAbbr - The set abbreviation being processed.
+ * @param {string} groupSlug - The henchman group slug.
+ * @param {object} variantEntries - The curated `cards` map: variant slug → timing entry.
+ * @returns {object[]} Edit descriptors { section, groupSlug, cardSlug, oldLine, newLine }.
+ * @throws On a variant slug missing from the group's cards[].
+ */
+function collectHenchmanVariantEdits(henchmanGroup, setAbbr, groupSlug, variantEntries) {
+  const variantBySlug = new Map();
+  for (const variantCard of Array.isArray(henchmanGroup.cards) ? henchmanGroup.cards : []) {
+    if (typeof variantCard === 'object' && variantCard !== null) {
+      variantBySlug.set(variantCard.slug, variantCard);
+    }
+  }
+  const edits = [];
+  for (const variantSlug of Object.keys(variantEntries).sort()) {
+    const variantCard = variantBySlug.get(variantSlug);
+    if (!variantCard) {
+      throw new Error(
+        `villain-effect-markers.json names variant card "${variantSlug}" of henchman group ` +
+          `"${setAbbr}/${groupSlug}", but that group's cards[] is ` +
+          `[${[...variantBySlug.keys()].map((slug) => `"${slug}"`).join(', ')}]. Fix the variant ` +
+          `slug in the marker map, or update the source data.`,
+      );
+    }
+    const abilities = Array.isArray(variantCard.abilities) ? variantCard.abilities : [];
+    const entityLabel = `henchman variant card "${setAbbr}/${groupSlug}/${variantSlug}"`;
+    for (const edit of collectTimingEdits(abilities, variantEntries[variantSlug], entityLabel, 'henchmen', groupSlug, variantSlug)) {
       edits.push(edit);
     }
   }
@@ -763,7 +813,7 @@ function collectHenchmanEdits(setData, setAbbr, henchmanEntries) {
  * @param {string} entityLabel - A human label for failure messages.
  * @param {string} section - "villains" | "henchmen" (anchor section).
  * @param {string} groupSlug - The group slug (anchor).
- * @param {string|null} cardSlug - The villain card slug, or null for henchmen.
+ * @param {string|null} cardSlug - The villain or henchman variant card slug, or null for group-level henchman text.
  * @returns {object[]} Edit descriptors for lines that still need a marker.
  * @throws On unsupported timing keys, unknown keywords, or bad timing match.
  */
@@ -827,7 +877,7 @@ function applyEditToText(text, edit) {
     searchPosition = text.indexOf(`"slug": "${edit.cardSlug}"`, searchPosition);
     if (searchPosition < 0) {
       throw new Error(
-        `Could not anchor villain card "${edit.cardSlug}" after group "${edit.groupSlug}" in the ` +
+        `Could not anchor card "${edit.cardSlug}" after group "${edit.groupSlug}" in the ` +
           `set-file text. The card-data file shape is not what the overlay expects.`,
       );
     }
@@ -992,6 +1042,11 @@ function collectProposeRowsForSet(setAbbr, setData, rows) {
   for (const henchmanGroup of setData.henchmen ?? []) {
     if (typeof henchmanGroup !== 'object' || henchmanGroup === null) continue;
     collectProposeRowsForAbilities(setAbbr, henchmanGroup.slug, '', henchmanGroup.abilities ?? [], rows);
+    // why: D-24803 — a variant henchman card's text lives on cards[].
+    for (const variantCard of Array.isArray(henchmanGroup.cards) ? henchmanGroup.cards : []) {
+      if (typeof variantCard !== 'object' || variantCard === null) continue;
+      collectProposeRowsForAbilities(setAbbr, henchmanGroup.slug, variantCard.slug, variantCard.abilities ?? [], rows);
+    }
   }
 }
 

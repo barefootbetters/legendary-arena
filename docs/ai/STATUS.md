@@ -10,19 +10,22 @@
 
 ## Current State
 
-### Henchman groups printed as variant cards: each copy is its own card, and Tardigrade costs less to fight (D-24803, direct fix) (2026-11-05)
+### Henchman groups printed as variant cards: each copy is its own card, Tardigrade costs less to fight, and their Fight effects work (D-24803, direct fix) (2026-11-05)
 
-**User-visible on `play.legendary-arena.com` after deploy.** Three henchman groups are printed as different cards rather than 10 identical ones: amwp Tardigrade (one per class, 2 each), wtif Ultron Sentries (one per class, 2 each) and rvlt Mandarin's Rings (10 unique rings). Each copy in the City now shows its own name and art, where before every copy showed the first variant. A Tardigrade knows its class, so it gets its Microscopic Size-Changing fight discount (D-24802). A Tardigrade (Tech) costs 2 less for each Tech card you played, up to three, and below 0 you fight it for nothing and gain the difference as Attack.
+**User-visible on `play.legendary-arena.com` after deploy.** Three henchman groups are printed as different cards rather than 10 identical ones: amwp Tardigrade (one per class, 2 each), wtif Ultron Sentries (one per class, 2 each) and rvlt Mandarin's Rings (10 unique rings). Each copy in the City now shows its own name and art, where before every copy showed the first variant. A Tardigrade knows its class, so it gets its Microscopic Size-Changing fight discount (D-24802). A Tardigrade (Tech) costs 2 less for each Tech card you played, up to three, and below 0 you fight it for nothing and gain the difference as Attack. Fighting a Tardigrade or an Ultron Sentry now KOs one of your Heroes. Four rings now work as printed: Daimonic draws a card, Incandescence lets you KO a card from your discard pile, Influence gives +1 Recruit, and Spectral KOs one of your Heroes.
 
 - **Engine.** `henchmanCopyVariant` (`villainDeck/villainDeck.setup.ts`) maps copies 00-09 onto the group's printed `cards[]` in contiguous blocks. The ability hooks, display data and `buildFightSizeChanging` read it. Copy ext_ids are unchanged, so the deck and shuffle are identical, and a match without these groups hashes as before.
-- **Feeds.** None changed: the villain ledger, `card-mechanics.json`, the effect index and the runtime-observed hollows (7725 observations) regenerate with line-ending churn only. The dashboard `totalObs` pin stays at 8686.
-- **Tests.** game-engine 6279 / 0 (+10), arena-client 2546 / 0, server 1847 / 0, dashboard 594 / 0.
-- **Not covered.** The variants' Fight effects ("KO one of your Heroes", the ten ring effects) still do nothing, because the marker pipeline marks only group-level henchman text. Each such fight now records an `unmarked-ability` hollow. Ultron Sentries' Empowered Attack is also not covered.
+- **Data.** The marker map can name a henchman variant (`henchmen.<set>.<group>.cards.<variant>`), and `apply-effect-markers.mjs` marks the variant's own line. 14 lines are marked: 5 Tardigrade, 5 Ultron Sentries and 4 rings.
+- **Feeds.** The villain ledger and the effect index gain 20 henchman-variant rows (14 executable, 6 unmarked). `card-mechanics.json` and the runtime-observed hollows (7725 observations) are unchanged. The dashboard `totalObs` pin stays at 8686.
+- **Tests.** game-engine 6281 / 0 (+12), arena-client 2546 / 0, server 1847 / 0, dashboard 594 / 0.
+- **Not covered.** Six rings (Liar, Lightning, Nightbringer, Remaker, Spin and Zero) need new effect primitives; their fights record an `unmarked-ability` hollow. Ultron Sentries' Empowered Attack is not covered either.
 - **Live-verify (D-24026): operator-pending.** In a match created after the deploy:
   1. Henchman group amwp Tardigrade: the City and victory pile show "Tardigrade (Covert)", "Tardigrade (Tech)" and so on, each with its class art.
   2. With a Tardigrade (Tech) in the City, play one Tech card: its tile reads 2, and it fights for 2. Play three or more Tech cards: it fights for 0 and the log reads "for 0 and gains 2 Attack." A Covert card does not discount it.
   3. Henchman group rvlt Mandarin's Rings: each ring shows its own name and art (Daimonic, Zero, ...).
-  4. Henchman group core Doombot Legion: unchanged.
+  4. Fight a Tardigrade or an Ultron Sentry: you choose one of your Heroes to KO.
+  5. Fight Daimonic: you draw a card. Fight Influence: +1 Recruit. Fight Incandescence: you may KO a card from your discard pile.
+  6. Henchman group core Doombot Legion: unchanged.
 
 ### Size-Changing Villains and Masterminds cost 2 less to fight, as the rulebook says (D-24802, direct fix) (2026-11-05)
 

@@ -186,11 +186,48 @@ describe('per-copy lookups read the variant (D-24803)', () => {
     assert.equal(tardigradeHooks.length, HENCHMAN_COPIES_PER_GROUP);
     for (const hook of tardigradeHooks) {
       assert.equal(hook.timing, 'onFight');
+      assert.deepStrictEqual(hook.keywords, ['koHeroCurrentPlayer'], `${hook.cardId} KOs one of your Heroes`);
     }
     const doombotHooks = hooks.filter((hook) => hook.cardId.startsWith('henchman-doombot-legion-'));
     assert.equal(doombotHooks.length, HENCHMAN_COPIES_PER_GROUP);
     for (const hook of doombotHooks) {
       assert.ok(hook.keywords.length + hook.effects.length > 0, `${hook.cardId} keeps its group-level Fight effect`);
+    }
+  });
+});
+
+describe('variant Fight markers (D-24803)', () => {
+  it('each Mandarin\'s Ring copy fires its own ring\'s Fight effect, and an unmarked ring fires none', () => {
+    const hooks = buildVillainAbilityHooks(REGISTRY, makeConfig(['rvlt/mandarins-rings']));
+    /**
+     * The resolved keyword names and effect primitives of one copy's hooks.
+     *
+     * @param copyIndex - The ring's copy index.
+     * @returns The sorted names.
+     */
+    function resolvedFor(copyIndex: number): string[] {
+      const names: string[] = [];
+      for (const hook of hooks.filter((candidate) => candidate.cardId === copyId('mandarins-rings', copyIndex))) {
+        for (const keyword of hook.keywords) names.push(keyword);
+        for (const descriptor of hook.effects) names.push(descriptor.primitive);
+      }
+      return names.sort();
+    }
+    assert.deepStrictEqual(resolvedFor(0), ['draw-cards-current'], 'Daimonic draws a card');
+    assert.deepStrictEqual(resolvedFor(1), ['ko-up-to-from-discard-current'], 'Incandescence may KO from the discard pile');
+    assert.deepStrictEqual(resolvedFor(2), ['gain-recruit-current'], 'Influence gives +1 Recruit');
+    assert.deepStrictEqual(resolvedFor(3), [], 'Liar is not marked yet');
+    // why: a legacy keyword resolves to both its name and its ko-hero descriptor.
+    assert.deepStrictEqual(resolvedFor(7), ['ko-hero', 'koHeroCurrentPlayer'], 'Spectral KOs one of your Heroes');
+  });
+
+  it('every Ultron Sentries copy KOs one of your Heroes', () => {
+    const hooks = buildVillainAbilityHooks(REGISTRY, makeConfig(['wtif/ultron-sentries'])).filter((hook) =>
+      hook.cardId.startsWith('henchman-ultron-sentries-'),
+    );
+    assert.equal(hooks.length, HENCHMAN_COPIES_PER_GROUP);
+    for (const hook of hooks) {
+      assert.deepStrictEqual(hook.keywords, ['koHeroCurrentPlayer'], `${hook.cardId} KOs one of your Heroes`);
     }
   });
 });

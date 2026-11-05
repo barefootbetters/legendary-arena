@@ -50222,7 +50222,7 @@ D-24074's deferred "Attack is also Victory Points" clause is dropped rather than
 ---
 Protect this file.
 
-### D-24803 — A henchman group printed as variant cards maps its 10 copies onto the variants in contiguous blocks; each copy reads its own name, image, abilities and Size-Changing discount (Active 2026-11-05 — direct fix, no WP)
+### D-24803 — A henchman group printed as variant cards maps its 10 copies onto the variants in contiguous blocks; each copy reads its own name, image, abilities, Fight effect and Size-Changing discount (Active 2026-11-05 — direct fix, no WP)
 
 **Status:** Active 2026-11-05. Closes the Tardigrade follow-up D-24802 listed. Live-verify (D-24026) operator-pending.
 
@@ -50240,17 +50240,23 @@ All three appeared as their first variant's art, with no abilities on any copy. 
 2. **Ext_ids unchanged.** The deck still holds `henchman-{group}-NN`, so the deck, its pre-shuffle sort and the shuffle are byte-identical for every match, variant groups included. Only the per-copy lookups read the variant.
 3. **Readers.** The ability hooks (`collectHenchmanHookEntries`) read each copy's own lines. Display data gives each copy its variant's `name` and `imageUrl`, and keeps the group `vAttack` as cost (the variants print none). `buildFightSizeChanging` adds every copy whose lines print Size-Changing, keyed by the copy id, so a Tardigrade (Tech) costs 2 less per Tech card played, up to three, and can go below 0 (D-24802 §5). `fightVillain` and `resolveFightPrice` needed no change, because henchmen already fight through the villain path.
 4. **Not changed.** cardStats, VP and keywords stay group-level. The variants carry no Attack or VP of their own, and henchman keyword detection is still deferred (D-18507).
+5. **Variant Fight markers.** In `villain-effect-markers.json`, a henchman group entry may name its variants under `cards`: `henchmen.<set>.<group>.cards.<variantSlug>.<timing>`. Its other keys stay group-level timings. `apply-effect-markers.mjs` anchors each edit on the variant slug after the group slug, as it does for a villain card, and loud-fails on a variant the group does not print. `--propose` scans variant lines too. Curated with the existing primitives and their shipped precedents:
+   - **"Fight: KO one of your Heroes."** is `koHeroCurrentPlayer` (the core Sentinel precedent) on all 5 Tardigrade variants, all 5 Ultron Sentries variants and the Spectral ring.
+   - **Daimonic "Draw a card."** is `draw-cards-current:1`.
+   - **Incandescence "You may KO a card from your discard pile."** is `ko-up-to-from-discard-current:1`. The "up to" primitive is the optional KO (the mdns and co2e precedent).
+   - **Influence "You get +1 Recruit."** is `gain-recruit-current:1` (the Hand Ninjas precedent).
+   - **The other six rings** are listed in `_unassigned` with their reasons: Liar and Remaker (multi-target), Lightning (conditional), and Nightbringer, Spin and Zero (other). Their fights record a D-24266 `unmarked-ability` hollow.
+6. **Villain ledger.** `villain-mechanic-ledger.mjs` emits one card per printed variant, `henchman-{group}-{variantSlug}`, named after the variant. It resolves that card from exactly the copies `henchmanCopyVariant` (imported from the engine dist) maps to it.
 
 **Out of scope (follow-ups).**
-- **The variants' Fight effects.** "Fight: KO one of your Heroes." (Tardigrade, Ultron Sentries) and the ten ring lines carry no `[effect:X]` marker. `apply-effect-markers.mjs` marks only group-level henchman text, so the marker pipeline needs a per-variant henchman entry first. Until then, each such fight records a D-24266 `no-handler` / `unmarked-ability` hollow, as Quantum Hound already does. Before this change it recorded nothing.
 - **Ultron Sentries' Empowered** villain attack ("2+").
-- **The villain ledger** reads group-level henchman text only, so the variant lines are not listed there yet.
+- **The six unmarked rings** (Liar, Lightning, Nightbringer, Remaker, Spin, Zero) need new villain effect primitives.
 
 **Consequences.**
 - **Hash stability.** A match without one of the three groups is byte-identical: same deck, same hooks (the hook sort restores the old order, and identical copies emit the same entries), same display data, and no new `G.fightSizeChanging` entry. In a match with one of them, display data and hooks change. `G.fightSizeChanging` appears when Tardigrade is selected.
-- **Feeds regenerated.** No content change. `ledger:villains`, `mechanics:metadata`, `effect-index` and `sim:runtime-observed` (7725 observations, 77 mechanics) regenerate with line-ending churn only. No sweep loadout selects a variant group. The dashboard in-play `totalObs` pin stays at 8686.
+- **Feeds regenerated.** The villain ledger gains 20 henchman-variant rows: 14 `executable` and 6 `unmarked` (executable 181 → 195, unmarked 556 → 562). The effect index follows (2042 → 2062 entries). `mechanics:metadata` and `sim:runtime-observed` (7725 observations, 77 mechanics) regenerate with line-ending churn only, because no sweep loadout selects a variant group. The dashboard in-play `totalObs` pin stays at 8686.
 
-**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` exit 0, 0 fail in every package: game-engine 6279 / 0 (+10, `villainDeck/henchmanVariantCopies.test.ts` against the committed amwp / rvlt / wtif / core data: the mapper blocks, the even-split data pin, the Size-Changing keys, display data, hooks, and the Tardigrade fight price end to end), arena-client 2546 / 0, server 1847 / 0, dashboard 594 / 0, registry 311 / 0, registry-viewer 341 / 0. `ledger:villains:check`, `ledger:heroes:check`, `mechanics:metadata:check`, `effect-index:check`, `ledger:numbers:check`, `workindex:rows:check`, `sim:runtime-observed:check` and `sim:coverage --check` 0.
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` exit 0, 0 fail in every package: game-engine 6281 / 0 (+12, `villainDeck/henchmanVariantCopies.test.ts` against the committed amwp / rvlt / wtif / core data: the mapper blocks, the even-split data pin, the Size-Changing keys, display data, per-variant Fight hooks for all three groups, and the Tardigrade fight price end to end), arena-client 2546 / 0, server 1847 / 0, dashboard 594 / 0, registry 311 / 0, registry-viewer 341 / 0. `ledger:villains:check`, `ledger:heroes:check`, `mechanics:metadata:check`, `effect-index:check`, `ledger:numbers:check`, `workindex:rows:check`, `sim:runtime-observed:check`, `cards:check` and `sim:coverage --check` 0.
 
 **Reserved by:** NUMBER-LEDGER D-24803 (#3162). Related: D-24802 (the fight discount), D-24801, D-18706 (the shared instance-id emitter precedent), D-13502 (no aliased hook arrays), D-24266 (unmarked-ability hollows), D-18507 (henchman keywords deferred), D-24026.
 

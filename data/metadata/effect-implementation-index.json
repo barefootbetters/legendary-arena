@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2042,
+    "totalEntries": 2062,
     "byScope": {
       "hero": 846,
-      "villain": 740,
+      "villain": 760,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 669,
+      "executable": 683,
       "deferred": 16,
       "condition": 58,
       "unsupported": 282,
-      "unmarked": 1012,
+      "unmarked": 1018,
       "subsystem": 5
     }
   },
@@ -13602,6 +13602,116 @@
       "decision": "D-18503"
     },
     {
+      "extId": "henchman-mandarins-rings-daimonic-the-white-light",
+      "name": "Daimonic, The White Light",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "draw-cards-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current",
+      "wp": "WP-485",
+      "decision": "D-24290"
+    },
+    {
+      "extId": "henchman-mandarins-rings-incandescence-the-flame-blast",
+      "name": "Incandescence, The Flame Blast",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current",
+      "wp": "WP-760",
+      "decision": "D-24589"
+    },
+    {
+      "extId": "henchman-mandarins-rings-influence-the-impact-beam",
+      "name": "Influence, The Impact Beam",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "gain-recruit-current",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current",
+      "wp": "WP-541",
+      "decision": "D-24350"
+    },
+    {
+      "extId": "henchman-mandarins-rings-liar-the-mento-intensifier",
+      "name": "Liar, The Mento-Intensifier",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-lightning-the-electro-blast",
+      "name": "Lightning, The Electro-Blast",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-nightbringer-the-black-light",
+      "name": "Nightbringer, The Black Light",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-remaker-the-matter-rearranger",
+      "name": "Remaker, The Matter Rearranger",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-spectral-the-disintegration-beam",
+      "name": "Spectral, The Disintegration Beam",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "henchman-mandarins-rings-spin-the-vortex-beam",
+      "name": "Spin, The Vortex Beam",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-zero-the-ice-blast",
+      "name": "Zero, The Ice Blast",
+      "set": "rvlt",
+      "scope": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "handler": "",
+      "wp": "",
+      "decision": ""
+    },
+    {
       "extId": "henchman-mandroid",
       "name": "Mandroid",
       "set": "cvwr",
@@ -13822,6 +13932,61 @@
       "decision": ""
     },
     {
+      "extId": "henchman-tardigrade-tardigrade-covert",
+      "name": "Tardigrade (Covert)",
+      "set": "amwp",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-instinct",
+      "name": "Tardigrade (Instinct)",
+      "set": "amwp",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-ranged",
+      "name": "Tardigrade (Ranged)",
+      "set": "amwp",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-strength",
+      "name": "Tardigrade (Strength)",
+      "set": "amwp",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-tech",
+      "name": "Tardigrade (Tech)",
+      "set": "amwp",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
       "extId": "henchman-ten-rings-fanatics",
       "name": "Ten Rings Fanatics",
       "set": "msp1",
@@ -13842,6 +14007,61 @@
       "handler": "",
       "wp": "",
       "decision": ""
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-covert",
+      "name": "Ultron Sentries (Covert)",
+      "set": "wtif",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-instinct",
+      "name": "Ultron Sentries (Instinct)",
+      "set": "wtif",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-ranged",
+      "name": "Ultron Sentries (Ranged)",
+      "set": "wtif",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-strength",
+      "name": "Ultron Sentries (Strength)",
+      "set": "wtif",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-tech",
+      "name": "Ultron Sentries (Tech)",
+      "set": "wtif",
+      "scope": "villain",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero",
+      "wp": "WP-185",
+      "decision": "D-18503"
     },
     {
       "extId": "henchman-universal-church-of-truth",
@@ -33712,6 +33932,66 @@
         "koHeroCurrentPlayer"
       ]
     },
+    "henchman-mandarins-rings-daimonic-the-white-light": {
+      "scope": "villain",
+      "mechanics": [
+        "draw-cards-current"
+      ]
+    },
+    "henchman-mandarins-rings-incandescence-the-flame-blast": {
+      "scope": "villain",
+      "mechanics": [
+        "ko-up-to-from-discard-current"
+      ]
+    },
+    "henchman-mandarins-rings-influence-the-impact-beam": {
+      "scope": "villain",
+      "mechanics": [
+        "gain-recruit-current"
+      ]
+    },
+    "henchman-mandarins-rings-liar-the-mento-intensifier": {
+      "scope": "villain",
+      "mechanics": [
+        "(unmarked)"
+      ]
+    },
+    "henchman-mandarins-rings-lightning-the-electro-blast": {
+      "scope": "villain",
+      "mechanics": [
+        "(unmarked)"
+      ]
+    },
+    "henchman-mandarins-rings-nightbringer-the-black-light": {
+      "scope": "villain",
+      "mechanics": [
+        "(unmarked)"
+      ]
+    },
+    "henchman-mandarins-rings-remaker-the-matter-rearranger": {
+      "scope": "villain",
+      "mechanics": [
+        "(unmarked)"
+      ]
+    },
+    "henchman-mandarins-rings-spectral-the-disintegration-beam": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
+    "henchman-mandarins-rings-spin-the-vortex-beam": {
+      "scope": "villain",
+      "mechanics": [
+        "(unmarked)"
+      ]
+    },
+    "henchman-mandarins-rings-zero-the-ice-blast": {
+      "scope": "villain",
+      "mechanics": [
+        "(unmarked)"
+      ]
+    },
     "henchman-mandroid": {
       "scope": "villain",
       "mechanics": [
@@ -33815,6 +34095,36 @@
         "(unmarked)"
       ]
     },
+    "henchman-tardigrade-tardigrade-covert": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
+    "henchman-tardigrade-tardigrade-instinct": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
+    "henchman-tardigrade-tardigrade-ranged": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
+    "henchman-tardigrade-tardigrade-strength": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
+    "henchman-tardigrade-tardigrade-tech": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
     "henchman-ten-rings-fanatics": {
       "scope": "villain",
       "mechanics": [
@@ -33825,6 +34135,36 @@
       "scope": "villain",
       "mechanics": [
         "(unmarked)"
+      ]
+    },
+    "henchman-ultron-sentries-ultron-sentries-covert": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
+    "henchman-ultron-sentries-ultron-sentries-instinct": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
+    "henchman-ultron-sentries-ultron-sentries-ranged": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
+    "henchman-ultron-sentries-ultron-sentries-strength": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
+      ]
+    },
+    "henchman-ultron-sentries-ultron-sentries-tech": {
+      "scope": "villain",
+      "mechanics": [
+        "koHeroCurrentPlayer"
       ]
     },
     "henchman-universal-church-of-truth": {
