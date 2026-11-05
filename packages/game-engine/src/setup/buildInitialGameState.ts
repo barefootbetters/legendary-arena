@@ -74,6 +74,7 @@ import {
 } from './villainDefeatRequirement.setup.js';
 import { buildVillainBloodFrenzy } from './buildVillainBloodFrenzy.js';
 import { buildCardAbomination } from './buildCardAbomination.js';
+import { buildFightSizeChanging } from './buildFightSizeChanging.js';
 import { buildCardKeywords } from './buildCardKeywords.js';
 import { buildCardTraits } from './buildCardTraits.js';
 import { buildCardVictoryPoints } from './buildCardVictoryPoints.js';
@@ -518,6 +519,20 @@ export function buildInitialGameState(
     mastermindState.baseCardId,
   );
 
+  // why: D-24802 — Size-Changing fight discounts for the selected villain copies and the
+  // mastermind's fightable faces (base, plus the alternate face of an allowlisted
+  // transforming mastermind), read only by the two fight-price resolvers. Placed after
+  // buildMastermindState for the face ids (the Abomination precedent). Narrow test mocks
+  // → empty record (omitted below).
+  const fightSizeChanging = buildFightSizeChanging(
+    registry as unknown,
+    villainBuildConfig,
+    config.mastermindId,
+    mastermindState.alternateFaceId === undefined
+      ? [mastermindState.baseCardId]
+      : [mastermindState.baseCardId, mastermindState.alternateFaceId],
+  );
+
   // why: D-24157 — printed victory points for VP-bearing cards (villains,
   // henchmen, the mastermind) resolved at setup so computeFinalScores awards
   // printed VP without runtime registry access — sibling snapshot to cardStats.
@@ -955,6 +970,10 @@ export function buildInitialGameState(
     // precedent): cardAbomination is on G ONLY when a selected villain or the mastermind
     // prints Abomination, so every other match keeps a byte-identical finalStateHash.
     ...(Object.keys(cardAbomination).length > 0 ? { cardAbomination } : {}),
+    // why: D-24802 — same hash-stability discipline (the cardAbomination precedent):
+    // fightSizeChanging is on G ONLY when a selected villain or a fightable mastermind face
+    // prints Size-Changing, so every other match keeps a byte-identical finalStateHash.
+    ...(Object.keys(fightSizeChanging).length > 0 ? { fightSizeChanging } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);

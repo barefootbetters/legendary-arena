@@ -70,6 +70,18 @@ export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 /** Converted-card villain origin — the named villain group a card "counts as". */
 export type ConvertedVillainOrigin = 'killbot' | 'skrull' | 'shield-officer';
 
+// why: D-24802 — a Villain or Mastermind's printed Size-Changing fight discount. `classes`
+// are the "Size-Changing [Class]" classes (2 less each when a matching card was played this
+// turn, de-duplicated); `microscopicIcons` are the "Microscopic Size-Changing" icons, one
+// entry per icon (2 less per matching played card, up to the icon count). JSON-serializable.
+/** A Villain or Mastermind's Size-Changing fight discount (D-24802). */
+export interface FightSizeChanging {
+  /** Size-Changing classes, de-duplicated. */
+  classes: string[];
+  /** Microscopic Size-Changing icons, one per printed icon. */
+  microscopicIcons: string[];
+}
+
 // why: WP-513 / D-24325 — Killbots' "number of Twists next to this Scheme" counter
 // key (G.counters). Seeded 3 at setup, +1 per Killbots twist; a Killbot's attack
 // equals this value. A plain counter key (not an endgame condition).
@@ -3067,6 +3079,17 @@ export interface LegendaryGameState {
   // precedent).
   /** Abomination kinds by card. Built at setup, read-only; absent when none. */
   cardAbomination?: Record<CardExtId, AbominationKind>;
+
+  // why: D-24802 — per-card Size-Changing fight discount ("You can fight this Villain for 2
+  // less if you played any [Class] cards this turn", rules v23 p.33; Microscopic: 2 less per
+  // matching card, up to one per icon, p.30). Villain copies are keyed by copy-suffixed
+  // instance ext_id; a Mastermind by its fightable face id(s). Read only by
+  // resolveFightPrice / resolveMastermindFightPrice. Kept apart from the hero
+  // cardSizeChangingClasses map so a Villain never reads as a "Size-Changing Hero" (Antics,
+  // the HQ recruitCosts presence rule). Built once at setup; OMITTED ENTIRELY when no
+  // selected villain or mastermind prints Size-Changing (hash oracles).
+  /** Size-Changing fight discounts by villain or mastermind card. Built at setup, read-only; absent when none. */
+  fightSizeChanging?: Record<CardExtId, FightSizeChanging>;
 
   // why: WP-200 — append-only structured event log emitted at four fire
   // sites (fightVillain.ts, villainDeck.reveal.ts ambush branch,

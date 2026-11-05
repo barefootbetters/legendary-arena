@@ -48,6 +48,9 @@ import { SAVIOR_BYSTANDER_THRESHOLD, countVictoryPileBystanders } from '../board
 // id-keyed like the Master Strike dispatch (D-24300), because Zemo is the only Mastermind
 // that prints "+N unless you are a Savior".
 import { BARON_ZEMO_MASTERMIND_ID } from './rescueOnFight.logic.js';
+// why: D-24802 — the fight side of Size-Changing shares the recruit side's discount step
+// (D-24801), so the two can never count played cards differently.
+import { applySizeChangingDiscount } from '../hero/sizeChanging.logic.js';
 
 // why: WP-539 / D-24348 — the Portals scheme ext_id, gating the Dark-Portal buffs.
 const PORTALS_SCHEME_ID = 'core/portals-to-the-dark-dimension';
@@ -126,6 +129,77 @@ export function resolveFightCost(
   // why: the 0 floor keeps this function's ">= 0" promise; Patrol (getPatrolModifier) is added
   // by the fight move AFTER this floor, unchanged, so Patrol still pays in full.
   return Math.max(0, costBeforeReduction - cityFightCostReduction(G, villainCardId));
+}
+
+/**
+ * Resolves what the fighting player pays to fight a City villain right now (D-24802).
+ *
+ * The villain's resolved Attack (resolveFightCost) minus its Size-Changing discount: 2 less
+ * for each listed class with a matching card the fighter played this turn, floored at 0
+ * ("A Villain's Attack can't go below 0", rules v23 ~L3418), then 2 less for each
+ * Microscopic icon matched by its own played card, which may go below 0 (rules v23 p.30:
+ * "if you fight a Villain with Microscopic Size-Changing and reduce its value to a negative
+ * number, you gain that many [Attack] when you fight it"). Patrol is added by the caller.
+ *
+ * // why: a separate read from resolveFightCost, like resolveRecruitCost beside the printed
+ * hero cost (D-24801): the discount applies only to the fight. Effects that read a villain's
+ * Attack ("less than N Attack", Pure Fury) keep reading resolveFightCost.
+ *
+ * @param G - Game state (read-only).
+ * @param villainCardId - The villain zone-instance ext_id.
+ * @param fightingPlayerId - The player who would fight. When omitted, no discount applies.
+ * @returns The fight price; negative only through Microscopic Size-Changing.
+ */
+export function resolveFightPrice(
+  G: LegendaryGameState,
+  villainCardId: CardExtId,
+  fightingPlayerId?: string,
+): number {
+  const villainAttack = resolveFightCost(G, villainCardId, fightingPlayerId);
+  return applyFightSizeChanging(G, villainCardId, villainAttack, fightingPlayerId);
+}
+
+/**
+ * Resolves what the fighting player pays to fight the Mastermind right now (D-24802).
+ *
+ * resolveMastermindFightCost minus the current face's Size-Changing discount, floored at 0.
+ *
+ * // why: floored at 0, unlike the villain price. The only Microscopic Mastermind face
+ * (amwp Yellowjacket) is the flip side of Darren Cross, which is not in the transform
+ * allowlist, so no match can fight it yet; the below-0 gain for a Mastermind lands with
+ * that face. Fin Fang Foom's regular Size-Changing floors at 0 either way.
+ *
+ * @param G - Game state (read-only).
+ * @param fightingPlayerId - The player fighting the Mastermind. When omitted, no discount applies.
+ * @returns The Mastermind fight price as a non-negative integer.
+ */
+export function resolveMastermindFightPrice(G: LegendaryGameState, fightingPlayerId?: string): number {
+  const mastermindAttack = resolveMastermindFightCost(G, fightingPlayerId);
+  return Math.max(0, applyFightSizeChanging(G, G.mastermind.baseCardId, mastermindAttack, fightingPlayerId));
+}
+
+/**
+ * Applies a card's Size-Changing fight discount to its resolved Attack (D-24802).
+ *
+ * @param G - Game state (read-only).
+ * @param cardId - The villain instance or mastermind face id.
+ * @param attack - The card's resolved Attack.
+ * @param fightingPlayerId - The fighter, whose played cards drive the discount.
+ * @returns The discounted value, or `attack` unchanged when the card has no discount.
+ */
+function applyFightSizeChanging(
+  G: LegendaryGameState,
+  cardId: CardExtId,
+  attack: number,
+  fightingPlayerId: string | undefined,
+): number {
+  const discount = G.fightSizeChanging?.[cardId];
+  // why: the discount reads the fighter's played cards, so with no fighter there is nothing
+  // to count (the Blood Frenzy convention).
+  if (discount === undefined || fightingPlayerId === undefined) {
+    return attack;
+  }
+  return applySizeChangingDiscount(G, fightingPlayerId, attack, discount.classes, discount.microscopicIcons);
 }
 
 /**

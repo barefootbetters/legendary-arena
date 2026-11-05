@@ -19,7 +19,7 @@ import { resolveRecruitCost } from '../hero/sizeChanging.logic.js';
 import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
-import { resolveFightCost, resolveMastermindFightCost } from '../economy/economy.resolve.js';
+import { resolveFightPrice, resolveMastermindFightPrice } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { isHqSlotHaunted, isMastermindHaunting } from '../board/haunt.logic.js';
 import {
@@ -1131,9 +1131,10 @@ export function getLegalMoves(
       }
       // why: WP-760 / D-24589 — the same fighter the fightVillain move passes, so a
       // Blood Frenzy cost can't diverge between enumeration and the move guard.
-      const baseFightCost = resolveFightCost(gameState, cityCard, activePlayer);
+      // why: D-24802 — mirror fightVillain: the Size-Changing price, never below 0 for the debit.
+      const fightPrice = resolveFightPrice(gameState, cityCard, activePlayer);
       const patrolModifier = getPatrolModifier(cityCard, cardKeywords);
-      const requiredFightCost = baseFightCost + patrolModifier;
+      const requiredFightCost = Math.max(0, fightPrice) + patrolModifier;
       // why: WP-580 / D-24389 + WP-790 / D-24652 — the per-target spendable figure (unspent
       // recruit under the recruit-as-attack conversion, plus restricted attack whose grant
       // names this City space), exactly mirroring the fightVillain move guard so the bot never
@@ -1159,7 +1160,8 @@ export function getLegalMoves(
     gameState.mastermind.tacticsDeck.length > 0 &&
     !isMastermindHaunting(gameState)
   ) {
-    const mastermindFightCost = resolveMastermindFightCost(gameState, activePlayer);
+    // why: D-24802 — mirror fightMastermind: the Size-Changing price.
+    const mastermindFightCost = resolveMastermindFightPrice(gameState, activePlayer);
     // why: WP-790 / D-24652 — the same per-target figure the fightMastermind move gates on.
     if (getSpendableAttackForTarget(gameState.turnEconomy, 'mastermind') >= mastermindFightCost) {
       // why: WP-830 / D-24763 — under The Unbreakable Enigma Code the fight needs a guess. The bot

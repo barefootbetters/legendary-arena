@@ -21,7 +21,7 @@ import { formatCardRef } from '../log/logDisplay.js';
 import { SHIELD_OFFICER_EXT_ID } from '../setup/pilesInit.js';
 import { awardAttachedBystanders } from '../board/bystanders.logic.js';
 import { awardAttachedHeroes } from '../board/heroCapture.logic.js';
-import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit } from '../economy/economy.logic.js';
+import { getSpendableAttackForTarget, spendFightCostForTarget, markExcessiveViolenceUsed, spendRecruit, addResources } from '../economy/economy.logic.js';
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { UNNAMED_CITY_SPACE_TARGET } from '../economy/economy.types.js';
 import {
@@ -35,7 +35,7 @@ import { citySpaceNameForIndex } from '../board/citySpaceNames.js';
 // ability. Called from THIS move body (never the shared defeatCityVillainCore, which non-fight
 // defeat paths reach without the useExcessiveViolence arg), after the defeat + the extra-attack debit.
 import { fireExcessiveViolencePlays } from '../hero/heroEffects.execute.js';
-import { resolveFightCost } from '../economy/economy.resolve.js';
+import { resolveFightCost, resolveFightPrice } from '../economy/economy.resolve.js';
 import { isGuardBlocking, getPatrolModifier } from '../board/boardKeywords.logic.js';
 import {
   getDefeatRequirement,
@@ -188,9 +188,14 @@ export function fightVillain(
   // dynamic (captured-hero-based) villains (WP-214).
   // why: WP-760 / D-24589 — pass the fighter so a Blood Frenzy villain's cost counts
   // THEIR Victory Pile (the same player the bot and the City projection pass).
-  const baseFightCost = resolveFightCost(G, cardId, ctx.currentPlayer);
+  // why: D-24802 — the fight is paid at the Size-Changing price (rules v23 p.33 / p.30), read
+  // from the fighter's cards played this turn; resolveFightCost stays the villain's Attack for
+  // the log note. Microscopic Size-Changing can take the price below 0: the fighter pays
+  // nothing for it and gains the difference as Attack after the debit (p.30).
+  const villainAttack = resolveFightCost(G, cardId, ctx.currentPlayer);
+  const fightPrice = resolveFightPrice(G, cardId, ctx.currentPlayer);
   const patrolModifier = getPatrolModifier(cardId, cardKeywords);
-  const requiredFightCost = baseFightCost + patrolModifier;
+  const requiredFightCost = Math.max(0, fightPrice) + patrolModifier;
   // why: WP-580 / D-24389 — the spendable figure folds in unspent recruit when the
   // recruit-as-attack conversion is active this turn (God of Thunder); equal to
   // getAvailableAttack on every non-conversion turn, so the gate is unchanged there.
@@ -334,6 +339,15 @@ export function fightVillain(
     requiredFightCost,
     fightTarget,
   );
+  // why: D-24802 — a Size-Changing note ONLY when the discount changed the price, logged just
+  // before the core's "fought" line, so every full-price fight's log is byte-identical.
+  if (fightPrice !== villainAttack) {
+    pushLog(
+      G,
+      buildFightSizeChangingLine(ctx.currentPlayer, formatCardRef(G.cardDisplayData, cardId), villainAttack, fightPrice),
+      'applied',
+    );
+  }
   // why: WP-819 / D-24753 — only this move passes the rescue option ("Whenever you
   // fight"); the free defeats (Silent Sniper, Cruel Ruler) call the core without it.
   defeatCityVillainCore(G, ctx, cityIndex, { random }, { payRescueOnFight: isRescuePaid });
@@ -360,6 +374,12 @@ export function fightVillain(
     requiredFightCost + (isExcessiveViolenceActive ? 1 : 0),
     fightTarget,
   );
+  // why: D-24802 — rules v23 p.30: "if you fight a Villain with Microscopic Size-Changing and
+  // reduce its value to a negative number, you gain that many [Attack] when you fight it!"
+  // Added after the debit, so the gain can never pay for this same fight.
+  if (fightPrice < 0) {
+    G.turnEconomy = addResources(G.turnEconomy, -fightPrice, 0);
+  }
   if (isExcessiveViolenceActive) {
     // why: WP-736 / D-24556 — close the once-per-turn window, then fire every enrolled EV ability
     // in enrolment (play) order via the fight-time driver (after the defeat + the extra-attack debit).
@@ -394,6 +414,27 @@ export function fightVillain(
   if (G.enigmaCode !== undefined) {
     queueEnigmaPeekOffer(G, ctx.currentPlayer);
   }
+}
+
+/**
+ * Builds the log line for a fight whose price Size-Changing changed (D-24802).
+ *
+ * @param playerId - The fighting player.
+ * @param villainRef - The fought villain's formatted card reference.
+ * @param villainAttack - The villain's Attack before Size-Changing.
+ * @param fightPrice - The Size-Changing price; negative when Microscopic went below 0.
+ * @returns The log line.
+ */
+export function buildFightSizeChangingLine(
+  playerId: string,
+  villainRef: string,
+  villainAttack: number,
+  fightPrice: number,
+): string {
+  if (fightPrice < 0) {
+    return `Size-Changing: Player ${playerId} fights ${villainRef} (${String(villainAttack)} Attack) for 0 and gains ${String(-fightPrice)} Attack.`;
+  }
+  return `Size-Changing: Player ${playerId} fights ${villainRef} (${String(villainAttack)} Attack) for ${String(fightPrice)}.`;
 }
 
 /**

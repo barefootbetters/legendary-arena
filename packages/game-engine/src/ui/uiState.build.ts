@@ -136,8 +136,8 @@ import { getAvailableRecruit, getSpendableAttack, formatAttackTargets } from '..
 import type { AttackTargetName } from '../economy/economy.types.js';
 import { isRescueOnFightCueOn } from '../economy/rescueOnFight.logic.js';
 import {
-  resolveFightCost,
-  resolveMastermindFightCost,
+  resolveFightPrice,
+  resolveMastermindFightPrice,
   darkPortalLocations,
   DARK_PORTAL_ATTACK_BONUS,
 } from '../economy/economy.resolve.js';
@@ -957,7 +957,9 @@ export function buildUIState(
         // dynamic values (engine-owns-truth invariant). WP-760 / D-24589: passes the
         // active player — the only player who can fight — so a Blood Frenzy villain
         // shows that player's cost to every audience.
-        fightCost: resolveFightCost(gameState, space, ctx.currentPlayer),
+        // D-24802: the Size-Changing price for the active player, never below 0 (the debit
+        // fightVillain makes before Patrol), so the tile gates on what the fight costs.
+        fightCost: Math.max(0, resolveFightPrice(gameState, space, ctx.currentPlayer)),
         // why: WP-817 / D-24750 — the fight discard cost is public printed card text;
         // a fresh copy, present only for a villain that has one (Primus).
         ...(spaceFightDiscardCosts !== undefined
@@ -1067,7 +1069,8 @@ export function buildUIState(
     // tile's Fight gate can never disagree with the engine (printed + Dark Portal).
     // WP-818 / D-24752: read for the active player (the only one who can fight), so
     // Baron Zemo's "+9 unless you are a Savior" shows that player's cost to everyone.
-    fightCost: resolveMastermindFightCost(gameState, ctx.currentPlayer),
+    // D-24802: the Size-Changing price (Fin Fang Foom), the same read fightMastermind gates on.
+    fightCost: resolveMastermindFightPrice(gameState, ctx.currentPlayer),
     // why: WP-757 / D-24587 — omit-when-absent: the key exists only while the Mastermind
     // haunts, read from the same isMastermindHaunting predicate fightMastermind uses.
     ...(isMastermindHaunting(gameState) ? { isHaunting: true as const } : {}),
