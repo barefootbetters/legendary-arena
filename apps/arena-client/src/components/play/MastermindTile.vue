@@ -156,7 +156,7 @@ export default defineComponent({
 
     function mastermindFightCost(): number | null {
       // why: WP-750 / D-24574 — the engine's projected cost
-      // (resolveMastermindFightCost: printed + the Portals Dark-Portal bonus) is
+      // (resolveMastermindFightPrice: printed + the Portals Dark-Portal bonus, less Size-Changing) is
       // the only fight-cost source. The `display.cost` fallback covers only
       // snapshots from before `fightCost` existed; it never adds a term itself.
       const mastermindFightCost = props.mastermind.fightCost ?? props.mastermind.display.cost;

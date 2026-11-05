@@ -10,6 +10,8 @@
  *   to zero or below; a negative cost gives the recruiter that many Recruit points.
  * - The reduced cost applies only at the moment of recruiting (rules v23 p.33); every other
  *   cost read keeps the printed G.cardStats cost.
+ * - The Villain / Mastermind side ("fight this Villain for 2 less", D-24802) shares
+ *   applySizeChangingDiscount through economy.resolve.ts resolveFightPrice.
  *
  * This module is also the SINGLE effective-class source for played cards: a card in `inPlay`
  * counts as its printed `G.cardTraits[id].heroClass` / `heroClass2` PLUS any class Rogue's
@@ -153,14 +155,42 @@ export function resolveRecruitCost(
   cardId: CardExtId,
 ): number {
   const printedCost = G.cardStats[cardId]?.cost ?? 0;
-  const sizeChangingClasses = getSizeChangingClasses(G, cardId);
-  const microscopicIcons = getMicroscopicSizeChangingClasses(G, cardId);
+  return applySizeChangingDiscount(
+    G,
+    playerID,
+    printedCost,
+    getSizeChangingClasses(G, cardId),
+    getMicroscopicSizeChangingClasses(G, cardId),
+  );
+}
+
+/**
+ * Applies a Size-Changing discount to a cost, from the player's cards played this turn.
+ *
+ * The shared step for both sides of the keyword (D-24801 recruit, D-24802 fight): minus 2 for
+ * each listed class with a matching card the player played this turn (floored at 0), then
+ * minus 2 for each Microscopic icon matched by its own played card, which may go below 0.
+ *
+ * @param G - Current game state (read-only).
+ * @param playerID - The recruiting or fighting player.
+ * @param baseCost - The cost before Size-Changing.
+ * @param sizeChangingClasses - The Size-Changing classes (one 2-less step each).
+ * @param microscopicIcons - The Microscopic icons (one 2-less step per matched icon).
+ * @returns The discounted cost; negative only through Microscopic Size-Changing.
+ */
+export function applySizeChangingDiscount(
+  G: LegendaryGameState,
+  playerID: string,
+  baseCost: number,
+  sizeChangingClasses: readonly string[],
+  microscopicIcons: readonly string[],
+): number {
   if (sizeChangingClasses.length === 0 && microscopicIcons.length === 0) {
-    return printedCost;
+    return baseCost;
   }
   const inPlay = G.playerZones[playerID]?.inPlay ?? [];
   const playedCardIds = playedCardIdsThisTurn(G, inPlay);
-  let cost = printedCost;
+  let cost = baseCost;
   for (const classSlug of sizeChangingClasses) {
     if (anyPlayedCardHasClass(G, playedCardIds, classSlug)) {
       cost -= SIZE_CHANGING_DISCOUNT_PER_STEP;

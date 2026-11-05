@@ -50184,4 +50184,40 @@ D-24074's deferred "Attack is also Victory Points" clause is dropped rather than
 **Reserved by:** NUMBER-LEDGER D-24801 (#3154). Related: D-24074 (superseded), D-24730 (Copy Powers copied class), D-24724 (villain class reads), D-24464 (Antics condition), D-24026.
 
 ---
+
+### D-24802 — A Villain or Mastermind with Size-Changing or Microscopic Size-Changing is fought for 2 less, priced by the engine fight-cost authority (completes D-24801) (Active 2026-11-05 — direct fix, no WP)
+
+**Status:** Active 2026-11-05. Completes D-24801 (the Hero recruit side). Live-verify (D-24026) operator-pending.
+
+**Context.** D-24801 made Size-Changing a recruit discount and listed the Villain side as its follow-up. The rulebook gives both sides:
+- **Size-Changing** (v23 p.33, `docs/legendary-universal-rules-v23.md` ~L1897): "some Villain cards say things like 'Size-Changing: [Class].' This means 'You can fight this Villain for 2 less if you played any [Class] cards this turn.'"
+- **Microscopic Size-Changing** (v23 p.30, ~L1728): Villains "work the same way, letting you fight that Villain for 2 less for each card of the correct Hero Class you played this turn, up to the number of icons", and "if you fight a Villain with Microscopic Size-Changing and reduce its value to a negative number, you gain that many [Attack] when you fight it."
+- **The floor** (v23 ~L3418): "A Villain's Attack can't go below 0."
+
+24 Villain cards print a bare Size-Changing line: 14 regular (amwp 2, chmp 6, cvwr 6) and 10 Microscopic (amwp 5, antm 5). Two Masterminds print one: Fin Fang Foom (chmp, all five classes, base and Epic faces) and Yellowjacket (amwp, Microscopic, the flip side of Darren Cross). Before this change every one of them fought at the printed Attack.
+
+**Decision.**
+1. **Data.** `setup/buildFightSizeChanging.ts` scans the selected villain groups and the mastermind's fightable faces once at setup (the Abomination precedent, WP-815). A line counts only when it is the keyword followed by nothing but class icons (`[keyword:Size-Changing]: [hc:X], [hc:Y]` or `[keyword:Microscopic Size-Changing] [hc:X][hc:X]…`). A timing line that only mentions the keyword (Sporr's "Fight: A Hero in the HQ gains Size-Changing…", Yellowjacket's Master Strike) is a different effect and is not read. The result is `G.fightSizeChanging: Record<CardExtId, { classes, microscopicIcons }>`, keyed by villain instance id and mastermind face id, omitted when empty. It is kept apart from the hero `cardSizeChangingClasses` map so a Villain never reads as a "Size-Changing Hero" (Antics, the HQ `recruitCosts` presence rule).
+2. **Price.** `resolveFightPrice` and `resolveMastermindFightPrice` (`economy/economy.resolve.ts`) take the resolved Attack (`resolveFightCost` / `resolveMastermindFightCost`) and apply the shared D-24801 step `applySizeChangingDiscount` (`hero/sizeChanging.logic.ts`, extracted from `resolveRecruitCost`): 2 less per listed class with a matching card the fighter played this turn, floored at 0; then 2 less per Microscopic icon matched by its own played card, which may go below 0. Played cards and their classes are the D-24801 reads (`playedCardIdsThisTurn`, `cardHasClassWhenPlayed`).
+3. **Attack stays Attack.** `resolveFightCost` / `resolveMastermindFightCost` are unchanged and remain the reads for effects about a villain's Attack (Pure Fury's "less than N"). The discount applies only to the fight, as on the Hero side.
+4. **Readers.** `fightVillain`, `fightMastermind`, the bot legal moves, the bot's cheapest-villain seat choice and the UIState `fightCost` projections (City and Mastermind; never below 0) read the price. No new UIState field.
+5. **Below 0.** A negative villain price debits 0 (plus Patrol) and adds the difference as Attack after the debit, so the gain cannot pay for the same fight. The Mastermind price floors at 0: the only Microscopic Mastermind face, Yellowjacket, is the flip side of Darren Cross, which is not in the transform allowlist (D-24483), so no match can fight it yet. Setup keys a mastermind's base face and, for an allowlisted transforming mastermind, its alternate face; an Epic face is never keyed.
+6. **Log.** When the price differs from the Attack, the fight logs "Size-Changing: Player N fights <card> (A Attack) for P." (or "for 0 and gains K Attack.") just before the fight's own lines. A full-price fight's log is byte-identical.
+
+**Out of scope (follow-ups).**
+- **Tardigrade** (amwp henchmen, Microscopic, one class per card variant). The engine models a henchman group as 10 identical copies with the group's abilities and image; the five per-class variants are not modelled, so no copy knows its class. Same gap for rvlt Mandarin's Rings and wtif Ultron Sentries.
+- Effects that grant or remove Size-Changing (antm Pym Particles, Sporr / Ultron Pym / Shrinksperiments / Fin Fang Foom tactic Fight effects, the amwp Shrinking Research Budget tactic) and the antm "Micro-Sized" scheme rule.
+- The below-0 Mastermind gain, with the Darren Cross transform.
+
+**Consequences.**
+- **What changes.** `G.fightSizeChanging` appears only in a match with a Size-Changing villain or Fin Fang Foom, so every other match hashes as before. In those matches the fights are cheaper and the bots fight sooner.
+- **Villain ledger unchanged.** Every Size-Changing villain also prints other text the ledger reports as `(unmarked)` (a Fight, Ambush or Escape line) or carries an `[effect:X]` row already, so a card-level `subsystem` entry would hide real work. The ledger stays as it is.
+- **Feeds regenerated.** None changed. `ledger:villains`, `ledger:heroes`, `mechanics:metadata` and `effect-index` regenerate byte-identical (the villain ledger reads `[effect:X]` markers; no hero mechanic moved). `sim:runtime-observed` regenerates identical (7725 observations, 77 mechanics): no sweep loadout fights a Size-Changing villain or Fin Fang Foom.
+- **Pins moved.** None. The dashboard in-play `totalObs` pin stays at 8686.
+
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` exit 0, 0 fail in every package: game-engine 6269 / 0 (+30: `setup/buildFightSizeChanging.test.ts` 11 against the committed amwp / antm / chmp / cvwr data, `economy/fightSizeChanging.resolve.test.ts` 8, `fightVillain` 5, `fightMastermind` 2, `ai.legalMoves` 2, `uiState.build` 2), arena-client 2546 / 0, server 1640 / 0, dashboard 594 / 0. `ledger:villains:check`, `ledger:heroes:check`, `mechanics:metadata:check`, `effect-index:check`, `ledger:numbers:check`, `workindex:rows:check`, `workindex:executed:check`, `sim:runtime-observed:check` and `sim:coverage --check` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24802 (#3156). Related: D-24801 (the recruit side), D-24074 (superseded), D-24747 (Abomination, the setup-scan precedent), D-24663 (fight-cost reductions), D-24483 (mastermind Transform allowlist), D-24026.
+
+---
 Protect this file.

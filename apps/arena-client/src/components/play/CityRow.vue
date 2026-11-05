@@ -207,7 +207,7 @@ export default defineComponent({
       if (!healLock.allowed) {
         return healLock;
       }
-      // why: WP-750 / D-24574 — gate on `fightCost`, which is resolveFightCost,
+      // why: WP-750 / D-24574 — gate on `fightCost`, which is resolveFightPrice (D-24802: Size-Changing included),
       // the same authority the fightVillain guard reads (captured Heroes, the
       // Dark-Portal space bonus, Killbot / Skrull overlays; Patrol / Guard are
       // unset per D-2504), never on the printed `display.cost`.

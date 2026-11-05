@@ -2903,3 +2903,46 @@ describe('buildUIState — live conditionalClauses tally (WP-848 / D-24784)', ()
     );
   });
 });
+
+describe('buildUIState — City and Mastermind fightCost are the Size-Changing price (D-24802)', () => {
+  it('projects 2 less once the active player played a card of the listed class, and never below 0', () => {
+    const gameState = createTestGameState();
+    const villainId = 'sc-villain' as CardExtId;
+    gameState.city = [villainId, null, null, null, null];
+    gameState.cardStats[villainId] = makeCardStatEntry({ fightCost: 5 });
+    const mastermindId = gameState.mastermind.baseCardId;
+    gameState.cardStats[mastermindId] = makeCardStatEntry({ fightCost: 3 });
+    gameState.fightSizeChanging = {
+      [villainId]: { classes: ['tech'], microscopicIcons: [] },
+      [mastermindId]: { classes: ['tech', 'covert'], microscopicIcons: [] },
+    };
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      ['tech-hero' as CardExtId]: { heroClass: 'tech', team: null },
+      ['covert-hero' as CardExtId]: { heroClass: 'covert', team: null },
+    } as LegendaryGameState['cardTraits'];
+
+    const beforePlay = buildUIState(gameState, mockCtx);
+    assert.equal(beforePlay.city.spaces[0]!.fightCost, 5, 'no Tech card played: the printed Attack');
+    assert.equal(beforePlay.mastermind.fightCost, 3);
+
+    gameState.playerZones[mockCtx.currentPlayer]!.inPlay = ['tech-hero', 'covert-hero'] as CardExtId[];
+    const afterPlay = buildUIState(gameState, mockCtx);
+    assert.equal(afterPlay.city.spaces[0]!.fightCost, 3);
+    assert.equal(afterPlay.mastermind.fightCost, 0, '3 - 4 floors at 0');
+  });
+
+  it('projects a negative Microscopic price as 0 (the debit fightVillain makes)', () => {
+    const gameState = createTestGameState();
+    const villainId = 'micro-villain' as CardExtId;
+    gameState.city = [villainId, null, null, null, null];
+    gameState.cardStats[villainId] = makeCardStatEntry({ fightCost: 1 });
+    gameState.fightSizeChanging = { [villainId]: { classes: [], microscopicIcons: ['tech'] } };
+    gameState.cardTraits = {
+      ...gameState.cardTraits,
+      ['tech-hero' as CardExtId]: { heroClass: 'tech', team: null },
+    } as LegendaryGameState['cardTraits'];
+    gameState.playerZones[mockCtx.currentPlayer]!.inPlay = ['tech-hero'] as CardExtId[];
+    assert.equal(buildUIState(gameState, mockCtx).city.spaces[0]!.fightCost, 0);
+  });
+});

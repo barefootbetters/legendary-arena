@@ -1260,3 +1260,40 @@ describe('fightMastermind — the all-tactics line follows the last tactic\'s Fi
     assert.ok(vanquishedIndex > tacticEffectIndex, texts.join('\n'));
   });
 });
+
+describe('fightMastermind — Size-Changing fight discount (D-24802)', () => {
+  /**
+   * The printed-8 test mastermind with Size-Changing [Strength][Tech] (the Fin Fang Foom
+   * shape), player 0 holding `attack` with the given cards in play.
+   */
+  function createSizeChangingMastermindState(attack: number, inPlay: string[]): LegendaryGameState {
+    const gameState = createMockGameState({ turnEconomy: makeTurnEconomy({ attack }) });
+    gameState.fightSizeChanging = {
+      ['test-mastermind-base' as CardExtId]: { classes: ['strength', 'tech'], microscopicIcons: [] },
+    };
+    gameState.cardTraits = {
+      'strength-hero': { heroClass: 'strength', team: null },
+      'tech-hero': { heroClass: 'tech', team: null },
+    } as LegendaryGameState['cardTraits'];
+    gameState.playerZones['0']!.inPlay = inPlay as LegendaryGameState['playerZones']['0']['inPlay'];
+    return gameState;
+  }
+
+  it('fights for 2 less per listed class played (8 - 4 = 4) and logs the price', () => {
+    const moveContext = createMockMoveContext(createSizeChangingMastermindState(4, ['strength-hero', 'tech-hero']));
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, ['tactic-1']);
+    assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 4);
+    assert.ok(
+      moveContext.G.messages.some((entry) => entry.text.startsWith('Size-Changing: Player 0 fights') && entry.text.endsWith('(8 Attack) for 4.')),
+      'the Size-Changing price line is logged',
+    );
+  });
+
+  it('refuses the fight at that attack when only one class was played (8 - 2 = 6 > 4)', () => {
+    const moveContext = createMockMoveContext(createSizeChangingMastermindState(4, ['strength-hero']));
+    fightMastermind(moveContext);
+    assert.deepStrictEqual(moveContext.G.mastermind.tacticsDefeated, []);
+    assert.strictEqual(moveContext.G.turnEconomy.spentAttack, 0);
+  });
+});

@@ -59,7 +59,7 @@ import { TIMESTREAM_PURGE_SEAT_CHOICE_KIND } from '../rules/timestreamPurge.logi
 import { ENIGMA_PEEK_SEAT_CHOICE_KIND } from '../rules/enigmaCode.logic.js';
 import { victoryPointValueForCard } from '../economy/bloodFrenzy.logic.js';
 import { WOUND_EXT_ID } from '../setup/pilesInit.js';
-import { resolveFightCost } from '../economy/economy.resolve.js';
+import { resolveFightPrice } from '../economy/economy.resolve.js';
 import { getPatrolModifier } from '../board/boardKeywords.logic.js';
 import { getLegalMoves } from './ai.legalMoves.js';
 
@@ -286,8 +286,9 @@ function indexOfCheapestCityTarget(
     if (villainCardId === null || villainCardId === undefined) {
       continue;
     }
+    // why: D-24802 — the price the seat would pay, Size-Changing included (fightVillain's read).
     const fightCost =
-      resolveFightCost(G, villainCardId, seat) + getPatrolModifier(villainCardId, G.cardKeywords ?? {});
+      Math.max(0, resolveFightPrice(G, villainCardId, seat)) + getPatrolModifier(villainCardId, G.cardKeywords ?? {});
     if (fightCost < bestCost) {
       bestCost = fightCost;
       bestIndex = optionIndex;

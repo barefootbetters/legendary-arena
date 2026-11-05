@@ -660,7 +660,7 @@ export interface UICityCard {
    * or display (that would leak a face-down identity).
    */
   attachedBystanderCount: number;
-  /** Engine-resolved fight cost for this villain (WP-214). Static or dynamic. */
+  /** Engine-resolved fight cost for this villain (WP-214). Static or dynamic; the active player's Size-Changing price, floored at 0 (D-24802). */
   fightCost: number;
   /**
    * The costs a card discarded to fight this villain may have (WP-817 / D-24750;
@@ -780,7 +780,8 @@ export interface UIMastermindState {
   finalBlowPending?: boolean;
   // why: WP-750 / D-24574 — the attack the engine will actually charge to fight
   // the Mastermind: resolveMastermindFightCost, the same authority the
-  // fightMastermind guard reads (printed cost + the Portals Dark-Portal bonus).
+  // fightMastermind guard reads (printed cost + the Portals Dark-Portal bonus). D-24802:
+  // now resolveMastermindFightPrice, which also takes off the active player's Size-Changing.
   // The client gates Fight on this instead of the printed display.cost. Optional
   // so typed fixtures and snapshots that predate it still compile (the client
   // falls back to display.cost); passed through the audience filter explicitly,

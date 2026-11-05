@@ -1863,3 +1863,108 @@ describe('fightVillain — variable-Attack passive (WP-841)', () => {
     assert.equal(moveContext.G.turnEconomy.spentAttack, 6);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Size-Changing fight discount (D-24802)
+// ---------------------------------------------------------------------------
+
+describe('fightVillain — Size-Changing fight discount (D-24802)', () => {
+  /**
+   * A villain at City index 0 with the given printed Attack and Size-Changing discount,
+   * and player 0 holding the given attack with the given cards in play.
+   *
+   * @param options - The villain's Attack, discount, the in-play cards and the attack pool.
+   * @returns The game state.
+   */
+  function createSizeChangingState(options: {
+    fightCost: number;
+    classes?: string[];
+    microscopicIcons?: string[];
+    inPlay: string[];
+    attack: number;
+  }): LegendaryGameState {
+    const gameState = createMockGameState({
+      city: ['villain-a', null, null, null, null],
+      inPlay: options.inPlay,
+      cardTraits: {
+        'tech-hero-1': { heroClass: 'tech', team: null },
+        'tech-hero-2': { heroClass: 'tech', team: null },
+        'tech-hero-3': { heroClass: 'tech', team: null },
+        'covert-hero': { heroClass: 'covert', team: null },
+      } as LegendaryGameState['cardTraits'],
+    });
+    gameState.cardStats['villain-a' as CardExtId] = {
+      attack: 0, recruit: 0, cost: 0, fightCost: options.fightCost, fightCostMode: 'static', fightCostBase: 0,
+    };
+    gameState.fightSizeChanging = {
+      ['villain-a' as CardExtId]: { classes: options.classes ?? [], microscopicIcons: options.microscopicIcons ?? [] },
+    };
+    gameState.turnEconomy = makeTurnEconomy({ attack: options.attack });
+    return gameState;
+  }
+
+  it('fights for 2 less when a card of the listed class was played this turn, and logs the price', () => {
+    const moveContext = createMockMoveContext(
+      createSizeChangingState({ fightCost: 5, classes: ['tech'], inPlay: ['tech-hero-1'], attack: 3 }),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 3, 'paid 5 - 2');
+    const texts = moveContext.G.messages.map((entry) => entry.text);
+    assert.ok(
+      texts.includes(`Size-Changing: Player 0 fights ${formatCardRef(moveContext.G.cardDisplayData, 'villain-a' as CardExtId)} (5 Attack) for 3.`),
+      `expected the Size-Changing line; got ${JSON.stringify(texts)}`,
+    );
+  });
+
+  it('refuses the fight at the discounted price when no card of the class was played', () => {
+    const moveContext = createMockMoveContext(
+      createSizeChangingState({ fightCost: 5, classes: ['tech'], inPlay: ['covert-hero'], attack: 3 }),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.equal(moveContext.G.city[0], 'villain-a', 'villain stays in the City');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 0, 'no attack spent');
+  });
+
+  it('takes 2 off per listed class matched, floored at 0 (rules v23: Attack cannot go below 0)', () => {
+    const moveContext = createMockMoveContext(
+      createSizeChangingState({
+        fightCost: 3,
+        classes: ['tech', 'covert'],
+        inPlay: ['tech-hero-1', 'covert-hero'],
+        attack: 0,
+      }),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated for 0');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 0);
+    assert.equal(moveContext.G.turnEconomy.attack, 0, 'regular Size-Changing never gives Attack back');
+  });
+
+  it('Microscopic: 2 less per matching card up to the icon count, and a negative price gains Attack', () => {
+    const moveContext = createMockMoveContext(
+      createSizeChangingState({
+        fightCost: 2,
+        microscopicIcons: ['tech', 'tech'],
+        inPlay: ['tech-hero-1', 'tech-hero-2', 'tech-hero-3'],
+        attack: 0,
+      }),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 0, 'paid nothing');
+    assert.equal(moveContext.G.turnEconomy.attack, 2, 'two icons matched: 2 - 4 = -2, so +2 Attack (a third card adds nothing)');
+    const texts = moveContext.G.messages.map((entry) => entry.text);
+    assert.ok(texts.includes(`Size-Changing: Player 0 fights ${formatCardRef(moveContext.G.cardDisplayData, 'villain-a' as CardExtId)} (2 Attack) for 0 and gains 2 Attack.`));
+  });
+
+  it('a full-price fight logs no Size-Changing line', () => {
+    const moveContext = createMockMoveContext(
+      createSizeChangingState({ fightCost: 2, classes: ['tech'], inPlay: [], attack: 2 }),
+    );
+    fightVillain(moveContext, { cityIndex: 0 });
+    assert.ok(moveContext.G.playerZones['0']!.victory.includes('villain-a'), 'defeated');
+    assert.equal(moveContext.G.turnEconomy.spentAttack, 2);
+    assert.ok(moveContext.G.messages.every((entry) => !entry.text.startsWith('Size-Changing')));
+  });
+});

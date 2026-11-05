@@ -10,6 +10,20 @@
 
 ## Current State
 
+### Size-Changing Villains and Masterminds cost 2 less to fight, as the rulebook says (D-24802, direct fix) (2026-11-05)
+
+**User-visible on `play.legendary-arena.com` after deploy.** A Villain with Size-Changing [Class] now costs 2 less to fight once you have played a card of that class this turn, for each class it lists. The City tile's Fight price and the Fight button follow the lower price. Fin Fang Foom (all five classes) works the same way. A Villain with Microscopic Size-Changing costs 2 less for each matching card you played, up to one per icon. If that takes it below 0, you fight it for nothing and gain the difference as Attack. Regular Size-Changing never goes below 0. This completes D-24801, which did the Hero recruit side.
+
+- **Engine.** Setup reads the bare Size-Changing lines of the selected villains and the mastermind's fightable face into `G.fightSizeChanging` (omitted when none). `resolveFightPrice` / `resolveMastermindFightPrice` (`economy/economy.resolve.ts`) apply the D-24801 discount step to the resolved Attack. `fightVillain`, `fightMastermind`, the bot legal moves and seat choice, and the City / Mastermind `fightCost` projections read the price. `resolveFightCost` stays the villain's Attack for effects like Pure Fury. The fight log notes the price when it differs.
+- **Feeds.** None changed: the villain and hero ledgers, `card-mechanics.json`, the effect index and the runtime-observed hollows (7725 observations) regenerate identical, because no sweep loadout fights these villains. The dashboard `totalObs` pin stays at 8686.
+- **Tests.** game-engine 6269 / 0 (+30), arena-client 2546 / 0, server 1640 / 0, dashboard 594 / 0.
+- **Not covered.** Tardigrade (amwp henchmen: the engine does not model per-class henchman variants), effects that grant or remove Size-Changing, the antm "Micro-Sized" scheme rule, and the Yellowjacket mastermind face (Darren Cross's transform is not allowlisted).
+- **Live-verify (D-24026): operator-pending.** In a match created after the deploy:
+  1. Villain group cvwr Great Lakes Avengers: with Big Bertha (7, Size-Changing Strength) in the City, play a Strength card. Its tile reads 5 and it fights for 5. The log reads "Size-Changing: Player 0 fights Big Bertha (7 Attack) for 5."
+  2. Villain group antm Queen's Vengeance: with Pixie (3, four Covert icons) in the City, play two Covert cards. It fights for 0 and the player gains 1 Attack ("for 0 and gains 1 Attack").
+  3. Mastermind chmp Fin Fang Foom: after playing a Strength and a Tech card, the Mastermind tile reads 4 less than printed and the fight charges that.
+  4. With no matching card played, every price is the printed one.
+
 ### Size-Changing makes a Hero cheaper to recruit, as the rulebook says (D-24801, direct fix) (2026-11-05)
 
 **User-visible on `play.legendary-arena.com` after deploy.** A Hero with Size-Changing [Class] now costs 2 less to recruit once you have played a card of that class this turn. The HQ tile shows "Costs N now", and the recruit button unlocks at that price. Before this, Size-Changing only gave the card the class it was already printed with, which did nothing on every Wasp card (match `PAwTxk88LRy`).

@@ -1734,3 +1734,39 @@ describe('getLegalMoves — WP-836 grey-filtered KO defaults (D-24769)', () => {
     ]);
   });
 });
+describe('getLegalMoves — Size-Changing fight price matches the move guard (D-24802)', () => {
+  // why: the bot must enumerate the fights fightVillain / fightMastermind accept at the
+  // Size-Changing price, or it would skip a fight the move allows (or offer one it refuses).
+
+  /** A printed-5 Size-Changing [Tech] villain and a printed-20 Size-Changing [Tech] mastermind. */
+  function makeSizeChangingG(availableAttack: number, inPlay: string[]): LegendaryGameState {
+    const gameState = makeG({ hand: [], currentStage: 'main' });
+    gameState.turnEconomy = { ...makeTurnEconomy(), attack: availableAttack } as LegendaryGameState['turnEconomy'];
+    gameState.city = ['sc-villain' as CardExtId, null, null, null, null];
+    gameState.cardStats = {
+      'sc-villain': { attack: 0, recruit: 0, cost: 0, fightCost: 5, fightCostMode: 'static', fightCostBase: 0 },
+      [gameState.mastermind.baseCardId]: { attack: 0, recruit: 0, cost: 0, fightCost: 4, fightCostMode: 'static', fightCostBase: 0 },
+    } as unknown as LegendaryGameState['cardStats'];
+    gameState.fightSizeChanging = {
+      ['sc-villain' as CardExtId]: { classes: ['tech'], microscopicIcons: [] },
+      [gameState.mastermind.baseCardId]: { classes: ['tech'], microscopicIcons: [] },
+    };
+    gameState.cardTraits = { 'tech-hero': { heroClass: 'tech', team: null } } as LegendaryGameState['cardTraits'];
+    gameState.playerZones['0']!.inPlay = inPlay as LegendaryGameState['playerZones']['0']['inPlay'];
+    (gameState.mastermind as { tacticsDeck: CardExtId[] }).tacticsDeck = ['tactic-0' as CardExtId];
+    (gameState.mastermind as { tacticsDefeated?: CardExtId[] }).tacticsDefeated = [];
+    return gameState;
+  }
+
+  test('does NOT offer either fight at the discounted price when no Tech card was played', () => {
+    const legalMoves = getLegalMoves(makeSizeChangingG(3, []), CONTEXT);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightVillain').length, 0);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightMastermind').length, 0);
+  });
+
+  test('offers both fights at the price once a Tech card was played (villain 5 - 2, mastermind 4 - 2)', () => {
+    const legalMoves = getLegalMoves(makeSizeChangingG(3, ['tech-hero']), CONTEXT);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightVillain').length, 1);
+    assert.equal(legalMoves.filter((move) => move.name === 'fightMastermind').length, 1);
+  });
+});
