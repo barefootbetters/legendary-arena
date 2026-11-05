@@ -350,7 +350,7 @@ What the registration actually asked, filled in as it happens:
 
 | Item | Answer |
 |---|---|
-| Date registered | *(not yet)* |
+| Date registered | On or before 2026-11-05, when both questions were posted from it; exact date *(not yet recorded)* |
 | Account country chosen | *(not yet)* |
 | Company name as registered | *(not yet)* |
 | Documents the Corporate form asked for | *(not yet)* |
@@ -393,10 +393,10 @@ your VOD or game app, In-App Purchase is required."
 
 | | LG's answer |
 |---|---|
-| Date asked | 2026-10-31 |
-| Ticket or reference | Posted on the public webOS TV developer forum as [In-app purchase policy for content bought on our website](https://forum.webostv.developer.lge.com/t/in-app-purchase-policy-for-content-bought-on-our-website/28527). The posted text names `barefootbetters.com` as the account site. Not yet in Seller Lounge 1:1 Q&A; post it there once the seller account exists |
+| Date asked | 2026-10-31 on the forum; 2026-11-05 in Seller Lounge 1:1 Q&A |
+| Ticket or reference | Seller Lounge 1:1 Q&A, category Partnership > LG Smart Device payment, posted 2026-11-05; status Inquiry Received that day. The 1:1 Q&A text adds a line linking the forum thread and names `barefootbetters.com` as the account site. Earlier, on the public webOS TV developer forum as [In-app purchase policy for content bought on our website](https://forum.webostv.developer.lge.com/t/in-app-purchase-policy-for-content-bought-on-our-website/28527) |
 | Forum reply | About 2026-11-02, from forum user `kpbhat`: LG Content Store app policy questions go to LG Seller Lounge > 1:1 Q&A. No answer to the three questions. The forum is not where LG answers policy |
-| Date answered | *(not yet answered; waits on Seller Lounge 1:1 Q&A)* |
+| Date answered | *(not yet answered)* |
 | 1. Allowed without in-app purchase? | *(not yet answered)* |
 | 2. Neutral "manage your account" message allowed? | *(not yet answered)* |
 | 3. Paymentwall only, or another provider? | *(not yet answered)* |
@@ -425,8 +425,8 @@ a separate approval process."
 
 | | LG's answer |
 |---|---|
-| Date asked | *(not yet asked)* |
-| Ticket or reference | *(not yet asked)* |
+| Date asked | 2026-11-05 |
+| Ticket or reference | Seller Lounge 1:1 Q&A, category Applications > App QA Process, posted 2026-11-05; status Inquiry Received that day |
 | Date answered | *(not yet answered)* |
 | 1. Server-side change needs approval? | *(not yet answered)* |
 | 2. Which changes need approval? | *(not yet answered)* |
@@ -550,11 +550,9 @@ change.
 2. **Seller Lounge, hosted changes:** does content changed behind a hosted URL
    need re-approval, and how big a change counts?
 
-   Both are drafted, with slots for LG's answers, under
+   Both were posted in Seller Lounge 1:1 Q&A on 2026-11-05 and wait on LG's
+   reply, with slots for the answers under
    [Seller Lounge questions and LG's answers](#seller-lounge-questions-and-lgs-answers).
-   Question 1 was also posted on the public forum, and LG's reply there sent
-   it to Seller Lounge 1:1 Q&A, so both answers wait on the
-   [seller account](#registering-the-seller-account).
 3. **Rights:** does a TV store listing need anything from Upper Deck or Marvel
    beyond what web distribution needs?
 
