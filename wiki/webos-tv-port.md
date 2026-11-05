@@ -336,7 +336,11 @@ form itself.
    `jeff@barefootbetters.com`.
 7. **Registration is complete.** The Seller Lounge menu then has **1:1 Q&A**,
    where the [two questions](#seller-lounge-questions-and-lgs-answers) are
-   posted.
+   posted. LG's 1:1 Q&A guide says only the poster can see a question, LG
+   replies by email, and a question moves through Inquiry Received, Checked,
+   and Completed (or Re-Opened). Its categories include Applications (App
+   Submission, App QA Process, CTS Test, webOS Cloud Test Lab) and Technical
+   Support. The guide gives no response time.
 
 Herbs vs. Ailments is not registered under this account: it is an
 independent project built to be sold separately, and its entity isn't
@@ -450,6 +454,24 @@ questions it answers, each tied to the requirement it tests:
 | Does a remote OK press unlock audio under the TV's autoplay policy? | First-run sound |
 | What do WebAuthn, `window.open`, and the clipboard do? | Sign-in and API adaptations |
 
+**webOS Cloud Test Lab, a possible first pass without buying a TV.** Seller
+Lounge offers sellers a pre-test on real TVs in Korea that, per LG's guide,
+"use the same SW version as the production environment." The seller uploads
+an IPK (the hosted shell would do) with an English title and description,
+then reserves a device in one-hour slots, up to five a day. The screen comes
+back as a video stream, 1280×720 at 10 fps by default (size, quality, and
+fps adjustable), with Launch App, Reboot, and Release controls. Releasing the
+device deletes the app. The guide doesn't say which webOS versions or model
+years are available, whether remote input can be driven, or whether there is
+a fee. A region-restricted app may need LG's lab IP `1.222.94.84`
+allowlisted. What it could answer, if input can be driven: whether the
+bundle loads on the TV's Chromium, the hosted redirect, Back on the entry
+page, and the selection effect. A 10 fps stream can't measure frame rate,
+and the guide says nothing about audio or a suspend, so those still need a
+TV in hand. It needs the seller account first. LG's
+App Compatibility Test Suite (App CTS) is, per its guide, open only to
+sellers with "a separate commercial contract" for now.
+
 ### Candidate implementation scope
 
 > **Non-authoritative sizing.** These slices only establish feasibility and
@@ -562,6 +584,8 @@ LG documentation, read 2026-10-31:
 - [In-App Purchase](https://webostv.developer.lge.com/develop/guides/in-app-purchase)
 - [App Approval Process](https://webostv.developer.lge.com/distribute/app-approval-process) and [App Ecosystem](https://webostv.developer.lge.com/distribute/app-ecosystem)
 - [Seller Registration guide](https://seller.lgappstv.com/seller/guide/sellerRegistration.lge) (on Seller Lounge): seller types and the five registration steps
+- Seller Lounge user guides, read 2026-11-05: [webOS Cloud Test Lab](https://seller.lgappstv.com/seller/support/userGuide/RetrieveUserGuide.lge?pstgSeq=49), [1:1 Q&A](https://seller.lgappstv.com/seller/support/userGuide/RetrieveUserGuide.lge?pstgSeq=31), [App CTS](https://seller.lgappstv.com/seller/support/userGuide/RetrieveUserGuide.lge?pstgSeq=48)
+- [Forum thread for question 1](https://forum.webostv.developer.lge.com/t/in-app-purchase-policy-for-content-bought-on-our-website/28527): LG's reply points policy questions to Seller Lounge 1:1 Q&A
 - [CLI Introduction](https://webostv.developer.lge.com/develop/tools/cli-introduction), [CLI Installation](https://webostv.developer.lge.com/develop/tools/cli-installation), [Developer Mode App](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app), [Simulator](https://webostv.developer.lge.com/develop/tools/simulator-introduction)
 
 Other sources:
