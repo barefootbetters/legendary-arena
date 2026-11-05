@@ -50123,4 +50123,24 @@ Protect this file.
 **Reserved by:** NUMBER-LEDGER D-24800. Related: D-24026 (header-classification precedent), D-24723 (`apps/dashboard` freeze).
 
 ---
+
+### D-24539 — A count-scaled line whose gate is its count source logs "+0" at count 0, not "did not activate" (Active 2026-11-04 — WP-716 / EC-753)
+
+**Status:** Active 2026-11-04. Live-verify (D-24026) operator-pending: a play.legendary-arena.com match created after the deploy, an Ice Slide / Absorb Energies / Arc Reactor led with no other Hero of its class, shows the `+0` line.
+
+**Context.** A count-scaled hero line gated on the class or team it counts ("[hc:ranged]: You get +1 Recruit for each other [hc:ranged] Hero you played this turn") fails its gate exactly when the count is 0. The failed-gate branch of `executeHeroEffects` then logged "Player 0's Absorb Energies ability did not activate — it needs another Ranged Hero played this turn." The card had worked (it scaled by 0), but the line read as broken: in the operator's 2026-09-20 Red Skull / Midtown match, Absorb Energies played first looked like WP-711 had not shipped.
+
+**Decision.**
+1. When a hook's failed gate qualifies, the line reads "Player N's <card> scaled to +0 Attack — no other <Class/Team> Hero played yet this turn." (`+0 Recruit` for `recruit-per-count`, `0 Bystander captures` for `kidnap-per-count`; "scaled one of its abilities to" when the card has more than one hook, the WP-702 multi-hook rule). It never says whiff, failed or missed.
+2. A hook qualifies only when all hold (`describeZeroScaledCountClause`): its sole effect is `attack-per-count` / `recruit-per-count` / `kidnap-per-count` with no primitive effects; the failed condition is the `heroClassMatch` / `requiresTeam` gate whose class or team the count source counts (`countSourceMatchingGate`: strength / ranged / tech / covert, avengers / shield / x-men); the count, re-resolved with the handlers' own arithmetic, would grant 0; and the body is not hollow (D-24623).
+3. Everything else keeps "did not activate": a flat-gated line (Repulsor Rays), a gate on another axis (`[hc:instinct]` with an extra-cards-drawn count, which the gate genuinely blocked), and a doubled gate with one matching other (count 1, so "+0" would be false).
+4. Text only. The outcome stays `blocked` and the line keeps `card`, so the Play Diagnostics `conditionNotMet` classification (WP-438) and log colouring are unchanged. No `LOG_OUTCOMES` member, grant, condition, synergy-tally (WP-708 / WP-709 / WP-712) or `G` field changes.
+
+**Consequences.** `G.messages` is hash-excluded (D-24081); no `finalStateHash` sentinel, replay or simulation pin moved, and no committed fixture held the old text. The ungated count-scaled line at count 0 already read "Count-scaled attack: +0 (…; count 0)." (D-24673) and is unchanged.
+
+**Gates.** game-engine 6213 → 6222 / 0 (+9 in `hero/heroEffects.execute.test.ts`: Ice Slide, Absorb Energies and X-Men United parsed from their committed lines, kidnap, multi-hook, count ≥ 1 unchanged, and the flat-gated, other-axis and doubled-gate regressions). With the new branch disabled, the 5 new-wording tests fail and the 4 regression pins pass. `pnpm -r build` 0; every package 0 fail; `sim:coverage --check`, `sim:runtime-observed:check`, `effect-index:check`, `ledger:heroes:check`, `cards:count-markers:check` 0.
+
+**Reserved by:** NUMBER-LEDGER D-24539 (#2194). Related: D-24082 (failed-gate log line), D-24375 (name the failed condition), D-24016 / D-24534 / D-24537 (the count-scaled family), D-24673 (count-source labels), D-24623 (hollow-body note), D-24026.
+
+---
 Protect this file.

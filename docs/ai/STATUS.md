@@ -10,6 +10,14 @@
 
 ## Current State
 
+### WP-716 / EC-753 — A count-scaled line at count 0 logs "+0", not "did not activate" (D-24539) (2026-11-04)
+
+**User-visible on `play.legendary-arena.com` after deploy (game log text).** Ice Slide, Absorb Energies, Arc Reactor, X-Men United and the other count-scaled lines gated on the class or team they count, played with no other matching Hero, now log "Player 0's Absorb Energies scaled to +0 Recruit — no other Ranged Hero played yet this turn." Before, the line said the ability "did not activate", which read as a bug.
+
+- **Engine.** `describeZeroScaledCountClause` + `countSourceMatchingGate` in `hero/heroEffects.execute.ts`. Text only: outcome stays `blocked`, the line keeps `card` (Play Diagnostics unchanged), and no grant, condition or `G` field changes. Flat-gated lines, a gate on another axis, and a count above 0 keep "did not activate".
+- **Tests.** game-engine 6213 -> 6222 / 0 (+9). Every package 0 fail; root sim / ledger / effect-index / count-marker checks 0. No `finalStateHash`, replay or log-oracle re-pin.
+- **Live-verify (D-24026): operator-pending.** A match created after the deploy, with one of these cards led and no other Hero of its class played, shows the `+0` line.
+
 ### WP-861 / EC-899 — "If this is the first card you played this turn": Surprise Attack draws, First Strike and Follow My Lead gate their +1 Attack (D-24798) (2026-11-01)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Leading a turn with No-Name's Surprise Attack now draws a card (before, it never drew). Elektra's First Strike and Wasp's Follow My Lead give 2 Attack only when played first; played after another card they give 1 and the log shows a `[blocked]` line saying the card needs to be the first Hero you played this turn (before, both gave 2 on every play). Bots now lead with these three, through the existing D-24705 / D-24706 marker read.
