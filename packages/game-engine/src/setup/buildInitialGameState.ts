@@ -971,7 +971,8 @@ export function buildInitialGameState(
     // prints Abomination, so every other match keeps a byte-identical finalStateHash.
     ...(Object.keys(cardAbomination).length > 0 ? { cardAbomination } : {}),
     // why: D-24802 — same hash-stability discipline (the cardAbomination precedent):
-    // fightSizeChanging is on G ONLY when a selected villain or a fightable mastermind face
+    // fightSizeChanging is on G ONLY when a selected villain, a selected henchman copy
+    // (D-24803) or a fightable mastermind face
     // prints Size-Changing, so every other match keeps a byte-identical finalStateHash.
     ...(Object.keys(fightSizeChanging).length > 0 ? { fightSizeChanging } : {}),
   };

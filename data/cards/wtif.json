@@ -2142,7 +2142,7 @@
           "imageUrl": "https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-covert.webp",
           "abilities": [
             "[keyword:Empowered] by [hc:covert]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -2151,7 +2151,7 @@
           "imageUrl": "https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-instinct.webp",
           "abilities": [
             "[keyword:Empowered] by [hc:instinct]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -2160,7 +2160,7 @@
           "imageUrl": "https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-ranged.webp",
           "abilities": [
             "[keyword:Empowered] by [hc:ranged]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -2169,7 +2169,7 @@
           "imageUrl": "https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-strength.webp",
           "abilities": [
             "[keyword:Empowered] by [hc:strength]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -2178,7 +2178,7 @@
           "imageUrl": "https://images.legendary-arena.com/wtif/wtif-hm-ultron-sentries-tech.webp",
           "abilities": [
             "[keyword:Empowered] by [hc:tech]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         }
       ],

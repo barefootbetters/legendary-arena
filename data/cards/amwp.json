@@ -1942,7 +1942,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-covert.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:covert][hc:covert][hc:covert]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1951,7 +1951,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-instinct.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:instinct][hc:instinct][hc:instinct]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1960,7 +1960,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-ranged.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:ranged][hc:ranged][hc:ranged]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1969,7 +1969,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-strength.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:strength][hc:strength][hc:strength]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {
@@ -1978,7 +1978,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-hm-tardigrade-tech.webp",
           "abilities": [
             "[keyword:Microscopic Size-Changing] [hc:tech][hc:tech][hc:tech]",
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         }
       ],

@@ -1,5 +1,5 @@
 /**
- * Setup-time Size-Changing fight discounts for villain and mastermind cards (D-24802).
+ * Setup-time Size-Changing fight discounts for villain, henchman and mastermind cards (D-24802).
  *
  * A Villain or Mastermind that prints "Size-Changing [Class]" can be fought for 2 less if
  * you played any [Class] cards this turn (rules v23 p.33). One that prints "Microscopic
@@ -8,6 +8,8 @@
  * `[keyword:Size-Changing]: [hc:X], [hc:Y]` or `[keyword:Microscopic Size-Changing] [hc:X][hc:X]`.
  * The villain parser reads only `[effect:X]` tokens, so this builder scans the ability text
  * once at setup (the Abomination precedent, WP-815). The fight-price resolvers read the result.
+ * Henchman copies are keyed per copy through the D-24803 variant mapper, so each Tardigrade
+ * copy discounts by its own printed class.
  *
  * No boardgame.io import. No randomness. No .reduce().
  */
@@ -19,7 +21,11 @@ import { normalizeTraitSlug } from '../state/traits.normalize.js';
 // why: the villain entries must key the copy-indexed villain INSTANCE ids that sit in the
 // City (the same grammar as G.cardKeywords, D-18704); the shared emitter is imported, not
 // re-implemented.
-import { villainCardInstanceExtIds } from '../villainDeck/villainDeck.setup.js';
+import {
+  HENCHMAN_COPIES_PER_GROUP,
+  henchmanCopyVariant,
+  villainCardInstanceExtIds,
+} from '../villainDeck/villainDeck.setup.js';
 
 // why: game-engine must not import @legendary-arena/registry; these interfaces are
 // satisfied structurally by CardRegistry and narrow the fields read here.
@@ -92,10 +98,10 @@ function splitQualifiedId(qualifiedId: string): { setAbbr: string; slug: string 
  * Reads an array-valued field from set data defensively.
  *
  * @param setData - The value returned by getSet.
- * @param fieldName - 'villains' or 'masterminds'.
+ * @param fieldName - 'villains', 'masterminds' or 'henchmen'.
  * @returns The array, or an empty array when absent or malformed.
  */
-function readSetArray(setData: unknown, fieldName: 'villains' | 'masterminds'): unknown[] {
+function readSetArray(setData: unknown, fieldName: 'villains' | 'masterminds' | 'henchmen'): unknown[] {
   if (!setData || typeof setData !== 'object') {
     return [];
   }
@@ -202,6 +208,48 @@ function addVillainSizeChanging(
 }
 
 /**
+ * Adds an entry for every copy of each Size-Changing henchman in the selected groups.
+ *
+ * // why: D-24803 — a copy reads its own variant's lines when the group is printed as
+ * variant cards (amwp Tardigrade: one Microscopic class per variant), else the group-level
+ * lines. Keys are the `henchman-{groupSlug}-{NN}` copy ids the City holds. No henchman group
+ * without a Size-Changing line gets an entry, so G stays byte-identical for them.
+ *
+ * @param registry - The setup registry reader.
+ * @param henchmanGroupIds - The match's `<setAbbr>/<groupSlug>` henchman groups.
+ * @param result - The map being built (mutated).
+ */
+function addHenchmanSizeChanging(
+  registry: SizeChangingRegistryReader,
+  henchmanGroupIds: readonly string[],
+  result: Record<CardExtId, FightSizeChanging>,
+): void {
+  for (const henchmanGroupId of henchmanGroupIds) {
+    const parsed = splitQualifiedId(henchmanGroupId);
+    if (parsed === null) {
+      continue;
+    }
+    for (const groupCandidate of readSetArray(registry.getSet(parsed.setAbbr), 'henchmen')) {
+      const henchmanGroup = groupCandidate as { slug?: unknown; abilities?: unknown } | null;
+      if (henchmanGroup?.slug !== parsed.slug) {
+        continue;
+      }
+      for (let copyIndex = 0; copyIndex < HENCHMAN_COPIES_PER_GROUP; copyIndex++) {
+        const variantCard = henchmanCopyVariant(henchmanGroup, copyIndex);
+        const abilities = variantCard === null ? henchmanGroup.abilities : variantCard.abilities;
+        const discount = readFightSizeChanging(abilities);
+        if (discount === null) {
+          continue;
+        }
+        const paddedIndex = String(copyIndex).padStart(2, '0');
+        result[`henchman-${parsed.slug}-${paddedIndex}`] = discount;
+      }
+      break;
+    }
+  }
+}
+
+/**
  * Adds an entry for each fightable mastermind face that prints Size-Changing.
  *
  * // why: only the faces the match can fight are keyed: the base face buildMastermindState
@@ -248,7 +296,7 @@ function addMastermindSizeChanging(
 }
 
 /**
- * Builds the Size-Changing fight-discount map for the villain groups and mastermind selected for this match.
+ * Builds the Size-Changing fight-discount map for the villain groups, henchman groups and mastermind selected for this match.
  *
  * // why: scoped to the selected villain groups and mastermind, not every loaded set, so the
  * map is empty in every match without a Size-Changing villain or mastermind — the caller
@@ -256,10 +304,10 @@ function addMastermindSizeChanging(
  *
  * @param registry - Setup-time registry reader; unknown so narrow mocks work (a reader
  *   without getSet yields an empty map).
- * @param villainConfig - The match setup carrying the scheme-effective villainGroupIds.
+ * @param villainConfig - The match setup carrying the scheme-effective villainGroupIds and henchmanGroupIds.
  * @param mastermindId - The selected mastermind, `<setAbbr>/<mastermindSlug>`.
  * @param fightableFaceIds - G.mastermind.baseCardId and, when present, alternateFaceId.
- * @returns A map from each Size-Changing villain copy id and mastermind face id to its discount.
+ * @returns A map from each Size-Changing villain or henchman copy id and mastermind face id to its discount.
  */
 export function buildFightSizeChanging(
   registry: unknown,
@@ -272,6 +320,7 @@ export function buildFightSizeChanging(
     return result;
   }
   addVillainSizeChanging(registry, villainConfig.villainGroupIds, result);
+  addHenchmanSizeChanging(registry, villainConfig.henchmanGroupIds, result);
   addMastermindSizeChanging(registry, mastermindId, fightableFaceIds, result);
   return result;
 }

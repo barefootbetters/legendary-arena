@@ -3122,11 +3122,12 @@ export interface LegendaryGameState {
   // why: D-24802 — per-card Size-Changing fight discount ("You can fight this Villain for 2
   // less if you played any [Class] cards this turn", rules v23 p.33; Microscopic: 2 less per
   // matching card, up to one per icon, p.30). Villain copies are keyed by copy-suffixed
-  // instance ext_id; a Mastermind by its fightable face id(s). Read only by
+  // instance ext_id; henchman copies by `henchman-{group}-NN`, each reading its own printed
+  // variant (D-24803); a Mastermind by its fightable face id(s). Read only by
   // resolveFightPrice / resolveMastermindFightPrice. Kept apart from the hero
   // cardSizeChangingClasses map so a Villain never reads as a "Size-Changing Hero" (Antics,
   // the HQ recruitCosts presence rule). Built once at setup; OMITTED ENTIRELY when no
-  // selected villain or mastermind prints Size-Changing (hash oracles).
+  // selected villain, henchman or mastermind prints Size-Changing (hash oracles).
   /** Size-Changing fight discounts by villain or mastermind card. Built at setup, read-only; absent when none. */
   fightSizeChanging?: Record<CardExtId, FightSizeChanging>;
 

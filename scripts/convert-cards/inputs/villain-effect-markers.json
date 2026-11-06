@@ -1,7 +1,7 @@
 {
   "_notes": [
     "WP-187 / EC-214 — curated, human-reviewed [effect:] marker map. WP-188 / EC-215 extends it to admit the Escape:/Overrun: timings. Consumed by apply-effect-markers.mjs, which appends [effect:<VillainEffectKeyword>] tokens to the matched Ambush:/Fight:/Escape:/Overrun: ability line in data/cards/*.json. WP-185's engine setup parser reads the Ambush/Fight markers; WP-186's parser reads the Escape/Overrun markers (collapsing both prefixes to the single onEscape timing engine-side).",
-    "Keys: villains -> setAbbr -> villainGroupSlug -> villainCardSlug -> { ambush?, fight?, escape?, overrun? }; henchmen -> setAbbr -> henchmanGroupSlug -> { ambush?, fight?, escape?, overrun? } (henchman ability text is group-level). Each list holds either a locked VillainEffectKeyword string (gainWoundEachPlayer, gainWoundCurrentPlayer, koHeroCurrentPlayer, heroDeckTopToEscape, captureBystander, koHeroEachPlayer, koHeroEachPlayerMag2, captureHqHeroRightmost, captureHqHeroHighestCost, captureHqHeroLowestCost) OR a parameterized VillainEffectPrimitive token (e.g. scry-ko-own-deck — WP-447/D-24267, the first primitive used in curated data), both accepted by apply-effect-markers.mjs and the engine parser.",
+    "Keys: villains -> setAbbr -> villainGroupSlug -> villainCardSlug -> { ambush?, fight?, escape?, overrun? }; henchmen -> setAbbr -> henchmanGroupSlug -> { ambush?, fight?, escape?, overrun? } (henchman ability text is group-level), or, for a group printed as variant cards (D-24803: Tardigrade, Ultron Sentries, Mandarin's Rings), henchmanGroupSlug -> { cards: { variantCardSlug -> { ambush?, fight?, escape?, overrun? } } }. Each list holds either a locked VillainEffectKeyword string (gainWoundEachPlayer, gainWoundCurrentPlayer, koHeroCurrentPlayer, heroDeckTopToEscape, captureBystander, koHeroEachPlayer, koHeroEachPlayerMag2, captureHqHeroRightmost, captureHqHeroHighestCost, captureHqHeroLowestCost) OR a parameterized VillainEffectPrimitive token (e.g. scry-ko-own-deck — WP-447/D-24267, the first primitive used in curated data), both accepted by apply-effect-markers.mjs and the engine parser.",
     "v1 curation discipline (WP-185 semantics): a line is marked ONLY when its entire effect reduces to unconditional + magnitude-1 + single-target applications of the MVP vocabulary. Conditional (may / If / '... or ...' choice), magnitude>1 (two / all / 'for each'), wrong/multi target (each villain, the Mastermind, another player, target-restricted KO), and lines carrying an extra non-MVP clause ('... Then ...') are deliberately left unmarked. Conservatism over coverage.",
     "WP-188 curatable Escape shapes: ONLY 'Escape: Each player gains a Wound.' plus punctuation-/markup-only variants — this is gainWoundEachPlayer's first data (zero matches under WP-187, which found no unconditional each-player wound lines on Ambush/Fight). DEFER anything with 'If'/'When'/'Unless'/'For each', '... or ...' choices, magnitude>1, compound '(After the normal Escape KO) ...', or 'each other player' wording.",
     "WP-188 'overrun' curation: the gate is widened so --propose scans overrun and _unassigned can capture it, but ZERO overrun entries were curatable under v1 discipline. Villain/henchman overrun lines appear only in the standalone Fear-Itself / Villains-Only sets and all carry either conditional choices, '[keyword:Demolish]' (no MVP keyword), or 'Bindings' (Fear-Itself recoloring distinct from 'Wound'). An empty overrun curation set is a valid v1 outcome per WP-188 §v1 Curation, not a gap. Scheme overrun is explicitly out of scope.",
@@ -373,7 +373,16 @@
   },
   "henchmen": {
     "amwp": {
-      "quantumnauts": { "fight": ["koHeroCurrentPlayer"] }
+      "quantumnauts": { "fight": ["koHeroCurrentPlayer"] },
+      "tardigrade": {
+        "cards": {
+          "tardigrade-covert": { "fight": ["koHeroCurrentPlayer"] },
+          "tardigrade-instinct": { "fight": ["koHeroCurrentPlayer"] },
+          "tardigrade-ranged": { "fight": ["koHeroCurrentPlayer"] },
+          "tardigrade-strength": { "fight": ["koHeroCurrentPlayer"] },
+          "tardigrade-tech": { "fight": ["koHeroCurrentPlayer"] }
+        }
+      }
     },
     "co2e": {
       "doombot-legion": { "fight": ["scry-ko-own-deck"] },
@@ -393,18 +402,43 @@
       "maggia-goons": { "fight": ["koHeroCurrentPlayer"] }
     },
     "rvlt": {
-      "hydra-base": { "fight": ["koHeroCurrentPlayer"] }
+      "hydra-base": { "fight": ["koHeroCurrentPlayer"] },
+      "mandarins-rings": {
+        "cards": {
+          "daimonic-the-white-light": { "fight": ["draw-cards-current:1"] },
+          "incandescence-the-flame-blast": { "fight": ["ko-up-to-from-discard-current:1"] },
+          "influence-the-impact-beam": { "fight": ["gain-recruit-current:1"] },
+          "spectral-the-disintegration-beam": { "fight": ["koHeroCurrentPlayer"] }
+        }
+      }
     },
     "ssw2": {
       "khonshu-guardians": { "fight": ["koHeroCurrentPlayer"] },
       "magma-men": { "fight": ["koHeroCurrentPlayer"] },
       "spider-infected": { "ambush": ["captureBystander"] }
     },
+    "wtif": {
+      "ultron-sentries": {
+        "cards": {
+          "ultron-sentries-covert": { "fight": ["koHeroCurrentPlayer"] },
+          "ultron-sentries-instinct": { "fight": ["koHeroCurrentPlayer"] },
+          "ultron-sentries-ranged": { "fight": ["koHeroCurrentPlayer"] },
+          "ultron-sentries-strength": { "fight": ["koHeroCurrentPlayer"] },
+          "ultron-sentries-tech": { "fight": ["koHeroCurrentPlayer"] }
+        }
+      }
+    },
     "xmen": {
       "shiar-death-commandos": { "fight": ["koHeroCurrentPlayer"] }
     }
   },
   "_unassigned": [
+    { "set": "rvlt", "group": "mandarins-rings", "card": "liar-the-mento-intensifier", "timing": "fight", "text": "Fight: Look at the top card of another player's deck. Say it is “Good“ or “Bad.“ That player chooses to put it in your discard pile or their discard pile.", "reason": "multi-target" },
+    { "set": "rvlt", "group": "mandarins-rings", "card": "lightning-the-electro-blast", "timing": "fight", "text": "Fight: Reveal the top card of your deck. You may KO it.", "reason": "conditional" },
+    { "set": "rvlt", "group": "mandarins-rings", "card": "nightbringer-the-black-light", "timing": "fight", "text": "Fight: Reveal the top three cards of the Villain Deck. You may defeat a Villain you revealed worth 2VP or less. (Do its Fight effect.) Put the rest back in any order.", "reason": "other" },
+    { "set": "rvlt", "group": "mandarins-rings", "card": "remaker-the-matter-rearranger", "timing": "fight", "text": "Fight: You may choose a card from your hand or discard pile. The player on your right puts it in their hand.", "reason": "multi-target" },
+    { "set": "rvlt", "group": "mandarins-rings", "card": "spin-the-vortex-beam", "timing": "fight", "text": "Fight: Reveal the top six cards of your deck. Discard all of them that cost 0, then put the rest back in any order.", "reason": "other" },
+    { "set": "rvlt", "group": "mandarins-rings", "card": "zero-the-ice-blast", "timing": "fight", "text": "Fight: Choose a card you played this turn that costs 0. When you draw a new hand of cards at the end of this turn, add that card to your hand as an extra card.", "reason": "other" },
     { "set": "amwp", "group": "armada-of-kang", "card": "quantumnaut-elite", "timing": "fight", "text": "Fight: KO two of your Heroes.", "reason": "magnitude>1" },
     { "set": "msp1", "group": "enemies-of-asgard", "card": "destroyer", "timing": "fight", "text": "Fight: KO all your [team:shield] Heroes.", "reason": "magnitude>1" },
     { "set": "core", "group": "radiation", "card": "maestro", "timing": "fight", "text": "Fight: For each of your [hc:strength] Heroes, KO one of your Heroes.", "reason": "magnitude>1" },

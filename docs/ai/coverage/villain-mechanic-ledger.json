@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "cardType": "villain",
   "summary": {
-    "totalRows": 740,
+    "totalRows": 760,
     "byStatus": {
-      "executable": 184,
+      "executable": 198,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 553,
+      "unmarked": 559,
       "subsystem": 2
     },
     "distinctMechanics": 47
@@ -430,6 +430,61 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-covert",
+      "cardName": "Tardigrade (Covert)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-instinct",
+      "cardName": "Tardigrade (Instinct)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-ranged",
+      "cardName": "Tardigrade (Ranged)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-strength",
+      "cardName": "Tardigrade (Strength)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-tardigrade-tardigrade-tech",
+      "cardName": "Tardigrade (Tech)",
+      "set": "amwp",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "amwp-villain-armada-of-kang-troop-ships-of-kang",
@@ -5184,6 +5239,17 @@
       "handler": ""
     },
     {
+      "extId": "henchman-mandarins-rings-daimonic-the-white-light",
+      "cardName": "Daimonic, The White Light",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "draw-cards-current",
+      "status": "executable",
+      "wp": "WP-485",
+      "decision": "D-24290",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current"
+    },
+    {
       "extId": "rvlt-villain-dark-avengers-dark-hawkeye-bullseye",
       "cardName": "Dark Hawkeye (Bullseye)",
       "set": "rvlt",
@@ -5250,6 +5316,28 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
+      "extId": "henchman-mandarins-rings-incandescence-the-flame-blast",
+      "cardName": "Incandescence, The Flame Blast",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "ko-up-to-from-discard-current",
+      "status": "executable",
+      "wp": "WP-760",
+      "decision": "D-24589",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current"
+    },
+    {
+      "extId": "henchman-mandarins-rings-influence-the-impact-beam",
+      "cardName": "Influence, The Impact Beam",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "gain-recruit-current",
+      "status": "executable",
+      "wp": "WP-541",
+      "decision": "D-24350",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current"
+    },
+    {
       "extId": "rvlt-villain-army-of-evil-klaw",
       "cardName": "Klaw",
       "set": "rvlt",
@@ -5265,6 +5353,28 @@
       "cardName": "Laser Maze",
       "set": "rvlt",
       "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-liar-the-mento-intensifier",
+      "cardName": "Liar, The Mento-Intensifier",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-lightning-the-electro-blast",
+      "cardName": "Lightning, The Electro-Blast",
+      "set": "rvlt",
+      "cardType": "henchman",
       "mechanic": "(unmarked)",
       "status": "unmarked",
       "wp": "",
@@ -5316,10 +5426,32 @@
       "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
+      "extId": "henchman-mandarins-rings-nightbringer-the-black-light",
+      "cardName": "Nightbringer, The Black Light",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
       "extId": "rvlt-villain-lethal-legion-power-man-erik-josten",
       "cardName": "Power Man (Erik Josten)",
       "set": "rvlt",
       "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-remaker-the-matter-rearranger",
+      "cardName": "Remaker, The Matter Rearranger",
+      "set": "rvlt",
+      "cardType": "henchman",
       "mechanic": "(unmarked)",
       "status": "unmarked",
       "wp": "",
@@ -5342,6 +5474,28 @@
       "cardName": "Sentry's Watchtower",
       "set": "rvlt",
       "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-spectral-the-disintegration-beam",
+      "cardName": "Spectral, The Disintegration Beam",
+      "set": "rvlt",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-mandarins-rings-spin-the-vortex-beam",
+      "cardName": "Spin, The Vortex Beam",
+      "set": "rvlt",
+      "cardType": "henchman",
       "mechanic": "(unmarked)",
       "status": "unmarked",
       "wp": "",
@@ -5386,6 +5540,17 @@
       "cardName": "White Gorilla Cult",
       "set": "rvlt",
       "cardType": "villain",
+      "mechanic": "(unmarked)",
+      "status": "unmarked",
+      "wp": "",
+      "decision": "",
+      "handler": ""
+    },
+    {
+      "extId": "henchman-mandarins-rings-zero-the-ice-blast",
+      "cardName": "Zero, The Ice Blast",
+      "set": "rvlt",
+      "cardType": "henchman",
       "mechanic": "(unmarked)",
       "status": "unmarked",
       "wp": "",
@@ -7151,6 +7316,61 @@
       "wp": "",
       "decision": "",
       "handler": ""
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-covert",
+      "cardName": "Ultron Sentries (Covert)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-instinct",
+      "cardName": "Ultron Sentries (Instinct)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-ranged",
+      "cardName": "Ultron Sentries (Ranged)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-strength",
+      "cardName": "Ultron Sentries (Strength)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
+    },
+    {
+      "extId": "henchman-ultron-sentries-ultron-sentries-tech",
+      "cardName": "Ultron Sentries (Tech)",
+      "set": "wtif",
+      "cardType": "henchman",
+      "mechanic": "koHeroCurrentPlayer",
+      "status": "executable",
+      "wp": "WP-185",
+      "decision": "D-18503",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero"
     },
     {
       "extId": "wtif-villain-rival-overlords-ulysses-klaue",

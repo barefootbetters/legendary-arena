@@ -37,6 +37,9 @@ import {
   resolveHeroCardCopyCount,
 } from './buildHeroDeck.js';
 import { resolveEffectiveTwistCount } from './schemeSetupSizing.js';
+// why: D-24803 — the one shared copy-to-variant mapper, imported (not
+// re-implemented) so display can never drift from the ability hooks.
+import { henchmanCopyVariant } from '../villainDeck/villainDeck.setup.js';
 
 // ---------------------------------------------------------------------------
 // parseCostNullable — null-distinction wrapper around parseCardStatValue
@@ -527,7 +530,7 @@ export function buildCardDisplayData(
     }
   }
 
-  // --- 3. Henchmen (group-level name/imageUrl/vAttack; 10 virtual copies) ---
+  // --- 3. Henchmen (group-level name/imageUrl/vAttack, or per-variant name/imageUrl; 10 virtual copies) ---
   // why: henchmen are NOT in FlatCard — flattenSet() emits only
   // hero / mastermind / villain / scheme. Walk getSet().henchmen[*]
   // directly. All 10 virtual copies share the group-level fields. Ext_id
@@ -551,10 +554,14 @@ export function buildCardDisplayData(
     for (let copyIndex = 0; copyIndex < 10; copyIndex++) {
       const paddedIndex = String(copyIndex).padStart(2, '0');
       const extId = `henchman-${henchmanGroup.slug}-${paddedIndex}` as CardExtId;
+      // why: D-24803 — a copy of a variant group (Tardigrade (Covert),
+      // Daimonic, The White Light, ...) shows its own variant's name and art;
+      // the printed Attack stays group-level (the variants carry none).
+      const variantCard = henchmanCopyVariant(henchmanGroup, copyIndex);
       result[extId] = {
         extId,
-        name: groupName,
-        imageUrl: groupImageUrl,
+        name: readVariantString(variantCard?.name, groupName),
+        imageUrl: readVariantString(variantCard?.imageUrl, groupImageUrl),
         cost: groupCost,
       };
     }
@@ -1041,6 +1048,20 @@ function findFlatCardForVillain(
     if (card.key === expectedKey) return card;
   }
   return undefined;
+}
+
+/**
+ * Reads a non-empty string field from a henchman variant card.
+ *
+ * @param value - The variant card's field, typed unknown.
+ * @param fallback - The group-level value used when the field is absent.
+ * @returns The variant's string, or the fallback.
+ */
+function readVariantString(value: unknown, fallback: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  return fallback;
 }
 
 /**
