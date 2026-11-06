@@ -21,6 +21,7 @@ import {
   countEscapedConvertedLoss,
   listConditionPiles,
   remainingPileCount,
+  resolveEscapedPileThreshold,
 } from './schemeResourceLoss.js';
 import { moveAttachedHeroesToEscapedPile } from '../board/heroCapture.logic.js';
 import { evaluateEndgame } from '../endgame/endgame.evaluate.js';
@@ -746,5 +747,35 @@ describe('Secret Invasion counts captured Heroes carried into the Escape pile (D
     );
     applyEscapedPileResourceLoss(state);
     assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined);
+  });
+});
+describe('per-player escape threshold and the additional escape condition (WP-863 / D-24805)', () => {
+  const MICROVERSE = 'antm/trap-heroes-in-the-microverse';
+
+  it('a flat escaped-pile-count threshold ignores the seat count', () => {
+    const state = makeState(MICROVERSE, [], {});
+    (state as unknown as { playerZones: Record<string, unknown> }).playerZones = { '0': {}, '1': {}, '2': {} };
+    assert.equal(resolveEscapedPileThreshold(state, { kind: 'escaped-pile-count', cardTypes: ['villain'], threshold: 5 }), 5);
+  });
+
+  it('a per-player threshold multiplies by the seats in G.playerZones', () => {
+    const state = makeState(MICROVERSE, [], {});
+    (state as unknown as { playerZones: Record<string, unknown> }).playerZones = { '0': {}, '1': {}, '2': {}, '3': {} };
+    assert.equal(
+      resolveEscapedPileThreshold(state, { kind: 'escaped-pile-count', cardTypes: ['villain'], threshold: 3, isThresholdPerPlayer: true }),
+      12,
+    );
+  });
+
+  it('a pile-depleted scheme with an additional escape condition loses on escapes, Henchmen included', () => {
+    const types: Record<string, RevealedCardType> = { v1: 'villain', v2: 'villain', h1: 'henchman', b1: 'bystander' };
+    const state = makeState(MICROVERSE, ['v1', 'h1', 'b1'], types);
+    (state as unknown as { playerZones: Record<string, unknown> }).playerZones = { '0': {} };
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], undefined, '2 of 3 Villains escaped (the Bystander does not count)');
+    state.escapedPile.push('v2');
+    applyEscapedPileResourceLoss(state);
+    assert.equal(state.counters[ENDGAME_CONDITIONS.SCHEME_LOSS], 1);
+    assert.equal(state.messages.at(-1)?.text, 'Scheme loss triggered — 3 Villains escaped (threshold 3).');
   });
 });

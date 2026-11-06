@@ -229,6 +229,14 @@ export interface HeroEffectDescriptor {
   // so this array stays plain data (no functions/Maps, acyclic). The handler safe-skips a
   // 'excessive-violence' effect that lacks it. Other keywords ignore it.
   excessiveViolenceEffects?: HeroEffectDescriptor[];
+  // why: WP-865 / D-24808 — for a 'heist' effect, heistEffects is the readied Heist ability's
+  // already-parsed inner effects (the +recruit / +attack / rescue / draw after the printed
+  // "Heist:" prefix, which the parser strips first so no nested 'heist' descriptor ever appears
+  // here). It is FIRED only by a successful attemptHeist (fireHeistPlays), NOT at play — the
+  // play-time handler (heroEffectHeist) only readies the card into the turn-scoped crew ledger.
+  // Plain data (no functions/Maps, acyclic), like excessiveViolenceEffects. The handler safe-skips
+  // a 'heist' effect that lacks it. Other keywords ignore it.
+  heistEffects?: HeroEffectDescriptor[];
   // why: WP-765 / D-24598 — for a 'day-night-both' effect, sunlightEffects / moonlightEffects are
   // the already-parsed inline effects of the card's printed "[keyword:Sunlight]:" and
   // "[keyword:Moonlight]:" lines (fused like the digest-indigestion branches; the same plain-data,

@@ -267,6 +267,28 @@ export interface TurnEconomy {
    * `carryConversionFlag`. Strings only (CardExtId).
    */
   ritualUsedPlayedCardIds?: CardExtId[];
+  /**
+   * WP-865 / D-24808 — the Heist crew: the allowlisted Heist cards the current player readied
+   * this turn, in play order. Playing a Heist card appends its CardExtId here (via
+   * `enrollHeistCard`) instead of firing its Heist ability; a successful `attemptHeist` then
+   * fires every readied card's ability in this order (`fireHeistPlays`). Duplicates are kept
+   * (two copies each fire). Strings only (CardExtId).
+   *
+   * ACTIVE-PLAYER-SCOPED. LAZILY MATERIALIZED: absent until the first Heist card is readied,
+   * dropped by `resetTurnEconomy` at turn start, carried by `carryConversionFlag`, so a turn
+   * that never readies a Heist serializes byte-identically and neither state-hash oracle moves.
+   */
+  heistCrewCards?: CardExtId[];
+  /**
+   * WP-865 / D-24808 — whether the current player already attempted this turn's one Heist
+   * (rules v23 p.27: one attempt per turn, whatever the outcome). Set by `attemptHeist` BEFORE
+   * the outcome resolves (via `markHeistAttempted`). While set, a newly played Heist card is too
+   * late and is not readied.
+   *
+   * LAZILY MATERIALIZED: absent until set, dropped by `resetTurnEconomy` at turn start, carried
+   * by `carryConversionFlag`. Absent ≡ not yet attempted this turn.
+   */
+  hasAttemptedHeistThisTurn?: boolean;
 }
 
 // why: stats resolved at setup time from registry so moves never query

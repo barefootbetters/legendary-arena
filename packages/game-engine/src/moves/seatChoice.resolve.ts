@@ -54,6 +54,12 @@ import {
   applyOutOfTimeGrantResolvedSeatChoice,
   OUT_OF_TIME_GRANT_SEAT_CHOICE_KIND,
 } from './outOfTimeGrant.logic.js';
+// why: WP-863 / D-24805 — Trap Heroes in the Microverse's "choose any player to gain it" apply (same
+// runtime-safe cycle: the binding is read only inside a function body).
+import {
+  applyMicroSizedGainResolvedSeatChoice,
+  MICRO_SIZED_GAIN_SEAT_CHOICE_KIND,
+} from '../rules/trapHeroesInTheMicroverse.logic.js';
 // why: WP-683 / D-24500 — the two Deadpool consumers' kind-specific applies + the
 // Random-Acts wound→pass chain builder.
 import {
@@ -553,6 +559,11 @@ function applySeatChoiceByKind(
   }
   if (choice.kind === COMMUNE_KO_SEAT_CHOICE_KIND) {
     applyCommuneKoResolvedSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-863 / D-24805 — the chosen player gains the defeated Micro-Sized Villain as a Hero.
+  if (choice.kind === MICRO_SIZED_GAIN_SEAT_CHOICE_KIND) {
+    applyMicroSizedGainResolvedSeatChoice(G, choice);
     return;
   }
   // why: WP-828 / D-24761 — the chosen hand Hero gains Man Out of Time this turn.

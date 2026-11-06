@@ -692,12 +692,13 @@ describe('HERO_KEYWORDS drift-detection', () => {
     'discard-artifact-or-three-then-ko', // why: WP-860 / D-24796 — Commune with the Spirit World: discard an Artifact you control or three cards from your hand, then KO a card from your hand or discard pile (chained seat choices; handler-bearing)
     'feast', // why: WP-857 / D-24793 — hero Feast "KO the top card of your deck": reuses the KO-or-keep reveal of the deck top (heroEffectRevealTopMayKo), resolved only on FEAST_CARDS
     'hq-hero-gains-size-changing-tech', // why: WP-862 / D-24804 — Pym Particles: a chosen HQ Hero with no Size-Changing gains Size-Changing [Tech] this turn (handler-bearing)
+    'heist', // why: WP-865 / D-24808 — the Ant-Man and the Wasp Heist keyword: heroEffectHeist readies an allowlisted Heist card at play; a successful attemptHeist fires its heistEffects (fireHeistPlays). Appended last.
     ];
 
     assert.equal(
       HERO_KEYWORDS.length,
-      93,
-      'HERO_KEYWORDS must have exactly 93 entries (D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, after WP-860 / D-24796 discard-artifact-or-three-then-ko; hq-hero-gains-size-changing-tech, WP-862 / D-24804, appended last)',
+      94,
+      'HERO_KEYWORDS must have exactly 94 entries (WP-865 / D-24808 heist appended last; D-24801 microscopic-size-changing after size-changing; feast, WP-857 / D-24793, after WP-860 / D-24796 discard-artifact-or-three-then-ko; hq-hero-gains-size-changing-tech, WP-862 / D-24804, appended last)',
     );
 
     assert.deepStrictEqual(

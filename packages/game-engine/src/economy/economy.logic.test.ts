@@ -32,6 +32,8 @@ import {
   recordSidekickReturned,
   recordRecruitedHeroCost,
   recordRitualUsedPlayed,
+  enrollHeistCard,
+  markHeistAttempted,
 } from './economy.logic.js';
 import type { MatchSetupConfig } from '../matchSetup.types.js';
 
@@ -931,5 +933,42 @@ describe('recordRecruitedHeroCost / recordRitualUsedPlayed (WP-858 / D-24794)', 
     const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(base, 1, 1), 1))) as Record<string, unknown>;
     assert.strictEqual(Object.keys(roundTripped).includes('highestRecruitedHeroCost'), false);
     assert.strictEqual(Object.keys(roundTripped).includes('ritualUsedPlayedCardIds'), false);
+  });
+});
+
+describe('enrollHeistCard / markHeistAttempted (WP-865 / D-24808)', () => {
+  it('readies Heist cards in play order, keeping duplicates, and latches the attempt', () => {
+    let economy = enrollHeistCard(resetTurnEconomy(), 'amwp/wasp/infiltrate#0');
+    economy = enrollHeistCard(economy, 'amwp/wasp/infiltrate#1');
+    economy = enrollHeistCard(economy, 'amwp/wasp/infiltrate#0');
+    assert.deepStrictEqual(economy.heistCrewCards, [
+      'amwp/wasp/infiltrate#0',
+      'amwp/wasp/infiltrate#1',
+      'amwp/wasp/infiltrate#0',
+    ]);
+    assert.strictEqual(markHeistAttempted(economy).hasAttemptedHeistThisTurn, true);
+  });
+
+  it('the crew and the latch survive addResources / spendAttack / spendRecruit and coexist with other lazy fields', () => {
+    let economy = enrollExcessiveViolenceCard(resetTurnEconomy(), 'vnom/carnage/rending-claws#0');
+    economy = enrollHeistCard(economy, 'amwp/wasp/infiltrate#0');
+    economy = markHeistAttempted(economy);
+    economy = addResources(economy, 3, 2);
+    economy = spendAttack(economy, 1);
+    economy = spendRecruit(economy, 1);
+    assert.deepStrictEqual(economy.heistCrewCards, ['amwp/wasp/infiltrate#0']);
+    assert.strictEqual(economy.hasAttemptedHeistThisTurn, true);
+    assert.deepStrictEqual(economy.excessiveViolencePlayedCards, ['vnom/carnage/rending-claws#0'], 'the EV ledger is not dropped');
+  });
+
+  it('the setters never mutate their input, and a reset or round-tripped base carries neither key', () => {
+    const base = resetTurnEconomy();
+    enrollHeistCard(base, 'x#0');
+    markHeistAttempted(base);
+    assert.strictEqual('heistCrewCards' in base, false);
+    assert.strictEqual('hasAttemptedHeistThisTurn' in base, false);
+    const roundTripped = JSON.parse(JSON.stringify(spendRecruit(addResources(base, 1, 1), 1))) as Record<string, unknown>;
+    assert.strictEqual(Object.keys(roundTripped).includes('heistCrewCards'), false);
+    assert.strictEqual(Object.keys(roundTripped).includes('hasAttemptedHeistThisTurn'), false);
   });
 });
