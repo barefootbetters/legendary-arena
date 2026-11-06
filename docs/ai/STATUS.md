@@ -10,6 +10,12 @@
 
 ## Current State
 
+### Each-player KO log line says every player KOs (D-24644 amendment) (2026-11-06)
+
+**User-visible in the game log after deploy.** Super-Skrull's Fight, Juggernaut's Ambush / Escape and Destroyer's KO now log "Fight effect: each player KOs a hero: Player 0 must choose which; Player 1 KO’d S.H.I.E.L.D. Agent from their hand." instead of "the active player must KO a hero; …", which read as if only the active player loses a Hero (Jeff's match `yTdbv34zeV6`, 7.2.6). Engine behavior is unchanged. A current-player KO keeps "the active player must KO a hero".
+
+- **Live-verify (D-24026): operator-pending.** In a 2-player match created after the deploy, fight Super-Skrull while holding two different Heroes. The Fight line reads as above, and the next line names your own pick.
+
 ### Heist: Attempt a Heist fires the readied Heist abilities, and Heist lines stop granting at play (WP-865 / EC-903, D-24808) (2026-11-06)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Ant-Man and the Wasp's Heist now plays by the rule (v23 p.26-27). Playing a Heist card grants nothing and logs it readied for a Heist. Once per turn, while a card is readied, an **Attempt Heist (Heist Count N)** button appears in the played-cards heading. Pressing it counts the different non-zero printed costs among the Heroes you have (hand plus cards still in play), reveals the Villain Deck top card (it stays on top), and compares with its printed VP: higher fires every readied Heist ability, tied does nothing, lower gains a Wound. Before this, six Heist lines paid out on every play (Infiltrate's +3 decided a Fin Fang Foom fight in `vZXSkk4xJNC`) and four did nothing.

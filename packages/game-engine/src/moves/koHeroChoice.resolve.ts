@@ -128,8 +128,8 @@ export function resolveKoHeroChoice({ G, playerID }: MoveContext, args: ResolveK
   recordOwnedCardKoed(G, playerID, args.cardId, args.zone);
 
   // Step 5: Narrate the resolved KO in the game log so the player sees WHICH
-  // hero they KO'd. The fight-time line only says "the active player must KO a
-  // hero" for this interactive (>=2-eligible) path — resolve-time naming was a
+  // hero they KO'd. The fight-time line only says who must still choose ("the
+  // active player must KO a hero" / "Player N must choose which") for this interactive (>=2-eligible) path — resolve-time naming was a
   // WP-316 §Scope Out deferral; this completes it. (The exactly-1 auto-KO path
   // already names its target at fight time.) `G.messages` is hash-excluded
   // (D-24081), so this adds no determinism / sentinel impact.
