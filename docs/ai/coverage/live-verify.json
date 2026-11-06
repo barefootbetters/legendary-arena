@@ -1649,8 +1649,8 @@
       "wp": "WP-861",
       "state": "verified",
       "date": "2026-11-02",
-      "evidence": "2p Operator match gs--GHdVvyG (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Wasp; server build 9c178a24, created 2026-11-02T15:09:49Z after boot, isMatchOlderThanServer false): Follow my Lead played first gave its printed +1 and the conditional +1 (6.2.1-6.2.3, 8.2.1-8.2.3, 12.2.1-12.2.3, 16.2.1-16.2.3); a second copy played after other cards logged blocked (12.2.10-12.2.12). Its separate Size-Changing line logs a not-supported gate or a gate-only hollow on every play (6.2.2, 12.2.11): the amwp Wasp Size-Changing lines lack the [keyword:Size-Changing] token, a pre-existing data gap outside WP-861.",
-      "note": "Follow My Lead played first gives 2 Attack; played after another card it gives 1 and logs [blocked]. Its Size-Changing line is unchanged and still logs its own Ranged gate. D-24798."
+      "evidence": "2p Operator match gs--GHdVvyG (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Wasp; server build 9c178a24, created 2026-11-02T15:09:49Z after boot, isMatchOlderThanServer false): Follow my Lead played first gave its printed +1 and the conditional +1 (6.2.1-6.2.3, 8.2.1-8.2.3, 12.2.1-12.2.3, 16.2.1-16.2.3); a second copy played after other cards logged blocked (12.2.10-12.2.12). Its separate Size-Changing line logs a not-supported gate or a gate-only hollow on every play (6.2.2, 12.2.11): the amwp Wasp Size-Changing lines lack the [keyword:Size-Changing] token, a pre-existing data gap outside WP-861. Re-checked on 2p Operator match PAwTxk88LRy (Magneto / Midtown Bank Robbery; Storm, Iron Man, Cyclops, Wasp, Janet van Dyne; server build 96855eb0, which contains the #3151 fix d5b9113f; created 2026-11-05T11:43:20Z after boot, isMatchOlderThanServer false): the Size-Changing line no longer logs a gate or a hollow; played after other cards, Follow my Lead logged only the first-card block (14.2.6-14.2.7, 20.2.11-20.2.12).",
+      "note": "Follow My Lead played first gives 2 Attack; played after another card it gives 1 and logs [blocked]. Its Size-Changing line stopped logging a false Ranged gate after #3151 (match PAwTxk88LRy). D-24798."
     },
     {
       "key": "chmp-villain-monsters-unleashed-sporr|hq-hero-gains-size-changing",
@@ -1695,6 +1695,28 @@
       "date": "2026-11-05",
       "evidence": "",
       "note": "Live check: setup log names the trapped Hero; a revealed trapped card fights for its printed cost (2 less per color played); with two seats the fight opens a Player N gains <Hero> choice; a Twist reveals two cards. D-24805."
+    },
+    {
+      "key": "amwp/wasp|size-changing",
+      "kind": "hero",
+      "card": "Wasp",
+      "ability": "Size-Changing [Ranged] / [Tech] (Follow my Lead, Flitting Sting, Master Physicist, Positive Ions)",
+      "wp": "#3151",
+      "state": "partial",
+      "date": "2026-11-05",
+      "evidence": "2p Operator match PAwTxk88LRy (Magneto / Midtown Bank Robbery; Storm, Iron Man, Cyclops, Wasp, Janet van Dyne; server build 96855eb0, which contains the #3151 fix d5b9113f; created 2026-11-05T11:43:20Z after boot, isMatchOlderThanServer false): the Size-Changing line logged no gate and no hollow on Follow my Lead (14.2.6, 20.2.11), Flitting Sting (5.2.5, 22.2.10, 26.2.14), Master Physicist (12.2.4, 14.2.1, 18.2.3, 20.2.13, 22.2.13, 26.2.7) or Positive Ions (8.2.1, 12.2.12, 20.2.9, 26.2.12, 26.2.17, 26.2.26), and none of them is in the hollow panel. Flitting Sting's Ranged line fired after another Ranged Hero (Tidal Wave 22.2.7, then 22.2.11-22.2.12; Positive Ions 26.2.12, then 26.2.15-26.2.16) and logged blocked without one (5.2.6, 9.2.6, 19.2.10). Not verified: the rulebook Size-Changing recruit discount (v23 p.33) was not in this build. This build modelled D-24074's class grant instead, which adds the card's own printed class and has no visible effect. D-24801 (#3155) replaced it with the discount after this match, so the discount needs a new match on a build with #3155. Every recruit in this match used the Operator +20 Recruit setter.",
+      "note": "The false gate-only hollow is gone (#3151). The recruit discount (D-24801, #3155) landed after this match and needs a new match."
+    },
+    {
+      "key": "amwp/janet-van-dyne|size-changing",
+      "kind": "hero",
+      "card": "Janet van Dyne",
+      "ability": "Size-Changing [Covert] (Wasp of Another Generation)",
+      "wp": "#3151",
+      "state": "partial",
+      "date": "2026-11-05",
+      "evidence": "2p Operator match PAwTxk88LRy (Magneto / Midtown Bank Robbery; Storm, Iron Man, Cyclops, Wasp, Janet van Dyne; server build 96855eb0, which contains the #3151 fix d5b9113f; created 2026-11-05T11:43:20Z after boot, isMatchOlderThanServer false): Wasp of Another Generation's Size-Changing line logged no gate and no hollow (12.2.10, 14.2.8, 22.2.5, 24.2.5). Its Covert line fired after Finally Found You (12.2.8, then 12.2.11; 22.2.3, then 22.2.6) and logged blocked with no other Covert Hero played (14.2.9, 24.2.6). Not verified: the rulebook Size-Changing recruit discount (v23 p.33) was not in this build. This build modelled D-24074's class grant instead, which adds the card's own printed class and has no visible effect. D-24801 (#3155) replaced it with the discount after this match, so the discount needs a new match on a build with #3155. Every recruit in this match used the Operator +20 Recruit setter.",
+      "note": "The false gate-only hollow is gone (#3151). The recruit discount (D-24801, #3155) landed after this match and needs a new match."
     }
   ]
 }
