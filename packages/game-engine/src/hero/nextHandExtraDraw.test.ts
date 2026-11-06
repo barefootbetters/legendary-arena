@@ -264,6 +264,6 @@ describe('next-hand-extra-draw handler (WP-866 / D-24809)', () => {
     const isHandled = executeSingleEffect(G, mockCtx, '0', INFILTRATE, { type: 'next-hand-extra-draw' });
 
     assert.equal(isHandled, false);
-    assert.equal(G.handSizeOverrides?.['0'], undefined, 'no override written');
+    assert.equal(G.handSizeOverrides, undefined, 'no handSizeOverrides container created');
   });
 });
