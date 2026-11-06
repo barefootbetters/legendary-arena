@@ -17,7 +17,7 @@
 - **Engine.** A new reveal predicate `hero-class-or-size-changing` (a Strength card, or any card with printed Size-Changing, Microscopic included), marked `[keyword:reveal:hc-or-size-changing-strength:draw]`. On that line the Size-Changing token is the reveal criterion. A non-match stays on top of the deck.
 - **Feeds.** Hero ledger and effect index list the reveal for amwp Ant-Man; the runtime-observed feed moved by one observation (7725 → 7724), so the dashboard in-play pin goes 8686 → 8687.
 - **Tests.** game-engine 6299 / 0 (+6), arena-client 2546 / 0, dashboard 594 / 0, server 1640 pass.
-- **Live-verify (D-24026): operator-pending.** In a match created after the deploy with amwp Ant-Man: play Look Out for the Little Guy with a Strength card on top of your deck (it is drawn), then with a non-Strength card that has Size-Changing (drawn), then with anything else (it stays on top). The log names the criterion "a strength card or a card with Size-Changing".
+- **Live-verify (D-24026): PARTIAL 2026-11-06** on operator match `l8uwhB8OMmN` (server `260af872`, created after boot): a revealed Shrink Away (Covert, Size-Changing) was drawn (17.2.4); a revealed Unstoppable Hulk (Instinct, no Size-Changing) stayed on top (5.2.6, 9.2.21). Still to see: a revealed Strength card is drawn.
 
 ### Size-Changing granted during play: Pym Particles, Ultron-Pym, Shrinksperiments, Sporr and two tactics make an HQ Hero cheaper to recruit (WP-862 / EC-900, D-24804) (2026-11-05)
 
@@ -28,7 +28,7 @@
 - **Tests.** game-engine 6293 / 0 (+24), arena-client 2546 / 0, dashboard 594 / 0, server 1640 pass.
 - **Operator call (D-24804).** Shrinking Research Budget prints no duration; it is implemented as "while the Hero stays in the HQ" (any player recruiting it later gets the discount). Reverting to "this turn" is a one-value change.
 - **Not covered.** Trap Heroes in the Microverse (the antm scheme needs its Heroes-in-the-Villain-Deck setup first), Look Out for the Little Guy's reveal line (same parse class as the Pym Particles bug), Darren Cross's Transform, and a client badge on a Hero with granted Size-Changing.
-- **Live-verify (D-24026): operator-pending.** In a match created after the deploy:
+- **Live-verify (D-24026): PARTIAL 2026-11-06** on operator match `l8uwhB8OMmN` (Fin Fang Foom; server `260af872`, created after boot). Verified: Pym Particles opened the pick and the chosen Unstoppable Hulk recruited for 2 instead of 4 (3.2.19-3.2.30); Alien Dragon Technology gave all five classes and the Hulk recruited for 0 (7.2.18-7.2.21); Sporr gave Tech and Ranged and the Hulk recruited for 2 with Tech played (9.2.32-9.2.38). Still to see (a Darren Cross match with Ultron's Legacy): Ultron-Pym, Shrinksperiments' replace mode, Shrinking Research Budget, the Sporr Ranged step and Pym Particles' own price. The original steps:
   1. Villain group chmp Monsters Unleashed, two or more Heroes in the HQ: fight Sporr. A pick opens (Play Diagnostics `uiStateSnapshot.pendingSeatChoice` lists "<Hero> gains Size-Changing Tech and Ranged this turn"). Choose a Hero, play a Tech card: that HQ tile reads 2 below its printed cost (`hq.recruitCosts`), 4 below with a Ranged card too. After End Turn it is back to printed.
   2. Hero antm Ant-Man: play Pym Particles with a Hero with no Size-Changing in the HQ; it gains Tech this turn ("Player 0 gave <Hero> Size-Changing Tech this turn (Pym Particles).").
   3. Villain group amwp Cross Technologies: fight Shrinksperiments; the chosen Hero's own Size-Changing stops discounting it and Tech does.
