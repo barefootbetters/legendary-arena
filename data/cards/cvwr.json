@@ -2482,8 +2482,8 @@
           "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-vi-great-lakes-avengers-big-bertha.webp",
           "abilities": [
             "[keyword:Size-Changing]: [hc:strength]",
-            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:strength] Hero or gains a Wound. [effect:reveal-or-wound:hc:strength]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:strength]"
           ],
           "copies": 2
         },

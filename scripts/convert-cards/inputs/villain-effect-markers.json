@@ -187,6 +187,9 @@
       }
     },
     "cvwr": {
+      "great-lakes-avengers": {
+        "big-bertha": { "fight": ["reveal-or-wound:hc:strength"], "escape": ["reveal-or-wound:hc:strength"] }
+      },
       "heroes-for-hire": {
         "humbug": { "fight": ["koHeroCurrentPlayer"] }
       },

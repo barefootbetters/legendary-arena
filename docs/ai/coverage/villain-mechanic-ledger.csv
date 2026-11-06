@@ -228,7 +228,7 @@ cosm-villain-celestials-tiamut-the-dreaming-celestial,"Tiamut, The Dreaming Cele
 henchman-universal-church-of-truth,Universal Church of Truth,cosm,henchman,(unmarked),unmarked,,,
 cvwr-villain-shield-elite-agent-eric-marshall,Agent Eric Marshall,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-shield-elite-agent-gabe-jones,Agent Gabe Jones,cvwr,villain,(unmarked),unmarked,,,
-cvwr-villain-great-lakes-avengers-big-bertha,Big Bertha,cvwr,villain,(unmarked),unmarked,,,
+cvwr-villain-great-lakes-avengers-big-bertha,Big Bertha,cvwr,villain,reveal-or-wound,executable,WP-469,D-24281,packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound
 cvwr-villain-registration-enforcers-blade,Blade,cvwr,villain,(unmarked),unmarked,,,
 cvwr-villain-csa-special-marshals-bullseye,Bullseye,cvwr,villain,(unmarked),unmarked,,,
 henchman-cape-killers,Cape-Killers,cvwr,henchman,(unmarked),unmarked,,,
