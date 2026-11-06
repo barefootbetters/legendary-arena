@@ -10,11 +10,11 @@
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 720,
-      "deferred": 16,
+      "executable": 723,
+      "deferred": 17,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 987,
+      "unmarked": 983,
       "subsystem": 5
     }
   },
@@ -5873,10 +5873,10 @@
       "set": "co2e",
       "scope": "mastermind",
       "mechanic": "treasures-of-latveria",
-      "status": "unmarked",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveTreasuresOfLatveria",
       "wp": "",
-      "decision": ""
+      "decision": "D-24813"
     },
     {
       "extId": "co2e-mastermind-doctor-octopus-absolute-octarchy",
@@ -9188,10 +9188,10 @@
       "set": "cvwr",
       "scope": "mastermind",
       "mechanic": "cursed-dynasty",
-      "status": "unmarked",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
       "wp": "",
-      "decision": ""
+      "decision": "D-24813"
     },
     {
       "extId": "cvwr-mastermind-baron-helmut-zemo-endless-minions",
@@ -14813,10 +14813,10 @@
       "set": "mgtg",
       "scope": "mastermind",
       "mechanic": "im-a-celestial-sweetheart",
-      "status": "unmarked",
-      "handler": "",
+      "status": "deferred",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
       "wp": "",
-      "decision": ""
+      "decision": "D-24813"
     },
     {
       "extId": "mgtg-mastermind-ego-the-living-planet-the-expansion-is-my-purpose",
@@ -15405,10 +15405,10 @@
       "set": "msis",
       "scope": "mastermind",
       "mechanic": "hear-me-and-rejoice",
-      "status": "unmarked",
-      "handler": "",
+      "status": "executable",
+      "handler": "packages/game-engine/src/rules/tacticHandlers.ts#resolveNextHandExtraCardsTactic",
       "wp": "",
-      "decision": ""
+      "decision": "D-24813"
     },
     {
       "extId": "msis-mastermind-ebony-maw-smile-even-in-death",

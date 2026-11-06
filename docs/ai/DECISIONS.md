@@ -50365,3 +50365,36 @@ All three appeared as their first variant's art, with no abilities on any copy. 
 
 ---
 Protect this file.
+
+### D-24813 — Four mastermind tactics that print "draw two/three extra cards" on your next hand use the core Treasures of Latveria writer (Active 2026-11-06 — direct fix, no WP)
+
+**Status:** Active 2026-11-06. Live-verify (D-24026) operator-pending: four `live-verify.json` rows.
+
+**Context.** Mastermind tactic Fight effects dispatch by ext_id in `packages/game-engine/src/rules/tacticHandlers.ts` (`dispatchTacticOnFight`, WP-497 / D-24300). Core Treasures of Latveria was wired in WP-691 / D-24508. Four other tactics print the same Fight line under their own ext_ids, so the core id never matched them and their Fight resolved to nothing:
+- cvwr Baron Helmut Zemo, "Cursed Dynasty": "Fight: When you draw a new hand of cards at the end of this turn, draw two extra cards."
+- mgtg Ego, the Living Planet, "I'm a Celestial, Sweetheart": the same +2 line, then "Destroy the leftmost city space. Any Villain there escapes. Shuffle this Tactic back into Ego's Tactics."
+- msis Ebony Maw, "Hear Me and Rejoice": the same +2 line, then "[keyword:Endgame]: Same effect, but three cards instead."
+- co2e Doctor Doom, "Treasures of Latveria": the same line with "three extra cards" (the co2e reprint of the core card).
+
+PR #3186 marked the villain and henchman cards with this text through `villain-effect-markers.json`. That map does not cover tactics, so these four were left for engine work.
+
+**Decision.**
+1. **One shared resolver.** `resolveNextHandExtraCardsTactic(G, player, extraCards, tacticName)` is the body core `resolveTreasuresOfLatveria` already ran: `G.handSizeOverrides[player] = (override ?? HAND_SIZE) + extraCards` (the WP-691 / D-24508 and Savage Land Mutates WP-543 / D-24352 additive writer), so stacked next-hand bonuses add up. `resolveTreasuresOfLatveria` now calls it with +3; its log line is unchanged.
+2. **Four dispatch entries.** co2e Treasures of Latveria calls `resolveTreasuresOfLatveria` (+3). Cursed Dynasty, I'm a Celestial, Sweetheart and Hear Me and Rejoice call the shared resolver with `TWO_EXTRA_CARDS` (2). No new `G` field, no new consumption site: the play-phase `onBegin` fill in `game.ts` reads and clears the override as before.
+3. **Hear Me and Rejoice is +2.** The engine has no Endgame state. Ebony Maw's Master Strike, which starts the Endgame, is not implemented, so outside the Endgame the printed result is +2, and that is what runs.
+4. **Provenance.** `scripts/coverage/tactic-provenance.json` marks co2e Treasures of Latveria, Cursed Dynasty and Hear Me and Rejoice `executable`. I'm a Celestial, Sweetheart is `deferred`, because its second line does not run.
+
+**Deferred (not modelled engine-side).**
+- **Ego's second line.** The city is a fixed five spaces, and the engine has nothing that destroys a city space, escapes the Villain there, or shuffles a defeated tactic back into the tactics deck. The rest of Ego is unmodelled too: +1 Attack per city space, "When there are no more city spaces, Good Wins", and the Master Strike that creates a city space. Defeating I'm a Celestial, Sweetheart grants the +2 and then follows the normal tactic path.
+- **Ebony Maw's Endgame.** The +3 Endgame branch needs an Endgame state, set by Ebony Maw's Master Strike. That state is also what gates Ebony Maw's own Endgame +4 Attack and the Endgame lines on his other three tactics.
+
+**Consequences.**
+- **Hash.** A match that never defeats one of the four tactics is byte-identical. One that does now carries a `handSizeOverrides` entry and draws a bigger next hand, so replays of earlier cvwr / mgtg / msis / co2e matches that defeated one diverge on re-execution; stored competitive rows stay frozen (D-24616 §5).
+- **Feeds.** The effect-implementation index moves the four tactics off `unmarked` (executable 720 -> 723, deferred 16 -> 17, unmarked 987 -> 983).
+
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` 0 fail in every package: game-engine 6442 / 0 (+16, `rules/tacticNextHandExtraCards.test.ts`: for each tactic, the printed Fight line and its tactics-deck ext_id read from the committed card data, the +N override and log line through `dispatchTacticOnFight`, and stacking on an existing override; 8 of the 16 fail against the old dispatcher), arena-client 2552 / 0, dashboard 594 / 0, server 1847 / 0 (1640 pass, DB-skipped), registry 311 / 0. `cards:check`, `ledger:heroes:check`, `ledger:villains:check`, `effect-index:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check`, `cards:count-markers:check`, `roadmap:counts:check`, `ledger:numbers:check` 0. No sentinel / `finalStateHash` / PAR pin moved.
+
+**Reserved by:** NUMBER-LEDGER D-24813 (this PR). Related: D-24508 (core Treasures of Latveria), D-24352 (the additive next-hand writer), D-24300 (tactic dispatch), D-24809 (WP-866, the hero-side next-hand extra draw, not overlapped), D-24026.
+
+---
+Protect this file.
