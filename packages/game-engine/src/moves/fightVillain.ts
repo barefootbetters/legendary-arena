@@ -99,6 +99,8 @@ import {
 } from '../events/notableEvents.compose.js';
 import { pushLog } from '../log/logPush.js';
 import { queueEnigmaPeekOffer } from '../rules/enigmaCode.logic.js';
+// why: WP-863 / D-24805 — the Micro-Sized Villain defeat route (gain + the recipient seat choice).
+import { gainDefeatedMicroSizedHero } from '../rules/trapHeroesInTheMicroverse.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -589,7 +591,15 @@ export function defeatCityVillainCore(
   // announce the gain in the center-screen overlay, not only in the durable log.
   let skrullGained = false;
   let officerGained = false;
-  if (G.convertedVillainOrigins?.[cardId] === 'skrull') {
+  let microSizedGained = false;
+  if (G.convertedVillainOrigins?.[cardId] === 'micro-sized') {
+    // why: WP-863 / D-24805 — Trap Heroes in the Microverse "When you fight one, choose any player
+    // to gain it as a Hero." The card goes to the defeater's discard first, so it always sits in a
+    // zone, then (two or more seats) the defeater picks the player through a seat choice. It never
+    // enters a Victory Pile. The narrative's gain clause is on only for an outright gain: with a
+    // pending pick the recipient is not decided yet.
+    microSizedGained = gainDefeatedMicroSizedHero(G, currentPlayer, cardId);
+  } else if (G.convertedVillainOrigins?.[cardId] === 'skrull') {
     skrullGained = true;
     G.playerZones[currentPlayer]!.discard.push(cardId);
     delete G.convertedVillainOrigins[cardId];
@@ -731,7 +741,7 @@ export function defeatCityVillainCore(
       // overlay; false for every ordinary villain defeat (byte-identical narrative).
       // WP-823 / D-24756: a Brainwash the Military Officer gained as a Hero shares the
       // same "gained the Hero" clause.
-      skrullGained || officerGained,
+      skrullGained || officerGained || microSizedGained,
     ),
   });
 

@@ -66,9 +66,11 @@ export { REVEALED_CARD_TYPES } from './villainDeck/villainDeck.types.js';
 // card's RevealedCardType. 'killbot' (Killbots, WP-513); 'skrull' (Secret Invasion,
 // WP-514 / D-24326 — 12 Heroes shuffled into the Villain Deck count as Skrull villains);
 // 'shield-officer' (Brainwash the Military, WP-823 / D-24756 — 12 S.H.I.E.L.D. Officers
-// in the Villain Deck are Villains, gained as a Hero on defeat).
+// in the Villain Deck are Villains, gained as a Hero on defeat); 'micro-sized' (Trap Heroes in the
+// Microverse, WP-863 / D-24805 — an extra Hero's cards in the Villain Deck are Micro-Sized Villains,
+// gained as a Hero by a player the defeater chooses).
 /** Converted-card villain origin — the named villain group a card "counts as". */
-export type ConvertedVillainOrigin = 'killbot' | 'skrull' | 'shield-officer';
+export type ConvertedVillainOrigin = 'killbot' | 'skrull' | 'shield-officer' | 'micro-sized';
 
 // why: D-24802 — a Villain or Mastermind's printed Size-Changing fight discount. `classes`
 // are the "Size-Changing [Class]" classes (2 less each when a matching card was played this
@@ -1434,13 +1436,15 @@ export interface SeatChoiceOption {
   cityIndex?: number;
   // why: WP-683 / D-24500 — for a 'random-acts-pass-left' option, cardId is the exact hand
   // instance the seat passes to the seat on its left. Hand instances are copy-suffixed and
-  // unique, so the atomic apply moves this exact card. Absent for every other kind. NOT
-  // projected to the client.
+  // unique, so the atomic apply moves this exact card. WP-821 / WP-863 also set it on
+  // 'dominate-the-weak-gain' and 'micro-sized-gain' options (the card being gained). Absent for
+  // every other kind. NOT projected to the client.
   cardId?: CardExtId;
   // why: WP-821 / D-24754 — for a 'dominate-the-weak-gain' option, recipientSeat names
   // the player who gains the option's HQ Hero (cardId), so one option pairs the
-  // recipient with the Hero. Consumer-added, like cityIndex / cardId. Absent for every
-  // other kind. NOT projected to the client.
+  // recipient with the Hero. Consumer-added, like cityIndex / cardId. WP-863 / D-24805: also
+  // on a 'micro-sized-gain' option (the player who gains the defeated Micro-Sized Villain).
+  // Absent for every other kind. NOT projected to the client.
   recipientSeat?: string;
   // why: WP-821 / D-24754 — for a Crush Pacifist Resistance KO option, sourceZone names
   // the zone the cardId is KO'd from, because S.H.I.E.L.D. starter ids repeat across the
@@ -3123,12 +3127,15 @@ export interface LegendaryGameState {
   // less if you played any [Class] cards this turn", rules v23 p.33; Microscopic: 2 less per
   // matching card, up to one per icon, p.30). Villain copies are keyed by copy-suffixed
   // instance ext_id; henchman copies by `henchman-{group}-NN`, each reading its own printed
-  // variant (D-24803); a Mastermind by its fightable face id(s). Read only by
+  // variant (D-24803); a Mastermind by its fightable face id(s); a Trap Heroes in the Microverse
+  // Micro-Sized Villain (a Hero card in the Villain Deck) by its Hero instance id, with its card
+  // color(s) as the classes (WP-863 / D-24805). Read only by
   // resolveFightPrice / resolveMastermindFightPrice. Kept apart from the hero
   // cardSizeChangingClasses map so a Villain never reads as a "Size-Changing Hero" (Antics,
   // the HQ recruitCosts presence rule). Built once at setup; OMITTED ENTIRELY when no
-  // selected villain, henchman or mastermind prints Size-Changing (hash oracles).
-  /** Size-Changing fight discounts by villain or mastermind card. Built at setup, read-only; absent when none. */
+  // selected villain, henchman or mastermind prints Size-Changing and no Micro-Sized Villain
+  // has a class (hash oracles).
+  /** Size-Changing fight discounts by villain, mastermind or Micro-Sized card. Built at setup, read-only; absent when none. */
   fightSizeChanging?: Record<CardExtId, FightSizeChanging>;
 
   // why: WP-200 — append-only structured event log emitted at four fire
