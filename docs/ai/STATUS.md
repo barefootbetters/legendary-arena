@@ -51,13 +51,7 @@
 - **Feeds.** The villain ledger and the effect index gain 20 henchman-variant rows (14 executable, 6 unmarked). `card-mechanics.json` and the runtime-observed hollows (7724 observations) are unchanged. The dashboard `totalObs` pin stays at 8686.
 - **Tests.** game-engine 6311 / 0 (+12), arena-client 2546 / 0, server 1847 / 0, dashboard 594 / 0.
 - **Not covered.** Six rings (Liar, Lightning, Nightbringer, Remaker, Spin and Zero) need new effect primitives; their fights record an `unmarked-ability` hollow. Ultron Sentries' Empowered Attack is not covered either.
-- **Live-verify (D-24026): operator-pending.** In a match created after the deploy:
-  1. Henchman group amwp Tardigrade: the City and victory pile show "Tardigrade (Covert)", "Tardigrade (Tech)" and so on, each with its class art.
-  2. With a Tardigrade (Tech) in the City, play one Tech card: its tile reads 2, and it fights for 2. Play three or more Tech cards: it fights for 0 and the log reads "for 0 and gains 2 Attack." A Covert card does not discount it.
-  3. Henchman group rvlt Mandarin's Rings: each ring shows its own name and art (Daimonic, Zero, ...).
-  4. Fight a Tardigrade or an Ultron Sentry: you choose one of your Heroes to KO.
-  5. Fight Daimonic: you draw a card. Fight Influence: +1 Recruit. Fight Incandescence: you may KO a card from your discard pile.
-  6. Henchman group core Doombot Legion: unchanged.
+- **Live-verify (D-24026): PASS 2026-11-06** on server `69f9719b`, operator matches created after boot. `yTdbv34zeV6` (Ultron Sentries + Doombot Legion): each Sentry copy shows its class name and art (00 Covert, 02 Instinct, 04-05 Ranged, 07 Strength, 08-09 Tech); all 8 Sentry fights fired `ko-hero` as a Hero pick; all 7 Doombot fights fired `scry-ko-own-deck` unchanged. `marWQ0Au-EN` (Tardigrade + Rings): every Tardigrade and ring copy shows its own name and art; Tardigrade (Instinct) after three Instinct cards and Tardigrade (Tech) after three Tech cards each logged "for 0 and gains 2 Attack" (11.2.38, 13.2.19), while Tardigrade (Ranged) on a turn with no Ranged card fought at full price (11.2.35); all 8 Tardigrade fights KO'd a picked Hero; Incandescence reached its handler on an empty discard (17.2.13); Spin, Liar, Nightbringer, Zero and Remaker recorded the expected `unmarked-ability` hollows. `kqMw86CWof_`: Daimonic drew a card (1.2.16), Influence gave +1 Recruit (1.2.18), Spectral opened the Hero KO pick (1.2.20-1.2.21). Not seen live: a Tardigrade tile at an intermediate price (one Tech card), and Lightning.
 
 ### Look Out for the Little Guy reveals and draws a Strength or Size-Changing card (D-24806, direct fix) (2026-11-05)
 
