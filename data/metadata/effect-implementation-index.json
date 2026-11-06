@@ -3,18 +3,18 @@
   "scope": "all",
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "summary": {
-    "totalEntries": 2065,
+    "totalEntries": 2066,
     "byScope": {
       "hero": 849,
-      "villain": 760,
+      "villain": 761,
       "mastermind": 456
     },
     "byStatus": {
-      "executable": 694,
+      "executable": 719,
       "deferred": 16,
       "condition": 58,
       "unsupported": 280,
-      "unmarked": 1012,
+      "unmarked": 988,
       "subsystem": 5
     }
   },
@@ -881,11 +881,11 @@
       "name": "City Defense System",
       "set": "amwp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "amwp-villain-armada-of-kang-energy-shield",
@@ -1002,11 +1002,11 @@
       "name": "Yellowjacket Prototype",
       "set": "amwp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "amwp-villain-ghost-chasers-anitolov",
@@ -1820,11 +1820,11 @@
       "name": "Ravenous",
       "set": "anni",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "anni-villain-annihilation-wave-weaponized-galactus",
@@ -2292,11 +2292,11 @@
       "name": "Iron Knight",
       "set": "antm",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "antm-villain-queens-vengeance-mordred-the-evil",
@@ -2358,11 +2358,11 @@
       "name": "Brutish Ultron-14",
       "set": "antm",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "antm-villain-ultrons-legacy-crimson-cowl",
@@ -4003,11 +4003,11 @@
       "name": "Blue Talon",
       "set": "bkwd",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "bkwd-villain-elite-assassins-iron-maiden",
@@ -5311,11 +5311,11 @@
       "name": "Monsteroso",
       "set": "chmp",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "add-next-hand-size",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size",
+      "wp": "WP-543",
+      "decision": "D-24352"
     },
     {
       "extId": "chmp-villain-monsters-unleashed-orrgo",
@@ -8695,11 +8695,11 @@
       "name": "Proxima Midnight",
       "set": "cosm",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "cosm-villain-black-order-of-thanos-supergiant",
@@ -9627,11 +9627,11 @@
       "name": "Mach-IV",
       "set": "cvwr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "cvwr-villain-thunderbolts-radioactive-man",
@@ -11325,11 +11325,11 @@
       "name": "Tombstone",
       "set": "dkcy",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "dkcy-villain-underworld-azazel",
@@ -12790,11 +12790,11 @@
       "name": "Firelord",
       "set": "ff04",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "ff04-villain-heralds-of-galactus-morg",
@@ -12834,11 +12834,11 @@
       "name": "Giganto",
       "set": "ff04",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "add-next-hand-size",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#add-next-hand-size",
+      "wp": "WP-543",
+      "decision": "D-24352"
     },
     {
       "extId": "ff04-villain-subterranea-megataur",
@@ -17028,22 +17028,22 @@
       "name": "Frost Giant",
       "set": "msp1",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "msp1-villain-enemies-of-asgard-laufey-frost-giant-king",
       "name": "Laufey, Frost Giant King",
       "set": "msp1",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "msp1-villain-gamma-hunters-abomination-raging-monster",
@@ -17171,11 +17171,11 @@
       "name": "Whiplash",
       "set": "msp1",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "msp1/black-widow",
@@ -18512,11 +18512,11 @@
       "name": "Sandman",
       "set": "pttr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "pttr-villain-sinister-six-shocker",
@@ -18534,11 +18534,11 @@
       "name": "Vulture",
       "set": "pttr",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "pttr/black-cat",
@@ -19450,11 +19450,11 @@
       "name": "Dark Wolverine (Daken)",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "rvlt-villain-dark-avengers-sentry",
@@ -19560,11 +19560,11 @@
       "name": "Living Laser",
       "set": "rvlt",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "rvlt-villain-lethal-legion-mbaku",
@@ -20758,11 +20758,11 @@
       "name": "Tinkerer",
       "set": "smhc",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "smhc-villain-vulture-tech-chitauri-weapon-assault",
@@ -24092,11 +24092,11 @@
       "name": "Agony",
       "set": "vnom",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "vnom-villain-life-foundation-dr-carlton-drake",
@@ -25392,11 +25392,11 @@
       "name": "Captain Marvel, End of the Party",
       "set": "wtif",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "wtif-villain-intergalactic-party-animals-frigga-mother-of-thor",
@@ -26540,11 +26540,11 @@
       "name": "Red She-Hulk",
       "set": "wwhk",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "wwhk-villain-code-red-thundra",
@@ -26738,11 +26738,11 @@
       "name": "Vapor",
       "set": "wwhk",
       "scope": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "handler": "",
-      "wp": "",
-      "decision": ""
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
     },
     {
       "extId": "wwhk-villain-u-foes-vector",
@@ -28640,6 +28640,17 @@
       "decision": "D-18503"
     },
     {
+      "extId": "xmen-villain-sisterhood-of-mutants-lady-deathstrike",
+      "name": "Lady Deathstrike",
+      "set": "xmen",
+      "scope": "villain",
+      "mechanic": "reveal-or-wound",
+      "status": "executable",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#reveal-or-wound",
+      "wp": "WP-469",
+      "decision": "D-24281"
+    },
+    {
       "extId": "xmen-villain-sisterhood-of-mutants-lady-mastermind",
       "name": "Lady Mastermind",
       "set": "xmen",
@@ -29979,7 +29990,7 @@
     "amwp-villain-armada-of-kang-city-defense-system": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "amwp-villain-armada-of-kang-energy-shield": {
@@ -30045,7 +30056,7 @@
     "amwp-villain-cross-technologies-yellowjacket-prototype": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "amwp-villain-ghost-chasers-anitolov": {
@@ -30272,7 +30283,7 @@
     "anni-villain-annihilation-wave-ravenous": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "anni-villain-annihilation-wave-weaponized-galactus": {
@@ -30412,7 +30423,7 @@
     "antm-villain-queens-vengeance-iron-knight": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "antm-villain-queens-vengeance-mordred-the-evil": {
@@ -30448,7 +30459,7 @@
     "antm-villain-ultrons-legacy-brutish-ultron-14": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "antm-villain-ultrons-legacy-crimson-cowl": {
@@ -30895,7 +30906,7 @@
     "bkwd-villain-elite-assassins-blue-talon": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "bkwd-villain-elite-assassins-iron-maiden": {
@@ -31194,7 +31205,7 @@
     "chmp-villain-monsters-unleashed-monsteroso": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "add-next-hand-size"
       ]
     },
     "chmp-villain-monsters-unleashed-orrgo": {
@@ -32216,7 +32227,7 @@
     "cosm-villain-black-order-of-thanos-proxima-midnight": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "cosm-villain-black-order-of-thanos-supergiant": {
@@ -32635,7 +32646,7 @@
     "cvwr-villain-thunderbolts-mach-iv": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "cvwr-villain-thunderbolts-radioactive-man": {
@@ -33189,7 +33200,7 @@
     "dkcy-villain-streets-of-new-york-tombstone": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "dkcy-villain-underworld-azazel": {
@@ -33638,7 +33649,7 @@
     "ff04-villain-heralds-of-galactus-firelord": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "ff04-villain-heralds-of-galactus-morg": {
@@ -33662,7 +33673,7 @@
     "ff04-villain-subterranea-giganto": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "add-next-hand-size"
       ]
     },
     "ff04-villain-subterranea-megataur": {
@@ -35129,13 +35140,13 @@
     "msp1-villain-enemies-of-asgard-frost-giant": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "msp1-villain-enemies-of-asgard-laufey-frost-giant-king": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "msp1-villain-gamma-hunters-abomination-raging-monster": {
@@ -35207,7 +35218,7 @@
     "msp1-villain-iron-foes-whiplash": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "msp1/black-widow": {
@@ -35667,7 +35678,7 @@
     "pttr-villain-sinister-six-sandman": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "pttr-villain-sinister-six-shocker": {
@@ -35679,7 +35690,7 @@
     "pttr-villain-sinister-six-vulture": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "pttr/black-cat": {
@@ -35986,7 +35997,7 @@
     "rvlt-villain-dark-avengers-dark-wolverine-daken": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "rvlt-villain-dark-avengers-sentry": {
@@ -36046,7 +36057,7 @@
     "rvlt-villain-lethal-legion-living-laser": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "rvlt-villain-lethal-legion-mbaku": {
@@ -36394,7 +36405,7 @@
     "smhc-villain-salvagers-tinkerer": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "smhc-villain-vulture-tech-chitauri-weapon-assault": {
@@ -37609,7 +37620,7 @@
     "vnom-villain-life-foundation-agony": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "vnom-villain-life-foundation-dr-carlton-drake": {
@@ -38026,7 +38037,7 @@
     "wtif-villain-intergalactic-party-animals-captain-marvel-end-of-the-party": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "wtif-villain-intergalactic-party-animals-frigga-mother-of-thor": {
@@ -38462,7 +38473,7 @@
     "wwhk-villain-code-red-red-she-hulk": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "wwhk-villain-code-red-thundra": {
@@ -38570,7 +38581,7 @@
     "wwhk-villain-u-foes-vapor": {
       "scope": "villain",
       "mechanics": [
-        "(unmarked)"
+        "reveal-or-wound"
       ]
     },
     "wwhk-villain-u-foes-vector": {
@@ -39092,7 +39103,8 @@
     "xmen-villain-sisterhood-of-mutants-lady-deathstrike": {
       "scope": "villain",
       "mechanics": [
-        "koHeroCurrentPlayer"
+        "koHeroCurrentPlayer",
+        "reveal-or-wound"
       ]
     },
     "xmen-villain-sisterhood-of-mutants-lady-mastermind": {

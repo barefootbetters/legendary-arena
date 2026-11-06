@@ -1469,7 +1469,7 @@
           "imageUrl": "https://images.legendary-arena.com/cosm/cosm-vi-black-order-of-thanos-proxima-midnight.webp",
           "abilities": [
             "Ambush: [keyword:Danger Sense 2], helping all Black Order Villains and the Mastermind. Play a Scheme Twist revealed this way.",
-            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound."
+            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]"
           ],
           "copies": 1
         },

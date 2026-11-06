@@ -2783,8 +2783,8 @@
           "vAttack": "5",
           "imageUrl": "https://images.legendary-arena.com/cvwr/cvwr-vi-thunderbolts-mach-iv.webp",
           "abilities": [
-            "Fight: Each player reveals a [hc:tech] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:tech] Hero or gains a Wound. [effect:reveal-or-wound:hc:tech]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:tech]"
           ],
           "copies": 2
         },
