@@ -97,25 +97,7 @@ export default defineComponent({
       default: () => [],
     },
     /**
-     * Whether the viewer may attempt a Heist right now, from `economy.heistAvailable`
-     * (WP-865 / D-24808; active player only, the engine's single legality predicate).
-     */
-    heistAvailable: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    /**
-     * The viewer's current Heist Count, from `economy.heistCount`, shown on the
-     * Attempt Heist button. Present only with `heistAvailable`.
-     */
-    heistCount: {
-      type: Number as PropType<number | undefined>,
-      required: false,
-      default: undefined,
-    },
-    /**
-     * Move submitter for the Use and Attempt Heist buttons. Optional: without it no
+     * Move submitter for the Use buttons. Optional: without it no
      * button renders (the row stays read-only, as before WP-858).
      */
     submitMove: {
@@ -185,27 +167,12 @@ export default defineComponent({
       props.submitMove('useRitualArtifact', { cardId });
     }
 
-    function canAttemptHeist(): boolean {
-      // why: WP-865 / D-24808 — the engine's heistAvailable is the only legality source; the
-      // client never re-derives the Heist Count or the readied crew.
-      return props.submitMove !== undefined && props.heistAvailable;
-    }
-
-    function onAttemptHeist(): void {
-      if (props.submitMove === undefined) {
-        return;
-      }
-      props.submitMove('attemptHeist', {});
-    }
-
     return {
       resolveDisplay,
       resolveOutOfTimeDisplay,
       canLandPlay,
       isUsableRitual,
       onUseRitual,
-      canAttemptHeist,
-      onAttemptHeist,
     };
   },
 });
@@ -219,17 +186,6 @@ export default defineComponent({
   >
     <header class="played-row__heading" data-testid="play-played-heading">
       Played This Turn — {{ inPlayCards.length }}
-      <!-- why: WP-865 / D-24808 — the once-per-turn Heist attempt sits in the played-cards
-           heading (the readied Heist cards are in this row), so no new layout slot is added. -->
-      <button
-        v-if="canAttemptHeist()"
-        type="button"
-        class="played-row__heist"
-        data-testid="attempt-heist"
-        @click="onAttemptHeist()"
-      >
-        Attempt Heist (Heist Count {{ heistCount ?? 0 }})
-      </button>
     </header>
     <!-- why: WP-685 / D-24502 lock 5 — the empty in-play well is a dashed "play
          here" landing target, disabled off-turn / off-main; it signals where a
@@ -446,28 +402,6 @@ export default defineComponent({
 
 .played-row__use:hover,
 .played-row__use:focus-visible {
-  background: rgba(88, 56, 176, 0.95);
-}
-
-/* why: WP-865 / D-24808 — the Attempt Heist button, inline in the heading (the Use button's
-   colours, so the player-initiated card actions read as one family). */
-.played-row__heist {
-  margin-left: 0.5rem;
-  min-height: 24px;
-  padding: 0.15rem 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 0.3rem;
-  background: rgba(40, 24, 88, 0.92);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  cursor: pointer;
-}
-
-.played-row__heist:hover,
-.played-row__heist:focus-visible {
   background: rgba(88, 56, 176, 0.95);
 }
 
