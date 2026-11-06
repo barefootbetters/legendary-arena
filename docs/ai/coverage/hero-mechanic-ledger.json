@@ -2,9 +2,9 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 847,
+    "totalRows": 848,
     "byStatus": {
-      "executable": 464,
+      "executable": 465,
       "deferred": 16,
       "condition": 58,
       "unsupported": 281,
@@ -581,6 +581,22 @@
         {
           "slug": "bug-swarm",
           "name": "Bug Swarm"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "heroName": "Ant-Man",
+      "set": "amwp",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "look-out-for-the-little-guy",
+          "name": "Look Out for the Little Guy!"
         }
       ]
     },

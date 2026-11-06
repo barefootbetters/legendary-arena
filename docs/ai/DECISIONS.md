@@ -50250,4 +50250,26 @@ D-24074's deferred "Attack is also Victory Points" clause is dropped rather than
 **Reserved by:** NUMBER-LEDGER D-24804 (#3163). Related: D-24801, D-24802, D-24501, D-24500, D-24754, D-24796, D-24648, D-24616, D-24026.
 
 ---
+
+### D-24806 — "If it's [Class] or has Size-Changing, draw it" is a hero-class-or-size-changing reveal predicate; the line's Size-Changing token is the criterion, not the card's own Size-Changing (Active 2026-11-05 — direct fix, no WP)
+
+**Status:** Active 2026-11-05. Follow-up to D-24804 (WP-862), same parse class as its Pym Particles correction. Live-verify (D-24026) operator-pending.
+
+**Context.** amwp Ant-Man's **Look Out for the Little Guy** prints "[keyword:Size-Changing] [hc:strength]" (line 1) and "Reveal the top card of your deck. If it's [hc:strength] or has [keyword:Size-Changing] draw it." (line 2). D-24801's hero parser routes every `[hc:X]` on a line carrying `[keyword:Size-Changing]` into that card's own Size-Changing list, so line 2 built a second `size-changing` hook (`sizeChangingClasses: ['strength']`) and no reveal: the line silently did nothing and logged no hollow. The price was unaffected (setup de-duplicates the classes, one Strength step). It is the only hero line in the corpus that prints the token inside a reader sentence (amwp line "for each card you played this turn that's [hc:strength] and/or has Size-Changing" carries no token and is a separate, unimplemented mechanic).
+
+**Decision.**
+1. **Predicate.** `RevealPredicateKind` / `REVEAL_PREDICATE_KINDS` gain `'hero-class-or-size-changing'` (appended last; `rules/revealRule.ts`, drift pin 7 → 8). It matches the revealed card when either printed class equals `traitValue` (the `hero-class` rule, split cards on either half) OR the card has printed Size-Changing, Microscopic included (`hasSizeChanging`, rules v23 p.30). A deck card is never in the HQ, so D-24804 grants never apply.
+2. **Marker.** `[keyword:reveal:hc-or-size-changing-<slug>:draw]` (the WP-729 reveal-rule grammar; the existing `VALID_TOKEN_PATTERN` arm accepts it). The parser checks the `hc-or-size-changing-` prefix before `hc-`. Curated on `amwp/ant-man/look-out-for-the-little-guy` ability 1 as `hc-or-size-changing-strength`.
+3. **Descriptive token.** On a line carrying that marker, the printed `[keyword:Size-Changing]` names what the revealed card must have: no `size-changing` keyword (Step 2) and no Size-Changing class (Step 1a); the `[hc:strength]` falls to the existing WP-729 reveal-criterion branch (no gate). The D-24804 grant suppression and this one share one `isSizeChangingTokenDescriptive` flag.
+4. **Behaviour.** A match is drawn; a non-match stays on top (the WP-729 leave-on-top rule). The reveal log names the criterion "a strength card or a card with Size-Changing".
+
+**Consequences.**
+- **Hash.** Setup hooks change in every match that selects amwp Ant-Man (line 2's hook is a reveal now); `cardSizeChangingClasses` is unchanged (still ['strength']). No `finalStateHash` sentinel uses amwp. Replays of earlier matches with amwp Ant-Man diverge where the card was played; stored competitive rows stay frozen (D-24616 §5).
+- **Pins moved (product change).** `REVEAL_PREDICATE_KINDS` 7 → 8.
+
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` 0 fail in every package: game-engine 6293 -> 6299 / 0 (+6, `hero/lookOutForTheLittleGuy.test.ts` against the committed amwp data and the real executor), arena-client 2546 / 0, dashboard 594 / 0, server 1640 pass. `cards:check`, `ledger:heroes:check`, `ledger:villains:check`, `effect-index:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check`, `cards:count-markers:check` all 0. The runtime-observed feed moved (7725 -> 7724 raw observations: the reveal now draws in the amwp sweep), so the dashboard in-play `totalObs` pin re-pins 8686 -> 8687 (dated comment); resolvedObs 1091 and percentResolved 12.6 unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24806 (#3168). Related: D-24804 (the Pym Particles precedent), D-24801, D-24550 (trait reveal predicates), D-24026.
+
+---
 Protect this file.

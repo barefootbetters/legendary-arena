@@ -10,6 +10,15 @@
 
 ## Current State
 
+### Look Out for the Little Guy reveals and draws a Strength or Size-Changing card (D-24806, direct fix) (2026-11-05)
+
+**User-visible on `play.legendary-arena.com` after deploy.** amwp Ant-Man's Look Out for the Little Guy now does what its second line prints: "Reveal the top card of your deck. If it's [Strength] or has Size-Changing, draw it." Before, the line did nothing: the parser read its printed Size-Changing token as a second Size-Changing on the card itself (the D-24801 parse class WP-862 fixed for Pym Particles). Its price was not affected.
+
+- **Engine.** A new reveal predicate `hero-class-or-size-changing` (a Strength card, or any card with printed Size-Changing, Microscopic included), marked `[keyword:reveal:hc-or-size-changing-strength:draw]`. On that line the Size-Changing token is the reveal criterion. A non-match stays on top of the deck.
+- **Feeds.** Hero ledger and effect index list the reveal for amwp Ant-Man; the runtime-observed feed moved by one observation (7725 → 7724), so the dashboard in-play pin goes 8686 → 8687.
+- **Tests.** game-engine 6299 / 0 (+6), arena-client 2546 / 0, dashboard 594 / 0, server 1640 pass.
+- **Live-verify (D-24026): operator-pending.** In a match created after the deploy with amwp Ant-Man: play Look Out for the Little Guy with a Strength card on top of your deck (it is drawn), then with a non-Strength card that has Size-Changing (drawn), then with anything else (it stays on top). The log names the criterion "a strength card or a card with Size-Changing".
+
 ### Size-Changing granted during play: Pym Particles, Ultron-Pym, Shrinksperiments, Sporr and two tactics make an HQ Hero cheaper to recruit (WP-862 / EC-900, D-24804) (2026-11-05)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Six printed effects that did nothing now work. Fighting Ultron-Pym, Shrinksperiments or Sporr, defeating Fin Fang Foom's Alien Dragon Technology tactic, or playing Pym Particles gives a Hero in the HQ Size-Changing for the printed classes this turn: with two or more eligible Heroes you pick one ("Captain America gains Size-Changing Tech this turn", recruitable and priciest first); with one it is applied at once. That Hero's HQ price then drops by 2 per matching class you have played. Shrinksperiments replaces the Hero's own Size-Changing with Tech. Darren Cross's Shrinking Research Budget gives every HQ Hero with no Size-Changing its own class for as long as it stays in the HQ, with a class pick for dual-class Heroes. Pym Particles itself no longer gets a spurious extra Tech discount (a D-24801 parse bug).

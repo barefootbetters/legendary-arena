@@ -1673,6 +1673,17 @@
       "date": "2026-11-05",
       "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-862 deploy (isMatchOlderThanServer: false), per the WP-862 DoD.",
       "note": "Playing Pym Particles gives a chosen HQ Hero with no Size-Changing a Tech recruit discount this turn; Pym Particles itself no longer takes an extra Tech step (only its Microscopic line). D-24804."
+    },
+    {
+      "key": "amwp/ant-man|reveal",
+      "kind": "hero",
+      "card": "Ant-Man",
+      "ability": "Look Out for the Little Guy (line 2): Reveal the top card of your deck. If it's Strength or has Size-Changing, draw it",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-05",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the D-24806 deploy (isMatchOlderThanServer: false) with amwp Ant-Man.",
+      "note": "Playing it reveals the deck top and draws a Strength card or any card with Size-Changing (Microscopic included); anything else stays on top. Before D-24806 the line did nothing. D-24806."
     }
   ]
 }
