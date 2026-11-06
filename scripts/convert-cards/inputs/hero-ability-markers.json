@@ -1723,6 +1723,24 @@
       "cardSlug": "follow-my-lead",
       "abilityIndex": 1,
       "markupToken": "[keyword:first-hero-condition]"
+    },
+    {
+      "heroSlug": "scott-lang-cat-burglar",
+      "cardSlug": "anything-for-cassie",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:rescue:1]"
+    },
+    {
+      "heroSlug": "ant-man",
+      "cardSlug": "tiny-little-risk",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:draw:2]"
+    },
+    {
+      "heroSlug": "ant-army",
+      "cardSlug": "up-the-ante",
+      "abilityIndex": 0,
+      "markupToken": "[keyword:draw:1]"
     }
   ],
   "anni": [
@@ -2683,14 +2701,6 @@
   ],
   "_deferred": [
     {
-      "setAbbr": "amwp",
-      "heroSlug": "scott-lang-cat-burglar",
-      "cardSlug": "anything-for-cassie",
-      "abilityIndex": 1,
-      "abilityText": "Heist: Rescue a Bystander.",
-      "reason": "D-21602 — onFight-timed rescue: 'Heist:' is a custom timing prefix analogous to 'Fight:'; the onFight timing is not wired to executeHeroEffects."
-    },
-    {
       "setAbbr": "anni",
       "heroSlug": "brainstorm",
       "cardSlug": "borrow-from-the-future",
@@ -2913,14 +2923,6 @@
       "abilityIndex": 1,
       "abilityText": "[hc:tech]: When you draw a new hand of cards at the end of this turn, draw an extra card.",
       "reason": "D-22501 — draw-a-new-hand replacement trigger: an end-of-turn draw-hand-replacement effect, not an onPlay draw; no timing dispatch exists for it."
-    },
-    {
-      "setAbbr": "amwp",
-      "heroSlug": "ant-man",
-      "cardSlug": "tiny-little-risk",
-      "abilityIndex": 1,
-      "abilityText": "[keyword:Heist]: Draw two cards.",
-      "reason": "D-22501 — timing-/keyword-gated draw: gated by a card-ability keyword timing prefix ([keyword:Heist], analogous to Fight:/[keyword:Ambush]); the keyword-timing dispatch is not wired to executeHeroEffects."
     },
     {
       "setAbbr": "wpnx",

@@ -707,6 +707,37 @@ describe('PlayDesktop — controlled Artifacts and the Ritual Use button (WP-858
   });
 });
 
+describe('PlayDesktop — the Attempt Heist button (WP-865 / D-24808)', () => {
+  test('economy.heistAvailable renders Attempt Heist with the Heist Count and dispatches attemptHeist', async () => {
+    // why: a mis-bound prop silently falls back to false (no button), so the page-level mount is
+    // what proves the two bindings and the submitMove pass-through.
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    const frame = snapshot();
+    frame.players[0]!.inPlayCards = ['amwp/wasp/infiltrate#0'];
+    frame.economy.heistAvailable = true;
+    frame.economy.heistCount = 2;
+    store.setSnapshot(frame);
+    const calls: Array<{ name: string; args: unknown }> = [];
+    const wrapper = mount(PlayDesktop, {
+      props: { submitMove: (name: string, args?: unknown) => { calls.push({ name, args }); } },
+    });
+    const buttons = wrapper.findAll('[data-testid="attempt-heist"]');
+    assert.equal(buttons.length, 1);
+    assert.equal(buttons[0]!.text(), 'Attempt Heist (Heist Count 2)');
+    await buttons[0]!.trigger('click');
+    assert.deepEqual(calls, [{ name: 'attemptHeist', args: {} }]);
+  });
+
+  test('a snapshot without heistAvailable renders no Attempt Heist button', () => {
+    setActivePinia(createPinia());
+    const store = useUiStateStore();
+    store.setSnapshot(snapshot());
+    const wrapper = mount(PlayDesktop, { props: { submitMove: noopSubmitMove } });
+    assert.equal(wrapper.findAll('[data-testid="attempt-heist"]').length, 0);
+  });
+});
+
 describe('PlayDesktop — Effects triggered line (WP-848 / D-24784)', () => {
   test('a viewer with conditionalClauses renders the bound Effects triggered line', () => {
     // why: a mis-bound prop silently falls back to 0 / 0 (the `victoryVp` precedent), so the

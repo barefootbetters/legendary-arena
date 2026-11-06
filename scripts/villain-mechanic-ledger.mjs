@@ -15,7 +15,9 @@
  *   extId      — per-card engine id (villain: the flat-card key
  *                "{setAbbr}-villain-{groupSlug}-{cardSlug}"; henchman:
  *                "henchman-{groupSlug}") — the hook card-instance id minus the
- *                copy index, i.e. the engine's per-card id space
+ *                copy index, i.e. the engine's per-card id space. A henchman
+ *                group printed as variant cards (D-24803) gets one card per
+ *                variant, "henchman-{groupSlug}-{variantSlug}".
  *   cardName   — display name
  *   set        — set abbreviation
  *   cardType   — villain | henchman
@@ -86,6 +88,12 @@ import { createRegistryFromLocalFiles } from '../packages/registry/dist/index.js
 // same posture the hero ledger holds: the ledger never imports engine/registry
 // source, and no layer on the Registry → Engine → Server chain imports the ledger.
 import { buildVillainAbilityHooks } from '../packages/game-engine/dist/setup/villainAbility.setup.js';
+// why: D-24803 — the engine's one copy-to-variant mapper, so a variant henchman row is
+// resolved from exactly the copies the engine gives that variant (never a local re-derivation).
+import {
+  HENCHMAN_COPIES_PER_GROUP,
+  henchmanCopyVariant,
+} from '../packages/game-engine/dist/villainDeck/villainDeck.setup.js';
 import {
   VILLAIN_EFFECT_KEYWORDS,
   VILLAIN_EFFECT_PRIMITIVES,
@@ -226,23 +234,81 @@ function buildResolutionIndex(registry, villainGroupIds, henchmanGroupIds) {
   });
   const index = new Map();
   for (const hook of hooks) {
-    const base = cardBaseIdOf(hook.cardId);
-    let resolution = index.get(base);
-    if (resolution === undefined) {
-      resolution = { resolved: new Set(), unresolved: new Set() };
-      index.set(base, resolution);
-    }
-    for (const keyword of hook.keywords ?? []) {
-      resolution.resolved.add(keyword);
-    }
-    for (const descriptor of hook.effects ?? []) {
-      resolution.resolved.add(descriptor.primitive);
-    }
-    for (const marker of hook.unresolvedMarkers ?? []) {
-      resolution.unresolved.add(marker);
+    // why: D-24803 — each hook is recorded under its per-card base id AND its own
+    // copy id, so a variant henchman card can union just the copies that are it.
+    for (const key of [cardBaseIdOf(hook.cardId), hook.cardId]) {
+      let resolution = index.get(key);
+      if (resolution === undefined) {
+        resolution = { resolved: new Set(), unresolved: new Set() };
+        index.set(key, resolution);
+      }
+      addHookResolution(resolution, hook);
     }
   }
   return index;
+}
+
+/**
+ * Adds one hook's resolved keywords / primitives and unresolved markers to a card's resolution.
+ *
+ * @param {CardResolution} resolution - the card's resolution (mutated).
+ * @param {object} hook - a VillainAbilityHook.
+ */
+function addHookResolution(resolution, hook) {
+  for (const keyword of hook.keywords ?? []) {
+    resolution.resolved.add(keyword);
+  }
+  for (const descriptor of hook.effects ?? []) {
+    resolution.resolved.add(descriptor.primitive);
+  }
+  for (const marker of hook.unresolvedMarkers ?? []) {
+    resolution.unresolved.add(marker);
+  }
+}
+
+/**
+ * Lists the ledger cards of one henchman group: the group itself, or one card per
+ * printed variant when the group is printed as variant cards (D-24803).
+ *
+ * A variant's resolution is the union of the copies the engine maps to it
+ * (henchmanCopyVariant), so the row reflects exactly the hooks those copies fire.
+ *
+ * @param {{setAbbr: string, slug: string, name: string, abilities: string[], raw: object}} group - the henchman group.
+ * @param {Map<string, CardResolution>} resolutionIndex - base-id and copy-id resolutions.
+ * @returns {Array<{extId: string, name: string, abilities: string[], resolution: CardResolution|undefined}>} the cards.
+ */
+function listHenchmanLedgerCards(group, resolutionIndex) {
+  const groupBaseId = `henchman-${group.slug}`;
+  const variantCards = new Map();
+  for (let copyIndex = 0; copyIndex < HENCHMAN_COPIES_PER_GROUP; copyIndex++) {
+    const variant = henchmanCopyVariant(group.raw, copyIndex);
+    if (variant === null || typeof variant.slug !== 'string') {
+      continue;
+    }
+    let card = variantCards.get(variant.slug);
+    if (card === undefined) {
+      card = {
+        extId: `${groupBaseId}-${variant.slug}`,
+        name: typeof variant.name === 'string' ? variant.name : variant.slug,
+        abilities: Array.isArray(variant.abilities) ? variant.abilities : [],
+        resolution: undefined,
+      };
+      variantCards.set(variant.slug, card);
+    }
+    const copyResolution = resolutionIndex.get(`${groupBaseId}-${String(copyIndex).padStart(2, '0')}`);
+    if (copyResolution === undefined) {
+      continue;
+    }
+    if (card.resolution === undefined) {
+      card.resolution = { resolved: new Set(), unresolved: new Set() };
+    }
+    for (const resolvedName of copyResolution.resolved) card.resolution.resolved.add(resolvedName);
+    for (const unresolvedMarker of copyResolution.unresolved) card.resolution.unresolved.add(unresolvedMarker);
+  }
+  if (variantCards.size > 0) {
+    return [...variantCards.values()];
+  }
+  return [{ extId: groupBaseId, name: group.name, abilities: group.abilities, resolution: resolutionIndex.get(groupBaseId) }];
 }
 
 /**
@@ -462,6 +528,7 @@ function buildLedger(registry, provenance, subsystemCoverage) {
             slug: group.slug,
             name: typeof group.name === 'string' ? group.name : group.slug,
             abilities: Array.isArray(group.abilities) ? group.abilities : [],
+            raw: group,
           });
         }
       }
@@ -488,15 +555,16 @@ function buildLedger(registry, provenance, subsystemCoverage) {
       rows.push(row);
     }
   }
-  // Henchmen: one card per henchman group (abilities are group-level).
+  // Henchmen: one card per henchman group (abilities are group-level), or one per
+  // printed variant for a group printed as variant cards (D-24803).
   for (const group of henchmanGroups) {
-    if (!hasAbilityText(group.abilities)) {
-      continue;
-    }
-    const baseId = `henchman-${group.slug}`;
-    const resolution = resolutionIndex.get(baseId);
-    for (const row of buildCardRows(baseId, group.name, group.setAbbr, 'henchman', group.abilities, resolution, provenance, subsystemCoverage)) {
-      rows.push(row);
+    for (const card of listHenchmanLedgerCards(group, resolutionIndex)) {
+      if (!hasAbilityText(card.abilities)) {
+        continue;
+      }
+      for (const row of buildCardRows(card.extId, card.name, group.setAbbr, 'henchman', card.abilities, card.resolution, provenance, subsystemCoverage)) {
+        rows.push(row);
+      }
     }
   }
 

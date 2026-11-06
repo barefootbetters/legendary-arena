@@ -21,6 +21,12 @@ import { BYSTANDER_EXT_ID } from '../setup/pilesInit.js';
 import { SCHEME_TWIST_CONFIGS } from './schemeTwistConfigs.js';
 import { pushLog } from '../log/logPush.js';
 
+/** The `escaped-pile-count` member of the resource-loss condition union. */
+export type EscapedPileCountCondition = Extract<
+  SchemeResourceLossCondition,
+  { kind: 'escaped-pile-count' }
+>;
+
 /** The `pile-depleted` members of the resource-loss condition union. */
 export type PileDepletedCondition = Extract<
   SchemeResourceLossCondition,
@@ -156,6 +162,52 @@ export function countEscapedConvertedLoss(
 }
 
 /**
+ * The count an `'escaped-pile-count'` loss is reached at.
+ *
+ * // why: WP-863 / D-24805 — a per-player count ("3 Villains per player") multiplies by the seats
+ * in `G.playerZones` (one entry per seat, a bot ally included). `lobby.requiredPlayers` is
+ * equivalent; `G.playerZones` is always present, so the loss never depends on lobby metadata. The
+ * loss check and the danger meter both read this, so they cannot disagree.
+ *
+ * @param gameState - The current game state (read-only).
+ * @param condition - The escaped-pile-count condition.
+ * @returns The escaped count at which the scheme is lost.
+ */
+export function resolveEscapedPileThreshold(
+  gameState: LegendaryGameState,
+  condition: EscapedPileCountCondition,
+): number {
+  if (condition.isThresholdPerPlayer !== true) {
+    return condition.threshold;
+  }
+  return condition.threshold * Object.keys(gameState.playerZones).length;
+}
+
+/**
+ * Selects the escape-pile loss condition the active scheme declares, if any.
+ *
+ * The primary `resourceLossCondition` when it is an escape kind; otherwise the WP-863 / D-24805
+ * `additionalEscapeLossCondition`, which is read ONLY beside a `pile-depleted` primary (the same
+ * rule the danger meter uses, so the two never disagree; schemeTwistConfigs.test.ts pins it).
+ *
+ * @param gameState - The current game state (read-only).
+ * @returns The escape-pile condition, or undefined when the scheme declares none.
+ */
+function selectEscapedLossCondition(
+  gameState: LegendaryGameState,
+): Extract<SchemeResourceLossCondition, { kind: 'escaped-pile-count' } | { kind: 'escaped-converted-count' }> | undefined {
+  const config = SCHEME_TWIST_CONFIGS.get(gameState.selection.schemeId);
+  const condition = config?.resourceLossCondition;
+  if (condition?.kind === 'escaped-pile-count' || condition?.kind === 'escaped-converted-count') {
+    return condition;
+  }
+  if (condition?.kind !== 'pile-depleted') {
+    return undefined;
+  }
+  return config?.additionalEscapeLossCondition;
+}
+
+/**
  * Applies the active scheme's escaped-pile resource-loss condition, if any.
  *
  * Handles both escape-pile loss kinds — `'escaped-pile-count'` (by card type,
@@ -170,13 +222,8 @@ export function countEscapedConvertedLoss(
 export function applyEscapedPileResourceLoss(
   gameState: LegendaryGameState,
 ): void {
-  const config = SCHEME_TWIST_CONFIGS.get(gameState.selection.schemeId);
-  const condition = config?.resourceLossCondition;
-  if (
-    !condition ||
-    (condition.kind !== 'escaped-pile-count' &&
-      condition.kind !== 'escaped-converted-count')
-  ) {
+  const condition = selectEscapedLossCondition(gameState);
+  if (condition === undefined) {
     return;
   }
 
@@ -190,11 +237,15 @@ export function applyEscapedPileResourceLoss(
   // why: both kinds count the escaped pile — by card type, or by converted
   // origin (Killbots: converted cards are typed 'villain' for routing, so they
   // must be counted by origin, not by the shared 'villain' type).
-  const matchCount =
-    condition.kind === 'escaped-pile-count'
-      ? countEscapedPileByType(gameState, condition.cardTypes)
-      : countEscapedConvertedLoss(gameState, condition);
-  if (matchCount >= condition.threshold) {
+  let matchCount = 0;
+  let threshold = condition.threshold;
+  if (condition.kind === 'escaped-pile-count') {
+    matchCount = countEscapedPileByType(gameState, condition.cardTypes);
+    threshold = resolveEscapedPileThreshold(gameState, condition);
+  } else {
+    matchCount = countEscapedConvertedLoss(gameState, condition);
+  }
+  if (matchCount >= threshold) {
     // why: SCHEME_LOSS is set HERE, in the escape path, rather than derived
     // inside evaluateEndgame, because evaluateEndgame reads only G.counters
     // (the counter-only invariant). The escape path is the only place
@@ -202,7 +253,7 @@ export function applyEscapedPileResourceLoss(
     gameState.counters[ENDGAME_CONDITIONS.SCHEME_LOSS] = 1;
     pushLog(
       gameState,
-      `Scheme loss triggered — ${describeEscapedLoss(gameState, condition, matchCount)} (threshold ${condition.threshold}).`,
+      `Scheme loss triggered — ${describeEscapedLoss(gameState, condition, matchCount)} (threshold ${threshold}).`,
     );
   }
 }

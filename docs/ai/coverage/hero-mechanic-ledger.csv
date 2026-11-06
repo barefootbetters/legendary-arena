@@ -22,12 +22,13 @@ ext_id,hero_name,set,mechanic,status,wp,decision,handler,designs
 3dtc/hulk,Hulk,3dtc,ko-wound-reward,executable,WP-382,D-24183,packages/game-engine/src/hero/heroEffects.execute.ts#ko-wound-reward,unstoppable-hulk
 3dtc/man-thing,Man-Thing,3dtc,(unmarked),unmarked,,,,
 amwp/ant-army,Ant Army,amwp,antics,condition,,,,antagonize|anticipate|antiproton-experiments|revolutionary-anthem
-amwp/ant-army,Ant Army,amwp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,anticipate
-amwp/ant-army,Ant Army,amwp,heist,unsupported,,,,revolutionary-anthem|up-the-ante
+amwp/ant-army,Ant Army,amwp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,anticipate|up-the-ante
+amwp/ant-army,Ant Army,amwp,heist,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#heist,revolutionary-anthem|up-the-ante
 amwp/ant-army,Ant Army,amwp,microscopic-size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing,anti-tank-weapons|antiproton-experiments|revolutionary-anthem
 amwp/ant-army,Ant Army,amwp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,antagonize|anticipate
 amwp/ant-man,Ant-Man,amwp,antics,condition,,,,bug-swarm|hitch-a-ride
-amwp/ant-man,Ant-Man,amwp,heist,unsupported,,,,tiny-little-risk
+amwp/ant-man,Ant-Man,amwp,draw,executable,WP-022,D-2201,packages/game-engine/src/hero/heroEffects.execute.ts#draw,tiny-little-risk
+amwp/ant-man,Ant-Man,amwp,heist,executable,,,packages/game-engine/src/hero/heroEffects.execute.ts#heist,tiny-little-risk
 amwp/ant-man,Ant-Man,amwp,microscopic-size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing,bug-swarm|giant-man|tiny-little-risk
 amwp/ant-man,Ant-Man,amwp,optional-ko-hand-discard,executable,WP-667,D-24480,packages/game-engine/src/hero/heroEffects.execute.ts#optional-ko-hand-discard,bug-swarm
 amwp/ant-man,Ant-Man,amwp,reveal,executable,WP-253,D-24024,packages/game-engine/src/hero/heroEffects.execute.ts#reveal,look-out-for-the-little-guy
@@ -41,7 +42,7 @@ amwp/janet-van-dyne,Janet van Dyne,amwp,microscopic-size-changing,executable,,D-
 amwp/janet-van-dyne,Janet van Dyne,amwp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,wasp-of-another-generation
 amwp/jentorra,Jentorra,amwp,conqueror,unsupported,,,,conquer-the-conqueror|take-the-high-ground|unite-the-oppressed
 amwp/jentorra,Jentorra,amwp,explore,unsupported,,,,find-your-courage|lead-powerful-allies
-amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,(unmarked),unmarked,,,,
+amwp/scott-lang-cat-burglar,"Scott Lang, Cat Burglar",amwp,rescue,executable,WP-215,D-21501,packages/game-engine/src/hero/heroEffects.execute.ts#rescue,anything-for-cassie
 amwp/wasp,Wasp,amwp,first-hero-condition,condition,,,,follow-my-lead
 amwp/wasp,Wasp,amwp,microscopic-size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#microscopic-size-changing,hope-returns|infiltrate
 amwp/wasp,Wasp,amwp,size-changing,executable,,D-24801,packages/game-engine/src/hero/heroEffects.execute.ts#size-changing,flitting-sting|follow-my-lead|master-physicist|positive-ions

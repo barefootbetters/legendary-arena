@@ -25,6 +25,7 @@ import {
   countEscapedPileByType,
   countEscapedConvertedLoss,
   listConditionPiles,
+  resolveEscapedPileThreshold,
   remainingPileCount,
 } from './schemeResourceLoss.js';
 
@@ -358,6 +359,10 @@ function escapedConvertedKind(origin: ConvertedVillainOrigin): SchemeLossKind {
     // why: WP-823 / D-24756 — Brainwash the Military counts escaped S.H.I.E.L.D. Officers.
     case 'shield-officer':
       return 'escaped-officer';
+    // why: WP-863 / D-24805 — no config counts Micro-Sized Villains by origin (they count as
+    // escaped Villains), so the generic escaped kind is the honest label if one ever does.
+    case 'micro-sized':
+      return 'escaped-pile';
   }
 }
 
@@ -392,7 +397,7 @@ function collectResourceConditions(
     conditions.push({
       kind,
       progress: countEscapedPileByType(gameState, condition.cardTypes),
-      threshold: condition.threshold,
+      threshold: resolveEscapedPileThreshold(gameState, condition),
       isThresholdReported: true,
     });
     return conditions;
@@ -439,6 +444,18 @@ function collectResourceConditions(
       kind: pileLossKind(pile),
       progress: depleted > 0 ? depleted : 0,
       threshold: setupSize,
+      isThresholdReported: true,
+    });
+  }
+  // why: WP-863 / D-24805 — the escape half of a compound Evil Wins (Trap Heroes in the
+  // Microverse) is measured beside the pile, from the same count and threshold the loss reads, so
+  // the meter shows whichever half is closer.
+  const escapeCondition = config?.additionalEscapeLossCondition;
+  if (escapeCondition !== undefined) {
+    conditions.push({
+      kind: 'escaped-pile',
+      progress: countEscapedPileByType(gameState, escapeCondition.cardTypes),
+      threshold: resolveEscapedPileThreshold(gameState, escapeCondition),
       isThresholdReported: true,
     });
   }

@@ -949,6 +949,73 @@ describe('UIState type drift (WP-128 / EC-131) — type pinning', () => {
     );
   });
 
+  it('WP-865 UITurnEconomyState.heistAvailable / heistCount are pinned on a BUILT projection (D-24808)', () => {
+    // why: both OPTIONAL fields are omit-when-absent, so only a runtime keyset assertion on a REAL
+    // built and filtered projection catches buildUIState or the filter dropping them
+    // (WP-563 / D-24372, the WP-739 precedent above).
+    const setData = {
+      abbr: 'core',
+      schemes: [{ slug: 's' }],
+      masterminds: [{ slug: 'mm', cards: [{ slug: 'mm-base', tactic: false }] }],
+      henchmen: [{ slug: 'h' }],
+      villains: [{ slug: 'v', cards: [{ slug: 'v1', vAttack: '4' }] }],
+      heroes: [
+        {
+          slug: 'hero-x',
+          cards: [
+            { slug: 'card-c1', rarityLabel: 'Common 1' },
+            { slug: 'card-c2', rarityLabel: 'Common 2' },
+            { slug: 'card-uncommon', rarityLabel: 'Uncommon' },
+            { slug: 'card-rare', rarityLabel: 'Rare' },
+          ],
+        },
+      ],
+    };
+    const registry = {
+      listCards: () => [],
+      listSets: () => [{ abbr: 'core' }],
+      getSet: (abbr: string) => (abbr === 'core' ? setData : undefined),
+    };
+    const config: MatchSetupConfig = {
+      schemeId: 'core/s',
+      mastermindId: 'core/mm',
+      villainGroupIds: ['core/v'],
+      henchmanGroupIds: ['core/h'],
+      heroDeckIds: ['core/hero-x'],
+      bystandersCount: 1,
+      woundsCount: 1,
+      officersCount: 1,
+      sidekicksCount: 1,
+    };
+    const gameState = buildInitialGameState(config, registry, makeMockCtx({ numPlayers: 1 }));
+    const uiCtx = { phase: 'play' as string | null, turn: 1, currentPlayer: '0' };
+
+    // why: a readied Heist card in the main stage with a Villain Deck to reveal makes the Heist
+    // available, so both fields project (they are lazily absent otherwise).
+    gameState.currentStage = 'main';
+    gameState.turnEconomy.heistCrewCards = ['core/hero-x/card-c1'];
+    assert.ok(gameState.villainDeck.deck.length > 0, 'the setup Villain Deck has a card to reveal');
+    const present = buildUIState(gameState, uiCtx);
+    assert.deepStrictEqual(Object.keys(present.economy).sort(), [
+      'attack',
+      'availableAttack',
+      'availableRecruit',
+      'heistAvailable',
+      'heistCount',
+      'piercing',
+      'recruit',
+      'woundsDrawn',
+    ]);
+    const filtered = filterUIStateForAudience(present, { kind: 'player', playerId: '0' });
+    assert.deepStrictEqual(Object.keys(filtered.economy).sort(), Object.keys(present.economy).sort());
+
+    // why: once the turn's Heist is attempted the fields must be ABSENT, not false.
+    gameState.turnEconomy.hasAttemptedHeistThisTurn = true;
+    const absent = buildUIState(gameState, uiCtx);
+    assert.ok(!('heistAvailable' in absent.economy), 'no Heist available ⇒ heistAvailable omitted');
+    assert.ok(!('heistCount' in absent.economy), 'no Heist available ⇒ heistCount omitted');
+  });
+
   it('WP-819 UITurnEconomyState.rescueOnFightAvailable is pinned on a BUILT projection (D-24753)', () => {
     // why: the OPTIONAL rescueOnFightAvailable is omit-when-absent, so only a runtime keyset
     // assertion on a REAL built projection catches buildUIState dropping it (WP-563 / D-24372).

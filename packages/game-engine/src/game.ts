@@ -74,6 +74,7 @@ import { endMatchEarly } from './moves/endMatchEarly.js';
 import { dodgeCard } from './moves/dodgeCard.js';
 import { phaseCard } from './moves/phaseCard.js';
 import { useRitualArtifact } from './moves/ritualArtifact.js';
+import { attemptHeist } from './moves/attemptHeist.js';
 import {
   operatorSetSupplyCount,
   operatorMoveToDeckTop,
@@ -601,6 +602,12 @@ export const LegendaryGame: Game<LegendaryGameState, Record<string, unknown>, Ma
     // real G (playerZones, controlledArtifacts, turnEconomy). Not emitted by getLegalMoves, so
     // bots never use a Ritual.
     useRitualArtifact: { move: useRitualArtifact, client: false },
+    // why: WP-865 / D-24808 — attemptHeist is a non-core, internally-stage-gated move (the
+    // useRitualArtifact pattern): once per turn the player attempts a Heist, comparing the Heist
+    // Count with the Villain Deck top card's printed VP. Server-only (client: false) per D-10008 —
+    // it mutates real G (turnEconomy, and the readied abilities' or the Wound's zones). Not in
+    // CORE_MOVE_NAMES and not emitted by getLegalMoves, so bots never attempt a Heist.
+    attemptHeist: { move: attemptHeist, client: false },
     // why: WP-502 / D-24306 — endMatchEarly is the player-initiated "End Game"
     // control: it latches the MATCH_ENDED_EARLY endgame counter so the match ends
     // (endedEarly tie) for every seat via the top-level endIf. Server-only

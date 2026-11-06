@@ -1615,7 +1615,7 @@
           "slug": "daimonic-the-white-light",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-daimonic-the-white-light.webp",
           "abilities": [
-            "Fight: Draw a card."
+            "Fight: Draw a card. [effect:draw-cards-current:1]"
           ]
         },
         {
@@ -1623,7 +1623,7 @@
           "slug": "incandescence-the-flame-blast",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-incandescence-the-flame-blast.webp",
           "abilities": [
-            "Fight: You may KO a card from your discard pile."
+            "Fight: You may KO a card from your discard pile. [effect:ko-up-to-from-discard-current:1]"
           ]
         },
         {
@@ -1631,7 +1631,7 @@
           "slug": "influence-the-impact-beam",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-influence-the-impact-beam.webp",
           "abilities": [
-            "Fight: You get +1[icon:recruit]."
+            "Fight: You get +1[icon:recruit]. [effect:gain-recruit-current:1]"
           ]
         },
         {
@@ -1671,7 +1671,7 @@
           "slug": "spectral-the-disintegration-beam",
           "imageUrl": "https://images.legendary-arena.com/rvlt/rvlt-hm-mandarins-rings-spectral-the-disintegration-beam.webp",
           "abilities": [
-            "Fight: KO one of your Heroes."
+            "Fight: KO one of your Heroes. [effect:koHeroCurrentPlayer]"
           ]
         },
         {

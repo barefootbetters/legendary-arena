@@ -58,6 +58,16 @@ import { initializeCity, fillHqFromDeck } from '../board/city.logic.js';
 import { buildCardStats, resetTurnEconomy } from '../economy/economy.logic.js';
 import { buildHeroDeck, buildTransformSideDeck, buildTransformTargets, buildSplitFaces, buildSplitFaceAlternateOnLeft } from './buildHeroDeck.js';
 import { convertHeroesToSkrulls } from './convertHeroesToSkrulls.js';
+// why: WP-863 / D-24805 — Trap Heroes in the Microverse's setup pieces (the trapped Hero, its
+// Villain Deck conversion, its color Size-Changing entries, the setup message).
+import {
+  splitTrappedHeroDeckId,
+  listTrappedHeroCards,
+  readTrappedHeroName,
+  describeTrappedHero,
+  addMicroSizedHeroesToVillainDeck,
+  buildMicroSizedFightSizeChanging,
+} from '../rules/trapHeroesInTheMicroverse.logic.js';
 import {
   buildMastermindState,
   isMastermindRegistryReader,
@@ -630,8 +640,13 @@ export function buildInitialGameState(
     numPlayers,
     [...config.heroDeckIds],
   );
+  // why: WP-863 / D-24805 — Trap Heroes in the Microverse traps the LAST listed Hero (the loadout
+  // supplied one extra; playerCountSetup.ts). Only the Hero Deck build loses it: the transform,
+  // split and display builders keep the full list, so a trapped card gained later plays as printed.
+  // Every other scheme gets the same list back, so its Hero Deck shuffle input is unchanged.
+  const trappedHeroSplit = splitTrappedHeroDeckId(config.schemeId, effectiveHeroDeckIds, registry);
   const shuffledHeroDeck = buildHeroDeck(
-    effectiveHeroDeckIds,
+    trappedHeroSplit.heroDeckIds,
     registry,
     context,
   );
@@ -704,13 +719,36 @@ export function buildInitialGameState(
     villainDeckResult.convertedOrigins,
     context,
   );
-  const convertedVillainOrigins = skrullConversion.convertedOrigins;
+  // why: WP-863 / D-24805 — the trapped Hero's cards join the Villain Deck as Micro-Sized Villains,
+  // re-shuffled once AFTER the Skrull step (the WP-514 placement: the last random draw in setup).
+  // A passthrough with no draw for every other scheme. Everything below reads this result.
+  const trappedCardIds = listTrappedHeroCards(trappedHeroSplit.trappedHeroDeckId, registry);
+  const microSizedConversion = addMicroSizedHeroesToVillainDeck(
+    trappedCardIds,
+    skrullConversion.villainDeckState,
+    skrullConversion.villainDeckCardTypes,
+    skrullConversion.convertedOrigins,
+    context,
+  );
+  if (trappedHeroSplit.trappedHeroDeckId !== undefined && trappedCardIds.length > 0) {
+    setupMessages.push(
+      describeTrappedHero(readTrappedHeroName(registry, trappedHeroSplit.trappedHeroDeckId), trappedCardIds.length),
+    );
+  }
+  // why: D-24805 — each trapped card's "Size-Changing for its card color" is a setup-time fight
+  // discount merged into the D-24802 map (Hero ids never collide with villain or mastermind ids),
+  // so the omit-when-empty spread below still omits it for every other scheme.
+  const combinedFightSizeChanging = {
+    ...fightSizeChanging,
+    ...buildMicroSizedFightSizeChanging(trappedCardIds, cardTraits),
+  };
+  const convertedVillainOrigins = microSizedConversion.convertedOrigins;
   // why: D-24736 — lift the Monster Pit out of the shuffled villain deck (Clash only;
   // a passthrough with monsterPit undefined for every other scheme). Keeping the
   // Monsters' relative deck order gives a shuffled Pit with no extra random draw.
   const monsterPitSplit = splitMonsterPitFromVillainDeck(
     config.schemeId,
-    skrullConversion.villainDeckState,
+    microSizedConversion.villainDeckState,
   );
   const hasConvertedVillains = Object.keys(convertedVillainOrigins).length > 0;
   const filledHqResult = fillHqFromDeck(skrullConversion.heroReservoir, HQ_SLOT_COUNT);
@@ -804,7 +842,7 @@ export function buildInitialGameState(
     // (12 Heroes injected as 'villain'-typed Skrulls); passthrough for every other
     // scheme (byte-identical to villainDeckResult.state / .cardTypes).
     villainDeck: monsterPitSplit.villainDeckState,
-    villainDeckCardTypes: skrullConversion.villainDeckCardTypes,
+    villainDeckCardTypes: microSizedConversion.villainDeckCardTypes,
     // why: D-24736 — omit-when-absent: only a Clash game carries a Monster Pit, so
     // every other game's state hash is unchanged (the convertedVillainOrigins pattern).
     ...(monsterPitSplit.monsterPit !== undefined ? { monsterPit: monsterPitSplit.monsterPit } : {}),
@@ -971,9 +1009,11 @@ export function buildInitialGameState(
     // prints Abomination, so every other match keeps a byte-identical finalStateHash.
     ...(Object.keys(cardAbomination).length > 0 ? { cardAbomination } : {}),
     // why: D-24802 — same hash-stability discipline (the cardAbomination precedent):
-    // fightSizeChanging is on G ONLY when a selected villain or a fightable mastermind face
-    // prints Size-Changing, so every other match keeps a byte-identical finalStateHash.
-    ...(Object.keys(fightSizeChanging).length > 0 ? { fightSizeChanging } : {}),
+    // fightSizeChanging is on G ONLY when a selected villain, a selected henchman copy
+    // (D-24803) or a fightable mastermind face
+    // prints Size-Changing, or (WP-863 / D-24805) a Trap Heroes in the Microverse Micro-Sized
+    // Villain has a card color, so every other match keeps a byte-identical finalStateHash.
+    ...(Object.keys(combinedFightSizeChanging).length > 0 ? { fightSizeChanging: combinedFightSizeChanging } : {}),
   };
 
   return executeSchemeSetup(baseState, schemeSetupInstructions);

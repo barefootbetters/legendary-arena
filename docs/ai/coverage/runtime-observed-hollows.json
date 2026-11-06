@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 77,
-    "totalObservations": 7724,
+    "totalObservations": 7677,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7203
+      "parse-unrecognized": 7156
     }
   },
   "byMechanic": {
@@ -1222,40 +1222,16 @@
       ]
     },
     "heist": {
-      "hitCount": 48,
-      "lastSeenTurn": 30,
+      "hitCount": 1,
+      "lastSeenTurn": 24,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 48
+        "parse-unrecognized": 1
       },
       "examples": [
         {
-          "cardId": "amwp/ant-army/up-the-ante#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "amwp/ant-army/up-the-ante#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "amwp/ant-army/up-the-ante#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "amwp/ant-army/up-the-ante#0",
-          "cardType": "hero",
-          "timing": "onPlay",
-          "reason": "parse-unrecognized"
-        },
-        {
-          "cardId": "amwp/ant-army/up-the-ante#0",
+          "cardId": "amwp/ant-army/revolutionary-anthem#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

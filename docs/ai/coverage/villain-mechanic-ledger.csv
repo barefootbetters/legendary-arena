@@ -37,6 +37,11 @@ amwp-villain-quantum-realm-sky-manta,Sky Manta,amwp,villain,(unmarked),unmarked,
 amwp-villain-ghost-chasers-sonny-burch,Sonny Burch,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-ghost-chasers-sonny-burchs-goons,Sonny Burch's Goons,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-cross-technologies-take-over-pym-technologies,Take Over Pym Technologies,amwp,villain,(unmarked),unmarked,,,
+henchman-tardigrade-tardigrade-covert,Tardigrade (Covert),amwp,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-tardigrade-tardigrade-instinct,Tardigrade (Instinct),amwp,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-tardigrade-tardigrade-ranged,Tardigrade (Ranged),amwp,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-tardigrade-tardigrade-strength,Tardigrade (Strength),amwp,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-tardigrade-tardigrade-tech,Tardigrade (Tech),amwp,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 amwp-villain-armada-of-kang-troop-ships-of-kang,Troop Ships of Kang,amwp,villain,(unmarked),unmarked,,,
 amwp-villain-ghost-chasers-uzman-with-truth-serum,"Uzman, with Truth Serum",amwp,villain,(unmarked),unmarked,,,
 amwp-villain-cross-technologies-yellowjacket-prototype,Yellowjacket Prototype,amwp,villain,(unmarked),unmarked,,,
@@ -469,25 +474,35 @@ rvlt-villain-dark-avengers-captain-marvel-noh-varr,Captain Marvel (Noh-Varr),rvl
 rvlt-villain-lethal-legion-carnival-of-wonders,Carnival of Wonders,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-hoods-gang-chemistro,Chemistro,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-army-of-evil-count-nefaria,Count Nefaria,rvlt,villain,(unmarked),unmarked,,,
+henchman-mandarins-rings-daimonic-the-white-light,"Daimonic, The White Light",rvlt,henchman,draw-cards-current,executable,WP-485,D-24290,packages/game-engine/src/villain/villainEffects.execute.ts#draw-cards-current
 rvlt-villain-dark-avengers-dark-hawkeye-bullseye,Dark Hawkeye (Bullseye),rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-dark-avengers-dark-ms-marvel-moonnstone,Dark Ms. Marvel (Moonnstone),rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-dark-avengers-dark-spider-man-scorpion,Dark Spider-Man (Scorpion),rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-dark-avengers-dark-wolverine-daken,Dark Wolverine (Daken),rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-army-of-evil-dome-of-darkforce,Dome of Darkforce,rvlt,villain,(unmarked),unmarked,,,
 henchman-hydra-base,HYDRA Base,rvlt,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-mandarins-rings-incandescence-the-flame-blast,"Incandescence, The Flame Blast",rvlt,henchman,ko-up-to-from-discard-current,executable,WP-760,D-24589,packages/game-engine/src/villain/villainEffects.execute.ts#ko-up-to-from-discard-current
+henchman-mandarins-rings-influence-the-impact-beam,"Influence, The Impact Beam",rvlt,henchman,gain-recruit-current,executable,WP-541,D-24350,packages/game-engine/src/villain/villainEffects.execute.ts#gain-recruit-current
 rvlt-villain-army-of-evil-klaw,Klaw,rvlt,villain,gain-attached-hero,executable,WP-450,D-24270,packages/game-engine/src/villain/villainEffects.execute.ts#gain-attached-hero
 rvlt-villain-lethal-legion-laser-maze,Laser Maze,rvlt,villain,(unmarked),unmarked,,,
+henchman-mandarins-rings-liar-the-mento-intensifier,"Liar, The Mento-Intensifier",rvlt,henchman,(unmarked),unmarked,,,
+henchman-mandarins-rings-lightning-the-electro-blast,"Lightning, The Electro-Blast",rvlt,henchman,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-living-laser,Living Laser,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-mbaku,M'Baku,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-hoods-gang-madam-masque,Madam Masque,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 rvlt-villain-army-of-evil-mister-hyde,Mister Hyde,rvlt,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-mandarins-rings-nightbringer-the-black-light,"Nightbringer, The Black Light",rvlt,henchman,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-power-man-erik-josten,Power Man (Erik Josten),rvlt,villain,(unmarked),unmarked,,,
+henchman-mandarins-rings-remaker-the-matter-rearranger,"Remaker, The Matter Rearranger",rvlt,henchman,(unmarked),unmarked,,,
 rvlt-villain-dark-avengers-sentry,Sentry,rvlt,villain,gainWoundEachPlayer,executable,WP-185,D-18502,packages/game-engine/src/villain/villainEffects.execute.ts#gain-wound
 rvlt-villain-dark-avengers-sentrys-watchtower,Sentry's Watchtower,rvlt,villain,(unmarked),unmarked,,,
+henchman-mandarins-rings-spectral-the-disintegration-beam,"Spectral, The Disintegration Beam",rvlt,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-mandarins-rings-spin-the-vortex-beam,"Spin, The Vortex Beam",rvlt,henchman,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-swordsman,Swordsman,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-hoods-gang-the-brothers-grimm,The Brothers Grimm,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-hoods-gang-the-dark-dimension,The Dark Dimension,rvlt,villain,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-white-gorilla-cult,White Gorilla Cult,rvlt,villain,(unmarked),unmarked,,,
+henchman-mandarins-rings-zero-the-ice-blast,"Zero, The Ice Blast",rvlt,henchman,(unmarked),unmarked,,,
 rvlt-villain-lethal-legion-the-raft-prison,“The Raft“ Prison,rvlt,villain,(unmarked),unmarked,,,
 shld-villain-hydra-elite-crossbones,Crossbones,shld,villain,(unmarked),unmarked,,,
 shld-villain-hydra-elite-gorgon,Gorgon,shld,villain,(unmarked),unmarked,,,
@@ -648,6 +663,11 @@ wtif-villain-rival-overlords-red-skull-hydra-occultist,"Red Skull, HYDRA Occulti
 wtif-villain-stranges-demons-skull-demon,Skull Demon,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-rival-overlords-thanos,Thanos,wtif,villain,(unmarked),unmarked,,,
 wtif-villain-stranges-demons-two-headed-ram-demon,Two-Headed Ram Demon,wtif,villain,(unmarked),unmarked,,,
+henchman-ultron-sentries-ultron-sentries-covert,Ultron Sentries (Covert),wtif,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-ultron-sentries-ultron-sentries-instinct,Ultron Sentries (Instinct),wtif,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-ultron-sentries-ultron-sentries-ranged,Ultron Sentries (Ranged),wtif,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-ultron-sentries-ultron-sentries-strength,Ultron Sentries (Strength),wtif,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
+henchman-ultron-sentries-ultron-sentries-tech,Ultron Sentries (Tech),wtif,henchman,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 wtif-villain-rival-overlords-ulysses-klaue,Ulysses Klaue,wtif,villain,koHeroCurrentPlayer,executable,WP-185,D-18503,packages/game-engine/src/villain/villainEffects.execute.ts#ko-hero
 henchman-vibranium-liberator-drones,Vibranium Liberator Drones,wtif,henchman,(unmarked),unmarked,,,
 wtif-villain-stranges-demons-wolf-demon,Wolf Demon,wtif,villain,(unmarked),unmarked,,,
