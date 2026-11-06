@@ -1651,6 +1651,39 @@
       "date": "2026-11-02",
       "evidence": "2p Operator match gs--GHdVvyG (Magneto / Midtown Bank Robbery; Doctor Voodoo, Miek, No-Name, Elektra, Wasp; server build 9c178a24, created 2026-11-02T15:09:49Z after boot, isMatchOlderThanServer false): Follow my Lead played first gave its printed +1 and the conditional +1 (6.2.1-6.2.3, 8.2.1-8.2.3, 12.2.1-12.2.3, 16.2.1-16.2.3); a second copy played after other cards logged blocked (12.2.10-12.2.12). Its separate Size-Changing line logs a not-supported gate or a gate-only hollow on every play (6.2.2, 12.2.11): the amwp Wasp Size-Changing lines lack the [keyword:Size-Changing] token, a pre-existing data gap outside WP-861.",
       "note": "Follow My Lead played first gives 2 Attack; played after another card it gives 1 and logs [blocked]. Its Size-Changing line is unchanged and still logs its own Ranged gate. D-24798."
+    },
+    {
+      "key": "chmp-villain-monsters-unleashed-sporr|hq-hero-gains-size-changing",
+      "kind": "villain",
+      "card": "Sporr",
+      "ability": "Fight: A Hero in the HQ gains Size-Changing [Tech], [Ranged] this turn",
+      "wp": "WP-862",
+      "state": "pending",
+      "date": "2026-11-05",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-862 deploy (isMatchOlderThanServer: false), per the WP-862 DoD.",
+      "note": "Fighting Sporr with two or more HQ Heroes opens a pick (priciest first); the chosen Hero recruits for 2 less per Tech / Ranged card played this turn, and is back to its printed price after End Turn. Ultron-Pym and Shrinksperiments share the primitive. D-24804."
+    },
+    {
+      "key": "antm/ant-man|hq-hero-gains-size-changing-tech",
+      "kind": "hero",
+      "card": "Ant-Man",
+      "ability": "Pym Particles (line 2): A Hero in the HQ with no Size-Changing abilities gains Size-Changing [Tech] this turn",
+      "wp": "WP-862",
+      "state": "pending",
+      "date": "2026-11-05",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the WP-862 deploy (isMatchOlderThanServer: false), per the WP-862 DoD.",
+      "note": "Playing Pym Particles gives a chosen HQ Hero with no Size-Changing a Tech recruit discount this turn; Pym Particles itself no longer takes an extra Tech step (only its Microscopic line). D-24804."
+    },
+    {
+      "key": "amwp/ant-man|reveal",
+      "kind": "hero",
+      "card": "Ant-Man",
+      "ability": "Look Out for the Little Guy (line 2): Reveal the top card of your deck. If it's Strength or has Size-Changing, draw it",
+      "wp": "",
+      "state": "pending",
+      "date": "2026-11-05",
+      "evidence": "Operator-pending (D-24026): a play.legendary-arena.com match created after the D-24806 deploy (isMatchOlderThanServer: false) with amwp Ant-Man.",
+      "note": "Playing it reveals the deck top and draws a Strength card or any card with Size-Changing (Microscopic included); anything else stays on top. Before D-24806 the line did nothing. D-24806."
     }
   ]
 }

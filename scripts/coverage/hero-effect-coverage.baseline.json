@@ -1,8 +1,8 @@
 {
   "corpus": {
-    "executable": 3882,
+    "executable": 3885,
     "heroes": 324,
-    "hooks": 6392,
+    "hooks": 6395,
     "noEffect": 2406,
     "parsedNotExecuted": 104
   },
@@ -18,8 +18,8 @@
       "noEffect": 34
     },
     "amwp": {
-      "executable": 132,
-      "hooks": 190,
+      "executable": 135,
+      "hooks": 193,
       "noEffect": 58
     },
     "anni": {

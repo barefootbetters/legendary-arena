@@ -2,16 +2,16 @@
   "schemaVersion": 2,
   "cardType": "hero",
   "summary": {
-    "totalRows": 846,
+    "totalRows": 848,
     "byStatus": {
-      "executable": 463,
+      "executable": 465,
       "deferred": 16,
       "condition": 58,
       "unsupported": 281,
       "unmarked": 25,
       "subsystem": 3
     },
-    "distinctMechanics": 178
+    "distinctMechanics": 179
   },
   "rows": [
     {
@@ -588,6 +588,22 @@
       "extId": "amwp/ant-man",
       "heroName": "Ant-Man",
       "set": "amwp",
+      "mechanic": "reveal",
+      "status": "executable",
+      "wp": "WP-253",
+      "decision": "D-24024",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#reveal",
+      "designs": [
+        {
+          "slug": "look-out-for-the-little-guy",
+          "name": "Look Out for the Little Guy!"
+        }
+      ]
+    },
+    {
+      "extId": "amwp/ant-man",
+      "heroName": "Ant-Man",
+      "set": "amwp",
       "mechanic": "size-changing",
       "status": "executable",
       "wp": "",
@@ -1156,6 +1172,22 @@
         {
           "slug": "ride-the-ants",
           "name": "Ride the Ants"
+        }
+      ]
+    },
+    {
+      "extId": "antm/ant-man",
+      "heroName": "Ant-Man",
+      "set": "antm",
+      "mechanic": "hq-hero-gains-size-changing-tech",
+      "status": "executable",
+      "wp": "WP-862",
+      "decision": "D-24804",
+      "handler": "packages/game-engine/src/hero/heroEffects.execute.ts#hq-hero-gains-size-changing-tech",
+      "designs": [
+        {
+          "slug": "pym-particles",
+          "name": "Pym Particles"
         }
       ]
     },

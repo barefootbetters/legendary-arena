@@ -7,12 +7,12 @@
   },
   "summary": {
     "distinctMechanics": 77,
-    "totalObservations": 7725,
+    "totalObservations": 7724,
     "hollowEffectsDropped": 0,
     "byReason": {
       "no-handler": 521,
       "unsupported-keyword": 0,
-      "parse-unrecognized": 7204
+      "parse-unrecognized": 7203
     }
   },
   "byMechanic": {
@@ -263,12 +263,12 @@
       ]
     },
     "attack-no-magnitude": {
-      "hitCount": 378,
+      "hitCount": 376,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 378
+        "parse-unrecognized": 376
       },
       "examples": [
         {
@@ -284,13 +284,13 @@
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "amwp/janet-van-dyne/prepare-for-war#0",
+          "cardId": "amwp/janet-van-dyne/prepare-for-war#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "amwp/janet-van-dyne/prepare-for-war#0",
+          "cardId": "amwp/janet-van-dyne/prepare-for-war#1",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
@@ -1181,12 +1181,12 @@
       ]
     },
     "gate-only": {
-      "hitCount": 418,
+      "hitCount": 421,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 418
+        "parse-unrecognized": 421
       },
       "examples": [
         {
@@ -1222,12 +1222,12 @@
       ]
     },
     "heist": {
-      "hitCount": 51,
+      "hitCount": 48,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 51
+        "parse-unrecognized": 48
       },
       "examples": [
         {
@@ -1813,22 +1813,22 @@
       ]
     },
     "recruit-no-magnitude": {
-      "hitCount": 416,
+      "hitCount": 417,
       "lastSeenTurn": 30,
       "byReason": {
         "no-handler": 0,
         "unsupported-keyword": 0,
-        "parse-unrecognized": 416
+        "parse-unrecognized": 417
       },
       "examples": [
         {
-          "cardId": "amwp/janet-van-dyne/search-for-peace#0",
+          "cardId": "amwp/janet-van-dyne/finally-found-you#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"
         },
         {
-          "cardId": "amwp/janet-van-dyne/search-for-peace#0",
+          "cardId": "amwp/janet-van-dyne/finally-found-you#0",
           "cardType": "hero",
           "timing": "onPlay",
           "reason": "parse-unrecognized"

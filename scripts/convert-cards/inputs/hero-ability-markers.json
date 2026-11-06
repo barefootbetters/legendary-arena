@@ -1682,6 +1682,12 @@
   ],
   "amwp": [
     {
+      "heroSlug": "ant-man",
+      "cardSlug": "look-out-for-the-little-guy",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:reveal:hc-or-size-changing-strength:draw]"
+    },
+    {
       "heroSlug": "freedom-fighters",
       "cardSlug": "steel-warrior",
       "abilityIndex": 1,
@@ -1739,6 +1745,12 @@
       "cardSlug": "ride-the-ants",
       "abilityIndex": 1,
       "markupToken": "[keyword:draw:1]"
+    },
+    {
+      "heroSlug": "ant-man",
+      "cardSlug": "pym-particles",
+      "abilityIndex": 1,
+      "markupToken": "[keyword:hq-hero-gains-size-changing-tech]"
     },
     {
       "heroSlug": "jocasta",

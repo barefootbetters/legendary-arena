@@ -377,7 +377,8 @@ export type VillainEffectPrimitive =
   | 'discard-hero-each-player-by-trait'
   | 'discard-hero-or-wound-each-player-by-trait'
   | 'discard-hand-matching-hq-card-names-each-player'
-  | 'hq-heroes-to-hero-deck-bottom';
+  | 'hq-heroes-to-hero-deck-bottom'
+  | 'hq-hero-gains-size-changing';
 
 // why: drift-detection array — must match VillainEffectPrimitive exactly
 // (villainAbility.types.test.ts asserts bidirectional parity). Adding a
@@ -517,6 +518,12 @@ export const VILLAIN_EFFECT_PRIMITIVES: readonly VillainEffectPrimitive[] = [
   'discard-hero-or-wound-each-player-by-trait',
   'discard-hand-matching-hq-card-names-each-player',
   'hq-heroes-to-hero-deck-bottom',
+  // why: WP-862 / D-24804 — appended at position 39. Ultron-Pym / Shrinksperiments / Sporr Fight
+  // (`hq-hero-gains-size-changing:<if-none|add|replace>:<c>[+<c>…]`): a chosen HQ Hero gains (or,
+  // for replace, swaps to) Size-Changing for the listed classes this turn, read by the recruit
+  // price. Keyword-less, so it self-narrates. The marker script's hand-synced copy
+  // (`scripts/convert-cards/apply-effect-markers.mjs`) appends it at the same position.
+  'hq-hero-gains-size-changing',
 ] as const;
 
 /**
@@ -733,6 +740,13 @@ export interface VillainEffectDescriptor {
   // Mutates: ['strength', 'instinct']), in marker order. Deliberately NOT part of
   // `descriptorKey` below — the primitive is keyword-less, so it self-narrates regardless.
   drawHeroClasses?: readonly HeroClass[];
+  // why: WP-862 / D-24804 — present ONLY on `{ primitive: 'hq-hero-gains-size-changing' }`
+  // descriptors: how the grant treats the chosen Hero's own Size-Changing (`if-none` offers only
+  // Heroes with none — Ultron-Pym; `add` — Sporr; `replace` drops it first — Shrinksperiments) and
+  // the granted classes in marker order. Deliberately NOT part of `descriptorKey` — the primitive
+  // is keyword-less, so it reverse-maps to `undefined` and self-narrates regardless.
+  sizeChangingGrantMode?: 'if-none' | 'add' | 'replace';
+  sizeChangingGrantClasses?: readonly HeroClass[];
 }
 
 // why: D-24023 — the frozen legacy-keyword → descriptor translation table. The

@@ -783,7 +783,7 @@
           "imageUrl": "https://images.legendary-arena.com/chmp/chmp-vi-monsters-unleashed-sporr.webp",
           "abilities": [
             "[keyword:Size-Changing]: [hc:tech], [hc:ranged]",
-            "Fight: A Hero in the HQ gains [keyword:Size-Changing]: [hc:tech], [hc:ranged] this turn."
+            "Fight: A Hero in the HQ gains [keyword:Size-Changing]: [hc:tech], [hc:ranged] this turn. [effect:hq-hero-gains-size-changing:add:tech+ranged]"
           ],
           "copies": 1
         },

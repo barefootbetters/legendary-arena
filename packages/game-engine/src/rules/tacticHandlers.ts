@@ -80,6 +80,20 @@ import {
   countVictoryPileBystanders,
   findFirstVictoryPileBystander,
 } from '../board/bystanders.logic.js';
+// why: WP-862 / D-24804 — the two Size-Changing grant tactics share the HQ grant module; its
+// Shrinking Research Budget id lives there (one copy, no import cycle back into this file).
+import {
+  grantSizeChangingToHqHero,
+  resolveShrinkingResearchBudgetGrants,
+  SHRINKING_RESEARCH_BUDGET_TACTIC_ID,
+} from '../hero/sizeChangingGrant.logic.js';
+
+// why: WP-862 / D-24804 — chmp Fin Fang Foom's Alien Dragon Technology tactic ext_id
+// (`${setAbbr}-mastermind-${slug}-${tacticSlug}`): "A Hero in the HQ gets Size-Changing
+// [Strength], [Instinct], [Covert], [Tech], [Ranged] this turn."
+const ALIEN_DRAGON_TECHNOLOGY_TACTIC_ID: CardExtId =
+  'chmp-mastermind-fin-fang-foom-alien-dragon-technology';
+const ALIEN_DRAGON_TECHNOLOGY_CLASSES: readonly string[] = ['strength', 'instinct', 'covert', 'tech', 'ranged'];
 
 // why: OCTET_HAND_SIZE = 8 is the printed draw count of Doctor Octopus's "Octet
 // of Valence Electrons" tactic (co2e, corrected 9→8 in #1214) — distinct from
@@ -1616,6 +1630,41 @@ export function dispatchTacticOnFight(
     resolveCrushPacifistResistance(G, events, currentPlayer);
     return;
   }
+  // why: WP-862 / D-24804 — Fin Fang Foom's Alien Dragon Technology gives a chosen HQ Hero
+  // Size-Changing for all five classes this turn (one eligible → at once; two+ → a pick).
+  if (defeatedTacticId === ALIEN_DRAGON_TECHNOLOGY_TACTIC_ID) {
+    resolveAlienDragonTechnology(G, currentPlayer);
+    return;
+  }
+  // why: WP-862 / D-24804 — Darren Cross's Shrinking Research Budget gives each HQ Hero with no
+  // Size-Changing its own class while it stays in the HQ; its Transform stays unimplemented.
+  if (defeatedTacticId === SHRINKING_RESEARCH_BUDGET_TACTIC_ID) {
+    resolveShrinkingResearchBudget(G, currentPlayer);
+    return;
+  }
+}
+
+/**
+ * Resolves Fin Fang Foom's "Alien Dragon Technology" tactic Fight effect (WP-862 / D-24804):
+ * "A Hero in the HQ gets Size-Changing [Strength], [Instinct], [Covert], [Tech], [Ranged] this turn."
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (the chooser).
+ */
+export function resolveAlienDragonTechnology(G: LegendaryGameState, currentPlayer: string): void {
+  grantSizeChangingToHqHero(G, currentPlayer, ALIEN_DRAGON_TECHNOLOGY_CLASSES, 'add', ALIEN_DRAGON_TECHNOLOGY_TACTIC_ID);
+}
+
+/**
+ * Resolves Darren Cross's "Shrinking Research Budget" tactic Fight effect (WP-862 / D-24804):
+ * "Each Hero currently in the HQ that has no Size-Changing abilities gains Size-Changing for one
+ * of its Hero Classes."
+ *
+ * @param G - The game state, mutated in place.
+ * @param currentPlayer - The player who defeated the tactic (picks for dual-class Heroes).
+ */
+export function resolveShrinkingResearchBudget(G: LegendaryGameState, currentPlayer: string): void {
+  resolveShrinkingResearchBudgetGrants(G, currentPlayer, SHRINKING_RESEARCH_BUDGET_TACTIC_ID);
 }
 
 /**

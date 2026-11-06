@@ -654,8 +654,15 @@ test('useInPlayCoverage reads the real committed seed + ledger and computes the 
   // with smaller ripples elsewhere). totalObs 8631 -> 8686 (+55; microscopic-size-changing is not in
   // the frozen baseline seed, so its vanished obs leave the denominator rather than move into
   // resolvedObs). resolvedObs stays 1091, so percentResolved stays 12.6 (1091 / 8686).
+  // 2026-11-05 (INFRA, D-24806, re-pin): Look Out for the Little Guy's reveal line now reveals and
+  // draws instead of parsing as a second Size-Changing, so the amwp sweep board plays out a little
+  // differently (feed regenerated: 7725 -> 7724 raw observations; attack-no-magnitude 378 -> 376,
+  // gate-only 418 -> 421, heist 51 -> 48, recruit-no-magnitude 416 -> 417). totalObs 8686 -> 8687
+  // (+1: totalObs sums each mechanic's max(baseline, live) peak, so the gate-only / recruit rises
+  // count and the falls under their baseline peaks do not). resolvedObs stays 1091, so
+  // percentResolved stays 12.6 (1091 / 8687). A trajectory re-pin; no mechanic changed status.
   const view = useInPlayCoverage();
-  assert.equal(view.totalObs.value, 8686);
+  assert.equal(view.totalObs.value, 8687);
   assert.equal(view.resolvedObs.value, 1091);
   assert.equal(view.percentResolved.value, 12.6);
   assert.ok(view.remaining.value.length > 0);

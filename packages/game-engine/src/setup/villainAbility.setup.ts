@@ -510,6 +510,8 @@ function parseLocationGatedEffect(
  *   - `gain-recruit-current-count-by-trait:<kind>:<value>` and
  *     `draw-cards-current-count-by-trait:<kind>:<value>`  (count-sized; D-24769)
  *   - `reveal-top-ko-grey-or-draw-by-class:<c>[+<c>…]`  (Hero Classes that draw; D-24769)
+ *   - `hq-hero-gains-size-changing:<if-none|add|replace>:<c>[+<c>…]`  (a chosen HQ Hero gains
+ *     Size-Changing for the classes this turn; D-24804)
  *   - `discard-hero-each-player-by-trait:<kind>:<value>` and
  *     `discard-hero-or-wound-each-player-by-trait:<kind>:<value>`  (each player discards a
  *     matching Hero, or may gain a Wound instead; D-24770)
@@ -798,6 +800,24 @@ function parseUngatedEffect(
       return null;
     }
     return { primitive: 'reveal-top-ko-grey-or-draw-by-class', drawHeroClasses };
+  }
+  if (primitiveToken === 'hq-hero-gains-size-changing') {
+    // why: WP-862 / D-24804 — grammar `hq-hero-gains-size-changing:<mode>:<c>[+<c>…]` (Ultron-Pym
+    // `:if-none:tech`, Shrinksperiments `:replace:tech`, Sporr `:add:tech+ranged`). Exactly 3
+    // colon-parts; the mode is one of three words and the class list reuses parseHeroClassList.
+    // Anything else returns null (→ unresolvedMarkers), never a partial descriptor.
+    if (parts.length !== 3) {
+      return null;
+    }
+    const mode = parts[1]!;
+    if (mode !== 'if-none' && mode !== 'add' && mode !== 'replace') {
+      return null;
+    }
+    const sizeChangingGrantClasses = parseHeroClassList(parts[2]!);
+    if (sizeChangingGrantClasses === null) {
+      return null;
+    }
+    return { primitive: 'hq-hero-gains-size-changing', sizeChangingGrantMode: mode, sizeChangingGrantClasses };
   }
   if (primitiveToken === 'play-villain-deck-cards') {
     // why: D-24351 — grammar `play-villain-deck-cards:<N>` (exactly 2 tokens); N is the

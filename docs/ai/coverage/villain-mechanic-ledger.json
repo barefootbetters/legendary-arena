@@ -4,13 +4,13 @@
   "summary": {
     "totalRows": 760,
     "byStatus": {
-      "executable": 195,
+      "executable": 198,
       "deferred": 0,
       "unsupported": 1,
-      "unmarked": 562,
+      "unmarked": 559,
       "subsystem": 2
     },
-    "distinctMechanics": 46
+    "distinctMechanics": 47
   },
   "rows": [
     {
@@ -381,11 +381,11 @@
       "cardName": "Shrinksperiments",
       "set": "amwp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-hero-gains-size-changing",
+      "status": "executable",
+      "wp": "WP-862",
+      "decision": "D-24804",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing"
     },
     {
       "extId": "amwp-villain-quantum-realm-sky-manta",
@@ -766,11 +766,11 @@
       "cardName": "Ultron-Pym",
       "set": "antm",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-hero-gains-size-changing",
+      "status": "executable",
+      "wp": "WP-862",
+      "decision": "D-24804",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing"
     },
     {
       "extId": "antm-villain-queens-vengeance-yeoman-america",
@@ -1338,11 +1338,11 @@
       "cardName": "Sporr",
       "set": "chmp",
       "cardType": "villain",
-      "mechanic": "(unmarked)",
-      "status": "unmarked",
-      "wp": "",
-      "decision": "",
-      "handler": ""
+      "mechanic": "hq-hero-gains-size-changing",
+      "status": "executable",
+      "wp": "WP-862",
+      "decision": "D-24804",
+      "handler": "packages/game-engine/src/villain/villainEffects.execute.ts#hq-hero-gains-size-changing"
     },
     {
       "extId": "chmp-villain-wrecking-crew-the-wrecker",

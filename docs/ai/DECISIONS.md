@@ -50220,6 +50220,58 @@ D-24074's deferred "Attack is also Victory Points" clause is dropped rather than
 **Reserved by:** NUMBER-LEDGER D-24802 (#3156). Related: D-24801 (the recruit side), D-24074 (superseded), D-24747 (Abomination, the setup-scan precedent), D-24663 (fight-cost reductions), D-24483 (mastermind Transform allowlist), D-24026.
 
 ---
+
+### D-24804 — Size-Changing granted or removed on an HQ Hero during play is a lazy per-card overlay read by the recruit price (Active 2026-11-05 — WP-862 / EC-900)
+
+**Status:** Active 2026-11-05. Completes the runtime half D-24801 and D-24802 left out. Live-verify (D-24026) operator-pending.
+
+**Context.** Six printed effects give a Hero in the HQ Size-Changing during play, and did nothing before this decision: Pym Particles (antm Ant-Man, second line), Ultron-Pym (antm), Shrinksperiments (amwp, "loses all Size-Changing abilities, then gains Size-Changing [Tech] this turn"), Sporr (chmp), Fin Fang Foom's tactic Alien Dragon Technology (chmp, all five classes) and Darren Cross's tactic Shrinking Research Budget (amwp, "Each Hero currently in the HQ that has no Size-Changing abilities gains Size-Changing for one of its Hero Classes", no duration printed). D-24801's parser also read Pym Particles' grant sentence as a second printed Size-Changing [Tech] on Pym Particles itself, a spurious 2-less step.
+
+**Decision.**
+1. **Overlay.** `G.hqSizeChangingGrants?: HqSizeChangingGrant[]` (`{ cardId, classes, replacesPrinted, expiresAtEndOfTurn }`, grant order), keyed by the copy-unique Hero instance id, created at the first grant and deleted when empty. The setup maps (`cardSizeChangingClasses`, `cardMicroscopicSizeChangingClasses`, `fightSizeChanging`) are never written after setup.
+2. **Read.** `getHqCardSizeChanging(G, cardId)` (`hero/sizeChanging.logic.ts`) starts from the printed lists and, only while the card is in `G.hq`, applies each grant in order: a replace grant sets the classes and drops the Microscopic icons; an add grant unions its classes, a class counting once. `resolveRecruitCost` prices through it (signature unchanged), so `recruitHero`, the bot legal moves and `UIHQState.recruitCosts` all follow. `hasSizeChanging` keeps its printed meaning for played cards; `resolveFightPrice` is unchanged (no effect grants Size-Changing to a Villain or Mastermind). `matchHasSizeChangingCard` also counts an open grant, so `recruitCosts` appears in a match with no printed Size-Changing card.
+3. **Lifetimes.** "This turn" grants are removed at end-of-turn cleanup (Step 8). Shrinking Research Budget's grant lasts while the card stays in the HQ — an interpretation of "each Hero currently in the HQ … gains" against the same set's Shrinksperiments, which prints "this turn"; **flagged for the operator**: switching it to "this turn" is one value (`expiresAtEndOfTurn: true`) plus its log text. Consequence of the current reading: any player who later recruits that card gets the discount against their own played cards. Cleanup also drops grants whose card left the HQ.
+4. **The pick.** The WP-684 seat choice addressed to the active player (`'size-changing-grant'`): no eligible Hero → a `blocked` log; one → granted at once; two or more → options ordered recruitable before Haunted, then printed cost descending, then slot, default 0 (the bot and timeout take it). An open seat choice blocks only the park (the WP-860 posture); zero- and one-eligible grants still resolve. Every apply re-checks that its card is still in the HQ.
+5. **Shrinking Research Budget.** Each HQ Hero with no Size-Changing, in slot order: a single-class Hero gets its class at once, a classless Hero is logged, and each dual-class Hero gets a `'size-changing-class-pick'` chained from `resolveSeatChoice`'s live-move chain point (a fresh scan from slot 0 finds the next one), each pick logged "Fight effect: Player N chooses which Hero Class <Hero> gains Size-Changing for (Shrinking Research Budget)." The class-pick kind carries no source field; its source is `SHRINKING_RESEARCH_BUDGET_TACTIC_ID`, and every line names it through `resolveCardName`. The timeout path does not chain. "This Mastermind Transforms" stays unimplemented.
+6. **Sources.** Villain primitive `hq-hero-gains-size-changing:<if-none|add|replace>:<classes>` (position 39; Ultron-Pym `if-none:tech`, Shrinksperiments `replace:tech`, Sporr `add:tech+ranged`), keyword-less so it self-narrates with a `Fight effect: ` prefix; hero keyword `hq-hero-gains-size-changing-tech` (Pym Particles, `if-none`); tactic resolvers `resolveAlienDragonTechnology` and `resolveShrinkingResearchBudget`. Class words follow the printed order Strength, Instinct, Covert, Tech, Ranged (not `HERO_CLASSES`).
+7. **Parse correction.** On a hero line carrying `[keyword:hq-hero-gains-size-changing-tech]`, the printed `[keyword:Size-Changing]` and `[hc:tech]` are descriptive: no `size-changing` keyword, no discount class, no gate. Pym Particles keeps only its Microscopic [Tech]×5 discount.
+
+**Out of scope (follow-ups).** Trap Heroes in the Microverse (antm scheme: Heroes in the Villain Deck as Micro-Sized Villains; once its setup exists, their color Size-Changing is a static `G.fightSizeChanging` entry). Look Out for the Little Guy (amwp Ant-Man): its reveal line's `[hc:strength]` is still read as a second Size-Changing [Strength] (the same D-24801 parse class). Darren Cross's Transform. A client badge for a granted Size-Changing.
+
+**Consequences.**
+- **Hash.** The overlay is absent unless a grant happens. The parse correction changes setup state (`cardSizeChangingClasses` loses Pym Particles) in every match that selects antm Ant-Man. No `finalStateHash` sentinel uses antm, amwp or chmp, so none moved. Replays of pre-WP-862 matches with antm Ant-Man or these cards diverge on re-execution; stored competitive rows stay frozen (D-24616 §5).
+- **Ledgers.** Ultron-Pym, Shrinksperiments and Sporr move from `(unmarked)` to executable in the villain ledger; both tactics move from `unmarked` to executable in the effect index; the hero ledger gains `antm/ant-man|hq-hero-gains-size-changing-tech`. The hero ledger still lists Pym Particles under `size-changing`: it scans printed `[keyword:X]` tokens, and the grant sentence prints one.
+- **Pins moved (product change).** `VILLAIN_EFFECT_PRIMITIVES` 38 → 39 (and its last-entry and WP-837 slice pins), `HERO_KEYWORDS` 92 → 93, `HERO_EFFECT_HANDLERS` 71 → 72. The runtime-observed feed and the dashboard in-play pin did not move.
+
+**Review.** Inspector (MEDIUM tier) round 1 FAIL on two P1s, both fixed: the SRB source now threads through `resolveCardName` instead of a second hard-coded name, and the tests cover every effect's park and resolve plus Pym Particles' real recruit price.
+
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` exit 0, 0 fail in every package: game-engine 6293 / 0 (+24, `hero/sizeChangingGrant.test.ts` against the committed antm / amwp / chmp data and the real executors, `resolveSeatChoice`, cleanup and `buildUIState`), arena-client 2546 / 0, dashboard 594 / 0, server 1640 pass. `cards:check`, `ledger:heroes:check`, `ledger:villains:check`, `effect-index:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check`, `cards:count-markers:check`, `roadmap:counts:check` all 0.
+
+**Reserved by:** NUMBER-LEDGER D-24804 (#3163). Related: D-24801, D-24802, D-24501, D-24500, D-24754, D-24796, D-24648, D-24616, D-24026.
+
+---
+
+### D-24806 — "If it's [Class] or has Size-Changing, draw it" is a hero-class-or-size-changing reveal predicate; the line's Size-Changing token is the criterion, not the card's own Size-Changing (Active 2026-11-05 — direct fix, no WP)
+
+**Status:** Active 2026-11-05. Follow-up to D-24804 (WP-862), same parse class as its Pym Particles correction. Live-verify (D-24026) operator-pending.
+
+**Context.** amwp Ant-Man's **Look Out for the Little Guy** prints "[keyword:Size-Changing] [hc:strength]" (line 1) and "Reveal the top card of your deck. If it's [hc:strength] or has [keyword:Size-Changing] draw it." (line 2). D-24801's hero parser routes every `[hc:X]` on a line carrying `[keyword:Size-Changing]` into that card's own Size-Changing list, so line 2 built a second `size-changing` hook (`sizeChangingClasses: ['strength']`) and no reveal: the line silently did nothing and logged no hollow. The price was unaffected (setup de-duplicates the classes, one Strength step). It is the only hero line in the corpus that prints the token inside a reader sentence (amwp line "for each card you played this turn that's [hc:strength] and/or has Size-Changing" carries no token and is a separate, unimplemented mechanic).
+
+**Decision.**
+1. **Predicate.** `RevealPredicateKind` / `REVEAL_PREDICATE_KINDS` gain `'hero-class-or-size-changing'` (appended last; `rules/revealRule.ts`, drift pin 7 → 8). It matches the revealed card when either printed class equals `traitValue` (the `hero-class` rule, split cards on either half) OR the card has printed Size-Changing, Microscopic included (`hasSizeChanging`, rules v23 p.30). A deck card is never in the HQ, so D-24804 grants never apply.
+2. **Marker.** `[keyword:reveal:hc-or-size-changing-<slug>:draw]` (the WP-729 reveal-rule grammar; the existing `VALID_TOKEN_PATTERN` arm accepts it). The parser checks the `hc-or-size-changing-` prefix before `hc-`. Curated on `amwp/ant-man/look-out-for-the-little-guy` ability 1 as `hc-or-size-changing-strength`.
+3. **Descriptive token.** On a line carrying that marker, the printed `[keyword:Size-Changing]` names what the revealed card must have: no `size-changing` keyword (Step 2) and no Size-Changing class (Step 1a); the `[hc:strength]` falls to the existing WP-729 reveal-criterion branch (no gate). The D-24804 grant suppression and this one share one `isSizeChangingTokenDescriptive` flag.
+4. **Behaviour.** A match is drawn; a non-match stays on top (the WP-729 leave-on-top rule). The reveal log names the criterion "a strength card or a card with Size-Changing".
+
+**Consequences.**
+- **Hash.** Setup hooks change in every match that selects amwp Ant-Man (line 2's hook is a reveal now); `cardSizeChangingClasses` is unchanged (still ['strength']). No `finalStateHash` sentinel uses amwp. Replays of earlier matches with amwp Ant-Man diverge where the card was played; stored competitive rows stay frozen (D-24616 §5).
+- **Pins moved (product change).** `REVEAL_PREDICATE_KINDS` 7 → 8.
+
+**Gates.** `pnpm -r build` 0. `pnpm -r --no-bail test` 0 fail in every package: game-engine 6293 -> 6299 / 0 (+6, `hero/lookOutForTheLittleGuy.test.ts` against the committed amwp data and the real executor), arena-client 2546 / 0, dashboard 594 / 0, server 1640 pass. `cards:check`, `ledger:heroes:check`, `ledger:villains:check`, `effect-index:check`, `mechanics:metadata:check`, `sim:runtime-observed:check`, `sim:coverage --check`, `cards:count-markers:check` all 0. The runtime-observed feed moved (7725 -> 7724 raw observations: the reveal now draws in the amwp sweep), so the dashboard in-play `totalObs` pin re-pins 8686 -> 8687 (dated comment); resolvedObs 1091 and percentResolved 12.6 unchanged.
+
+**Reserved by:** NUMBER-LEDGER D-24806 (#3168). Related: D-24804 (the Pym Particles precedent), D-24801, D-24550 (trait reveal predicates), D-24026.
+
+---
 Protect this file.
 
 ### D-24803 — A henchman group printed as variant cards maps its 10 copies onto the variants in contiguous blocks; each copy reads its own name, image, abilities, Fight effect and Size-Changing discount (Active 2026-11-05 — direct fix, no WP)

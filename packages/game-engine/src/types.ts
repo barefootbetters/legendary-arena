@@ -82,6 +82,24 @@ export interface FightSizeChanging {
   microscopicIcons: string[];
 }
 
+// why: WP-862 / D-24804 — one Size-Changing grant on one HQ Hero instance. `classes` are
+// normalized class slugs (strength / instinct / covert / tech / ranged only). A grant with
+// `replacesPrinted` sets the card's classes to its own and drops its Microscopic icons
+// (Shrinksperiments: "loses all Size-Changing abilities, then gains …"); otherwise its
+// classes are added, a class counting once. `expiresAtEndOfTurn` is false only for
+// Shrinking Research Budget, whose grant lasts while the card stays in the HQ.
+/** One runtime Size-Changing grant on an HQ Hero (D-24804). JSON-serializable. */
+export interface HqSizeChangingGrant {
+  /** The copy-unique Hero instance the grant belongs to. */
+  cardId: CardExtId;
+  /** The granted Size-Changing classes, de-duplicated. */
+  classes: string[];
+  /** True when the grant replaces the card's printed Size-Changing (and Microscopic icons). */
+  replacesPrinted: boolean;
+  /** True for "this turn" grants (removed at end-of-turn cleanup). */
+  expiresAtEndOfTurn: boolean;
+}
+
 // why: WP-513 / D-24325 — Killbots' "number of Twists next to this Scheme" counter
 // key (G.counters). Seeded 3 at setup, +1 per Killbots twist; a Killbot's attack
 // equals this value. A plain counter key (not an endgame condition).
@@ -1432,6 +1450,10 @@ export interface SeatChoiceOption {
   // ("KO a card from your hand or discard pile"); the same starter / Wound ids repeat across hand
   // and discard pile.
   sourceZone?: 'hand' | 'inPlay' | 'discard';
+  // why: WP-862 / D-24804 — for a 'size-changing-class-pick' option (Shrinking Research
+  // Budget, a dual-class Hero), heroClass is the class slug the option's Hero (cardId) gains
+  // Size-Changing for. Consumer-added. Absent for every other kind. NOT projected to the client.
+  heroClass?: string;
 }
 
 /**
@@ -1503,6 +1525,14 @@ export interface PendingSeatChoice {
   communeSpiritWorld?: {
     sourceCardId: CardExtId;
     discardsRemaining?: number;
+  };
+  // why: WP-862 / D-24804 — present only on the 'size-changing-grant' kind: the classes the
+  // chosen HQ Hero gains, whether they replace its printed Size-Changing, and the card whose
+  // effect parked the pick (for the log). Read by the apply. NOT projected to the client.
+  sizeChangingGrant?: {
+    classes: string[];
+    replacesPrinted: boolean;
+    sourceCardId: CardExtId;
   };
 }
 
@@ -2946,6 +2976,15 @@ export interface LegendaryGameState {
   // cleared; omit-when-empty so games without a Microscopic card keep their hash.
   /** Per-card Microscopic Size-Changing icons. Setup-only; read via sizeChanging.logic.ts. */
   cardMicroscopicSizeChangingClasses?: Record<CardExtId, string[]>;
+
+  // why: WP-862 / D-24804 — Size-Changing granted (or replaced) on an HQ Hero during play
+  // (Pym Particles, Ultron-Pym, Shrinksperiments, Sporr, Alien Dragon Technology, Shrinking
+  // Research Budget). A removable fact about one card instance, so it never touches the
+  // setup maps above; keyed by the copy-unique instance id and read only while that card is
+  // in G.hq (getHqCardSizeChanging). Lazy-created at the first grant and deleted when empty,
+  // so a match that never grants keeps a byte-identical finalStateHash.
+  /** HQ Size-Changing grants in grant order. Runtime-written by sizeChangingGrant.logic.ts; pruned at turn cleanup. */
+  hqSizeChangingGrants?: HqSizeChangingGrant[];
 
   // why: D-24730 — per-card Copy-Powers copied Hero Classes ("This card is both Covert
   // and the color you copy", D-24345). Unlike Size-Changing, the copied class belongs to

@@ -124,6 +124,17 @@ import {
   applyRevealOrWoundSeatChoice,
   REVEAL_OR_WOUND_SEAT_CHOICE_KIND,
 } from './revealOrWoundChoice.logic.js';
+// why: WP-862 / D-24804 — the Size-Changing grant pick and Shrinking Research Budget's class pick.
+// sizeChangingGrant.logic imports parkSeatChoice from this module: the same runtime-safe cycle.
+import {
+  applySizeChangingClassPickResolvedSeatChoice,
+  applySizeChangingGrantResolvedSeatChoice,
+  chainSizeChangingClassPick,
+  readSizeChangingClassPickSeat,
+  SHRINKING_RESEARCH_BUDGET_TACTIC_ID,
+  SIZE_CHANGING_CLASS_PICK_SEAT_CHOICE_KIND,
+  SIZE_CHANGING_GRANT_SEAT_CHOICE_KIND,
+} from '../hero/sizeChangingGrant.logic.js';
 
 /** Move context provided by boardgame.io 0.50.x to every move function. */
 type MoveContext = FnContext<LegendaryGameState> & { playerID: PlayerID };
@@ -445,6 +456,9 @@ export function resolveSeatChoice(
     const communeSourceCardId = choice.communeSpiritWorld?.sourceCardId;
     const communeCostBranch = isCommuneCost ? readCommuneCostBranch(G, choice) : undefined;
     const communeDiscardsLeft = isCommuneDiscard ? readCommuneDiscardsLeft(G, choice) : undefined;
+    // why: WP-862 / D-24804 — capture a Shrinking Research Budget class pick's seat BEFORE the
+    // apply clears the choice, so the next dual-class Hero's pick chains below (the Commune shape).
+    const sizeChangingClassPickSeat = readSizeChangingClassPickSeat(choice);
     // why: WP-682 / WP-683 — dispatch by kind (diving-block via its own apply; the Deadpool
     // kinds via applySeatChoiceCard; the 'generic' kind via the foundational per-seat log).
     // why: D-24732 — ctx?. because narrow test contexts omit ctx; moves never throw.
@@ -481,6 +495,12 @@ export function resolveSeatChoice(
       } else if (communeDiscardsLeft !== undefined) {
         chainCommuneAfterDiscard(G, communeSeat, communeDiscardsLeft, communeSourceCardId, events);
       }
+    }
+    // why: WP-862 / D-24804 — Shrinking Research Budget chains its next dual-class Hero's class
+    // pick here in the live move context, exactly where Commune chains its next step.
+    if (sizeChangingClassPickSeat !== undefined) {
+      // why: the class-pick kind carries no source field; its only source is the tactic (D-24804).
+      chainSizeChangingClassPick(G, sizeChangingClassPickSeat, SHRINKING_RESEARCH_BUDGET_TACTIC_ID);
     }
   }
 }
@@ -625,6 +645,16 @@ function applySeatChoiceByKind(
   // woundsDrawn only for the entry's current player. No draw, so no shuffle context.
   if (choice.kind === REVEAL_OR_WOUND_SEAT_CHOICE_KIND) {
     applyRevealOrWoundSeatChoice(G, choice);
+    return;
+  }
+  // why: WP-862 / D-24804 — the chosen HQ Hero gains Size-Changing this turn; a Shrinking
+  // Research Budget class pick records that Hero's lasting grant. No draw, no shuffle context.
+  if (choice.kind === SIZE_CHANGING_GRANT_SEAT_CHOICE_KIND) {
+    applySizeChangingGrantResolvedSeatChoice(G, choice);
+    return;
+  }
+  if (choice.kind === SIZE_CHANGING_CLASS_PICK_SEAT_CHOICE_KIND) {
+    applySizeChangingClassPickResolvedSeatChoice(G, choice);
     return;
   }
   // why: D-24678 — the shuffle context reaches Random Acts' Diving Block draw.

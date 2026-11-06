@@ -183,6 +183,9 @@ function isLockedEffectKeyword(keyword) {
 // (D-24770 — co2e Mystique, Frost Giant Warrior and Juggernaut Ambushes; the first two
 // validate via the shared trait-predicate branch, the last two via the terminal no-param
 // branch).
+// `hq-hero-gains-size-changing` (`:<if-none|add|replace>:<c>[+<c>…]`) appended at position 39
+// by WP-862 (D-24804 — antm Ultron-Pym, amwp Shrinksperiments and chmp Sporr Fights; validates via
+// its own mode + Hero Class list branch below).
 const VILLAIN_EFFECT_PRIMITIVES = [
   'ko-hero',
   'gain-wound',
@@ -222,6 +225,7 @@ const VILLAIN_EFFECT_PRIMITIVES = [
   'discard-hero-or-wound-each-player-by-trait',
   'discard-hand-matching-hq-card-names-each-player',
   'hq-heroes-to-hero-deck-bottom',
+  'hq-hero-gains-size-changing',
 ];
 
 // why: WP-836 / D-24769 — hand-synced local copy of the engine's HERO_CLASSES
@@ -432,6 +436,12 @@ function isValidParameterizedEffectToken(token) {
     // tokens; co2e Savage Land Mutates: :strength+instinct). Mirrors the engine parser's
     // parseHeroClassList so producer + consumer accept the same tokens.
     return parts.length === 2 && isValidHeroClassList(parts[1]);
+  }
+  if (primitive === 'hq-hero-gains-size-changing') {
+    // why: D-24804 — grammar hq-hero-gains-size-changing:<if-none|add|replace>:<c>[+<c>…] (exactly
+    // 3 tokens; Sporr: :add:tech+ranged). Mirrors the engine parser so producer + consumer agree.
+    const modes = ['if-none', 'add', 'replace'];
+    return parts.length === 3 && modes.includes(parts[1]) && isValidHeroClassList(parts[2]);
   }
   if (primitive === 'play-villain-deck-cards') {
     // why: D-24351 — grammar play-villain-deck-cards:<N> (exactly 2 tokens); N is the

@@ -27,6 +27,29 @@
   5. Fight Daimonic: you draw a card. Fight Influence: +1 Recruit. Fight Incandescence: you may KO a card from your discard pile.
   6. Henchman group core Doombot Legion: unchanged.
 
+### Look Out for the Little Guy reveals and draws a Strength or Size-Changing card (D-24806, direct fix) (2026-11-05)
+
+**User-visible on `play.legendary-arena.com` after deploy.** amwp Ant-Man's Look Out for the Little Guy now does what its second line prints: "Reveal the top card of your deck. If it's [Strength] or has Size-Changing, draw it." Before, the line did nothing: the parser read its printed Size-Changing token as a second Size-Changing on the card itself (the D-24801 parse class WP-862 fixed for Pym Particles). Its price was not affected.
+
+- **Engine.** A new reveal predicate `hero-class-or-size-changing` (a Strength card, or any card with printed Size-Changing, Microscopic included), marked `[keyword:reveal:hc-or-size-changing-strength:draw]`. On that line the Size-Changing token is the reveal criterion. A non-match stays on top of the deck.
+- **Feeds.** Hero ledger and effect index list the reveal for amwp Ant-Man; the runtime-observed feed moved by one observation (7725 → 7724), so the dashboard in-play pin goes 8686 → 8687.
+- **Tests.** game-engine 6299 / 0 (+6), arena-client 2546 / 0, dashboard 594 / 0, server 1640 pass.
+- **Live-verify (D-24026): operator-pending.** In a match created after the deploy with amwp Ant-Man: play Look Out for the Little Guy with a Strength card on top of your deck (it is drawn), then with a non-Strength card that has Size-Changing (drawn), then with anything else (it stays on top). The log names the criterion "a strength card or a card with Size-Changing".
+
+### Size-Changing granted during play: Pym Particles, Ultron-Pym, Shrinksperiments, Sporr and two tactics make an HQ Hero cheaper to recruit (WP-862 / EC-900, D-24804) (2026-11-05)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Six printed effects that did nothing now work. Fighting Ultron-Pym, Shrinksperiments or Sporr, defeating Fin Fang Foom's Alien Dragon Technology tactic, or playing Pym Particles gives a Hero in the HQ Size-Changing for the printed classes this turn: with two or more eligible Heroes you pick one ("Captain America gains Size-Changing Tech this turn", recruitable and priciest first); with one it is applied at once. That Hero's HQ price then drops by 2 per matching class you have played. Shrinksperiments replaces the Hero's own Size-Changing with Tech. Darren Cross's Shrinking Research Budget gives every HQ Hero with no Size-Changing its own class for as long as it stays in the HQ, with a class pick for dual-class Heroes. Pym Particles itself no longer gets a spurious extra Tech discount (a D-24801 parse bug).
+
+- **Engine.** A lazy `G.hqSizeChangingGrants` overlay keyed by the Hero instance, read by `resolveRecruitCost` while the card is in the HQ; end-of-turn cleanup removes "this turn" grants. Two seat-choice kinds, one villain primitive (`hq-hero-gains-size-changing`), one hero keyword, two tactic resolvers. No new move, queue, UIState field or client file.
+- **Feeds.** Villain ledger: Ultron-Pym, Shrinksperiments and Sporr are executable. Effect index: both tactics executable. Hero ledger: `hq-hero-gains-size-changing-tech` for antm Ant-Man. Runtime-observed hollows and the dashboard pin unchanged.
+- **Tests.** game-engine 6293 / 0 (+24), arena-client 2546 / 0, dashboard 594 / 0, server 1640 pass.
+- **Operator call (D-24804).** Shrinking Research Budget prints no duration; it is implemented as "while the Hero stays in the HQ" (any player recruiting it later gets the discount). Reverting to "this turn" is a one-value change.
+- **Not covered.** Trap Heroes in the Microverse (the antm scheme needs its Heroes-in-the-Villain-Deck setup first), Look Out for the Little Guy's reveal line (same parse class as the Pym Particles bug), Darren Cross's Transform, and a client badge on a Hero with granted Size-Changing.
+- **Live-verify (D-24026): operator-pending.** In a match created after the deploy:
+  1. Villain group chmp Monsters Unleashed, two or more Heroes in the HQ: fight Sporr. A pick opens (Play Diagnostics `uiStateSnapshot.pendingSeatChoice` lists "<Hero> gains Size-Changing Tech and Ranged this turn"). Choose a Hero, play a Tech card: that HQ tile reads 2 below its printed cost (`hq.recruitCosts`), 4 below with a Ranged card too. After End Turn it is back to printed.
+  2. Hero antm Ant-Man: play Pym Particles with a Hero with no Size-Changing in the HQ; it gains Tech this turn ("Player 0 gave <Hero> Size-Changing Tech this turn (Pym Particles).").
+  3. Villain group amwp Cross Technologies: fight Shrinksperiments; the chosen Hero's own Size-Changing stops discounting it and Tech does.
+
 ### Size-Changing Villains and Masterminds cost 2 less to fight, as the rulebook says (D-24802, direct fix) (2026-11-05)
 
 **User-visible on `play.legendary-arena.com` after deploy.** A Villain with Size-Changing [Class] now costs 2 less to fight once you have played a card of that class this turn, for each class it lists. The City tile's Fight price and the Fight button follow the lower price. Fin Fang Foom (all five classes) works the same way. A Villain with Microscopic Size-Changing costs 2 less for each matching card you played, up to one per icon. If that takes it below 0, you fight it for nothing and gain the difference as Attack. Regular Size-Changing never goes below 0. This completes D-24801, which did the Hero recruit side.

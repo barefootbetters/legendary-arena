@@ -197,7 +197,7 @@
           "recruit": null,
           "abilities": [
             "[keyword:Size-Changing] [hc:strength]",
-            "Reveal the top card of your deck. If it's [hc:strength] or has [keyword:Size-Changing] draw it."
+            "Reveal the top card of your deck. If it's [hc:strength] or has [keyword:Size-Changing] draw it. [keyword:reveal:hc-or-size-changing-strength:draw]"
           ]
         },
         {
@@ -1548,7 +1548,7 @@
           "imageUrl": "https://images.legendary-arena.com/amwp/amwp-vi-cross-technologies-shrinksperiments.webp",
           "abilities": [
             "[keyword:Size-Changing] [hc:tech]",
-            "Fight: A Hero in the HQ loses all [keyword:Size-Changing] abilities, then gains [keyword:Size-Changing] [hc:tech] this turn."
+            "Fight: A Hero in the HQ loses all [keyword:Size-Changing] abilities, then gains [keyword:Size-Changing] [hc:tech] this turn. [effect:hq-hero-gains-size-changing:replace:tech]"
           ],
           "copies": 2
         },
