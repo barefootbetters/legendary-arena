@@ -134,9 +134,10 @@ export interface ResolvedPlayerTargetNames {
  * log line from the resolved per-effect results.
  *
  * Pure + byte-stable. Each result renders as its generic keyword label with the
- * resolved target names appended in parentheses when present, or the fixed
- * "the active player must KO a hero" phrase ("two heroes" for a two-KO effect) when the
- * KO is still pending. Clauses
+ * resolved target names appended in parentheses when present. A still-pending KO
+ * reads "the active player must KO a hero" for a current-player KO, or "each player
+ * KOs a hero: Player N must choose which; …" for an each-player KO ("two heroes" for
+ * a two-KO effect). Clauses
  * join with "; " in dispatch order. The caller supplies the leading
  * `<timing> effect: ` label and the trailing period.
  *
@@ -167,18 +168,18 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     // why: D-24644 amendment — a two-KO effect (Juggernaut's Ambush / Escape) owes two
     // picks, so the line says so; the prompt's "(2 remaining)" already did. Every other
     // pending KO keyword owes one.
-    let pendingClause = 'the active player must KO a hero';
-    if (result.keyword === 'koHeroEachPlayerMag2') {
-      pendingClause = 'the active player must KO two heroes';
+    const heroNoun = composePendingKoHeroNoun(result);
+    // why: D-24644 amendment (2026-11-06) — an each-player KO (Super-Skrull's "Each player
+    // KOs one of their Heroes") said "the active player must KO a hero", which read as if
+    // only the active player lost a Hero (Jeff's match yTdbv34zeV6, 7.2.6). Say every
+    // player KOs and name who is still choosing. A current-player KO keeps its wording.
+    const isEachPlayerKo = result.keyword === 'koHeroEachPlayer'
+      || result.keyword === 'koHeroEachPlayerMag2'
+      || result.playerTargetNames !== undefined;
+    if (!isEachPlayerKo) {
+      return `the active player must KO ${heroNoun}`;
     }
-    // why: D-24783 — a grey-filtered KO (Destroyer: "KOs a non-grey Hero") names the filter.
-    if (result.greyFilter !== undefined) {
-      if (result.keyword === 'koHeroEachPlayerMag2') {
-        pendingClause = `the active player must KO two ${greyHeroNoun(result.greyFilter, 2)}`;
-      } else {
-        pendingClause = `the active player must KO a ${greyHeroNoun(result.greyFilter, 1)}`;
-      }
-    }
+    const pendingClause = `each player KOs ${heroNoun}: ${composePendingChooserName(result)} must choose which`;
     // why: D-24683 — with the per-player split, name each other player's outcome
     // ("Player 1 KO’d …" / "Player 1 had no hero to KO") instead of a flat list.
     if (result.playerTargetNames !== undefined) {
@@ -228,6 +229,46 @@ function composeEffectResultClause(result: ResolvedEffectResult): string {
     return noTargetLabel;
   }
   return label;
+}
+
+/**
+ * Names what a pending KO still owes: "a hero", "two heroes", or the grey-filtered
+ * noun (D-24783, Destroyer's "a non-grey Hero").
+ *
+ * @param result - The pending effect result.
+ * @returns The hero noun phrase, with its article or count.
+ */
+function composePendingKoHeroNoun(result: ResolvedEffectResult): string {
+  // why: D-24644 amendment (2026-10-01) — a two-KO effect (Juggernaut) owes two picks.
+  const isTwoKo = result.keyword === 'koHeroEachPlayerMag2';
+  if (result.greyFilter !== undefined) {
+    if (isTwoKo) {
+      return `two ${greyHeroNoun(result.greyFilter, 2)}`;
+    }
+    return `a ${greyHeroNoun(result.greyFilter, 1)}`;
+  }
+  if (isTwoKo) {
+    return 'two heroes';
+  }
+  return 'a hero';
+}
+
+/**
+ * Names the player whose each-player KO pick is parked: "Player N" from the per-player
+ * split, or "the active player" when no split was carried.
+ *
+ * @param result - The pending each-player effect result.
+ * @returns The chooser's display name.
+ */
+function composePendingChooserName(result: ResolvedEffectResult): string {
+  if (result.playerTargetNames !== undefined) {
+    for (const playerShare of result.playerTargetNames) {
+      if (playerShare.pending === true) {
+        return `Player ${playerShare.playerId}`;
+      }
+    }
+  }
+  return 'the active player';
 }
 
 /**

@@ -265,7 +265,7 @@ describe('composeEffectResultLogLine (WP-316)', () => {
       { keyword: 'koHeroEachPlayerMag2', targetNames: ['S.H.I.E.L.D. Agent', 'Hulk'], pending: true },
     ]);
     // why: D-24644 amendment — a two-KO effect names the count it owes (was "a hero").
-    assert.equal(line, 'the active player must KO two heroes; other players KO’d S.H.I.E.L.D. Agent, Hulk');
+    assert.equal(line, 'each player KOs two heroes: the active player must choose which; other players KO’d S.H.I.E.L.D. Agent, Hulk');
   });
 
   // why: D-24646 — the KO labels are past tense; a KO that found no Hero must not claim one.
@@ -328,7 +328,7 @@ describe('composeEffectResultLogLine (WP-316)', () => {
           { playerId: '2', names: [] },
         ],
       }]),
-      'the active player must KO two heroes; Player 1 KO’d Hulk; Player 2 had no hero to KO',
+      'each player KOs two heroes: Player 0 must choose which; Player 1 KO’d Hulk; Player 2 had no hero to KO',
     );
   });
 
@@ -358,7 +358,7 @@ describe('composeEffectResultLogLine (WP-316)', () => {
           { playerId: '1', names: [] },
         ],
       }]),
-      'the active player must KO two non-grey Heroes; Player 1 had no non-grey Hero to KO',
+      'each player KOs two non-grey Heroes: Player 0 must choose which; Player 1 had no non-grey Hero to KO',
     );
     assert.equal(
       composeEffectResultLogLine([{ keyword: 'koHeroEachPlayer', targetNames: [], greyFilter: 'grey' }]),
@@ -369,15 +369,41 @@ describe('composeEffectResultLogLine (WP-316)', () => {
   it('D-24644 amendment: a pending two-KO effect (Juggernaut) says "two heroes"; one-KO keywords keep "a hero"', () => {
     assert.equal(
       composeEffectResultLogLine([{ keyword: 'koHeroEachPlayerMag2', targetNames: [], pending: true }]),
-      'the active player must KO two heroes',
+      'each player KOs two heroes: the active player must choose which',
     );
     assert.equal(
       composeEffectResultLogLine([{ keyword: 'koHeroEachPlayer', targetNames: [], pending: true }]),
-      'the active player must KO a hero',
+      'each player KOs a hero: the active player must choose which',
     );
     assert.equal(
       composeAmbushNarrative('Juggernaut', [{ keyword: 'koHeroEachPlayerMag2', targetNames: [], pending: true }]),
-      '"Juggernaut" ambushed: the active player must KO two heroes.',
+      '"Juggernaut" ambushed: each player KOs two heroes: the active player must choose which.',
+    );
+  });
+
+  // why: D-24644 amendment (2026-11-06) — Super-Skrull's "Each player KOs one of their
+  // Heroes" logged "the active player must KO a hero; Player 1 KO’d S.H.I.E.L.D. Agent from
+  // their hand" (Jeff's match yTdbv34zeV6, 7.2.6), which read as if only the active player KOs.
+  it('D-24644 amendment: a pending each-player KO says every player KOs and names who is choosing', () => {
+    const fightLine = composeFightNarrative('Super-Skrull', 0, [{
+      keyword: 'koHeroEachPlayer',
+      targetNames: ['S.H.I.E.L.D. Agent from their hand'],
+      pending: true,
+      playerTargetNames: [
+        { playerId: '0', names: [], pending: true },
+        { playerId: '1', names: ['S.H.I.E.L.D. Agent from their hand'] },
+      ],
+    }]);
+    assert.equal(
+      fightLine,
+      'Fought "Super-Skrull"; Fight effect: each player KOs a hero: Player 0 must choose which; '
+        + 'Player 1 KO’d S.H.I.E.L.D. Agent from their hand.',
+    );
+    assert.equal(fightLine.includes('the active player must KO'), false);
+    // why: a current-player KO (one player loses a Hero) keeps its wording.
+    assert.equal(
+      composeEffectResultLogLine([{ keyword: 'koHeroCurrentPlayer', targetNames: [], pending: true }]),
+      'the active player must KO a hero',
     );
   });
 
