@@ -1684,6 +1684,17 @@
       "date": "2026-11-06",
       "evidence": "2p Operator match l8uwhB8OMmN (Fin Fang Foom / Midtown Bank Robbery; Monsters Unleashed + Cross Technologies; Iron Man, Hulk, amwp Ant-Man, antm Ant-Man, Hawkeye; server build 260af872, created 2026-11-06T03:27:50Z after boot): Look Out for the Little Guy revealed Shrink Away (Covert, Size-Changing) and drew it (17.2.4); it revealed Unstoppable Hulk (Instinct, no Size-Changing) and left it on top (5.2.6, 9.2.21). Not observed live: a revealed Strength card. Second operator match nbN7_IAWLAp (same loadout; created 2026-11-06T04:02:21Z on server 260af872, which carries WP-862 and D-24806): drew Size-Changing cards (6.2.11 Risky Science, 16.2.11 Ride the Ants, 24.2.2 Risky Science) and left S.H.I.E.L.D. cards on top (10.2.24, 20.2.17). A revealed Strength card is still not observed.",
       "note": "Playing it reveals the deck top and draws a Strength card or any card with Size-Changing (Microscopic included); anything else stays on top. Before D-24806 the line did nothing. D-24806."
+    },
+    {
+      "key": "scheme:antm/trap-heroes-in-the-microverse|micro-sized-villains",
+      "kind": "scheme",
+      "card": "Trap Heroes in the Microverse",
+      "ability": "The last-listed Hero's cards are Micro-Sized Villains in the Villain Deck (Attack = printed cost, Size-Changing for their color); fight one and choose a player to gain it; Twist plays two Villain Deck cards; Evil Wins at 3 escaped per player or an empty Villain Deck",
+      "wp": "WP-863",
+      "state": "pending",
+      "date": "2026-11-05",
+      "evidence": "",
+      "note": "Live check: setup log names the trapped Hero; a revealed trapped card fights for its printed cost (2 less per color played); with two seats the fight opens a Player N gains <Hero> choice; a Twist reveals two cards. D-24805."
     }
   ]
 }

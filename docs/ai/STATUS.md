@@ -10,6 +10,23 @@
 
 ## Current State
 
+### Trap Heroes in the Microverse: the last-listed Hero's cards fight from the Villain Deck as Micro-Sized Villains (WP-863 / EC-901, D-24805) (2026-11-05)
+
+**User-visible on `play.legendary-arena.com` after deploy.** The antm scheme now plays as printed. The lobby asks for one more Hero (4 solo, 6 at 2-4 players, 7 at 5), and the last Hero listed is trapped: its cards are shuffled into the Villain Deck, never the Hero Deck or the HQ, and the setup log names it ("Trap Heroes in the Microverse: <Hero>'s 14 cards are shuffled into the Villain Deck as Micro-Sized Villains."). A revealed one enters the City as a Villain showing its Hero card, with Attack equal to its printed cost, and it costs 2 less to fight for each of its colors you have played this turn (a dual-class card counts both). Fighting one never scores VP: in a one-seat match it goes straight into your discard pile; otherwise you choose "Player N gains <Hero>" (you first). A Twist plays two cards from the Villain Deck. The scheme is lost at 3 escaped Villains per player (Micro-Sized ones count) or when the Villain Deck runs out, never on the Twist count, and the danger meter tracks whichever is closer.
+
+- **Engine.** New `rules/trapHeroesInTheMicroverse.logic.ts` (the trapped-Hero split, the Villain Deck conversion, the color Size-Changing entries, the defeat route and its `'micro-sized-gain'` seat choice). `ConvertedVillainOrigin` gains `'micro-sized'`; `resolveBaseFightCost` reads the printed cost; the entries join the D-24802 `G.fightSizeChanging` map at setup. Scheme config: `chained-reveals` (2) plus the new `additionalEscapeLossCondition` with `isThresholdPerPlayer`; the twist fallback is gone. No new move, queue, UIState field, client or server file.
+- **Registry.** `SCHEME_HERO_COUNT_RULES` gains the scheme (`add 1 from 1p`), so the engine, server and lobby all require the extra Hero.
+- **Feeds.** None moved: every `:check` passes with no regeneration (the sweep runs this scheme solo, still a valid 4-Hero loadout). No `finalStateHash` sentinel moved.
+- **Tests.** game-engine 6335 / 0 (+24), registry 311 / 0, arena-client 2546 / 0, server 1847 / 0, dashboard 594 / 0.
+- **Operator call (D-24805).** A dual-class Micro-Sized Villain has Size-Changing for both colors, each its own 2-less step (the engine's existing two-class Size-Changing reading). Reverting to "one 2-less step if either color was played" is a one-function change.
+- **Not covered.** A City badge marking a card Micro-Sized; bot fight valuation (the bot values fights by VP, and these carry none); the other D-compound "N Villains escape per player or a pile runs out" schemes (the new field now makes each a config change).
+- **Live-verify (D-24026): operator-pending.** In a match created after the deploy (`isMatchOlderThanServer: false`), 2 players, scheme Trap Heroes in the Microverse, any mastermind / villain group, 6 Heroes:
+  1. The opening log names the last-listed Hero as trapped; none of its cards appear in the HQ.
+  2. Operator panel: move a trapped card to the Villain Deck top, then reveal. It enters the City as that Hero card; Play Diagnostics `uiStateSnapshot` shows its `fightCost` equal to its printed cost, then 2 less after playing a card of its class.
+  3. Fight it: a choice opens ("Player 0 gains <Hero>" / "Player 1 gains <Hero>"); pick Player 1, and the card lands in Player 1's discard ("Player 1 gains <Hero> (Trap Heroes in the Microverse).").
+  4. Reveal a Scheme Twist: two Villain Deck cards are played.
+  5. The danger meter reads escaped Villains against 6 (2 players) once any Villain escapes.
+
 ### Henchman groups printed as variant cards: each copy is its own card, Tardigrade costs less to fight, and their Fight effects work (D-24803, direct fix) (2026-11-05)
 
 **User-visible on `play.legendary-arena.com` after deploy.** Three henchman groups are printed as different cards rather than 10 identical ones: amwp Tardigrade (one per class, 2 each), wtif Ultron Sentries (one per class, 2 each) and rvlt Mandarin's Rings (10 unique rings). Each copy in the City now shows its own name and art, where before every copy showed the first variant. A Tardigrade knows its class, so it gets its Microscopic Size-Changing fight discount (D-24802). A Tardigrade (Tech) costs 2 less for each Tech card you played, up to three, and below 0 you fight it for nothing and gain the difference as Attack. Fighting a Tardigrade or an Ultron Sentry now KOs one of your Heroes. Four rings now work as printed: Daimonic draws a card, Incandescence lets you KO a card from your discard pile, Influence gives +1 Recruit, and Spectral KOs one of your Heroes.
