@@ -50365,7 +50365,7 @@ All three appeared as their first variant's art, with no abilities on any copy. 
 
 ---
 
-### D-24811 — Attempt Heist lives in the turn-action bar, not the played-cards heading (direct fix, no WP; amends D-24808 §7) (Active 2026-11-06)
+### D-24812 — Attempt Heist lives in the turn-action bar, not the played-cards heading (direct fix, no WP; amends D-24808 §7) (Active 2026-11-06)
 
 **Context.** D-24808 §7 put the `Attempt Heist (Heist Count N)` button in the "Played This Turn" heading. In operator match `OZLV05npDB8` (Fin Fang Foom / Midtown Bank Robbery, 2 players, server and client `af4efcab`) the operator readied a Heist card on about 20 turns and never attempted a Heist: the log has 82 Heist lines and no attempt, and the operator reports never seeing the button. Every layer was verified to work: the real Master + `playerView` on the real registry and that loadout project `heistAvailable: true` (Heist Count 4) from the first readied card through the rest of the turn, to the active seat only; `attemptHeist` through the Master resolves; the deployed bundle carries the button; the client stores the projection verbatim; nothing overlays it. The button sat in a small, muted, uppercase zone heading, away from where the turn's actions are.
 

@@ -326,9 +326,9 @@ describe('TurnActionBar — Heal Wounds (shown only when usable)', () => {
   });
 });
 
-// D-24811 (amends D-24808 §7): Attempt Heist lives in the always-visible sticky bar,
+// D-24812 (amends D-24808 §7): Attempt Heist lives in the always-visible sticky bar,
 // shown only while the engine projects heistAvailable — the Heal Wounds "only when usable" rule.
-describe('TurnActionBar — Attempt Heist (D-24811)', () => {
+describe('TurnActionBar — Attempt Heist (D-24812)', () => {
   test('shows the Heist Count in Step 2 and dispatches attemptHeist with no args', () => {
     const { calls, submitMove } = recorder();
     const wrapper = mount(TurnActionBar, {

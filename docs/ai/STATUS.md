@@ -10,7 +10,7 @@
 
 ## Current State
 
-### Attempt Heist moves to the bottom turn bar (D-24811, amends D-24808 §7) (2026-11-06)
+### Attempt Heist moves to the bottom turn bar (D-24812, amends D-24808 §7) (2026-11-06)
 
 **User-visible on `play.legendary-arena.com` after deploy.** The **Attempt Heist (Heist Count N)** button now appears in Step 2 of the bottom turn bar, beside Heal Wounds and End turn, whenever a Heist can be attempted. It used to sit in the "Played This Turn" heading, where operator match `OZLV05npDB8` readied a Heist card on about 20 turns without the button ever being noticed. The engine path was re-verified end to end; this is a client placement fix only.
 

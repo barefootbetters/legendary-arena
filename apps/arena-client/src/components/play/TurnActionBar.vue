@@ -348,7 +348,7 @@ export default defineComponent({
       required: false,
       default: false,
     },
-    // why: D-24811 (amends D-24808 §7) — the Attempt Heist control lives in this sticky bar,
+    // why: D-24812 (amends D-24808 §7) — the Attempt Heist control lives in this sticky bar,
     // beside Heal Wounds and End turn — where the player decides what else to do before ending
     // the turn. Inside the small, muted played-cards heading it went unnoticed for ~20
     // readied-Heist turns of operator match OZLV05npDB8. `economy.heistAvailable` (active
@@ -358,7 +358,7 @@ export default defineComponent({
       required: false,
       default: false,
     },
-    // why: D-24811 — the viewer's Heist Count (`economy.heistCount`), shown on the button so
+    // why: D-24812 — the viewer's Heist Count (`economy.heistCount`), shown on the button so
     // the player can weigh the attempt against the Villain Deck before pressing it.
     heistCount: {
       type: Number as PropType<number | undefined>,
@@ -651,7 +651,7 @@ export default defineComponent({
         data-testid="play-turn-step-2"
       >
         <header>Step 2 — Play / Recruit / Fight (play.main)</header>
-        <!-- why: D-24811 — Attempt Heist sits ABOVE the hint so it stays level with Reveal / End turn;
+        <!-- why: D-24812 — Attempt Heist sits ABOVE the hint so it stays level with Reveal / End turn;
              below the hint it wrapped under the fixed audio controls on a phone-width board. -->
         <button
           v-if="canAttemptHeist()"
@@ -660,7 +660,7 @@ export default defineComponent({
           data-testid="attempt-heist"
           @click="onAttemptHeist($event)"
         >
-          <!-- why: D-24811 — shown only while the engine projects heistAvailable, the same
+          <!-- why: D-24812 — shown only while the engine projects heistAvailable, the same
                "only when usable" rule as Heal Wounds, in the always-visible bar. -->
           Attempt Heist (Heist Count {{ heistCount ?? 0 }})
         </button>
@@ -793,7 +793,7 @@ export default defineComponent({
    not-allowed styling so the enabled/disabled distinction is carried by the
    button itself — an enabled Pass priority at play.start now reads as clickable,
    a stage-blocked button reads as blocked. */
-/* why: D-24811 — Attempt Heist is an optional, once-per-turn gamble, so it is accented (the
+/* why: D-24812 — Attempt Heist is an optional, once-per-turn gamble, so it is accented (the
    WP-865 Heist purple) to stand out from the plain Heal / End turn buttons in the same bar. */
 .turn-action-bar__step .turn-action-bar__heist {
   margin: 0 0 0.25rem 0;

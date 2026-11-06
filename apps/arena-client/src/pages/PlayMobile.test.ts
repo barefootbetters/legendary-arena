@@ -282,7 +282,7 @@ describe('PlayMobile — controlled Artifacts and the Ritual Use button (WP-858 
   });
 });
 
-describe('PlayMobile — the Attempt Heist button in the turn bar (WP-865 / D-24811)', () => {
+describe('PlayMobile — the Attempt Heist button in the turn bar (WP-865 / D-24812)', () => {
   test('economy.heistAvailable renders Attempt Heist with the Heist Count and dispatches attemptHeist', async () => {
     // why: a mis-bound prop silently falls back to false (no button), so the page-level mount is
     // what proves the two bindings and the submitMove pass-through.
@@ -299,7 +299,7 @@ describe('PlayMobile — the Attempt Heist button in the turn bar (WP-865 / D-24
     });
     const buttons = wrapper.findAll('[data-testid="attempt-heist"]');
     assert.equal(buttons.length, 1);
-    // why: D-24811 — the button lives in the always-visible TurnActionBar, never the played-cards heading.
+    // why: D-24812 — the button lives in the always-visible TurnActionBar, never the played-cards heading.
     assert.equal(wrapper.find('[data-testid="play-turn-action-bar"] [data-testid="attempt-heist"]').exists(), true);
     assert.equal(wrapper.find('[data-testid="play-played-row"] [data-testid="attempt-heist"]').exists(), false);
     assert.equal(buttons[0]!.text(), 'Attempt Heist (Heist Count 2)');

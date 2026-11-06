@@ -227,9 +227,9 @@ describe('PlayedCardsRow — controlled Artifacts and the Ritual Use button (WP-
   });
 });
 
-describe('PlayedCardsRow — no Attempt Heist button (D-24811)', () => {
+describe('PlayedCardsRow — no Attempt Heist button (D-24812)', () => {
   test('the played-cards heading never carries Attempt Heist; it lives in the TurnActionBar', () => {
-    // why: D-24811 moved the Heist control out of this heading (unnoticed there) into the turn
+    // why: D-24812 moved the Heist control out of this heading (unnoticed there) into the turn
     // bar. Unknown props fall through as attrs, so passing the old ones proves nothing renders.
     const wrapper = mount(PlayedCardsRow, {
       props: { inPlayCards: ['amwp/wasp/infiltrate#0'], submitMove: () => {} },
