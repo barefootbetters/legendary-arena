@@ -16,8 +16,8 @@
 
 - **Engine.** `henchmanCopyVariant` (`villainDeck/villainDeck.setup.ts`) maps copies 00-09 onto the group's printed `cards[]` in contiguous blocks. The ability hooks, display data and `buildFightSizeChanging` read it. Copy ext_ids are unchanged, so the deck and shuffle are identical, and a match without these groups hashes as before.
 - **Data.** The marker map can name a henchman variant (`henchmen.<set>.<group>.cards.<variant>`), and `apply-effect-markers.mjs` marks the variant's own line. 14 lines are marked: 5 Tardigrade, 5 Ultron Sentries and 4 rings.
-- **Feeds.** The villain ledger and the effect index gain 20 henchman-variant rows (14 executable, 6 unmarked). `card-mechanics.json` and the runtime-observed hollows (7725 observations) are unchanged. The dashboard `totalObs` pin stays at 8686.
-- **Tests.** game-engine 6281 / 0 (+12), arena-client 2546 / 0, server 1847 / 0, dashboard 594 / 0.
+- **Feeds.** The villain ledger and the effect index gain 20 henchman-variant rows (14 executable, 6 unmarked). `card-mechanics.json` and the runtime-observed hollows (7724 observations) are unchanged. The dashboard `totalObs` pin stays at 8686.
+- **Tests.** game-engine 6311 / 0 (+12), arena-client 2546 / 0, server 1847 / 0, dashboard 594 / 0.
 - **Not covered.** Six rings (Liar, Lightning, Nightbringer, Remaker, Spin and Zero) need new effect primitives; their fights record an `unmarked-ability` hollow. Ultron Sentries' Empowered Attack is not covered either.
 - **Live-verify (D-24026): operator-pending.** In a match created after the deploy:
   1. Henchman group amwp Tardigrade: the City and victory pile show "Tardigrade (Covert)", "Tardigrade (Tech)" and so on, each with its class art.
