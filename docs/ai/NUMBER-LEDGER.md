@@ -503,6 +503,7 @@ high-water: 422
 - WP-863 — trap-heroes-in-the-microverse (antm scheme: an extra Hero's 14 cards shuffle into the Villain Deck as Micro-Sized Villains, Attack = printed cost, Size-Changing for their color via G.fightSizeChanging; fight one and a chosen player gains it as a Hero; Twist plays two Villain Deck cards; Evil Wins at 3 escaped per player or an empty Villain Deck. reserved 2026-11-05, claude/wp863-reserve; LANDED 2026-11-05)
 - WP-862 — size-changing-runtime-grants (card effects that grant or remove Size-Changing on an HQ Hero during play — Pym Particles, Ultron-Pym, Shrinksperiments, Sporr, Fin Fang Foom's Alien Dragon Technology, Darren Cross's Shrinking Research Budget — read by the recruit-price authority. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - WP-864 — demolish-keyword (the Demolish keyword: reveal the Hero Deck top, note its cost, put it on the bottom, each player discards a card of that cost; Fin Fang Foom's Master Strike Demolishes once plus once per Monsters Unleashed Villain in the city and Escape Pile; Trull the Unhuman Ambush, Zzutak and Piledriver Escape. reserved 2026-11-05, claude/wp864-reserve)
+- WP-867 — unresolved-master-strike-diagnostic (a Master Strike whose mastermind has no strike resolver is flagged — a hollow-effect record and a visible log line — instead of silently doing nothing; strike-provenance coverage feed. reserved 2026-11-06, claude/wp867-reserve)
 
 ## EC
 
@@ -968,6 +969,7 @@ high-water: 457
 - EC-901 — trap-heroes-in-the-microverse (WP-863. reserved 2026-11-05, claude/wp863-reserve; LANDED 2026-11-05)
 - EC-900 — size-changing-runtime-grants (WP-862. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - EC-902 — demolish-keyword (WP-864. reserved 2026-11-05, claude/wp864-reserve)
+- EC-905 — unresolved-master-strike-diagnostic (WP-867. reserved 2026-11-06, claude/wp867-reserve)
 
 ## D
 
@@ -1553,3 +1555,4 @@ section below) and the allocation protocol in
 - D-24804 — size-changing-runtime-grants (WP-862; an HQ Size-Changing grant overlay keyed by the copy-unique Hero id, read by resolveRecruitCost while the card is in the HQ, cleared at end of turn or when the card leaves the HQ. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - D-24807 — demolish-keyword (WP-864; one shared Demolish resolver, its auto-picked discard, the Fin Fang Foom repeat count, and the demolish-each-player villain primitive. reserved 2026-11-05, claude/wp864-reserve)
 - D-24803 — henchman-variant-copies (direct fix, no WP — a henchman group printed as per-class or unique variant cards maps its 10 copies to the variants in contiguous blocks, so each copy carries its own name, image, abilities and Size-Changing fight discount; ext_ids unchanged. reserved 2026-11-05, claude/henchman-variants-reserve)
+- D-24810 — unresolved-master-strike-diagnostic (WP-867; how an unresolved Master Strike is recorded and surfaced, and its replay-hash consequence. reserved 2026-11-06, claude/wp867-reserve)
