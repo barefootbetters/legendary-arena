@@ -505,6 +505,7 @@ high-water: 422
 - WP-862 — size-changing-runtime-grants (card effects that grant or remove Size-Changing on an HQ Hero during play — Pym Particles, Ultron-Pym, Shrinksperiments, Sporr, Fin Fang Foom's Alien Dragon Technology, Darren Cross's Shrinking Research Budget — read by the recruit-price authority. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - WP-864 — demolish-keyword (the Demolish keyword: reveal the Hero Deck top, note its cost, put it on the bottom, each player discards a card of that cost; Fin Fang Foom's Master Strike Demolishes once plus once per Monsters Unleashed Villain in the city and Escape Pile; Trull the Unhuman Ambush, Zzutak and Piledriver Escape. reserved 2026-11-05, claude/wp864-reserve)
 - WP-867 — unresolved-master-strike-diagnostic (a Master Strike whose mastermind has no strike resolver is flagged — a hollow-effect record and a visible log line — instead of silently doing nothing; strike-provenance coverage feed. reserved 2026-11-06, claude/wp867-reserve)
+- WP-868 — villain-hq-cost-discard-ko-reenter (villain Fight/Ambush lines that log unmarked-ability hollows: Heroes in the HQ cost N less or more this turn, a mandatory KO from your discard pile, and Mr. Immortal reentering the Sewers off a Villain Deck reveal. reserved 2026-11-06, claude/wp868-reserve)
 
 ## EC
 
@@ -972,6 +973,7 @@ high-water: 457
 - EC-900 — size-changing-runtime-grants (WP-862. reserved 2026-11-05, claude/wp862-reserve; LANDED 2026-11-05)
 - EC-902 — demolish-keyword (WP-864. reserved 2026-11-05, claude/wp864-reserve)
 - EC-905 — unresolved-master-strike-diagnostic (WP-867. reserved 2026-11-06, claude/wp867-reserve)
+- EC-906 — villain-hq-cost-discard-ko-reenter (WP-868. reserved 2026-11-06, claude/wp868-reserve)
 
 ## D
 
@@ -1559,3 +1561,4 @@ section below) and the allocation protocol in
 - D-24807 — demolish-keyword (WP-864; one shared Demolish resolver, its auto-picked discard, the Fin Fang Foom repeat count, and the demolish-each-player villain primitive. reserved 2026-11-05, claude/wp864-reserve)
 - D-24803 — henchman-variant-copies (direct fix, no WP — a henchman group printed as per-class or unique variant cards maps its 10 copies to the variants in contiguous blocks, so each copy carries its own name, image, abilities and Size-Changing fight discount; ext_ids unchanged. reserved 2026-11-05, claude/henchman-variants-reserve; LANDED 2026-11-05)
 - D-24810 — unresolved-master-strike-diagnostic (WP-867; how an unresolved Master Strike is recorded and surfaced, and its replay-hash consequence. reserved 2026-11-06, claude/wp867-reserve)
+- D-24811 — villain-hq-cost-discard-ko-reenter (WP-868; the HQ cost-change overlay and its recruit-price order, the mandatory KO-from-discard minimum, and the reenter-the-Sewers fire-site bridge. reserved 2026-11-06, claude/wp868-reserve)
