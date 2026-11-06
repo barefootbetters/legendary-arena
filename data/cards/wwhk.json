@@ -2736,8 +2736,8 @@
           "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-vi-code-red-red-she-hulk.webp",
           "abilities": [
             "[keyword:Wounded Fury]",
-            "Fight: Each player reveals a [hc:covert] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:covert]"
           ],
           "copies": 1
         },
@@ -2976,8 +2976,8 @@
           "vAttack": "4",
           "imageUrl": "https://images.legendary-arena.com/wwhk/wwhk-vi-u-foes-vapor.webp",
           "abilities": [
-            "Fight: Each player reveals a [hc:covert] Hero or gains a Wound.",
-            "Escape: Same effect."
+            "Fight: Each player reveals a [hc:covert] Hero or gains a Wound. [effect:reveal-or-wound:hc:covert]",
+            "Escape: Same effect. [effect:reveal-or-wound:hc:covert]"
           ],
           "copies": 2
         },

@@ -799,7 +799,7 @@
           "imageUrl": "https://images.legendary-arena.com/pttr/pttr-vi-sinister-six-sandman.webp",
           "abilities": [
             "Sandman's [icon:attack] is twice the number of Villains in the city.",
-            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound."
+            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]"
           ],
           "copies": 1
         },
@@ -822,7 +822,7 @@
           "imageUrl": "https://images.legendary-arena.com/pttr/pttr-vi-sinister-six-vulture.webp",
           "abilities": [
             "Ambush: (After Vulture enters the city) If there is a Villain on the Rooftops or Bridge, swap Vulture with one of those Villains.",
-            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound."
+            "Escape: Each player reveals an [hc:instinct] Hero or gains a Wound. [effect:reveal-or-wound:hc:instinct]"
           ],
           "copies": 2
         }

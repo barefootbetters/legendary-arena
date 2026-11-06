@@ -2454,7 +2454,7 @@
           "imageUrl": "https://images.legendary-arena.com/dkcy/dkcy-vi-streets-of-new-york-tombstone.webp",
           "abilities": [
             "[keyword:Bribe]",
-            "Escape: Each player reveals a [hc:strength] Hero or gains a Wound."
+            "Escape: Each player reveals a [hc:strength] Hero or gains a Wound. [effect:reveal-or-wound:hc:strength]"
           ],
           "copies": 2
         }

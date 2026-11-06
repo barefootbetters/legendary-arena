@@ -768,7 +768,7 @@
           "imageUrl": "https://images.legendary-arena.com/smhc/smhc-vi-salvagers-tinkerer.webp",
           "abilities": [
             "Fight: You get +1[icon:recruit] for each [hc:tech] Hero in the HQ.",
-            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound."
+            "Escape: Each player reveals a [hc:tech] Hero or gains a Wound. [effect:reveal-or-wound:hc:tech]"
           ],
           "copies": 2
         }
