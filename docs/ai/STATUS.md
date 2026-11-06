@@ -10,6 +10,21 @@
 
 ## Current State
 
+### Heist: Attempt a Heist fires the readied Heist abilities, and Heist lines stop granting at play (WP-865 / EC-903, D-24808) (2026-11-06)
+
+**User-visible on `play.legendary-arena.com` after deploy.** Ant-Man and the Wasp's Heist now plays by the rule (v23 p.26-27). Playing a Heist card grants nothing and logs it readied for a Heist. Once per turn, while a card is readied, an **Attempt Heist (Heist Count N)** button appears in the played-cards heading. Pressing it counts the different non-zero printed costs among the Heroes you have (hand plus cards still in play), reveals the Villain Deck top card (it stays on top), and compares with its printed VP: higher fires every readied Heist ability, tied does nothing, lower gains a Wound. Before this, six Heist lines paid out on every play (Infiltrate's +3 decided a Fin Fang Foom fight in `vZXSkk4xJNC`) and four did nothing.
+
+- **Engine.** New `moves/attemptHeist.ts` (server-only, `main` stage, blocked while a choice is open, one latched attempt per turn; `heistCount`, `heistRevealedVictoryPoints`, `isHeistAvailable`). `heroEffectHeist` readies, `fireHeistPlays` fires in play order. The parser fuses six allowlisted lines (Petty Larceny, Anything for Cassie, Shocking Support, Infiltrate, Tiny little Risk, Up the Ante) into one `heist` hook; The Big Score, Putting a Crew Together, X-Con Security Van and Revolutionary Anthem's Heist line are honest `heist` hollows with no payout. `TurnEconomy` gains `heistCrewCards?` / `hasAttemptedHeistThisTurn?` (lazy).
+- **UIState + client.** `economy.heistAvailable` / `heistCount`, active player only, through the filter whitelist. `PlayedCardsRow` renders the button on desktop and mobile.
+- **Data + feeds.** Three curated amwp markers (`rescue:1`, `draw:2`, `draw:1`). Hero ledger, effect index, card mechanics, runtime-observed hollows (heist 48 -> 1 hit) and the coverage baseline (executable +3) regenerated. Dashboard in-play coverage 12.6% -> 13.1% (resolvedObs 1091 -> 1141; totalObs held at 8687).
+- **Tests.** game-engine 6335 -> 6387 / 0 (+52), arena-client 2546 -> 2552 / 0 (+6), dashboard 594 / 0, server 1847 / 0, registry 311 / 0. Only the listed +1 count pins moved; no sentinel / `finalStateHash` / PAR pin moved.
+- **Not covered.** The four deferred lines' payloads (Master Strike KO, Scheme Twist bonus, every-card count, move-a-Villain), Enemy and scheme Heist (Ghost Chasers, Safeguard Dark Secrets), bot Heist attempts, a Heist VFX beat. Bots play Heist cards and never attempt, so they gain nothing from the Heist line.
+- **Live-verify (D-24026): operator-pending.** In a NEW match created after the deploy (`isMatchOlderThanServer: false`) with Wasp and Scott Lang, Cat Burglar:
+  1. Infiltrate played alone grants only its printed 1 Attack, logs "readied … for a Heist", and shows Attempt Heist.
+  2. A won Heist adds +3 Attack ("The Heist worked!"); Play Diagnostics `uiStateSnapshot.economy` carries `heistAvailable` / `heistCount` before the attempt.
+  3. A lost Heist gains a Wound ("The Heist failed …").
+  4. The button disappears after one attempt.
+
 ### Trap Heroes in the Microverse: the last-listed Hero's cards fight from the Villain Deck as Micro-Sized Villains (WP-863 / EC-901, D-24805) (2026-11-05)
 
 **User-visible on `play.legendary-arena.com` after deploy.** The antm scheme now plays as printed. The lobby asks for one more Hero (4 solo, 6 at 2-4 players, 7 at 5), and the last Hero listed is trapped: its cards are shuffled into the Villain Deck, never the Hero Deck or the HQ, and the setup log names it ("Trap Heroes in the Microverse: <Hero>'s 14 cards are shuffled into the Villain Deck as Micro-Sized Villains."). A revealed one enters the City as a Villain showing its Hero card, with Attack equal to its printed cost, and it costs 2 less to fight for each of its colors you have played this turn (a dual-class card counts both). Fighting one never scores VP: in a one-seat match it goes straight into your discard pile; otherwise you choose "Player N gains <Hero>" (you first). A Twist plays two cards from the Villain Deck. The scheme is lost at 3 escaped Villains per player (Micro-Sized ones count) or when the Villain Deck runs out, never on the Twist count, and the danger meter tracks whichever is closer.
